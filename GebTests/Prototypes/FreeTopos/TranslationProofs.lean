@@ -11,6 +11,8 @@ public import GebTests.Prototypes.Proofs -- shake: keep
 public meta import GebTests.Prototypes.Proofs -- shake: keep
 public import Geb.Prototypes.FreeTopos.Internal.Prove -- shake: keep
 public meta import Geb.Prototypes.FreeTopos.Internal.Prove -- shake: keep
+public import Geb.Prototypes.FreeTopos.Tactics -- shake: keep
+public meta import Geb.Prototypes.FreeTopos.Tactics -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -50,7 +52,7 @@ set_option doc.verso true
 
 namespace GebTests.Prototypes.FreeTopos.TranslationProofs
 
-open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation
+open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation Geb.FreeTopos.Tactics
 open Geb.GoedelT.ProofTests
 open GebTests.Prototypes.FreeTopos.Translation (sizeK sizeM baseRules)
 open scoped FinEnum
@@ -159,16 +161,6 @@ def lcaseRebuild (G : Internal.Globals) (rs : List NormRule) : Option Internal.T
   pure ⟨2, [list X₀, P], [], Term.eq
     (nf G rs 2 [list X₀, P] (Term.fst (Term.app (Term.listRec z s (v 0)) (v 1)))) (v 0)⟩
 
-/-- The proof by normalization, weak head normal forms first, with the hypotheses as rewriting
-rules before the rules given. -/
-def normH (G : Internal.Globals) (E : Array Entry) (rs : List NormRule) : Internal.Prover :=
-  fun Γ Φ t u ↦ Internal.byNormW G E 0 ((List.range Φ.length).map NormRule.hyp ++ rs) 1024 Γ Φ t u
-
-/-- The proof by induction on a bitstring, the empty one by {lit}`p₀` and a construction by case
-analysis of its bit, each case by {lit}`p₁`. -/
-def bitsInd (G : Internal.Globals) (p₀ p₁ : Internal.Prover) : Internal.Prover :=
-  Internal.byListIndWith G 0 0 1 p₀ (Internal.bySplit 3 4 1 p₁)
-
 /-- The numeral one in normal form. -/
 def oneN : Term := consT bitTy bit0T (nilT bitTy)
 
@@ -197,13 +189,13 @@ def natDev (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (L
   let addSucc : Internal.Thm := ⟨0, [bitsTy, bitsTy], [], Term.eq
     (call D.add [] [v 1, call D.succ [] [v 0]]) (call D.succ [] [call D.add [] [v 1, v 0]])⟩
   let byFun (E : Array Entry) : Internal.Prover :=
-    Internal.byFunExt G 0 (bitsInd G (normH G E rsR) (normH G E rsR))
+    Internal.byFunExt G 0 (bitsInd G 0 (normH G E rsR) (normH G E rsR))
   develop [
     (rA, listInd G (consT bitTy (v 1) (v 0)) rs 256 rA),
     (rS, listInd G (consT bitTy (v 1) (v 0)) rs 256 rS),
     (rL, fun E ↦ Internal.byListInd G E 2 0 1 (consT X₀ (v 1) (v 0)) rs 256 rL.ctx rL.hyps
       (sides rL).1 (sides rL).2),
-    (addOne, fun E ↦ side addOne (bitsInd G (normH G E rsR) (normH G E rsR))),
+    (addOne, fun E ↦ side addOne (bitsInd G 0 (normH G E rsR) (normH G E rsR))),
     (addZero, fun E ↦ side addZero
       (Internal.byListIndWith G 0 0 1 (normH G E rsR) (normH G E rsR))),
     (addSuccF, fun E ↦ side addSuccF (Internal.byListIndWith G 0 0 1 (byFun E)
@@ -227,18 +219,6 @@ def timeUs (f : Unit → Bool) : IO (Bool × ℕ) := do
     if i = 0 ∨ d < best then best := d
   pure (b, best)
 
-/-- The type the unfolding of trees folds into: the pair of a label and the list of the
-children. -/
-def P : Tree := prod bitsTy (list treeTy)
-
-/-- The step of the unfolding of trees, the library's. -/
-def unnodeStep : Term := match lib[D.unnode]? with
-  | some d => d.body.children.headD Term.star
-  | none => Term.star
-
-/-- The unfolding of a tree. -/
-def unnodeU (t : Term) : Term := Term.roseRec P unnodeStep t
-
 /-- The fold of a list of trees by construction is the list. -/
 def mapId : Internal.Thm :=
   ⟨0, [list treeTy], [], Term.eq (Term.listRec (nilT treeTy)
@@ -248,7 +228,8 @@ def mapId : Internal.Thm :=
 def mapFusion : Internal.Thm :=
   ⟨0, [list treeTy], [], Term.eq
     (Term.listRec (nilT treeTy) (consT treeTy (nodeT (Term.var 1)) (Term.var 0))
-      (Term.listRec (nilT P) (consT P (unnodeU (Term.var 1)) (Term.var 0)) (Term.var 0)))
+      (Term.listRec (nilT unnodeTy) (consT unnodeTy (unnodeU (Term.var 1)) (Term.var 0))
+        (Term.var 0)))
     (Term.listRec (nilT treeTy) (consT treeTy (nodeT (unnodeU (Term.var 1))) (Term.var 0))
       (Term.var 0))⟩
 

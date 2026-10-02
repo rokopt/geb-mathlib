@@ -12,9 +12,10 @@ set_option doc.verso true in
 /-!
 # Case analysis of trees and rewriting under a test
 
-Two provers of the internal language beyond those of the weakening proof, and the lemmas that
-exercise them, about the translation of the prelude, the reader, the type checker and the
-expansion of the datatype language.
+The lemmas that exercise two provers of the internal language,
+{name}`Geb.FreeTopos.Tactics.byTreeSplit` and {name}`Geb.FreeTopos.Tactics.maskRw`, about the
+translation of the prelude, the reader, the type checker and the expansion of the datatype
+language.
 
 Case analysis of a tree variable in any context: the induction on rose trees applies to a tree
 alone, so the sides at a tree of a new label and new children are proved instead, their
@@ -38,10 +39,6 @@ case analysis of the tree, of its children and of their labels' bits proves to b
 
 ## Main definitions
 
-* {lit}`byTreeSplit` — case analysis of a tree variable.
-* {lit}`byAutoT` — proof by reduction and case analysis of the variables it is stuck on.
-* {lit}`abstractTerm`, {lit}`maskRw` — the abstraction over a term's occurrences, and the
-  rewriting under a test.
 * {lit}`development` — the lemmas, each with its proof.
 
 ## Tags
@@ -55,7 +52,7 @@ set_option doc.verso true
 
 namespace GebTests.Prototypes.FreeTopos.TreeCases
 
-open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation
+open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation Geb.FreeTopos.Tactics
 open GebTests.Prototypes.FreeTopos.TranslationProofs
 open GebTests.Prototypes.FreeTopos.Weakening
 open Internal (Term NormRule Entry Deriv Decl Definition)
@@ -66,128 +63,6 @@ language. -/
 def programText : String :=
   Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
     Kernel.Stage0Tests.check ++ "\n" ++ Kernel.Stage0Tests.datatype
-
-/-! Case analysis of a tree. -/
-
-/-- The rewriting of a term in which a tree rebuilt from the unfolding of its variable of index
-{lit}`i` stands for the variable, back to the term: at each occurrence of the variable, the pair
-of the unfolding's components is the unfolding, and the tree rebuilt from it is the variable,
-Lambek's lemma of index {lit}`lk`. Folds' starts and steps, in contexts of their own, do not
-mention it. -/
-def occRewrite (lk i : ℕ) : Term → ℕ → Deriv := RoseTree.para fun l cs d ↦
-  let refl : Deriv := RoseTree.node .refl []
-  let j := i + d
-  match l with
-  | .var k =>
-    if k = j then RoseTree.node .trans [RoseTree.node .cong [RoseTree.node .pairEta []],
-      RoseTree.node (.thm lk [] [Term.var j] false) []]
-    else refl
-  | .lam _ => RoseTree.node .cong (cs.map fun (_, r) ↦ r (d + 1))
-  | .natRec | .listRec => RoseTree.node .cong (cs.zipIdx.map fun ((_, r), k) ↦
-      if k = 2 then r d else refl)
-  | .roseRec _ => RoseTree.node .cong (cs.zipIdx.map fun ((_, r), k) ↦
-      if k = 1 then r d else refl)
-  | _ =>
-    if cs.all fun (c, _) ↦ Internal.uses c j = 0 then refl
-    else RoseTree.node .cong (cs.map fun (_, r) ↦ r d)
-
-/-- The proof of an equation by case analysis on the tree variable of index {lit}`i`: the sides
-at a tree of a new label and new children are proved by {lit}`p`, so that, by extensionality,
-their abstractions over the label and the children are equal functions; applied to the
-components of the variable's unfolding, they are the sides at the tree rebuilt from it, which
-is the variable by Lambek's lemma, the entry of index {lit}`lk`. -/
-def byTreeSplit (lk i : ℕ) (p : Internal.Prover) : Internal.Prover :=
-  fun Γ Φ t u ↦ do
-    let c ← Γ[i]?
-    if c ≠ treeTy then none else
-    let F := Internal.abstractVar i c t
-    let H := Internal.abstractVar i c u
-    let N₀ := nodeT (Term.pair (v 1) (v 0))
-    let A := Term.app (Internal.weaken2 F) N₀
-    let B := Term.app (Internal.weaken2 H) N₀
-    let q ← p (list treeTy :: bitsTy :: Γ) (Φ.map Internal.weaken2) A B
-    let Fl := Term.lam bitsTy (Term.lam (list treeTy) A)
-    let Hl := Term.lam bitsTy (Term.lam (list treeTy) B)
-    let beta : Deriv := RoseTree.node .beta []
-    let refl : Deriv := RoseTree.node .refl []
-    let betaBoth : Deriv := RoseTree.node .cong [beta, beta]
-    let dG := RoseTree.node .funExt [RoseTree.node .conv [betaBoth,
-      RoseTree.node .funExt [RoseTree.node .conv [betaBoth, q]]]]
-    let U := unnodeU (v i)
-    let applied (L : Term) : Term := Term.app (Term.app L (Term.fst U)) (Term.snd U)
-    let χ := Term.eq (applied Fl) (applied Hl)
-    let side (w : Term) : Deriv := RoseTree.node .trans [RoseTree.node .cong [beta, refl],
-      RoseTree.node .trans [beta, RoseTree.node .trans [beta, occRewrite lk i w 0]]]
-    let dχ := RoseTree.node .join [RoseTree.node .cong [RoseTree.node .cong
-      [RoseTree.node (.rwHyp Φ.length false) [], refl], refl], refl]
-    pure (RoseTree.node (.cut (Term.eq Fl Hl))
-      [dG, RoseTree.node (.convFrom χ) [RoseTree.node .cong [side t, side u], dχ]])
-
-/-- The proof of an equation by reducing both sides to one normal form, with the instances of the
-hypotheses it starts with where there are any, or else by case analysis of a variable the normal
-forms are stuck on, a list, a coproduct or a tree, each case the same way, to a depth; Lambek's
-lemma is the entry of index {lit}`lk`. Each goal's sides are reduced once. -/
-def byAutoT (G : Internal.Globals) (E : Array Entry) (n lk : ℕ) (rs : List NormRule) (d : ℕ)
-    (m : Internal.Depth := .weak) : Internal.Prover := fun Γ₀ Φ₀ t₀ u₀ ↦
-  let hs := Φ₀.length
-  let direct : Internal.Prover := fun Γ Φ t u ↦ do
-    let (t', dt, _) ← Internal.eval G E n rs 4096 m Γ Φ t
-    let (u', du, _) ← Internal.eval G E n rs 4096 m Γ Φ u
-    if t' = u' then some (RoseTree.node .join [dt, du]) else none
-  let solve : Internal.Prover := fun Γ Φ t u ↦ (direct Γ Φ t u).orElse fun _ ↦
-    if hs = 0 then none else byInsts m G E n rs hs Γ Φ t u
-  (d.rec solve fun _ rec Γ Φ t u ↦ do
-    let (t', dt, _) ← Internal.eval G E n rs 4096 m Γ Φ t
-    let (u', du, _) ← Internal.eval G E n rs 4096 m Γ Φ u
-    if t' = u' then some (RoseTree.node .join [dt, du]) else
-    (if hs = 0 then none else byInsts m G E n rs hs Γ Φ t u).orElse fun _ ↦ do
-    let skip (i : ℕ) : Bool := (Φ.take hs).any (mentions · i)
-    let i ← ((stuckVar skip t').orElse fun _ ↦ stuckVar skip u').orElse fun _ ↦
-      (stuckVar (fun _ ↦ false) t').orElse fun _ ↦ stuckVar (fun _ ↦ false) u'
-    let c ← Γ[i]?
-    match Internal.listPart c, Internal.coprodParts c with
-    | some _, _ => byListSplit G n i rec rec Γ Φ t u
-    | none, some _ => bySplit2 3 4 i rec rec Γ Φ t u
-    | none, none => if c = treeTy then byTreeSplit lk i rec Γ Φ t u else none :
-    Internal.Prover) Γ₀ Φ₀ t₀ u₀
-
-/-! Rewriting under a mask. -/
-
-/-- The abstraction, over a new variable of the type {lit}`b`, of a term's occurrences of the
-term {lit}`x`: the function whose application to {lit}`x` is the term. Folds' starts and steps,
-in contexts of their own, are left in place. -/
-def abstractTerm (b : Tree) (x y : Term) : Term :=
-  let xw := Internal.weaken1 x
-  let go : Term → ℕ → Term := RoseTree.para fun l cs d ↦
-    if RoseTree.node l (cs.map (·.1)) = Term.rename xw (· + d) then Term.var d else
-    match l with
-    | .lam _ => RoseTree.node l (cs.map fun (_, r) ↦ r (d + 1))
-    | .natRec | .listRec => RoseTree.node l (cs.zipIdx.map fun ((c, r), k) ↦
-        if k = 2 then r d else c)
-    | .roseRec _ => RoseTree.node l (cs.zipIdx.map fun ((c, r), k) ↦
-        if k = 1 then r d else c)
-    | _ => RoseTree.node l (cs.map fun (_, r) ↦ r d)
-  Term.lam b (go (Internal.weaken1 y) 0)
-
-/-- The proof that a conditional of the type {lit}`a` on the test {lit}`c`, between {lit}`y` and
-{lit}`d`, is the conditional between {lit}`y` with {lit}`x'` for {lit}`x` and {lit}`d`: by the
-absorption lemma of index {lit}`ab`, the occurrences of {lit}`x`, of the type {lit}`b`, are the
-conditional on the same test between {lit}`x` and {lit}`z`, which the masked lemma of index
-{lit}`j`, at the objects {lit}`θ` and the terms {lit}`σ`, equates with the conditional between
-{lit}`x'` and {lit}`z`, which absorption removes. -/
-def maskRw (a b : Tree) (ab j : ℕ) (θ : List Tree) (σ : List Term) (c d x x' z y : Term) :
-    Deriv :=
-  let F := abstractTerm b x y
-  let refl : Deriv := RoseTree.node .refl []
-  let beta : Deriv := RoseTree.node .beta []
-  let χ := Term.eq (condT a c (Term.app F x) d) (condT a c (Term.app F x') d)
-  let dχ := RoseTree.node .join [RoseTree.node .trans
-    [RoseTree.node (.thm ab [a, b] [c, d, x, z, F] true) [],
-      RoseTree.node .trans [RoseTree.node .cong [refl, RoseTree.node .cong
-        [refl, RoseTree.node (.thm j θ σ false) []], refl],
-        RoseTree.node (.thm ab [a, b] [c, d, x', z, F] false) []]], refl]
-  RoseTree.node (.convFrom χ) [RoseTree.node .cong
-    [RoseTree.node .cong [refl, beta, refl], RoseTree.node .cong [refl, beta, refl]], dχ]
 
 /-! The lemmas. -/
 

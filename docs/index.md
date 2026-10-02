@@ -3999,10 +3999,10 @@ checklist and in CI.
   theorem of Gödel's T, by the method of the checker's agreement, and
   `Weakening.lean` and `Substitution.lean` prove that the kernel's type
   checker written in Geb, `bootstrap/check.geb`, preserves
-  types by weakening and by substitution; `TreeCases.lean` supplies case
-  analysis of a tree variable in any context and rewriting under a test,
-  with the lemmas that exercise them, and `Expansion.lean` proves with
-  them that the expansion of the datatype language,
+  types by weakening and by substitution; `TreeCases.lean` exercises
+  the case analysis of a tree variable in any context and rewriting
+  under a test, and `Expansion.lean` proves with them that the
+  expansion of the datatype language,
   `bootstrap/datatype.geb`, is the
   identity on programs of kernel forms. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
@@ -4011,6 +4011,22 @@ checklist and in CI.
   `Geb/Prototypes/FreeTopos/Internal/`, `Geb.Prototypes.Kernel.Reader`,
   `Geb.Prototypes.GoedelT.Equations` and
   `Geb.Prototypes.Computability.Oitavem.Word`.
+- `Geb/Prototypes/FreeTopos/Tactics.lean` — the tactics the proofs about
+  the compiler's components compose from the internal language's prover
+  (`Geb.FreeTopos.Internal.byNorm` and the provers beside it): proofs by
+  reduction to a depth (`Tactics/Reduction.lean`), by induction and case
+  analysis of lists, bitstrings, rose trees and coproducts
+  (`Tactics/Induction.lean`), with hypotheses cut in as rewriting rules,
+  their instances, and implications introduced and eliminated
+  (`Tactics/Hypotheses.lean`), by the instances of hypotheses and case
+  analysis of the variables the sides are stuck on
+  (`Tactics/Search.lean`), and by case analysis of a tree variable by
+  Lambek's lemma and rewriting under a conditional's mask
+  (`Tactics/Trees.lean`). Tested by the proofs of
+  `GebTests/Prototypes/FreeTopos/` that use them: `TranslationProofs.lean`,
+  `Weakening.lean`, `Substitution.lean`, `TreeCases.lean` and
+  `Expansion.lean`. Depends on `Geb/Prototypes/FreeTopos/Translation.lean`
+  and the modules of `Geb/Prototypes/FreeTopos/Internal/`.
 - `Geb/Prototypes/RelSeparation.lean` — whether separating a
   proof-relevant relation, a span, to its image commutes with the type
   formers, over the point and over the walking arrow. The dependent sum

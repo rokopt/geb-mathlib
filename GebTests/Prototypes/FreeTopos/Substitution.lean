@@ -39,8 +39,6 @@ past the substituted variable's index are the lookup in the context with it, by 
 * {lit}`substitution` — the statement.
 * {lit}`development` — the lemmas, each with its proof, after the weakening proof's and the
   weakening theorem.
-* {lit}`byImpI` — the proof of an implication's equality with truth by its introduction.
-* {lit}`withImpElim` — the conclusions of implications among the hypotheses, cut in.
 * {lit}`bySubLabels` — the proof at a construction.
 
 ## Tags
@@ -54,7 +52,7 @@ set_option doc.verso true
 
 namespace GebTests.Prototypes.FreeTopos.Substitution
 
-open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation
+open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation Geb.FreeTopos.Tactics
 open GebTests.Prototypes.FreeTopos.TranslationProofs
 open GebTests.Prototypes.FreeTopos.Weakening
 open Internal (Term NormRule Entry Deriv Decl Definition)
@@ -110,15 +108,6 @@ def substitution (P : Prog) : Internal.Thm :=
   ⟨0, [treeTy], [], Term.eq (subF P) (lams5 (Internal.Logic.tt P.o))⟩
 
 /-! The development. -/
-
-/-- The proof of an equation in a context of a list variable by induction on it with the induction
-hypothesis, the construction's case by case analysis of its bit, each case by reduction to a
-depth, the construction's with the hypothesis in normal form as a rewriting rule. -/
-def byBitsIndHyp (G : Internal.Globals) (E : Array Entry) (rs : List NormRule)
-    (m : Internal.Depth) : Internal.Prover :=
-  Internal.byListIndWith G 0 0 1 (byMode m G E 0 rs)
-    (Internal.bySplit 3 4 1 fun Γ Φ t u ↦ withWeakHyps G E 0 rs [Φ.length - 1]
-      (fun extra ↦ byMode m G E 0 (extra ++ rs)) (m := m) Γ Φ t u)
 
 /-- The rules of the lemmas at successors and of the variable's case, before
 {name}`rulesNth`. -/
@@ -230,54 +219,6 @@ def subRules (ix : String → ℕ) : List NormRule :=
 
 /-! Proofs under the antecedent. -/
 
-/-- A prover under five new variables of the statement's arguments, by extensionality. -/
-def funExt5 (G : Internal.Globals) (p : Internal.Prover) : Internal.Prover :=
-  (List.replicate 5 ()).foldr (fun _ q ↦ Internal.byFunExt G 0 q) p
-
-/-- The proof of an equation whose sides reduce, at their heads, to an implication of an
-equation and to truth, the connectives' definitions from the index {lit}`o`: the implication is
-introduced, its conclusion's sides proved by {lit}`p` under the hypotheses, truth and the
-antecedent. -/
-def byImpI (G : Internal.Globals) (E : Array Entry) (o : ℕ) (p : Internal.Prover) :
-    Internal.Prover := fun Γ Φ t u ↦ do
-  let (t', dt, _) ← Internal.eval G E 0 [.rule .beta] 4096 .head Γ Φ t
-  let (u', du, _) ← Internal.eval G E 0 [.rule .beta] 4096 .head Γ Φ u
-  match t'.label, t'.children, u'.label with
-  | .defn k _, [q, a], .defn k' _ =>
-    if k = o + 2 ∧ k' = o then do
-      let (l, r) ← Internal.eqParts q
-      let d ← p Γ (Φ ++ [Internal.Logic.tt o, a]) l r
-      pure (Internal.Logic.nd .conv [Internal.Logic.nd .cong [dt, du],
-        Internal.Logic.nd .propExt [Internal.Logic.trueI,
-          Internal.Logic.impI logicBase (Φ.length + 1) a q d]])
-    else none
-  | _, _, _ => none
-
-/-- The proof of an equation with the conclusion of each hypothesis of the given indices, an
-implication equal to truth whose antecedent is the hypothesis of index {lit}`h`, cut in by modus
-ponens and used as a rewriting rule before those given to {lit}`k`; the connectives' definitions
-from the index {lit}`o`. -/
-def withImpElim (o h : ℕ) (is : List ℕ) (k : List NormRule → Internal.Prover) :
-    Internal.Prover := fun Γ Φ t u ↦
-  (is.foldr (fun i (acc : List Term → List NormRule → Option Deriv) Φ₁ extra ↦ do
-      let (l, _) ← Internal.eqParts (← Φ₁[i]?)
-      match l.label, l.children with
-      | .defn k' _, [q, a] =>
-        if k' = o + 2 then do
-          let rest ← acc (Φ₁ ++ [q]) (extra ++ [.hyp Φ₁.length])
-          let dImp := Internal.Logic.nd .conv
-            [Internal.Logic.nd (.rwHyp i false), Internal.Logic.trueI]
-          pure (Internal.Logic.nd (.cut q) [Internal.Logic.nd (.apply (logicBase + 4) [] [q, a])
-            [dImp, Internal.Logic.nd (.hyp h)], rest])
-        else none
-      | _, _ => none)
-    (fun Φ₁ extra ↦ k extra Γ Φ₁ t u)) Φ []
-
-/-- The index of a hypothesis rule's hypothesis. -/
-def hypIndex : NormRule → Option ℕ
-  | .hyp i => some i
-  | _ => none
-
 /-- The proof at a label: under the statement's arguments and the antecedent, whose weak normal
 form rewrites, by weak reduction of the sides; or, for a label whose case depends on the
 children's types, by case analysis of the list of the children to their number, the induction
@@ -290,7 +231,7 @@ def subLeaf (P : Prog) (lemmas : List NormRule) (E : Array Entry) (bits : Option
   let rs := baseNorm P ++ lemmas
   -- extensionality, the implication introduced and its antecedent in weak normal form
   let under (k : ℕ → List NormRule → Internal.Prover) : Internal.Prover :=
-    funExt5 P.G (byImpI P.G E P.o fun Γ Φ t u ↦
+    funExts 5 P.G (byImpI P.G E P.o logicBase fun Γ Φ t u ↦
       withWeakHyps P.G E 0 rs [Φ.length - 1] (fun ex ↦ k (Φ.length) ex) (m := .weak) Γ Φ t u)
   let plain : Internal.Prover := under fun _ ex ↦ byWeak P.G E 0 (baseNorm P ++ ex ++ lemmas)
   let k? := bits.bind fun bs ↦ arityOf (Oitavem.rank bs)
@@ -314,11 +255,11 @@ def subLeaf (P : Prog) (lemmas : List NormRule) (E : Array Entry) (bits : Option
           [[v 4, v 3, v 2, v 1, v 0]] ++
             if p = 1 then [[v 4, consT treeTy A (v 3), v 2, v 1, v 0]] else [])
         (fun insts ↦ withWeakHyps P.G E 0 rs insts (m := .weak) fun extra ↦
-          withImpElim P.o hA (extra.filterMap hypIndex) fun concls ↦
+          withImpElim P.o logicBase hA (extra.filterMap hypIndex) fun concls ↦
             byWeak P.G E 0 (baseNorm P ++ concls ++ exA ++ lemmas))) Γ Φ t u
     let levels : ℕ → Internal.Prover := fun m ↦ m.rec rest fun _ next ↦
-      fun Γ Φ t u ↦ revertCase P.G 0 P.o 0 (Φ.length - 1) plain next Γ Φ t u
-    revertCase P.G 0 P.o i 0 plain (levels (k - 1)) Γ Φ t u
+      fun Γ Φ t u ↦ revertCase P.G 0 P.o logicBase 0 (Φ.length - 1) plain next Γ Φ t u
+    revertCase P.G 0 P.o logicBase i 0 plain (levels (k - 1)) Γ Φ t u
 
 /-- The proof at a construction: case analysis of the label's bits, to five of them, each case
 proved by {lit}`subLeaf` with the bits of a label ending there, or none past the fourth. -/
