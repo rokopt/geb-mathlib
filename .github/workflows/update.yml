@@ -40,8 +40,15 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Set verso, mathlib, cslib, doc-gen4 revs to the target tag
+        # Only these four are pinned in lockstep with the toolchain; other
+        # requires, such as Canonical, keep their own revisions.
         run: |
-          sed -i -E 's/^rev = "[^"]*"/rev = "'"${TARGET}"'"/' lakefile.toml
+          awk -v t="${TARGET}" '
+            /^\[\[/ { name = "" }
+            /^name = / { name = $3 }
+            /^rev = / && name ~ /^"(verso|mathlib|cslib|doc-gen4)"$/ { $0 = "rev = \"" t "\"" }
+            { print }' lakefile.toml > lakefile.toml.new
+          mv lakefile.toml.new lakefile.toml
           echo "lakefile.toml require revisions set to ${TARGET}:"
           grep -nE '^rev = ' lakefile.toml
         env:

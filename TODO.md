@@ -140,6 +140,15 @@ Status gives the state of each phase, and its sections Improvements and
 The next phase record the known limitations with their fixes and where
 work resumes.
 
+Among the first work written in Geb after the bootstrap, after the setoid
+language, come the internal universes: the datatypes' codes in `2^T` and
+the subobjects of the trees' codes in `Ω^T`, each interpreted by
+membership, with category theory internalized over them and type
+parameters converted from sorts to parameters over a universe. No universe
+interprets every object of the free topos, truth being undefinable.
+`docs/source-format.md` § Datatypes, type parameters and interfaces
+records the mathematics of both.
+
 ### Definitions
 
 [docs/definitions.md](docs/definitions.md) records the design of
@@ -1235,6 +1244,26 @@ Correcting these is a separate concern from any current branch per
 
 ## Triggers (do when condition fires)
 
+- **The checker of shared certificates**: the Bootstrap chapter's section
+  The next phase requires two stronger checkers, the conversion step and
+  the checker of holes, and makes the checker of the shared certificates,
+  admitted by unsharing, a requirement only if measurement shows the
+  checking or storage of cached certificates to need it. Trigger: such a
+  measurement during the bootstrap, at which point it becomes a
+  requirement of the bootstrap; or the bootstrap's completion without
+  one, at which point it becomes an early item of the work after the
+  bootstrap in the chapter's road map.
+- **Canonical as a dependency**: `lakefile.toml` requires Canonical
+  ([docs/source-format.md](docs/source-format.md) § Canonical) for
+  experiments with search, in a library of their own that no module of
+  `Geb`, `GebLang` or `GebTests` imports; committed experiments call its
+  solver as a program and check what they decode with Geb's checkers.
+  Trigger: everything done with it, and everything planned with it, is
+  written in Geb, or writable in Geb by the Geb-native refinement search,
+  at which point the require, its manifest entry and the experiments that
+  import it are removed, their findings kept in the report. Until then, a
+  toolchain bump moves its `rev` to the tag Canonical publishes for the
+  new toolchain, or confirms that the tag in use still builds and loads.
 - **Choice-free bound for `Fin.divNat` in Batteries**:
   `Geb/Mathlib/Data/Fin/Basic.lean` exists because Batteries' `Fin.divNat`
   proves its bound through `Nat.div_lt_of_lt_mul`, which depends on

@@ -13,7 +13,8 @@
   - [Documents and separate annotations](#documents-and-separate-annotations)
   - [Hashes and content identity](#hashes-and-content-identity)
   - [Files, assembly and the host boundary](#files-assembly-and-the-host-boundary)
-  - [Namespaces and name uniqueness](#namespaces-and-name-uniqueness)
+  - [Modules and name uniqueness](#modules-and-name-uniqueness)
+  - [Datatypes, type parameters and interfaces](#datatypes-type-parameters-and-interfaces)
   - [Free-monad and cofree-comonad addressing](#free-monad-and-cofree-comonad-addressing)
   - [Documentation through Verso](#documentation-through-verso)
   - [Structural editing and parinfer](#structural-editing-and-parinfer)
@@ -21,7 +22,7 @@
   - [Typed holes](#typed-holes)
   - [Synthesis and certificates](#synthesis-and-certificates)
   - [Canonical](#canonical)
-  - [Grammar narrowing and editions](#grammar-narrowing-and-editions)
+  - [Tokens, numerals and editions](#tokens-numerals-and-editions)
   - [Stability of elaboration](#stability-of-elaboration)
   - [Proof scripts and certificates](#proof-scripts-and-certificates)
   - [Comment conventions](#comment-conventions)
@@ -29,6 +30,7 @@
   - [Further requirements before substantial authoring](#further-requirements-before-substantial-authoring)
   - [Scale](#scale)
 - [A sequence and its acceptance](#a-sequence-and-its-acceptance)
+- [Decisions](#decisions)
 - [Open decisions](#open-decisions)
 - [Sources](#sources)
 
@@ -75,26 +77,36 @@ written. The work to do first:
    carries declaration and binder names, prose, examples and links
    ([Source documents](#source-documents-and-a-verified-formatter),
    [Documents and annotations](#documents-and-separate-annotations)).
-2. Narrow the grammar now, so that every later addition widens it:
-   reserve ``" ' ` , # | [ ] { } \ @`` and restrict atoms to numerals and
-   identifiers beginning with a letter
-   ([Grammar narrowing](#grammar-narrowing-and-editions)). No source under
-   `bootstrap/` is affected.
+2. Write source in the syntaxes of [RFC9804] (decided): its canonical and
+   transport encodings for exchange, hashing and signing, its advanced
+   encoding, and a Geb authoring profile extending the advanced encoding
+   by line comments and UTF-8 in strings, all four reading into one
+   document type
+   ([Readable and canonical S-expressions](#readable-and-canonical-s-expressions),
+   [Tokens](#tokens-numerals-and-editions)).
 3. Make name resolution a function of recorded data: a manifest per
-   program, rejection of duplicate and ambiguous names, a namespace
-   separator, and hygienic generated names
+   program, rejection of duplicate and ambiguous names, a separator of
+   qualified names, and hygienic generated names
    ([Files](#files-assembly-and-the-host-boundary),
-   [Namespaces](#namespaces-and-name-uniqueness)).
-4. Pin elaboration as well as syntax: an edition per program, and a
+   [Modules](#modules-and-name-uniqueness)).
+4. Record what an author knows of types and organization: the datatype
+   language's completion, with datatype names as exact types checked at
+   every use, explicit representation and decoding, opaque type
+   parameters and the soundness of the typing, and modules with
+   parameters, imports and export lists. Which datatype a value belongs
+   to, and which definitions a module exports, are information no tool
+   recovers later ([Modules](#modules-and-name-uniqueness),
+   [Datatypes](#datatypes-type-parameters-and-interfaces)).
+5. Pin elaboration as well as syntax: an edition per program, and a
    committed record of each program's elaborated definitions compared in
    continuous integration ([Elaboration](#stability-of-elaboration)).
-5. Version every interface that persists: document and core schemas,
+6. Version every interface that persists: document and core schemas,
    semantic profiles, datatype encodings, certificates and host protocols
    ([Further requirements](#further-requirements-before-substantial-authoring)).
-6. Fix the markup of comments, with explicit links for references to code,
-   since links cannot be added mechanically to prose written without them
-   ([Documentation](#documentation-through-verso)).
-7. State which steps of the pipeline are proved and which are tested
+7. Write comments in Verso markup (decided), with explicit links for
+   references to code, since links cannot be added mechanically to prose
+   written without them ([Documentation](#documentation-through-verso)).
+8. State which steps of the pipeline are proved and which are tested
    ([The compatibility contract](#the-compatibility-contract)).
 
 Content storage, a network of identifiers, a language server,
@@ -146,6 +158,17 @@ Two consequences follow. Restrictions cost little before code exists and
 much after, and extensions the reverse, so the grammar is made as narrow
 as present code requires. And a feature may be deferred when its data is
 a function of the document.
+
+Until the bootstrap completes, no source is kept unchanged for its own
+sake (decided; [Decisions](#decisions)). Geb is built from scratch and has
+no users to keep compatible, so whatever is preferable is adopted
+everywhere, every source converted to it, mechanically where the
+contract above permits and by hand where it does not. And the languages
+admit exactly what the mathematics states: no implicit coercion, no
+silent conversion, no convenience that makes a term differ from the
+mathematical object it denotes. Editions and importers exist to make
+conversions mechanical and to state what a conversion preserves, not to
+keep old code in use.
 
 Universal properties fix the interpretation up to the relevant
 isomorphism, or equivalence where categories are compared. They supply no
@@ -211,7 +234,7 @@ term and the second its denotation. Four things lie outside both.
    tactic script is a program for one prover
    ([Proof scripts](#proof-scripts-and-certificates)).
 4. Organization: which definitions form a program, their order, files,
-   sections and namespaces, recorded now in the source lists of
+   sections and modules, recorded now in the source lists of
    [scripts/bootstrap.sh](../scripts/bootstrap.sh) and in the
    `include_str` definitions of the tests.
 
@@ -306,7 +329,12 @@ The layout policy (`planStep`, `planElem`) writes a list that fits on one
 line; otherwise its elements fill the first line while they fit, the
 parentheses that close after them included, and the rest begin lines
 indented past the list's opening parenthesis, by two columns after an
-atom at its head and by one otherwise. Its output meets parinfer's
+atom at its head and by one otherwise (decided; [Decisions](#decisions)).
+An element that does not fit is not hung on the current line: a body's
+indentation then depends on its depth of nesting alone, so renaming a
+definition changes one line of a diff rather than every line of the body,
+and a chain of nested forms indents by two columns a level rather than by
+the width of everything before it. Its output meets parinfer's
 invariant: each continuation line is indented beyond the innermost open
 parenthesis and not beyond a parenthesis closed at the end of the line
 before ([parinfer](https://shaunlebron.github.io/parinfer/#mathematical-foundation)).
@@ -331,77 +359,108 @@ not yet written.
 
 ### Readable and canonical S-expressions
 
-[RFC9804] specifies a canonical encoding for hashing and signing, an
-advanced encoding for people, and a basic encoding for transport; it is an
-Informational RFC, not on the standards track. Its atoms are octet strings
-with optional display hints; canonical lengths count bytes; an advanced
-token cannot begin with a digit; and its grammar has no comments.
+Geb's source is written in the syntaxes of [RFC9804] (decided;
+[Decisions](#decisions)). The RFC specifies a canonical encoding, designed
+for hashing and signing, a basic encoding for transport, which is the
+base-64 of the canonical one, and an advanced encoding for people. It is an
+Informational RFC, not on the standards track, and requires an
+implementation to support the first two, the third being optional (§ 6).
+Its atoms are octet strings with optional display hints, and canonical
+lengths count bytes. An advanced token is a letter or one of
+`- . / _ : * + =` followed by letters, digits and those marks, so it cannot
+begin with a digit. Quoted strings admit printable ASCII alone: a line
+break or any other byte is escaped (`\n`, `\xhh`, `\ooo`) or continued by a
+backslash before the break. The advanced grammar has no comments (§§ 4,
+7.1).
 
-Two routes to a durable readable profile are open.
+Four syntaxes read into one document type:
 
-- A Geb readable profile: the kernel's present syntax, narrowed
-  ([Grammar narrowing](#grammar-narrowing-and-editions)), inside [R7RS]
-  `<datum>`, [EDN] and `sexplib`, with bare numerals, `;` comments read
-  into the document by the reader of
-  [Source documents](#source-documents-and-a-verified-formatter), and
-  quoted atoms added when wanted. Every present source is already in it;
-  the seed's reader, the reader in Geb and generic tools for Lisps read
-  it; the formatter and its theorems exist. It is a profile of its own and
-  is not called [RFC9804].
-- The advanced encoding of [RFC9804]: numerals acquire quotes or length
-  prefixes (`"0"`, `1:0`), atoms outside the token alphabet such as `&`
-  acquire quotes, and prose is an explicit annotation form of the grammar,
-  a quoted string, since the grammar has no comments. It is a published
-  specification with several implementations. Either both of the
-  compilers' readers change, or an importer converts it into the legacy
-  syntax the compilers read.
+- the canonical encoding, for exchange, hashing and signing: a
+  definition's digest is taken over the canonical bytes of its
+  identity-bearing payload ([Hashes](#hashes-and-content-identity)), and
+  the canonical bytes of a source document identify the document;
+- the basic encoding for transport, completing conformance;
+- the advanced encoding, strictly as specified, printed when a conforming
+  readable file is wanted;
+- a Geb authoring profile, in which source is written by hand: the
+  advanced encoding with its extensions, `;` line comments, read as items
+  of the document as in
+  [Source documents](#source-documents-and-a-verified-formatter); UTF-8
+  and line breaks inside quoted strings; numerals as bare runs of digits;
+  `&` as a token; and `?name` as shorthand for the form `(hole name)`
+  ([Tokens](#tokens-numerals-and-editions)). Each
+  extension is unambiguous against the advanced grammar, so every strictly
+  conforming advanced file is a file of the profile. The profile is not
+  called [RFC9804].
 
-Both are printers of one document type, whose data model is that of
-[RFC9804], atoms and lists; so the choice can be revisited by a mechanical
-translation, provided the document type holds comments as data. The
-recommendation is to author in the Geb readable profile and to add
-printers of [RFC9804] as further profiles with their own retractions: the
-canonical encoding for exchange first, the advanced encoding if a
-published readable form is wanted. The advanced encoding costs quotes on
-every numeral of kernel source and prose written as quoted strings; its
-benefit is a specification maintained outside Geb
-([Open decisions](#open-decisions)).
+The strict encodings have no comments, so they carry the document's
+comments and empty lines as annotation forms, lists headed by a reserved
+token such as `*ann`, as the survey's annotated examples do
+([concrete-syntaxes.md](concrete-syntaxes.md) § One tree, every recommended
+encoding); a list of code headed by that token is excluded, so that
+annotation and code are never confused. A strict quoted string escapes each
+non-ASCII byte and line break, and a canonical verbatim atom holds the
+bytes as they are, so prose passes through every syntax unchanged.
 
-Common to either route:
+Each syntax's printer is a section of its parser into the document type,
+so the migrations among the four are those of
+[The compatibility contract](#the-compatibility-contract): each preserves
+the parsed document, and they compose. The four share code as far as their
+grammars allow:
+
+- the document type and its well-formedness, and the encoding of comments
+  and empty lines as annotation forms;
+- the choice of an atom's spelling from its bytes: a token where one is
+  legal, else a quoted string, else a hexadecimal or verbatim atom;
+- the decimal layer of length prefixes, which verbatim atoms and quoted
+  and hexadecimal atoms with lengths share, and which `Csexp.decOf` and
+  `Csexp.digitsVal` implement already;
+- base-64, for the transport encoding and for base-64 atoms;
+- escaping and its inverse, parameterized by the bytes a profile admits
+  unescaped;
+- the loop over a list's elements (`Rose.parseChildren`);
+- for both advanced syntaxes, the lexer and printer of
+  [Source documents](#source-documents-and-a-verified-formatter), with its
+  separators chosen by the layout;
+- the generic corollaries of the retraction law, proved once in
+  [ConcreteSyntax.lean](../Geb/Prototypes/ConcreteSyntax.lean).
+
+The present `.geb` sources are in a legacy syntax, the kernel reader's,
+which the document reader of the prototype reads. An importer converts
+them into the authoring profile; it is accepted when the actual bootstrap
+sources convert with names and comments preserved and compile to the same
+checked bundles, which a proof over trees of numerals does not show. Until
+the readers of the seed and of Geb read the profile, a converter from the
+profile to the legacy syntax, proved to preserve the document, feeds the
+compilers.
+
+Further:
 
 - Atoms are byte strings preserved exactly; human names and prose are
   UTF-8, without implicit Unicode normalization. Whether an atom names a
   numeral, an identifier or a datum is decided by Geb's grammar, not by
   the S-expression layer, so a change of spelling changes no decoded
   bytes.
-- Binary atoms stay available for exchange. A canonical file holding
-  arbitrary bytes is not an editor buffer, since trimming whitespace or
-  converting encodings corrupts a length-prefixed atom.
-- Display hints are excluded from the first profile, as [RFC9804] § 8
-  permits; format information is a field of the document, and hints
-  accepted later keep their bytes.
-- A restricted codec claims conformance only for the subset it
-  implements; general conformance to [RFC9804] also requires the basic
-  encoding for transport.
-- A profile is accepted when the actual bootstrap sources convert into it
-  with names and comments preserved and compile to the same checked
-  bundles; a proof over trees of numerals does not meet that condition.
-- Strict quoted strings escape non-ASCII bytes, and verbatim atoms need
-  byte lengths; prose in UTF-8 spelled directly belongs to a convenience
-  profile with the same document retraction, a mechanical change of
-  spelling.
-
-Now: reserve the characters these spellings use. Later: an export of the
-document to the canonical encoding, a fold with a retraction, for
-exchanging source. Kernel terms have a canonical, versioned exchange format
-already, the image (`Geb.Kernel.writeImage`), compared by bytes in
-continuous integration. The bytes of a source identify a document; the
-digest of a kernel term identifies a definition. The Bootstrap chapter's
-syntax unification, one reader over the canonical data model with a quoted
-spelling for atoms that are not tokens, is a widening; its first use is
-replacing the lists of character codes of
-[bootstrap/stage1/datatype.geb](../bootstrap/stage1/datatype.geb), such as
-`(quote (1 108 101 116))`.
+- A canonical file holding arbitrary bytes is not an editor buffer, since
+  trimming whitespace or converting encodings corrupts a length-prefixed
+  atom.
+- Display hints are excluded, as [RFC9804] § 8 permits; format
+  information is a field of the document, and hints accepted later keep
+  their bytes.
+- The existing canonical codec,
+  [CanonicalSExpr.lean](../Geb/Prototypes/CanonicalSExpr.lean), is proved
+  over trees of numerals and counts characters, so its conformance holds
+  for ASCII atoms; it is generalized to byte atoms and to lists of every
+  shape, empty or headed by lists. The advanced encoding's parser and
+  printer and the inverse of its escaping are new, the separators and
+  lexer lemmas of the document prototype carrying over.
+- Kernel terms also have a canonical, versioned exchange format, the image
+  (`Geb.Kernel.writeImage`), compared by bytes in continuous integration.
+- The syntax unification of the Bootstrap chapter, one reader over the
+  canonical data model with a quoted spelling for atoms that are not
+  tokens, is this decision; its first use replaces the lists of character
+  codes of [bootstrap/stage1/datatype.geb](../bootstrap/stage1/datatype.geb),
+  such as `(quote (1 108 101 116))`, by quoted atoms.
 
 ### Documents and separate annotations
 
@@ -523,9 +582,9 @@ quotation may contain the label of the reference constructor without
 being a reference, as
 [the substitution traversal](../Geb/Prototypes/Kernel/Subst.lean) already
 treats quotations apart from term children, and reflective code values
-need an identified schema and a transport of their own. The one decision
-touching source is whether it will contain a digest literal, pinning a
-dependency as Unison's `#…` does; reserving `#` keeps that possible.
+need an identified schema and a transport of their own. A digest literal in
+source, pinning a dependency as Unison's `#…` does, is a hexadecimal or
+base-64 atom of [RFC9804] that Geb's grammar reads as a reference.
 
 ### Files, assembly and the host boundary
 
@@ -551,10 +610,10 @@ and semantic dependencies are references to definitions.
   names qualified. The Bootstrap chapter records the capture of primitives
   in the datatype language's expansion and the conflicts with emitted `T`,
   `leaf` and `mk`.
-- Importing existing source keeps the old resolver's meaning: changing the
-  rules of duplicates or shadowing retroactively can change a program once
-  accepted, which is why duplicates are rejected in a new edition, no
-  present source having one.
+- Converting existing source replays the old resolver, so that the
+  meaning to be re-expressed is known exactly, and the converted source
+  then follows the new reader's rules, duplicates rejected; no present
+  source has one.
 
 Interaction with the operating system stays a pure interface of requests
 and results with an interpreter in the host. Byte encoding, framing of
@@ -563,22 +622,221 @@ contracts, which a later interface of effects implements. Paths, clocks,
 environment variables and the width of machine integers are never hidden
 semantic inputs.
 
-With content identity, a file is a view: a path in a namespace names a
+With content identity, a file is a view: a qualified name names a
 definition's digest, and a program's order is the order of its references.
 The manifest migrates mechanically into that; names being unique, a file
 resolves alike in every program that includes it.
 
-### Namespaces and name uniqueness
+### Modules and name uniqueness
 
-`.` separates qualifiers in the sources already (`Label.app`, `Prim.add`,
-`Rule.hyp`). Names are annotations and bear no identity, so a namespace is
-a matter of the reader: a namespace per entry of the manifest or a
-`(namespace X)` form, with resolution in the current namespace, then the
-opened ones, then by qualified name. Now: reject duplicates and reserve `.`
-for qualification; present names stay valid in the root namespace. Before
-the sources grow: the mechanism itself. Prefixes that avoid collisions,
-such as `mTypeIn` beside `typeIn`, otherwise accumulate, and removing them
-later is renaming by hand.
+A module is a block form, `(module M header… body…)` (decided;
+[Decisions](#decisions)). It does not depend on files, so the same source
+can be kept in files, in a database or in a content-addressed store, and
+membership in a module is structural: a module is a subtree of the
+document, and a definition's module travels with it. Blocks nest, each
+level indenting its contents by two columns under the layout policy, so the
+depth of nesting shows at a glance.
+
+The header is a telescope followed by an export list. Its entries,
+`(parameter …)` and `(import …)`, stand in the order of their dependence,
+each in scope for the entries after it and for the body: a parameter's type
+may use an imported name, and an import may take a parameter as an
+argument. A parameter is a sort, an operation, a certificate of a
+proposition, or a named telescope, which abbreviates its entries: declared
+as `(interface I entries…)`, parameter and import entries under a name,
+and taken as `(parameter (m I))`, its entries then named `m.x` (decided).
+An import
+names a module and supplies every one of its parameters; a module leaving
+one of them open declares a parameter of its own and passes it through.
+`(import M)` brings `M`'s exports into scope unqualified, and a clash
+between two names in scope is rejected; `(import M as N)` brings them in
+qualified alone, as `N.x`, which two instances of one module in one block
+need. The export list, `(export …)`, follows the telescope and may name
+imported definitions as well as the body's, re-exporting them. A module
+refers to nothing outside it except through its imports, its parameters and
+the blocks enclosing it, so its meaning is its text and the identities of
+its imports. An import names a module by its path from the root; `.`
+separates the components of a qualified name, being a token character of
+[RFC9804] and already used so (`Label.app`, `Prim.add`, `Rule.hyp`).
+`module`, `parameter`, `import`, `export` and `interface` are keywords no
+definition may shadow. In the present syntax of definitions:
+
+```text
+(module Sorting
+  (import Prelude)             ; List, Bool
+  (parameter A)
+  (parameter (le (A A) Bool))  ; typed by the import above
+  (import (Orders A le))       ; both parameters passed through
+  (export sort)
+  (defn sort ((xs (List A))) (List A) …))
+```
+
+A block without an export list exports nothing (decided): a test's ad hoc
+definitions, for instance, stay unreachable from other code. The resolver
+rejects an entry naming nothing. A module is not reopened: a second block
+of one module would either see the first's unexported definitions or
+divide its interface, and a module extending another imports it.
+
+Every definition in a module takes all of its parameters (decided), as in
+Agda's parameterized modules
+([Agda's module system](https://agda.readthedocs.io/en/latest/language/module-system.html)):
+the body is one structure over the context the parameters form, abstracted
+over all of them as a whole, and an import instantiates the whole of it at
+once. A definition that takes fewer belongs in an enclosing block. A
+nested module's context extends the enclosing one by its own parameters
+(decided): the rest of the enclosing body refers to the exports of a nested
+module without parameters of its own by qualified name, `N.x`, and a
+nested module with parameters is used through an import in a later
+module's header, supplying parameters being an import's work.
+Declarations keep parameters of their own, supplied where they are used
+(decided): a module uses a declaration at several arguments, as
+[partial-horn.geb](../bootstrap/free-topos/partial-horn.geb) writes
+`(List PT)` beside `(nil T)`, and a nested datatype such as
+`(data Tree (node T (List Tree)))` applies `List` to the type being
+defined, which no header can name.
+
+For parameters that are terms or certificates, the body lies in the slice
+over the context `Γ` the parameters form, a telescope denoting one object:
+an iterated dependent pair, a certificate contributing a subset rather than
+a component. A definition in the body is a morphism in the context,
+corresponding to a morphism out of `Γ × X` by functional completeness
+[LambekScott1986]; an import at arguments `σ : Δ → Γ` is reindexing along
+`σ`, which on the syntax is substitution; and imports passing parameters
+through compose as their substitutions do. In a topos a slice is again a
+topos and reindexing is a logical functor [MacLaneMoerdijk1992], so the
+language of a module's body is the whole language, and a theorem proved in
+a module holds at every instance. A sort parameter extends the language
+instead, and its instantiation is the logical functor of
+[Datatypes](#datatypes-type-parameters-and-interfaces). A named telescope
+therefore adds nothing to the semantics. Isabelle's locales are
+parameterized by assumptions as well as by constants, each interpretation
+discharging the assumptions as an import supplies a certificate
+[Ballarin2014].
+
+Parameters make modules a matter of elaboration: the elaborator abstracts
+each module's definitions over its parameters and instantiates an import by
+substitution, type parameters being instantiated at elaboration as
+[Datatypes](#datatypes-type-parameters-and-interfaces) states, and the
+correctness of the step is the substitution lemma. Imports and exports are
+otherwise a matter of the reader; names are annotations and bear no
+identity, so modules migrate mechanically. Now: reject duplicates and
+reserve `.` for qualification. Then organize the present sources into
+modules with export lists, before the sources grow. Prefixes that avoid
+collisions, such as `mTypeIn` beside `typeIn`, otherwise accumulate, and
+removing them later is renaming by hand. A whole module written as one
+block is one form, so an unbalanced parenthesis inside it leaves the block
+unreadable; the kernel's reader already rejects an unbalanced text as a
+whole, and a language server's recovery from errors, not the reader,
+answers it. The block's closing parenthesis ends the line of its last
+definition, so appending a definition changes that line too.
+
+### Datatypes, type parameters and interfaces
+
+The sources annotate every value of a declared datatype as `T`:
+[bootstrap/free-topos/partial-horn.geb](../bootstrap/free-topos/partial-horn.geb)
+declares `(data Eqn (eqn T T))`, and functions over optional trees take
+`(m T)`. The expansion of the datatype language ignores the types of
+fields. Which datatype a value is meant to belong to is therefore recorded
+nowhere, and it is information no tool recovers later. It is not the
+intended state: the Bootstrap chapter's layers make the datatype
+language's types denote recognized types, a datatype being the subset of
+trees its recognizer accepts, a subobject `{t : T | rec_D t}` of the tree
+object in the metalogic, whose language is typed throughout; and it lists
+the datatype language's completion, generated recognizers, type
+parameters and a static check of datatypes, as ready. The completion comes
+before substantial authoring (decided; [Decisions](#decisions)), in these
+parts:
+
+| Part | Content |
+| --- | --- |
+| Datatype names as types | `(m Opt)` rather than `(m T)`, in fields, parameters and results |
+| Static check at every use | constructors produce `D`, case analysis and structural recursion consume `D`, fields and results are checked; `D` and `T` are distinct types, with no implicit conversion between them |
+| Representation and decoding | `D`'s representation `D → T` and its decoding `T → 1 + D`, each written explicitly where it is used |
+| Generated recognizers | the kernel program deciding membership in `D`, which decoding and the meaning of `D` need |
+| Type parameters checked opaquely | a parameter `X` has no representation; instantiated at elaboration, the Bootstrap chapter's decision, with the interface's operations passed as values |
+| Soundness of the typing | a checked program maps members of `D` to members of `E`, so that typed programs translate into morphisms between subobjects |
+
+All six precede substantial authoring (decided); the last is proved with
+the metalogic's prover in Geb, which is being written.
+
+The types are exactly those of the mathematics. A datatype `D` is the
+initial algebra of the polynomial functor its declaration presents: its
+constructors are the algebra's structure map, its case analysis the
+inverse that Lambek's lemma gives, and its structural recursion the fold.
+The encoding of a constructor as the node of its position over its fields'
+encodings makes the trees an algebra of the same functor, so initiality
+determines the representation `D → T` as the unique algebra morphism,
+chosen by no convention; it is a monomorphism, and `D`'s recognizer cuts
+out its image. The recognizer decides membership, so the image is a
+complemented subobject and decoding `T → 1 + D` is a total morphism. `D`
+and `T` are distinct types: a tree operation such as `label` or `child`
+applies to a value of `D` only through its representation, written where
+it is used, which marks exactly the code that depends on the encoding.
+The kernel erases the distinction, the representation compiling to the
+identity on trees, and the soundness of the typing relates the two.
+
+The first five are work of the elaborator, a Geb program; the kernel is
+unchanged, and the check is outside the trusted base, since a wrong check
+can accept an ill-typed program but cannot change a kernel term's meaning.
+Every source of the datatype language is retyped exactly, the metalogic's
+checker in Geb included; the stage-0 sources, written in the kernel's
+syntax, keep the kernel's types, exact for a kernel whose only type of data
+is the trees. The soundness theorem lets a proof use a datatype's type as a
+hypothesis; it is proved by induction on the check.
+
+Abstraction is mathematical, not syntactic, and needs no mark of its own.
+An interface is a theory, a presentation of operations and axioms
+([definitions.md](definitions.md) § Definitions as presentations). Generic
+code is a module over it ([Modules](#modules-and-name-uniqueness)),
+parameterized by an opaque type and by the interface's operations, so it
+holds no reference to a concrete type and has no representation to
+inspect. Instantiation is interpretation by the
+universal property, evaluation into an implementation, a model of the
+theory, as `Geb.Definition.eval` and `derivedAlg` evaluate. In the
+metalogic this is the topos generated by the language extended by the
+interface's constants and axioms, from which an implementation determines
+a logical functor, so a theorem proved of the generic code holds of every
+instance [LambekScott1986]. A certificate is a hypothesis: code using a
+proof of a proposition works under it, the slice over the proposition's
+subterminal, and instantiating supplies the proof. The prover's contract,
+any checked certificate of the statement, is kept by clients written so.
+
+Type parameters are sorts through the bootstrap. After it, written in Geb
+among the first items, they become parameters over internal universes
+(decided; [Decisions](#decisions)). A universe is a family `El → U`, `U` an
+object of codes and `El X` the type the code `X` names. Two are defined
+from the exponentials and power objects every topos has
+[MacLaneMoerdijk1992], and interpret a code by membership. Every value is a
+tree and a datatype is a complemented subobject of `T`, so the datatypes
+have codes in `2^T`, the morphisms `T → 1 + 1`, a datatype's code being the
+transpose of its recognizer, with `El X = {t : T | X t = 1}`; and the
+subobjects of `T`, the setoid language's subset types of trees among them,
+have codes in the power object `Ω^T`, with `El X = {t : T | t ∈ X}`.
+Internal categories whose objects and arrows are carried by subobjects of
+`T` form an object too, a subobject of a product of power objects, so a
+pair of such a category and one of its objects is a parameter of an
+ordinary type; using the elements of that object takes an interpretation
+of the category in a universe. Code generic over an opaque sort converts to
+code over a universe by the universal property above: sending the sort to
+the generic family `El → U` is a model of the extended language in the
+slice over `U`, which determines a logical functor, so every theorem about
+the generic code holds of the converted code [LambekScott1986].
+
+No universe interprets every object of the topos. The free topos with a
+natural numbers object contains arithmetic, and its syntax, being
+inductively generated, has codes in it. A family `El` over the codes of its
+objects with `El ⌜A⌝ ≅ A` for every closed object `A` would, at the codes
+of subterminals, make `Tr c := ∃ e : El c` satisfy `Tr ⌜φ⌝ ↔ φ` for every
+closed proposition `φ`. The diagonal lemma gives a `ψ` with
+`ψ ↔ ¬ Tr ⌜ψ⌝`, hence `ψ ↔ ¬ψ`, which is contradictory in intuitionistic as
+in classical logic; the free topos being non-degenerate, no such family
+exists, which is the undefinability of truth [Tarski1935]. The codes of the
+whole language are therefore data that a program constructs and inspects
+but that no program interprets uniformly, and each universe interprets a
+part of the topos. Within their parts `2^T` and `Ω^T` meet no such limit,
+since their codes are not syntax: a code is the subobject itself, an
+element of an exponential or a power object, and no step interprets a
+program's text.
 
 ### Free-monad and cofree-comonad addressing
 
@@ -609,37 +867,52 @@ them the `Ann` components.
 
 ### Documentation through Verso
 
-Now: the storage and markup of documentation, before substantial prose is
-written; rendering follows once storage round-trips. The comments of the
-sources read as Verso inline text but for one `_`, whereas a reference such
-as ``{name}`typeIn` `` cannot be inferred mechanically from prose that
-reads "the type checker". A migration keeps unmarked prose byte for byte
-but cannot tell which words were meant as references, so references that
-should follow renaming are marked as links from the start. Verso markup is
-recommended, with the four roles the repository's Lean modules use,
-`{name}` resolving to Geb definitions through the compiler's maps of names
-and sources, and checked when documentation is built; a field of format
-and version with the prose's bytes permits starting from a subset of Verso
-without a complete parser of documentation. The convention the sources
-follow is kept: a block of comments immediately before a form documents
-it, and a block followed by an empty line is prose.
+The markup of comments is Verso's (decided; [Decisions](#decisions)).
+Its storage is fixed before substantial prose is written, and rendering
+follows once storage round-trips. The comments of the sources read as
+Verso inline text but for one `_`, whereas a reference such as
+``{name}`infer_subst` `` cannot be inferred mechanically from prose that
+reads "the substitution theorem". A migration keeps unmarked prose byte for
+byte but cannot tell which words were meant as references, so references
+that should follow renaming are marked from the start. The roles are the
+four the repository's Lean modules use, `{name}` resolving Lean constants
+as it does there, and one more, `{geb}`, for Geb definitions,
+resolved through the compiler's maps of names and sources against the
+manifest, so that a comment citing both a Geb definition and the Lean
+theorem about it is unambiguous; both are checked when documentation is
+built. Verso's design suits this use: its markup fails on mismatched or
+unmatched delimiters rather than guessing, parses with little lookahead,
+and extends by roles and directives rather than textual sub-formats
+(Verso's user guide, § Design Principles). Verso's markup is defined by
+its implementation in Lean rather than by an independent specification,
+so a field of format and version with the prose's bytes records the
+subset in use, and permits starting from that subset without a complete
+parser; `scripts/extract-pr.sh` converts the four roles to Markdown where
+Markdown is wanted. The convention the sources follow is kept: a block of
+comments immediately before a form documents it, and a block followed by
+an empty line is prose.
 
-Two routes render it.
+Documentation renders as a literate page per Geb file, generated from its
+document (decided; [Decisions](#decisions)): top-level comments become
+prose and forms become code blocks of a `geb` expander (Verso supports
+`@[code_block]` expanders, as its `InlineLean` shows), which reads each
+block, fails the build of documentation on one that does not read, and
+anchors each definition; Lean may still check its examples. The page shows
+the Geb source, rendered as the repository's literate Lean modules are,
+and the compiler is unchanged. One implementation writes each Geb file as a
+generated literate module holding only its prose and `geb` blocks, which a
+chapter includes by `includeLiterate` as it includes any literate module.
 
-- Docstrings in the emitted Lean: the backend
-  [bootstrap/stage1/lean.geb](../bootstrap/stage1/lean.geb) writes
-  `/-- … -/` before each definition from comments the Geb reader keeps, and
-  the literate site renders them beside the Lean denotations, not the Geb
-  source. Lean's comment delimiters, quoted identifiers and markup are
-  escaped explicitly; a string interpolated into generated Lean is not a
-  safe encoding of a document. The compiler and its artifacts change.
-- A literate page per Geb file, generated from its document: top-level
-  comments become prose and forms become code blocks of a `geb` expander
-  (Verso supports `@[code_block]` expanders, as its `InlineLean` shows),
-  which reads each block, fails the build of documentation on one that
-  does not read, and anchors each definition; Lean may still check its
-  examples. No compiler change is needed and the page shows Geb source.
-  This route is recommended.
+The alternative, docstrings in the emitted Lean, would render Geb's prose
+beside the Lean denotations, generated artifacts, rather than the source,
+and would change the backend
+[bootstrap/stage1/lean.geb](../bootstrap/stage1/lean.geb) and its committed
+artifacts. What it alone offers, documentation on hover where a Lean proof
+cites an emitted definition and the emitted definitions in doc-gen4's
+reference, remains available as a further renderer of the same document:
+docstrings pointing to the page, generated with Lean's comment delimiters,
+quoted identifiers and markup escaped explicitly, since a string
+interpolated into generated Lean is not a safe encoding of a document.
 
 The model of documentation stays independent of its renderer, which
 permits either view and renderers without Lean. Files whose comments come
@@ -679,17 +952,33 @@ The following was determined for VS Code on 2026-09-29.
   tree; Indent Mode changes it by design and is an operation of editing,
   not a formatter.
 
-Explicit paredit edits come first. Without writing an extension:
-associate `*.geb` with `scheme` (`"files.associations": {"*.geb":
-"scheme"}`), install `sjhuangx.vscode-scheme` for a grammar and language
-configuration, and use Mike's Paredit or `ailisp.strict-paredit`. This is
-sound because atoms avoid the characters Scheme treats specially, and the
-narrowed grammar keeps it so. With a little code: a `geb` language (a
-manifest, a language configuration and a TextMate grammar of some fifteen
-lines) with Mike's Paredit configured for it. `geb-fmt` is the formatter;
-a test in continuous integration, `parenMode(x).text === x &&
-indentMode(x).text === x` at a pinned parinfer, keeps its output usable
-under parinfer, and Indent Mode is used on formatted files only.
+Paredit and parinfer are alternative models of editing the same balanced
+text, and neither bears on the document type, the reader or the
+formatter. Paredit's commands change the tree explicitly and keep
+parentheses balanced by construction, whatever the layout, `geb-fmt`
+restoring the layout after them. Parinfer infers while one types, and
+depends on layout: Indent Mode infers parentheses from indentation, so it
+changes the tree by design and is an operation of editing, never a
+formatter; Paren Mode infers indentation from parentheses and keeps the
+tree. Either serves the same Geb source: the authoring profile uses no
+brackets or braces, whose display hints and transport encoding are never
+written by hand, and its strings are those parinfer reads, delimited by
+double quotes with backslash escapes; the formatter's output is a fixed
+point of both modes.
+
+The editor is a `geb` language, a declarative extension of a manifest, a
+language configuration and a TextMate grammar of some fifteen lines, with
+Mike's Paredit configured for it as the structural editor (decided;
+[Decisions](#decisions)). Parinfer is optional: its extensions fix their
+languages and are unmaintained, so it enters, if wanted, through the
+`geb` extension calling the `parinfer` library's `parenMode` or
+`smartMode` on formatted files. `geb-fmt` is the formatter; a test in
+continuous integration, `parenMode(x).text === x && indentMode(x).text ===
+x` at a pinned parinfer, keeps its output usable under parinfer. For the legacy
+syntax until the extension exists, associating `*.geb` with `scheme` (`"files.associations":
+{"*.geb": "scheme"}`), with `sjhuangx.vscode-scheme` for a grammar and
+language configuration, serves Mike's Paredit or `ailisp.strict-paredit`,
+sound because atoms avoid the characters Scheme treats specially.
 
 Before an extension is the supported default, it passes a fixture of the
 profile: nested bindings, parentheses in comments, parentheses and
@@ -788,9 +1077,10 @@ Geb's trusted logic.
 
 Holes in programs, the next layer:
 
-- Holes are written `?name`, `?` being reserved as the initial character
-  of an atom. The reader takes them as variables of the free monad of the
-  definition, the directions of [definitions.md](definitions.md), so that
+- Holes are forms `(hole name)`, written `?name` in the authoring profile
+  ([Tokens](#tokens-numerals-and-editions)). The reader takes them as
+  variables of the free monad of the definition, the directions of
+  [definitions.md](definitions.md), so that
   filling is `link`, the Kleisli composition the definitions prototype
   proves associative.
 - Each hole has an identity, a declaring context, an expected type and
@@ -818,21 +1108,40 @@ free monad of derivation trees. Only a closed derivation is accepted as
 the original theorem; a sketch is state of the editor, not an axiom or a
 completed program.
 
-An elaborator of holes, whose filled obligations produce an ordinary
-checked term or derivation, is admitted by relative soundness, a
-translation of its certificates into derivations under hypotheses with a
-proof in the metalogic. It is a small case of the admission of checkers
-but need not be the first: its conclusions are conditional, not stronger,
-and the Bootstrap chapter's candidates of conversion and shared
-certificates address existing costs of proofs more directly, the
-conversion step with the further support of [Canonical](#canonical)'s
-measurements. Admitting a checker of open sketches is not admitting their
-unresolved conclusions. It waits on the metalogic's prover in Geb.
+The stronger checkers are decided ([Decisions](#decisions)), and the
+bootstrap requires two. The first is the Bootstrap chapter's checker with
+a step of conversion to a normal form under named rules, supported further
+by [Canonical](#canonical)'s measurements, with the evaluation of
+primitives at literals as a family of its rules; the chapter's measurement
+of derivation nodes by rule selects the rules it carries. The second is
+the checker of holes, admitted beside the first rather than beside the
+base checker: its certificates are
+the conversion checker's with leaves for holes, its translation targets the
+conversion checker, and soundness chains from holes to conversion to the
+base, as Milawa's levels layer. Its conclusions are conditional, the
+obligations of the holes implying the goal, which the base checker can
+state, so admission applies to it as to any checker. Admitting a checker of
+open sketches is not admitting their unresolved conclusions. It waits on
+the metalogic's prover in Geb. The chapter's third candidate, the checker
+of shared certificates, becomes a requirement only if measurement of
+checking or storing cached certificates calls for it.
 
-A checker written as Canonical-min's is, suspending at unassigned
-metavariables, reports each hole's goal as the constraints suspended on
-it, so the report of holes and the search that fills them share one
-implementation ([Canonical](#canonical)).
+The checker of holes in programs is written now, in Lean, in the
+suspending form (decided; [Decisions](#decisions)). A checker written as
+Canonical-min's is, suspending at unassigned metavariables, reports each
+hole's goal as the constraints suspended on it, so the report of holes and
+the search that fills them share one implementation
+([Canonical](#canonical)). Canonical-min keeps suspended work as closures
+of Lean in a continuation monad, through `partial` functions; the
+repository's rules admit no function calling itself, so the checker keeps
+it as explicit finite work items, each carrying its context, its
+substitution and the check that remains, resumes those an assignment
+affects, and runs within a natural-number budget, driven by recursors.
+That is the form a checker written in Geb needs, so it is transcribed into
+Geb later and proved in Lean to agree, by the method of the metalogic's
+checker. It extends `fillHole` from one hole to many, and leaves
+`Geb.Kernel.infer`, the trusted checker, unchanged: a program with holes
+checks exactly when its lambda-lifting does.
 
 ### Synthesis and certificates
 
@@ -1148,29 +1457,53 @@ richer than `fillHole`.
 
 Recommendations: nothing in the source format beyond the syntax of holes;
 the checker of holes written to suspend, so that it serves as the search's
-checker; the Geb-native refinement as the lasting implementation; and the
-first route, which adds Canonical as a dependency of the package, only if
-an experiment from Lean is wanted before it
-([Open decisions](#open-decisions)).
+checker; and the Geb-native refinement as the lasting implementation.
+Canonical is a dependency of the package for experiments throughout the
+bootstrap (decided; [Decisions](#decisions)). It enters `lakefile.toml` at
+tag `v4.34.0`, which was measured to build and run under the repository's
+toolchain, and has no dependencies of its own. The experiments form a
+library of their own that no module of `Geb`, `GebLang` or `GebTests`
+imports, so a default build never fetches its solver library, and
+committed experiments call the solver as a program — the tactic leaves
+`sorry`, which committed code excludes — and check what they decode with
+Geb's checkers, the first route above. `TODO.md` § Triggers records the
+condition for removing it: everything done or planned with it written in
+Geb, or writable in Geb by the Geb-native search.
 
-### Grammar narrowing and editions
+### Tokens, numerals and editions
 
-Reserve ``" ' ` , # | [ ] { } \ @ ?`` as characters no atom contains,
-except `?` as the initial character of a hole, and restrict atoms to
-`[0-9]+` or an identifier beginning with a letter, with `&` kept as a
-keyword. No source changes. The syntax then lies in [R7RS] `<datum>`,
-[EDN] and `sexplib`, so generic tools for Lisps (paredit, parinfer,
-grammars for Scheme) read it correctly, and strings, digest literals with
-`#`, symbols quoted with `|`, vectors and holes can each be added as a
-widening. Identifiers beyond ASCII are a widening too, no source using
-one: admitted by Unicode's UAX #31, compared byte for byte, and, since no
-reader normalizes, rejected when not already in normalization form C, so
-that equal-looking names are equal.
+Identifiers are tokens of [RFC9804]: ASCII letters, digits and
+`- . / _ : * + =`, not beginning with a digit (decided). Every identifier
+of the present sources is one already. A name beyond ASCII is a quoted
+atom, readable in the authoring profile, whose quoted strings admit UTF-8.
+Names are compared byte for byte, and since no reader normalizes, a quoted
+name not already in Unicode's normalization form C is rejected, so that
+equal-looking names are equal.
+
+Numerals, which no token spells, are bare runs of digits in the authoring
+profile, unambiguous against the advanced grammar since a digit there
+begins a length only when `:`, `"`, `#` or `|` follows it; the strict
+printers write them quoted (`"0"`). The datatype language's `&`, not a
+token character, is a token of the authoring profile, and the strict
+printers write it `"&"` (both decided). A hole is the form `(hole name)`,
+of tokens alone, in the document type and in every syntax, and the
+authoring profile writes it `?name`, as a Lisp writes `'x` for
+`(quote x)`: the profile's reader reads `?name` as the form, and its
+printer writes a hole form of one argument as `?name`, deterministically,
+so the retraction holds (decided). The form extends where the prefix
+cannot: `(hole name T)` gives an expected type, which a first
+implementation may require, and `(hole)` an anonymous hole. No atom prefix
+is reserved, and the strict encodings need nothing of their own; `hole` is
+a keyword that no definition may shadow, as the Bootstrap chapter requires
+of the names its expansions use.
 
 Record an edition per program in the manifest, as Racket's `#lang`, Rust's
 editions and Go's `go` directive do. An edition fixes the reader, its rules
 of resolution included, and the elaborator. An elaborator is a committed
 image and the kernel is fixed, so an old edition's image runs unchanged.
+Before the bootstrap completes, sources are converted to the current
+edition rather than kept under old ones; editions preserve meaning across
+revisions for code relied on beyond the bootstrap.
 Mixing editions in one program needs an interface between the
 environments of elaborators, such as declarations of constructors; that
 is its cost.
@@ -1265,16 +1598,20 @@ reader:
 | Step | Acceptance |
 | --- | --- |
 | Adopt the document reader and the formatter | `bootstrap/` formatted in one mechanical change with images and emitted Lean unchanged, as measured above; `geb-fmt --check` and the test of parinfer's fixed points in continuous integration |
-| Narrow the grammar; reject duplicate and ambiguous names | both readers reject the reserved characters and duplicates, and accept every present source unchanged |
+| Reject duplicate and ambiguous names | both readers reject duplicates and accept every present source unchanged |
+| Modules with parameters, imports and export lists | the bootstrap sources, organized into modules with export lists and without the prefixes that avoided collisions, compile and pass their tests; a clash, an unresolved name and an import leaving a parameter unsupplied are rejected |
+| The datatype language's completion | every source of the datatype language retyped with datatype names as exact types, checked at every use, with representation and decoding written explicitly, generated recognizers and opaque type parameters, compiles and passes its tests; the soundness of the typing is proved with the prover in Geb |
+| The syntaxes of RFC 9804 and the authoring profile, with the importer | the four retractions proved over one document type; the bootstrap sources convert, and compile to the same checked bundles |
 | Manifests with editions; the record of elaborated definitions | the build and tests read manifests; the regenerated record equals the committed one |
 | A durable document with versioned profiles | declaration and binder names, prose, examples, links and unknown optional fields survive reading, printing and conversion |
 | Hygienic elaboration, explicit assembly, diagnostics | shadowing a primitive cannot alter generated operations; imports resolve deterministically; failures name a source occurrence and preserve existing outputs |
 | Markup and conventions of comments; documentation | one Geb module renders prose, a checked example and a link through Verso; editing only its documentation leaves the core identity unchanged |
-| Editor configuration | the pinned VS Code extension passes the profile's fixture |
+| The `geb` language with Mike's Paredit | the pinned extensions pass the profile's fixture |
 
 Early in writing, alongside the first substantial module where it helps:
-namespaces; `let*` and `cond`; quoted atoms; the syntax of holes and the
-display of their obligations; diagnostics with locations through
+`let*` and `cond`; quoted atoms; the syntax of holes, the
+suspending checker of holes in programs and the display of their
+obligations; diagnostics with locations through
 efm-langserver; literate pages generated from documents; and the typed
 enumerator. When their consumers exist: digests and the store, `attach`
 and hover text, a language server, tree-sitter, holes in proofs, the cache
@@ -1284,33 +1621,95 @@ content storage, richer language services, adapters to solvers and
 optimization of the runtime; none of them may discard the document,
 binding or dependency information already kept.
 
+## Decisions
+
+- 2026-09-30: the markup of comments and documentation is Verso's, over
+  Markdown, with `{name}` for Lean constants and a role `{geb}` for Geb
+  definitions ([Documentation](#documentation-through-verso)).
+- 2026-09-30: documentation renders as literate pages generated from Geb
+  source, not as docstrings in the emitted Lean
+  ([Documentation](#documentation-through-verso)).
+- 2026-09-30: the editor is a `geb` language with Mike's Paredit as the
+  structural editor; parinfer is optional, through the `geb` extension
+  ([Structural editing](#structural-editing-and-parinfer)).
+- 2026-09-30: Canonical is a dependency of the package for experiments,
+  removed once everything done or planned with it is written, or
+  writable, in Geb ([Canonical](#canonical); `TODO.md` § Triggers).
+- 2026-09-30: the bootstrap requires two stronger checkers: first the
+  conversion step, with the evaluation of primitives at literals as a
+  family of its rules, and second the checker of holes, admitted beside
+  the first ([Typed holes](#typed-holes)). The checker of shared
+  certificates becomes a requirement only if measurement of checking or
+  storing cached certificates calls for it, and is otherwise an early item
+  after the bootstrap (`TODO.md` § Triggers).
+- 2026-09-30: the checker of holes in programs is written now, in Lean,
+  in the suspending form with explicit work items and a budget, to be
+  transcribed into Geb and proved to agree ([Typed holes](#typed-holes)).
+- 2026-09-30: source is written in the syntaxes of [RFC9804]: its canonical
+  and transport encodings, its advanced encoding, and a Geb authoring
+  profile extending the advanced encoding by line comments and by UTF-8
+  and line breaks in quoted strings, all reading into one document type
+  and sharing code; identifiers are its tokens
+  ([Readable and canonical S-expressions](#readable-and-canonical-s-expressions)).
+- 2026-09-30: in the authoring profile, numerals are bare runs of digits
+  and `&` is a token; the strict printers write `"0"` and `"&"`
+  ([Tokens](#tokens-numerals-and-editions)).
+- 2026-09-30: a hole is the form `(hole name)`, with `(hole name T)` for
+  an expected type; the authoring profile writes a one-argument hole as
+  `?name` ([Tokens](#tokens-numerals-and-editions)).
+- 2026-09-30: code is organized in modules, block forms `(module M …)`
+  independent of files and not reopened. A module's header is a telescope
+  of parameters and imports in the order of their dependence, followed by
+  an export list, which may re-export imported definitions; an import
+  supplies every parameter of the module it imports, a parameter of the
+  importer passing through any left open; `(import M)` brings names in
+  unqualified, a clash being rejected, and `(import M as N)` qualified
+  alone ([Modules](#modules-and-name-uniqueness)).
+- 2026-09-30: every definition in a module takes all of its parameters, a
+  module's body being one structure over the context they form;
+  declarations keep parameters of their own, supplied where they are used;
+  and a parameter may take a named telescope, an abbreviation of its
+  entries ([Modules](#modules-and-name-uniqueness)).
+- 2026-09-30: a named telescope is declared as `(interface I entries…)`
+  and taken as `(parameter (m I))`, its entries then named `m.x`; the rest
+  of an enclosing body refers to the exports of a nested module without
+  parameters of its own by qualified name, and uses a nested module with
+  parameters through an import in a later module's header
+  ([Modules](#modules-and-name-uniqueness)).
+- 2026-09-30: the prover's public contract is any checked certificate of
+  the statement, behind an abstraction clients may check or cite but not
+  inspect; exact agreement with the Lean prover is a milestone of the
+  bootstrap, not a promise to clients
+  ([The compatibility contract](#the-compatibility-contract)).
+- 2026-09-30: before substantial authoring come modules with export
+  lists, a block without one exporting nothing; the datatype language's
+  completion, datatype names as types with the static check; and type
+  parameters checked opaquely, abstraction being parameterization over
+  interfaces rather than a syntactic mark
+  ([Modules](#modules-and-name-uniqueness),
+  [Datatypes](#datatypes-type-parameters-and-interfaces)).
+- 2026-09-30: until the bootstrap completes, no source is kept unchanged
+  for its own sake: whatever is preferable is adopted everywhere, and the
+  languages admit exactly what the mathematics states, without implicit
+  coercions ([The compatibility contract](#the-compatibility-contract)).
+- 2026-09-30: the datatype language's completion precedes substantial
+  authoring entire: datatype names as exact types checked at every use,
+  explicit representation and decoding maps, generated recognizers,
+  opaque type parameters, and the soundness of the typing, proved with the
+  prover in Geb ([Datatypes](#datatypes-type-parameters-and-interfaces)).
+- 2026-09-30: the layout policy is the prototype's: a list that does not
+  fit breaks every remaining element onto its own line, none hung on the
+  current line ([Source documents](#source-documents-and-a-verified-formatter)).
+- 2026-09-30: type parameters are sorts through the bootstrap; after it,
+  among the first work written in Geb, category theory is internalized and
+  type parameters become parameters over internal universes defined from
+  the topos's structure, the datatypes' codes in `2^T` and the subobjects'
+  in `Ω^T`, each interpreted by membership; no universe interprets every
+  object ([Datatypes](#datatypes-type-parameters-and-interfaces)).
+
 ## Open decisions
 
-1. The readable profile: the Geb readable profile, recommended, or the
-   advanced encoding of [RFC9804]
-   ([Readable and canonical S-expressions](#readable-and-canonical-s-expressions)).
-2. The reserved characters: whether `&` stays an atom, and whether
-   identifiers beyond ASCII are admitted now.
-3. Namespaces: per file, by a form, or by qualified names only.
-4. The markup of comments: Verso or Markdown.
-5. The route to documentation: literate pages from Geb source, or
-   docstrings in the emitted Lean.
-6. The layout policy. The retraction holds at every policy; parinfer
-   constrains it to continuation lines inside the innermost open
-   parenthesis and not beyond a parenthesis closed on the line before;
-   whether a list that does not fit may keep its last element on its
-   first line, as in `(def pick (lam (…)`, is style.
-7. The structural editor: Mike's Paredit with a `geb` language, or the
-   association with Scheme and strict paredit.
-8. Canonical: whether it becomes a dependency of the package for
-   experiments from Lean, the Geb-native refinement being the lasting
-   implementation either way.
-9. The first stronger checker: the conversion step, which the chapter
-   ranks first and the measurements of Canonical support, or another.
-10. Whether the checker of holes in programs is written now, in Lean and
-    in the suspending form, so that the same code later drives search.
-11. The public contract of the prover as a library: exact certificates, or
-    any checked certificate behind a proved abstraction.
+None at present.
 
 ## Sources
 
