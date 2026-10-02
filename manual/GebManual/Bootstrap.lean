@@ -129,7 +129,8 @@ Computation:
   `bootstrap/stage1/lean.geb`, the committed `bootstrap/compiler.img`
   and `bootstrap/lean/GebBoot.lean`, and the executable `geb-compile`.
 * Ready. The datatype language's completion
-  ({ref "improvements"}[Improvements]), before substantial authoring:
+  ({ref "datatype-completion"}[The datatype language's completion]),
+  before substantial authoring:
   datatype names as types distinct from the type of trees, checked at
   every use, a datatype reaching the trees only through its
   representation and its decoding by its generated recognizer, both
@@ -283,17 +284,27 @@ Extension:
 * Ready. The syntaxes of {citet RFC9804}[] and the Geb authoring profile,
   reading into one document type with proved retractions, and the
   importer from the present syntax
-  ({ref "authoring-compatibility"}[Authoring across bootstrap
-  revisions]); and a printer for the kernel's terms with the retraction
-  law, the section on improvements.
+  ({ref "rfc9804-syntaxes"}[The syntaxes of RFC 9804]); and a printer for
+  the kernel's terms with the retraction law, the section on
+  improvements.
 * In progress. {ref "authoring-compatibility"}[Authoring across bootstrap
   revisions]: preservation of source documents, bindings and dependency
   references through format changes. Checked filling of one contextual
   term hole in Lean, and source documents keeping comments with their
-  retraction and formatter, are complete; modules with parameters,
-  imports and export lists, the syntax of holes, the checker of holes in
-  programs in its suspending form, and the display of their obligations
-  are ready.
+  retraction and formatter, are complete. Ready, in the order of
+  {ref "authoring-sequence"}[the sequence]: the formatter's adoption, the
+  rejection of duplicate and ambiguous names, modules with parameters,
+  imports and export lists, the datatype language's completion, the
+  syntaxes of RFC 9804, manifests with editions and the record of
+  elaborated definitions, a durable document with versioned profiles,
+  hygienic elaboration with explicit assembly and diagnostics, the markup
+  of comments with documentation as literate pages, and the `geb` editor
+  language; then, early in writing, `let*` and `cond`, quoted atoms, the
+  syntax of holes, the checker of holes in programs in its suspending
+  form and the display of their obligations, located diagnostics and the
+  typed enumerator. The rest, the store, a language server, holes in
+  proofs and the Geb-native refinement search among it, waits on its
+  consumers.
 
 ## After the bootstrap
 
@@ -314,11 +325,13 @@ translations:
   generic over opaque type parameters into code over a universe, by the
   logical functor the generic family determines. No universe interprets
   every object of the free topos, truth being undefinable
-  ({citet Tarski1935}[]). `docs/source-format.md` § Datatypes, type
-  parameters and interfaces details both.
+  ({citet Tarski1935}[]). {ref "datatype-completion"}[The datatype
+  language's completion] details both.
 * The richer forms of definition of `docs/definitions.md`: well-founded
-  and guarded blocks, presentations, presheaf signatures, a binding
-  language with its substitution laws, and modules. Their Lean
+  and guarded blocks, presentations, presheaf signatures, and a binding
+  language with its substitution laws; modules precede them, before
+  substantial authoring
+  ({ref "modules"}[Modules]). Their Lean
   prototypes under `Geb/Prototypes/Definition/` are constructed.
 * The mathematics the repository formalizes in Lean: polynomial
   functors and their W-types and M-types, the presheaf parametric right
@@ -1484,7 +1497,8 @@ section below opens with a table of the states of its parts.
 *
   * {ref "geb-grows-in-itself"}[Geb grows in itself]
   * Complete
-  * The datatype language's completion ({ref "improvements"}[Improvements]):
+  * The datatype language's completion
+    ({ref "datatype-completion"}[The datatype language's completion]):
     ready
 *
   * {ref "speed-and-second-host"}[Speed and a second host]
@@ -1499,8 +1513,8 @@ section below opens with a table of the states of its parts.
   * {ref "authoring-compatibility"}[Authoring across bootstrap revisions]
   * In progress
   * Checked contextual-hole filling and source documents with their
-    formatter, in Lean: complete; document fields, profiles, migration
-    contracts and authoring tools: ready
+    formatter, in Lean: complete; the rest of the sequence: ready, but the
+    parts that follow their consumers, which wait on them
 *
   * {ref "goedel-t"}[Gödel's T]
   * In progress
@@ -1889,8 +1903,7 @@ tag := "geb-grows-in-itself"
 *
   * The libraries and serializer, the reader, the type checker, the
     elaborator, and its self-compilation
-  * Complete; the elaborator's completion, the section on improvements,
-    is ready
+  * Complete; the datatype language's completion is ready
 *
   * Acceptance
   * Met
@@ -5785,21 +5798,36 @@ the change that removes it.
   primitive by its index, added to the seed's reader and to the Geb
   reader alike, removes the dependence; the reservation of names
   beginning with `%` for the expansion is likewise documented and not
-  enforced.
+  enforced. Hygienic elaboration, a step of the authoring sequence,
+  removes both ({ref "files-editions"}[Files, editions and the host
+  boundary]).
 * Diagnostics of the Geb compiler. The stage-0 and stage-1 compilers
   report a program that does not read, expand or type-check by an empty
   image and name no definition, where {name}`Geb.Kernel.diagnose` in the
   seed names the first failing one. Until the Geb compiler reports a
   message, a failing program is diagnosed by expanding it with the
   stage-0 expansion, printing the kernel forms, and applying
-  {name}`Geb.Kernel.diagnose` to them.
+  {name}`Geb.Kernel.diagnose` to them. Diagnostics that name a source
+  occurrence are a step of the authoring sequence
+  ({ref "editing"}[Editing]).
 * The reader's printer and the retraction law
   ({ref "kernel-in-lean"}[The kernel runs in Lean]), and the syntaxes of
   {citet RFC9804}[] with the Geb authoring profile, one document type read
   by all of them, replacing the kernel reader's syntax through an
-  importer; `Geb/Prototypes/CanonicalSExpr.lean` supplies the canonical
-  codec over trees of numerals, generalized to atoms of bytes, and
+  importer ({ref "rfc9804-syntaxes"}[The syntaxes of RFC 9804]);
+  `Geb/Prototypes/CanonicalSExpr.lean` supplies the canonical codec over
+  trees of numerals, generalized to atoms of bytes, and
   `Geb/Prototypes/Kernel/Document.lean` the document and its layouts.
+* Chains of tests and bindings. The kernel's conditional and `let` are
+  binary, so chains of tests and of bindings nest, and under a layout
+  parinfer admits, nesting is indentation. The chain of tests of rules in
+  `bootstrap/goedel-t/equations.geb` gives the only lines the formatter
+  cannot keep within 100 columns, and the written files' flat chains are
+  what parinfer's Indent Mode restructures
+  ({ref "source-documents"}[Source documents and the formatter]). Forms
+  `let*`, of several bindings, and `cond`, of several guarded branches,
+  expanded by the reader as the lists of binders of `lam` are, remove
+  both; they are widenings, and precede long chains.
 * The equivalence of the word-level codec with
   {name}`Geb.RoseTree.wire`, tested and not proved, which is the first
   of the decision gates of the value-representation chapter.
@@ -5822,7 +5850,7 @@ the change that removes it.
   compare with, the keywords of the reader, the expansion and the
   prover, as quoted lists of character codes, since a datum has no
   spelling for an atom; the quoted spelling of the syntax unification
-  removes it.
+  removes it ({ref "rfc9804-syntaxes"}[The syntaxes of RFC 9804]).
 * Depth of the Geb reader and serializer. The reader's tokenizer and
   the serializer's packing of bits are right folds whose continuations
   nest one call per character and per bit, so running either in Lean's
@@ -5862,14 +5890,19 @@ the change that removes it.
 * Emitted names. A program's definition named `T`, `leaf` or `mk` makes
   the emitted module ill-typed, since the module refers to the tree type,
   the leaf and the node by those names; qualifying them as the constants
-  are qualified removes the restriction.
+  are qualified, as the hygiene of generated names requires, removes the
+  restriction.
 * The datatype language annotates every value of a datatype as the type
   of trees and lacks generated recognizers, type parameters and a static
   check of datatypes, so the datatype a value belongs to is recorded
-  nowhere; a pattern omits the `&` that a declaration writes; and every
-  pattern variable is bound whether or not the clause uses it.
+  nowhere, which its completion removes
+  ({ref "datatype-completion"}[The datatype language's completion]); a
+  pattern omits the `&` that a declaration writes; and every pattern
+  variable is bound whether or not the clause uses it.
 * Only the names of definitions are kept beside a bundle; the names of
-  bound variables and comments are not.
+  bound variables and comments are not. The source documents keep the
+  comments, and the durable document of the authoring sequence keeps
+  both ({ref "documents-annotations"}[Documents and annotations]).
 * Proof time. The prover finds the weakening proof in about a minute
   and the checker checks it in half of one, most of both normalizing the
   checker afresh at each of the label's cases, whose cost is the
@@ -5957,7 +5990,8 @@ steps without adding to what is trusted.
 
 The rest of the road map's bootstrap is independent of these proofs and
 may proceed beside them: the choice of machine and the second host;
-content identity; and the syntax unification.
+content identity; and the authoring sequence, the syntax unification
+among it ({ref "authoring-sequence"}[The sequence and its acceptance]).
 
 ## What self-compilation establishes
 
