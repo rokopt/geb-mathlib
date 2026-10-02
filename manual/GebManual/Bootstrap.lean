@@ -603,8 +603,10 @@ state; exhausting the bound is neither falsity nor divergence.
 The survey covers four questions: how other systems keep a seed and
 check a fixed point, how small kernels grow in themselves, which
 operational semantics the kernel should run on, and how small a proof
-checker for the metalogic can be. A fifth part maps the prior art in
-this repository and the experimental one.
+checker for the metalogic can be. Two more parts cover how source and
+its annotations are kept and edited across changes of format, and how
+holes in programs and proofs are reported and filled by search. A last
+part maps the prior art in this repository and the experimental one.
 
 ## Seed images and fixed points
 
@@ -1036,6 +1038,279 @@ mathematical proofs are migrated to it, and a migration from Lean checks
 the logical strength and the universes it relies on, since a fixed
 elementary-topos presentation does not internalize all of Lean's
 universe-polymorphic mathematics.
+
+## Source and its tools
+%%%
+tag := "source-tools"
+%%%
+
+A formatter that keeps comments reads them as data. The lossless syntax
+trees of Roslyn and of rust-analyzer's rowan
+([syntax trees](https://github.com/rust-lang/rust-analyzer/blob/master/docs/book/src/contributing/syntax.md))
+keep comments and whitespace as items in document order rather than as
+annotations of the nodes after them, as does
+[rewrite-clj](https://github.com/clj-commons/rewrite-clj), on which the
+Clojure formatters cljfmt and zprint are built; gofmt and ormolu keep at
+most one empty line between items.
+
+{citet RFC9804}[] specifies three encodings of S-expressions: a canonical
+encoding, designed for hashing and signing; a basic encoding for
+transport, which is the base-64 of the canonical one; and an advanced
+encoding for people. It is an Informational RFC, not on the standards
+track, and requires an implementation to support the first two, the
+third being optional (§ 6). Its atoms are octet strings with optional
+display hints, which an implementation may exclude (§ 8), and canonical
+lengths count bytes. An advanced token is a letter or one of
+`- . / _ : * + =` followed by letters, digits and those marks, so it
+cannot begin with a digit, and a digit begins a length only when `:`,
+`"`, `#` or `|` follows it. Quoted strings admit printable ASCII alone: a
+line break or any other byte is escaped (`\n`, `\xhh`, `\ooo`) or
+continued by a backslash before the break. The advanced grammar has no
+comments (§§ 4, 7.1).
+
+Two arrangements keep a program's annotations beside its code. In the
+first, text is primary, comments are data in it, and the separation into
+core and annotations is derived when reading, so that editors, diffs,
+merges, reviews and searches need nothing new.
+[Clojure's metadata](https://clojure.org/reference/metadata) does not
+affect equality or hashes;
+[Dhall](https://docs.dhall-lang.org/discussions/Safety-guarantees.html)
+hashes a normal form without comments; and
+[Yatima](https://github.com/argumentcomputer/yatima-lang-alpha)'s
+`Term::embed` separates a nameless tree for the content identifier from a
+tree of names of the same shape, and its `unembed` rejoins them and fails
+when the shapes differ. Darklang returned from a structure editor to text
+as the source of truth
+([status update](https://blog.darklang.com/an-overdue-status-update/)).
+In the second, core and annotations are two independently authoritative
+artifacts, with text as a projection: Unison, Lamdu, MPS, and Unison's
+design of 2019, not built, of comments keyed by a hash and a path
+([unison#443](https://github.com/unisonweb/unison/issues/443)). They need
+atomic updates, detection of stale annotations and coordinated merging.
+Keys by path move under edits, as Go's comment map's do
+([golang/go#20744](https://github.com/golang/go/issues/20744)); keys by
+hash conflate structurally equal definitions
+([unison#462](https://github.com/unisonweb/unison/issues/462)); Unison
+drops comments inside terms when they are added to its codebase
+([language reference](https://www.unison-lang.org/docs/language-reference/comments/),
+[unison#6262](https://github.com/unisonweb/unison/issues/6262)) and
+removed its metadata links
+([unison#4574](https://github.com/unisonweb/unison/pull/4574)).
+
+A content identifier names an algorithm and the bytes it hashes. A
+multihash names an algorithm and a digest; it neither versions a schema
+nor specifies the bytes hashed, and a CID also names the codec of the
+block hashed ([IPLD primer](https://ipld.io/docs/intro/primer/)). Unison
+separates names from identity, refers to a member of a recursive
+component by the component's hash and an index
+([hashes](https://www.unison-lang.org/docs/language-reference/hashes/)),
+and pins a dependency in source by a digest literal, `#…`.
+
+A language whose reader changes records the version a source is written
+for, as Racket's `#lang`, Rust's editions and Go's `go` directive do.
+Agda's parameterized modules abstract every definition of a module over
+the module's parameters, and an import instantiates them
+([Agda's module system](https://agda.readthedocs.io/en/latest/language/module-system.html)).
+Isabelle's locales are parameterized by assumptions as well as by
+constants, each interpretation discharging the assumptions
+{citep Ballarin2014}[].
+
+The following was determined for VS Code on 2026-09-29.
+
+* Bracket pairs are coloured without an extension
+  (`editor.bracketPairColorization.enabled`, the default since version
+  1.67); brackets inside comments are skipped only when a TextMate grammar
+  marks the comment as one
+  ([bracket pair colorization](https://code.visualstudio.com/blogs/2021/09/29/bracket-pair-colorization)).
+  A language configuration and a small TextMate grammar are declarative
+  features and need no language server
+  ([language extensions](https://code.visualstudio.com/api/language-extensions/overview)).
+* [Mike's Paredit](https://marketplace.visualstudio.com/items?itemName=MikeDelmonaco.paredit)
+  (`MikeDelmonaco.paredit`, MIT) extracts Calva's structural operations
+  (navigation, selection, slurp, barf, raise, splice, transpose, wrap,
+  kill), is independent of language, takes delimiters per language
+  (`paredit.customDelimiters`) and reads the comment configuration of a
+  language's extension. It had 29 installations.
+  [strict-paredit](https://github.com/ailisp/strict-paredit-vscode)
+  (`ailisp.strict-paredit` 0.3.1) fixes the languages it serves
+  (`commonlisp`, `clojure`, `lisp`, `scheme`), and Calva's paredit serves
+  Clojure only.
+* The parinfer extensions (`shaunlebron.vscode-parinfer` 0.6.2 and its
+  forks) fix their languages likewise. The library
+  [parinfer.js](https://github.com/parinfer/parinfer.js), npm package
+  `parinfer` 3.13.1, exposes `parenMode` and `indentMode` over whole texts
+  and treats `[`, `]`, `{`, `}` as parentheses, `"` as a string delimiter
+  and `\` as an escape, so atoms containing them break it.
+* `sjhuangx.vscode-scheme` supplies a grammar and language configuration
+  for `scheme`, and `pucelle.run-on-save` runs a command on saving a file.
+  Whether `emeraldwalk.RunOnSave` can run commands of VS Code is not
+  verified.
+
+Paredit and parinfer are alternative models of editing the same balanced
+text. Paredit's commands change the tree explicitly and keep parentheses
+balanced by construction, whatever the layout. Parinfer infers while one
+types, and depends on layout: Indent Mode infers parentheses from
+indentation, so it changes the tree by design and is an operation of
+editing, never a formatter; Paren Mode infers indentation from
+parentheses and never changes the tree. Their invariant is that each
+continuation line is indented beyond the innermost open parenthesis and
+not beyond a parenthesis closed at the end of the line before
+([parinfer](https://shaunlebron.github.io/parinfer/#mathematical-foundation)).
+Paren Mode would serve as a formatter, but its equations are stated
+properties, not proofs for a given grammar.
+
+Tree-sitter is an incremental concrete-syntax parser that recovers from
+errors ([introduction](https://tree-sitter.github.io/tree-sitter/)); it
+helps selection and incomplete buffers independently of a language
+server. VS Code offers no user-extensible tree-sitter highlighting,
+having experimental grammars for a few built-in languages only
+([vscode#50140](https://github.com/microsoft/vscode/issues/50140) is
+open); [tree-sitter-vscode](https://github.com/AlecGhost/tree-sitter-vscode)
+highlights with a supplied grammar through semantic tokens, and Neovim,
+Helix, Zed and Emacs 29 use tree-sitter natively. tree-sitter-scheme is
+licensed MIT. [efm-langserver](https://github.com/mattn/efm-langserver)
+turns a checker on the command line into diagnostics, with a generic
+client for VS Code. A language service needs source spans and structured
+diagnostics, lookup of definitions, inferred and expected types, and the
+obligations of holes
+([language-server guide](https://code.visualstudio.com/api/language-extensions/language-server-extension-guide));
+the protocol transports those services between a checker and an editor,
+and does not store or rebuild annotations. Whether clojure-lsp reports
+errors on `.geb` files is not verified.
+
+## Holes and search
+%%%
+tag := "holes-and-search"
+%%%
+
+A hole of type `A` in a context `Γ` is a metavariable `u :: A[Γ]`
+occurring as `clo(u, id_Γ)` {citep NanevskiPfenningPientka2008}[]. Their
+Theorem 4.6 translates such a metavariable into an ordinary variable of
+type `B₁ → … → Bₘ → A`, instantiation being substitution followed by β:
+holes are lambda-lifted variables, and in a cartesian closed category a
+term with a hole is a morphism out of the exponential `[Γ ⇒ A]`, by
+functional completeness {citep LambekScott1986}[]. Hazelnut studies typed
+editing states, incomplete terms included
+{citep OmarVoyseyHiltonAldrichHammer2017}[]; Hazelnut Live assigns a hole
+its type in checking mode (rule EAEHole), and filling commutes with
+evaluation (Theorems 4.1 and 4.2) {citep OmarVoyseyChughHammer2019}[]. The
+free Σ-monoid over presheaves on contexts characterizes metavariables,
+metasubstitution being the monad's bind {citep FioreHur2010}[]
+{citep FioreSzamozvancev2022}[]. An Isabelle proof state with subgoals
+`ψ₁ … ψₙ` is the theorem `[ψ₁, …, ψₙ] ⇒ C`, the subgoals lifted over their
+parameters, and admits nothing {citep Paulson1989}[], unlike an axiom
+such as Lean's `sorryAx`. That a derivation with open subgoals is a
+derivation under the hypotheses `∀Γ_h. φ_h` in a topos's internal
+language follows from the rules introducing `⇒` and `∀`; a statement of
+it in the literature was not located.
+
+The universal property of the fold turns the synthesis of a recursive
+function from examples into the synthesis of its non-recursive step
+{citep Hutton1999}[] {citep FeserChaudhuriDillig2015}[]
+{citep OseraZdancewic2015}[]. Equality saturation records explanations of
+the equalities it derives {citep WillseyNandiWangFlattTatlockPanchekha2021}[].
+cvc5's SyGuS interface restricts candidates by a grammar
+([example](https://cvc5.github.io/docs/latest/examples/sygus-fun.html),
+[SyGuS 2.1](https://arxiv.org/abs/2312.06001)). A topos interprets
+existential quantification through images, without sections of every
+epimorphism
+([Borceux, *Some flavours of topos theory*, §§ 3.5, 4.4–4.5](https://www.uclouvain.be/system/files/uclouvain_assetmanager/groups/cms-editors-irmp/Lecture%20Notes.pdf)),
+so a derivation of an internal existential statement is not an executable
+witness.
+
+SupGen searches by shared enumeration. Its mechanism, from its two gists
+([60d3bc72](https://gist.github.com/VictorTaelin/60d3bc72fb4edefecd42095e44138b41),
+[7fe49a99](https://gist.github.com/VictorTaelin/7fe49a99ebca42e5721aa1a3bb32e278))
+and the public sources of [HVM4](https://github.com/HigherOrderCO/HVM4):
+given a type, helper functions and equations between inputs and outputs,
+the candidates form one term with a labelled superposition at each
+choice; the interaction rules for applying and duplicating
+superpositions share every computation independent of a choice; failed
+tests erase branches; and a breadth-first collapse reads the survivors
+back. This is pull-tabbing {citep Antoy2011}[] with the pruning of partial
+candidates of Lazy SmallCheck {citep RuncimanNaylorLindblad2008}[], shared
+under optimal reduction. SupGen's source is not published and HVM4 has no
+licence; Bend 2, launched without it, states that it has no tactics or
+proof search. Its reported speeds are not reproduced independently, and
+its programs recurse through `Y`, so they need not be total. Material for
+a bounded experiment exists:
+[HVM3](https://github.com/HigherOrderCO/HVM3)'s
+[enumerator of affine λ-terms](https://github.com/HigherOrderCO/HVM3/blob/fba2e9c82faf6e2f019c9ecea94c32f19a8b7820/examples/enum_lam_smart.hvm),
+which bounds the depth of binding and the arity of application, and its
+[type-directed enumerator](https://github.com/HigherOrderCO/HVM3/blob/fba2e9c82faf6e2f019c9ecea94c32f19a8b7820/examples/enum_coc_smart.hvm),
+both needing adaptation of their discipline of contexts and grammar of
+candidates to Geb; and the
+[SupVM gist](https://gist.github.com/VictorTaelin/7ae3d262e4d0b80a4e8817a80f976a68),
+a small evaluator in TypeScript for a stated subset of HVM, representing
+correlated labelled choices by a map, which is neither a specification nor
+a verification of HVM.
+
+Canonical is a solver for type inhabitation in dependent type theory
+{citep NormanAvigad2025}[]
+([paper](https://drops.dagstuhl.de/storage/00lipics/lipics-vol352-itp2025/LIPIcs.ITP.2025.14/LIPIcs.ITP.2025.14.pdf);
+talks by Chase Norman,
+[1](https://www.youtube.com/watch?v=y6p0hHkabXs) and
+[2](https://www.youtube.com/watch?v=Me7WFEvoksw)).
+
+* Its format is that of the Logical Framework
+  {citep HarperHonsellPlotkin1993}[] without universes, with let
+  definitions carrying reduction rules.
+* Every term is β-normal and η-long, with one constructor,
+  `λ x̄. let ȳ := M̄. f Ā`, and the type of a symbol determines its arity.
+* A search refines one metavariable at a time. It chooses a head from the
+  metavariable's local context and creates fresh metavariables for the
+  head's arguments, all at once, so that they may be refined in any order
+  and a later argument, a proof for instance, can constrain an earlier
+  one, the witness it is about.
+* Terms carry explicit substitutions, so an equation between partial
+  terms is found violated as soon as its head symbols differ, and the
+  branch is abandoned.
+* Metavariables with a rigid equation are refined first, as unit
+  propagation in SAT.
+* Iterative deepening bounds a measure it calls entropy, estimated from
+  statistics of earlier refinements, and branches are searched in
+  parallel.
+* The algorithm is Dowek's complete method {citep Dowek1993}[] with this
+  representation.
+* On the Natural Number Game it proves 62 of 74 statements in 51 seconds
+  in all, against 27 for Aesop and 45 for Duper, with shorter proofs.
+* Its future work names forward reasoning and the invention of lemmas and
+  tactics as absent. Canonical produces cut-free proofs.
+
+Canonical-min {citep NormanAvigad2026}[] is a reference implementation in
+185 lines of Lean
+([repository](https://github.com/chasenorman/Canonical-min), cited here at
+revision `72a24f13ec2e6ff3150e609cb5edbc70ef59a236`).
+
+* Its type checker for dependent type theory runs in a continuation
+  monad. Meeting an unassigned metavariable, the checker stores the rest
+  of the check as a constraint on that metavariable, and continues the
+  independent checks of other arguments (`judgment`); assigning the
+  metavariable resumes it.
+* The search is iterative deepening over assignments of heads, favoring
+  rigid constraints and otherwise later arguments, and raising both a
+  bound on the size of terms and a heuristic budget.
+* On DTTBench, 31 problems from Lean's library needing β-reduction only,
+  with a timeout of 60 seconds, it solves 31. Twelf solves 8, sauto 6 and
+  Mimer 2.
+* Its search is written with `partial` functions, so being Lean source
+  proves neither soundness nor completeness of the search; and its tactic
+  wrapper imports Canonical itself for preparing premises, translation and
+  reconstruction of proofs.
+
+Canonical is available under the MIT licence: the solver in Rust with the
+Lean tactic ([Canonical](https://github.com/chasenorman/Canonical),
+[CanonicalLean](https://github.com/chasenorman/CanonicalLean)), released
+for each Lean version with precompiled libraries for three platforms, the
+latest for Lean v4.34.0 on 2026-09-27. Outside Lean it reads a problem in
+an undocumented JSON form. A mode for program synthesis, in which an
+equation stuck on the major argument of a recursor counts as stuck rather
+than violated (§ 3.3.1 of the paper), is absent from the released tactic.
+A stuck check is not a failed one, `natRec z s ?n = z` becoming true when
+`?n` is zero, so a search claiming completeness over its grammar keeps
+stuck branches that remain viable. The paper's encoding of Lean (§ 4)
+erases universes; it is not a foundation for Geb, whose final checker
+stays the boundary of acceptance.
 
 ## Prior art in the repositories
 
