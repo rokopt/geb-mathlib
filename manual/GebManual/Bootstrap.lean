@@ -189,8 +189,7 @@ the sections below detail:
     the components' translations, the type checker's preservation of
     types by weakening and by substitution and the datatype language's
     expansion's identity on programs of kernel forms complete, and the
-    reader's inverse to the printer waiting on the printer and on the
-    readers of the authoring profile.
+    reader's inverse to the printer waiting on the printer.
 * The metalogic, the free topos in one presentation:
   * Complete. The rule set with its checker in Lean, sound, and the
     proof that every model is an elementary topos with the data
@@ -294,15 +293,15 @@ Extension:
   term hole in Lean, source documents keeping comments as decorations with
   their retraction and formatter, adopted over `bootstrap/`, and the
   authoring profile read by the seed and by the Geb reader, rejecting
-  duplicate and reserved names, are complete. Ready, in the order of
-  {ref "authoring-sequence"}[the sequence]: quoted atoms in place of the
-  sources' lists of character codes, the strict encodings of
-  RFC 9804, modules with parameters, imports and export lists, the
-  datatype language's completion, manifests with editions and the record of
+  duplicate and reserved names, with quoted atoms in the sources, are
+  complete. Ready, in the order of {ref "authoring-sequence"}[the
+  sequence]: the strict encodings of RFC 9804, modules with parameters,
+  imports and export lists, the datatype language's completion, manifests
+  with editions and the record of
   elaborated definitions, a durable document with versioned profiles,
   hygienic elaboration with explicit assembly and diagnostics, the markup
   of comments with documentation as literate pages, and the `geb` editor
-  language; then, early in writing, `let*` and `cond`, quoted atoms, the
+  language; then, early in writing, `let*` and `cond`, the
   syntax of holes, the checker of holes in programs in its suspending
   form and the display of their obligations, located diagnostics and the
   typed enumerator. The rest, the store, a language server, holes in
@@ -1553,7 +1552,7 @@ section below opens with a table of the states of its parts.
   * In progress
   * Weakening, substitution and the identity of the datatype language's
     expansion: complete; the reader's inverse to the printer: waiting on
-    the printer and on the readers of the authoring profile
+    the printer
 *
   * {ref "metalogic"}[The metalogic]
   * In progress
@@ -2388,11 +2387,7 @@ tag := "authoring-compatibility"
 *
   * The authoring profile and the importer, the kernel's readers reading
     it and rejecting duplicate and ambiguous names
-  * In progress: the profile's reader and printer in Lean with their
-    retraction, the seed's reader and the Geb reader of the profile
-    rejecting duplicate and reserved names, and the import of the sources,
-    complete; quoted atoms in place of the sources' lists of character
-    codes, ready
+  * Complete
 *
   * The strict encodings of RFC 9804
   * Ready
@@ -2419,9 +2414,9 @@ tag := "authoring-compatibility"
   * The `geb` editor language with Mike's Paredit
   * Ready
 *
-  * Early in writing: `let*` and `cond`, quoted atoms, the syntax of
-    holes, the suspending checker of holes in programs and the display of
-    their obligations, located diagnostics, literate pages and the typed
+  * Early in writing: `let*` and `cond`, the syntax of holes, the
+    suspending checker of holes in programs and the display of their
+    obligations, located diagnostics, literate pages and the typed
     enumerator
   * Ready
 *
@@ -2821,12 +2816,9 @@ construct parinfer cannot lay out stably: the prototype prints the
 closing parenthesis of such a list at the start of a line, which
 parinfer rejects, and no file has one.
 
-The prototype leaves two more things open. The alphabet of atoms is the
-kernel reader's, without quoted atoms, which the authoring profile
-replaces ({ref "rfc9804-syntaxes"}[The syntaxes of RFC 9804]). And the
-attachment of comments to the definitions they document, which hover
-text and a store need, is the redecoration not yet written
-({ref "documents-annotations"}[Documents and annotations]).
+One thing is left open: the attachment of comments to the definitions
+they document, which hover text and a store need, a redecoration not yet
+written ({ref "documents-annotations"}[Documents and annotations]).
 
 ### The syntaxes of RFC 9804
 %%%
@@ -2951,12 +2943,13 @@ Further:
   image ({name}`Geb.Kernel.writeImage`), compared by bytes in continuous
   integration.
 * The syntax unification, one reader over the canonical data model with a
-  quoted spelling for atoms that are not tokens, is this decision; its
-  first use replaces the lists of character codes of
-  `bootstrap/stage1/datatype.geb`, such as `(quote (1 108 101 116))`, by
-  atoms, `(quote (1 let))`, an atom that is not a numeral contributing
-  the leaves of its bytes to the datum list it is in, so the trees quoted
-  are unchanged ({ref "improvements"}[Improvements]).
+  quoted spelling for atoms that are not tokens, is this decision. In a
+  quoted datum, an atom that is not a numeral contributes the leaves of its
+  bytes to the list it is in, so the sources spell the atoms they compare
+  with, the keywords of the reader, the expansion and the prover, as atoms,
+  `(quote (1 let))` for `(quote (1 108 101 116))`, and the trees quoted are
+  unchanged; a text of digits alone, which would read as a numeral, stays a
+  list of its codes.
 
 ### Documents and annotations
 %%%
@@ -3854,7 +3847,7 @@ reader:
 :::
 
 Early in writing, alongside the first substantial module where it helps:
-`let*` and `cond`; quoted atoms; the syntax of holes, the suspending
+`let*` and `cond`; the syntax of holes, the suspending
 checker of holes in programs and the display of their obligations;
 diagnostics with locations through efm-langserver; literate pages
 generated from documents; and the typed enumerator. When their consumers
@@ -4300,8 +4293,7 @@ Gödel's T states and proves the following.
     substitution, complete;
   * the identity of the datatype language's expansion on programs of
     kernel forms, complete;
-  * the reader's inverse to the printer, waiting on the printer and on
-    the kernel's readers reading the authoring profile;
+  * the reader's inverse to the printer, waiting on the printer;
   * the admission of a stronger checker by the proof that a Geb
     program translates its certificates into the metalogic's
     derivations with the same conclusions, ready: it is admitted beside
@@ -5925,11 +5917,6 @@ the change that removes it.
   into one function and the step returns it, a loop inside a closure
   over the argument not being typable. The requirement that the
   bootstrap's programs be decorated waits on that rewriting.
-* Atoms as character codes. The Geb sources spell the atoms they
-  compare with, the keywords of the reader, the expansion and the
-  prover, as quoted lists of character codes, since a datum has no
-  spelling for an atom; the quoted spelling of the syntax unification
-  removes it ({ref "rfc9804-syntaxes"}[The syntaxes of RFC 9804]).
 * Depth of the Geb reader and serializer. The reader's tokenizer and
   the serializer's packing of bits are right folds whose continuations
   nest one call per character and per bit, so running either in Lean's
@@ -6011,13 +5998,10 @@ with the Lean checker is proved, is ready (the section on the metalogic
 and its checker). The first of the two items below is complete, the
 checker, the translation, the prover, its tactics and the combinator
 prover written in Geb and their agreement proved. The second proves a
-property of the kernel's reader, so it follows the change of that
-reader's syntax: the next phase is the authoring profile, its importer
-and the kernel's readers reading it and rejecting duplicate and
-ambiguous names, the decorated trees of the decision on annotations
-among it ({ref "authoring-sequence"}[The sequence and its acceptance]),
-and the
-second item follows it:
+property of the kernel's reader, so it followed the change of that
+reader's syntax to the authoring profile, which is complete
+({ref "authoring-sequence"}[The sequence and its acceptance]); the next
+phase is the second, which is ready:
 
 * The metalogic's checker, its prover and the translation of kernel
   programs written in Geb, the checker in Geb and proof construction for

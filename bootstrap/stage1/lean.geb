@@ -29,246 +29,68 @@
         (cons d (foldr T Ts (lam ((x T) (acc Ts)) (cons sep (cons x acc))) (nil T) r))))))
 
 ; the text the backend writes
-(def tLp (text (children (quote (0 40)))))
-(def tRp (text (children (quote (0 41)))))
-(def tComma (text (children (quote (0 44)))))
-(def tColon (text (children (quote (0 32 58 32)))))
-(def tUnder (text (children (quote (0 95)))))
-(def tFun (text (children (quote (0 102 117 110 32)))))
-(def tDoubleArrow (text (children (quote (0 32 61 62)))))
-(def tT (text (children (quote (0 84)))))
-(def tUnitTy (text (children (quote (0 85 110 105 116)))))
-(def tTimes (text (children (quote (0 32 195 151)))))
-(def tTo (text (children (quote (0 32 226 134 146)))))
-(def tList (text (children (quote (0 76 105 115 116)))))
-(def tLet (text (children (quote (0 108 101 116 32)))))
-(def tSemi (text (children (quote (0 59)))))
-(def tUnitV (text (children (quote (0 40 41)))))
-(def tDot1 (text (children (quote (0 41 46 49)))))
-(def tDot2 (text (children (quote (0 41 46 50)))))
-(def tIf (text (children (quote (0 105 102 32 40)))))
-(def tThen
-  (text (children (quote (0 41 46 108 97 98 101 108 32 226 137 160 32 48 32 116 104 101 110)))))
-(def tElse (text (children (quote (0 101 108 115 101)))))
-(def tFold (text (children (quote (0 67 111 110 115 116 46 102 111 108 100)))))
-(def tIter (text (children (quote (0 67 111 110 115 116 46 105 116 101 114)))))
-(def tFoldr (text (children (quote (0 67 111 110 115 116 46 102 111 108 100 114)))))
-(def tLcase (text (children (quote (0 67 111 110 115 116 46 108 99 97 115 101)))))
-(def tPara (text (children (quote (0 67 111 110 115 116 46 112 97 114 97)))))
-(def tConstDot (text (children (quote (0 67 111 110 115 116 46)))))
-(def tAlpha (text (children (quote (0 206 177)))))
-(def tBeta (text (children (quote (0 206 178)))))
-(def tColonEq (text (children (quote (0 32 58 61 32)))))
-(def tNilLp (text (children (quote (0 40 91 93 32 58 32 76 105 115 116 32)))))
-(def tConsOp (text (children (quote (0 32 58 58)))))
-(def tLeaf (text (children (quote (0 108 101 97 102 32)))))
-(def tMk (text (children (quote (0 109 107 32)))))
-(def tSpLb (text (children (quote (0 32 91)))))
-(def tRb (text (children (quote (0 93)))))
-(def tLg (text (children (quote (0 194 171)))))
-(def tRg (text (children (quote (0 194 187)))))
-(def tDef (text (children (quote (0 100 101 102 32 194 171)))))
-(def tAssign (text (children (quote (0 194 187 32 58 61)))))
+(def tLp (text (children (quote (0 "(")))))
+(def tRp (text (children (quote (0 ")")))))
+(def tComma (text (children (quote (0 ",")))))
+(def tColon (text (children (quote (0 " : ")))))
+(def tUnder (text (children (quote (0 _)))))
+(def tFun (text (children (quote (0 "fun ")))))
+(def tDoubleArrow (text (children (quote (0 " =>")))))
+(def tT (text (children (quote (0 T)))))
+(def tUnitTy (text (children (quote (0 Unit)))))
+(def tTimes (text (children (quote (0 " ×")))))
+(def tTo (text (children (quote (0 " →")))))
+(def tList (text (children (quote (0 List)))))
+(def tLet (text (children (quote (0 "let ")))))
+(def tSemi (text (children (quote (0 ";")))))
+(def tUnitV (text (children (quote (0 "()")))))
+(def tDot1 (text (children (quote (0 ").1")))))
+(def tDot2 (text (children (quote (0 ").2")))))
+(def tIf (text (children (quote (0 "if (")))))
+(def tThen (text (children (quote (0 ").label ≠ 0 then")))))
+(def tElse (text (children (quote (0 else)))))
+(def tFold (text (children (quote (0 Const.fold)))))
+(def tIter (text (children (quote (0 Const.iter)))))
+(def tFoldr (text (children (quote (0 Const.foldr)))))
+(def tLcase (text (children (quote (0 Const.lcase)))))
+(def tPara (text (children (quote (0 Const.para)))))
+(def tConstDot (text (children (quote (0 Const.)))))
+(def tAlpha (text (children (quote (0 "α")))))
+(def tBeta (text (children (quote (0 "β")))))
+(def tColonEq (text (children (quote (0 " := ")))))
+(def tNilLp (text (children (quote (0 "([] : List ")))))
+(def tConsOp (text (children (quote (0 " ::")))))
+(def tLeaf (text (children (quote (0 "leaf ")))))
+(def tMk (text (children (quote (0 "mk ")))))
+(def tSpLb (text (children (quote (0 " [")))))
+(def tRb (text (children (quote (0 "]")))))
+(def tLg (text (children (quote (0 "«")))))
+(def tRg (text (children (quote (0 "»")))))
+(def tDef (text (children (quote (0 "def «")))))
+(def tAssign (text (children (quote (0 "» :=")))))
 (def tHeader
   (text
     (children
       (quote
-        (0 109 111 100 117 108 101 10 10 112 117 98 108 105 99 32 105 109 112 111 114 116 32 71 101
-          98
-          46
-          80
-          114
-          111
-          116
-          111
-          116
-          121
-          112
-          101
-          115
-          46
-          75
-          101
-          114
-          110
-          101
-          108
-          46
-          82
-          101
-          97
-          100
-          101
-          114
-          10
-          10
-          47
-          45
-          33
-          32
-          71
-          101
-          110
-          101
-          114
-          97
-          116
-          101
-          100
-          32
-          102
-          114
-          111
-          109
-          32
-          97
-          32
-          71
-          101
-          98
-          32
-          112
-          114
-          111
-          103
-          114
-          97
-          109
-          32
-          98
-          121
-          32
-          96
-          98
-          111
-          111
-          116
-          115
-          116
-          114
-          97
-          112
-          47
-          115
-          116
-          97
-          103
-          101
-          49
-          47
-          108
-          101
-          97
-          110
-          46
-          103
-          101
-          98
-          96
-          46
-          32
-          45
-          47
-          10
-          10
-          64
-          91
-          101
-          120
-          112
-          111
-          115
-          101
-          93
-          32
-          112
-          117
-          98
-          108
-          105
-          99
-          32
-          115
-          101
-          99
-          116
-          105
-          111
-          110
-          10
-          10
-          111
-          112
-          101
-          110
-          32
-          71
-          101
-          98
-          46
-          75
-          101
-          114
-          110
-          101
-          108
-          10
-          111
-          112
-          101
-          110
-          32
-          71
-          101
-          98
-          46
-          75
-          101
-          114
-          110
-          101
-          108
-          32
-          114
-          101
-          110
-          97
-          109
-          105
-          110
-          103
-          32
-          84
-          114
-          101
-          101
-          32
-          226
-          134
-          146
-          32
-          84
-          10
-          10
-          110
-          97
-          109
-          101
-          115
-          112
-          97
-          99
-          101
-          32
-          71
-          101
-          98
-          66
-          111
-          111
-          116)))))
-(def tFooter
-  (text (children (quote (0 10 10 101 110 100 32 71 101 98 66 111 111 116 10 10 101 110 100 10)))))
+        (0
+          "module
+
+public import Geb.Prototypes.Kernel.Reader
+
+/-! Generated from a Geb program by `bootstrap/stage1/lean.geb`. -/
+
+@[expose] public section
+
+open Geb.Kernel
+open Geb.Kernel renaming Tree → T
+
+namespace GebBoot")))))
+(def tFooter (text (children (quote (0 "
+
+end GebBoot
+
+end
+")))))
 
 ; layout: a document's measure, its flat width, whether it holds a line break outside any
 ; group, and the width of its text up to the first such break, or its flat width when it holds
