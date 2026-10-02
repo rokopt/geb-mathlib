@@ -11,25 +11,28 @@ public import GebTests.Prototypes.GoedelT.MirrorDelta
 
 set_option doc.verso true in
 /-!
-# The metalogic's checker, translation, prover and tactics written in Geb, loaded by the kernel
+# The metalogic's checker, translation, provers and tactics written in Geb, loaded by the kernel
 
 The bootstrap compiler's Lean backend emits the checker of the metalogic written in Geb,
 {lit}`bootstrap/free-topos/`, with the kernel's checker it translates the kernel's terms by, the
-translation of the kernel into the internal language, the prover of the internal language and its
-tactics, as Lean definitions, one for each of the program's definitions: the program's mirror,
-{lit}`GebMirror.Metalogic`. This module states, and the kernel checks, that loading the program
-with {name}`Geb.Kernel.load` gives globals whose denotations are the mirror's definitions.
+translation of the kernel into the internal language, the prover of the internal language, its
+tactics and the combinator prover, as Lean definitions, one for each of the program's
+definitions: the program's mirror, {lit}`GebMirror.Metalogic`. This module states, and the kernel
+checks, that loading the program with {name}`Geb.Kernel.load` gives globals whose denotations are
+the mirror's definitions.
 
 The command {lit}`geb_program` of {lit}`GebTests.Prototypes.GoedelT.LoadCommand` declares the
 program's definitions, globals and loading, one definition at a time. Among the globals are the
 check of a development, at the type of the function from constants, entries and declarations to a
 state; the translations of a program, of its constants and of a theorem of Gödel's T; and the
 prover's entry points, the preparation of rules, the proofs by normalization and by induction and
-the provers built from provers; and the tactics' entry points, the proofs by reduction, case
-analysis, induction, hypotheses and search. Each type is read from the definition, whose
+the provers built from provers; the tactics' entry points, the proofs by reduction, case
+analysis, induction, hypotheses and search; and the combinator prover's entry points, the typing,
+normalization, the proofs by normalization and by induction, the proof of a sequent added to a
+development and the library. Each type is read from the definition, whose
 abstractions carry their types and whose body the front end applies the identity at the result
-type to, by inverting the checker-evaluator: for the tactics, by one lemma over the list of the
-abstractions' annotations, {lit}`infer_lams`.
+type to, by inverting the checker-evaluator: for the tactics and the combinator prover, by one
+lemma over the list of the abstractions' annotations, {lit}`infer_lams`.
 
 ## Main definitions
 
@@ -40,6 +43,8 @@ abstractions' annotations, {lit}`infer_lams`.
   of a prover of equations, and the types of the prover's entry points built from them.
 * {lit}`krTy`, {lit}`modeTy` and the tactics' other types — the types of a prover from rules and of
   the tactics' entry points.
+* {lit}`pmTy`, {lit}`proveSeqTy` and the combinator prover's other types — the types of a
+  computation of the combinator prover and of its entry points.
 
 ## Main statements
 
@@ -52,12 +57,14 @@ abstractions' annotations, {lit}`infer_lams`.
   without evaluating it.
 * {lit}`metalogic_checkDev`, {lit}`metalogic_program`, {lit}`metalogic_trGlobals`,
   {lit}`metalogic_thm`, {lit}`metalogic_byNorm` with the prover's other entry points, and
-  {lit}`metalogic_byMode` with the tactics' other entry points — those globals are the mirror's
-  definitions, at those types.
+  {lit}`metalogic_byMode` with the tactics' other entry points, and {lit}`metalogic_proveSeq`
+  with the combinator prover's other entry points — those globals are the mirror's definitions, at
+  those types.
 
 ## Tags
 
-metalogic, checker, translation, prover, tactic, development, denotation, mirror, kernel reduction
+metalogic, checker, translation, prover, tactic, combinator, development, denotation, mirror,
+kernel reduction
 -/
 
 set_option doc.verso true
@@ -77,14 +84,15 @@ geb_program metalogic from "bootstrap/prelude.geb" "bootstrap/free-topos/base.ge
   "bootstrap/free-topos/infer.geb" "bootstrap/free-topos/language.geb"
   "bootstrap/free-topos/derivation.geb" "bootstrap/reader.geb" "bootstrap/check.geb"
   "bootstrap/free-topos/translation.geb" "bootstrap/free-topos/prove.geb"
-  "bootstrap/free-topos/tactics.geb"
+  "bootstrap/free-topos/tactics.geb" "bootstrap/free-topos/combinator.geb"
   mirror GebMirror.Metalogic
   exports checkDev program trGlobals thm prepareRules byNorm byNatInd byListInd byNatIndHyp
     byListIndHyp byNormW byFunExt bySplit byListIndWith byRoseInd byRoseIndHyp byMode byWeak
     byNF normH funExts byListIndWeak byRoseIndWith byListSplit bySplit2 byListCases bitsInd
     bitsCases byBits byLength3 withWeakHyps byListIndHypWeak byBitsIndHyp withInsts withChildHyps
     revertCase byImpI withImpElim bySuccPred byInsts byAuto byTreeSplit byAutoT byAutoC maskRw
-    byMaskSubs byGeneralize
+    byMaskSubs byGeneralize typeTerm pNormalize pInst etaExpand deltaRule pByNorm proveSeq
+    normalizeThm instBy byNatInduction byListInduction byListParamInduction libraryWith libRules
 
 /-- The type of the check of a development written in Geb: from the constants, the entries and
 the declarations, to the optional state after them. -/
@@ -107,12 +115,12 @@ theorem checkDev_type : metalogic.g372.1 = checkDevTy := by
   rfl
 
 -- the check of a development is the program's global of index 372
-kernel_rfl metalogic_g372 : metalogic.pre673[372]? = some metalogic.g372
+kernel_rfl metalogic_g372 : metalogic.pre804[372]? = some metalogic.g372
 
 /-- The program's global of index 372 is the mirror's check of a development, at the check's
 type. -/
 theorem metalogic_checkDev :
-    metalogic.pre673[372]? = some (⟨checkDevTy, GebMirror.Metalogic.checkDev⟩ : Glob) :=
+    metalogic.pre804[372]? = some (⟨checkDevTy, GebMirror.Metalogic.checkDev⟩ : Glob) :=
   metalogic_g372.trans
     (congrArg some (Sigma.ext checkDev_type (metalogic.checkDev_heq.trans HEq.rfl)))
 
@@ -166,25 +174,25 @@ theorem thm_type : metalogic.g535.1 = thmTy := by
 
 -- the translations of a program, of its constants and of a theorem are the program's globals of
 -- indices 533, 534 and 535
-kernel_rfl metalogic_g533 : metalogic.pre673[533]? = some metalogic.g533
-kernel_rfl metalogic_g534 : metalogic.pre673[534]? = some metalogic.g534
-kernel_rfl metalogic_g535 : metalogic.pre673[535]? = some metalogic.g535
+kernel_rfl metalogic_g533 : metalogic.pre804[533]? = some metalogic.g533
+kernel_rfl metalogic_g534 : metalogic.pre804[534]? = some metalogic.g534
+kernel_rfl metalogic_g535 : metalogic.pre804[535]? = some metalogic.g535
 
 /-- The program's global of index 533 is the mirror's translation of a program. -/
 theorem metalogic_program :
-    metalogic.pre673[533]? = some (⟨listFnTy, GebMirror.Metalogic.program⟩ : Glob) :=
+    metalogic.pre804[533]? = some (⟨listFnTy, GebMirror.Metalogic.program⟩ : Glob) :=
   metalogic_g533.trans
     (congrArg some (Sigma.ext program_type (metalogic.program_heq.trans HEq.rfl)))
 
 /-- The program's global of index 534 is the mirror's constants of a translated program. -/
 theorem metalogic_trGlobals :
-    metalogic.pre673[534]? = some (⟨listFnTy, GebMirror.Metalogic.trGlobals⟩ : Glob) :=
+    metalogic.pre804[534]? = some (⟨listFnTy, GebMirror.Metalogic.trGlobals⟩ : Glob) :=
   metalogic_g534.trans
     (congrArg some (Sigma.ext trGlobals_type (metalogic.trGlobals_heq.trans HEq.rfl)))
 
 /-- The program's global of index 535 is the mirror's translation of a theorem. -/
 theorem metalogic_thm :
-    metalogic.pre673[535]? = some (⟨thmTy, GebMirror.Metalogic.thm⟩ : Glob) :=
+    metalogic.pre804[535]? = some (⟨thmTy, GebMirror.Metalogic.thm⟩ : Glob) :=
   metalogic_g535.trans
     (congrArg some (Sigma.ext thm_type (metalogic.thm_heq.trans HEq.rfl)))
 
@@ -475,96 +483,96 @@ theorem byRoseIndHyp_type : metalogic.g588.1 = proverFnTy := by
   rfl
 
 -- the prover's entry points are the program's globals of indices 553 to 588
-kernel_rfl metalogic_g553 : metalogic.pre673[553]? = some metalogic.g553
-kernel_rfl metalogic_g560 : metalogic.pre673[560]? = some metalogic.g560
-kernel_rfl metalogic_g562 : metalogic.pre673[562]? = some metalogic.g562
-kernel_rfl metalogic_g563 : metalogic.pre673[563]? = some metalogic.g563
-kernel_rfl metalogic_g565 : metalogic.pre673[565]? = some metalogic.g565
-kernel_rfl metalogic_g566 : metalogic.pre673[566]? = some metalogic.g566
-kernel_rfl metalogic_g582 : metalogic.pre673[582]? = some metalogic.g582
-kernel_rfl metalogic_g584 : metalogic.pre673[584]? = some metalogic.g584
-kernel_rfl metalogic_g585 : metalogic.pre673[585]? = some metalogic.g585
-kernel_rfl metalogic_g586 : metalogic.pre673[586]? = some metalogic.g586
-kernel_rfl metalogic_g587 : metalogic.pre673[587]? = some metalogic.g587
-kernel_rfl metalogic_g588 : metalogic.pre673[588]? = some metalogic.g588
+kernel_rfl metalogic_g553 : metalogic.pre804[553]? = some metalogic.g553
+kernel_rfl metalogic_g560 : metalogic.pre804[560]? = some metalogic.g560
+kernel_rfl metalogic_g562 : metalogic.pre804[562]? = some metalogic.g562
+kernel_rfl metalogic_g563 : metalogic.pre804[563]? = some metalogic.g563
+kernel_rfl metalogic_g565 : metalogic.pre804[565]? = some metalogic.g565
+kernel_rfl metalogic_g566 : metalogic.pre804[566]? = some metalogic.g566
+kernel_rfl metalogic_g582 : metalogic.pre804[582]? = some metalogic.g582
+kernel_rfl metalogic_g584 : metalogic.pre804[584]? = some metalogic.g584
+kernel_rfl metalogic_g585 : metalogic.pre804[585]? = some metalogic.g585
+kernel_rfl metalogic_g586 : metalogic.pre804[586]? = some metalogic.g586
+kernel_rfl metalogic_g587 : metalogic.pre804[587]? = some metalogic.g587
+kernel_rfl metalogic_g588 : metalogic.pre804[588]? = some metalogic.g588
 
 /-- The program's global of index 553 is the mirror's preparation of rules, at its type. -/
 theorem metalogic_prepareRules :
-    metalogic.pre673[553]? = some (⟨prepareTy, GebMirror.Metalogic.prepareRules⟩ : Glob) :=
+    metalogic.pre804[553]? = some (⟨prepareTy, GebMirror.Metalogic.prepareRules⟩ : Glob) :=
   metalogic_g553.trans (congrArg some (Sigma.ext
     prepareRules_type (metalogic.prepareRules_heq.trans HEq.rfl)))
 
 /-- The program's global of index 560 is the mirror's proof by normalization, at its type. -/
 theorem metalogic_byNorm :
-    metalogic.pre673[560]? = some (⟨normTy, GebMirror.Metalogic.byNorm⟩ : Glob) :=
+    metalogic.pre804[560]? = some (⟨normTy, GebMirror.Metalogic.byNorm⟩ : Glob) :=
   metalogic_g560.trans (congrArg some (Sigma.ext
     byNorm_type (metalogic.byNorm_heq.trans HEq.rfl)))
 
 /-- The program's global of index 562 is the mirror's proof by induction on a natural number
 with a step, at its type. -/
 theorem metalogic_byNatInd :
-    metalogic.pre673[562]? = some (⟨indTy, GebMirror.Metalogic.byNatInd⟩ : Glob) :=
+    metalogic.pre804[562]? = some (⟨indTy, GebMirror.Metalogic.byNatInd⟩ : Glob) :=
   metalogic_g562.trans (congrArg some (Sigma.ext
     byNatInd_type (metalogic.byNatInd_heq.trans HEq.rfl)))
 
 /-- The program's global of index 563 is the mirror's proof by induction on a list with a step,
 at its type. -/
 theorem metalogic_byListInd :
-    metalogic.pre673[563]? = some (⟨indTy, GebMirror.Metalogic.byListInd⟩ : Glob) :=
+    metalogic.pre804[563]? = some (⟨indTy, GebMirror.Metalogic.byListInd⟩ : Glob) :=
   metalogic_g563.trans (congrArg some (Sigma.ext
     byListInd_type (metalogic.byListInd_heq.trans HEq.rfl)))
 
 /-- The program's global of index 565 is the mirror's proof by induction on a natural number
 with the induction hypothesis, at its type. -/
 theorem metalogic_byNatIndHyp :
-    metalogic.pre673[565]? = some (⟨indHypTy, GebMirror.Metalogic.byNatIndHyp⟩ : Glob) :=
+    metalogic.pre804[565]? = some (⟨indHypTy, GebMirror.Metalogic.byNatIndHyp⟩ : Glob) :=
   metalogic_g565.trans (congrArg some (Sigma.ext
     byNatIndHyp_type (metalogic.byNatIndHyp_heq.trans HEq.rfl)))
 
 /-- The program's global of index 566 is the mirror's proof by induction on a list with the
 induction hypothesis, at its type. -/
 theorem metalogic_byListIndHyp :
-    metalogic.pre673[566]? = some (⟨indHypTy, GebMirror.Metalogic.byListIndHyp⟩ : Glob) :=
+    metalogic.pre804[566]? = some (⟨indHypTy, GebMirror.Metalogic.byListIndHyp⟩ : Glob) :=
   metalogic_g566.trans (congrArg some (Sigma.ext
     byListIndHyp_type (metalogic.byListIndHyp_heq.trans HEq.rfl)))
 
 /-- The program's global of index 582 is the mirror's proof by normalization through weak head
 normal forms, at its type. -/
 theorem metalogic_byNormW :
-    metalogic.pre673[582]? = some (⟨normTy, GebMirror.Metalogic.byNormW⟩ : Glob) :=
+    metalogic.pre804[582]? = some (⟨normTy, GebMirror.Metalogic.byNormW⟩ : Glob) :=
   metalogic_g582.trans (congrArg some (Sigma.ext
     byNormW_type (metalogic.byNormW_heq.trans HEq.rfl)))
 
 /-- The program's global of index 584 is the mirror's proof by extensionality, at its type. -/
 theorem metalogic_byFunExt :
-    metalogic.pre673[584]? = some (⟨funExtTy, GebMirror.Metalogic.byFunExt⟩ : Glob) :=
+    metalogic.pre804[584]? = some (⟨funExtTy, GebMirror.Metalogic.byFunExt⟩ : Glob) :=
   metalogic_g584.trans (congrArg some (Sigma.ext
     byFunExt_type (metalogic.byFunExt_heq.trans HEq.rfl)))
 
 /-- The program's global of index 585 is the mirror's proof by case analysis, at its type. -/
 theorem metalogic_bySplit :
-    metalogic.pre673[585]? = some (⟨proverFnTy, GebMirror.Metalogic.bySplit⟩ : Glob) :=
+    metalogic.pre804[585]? = some (⟨proverFnTy, GebMirror.Metalogic.bySplit⟩ : Glob) :=
   metalogic_g585.trans (congrArg some (Sigma.ext
     bySplit_type (metalogic.bySplit_heq.trans HEq.rfl)))
 
 /-- The program's global of index 586 is the mirror's proof by induction on a list with the
 premises' provers, at its type. -/
 theorem metalogic_byListIndWith :
-    metalogic.pre673[586]? = some (⟨listIndWithTy, GebMirror.Metalogic.byListIndWith⟩ : Glob) :=
+    metalogic.pre804[586]? = some (⟨listIndWithTy, GebMirror.Metalogic.byListIndWith⟩ : Glob) :=
   metalogic_g586.trans (congrArg some (Sigma.ext
     byListIndWith_type (metalogic.byListIndWith_heq.trans HEq.rfl)))
 
 /-- The program's global of index 587 is the mirror's proof by the uniqueness of the fold of a
 rose tree, at its type. -/
 theorem metalogic_byRoseInd :
-    metalogic.pre673[587]? = some (⟨roseIndTy, GebMirror.Metalogic.byRoseInd⟩ : Glob) :=
+    metalogic.pre804[587]? = some (⟨roseIndTy, GebMirror.Metalogic.byRoseInd⟩ : Glob) :=
   metalogic_g587.trans (congrArg some (Sigma.ext
     byRoseInd_type (metalogic.byRoseInd_heq.trans HEq.rfl)))
 
 /-- The program's global of index 588 is the mirror's proof by induction on a rose tree with the
 induction hypothesis, at its type. -/
 theorem metalogic_byRoseIndHyp :
-    metalogic.pre673[588]? = some (⟨proverFnTy, GebMirror.Metalogic.byRoseIndHyp⟩ : Glob) :=
+    metalogic.pre804[588]? = some (⟨proverFnTy, GebMirror.Metalogic.byRoseIndHyp⟩ : Glob) :=
   metalogic_g588.trans (congrArg some (Sigma.ext
     byRoseIndHyp_type (metalogic.byRoseIndHyp_heq.trans HEq.rfl)))
 
@@ -676,42 +684,42 @@ indices, the rules and the number of rounds to a prover from a prover from rules
 def maskSubsTy : Tree := [tT, tList tT, tT, tT, rulesTy, tT].foldr tArrow (tArrow krTy proverTy)
 
 -- the tactics' entry points are the program's globals of indices 594 to 672
-kernel_rfl metalogic_g594 : metalogic.pre673[594]? = some metalogic.g594
-kernel_rfl metalogic_g595 : metalogic.pre673[595]? = some metalogic.g595
-kernel_rfl metalogic_g596 : metalogic.pre673[596]? = some metalogic.g596
-kernel_rfl metalogic_g600 : metalogic.pre673[600]? = some metalogic.g600
-kernel_rfl metalogic_g601 : metalogic.pre673[601]? = some metalogic.g601
-kernel_rfl metalogic_g602 : metalogic.pre673[602]? = some metalogic.g602
-kernel_rfl metalogic_g603 : metalogic.pre673[603]? = some metalogic.g603
-kernel_rfl metalogic_g605 : metalogic.pre673[605]? = some metalogic.g605
-kernel_rfl metalogic_g606 : metalogic.pre673[606]? = some metalogic.g606
-kernel_rfl metalogic_g607 : metalogic.pre673[607]? = some metalogic.g607
-kernel_rfl metalogic_g608 : metalogic.pre673[608]? = some metalogic.g608
-kernel_rfl metalogic_g609 : metalogic.pre673[609]? = some metalogic.g609
-kernel_rfl metalogic_g610 : metalogic.pre673[610]? = some metalogic.g610
-kernel_rfl metalogic_g611 : metalogic.pre673[611]? = some metalogic.g611
-kernel_rfl metalogic_g612 : metalogic.pre673[612]? = some metalogic.g612
-kernel_rfl metalogic_g613 : metalogic.pre673[613]? = some metalogic.g613
-kernel_rfl metalogic_g614 : metalogic.pre673[614]? = some metalogic.g614
-kernel_rfl metalogic_g618 : metalogic.pre673[618]? = some metalogic.g618
-kernel_rfl metalogic_g620 : metalogic.pre673[620]? = some metalogic.g620
-kernel_rfl metalogic_g622 : metalogic.pre673[622]? = some metalogic.g622
-kernel_rfl metalogic_g624 : metalogic.pre673[624]? = some metalogic.g624
-kernel_rfl metalogic_g625 : metalogic.pre673[625]? = some metalogic.g625
-kernel_rfl metalogic_g628 : metalogic.pre673[628]? = some metalogic.g628
-kernel_rfl metalogic_g647 : metalogic.pre673[647]? = some metalogic.g647
-kernel_rfl metalogic_g649 : metalogic.pre673[649]? = some metalogic.g649
-kernel_rfl metalogic_g661 : metalogic.pre673[661]? = some metalogic.g661
-kernel_rfl metalogic_g663 : metalogic.pre673[663]? = some metalogic.g663
-kernel_rfl metalogic_g664 : metalogic.pre673[664]? = some metalogic.g664
-kernel_rfl metalogic_g668 : metalogic.pre673[668]? = some metalogic.g668
-kernel_rfl metalogic_g671 : metalogic.pre673[671]? = some metalogic.g671
-kernel_rfl metalogic_g672 : metalogic.pre673[672]? = some metalogic.g672
+kernel_rfl metalogic_g594 : metalogic.pre804[594]? = some metalogic.g594
+kernel_rfl metalogic_g595 : metalogic.pre804[595]? = some metalogic.g595
+kernel_rfl metalogic_g596 : metalogic.pre804[596]? = some metalogic.g596
+kernel_rfl metalogic_g600 : metalogic.pre804[600]? = some metalogic.g600
+kernel_rfl metalogic_g601 : metalogic.pre804[601]? = some metalogic.g601
+kernel_rfl metalogic_g602 : metalogic.pre804[602]? = some metalogic.g602
+kernel_rfl metalogic_g603 : metalogic.pre804[603]? = some metalogic.g603
+kernel_rfl metalogic_g605 : metalogic.pre804[605]? = some metalogic.g605
+kernel_rfl metalogic_g606 : metalogic.pre804[606]? = some metalogic.g606
+kernel_rfl metalogic_g607 : metalogic.pre804[607]? = some metalogic.g607
+kernel_rfl metalogic_g608 : metalogic.pre804[608]? = some metalogic.g608
+kernel_rfl metalogic_g609 : metalogic.pre804[609]? = some metalogic.g609
+kernel_rfl metalogic_g610 : metalogic.pre804[610]? = some metalogic.g610
+kernel_rfl metalogic_g611 : metalogic.pre804[611]? = some metalogic.g611
+kernel_rfl metalogic_g612 : metalogic.pre804[612]? = some metalogic.g612
+kernel_rfl metalogic_g613 : metalogic.pre804[613]? = some metalogic.g613
+kernel_rfl metalogic_g614 : metalogic.pre804[614]? = some metalogic.g614
+kernel_rfl metalogic_g618 : metalogic.pre804[618]? = some metalogic.g618
+kernel_rfl metalogic_g620 : metalogic.pre804[620]? = some metalogic.g620
+kernel_rfl metalogic_g622 : metalogic.pre804[622]? = some metalogic.g622
+kernel_rfl metalogic_g624 : metalogic.pre804[624]? = some metalogic.g624
+kernel_rfl metalogic_g625 : metalogic.pre804[625]? = some metalogic.g625
+kernel_rfl metalogic_g628 : metalogic.pre804[628]? = some metalogic.g628
+kernel_rfl metalogic_g647 : metalogic.pre804[647]? = some metalogic.g647
+kernel_rfl metalogic_g649 : metalogic.pre804[649]? = some metalogic.g649
+kernel_rfl metalogic_g661 : metalogic.pre804[661]? = some metalogic.g661
+kernel_rfl metalogic_g663 : metalogic.pre804[663]? = some metalogic.g663
+kernel_rfl metalogic_g664 : metalogic.pre804[664]? = some metalogic.g664
+kernel_rfl metalogic_g668 : metalogic.pre804[668]? = some metalogic.g668
+kernel_rfl metalogic_g671 : metalogic.pre804[671]? = some metalogic.g671
+kernel_rfl metalogic_g672 : metalogic.pre804[672]? = some metalogic.g672
 
 /-- The program's global of index 594 is the mirror's proof by reduction to one normal form at a
 depth, at its type. -/
 theorem metalogic_byMode :
-    metalogic.pre673[594]? = some (⟨modeTy, GebMirror.Metalogic.byMode⟩ : Glob) :=
+    metalogic.pre804[594]? = some (⟨modeTy, GebMirror.Metalogic.byMode⟩ : Glob) :=
   metalogic_g594.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step594).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, tList tT, tT, rulesTy] h)
@@ -720,7 +728,7 @@ theorem metalogic_byMode :
 /-- The program's global of index 595 is the mirror's proof by reduction to one weak normal form, at
 its type. -/
 theorem metalogic_byWeak :
-    metalogic.pre673[595]? = some (⟨rulesProverTy, GebMirror.Metalogic.byWeak⟩ : Glob) :=
+    metalogic.pre804[595]? = some (⟨rulesProverTy, GebMirror.Metalogic.byWeak⟩ : Glob) :=
   metalogic_g595.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step595).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, rulesTy] h)
@@ -729,7 +737,7 @@ theorem metalogic_byWeak :
 /-- The program's global of index 596 is the mirror's proof by that of the sides' normal forms at a
 depth, at its type. -/
 theorem metalogic_byNF :
-    metalogic.pre673[596]? = some (⟨nfTy, GebMirror.Metalogic.byNF⟩ : Glob) :=
+    metalogic.pre804[596]? = some (⟨nfTy, GebMirror.Metalogic.byNF⟩ : Glob) :=
   metalogic_g596.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step596).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, rulesTy, tT, proverTy] h)
@@ -738,7 +746,7 @@ theorem metalogic_byNF :
 /-- The program's global of index 600 is the mirror's proof by normalization with the hypotheses as
 rules, at its type. -/
 theorem metalogic_normH :
-    metalogic.pre673[600]? = some (⟨normHTy, GebMirror.Metalogic.normH⟩ : Glob) :=
+    metalogic.pre804[600]? = some (⟨normHTy, GebMirror.Metalogic.normH⟩ : Glob) :=
   metalogic_g600.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step600).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, rulesTy] h)
@@ -747,7 +755,7 @@ theorem metalogic_normH :
 /-- The program's global of index 601 is the mirror's proof by extensionality a number of times, at
 its type. -/
 theorem metalogic_funExts :
-    metalogic.pre673[601]? = some (⟨funExtTy, GebMirror.Metalogic.funExts⟩ : Glob) :=
+    metalogic.pre804[601]? = some (⟨funExtTy, GebMirror.Metalogic.funExts⟩ : Glob) :=
   metalogic_g601.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step601).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, proverTy] h)
@@ -756,7 +764,7 @@ theorem metalogic_funExts :
 /-- The program's global of index 602 is the mirror's proof by induction on a list with a step, both
 cases by weak reduction, at its type. -/
 theorem metalogic_byListIndWeak :
-    metalogic.pre673[602]? = some (⟨listIndWeakTy, GebMirror.Metalogic.byListIndWeak⟩ : Glob) :=
+    metalogic.pre804[602]? = some (⟨listIndWeakTy, GebMirror.Metalogic.byListIndWeak⟩ : Glob) :=
   metalogic_g602.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step602).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, tT, rulesTy] h)
@@ -765,7 +773,7 @@ theorem metalogic_byListIndWeak :
 /-- The program's global of index 603 is the mirror's proof by the uniqueness of the fold of a rose
 tree, the step's premise by a prover, at its type. -/
 theorem metalogic_byRoseIndWith :
-    metalogic.pre673[603]? = some (⟨proverFnTy, GebMirror.Metalogic.byRoseIndWith⟩ : Glob) :=
+    metalogic.pre804[603]? = some (⟨proverFnTy, GebMirror.Metalogic.byRoseIndWith⟩ : Glob) :=
   metalogic_g603.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step603).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, tT, proverTy] h)
@@ -774,7 +782,7 @@ theorem metalogic_byRoseIndWith :
 /-- The program's global of index 605 is the mirror's proof by case analysis of a list variable, at
 its type. -/
 theorem metalogic_byListSplit :
-    metalogic.pre673[605]? = some (⟨splitTy, GebMirror.Metalogic.byListSplit⟩ : Glob) :=
+    metalogic.pre804[605]? = some (⟨splitTy, GebMirror.Metalogic.byListSplit⟩ : Glob) :=
   metalogic_g605.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step605).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, tT, proverTy, proverTy] h)
@@ -783,7 +791,7 @@ theorem metalogic_byListSplit :
 /-- The program's global of index 606 is the mirror's proof by case analysis of a coproduct
 variable, at its type. -/
 theorem metalogic_bySplit2 :
-    metalogic.pre673[606]? = some (⟨splitTy, GebMirror.Metalogic.bySplit2⟩ : Glob) :=
+    metalogic.pre804[606]? = some (⟨splitTy, GebMirror.Metalogic.bySplit2⟩ : Glob) :=
   metalogic_g606.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step606).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, tT, proverTy, proverTy] h)
@@ -792,7 +800,7 @@ theorem metalogic_bySplit2 :
 /-- The program's global of index 607 is the mirror's proof by case analysis of the innermost list
 variable, at its type. -/
 theorem metalogic_byListCases :
-    metalogic.pre673[607]? = some (⟨funExtTy, GebMirror.Metalogic.byListCases⟩ : Glob) :=
+    metalogic.pre804[607]? = some (⟨funExtTy, GebMirror.Metalogic.byListCases⟩ : Glob) :=
   metalogic_g607.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step607).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, proverTy] h)
@@ -801,7 +809,7 @@ theorem metalogic_byListCases :
 /-- The program's global of index 608 is the mirror's proof by induction on a bitstring, at its
 type. -/
 theorem metalogic_bitsInd :
-    metalogic.pre673[608]? = some (⟨twoProverTy, GebMirror.Metalogic.bitsInd⟩ : Glob) :=
+    metalogic.pre804[608]? = some (⟨twoProverTy, GebMirror.Metalogic.bitsInd⟩ : Glob) :=
   metalogic_g608.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step608).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, proverTy, proverTy] h)
@@ -810,7 +818,7 @@ theorem metalogic_bitsInd :
 /-- The program's global of index 609 is the mirror's proof by case analysis of a bitstring, at its
 type. -/
 theorem metalogic_bitsCases :
-    metalogic.pre673[609]? = some (⟨funExtTy, GebMirror.Metalogic.bitsCases⟩ : Glob) :=
+    metalogic.pre804[609]? = some (⟨funExtTy, GebMirror.Metalogic.bitsCases⟩ : Glob) :=
   metalogic_g609.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step609).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, proverTy] h)
@@ -819,7 +827,7 @@ theorem metalogic_bitsCases :
 /-- The program's global of index 610 is the mirror's proof by case analysis of bitstrings to a
 depth, at its type. -/
 theorem metalogic_byBits :
-    metalogic.pre673[610]? = some (⟨byBitsTy, GebMirror.Metalogic.byBits⟩ : Glob) :=
+    metalogic.pre804[610]? = some (⟨byBitsTy, GebMirror.Metalogic.byBits⟩ : Glob) :=
   metalogic_g610.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step610).elim fun _ h ↦
       infer_lams (tArrow tT proverTy) _ [tT, proverTy, tT] h)
@@ -828,7 +836,7 @@ theorem metalogic_byBits :
 /-- The program's global of index 611 is the mirror's proof by case analysis of a list to length
 three, at its type. -/
 theorem metalogic_byLength3 :
-    metalogic.pre673[611]? = some (⟨twoProverTy, GebMirror.Metalogic.byLength3⟩ : Glob) :=
+    metalogic.pre804[611]? = some (⟨twoProverTy, GebMirror.Metalogic.byLength3⟩ : Glob) :=
   metalogic_g611.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step611).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, proverTy, proverTy] h)
@@ -837,7 +845,7 @@ theorem metalogic_byLength3 :
 /-- The program's global of index 612 is the mirror's proof with hypotheses cut in in normal form
 and used as rules, at its type. -/
 theorem metalogic_withWeakHyps :
-    metalogic.pre673[612]? = some (⟨weakHypsTy, GebMirror.Metalogic.withWeakHyps⟩ : Glob) :=
+    metalogic.pre804[612]? = some (⟨weakHypsTy, GebMirror.Metalogic.withWeakHyps⟩ : Glob) :=
   metalogic_g612.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step612).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, rulesTy, tList tT, krTy, tT] h)
@@ -846,7 +854,7 @@ theorem metalogic_withWeakHyps :
 /-- The program's global of index 613 is the mirror's proof by induction on a list with the
 induction hypothesis as a rule, at its type. -/
 theorem metalogic_byListIndHypWeak :
-    metalogic.pre673[613]? = some (⟨rulesProverTy, GebMirror.Metalogic.byListIndHypWeak⟩ : Glob) :=
+    metalogic.pre804[613]? = some (⟨rulesProverTy, GebMirror.Metalogic.byListIndHypWeak⟩ : Glob) :=
   metalogic_g613.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step613).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, rulesTy] h)
@@ -855,7 +863,7 @@ theorem metalogic_byListIndHypWeak :
 /-- The program's global of index 614 is the mirror's proof by induction on a bitstring with the
 induction hypothesis as a rule, at its type. -/
 theorem metalogic_byBitsIndHyp :
-    metalogic.pre673[614]? = some (⟨bitsIndHypTy, GebMirror.Metalogic.byBitsIndHyp⟩ : Glob) :=
+    metalogic.pre804[614]? = some (⟨bitsIndHypTy, GebMirror.Metalogic.byBitsIndHyp⟩ : Glob) :=
   metalogic_g614.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step614).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, rulesTy, tT] h)
@@ -864,7 +872,7 @@ theorem metalogic_byBitsIndHyp :
 /-- The program's global of index 618 is the mirror's proof with the instances of a hypothesis
 equating functions cut in, at its type. -/
 theorem metalogic_withInsts :
-    metalogic.pre673[618]? = some (⟨instsTy, GebMirror.Metalogic.withInsts⟩ : Glob) :=
+    metalogic.pre804[618]? = some (⟨instsTy, GebMirror.Metalogic.withInsts⟩ : Glob) :=
   metalogic_g618.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step618).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, rulesTy, tT, tssTy, krTy, tT] h)
@@ -873,7 +881,7 @@ theorem metalogic_withInsts :
 /-- The program's global of index 620 is the mirror's proof with the hypotheses at the children of
 an induction on rose trees, at its type. -/
 theorem metalogic_withChildHyps :
-    metalogic.pre673[620]? = some (⟨childHypsTy, GebMirror.Metalogic.withChildHyps⟩ : Glob) :=
+    metalogic.pre804[620]? = some (⟨childHypsTy, GebMirror.Metalogic.withChildHyps⟩ : Glob) :=
   metalogic_g620.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step620).elim fun _ h ↦
       infer_lams proverTy _
@@ -883,7 +891,7 @@ theorem metalogic_withChildHyps :
 /-- The program's global of index 622 is the mirror's proof by case analysis of a list variable with
 a hypothesis reverted, at its type. -/
 theorem metalogic_revertCase :
-    metalogic.pre673[622]? = some (⟨revertTy, GebMirror.Metalogic.revertCase⟩ : Glob) :=
+    metalogic.pre804[622]? = some (⟨revertTy, GebMirror.Metalogic.revertCase⟩ : Glob) :=
   metalogic_g622.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step622).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, tT, tT, tT, tT, proverTy, proverTy] h)
@@ -892,7 +900,7 @@ theorem metalogic_revertCase :
 /-- The program's global of index 624 is the mirror's proof of an implication by its introduction,
 at its type. -/
 theorem metalogic_byImpI :
-    metalogic.pre673[624]? = some (⟨impITy, GebMirror.Metalogic.byImpI⟩ : Glob) :=
+    metalogic.pre804[624]? = some (⟨impITy, GebMirror.Metalogic.byImpI⟩ : Glob) :=
   metalogic_g624.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step624).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, tT, proverTy] h)
@@ -901,7 +909,7 @@ theorem metalogic_byImpI :
 /-- The program's global of index 625 is the mirror's proof with implications eliminated, at its
 type. -/
 theorem metalogic_withImpElim :
-    metalogic.pre673[625]? = some (⟨impElimTy, GebMirror.Metalogic.withImpElim⟩ : Glob) :=
+    metalogic.pre804[625]? = some (⟨impElimTy, GebMirror.Metalogic.withImpElim⟩ : Glob) :=
   metalogic_g625.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step625).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, tT, tList tT, krTy] h)
@@ -910,7 +918,7 @@ theorem metalogic_withImpElim :
 /-- The program's global of index 628 is the mirror's proof by rewriting a predecessor's successor,
 at its type. -/
 theorem metalogic_bySuccPred :
-    metalogic.pre673[628]? = some (⟨succPredTy, GebMirror.Metalogic.bySuccPred⟩ : Glob) :=
+    metalogic.pre804[628]? = some (⟨succPredTy, GebMirror.Metalogic.bySuccPred⟩ : Glob) :=
   metalogic_g628.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step628).elim fun _ h ↦
       infer_lams proverTy _ [tList tT, tT, proverTy] h)
@@ -919,7 +927,7 @@ theorem metalogic_bySuccPred :
 /-- The program's global of index 647 is the mirror's proof by rounds of the instance search, at its
 type. -/
 theorem metalogic_byInsts :
-    metalogic.pre673[647]? = some (⟨instsSearchTy, GebMirror.Metalogic.byInsts⟩ : Glob) :=
+    metalogic.pre804[647]? = some (⟨instsSearchTy, GebMirror.Metalogic.byInsts⟩ : Glob) :=
   metalogic_g647.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step647).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, tList tT, tT, rulesTy, tT] h)
@@ -928,7 +936,7 @@ theorem metalogic_byInsts :
 /-- The program's global of index 649 is the mirror's proof by the instance search or by case
 analysis, to a depth, at its type. -/
 theorem metalogic_byAuto :
-    metalogic.pre673[649]? = some (⟨autoTy, GebMirror.Metalogic.byAuto⟩ : Glob) :=
+    metalogic.pre804[649]? = some (⟨autoTy, GebMirror.Metalogic.byAuto⟩ : Glob) :=
   metalogic_g649.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step649).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, rulesTy, tT, tT] h)
@@ -937,7 +945,7 @@ theorem metalogic_byAuto :
 /-- The program's global of index 661 is the mirror's proof by case analysis of a tree variable, at
 its type. -/
 theorem metalogic_byTreeSplit :
-    metalogic.pre673[661]? = some (⟨funExtTy, GebMirror.Metalogic.byTreeSplit⟩ : Glob) :=
+    metalogic.pre804[661]? = some (⟨funExtTy, GebMirror.Metalogic.byTreeSplit⟩ : Glob) :=
   metalogic_g661.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step661).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, proverTy] h)
@@ -946,7 +954,7 @@ theorem metalogic_byTreeSplit :
 /-- The program's global of index 663 is the mirror's proof by reduction, the instance search or
 case analysis of lists, coproducts and trees, at its type. -/
 theorem metalogic_byAutoT :
-    metalogic.pre673[663]? = some (⟨autoTTy, GebMirror.Metalogic.byAutoT⟩ : Glob) :=
+    metalogic.pre804[663]? = some (⟨autoTTy, GebMirror.Metalogic.byAutoT⟩ : Glob) :=
   metalogic_g663.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step663).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, tT, rulesTy, tT, tT] h)
@@ -955,7 +963,7 @@ theorem metalogic_byAutoT :
 /-- The program's global of index 664 is the mirror's proof by reduction or by case analysis, folded
 conditionals' tests among the variables, at its type. -/
 theorem metalogic_byAutoC :
-    metalogic.pre673[664]? = some (⟨autoCTy, GebMirror.Metalogic.byAutoC⟩ : Glob) :=
+    metalogic.pre804[664]? = some (⟨autoCTy, GebMirror.Metalogic.byAutoC⟩ : Glob) :=
   metalogic_g664.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step664).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, tT, rulesTy, tT] h)
@@ -964,7 +972,7 @@ theorem metalogic_byAutoC :
 /-- The program's global of index 668 is the mirror's derivation of a rewriting under a
 conditional's mask, at its type. -/
 theorem metalogic_maskRw :
-    metalogic.pre673[668]? = some (⟨maskRwTy, GebMirror.Metalogic.maskRw⟩ : Glob) :=
+    metalogic.pre804[668]? = some (⟨maskRwTy, GebMirror.Metalogic.maskRw⟩ : Glob) :=
   metalogic_g668.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step668).elim fun _ h ↦
       infer_lams tT _ [tT, tT, tT, tT, tList tT, tList tT, tT, tT, tT, tT, tT, tT] h)
@@ -973,7 +981,7 @@ theorem metalogic_maskRw :
 /-- The program's global of index 671 is the mirror's proof by rewriting under masks by the
 hypotheses, at its type. -/
 theorem metalogic_byMaskSubs :
-    metalogic.pre673[671]? = some (⟨maskSubsTy, GebMirror.Metalogic.byMaskSubs⟩ : Glob) :=
+    metalogic.pre804[671]? = some (⟨maskSubsTy, GebMirror.Metalogic.byMaskSubs⟩ : Glob) :=
   metalogic_g671.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step671).elim fun _ h ↦
       infer_lams (tArrow krTy proverTy) _ [tT, tList tT, tT, tT, rulesTy, tT] h)
@@ -981,11 +989,201 @@ theorem metalogic_byMaskSubs :
 
 /-- The program's global of index 672 is the mirror's proof by generalizing a term, at its type. -/
 theorem metalogic_byGeneralize :
-    metalogic.pre673[672]? = some (⟨funExtTy, GebMirror.Metalogic.byGeneralize⟩ : Glob) :=
+    metalogic.pre804[672]? = some (⟨funExtTy, GebMirror.Metalogic.byGeneralize⟩ : Glob) :=
   metalogic_g672.trans (congrArg some (Sigma.ext
     ((infer_of_loadStep metalogic.step672).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, proverTy] h)
     (metalogic.byGeneralize_heq.trans HEq.rfl)))
+
+/-- The type of a computation of the combinator prover: from the scope and the state to the optional
+value with the state. -/
+def pmTy : Tree := tArrow tT (tArrow tT tT)
+
+/-- The type of a computation of the combinator prover from a term. -/
+def termPMTy : Tree := [tT].foldr tArrow pmTy
+
+/-- The type of a computation of the combinator prover from rules and a term. -/
+def rulesPMTy : Tree := [tList tT, tT].foldr tArrow pmTy
+
+/-- The type of a computation of the combinator prover from a source and terms. -/
+def instPMTy : Tree := [tT, tList tT].foldr tArrow pmTy
+
+/-- The type of a function of trees. -/
+def treeFnTy : Tree := [tT].foldr tArrow tT
+
+/-- The type of the proof of a sequent added to a development: from the sequent, the computation of
+its certificate, the definitions, whether the typing is inferred and the development to the optional
+index and development. -/
+def proveSeqTy : Tree := [tT, pmTy, tList tT, tT, tList tT].foldr tArrow tT
+
+/-- The type of the normalization of a theorem added to a development: from the rules, the theorem's
+index, the definitions, whether the typing is inferred and the development to the optional index and
+development. -/
+def normalizeThmTy : Tree := [tList tT, tT, tList tT, tT, tList tT].foldr tArrow tT
+
+/-- The type of a computation of the combinator prover from rules, a source and terms. -/
+def instByTy : Tree := [tList tT, tT, tList tT].foldr tArrow pmTy
+
+/-- The type of a proof by induction on the natural numbers object: from the rules, the start, the
+step and the equation. -/
+def natIndPMTy : Tree := [tList tT, tT, tT, tT].foldr tArrow pmTy
+
+/-- The type of a proof by induction on a list object: from the rules, the type of elements, the
+start, the step and the equation. -/
+def listIndPMTy : Tree := [tList tT, tT, tT, tT, tT].foldr tArrow pmTy
+
+/-- The type of the rules of a library's indices. -/
+def libRulesTy : Tree := [tT].foldr tArrow (tList tT)
+
+kernel_rfl metalogic_g736 : metalogic.pre804[736]? = some metalogic.g736
+kernel_rfl metalogic_g765 : metalogic.pre804[765]? = some metalogic.g765
+kernel_rfl metalogic_g771 : metalogic.pre804[771]? = some metalogic.g771
+kernel_rfl metalogic_g772 : metalogic.pre804[772]? = some metalogic.g772
+kernel_rfl metalogic_g775 : metalogic.pre804[775]? = some metalogic.g775
+kernel_rfl metalogic_g776 : metalogic.pre804[776]? = some metalogic.g776
+kernel_rfl metalogic_g777 : metalogic.pre804[777]? = some metalogic.g777
+kernel_rfl metalogic_g778 : metalogic.pre804[778]? = some metalogic.g778
+kernel_rfl metalogic_g779 : metalogic.pre804[779]? = some metalogic.g779
+kernel_rfl metalogic_g784 : metalogic.pre804[784]? = some metalogic.g784
+kernel_rfl metalogic_g785 : metalogic.pre804[785]? = some metalogic.g785
+kernel_rfl metalogic_g786 : metalogic.pre804[786]? = some metalogic.g786
+kernel_rfl metalogic_g803 : metalogic.pre804[803]? = some metalogic.g803
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 736 is the mirror's the typing of a term, at its type. -/
+theorem metalogic_typeTerm :
+    metalogic.pre804[736]? = some (⟨termPMTy, GebMirror.Metalogic.typeTerm⟩ : Glob) :=
+  metalogic_g736.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step736).elim fun _ h ↦
+      infer_lams pmTy _ [tT] h)
+    (metalogic.typeTerm_heq.trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 765 is the mirror's normal form of a term under rules, at its
+type. -/
+theorem metalogic_pNormalize :
+    metalogic.pre804[765]? = some (⟨rulesPMTy, GebMirror.Metalogic.pNormalize⟩ : Glob) :=
+  metalogic_g765.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step765).elim fun _ h ↦
+      infer_lams pmTy _ [tList tT, tT] h)
+    (metalogic.pNormalize_heq.trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 771 is the mirror's instance of a source's sequent at terms, at
+its type. -/
+theorem metalogic_pInst :
+    metalogic.pre804[771]? = some (⟨instPMTy, GebMirror.Metalogic.pInst⟩ : Glob) :=
+  metalogic_g771.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step771).elim fun _ h ↦
+      infer_lams pmTy _ [tT, tList tT] h)
+    (metalogic.pInst_heq.trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 772 is the mirror's expansion of an arrow into a product, at its
+type. -/
+theorem metalogic_etaExpand :
+    metalogic.pre804[772]? = some (⟨termPMTy, GebMirror.Metalogic.etaExpand⟩ : Glob) :=
+  metalogic_g772.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step772).elim fun _ h ↦
+      infer_lams pmTy _ [tT] h)
+    (metalogic.etaExpand_heq.trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 775 is the mirror's rule unfolding a definition, at its type. -/
+theorem metalogic_deltaRule :
+    metalogic.pre804[775]? = some (⟨treeFnTy, GebMirror.Metalogic.deltaRule⟩ : Glob) :=
+  metalogic_g775.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step775).elim fun _ h ↦
+      infer_lams tT _ [tT] h)
+    (metalogic.deltaRule_heq.trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 776 is the mirror's proof of an equation by normalization, at its
+type. -/
+theorem metalogic_pByNorm :
+    metalogic.pre804[776]? = some (⟨rulesPMTy, GebMirror.Metalogic.pByNorm⟩ : Glob) :=
+  metalogic_g776.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step776).elim fun _ h ↦
+      infer_lams pmTy _ [tList tT, tT] h)
+    (metalogic.pByNorm_heq.trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 777 is the mirror's proof of a sequent added to a development, at
+its type. -/
+theorem metalogic_proveSeq :
+    metalogic.pre804[777]? = some (⟨proveSeqTy, GebMirror.Metalogic.proveSeq⟩ : Glob) :=
+  metalogic_g777.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step777).elim fun _ h ↦
+      infer_lams tT _ [tT, pmTy, tList tT, tT, tList tT] h)
+    (metalogic.proveSeq_heq.trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 778 is the mirror's normalization of a theorem's left side, added
+to a development, at its type. -/
+theorem metalogic_normalizeThm :
+    metalogic.pre804[778]? = some (⟨normalizeThmTy, GebMirror.Metalogic.normalizeThm⟩ : Glob) :=
+  metalogic_g778.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step778).elim fun _ h ↦
+      infer_lams tT _ [tList tT, tT, tList tT, tT, tList tT] h)
+    (metalogic.normalizeThm_heq.trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 779 is the mirror's instance of a source's sequent, its hypotheses
+proved by normalization, at its type. -/
+theorem metalogic_instBy :
+    metalogic.pre804[779]? = some (⟨instByTy, GebMirror.Metalogic.instBy⟩ : Glob) :=
+  metalogic_g779.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step779).elim fun _ h ↦
+      infer_lams pmTy _ [tList tT, tT, tList tT] h)
+    (metalogic.instBy_heq.trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 784 is the mirror's proof by induction on the natural numbers
+object, at its type. -/
+theorem metalogic_byNatInduction :
+    metalogic.pre804[784]? = some (⟨natIndPMTy, GebMirror.Metalogic.byNatInduction⟩ : Glob) :=
+  metalogic_g784.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step784).elim fun _ h ↦
+      infer_lams pmTy _ [tList tT, tT, tT, tT] h)
+    (metalogic.byNatInduction_heq.trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 785 is the mirror's proof by induction on a list object, at its
+type. -/
+theorem metalogic_byListInduction :
+    metalogic.pre804[785]? = some (⟨listIndPMTy, GebMirror.Metalogic.byListInduction⟩ : Glob) :=
+  metalogic_g785.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step785).elim fun _ h ↦
+      infer_lams pmTy _ [tList tT, tT, tT, tT, tT] h)
+    (metalogic.byListInduction_heq.trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 786 is the mirror's proof by induction on a list object with a
+parameter, at its type. -/
+theorem metalogic_byListParamInduction :
+    metalogic.pre804[786]? =
+      some (⟨listIndPMTy, GebMirror.Metalogic.byListParamInduction⟩ : Glob) :=
+  metalogic_g786.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step786).elim fun _ h ↦
+      infer_lams pmTy _ [tList tT, tT, tT, tT, tT] h)
+    (metalogic.byListParamInduction_heq.trans HEq.rfl)))
+
+-- The program's global of index 802 is the mirror's library of derived equations and its
+-- development, at its type, checked by the kernel: elaborating the global's equality with its
+-- mirror makes the elaborator evaluate the checker-evaluator on the definition.
+kernel_rfl metalogic_libraryWith :
+    metalogic.pre804[802]? = some (⟨treeFnTy, GebMirror.Metalogic.libraryWith⟩ : Glob)
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 803 is the mirror's rules of the axioms and of the library's
+derived equations, at its type. -/
+theorem metalogic_libRules :
+    metalogic.pre804[803]? = some (⟨libRulesTy, GebMirror.Metalogic.libRules⟩ : Glob) :=
+  metalogic_g803.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step803).elim fun _ h ↦
+      infer_lams (tList tT) _ [tT] h)
+    (metalogic.libRules_heq.trans HEq.rfl)))
+
 end GebTests.Prototypes.FreeTopos.Agreement.Load
 
 end

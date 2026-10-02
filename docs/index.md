@@ -3876,7 +3876,14 @@ checklist and in CI.
   combinators prototyped in Lean: it types terms, rewrites innermost
   first by the axioms and a development's equations, and proves
   equations by normalization and by induction as the uniqueness of
-  folds, and its certificates are checked. `UniqueChoice.lean` states
+  folds, and its certificates are checked.
+  `bootstrap/free-topos/combinator.geb`, in the metalogic's program, is
+  the prover written again in the datatype language:
+  `GebTests/Prototypes/FreeTopos/GebCombinator.lean` compares it with the
+  Lean prover at the library and at the benchmark's development, and
+  `Agreement/Combinator.lean` proves each of its definitions equal to the
+  Lean definition it transcribes at every encoded input and related
+  state. `UniqueChoice.lean` states
   unique choice [ContenteMaietti2024] as a proposition, a hypothesis of
   the theorems that need it, and `UniqueChoiceClassical.lean` proves it
   from `Classical.choice`. Tested in `GebTests/Prototypes/FreeTopos.lean`

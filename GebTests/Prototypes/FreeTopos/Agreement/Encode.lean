@@ -25,6 +25,8 @@ rule's position over the node of the label's or the rule's data followed by its 
   theories and the inference's environments.
 * {lit}`encTerm`, {lit}`encDeriv`, {lit}`encRule` — terms, derivations and the prover's rules.
 * {lit}`encCond` — a conditional's parts, as the tactics find them.
+* {lit}`encRw`, {lit}`encDevEntry`, {lit}`encLib` — the combinator prover's rewriting rules,
+  developments and library.
 * {lit}`encGlobals`, {lit}`encEntry`, {lit}`encDecl`, {lit}`encState` — constants, entries,
   declarations and the state of a development.
 
@@ -217,6 +219,28 @@ def encDecl : Internal.Decl → Tree
 /-- The state of a development as the pair of its constants and the node of its entries. -/
 def encState (s : Internal.Globals × Array Internal.Entry) : Tree :=
   RoseTree.node 0 [encGlobals s.1, RoseTree.node 0 (s.2.toList.map encEntry)]
+
+/-- A rewriting rule's source, an axiom or a theorem of the development, as the node of its kind
+over its index. -/
+def encSrc : Prover.Src → Tree
+  | .ax j => RoseTree.node 0 [Kernel.leaf j]
+  | .thm j => RoseTree.node 1 [Kernel.leaf j]
+
+/-- A rewriting rule as the node of its source, its direction and the node of the root labels it
+avoids. -/
+def encRw (r : Prover.RwRule) : Tree :=
+  RoseTree.node 0 [encSrc r.src, Kernel.ofBool r.flip, RoseTree.node 0 (r.avoid.map Kernel.leaf)]
+
+/-- An entry of a development as the node of its sequent and its certificate. -/
+def encDevEntry (e : Seq × Tree) : Tree := RoseTree.node 0 [encSeq e.1, e.2]
+
+/-- The indices of the library's derived equations as the node of their leaves. -/
+def encIdx (i : Prover.LibIdx) : Tree := RoseTree.node 0
+  ([i.compPair, i.pairFstSnd, i.evCurry, i.evCurry0, i.curryNat, i.bangOne].map Kernel.leaf)
+
+/-- The library's optional indices and development. -/
+def encLib (r : Option (Prover.LibIdx × Development)) : Tree :=
+  encOpt (r.map fun p ↦ RoseTree.node 0 [encIdx p.1, RoseTree.node 0 (p.2.map encDevEntry)])
 
 end GebTests.Prototypes.FreeTopos.Agreement.Encode
 

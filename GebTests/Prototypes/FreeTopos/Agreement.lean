@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import GebTests.Prototypes.FreeTopos.Agreement.Combinator
 public import GebTests.Prototypes.FreeTopos.Agreement.Derivation
 public import GebTests.Prototypes.FreeTopos.Agreement.Load
 public import GebTests.Prototypes.FreeTopos.Agreement.Prove
@@ -13,7 +14,7 @@ public import GebTests.Prototypes.FreeTopos.Agreement.Translation
 
 set_option doc.verso true in
 /-!
-# The metalogic's checker, translation, prover and tactics written in Geb agree with Lean's
+# The metalogic's checker, translation, provers and tactics written in Geb agree with Lean's
 
 The checker of the metalogic written in Geb, {lit}`bootstrap/free-topos/`, loads, and one of its
 globals is a function which, at the encodings of constants, entries and declarations, gives the
@@ -32,7 +33,11 @@ prover ({name}`Geb.FreeTopos.Internal.byNorm` and the provers beside it) constru
 two provers prove the same equations with the same derivations. The tactics written in Geb,
 {lit}`bootstrap/free-topos/tactics.geb`, are part of the same program as well, and each entry point,
 at encoded arguments, related rules and related provers, is a prover related to the Lean tactic
-({lit}`Geb.FreeTopos.Tactics`) it transcribes.
+({lit}`Geb.FreeTopos.Tactics`) it transcribes. The combinator prover written in Geb,
+{lit}`bootstrap/free-topos/combinator.geb`, is part of the same program, and each of its entry
+points, at encoded arguments and related states, gives the encoding of the Lean prover's result
+({name}`Geb.FreeTopos.Prover.normalize` and the provers beside it), so that the two provers prove
+the same equations with the same certificates.
 
 Constants are encoded by
 {name}`GebTests.Prototypes.FreeTopos.Agreement.Encode.encGlobals`, entries by
@@ -49,7 +54,8 @@ of the program's Lean mirror with the Lean definitions, proved definition by def
 {name}`GebTests.Prototypes.FreeTopos.Agreement.Translation.thm_eq`,
 {name}`GebTests.Prototypes.FreeTopos.Agreement.Prove.byNorm_eq` and the prover's other agreements,
 {name}`GebTests.Prototypes.FreeTopos.Agreement.Tactics.byAuto_eq` and the tactics' other
-agreements).
+agreements, {name}`GebTests.Prototypes.FreeTopos.Agreement.Combinator.normalize_rel` and the
+combinator prover's other agreements).
 
 ## Main statements
 
@@ -58,10 +64,13 @@ agreements).
   in Lean.
 * {lit}`prover_agree` — the loaded prover written in Geb proves as the prover in Lean.
 * {lit}`tactics_agree` — the loaded tactics written in Geb prove as the tactics in Lean.
+* {lit}`combinator_agree` — the loaded combinator prover written in Geb proves as the combinator
+  prover in Lean.
 
 ## Tags
 
-metalogic, checker, translation, prover, tactic, development, agreement, soundness, completeness
+metalogic, checker, translation, prover, tactic, combinator, development, agreement, soundness,
+completeness
 -/
 
 set_option doc.verso true
@@ -303,6 +312,62 @@ theorem tactics_agree : ∃ G' : List Glob, load metalogic = some G' ∧
     ⟨_, metalogic_byAutoT, byAutoT_eq⟩, ⟨_, metalogic_byAutoC, byAutoC_eq⟩,
     ⟨_, metalogic_maskRw, maskRw_eq⟩, ⟨_, metalogic_byMaskSubs, byMaskSubs_eq⟩,
     ⟨_, metalogic_byGeneralize, byGeneralize_eq⟩⟩
+
+set_option maxRecDepth 100000 in
+/-- The combinator prover written in Geb proves as the combinator prover in Lean: the program
+loads to globals among which are the prover's entry points, each a function of its type that, at
+encoded arguments and related states, gives the encoding of the Lean prover's result, and the
+library written in Geb and its rules are the encodings of the Lean library and its rules. -/
+theorem combinator_agree : ∃ G' : List Glob, load metalogic = some G' ∧
+    (∃ f : Ty.den termPMTy, G'[736]? = some ⟨termPMTy, f⟩ ∧
+      ∀ t, Combinator.PMRel Combinator.encTy (f t) (Prover.typeTerm t)) ∧
+    (∃ f : Ty.den rulesPMTy, G'[765]? = some ⟨rulesPMTy, f⟩ ∧
+      ∀ rules t, Combinator.PMRel encPair (f (rules.map encRw) t) (Prover.normalize rules t)) ∧
+    (∃ f : Ty.den instPMTy, G'[771]? = some ⟨instPMTy, f⟩ ∧
+      ∀ s σ, Combinator.PMRel Combinator.encEqC (f (encSrc s) σ) (Prover.inst s σ)) ∧
+    (∃ f : Ty.den termPMTy, G'[772]? = some ⟨termPMTy, f⟩ ∧
+      ∀ t, Combinator.PMRel encPair (f t) (Prover.etaExpand t)) ∧
+    (∃ f : Ty.den treeFnTy, G'[775]? = some ⟨treeFnTy, f⟩ ∧
+      ∀ i, f (leaf i) = encRw (Prover.deltaRule i)) ∧
+    (∃ f : Ty.den rulesPMTy, G'[776]? = some ⟨rulesPMTy, f⟩ ∧
+      ∀ rules q, Combinator.PMRel id (f (rules.map encRw) (encEqn q)) (Prover.byNorm rules q)) ∧
+    (∃ f : Ty.den proveSeqTy, G'[777]? = some ⟨proveSeqTy, f⟩ ∧
+      ∀ a m' m, Combinator.PMRel id m' m → ∀ defs infer dev,
+        f (encSeq a) m' (defs.map encDefn) (ofBool infer) (dev.map encDevEntry) =
+          encOpt ((Prover.proveSeq a m defs infer dev).map Combinator.encIdxDev)) ∧
+    (∃ f : Ty.den normalizeThmTy, G'[778]? = some ⟨normalizeThmTy, f⟩ ∧
+      ∀ rules j defs infer dev,
+        f (rules.map encRw) (leaf j) (defs.map encDefn) (ofBool infer) (dev.map encDevEntry) =
+          encOpt ((Prover.normalizeThm rules j defs infer dev).map Combinator.encIdxDev)) ∧
+    (∃ f : Ty.den instByTy, G'[779]? = some ⟨instByTy, f⟩ ∧
+      ∀ rules s σ, Combinator.PMRel Combinator.encEqC (f (rules.map encRw) (encSrc s) σ)
+        (Prover.instBy rules s σ)) ∧
+    (∃ f : Ty.den natIndPMTy, G'[784]? = some ⟨natIndPMTy, f⟩ ∧
+      ∀ rules z s q, Combinator.PMRel id (f (rules.map encRw) z s (encEqn q))
+        (Prover.byNatInduction rules z s q)) ∧
+    (∃ f : Ty.den listIndPMTy, G'[785]? = some ⟨listIndPMTy, f⟩ ∧
+      ∀ rules a z s q, Combinator.PMRel id (f (rules.map encRw) a z s (encEqn q))
+        (Prover.byListInduction rules a z s q)) ∧
+    (∃ f : Ty.den listIndPMTy, G'[786]? = some ⟨listIndPMTy, f⟩ ∧
+      ∀ rules a z s q, Combinator.PMRel id (f (rules.map encRw) a z s (encEqn q))
+        (Prover.byListParamInduction rules a z s q)) ∧
+    (∃ f : Ty.den treeFnTy, G'[802]? = some ⟨treeFnTy, f⟩ ∧
+      ∀ infer, f (ofBool infer) = encLib (Prover.libraryWith infer)) ∧
+    (∃ f : Ty.den libRulesTy, G'[803]? = some ⟨libRulesTy, f⟩ ∧
+      ∀ i, f (encIdx i) = (Prover.rules i).map encRw) :=
+  ⟨_, metalogic.load_eq, ⟨_, metalogic_typeTerm, Combinator.typeTerm_rel⟩,
+    ⟨_, metalogic_pNormalize, Combinator.normalize_rel⟩,
+    ⟨_, metalogic_pInst, Combinator.inst_rel⟩, ⟨_, metalogic_etaExpand, Combinator.etaExpand_rel⟩,
+    ⟨_, metalogic_deltaRule, Combinator.deltaRule_eq⟩,
+    ⟨_, metalogic_pByNorm, Combinator.byNorm_rel⟩,
+    ⟨_, metalogic_proveSeq, Combinator.proveSeq_eq⟩,
+    ⟨_, metalogic_normalizeThm, Combinator.normalizeThm_eq⟩,
+    ⟨_, metalogic_instBy, Combinator.instBy_rel⟩,
+    ⟨_, metalogic_byNatInduction, Combinator.byNatInduction_rel⟩,
+    ⟨_, metalogic_byListInduction, Combinator.byListInduction_rel⟩,
+    ⟨_, metalogic_byListParamInduction, Combinator.byListParamInduction_rel⟩,
+    ⟨_, metalogic_libraryWith, Combinator.libraryWith_eq⟩,
+    ⟨_, metalogic_libRules, Combinator.libRules_eq⟩⟩
 
 end GebTests.Prototypes.FreeTopos.Agreement
 
