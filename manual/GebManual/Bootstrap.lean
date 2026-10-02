@@ -189,7 +189,8 @@ the sections below detail:
     the components' translations, the type checker's preservation of
     types by weakening and by substitution and the datatype language's
     expansion's identity on programs of kernel forms complete, and the
-    reader's inverse to the printer waiting on the printer.
+    reader's inverse to the printer waiting on the printer and on the
+    readers of the authoring profile.
 * The metalogic, the free topos in one presentation:
   * Complete. The rule set with its checker in Lean, sound, and the
     proof that every model is an elementary topos with the data
@@ -275,9 +276,9 @@ Extension:
 
 * Complete. Closed bundles referring to definitions by position
   ({ref "definitions-and-images"}[Definitions and images]).
-* Ready. {ref "content-identity"}[Content identity]: the hash and its
-  version tag,
-  BLAKE3 and SHA3-256 reconciled; its input, recorded in
+* Ready. {ref "content-identity"}[Content identity]: identifiers as
+  CIDs whose multihashes are of BLAKE3, and their codec; its input,
+  recorded in
   `docs/definitions.md` § Content identity; the hash written in Geb and
   compared with a host binding; the migration from positions to
   digests, the tree of modules and the re-keying of annotations.
@@ -293,9 +294,10 @@ Extension:
   term hole in Lean, and source documents keeping comments with their
   retraction and formatter, are complete. Ready, in the order of
   {ref "authoring-sequence"}[the sequence]: the formatter's adoption, the
-  rejection of duplicate and ambiguous names, modules with parameters,
-  imports and export lists, the datatype language's completion, the
-  syntaxes of RFC 9804, manifests with editions and the record of
+  authoring profile with its importer and the kernel's readers reading it
+  and rejecting duplicate and ambiguous names, the strict encodings of
+  RFC 9804, modules with parameters, imports and export lists, the
+  datatype language's completion, manifests with editions and the record of
   elaborated definitions, a durable document with versioned profiles,
   hygienic elaboration with explicit assembly and diagnostics, the markup
   of comments with documentation as literate pages, and the `geb` editor
@@ -463,6 +465,34 @@ The following are fixed; the plan builds on them.
   quoted, `"0"` and `"&"`. A hole is the form `(hole name)` in every
   syntax, `(hole name T)` giving an expected type. The present sources'
   syntax, the kernel reader's, is converted into the authoring profile.
+  In a quoted datum, an atom that is not a numeral contributes the leaves
+  of its bytes to the list it is in, so `(quote (0 let))` is
+  `(quote (0 108 101 116))`.
+* Annotations. Every annotation of source is a decoration of the rose
+  trees read: each node carries, beside its atom or list, a value of a
+  decoration type, and the decorated trees form the cofree recursive
+  comonad on the rose functor ({citet UustaluVene2011}[]), whose
+  redecoration computes one decoration from another. The reader
+  decorates each node with its trivia, the comment lines and the empty
+  line before it, and a list also with the comment lines before its
+  closing parenthesis; which definition a comment documents is a
+  redecoration of the trivia into the vocabulary of annotations, a
+  function of the trees read, outside reading and printing. The
+  vocabulary is versioned and extensible, a field it does not know being
+  kept. What changes elaboration is not a decoration: erasing every
+  decoration leaves the elaborated core unchanged
+  ({ref "documents-annotations"}[Documents and annotations]).
+* Identity. A reference to a definition is, once content identity
+  exists, a CIDv1 ({citet RatajBerjon2026}[]) in the core, whose
+  multihash ({citet BenetSporny2023}[]) is of BLAKE3
+  ({citet OConnorAumassonNevesWilcoxOHearn2020}[]), multicodec `0x1e`
+  in the table of {citet Multiformats2026}[], where its status is draft;
+  the version of the CID and the codes of its codec and its hash make
+  every identifier self-describing, so a later hash or codec is a new
+  identifier and not a new format. Names are decorations: the name a
+  definition is declared under, and the name written at a reference to
+  it, decorate the declaration and the reference, whose identity is the
+  CID alone ({ref "content-identity"}[Content identity]).
 * Layout. The formatter writes a list that fits on one line on it;
   otherwise the list's elements fill the first line while they fit, the
   parentheses that close after them included, and each remaining element
@@ -664,8 +694,9 @@ inside a hashed object; at the migration a key splits into the digest
 of the enclosing definition and a vertex inside it. The
 value-representation chapter selects BLAKE3
 {citep OConnorAumassonNevesWilcoxOHearn2020}[] and the repository's
-survey of concrete syntaxes names SHA3-256; the two are reconciled
-before the first digest. A digest locates a payload and never creates
+survey of concrete syntaxes names SHA3-256; the decision on identity
+reconciles them, BLAKE3 in the multihash of a CID, which names its
+hash, so a later change of hash is a new identifier. A digest locates a payload and never creates
 an equality: the checker compares validated contents exactly.
 
 ## Input and output
@@ -1520,7 +1551,7 @@ section below opens with a table of the states of its parts.
   * In progress
   * Weakening, substitution and the identity of the datatype language's
     expansion: complete; the reader's inverse to the printer: waiting on
-    the printer
+    the printer and on the readers of the authoring profile
 *
   * {ref "metalogic"}[The metalogic]
   * In progress
@@ -2264,7 +2295,9 @@ serializer written in Geb, `bootstrap/serialize.geb`, is the model for
 the hash written in Geb.
 
 Content identity follows the preservation of authoring information
-({ref "authoring-compatibility"}[Authoring across bootstrap revisions]).
+({ref "authoring-compatibility"}[Authoring across bootstrap revisions]),
+and in particular the strict encodings of {citet RFC9804}[], whose
+canonical encoding gives the bytes a CID hashes.
 The block of `docs/definitions.md` § Content identity is the starting
 point of the payload that bears identity:
 
@@ -2280,13 +2313,18 @@ affect meaning, and a separately checked certificate of an identified
 term is an artifact of its own. The payload's schema and its
 interpretation are versioned separately from the hash algorithm.
 
-* An identifier is versioned and carries a multihash, or is a CIDv1 of
-  an actual serialized block with a specified codec
-  ({ref "source-tools"}[Source and its tools]). A structural digest of
-  the Merkle kind is not presented as the CID of unrelated exchange
-  bytes.
-* One algorithm is chosen, between BLAKE3 and SHA3-256, before
-  identifiers are assigned; the envelope and the tags of
+* An identifier is a CIDv1 ({citet RatajBerjon2026}[]) of an actual
+  serialized block, the identity-bearing payload in the canonical
+  encoding, with the codec of that block
+  ({ref "source-tools"}[Source and its tools]); its multihash
+  ({citet BenetSporny2023}[]) is of BLAKE3 (the decision on identity).
+  A structural digest of the Merkle kind is not presented as the CID of
+  unrelated exchange bytes. The table of multicodecs
+  ({citet Multiformats2026}[]) names no code for canonical
+  S-expressions, so the codec is chosen with the payload's format: the
+  code `raw` over the canonical bytes, which declares no links between
+  blocks; `dag-cbor`, whose links tools of the table's ecosystem follow;
+  or a code registered for Geb's blocks. The envelope and the tags of
   `docs/concrete-syntaxes.md` § Structural content-addressing
   specification are fixed then. The choice does not delay writing
   source. A local store of canonical blocks suffices at first;
@@ -2346,7 +2384,11 @@ tag := "authoring-compatibility"
   * Source documents keeping comments, their retraction and the formatter
   * Complete; their adoption over `bootstrap/` is ready
 *
-  * The rejection of duplicate and ambiguous names
+  * The authoring profile and the importer, the kernel's readers reading
+    it and rejecting duplicate and ambiguous names
+  * Ready
+*
+  * The strict encodings of RFC 9804
   * Ready
 *
   * Modules with parameters, imports and export lists
@@ -2354,9 +2396,6 @@ tag := "authoring-compatibility"
 *
   * The datatype language's completion
     ({ref "datatype-completion"}[The datatype language's completion])
-  * Ready
-*
-  * The syntaxes of RFC 9804 and the authoring profile, with the importer
   * Ready
 *
   * Manifests with editions, and the record of elaborated definitions
@@ -2412,8 +2451,9 @@ comments from code, highlighting, rendered documentation, reports of
 holes and synthesized terms, can be added later without touching what was
 written. The work to do first:
 
-1. Read comments and empty lines as data, in a document type that also
-   carries declaration and binder names, prose, examples and links
+1. Read comments and empty lines as data, decorations of the trees read
+   of the same kind as declaration and binder names, prose, examples and
+   links
    ({ref "source-documents"}[Source documents and the formatter],
    {ref "documents-annotations"}[Documents and annotations]).
 2. Write source in the syntaxes of {citet RFC9804}[]: its canonical and
@@ -2667,23 +2707,33 @@ measured at revision `b3aa139a`.
   prelude, the reader and the checker").
 * Content identity is designed: the node-digest rule, the migration from
   positions to digests and the annotation tables keyed by vertex
-  ({ref "content-identity"}[Content identity]). The choice between
-  BLAKE3 and SHA3-256 is open.
+  ({ref "content-identity"}[Content identity]), with identifiers as CIDs
+  whose multihashes are of BLAKE3 (the decision on identity).
 
 ### Source documents and the formatter
 %%%
 tag := "source-documents"
 %%%
 
-A document is a list of items, each a `RoseTree Lab` with
-`Lab = {gap : Bool, kind : atom s | list | comment s}`. Comments are items
-in document order, not annotations of the nodes after them, as in the
-lossless syntax trees of the survey ({ref "source-tools"}[Source and its
-tools]). Reading attaches no comment to a node; an attachment is a
-separate function of the document. An empty line is a flag on the item
-after it, as gofmt and ormolu keep at most one empty line between items.
-The lexer reads one character per byte, as the kernel's readers do, so
-atoms and comments keep their bytes.
+In the prototype, a document is a list of items, each a `RoseTree Lab`
+with `Lab = {gap : Bool, kind : atom s | list | comment s}`. Comments are
+items in document order, as in the lossless syntax trees of the survey
+({ref "source-tools"}[Source and its tools]), and an empty line is a flag
+on the item after it, as gofmt and ormolu keep at most one empty line
+between items. The lexer reads one character per byte, as the kernel's
+readers do, so atoms and comments keep their bytes.
+
+The decision on annotations replaces the comment items by decorations:
+the reader returns S-expressions with comments, rose trees whose nodes
+are atoms and lists, each decorated with its trivia, the comment lines,
+each with its empty-line flag, before the node and the node's own
+empty-line flag, and a list also with the comment lines before its
+closing parenthesis; the comment lines after the last S-expression of a
+file decorate the file. Placing each comment by its position is a rule
+of the syntax, so reading and printing keep their retraction, while
+which definition a comment documents is a redecoration outside them
+({ref "documents-annotations"}[Documents and annotations]). The layout
+policy and the theorems below carry over unchanged.
 
 Three theorems hold, none depending on `Classical.choice`:
 
@@ -2771,10 +2821,11 @@ closing parenthesis of such a list at the start of a line, which
 parinfer rejects, and no file has one.
 
 The prototype leaves two more things open. The alphabet of atoms is the
-kernel reader's, without quoted atoms. And the attachment of comments to
-vertices, which hover text and a store need, is a fold over the document
-not yet written ({ref "documents-annotations"}[Documents and
-annotations]).
+kernel reader's, without quoted atoms, which the authoring profile
+replaces ({ref "rfc9804-syntaxes"}[The syntaxes of RFC 9804]). And the
+attachment of comments to the definitions they document, which hover
+text and a store need, is the redecoration not yet written
+({ref "documents-annotations"}[Documents and annotations]).
 
 ### The syntaxes of RFC 9804
 %%%
@@ -2802,9 +2853,10 @@ document type:
   grammar, so every strictly conforming advanced file is a file of the
   profile. The profile is not called RFC 9804.
 
-The strict encodings have no comments, so they carry the document's
-comments and empty lines as annotation forms, lists headed by a reserved
-token such as `*ann`, as the annotated examples of
+The strict encodings have no comments, so they carry each node's
+decoration, its comments and empty lines among it, as an annotation
+form among the node's children, a list headed by a reserved token such
+as `*ann`, as the annotated examples of
 `docs/concrete-syntaxes.md` § One tree, every recommended encoding do; a
 list of code headed by that token is excluded, so that annotation and
 code are never confused. A strict quoted string escapes each non-ASCII
@@ -2892,7 +2944,9 @@ Further:
   quoted spelling for atoms that are not tokens, is this decision; its
   first use replaces the lists of character codes of
   `bootstrap/stage1/datatype.geb`, such as `(quote (1 108 101 116))`, by
-  quoted atoms ({ref "improvements"}[Improvements]).
+  atoms, `(quote (1 let))`, an atom that is not a numeral contributing
+  the leaves of its bytes to the datum list it is in, so the trees quoted
+  are unchanged ({ref "improvements"}[Improvements]).
 
 ### Documents and annotations
 %%%
@@ -2919,8 +2973,14 @@ conversion from the single document. The document keeps at least:
   encodings among it, in the checked input, since calling such
   information a decoration must not let its erasure change meaning.
 
-The side table is a function `attach : List Item → Core × (Vertex ⇀ Notes)`
-of the document. Its keys identify occurrences relative to one revision
+Annotations are decorations of the trees read (the decision on
+annotations), one mechanism for comments, names, prose, links and every
+later kind. The attachment is a redecoration, from the trivia the reader
+decorates each node with to decorations in the vocabulary of
+annotations, and erasing the decorations gives the core. The side table
+`Vertex ⇀ Notes` is the same decoration presented apart from the tree,
+a presentation with a proved correspondence, which separate hashes of
+core and annotations use. Its keys identify occurrences relative to one revision
 of a document or definition: two equal subtrees can carry different
 comments, which a key made from their hash cannot distinguish, while
 metadata meant for every instance of an equal definition uses that
@@ -2951,13 +3011,15 @@ several members, absent from the kernel, need. A change of
 representation supplies a transport of addresses with a proof that
 selection commutes with it; an isomorphism of values alone does not
 preserve a chosen set of addressable intermediate nodes. The finite
-decorated trees of `Geb/Prototypes/ConcreteSyntax.lean`, with their
-comonad laws, or their side-table presentation with a proved
-correspondence, serve the annotations; `docs/concrete-syntaxes.md` § The
+decorated trees serve the annotations: those of
+`Geb/Prototypes/ConcreteSyntax.lean`, with their comonad laws, decorate
+its binary syntax, and the same construction over the rose functor
+decorates the S-expressions read; `docs/concrete-syntaxes.md` § The
 document type is a μ, not a ν distinguishes them from the possibly
-infinite cofree comonad, and no new comonad is a prerequisite. The source
-documents' `RoseTree Lab` keeps comments as siblings, and `attach` makes
-them the `Ann` components.
+infinite cofree comonad. The strict encodings of
+{citet RFC9804}[], which have no comments, write a node's decoration as
+an annotation form among its children
+({ref "rfc9804-syntaxes"}[The syntaxes of RFC 9804]).
 
 ### Files, editions and the host boundary
 %%%
@@ -3733,9 +3795,18 @@ reader:
     emitted Lean unchanged, as measured above; `geb-fmt --check` and the
     test of parinfer's fixed points in continuous integration
 *
-  * Reject duplicate and ambiguous names
-  * Both readers reject duplicates and accept every present source
-    unchanged
+  * The authoring profile and the importer; the kernel's readers reading
+    the profile and rejecting duplicate and ambiguous names
+  * The retraction proved for the profile over S-expressions with
+    comments at every layout; the bootstrap sources converted, with names
+    and comments kept, compile to the same checked bundles; both readers
+    read the profile, reject duplicates and accept every converted source
+*
+  * The strict encodings of RFC 9804: canonical, basic and advanced
+  * The retraction proved for each over the same S-expressions with
+    comments, their decorations as annotation forms; the bootstrap
+    sources convert among the four syntaxes and compile to the same
+    checked bundles
 *
   * Modules with parameters, imports and export lists
   * The bootstrap sources, organized into modules with export lists and
@@ -3749,10 +3820,6 @@ reader:
     written explicitly, generated recognizers and opaque type parameters,
     compiles and passes its tests; the soundness of the typing is proved
     with the prover in Geb
-*
-  * The syntaxes of RFC 9804 and the authoring profile, with the importer
-  * The four retractions proved over one document type; the bootstrap
-    sources convert, and compile to the same checked bundles
 *
   * Manifests with editions; the record of elaborated definitions
   * The build and tests read manifests; the regenerated record equals the
@@ -4223,7 +4290,8 @@ Gödel's T states and proves the following.
     substitution, complete;
   * the identity of the datatype language's expansion on programs of
     kernel forms, complete;
-  * the reader's inverse to the printer, waiting on the printer;
+  * the reader's inverse to the printer, waiting on the printer and on
+    the kernel's readers reading the authoring profile;
   * the admission of a stronger checker by the proof that a Geb
     program translates its certificates into the metalogic's
     derivations with the same conclusions, ready: it is admitted beside
@@ -5932,8 +6000,14 @@ checker beside the metalogic's checker written in Geb, whose agreement
 with the Lean checker is proved, is ready (the section on the metalogic
 and its checker). The first of the two items below is complete, the
 checker, the translation, the prover, its tactics and the combinator
-prover written in Geb and their agreement proved; the next phase is the
-second, which is ready:
+prover written in Geb and their agreement proved. The second proves a
+property of the kernel's reader, so it follows the change of that
+reader's syntax: the next phase is the authoring profile, its importer
+and the kernel's readers reading it and rejecting duplicate and
+ambiguous names, the decorated trees of the decision on annotations
+among it, after the formatter's adoption
+({ref "authoring-sequence"}[The sequence and its acceptance]), and the
+second item follows it:
 
 * The metalogic's checker, its prover and the translation of kernel
   programs written in Geb, the checker in Geb and proof construction for
@@ -5952,7 +6026,7 @@ second, which is ready:
 * The printer for the kernel's readable syntax and the retraction law
   (the section on improvements), and then the reader's inverse to the
   printer, proved in the metalogic by the method of the three complete
-  proofs.
+  proofs, of the reader of the authoring profile.
 
 The admission of stronger checkers rests on the checker written in Geb
 and its agreement, and two are required by the bootstrap. The provers

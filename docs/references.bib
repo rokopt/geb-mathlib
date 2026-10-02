@@ -1463,6 +1463,34 @@
   year         = {2020},
 }
 
+@misc{BenetSporny2023,
+  author       = {Benet, Juan and Sporny, Manu},
+  title        = {The Multihash Data Format},
+  howpublished = {Internet-Draft draft-multiformats-multihash-07,
+                  \url{https://datatracker.ietf.org/doc/draft-multiformats-multihash/07/}},
+  year         = {2023},
+  note         = {Expired individual submission; the multihash is a hash function's code
+                  and its digest's length, each an unsigned varint, before the digest},
+}
+
+@misc{RatajBerjon2026,
+  author       = {Rataj, Marcin and Berjon, Robin},
+  title        = {{CID} (Content {ID}entifier)},
+  howpublished = {IPFS specification, \url{https://specs.ipfs.tech/cid/}},
+  year         = {2026},
+  note         = {Status permanent, 2026-06-26; a CIDv1 is the varint 0x01, the multicodec
+                  of the content's codec, and the multihash of the content},
+}
+
+@misc{Multiformats2026,
+  author       = {{Multiformats}},
+  title        = {The Multicodec Table},
+  howpublished = {\url{https://github.com/multiformats/multicodec/blob/8d9e9b3b3d376ee86179fc6c866f6e56f74fa167/table.csv}},
+  year         = {2026},
+  note         = {Codes sha2-256 0x12, sha3-256 0x16 and blake3 0x1e (draft) of multihashes,
+                  raw 0x55 and dag-cbor 0x71 of codecs, cidv1 0x01},
+}
+
 @misc{NIST2015,
   author       = {{National Institute of Standards and Technology}},
   title        = {Secure Hash Standard ({SHS})},
