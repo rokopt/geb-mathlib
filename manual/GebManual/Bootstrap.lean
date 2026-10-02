@@ -294,8 +294,10 @@ Extension:
   their retraction and formatter, adopted over `bootstrap/`, and the
   authoring profile read by the seed and by the Geb reader, rejecting
   duplicate and reserved names, with quoted atoms in the sources, are
-  complete. Ready, in the order of {ref "authoring-sequence"}[the
-  sequence]: the strict encodings of RFC 9804, modules with parameters,
+  complete, as are the canonical and basic transport encodings of the
+  strict encodings of RFC 9804 with their retraction. Ready, in the order
+  of {ref "authoring-sequence"}[the sequence]: the printer of the advanced
+  encoding, modules with parameters,
   imports and export lists, the datatype language's completion, manifests
   with editions and the record of
   elaborated definitions, a durable document with versioned profiles,
@@ -1547,9 +1549,11 @@ section below opens with a table of the states of its parts.
   * {ref "authoring-compatibility"}[Authoring across bootstrap revisions]
   * In progress
   * Checked contextual-hole filling, source documents with their
-    formatter, the formatter's adoption and the authoring profile read by
-    the seed and the Geb reader: complete; the rest of the sequence: ready,
-    but the parts that follow their consumers, which wait on them
+    formatter, the formatter's adoption, the authoring profile read by the
+    seed and the Geb reader, and the canonical and basic transport
+    encodings: complete; the advanced encoding's printer and the rest of the
+    sequence: ready, but the parts that follow their consumers, which wait
+    on them
 *
   * {ref "goedel-t"}[Gödel's T]
   * In progress
@@ -2404,7 +2408,10 @@ tag := "authoring-compatibility"
   * Complete
 *
   * The strict encodings of RFC 9804
-  * Ready
+  * In progress: the readers of every spelling of their atoms, the
+    canonical and basic transport encodings and the strict form of
+    documents, with the retraction, complete; the printer of the advanced
+    encoding, ready
 *
   * Modules with parameters, imports and export lists
   * Ready
@@ -2892,22 +2899,38 @@ code as far as their grammars allow:
   `Geb/Prototypes/ConcreteSyntax.lean`.
 
 The authoring profile's reader and printer are constructed in Lean
-({name}`Geb.Kernel.Document.readDoc`, {name}`Geb.Kernel.Document.print`),
-with the retraction at every layout
+({name}`Geb.Kernel.Document.readDoc`,
+{name}`Geb.Kernel.Document.print`), with the retraction at every layout
 ({name}`Geb.Kernel.Document.readDoc_print`), and the seed reads the
-profile ({name}`Geb.Kernel.readSExps`). Its reader rejects the other
-spellings of atoms of the advanced encoding, which the strict encodings
-add. The `.geb` sources were written in a legacy syntax, the kernel
-reader's, whose atoms were any characters but whitespace, parentheses and
-the semicolon. They were files of the profile already but for two names
-beyond ASCII, which were renamed, so the importer is the profile's reader
-itself; its acceptance, that the sources compile to the same checked
-bundles with names and comments kept, is that of the fixed points, and
-every source is a fixed point of the profile's formatter. The Geb reader,
-`bootstrap/reader.geb`, reads the profile as the seed does, rejecting the
-same texts and the same declarations; the stage tests compare the two on
-programs with quoted atoms and their escapes, comments, holes, the
-spellings the profile does not admit, and reserved and repeated names.
+profile ({name}`Geb.Kernel.readSExps`). Its reader reads every spelling
+of an atom of the advanced encoding, verbatim, quoted, hexadecimal and
+base-64, each with or without a length, which its bytes must match, so
+every file of the advanced encoding without display hints is a file of
+the profile. The canonical encoding, written by
+{name}`Geb.Kernel.Document.canonOf`, reads back to every well-formed
+S-expression ({name}`Geb.Kernel.Document.readDoc_canonOf`); a document
+is written in a strict encoding as one S-expression, its decorations as
+annotation forms headed by `*ann` inside a list headed by `*doc`, and
+read back from its canonical encoding
+({name}`Geb.Kernel.Document.readStrictDoc_printCanonDoc`) when no list
+of it is headed by the atom `*ann`; the basic transport encoding is read
+from the canonical one or from its base-64 form between braces
+({name}`Geb.Kernel.Document.readBasic`) and written as the canonical
+one. The heads `*ann` and `*doc` are reserved names. The Geb reader
+reads the same spellings. The advanced encoding's printer, writing every
+atom that is not a token quoted with escapes of ASCII alone, remains.
+The `.geb` sources were written in a legacy syntax, the kernel reader's,
+whose atoms were any characters but whitespace, parentheses and the
+semicolon. They were files of the profile already but for two names
+beyond ASCII, which were renamed, so the importer is the profile's
+reader itself; its acceptance, that the sources compile to the same
+checked bundles with names and comments kept, is that of the fixed
+points, and every source is a fixed point of the profile's formatter.
+The Geb reader, `bootstrap/reader.geb`, reads the profile as the seed
+does, rejecting the same texts and the same declarations; the stage
+tests compare the two on programs with quoted atoms and their escapes,
+comments, holes, the spellings the profile does not admit, and reserved
+and repeated names.
 
 Identifiers are tokens of {citet RFC9804}[]: ASCII letters, digits and
 `- . / _ : * + =`, not beginning with a digit. Every identifier of the

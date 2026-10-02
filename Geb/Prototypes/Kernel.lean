@@ -13,6 +13,7 @@ public import Geb.Prototypes.Kernel.Image
 public import Geb.Prototypes.Kernel.LoadCommand
 public import Geb.Prototypes.Kernel.Loading
 public import Geb.Prototypes.Kernel.Reader
+public import Geb.Prototypes.Kernel.Strict
 public import Geb.Prototypes.Kernel.Subst
 
 set_option doc.verso true in

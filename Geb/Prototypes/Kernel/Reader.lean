@@ -216,11 +216,12 @@ def resolve (tys : TypeNames) (defs : List (List Char)) (e : SExp) (scope : List
   RoseTree.para (resolveStep tys defs) e scope
 
 /-- The names no declaration takes: the keywords of terms and of declarations, the form of a
-hole, the names of the types and of the primitives. -/
+hole, the heads of the strict encodings' annotation forms and documents, the names of the types
+and of the primitives. -/
 def reservedNames : List String :=
   ["lam", "let", "pair", "fst", "snd", "if", "quote", "cons", "nil", "fold", "para", "iter",
-    "foldr", "lcase", "unit", "def", "deftype", "defnum", "hole", "T", "Unit", "Prod", "Arrow",
-    "List"] ++ primNames
+    "foldr", "lcase", "unit", "def", "deftype", "defnum", "hole", "*ann", "*doc", "T", "Unit",
+    "Prod", "Arrow", "List"] ++ primNames
 
 /-- Whether a name may be declared after declarations of the names given: it is neither
 reserved nor declared already, as a definition or an abbreviation of either kind. -/
