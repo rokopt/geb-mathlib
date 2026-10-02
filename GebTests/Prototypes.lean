@@ -54,6 +54,7 @@ import GebTests.Prototypes.GoedelT.MirrorRules
 import GebTests.Prototypes.GoedelT.MirrorTerms
 import GebTests.Prototypes.GoedelT.MirrorTyping
 import GebTests.Prototypes.Kernel
+import GebTests.Prototypes.Kernel.Document
 import GebTests.Prototypes.LargeIR
 import GebTests.Prototypes.MType
 import GebTests.Prototypes.Proofs

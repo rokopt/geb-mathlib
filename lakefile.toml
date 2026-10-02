@@ -222,6 +222,10 @@ name = "geb-defs"
 root = "GebDefsMain"
 
 [[lean_exe]]
+name = "geb-fmt"
+root = "GebFmtMain"
+
+[[lean_exe]]
 name = "geb-manual"
 srcDir = "manual"
 root = "Main"
