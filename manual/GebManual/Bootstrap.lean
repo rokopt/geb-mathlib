@@ -483,11 +483,14 @@ The following are fixed; the plan builds on them.
   decoration leaves the elaborated core unchanged
   ({ref "documents-annotations"}[Documents and annotations]).
 * Identity. A reference to a definition is, once content identity
-  exists, a CIDv1 ({citet RatajBerjon2026}[]) in the core, whose
-  multihash ({citet BenetSporny2023}[]) is of BLAKE3
+  exists, a CIDv1 ({citet RatajBerjon2026}[]) in the definition's
+  payload, of the codec `raw` until a code for Geb's blocks is
+  registered, whose multihash ({citet BenetSporny2023}[]) is of BLAKE3
   ({citet OConnorAumassonNevesWilcoxOHearn2020}[]), multicodec `0x1e`
   in the table of {citet Multiformats2026}[], where its status is draft;
-  the version of the CID and the codes of its codec and its hash make
+  a linker gives the kernel positions in place of the CIDs, so the
+  kernel is unchanged; the version of the CID and the codes of its codec
+  and its hash make
   every identifier self-describing, so a later hash or codec is a new
   identifier and not a new format. Names are decorations: the name a
   definition is declared under, and the name written at a reference to
@@ -2279,7 +2282,12 @@ tag := "content-identity"
 * The node-digest rule, the hash function and its version tag, if
   {ref "definitions-and-images"}[Definitions and images] did not fix
   them.
-* Geb: the hash, compared with known answers from the host binding.
+* Geb: the hash, compared with known answers from the host binding. The
+  kernel has no operations on the bits of a word, so the hash written in
+  Geb computes BLAKE3's exclusive or, rotations and addition modulo
+  `2^32` by arithmetic on natural numbers; an acceleration bound to it
+  ({ref "speed-and-second-host"}[Speed and a second host]) makes it fast
+  later without changing what it computes.
 * Geb: the migration from positions to digests, the tree of modules,
   and the re-keying of annotations.
 
@@ -2322,13 +2330,15 @@ interpretation are versioned separately from the hash algorithm.
   A structural digest of the Merkle kind is not presented as the CID of
   unrelated exchange bytes. The table of multicodecs
   ({citet Multiformats2026}[]) names no code for canonical
-  S-expressions, so the codec is chosen with the payload's format: the
-  code `raw` over the canonical bytes, which declares no links between
-  blocks; `dag-cbor`, whose links tools of the table's ecosystem follow;
-  or a code registered for Geb's blocks. The envelope and the tags of
+  S-expressions. The codec is `raw`, `0x55`, over the canonical bytes,
+  until a code registered for Geb's blocks replaces it; `raw` declares no
+  links between blocks, and `dag-cbor`, whose links the tools of the
+  table's ecosystem follow, would hash bytes other than the canonical
+  S-expressions. A change of codec gives new identifiers and no new
+  format, the CID naming its codec. The tags of
   `docs/concrete-syntaxes.md` § Structural content-addressing
-  specification are fixed then. The choice does not delay writing
-  source. A local store of canonical blocks suffices at first;
+  specification are not used: the payload is hashed whole, not node by
+  node. A local store of canonical blocks suffices at first;
   networking, CAR archives, digests per node and deduplication across
   graphs are features of storage for later.
 * This is structural identity, not semantic identity: renaming bound
@@ -2343,13 +2353,17 @@ interpretation are versioned separately from the hash algorithm.
   digest and its validated export direction, where Unison uses an index
   into a recursive component.
 
-Nothing is needed in the source before digests exist. A reference is
-then a position relative to a complete frozen bundle and its profile,
-never a globally meaningful integer, and complete bundles, their
-profiles and their order of dependencies are kept. The migration to
-digests runs in that order, rewrites the constructor of external
-references, produces a map from old references to new, and re-keys
-annotations with it; a later change of algorithm or schema computes new
+Identifiers live above the kernel. A definition's payload refers to the
+definitions it depends on by their CIDs, and the kernel goes on reading
+a reference as a position in a bundle: a linker, given the payloads a
+program needs, orders them by dependence and replaces each CID by the
+position of the definition it identifies, a relabelling proved in Lean
+to preserve the payloads, so the kernel, its checkers, the translation
+into the metalogic and their proofs are unchanged. A position is then a
+property of one linked bundle, never a globally meaningful integer. The
+migration to digests runs in the order of dependence, rewrites the
+constructor of external references, produces a map from old references
+to new, and re-keys annotations with it; a later change of algorithm or schema computes new
 identifiers without promising equal ones. The traversal follows the
 grammar: a data tree inside a quotation may contain the label of the
 reference constructor without being a reference, as the substitution
