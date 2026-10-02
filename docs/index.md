@@ -3987,8 +3987,12 @@ checklist and in CI.
   `Classical.choice`. Tested in `GebTests/Prototypes/FreeTopos/`:
   `Translation.lean` computes with the library, `TranslationProofs.lean`
   proves the theorems of Gödel's T about the translated
-  programs, and `Weakening.lean` and `Substitution.lean` prove that the
-  kernel's type checker written in Geb, `bootstrap/check.geb`, preserves
+  programs, `Agreement/Translation.lean` proves the translation written
+  again in the datatype language, `bootstrap/free-topos/translation.geb`,
+  equal to it at every program, translated program's constants and
+  theorem of Gödel's T, by the method of the checker's agreement, and
+  `Weakening.lean` and `Substitution.lean` prove that the kernel's type
+  checker written in Geb, `bootstrap/check.geb`, preserves
   types by weakening and by substitution; `TreeCases.lean` supplies case
   analysis of a tree variable in any context and rewriting under a test,
   with the lemmas that exercise them, and `Expansion.lean` proves with
