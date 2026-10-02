@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Kernel.Reader
+public import Geb.Prototypes.RoseTree.Decorated
 
 set_option doc.verso true in
 /-!
@@ -13,14 +14,18 @@ set_option doc.verso true in
 
 A source document is the text of a program read without loss of anything a person wrote but
 the widths of its whitespace: its S-expressions, its comment lines and the empty lines between
-its items. It is a list of items, each a rose tree whose label records whether an empty line
-precedes the item and whether it is an atom, a list or a comment line, a list's items being its
-children. Comments are items in document order rather than annotations of the nodes they
-precede, as in the lossless syntax trees of formatters, so reading attaches no comment to any
-node, and attaching one is a separate function of the document.
+its items. It is read into S-expressions with comments: rose trees whose labels are those of the
+kernel's S-expressions, each node decorated with its trivia, the comment lines before it, each
+with whether an empty line precedes it, whether an empty line precedes the node itself, and,
+for a list, the comment lines before its closing parenthesis; the comment lines after the last
+S-expression belong to the document. The decoration is that of
+{name}`Geb.RoseTree.Decorated`, so the trivia, like every other annotation, is computed from
+and into other decorations by redecoration. A comment is placed by its position alone, so
+reading attaches no comment to the definition it documents; that attachment is a redecoration
+of the trivia.
 
 The reader {lit}`readDoc` is a conservative refinement of the kernel's reader
-{name}`Geb.Kernel.readSExps`: erasing the comments of what it reads gives what that reader
+{name}`Geb.Kernel.readSExps`: erasing the decorations of what it reads gives what that reader
 reads, at every text ({lit}`readDoc_erase`). The printer {lit}`print` is parameterized by a
 layout, a choice at each token of whether a line break precedes it and of the indentation of
 the new line, and the retraction law holds at every layout ({lit}`readDoc_print`): reading a
@@ -30,9 +35,10 @@ layout policy, so the policy is not part of what is proved.
 
 ## Main definitions
 
-* {lit}`Item` — the items of a source document.
+* {lit}`Line`, {lit}`Trivia`, {lit}`SExpr`, {lit}`Doc` — comment lines, the trivia an
+  S-expression is decorated with, S-expressions with comments, and source documents.
 * {lit}`lex`, {lit}`readDoc` — the lexer and reader keeping comments and empty lines.
-* {lit}`sepFor`, {lit}`arrange`, {lit}`print` — the separators a layout chooses, and the
+* {lit}`sepFor`, {lit}`arrangeFrom`, {lit}`print` — the separators a layout chooses, and the
   printer.
 * {lit}`defaultLayout`, {lit}`format` — a layout policy, and the formatter.
 
@@ -50,10 +56,12 @@ one, a line break after a comment, which extends to the end of its line, and oth
 break when the layout chooses one, nothing after an opening parenthesis or before a closing one,
 and a space elsewhere. The lexer's correctness is proved for every sequence of separators so
 formed, one token at a time, so the layout is an arbitrary function of the token's position.
+The reader holds the comment lines read since the last S-expression on its stack, until the
+S-expression after them, or the end of the list or of the text, takes them as its trivia.
 
 ## Tags
 
-S-expression, comments, formatter, retraction, lossless syntax tree
+S-expression, comments, trivia, formatter, retraction, lossless syntax tree
 -/
 
 set_option doc.verso true
@@ -62,26 +70,38 @@ set_option doc.verso true
 
 namespace Geb.Kernel.Document
 
-/-- What an item of a source document is. -/
-inductive Kind where
-  /-- An atom, with its characters. -/
-  | atom (s : List Char)
-  /-- A list, whose elements are the item's children. -/
-  | list
-  /-- A comment line, with its characters after the semicolon and before the end of the line. -/
-  | comment (s : List Char)
-  deriving DecidableEq, Repr
-
-/-- The label of an item: whether an empty line precedes it, and what it is. -/
-@[ext] structure Lab where
-  /-- Whether an empty line precedes the item. -/
+/-- A comment line: whether an empty line precedes it, and its characters after the semicolon
+and before the end of the line. -/
+@[ext] structure Line where
+  /-- Whether an empty line precedes the comment line. -/
   gap : Bool
-  /-- What the item is. -/
-  kind : Kind
+  /-- The characters of the comment. -/
+  text : List Char
   deriving DecidableEq, Repr
 
-/-- An item of a source document. -/
-abbrev Item : Type := RoseTree Lab
+/-- The trivia an S-expression is decorated with: the comment lines before it, whether an empty
+line precedes it, and, for a list, the comment lines before its closing parenthesis. -/
+@[ext] structure Trivia where
+  /-- The comment lines before the S-expression. -/
+  lead : List Line
+  /-- Whether an empty line precedes the S-expression. -/
+  gap : Bool
+  /-- The comment lines before a list's closing parenthesis. -/
+  close : List Line
+  deriving DecidableEq, Repr
+
+/-- An S-expression with comments: a rose tree whose labels are those of
+{name}`Geb.Kernel.SExp`, an atom's characters or nothing for a list, each decorated with its
+trivia. -/
+abbrev SExpr : Type := RoseTree.Decorated Trivia (Option (List Char))
+
+/-- A source document: its S-expressions with comments, and the comment lines after the
+last. -/
+@[ext] structure Doc where
+  /-- The S-expressions. -/
+  items : List SExpr
+  /-- The comment lines after the last S-expression. -/
+  trail : List Line
 
 /-! ## Tokens and the lexer -/
 
@@ -205,55 +225,54 @@ theorem tokenize_eq (text : List Char) : tokenize text = (lex text).filterMap To
 
 /-! ## The reader -/
 
-/-- A frame of the reader's stack: whether an empty line precedes the list being read, and its
-items read so far, the latest first. -/
-abbrev Frame : Type := Bool × List Item
+/-- A frame of the reader's stack: the comment lines before the list being read and whether an
+empty line precedes it, its elements read so far, the latest first, and the comment lines read
+since the last element, the latest first. -/
+structure Frame where
+  /-- The comment lines before the list. -/
+  lead : List Line
+  /-- Whether an empty line precedes the list. -/
+  gap : Bool
+  /-- The elements read so far, the latest first. -/
+  items : List SExpr
+  /-- The comment lines read since the last element, the latest first. -/
+  pend : List Line
 
-/-- Read one token into a stack of lists under construction, the innermost first. A comment
-read where no list is open leaves the empty stack as it is, as the kernel's reader leaves it. -/
+/-- The frame of a list beginning, with the comment lines before it. -/
+def Frame.start (lead : List Line) (gap : Bool) : Frame := ⟨lead, gap, [], []⟩
+
+/-- A frame with an element added, the comment lines read before it becoming its trivia. -/
+def Frame.push (f : Frame) (t : SExpr) : Frame := ⟨f.lead, f.gap, t :: f.items, []⟩
+
+/-- Read one token into a stack of lists under construction, the innermost first: a comment
+line waits for the S-expression after it, or for the end of the list or the text, whose trivia
+it becomes. A comment read where no list is open leaves the empty stack as it is, as the
+kernel's reader leaves it. -/
 def readStep : Option (List Frame) → Tok → Option (List Frame)
-  | some fs, .lp g => some ((g, []) :: fs)
-  | some ((g, f) :: fs), .atom h s => some ((g, RoseTree.node ⟨h, .atom s⟩ [] :: f) :: fs)
-  | some ((g, f) :: fs), .comment h s => some ((g, RoseTree.node ⟨h, .comment s⟩ [] :: f) :: fs)
-  | some ((g, f) :: (h, e) :: fs), .rp => some ((h, RoseTree.node ⟨g, .list⟩ f.reverse :: e) :: fs)
+  | some (f :: fs), .lp g => some (.start f.pend.reverse g :: { f with pend := [] } :: fs)
+  | some (f :: fs), .atom g s =>
+    some (f.push (RoseTree.node (⟨f.pend.reverse, g, []⟩, some s) []) :: fs)
+  | some (f :: fs), .comment g s => some ({ f with pend := ⟨g, s⟩ :: f.pend } :: fs)
+  | some (f :: e :: fs), .rp =>
+    some (e.push (RoseTree.node (⟨f.lead, f.gap, f.pend.reverse⟩, none) f.items.reverse) :: fs)
+  | some [], .lp g => some [.start [] g]
   | some [], .comment _ _ => some []
   | _, _ => none
 
-/-- The items of a text, or nothing when its parentheses do not balance. -/
-def readDoc (text : List Char) : Option (List Item) :=
-  match (lex text).foldl readStep (some [(false, [])]) with
-  | some [(_, f)] => some f.reverse
+/-- The source document of a text, or nothing when its parentheses do not balance. -/
+def readDoc (text : List Char) : Option Doc :=
+  match (lex text).foldl readStep (some [.start [] false]) with
+  | some [f] => some ⟨f.items.reverse, f.pend.reverse⟩
   | _ => none
-
-/-- The S-expression an item erases to: an atom to itself and a list to the list of its
-elements erased; a comment erases to nothing. -/
-def eraseItem : Item → Option SExp :=
-  RoseTree.elim fun l rs ↦
-    match l.kind with
-    | .atom s => some (RoseTree.node (some s) [])
-    | .list => some (RoseTree.node none rs.reduceOption)
-    | .comment _ => none
 
 /-- The stack of the kernel's reader a stack of frames erases to. -/
 def eraseStack : Option (List Frame) → Option (List (List SExp)) :=
-  Option.map (List.map fun p ↦ p.2.filterMap eraseItem)
+  Option.map (List.map fun f ↦ f.items.map RoseTree.erase)
 
-/-- The list of an item's erased elements, in order. -/
-theorem eraseItem_list (g : Bool) (f : List Item) :
-    eraseItem (RoseTree.node ⟨g, .list⟩ f.reverse) =
-      some (RoseTree.node none (f.filterMap eraseItem).reverse) := by
-  simp only [eraseItem, RoseTree.elim_node, List.reduceOption, List.filterMap_map,
-    Function.comp_def, id, List.filterMap_reverse]
-
-/-- An atom erases to itself. -/
-theorem eraseItem_atom (g : Bool) (s : List Char) :
-    eraseItem (RoseTree.node ⟨g, .atom s⟩ []) = some (RoseTree.node (some s) []) := by
-  simp [eraseItem]
-
-/-- A comment erases to nothing. -/
-theorem eraseItem_comment (g : Bool) (s : List Char) :
-    eraseItem (RoseTree.node ⟨g, .comment s⟩ []) = none := by
-  simp [eraseItem]
+/-- A node erases to the node of its label over its children erased. -/
+theorem erase_node (l : Trivia × Option (List Char)) (cs : List SExpr) :
+    RoseTree.erase (RoseTree.node l cs) = RoseTree.node l.2 (cs.map RoseTree.erase) :=
+  RoseTree.map_node _ _ _
 
 /-- One token read by the reader and, erased, by the kernel's reader from corresponding stacks
 gives corresponding stacks. -/
@@ -262,9 +281,9 @@ theorem eraseStack_readStep (st : Option (List Frame)) (t : Tok) :
       match t.erase with
       | none => eraseStack st
       | some u => parseStep (eraseStack st) u := by
-  rcases st with _ | _ | ⟨⟨g, f⟩, _ | ⟨⟨h, e⟩, fs⟩⟩ <;> cases t <;>
-    simp [readStep, parseStep, eraseStack, Tok.erase, eraseItem_list, eraseItem_atom,
-      eraseItem_comment]
+  rcases st with _ | _ | ⟨f, _ | ⟨e, fs⟩⟩ <;> cases t <;>
+    simp [readStep, parseStep, eraseStack, Tok.erase, Frame.push, Frame.start, erase_node,
+      List.map_reverse]
 
 /-- Reading tokens, erased, by the kernel's reader from an erased stack gives the erasure of
 reading them from the stack. -/
@@ -275,15 +294,16 @@ theorem foldl_readStep (toks : List Tok) :
     rw [List.foldl_cons, ih, eraseStack_readStep]
     cases h : t.erase <;> simp [h]) toks
 
-/-- The reader keeps what the kernel's reader reads: erasing the comments of the items of a
-text gives the text's S-expressions. -/
+/-- The reader keeps what the kernel's reader reads: erasing the decorations of the
+S-expressions of a text gives the text's S-expressions. -/
 theorem readDoc_erase (text : List Char) :
-    (readDoc text).map (·.filterMap eraseItem) = readSExps text := by
-  have h := foldl_readStep (lex text) (some [(false, [])])
-  simp only [eraseStack, Option.map_some, List.map_cons, List.filterMap_nil, List.map_nil] at h
-  simp only [readDoc, readSExps, tokenize_eq, ← h]
-  rcases (lex text).foldl readStep (some [(false, [])]) with _ | _ | ⟨⟨g, f⟩, _ | ⟨_, _⟩⟩ <;>
-    simp [List.filterMap_reverse]
+    (readDoc text).map (·.items.map RoseTree.erase) = readSExps text := by
+  have h := foldl_readStep (lex text) (some [.start [] false])
+  rw [readSExps, tokenize_eq,
+    show (some [[]] : Option (List (List SExp))) = eraseStack (some [.start [] false]) from rfl,
+    ← h, readDoc]
+  rcases (lex text).foldl readStep (some [.start [] false]) with _ | _ | ⟨f, _ | ⟨_, _⟩⟩ <;>
+    simp [eraseStack, List.map_reverse]
 
 /-! ## The printer -/
 
@@ -338,18 +358,25 @@ def arrangeFrom (L : ℕ → Bool × ℕ) (toks : List Tok) : Option Tok → ℕ
 def render (ps : List (Sep × Tok)) : List Char :=
   ps.flatMap fun p ↦ p.1.render ++ p.2.render
 
-/-- The tokens of an item. -/
-def tokensOf : Item → List Tok :=
+/-- The token of a comment line. -/
+def Line.tok (l : Line) : Tok := .comment l.gap l.text
+
+/-- The tokens of an S-expression: the comment lines before it, then an atom, or a list's
+parentheses around the tokens of its elements and the comment lines before its end. -/
+def tokensOf : SExpr → List Tok :=
   RoseTree.elim fun l rs ↦
-    match l.kind with
-    | .atom s => [.atom l.gap s]
-    | .comment s => [.comment l.gap s]
-    | .list => .lp l.gap :: rs.flatten ++ [.rp]
+    l.1.lead.map Line.tok ++
+      match l.2 with
+      | some s => [.atom l.1.gap s]
+      | none => .lp l.1.gap :: rs.flatten ++ l.1.close.map Line.tok ++ [.rp]
+
+/-- The tokens of a document. -/
+def Doc.tokens (d : Doc) : List Tok := d.items.flatMap tokensOf ++ d.trail.map Line.tok
 
 /-- A document's characters, laid out by a layout, a choice at each position of the document's
 tokens; the text ends with a line break. -/
-def print (L : ℕ → Bool × ℕ) (items : List Item) : List Char :=
-  render (arrangeFrom L (items.flatMap tokensOf) none 0) ++ ['\n']
+def print (L : ℕ → Bool × ℕ) (d : Doc) : List Char :=
+  render (arrangeFrom L d.tokens none 0) ++ ['\n']
 
 /-! ## Lexing what the printer writes -/
 
@@ -598,156 +625,184 @@ theorem lexEnd_arrangeFrom (L : ℕ → Bool × ℕ) (toks : List Tok) (htoks : 
       cases t <;> rcases hq : pendOf prev with _ | q <;>
         simp [Tok.emitted, Tok.isLp, Tok.isRp, pendOf]) toks htoks
 
-/-- The lexer reads back the tokens of a printed document, whatever the layout. -/
-theorem lex_print (L : ℕ → Bool × ℕ) (items : List Item)
-    (h : (items.flatMap tokensOf).all Tok.wf) :
-    lex (print L items) = items.flatMap tokensOf := by
+/-- The lexer reads back the tokens a layout arranges, whatever the layout. -/
+theorem lex_print (L : ℕ → Bool × ℕ) (toks : List Tok) (h : toks.all Tok.wf) :
+    lex (render (arrangeFrom L toks none 0) ++ ['\n']) = toks := by
   have h' := lexEnd_arrangeFrom L _ h none 0 [] rfl
   simp only [pendOf, Option.toList_none, List.reverse_nil, List.nil_append] at h'
   exact h'
 
 /-! ## Reading what the printer writes -/
 
-/-- Whether an item can be printed and read back: every atom is a non-empty word of atom
-characters and has no children, and every comment contains no line break and has no
-children. -/
-def wf : Item → Bool :=
+/-- Whether a comment line can be printed and read back: it contains no line break. -/
+def Line.wf (l : Line) : Bool := l.text.all (· != '\n')
+
+/-- Whether an S-expression can be printed and read back: its comment lines are well formed,
+and an atom is a non-empty word of atom characters without children or closing comment
+lines. -/
+def wf : SExpr → Bool :=
   RoseTree.elim fun l rs ↦
-    match l.kind with
-    | .atom s => rs.isEmpty && (Tok.atom l.gap s).wf
-    | .comment s => rs.isEmpty && (Tok.comment l.gap s).wf
-    | .list => rs.all id
+    l.1.lead.all Line.wf &&
+      match l.2 with
+      | some s => rs.isEmpty && l.1.close.isEmpty && (Tok.atom l.1.gap s).wf
+      | none => l.1.close.all Line.wf && rs.all id
+
+/-- Whether a document can be printed and read back. -/
+def Doc.wf (d : Doc) : Bool := d.items.all Document.wf && d.trail.all Line.wf
 
 /-- The tokens of an atom. -/
-theorem tokensOf_atom (g : Bool) (s : List Char) (cs : List Item) :
-    tokensOf (RoseTree.node ⟨g, .atom s⟩ cs) = [.atom g s] := by
+theorem tokensOf_atom (tr : Trivia) (s : List Char) (cs : List SExpr) :
+    tokensOf (RoseTree.node (tr, some s) cs) = tr.lead.map Line.tok ++ [.atom tr.gap s] := by
   simp [tokensOf]
 
-/-- The tokens of a comment. -/
-theorem tokensOf_comment (g : Bool) (s : List Char) (cs : List Item) :
-    tokensOf (RoseTree.node ⟨g, .comment s⟩ cs) = [.comment g s] := by
-  simp [tokensOf]
-
-/-- The tokens of a list: its parentheses around the tokens of its elements. -/
-theorem tokensOf_list (g : Bool) (cs : List Item) :
-    tokensOf (RoseTree.node ⟨g, .list⟩ cs) = .lp g :: cs.flatMap tokensOf ++ [.rp] := by
+/-- The tokens of a list: its comment lines before it, and its parentheses around the tokens of
+its elements and its comment lines before its end. -/
+theorem tokensOf_list (tr : Trivia) (cs : List SExpr) :
+    tokensOf (RoseTree.node (tr, none) cs) =
+      tr.lead.map Line.tok ++ (.lp tr.gap :: cs.flatMap tokensOf ++ tr.close.map Line.tok ++
+        [.rp]) := by
   simp [tokensOf, List.flatMap_def]
 
-/-- A list is well formed when its elements are. -/
-theorem wf_list (g : Bool) (cs : List Item) :
-    wf (RoseTree.node ⟨g, .list⟩ cs) = cs.all wf := by
+/-- A well-formed atom has no children and no closing comment lines. -/
+theorem wf_atom (tr : Trivia) (s : List Char) (cs : List SExpr) :
+    wf (RoseTree.node (tr, some s) cs) =
+      (tr.lead.all Line.wf && (cs.isEmpty && tr.close.isEmpty && (Tok.atom tr.gap s).wf)) := by
+  simp [wf]
+
+/-- A list is well formed when its comment lines and its elements are. -/
+theorem wf_list (tr : Trivia) (cs : List SExpr) :
+    wf (RoseTree.node (tr, none) cs) =
+      (tr.lead.all Line.wf && (tr.close.all Line.wf && cs.all wf)) := by
   simp [wf, List.all_map]
 
-/-- A well-formed atom has no children. -/
-theorem wf_atom (g : Bool) (s : List Char) (cs : List Item) :
-    wf (RoseTree.node ⟨g, .atom s⟩ cs) = (cs.isEmpty && (Tok.atom g s).wf) := by
-  simp [wf]
+/-- The token of a well-formed comment line can be printed and read back. -/
+theorem wf_tok {l : Line} (h : l.wf) : l.tok.wf := h
 
-/-- A well-formed comment has no children. -/
-theorem wf_comment (g : Bool) (s : List Char) (cs : List Item) :
-    wf (RoseTree.node ⟨g, .comment s⟩ cs) = (cs.isEmpty && (Tok.comment g s).wf) := by
-  simp [wf]
+/-- The tokens of well-formed comment lines can be printed and read back. -/
+theorem all_wf_toks {ls : List Line} (h : ls.all Line.wf) : (ls.map Line.tok).all Tok.wf := by
+  simpa [List.all_map, Function.comp_def, Line.tok, Tok.wf, Line.wf] using h
 
-/-- The tokens of a well-formed item can be printed and read back. -/
-theorem all_wf_tokensOf : ∀ t : Item, wf t → (tokensOf t).all Tok.wf :=
+/-- The tokens of a well-formed S-expression can be printed and read back. -/
+theorem all_wf_tokensOf : ∀ t : SExpr, wf t → (tokensOf t).all Tok.wf :=
   RoseTree.ind fun l cs ih h ↦ by
-    obtain ⟨g, kind⟩ := l
-    cases kind with
-    | atom s =>
-      rw [wf_atom, Bool.and_eq_true] at h
-      simp [tokensOf_atom, h.2]
-    | comment s =>
-      rw [wf_comment, Bool.and_eq_true] at h
-      simp [tokensOf_comment, h.2]
-    | list =>
-      rw [wf_list, List.all_eq_true] at h
-      simp only [tokensOf_list, List.all_cons, List.all_append, List.all_flatMap, Tok.wf,
-        Bool.true_and, List.all_nil, Bool.and_true, List.all_eq_true]
-      exact fun c hc ↦ List.all_eq_true.mp (ih c hc (h c hc))
+    obtain ⟨tr, k⟩ := l
+    cases k with
+    | some s =>
+      rw [wf_atom] at h
+      simp only [Bool.and_eq_true] at h
+      simp [tokensOf_atom, all_wf_toks h.1, h.2.2]
+    | none =>
+      rw [wf_list] at h
+      simp only [Bool.and_eq_true] at h
+      simp only [tokensOf_list, List.all_append, List.all_cons, List.all_flatMap, Tok.wf,
+        all_wf_toks h.1, all_wf_toks h.2.1, Bool.true_and, List.all_nil, Bool.and_true,
+        List.all_eq_true]
+      exact fun c hc ↦ List.all_eq_true.mp (ih c hc (List.all_eq_true.mp h.2.2 c hc))
 
-/-- Reading the tokens of well-formed items onto a frame adds the items to it. -/
-theorem foldl_readStep_items (cs : List Item)
-    (ih : ∀ t ∈ cs, wf t → ∀ g f fs,
-      (tokensOf t).foldl readStep (some ((g, f) :: fs)) = some ((g, t :: f) :: fs))
+/-- Reading comment lines' tokens onto a frame adds them to its pending lines. -/
+theorem foldl_readStep_lines (ls : List Line) :
+    ∀ f fs, (ls.map Line.tok).foldl readStep (some (f :: fs)) =
+      some ({ f with pend := ls.reverse ++ f.pend } :: fs) :=
+  List.rec (fun f fs ↦ by simp) (fun l ls ih f fs ↦ by
+    simp only [List.map_cons, List.foldl_cons, Line.tok, readStep]
+    rw [ih]
+    simp) ls
+
+/-- Reading the tokens of well-formed S-expressions onto a frame with no pending lines adds the
+S-expressions to it. -/
+theorem foldl_readStep_items (cs : List SExpr)
+    (ih : ∀ t ∈ cs, wf t → ∀ (f : Frame) fs, f.pend = [] →
+      (tokensOf t).foldl readStep (some (f :: fs)) = some (f.push t :: fs))
     (hcs : ∀ c ∈ cs, wf c) :
-    ∀ g f fs, (cs.flatMap tokensOf).foldl readStep (some ((g, f) :: fs)) =
-      some ((g, cs.reverse ++ f) :: fs) :=
-  List.rec (motive := fun cs ↦ (∀ t ∈ cs, wf t → ∀ g f fs,
-      (tokensOf t).foldl readStep (some ((g, f) :: fs)) = some ((g, t :: f) :: fs)) →
-      (∀ c ∈ cs, wf c) → ∀ g f fs,
-      (cs.flatMap tokensOf).foldl readStep (some ((g, f) :: fs)) =
-        some ((g, cs.reverse ++ f) :: fs))
-    (fun _ _ _ _ _ ↦ rfl)
-    (fun c cs ihl ih hcs g f fs ↦ by
+    ∀ (f : Frame) fs, f.pend = [] → (cs.flatMap tokensOf).foldl readStep (some (f :: fs)) =
+      some (⟨f.lead, f.gap, cs.reverse ++ f.items, []⟩ :: fs) :=
+  List.rec (motive := fun cs ↦ (∀ t ∈ cs, wf t → ∀ (f : Frame) fs, f.pend = [] →
+      (tokensOf t).foldl readStep (some (f :: fs)) = some (f.push t :: fs)) →
+      (∀ c ∈ cs, wf c) → ∀ (f : Frame) fs, f.pend = [] →
+      (cs.flatMap tokensOf).foldl readStep (some (f :: fs)) =
+        some (⟨f.lead, f.gap, cs.reverse ++ f.items, []⟩ :: fs))
+    (fun _ _ f fs hf ↦ by
+      obtain ⟨a, b, c, d⟩ := f
+      simp only at hf
+      subst hf
+      rfl)
+    (fun c cs ihl ih hcs f fs hf ↦ by
       rw [List.flatMap_cons, List.foldl_append,
-        ih c List.mem_cons_self (hcs c List.mem_cons_self),
+        ih c List.mem_cons_self (hcs c List.mem_cons_self) f fs hf,
         ihl (fun t ht ↦ ih t (List.mem_cons_of_mem c ht))
-          (fun d hd ↦ hcs d (List.mem_cons_of_mem c hd))]
-      simp) cs ih hcs
+          (fun d hd ↦ hcs d (List.mem_cons_of_mem c hd)) _ fs rfl]
+      simp [Frame.push]) cs ih hcs
 
-/-- Reading the tokens of a well-formed item onto a frame adds the item to it. -/
-theorem foldl_readStep_tokensOf : ∀ t : Item, wf t → ∀ g f fs,
-    (tokensOf t).foldl readStep (some ((g, f) :: fs)) = some ((g, t :: f) :: fs) :=
-  RoseTree.ind fun l cs ih h g f fs ↦ by
-    obtain ⟨gap, kind⟩ := l
-    cases kind with
-    | atom s =>
-      rw [wf_atom, Bool.and_eq_true, List.isEmpty_iff] at h
-      obtain ⟨rfl, -⟩ := h
-      simp [tokensOf_atom, readStep]
-    | comment s =>
-      rw [wf_comment, Bool.and_eq_true, List.isEmpty_iff] at h
-      obtain ⟨rfl, -⟩ := h
-      simp [tokensOf_comment, readStep]
-    | list =>
-      rw [wf_list, List.all_eq_true] at h
-      have hlp : readStep (some ((g, f) :: fs)) (.lp gap) = some ((gap, []) :: (g, f) :: fs) :=
-        rfl
-      rw [tokensOf_list, List.foldl_append]
-      simp only [List.foldl_cons, List.foldl_nil, hlp]
-      rw [foldl_readStep_items cs ih h gap [] ((g, f) :: fs)]
-      simp [readStep]
+/-- Reading the tokens of a well-formed S-expression onto a frame with no pending lines adds the
+S-expression to it. -/
+theorem foldl_readStep_tokensOf : ∀ t : SExpr, wf t → ∀ (f : Frame) fs, f.pend = [] →
+    (tokensOf t).foldl readStep (some (f :: fs)) = some (f.push t :: fs) :=
+  RoseTree.ind fun l cs ih h f fs hf ↦ by
+    obtain ⟨tr, k⟩ := l
+    cases k with
+    | some s =>
+      rw [wf_atom] at h
+      simp only [Bool.and_eq_true, List.isEmpty_iff] at h
+      obtain ⟨-, ⟨rfl, hc⟩, -⟩ := h
+      obtain ⟨lead, gap, close⟩ := tr
+      simp only at hc
+      subst hc
+      rw [tokensOf_atom, List.foldl_append, foldl_readStep_lines]
+      simp [readStep, hf, Frame.push]
+    | none =>
+      rw [wf_list] at h
+      simp only [Bool.and_eq_true, List.all_eq_true] at h
+      rw [tokensOf_list, List.foldl_append, foldl_readStep_lines]
+      simp only [List.foldl_cons, List.foldl_append, hf, List.append_nil, readStep]
+      rw [foldl_readStep_items cs ih h.2.2 _ _ rfl, foldl_readStep_lines]
+      simp [Frame.start, Frame.push]
 
-/-- The retraction law: reading a document printed at any layout gives the document back,
-when its items are well formed. -/
-theorem readDoc_print (L : ℕ → Bool × ℕ) (items : List Item) (h : items.all wf) :
-    readDoc (print L items) = some items := by
-  have hw : ∀ c ∈ items, wf c := List.all_eq_true.mp h
-  have htoks : (items.flatMap tokensOf).all Tok.wf := by
-    simp only [List.all_flatMap, List.all_eq_true]
+/-- The retraction law: reading a document printed at any layout gives the document back, when
+it is well formed. -/
+theorem readDoc_print (L : ℕ → Bool × ℕ) (d : Doc) (h : d.wf) :
+    readDoc (print L d) = some d := by
+  simp only [Doc.wf, Bool.and_eq_true] at h
+  have hw : ∀ c ∈ d.items, wf c := List.all_eq_true.mp h.1
+  have htoks : d.tokens.all Tok.wf := by
+    simp only [Doc.tokens, List.all_append, List.all_flatMap, all_wf_toks h.2, Bool.and_true,
+      List.all_eq_true]
     exact fun c hc ↦ List.all_eq_true.mp (all_wf_tokensOf c (hw c hc))
-  rw [readDoc, lex_print L items htoks,
-    foldl_readStep_items items (fun t _ ↦ foldl_readStep_tokensOf t) hw false [] []]
-  simp
+  rw [readDoc, print, lex_print L d.tokens htoks, Doc.tokens, List.foldl_append,
+    foldl_readStep_items d.items (fun t _ ↦ foldl_readStep_tokensOf t) hw _ [] rfl,
+    foldl_readStep_lines]
+  simp [Frame.start]
 
 /-! ## A layout policy and the formatter -/
 
-/-- Whether an item is a comment. -/
-def Lab.isComment (l : Lab) : Bool :=
-  match l.kind with
-  | .comment _ => true
-  | _ => false
-
-/-- Whether an item is an atom. -/
-def Lab.isAtom (l : Lab) : Bool :=
-  match l.kind with
-  | .atom _ => true
-  | _ => false
-
-/-- The width of an item printed on one line, or nothing when it cannot be: when it contains
-a comment, or an item after an empty line. -/
-def flatWidthStep (l : Lab) (ws : List (Lab × Option ℕ)) : Option ℕ :=
-  match l.kind with
-  | .atom s => some s.length
-  | .comment _ => none
-  | .list =>
-    if ws.any (fun p : Lab × Option ℕ ↦ p.1.gap) then none
-    else (ws.mapM fun p : Lab × Option ℕ ↦ p.2).map fun w ↦ w.sum + w.length - 1 + 2
-
-/-- A layout from the column an item's first character is written at and the number of
-closing parentheses that follow the item on its line: it appends the choices for the item's
-tokens after the first to those made before, and gives the column after the item. -/
+/-- A layout from the column an element's first character is written at and the number of
+closing parentheses that follow the element on its line: it appends the choices for the
+element's tokens after the first to those made before, and gives the column after the
+element. -/
 abbrev Plan : Type := ℕ → ℕ → Array (Bool × ℕ) → Array (Bool × ℕ) × ℕ
+
+/-- An element of a list's layout, a comment line or an S-expression, each one token or more:
+whether an empty line precedes it, whether it is a comment line or an atom, its width on one
+line, if it can be written on one, and its layout. -/
+structure Elem where
+  /-- Whether an empty line precedes the element. -/
+  gap : Bool
+  /-- Whether the element is a comment line. -/
+  isComment : Bool
+  /-- Whether the element is an atom. -/
+  isAtom : Bool
+  /-- The element's width on one line, or nothing when it cannot be written on one. -/
+  width : Option ℕ
+  /-- The element's layout. -/
+  plan : Plan
+
+/-- The element of a comment line. -/
+def Line.elem (l : Line) : Elem :=
+  ⟨l.gap, true, false, none, fun c _ acc ↦ (acc, c + 1 + l.text.length)⟩
+
+/-- The elements of a list: each element's comment lines before it and the element, then the
+comment lines before the list's end. -/
+def elemsOf (rs : List (List Line × Elem)) (close : List Line) : List Elem :=
+  rs.flatMap (fun r ↦ r.1.map Line.elem ++ [r.2]) ++ close.map Line.elem
 
 /-- The state of a list's layout between its elements: the current column, whether a line has
 been broken before an element after the first, whether the element before was a comment, the
@@ -765,75 +820,77 @@ structure PlanState where
   out : Array (Bool × ℕ)
 
 /-- Lay out one element of a list whose elements are indented to a column, within a line
-width, given the list's number of elements and the closing parentheses that follow the list,
-and the element's label, width on one line and own layout. The element begins a line when the
-list does not fit on one, when it or the element before is a comment, when a line was broken
-before an earlier element after the first, or when it and the parentheses that follow it do
-not fit on the current line; the first element begins one only when it or the element before
-is a comment. -/
-def planElem (lim ind n trail : ℕ) (fits : Bool) (s : PlanState) (e : Lab × Option ℕ × Plan) :
-    PlanState :=
-  let (l, w, plan) := e
+width, given the list's number of elements and the closing parentheses that follow the list.
+The element begins a line when the list does not fit on one, when it or the element before is
+a comment, when a line was broken before an earlier element after the first, or when it and
+the parentheses that follow it do not fit on the current line; the first element begins one
+only when it or the element before is a comment. -/
+def planElem (lim ind n trail : ℕ) (fits : Bool) (s : PlanState) (e : Elem) : PlanState :=
   let after := if s.pos + 1 == n then trail + 1 else 0
   let brk : Bool :=
-    if fits || s.pos == 0 then l.isComment || s.afterComment
-    else l.isComment || s.afterComment || s.broken ||
-      match w with
+    if fits || s.pos == 0 then e.isComment || s.afterComment
+    else e.isComment || s.afterComment || s.broken ||
+      match e.width with
       | some w => lim < s.col + 1 + w + after
       | none => true
-  let start := if brk || l.gap || s.afterComment then ind else if s.pos == 0 then s.col
+  let start := if brk || e.gap || s.afterComment then ind else if s.pos == 0 then s.col
     else s.col + 1
-  let (out, endCol) := plan start after (s.out.push (brk, ind))
-  ⟨endCol, s.broken || (brk && s.pos != 0) || l.gap, l.isComment, s.pos + 1, out⟩
+  let (out, endCol) := e.plan start after (s.out.push (brk, ind))
+  ⟨endCol, s.broken || (brk && s.pos != 0) || e.gap, e.isComment, s.pos + 1, out⟩
 
-/-- An item's label, its width on one line, and its layout. A list that fits within the line
+/-- An S-expression's comment lines before it and its element. A list that fits within the line
 width is written on one line; otherwise its elements after the first fill the first line while
 they fit, and the rest begin lines indented past the list's opening parenthesis, by two columns
 after an atom at its head and by one otherwise, so that no line is indented beyond a
-parenthesis closed at the end of the line before. -/
-def planStep (lim : ℕ) (l : Lab) (rs : List (Lab × Option ℕ × Plan)) : Lab × Option ℕ × Plan :=
-  let w := flatWidthStep l (rs.map fun r ↦ (r.1, r.2.1))
-  (l, w, fun c trail acc ↦
-    match l.kind with
-    | .atom s => (acc, c + s.length)
-    | .comment s => (acc, c + 1 + s.length)
-    | .list =>
+parenthesis closed at the end of the line before. A list holding a comment line, or an element
+after an empty line, is not written on one line. -/
+def planStep (lim : ℕ) (l : Trivia × Option (List Char)) (rs : List (List Line × Elem)) :
+    List Line × Elem :=
+  let es := elemsOf rs l.1.close
+  let w : Option ℕ := match l.2 with
+    | some s => some s.length
+    | none =>
+      if es.any (fun e : Elem ↦ e.gap) then none
+      else (es.mapM fun e : Elem ↦ e.width).map fun w ↦ w.sum + w.length - 1 + 2
+  (l.1.lead, ⟨l.1.gap, false, l.2.isSome, w, fun c trail acc ↦
+    match l.2 with
+    | some s => (acc, c + s.length)
+    | none =>
       let fits := match w with
         | some w => decide (c + w + trail ≤ lim)
         | none => false
-      let ind := c + if (rs.head?.map (·.1.isAtom)).getD false then 2 else 1
-      let s := rs.foldl (planElem lim ind rs.length trail fits) ⟨c + 1, false, false, 0, acc⟩
+      let ind := c + if (es.head?.map (·.isAtom)).getD false then 2 else 1
+      let s := es.foldl (planElem lim ind es.length trail fits) ⟨c + 1, false, false, 0, acc⟩
       let rpCol := if s.afterComment then ind else s.col
-      (s.out.push (false, ind), rpCol + 1))
+      (s.out.push (false, ind), rpCol + 1)⟩)
 
 /-- The layout of a document within a line width, as the choices at the positions of its
-tokens: each item after the first begins a line at the first column, and each is laid out by
-{name}`planStep`. -/
-def defaultLayout (lim : ℕ) (items : List Item) : Array (Bool × ℕ) :=
-  (items.foldl (fun (acc : Array (Bool × ℕ) × Bool) t ↦
-      (((RoseTree.elim (planStep lim) t).2.2 0 0 (acc.1.push (acc.2, 0))).1, true))
-    (#[], false)).1
+tokens: each element after the first, an S-expression or a comment line, begins a line at the
+first column, and each is laid out by {name}`planStep`. -/
+def defaultLayout (lim : ℕ) (d : Doc) : Array (Bool × ℕ) :=
+  (elemsOf (d.items.map (RoseTree.elim (planStep lim))) d.trail).foldl
+    (fun (acc : Array (Bool × ℕ) × Bool) e ↦ ((e.plan 0 0 (acc.1.push (acc.2, 0))).1, true))
+    (#[], false) |>.1
 
 /-- A document printed at the choices of a layout, positions beyond them choosing no line
 break. -/
-def printAt (ds : Array (Bool × ℕ)) (items : List Item) : List Char :=
-  print (fun i ↦ ds.getD i (false, 0)) items
+def printAt (ds : Array (Bool × ℕ)) (d : Doc) : List Char :=
+  print (fun i ↦ ds.getD i (false, 0)) d
 
 /-- The formatter: a text read and printed within a line width, or nothing when its
 parentheses do not balance. -/
 def format (lim : ℕ) (text : List Char) : Option (List Char) :=
-  (readDoc text).bind fun items ↦
-    if items.all wf then some (printAt (defaultLayout lim items) items) else none
+  (readDoc text).bind fun d ↦ if d.wf then some (printAt (defaultLayout lim d) d) else none
 
 /-- The formatter is idempotent: formatting a formatted text gives it back. -/
 theorem format_format (lim : ℕ) (text out : List Char) (h : format lim text = some out) :
     format lim out = some out := by
   unfold format at h
-  obtain ⟨items, hr, hout⟩ := Option.bind_eq_some_iff.mp h
-  by_cases hw : items.all wf = true
+  obtain ⟨d, hr, hout⟩ := Option.bind_eq_some_iff.mp h
+  by_cases hw : d.wf = true
   · simp only [hw, ↓reduceIte, Option.some.injEq] at hout
     subst hout
-    simp only [format, printAt, readDoc_print _ items hw, Option.bind_some, hw, ↓reduceIte]
+    simp only [format, printAt, readDoc_print _ d hw, Option.bind_some, hw, ↓reduceIte]
   · simp [hw] at hout
 
 end Geb.Kernel.Document
