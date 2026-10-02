@@ -3734,9 +3734,9 @@ checklist and in CI.
   executable `geb-fmt` applies to files. Tested in
   `GebTests/Prototypes/Kernel.lean` and
   `GebTests/Prototypes/Kernel/Document.lean`. The
-  [source-format report](source-format.md) describes document
-  preservation, migration contracts, the remaining hole interface and
-  synthesis.
+  [Bootstrap chapter](../manual/GebManual/Bootstrap.lean) § Authoring
+  across bootstrap revisions describes document preservation, migration
+  contracts, the remaining hole interface and synthesis.
   The Geb-written
   stage 0 is under `bootstrap/`, in the kernel's syntax: `prelude.geb`
   names the kernel's labels and primitives by numeral abbreviations and
