@@ -8,11 +8,12 @@ module
 public import GebTests.Prototypes.FreeTopos.Agreement.Derivation
 public import GebTests.Prototypes.FreeTopos.Agreement.Load
 public import GebTests.Prototypes.FreeTopos.Agreement.Prove
+public import GebTests.Prototypes.FreeTopos.Agreement.Tactics
 public import GebTests.Prototypes.FreeTopos.Agreement.Translation
 
 set_option doc.verso true in
 /-!
-# The metalogic's checker, the translation and the prover written in Geb agree with Lean's
+# The metalogic's checker, translation, prover and tactics written in Geb agree with Lean's
 
 The checker of the metalogic written in Geb, {lit}`bootstrap/free-topos/`, loads, and one of its
 globals is a function which, at the encodings of constants, entries and declarations, gives the
@@ -28,7 +29,10 @@ input. The prover of the internal language written in Geb, {lit}`bootstrap/free-
 is part of the same program too, and each of its entry points, at encoded arguments, rules related
 to the normalizer's and provers related to Lean's, gives the encoding of the derivation the Lean
 prover ({name}`Geb.FreeTopos.Internal.byNorm` and the provers beside it) constructs, so that the
-two provers prove the same equations with the same derivations.
+two provers prove the same equations with the same derivations. The tactics written in Geb,
+{lit}`bootstrap/free-topos/tactics.geb`, are part of the same program as well, and each entry point,
+at encoded arguments, related rules and related provers, is a prover related to the Lean tactic
+({lit}`Geb.FreeTopos.Tactics`) it transcribes.
 
 Constants are encoded by
 {name}`GebTests.Prototypes.FreeTopos.Agreement.Encode.encGlobals`, entries by
@@ -43,7 +47,9 @@ of the program's Lean mirror with the Lean definitions, proved definition by def
 {name}`GebTests.Prototypes.FreeTopos.Agreement.Translation.program_eq`,
 {name}`GebTests.Prototypes.FreeTopos.Agreement.Translation.trGlobals_eq`,
 {name}`GebTests.Prototypes.FreeTopos.Agreement.Translation.thm_eq`,
-{name}`GebTests.Prototypes.FreeTopos.Agreement.Prove.byNorm_eq` and the prover's other agreements).
+{name}`GebTests.Prototypes.FreeTopos.Agreement.Prove.byNorm_eq` and the prover's other agreements,
+{name}`GebTests.Prototypes.FreeTopos.Agreement.Tactics.byAuto_eq` and the tactics' other
+agreements).
 
 ## Main statements
 
@@ -51,10 +57,11 @@ of the program's Lean mirror with the Lean definitions, proved definition by def
 * {lit}`translation_agree` — the loaded translation written in Geb translates as the translation
   in Lean.
 * {lit}`prover_agree` — the loaded prover written in Geb proves as the prover in Lean.
+* {lit}`tactics_agree` — the loaded tactics written in Geb prove as the tactics in Lean.
 
 ## Tags
 
-metalogic, checker, translation, prover, development, agreement, soundness, completeness
+metalogic, checker, translation, prover, tactic, development, agreement, soundness, completeness
 -/
 
 set_option doc.verso true
@@ -66,6 +73,7 @@ namespace GebTests.Prototypes.FreeTopos.Agreement
 open Geb Geb.Kernel Geb.FreeTopos GebTests.Prototypes.FreeTopos.Agreement.Encode
   GebTests.Prototypes.FreeTopos.Agreement.Load GebTests.Prototypes.FreeTopos.Agreement.Derivation
   GebTests.Prototypes.FreeTopos.Agreement.Translation GebTests.Prototypes.FreeTopos.Agreement.Prove
+  GebTests.Prototypes.FreeTopos.Agreement.Tactics
 
 /-- The metalogic's checker written in Geb decides as the checker in Lean: its program loads to
 globals among which is a function of the check's type that, at encoded constants, entries and
@@ -163,6 +171,138 @@ theorem prover_agree : ∃ G' : List Glob, load metalogic = some G' ∧
     ⟨_, metalogic_byListIndWith,
       fun G n kn kc _ _ _ _ h₀ h₁ ↦ byListIndWith_eq G n kn kc _ _ _ _ h₀ h₁⟩,
     ⟨_, metalogic_byRoseIndHyp, fun kn kl kc _ _ h ↦ byRoseIndHyp_eq kn kl kc _ _ h⟩⟩
+
+/-- The tactics written in Geb prove as the tactics in Lean: the program loads to globals among
+which are the tactics' entry points, each a function of its type that, at encoded arguments,
+related rules, related provers and related provers from rules, is a prover related to the Lean
+tactic, and the derivation of a rewriting under a mask is the encoding of Lean's. -/
+theorem tactics_agree : ∃ G' : List Glob, load metalogic = some G' ∧
+    (∃ f : Ty.den modeTy, G'[594]? = some ⟨modeTy, f⟩ ∧
+      ∀ m G E n rs' rs, List.Forall₂ RRel rs' rs →
+        PRel (f (leaf (encDepth m)) (encGlobals G) (E.toList.map encEntry) (leaf n) rs')
+          (Tactics.byMode m G E n rs)) ∧
+    (∃ f : Ty.den rulesProverTy, G'[595]? = some ⟨rulesProverTy, f⟩ ∧
+      ∀ G E n rs' rs, List.Forall₂ RRel rs' rs →
+        PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) rs') (Tactics.byWeak G E n rs)) ∧
+    (∃ f : Ty.den nfTy, G'[596]? = some ⟨nfTy, f⟩ ∧
+      ∀ G E n rs' rs, List.Forall₂ RRel rs' rs → ∀ m p' p, PRel p' p →
+        PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (leaf (encDepth m)) p')
+          (Tactics.byNF G E n rs m p)) ∧
+    (∃ f : Ty.den normHTy, G'[600]? = some ⟨normHTy, f⟩ ∧
+      ∀ G E rs' rs, List.Forall₂ RRel rs' rs →
+        PRel (f (encGlobals G) (E.toList.map encEntry) rs') (Tactics.normH G E rs)) ∧
+    (∃ f : Ty.den funExtTy, G'[601]? = some ⟨funExtTy, f⟩ ∧
+      ∀ k G p' p, PRel p' p → PRel (f (leaf k) (encGlobals G) p') (Tactics.funExts k G p)) ∧
+    (∃ f : Ty.den listIndWeakTy, G'[602]? = some ⟨listIndWeakTy, f⟩ ∧
+      ∀ G E n s rs' rs, List.Forall₂ RRel rs' rs →
+        PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) (encTerm s) rs')
+          (Tactics.byListIndWeak G E n s rs)) ∧
+    (∃ f : Ty.den proverFnTy, G'[603]? = some ⟨proverFnTy, f⟩ ∧
+      ∀ G n s p' p, PRel p' p →
+        PRel (f (encGlobals G) (leaf n) (encTerm s) p') (Tactics.byRoseIndWith G n s p)) ∧
+    (∃ f : Ty.den splitTy, G'[605]? = some ⟨splitTy, f⟩ ∧
+      ∀ G n i p₀' p₁' p₀ p₁, PRel p₀' p₀ → PRel p₁' p₁ →
+        PRel (f (encGlobals G) (leaf n) (leaf i) p₀' p₁') (Tactics.byListSplit G n i p₀ p₁)) ∧
+    (∃ f : Ty.den splitTy, G'[606]? = some ⟨splitTy, f⟩ ∧
+      ∀ kl kr i p₀' p₁' p₀ p₁, PRel p₀' p₀ → PRel p₁' p₁ →
+        PRel (f (leaf kl) (leaf kr) (leaf i) p₀' p₁') (Tactics.bySplit2 kl kr i p₀ p₁)) ∧
+    (∃ f : Ty.den funExtTy, G'[607]? = some ⟨funExtTy, f⟩ ∧
+      ∀ G n p' p, PRel p' p → PRel (f (encGlobals G) (leaf n) p') (Tactics.byListCases G n p)) ∧
+    (∃ f : Ty.den twoProverTy, G'[608]? = some ⟨twoProverTy, f⟩ ∧
+      ∀ G n p₀' p₁' p₀ p₁, PRel p₀' p₀ → PRel p₁' p₁ →
+        PRel (f (encGlobals G) (leaf n) p₀' p₁') (Tactics.bitsInd G n p₀ p₁)) ∧
+    (∃ f : Ty.den funExtTy, G'[609]? = some ⟨funExtTy, f⟩ ∧
+      ∀ G n p' p, PRel p' p → PRel (f (encGlobals G) (leaf n) p') (Tactics.bitsCases G n p)) ∧
+    (∃ f : Ty.den byBitsTy, G'[610]? = some ⟨byBitsTy, f⟩ ∧
+      ∀ G p' p, PRel p' p → ∀ d i,
+        PRel (f (encGlobals G) p' (leaf d) (leaf i)) (Tactics.byBits G p d i)) ∧
+    (∃ f : Ty.den twoProverTy, G'[611]? = some ⟨twoProverTy, f⟩ ∧
+      ∀ G i p' q' p q, PRel p' p → PRel q' q →
+        PRel (f (encGlobals G) (leaf i) p' q') (Tactics.byLength3 G i p q)) ∧
+    (∃ f : Ty.den weakHypsTy, G'[612]? = some ⟨weakHypsTy, f⟩ ∧
+      ∀ G E n rs' rs, List.Forall₂ RRel rs' rs → ∀ (is : List ℕ) k' k, KRel k' k → ∀ m,
+        PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (is.map leaf) k'
+          (leaf (encDepth m))) (Tactics.withWeakHyps G E n rs is k m)) ∧
+    (∃ f : Ty.den rulesProverTy, G'[613]? = some ⟨rulesProverTy, f⟩ ∧
+      ∀ G E n rs' rs, List.Forall₂ RRel rs' rs →
+        PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) rs')
+          (Tactics.byListIndHypWeak G E n rs)) ∧
+    (∃ f : Ty.den bitsIndHypTy, G'[614]? = some ⟨bitsIndHypTy, f⟩ ∧
+      ∀ G E rs' rs, List.Forall₂ RRel rs' rs → ∀ m,
+        PRel (f (encGlobals G) (E.toList.map encEntry) rs' (leaf (encDepth m)))
+          (Tactics.byBitsIndHyp G E rs m)) ∧
+    (∃ f : Ty.den instsTy, G'[618]? = some ⟨instsTy, f⟩ ∧
+      ∀ G E n rs' rs, List.Forall₂ RRel rs' rs → ∀ h (αs : List (List Internal.Term)) k' k,
+        KRel k' k → ∀ m, PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (leaf h)
+          (αs.map (·.map encTerm)) k' (leaf (encDepth m))) (Tactics.withInsts G E n rs h αs k m)) ∧
+    (∃ f : Ty.den childHypsTy, G'[620]? = some ⟨childHypsTy, f⟩ ∧
+      ∀ G E n rs' rs, List.Forall₂ RRel rs' rs → ∀ h (kids : List ℕ)
+        (args' : Tree → List (List Tree)) (args : ℕ → List (List Internal.Term)),
+        (∀ p, args' (leaf p) = (args p).map (·.map encTerm)) →
+        ∀ (k' : List Tree → List Tree → List Tree → Tree → Tree → Tree)
+          (k : List ℕ → Internal.Prover), (∀ is : List ℕ, PRel (k' (is.map leaf)) (k is)) →
+        PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (leaf h) (kids.map leaf) args'
+          k') (Tactics.withChildHyps G E n rs h kids args k)) ∧
+    (∃ f : Ty.den revertTy, G'[622]? = some ⟨revertTy, f⟩ ∧
+      ∀ G n o lb i h pNil' pCons' pNil pCons, PRel pNil' pNil → PRel pCons' pCons →
+        PRel (f (encGlobals G) (leaf n) (leaf o) (leaf lb) (leaf i) (leaf h) pNil' pCons')
+          (Tactics.revertCase G n o lb i h pNil pCons)) ∧
+    (∃ f : Ty.den impITy, G'[624]? = some ⟨impITy, f⟩ ∧
+      ∀ G E o lb p' p, PRel p' p →
+        PRel (f (encGlobals G) (E.toList.map encEntry) (leaf o) (leaf lb) p')
+          (Tactics.byImpI G E o lb p)) ∧
+    (∃ f : Ty.den impElimTy, G'[625]? = some ⟨impElimTy, f⟩ ∧
+      ∀ o lb h (is : List ℕ) k' k, KRel k' k →
+        PRel (f (leaf o) (leaf lb) (leaf h) (is.map leaf) k') (Tactics.withImpElim o lb h is k)) ∧
+    (∃ f : Ty.den succPredTy, G'[628]? = some ⟨succPredTy, f⟩ ∧
+      ∀ E j p' p, PRel p' p →
+        PRel (f (E.toList.map encEntry) (leaf j) p') (Tactics.bySuccPred E j p)) ∧
+    (∃ f : Ty.den instsSearchTy, G'[647]? = some ⟨instsSearchTy, f⟩ ∧
+      ∀ m G E n rs' rs, List.Forall₂ RRel rs' rs → ∀ hs,
+        PRel (f (leaf (encDepth m)) (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (leaf hs))
+          (Tactics.byInsts m G E n rs hs)) ∧
+    (∃ f : Ty.den autoTy, G'[649]? = some ⟨autoTy, f⟩ ∧
+      ∀ G E n rs' rs, List.Forall₂ RRel rs' rs → ∀ d m,
+        PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (leaf d) (leaf (encDepth m)))
+          (Tactics.byAuto G E n rs d m)) ∧
+    (∃ f : Ty.den funExtTy, G'[661]? = some ⟨funExtTy, f⟩ ∧
+      ∀ lk i p' p, PRel p' p → PRel (f (leaf lk) (leaf i) p') (Tactics.byTreeSplit lk i p)) ∧
+    (∃ f : Ty.den autoTTy, G'[663]? = some ⟨autoTTy, f⟩ ∧
+      ∀ G E n lk rs' rs, List.Forall₂ RRel rs' rs → ∀ d m,
+        PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf lk) rs' (leaf d)
+          (leaf (encDepth m))) (Tactics.byAutoT G E n lk rs d m)) ∧
+    (∃ f : Ty.den autoCTy, G'[664]? = some ⟨autoCTy, f⟩ ∧
+      ∀ G E n lk rs' rs, List.Forall₂ RRel rs' rs → ∀ d,
+        PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf lk) rs' (leaf d))
+          (Tactics.byAutoC G E n lk rs d)) ∧
+    (∃ f : Ty.den maskRwTy, G'[668]? = some ⟨maskRwTy, f⟩ ∧
+      ∀ a b ab j θ (σ : List Internal.Term) c d x x' z y,
+        f a b (leaf ab) (leaf j) θ (σ.map encTerm) (encTerm c) (encTerm d) (encTerm x)
+            (encTerm x') (encTerm z) (encTerm y) =
+          encDeriv (Tactics.maskRw a b ab j θ σ c d x x' z y)) ∧
+    (∃ f : Ty.den maskSubsTy, G'[671]? = some ⟨maskSubsTy, f⟩ ∧
+      ∀ G E ab cs rs' rs, List.Forall₂ RRel rs' rs → ∀ n p' p, KRel p' p →
+        PRel (f (encGlobals G) (E.toList.map encEntry) (leaf ab) (leaf cs) rs' (leaf n) p')
+          (Tactics.byMaskSubs G E ab cs rs n p)) ∧
+    (∃ f : Ty.den funExtTy, G'[672]? = some ⟨funExtTy, f⟩ ∧
+      ∀ a c p' p, PRel p' p → PRel (f a (encTerm c) p') (Tactics.byGeneralize a c p)) :=
+  ⟨_, metalogic.load_eq, ⟨_, metalogic_byMode, byMode_eq⟩, ⟨_, metalogic_byWeak, byWeak_eq⟩,
+    ⟨_, metalogic_byNF, byNF_eq⟩, ⟨_, metalogic_normH, normH_eq⟩,
+    ⟨_, metalogic_funExts, funExts_eq⟩, ⟨_, metalogic_byListIndWeak, byListIndWeak_eq⟩,
+    ⟨_, metalogic_byRoseIndWith, byRoseIndWith_eq⟩, ⟨_, metalogic_byListSplit, byListSplit_eq⟩,
+    ⟨_, metalogic_bySplit2, bySplit2_eq⟩, ⟨_, metalogic_byListCases, byListCases_eq⟩,
+    ⟨_, metalogic_bitsInd, bitsInd_eq⟩, ⟨_, metalogic_bitsCases, bitsCases_eq⟩,
+    ⟨_, metalogic_byBits, byBits_eq⟩, ⟨_, metalogic_byLength3, byLength3_eq⟩,
+    ⟨_, metalogic_withWeakHyps, withWeakHyps_eq⟩,
+    ⟨_, metalogic_byListIndHypWeak, byListIndHypWeak_eq⟩,
+    ⟨_, metalogic_byBitsIndHyp, byBitsIndHyp_eq⟩, ⟨_, metalogic_withInsts, withInsts_eq⟩,
+    ⟨_, metalogic_withChildHyps, withChildHyps_eq⟩, ⟨_, metalogic_revertCase, revertCase_eq⟩,
+    ⟨_, metalogic_byImpI, byImpI_eq⟩, ⟨_, metalogic_withImpElim, withImpElim_eq⟩,
+    ⟨_, metalogic_bySuccPred, bySuccPred_eq⟩, ⟨_, metalogic_byInsts, byInsts_eq⟩,
+    ⟨_, metalogic_byAuto, byAuto_eq⟩, ⟨_, metalogic_byTreeSplit, byTreeSplit_eq⟩,
+    ⟨_, metalogic_byAutoT, byAutoT_eq⟩, ⟨_, metalogic_byAutoC, byAutoC_eq⟩,
+    ⟨_, metalogic_maskRw, maskRw_eq⟩, ⟨_, metalogic_byMaskSubs, byMaskSubs_eq⟩,
+    ⟨_, metalogic_byGeneralize, byGeneralize_eq⟩⟩
 
 end GebTests.Prototypes.FreeTopos.Agreement
 

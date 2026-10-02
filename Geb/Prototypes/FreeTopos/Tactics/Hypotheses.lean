@@ -86,6 +86,17 @@ def rwFun (i : ℕ) : ℕ → Deriv :=
   Nat.rec (RoseTree.node (.rwHyp i false) []) fun _ d ↦
     RoseTree.node .cong [d, RoseTree.node .refl []]
 
+/-- The equations of the applications of two functions to each list of arguments. -/
+def instEqs (F H : Term) (αs : List (List Term)) : List Term :=
+  αs.map fun α ↦ Term.eq (apps F α) (apps H α)
+
+/-- The derivation {lit}`rest` under the equations of the applications of two functions to each
+list of arguments, each cut in, derived from the equation of the functions, the hypothesis of
+index {lit}`i`, by rewriting the functions. -/
+def cutInsts (F H : Term) (i : ℕ) (αs : List (List Term)) (rest : Deriv) : Deriv :=
+  αs.foldr (fun α r ↦ RoseTree.node (.cut (Term.eq (apps F α) (apps H α)))
+    [RoseTree.node .join [rwFun i α.length, RoseTree.node .refl []], r]) rest
+
 /-- The proof of an equation with the instances of the hypothesis of index {lit}`h`, an
 equation of functions, at the lists of arguments {lit}`αs`, each cut in and then in weak normal
 form, as rewriting rules before those given to {lit}`k`. -/
@@ -94,11 +105,14 @@ def withInsts (G : Internal.Globals) (E : Array Entry) (n : ℕ) (rs : List Norm
     Internal.Prover :=
   fun Γ Φ t u ↦ do
     let (F, H) ← Internal.eqParts (← Φ[h]?)
-    let insts := αs.map fun α ↦ Term.eq (apps F α) (apps H α)
     let rest ← withWeakHyps G E n rs ((List.range αs.length).map (Φ.length + ·)) k (m := m) Γ
-      (Φ ++ insts) t u
-    pure ((αs.zip insts).foldr (fun (α, q) r ↦ RoseTree.node (.cut q)
-      [RoseTree.node .join [rwFun h α.length, RoseTree.node .refl []], r]) rest)
+      (Φ ++ instEqs F H αs) t u
+    pure (cutInsts F H h αs rest)
+
+/-- The element of a list of formulas at a position, as the library's head, with the default of
+an equation, of the list's tail that many times. -/
+def nthOf (X : Term) (p : ℕ) : Term :=
+  call D.headD [omega] [Term.eq Term.star Term.star, p.rec X fun _ Y ↦ call D.tail [omega] [Y]]
 
 /-- The induction hypothesis at the children: for the hypothesis of index {lit}`h`, that the
 two lists of formulas its sides fold from the list of children are equal, the formula at each
@@ -108,9 +122,6 @@ def withChildHyps (G : Internal.Globals) (E : Array Entry) (n : ℕ) (rs : List 
     (h : ℕ) (kids : List ℕ) (args : ℕ → List (List Term)) (k' : List ℕ → Internal.Prover) :
     Internal.Prover := fun Γ Φ t u ↦ do
   let (L₀, R₀) ← Internal.eqParts (← Φ[h]?)
-  let tt : Term := Term.eq Term.star Term.star
-  let nthOf (X : Term) (p : ℕ) : Term :=
-    call D.headD [omega] [tt, p.rec X fun _ Y ↦ call D.tail [omega] [Y]]
   (kids.foldr (fun p (acc : List Term → List ℕ → Option Deriv) Φ₁ insts ↦ do
       let A := nthOf L₀ p
       let B := nthOf R₀ p
@@ -121,16 +132,19 @@ def withChildHyps (G : Internal.Globals) (E : Array Entry) (n : ℕ) (rs : List 
       let i₁ := Φ₁.length
       let i₂ := i₁ + 1
       let αs := args p
-      let Φ₂ := Φ₁ ++ [Term.eq A' B', A'] ++ αs.map fun α ↦ Term.eq (apps F α) (apps H α)
+      let Φ₂ := Φ₁ ++ [Term.eq A' B', A'] ++ instEqs F H αs
       let rest ← acc Φ₂ (insts ++ (List.range αs.length).map (i₂ + 1 + ·))
-      let instDs := αs.map fun α ↦ RoseTree.node .join [rwFun i₂ α.length, RoseTree.node .refl []]
-      let body := (αs.zip instDs).foldr (fun (α, d) r ↦
-        RoseTree.node (.cut (Term.eq (apps F α) (apps H α))) [d, r]) rest
+      let body := cutInsts F H i₂ αs rest
       pure (RoseTree.node (.cut (Term.eq A' B')) [RoseTree.node (.convFrom (Term.eq A B))
         [RoseTree.node .cong [dA, dB], RoseTree.node .join [dAh, RoseTree.node .refl []]],
         RoseTree.node (.cut A') [RoseTree.node .conv [RoseTree.node (.rwHyp i₁ false) [],
           RoseTree.node .join [RoseTree.node .refl [], RoseTree.node .refl []]], body]]))
     (fun Φ₁ insts ↦ k' insts Γ Φ₁ t u)) Φ []
+
+/-- A term with its variable of index {lit}`i` moved to a new, innermost variable, the body of
+{name}`Geb.FreeTopos.Internal.abstractVar`. -/
+def subVar (i : ℕ) (x : Term) : Term :=
+  Term.subst (Internal.weaken1 x) fun j ↦ if j = i + 1 then v 0 else v j
 
 /-- The proof of an equation by case analysis of the list variable of index {lit}`i`, the
 hypothesis of index {lit}`h`, which mentions it, reverted: the implication of the equation by the
@@ -148,10 +162,8 @@ def revertCase (G : Internal.Globals) (n o logicBase i h : ℕ) (pNil pCons : In
   let imp (p r : Term) : Term := Internal.Logic.imp o p r
   let tt := Internal.Logic.tt o
   let Fχ := Internal.abstractVar i c (imp ψ q)
-  let sub (x : Term) : Term :=
-    Term.subst (Internal.weaken1 x) fun j ↦ if j = i + 1 then v 0 else v j
-  let ψ₁ := sub ψ
-  let q₁ := sub q
+  let ψ₁ := subVar i ψ
+  let q₁ := subVar i q
   let Φ₁ := Φ.map Internal.weaken1 ++ [tt]
   let Φ' ← Internal.lowerHyps G n Γ Φ₁
   -- the empty list
@@ -222,6 +234,13 @@ def hypIndex : NormRule → Option ℕ
   | .hyp i => some i
   | _ => none
 
+/-- The rewriting of an application's argument, backward by the theorem of index {lit}`j`, to
+the theorem's left side {lit}`l` at the last two variables, with its derivation. -/
+def succPredRw (j : ℕ) (l s : Term) : Option (Term × Deriv) := match s.label, s.children with
+  | .app, [f, _] => some (Term.app f (Internal.instTerm [] [v 1, v 0] l),
+      RoseTree.node .cong [RoseTree.node .refl [], RoseTree.node (.thm j [] [v 1, v 0] true) []])
+  | _, _ => none
+
 /-- The proof of an equation of two applications to a bit before a bitstring, the last two
 variables, by the proof, by {lit}`p`, of the equation at the successor of the bitstring's
 predecessor, into which the theorem of index {lit}`j` rewrites it backwards. -/
@@ -229,14 +248,8 @@ def bySuccPred (E : Array Entry) (j : ℕ) (p : Internal.Prover) : Internal.Prov
   fun Γ Φ t u ↦ do
   let some (Entry.language b) := E[j]? | none
   let (l, _) ← Internal.eqParts b.concl
-  let σ := [v 1, v 0]
-  let back : Deriv := RoseTree.node (.thm j [] σ true) []
-  let rw (s : Term) : Option (Term × Deriv) := match s.label, s.children with
-    | .app, [f, _] => some (Term.app f (Internal.instTerm [] σ l),
-        RoseTree.node .cong [RoseTree.node .refl [], back])
-    | _, _ => none
-  let (t', dt) ← rw t
-  let (u', du) ← rw u
+  let (t', dt) ← succPredRw j l t
+  let (u', du) ← succPredRw j l u
   let q ← p Γ Φ t' u'
   pure (RoseTree.node .conv [RoseTree.node .cong [dt, du], q])
 

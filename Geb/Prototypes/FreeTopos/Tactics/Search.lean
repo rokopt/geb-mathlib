@@ -51,20 +51,30 @@ def openSubterms : Term → List Term := RoseTree.para fun l cs ↦
     | .roseRec _ => (cs.drop 1).flatMap (·.2)
     | _ => cs.flatMap (·.2)
 
-/-- The variable a weak normal form is stuck on: the datum of a fold, or the scrutinee of a case
-analysis, the primitive of index five, that is a variable, the first in preorder. -/
+/-- The index of a term that is a variable the predicate {lit}`skip` does not hold of. -/
+def varUnless (skip : ℕ → Bool) (m : Term) : Option ℕ := match m.label with
+  | .var i => if skip i then none else some i
+  | _ => none
+
+/-- The variable a case analysis, an application of the primitive of index five, is stuck on:
+its scrutinee, where that is a variable {lit}`skip` does not hold of. -/
+def scrutVar (skip : ℕ → Bool) (u : Term) : Option ℕ := match u.label, u.children with
+  | .app, [f, m] => match f.label with
+    | .arr 5 _ => varUnless skip m
+    | _ => none
+  | _, _ => none
+
+/-- The variable a fold is stuck on: its datum, where that is a variable {lit}`skip` does not
+hold of. -/
+def datumVar (skip : ℕ → Bool) (u : Term) : Option ℕ := match u.label, u.children with
+  | .natRec, [_, _, m] | .listRec, [_, _, m] | .roseRec _, [_, m] => varUnless skip m
+  | _, _ => none
+
+/-- The variable a weak normal form is stuck on, the first in preorder: the scrutinee of a case
+analysis, and else the datum of a fold. -/
 def stuckVar (skip : ℕ → Bool) (t : Term) : Option ℕ :=
   let subs := openSubterms t
-  -- a case analysis's scrutinee first, then a fold's datum
-  (subs.findSome? fun u ↦ match u.label, u.children with
-    | .app, [f, m] => match f.label, m.label with
-      | .arr 5 _, .var i => if skip i then none else some i
-      | _, _ => none
-    | _, _ => none).orElse fun _ ↦ subs.findSome? fun u ↦ match u.label, u.children with
-    | .natRec, [_, _, m] | .listRec, [_, _, m] | .roseRec _, [_, m] => match m.label with
-      | .var i => if skip i then none else some i
-      | _ => none
-    | _, _ => none
+  (subs.findSome? (scrutVar skip)).orElse fun _ ↦ subs.findSome? (datumVar skip)
 
 /-- Whether a term mentions the variable of an index. -/
 def mentions (t : Term) (i : ℕ) : Bool := Internal.uses t i > 0
@@ -86,6 +96,20 @@ of a term, the body folded into its matching once rather than at each subterm. -
 def matchesOf (body : Term) (k : ℕ) (t : Term) : List (List Term) :=
   matchesWith (RoseTree.para Internal.matchStep body) k t
 
+/-- The arguments at which the body of the hypothesis of index {lit}`h`, an equation of
+abstractions of one variable, in normal form to a depth, matches the subterms of the terms
+{lit}`t'` and {lit}`u'`; none where the hypothesis is not one. -/
+def instArgs (m : Internal.Depth) (G : Internal.Globals) (E : Array Entry) (n : ℕ)
+    (rs : List NormRule) (Γ : List Tree) (Φ : List Term) (t' u' : Term) (h : ℕ) :
+    List (List Term) :=
+  match (Φ[h]?).bind Internal.eqParts with
+  | some (F, _) => match F.label, F.children with
+    | .lam a, [b] => match Internal.eval G E n rs 4096 m (a :: Γ) (Φ.map Internal.weaken1) b with
+      | some (bw, _, _) => (matchesOf bw 1 t' ++ matchesOf bw 1 u').eraseDups
+      | none => []
+    | _, _ => []
+  | none => []
+
 /-- The proof of an equation by weak reduction with the instances of the hypotheses that are
 equations of abstractions of one variable, at the arguments at which the left side's body, in
 weak normal form, matches the sides' weak normal forms, each cut in. -/
@@ -95,14 +119,9 @@ def byInstsOnce (m : Internal.Depth) (G : Internal.Globals) (E : Array Entry) (n
   let (t', _, _) ← Internal.eval G E n rs 4096 m Γ Φ t
   let (u', _, _) ← Internal.eval G E n rs 4096 m Γ Φ u
   if t' = u' then byMode m G E n rs Γ Φ t u else
-  let found := (List.range (min hs Φ.length)).filterMap fun h ↦ do
-    let (F, _) ← Internal.eqParts (← Φ[h]?)
-    match F.label, F.children with
-    | .lam a, [b] =>
-      let (bw, _, _) ← Internal.eval G E n rs 4096 m (a :: Γ) (Φ.map Internal.weaken1) b
-      let αs := (matchesOf bw 1 t' ++ matchesOf bw 1 u').eraseDups
-      if αs.isEmpty then none else some (h, αs)
-    | _, _ => none
+  let found := (List.range (min hs Φ.length)).filterMap fun h ↦
+    let αs := instArgs m G E n rs Γ Φ t' u' h
+    if αs.isEmpty then none else some (h, αs)
   let go := found.foldr (fun (h, αs) (k : List NormRule → Internal.Prover) extra ↦
       withInsts G E n rs h αs (fun ex ↦ k (extra ++ ex)) (m := m)) next
   if found.isEmpty then none else go [] Γ Φ t u
@@ -142,22 +161,27 @@ def condParts (w : Term) : Option (Tree × Term × Term × Term) := match w.labe
   | .defn k [a], [d, y, c] => if k = D.cond then some (a, c, y, d) else none
   | _, _ => none
 
+/-- The variable a folded conditional is stuck on: its test, where that is a variable {lit}`skip`
+does not hold of. -/
+def condVar (skip : ℕ → Bool) (u : Term) : Option ℕ := match condParts u with
+  | some (_, c, _, _) => varUnless skip c
+  | none => none
+
 /-- The variable a weak normal form is stuck on, including the test of a folded conditional. -/
 def stuckVarC (skip : ℕ → Bool) (t : Term) : Option ℕ :=
-  ((openSubterms t).findSome? fun u ↦ match condParts u with
-    | some (_, c, _, _) => match c.label with
-      | .var i => if skip i then none else some i
-      | _ => none
-    | none => none).orElse fun _ ↦ stuckVar skip t
+  ((openSubterms t).findSome? (condVar skip)).orElse fun _ ↦ stuckVar skip t
+
+/-- Whether a term is an application of the definition of index {lit}`k`, at no objects, to
+two arguments. -/
+def isApps2 (k : ℕ) (u : Term) : Bool := match u.label, u.children with
+  | .app, [f, _] => match f.label, f.children with
+    | .app, [g, _] => g.label = .defn k []
+    | _, _ => false
+  | _, _ => false
 
 /-- The applications of the definition of index {lit}`k` to two arguments among a term's
 subterms outside binders and folds' starts and steps. -/
-def appsOf (k : ℕ) (t : Term) : List Term :=
-  (openSubterms t).filter fun u ↦ match u.label, u.children with
-    | .app, [f, _] => match f.label, f.children with
-      | .app, [g, _] => g.label = .defn k []
-      | _, _ => false
-    | _, _ => false
+def appsOf (k : ℕ) (t : Term) : List Term := (openSubterms t).filter (isApps2 k)
 
 end Geb.FreeTopos.Tactics
 
