@@ -52,9 +52,10 @@
 ; lists of trees
 (def append (lam ((xs Ts) (ys Ts)) (foldr T Ts (lam ((x T) (r Ts)) (cons x r)) ys xs)))
 (def length (lam ((xs Ts)) (foldr T T (lam ((x T) (n T)) (add n 1)) 0 xs)))
-(def reverse (lam ((xs Ts))
-  ((foldr T Endo (lam ((x T) (k Endo) (acc Ts)) (k (cons x acc))) (lam ((acc Ts)) acc) xs)
-   (nil T))))
+(def reverse
+  (lam ((xs Ts))
+    ((foldr T Endo (lam ((x T) (k Endo) (acc Ts)) (k (cons x acc))) (lam ((acc Ts)) acc) xs)
+     (nil T))))
 (def replicate (lam ((n T) (x T)) (iter Ts (lam ((r Ts)) (cons x r)) (nil T) n)))
 (def single (lam ((x T)) (cons x (nil T))))
 
@@ -78,9 +79,10 @@
 
 ; the low n digits of m in a base, most significant first
 (deftype Digits (Prod T Ts))
-(def digitsMsb (lam ((base T) (m T) (n T))
-  (snd (iter Digits
-         (lam ((s Digits)) (pair (div (fst s) base) (cons (mod (fst s) base) (snd s))))
-         (pair m (nil T))
-         n))))
+(def digitsMsb
+  (lam ((base T) (m T) (n T))
+    (snd
+      (iter Digits (lam ((s Digits)) (pair (div (fst s) base) (cons (mod (fst s) base) (snd s))))
+        (pair m (nil T))
+        n))))
 (def digitsLsb (lam ((base T) (m T) (n T)) (reverse (digitsMsb base m n))))

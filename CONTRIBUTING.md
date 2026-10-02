@@ -88,6 +88,10 @@ does not run config commands on a contributor's behalf.
    `pip install -r scripts/eal/requirements.txt`. Its test in
    `scripts/test-tooling.sh` is skipped when the package is
    missing.
+10. Install the pinned parinfer release, whose fixed points
+    `scripts/bootstrap.sh check` tests on the Geb sources:
+    `npm ci --prefix scripts/parinfer`. The check is skipped when it
+    is missing.
 
 ## Working
 

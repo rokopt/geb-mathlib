@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "description": "The parinfer release whose fixed points scripts/parinfer/check.mjs tests",
+  "dependencies": {
+    "parinfer": "3.13.1"
+  }
+}

@@ -19,6 +19,9 @@ node_modules/
 /manual/_out
 package-lock.json
 package.json
+# The pinned parinfer release of scripts/bootstrap.sh's check is tracked.
+!scripts/parinfer/package.json
+!scripts/parinfer/package-lock.json
 skills-lock.json
 .agents/
 

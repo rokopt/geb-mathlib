@@ -21,7 +21,10 @@
 #          bytes with the committed ones; checks that the stage-0 compiler
 #          and the committed image each reproduce themselves; builds
 #          geb-compile, the committed Lean, and checks that it compiles S
-#          to the committed Lean and the committed image.
+#          to the committed Lean and the committed image. Checks that every
+#          source under bootstrap/ is a fixed point of geb-fmt and, where
+#          the parinfer release pinned in scripts/parinfer/ is installed
+#          (npm ci --prefix scripts/parinfer), of both of its modes.
 #
 # Exit 0 when every comparison holds; exit 1 naming the first that does
 # not.
@@ -169,6 +172,16 @@ case "${1:-}" in
       "the committed index of the metalogic's layers is not the generated one"
     diff -rq "$tmp/lean/GebMirror/Metalogic" "$b/lean/GebMirror/Metalogic" > /dev/null \
       || fail "the committed layers of the metalogic are not the image's Lean of their sources"
+    lake build geb-fmt
+    mapfile -t sources < <(find "$b" -name '*.geb' | sort)
+    .lake/build/bin/geb-fmt --check "${sources[@]}" \
+      || fail "a source is not formatted: run lake exe geb-fmt on it"
+    if [ -d scripts/parinfer/node_modules/parinfer ]; then
+      node scripts/parinfer/check.mjs "${sources[@]}" \
+        || fail "a source is not a fixed point of parinfer"
+    else
+      echo "bootstrap: parinfer not installed (npm ci --prefix scripts/parinfer); skipped"
+    fi
     echo "bootstrap: every fixed point holds"
     ;;
   *)
