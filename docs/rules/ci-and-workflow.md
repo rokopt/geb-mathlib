@@ -13,6 +13,7 @@ paths:
 - [Pre-push checklist](#pre-push-checklist)
 - [Verso manual build](#verso-manual-build)
 - [Literate site build](#literate-site-build)
+- [Loading modes](#loading-modes)
 - [Action pinning policy](#action-pinning-policy)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -232,6 +233,29 @@ which doc-gen4 does not accept, taking `git@host:org/repo.git` and
 (`github`, `vscode` or `file`) and changes nothing else about the generated
 pages, so a local measurement of page content is unaffected by it. CI's
 checkout provides an `https` remote, so the workflows set nothing.
+
+## Loading modes
+
+The loading of the metalogic's program, declared by the modules
+`scripts/bootstrap.sh` generates under `bootstrap/lean/GebMirror/Metalogic/Load/`,
+is checked in one of two modes, which the environment variable
+`GEB_LOADING` selects (`Geb/Prototypes/Kernel/LoadCommand.lean`). In
+the mode `native`, the default, each definition's equation of types and
+loading step, the facts whose proofs evaluate the checker-evaluator, are
+axioms declared after the compiled checker-evaluator has loaded the
+program, and the axiom linter permits the axioms of those modules
+(`GebMeta.loadingAxiomModules`). In the mode `rfl` they are theorems the
+kernel checks by that evaluation, which takes hours, and the linter
+permits none of them. `scripts/pre-push.sh` and `scripts/pre-push-full.sh`
+take `--loading=native` or `--loading=rfl`; every other workflow builds in
+the mode `native`. Lake does not track the variable, so a module built in
+one mode is reused in the other: the mode `rfl` of `scripts/pre-push.sh`
+deletes the outputs of the generated modules and of those depending on
+them, and `rfl-loading.yml` builds without the GitHub cache. A stale
+module built in the mode `native` that is left in an `rfl` build depends
+on an axiom of the loading, which the linter then rejects.
+`rfl-loading.yml` builds and lints `GebTests` in the mode `rfl` daily and
+on demand.
 
 ## Action pinning policy
 

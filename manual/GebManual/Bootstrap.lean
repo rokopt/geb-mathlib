@@ -3755,20 +3755,25 @@ the change that removes it.
   importers.
 * Load time. The kernel checks the loading of the metalogic's program
   by evaluating the checker-evaluator {name}`Geb.Kernel.infer`, by
-  reduction, on each definition in the globals before it: each reference
-  to a global walks the list of those globals, and each global's type is
-  computed from its definition ({name}`Geb.Kernel.defType`) rather than
-  stored, so a step that applies a global reduces that computation
-  again. The check takes hours and grows faster than the program. The
-  program is loaded a layer to a module, generated with the mirror by
-  `scripts/bootstrap.sh`, so a change to a layer's sources checks again
-  that layer, the layers after it, and the equality of the program's
-  exported definitions with their mirrors, which the agreement proofs
-  state once for the whole program, and no other layer. A lookup of a
-  global the kernel reduces in fewer steps, and types it reads rather
-  than computes, shorten the check itself; they are made before or
-  shortly after the end of the bootstrap, as the check's duration
-  requires.
+  reduction, on each definition in the globals before it, and comparing
+  the denotation it computes with the definition's mirror. The check
+  takes hours and grows faster than the program. The program is loaded a
+  layer to a module, generated with the mirror by `scripts/bootstrap.sh`,
+  so a change to a layer's sources checks again that layer, the layers
+  after it, and the equality of the program's exported definitions with
+  their mirrors, and no other layer. The kernel makes the check in the
+  loading mode `rfl`, daily in CI and on demand; in the default mode
+  `native` the facts it checks are axioms, declared after the compiled
+  checker-evaluator has loaded the program
+  (`docs/rules/ci-and-workflow.md` § Loading modes). Each global's type
+  is computed from its definition ({name}`Geb.Kernel.defType`) rather
+  than stored: the checker-evaluator builds a type from its constructors
+  and from type annotations its fold rebuilds, and the kernel cannot
+  equate the children of a rebuilt node with those of a constructed one,
+  so a stored type equals a computed one only by decision, while the
+  casts inside a denotation compare them by reduction. A shorter check in
+  the mode `rfl` is made before or shortly after the end of the
+  bootstrap, as its duration requires.
 * Emitted names. A program's definition named `T`, `leaf` or `mk` makes
   the emitted module ill-typed, since the module refers to the tree type,
   the leaf and the node by those names; qualifying them as the constants

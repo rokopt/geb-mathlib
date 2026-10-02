@@ -9,10 +9,32 @@
 # scripts/test-tooling.sh; scripts/pre-push-full.sh runs both, and
 # is the one to run for a change touching the build system itself.
 #
+# Usage: scripts/pre-push.sh [--loading=native|rfl]
+#
+# --loading selects how the loading of the metalogic's program is
+# checked (Geb/Prototypes/Kernel/LoadCommand.lean), through the
+# environment variable GEB_LOADING that the build and the axiom linter
+# read. In the mode native, the default, the facts whose proofs
+# evaluate the checker-evaluator are axioms, declared after the loading
+# is evaluated by compiled code, and the linter permits them. In the
+# mode rfl the kernel checks each of them and the linter permits none.
+# Lake does not track the variable, so the mode rfl deletes the outputs
+# of the modules declaring the loading and of those depending on it,
+# which the build then remakes with every fact checked.
+#
 # Exits non-zero on any failure.
 
 set -euo pipefail
 export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
+
+loading=native
+for arg in "$@"; do
+  case "$arg" in
+    --loading=native | --loading=rfl) loading="${arg#--loading=}" ;;
+    *) echo "pre-push: unknown argument $arg" >&2; exit 2 ;;
+  esac
+done
+export GEB_LOADING="$loading"
 
 step() {
   echo "==> $*"
@@ -55,6 +77,15 @@ else
     lake exe cache get
   fi
   cat lean-toolchain lake-manifest.json > "$cache_stamp"
+fi
+
+if [ "$loading" = rfl ]; then
+  step "delete the outputs of the metalogic's loading and its dependents (mode rfl)"
+  for m in GebMirror/Metalogic/Load GebTests/Prototypes/FreeTopos/Agreement/Load \
+           GebTests/Prototypes/FreeTopos/Agreement; do
+    rm -rf .lake/build/lib/lean/"$m".* .lake/build/ir/"$m".*
+  done
+  rm -rf .lake/build/lib/lean/GebMirror/Metalogic/Load .lake/build/ir/GebMirror/Metalogic/Load
 fi
 
 step "lake build"
