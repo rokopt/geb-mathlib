@@ -49,11 +49,6 @@ open Geb Geb.Kernel Geb.FreeTopos GebTests.Prototypes.FreeTopos.Agreement.Encode
 open Internal (Term)
 open scoped FinEnum
 
-/-- The reflexivity of the equality test of natural numbers from its lawfulness, named because
-instance search in this module's imports otherwise derives it from the order's, which depends on
-{name}`Classical.choice`. -/
-local instance natReflBEq : ReflBEq ℕ := Nat.instLawfulBEq.toReflBEq
-
 /-- A kernel type with a term of the language, as the node of the type and the term. -/
 def encTr (p : Tree × Term) : Tree := encPair (p.1, encTerm p.2)
 

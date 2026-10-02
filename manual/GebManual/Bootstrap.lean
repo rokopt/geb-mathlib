@@ -93,9 +93,9 @@ order of dependence.
   language, sound by a theorem in Lean. In progress: the checker and the
   translation are constructed in Lean and proved sound, the proofs
   about the compiler's components are made in the language, and the
-  checker and the translation are written in Geb and proved in Lean to
-  agree with the Lean checker and translation; its prover is not yet
-  written in Geb.
+  checker, the translation and the prover are written in Geb and proved
+  in Lean to agree with the Lean checker, translation and prover; the
+  prover's tactics and the combinator prover are not yet written in Geb.
   The checker of Gödel's T, the equational theory of the kernel's terms,
   constructed and written in Geb first, is retired: equations between
   kernel programs are proved in the metalogic
@@ -1118,7 +1118,8 @@ section below opens with a table of the states of its parts.
     relations and the retirement of the checker of Gödel's T: complete;
     the checker and the translation written in Geb and the proofs of
     their agreement: complete; the prover written in Geb and the proof
-    of its agreement: ready; stronger checkers: ready
+    of its agreement: complete; its tactics and the combinator prover
+    written in Geb: ready; stronger checkers: ready
 :::
 
 The fixed points hold on images and on Lean. The seed builds the
@@ -1963,6 +1964,25 @@ the paramorphism {name}`Geb.RoseTree.para` of the term. At every
 program, every translated program's definitions and every theorem of
 Gödel's T, the loaded translation gives the encoding of the Lean
 translation's result. The proof depends on no axiom beyond `propext` and
+`Quot.sound`.
+
+The language's prover is written in Geb in
+`bootstrap/free-topos/prove.geb`, in the same program, proving as
+{name}`Geb.FreeTopos.Internal.byNorm` and the provers beside it prove:
+the matching of patterns, the rewriting at a term's root by the
+normalizer's rules, normalization innermost first, the reduction to a
+depth through weak head normal forms, and the proofs of an equation by
+normalization, by induction, by extensionality and by case analysis. A
+rule of the normalizer is its encoding paired with a matching, which the
+preparation of a theorem computes once from the theorem's left side.
+`GebTests/Prototypes/FreeTopos/GebProve.lean` compares it with the Lean
+prover at the proofs of the test modules, and
+`GebTests/Prototypes/FreeTopos/Agreement/Prove.lean` proves it equal to
+the Lean prover by the same method: at encoded arguments, rules related
+to the normalizer's and provers related to Lean's, each of its entry
+points gives the encoding of the Lean prover's derivation, so that the
+prover written in Geb constructs exactly the derivations the Lean prover
+constructs. The proof depends on no axiom beyond `propext` and
 `Quot.sound`.
 
 Proof construction was begun for Gödel's T. `bootstrap/goedel-t/prove.geb`
@@ -3733,8 +3753,9 @@ inverse to the printer waits on the printer; the admission of a stronger
 checker beside the metalogic's checker written in Geb, whose agreement
 with the Lean checker is proved, is ready (the section on the metalogic
 and its checker). The next phase is the first of the two items below, in
-progress, the checker and the translation written in Geb and their
-agreement proved, the prover remaining; the second is ready:
+progress, the checker, the translation and the prover written in Geb
+and their agreement proved, the prover's tactics and the combinator
+prover remaining; the second is ready:
 
 * The metalogic's checker, its prover and the translation of kernel
   programs written in Geb, the checker in Geb and proof construction for

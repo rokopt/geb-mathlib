@@ -18,6 +18,11 @@ bootstrap compiler emits from the metalogic's checker ({lit}`GebMirror.Metalogic
 primitives at leaves and nodes, optional trees, truth values and lists, each stated as the
 encoding of the Lean value it represents.
 
+## Main definitions
+
+* {lit}`natReflBEq` — the reflexivity of the equality test of natural numbers the simplifications
+  use, from its lawfulness.
+
 ## Main statements
 
 * {lit}`bindO_eq`, {lit}`mapO_eq` — the binding and mapping of optional trees.
@@ -37,6 +42,11 @@ namespace GebTests.Prototypes.FreeTopos.Agreement.Base
 
 open Geb Geb.Kernel GebTests.Prototypes.FreeTopos.Agreement.Encode
 open scoped FinEnum
+
+/-- The reflexivity of the equality test of natural numbers from its lawfulness, which the
+simplifications of the mirrors use: where the imports reach the order's derivation of it, which
+depends on {name}`Classical.choice`, instance search would otherwise select that. -/
+instance (priority := high) natReflBEq : ReflBEq ℕ := Nat.instLawfulBEq.toReflBEq
 
 -- the kernel's primitives at leaves and nodes, shared with the mirror of Gödel's T
 export GebTests.Prototypes.GoedelT.MirrorTyping (label_leaf ofBool_label label_node children_node
