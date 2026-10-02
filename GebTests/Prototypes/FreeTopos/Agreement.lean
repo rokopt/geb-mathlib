@@ -83,6 +83,7 @@ open Geb Geb.Kernel Geb.FreeTopos GebTests.Prototypes.FreeTopos.Agreement.Encode
   GebTests.Prototypes.FreeTopos.Agreement.Load GebTests.Prototypes.FreeTopos.Agreement.Derivation
   GebTests.Prototypes.FreeTopos.Agreement.Translation GebTests.Prototypes.FreeTopos.Agreement.Prove
   GebTests.Prototypes.FreeTopos.Agreement.Tactics
+open GebMirror (metalogic)
 
 /-- The metalogic's checker written in Geb decides as the checker in Lean: its program loads to
 globals among which is a function of the check's type that, at encoded constants, entries and

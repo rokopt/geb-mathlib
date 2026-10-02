@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import GebMirror.Metalogic
+public import GebMirror.Metalogic.Load
 public import GebTests.Prototypes.GoedelT.LoadCommand
 public import GebTests.Prototypes.GoedelT.MirrorDelta
 
@@ -73,13 +73,13 @@ set_option doc.verso true
 
 namespace GebTests.Prototypes.FreeTopos.Agreement.Load
 
-open Geb Geb.Kernel GebTests.Prototypes.GoedelT.Load GebTests.Prototypes.GoedelT.MirrorDelta
+open Geb Geb.Kernel GebTests.Prototypes.GoedelT.MirrorDelta
 
 set_option maxHeartbeats 20000000 in
--- the kernel evaluates the checker-evaluator on each definition of the program, the largest the
--- checker's steps over derivations and declarations
+-- the generated modules of GebMirror.Metalogic.Load declare the program's definitions and the
+-- steps of its loading; the kernel evaluates the checker-evaluator on each exported definition
 set_option Elab.async false in
-geb_program metalogic from "bootstrap/prelude.geb" "bootstrap/free-topos/base.geb"
+geb_program _root_.GebMirror.metalogic from "bootstrap/prelude.geb" "bootstrap/free-topos/base.geb"
   "bootstrap/free-topos/partial-horn.geb" "bootstrap/free-topos/theory.geb"
   "bootstrap/free-topos/infer.geb" "bootstrap/free-topos/language.geb"
   "bootstrap/free-topos/derivation.geb" "bootstrap/reader.geb" "bootstrap/check.geb"
@@ -93,6 +93,8 @@ geb_program metalogic from "bootstrap/prelude.geb" "bootstrap/free-topos/base.ge
     revertCase byImpI withImpElim bySuccPred byInsts byAuto byTreeSplit byAutoT byAutoC maskRw
     byMaskSubs byGeneralize typeTerm pNormalize pInst etaExpand deltaRule pByNorm proveSeq
     normalizeThm instBy byNatInduction byListInduction byListParamInduction libraryWith libRules
+
+open GebMirror (metalogic)
 
 /-- The type of the check of a development written in Geb: from the constants, the entries and
 the declarations, to the optional state after them. -/

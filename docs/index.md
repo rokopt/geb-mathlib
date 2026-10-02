@@ -3695,6 +3695,11 @@ checklist and in CI.
   fold whose step sees the node (`Geb.Kernel.Const.para`,
   `Geb.Kernel.Const.para_node`) the same fold at pairs of a rebuilt node and
   its result, and iteration repeats a step as often as a label's value.
+  `Loading.lean` states a program's loading as a fold of one step
+  (`Geb.Kernel.loadStep`), and `LoadCommand.lean` declares the loading one
+  definition at a time, each step checked by the kernel, beyond the
+  definitions earlier modules declare (`Geb.Kernel.LoadCommand.declareLoading`,
+  the command `geb_load`, which reads a program's image).
   `Reader.lean` reads programs, sequences of named definitions and of type
   and numeral abbreviations in S-expressions over lists of characters,
   resolving names to de Bruijn indices, references and primitives and
@@ -3956,10 +3961,12 @@ checklist and in CI.
   declarations. `GebTests/Prototypes/FreeTopos/Agreement.lean` proves the
   checker written in Geb equal to `Geb.FreeTopos.Internal.checkDev`, by
   the method of the checker of Gödel's T: the Lean the bootstrap compiler
-  emits from the program, `bootstrap/lean/GebMirror/Metalogic.lean`, is
-  the denotation of each of the program's definitions as
-  `Geb.Kernel.load` loads them, checked by the kernel's evaluation
-  (`Agreement/Load.lean`), and agrees definition by definition with the
+  emits from the program, `bootstrap/lean/GebMirror/Metalogic/`, a module
+  per layer of the program, is the denotation of each of the program's
+  definitions as `Geb.Kernel.load` loads them, checked by the kernel's
+  evaluation a layer to a generated module
+  (`bootstrap/lean/GebMirror/Metalogic/Load/`) and composed in
+  `Agreement/Load.lean`, and agrees definition by definition with the
   Lean definitions it transcribes (`Agreement/`): each fold of the program
   is related to a paramorphism of the tree it encodes (`Fold.lean`), and
   the partial Horn logic, the theory, the inference, the language and the

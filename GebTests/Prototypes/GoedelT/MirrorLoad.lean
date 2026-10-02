@@ -49,7 +49,7 @@ set_option doc.verso true
 
 namespace GebTests.Prototypes.GoedelT.MirrorLoad
 
-open Geb Geb.Kernel GebTests.Prototypes.GoedelT.Load GebTests.Prototypes.GoedelT.MirrorDelta
+open Geb Geb.Kernel GebTests.Prototypes.GoedelT.MirrorDelta
 
 set_option Elab.async false in
 geb_program checker from "bootstrap/prelude.geb" "bootstrap/reader.geb" "bootstrap/check.geb"

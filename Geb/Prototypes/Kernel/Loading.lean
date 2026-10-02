@@ -36,9 +36,7 @@ set_option doc.verso true
 
 @[expose] public section
 
-namespace GebTests.Prototypes.GoedelT.Load
-
-open Geb Geb.Kernel
+namespace Geb.Kernel
 
 /-- The step of loading a program: a definition checked and evaluated in the globals before it,
 and appended to them. -/
@@ -81,6 +79,6 @@ theorem infer_of_loadStep {G : List Glob} {t : Tree} {g : Glob}
 theorem infer_var0 (G : List Glob) (Γ : Ctx) (A : Tree) :
     infer G (A :: Γ) (Tm.var 0) = some ⟨A, Prod.fst⟩ := rfl
 
-end GebTests.Prototypes.GoedelT.Load
+end Geb.Kernel
 
 end

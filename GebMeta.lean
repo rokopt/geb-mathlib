@@ -279,6 +279,7 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Typechecker.Instances,
    `GebTests.Prototypes.Typechecker.Instances,
    `GebTests.Prototypes.GoedelT.LoadCommand,
+   `Geb.Prototypes.Kernel.LoadCommand,
    `Geb.Prototypes.FreeTopos.Topos,
    `Geb.Prototypes.FreeTopos.Elementary,
    `Geb.Prototypes.FreeTopos.UniqueChoiceClassical,
