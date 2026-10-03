@@ -131,10 +131,11 @@ def headLemmas (P : Prog) : List Step :=
   let rs (ix : String → ℕ) : List NormRule := baseNorm P ++ [.thm (ix "childrenNode") []] ++
     ([(bitTy, bitsTy), (bitTy, treeTy), (treeTy, bitsTy), (treeTy, treeTy)].map fun (a, b) ↦
       .thm (ix "rebLF") [a, b])
-  let named (h : Term) : Term := apps (call (P.idx "named") [] []) [h, call (P.idx "kwDef") [] []]
+  let named (h : Term) : Term :=
+    apps (call (P.idx "Reader.named") [] []) [h, call (P.idx "Reader.kwDef") [] []]
   let headDef : Internal.Thm := ⟨0, [treeTy], [], Term.eq
-    (condT treeTy (call D.lab [] [named (v 0)]) (v 0) (call (P.idx "aDef") [] []))
-    (call (P.idx "aDef") [] [])⟩
+    (condT treeTy (call D.lab [] [named (v 0)]) (v 0) (call (P.idx "Datatype.aDef") [] []))
+    (call (P.idx "Datatype.aDef") [] [])⟩
   [step "childrenNode" childrenNode (fun ix E ↦
       side childrenNode (byMode .full P.G E 0 (rsU ix))),
     step "headDef" headDef (fun ix E ↦

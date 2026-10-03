@@ -9,403 +9,457 @@
 ; cNil, cCons, cNode and cZero here, the other names being the kernel's. Requires the prelude,
 ; the base and partial Horn logic.
 
-; the sorts
-(defnum Sorts.obj 0)
-(defnum Sorts.arr 1)
+(module Theory
+  (export Sorts.obj Sorts.arr l2 l3 l4 l5 l6 sig x dom cod idt comp one bang prod cFst cSnd cPair
+    cZero
+    absurd
+    coprod
+    inl
+    inr
+    copair
+    coeqz
+    coeqProj
+    coeqDesc
+    exp
+    ev
+    curry
+    omega
+    tru
+    chi
+    nat
+    zeroN
+    succ
+    natRec
+    list
+    cNil
+    cCons
+    listRec
+    rose
+    cNode
+    roseRec
+    lrose
+    lnode
+    lroseRec
+    dfd
+    prodMapLeft
+    diag
+    truthEq
+    truthIncl
+    categoryAxioms
+    terminalAxioms
+    productAxioms
+    equalizerAxioms
+    initialAxioms
+    coproductAxioms
+    coequalizerAxioms
+    exponentialAxioms
+    classifierAxioms
+    natAxioms
+    axioms
+    toposTheory)
+  ; the sorts
+  (defnum Sorts.obj 0)
+  (defnum Sorts.arr 1)
 
-; lists of trees of a few elements
-(defn l2 ((a T) (b T)) Ts (cons a (single b)))
-(defn l3 ((a T) (b T) (c T)) Ts (cons a (l2 b c)))
-(defn l4 ((a T) (b T) (c T) (d T)) Ts (cons a (l3 b c d)))
-(defn l5 ((a T) (b T) (c T) (d T) (e T)) Ts (cons a (l4 b c d e)))
-(defn l6 ((a T) (b T) (c T) (d T) (e T) (f T)) Ts (cons a (l5 b c d e f)))
+  ; lists of trees of a few elements
+  (defn l2 ((a T) (b T)) Ts (cons a (single b)))
+  (defn l3 ((a T) (b T) (c T)) Ts (cons a (l2 b c)))
+  (defn l4 ((a T) (b T) (c T) (d T)) Ts (cons a (l3 b c d)))
+  (defn l5 ((a T) (b T) (c T) (d T) (e T)) Ts (cons a (l4 b c d e)))
+  (defn l6 ((a T) (b T) (c T) (d T) (e T) (f T)) Ts (cons a (l5 b c d e f)))
 
-; the signature: for each operation, by its index, its arguments' sorts and its sort
-(defn os ((as Ts) (s T)) T (opSig (node 0 as) s))
-(def sig
-  (append
-    (l4 (os (single Sorts.arr) Sorts.obj) (os (single Sorts.arr) Sorts.obj)
-      (os (single Sorts.obj) Sorts.arr)
-      (os (l2 Sorts.arr Sorts.arr) Sorts.arr))
-    (append (l2 (os (nil T) Sorts.obj) (os (single Sorts.obj) Sorts.arr))
-      (append
-        (l4 (os (l2 Sorts.obj Sorts.obj) Sorts.obj) (os (l2 Sorts.obj Sorts.obj) Sorts.arr)
-          (os (l2 Sorts.obj Sorts.obj) Sorts.arr)
-          (os (l2 Sorts.arr Sorts.arr) Sorts.arr))
+  ; the signature: for each operation, by its index, its arguments' sorts and its sort
+  (defn os ((as Ts) (s T)) T (opSig (node 0 as) s))
+  (def sig
+    (append
+      (l4 (os (single Sorts.arr) Sorts.obj) (os (single Sorts.arr) Sorts.obj)
+        (os (single Sorts.obj) Sorts.arr)
+        (os (l2 Sorts.arr Sorts.arr) Sorts.arr))
+      (append (l2 (os (nil T) Sorts.obj) (os (single Sorts.obj) Sorts.arr))
         (append
-          (l3 (os (l2 Sorts.arr Sorts.arr) Sorts.obj) (os (l2 Sorts.arr Sorts.arr) Sorts.arr)
-            (os (l3 Sorts.arr Sorts.arr Sorts.arr) Sorts.arr))
-          (append (l2 (os (nil T) Sorts.obj) (os (single Sorts.obj) Sorts.arr))
-            (append
-              (l4 (os (l2 Sorts.obj Sorts.obj) Sorts.obj) (os (l2 Sorts.obj Sorts.obj) Sorts.arr)
-                (os (l2 Sorts.obj Sorts.obj) Sorts.arr)
-                (os (l2 Sorts.arr Sorts.arr) Sorts.arr))
+          (l4 (os (l2 Sorts.obj Sorts.obj) Sorts.obj) (os (l2 Sorts.obj Sorts.obj) Sorts.arr)
+            (os (l2 Sorts.obj Sorts.obj) Sorts.arr)
+            (os (l2 Sorts.arr Sorts.arr) Sorts.arr))
+          (append
+            (l3 (os (l2 Sorts.arr Sorts.arr) Sorts.obj) (os (l2 Sorts.arr Sorts.arr) Sorts.arr)
+              (os (l3 Sorts.arr Sorts.arr Sorts.arr) Sorts.arr))
+            (append (l2 (os (nil T) Sorts.obj) (os (single Sorts.obj) Sorts.arr))
               (append
-                (l3 (os (l2 Sorts.arr Sorts.arr) Sorts.obj) (os (l2 Sorts.arr Sorts.arr) Sorts.arr)
-                  (os (l3 Sorts.arr Sorts.arr Sorts.arr) Sorts.arr))
+                (l4 (os (l2 Sorts.obj Sorts.obj) Sorts.obj) (os (l2 Sorts.obj Sorts.obj) Sorts.arr)
+                  (os (l2 Sorts.obj Sorts.obj) Sorts.arr)
+                  (os (l2 Sorts.arr Sorts.arr) Sorts.arr))
                 (append
-                  (l3 (os (l2 Sorts.obj Sorts.obj) Sorts.obj)
-                    (os (l2 Sorts.obj Sorts.obj) Sorts.arr)
-                    (os (l3 Sorts.obj Sorts.obj Sorts.arr) Sorts.arr))
+                  (l3 (os (l2 Sorts.arr Sorts.arr) Sorts.obj)
+                    (os (l2 Sorts.arr Sorts.arr) Sorts.arr)
+                    (os (l3 Sorts.arr Sorts.arr Sorts.arr) Sorts.arr))
                   (append
-                    (l4 (os (nil T) Sorts.obj) (os (nil T) Sorts.arr)
-                      (os (single Sorts.arr) Sorts.arr)
-                      (os (single Sorts.arr) Sorts.arr))
+                    (l3 (os (l2 Sorts.obj Sorts.obj) Sorts.obj)
+                      (os (l2 Sorts.obj Sorts.obj) Sorts.arr)
+                      (os (l3 Sorts.obj Sorts.obj Sorts.arr) Sorts.arr))
                     (append
-                      (l4 (os (nil T) Sorts.obj) (os (nil T) Sorts.arr) (os (nil T) Sorts.arr)
-                        (os (l2 Sorts.arr Sorts.arr) Sorts.arr))
+                      (l4 (os (nil T) Sorts.obj) (os (nil T) Sorts.arr)
+                        (os (single Sorts.arr) Sorts.arr)
+                        (os (single Sorts.arr) Sorts.arr))
                       (append
-                        (l4 (os (single Sorts.obj) Sorts.obj) (os (single Sorts.obj) Sorts.arr)
-                          (os (single Sorts.obj) Sorts.arr)
-                          (os (l3 Sorts.obj Sorts.arr Sorts.arr) Sorts.arr))
+                        (l4 (os (nil T) Sorts.obj) (os (nil T) Sorts.arr) (os (nil T) Sorts.arr)
+                          (os (l2 Sorts.arr Sorts.arr) Sorts.arr))
                         (append
-                          (l3 (os (nil T) Sorts.obj) (os (nil T) Sorts.arr)
-                            (os (single Sorts.arr) Sorts.arr))
-                          (l3 (os (single Sorts.obj) Sorts.obj) (os (single Sorts.obj) Sorts.arr)
-                            (os (l2 Sorts.obj Sorts.arr) Sorts.arr)))))))))))))))
+                          (l4 (os (single Sorts.obj) Sorts.obj) (os (single Sorts.obj) Sorts.arr)
+                            (os (single Sorts.obj) Sorts.arr)
+                            (os (l3 Sorts.obj Sorts.arr Sorts.arr) Sorts.arr))
+                          (append
+                            (l3 (os (nil T) Sorts.obj) (os (nil T) Sorts.arr)
+                              (os (single Sorts.arr) Sorts.arr))
+                            (l3 (os (single Sorts.obj) Sorts.obj) (os (single Sorts.obj) Sorts.arr)
+                              (os (l2 Sorts.obj Sorts.arr) Sorts.arr)))))))))))))))
 
-; the variables and the operations, by index
-(defn x ((i T)) T (phVar i))
-(defn dom ((f T)) T (phOp 0 (single f)))
-(defn cod ((f T)) T (phOp 1 (single f)))
-(defn idt ((a T)) T (phOp 2 (single a)))
-(defn comp ((g T) (f T)) T (phOp 3 (l2 g f)))
-(def one (phOp 4 (nil T)))
-(defn bang ((a T)) T (phOp 5 (single a)))
-(defn prod ((a T) (b T)) T (phOp 6 (l2 a b)))
-(defn cFst ((a T) (b T)) T (phOp 7 (l2 a b)))
-(defn cSnd ((a T) (b T)) T (phOp 8 (l2 a b)))
-(defn cPair ((f T) (g T)) T (phOp 9 (l2 f g)))
-(defn eqz ((f T) (g T)) T (phOp 10 (l2 f g)))
-(defn eqIncl ((f T) (g T)) T (phOp 11 (l2 f g)))
-(defn eqLift ((f T) (g T) (h T)) T (phOp 12 (l3 f g h)))
-(def cZero (phOp 13 (nil T)))
-(defn absurd ((a T)) T (phOp 14 (single a)))
-(defn coprod ((a T) (b T)) T (phOp 15 (l2 a b)))
-(defn inl ((a T) (b T)) T (phOp 16 (l2 a b)))
-(defn inr ((a T) (b T)) T (phOp 17 (l2 a b)))
-(defn copair ((f T) (g T)) T (phOp 18 (l2 f g)))
-(defn coeqz ((f T) (g T)) T (phOp 19 (l2 f g)))
-(defn coeqProj ((f T) (g T)) T (phOp 20 (l2 f g)))
-(defn coeqDesc ((f T) (g T) (h T)) T (phOp 21 (l3 f g h)))
-(defn exp ((a T) (b T)) T (phOp 22 (l2 a b)))
-(defn ev ((a T) (b T)) T (phOp 23 (l2 a b)))
-(defn curry ((c T) (a T) (f T)) T (phOp 24 (l3 c a f)))
-(def omega (phOp 25 (nil T)))
-(def tru (phOp 26 (nil T)))
-(defn chi ((m T)) T (phOp 27 (single m)))
-(defn chiInv ((m T)) T (phOp 28 (single m)))
-(def nat (phOp 29 (nil T)))
-(def zeroN (phOp 30 (nil T)))
-(def succ (phOp 31 (nil T)))
-(defn natRec ((z T) (s T)) T (phOp 32 (l2 z s)))
-(defn list ((a T)) T (phOp 33 (single a)))
-(defn cNil ((a T)) T (phOp 34 (single a)))
-(defn cCons ((a T)) T (phOp 35 (single a)))
-(defn listRec ((a T) (z T) (s T)) T (phOp 36 (l3 a z s)))
-(def rose (phOp 37 (nil T)))
-(def cNode (phOp 38 (nil T)))
-(defn roseRec ((f T)) T (phOp 39 (single f)))
-(defn lrose ((a T)) T (phOp 40 (single a)))
-(defn lnode ((a T)) T (phOp 41 (single a)))
-(defn lroseRec ((a T) (f T)) T (phOp 42 (l2 a f)))
+  ; the variables and the operations, by index
+  (defn x ((i T)) T (phVar i))
+  (defn dom ((f T)) T (phOp 0 (single f)))
+  (defn cod ((f T)) T (phOp 1 (single f)))
+  (defn idt ((a T)) T (phOp 2 (single a)))
+  (defn comp ((g T) (f T)) T (phOp 3 (l2 g f)))
+  (def one (phOp 4 (nil T)))
+  (defn bang ((a T)) T (phOp 5 (single a)))
+  (defn prod ((a T) (b T)) T (phOp 6 (l2 a b)))
+  (defn cFst ((a T) (b T)) T (phOp 7 (l2 a b)))
+  (defn cSnd ((a T) (b T)) T (phOp 8 (l2 a b)))
+  (defn cPair ((f T) (g T)) T (phOp 9 (l2 f g)))
+  (defn eqz ((f T) (g T)) T (phOp 10 (l2 f g)))
+  (defn eqIncl ((f T) (g T)) T (phOp 11 (l2 f g)))
+  (defn eqLift ((f T) (g T) (h T)) T (phOp 12 (l3 f g h)))
+  (def cZero (phOp 13 (nil T)))
+  (defn absurd ((a T)) T (phOp 14 (single a)))
+  (defn coprod ((a T) (b T)) T (phOp 15 (l2 a b)))
+  (defn inl ((a T) (b T)) T (phOp 16 (l2 a b)))
+  (defn inr ((a T) (b T)) T (phOp 17 (l2 a b)))
+  (defn copair ((f T) (g T)) T (phOp 18 (l2 f g)))
+  (defn coeqz ((f T) (g T)) T (phOp 19 (l2 f g)))
+  (defn coeqProj ((f T) (g T)) T (phOp 20 (l2 f g)))
+  (defn coeqDesc ((f T) (g T) (h T)) T (phOp 21 (l3 f g h)))
+  (defn exp ((a T) (b T)) T (phOp 22 (l2 a b)))
+  (defn ev ((a T) (b T)) T (phOp 23 (l2 a b)))
+  (defn curry ((c T) (a T) (f T)) T (phOp 24 (l3 c a f)))
+  (def omega (phOp 25 (nil T)))
+  (def tru (phOp 26 (nil T)))
+  (defn chi ((m T)) T (phOp 27 (single m)))
+  (defn chiInv ((m T)) T (phOp 28 (single m)))
+  (def nat (phOp 29 (nil T)))
+  (def zeroN (phOp 30 (nil T)))
+  (def succ (phOp 31 (nil T)))
+  (defn natRec ((z T) (s T)) T (phOp 32 (l2 z s)))
+  (defn list ((a T)) T (phOp 33 (single a)))
+  (defn cNil ((a T)) T (phOp 34 (single a)))
+  (defn cCons ((a T)) T (phOp 35 (single a)))
+  (defn listRec ((a T) (z T) (s T)) T (phOp 36 (l3 a z s)))
+  (def rose (phOp 37 (nil T)))
+  (def cNode (phOp 38 (nil T)))
+  (defn roseRec ((f T)) T (phOp 39 (single f)))
+  (defn lrose ((a T)) T (phOp 40 (single a)))
+  (defn lnode ((a T)) T (phOp 41 (single a)))
+  (defn lroseRec ((a T) (f T)) T (phOp 42 (l2 a f)))
 
-; definedness, and the derived arrows the axioms use
-(defn dfd ((t T)) T (eqn t t))
-(defn prodMapLeft ((f T) (a T)) T (cPair (comp f (cFst (dom f) a)) (cSnd (dom f) a)))
-(defn prodMapRight ((a T) (f T)) T (cPair (cFst a (dom f)) (comp f (cSnd a (dom f)))))
-(defn listMap ((f T)) T
-  (listRec (dom f) (cNil (cod f)) (comp (cCons (cod f)) (prodMapLeft f (list (cod f))))))
-(defn diag ((a T)) T (cPair (idt a) (idt a)))
-(defn monoCond ((m T)) T
-  (let a T (dom m)
-    (let k T (eqIncl (comp m (cFst a a)) (comp m (cSnd a a)))
-      (eqn (comp (cFst a a) k) (comp (cSnd a a) k)))))
-(defn truthEq ((p T)) T (eqz p (comp tru (bang (dom p)))))
-(defn truthIncl ((p T)) T (eqIncl p (comp tru (bang (dom p)))))
-(defn truthLift ((p T) (m T)) T (eqLift p (comp tru (bang (dom p))) m))
+  ; definedness, and the derived arrows the axioms use
+  (defn dfd ((t T)) T (eqn t t))
+  (defn prodMapLeft ((f T) (a T)) T (cPair (comp f (cFst (dom f) a)) (cSnd (dom f) a)))
+  (defn prodMapRight ((a T) (f T)) T (cPair (cFst a (dom f)) (comp f (cSnd a (dom f)))))
+  (defn listMap ((f T)) T
+    (listRec (dom f) (cNil (cod f)) (comp (cCons (cod f)) (prodMapLeft f (list (cod f))))))
+  (defn diag ((a T)) T (cPair (idt a) (idt a)))
+  (defn monoCond ((m T)) T
+    (let a T (dom m)
+      (let k T (eqIncl (comp m (cFst a a)) (comp m (cSnd a a)))
+        (eqn (comp (cFst a a) k) (comp (cSnd a a) k)))))
+  (defn truthEq ((p T)) T (eqz p (comp tru (bang (dom p)))))
+  (defn truthIncl ((p T)) T (eqIncl p (comp tru (bang (dom p)))))
+  (defn truthLift ((p T) (m T)) T (eqLift p (comp tru (bang (dom p))) m))
 
-; a sequent of the theory, and the contexts the axioms have, by their sorts
-(defn sq ((ctx Ts) (hs Ts) (q T)) T (mkSeq ctx hs q))
-(def ctxOO (l2 Sorts.obj Sorts.obj))
-(def ctxAA (l2 Sorts.arr Sorts.arr))
-(def ctxAAA (l3 Sorts.arr Sorts.arr Sorts.arr))
-(def ctxA (single Sorts.arr))
-(def ctxO (single Sorts.obj))
+  ; a sequent of the theory, and the contexts the axioms have, by their sorts
+  (defn sq ((ctx Ts) (hs Ts) (q T)) T (mkSeq ctx hs q))
+  (def ctxOO (l2 Sorts.obj Sorts.obj))
+  (def ctxAA (l2 Sorts.arr Sorts.arr))
+  (def ctxAAA (l3 Sorts.arr Sorts.arr Sorts.arr))
+  (def ctxA (single Sorts.arr))
+  (def ctxO (single Sorts.obj))
 
-(def categoryAxioms
-  (append
-    (l6 (sq ctxA (nil T) (dfd (dom (x 0)))) (sq ctxA (nil T) (dfd (cod (x 0))))
-      (sq ctxO (nil T) (dfd (idt (x 0))))
-      (sq ctxAA (single (dfd (comp (x 0) (x 1)))) (eqn (cod (x 1)) (dom (x 0))))
-      (sq ctxAA (single (eqn (cod (x 1)) (dom (x 0)))) (dfd (comp (x 0) (x 1))))
-      (sq ctxAA (single (dfd (comp (x 0) (x 1)))) (eqn (dom (comp (x 0) (x 1))) (dom (x 1)))))
-    (l6 (sq ctxAA (single (dfd (comp (x 0) (x 1)))) (eqn (cod (comp (x 0) (x 1))) (cod (x 0))))
-      (sq ctxAAA (single (dfd (comp (x 0) (comp (x 1) (x 2)))))
-        (eqn (comp (x 0) (comp (x 1) (x 2))) (comp (comp (x 0) (x 1)) (x 2))))
-      (sq ctxO (nil T) (eqn (dom (idt (x 0))) (x 0)))
-      (sq ctxO (nil T) (eqn (cod (idt (x 0))) (x 0)))
-      (sq ctxA (nil T) (eqn (comp (x 0) (idt (dom (x 0)))) (x 0)))
-      (sq ctxA (nil T) (eqn (comp (idt (cod (x 0))) (x 0)) (x 0))))))
-
-(def terminalAxioms
-  (l4 (sq (nil T) (nil T) (dfd one)) (sq ctxO (nil T) (eqn (dom (bang (x 0))) (x 0)))
-    (sq ctxO (nil T) (eqn (cod (bang (x 0))) one))
-    (sq ctxA (single (eqn (cod (x 0)) one)) (eqn (x 0) (bang (dom (x 0)))))))
-
-(def productAxioms
-  (append
-    (l6 (sq ctxOO (nil T) (dfd (prod (x 0) (x 1))))
-      (sq ctxOO (nil T) (eqn (dom (cFst (x 0) (x 1))) (prod (x 0) (x 1))))
-      (sq ctxOO (nil T) (eqn (cod (cFst (x 0) (x 1))) (x 0)))
-      (sq ctxOO (nil T) (eqn (dom (cSnd (x 0) (x 1))) (prod (x 0) (x 1))))
-      (sq ctxOO (nil T) (eqn (cod (cSnd (x 0) (x 1))) (x 1)))
-      (sq ctxAA (single (dfd (cPair (x 0) (x 1)))) (eqn (dom (x 0)) (dom (x 1)))))
-    (l6 (sq ctxAA (single (eqn (dom (x 0)) (dom (x 1)))) (dfd (cPair (x 0) (x 1))))
-      (sq ctxAA (single (dfd (cPair (x 0) (x 1)))) (eqn (dom (cPair (x 0) (x 1))) (dom (x 0))))
-      (sq ctxAA (single (dfd (cPair (x 0) (x 1))))
-        (eqn (cod (cPair (x 0) (x 1))) (prod (cod (x 0)) (cod (x 1)))))
-      (sq ctxAA (single (dfd (cPair (x 0) (x 1))))
-        (eqn (comp (cFst (cod (x 0)) (cod (x 1))) (cPair (x 0) (x 1))) (x 0)))
-      (sq ctxAA (single (dfd (cPair (x 0) (x 1))))
-        (eqn (comp (cSnd (cod (x 0)) (cod (x 1))) (cPair (x 0) (x 1))) (x 1)))
-      (sq (l3 Sorts.arr Sorts.obj Sorts.obj) (single (eqn (cod (x 0)) (prod (x 1) (x 2))))
-        (eqn (cPair (comp (cFst (x 1) (x 2)) (x 0)) (comp (cSnd (x 1) (x 2)) (x 0))) (x 0))))))
-
-(def equalizerAxioms
-  (append
-    (l6 (sq ctxAA (single (dfd (eqz (x 0) (x 1)))) (eqn (dom (x 0)) (dom (x 1))))
-      (sq ctxAA (single (dfd (eqz (x 0) (x 1)))) (eqn (cod (x 0)) (cod (x 1))))
-      (sq ctxAA (l2 (eqn (dom (x 0)) (dom (x 1))) (eqn (cod (x 0)) (cod (x 1))))
-        (dfd (eqz (x 0) (x 1))))
-      (sq ctxAA (single (dfd (eqIncl (x 0) (x 1)))) (dfd (eqz (x 0) (x 1))))
-      (sq ctxAA (single (dfd (eqz (x 0) (x 1)))) (dfd (eqIncl (x 0) (x 1))))
-      (sq ctxAA (single (dfd (eqz (x 0) (x 1))))
-        (eqn (dom (eqIncl (x 0) (x 1))) (eqz (x 0) (x 1)))))
+  (def categoryAxioms
     (append
-      (l6 (sq ctxAA (single (dfd (eqz (x 0) (x 1)))) (eqn (cod (eqIncl (x 0) (x 1))) (dom (x 0))))
+      (l6 (sq ctxA (nil T) (dfd (dom (x 0)))) (sq ctxA (nil T) (dfd (cod (x 0))))
+        (sq ctxO (nil T) (dfd (idt (x 0))))
+        (sq ctxAA (single (dfd (comp (x 0) (x 1)))) (eqn (cod (x 1)) (dom (x 0))))
+        (sq ctxAA (single (eqn (cod (x 1)) (dom (x 0)))) (dfd (comp (x 0) (x 1))))
+        (sq ctxAA (single (dfd (comp (x 0) (x 1)))) (eqn (dom (comp (x 0) (x 1))) (dom (x 1)))))
+      (l6 (sq ctxAA (single (dfd (comp (x 0) (x 1)))) (eqn (cod (comp (x 0) (x 1))) (cod (x 0))))
+        (sq ctxAAA (single (dfd (comp (x 0) (comp (x 1) (x 2)))))
+          (eqn (comp (x 0) (comp (x 1) (x 2))) (comp (comp (x 0) (x 1)) (x 2))))
+        (sq ctxO (nil T) (eqn (dom (idt (x 0))) (x 0)))
+        (sq ctxO (nil T) (eqn (cod (idt (x 0))) (x 0)))
+        (sq ctxA (nil T) (eqn (comp (x 0) (idt (dom (x 0)))) (x 0)))
+        (sq ctxA (nil T) (eqn (comp (idt (cod (x 0))) (x 0)) (x 0))))))
+
+  (def terminalAxioms
+    (l4 (sq (nil T) (nil T) (dfd one)) (sq ctxO (nil T) (eqn (dom (bang (x 0))) (x 0)))
+      (sq ctxO (nil T) (eqn (cod (bang (x 0))) one))
+      (sq ctxA (single (eqn (cod (x 0)) one)) (eqn (x 0) (bang (dom (x 0)))))))
+
+  (def productAxioms
+    (append
+      (l6 (sq ctxOO (nil T) (dfd (prod (x 0) (x 1))))
+        (sq ctxOO (nil T) (eqn (dom (cFst (x 0) (x 1))) (prod (x 0) (x 1))))
+        (sq ctxOO (nil T) (eqn (cod (cFst (x 0) (x 1))) (x 0)))
+        (sq ctxOO (nil T) (eqn (dom (cSnd (x 0) (x 1))) (prod (x 0) (x 1))))
+        (sq ctxOO (nil T) (eqn (cod (cSnd (x 0) (x 1))) (x 1)))
+        (sq ctxAA (single (dfd (cPair (x 0) (x 1)))) (eqn (dom (x 0)) (dom (x 1)))))
+      (l6 (sq ctxAA (single (eqn (dom (x 0)) (dom (x 1)))) (dfd (cPair (x 0) (x 1))))
+        (sq ctxAA (single (dfd (cPair (x 0) (x 1)))) (eqn (dom (cPair (x 0) (x 1))) (dom (x 0))))
+        (sq ctxAA (single (dfd (cPair (x 0) (x 1))))
+          (eqn (cod (cPair (x 0) (x 1))) (prod (cod (x 0)) (cod (x 1)))))
+        (sq ctxAA (single (dfd (cPair (x 0) (x 1))))
+          (eqn (comp (cFst (cod (x 0)) (cod (x 1))) (cPair (x 0) (x 1))) (x 0)))
+        (sq ctxAA (single (dfd (cPair (x 0) (x 1))))
+          (eqn (comp (cSnd (cod (x 0)) (cod (x 1))) (cPair (x 0) (x 1))) (x 1)))
+        (sq (l3 Sorts.arr Sorts.obj Sorts.obj) (single (eqn (cod (x 0)) (prod (x 1) (x 2))))
+          (eqn (cPair (comp (cFst (x 1) (x 2)) (x 0)) (comp (cSnd (x 1) (x 2)) (x 0))) (x 0))))))
+
+  (def equalizerAxioms
+    (append
+      (l6 (sq ctxAA (single (dfd (eqz (x 0) (x 1)))) (eqn (dom (x 0)) (dom (x 1))))
+        (sq ctxAA (single (dfd (eqz (x 0) (x 1)))) (eqn (cod (x 0)) (cod (x 1))))
+        (sq ctxAA (l2 (eqn (dom (x 0)) (dom (x 1))) (eqn (cod (x 0)) (cod (x 1))))
+          (dfd (eqz (x 0) (x 1))))
+        (sq ctxAA (single (dfd (eqIncl (x 0) (x 1)))) (dfd (eqz (x 0) (x 1))))
+        (sq ctxAA (single (dfd (eqz (x 0) (x 1)))) (dfd (eqIncl (x 0) (x 1))))
         (sq ctxAA (single (dfd (eqz (x 0) (x 1))))
-          (eqn (comp (x 0) (eqIncl (x 0) (x 1))) (comp (x 1) (eqIncl (x 0) (x 1)))))
-        (sq ctxAAA (single (dfd (eqLift (x 0) (x 1) (x 2)))) (dfd (eqz (x 0) (x 1))))
-        (sq ctxAAA (single (dfd (eqLift (x 0) (x 1) (x 2))))
-          (eqn (comp (x 0) (x 2)) (comp (x 1) (x 2))))
-        (sq ctxAAA (l2 (dfd (eqz (x 0) (x 1))) (eqn (comp (x 0) (x 2)) (comp (x 1) (x 2))))
-          (dfd (eqLift (x 0) (x 1) (x 2))))
-        (sq ctxAAA (single (dfd (eqLift (x 0) (x 1) (x 2))))
-          (eqn (dom (eqLift (x 0) (x 1) (x 2))) (dom (x 2)))))
-      (l3
-        (sq ctxAAA (single (dfd (eqLift (x 0) (x 1) (x 2))))
-          (eqn (cod (eqLift (x 0) (x 1) (x 2))) (eqz (x 0) (x 1))))
-        (sq ctxAAA (single (dfd (eqLift (x 0) (x 1) (x 2))))
-          (eqn (comp (eqIncl (x 0) (x 1)) (eqLift (x 0) (x 1) (x 2))) (x 2)))
-        (sq ctxAAA (l2 (dfd (eqz (x 0) (x 1))) (eqn (cod (x 2)) (eqz (x 0) (x 1))))
-          (eqn (eqLift (x 0) (x 1) (comp (eqIncl (x 0) (x 1)) (x 2))) (x 2)))))))
+          (eqn (dom (eqIncl (x 0) (x 1))) (eqz (x 0) (x 1)))))
+      (append
+        (l6 (sq ctxAA (single (dfd (eqz (x 0) (x 1)))) (eqn (cod (eqIncl (x 0) (x 1))) (dom (x 0))))
+          (sq ctxAA (single (dfd (eqz (x 0) (x 1))))
+            (eqn (comp (x 0) (eqIncl (x 0) (x 1))) (comp (x 1) (eqIncl (x 0) (x 1)))))
+          (sq ctxAAA (single (dfd (eqLift (x 0) (x 1) (x 2)))) (dfd (eqz (x 0) (x 1))))
+          (sq ctxAAA (single (dfd (eqLift (x 0) (x 1) (x 2))))
+            (eqn (comp (x 0) (x 2)) (comp (x 1) (x 2))))
+          (sq ctxAAA (l2 (dfd (eqz (x 0) (x 1))) (eqn (comp (x 0) (x 2)) (comp (x 1) (x 2))))
+            (dfd (eqLift (x 0) (x 1) (x 2))))
+          (sq ctxAAA (single (dfd (eqLift (x 0) (x 1) (x 2))))
+            (eqn (dom (eqLift (x 0) (x 1) (x 2))) (dom (x 2)))))
+        (l3
+          (sq ctxAAA (single (dfd (eqLift (x 0) (x 1) (x 2))))
+            (eqn (cod (eqLift (x 0) (x 1) (x 2))) (eqz (x 0) (x 1))))
+          (sq ctxAAA (single (dfd (eqLift (x 0) (x 1) (x 2))))
+            (eqn (comp (eqIncl (x 0) (x 1)) (eqLift (x 0) (x 1) (x 2))) (x 2)))
+          (sq ctxAAA (l2 (dfd (eqz (x 0) (x 1))) (eqn (cod (x 2)) (eqz (x 0) (x 1))))
+            (eqn (eqLift (x 0) (x 1) (comp (eqIncl (x 0) (x 1)) (x 2))) (x 2)))))))
 
-(def initialAxioms
-  (l4 (sq (nil T) (nil T) (dfd cZero)) (sq ctxO (nil T) (eqn (dom (absurd (x 0))) cZero))
-    (sq ctxO (nil T) (eqn (cod (absurd (x 0))) (x 0)))
-    (sq ctxA (single (eqn (dom (x 0)) cZero)) (eqn (x 0) (absurd (cod (x 0)))))))
+  (def initialAxioms
+    (l4 (sq (nil T) (nil T) (dfd cZero)) (sq ctxO (nil T) (eqn (dom (absurd (x 0))) cZero))
+      (sq ctxO (nil T) (eqn (cod (absurd (x 0))) (x 0)))
+      (sq ctxA (single (eqn (dom (x 0)) cZero)) (eqn (x 0) (absurd (cod (x 0)))))))
 
-(def coproductAxioms
-  (append
-    (l6 (sq ctxOO (nil T) (dfd (coprod (x 0) (x 1))))
-      (sq ctxOO (nil T) (eqn (dom (inl (x 0) (x 1))) (x 0)))
-      (sq ctxOO (nil T) (eqn (cod (inl (x 0) (x 1))) (coprod (x 0) (x 1))))
-      (sq ctxOO (nil T) (eqn (dom (inr (x 0) (x 1))) (x 1)))
-      (sq ctxOO (nil T) (eqn (cod (inr (x 0) (x 1))) (coprod (x 0) (x 1))))
-      (sq ctxAA (single (dfd (copair (x 0) (x 1)))) (eqn (cod (x 0)) (cod (x 1)))))
-    (l6 (sq ctxAA (single (eqn (cod (x 0)) (cod (x 1)))) (dfd (copair (x 0) (x 1))))
-      (sq ctxAA (single (dfd (copair (x 0) (x 1))))
-        (eqn (dom (copair (x 0) (x 1))) (coprod (dom (x 0)) (dom (x 1)))))
-      (sq ctxAA (single (dfd (copair (x 0) (x 1)))) (eqn (cod (copair (x 0) (x 1))) (cod (x 0))))
-      (sq ctxAA (single (dfd (copair (x 0) (x 1))))
-        (eqn (comp (copair (x 0) (x 1)) (inl (dom (x 0)) (dom (x 1)))) (x 0)))
-      (sq ctxAA (single (dfd (copair (x 0) (x 1))))
-        (eqn (comp (copair (x 0) (x 1)) (inr (dom (x 0)) (dom (x 1)))) (x 1)))
-      (sq (l3 Sorts.arr Sorts.obj Sorts.obj) (single (eqn (dom (x 0)) (coprod (x 1) (x 2))))
-        (eqn (copair (comp (x 0) (inl (x 1) (x 2))) (comp (x 0) (inr (x 1) (x 2)))) (x 0))))))
-
-(def coequalizerAxioms
-  (append
-    (l6 (sq ctxAA (single (dfd (coeqz (x 0) (x 1)))) (eqn (dom (x 0)) (dom (x 1))))
-      (sq ctxAA (single (dfd (coeqz (x 0) (x 1)))) (eqn (cod (x 0)) (cod (x 1))))
-      (sq ctxAA (l2 (eqn (dom (x 0)) (dom (x 1))) (eqn (cod (x 0)) (cod (x 1))))
-        (dfd (coeqz (x 0) (x 1))))
-      (sq ctxAA (single (dfd (coeqProj (x 0) (x 1)))) (dfd (coeqz (x 0) (x 1))))
-      (sq ctxAA (single (dfd (coeqz (x 0) (x 1)))) (dfd (coeqProj (x 0) (x 1))))
-      (sq ctxAA (single (dfd (coeqz (x 0) (x 1)))) (eqn (dom (coeqProj (x 0) (x 1))) (cod (x 0)))))
+  (def coproductAxioms
     (append
-      (l6
+      (l6 (sq ctxOO (nil T) (dfd (coprod (x 0) (x 1))))
+        (sq ctxOO (nil T) (eqn (dom (inl (x 0) (x 1))) (x 0)))
+        (sq ctxOO (nil T) (eqn (cod (inl (x 0) (x 1))) (coprod (x 0) (x 1))))
+        (sq ctxOO (nil T) (eqn (dom (inr (x 0) (x 1))) (x 1)))
+        (sq ctxOO (nil T) (eqn (cod (inr (x 0) (x 1))) (coprod (x 0) (x 1))))
+        (sq ctxAA (single (dfd (copair (x 0) (x 1)))) (eqn (cod (x 0)) (cod (x 1)))))
+      (l6 (sq ctxAA (single (eqn (cod (x 0)) (cod (x 1)))) (dfd (copair (x 0) (x 1))))
+        (sq ctxAA (single (dfd (copair (x 0) (x 1))))
+          (eqn (dom (copair (x 0) (x 1))) (coprod (dom (x 0)) (dom (x 1)))))
+        (sq ctxAA (single (dfd (copair (x 0) (x 1)))) (eqn (cod (copair (x 0) (x 1))) (cod (x 0))))
+        (sq ctxAA (single (dfd (copair (x 0) (x 1))))
+          (eqn (comp (copair (x 0) (x 1)) (inl (dom (x 0)) (dom (x 1)))) (x 0)))
+        (sq ctxAA (single (dfd (copair (x 0) (x 1))))
+          (eqn (comp (copair (x 0) (x 1)) (inr (dom (x 0)) (dom (x 1)))) (x 1)))
+        (sq (l3 Sorts.arr Sorts.obj Sorts.obj) (single (eqn (dom (x 0)) (coprod (x 1) (x 2))))
+          (eqn (copair (comp (x 0) (inl (x 1) (x 2))) (comp (x 0) (inr (x 1) (x 2)))) (x 0))))))
+
+  (def coequalizerAxioms
+    (append
+      (l6 (sq ctxAA (single (dfd (coeqz (x 0) (x 1)))) (eqn (dom (x 0)) (dom (x 1))))
+        (sq ctxAA (single (dfd (coeqz (x 0) (x 1)))) (eqn (cod (x 0)) (cod (x 1))))
+        (sq ctxAA (l2 (eqn (dom (x 0)) (dom (x 1))) (eqn (cod (x 0)) (cod (x 1))))
+          (dfd (coeqz (x 0) (x 1))))
+        (sq ctxAA (single (dfd (coeqProj (x 0) (x 1)))) (dfd (coeqz (x 0) (x 1))))
+        (sq ctxAA (single (dfd (coeqz (x 0) (x 1)))) (dfd (coeqProj (x 0) (x 1))))
         (sq ctxAA (single (dfd (coeqz (x 0) (x 1))))
-          (eqn (cod (coeqProj (x 0) (x 1))) (coeqz (x 0) (x 1))))
-        (sq ctxAA (single (dfd (coeqz (x 0) (x 1))))
-          (eqn (comp (coeqProj (x 0) (x 1)) (x 0)) (comp (coeqProj (x 0) (x 1)) (x 1))))
-        (sq ctxAAA (single (dfd (coeqDesc (x 0) (x 1) (x 2)))) (dfd (coeqz (x 0) (x 1))))
-        (sq ctxAAA (single (dfd (coeqDesc (x 0) (x 1) (x 2))))
-          (eqn (comp (x 2) (x 0)) (comp (x 2) (x 1))))
-        (sq ctxAAA (l2 (dfd (coeqz (x 0) (x 1))) (eqn (comp (x 2) (x 0)) (comp (x 2) (x 1))))
-          (dfd (coeqDesc (x 0) (x 1) (x 2))))
-        (sq ctxAAA (single (dfd (coeqDesc (x 0) (x 1) (x 2))))
-          (eqn (dom (coeqDesc (x 0) (x 1) (x 2))) (coeqz (x 0) (x 1)))))
+          (eqn (dom (coeqProj (x 0) (x 1))) (cod (x 0)))))
+      (append
+        (l6
+          (sq ctxAA (single (dfd (coeqz (x 0) (x 1))))
+            (eqn (cod (coeqProj (x 0) (x 1))) (coeqz (x 0) (x 1))))
+          (sq ctxAA (single (dfd (coeqz (x 0) (x 1))))
+            (eqn (comp (coeqProj (x 0) (x 1)) (x 0)) (comp (coeqProj (x 0) (x 1)) (x 1))))
+          (sq ctxAAA (single (dfd (coeqDesc (x 0) (x 1) (x 2)))) (dfd (coeqz (x 0) (x 1))))
+          (sq ctxAAA (single (dfd (coeqDesc (x 0) (x 1) (x 2))))
+            (eqn (comp (x 2) (x 0)) (comp (x 2) (x 1))))
+          (sq ctxAAA (l2 (dfd (coeqz (x 0) (x 1))) (eqn (comp (x 2) (x 0)) (comp (x 2) (x 1))))
+            (dfd (coeqDesc (x 0) (x 1) (x 2))))
+          (sq ctxAAA (single (dfd (coeqDesc (x 0) (x 1) (x 2))))
+            (eqn (dom (coeqDesc (x 0) (x 1) (x 2))) (coeqz (x 0) (x 1)))))
+        (l3
+          (sq ctxAAA (single (dfd (coeqDesc (x 0) (x 1) (x 2))))
+            (eqn (cod (coeqDesc (x 0) (x 1) (x 2))) (cod (x 2))))
+          (sq ctxAAA (single (dfd (coeqDesc (x 0) (x 1) (x 2))))
+            (eqn (comp (coeqDesc (x 0) (x 1) (x 2)) (coeqProj (x 0) (x 1))) (x 2)))
+          (sq ctxAAA (l2 (dfd (coeqz (x 0) (x 1))) (eqn (dom (x 2)) (coeqz (x 0) (x 1))))
+            (eqn (coeqDesc (x 0) (x 1) (comp (x 2) (coeqProj (x 0) (x 1)))) (x 2)))))))
+
+  (def ctxOOA (l3 Sorts.obj Sorts.obj Sorts.arr))
+  (def exponentialAxioms
+    (append
+      (l6 (sq ctxOO (nil T) (dfd (exp (x 0) (x 1))))
+        (sq ctxOO (nil T) (eqn (dom (ev (x 0) (x 1))) (prod (exp (x 0) (x 1)) (x 0))))
+        (sq ctxOO (nil T) (eqn (cod (ev (x 0) (x 1))) (x 1)))
+        (sq ctxOOA (single (dfd (curry (x 0) (x 1) (x 2)))) (eqn (dom (x 2)) (prod (x 0) (x 1))))
+        (sq ctxOOA (single (eqn (dom (x 2)) (prod (x 0) (x 1)))) (dfd (curry (x 0) (x 1) (x 2))))
+        (sq ctxOOA (single (dfd (curry (x 0) (x 1) (x 2))))
+          (eqn (dom (curry (x 0) (x 1) (x 2))) (x 0))))
       (l3
-        (sq ctxAAA (single (dfd (coeqDesc (x 0) (x 1) (x 2))))
-          (eqn (cod (coeqDesc (x 0) (x 1) (x 2))) (cod (x 2))))
-        (sq ctxAAA (single (dfd (coeqDesc (x 0) (x 1) (x 2))))
-          (eqn (comp (coeqDesc (x 0) (x 1) (x 2)) (coeqProj (x 0) (x 1))) (x 2)))
-        (sq ctxAAA (l2 (dfd (coeqz (x 0) (x 1))) (eqn (dom (x 2)) (coeqz (x 0) (x 1))))
-          (eqn (coeqDesc (x 0) (x 1) (comp (x 2) (coeqProj (x 0) (x 1)))) (x 2)))))))
+        (sq ctxOOA (single (dfd (curry (x 0) (x 1) (x 2))))
+          (eqn (cod (curry (x 0) (x 1) (x 2))) (exp (x 1) (cod (x 2)))))
+        (sq ctxOOA (single (dfd (curry (x 0) (x 1) (x 2))))
+          (eqn (comp (ev (x 1) (cod (x 2))) (prodMapLeft (curry (x 0) (x 1) (x 2)) (x 1))) (x 2)))
+        (sq (l4 Sorts.obj Sorts.obj Sorts.obj Sorts.arr)
+          (l2 (eqn (dom (x 3)) (x 0)) (eqn (cod (x 3)) (exp (x 1) (x 2))))
+          (eqn (curry (x 0) (x 1) (comp (ev (x 1) (x 2)) (prodMapLeft (x 3) (x 1)))) (x 3))))))
 
-(def ctxOOA (l3 Sorts.obj Sorts.obj Sorts.arr))
-(def exponentialAxioms
-  (append
-    (l6 (sq ctxOO (nil T) (dfd (exp (x 0) (x 1))))
-      (sq ctxOO (nil T) (eqn (dom (ev (x 0) (x 1))) (prod (exp (x 0) (x 1)) (x 0))))
-      (sq ctxOO (nil T) (eqn (cod (ev (x 0) (x 1))) (x 1)))
-      (sq ctxOOA (single (dfd (curry (x 0) (x 1) (x 2)))) (eqn (dom (x 2)) (prod (x 0) (x 1))))
-      (sq ctxOOA (single (eqn (dom (x 2)) (prod (x 0) (x 1)))) (dfd (curry (x 0) (x 1) (x 2))))
-      (sq ctxOOA (single (dfd (curry (x 0) (x 1) (x 2))))
-        (eqn (dom (curry (x 0) (x 1) (x 2))) (x 0))))
-    (l3
-      (sq ctxOOA (single (dfd (curry (x 0) (x 1) (x 2))))
-        (eqn (cod (curry (x 0) (x 1) (x 2))) (exp (x 1) (cod (x 2)))))
-      (sq ctxOOA (single (dfd (curry (x 0) (x 1) (x 2))))
-        (eqn (comp (ev (x 1) (cod (x 2))) (prodMapLeft (curry (x 0) (x 1) (x 2)) (x 1))) (x 2)))
-      (sq (l4 Sorts.obj Sorts.obj Sorts.obj Sorts.arr)
-        (l2 (eqn (dom (x 3)) (x 0)) (eqn (cod (x 3)) (exp (x 1) (x 2))))
-        (eqn (curry (x 0) (x 1) (comp (ev (x 1) (x 2)) (prodMapLeft (x 3) (x 1)))) (x 3))))))
-
-(def classifierAxioms
-  (append
-    (l6 (sq (nil T) (nil T) (dfd omega)) (sq (nil T) (nil T) (eqn (dom tru) one))
-      (sq (nil T) (nil T) (eqn (cod tru) omega))
-      (sq ctxA (single (dfd (chi (x 0)))) (monoCond (x 0)))
-      (sq ctxA (single (monoCond (x 0))) (dfd (chi (x 0))))
-      (sq ctxA (single (dfd (chi (x 0)))) (eqn (dom (chi (x 0))) (cod (x 0)))))
+  (def classifierAxioms
     (append
-      (l6 (sq ctxA (single (dfd (chi (x 0)))) (eqn (cod (chi (x 0))) omega))
-        (sq ctxA (single (dfd (chi (x 0))))
-          (eqn (comp (chi (x 0)) (x 0)) (comp tru (bang (dom (x 0))))))
-        (sq ctxA (single (dfd (chiInv (x 0)))) (dfd (chi (x 0))))
-        (sq ctxA (single (dfd (chi (x 0)))) (dfd (chiInv (x 0))))
-        (sq ctxA (single (dfd (chi (x 0)))) (eqn (dom (chiInv (x 0))) (truthEq (chi (x 0)))))
-        (sq ctxA (single (dfd (chi (x 0)))) (eqn (cod (chiInv (x 0))) (dom (x 0)))))
-      (l3
-        (sq ctxA (single (dfd (chi (x 0))))
-          (eqn (comp (truthLift (chi (x 0)) (x 0)) (chiInv (x 0))) (idt (truthEq (chi (x 0))))))
-        (sq ctxA (single (dfd (chi (x 0))))
-          (eqn (comp (chiInv (x 0)) (truthLift (chi (x 0)) (x 0))) (idt (dom (x 0)))))
-        (sq (l4 Sorts.arr Sorts.arr Sorts.arr Sorts.arr)
-          (l6 (dfd (chi (x 0))) (eqn (dom (x 1)) (cod (x 0))) (eqn (cod (x 1)) omega)
-            (eqn (comp (truthIncl (x 1)) (x 2)) (x 0))
-            (eqn (comp (x 2) (x 3)) (idt (truthEq (x 1))))
-            (eqn (comp (x 3) (x 2)) (idt (dom (x 0)))))
-          (eqn (x 1) (chi (x 0))))))))
+      (l6 (sq (nil T) (nil T) (dfd omega)) (sq (nil T) (nil T) (eqn (dom tru) one))
+        (sq (nil T) (nil T) (eqn (cod tru) omega))
+        (sq ctxA (single (dfd (chi (x 0)))) (monoCond (x 0)))
+        (sq ctxA (single (monoCond (x 0))) (dfd (chi (x 0))))
+        (sq ctxA (single (dfd (chi (x 0)))) (eqn (dom (chi (x 0))) (cod (x 0)))))
+      (append
+        (l6 (sq ctxA (single (dfd (chi (x 0)))) (eqn (cod (chi (x 0))) omega))
+          (sq ctxA (single (dfd (chi (x 0))))
+            (eqn (comp (chi (x 0)) (x 0)) (comp tru (bang (dom (x 0))))))
+          (sq ctxA (single (dfd (chiInv (x 0)))) (dfd (chi (x 0))))
+          (sq ctxA (single (dfd (chi (x 0)))) (dfd (chiInv (x 0))))
+          (sq ctxA (single (dfd (chi (x 0)))) (eqn (dom (chiInv (x 0))) (truthEq (chi (x 0)))))
+          (sq ctxA (single (dfd (chi (x 0)))) (eqn (cod (chiInv (x 0))) (dom (x 0)))))
+        (l3
+          (sq ctxA (single (dfd (chi (x 0))))
+            (eqn (comp (truthLift (chi (x 0)) (x 0)) (chiInv (x 0))) (idt (truthEq (chi (x 0))))))
+          (sq ctxA (single (dfd (chi (x 0))))
+            (eqn (comp (chiInv (x 0)) (truthLift (chi (x 0)) (x 0))) (idt (dom (x 0)))))
+          (sq (l4 Sorts.arr Sorts.arr Sorts.arr Sorts.arr)
+            (l6 (dfd (chi (x 0))) (eqn (dom (x 1)) (cod (x 0))) (eqn (cod (x 1)) omega)
+              (eqn (comp (truthIncl (x 1)) (x 2)) (x 0))
+              (eqn (comp (x 2) (x 3)) (idt (truthEq (x 1))))
+              (eqn (comp (x 3) (x 2)) (idt (dom (x 0)))))
+            (eqn (x 1) (chi (x 0))))))))
 
-(def natAxioms
-  (append
-    (l6 (sq (nil T) (nil T) (eqn (dom zeroN) one)) (sq (nil T) (nil T) (eqn (cod zeroN) nat))
-      (sq (nil T) (nil T) (eqn (dom succ) nat))
-      (sq (nil T) (nil T) (eqn (cod succ) nat))
-      (sq ctxAA (single (dfd (natRec (x 0) (x 1)))) (eqn (dom (x 0)) one))
-      (sq ctxAA (single (dfd (natRec (x 0) (x 1)))) (eqn (cod (x 0)) (dom (x 1)))))
+  (def natAxioms
     (append
-      (l6 (sq ctxAA (single (dfd (natRec (x 0) (x 1)))) (eqn (dom (x 1)) (cod (x 1))))
-        (sq ctxAA
-          (l3 (eqn (dom (x 0)) one) (eqn (cod (x 0)) (dom (x 1))) (eqn (dom (x 1)) (cod (x 1))))
-          (dfd (natRec (x 0) (x 1))))
-        (sq ctxAA (single (dfd (natRec (x 0) (x 1)))) (eqn (dom (natRec (x 0) (x 1))) nat))
-        (sq ctxAA (single (dfd (natRec (x 0) (x 1)))) (eqn (cod (natRec (x 0) (x 1))) (cod (x 0))))
-        (sq ctxAA (single (dfd (natRec (x 0) (x 1)))) (eqn (comp (natRec (x 0) (x 1)) zeroN) (x 0)))
-        (sq ctxAA (single (dfd (natRec (x 0) (x 1))))
-          (eqn (comp (natRec (x 0) (x 1)) succ) (comp (x 1) (natRec (x 0) (x 1))))))
-      (single
-        (sq ctxAAA
-          (l4 (dfd (natRec (x 0) (x 1))) (eqn (dom (x 2)) nat) (eqn (comp (x 2) zeroN) (x 0))
-            (eqn (comp (x 2) succ) (comp (x 1) (x 2))))
-          (eqn (x 2) (natRec (x 0) (x 1))))))))
+      (l6 (sq (nil T) (nil T) (eqn (dom zeroN) one)) (sq (nil T) (nil T) (eqn (cod zeroN) nat))
+        (sq (nil T) (nil T) (eqn (dom succ) nat))
+        (sq (nil T) (nil T) (eqn (cod succ) nat))
+        (sq ctxAA (single (dfd (natRec (x 0) (x 1)))) (eqn (dom (x 0)) one))
+        (sq ctxAA (single (dfd (natRec (x 0) (x 1)))) (eqn (cod (x 0)) (dom (x 1)))))
+      (append
+        (l6 (sq ctxAA (single (dfd (natRec (x 0) (x 1)))) (eqn (dom (x 1)) (cod (x 1))))
+          (sq ctxAA
+            (l3 (eqn (dom (x 0)) one) (eqn (cod (x 0)) (dom (x 1))) (eqn (dom (x 1)) (cod (x 1))))
+            (dfd (natRec (x 0) (x 1))))
+          (sq ctxAA (single (dfd (natRec (x 0) (x 1)))) (eqn (dom (natRec (x 0) (x 1))) nat))
+          (sq ctxAA (single (dfd (natRec (x 0) (x 1))))
+            (eqn (cod (natRec (x 0) (x 1))) (cod (x 0))))
+          (sq ctxAA (single (dfd (natRec (x 0) (x 1))))
+            (eqn (comp (natRec (x 0) (x 1)) zeroN) (x 0)))
+          (sq ctxAA (single (dfd (natRec (x 0) (x 1))))
+            (eqn (comp (natRec (x 0) (x 1)) succ) (comp (x 1) (natRec (x 0) (x 1))))))
+        (single
+          (sq ctxAAA
+            (l4 (dfd (natRec (x 0) (x 1))) (eqn (dom (x 2)) nat) (eqn (comp (x 2) zeroN) (x 0))
+              (eqn (comp (x 2) succ) (comp (x 1) (x 2))))
+            (eqn (x 2) (natRec (x 0) (x 1))))))))
 
-(def ctxOAA (l3 Sorts.obj Sorts.arr Sorts.arr))
-(def listAxioms
-  (append
-    (l6 (sq ctxO (nil T) (dfd (list (x 0)))) (sq ctxO (nil T) (eqn (dom (cNil (x 0))) one))
-      (sq ctxO (nil T) (eqn (cod (cNil (x 0))) (list (x 0))))
-      (sq ctxO (nil T) (eqn (dom (cCons (x 0))) (prod (x 0) (list (x 0)))))
-      (sq ctxO (nil T) (eqn (cod (cCons (x 0))) (list (x 0))))
-      (sq ctxOAA (single (dfd (listRec (x 0) (x 1) (x 2)))) (eqn (dom (x 1)) one)))
+  (def ctxOAA (l3 Sorts.obj Sorts.arr Sorts.arr))
+  (def listAxioms
     (append
-      (l6 (sq ctxOAA (single (dfd (listRec (x 0) (x 1) (x 2)))) (eqn (cod (x 1)) (cod (x 2))))
-        (sq ctxOAA (single (dfd (listRec (x 0) (x 1) (x 2))))
-          (eqn (dom (x 2)) (prod (x 0) (cod (x 2)))))
-        (sq ctxOAA
-          (l3 (eqn (dom (x 1)) one) (eqn (cod (x 1)) (cod (x 2)))
+      (l6 (sq ctxO (nil T) (dfd (list (x 0)))) (sq ctxO (nil T) (eqn (dom (cNil (x 0))) one))
+        (sq ctxO (nil T) (eqn (cod (cNil (x 0))) (list (x 0))))
+        (sq ctxO (nil T) (eqn (dom (cCons (x 0))) (prod (x 0) (list (x 0)))))
+        (sq ctxO (nil T) (eqn (cod (cCons (x 0))) (list (x 0))))
+        (sq ctxOAA (single (dfd (listRec (x 0) (x 1) (x 2)))) (eqn (dom (x 1)) one)))
+      (append
+        (l6 (sq ctxOAA (single (dfd (listRec (x 0) (x 1) (x 2)))) (eqn (cod (x 1)) (cod (x 2))))
+          (sq ctxOAA (single (dfd (listRec (x 0) (x 1) (x 2))))
             (eqn (dom (x 2)) (prod (x 0) (cod (x 2)))))
-          (dfd (listRec (x 0) (x 1) (x 2))))
-        (sq ctxOAA (single (dfd (listRec (x 0) (x 1) (x 2))))
-          (eqn (dom (listRec (x 0) (x 1) (x 2))) (list (x 0))))
-        (sq ctxOAA (single (dfd (listRec (x 0) (x 1) (x 2))))
-          (eqn (cod (listRec (x 0) (x 1) (x 2))) (cod (x 1))))
-        (sq ctxOAA (single (dfd (listRec (x 0) (x 1) (x 2))))
-          (eqn (comp (listRec (x 0) (x 1) (x 2)) (cNil (x 0))) (x 1))))
+          (sq ctxOAA
+            (l3 (eqn (dom (x 1)) one) (eqn (cod (x 1)) (cod (x 2)))
+              (eqn (dom (x 2)) (prod (x 0) (cod (x 2)))))
+            (dfd (listRec (x 0) (x 1) (x 2))))
+          (sq ctxOAA (single (dfd (listRec (x 0) (x 1) (x 2))))
+            (eqn (dom (listRec (x 0) (x 1) (x 2))) (list (x 0))))
+          (sq ctxOAA (single (dfd (listRec (x 0) (x 1) (x 2))))
+            (eqn (cod (listRec (x 0) (x 1) (x 2))) (cod (x 1))))
+          (sq ctxOAA (single (dfd (listRec (x 0) (x 1) (x 2))))
+            (eqn (comp (listRec (x 0) (x 1) (x 2)) (cNil (x 0))) (x 1))))
+        (l2
+          (sq ctxOAA (single (dfd (listRec (x 0) (x 1) (x 2))))
+            (eqn (comp (listRec (x 0) (x 1) (x 2)) (cCons (x 0)))
+              (comp (x 2) (prodMapRight (x 0) (listRec (x 0) (x 1) (x 2))))))
+          (sq (l4 Sorts.obj Sorts.arr Sorts.arr Sorts.arr)
+            (l4 (dfd (listRec (x 0) (x 1) (x 2))) (eqn (dom (x 3)) (list (x 0)))
+              (eqn (comp (x 3) (cNil (x 0))) (x 1))
+              (eqn (comp (x 3) (cCons (x 0))) (comp (x 2) (prodMapRight (x 0) (x 3)))))
+            (eqn (x 3) (listRec (x 0) (x 1) (x 2))))))))
+
+  (def roseAxioms
+    (append
+      (l6 (sq (nil T) (nil T) (eqn (dom cNode) (prod nat (list rose))))
+        (sq (nil T) (nil T) (eqn (cod cNode) rose))
+        (sq ctxA (single (dfd (roseRec (x 0)))) (eqn (dom (x 0)) (prod nat (list (cod (x 0))))))
+        (sq ctxA (single (eqn (dom (x 0)) (prod nat (list (cod (x 0)))))) (dfd (roseRec (x 0))))
+        (sq ctxA (single (dfd (roseRec (x 0)))) (eqn (dom (roseRec (x 0))) rose))
+        (sq ctxA (single (dfd (roseRec (x 0)))) (eqn (cod (roseRec (x 0))) (cod (x 0)))))
       (l2
-        (sq ctxOAA (single (dfd (listRec (x 0) (x 1) (x 2))))
-          (eqn (comp (listRec (x 0) (x 1) (x 2)) (cCons (x 0)))
-            (comp (x 2) (prodMapRight (x 0) (listRec (x 0) (x 1) (x 2))))))
-        (sq (l4 Sorts.obj Sorts.arr Sorts.arr Sorts.arr)
-          (l4 (dfd (listRec (x 0) (x 1) (x 2))) (eqn (dom (x 3)) (list (x 0)))
-            (eqn (comp (x 3) (cNil (x 0))) (x 1))
-            (eqn (comp (x 3) (cCons (x 0))) (comp (x 2) (prodMapRight (x 0) (x 3)))))
-          (eqn (x 3) (listRec (x 0) (x 1) (x 2))))))))
+        (sq ctxA (single (dfd (roseRec (x 0))))
+          (eqn (comp (roseRec (x 0)) cNode)
+            (comp (x 0) (prodMapRight nat (listMap (roseRec (x 0)))))))
+        (sq ctxAA
+          (l3 (dfd (roseRec (x 0))) (eqn (dom (x 1)) rose)
+            (eqn (comp (x 1) cNode) (comp (x 0) (prodMapRight nat (listMap (x 1))))))
+          (eqn (x 1) (roseRec (x 0)))))))
 
-(def roseAxioms
-  (append
-    (l6 (sq (nil T) (nil T) (eqn (dom cNode) (prod nat (list rose))))
-      (sq (nil T) (nil T) (eqn (cod cNode) rose))
-      (sq ctxA (single (dfd (roseRec (x 0)))) (eqn (dom (x 0)) (prod nat (list (cod (x 0))))))
-      (sq ctxA (single (eqn (dom (x 0)) (prod nat (list (cod (x 0)))))) (dfd (roseRec (x 0))))
-      (sq ctxA (single (dfd (roseRec (x 0)))) (eqn (dom (roseRec (x 0))) rose))
-      (sq ctxA (single (dfd (roseRec (x 0)))) (eqn (cod (roseRec (x 0))) (cod (x 0)))))
-    (l2
-      (sq ctxA (single (dfd (roseRec (x 0))))
-        (eqn (comp (roseRec (x 0)) cNode)
-          (comp (x 0) (prodMapRight nat (listMap (roseRec (x 0)))))))
-      (sq ctxAA
-        (l3 (dfd (roseRec (x 0))) (eqn (dom (x 1)) rose)
-          (eqn (comp (x 1) cNode) (comp (x 0) (prodMapRight nat (listMap (x 1))))))
-        (eqn (x 1) (roseRec (x 0)))))))
+  (def ctxOA (l2 Sorts.obj Sorts.arr))
+  (def lroseAxioms
+    (append
+      (l6 (sq ctxO (nil T) (dfd (lrose (x 0))))
+        (sq ctxO (nil T) (eqn (dom (lnode (x 0))) (prod (x 0) (list (lrose (x 0))))))
+        (sq ctxO (nil T) (eqn (cod (lnode (x 0))) (lrose (x 0))))
+        (sq ctxOA (single (dfd (lroseRec (x 0) (x 1))))
+          (eqn (dom (x 1)) (prod (x 0) (list (cod (x 1))))))
+        (sq ctxOA (single (eqn (dom (x 1)) (prod (x 0) (list (cod (x 1))))))
+          (dfd (lroseRec (x 0) (x 1))))
+        (sq ctxOA (single (dfd (lroseRec (x 0) (x 1))))
+          (eqn (dom (lroseRec (x 0) (x 1))) (lrose (x 0)))))
+      (l3
+        (sq ctxOA (single (dfd (lroseRec (x 0) (x 1))))
+          (eqn (cod (lroseRec (x 0) (x 1))) (cod (x 1))))
+        (sq ctxOA (single (dfd (lroseRec (x 0) (x 1))))
+          (eqn (comp (lroseRec (x 0) (x 1)) (lnode (x 0)))
+            (comp (x 1) (prodMapRight (x 0) (listMap (lroseRec (x 0) (x 1)))))))
+        (sq ctxOAA
+          (l3 (dfd (lroseRec (x 0) (x 1))) (eqn (dom (x 2)) (lrose (x 0)))
+            (eqn (comp (x 2) (lnode (x 0))) (comp (x 1) (prodMapRight (x 0) (listMap (x 2))))))
+          (eqn (x 2) (lroseRec (x 0) (x 1)))))))
 
-(def ctxOA (l2 Sorts.obj Sorts.arr))
-(def lroseAxioms
-  (append
-    (l6 (sq ctxO (nil T) (dfd (lrose (x 0))))
-      (sq ctxO (nil T) (eqn (dom (lnode (x 0))) (prod (x 0) (list (lrose (x 0))))))
-      (sq ctxO (nil T) (eqn (cod (lnode (x 0))) (lrose (x 0))))
-      (sq ctxOA (single (dfd (lroseRec (x 0) (x 1))))
-        (eqn (dom (x 1)) (prod (x 0) (list (cod (x 1))))))
-      (sq ctxOA (single (eqn (dom (x 1)) (prod (x 0) (list (cod (x 1))))))
-        (dfd (lroseRec (x 0) (x 1))))
-      (sq ctxOA (single (dfd (lroseRec (x 0) (x 1))))
-        (eqn (dom (lroseRec (x 0) (x 1))) (lrose (x 0)))))
-    (l3
-      (sq ctxOA (single (dfd (lroseRec (x 0) (x 1))))
-        (eqn (cod (lroseRec (x 0) (x 1))) (cod (x 1))))
-      (sq ctxOA (single (dfd (lroseRec (x 0) (x 1))))
-        (eqn (comp (lroseRec (x 0) (x 1)) (lnode (x 0)))
-          (comp (x 1) (prodMapRight (x 0) (listMap (lroseRec (x 0) (x 1)))))))
-      (sq ctxOAA
-        (l3 (dfd (lroseRec (x 0) (x 1))) (eqn (dom (x 2)) (lrose (x 0)))
-          (eqn (comp (x 2) (lnode (x 0))) (comp (x 1) (prodMapRight (x 0) (listMap (x 2))))))
-        (eqn (x 2) (lroseRec (x 0) (x 1)))))))
-
-; the axioms, block by block, and the theory
-(def axioms
-  (append categoryAxioms
-    (append terminalAxioms
-      (append productAxioms
-        (append equalizerAxioms
-          (append initialAxioms
-            (append coproductAxioms
-              (append coequalizerAxioms
-                (append exponentialAxioms
-                  (append classifierAxioms
-                    (append natAxioms (append listAxioms (append roseAxioms lroseAxioms)))))))))))))
-(def toposTheory (theory (node 0 sig) (node 0 axioms)))
+  ; the axioms, block by block, and the theory
+  (def axioms
+    (append categoryAxioms
+      (append terminalAxioms
+        (append productAxioms
+          (append equalizerAxioms
+            (append initialAxioms
+              (append coproductAxioms
+                (append coequalizerAxioms
+                  (append exponentialAxioms
+                    (append classifierAxioms
+                      (append natAxioms
+                        (append listAxioms (append roseAxioms lroseAxioms)))))))))))))
+  (def toposTheory (theory (node 0 sig) (node 0 axioms))))
+(import Theory)

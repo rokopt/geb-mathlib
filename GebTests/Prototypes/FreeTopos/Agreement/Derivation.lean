@@ -45,6 +45,8 @@ set_option doc.verso true
 
 @[expose] public section
 
+open GebMirror.Metalogic
+
 namespace GebTests.Prototypes.FreeTopos.Agreement.Derivation
 
 open Geb Geb.Kernel Geb.FreeTopos GebTests.Prototypes.FreeTopos.Agreement.Encode
@@ -70,31 +72,31 @@ local macro "der_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* "]"
     List.isEmpty_cons, List.isEmpty_nil, Bool.or_eq_true, leaf_zero_eq_ofBool, $ls,*] $(loc)?)
 
 /-- The mirror's primitive arrow zero. -/
-@[simp] theorem zeroPrim_eq : GebMirror.Metalogic.zeroPrim = encPrim Internal.zeroPrim := rfl
+@[simp] theorem zeroPrim_eq : «Derivation.zeroPrim» = encPrim Internal.zeroPrim := rfl
 
 /-- The mirror's primitive arrow successor. -/
-@[simp] theorem succPrim_eq : GebMirror.Metalogic.succPrim = encPrim Internal.succPrim := rfl
+@[simp] theorem succPrim_eq : «Derivation.succPrim» = encPrim Internal.succPrim := rfl
 
 /-- The mirror's primitive arrow of the empty list. -/
-@[simp] theorem nilPrim_eq : GebMirror.Metalogic.nilPrim = encPrim Internal.nilPrim := rfl
+@[simp] theorem nilPrim_eq : «Derivation.nilPrim» = encPrim Internal.nilPrim := rfl
 
 /-- The mirror's primitive arrow of the construction of a list. -/
-@[simp] theorem consPrim_eq : GebMirror.Metalogic.consPrim = encPrim Internal.consPrim := rfl
+@[simp] theorem consPrim_eq : «Derivation.consPrim» = encPrim Internal.consPrim := rfl
 
 /-- The mirror's primitive arrow of the construction of a rose tree. -/
-@[simp] theorem nodePrim_eq : GebMirror.Metalogic.nodePrim = encPrim Internal.nodePrim := rfl
+@[simp] theorem nodePrim_eq : «Derivation.nodePrim» = encPrim Internal.nodePrim := rfl
 
 /-- The mirror's primitive arrow of the construction of a rose tree over labels. -/
-@[simp] theorem lnodePrim_eq : GebMirror.Metalogic.lnodePrim = encPrim Internal.lnodePrim := rfl
+@[simp] theorem lnodePrim_eq : «Derivation.lnodePrim» = encPrim Internal.lnodePrim := rfl
 
 /-- The mirror's primitive arrow of the left injection. -/
-@[simp] theorem inlPrim_eq : GebMirror.Metalogic.inlPrim = encPrim Internal.inlPrim := rfl
+@[simp] theorem inlPrim_eq : «Derivation.inlPrim» = encPrim Internal.inlPrim := rfl
 
 /-- The mirror's primitive arrow of the right injection. -/
-@[simp] theorem inrPrim_eq : GebMirror.Metalogic.inrPrim = encPrim Internal.inrPrim := rfl
+@[simp] theorem inrPrim_eq : «Derivation.inrPrim» = encPrim Internal.inrPrim := rfl
 
 /-- The mirror's primitive arrow of the case analysis of a coproduct. -/
-@[simp] theorem casePrim_eq : GebMirror.Metalogic.casePrim = encPrim Internal.casePrim := rfl
+@[simp] theorem casePrim_eq : «Derivation.casePrim» = encPrim Internal.casePrim := rfl
 
 /-- Encoded primitive arrows are equal exactly when the primitive arrows are. -/
 theorem encPrim_inj {p q : Internal.Prim} : encPrim p = encPrim q ↔ p = q := by
@@ -107,156 +109,156 @@ theorem encPrim_inj {p q : Internal.Prim} : encPrim p = encPrim q ↔ p = q := b
 
 /-- The mirror's test that the primitive arrow of an index is a given one. -/
 theorem primIs_eq (G : Internal.Globals) (k : ℕ) (p : Internal.Prim) :
-    GebMirror.Metalogic.primIs (encGlobals G) (leaf k) (encPrim p) =
+    «Derivation.primIs» (encGlobals G) (leaf k) (encPrim p) =
       ofBool (decide (G.prims[k]? = some p)) := by
-  simp only [GebMirror.Metalogic.primIs, gPrims_eq, nth_eq, List.getElem?_map, some_eq, equal_eq]
+  simp only [«Derivation.primIs», gPrims_eq, nth_eq, List.getElem?_map, some_eq, equal_eq]
   congr 1
   cases G.prims[k]? <;> simp [encOpt_inj, encPrim_inj]
 
 /-- The mirror's object variables. -/
 @[simp] theorem objVars_eq (n : ℕ) :
-    GebMirror.Metalogic.objVars (leaf n) = Internal.objVars n := by
-  simp [GebMirror.Metalogic.objVars, Internal.objVars, Function.comp_def]
+    «Derivation.objVars» (leaf n) = Internal.objVars n := by
+  simp [«Derivation.objVars», Internal.objVars, Function.comp_def]
 
 /-- The mirror's substitution of a term for the innermost variable, the others lowered. -/
 theorem instVar_eq (u : Term) (i : ℕ) :
-    GebMirror.Metalogic.instVar (encTerm u) (leaf i) = encTerm (Internal.instVar u i) := by
-  cases i <;> mirror_simp [GebMirror.Metalogic.instVar, Internal.instVar, mVar_eq, beq_iff_eq,
+    «Derivation.instVar» (encTerm u) (leaf i) = encTerm (Internal.instVar u i) := by
+  cases i <;> mirror_simp [«Derivation.instVar», Internal.instVar, mVar_eq, beq_iff_eq,
     Nat.add_one_ne_zero, Nat.add_sub_cancel]
 
 /-- The mirror's substitution of a term for the innermost variable, the others in place. -/
 theorem atVar0_eq (u : Term) (i : ℕ) :
-    GebMirror.Metalogic.atVar0 (encTerm u) (leaf i) = encTerm (Internal.atVar0 u i) := by
-  cases i <;> mirror_simp [GebMirror.Metalogic.atVar0, Internal.atVar0, mVar_eq, beq_iff_eq,
+    «Derivation.atVar0» (encTerm u) (leaf i) = encTerm (Internal.atVar0 u i) := by
+  cases i <;> mirror_simp [«Derivation.atVar0», Internal.atVar0, mVar_eq, beq_iff_eq,
     Nat.add_one_ne_zero]
 
 /-- The mirror's term at the successor of its natural number variable. -/
 @[simp] theorem natSuccAt_eq (ks : ℕ) (t : Term) :
-    GebMirror.Metalogic.natSuccAt (leaf ks) (encTerm t) = encTerm (Internal.natSuccAt ks t) := by
-  simp only [GebMirror.Metalogic.natSuccAt, Internal.natSuccAt, mVar_eq, mArr_eq]
+    «Derivation.natSuccAt» (leaf ks) (encTerm t) = encTerm (Internal.natSuccAt ks t) := by
+  simp only [«Derivation.natSuccAt», Internal.natSuccAt, mVar_eq, mArr_eq]
   exact subst_eq _ _ _ (atVar0_eq _)
 
 /-- The mirror's term at the construction of a list before its list variable. -/
 @[simp] theorem listConsAt_eq (kc : ℕ) (a : Tree) (t : Term) :
-    GebMirror.Metalogic.listConsAt (leaf kc) a (encTerm t) =
+    «Derivation.listConsAt» (leaf kc) a (encTerm t) =
       encTerm (Internal.listConsAt kc a t) := by
-  simp only [GebMirror.Metalogic.listConsAt, Internal.listConsAt]
+  simp only [«Derivation.listConsAt», Internal.listConsAt]
   refine subst_eq _ _ _ fun i ↦ ?_
   cases i <;> mirror_simp [mVar_eq, mPair_eq, mArr_eq, beq_iff_eq, Nat.add_one_ne_zero]
 
 /-- The mirror's term at the construction of a rose tree. -/
 @[simp] theorem roseNodeAt_eq (kn : ℕ) (r a : Tree) (t : Term) :
-    GebMirror.Metalogic.roseNodeAt (leaf kn) r a (encTerm t) =
+    «Derivation.roseNodeAt» (leaf kn) r a (encTerm t) =
       encTerm (Internal.roseNodeAt kn r a t) := by
-  simp only [GebMirror.Metalogic.roseNodeAt, Internal.roseNodeAt, mVar_eq, mPair_eq, mArr_eq,
+  simp only [«Derivation.roseNodeAt», Internal.roseNodeAt, mVar_eq, mPair_eq, mArr_eq,
     equal_eq, mirror_rose, label_ne_zero, ofBool_bne, decide_eq_true_eq, single_eq]
   split_ifs <;> exact subst_eq _ _ _ (instVar_eq _)
 
 /-- The mirror's weakening of a term past an element after its list variable. -/
 @[simp] theorem weakenElem_eq (t : Term) :
-    GebMirror.Metalogic.weakenElem (encTerm t) = encTerm (Internal.weakenElem t) := by
+    «Derivation.weakenElem» (encTerm t) = encTerm (Internal.weakenElem t) := by
   refine rename_eq _ _ _ fun i ↦ ?_
   cases i <;> mirror_simp [beq_iff_eq, Nat.add_one_ne_zero]
 
 /-- The mirror's weakening of a term past a new innermost variable. -/
 @[simp] theorem weaken1_eq (t : Term) :
-    GebMirror.Metalogic.weaken1 (encTerm t) = encTerm (Internal.weaken1 t) :=
+    «Derivation.weaken1» (encTerm t) = encTerm (Internal.weaken1 t) :=
   rename_eq _ _ _ fun _ ↦ rfl
 
 /-- The mirror's weakening of a term past two new innermost variables. -/
 @[simp] theorem weaken2_eq (t : Term) :
-    GebMirror.Metalogic.weaken2 (encTerm t) = encTerm (Internal.weaken2 t) :=
+    «Derivation.weaken2» (encTerm t) = encTerm (Internal.weaken2 t) :=
   rename_eq _ _ _ fun _ ↦ rfl
 
 /-- The mirror's lowering of a term's variables by one. -/
 @[simp] theorem lower1_eq (t : Term) :
-    GebMirror.Metalogic.lower1 (encTerm t) = encTerm (Internal.Term.rename t (· - 1)) :=
+    «Derivation.lower1» (encTerm t) = encTerm (Internal.Term.rename t (· - 1)) :=
   rename_eq _ _ _ fun _ ↦ rfl
 
 /-- The mirror's list of a term's values at a rose tree's children. -/
 @[simp] theorem roseMapAt_eq (kl kc : ℕ) (c : Tree) (t : Term) :
-    GebMirror.Metalogic.roseMapAt (leaf kl) (leaf kc) c (encTerm t) =
+    «Derivation.roseMapAt» (leaf kl) (leaf kc) c (encTerm t) =
       encTerm (Internal.roseMapAt kl kc c t) := by
-  simp only [GebMirror.Metalogic.roseMapAt, Internal.roseMapAt, weaken1_eq, mVar_eq, mPair_eq,
+  simp only [«Derivation.roseMapAt», Internal.roseMapAt, weaken1_eq, mVar_eq, mPair_eq,
     mStar_eq, single_eq, mArr_eq, mListRec_eq]
 
 /-- The mirror's hypothesis of induction on rose trees. -/
 @[simp] theorem roseHyp_eq (kl kc : ℕ) (φ : Term) :
-    GebMirror.Metalogic.roseHyp (leaf kl) (leaf kc) (encTerm φ) =
+    «Derivation.roseHyp» (leaf kl) (leaf kc) (encTerm φ) =
       encTerm (Internal.roseHyp kl kc φ) := by
-  simp only [GebMirror.Metalogic.roseHyp, Internal.roseHyp, mStar_eq, mEq_eq, roseMapAt_eq,
+  simp only [«Derivation.roseHyp», Internal.roseHyp, mStar_eq, mEq_eq, roseMapAt_eq,
     mirror_omega]
 
 /-- The mirror's sides of an equation. -/
 theorem eqParts_eq (φ : Term) :
-    GebMirror.Metalogic.eqParts (encTerm φ) =
+    «Derivation.eqParts» (encTerm φ) =
       encOpt ((Internal.eqParts φ).map fun p ↦ encPair (encTerm p.1, encTerm p.2)) := by
   obtain ⟨l, cs, rfl⟩ : ∃ l cs, φ = RoseTree.node l cs :=
     ⟨φ.label, φ.children, (RoseTree.node_label_children φ).symm⟩
   cases l <;> rcases cs with _ | ⟨t, _ | ⟨u, _ | ⟨w, cs⟩⟩⟩ <;>
-    der_simp [GebMirror.Metalogic.eqParts, Internal.eqParts, labelData]
+    der_simp [«Derivation.eqParts», Internal.eqParts, labelData]
 
 /-- The mirror's instance of a theorem's term at objects and terms. -/
 @[simp] theorem instTerm_eq (θ : List Tree) (σ : List Term) (s : Term) :
-    GebMirror.Metalogic.instTerm θ (σ.map encTerm) (encTerm s) =
+    «Derivation.instTerm» θ (σ.map encTerm) (encTerm s) =
       encTerm (Internal.instTerm θ σ s) := by
-  simp only [GebMirror.Metalogic.instTerm, Internal.instTerm, osubst_eq]
+  simp only [«Derivation.instTerm», Internal.instTerm, osubst_eq]
   exact subst_eq _ _ _ (substList_eq σ)
 
 /-- The mirror's type of a term in a context. -/
 @[simp] theorem typeIn_eq (G : Internal.Globals) (n : ℕ) (Γ : List Tree) (t : Term) :
-    GebMirror.Metalogic.mTypeIn (encGlobals G) (leaf n) Γ (encTerm t) =
+    «Derivation.mTypeIn» (encGlobals G) (leaf n) Γ (encTerm t) =
       encOpt (Internal.typeIn G n Γ t) := by
   have hc := compile_eq G n t (Internal.ctxObj Γ) (Internal.stdEnv Γ)
-  simp only [GebMirror.Metalogic.mTypeIn, ctxObj_eq, stdEnv_eq, hc, mapO_eq, Option.map_map,
+  simp only [«Derivation.mTypeIn», ctxObj_eq, stdEnv_eq, hc, mapO_eq, Option.map_map,
     Internal.typeIn]
   rfl
 
 /-- The mirror's test that a term is a formula in a context. -/
 @[simp] theorem isFormula_eq (G : Internal.Globals) (n : ℕ) (Γ : List Tree) (t : Term) :
-    GebMirror.Metalogic.isFormula (encGlobals G) (leaf n) Γ (encTerm t) =
+    «Derivation.isFormula» (encGlobals G) (leaf n) Γ (encTerm t) =
       ofBool (decide (Internal.typeIn G n Γ t = some omega)) := by
-  simp [GebMirror.Metalogic.isFormula, some_eq, encOpt_inj]
+  simp [«Derivation.isFormula», some_eq, encOpt_inj]
 
 /-- The mirror's hypotheses lowered past an innermost variable none of them mentions. -/
 theorem lowerHyps_eq (G : Internal.Globals) (n : ℕ) (Γ : List Tree) (Φ : List Term) :
-    GebMirror.Metalogic.lowerHyps (encGlobals G) (leaf n) Γ (Φ.map encTerm) =
+    «Derivation.lowerHyps» (encGlobals G) (leaf n) Γ (Φ.map encTerm) =
       encOpt ((Internal.lowerHyps G n Γ Φ).map fun Φ' ↦ RoseTree.node 0 (Φ'.map encTerm)) := by
   have hf : ∀ ψ : Term, (fun h ↦
-      let l := GebMirror.Metalogic.lower1 h
-      if (GebMirror.Metalogic.and (Const.equal (GebMirror.Metalogic.weaken1 l) h)
-          (GebMirror.Metalogic.isFormula (encGlobals G) (leaf n) Γ l)).label ≠ 0 then
-        GebMirror.Metalogic.some l else GebMirror.Metalogic.none) (encTerm ψ) =
+      let l := «Derivation.lower1» h
+      if («Prelude.and» (Const.equal («Derivation.weaken1» l) h)
+          («Derivation.isFormula» (encGlobals G) (leaf n) Γ l)).label ≠ 0 then
+        «Prelude.some» l else «Prelude.none») (encTerm ψ) =
       encOpt ((if Internal.weaken1 (Internal.Term.rename ψ (· - 1)) = ψ ∧
           Internal.typeIn G n Γ (Internal.Term.rename ψ (· - 1)) = some omega
         then some (Internal.Term.rename ψ (· - 1)) else none).map encTerm) := fun ψ ↦ by
     mirror_simp [lower1_eq, weaken1_eq, isFormula_eq, encTerm_eq_iff, some_eq, none_eq,
       Bool.and_eq_true, decide_eq_true_eq]
     split_ifs <;> rfl
-  simp only [GebMirror.Metalogic.lowerHyps, mapT_eq, List.map_map, Function.comp_def, hf]
+  simp only [«Derivation.lowerHyps», mapT_eq, List.map_map, Function.comp_def, hf]
   rw [allSomeT_eq, mapM_map_option, Option.map_map]
   rfl
 
 /-- The mirror's number of a theorem's object variables. -/
 @[simp] theorem thArity_eq (a : Internal.Thm) :
-    GebMirror.Metalogic.thArity (encThm a) = leaf a.arity := rfl
+    «Derivation.thArity» (encThm a) = leaf a.arity := rfl
 
 /-- The mirror's context of a theorem. -/
-@[simp] theorem thCtx_eq (a : Internal.Thm) : GebMirror.Metalogic.thCtx (encThm a) = a.ctx := by
-  simp [GebMirror.Metalogic.thCtx, encThm]
+@[simp] theorem thCtx_eq (a : Internal.Thm) : «Derivation.thCtx» (encThm a) = a.ctx := by
+  simp [«Derivation.thCtx», encThm]
 
 /-- The mirror's hypotheses of a theorem. -/
 @[simp] theorem thHyps_eq (a : Internal.Thm) :
-    GebMirror.Metalogic.thHyps (encThm a) = a.hyps.map encTerm := by
-  simp [GebMirror.Metalogic.thHyps, encThm]
+    «Derivation.thHyps» (encThm a) = a.hyps.map encTerm := by
+  simp [«Derivation.thHyps», encThm]
 
 /-- The mirror's conclusion of a theorem. -/
 @[simp] theorem thConcl_eq (a : Internal.Thm) :
-    GebMirror.Metalogic.thConcl (encThm a) = encTerm a.concl := rfl
+    «Derivation.thConcl» (encThm a) = encTerm a.concl := rfl
 
 /-- The mirror's theorem of its arity, context, hypotheses and conclusion. -/
 @[simp] theorem mkThm_eq (a : Internal.Thm) :
-    GebMirror.Metalogic.mkThm (leaf a.arity) (RoseTree.node 0 a.ctx)
+    «Derivation.mkThm» (leaf a.arity) (RoseTree.node 0 a.ctx)
       (RoseTree.node 0 (a.hyps.map encTerm)) (encTerm a.concl) = encThm a := rfl
 
 /-- The positions of two lists of one length, each with the elements there, are their pairs. -/
@@ -273,19 +275,19 @@ theorem range_all_zip {α β : Type} (p : α → β → Bool) (dx : α) (dy : β
 
 /-- The mirror's conjunction with a false truth value first. -/
 @[simp] theorem and_false_left (x : Tree) :
-    GebMirror.Metalogic.and (ofBool false) x = ofBool false := rfl
+    «Prelude.and» (ofBool false) x = ofBool false := rfl
 
 /-- The mirror's test that objects and terms instantiate a theorem in a context. -/
 theorem instOk_eq (G : Internal.Globals) (n : ℕ) (Γ : List Tree) (a : Internal.Thm)
     (θ : List Tree) (σ : List Term) :
-    GebMirror.Metalogic.instOk (encGlobals G) (leaf n) Γ (encThm a) θ (σ.map encTerm) =
+    «Derivation.instOk» (encGlobals G) (leaf n) Γ (encThm a) θ (σ.map encTerm) =
       ofBool (Internal.instOk G n Γ a θ σ) := by
-  simp only [GebMirror.Metalogic.instOk, thArity_eq, thCtx_eq, length_eq, List.length_map,
+  simp only [«Derivation.instOk», thArity_eq, thCtx_eq, length_eq, List.length_map,
     eq_leaf, allT_isTy, range_eq, Internal.instOk]
   by_cases hl : σ.length = a.ctx.length
-  · have hr := allT_map (fun t ↦ Const.equal (GebMirror.Metalogic.mTypeIn (encGlobals G) (leaf n) Γ
-        (GebMirror.Metalogic.at (σ.map encTerm) t))
-        (GebMirror.Metalogic.some (GebMirror.Metalogic.phSubst θ (GebMirror.Metalogic.at a.ctx t))))
+  · have hr := allT_map (fun t ↦ Const.equal («Derivation.mTypeIn» (encGlobals G) (leaf n) Γ
+        («Prelude.at» (σ.map encTerm) t))
+        («Prelude.some» («PartialHorn.phSubst» θ («Prelude.at» a.ctx t))))
       leaf (fun i ↦ decide (Internal.typeIn G n Γ (σ.getD i Internal.Term.star) =
         some (PartialHorn.subst θ (a.ctx.getD i (leaf 0))))) (List.range σ.length)
       fun i hi ↦ by
@@ -302,50 +304,50 @@ theorem instOk_eq (G : Internal.Globals) (n : ℕ) (Γ : List Tree) (a : Interna
 /-- The mirror's subobject on which arrows into the subobject classifier are truth, with its
 inclusion. -/
 @[simp] theorem truthSub_eq (X : Tree) (Hs : List Tree) :
-    GebMirror.Metalogic.truthSub X Hs = encPair (Internal.truthSub X Hs) := by
-  simp only [GebMirror.Metalogic.truthSub, reverse_eq, foldr_eq, List.foldr_reverse, pr_eq,
+    «Derivation.truthSub» X Hs = encPair (Internal.truthSub X Hs) := by
+  simp only [«Derivation.truthSub», reverse_eq, foldr_eq, List.foldr_reverse, pr_eq,
     mirror_idt, Internal.truthSub]
   exact List.foldl_hom encPair fun _ _ ↦ rfl
 
 /-- The mirror's arrow of a formula in a theorem's context. -/
 @[simp] theorem thmArrow_eq (G : Internal.Globals) (a : Internal.Thm) (φ : Term) :
-    GebMirror.Metalogic.thmArrow (encGlobals G) (encThm a) (encTerm φ) = a.arrow G φ := by
+    «Derivation.thmArrow» (encGlobals G) (encThm a) (encTerm φ) = a.arrow G φ := by
   have hc := compile_eq G a.arity φ (Internal.ctxObj a.ctx) (Internal.stdEnv a.ctx)
-  simp only [GebMirror.Metalogic.thmArrow, thArity_eq, thCtx_eq, ctxObj_eq, stdEnv_eq, hc,
+  simp only [«Derivation.thmArrow», thArity_eq, thCtx_eq, ctxObj_eq, stdEnv_eq, hc,
     mapO_eq, getD_eq, mirror_idt, Option.map_map, Internal.Thm.arrow]
   rfl
 
 /-- The mirror's arrow after the inclusion of the subobject of a theorem's hypotheses. -/
 @[simp] theorem thmSide_eq (G : Internal.Globals) (a : Internal.Thm) (f : Tree) :
-    GebMirror.Metalogic.thmSide (encGlobals G) (encThm a) f = a.side G f := by
-  der_simp [GebMirror.Metalogic.thmSide, Internal.Thm.side, thHyps_eq, thCtx_eq, thmArrow_eq,
+    «Derivation.thmSide» (encGlobals G) (encThm a) f = a.side G f := by
+  der_simp [«Derivation.thmSide», Internal.Thm.side, thHyps_eq, thCtx_eq, thmArrow_eq,
     ctxObj_eq, truthSub_eq, mirror_comp, List.isEmpty_iff]
 
 /-- The mirror's sequent of the combinators a theorem compiles to. -/
 theorem thmSeq_eq (G : Internal.Globals) (a : Internal.Thm) :
-    GebMirror.Metalogic.thmSeq (encGlobals G) (encThm a) = encSeq (a.seq G) := by
-  simp only [GebMirror.Metalogic.thmSeq, thConcl_eq, eqParts_eq, Internal.Thm.seq]
+    «Derivation.thmSeq» (encGlobals G) (encThm a) = encSeq (a.seq G) := by
+  simp only [«Derivation.thmSeq», thConcl_eq, eqParts_eq, Internal.Thm.seq]
   rcases Internal.eqParts a.concl with _ | ⟨t, u⟩ <;>
     der_simp [thmSide_eq, thmArrow_eq, thArity_eq, thCtx_eq, ctxObj_eq, mirror_comp, mirror_tru,
-      mirror_bang, GebMirror.Metalogic.mkSeq, GebMirror.Metalogic.seq, eqn_eq, encSeq,
+      mirror_bang, «PartialHorn.mkSeq», «PartialHorn.seq», eqn_eq, encSeq,
       List.map_replicate]
 
 /-- The mirror's entry of a theorem of the language. -/
 @[simp] theorem entLang_eq (a : Internal.Thm) :
-    GebMirror.Metalogic.entLang (encThm a) = encEntry (.language a) := rfl
+    «Derivation.entLang» (encThm a) = encEntry (.language a) := rfl
 
 /-- The mirror's entry of a sequent of the combinators. -/
 @[simp] theorem entComb_eq (s : PartialHorn.Seq) :
-    GebMirror.Metalogic.entComb (encSeq s) = encEntry (.combinators s) := rfl
+    «Derivation.entComb» (encSeq s) = encEntry (.combinators s) := rfl
 
 /-- The mirror's theorem of the language an entry is. -/
 @[simp] theorem entryLanguage_eq (e : Internal.Entry) :
-    GebMirror.Metalogic.entryLanguage (encEntry e) = encOpt (e.language?.map encThm) := by
+    «Derivation.entryLanguage» (encEntry e) = encOpt (e.language?.map encThm) := by
   cases e <;> rfl
 
 /-- The mirror's sequent of the combinators an entry states. -/
 @[simp] theorem entrySeq_eq (G : Internal.Globals) (e : Internal.Entry) :
-    GebMirror.Metalogic.entrySeq (encGlobals G) (encEntry e) = encSeq (e.seq G) := by
+    «Derivation.entrySeq» (encGlobals G) (encEntry e) = encSeq (e.seq G) := by
   cases e with
   | language a => exact thmSeq_eq G a
   | combinators s => rfl
@@ -353,19 +355,19 @@ theorem thmSeq_eq (G : Internal.Globals) (a : Internal.Thm) :
 /-- The mirror's test of the compilations of the constants' definitions. -/
 theorem anyDefs_eq (G : Internal.Globals) (f : List Tree → Tree)
     (g : List PartialHorn.Defn → Bool) (h : ∀ cds, f (cds.map encDefn) = ofBool (g cds)) :
-    GebMirror.Metalogic.anyDefs (encGlobals G) f = ofBool ((Internal.compileDefs G).any g) := by
-  simp only [GebMirror.Metalogic.anyDefs, compileDefs_eq]
+    «Derivation.anyDefs» (encGlobals G) f = ofBool ((Internal.compileDefs G).any g) := by
+  simp only [«Derivation.anyDefs», compileDefs_eq]
   cases Internal.compileDefs G <;> mirror_simp [h, Option.any_some]
   rfl
 
 /-- The mirror's test that a certificate proves a sequent. -/
 theorem certifies_eq (G : Internal.Globals) (E : Array Internal.Entry) (c : Tree)
     (s : PartialHorn.Seq) :
-    GebMirror.Metalogic.certifies (encGlobals G) (E.toList.map encEntry) c (encSeq s) =
+    «Derivation.certifies» (encGlobals G) (E.toList.map encEntry) c (encSeq s) =
       ofBool (Internal.certifies G E c s) := by
-  simp only [GebMirror.Metalogic.certifies, Internal.certifies]
+  simp only [«Derivation.certifies», Internal.certifies]
   refine anyDefs_eq G _ _ fun cds ↦ ?_
-  have hE : (E.toList.map encEntry).map (GebMirror.Metalogic.entrySeq (encGlobals G)) =
+  have hE : (E.toList.map encEntry).map («Derivation.entrySeq» (encGlobals G)) =
       (E.map (Internal.Entry.seq G)).toList.map encSeq := by
     simp [Function.comp_def]
   have hc := pcheck_eq (ext cds) (E.map (Internal.Entry.seq G)) c s.ctx s.hyps
@@ -382,7 +384,7 @@ def encCtx (p : List Tree × List Term) : Tree :=
 
 /-- The mirror's context with hypotheses. -/
 @[simp] theorem ctxPair_eq (Γ : List Tree) (Φ : List Term) :
-    GebMirror.Metalogic.ctxPair Γ (Φ.map encTerm) = encCtx (Γ, Φ) := rfl
+    «Derivation.ctxPair» Γ (Φ.map encTerm) = encCtx (Γ, Φ) := rfl
 
 /-- A case analysis of an option into encoded optional trees is the encoding of its binding. -/
 @[simp] theorem elim_encOpt {α : Type} (o : Option α) (f : α → Option Tree) :
@@ -392,20 +394,20 @@ def encCtx (p : List Tree × List Term) : Tree :=
 /-- The mirror's contexts and hypotheses of a node's children. -/
 theorem childCtxs_eq (G : Internal.Globals) (n : ℕ) (l : Label) (ts : List Term)
     (Γ : List Tree) (Φ : List Term) :
-    GebMirror.Metalogic.childCtxs (encGlobals G) (leaf n) (encTerm (RoseTree.node l ts)) Γ
+    «Derivation.childCtxs» (encGlobals G) (leaf n) (encTerm (RoseTree.node l ts)) Γ
         (Φ.map encTerm) =
       encOpt ((Internal.childCtxs G n l ts Γ Φ).map fun cs ↦ RoseTree.node 0 (cs.map encCtx)) := by
   cases l <;> rcases ts with _ | ⟨z, _ | ⟨s, _ | ⟨m, _ | ⟨w, ts⟩⟩⟩⟩ <;>
-    der_simp [GebMirror.Metalogic.childCtxs, Internal.childCtxs, labelData,
-      GebMirror.Metalogic.ctxPair, encCtx, typeIn_eq, weaken1_eq, funext listPart_eq,
-      funext roseLabel_eq, elim_encOpt, GebMirror.Metalogic.l2, GebMirror.Metalogic.l3,
+    der_simp [«Derivation.childCtxs», Internal.childCtxs, labelData,
+      «Derivation.ctxPair», encCtx, typeIn_eq, weaken1_eq, funext listPart_eq,
+      funext roseLabel_eq, elim_encOpt, «Theory.l2», «Theory.l3»,
       mirror_prod, mirror_list, Option.bind_assoc, Option.bind_map]
 
 /-- The mirror's test that a node's child of an index is in the node's context. -/
 theorem sameCtx_eq (l : Label) (i : ℕ) :
-    GebMirror.Metalogic.sameCtx (leaf (labelData l).1) (leaf i) =
+    «Derivation.sameCtx» (leaf (labelData l).1) (leaf i) =
       ofBool (Internal.sameCtx l i) := by
-  cases l <;> der_simp [GebMirror.Metalogic.sameCtx, Internal.sameCtx, labelData] <;> rfl
+  cases l <;> der_simp [«Derivation.sameCtx», Internal.sameCtx, labelData] <;> rfl
 
 /-- A rule's position is zero exactly for the identity rewriting. -/
 theorem ruleData_eq_zero (r : Internal.Rule) : ((ruleData r).1 == 0) = r.isRefl := by
@@ -414,7 +416,7 @@ theorem ruleData_eq_zero (r : Internal.Rule) : ((ruleData r).1 == 0) = r.isRefl 
 /-- The mirror's test at every position of a list of derivations, the positions' leaves. -/
 theorem allT_range_zipIdx (ds : List Internal.Deriv) (F : Tree → Tree)
     (q : ℕ → Tree → Bool) (h : ∀ i, F (leaf i) = ofBool (q i ((ds.map encDeriv).getD i (leaf 0)))) :
-    GebMirror.Metalogic.allT F ((List.range ds.length).map leaf) =
+    «Base.allT» F ((List.range ds.length).map leaf) =
       ofBool (ds.zipIdx.all fun p ↦ q p.2 (encDeriv p.1)) := by
   rw [allT_map F leaf (fun i ↦ q i ((ds.map encDeriv).getD i (leaf 0))) _ fun i _ ↦ h i]
   congr 1
@@ -431,11 +433,11 @@ theorem allT_range_zipIdx (ds : List Internal.Deriv) (F : Tree → Tree)
 /-- The mirror's contexts in which a congruence rewrites a node's children. -/
 theorem congCtxs_eq (G : Internal.Globals) (n : ℕ) (l : Label) (ts : List Term)
     (Γ : List Tree) (Φ : List Term) (ds : List Internal.Deriv) :
-    GebMirror.Metalogic.congCtxs (encGlobals G) (leaf n) (encTerm (RoseTree.node l ts)) Γ
+    «Derivation.congCtxs» (encGlobals G) (leaf n) (encTerm (RoseTree.node l ts)) Γ
         (Φ.map encTerm) (ds.map encDeriv) =
       encOpt ((Internal.congCtxs G n l ts Γ Φ ds).map fun cs ↦
         RoseTree.node 0 (cs.map encCtx)) := by
-  simp only [GebMirror.Metalogic.congCtxs, length_eq, List.length_map, range_eq]
+  simp only [«Derivation.congCtxs», length_eq, List.length_map, range_eq]
   rw [allT_range_zipIdx ds _ (fun i t ↦ Internal.sameCtx l i || t.label == 0) fun i ↦ by
     der_simp [sameCtx_eq, at_eq]]
   simp only [label_encDeriv, ruleData_eq_zero, childCtxs_eq, Internal.congCtxs]
@@ -448,19 +450,19 @@ theorem exists_node {L : Type} (t : RoseTree L) : ∃ l cs, t = RoseTree.node l 
 
 /-- The mirror's substitution of a term for the innermost variable of an encoded term. -/
 @[simp] theorem subst_instVar (b u : Term) :
-    GebMirror.Metalogic.subst (encTerm b) (GebMirror.Metalogic.instVar (encTerm u)) =
+    «Language.subst» (encTerm b) («Derivation.instVar» (encTerm u)) =
       encTerm (Internal.Term.subst b (Internal.instVar u)) :=
   subst_eq _ _ _ (instVar_eq u)
 
 /-- The mirror's substitution of a term for the innermost variable, the others in place. -/
 @[simp] theorem subst_atVar0 (b u : Term) :
-    GebMirror.Metalogic.subst (encTerm b) (GebMirror.Metalogic.atVar0 (encTerm u)) =
+    «Language.subst» (encTerm b) («Derivation.atVar0» (encTerm u)) =
       encTerm (Internal.Term.subst b (Internal.atVar0 u)) :=
   subst_eq _ _ _ (atVar0_eq u)
 
 /-- The mirror's substitution of a list of encoded terms for the variables. -/
 @[simp] theorem subst_substList (b : Term) (us : List Term) :
-    GebMirror.Metalogic.subst (encTerm b) (GebMirror.Metalogic.substList (us.map encTerm)) =
+    «Language.subst» (encTerm b) («Language.substList» (us.map encTerm)) =
       encTerm (Internal.Term.subst b (Internal.Term.substList us)) :=
   subst_eq _ _ _ (substList_eq us)
 
@@ -469,10 +471,10 @@ variable (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ) (Γ : List 
 
 /-- The mirror's rewriting of an encoded term by beta. -/
 theorem rootBeta_eq (t : Term) :
-    GebMirror.Metalogic.rootBeta (encTerm t) =
+    «Derivation.rootBeta» (encTerm t) =
       encOpt ((Internal.rootStep G E n Γ Φ .beta t).map encTerm) := by
   obtain ⟨l, cs, rfl⟩ := exists_node t
-  cases l <;> der_simp [GebMirror.Metalogic.rootBeta, Internal.rootStep, labelData]
+  cases l <;> der_simp [«Derivation.rootBeta», Internal.rootStep, labelData]
   rcases cs with _ | ⟨f, _ | ⟨u, _ | ⟨w, cs⟩⟩⟩ <;> der_simp []
   obtain ⟨fl, fs, rfl⟩ := exists_node f
   cases fl <;> der_simp [labelData]
@@ -480,10 +482,10 @@ theorem rootBeta_eq (t : Term) :
 
 /-- The mirror's rewriting of an encoded term by the first component of a pair. -/
 theorem rootFst_eq (t : Term) :
-    GebMirror.Metalogic.rootFst (encTerm t) =
+    «Derivation.rootFst» (encTerm t) =
       encOpt ((Internal.rootStep G E n Γ Φ .fstPair t).map encTerm) := by
   obtain ⟨l, cs, rfl⟩ := exists_node t
-  cases l <;> der_simp [GebMirror.Metalogic.rootFst, Internal.rootStep, labelData]
+  cases l <;> der_simp [«Derivation.rootFst», Internal.rootStep, labelData]
   rcases cs with _ | ⟨p, _ | ⟨u, cs⟩⟩ <;> der_simp []
   obtain ⟨pl, ps, rfl⟩ := exists_node p
   cases pl <;> der_simp [labelData]
@@ -491,10 +493,10 @@ theorem rootFst_eq (t : Term) :
 
 /-- The mirror's rewriting of an encoded term by the second component of a pair. -/
 theorem rootSnd_eq (t : Term) :
-    GebMirror.Metalogic.rootSnd (encTerm t) =
+    «Derivation.rootSnd» (encTerm t) =
       encOpt ((Internal.rootStep G E n Γ Φ .sndPair t).map encTerm) := by
   obtain ⟨l, cs, rfl⟩ := exists_node t
-  cases l <;> der_simp [GebMirror.Metalogic.rootSnd, Internal.rootStep, labelData]
+  cases l <;> der_simp [«Derivation.rootSnd», Internal.rootStep, labelData]
   rcases cs with _ | ⟨p, _ | ⟨u, cs⟩⟩ <;> der_simp []
   obtain ⟨pl, ps, rfl⟩ := exists_node p
   cases pl <;> der_simp [labelData]
@@ -502,10 +504,10 @@ theorem rootSnd_eq (t : Term) :
 
 /-- The mirror's rewriting of an encoded term by the eta of pairs. -/
 theorem rootPairEta_eq (t : Term) :
-    GebMirror.Metalogic.rootPairEta (encTerm t) =
+    «Derivation.rootPairEta» (encTerm t) =
       encOpt ((Internal.rootStep G E n Γ Φ .pairEta t).map encTerm) := by
   obtain ⟨l, cs, rfl⟩ := exists_node t
-  cases l <;> der_simp [GebMirror.Metalogic.rootPairEta, Internal.rootStep, labelData]
+  cases l <;> der_simp [«Derivation.rootPairEta», Internal.rootStep, labelData]
   rcases cs with _ | ⟨a, _ | ⟨b, _ | ⟨c, cs⟩⟩⟩ <;> der_simp []
   obtain ⟨al, as, rfl⟩ := exists_node a
   obtain ⟨bl, bs, rfl⟩ := exists_node b
@@ -517,18 +519,18 @@ theorem rootPairEta_eq (t : Term) :
 
 /-- The mirror's rewriting of an encoded term by the eta of the terminal type. -/
 theorem rootUnitEta_eq (t : Term) :
-    GebMirror.Metalogic.rootUnitEta (encGlobals G) (leaf n) Γ (encTerm t) =
+    «Derivation.rootUnitEta» (encGlobals G) (leaf n) Γ (encTerm t) =
       encOpt ((Internal.rootStep G E n Γ Φ .unitEta t).map encTerm) := by
-  der_simp [GebMirror.Metalogic.rootUnitEta, Internal.rootStep, typeIn_eq, encOpt_inj,
+  der_simp [«Derivation.rootUnitEta», Internal.rootStep, typeIn_eq, encOpt_inj,
     mirror_one, equal_eq]
   split_ifs <;> rfl
 
 /-- The mirror's rewriting of an encoded term by the unfolding of a definition. -/
 theorem rootDelta_eq (t : Term) :
-    GebMirror.Metalogic.rootDelta (encGlobals G) (encTerm t) =
+    «Derivation.rootDelta» (encGlobals G) (encTerm t) =
       encOpt ((Internal.rootStep G E n Γ Φ .delta t).map encTerm) := by
   obtain ⟨l, cs, rfl⟩ := exists_node t
-  cases l <;> der_simp [GebMirror.Metalogic.rootDelta, Internal.rootStep, labelData]
+  cases l <;> der_simp [«Derivation.rootDelta», Internal.rootStep, labelData]
   rename_i k θ
   rcases hk : G.defs[k]? with _ | (d | ⟨m, b⟩) <;>
     der_simp [gDefs_eq, hk, defLanguage_eq, Internal.Definition.language?, ldBody_eq,
@@ -536,10 +538,10 @@ theorem rootDelta_eq (t : Term) :
 
 /-- The mirror's rewriting of an encoded term by the fold of the natural numbers at zero. -/
 theorem rootNatZero_eq (kz : ℕ) (t : Term) :
-    GebMirror.Metalogic.rootNat (encGlobals G) (leaf 9) [leaf kz] (encTerm t) =
+    «Derivation.rootNat» (encGlobals G) (leaf 9) [leaf kz] (encTerm t) =
       encOpt ((Internal.rootStep G E n Γ Φ (.natZero kz) t).map encTerm) := by
   obtain ⟨l, cs, rfl⟩ := exists_node t
-  cases l <;> der_simp [GebMirror.Metalogic.rootNat, Internal.rootStep, labelData]
+  cases l <;> der_simp [«Derivation.rootNat», Internal.rootStep, labelData]
   rcases cs with _ | ⟨z, _ | ⟨s, _ | ⟨m, _ | ⟨w, cs⟩⟩⟩⟩ <;> der_simp []
   obtain ⟨ml, ms, rfl⟩ := exists_node m
   cases ml <;> der_simp [labelData]
@@ -551,10 +553,10 @@ theorem rootNatZero_eq (kz : ℕ) (t : Term) :
 /-- The mirror's rewriting of an encoded term by the fold of the natural numbers at a
 successor. -/
 theorem rootNatSucc_eq (ks : ℕ) (t : Term) :
-    GebMirror.Metalogic.rootNat (encGlobals G) (leaf 10) [leaf ks] (encTerm t) =
+    «Derivation.rootNat» (encGlobals G) (leaf 10) [leaf ks] (encTerm t) =
       encOpt ((Internal.rootStep G E n Γ Φ (.natSucc ks) t).map encTerm) := by
   obtain ⟨l, cs, rfl⟩ := exists_node t
-  cases l <;> der_simp [GebMirror.Metalogic.rootNat, Internal.rootStep, labelData]
+  cases l <;> der_simp [«Derivation.rootNat», Internal.rootStep, labelData]
   rcases cs with _ | ⟨z, _ | ⟨s, _ | ⟨m, _ | ⟨w, cs⟩⟩⟩⟩ <;> der_simp []
   obtain ⟨ml, ms, rfl⟩ := exists_node m
   cases ml <;> der_simp [labelData]
@@ -565,16 +567,16 @@ theorem rootNatSucc_eq (ks : ℕ) (t : Term) :
 
 /-- The mirror's substitution of two encoded terms for the two innermost variables. -/
 @[simp] theorem subst_substList₂ (b u v : Term) :
-    GebMirror.Metalogic.subst (encTerm b) (GebMirror.Metalogic.substList [encTerm u, encTerm v]) =
+    «Language.subst» (encTerm b) («Language.substList» [encTerm u, encTerm v]) =
       encTerm (Internal.Term.subst b (Internal.Term.substList [u, v])) :=
   subst_substList b [u, v]
 
 /-- The mirror's rewriting of an encoded term by the fold of lists at the empty list. -/
 theorem rootListNil_eq (kn : ℕ) (t : Term) :
-    GebMirror.Metalogic.rootListNil (encGlobals G) [leaf kn] (encTerm t) =
+    «Derivation.rootListNil» (encGlobals G) [leaf kn] (encTerm t) =
       encOpt ((Internal.rootStep G E n Γ Φ (.listNil kn) t).map encTerm) := by
   obtain ⟨l, cs, rfl⟩ := exists_node t
-  cases l <;> der_simp [GebMirror.Metalogic.rootListNil, Internal.rootStep, labelData]
+  cases l <;> der_simp [«Derivation.rootListNil», Internal.rootStep, labelData]
   rcases cs with _ | ⟨z, _ | ⟨s, _ | ⟨m, _ | ⟨w, cs⟩⟩⟩⟩ <;> der_simp []
   obtain ⟨ml, ms, rfl⟩ := exists_node m
   cases ml <;> der_simp [labelData]
@@ -585,10 +587,10 @@ theorem rootListNil_eq (kn : ℕ) (t : Term) :
 
 /-- The mirror's rewriting of an encoded term by the fold of lists at a construction. -/
 theorem rootListCons_eq (kc : ℕ) (t : Term) :
-    GebMirror.Metalogic.rootListCons (encGlobals G) [leaf kc] (encTerm t) =
+    «Derivation.rootListCons» (encGlobals G) [leaf kc] (encTerm t) =
       encOpt ((Internal.rootStep G E n Γ Φ (.listCons kc) t).map encTerm) := by
   obtain ⟨l, cs, rfl⟩ := exists_node t
-  cases l <;> der_simp [GebMirror.Metalogic.rootListCons, Internal.rootStep, labelData]
+  cases l <;> der_simp [«Derivation.rootListCons», Internal.rootStep, labelData]
   rcases cs with _ | ⟨z, _ | ⟨s, _ | ⟨m, _ | ⟨w, cs⟩⟩⟩⟩ <;> der_simp []
   obtain ⟨ml, ms, rfl⟩ := exists_node m
   cases ml <;> der_simp [labelData]
@@ -597,15 +599,15 @@ theorem rootListCons_eq (kc : ℕ) (t : Term) :
   obtain ⟨pl, ps, rfl⟩ := exists_node p
   cases pl <;> der_simp [labelData]
   rcases ps with _ | ⟨h, _ | ⟨tl, _ | ⟨w', ps⟩⟩⟩ <;>
-    der_simp [primIs_eq, consPrim_eq, GebMirror.Metalogic.l2, subst_substList₂]
+    der_simp [primIs_eq, consPrim_eq, «Theory.l2», subst_substList₂]
   split_ifs <;> simp_all
 
 /-- The mirror's rewriting of an encoded term by the fold of rose trees at a construction. -/
 theorem rootRoseNode_eq (kn kl kc : ℕ) (t : Term) :
-    GebMirror.Metalogic.rootRoseNode (encGlobals G) [leaf kn, leaf kl, leaf kc] (encTerm t) =
+    «Derivation.rootRoseNode» (encGlobals G) [leaf kn, leaf kl, leaf kc] (encTerm t) =
       encOpt ((Internal.rootStep G E n Γ Φ (.roseNode kn kl kc) t).map encTerm) := by
   obtain ⟨l, cs, rfl⟩ := exists_node t
-  cases l <;> der_simp [GebMirror.Metalogic.rootRoseNode, Internal.rootStep, labelData]
+  cases l <;> der_simp [«Derivation.rootRoseNode», Internal.rootStep, labelData]
   rcases cs with _ | ⟨s, _ | ⟨m, _ | ⟨w, cs⟩⟩⟩ <;> der_simp []
   obtain ⟨ml, ms, rfl⟩ := exists_node m
   cases ml <;> der_simp [labelData]
@@ -618,11 +620,11 @@ theorem rootRoseNode_eq (kn kl kc : ℕ) (t : Term) :
 
 /-- The mirror's rewriting of an encoded term by the case analysis of a left injection. -/
 theorem rootCaseInl_eq (kc kl : ℕ) (t : Term) :
-    GebMirror.Metalogic.rootCase (encGlobals G) GebMirror.Metalogic.inlPrim (leaf 0)
+    «Derivation.rootCase» (encGlobals G) «Derivation.inlPrim» (leaf 0)
         [leaf kc, leaf kl] (encTerm t) =
       encOpt ((Internal.rootStep G E n Γ Φ (.caseInl kc kl) t).map encTerm) := by
   obtain ⟨l, cs, rfl⟩ := exists_node t
-  cases l <;> der_simp [GebMirror.Metalogic.rootCase, Internal.rootStep, labelData]
+  cases l <;> der_simp [«Derivation.rootCase», Internal.rootStep, labelData]
   rcases cs with _ | ⟨f, _ | ⟨u, _ | ⟨w, cs⟩⟩⟩ <;> der_simp []
   obtain ⟨fl, fs, rfl⟩ := exists_node f
   cases fl <;> der_simp [labelData]
@@ -638,11 +640,11 @@ theorem rootCaseInl_eq (kc kl : ℕ) (t : Term) :
 
 /-- The mirror's rewriting of an encoded term by the case analysis of a right injection. -/
 theorem rootCaseInr_eq (kc kr : ℕ) (t : Term) :
-    GebMirror.Metalogic.rootCase (encGlobals G) GebMirror.Metalogic.inrPrim (leaf 1)
+    «Derivation.rootCase» (encGlobals G) «Derivation.inrPrim» (leaf 1)
         [leaf kc, leaf kr] (encTerm t) =
       encOpt ((Internal.rootStep G E n Γ Φ (.caseInr kc kr) t).map encTerm) := by
   obtain ⟨l, cs, rfl⟩ := exists_node t
-  cases l <;> der_simp [GebMirror.Metalogic.rootCase, Internal.rootStep, labelData]
+  cases l <;> der_simp [«Derivation.rootCase», Internal.rootStep, labelData]
   rcases cs with _ | ⟨f, _ | ⟨u, _ | ⟨w, cs⟩⟩⟩ <;> der_simp []
   obtain ⟨fl, fs, rfl⟩ := exists_node f
   cases fl <;> der_simp [labelData]
@@ -658,9 +660,9 @@ theorem rootCaseInr_eq (kc kr : ℕ) (t : Term) :
 
 /-- The mirror's rewriting of an encoded term by an equation among the hypotheses. -/
 theorem rootHyp_eq (i : ℕ) (flip : Bool) (t : Term) :
-    GebMirror.Metalogic.rootHyp (Φ.map encTerm) [leaf i, ofBool flip] (encTerm t) =
+    «Derivation.rootHyp» (Φ.map encTerm) [leaf i, ofBool flip] (encTerm t) =
       encOpt ((Internal.rootStep G E n Γ Φ (.rwHyp i flip) t).map encTerm) := by
-  simp only [GebMirror.Metalogic.rootHyp, Internal.rootStep, at_eq, List.getD_cons_zero,
+  simp only [«Derivation.rootHyp», Internal.rootStep, at_eq, List.getD_cons_zero,
     List.getD_cons_succ, nth_eq, List.getElem?_map]
   rcases Φ[i]? with _ | φ
   · der_simp []
@@ -669,10 +671,10 @@ theorem rootHyp_eq (i : ℕ) (flip : Bool) (t : Term) :
 
 /-- The mirror's rewriting of an encoded term by an equational theorem. -/
 theorem rootThm_eq (j : ℕ) (θ : List Tree) (σ : List Term) (flip : Bool) (t : Term) :
-    GebMirror.Metalogic.rootThm (encGlobals G) (E.toList.map encEntry) (leaf n) Γ
+    «Derivation.rootThm» (encGlobals G) (E.toList.map encEntry) (leaf n) Γ
         [leaf j, RoseTree.node 0 θ, RoseTree.node 0 (σ.map encTerm), ofBool flip] (encTerm t) =
       encOpt ((Internal.rootStep G E n Γ Φ (.thm j θ σ flip) t).map encTerm) := by
-  simp only [GebMirror.Metalogic.rootThm, Internal.rootStep, at_eq, List.getD_cons_zero,
+  simp only [«Derivation.rootThm», Internal.rootStep, at_eq, List.getD_cons_zero,
     List.getD_cons_succ, nth_eq, List.getElem?_map, Array.getElem?_toList, children_eq,
     RoseTree.children_node]
   rcases E[j]? with _ | (a | s)
@@ -687,11 +689,11 @@ theorem rootThm_eq (j : ℕ) (θ : List Tree) (σ : List Term) (flip : Bool) (t 
 
 /-- The mirror's rewriting of an encoded term at its root by a rule. -/
 theorem rootStep_eq (l : Internal.Rule) (t : Term) :
-    GebMirror.Metalogic.rootStep (encGlobals G) (E.toList.map encEntry) (leaf n) Γ
+    «Derivation.rootStep» (encGlobals G) (E.toList.map encEntry) (leaf n) Γ
         (Φ.map encTerm) (leaf (ruleData l).1) (ruleData l).2 (encTerm t) =
       encOpt ((Internal.rootStep G E n Γ Φ l t).map encTerm) := by
   cases l <;>
-    der_simp [GebMirror.Metalogic.rootStep, ruleData, rootBeta_eq G E n Γ Φ,
+    der_simp [«Derivation.rootStep», ruleData, rootBeta_eq G E n Γ Φ,
       rootFst_eq G E n Γ Φ, rootSnd_eq G E n Γ Φ, rootPairEta_eq G E n Γ Φ,
       rootUnitEta_eq G E n Γ Φ, rootDelta_eq G E n Γ Φ, rootNatZero_eq G E n Γ Φ,
       rootNatSucc_eq G E n Γ Φ, rootListNil_eq G E n Γ Φ, rootListCons_eq G E n Γ Φ,
@@ -712,26 +714,26 @@ def DRel (v : DV) (w : Internal.Checks) : Prop :=
 
 /-- The derivations of a list of derivations with their results. -/
 @[simp] theorem dpTrees_eq (rs : List (Tree × DV)) :
-    GebMirror.Metalogic.dpTrees rs = rs.map Prod.fst :=
+    «Derivation.dpTrees» rs = rs.map Prod.fst :=
   rs.rec rfl fun _ _ ih ↦ by
-    simp only [GebMirror.Metalogic.dpTrees, foldr_eq, List.foldr_cons] at ih ⊢
+    simp only [«Derivation.dpTrees», foldr_eq, List.foldr_cons] at ih ⊢
     rw [ih]
     rfl
 
 /-- A list of derivations with their results without its head. -/
-@[simp] theorem dpTail_eq (rs : List (Tree × DV)) : GebMirror.Metalogic.dpTail rs = rs.tail := by
+@[simp] theorem dpTail_eq (rs : List (Tree × DV)) : «Derivation.dpTail» rs = rs.tail := by
   cases rs <;> rfl
 
 /-- Dropping the head of a list of derivations with their results as many times as a label. -/
 theorem repeat_dpTail (rs : List (Tree × DV)) :
-    ∀ i : ℕ, Nat.repeat GebMirror.Metalogic.dpTail i rs = rs.drop i :=
+    ∀ i : ℕ, Nat.repeat «Derivation.dpTail» i rs = rs.drop i :=
   Nat.rec rfl fun i ih ↦ by rw [Nat.repeat, ih, dpTail_eq, List.tail_drop]
 
 /-- The results of a derivation at a position, none and false out of range. -/
 @[simp] theorem dpAt_eq (rs : List (Tree × DV)) (i : ℕ) :
-    GebMirror.Metalogic.dpAt rs (leaf i) = (rs[i]?.map Prod.snd).getD
-      (fun _ _ _ ↦ GebMirror.Metalogic.none, fun _ _ _ ↦ leaf 0) := by
-  simp only [GebMirror.Metalogic.dpAt, iter_leaf, repeat_dpTail]
+    «Derivation.dpAt» rs (leaf i) = (rs[i]?.map Prod.snd).getD
+      (fun _ _ _ ↦ «Prelude.none», fun _ _ _ ↦ leaf 0) := by
+  simp only [«Derivation.dpAt», iter_leaf, repeat_dpTail]
   cases h : rs.drop i with
   | nil =>
     rw [List.drop_eq_nil_iff] at h
@@ -746,17 +748,17 @@ theorem repeat_dpTail (rs : List (Tree × DV)) :
 
 /-- The rewriting of a derivation at a position. -/
 @[simp] theorem rw_eq (rs : List (Tree × DV)) (i : ℕ) :
-    GebMirror.Metalogic.rw rs (leaf i) = (GebMirror.Metalogic.dpAt rs (leaf i)).1 := rfl
+    «Derivation.rw» rs (leaf i) = («Derivation.dpAt» rs (leaf i)).1 := rfl
 
 /-- The proving of a derivation at a position. -/
 @[simp] theorem pf_eq (rs : List (Tree × DV)) (i : ℕ) :
-    GebMirror.Metalogic.pf rs (leaf i) = (GebMirror.Metalogic.dpAt rs (leaf i)).2 := rfl
+    «Derivation.pf» rs (leaf i) = («Derivation.dpAt» rs (leaf i)).2 := rfl
 
 /-- The mirror's map at the positions of a list is the list's map, where the two agree at each
 position. -/
 theorem mapT_range {β : Type} (F : Tree → Tree) (xs : List β) (g : β → Tree)
     (hF : ∀ i (hi : i < xs.length), F (leaf i) = g xs[i]) :
-    GebMirror.Metalogic.mapT F ((List.range xs.length).map leaf) = xs.map g := by
+    «Base.mapT» F ((List.range xs.length).map leaf) = xs.map g := by
   rw [mapT_eq, List.map_map]
   refine List.ext_getElem (by simp) fun i h₁ h₂ ↦ ?_
   simp only [List.getElem_map, List.getElem_range, Function.comp_apply]
@@ -789,14 +791,14 @@ theorem three_le_ruleData (l : Internal.Rule) (hr : l ≠ .refl) (ht : l ≠ .tr
 related to the checker's. -/
 theorem rewriteStep_eq (l : Internal.Rule) (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (t : Term) :
-    GebMirror.Metalogic.rewriteStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.rewriteStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData l).1) (ruleData l).2 (xs.map fun x ↦ encDeriv x.1)
         (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ (Φ.map encTerm) (encTerm t) =
       encOpt (((Internal.checkStep G E n l (xs.map fun x ↦ (x.1, x.2.2))).1 Γ Φ t).map
         encTerm) := by
   have h1 : ∀ x ∈ xs, ∀ Γ Φ t, x.2.1.1 Γ (Φ.map encTerm) (encTerm t) =
       encOpt ((x.2.2.1 Γ Φ t).map encTerm) := fun x h ↦ (hx x h).1
-  simp only [GebMirror.Metalogic.rewriteStep, rootStep_eq G E n Γ Φ l t]
+  simp only [«Derivation.rewriteStep», rootStep_eq G E n Γ Φ l t]
   -- the rules have no decidable equality, but the tests against a constructor are decidable
   have : Decidable (l = .refl) := by cases l <;> first | exact isTrue rfl | exact isFalse nofun
   have : Decidable (l = .trans) := by cases l <;> first | exact isTrue rfl | exact isFalse nofun
@@ -902,13 +904,13 @@ theorem pf_rel (xs : List (Internal.Deriv × DV × Internal.Checks))
 /-- The mirror's proving step at an encoded node of the rule joining two rewritings. -/
 theorem proveJoin_eq (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf 18) []
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf 18) []
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ (Φ.map encTerm)
         (encTerm φ) =
       ofBool ((Internal.checkStep G E n .join (xs.map fun x ↦ (x.1, x.2.2))).2 Γ Φ φ) := by
   have h1 := rw_rel xs hx
   have h2 := pf_rel xs hx
-  simp only [GebMirror.Metalogic.proveStep]
+  simp only [«Derivation.proveStep»]
   rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, xs⟩⟩⟩ <;> select_rule <;> prove_simp []
   rcases Internal.eqParts φ with _ | ⟨t, u⟩ <;> prove_simp []
   rcases x0.2.2.1 Γ Φ t with _ | v <;> rcases x1.2.2.1 Γ Φ u with _ | v' <;> prove_simp []
@@ -916,7 +918,7 @@ theorem proveJoin_eq (xs : List (Internal.Deriv × DV × Internal.Checks))
 /-- The mirror's proving step at an encoded node of the rule of a hypothesis. -/
 theorem proveHyp_eq (i : ℕ) (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData (.hyp i)).1) (ruleData (.hyp i)).2
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ
         (Φ.map encTerm) (encTerm φ) =
@@ -924,14 +926,14 @@ theorem proveHyp_eq (i : ℕ) (xs : List (Internal.Deriv × DV × Internal.Check
         Φ φ) := by
   have h1 := rw_rel xs hx
   have h2 := pf_rel xs hx
-  simp only [GebMirror.Metalogic.proveStep]
+  simp only [«Derivation.proveStep»]
   rcases xs with _ | ⟨x0, xs⟩ <;> select_rule <;> prove_simp [nth_eq, List.getElem?_map]
 
 
 /-- The mirror's proving step at an encoded node of the rule of a cut. -/
 theorem proveCut_eq (ψ : Term) (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData (.cut ψ)).1) (ruleData (.cut ψ)).2
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ
         (Φ.map encTerm) (encTerm φ) =
@@ -939,14 +941,14 @@ theorem proveCut_eq (ψ : Term) (xs : List (Internal.Deriv × DV × Internal.Che
         Φ φ) := by
   have h1 := rw_rel xs hx
   have h2 := pf_rel xs hx
-  simp only [GebMirror.Metalogic.proveStep]
+  simp only [«Derivation.proveStep»]
   rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, xs⟩⟩⟩ <;> select_rule <;> prove_simp [isFormula_eq]
 
 
 /-- The mirror's proving step at an encoded node of the rule of a conversion. -/
 theorem proveConv_eq (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData (.conv)).1) (ruleData (.conv)).2
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ
         (Φ.map encTerm) (encTerm φ) =
@@ -954,7 +956,7 @@ theorem proveConv_eq (xs : List (Internal.Deriv × DV × Internal.Checks))
         Φ φ) := by
   have h1 := rw_rel xs hx
   have h2 := pf_rel xs hx
-  simp only [GebMirror.Metalogic.proveStep]
+  simp only [«Derivation.proveStep»]
   rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, xs⟩⟩⟩ <;> select_rule <;> prove_simp []
   rcases x0.2.2.1 Γ Φ φ with _ | ψ <;> prove_simp []
 
@@ -962,7 +964,7 @@ theorem proveConv_eq (xs : List (Internal.Deriv × DV × Internal.Checks))
 /-- The mirror's proving step at an encoded node of the rule of a conversion from a formula. -/
 theorem proveConvFrom_eq (ψ : Term) (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData (.convFrom ψ)).1) (ruleData (.convFrom ψ)).2
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ
         (Φ.map encTerm) (encTerm φ) =
@@ -970,14 +972,14 @@ theorem proveConvFrom_eq (ψ : Term) (xs : List (Internal.Deriv × DV × Interna
         Φ φ) := by
   have h1 := rw_rel xs hx
   have h2 := pf_rel xs hx
-  simp only [GebMirror.Metalogic.proveStep]
+  simp only [«Derivation.proveStep»]
   rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, xs⟩⟩⟩ <;> select_rule <;> prove_simp [isFormula_eq]
 
 
 /-- The mirror's proving step at an encoded node of the rule of propositional extensionality. -/
 theorem provePropExt_eq (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData (.propExt)).1) (ruleData (.propExt)).2
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ
         (Φ.map encTerm) (encTerm φ) =
@@ -985,7 +987,7 @@ theorem provePropExt_eq (xs : List (Internal.Deriv × DV × Internal.Checks))
         Φ φ) := by
   have h1 := rw_rel xs hx
   have h2 := pf_rel xs hx
-  simp only [GebMirror.Metalogic.proveStep]
+  simp only [«Derivation.proveStep»]
   rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, xs⟩⟩⟩ <;> select_rule <;> prove_simp []
   rcases Internal.eqParts φ with _ | ⟨a, b⟩ <;> prove_simp [isFormula_eq]
 
@@ -993,7 +995,7 @@ theorem provePropExt_eq (xs : List (Internal.Deriv × DV × Internal.Checks))
 /-- The mirror's proving step at an encoded node of the rule of function extensionality. -/
 theorem proveFunExt_eq (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData (.funExt)).1) (ruleData (.funExt)).2
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ
         (Φ.map encTerm) (encTerm φ) =
@@ -1001,7 +1003,7 @@ theorem proveFunExt_eq (xs : List (Internal.Deriv × DV × Internal.Checks))
         Φ φ) := by
   have h1 := rw_rel xs hx
   have h2 := pf_rel xs hx
-  simp only [GebMirror.Metalogic.proveStep]
+  simp only [«Derivation.proveStep»]
   rcases xs with _ | ⟨x0, _ | ⟨x1, xs⟩⟩ <;> select_rule <;> prove_simp []
   rcases Internal.eqParts φ with _ | ⟨f, g⟩ <;> prove_simp []
   rcases hT : Internal.typeIn G n Γ f with _ | T <;> prove_simp [typeIn_eq, hT]
@@ -1011,9 +1013,9 @@ theorem proveFunExt_eq (xs : List (Internal.Deriv × DV × Internal.Checks))
 
 /-- The mirror's recognition of a coequalizer's projection. -/
 theorem isCoeqProj_eq (p : Internal.Prim) :
-    GebMirror.Metalogic.isCoeqProj (encPrim p) = ofBool p.coeqParts.isSome := by
+    «Derivation.isCoeqProj» (encPrim p) = ofBool p.coeqParts.isSome := by
   obtain ⟨m, a, d, c⟩ := p
-  simp only [GebMirror.Metalogic.isCoeqProj, prArrow_eq, Internal.Prim.coeqParts]
+  simp only [«Derivation.isCoeqProj», prArrow_eq, Internal.Prim.coeqParts]
   obtain ⟨la, as, rfl⟩ := exists_node a
   rcases as with _ | ⟨f, _ | ⟨g, _ | ⟨h, as⟩⟩⟩ <;> der_simp []
   obtain ⟨lf, fs, rfl⟩ := exists_node f
@@ -1029,38 +1031,38 @@ theorem isCoeqProj_eq (p : Internal.Prim) :
 
 /-- The mirror's relation of a quotient's projection. -/
 theorem primRel_eq (p : Internal.Prim) :
-    GebMirror.Metalogic.primRel (encPrim p) = encOpt p.rel? := by
+    «Derivation.primRel» (encPrim p) = encOpt p.rel? := by
   obtain ⟨m, a, d, c⟩ := p
-  simp only [GebMirror.Metalogic.primRel, prArrow_eq, prDom_eq, Internal.Prim.rel?]
+  simp only [«Derivation.primRel», prArrow_eq, prDom_eq, Internal.Prim.rel?]
   obtain ⟨la, as, rfl⟩ := exists_node a
   rcases as with _ | ⟨f, _ | ⟨g, _ | ⟨h, as⟩⟩⟩ <;> der_simp []
   obtain ⟨lf, fs, rfl⟩ := exists_node f
   rcases fs with _ | ⟨f1, _ | ⟨mm, _ | ⟨f3, fs⟩⟩⟩ <;> der_simp []
   obtain ⟨lm, ms, rfl⟩ := exists_node mm
   rcases ms with _ | ⟨r, _ | ⟨r2, _ | ⟨r3, ms⟩⟩⟩ <;>
-    der_simp [mirror_coeqProj, GebMirror.Metalogic.relL, GebMirror.Metalogic.relR, mirror_comp,
+    der_simp [mirror_coeqProj, «Derivation.relL», «Derivation.relR», mirror_comp,
       mirror_cFst, mirror_cSnd, mirror_truthIncl, Internal.relPair]
   split_ifs <;> simp_all
 
 /-- The mirror's test of the primitive arrows of induction on rose trees. -/
 theorem rosePrimsOk_eq (kn kl kc : ℕ) (r a : Tree) :
-    GebMirror.Metalogic.rosePrimsOk (encGlobals G) (leaf kn) (leaf kl) (leaf kc) r a =
+    «Derivation.rosePrimsOk» (encGlobals G) (leaf kn) (leaf kl) (leaf kc) r a =
       ofBool (decide (((G.prims[kn]? = some Internal.nodePrim ∧ r = rose) ∨
         (G.prims[kn]? = some Internal.lnodePrim ∧ r = lrose a)) ∧
         G.prims[kl]? = some Internal.nilPrim ∧ G.prims[kc]? = some Internal.consPrim)) := by
-  simp only [GebMirror.Metalogic.rosePrimsOk, primIs_eq, nodePrim_eq, lnodePrim_eq, nilPrim_eq,
+  simp only [«Derivation.rosePrimsOk», primIs_eq, nodePrim_eq, lnodePrim_eq, nilPrim_eq,
     consPrim_eq, mirror_rose, mirror_lrose, equal_eq, and_eq, or_eq]
   congr 1
 
 /-- The mirror's theorem of an arity, a context, hypotheses and a conclusion. -/
 @[simp] theorem mkThm_eq' (n : ℕ) (Γ : List Tree) (Φ : List Term) (φ : Term) :
-    GebMirror.Metalogic.mkThm (leaf n) (RoseTree.node 0 Γ) (RoseTree.node 0 (Φ.map encTerm))
+    «Derivation.mkThm» (leaf n) (RoseTree.node 0 Γ) (RoseTree.node 0 (Φ.map encTerm))
       (encTerm φ) = encThm ⟨n, Γ, Φ, φ⟩ := rfl
 
 /-- The mirror's proving step at an encoded node of the rule of induction on the initial object. -/
 theorem proveZeroInd_eq (i : ℕ) (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData (.zeroInd i)).1) (ruleData (.zeroInd i)).2
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ
         (Φ.map encTerm) (encTerm φ) =
@@ -1068,7 +1070,7 @@ theorem proveZeroInd_eq (i : ℕ) (xs : List (Internal.Deriv × DV × Internal.C
         Φ φ) := by
   have h1 := rw_rel xs hx
   have h2 := pf_rel xs hx
-  simp only [GebMirror.Metalogic.proveStep]
+  simp only [«Derivation.proveStep»]
   rcases xs with _ | ⟨x0, xs⟩ <;> select_rule <;>
     prove_simp [nth_eq, isFormula_eq, mirror_cZero, encOpt_inj, Bool.decide_and]
 
@@ -1076,7 +1078,7 @@ theorem proveZeroInd_eq (i : ℕ) (xs : List (Internal.Deriv × DV × Internal.C
 /-- The mirror's proving step at an encoded node of the rule of a certificate of an equation. -/
 theorem proveCert_eq (c : Tree) (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData (.cert c)).1) (ruleData (.cert c)).2
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ
         (Φ.map encTerm) (encTerm φ) =
@@ -1084,7 +1086,7 @@ theorem proveCert_eq (c : Tree) (xs : List (Internal.Deriv × DV × Internal.Che
         Φ φ) := by
   have h1 := rw_rel xs hx
   have h2 := pf_rel xs hx
-  simp only [GebMirror.Metalogic.proveStep]
+  simp only [«Derivation.proveStep»]
   rcases xs with _ | ⟨x0, xs⟩ <;> select_rule <;> prove_simp []
   rcases Internal.eqParts φ with _ | ⟨t, u⟩ <;> prove_simp [compileEq_eq]
   rcases Internal.compileEq G n Γ t u with _ | q <;> prove_simp [certifies_eq]
@@ -1094,7 +1096,7 @@ theorem proveCert_eq (c : Tree) (xs : List (Internal.Deriv × DV × Internal.Che
 sequent. -/
 theorem proveCertSeq_eq (c : Tree) (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData (.certSeq c)).1) (ruleData (.certSeq c)).2
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ
         (Φ.map encTerm) (encTerm φ) =
@@ -1102,8 +1104,8 @@ theorem proveCertSeq_eq (c : Tree) (xs : List (Internal.Deriv × DV × Internal.
         Φ φ) := by
   have h1 := rw_rel xs hx
   have h2 := pf_rel xs hx
-  simp only [GebMirror.Metalogic.proveStep]
-  have ha := allT_map (GebMirror.Metalogic.isFormula (encGlobals G) (leaf n) Γ) encTerm
+  simp only [«Derivation.proveStep»]
+  have ha := allT_map («Derivation.isFormula» (encGlobals G) (leaf n) Γ) encTerm
     (fun ψ ↦ decide (Internal.typeIn G n Γ ψ = some omega)) Φ fun ψ _ ↦ isFormula_eq G n Γ ψ
   rcases xs with _ | ⟨x0, xs⟩ <;> select_rule <;>
     prove_simp [ha, isFormula_eq, certifies_eq, thmSeq_eq, mkThm_eq', List.all_eq_true]
@@ -1113,7 +1115,7 @@ theorem proveCertSeq_eq (c : Tree) (xs : List (Internal.Deriv × DV × Internal.
 into a hypothesis. -/
 theorem proveNatIndHyp_eq (kz ks : ℕ) (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData (.natIndHyp kz ks)).1) (ruleData (.natIndHyp kz ks)).2
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ
         (Φ.map encTerm) (encTerm φ) =
@@ -1121,7 +1123,7 @@ theorem proveNatIndHyp_eq (kz ks : ℕ) (xs : List (Internal.Deriv × DV × Inte
         Φ φ) := by
   have h1 := rw_rel xs hx
   have h2 := pf_rel xs hx
-  simp only [GebMirror.Metalogic.proveStep]
+  simp only [«Derivation.proveStep»]
   rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, xs⟩⟩⟩ <;> select_rule <;> prove_simp []
   rcases Γ with _ | ⟨c, Γ'⟩ <;> prove_simp []
   rcases hH : Internal.lowerHyps G n Γ' Φ with _ | Φ' <;>
@@ -1133,7 +1135,7 @@ theorem proveNatIndHyp_eq (kz ks : ℕ) (xs : List (Internal.Deriv × DV × Inte
 hypothesis. -/
 theorem proveListIndHyp_eq (kn kc : ℕ) (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData (.listIndHyp kn kc)).1) (ruleData (.listIndHyp kn kc)).2
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ
         (Φ.map encTerm) (encTerm φ) =
@@ -1141,7 +1143,7 @@ theorem proveListIndHyp_eq (kn kc : ℕ) (xs : List (Internal.Deriv × DV × Int
         Φ φ) := by
   have h1 := rw_rel xs hx
   have h2 := pf_rel xs hx
-  simp only [GebMirror.Metalogic.proveStep]
+  simp only [«Derivation.proveStep»]
   rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, xs⟩⟩⟩ <;> select_rule <;> prove_simp []
   rcases Γ with _ | ⟨c, Γ'⟩ <;> prove_simp []
   rcases hl : Internal.listPart c with _ | a <;>
@@ -1153,7 +1155,7 @@ theorem proveListIndHyp_eq (kn kc : ℕ) (xs : List (Internal.Deriv × DV × Int
 /-- The mirror's proving step at an encoded node of the rule of induction on a coproduct. -/
 theorem proveCoprodInd_eq (kl kr : ℕ) (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData (.coprodInd kl kr)).1) (ruleData (.coprodInd kl kr)).2
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ
         (Φ.map encTerm) (encTerm φ) =
@@ -1161,19 +1163,19 @@ theorem proveCoprodInd_eq (kl kr : ℕ) (xs : List (Internal.Deriv × DV × Inte
         Φ φ) := by
   have h1 := rw_rel xs hx
   have h2 := pf_rel xs hx
-  simp only [GebMirror.Metalogic.proveStep]
+  simp only [«Derivation.proveStep»]
   rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, xs⟩⟩⟩ <;> select_rule <;> prove_simp []
   rcases Γ with _ | ⟨c, Γ'⟩ <;> prove_simp []
   rcases hp : Internal.coprodParts c with _ | ⟨a, b⟩ <;>
     rcases hH : Internal.lowerHyps G n Γ' Φ with _ | Φ' <;>
     prove_simp [coprodParts_eq, hp, lowerHyps_eq, hH, primIs_eq, inlPrim_eq, inrPrim_eq,
-      isFormula_eq, subst_atVar0, GebMirror.Metalogic.l2, Bool.decide_and]
+      isFormula_eq, subst_atVar0, «Theory.l2», Bool.decide_and]
 
 
 /-- The mirror's proving step at an encoded node of the rule of induction on a quotient. -/
 theorem proveQuotInd_eq (kq : ℕ) (θ : List Tree) (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData (.quotInd kq θ)).1) (ruleData (.quotInd kq θ)).2
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ
         (Φ.map encTerm) (encTerm φ) =
@@ -1181,7 +1183,7 @@ theorem proveQuotInd_eq (kq : ℕ) (θ : List Tree) (xs : List (Internal.Deriv �
         Φ φ) := by
   have h1 := rw_rel xs hx
   have h2 := pf_rel xs hx
-  simp only [GebMirror.Metalogic.proveStep]
+  simp only [«Derivation.proveStep»]
   rcases xs with _ | ⟨x0, _ | ⟨x1, xs⟩⟩ <;> select_rule <;> prove_simp []
   rcases Γ with _ | ⟨c, Γ'⟩ <;> prove_simp [gPrims_eq, nth_eq, List.getElem?_map]
   rcases hp : G.prims[kq]? with _ | p <;> prove_simp [gPrims_eq, nth_eq, List.getElem?_map, hp]
@@ -1193,7 +1195,7 @@ theorem proveQuotInd_eq (kq : ℕ) (θ : List Tree) (xs : List (Internal.Deriv �
 /-- The mirror's proving step at an encoded node of the rule of induction on the natural numbers. -/
 theorem proveNatInd_eq (kz ks : ℕ) (s : Term) (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData (.natInd kz ks s)).1) (ruleData (.natInd kz ks s)).2
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ
         (Φ.map encTerm) (encTerm φ) =
@@ -1201,7 +1203,7 @@ theorem proveNatInd_eq (kz ks : ℕ) (s : Term) (xs : List (Internal.Deriv × DV
         Φ φ) := by
   have h1 := rw_rel xs hx
   have h2 := pf_rel xs hx
-  simp only [GebMirror.Metalogic.proveStep]
+  simp only [«Derivation.proveStep»]
   rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, _ | ⟨x3, xs⟩⟩⟩⟩ <;> select_rule <;> prove_simp []
   rcases Internal.eqParts φ with _ | ⟨t, u⟩ <;> prove_simp []
   rcases Γ with _ | ⟨c, Γ'⟩ <;> prove_simp []
@@ -1214,7 +1216,7 @@ theorem proveNatInd_eq (kz ks : ℕ) (s : Term) (xs : List (Internal.Deriv × DV
 /-- The mirror's proving step at an encoded node of the rule of induction on lists. -/
 theorem proveListInd_eq (kn kc : ℕ) (s : Term) (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData (.listInd kn kc s)).1) (ruleData (.listInd kn kc s)).2
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ
         (Φ.map encTerm) (encTerm φ) =
@@ -1222,7 +1224,7 @@ theorem proveListInd_eq (kn kc : ℕ) (s : Term) (xs : List (Internal.Deriv × D
         Φ φ) := by
   have h1 := rw_rel xs hx
   have h2 := pf_rel xs hx
-  simp only [GebMirror.Metalogic.proveStep]
+  simp only [«Derivation.proveStep»]
   rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, _ | ⟨x3, xs⟩⟩⟩⟩ <;> select_rule <;> prove_simp []
   rcases Internal.eqParts φ with _ | ⟨t, u⟩ <;> prove_simp []
   rcases Γ with _ | ⟨c, Γ'⟩ <;> prove_simp []
@@ -1238,7 +1240,7 @@ theorem proveListInd_eq (kn kc : ℕ) (s : Term) (xs : List (Internal.Deriv × D
 theorem proveRoseInd_eq (kn kl kc : ℕ) (s : Term)
     (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData (.roseInd kn kl kc s)).1) (ruleData (.roseInd kn kl kc s)).2
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ
         (Φ.map encTerm) (encTerm φ) =
@@ -1248,14 +1250,14 @@ theorem proveRoseInd_eq (kn kl kc : ℕ) (s : Term)
   have h2 := pf_rel xs hx
   have h3 : ∀ x ∈ xs, ∀ Γ φ, x.2.1.2 Γ [] (encTerm φ) = ofBool (x.2.2.2 Γ [] φ) :=
     fun x h Γ φ ↦ (hx x h).2 Γ [] φ
-  simp only [GebMirror.Metalogic.proveStep]
+  simp only [«Derivation.proveStep»]
   rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, xs⟩⟩⟩ <;> select_rule <;> prove_simp []
   rcases Internal.eqParts φ with _ | ⟨t, u⟩ <;> prove_simp []
   rcases Γ with _ | ⟨r, _ | ⟨r', Γ⟩⟩ <;> prove_simp []
   rcases hC : Internal.typeIn G n [r] t with _ | C <;>
     rcases hp : Internal.roseParts r with _ | ⟨a, fold⟩ <;>
     prove_simp [h3, typeIn_eq, hC, roseLabel_eq, hp, rosePrimsOk_eq, roseNodeAt_eq,
-      roseMapAt_eq, subst_atVar0, mirror_list, GebMirror.Metalogic.l2, encOpt_inj,
+      roseMapAt_eq, subst_atVar0, mirror_list, «Theory.l2», encOpt_inj,
       Bool.decide_and]
 
 
@@ -1263,7 +1265,7 @@ theorem proveRoseInd_eq (kn kl kc : ℕ) (s : Term)
 hypothesis. -/
 theorem proveRoseIndHyp_eq (kn kl kc : ℕ) (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData (.roseIndHyp kn kl kc)).1) (ruleData (.roseIndHyp kn kl kc)).2
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ
         (Φ.map encTerm) (encTerm φ) =
@@ -1274,19 +1276,19 @@ theorem proveRoseIndHyp_eq (kn kl kc : ℕ) (xs : List (Internal.Deriv × DV × 
   have h4 : ∀ x ∈ xs, ∀ Γ ψ φ,
       x.2.1.2 Γ [encTerm ψ] (encTerm φ) = ofBool (x.2.2.2 Γ [ψ] φ) :=
     fun x h Γ ψ φ ↦ (hx x h).2 Γ [ψ] φ
-  simp only [GebMirror.Metalogic.proveStep]
+  simp only [«Derivation.proveStep»]
   rcases xs with _ | ⟨x0, _ | ⟨x1, xs⟩⟩ <;> select_rule <;> prove_simp []
   rcases Γ with _ | ⟨r, _ | ⟨r', Γ⟩⟩ <;> prove_simp []
   rcases hp : Internal.roseParts r with _ | ⟨a, fold⟩ <;>
     prove_simp [h4, roseLabel_eq, hp, rosePrimsOk_eq, roseNodeAt_eq, roseHyp_eq, isFormula_eq,
-      mirror_list, GebMirror.Metalogic.l2, Bool.decide_and]
+      mirror_list, «Theory.l2», Bool.decide_and]
 
 
 /-- The mirror's test at the positions of a list is the list's test, where the two agree at each
 position. -/
 theorem allT_range_eq {β : Type} (F : Tree → Tree) (ys : List β) (g : β → Bool)
     (h : ∀ i (hi : i < ys.length), F (leaf i) = ofBool (g ys[i])) :
-    GebMirror.Metalogic.allT F ((List.range ys.length).map leaf) = ofBool (ys.all g) := by
+    «Base.allT» F ((List.range ys.length).map leaf) = ofBool (ys.all g) := by
   rw [allT_map F leaf (fun i ↦ (ys[i]?.map g).getD true) _ fun i hi ↦ by
     rw [List.mem_range] at hi
     rw [h i hi, List.getElem?_eq_getElem hi]
@@ -1301,7 +1303,7 @@ theorem allT_range_eq {β : Type} (F : Tree → Tree) (ys : List β) (g : β →
 theorem proveApply_eq (j : ℕ) (θ : List Tree) (σ : List Term)
     (xs : List (Internal.Deriv × DV × Internal.Checks)) (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2)
     (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData (.apply j θ σ)).1) (ruleData (.apply j θ σ)).2
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ
         (Φ.map encTerm) (encTerm φ) =
@@ -1310,11 +1312,11 @@ theorem proveApply_eq (j : ℕ) (θ : List Tree) (σ : List Term)
   have h1 := rw_rel xs hx
   have h2 := pf_rel xs hx
   have hr : ∀ a : Internal.Thm, xs.length = a.hyps.length →
-      GebMirror.Metalogic.allT (fun t ↦ GebMirror.Metalogic.pf
+      «Base.allT» (fun t ↦ «Derivation.pf»
           (xs.map fun x ↦ (encDeriv x.1, x.2.1)) t Γ (Φ.map encTerm)
-          (GebMirror.Metalogic.instTerm θ (σ.map encTerm)
-            (GebMirror.Metalogic.at (GebMirror.Metalogic.thHyps (encThm a)) t)))
-        (GebMirror.Metalogic.range (leaf xs.length)) =
+          («Derivation.instTerm» θ (σ.map encTerm)
+            («Prelude.at» («Derivation.thHyps» (encThm a)) t)))
+        («Base.range» (leaf xs.length)) =
       ofBool ((xs.zip a.hyps).all fun q ↦ q.1.2.2.2 Γ Φ (Internal.instTerm θ σ q.2)) := by
     intro a hl
     have hz : xs.length = (xs.zip a.hyps).length := by simp [hl]
@@ -1327,7 +1329,7 @@ theorem proveApply_eq (j : ℕ) (θ : List Tree) (σ : List Term)
       List.getElem?_map, List.getElem?_eq_getElem hxi, List.getElem?_eq_getElem hai,
       Option.map_some, Option.getD_some, instTerm_eq]
     exact (hx _ (List.getElem_mem hxi)).2 Γ Φ _
-  simp only [GebMirror.Metalogic.proveStep]
+  simp only [«Derivation.proveStep»]
   select_rule
   simp only [at_eq, List.getD_cons_zero, List.getD_cons_succ, children_eq,
     RoseTree.children_node, nth_eq, List.getElem?_map, Array.getElem?_toList]
@@ -1348,7 +1350,7 @@ theorem proveApply_eq (j : ℕ) (θ : List Tree) (σ : List Term)
 to the checker's. -/
 theorem proveStep_eq (l : Internal.Rule) (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.proveStep (encGlobals G) (E.toList.map encEntry) (leaf n)
+    «Derivation.proveStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData l).1) (ruleData l).2
         (xs.map fun x ↦ encDeriv x.1) (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ
         (Φ.map encTerm) (encTerm φ) =
@@ -1374,7 +1376,7 @@ theorem proveStep_eq (l : Internal.Rule) (xs : List (Internal.Deriv × DV × Int
   case zeroInd i => exact proveZeroInd_eq G E n Φ i xs hx Γ φ
   case quotInd kq θ => exact proveQuotInd_eq G E n Φ kq θ xs hx Γ φ
   all_goals
-    simp only [GebMirror.Metalogic.proveStep]
+    simp only [«Derivation.proveStep»]
     select_rule
     simp only [leaf_zero_eq_ofBool]
     rfl
@@ -1383,7 +1385,7 @@ theorem proveStep_eq (l : Internal.Rule) (xs : List (Internal.Deriv × DV × Int
 their rewritings and their provings agree at every context and every encoded list of hypotheses
 and term. -/
 theorem check_eq (d : Internal.Deriv) :
-    DRel (GebMirror.Metalogic.check (encGlobals G) (E.toList.map encEntry) (leaf n) (encDeriv d))
+    DRel («Derivation.check» (encGlobals G) (E.toList.map encEntry) (leaf n) (encDeriv d))
       (Internal.check G E n d) :=
   fold_pair_enc (fun r ↦ (ruleData r).1) (fun r ↦ RoseTree.node 0 (ruleData r).2) DRel
     (fun l rs ↦ by simp only [dpTrees_eq]) (Internal.checkStep G E n)
@@ -1400,34 +1402,34 @@ theorem check_eq (d : Internal.Deriv) :
 
 /-- The mirror's test that a derivation proves a theorem. -/
 theorem thmChecks_eq (a : Internal.Thm) (d : Internal.Deriv) :
-    GebMirror.Metalogic.thmChecks (encGlobals G) (E.toList.map encEntry) (encThm a) (encDeriv d) =
+    «Derivation.thmChecks» (encGlobals G) (E.toList.map encEntry) (encThm a) (encDeriv d) =
       ofBool (a.checks G E d) := by
   have hc := (check_eq G E a.arity d).2 a.ctx a.hyps a.concl
-  have ha := allT_map (GebMirror.Metalogic.isFormula (encGlobals G) (leaf a.arity) a.ctx) encTerm
+  have ha := allT_map («Derivation.isFormula» (encGlobals G) (leaf a.arity) a.ctx) encTerm
     (fun ψ ↦ decide (Internal.typeIn G a.arity a.ctx ψ = some omega)) a.hyps
     fun ψ _ ↦ isFormula_eq G a.arity a.ctx ψ
-  der_simp [GebMirror.Metalogic.thmChecks, Internal.Thm.checks, thArity_eq, thCtx_eq, thHyps_eq,
+  der_simp [«Derivation.thmChecks», Internal.Thm.checks, thArity_eq, thCtx_eq, thHyps_eq,
     thConcl_eq, allT_isTy, ha, isFormula_eq, hc, ite_leaf_zero, Bool.decide_eq_true,
     Bool.decide_and]
   simp only [Bool.and_assoc]
 
 /-- The mirror's sequent that a primitive arrow is an arrow from its domain to its codomain. -/
 @[simp] theorem primSeq_eq (p : Internal.Prim) :
-    GebMirror.Metalogic.primSeq (encPrim p) = encSeq p.seq := by
-  simp [GebMirror.Metalogic.primSeq, GebMirror.Metalogic.mkSeq, GebMirror.Metalogic.seq,
+    «Derivation.primSeq» (encPrim p) = encSeq p.seq := by
+  simp [«Derivation.primSeq», «PartialHorn.mkSeq», «PartialHorn.seq»,
     Internal.Prim.seq, encSeq, prArity_eq, prArrow_eq, prDom_eq, prCod_eq, List.map_replicate]
 
 /-- The mirror's confirmation of a primitive arrow. -/
 theorem primConfirms_eq (p : Internal.Prim) (c : Option Tree) :
-    GebMirror.Metalogic.primConfirms (encGlobals G) (E.toList.map encEntry) (encPrim p)
+    «Derivation.primConfirms» (encGlobals G) (E.toList.map encEntry) (encPrim p)
         (encOpt c) = ofBool (p.confirms G E c) := by
   cases c with
   | none =>
-    der_simp [GebMirror.Metalogic.primConfirms, Internal.Prim.confirms]
+    der_simp [«Derivation.primConfirms», Internal.Prim.confirms]
     refine anyDefs_eq G _ _ fun cds ↦ ?_
     der_simp [gBase_eq, sig_eq, envOfDefs_eq, primOk_eq, ite_leaf_zero, Bool.decide_eq_true]
   | some c =>
-    der_simp [GebMirror.Metalogic.primConfirms, Internal.Prim.confirms]
+    der_simp [«Derivation.primConfirms», Internal.Prim.confirms]
     rw [anyDefs_eq G _ (fun cds ↦ p.wf G (ext cds).sig) fun cds ↦ by
       der_simp [ext_eq, thySig_eq, primWf_eq]]
     der_simp [certifies_eq, primSeq_eq, ite_leaf_zero, Bool.decide_eq_true]
@@ -1439,56 +1441,56 @@ theorem decide_encOpt_sort (o : Option ℕ) (s : ℕ) :
 
 /-- The mirror's confirmation of an object in object parameters. -/
 theorem objConfirms_eq (m : ℕ) (b : Tree) (c : Option Tree) :
-    GebMirror.Metalogic.objConfirms (encGlobals G) (E.toList.map encEntry) (leaf m) b
+    «Derivation.objConfirms» (encGlobals G) (E.toList.map encEntry) (leaf m) b
         (encOpt c) = ofBool (Internal.objConfirms G E m b c) := by
   cases c with
   | none =>
-    der_simp [GebMirror.Metalogic.objConfirms, Internal.objConfirms]
+    der_simp [«Derivation.objConfirms», Internal.objConfirms]
     refine anyDefs_eq G _ _ fun cds ↦ ?_
     der_simp [gBase_eq, sig_eq, envOfDefs_eq, objOk_eq, ite_leaf_zero, Bool.decide_eq_true]
   | some c =>
-    der_simp [GebMirror.Metalogic.objConfirms, Internal.objConfirms]
+    der_simp [«Derivation.objConfirms», Internal.objConfirms]
     rw [anyDefs_eq G _ (fun cds ↦ PartialHorn.sortOf (ext cds).sig (List.replicate m Sorts.obj) b ==
       some Sorts.obj) fun cds ↦ by
         der_simp [ext_eq, thySig_eq, sortOf_objs, equal_eq, decide_encOpt_sort]]
-    have hs : GebMirror.Metalogic.mkSeq (List.replicate m (leaf 0)) [] (encEqn (dfd b)) =
+    have hs : «PartialHorn.mkSeq» (List.replicate m (leaf 0)) [] (encEqn (dfd b)) =
         encSeq ⟨List.replicate m Sorts.obj, [], dfd b⟩ := by
-      simp [GebMirror.Metalogic.mkSeq, GebMirror.Metalogic.seq, encSeq, List.map_replicate]
+      simp [«PartialHorn.mkSeq», «PartialHorn.seq», encSeq, List.map_replicate]
     der_simp [dfd_eq, hs, certifies_eq, ite_leaf_zero, Bool.decide_eq_true]
 
 /-- The mirror's check of a definition of the language. -/
 @[simp] theorem ldChecks_eq (d : Internal.Defn) :
-    GebMirror.Metalogic.ldChecks (encGlobals G) (encLDefn d) = ofBool (d.checks G) := by
-  der_simp [GebMirror.Metalogic.ldChecks, Internal.Defn.checks, ldCompile_eq, ldArity_eq,
+    «Derivation.ldChecks» (encGlobals G) (encLDefn d) = ofBool (d.checks G) := by
+  der_simp [«Derivation.ldChecks», Internal.Defn.checks, ldCompile_eq, ldArity_eq,
     ldType_eq, isTy_eq, Option.isSome_map]
 
 /-- The mirror's state of a development. -/
 @[simp] theorem devState_eq (s : Internal.Globals × Array Internal.Entry) :
-    GebMirror.Metalogic.devState (encGlobals s.1) (s.2.toList.map encEntry) = encState s := rfl
+    «Derivation.devState» (encGlobals s.1) (s.2.toList.map encEntry) = encState s := rfl
 
 /-- The mirror's constants with new primitive arrows. -/
 @[simp] theorem withPrims_eq (ps : List Internal.Prim) :
-    GebMirror.Metalogic.withPrims (encGlobals G) (ps.map encPrim) =
+    «Derivation.withPrims» (encGlobals G) (ps.map encPrim) =
       encGlobals { G with prims := ps } := by
-  simp only [GebMirror.Metalogic.withPrims, gDefs_eq, gBase_eq, node_leaf, globals_eq]
+  simp only [«Derivation.withPrims», gDefs_eq, gBase_eq, node_leaf, globals_eq]
 
 /-- The mirror's constants with new definitions. -/
 @[simp] theorem withDefs_eq (ds : List Internal.Definition) :
-    GebMirror.Metalogic.withDefs (encGlobals G) (ds.map encDefinition) =
+    «Derivation.withDefs» (encGlobals G) (ds.map encDefinition) =
       encGlobals { G with defs := ds } := by
-  simp only [GebMirror.Metalogic.withDefs, gPrims_eq, gBase_eq, node_leaf, globals_eq]
+  simp only [«Derivation.withDefs», gPrims_eq, gBase_eq, node_leaf, globals_eq]
 
 /-- The mirror's list with an element at its end. -/
 @[simp] theorem push_eq (xs : List Tree) (x : Tree) :
-    GebMirror.Metalogic.push xs x = xs ++ [x] := by
-  simp [GebMirror.Metalogic.push]
+    «Derivation.push» xs x = xs ++ [x] := by
+  simp [«Derivation.push»]
 
 /-- The mirror's test that a term in object parameters is an arrow of the extended signature. -/
 theorem sortsArr_eq (m : ℕ) (f : Tree) :
-    GebMirror.Metalogic.sortsArr (encGlobals G) (leaf m) f =
+    «Derivation.sortsArr» (encGlobals G) (leaf m) f =
       ofBool ((Internal.compileDefs G).any fun cds ↦
         PartialHorn.sortOf (ext cds).sig (List.replicate m Sorts.obj) f == some Sorts.arr) := by
-  rw [GebMirror.Metalogic.sortsArr]
+  rw [«Derivation.sortsArr»]
   exact anyDefs_eq G _ _ fun cds ↦ by
     der_simp [ext_eq, thySig_eq, sortOf_objs, equal_eq, decide_encOpt_sort]
 
@@ -1499,27 +1501,27 @@ theorem map_push {α : Type} (f : α → Tree) (xs : List α) (x : α) :
 
 /-- The mirror's primitive arrow of its fields. -/
 @[simp] theorem primitive_eq (m : ℕ) (f a b : Tree) :
-    GebMirror.Metalogic.primitive (leaf m) f a b = encPrim ⟨m, f, a, b⟩ := rfl
+    «Language.primitive» (leaf m) f a b = encPrim ⟨m, f, a, b⟩ := rfl
 
 /-- The mirror's object definition of its fields. -/
 @[simp] theorem defObj_eq (m : ℕ) (b : Tree) :
-    GebMirror.Metalogic.defObj (leaf m) b = encDefinition (.object m b) := rfl
+    «Language.defObj» (leaf m) b = encDefinition (.object m b) := rfl
 
 /-- The mirror's theorem of an arity, a context, one hypothesis and a conclusion. -/
 @[simp] theorem mkThm_single (n : ℕ) (Γ : List Tree) (ψ φ : Term) :
-    GebMirror.Metalogic.mkThm (leaf n) (RoseTree.node 0 Γ) (RoseTree.node 0 [encTerm ψ])
+    «Derivation.mkThm» (leaf n) (RoseTree.node 0 Γ) (RoseTree.node 0 [encTerm ψ])
       (encTerm φ) = encThm ⟨n, Γ, [ψ], φ⟩ := rfl
 
 /-- The mirror's theorem of an arity, a context, no hypotheses and a conclusion. -/
 @[simp] theorem mkThm_nil (n : ℕ) (Γ : List Tree) (φ : Term) :
-    GebMirror.Metalogic.mkThm (leaf n) (RoseTree.node 0 Γ) (RoseTree.node 0 []) (encTerm φ) =
+    «Derivation.mkThm» (leaf n) (RoseTree.node 0 Γ) (RoseTree.node 0 []) (encTerm φ) =
       encThm ⟨n, Γ, [], φ⟩ := rfl
 
 /-- The mirror's first component of the node of two trees. -/
-@[simp] theorem p1_node (a b : Tree) : GebMirror.Metalogic.p1 (RoseTree.node 0 [a, b]) = a := rfl
+@[simp] theorem p1_node (a b : Tree) : «Language.p1» (RoseTree.node 0 [a, b]) = a := rfl
 
 /-- The mirror's second component of the node of two trees. -/
-@[simp] theorem p2_node (a b : Tree) : GebMirror.Metalogic.p2 (RoseTree.node 0 [a, b]) = b := rfl
+@[simp] theorem p2_node (a b : Tree) : «Language.p2» (RoseTree.node 0 [a, b]) = b := rfl
 
 /-- A test of an encoded tree is the encoding of the test of a value encoding to it. -/
 theorem ite_encOpt {α : Type} (P : Prop) {i₁ i₂ : Decidable P} (a : Tree) (x : α)
@@ -1530,18 +1532,18 @@ theorem ite_encOpt {α : Type} (P : Prop) {i₁ i₂ : Decidable P} (a : Tree) (
 
 /-- The mirror's declaration of the quotient of a type by a relation. -/
 theorem quotStep_eq (m : ℕ) (A : Tree) (R : Term) :
-    GebMirror.Metalogic.quotStep (encGlobals G) (E.toList.map encEntry) (leaf m) A (encTerm R) =
+    «Derivation.quotStep» (encGlobals G) (E.toList.map encEntry) (leaf m) A (encTerm R) =
       encOpt ((Internal.Decl.step G E (.quotient m A R)).map encState) := by
   have hc := compile_eq G m R (Internal.ctxObj [A, A]) (Internal.stdEnv [A, A])
-  simp only [GebMirror.Metalogic.quotStep, GebMirror.Metalogic.l2, single_eq, ctxObj_eq,
+  simp only [«Derivation.quotStep», «Theory.l2», single_eq, ctxObj_eq,
     stdEnv_eq, hc, Internal.Decl.step]
   rcases Internal.compile G m R (Internal.ctxObj [A, A]) (Internal.stdEnv [A, A]) with _ | ⟨r, t⟩
   · der_simp []
   · der_simp [gPrims_eq, gDefs_eq, gBase_eq, sig_eq, objVars_eq, phOp_eq, primitive_eq,
-      defObj_eq, mirror_coeqProj, mirror_coeqz, GebMirror.Metalogic.relL,
-      GebMirror.Metalogic.relR, mirror_comp, mirror_cFst, mirror_cSnd, mirror_truthIncl,
+      defObj_eq, mirror_coeqProj, mirror_coeqz, «Derivation.relL»,
+      «Derivation.relR», mirror_comp, mirror_cFst, mirror_cSnd, mirror_truthIncl,
       map_push, globals_eq, isTy_eq, scoped_eq, prArrow_eq, prCod_eq, sortsArr_eq,
-      isFormula_eq, mkThm_single, thConcl_eq, entLang_eq, GebMirror.Metalogic.devState, encState,
+      isFormula_eq, mkThm_single, thConcl_eq, entLang_eq, «Derivation.devState», encState,
       Array.toList_push, mirror_omega, ite_leaf_zero, Internal.relPair, push_eq, encPair, p1_node,
       p2_node]
     refine ite_encOpt _ _ _ _ ?_
@@ -1554,9 +1556,9 @@ theorem encOpt_pair_eq_some (o : Option (Tree × Tree)) (q : Tree × Tree) :
 
 /-- The mirror's declaration of the descent of a function through a quotient. -/
 theorem descStep_eq (kq : ℕ) (C : Tree) (h : Term) (jr : ℕ) :
-    GebMirror.Metalogic.descStep (encGlobals G) (E.toList.map encEntry) (leaf kq) C (encTerm h)
+    «Derivation.descStep» (encGlobals G) (E.toList.map encEntry) (leaf kq) C (encTerm h)
         (leaf jr) = encOpt ((Internal.Decl.step G E (.descent kq C h jr)).map encState) := by
-  simp only [GebMirror.Metalogic.descStep, Internal.Decl.step, gPrims_eq, nth_eq,
+  simp only [«Derivation.descStep», Internal.Decl.step, gPrims_eq, nth_eq,
     List.getElem?_map, Array.getElem?_toList]
   rcases hp : G.prims[kq]? with _ | p
   · der_simp []
@@ -1575,11 +1577,11 @@ theorem descStep_eq (kq : ℕ) (C : Tree) (h : Term) (jr : ℕ) :
     rcases Th with _ | ⟨R', _ | ⟨R'', Th⟩⟩ <;>
       der_simp [primRel_eq, hr, entryLanguage_eq, Internal.Entry.language?, prArity_eq,
         prDom_eq, prCod_eq, prArrow_eq, ctxObj_eq, stdEnv_eq, hc, hC, hc2, thHyps_eq, thArity_eq,
-        thCtx_eq, thConcl_eq, GebMirror.Metalogic.l2, primitive_eq, mirror_coeqDesc,
-        GebMirror.Metalogic.relL, GebMirror.Metalogic.relR, mirror_comp, mirror_cFst,
+        thCtx_eq, thConcl_eq, «Theory.l2», primitive_eq, mirror_coeqDesc,
+        «Derivation.relL», «Derivation.relR», mirror_comp, mirror_cFst,
         mirror_cSnd, mirror_truthIncl, Internal.relPair, push_eq, map_push, withPrims_eq,
         objVars_eq, weaken1_eq, isTy_eq, scoped_eq, sortsArr_eq, isFormula_eq, mkThm_nil,
-        entLang_eq, GebMirror.Metalogic.devState, sig_eq, gBase_eq, equalTs_eq,
+        entLang_eq, «Derivation.devState», sig_eq, gBase_eq, equalTs_eq,
         encOpt_pair_eq_some, encTerm_eq_iff, mirror_omega, ite_leaf_zero]
     refine ite_encOpt _ _ _ _ ?_
     simp [encState, encPair, Array.toList_push]
@@ -1587,43 +1589,43 @@ theorem descStep_eq (kq : ℕ) (C : Tree) (h : Term) (jr : ℕ) :
 
 /-- The mirror's definition of the language as a definition of either kind. -/
 @[simp] theorem defLang_eq (d : Internal.Defn) :
-    GebMirror.Metalogic.defLang (encLDefn d) = encDefinition (.language d) := rfl
+    «Language.defLang» (encLDefn d) = encDefinition (.language d) := rfl
 
 /-- The mirror's state after a declaration, where its proof proves it. -/
 theorem declStep_eq (d : Internal.Decl) :
-    GebMirror.Metalogic.declStep (encGlobals G) (E.toList.map encEntry) (encDecl d) =
+    «Derivation.declStep» (encGlobals G) (E.toList.map encEntry) (encDecl d) =
       encOpt ((d.step G E).map encState) := by
   cases d with
   | quotient m A R =>
-    simp only [GebMirror.Metalogic.declStep, encDecl, Internal.Decl.step] at ⊢
+    simp only [«Derivation.declStep», encDecl, Internal.Decl.step] at ⊢
     der_simp []
     exact quotStep_eq G E m A R
   | descent kq C h jr =>
-    der_simp [GebMirror.Metalogic.declStep, encDecl]
+    der_simp [«Derivation.declStep», encDecl]
     exact descStep_eq G E kq C h jr
   | language a dv =>
-    der_simp [GebMirror.Metalogic.declStep, encDecl, Internal.Decl.step, thmChecks_eq,
-      entLang_eq, push_eq, map_push, GebMirror.Metalogic.devState]
+    der_simp [«Derivation.declStep», encDecl, Internal.Decl.step, thmChecks_eq,
+      entLang_eq, push_eq, map_push, «Derivation.devState»]
     refine ite_encOpt _ _ _ _ ?_
     simp [encState, encPair, Array.toList_push]
   | combinators s c =>
-    der_simp [GebMirror.Metalogic.declStep, encDecl, Internal.Decl.step, certifies_eq,
-      entComb_eq, push_eq, map_push, GebMirror.Metalogic.devState]
+    der_simp [«Derivation.declStep», encDecl, Internal.Decl.step, certifies_eq,
+      entComb_eq, push_eq, map_push, «Derivation.devState»]
     refine ite_encOpt _ _ _ _ ?_
     simp [encState, encPair, Array.toList_push]
   | definition df =>
-    der_simp [GebMirror.Metalogic.declStep, encDecl, Internal.Decl.step, ldChecks_eq, gDefs_eq,
-      defLang_eq, push_eq, map_push, withDefs_eq, GebMirror.Metalogic.devState]
+    der_simp [«Derivation.declStep», encDecl, Internal.Decl.step, ldChecks_eq, gDefs_eq,
+      defLang_eq, push_eq, map_push, withDefs_eq, «Derivation.devState»]
     refine ite_encOpt _ _ _ _ ?_
     simp [encState, encPair]
   | constant p c =>
-    der_simp [GebMirror.Metalogic.declStep, encDecl, Internal.Decl.step, primConfirms_eq,
-      gPrims_eq, push_eq, map_push, withPrims_eq, GebMirror.Metalogic.devState]
+    der_simp [«Derivation.declStep», encDecl, Internal.Decl.step, primConfirms_eq,
+      gPrims_eq, push_eq, map_push, withPrims_eq, «Derivation.devState»]
     refine ite_encOpt _ _ _ _ ?_
     simp [encState, encPair]
   | object m b c =>
-    der_simp [GebMirror.Metalogic.declStep, encDecl, Internal.Decl.step, objConfirms_eq,
-      gDefs_eq, defObj_eq, push_eq, map_push, withDefs_eq, GebMirror.Metalogic.devState]
+    der_simp [«Derivation.declStep», encDecl, Internal.Decl.step, objConfirms_eq,
+      gDefs_eq, defObj_eq, push_eq, map_push, withDefs_eq, «Derivation.devState»]
     refine ite_encOpt _ _ _ _ ?_
     simp [encState, encPair]
 
@@ -1631,15 +1633,15 @@ theorem declStep_eq (d : Internal.Decl) :
 those before it. -/
 theorem foldl_declStep (ds : List Internal.Decl) :
     ∀ o : Option (Internal.Globals × Array Internal.Entry),
-      (ds.map encDecl).foldl (fun st d ↦ GebMirror.Metalogic.bindO st fun s ↦
-          GebMirror.Metalogic.declStep (GebMirror.Metalogic.p1 s)
-            (Const.children (GebMirror.Metalogic.p2 s)) d) (encOpt (o.map encState)) =
+      (ds.map encDecl).foldl (fun st d ↦ «Base.bindO» st fun s ↦
+          «Derivation.declStep» («Language.p1» s)
+            (Const.children («Language.p2» s)) d) (encOpt (o.map encState)) =
         encOpt ((o.bind fun s ↦ ds.foldlM (fun st d ↦ d.step st.1 st.2) s).map encState) :=
   ds.rec (fun o ↦ by cases o <;> rfl) fun d ds ih o ↦ by
     rw [List.map_cons, List.foldl_cons]
-    have hs : GebMirror.Metalogic.bindO (encOpt (o.map encState)) (fun s ↦
-        GebMirror.Metalogic.declStep (GebMirror.Metalogic.p1 s)
-          (Const.children (GebMirror.Metalogic.p2 s)) (encDecl d)) =
+    have hs : «Base.bindO» (encOpt (o.map encState)) (fun s ↦
+        «Derivation.declStep» («Language.p1» s)
+          (Const.children («Language.p2» s)) (encDecl d)) =
         encOpt ((o.bind fun st ↦ d.step st.1 st.2).map encState) := by
       cases o with
       | none => simp only [Option.map_none, bindO_eq, Option.elim_none, Option.bind_none]
@@ -1656,9 +1658,9 @@ theorem foldl_declStep (ds : List Internal.Decl) :
 /-- The mirror's state after a development, each declaration proved with those before it, is the
 checker's. -/
 theorem checkDev_eq (ds : List Internal.Decl) :
-    GebMirror.Metalogic.checkDev (encGlobals G) (E.toList.map encEntry) (ds.map encDecl) =
+    «Derivation.checkDev» (encGlobals G) (E.toList.map encEntry) (ds.map encDecl) =
       encOpt ((Internal.checkDev G E ds).map encState) := by
-  simp only [GebMirror.Metalogic.checkDev, reverse_eq, foldr_eq, List.foldr_reverse]
+  simp only [«Derivation.checkDev», reverse_eq, foldr_eq, List.foldr_reverse]
   exact foldl_declStep ds (some (G, E))
 
 end GebTests.Prototypes.FreeTopos.Agreement.Derivation

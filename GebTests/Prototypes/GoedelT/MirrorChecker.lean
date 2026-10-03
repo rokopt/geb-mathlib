@@ -34,6 +34,8 @@ set_option doc.verso true
 
 @[expose] public section
 
+open GebMirror.GoedelT
+
 namespace GebTests.Prototypes.GoedelT.MirrorChecker
 
 open Geb Geb.Kernel Geb.GoedelT GebTests.Prototypes.GoedelT.MirrorTyping
@@ -49,7 +51,7 @@ set_option maxHeartbeats 1000000 in
 /-- The mirror's rules below case analysis of lists at a node without children. -/
 theorem core_nil (E : Env) (G : List Glob) (l : ℕ) (hl : l < 24)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk) (Γ : Ctx) (H : List Eqn) :
-    GebMirror.GoedelT.checkCore E.defs (G.map (·.1)) (leaf l) []
+    «Equations.checkCore» E.defs (G.map (·.1)) (leaf l) []
       ([].map fun c ↦ (c, p c)) Γ (H.map encEqn) =
       enc ((checkCore l ([].map fun c ↦ (c, P c)) E G Γ H).map encEqn) := by
   match l, hl with
@@ -64,7 +66,7 @@ set_option maxHeartbeats 1000000 in
 theorem core_one (E : Env) (G : List Glob) (l : ℕ) (hl : l < 24) (a : Tree)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk)
     (ha : Agrees E G (p a) (P a)) (Γ : Ctx) (H : List Eqn) :
-    GebMirror.GoedelT.checkCore E.defs (G.map (·.1)) (leaf l) [a]
+    «Equations.checkCore» E.defs (G.map (·.1)) (leaf l) [a]
       ([a].map fun c ↦ (c, p c)) Γ (H.map encEqn) =
       enc ((checkCore l ([a].map fun c ↦ (c, P c)) E G Γ H).map encEqn) := by
   simp only [List.map_cons, List.map_nil]
@@ -89,7 +91,7 @@ set_option maxHeartbeats 1000000 in
 theorem core_two (E : Env) (G : List Glob) (l : ℕ) (hl : l < 24) (a b : Tree)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk)
     (ha : Agrees E G (p a) (P a)) (hb : Agrees E G (p b) (P b)) (Γ : Ctx) (H : List Eqn) :
-    GebMirror.GoedelT.checkCore E.defs (G.map (·.1)) (leaf l) [a, b]
+    «Equations.checkCore» E.defs (G.map (·.1)) (leaf l) [a, b]
       ([a, b].map fun c ↦ (c, p c)) Γ (H.map encEqn) =
       enc ((checkCore l ([a, b].map fun c ↦ (c, P c)) E G Γ H).map encEqn) := by
   simp only [List.map_cons, List.map_nil]
@@ -115,7 +117,7 @@ theorem core_three (E : Env) (G : List Glob) (l : ℕ) (hl : l < 24) (a b c : Tr
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk)
     (ha : Agrees E G (p a) (P a)) (hb : Agrees E G (p b) (P b)) (hc : Agrees E G (p c) (P c))
     (Γ : Ctx) (H : List Eqn) :
-    GebMirror.GoedelT.checkCore E.defs (G.map (·.1)) (leaf l) [a, b, c]
+    «Equations.checkCore» E.defs (G.map (·.1)) (leaf l) [a, b, c]
       ([a, b, c].map fun c ↦ (c, p c)) Γ (H.map encEqn) =
       enc ((checkCore l ([a, b, c].map fun c ↦ (c, P c)) E G Γ H).map encEqn) := by
   simp only [List.map_cons, List.map_nil]
@@ -135,7 +137,7 @@ set_option maxHeartbeats 1000000 in
 theorem core_four (E : Env) (G : List Glob) (l : ℕ) (hl : l < 24) (a b c d : Tree)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk)
     (hc : Agrees E G (p c) (P c)) (hd : Agrees E G (p d) (P d)) (Γ : Ctx) (H : List Eqn) :
-    GebMirror.GoedelT.checkCore E.defs (G.map (·.1)) (leaf l) [a, b, c, d]
+    «Equations.checkCore» E.defs (G.map (·.1)) (leaf l) [a, b, c, d]
       ([a, b, c, d].map fun c ↦ (c, p c)) Γ (H.map encEqn) =
       enc ((checkCore l ([a, b, c, d].map fun c ↦ (c, P c)) E G Γ H).map encEqn) := by
   simp only [List.map_cons, List.map_nil]
@@ -155,7 +157,7 @@ set_option maxHeartbeats 1000000 in
 /-- The mirror's rules below case analysis of lists at a node of five children. -/
 theorem core_five (E : Env) (G : List Glob) (l : ℕ) (hl : l < 24) (a b c d e : Tree)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk) (Γ : Ctx) (H : List Eqn) :
-    GebMirror.GoedelT.checkCore E.defs (G.map (·.1)) (leaf l) [a, b, c, d, e]
+    «Equations.checkCore» E.defs (G.map (·.1)) (leaf l) [a, b, c, d, e]
       ([a, b, c, d, e].map fun c ↦ (c, p c)) Γ (H.map encEqn) =
       enc ((checkCore l ([a, b, c, d, e].map fun c ↦ (c, P c)) E G Γ H).map encEqn) := by
   simp only [List.map_cons, List.map_nil]
@@ -172,7 +174,7 @@ set_option maxHeartbeats 1000000 in
 /-- The mirror's rules below case analysis of lists at a node of six children. -/
 theorem core_six (E : Env) (G : List Glob) (l : ℕ) (hl : l < 24) (a b c d e f : Tree)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk) (Γ : Ctx) (H : List Eqn) :
-    GebMirror.GoedelT.checkCore E.defs (G.map (·.1)) (leaf l) [a, b, c, d, e, f]
+    «Equations.checkCore» E.defs (G.map (·.1)) (leaf l) [a, b, c, d, e, f]
       ([a, b, c, d, e, f].map fun c ↦ (c, p c)) Γ (H.map encEqn) =
       enc ((checkCore l ([a, b, c, d, e, f].map fun c ↦ (c, P c)) E G Γ H).map encEqn) := by
   simp only [List.map_cons, List.map_nil]
@@ -194,7 +196,7 @@ set_option maxHeartbeats 1000000 in
 theorem core_many (E : Env) (G : List Glob) (l : ℕ) (hl : l < 24) (a b c d e f g : Tree)
     (rest : List Tree) (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk) (Γ : Ctx)
     (H : List Eqn) :
-    GebMirror.GoedelT.checkCore E.defs (G.map (·.1)) (leaf l)
+    «Equations.checkCore» E.defs (G.map (·.1)) (leaf l)
       (a :: b :: c :: d :: e :: f :: g :: rest)
       ((a :: b :: c :: d :: e :: f :: g :: rest).map fun c ↦ (c, p c)) Γ (H.map encEqn) =
       enc ((checkCore l ((a :: b :: c :: d :: e :: f :: g :: rest).map fun c ↦ (c, P c)) E G Γ
@@ -215,7 +217,7 @@ children agree. -/
 theorem checkCore_eq (E : Env) (G : List Glob) (l : ℕ) (hl : l < 24) (cs : List Tree)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk)
     (hp : ∀ c ∈ cs, Agrees E G (p c) (P c)) (Γ : Ctx) (H : List Eqn) :
-    GebMirror.GoedelT.checkCore E.defs (G.map (·.1)) (leaf l) cs (cs.map fun c ↦ (c, p c)) Γ
+    «Equations.checkCore» E.defs (G.map (·.1)) (leaf l) cs (cs.map fun c ↦ (c, p c)) Γ
       (H.map encEqn) = enc ((checkCore l (cs.map fun c ↦ (c, P c)) E G Γ H).map encEqn) := by
   rcases cs with _ | ⟨a, _ | ⟨b, _ | ⟨c, _ | ⟨d, _ | ⟨e, _ | ⟨f, _ | ⟨g, rest⟩⟩⟩⟩⟩⟩⟩
   · exact core_nil E G l hl p P Γ H
@@ -232,7 +234,7 @@ set_option maxHeartbeats 1000000 in
 /-- The mirror's other rules at a node without children. -/
 theorem more_nil (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 38)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk) (Γ : Ctx) (H : List Eqn) :
-    GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) []
+    «Equations.checkMore» E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) []
       ([].map fun c ↦ (c, p c)) Γ (H.map encEqn) =
       enc ((checkMore l ([].map fun c ↦ (c, P c)) E G Γ H).map encEqn) := by
   match l, hl, hl' with
@@ -249,7 +251,7 @@ set_option maxHeartbeats 1000000 in
 /-- The mirror's other rules at a node of one child. -/
 theorem more_one (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 38) (a : Tree)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk) (Γ : Ctx) (H : List Eqn) :
-    GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) [a]
+    «Equations.checkMore» E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) [a]
       ([a].map fun c ↦ (c, p c)) Γ (H.map encEqn) =
       enc ((checkMore l ([a].map fun c ↦ (c, P c)) E G Γ H).map encEqn) := by
   simp only [List.map_cons, List.map_nil]
@@ -274,7 +276,7 @@ set_option maxHeartbeats 1000000 in
 /-- The mirror's other rules at a node of two children. -/
 theorem more_two (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 38) (a b : Tree)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk) (Γ : Ctx) (H : List Eqn) :
-    GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) [a, b]
+    «Equations.checkMore» E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) [a, b]
       ([a, b].map fun c ↦ (c, p c)) Γ (H.map encEqn) =
       enc ((checkMore l ([a, b].map fun c ↦ (c, P c)) E G Γ H).map encEqn) := by
   simp only [List.map_cons, List.map_nil]
@@ -299,7 +301,7 @@ set_option maxHeartbeats 1000000 in
 theorem more_three (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 38) (a b c : Tree)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk)
     (hc : Agrees E G (p c) (P c)) (Γ : Ctx) (H : List Eqn) :
-    GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) [a, b, c]
+    «Equations.checkMore» E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) [a, b, c]
       ([a, b, c].map fun c ↦ (c, p c)) Γ (H.map encEqn) =
       enc ((checkMore l ([a, b, c].map fun c ↦ (c, P c)) E G Γ H).map encEqn) := by
   simp only [List.map_cons, List.map_nil]
@@ -327,7 +329,7 @@ set_option maxHeartbeats 1000000 in
 theorem more_four (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 38) (a b c d : Tree)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk)
     (hc : Agrees E G (p c) (P c)) (hd : Agrees E G (p d) (P d)) (Γ : Ctx) (H : List Eqn) :
-    GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) [a, b, c, d]
+    «Equations.checkMore» E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) [a, b, c, d]
       ([a, b, c, d].map fun c ↦ (c, p c)) Γ (H.map encEqn) =
       enc ((checkMore l ([a, b, c, d].map fun c ↦ (c, P c)) E G Γ H).map encEqn) := by
   simp only [List.map_cons, List.map_nil]
@@ -358,7 +360,7 @@ set_option maxHeartbeats 1000000 in
 /-- The mirror's other rules at a node of five children. -/
 theorem more_five (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 38) (a b c d e : Tree)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk) (Γ : Ctx) (H : List Eqn) :
-    GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) [a, b, c, d, e]
+    «Equations.checkMore» E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) [a, b, c, d, e]
       ([a, b, c, d, e].map fun c ↦ (c, p c)) Γ (H.map encEqn) =
       enc ((checkMore l ([a, b, c, d, e].map fun c ↦ (c, P c)) E G Γ H).map encEqn) := by
   simp only [List.map_cons, List.map_nil]
@@ -382,7 +384,7 @@ set_option maxHeartbeats 1000000 in
 /-- The mirror's other rules at a node of six children. -/
 theorem more_six (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 38) (a b c d e f : Tree)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk) (Γ : Ctx) (H : List Eqn) :
-    GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) [a, b, c, d, e, f]
+    «Equations.checkMore» E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) [a, b, c, d, e, f]
       ([a, b, c, d, e, f].map fun c ↦ (c, p c)) Γ (H.map encEqn) =
       enc ((checkMore l ([a, b, c, d, e, f].map fun c ↦ (c, P c)) E G Γ H).map encEqn) := by
   simp only [List.map_cons, List.map_nil]
@@ -412,7 +414,7 @@ set_option maxHeartbeats 1000000 in
 theorem more_many (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 38)
     (a b c d e f g : Tree) (rest : List Tree) (p : Tree → List Tree → List Tree → Tree)
     (P : Tree → Chk) (Γ : Ctx) (H : List Eqn) :
-    GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l)
+    «Equations.checkMore» E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l)
       (a :: b :: c :: d :: e :: f :: g :: rest)
       ((a :: b :: c :: d :: e :: f :: g :: rest).map fun c ↦ (c, p c)) Γ (H.map encEqn) =
       enc ((checkMore l ((a :: b :: c :: d :: e :: f :: g :: rest).map fun c ↦ (c, P c)) E G Γ
@@ -446,9 +448,9 @@ theorem checkMore_other (E : Env) (G : List Glob) (l : ℕ) (hl : 37 < l) (cs : 
 /-- The mirror's rules give nothing at a node whose label is past its rules. -/
 theorem more_other (E : Env) (G : List Glob) (l : ℕ) (hl : 37 < l) (cs : List Tree)
     (ps : List (Tree × (List Tree → List Tree → Tree))) (Γ : Ctx) (H : List Tree) :
-    GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) cs ps Γ H =
+    «Equations.checkMore» E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) cs ps Γ H =
       enc none := by
-  simp only [GebMirror.GoedelT.checkMore, ↓reduceIte, shape_label, and_label, eq_leaf, lt_leaf,
+  simp only [«Equations.checkMore», ↓reduceIte, shape_label, and_label, eq_leaf, lt_leaf,
     length_eq, show l ≠ 24 by omega, show l ≠ 25 by omega, show l ≠ 26 by omega,
     show l ≠ 27 by omega, show l ≠ 28 by omega, show l ≠ 29 by omega, show l ≠ 30 by omega,
     show l ≠ 31 by omega, show l ≠ 32 by omega, show l ≠ 33 by omega, show l ≠ 34 by omega,
@@ -460,7 +462,7 @@ children agree. -/
 theorem checkMore_eq (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (cs : List Tree)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk)
     (hp : ∀ c ∈ cs, Agrees E G (p c) (P c)) (Γ : Ctx) (H : List Eqn) :
-    GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) cs
+    «Equations.checkMore» E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) cs
       (cs.map fun c ↦ (c, p c)) Γ (H.map encEqn) =
       enc ((checkMore l (cs.map fun c ↦ (c, P c)) E G Γ H).map encEqn) := by
   by_cases hl' : l < 38
@@ -478,9 +480,9 @@ theorem checkMore_eq (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (cs : L
 
 /-- The trees of a list of certificates with their checkers. -/
 theorem crTrees_eq (rs : List (Tree × (List Tree → List Tree → Tree))) :
-    GebMirror.GoedelT.crTrees rs = rs.map (·.1) :=
+    «Equations.crTrees» rs = rs.map (·.1) :=
   rs.rec rfl fun _ _ ih ↦ by
-    simp only [GebMirror.GoedelT.crTrees, Const.foldr, List.foldr_cons] at ih ⊢
+    simp only [«Equations.crTrees», Const.foldr, List.foldr_cons] at ih ⊢
     rw [ih]
     rfl
 
@@ -488,14 +490,14 @@ theorem crTrees_eq (rs : List (Tree × (List Tree → List Tree → Tree))) :
 a function of the context and the hypotheses. -/
 def certStep (D Th Gt : List Tree) (l : Tree) (rs : List (Tree × (List Tree → List Tree → Tree))) :
     Tree × (List Tree → List Tree → Tree) :=
-  (Const.node l (GebMirror.GoedelT.crTrees rs), fun Γ H ↦
+  (Const.node l («Equations.crTrees» rs), fun Γ H ↦
     if (Const.lt l (leaf 24)).label ≠ 0 then
-      GebMirror.GoedelT.checkCore D Gt l (GebMirror.GoedelT.crTrees rs) rs Γ H
-    else GebMirror.GoedelT.checkMore D Th Gt l (GebMirror.GoedelT.crTrees rs) rs Γ H)
+      «Equations.checkCore» D Gt l («Equations.crTrees» rs) rs Γ H
+    else «Equations.checkMore» D Th Gt l («Equations.crTrees» rs) rs Γ H)
 
 /-- The mirror's checker is the fold of its step. -/
 theorem checkCert_def (D Th Gt : List Tree) (c : Tree) (Γ H : List Tree) :
-    GebMirror.GoedelT.checkCert D Th Gt c Γ H = (Const.fold (certStep D Th Gt) c).2 Γ H := rfl
+    «Equations.checkCert» D Th Gt c Γ H = (Const.fold (certStep D Th Gt) c).2 Γ H := rfl
 
 /-- The fold of the mirror's checker gives each certificate with a checker agreeing with the
 kernel's. -/
@@ -509,7 +511,7 @@ theorem fold_certStep (E : Env) (G : List Glob) : ∀ c : Tree,
         cs.map fun c ↦
           (c, (Const.fold (certStep E.defs (E.thms.map encThm) (G.map (·.1))) c).2) :=
       List.map_congr_left fun c hc ↦ Prod.ext (ih c hc).1 rfl
-    have htr : GebMirror.GoedelT.crTrees
+    have htr : «Equations.crTrees»
         (cs.map (Const.fold (certStep E.defs (E.thms.map encThm) (G.map (·.1))))) = cs := by
       rw [crTrees_eq, List.map_map]
       exact (List.map_congr_left fun c hc ↦ (ih c hc).1).trans (List.map_id cs)
@@ -525,7 +527,7 @@ theorem fold_certStep (E : Env) (G : List Glob) : ∀ c : Tree,
 definitions and theorems, a global environment, a context and hypotheses, all encoded, it gives
 the encoding of the kernel's conclusion, or nothing where the kernel gives nothing. -/
 theorem checkCert_eq (E : Env) (G : List Glob) (c : Tree) (Γ : Ctx) (H : List Eqn) :
-    GebMirror.GoedelT.checkCert E.defs (E.thms.map encThm) (G.map (·.1)) c Γ (H.map encEqn) =
+    «Equations.checkCert» E.defs (E.thms.map encThm) (G.map (·.1)) c Γ (H.map encEqn) =
       enc ((check c E G Γ H).map encEqn) :=
   (fold_certStep E G c).2 Γ H
 

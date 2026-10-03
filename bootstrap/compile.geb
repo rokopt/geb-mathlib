@@ -9,15 +9,17 @@
 ; program's bundle. Requires the prelude, the serializer, the reader, the checker, the expansion
 ; and the modules.
 
-(def compileWith
-  (lam ((back (Arrow T T)) (file T))
-    (let sx T (readSExps (children file))
-      (let mx T (if (isSome sx) (expandModules (children (get sx))) none)
-        (let kx T (if (isSome mx) (expandProgram (children (get mx))) none)
-          (let b T (if (isSome kx) (readProgram (children (get kx))) none)
-            (if (isSome b)
-              (if (isSome (checkProgram (children (child (get b) 0)))) (back (get b))
-                (node 0 (nil T)))
-              (node 0 (nil T)))))))))
-(def compile (lam ((file T)) (compileWith image file)))
+(module Compile (export compileWith compile)
+  (def compileWith
+    (lam ((back (Arrow T T)) (file T))
+      (let sx T (readSExps (children file))
+        (let mx T (if (isSome sx) (expandModules (children (get sx))) none)
+          (let kx T (if (isSome mx) (expandProgram (children (get mx))) none)
+            (let b T (if (isSome kx) (readProgram (children (get kx))) none)
+              (if (isSome b)
+                (if (isSome (checkProgram (children (child (get b) 0)))) (back (get b))
+                  (node 0 (nil T)))
+                (node 0 (nil T)))))))))
+  (def compile (lam ((file T)) (compileWith image file))))
+(import Compile)
 (def main (lam ((file T)) (compile file)))

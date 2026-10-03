@@ -13,694 +13,763 @@
 ; node of label 2 over a list's elements. An optional tree is the node of label 1 over the
 ; tree, or the leaf 0. A name is a node of label 0 over its characters.
 
-; whether two optional trees are both present, and whether a list has an element
-(def both (lam ((a T) (b T)) (if (isSome a) (isSome b) 0)))
-(def nonEmpty (lam ((xs Ts)) (lcase T T xs 0 (lam ((x T) (r Ts)) 1))))
+(module Reader
+  (export both nonEmpty Opts allSome isDigit isSpace isTokenStart isTokenChar kwHole idleStep
+    endAtom
+    strStep
+    escChar
+    hexVal
+    decodeHex
+    base64Val
+    base64Step
+    decodeBase64
+    lengthStep
+    lexStep
+    lexEnd
+    fail
+    readSExps
+    isAtom
+    isList
+    nameOf
+    named
+    kwUnit
+    kwProd
+    kwArrow
+    kwList
+    kwLam
+    kwLet
+    kwQuote
+    kwNil
+    kwFold
+    kwPara
+    kwIter
+    kwFoldr
+    kwLcase
+    kwDef
+    kwDeftype
+    kwDefnum
+    primNames
+    indexOf
+    lookupAbbrev
+    numeral
+    RT
+    RTs
+    rtTrees
+    rtValues
+    node2
+    some2
+    RR
+    RRs
+    rrTrees
+    rrApply
+    rrTail
+    rrAt
+    app
+    apps
+    argsOf
+    binders
+    resolve
+    reservedNames
+    readProgram)
+  ; whether two optional trees are both present, and whether a list has an element
+  (def both (lam ((a T) (b T)) (if (isSome a) (isSome b) 0)))
+  (def nonEmpty (lam ((xs Ts)) (lcase T T xs 0 (lam ((x T) (r Ts)) 1))))
 
-; the list of the values of a list of optional trees, when every one is present
-(deftype Opts (Prod T Ts))
-(def allSome
-  (lam ((ms Ts))
-    (let r Opts
-      (foldr T Opts (lam ((m T) (acc Opts)) (pair (both m (fst acc)) (cons (get m) (snd acc))))
-        (pair 1 (nil T))
-        ms)
-      (if (fst r) (some (node 0 (snd r))) none))))
+  ; the list of the values of a list of optional trees, when every one is present
+  (deftype Opts (Prod T Ts))
+  (def allSome
+    (lam ((ms Ts))
+      (let r Opts
+        (foldr T Opts (lam ((m T) (acc Opts)) (pair (both m (fst acc)) (cons (get m) (snd acc))))
+          (pair 1 (nil T))
+          ms)
+        (if (fst r) (some (node 0 (snd r))) none))))
 
-; the lexer of the authoring profile, reading as the seed's lexer reads and leaving out the
-; comments. Its state is the tokens read, the latest first, the characters of the token being
-; read, the latest first, and the mode, a tree whose label is what is being read: 0 nothing, 1
-; a bare atom, 2 a numeral, 3 a hole's name, 4 a comment, 5 a quoted string, 6 an escape after
-; its backslash, 7 after a backslash and a carriage return, 8 after a backslash and a line feed,
-; 9 a hexadecimal and 10 an octal escape, 11 a text that is not well formed, 12 a verbatim atom
-; over the bytes left, 13 a hexadecimal atom and 14 a base-64 atom. The modes 5 to 10, 13 and
-; 14 are over the optional length a decimal prefix declares first, and the escapes 9 and 10
-; then over the digits read and their value.
-(deftype Lex (Prod Ts (Prod Ts T)))
-(deftype LexK (Arrow Lex Lex))
-(def lexFail (pair (nil T) (pair (nil T) 11)))
-(def lexIn (lam ((toks Ts) (cur Ts) (m T)) (pair toks (pair cur m))))
-(def lexIdle (lam ((toks Ts)) (lexIn toks (nil T) 0)))
-; the mode of a label over an optional length
-(def withLen (lam ((k T) (want T)) (node k (single want))))
-(def inRange (lam ((c T) (lo T) (hi T)) (if (lt c lo) 0 (lt c (add hi 1)))))
-(def isDigit (lam ((c T)) (inRange c 48 57)))
-(def isSpace
-  (lam ((c T))
-    (if (eq c 32) 1 (if (eq c 10) 1 (if (eq c 9) 1 (if (eq c 13) 1 (if (eq c 11) 1 (eq c 12))))))))
-; a letter, or one of the eight pseudo-alphabetic characters of RFC 9804, - . / _ : * + =
-(def isTokenStart
-  (lam ((c T))
-    (if (inRange c 65 90) 1
-      (if (inRange c 97 122) 1
-        (if (eq c 45) 1
-          (if (eq c 46) 1
-            (if (eq c 47) 1
-              (if (eq c 95) 1 (if (eq c 58) 1 (if (eq c 42) 1 (if (eq c 43) 1 (eq c 61))))))))))))
-(def isTokenChar (lam ((c T)) (if (isTokenStart c) 1 (isDigit c))))
-; a character a quoted string holds as it is: printable ASCII but the double quote and the
-; backslash, a line break, or a byte beyond ASCII
-(def isPlainIn
-  (lam ((c T))
-    (if (inRange c 32 126) (if (eq c 34) 0 (if (eq c 92) 0 1))
-      (if (eq c 10) 1 (if (eq c 13) 1 (lt 127 c))))))
-(def atomTok (lam ((cur Ts)) (node 3 (reverse cur))))
-(def kwHole (quote (0 hole)))
-; the tokens of a hole's form, (hole name), after the tokens read
-(def holeToks
-  (lam ((cur Ts) (toks Ts))
-    (cons 2 (cons (atomTok cur) (cons (node 3 (children kwHole)) (cons 1 toks))))))
-; a character read between tokens
-(def idleStep
-  (lam ((toks Ts) (c T))
-    (if (eq c 59) (lexIn toks (nil T) 4)
-      (if (eq c 40) (lexIdle (cons 1 toks))
-        (if (eq c 41) (lexIdle (cons 2 toks))
-          (if (eq c 34) (lexIn toks (nil T) (withLen 5 none))
-            (if (eq c 38) (lexIdle (cons (node 3 (single 38)) toks))
-              (if (eq c 63) (lexIn toks (nil T) 3)
-                (if (eq c 35) (lexIn toks (nil T) (withLen 13 none))
-                  (if (eq c 124) (lexIn toks (nil T) (withLen 14 none))
-                    (if (isSpace c) (lexIdle toks)
-                      (if (isDigit c) (lexIn toks (single c) 2)
-                        (if (isTokenStart c) (lexIn toks (single c) 1) lexFail)))))))))))))
-; an atom's bytes, in order, ended, when they number the optional length declared
-(def endAtom
-  (lam ((toks Ts) (want T) (bs Ts))
-    (if (if (isSome want) (eq (get want) (length bs)) 1) (lexIdle (cons (node 3 bs) toks))
-      lexFail)))
-; a character of a quoted string
-(def strStep
-  (lam ((toks Ts) (cur Ts) (want T) (c T))
-    (if (eq c 34) (endAtom toks want (reverse cur))
-      (if (eq c 92) (lexIn toks cur (withLen 6 want))
-        (if (isPlainIn c) (lexIn toks (cons c cur) (withLen 5 want)) lexFail)))))
-; the character an escape of one character after its backslash denotes
-(def escChar
-  (lam ((c T))
-    (if (eq c 97) (some 7)
-      (if (eq c 98) (some 8)
-        (if (eq c 116) (some 9)
-          (if (eq c 118) (some 11)
-            (if (eq c 110) (some 10)
-              (if (eq c 102) (some 12)
-                (if (eq c 114) (some 13)
-                  (if (eq c 34) (some c)
-                    (if (eq c 39) (some c)
-                      (if (eq c 63) (some c) (if (eq c 92) (some c) none)))))))))))))
-(def hexVal
-  (lam ((c T))
-    (if (isDigit c) (some (sub c 48))
-      (if (inRange c 65 70) (some (sub c 55)) (if (inRange c 97 102) (some (sub c 87)) none)))))
-; the bytes of a hexadecimal atom's digits, an even number of them, paired from the right
-(deftype Hex (Prod T (Prod Ts T)))
-(def decodeHex
-  (lam ((cs Ts))
-    (if (eq (mod (length cs) 2) 0)
-      (let r Hex
-        (foldr T Hex
-          (lam ((c T) (acc Hex))
-            (let v T (hexVal c)
-              (if (if (fst acc) (isSome v) 0)
-                (if (isSome (snd (snd acc)))
-                  (pair 1
-                    (pair (cons (add (mul 16 (get v)) (get (snd (snd acc)))) (fst (snd acc))) none))
-                  (pair 1 (pair (fst (snd acc)) (some (get v)))))
-                (pair 0 (snd acc)))))
-          (pair 1 (pair (nil T) none))
-          cs)
-        (if (fst r) (some (node 0 (fst (snd r)))) none))
-      none)))
-; the value of a base-64 character of RFC 4648
-(def base64Val
-  (lam ((c T))
-    (if (inRange c 65 90) (some (sub c 65))
-      (if (inRange c 97 122) (some (sub c 71))
-        (if (isDigit c) (some (add c 4)) (if (eq c 43) (some 62) (if (eq c 47) (some 63) none)))))))
-; the state of decoding base 64: whether every character so far is admitted, the bytes decoded,
-; the latest first, the bits not yet a byte with their number, and the padding read
-(deftype B64 (Prod T (Prod Ts (Prod T (Prod T T)))))
-(deftype B64K (Arrow B64 B64))
-(def b64Fail (pair 0 (pair (nil T) (pair 0 (pair 0 0)))))
-(def base64Step
-  (lam ((st B64) (c T))
-    (if (fst st)
-      (let bs Ts (fst (snd st))
-        (let acc T (fst (snd (snd st)))
-          (let bits T (fst (snd (snd (snd st))))
-            (let pad T (snd (snd (snd (snd st))))
-              (if (eq c 61)
-                (if (lt pad 2) (pair 1 (pair bs (pair acc (pair bits (add pad 1))))) b64Fail)
-                (if (eq pad 0)
-                  (let v T (base64Val c)
-                    (if (isSome v)
-                      (if (lt (add bits 6) 8)
-                        (pair 1 (pair bs (pair (add (mul 64 acc) (get v)) (pair (add bits 6) 0))))
-                        (let w T (add (mul 64 acc) (get v))
-                          (let r T (sub (add bits 6) 8)
-                            (let p T (iter T (lam ((x T)) (mul x 2)) 1 r)
-                              (pair 1 (pair (cons (div w p) bs) (pair (mod w p) (pair r 0))))))))
-                      b64Fail))
-                  b64Fail))))))
-      st)))
-; the bytes of a base-64 atom's characters, unless a group ends after a single character
-(def decodeBase64
-  (lam ((cs Ts))
-    (let st B64
-      ((foldr T B64K (lam ((c T) (k B64K) (s B64)) (k (base64Step s c))) (lam ((s B64)) s) cs)
-       (pair 1 (pair (nil T) (pair 0 (pair 0 0)))))
-      (if (if (fst st) (lt (fst (snd (snd (snd st)))) 6) 0) (some (node 0 (reverse (fst (snd st)))))
-        none))))
-; a character after a numeral beginning an atom of the length it declares, in shortest form: a
-; colon a verbatim atom, a double quote a quoted string, a number sign a hexadecimal and a
-; vertical bar a base-64 atom
-(def lengthStep
-  (lam ((toks Ts) (cur Ts) (c T))
-    (let ds Ts (reverse cur)
-      (if (if (lt 1 (length ds)) (eq (at ds 0) 48) 0) lexFail
-        (let n T (foldr T T (lam ((d T) (acc T)) (add (sub d 48) (mul 10 acc))) 0 cur)
-          (if (eq c 58)
-            (if (eq n 0) (lexIdle (cons (node 3 (nil T)) toks))
-              (lexIn toks (nil T) (node 12 (single n))))
-            (if (eq c 34) (lexIn toks (nil T) (withLen 5 (some n)))
-              (if (eq c 35) (lexIn toks (nil T) (withLen 13 (some n)))
-                (if (eq c 124) (lexIn toks (nil T) (withLen 14 (some n))) lexFail)))))))))
-(def lexStep
-  (lam ((s Lex) (c T))
-    (let toks Ts (fst s)
-      (let cur Ts (fst (snd s))
-        (let m T (snd (snd s))
-          (let k T (label m)
-            (if (eq k 0) (idleStep toks c)
-              (if (eq k 4) (if (eq c 10) (lexIdle toks) s)
-                (if (eq k 1)
-                  (if (isTokenChar c) (lexIn toks (cons c cur) m)
-                    (idleStep (cons (atomTok cur) toks) c))
-                  (if (eq k 2)
-                    (if (isDigit c) (lexIn toks (cons c cur) m)
-                      (if (if (isTokenChar c) 1 (if (eq c 34) 1 (if (eq c 35) 1 (eq c 124))))
-                        (lengthStep toks cur c)
-                        (idleStep (cons (atomTok cur) toks) c)))
-                    (if (eq k 3)
-                      (if (if (isTokenChar c) (if (nonEmpty cur) 1 (if (isDigit c) 0 1)) 0)
-                        (lexIn toks (cons c cur) m)
-                        (if (nonEmpty cur) (idleStep (holeToks cur toks) c) lexFail))
-                      (if (eq k 11) s
-                        (if (eq k 12)
-                          (if (lt (child m 0) 2) (lexIdle (cons (atomTok (cons c cur)) toks))
-                            (lexIn toks (cons c cur) (node 12 (single (sub (child m 0) 1)))))
-                          (let want T (child m 0)
-                            (if (eq k 5) (strStep toks cur want c)
-                              (if (eq k 6)
-                                (let e T (escChar c)
-                                  (if (isSome e) (lexIn toks (cons (get e) cur) (withLen 5 want))
-                                    (if (eq c 120)
-                                      (lexIn toks cur (node 9 (cons want (cons 0 (single 0)))))
-                                      (if (inRange c 48 55)
-                                        (lexIn toks cur
-                                          (node 10 (cons want (cons 1 (single (sub c 48))))))
-                                        (if (eq c 13) (lexIn toks cur (withLen 7 want))
-                                          (if (eq c 10) (lexIn toks cur (withLen 8 want))
-                                            lexFail))))))
-                                (if (eq k 7)
-                                  (if (eq c 10) (lexIn toks cur (withLen 5 want))
-                                    (strStep toks cur want c))
-                                  (if (eq k 8)
-                                    (if (eq c 13) (lexIn toks cur (withLen 5 want))
-                                      (strStep toks cur want c))
-                                    (if (eq k 9)
-                                      (let d T (hexVal c)
-                                        (if (isSome d)
-                                          (if (eq (child m 1) 1)
-                                            (lexIn toks
-                                              (cons (add (mul 16 (child m 2)) (get d)) cur)
-                                              (withLen 5 want))
-                                            (lexIn toks cur
-                                              (node 9 (cons want (cons 1 (single (get d)))))))
-                                          lexFail))
-                                      (if (eq k 10)
+  ; the lexer of the authoring profile, reading as the seed's lexer reads and leaving out the
+  ; comments. Its state is the tokens read, the latest first, the characters of the token being
+  ; read, the latest first, and the mode, a tree whose label is what is being read: 0 nothing, 1
+  ; a bare atom, 2 a numeral, 3 a hole's name, 4 a comment, 5 a quoted string, 6 an escape after
+  ; its backslash, 7 after a backslash and a carriage return, 8 after a backslash and a line feed,
+  ; 9 a hexadecimal and 10 an octal escape, 11 a text that is not well formed, 12 a verbatim atom
+  ; over the bytes left, 13 a hexadecimal atom and 14 a base-64 atom. The modes 5 to 10, 13 and
+  ; 14 are over the optional length a decimal prefix declares first, and the escapes 9 and 10
+  ; then over the digits read and their value.
+  (deftype Lex (Prod Ts (Prod Ts T)))
+  (deftype LexK (Arrow Lex Lex))
+  (def lexFail (pair (nil T) (pair (nil T) 11)))
+  (def lexIn (lam ((toks Ts) (cur Ts) (m T)) (pair toks (pair cur m))))
+  (def lexIdle (lam ((toks Ts)) (lexIn toks (nil T) 0)))
+  ; the mode of a label over an optional length
+  (def withLen (lam ((k T) (want T)) (node k (single want))))
+  (def inRange (lam ((c T) (lo T) (hi T)) (if (lt c lo) 0 (lt c (add hi 1)))))
+  (def isDigit (lam ((c T)) (inRange c 48 57)))
+  (def isSpace
+    (lam ((c T))
+      (if (eq c 32) 1
+        (if (eq c 10) 1 (if (eq c 9) 1 (if (eq c 13) 1 (if (eq c 11) 1 (eq c 12))))))))
+  ; a letter, or one of the eight pseudo-alphabetic characters of RFC 9804, - . / _ : * + =
+  (def isTokenStart
+    (lam ((c T))
+      (if (inRange c 65 90) 1
+        (if (inRange c 97 122) 1
+          (if (eq c 45) 1
+            (if (eq c 46) 1
+              (if (eq c 47) 1
+                (if (eq c 95) 1 (if (eq c 58) 1 (if (eq c 42) 1 (if (eq c 43) 1 (eq c 61))))))))))))
+  (def isTokenChar (lam ((c T)) (if (isTokenStart c) 1 (isDigit c))))
+  ; a character a quoted string holds as it is: printable ASCII but the double quote and the
+  ; backslash, a line break, or a byte beyond ASCII
+  (def isPlainIn
+    (lam ((c T))
+      (if (inRange c 32 126) (if (eq c 34) 0 (if (eq c 92) 0 1))
+        (if (eq c 10) 1 (if (eq c 13) 1 (lt 127 c))))))
+  (def atomTok (lam ((cur Ts)) (node 3 (reverse cur))))
+  (def kwHole (quote (0 hole)))
+  ; the tokens of a hole's form, (hole name), after the tokens read
+  (def holeToks
+    (lam ((cur Ts) (toks Ts))
+      (cons 2 (cons (atomTok cur) (cons (node 3 (children kwHole)) (cons 1 toks))))))
+  ; a character read between tokens
+  (def idleStep
+    (lam ((toks Ts) (c T))
+      (if (eq c 59) (lexIn toks (nil T) 4)
+        (if (eq c 40) (lexIdle (cons 1 toks))
+          (if (eq c 41) (lexIdle (cons 2 toks))
+            (if (eq c 34) (lexIn toks (nil T) (withLen 5 none))
+              (if (eq c 38) (lexIdle (cons (node 3 (single 38)) toks))
+                (if (eq c 63) (lexIn toks (nil T) 3)
+                  (if (eq c 35) (lexIn toks (nil T) (withLen 13 none))
+                    (if (eq c 124) (lexIn toks (nil T) (withLen 14 none))
+                      (if (isSpace c) (lexIdle toks)
+                        (if (isDigit c) (lexIn toks (single c) 2)
+                          (if (isTokenStart c) (lexIn toks (single c) 1) lexFail)))))))))))))
+  ; an atom's bytes, in order, ended, when they number the optional length declared
+  (def endAtom
+    (lam ((toks Ts) (want T) (bs Ts))
+      (if (if (isSome want) (eq (get want) (length bs)) 1) (lexIdle (cons (node 3 bs) toks))
+        lexFail)))
+  ; a character of a quoted string
+  (def strStep
+    (lam ((toks Ts) (cur Ts) (want T) (c T))
+      (if (eq c 34) (endAtom toks want (reverse cur))
+        (if (eq c 92) (lexIn toks cur (withLen 6 want))
+          (if (isPlainIn c) (lexIn toks (cons c cur) (withLen 5 want)) lexFail)))))
+  ; the character an escape of one character after its backslash denotes
+  (def escChar
+    (lam ((c T))
+      (if (eq c 97) (some 7)
+        (if (eq c 98) (some 8)
+          (if (eq c 116) (some 9)
+            (if (eq c 118) (some 11)
+              (if (eq c 110) (some 10)
+                (if (eq c 102) (some 12)
+                  (if (eq c 114) (some 13)
+                    (if (eq c 34) (some c)
+                      (if (eq c 39) (some c)
+                        (if (eq c 63) (some c) (if (eq c 92) (some c) none)))))))))))))
+  (def hexVal
+    (lam ((c T))
+      (if (isDigit c) (some (sub c 48))
+        (if (inRange c 65 70) (some (sub c 55)) (if (inRange c 97 102) (some (sub c 87)) none)))))
+  ; the bytes of a hexadecimal atom's digits, an even number of them, paired from the right
+  (deftype Hex (Prod T (Prod Ts T)))
+  (def decodeHex
+    (lam ((cs Ts))
+      (if (eq (mod (length cs) 2) 0)
+        (let r Hex
+          (foldr T Hex
+            (lam ((c T) (acc Hex))
+              (let v T (hexVal c)
+                (if (if (fst acc) (isSome v) 0)
+                  (if (isSome (snd (snd acc)))
+                    (pair 1
+                      (pair (cons (add (mul 16 (get v)) (get (snd (snd acc)))) (fst (snd acc)))
+                        none))
+                    (pair 1 (pair (fst (snd acc)) (some (get v)))))
+                  (pair 0 (snd acc)))))
+            (pair 1 (pair (nil T) none))
+            cs)
+          (if (fst r) (some (node 0 (fst (snd r)))) none))
+        none)))
+  ; the value of a base-64 character of RFC 4648
+  (def base64Val
+    (lam ((c T))
+      (if (inRange c 65 90) (some (sub c 65))
+        (if (inRange c 97 122) (some (sub c 71))
+          (if (isDigit c) (some (add c 4))
+            (if (eq c 43) (some 62) (if (eq c 47) (some 63) none)))))))
+  ; the state of decoding base 64: whether every character so far is admitted, the bytes decoded,
+  ; the latest first, the bits not yet a byte with their number, and the padding read
+  (deftype B64 (Prod T (Prod Ts (Prod T (Prod T T)))))
+  (deftype B64K (Arrow B64 B64))
+  (def b64Fail (pair 0 (pair (nil T) (pair 0 (pair 0 0)))))
+  (def base64Step
+    (lam ((st B64) (c T))
+      (if (fst st)
+        (let bs Ts (fst (snd st))
+          (let acc T (fst (snd (snd st)))
+            (let bits T (fst (snd (snd (snd st))))
+              (let pad T (snd (snd (snd (snd st))))
+                (if (eq c 61)
+                  (if (lt pad 2) (pair 1 (pair bs (pair acc (pair bits (add pad 1))))) b64Fail)
+                  (if (eq pad 0)
+                    (let v T (base64Val c)
+                      (if (isSome v)
+                        (if (lt (add bits 6) 8)
+                          (pair 1 (pair bs (pair (add (mul 64 acc) (get v)) (pair (add bits 6) 0))))
+                          (let w T (add (mul 64 acc) (get v))
+                            (let r T (sub (add bits 6) 8)
+                              (let p T (iter T (lam ((x T)) (mul x 2)) 1 r)
+                                (pair 1 (pair (cons (div w p) bs) (pair (mod w p) (pair r 0))))))))
+                        b64Fail))
+                    b64Fail))))))
+        st)))
+  ; the bytes of a base-64 atom's characters, unless a group ends after a single character
+  (def decodeBase64
+    (lam ((cs Ts))
+      (let st B64
+        ((foldr T B64K (lam ((c T) (k B64K) (s B64)) (k (base64Step s c))) (lam ((s B64)) s) cs)
+         (pair 1 (pair (nil T) (pair 0 (pair 0 0)))))
+        (if (if (fst st) (lt (fst (snd (snd (snd st)))) 6) 0)
+          (some (node 0 (reverse (fst (snd st)))))
+          none))))
+  ; a character after a numeral beginning an atom of the length it declares, in shortest form: a
+  ; colon a verbatim atom, a double quote a quoted string, a number sign a hexadecimal and a
+  ; vertical bar a base-64 atom
+  (def lengthStep
+    (lam ((toks Ts) (cur Ts) (c T))
+      (let ds Ts (reverse cur)
+        (if (if (lt 1 (length ds)) (eq (at ds 0) 48) 0) lexFail
+          (let n T (foldr T T (lam ((d T) (acc T)) (add (sub d 48) (mul 10 acc))) 0 cur)
+            (if (eq c 58)
+              (if (eq n 0) (lexIdle (cons (node 3 (nil T)) toks))
+                (lexIn toks (nil T) (node 12 (single n))))
+              (if (eq c 34) (lexIn toks (nil T) (withLen 5 (some n)))
+                (if (eq c 35) (lexIn toks (nil T) (withLen 13 (some n)))
+                  (if (eq c 124) (lexIn toks (nil T) (withLen 14 (some n))) lexFail)))))))))
+  (def lexStep
+    (lam ((s Lex) (c T))
+      (let toks Ts (fst s)
+        (let cur Ts (fst (snd s))
+          (let m T (snd (snd s))
+            (let k T (label m)
+              (if (eq k 0) (idleStep toks c)
+                (if (eq k 4) (if (eq c 10) (lexIdle toks) s)
+                  (if (eq k 1)
+                    (if (isTokenChar c) (lexIn toks (cons c cur) m)
+                      (idleStep (cons (atomTok cur) toks) c))
+                    (if (eq k 2)
+                      (if (isDigit c) (lexIn toks (cons c cur) m)
+                        (if (if (isTokenChar c) 1 (if (eq c 34) 1 (if (eq c 35) 1 (eq c 124))))
+                          (lengthStep toks cur c)
+                          (idleStep (cons (atomTok cur) toks) c)))
+                      (if (eq k 3)
+                        (if (if (isTokenChar c) (if (nonEmpty cur) 1 (if (isDigit c) 0 1)) 0)
+                          (lexIn toks (cons c cur) m)
+                          (if (nonEmpty cur) (idleStep (holeToks cur toks) c) lexFail))
+                        (if (eq k 11) s
+                          (if (eq k 12)
+                            (if (lt (child m 0) 2) (lexIdle (cons (atomTok (cons c cur)) toks))
+                              (lexIn toks (cons c cur) (node 12 (single (sub (child m 0) 1)))))
+                            (let want T (child m 0)
+                              (if (eq k 5) (strStep toks cur want c)
+                                (if (eq k 6)
+                                  (let e T (escChar c)
+                                    (if (isSome e) (lexIn toks (cons (get e) cur) (withLen 5 want))
+                                      (if (eq c 120)
+                                        (lexIn toks cur (node 9 (cons want (cons 0 (single 0)))))
                                         (if (inRange c 48 55)
-                                          (let w T (add (mul 8 (child m 2)) (sub c 48))
-                                            (if (eq (child m 1) 2)
-                                              (if (lt w 256)
-                                                (lexIn toks (cons w cur) (withLen 5 want))
-                                                lexFail)
+                                          (lexIn toks cur
+                                            (node 10 (cons want (cons 1 (single (sub c 48))))))
+                                          (if (eq c 13) (lexIn toks cur (withLen 7 want))
+                                            (if (eq c 10) (lexIn toks cur (withLen 8 want))
+                                              lexFail))))))
+                                  (if (eq k 7)
+                                    (if (eq c 10) (lexIn toks cur (withLen 5 want))
+                                      (strStep toks cur want c))
+                                    (if (eq k 8)
+                                      (if (eq c 13) (lexIn toks cur (withLen 5 want))
+                                        (strStep toks cur want c))
+                                      (if (eq k 9)
+                                        (let d T (hexVal c)
+                                          (if (isSome d)
+                                            (if (eq (child m 1) 1)
+                                              (lexIn toks
+                                                (cons (add (mul 16 (child m 2)) (get d)) cur)
+                                                (withLen 5 want))
                                               (lexIn toks cur
-                                                (node 10
-                                                  (cons want
-                                                    (cons (add (child m 1) 1) (single w)))))))
-                                          lexFail)
-                                        (if (eq k 13)
-                                          (if (isSpace c) s
-                                            (if (isSome (hexVal c)) (lexIn toks (cons c cur) m)
-                                              (if (eq c 35)
-                                                (let bs T (decodeHex (reverse cur))
-                                                  (if (isSome bs)
-                                                    (endAtom toks want (children (get bs)))
-                                                    lexFail))
-                                                lexFail)))
-                                          (if (isSpace c) s
-                                            (if (if (isSome (base64Val c)) 1 (eq c 61))
-                                              (lexIn toks (cons c cur) m)
-                                              (if (eq c 124)
-                                                (let bs T (decodeBase64 (reverse cur))
-                                                  (if (isSome bs)
-                                                    (endAtom toks want (children (get bs)))
-                                                    lexFail))
-                                                lexFail))))))))))))))))))))))))
-; the tokens of a text, in order, when it is well formed
-(def lexEnd
-  (lam ((s Lex))
-    (let toks Ts (fst s)
-      (let cur Ts (fst (snd s))
-        (let k T (label (snd (snd s)))
-          (if (if (eq k 0) 1 (eq k 4)) (some (node 0 (reverse toks)))
-            (if (if (eq k 1) 1 (eq k 2)) (some (node 0 (reverse (cons (atomTok cur) toks))))
-              (if (eq k 3) (if (nonEmpty cur) (some (node 0 (reverse (holeToks cur toks)))) none)
-                none))))))))
-(def tokenize
-  (lam ((cs Ts))
-    (lexEnd
-      ((foldr T LexK (lam ((c T) (k LexK) (s Lex)) (k (lexStep s c))) (lam ((s Lex)) s) cs)
-       (lexIdle (nil T))))))
+                                                (node 9 (cons want (cons 1 (single (get d)))))))
+                                            lexFail))
+                                        (if (eq k 10)
+                                          (if (inRange c 48 55)
+                                            (let w T (add (mul 8 (child m 2)) (sub c 48))
+                                              (if (eq (child m 1) 2)
+                                                (if (lt w 256)
+                                                  (lexIn toks (cons w cur) (withLen 5 want))
+                                                  lexFail)
+                                                (lexIn toks cur
+                                                  (node 10
+                                                    (cons want
+                                                      (cons (add (child m 1) 1) (single w)))))))
+                                            lexFail)
+                                          (if (eq k 13)
+                                            (if (isSpace c) s
+                                              (if (isSome (hexVal c)) (lexIn toks (cons c cur) m)
+                                                (if (eq c 35)
+                                                  (let bs T (decodeHex (reverse cur))
+                                                    (if (isSome bs)
+                                                      (endAtom toks want (children (get bs)))
+                                                      lexFail))
+                                                  lexFail)))
+                                            (if (isSpace c) s
+                                              (if (if (isSome (base64Val c)) 1 (eq c 61))
+                                                (lexIn toks (cons c cur) m)
+                                                (if (eq c 124)
+                                                  (let bs T (decodeBase64 (reverse cur))
+                                                    (if (isSome bs)
+                                                      (endAtom toks want (children (get bs)))
+                                                      lexFail))
+                                                  lexFail))))))))))))))))))))))))
+  ; the tokens of a text, in order, when it is well formed
+  (def lexEnd
+    (lam ((s Lex))
+      (let toks Ts (fst s)
+        (let cur Ts (fst (snd s))
+          (let k T (label (snd (snd s)))
+            (if (if (eq k 0) 1 (eq k 4)) (some (node 0 (reverse toks)))
+              (if (if (eq k 1) 1 (eq k 2)) (some (node 0 (reverse (cons (atomTok cur) toks))))
+                (if (eq k 3) (if (nonEmpty cur) (some (node 0 (reverse (holeToks cur toks)))) none)
+                  none))))))))
+  (def tokenize
+    (lam ((cs Ts))
+      (lexEnd
+        ((foldr T LexK (lam ((c T) (k LexK) (s Lex)) (k (lexStep s c))) (lam ((s Lex)) s) cs)
+         (lexIdle (nil T))))))
 
-; S-expressions, by a stack of lists under construction, innermost first, each in reverse
-(deftype Stack (List Ts))
-(deftype Par (Prod T Stack))
-(deftype ParK (Arrow Par Par))
-(def fail (pair 0 (nil Ts)))
-(def parseStep
-  (lam ((s Par) (tok T))
-    (if (fst s)
-      (lcase Ts Par (snd s) fail
-        (lam ((f Ts) (fs Stack))
-          (if (eq (label tok) 1) (pair 1 (cons (nil T) (cons f fs)))
-            (if (eq (label tok) 3) (pair 1 (cons (cons (node 1 (children tok)) f) fs))
-              (lcase Ts Par fs fail
-                (lam ((g Ts) (gs Stack)) (pair 1 (cons (cons (node 2 (reverse f)) g) gs))))))))
-      s)))
-(def readSExps
-  (lam ((cs Ts))
-    (let toks T (tokenize cs)
-      (if (isSome toks)
-        (let s Par
-          ((foldr T ParK (lam ((t T) (k ParK) (s Par)) (k (parseStep s t))) (lam ((s Par)) s)
-             (children (get toks))) (pair 1 (cons (nil T) (nil Ts))))
-          (if (fst s)
-            (lcase Ts T (snd s) none
-              (lam ((f Ts) (fs Stack))
-                (lcase Ts T fs (some (node 0 (reverse f))) (lam ((g Ts) (gs Stack)) none))))
-            none))
-        none))))
+  ; S-expressions, by a stack of lists under construction, innermost first, each in reverse
+  (deftype Stack (List Ts))
+  (deftype Par (Prod T Stack))
+  (deftype ParK (Arrow Par Par))
+  (def fail (pair 0 (nil Ts)))
+  (def parseStep
+    (lam ((s Par) (tok T))
+      (if (fst s)
+        (lcase Ts Par (snd s) fail
+          (lam ((f Ts) (fs Stack))
+            (if (eq (label tok) 1) (pair 1 (cons (nil T) (cons f fs)))
+              (if (eq (label tok) 3) (pair 1 (cons (cons (node 1 (children tok)) f) fs))
+                (lcase Ts Par fs fail
+                  (lam ((g Ts) (gs Stack)) (pair 1 (cons (cons (node 2 (reverse f)) g) gs))))))))
+        s)))
+  (def readSExps
+    (lam ((cs Ts))
+      (let toks T (tokenize cs)
+        (if (isSome toks)
+          (let s Par
+            ((foldr T ParK (lam ((t T) (k ParK) (s Par)) (k (parseStep s t))) (lam ((s Par)) s)
+               (children (get toks))) (pair 1 (cons (nil T) (nil Ts))))
+            (if (fst s)
+              (lcase Ts T (snd s) none
+                (lam ((f Ts) (fs Stack))
+                  (lcase Ts T fs (some (node 0 (reverse f))) (lam ((g Ts) (gs Stack)) none))))
+              none))
+          none))))
 
-; atoms and names
-(def isAtom (lam ((e T)) (eq (label e) 1)))
-(def isList (lam ((e T)) (eq (label e) 2)))
-(def nameOf (lam ((e T)) (node 0 (children e))))
-(def named (lam ((e T) (n T)) (if (isAtom e) (equal (nameOf e) n) 0)))
-(def kwT (quote (0 T)))
-(def kwUnit (quote (0 Unit)))
-(def kwProd (quote (0 Prod)))
-(def kwArrow (quote (0 Arrow)))
-(def kwList (quote (0 List)))
-(def kwLam (quote (0 lam)))
-(def kwLet (quote (0 let)))
-(def kwPair (quote (0 pair)))
-(def kwFst (quote (0 fst)))
-(def kwSnd (quote (0 snd)))
-(def kwIf (quote (0 if)))
-(def kwQuote (quote (0 quote)))
-(def kwCons (quote (0 cons)))
-(def kwNil (quote (0 nil)))
-(def kwFold (quote (0 fold)))
-(def kwPara (quote (0 para)))
-(def kwIter (quote (0 iter)))
-(def kwFoldr (quote (0 foldr)))
-(def kwLcase (quote (0 lcase)))
-(def kwUnitValue (quote (0 unit)))
-(def kwDef (quote (0 def)))
-(def kwDeftype (quote (0 deftype)))
-(def kwDefnum (quote (0 defnum)))
-(def primNames
-  (children
-    (quote
-      (0 (0 label) (0 arity) (0 child) (0 node) (0 children) (0 add) (0 sub) (0 mul) (0 div) (0 mod)
-        (0 eq)
-        (0 lt)
-        (0 equal)
-        (0 log2)))))
+  ; atoms and names
+  (def isAtom (lam ((e T)) (eq (label e) 1)))
+  (def isList (lam ((e T)) (eq (label e) 2)))
+  (def nameOf (lam ((e T)) (node 0 (children e))))
+  (def named (lam ((e T) (n T)) (if (isAtom e) (equal (nameOf e) n) 0)))
+  (def kwT (quote (0 T)))
+  (def kwUnit (quote (0 Unit)))
+  (def kwProd (quote (0 Prod)))
+  (def kwArrow (quote (0 Arrow)))
+  (def kwList (quote (0 List)))
+  (def kwLam (quote (0 lam)))
+  (def kwLet (quote (0 let)))
+  (def kwPair (quote (0 pair)))
+  (def kwFst (quote (0 fst)))
+  (def kwSnd (quote (0 snd)))
+  (def kwIf (quote (0 if)))
+  (def kwQuote (quote (0 quote)))
+  (def kwCons (quote (0 cons)))
+  (def kwNil (quote (0 nil)))
+  (def kwFold (quote (0 fold)))
+  (def kwPara (quote (0 para)))
+  (def kwIter (quote (0 iter)))
+  (def kwFoldr (quote (0 foldr)))
+  (def kwLcase (quote (0 lcase)))
+  (def kwUnitValue (quote (0 unit)))
+  (def kwDef (quote (0 def)))
+  (def kwDeftype (quote (0 deftype)))
+  (def kwDefnum (quote (0 defnum)))
+  (def primNames
+    (children
+      (quote
+        (0 (0 label) (0 arity) (0 child) (0 node) (0 children) (0 add) (0 sub) (0 mul) (0 div)
+          (0 mod)
+          (0 eq)
+          (0 lt)
+          (0 equal)
+          (0 log2)))))
 
-; the first position of a name in a list of names
-(def indexOf
-  (lam ((x T) (xs Ts))
-    (foldr T T
-      (lam ((y T) (r T)) (if (equal x y) (some 0) (if (isSome r) (some (add (get r) 1)) none)))
-      none
-      xs)))
-; the value an abbreviation names; an abbreviation is a node over its name and its value
-(def lookupAbbrev
-  (lam ((n T) (abbrevs Ts))
-    (foldr T T (lam ((p T) (r T)) (if (equal n (child p 0)) (some (child p 1)) r)) none abbrevs)))
-; the value of a numeral: a non-empty list of decimal digits
-(deftype Num (Prod T (Prod T T)))
-(def numeral
-  (lam ((cs Ts))
-    (let r Num
-      (foldr T Num
-        (lam ((c T) (s Num))
-          (if (lt c 48) (pair 0 (snd s))
-            (if (lt 57 c) (pair 0 (snd s))
-              (pair (fst s)
-                (pair (add (fst (snd s)) (mul (sub c 48) (snd (snd s)))) (mul 10 (snd (snd s))))))))
-        (pair 1 (pair 0 1))
-        cs)
-      (if (nonEmpty cs) (if (fst r) (some (fst (snd r))) none) none))))
-; an S-expression with each atom that names a numeral abbreviation replaced by its numeral's
-; atom; a numeral abbreviation's value is that atom
-(def expandNums
-  (lam ((nums Ts) (e T))
-    (fold T
-      (lam ((l T) (rs Ts))
-        (let raw T (node l rs)
-          (if (isAtom raw) (let v T (lookupAbbrev (nameOf raw) nums) (if (isSome v) (get v) raw))
-            raw)))
-      e)))
-; a numeral abbreviation's value: the S-expression, its abbreviations expanded, when it is a
-; numeral
-(def numOf
-  (lam ((nums Ts) (e T))
-    (let x T (expandNums nums e)
-      (if (isAtom x) (if (isSome (numeral (children x))) (some x) none) none))))
+  ; the first position of a name in a list of names
+  (def indexOf
+    (lam ((x T) (xs Ts))
+      (foldr T T
+        (lam ((y T) (r T)) (if (equal x y) (some 0) (if (isSome r) (some (add (get r) 1)) none)))
+        none
+        xs)))
+  ; the value an abbreviation names; an abbreviation is a node over its name and its value
+  (def lookupAbbrev
+    (lam ((n T) (abbrevs Ts))
+      (foldr T T (lam ((p T) (r T)) (if (equal n (child p 0)) (some (child p 1)) r)) none abbrevs)))
+  ; the value of a numeral: a non-empty list of decimal digits
+  (deftype Num (Prod T (Prod T T)))
+  (def numeral
+    (lam ((cs Ts))
+      (let r Num
+        (foldr T Num
+          (lam ((c T) (s Num))
+            (if (lt c 48) (pair 0 (snd s))
+              (if (lt 57 c) (pair 0 (snd s))
+                (pair (fst s)
+                  (pair (add (fst (snd s)) (mul (sub c 48) (snd (snd s))))
+                    (mul 10 (snd (snd s))))))))
+          (pair 1 (pair 0 1))
+          cs)
+        (if (nonEmpty cs) (if (fst r) (some (fst (snd r))) none) none))))
+  ; an S-expression with each atom that names a numeral abbreviation replaced by its numeral's
+  ; atom; a numeral abbreviation's value is that atom
+  (def expandNums
+    (lam ((nums Ts) (e T))
+      (fold T
+        (lam ((l T) (rs Ts))
+          (let raw T (node l rs)
+            (if (isAtom raw) (let v T (lookupAbbrev (nameOf raw) nums) (if (isSome v) (get v) raw))
+              raw)))
+        e)))
+  ; a numeral abbreviation's value: the S-expression, its abbreviations expanded, when it is a
+  ; numeral
+  (def numOf
+    (lam ((nums Ts) (e T))
+      (let x T (expandNums nums e)
+        (if (isAtom x) (if (isSome (numeral (children x))) (some x) none) none))))
 
-; a fold whose results carry the subtree they come from, the subtrees' list and the results'
-(deftype RT (Prod T T))
-(deftype RTs (List RT))
-(def rtTrees (lam ((rs RTs)) (foldr RT Ts (lam ((r RT) (acc Ts)) (cons (fst r) acc)) (nil T) rs)))
-(def rtValues (lam ((rs RTs)) (foldr RT Ts (lam ((r RT) (acc Ts)) (cons (snd r) acc)) (nil T) rs)))
-(def node2 (lam ((l T) (a T) (b T)) (node l (cons a (single b)))))
-(def some2 (lam ((l T) (a T) (b T)) (if (both a b) (some (node2 l (get a) (get b))) none)))
+  ; a fold whose results carry the subtree they come from, the subtrees' list and the results'
+  (deftype RT (Prod T T))
+  (deftype RTs (List RT))
+  (def rtTrees (lam ((rs RTs)) (foldr RT Ts (lam ((r RT) (acc Ts)) (cons (fst r) acc)) (nil T) rs)))
+  (def rtValues
+    (lam ((rs RTs)) (foldr RT Ts (lam ((r RT) (acc Ts)) (cons (snd r) acc)) (nil T) rs)))
+  (def node2 (lam ((l T) (a T) (b T)) (node l (cons a (single b)))))
+  (def some2 (lam ((l T) (a T) (b T)) (if (both a b) (some (node2 l (get a) (get b))) none)))
 
-; an S-expression read as a type, given the type abbreviations in force
-(def readType
-  (lam ((tys Ts) (e T))
-    (snd
-      (fold RT
-        (lam ((l T) (rs RTs))
-          (let raw T (node l (rtTrees rs))
-            (let vs Ts (rtValues rs)
-              (pair raw
-                (if (isAtom raw)
-                  (let n T (nameOf raw)
-                    (if (equal n kwT) (some Label.tyTree)
-                      (if (equal n kwUnit) (some Label.tyUnit) (lookupAbbrev n tys))))
-                  (if (isList raw)
-                    (let h T (at (children raw) 0)
-                      (let k T (arity raw)
-                        (if (named h kwProd)
-                          (if (eq k 3) (some2 Label.tyProd (at vs 1) (at vs 2)) none)
-                          (if (named h kwArrow)
-                            (if (eq k 3) (some2 Label.tyArrow (at vs 1) (at vs 2)) none)
-                            (if (named h kwList)
-                              (if (eq k 2)
-                                (if (isSome (at vs 1))
-                                  (some (node Label.tyList (single (get (at vs 1)))))
-                                  none)
-                                none)
-                              none)))))
-                    none))))))
-        e))))
-
-; an S-expression read as a quoted datum: a numeral is a leaf, and a list of a numeral and data
-; is a node, in which an atom that is not a numeral contributes the leaves of its characters'
-; codes; each node's result is the list of the trees it contributes, under a node of label 0
-(def readDatum
-  (lam ((e T))
-    (if (isAtom e)
-      (let v T (numeral (children e)) (if (isSome v) (some (node (get v) (nil T))) none))
-      (let r T
-        (snd
-          (fold RT
-            (lam ((l T) (rs RTs))
-              (let raw T (node l (rtTrees rs))
+  ; an S-expression read as a type, given the type abbreviations in force
+  (def readType
+    (lam ((tys Ts) (e T))
+      (snd
+        (fold RT
+          (lam ((l T) (rs RTs))
+            (let raw T (node l (rtTrees rs))
+              (let vs Ts (rtValues rs)
                 (pair raw
                   (if (isAtom raw)
-                    (let v T (numeral (children raw))
-                      (if (isSome v) (some (node 0 (single (node (get v) (nil T)))))
-                        (some (node 0 (children raw)))))
+                    (let n T (nameOf raw)
+                      (if (equal n kwT) (some Label.tyTree)
+                        (if (equal n kwUnit) (some Label.tyUnit) (lookupAbbrev n tys))))
                     (if (isList raw)
-                      (lcase T T (children raw) none
-                        (lam ((h T) (r Ts))
-                          (let v T (if (isAtom h) (numeral (children h)) none)
-                            (let ds T (allSome (tail (rtValues rs)))
-                              (if (both v ds)
-                                (some
-                                  (node 0
-                                    (single
-                                      (node (get v)
-                                        (foldr T Ts (lam ((x T) (acc Ts)) (append (children x) acc))
-                                          (nil T)
-                                          (children (get ds)))))))
+                      (let h T (at (children raw) 0)
+                        (let k T (arity raw)
+                          (if (named h kwProd)
+                            (if (eq k 3) (some2 Label.tyProd (at vs 1) (at vs 2)) none)
+                            (if (named h kwArrow)
+                              (if (eq k 3) (some2 Label.tyArrow (at vs 1) (at vs 2)) none)
+                              (if (named h kwList)
+                                (if (eq k 2)
+                                  (if (isSome (at vs 1))
+                                    (some (node Label.tyList (single (get (at vs 1)))))
+                                    none)
+                                  none)
                                 none)))))
-                      none)))))
-            e))
-        (if (isSome r) (some (child (get r) 0)) none)))))
+                      none))))))
+          e))))
 
-; resolution: each S-expression's result is its subtree with its resolution as a function of
-; the names bound around it
-(deftype Scope Ts)
-(deftype Res (Arrow Scope T))
-(deftype RR (Prod T Res))
-(deftype RRs (List RR))
-(def rrTrees (lam ((rs RRs)) (foldr RR Ts (lam ((r RR) (acc Ts)) (cons (fst r) acc)) (nil T) rs)))
-(def rrApply
-  (lam ((rs RRs) (scope Scope))
-    (foldr RR Ts (lam ((r RR) (acc Ts)) (cons ((snd r) scope) acc)) (nil T) rs)))
-(def rrTail (lam ((rs RRs)) (lcase RR RRs rs (nil RR) (lam ((r RR) (rest RRs)) rest))))
-(def rrAt
-  (lam ((rs RRs) (i T) (scope Scope))
-    ((lcase RR Res (iter RRs rrTail rs i) (lam ((s Scope)) none) (lam ((r RR) (rest RRs)) (snd r)))
-     scope)))
-(def app (lam ((f T) (x T)) (node2 Label.app f x)))
-(def apps (lam ((f T) (xs Ts)) (foldr T T (lam ((x T) (acc T)) (app acc x)) f (reverse xs))))
-(def some1 (lam ((l T) (a T)) (if (isSome a) (some (node l (single (get a)))) none)))
-(def argsOf (lam ((rs RRs) (n T) (scope Scope)) (allSome (rrApply (iter RRs rrTail rs n) scope))))
-(def mkArgs (lam ((l T) (a T)) (if (isSome a) (some (node l (children (get a)))) none)))
-(def appsOpt (lam ((f T) (a T)) (if (both f a) (some (apps (get f) (children (get a)))) none)))
+  ; an S-expression read as a quoted datum: a numeral is a leaf, and a list of a numeral and data
+  ; is a node, in which an atom that is not a numeral contributes the leaves of its characters'
+  ; codes; each node's result is the list of the trees it contributes, under a node of label 0
+  (def readDatum
+    (lam ((e T))
+      (if (isAtom e)
+        (let v T (numeral (children e)) (if (isSome v) (some (node (get v) (nil T))) none))
+        (let r T
+          (snd
+            (fold RT
+              (lam ((l T) (rs RTs))
+                (let raw T (node l (rtTrees rs))
+                  (pair raw
+                    (if (isAtom raw)
+                      (let v T (numeral (children raw))
+                        (if (isSome v) (some (node 0 (single (node (get v) (nil T)))))
+                          (some (node 0 (children raw)))))
+                      (if (isList raw)
+                        (lcase T T (children raw) none
+                          (lam ((h T) (r Ts))
+                            (let v T (if (isAtom h) (numeral (children h)) none)
+                              (let ds T (allSome (tail (rtValues rs)))
+                                (if (both v ds)
+                                  (some
+                                    (node 0
+                                      (single
+                                        (node (get v)
+                                          (foldr T Ts
+                                            (lam ((x T) (acc Ts)) (append (children x) acc))
+                                            (nil T)
+                                            (children (get ds)))))))
+                                  none)))))
+                        none)))))
+              e))
+          (if (isSome r) (some (child (get r) 0)) none)))))
 
-; the binders of an abstraction: one binder (x A), or a list of them
-(def binders
-  (lam ((b T))
-    (if (isList b)
-      (if (eq (arity b) 2) (if (isAtom (child b 0)) (single b) (children b)) (children b))
-      (nil T))))
-; the names and types of binders, as the node of label 0 over nodes of label 0 over a name and
-; a type, when every binder is a name with a type
-(def readBinders
-  (lam ((tys Ts) (bs Ts))
-    (allSome
-      (foldr T Ts
-        (lam ((c T) (acc Ts))
-          (cons
-            (if (isList c)
-              (if (eq (arity c) 2)
-                (if (isAtom (child c 0))
-                  (let A T (readType tys (child c 1))
-                    (if (isSome A) (some (node2 0 (nameOf (child c 0)) (get A))) none))
+  ; resolution: each S-expression's result is its subtree with its resolution as a function of
+  ; the names bound around it
+  (deftype Scope Ts)
+  (deftype Res (Arrow Scope T))
+  (deftype RR (Prod T Res))
+  (deftype RRs (List RR))
+  (def rrTrees (lam ((rs RRs)) (foldr RR Ts (lam ((r RR) (acc Ts)) (cons (fst r) acc)) (nil T) rs)))
+  (def rrApply
+    (lam ((rs RRs) (scope Scope))
+      (foldr RR Ts (lam ((r RR) (acc Ts)) (cons ((snd r) scope) acc)) (nil T) rs)))
+  (def rrTail (lam ((rs RRs)) (lcase RR RRs rs (nil RR) (lam ((r RR) (rest RRs)) rest))))
+  (def rrAt
+    (lam ((rs RRs) (i T) (scope Scope))
+      ((lcase RR Res (iter RRs rrTail rs i) (lam ((s Scope)) none)
+         (lam ((r RR) (rest RRs)) (snd r))) scope)))
+  (def app (lam ((f T) (x T)) (node2 Label.app f x)))
+  (def apps (lam ((f T) (xs Ts)) (foldr T T (lam ((x T) (acc T)) (app acc x)) f (reverse xs))))
+  (def some1 (lam ((l T) (a T)) (if (isSome a) (some (node l (single (get a)))) none)))
+  (def argsOf (lam ((rs RRs) (n T) (scope Scope)) (allSome (rrApply (iter RRs rrTail rs n) scope))))
+  (def mkArgs (lam ((l T) (a T)) (if (isSome a) (some (node l (children (get a)))) none)))
+  (def appsOpt (lam ((f T) (a T)) (if (both f a) (some (apps (get f) (children (get a)))) none)))
+
+  ; the binders of an abstraction: one binder (x A), or a list of them
+  (def binders
+    (lam ((b T))
+      (if (isList b)
+        (if (eq (arity b) 2) (if (isAtom (child b 0)) (single b) (children b)) (children b))
+        (nil T))))
+  ; the names and types of binders, as the node of label 0 over nodes of label 0 over a name and
+  ; a type, when every binder is a name with a type
+  (def readBinders
+    (lam ((tys Ts) (bs Ts))
+      (allSome
+        (foldr T Ts
+          (lam ((c T) (acc Ts))
+            (cons
+              (if (isList c)
+                (if (eq (arity c) 2)
+                  (if (isAtom (child c 0))
+                    (let A T (readType tys (child c 1))
+                      (if (isSome A) (some (node2 0 (nameOf (child c 0)) (get A))) none))
+                    none)
                   none)
                 none)
-              none)
-            acc))
-        (nil T)
-        bs))))
+              acc))
+          (nil T)
+          bs))))
 
-; one atom's resolution
-(def resolveAtom
-  (lam ((defs Ts) (raw T) (scope Scope))
-    (let v T (numeral (children raw))
-      (if (isSome v) (some (node Label.quote (single (get v))))
-        (let n T (nameOf raw)
-          (let i T (indexOf n scope)
-            (if (isSome i) (some (node Label.var (single (get i))))
-              (let j T (indexOf n defs)
-                (if (isSome j) (some (node Label.ref (single (get j))))
-                  (let k T (indexOf n primNames)
-                    (if (isSome k) (some (node Label.prim (single (get k))))
-                      (if (equal n kwUnitValue) (some (node Label.unit (nil T))) none))))))))))))
+  ; one atom's resolution
+  (def resolveAtom
+    (lam ((defs Ts) (raw T) (scope Scope))
+      (let v T (numeral (children raw))
+        (if (isSome v) (some (node Label.quote (single (get v))))
+          (let n T (nameOf raw)
+            (let i T (indexOf n scope)
+              (if (isSome i) (some (node Label.var (single (get i))))
+                (let j T (indexOf n defs)
+                  (if (isSome j) (some (node Label.ref (single (get j))))
+                    (let k T (indexOf n primNames)
+                      (if (isSome k) (some (node Label.prim (single (get k))))
+                        (if (equal n kwUnitValue) (some (node Label.unit (nil T))) none))))))))))))
 
-; one list's resolution, from its elements with their resolutions
-(def resolveList
-  (lam ((tys Ts) (raw T) (rs RRs) (scope Scope))
-    (let es Ts (children raw)
-      (let k T (arity raw)
-        (let h T (at es 0)
-          (if (eq k 0) none
-            (if (if (named h kwLam) (eq k 3) 0)
-              (let bs T (readBinders tys (binders (at es 1)))
-                (if (isSome bs)
-                  (let ps Ts (children (get bs))
-                    (if (nonEmpty ps)
-                      (let body T
-                        (rrAt rs 2
-                          (append
-                            (reverse
-                              (foldr T Ts (lam ((p T) (acc Ts)) (cons (child p 0) acc)) (nil T) ps))
-                            scope))
-                        (if (isSome body)
-                          (some
-                            (foldr T T (lam ((p T) (u T)) (node2 Label.lam (child p 1) u))
-                              (get body)
-                              ps))
-                          none))
-                      none))
-                  none))
-              (if (if (named h kwLet) (eq k 5) 0)
-                (let x T (at es 1)
-                  (if (isAtom x)
-                    (let A T (readType tys (at es 2))
-                      (let body T (rrAt rs 4 (cons (nameOf x) scope))
-                        (let e T (rrAt rs 3 scope)
-                          (if (both A (both body e))
-                            (some (app (node2 Label.lam (get A) (get body)) (get e)))
-                            none))))
+  ; one list's resolution, from its elements with their resolutions
+  (def resolveList
+    (lam ((tys Ts) (raw T) (rs RRs) (scope Scope))
+      (let es Ts (children raw)
+        (let k T (arity raw)
+          (let h T (at es 0)
+            (if (eq k 0) none
+              (if (if (named h kwLam) (eq k 3) 0)
+                (let bs T (readBinders tys (binders (at es 1)))
+                  (if (isSome bs)
+                    (let ps Ts (children (get bs))
+                      (if (nonEmpty ps)
+                        (let body T
+                          (rrAt rs 2
+                            (append
+                              (reverse
+                                (foldr T Ts (lam ((p T) (acc Ts)) (cons (child p 0) acc)) (nil T)
+                                  ps))
+                              scope))
+                          (if (isSome body)
+                            (some
+                              (foldr T T (lam ((p T) (u T)) (node2 Label.lam (child p 1) u))
+                                (get body)
+                                ps))
+                            none))
+                        none))
                     none))
-                (if (named h kwPair) (mkArgs Label.pair (argsOf rs 1 scope))
-                  (if (named h kwFst) (mkArgs Label.fst (argsOf rs 1 scope))
-                    (if (named h kwSnd) (mkArgs Label.snd (argsOf rs 1 scope))
-                      (if (named h kwIf) (mkArgs Label.cond (argsOf rs 1 scope))
-                        (if (named h kwCons) (mkArgs Label.cons (argsOf rs 1 scope))
-                          (if (if (named h kwQuote) (eq k 2) 0)
-                            (some1 Label.quote (readDatum (at es 1)))
-                            (if (if (named h kwNil) (eq k 2) 0)
-                              (some1 Label.nil (readType tys (at es 1)))
-                              (if (if (named h kwFold) (lt 1 k) 0)
-                                (let A T (readType tys (at es 1))
-                                  (if (isSome A)
-                                    (appsOpt (some (node Label.fold (single (get A))))
-                                      (argsOf rs 2 scope))
-                                    none))
-                                (if (if (named h kwPara) (lt 1 k) 0)
+                (if (if (named h kwLet) (eq k 5) 0)
+                  (let x T (at es 1)
+                    (if (isAtom x)
+                      (let A T (readType tys (at es 2))
+                        (let body T (rrAt rs 4 (cons (nameOf x) scope))
+                          (let e T (rrAt rs 3 scope)
+                            (if (both A (both body e))
+                              (some (app (node2 Label.lam (get A) (get body)) (get e)))
+                              none))))
+                      none))
+                  (if (named h kwPair) (mkArgs Label.pair (argsOf rs 1 scope))
+                    (if (named h kwFst) (mkArgs Label.fst (argsOf rs 1 scope))
+                      (if (named h kwSnd) (mkArgs Label.snd (argsOf rs 1 scope))
+                        (if (named h kwIf) (mkArgs Label.cond (argsOf rs 1 scope))
+                          (if (named h kwCons) (mkArgs Label.cons (argsOf rs 1 scope))
+                            (if (if (named h kwQuote) (eq k 2) 0)
+                              (some1 Label.quote (readDatum (at es 1)))
+                              (if (if (named h kwNil) (eq k 2) 0)
+                                (some1 Label.nil (readType tys (at es 1)))
+                                (if (if (named h kwFold) (lt 1 k) 0)
                                   (let A T (readType tys (at es 1))
                                     (if (isSome A)
-                                      (appsOpt (some (node Label.para (single (get A))))
+                                      (appsOpt (some (node Label.fold (single (get A))))
                                         (argsOf rs 2 scope))
                                       none))
-                                  (if (if (named h kwIter) (lt 1 k) 0)
+                                  (if (if (named h kwPara) (lt 1 k) 0)
                                     (let A T (readType tys (at es 1))
                                       (if (isSome A)
-                                        (appsOpt (some (node Label.iter (single (get A))))
+                                        (appsOpt (some (node Label.para (single (get A))))
                                           (argsOf rs 2 scope))
                                         none))
-                                    (if (if (named h kwFoldr) (lt 2 k) 0)
-                                      (let A T
-                                        (some2 Label.foldr (readType tys (at es 1))
-                                          (readType tys (at es 2)))
-                                        (if (isSome A) (appsOpt A (argsOf rs 3 scope)) none))
-                                      (if (if (named h kwLcase) (lt 2 k) 0)
+                                    (if (if (named h kwIter) (lt 1 k) 0)
+                                      (let A T (readType tys (at es 1))
+                                        (if (isSome A)
+                                          (appsOpt (some (node Label.iter (single (get A))))
+                                            (argsOf rs 2 scope))
+                                          none))
+                                      (if (if (named h kwFoldr) (lt 2 k) 0)
                                         (let A T
-                                          (some2 Label.lcase (readType tys (at es 1))
+                                          (some2 Label.foldr (readType tys (at es 1))
                                             (readType tys (at es 2)))
                                           (if (isSome A) (appsOpt A (argsOf rs 3 scope)) none))
-                                        (appsOpt (rrAt rs 0 scope)
-                                          (argsOf rs 1 scope))))))))))))))))))))))
+                                        (if (if (named h kwLcase) (lt 2 k) 0)
+                                          (let A T
+                                            (some2 Label.lcase (readType tys (at es 1))
+                                              (readType tys (at es 2)))
+                                            (if (isSome A) (appsOpt A (argsOf rs 3 scope)) none))
+                                          (appsOpt (rrAt rs 0 scope)
+                                            (argsOf rs 1 scope))))))))))))))))))))))
 
-; an S-expression resolved into a kernel term, given the type abbreviations in force, the names
-; of the definitions before it and the names bound around it
-(def resolve
-  (lam ((tys Ts) (defs Ts) (e T) (scope Scope))
-    ((snd
-       (fold RR
-         (lam ((l T) (rs RRs))
-           (let raw T (node l (rrTrees rs))
-             (pair raw
-               (lam ((s Scope))
-                 (if (isAtom raw) (resolveAtom defs raw s)
-                   (if (isList raw) (resolveList tys raw rs s) none))))))
-         e)) scope)))
+  ; an S-expression resolved into a kernel term, given the type abbreviations in force, the names
+  ; of the definitions before it and the names bound around it
+  (def resolve
+    (lam ((tys Ts) (defs Ts) (e T) (scope Scope))
+      ((snd
+         (fold RR
+           (lam ((l T) (rs RRs))
+             (let raw T (node l (rrTrees rs))
+               (pair raw
+                 (lam ((s Scope))
+                   (if (isAtom raw) (resolveAtom defs raw s)
+                     (if (isList raw) (resolveList tys raw rs s) none))))))
+           e)) scope)))
 
-; the names no declaration takes: the keywords of terms and of declarations, the form of a hole,
-; the heads of the strict encodings' annotation forms and documents, the names of the types and of
-; the primitives
-(def reservedNames
-  (append
-    (cons kwLam
-      (cons kwLet
-        (cons kwPair
-          (cons kwFst
-            (cons kwSnd
-              (cons kwIf
-                (cons kwQuote
-                  (cons kwCons
-                    (cons kwNil
-                      (cons kwFold
-                        (cons kwPara
-                          (cons kwIter
-                            (cons kwFoldr
-                              (cons kwLcase
-                                (cons kwUnitValue
-                                  (cons kwDef
-                                    (cons kwDeftype
-                                      (cons kwDefnum
-                                        (cons kwHole
-                                          (cons (quote (0 *ann))
-                                            (cons (quote (0 *doc))
-                                              (cons kwT
-                                                (cons kwUnit
-                                                  (cons kwProd
-                                                    (cons kwArrow
-                                                      (single kwList))))))))))))))))))))))))))
-    primNames))
-; whether a name may be declared after the type abbreviations, numeral abbreviations and
-; definitions given: it is neither reserved nor declared already
-(def isFresh
-  (lam ((tys Ts) (nums Ts) (names Ts) (n T))
-    (if (isSome (indexOf n reservedNames)) 0
-      (if (isSome (indexOf n names)) 0
-        (if (isSome (lookupAbbrev n tys)) 0 (if (isSome (lookupAbbrev n nums)) 0 1))))))
+  ; the names no declaration takes: the keywords of terms and of declarations, the form of a hole,
+  ; the heads of the strict encodings' annotation forms and documents, the names of the types and of
+  ; the primitives
+  (def reservedNames
+    (append
+      (cons kwLam
+        (cons kwLet
+          (cons kwPair
+            (cons kwFst
+              (cons kwSnd
+                (cons kwIf
+                  (cons kwQuote
+                    (cons kwCons
+                      (cons kwNil
+                        (cons kwFold
+                          (cons kwPara
+                            (cons kwIter
+                              (cons kwFoldr
+                                (cons kwLcase
+                                  (cons kwUnitValue
+                                    (cons kwDef
+                                      (cons kwDeftype
+                                        (cons kwDefnum
+                                          (cons kwHole
+                                            (cons (quote (0 *ann))
+                                              (cons (quote (0 *doc))
+                                                (cons kwT
+                                                  (cons kwUnit
+                                                    (cons kwProd
+                                                      (cons kwArrow
+                                                        (single kwList))))))))))))))))))))))))))
+      primNames))
+  ; whether a name may be declared after the type abbreviations, numeral abbreviations and
+  ; definitions given: it is neither reserved nor declared already
+  (def isFresh
+    (lam ((tys Ts) (nums Ts) (names Ts) (n T))
+      (if (isSome (indexOf n reservedNames)) 0
+        (if (isSome (indexOf n names)) 0
+          (if (isSome (lookupAbbrev n tys)) 0 (if (isSome (lookupAbbrev n nums)) 0 1))))))
 
-; a program's forms read into its bundle: the state is whether every form has read, the type
-; abbreviations, the numeral abbreviations, the names of the definitions, and their terms
-(deftype Prog (Prod T (Prod Ts (Prod Ts (Prod Ts Ts)))))
-(deftype ProgK (Arrow Prog Prog))
-(def progStep
-  (lam ((s Prog) (e T))
-    (let tys Ts (fst (snd s))
-      (let nums Ts (fst (snd (snd s)))
-        (let names Ts (fst (snd (snd (snd s))))
-          (let terms Ts (snd (snd (snd (snd s))))
-            (if
-              (if (fst s)
-                (if (isList e)
-                  (if (eq (arity e) 3)
-                    (if (isAtom (child e 1)) (isFresh tys nums names (nameOf (child e 1))) 0)
+  ; a program's forms read into its bundle: the state is whether every form has read, the type
+  ; abbreviations, the numeral abbreviations, the names of the definitions, and their terms
+  (deftype Prog (Prod T (Prod Ts (Prod Ts (Prod Ts Ts)))))
+  (deftype ProgK (Arrow Prog Prog))
+  (def progStep
+    (lam ((s Prog) (e T))
+      (let tys Ts (fst (snd s))
+        (let nums Ts (fst (snd (snd s)))
+          (let names Ts (fst (snd (snd (snd s))))
+            (let terms Ts (snd (snd (snd (snd s))))
+              (if
+                (if (fst s)
+                  (if (isList e)
+                    (if (eq (arity e) 3)
+                      (if (isAtom (child e 1)) (isFresh tys nums names (nameOf (child e 1))) 0)
+                      0)
                     0)
                   0)
-                0)
-              (let n T (nameOf (child e 1))
-                (if (named (child e 0) kwDef)
-                  (let t T (resolve tys names (expandNums nums (child e 2)) (nil T))
-                    (if (isSome t)
-                      (pair 1
-                        (pair tys
-                          (pair nums
-                            (pair (append names (single n)) (append terms (single (get t)))))))
-                      (pair 0 (snd s))))
-                  (if (named (child e 0) kwDeftype)
-                    (let A T (readType tys (child e 2))
-                      (if (isSome A) (pair 1 (pair (cons (node2 0 n (get A)) tys) (snd (snd s))))
+                (let n T (nameOf (child e 1))
+                  (if (named (child e 0) kwDef)
+                    (let t T (resolve tys names (expandNums nums (child e 2)) (nil T))
+                      (if (isSome t)
+                        (pair 1
+                          (pair tys
+                            (pair nums
+                              (pair (append names (single n)) (append terms (single (get t)))))))
                         (pair 0 (snd s))))
-                    (if (named (child e 0) kwDefnum)
-                      (let v T (numOf nums (child e 2))
-                        (if (isSome v)
-                          (pair 1
-                            (pair tys (pair (cons (node2 0 n (get v)) nums) (snd (snd (snd s))))))
+                    (if (named (child e 0) kwDeftype)
+                      (let A T (readType tys (child e 2))
+                        (if (isSome A) (pair 1 (pair (cons (node2 0 n (get A)) tys) (snd (snd s))))
                           (pair 0 (snd s))))
-                      (pair 0 (snd s))))))
-              (pair 0 (snd s)))))))))
-(def readProgram
-  (lam ((es Ts))
-    (let s Prog
-      ((foldr T ProgK (lam ((e T) (k ProgK) (s Prog)) (k (progStep s e))) (lam ((s Prog)) s) es)
-       (pair 1 (pair (nil T) (pair (nil T) (pair (nil T) (nil T))))))
-      (if (fst s)
-        (some (node2 100 (node 101 (snd (snd (snd (snd s))))) (node 102 (fst (snd (snd (snd s)))))))
-        none))))
+                      (if (named (child e 0) kwDefnum)
+                        (let v T (numOf nums (child e 2))
+                          (if (isSome v)
+                            (pair 1
+                              (pair tys (pair (cons (node2 0 n (get v)) nums) (snd (snd (snd s))))))
+                            (pair 0 (snd s))))
+                        (pair 0 (snd s))))))
+                (pair 0 (snd s)))))))))
+  (def readProgram
+    (lam ((es Ts))
+      (let s Prog
+        ((foldr T ProgK (lam ((e T) (k ProgK) (s Prog)) (k (progStep s e))) (lam ((s Prog)) s) es)
+         (pair 1 (pair (nil T) (pair (nil T) (pair (nil T) (nil T))))))
+        (if (fst s)
+          (some
+            (node2 100 (node 101 (snd (snd (snd (snd s))))) (node 102 (fst (snd (snd (snd s)))))))
+          none)))))
+(import Reader)

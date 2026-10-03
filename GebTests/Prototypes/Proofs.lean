@@ -69,15 +69,17 @@ datatype language, the checker of Gödel's T and the proof construction, applyin
 construction to a file of program forms and theorems. -/
 def prover : String :=
   Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
-    Kernel.Stage0Tests.check ++ "\n" ++ Kernel.Stage0Tests.datatype ++ "\n" ++ Tests.equationsGeb ++
-    "\n" ++ proveGeb ++ "\n(def main (lam ((file T)) (proveFile 256 file)))"
+    Kernel.Stage0Tests.check ++ "\n" ++ Kernel.Stage0Tests.datatype ++ "\n" ++
+    Kernel.Stage0Tests.modules ++ "\n" ++ Tests.equationsGeb ++ "\n" ++ proveGeb ++
+    "\n(def main (lam ((file T)) (proveFile 256 file)))"
 
 /-- The stage-0 compiler with an entry point giving a program's bundle: its text read and its
 forms of the datatype language expanded, without the image written. -/
 def bundler : String :=
   Kernel.Stage0Tests.compiler ++ "(def bundleMain (lam ((file T)) (let sx T (readSExps " ++
-    "(children file)) (if (isSome sx) (let kx T (expandProgram (children (get sx))) " ++
-    "(if (isSome kx) (readProgram (children (get kx))) none)) none))))"
+    "(children file)) (let mx T (if (isSome sx) (expandModules (children (get sx))) none) " ++
+    "(if (isSome mx) (let kx T (expandProgram (children (get mx))) " ++
+    "(if (isSome kx) (readProgram (children (get kx))) none)) none)))))"
 
 /-- The prover, its program bundled by the stage-0 compiler's reader and expansion and loaded by
 the seed, which checks each definition's type, as a function on trees. -/

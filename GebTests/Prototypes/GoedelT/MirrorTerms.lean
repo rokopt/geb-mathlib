@@ -34,6 +34,8 @@ set_option doc.verso true
 
 @[expose] public section
 
+open GebMirror.GoedelT
+
 namespace GebTests.Prototypes.GoedelT.MirrorTerms
 
 open Geb Geb.Kernel GebTests.Prototypes.GoedelT.MirrorTyping
@@ -41,17 +43,17 @@ open scoped FinEnum
 
 /-- The trees of a list of trees with their functions. -/
 theorem trTrees_eq (rs : List (Tree × (Tree → Tree))) :
-    GebMirror.GoedelT.trTrees rs = rs.map (·.1) :=
+    «Equations.trTrees» rs = rs.map (·.1) :=
   rs.rec rfl fun _ _ ih ↦ by
-    simp only [GebMirror.GoedelT.trTrees, Const.foldr, List.foldr_cons] at ih ⊢
+    simp only [«Equations.trTrees», Const.foldr, List.foldr_cons] at ih ⊢
     rw [ih]
     rfl
 
 /-- The functions of a list of trees with their functions, applied to a tree. -/
 theorem trAll_eq (rs : List (Tree × (Tree → Tree))) (k : Tree) :
-    GebMirror.GoedelT.trAll rs k = rs.map (·.2 k) :=
+    «Equations.trAll» rs k = rs.map (·.2 k) :=
   rs.rec rfl fun _ _ ih ↦ by
-    simp only [GebMirror.GoedelT.trAll, Const.foldr, List.foldr_cons] at ih ⊢
+    simp only [«Equations.trAll», Const.foldr, List.foldr_cons] at ih ⊢
     rw [ih]
     rfl
 
@@ -59,32 +61,32 @@ theorem trAll_eq (rs : List (Tree × (Tree → Tree))) (k : Tree) :
 function of the number of binders around it. -/
 def travStep (v : Tree → Tree → Tree) (l : Tree) (rs : List (Tree × (Tree → Tree))) :
     Tree × (Tree → Tree) :=
-  (Const.node l (GebMirror.GoedelT.trTrees rs), fun k ↦
-    if (GebMirror.GoedelT.and (Const.eq l (leaf 8))
-        (Const.eq (GebMirror.GoedelT.length (GebMirror.GoedelT.trTrees rs)) (leaf 1))).label ≠ 0
-    then v k (Const.label (GebMirror.GoedelT.at (GebMirror.GoedelT.trTrees rs) (leaf 0)))
-    else if (GebMirror.GoedelT.and (Const.eq l (leaf 9))
-        (Const.eq (GebMirror.GoedelT.length (GebMirror.GoedelT.trTrees rs)) (leaf 2))).label ≠ 0
-    then GebMirror.GoedelT.node2 (leaf 9)
-      (GebMirror.GoedelT.at (GebMirror.GoedelT.trTrees rs) (leaf 0))
-      (GebMirror.GoedelT.at (GebMirror.GoedelT.trAll rs (Const.add k (leaf 1))) (leaf 1))
-    else if (GebMirror.GoedelT.termNode l).label ≠ 0 then
-      Const.node l (GebMirror.GoedelT.trAll rs k)
-    else Const.node l (GebMirror.GoedelT.trTrees rs))
+  (Const.node l («Equations.trTrees» rs), fun k ↦
+    if («Prelude.and» (Const.eq l (leaf 8))
+        (Const.eq («Prelude.length» («Equations.trTrees» rs)) (leaf 1))).label ≠ 0
+    then v k (Const.label («Prelude.at» («Equations.trTrees» rs) (leaf 0)))
+    else if («Prelude.and» (Const.eq l (leaf 9))
+        (Const.eq («Prelude.length» («Equations.trTrees» rs)) (leaf 2))).label ≠ 0
+    then «Reader.node2» (leaf 9)
+      («Prelude.at» («Equations.trTrees» rs) (leaf 0))
+      («Prelude.at» («Equations.trAll» rs (Const.add k (leaf 1))) (leaf 1))
+    else if («Equations.termNode» l).label ≠ 0 then
+      Const.node l («Equations.trAll» rs k)
+    else Const.node l («Equations.trTrees» rs))
 
 /-- The mirror's traversal is the fold of its step. -/
 theorem trav_def (v : Tree → Tree → Tree) (t k : Tree) :
-    GebMirror.GoedelT.trav v t k = (Const.fold (travStep v) t).2 k := rfl
+    «Equations.trav» v t k = (Const.fold (travStep v) t).2 k := rfl
 
 /-- The mirror's disjunction of truth values. -/
 theorem or_ofBool (a b : Bool) :
-    GebMirror.GoedelT.or (ofBool a) (ofBool b) = ofBool (a || b) := by
+    «Prelude.or» (ofBool a) (ofBool b) = ofBool (a || b) := by
   cases a <;> cases b <;> rfl
 
 /-- The mirror's test of a label whose children are all terms. -/
 theorem termNode_label (l : ℕ) :
-    (GebMirror.GoedelT.termNode (leaf l)).label ≠ 0 ↔ l ∈ [10, 11, 12, 13, 14, 16, 20] := by
-  simp only [GebMirror.GoedelT.termNode, eq_leaf_ofBool, or_ofBool, ofBool_label, Bool.or_eq_true,
+    («Equations.termNode» (leaf l)).label ≠ 0 ↔ l ∈ [10, 11, 12, 13, 14, 16, 20] := by
+  simp only [«Equations.termNode», eq_leaf_ofBool, or_ofBool, ofBool_label, Bool.or_eq_true,
     beq_iff_eq, List.mem_cons, List.not_mem_nil, or_false]
 
 /-- The traversal at a variable. -/
@@ -117,7 +119,7 @@ theorem fold_travStep (v' : Tree → Tree → Tree) (v : ℕ → ℕ → Tree)
       ∀ k : ℕ, (Const.fold (travStep v') t).2 (leaf k) = trav v t k :=
   RoseTree.ind fun l cs ih ↦ by
     rw [fold_node]
-    have htr : GebMirror.GoedelT.trTrees (cs.map (Const.fold (travStep v'))) = cs := by
+    have htr : «Equations.trTrees» (cs.map (Const.fold (travStep v'))) = cs := by
       rw [trTrees_eq, List.map_map]
       exact (List.map_congr_left fun c hc ↦ (ih c hc).1).trans (List.map_id cs)
     refine ⟨by simp only [travStep, htr]; rfl, fun k ↦ ?_⟩
@@ -143,30 +145,30 @@ theorem fold_travStep (v' : Tree → Tree → Tree) (v : ℕ → ℕ → Tree)
 /-- The mirror's traversal agrees with the kernel's, when their replacements of variables do. -/
 theorem trav_eq (v' : Tree → Tree → Tree) (v : ℕ → ℕ → Tree)
     (hv : ∀ k i, v' (leaf k) (leaf i) = v k i) (t : Tree) (k : ℕ) :
-    GebMirror.GoedelT.trav v' t (leaf k) = trav v t k :=
+    «Equations.trav» v' t (leaf k) = trav v t k :=
   (fold_travStep v' v hv t).2 k
 
 /-- The mirror's variable. -/
-theorem var_eq (i : ℕ) : GebMirror.GoedelT.var (leaf i) = Tm.var i := rfl
+theorem var_eq (i : ℕ) : «Equations.var» (leaf i) = Tm.var i := rfl
 
 /-- The mirror's replacement of a variable in weakening. -/
 theorem wkVar_eq (n k i : ℕ) :
-    GebMirror.GoedelT.wkVar (leaf n) (leaf k) (leaf i) = wkVar n k i := by
-  simp only [GebMirror.GoedelT.wkVar, Kernel.wkVar, lt_leaf]
+    «Equations.wkVar» (leaf n) (leaf k) (leaf i) = wkVar n k i := by
+  simp only [«Equations.wkVar», Kernel.wkVar, lt_leaf]
   split_ifs <;> rfl
 
 /-- The mirror's weakening. -/
-theorem wk_eq (n : ℕ) (t : Tree) : GebMirror.GoedelT.wk (leaf n) t = wk n t :=
+theorem wk_eq (n : ℕ) (t : Tree) : «Equations.wk» (leaf n) t = wk n t :=
   trav_eq _ _ (wkVar_eq n) t 0
 
 /-- The mirror's replacement of a variable in substitution. -/
 theorem substVar_eq (u : Tree) (k i : ℕ) :
-    GebMirror.GoedelT.substVar u (leaf k) (leaf i) = substVar u k i := by
-  simp only [GebMirror.GoedelT.substVar, Kernel.substVar, lt_leaf, eq_leaf, wk_eq]
+    «Equations.substVar» u (leaf k) (leaf i) = substVar u k i := by
+  simp only [«Equations.substVar», Kernel.substVar, lt_leaf, eq_leaf, wk_eq]
   split_ifs <;> rfl
 
 /-- The mirror's substitution for the innermost variable. -/
-theorem subst_eq (u t : Tree) : GebMirror.GoedelT.subst u t = subst u t :=
+theorem subst_eq (u t : Tree) : «Equations.subst» u t = subst u t :=
   trav_eq _ _ (substVar_eq u) t 0
 
 end GebTests.Prototypes.GoedelT.MirrorTerms

@@ -106,25 +106,25 @@ its name as {lit}`nm` spells it. -/
 def Call.geb (P : List (List Char × Kernel.Glob)) (nm : String → List Char) (G : Internal.Globals)
     (E : Array Entry) (Γ : List Tree) (Φ : List Term) (t u : Term) : Call → Option Tree
   | .norm w n rs fuel => do
-    let f ← fn P (nm (if w then "byNormW" else "byNorm")) tyNorm
+    let f ← fn P (nm (if w then "Prover.byNormW" else "Prover.byNorm")) tyNorm
     pure (f (encGlobals G) (E.toList.map encEntry) (Kernel.leaf n) (plain rs) (Kernel.leaf fuel) Γ
       (Φ.map encTerm) (encTerm t) (encTerm u))
   | .natInd n kz ks s rs fuel => do
-    let f ← fn P (nm "byNatInd") tyInd
+    let f ← fn P (nm "Prover.byNatInd") tyInd
     pure (f (encGlobals G) (E.toList.map encEntry) (Kernel.leaf n) (Kernel.leaf kz)
       (Kernel.leaf ks) (encTerm s) (plain rs) (Kernel.leaf fuel) Γ (Φ.map encTerm) (encTerm t)
       (encTerm u))
   | .listInd n kn kc s rs fuel => do
-    let f ← fn P (nm "byListInd") tyInd
+    let f ← fn P (nm "Prover.byListInd") tyInd
     pure (f (encGlobals G) (E.toList.map encEntry) (Kernel.leaf n) (Kernel.leaf kn)
       (Kernel.leaf kc) (encTerm s) (plain rs) (Kernel.leaf fuel) Γ (Φ.map encTerm) (encTerm t)
       (encTerm u))
   | .natIndHyp n kz ks rs fuel => do
-    let f ← fn P (nm "byNatIndHyp") tyIndHyp
+    let f ← fn P (nm "Prover.byNatIndHyp") tyIndHyp
     pure (f (encGlobals G) (E.toList.map encEntry) (Kernel.leaf n) (Kernel.leaf kz)
       (Kernel.leaf ks) (plain rs) (Kernel.leaf fuel) Γ (Φ.map encTerm) (encTerm t) (encTerm u))
   | .listIndHyp n kn kc rs fuel => do
-    let f ← fn P (nm "byListIndHyp") tyIndHyp
+    let f ← fn P (nm "Prover.byListIndHyp") tyIndHyp
     pure (f (encGlobals G) (E.toList.map encEntry) (Kernel.leaf n) (Kernel.leaf kn)
       (Kernel.leaf kc) (plain rs) (Kernel.leaf fuel) Γ (Φ.map encTerm) (encTerm t) (encTerm u))
 

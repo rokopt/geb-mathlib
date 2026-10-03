@@ -58,7 +58,7 @@ theorem checker_eq : ∃ G' : List Glob, load checker = some G' ∧
       ∀ (E : Env) (G : List Glob) (c : Tree) (Γ : Ctx) (H : List Eqn),
         f E.defs (E.thms.map encThm) (G.map (·.1)) c Γ (H.map encEqn) =
           enc ((check c E G Γ H).map encEqn) :=
-  ⟨_, checker.load_eq, GebMirror.GoedelT.checkCert, checker_checkCert, checkCert_eq⟩
+  ⟨_, checker.load_eq, GebMirror.GoedelT.«Equations.checkCert», checker_checkCert, checkCert_eq⟩
 
 end GebTests.Prototypes.GoedelT.Agreement
 

@@ -101,10 +101,15 @@ path = "bootstrap"
 text = true
 filter = {extension = ["geb"]}
 
+# The committed stage-1 compiler, which a test runs, read at elaboration.
+[[input_file]]
+name = "compilerImage"
+path = "bootstrap/compiler.img"
+
 [[lean_lib]]
 name = "GebTests"
 globs = ["GebTests.*"]
-needs = ["@/gebSources"]
+needs = ["@/gebSources", "@/compilerImage"]
 
 # `linter.hashCommand`, a member of `mathlibStandardSet`, rejects every
 # `#`-command outside `#adaptation_note`. Its purpose is to keep them

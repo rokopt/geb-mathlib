@@ -8,166 +8,173 @@
 ; type of trees, the leaf 1 the unit type, and nodes of label 2, 3 and 4 are products,
 ; function types and lists. Requires the prelude and the reader.
 
-; types
-(def tyArrow (lam ((a T) (b T)) (node2 Label.tyArrow a b)))
-(def tyList (lam ((a T)) (node Label.tyList (single a))))
-(def isTy
-  (lam ((t T))
-    (fold T
-      (lam ((l T) (rs Ts))
-        (let k T (length rs)
-          (if (eq k 0) (if (eq l Label.tyTree) 1 (eq l Label.tyUnit))
-            (if (eq k 1) (and (eq l Label.tyList) (at rs 0))
-              (if (eq k 2)
-                (and (if (eq l Label.tyProd) 1 (eq l Label.tyArrow)) (and (at rs 0) (at rs 1)))
-                0)))))
-      t)))
-(def isProd (lam ((t T)) (and (eq (label t) Label.tyProd) (eq (arity t) 2))))
-(def isArrow (lam ((t T)) (and (eq (label t) Label.tyArrow) (eq (arity t) 2))))
-(def isListTy (lam ((t T)) (and (eq (label t) Label.tyList) (eq (arity t) 1))))
-
-; the types of the kernel's constants at their result types
-(def foldTy
-  (lam ((a T)) (tyArrow (tyArrow Label.tyTree (tyArrow (tyList a) a)) (tyArrow Label.tyTree a))))
-(def iterTy (lam ((a T)) (tyArrow (tyArrow a a) (tyArrow a (tyArrow Label.tyTree a)))))
-(def foldrTy
-  (lam ((a T) (b T)) (tyArrow (tyArrow a (tyArrow b b)) (tyArrow b (tyArrow (tyList a) b)))))
-(def lcaseTy
-  (lam ((a T) (b T))
-    (tyArrow (tyList a) (tyArrow b (tyArrow (tyArrow a (tyArrow (tyList a) b)) b)))))
-; the primitives' types, in the order of the seed's table
-(def primTypes
-  (let tt T (tyArrow Label.tyTree Label.tyTree)
-    (let ttt T (tyArrow Label.tyTree tt)
-      (append
-        (cons tt
-          (cons tt
-            (cons ttt
-              (cons (tyArrow Label.tyTree (tyArrow (tyList Label.tyTree) Label.tyTree))
-                (cons (tyArrow Label.tyTree (tyList Label.tyTree)) (nil T))))))
-        (append (replicate 8 ttt) (single tt))))))
-
-; one node's type, from its children with their types as functions of the context
-(def checkNode
-  (lam ((G Ts) (raw T) (rs RRs) (ctx Ts))
-    (let l T (label raw)
-      (let es Ts (children raw)
-        (let k T (arity raw)
-          (if (eq l Label.var) (if (eq k 1) (nth ctx (label (at es 0))) none)
-            (if (eq l Label.lam)
-              (if (eq k 2)
-                (let A T (at es 0)
-                  (if (isTy A)
-                    (let b T (rrAt rs 1 (cons A ctx))
-                      (if (isSome b) (some (tyArrow A (get b))) none))
-                    none))
-                none)
-              (if (eq l Label.app)
+(module Check
+  (export tyArrow tyList isTy isProd isArrow isListTy foldTy iterTy foldrTy lcaseTy primTypes typeIn
+    checkProgram
+    checkNode)
+  ; types
+  (def tyArrow (lam ((a T) (b T)) (node2 Label.tyArrow a b)))
+  (def tyList (lam ((a T)) (node Label.tyList (single a))))
+  (def isTy
+    (lam ((t T))
+      (fold T
+        (lam ((l T) (rs Ts))
+          (let k T (length rs)
+            (if (eq k 0) (if (eq l Label.tyTree) 1 (eq l Label.tyUnit))
+              (if (eq k 1) (and (eq l Label.tyList) (at rs 0))
                 (if (eq k 2)
-                  (let f T (rrAt rs 0 ctx)
-                    (let x T (rrAt rs 1 ctx)
-                      (if (both f x)
-                        (if (isArrow (get f))
-                          (if (equal (get x) (child (get f) 0)) (some (child (get f) 1)) none)
-                          none)
-                        none)))
+                  (and (if (eq l Label.tyProd) 1 (eq l Label.tyArrow)) (and (at rs 0) (at rs 1)))
+                  0)))))
+        t)))
+  (def isProd (lam ((t T)) (and (eq (label t) Label.tyProd) (eq (arity t) 2))))
+  (def isArrow (lam ((t T)) (and (eq (label t) Label.tyArrow) (eq (arity t) 2))))
+  (def isListTy (lam ((t T)) (and (eq (label t) Label.tyList) (eq (arity t) 1))))
+
+  ; the types of the kernel's constants at their result types
+  (def foldTy
+    (lam ((a T)) (tyArrow (tyArrow Label.tyTree (tyArrow (tyList a) a)) (tyArrow Label.tyTree a))))
+  (def iterTy (lam ((a T)) (tyArrow (tyArrow a a) (tyArrow a (tyArrow Label.tyTree a)))))
+  (def foldrTy
+    (lam ((a T) (b T)) (tyArrow (tyArrow a (tyArrow b b)) (tyArrow b (tyArrow (tyList a) b)))))
+  (def lcaseTy
+    (lam ((a T) (b T))
+      (tyArrow (tyList a) (tyArrow b (tyArrow (tyArrow a (tyArrow (tyList a) b)) b)))))
+  ; the primitives' types, in the order of the seed's table
+  (def primTypes
+    (let tt T (tyArrow Label.tyTree Label.tyTree)
+      (let ttt T (tyArrow Label.tyTree tt)
+        (append
+          (cons tt
+            (cons tt
+              (cons ttt
+                (cons (tyArrow Label.tyTree (tyArrow (tyList Label.tyTree) Label.tyTree))
+                  (cons (tyArrow Label.tyTree (tyList Label.tyTree)) (nil T))))))
+          (append (replicate 8 ttt) (single tt))))))
+
+  ; one node's type, from its children with their types as functions of the context
+  (def checkNode
+    (lam ((G Ts) (raw T) (rs RRs) (ctx Ts))
+      (let l T (label raw)
+        (let es Ts (children raw)
+          (let k T (arity raw)
+            (if (eq l Label.var) (if (eq k 1) (nth ctx (label (at es 0))) none)
+              (if (eq l Label.lam)
+                (if (eq k 2)
+                  (let A T (at es 0)
+                    (if (isTy A)
+                      (let b T (rrAt rs 1 (cons A ctx))
+                        (if (isSome b) (some (tyArrow A (get b))) none))
+                      none))
                   none)
-                (if (eq l Label.unit) (if (eq k 0) (some Label.tyUnit) none)
-                  (if (eq l Label.pair)
-                    (if (eq k 2) (some2 Label.tyProd (rrAt rs 0 ctx) (rrAt rs 1 ctx)) none)
-                    (if (eq l Label.fst)
-                      (if (eq k 1)
-                        (let p T (rrAt rs 0 ctx)
-                          (if (isSome p) (if (isProd (get p)) (some (child (get p) 0)) none) none))
-                        none)
-                      (if (eq l Label.snd)
+                (if (eq l Label.app)
+                  (if (eq k 2)
+                    (let f T (rrAt rs 0 ctx)
+                      (let x T (rrAt rs 1 ctx)
+                        (if (both f x)
+                          (if (isArrow (get f))
+                            (if (equal (get x) (child (get f) 0)) (some (child (get f) 1)) none)
+                            none)
+                          none)))
+                    none)
+                  (if (eq l Label.unit) (if (eq k 0) (some Label.tyUnit) none)
+                    (if (eq l Label.pair)
+                      (if (eq k 2) (some2 Label.tyProd (rrAt rs 0 ctx) (rrAt rs 1 ctx)) none)
+                      (if (eq l Label.fst)
                         (if (eq k 1)
                           (let p T (rrAt rs 0 ctx)
-                            (if (isSome p) (if (isProd (get p)) (some (child (get p) 1)) none)
+                            (if (isSome p) (if (isProd (get p)) (some (child (get p) 0)) none)
                               none))
                           none)
-                        (if (eq l Label.quote) (if (eq k 1) (some Label.tyTree) none)
-                          (if (eq l Label.cond)
-                            (if (eq k 3)
-                              (let c T (rrAt rs 0 ctx)
-                                (let a T (rrAt rs 1 ctx)
-                                  (let b T (rrAt rs 2 ctx)
-                                    (if (both c (both a b))
-                                      (if (equal (get c) Label.tyTree)
-                                        (if (equal (get b) (get a)) a none)
-                                        none)
-                                      none))))
-                              none)
-                            (if (eq l Label.fold)
-                              (if (eq k 1) (if (isTy (at es 0)) (some (foldTy (at es 0))) none)
+                        (if (eq l Label.snd)
+                          (if (eq k 1)
+                            (let p T (rrAt rs 0 ctx)
+                              (if (isSome p) (if (isProd (get p)) (some (child (get p) 1)) none)
+                                none))
+                            none)
+                          (if (eq l Label.quote) (if (eq k 1) (some Label.tyTree) none)
+                            (if (eq l Label.cond)
+                              (if (eq k 3)
+                                (let c T (rrAt rs 0 ctx)
+                                  (let a T (rrAt rs 1 ctx)
+                                    (let b T (rrAt rs 2 ctx)
+                                      (if (both c (both a b))
+                                        (if (equal (get c) Label.tyTree)
+                                          (if (equal (get b) (get a)) a none)
+                                          none)
+                                        none))))
                                 none)
-                              (if (eq l Label.para)
+                              (if (eq l Label.fold)
                                 (if (eq k 1) (if (isTy (at es 0)) (some (foldTy (at es 0))) none)
                                   none)
-                                (if (eq l Label.iter)
-                                  (if (eq k 1) (if (isTy (at es 0)) (some (iterTy (at es 0))) none)
+                                (if (eq l Label.para)
+                                  (if (eq k 1) (if (isTy (at es 0)) (some (foldTy (at es 0))) none)
                                     none)
-                                  (if (eq l Label.nil)
+                                  (if (eq l Label.iter)
                                     (if (eq k 1)
-                                      (if (isTy (at es 0)) (some (tyList (at es 0))) none)
+                                      (if (isTy (at es 0)) (some (iterTy (at es 0))) none)
                                       none)
-                                    (if (eq l Label.cons)
-                                      (if (eq k 2)
-                                        (let x T (rrAt rs 0 ctx)
-                                          (let xs T (rrAt rs 1 ctx)
-                                            (if (both x xs)
-                                              (if (isListTy (get xs))
-                                                (if (equal (get x) (child (get xs) 0))
-                                                  (some (tyList (get x)))
-                                                  none)
-                                                none)
-                                              none)))
+                                    (if (eq l Label.nil)
+                                      (if (eq k 1)
+                                        (if (isTy (at es 0)) (some (tyList (at es 0))) none)
                                         none)
-                                      (if (eq l Label.foldr)
+                                      (if (eq l Label.cons)
                                         (if (eq k 2)
-                                          (if (and (isTy (at es 0)) (isTy (at es 1)))
-                                            (some (foldrTy (at es 0) (at es 1)))
-                                            none)
-                                          none)
-                                        (if (eq l Label.prim)
-                                          (if (eq k 1) (nth primTypes (label (at es 0))) none)
-                                          (if (eq l Label.ref)
-                                            (if (eq k 1) (nth G (label (at es 0))) none)
-                                            (if (eq l Label.lcase)
-                                              (if (eq k 2)
-                                                (if (and (isTy (at es 0)) (isTy (at es 1)))
-                                                  (some (lcaseTy (at es 0) (at es 1)))
+                                          (let x T (rrAt rs 0 ctx)
+                                            (let xs T (rrAt rs 1 ctx)
+                                              (if (both x xs)
+                                                (if (isListTy (get xs))
+                                                  (if (equal (get x) (child (get xs) 0))
+                                                    (some (tyList (get x)))
+                                                    none)
                                                   none)
-                                                none)
-                                              none)))))))))))))))))))))))
+                                                none)))
+                                          none)
+                                        (if (eq l Label.foldr)
+                                          (if (eq k 2)
+                                            (if (and (isTy (at es 0)) (isTy (at es 1)))
+                                              (some (foldrTy (at es 0) (at es 1)))
+                                              none)
+                                            none)
+                                          (if (eq l Label.prim)
+                                            (if (eq k 1) (nth primTypes (label (at es 0))) none)
+                                            (if (eq l Label.ref)
+                                              (if (eq k 1) (nth G (label (at es 0))) none)
+                                              (if (eq l Label.lcase)
+                                                (if (eq k 2)
+                                                  (if (and (isTy (at es 0)) (isTy (at es 1)))
+                                                    (some (lcaseTy (at es 0) (at es 1)))
+                                                    none)
+                                                  none)
+                                                none)))))))))))))))))))))))
 
-; the type of a term in a context, innermost first, given the types of the definitions before
-; it
-(def typeIn
-  (lam ((G Ts) (ctx Ts) (t T))
-    ((snd
-       (fold RR
-         (lam ((l T) (rs RRs))
-           (let raw T (node l (rrTrees rs)) (pair raw (lam ((ctx Ts)) (checkNode G raw rs ctx)))))
-         t)) ctx)))
+  ; the type of a term in a context, innermost first, given the types of the definitions before
+  ; it
+  (def typeIn
+    (lam ((G Ts) (ctx Ts) (t T))
+      ((snd
+         (fold RR
+           (lam ((l T) (rs RRs))
+             (let raw T (node l (rrTrees rs)) (pair raw (lam ((ctx Ts)) (checkNode G raw rs ctx)))))
+           t)) ctx)))
 
-; the type of a closed term, given the types of the definitions before it
-(def typeOf (lam ((G Ts) (t T)) (typeIn G (nil T) t)))
+  ; the type of a closed term, given the types of the definitions before it
+  (def typeOf (lam ((G Ts) (t T)) (typeIn G (nil T) t)))
 
-; the types of a program's definitions, each checked given the types of those before it, when
-; every one is well typed
-(deftype Chk (Prod T Ts))
-(deftype ChkK (Arrow Chk Chk))
-(def checkProgram
-  (lam ((terms Ts))
-    (let s Chk
-      ((foldr T ChkK
-         (lam ((t T) (k ChkK) (s Chk))
-           (k
-             (if (fst s)
-               (let ty T (typeOf (snd s) t)
-                 (if (isSome ty) (pair 1 (append (snd s) (single (get ty)))) (pair 0 (snd s))))
-               s)))
-         (lam ((s Chk)) s)
-         terms) (pair 1 (nil T)))
-      (if (fst s) (some (node 0 (snd s))) none))))
+  ; the types of a program's definitions, each checked given the types of those before it, when
+  ; every one is well typed
+  (deftype Chk (Prod T Ts))
+  (deftype ChkK (Arrow Chk Chk))
+  (def checkProgram
+    (lam ((terms Ts))
+      (let s Chk
+        ((foldr T ChkK
+           (lam ((t T) (k ChkK) (s Chk))
+             (k
+               (if (fst s)
+                 (let ty T (typeOf (snd s) t)
+                   (if (isSome ty) (pair 1 (append (snd s) (single (get ty)))) (pair 0 (snd s))))
+                 s)))
+           (lam ((s Chk)) s)
+           terms) (pair 1 (nil T)))
+        (if (fst s) (some (node 0 (snd s))) none)))))
+(import Check)

@@ -13,428 +13,439 @@
 ; prelude, indexOf and lookupAbbrev of the reader, concat of the modules and decimalChars of the
 ; datatype language.
 
-; words of 32 bits
-(defnum wordSize 4294967296)
-(def addw (lam ((a T) (b T)) (mod (add a b) wordSize)))
-; the exclusive or of two words, a bit at a time, least significant first; the state is the
-; words' bits not yet combined, the result so far and the weight of the next bit
-(deftype Xor (Prod T (Prod T (Prod T T))))
-(def xor
-  (lam ((a T) (b T))
-    (fst
-      (snd
-        (snd
-          (iter Xor
-            (lam ((s Xor))
-              (let x T (fst s)
-                (let y T (fst (snd s))
-                  (let w T (snd (snd (snd s)))
-                    (pair (div x 2)
-                      (pair (div y 2)
-                        (pair (add (fst (snd (snd s))) (mul w (mod (add (mod x 2) (mod y 2)) 2)))
-                          (mul w 2))))))))
-            (pair a (pair b (pair 0 1)))
-            32))))))
-; a word rotated right by n bits, given 2^n and 2^(32 - n)
-(def rotr (lam ((x T) (p T) (q T)) (add (div x p) (mul (mod x p) q))))
-
-; lists of words by position: the words at the positions of a list, and a list with one word
-; replaced
-(def pick (lam ((xs Ts) (is Ts)) (foldr T Ts (lam ((i T) (r Ts)) (cons (at xs i) r)) (nil T) is)))
-(def put
-  (lam ((xs Ts) (i T) (w T))
-    (snd
-      (foldr T Digits
-        (lam ((x T) (s Digits)) (let k T (sub (fst s) 1) (pair k (cons (if (eq k i) w x) (snd s)))))
-        (pair (length xs) (nil T))
-        xs))))
-(def range8 (children (quote (0 0 1 2 3 4 5 6 7))))
-(def range16 (append range8 (children (quote (0 8 9 10 11 12 13 14 15)))))
-(def take8 (lam ((xs Ts)) (pick xs range8)))
-
-; the initialization vector and the permutation of the message words
-(def iv
-  (children
-    (quote
-      (0 1779033703 3144134277 1013904242 2773480762 1359893119 2600822924 528734635 1541459225))))
-(def msgPermutation (children (quote (0 2 6 3 10 7 0 4 13 1 11 12 5 9 14 15 8))))
-
-; the quarter-round mixing function G on the state's words a, b, c and d with two message words
-(def g
-  (lam ((st Ts) (a T) (b T) (c T) (d T) (mx T) (my T))
-    (let va T (addw (addw (at st a) (at st b)) mx)
-      (let vd T (rotr (xor (at st d) va) 65536 65536)
-        (let vc T (addw (at st c) vd)
-          (let vb T (rotr (xor (at st b) vc) 4096 1048576)
-            (let va2 T (addw (addw va vb) my)
-              (let vd2 T (rotr (xor vd va2) 256 16777216)
-                (let vc2 T (addw vc vd2)
-                  (let vb2 T (rotr (xor vb vc2) 128 33554432)
-                    (put (put (put (put st a va2) b vb2) c vc2) d vd2)))))))))))
-
-; one round: the columns, then the diagonals
-(def round
-  (lam ((st Ts) (m Ts))
-    (let s1 Ts (g st 0 4 8 12 (at m 0) (at m 1))
-      (let s2 Ts (g s1 1 5 9 13 (at m 2) (at m 3))
-        (let s3 Ts (g s2 2 6 10 14 (at m 4) (at m 5))
-          (let s4 Ts (g s3 3 7 11 15 (at m 6) (at m 7))
-            (let s5 Ts (g s4 0 5 10 15 (at m 8) (at m 9))
-              (let s6 Ts (g s5 1 6 11 12 (at m 10) (at m 11))
-                (let s7 Ts (g s6 2 7 8 13 (at m 12) (at m 13))
-                  (g s7 3 4 9 14 (at m 14) (at m 15)))))))))))
-
-; the compression function: sixteen words from a chaining value of eight, a block of sixteen
-; message words, a counter, the block's length and its flags
-(deftype Rounds (Prod Ts Ts))
-(def compress
-  (lam ((cv Ts) (m Ts) (counter T) (len T) (flags T))
-    (let st Ts
+(module Identity
+  (export pick put g round words push blake3 member cidsOf migrate link nameNotes moduleCids)
+  ; words of 32 bits
+  (defnum wordSize 4294967296)
+  (def addw (lam ((a T) (b T)) (mod (add a b) wordSize)))
+  ; the exclusive or of two words, a bit at a time, least significant first; the state is the
+  ; words' bits not yet combined, the result so far and the weight of the next bit
+  (deftype Xor (Prod T (Prod T (Prod T T))))
+  (def xor
+    (lam ((a T) (b T))
       (fst
-        (iter Rounds (lam ((p Rounds)) (pair (round (fst p) (snd p)) (pick (snd p) msgPermutation)))
-          (pair
-            (append cv
-              (append (pick iv (children (quote (0 0 1 2 3))))
-                (cons (mod counter wordSize)
-                  (cons (div counter wordSize) (cons len (single flags))))))
-            m)
-          7))
-      (append
-        (foldr T Ts (lam ((i T) (r Ts)) (cons (xor (at st i) (at st (add i 8))) r)) (nil T) range8)
-        (foldr T Ts (lam ((i T) (r Ts)) (cons (xor (at st (add i 8)) (at cv i)) r)) (nil T)
-          range8)))))
-
-; the little-endian words of a block of at most 64 bytes, padded with zeros
-(def words
-  (lam ((block Ts))
-    (foldr T Ts
-      (lam ((i T) (r Ts))
-        (cons
-          (foldr T T (lam ((j T) (w T)) (add (mul w 256) (at block (add (mul 4 i) j)))) 0
-            (children (quote (0 0 1 2 3))))
-          r))
-      (nil T)
-      range16)))
-; the little-endian bytes of words
-(def bytesOfWords
-  (lam ((ws Ts)) (foldr T Ts (lam ((w T) (r Ts)) (append (digitsLsb 256 w 4) r)) (nil T) ws)))
-
-; the bytes of a list in consecutive pieces of a size, each a node over its bytes, at least
-; one, the last possibly shorter or empty; a right fold numbers the bytes from the end and
-; closes a piece at each position divisible by the size
-(deftype Pieces (Prod T (Prod Ts Ts)))
-(def pieces
-  (lam ((n T) (bs Ts))
-    (let s Pieces
-      (foldr T Pieces
-        (lam ((b T) (s Pieces))
-          (let k T (sub (fst s) 1)
-            (let cur Ts (cons b (fst (snd s)))
-              (if (eq (mod k n) 0) (pair k (pair (nil T) (cons (node 0 cur) (snd (snd s)))))
-                (pair k (pair cur (snd (snd s))))))))
-        (pair (length bs) (pair (nil T) (nil T)))
-        bs)
-      (lcase T Ts (snd (snd s)) (single (node 0 (nil T))) (lam ((x T) (r Ts)) (cons x r))))))
-
-; a compression not yet made: a chaining value, a block's words, a counter, the block's length
-; and its flags
-(deftype Output (Prod Ts (Prod Ts (Prod T (Prod T T)))))
-(def chainingValue
-  (lam ((o Output))
-    (take8
-      (compress (fst o) (fst (snd o)) (fst (snd (snd o))) (fst (snd (snd (snd o))))
-        (snd (snd (snd (snd o))))))))
-
-; the output of a chunk of at most 1024 bytes, its blocks but the last compressed
-(deftype Count (Prod T Ts))
-(def chunkOutput
-  (lam ((counter T) (chunk Ts))
-    (let blocks Ts (pieces 64 chunk)
-      (let n T (length blocks)
-        (let cv Ts
+        (snd
           (snd
-            (iter Count
-              (lam ((s Count))
-                (pair (add (fst s) 1)
-                  (take8
-                    (compress (snd s) (words (children (at blocks (fst s)))) counter 64
-                      (if (eq (fst s) 0) 1 0)))))
-              (pair 0 iv)
-              (sub n 1)))
-          (let last Ts (children (at blocks (sub n 1)))
-            (pair cv
-              (pair (words last)
-                (pair counter (pair (length last) (add (if (eq n 1) 1 0) 2)))))))))))
+            (iter Xor
+              (lam ((s Xor))
+                (let x T (fst s)
+                  (let y T (fst (snd s))
+                    (let w T (snd (snd (snd s)))
+                      (pair (div x 2)
+                        (pair (div y 2)
+                          (pair (add (fst (snd (snd s))) (mul w (mod (add (mod x 2) (mod y 2)) 2)))
+                            (mul w 2))))))))
+              (pair a (pair b (pair 0 1)))
+              32))))))
+  ; a word rotated right by n bits, given 2^n and 2^(32 - n)
+  (def rotr (lam ((x T) (p T) (q T)) (add (div x p) (mul (mod x p) q))))
 
-; the output of a parent node over two chaining values
-(def parentOutput (lam ((l Ts) (r Ts)) (pair iv (pair (append l r) (pair 0 (pair 64 4))))))
+  ; lists of words by position: the words at the positions of a list, and a list with one word
+  ; replaced
+  (def pick (lam ((xs Ts) (is Ts)) (foldr T Ts (lam ((i T) (r Ts)) (cons (at xs i) r)) (nil T) is)))
+  (def put
+    (lam ((xs Ts) (i T) (w T))
+      (snd
+        (foldr T Digits
+          (lam ((x T) (s Digits))
+            (let k T (sub (fst s) 1) (pair k (cons (if (eq k i) w x) (snd s)))))
+          (pair (length xs) (nil T))
+          xs))))
+  (def range8 (children (quote (0 0 1 2 3 4 5 6 7))))
+  (def range16 (append range8 (children (quote (0 8 9 10 11 12 13 14 15)))))
+  (def take8 (lam ((xs Ts)) (pick xs range8)))
 
-; a chunk's chaining value pushed onto the stack of subtrees' chaining values, each a node over
-; its words, most recent first, merging a pair of completed subtrees for each trailing zero bit
-; of the number of chunks completed
-(deftype CvStack (Prod Ts (Prod Ts T)))
-(def push
-  (lam ((stack Ts) (cv Ts) (total T))
-    (let s CvStack
-      (iter CvStack
-        (lam ((s CvStack))
-          (let t T (snd (snd s))
-            (if (and (eq (mod t 2) 0) (lt 0 t))
-              (lcase T CvStack (fst s) (pair (nil T) (pair (fst (snd s)) 0))
-                (lam ((l T) (rest Ts))
-                  (pair rest
-                    (pair (chainingValue (parentOutput (children l) (fst (snd s)))) (div t 2)))))
-              (pair (fst s) (pair (fst (snd s)) 0)))))
-        (pair stack (pair cv total))
-        64)
-      (cons (node 0 (fst (snd s))) (fst s)))))
+  ; the initialization vector and the permutation of the message words
+  (def iv
+    (children
+      (quote
+        (0 1779033703 3144134277 1013904242 2773480762 1359893119 2600822924 528734635
+          1541459225))))
+  (def msgPermutation (children (quote (0 2 6 3 10 7 0 4 13 1 11 12 5 9 14 15 8))))
 
-; the 32-byte digest of a list of bytes
-(def blake3
-  (lam ((bs Ts))
-    (let chunks Ts (pieces 1024 bs)
-      (let n T (length chunks)
-        (let stack Ts
-          (snd
-            (iter Count
-              (lam ((s Count))
-                (pair (add (fst s) 1)
-                  (push (snd s) (chainingValue (chunkOutput (fst s) (children (at chunks (fst s)))))
-                    (add (fst s) 1))))
-              (pair 0 (nil T))
-              (sub n 1)))
-          (let out Output
-            (foldr T (Arrow Output Output)
-              (lam ((l T) (k (Arrow Output Output)) (o Output))
-                (k (parentOutput (children l) (chainingValue o))))
-              (lam ((o Output)) o)
-              stack
-              (chunkOutput (sub n 1) (children (at chunks (sub n 1)))))
-            (bytesOfWords
-              (take8
-                (compress (fst out) (fst (snd out)) (fst (snd (snd out)))
-                  (fst (snd (snd (snd out))))
-                  (add (snd (snd (snd (snd out)))) 8))))))))))
+  ; the quarter-round mixing function G on the state's words a, b, c and d with two message words
+  (def g
+    (lam ((st Ts) (a T) (b T) (c T) (d T) (mx T) (my T))
+      (let va T (addw (addw (at st a) (at st b)) mx)
+        (let vd T (rotr (xor (at st d) va) 65536 65536)
+          (let vc T (addw (at st c) vd)
+            (let vb T (rotr (xor (at st b) vc) 4096 1048576)
+              (let va2 T (addw (addw va vb) my)
+                (let vd2 T (rotr (xor vd va2) 256 16777216)
+                  (let vc2 T (addw vc vd2)
+                    (let vb2 T (rotr (xor vb vc2) 128 33554432)
+                      (put (put (put (put st a va2) b vb2) c vc2) d vd2)))))))))))
 
-; the CIDv1 of bytes of the codec raw, 0x55: the version 1, the codec, and the multihash of
-; BLAKE3, 0x1e, of its 32-byte digest, each code a varint of one byte
-(def cidOf (lam ((bs Ts)) (cons 1 (cons 85 (cons 30 (cons 32 (blake3 bs)))))))
+  ; one round: the columns, then the diagonals
+  (def round
+    (lam ((st Ts) (m Ts))
+      (let s1 Ts (g st 0 4 8 12 (at m 0) (at m 1))
+        (let s2 Ts (g s1 1 5 9 13 (at m 2) (at m 3))
+          (let s3 Ts (g s2 2 6 10 14 (at m 4) (at m 5))
+            (let s4 Ts (g s3 3 7 11 15 (at m 6) (at m 7))
+              (let s5 Ts (g s4 0 5 10 15 (at m 8) (at m 9))
+                (let s6 Ts (g s5 1 6 11 12 (at m 10) (at m 11))
+                  (let s7 Ts (g s6 2 7 8 13 (at m 12) (at m 13))
+                    (g s7 3 4 9 14 (at m 14) (at m 15)))))))))))
 
-; the references of a term and its relabelling, following the term grammar as the kernel's
-; substitution does: a reference's child is a position, an abstraction's type and the children
-; of every node that is not a term former are kept, and a quotation is never read as a term
-(def isTermFormer
-  (lam ((l T))
-    (or (eq l Label.app)
-      (or (eq l Label.unit)
-        (or (eq l Label.pair)
-          (or (eq l Label.fst) (or (eq l Label.snd) (or (eq l Label.cond) (eq l Label.cons)))))))))
-(def refsOf
-  (lam ((t T))
-    (para Ts
-      (lam ((u T) (rs (List Ts)))
-        (let l T (label u)
-          (if (eq l Label.ref)
-            (foldr T Ts (lam ((c T) (r Ts)) (cons (label c) r)) (nil T) (children u))
-            (if (eq l Label.lam)
-              (lcase Ts Ts rs (nil T) (lam ((x Ts) (rest (List Ts))) (concat rest)))
-              (if (isTermFormer l) (concat rs) (nil T))))))
-      t)))
-(def mapRefs
-  (lam ((f (Arrow T T)) (t T))
-    (para T
-      (lam ((u T) (rs Ts))
-        (let l T (label u)
-          (if (eq l Label.ref)
-            (node l
-              (foldr T Ts (lam ((c T) (r Ts)) (cons (node (f (label c)) (children c)) r)) (nil T)
-                (children u)))
-            (if (eq l Label.lam)
-              (node l (lcase T Ts (children u) (nil T) (lam ((a T) (cs Ts)) (cons a (tail rs)))))
-              (if (isTermFormer l) (node l rs) u)))))
-      t)))
+  ; the compression function: sixteen words from a chaining value of eight, a block of sixteen
+  ; message words, a counter, the block's length and its flags
+  (deftype Rounds (Prod Ts Ts))
+  (def compress
+    (lam ((cv Ts) (m Ts) (counter T) (len T) (flags T))
+      (let st Ts
+        (fst
+          (iter Rounds
+            (lam ((p Rounds)) (pair (round (fst p) (snd p)) (pick (snd p) msgPermutation)))
+            (pair
+              (append cv
+                (append (pick iv (children (quote (0 0 1 2 3))))
+                  (cons (mod counter wordSize)
+                    (cons (div counter wordSize) (cons len (single flags))))))
+              m)
+            7))
+        (append
+          (foldr T Ts (lam ((i T) (r Ts)) (cons (xor (at st i) (at st (add i 8))) r)) (nil T)
+            range8)
+          (foldr T Ts (lam ((i T) (r Ts)) (cons (xor (at st (add i 8)) (at cv i)) r)) (nil T)
+            range8)))))
 
-; lists of identifiers: membership, the position of the first equal element or the length, and
-; the elements each once, in the order of their first occurrences
-(def member (lam ((x T) (xs Ts)) (foldr T T (lam ((y T) (r T)) (or (equal x y) r)) 0 xs)))
-(def positionIn (lam ((x T) (xs Ts)) (let r T (indexOf x xs) (if (isSome r) (get r) (length xs)))))
-(def eraseDups
-  (lam ((xs Ts))
-    (reverse
-      ((foldr T Endo (lam ((x T) (k Endo) (acc Ts)) (k (if (member x acc) acc (cons x acc))))
-         (lam ((acc Ts)) acc)
-         xs) (nil T)))))
+  ; the little-endian words of a block of at most 64 bytes, padded with zeros
+  (def words
+    (lam ((block Ts))
+      (foldr T Ts
+        (lam ((i T) (r Ts))
+          (cons
+            (foldr T T (lam ((j T) (w T)) (add (mul w 256) (at block (add (mul 4 i) j)))) 0
+              (children (quote (0 0 1 2 3))))
+            r))
+        (nil T)
+        range16)))
+  ; the little-endian bytes of words
+  (def bytesOfWords
+    (lam ((ws Ts)) (foldr T Ts (lam ((w T) (r Ts)) (append (digitsLsb 256 w 4) r)) (nil T) ws)))
 
-; the canonical encoding: an atom verbatim, its length's numeral, a colon and its bytes; a
-; term's leaf as its label's numeral and a node as the list of its label's numeral and its
-; children
-(def atomBytes (lam ((cs Ts)) (append (decimalChars (length cs)) (cons 58 cs))))
-(def termBytes
-  (lam ((t T))
-    ((fold Endo
-       (lam ((l T) (rs (List Endo)))
-         (let a Ts (atomBytes (decimalChars l))
-           (lcase Endo Endo rs (lam ((acc Ts)) (append a acc))
-             (lam ((r Endo) (rest (List Endo)) (acc Ts))
-               (cons 40
-                 (append a
-                   (foldr Endo Ts (lam ((k Endo) (x Ts)) (k x)) (cons 41 acc) (cons r rest))))))))
-       t) (nil T))))
+  ; the bytes of a list in consecutive pieces of a size, each a node over its bytes, at least
+  ; one, the last possibly shorter or empty; a right fold numbers the bytes from the end and
+  ; closes a piece at each position divisible by the size
+  (deftype Pieces (Prod T (Prod Ts Ts)))
+  (def pieces
+    (lam ((n T) (bs Ts))
+      (let s Pieces
+        (foldr T Pieces
+          (lam ((b T) (s Pieces))
+            (let k T (sub (fst s) 1)
+              (let cur Ts (cons b (fst (snd s)))
+                (if (eq (mod k n) 0) (pair k (pair (nil T) (cons (node 0 cur) (snd (snd s)))))
+                  (pair k (pair cur (snd (snd s))))))))
+          (pair (length bs) (pair (nil T) (nil T)))
+          bs)
+        (lcase T Ts (snd (snd s)) (single (node 0 (nil T))) (lam ((x T) (r Ts)) (cons x r))))))
 
-; a definition's payload, from the identifiers of the definitions before it, each a node over
-; its bytes, and its term referring to them by position: a node over the node of its imports,
-; the identifiers referred to, each once, in the order of their first references, and its body,
-; referring to them by their positions among the imports
-(def payloadOf
-  (lam ((cids Ts) (t T))
-    (let imports Ts (eraseDups (pick cids (refsOf t)))
-      (node 0
-        (cons (node 0 imports)
-          (single (mapRefs (lam ((p T)) (positionIn (at cids p) imports)) t)))))))
-(def importsOf (lam ((p T)) (children (child p 0))))
-(def bodyOf (lam ((p T)) (child p 1)))
+  ; a compression not yet made: a chaining value, a block's words, a counter, the block's length
+  ; and its flags
+  (deftype Output (Prod Ts (Prod Ts (Prod T (Prod T T)))))
+  (def chainingValue
+    (lam ((o Output))
+      (take8
+        (compress (fst o) (fst (snd o)) (fst (snd (snd o))) (fst (snd (snd (snd o))))
+          (snd (snd (snd (snd o))))))))
 
-; a payload, (geb-def/v1 geb-kernel/v1 (imports …) body), in the canonical encoding, and its
-; identifier
-(def payloadBytes
-  (lam ((p T))
-    (cons 40
-      (append (atomBytes (children (quote (0 geb-def/v1))))
-        (append (atomBytes (children (quote (0 geb-kernel/v1))))
+  ; the output of a chunk of at most 1024 bytes, its blocks but the last compressed
+  (deftype Count (Prod T Ts))
+  (def chunkOutput
+    (lam ((counter T) (chunk Ts))
+      (let blocks Ts (pieces 64 chunk)
+        (let n T (length blocks)
+          (let cv Ts
+            (snd
+              (iter Count
+                (lam ((s Count))
+                  (pair (add (fst s) 1)
+                    (take8
+                      (compress (snd s) (words (children (at blocks (fst s)))) counter 64
+                        (if (eq (fst s) 0) 1 0)))))
+                (pair 0 iv)
+                (sub n 1)))
+            (let last Ts (children (at blocks (sub n 1)))
+              (pair cv
+                (pair (words last)
+                  (pair counter (pair (length last) (add (if (eq n 1) 1 0) 2)))))))))))
+
+  ; the output of a parent node over two chaining values
+  (def parentOutput (lam ((l Ts) (r Ts)) (pair iv (pair (append l r) (pair 0 (pair 64 4))))))
+
+  ; a chunk's chaining value pushed onto the stack of subtrees' chaining values, each a node over
+  ; its words, most recent first, merging a pair of completed subtrees for each trailing zero bit
+  ; of the number of chunks completed
+  (deftype CvStack (Prod Ts (Prod Ts T)))
+  (def push
+    (lam ((stack Ts) (cv Ts) (total T))
+      (let s CvStack
+        (iter CvStack
+          (lam ((s CvStack))
+            (let t T (snd (snd s))
+              (if (and (eq (mod t 2) 0) (lt 0 t))
+                (lcase T CvStack (fst s) (pair (nil T) (pair (fst (snd s)) 0))
+                  (lam ((l T) (rest Ts))
+                    (pair rest
+                      (pair (chainingValue (parentOutput (children l) (fst (snd s)))) (div t 2)))))
+                (pair (fst s) (pair (fst (snd s)) 0)))))
+          (pair stack (pair cv total))
+          64)
+        (cons (node 0 (fst (snd s))) (fst s)))))
+
+  ; the 32-byte digest of a list of bytes
+  (def blake3
+    (lam ((bs Ts))
+      (let chunks Ts (pieces 1024 bs)
+        (let n T (length chunks)
+          (let stack Ts
+            (snd
+              (iter Count
+                (lam ((s Count))
+                  (pair (add (fst s) 1)
+                    (push (snd s)
+                      (chainingValue (chunkOutput (fst s) (children (at chunks (fst s)))))
+                      (add (fst s) 1))))
+                (pair 0 (nil T))
+                (sub n 1)))
+            (let out Output
+              (foldr T (Arrow Output Output)
+                (lam ((l T) (k (Arrow Output Output)) (o Output))
+                  (k (parentOutput (children l) (chainingValue o))))
+                (lam ((o Output)) o)
+                stack
+                (chunkOutput (sub n 1) (children (at chunks (sub n 1)))))
+              (bytesOfWords
+                (take8
+                  (compress (fst out) (fst (snd out)) (fst (snd (snd out)))
+                    (fst (snd (snd (snd out))))
+                    (add (snd (snd (snd (snd out)))) 8))))))))))
+
+  ; the CIDv1 of bytes of the codec raw, 0x55: the version 1, the codec, and the multihash of
+  ; BLAKE3, 0x1e, of its 32-byte digest, each code a varint of one byte
+  (def cidOf (lam ((bs Ts)) (cons 1 (cons 85 (cons 30 (cons 32 (blake3 bs)))))))
+
+  ; the references of a term and its relabelling, following the term grammar as the kernel's
+  ; substitution does: a reference's child is a position, an abstraction's type and the children
+  ; of every node that is not a term former are kept, and a quotation is never read as a term
+  (def isTermFormer
+    (lam ((l T))
+      (or (eq l Label.app)
+        (or (eq l Label.unit)
+          (or (eq l Label.pair)
+            (or (eq l Label.fst)
+              (or (eq l Label.snd) (or (eq l Label.cond) (eq l Label.cons)))))))))
+  (def refsOf
+    (lam ((t T))
+      (para Ts
+        (lam ((u T) (rs (List Ts)))
+          (let l T (label u)
+            (if (eq l Label.ref)
+              (foldr T Ts (lam ((c T) (r Ts)) (cons (label c) r)) (nil T) (children u))
+              (if (eq l Label.lam)
+                (lcase Ts Ts rs (nil T) (lam ((x Ts) (rest (List Ts))) (concat rest)))
+                (if (isTermFormer l) (concat rs) (nil T))))))
+        t)))
+  (def mapRefs
+    (lam ((f (Arrow T T)) (t T))
+      (para T
+        (lam ((u T) (rs Ts))
+          (let l T (label u)
+            (if (eq l Label.ref)
+              (node l
+                (foldr T Ts (lam ((c T) (r Ts)) (cons (node (f (label c)) (children c)) r)) (nil T)
+                  (children u)))
+              (if (eq l Label.lam)
+                (node l (lcase T Ts (children u) (nil T) (lam ((a T) (cs Ts)) (cons a (tail rs)))))
+                (if (isTermFormer l) (node l rs) u)))))
+        t)))
+
+  ; lists of identifiers: membership, the position of the first equal element or the length, and
+  ; the elements each once, in the order of their first occurrences
+  (def member (lam ((x T) (xs Ts)) (foldr T T (lam ((y T) (r T)) (or (equal x y) r)) 0 xs)))
+  (def positionIn
+    (lam ((x T) (xs Ts)) (let r T (indexOf x xs) (if (isSome r) (get r) (length xs)))))
+  (def eraseDups
+    (lam ((xs Ts))
+      (reverse
+        ((foldr T Endo (lam ((x T) (k Endo) (acc Ts)) (k (if (member x acc) acc (cons x acc))))
+           (lam ((acc Ts)) acc)
+           xs) (nil T)))))
+
+  ; the canonical encoding: an atom verbatim, its length's numeral, a colon and its bytes; a
+  ; term's leaf as its label's numeral and a node as the list of its label's numeral and its
+  ; children
+  (def atomBytes (lam ((cs Ts)) (append (decimalChars (length cs)) (cons 58 cs))))
+  (def termBytes
+    (lam ((t T))
+      ((fold Endo
+         (lam ((l T) (rs (List Endo)))
+           (let a Ts (atomBytes (decimalChars l))
+             (lcase Endo Endo rs (lam ((acc Ts)) (append a acc))
+               (lam ((r Endo) (rest (List Endo)) (acc Ts))
+                 (cons 40
+                   (append a
+                     (foldr Endo Ts (lam ((k Endo) (x Ts)) (k x)) (cons 41 acc) (cons r rest))))))))
+         t) (nil T))))
+
+  ; a definition's payload, from the identifiers of the definitions before it, each a node over
+  ; its bytes, and its term referring to them by position: a node over the node of its imports,
+  ; the identifiers referred to, each once, in the order of their first references, and its body,
+  ; referring to them by their positions among the imports
+  (def payloadOf
+    (lam ((cids Ts) (t T))
+      (let imports Ts (eraseDups (pick cids (refsOf t)))
+        (node 0
+          (cons (node 0 imports)
+            (single (mapRefs (lam ((p T)) (positionIn (at cids p) imports)) t)))))))
+  (def importsOf (lam ((p T)) (children (child p 0))))
+  (def bodyOf (lam ((p T)) (child p 1)))
+
+  ; a payload, (geb-def/v1 geb-kernel/v1 (imports …) body), in the canonical encoding, and its
+  ; identifier
+  (def payloadBytes
+    (lam ((p T))
+      (cons 40
+        (append (atomBytes (children (quote (0 geb-def/v1))))
+          (append (atomBytes (children (quote (0 geb-kernel/v1))))
+            (cons 40
+              (append
+                (concat
+                  (foldr T (List Ts) (lam ((c T) (r (List Ts))) (cons (atomBytes (children c)) r))
+                    (nil Ts)
+                    (importsOf p)))
+                (cons 41 (append (termBytes (bodyOf p)) (single 41))))))))))
+  (def payloadCid (lam ((p T)) (node 0 (cidOf (payloadBytes p)))))
+  (def cidsOf (lam ((ps Ts)) (foldr T Ts (lam ((p T) (r Ts)) (cons (payloadCid p) r)) (nil T) ps)))
+
+  ; the payloads of a bundle's definitions, in order, each computed from the identifiers of the
+  ; payloads before it, each identifier computed once; the state is the payloads and their
+  ; identifiers
+  (deftype Migration (Prod Ts Ts))
+  (def migrate
+    (lam ((ds Ts))
+      (fst
+        ((foldr T (Arrow Migration Migration)
+           (lam ((t T) (k (Arrow Migration Migration)) (s Migration))
+             (let p T (payloadOf (snd s) t)
+               (k (pair (append (fst s) (single p)) (append (snd s) (single (payloadCid p)))))))
+           (lam ((s Migration)) s)
+           ds) (pair (nil T) (nil T))))))
+
+  ; the bundle of payloads in an order of dependence: each payload's imports replaced by the
+  ; position of the first payload they identify
+  (def link
+    (lam ((ps Ts))
+      (let cids Ts (cidsOf ps)
+        (foldr T Ts
+          (lam ((p T) (r Ts))
+            (cons (mapRefs (lam ((i T)) (positionIn (at (importsOf p) i) cids)) (bodyOf p)) r))
+          (nil T)
+          ps))))
+
+  ; annotations of identifiers: entries keyed by a definition's identifier and a vertex of its
+  ; term, the path of child positions from the root, which the migration moves no node of. An
+  ; entry of a term's vertices is a node over the node of its vertex and its value; children's
+  ; entries are put under the children's positions, counted from a start
+  (def underChildren
+    (lam ((start T) (rs (List Ts)))
+      ((foldr Ts (Arrow T Ts)
+         (lam ((r Ts) (k (Arrow T Ts)) (i T))
+           (append
+             (foldr T Ts
+               (lam ((e T) (acc Ts))
+                 (cons (node 0 (cons (node 0 (cons i (children (child e 0)))) (single (child e 1))))
+                   acc))
+               (nil T)
+               r)
+             (k (add i 1))))
+         (lam ((i T)) (nil T))
+         rs) start)))
+  ; the vertices of a term's references to definitions, each with the position it refers to,
+  ; following the term grammar as mapRefs does
+  (def refVertices
+    (lam ((t T))
+      (para Ts
+        (lam ((u T) (rs (List Ts)))
+          (let l T (label u)
+            (if (eq l Label.ref)
+              (foldr T Ts
+                (lam ((c T) (r Ts)) (cons (node 0 (cons (node 0 (nil T)) (single (label c)))) r))
+                (nil T)
+                (children u))
+              (if (eq l Label.lam)
+                (lcase Ts Ts rs (nil T) (lam ((x Ts) (rest (List Ts))) (underChildren 1 rest)))
+                (if (isTermFormer l) (underChildren 0 rs) (nil T))))))
+        t)))
+  ; the names of a bundle as annotations keyed by its definitions' identifiers: an entry is a node
+  ; over the identifier, the node of the vertex and the note, a node of label 0 over the name a
+  ; definition is declared under, at the root of its term, or of label 1 over the name written at
+  ; a reference, the name of the definition it refers to, at the reference's vertex
+  (def nameNote (lam ((cid T) (v T) (n T)) (node 0 (cons cid (cons v (single n))))))
+  (def nameNotes
+    (lam ((names Ts) (cids Ts) (ds Ts))
+      ((foldr T (Arrow T Ts)
+         (lam ((t T) (k (Arrow T Ts)) (i T))
+           (let cid T (at cids i)
+             (cons (nameNote cid (node 0 (nil T)) (node 0 (children (at names i))))
+               (append
+                 (foldr T Ts
+                   (lam ((e T) (r Ts))
+                     (cons
+                       (nameNote cid (child e 0) (node 1 (children (at names (label (child e 1))))))
+                       r))
+                   (nil T)
+                   (refVertices t))
+                 (k (add i 1))))))
+         (lam ((i T)) (nil T))
+         ds) 0)))
+
+  ; the identifiers of modules: a module's payload, (geb-module/v1 (members ...) (exports ...)), in
+  ; the canonical encoding, from the identifiers of its members and of the definitions its exports
+  ; denote; and the identifiers of a program's tree of modules, each after the modules nested in it,
+  ; from the identifiers of its definitions by their names in the flat program, each entry a node
+  ; over a name or path and an identifier
+  (def cidAtoms
+    (lam ((cs Ts))
+      (concat
+        (foldr T (List Ts) (lam ((c T) (r (List Ts))) (cons (atomBytes (children c)) r)) (nil Ts)
+          cs))))
+  (def moduleBytes
+    (lam ((members Ts) (exports Ts))
+      (cons 40
+        (append (atomBytes (children (quote (0 geb-module/v1))))
           (cons 40
-            (append
-              (concat
-                (foldr T (List Ts) (lam ((c T) (r (List Ts))) (cons (atomBytes (children c)) r))
-                  (nil Ts)
-                  (importsOf p)))
-              (cons 41 (append (termBytes (bodyOf p)) (single 41))))))))))
-(def payloadCid (lam ((p T)) (node 0 (cidOf (payloadBytes p)))))
-(def cidsOf (lam ((ps Ts)) (foldr T Ts (lam ((p T) (r Ts)) (cons (payloadCid p) r)) (nil T) ps)))
-
-; the payloads of a bundle's definitions, in order, each computed from the identifiers of the
-; payloads before it, each identifier computed once; the state is the payloads and their
-; identifiers
-(deftype Migration (Prod Ts Ts))
-(def migrate
-  (lam ((ds Ts))
-    (fst
-      ((foldr T (Arrow Migration Migration)
-         (lam ((t T) (k (Arrow Migration Migration)) (s Migration))
-           (let p T (payloadOf (snd s) t)
-             (k (pair (append (fst s) (single p)) (append (snd s) (single (payloadCid p)))))))
-         (lam ((s Migration)) s)
-         ds) (pair (nil T) (nil T))))))
-
-; the bundle of payloads in an order of dependence: each payload's imports replaced by the
-; position of the first payload they identify
-(def link
-  (lam ((ps Ts))
-    (let cids Ts (cidsOf ps)
+            (append (cidAtoms members)
+              (cons 41 (cons 40 (append (cidAtoms exports) (cons 41 (single 41)))))))))))
+  (def foundCids
+    (lam ((names Ts) (table Ts))
       (foldr T Ts
-        (lam ((p T) (r Ts))
-          (cons (mapRefs (lam ((i T)) (positionIn (at (importsOf p) i) cids)) (bodyOf p)) r))
+        (lam ((n T) (r Ts)) (let c T (lookupAbbrev n table) (if (isSome c) (cons (get c) r) r)))
         (nil T)
-        ps))))
-
-; annotations of identifiers: entries keyed by a definition's identifier and a vertex of its
-; term, the path of child positions from the root, which the migration moves no node of. An
-; entry of a term's vertices is a node over the node of its vertex and its value; children's
-; entries are put under the children's positions, counted from a start
-(def underChildren
-  (lam ((start T) (rs (List Ts)))
-    ((foldr Ts (Arrow T Ts)
-       (lam ((r Ts) (k (Arrow T Ts)) (i T))
-         (append
-           (foldr T Ts
-             (lam ((e T) (acc Ts))
-               (cons (node 0 (cons (node 0 (cons i (children (child e 0)))) (single (child e 1))))
-                 acc))
-             (nil T)
-             r)
-           (k (add i 1))))
-       (lam ((i T)) (nil T))
-       rs) start)))
-; the vertices of a term's references to definitions, each with the position it refers to,
-; following the term grammar as mapRefs does
-(def refVertices
-  (lam ((t T))
-    (para Ts
-      (lam ((u T) (rs (List Ts)))
-        (let l T (label u)
-          (if (eq l Label.ref)
-            (foldr T Ts
-              (lam ((c T) (r Ts)) (cons (node 0 (cons (node 0 (nil T)) (single (label c)))) r))
-              (nil T)
-              (children u))
-            (if (eq l Label.lam)
-              (lcase Ts Ts rs (nil T) (lam ((x Ts) (rest (List Ts))) (underChildren 1 rest)))
-              (if (isTermFormer l) (underChildren 0 rs) (nil T))))))
-      t)))
-; the names of a bundle as annotations keyed by its definitions' identifiers: an entry is a node
-; over the identifier, the node of the vertex and the note, a node of label 0 over the name a
-; definition is declared under, at the root of its term, or of label 1 over the name written at
-; a reference, the name of the definition it refers to, at the reference's vertex
-(def nameNote (lam ((cid T) (v T) (n T)) (node 0 (cons cid (cons v (single n))))))
-(def nameNotes
-  (lam ((names Ts) (cids Ts) (ds Ts))
-    ((foldr T (Arrow T Ts)
-       (lam ((t T) (k (Arrow T Ts)) (i T))
-         (let cid T (at cids i)
-           (cons (nameNote cid (node 0 (nil T)) (node 0 (children (at names i))))
-             (append
-               (foldr T Ts
-                 (lam ((e T) (r Ts))
-                   (cons
-                     (nameNote cid (child e 0) (node 1 (children (at names (label (child e 1))))))
-                     r))
-                 (nil T)
-                 (refVertices t))
-               (k (add i 1))))))
-       (lam ((i T)) (nil T))
-       ds) 0)))
-
-; the identifiers of modules: a module's payload, (geb-module/v1 (members ...) (exports ...)), in
-; the canonical encoding, from the identifiers of its members and of the definitions its exports
-; denote; and the identifiers of a program's tree of modules, each after the modules nested in it,
-; from the identifiers of its definitions by their names in the flat program, each entry a node
-; over a name or path and an identifier
-(def cidAtoms
-  (lam ((cs Ts))
-    (concat
-      (foldr T (List Ts) (lam ((c T) (r (List Ts))) (cons (atomBytes (children c)) r)) (nil Ts)
-        cs))))
-(def moduleBytes
-  (lam ((members Ts) (exports Ts))
-    (cons 40
-      (append (atomBytes (children (quote (0 geb-module/v1))))
-        (cons 40
-          (append (cidAtoms members)
-            (cons 41 (cons 40 (append (cidAtoms exports) (cons 41 (single 41)))))))))))
-(def foundCids
-  (lam ((names Ts) (table Ts))
-    (foldr T Ts
-      (lam ((n T) (r Ts)) (let c T (lookupAbbrev n table) (if (isSome c) (cons (get c) r) r)))
-      (nil T)
-      names)))
-(def moduleCidIn
-  (lam ((byName Ts) (done Ts) (m T))
-    (let members Ts
-      (foldr T Ts
-        (lam ((x T) (r Ts))
-          (let c T (lookupAbbrev (child x 0) (if (eq (label x) 0) byName done))
-            (if (isSome c) (cons (get c) r) r)))
-        (nil T)
-        (children (child m 1)))
-      (node 0
-        (cidOf
-          (moduleBytes members
-            (foundCids
-              (foldr T Ts (lam ((x T) (r Ts)) (cons (child x 1) r)) (nil T) (children (child m 2)))
-              byName)))))))
-(def moduleCids
-  (lam ((byName Ts) (mods Ts))
-    ((foldr T Endo
-       (lam ((m T) (k Endo) (done Ts))
-         (k (append done (single (node2 0 (child m 0) (moduleCidIn byName done m))))))
-       (lam ((done Ts)) done)
-       mods) (nil T))))
+        names)))
+  (def moduleCidIn
+    (lam ((byName Ts) (done Ts) (m T))
+      (let members Ts
+        (foldr T Ts
+          (lam ((x T) (r Ts))
+            (let c T (lookupAbbrev (child x 0) (if (eq (label x) 0) byName done))
+              (if (isSome c) (cons (get c) r) r)))
+          (nil T)
+          (children (child m 1)))
+        (node 0
+          (cidOf
+            (moduleBytes members
+              (foundCids
+                (foldr T Ts (lam ((x T) (r Ts)) (cons (child x 1) r)) (nil T)
+                  (children (child m 2)))
+                byName)))))))
+  (def moduleCids
+    (lam ((byName Ts) (mods Ts))
+      ((foldr T Endo
+         (lam ((m T) (k Endo) (done Ts))
+           (k (append done (single (node2 0 (child m 0) (moduleCidIn byName done m))))))
+         (lam ((done Ts)) done)
+         mods) (nil T)))))
+(import Identity)

@@ -37,6 +37,8 @@ set_option doc.verso true
 
 @[expose] public section
 
+open GebMirror.GoedelT
+
 namespace GebTests.Prototypes.GoedelT.MirrorDelta
 
 open Geb Geb.Kernel Geb.GoedelT GebTests.Prototypes.GoedelT.MirrorTyping
@@ -158,30 +160,30 @@ theorem infer_nil_inv {G : List Glob} {Γ : Ctx} {A : Tree} {m : Meaning Γ}
 @[simp] theorem label_tT : tT.label = Label.tyTree := rfl
 
 /-- The trees of a list of trees with their values. -/
-theorem rtTrees_eq (rs : List (Tree × Tree)) : GebMirror.GoedelT.rtTrees rs = rs.map (·.1) :=
+theorem rtTrees_eq (rs : List (Tree × Tree)) : «Reader.rtTrees» rs = rs.map (·.1) :=
   rs.rec rfl fun _ _ ih ↦ by
-    simp only [GebMirror.GoedelT.rtTrees, Const.foldr, List.foldr_cons] at ih ⊢
+    simp only [«Reader.rtTrees», Const.foldr, List.foldr_cons] at ih ⊢
     rw [ih]
     rfl
 
 /-- The values of a list of trees with their values. -/
-theorem rtValues_eq (rs : List (Tree × Tree)) : GebMirror.GoedelT.rtValues rs = rs.map (·.2) :=
+theorem rtValues_eq (rs : List (Tree × Tree)) : «Reader.rtValues» rs = rs.map (·.2) :=
   rs.rec rfl fun _ _ ih ↦ by
-    simp only [GebMirror.GoedelT.rtValues, Const.foldr, List.foldr_cons] at ih ⊢
+    simp only [«Reader.rtValues», Const.foldr, List.foldr_cons] at ih ⊢
     rw [ih]
     rfl
 
 /-- The mirror's disjunction of truth values, as a proposition. -/
 theorem or_label (a b : Tree) :
-    (GebMirror.GoedelT.or a b).label ≠ 0 ↔ a.label ≠ 0 ∨ b.label ≠ 0 := by
-  unfold GebMirror.GoedelT.or
+    («Prelude.or» a b).label ≠ 0 ↔ a.label ≠ 0 ∨ b.label ≠ 0 := by
+  unfold «Prelude.or»
   split <;> simp_all
 
 /-- The mirror's test of a quoted tree. -/
 theorem isQuote_label (t : Tree) :
-    (GebMirror.GoedelT.isQuote t).label ≠ 0 ↔ t.label = Label.quote ∧ t.children.length = 1 := by
+    («Equations.isQuote» t).label ≠ 0 ↔ t.label = Label.quote ∧ t.children.length = 1 := by
   rw [← RoseTree.node_label_children t]
-  simp only [GebMirror.GoedelT.isQuote, and_label, label_node, arity_node, eq_leaf,
+  simp only [«Equations.isQuote», and_label, label_node, arity_node, eq_leaf,
     RoseTree.label_node, RoseTree.children_node]
 
 /-- The test of a list literal at a node. -/
@@ -219,27 +221,27 @@ theorem isListLit_cases {t : Tree} (h : IsListLit t = true) :
 /-- The step of the mirror's elements of a list literal at a node: the node rebuilt, and the
 optional node of the elements. -/
 def elemsStep (l : Tree) (rs : List (Tree × Tree)) : Tree × Tree :=
-  (Const.node l (GebMirror.GoedelT.rtTrees rs),
-    if (GebMirror.GoedelT.and (Const.eq l (leaf 19))
-        (Const.eq (GebMirror.GoedelT.length (GebMirror.GoedelT.rtTrees rs)) (leaf 1))).label ≠ 0
-    then GebMirror.GoedelT.some (Const.node (leaf 0) [])
-    else if (GebMirror.GoedelT.and (Const.eq l (leaf 20))
-        (Const.eq (GebMirror.GoedelT.length (GebMirror.GoedelT.rtTrees rs)) (leaf 2))).label ≠ 0
+  (Const.node l («Reader.rtTrees» rs),
+    if («Prelude.and» (Const.eq l (leaf 19))
+        (Const.eq («Prelude.length» («Reader.rtTrees» rs)) (leaf 1))).label ≠ 0
+    then «Prelude.some» (Const.node (leaf 0) [])
+    else if («Prelude.and» (Const.eq l (leaf 20))
+        (Const.eq («Prelude.length» («Reader.rtTrees» rs)) (leaf 2))).label ≠ 0
     then
-      if (GebMirror.GoedelT.and
-          (GebMirror.GoedelT.isQuote (GebMirror.GoedelT.at (GebMirror.GoedelT.rtTrees rs) (leaf 0)))
-          (GebMirror.GoedelT.isSome
-            (GebMirror.GoedelT.at (GebMirror.GoedelT.rtValues rs) (leaf 1)))).label ≠ 0 then
-        GebMirror.GoedelT.some (Const.node (leaf 0)
-          (Const.child (GebMirror.GoedelT.at (GebMirror.GoedelT.rtTrees rs) (leaf 0)) (leaf 0) ::
-            Const.children (GebMirror.GoedelT.get
-              (GebMirror.GoedelT.at (GebMirror.GoedelT.rtValues rs) (leaf 1)))))
-      else GebMirror.GoedelT.none
-    else GebMirror.GoedelT.none)
+      if («Prelude.and»
+          («Equations.isQuote» («Prelude.at» («Reader.rtTrees» rs) (leaf 0)))
+          («Prelude.isSome»
+            («Prelude.at» («Reader.rtValues» rs) (leaf 1)))).label ≠ 0 then
+        «Prelude.some» (Const.node (leaf 0)
+          (Const.child («Prelude.at» («Reader.rtTrees» rs) (leaf 0)) (leaf 0) ::
+            Const.children («Prelude.get»
+              («Prelude.at» («Reader.rtValues» rs) (leaf 1)))))
+      else «Prelude.none»
+    else «Prelude.none»)
 
 /-- The mirror's elements of a list literal are the fold of its step. -/
 theorem listElems_def (t : Tree) :
-    GebMirror.GoedelT.listElems t = (Const.fold elemsStep t).2 := rfl
+    «Equations.listElems» t = (Const.fold elemsStep t).2 := rfl
 
 /-- The fold of the mirror's elements of a list literal gives each tree, and for a list literal
 the node of the elements its denotation has at the type of lists of trees, and nothing
@@ -251,7 +253,7 @@ theorem fold_elemsStep : ∀ t : Tree, (Const.fold elemsStep t).1 = t ∧
           infer G Γ t = some ⟨tList tT, f⟩ → ∀ e, f e = vs) :=
   RoseTree.ind fun l cs ih ↦ by
     rw [fold_node]
-    have htr : GebMirror.GoedelT.rtTrees (cs.map (Const.fold elemsStep)) = cs := by
+    have htr : «Reader.rtTrees» (cs.map (Const.fold elemsStep)) = cs := by
       rw [rtTrees_eq, List.map_map]
       exact (List.map_congr_left fun c hc ↦ (ih c hc).1).trans (List.map_id cs)
     refine ⟨by simp only [elemsStep, htr]; rfl, ?_⟩
@@ -309,8 +311,8 @@ theorem fold_elemsStep : ∀ t : Tree, (Const.fold elemsStep t).1 = t ∧
       · rfl
 
 /-- The mirror's test of a literal. -/
-theorem isLit_label (t : Tree) : (GebMirror.GoedelT.isLit t).label ≠ 0 ↔ IsLit t = true := by
-  simp only [GebMirror.GoedelT.isLit, or_label, isQuote_label, IsLit, Bool.or_eq_true,
+theorem isLit_label (t : Tree) : («Equations.isLit» t).label ≠ 0 ↔ IsLit t = true := by
+  simp only [«Equations.isLit», or_label, isQuote_label, IsLit, Bool.or_eq_true,
     Bool.and_eq_true, beq_iff_eq, listElems_def]
   rcases (fold_elemsStep t).2 with ⟨h, hl⟩ | ⟨vs, h, hl, -⟩ <;> simp [h, hl, isSome_enc]
 
@@ -323,7 +325,7 @@ theorem not_quote_of_isListLit {t : Tree} (h : IsListLit t = true) :
 /-- The value of a literal at the type of trees is the mirror's value of the literal. -/
 theorem lit_tree {G : List Glob} {Γ : Ctx} {a : Tree} {f : Γ.den → Ty.den tT}
     (ha : IsLit a = true) (h : infer G Γ a = some ⟨tT, f⟩) (e : Γ.den) :
-    f e = GebMirror.GoedelT.litValue a := by
+    f e = «Equations.litValue» a := by
   simp only [IsLit, Bool.or_eq_true, Bool.and_eq_true, beq_iff_eq] at ha
   rcases ha with ⟨hl, hlen⟩ | hlist
   · obtain ⟨x, hx⟩ := List.length_eq_one_iff.mp hlen
@@ -331,8 +333,8 @@ theorem lit_tree {G : List Glob} {Γ : Ctx} {a : Tree} {f : Γ.den → Ty.den tT
     subst hq
     rw [infer_quote] at h
     obtain rfl := eq_of_heq (Sigma.mk.inj_iff.mp (Option.some.inj h)).2
-    change x = GebMirror.GoedelT.litValue (mk Label.quote [x])
-    simp [GebMirror.GoedelT.litValue, isQuote_label, child_node]
+    change x = «Equations.litValue» (mk Label.quote [x])
+    simp [«Equations.litValue», isQuote_label, child_node]
   · rcases isListLit_cases hlist with ⟨A, rfl⟩ | ⟨x, r, rfl, -⟩
     · exact absurd (Sigma.mk.inj_iff.mp (infer_nil_inv h)).1 (tList_ne_tT A).symm
     · obtain ⟨A, hA⟩ := infer_cons_ty h
@@ -342,7 +344,7 @@ theorem lit_tree {G : List Glob} {Γ : Ctx} {a : Tree} {f : Γ.den → Ty.den tT
 value of the literal. -/
 theorem lit_list {G : List Glob} {Γ : Ctx} {a : Tree} {f : Γ.den → Ty.den (tList tT)}
     (ha : IsLit a = true) (h : infer G Γ a = some ⟨tList tT, f⟩) (e : Γ.den) :
-    f e = (GebMirror.GoedelT.litValue a).children := by
+    f e = («Equations.litValue» a).children := by
   simp only [IsLit, Bool.or_eq_true, Bool.and_eq_true, beq_iff_eq] at ha
   rcases ha with ⟨hl, hlen⟩ | hlist
   · obtain ⟨x, hx⟩ := List.length_eq_one_iff.mp hlen
@@ -350,9 +352,9 @@ theorem lit_list {G : List Glob} {Γ : Ctx} {a : Tree} {f : Γ.den → Ty.den (t
     subst hq
     rw [infer_quote] at h
     exact absurd (Sigma.mk.inj_iff.mp (Option.some.inj h)).1 (tList_ne_tT tT).symm
-  · have hv : GebMirror.GoedelT.litValue a =
-        GebMirror.GoedelT.get (GebMirror.GoedelT.listElems a) := by
-      simp [GebMirror.GoedelT.litValue, isQuote_label, not_quote_of_isListLit hlist]
+  · have hv : «Equations.litValue» a =
+        «Prelude.get» («Equations.listElems» a) := by
+      simp [«Equations.litValue», isQuote_label, not_quote_of_isListLit hlist]
     rw [hv, listElems_def]
     rcases (fold_elemsStep a).2 with ⟨-, hl⟩ | ⟨vs, hv', -, hvs⟩
     · rw [hl] at hlist
@@ -409,7 +411,7 @@ theorem prim_arg {i : ℕ} {A B : Tree} {g : Ty.den (tArrow A B)}
 
 /-- A primitive from trees to trees is the mirror's primitive of its index. -/
 theorem prim1_tree {i : ℕ} {g : Ty.den (tArrow tT tT)} (h : prims[i]? = some ⟨tArrow tT tT, g⟩)
-    (x y : Tree) : g x = GebMirror.GoedelT.delta (leaf i) x y := by
+    (x y : Tree) : g x = «Equations.delta» (leaf i) x y := by
   match i, h with
   | 0, h | 1, h | 13, h =>
     obtain rfl := eq_of_heq (Sigma.mk.inj_iff.mp (Option.some.inj h)).2
@@ -422,7 +424,7 @@ theorem prim1_tree {i : ℕ} {g : Ty.den (tArrow tT tT)} (h : prims[i]? = some �
 index. -/
 theorem prim1_list {i : ℕ} {g : Ty.den (tArrow tT (tList tT))}
     (h : prims[i]? = some ⟨tArrow tT (tList tT), g⟩) (x y : Tree) :
-    g x = (GebMirror.GoedelT.delta (leaf i) x y).children := by
+    g x = («Equations.delta» (leaf i) x y).children := by
   match i, h with
   | 4, h =>
     obtain rfl := eq_of_heq (Sigma.mk.inj_iff.mp (Option.some.inj h)).2
@@ -447,7 +449,7 @@ theorem prim2_arg {i : ℕ} {A B : Tree} {g : Ty.den (tArrow tT (tArrow A B))}
 /-- A primitive of two trees to a tree is the mirror's primitive of its index. -/
 theorem prim2_tree {i : ℕ} {g : Ty.den (tArrow tT (tArrow tT tT))}
     (h : prims[i]? = some ⟨tArrow tT (tArrow tT tT), g⟩) (x y : Tree) :
-    g x y = GebMirror.GoedelT.delta (leaf i) x y := by
+    g x y = «Equations.delta» (leaf i) x y := by
   match i, h with
   | 2, h | 5, h | 6, h | 7, h | 8, h | 9, h | 10, h | 11, h | 12, h =>
     obtain rfl := eq_of_heq (Sigma.mk.inj_iff.mp (Option.some.inj h)).2
@@ -460,7 +462,7 @@ theorem prim2_tree {i : ℕ} {g : Ty.den (tArrow tT (tArrow tT tT))}
 at the node of the list. -/
 theorem prim2_list {i : ℕ} {g : Ty.den (tArrow tT (tArrow (tList tT) tT))}
     (h : prims[i]? = some ⟨tArrow tT (tArrow (tList tT) tT), g⟩) (x y : Tree) :
-    g x y.children = GebMirror.GoedelT.delta (leaf i) x y := by
+    g x y.children = «Equations.delta» (leaf i) x y := by
   match i, h with
   | 3, h =>
     obtain rfl := eq_of_heq (Sigma.mk.inj_iff.mp (Option.some.inj h)).2
@@ -509,9 +511,9 @@ index at the literals' values. -/
 theorem delta_tree {G : List Glob} {k : Tree} {args : List Tree} {f : Ctx.den [] → Ty.den tT}
     (hargs : ∀ a ∈ args, IsLit a = true)
     (h : infer G [] (apps (mk Label.prim [k]) args) = some ⟨tT, f⟩) (e : Ctx.den []) :
-    f e = GebMirror.GoedelT.delta (Const.label k)
-      (GebMirror.GoedelT.litValue (args.getD 0 (leaf 0)))
-      (GebMirror.GoedelT.litValue (args.getD 1 (leaf 0))) := by
+    f e = «Equations.delta» (Const.label k)
+      («Equations.litValue» (args.getD 0 (leaf 0)))
+      («Equations.litValue» (args.getD 1 (leaf 0))) := by
   rcases args with _ | ⟨a, _ | ⟨b, _ | ⟨c, rest⟩⟩⟩
   · exact absurd rfl (prim0_ne (infer_prim_inv h)).1
   · obtain ⟨A, ff, fx, hp, ha, hf⟩ := infer_app_inv h
@@ -535,9 +537,9 @@ mirror's primitive of its index at the literals' values. -/
 theorem delta_list {G : List Glob} {k : Tree} {args : List Tree}
     {f : Ctx.den [] → Ty.den (tList tT)} (hargs : ∀ a ∈ args, IsLit a = true)
     (h : infer G [] (apps (mk Label.prim [k]) args) = some ⟨tList tT, f⟩) (e : Ctx.den []) :
-    f e = (GebMirror.GoedelT.delta (Const.label k)
-      (GebMirror.GoedelT.litValue (args.getD 0 (leaf 0)))
-      (GebMirror.GoedelT.litValue (args.getD 1 (leaf 0)))).children := by
+    f e = («Equations.delta» (Const.label k)
+      («Equations.litValue» (args.getD 0 (leaf 0)))
+      («Equations.litValue» (args.getD 1 (leaf 0)))).children := by
   rcases args with _ | ⟨a, _ | ⟨b, _ | ⟨c, rest⟩⟩⟩
   · exact absurd rfl (prim0_ne (infer_prim_inv h)).2
   · obtain ⟨A, ff, fx, hp, ha, hf⟩ := infer_app_inv h

@@ -14,7 +14,7 @@ set_option doc.verso true in
 
 The kernel's checker written in Geb, {lit}`bootstrap/check.geb`, gives the type of a term in a
 global environment's types and a context, as the reader represents an optional tree:
-{lit}`enc`. Its Lean mirror, {lit}`GebMirror.GoedelT.typeIn`, emitted by the bootstrap compiler,
+{lit}`enc`. Its Lean mirror, {lit}`«Check.typeIn»`, emitted by the bootstrap compiler,
 is here proved equal to the type the kernel's checker-evaluator {name}`Geb.Kernel.infer` gives,
 at every term: {lit}`typeIn_eq`.
 
@@ -41,6 +41,8 @@ set_option doc.verso true
 
 @[expose] public section
 
+open GebMirror.GoedelT
+
 namespace GebTests.Prototypes.GoedelT.MirrorTyping
 
 open Geb Geb.Kernel
@@ -53,18 +55,18 @@ def enc : Option Tree → Tree
   | none => leaf 0
 
 /-- The mirror's {lit}`some`. -/
-theorem some_eq (t : Tree) : GebMirror.GoedelT.some t = enc (some t) := rfl
+theorem some_eq (t : Tree) : «Prelude.some» t = enc (some t) := rfl
 
 /-- The mirror's {lit}`none`. -/
-theorem none_eq : GebMirror.GoedelT.none = enc none := rfl
+theorem none_eq : «Prelude.none» = enc none := rfl
 
 /-- The label of a leaf. -/
 @[simp] theorem label_leaf (n : ℕ) : (leaf n).label = n := rfl
 
 /-- The mirror's test of an optional tree. -/
 theorem isSome_enc (o : Option Tree) :
-    (GebMirror.GoedelT.isSome (enc o)).label ≠ 0 ↔ o.isSome := by
-  cases o <;> simp [GebMirror.GoedelT.isSome, enc, Const.eq, Const.label, ofBool]
+    («Prelude.isSome» (enc o)).label ≠ 0 ↔ o.isSome := by
+  cases o <;> simp [«Prelude.isSome», enc, Const.eq, Const.label, ofBool]
 
 /-- A node's child by index, the leaf of label zero when out of range. -/
 theorem child_node (l i : ℕ) (cs : List Tree) :
@@ -76,18 +78,18 @@ theorem child_node (l i : ℕ) (cs : List Tree) :
     simp [List.getElem?_eq_none (Nat.le_of_not_lt h)]
 
 /-- The mirror's tree of a present optional tree. -/
-theorem get_enc (t : Tree) : GebMirror.GoedelT.get (enc (some t)) = t := by
-  simp [GebMirror.GoedelT.get, enc, child_node]
+theorem get_enc (t : Tree) : «Prelude.get» (enc (some t)) = t := by
+  simp [«Prelude.get», enc, child_node]
 
 /-- The mirror's length of a list. -/
-theorem length_eq (xs : List Tree) : GebMirror.GoedelT.length xs = leaf xs.length :=
+theorem length_eq (xs : List Tree) : «Prelude.length» xs = leaf xs.length :=
   xs.rec rfl fun _ _ ih ↦ by
-    simp only [GebMirror.GoedelT.length, Const.foldr, List.foldr_cons] at ih ⊢
+    simp only [«Prelude.length», Const.foldr, List.foldr_cons] at ih ⊢
     rw [ih]
     rfl
 
 /-- The mirror's element of a list at a position, the leaf of label zero when out of range. -/
-theorem at_eq (xs : List Tree) (i : ℕ) : GebMirror.GoedelT.at xs (leaf i) = xs.getD i (leaf 0) :=
+theorem at_eq (xs : List Tree) (i : ℕ) : «Prelude.at» xs (leaf i) = xs.getD i (leaf 0) :=
   child_node 0 i xs
 
 /-- The comparison of two labels' equality. -/
@@ -99,8 +101,8 @@ theorem lt_leaf (a b : ℕ) : (Const.lt (leaf a) (leaf b)).label ≠ 0 ↔ a < b
   by_cases h : a < b <;> simp [Const.lt, ofBool, h]
 
 /-- The mirror's element of a list at a position, when the position is in range. -/
-theorem nth_eq (xs : List Tree) (i : ℕ) : GebMirror.GoedelT.nth xs (leaf i) = enc xs[i]? := by
-  simp only [GebMirror.GoedelT.nth, length_eq]
+theorem nth_eq (xs : List Tree) (i : ℕ) : «Prelude.nth» xs (leaf i) = enc xs[i]? := by
+  simp only [«Prelude.nth», length_eq]
   split
   · rename_i h
     rw [lt_leaf] at h
@@ -112,15 +114,15 @@ theorem nth_eq (xs : List Tree) (i : ℕ) : GebMirror.GoedelT.nth xs (leaf i) = 
 
 /-- The trees of a list of trees with their results. -/
 theorem rrTrees_eq (rs : List (Tree × (List Tree → Tree))) :
-    GebMirror.GoedelT.rrTrees rs = rs.map (·.1) :=
+    «Reader.rrTrees» rs = rs.map (·.1) :=
   rs.rec rfl fun _ _ ih ↦ by
-    simp only [GebMirror.GoedelT.rrTrees, Const.foldr, List.foldr_cons] at ih ⊢
+    simp only [«Reader.rrTrees», Const.foldr, List.foldr_cons] at ih ⊢
     rw [ih]
     rfl
 
 /-- Dropping the head of a list as many times as a label. -/
 theorem repeat_tail (rs : List (Tree × (List Tree → Tree))) :
-    ∀ i : ℕ, Nat.repeat GebMirror.GoedelT.rrTail i rs = rs.drop i :=
+    ∀ i : ℕ, Nat.repeat «Reader.rrTail» i rs = rs.drop i :=
   Nat.rec rfl fun i ih ↦ by
     rw [Nat.repeat, ih, ← List.tail_drop]
     cases rs.drop i <;> rfl
@@ -128,8 +130,8 @@ theorem repeat_tail (rs : List (Tree × (List Tree → Tree))) :
 /-- The mirror's result of a child at a position, applied to a context; nothing when the
 position is out of range. -/
 theorem rrAt_eq (rs : List (Tree × (List Tree → Tree))) (i : ℕ) (Γ : List Tree) :
-    GebMirror.GoedelT.rrAt rs (leaf i) Γ = (rs[i]?.map (·.2 Γ)).getD (enc none) := by
-  simp only [GebMirror.GoedelT.rrAt, Const.iter, label_leaf, repeat_tail, Const.lcase]
+    «Reader.rrAt» rs (leaf i) Γ = (rs[i]?.map (·.2 Γ)).getD (enc none) := by
+  simp only [«Reader.rrAt», Const.iter, label_leaf, repeat_tail, Const.lcase]
   cases h : rs.drop i with
   | nil =>
     rw [List.drop_eq_nil_iff] at h
@@ -154,18 +156,18 @@ theorem tList_eq (A : Tree) : tList A = RoseTree.node Label.tyList [A] := by
   | 0 => rfl
 
 /-- The mirror's function type. -/
-theorem tyArrow_eq (A B : Tree) : GebMirror.GoedelT.tyArrow A B = tArrow A B := by
+theorem tyArrow_eq (A B : Tree) : «Check.tyArrow» A B = tArrow A B := by
   rw [tArrow, node2_eq]
   rfl
 
 /-- The mirror's list type. -/
-theorem tyList_eq (A : Tree) : GebMirror.GoedelT.tyList A = tList A := by
+theorem tyList_eq (A : Tree) : «Check.tyList» A = tList A := by
   rw [tList_eq]
   rfl
 
 /-- The mirror's product type, as the node of two children. -/
 theorem node2_mirror (l : ℕ) (A B : Tree) :
-    GebMirror.GoedelT.node2 (leaf l) A B = node2 l A B := by
+    «Reader.node2» (leaf l) A B = node2 l A B := by
   rw [node2_eq]
   rfl
 
@@ -180,7 +182,7 @@ theorem fold_node {α : Type} (f : Tree → List α → α) (l : ℕ) (cs : List
 
 /-- The mirror's conjunction of truth values. -/
 theorem and_ofBool (a b : Bool) :
-    GebMirror.GoedelT.and (ofBool a) (ofBool b) = ofBool (a && b) := by
+    «Prelude.and» (ofBool a) (ofBool b) = ofBool (a && b) := by
   cases a <;> cases b <;> rfl
 
 /-- The comparison of two labels' equality, as a truth value. -/
@@ -198,9 +200,9 @@ theorem isTy_node (l : ℕ) (cs : List Tree) :
   rfl
 
 /-- The mirror's test of a type. -/
-theorem isTy_eq : ∀ t : Tree, GebMirror.GoedelT.isTy t = ofBool (Ty.IsTy t) :=
+theorem isTy_eq : ∀ t : Tree, «Check.isTy» t = ofBool (Ty.IsTy t) :=
   RoseTree.ind fun l cs ih ↦ by
-    unfold GebMirror.GoedelT.isTy at ih ⊢
+    unfold «Check.isTy» at ih ⊢
     rw [fold_node, List.map_congr_left ih, isTy_node]
     rcases cs with _ | ⟨a, _ | ⟨b, _ | ⟨c, rest⟩⟩⟩
     · match l with
@@ -235,7 +237,7 @@ theorem mk_index_eq {x y : ℕ × ℕ} {g : RoseTree.Sig ℕ x → Tree} {g' : R
 reads. -/
 theorem arrow_some {F A B : Tree} {h : Ty.den F = (Ty.den A → Ty.den B)}
     (hF : Ty.arrow? F = some ⟨A, B, h⟩) :
-    (GebMirror.GoedelT.isArrow F).label ≠ 0 ∧ Const.child F (leaf 0) = A ∧
+    («Check.isArrow» F).label ≠ 0 ∧ Const.child F (leaf 0) = A ∧
       Const.child F (leaf 1) = B := by
   obtain ⟨⟨a, k⟩, g⟩ := F
   by_cases hak : a = 3 ∧ k = 2
@@ -248,9 +250,9 @@ theorem arrow_some {F A B : Tree} {h : Ty.den F = (Ty.den A → Ty.den B)}
 
 /-- A tree the kernel does not read as a function type fails the mirror's test. -/
 theorem arrow_none {F : Tree} (hF : Ty.arrow? F = none) :
-    (GebMirror.GoedelT.isArrow F).label = 0 := by
+    («Check.isArrow» F).label = 0 := by
   obtain ⟨⟨a, k⟩, g⟩ := F
-  change (GebMirror.GoedelT.and (ofBool (a == 3)) (ofBool (k == 2))).label = 0
+  change («Prelude.and» (ofBool (a == 3)) (ofBool (k == 2))).label = 0
   rw [and_ofBool]
   by_cases hak : a = 3 ∧ k = 2
   · obtain ⟨rfl, rfl⟩ := hak
@@ -262,7 +264,7 @@ theorem arrow_none {F : Tree} (hF : Ty.arrow? F = none) :
 
 /-- The mirror's product type of two optional types. -/
 theorem some2_eq (l : ℕ) (a b : Option Tree) :
-    GebMirror.GoedelT.some2 (leaf l) (enc a) (enc b) =
+    «Reader.some2» (leaf l) (enc a) (enc b) =
       enc (do let A ← a; let B ← b; some (node2 l A B)) := by
   cases a <;> cases b
   · rfl
@@ -272,7 +274,7 @@ theorem some2_eq (l : ℕ) (a b : Option Tree) :
     rfl
 
 /-- The mirror's types of the primitives are the kernel's. -/
-theorem primTypes_eq : GebMirror.GoedelT.primTypes = prims.map (·.1) := by
+theorem primTypes_eq : «Check.primTypes» = prims.map (·.1) := by
   decide +kernel
 
 /-- The type of a variable of a context is the context's type at its index. -/
@@ -409,7 +411,7 @@ theorem inferStep_ref (G : List Glob) (Γ : Ctx) (n : Tree) (sn : Sem) :
 reads. -/
 theorem prod_some {P A B : Tree} {h : Ty.den P = (Ty.den A × Ty.den B)}
     (hP : Ty.prod? P = some ⟨A, B, h⟩) :
-    (GebMirror.GoedelT.isProd P).label ≠ 0 ∧ Const.child P (leaf 0) = A ∧
+    («Check.isProd» P).label ≠ 0 ∧ Const.child P (leaf 0) = A ∧
       Const.child P (leaf 1) = B := by
   obtain ⟨⟨a, k⟩, g⟩ := P
   by_cases hak : a = 2 ∧ k = 2
@@ -422,9 +424,9 @@ theorem prod_some {P A B : Tree} {h : Ty.den P = (Ty.den A × Ty.den B)}
 
 /-- A tree the kernel does not read as a product type fails the mirror's test. -/
 theorem prod_none {P : Tree} (hP : Ty.prod? P = none) :
-    (GebMirror.GoedelT.isProd P).label = 0 := by
+    («Check.isProd» P).label = 0 := by
   obtain ⟨⟨a, k⟩, g⟩ := P
-  change (GebMirror.GoedelT.and (ofBool (a == 2)) (ofBool (k == 2))).label = 0
+  change («Prelude.and» (ofBool (a == 2)) (ofBool (k == 2))).label = 0
   rw [and_ofBool]
   by_cases hak : a = 2 ∧ k = 2
   · obtain ⟨rfl, rfl⟩ := hak
@@ -438,7 +440,7 @@ theorem prod_none {P : Tree} (hP : Ty.prod? P = none) :
 reads. -/
 theorem list_some {L A : Tree} {h : Ty.den L = List (Ty.den A)}
     (hL : Ty.list? L = some ⟨A, h⟩) :
-    (GebMirror.GoedelT.isListTy L).label ≠ 0 ∧ Const.child L (leaf 0) = A := by
+    («Check.isListTy» L).label ≠ 0 ∧ Const.child L (leaf 0) = A := by
   obtain ⟨⟨a, k⟩, g⟩ := L
   by_cases hak : a = 4 ∧ k = 1
   · obtain ⟨rfl, rfl⟩ := hak
@@ -450,9 +452,9 @@ theorem list_some {L A : Tree} {h : Ty.den L = List (Ty.den A)}
 
 /-- A tree the kernel does not read as a list type fails the mirror's test. -/
 theorem list_none {L : Tree} (hL : Ty.list? L = none) :
-    (GebMirror.GoedelT.isListTy L).label = 0 := by
+    («Check.isListTy» L).label = 0 := by
   obtain ⟨⟨a, k⟩, g⟩ := L
-  change (GebMirror.GoedelT.and (ofBool (a == 4)) (ofBool (k == 1))).label = 0
+  change («Prelude.and» (ofBool (a == 4)) (ofBool (k == 1))).label = 0
   rw [and_ofBool]
   by_cases hak : a = 4 ∧ k = 1
   · obtain ⟨rfl, rfl⟩ := hak
@@ -464,18 +466,18 @@ theorem list_none {L : Tree} (hL : Ty.list? L = none) :
 
 /-- The mirror's test of two optional trees' presence. -/
 theorem both_enc (a b : Option Tree) :
-    (GebMirror.GoedelT.both (enc a) (enc b)).label ≠ 0 ↔ a.isSome ∧ b.isSome := by
-  unfold GebMirror.GoedelT.both
+    («Reader.both» (enc a) (enc b)).label ≠ 0 ↔ a.isSome ∧ b.isSome := by
+  unfold «Reader.both»
   split <;> rename_i h <;> rw [isSome_enc] at h <;> simp_all [isSome_enc]
 
 /-- The mirror's test of two optional trees' presence, as a truth value. -/
 theorem both_enc_eq (a b : Option Tree) :
-    GebMirror.GoedelT.both (enc a) (enc b) = ofBool (a.isSome && b.isSome) := by
+    «Reader.both» (enc a) (enc b) = ofBool (a.isSome && b.isSome) := by
   cases a <;> cases b <;> rfl
 
 /-- The mirror's test of an optional tree's presence and a truth value. -/
 theorem both_enc_ofBool (a : Option Tree) (b : Bool) :
-    GebMirror.GoedelT.both (enc a) (ofBool b) = ofBool (a.isSome && b) := by
+    «Reader.both» (enc a) (ofBool b) = ofBool (a.isSome && b) := by
   cases a <;> cases b <;> rfl
 
 /-- Equality of trees, as the kernel's primitive tests it. -/
@@ -483,37 +485,37 @@ theorem equal_label (a b : Tree) : (Const.equal a b).label ≠ 0 ↔ a = b := by
   simp [Const.equal, ofBool]
 
 /-- The mirror's type of the fold of trees. -/
-theorem foldTy_eq (A : Tree) : GebMirror.GoedelT.foldTy A = foldTy A := by
-  simp only [GebMirror.GoedelT.foldTy, tyArrow_eq, tyList_eq, Kernel.foldTy, tT, tList_eq]
+theorem foldTy_eq (A : Tree) : «Check.foldTy» A = foldTy A := by
+  simp only [«Check.foldTy», tyArrow_eq, tyList_eq, Kernel.foldTy, tT, tList_eq]
 
 /-- The mirror's type of iteration. -/
-theorem iterTy_eq (A : Tree) : GebMirror.GoedelT.iterTy A = iterTy A := by
-  simp only [GebMirror.GoedelT.iterTy, tyArrow_eq, Kernel.iterTy, tT]
+theorem iterTy_eq (A : Tree) : «Check.iterTy» A = iterTy A := by
+  simp only [«Check.iterTy», tyArrow_eq, Kernel.iterTy, tT]
 
 /-- The mirror's type of the right fold of lists. -/
-theorem foldrTy_eq (A B : Tree) : GebMirror.GoedelT.foldrTy A B = foldrTy A B := by
-  simp only [GebMirror.GoedelT.foldrTy, tyArrow_eq, tyList_eq, Kernel.foldrTy]
+theorem foldrTy_eq (A B : Tree) : «Check.foldrTy» A B = foldrTy A B := by
+  simp only [«Check.foldrTy», tyArrow_eq, tyList_eq, Kernel.foldrTy]
 
 /-- The mirror's type of case analysis of lists. -/
-theorem lcaseTy_eq (A B : Tree) : GebMirror.GoedelT.lcaseTy A B = lcaseTy A B := by
-  simp only [GebMirror.GoedelT.lcaseTy, tyArrow_eq, tyList_eq, Kernel.lcaseTy]
+theorem lcaseTy_eq (A B : Tree) : «Check.lcaseTy» A B = lcaseTy A B := by
+  simp only [«Check.lcaseTy», tyArrow_eq, tyList_eq, Kernel.lcaseTy]
 
 /-- The mirror's type of a variable. -/
 theorem node_var (G : List Glob) (Γ : Ctx) (n : Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.var [n]) (withTys G [n]) Γ =
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node Label.var [n]) (withTys G [n]) Γ =
       enc (tyOf G Γ (RoseTree.node Label.var [n])) := by
-  change GebMirror.GoedelT.nth Γ (leaf n.label) = _
+  change «Prelude.nth» Γ (leaf n.label) = _
   rw [nth_eq, tyOf_node, List.map_singleton, inferStep_var]
 
 /-- The mirror's type of an abstraction. -/
 theorem node_lam (G : List Glob) (Γ : Ctx) (A b : Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.lam [A, b]) (withTys G [A, b])
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node Label.lam [A, b]) (withTys G [A, b])
       Γ = enc (tyOf G Γ (RoseTree.node Label.lam [A, b])) := by
-  change (if (GebMirror.GoedelT.isTy A).label ≠ 0 then
-      (if (GebMirror.GoedelT.isSome (enc (tyOf G (A :: Γ) b))).label ≠ 0 then
-        GebMirror.GoedelT.some (GebMirror.GoedelT.tyArrow A
-          (GebMirror.GoedelT.get (enc (tyOf G (A :: Γ) b))))
-      else GebMirror.GoedelT.none) else GebMirror.GoedelT.none) = _
+  change (if («Check.isTy» A).label ≠ 0 then
+      (if («Prelude.isSome» (enc (tyOf G (A :: Γ) b))).label ≠ 0 then
+        «Prelude.some» («Check.tyArrow» A
+          («Prelude.get» (enc (tyOf G (A :: Γ) b))))
+      else «Prelude.none») else «Prelude.none») = _
   rw [tyOf_node, List.map_cons, List.map_singleton, inferStep_lam, isTy_eq]
   change _ = enc (if Ty.IsTy A then (tyOf G (A :: Γ) b).map (tArrow A) else none)
   cases Ty.IsTy A <;> cases tyOf G (A :: Γ) b <;>
@@ -521,15 +523,15 @@ theorem node_lam (G : List Glob) (Γ : Ctx) (A b : Tree) :
 
 /-- The mirror's type of an application. -/
 theorem node_app (G : List Glob) (Γ : Ctx) (f x : Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.app [f, x]) (withTys G [f, x])
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node Label.app [f, x]) (withTys G [f, x])
       Γ = enc (tyOf G Γ (RoseTree.node Label.app [f, x])) := by
-  change (if (GebMirror.GoedelT.both (enc (tyOf G Γ f)) (enc (tyOf G Γ x))).label ≠ 0 then
-      (if (GebMirror.GoedelT.isArrow (GebMirror.GoedelT.get (enc (tyOf G Γ f)))).label ≠ 0 then
-        (if (Const.equal (GebMirror.GoedelT.get (enc (tyOf G Γ x)))
-            (Const.child (GebMirror.GoedelT.get (enc (tyOf G Γ f))) (leaf 0))).label ≠ 0 then
-          GebMirror.GoedelT.some (Const.child (GebMirror.GoedelT.get (enc (tyOf G Γ f))) (leaf 1))
-        else GebMirror.GoedelT.none)
-      else GebMirror.GoedelT.none) else GebMirror.GoedelT.none) = _
+  change (if («Reader.both» (enc (tyOf G Γ f)) (enc (tyOf G Γ x))).label ≠ 0 then
+      (if («Check.isArrow» («Prelude.get» (enc (tyOf G Γ f)))).label ≠ 0 then
+        (if (Const.equal («Prelude.get» (enc (tyOf G Γ x)))
+            (Const.child («Prelude.get» (enc (tyOf G Γ f))) (leaf 0))).label ≠ 0 then
+          «Prelude.some» (Const.child («Prelude.get» (enc (tyOf G Γ f))) (leaf 1))
+        else «Prelude.none»)
+      else «Prelude.none») else «Prelude.none») = _
   rw [tyOf_node, List.map_cons, List.map_singleton, inferStep_app]
   change _ = enc ((tyOf G Γ f).bind fun F ↦ (tyOf G Γ x).bind fun X ↦
     (Ty.arrow? F).bind fun p ↦ if X = p.1 then some p.2.1 else none)
@@ -548,25 +550,25 @@ theorem node_app (G : List Glob) (Γ : Ctx) (f x : Tree) :
 
 /-- The mirror's type of the unit value. -/
 theorem node_unit (G : List Glob) (Γ : Ctx) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.unit []) (withTys G []) Γ =
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node Label.unit []) (withTys G []) Γ =
       enc (tyOf G Γ (RoseTree.node Label.unit [])) := rfl
 
 /-- The mirror's type of a pair. -/
 theorem node_pair (G : List Glob) (Γ : Ctx) (a b : Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.pair [a, b])
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node Label.pair [a, b])
       (withTys G [a, b]) Γ = enc (tyOf G Γ (RoseTree.node Label.pair [a, b])) := by
-  change GebMirror.GoedelT.some2 (leaf 2) (enc (tyOf G Γ a)) (enc (tyOf G Γ b)) = _
+  change «Reader.some2» (leaf 2) (enc (tyOf G Γ a)) (enc (tyOf G Γ b)) = _
   rw [some2_eq, tyOf_node, List.map_cons, List.map_singleton, inferStep_pair]
   rfl
 
 /-- The mirror's type of a first projection. -/
 theorem node_fst (G : List Glob) (Γ : Ctx) (p : Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.fst [p]) (withTys G [p]) Γ =
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node Label.fst [p]) (withTys G [p]) Γ =
       enc (tyOf G Γ (RoseTree.node Label.fst [p])) := by
-  change (if (GebMirror.GoedelT.isSome (enc (tyOf G Γ p))).label ≠ 0 then
-      (if (GebMirror.GoedelT.isProd (GebMirror.GoedelT.get (enc (tyOf G Γ p)))).label ≠ 0 then
-        GebMirror.GoedelT.some (Const.child (GebMirror.GoedelT.get (enc (tyOf G Γ p))) (leaf 0))
-      else GebMirror.GoedelT.none) else GebMirror.GoedelT.none) = _
+  change (if («Prelude.isSome» (enc (tyOf G Γ p))).label ≠ 0 then
+      (if («Check.isProd» («Prelude.get» (enc (tyOf G Γ p)))).label ≠ 0 then
+        «Prelude.some» (Const.child («Prelude.get» (enc (tyOf G Γ p))) (leaf 0))
+      else «Prelude.none») else «Prelude.none») = _
   rw [tyOf_node, List.map_singleton, inferStep_fst]
   change _ = enc ((tyOf G Γ p).bind fun P ↦ (Ty.prod? P).map (·.1))
   cases tyOf G Γ p with
@@ -579,12 +581,12 @@ theorem node_fst (G : List Glob) (Γ : Ctx) (p : Tree) :
 
 /-- The mirror's type of a second projection. -/
 theorem node_snd (G : List Glob) (Γ : Ctx) (p : Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.snd [p]) (withTys G [p]) Γ =
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node Label.snd [p]) (withTys G [p]) Γ =
       enc (tyOf G Γ (RoseTree.node Label.snd [p])) := by
-  change (if (GebMirror.GoedelT.isSome (enc (tyOf G Γ p))).label ≠ 0 then
-      (if (GebMirror.GoedelT.isProd (GebMirror.GoedelT.get (enc (tyOf G Γ p)))).label ≠ 0 then
-        GebMirror.GoedelT.some (Const.child (GebMirror.GoedelT.get (enc (tyOf G Γ p))) (leaf 1))
-      else GebMirror.GoedelT.none) else GebMirror.GoedelT.none) = _
+  change (if («Prelude.isSome» (enc (tyOf G Γ p))).label ≠ 0 then
+      (if («Check.isProd» («Prelude.get» (enc (tyOf G Γ p)))).label ≠ 0 then
+        «Prelude.some» (Const.child («Prelude.get» (enc (tyOf G Γ p))) (leaf 1))
+      else «Prelude.none») else «Prelude.none») = _
   rw [tyOf_node, List.map_singleton, inferStep_snd]
   change _ = enc ((tyOf G Γ p).bind fun P ↦ (Ty.prod? P).map (·.2.1))
   cases tyOf G Γ p with
@@ -597,22 +599,22 @@ theorem node_snd (G : List Glob) (Γ : Ctx) (p : Tree) :
 
 /-- The mirror's type of a quoted tree. -/
 theorem node_quote (G : List Glob) (Γ : Ctx) (t : Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.quote [t]) (withTys G [t]) Γ =
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node Label.quote [t]) (withTys G [t]) Γ =
       enc (tyOf G Γ (RoseTree.node Label.quote [t])) := by
   rw [tyOf_node]
   rfl
 
 /-- The mirror's type of a conditional. -/
 theorem node_cond (G : List Glob) (Γ : Ctx) (c a b : Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.cond [c, a, b])
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node Label.cond [c, a, b])
       (withTys G [c, a, b]) Γ = enc (tyOf G Γ (RoseTree.node Label.cond [c, a, b])) := by
-  change (if (GebMirror.GoedelT.both (enc (tyOf G Γ c))
-        (GebMirror.GoedelT.both (enc (tyOf G Γ a)) (enc (tyOf G Γ b)))).label ≠ 0 then
-      (if (Const.equal (GebMirror.GoedelT.get (enc (tyOf G Γ c))) (leaf 0)).label ≠ 0 then
-        (if (Const.equal (GebMirror.GoedelT.get (enc (tyOf G Γ b)))
-            (GebMirror.GoedelT.get (enc (tyOf G Γ a)))).label ≠ 0 then enc (tyOf G Γ a)
-        else GebMirror.GoedelT.none)
-      else GebMirror.GoedelT.none) else GebMirror.GoedelT.none) = _
+  change (if («Reader.both» (enc (tyOf G Γ c))
+        («Reader.both» (enc (tyOf G Γ a)) (enc (tyOf G Γ b)))).label ≠ 0 then
+      (if (Const.equal («Prelude.get» (enc (tyOf G Γ c))) (leaf 0)).label ≠ 0 then
+        (if (Const.equal («Prelude.get» (enc (tyOf G Γ b)))
+            («Prelude.get» (enc (tyOf G Γ a)))).label ≠ 0 then enc (tyOf G Γ a)
+        else «Prelude.none»)
+      else «Prelude.none») else «Prelude.none») = _
   rw [tyOf_node, List.map_cons, List.map_cons, List.map_singleton, inferStep_cond]
   change _ = enc ((tyOf G Γ c).bind fun C ↦ (tyOf G Γ a).bind fun A ↦ (tyOf G Γ b).bind fun B ↦
     if C = tT then if B = A then some A else none else none)
@@ -625,10 +627,10 @@ theorem node_cond (G : List Glob) (Γ : Ctx) (c a b : Tree) :
 
 /-- The mirror's type of the fold of trees. -/
 theorem node_fold (G : List Glob) (Γ : Ctx) (A : Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.fold [A]) (withTys G [A]) Γ =
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node Label.fold [A]) (withTys G [A]) Γ =
       enc (tyOf G Γ (RoseTree.node Label.fold [A])) := by
-  change (if (GebMirror.GoedelT.isTy A).label ≠ 0 then GebMirror.GoedelT.some
-    (GebMirror.GoedelT.foldTy A) else GebMirror.GoedelT.none) = _
+  change (if («Check.isTy» A).label ≠ 0 then «Prelude.some»
+    («Check.foldTy» A) else «Prelude.none») = _
   rw [tyOf_node]
   change _ = enc (fstOf (if Ty.IsTy A then some (constant ⟨foldTy A, foldDen A⟩) else none))
   rw [isTy_eq, foldTy_eq]
@@ -637,10 +639,10 @@ theorem node_fold (G : List Glob) (Γ : Ctx) (A : Tree) :
 /-- The mirror's type of the fold of trees whose step sees the node itself: the type of the
 fold. -/
 theorem node_para (G : List Glob) (Γ : Ctx) (A : Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.para [A]) (withTys G [A]) Γ =
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node Label.para [A]) (withTys G [A]) Γ =
       enc (tyOf G Γ (RoseTree.node Label.para [A])) := by
-  change (if (GebMirror.GoedelT.isTy A).label ≠ 0 then GebMirror.GoedelT.some
-    (GebMirror.GoedelT.foldTy A) else GebMirror.GoedelT.none) = _
+  change (if («Check.isTy» A).label ≠ 0 then «Prelude.some»
+    («Check.foldTy» A) else «Prelude.none») = _
   rw [tyOf_node]
   change _ = enc (fstOf (if Ty.IsTy A then some (constant ⟨foldTy A, paraDen A⟩) else none))
   rw [isTy_eq, foldTy_eq]
@@ -648,10 +650,10 @@ theorem node_para (G : List Glob) (Γ : Ctx) (A : Tree) :
 
 /-- The mirror's type of iteration. -/
 theorem node_iter (G : List Glob) (Γ : Ctx) (A : Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.iter [A]) (withTys G [A]) Γ =
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node Label.iter [A]) (withTys G [A]) Γ =
       enc (tyOf G Γ (RoseTree.node Label.iter [A])) := by
-  change (if (GebMirror.GoedelT.isTy A).label ≠ 0 then GebMirror.GoedelT.some
-    (GebMirror.GoedelT.iterTy A) else GebMirror.GoedelT.none) = _
+  change (if («Check.isTy» A).label ≠ 0 then «Prelude.some»
+    («Check.iterTy» A) else «Prelude.none») = _
   rw [tyOf_node]
   change _ = enc (fstOf (if Ty.IsTy A then some (constant ⟨iterTy A, iterDen A⟩) else none))
   rw [isTy_eq, iterTy_eq]
@@ -659,10 +661,10 @@ theorem node_iter (G : List Glob) (Γ : Ctx) (A : Tree) :
 
 /-- The mirror's type of the empty list. -/
 theorem node_nil (G : List Glob) (Γ : Ctx) (A : Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.nil [A]) (withTys G [A]) Γ =
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node Label.nil [A]) (withTys G [A]) Γ =
       enc (tyOf G Γ (RoseTree.node Label.nil [A])) := by
-  change (if (GebMirror.GoedelT.isTy A).label ≠ 0 then GebMirror.GoedelT.some
-    (GebMirror.GoedelT.tyList A) else GebMirror.GoedelT.none) = _
+  change (if («Check.isTy» A).label ≠ 0 then «Prelude.some»
+    («Check.tyList» A) else «Prelude.none») = _
   rw [tyOf_node]
   change _ = enc (fstOf (if Ty.IsTy A then
     some (⟨tList A, fun _ ↦ ([] : List (Ty.den A))⟩ : Meaning Γ) else none))
@@ -671,16 +673,16 @@ theorem node_nil (G : List Glob) (Γ : Ctx) (A : Tree) :
 
 /-- The mirror's type of a list construction. -/
 theorem node_cons (G : List Glob) (Γ : Ctx) (x xs : Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.cons [x, xs])
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node Label.cons [x, xs])
       (withTys G [x, xs]) Γ = enc (tyOf G Γ (RoseTree.node Label.cons [x, xs])) := by
-  change (if (GebMirror.GoedelT.both (enc (tyOf G Γ x)) (enc (tyOf G Γ xs))).label ≠ 0 then
-      (if (GebMirror.GoedelT.isListTy (GebMirror.GoedelT.get (enc (tyOf G Γ xs)))).label ≠ 0 then
-        (if (Const.equal (GebMirror.GoedelT.get (enc (tyOf G Γ x)))
-            (Const.child (GebMirror.GoedelT.get (enc (tyOf G Γ xs))) (leaf 0))).label ≠ 0 then
-          GebMirror.GoedelT.some (GebMirror.GoedelT.tyList (GebMirror.GoedelT.get
+  change (if («Reader.both» (enc (tyOf G Γ x)) (enc (tyOf G Γ xs))).label ≠ 0 then
+      (if («Check.isListTy» («Prelude.get» (enc (tyOf G Γ xs)))).label ≠ 0 then
+        (if (Const.equal («Prelude.get» (enc (tyOf G Γ x)))
+            (Const.child («Prelude.get» (enc (tyOf G Γ xs))) (leaf 0))).label ≠ 0 then
+          «Prelude.some» («Check.tyList» («Prelude.get»
             (enc (tyOf G Γ x))))
-        else GebMirror.GoedelT.none)
-      else GebMirror.GoedelT.none) else GebMirror.GoedelT.none) = _
+        else «Prelude.none»)
+      else «Prelude.none») else «Prelude.none») = _
   rw [tyOf_node, List.map_cons, List.map_singleton, inferStep_cons]
   change _ = enc ((tyOf G Γ x).bind fun X ↦ (tyOf G Γ xs).bind fun L ↦
     (Ty.list? L).bind fun p ↦ if X = p.1 then some (tList p.1) else none)
@@ -700,11 +702,11 @@ theorem node_cons (G : List Glob) (Γ : Ctx) (x xs : Tree) :
 
 /-- The mirror's type of the right fold of lists. -/
 theorem node_foldr (G : List Glob) (Γ : Ctx) (A B : Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.foldr [A, B])
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node Label.foldr [A, B])
       (withTys G [A, B]) Γ = enc (tyOf G Γ (RoseTree.node Label.foldr [A, B])) := by
-  change (if (GebMirror.GoedelT.and (GebMirror.GoedelT.isTy A)
-      (GebMirror.GoedelT.isTy B)).label ≠ 0 then
-    GebMirror.GoedelT.some (GebMirror.GoedelT.foldrTy A B) else GebMirror.GoedelT.none) = _
+  change (if («Prelude.and» («Check.isTy» A)
+      («Check.isTy» B)).label ≠ 0 then
+    «Prelude.some» («Check.foldrTy» A B) else «Prelude.none») = _
   rw [tyOf_node]
   change _ = enc (fstOf (if (Ty.IsTy A && Ty.IsTy B) then
     some (constant ⟨foldrTy A B, foldrDen A B⟩) else none))
@@ -713,11 +715,11 @@ theorem node_foldr (G : List Glob) (Γ : Ctx) (A B : Tree) :
 
 /-- The mirror's type of case analysis of lists. -/
 theorem node_lcase (G : List Glob) (Γ : Ctx) (A B : Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.lcase [A, B])
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node Label.lcase [A, B])
       (withTys G [A, B]) Γ = enc (tyOf G Γ (RoseTree.node Label.lcase [A, B])) := by
-  change (if (GebMirror.GoedelT.and (GebMirror.GoedelT.isTy A)
-      (GebMirror.GoedelT.isTy B)).label ≠ 0 then
-    GebMirror.GoedelT.some (GebMirror.GoedelT.lcaseTy A B) else GebMirror.GoedelT.none) = _
+  change (if («Prelude.and» («Check.isTy» A)
+      («Check.isTy» B)).label ≠ 0 then
+    «Prelude.some» («Check.lcaseTy» A B) else «Prelude.none») = _
   rw [tyOf_node]
   change _ = enc (fstOf (if (Ty.IsTy A && Ty.IsTy B) then
     some (constant ⟨lcaseTy A B, lcaseDen A B⟩) else none))
@@ -726,28 +728,28 @@ theorem node_lcase (G : List Glob) (Γ : Ctx) (A B : Tree) :
 
 /-- The mirror's type of a primitive. -/
 theorem node_prim (G : List Glob) (Γ : Ctx) (k : Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.prim [k]) (withTys G [k]) Γ =
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node Label.prim [k]) (withTys G [k]) Γ =
       enc (tyOf G Γ (RoseTree.node Label.prim [k])) := by
-  change GebMirror.GoedelT.nth GebMirror.GoedelT.primTypes (leaf k.label) = _
+  change «Prelude.nth» «Check.primTypes» (leaf k.label) = _
   rw [nth_eq, primTypes_eq, tyOf_node, List.map_singleton, inferStep_prim]
 
 /-- The mirror's type of a reference. -/
 theorem node_ref (G : List Glob) (Γ : Ctx) (n : Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.ref [n]) (withTys G [n]) Γ =
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node Label.ref [n]) (withTys G [n]) Γ =
       enc (tyOf G Γ (RoseTree.node Label.ref [n])) := by
-  change GebMirror.GoedelT.nth (G.map (·.1)) (leaf n.label) = _
+  change «Prelude.nth» (G.map (·.1)) (leaf n.label) = _
   rw [nth_eq, tyOf_node, List.map_singleton, inferStep_ref]
 
 /-- The mirror's type of a node whose label is past the kernel's labels: nothing. -/
 theorem node_other (G : List Glob) (Γ : Ctx) (l : ℕ) (hl : 25 < l) (cs : List Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node l cs) (withTys G cs) Γ =
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node l cs) (withTys G cs) Γ =
       enc (tyOf G Γ (RoseTree.node l cs)) := by
   rw [tyOf_node]
   have hnone : inferStep l (cs.map fun c ↦ (c, RoseTree.para inferStep c)) G Γ = none := by
     unfold inferStep
     split <;> first | omega | rfl
   rw [hnone]
-  unfold GebMirror.GoedelT.checkNode
+  unfold «Check.checkNode»
   simp only [label_node, children_node, arity_node, eq_leaf_ofBool, ofBool_label, beq_iff_eq,
     show l ≠ 8 by omega, show l ≠ 9 by omega, show l ≠ 10 by omega, show l ≠ 11 by omega,
     show l ≠ 12 by omega, show l ≠ 13 by omega, show l ≠ 14 by omega, show l ≠ 15 by omega,
@@ -767,13 +769,13 @@ theorem eq_arity_many (n k : ℕ) (hk : k ≤ 3) : Const.eq (leaf (n + 1 + 1 + 1
 
 /-- The mirror's type of a node of four or more children: nothing. -/
 theorem node_many (G : List Glob) (Γ : Ctx) (l : ℕ) (a b c d : Tree) (rest : List Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node l (a :: b :: c :: d :: rest))
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node l (a :: b :: c :: d :: rest))
       (withTys G (a :: b :: c :: d :: rest)) Γ =
       enc (tyOf G Γ (RoseTree.node l (a :: b :: c :: d :: rest))) := by
   by_cases hl : 25 < l
   · exact node_other G Γ l hl _
   rw [tyOf_node, List.map_cons, List.map_cons, List.map_cons, List.map_cons]
-  unfold GebMirror.GoedelT.checkNode
+  unfold «Check.checkNode»
   simp only [arity_node, List.length_cons, eq_arity_many _ 0 (by omega),
     eq_arity_many _ 1 (by omega), eq_arity_many _ 2 (by omega), eq_arity_many _ 3 (by omega)]
   match l, hl with
@@ -784,7 +786,7 @@ theorem node_many (G : List Glob) (Γ : Ctx) (l : ℕ) (a b c d : Tree) (rest : 
 
 /-- The mirror's type of a node, from its children's types. -/
 theorem checkNode_eq (G : List Glob) (Γ : Ctx) (l : ℕ) (cs : List Tree) :
-    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node l cs) (withTys G cs) Γ =
+    «Check.checkNode» (G.map (·.1)) (RoseTree.node l cs) (withTys G cs) Γ =
       enc (tyOf G Γ (RoseTree.node l cs)) := by
   by_cases hl : 25 < l
   · exact node_other G Γ l hl cs
@@ -831,8 +833,8 @@ theorem checkNode_eq (G : List Glob) (Γ : Ctx) (l : ℕ) (cs : List Tree) :
 function of the context. -/
 def typeStep (Gt : List Tree) (l : Tree) (rs : List (Tree × (List Tree → Tree))) :
     Tree × (List Tree → Tree) :=
-  (Const.node l (GebMirror.GoedelT.rrTrees rs),
-    fun Γ ↦ GebMirror.GoedelT.checkNode Gt (Const.node l (GebMirror.GoedelT.rrTrees rs)) rs Γ)
+  (Const.node l («Reader.rrTrees» rs),
+    fun Γ ↦ «Check.checkNode» Gt (Const.node l («Reader.rrTrees» rs)) rs Γ)
 
 /-- The mirror's type checker's fold gives each tree with its type. -/
 theorem fold_typeStep (G : List Glob) :
@@ -840,7 +842,7 @@ theorem fold_typeStep (G : List Glob) :
   RoseTree.ind fun l cs ih ↦ by
     rw [fold_node, List.map_congr_left ih]
     change typeStep _ (leaf l) (withTys G cs) = _
-    have hcs : GebMirror.GoedelT.rrTrees (withTys G cs) = cs := by
+    have hcs : «Reader.rrTrees» (withTys G cs) = cs := by
       rw [rrTrees_eq, withTys, List.map_map]
       exact List.map_id cs
     unfold typeStep
@@ -850,7 +852,7 @@ theorem fold_typeStep (G : List Glob) :
 /-- The type checker written in Geb decides as the kernel's checker-evaluator: the type it gives
 a term in a context, as an optional tree, is the type of the term's meaning. -/
 theorem typeIn_eq (G : List Glob) (Γ : Ctx) (t : Tree) :
-    GebMirror.GoedelT.typeIn (G.map (·.1)) Γ t = enc (tyOf G Γ t) := by
+    «Check.typeIn» (G.map (·.1)) Γ t = enc (tyOf G Γ t) := by
   change (Const.fold (typeStep (G.map (·.1))) t).2 Γ = _
   rw [fold_typeStep]
 
