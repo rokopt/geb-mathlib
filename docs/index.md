@@ -3772,13 +3772,17 @@ checklist and in CI.
   (`Geb.Kernel.rename`), recording the program's tree of modules
   (`Geb.Kernel.elabTree`). `ModuleIdentity.lean` identifies each module by
   the CID of its members' and exports' identifiers
-  (`Geb.Kernel.Identity.moduleCids`).
+  (`Geb.Kernel.Identity.moduleCids`). `Printer.lean` writes a bundle in the
+  readable syntax (`Geb.Kernel.printProgram`), which the reader retracts on
+  well-formed terms (`Geb.Kernel.resolve_printTerm`) and bundles
+  (`Geb.Kernel.readForms_printProgram`).
   Tested in
   `GebTests/Prototypes/Kernel.lean`,
   `GebTests/Prototypes/Kernel/Document.lean`,
   `GebTests/Prototypes/Kernel/Strict.lean`,
-  `GebTests/Prototypes/Kernel/Identity.lean` and
-  `GebTests/Prototypes/Kernel/Modules.lean`. The
+  `GebTests/Prototypes/Kernel/Identity.lean`,
+  `GebTests/Prototypes/Kernel/Modules.lean` and
+  `GebTests/Prototypes/Kernel/Printer.lean`. The
   [Bootstrap chapter](../manual/GebManual/Bootstrap.lean) § Authoring
   across bootstrap revisions describes document preservation, migration
   contracts, the remaining hole interface and synthesis.

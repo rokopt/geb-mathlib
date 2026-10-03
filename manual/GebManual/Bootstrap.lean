@@ -114,8 +114,8 @@ Computation:
 * Complete. The seed ({ref "kernel-in-lean"}[The kernel runs in Lean]):
   the kernel's syntax, its type checker
   and evaluator, the primitives and the reader, with numeral
-  abbreviations for labels. The reader's printer and the retraction law
-  between them are ready.
+  abbreviations for labels, the reader's printer and the retraction law
+  between them.
 * Complete. {ref "definitions-and-images"}[Definitions and images]:
   closed bundles, the image
   format and the host driver `geb-kernel`. The names of bound variables
@@ -189,7 +189,8 @@ the sections below detail:
     the components' translations, the type checker's preservation of
     types by weakening and by substitution and the datatype language's
     expansion's identity on programs of kernel forms complete, and the
-    reader's inverse to the printer waiting on the printer.
+    reader's inverse to the printer, whose printer and retraction in Lean
+    are complete, in progress.
 * The metalogic, the free topos in one presentation:
   * Complete. The rule set with its checker in Lean, sound, and the
     proof that every model is an elementary topos with the data
@@ -284,8 +285,8 @@ Extension:
 * Ready. The syntaxes of {citet RFC9804}[] and the Geb authoring profile,
   reading into one document type with proved retractions, and the
   importer from the present syntax
-  ({ref "rfc9804-syntaxes"}[The syntaxes of RFC 9804]); and a printer for
-  the kernel's terms with the retraction law, the section on
+  ({ref "rfc9804-syntaxes"}[The syntaxes of RFC 9804]). Complete: a
+  printer for the kernel's terms with the retraction law, the section on
   improvements.
 * In progress. {ref "authoring-compatibility"}[Authoring across bootstrap
   revisions]: preservation of source documents, bindings and dependency
@@ -1522,7 +1523,7 @@ section below opens with a table of the states of its parts.
 *
   * {ref "kernel-in-lean"}[The kernel runs in Lean]
   * Complete
-  * The reader's printer and the retraction law: ready
+  * Nothing
 *
   * {ref "choice-of-machine"}[The choice of machine]
   * Deferred until before the second host
@@ -1564,8 +1565,8 @@ section below opens with a table of the states of its parts.
   * {ref "goedel-t"}[Gödel's T]
   * In progress
   * Weakening, substitution and the identity of the datatype language's
-    expansion: complete; the reader's inverse to the printer: waiting on
-    the printer
+    expansion: complete; the reader's inverse to the printer: in
+    progress, its printer and retraction in Lean complete
 *
   * {ref "metalogic"}[The metalogic]
   * In progress
@@ -1612,7 +1613,7 @@ tag := "kernel-in-lean"
   * Complete
 *
   * The reader
-  * Complete; its printer and the retraction law are ready
+  * Complete, with its printer and the retraction law
 *
   * Acceptance
   * Met
@@ -1666,8 +1667,16 @@ tag := "kernel-in-lean"
   constants do and leave no trace in the terms read; the
   definitions are checked and evaluated in order
   ({name}`Geb.Kernel.load`), and the last is applied to an input tree
-  ({name}`Geb.Kernel.runMain`). A printer and the retraction law
-  between it and the reader remain to be written.
+  ({name}`Geb.Kernel.runMain`). The printer writes a bundle in the readable
+  syntax ({name}`Geb.Kernel.printProgram`), a variable as the name of its
+  binder, `_d` for the binder at depth `d`, an abstraction with one binder
+  and its type written structurally, an application of several arguments
+  as applications of one, and a reference by the name of the definition it
+  refers to. The reader retracts it: a well-formed term
+  ({name}`Geb.Kernel.TermWf`) printed resolves to itself
+  ({name}`Geb.Kernel.resolve_printTerm`), and the definitions of a
+  well-formed bundle ({name}`Geb.Kernel.ProgramWf`), printed, read back to
+  the bundle ({name}`Geb.Kernel.readForms_printProgram`).
 
 Acceptance: a program written by hand in S-expressions is read, type
 checked and run, with arithmetic beyond a machine word; ill-typed and
@@ -4438,7 +4447,8 @@ Gödel's T states and proves the following.
     substitution, complete;
   * the identity of the datatype language's expansion on programs of
     kernel forms, complete;
-  * the reader's inverse to the printer, waiting on the printer;
+  * the reader's inverse to the printer, in progress, its printer and
+    retraction in Lean complete;
   * the admission of a stronger checker by the proof that a Geb
     program translates its certificates into the metalogic's
     derivations with the same conclusions, ready: it is admitted beside
@@ -6137,7 +6147,8 @@ printer nor a checker written in Geb are complete: the type checker's
 preservation of types by weakening and by substitution and the identity
 of the datatype language's expansion on programs of kernel forms
 ({ref "goedel-t"}[Gödel's T]). The reader's
-inverse to the printer waits on the printer; the admission of a stronger
+inverse to the printer is in progress, its printer and retraction in Lean
+complete; the admission of a stronger
 checker beside the metalogic's checker written in Geb, whose agreement
 with the Lean checker is proved, is ready (the section on the metalogic
 and its checker). The first of the two items below is complete, the

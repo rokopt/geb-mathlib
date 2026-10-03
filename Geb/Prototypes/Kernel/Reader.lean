@@ -115,18 +115,21 @@ a numeral. -/
 def numOf (nums : NumNames) (e : SExp) : Option (List Char) :=
   (expandNums nums e).label.bind fun s ↦ (numeral? s).map fun _ ↦ s
 
-/-- An S-expression read as a type, given the type abbreviations in force, with its atom if it
-is one. -/
-def readType (tys : TypeNames) : SExp → Option Tree :=
-  fun e ↦ (RoseTree.elim (β := Option String × Option Tree) (fun a rs ↦
-    match a.map String.ofList, rs with
-    | some "T", _ => (some "T", some tT)
-    | some "Unit", _ => (some "Unit", some tUnit)
-    | some s, _ => (some s, a.bind fun n ↦ List.lookup n tys)
-    | none, [(some "Prod", _), (_, some A), (_, some B)] => (none, some (tProd A B))
-    | none, [(some "Arrow", _), (_, some A), (_, some B)] => (none, some (tArrow A B))
-    | none, [(some "List", _), (_, some A)] => (none, some (tList A))
-    | none, _ => (none, none)) e).2
+/-- One node of an S-expression read as a type: its atom, if it is one, and the type it denotes,
+from its children's. -/
+def readTypeStep (tys : TypeNames) (a : Option (List Char))
+    (rs : List (Option String × Option Tree)) : Option String × Option Tree :=
+  match a.map String.ofList, rs with
+  | some "T", _ => (some "T", some tT)
+  | some "Unit", _ => (some "Unit", some tUnit)
+  | some s, _ => (some s, a.bind fun n ↦ List.lookup n tys)
+  | none, [(some "Prod", _), (_, some A), (_, some B)] => (none, some (tProd A B))
+  | none, [(some "Arrow", _), (_, some A), (_, some B)] => (none, some (tArrow A B))
+  | none, [(some "List", _), (_, some A)] => (none, some (tList A))
+  | none, _ => (none, none)
+
+/-- An S-expression read as a type, given the type abbreviations in force. -/
+def readType (tys : TypeNames) (e : SExp) : Option Tree := (RoseTree.elim (readTypeStep tys) e).2
 
 /-- One node of a quoted datum: an atom's numeral, if it is one, and the trees the node
 contributes to the list it is in, a numeral its leaf, another atom the leaves of its
@@ -177,10 +180,10 @@ def resolveStep (tys : TypeNames) (defs : List (List Char)) (a : Option (List Ch
     | _, some i, _, _ => some (mk Label.var [leaf i])
     | _, _, some j, _ => some (mk Label.ref [leaf j])
     | _, _, _, some k => some (mk Label.prim [leaf k])
-    | _, _, _, _ => if String.ofList s == "unit" then some (mk Label.unit []) else none
+    | _, _, _, _ => if s == ['u', 'n', 'i', 't'] then some (mk Label.unit []) else none
   | none, (h, rh) :: rest =>
-    match h.label.map String.ofList, rest with
-    | some "lam", [(b, _), (_, body)] => do
+    match h.label, rest with
+    | some ['l', 'a', 'm'], [(b, _), (_, body)] => do
       let bs ← (binders b).mapM fun c ↦
         match c.children with
         | [x, A] => do some (← x.label, ← readType tys A)
@@ -189,22 +192,25 @@ def resolveStep (tys : TypeNames) (defs : List (List Char)) (a : Option (List Ch
       else
         let t ← body ((bs.map Prod.fst).reverse ++ scope)
         some (bs.foldr (fun p u ↦ mk Label.lam [p.2, u]) t)
-    | some "let", [(x, _), (A, _), (_, e), (_, body)] => do
+    | some ['l', 'e', 't'], [(x, _), (A, _), (_, e), (_, body)] => do
       let name ← x.label
       some (mk Label.app [mk Label.lam [← readType tys A, ← body (name :: scope)], ← e scope])
-    | some "pair", _ => (args rest).map (mk Label.pair)
-    | some "fst", _ => (args rest).map (mk Label.fst)
-    | some "snd", _ => (args rest).map (mk Label.snd)
-    | some "if", _ => (args rest).map (mk Label.cond)
-    | some "quote", [(d, _)] => (readDatum d).map fun t ↦ mk Label.quote [t]
-    | some "cons", _ => (args rest).map (mk Label.cons)
-    | some "nil", [(A, _)] => (readType tys A).map fun A ↦ mk Label.nil [A]
-    | some "fold", (A, _) :: xs => do apps (mk Label.fold [← readType tys A]) (← args xs)
-    | some "para", (A, _) :: xs => do apps (mk Label.para [← readType tys A]) (← args xs)
-    | some "iter", (A, _) :: xs => do apps (mk Label.iter [← readType tys A]) (← args xs)
-    | some "foldr", (A, _) :: (B, _) :: xs => do
+    | some ['p', 'a', 'i', 'r'], _ => (args rest).map (mk Label.pair)
+    | some ['f', 's', 't'], _ => (args rest).map (mk Label.fst)
+    | some ['s', 'n', 'd'], _ => (args rest).map (mk Label.snd)
+    | some ['i', 'f'], _ => (args rest).map (mk Label.cond)
+    | some ['q', 'u', 'o', 't', 'e'], [(d, _)] => (readDatum d).map fun t ↦ mk Label.quote [t]
+    | some ['c', 'o', 'n', 's'], _ => (args rest).map (mk Label.cons)
+    | some ['n', 'i', 'l'], [(A, _)] => (readType tys A).map fun A ↦ mk Label.nil [A]
+    | some ['f', 'o', 'l', 'd'], (A, _) :: xs => do
+      apps (mk Label.fold [← readType tys A]) (← args xs)
+    | some ['p', 'a', 'r', 'a'], (A, _) :: xs => do
+      apps (mk Label.para [← readType tys A]) (← args xs)
+    | some ['i', 't', 'e', 'r'], (A, _) :: xs => do
+      apps (mk Label.iter [← readType tys A]) (← args xs)
+    | some ['f', 'o', 'l', 'd', 'r'], (A, _) :: (B, _) :: xs => do
       apps (mk Label.foldr [← readType tys A, ← readType tys B]) (← args xs)
-    | some "lcase", (A, _) :: (B, _) :: xs => do
+    | some ['l', 'c', 'a', 's', 'e'], (A, _) :: (B, _) :: xs => do
       apps (mk Label.lcase [← readType tys A, ← readType tys B]) (← args xs)
     | _, _ => do apps (← rh scope) (← args rest)
   | none, [] => none
@@ -228,24 +234,28 @@ reserved nor declared already, as a definition or an abbreviation of either kind
 def isFresh (taken : List (List Char)) (name : List Char) : Bool :=
   !reservedNames.contains (String.ofList name) && !taken.contains name
 
+/-- One form of a program read after those before it, given their abbreviations and
+definitions: a definition, a type abbreviation or a numeral abbreviation under a fresh name. -/
+def readFormStep (acc : Option (TypeNames × NumNames × List (List Char × Tree))) (e : SExp) :
+    Option (TypeNames × NumNames × List (List Char × Tree)) := do
+  let (tys, nums, ds) ← acc
+  match e.children with
+  | [kw, n, body] => do
+    let name ← n.label
+    guard (isFresh (tys.map Prod.fst ++ nums.map Prod.fst ++ ds.map Prod.fst) name)
+    match kw.label with
+    | some ['d', 'e', 'f'] =>
+      some (tys, nums, ds ++ [(name, ← resolve tys (ds.map Prod.fst) (expandNums nums body) [])])
+    | some ['d', 'e', 'f', 't', 'y', 'p', 'e'] =>
+      some ((name, ← readType tys body) :: tys, nums, ds)
+    | some ['d', 'e', 'f', 'n', 'u', 'm'] => some (tys, (name, ← numOf nums body) :: nums, ds)
+    | _ => none
+  | _ => none
+
 /-- The definitions of a program's forms, as names with kernel terms; abbreviations are expanded
 where they are used. A declaration whose name is reserved or declared before it is rejected. -/
 def readForms (es : List SExp) : Option (List (List Char × Tree)) :=
-  let step (acc : Option (TypeNames × NumNames × List (List Char × Tree))) (e : SExp) :
-      Option (TypeNames × NumNames × List (List Char × Tree)) := do
-    let (tys, nums, ds) ← acc
-    match e.children with
-    | [kw, n, body] => do
-      let name ← n.label
-      guard (isFresh (tys.map Prod.fst ++ nums.map Prod.fst ++ ds.map Prod.fst) name)
-      match kw.label.map String.ofList with
-      | some "def" =>
-        some (tys, nums, ds ++ [(name, ← resolve tys (ds.map Prod.fst) (expandNums nums body) [])])
-      | some "deftype" => some ((name, ← readType tys body) :: tys, nums, ds)
-      | some "defnum" => some (tys, (name, ← numOf nums body) :: nums, ds)
-      | _ => none
-    | _ => none
-  (es.foldl step (some ([], [], []))).map (·.2.2)
+  (es.foldl readFormStep (some ([], [], []))).map (·.2.2)
 
 /-- The meanings of a program's definitions, each checked and evaluated in the global
 environment of those before it. -/

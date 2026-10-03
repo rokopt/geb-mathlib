@@ -16,6 +16,7 @@ public import Geb.Prototypes.Kernel.Image
 public import Geb.Prototypes.Kernel.LoadCommand
 public import Geb.Prototypes.Kernel.ModuleIdentity
 public import Geb.Prototypes.Kernel.Modules
+public import Geb.Prototypes.Kernel.Printer
 public import Geb.Prototypes.Kernel.Loading
 public import Geb.Prototypes.Kernel.Reader
 public import Geb.Prototypes.Kernel.Strict
