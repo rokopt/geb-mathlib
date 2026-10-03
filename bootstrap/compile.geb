@@ -3,19 +3,21 @@
 ; Authors: Terence Rokop
 ;
 ; The stage-0 compiler: a program's source file to the image of its bundle, or the empty file
-; when the program does not read or is ill-typed. The program's forms of the datatype language
-; are expanded first; for a program of kernel forms alone the image is byte for byte the one the
-; seed builds. compileWith takes the backend applied to a checked program's bundle. Requires the
-; prelude, the serializer, the reader, the checker and the expansion.
+; when the program does not read or is ill-typed. The program's modules are elaborated and its
+; forms of the datatype language expanded first; for a program of kernel forms alone the image is
+; byte for byte the one the seed builds. compileWith takes the backend applied to a checked
+; program's bundle. Requires the prelude, the serializer, the reader, the checker, the expansion
+; and the modules.
 
 (def compileWith
   (lam ((back (Arrow T T)) (file T))
     (let sx T (readSExps (children file))
-      (let kx T (if (isSome sx) (expandProgram (children (get sx))) none)
-        (let b T (if (isSome kx) (readProgram (children (get kx))) none)
-          (if (isSome b)
-            (if (isSome (checkProgram (children (child (get b) 0)))) (back (get b))
-              (node 0 (nil T)))
-            (node 0 (nil T))))))))
+      (let mx T (if (isSome sx) (expandModules (children (get sx))) none)
+        (let kx T (if (isSome mx) (expandProgram (children (get mx))) none)
+          (let b T (if (isSome kx) (readProgram (children (get kx))) none)
+            (if (isSome b)
+              (if (isSome (checkProgram (children (child (get b) 0)))) (back (get b))
+                (node 0 (nil T)))
+              (node 0 (nil T)))))))))
 (def compile (lam ((file T)) (compileWith image file)))
 (def main (lam ((file T)) (compile file)))

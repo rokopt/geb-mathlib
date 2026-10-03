@@ -73,6 +73,9 @@ def check : String := include_str "../../bootstrap/check.geb"
 /-- The expansion of the datatype language's source. -/
 def datatype : String := include_str "../../bootstrap/datatype.geb"
 
+/-- The elaboration of modules' source. -/
+def modules : String := include_str "../../bootstrap/modules.geb"
+
 /-- The compiler's entry point. -/
 def compile : String := include_str "../../bootstrap/compile.geb"
 
@@ -83,7 +86,7 @@ def serializer : String := prelude ++ serialize ++ "(def main (lam ((t T)) (imag
 joins them. -/
 def compiler : String :=
   prelude ++ "\n" ++ serialize ++ "\n" ++ reader ++ "\n" ++ check ++ "\n" ++ datatype ++ "\n" ++
-    compile ++ "\n"
+    modules ++ "\n" ++ compile ++ "\n"
 
 /-- Compile a program with the stage-0 compiler, given as text, read the image back, and apply
 its definition named {lit}`main` to an input tree. -/

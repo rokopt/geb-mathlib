@@ -34,9 +34,9 @@ cd "$(dirname "$0")/.."
 
 b=bootstrap
 stage0=("$b/prelude.geb" "$b/serialize.geb" "$b/reader.geb" "$b/check.geb" "$b/datatype.geb"
-        "$b/compile.geb")
+        "$b/modules.geb" "$b/compile.geb")
 stage1=("$b/prelude.geb" "$b/serialize.geb" "$b/reader.geb" "$b/check.geb" "$b/stage1/datatype.geb"
-        "$b/compile.geb" "$b/stage1/lean.geb")
+        "$b/modules.geb" "$b/compile.geb" "$b/stage1/lean.geb")
 img=$b/compiler.img
 lean=$b/lean/GebBoot.lean
 # each mirror emitted as one module: its name, then its sources

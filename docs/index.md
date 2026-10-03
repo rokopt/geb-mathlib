@@ -3765,11 +3765,17 @@ checklist and in CI.
   identifiers (`Geb.Kernel.Identity.rekey`) addresses the same nodes
   (`Geb.Kernel.Identity.valid_rekey`), and keeps names as such annotations
   (`Geb.Kernel.Identity.nameNotes`).
+  `Modules.lean` elaborates a program's modules before it is read
+  (`Geb.Kernel.expandModules`): declarations under qualified names, imports
+  and export lists, and modules with parameters instantiated at their
+  imports, every name of a body renamed to what it denotes
+  (`Geb.Kernel.rename`).
   Tested in
   `GebTests/Prototypes/Kernel.lean`,
   `GebTests/Prototypes/Kernel/Document.lean`,
-  `GebTests/Prototypes/Kernel/Strict.lean` and
-  `GebTests/Prototypes/Kernel/Identity.lean`. The
+  `GebTests/Prototypes/Kernel/Strict.lean`,
+  `GebTests/Prototypes/Kernel/Identity.lean` and
+  `GebTests/Prototypes/Kernel/Modules.lean`. The
   [Bootstrap chapter](../manual/GebManual/Bootstrap.lean) § Authoring
   across bootstrap revisions describes document preservation, migration
   contracts, the remaining hole interface and synthesis.
@@ -3794,6 +3800,10 @@ checklist and in CI.
   `GebTests/Prototypes/Kernel/Identity.lean` compares with
   `Geb.Blake3.hash`, `Geb.Kernel.Identity.migrate`,
   `Geb.Kernel.Identity.link` and `Geb.Kernel.Identity.nameNotes`.
+  `bootstrap/modules.geb` elaborates modules in the stage-0 compiler, before
+  the expansion of the datatype language, and
+  `GebTests/Prototypes/Kernel/Modules.lean` compares it with
+  `Geb.Kernel.expandModules`.
   `bootstrap/stage1/datatype.geb` rewrites the expansion in the datatype
   language, and `bootstrap/stage1/lean.geb` is a
   backend emitting a Lean module in place of an image; the stage-1 compiler

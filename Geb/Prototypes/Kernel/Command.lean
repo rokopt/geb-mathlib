@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Kernel.Image
+public import Geb.Prototypes.Kernel.Modules
 
 set_option doc.verso true in
 /-!
