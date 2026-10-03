@@ -50,7 +50,7 @@ def Agrees (E : Env) (G : List Glob) (p : List Tree → List Tree → Tree) (P :
 /-- The mirror's checker of a premise by position, nothing when out of range. -/
 theorem prem_eq (ps : List (Tree × (List Tree → List Tree → Tree))) (i : ℕ) :
     «Equations.prem» ps (leaf i) = (ps[i]?.map (·.2)).getD fun _ _ ↦ enc none := by
-  have hdrop : ∀ i : ℕ, Nat.repeat «Equations.crTail» i ps = ps.drop i :=
+  have hdrop : ∀ i : ℕ, Nat.repeat «Equations/CRs.tail» i ps = ps.drop i :=
     Nat.rec rfl fun i ih ↦ by
       rw [Nat.repeat, ih, ← List.tail_drop]
       cases ps.drop i <;> rfl

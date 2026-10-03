@@ -12,6 +12,10 @@
 ; image. Requires the stage-1 compiler's other sources.
 
 (module LeanBackend (export Doc nest line text ms layout atomic compound ap closed emitLean)
+  (import Prelude)
+  (import Reader)
+  (import Datatype)
+  (import Compile)
   ; documents: text with its width in columns and its bytes, a concatenation, the line breaks of
   ; a document indented by two more columns, a line break or, in a flat group, a space, a group,
   ; and the line breaks of a document indented to the column where it starts
@@ -317,5 +321,4 @@ end
                       (pair 0 (nil T))
                       ds))
                   (single tFooter))))))))))
-(import LeanBackend)
-(defn mainLean ((file T)) T (compileWith emitLean file))
+(defn mainLean ((file T)) T (Compile.compileWith LeanBackend.emitLean file))

@@ -6,6 +6,8 @@
 ; prelude's definitions. A theorem is (theorem name binders lhs rhs tactic), its induction
 ; variable, when it has one, bound last.
 
+(import Prelude)
+
 ; the empty list is a unit of appending
 (theorem appendNilLeft ((ys Ts)) (append (nil T) ys) ys (simp (unfold append)))
 (theorem appendNil ((xs Ts)) (append xs (nil T)) xs

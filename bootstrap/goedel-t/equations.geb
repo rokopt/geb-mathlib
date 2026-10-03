@@ -76,6 +76,9 @@
     axioms
     shape
     checkCert)
+  (import Prelude)
+  (import Reader)
+  (import Check)
   ; the labels of the certificates' rules, as Geb.GoedelT.Rule names them
   (defnum Rule.hyp 0)
   (defnum Rule.refl 1)
@@ -383,9 +386,9 @@
   (deftype CR (Prod T Concl))
   (deftype CRs (List CR))
   (defn crTrees ((rs CRs)) Ts (foldr CR Ts (lam ((r CR) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
-  (defn crTail ((rs CRs)) CRs (lcase CR CRs rs (nil CR) (lam ((r CR) (rest CRs)) rest)))
+  (import (Lists CR) as CRs)
   (defn prem ((rs CRs) (i T)) Concl
-    (lcase CR Concl (iter CRs crTail rs i) (lam ((ctx Ts) (hs Ts)) none)
+    (lcase CR Concl (iter CRs CRs.tail rs i) (lam ((ctx Ts) (hs Ts)) none)
       (lam ((r CR) (rest CRs)) (snd r))))
   (defn shape ((l T) (k T) (m T) (n T)) T (and (eq l m) (eq k n)))
 
@@ -904,4 +907,3 @@
                  (if (lt l Rule.lcaseNil) (checkCore D G l cs rs ctx hs)
                    (checkMore D Th G l cs rs ctx hs))))))
          c)) ctx hs)))
-(import Equations)

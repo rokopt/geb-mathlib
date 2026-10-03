@@ -9,7 +9,7 @@
 ; its label's bits below the sentinel, least significant first, and then its children.
 ; Requires the prelude.
 
-(module Serialize (export image)
+(module Serialize (export image) (import Prelude)
   ; the Elias delta code of n: the size of the size in unary zeros and a one, then the size and
   ; n + 1 below their leading ones, most significant first
   (def deltaBits
@@ -67,4 +67,3 @@
         (node 0
           (append (cons 71 (cons 69 (cons 66 (cons 75 (cons 1 (nil T))))))
             (append (digitsLsb 256 (length bits) 8) (packBits bits))))))))
-(import Serialize)

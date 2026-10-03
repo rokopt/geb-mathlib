@@ -232,12 +232,12 @@ def ChkRel (v : List Tree → List Tree → Tree) (w : PartialHorn.Chk) : Prop :
 
 /-- A list of certificates with their results without its head. -/
 @[simp] theorem pcTail_eq (rs : List (Tree × (List Tree → List Tree → Tree))) :
-    «PartialHorn.pcTail» rs = rs.tail := by
+    «PartialHorn/PCs.tail» rs = rs.tail := by
   cases rs <;> rfl
 
 /-- Dropping the head of a list of certificates as many times as a label. -/
 theorem repeat_pcTail (rs : List (Tree × (List Tree → List Tree → Tree))) :
-    ∀ i : ℕ, Nat.repeat «PartialHorn.pcTail» i rs = rs.drop i :=
+    ∀ i : ℕ, Nat.repeat «PartialHorn/PCs.tail» i rs = rs.drop i :=
   Nat.rec rfl fun i ih ↦ by rw [Nat.repeat, ih, pcTail_eq, List.tail_drop]
 
 /-- The result of a premise at a position, the absent result out of range. -/

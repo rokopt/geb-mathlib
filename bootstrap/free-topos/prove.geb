@@ -22,7 +22,7 @@
     byListIndHyp
     UF
     UFs
-    ufTail
+    UFs.tail
     ufAt
     uses
     headStep
@@ -33,6 +33,11 @@
     byFunExt
     bySplit
     byListIndWith)
+  (import Prelude)
+  (import Base)
+  (import Theory)
+  (import Language)
+  (import Derivation)
   ; derivations, and a rewriting's derivation marked when it rewrites
   (defn dNode ((r T) (d Ts) (cs Ts)) T (mNode r d cs))
   (def dRefl (pr (dNode 0 (nil T) (nil T)) 0))
@@ -55,19 +60,19 @@
   ; pattern's variables to optional terms: the optional node of the extended assignment
   (deftype Mt (Arrow T (Arrow T (Arrow Ts T))))
   (deftype Mts (List Mt))
-  (defn mtTail ((rs Mts)) Mts (lcase Mt Mts rs (nil Mt) (lam ((r Mt) (rest Mts)) rest)))
+  (import (Lists Mt) as Mts)
   (defn mtAt ((rs Mts) (i T)) Mt
-    (lcase Mt Mt (iter Mts mtTail rs i) (lam ((d T) (t T) (s Ts)) none)
+    (lcase Mt Mt (iter Mts Mts.tail rs i) (lam ((d T) (t T) (s Ts)) none)
       (lam ((r Mt) (rest Mts)) r)))
   (defn matchVar ((i T) (d T) (t T) (s Ts)) T
-    (if (lt i d) (if (equal t (mVar i)) (some (node 0 s)) none)
+    (if (lt i d) (if (equal t (var i)) (some (node 0 s)) none)
       (let t1 T (if (eq d 0) t (rename t (lam ((j T)) (sub j d))))
         (if (or (eq d 0) (equal (rename t1 (lam ((j T)) (add j d))) t))
           (let e T (nth s (sub i d))
             (if (isSome e)
               (if (isSome (get e)) (if (equal (get (get e)) t1) (some (node 0 s)) none)
                 (some (node 0 (setAt s (sub i d) (some t1)))))
-              (if (equal t1 (mVar (sub i d))) (some (node 0 s)) none)))
+              (if (equal t1 (var (sub i d))) (some (node 0 s)) none)))
           none))))
   (deftype MA (Arrow Ts (Arrow T T)))
   (defn matchAll ((rs Mts) (d T) (us Ts) (s Ts)) T
@@ -77,7 +82,7 @@
            (lcase T T ts acc
              (lam ((u T) (rest Ts)) (k rest (bindO acc (lam ((sn T)) (q d u (children sn)))))))))
        (lam ((ts Ts) (acc T)) acc)
-       (mtTail rs)) us (some (node 0 s))))
+       (Mts.tail rs)) us (some (node 0 s))))
   (defn matchStep ((nd T) (rs Mts)) Mt
     (lam ((d T) (t T) (s Ts))
       (let l T (label nd)
@@ -355,10 +360,11 @@
   ; fold's start and step having none
   (deftype UF (Arrow T T))
   (deftype UFs (List UF))
-  (defn ufTail ((rs UFs)) UFs (lcase UF UFs rs (nil UF) (lam ((r UF) (rest UFs)) rest)))
+  (import (Lists UF) as UFs)
   (defn ufAt ((rs UFs) (i T)) UF
-    (lcase UF UF (iter UFs ufTail rs i) (lam ((d T)) 0) (lam ((r UF) (rest UFs)) r)))
-  (defn ufSum ((rs UFs) (d T)) T (foldr UF T (lam ((r UF) (acc T)) (add (r d) acc)) 0 (ufTail rs)))
+    (lcase UF UF (iter UFs UFs.tail rs i) (lam ((d T)) 0) (lam ((r UF) (rest UFs)) r)))
+  (defn ufSum ((rs UFs) (d T)) T
+    (foldr UF T (lam ((r UF) (acc T)) (add (r d) acc)) 0 (UFs.tail rs)))
   (defn usesStep ((nd T) (rs UFs)) UF
     (lam ((d T))
       (let l T (label nd)
@@ -389,7 +395,7 @@
                 (if (mIs 5 1 f1) (if (lt (uses (mArg f1 0) 0) 2) (some (pr u dRefl)) (rec 1 g hs u))
                   (rec 0 g hs u))
                 (lam ((ru T))
-                  (atRoot G E n rs rec g hs 0 (mApp f1 (p1 ru)) (dCong (l2 (p2 rf) (p2 ru))))))))))
+                  (atRoot G E n rs rec g hs 0 (app f1 (p1 ru)) (dCong (l2 (p2 rf) (p2 ru))))))))))
       (let rr T (rootRewrite G E n rs g hs t)
         (if (isSome rr)
           (let r T (get rr)
@@ -468,14 +474,14 @@
   ; provers of equations, and the proofs of an equation from proofs of others
   (deftype Pv (Arrow Ts (Arrow Ts (Arrow T (Arrow T T)))))
   (defn abstractVar ((i T) (c T) (t T)) T
-    (mLam c (subst (weaken1 t) (lam ((j T)) (if (eq j (add i 1)) (mVar 0) (mVar j))))))
+    (mLam c (subst (weaken1 t) (lam ((j T)) (if (eq j (add i 1)) (var 0) (var j))))))
   (defn byFunExt ((G T) (n T) (prove Pv)) Pv
     (lam ((g Ts) (hs Ts) (f T) (h T))
-      (bindO (bindO (mTypeIn G n g f) expParts)
+      (bindO (bindO (typeIn G n g f) expParts)
         (lam ((ab T))
           (mapO (lam ((d T)) (dNode 26 (nil T) (single d)))
-            (prove (cons (p1 ab) g) (mapT weaken1 hs) (mApp (weaken1 f) (mVar 0))
-              (mApp (weaken1 h) (mVar 0))))))))
+            (prove (cons (p1 ab) g) (mapT weaken1 hs) (app (weaken1 f) (var 0))
+              (app (weaken1 h) (var 0))))))))
   (defn bySplit ((kl T) (kr T) (i T) (prove Pv)) Pv
     (lam ((g Ts) (hs Ts) (t T) (u T))
       (bindO (nth g i)
@@ -487,7 +493,7 @@
                   (let F T (abstractVar i c t)
                     (let H T (abstractVar i c u)
                       (let inj (Arrow T (Arrow T T))
-                        (lam ((k T) (s T)) (mApp (weaken1 s) (mArr k (l2 a b) (mVar 0))))
+                        (lam ((k T) (s T)) (app (weaken1 s) (mArr k (l2 a b) (var 0))))
                         (bindO (prove (cons a g) (mapT weaken1 hs) (inj kl F) (inj kl H))
                           (lam ((q0 T))
                             (bindO (prove (cons b g) (mapT weaken1 hs) (inj kr F) (inj kr H))
@@ -504,7 +510,7 @@
                                             (l2 (dNode 17 (l2 (length hs) 0) (nil T))
                                               (dNode 0 (nil T) (nil T))))
                                           (dNode 0 (nil T) (nil T))))
-                                      (let chi T (mEq (mApp F (mVar i)) (mApp H (mVar i)))
+                                      (let chi T (mEq (app F (var i)) (app H (var i)))
                                         (some
                                           (dNode 22 (single (mEq F H))
                                             (l2 pp
@@ -536,7 +542,7 @@
       (let r T (at g 0)
         (bindO (roseLabel r)
           (lam ((a T))
-            (bindO (mTypeIn G n g t)
+            (bindO (typeIn G n g t)
               (lam ((C T))
                 (let g2 Ts (l2 (list r) a)
                   (bindO
@@ -557,4 +563,3 @@
                 (p (l2 (list r) a) (single (roseHyp kl kc (mEq t u))) (roseNodeAt kn r a t)
                   (roseNodeAt kn r a u))))))
         none))))
-(import Prover)

@@ -25,6 +25,14 @@
     byListParamInduction
     libraryWith
     libRules)
+  (import Prelude)
+  (import Base)
+  (import PartialHorn)
+  (import Theory)
+  (import Infer)
+  (import Derivation)
+  (import Translation)
+  (import Prover)
   ; certificates, as Geb.PartialHorn.Cert builds them
   (defn cHyp ((i T)) T (node PRule.hyp (single (node i (nil T)))))
   (defn cRefl ((i T)) T (node PRule.refl (single (node i (nil T)))))
@@ -888,4 +896,3 @@
       (l5 (rwThm (at (children i) 0)) (rwThm (at (children i) 1)) (rwThm (at (children i) 4))
         (rwThm (at (children i) 3))
         (rwThm (at (children i) 5))))))
-(import Combinator)

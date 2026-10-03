@@ -80,7 +80,8 @@ def modules : String := include_str "../../bootstrap/modules.geb"
 def compile : String := include_str "../../bootstrap/compile.geb"
 
 /-- The prelude and the serializer, applying the serializer to the input tree. -/
-def serializer : String := prelude ++ serialize ++ "(def main (lam ((t T)) (image t)))"
+def serializer : String :=
+  prelude ++ serialize ++ "(import Serialize) (def main (lam ((t T)) (image t)))"
 
 /-- The stage-0 compiler, its sources joined, each followed by a newline, as the host driver
 joins them. -/
@@ -121,7 +122,8 @@ def roses : String := "
 
 /-- The type checker, returning the types of the definitions of the bundle it is given. -/
 def checker : String :=
-  prelude ++ reader ++ check ++ "(def main (lam ((b T)) (checkProgram (children (child b 0)))))"
+  prelude ++ reader ++ check ++
+    "(import Check) (def main (lam ((b T)) (checkProgram (children (child b 0)))))"
 
 /-- The seed's types of a bundle's definitions, as the Geb checker returns them: the
 optional node over the types, or the leaf of label zero when a definition is ill-typed. -/

@@ -315,13 +315,13 @@ def TRel (v : List Tree → List Tree → Tree) (w : Translation.Tr) : Prop :=
 
 /-- A list of translations without its head. -/
 @[simp] theorem trTail_eq (rs : List (List Tree → List Tree → Tree)) :
-    «Translation.trTail» rs = rs.tail := by
+    «Translation/TrFs.tail» rs = rs.tail := by
   cases rs <;> rfl
 
 /-- The translation of a child at a position, nothing out of range. -/
 @[simp] theorem trAt_eq (rs : List (List Tree → List Tree → Tree)) (i : ℕ) :
     «Translation.trAt» rs (leaf i) = rs[i]?.getD fun _ _ ↦ «Prelude.none» := by
-  have hr : ∀ i : ℕ, Nat.repeat «Translation.trTail» i rs = rs.drop i :=
+  have hr : ∀ i : ℕ, Nat.repeat «Translation/TrFs.tail» i rs = rs.drop i :=
     Nat.rec rfl fun i ih ↦ by rw [Nat.repeat, ih, trTail_eq, List.tail_drop]
   simp only [«Translation.trAt», iter_leaf, hr]
   cases h : rs.drop i with

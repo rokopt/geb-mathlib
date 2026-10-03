@@ -140,7 +140,7 @@ theorem mNode_eq (l : Label) (cs : List Term) :
 
 /-- The mirror's application of encoded terms. -/
 @[simp] theorem mApp_eq (t u : Term) :
-    «Language.mApp» (encTerm t) (encTerm u) = encTerm (Internal.Term.app t u) :=
+    «Language.app» (encTerm t) (encTerm u) = encTerm (Internal.Term.app t u) :=
   mNode_eq .app [t, u]
 
 /-- The mirror's primitive arrow applied to an encoded term. -/
@@ -210,7 +210,7 @@ theorem substStep_eq : Internal.Term.substStep = travL (fun σ i ↦ σ i) Inter
 
 /-- A list of terms with their traversals without its head. -/
 @[simp] theorem rpTail_eq (rs : List (Tree × ((Tree → Tree) → Tree))) :
-    «Language.rpTail» rs = rs.tail := by
+    «Language/RPs.tail» rs = rs.tail := by
   cases rs <;> rfl
 
 /-- The traversals of a list of terms by a map. -/
@@ -223,7 +223,7 @@ theorem substStep_eq : Internal.Term.substStep = travL (fun σ i ↦ σ i) Inter
 
 /-- Dropping the head of a list of terms with their traversals as many times as a label. -/
 theorem repeat_rpTail (rs : List (Tree × ((Tree → Tree) → Tree))) :
-    ∀ i : ℕ, Nat.repeat «Language.rpTail» i rs = rs.drop i :=
+    ∀ i : ℕ, Nat.repeat «Language/RPs.tail» i rs = rs.drop i :=
   Nat.rec rfl fun i ih ↦ by rw [Nat.repeat, ih, rpTail_eq, List.tail_drop]
 
 /-- The traversal of a term at a position by a map, the leaf of label zero out of range. -/
@@ -289,7 +289,7 @@ theorem trav_eq {M : Type} (Rel : (Tree → Tree) → M → Prop) (V : M → ℕ
 
 /-- The mirror's variable of an index is the encoded variable. -/
 @[simp] theorem mVar_eq (i : ℕ) :
-    «Language.mVar» (leaf i) = encTerm (Internal.Term.var i) := rfl
+    «Language.var» (leaf i) = encTerm (Internal.Term.var i) := rfl
 
 /-- The mirror's renaming of an encoded term is the renaming of the term, at a renaming of
 leaves. -/
@@ -547,8 +547,8 @@ theorem isTyOp_eq (G : Internal.Globals) (k m : ℕ) :
 
 /-- The mirror's test of a type in object variables. -/
 theorem isTy_eq (G : Internal.Globals) (n : ℕ) (t : Tree) :
-    «Language.mIsTy» (encGlobals G) (leaf n) t = ofBool (Internal.IsTy G n t) := by
-  simp only [«Language.mIsTy», Internal.IsTy]
+    «Language.isTy» (encGlobals G) (leaf n) t = ofBool (Internal.IsTy G n t) := by
+  simp only [«Language.isTy», Internal.IsTy]
   apply fold_pair_snd (fun (v : Tree) (w : Bool) ↦ v = ofBool w)
   · intro l rs
     simp
@@ -580,12 +580,12 @@ def CRel (v : Tree → List Tree → Tree)
 
 /-- A list of terms with their compilations without its head. -/
 @[simp] theorem cpTail_eq (rs : List (Tree × (Tree → List Tree → Tree))) :
-    «Language.cpTail» rs = rs.tail := by
+    «Language/CPs.tail» rs = rs.tail := by
   cases rs <;> rfl
 
 /-- Dropping the head of a list of terms with their compilations as many times as a label. -/
 theorem repeat_cpTail (rs : List (Tree × (Tree → List Tree → Tree))) :
-    ∀ i : ℕ, Nat.repeat «Language.cpTail» i rs = rs.drop i :=
+    ∀ i : ℕ, Nat.repeat «Language/CPs.tail» i rs = rs.drop i :=
   Nat.rec rfl fun i ih ↦ by rw [Nat.repeat, ih, cpTail_eq, List.tail_drop]
 
 /-- The compilation of a term at a position, nothing out of range. -/
@@ -691,7 +691,7 @@ theorem compileStep_eq (G : Internal.Globals) (n : ℕ) (l : Label) (v : Tree �
       compile_simp [hf]
     split_ifs <;> simp
   case arr k θ =>
-    have hall : «Base.allT» («Language.mIsTy» (encGlobals G) (leaf n)) θ =
+    have hall : «Base.allT» («Language.isTy» (encGlobals G) (leaf n)) θ =
         ofBool (θ.all (Internal.IsTy G n)) := allT_eq _ _ θ fun t _ ↦ isTy_eq G n t
     rcases xs with _ | ⟨x0, _ | ⟨x1, r⟩⟩ <;>
       compile_simp [h0, gPrims_eq, hall, phSubst_eq, prArity_eq, prArrow_eq, prDom_eq, prCod_eq]
@@ -699,7 +699,7 @@ theorem compileStep_eq (G : Internal.Globals) (n : ℕ) (l : Label) (v : Tree �
     rcases x0.2.2 X e with _ | ⟨g, d⟩ <;> compile_simp []
     split_ifs with h <;> simp only [h, and_self, ↓reduceIte, Option.map_some, Option.map_none]
   case defn k θ =>
-    have hall : «Base.allT» («Language.mIsTy» (encGlobals G) (leaf n)) θ =
+    have hall : «Base.allT» («Language.isTy» (encGlobals G) (leaf n)) θ =
         ofBool (θ.all (Internal.IsTy G n)) := allT_eq _ _ θ fun t _ ↦ isTy_eq G n t
     have hxs : xs.map (fun x ↦ x.2.1 X (e.map encPair)) =
         xs.map fun x ↦ encOpt ((x.2.2 X e).map encPair) :=
@@ -722,7 +722,7 @@ theorem compile_eq (G : Internal.Globals) (n : ℕ) (t : Term) :
 
 /-- The mirror's test that a list of objects are types. -/
 theorem allT_isTy (G : Internal.Globals) (n : ℕ) (ts : List Tree) :
-    «Base.allT» («Language.mIsTy» (encGlobals G) (leaf n)) ts =
+    «Base.allT» («Language.isTy» (encGlobals G) (leaf n)) ts =
       ofBool (ts.all (Internal.IsTy G n)) :=
   allT_eq _ _ ts fun t _ ↦ isTy_eq G n t
 

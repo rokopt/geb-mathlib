@@ -16,8 +16,7 @@
 ; operation. Requires the prelude, the base, partial Horn logic, the theory and the inference.
 
 (module Language
-  (export pr p1 p2 mNode mVar mStar mPair mFst mSnd mLam mApp mArr mNatRec mListRec mRoseRec mDefn
-    mEq
+  (export pr p1 p2 mNode var mStar mPair mFst mSnd mLam app mArr mNatRec mListRec mRoseRec mDefn mEq
     mArgs
     mIs
     mArg
@@ -51,7 +50,7 @@
     gPrims
     gDefs
     gBase
-    mIsTy
+    isTy
     compile
     ldCompile
     compileDefs
@@ -59,6 +58,11 @@
     primWf
     primOk
     objOk)
+  (import Prelude)
+  (import Base)
+  (import PartialHorn)
+  (import Theory)
+  (import Infer)
   ; pairs of trees
   (defn pr ((a T) (b T)) T (node 0 (l2 a b)))
   (defn p1 ((p T)) T (child p 0))
@@ -66,13 +70,13 @@
 
   ; terms, by their labels' constructors
   (defn mNode ((l T) (d Ts) (cs Ts)) T (node l (cons (node 0 d) cs)))
-  (defn mVar ((i T)) T (mNode 0 (single i) (nil T)))
+  (defn var ((i T)) T (mNode 0 (single i) (nil T)))
   (def mStar (mNode 1 (nil T) (nil T)))
   (defn mPair ((t T) (u T)) T (mNode 2 (nil T) (l2 t u)))
   (defn mFst ((t T)) T (mNode 3 (nil T) (single t)))
   (defn mSnd ((t T)) T (mNode 4 (nil T) (single t)))
   (defn mLam ((a T) (t T)) T (mNode 5 (single a) (single t)))
-  (defn mApp ((t T) (u T)) T (mNode 6 (nil T) (l2 t u)))
+  (defn app ((t T) (u T)) T (mNode 6 (nil T) (l2 t u)))
   (defn mArr ((k T) (th Ts) (t T)) T (mNode 7 (l2 k (node 0 th)) (single t)))
   (defn mNatRec ((z T) (s T) (n T)) T (mNode 8 (nil T) (l3 z s n)))
   (defn mListRec ((z T) (s T) (l T)) T (mNode 9 (nil T) (l3 z s l)))
@@ -94,17 +98,17 @@
   (deftype RP (Prod T RV))
   (deftype RPs (List RP))
   (defn rpTrees ((rs RPs)) Ts (foldr RP Ts (lam ((r RP) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
-  (defn rpTail ((rs RPs)) RPs (lcase RP RPs rs (nil RP) (lam ((r RP) (rest RPs)) rest)))
+  (import (Lists RP) as RPs)
   (defn rpAll ((rs RPs) (f Ren)) Ts
     (foldr RP Ts (lam ((r RP) (acc Ts)) (cons ((snd r) f) acc)) (nil T) rs))
   (defn rpAt ((rs RPs) (i T) (f Ren)) T
-    (lcase RP T (iter RPs rpTail rs i) 0 (lam ((r RP) (rest RPs)) ((snd r) f))))
+    (lcase RP T (iter RPs RPs.tail rs i) 0 (lam ((r RP) (rest RPs)) ((snd r) f))))
 
   ; one step of a traversal of a term's variables, by a map lifted under each binder; the start and
   ; the step of a fold, in contexts of their own, are left in place
   (defn travStep ((lift (Arrow Ren Ren)) (wrap (Arrow T T)) (l T) (rs RPs) (f Ren)) T
     (let d T (at (rpTrees rs) 0)
-      (let as RPs (rpTail rs)
+      (let as RPs (RPs.tail rs)
         (let ts Ts (rpTrees as)
           (let k T (length ts)
             (if (eq l 0) (wrap (f (at (children d) 0)))
@@ -122,11 +126,11 @@
 
   ; renaming and substitution of variables
   (defn liftR ((f Ren) (i T)) T (if (eq i 0) 0 (add (f (sub i 1)) 1)))
-  (defn rename ((t T) (f Ren)) T ((trav liftR mVar t) f))
+  (defn rename ((t T) (f Ren)) T ((trav liftR var t) f))
   (defn liftS ((s Ren) (i T)) T
-    (if (eq i 0) (mVar 0) (rename (s (sub i 1)) (lam ((j T)) (add j 1)))))
+    (if (eq i 0) (var 0) (rename (s (sub i 1)) (lam ((j T)) (add j 1)))))
   (defn subst ((t T) (s Ren)) T ((trav liftS (lam ((u T)) u) t) s))
-  (defn substList ((ts Ts) (i T)) T (getD (nth ts i) (mVar i)))
+  (defn substList ((ts Ts) (i T)) T (getD (nth ts i) (var i)))
 
   ; the substitution of objects for the object variables of a term's types and arrows
   (defn dataOsubst ((th Ts) (l T) (d Ts)) Ts
@@ -216,7 +220,7 @@
       (and (not (lt k (gBase G)))
         (let d T (nth (gDefs G) (sub k (gBase G)))
           (if (isSome d) (case (get d) ((defLang l) 0) ((defObj m2 b) (eq m2 m))) 0)))))
-  (defn mIsTy ((G T) (n T) (t T)) T
+  (defn isTy ((G T) (n T) (t T)) T
     (snd
       (fold PT
         (lam ((l T) (rs PTs))
@@ -233,9 +237,9 @@
   (deftype CP (Prod T CV))
   (deftype CPs (List CP))
   (defn cpTrees ((rs CPs)) Ts (foldr CP Ts (lam ((r CP) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
-  (defn cpTail ((rs CPs)) CPs (lcase CP CPs rs (nil CP) (lam ((r CP) (rest CPs)) rest)))
+  (import (Lists CP) as CPs)
   (defn cpAt ((rs CPs) (i T)) CV
-    (lcase CP CV (iter CPs cpTail rs i) (lam ((X T) (e Ts)) none)
+    (lcase CP CV (iter CPs CPs.tail rs i) (lam ((X T) (e Ts)) none)
       (lam ((r CP) (rest CPs)) (snd r))))
   (defn cpAll ((rs CPs) (X T) (e Ts)) Ts
     (foldr CP Ts (lam ((r CP) (acc Ts)) (cons ((snd r) X e) acc)) (nil T) rs))
@@ -244,7 +248,7 @@
   ; the type of the node's term in n object variables, in an environment over X
   (defn compileStep ((G T) (n T) (l T) (rs CPs) (X T) (e Ts)) T
     (let d Ts (children (at (cpTrees rs) 0))
-      (let as CPs (cpTail rs)
+      (let as CPs (CPs.tail rs)
         (let k T (length (cpTrees as))
           (let r0 CV (cpAt as 0)
             (let r1 CV (cpAt as 1)
@@ -266,7 +270,7 @@
                                   (some (pr (comp (cSnd (p1 ab) (p2 ab)) (p1 p)) (p2 ab))))))))
                         (if (and (eq l 5) (eq k 1))
                           (let a T (at d 0)
-                            (if (mIsTy G n a)
+                            (if (isTy G n a)
                               (bindO (r0 (prod X a) (extendEnv X a e))
                                 (lam ((p T)) (some (pr (curry X a (p1 p)) (exp a (p2 p))))))
                               none))
@@ -290,7 +294,7 @@
                                       (lam ((q T))
                                         (if
                                           (and (eq (length th) (prArity pm))
-                                            (and (allT (mIsTy G n) th)
+                                            (and (allT (isTy G n) th)
                                               (equal (p2 q) (phSubst th (prDom pm)))))
                                           (some
                                             (pr (comp (phSubst th (prArrow pm)) (p1 q))
@@ -326,7 +330,7 @@
                                                       none))))))))))
                                   (if (and (eq l 10) (eq k 2))
                                     (let c T (at d 0)
-                                      (if (mIsTy G n c)
+                                      (if (isTy G n c)
                                         (bindO (r1 X e)
                                           (lam ((m T))
                                             (bindO (roseLabel (p2 m))
@@ -360,7 +364,7 @@
                                                   (let rl Ts (children rsN)
                                                     (if
                                                       (and (eq (length th) (ldArity df))
-                                                        (and (allT (mIsTy G n) th)
+                                                        (and (allT (isTy G n) th)
                                                           (equalTs (mapT p2 rl)
                                                             (mapT (phSubst th) (ldParams df)))))
                                                       (some
@@ -383,7 +387,7 @@
   (defn ldCompile ((G T) (d T)) T
     (bindO ((compile G (ldArity d) (ldBody d)) (ctxObj (ldParams d)) (stdEnv (ldParams d)))
       (lam ((p T))
-        (if (and (allT (mIsTy G (ldArity d)) (ldParams d)) (equal (p2 p) (ldType d)))
+        (if (and (allT (isTy G (ldArity d)) (ldParams d)) (equal (p2 p) (ldType d)))
           (some (pdefn (node 0 (replicate (ldArity d) Sorts.obj)) Sorts.arr (p1 p)))
           none))))
   (defn defCompile ((G T) (d T)) T
@@ -403,7 +407,7 @@
       (lam ((p T))
         (bindO ((compile G n u) (ctxObj g) (stdEnv g))
           (lam ((q T))
-            (if (and (allT (mIsTy G n) g) (equal (p2 p) (p2 q)))
+            (if (and (allT (isTy G n) g) (equal (p2 p) (p2 q)))
               (some (mkSeq (replicate n Sorts.obj) (nil T) (eqn (p1 p) (p1 q))))
               none))))))
 
@@ -412,8 +416,8 @@
   (defn primWf ((G T) (S Ts) (p T)) T
     (let m T (prArity p)
       (and (scoped m (prArrow p))
-        (and (mIsTy G m (prDom p))
-          (and (mIsTy G m (prCod p))
+        (and (isTy G m (prDom p))
+          (and (isTy G m (prCod p))
             (equal (sortOf S (replicate m Sorts.obj) (prArrow p)) (some Sorts.arr)))))))
   (defn primOk ((G T) (E T) (p T)) T
     (and (primWf G (envSg E) p)
@@ -435,4 +439,3 @@
   (defn objOk ((E T) (m T) (b T)) T
     (and (equal (sortOf (envSg E) (replicate m Sorts.obj) b) (some Sorts.obj))
       (isSome ((snd (infers E (replicate m Sorts.obj) (nil T) inferFuel)) b)))))
-(import Language)

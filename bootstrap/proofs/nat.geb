@@ -6,6 +6,8 @@
 ; bootstrap/goedel-t/prove.geb. Addition is defined by iterating the successor (the axiom
 ; addIter); its recursion equations follow, and induction on labels proves what they do not.
 
+(import Prelude)
+
 ; addition's recursion equations: iteration from the label of the first argument, zero times
 ; and one more time
 (theorem addZero ((m T)) (add m 0) (label m) (rewrite addIter lhs 0 (simp)))

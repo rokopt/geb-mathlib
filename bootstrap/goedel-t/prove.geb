@@ -21,6 +21,12 @@
     hypRules
     tactic
     proveFile)
+  (import Prelude)
+  (import Reader)
+  (import Check)
+  (import Datatype)
+  (import Modules)
+  (import Equations)
   ; certificates, by rule
   (defn cRefl ((t T)) T (mk1 Rule.refl t))
   (defn cSym ((p T)) T (mk1 Rule.symm p))
@@ -53,9 +59,9 @@
   (deftype MR (Prod T MF))
   (deftype MRs (List MR))
   (defn mrRaws ((rs MRs)) Ts (foldr MR Ts (lam ((r MR) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
-  (defn mrTail ((rs MRs)) MRs (lcase MR MRs rs (nil MR) (lam ((r MR) (rest MRs)) rest)))
+  (import (Lists MR) as MRs)
   (defn mrFn ((rs MRs) (i T)) MF
-    (lcase MR MF (iter MRs mrTail rs i) (lam ((t T) (k T) (s Ts)) none)
+    (lcase MR MF (iter MRs MRs.tail rs i) (lam ((t T) (k T) (s Ts)) none)
       (lam ((r MR) (rest MRs)) (snd r))))
   (defn matchKids ((rs MRs) (ts Ts) (k T) (s T)) T
     ((foldr MR (Arrow Ts (Arrow T T))
@@ -383,9 +389,9 @@
   (deftype RN (Prod T RF))
   (deftype RNs (List RN))
   (defn rnRaws ((rs RNs)) Ts (foldr RN Ts (lam ((r RN) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
-  (defn rnTail ((rs RNs)) RNs (lcase RN RNs rs (nil RN) (lam ((r RN) (rest RNs)) rest)))
+  (import (Lists RN) as RNs)
   (defn rnFn ((rs RNs) (i T)) RF
-    (lcase RN RF (iter RNs rnTail rs i) (lam ((k T) (ctx Ts)) (node2 0 none k))
+    (lcase RN RF (iter RNs RNs.tail rs i) (lam ((k T) (ctx Ts)) (node2 0 none k))
       (lam ((r RN) (rest RNs)) (snd r))))
   (defn rewriteAt ((G Ts) (rule T) (t T) (k0 T) (ctx0 Ts)) T
     (child
@@ -521,9 +527,9 @@
   (deftype AN (Prod T Endo1))
   (deftype ANs (List AN))
   (defn anRaws ((rs ANs)) Ts (foldr AN Ts (lam ((r AN) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
-  (defn anTail ((rs ANs)) ANs (lcase AN ANs rs (nil AN) (lam ((r AN) (rest ANs)) rest)))
+  (import (Lists AN) as ANs)
   (defn anFn ((rs ANs) (i T)) Endo1
-    (lcase AN Endo1 (iter ANs anTail rs i) (lam ((d T)) 0) (lam ((r AN) (rest ANs)) (snd r))))
+    (lcase AN Endo1 (iter ANs ANs.tail rs i) (lam ((d T)) 0) (lam ((r AN) (rest ANs)) (snd r))))
   (defn absLabel ((t T)) T
     ((snd
        (fold AN
@@ -630,9 +636,9 @@
   (deftype TN (Prod T Tac))
   (deftype TNs (List TN))
   (defn tnRaws ((rs TNs)) Ts (foldr TN Ts (lam ((r TN) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
-  (defn tnTail ((rs TNs)) TNs (lcase TN TNs rs (nil TN) (lam ((r TN) (rest TNs)) rest)))
+  (import (Lists TN) as TNs)
   (defn tnAt ((rs TNs) (i T)) Tac
-    (lcase TN Tac (iter TNs tnTail rs i) (lam ((c Ts) (h Ts) (q T)) none)
+    (lcase TN Tac (iter TNs TNs.tail rs i) (lam ((c Ts) (h Ts) (q T)) none)
       (lam ((r TN) (rest TNs)) (snd r))))
   (defn tactic ((D Ts) (Th Ts) (G Ts) (dn Ts) (tn Ts) (fuel T) (e T)) Tac
     (snd
@@ -761,4 +767,3 @@
                                  (lam ((s PS)) s)
                                  thms) (pair (nil T) (pair (nil T) (nil T))))
                               (some (node2 0 b (node 0 (snd (snd s))))))))))))))))))))
-(import EquationProver)

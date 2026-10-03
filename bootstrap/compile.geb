@@ -9,7 +9,10 @@
 ; program's bundle. Requires the prelude, the serializer, the reader, the checker, the expansion
 ; and the modules.
 
-(module Compile (export compileWith compile)
+(module Compile (export compileWith compile) (import Prelude) (import Serialize) (import Reader)
+  (import Check)
+  (import Datatype)
+  (import Modules)
   (def compileWith
     (lam ((back (Arrow T T)) (file T))
       (let sx T (readSExps (children file))
@@ -21,5 +24,4 @@
                   (node 0 (nil T)))
                 (node 0 (nil T)))))))))
   (def compile (lam ((file T)) (compileWith image file))))
-(import Compile)
-(def main (lam ((file T)) (compile file)))
+(def main (lam ((file T)) (Compile.compile file)))

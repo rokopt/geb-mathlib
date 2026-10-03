@@ -75,6 +75,7 @@ past a list of types inserted below a context's first part, and its type in the 
 it; the two sides of the lookup at a variable, at its index moved past the inserted types and at
 its index; and the two sides of the lookup past the inserted types below no part. -/
 def statement : String := "
+(import Prelude) (import Check) (import Equations)
 (def wkL (lam ((t T) (G Ts) (c1 Ts) (c0 Ts) (c2 Ts))
   (typeIn G (append c1 (append c0 c2)) (wkAt (length c1) (length c0) t))))
 (def wkR (lam ((t T) (G Ts) (c1 Ts) (c0 Ts) (c2 Ts)) (typeIn G (append c1 c2) t)))

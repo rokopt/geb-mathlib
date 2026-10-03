@@ -74,6 +74,7 @@ open scoped FinEnum
 
 /-- The expansion at a node of a variable label and children, and at a form, as definitions. -/
 def statement : String := "
+(import Prelude) (import Reader) (import Datatype)
 (deftype KP (Prod T T))
 (def kTrees (lam ((ps (List KP)))
   (foldr KP Ts (lam ((p KP) (acc Ts)) (cons (fst p) acc)) (nil T) ps)))

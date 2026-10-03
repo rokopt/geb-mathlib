@@ -57,6 +57,8 @@
     natAxioms
     axioms
     toposTheory)
+  (import Prelude)
+  (import PartialHorn)
   ; the sorts
   (defnum Sorts.obj 0)
   (defnum Sorts.arr 1)
@@ -462,4 +464,3 @@
                       (append natAxioms
                         (append listAxioms (append roseAxioms lroseAxioms)))))))))))))
   (def toposTheory (theory (node 0 sig) (node 0 axioms))))
-(import Theory)

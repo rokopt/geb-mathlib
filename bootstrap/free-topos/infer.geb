@@ -19,6 +19,10 @@
     bound
     infers
     inferFuel)
+  (import Prelude)
+  (import Base)
+  (import PartialHorn)
+  (import Theory)
   ; the rules by which an axiom proves an operation's application defined
   (data DfdRule (direct T) (strict T) (rhsRule T))
 
@@ -308,4 +312,3 @@
       (pair (lam ((env Ts) (p T)) none) (lam ((t T)) none))
       fuel))
   (def inferFuel 8))
-(import Infer)

@@ -8,6 +8,7 @@
 ; and any other true. Requires the prelude.
 
 (module Base (export getD mapO bindO not isEmpty equalTs take range mapT allT anyT allSomeT)
+  (import Prelude)
   ; optional trees
   (defn getD ((m T) (d T)) T (if (isSome m) (get m) d))
   (defn mapO ((f (Arrow T T)) (m T)) T (if (isSome m) (some (f (get m))) none))
@@ -41,4 +42,3 @@
   (defn anyT ((f (Arrow T T)) (xs Ts)) T (foldr T T (lam ((x T) (r T)) (or (f x) r)) 0 xs))
   ; the node of label 0 over the trees of a list of optional trees when each is present
   (defn allSomeT ((ms Ts)) T (if (allT isSome ms) (some (node 0 (mapT get ms))) none)))
-(import Base)

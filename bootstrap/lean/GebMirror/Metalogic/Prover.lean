@@ -72,19 +72,14 @@ def «Prover.setAt» :=
       («Base.range» («Prelude.length» x0));
     x3
 
-def «Prover.mtTail» :=
+def «Prover/Mts.tail» :=
   fun (x0 : List (T → T → List T → T)) =>
-    let x1 : List
-      (T →
-        T →
-          List T →
-            T) := Const.lcase
+    Const.lcase
       (α := T → T → List T → T)
       (β := List (T → T → List T → T))
       x0
       ([] : List (T → T → List T → T))
-      (fun (_ : T → T → List T → T) (x2 : List (T → T → List T → T)) => x2);
-    x1
+      (fun (_ : T → T → List T → T) (x2 : List (T → T → List T → T)) => x2)
 
 def «Prover.mtAt» :=
   fun (x0 : List (T → T → List T → T)) (x1 : T) =>
@@ -94,7 +89,7 @@ def «Prover.mtAt» :=
           T := Const.lcase
       (α := T → T → List T → T)
       (β := T → T → List T → T)
-      (Const.iter (α := List (T → T → List T → T)) «Prover.mtTail» x0 x1)
+      (Const.iter (α := List (T → T → List T → T)) «Prover/Mts.tail» x0 x1)
       (fun (_ : T) (_ : T) (_ : List T) => «Prelude.none»)
       (fun (x2 : T → T → List T → T) (_ : List (T → T → List T → T)) => x2);
     x2
@@ -102,7 +97,7 @@ def «Prover.mtAt» :=
 def «Prover.matchVar» :=
   fun (x0 : T) (x1 : T) (x2 : T) (x3 : List T) =>
     let x4 : T := (if (Const.lt x0 x1).label ≠ 0 then
-      if (Const.equal x2 («Language.mVar» x0)).label ≠ 0 then
+      if (Const.equal x2 («Language.var» x0)).label ≠ 0 then
         «Prelude.some» (Const.node (leaf 0) x3)
       else
         «Prelude.none»
@@ -129,7 +124,7 @@ def «Prover.matchVar» :=
                 (leaf 0)
                 («Prover.setAt» x3 (Const.sub x0 x1) («Prelude.some» x4)))
         else
-          if (Const.equal x4 («Language.mVar» (Const.sub x0 x1))).label ≠ 0 then
+          if (Const.equal x4 («Language.var» (Const.sub x0 x1))).label ≠ 0 then
             «Prelude.some» (Const.node (leaf 0) x3)
           else
             «Prelude.none»
@@ -159,7 +154,7 @@ def «Prover.matchAll» :=
               x9
               («Base.bindO» x7 (fun (x10 : T) => x4 x1 x8 (Const.children x10)))))
       (fun (_ : List T) (x5 : T) => x5)
-      («Prover.mtTail» x0)
+      («Prover/Mts.tail» x0)
       x2
       («Prelude.some» (Const.node (leaf 0) x3));
     x4
@@ -945,17 +940,14 @@ def «Prover.keepsWeak» :=
       «Prover.keepsFold» x0 x1);
     x2
 
-def «Prover.ufTail» :=
+def «Prover/UFs.tail» :=
   fun (x0 : List (T → T)) =>
-    let x1 : List
-      (T →
-        T) := Const.lcase
+    Const.lcase
       (α := T → T)
       (β := List (T → T))
       x0
       ([] : List (T → T))
-      (fun (_ : T → T) (x2 : List (T → T)) => x2);
-    x1
+      (fun (_ : T → T) (x2 : List (T → T)) => x2)
 
 def «Prover.ufAt» :=
   fun (x0 : List (T → T)) (x1 : T) =>
@@ -963,7 +955,7 @@ def «Prover.ufAt» :=
       T := Const.lcase
       (α := T → T)
       (β := T → T)
-      (Const.iter (α := List (T → T)) «Prover.ufTail» x0 x1)
+      (Const.iter (α := List (T → T)) «Prover/UFs.tail» x0 x1)
       (fun (_ : T) => leaf 0)
       (fun (x2 : T → T) (_ : List (T → T)) => x2);
     x2
@@ -975,7 +967,7 @@ def «Prover.ufSum» :=
       (β := T)
       (fun (x2 : T → T) (x3 : T) => Const.add (x2 x1) x3)
       (leaf 0)
-      («Prover.ufTail» x0);
+      («Prover/UFs.tail» x0);
     x2
 
 def «Prover.usesStep» :=
@@ -1073,7 +1065,7 @@ def «Prover.headStep» :=
                 x5
                 x6
                 (leaf 0)
-                («Language.mApp» x9 («Language.p1» x11))
+                («Language.app» x9 («Language.p1» x11))
                 («Prover.dCong»
                   («Theory.l2» («Language.p2» x8) («Language.p2» x11)))))
     else
@@ -1310,9 +1302,9 @@ def «Prover.abstractVar» :=
         («Derivation.weaken1» x2)
         (fun (x3 : T) =>
           if (Const.eq x3 (Const.add x0 (leaf 1))).label ≠ 0 then
-            «Language.mVar» (leaf 0)
+            «Language.var» (leaf 0)
           else
-            «Language.mVar» x3));
+            «Language.var» x3));
     x3
 
 def «Prover.byFunExt» :=
@@ -1323,7 +1315,7 @@ def «Prover.byFunExt» :=
           T →
             T := (fun (x3 : List T) (x4 : List T) (x5 : T) (x6 : T) =>
       «Base.bindO»
-        («Base.bindO» («Derivation.mTypeIn» x0 x1 x3 x5) «Language.expParts»)
+        («Base.bindO» («Derivation.typeIn» x0 x1 x3 x5) «Language.expParts»)
         (fun (x7 : T) =>
           «Base.mapO»
             (fun (x8 : T) =>
@@ -1331,10 +1323,10 @@ def «Prover.byFunExt» :=
             (x2
               ((«Language.p1» x7) :: x3)
               («Base.mapT» «Derivation.weaken1» x4)
-              («Language.mApp» («Derivation.weaken1» x5) («Language.mVar» (leaf 0)))
-              («Language.mApp»
+              («Language.app» («Derivation.weaken1» x5) («Language.var» (leaf 0)))
+              («Language.app»
                 («Derivation.weaken1» x6)
-                («Language.mVar» (leaf 0))))));
+                («Language.var» (leaf 0))))));
     x3
 
 def «Prover.bySplit» :=
@@ -1357,12 +1349,12 @@ def «Prover.bySplit» :=
               let x14 : T →
                 T →
                   T := (fun (x14 : T) (x15 : T) =>
-                «Language.mApp»
+                «Language.app»
                   («Derivation.weaken1» x15)
                   («Language.mArr»
                     x14
                     («Theory.l2» x10 x11)
-                    («Language.mVar» (leaf 0))));
+                    («Language.var» (leaf 0))));
               «Base.bindO»
                 (x3
                   (x10 :: x4)
@@ -1403,8 +1395,8 @@ def «Prover.bySplit» :=
                               («Prover.dNode» (leaf 0) ([] : List T) ([] : List T))))
                           («Prover.dNode» (leaf 0) ([] : List T) ([] : List T)));
                       let x20 : T := «Language.mEq»
-                        («Language.mApp» x12 («Language.mVar» x2))
-                        («Language.mApp» x13 («Language.mVar» x2));
+                        («Language.app» x12 («Language.var» x2))
+                        («Language.app» x13 («Language.var» x2));
                       «Prelude.some»
                         («Prover.dNode»
                           (leaf 22)
@@ -1482,7 +1474,7 @@ def «Prover.byRoseInd» :=
         («Language.roseLabel» x12)
         (fun (x13 : T) =>
           «Base.bindO»
-            («Derivation.mTypeIn» x0 x2 x9 x10)
+            («Derivation.typeIn» x0 x2 x9 x10)
             (fun (x14 : T) =>
               let x15 : List T := «Theory.l2» («Theory.list» x12) x13;
               «Base.bindO»

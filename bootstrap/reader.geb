@@ -62,7 +62,7 @@
     RRs
     rrTrees
     rrApply
-    rrTail
+    RRs.tail
     rrAt
     app
     apps
@@ -71,6 +71,7 @@
     resolve
     reservedNames
     readProgram)
+  (import Prelude)
   ; whether two optional trees are both present, and whether a list has an element
   (def both (lam ((a T) (b T)) (if (isSome a) (isSome b) 0)))
   (def nonEmpty (lam ((xs Ts)) (lcase T T xs 0 (lam ((x T) (r Ts)) 1))))
@@ -541,15 +542,16 @@
   (def rrApply
     (lam ((rs RRs) (scope Scope))
       (foldr RR Ts (lam ((r RR) (acc Ts)) (cons ((snd r) scope) acc)) (nil T) rs)))
-  (def rrTail (lam ((rs RRs)) (lcase RR RRs rs (nil RR) (lam ((r RR) (rest RRs)) rest))))
+  (import (Lists RR) as RRs)
   (def rrAt
     (lam ((rs RRs) (i T) (scope Scope))
-      ((lcase RR Res (iter RRs rrTail rs i) (lam ((s Scope)) none)
+      ((lcase RR Res (iter RRs RRs.tail rs i) (lam ((s Scope)) none)
          (lam ((r RR) (rest RRs)) (snd r))) scope)))
   (def app (lam ((f T) (x T)) (node2 Label.app f x)))
   (def apps (lam ((f T) (xs Ts)) (foldr T T (lam ((x T) (acc T)) (app acc x)) f (reverse xs))))
   (def some1 (lam ((l T) (a T)) (if (isSome a) (some (node l (single (get a)))) none)))
-  (def argsOf (lam ((rs RRs) (n T) (scope Scope)) (allSome (rrApply (iter RRs rrTail rs n) scope))))
+  (def argsOf
+    (lam ((rs RRs) (n T) (scope Scope)) (allSome (rrApply (iter RRs RRs.tail rs n) scope))))
   (def mkArgs (lam ((l T) (a T)) (if (isSome a) (some (node l (children (get a)))) none)))
   (def appsOpt (lam ((f T) (a T)) (if (both f a) (some (apps (get f) (children (get a)))) none)))
 
@@ -772,4 +774,3 @@
           (some
             (node2 100 (node 101 (snd (snd (snd (snd s))))) (node 102 (fst (snd (snd (snd s)))))))
           none)))))
-(import Reader)

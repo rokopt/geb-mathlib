@@ -94,8 +94,8 @@ open scoped FinEnum
 
 /-- The mirror's application of an encoded term to encoded arguments, the first first. -/
 @[simp] theorem mApps_eq (f : Term) (xs : List Term) :
-    «Tactics.mApps» (encTerm f) (xs.map encTerm) = encTerm (Tactics.apps f xs) := by
-  simp only [«Tactics.mApps», foldr_eq, Tactics.apps]
+    «Tactics.apps» (encTerm f) (xs.map encTerm) = encTerm (Tactics.apps f xs) := by
+  simp only [«Tactics.apps», foldr_eq, Tactics.apps]
   revert f
   exact xs.rec (fun _ ↦ rfl) fun x xs ih f ↦ by
     simp only [List.map_cons, List.foldr_cons, List.foldl_cons, mApp_eq]
@@ -1060,7 +1060,7 @@ theorem matchesWith_eq (m' : Tree → Tree → List Tree → Tree)
     if j < k then none else some (Translation.v (j - k))) = σ₀
   have hs : «Base.mapT» (fun j ↦ if (Const.lt j (leaf k)).label ≠ 0 then
       «Prelude.none» else «Prelude.some»
-        («Language.mVar» (Const.sub j (leaf k))))
+        («Language.var» (Const.sub j (leaf k))))
       («Base.range» (Const.add (leaf k) (leaf 64))) = σ₀.map encOT := by
     rw [← hσ]
     simp only [add_leaf, range_eq, mapT_eq, List.map_map]

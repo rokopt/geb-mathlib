@@ -7,6 +7,10 @@
 ; structural recursion over a declared datatype satisfies its recursion equations at the
 ; datatype's constructors.
 
+(import Prelude)
+(import Reader)
+(import Check)
+
 ; unary naturals, and addition by structural recursion on the first argument
 (data Nat (zero) (succ Nat))
 (defn plus ((m Nat) (n Nat)) Nat (cata Nat Nat m ((zero) n) ((succ r) (succ r))))

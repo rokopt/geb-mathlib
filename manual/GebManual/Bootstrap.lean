@@ -297,11 +297,10 @@ Extension:
   complete, as are the canonical and basic transport encodings of the
   strict encodings of RFC 9804 with their retraction. Ready, in the order
   of {ref "authoring-sequence"}[the sequence]: modules with parameters,
-  imports and export lists, their elaboration complete and the sources
-  modules, their prefixes and copies removed next, with content identity and
-  before the reader's inverse ({ref "the-next-phase"}[The next phase]); the
-  printer of the
-  advanced encoding, after the reader's inverse; the datatype language's
+  imports and export lists, complete but for named telescopes and
+  certificates as parameters, which follow their first consumers; the
+  printer of the advanced encoding, after the reader's inverse
+  ({ref "the-next-phase"}[The next phase]); the datatype language's
   completion, manifests
   with editions and the record of
   elaborated definitions, a durable document with versioned profiles,
@@ -1550,9 +1549,8 @@ section below opens with a table of the states of its parts.
   * In progress
   * The hash, the payload, the CID, the migration, the linker, names as
     annotations re-keyed by identifiers, and the identifiers of the tree of
-    modules, in Lean and Geb: complete; the sources' prefixes that avoided
-    collisions and copies of one function, removed by modules: ready, before
-    the reader's inverse
+    modules, in Lean and Geb, and the sources organized into modules:
+    complete
 *
   * {ref "authoring-compatibility"}[Authoring across bootstrap revisions]
   * In progress
@@ -2355,9 +2353,7 @@ renaming leaves every identifier unchanged, and a changed definition
 changes the identifiers of the modules containing it, up to the root,
 which the tests check. Type and numeral abbreviations are expanded where
 they are used and have no identifiers of their own. Each source is a
-module; the removal of the prefixes and copies its flat names carried
-follows, before the reader's inverse
-({ref "the-next-phase"}[The next phase]).
+module ({ref "modules"}[Modules]).
 
 What the sections before the choice of machine fix for this one: the
 reference node is
@@ -2475,11 +2471,11 @@ tag := "authoring-compatibility"
 *
   * Modules with parameters, imports and export lists
   * In progress: the elaboration of modules, imports, export lists and
-    parameters of sorts and operations, in Lean and Geb, complete; each
-    source a module with an export list, complete; the prefixes that
-    avoided collisions, and the copies of one function at several element
-    types, removed, ready; named telescopes and certificates as
-    parameters, with their first consumers
+    parameters of sorts and operations, in Lean and Geb, and the sources
+    organized into modules without the prefixes that avoided collisions
+    or the copies of one function at several element types, complete;
+    named telescopes and certificates as parameters, with their first
+    consumers
 *
   * The datatype language's completion
     ({ref "datatype-completion"}[The datatype language's completion])
@@ -3309,23 +3305,32 @@ Named telescopes and certificates as parameters follow their first
 consumers.
 
 Each source under `bootstrap/` is a module named after its file, with an
-export list of the definitions other sources and the tests use, followed
-at the root by its import, so that a program is still the concatenation
-of its sources and a later source refers to an earlier one's exports
-unqualified; the entry points `main` and `mainLean` stay at the root. A
-definition's name in the flat program, and so in the mirrors and the
+export list of the definitions other sources and the tests use, and
+imports of the modules whose exports it uses, so that a program is still
+the concatenation of its sources. The entry points `main` and `mainLean`
+stay at the root and refer to the modules qualified, as a test's root
+definitions and the theorems of `bootstrap/proofs/` import what they use.
+A definition's name in the flat program, and so in the mirrors and the
 proofs about them, is its name qualified by its module. The elaboration
 also gives the names visible at the root with what they denote, through
 which the prover of Gödel's T reads the definitions a theorem's tactic
-names as the theorem writes them. Next, before the
-sources grow, the prefixes that avoided collisions, such as `mTypeIn`
-beside `typeIn`, are removed, and the copies of one function at several
-element types, such as the list functions `sTail`, `rrTail` and their
-kind, are replaced by one module of lists with a sort parameter,
-imported at each element type; prefixes otherwise accumulate, and
-removing them later is renaming by hand. A whole module written as one
-block is one form, so an unbalanced parenthesis inside it leaves the
-block unreadable; the kernel's reader
+names as the theorem writes them.
+
+A name carries no prefix that would only keep the flat program's names
+apart: the Mitchell–Bénabou language's `var`, `app` and `isTy`, the
+derivation's `typeIn` and the tactics' `apps` are named as the kernel's
+are, and the translation, which takes the kernel's terms to the
+language's, refers to the reader and the checker qualified, as
+`Check.isTy`, importing neither. A prefix that distinguishes two names in
+one scope stays, as `mNatRec` beside the theory's `natRec` and `phVar`
+beside the language's `var`, as does a prefix that names a role, such as
+`kw` for keywords and `is` for tests. A list function used at several
+element types is an instance of one module, `Lists`, whose parameter is
+the element type, imported as `(import (Lists RR) as RRs)` and used as
+`RRs.tail`.
+
+A whole module written as one block is one form, so an unbalanced
+parenthesis inside it leaves the block unreadable; the kernel's reader
 already rejects an unbalanced text as a whole, and a language server's
 recovery from errors, not the reader, answers it. The block's closing
 parenthesis ends the line of its last definition, so appending a

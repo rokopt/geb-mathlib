@@ -120,7 +120,8 @@ def sexpTree : SExp → Tree :=
 /-- The elaboration of modules written in Geb, applied to a text's S-expressions: the node of
 label 1 over the node of the elaborated forms, or the leaf 0. -/
 def elaborator : String :=
-  compiler ++ "(def modulesMain (lam ((file T)) (let sx T (readSExps (children file)) " ++
+  compiler ++ "(import Prelude) (import Reader) (import Modules) " ++
+    "(def modulesMain (lam ((file T)) (let sx T (readSExps (children file)) " ++
     "(if (isSome sx) (expandModules (children (get sx))) none))))"
 
 /-- What the elaboration written in Geb gives for a text, computed in Lean. -/
