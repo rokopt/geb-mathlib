@@ -1676,7 +1676,9 @@ tag := "kernel-in-lean"
   ({name}`Geb.Kernel.TermWf`) printed resolves to itself
   ({name}`Geb.Kernel.resolve_printTerm`), and the definitions of a
   well-formed bundle ({name}`Geb.Kernel.ProgramWf`), printed, read back to
-  the bundle ({name}`Geb.Kernel.readForms_printProgram`).
+  the bundle ({name}`Geb.Kernel.readForms_printProgram`). The printer
+  written in Geb, `bootstrap/printer.geb`, agrees with it on the examples
+  of `GebTests/Prototypes/Kernel/Printer.lean`.
 
 Acceptance: a program written by hand in S-expressions is read, type
 checked and run, with arithmetic beyond a machine word; ill-typed and
