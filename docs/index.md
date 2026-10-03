@@ -3759,6 +3759,12 @@ checklist and in CI.
   bundle (`Geb.Kernel.Identity.migrate`) and links payloads back into a
   bundle (`Geb.Kernel.Identity.link`), and proves that migrating a linked
   bundle gives its payloads back (`Geb.Kernel.Identity.migrate_link`).
+  `Annotation.lean` keys annotations by a definition and a vertex of its
+  term, proves that the migration moves no vertex
+  (`Geb.Kernel.Identity.migrate_shape`) so that a table re-keyed by
+  identifiers (`Geb.Kernel.Identity.rekey`) addresses the same nodes
+  (`Geb.Kernel.Identity.valid_rekey`), and keeps names as such annotations
+  (`Geb.Kernel.Identity.nameNotes`).
   Tested in
   `GebTests/Prototypes/Kernel.lean`,
   `GebTests/Prototypes/Kernel/Document.lean`,
@@ -3784,9 +3790,10 @@ checklist and in CI.
   the datatype language compiled by the compiler.
   `bootstrap/identity.geb` computes content identity in Geb, BLAKE3 by
   arithmetic on natural numbers, a definition's payload, its CID, the
-  migration and the linker, which `GebTests/Prototypes/Kernel/Identity.lean`
-  compares with `Geb.Blake3.hash`, `Geb.Kernel.Identity.migrate` and
-  `Geb.Kernel.Identity.link`.
+  migration, the linker and the names re-keyed by identifiers, which
+  `GebTests/Prototypes/Kernel/Identity.lean` compares with
+  `Geb.Blake3.hash`, `Geb.Kernel.Identity.migrate`,
+  `Geb.Kernel.Identity.link` and `Geb.Kernel.Identity.nameNotes`.
   `bootstrap/stage1/datatype.geb` rewrites the expansion in the datatype
   language, and `bootstrap/stage1/lean.geb` is a
   backend emitting a Lean module in place of an image; the stage-1 compiler

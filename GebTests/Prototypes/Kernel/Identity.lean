@@ -5,8 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.Kernel.Identity -- shake: keep
-public meta import Geb.Prototypes.Kernel.Identity -- shake: keep
+public import Geb.Prototypes.Kernel.Annotation -- shake: keep
+public meta import Geb.Prototypes.Kernel.Annotation -- shake: keep
 public import GebTests.Prototypes.Stage0 -- shake: keep
 public meta import GebTests.Prototypes.Stage0 -- shake: keep
 
@@ -21,7 +21,9 @@ definitions are unchanged by renaming a definition and
 changed, for a definition and the definitions referring to it, by a change of its body; the
 migration of the stage-0 compiler's linked bundle gives back its payloads. BLAKE3, the
 migration and the linker written in Geb, {lit}`bootstrap/identity.geb`, agree with Lean's, and
-migrating a bundle the Geb linker links gives back its payloads.
+migrating a bundle the Geb linker links gives back its payloads. Names, as annotations re-keyed
+by identifiers and vertices, address nodes of the payloads, are unchanged in their keys by
+renaming, and agree between Geb and Lean.
 
 ## Tags
 
@@ -135,6 +137,53 @@ def expected (ds : List Tree) : Tree :=
   match readProgram src.toList with
   | some ds =>
     runMain migrator.toList (bundle ds) == some (expected (ds.map Prod.snd))
+  | none => false
+
+/-- A note as the Geb names write it: a node of label 0 over a declared name's characters, or
+of label 1 over a written name's. -/
+def noteTree : Note → Tree
+  | .declared n => mk 0 (n.map fun c ↦ leaf c.toNat)
+  | .written n => mk 1 (n.map fun c ↦ leaf c.toNat)
+
+/-- The names of a bundle as annotations keyed by identifiers and vertices. -/
+def namesOf (ds : List (List Char × Tree)) : List ((List UInt8 × List ℕ) × Note) :=
+  rekey ((migrate (ds.map Prod.snd)).map Payload.cid) (nameNotes ds)
+
+/-- Whether every key of a bundle's names addresses a node of a payload with its identifier. -/
+def namesValid (ds : List (List Char × Tree)) : Bool :=
+  let ps := migrate (ds.map Prod.snd)
+  let cs := ps.map fun p ↦ (p.cid, p.body)
+  (rekey (cs.map Prod.fst) (nameNotes ds)).all fun ((c, v), _) ↦
+    cs.any fun (c', b) ↦ c' == c && (subtree? b v).isSome
+
+/-- The names written in Geb, applied to a bundle. -/
+def namer : String :=
+  withIdentity <| "(def namesMain (lam ((b T)) (let ds Ts (children (child b 0)) " ++
+    "(node 0 (nameNotes (children (child b 1)) (cidsOf (migrate ds)) ds)))))"
+
+-- the names of a bundle: each definition's at the root of its term, and each reference's at its
+-- vertex
+#guard ((readProgram
+    "(def a (lam ((x T)) x)) (def b (lam ((y T)) (a (a y)))) (def c b)".toList).map
+    nameNotes) =
+  some [((0, []), .declared ['a']), ((1, []), .declared ['b']), ((1, [1, 0]), .written ['a']),
+    ((1, [1, 1, 0]), .written ['a']), ((2, []), .declared ['c']), ((2, []), .written ['b'])]
+-- re-keyed by identifiers, every key of the stage-0 compiler's names addresses a node of a
+-- payload with that identifier
+#guard (readProgram compiler.toList).all namesValid
+-- renaming changes the names and no key
+#guard ((readProgram "(def a (lam ((x T)) x)) (def b (lam ((y T)) (a y)))".toList).map
+    fun ds ↦ (namesOf ds).map (·.1)) =
+  ((readProgram "(def c (lam ((x T)) x)) (def b (lam ((y T)) (c y)))".toList).map
+    fun ds ↦ (namesOf ds).map (·.1))
+
+-- the names written in Geb agree with Lean's
+#guard ["(def a (lam ((x T)) x)) (def b (lam ((y T)) (a (a y)))) (def c b)", serializer].all
+  fun src ↦
+  match readProgram src.toList with
+  | some ds =>
+    runMain namer.toList (bundle ds) == some (mk 0 ((namesOf ds).map fun ((c, v), n) ↦
+      mk 0 [bytesTree c, mk 0 (v.map leaf), noteTree n]))
   | none => false
 
 end Geb.Kernel.Identity.Tests
