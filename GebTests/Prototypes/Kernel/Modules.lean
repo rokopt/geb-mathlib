@@ -5,12 +5,12 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.Kernel.Modules -- shake: keep
-public meta import Geb.Prototypes.Kernel.Modules -- shake: keep
+public import Geb.Prototypes.Kernel.ModuleIdentity -- shake: keep
+public meta import Geb.Prototypes.Kernel.ModuleIdentity -- shake: keep
 public import Geb.Prototypes.Kernel.Strict -- shake: keep
 public meta import Geb.Prototypes.Kernel.Strict -- shake: keep
-public import GebTests.Prototypes.Stage0 -- shake: keep
-public meta import GebTests.Prototypes.Stage0 -- shake: keep
+public import GebTests.Prototypes.Kernel.Identity -- shake: keep
+public meta import GebTests.Prototypes.Kernel.Identity -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -23,7 +23,9 @@ parameter by a type and an operation by a term of its type. A name bound in a te
 datum and a hole are not renamed. A clash, an import naming no module or leaving a parameter
 unsupplied, and an export naming nothing are rejected with a message. The elaboration
 written in Geb, {lit}`bootstrap/modules.geb`, agrees with Lean's, and the stage-0 compiler
-compiles a module of the datatype language.
+compiles a module of the datatype language. A module's identifier is unchanged by renaming the
+module and its members, and changed, with the root's, by a change of one of its definitions;
+the identifiers computed in Geb agree with Lean's.
 
 The texts are string constants, converted to lists of characters inside each {lit}`#guard`.
 
@@ -151,6 +153,44 @@ def moduleTexts : List String :=
     " (data Maybe (nothing) (just T))" ++
     " (defn fromMaybe ((d T) (m Maybe)) T (case m ((nothing) d) ((just x) x))))" ++
     " (defn main ((t T)) T (Opt.fromMaybe 7 (Opt.just 3)))").toList (leaf 0) = some (leaf 3)
+
+/-- Two modules, the first exporting one of its definitions. -/
+def twoModules (m f g n h : String) (k : ℕ) : String :=
+  s!"(module {m} (export {f}) (def {g} (lam ((x T)) x)) (def {f} (lam ((y T)) ({g} y))))" ++
+    s!" (module {n} (export {h}) (def {h} (lam ((x T)) (add x {k}))))"
+
+open Identity in
+-- renaming modules and their members changes no identifier
+#guard (programModules (twoModules "M" "f" "g" "N" "h" 1).toList).isSome &&
+  ((programModules (twoModules "M" "f" "g" "N" "h" 1).toList).map (·.map Prod.snd)) ==
+    ((programModules (twoModules "Q" "e" "k" "P" "u" 1).toList).map (·.map Prod.snd))
+open Identity in
+-- a changed definition changes its module's identifier and the root's, and no other module's
+#guard ((programModules (twoModules "M" "f" "g" "N" "h" 1).toList).bind fun xs ↦
+    (programModules (twoModules "M" "f" "g" "N" "h" 2).toList).map fun ys ↦
+      (xs.zip ys).map fun (x, y) ↦ x.2 == y.2) = some [true, false, false]
+
+/-- The identifiers of a text's modules computed in Geb: its modules elaborated, its forms read
+into a bundle, its definitions migrated, and its tree of modules identified. -/
+def moduleIdentifier : String :=
+  Identity.Tests.withIdentity <|
+    "(def modulesMain (lam ((file T)) (let sx T (readSExps (children file)) " ++
+    "(if (isSome sx) (let r T (expandModulesTree (children (get sx))) " ++
+    "(if (isSome r) (let b T (readProgram (children (child (get r) 0))) " ++
+    "(if (isSome b) (let cids Ts (cidsOf (migrate (children (child (get b) 0)))) " ++
+    "(some (node 0 (moduleCids (zipWith2 (lam ((n T) (c T)) (node2 0 n c)) " ++
+    "(children (child (get b) 1)) cids) (children (child (get r) 1)))))) none)) none)) none))))"
+
+open Identity in
+-- the identifiers of modules computed in Geb agree with Lean's
+#guard [twoModules "M" "f" "g" "N" "h" 1, twoModules "M" "f" "g" "N" "h" 2,
+    "(module A (export f) (module B (export g) (def g (lam ((x T)) x))) (def f B.g))"].all
+  fun text ↦
+  runMain moduleIdentifier.toList (mk 0 (text.toList.map fun c ↦ leaf c.toNat)) ==
+    some (match programModules text.toList with
+      | some ms => mk 1 [mk 0 (ms.map fun (p, c) ↦ mk 0 [mk 0 (p.map fun ch ↦ leaf ch.toNat),
+          Identity.Tests.bytesTree c])]
+      | none => leaf 0)
 
 end Geb.Kernel.ModulesTests
 

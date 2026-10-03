@@ -3769,7 +3769,10 @@ checklist and in CI.
   (`Geb.Kernel.expandModules`): declarations under qualified names, imports
   and export lists, and modules with parameters instantiated at their
   imports, every name of a body renamed to what it denotes
-  (`Geb.Kernel.rename`).
+  (`Geb.Kernel.rename`), recording the program's tree of modules
+  (`Geb.Kernel.elabTree`). `ModuleIdentity.lean` identifies each module by
+  the CID of its members' and exports' identifiers
+  (`Geb.Kernel.Identity.moduleCids`).
   Tested in
   `GebTests/Prototypes/Kernel.lean`,
   `GebTests/Prototypes/Kernel/Document.lean`,
@@ -3796,7 +3799,8 @@ checklist and in CI.
   the datatype language compiled by the compiler.
   `bootstrap/identity.geb` computes content identity in Geb, BLAKE3 by
   arithmetic on natural numbers, a definition's payload, its CID, the
-  migration, the linker and the names re-keyed by identifiers, which
+  migration, the linker, the names re-keyed by identifiers and the
+  identifiers of modules, which
   `GebTests/Prototypes/Kernel/Identity.lean` compares with
   `Geb.Blake3.hash`, `Geb.Kernel.Identity.migrate`,
   `Geb.Kernel.Identity.link` and `Geb.Kernel.Identity.nameNotes`.

@@ -183,8 +183,28 @@ inductive ModDef where
   /-- A module with parameters, elaborated at each import. -/
   | template (params : List SExp) (exports : List Ident) (forms : List SExp) (scope : Visible)
 
+/-- A member of a module: a definition, by its name in the flat program, or a module nested in
+it or instantiated in it, by its path. -/
+inductive Member where
+  /-- A definition, by its name in the flat program. -/
+  | decl (fl : Ident)
+  /-- A nested module or an instance, by its path. -/
+  | sub (path : Ident)
+  deriving DecidableEq
+
+/-- A module of the program's tree of modules: its path, its members in order, and its exports
+with what they denote. The root block is the module of the empty path. -/
+structure ModNode where
+  /-- The module's path from the root. -/
+  path : Ident
+  /-- The module's members, in order. -/
+  members : List Member
+  /-- The module's exports, with what they denote. -/
+  exports : Visible
+
 /-- The state of the elaboration of a block: the names visible in it, the declarations emitted,
-the modules declared, by their paths from the root, and the names the block exports. -/
+the modules declared, by their paths from the root, the names the block exports, the block's
+members and the modules elaborated. -/
 structure ElabState where
   /-- The names visible in the block. -/
   vis : Visible
@@ -194,6 +214,10 @@ structure ElabState where
   reg : List (Ident × ModDef)
   /-- The names the block's export lists name. -/
   exports : List Ident
+  /-- The block's members, in order. -/
+  members : List Member
+  /-- The modules elaborated, each after the modules nested in it. -/
+  mods : List ModNode
 
 /-- The result of an elaboration: a value, or the message of its first failure. -/
 abbrev Elab : Type → Type := Except String
@@ -259,7 +283,9 @@ def bindParam (inst : Ident) (importer : Visible) (st : ElabState) (p arg : SExp
         else slist [atom ['l', 'a', 'm'], slist ((args.children.zip vars).map fun (A, v) ↦
           slist [atom v, rename st.vis A .type []]), body]
       let st ← declare st s fl
-      pure { st with out := st.out ++ [slist [atom ['d', 'e', 'f'], atom fl, term]] }
+      pure { st with
+        out := st.out ++ [slist [atom ['d', 'e', 'f'], atom fl, term]]
+        members := st.members ++ [.decl fl] }
     | _, _ => throw bad
   | _ => throw bad
 
@@ -271,20 +297,20 @@ def elabDecl (pre : Ident) (st : ElabState) (e : SExp) : Elab ElabState := do
   | kw :: x :: rest => do
     let s ← need x.label other
     let fl := qualify pre s
-    let emit (st : ElabState) (body : List SExp) : ElabState :=
-      { st with out := st.out ++ [slist (kw :: atom fl :: body)] }
+    let emit (st : ElabState) (body : List SExp) (mem : List Member) : ElabState :=
+      { st with out := st.out ++ [slist (kw :: atom fl :: body)], members := st.members ++ mem }
     if isKw kw "def" then
       match rest with
-      | [b] => return emit (← declare st s fl) [rename st.vis b .term []]
+      | [b] => return emit (← declare st s fl) [rename st.vis b .term []] [.decl fl]
       | _ => throw other
     else if isKw kw "deftype" || isKw kw "defnum" then
       match rest with
-      | [b] => return emit (← declare st s fl) [rename st.vis b .type []]
+      | [b] => return emit (← declare st s fl) [rename st.vis b .type []] []
       | _ => throw other
     else if isKw kw "defn" then
       match rest with
       | [ps, res, b] => return emit (← declare st s fl) [rename st.vis ps .binders [],
-          rename st.vis res .type [], rename st.vis b .term (boundBy ps)]
+          rename st.vis res .type [], rename st.vis b .term (boundBy ps)] [.decl fl]
       | _ => throw other
     else if isKw kw "data" then do
       let st1 ← declare st s fl
@@ -292,8 +318,10 @@ def elabDecl (pre : Ident) (st : ElabState) (e : SExp) : Elab ElabState := do
         | n :: fs => need (n.label.map fun cn ↦ (cn, fs)) other
         | [] => throw other
       let st2 ← declareAll st1 (ctors.map fun (cn, _) ↦ (cn, qualify pre cn))
-      return { st2 with out := st.out ++ [slist (kw :: atom fl :: ctors.map fun (cn, fs) ↦
-        slist (atom (qualify pre cn) :: fs.map (rename st1.vis · .type [])))] }
+      return { st2 with
+        out := st.out ++ [slist (kw :: atom fl :: ctors.map fun (cn, fs) ↦
+          slist (atom (qualify pre cn) :: fs.map (rename st1.vis · .type [])))]
+        members := st.members ++ ctors.map fun (cn, _) ↦ .decl (qualify pre cn) }
     else throw other
   | _ => throw other
 
@@ -334,10 +362,14 @@ def elabStep (rec : Ident → ElabState → SExp → Elab ElabState) (pre : Iden
             {params.length} parameters"
         let inst := pre ++ '/' :: (as?.getD p)
         let st1 ← (params.zip args).foldlM (fun acc (prm, arg) ↦ bindParam inst st.vis acc prm arg)
-          ⟨scope, st.out, st.reg, exports⟩
+          ⟨scope, st.out, st.reg, exports, [], st.mods⟩
         let st2 ← forms.foldlM (rec inst) st1
         let ex ← exportsOf st2
-        declareAll { st with out := st2.out, reg := st2.reg } (importAs as? ex)
+        declareAll { st with
+          out := st2.out
+          reg := st2.reg
+          members := st.members ++ [.sub inst]
+          mods := st2.mods ++ [⟨inst, st2.members, ex⟩] } (importAs as? ex)
     else if isKw kw "module" then
       match rest with
       | m :: forms => do
@@ -345,9 +377,10 @@ def elabStep (rec : Ident → ElabState → SExp → Elab ElabState) (pre : Iden
         let path := qualify pre s
         let (params, others) := splitHead "parameter" forms
         if params.isEmpty then do
-          let st1 ← forms.foldlM (rec path) { st with exports := [] }
+          let st1 ← forms.foldlM (rec path) { st with exports := [], members := [] }
           let ex ← exportsOf st1
-          declareAll ⟨st.vis, st1.out, st1.reg ++ [(path, .plain ex)], st.exports⟩
+          declareAll ⟨st.vis, st1.out, st1.reg ++ [(path, .plain ex)], st.exports,
+            st.members ++ [.sub path], st1.mods ++ [⟨path, st1.members, ex⟩]⟩
             (importAs (some s) ex)
         else
           let (exs, body) := splitHead "export" others
@@ -369,14 +402,19 @@ def moduleCount (es : List SExp) : ℕ :=
   (es.map (RoseTree.elim fun a (rs : List ℕ) ↦
     rs.sum + if a.any (String.ofList · == "module") then 1 else 0)).sum
 
-/-- A program's forms with its modules elaborated: each declaration under its qualified name,
+/-- A program's forms with its modules elaborated, with its tree of modules, each module after
+those nested in it and the root block last: each declaration under its qualified name,
 the instances of modules with parameters at their imports, and every name renamed to what it
 denotes; a failure when a name clashes with one visible, an import names no module or leaves a
 parameter unsupplied, an export names nothing, or a form is not a declaration, a module, an
 import or an export. -/
-def elabModules (es : List SExp) : Elab (List SExp) := do
-  let st ← es.foldlM (elabAt (moduleCount es + 1) []) ⟨[], [], [], []⟩
-  if st.exports.isEmpty then pure st.out else throw "the program exports names"
+def elabTree (es : List SExp) : Elab (List SExp × List ModNode) := do
+  let st ← es.foldlM (elabAt (moduleCount es + 1) []) ⟨[], [], [], [], [], []⟩
+  if st.exports.isEmpty then pure (st.out, st.mods ++ [⟨[], st.members, []⟩])
+  else throw "the program exports names"
+
+/-- A program's forms with its modules elaborated, or the message of the first failure. -/
+def elabModules (es : List SExp) : Elab (List SExp) := (elabTree es).map Prod.fst
 
 /-- A program's forms with its modules elaborated, when they elaborate. -/
 def expandModules (es : List SExp) : Option (List SExp) :=

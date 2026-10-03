@@ -3268,46 +3268,95 @@ def «rename» :=
       x3
 
 def «mkSt» :=
-  fun (x0 : List T) (x1 : List T) (x2 : List T) (x3 : List T) =>
-    (leaf 1, (x0, (x1, (x2, x3))))
+  fun (x0 : List T)
+    (x1 : List T)
+    (x2 : List T)
+    (x3 : List T)
+    (x4 : List T)
+    (x5 : List T) =>
+    (leaf 1, (x0, (x1, (x2, (x3, (x4, x5))))))
 
 def «stFail» :=
   (leaf 0,
-    (([] : List T), (([] : List T), (([] : List T), ([] : List T)))))
+    («mkSt»
+      ([] : List T)
+      ([] : List T)
+      ([] : List T)
+      ([] : List T)
+      ([] : List T)
+      ([] : List T)).2)
 
 def «stVis» :=
-  fun (x0 : T × (List T × (List T × (List T × List T)))) => ((x0).2).1
+  fun (x0 : T ×
+      (List T × (List T × (List T × (List T × (List T × List T)))))) =>
+    ((x0).2).1
 
 def «stOut» :=
-  fun (x0 : T × (List T × (List T × (List T × List T)))) =>
+  fun (x0 : T ×
+      (List T × (List T × (List T × (List T × (List T × List T)))))) =>
     (((x0).2).2).1
 
 def «stReg» :=
-  fun (x0 : T × (List T × (List T × (List T × List T)))) =>
+  fun (x0 : T ×
+      (List T × (List T × (List T × (List T × (List T × List T)))))) =>
     ((((x0).2).2).2).1
 
 def «stEx» :=
-  fun (x0 : T × (List T × (List T × (List T × List T)))) =>
-    ((((x0).2).2).2).2
+  fun (x0 : T ×
+      (List T × (List T × (List T × (List T × (List T × List T)))))) =>
+    (((((x0).2).2).2).2).1
+
+def «stMem» :=
+  fun (x0 : T ×
+      (List T × (List T × (List T × (List T × (List T × List T)))))) =>
+    ((((((x0).2).2).2).2).2).1
+
+def «stMods» :=
+  fun (x0 : T ×
+      (List T × (List T × (List T × (List T × (List T × List T)))))) =>
+    ((((((x0).2).2).2).2).2).2
 
 def «withVis» :=
-  fun (x0 : T × (List T × (List T × (List T × List T))))
+  fun (x0 : T ×
+      (List T × (List T × (List T × (List T × (List T × List T))))))
     (x1 : List T) =>
     if ((x0).1).label ≠ 0 then
-      «mkSt» x1 («stOut» x0) («stReg» x0) («stEx» x0)
+      «mkSt»
+        x1
+        («stOut» x0)
+        («stReg» x0)
+        («stEx» x0)
+        («stMem» x0)
+        («stMods» x0)
     else
       x0
 
 def «emitTo» :=
-  fun (x0 : T × (List T × (List T × (List T × List T)))) (x1 : T) =>
+  fun (x0 : T ×
+      (List T × (List T × (List T × (List T × (List T × List T))))))
+    (x1 : T)
+    (x2 : List T) =>
     if ((x0).1).label ≠ 0 then
       «mkSt»
         («stVis» x0)
         («append» («stOut» x0) («single» x1))
         («stReg» x0)
         («stEx» x0)
+        («append» («stMem» x0) x2)
+        («stMods» x0)
     else
       x0
+
+def «memberDecl» := fun (x0 : T) => Const.node (leaf 0) («single» x0)
+
+def «memberSub» := fun (x0 : T) => Const.node (leaf 1) («single» x0)
+
+def «modNode» :=
+  fun (x0 : T) (x1 : List T) (x2 : List T) =>
+    Const.node
+      (leaf 0)
+      (x0 ::
+        ((Const.node (leaf 0) x1) :: («single» (Const.node (leaf 0) x2))))
 
 def «qualify» :=
   fun (x0 : T) (x1 : T) =>
@@ -3317,7 +3366,8 @@ def «qualify» :=
       x1
 
 def «declare» :=
-  fun (x0 : T × (List T × (List T × (List T × List T))))
+  fun (x0 : T ×
+      (List T × (List T × (List T × (List T × (List T × List T))))))
     (x1 : T)
     (x2 : T) =>
     if ((x0).1).label ≠ 0 then
@@ -3337,23 +3387,30 @@ def «declare» :=
       x0
 
 def «declareAll» :=
-  fun (x0 : T × (List T × (List T × (List T × List T))))
+  fun (x0 : T ×
+      (List T × (List T × (List T × (List T × (List T × List T))))))
     (x1 : List T) =>
     Const.foldr
       (α := T)
-      (β := (T × (List T × (List T × (List T × List T)))) →
-        T × (List T × (List T × (List T × List T))))
+      (β := (T ×
+        (List T × (List T × (List T × (List T × (List T × List T)))))) →
+        T × (List T × (List T × (List T × (List T × (List T × List T))))))
       (fun (x2 : T)
-         (x3 : (T × (List T × (List T × (List T × List T)))) →
-           T × (List T × (List T × (List T × List T))))
-         (x4 : T × (List T × (List T × (List T × List T)))) =>
+         (x3 : (T ×
+           (List T × (List T × (List T × (List T × (List T × List T)))))) →
+           T × (List T × (List T × (List T × (List T × (List T × List T))))))
+         (x4 : T ×
+           (List T × (List T × (List T × (List T × (List T × List T)))))) =>
         x3 («declare» x4 (Const.child x2 (leaf 0)) (Const.child x2 (leaf 1))))
-      (fun (x2 : T × (List T × (List T × (List T × List T)))) => x2)
+      (fun (x2 : T ×
+           (List T × (List T × (List T × (List T × (List T × List T)))))) =>
+        x2)
       x1
       x0
 
 def «exportsOf» :=
-  fun (x0 : T × (List T × (List T × (List T × List T)))) =>
+  fun (x0 : T ×
+      (List T × (List T × (List T × (List T × (List T × List T)))))) =>
     «allSome»
       (Const.foldr
         (α := T)
@@ -3454,7 +3511,8 @@ def «zipWith2» :=
 def «bindParam» :=
   fun (x0 : T)
     (x1 : List T)
-    (x2 : T × (List T × (List T × (List T × List T))))
+    (x2 : T ×
+      (List T × (List T × (List T × (List T × (List T × List T))))))
     (x3 : T)
     (x4 : T) =>
     if (if ((x2).1).label ≠ 0 then
@@ -3470,6 +3528,7 @@ def «bindParam» :=
             («aDeftypeM» ::
               ((«atomOf» x6) ::
                 («single» («rename» x1 x4 (leaf 1) ([] : List T))))))
+          ([] : List T)
       else
         if (if (Const.eq (Const.arity x5) (leaf 3)).label ≠ 0 then
           «isAtom» (Const.child x5 (leaf 0))
@@ -3510,6 +3569,7 @@ def «bindParam» :=
           «emitTo»
             («declare» x2 x6 x7)
             («mkList» («aDefM» :: ((«atomOf» x7) :: («single» x13))))
+            («single» («memberDecl» x7))
         else
           «stFail»
     else
@@ -3517,7 +3577,8 @@ def «bindParam» :=
 
 def «elabDecl» :=
   fun (x0 : T)
-    (x1 : T × (List T × (List T × (List T × List T))))
+    (x1 : T ×
+      (List T × (List T × (List T × (List T × (List T × List T))))))
     (x2 : T) =>
     let x3 : List T := Const.children x2;
     let x4 : T := Const.arity x2;
@@ -3539,6 +3600,7 @@ def «elabDecl» :=
             («declare» x1 x7 x8)
             (x10
               («single» («rename» x9 («at» x3 (leaf 2)) (leaf 0) ([] : List T))))
+            («single» («memberDecl» x8))
         else
           «stFail»
       else
@@ -3550,6 +3612,7 @@ def «elabDecl» :=
               («declare» x1 x7 x8)
               (x10
                 («single» («rename» x9 («at» x3 (leaf 2)) (leaf 1) ([] : List T))))
+              ([] : List T)
           else
             «stFail»
         else
@@ -3566,6 +3629,7 @@ def «elabDecl» :=
                           («at» x3 (leaf 4))
                           (leaf 0)
                           («boundBy» («at» x3 (leaf 2))))))))
+                («single» («memberDecl» x8))
             else
               «stFail»
           else
@@ -3587,13 +3651,17 @@ def «elabDecl» :=
                 (leaf 1)
                 x11).label ≠ 0 then
                 let x12 : T ×
-                  (List T × (List T × (List T × List T))) := «declare» x1 x7 x8;
+                  (List T ×
+                    (List T ×
+                      (List T × (List T × (List T × List T))))) := «declare» x1 x7 x8;
                 let x13 : T ×
                   (List T ×
                     (List T ×
                       (List T ×
-                        List
-                          T))) := «declareAll»
+                        (List T ×
+                          (List T ×
+                            List
+                              T))))) := «declareAll»
                   x12
                   (Const.foldr
                     (α := T)
@@ -3631,6 +3699,18 @@ def «elabDecl» :=
                             x11))))
                     («stReg» x13)
                     («stEx» x13)
+                    («append»
+                      («stMem» x1)
+                      (Const.foldr
+                        (α := T)
+                        (β := List T)
+                        (fun (x14 : T) (x15 : List T) =>
+                          ((«memberDecl»
+                            («qualify» x0 («nameOf» (Const.child x14 (leaf 0))))) ::
+                            x15))
+                        ([] : List T)
+                        x11))
+                    («stMods» x13)
                 else
                   «stFail»
               else
@@ -3708,30 +3788,37 @@ def «importAs» :=
 
 def «elabForms» :=
   fun (x0 : T →
-      (T × (List T × (List T × (List T × List T)))) →
-        T → T × (List T × (List T × (List T × List T))))
+      (T × (List T × (List T × (List T × (List T × (List T × List T)))))) →
+        T → T × (List T × (List T × (List T × (List T × (List T × List T))))))
     (x1 : T)
-    (x2 : T × (List T × (List T × (List T × List T))))
+    (x2 : T ×
+      (List T × (List T × (List T × (List T × (List T × List T))))))
     (x3 : List T) =>
     Const.foldr
       (α := T)
-      (β := (T × (List T × (List T × (List T × List T)))) →
-        T × (List T × (List T × (List T × List T))))
+      (β := (T ×
+        (List T × (List T × (List T × (List T × (List T × List T)))))) →
+        T × (List T × (List T × (List T × (List T × (List T × List T))))))
       (fun (x4 : T)
-         (x5 : (T × (List T × (List T × (List T × List T)))) →
-           T × (List T × (List T × (List T × List T))))
-         (x6 : T × (List T × (List T × (List T × List T)))) =>
+         (x5 : (T ×
+           (List T × (List T × (List T × (List T × (List T × List T)))))) →
+           T × (List T × (List T × (List T × (List T × (List T × List T))))))
+         (x6 : T ×
+           (List T × (List T × (List T × (List T × (List T × List T)))))) =>
         x5 (x0 x1 x6 x4))
-      (fun (x4 : T × (List T × (List T × (List T × List T)))) => x4)
+      (fun (x4 : T ×
+           (List T × (List T × (List T × (List T × (List T × List T)))))) =>
+        x4)
       x3
       x2
 
 def «elabStep» :=
   fun (x0 : T →
-      (T × (List T × (List T × (List T × List T)))) →
-        T → T × (List T × (List T × (List T × List T))))
+      (T × (List T × (List T × (List T × (List T × (List T × List T)))))) →
+        T → T × (List T × (List T × (List T × (List T × (List T × List T))))))
     (x1 : T)
-    (x2 : T × (List T × (List T × (List T × List T))))
+    (x2 : T ×
+      (List T × (List T × (List T × (List T × (List T × List T))))))
     (x3 : T) =>
     if (if ((x2).1).label ≠ 0 then
       if («isList» x3).label ≠ 0 then
@@ -3748,6 +3835,8 @@ def «elabStep» :=
           («stOut» x2)
           («stReg» x2)
           («append» («stEx» x2) («atomNames» («drop» (leaf 1) x4)))
+          («stMem» x2)
+          («stMods» x2)
       else
         if («named» x5 «kwImport»).label ≠ 0 then
           let x6 : T := «importSpec» x3;
@@ -3776,22 +3865,27 @@ def «elabStep» :=
                     (List T ×
                       (List T ×
                         (List T ×
-                          List
-                            T))) := Const.foldr
+                          (List T ×
+                            (List T ×
+                              List
+                                T))))) := Const.foldr
                     (α := T)
                     (β := T →
-                      (T × (List T × (List T × (List T × List T)))) →
-                        T × (List T × (List T × (List T × List T))))
+                      (T × (List T × (List T × (List T × (List T × (List T × List T)))))) →
+                        T × (List T × (List T × (List T × (List T × (List T × List T))))))
                     (fun (x14 : T)
                        (x15 : T →
-                         (T × (List T × (List T × (List T × List T)))) →
-                           T × (List T × (List T × (List T × List T))))
+                         (T × (List T × (List T × (List T × (List T × (List T × List T)))))) →
+                           T × (List T × (List T × (List T × (List T × (List T × List T))))))
                        (x16 : T)
-                       (x17 : T × (List T × (List T × (List T × List T)))) =>
+                       (x17 : T ×
+                         (List T × (List T × (List T × (List T × (List T × List T)))))) =>
                       x15
                         (Const.add x16 (leaf 1))
                         («bindParam» x13 («stVis» x2) x17 x14 («at» x8 x16)))
-                    (fun (_ : T) (x15 : T × (List T × (List T × (List T × List T)))) =>
+                    (fun (_ : T)
+                       (x15 : T ×
+                         (List T × (List T × (List T × (List T × (List T × List T)))))) =>
                       x15)
                     x12
                     (leaf 0)
@@ -3799,13 +3893,17 @@ def «elabStep» :=
                       (Const.children (Const.child x11 (leaf 3)))
                       («stOut» x2)
                       («stReg» x2)
-                      (Const.children (Const.child x11 (leaf 1))));
+                      (Const.children (Const.child x11 (leaf 1)))
+                      ([] : List T)
+                      («stMods» x2));
                   let x15 : T ×
                     (List T ×
                       (List T ×
                         (List T ×
-                          List
-                            T))) := «elabForms»
+                          (List T ×
+                            (List T ×
+                              List
+                                T))))) := «elabForms»
                     x0
                     x13
                     x14
@@ -3816,7 +3914,16 @@ def «elabStep» :=
                     «none»);
                   if («isSome» x16).label ≠ 0 then
                     «declareAll»
-                      («mkSt» («stVis» x2) («stOut» x15) («stReg» x15) («stEx» x2))
+                      («mkSt»
+                        («stVis» x2)
+                        («stOut» x15)
+                        («stReg» x15)
+                        («stEx» x2)
+                        («append» («stMem» x2) («single» («memberSub» x13)))
+                        («append»
+                          («stMods» x15)
+                          («single»
+                            («modNode» x13 («stMem» x15) (Const.children («get» x16))))))
                       («importAs» x9 (Const.children («get» x16)))
                   else
                     «stFail»
@@ -3863,16 +3970,26 @@ def «elabStep» :=
                               ((Const.node (leaf 0) («withoutHead» «kwExport» x10)) ::
                                 («single» (Const.node (leaf 0) («stVis» x2))))))))))
                   («stEx» x2)
+                  («stMem» x2)
+                  («stMods» x2)
               else
                 let x10 : T ×
                   (List T ×
                     (List T ×
                       (List T ×
-                        List
-                          T))) := «elabForms»
+                        (List T ×
+                          (List T ×
+                            List
+                              T))))) := «elabForms»
                   x0
                   x7
-                  («mkSt» («stVis» x2) («stOut» x2) («stReg» x2) ([] : List T))
+                  («mkSt»
+                    («stVis» x2)
+                    («stOut» x2)
+                    («stReg» x2)
+                    ([] : List T)
+                    ([] : List T)
+                    («stMods» x2))
                   x8;
                 let x11 : T := (if ((x10).1).label ≠ 0 then
                   «exportsOf» x10
@@ -3887,7 +4004,11 @@ def «elabStep» :=
                         («stReg» x10)
                         («single»
                           («node2» (leaf 0) x7 (Const.node (leaf 0) («single» («get» x11))))))
-                      («stEx» x2))
+                      («stEx» x2)
+                      («append» («stMem» x2) («single» («memberSub» x7)))
+                      («append»
+                        («stMods» x10)
+                        («single» («modNode» x7 («stMem» x10) (Const.children («get» x11))))))
                     («importAs» («some» x6) (Const.children («get» x11)))
                 else
                   «stFail»
@@ -3902,17 +4023,19 @@ def «elabAt» :=
   fun (x0 : T) =>
     Const.iter
       (α := T →
-        (T × (List T × (List T × (List T × List T)))) →
-          T → T × (List T × (List T × (List T × List T))))
+        (T × (List T × (List T × (List T × (List T × (List T × List T)))))) →
+          T → T × (List T × (List T × (List T × (List T × (List T × List T))))))
       (fun (x1 : T →
-           (T × (List T × (List T × (List T × List T)))) →
-             T → T × (List T × (List T × (List T × List T))))
+           (T × (List T × (List T × (List T × (List T × (List T × List T)))))) →
+             T → T × (List T × (List T × (List T × (List T × (List T × List T))))))
          (x2 : T)
-         (x3 : T × (List T × (List T × (List T × List T))))
+         (x3 : T ×
+           (List T × (List T × (List T × (List T × (List T × List T))))))
          (x4 : T) =>
         «elabStep» x1 x2 x3 x4)
       (fun (_ : T)
-         (_ : T × (List T × (List T × (List T × List T))))
+         (_ : T ×
+           (List T × (List T × (List T × (List T × (List T × List T))))))
          (_ : T) =>
         «stFail»)
       x0
@@ -3938,23 +4061,51 @@ def «moduleCount» :=
       (leaf 0)
       x0
 
-def «expandModules» :=
+def «expandModulesTree» :=
   fun (x0 : List T) =>
     let x1 : T ×
       (List T ×
         (List T ×
           (List T ×
-            List
-              T))) := «elabForms»
+            (List T ×
+              (List T ×
+                List
+                  T))))) := «elabForms»
       («elabAt» (Const.add («moduleCount» x0) (leaf 1)))
       (Const.node (leaf 0) ([] : List T))
-      («mkSt» ([] : List T) ([] : List T) ([] : List T) ([] : List T))
+      («mkSt»
+        ([] : List T)
+        ([] : List T)
+        ([] : List T)
+        ([] : List T)
+        ([] : List T)
+        ([] : List T))
       x0;
     if ((x1).1).label ≠ 0 then
       if («nonEmpty» («stEx» x1)).label ≠ 0 then
         «none»
       else
-        «some» (Const.node (leaf 0) («stOut» x1))
+        «some»
+          («node2»
+            (leaf 0)
+            (Const.node (leaf 0) («stOut» x1))
+            (Const.node
+              (leaf 0)
+              («append»
+                («stMods» x1)
+                («single»
+                  («modNode»
+                    (Const.node (leaf 0) ([] : List T))
+                    («stMem» x1)
+                    ([] : List T))))))
+    else
+      «none»
+
+def «expandModules» :=
+  fun (x0 : List T) =>
+    let x1 : T := «expandModulesTree» x0;
+    if («isSome» x1).label ≠ 0 then
+      «some» (Const.child («get» x1) (leaf 0))
     else
       «none»
 

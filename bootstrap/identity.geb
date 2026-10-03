@@ -5,12 +5,13 @@
 ; Content identity, as Geb.Kernel.Identity computes it: the hash BLAKE3 in its default mode,
 ; with a 32-byte digest, as Geb.Blake3 computes it; a definition's payload in the canonical
 ; encoding of RFC 9804; its CIDv1 of codec raw over a multihash of BLAKE3; the migration of a
-; bundle's definitions from positions to payloads referring to CIDs; the linker back; and names
-; as annotations keyed by identifiers and vertices. The kernel has no operations on the bits of
-; a word, so a word of 32 bits is a natural number below 2^32, and the exclusive or, the
-; rotations and the addition modulo 2^32 are computed by arithmetic. Bytes are leaves, and a
-; list of bytes is a node's children where a tree is needed. Requires the prelude, indexOf of
-; the reader, concat of the modules and decimalChars of the datatype language.
+; bundle's definitions from positions to payloads referring to CIDs; the linker back; names as
+; annotations keyed by identifiers and vertices; and the identifiers of modules. The kernel has
+; no operations on the bits of a word, so a word of 32 bits is a natural number below 2^32, and
+; the exclusive or, the rotations and the addition modulo 2^32 are computed by arithmetic. Bytes
+; are leaves, and a list of bytes is a node's children where a tree is needed. Requires the
+; prelude, indexOf and lookupAbbrev of the reader, concat of the modules and decimalChars of the
+; datatype language.
 
 ; words of 32 bits
 (defnum wordSize 4294967296)
@@ -391,3 +392,49 @@
                (k (add i 1))))))
        (lam ((i T)) (nil T))
        ds) 0)))
+
+; the identifiers of modules: a module's payload, (geb-module/v1 (members ...) (exports ...)), in
+; the canonical encoding, from the identifiers of its members and of the definitions its exports
+; denote; and the identifiers of a program's tree of modules, each after the modules nested in it,
+; from the identifiers of its definitions by their names in the flat program, each entry a node
+; over a name or path and an identifier
+(def cidAtoms
+  (lam ((cs Ts))
+    (concat
+      (foldr T (List Ts) (lam ((c T) (r (List Ts))) (cons (atomBytes (children c)) r)) (nil Ts)
+        cs))))
+(def moduleBytes
+  (lam ((members Ts) (exports Ts))
+    (cons 40
+      (append (atomBytes (children (quote (0 geb-module/v1))))
+        (cons 40
+          (append (cidAtoms members)
+            (cons 41 (cons 40 (append (cidAtoms exports) (cons 41 (single 41)))))))))))
+(def foundCids
+  (lam ((names Ts) (table Ts))
+    (foldr T Ts
+      (lam ((n T) (r Ts)) (let c T (lookupAbbrev n table) (if (isSome c) (cons (get c) r) r)))
+      (nil T)
+      names)))
+(def moduleCidIn
+  (lam ((byName Ts) (done Ts) (m T))
+    (let members Ts
+      (foldr T Ts
+        (lam ((x T) (r Ts))
+          (let c T (lookupAbbrev (child x 0) (if (eq (label x) 0) byName done))
+            (if (isSome c) (cons (get c) r) r)))
+        (nil T)
+        (children (child m 1)))
+      (node 0
+        (cidOf
+          (moduleBytes members
+            (foundCids
+              (foldr T Ts (lam ((x T) (r Ts)) (cons (child x 1) r)) (nil T) (children (child m 2)))
+              byName)))))))
+(def moduleCids
+  (lam ((byName Ts) (mods Ts))
+    ((foldr T Endo
+       (lam ((m T) (k Endo) (done Ts))
+         (k (append done (single (node2 0 (child m 0) (moduleCidIn byName done m))))))
+       (lam ((done Ts)) done)
+       mods) (nil T))))

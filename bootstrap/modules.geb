@@ -145,21 +145,38 @@
      bound)))
 
 ; the state of the elaboration of a block: whether every form has elaborated, the names visible
-; in it, the declarations emitted, the modules declared, by their paths from the root, and the
-; names the block exports. A module of the registry is a node of label 0 over the node of its
-; exports, visible names with what they denote, or a template, a node of label 1 over the nodes
-; of its parameters, its export list, its other forms and the names visible where it is declared
-(deftype ModSt (Prod T (Prod Ts (Prod Ts (Prod Ts Ts)))))
-(def mkSt (lam ((vis Ts) (out Ts) (reg Ts) (ex Ts)) (pair 1 (pair vis (pair out (pair reg ex))))))
-(def stFail (pair 0 (pair (nil T) (pair (nil T) (pair (nil T) (nil T))))))
+; in it, the declarations emitted, the modules declared, by their paths from the root, the names
+; the block exports, the block's members and the modules elaborated, each after those nested in
+; it. A module of the registry is a node of label 0 over the node of its exports, visible names
+; with what they denote, or a template, a node of label 1 over the nodes of its parameters, its
+; export list, its other forms and the names visible where it is declared. A member is a node of
+; label 0 over a definition's name in the flat program, or of label 1 over the path of a module
+; nested or instantiated in the block; a module of the tree is a node over its path, the node of
+; its members and the node of its exports
+(deftype ModSt (Prod T (Prod Ts (Prod Ts (Prod Ts (Prod Ts (Prod Ts Ts)))))))
+(def mkSt
+  (lam ((vis Ts) (out Ts) (reg Ts) (ex Ts) (mem Ts) (mods Ts))
+    (pair 1 (pair vis (pair out (pair reg (pair ex (pair mem mods))))))))
+(def stFail (pair 0 (snd (mkSt (nil T) (nil T) (nil T) (nil T) (nil T) (nil T)))))
 (def stVis (lam ((s ModSt)) (fst (snd s))))
 (def stOut (lam ((s ModSt)) (fst (snd (snd s)))))
 (def stReg (lam ((s ModSt)) (fst (snd (snd (snd s))))))
-(def stEx (lam ((s ModSt)) (snd (snd (snd (snd s))))))
-(def withVis (lam ((s ModSt) (vis Ts)) (if (fst s) (mkSt vis (stOut s) (stReg s) (stEx s)) s)))
+(def stEx (lam ((s ModSt)) (fst (snd (snd (snd (snd s)))))))
+(def stMem (lam ((s ModSt)) (fst (snd (snd (snd (snd (snd s))))))))
+(def stMods (lam ((s ModSt)) (snd (snd (snd (snd (snd (snd s))))))))
+(def withVis
+  (lam ((s ModSt) (vis Ts))
+    (if (fst s) (mkSt vis (stOut s) (stReg s) (stEx s) (stMem s) (stMods s)) s)))
 (def emitTo
-  (lam ((s ModSt) (e T))
-    (if (fst s) (mkSt (stVis s) (append (stOut s) (single e)) (stReg s) (stEx s)) s)))
+  (lam ((s ModSt) (e T) (mem Ts))
+    (if (fst s)
+      (mkSt (stVis s) (append (stOut s) (single e)) (stReg s) (stEx s) (append (stMem s) mem)
+        (stMods s))
+      s)))
+(def memberDecl (lam ((fl T)) (node 0 (single fl))))
+(def memberSub (lam ((path T)) (node 1 (single path))))
+(def modNode
+  (lam ((path T) (mem Ts) (ex Ts)) (node 0 (cons path (cons (node 0 mem) (single (node 0 ex)))))))
 
 ; a name under a prefix: the name itself at the root, and the prefix, a dot and the name otherwise
 (def qualify (lam ((pre T) (n T)) (if (nonEmpty (children pre)) (nameCat pre 46 n) n)))
@@ -235,8 +252,8 @@
         (if (isAtom sig)
           (let fl T (qualify inst (nameOf sig))
             (emitTo (declare s (nameOf sig) fl)
-              (mkList
-                (cons aDeftypeM (cons (atomOf fl) (single (rename importer arg 1 (nil T))))))))
+              (mkList (cons aDeftypeM (cons (atomOf fl) (single (rename importer arg 1 (nil T))))))
+              (nil T)))
           (if (if (eq (arity sig) 3) (isAtom (child sig 0)) 0)
             (let n T (nameOf (child sig 0))
               (let fl T (qualify inst n)
@@ -264,7 +281,8 @@
                                     (single body))))
                               body)
                             (emitTo (declare s n fl)
-                              (mkList (cons aDefM (cons (atomOf fl) (single term)))))))))))))
+                              (mkList (cons aDefM (cons (atomOf fl) (single term))))
+                              (single (memberDecl fl)))))))))))
             stFail)))
       stFail)))
 
@@ -284,12 +302,13 @@
                       (lam ((body Ts)) (mkList (cons kw (cons (atomOf fl) body))))
                       (if (named kw kwDef)
                         (if (eq k 3)
-                          (emitTo (declare s n fl) (out (single (rename vis (at es 2) 0 (nil T)))))
+                          (emitTo (declare s n fl) (out (single (rename vis (at es 2) 0 (nil T))))
+                            (single (memberDecl fl)))
                           stFail)
                         (if (or (named kw kwDeftype) (named kw kwDefnum))
                           (if (eq k 3)
-                            (emitTo (declare s n fl)
-                              (out (single (rename vis (at es 2) 1 (nil T)))))
+                            (emitTo (declare s n fl) (out (single (rename vis (at es 2) 1 (nil T))))
+                              (nil T))
                             stFail)
                           (if (named kw kwDefn)
                             (if (eq k 5)
@@ -297,7 +316,8 @@
                                 (out
                                   (cons (rename vis (at es 2) 3 (nil T))
                                     (cons (rename vis (at es 3) 1 (nil T))
-                                      (single (rename vis (at es 4) 0 (boundBy (at es 2))))))))
+                                      (single (rename vis (at es 4) 0 (boundBy (at es 2)))))))
+                                (single (memberDecl fl)))
                               stFail)
                             (if (named kw kwData)
                               (let ctors Ts (drop 2 es)
@@ -344,7 +364,16 @@
                                                   (nil T)
                                                   ctors))))
                                           (stReg s2)
-                                          (stEx s2))
+                                          (stEx s2)
+                                          (append (stMem s)
+                                            (foldr T Ts
+                                              (lam ((c T) (acc Ts))
+                                                (cons
+                                                  (memberDecl (qualify pre (nameOf (child c 0))))
+                                                  acc))
+                                              (nil T)
+                                              ctors))
+                                          (stMods s2))
                                         stFail)))
                                   stFail))
                               stFail))))))))
@@ -398,7 +427,8 @@
       (let es Ts (children e)
         (let kw T (at es 0)
           (if (named kw kwExport)
-            (mkSt (stVis s) (stOut s) (stReg s) (append (stEx s) (atomNames (drop 1 es))))
+            (mkSt (stVis s) (stOut s) (stReg s) (append (stEx s) (atomNames (drop 1 es))) (stMem s)
+              (stMods s))
             (if (named kw kwImport)
               (let spec T (importSpec e)
                 (if (isSome spec)
@@ -424,12 +454,19 @@
                                            (lam ((i T) (acc ModSt)) acc)
                                            params) 0
                                          (mkSt (children (child d 3)) (stOut s) (stReg s)
-                                           (children (child d 1))))
+                                           (children (child d 1))
+                                           (nil T)
+                                           (stMods s)))
                                         (let s2 ModSt (elabForms rec inst s1 (children (child d 2)))
                                           (let ex T (if (fst s2) (exportsOf s2) none)
                                             (if (isSome ex)
                                               (declareAll
-                                                (mkSt (stVis s) (stOut s2) (stReg s2) (stEx s))
+                                                (mkSt (stVis s) (stOut s2) (stReg s2) (stEx s)
+                                                  (append (stMem s) (single (memberSub inst)))
+                                                  (append (stMods s2)
+                                                    (single
+                                                      (modNode inst (stMem s2)
+                                                        (children (get ex))))))
                                                 (importAs as (children (get ex))))
                                               stFail)))))
                                     stFail))))
@@ -459,9 +496,12 @@
                                                   (withHead kwExport others))))
                                             (cons (node 0 (withoutHead kwExport others))
                                               (single (node 0 (stVis s))))))))))
-                                (stEx s)))
+                                (stEx s)
+                                (stMem s)
+                                (stMods s)))
                             (let s1 ModSt
-                              (elabForms rec path (mkSt (stVis s) (stOut s) (stReg s) (nil T))
+                              (elabForms rec path
+                                (mkSt (stVis s) (stOut s) (stReg s) (nil T) (nil T) (stMods s))
                                 forms)
                               (let ex T (if (fst s1) (exportsOf s1) none)
                                 (if (isSome ex)
@@ -469,7 +509,10 @@
                                     (mkSt (stVis s) (stOut s1)
                                       (append (stReg s1)
                                         (single (node2 0 path (node 0 (single (get ex))))))
-                                      (stEx s))
+                                      (stEx s)
+                                      (append (stMem s) (single (memberSub path)))
+                                      (append (stMods s1)
+                                        (single (modNode path (stMem s1) (children (get ex))))))
                                     (importAs (some n) (children (get ex))))
                                   stFail))))))))
                   stFail)
@@ -489,11 +532,20 @@
         (add acc (para T (lam ((u T) (rs Ts)) (foldr T T add (if (named u kwModule) 1 0) rs)) e)))
       0
       es)))
-; a program's forms with its modules elaborated, as a node over them, when they elaborate
-(def expandModules
+; a program's forms with its modules elaborated, with its tree of modules, the root block last,
+; as a node over the node of the forms and the node of the modules, when they elaborate
+(def expandModulesTree
   (lam ((es Ts))
     (let s ModSt
       (elabForms (elabAt (add (moduleCount es) 1)) (node 0 (nil T))
-        (mkSt (nil T) (nil T) (nil T) (nil T))
+        (mkSt (nil T) (nil T) (nil T) (nil T) (nil T) (nil T))
         es)
-      (if (fst s) (if (nonEmpty (stEx s)) none (some (node 0 (stOut s)))) none))))
+      (if (fst s)
+        (if (nonEmpty (stEx s)) none
+          (some
+            (node2 0 (node 0 (stOut s))
+              (node 0 (append (stMods s) (single (modNode (node 0 (nil T)) (stMem s) (nil T))))))))
+        none))))
+; a program's forms with its modules elaborated, as a node over them, when they elaborate
+(def expandModules
+  (lam ((es Ts)) (let r T (expandModulesTree es) (if (isSome r) (some (child (get r) 0)) none))))
