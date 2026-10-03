@@ -296,9 +296,11 @@ Extension:
   duplicate and reserved names, with quoted atoms in the sources, are
   complete, as are the canonical and basic transport encodings of the
   strict encodings of RFC 9804 with their retraction. Ready, in the order
-  of {ref "authoring-sequence"}[the sequence]: the printer of the advanced
-  encoding, modules with parameters,
-  imports and export lists, the datatype language's completion, manifests
+  of {ref "authoring-sequence"}[the sequence]: modules with parameters,
+  imports and export lists, with content identity and before the reader's
+  inverse ({ref "the-next-phase"}[The next phase]); the printer of the
+  advanced encoding, after the reader's inverse; the datatype language's
+  completion, manifests
   with editions and the record of
   elaborated definitions, a durable document with versioned profiles,
   hygienic elaboration with explicit assembly and diagnostics, the markup
@@ -1543,17 +1545,20 @@ section below opens with a table of the states of its parts.
     of machine; accelerations: ready
 *
   * {ref "content-identity"}[Content identity]
-  * Ready
-  * Every part
+  * In progress
+  * The hash, the payload, the CID and the migration in Lean and Geb, and
+    the linker in Lean: complete; the linker in Geb, the re-keying of
+    annotations and modules: ready, in that order, before the reader's
+    inverse
 *
   * {ref "authoring-compatibility"}[Authoring across bootstrap revisions]
   * In progress
   * Checked contextual-hole filling, source documents with their
     formatter, the formatter's adoption, the authoring profile read by the
     seed and the Geb reader, and the canonical and basic transport
-    encodings: complete; the advanced encoding's printer and the rest of the
-    sequence: ready, but the parts that follow their consumers, which wait
-    on them
+    encodings: complete; modules, then the advanced encoding's printer
+    after the reader's inverse, and the rest of the sequence: ready, but
+    the parts that follow their consumers, which wait on them
 *
   * {ref "goedel-t"}[Gödel's T]
   * In progress
@@ -2318,6 +2323,15 @@ of acceptance on examples and on the stage-0 compiler. In Geb,
 canonical bytes, its CID and the migration, and the same tests compare
 each with Lean's.
 
+The remaining steps follow in this order, before the reader's inverse
+({ref "the-next-phase"}[The next phase]): the linker written in Geb,
+which lets running the migration twice be checked in Geb and a Geb tool
+load a program from payloads; the re-keying of annotations, which makes
+names annotations of identifiers, from the map of old references to new
+that the migration produces; and modules
+({ref "modules"}[Modules]), whose names resolve to identifiers through
+those annotations.
+
 What the sections before the choice of machine fix for this one: the
 reference node is
 the kernel's constructor of label 23 over a definition's position in
@@ -2937,7 +2951,9 @@ from the canonical one or from its base-64 form between braces
 ({name}`Geb.Kernel.Document.readBasic`) and written as the canonical
 one. The heads `*ann` and `*doc` are reserved names. The Geb reader
 reads the same spellings. The advanced encoding's printer, writing every
-atom that is not a token quoted with escapes of ASCII alone, remains.
+atom that is not a token quoted with escapes of ASCII alone, remains; no
+tool reads its output yet, so it follows the reader's inverse
+({ref "the-next-phase"}[The next phase]).
 The `.geb` sources were written in a legacy syntax, the kernel reader's,
 whose atoms were any characters but whitespace, parentheses and the
 semicolon. They were files of the profile already but for two names
@@ -6057,7 +6073,9 @@ prover written in Geb and their agreement proved. The second proves a
 property of the kernel's reader, so it followed the change of that
 reader's syntax to the authoring profile, which is complete
 ({ref "authoring-sequence"}[The sequence and its acceptance]); the next
-phase is the second, which is ready:
+phase is the second, which follows the linker written in Geb, the
+re-keying of annotations and modules ({ref "content-identity"}[Content
+identity]) and precedes the printer of the advanced encoding:
 
 * The metalogic's checker, its prover and the translation of kernel
   programs written in Geb, the checker in Geb and proof construction for
