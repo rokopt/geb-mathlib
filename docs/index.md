@@ -3750,7 +3750,10 @@ checklist and in CI.
   (`Geb.Kernel.Document.readDoc_canonOf`), writes a document in strict form,
   its decorations as annotation forms, and reads it back from its canonical
   encoding (`Geb.Kernel.Document.readStrictDoc_printCanonDoc`) or from the
-  basic transport encoding (`Geb.Kernel.Document.readBasic`).
+  basic transport encoding (`Geb.Kernel.Document.readBasic`), and writes it in
+  the advanced encoding as ASCII (`Geb.Kernel.Document.printAdvancedDoc`),
+  from which a document whose characters are bytes reads back
+  (`Geb.Kernel.Document.readStrictDoc_printAdvancedDoc`).
   `Blake3.lean` computes the hash BLAKE3 [OConnorAumassonNevesWilcoxOHearn2020]
   (`Geb.Blake3.hash`). `Identity.lean` identifies a definition by the
   CIDv1 [RatajBerjon2026] of its payload, the canonical encoding of its

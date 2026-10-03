@@ -295,13 +295,12 @@ Extension:
   their retraction and formatter, adopted over `bootstrap/`, and the
   authoring profile read by the seed and by the Geb reader, rejecting
   duplicate and reserved names, with quoted atoms in the sources, are
-  complete, as are the canonical and basic transport encodings of the
-  strict encodings of RFC 9804 with their retraction. Ready, in the order
-  of {ref "authoring-sequence"}[the sequence]: modules with parameters,
-  imports and export lists, complete but for named telescopes and
-  certificates as parameters, which follow their first consumers; the
-  printer of the advanced encoding, after the reader's inverse
-  ({ref "the-next-phase"}[The next phase]); the datatype language's
+  complete, as are the canonical, basic transport and advanced encodings
+  of the strict encodings of RFC 9804 with their retraction. Ready, in the
+  order of {ref "authoring-sequence"}[the sequence]: modules with
+  parameters, imports and export lists, complete but for named telescopes
+  and certificates as parameters, which follow their first consumers; the
+  datatype language's
   completion, manifests
   with editions and the record of
   elaborated definitions, a durable document with versioned profiles,
@@ -1557,10 +1556,10 @@ section below opens with a table of the states of its parts.
   * In progress
   * Checked contextual-hole filling, source documents with their
     formatter, the formatter's adoption, the authoring profile read by the
-    seed and the Geb reader, and the canonical and basic transport
-    encodings: complete; modules, then the advanced encoding's printer
-    after the reader's inverse, and the rest of the sequence: ready, but
-    the parts that follow their consumers, which wait on them
+    seed and the Geb reader, and the canonical, basic transport and
+    advanced encodings: complete; modules: complete but for the parts that
+    follow their consumers; the rest of the sequence: ready, but the parts
+    that follow their consumers, which wait on them
 *
   * {ref "goedel-t"}[Gödel's T]
   * In progress
@@ -2475,10 +2474,10 @@ tag := "authoring-compatibility"
   * Complete
 *
   * The strict encodings of RFC 9804
-  * In progress: the readers of every spelling of their atoms, the
-    canonical and basic transport encodings and the strict form of
-    documents, with the retraction, complete; the printer of the advanced
-    encoding, ready
+  * Complete: the readers of every spelling of their atoms, the
+    canonical, basic transport and advanced encodings and the strict form
+    of documents, with the retraction, the advanced encoding's for
+    documents whose characters are bytes
 *
   * Modules with parameters, imports and export lists
   * In progress: the elaboration of modules, imports, export lists and
@@ -2989,10 +2988,15 @@ of it is headed by the atom `*ann`; the basic transport encoding is read
 from the canonical one or from its base-64 form between braces
 ({name}`Geb.Kernel.Document.readBasic`) and written as the canonical
 one. The heads `*ann` and `*doc` are reserved names. The Geb reader
-reads the same spellings. The advanced encoding's printer, writing every
-atom that is not a token quoted with escapes of ASCII alone, remains; no
-tool reads its output yet, so it follows the reader's inverse
-({ref "the-next-phase"}[The next phase]).
+reads the same spellings. The advanced encoding
+({name}`Geb.Kernel.Document.printAdvancedDoc`) writes the strict form's
+tokens laid out as the formatter lays out source, a token bare and every
+other atom quoted with escapes of ASCII alone, spellings that the
+profile's printer shares as instances of one parameter
+({name}`Geb.Kernel.Document.Spelling`); a document whose strict form's
+characters are bytes is read back from it
+({name}`Geb.Kernel.Document.readStrictDoc_printAdvancedDoc`), and a
+character beyond a byte has no spelling in it.
 The `.geb` sources were written in a legacy syntax, the kernel reader's,
 whose atoms were any characters but whitespace, parentheses and the
 semicolon. They were files of the profile already but for two names
@@ -6160,8 +6164,7 @@ property of the kernel's reader, so it followed the change of that
 reader's syntax to the authoring profile, which is complete
 ({ref "authoring-sequence"}[The sequence and its acceptance]); the next
 phase is the second, which follows modules
-({ref "content-identity"}[Content identity]) and precedes the printer of
-the advanced encoding:
+({ref "content-identity"}[Content identity]):
 
 * The metalogic's checker, its prover and the translation of kernel
   programs written in Geb, the checker in Geb and proof construction for

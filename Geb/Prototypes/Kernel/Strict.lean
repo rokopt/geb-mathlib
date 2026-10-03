@@ -25,7 +25,11 @@ a flag of an empty line and the line's characters, inside a list headed by {lit}
 comment lines after the last S-expression. A document no list of which is headed by
 {lit}`*ann` is read back from that form ({lit}`fromStrictDoc_toStrict`), and so from its
 canonical encoding ({lit}`readStrictDoc_printCanonDoc`). The basic transport encoding is the
-canonical one or the base-64 encoding of it between braces; its printer writes the first.
+canonical one or the base-64 encoding of it between braces; its printer writes the first. The
+advanced encoding writes the same tokens laid out as the formatter lays out source, a token bare
+and every other atom quoted with escapes of ASCII alone ({lit}`advancedOf`); when every
+character of a document's strict form is a byte, its text is ASCII and reads back to the
+document ({lit}`readStrictDoc_printAdvancedDoc`).
 
 ## Main definitions
 
@@ -34,12 +38,16 @@ canonical one or the base-64 encoding of it between braces; its printer writes t
 * {lit}`printCanonDoc`, {lit}`readStrictDoc` — a document in the canonical encoding, and a
   document read from a strict encoding.
 * {lit}`readBasic` — a document in the basic transport encoding.
+* {lit}`advancedOf`, {lit}`printAdvancedDoc` — an S-expression and a document in the advanced
+  encoding.
 
 ## Main statements
 
 * {lit}`readDoc_canonOf` — the canonical encoding of an S-expression reads back to it.
 * {lit}`fromStrictDoc_toStrict` — the strict form of a document reads back to it.
 * {lit}`readStrictDoc_printCanonDoc` — the retraction law of the canonical encoding of
+  documents.
+* {lit}`readStrictDoc_printAdvancedDoc` — the retraction law of the advanced encoding of
   documents.
 
 ## References
@@ -541,6 +549,70 @@ theorem readStrictDoc_printCanonDoc (d : Doc) (h : d.strictWf) :
       List.all_map, Bool.true_and, List.all_eq_true, Function.comp_apply]
     exact fun c hc ↦ wf_strictOf c (List.all_eq_true.mp h c hc)
   rw [readStrictDoc, printCanonDoc, readDoc_canonOf _ hw, Option.bind_some]
+  simp only [erase_plain]
+  exact fromStrictDoc_toStrict d h
+
+/-! ## The advanced encoding -/
+
+/-- Whether every character of an S-expression's atoms is a byte. -/
+def SExp.bytes : SExp → Bool :=
+  RoseTree.elim fun a rs ↦ (a.all fun s ↦ s.all fun c ↦ decide (c.toNat < 256)) && rs.all id
+
+/-- An S-expression in the advanced encoding, laid out by a layout: its canonical tokens, a
+token bare and every other atom quoted with escapes of ASCII alone. -/
+def advancedOf (L : ℕ → Bool × ℕ) (t : SExp) : List Char :=
+  render .advanced (arrangeFrom L (canonToks t) none 0) ++ ['\n']
+
+/-- The advanced encoding can write the canonical tokens of an S-expression whose characters are
+bytes. -/
+theorem canonToks_escapable : ∀ t : SExp, SExp.bytes t →
+    ∀ x ∈ canonToks t, x.wf && x.escapable .advanced :=
+  RoseTree.ind fun a cs ih hb x hx ↦ by
+    simp only [SExp.bytes, RoseTree.elim_node, Bool.and_eq_true] at hb
+    cases a with
+    | some s =>
+      simp only [canonToks, RoseTree.elim_node, List.mem_singleton] at hx
+      subst hx
+      simp only [Option.all_some, List.all_eq_true, decide_eq_true_eq] at hb
+      simp only [Tok.wf, Tok.escapable, Spelling.escapable, Bool.true_and, List.all_eq_true,
+        Bool.or_eq_true, decide_eq_true_eq]
+      exact fun c hc ↦ Or.inr (hb.1 c hc)
+    | none =>
+      simp only [canonToks, RoseTree.elim_node, List.cons_append, List.mem_cons, List.mem_append,
+        List.mem_flatten, List.mem_map, List.not_mem_nil, or_false] at hx
+      rcases hx with rfl | ⟨⟨_, ⟨c, hc, rfl⟩, hx⟩ | rfl⟩
+      · rfl
+      · simp only [List.all_map, List.all_eq_true, Function.comp_apply, id] at hb
+        exact ih c hc (hb.2 c hc) x hx
+      · rfl
+
+/-- The lexer reads the advanced encoding of an S-expression whose characters are bytes to its
+canonical tokens, whatever the layout. -/
+theorem lex_advancedOf (L : ℕ → Bool × ℕ) (t : SExp) (hb : SExp.bytes t) :
+    lex (advancedOf L t) = some (canonToks t) :=
+  lex_print Spelling.lawful_advanced L _ (List.all_eq_true.mpr (canonToks_escapable t hb))
+
+/-- The advanced encoding of a well-formed S-expression whose characters are bytes reads back to
+it, as a document of that S-expression alone, without trivia, whatever the layout. -/
+theorem readDoc_advancedOf (L : ℕ → Bool × ℕ) (t : SExp) (ht : SExp.wf t) (hb : SExp.bytes t) :
+    readDoc (advancedOf L t) = some ⟨[plain t], []⟩ := by
+  rw [readDoc, lex_advancedOf L t hb, Option.bind_some, foldl_readStep_canonToks t ht _ [] rfl]
+  simp [Frame.start, Frame.push]
+
+/-- A document in the advanced encoding, its strict form laid out within a line width by the
+layout policy. -/
+def printAdvancedDoc (lim : ℕ) (d : Doc) : List Char :=
+  advancedOf (fun i ↦ (defaultLayout .advanced lim ⟨[plain (toStrict d)], []⟩).getD i (false, 0))
+    (toStrict d)
+
+/-- The retraction law of the advanced encoding of documents whose characters are bytes. -/
+theorem readStrictDoc_printAdvancedDoc (lim : ℕ) (d : Doc) (h : d.strictWf)
+    (hb : SExp.bytes (toStrict d)) : readStrictDoc (printAdvancedDoc lim d) = some d := by
+  have hw : SExp.wf (toStrict d) := by
+    simp only [toStrict, listOf, SExp.wf_list, List.all_cons, wf_atomOf, wf_linesSExp,
+      List.all_map, Bool.true_and, List.all_eq_true, Function.comp_apply]
+    exact fun c hc ↦ wf_strictOf c (List.all_eq_true.mp h c hc)
+  rw [readStrictDoc, printAdvancedDoc, readDoc_advancedOf _ _ hw hb, Option.bind_some]
   simp only [erase_plain]
   exact fromStrictDoc_toStrict d h
 
