@@ -6,7 +6,9 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.LF.HSubst
+public import Geb.Prototypes.LF.Rewrite
 public import Geb.Prototypes.LF.Syntax
+public import Geb.Prototypes.LF.Topos
 public import Geb.Prototypes.LF.Typing
 meta import GebMeta -- shake: keep
 
@@ -19,9 +21,11 @@ of {cite}`HarperHonsellPlotkin1993` whose expressions are its canonical forms: i
 which the β-normal forms are the only expressions and each application is a head with its spine;
 the hereditary substitution, which keeps them canonical; and its judgments, decided by a fold
 over the expression each classifies, among them the formation of a signature, the declaration of
-the constants, with their kinds and types, that an object language is represented by. The
-expressions are the input format of the type inhabitation solver of {cite}`NormanAvigad2025`
-without its let definitions.
+the constants, with their kinds and types, that an object language is represented by; and its
+extension by rewrite rules on the constants ({cite}`CousineauDowek2007`). The expressions with
+the rules are the input format of the type inhabitation solver of {cite}`NormanAvigad2025`. A
+fragment of the internal language of the free topos with a natural numbers object is represented
+in it.
 -/
 
 set_option doc.verso true
