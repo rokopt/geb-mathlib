@@ -13,10 +13,8 @@ set_option doc.verso true in
 
 The resolution of {lit}`bootstrap/reader.geb`, in the Lean the bootstrap compiler emits
 ({lit}`GebMirror.Metalogic`), agrees with the Lean reader's ({name}`Geb.Kernel.resolve`) at every
-well-formed S-expression, in every scope, given any type abbreviations and names of definitions:
-numerals, names, types, quoted data and binders, and the forms of terms. An S-expression is
-well formed when no atom has children, as every S-expression the readers read is; at an atom with
-children the Lean reader's binders read the children and the mirror's do not. With the agreement
+S-expression, in every scope, given any type abbreviations and names of definitions: numerals,
+names, types, quoted data and binders, and the forms of terms. With the agreement
 of the printer written in Geb ({lit}`GebTests.Prototypes.FreeTopos.Agreement.Printer`), the
 retraction of the Lean printer by the Lean reader ({name}`Geb.Kernel.resolve_printTerm`) carries
 across: the reader written in Geb inverts the printer written in Geb.
@@ -29,7 +27,7 @@ across: the reader written in Geb inverts the printer written in Geb.
 
 * {lit}`numeral_eq`, {lit}`indexOf_eq` — the value of a numeral and the position of a name.
 * {lit}`readType_eq`, {lit}`readDatum_eq` — types and quoted data.
-* {lit}`resolve_eq` — the resolution of a well-formed S-expression.
+* {lit}`resolve_eq` — the resolution of an S-expression.
 * {lit}`readBack_printTerm_eq` — the reader written in Geb inverts the printer written in Geb.
 
 ## Tags
@@ -904,14 +902,8 @@ theorem rrAt_map (cs : List (SExp × (List (List Char) → Option Tree)))
 
 /-! ## Binders -/
 
-/-- A well-formed atom has no children. -/
-theorem children_of_wf_atom {s : List Char} {cs : List SExp}
-    (h : Document.SExp.wf (RoseTree.node (some s) cs)) : cs = [] := by
-  rw [Document.SExp.wf_atom, List.isEmpty_iff] at h
-  exact h
-
 /-- The binders of an abstraction, as the mirror takes them. -/
-theorem binders_eq (b : SExp) (hb : Document.SExp.wf b) :
+theorem binders_eq (b : SExp) :
     «Reader.binders» (sexpTree b) = (binders b).map sexpTree := by
   obtain ⟨a, cs, rfl⟩ : ∃ a cs, b = RoseTree.node a cs :=
     ⟨_, _, (RoseTree.node_label_children b).symm⟩
@@ -934,14 +926,14 @@ theorem binders_eq (b : SExp) (hb : Document.SExp.wf b) :
         rfl
     | x :: y :: z :: r => rfl
   | some s =>
-    rw [children_of_wf_atom hb, sexpTree_atom]
+    rw [sexpTree_atom]
     rfl
 
 /-- One binder read, as Lean reads it: a name with a type. -/
 def leanBinder (tys : TypeNames) (c : SExp) : Option (List Char × Tree) :=
-  match c.children with
-  | [x, A] => do some (← x.label, ← readType tys A)
-  | _ => none
+  match c.label, c.children with
+  | none, [x, A] => do some (← x.label, ← readType tys A)
+  | _, _ => none
 
 /-- A name with a type, as the mirror represents it. -/
 def encB (p : List Char × Tree) : Tree := RoseTree.node 0 [nameTree p.1, p.2]
@@ -968,8 +960,8 @@ theorem readBinders_map (x0 x1 : List Tree) :
   congr 1
   exact x1.rec rfl fun _ _ ih ↦ by rw [List.foldr_cons, ih]; rfl
 
-/-- One well-formed binder read, as the mirror reads it. -/
-theorem binderT_eq (tys : TypeNames) (c : SExp) (hc : Document.SExp.wf c) :
+/-- One binder read, as the mirror reads it. -/
+theorem binderT_eq (tys : TypeNames) (c : SExp) :
     binderT (encTys tys) (sexpTree c) = encOpt ((leanBinder tys c).map encB) := by
   obtain ⟨a, cs, rfl⟩ : ∃ a cs, c = RoseTree.node a cs :=
     ⟨_, _, (RoseTree.node_label_children c).symm⟩
@@ -996,18 +988,18 @@ theorem binderT_eq (tys : TypeNames) (c : SExp) (hc : Document.SExp.wf c) :
         · rfl
     | x :: y :: z :: r => rfl
   | some s =>
-    rw [children_of_wf_atom hc, sexpTree_atom]
+    rw [sexpTree_atom]
     rfl
 
-/-- Well-formed binders read, as the mirror reads them. -/
-theorem readBinders_eq (tys : TypeNames) (bs : List SExp) (hbs : ∀ c ∈ bs, Document.SExp.wf c) :
+/-- Binders read, as the mirror reads them. -/
+theorem readBinders_eq (tys : TypeNames) (bs : List SExp) :
     «Reader.readBinders» (encTys tys) (bs.map sexpTree) =
       encOpt ((bs.mapM (leanBinder tys)).map fun ps ↦ RoseTree.node 0 (ps.map encB)) := by
   rw [readBinders_map, List.map_map]
   have : bs.map (binderT (encTys tys) ∘ sexpTree) =
       ((bs.map (leanBinder tys)).map (·.map encB)).map encOpt := by
     rw [List.map_map, List.map_map]
-    exact List.map_congr_left fun c hc ↦ binderT_eq tys c (hbs c hc)
+    exact List.map_congr_left fun c hc ↦ binderT_eq tys c
   rw [this, allSome_eq, mapM_map_option, mapM_map_id, Option.map_map]
   rfl
 
@@ -1044,34 +1036,6 @@ theorem lt_one_leaf (n : ℕ) : Const.lt (leaf 1) (leaf (n + 1 + 1)) = leaf 1 :=
 theorem lt_two_leaf (n : ℕ) : Const.lt (leaf 2) (leaf (n + 1 + 1 + 1)) = leaf 1 := by
   rw [lt_leaf, decide_eq_true (Nat.succ_lt_succ (Nat.succ_lt_succ (Nat.succ_pos n)))]
   rfl
-
-/-- The binders of a well-formed S-expression are well formed. -/
-theorem wf_binders (b : SExp) (hb : Document.SExp.wf b) : ∀ c ∈ binders b, Document.SExp.wf c := by
-  obtain ⟨a, cs, rfl⟩ : ∃ a cs, b = RoseTree.node a cs :=
-    ⟨_, _, (RoseTree.node_label_children b).symm⟩
-  cases a with
-  | some s =>
-    rw [children_of_wf_atom hb]
-    intro c hc
-    exact absurd hc List.not_mem_nil
-  | none =>
-    have hcs : ∀ c ∈ cs, Document.SExp.wf c := List.all_eq_true.mp (by
-      rw [Document.SExp.wf_list] at hb
-      exact hb)
-    unfold binders
-    rw [RoseTree.children_node]
-    match cs, hcs with
-    | [x, y], hcs =>
-      dsimp only
-      split
-      · intro c hc
-        rw [List.mem_singleton] at hc
-        subst hc
-        exact hb
-      · exact hcs
-    | [], hcs => exact hcs
-    | [x], hcs => exact hcs
-    | x :: y :: z :: r, hcs => exact hcs
 
 /-- The names of encoded binders. -/
 theorem foldr_child0 (ps : List (List Char × Tree)) :
@@ -1111,16 +1075,16 @@ theorem resolveList_eq (tys : TypeNames) (defs : List (List Char))
     (cs : List (SExp × (List (List Char) → Option Tree)))
     (G : SExp × (List (List Char) → Option Tree) → List Tree → Tree)
     (hG : ∀ c ∈ cs, ∀ scope, G c (scope.map nameTree) = encOpt (c.2 scope))
-    (hwf : ∀ c ∈ cs, Document.SExp.wf c.1) (scope : List (List Char)) :
+    (scope : List (List Char)) :
     «Reader.resolveList» (encTys tys) (RoseTree.node 2 (cs.map fun c ↦ sexpTree c.1))
         (cs.map fun c ↦ (sexpTree c.1, G c)) (scope.map nameTree) =
       encOpt (resolveStep tys defs none cs scope) := by
   unfold «Reader.resolveList»
   dsimp only
   simp only [children_eq, RoseTree.children_node, arity_eq, List.length_map, eq_leaf, at_eq]
-  match cs, hG, hwf with
-  | [], _, _ => rfl
-  | (h, rh) :: rest, hG, hwf =>
+  match cs, hG with
+  | [], _ => rfl
+  | (h, rh) :: rest, hG =>
     obtain ⟨k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11, k12, k13, k14⟩ := kw_names
     simp only [rrAt_map _ G hG, argsOf_map _ G hG]
     simp only [List.map_cons, List.getD_cons_zero, List.length_cons, k1, k2, k3, k4, k5, k6, k7,
@@ -1171,8 +1135,7 @@ theorem resolveList_eq (tys : TypeNames) (defs : List (List Char))
           rfl
         · simp (config := {decide := true}) only [List.length_cons, List.length_nil, ↓reduceIte,
             List.map_cons, List.map_nil, List.getD_cons_succ, List.getD_cons_zero]
-          have hwfb : Document.SExp.wf b := hwf (b, rb) (List.mem_cons_of_mem _ List.mem_cons_self)
-          rw [binders_eq b hwfb, readBinders_eq tys _ (wf_binders b hwfb)]
+          rw [binders_eq b, readBinders_eq tys _]
           rw [show resolveStep tys defs none [(h, rh), (b, rb), (bd, rbd)] scope =
               (do
                 let bs ← (binders b).mapM (leanBinder tys)
@@ -1481,12 +1444,12 @@ theorem resolve_fold (x0 x1 : List Tree) (x2 : Tree) (x3 : List Tree) :
 theorem pairStep_resolveFold (x0 x1 : List Tree) : PairStep (resolveFold x0 x1) := fun l rs ↦ by
   simp only [resolveFold, rrTrees_eq]
 
-/-- The resolution of a well-formed S-expression, in every scope. -/
+/-- The resolution of an S-expression, in every scope. -/
 theorem fold_resolve (tys : TypeNames) (defs : List (List Char)) : ∀ e : SExp,
-    Document.SExp.wf e → ∀ scope : List (List Char),
+    ∀ scope : List (List Char),
       (Const.fold (resolveFold (encTys tys) (defs.map nameTree)) (sexpTree e)).2
           (scope.map nameTree) = encOpt (resolve tys defs e scope) :=
-  RoseTree.ind fun a cs ih hwf scope ↦ by
+  RoseTree.ind fun a cs ih scope ↦ by
     rw [resolve_node]
     cases a with
     | some s =>
@@ -1500,9 +1463,6 @@ theorem fold_resolve (tys : TypeNames) (defs : List (List Char)) : ∀ e : SExp,
         not_false_eq_true, ↓reduceIte]
       exact resolveAtom_eq tys defs scope s _
     | none =>
-      have hcs : ∀ c ∈ cs, Document.SExp.wf c := List.all_eq_true.mp (by
-        rw [Document.SExp.wf_list] at hwf
-        exact hwf)
       rw [sexpTree_listS', fold_node, map_fold_pair (pairStep_resolveFold _ _)]
       simp only [resolveFold, rrTrees_eq, List.map_map, Function.comp_def, node_leaf,
         isAtom_node2, isList_node2, label_leaf, ne_eq, not_true_eq_false, one_ne_zero,
@@ -1511,115 +1471,25 @@ theorem fold_resolve (tys : TypeNames) (defs : List (List Char)) : ∀ e : SExp,
         (fun c ↦ (Const.fold (resolveFold (encTys tys) (defs.map nameTree)) (sexpTree c.1)).2)
         (fun c hc scope' ↦ by
           obtain ⟨c', hc', rfl⟩ := List.mem_map.mp hc
-          exact ih c' hc' (hcs c' hc') scope')
-        (fun c hc ↦ by
-          obtain ⟨c', hc', rfl⟩ := List.mem_map.mp hc
-          exact hcs c' hc') scope
+          exact ih c' hc' scope') scope
       simpa only [List.map_map, Function.comp_def] using this
 
-/-- The resolution written in Geb agrees with the Lean reader's at every well-formed
-S-expression, in every scope, given any type abbreviations and names of definitions. -/
+/-- The resolution written in Geb agrees with the Lean reader's at every S-expression, in every
+scope, given any type abbreviations and names of definitions. -/
 theorem resolve_eq (tys : TypeNames) (defs : List (List Char)) (e : SExp)
-    (he : Document.SExp.wf e) (scope : List (List Char)) :
+    (scope : List (List Char)) :
     «Reader.resolve» (encTys tys) (defs.map nameTree) (sexpTree e) (scope.map nameTree) =
       encOpt (resolve tys defs e scope) := by
-  rw [resolve_fold, fold_resolve tys defs e he scope]
+  rw [resolve_fold, fold_resolve tys defs e scope]
 
 /-! ## The reader's inverse -/
 
-/-- An atom is well formed. -/
-theorem wf_atomS (s : List Char) : Document.SExp.wf (atomS s) := rfl
-
-/-- A list of well-formed S-expressions is well formed. -/
-theorem wf_listS {cs : List SExp} (h : ∀ c ∈ cs, Document.SExp.wf c) :
-    Document.SExp.wf (listS cs) := by
-  rw [listS, Document.SExp.wf_list]
-  exact List.all_eq_true.mpr h
-
-/-- A choice between well-formed S-expressions is well formed. -/
-theorem wf_ite {p : Prop} [Decidable p] {a b : SExp} (ha : Document.SExp.wf a)
-    (hb : Document.SExp.wf b) : Document.SExp.wf (if p then a else b) := by
-  split
-  · exact ha
-  · exact hb
-
-/-- A printed type is well formed. -/
-theorem wf_printType : ∀ A : Tree, Document.SExp.wf (printType A) :=
-  RoseTree.ind fun l cs ih ↦ by
-    rw [printType_node]
-    unfold printTypeStep
-    repeat' refine wf_ite ?_ ?_
-    all_goals first
-      | exact wf_atomS _
-      | (refine wf_listS fun c hc ↦ ?_
-         rcases List.mem_cons.mp hc with rfl | hc
-         · exact wf_atomS _
-         · obtain ⟨c', hc', rfl⟩ := List.mem_map.mp hc
-           exact ih c' hc')
-
-/-- A printed datum is well formed. -/
-theorem wf_printDatum : ∀ t : Tree, Document.SExp.wf (printDatum t) :=
-  RoseTree.ind fun l cs ih ↦ by
-    rw [printDatum_node]
-    refine wf_ite (wf_atomS _) (wf_listS fun c hc ↦ ?_)
-    rcases List.mem_cons.mp hc with rfl | hc
-    · exact wf_atomS _
-    · obtain ⟨c', hc', rfl⟩ := List.mem_map.mp hc
-      exact ih c' hc'
-
-/-- A printed term is well formed. -/
-theorem wf_printTerm (defs : List (List Char)) : ∀ (t : Tree) (d : ℕ),
-    Document.SExp.wf (printTerm defs t d) :=
-  RoseTree.ind fun l cs ih d ↦ by
-    rw [printTerm_node]
-    unfold printStep
-    dsimp only
-    have hps : ∀ e : ℕ, ∀ c ∈ (cs.map fun c ↦ (c, printTerm defs c)).map fun r ↦ r.2 e,
-        Document.SExp.wf c := fun e c hc ↦ by
-      rw [List.map_map] at hc
-      obtain ⟨c', hc', rfl⟩ := List.mem_map.mp hc
-      exact ih c' hc' e
-    repeat' refine wf_ite ?_ ?_
-    all_goals first
-      | exact wf_atomS _
-      | exact wf_listS (hps d)
-      | (refine wf_listS fun c hc ↦ ?_
-         rcases List.mem_cons.mp hc with rfl | hc
-         · exact wf_atomS _
-         · first
-             | exact hps d c hc
-             | (obtain ⟨c', -, rfl⟩ := List.mem_map.mp hc
-                exact wf_printType c'))
-      | (split
-         · rename_i A sA x b heq
-           exact wf_listS fun c hc ↦ by
-             simp only [List.mem_cons, List.mem_nil_iff, or_false] at hc
-             rcases hc with rfl | rfl | rfl
-             · exact wf_atomS _
-             · exact wf_listS fun c hc ↦ by
-                 simp only [List.mem_cons, List.mem_nil_iff, or_false] at hc
-                 rcases hc with rfl | rfl
-                 · exact wf_atomS _
-                 · exact wf_printType _
-             · exact hps (d + 1) _ (by
-                 rw [heq, List.map_cons, List.map_cons]
-                 exact List.mem_cons_of_mem _ List.mem_cons_self)
-         · exact wf_listS fun c hc ↦ absurd hc List.not_mem_nil)
-      | (split
-         · refine wf_ite (wf_atomS _) (wf_listS fun c hc ↦ ?_)
-           simp only [List.mem_cons, List.mem_nil_iff, or_false] at hc
-           rcases hc with rfl | rfl
-           · exact wf_atomS _
-           · exact wf_printDatum _
-         · exact wf_listS fun c hc ↦ absurd hc List.not_mem_nil)
-
 /-- The resolution with no type abbreviations, the printer's reading back, agrees with the Lean
-reader's at every well-formed S-expression. -/
-theorem readBack_eq (defs : List (List Char)) (e : SExp) (he : Document.SExp.wf e)
-    (scope : List (List Char)) :
+reader's at every S-expression. -/
+theorem readBack_eq (defs : List (List Char)) (e : SExp) (scope : List (List Char)) :
     «Printer.readBack» (defs.map nameTree) (sexpTree e) (scope.map nameTree) =
       encOpt (resolve [] defs e scope) :=
-  resolve_eq [] defs e he scope
+  resolve_eq [] defs e scope
 
 /-- The reader written in Geb inverts the printer written in Geb: a well-formed term printed by
 the mirror's printer under binders to a depth, given the names of the definitions, is read back,
@@ -1628,7 +1498,7 @@ theorem readBack_printTerm_eq (defs : List (List Char)) (hnd : defs.Nodup)
     (hok : ∀ n ∈ defs, NameOk n) (t : Tree) (d : ℕ) (ht : TermWf defs.length t d = true) :
     «Printer.readBack» (defs.map nameTree) («Printer.printTerm» (defs.map nameTree) t (leaf d))
       ((scopeOf d).map nameTree) = encOpt (some t) := by
-  rw [printTerm_eq defs t d ht, readBack_eq defs _ (wf_printTerm defs t d) (scopeOf d),
+  rw [printTerm_eq defs t d ht, readBack_eq defs _ (scopeOf d),
     resolve_printTerm [] defs hnd hok t d ht]
 
 end GebTests.Prototypes.FreeTopos.Agreement.Reader

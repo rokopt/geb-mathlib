@@ -386,7 +386,7 @@ theorem combinator_agree : ∃ G' : List Glob, load metalogic = some G' ∧
 among which are the printer of kernel terms and the reader's resolution with no type
 abbreviations, at their types; the printer gives the encoding of the Lean printer's S-expression
 of every well-formed term; the resolution, at encoded names of definitions and names in scope,
-gives the encoding of the Lean reader's resolution of every well-formed S-expression; and the
+gives the encoding of the Lean reader's resolution of every S-expression; and the
 resolution of a well-formed term the printer writes, under binders to a depth, in the scope of
 those binders, is the term. -/
 theorem reader_inverse_agree : ∃ G' : List Glob, load metalogic = some G' ∧
@@ -394,8 +394,7 @@ theorem reader_inverse_agree : ∃ G' : List Glob, load metalogic = some G' ∧
     ∃ rb : Ty.den readBackTy, G'[936]? = some ⟨readBackTy, rb⟩ ∧
       (∀ (defs : List (List Char)) (t : Tree) (d : ℕ), TermWf defs.length t d = true →
         pr (defs.map nameTree) t (leaf d) = sexpTree (printTerm defs t d)) ∧
-      (∀ (defs : List (List Char)) (e : SExp), Document.SExp.wf e →
-        ∀ scope : List (List Char),
+      (∀ (defs : List (List Char)) (e : SExp) (scope : List (List Char)),
           rb (defs.map nameTree) (sexpTree e) (scope.map nameTree) =
             encOpt (resolve [] defs e scope)) ∧
       (∀ defs : List (List Char), defs.Nodup → (∀ n ∈ defs, NameOk n) →
