@@ -9,6 +9,8 @@ public import Geb.Prototypes.LF.Metatheory.Composition
 public import Geb.Prototypes.LF.Metatheory.HSubstRename
 public import Geb.Prototypes.LF.Metatheory.Rename
 public import Geb.Prototypes.LF.Metatheory.Scope
+public import Geb.Prototypes.LF.Metatheory.Substitution
+public import Geb.Prototypes.LF.Metatheory.TypeShape
 public import Geb.Prototypes.LF.Metatheory.Weakening
 meta import GebMeta -- shake: keep
 
@@ -19,8 +21,9 @@ set_option doc.verso true in
 The metatheory of Canonical LF of {cite}`HarperLicata2007`, Section 2.3: the laws of renaming
 and its commutation with hereditary substitution, vacuous substitution, the composition of
 hereditary substitutions, the stability of the judgments under renaming, weakening among them,
-and the scoping of judged expressions, by which the declarations of a formed signature are
-closed.
+the scoping of judged expressions, by which the declarations of a formed signature are closed,
+the invariance of erasure under substitution, and the substitution theorem: hereditary
+substitutions exist and preserve the judgments.
 -/
 
 set_option doc.verso true
