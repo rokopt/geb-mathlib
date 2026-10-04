@@ -4226,8 +4226,9 @@ Gödel's T states and proves the following.
   * the reader's inverse to the printer, waiting on the printer;
   * the admission of a stronger checker by the proof that a Geb
     program translates its certificates into the metalogic's
-    derivations with the same conclusions, waiting on the metalogic's
-    checker written in Geb, beside which it is admitted.
+    derivations with the same conclusions, ready: it is admitted beside
+    the metalogic's checker written in Geb, whose agreement with the
+    Lean checker is proved.
 * After the bootstrap: equational theorems about programs, in the
   metalogic.
 
