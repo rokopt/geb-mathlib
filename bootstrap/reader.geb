@@ -348,11 +348,14 @@
               (if (if (eq k 1) 1 (eq k 2)) (some (node 0 (reverse (cons (atomTok cur) toks))))
                 (if (eq k 3) (if (nonEmpty cur) (some (node 0 (reverse (holeToks cur toks)))) none)
                   none))))))))
+  ; the tokens of a text, or none when a character is beyond a byte or the text is not well formed
   (def tokenize
     (lam ((cs Ts))
-      (lexEnd
-        ((foldr T LexK (lam ((c T) (k LexK) (s Lex)) (k (lexStep s c))) (lam ((s Lex)) s) cs)
-         (lexIdle (nil T))))))
+      (if (foldr T T (lam ((c T) (ok T)) (if (lt c 256) ok 0)) 1 cs)
+        (lexEnd
+          ((foldr T LexK (lam ((c T) (k LexK) (s Lex)) (k (lexStep s c))) (lam ((s Lex)) s) cs)
+           (lexIdle (nil T))))
+        none)))
 
   ; S-expressions, by a stack of lists under construction, innermost first, each in reverse
   (deftype Stack (List Ts))

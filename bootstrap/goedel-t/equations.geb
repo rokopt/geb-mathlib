@@ -491,7 +491,7 @@
                                                       (mk3 Label.cond (eqRhs q) (eqRhs q2)
                                                         (eqRhs q3))))
                                                   none)))))))
-                                    ; computation: the β and η rules of functions, pairs and the unit type
+                                    ; computation: the beta and eta rules of functions, pairs and the unit type
                                     (if (shape l k Rule.beta 3)
                                       (if (and (isTy c0) (hasType G ctx c2 c0))
                                         (bindO (typeIn G (cons c0 ctx) c1)

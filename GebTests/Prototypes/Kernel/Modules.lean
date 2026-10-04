@@ -133,6 +133,7 @@ def expectedModules (text : List Char) : Tree :=
 /-- The texts the elaboration is compared on: each example above, and failures. -/
 def moduleTexts : List String :=
   [arith ++ " (def main (lam ((t T)) (Arith.double 3)))",
+    "(def x (lam ((t T)) (quote (0 \"…\"))))",
     arith ++ " (def main (lam ((t T)) (Arith.twice 3)))",
     "(module A (export f) (def f (lam ((x T)) (add x 1))))" ++
       " (module B (import A) (export g) (def g (lam ((x T)) (f (f x)))))",

@@ -825,17 +825,26 @@ def «Reader.lexEnd» :=
 
 def «Reader.tokenize» :=
   fun (x0 : List T) =>
-    «Reader.lexEnd»
-      (Const.foldr
-        (α := T)
-        (β := (List T × (List T × T)) → List T × (List T × T))
-        (fun (x1 : T)
-           (x2 : (List T × (List T × T)) → List T × (List T × T))
-           (x3 : List T × (List T × T)) =>
-          x2 («Reader.lexStep» x3 x1))
-        (fun (x1 : List T × (List T × T)) => x1)
-        x0
-        («Reader.lexIdle» ([] : List T)))
+    if (Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x1 : T) (x2 : T) =>
+        if (Const.lt x1 (leaf 256)).label ≠ 0 then x2 else leaf 0)
+      (leaf 1)
+      x0).label ≠ 0 then
+      «Reader.lexEnd»
+        (Const.foldr
+          (α := T)
+          (β := (List T × (List T × T)) → List T × (List T × T))
+          (fun (x1 : T)
+             (x2 : (List T × (List T × T)) → List T × (List T × T))
+             (x3 : List T × (List T × T)) =>
+            x2 («Reader.lexStep» x3 x1))
+          (fun (x1 : List T × (List T × T)) => x1)
+          x0
+          («Reader.lexIdle» ([] : List T)))
+    else
+      «Prelude.none»
 
 def «Reader.fail» := (leaf 0, ([] : List (List T)))
 

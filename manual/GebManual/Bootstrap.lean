@@ -2477,8 +2477,7 @@ tag := "authoring-compatibility"
   * The strict encodings of RFC 9804
   * Complete: the readers of every spelling of their atoms, the
     canonical, basic transport and advanced encodings and the strict form
-    of documents, with the retraction, the advanced encoding's for
-    documents whose characters are bytes
+    of documents, with the retraction
 *
   * Modules with parameters, imports and export lists
   * In progress: the elaboration of modules, imports, export lists and
@@ -2994,10 +2993,13 @@ reads the same spellings. The advanced encoding
 tokens laid out as the formatter lays out source, a token bare and every
 other atom quoted with escapes of ASCII alone, spellings that the
 profile's printer shares as instances of one parameter
-({name}`Geb.Kernel.Document.Spelling`); a document whose strict form's
-characters are bytes is read back from it
-({name}`Geb.Kernel.Document.readStrictDoc_printAdvancedDoc`), and a
-character beyond a byte has no spelling in it.
+({name}`Geb.Kernel.Document.Spelling`); a document is read back from it
+({name}`Geb.Kernel.Document.readStrictDoc_printAdvancedDoc`). Text is
+bytes, one character to a byte as the hosts read files, so UTF-8 is read
+as its bytes, and both readers reject a character beyond a byte; their
+escapes and encoded atoms denote bytes, so every document read is of
+bytes, and the condition of bytes in the retractions' well-formedness is
+no restriction on what is read.
 The `.geb` sources were written in a legacy syntax, the kernel reader's,
 whose atoms were any characters but whitespace, parentheses and the
 semicolon. They were files of the profile already but for two names
