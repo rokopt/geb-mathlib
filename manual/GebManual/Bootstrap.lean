@@ -1547,9 +1547,10 @@ section below opens with a table of the states of its parts.
 *
   * {ref "content-identity"}[Content identity]
   * In progress
-  * The hash, the payload, the CID, the migration, the linker and names
-    as annotations re-keyed by identifiers in Lean and Geb: complete;
-    modules: ready, before the reader's inverse
+  * The hash, the payload, the CID, the migration, the linker, names as
+    annotations re-keyed by identifiers, and the identifiers of the tree of
+    modules, in Lean and Geb: complete; the sources organized into modules:
+    ready, before the reader's inverse
 *
   * {ref "authoring-compatibility"}[Authoring across bootstrap revisions]
   * In progress
@@ -2280,9 +2281,10 @@ tag := "content-identity"
   * In progress: definitions in Lean and Geb
 *
   * The node-digest rule, the hash, the migration
-  * In progress: the hash, the migration, the linker and the re-keying of
-    names in Lean and Geb, agreeing, the linker's relabelling and the
-    re-keying's addressing proved; modules, ready
+  * In progress: the hash, the migration, the linker, the re-keying of
+    names and the identifiers of modules in Lean and Geb, agreeing, the
+    linker's relabelling and the re-keying's addressing proved; the sources
+    organized into modules, ready
 *
   * Acceptance
   * Met
@@ -2338,8 +2340,20 @@ same table, and the tests compare it with Lean's. Comments re-key in the
 same way once their attachment, a redecoration of the trivia, places
 them at vertices of the core.
 
-Modules ({ref "modules"}[Modules]), whose names resolve to identifiers
-through those annotations, follow, before the reader's inverse
+The modules of a program form a tree, the root block its root, which
+the elaboration of modules records ({ref "modules"}[Modules]). A module is
+identified by the CID of its payload `(geb-module/v1 (members…)
+(exports…))`, its members in order, each a definition by its CID or a
+module nested or instantiated in it by the module's CID, and its exports
+by the CIDs of the definitions they denote; the identifiers are computed
+from the leaves up (`Geb/Prototypes/Kernel/ModuleIdentity.lean`, and in
+`bootstrap/identity.geb`). A module's name and the names of its exports
+are annotations, keyed by the module's CID and an export's position, so
+renaming leaves every identifier unchanged, and a changed definition
+changes the identifiers of the modules containing it, up to the root,
+which the tests check. Type and numeral abbreviations are expanded where
+they are used and have no identifiers of their own. The sources'
+organization into modules follows, before the reader's inverse
 ({ref "the-next-phase"}[The next phase]).
 
 What the sections before the choice of machine fix for this one: the
