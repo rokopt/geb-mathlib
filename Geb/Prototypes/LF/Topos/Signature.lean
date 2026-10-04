@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.LF.Typing
+public import Geb.Prototypes.LF.Syntax
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in

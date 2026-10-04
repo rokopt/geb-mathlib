@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.LF.Metatheory.Scope
+public import Geb.Prototypes.LF.Metatheory.Weakening
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in

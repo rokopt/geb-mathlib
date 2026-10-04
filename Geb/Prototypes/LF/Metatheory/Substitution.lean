@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.LF.Metatheory.Composition
+public import Geb.Prototypes.LF.Metatheory.Scope
 public import Geb.Prototypes.LF.Metatheory.TypeShape
 meta import GebMeta -- shake: keep
 

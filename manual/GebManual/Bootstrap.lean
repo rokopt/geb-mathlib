@@ -3816,23 +3816,23 @@ of 120 s, every term returned checked:
   * The same
 *
   * `natRec C z s (succ zero) = s z`
-  * Found, 10 ms, by the fold's rules and substitution of equals
-  * Found, 3 ms, by reflexivity
+  * Found, 9 ms, by the fold's rules and substitution of equals
+  * Found, 2 ms, by reflexivity
 *
   * `n + 0 = n` and `m + succ n = succ (m + n)`
-  * Found, 2 ms each, by a rule of the fold
-  * Found, 3 ms each, by reflexivity
+  * Found, 1 ms each, by a rule of the fold
+  * Found, 2 ms or less each, by reflexivity
 *
   * `0 + n = n`
-  * Found, 24 ms, by induction
-  * Found, 22 ms, by induction
+  * Found, 23 ms, by induction
+  * Found, 19 ms, by induction
 *
   * `succ m + n = succ (m + n)`
   * Not found in 120 s
-  * Found, 41 ms, by induction
+  * Found, 53 ms, by induction
 *
   * `lam (λ x. x) = lam (λ x. app (lam (λ y. y)) x)`
-  * Found, 83 ms, by extensionality and β
+  * Found, 82 ms, by extensionality and β
   * Found, 2 ms, by reflexivity
 :::
 

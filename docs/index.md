@@ -3923,17 +3923,28 @@ checklist and in CI.
   the extension by rewrite rules on constants [CousineauDowek2007], with
   first-order matching of patterns, instantiation by hereditary
   substitution, η-expansion, normalization to a bound and the typing of a
-  rule. `Topos/`: a fragment of the internal language of
+  rule. `Metatheory/`: the laws of renaming and its commutation with
+  hereditary substitution, vacuous substitution, the composition of
+  hereditary substitutions, weakening, the scoping of judged expressions,
+  the invariance of erasure under substitution, the substitution theorem
+  [HarperLicata2007], and the identity principles: the η-expansion of a
+  variable is an identity for hereditary substitution, and the
+  η-expansion of an atomic term checks against the type it synthesizes
+  [WatkinsEtAl2002]. `Topos/`: a fragment of the internal language of
   `Geb/Prototypes/FreeTopos/` as a signature, its object types, terms in
   higher-order abstract syntax and derivations, and its computation rules
-  as rewrite rules. Tested in `GebTests/Prototypes/LF.lean` and
+  as rewrite rules; `Topos/Adequacy.lean` encodes the fragment's types and
+  compiled terms as canonical LF terms and decodes them, and proves the
+  encoding sound and complete, complete for the terms whose folds have
+  closed starts and steps. Tested in `GebTests/Prototypes/LF.lean` and
   `GebTests/Prototypes/LF/Topos.lean`. The library `GebExperiments`, which
   no module of `Geb`, `GebLang` or `GebTests` imports, translates goals of
   the signature to Canonical's input and the terms it returns back, and
   checks them (`lake exe lf-canonical`); the
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   measurements. Depends on `Geb.Prototypes.RoseTree.Basic`,
-  `Geb.Prototypes.ConcreteSyntax` and `Geb.Mathlib.Data.W.Basic`.
+  `Geb.Prototypes.ConcreteSyntax`, `Geb.Mathlib.Data.W.Basic` and
+  `Geb.Prototypes.FreeTopos.Internal`.
 - `Geb/Prototypes/PartialHorn/` — the logic of partial Horn theories
   [PalmgrenVickers2007] over rose trees, in which the metalogic presents
   the free topos. `Basic.lean` carries signatures and theories, terms as

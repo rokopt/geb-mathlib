@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.FreeTopos.Internal.Derivation
-public import Geb.Prototypes.FreeTopos.Internal.Substitution
+public import Geb.Prototypes.FreeTopos.Internal.Inversion
 public import Geb.Prototypes.LF.Metatheory.Substitution
 public import Geb.Prototypes.LF.Topos.Signature
 import Mathlib.Tactic.IntervalCases
