@@ -448,10 +448,10 @@
                       (matchSt (node 0 (mapT (lam ((c T)) none) (seqCtx a))) (node 0 (nil T))))
                     (if (isSome mm)
                       (let ms T (get mm)
-                        (let mσ T (allSomeT (msSigma ms))
-                          (if (isSome mσ)
-                            (let σ Ts (children (get mσ))
-                              (pmBind (pmMapM typeTerm σ)
+                        (let mSigma T (allSomeT (msSigma ms))
+                          (if (isSome mSigma)
+                            (let sigma Ts (children (get mSigma))
+                              (pmBind (pmMapM typeTerm sigma)
                                 (lam ((tysN T))
                                   (let tys Ts (children tysN)
                                     (pmBind
@@ -468,11 +468,11 @@
                                             (pmBind (pmMapM (proveHyp typePattern tys) (seqHyps a))
                                               (lam ((hs T))
                                                 (let i T
-                                                  (srcCert (rwSrc r) σ (mapT tyDfd tys)
+                                                  (srcCert (rwSrc r) sigma (mapT tyDfd tys)
                                                     (children hs))
                                                   (pmPure
                                                     (node 0
-                                                      (l2 (phSubst σ q)
+                                                      (l2 (phSubst sigma q)
                                                         (cTrans b
                                                           (if (rwFlip r) (cSymm i) i))))))))))))))))
                             pmFail)))
@@ -575,18 +575,18 @@
         (add (length initialAxioms) (add (length coproductAxioms) (length coequalizerAxioms)))))))
 (def beforeNat (add beforeExponential (add (length exponentialAxioms) (length classifierAxioms))))
 (def beforeList (add beforeNat (length natAxioms)))
-(defn pInst ((s T) (σ Ts)) PM
+(defn pInst ((s T) (sigma Ts)) PM
   (pmBind (srcSeq s)
     (lam ((a T))
-      (pmBind (pmMapM typeTerm σ)
+      (pmBind (pmMapM typeTerm sigma)
         (lam ((tysN T))
           (let tys Ts (children tysN)
             (pmBind (pmMapM (proveHyp typePattern tys) (seqHyps a))
               (lam ((hs T))
                 (pmPure
                   (node 0
-                    (l2 (eqSubst σ (seqConcl a))
-                      (srcCert s σ (mapT tyDfd tys) (children hs)))))))))))))
+                    (l2 (eqSubst sigma (seqConcl a))
+                      (srcCert s sigma (mapT tyDfd tys) (children hs)))))))))))))
 (defn etaExpand ((f T)) PM
   (pmBind (typeTerm f)
     (lam ((ty T))
@@ -638,21 +638,21 @@
 ; induction: the instance of a source's sequent whose equations between arrows are proved by
 ; normalization, the certificate of an equation's rewriting inside a term, and the proofs of
 ; equations between arrows from the natural numbers object and from list objects
-(defn instBy ((rules Ts) (s T) (σ Ts)) PM
+(defn instBy ((rules Ts) (s T) (sigma Ts)) PM
   (pmBind (srcSeq s)
     (lam ((a T))
-      (pmBind (pmMapM typeTerm σ)
+      (pmBind (pmMapM typeTerm sigma)
         (lam ((tysN T))
           (let tys Ts (children tysN)
             (pmBind
               (pmMapM
-                (lam ((h T)) (pmOr (proveHyp typePattern tys h) (pByNorm rules (eqSubst σ h))))
+                (lam ((h T)) (pmOr (proveHyp typePattern tys h) (pByNorm rules (eqSubst sigma h))))
                 (seqHyps a))
               (lam ((hs T))
                 (pmPure
                   (node 0
-                    (l2 (eqSubst σ (seqConcl a))
-                      (srcCert s σ (mapT tyDfd tys) (children hs)))))))))))))
+                    (l2 (eqSubst sigma (seqConcl a))
+                      (srcCert s sigma (mapT tyDfd tys) (children hs)))))))))))))
 (defn congStep ((e T) (ce T) (nd T) (rs (List BF))) BF
   (lam ((t T))
     (pmBind (typeTerm nd)

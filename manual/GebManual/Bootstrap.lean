@@ -291,11 +291,12 @@ Extension:
 * In progress. {ref "authoring-compatibility"}[Authoring across bootstrap
   revisions]: preservation of source documents, bindings and dependency
   references through format changes. Checked filling of one contextual
-  term hole in Lean, and source documents keeping comments with their
-  retraction and formatter, adopted over `bootstrap/`, are complete.
-  Ready, in the order of {ref "authoring-sequence"}[the sequence]: the
-  authoring profile with its importer and the kernel's readers reading it
-  and rejecting duplicate and ambiguous names, the strict encodings of
+  term hole in Lean, source documents keeping comments as decorations with
+  their retraction and formatter, adopted over `bootstrap/`, and the
+  authoring profile read by the seed, are complete. Ready, in the order of
+  {ref "authoring-sequence"}[the sequence]: the Geb reader of the profile,
+  rejecting duplicate and reserved names as the seed does, the strict
+  encodings of
   RFC 9804, modules with parameters, imports and export lists, the
   datatype language's completion, manifests with editions and the record of
   elaborated definitions, a durable document with versioned profiles,
@@ -1543,10 +1544,11 @@ section below opens with a table of the states of its parts.
 *
   * {ref "authoring-compatibility"}[Authoring across bootstrap revisions]
   * In progress
-  * Checked contextual-hole filling and source documents with their
-    formatter, in Lean, and the formatter's adoption: complete; the rest
-    of the sequence: ready, but the parts that follow their consumers,
-    which wait on them
+  * Checked contextual-hole filling, source documents with their
+    formatter, the formatter's adoption and the authoring profile read by
+    the seed: complete; the Geb reader of the profile and the rest of the
+    sequence: ready, but the parts that follow their consumers, which wait
+    on them
 *
   * {ref "goedel-t"}[Gödel's T]
   * In progress
@@ -2387,7 +2389,10 @@ tag := "authoring-compatibility"
 *
   * The authoring profile and the importer, the kernel's readers reading
     it and rejecting duplicate and ambiguous names
-  * Ready
+  * In progress: the profile's reader and printer in Lean with their
+    retraction, the seed's reader of the profile rejecting duplicate and
+    reserved names, and the import of the sources, complete; the Geb
+    reader of the profile and quoted atoms in its sources, ready
 *
   * The strict encodings of RFC 9804
   * Ready
@@ -2716,7 +2721,9 @@ measured at revision `b3aa139a`.
 tag := "source-documents"
 %%%
 
-A document is read into S-expressions with comments
+A document, written in the authoring profile
+({ref "rfc9804-syntaxes"}[The syntaxes of RFC 9804]), is read into
+S-expressions with comments
 ({name}`Geb.Kernel.Document.SExpr`), rose trees whose nodes are atoms and
 lists, each decorated ({name}`Geb.RoseTree.Decorated`, the decision on
 annotations) with its trivia ({name}`Geb.Kernel.Document.Trivia`): the
@@ -2730,15 +2737,11 @@ its position is a rule of the syntax, so reading and printing keep their
 retraction, while which definition a comment documents is a redecoration
 outside them ({ref "documents-annotations"}[Documents and annotations]).
 The lexer reads one character per byte, as the kernel's readers do, so
-atoms and comments keep their bytes.
+atoms and comments keep their bytes. The kernel's reader of the seed,
+{name}`Geb.Kernel.readSExps`, is this reader with the decorations erased.
 
-Three theorems hold, none depending on `Classical.choice`:
+Two theorems hold, neither depending on `Classical.choice`:
 
-* {name}`Geb.Kernel.Document.readDoc_erase`:
-  `(readDoc t).map (·.items.map RoseTree.erase) = readSExps t` at every
-  text `t`. Erasing the decorations of what the new reader reads gives what
-  the kernel's reader reads, so adopting it changes the meaning of no
-  file.
 * {name}`Geb.Kernel.Document.readDoc_print`:
   `readDoc (print L d) = some d` at every well-formed document and
   every layout `L`, a function from the positions of tokens to a choice
@@ -2882,14 +2885,21 @@ code as far as their grammars allow:
 * the generic corollaries of the retraction law, proved once in
   `Geb/Prototypes/ConcreteSyntax.lean`.
 
-The present `.geb` sources are in a legacy syntax, the kernel reader's,
-which the document reader of the prototype reads. An importer converts
-them into the authoring profile; it is accepted when the actual bootstrap
-sources convert with names and comments preserved and compile to the same
-checked bundles, which a proof over trees of numerals does not show.
-Until the readers of the seed and of Geb read the profile, a converter
-from the profile to the legacy syntax, proved to preserve the document,
-feeds the compilers.
+The authoring profile's reader and printer are constructed in Lean
+({name}`Geb.Kernel.Document.readDoc`, {name}`Geb.Kernel.Document.print`),
+with the retraction at every layout
+({name}`Geb.Kernel.Document.readDoc_print`), and the seed reads the
+profile ({name}`Geb.Kernel.readSExps`). Its reader rejects the other
+spellings of atoms of the advanced encoding, which the strict encodings
+add. The `.geb` sources were written in a legacy syntax, the kernel
+reader's, whose atoms were any characters but whitespace, parentheses and
+the semicolon. They were files of the profile already but for two names
+beyond ASCII, which were renamed, so the importer is the profile's reader
+itself; its acceptance, that the sources compile to the same checked
+bundles with names and comments kept, is that of the fixed points, and
+every source is a fixed point of the profile's formatter. The Geb reader
+reads the legacy syntax until it reads the profile, and the sources lie
+in both meanwhile, so no converter between them is needed.
 
 Identifiers are tokens of {citet RFC9804}[]: ASCII letters, digits and
 `- . / _ : * + =`, not beginning with a digit. Every identifier of the

@@ -95,6 +95,47 @@ def sampleFormatted : String := "; a header
 -- a narrow line width breaks every list that does not fit, and keeps the S-expressions
 #guard ((format 20 sample.toList).bind readSExps) = readSExps sample.toList
 
+-- an atom is written bare when it is a numeral, a token or the ampersand, and otherwise
+-- quoted, its double quotes and backslashes escaped and its control characters in hexadecimal
+#guard spell "let".toList = "let".toList
+#guard spell "12".toList = "12".toList
+#guard spell "&".toList = "&".toList
+#guard spell "a b".toList = "\"a b\"".toList
+#guard spell "2x".toList = "\"2x\"".toList
+#guard spell ['"', '\\', Char.ofNat 9, 'σ'] = "\"\\\"\\\\\\x09σ\"".toList
+#guard spell [] = "\"\"".toList
+
+-- quoted strings read the escapes of RFC 9804, and a backslash before a line break continues the
+-- string
+#guard readSExps "(f \"a b\" 12 & x)".toList = some [RoseTree.node none
+  ([some "f".toList, some "a b".toList, some "12".toList, some "&".toList, some "x".toList].map
+    fun a ↦ RoseTree.node a [])]
+#guard readSExps "\"\\t\\x41\\101\\\"\\\\\\?\"".toList =
+  some [RoseTree.node (some [Char.ofNat 9, 'A', 'A', '"', '\\', '?']) []]
+#guard readSExps "\"ab\\\ncd\"".toList = some [RoseTree.node (some "abcd".toList) []]
+#guard readSExps "\"a\nσ\"".toList = some [RoseTree.node (some "a\nσ".toList) []]
+
+-- a hole is the form (hole name), written ?name
+#guard readSExps "(f ?x)".toList = readSExps "(f (hole x))".toList
+#guard format 100 "(f (hole x))".toList = some "(f ?x)\n".toList
+#guard format 100 "(f (hole\n ; why\n x))".toList = some "(f\n  (hole\n    ; why\n    x))\n".toList
+
+-- formatting writes each atom in its spelling
+#guard format 100 "(a \"x\\x41\" \"1 2\" \"007\")".toList = some "(a xA \"1 2\" 007)\n".toList
+
+-- the profile admits no other spelling, a character outside a quoted string that no token
+-- admits, a hole without a name, or a string that does not end
+#guard readDoc "(a 12b)".toList = none
+#guard readDoc "(a 3:abc)".toList = none
+#guard readDoc "(a #616263#)".toList = none
+#guard readDoc "(a |YWJj|)".toList = none
+#guard readDoc "(a [h]x)".toList = none
+#guard readDoc "(a σ)".toList = none
+#guard readDoc "(a ?)".toList = none
+#guard readDoc "(a ?1)".toList = none
+#guard readDoc "(a \"bc)".toList = none
+#guard readDoc "(a \"\\q\")".toList = none
+
 -- unbalanced text does not read
 #guard readDoc "(def x".toList = none
 #guard readDoc "(def x))".toList = none

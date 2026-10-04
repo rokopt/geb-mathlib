@@ -147,6 +147,20 @@ def numerals : String := "
 #guard runMain "(defnum n (1 2)) (def f (lam (x T) x))".toList (leaf 1) = none
 -- the last definition is not a function on trees
 #guard runMain "(def f unit)".toList (leaf 1) = none
+-- in a quoted datum, an atom that is not a numeral stands for its characters' codes
+#guard datum "(0 let)".toList = datum "(0 108 101 116)".toList
+#guard datum "(1 \"a b\" 7)".toList = datum "(1 97 32 98 7)".toList
+#guard ((readSExps "(quote let)".toList).bind (·.head?) |>.bind fun e ↦
+    e.children[1]?.bind readDatum) = none
+-- a declaration's name is neither reserved nor declared before
+#guard runMain "(def a (lam (x T) x)) (def a (lam (x T) x))".toList (leaf 1) = none
+#guard runMain "(def lam (lam (x T) x))".toList (leaf 1) = none
+#guard runMain "(def add (lam (x T) x))".toList (leaf 1) = none
+#guard runMain "(deftype T Unit) (def f (lam (x T) x))".toList (leaf 1) = none
+#guard runMain "(defnum a 1) (def a (lam (x T) x))".toList (leaf 1) = none
+#guard runMain "(deftype a T) (def a (lam (x T) x))".toList (leaf 1) = none
+#guard diagnose "(def a (lam (x T) x)) (def a (lam (x T) x))".toList =
+  some "a is reserved or declared before"
 
 /-- The image of a program's bundle, or the empty image when the program does not read. -/
 def imageOf (text : List Char) : ByteArray :=

@@ -3711,9 +3711,12 @@ checklist and in CI.
   `native` (`docs/rules/ci-and-workflow.md` § Loading modes).
   `Reader.lean` reads programs, sequences of named definitions and of type
   and numeral abbreviations in S-expressions over lists of characters,
-  resolving names to de Bruijn indices, references and primitives and
-  expanding lists of binders, local bindings and numeral abbreviations
-  (`Geb.Kernel.readProgram`), loads them in order
+  read from the authoring profile (`Geb.Kernel.readSExps`), rejecting a
+  name reserved or declared before, resolving names to de Bruijn indices,
+  references and primitives and expanding lists of binders, local
+  bindings and numeral abbreviations (`Geb.Kernel.readProgram`), with a
+  non-numeral atom in a quoted datum standing for its characters' codes
+  (`Geb.Kernel.readDatum`), loads them in order
   (`Geb.Kernel.load`), and applies the last to an input tree
   (`Geb.Kernel.runMain`). `Image.lean` stores a program as one tree
   (`Geb.Kernel.bundle`), writes and reads its image, a versioned header
@@ -3730,13 +3733,14 @@ checklist and in CI.
   type and the sketch's context (`Geb.Kernel.fillHole`), and proves
   acceptance of well-typed inputs and the type and denotation of every
   accepted result (`Geb.Kernel.fillHole_of_infer`,
-  `Geb.Kernel.infer_fillHole`). `Document.lean` reads a text as a source
-  document, S-expressions decorated with the comment lines and empty lines
-  around them (`Geb.Kernel.Document.readDoc`), proves that erasing the
-  decorations gives the kernel reader's S-expressions
-  and that reading a document printed at any layout gives it back
-  (`Geb.Kernel.Document.readDoc_erase`, `Geb.Kernel.Document.readDoc_print`),
-  and formats text idempotently (`Geb.Kernel.Document.format`), which the
+  `Geb.Kernel.infer_fillHole`). `Document.lean` reads a text in the
+  authoring profile of the syntaxes of [RFC9804], its bare and quoted
+  atoms, holes and comments, as a source document, S-expressions decorated
+  with the comment lines and empty lines around them
+  (`Geb.Kernel.Document.readDoc`), spells each atom from its bytes
+  (`Geb.Kernel.Document.spell`), proves that reading a document printed at
+  any layout gives it back (`Geb.Kernel.Document.readDoc_print`), and
+  formats text idempotently (`Geb.Kernel.Document.format`), which the
   executable `geb-fmt` applies to files. Tested in
   `GebTests/Prototypes/Kernel.lean` and
   `GebTests/Prototypes/Kernel/Document.lean`. The

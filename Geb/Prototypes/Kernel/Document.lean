@@ -5,38 +5,49 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.Kernel.Reader
 public import Geb.Prototypes.RoseTree.Decorated
+meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
 /-!
-# Source documents of the kernel's readable syntax
+# Source documents in the authoring profile
 
-A source document is the text of a program read without loss of anything a person wrote but
-the widths of its whitespace: its S-expressions, its comment lines and the empty lines between
-its items. It is read into S-expressions with comments: rose trees whose labels are those of the
-kernel's S-expressions, each node decorated with its trivia, the comment lines before it, each
-with whether an empty line precedes it, whether an empty line precedes the node itself, and,
-for a list, the comment lines before its closing parenthesis; the comment lines after the last
-S-expression belong to the document. The decoration is that of
-{name}`Geb.RoseTree.Decorated`, so the trivia, like every other annotation, is computed from
-and into other decorations by redecoration. A comment is placed by its position alone, so
-reading attaches no comment to the definition it documents; that attachment is a redecoration
-of the trivia.
+Geb's source is written in the authoring profile of the syntaxes of {cite}`RFC9804`: its
+advanced encoding with line comments, UTF-8 and line breaks in quoted strings, numerals as bare
+runs of digits, the ampersand as a token, and {lit}`?name` for the form {lit}`(hole name)`. A
+source document is the text of a program read without loss of anything a person wrote but the
+widths of its whitespace and the spellings of its atoms: its S-expressions, its comment lines
+and the empty lines between its items. It is read into S-expressions with comments: rose trees
+whose labels are those of the kernel's S-expressions, the bytes of an atom or nothing for a
+list, each node decorated with its trivia, the comment lines before it, each with whether an
+empty line precedes it, whether an empty line precedes the node itself, and, for a list, the
+comment lines before its closing parenthesis; the comment lines after the last S-expression
+belong to the document. The decoration is that of {name}`Geb.RoseTree.Decorated`, so the
+trivia, like every other annotation, is computed from and into other decorations by
+redecoration. A comment is placed by its position alone, so reading attaches no comment to the
+definition it documents; that attachment is a redecoration of the trivia.
 
-The reader {lit}`readDoc` is a conservative refinement of the kernel's reader
-{name}`Geb.Kernel.readSExps`: erasing the decorations of what it reads gives what that reader
-reads, at every text ({lit}`readDoc_erase`). The printer {lit}`print` is parameterized by a
-layout, a choice at each token of whether a line break precedes it and of the indentation of
-the new line, and the retraction law holds at every layout ({lit}`readDoc_print`): reading a
-printed well-formed document gives the document back. A formatter, reading and printing with a
-layout computed from the document, is therefore idempotent ({lit}`format_format`), whatever the
-layout policy, so the policy is not part of what is proved.
+An atom is a string of bytes, one character per byte as the kernel's readers read text; the
+printer chooses its spelling from its bytes ({lit}`spell`): bare when it is a numeral, a token
+of {cite}`RFC9804` or the ampersand, and otherwise a quoted string, whose double quotes and
+backslashes are escaped, and whose other control characters are written as hexadecimal
+escapes. The reader admits the escapes of {cite}`RFC9804`; its other spellings of atoms,
+hexadecimal, base-64, verbatim and with lengths, and its display hints are rejected, the
+first four being the strict encodings' to add.
+
+The printer {lit}`print` is parameterized by a layout, a choice at each token of whether a line
+break precedes it and of the indentation of the new line, and the retraction law holds at every
+layout ({lit}`readDoc_print`): reading a printed well-formed document gives the document back.
+A formatter, reading and printing with a layout computed from the document, is therefore
+idempotent ({lit}`format_format`), whatever the layout policy, so the policy is not part of
+what is proved.
 
 ## Main definitions
 
+* {lit}`SExp` — the kernel's S-expressions, the labels of the trees read.
 * {lit}`Line`, {lit}`Trivia`, {lit}`SExpr`, {lit}`Doc` — comment lines, the trivia an
   S-expression is decorated with, S-expressions with comments, and source documents.
+* {lit}`spell` — the spelling of an atom.
 * {lit}`lex`, {lit}`readDoc` — the lexer and reader keeping comments and empty lines.
 * {lit}`sepFor`, {lit}`arrangeFrom`, {lit}`print` — the separators a layout chooses, and the
   printer.
@@ -44,7 +55,6 @@ layout policy, so the policy is not part of what is proved.
 
 ## Main statements
 
-* {lit}`readDoc_erase` — the reader keeps what the kernel's reader reads.
 * {lit}`readDoc_print` — the retraction law, at every layout.
 * {lit}`format_format` — the formatter is idempotent.
 
@@ -56,19 +66,30 @@ one, a line break after a comment, which extends to the end of its line, and oth
 break when the layout chooses one, nothing after an opening parenthesis or before a closing one,
 and a space elsewhere. The lexer's correctness is proved for every sequence of separators so
 formed, one token at a time, so the layout is an arbitrary function of the token's position.
-The reader holds the comment lines read since the last S-expression on its stack, until the
-S-expression after them, or the end of the list or of the text, takes them as its trivia.
+A bare atom, a hole and a comment end where the character after them is read; a quoted string,
+the ampersand and a parenthesis end with their last character. The reader holds the comment
+lines read since the last S-expression on its stack, until the S-expression after them, or the
+end of the list or of the text, takes them as its trivia.
+
+## References
+
+* {cite}`RFC9804` — the syntaxes of S-expressions the profile extends.
 
 ## Tags
 
-S-expression, comments, trivia, formatter, retraction, lossless syntax tree
+S-expression, RFC 9804, comments, trivia, formatter, retraction, lossless syntax tree
 -/
 
 set_option doc.verso true
 
 @[expose] public section
 
-namespace Geb.Kernel.Document
+namespace Geb.Kernel
+
+/-- An S-expression: a leaf carries an atom, and a node without a label is a list. -/
+abbrev SExp : Type := RoseTree (Option (List Char))
+
+namespace Document
 
 /-- A comment line: whether an empty line precedes it, and its characters after the semicolon
 and before the end of the line. -/
@@ -103,6 +124,65 @@ last. -/
   /-- The comment lines after the last S-expression. -/
   trail : List Line
 
+/-! ## Characters and the spelling of atoms -/
+
+/-- Whether a character is whitespace in the syntaxes of {cite}`RFC9804`: a space, a horizontal
+or vertical tab, a form feed, a carriage return or a line feed. -/
+def isSpace (c : Char) : Bool :=
+  c == ' ' || c == '\n' || c == '\t' || c == '\r' || c.toNat == 11 || c.toNat == 12
+
+/-- Whether a character is a decimal digit, of code point 48 to 57. -/
+def isDigit (c : Char) : Bool := 48 ≤ c.toNat && c.toNat ≤ 57
+
+/-- Whether a character may begin a token of {cite}`RFC9804`: an ASCII letter, of code point
+65 to 90 or 97 to 122, or one of its eight pseudo-alphabetic characters. -/
+def isTokenStart (c : Char) : Bool :=
+  (65 ≤ c.toNat && c.toNat ≤ 90) || (97 ≤ c.toNat && c.toNat ≤ 122) || c == '-' || c == '.' ||
+    c == '/' || c == '_' || c == ':' || c == '*' || c == '+' || c == '='
+
+/-- Whether a character may continue a token: a character that may begin one, or a digit. -/
+def isTokenChar (c : Char) : Bool := isTokenStart c || isDigit c
+
+/-- Whether a word is a token: non-empty, of token characters, and not beginning with a
+digit. -/
+def isToken : List Char → Bool
+  | [] => false
+  | c :: cs => isTokenStart c && cs.all isTokenChar
+
+/-- Whether a word is a numeral: a non-empty run of decimal digits. -/
+def isNumeral (s : List Char) : Bool := !s.isEmpty && s.all isDigit
+
+/-- Whether an atom is written bare and ends where its word ends: a numeral or a token. -/
+def isBare (s : List Char) : Bool := isNumeral s || isToken s
+
+/-- Whether the printer writes a character of a quoted string as it is: a printable ASCII
+character, of code point 32 to 126, other than the double quote and the backslash, a line
+feed, or a character beyond ASCII. -/
+def isPlain (c : Char) : Bool :=
+  (32 ≤ c.toNat && c.toNat ≤ 126 && c != '"' && c != '\\') || c == '\n' || 128 ≤ c.toNat
+
+/-- The hexadecimal digit of a number below sixteen, upper case. -/
+def hexDigit (n : ℕ) : Char := Char.ofNat (if n < 10 then 48 + n else 55 + n)
+
+/-- The value of a hexadecimal digit of either case. -/
+def hexVal (c : Char) : Option ℕ :=
+  if isDigit c then some (c.toNat - 48)
+  else if 65 ≤ c.toNat && c.toNat ≤ 70 then some (c.toNat - 55)
+  else if 97 ≤ c.toNat && c.toNat ≤ 102 then some (c.toNat - 87)
+  else none
+
+/-- A character of a quoted string as the printer writes it: as it is, after a backslash when
+it is the double quote or the backslash, and otherwise as a hexadecimal escape. -/
+def escape (c : Char) : List Char :=
+  if isPlain c then [c]
+  else if c == '"' || c == '\\' then ['\\', c]
+  else ['\\', 'x', hexDigit (c.toNat / 16), hexDigit (c.toNat % 16)]
+
+/-- An atom as the printer writes it: bare when it is a numeral, a token or the ampersand, and
+otherwise quoted. -/
+def spell (s : List Char) : List Char :=
+  if isBare s || s == ['&'] then s else '"' :: s.flatMap escape ++ ['"']
+
 /-! ## Tokens and the lexer -/
 
 /-- The tokens of a source document; each but a closing parenthesis records whether an empty
@@ -112,10 +192,12 @@ inductive Tok where
   | lp (gap : Bool)
   /-- A closing parenthesis. -/
   | rp
-  /-- An atom. -/
+  /-- An atom, with its characters. -/
   | atom (gap : Bool) (s : List Char)
   /-- A comment line, without its semicolon and line break. -/
   | comment (gap : Bool) (s : List Char)
+  /-- A hole, {lit}`?name`, with the characters of its name. -/
+  | hole (gap : Bool) (s : List Char)
   deriving DecidableEq, Repr
 
 /-- Whether an empty line precedes a token. -/
@@ -124,6 +206,7 @@ def Tok.gap : Tok → Bool
   | .rp => false
   | .atom g _ => g
   | .comment g _ => g
+  | .hole g _ => g
 
 /-- Whether a token is a comment. -/
 def Tok.isComment : Tok → Bool
@@ -135,95 +218,177 @@ def Tok.isLp : Tok → Bool
   | .lp _ => true
   | _ => false
 
-/-- The token of the kernel's reader a token erases to; a comment erases to nothing. -/
-def Tok.erase : Tok → Option Token
-  | .lp _ => some .lp
-  | .rp => some .rp
-  | .atom _ s => some (.atom s)
-  | .comment _ _ => none
+/-- Whether a token is a closing parenthesis. -/
+def Tok.isRp : Tok → Bool
+  | .rp => true
+  | _ => false
 
-/-- Whether a character can occur in an atom: it is neither whitespace, a parenthesis nor the
-semicolon that begins a comment. -/
-def isAtomChar (c : Char) : Bool :=
-  !(c == ';' || c == '(' || c == ')' || c.isWhitespace)
-
-/-- Whether a token can be spelled and read back: an atom is a non-empty word of atom
-characters, and a comment contains no line break. -/
+/-- Whether a token can be spelled and read back: a comment contains no line break, and a hole
+is named by a token; every atom has a spelling. -/
 def Tok.wf : Tok → Bool
-  | .atom _ s => !s.isEmpty && s.all isAtomChar
   | .comment _ s => s.all (· != '\n')
+  | .hole _ s => isToken s
   | _ => true
+
+/-- What the lexer is reading: nothing, a bare atom, a numeral, a hole's name, a comment, a
+quoted string, or an escape in a quoted string, after its backslash, after a backslash and a
+carriage return or a line feed, or among the digits of a hexadecimal or octal escape, with the
+digits read and their value. -/
+inductive Mode where
+  /-- Between tokens. -/
+  | idle
+  /-- A bare atom. -/
+  | bare
+  /-- A numeral. -/
+  | numeral
+  /-- A hole's name. -/
+  | hole
+  /-- A comment. -/
+  | comment
+  /-- A quoted string. -/
+  | str
+  /-- An escape, after its backslash. -/
+  | esc
+  /-- After a backslash and a carriage return. -/
+  | escCR
+  /-- After a backslash and a line feed. -/
+  | escLF
+  /-- A hexadecimal escape, with the digits read and their value. -/
+  | hex (n v : ℕ)
+  /-- An octal escape, with the digits read and their value. -/
+  | oct (n v : ℕ)
+  deriving DecidableEq
 
 /-- The lexer's state. -/
 structure LexState where
   /-- The tokens read, the latest first. -/
   toks : List Tok
-  /-- The characters of the atom or comment being read, the latest first. -/
+  /-- The characters of the token being read, the latest first. -/
   cur : List Char
-  /-- Whether a comment is being read. -/
-  inComment : Bool
-  /-- The line breaks since the last token began. -/
+  /-- What the lexer is reading. -/
+  mode : Mode
+  /-- The line breaks since the last token. -/
   breaks : ℕ
-  /-- Whether an empty line precedes the atom or comment being read. -/
+  /-- Whether an empty line precedes the token being read. -/
   gap : Bool
+  /-- Whether the text read so far is well formed. -/
+  ok : Bool
 
-/-- End the atom being read, if any. -/
-def endAtom (s : LexState) : LexState :=
-  match s.cur with
-  | [] => s
-  | cs => ⟨.atom s.gap cs.reverse :: s.toks, [], false, s.breaks, false⟩
+/-- The state after a text that is not well formed. -/
+def LexState.fail : LexState := ⟨[], [], .idle, 0, false, false⟩
+
+/-- The state between tokens, after the tokens read and the line breaks since the last. -/
+def LexState.idle (toks : List Tok) (n : ℕ) : LexState := ⟨toks, [], .idle, n, false, true⟩
+
+/-- Read a character between tokens, after the tokens read and the line breaks since the
+last. -/
+def idleStep (toks : List Tok) (n : ℕ) (ch : Char) : LexState :=
+  let g := decide (2 ≤ n)
+  if ch == ';' then ⟨toks, [], .comment, 0, g, true⟩
+  else if ch == '(' then .idle (.lp g :: toks) 0
+  else if ch == ')' then .idle (.rp :: toks) 0
+  else if ch == '"' then ⟨toks, [], .str, 0, g, true⟩
+  else if ch == '&' then .idle (.atom g ['&'] :: toks) 0
+  else if ch == '?' then ⟨toks, [], .hole, 0, g, true⟩
+  else if isSpace ch then .idle toks (if ch == '\n' then n + 1 else n)
+  else if isDigit ch then ⟨toks, [ch], .numeral, 0, g, true⟩
+  else if isTokenStart ch then ⟨toks, [ch], .bare, 0, g, true⟩
+  else .fail
+
+/-- Read a character of a quoted string. -/
+def strStep (s : LexState) (ch : Char) : LexState :=
+  if ch == '"' then .idle (.atom s.gap s.cur.reverse :: s.toks) 0
+  else if ch == '\\' then { s with mode := .esc }
+  else if isPlain ch || ch == '\r' then { s with cur := ch :: s.cur }
+  else .fail
+
+/-- The character an escape of one character after its backslash denotes, the escapes of the C
+language that {cite}`RFC9804` admits. -/
+def escChar (ch : Char) : Option Char :=
+  if ch == 'a' then some (Char.ofNat 7) else if ch == 'b' then some (Char.ofNat 8)
+  else if ch == 't' then some '\t' else if ch == 'v' then some (Char.ofNat 11)
+  else if ch == 'n' then some '\n' else if ch == 'f' then some (Char.ofNat 12)
+  else if ch == 'r' then some '\r'
+  else if ch == '"' || ch == '\'' || ch == '?' || ch == '\\' then some ch
+  else none
 
 /-- Read one character. -/
 def lexStep (s : LexState) (ch : Char) : LexState :=
-  if s.inComment then
-    if ch == '\n' then ⟨.comment s.gap s.cur.reverse :: s.toks, [], false, 1, false⟩
-    else ⟨s.toks, ch :: s.cur, true, s.breaks, s.gap⟩
-  else if ch == ';' then ⟨(endAtom s).toks, [], true, 0, decide (2 ≤ s.breaks)⟩
-  else if ch == '(' then ⟨.lp (decide (2 ≤ s.breaks)) :: (endAtom s).toks, [], false, 0, false⟩
-  else if ch == ')' then ⟨.rp :: (endAtom s).toks, [], false, 0, false⟩
-  else if ch.isWhitespace then
-    ⟨(endAtom s).toks, [], false, if ch == '\n' then s.breaks + 1 else s.breaks, false⟩
-  else if s.cur.isEmpty then ⟨s.toks, [ch], false, 0, decide (2 ≤ s.breaks)⟩
-  else ⟨s.toks, ch :: s.cur, false, 0, s.gap⟩
+  if !s.ok then s else
+  match s.mode with
+  | .idle => idleStep s.toks s.breaks ch
+  | .comment =>
+    if ch == '\n' then .idle (.comment s.gap s.cur.reverse :: s.toks) 1
+    else { s with cur := ch :: s.cur }
+  | .bare =>
+    if isTokenChar ch then { s with cur := ch :: s.cur }
+    else idleStep (.atom s.gap s.cur.reverse :: s.toks) 0 ch
+  | .numeral =>
+    if isDigit ch then { s with cur := ch :: s.cur }
+    else if isTokenChar ch || ch == '"' || ch == '#' || ch == '|' then .fail
+    else idleStep (.atom s.gap s.cur.reverse :: s.toks) 0 ch
+  | .hole =>
+    if isTokenChar ch && !(s.cur.isEmpty && isDigit ch) then { s with cur := ch :: s.cur }
+    else if s.cur.isEmpty then .fail
+    else idleStep (.hole s.gap s.cur.reverse :: s.toks) 0 ch
+  | .str => strStep s ch
+  | .esc =>
+    match escChar ch with
+    | some c => { s with cur := c :: s.cur, mode := .str }
+    | none =>
+      if ch == 'x' then { s with mode := .hex 0 0 }
+      else if 48 ≤ ch.toNat && ch.toNat ≤ 55 then { s with mode := .oct 1 (ch.toNat - 48) }
+      else if ch == '\r' then { s with mode := .escCR }
+      else if ch == '\n' then { s with mode := .escLF }
+      else .fail
+  | .escCR => if ch == '\n' then { s with mode := .str } else strStep { s with mode := .str } ch
+  | .escLF => if ch == '\r' then { s with mode := .str } else strStep { s with mode := .str } ch
+  | .hex n v =>
+    match hexVal ch with
+    | some d =>
+      if n == 1 then { s with cur := Char.ofNat (16 * v + d) :: s.cur, mode := .str }
+      else { s with mode := .hex 1 d }
+    | none => .fail
+  | .oct n v =>
+    if 48 ≤ ch.toNat && ch.toNat ≤ 55 then
+      let w := 8 * v + (ch.toNat - 48)
+      if n == 2 then
+        if w < 256 then { s with cur := Char.ofNat w :: s.cur, mode := .str } else .fail
+      else { s with mode := .oct (n + 1) w }
+    else .fail
 
 /-- The lexer's initial state. -/
-def LexState.init : LexState := ⟨[], [], false, 0, false⟩
+def LexState.init : LexState := .idle [] 0
 
-/-- The tokens of a text, from the lexer's state at its end. -/
-def lexEnd (s : LexState) : List Tok :=
-  if s.inComment then (.comment s.gap s.cur.reverse :: s.toks).reverse
-  else (endAtom s).toks.reverse
+/-- The tokens of a text, from the lexer's state at its end, or nothing when the text is not
+well formed or ends inside a quoted string or a hole without a name. -/
+def lexEnd (s : LexState) : Option (List Tok) :=
+  if !s.ok then none else
+  match s.mode with
+  | .idle => some s.toks.reverse
+  | .comment => some (.comment s.gap s.cur.reverse :: s.toks).reverse
+  | .bare | .numeral => some (.atom s.gap s.cur.reverse :: s.toks).reverse
+  | .hole => if s.cur.isEmpty then none else some (.hole s.gap s.cur.reverse :: s.toks).reverse
+  | _ => none
 
-/-- The tokens of a text. -/
-def lex (text : List Char) : List Tok :=
-  lexEnd (text.foldl lexStep LexState.init)
-
-/-! ## The lexer refines the kernel's tokenizer -/
-
-/-- The state of the kernel's tokenizer a lexer's state erases to: its tokens erased, and the
-atom being read, a comment's characters being dropped. -/
-def LexState.erase (s : LexState) : TokState :=
-  (s.toks.filterMap Tok.erase, if s.inComment then [] else s.cur, s.inComment)
-
-/-- One character read by the lexer and by the kernel's tokenizer from corresponding states
-gives corresponding states. -/
-theorem erase_lexStep (s : LexState) (ch : Char) : (lexStep s ch).erase = tokStep s.erase ch := by
-  obtain ⟨ts, cs, c, n, g⟩ := s
-  cases c <;> cases cs <;>
-    simp only [lexStep, tokStep, LexState.erase, endAtom, flush, Bool.false_eq_true,
-      ↓reduceIte, Tok.erase, List.isEmpty_nil, List.isEmpty_cons] <;>
-    split_ifs <;> simp_all [Tok.erase, List.filterMap_cons]
-
-/-- The kernel's tokenizer's tokens are the lexer's, erased. -/
-theorem tokenize_eq (text : List Char) : tokenize text = (lex text).filterMap Tok.erase := by
-  have h : text.foldl tokStep LexState.init.erase = (text.foldl lexStep LexState.init).erase :=
-    List.foldl_hom _ fun s ch ↦ (erase_lexStep s ch).symm
-  simp only [tokenize, lex, lexEnd]
-  rw [show (([], [], false) : TokState) = LexState.init.erase from rfl, h]
-  obtain ⟨ts, cs, c, n, g⟩ := text.foldl lexStep LexState.init
-  cases c <;> cases cs <;> simp [LexState.erase, flush, endAtom, Tok.erase, List.filterMap_reverse]
+/-- The tokens of a text, or nothing when it is not well formed. -/
+def lex (text : List Char) : Option (List Tok) :=
+  lexEnd (text.foldl lexStep .init)
 
 /-! ## The reader -/
+
+/-- The characters of the keyword of a hole, {lit}`hole`. -/
+def kwHole : List Char := ['h', 'o', 'l', 'e']
+
+/-- The trivia of an S-expression without comment lines or an empty line before it. -/
+def Trivia.none : Trivia := ⟨[], false, []⟩
+
+/-- An atom without trivia. -/
+def bareAtom (s : List Char) : SExpr := RoseTree.node (.none, some s) []
+
+/-- The form of a hole, {lit}`(hole name)`, with its trivia. -/
+def holeForm (tr : Trivia) (s : List Char) : SExpr :=
+  RoseTree.node (tr, none) [bareAtom kwHole, bareAtom s]
 
 /-- A frame of the reader's stack: the comment lines before the list being read and whether an
 empty line precedes it, its elements read so far, the latest first, and the comment lines read
@@ -246,64 +411,24 @@ def Frame.push (f : Frame) (t : SExpr) : Frame := ⟨f.lead, f.gap, t :: f.items
 
 /-- Read one token into a stack of lists under construction, the innermost first: a comment
 line waits for the S-expression after it, or for the end of the list or the text, whose trivia
-it becomes. A comment read where no list is open leaves the empty stack as it is, as the
-kernel's reader leaves it. -/
+it becomes, and a hole is read as its form. -/
 def readStep : Option (List Frame) → Tok → Option (List Frame)
   | some (f :: fs), .lp g => some (.start f.pend.reverse g :: { f with pend := [] } :: fs)
   | some (f :: fs), .atom g s =>
     some (f.push (RoseTree.node (⟨f.pend.reverse, g, []⟩, some s) []) :: fs)
+  | some (f :: fs), .hole g s => some (f.push (holeForm ⟨f.pend.reverse, g, []⟩ s) :: fs)
   | some (f :: fs), .comment g s => some ({ f with pend := ⟨g, s⟩ :: f.pend } :: fs)
   | some (f :: e :: fs), .rp =>
     some (e.push (RoseTree.node (⟨f.lead, f.gap, f.pend.reverse⟩, none) f.items.reverse) :: fs)
-  | some [], .lp g => some [.start [] g]
-  | some [], .comment _ _ => some []
   | _, _ => none
 
-/-- The source document of a text, or nothing when its parentheses do not balance. -/
+/-- The source document of a text, or nothing when the text is not well formed or its
+parentheses do not balance. -/
 def readDoc (text : List Char) : Option Doc :=
-  match (lex text).foldl readStep (some [.start [] false]) with
-  | some [f] => some ⟨f.items.reverse, f.pend.reverse⟩
-  | _ => none
-
-/-- The stack of the kernel's reader a stack of frames erases to. -/
-def eraseStack : Option (List Frame) → Option (List (List SExp)) :=
-  Option.map (List.map fun f ↦ f.items.map RoseTree.erase)
-
-/-- A node erases to the node of its label over its children erased. -/
-theorem erase_node (l : Trivia × Option (List Char)) (cs : List SExpr) :
-    RoseTree.erase (RoseTree.node l cs) = RoseTree.node l.2 (cs.map RoseTree.erase) :=
-  RoseTree.map_node _ _ _
-
-/-- One token read by the reader and, erased, by the kernel's reader from corresponding stacks
-gives corresponding stacks. -/
-theorem eraseStack_readStep (st : Option (List Frame)) (t : Tok) :
-    eraseStack (readStep st t) =
-      match t.erase with
-      | none => eraseStack st
-      | some u => parseStep (eraseStack st) u := by
-  rcases st with _ | _ | ⟨f, _ | ⟨e, fs⟩⟩ <;> cases t <;>
-    simp [readStep, parseStep, eraseStack, Tok.erase, Frame.push, Frame.start, erase_node,
-      List.map_reverse]
-
-/-- Reading tokens, erased, by the kernel's reader from an erased stack gives the erasure of
-reading them from the stack. -/
-theorem foldl_readStep (toks : List Tok) :
-    ∀ st, eraseStack (toks.foldl readStep st) =
-      (toks.filterMap Tok.erase).foldl parseStep (eraseStack st) :=
-  List.rec (fun _ ↦ rfl) (fun t rest ih st ↦ by
-    rw [List.foldl_cons, ih, eraseStack_readStep]
-    cases h : t.erase <;> simp [h]) toks
-
-/-- The reader keeps what the kernel's reader reads: erasing the decorations of the
-S-expressions of a text gives the text's S-expressions. -/
-theorem readDoc_erase (text : List Char) :
-    (readDoc text).map (·.items.map RoseTree.erase) = readSExps text := by
-  have h := foldl_readStep (lex text) (some [.start [] false])
-  rw [readSExps, tokenize_eq,
-    show (some [[]] : Option (List (List SExp))) = eraseStack (some [.start [] false]) from rfl,
-    ← h, readDoc]
-  rcases (lex text).foldl readStep (some [.start [] false]) with _ | _ | ⟨f, _ | ⟨_, _⟩⟩ <;>
-    simp [eraseStack, List.map_reverse]
+  (lex text).bind fun toks ↦
+    match toks.foldl readStep (some [.start [] false]) with
+    | some [f] => some ⟨f.items.reverse, f.pend.reverse⟩
+    | _ => none
 
 /-! ## The printer -/
 
@@ -329,13 +454,9 @@ def Sep.render : Sep → List Char
 def Tok.render : Tok → List Char
   | .lp _ => ['(']
   | .rp => [')']
-  | .atom _ s => s
+  | .atom _ s => spell s
   | .comment _ s => ';' :: s
-
-/-- Whether a token is a closing parenthesis. -/
-def Tok.isRp : Tok → Bool
-  | .rp => true
-  | _ => false
+  | .hole _ s => '?' :: s
 
 /-- The separator before a token, given the token before it, if any, and a layout's choice of
 whether to break the line there and of the indentation of the new line: an empty line where the
@@ -358,26 +479,6 @@ def arrangeFrom (L : ℕ → Bool × ℕ) (toks : List Tok) : Option Tok → ℕ
 def render (ps : List (Sep × Tok)) : List Char :=
   ps.flatMap fun p ↦ p.1.render ++ p.2.render
 
-/-- The token of a comment line. -/
-def Line.tok (l : Line) : Tok := .comment l.gap l.text
-
-/-- The tokens of an S-expression: the comment lines before it, then an atom, or a list's
-parentheses around the tokens of its elements and the comment lines before its end. -/
-def tokensOf : SExpr → List Tok :=
-  RoseTree.elim fun l rs ↦
-    l.1.lead.map Line.tok ++
-      match l.2 with
-      | some s => [.atom l.1.gap s]
-      | none => .lp l.1.gap :: rs.flatten ++ l.1.close.map Line.tok ++ [.rp]
-
-/-- The tokens of a document. -/
-def Doc.tokens (d : Doc) : List Tok := d.items.flatMap tokensOf ++ d.trail.map Line.tok
-
-/-- A document's characters, laid out by a layout, a choice at each position of the document's
-tokens; the text ends with a line break. -/
-def print (L : ℕ → Bool × ℕ) (d : Doc) : List Char :=
-  render (arrangeFrom L d.tokens none 0) ++ ['\n']
-
 /-! ## Lexing what the printer writes -/
 
 /-- The line breaks a separator writes. -/
@@ -387,110 +488,210 @@ def Sep.breaks : Sep → ℕ
   | .line _ => 1
   | .blank _ => 2
 
-/-- The token a token leaves pending, an atom or a comment, whose end the lexer has not yet
-read. -/
+/-- The token a token leaves pending, a bare atom, a comment or a hole, whose end the lexer has
+not yet read. -/
 def pendOf : Option Tok → Option Tok
-  | some (.atom g s) => some (.atom g s)
+  | some (.atom g s) => if isBare s then some (.atom g s) else none
   | some (.comment g s) => some (.comment g s)
+  | some (.hole g s) => some (.hole g s)
   | _ => none
 
 /-- The lexer's state after tokens, the latest first, and a pending token. -/
 def state (done : List Tok) : Option Tok → LexState
-  | some (.atom g s) => ⟨done, s.reverse, false, 0, g⟩
-  | some (.comment g s) => ⟨done, s.reverse, true, 0, g⟩
-  | _ => ⟨done, [], false, 0, false⟩
+  | some (.atom g s) => ⟨done, s.reverse, if isNumeral s then .numeral else .bare, 0, g, true⟩
+  | some (.comment g s) => ⟨done, s.reverse, .comment, 0, g, true⟩
+  | some (.hole g s) => ⟨done, s.reverse, .hole, 0, g, true⟩
+  | _ => .idle done 0
 
-/-- The tokens the lexer emits as soon as it reads a token: a parenthesis. -/
-def Tok.emitted (t : Tok) : List Tok := if t.isLp || t.isRp then [t] else []
+/-- The tokens the lexer emits as soon as it reads a token: a parenthesis, or an atom that is
+not bare. -/
+def Tok.emitted (t : Tok) : List Tok :=
+  match t with
+  | .lp _ => [t]
+  | .rp => [t]
+  | .atom _ s => if isBare s then [] else [t]
+  | _ => []
 
 /-- Spaces leave a state between tokens as it is. -/
-theorem foldl_spaces (d : List Tok) (n : ℕ) (k : ℕ) :
-    (List.replicate k ' ').foldl lexStep ⟨d, [], false, n, false⟩ = ⟨d, [], false, n, false⟩ :=
+theorem foldl_spaces (d : List Tok) (n k : ℕ) :
+    (List.replicate k ' ').foldl lexStep (.idle d n) = .idle d n :=
   Nat.rec rfl (fun k ih ↦ by
     rw [List.replicate_succ, List.foldl_cons]
-    exact (congrArg (fun s ↦ (List.replicate k ' ').foldl lexStep s)
-      (by simp [lexStep, endAtom])).trans ih) k
+    exact (congrArg (fun s ↦ (List.replicate k ' ').foldl lexStep s) rfl).trans ih) k
 
 /-- A line break between tokens is counted. -/
 theorem lexStep_newline (d : List Tok) (n : ℕ) :
-    lexStep ⟨d, [], false, n, false⟩ '\n' = ⟨d, [], false, n + 1, false⟩ :=
+    lexStep (.idle d n) '\n' = .idle d (n + 1) :=
   rfl
 
 /-- A separator read between tokens counts its line breaks. -/
 theorem foldl_sep (sep : Sep) (d : List Tok) :
-    sep.render.foldl lexStep ⟨d, [], false, 0, false⟩ = ⟨d, [], false, sep.breaks, false⟩ := by
+    sep.render.foldl lexStep (.idle d 0) = .idle d sep.breaks := by
   cases sep with
   | none => rfl
-  | space => simp [Sep.render, Sep.breaks, lexStep, endAtom]
+  | space => rfl
   | line k => simp only [Sep.render, List.foldl_cons, lexStep_newline, foldl_spaces, Sep.breaks]
   | blank k => simp only [Sep.render, List.foldl_cons, lexStep_newline, foldl_spaces, Sep.breaks]
 
-/-- The characters of an atom after its first extend the atom being read. -/
-theorem foldl_atomChars (cs : List Char) (hcs : cs.all isAtomChar) :
+/-- The hexadecimal digit of a number below sixteen has that value. -/
+theorem hexVal_hexDigit : ∀ n : Fin 16, hexVal (hexDigit n) = some n := by decide
+
+/-- A character that may begin a token is not a digit. -/
+theorem isDigit_of_isTokenStart {c : Char} (h : isTokenStart c) : isDigit c = false := by
+  simp only [isTokenStart, Bool.or_eq_true, Bool.and_eq_true, decide_eq_true_eq,
+    beq_iff_eq] at h
+  rcases h with ((((((((h | h) | rfl) | rfl) | rfl) | rfl) | rfl) | rfl) | rfl) | rfl
+  all_goals first
+    | rfl
+    | simp only [isDigit, Bool.and_eq_false_iff, decide_eq_false_iff_not]
+      exact Or.inr fun h' ↦ by omega
+
+/-- Whitespace lies at or below the space in code point. -/
+theorem toNat_le_of_isSpace {c : Char} (h : isSpace c) : c.toNat ≤ 32 := by
+  simp only [isSpace, Bool.or_eq_true, beq_iff_eq] at h
+  rcases h with (((((rfl | rfl) | rfl) | rfl) | h) | h) <;> first | decide | omega
+
+/-- A character that may begin a token lies above the space in code point. -/
+theorem lt_toNat_of_isTokenStart {c : Char} (h : isTokenStart c) : 32 < c.toNat := by
+  simp only [isTokenStart, Bool.or_eq_true, Bool.and_eq_true, decide_eq_true_eq,
+    beq_iff_eq] at h
+  rcases h with ((((((((h | h) | rfl) | rfl) | rfl) | rfl) | rfl) | rfl) | rfl) | rfl
+  all_goals first | decide | omega
+
+/-- Reading a digit between tokens begins a numeral. -/
+theorem idleStep_digit (d : List Tok) (n : ℕ) {c : Char} (hc : isDigit c) :
+    idleStep d n c = ⟨d, [c], .numeral, 0, decide (2 ≤ n), true⟩ := by
+  have hs : isSpace c = false := by
+    cases h : isSpace c
+    · rfl
+    · have := toNat_le_of_isSpace h
+      simp only [isDigit, Bool.and_eq_true, decide_eq_true_eq] at hc
+      exfalso
+      omega
+  unfold idleStep
+  split_ifs <;> simp_all (config := { decide := true })
+
+/-- Reading a character that may begin a token, between tokens, begins a bare atom. -/
+theorem idleStep_tokenStart (d : List Tok) (n : ℕ) {c : Char} (hc : isTokenStart c) :
+    idleStep d n c = ⟨d, [c], .bare, 0, decide (2 ≤ n), true⟩ := by
+  have hd := isDigit_of_isTokenStart hc
+  have hs : isSpace c = false := by
+    cases h : isSpace c
+    · rfl
+    · have := toNat_le_of_isSpace h
+      have := lt_toNat_of_isTokenStart hc
+      exfalso
+      omega
+  unfold idleStep
+  split_ifs <;> simp_all (config := { decide := true })
+
+/-- The characters of a token after its first extend the bare atom being read. -/
+theorem foldl_bareChars (cs : List Char) (hcs : cs.all isTokenChar) :
+    ∀ (d : List Tok) (b : List Char) (g : Bool),
+      cs.foldl lexStep ⟨d, b, .bare, 0, g, true⟩ = ⟨d, cs.reverse ++ b, .bare, 0, g, true⟩ :=
+  List.rec (motive := fun cs ↦ cs.all isTokenChar → ∀ (d : List Tok) (b : List Char) (g : Bool),
+      cs.foldl lexStep ⟨d, b, .bare, 0, g, true⟩ = ⟨d, cs.reverse ++ b, .bare, 0, g, true⟩)
+    (fun _ _ _ _ ↦ rfl)
+    (fun c cs ih hall d b g ↦ by
+      simp only [List.all_cons, Bool.and_eq_true] at hall
+      rw [List.foldl_cons, show lexStep ⟨d, b, .bare, 0, g, true⟩ c =
+        ⟨d, c :: b, .bare, 0, g, true⟩ by simp [lexStep, hall.1], ih hall.2]
+      simp) cs hcs
+
+/-- The digits of a numeral after its first extend the numeral being read. -/
+theorem foldl_numChars (cs : List Char) (hcs : cs.all isDigit) :
+    ∀ (d : List Tok) (b : List Char) (g : Bool),
+      cs.foldl lexStep ⟨d, b, .numeral, 0, g, true⟩ = ⟨d, cs.reverse ++ b, .numeral, 0, g, true⟩ :=
+  List.rec (motive := fun cs ↦ cs.all isDigit → ∀ (d : List Tok) (b : List Char) (g : Bool),
+      cs.foldl lexStep ⟨d, b, .numeral, 0, g, true⟩ = ⟨d, cs.reverse ++ b, .numeral, 0, g, true⟩)
+    (fun _ _ _ _ ↦ rfl)
+    (fun c cs ih hall d b g ↦ by
+      simp only [List.all_cons, Bool.and_eq_true] at hall
+      rw [List.foldl_cons, show lexStep ⟨d, b, .numeral, 0, g, true⟩ c =
+        ⟨d, c :: b, .numeral, 0, g, true⟩ by simp [lexStep, hall.1], ih hall.2]
+      simp) cs hcs
+
+/-- The characters of a hole's name after its first extend the name being read. -/
+theorem foldl_holeChars (cs : List Char) (hcs : cs.all isTokenChar) :
     ∀ (d : List Tok) (b : List Char) (g : Bool), b ≠ [] →
-      cs.foldl lexStep ⟨d, b, false, 0, g⟩ = ⟨d, cs.reverse ++ b, false, 0, g⟩ :=
-  List.rec (motive := fun cs ↦ cs.all isAtomChar → ∀ (d : List Tok) (b : List Char) (g : Bool),
-      b ≠ [] → cs.foldl lexStep ⟨d, b, false, 0, g⟩ = ⟨d, cs.reverse ++ b, false, 0, g⟩)
+      cs.foldl lexStep ⟨d, b, .hole, 0, g, true⟩ = ⟨d, cs.reverse ++ b, .hole, 0, g, true⟩ :=
+  List.rec (motive := fun cs ↦ cs.all isTokenChar → ∀ (d : List Tok) (b : List Char) (g : Bool),
+      b ≠ [] → cs.foldl lexStep ⟨d, b, .hole, 0, g, true⟩ = ⟨d, cs.reverse ++ b, .hole, 0, g, true⟩)
     (fun _ _ _ _ _ ↦ rfl)
     (fun c cs ih hall d b g hb ↦ by
       simp only [List.all_cons, Bool.and_eq_true] at hall
-      obtain ⟨hc, hall⟩ := hall
-      simp only [isAtomChar, Bool.not_eq_true', Bool.or_eq_false_iff, beq_eq_false_iff_ne] at hc
-      obtain ⟨⟨⟨h1, h2⟩, h3⟩, h4⟩ := hc
-      have hstep : lexStep ⟨d, b, false, 0, g⟩ c = ⟨d, c :: b, false, 0, g⟩ := by
-        cases b with
-        | nil => exact absurd rfl hb
-        | cons x xs => simp [lexStep, h1, h2, h3, h4]
-      rw [List.foldl_cons, hstep, ih hall d (c :: b) g (List.cons_ne_nil c b)]
+      have he : b.isEmpty = false := List.isEmpty_eq_false_iff.mpr hb
+      rw [List.foldl_cons, show lexStep ⟨d, b, .hole, 0, g, true⟩ c =
+        ⟨d, c :: b, .hole, 0, g, true⟩ by simp [lexStep, hall.1, he],
+        ih hall.2 d (c :: b) g (List.cons_ne_nil c b)]
       simp) cs hcs
 
 /-- The characters of a comment extend the comment being read. -/
 theorem foldl_commentChars (cs : List Char) (hcs : cs.all (· != '\n')) :
     ∀ (d : List Tok) (b : List Char) (g : Bool),
-      cs.foldl lexStep ⟨d, b, true, 0, g⟩ = ⟨d, cs.reverse ++ b, true, 0, g⟩ :=
+      cs.foldl lexStep ⟨d, b, .comment, 0, g, true⟩ = ⟨d, cs.reverse ++ b, .comment, 0, g, true⟩ :=
   List.rec (motive := fun cs ↦ cs.all (· != '\n') → ∀ (d : List Tok) (b : List Char) (g : Bool),
-      cs.foldl lexStep ⟨d, b, true, 0, g⟩ = ⟨d, cs.reverse ++ b, true, 0, g⟩)
+      cs.foldl lexStep ⟨d, b, .comment, 0, g, true⟩ = ⟨d, cs.reverse ++ b, .comment, 0, g, true⟩)
     (fun _ _ _ _ ↦ rfl)
     (fun c cs ih hall d b g ↦ by
       simp only [List.all_cons, Bool.and_eq_true, bne_iff_ne, ne_eq] at hall
-      obtain ⟨hc, hall⟩ := hall
-      have hstep : lexStep ⟨d, b, true, 0, g⟩ c = ⟨d, c :: b, true, 0, g⟩ := by
-        simp [lexStep, hc]
-      rw [List.foldl_cons, hstep, ih (by simpa using hall) d (c :: b) g]
+      rw [List.foldl_cons, show lexStep ⟨d, b, .comment, 0, g, true⟩ c =
+        ⟨d, c :: b, .comment, 0, g, true⟩ by simp [lexStep, hall.1],
+        ih (by simpa using hall.2) d (c :: b) g]
       simp) cs hcs
 
-/-- A token read between tokens, after a separator of as many line breaks as the token's record
-of an empty line requires, is emitted, or left pending when it is an atom or a comment. -/
-theorem foldl_tok (t : Tok) (d : List Tok) (n : ℕ) (ht : t.wf) (hg : t.gap = decide (2 ≤ n)) :
-    t.render.foldl lexStep ⟨d, [], false, n, false⟩ = state (t.emitted ++ d) (pendOf (some t)) := by
-  cases t with
-  | lp g =>
-    subst hg
-    rfl
-  | rp => rfl
-  | atom g s =>
-    simp only [Tok.wf, Bool.and_eq_true, Bool.not_eq_true', List.isEmpty_eq_false_iff] at ht
-    obtain ⟨hne, hall⟩ := ht
-    obtain ⟨c, cs, rfl⟩ := List.exists_cons_of_ne_nil hne
-    simp only [List.all_cons, Bool.and_eq_true] at hall
-    obtain ⟨hc, hall⟩ := hall
-    simp only [isAtomChar, Bool.not_eq_true', Bool.or_eq_false_iff, beq_eq_false_iff_ne] at hc
-    obtain ⟨⟨⟨h1, h2⟩, h3⟩, h4⟩ := hc
-    simp only [Tok.gap] at hg
-    have hstep : lexStep ⟨d, [], false, n, false⟩ c = ⟨d, [c], false, 0, g⟩ := by
-      simp [lexStep, h1, h2, h3, h4, ← hg]
-    simp only [Tok.render, List.foldl_cons, hstep,
-      foldl_atomChars cs hall d [c] g (List.cons_ne_nil c []), state, pendOf, Tok.emitted,
-      Tok.isLp, Tok.isRp, Bool.or_false, Bool.false_eq_true, ↓reduceIte, List.nil_append,
-      List.reverse_cons]
-  | comment g s =>
-    simp only [Tok.gap] at hg
-    have hstep : lexStep ⟨d, [], false, n, false⟩ ';' = ⟨d, [], true, 0, g⟩ := by
-      subst hg
+/-- The second digit of a hexadecimal escape ends it, extending the string being read by the
+character the two digits give. -/
+theorem lexStep_hex_last {d : List Tok} {b : List Char} {g : Bool} {v k : ℕ} {ch : Char}
+    (h : hexVal ch = some k) :
+    lexStep ⟨d, b, .hex 1 v, 0, g, true⟩ ch =
+      ⟨d, Char.ofNat (16 * v + k) :: b, .str, 0, g, true⟩ := by
+  unfold lexStep
+  rw [h]
+  rfl
+
+/-- A character of a quoted string, as the printer writes it, extends the string being read. -/
+theorem foldl_escape (c : Char) (d : List Tok) (b : List Char) (g : Bool) :
+    (escape c).foldl lexStep ⟨d, b, .str, 0, g, true⟩ = ⟨d, c :: b, .str, 0, g, true⟩ := by
+  unfold escape
+  split_ifs with hp hq
+  · have h1 : c ≠ '"' := by rintro rfl; exact absurd hp (by decide)
+    have h2 : c ≠ '\\' := by rintro rfl; exact absurd hp (by decide)
+    simp only [List.foldl_cons, List.foldl_nil, lexStep, Bool.not_true, Bool.false_eq_true,
+      ↓reduceIte, strStep, beq_iff_eq, h1, h2, hp, Bool.true_or]
+  · simp only [Bool.or_eq_true, beq_iff_eq] at hq
+    rcases hq with rfl | rfl <;> rfl
+  · have hlt : c.toNat < 128 := by
+      simp only [isPlain, Bool.or_eq_true, decide_eq_true_eq, not_or] at hp
+      exact Nat.lt_of_not_le hp.2
+    have hx : hexVal (hexDigit (c.toNat / 16)) = some (c.toNat / 16) :=
+      hexVal_hexDigit ⟨c.toNat / 16,
+        (Nat.div_lt_iff_lt_mul (by decide)).mpr (Nat.lt_trans hlt (by decide))⟩
+    have hy : hexVal (hexDigit (c.toNat % 16)) = some (c.toNat % 16) :=
+      hexVal_hexDigit ⟨c.toNat % 16, Nat.mod_lt _ (by decide)⟩
+    have e1 : lexStep ⟨d, b, .str, 0, g, true⟩ '\\' = ⟨d, b, .esc, 0, g, true⟩ := rfl
+    have e2 : lexStep ⟨d, b, .esc, 0, g, true⟩ 'x' = ⟨d, b, .hex 0 0, 0, g, true⟩ := rfl
+    have e3 : lexStep ⟨d, b, .hex 0 0, 0, g, true⟩ (hexDigit (c.toNat / 16)) =
+        ⟨d, b, .hex 1 (c.toNat / 16), 0, g, true⟩ := by
+      simp only [lexStep, hx, Bool.not_true, Bool.false_eq_true, ↓reduceIte]
       rfl
-    simp only [Tok.render, List.foldl_cons, hstep, foldl_commentChars s ht d [] g, state, pendOf,
-      Tok.emitted, Tok.isLp, Tok.isRp, Bool.or_false, Bool.false_eq_true, ↓reduceIte,
-      List.nil_append, List.append_nil]
+    have e4 : lexStep ⟨d, b, .hex 1 (c.toNat / 16), 0, g, true⟩ (hexDigit (c.toNat % 16)) =
+        ⟨d, c :: b, .str, 0, g, true⟩ := by
+      rw [lexStep_hex_last hy, Nat.div_add_mod, Char.ofNat_toNat]
+    simp only [List.foldl_cons, List.foldl_nil, e1, e2, e3, e4]
+
+/-- The characters of a quoted string, as the printer writes them, extend the string being
+read. -/
+theorem foldl_escapes (cs : List Char) :
+    ∀ (d : List Tok) (b : List Char) (g : Bool),
+      (cs.flatMap escape).foldl lexStep ⟨d, b, .str, 0, g, true⟩ =
+        ⟨d, cs.reverse ++ b, .str, 0, g, true⟩ :=
+  List.rec (fun _ _ _ ↦ rfl) (fun c cs ih d b g ↦ by
+    rw [List.flatMap_cons, List.foldl_append, foldl_escape, ih]
+    simp) cs
+
+/-- A line break between tokens is counted. -/
+theorem idleStep_newline (d : List Tok) (n : ℕ) : idleStep d n '\n' = .idle d (n + 1) := rfl
 
 /-- The separator {name}`sepFor` chooses writes an empty line exactly when the token records
 one. -/
@@ -499,122 +700,229 @@ theorem gap_sepFor (prev : Option Tok) (t : Tok) (b : Bool) (k : ℕ) :
   unfold sepFor
   split_ifs with h1 h2 h3 <;> simp_all [Sep.breaks]
 
-/-- After an atom, {name}`sepFor` writes nothing only before a closing parenthesis. -/
-theorem sepFor_atom_none {g : Bool} {a : List Char} {t : Tok} {b : Bool} {k : ℕ}
-    (h : sepFor (some (.atom g a)) t b k = .none) : t = .rp := by
-  unfold sepFor at h
-  cases t <;> split_ifs at h <;> simp_all [Tok.isRp, Tok.isLp, Tok.isComment]
+/-- A token read between tokens, after a separator of as many line breaks as the token's record
+of an empty line requires, is emitted, or left pending when it is a bare atom, a comment or a
+hole. -/
+theorem foldl_tok (t : Tok) (d : List Tok) (n : ℕ) (ht : t.wf) (hg : t.gap = decide (2 ≤ n)) :
+    t.render.foldl lexStep (.idle d n) = state (t.emitted ++ d) (pendOf (some t)) := by
+  cases t with
+  | lp g =>
+    simp only [Tok.gap] at hg
+    subst hg
+    rfl
+  | rp => rfl
+  | comment g s =>
+    simp only [Tok.gap] at hg
+    simp only [Tok.wf] at ht
+    subst hg
+    simp only [Tok.render, List.foldl_cons]
+    rw [show lexStep (.idle d n) ';' = ⟨d, [], .comment, 0, decide (2 ≤ n), true⟩ from rfl,
+      foldl_commentChars s ht]
+    simp [state, pendOf, Tok.emitted]
+  | hole g s =>
+    simp only [Tok.gap] at hg
+    simp only [Tok.wf] at ht
+    subst hg
+    cases s with
+    | nil => simp [isToken] at ht
+    | cons c cs =>
+      simp only [isToken, Bool.and_eq_true] at ht
+      have hc : lexStep ⟨d, [], .hole, 0, decide (2 ≤ n), true⟩ c =
+          ⟨d, [c], .hole, 0, decide (2 ≤ n), true⟩ := by
+        simp [lexStep, isDigit_of_isTokenStart ht.1, isTokenChar, ht.1]
+      simp only [Tok.render, List.foldl_cons]
+      rw [show lexStep (.idle d n) '?' = ⟨d, [], .hole, 0, decide (2 ≤ n), true⟩ from rfl, hc,
+        foldl_holeChars cs ht.2 d [c] _ (List.cons_ne_nil c [])]
+      simp [state, pendOf, Tok.emitted]
+  | atom g s =>
+    simp only [Tok.gap] at hg
+    subst hg
+    by_cases hb : isBare s = true
+    · have hsp : spell s = s := by simp [spell, hb]
+      have hb' := hb
+      simp only [isBare, Bool.or_eq_true] at hb'
+      cases s with
+      | nil => simp [isNumeral, isToken] at hb'
+      | cons c cs =>
+        rcases hb' with hn | htk
+        · simp only [isNumeral, List.isEmpty_cons, Bool.not_false, List.all_cons, Bool.true_and,
+            Bool.and_eq_true] at hn
+          rw [Tok.render, hsp, List.foldl_cons,
+            show lexStep (.idle d n) c = idleStep d n c from rfl, idleStep_digit d n hn.1,
+            foldl_numChars cs hn.2]
+          simp [state, pendOf, Tok.emitted, hb, isNumeral, hn.1, hn.2]
+        · simp only [isToken, Bool.and_eq_true] at htk
+          have hnn : isNumeral (c :: cs) = false := by
+            simp [isNumeral, isDigit_of_isTokenStart htk.1]
+          rw [Tok.render, hsp, List.foldl_cons,
+            show lexStep (.idle d n) c = idleStep d n c from rfl, idleStep_tokenStart d n htk.1,
+            foldl_bareChars cs htk.2]
+          simp [state, pendOf, Tok.emitted, hb, hnn]
+    · simp only [Bool.not_eq_true] at hb
+      by_cases ha : s = ['&']
+      · subst ha
+        rfl
+      · have ha' : (s == ['&']) = false := beq_eq_false_iff_ne.mpr ha
+        have hsp : spell s = '"' :: (s.flatMap escape ++ ['"']) := by
+          unfold spell
+          rw [hb, ha']
+          rfl
+        rw [Tok.render, hsp, List.foldl_cons,
+          show lexStep (.idle d n) '"' = ⟨d, [], .str, 0, decide (2 ≤ n), true⟩ from rfl,
+          List.foldl_append, foldl_escapes, List.append_nil]
+        change LexState.idle (.atom _ s.reverse.reverse :: d) 0 = _
+        simp only [List.reverse_reverse, Tok.emitted, pendOf, hb, Bool.false_eq_true, ↓reduceIte,
+          List.singleton_append]
+        rfl
 
-/-- After a comment, {name}`sepFor` writes a line break. -/
-theorem sepFor_comment (g : Bool) (c : List Char) (t : Tok) (b : Bool) (k : ℕ) :
-    sepFor (some (.comment g c)) t b k = .line k ∨
-      sepFor (some (.comment g c)) t b k = .blank k := by
-  unfold sepFor
-  split_ifs <;> simp_all [Tok.isComment]
+/-- The token a token leaves pending is the token itself. -/
+theorem eq_of_pendOf {prev : Option Tok} {p : Tok} (h : pendOf prev = some p) :
+    prev = some p := by
+  rcases prev with _ | ⟨_ | _ | ⟨g, s⟩ | ⟨g, s⟩ | ⟨g, s⟩⟩ <;>
+    simp only [pendOf, reduceCtorEq, Option.some.injEq, Option.ite_none_right_eq_some] at h
+  all_goals first | exact congrArg some h | exact congrArg some h.2
 
-/-- A space after an atom emits it. -/
-theorem lexStep_atom_space (d : List Tok) (a : List Char) (g : Bool) (ha : a ≠ []) :
-    lexStep ⟨d, a.reverse, false, 0, g⟩ ' ' = ⟨.atom g a :: d, [], false, 0, false⟩ := by
-  obtain ⟨x, xs, h⟩ := List.exists_cons_of_ne_nil (List.reverse_ne_nil_iff.mpr ha)
-  rw [h, ← List.reverse_reverse a, h]
+/-- A character that cannot continue a token ends the bare atom being read. -/
+theorem lexStep_bare_end {d : List Tok} {b : List Char} {g : Bool} {ch : Char}
+    (h : isTokenChar ch = false) :
+    lexStep ⟨d, b, .bare, 0, g, true⟩ ch = idleStep (.atom g b.reverse :: d) 0 ch := by
+  change (if isTokenChar ch then (⟨d, ch :: b, .bare, 0, g, true⟩ : LexState)
+    else idleStep (.atom g b.reverse :: d) 0 ch) = _
+  rw [h]
   rfl
 
-/-- A line break after an atom emits it and is counted. -/
-theorem lexStep_atom_newline (d : List Tok) (a : List Char) (g : Bool) (ha : a ≠ []) :
-    lexStep ⟨d, a.reverse, false, 0, g⟩ '\n' = ⟨.atom g a :: d, [], false, 1, false⟩ := by
-  obtain ⟨x, xs, h⟩ := List.exists_cons_of_ne_nil (List.reverse_ne_nil_iff.mpr ha)
-  rw [h, ← List.reverse_reverse a, h]
+/-- A character that is neither a digit nor begins a length ends the numeral being read. -/
+theorem lexStep_numeral_end {d : List Tok} {b : List Char} {g : Bool} {ch : Char}
+    (h₁ : isDigit ch = false)
+    (h₂ : (isTokenChar ch || ch == '"' || ch == '#' || ch == '|') = false) :
+    lexStep ⟨d, b, .numeral, 0, g, true⟩ ch = idleStep (.atom g b.reverse :: d) 0 ch := by
+  change (if isDigit ch then (⟨d, ch :: b, .numeral, 0, g, true⟩ : LexState)
+    else if isTokenChar ch || ch == '"' || ch == '#' || ch == '|' then .fail
+    else idleStep (.atom g b.reverse :: d) 0 ch) = _
+  rw [h₁, h₂]
   rfl
 
-/-- A closing parenthesis after an atom emits the atom and the parenthesis. -/
-theorem lexStep_atom_rp (d : List Tok) (a : List Char) (g : Bool) (ha : a ≠ []) :
-    lexStep ⟨d, a.reverse, false, 0, g⟩ ')' = ⟨.rp :: .atom g a :: d, [], false, 0, false⟩ := by
-  obtain ⟨x, xs, h⟩ := List.exists_cons_of_ne_nil (List.reverse_ne_nil_iff.mpr ha)
-  rw [h, ← List.reverse_reverse a, h]
+/-- A character that cannot continue a token ends the name of the hole being read. -/
+theorem lexStep_hole_end {d : List Tok} {b : List Char} {g : Bool} {ch : Char}
+    (hb : b.isEmpty = false) (h : isTokenChar ch = false) :
+    lexStep ⟨d, b, .hole, 0, g, true⟩ ch = idleStep (.hole g b.reverse :: d) 0 ch := by
+  change (if isTokenChar ch && !(b.isEmpty && isDigit ch) then
+      (⟨d, ch :: b, .hole, 0, g, true⟩ : LexState)
+    else if b.isEmpty then .fail
+    else idleStep (.hole g b.reverse :: d) 0 ch) = _
+  rw [h, hb]
   rfl
 
-/-- A line break ends a comment and emits it. -/
-theorem lexStep_comment_newline (d : List Tok) (c : List Char) (g : Bool) :
-    lexStep ⟨d, c.reverse, true, 0, g⟩ '\n' = ⟨.comment g c :: d, [], false, 1, false⟩ := by
-  rw [← List.reverse_reverse c, List.reverse_reverse c.reverse]
-  rfl
+/-- A space, a line break or a closing parenthesis ends a pending bare atom or hole, and a line
+break a pending comment, as if read between tokens after it. -/
+theorem lexStep_pend {prev : Option Tok} {p : Tok} (hp : pendOf prev = some p)
+    (hw : prev.all Tok.wf) (d : List Tok) (ch : Char) (hch : ch = ' ' ∨ ch = '\n' ∨ ch = ')')
+    (hc : p.isComment → ch = '\n') :
+    lexStep (state d (some p)) ch = idleStep (p :: d) 0 ch := by
+  have h₁ : isDigit ch = false := by rcases hch with rfl | rfl | rfl <;> rfl
+  have h₂ : isTokenChar ch = false := by rcases hch with rfl | rfl | rfl <;> rfl
+  have h₃ : (isTokenChar ch || ch == '"' || ch == '#' || ch == '|') = false := by
+    rcases hch with rfl | rfl | rfl <;> rfl
+  rcases prev with _ | ⟨_ | _ | ⟨g, s⟩ | ⟨g, s⟩ | ⟨g, s⟩⟩ <;>
+    simp only [pendOf, reduceCtorEq, Option.some.injEq, Option.ite_none_right_eq_some] at hp
+  · obtain ⟨-, rfl⟩ := hp
+    change lexStep ⟨d, s.reverse, if isNumeral s then .numeral else .bare, 0, g, true⟩ ch = _
+    cases hn : isNumeral s
+    · exact (lexStep_bare_end h₂).trans (by rw [List.reverse_reverse])
+    · exact (lexStep_numeral_end h₁ h₃).trans (by rw [List.reverse_reverse])
+  · subst hp
+    obtain rfl := hc rfl
+    change LexState.idle (.comment g s.reverse.reverse :: d) 1 = _
+    rw [List.reverse_reverse, idleStep_newline]
+  · subst hp
+    have hne : s.reverse.isEmpty = false := by
+      cases s with
+      | nil => exact absurd hw (by simp [Tok.wf, isToken])
+      | cons c cs => exact List.isEmpty_eq_false_iff.mpr (by simp)
+    change lexStep ⟨d, s.reverse, .hole, 0, g, true⟩ ch = _
+    rw [lexStep_hole_end hne h₂, List.reverse_reverse]
 
-/-- A token read after the separator {name}`sepFor` chooses, from the state its predecessor left,
-emits the predecessor if it was pending and leaves the lexer in the state after the token. -/
+/-- After a pending token, {name}`sepFor` writes nothing only before a closing parenthesis, and
+after a comment it writes a line break. -/
+theorem sepFor_pend {prev : Option Tok} {p : Tok} (hp : pendOf prev = some p) (t : Tok) (b : Bool)
+    (k : ℕ) :
+    (sepFor prev t b k = .none → t = .rp) ∧
+      (p.isComment → sepFor prev t b k = .line k ∨ sepFor prev t b k = .blank k) := by
+  obtain rfl := eq_of_pendOf hp
+  constructor
+  · intro h
+    unfold sepFor at h
+    rcases p with _ | _ | ⟨g, s⟩ | ⟨g, s⟩ | ⟨g, s⟩ <;> simp [pendOf] at hp <;>
+      cases t <;> split_ifs at h <;> simp_all [Tok.isRp, Tok.isLp, Tok.isComment]
+  · intro hc
+    unfold sepFor
+    split_ifs <;> simp_all [Tok.isComment, Option.any]
+
+/-- A token read after the separator {name}`sepFor` chooses, from the state its predecessor
+left, emits the predecessor if it was pending and leaves the lexer in the state after the
+token. -/
 theorem foldl_step (prev : Option Tok) (t : Tok) (b : Bool) (k : ℕ) (done : List Tok)
     (hp : prev.all Tok.wf) (ht : t.wf) :
     ((sepFor prev t b k).render ++ t.render).foldl lexStep (state done (pendOf prev)) =
       state (t.emitted ++ ((pendOf prev).toList ++ done)) (pendOf (some t)) := by
   have hg := gap_sepFor prev t b k
   rw [List.foldl_append]
-  rcases prev with _ | ⟨_ | _ | ⟨g, a⟩ | ⟨g, c⟩⟩
-  · simp only [pendOf, state, Option.toList_none, List.nil_append]
-    rw [foldl_sep]
-    exact foldl_tok t done _ ht hg
-  · simp only [pendOf, state, Option.toList_none, List.nil_append]
-    rw [foldl_sep]
-    exact foldl_tok t done _ ht hg
-  · simp only [pendOf, state, Option.toList_none, List.nil_append]
-    rw [foldl_sep]
-    exact foldl_tok t done _ ht hg
-  · have ha : a ≠ [] := by
-      simp only [Option.all_some, Tok.wf, Bool.and_eq_true, Bool.not_eq_true',
-        List.isEmpty_eq_false_iff] at hp
-      exact hp.1
-    simp only [pendOf, state, Option.toList_some, List.singleton_append]
-    cases hs : sepFor (some (.atom g a)) t b k with
+  cases hq : pendOf prev with
+  | none =>
+    rw [show state done none = .idle done 0 from rfl, foldl_sep]
+    simpa using foldl_tok t done _ ht hg
+  | some p =>
+    obtain ⟨hnone, hcom⟩ := sepFor_pend hq t b k
+    simp only [Option.toList_some, List.singleton_append]
+    cases hs : sepFor prev t b k with
     | none =>
-      obtain rfl := sepFor_atom_none hs
-      simp [Sep.render, Tok.render, lexStep_atom_rp _ _ _ ha, Tok.emitted, Tok.isRp]
+      obtain rfl := hnone hs
+      simp only [Sep.render, List.foldl_nil, Tok.render, List.foldl_cons]
+      rw [lexStep_pend hq hp done ')' (by simp) (fun h ↦ by simpa [hs] using hcom h)]
+      rfl
     | space =>
       rw [hs] at hg
-      simp only [Sep.render, List.foldl_cons, List.foldl_nil, lexStep_atom_space _ _ _ ha]
+      simp only [Sep.render, List.foldl_cons, List.foldl_nil]
+      rw [lexStep_pend hq hp done ' ' (by simp) (fun h ↦ by simpa [hs] using hcom h)]
       exact foldl_tok t _ 0 ht hg
     | line j =>
       rw [hs] at hg
-      simp only [Sep.render, List.foldl_cons, lexStep_atom_newline _ _ _ ha, foldl_spaces]
-      exact foldl_tok t _ 1 ht hg
+      simp only [Sep.render, List.foldl_cons]
+      rw [lexStep_pend hq hp done '\n' (by simp) (fun _ ↦ rfl)]
+      exact (congrArg (fun s ↦ t.render.foldl lexStep s) (foldl_spaces _ 1 j)).trans
+        (foldl_tok t _ 1 ht hg)
     | blank j =>
       rw [hs] at hg
-      simp only [Sep.render, List.foldl_cons, lexStep_atom_newline _ _ _ ha, lexStep_newline,
-        foldl_spaces]
-      exact foldl_tok t _ 2 ht hg
-  · simp only [pendOf, state, Option.toList_some, List.singleton_append]
-    rcases sepFor_comment g c t b k with hs | hs <;> rw [hs] at hg ⊢
-    · simp only [Sep.render, List.foldl_cons, lexStep_comment_newline, foldl_spaces]
-      exact foldl_tok t _ 1 ht hg
-    · simp only [Sep.render, List.foldl_cons, lexStep_comment_newline, lexStep_newline,
-        foldl_spaces]
-      exact foldl_tok t _ 2 ht hg
+      simp only [Sep.render, List.foldl_cons]
+      rw [lexStep_pend hq hp done '\n' (by simp) (fun _ ↦ rfl)]
+      exact (congrArg (fun s ↦ t.render.foldl lexStep s) (foldl_spaces _ 2 j)).trans
+        (foldl_tok t _ 2 ht hg)
+
+/-- A token is what it emits followed by what it leaves pending. -/
+theorem emitted_pendOf (t : Tok) : t.emitted ++ (pendOf (some t)).toList = [t] := by
+  cases t with
+  | atom g s => by_cases hb : isBare s <;> simp [Tok.emitted, pendOf, hb]
+  | _ => rfl
 
 /-- The lexer reads back the tokens a layout arranges, after those already emitted and the
 one pending, whatever the layout chooses. -/
 theorem lexEnd_arrangeFrom (L : ℕ → Bool × ℕ) (toks : List Tok) (htoks : toks.all Tok.wf) :
     ∀ (prev : Option Tok) (i : ℕ) (done : List Tok), prev.all Tok.wf →
       lexEnd ((render (arrangeFrom L toks prev i) ++ ['\n']).foldl lexStep
-        (state done (pendOf prev))) = done.reverse ++ (pendOf prev).toList ++ toks :=
+        (state done (pendOf prev))) = some (done.reverse ++ (pendOf prev).toList ++ toks) :=
   List.rec (motive := fun toks ↦ toks.all Tok.wf → ∀ (prev : Option Tok) (i : ℕ)
       (done : List Tok), prev.all Tok.wf →
       lexEnd ((render (arrangeFrom L toks prev i) ++ ['\n']).foldl lexStep
-        (state done (pendOf prev))) = done.reverse ++ (pendOf prev).toList ++ toks)
+        (state done (pendOf prev))) = some (done.reverse ++ (pendOf prev).toList ++ toks))
     (fun _ prev _ done hp ↦ by
       change lexEnd (lexStep (state done (pendOf prev)) '\n') = _
-      rcases prev with _ | ⟨_ | _ | ⟨g, a⟩ | ⟨g, c⟩⟩
-      · simp only [pendOf, state, lexStep_newline, Option.toList_none, List.append_nil]
-        rfl
-      · simp only [pendOf, state, lexStep_newline, Option.toList_none, List.append_nil]
-        rfl
-      · simp only [pendOf, state, lexStep_newline, Option.toList_none, List.append_nil]
-        rfl
-      · have ha : a ≠ [] := by
-          simp only [Option.all_some, Tok.wf, Bool.and_eq_true, Bool.not_eq_true',
-            List.isEmpty_eq_false_iff] at hp
-          exact hp.1
-        simp only [pendOf, state, lexStep_atom_newline _ _ _ ha, Option.toList_some,
-          List.append_nil]
-        exact List.reverse_cons ..
-      · simp only [pendOf, state, lexStep_comment_newline, Option.toList_some, List.append_nil]
-        exact List.reverse_cons ..)
+      cases hq : pendOf prev with
+      | none =>
+        rw [show state done none = .idle done 0 from rfl, lexStep_newline]
+        simp [LexState.idle, lexEnd]
+      | some p =>
+        rw [lexStep_pend hq hp done '\n' (by simp) (fun _ ↦ rfl), idleStep_newline]
+        simp [LexState.idle, lexEnd])
     (fun t rest ih hall prev i done hp ↦ by
       simp only [List.all_cons, Bool.and_eq_true] at hall
       have hstep := foldl_step prev t (L i).1 (L i).2 done hp hall.1
@@ -622,51 +930,109 @@ theorem lexEnd_arrangeFrom (L : ℕ → Bool × ℕ) (toks : List Tok) (htoks : 
           (sepFor prev t (L i).1 (L i).2, t) :: arrangeFrom L rest (some t) (i + 1) := rfl
       rw [harr, render, List.flatMap_cons, ← render, List.append_assoc, List.foldl_append,
         hstep, ih hall.2 (some t) (i + 1) _ (by simpa using hall.1)]
-      cases t <;> rcases hq : pendOf prev with _ | q <;>
-        simp [Tok.emitted, Tok.isLp, Tok.isRp, pendOf]) toks htoks
+      have he := emitted_pendOf t
+      congr 1
+      rcases hq : pendOf prev with _ | q <;> cases t <;>
+        simp_all [Tok.emitted, pendOf] <;> split_ifs <;> simp_all) toks htoks
 
 /-- The lexer reads back the tokens a layout arranges, whatever the layout. -/
 theorem lex_print (L : ℕ → Bool × ℕ) (toks : List Tok) (h : toks.all Tok.wf) :
-    lex (render (arrangeFrom L toks none 0) ++ ['\n']) = toks := by
+    lex (render (arrangeFrom L toks none 0) ++ ['\n']) = some toks := by
   have h' := lexEnd_arrangeFrom L _ h none 0 [] rfl
   simp only [pendOf, Option.toList_none, List.reverse_nil, List.nil_append] at h'
   exact h'
+
+/-- The name of a hole whose form a node is, when the printer writes it {lit}`?name`: a list
+without closing comment lines of the keyword and a token, each an atom without trivia. -/
+def holeName? (l : Trivia × Option (List Char)) (cs : List SExpr) : Option (List Char) :=
+  match l.2, l.1.close, cs with
+  | none, [], [a, b] =>
+    match a.label, b.label with
+    | (ta, some h), (tb, some n) =>
+      if ta == .none && h == kwHole && a.children.isEmpty && tb == .none && b.children.isEmpty &&
+          isToken n then some n
+      else none
+    | _, _ => none
+  | _, _, _ => none
+
+/-- The token of a comment line. -/
+def Line.tok (l : Line) : Tok := .comment l.gap l.text
+
+/-- The tokens of an S-expression: the comment lines before it, then a hole, an atom, or a
+list's parentheses around the tokens of its elements and the comment lines before its end. -/
+def tokensOf : SExpr → List Tok :=
+  RoseTree.para fun l rs ↦
+    l.1.lead.map Line.tok ++
+      match holeName? l (rs.map Prod.fst) with
+      | some n => [.hole l.1.gap n]
+      | none =>
+        match l.2 with
+        | some s => [.atom l.1.gap s]
+        | none => .lp l.1.gap :: (rs.map Prod.snd).flatten ++ l.1.close.map Line.tok ++ [.rp]
+
+/-- The tokens of a document. -/
+def Doc.tokens (d : Doc) : List Tok := d.items.flatMap tokensOf ++ d.trail.map Line.tok
+
+/-- A document's characters, laid out by a layout, a choice at each position of the document's
+tokens; the text ends with a line break. -/
+def print (L : ℕ → Bool × ℕ) (d : Doc) : List Char :=
+  render (arrangeFrom L d.tokens none 0) ++ ['\n']
 
 /-! ## Reading what the printer writes -/
 
 /-- Whether a comment line can be printed and read back: it contains no line break. -/
 def Line.wf (l : Line) : Bool := l.text.all (· != '\n')
 
-/-- Whether an S-expression can be printed and read back: its comment lines are well formed,
-and an atom is a non-empty word of atom characters without children or closing comment
-lines. -/
+/-- Whether an S-expression can be printed and read back: its comment lines are well formed, and
+an atom has no children and no closing comment lines. -/
 def wf : SExpr → Bool :=
   RoseTree.elim fun l rs ↦
     l.1.lead.all Line.wf &&
       match l.2 with
-      | some s => rs.isEmpty && l.1.close.isEmpty && (Tok.atom l.1.gap s).wf
+      | some _ => rs.isEmpty && l.1.close.isEmpty
       | none => l.1.close.all Line.wf && rs.all id
 
 /-- Whether a document can be printed and read back. -/
 def Doc.wf (d : Doc) : Bool := d.items.all Document.wf && d.trail.all Line.wf
 
-/-- The tokens of an atom. -/
-theorem tokensOf_atom (tr : Trivia) (s : List Char) (cs : List SExpr) :
-    tokensOf (RoseTree.node (tr, some s) cs) = tr.lead.map Line.tok ++ [.atom tr.gap s] := by
-  simp [tokensOf]
+/-- The tokens of a node. -/
+theorem tokensOf_node (l : Trivia × Option (List Char)) (cs : List SExpr) :
+    tokensOf (RoseTree.node l cs) =
+      l.1.lead.map Line.tok ++
+        match holeName? l cs with
+        | some n => [.hole l.1.gap n]
+        | none =>
+          match l.2 with
+          | some s => [.atom l.1.gap s]
+          | none => .lp l.1.gap :: cs.flatMap tokensOf ++ l.1.close.map Line.tok ++ [.rp] := by
+  simp [tokensOf, List.flatMap_def, Function.comp_def]
 
-/-- The tokens of a list: its comment lines before it, and its parentheses around the tokens of
-its elements and its comment lines before its end. -/
-theorem tokensOf_list (tr : Trivia) (cs : List SExpr) :
-    tokensOf (RoseTree.node (tr, none) cs) =
-      tr.lead.map Line.tok ++ (.lp tr.gap :: cs.flatMap tokensOf ++ tr.close.map Line.tok ++
-        [.rp]) := by
-  simp [tokensOf, List.flatMap_def]
+/-- A node whose hole name is given is the form of that hole. -/
+theorem eq_holeForm_of_holeName? {l : Trivia × Option (List Char)} {cs : List SExpr}
+    {n : List Char} (h : holeName? l cs = some n) :
+    RoseTree.node l cs = holeForm ⟨l.1.lead, l.1.gap, []⟩ n ∧ isToken n := by
+  unfold holeName? at h
+  split at h
+  · rename_i _ _ _ a b hk hc
+    split at h
+    · rename_i ta h' tb m ha hb
+      simp only [Bool.and_eq_true, beq_iff_eq, List.isEmpty_iff] at h
+      split_ifs at h with hcond
+      obtain ⟨⟨⟨⟨⟨rfl, rfl⟩, hca⟩, rfl⟩, hcb⟩, htok⟩ := hcond
+      cases h
+      obtain ⟨⟨lead, gap, close⟩, k⟩ := l
+      simp only at hk hc
+      subst hk hc
+      refine ⟨?_, htok⟩
+      rw [← RoseTree.node_label_children a, ← RoseTree.node_label_children b, ha, hb, hca, hcb]
+      rfl
+    · simp at h
+  · simp at h
 
 /-- A well-formed atom has no children and no closing comment lines. -/
 theorem wf_atom (tr : Trivia) (s : List Char) (cs : List SExpr) :
     wf (RoseTree.node (tr, some s) cs) =
-      (tr.lead.all Line.wf && (cs.isEmpty && tr.close.isEmpty && (Tok.atom tr.gap s).wf)) := by
+      (tr.lead.all Line.wf && (cs.isEmpty && tr.close.isEmpty)) := by
   simp [wf]
 
 /-- A list is well formed when its comment lines and its elements are. -/
@@ -675,9 +1041,6 @@ theorem wf_list (tr : Trivia) (cs : List SExpr) :
       (tr.lead.all Line.wf && (tr.close.all Line.wf && cs.all wf)) := by
   simp [wf, List.all_map]
 
-/-- The token of a well-formed comment line can be printed and read back. -/
-theorem wf_tok {l : Line} (h : l.wf) : l.tok.wf := h
-
 /-- The tokens of well-formed comment lines can be printed and read back. -/
 theorem all_wf_toks {ls : List Line} (h : ls.all Line.wf) : (ls.map Line.tok).all Tok.wf := by
   simpa [List.all_map, Function.comp_def, Line.tok, Tok.wf, Line.wf] using h
@@ -685,19 +1048,30 @@ theorem all_wf_toks {ls : List Line} (h : ls.all Line.wf) : (ls.map Line.tok).al
 /-- The tokens of a well-formed S-expression can be printed and read back. -/
 theorem all_wf_tokensOf : ∀ t : SExpr, wf t → (tokensOf t).all Tok.wf :=
   RoseTree.ind fun l cs ih h ↦ by
-    obtain ⟨tr, k⟩ := l
-    cases k with
-    | some s =>
-      rw [wf_atom] at h
-      simp only [Bool.and_eq_true] at h
-      simp [tokensOf_atom, all_wf_toks h.1, h.2.2]
+    rw [tokensOf_node]
+    cases hn : holeName? l cs with
+    | some n =>
+      have hl : l.1.lead.all Line.wf := by
+        obtain ⟨tr, _ | s⟩ := l
+        · rw [wf_list] at h
+          exact (Bool.and_eq_true _ _ ▸ h).1
+        · rw [wf_atom] at h
+          exact (Bool.and_eq_true _ _ ▸ h).1
+      simp [all_wf_toks hl, Tok.wf, (eq_holeForm_of_holeName? hn).2]
     | none =>
-      rw [wf_list] at h
-      simp only [Bool.and_eq_true] at h
-      simp only [tokensOf_list, List.all_append, List.all_cons, List.all_flatMap, Tok.wf,
-        all_wf_toks h.1, all_wf_toks h.2.1, Bool.true_and, List.all_nil, Bool.and_true,
-        List.all_eq_true]
-      exact fun c hc ↦ List.all_eq_true.mp (ih c hc (List.all_eq_true.mp h.2.2 c hc))
+      obtain ⟨tr, k⟩ := l
+      cases k with
+      | some s =>
+        rw [wf_atom] at h
+        simp only [Bool.and_eq_true] at h
+        simp [all_wf_toks h.1, Tok.wf]
+      | none =>
+        rw [wf_list] at h
+        simp only [Bool.and_eq_true] at h
+        simp only [List.all_append, List.all_cons, List.all_flatMap, Tok.wf,
+          all_wf_toks h.1, all_wf_toks h.2.1, Bool.true_and, List.all_nil, Bool.and_true,
+          List.all_eq_true]
+        exact fun c hc ↦ List.all_eq_true.mp (ih c hc (List.all_eq_true.mp h.2.2 c hc))
 
 /-- Reading comment lines' tokens onto a frame adds them to its pending lines. -/
 theorem foldl_readStep_lines (ls : List Line) :
@@ -738,24 +1112,28 @@ S-expression to it. -/
 theorem foldl_readStep_tokensOf : ∀ t : SExpr, wf t → ∀ (f : Frame) fs, f.pend = [] →
     (tokensOf t).foldl readStep (some (f :: fs)) = some (f.push t :: fs) :=
   RoseTree.ind fun l cs ih h f fs hf ↦ by
-    obtain ⟨tr, k⟩ := l
-    cases k with
-    | some s =>
-      rw [wf_atom] at h
-      simp only [Bool.and_eq_true, List.isEmpty_iff] at h
-      obtain ⟨-, ⟨rfl, hc⟩, -⟩ := h
-      obtain ⟨lead, gap, close⟩ := tr
-      simp only at hc
-      subst hc
-      rw [tokensOf_atom, List.foldl_append, foldl_readStep_lines]
+    rw [tokensOf_node, List.foldl_append, foldl_readStep_lines]
+    cases hn : holeName? l cs with
+    | some n =>
+      rw [(eq_holeForm_of_holeName? hn).1]
       simp [readStep, hf, Frame.push]
     | none =>
-      rw [wf_list] at h
-      simp only [Bool.and_eq_true, List.all_eq_true] at h
-      rw [tokensOf_list, List.foldl_append, foldl_readStep_lines]
-      simp only [List.foldl_cons, List.foldl_append, hf, List.append_nil, readStep]
-      rw [foldl_readStep_items cs ih h.2.2 _ _ rfl, foldl_readStep_lines]
-      simp [Frame.start, Frame.push]
+      obtain ⟨tr, k⟩ := l
+      cases k with
+      | some s =>
+        rw [wf_atom] at h
+        simp only [Bool.and_eq_true, List.isEmpty_iff] at h
+        obtain ⟨-, rfl, hc⟩ := h
+        obtain ⟨lead, gap, close⟩ := tr
+        simp only at hc
+        subst hc
+        simp [readStep, hf, Frame.push]
+      | none =>
+        rw [wf_list] at h
+        simp only [Bool.and_eq_true, List.all_eq_true] at h
+        simp only [List.foldl_cons, List.foldl_append, hf, List.append_nil, readStep]
+        rw [foldl_readStep_items cs ih h.2.2 _ _ rfl, foldl_readStep_lines]
+        simp [Frame.start, Frame.push]
 
 /-- The retraction law: reading a document printed at any layout gives the document back, when
 it is well formed. -/
@@ -767,7 +1145,8 @@ theorem readDoc_print (L : ℕ → Bool × ℕ) (d : Doc) (h : d.wf) :
     simp only [Doc.tokens, List.all_append, List.all_flatMap, all_wf_toks h.2, Bool.and_true,
       List.all_eq_true]
     exact fun c hc ↦ List.all_eq_true.mp (all_wf_tokensOf c (hw c hc))
-  rw [readDoc, print, lex_print L d.tokens htoks, Doc.tokens, List.foldl_append,
+  rw [readDoc, print, lex_print L d.tokens htoks, Option.bind_some, Doc.tokens,
+    List.foldl_append,
     foldl_readStep_items d.items (fun t _ ↦ foldl_readStep_tokensOf t) hw _ [] rfl,
     foldl_readStep_lines]
   simp [Frame.start]
@@ -838,37 +1217,42 @@ def planElem (lim ind n trail : ℕ) (fits : Bool) (s : PlanState) (e : Elem) : 
   let (out, endCol) := e.plan start after (s.out.push (brk, ind))
   ⟨endCol, s.broken || (brk && s.pos != 0) || e.gap, e.isComment, s.pos + 1, out⟩
 
-/-- An S-expression's comment lines before it and its element. A list that fits within the line
-width is written on one line; otherwise its elements after the first fill the first line while
-they fit, and the rest begin lines indented past the list's opening parenthesis, by two columns
-after an atom at its head and by one otherwise, so that no line is indented beyond a
+/-- An S-expression's comment lines before it and its element, from its children with their
+elements. A hole is one token; an atom is as wide as its spelling. A list that fits within the
+line width is written on one line; otherwise its elements after the first fill the first line
+while they fit, and the rest begin lines indented past the list's opening parenthesis, by two
+columns after an atom at its head and by one otherwise, so that no line is indented beyond a
 parenthesis closed at the end of the line before. A list holding a comment line, or an element
 after an empty line, is not written on one line. -/
-def planStep (lim : ℕ) (l : Trivia × Option (List Char)) (rs : List (List Line × Elem)) :
-    List Line × Elem :=
-  let es := elemsOf rs l.1.close
-  let w : Option ℕ := match l.2 with
-    | some s => some s.length
-    | none =>
-      if es.any (fun e : Elem ↦ e.gap) then none
-      else (es.mapM fun e : Elem ↦ e.width).map fun w ↦ w.sum + w.length - 1 + 2
-  (l.1.lead, ⟨l.1.gap, false, l.2.isSome, w, fun c trail acc ↦
-    match l.2 with
-    | some s => (acc, c + s.length)
-    | none =>
-      let fits := match w with
-        | some w => decide (c + w + trail ≤ lim)
-        | none => false
-      let ind := c + if (es.head?.map (·.isAtom)).getD false then 2 else 1
-      let s := es.foldl (planElem lim ind es.length trail fits) ⟨c + 1, false, false, 0, acc⟩
-      let rpCol := if s.afterComment then ind else s.col
-      (s.out.push (false, ind), rpCol + 1)⟩)
+def planStep (lim : ℕ) (l : Trivia × Option (List Char))
+    (rs : List (SExpr × (List Line × Elem))) : List Line × Elem :=
+  match holeName? l (rs.map Prod.fst) with
+  | some n => (l.1.lead, ⟨l.1.gap, false, false, some (n.length + 1),
+      fun c _ acc ↦ (acc, c + 1 + n.length)⟩)
+  | none =>
+    let es := elemsOf (rs.map Prod.snd) l.1.close
+    let w : Option ℕ := match l.2 with
+      | some s => some (spell s).length
+      | none =>
+        if es.any (fun e : Elem ↦ e.gap) then none
+        else (es.mapM fun e : Elem ↦ e.width).map fun w ↦ w.sum + w.length - 1 + 2
+    (l.1.lead, ⟨l.1.gap, false, l.2.isSome, w, fun c trail acc ↦
+      match l.2 with
+      | some s => (acc, c + (spell s).length)
+      | none =>
+        let fits := match w with
+          | some w => decide (c + w + trail ≤ lim)
+          | none => false
+        let ind := c + if (es.head?.map (·.isAtom)).getD false then 2 else 1
+        let s := es.foldl (planElem lim ind es.length trail fits) ⟨c + 1, false, false, 0, acc⟩
+        let rpCol := if s.afterComment then ind else s.col
+        (s.out.push (false, ind), rpCol + 1)⟩)
 
 /-- The layout of a document within a line width, as the choices at the positions of its
 tokens: each element after the first, an S-expression or a comment line, begins a line at the
 first column, and each is laid out by {name}`planStep`. -/
 def defaultLayout (lim : ℕ) (d : Doc) : Array (Bool × ℕ) :=
-  (elemsOf (d.items.map (RoseTree.elim (planStep lim))) d.trail).foldl
+  (elemsOf (d.items.map (RoseTree.para (planStep lim))) d.trail).foldl
     (fun (acc : Array (Bool × ℕ) × Bool) e ↦ ((e.plan 0 0 (acc.1.push (acc.2, 0))).1, true))
     (#[], false) |>.1
 
@@ -893,6 +1277,9 @@ theorem format_format (lim : ℕ) (text out : List Char) (h : format lim text = 
     simp only [format, printAt, readDoc_print _ d hw, Option.bind_some, hw, ↓reduceIte]
   · simp [hw] at hout
 
-end Geb.Kernel.Document
+
+end Document
+
+end Geb.Kernel
 
 end

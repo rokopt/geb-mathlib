@@ -9,13 +9,13 @@ import Geb.Prototypes.Kernel.Command
 import Geb.Prototypes.Kernel.Document
 
 /-!
-# The formatter of the kernel's readable syntax
+# The formatter of the authoring profile
 
 `lake exe geb-fmt FILE...` formats each file in place with
 `Geb.Kernel.Document.format` within 100 columns; `lake exe geb-fmt --check FILE...` changes
 nothing and names each file that formatting would change. A file is read as bytes, one
-character per byte, as the host driver reads sources, so its bytes outside the whitespace are
-kept.
+character per byte, as the host driver reads sources, so its atoms and comments keep their
+bytes; each atom is written in its spelling, `Geb.Kernel.Document.spell`.
 
 ## Main definitions
 
@@ -43,7 +43,7 @@ public def main (args : List String) : IO UInt32 := do
     let text := Geb.Kernel.Command.chars (← IO.FS.readBinFile f)
     match Geb.Kernel.Document.format 100 text with
     | none =>
-      IO.eprintln s!"geb-fmt: {f}: the parentheses do not balance"
+      IO.eprintln s!"geb-fmt: {f}: not well formed, or its parentheses do not balance"
       status := 1
     | some out =>
       if out != text then

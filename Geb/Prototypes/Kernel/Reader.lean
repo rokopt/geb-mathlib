@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Kernel.Basic
+public import Geb.Prototypes.Kernel.Document
 
 set_option doc.verso true in
 /-!
@@ -16,8 +17,11 @@ term referring to the definitions before it by name, of type abbreviations
 {lit}`(deftype name type)`, and of numeral abbreviations {lit}`(defnum name n)`, the
 abbreviations each in force after it. A numeral abbreviation names a label, as an
 assembler's symbolic constant does: the atoms of a definition's term that name one are read
-as its numeral, wherever they occur. Reading has two stages: a text is read
-as S-expressions, a rose tree whose leaves carry atoms and whose other nodes are lists; each
+as its numeral, wherever they occur. A declaration's name is neither a keyword, a primitive's
+name nor a type's, nor the name of an earlier declaration of any kind. Reading has two stages:
+a text in the authoring profile is read as S-expressions
+({name}`Geb.Kernel.Document.readDoc`),
+rose trees whose leaves carry atoms and whose other nodes are lists; each
 S-expression is then resolved into a kernel term, variable names becoming de Bruijn indices,
 definition names references, and keywords the kernel's constructors. Loading type-checks
 and evaluates the definitions in order, each in the global environment of those before it.
@@ -33,7 +37,8 @@ The forms of a term:
   {lit}`e`;
   {lit}`(pair a b)`, {lit}`(fst p)`, {lit}`(snd p)`, {lit}`(if c a b)` and
   {lit}`(quote d)` are the corresponding constructors, a datum being a numeral or a list
-  {lit}`(n d₁ … dₖ)` of a label and children;
+  {lit}`(n d₁ … dₖ)` of a label and children, in which an atom that is not a numeral stands
+  for the leaves of its characters' codes;
 * {lit}`(nil A)` is the empty list of elements of type {lit}`A` and {lit}`(cons x xs)` the
   list of a head and a tail;
 * {lit}`(fold A x₁ … xₖ)`, {lit}`(iter A x₁ … xₖ)`, {lit}`(foldr A B x₁ … xₖ)` and
@@ -43,11 +48,14 @@ The forms of a term:
 
 Types are {lit}`T`, {lit}`Unit`, {lit}`(Prod A B)`, {lit}`(Arrow A B)`,
 {lit}`(List A)` and the names of type abbreviations. A semicolon begins a comment that
-extends to the end of its line.
+extends to the end of its line, which the reading of a document keeps and the reading of a
+program erases.
 
 ## Main definitions
 
-* {lit}`SExp`, {lit}`readSExps` — S-expressions and the reader of a text.
+* {lit}`readSExps` — the S-expressions of a text.
+* {lit}`readDatum` — an S-expression read as a quoted datum.
+* {lit}`reservedNames`, {lit}`isFresh` — the names a declaration may take.
 * {lit}`expandNums` — the expansion of numeral abbreviations.
 * {lit}`resolve` — the resolution of an S-expression into a kernel term.
 * {lit}`readProgram`, {lit}`load` — a program's definitions as named terms, and their
@@ -57,11 +65,12 @@ extends to the end of its line.
 
 ## Implementation notes
 
-Both stages are folds: the tokenizer and the parser fold over the text with an explicit
-stack, and resolution is a fold over the S-expression whose result is a function of the
-names in scope. Text is a list of characters and atoms are lists of characters, compared
-with keywords through {name}`String.ofList`: core's {lit}`String.toList`, and the numeral
-parser built on it, depend on {lit}`Classical.choice`, which this module avoids.
+Both stages are folds: the lexer and the parser of the source document fold over the text,
+the parser with an explicit stack, and resolution is a fold over the S-expression whose
+result is a function of the names in scope. Text is a list of characters and atoms are lists
+of characters, compared with keywords through {name}`String.ofList`: core's
+{lit}`String.toList`, and the numeral parser built on it, depend on {lit}`Classical.choice`,
+which this module avoids.
 
 ## Tags
 
@@ -74,53 +83,11 @@ set_option doc.verso true
 
 namespace Geb.Kernel
 
-/-- An S-expression: a leaf carries an atom, and a node without a label is a list. -/
-abbrev SExp : Type := RoseTree (Option (List Char))
-
-/-- The tokens of S-expression text. -/
-inductive Token
-  /-- An opening parenthesis. -/
-  | lp
-  /-- A closing parenthesis. -/
-  | rp
-  /-- An atom. -/
-  | atom (s : List Char)
-
-/-- The tokenizer's state: the tokens read, the atom being read, and whether a comment is
-being skipped, the first two in reverse. -/
-abbrev TokState : Type := List Token × List Char × Bool
-
-/-- End the atom being read, if any. -/
-def flush : TokState → TokState
-  | (ts, [], c) => (ts, [], c)
-  | (ts, cs, c) => (.atom cs.reverse :: ts, [], c)
-
-/-- Read one character. -/
-def tokStep (s : TokState) (ch : Char) : TokState :=
-  if s.2.2 then (s.1, s.2.1, ch != '\n')
-  else if ch == ';' then let (ts, cs, _) := flush s; (ts, cs, true)
-  else if ch == '(' then let (ts, cs, c) := flush s; (.lp :: ts, cs, c)
-  else if ch == ')' then let (ts, cs, c) := flush s; (.rp :: ts, cs, c)
-  else if ch.isWhitespace then flush s
-  else (s.1, ch :: s.2.1, false)
-
-/-- The tokens of a text. -/
-def tokenize (text : List Char) : List Token :=
-  (flush (text.foldl tokStep ([], [], false))).1.reverse
-
-/-- Read one token into a stack of lists under construction, the innermost first and each
-list's elements in reverse. -/
-def parseStep : Option (List (List SExp)) → Token → Option (List (List SExp))
-  | some fs, .lp => some ([] :: fs)
-  | some (f :: fs), .atom s => some ((RoseTree.node (some s) [] :: f) :: fs)
-  | some (f :: g :: fs), .rp => some ((RoseTree.node none f.reverse :: g) :: fs)
-  | _, _ => none
-
-/-- The S-expressions of a text, or nothing when its parentheses do not balance. -/
+/-- The S-expressions of a text in the authoring profile, read by
+{name}`Geb.Kernel.Document.readDoc` with their comments and empty lines erased, or nothing when
+the text is not well formed or its parentheses do not balance. -/
 def readSExps (text : List Char) : Option (List SExp) :=
-  match (tokenize text).foldl parseStep (some [[]]) with
-  | some [f] => some f.reverse
-  | _ => none
+  (Document.readDoc text).map (·.items.map RoseTree.erase)
 
 /-- The label a numeral denotes: a non-empty list of decimal digits. -/
 def numeral? (s : List Char) : Option ℕ :=
@@ -161,14 +128,29 @@ def readType (tys : TypeNames) : SExp → Option Tree :=
     | none, [(some "List", _), (_, some A)] => (none, some (tList A))
     | none, _ => (none, none)) e).2
 
+/-- One node of a quoted datum: an atom's numeral, if it is one, and the trees the node
+contributes to the list it is in, a numeral its leaf, another atom the leaves of its
+characters' codes, and a list of a numeral and data the node of that label. -/
+def datumStep (a : Option (List Char)) (rs : List (Option ℕ × Option (List Tree))) :
+    Option ℕ × Option (List Tree) :=
+  match a, rs with
+  | some s, _ =>
+    match numeral? s with
+    | some n => (some n, some [leaf n])
+    | none => (none, some (s.map fun c ↦ leaf c.toNat))
+  | none, (some l, _) :: ds => (none, (ds.mapM Prod.snd).map fun ts ↦ [RoseTree.node l ts.flatten])
+  | _, _ => (none, none)
+
 /-- An S-expression read as a quoted datum: a numeral is a leaf, and a list of a numeral and
-data is a node. -/
-def readDatum : SExp → Option Tree :=
-  fun e ↦ (RoseTree.elim (β := Option ℕ × Option Tree) (fun a rs ↦
-    match a, rs with
-    | some s, _ => ((numeral? s), (numeral? s).map leaf)
-    | none, (some l, _) :: ds => (none, (ds.mapM Prod.snd).map (RoseTree.node l))
-    | _, _ => (none, none)) e).2
+data is a node, in which an atom that is not a numeral contributes the leaves of its
+characters' codes, so that {lit}`(0 let)` is {lit}`(0 108 101 116)`. -/
+def readDatum (e : SExp) : Option Tree :=
+  match e.label with
+  | some s => (numeral? s).map leaf
+  | none =>
+    match (RoseTree.elim datumStep e).2 with
+    | some [t] => some t
+    | _ => none
 
 /-- A node of the kernel over a list of children. -/
 abbrev mk (l : ℕ) (cs : List Tree) : Tree := RoseTree.node l cs
@@ -233,8 +215,20 @@ def resolve (tys : TypeNames) (defs : List (List Char)) (e : SExp) (scope : List
     Option Tree :=
   RoseTree.para (resolveStep tys defs) e scope
 
+/-- The names no declaration takes: the keywords of terms and of declarations, the form of a
+hole, the names of the types and of the primitives. -/
+def reservedNames : List String :=
+  ["lam", "let", "pair", "fst", "snd", "if", "quote", "cons", "nil", "fold", "para", "iter",
+    "foldr", "lcase", "unit", "def", "deftype", "defnum", "hole", "T", "Unit", "Prod", "Arrow",
+    "List"] ++ primNames
+
+/-- Whether a name may be declared after declarations of the names given: it is neither
+reserved nor declared already, as a definition or an abbreviation of either kind. -/
+def isFresh (taken : List (List Char)) (name : List Char) : Bool :=
+  !reservedNames.contains (String.ofList name) && !taken.contains name
+
 /-- The definitions of a program, as names with kernel terms; abbreviations are expanded where
-they are used. -/
+they are used. A declaration whose name is reserved or declared before it is rejected. -/
 def readProgram (text : List Char) : Option (List (List Char × Tree)) := do
   let es ← readSExps text
   let step (acc : Option (TypeNames × NumNames × List (List Char × Tree))) (e : SExp) :
@@ -243,6 +237,7 @@ def readProgram (text : List Char) : Option (List (List Char × Tree)) := do
     match e.children with
     | [kw, n, body] => do
       let name ← n.label
+      guard (isFresh (tys.map Prod.fst ++ nums.map Prod.fst ++ ds.map Prod.fst) name)
       match kw.label.map String.ofList with
       | some "def" =>
         some (tys, nums, ds ++ [(name, ← resolve tys (ds.map Prod.fst) (expandNums nums body) [])])
@@ -260,12 +255,13 @@ def load (ds : List Tree) : Option (List Glob) :=
     let m ← infer G [] t
     some (G ++ [⟨m.1, m.2 ()⟩])) (some [])
 
-/-- The first failure of a program, as a message: text whose parentheses do not balance, a
-form that is neither a definition nor an abbreviation, or the first definition that does not
-resolve or is ill-typed; nothing when the program reads and loads. -/
+/-- The first failure of a program, as a message: text that is not well formed or whose
+parentheses do not balance, a form that is neither a definition nor an abbreviation, a name
+reserved or declared twice, or the first definition that does not resolve or is ill-typed;
+nothing when the program reads and loads. -/
 def diagnose (text : List Char) : Option String :=
   match readSExps text with
-  | none => some "the parentheses do not balance"
+  | none => some "the text is not well formed or its parentheses do not balance"
   | some es =>
     let other := "a form is neither a def, a deftype nor a defnum"
     let step (acc : TypeNames × NumNames × List (List Char) × List Glob × Option String)
@@ -274,6 +270,10 @@ def diagnose (text : List Char) : Option String :=
       if err.isSome then acc else
       match e.children with
       | [kw, n, body] =>
+        if n.label.any (!isFresh (tys.map Prod.fst ++ nums.map Prod.fst ++ names) ·) then
+          (tys, nums, names, G,
+            some s!"{String.ofList (n.label.getD [])} is reserved or declared before")
+        else
         match n.label, kw.label.map String.ofList with
         | some name, some "def" =>
           match resolve tys names (expandNums nums body) [] with
