@@ -233,11 +233,14 @@ otherwise. -/
 def qualify (pre s : Ident) : Ident := if pre.isEmpty then s else pre ++ '.' :: s
 
 /-- The keywords of modules, which no declaration takes. -/
-def moduleKeywords : List String := ["module", "parameter", "import", "export", "interface"]
+def moduleKeywords : List (List Char) :=
+  [['m', 'o', 'd', 'u', 'l', 'e'], ['p', 'a', 'r', 'a', 'm', 'e', 't', 'e', 'r'],
+    ['i', 'm', 'p', 'o', 'r', 't'], ['e', 'x', 'p', 'o', 'r', 't'],
+    ['i', 'n', 't', 'e', 'r', 'f', 'a', 'c', 'e']]
 
 /-- The state with a name made visible, when it is neither visible already nor reserved. -/
 def declare (st : ElabState) (s fl : Ident) : Elab ElabState :=
-  if st.vis.any (·.1 == s) || (reservedNames ++ moduleKeywords).contains (String.ofList s) then
+  if st.vis.any (·.1 == s) || (reservedNames ++ moduleKeywords).contains s then
     throw s!"{String.ofList s} is reserved or declared before"
   else pure { st with vis := st.vis ++ [(s, fl)] }
 
