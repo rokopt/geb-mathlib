@@ -95,7 +95,8 @@ order of dependence.
   about the compiler's components are made in the language, and the
   checker, the translation, the prover, its tactics and the combinator
   prover are written in Geb and proved in Lean to agree with their Lean
-  prototypes.
+  prototypes; the stronger checkers admitted beside the checker written
+  in Geb are ready.
   The checker of Gödel's T, the equational theory of the kernel's terms,
   constructed and written in Geb first, is retired: equations between
   kernel programs are proved in the metalogic
@@ -104,8 +105,9 @@ order of dependence.
 * Extension. A program is extended by definitions whose identity
   survives edits, and the datatype language is complete enough to write
   the rest of Geb in, with diagnostics that name what fails. In
-  progress: closed bundles and the datatype language are complete, and
-  content identity is ready.
+  progress: closed bundles, the datatype language as it stands, content
+  identity and modules are complete; the datatype language's completion,
+  the next step of the authoring sequence, is ready.
 
 ## The bootstrap
 
@@ -276,12 +278,14 @@ Extension:
 
 * Complete. Closed bundles referring to definitions by position
   ({ref "definitions-and-images"}[Definitions and images]).
-* In progress. {ref "content-identity"}[Content identity]: identifiers as
+* Complete. {ref "content-identity"}[Content identity]: identifiers as
   CIDs whose multihashes are of BLAKE3, and their codec; its input,
   recorded in
   `docs/definitions.md` § Content identity; the hash written in Geb and
   compared with a host binding; the migration from positions to
-  digests, the tree of modules and the re-keying of annotations.
+  digests, the linker, the tree of modules and the re-keying of
+  annotations. The freezing of the payload and of the format of
+  identifiers is deferred until durable identifiers are published.
 * Complete. The syntaxes of {citet RFC9804}[] and the Geb authoring
   profile, reading into one document type with proved retractions, and
   the importer from the present syntax
@@ -1532,7 +1536,7 @@ section below opens with a table of the states of its parts.
   * {ref "definitions-and-images"}[Definitions and images]
   * Complete
   * The names of bound variables and comments: ready; the hash binding:
-    deferred to content identity
+    complete, in content identity
 *
   * {ref "geb-grows-in-itself"}[Geb grows in itself]
   * Complete
@@ -1546,11 +1550,9 @@ section below opens with a table of the states of its parts.
     of machine; accelerations: ready
 *
   * {ref "content-identity"}[Content identity]
-  * In progress
-  * The hash, the payload, the CID, the migration, the linker, names as
-    annotations re-keyed by identifiers, and the identifiers of the tree of
-    modules, in Lean and Geb, and the sources organized into modules:
-    complete
+  * Complete
+  * The freezing of the payload and of the format of identifiers:
+    deferred until durable identifiers are published
 *
   * {ref "authoring-compatibility"}[Authoring across bootstrap revisions]
   * In progress
@@ -1910,7 +1912,7 @@ tag := "definitions-and-images"
   * Complete
 *
   * The hash binding
-  * Deferred to {ref "content-identity"}[Content identity]
+  * Complete, in {ref "content-identity"}[Content identity]
 *
   * Acceptance
   * Met
@@ -2294,13 +2296,14 @@ tag := "content-identity"
   * State
 *
   * The identity-bearing payload and the format of identifiers
-  * In progress: definitions in Lean and Geb
+  * Complete: definitions in Lean and Geb; frozen when durable
+    identifiers are published, deferred until then
 *
   * The node-digest rule, the hash, the migration
-  * In progress: the hash, the migration, the linker, the re-keying of
+  * Complete: the hash, the migration, the linker, the re-keying of
     names and the identifiers of modules in Lean and Geb, agreeing, the
-    linker's relabelling and the re-keying's addressing proved; the sources
-    organized into modules, ready
+    linker's relabelling and the re-keying's addressing proved, and the
+    sources organized into modules
 *
   * Acceptance
   * Met
@@ -4062,10 +4065,9 @@ tag := "logic"
   * In progress: the proofs of the prelude's lists and labels and of the
     checker's accessors are complete in Gödel's T, whose checker and
     prover are retired; the rest are proved in the metalogic, the
-    preservation of types by weakening and by substitution and the
-    identity of the datatype language's expansion complete, and the
-    admission of stronger checkers waiting on the metalogic's checker in
-    Geb
+    preservation of types by weakening and by substitution, the identity
+    of the datatype language's expansion and the reader's inverse to the
+    printer complete, and the admission of stronger checkers ready
 *
   * Metalogic: the rule set and its soundness
   * Complete: the rule set, its checker and their soundness in every
@@ -4073,13 +4075,12 @@ tag := "logic"
     a model from every topos with chosen structure and the data objects
 *
   * Metalogic: the checker and prover in Geb
-  * In progress: the checker is written in Geb and compared with the Lean
-    checker; the prover and the proof in Lean of the checker's agreement
-    are ready
+  * Complete: the checker, the translation, the prover, its tactics and
+    the combinator prover written in Geb, each proved in Lean to agree
+    with its Lean prototype
 *
   * Acceptance
-  * Met for Gödel's T; waiting, for the metalogic, on the proof of its
-    checker's agreement
+  * Met
 :::
 
 The metalogic's checker ({ref "metalogic-and-checker"}[The metalogic and
@@ -6149,45 +6150,63 @@ the change that removes it.
 tag := "the-next-phase"
 %%%
 
-The proofs about the compiler's components that need neither the
-printer nor a checker written in Geb are complete: the type checker's
-preservation of types by weakening and by substitution and the identity
-of the datatype language's expansion on programs of kernel forms
-({ref "goedel-t"}[Gödel's T]), and so is the reader's inverse to the
-printer; the admission of a stronger checker beside the metalogic's
-checker written in Geb, whose agreement with the Lean checker is proved,
-is ready (the section on the metalogic and its checker). Both items
-below are complete: the first, the checker, the translation, the
-prover, its tactics and the combinator prover written in Geb and their
-agreement proved; the second, a property of the kernel's reader, which
-followed the change of that reader's syntax to the authoring profile
-({ref "authoring-sequence"}[The sequence and its acceptance]) and
-modules ({ref "content-identity"}[Content identity]):
+The proofs about the compiler's components are complete: the type
+checker's preservation of types by weakening and by substitution and the
+identity of the datatype language's expansion on programs of kernel forms
+({ref "goedel-t"}[Gödel's T]). So are the two items that followed them:
 
 * The metalogic's checker, its prover and the translation of kernel
-  programs written in Geb, the checker in Geb and proof construction for
-  the metalogic ({ref "logic"}[The logic]): the checker compared with the Lean checker on valid and
-  malformed derivations and proved in Lean to agree with it, which the
-  bootstrap requires; the prover, its tactics and the combinator
-  prover, each proved in Lean to agree with its Lean prototype, so that
-  the prover written in Geb constructs exactly the derivations the Lean
-  prover constructs; and the translation proved in Lean to agree with
-  the Lean translation. During the bootstrap it meets the logic's end point and
-  the metalogic's acceptance, lets the proofs about programs be made
-  without the Lean prototype, and is the checker every stronger checker
-  is admitted beside. After the bootstrap it checks the proofs the road
-  map lists, written in Geb, and is the checker of a host or a backend
-  without Lean, which cannot run the Lean checker.
-* The printer for the kernel's readable syntax and the retraction law
-  ({ref "kernel-in-lean"}[The kernel runs in Lean]), and then the reader's inverse to the
-  printer: the printer written in Geb, `bootstrap/printer.geb`, and the
-  resolution of the Geb reader each proved in Lean to agree with its
-  Lean counterpart, so that the Geb reader inverts the Geb printer by
-  the Lean retraction (`GebTests/Prototypes/FreeTopos/Agreement.lean`).
-  The proof is by agreement rather than in the metalogic, where reading
-  back a printed numeral would need the arithmetic of decimal numerals,
+  programs written in Geb ({ref "logic"}[The logic]): the checker
+  compared with the Lean checker on valid and malformed derivations and
+  proved in Lean to agree with it; the prover, its tactics and the
+  combinator prover, each proved in Lean to agree with its Lean
+  prototype, so that the prover written in Geb constructs exactly the
+  derivations the Lean prover constructs; and the translation proved in
+  Lean to agree with the Lean translation. During the bootstrap it lets
+  the proofs about programs be made without the Lean prototype, and is
+  the checker every stronger checker is admitted beside. After the
+  bootstrap it checks the proofs the road map lists, written in Geb, and
+  is the checker of a host or a backend without Lean, which cannot run
+  the Lean checker.
+* The reader's inverse to the printer: the printers of terms and of
+  programs, in Lean and in Geb, are partial, writing nothing for a term
+  that is not well formed or for names of definitions that would not read
+  back, and the readers read text as bytes, rejecting a character beyond
+  a byte, so the retraction laws hold without hypotheses
+  ({ref "kernel-in-lean"}[The kernel runs in Lean]). The printer written
+  in Geb, `bootstrap/printer.geb`, and the resolution of the Geb reader
+  are each proved in Lean to agree with their Lean counterparts at every
+  input, so that the Geb reader inverts the Geb printer by the Lean
+  retraction (`GebTests/Prototypes/FreeTopos/Agreement.lean`). The
+  proof is by agreement rather than in the metalogic, where reading back
+  a printed numeral would need the arithmetic of decimal numerals,
   division and remainder by ten on the bitstrings, which no proof in the
   metalogic has needed.
+
+What is ready, each item independent of the others except as stated:
+
+* Stronger checkers ({ref "metalogic-and-checker"}[The metalogic and its
+  checker]), described below; their first step is a measurement, the
+  nodes of the complete proofs' derivations counted by rule, which
+  decides the rules of the checker with a step of conversion.
+* The datatype language's completion
+  ({ref "datatype-completion"}[The datatype language's completion]),
+  the next step of the authoring sequence
+  ({ref "authoring-sequence"}[The sequence and its acceptance]), which
+  precedes substantial authoring in Geb; the soundness of its typing is
+  proved with the prover written in Geb. The steps of the sequence after
+  it are ready in its order, and the items early in writing, `let*` and
+  `cond` among them, accompany the first substantial module.
+* The first stage of the interaction-net arm in Lean, its read-back
+  proved to be the denotation ({ref "choice-of-machine"}[The choice of
+  machine]); the elementary-affine decorations, in progress, wait on
+  rewriting the folds that read their children's results twice
+  ({ref "improvements"}[Improvements]).
+* Accelerations ({ref "speed-and-second-host"}[Speed and a second
+  host]), the hash written in Geb, which computes by arithmetic on
+  natural numbers, first among their uses.
+* The Geb reader and serializer in constant depth, and the stage tests
+  run by the compiled executables ({ref "improvements"}[Improvements]).
 
 The admission of stronger checkers rests on the checker written in Geb
 and its agreement, and two are required by the bootstrap. The provers
@@ -6224,10 +6243,9 @@ the bootstrap it bears on the size of the proofs of the mathematics the
 road map lists, and adds decision procedures and tactics as single
 steps without adding to what is trusted.
 
-The rest of the road map's bootstrap is independent of these proofs and
-may proceed beside them: the choice of machine and the second host;
-content identity; and the authoring sequence, the syntax unification
-among it ({ref "authoring-sequence"}[The sequence and its acceptance]).
+The second host waits on the choice of machine, and the parts of the
+authoring sequence that follow their consumers wait on those consumers
+({ref "authoring-sequence"}[The sequence and its acceptance]).
 
 ## What self-compilation establishes
 
