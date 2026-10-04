@@ -49,6 +49,10 @@ theorem getElem_zipIdx_map {α β : Type} (l : List α) (f : α × ℕ → β) (
     (l.zipIdx.map f).length = l.length := by
   simp
 
+/-- An expression is the node of its label over its children. -/
+theorem exists_node (e : Expr) : ∃ l cs, e = RoseTree.node l cs :=
+  ⟨e.label, e.children, (RoseTree.node_label_children e).symm⟩
+
 /-- The renaming of a node renames its label and each child, lifted under the variables the node
 binds over it. -/
 theorem rename_node (l : Label) (cs : List Expr) (ρ : ℕ → ℕ) :

@@ -31,12 +31,17 @@ hereditary substitution under weakening and exchange ({cite}`HarperLicata2007`, 
 ## Main definitions
 
 * {lit}`RenameCompat` — a reduction commutes with renaming.
+* {lit}`renumber`, {lit}`HoleRen` — the renumbering past a removed variable, and renamings that
+  agree around it.
 
 ## Main statements
 
 * {lit}`hsubWith_node`, {lit}`hsubWith_var`, {lit}`hsubWith_node_of_ne` — the computation
   rules of the substitution.
-* {lit}`hsubWith_rename` — the substitution commutes with renaming, given a reduction that does.
+* {lit}`HoleRen.lift`, {lit}`HoleRen.iterate` — agreement around a variable under binders.
+* {lit}`hsubWith_holeRen`, {lit}`hsubWith_rename` — the substitution commutes with renamings
+  that agree around the substituted variable, and with renaming outside it, given a reduction
+  that does.
 * {lit}`reduce_rename`, {lit}`hsub_rename` — the reduction and the hereditary substitution at a
   simple type commute with renaming.
 
@@ -153,15 +158,57 @@ theorem rename_var (i : ℕ) (ms : List Expr) (ρ : ℕ → ℕ) :
   rw [Expr.var, Expr.app, rename_node]
   exact congrArg _ (List.ext_getElem (by simp) fun k _ _ ↦ by simp)
 
-/-- The substitution into an expression commutes with renaming, given a reduction that does: a
-renaming of the context outside the substituted variable and the {lit}`j` variables inside it. -/
-theorem hsubWith_rename {red : Expr → List Expr → Option Expr} (hred : RenameCompat red) :
-    ∀ (e n : Expr) (j : ℕ) (ρ : ℕ → ℕ) (e' : Expr), hsubWith red e n j = some e' →
-      hsubWith red (e.rename (liftR^[j + 1] ρ)) (n.rename (liftR^[j] ρ)) j =
-        some (e'.rename (liftR^[j] ρ)) :=
-  RoseTree.ind fun l cs ih n j ρ e' h ↦ by
-    have nonvar : (∀ i, l ≠ .app (.var i)) → hsubWith red (Expr.rename (RoseTree.node l cs)
-        (liftR^[j + 1] ρ)) (n.rename (liftR^[j] ρ)) j = some (e'.rename (liftR^[j] ρ)) := by
+/-- The renumbering of a variable past the removal of the variable of index {lit}`j`. -/
+def renumber (j i : ℕ) : ℕ := if j < i then i - 1 else i
+
+/-- A renaming {lit}`τ` of a context with a variable at {lit}`j` and a renaming {lit}`σ` of that
+context with the variable removed agree around it: {lit}`τ` takes it to {lit}`j'`, and every other
+variable to one other than {lit}`j'` which, renumbered past {lit}`j'`, is the image under
+{lit}`σ` of the variable renumbered past {lit}`j`. -/
+def HoleRen (σ τ : ℕ → ℕ) (j j' : ℕ) : Prop :=
+  τ j = j' ∧ ∀ i, i ≠ j → τ i ≠ j' ∧ renumber j' (τ i) = σ (renumber j i)
+
+/-- Renamings that agree around a variable agree, lifted under a binder, around its
+successor. -/
+theorem HoleRen.lift {σ τ : ℕ → ℕ} {j j' : ℕ} (h : HoleRen σ τ j j') :
+    HoleRen (liftR σ) (liftR τ) (j + 1) (j' + 1) := by
+  refine ⟨congrArg (· + 1) h.1, fun i hi ↦ ?_⟩
+  rcases i with _ | i
+  · refine ⟨fun e ↦ Nat.succ_ne_zero j' e.symm, ?_⟩
+    simp only [renumber, Nat.not_lt_zero, ↓reduceIte]
+    rfl
+  · have hi' : i ≠ j := fun e ↦ hi (congrArg (· + 1) e)
+    obtain ⟨hne, heq⟩ := h.2 i hi'
+    refine ⟨fun e ↦ hne (Nat.succ.inj e), ?_⟩
+    change renumber (j' + 1) (τ i + 1) = liftR σ (renumber (j + 1) (i + 1))
+    have h₁ : renumber (j' + 1) (τ i + 1) = renumber j' (τ i) + 1 := by
+      unfold renumber
+      split_ifs <;> omega
+    have h₂ : renumber (j + 1) (i + 1) = renumber j i + 1 := by
+      unfold renumber
+      split_ifs <;> omega
+    rw [h₁, h₂, heq]
+    rfl
+
+/-- Renamings that agree around a variable agree, lifted under {lit}`b` binders, around the
+variable {lit}`b` above it. -/
+theorem HoleRen.iterate {σ τ : ℕ → ℕ} {j j' : ℕ} (h : HoleRen σ τ j j') (b : ℕ) :
+    HoleRen (liftR^[b] σ) (liftR^[b] τ) (j + b) (j' + b) :=
+  Nat.rec (motive := fun b ↦ HoleRen (liftR^[b] σ) (liftR^[b] τ) (j + b) (j' + b)) h
+    (fun b ih ↦ by
+      rw [Function.iterate_succ_apply', Function.iterate_succ_apply', Nat.succ_eq_add_one,
+        ← Nat.add_assoc, ← Nat.add_assoc]
+      exact ih.lift) b
+
+/-- The substitution into an expression commutes with renamings that agree around the
+substituted variable, given a reduction that commutes with renaming. -/
+theorem hsubWith_holeRen {red : Expr → List Expr → Option Expr} (hred : RenameCompat red) :
+    ∀ (e n : Expr) (j j' : ℕ) (σ τ : ℕ → ℕ) (e' : Expr), HoleRen σ τ j j' →
+      hsubWith red e n j = some e' → hsubWith red (e.rename τ) (n.rename σ) j' =
+        some (e'.rename σ) :=
+  RoseTree.ind fun l cs ih n j j' σ τ e' hστ h ↦ by
+    have nonvar : (∀ i, l ≠ .app (.var i)) → hsubWith red (Expr.rename (RoseTree.node l cs) τ)
+        (n.rename σ) j' = some (e'.rename σ) := by
       intro hl
       rw [hsubWith_node_of_ne red l hl, Option.map_eq_map, Option.map_eq_some_iff] at h
       obtain ⟨ys, hys, rfl⟩ := h
@@ -172,11 +219,8 @@ theorem hsubWith_rename {red : Expr → List Expr → Option Expr} (hred : Renam
         fun k h₁ h₂ ↦ ?_)
       have hk' := hk k (by simpa using h₁) (by simpa using h₂)
       simp only [List.getElem_map, List.getElem_zipIdx, zero_add] at hk' ⊢
-      have := ih _ (List.getElem_mem _) _ _ ρ _ hk'
-      rw [iterate_shift_rename, ← Function.iterate_add_apply, ← Function.iterate_add_apply]
-      rw [show l.binders k + (j + 1) = j + l.binders k + 1 by omega,
-        show l.binders k + j = j + l.binders k by omega]
-      exact this
+      rw [iterate_shift_rename]
+      exact ih _ (List.getElem_mem _) _ _ _ _ _ _ (hστ.iterate _) hk'
     rcases l with _ | _ | _ | (i | c)
     · exact nonvar fun i h ↦ by cases h
     · exact nonvar fun i h ↦ by cases h
@@ -187,29 +231,94 @@ theorem hsubWith_rename {red : Expr → List Expr → Option Expr} (hred : Renam
       rw [rename_node]
       simp only [Label.rename, Head.rename, Label.binders_app, Function.iterate_zero_apply]
       rw [hsubWith_var]
-      have hms' : ((cs.zipIdx.map fun p ↦ Expr.rename p.1 (liftR^[j + 1] ρ)).map
-          fun c ↦ hsubWith red c (n.rename (liftR^[j] ρ)) j).mapM id =
-          some (ms.map fun m ↦ m.rename (liftR^[j] ρ)) :=
+      have hms' : ((cs.zipIdx.map fun p ↦ Expr.rename p.1 τ).map
+          fun c ↦ hsubWith red c (n.rename σ) j').mapM id =
+          some (ms.map fun m ↦ m.rename σ) :=
         mapM_id_eq_some_of_getElem (by simpa using hl) fun k h₁ h₂ ↦ by
           have hk' := hk k (by simpa using h₁) (by simpa using h₂)
           simp only [List.getElem_map, List.getElem_zipIdx, zero_add] at hk' ⊢
-          exact ih _ (List.getElem_mem _) _ _ _ _ hk'
+          exact ih _ (List.getElem_mem _) _ _ _ _ _ _ hστ hk'
       rw [hms', Option.bind_some]
       by_cases hij : i = j
       · subst hij
         simp only [↓reduceIte] at h
-        have hii : liftR^[i + 1] ρ i = i := by
-          rw [iterate_liftR_apply]
-          simp
-        simp only [hii, ↓reduceIte]
+        simp only [hστ.1, ↓reduceIte]
         exact hred _ _ _ _ h
       · simp only [hij, ↓reduceIte] at h
         obtain rfl := Option.some.inj h
-        have hne : liftR^[j + 1] ρ i ≠ j := by
-          rw [iterate_liftR_apply]
-          split_ifs <;> omega
+        obtain ⟨hne, heq⟩ := hστ.2 i hij
         simp only [hne, ↓reduceIte]
-        rw [rename_var, iterate_liftR_renumber j i ρ hij]
+        rw [rename_var]
+        exact congrArg (fun x ↦ some (Expr.var x _)) heq
+    · exact nonvar fun i h ↦ by cases h
+
+/-- The substitution into an expression commutes with renaming, given a reduction that does: a
+renaming of the context outside the substituted variable and the {lit}`j` variables inside it. -/
+theorem hsubWith_rename {red : Expr → List Expr → Option Expr} (hred : RenameCompat red)
+    (e n : Expr) (j : ℕ) (ρ : ℕ → ℕ) (e' : Expr) (h : hsubWith red e n j = some e') :
+    hsubWith red (e.rename (liftR^[j + 1] ρ)) (n.rename (liftR^[j] ρ)) j =
+      some (e'.rename (liftR^[j] ρ)) := by
+  refine hsubWith_holeRen hred e n j j _ _ e' ⟨?_, fun i hi ↦ ⟨?_, ?_⟩⟩ h
+  · rw [iterate_liftR_apply]
+    simp
+  · rw [iterate_liftR_apply]
+    split_ifs <;> omega
+  · exact (iterate_liftR_renumber j i ρ hi).symm
+
+/-- Weakening past {lit}`b` variables is renaming by adding {lit}`b`. -/
+theorem iterate_shift (b : ℕ) : ∀ e : Expr, Expr.shift^[b] e = e.rename (· + b) :=
+  Nat.rec (motive := fun b ↦ ∀ e : Expr, Expr.shift^[b] e = e.rename (· + b))
+    (fun e ↦ (rename_id e).symm)
+    (fun b ih e ↦ by
+      rw [Function.iterate_succ_apply', ih, Expr.shift, rename_rename]
+      rfl) b
+
+/-- Substitution into an expression in which the substituted variable does not occur, an
+expression of the context without it renamed past it, gives that expression
+({cite}`HarperLicata2007`, Lemma 2.8), whatever the reduction. -/
+theorem hsubWith_vacuous (red : Expr → List Expr → Option Expr) :
+    ∀ (e n : Expr) (j : ℕ), hsubWith red (e.rename (liftR^[j] Nat.succ)) n j = some e :=
+  RoseTree.ind fun l cs ih n j ↦ by
+    have hch : ∀ b, ((cs.zipIdx.map fun p ↦ Expr.rename p.1 (liftR^[b] (liftR^[j] Nat.succ))).map
+        fun c ↦ hsubWith red c (Expr.shift^[b] n) (j + b)).mapM id = some cs := fun b ↦
+      mapM_id_eq_some_of_getElem (by simp) fun k h₁ h₂ ↦ by
+        simp only [List.getElem_map, List.getElem_zipIdx, zero_add]
+        have := ih _ (List.getElem_mem h₂) (Expr.shift^[b] n) (j + b)
+        rwa [show liftR^[j + b] Nat.succ = liftR^[b] (liftR^[j] Nat.succ) by
+          rw [Nat.add_comm, Function.iterate_add_apply]] at this
+    have nonvar : (∀ i, l ≠ .app (.var i)) →
+        hsubWith red (Expr.rename (RoseTree.node l cs) (liftR^[j] Nat.succ)) n j =
+          some (RoseTree.node l cs) := by
+      intro hl
+      rw [rename_node, Label.rename_of_ne hl, hsubWith_node_of_ne red l hl]
+      refine congrArg (Option.map _) (mapM_id_eq_some_of_getElem (by simp) fun k h₁ h₂ ↦ ?_)
+      simp only [List.getElem_map, List.getElem_zipIdx, zero_add]
+      have := ih _ (List.getElem_mem h₂) (Expr.shift^[l.binders k] n) (j + l.binders k)
+      rwa [show liftR^[j + l.binders k] Nat.succ = liftR^[l.binders k] (liftR^[j] Nat.succ) by
+        rw [Nat.add_comm, Function.iterate_add_apply]] at this
+    rcases l with _ | _ | _ | (i | c)
+    · exact nonvar fun i h ↦ by cases h
+    · exact nonvar fun i h ↦ by cases h
+    · exact nonvar fun i h ↦ by cases h
+    · rw [rename_node]
+      simp only [Label.rename, Head.rename, Label.binders_app, Function.iterate_zero_apply]
+      rw [hsubWith_var]
+      have hcs := hch 0
+      simp only [Function.iterate_zero_apply, Nat.add_zero] at hcs
+      rw [hcs, Option.bind_some]
+      have hτ : liftR^[j] Nat.succ i = if i < j then i else i + 1 := by
+        rw [iterate_liftR_apply]
+        split_ifs with h
+        · rfl
+        · simp only [Nat.succ_eq_add_one]
+          omega
+      have hne : liftR^[j] Nat.succ i ≠ j := by
+        rw [hτ]
+        split_ifs <;> omega
+      simp only [hne, ↓reduceIte]
+      congr 2
+      rw [hτ]
+      split_ifs <;> omega
     · exact nonvar fun i h ↦ by cases h
 
 /-- The computation rule of the reduction. -/
@@ -263,6 +372,14 @@ theorem hsub_rename (α : SimpleTy) (e n : Expr) (j : ℕ) (ρ : ℕ → ℕ) (e
     hsub α (n.rename (liftR^[j] ρ)) (e.rename (liftR^[j + 1] ρ)) j =
       some (e'.rename (liftR^[j] ρ)) :=
   hsubWith_rename (reduce_rename α) e n j ρ e' h
+
+/-- Hereditary substitution commutes with weakening by {lit}`k` variables inside the substituted
+one. -/
+theorem hsub_weaken (α : SimpleTy) (e n : Expr) (j k : ℕ) (e' : Expr) (h : hsub α n e j = some e') :
+    hsub α (n.rename (· + k)) (e.rename (· + k)) (j + k) = some (e'.rename (· + k)) :=
+  hsubWith_holeRen (reduce_rename α) e n j (j + k) _ _ e' ⟨rfl, fun i hi ↦
+    ⟨fun e ↦ hi (by dsimp only at e; omega), by dsimp only; unfold renumber; split_ifs <;> omega⟩⟩
+    h
 
 end Geb.LF
 

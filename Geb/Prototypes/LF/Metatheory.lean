@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Prototypes.LF.Metatheory.Composition
 public import Geb.Prototypes.LF.Metatheory.HSubstRename
 public import Geb.Prototypes.LF.Metatheory.Rename
 public import Geb.Prototypes.LF.Metatheory.Scope
@@ -16,9 +17,10 @@ set_option doc.verso true in
 # The metatheory of canonical LF
 
 The metatheory of Canonical LF of {cite}`HarperLicata2007`, Section 2.3: the laws of renaming
-and its commutation with hereditary substitution, the stability of the judgments under renaming,
-weakening among them, and the scoping of judged expressions, by which the declarations of a
-formed signature are closed.
+and its commutation with hereditary substitution, vacuous substitution, the composition of
+hereditary substitutions, the stability of the judgments under renaming, weakening among them,
+and the scoping of judged expressions, by which the declarations of a formed signature are
+closed.
 -/
 
 set_option doc.verso true

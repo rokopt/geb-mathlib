@@ -115,10 +115,6 @@ theorem judgeWith_node (eqv : Expr → Expr → Bool) (sig : Sig) (l : Label) (c
       judgeStep eqv sig l (cs.map fun c ↦ (c, judgeWith eqv sig c)) :=
   RoseTree.para_node _ l cs
 
-/-- An expression is the node of its label over its children. -/
-theorem exists_node (e : Expr) : ∃ l cs, e = RoseTree.node l cs :=
-  ⟨e.label, e.children, (RoseTree.node_label_children e).symm⟩
-
 /-- The renaming of a product renames its domain, and its codomain under the binder. -/
 theorem rename_pi (a b : Expr) (ρ : ℕ → ℕ) :
     (Expr.pi a b).rename ρ = Expr.pi (a.rename ρ) (b.rename (liftR ρ)) := by
