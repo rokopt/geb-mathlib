@@ -321,7 +321,8 @@ test module that loads the checker of Gödel's T. -/
 def loadingAxiomModules : NameSet :=
   NameSet.ofList [`GebMirror.Metalogic.Load.Checker, `GebMirror.Metalogic.Load.Translation,
     `GebMirror.Metalogic.Load.Prover, `GebMirror.Metalogic.Load.Tactics,
-    `GebMirror.Metalogic.Load.Combinator, `GebTests.Prototypes.GoedelT.MirrorLoad]
+    `GebMirror.Metalogic.Load.Combinator, `GebMirror.Metalogic.Load.Printer,
+    `GebTests.Prototypes.GoedelT.MirrorLoad]
 
 /-- Whether the environment variable `GEB_LOADING` selects the loading
 mode `native`, as it does unless it is `rfl`. -/

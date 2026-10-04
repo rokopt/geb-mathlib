@@ -12,7 +12,7 @@
 ; its characters. A bundle is the node of label 100 over the node of label 101 over the terms and
 ; the node of label 102 over the names.
 
-(module Printer (export printType printDatum printTerm printProgram) (import Prelude)
+(module Printer (export printType printDatum printTerm readBack printProgram) (import Prelude)
   (import Reader)
   ; atoms and lists
   (def atomOf (lam ((n T)) (node 1 (children n))))
@@ -83,12 +83,20 @@
                                           (if (eq l Label.lcase) (kwList1 kwLcase (printTypes cs))
                                             (if (eq l Label.prim) (nameAt primNames i)
                                               (nameAt defs i)))))))))))))))))))))))
+  ; a term printed under binders to a depth, given the names of the definitions; the body is
+  ; applied to the identity at its type, as the datatype language's defn applies it, so that the
+  ; type is read from the definition
   (def printTerm
     (lam ((defs Ts) (t T) (d T))
-      ((snd
-         (fold PR
-           (lam ((l T) (rs PRs)) (pair (node l (prTrees rs)) (lam ((e T)) (printStep defs l rs e))))
-           t)) d)))
+      ((lam ((r T)) r)
+       ((snd
+          (fold PR
+            (lam ((l T) (rs PRs))
+              (pair (node l (prTrees rs)) (lam ((e T)) (printStep defs l rs e))))
+            t)) d))))
+  ; the reader's resolution of an S-expression, with no type abbreviations, given the names of the
+  ; definitions and the names in scope: what reads back what the printer writes
+  (def readBack (lam ((defs Ts) (e T) (scope Ts)) ((lam ((r T)) r) (resolve (nil T) defs e scope))))
 
   ; a bundle's definitions printed, each (def name term), its references named by the names of
   ; the definitions before it

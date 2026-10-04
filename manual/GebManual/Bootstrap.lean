@@ -183,14 +183,14 @@ the sections below detail:
     written in Geb, with its prover begun; both are retired, equations
     between kernel programs being proved in the metalogic, and their
     proofs remain and are checked.
-  * In progress. The proofs about the compiler's components: those of
-    the prelude's lists and labels and of the checker's accessors, in
-    Gödel's T, are complete; the rest are proved in the metalogic, about
-    the components' translations, the type checker's preservation of
-    types by weakening and by substitution and the datatype language's
-    expansion's identity on programs of kernel forms complete, and the
-    reader's inverse to the printer, whose printer and retraction in Lean
-    are complete, in progress.
+  * Complete. The proofs about the compiler's components: those of the
+    prelude's lists and labels and of the checker's accessors, in Gödel's
+    T; the type checker's preservation of types by weakening and by
+    substitution and the datatype language's expansion's identity on
+    programs of kernel forms, in the metalogic, about the components'
+    translations; and the reader's inverse to the printer, the Lean
+    retraction carried to the reader and the printer written in Geb by
+    their agreement with Lean's.
 * The metalogic, the free topos in one presentation:
   * Complete. The rule set with its checker in Lean, sound, and the
     proof that every model is an elementary topos with the data
@@ -282,12 +282,12 @@ Extension:
   `docs/definitions.md` § Content identity; the hash written in Geb and
   compared with a host binding; the migration from positions to
   digests, the tree of modules and the re-keying of annotations.
-* Ready. The syntaxes of {citet RFC9804}[] and the Geb authoring profile,
-  reading into one document type with proved retractions, and the
-  importer from the present syntax
-  ({ref "rfc9804-syntaxes"}[The syntaxes of RFC 9804]). Complete: a
-  printer for the kernel's terms with the retraction law, the section on
-  improvements.
+* Complete. The syntaxes of {citet RFC9804}[] and the Geb authoring
+  profile, reading into one document type with proved retractions, and
+  the importer from the present syntax
+  ({ref "rfc9804-syntaxes"}[The syntaxes of RFC 9804]); a printer for the
+  kernel's terms with the retraction law
+  ({ref "kernel-in-lean"}[The kernel runs in Lean]).
 * In progress. {ref "authoring-compatibility"}[Authoring across bootstrap
   revisions]: preservation of source documents, bindings and dependency
   references through format changes. Checked filling of one contextual
@@ -1562,10 +1562,8 @@ section below opens with a table of the states of its parts.
     that follow their consumers, which wait on them
 *
   * {ref "goedel-t"}[Gödel's T]
-  * In progress
-  * Weakening, substitution and the identity of the datatype language's
-    expansion: complete; the reader's inverse to the printer: in
-    progress, its printer and retraction in Lean complete
+  * Complete
+  * Nothing
 *
   * {ref "metalogic"}[The metalogic]
   * In progress
@@ -1676,8 +1674,11 @@ tag := "kernel-in-lean"
   ({name}`Geb.Kernel.resolve_printTerm`), and the definitions of a
   well-formed bundle ({name}`Geb.Kernel.ProgramWf`), printed, read back to
   the bundle ({name}`Geb.Kernel.readForms_printProgram`). The printer
-  written in Geb, `bootstrap/printer.geb`, agrees with it on the examples
-  of `GebTests/Prototypes/Kernel/Printer.lean`.
+  written in Geb, `bootstrap/printer.geb`, and the resolution of the
+  reader written in Geb are proved equal to the Lean printer and
+  resolution, on well-formed terms and S-expressions, so that the reader
+  written in Geb inverts the printer written in Geb
+  ({ref "the-next-phase"}[The next phase]).
 
 Acceptance: a program written by hand in S-expressions is read, type
 checked and run, with arithmetic beyond a machine word; ill-typed and
@@ -4453,8 +4454,9 @@ Gödel's T states and proves the following.
     substitution, complete;
   * the identity of the datatype language's expansion on programs of
     kernel forms, complete;
-  * the reader's inverse to the printer, in progress, its printer and
-    retraction in Lean complete;
+  * the reader's inverse to the printer, complete: the reader and the
+    printer written in Geb proved to agree with Lean's, which carries
+    the Lean retraction across;
   * the admission of a stronger checker by the proof that a Geb
     program translates its certificates into the metalogic's
     derivations with the same conclusions, ready: it is admitted beside
@@ -6042,14 +6044,6 @@ the change that removes it.
   {name}`Geb.Kernel.diagnose` to them. Diagnostics that name a source
   occurrence are a step of the authoring sequence
   ({ref "editing"}[Editing]).
-* The reader's printer and the retraction law
-  ({ref "kernel-in-lean"}[The kernel runs in Lean]), and the syntaxes of
-  {citet RFC9804}[] with the Geb authoring profile, one document type read
-  by all of them, replacing the kernel reader's syntax through an
-  importer ({ref "rfc9804-syntaxes"}[The syntaxes of RFC 9804]);
-  `Geb/Prototypes/CanonicalSExpr.lean` supplies the canonical codec over
-  trees of numerals, generalized to atoms of bytes, and
-  `Geb/Prototypes/Kernel/Document.lean` the document and its layouts.
 * Chains of tests and bindings. The kernel's conditional and `let` are
   binary, so chains of tests and of bindings nest, and under a layout
   parinfer admits, nesting is indentation. The chain of tests of rules in
@@ -6152,19 +6146,16 @@ The proofs about the compiler's components that need neither the
 printer nor a checker written in Geb are complete: the type checker's
 preservation of types by weakening and by substitution and the identity
 of the datatype language's expansion on programs of kernel forms
-({ref "goedel-t"}[Gödel's T]). The reader's
-inverse to the printer is in progress, its printer and retraction in Lean
-complete; the admission of a stronger
-checker beside the metalogic's checker written in Geb, whose agreement
-with the Lean checker is proved, is ready (the section on the metalogic
-and its checker). The first of the two items below is complete, the
-checker, the translation, the prover, its tactics and the combinator
-prover written in Geb and their agreement proved. The second proves a
-property of the kernel's reader, so it followed the change of that
-reader's syntax to the authoring profile, which is complete
-({ref "authoring-sequence"}[The sequence and its acceptance]); the next
-phase is the second, which follows modules
-({ref "content-identity"}[Content identity]):
+({ref "goedel-t"}[Gödel's T]), and so is the reader's inverse to the
+printer; the admission of a stronger checker beside the metalogic's
+checker written in Geb, whose agreement with the Lean checker is proved,
+is ready (the section on the metalogic and its checker). Both items
+below are complete: the first, the checker, the translation, the
+prover, its tactics and the combinator prover written in Geb and their
+agreement proved; the second, a property of the kernel's reader, which
+followed the change of that reader's syntax to the authoring profile
+({ref "authoring-sequence"}[The sequence and its acceptance]) and
+modules ({ref "content-identity"}[Content identity]):
 
 * The metalogic's checker, its prover and the translation of kernel
   programs written in Geb, the checker in Geb and proof construction for
@@ -6181,9 +6172,15 @@ phase is the second, which follows modules
   map lists, written in Geb, and is the checker of a host or a backend
   without Lean, which cannot run the Lean checker.
 * The printer for the kernel's readable syntax and the retraction law
-  (the section on improvements), and then the reader's inverse to the
-  printer, proved in the metalogic by the method of the three complete
-  proofs, of the reader of the authoring profile.
+  ({ref "kernel-in-lean"}[The kernel runs in Lean]), and then the reader's inverse to the
+  printer: the printer written in Geb, `bootstrap/printer.geb`, and the
+  resolution of the Geb reader each proved in Lean to agree with its
+  Lean counterpart, so that the Geb reader inverts the Geb printer by
+  the Lean retraction (`GebTests/Prototypes/FreeTopos/Agreement.lean`).
+  The proof is by agreement rather than in the metalogic, where reading
+  back a printed numeral would need the arithmetic of decimal numerals,
+  division and remainder by ten on the bitstrings, which no proof in the
+  metalogic has needed.
 
 The admission of stronger checkers rests on the checker written in Geb
 and its agreement, and two are required by the bootstrap. The provers
