@@ -5,11 +5,12 @@
 ; Content identity, as Geb.Kernel.Identity computes it: the hash BLAKE3 in its default mode,
 ; with a 32-byte digest, as Geb.Blake3 computes it; a definition's payload in the canonical
 ; encoding of RFC 9804; its CIDv1 of codec raw over a multihash of BLAKE3; the migration of a
-; bundle's definitions from positions to payloads referring to CIDs; and the linker back. The
-; kernel has no operations on the bits of a word, so a word of 32 bits is a natural number below
-; 2^32, and the exclusive or, the rotations and the addition modulo 2^32 are computed by
-; arithmetic. Bytes are leaves, and a list of bytes is a node's children where a tree is needed.
-; Requires the prelude, indexOf of the reader and decimalChars of the datatype language.
+; bundle's definitions from positions to payloads referring to CIDs; the linker back; and names
+; as annotations keyed by identifiers and vertices. The kernel has no operations on the bits of
+; a word, so a word of 32 bits is a natural number below 2^32, and the exclusive or, the
+; rotations and the addition modulo 2^32 are computed by arithmetic. Bytes are leaves, and a
+; list of bytes is a node's children where a tree is needed. Requires the prelude, indexOf of
+; the reader and decimalChars of the datatype language.
 
 ; words of 32 bits
 (defnum wordSize 4294967296)
@@ -334,3 +335,60 @@
           (cons (mapRefs (lam ((i T)) (positionIn (at (importsOf p) i) cids)) (bodyOf p)) r))
         (nil T)
         ps))))
+
+; annotations of identifiers: entries keyed by a definition's identifier and a vertex of its
+; term, the path of child positions from the root, which the migration moves no node of. An
+; entry of a term's vertices is a node over the node of its vertex and its value; children's
+; entries are put under the children's positions, counted from a start
+(def underChildren
+  (lam ((start T) (rs (List Ts)))
+    ((foldr Ts (Arrow T Ts)
+       (lam ((r Ts) (k (Arrow T Ts)) (i T))
+         (append
+           (foldr T Ts
+             (lam ((e T) (acc Ts))
+               (cons (node 0 (cons (node 0 (cons i (children (child e 0)))) (single (child e 1))))
+                 acc))
+             (nil T)
+             r)
+           (k (add i 1))))
+       (lam ((i T)) (nil T))
+       rs) start)))
+; the vertices of a term's references to definitions, each with the position it refers to,
+; following the term grammar as mapRefs does
+(def refVertices
+  (lam ((t T))
+    (para Ts
+      (lam ((u T) (rs (List Ts)))
+        (let l T (label u)
+          (if (eq l Label.ref)
+            (foldr T Ts
+              (lam ((c T) (r Ts)) (cons (node 0 (cons (node 0 (nil T)) (single (label c)))) r))
+              (nil T)
+              (children u))
+            (if (eq l Label.lam)
+              (lcase Ts Ts rs (nil T) (lam ((x Ts) (rest (List Ts))) (underChildren 1 rest)))
+              (if (isTermFormer l) (underChildren 0 rs) (nil T))))))
+      t)))
+; the names of a bundle as annotations keyed by its definitions' identifiers: an entry is a node
+; over the identifier, the node of the vertex and the note, a node of label 0 over the name a
+; definition is declared under, at the root of its term, or of label 1 over the name written at
+; a reference, the name of the definition it refers to, at the reference's vertex
+(def nameNote (lam ((cid T) (v T) (n T)) (node 0 (cons cid (cons v (single n))))))
+(def nameNotes
+  (lam ((names Ts) (cids Ts) (ds Ts))
+    ((foldr T (Arrow T Ts)
+       (lam ((t T) (k (Arrow T Ts)) (i T))
+         (let cid T (at cids i)
+           (cons (nameNote cid (node 0 (nil T)) (node 0 (children (at names i))))
+             (append
+               (foldr T Ts
+                 (lam ((e T) (r Ts))
+                   (cons
+                     (nameNote cid (child e 0) (node 1 (children (at names (label (child e 1))))))
+                     r))
+                 (nil T)
+                 (refVertices t))
+               (k (add i 1))))))
+       (lam ((i T)) (nil T))
+       ds) 0)))

@@ -1546,9 +1546,9 @@ section below opens with a table of the states of its parts.
 *
   * {ref "content-identity"}[Content identity]
   * In progress
-  * The hash, the payload, the CID, the migration and the linker in Lean
-    and Geb: complete; the re-keying of annotations and modules: ready,
-    in that order, before the reader's inverse
+  * The hash, the payload, the CID, the migration, the linker and names
+    as annotations re-keyed by identifiers in Lean and Geb: complete;
+    modules: ready, before the reader's inverse
 *
   * {ref "authoring-compatibility"}[Authoring across bootstrap revisions]
   * In progress
@@ -2279,9 +2279,9 @@ tag := "content-identity"
   * In progress: definitions in Lean and Geb
 *
   * The node-digest rule, the hash, the migration
-  * In progress: the hash, the migration and the linker in Lean and Geb,
-    agreeing, the linker's relabelling proved; the re-keying of
-    annotations and modules, ready
+  * In progress: the hash, the migration, the linker and the re-keying of
+    names in Lean and Geb, agreeing, the linker's relabelling and the
+    re-keying's addressing proved; modules, ready
 *
   * Acceptance
   * Met
@@ -2323,12 +2323,23 @@ canonical bytes and CID, the migration and the linker; the same tests
 compare each with Lean's, and check in Geb that migrating a linked bundle
 gives back its payloads.
 
-The remaining steps follow in this order, before the reader's inverse
-({ref "the-next-phase"}[The next phase]): the re-keying of annotations,
-which makes names annotations of identifiers, from the map of old
-references to new that the migration produces; and modules
-({ref "modules"}[Modules]), whose names resolve to identifiers through
-those annotations.
+`Geb/Prototypes/Kernel/Annotation.lean` keeps annotations in a table
+keyed by a definition and a vertex of its term, the path of child
+positions from the root. The migration relabels the leaves of references
+and moves no vertex (`migrate_shape`), so a key re-keyed from a
+definition's position to its payload's CID with the same vertex addresses
+the same node of the payload's body (`valid_rekey`). Names are such
+annotations: the name a definition is declared under, at the root of its
+term, and the name written at each reference, at the reference's vertex.
+The table is a relation, definitions with equal payloads sharing a CID
+and keeping each its own notes. `bootstrap/identity.geb` computes the
+same table, and the tests compare it with Lean's. Comments re-key in the
+same way once their attachment, a redecoration of the trivia, places
+them at vertices of the core.
+
+Modules ({ref "modules"}[Modules]), whose names resolve to identifiers
+through those annotations, follow, before the reader's inverse
+({ref "the-next-phase"}[The next phase]).
 
 What the sections before the choice of machine fix for this one: the
 reference node is
@@ -6071,9 +6082,9 @@ prover written in Geb and their agreement proved. The second proves a
 property of the kernel's reader, so it followed the change of that
 reader's syntax to the authoring profile, which is complete
 ({ref "authoring-sequence"}[The sequence and its acceptance]); the next
-phase is the second, which follows the re-keying of annotations and
-modules ({ref "content-identity"}[Content identity]) and precedes the
-printer of the advanced encoding:
+phase is the second, which follows modules
+({ref "content-identity"}[Content identity]) and precedes the printer of
+the advanced encoding:
 
 * The metalogic's checker, its prover and the translation of kernel
   programs written in Geb, the checker in Geb and proof construction for
