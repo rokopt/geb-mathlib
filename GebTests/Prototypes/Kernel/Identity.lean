@@ -19,8 +19,9 @@ position {lit}`i`, at lengths on each side of the block, chunk and tree boundari
 starts with its version, codec, hash code and digest length. The identifiers of
 definitions are unchanged by renaming a definition and
 changed, for a definition and the definitions referring to it, by a change of its body; the
-migration of the stage-0 compiler's linked bundle gives back its payloads. BLAKE3 and the
-migration written in Geb, {lit}`bootstrap/identity.geb`, agree with Lean's.
+migration of the stage-0 compiler's linked bundle gives back its payloads. BLAKE3, the
+migration and the linker written in Geb, {lit}`bootstrap/identity.geb`, agree with Lean's, and
+migrating a bundle the Geb linker links gives back its payloads.
 
 ## Tags
 
@@ -103,25 +104,37 @@ def withIdentity (main : String) : String := compiler ++ identity ++ "\n" ++ mai
 /-- BLAKE3 written in Geb, applied to the bytes of its input's children. -/
 def hasher : String := withIdentity "(def hashMain (lam ((t T)) (node 0 (blake3 (children t)))))"
 
-/-- The migration written in Geb, applied to a bundle's definitions. -/
+/-- The migration written in Geb, applied to a bundle's definitions: the payloads, their
+identifiers, the linked bundle, and whether migrating it gives the payloads back. -/
 def migrator : String :=
-  withIdentity "(def migrateMain (lam ((b T)) (node 0 (migrate (children (child b 0))))))"
+  withIdentity <| "(def migrateMain (lam ((b T)) (let ps Ts (migrate (children (child b 0))) " ++
+    "(let ds Ts (link ps) (node 0 (cons (node 0 ps) (cons (node 0 (cidsOf ps)) " ++
+    "(cons (node 0 ds) (single (equal (node 0 (migrate ds)) (node 0 ps)))))))))))"
 
 /-- Bytes as a node over their leaves. -/
 def bytesTree (bs : List UInt8) : Tree := mk 0 (bs.map fun b ↦ leaf b.toNat)
+
+/-- A payload as the Geb migration writes it: a node over the node of its imports and its
+body. -/
+def payloadTree (p : Payload) : Tree := mk 0 [mk 0 (p.imports.map bytesTree), p.body]
+
+/-- What the migration written in Geb gives for a bundle's definitions, computed in Lean. -/
+def expected (ds : List Tree) : Tree :=
+  let ps := migrate ds
+  mk 0 [mk 0 (ps.map payloadTree), mk 0 (ps.map fun p ↦ bytesTree p.cid), mk 0 (link ps), leaf 1]
 
 -- BLAKE3 written in Geb agrees with the host binding about the block, chunk and tree boundaries
 #guard [0, 1, 64, 65, 1024, 1025, 2049, 4096].all fun n ↦
   runMain hasher.toList (bytesTree (input n)) == some (bytesTree (Blake3.hash (input n)))
 
--- the migration written in Geb agrees with Lean's on examples and on the prelude and serializer
+-- the migration and the linker written in Geb agree with Lean's, and migrating the linked
+-- bundle gives the payloads back, on examples and on the prelude and serializer
 #guard ["(def a (lam ((x T)) x)) (def b (lam ((y T)) (a (a y))))",
     "(def a (lam ((x T)) (quote (23 0)))) (def b (lam ((y T)) (pair (a y) (a (a y)))))",
     serializer].all fun src ↦
   match readProgram src.toList with
   | some ds =>
-    runMain migrator.toList (bundle ds) ==
-      some (mk 0 ((migrate (ds.map Prod.snd)).map fun p ↦ bytesTree p.cid))
+    runMain migrator.toList (bundle ds) == some (expected (ds.map Prod.snd))
   | none => false
 
 end Geb.Kernel.Identity.Tests

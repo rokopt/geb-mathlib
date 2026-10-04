@@ -3783,9 +3783,10 @@ checklist and in CI.
   the compiler with the seed on the kernel's examples, runs programs in
   the datatype language compiled by the compiler.
   `bootstrap/identity.geb` computes content identity in Geb, BLAKE3 by
-  arithmetic on natural numbers, a definition's payload, its CID and the
-  migration, which `GebTests/Prototypes/Kernel/Identity.lean` compares with
-  `Geb.Blake3.hash` and `Geb.Kernel.Identity.migrate`.
+  arithmetic on natural numbers, a definition's payload, its CID, the
+  migration and the linker, which `GebTests/Prototypes/Kernel/Identity.lean`
+  compares with `Geb.Blake3.hash`, `Geb.Kernel.Identity.migrate` and
+  `Geb.Kernel.Identity.link`.
   `bootstrap/stage1/datatype.geb` rewrites the expansion in the datatype
   language, and `bootstrap/stage1/lean.geb` is a
   backend emitting a Lean module in place of an image; the stage-1 compiler

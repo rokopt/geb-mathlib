@@ -4,12 +4,12 @@
 ;
 ; Content identity, as Geb.Kernel.Identity computes it: the hash BLAKE3 in its default mode,
 ; with a 32-byte digest, as Geb.Blake3 computes it; a definition's payload in the canonical
-; encoding of RFC 9804; its CIDv1 of codec raw over a multihash of BLAKE3; and the migration
-; of a bundle's definitions from positions to the CIDs of their payloads. The kernel has no
-; operations on the bits of a word, so a word of 32 bits is a natural number below 2^32, and
-; the exclusive or, the rotations and the addition modulo 2^32 are computed by arithmetic.
-; Bytes are leaves, and a list of bytes is a node's children where a tree is needed. Requires
-; the prelude, indexOf of the reader and decimalChars of the datatype language.
+; encoding of RFC 9804; its CIDv1 of codec raw over a multihash of BLAKE3; the migration of a
+; bundle's definitions from positions to payloads referring to CIDs; and the linker back. The
+; kernel has no operations on the bits of a word, so a word of 32 bits is a natural number below
+; 2^32, and the exclusive or, the rotations and the addition modulo 2^32 are computed by
+; arithmetic. Bytes are leaves, and a list of bytes is a node's children where a tree is needed.
+; Requires the prelude, indexOf of the reader and decimalChars of the datatype language.
 
 ; words of 32 bits
 (defnum wordSize 4294967296)
@@ -280,30 +280,57 @@
                    (foldr Endo Ts (lam ((k Endo) (x Ts)) (k x)) (cons 41 acc) (cons r rest))))))))
        t) (nil T))))
 
-; a definition's payload, (geb-def/v1 geb-kernel/v1 (imports …) body), in the canonical encoding,
-; from the identifiers of the definitions before it, each a node over its bytes, and its term
-; referring to them by position
-(def payloadBytes
+; a definition's payload, from the identifiers of the definitions before it, each a node over
+; its bytes, and its term referring to them by position: a node over the node of its imports,
+; the identifiers referred to, each once, in the order of their first references, and its body,
+; referring to them by their positions among the imports
+(def payloadOf
   (lam ((cids Ts) (t T))
     (let imports Ts (eraseDups (pick cids (refsOf t)))
-      (let body T (mapRefs (lam ((p T)) (positionIn (at cids p) imports)) t)
-        (cons 40
-          (append (atomBytes (children (quote (0 geb-def/v1))))
-            (append (atomBytes (children (quote (0 geb-kernel/v1))))
-              (cons 40
-                (append
-                  (concat
-                    (foldr T (List Ts) (lam ((c T) (r (List Ts))) (cons (atomBytes (children c)) r))
-                      (nil Ts)
-                      imports))
-                  (cons 41 (append (termBytes body) (single 41))))))))))))
+      (node 0
+        (cons (node 0 imports)
+          (single (mapRefs (lam ((p T)) (positionIn (at cids p) imports)) t)))))))
+(def importsOf (lam ((p T)) (children (child p 0))))
+(def bodyOf (lam ((p T)) (child p 1)))
 
-; the identifiers of a bundle's definitions, each a node over its bytes, in order, each
-; computed from the identifiers before it
+; a payload, (geb-def/v1 geb-kernel/v1 (imports …) body), in the canonical encoding, and its
+; identifier
+(def payloadBytes
+  (lam ((p T))
+    (cons 40
+      (append (atomBytes (children (quote (0 geb-def/v1))))
+        (append (atomBytes (children (quote (0 geb-kernel/v1))))
+          (cons 40
+            (append
+              (concat
+                (foldr T (List Ts) (lam ((c T) (r (List Ts))) (cons (atomBytes (children c)) r))
+                  (nil Ts)
+                  (importsOf p)))
+              (cons 41 (append (termBytes (bodyOf p)) (single 41))))))))))
+(def payloadCid (lam ((p T)) (node 0 (cidOf (payloadBytes p)))))
+(def cidsOf (lam ((ps Ts)) (foldr T Ts (lam ((p T) (r Ts)) (cons (payloadCid p) r)) (nil T) ps)))
+
+; the payloads of a bundle's definitions, in order, each computed from the identifiers of the
+; payloads before it, each identifier computed once; the state is the payloads and their
+; identifiers
+(deftype Migration (Prod Ts Ts))
 (def migrate
   (lam ((ds Ts))
-    ((foldr T Endo
-       (lam ((t T) (k Endo) (cids Ts))
-         (k (append cids (single (node 0 (cidOf (payloadBytes cids t)))))))
-       (lam ((cids Ts)) cids)
-       ds) (nil T))))
+    (fst
+      ((foldr T (Arrow Migration Migration)
+         (lam ((t T) (k (Arrow Migration Migration)) (s Migration))
+           (let p T (payloadOf (snd s) t)
+             (k (pair (append (fst s) (single p)) (append (snd s) (single (payloadCid p)))))))
+         (lam ((s Migration)) s)
+         ds) (pair (nil T) (nil T))))))
+
+; the bundle of payloads in an order of dependence: each payload's imports replaced by the
+; position of the first payload they identify
+(def link
+  (lam ((ps Ts))
+    (let cids Ts (cidsOf ps)
+      (foldr T Ts
+        (lam ((p T) (r Ts))
+          (cons (mapRefs (lam ((i T)) (positionIn (at (importsOf p) i) cids)) (bodyOf p)) r))
+        (nil T)
+        ps))))

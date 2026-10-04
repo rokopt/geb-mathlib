@@ -1546,10 +1546,9 @@ section below opens with a table of the states of its parts.
 *
   * {ref "content-identity"}[Content identity]
   * In progress
-  * The hash, the payload, the CID and the migration in Lean and Geb, and
-    the linker in Lean: complete; the linker in Geb, the re-keying of
-    annotations and modules: ready, in that order, before the reader's
-    inverse
+  * The hash, the payload, the CID, the migration and the linker in Lean
+    and Geb: complete; the re-keying of annotations and modules: ready,
+    in that order, before the reader's inverse
 *
   * {ref "authoring-compatibility"}[Authoring across bootstrap revisions]
   * In progress
@@ -2280,12 +2279,12 @@ tag := "content-identity"
   * In progress: definitions in Lean and Geb
 *
   * The node-digest rule, the hash, the migration
-  * In progress: the hash and the migration in Lean and Geb, agreeing; the
-    linker in Lean, its relabelling proved; the tree of modules and the
-    re-keying of annotations, ready
+  * In progress: the hash, the migration and the linker in Lean and Geb,
+    agreeing, the linker's relabelling proved; the re-keying of
+    annotations and modules, ready
 *
   * Acceptance
-  * Met in Lean, and in Geb by agreement with Lean
+  * Met
 :::
 
 * The identity-bearing payload and the format of identifiers, frozen
@@ -2319,16 +2318,15 @@ each derived from the payloads before it, gives those payloads back,
 and `migrate_idem` that running the migration twice changes nothing;
 `GebTests/Prototypes/Kernel/Identity.lean` checks the three conditions
 of acceptance on examples and on the stage-0 compiler. In Geb,
-`bootstrap/identity.geb` computes BLAKE3 by arithmetic, a payload's
-canonical bytes, its CID and the migration, and the same tests compare
-each with Lean's.
+`bootstrap/identity.geb` computes BLAKE3 by arithmetic, a payload, its
+canonical bytes and CID, the migration and the linker; the same tests
+compare each with Lean's, and check in Geb that migrating a linked bundle
+gives back its payloads.
 
 The remaining steps follow in this order, before the reader's inverse
-({ref "the-next-phase"}[The next phase]): the linker written in Geb,
-which lets running the migration twice be checked in Geb and a Geb tool
-load a program from payloads; the re-keying of annotations, which makes
-names annotations of identifiers, from the map of old references to new
-that the migration produces; and modules
+({ref "the-next-phase"}[The next phase]): the re-keying of annotations,
+which makes names annotations of identifiers, from the map of old
+references to new that the migration produces; and modules
 ({ref "modules"}[Modules]), whose names resolve to identifiers through
 those annotations.
 
@@ -6073,9 +6071,9 @@ prover written in Geb and their agreement proved. The second proves a
 property of the kernel's reader, so it followed the change of that
 reader's syntax to the authoring profile, which is complete
 ({ref "authoring-sequence"}[The sequence and its acceptance]); the next
-phase is the second, which follows the linker written in Geb, the
-re-keying of annotations and modules ({ref "content-identity"}[Content
-identity]) and precedes the printer of the advanced encoding:
+phase is the second, which follows the re-keying of annotations and
+modules ({ref "content-identity"}[Content identity]) and precedes the
+printer of the advanced encoding:
 
 * The metalogic's checker, its prover and the translation of kernel
   programs written in Geb, the checker in Geb and proof construction for
