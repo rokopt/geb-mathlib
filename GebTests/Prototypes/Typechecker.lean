@@ -10,6 +10,7 @@ import Geb.Prototypes.Typechecker.Coequalizers
 import Geb.Prototypes.Typechecker.Exponentials
 import Geb.Prototypes.Typechecker.Terminal -- shake: keep
 import Mathlib.Data.Tree.Basic
+public import Geb.Prototypes.Typechecker
 
 set_option doc.verso true in
 /-!

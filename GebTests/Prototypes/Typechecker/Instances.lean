@@ -5,11 +5,12 @@ Authors: Terence Rokop
 -/
 module
 
-import Geb.Prototypes.Typechecker.Instances
-import Mathlib.CategoryTheory.Monoidal.Cartesian.Basic
+import Geb.Prototypes.Typechecker.Instances -- shake: keep
+import Mathlib.CategoryTheory.Monoidal.Cartesian.Basic -- shake: keep
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Fintype.Sets
 import Mathlib.Data.Fintype.Inv
+public import Geb.Prototypes.Typechecker
 
 set_option doc.verso true in
 /-!

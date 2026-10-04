@@ -88,12 +88,10 @@ rev = "v4.35.0-rc3"
 name = "Geb"
 globs = ["Geb.*"]
 
-# The test library: its root, every module the root imports but for the
-# modules below that read files at elaboration, and the one test module
-# the root does not import.
+# The test library: its root and every module the root imports, but for
+# the modules below that read files at elaboration.
 [[lean_lib]]
 name = "GebTests"
-globs = ["GebTests", "GebTests.Prototypes.Typechecker.Instances"]
 
 # `linter.hashCommand`, a member of `mathlibStandardSet`, rejects every
 # `#`-command outside `#adaptation_note`. Its purpose is to keep them

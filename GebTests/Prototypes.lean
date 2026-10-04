@@ -73,6 +73,7 @@ import GebTests.Prototypes.RelSeparation
 import GebTests.Prototypes.RoseTree
 import GebTests.Prototypes.SuccinctTree
 import GebTests.Prototypes.Typechecker
+import GebTests.Prototypes.Typechecker.Instances
 import GebTests.Prototypes.Typechecker.Oitavem
 import GebTests.Prototypes.UniverseVariance
 import GebTests.Prototypes.SExprIO
