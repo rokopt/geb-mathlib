@@ -41,7 +41,8 @@ contexts and signatures (Figure 2) check each declaration in the scope of those 
 
 * {lit}`Mode` — the three judgments that check an expression.
 * {lit}`classOf`, {lit}`spine` — the classifier of a head, and its instantiation along a spine.
-* {lit}`judge` — the fold deciding the judgments.
+* {lit}`judgeWith`, {lit}`judge` — the fold deciding the judgments, with a given equality of
+  types and with the equality of expressions.
 * {lit}`IsKind`, {lit}`IsType`, {lit}`Checks` — the judgments.
 * {lit}`Ctx.ok`, {lit}`Sig.ok` — the formation of contexts and signatures.
 
@@ -94,9 +95,10 @@ def IsApp (e : Expr) : Bool :=
     | _ => false
 
 /-- One step of the judgments, at a node of a label, from the judgments of its children, each
-child paired with its judgment. -/
-def judgeStep (sig : Sig) (l : Label) (cs : List (Expr × (Ctx → Mode → Bool))) (Γ : Ctx) :
-    Mode → Bool
+child paired with its judgment, with {lit}`eqv` the equality of the types an atomic term
+synthesizes and is checked against. -/
+def judgeStep (eqv : Expr → Expr → Bool) (sig : Sig) (l : Label)
+    (cs : List (Expr × (Ctx → Mode → Bool))) (Γ : Ctx) : Mode → Bool
   | .kind =>
     match l, cs with
       | .type, [] => true
@@ -113,11 +115,19 @@ def judgeStep (sig : Sig) (l : Label) (cs : List (Expr × (Ctx → Mode → Bool
         match p.label, p.children with
           | .pi, [a, b] => jm (a :: Γ) (.check b)
           | _, _ => false
-      | .app h, cs => IsApp p && (classOf sig Γ h).bind (fun a ↦ spine Γ a cs) == some p
+      | .app h, cs =>
+        IsApp p && match (classOf sig Γ h).bind fun a ↦ spine Γ a cs with
+          | some a => eqv a p
+          | none => false
       | _, _ => false
 
-/-- The judgments of an expression in a signature, in a context. -/
-def judge (sig : Sig) : Expr → Ctx → Mode → Bool := RoseTree.para (judgeStep sig)
+/-- The judgments of an expression in a signature, in a context, with {lit}`eqv` the equality of
+types. -/
+def judgeWith (eqv : Expr → Expr → Bool) (sig : Sig) : Expr → Ctx → Mode → Bool :=
+  RoseTree.para (judgeStep eqv sig)
+
+/-- The judgments of an expression in a signature, in a context, types compared as expressions. -/
+def judge (sig : Sig) : Expr → Ctx → Mode → Bool := judgeWith (· == ·) sig
 
 /-- {lit}`Γ ⊢ K kind`. -/
 def IsKind (sig : Sig) (Γ : Ctx) (k : Expr) : Bool := judge sig k Γ .kind

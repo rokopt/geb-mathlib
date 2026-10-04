@@ -108,10 +108,6 @@ def var (i : ℕ) (ms : List Expr := []) : Expr := app (.var i) ms
 /-- The application of the constant of index {lit}`c` to a spine. -/
 def const (c : ℕ) (ms : List Expr := []) : Expr := app (.const c) ms
 
-/-- The non-dependent product {lit}`A → B`, whose codomain does not mention the bound
-variable; {lit}`B` is written in the context outside the binder. -/
-def arrow (a b : Expr) : Expr := pi a b
-
 end Expr
 
 /-- The lifting of a renaming of variables under a binder. -/
@@ -139,6 +135,10 @@ def Expr.rename : Expr → (ℕ → ℕ) → Expr := RoseTree.elim renameStep
 
 /-- The weakening of an expression by one variable, bound outside it. -/
 def Expr.shift (e : Expr) : Expr := e.rename Nat.succ
+
+/-- The non-dependent product {lit}`A → B`, whose codomain does not mention the bound variable:
+{lit}`B` is written in the context outside the binder and weakened past it. -/
+def Expr.arrow (a b : Expr) : Expr := Expr.pi a b.shift
 
 /-- The label of a node of a simple type ({cite}`HarperLicata2007`, Figure 4). -/
 inductive SimpleLabel where
