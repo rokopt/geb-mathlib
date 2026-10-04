@@ -248,3 +248,15 @@ name = "geb-manual"
 srcDir = "manual"
 root = "Main"
 supportInterpreter = true
+
+# Experiments with Canonical (the manual's Bootstrap chapter, § Search and
+# synthesis): a library that no module of `Geb`, `GebLang` or `GebTests`
+# imports, and the programs that run it, which give the solver problems
+# and check the terms it returns with Geb's checkers.
+[[lean_lib]]
+name = "GebExperiments"
+globs = ["GebExperiments.*"]
+
+[[lean_exe]]
+name = "lf-canonical"
+root = "GebExperiments.LF.Main"
