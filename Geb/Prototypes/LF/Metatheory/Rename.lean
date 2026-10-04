@@ -36,14 +36,27 @@ set_option doc.verso true
 
 namespace Geb.LF
 
+/-- An element of a list paired with positions and mapped is the map at the element and its
+position. Stated through {name}`List.zipIdx`, whose element access does not depend on
+{lit}`Classical.choice`, unlike that of {name}`List.mapIdx`. -/
+theorem getElem_zipIdx_map {α β : Type} (l : List α) (f : α × ℕ → β) (k : ℕ)
+    (h : k < (l.zipIdx.map f).length) :
+    (l.zipIdx.map f)[k] = f (l[k]'(by simpa using h), k) := by
+  simp only [List.getElem_map, List.getElem_zipIdx, zero_add]
+
+/-- A list paired with positions and mapped has the list's length. -/
+@[simp] theorem length_zipIdx_map {α β : Type} (l : List α) (f : α × ℕ → β) :
+    (l.zipIdx.map f).length = l.length := by
+  simp
+
 /-- The renaming of a node renames its label and each child, lifted under the variables the node
 binds over it. -/
 theorem rename_node (l : Label) (cs : List Expr) (ρ : ℕ → ℕ) :
     Expr.rename (RoseTree.node l cs) ρ =
-      RoseTree.node (l.rename ρ) (cs.mapIdx fun k c ↦ c.rename (liftR^[l.binders k] ρ)) := by
+      RoseTree.node (l.rename ρ) (cs.zipIdx.map fun p ↦ p.1.rename (liftR^[l.binders p.2] ρ)) := by
   rw [Expr.rename, RoseTree.elim_node]
   refine congrArg _ (List.ext_getElem (by simp) fun i _ _ ↦ ?_)
-  simp only [List.getElem_mapIdx, List.getElem_map]
+  simp only [List.getElem_map, List.getElem_zipIdx, zero_add]
 
 /-- Renaming preserves the binders of a label. -/
 @[simp] theorem Label.binders_rename (ρ : ℕ → ℕ) (l : Label) (k : ℕ) :
@@ -102,7 +115,7 @@ theorem Label.rename_rename (σ ρ : ℕ → ℕ) (l : Label) :
     rw [rename_node, Label.rename_id]
     congr 1
     refine List.ext_getElem (by simp) fun i h₁ h₂ ↦ ?_
-    simp only [List.getElem_mapIdx, iterate_liftR_id]
+    simp only [getElem_zipIdx_map, iterate_liftR_id]
     exact ih _ (List.getElem_mem _)
 
 /-- Renaming twice is renaming by the composite. -/
@@ -111,7 +124,7 @@ theorem rename_rename : ∀ (e : Expr) (σ ρ : ℕ → ℕ), (e.rename ρ).rena
     rw [rename_node, rename_node, rename_node, Label.rename_rename]
     congr 1
     refine List.ext_getElem (by simp) fun i h₁ h₂ ↦ ?_
-    simp only [List.getElem_mapIdx, Label.binders_rename, iterate_liftR_comp]
+    simp only [getElem_zipIdx_map, Label.binders_rename, iterate_liftR_comp]
     exact ih _ (List.getElem_mem _) _ _
 
 /-- Weakening after a renaming is renaming, lifted, after weakening. -/
@@ -146,7 +159,7 @@ theorem erase_rename : ∀ (e : Expr) (ρ : ℕ → ℕ), (e.rename ρ).erase = 
       · rfl
       · rfl
       · simp [eraseStep, Label.rename, ih a (by simp), ih b (by simp)]
-      · simp [eraseStep, Label.rename, List.mapIdx_cons]
+      · simp [eraseStep, Label.rename]
     · rfl
     · rfl
     · rfl

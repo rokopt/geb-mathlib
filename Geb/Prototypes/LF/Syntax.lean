@@ -140,7 +140,7 @@ def Label.rename (ρ : ℕ → ℕ) : Label → Label
 renamings of its children: the label is renamed, and each child is renamed by the renaming lifted
 under the variables the node binds over it. -/
 def renameStep (l : Label) (cs : List ((ℕ → ℕ) → Expr)) (ρ : ℕ → ℕ) : Expr :=
-  RoseTree.node (l.rename ρ) (cs.mapIdx fun k c ↦ c (liftR^[l.binders k] ρ))
+  RoseTree.node (l.rename ρ) (cs.zipIdx.map fun p ↦ p.1 (liftR^[l.binders p.2] ρ))
 
 /-- The renaming of an expression's variables. -/
 def Expr.rename : Expr → (ℕ → ℕ) → Expr := RoseTree.elim renameStep

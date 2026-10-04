@@ -76,10 +76,11 @@ theorem getElem_of_mapM_id_eq_some {β : Type} {xs : List (Option β)} {ys : Lis
   subst h
   exact ⟨by simp, fun k _ _ ↦ by simp⟩
 
-/-- Mapping with indices after mapping is mapping with indices by the composite. -/
-theorem mapIdx_map {α β γ : Type} (f : α → β) (g : ℕ → β → γ) (l : List α) :
-    (l.map f).mapIdx g = l.mapIdx fun k a ↦ g k (f a) :=
-  List.ext_getElem (by simp) fun k _ _ ↦ by simp
+/-- Pairing with positions and mapping after mapping is pairing and mapping by the composite. -/
+theorem zipIdx_map_map {α β γ : Type} (f : α → β) (g : β × ℕ → γ) (l : List α) :
+    (l.map f).zipIdx.map g = l.zipIdx.map fun p ↦ g (f p.1, p.2) :=
+  List.ext_getElem (by simp) fun k _ _ ↦ by
+    simp only [List.getElem_map, List.getElem_zipIdx, zero_add]
 
 /-- The computation rule of the substitution. -/
 theorem hsubWith_node (red : Expr → List Expr → Option Expr) (l : Label) (cs : List Expr)
@@ -103,15 +104,16 @@ each child, under the variables the node binds over it. -/
 theorem hsubWith_node_of_ne (red : Expr → List Expr → Option Expr) (l : Label)
     (hl : ∀ i, l ≠ .app (.var i)) (cs : List Expr) (n : Expr) (j : ℕ) :
     hsubWith red (RoseTree.node l cs) n j = RoseTree.node l <$>
-      (cs.mapIdx fun k c ↦ hsubWith red c (Expr.shift^[l.binders k] n) (j + l.binders k)).mapM
+      (cs.zipIdx.map fun p ↦
+        hsubWith red p.1 (Expr.shift^[l.binders p.2] n) (j + l.binders p.2)).mapM
         id := by
   rw [hsubWith_node]
   rcases l with _ | _ | _ | (i | c)
-  · simp only [hsubStep, mapIdx_map]
-  · simp only [hsubStep, mapIdx_map]
-  · simp only [hsubStep, mapIdx_map]
+  · simp only [hsubStep, zipIdx_map_map]
+  · simp only [hsubStep, zipIdx_map_map]
+  · simp only [hsubStep, zipIdx_map_map]
   · exact absurd rfl (hl i)
-  · simp only [hsubStep, mapIdx_map]
+  · simp only [hsubStep, zipIdx_map_map]
 
 /-- A reduction commutes with renaming: reducing and renaming the result is renaming the term
 and the spine and reducing. -/
@@ -158,20 +160,39 @@ theorem hsubWith_rename {red : Expr → List Expr → Option Expr} (hred : Renam
       hsubWith red (e.rename (liftR^[j + 1] ρ)) (n.rename (liftR^[j] ρ)) j =
         some (e'.rename (liftR^[j] ρ)) :=
   RoseTree.ind fun l cs ih n j ρ e' h ↦ by
-    by_cases hv : ∃ i, l = .app (.var i)
-    · obtain ⟨i, rfl⟩ := hv
-      rw [hsubWith_var, Option.bind_eq_some_iff] at h
+    have nonvar : (∀ i, l ≠ .app (.var i)) → hsubWith red (Expr.rename (RoseTree.node l cs)
+        (liftR^[j + 1] ρ)) (n.rename (liftR^[j] ρ)) j = some (e'.rename (liftR^[j] ρ)) := by
+      intro hl
+      rw [hsubWith_node_of_ne red l hl, Option.map_eq_map, Option.map_eq_some_iff] at h
+      obtain ⟨ys, hys, rfl⟩ := h
+      obtain ⟨hlen, hk⟩ := getElem_of_mapM_id_eq_some hys
+      rw [rename_node, Label.rename_of_ne hl, hsubWith_node_of_ne red l hl, rename_node,
+        Label.rename_of_ne hl]
+      refine congrArg (Option.map _) (mapM_id_eq_some_of_getElem (by simpa using hlen)
+        fun k h₁ h₂ ↦ ?_)
+      have hk' := hk k (by simpa using h₁) (by simpa using h₂)
+      simp only [List.getElem_map, List.getElem_zipIdx, zero_add] at hk' ⊢
+      have := ih _ (List.getElem_mem _) _ _ ρ _ hk'
+      rw [iterate_shift_rename, ← Function.iterate_add_apply, ← Function.iterate_add_apply]
+      rw [show l.binders k + (j + 1) = j + l.binders k + 1 by omega,
+        show l.binders k + j = j + l.binders k by omega]
+      exact this
+    rcases l with _ | _ | _ | (i | c)
+    · exact nonvar fun i h ↦ by cases h
+    · exact nonvar fun i h ↦ by cases h
+    · exact nonvar fun i h ↦ by cases h
+    · rw [hsubWith_var, Option.bind_eq_some_iff] at h
       obtain ⟨ms, hms, h⟩ := h
       obtain ⟨hl, hk⟩ := getElem_of_mapM_id_eq_some hms
       rw [rename_node]
       simp only [Label.rename, Head.rename, Label.binders_app, Function.iterate_zero_apply]
       rw [hsubWith_var]
-      have hms' : ((cs.mapIdx fun _ c ↦ Expr.rename c (liftR^[j + 1] ρ)).map
+      have hms' : ((cs.zipIdx.map fun p ↦ Expr.rename p.1 (liftR^[j + 1] ρ)).map
           fun c ↦ hsubWith red c (n.rename (liftR^[j] ρ)) j).mapM id =
           some (ms.map fun m ↦ m.rename (liftR^[j] ρ)) :=
         mapM_id_eq_some_of_getElem (by simpa using hl) fun k h₁ h₂ ↦ by
           have hk' := hk k (by simpa using h₁) (by simpa using h₂)
-          simp only [List.getElem_map, List.getElem_mapIdx] at hk' ⊢
+          simp only [List.getElem_map, List.getElem_zipIdx, zero_add] at hk' ⊢
           exact ih _ (List.getElem_mem _) _ _ _ _ hk'
       rw [hms', Option.bind_some]
       by_cases hij : i = j
@@ -189,21 +210,7 @@ theorem hsubWith_rename {red : Expr → List Expr → Option Expr} (hred : Renam
           split_ifs <;> omega
         simp only [hne, ↓reduceIte]
         rw [rename_var, iterate_liftR_renumber j i ρ hij]
-    · have hl : ∀ i, l ≠ .app (.var i) := fun i h ↦ hv ⟨i, h⟩
-      rw [hsubWith_node_of_ne red l hl, Option.map_eq_map, Option.map_eq_some_iff] at h
-      obtain ⟨ys, hys, rfl⟩ := h
-      obtain ⟨hlen, hk⟩ := getElem_of_mapM_id_eq_some hys
-      rw [rename_node, Label.rename_of_ne hl, hsubWith_node_of_ne red l hl, rename_node,
-        Label.rename_of_ne hl]
-      refine congrArg (Option.map _) (mapM_id_eq_some_of_getElem (by simpa using hlen)
-        fun k h₁ h₂ ↦ ?_)
-      have hk' := hk k (by simpa using h₁) (by simpa using h₂)
-      simp only [List.getElem_mapIdx] at hk' ⊢
-      have := ih _ (List.getElem_mem _) _ _ ρ _ hk'
-      rw [iterate_shift_rename, ← Function.iterate_add_apply, ← Function.iterate_add_apply]
-      rw [show l.binders k + (j + 1) = j + l.binders k + 1 by omega,
-        show l.binders k + j = j + l.binders k by omega]
-      exact this
+    · exact nonvar fun i h ↦ by cases h
 
 /-- The computation rule of the reduction. -/
 theorem reduce_node (l : SimpleLabel) (cs : List SimpleTy) :
@@ -241,7 +248,8 @@ theorem reduce_rename : ∀ α : SimpleTy, RenameCompat (reduce α) :=
             · obtain ⟨b', hb, hr⟩ := Option.bind_eq_some_iff.mp h
               have hb' := hsubWith_rename (ih α₁ (by simp)) b m 0 ρ b' hb
               simp only [zero_add, Function.iterate_one, Function.iterate_zero_apply] at hb'
-              simp only [Label.rename, List.mapIdx_cons, List.mapIdx_nil]
+              simp only [Label.rename, List.zipIdx_cons, List.zipIdx_nil, List.map_cons,
+                List.map_nil]
               rw [show Label.lam.binders 0 = 1 from rfl, Function.iterate_one, hb',
                 Option.bind_some]
               exact ih α₂ (by simp) _ _ _ _ hr

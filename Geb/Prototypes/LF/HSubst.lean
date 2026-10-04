@@ -69,7 +69,7 @@ def hsubStep (red : Expr → List Expr → Option Expr) (l : Label)
       let ms ← cs.mapM fun c ↦ c n j
       if i = j then red n ms else pure (var (if j < i then i - 1 else i) ms)
     | l => RoseTree.node l <$>
-      (cs.mapIdx fun k c ↦ c (Expr.shift^[l.binders k] n) (j + l.binders k)).mapM id
+      (cs.zipIdx.map fun p ↦ p.1 (Expr.shift^[l.binders p.2] n) (j + l.binders p.2)).mapM id
 
 /-- The substitution of a term for a variable in an expression, given the reduction of the term
 applied to a spine. -/
