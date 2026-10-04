@@ -36,6 +36,8 @@ set_option doc.verso true
 
 @[expose] public section
 
+open GebMirror.Metalogic
+
 namespace GebTests.Prototypes.FreeTopos.Agreement.PartialHorn
 
 open Geb Geb.Kernel GebTests.Prototypes.FreeTopos.Agreement.Encode
@@ -44,29 +46,29 @@ open scoped FinEnum
 
 /-- The trees of a list of trees with their results. -/
 @[simp] theorem ptTrees_eq (rs : List (Tree × Tree)) :
-    GebMirror.Metalogic.ptTrees rs = rs.map Prod.fst :=
+    «PartialHorn.ptTrees» rs = rs.map Prod.fst :=
   rs.rec rfl fun _ _ ih ↦ by
-    simp only [GebMirror.Metalogic.ptTrees, foldr_eq, List.foldr_cons] at ih ⊢
+    simp only [«PartialHorn.ptTrees», foldr_eq, List.foldr_cons] at ih ⊢
     rw [ih]
     rfl
 
 /-- The results of a list of trees with their results. -/
 @[simp] theorem ptValues_eq (rs : List (Tree × Tree)) :
-    GebMirror.Metalogic.ptValues rs = rs.map Prod.snd :=
+    «PartialHorn.ptValues» rs = rs.map Prod.snd :=
   rs.rec rfl fun _ _ ih ↦ by
-    simp only [GebMirror.Metalogic.ptValues, foldr_eq, List.foldr_cons] at ih ⊢
+    simp only [«PartialHorn.ptValues», foldr_eq, List.foldr_cons] at ih ⊢
     rw [ih]
     rfl
 
 /-- The argument sorts of an encoded signature. -/
 @[simp] theorem opArgs_eq (o : List ℕ × ℕ) :
-    GebMirror.Metalogic.opArgs (encOpSig o) = o.1.map leaf := by
-  simp [GebMirror.Metalogic.opArgs, encOpSig]
+    «PartialHorn.opArgs» (encOpSig o) = o.1.map leaf := by
+  simp [«PartialHorn.opArgs», encOpSig]
 
 /-- The sort of an encoded signature. -/
 @[simp] theorem opSort_eq (o : List ℕ × ℕ) :
-    GebMirror.Metalogic.opSort (encOpSig o) = leaf o.2 := by
-  simp [GebMirror.Metalogic.opSort, encOpSig]
+    «PartialHorn.opSort» (encOpSig o) = leaf o.2 := by
+  simp [«PartialHorn.opSort», encOpSig]
 
 /-- The encoding of an optional number is injective. -/
 theorem encOptLeaf_inj {a b : Option ℕ} : encOpt (a.map leaf) = encOpt (b.map leaf) ↔ a = b := by
@@ -75,9 +77,9 @@ theorem encOptLeaf_inj {a b : Option ℕ} : encOpt (a.map leaf) = encOpt (b.map 
 
 /-- The mirror's sort of a term in a context of sorts is the encoding of its sort. -/
 theorem sortOf_eq (S : PartialHorn.Sig) (Γ : List ℕ) (t : Tree) :
-    GebMirror.Metalogic.sortOf (S.map encOpSig) (Γ.map leaf) t =
+    «PartialHorn.sortOf» (S.map encOpSig) (Γ.map leaf) t =
       encOpt ((PartialHorn.sortOf S Γ t).map leaf) := by
-  simp only [GebMirror.Metalogic.sortOf, PartialHorn.sortOf]
+  simp only [«PartialHorn.sortOf», PartialHorn.sortOf]
   apply fold_pair_snd (fun (v : Tree) (w : Option ℕ) ↦ v = encOpt (w.map leaf))
   · intro l rs
     simp
@@ -98,7 +100,7 @@ theorem sortOf_eq (S : PartialHorn.Sig) (Γ : List ℕ) (t : Tree) :
         fun _ _ h ↦ encOptLeaf_inj.mp h
       simp only [Option.map_some, Option.elim_some, Option.bind_some, ptValues_eq, opArgs_eq,
         mapT_eq, List.map_map, Function.comp_def, equalTs_eq, ofBool_label, decide_eq_true_eq]
-      have hs : o.1.map (fun a ↦ GebMirror.Metalogic.some (leaf a)) =
+      have hs : o.1.map (fun a ↦ «Prelude.some» (leaf a)) =
           (o.1.map some).map fun w ↦ encOpt (w.map leaf) := by
         rw [List.map_map]
         rfl
@@ -108,8 +110,8 @@ theorem sortOf_eq (S : PartialHorn.Sig) (Γ : List ℕ) (t : Tree) :
 
 /-- The mirror's test of a term's variables' scope is the encoding of the test. -/
 theorem scoped_eq (n : ℕ) (t : Tree) :
-    GebMirror.Metalogic.scoped (leaf n) t = ofBool (PartialHorn.Scoped n t) := by
-  simp only [GebMirror.Metalogic.scoped, PartialHorn.Scoped]
+    «PartialHorn.scoped» (leaf n) t = ofBool (PartialHorn.Scoped n t) := by
+  simp only [«PartialHorn.scoped», PartialHorn.Scoped]
   apply fold_pair_snd (fun (v : Tree) (w : Bool) ↦ v = ofBool w)
   · intro l rs
     simp
@@ -124,20 +126,20 @@ theorem scoped_eq (n : ℕ) (t : Tree) :
 
 /-- The mirror's application of an operation. -/
 @[simp] theorem phOp_eq (k : ℕ) (ts : List Tree) :
-    GebMirror.Metalogic.phOp (leaf k) ts = PartialHorn.op k ts := rfl
+    «PartialHorn.phOp» (leaf k) ts = PartialHorn.op k ts := rfl
 
 /-- The mirror's variable of an index. -/
-@[simp] theorem phVar_eq (i : ℕ) : GebMirror.Metalogic.phVar (leaf i) = PartialHorn.var i := rfl
+@[simp] theorem phVar_eq (i : ℕ) : «PartialHorn.phVar» (leaf i) = PartialHorn.var i := rfl
 
 /-- The mirror's substitution of terms for a term's variables is the substitution. -/
 theorem phSubst_eq (ts : List Tree) (t : Tree) :
-    GebMirror.Metalogic.phSubst ts t = PartialHorn.subst ts t := by
-  simp only [GebMirror.Metalogic.phSubst, PartialHorn.subst]
+    «PartialHorn.phSubst» ts t = PartialHorn.subst ts t := by
+  simp only [«PartialHorn.phSubst», PartialHorn.subst]
   apply fold_pair_snd (fun (v w : Tree) ↦ v = w)
   · intro l rs
     simp
   intro l xs hx
-  have hv : GebMirror.Metalogic.ptValues (xs.map fun x ↦ (x.1, x.2.1)) =
+  have hv : «PartialHorn.ptValues» (xs.map fun x ↦ (x.1, x.2.1)) =
       (xs.map fun x ↦ (x.1, x.2.2)).map Prod.snd := by
     simp only [ptValues_eq, List.map_map, Function.comp_def]
     exact List.map_congr_left hx
@@ -148,63 +150,63 @@ theorem phSubst_eq (ts : List Tree) (t : Tree) :
   | succ k => simp
 
 /-- The mirror's equation of two sides. -/
-@[simp] theorem eqn_eq (a b : Tree) : GebMirror.Metalogic.eqn a b = encEqn ⟨a, b⟩ := rfl
+@[simp] theorem eqn_eq (a b : Tree) : «PartialHorn.eqn» a b = encEqn ⟨a, b⟩ := rfl
 
 /-- The mirror's left side of an equation. -/
-@[simp] theorem eqLhs_eq (q : PartialHorn.Eqn) : GebMirror.Metalogic.eqLhs (encEqn q) = q.lhs := by
-  simp [GebMirror.Metalogic.eqLhs, encEqn]
+@[simp] theorem eqLhs_eq (q : PartialHorn.Eqn) : «PartialHorn.eqLhs» (encEqn q) = q.lhs := by
+  simp [«PartialHorn.eqLhs», encEqn]
 
 /-- The mirror's right side of an equation. -/
-@[simp] theorem eqRhs_eq (q : PartialHorn.Eqn) : GebMirror.Metalogic.eqRhs (encEqn q) = q.rhs := by
-  simp [GebMirror.Metalogic.eqRhs, encEqn]
+@[simp] theorem eqRhs_eq (q : PartialHorn.Eqn) : «PartialHorn.eqRhs» (encEqn q) = q.rhs := by
+  simp [«PartialHorn.eqRhs», encEqn]
 
 /-- The mirror's substitution in an equation. -/
 @[simp] theorem eqSubst_eq (ts : List Tree) (q : PartialHorn.Eqn) :
-    GebMirror.Metalogic.eqSubst ts (encEqn q) = encEqn (q.subst ts) := by
-  simp [GebMirror.Metalogic.eqSubst, phSubst_eq, PartialHorn.Eqn.subst]
+    «PartialHorn.eqSubst» ts (encEqn q) = encEqn (q.subst ts) := by
+  simp [«PartialHorn.eqSubst», phSubst_eq, PartialHorn.Eqn.subst]
 
 /-- The mirror's test of an equation's scope. -/
 @[simp] theorem eqScoped_eq (n : ℕ) (q : PartialHorn.Eqn) :
-    GebMirror.Metalogic.eqScoped (leaf n) (encEqn q) = ofBool (q.Scoped n) := by
-  simp [GebMirror.Metalogic.eqScoped, scoped_eq, PartialHorn.Eqn.Scoped]
+    «PartialHorn.eqScoped» (leaf n) (encEqn q) = ofBool (q.Scoped n) := by
+  simp [«PartialHorn.eqScoped», scoped_eq, PartialHorn.Eqn.Scoped]
 
 /-- The mirror's context of a sequent. -/
 @[simp] theorem seqCtx_eq (a : PartialHorn.Seq) :
-    GebMirror.Metalogic.seqCtx (encSeq a) = a.ctx.map leaf := by
-  simp [GebMirror.Metalogic.seqCtx, encSeq]
+    «PartialHorn.seqCtx» (encSeq a) = a.ctx.map leaf := by
+  simp [«PartialHorn.seqCtx», encSeq]
 
 /-- The mirror's hypotheses of a sequent. -/
 @[simp] theorem seqHyps_eq (a : PartialHorn.Seq) :
-    GebMirror.Metalogic.seqHyps (encSeq a) = a.hyps.map encEqn := by
-  simp [GebMirror.Metalogic.seqHyps, encSeq]
+    «PartialHorn.seqHyps» (encSeq a) = a.hyps.map encEqn := by
+  simp [«PartialHorn.seqHyps», encSeq]
 
 /-- The mirror's conclusion of a sequent. -/
 @[simp] theorem seqConcl_eq (a : PartialHorn.Seq) :
-    GebMirror.Metalogic.seqConcl (encSeq a) = encEqn a.concl := by
-  simp [GebMirror.Metalogic.seqConcl, encSeq]
+    «PartialHorn.seqConcl» (encSeq a) = encEqn a.concl := by
+  simp [«PartialHorn.seqConcl», encSeq]
 
 /-- The mirror's sequent of a context, hypotheses and a conclusion. -/
 @[simp] theorem mkSeq_eq (ctx : List ℕ) (hs : List PartialHorn.Eqn) (q : PartialHorn.Eqn) :
-    GebMirror.Metalogic.mkSeq (ctx.map leaf) (hs.map encEqn) (encEqn q) = encSeq ⟨ctx, hs, q⟩ :=
+    «PartialHorn.mkSeq» (ctx.map leaf) (hs.map encEqn) (encEqn q) = encSeq ⟨ctx, hs, q⟩ :=
   rfl
 
 /-- The mirror's test of a sequent's scope. -/
 @[simp] theorem seqScoped_eq (a : PartialHorn.Seq) :
-    GebMirror.Metalogic.seqScoped (encSeq a) = ofBool a.Scoped := by
-  simp only [GebMirror.Metalogic.seqScoped, seqCtx_eq, seqHyps_eq, seqConcl_eq, length_eq,
+    «PartialHorn.seqScoped» (encSeq a) = ofBool a.Scoped := by
+  simp only [«PartialHorn.seqScoped», seqCtx_eq, seqHyps_eq, seqConcl_eq, length_eq,
     List.length_map, PartialHorn.Seq.Scoped]
   rw [allT_map _ encEqn (fun h ↦ h.Scoped a.ctx.length) _ fun q _ ↦ eqScoped_eq _ q,
     eqScoped_eq, and_eq]
 
 /-- The mirror's signature of a theory. -/
 @[simp] theorem thySig_eq (T : PartialHorn.Theory) :
-    GebMirror.Metalogic.thySig (encTheory T) = T.sig.map encOpSig := by
-  simp [GebMirror.Metalogic.thySig, encTheory]
+    «PartialHorn.thySig» (encTheory T) = T.sig.map encOpSig := by
+  simp [«PartialHorn.thySig», encTheory]
 
 /-- The mirror's axioms of a theory. -/
 @[simp] theorem thyAxioms_eq (T : PartialHorn.Theory) :
-    GebMirror.Metalogic.thyAxioms (encTheory T) = T.axioms.map encSeq := by
-  simp [GebMirror.Metalogic.thyAxioms, encTheory]
+    «PartialHorn.thyAxioms» (encTheory T) = T.axioms.map encSeq := by
+  simp [«PartialHorn.thyAxioms», encTheory]
 
 /-- A result of the checker written in Geb represents a result of the Lean checker when, at
 every encoded context and hypotheses, it is the encoding of the Lean checker's. -/
@@ -213,36 +215,36 @@ def ChkRel (v : List Tree → List Tree → Tree) (w : PartialHorn.Chk) : Prop :
 
 /-- The certificates of a list of certificates with their results. -/
 @[simp] theorem pcTrees_eq (rs : List (Tree × (List Tree → List Tree → Tree))) :
-    GebMirror.Metalogic.pcTrees rs = rs.map Prod.fst :=
+    «PartialHorn.pcTrees» rs = rs.map Prod.fst :=
   rs.rec rfl fun _ _ ih ↦ by
-    simp only [GebMirror.Metalogic.pcTrees, foldr_eq, List.foldr_cons] at ih ⊢
+    simp only [«PartialHorn.pcTrees», foldr_eq, List.foldr_cons] at ih ⊢
     rw [ih]
     rfl
 
 /-- The results of a list of certificates with their results, at a context and hypotheses. -/
 @[simp] theorem pcResults_eq (rs : List (Tree × (List Tree → List Tree → Tree)))
     (ctx hs : List Tree) :
-    GebMirror.Metalogic.pcResults rs ctx hs = rs.map fun r ↦ r.2 ctx hs :=
+    «PartialHorn.pcResults» rs ctx hs = rs.map fun r ↦ r.2 ctx hs :=
   rs.rec rfl fun _ _ ih ↦ by
-    simp only [GebMirror.Metalogic.pcResults, foldr_eq, List.foldr_cons] at ih ⊢
+    simp only [«PartialHorn.pcResults», foldr_eq, List.foldr_cons] at ih ⊢
     rw [ih]
     rfl
 
 /-- A list of certificates with their results without its head. -/
 @[simp] theorem pcTail_eq (rs : List (Tree × (List Tree → List Tree → Tree))) :
-    GebMirror.Metalogic.pcTail rs = rs.tail := by
+    «PartialHorn.pcTail» rs = rs.tail := by
   cases rs <;> rfl
 
 /-- Dropping the head of a list of certificates as many times as a label. -/
 theorem repeat_pcTail (rs : List (Tree × (List Tree → List Tree → Tree))) :
-    ∀ i : ℕ, Nat.repeat GebMirror.Metalogic.pcTail i rs = rs.drop i :=
+    ∀ i : ℕ, Nat.repeat «PartialHorn.pcTail» i rs = rs.drop i :=
   Nat.rec rfl fun i ih ↦ by rw [Nat.repeat, ih, pcTail_eq, List.tail_drop]
 
 /-- The result of a premise at a position, the absent result out of range. -/
 @[simp] theorem pcPrem_eq (rs : List (Tree × (List Tree → List Tree → Tree))) (i : ℕ) :
-    GebMirror.Metalogic.pcPrem rs (leaf i) =
+    «PartialHorn.pcPrem» rs (leaf i) =
       (rs[i]?.map Prod.snd).getD fun _ _ ↦ encOpt none := by
-  simp only [GebMirror.Metalogic.pcPrem, iter_leaf, repeat_pcTail]
+  simp only [«PartialHorn.pcPrem», iter_leaf, repeat_pcTail]
   cases h : rs.drop i with
   | nil =>
     rw [List.drop_eq_nil_iff] at h
@@ -257,8 +259,8 @@ theorem repeat_pcTail (rs : List (Tree × (List Tree → List Tree → Tree))) :
 
 /-- The mirror's index a leaf names. -/
 @[simp] theorem leafIndex_eq (t : Tree) :
-    GebMirror.Metalogic.leafIndex t = encOpt ((PartialHorn.leafIndex t).map leaf) := by
-  simp only [GebMirror.Metalogic.leafIndex, PartialHorn.leafIndex, arity_eq, eq_leaf,
+    «PartialHorn.leafIndex» t = encOpt ((PartialHorn.leafIndex t).map leaf) := by
+  simp only [«PartialHorn.leafIndex», PartialHorn.leafIndex, arity_eq, eq_leaf,
     ofBool_label, length_beq_zero, label_eq]
   split <;> rfl
 
@@ -285,7 +287,7 @@ theorem encOptEqn_inj :
 
 /-- The mirror's sort of a term, as a function. -/
 theorem sortOf_fun (S : PartialHorn.Sig) (Γ : List ℕ) :
-    GebMirror.Metalogic.sortOf (S.map encOpSig) (Γ.map leaf) =
+    «PartialHorn.sortOf» (S.map encOpSig) (Γ.map leaf) =
       fun t ↦ encOpt ((PartialHorn.sortOf S Γ t).map leaf) :=
   funext (sortOf_eq S Γ)
 
@@ -296,7 +298,7 @@ theorem encOpt_injective : Function.Injective encOpt := fun _ _ h ↦ encOpt_inj
 theorem inst_eq (S : PartialHorn.Sig) (a : PartialHorn.Seq)
     (xs : List (Tree × (List Tree → List Tree → Tree) × PartialHorn.Chk))
     (hx : ∀ x ∈ xs, ChkRel x.2.1 x.2.2) (Γ : List ℕ) (H : List PartialHorn.Eqn) :
-    GebMirror.Metalogic.inst (S.map encOpSig) (encSeq a) (xs.map fun x ↦ (x.1, x.2.1))
+    «PartialHorn.inst» (S.map encOpSig) (encSeq a) (xs.map fun x ↦ (x.1, x.2.1))
         (Γ.map leaf) (H.map encEqn) =
       encOpt ((PartialHorn.inst S a (xs.map fun x ↦ (x.1, x.2.2)) Γ H).map encEqn) := by
   set cs := xs.map fun x ↦ (x.1, x.2.2) with hcs
@@ -307,9 +309,9 @@ theorem inst_eq (S : PartialHorn.Sig) (a : PartialHorn.Seq)
   have hts : List.take a.ctx.length (List.map Prod.fst (xs.map fun x ↦ (x.1, x.2.1))) =
       List.map Prod.fst (List.take a.ctx.length cs) := by
     simp [hcs, List.map_take, List.map_map, Function.comp_def]
-  have c2 : decide (List.map (GebMirror.Metalogic.sortOf (S.map encOpSig) (Γ.map leaf))
+  have c2 : decide (List.map («PartialHorn.sortOf» (S.map encOpSig) (Γ.map leaf))
         (List.map Prod.fst (List.take a.ctx.length cs)) =
-        List.map GebMirror.Metalogic.some (List.map leaf a.ctx)) =
+        List.map «Prelude.some» (List.map leaf a.ctx)) =
       decide (List.map (PartialHorn.sortOf S Γ) (List.map Prod.fst (List.take a.ctx.length cs)) =
         List.map some a.ctx) := by
     have inj : Function.Injective fun (w : Option ℕ) ↦ encOpt (w.map leaf) :=
@@ -317,10 +319,10 @@ theorem inst_eq (S : PartialHorn.Sig) (a : PartialHorn.Seq)
     rw [sortOf_fun, decide_eq_decide, ← (List.map_injective_iff.mpr inj).eq_iff]
     simp only [List.map_map, Function.comp_def, Option.map_some]
     rfl
-  have c3 : decide (List.map (GebMirror.Metalogic.mapO GebMirror.Metalogic.eqLhs)
+  have c3 : decide (List.map («Base.mapO» «PartialHorn.eqLhs»)
         (List.take a.ctx.length (List.drop a.ctx.length
           (cs.map fun c ↦ encOpt ((c.2 Γ H).map encEqn)))) =
-        List.map GebMirror.Metalogic.some (List.map Prod.fst (List.take a.ctx.length cs))) =
+        List.map «Prelude.some» (List.map Prod.fst (List.take a.ctx.length cs))) =
       decide (List.map (fun (c : Tree × PartialHorn.Chk) ↦ (c.2 Γ H).map PartialHorn.Eqn.lhs)
         (List.take a.ctx.length (List.drop a.ctx.length cs)) =
         List.map some (List.map Prod.fst (List.take a.ctx.length cs))) := by
@@ -329,7 +331,7 @@ theorem inst_eq (S : PartialHorn.Sig) (a : PartialHorn.Seq)
       Option.map_map, eqLhs_eq, some_eq]
   have c4 : decide (List.drop (a.ctx.length + a.ctx.length)
         (cs.map fun c ↦ encOpt ((c.2 Γ H).map encEqn)) =
-        List.map (fun x8 ↦ GebMirror.Metalogic.some (GebMirror.Metalogic.eqSubst
+        List.map (fun x8 ↦ «Prelude.some» («PartialHorn.eqSubst»
           (List.map Prod.fst (List.take a.ctx.length cs)) x8)) (List.map encEqn a.hyps)) =
       decide (List.map (fun (c : Tree × PartialHorn.Chk) ↦ c.2 Γ H)
         (List.drop (a.ctx.length + a.ctx.length) cs) =
@@ -338,7 +340,7 @@ theorem inst_eq (S : PartialHorn.Sig) (a : PartialHorn.Seq)
     rw [decide_eq_decide, ← (List.map_injective_iff.mpr encOptEqn_inj).eq_iff]
     simp only [List.map_map, Function.comp_def, ← List.map_drop, eqSubst_eq, some_eq,
       Option.map_some]
-  simp only [GebMirror.Metalogic.inst, seqCtx_eq, length_eq, List.length_map, pcTrees_eq,
+  simp only [«PartialHorn.inst», seqCtx_eq, length_eq, List.length_map, pcTrees_eq,
     take_eq, pcResults_eq, hres, seqScoped_eq, mapT_eq, drop_eq, add_leaf,
     seqHyps_eq, seqConcl_eq, eqSubst_eq, equalTs_eq, and_eq, ofBool_label, PartialHorn.inst]
   rw [hts, c2, c3, c4]
@@ -347,18 +349,18 @@ theorem inst_eq (S : PartialHorn.Sig) (a : PartialHorn.Seq)
 
 /-- The mirror's test of a node's rule and number of children. -/
 @[simp] theorem pShape_eq (l k a b : ℕ) :
-    GebMirror.Metalogic.pShape (leaf l) (leaf k) (leaf a) (leaf b) = ofBool (l == a && k == b) :=
-  by simp [GebMirror.Metalogic.pShape]
+    «PartialHorn.pShape» (leaf l) (leaf k) (leaf a) (leaf b) = ofBool (l == a && k == b) :=
+  by simp [«PartialHorn.pShape»]
 
 /-- The mirror's rule of the checker at a node is the Lean checker's, at related premises. -/
 theorem pcheckStep_eq (T : PartialHorn.Theory) (E : Array PartialHorn.Seq) (l : ℕ)
     (xs : List (Tree × (List Tree → List Tree → Tree) × PartialHorn.Chk))
     (hx : ∀ x ∈ xs, ChkRel x.2.1 x.2.2) :
-    ChkRel (GebMirror.Metalogic.pcheckStep (encTheory T) (E.toList.map encSeq) (leaf l)
-        (GebMirror.Metalogic.pcTrees (xs.map fun x ↦ (x.1, x.2.1))) (xs.map fun x ↦ (x.1, x.2.1)))
+    ChkRel («PartialHorn.pcheckStep» (encTheory T) (E.toList.map encSeq) (leaf l)
+        («PartialHorn.pcTrees» (xs.map fun x ↦ (x.1, x.2.1))) (xs.map fun x ↦ (x.1, x.2.1)))
       (PartialHorn.checkStep T E l (xs.map fun x ↦ (x.1, x.2.2))) := by
   intro Γ H
-  simp only [GebMirror.Metalogic.pcheckStep, pcTrees_eq, List.map_map, Function.comp_def,
+  simp only [«PartialHorn.pcheckStep», pcTrees_eq, List.map_map, Function.comp_def,
     length_eq, List.length_map, at_eq, pShape_eq]
   have hx0 := fun x (h : x ∈ xs) ↦ hx x h Γ H
   rcases l with _ | _ | _ | _ | _ | _ | _ | _ | _ | l
@@ -433,7 +435,7 @@ theorem pcheckStep_eq (T : PartialHorn.Theory) (E : Array PartialHorn.Seq) (l : 
       simp only [Function.comp_def, mapO_eq, Option.map_map, eqLhs_eq, eqRhs_eq, Option.elim_some,
           Option.bind_some]
       have hc : (r.map fun x ↦ encOpt ((x.2.2 Γ H).map PartialHorn.Eqn.lhs)) =
-            q.lhs.children.map (fun t ↦ GebMirror.Metalogic.some t) ↔
+            q.lhs.children.map (fun t ↦ «Prelude.some» t) ↔
           r.map (fun x ↦ (x.2.2 Γ H).map PartialHorn.Eqn.lhs) = q.lhs.children.map some := by
         rw [← (List.map_injective_iff.mpr encOpt_injective).eq_iff]
         simp only [List.map_map, Function.comp_def, some_eq]
@@ -513,9 +515,9 @@ theorem pcheckStep_eq (T : PartialHorn.Theory) (E : Array PartialHorn.Seq) (l : 
 /-- The mirror's checker is the Lean checker: at every certificate, its result at an encoded
 context and hypotheses is the encoding of the Lean checker's. -/
 theorem pcheck_eq (T : PartialHorn.Theory) (E : Array PartialHorn.Seq) (c : Tree) :
-    ChkRel (GebMirror.Metalogic.pcheck (encTheory T) (E.toList.map encSeq) c)
+    ChkRel («PartialHorn.pcheck» (encTheory T) (E.toList.map encSeq) c)
       (PartialHorn.check T E c) := by
-  simp only [GebMirror.Metalogic.pcheck, PartialHorn.check]
+  simp only [«PartialHorn.pcheck», PartialHorn.check]
   apply fold_pair_snd ChkRel
   · intro l rs
     simp
@@ -524,36 +526,36 @@ theorem pcheck_eq (T : PartialHorn.Theory) (E : Array PartialHorn.Seq) (c : Tree
 
 /-- The mirror's arguments' sorts of a definition. -/
 @[simp] theorem pdCtx_eq (d : PartialHorn.Defn) :
-    GebMirror.Metalogic.pdCtx (encDefn d) = d.ctx.map leaf := by
-  simp [GebMirror.Metalogic.pdCtx, encDefn]
+    «PartialHorn.pdCtx» (encDefn d) = d.ctx.map leaf := by
+  simp [«PartialHorn.pdCtx», encDefn]
 
 /-- The mirror's sort of a definition. -/
 @[simp] theorem pdSort_eq (d : PartialHorn.Defn) :
-    GebMirror.Metalogic.pdSort (encDefn d) = leaf d.sort := by
-  simp [GebMirror.Metalogic.pdSort, encDefn]
+    «PartialHorn.pdSort» (encDefn d) = leaf d.sort := by
+  simp [«PartialHorn.pdSort», encDefn]
 
 /-- The mirror's body of a definition. -/
 @[simp] theorem pdBody_eq (d : PartialHorn.Defn) :
-    GebMirror.Metalogic.pdBody (encDefn d) = d.body := by
-  simp [GebMirror.Metalogic.pdBody, encDefn]
+    «PartialHorn.pdBody» (encDefn d) = d.body := by
+  simp [«PartialHorn.pdBody», encDefn]
 
 /-- The mirror's application of an operation to the first variables. -/
 @[simp] theorem opVars_eq (n m : ℕ) :
-    GebMirror.Metalogic.opVars (leaf n) (leaf m) = PartialHorn.opVars n m := by
-  simp [GebMirror.Metalogic.opVars, GebMirror.Metalogic.phOp, PartialHorn.opVars, PartialHorn.op,
+    «PartialHorn.opVars» (leaf n) (leaf m) = PartialHorn.opVars n m := by
+  simp [«PartialHorn.opVars», «PartialHorn.phOp», PartialHorn.opVars, PartialHorn.op,
     List.map_map, Function.comp_def]
 
 /-- The mirror's axioms of a definition. -/
 @[simp] theorem pdAxioms_eq (n : ℕ) (d : PartialHorn.Defn) :
-    GebMirror.Metalogic.pdAxioms (leaf n) (encDefn d) = (d.axioms n).map encSeq := by
-  simp only [GebMirror.Metalogic.pdAxioms, pdCtx_eq, length_eq, List.length_map, opVars_eq,
+    «PartialHorn.pdAxioms» (leaf n) (encDefn d) = (d.axioms n).map encSeq := by
+  simp only [«PartialHorn.pdAxioms», pdCtx_eq, length_eq, List.length_map, opVars_eq,
     pdBody_eq, single_eq, eqn_eq, PartialHorn.Defn.axioms, List.map_cons, List.map_nil]
   rfl
 
 /-- The mirror's extension of a theory by a definition. -/
 @[simp] theorem thyExtend_eq (T : PartialHorn.Theory) (d : PartialHorn.Defn) :
-    GebMirror.Metalogic.thyExtend (encTheory T) (encDefn d) = encTheory (T.extend d) := by
-  simp only [GebMirror.Metalogic.thyExtend, thySig_eq, thyAxioms_eq, length_eq, List.length_map,
+    «PartialHorn.thyExtend» (encTheory T) (encDefn d) = encTheory (T.extend d) := by
+  simp only [«PartialHorn.thyExtend», thySig_eq, thyAxioms_eq, length_eq, List.length_map,
     pdAxioms_eq, pdCtx_eq, pdSort_eq, single_eq, append_eq, PartialHorn.Theory.extend,
     PartialHorn.Sig.extend]
   simp only [encTheory, List.map_append, List.map_cons, List.map_nil]
@@ -561,14 +563,14 @@ theorem pcheck_eq (T : PartialHorn.Theory) (E : Array PartialHorn.Seq) (c : Tree
 
 /-- The mirror's extension of a theory by a list of definitions, in order. -/
 theorem thyExtendAll_eq (T : PartialHorn.Theory) (ds : List PartialHorn.Defn) :
-    GebMirror.Metalogic.thyExtendAll (encTheory T) (ds.map encDefn) =
+    «PartialHorn.thyExtendAll» (encTheory T) (ds.map encDefn) =
       encTheory (T.extendAll ds) := by
   have h : ∀ l : List PartialHorn.Defn,
-      (l.map encDefn).foldr (fun x y ↦ GebMirror.Metalogic.thyExtend y x) (encTheory T) =
+      (l.map encDefn).foldr (fun x y ↦ «PartialHorn.thyExtend» y x) (encTheory T) =
         encTheory (l.foldr (fun d T ↦ T.extend d) T) :=
     List.rec rfl fun d l ih ↦ by
       rw [List.map_cons, List.foldr_cons, ih, List.foldr_cons, thyExtend_eq]
-  simp only [GebMirror.Metalogic.thyExtendAll, foldr_eq, reverse_eq, ← List.map_reverse,
+  simp only [«PartialHorn.thyExtendAll», foldr_eq, reverse_eq, ← List.map_reverse,
     PartialHorn.Theory.extendAll, List.foldl_eq_foldr_reverse]
   exact h ds.reverse
 

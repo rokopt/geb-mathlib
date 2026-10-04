@@ -97,8 +97,8 @@ in a context of a term: the implication of the equation of the two sides by the 
 substituted term. -/
 def subF (P : Prog) : Term :=
   -- under the abstractions: the term, the environment, the contexts, the type and the term
-  let typed := Term.eq (apps (call (P.idx "typeIn") [] []) [v 4, v 2, v 0])
-    (apps (call (P.idx "some") [] []) [v 1])
+  let typed := Term.eq (apps (call (P.idx "Check.typeIn") [] []) [v 4, v 2, v 0])
+    (apps (call (P.idx "Prelude.some") [] []) [v 1])
   let side (name : String) : Term := apps (call (P.idx name) [] []) [v 5, v 4, v 3, v 2, v 1, v 0]
   lams5 (Internal.Logic.imp P.o typed (Term.eq (side "sbL") (side "sbR")))
 
@@ -121,9 +121,11 @@ def rulesSub (P : Prog) (ix : String → ℕ) : List NormRule :=
 weakened past a context's first part, in the context, is its type in the rest. -/
 def weakeningSteps (P : Prog) : List Step :=
   let wkZ := weakThm P 0 [treeTy, list treeTy, list treeTy, list treeTy]
-    (apps (call (P.idx "typeIn") [] []) [v 1, apps (call (P.idx "append") [] []) [v 2, v 3],
-      apps (call (P.idx "wk") [] []) [apps (call (P.idx "length") [] []) [v 2], v 0]])
-    (apps (call (P.idx "typeIn") [] []) [v 1, v 3, v 0])
+    (apps (call (P.idx "Check.typeIn") [] [])
+      [v 1, apps (call (P.idx "Prelude.append") [] []) [v 2, v 3],
+        apps (call (P.idx "Equations.wk") [] [])
+          [apps (call (P.idx "Prelude.length") [] []) [v 2], v 0]])
+    (apps (call (P.idx "Check.typeIn") [] []) [v 1, v 3, v 0])
   let a := weakening P
   [step "weakening" a (fun ix E ↦
       Internal.byRoseIndHyp 2 0 1 (byLabels P ix E) a.ctx [] (sides a).1 (sides a).2),

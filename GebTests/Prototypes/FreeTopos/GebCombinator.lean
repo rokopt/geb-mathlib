@@ -68,20 +68,22 @@ def parseStep (r : Tree) : Option (Tree × List Tree) :=
 characters under {lit}`nm`. -/
 def replay (G : List (List Char × Kernel.Glob)) (nm : String → List Char) :
     Option (List Tree) := do
-  let pS : Tree → PMF → List Tree → Tree → List Tree → Tree ← fn G (nm "proveSeq")
+  let pS : Tree → PMF → List Tree → Tree → List Tree → Tree ← fn G (nm "Combinator.proveSeq")
     (arrow tyT (arrow tyPM (arrow tyTs (arrow tyT (arrow tyTs tyT)))))
-  let bN : List Tree → Tree → PMF ← fn G (nm "pByNorm") (arrow tyTs (arrow tyT tyPM))
-  let bLI : List Tree → Tree → Tree → Tree → Tree → PMF ← fn G (nm "byListInduction")
+  let bN : List Tree → Tree → PMF ← fn G (nm "Combinator.pByNorm") (arrow tyTs (arrow tyT tyPM))
+  let bLI : List Tree → Tree → Tree → Tree → Tree → PMF ← fn G (nm "Combinator.byListInduction")
     (arrow tyTs (arrow tyT (arrow tyT (arrow tyT (arrow tyT tyPM)))))
-  let bLPI : List Tree → Tree → Tree → Tree → Tree → PMF ← fn G (nm "byListParamInduction")
-    (arrow tyTs (arrow tyT (arrow tyT (arrow tyT (arrow tyT tyPM)))))
-  let bNI : List Tree → Tree → Tree → Tree → PMF ← fn G (nm "byNatInduction")
+  let bLPI : List Tree → Tree → Tree → Tree → Tree → PMF ←
+    fn G (nm "Combinator.byListParamInduction")
+      (arrow tyTs (arrow tyT (arrow tyT (arrow tyT (arrow tyT tyPM)))))
+  let bNI : List Tree → Tree → Tree → Tree → PMF ← fn G (nm "Combinator.byNatInduction")
     (arrow tyTs (arrow tyT (arrow tyT (arrow tyT tyPM))))
-  let nT : List Tree → Tree → List Tree → Tree → List Tree → Tree ← fn G (nm "normalizeThm")
-    (arrow tyTs (arrow tyT (arrow tyTs (arrow tyT (arrow tyTs tyT)))))
-  let lib : Tree → Tree ← fn G (nm "libraryWith") (arrow tyT tyT)
+  let nT : List Tree → Tree → List Tree → Tree → List Tree → Tree ←
+    fn G (nm "Combinator.normalizeThm")
+      (arrow tyTs (arrow tyT (arrow tyTs (arrow tyT (arrow tyTs tyT)))))
+  let lib : Tree → Tree ← fn G (nm "Combinator.libraryWith") (arrow tyT tyT)
   let (ix, d0) ← parseStep (lib (Kernel.leaf 1))
-  let libR : Tree → List Tree ← fn G (nm "libRules") (arrow tyT tyTs)
+  let libR : Tree → List Tree ← fn G (nm "Combinator.libRules") (arrow tyT tyTs)
   let rs := libR ix
   let ds := defs.map encDefn
   let prove (a : Seq) (m : PMF) (d : List Tree) :=
@@ -110,7 +112,7 @@ def replay (G : List (List Char × Kernel.Glob)) (nm : String → List Char) :
 -- the library written in Geb is the Lean library, its typing certified by lemmas and by the
 -- checker's oracle rules
 #guard ((loaded GoedelT.ProofTests.bundler.toList combinatorProgram.toList).bind fun P ↦ do
-  let lib : Tree → Tree ← fn P "libraryWith".toList (arrow tyT tyT)
+  let lib : Tree → Tree ← fn P "Combinator.libraryWith".toList (arrow tyT tyT)
   pure (lib (Kernel.leaf 1) == encLib (libraryWith true) &&
     lib (Kernel.leaf 0) == encLib (libraryWith false))).getD false
 

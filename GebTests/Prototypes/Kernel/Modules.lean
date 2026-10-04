@@ -16,8 +16,8 @@ set_option doc.verso true in
 /-!
 # Module examples
 
-A program without modules is unchanged by their elaboration, the stage-0 compiler's sources
-among them. Modules without parameters export their definitions under qualified names, imported
+A program without modules is unchanged by their elaboration, the kernel's examples among
+them. Modules without parameters export their definitions under qualified names, imported
 unqualified or under a name; a module with parameters is instantiated at each import, a sort
 parameter by a type and an operation by a term of its type. A name bound in a term, a quoted
 datum and a hole are not renamed. A clash, an import naming no module or leaving a parameter
@@ -42,9 +42,11 @@ namespace Geb.Kernel.ModulesTests
 
 open Geb.Kernel.Stage0Tests Document
 
--- a program without modules is unchanged, the stage-0 compiler among them
-#guard ((readSExps compiler.toList).bind expandModules).map (·.map canonOf) =
-  (readSExps compiler.toList).map (·.map canonOf)
+-- a program without modules is unchanged, the kernel's examples among them
+#guard [Tests.factorial, Tests.size, Tests.mirror, Tests.quadruple, Tests.sugar,
+    Tests.numerals].all fun p ↦
+  ((readSExps p.toList).bind expandModules).map (·.map canonOf) =
+    (readSExps p.toList).map (·.map canonOf)
 
 /-- A module of arithmetic exporting one of its definitions. -/
 def arith : String :=

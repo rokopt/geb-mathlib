@@ -7,35 +7,38 @@
 ; leaf of label 0, and a tree is the node of label 1 over it; a truth value is a label, 0 false
 ; and any other true. Requires the prelude.
 
-; optional trees
-(defn getD ((m T) (d T)) T (if (isSome m) (get m) d))
-(defn mapO ((f (Arrow T T)) (m T)) T (if (isSome m) (some (f (get m))) none))
-(defn bindO ((m T) (f (Arrow T T))) T (if (isSome m) (f (get m)) none))
+(module Base (export getD mapO bindO not isEmpty equalTs take range mapT allT anyT allSomeT)
+  ; optional trees
+  (defn getD ((m T) (d T)) T (if (isSome m) (get m) d))
+  (defn mapO ((f (Arrow T T)) (m T)) T (if (isSome m) (some (f (get m))) none))
+  (defn bindO ((m T) (f (Arrow T T))) T (if (isSome m) (f (get m)) none))
 
-; truth values
-(def not (lam ((a T)) (if a 0 1)))
+  ; truth values
+  (def not (lam ((a T)) (if a 0 1)))
 
-; lists of trees
-(def isEmpty (lam ((xs Ts)) (eq (length xs) 0)))
-(def equalTs (lam ((xs Ts) (ys Ts)) (equal (node 0 xs) (node 0 ys))))
-; the first n elements, those with fewer than length - n elements after them
-(defn take ((n T) (xs Ts)) Ts
-  (let len T (length xs)
+  ; lists of trees
+  (def isEmpty (lam ((xs Ts)) (eq (length xs) 0)))
+  (def equalTs (lam ((xs Ts) (ys Ts)) (equal (node 0 xs) (node 0 ys))))
+  ; the first n elements, those with fewer than length - n elements after them
+  (defn take ((n T) (xs Ts)) Ts
+    (let len T (length xs)
+      (snd
+        (foldr T (Prod T Ts)
+          (lam ((x T) (s (Prod T Ts)))
+            (pair (add (fst s) 1) (if (lt (sub (sub len (fst s)) 1) n) (cons x (snd s)) (snd s))))
+          (pair 0 (nil T))
+          xs))))
+  ; the labels below n, in order
+  (defn range ((n T)) Ts
     (snd
-      (foldr T (Prod T Ts)
-        (lam ((x T) (s (Prod T Ts)))
-          (pair (add (fst s) 1) (if (lt (sub (sub len (fst s)) 1) n) (cons x (snd s)) (snd s))))
+      (iter (Prod T Ts)
+        (lam ((s (Prod T Ts))) (pair (add (fst s) 1) (append (snd s) (single (fst s)))))
         (pair 0 (nil T))
-        xs))))
-; the labels below n, in order
-(defn range ((n T)) Ts
-  (snd
-    (iter (Prod T Ts)
-      (lam ((s (Prod T Ts))) (pair (add (fst s) 1) (append (snd s) (single (fst s)))))
-      (pair 0 (nil T))
-      n)))
-(defn mapT ((f (Arrow T T)) (xs Ts)) Ts (foldr T Ts (lam ((x T) (r Ts)) (cons (f x) r)) (nil T) xs))
-(defn allT ((f (Arrow T T)) (xs Ts)) T (foldr T T (lam ((x T) (r T)) (and (f x) r)) 1 xs))
-(defn anyT ((f (Arrow T T)) (xs Ts)) T (foldr T T (lam ((x T) (r T)) (or (f x) r)) 0 xs))
-; the node of label 0 over the trees of a list of optional trees when each is present
-(defn allSomeT ((ms Ts)) T (if (allT isSome ms) (some (node 0 (mapT get ms))) none))
+        n)))
+  (defn mapT ((f (Arrow T T)) (xs Ts)) Ts
+    (foldr T Ts (lam ((x T) (r Ts)) (cons (f x) r)) (nil T) xs))
+  (defn allT ((f (Arrow T T)) (xs Ts)) T (foldr T T (lam ((x T) (r T)) (and (f x) r)) 1 xs))
+  (defn anyT ((f (Arrow T T)) (xs Ts)) T (foldr T T (lam ((x T) (r T)) (or (f x) r)) 0 xs))
+  ; the node of label 0 over the trees of a list of optional trees when each is present
+  (defn allSomeT ((ms Ts)) T (if (allT isSome ms) (some (node 0 (mapT get ms))) none)))
+(import Base)

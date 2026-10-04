@@ -51,6 +51,8 @@ set_option doc.verso true
 
 @[expose] public section
 
+open GebMirror.Metalogic
+
 namespace GebTests.Prototypes.FreeTopos.Agreement.Combinator
 
 open Geb Geb.Kernel Geb.FreeTopos Geb.FreeTopos.Prover
@@ -141,13 +143,13 @@ def PMRel {α : Type} (e : α → Tree) (m' : Tree → Tree → Tree) (m : PM α
 
 /-- The mirror's computation of a value. -/
 theorem pmPure_rel {α : Type} (e : α → Tree) (a : α) :
-    PMRel e (GebMirror.Metalogic.pmPure (e a)) (pure a) := fun sc st' st h ↦ by
+    PMRel e («Combinator.pmPure» (e a)) (pure a) := fun sc st' st h ↦ by
   simp only [ReaderT.run_pure, StateT.run_pure]
   exact ⟨st', h, rfl⟩
 
 /-- The mirror's failure. -/
 theorem pmFail_rel {α : Type} (e : α → Tree) :
-    PMRel e GebMirror.Metalogic.pmFail (failure : PM α) := fun _ _ _ _ ↦ by
+    PMRel e «Combinator.pmFail» (failure : PM α) := fun _ _ _ _ ↦ by
   simp only [ReaderT.run_failure, StateT.run_failure]
   rfl
 
@@ -155,46 +157,46 @@ theorem pmFail_rel {α : Type} (e : α → Tree) :
 theorem pmBind_rel {α β : Type} (e₁ : α → Tree) (e₂ : β → Tree) (m' : Tree → Tree → Tree)
     (m : PM α) (hm : PMRel e₁ m' m) (k' : Tree → Tree → Tree → Tree) (k : α → PM β)
     (hk : ∀ a, PMRel e₂ (k' (e₁ a)) (k a)) :
-    PMRel e₂ (GebMirror.Metalogic.pmBind m' k') (m >>= k) := by
+    PMRel e₂ («Combinator.pmBind» m' k') (m >>= k) := by
   intro sc st' st h
   have h1 := hm sc st' st h
   simp only [ReaderT.run_bind, StateT.run_bind]
   rcases hr : (m.run sc).run st with _ | ⟨a, st₂⟩
   · rw [hr] at h1
-    simp only [GebMirror.Metalogic.pmBind, h1]
+    simp only [«Combinator.pmBind», h1]
     rfl
   · rw [hr] at h1
     obtain ⟨st₂', h2, h3⟩ := h1
-    simp only [GebMirror.Metalogic.pmBind, h3]
+    simp only [«Combinator.pmBind», h3]
     exact hk a sc st₂' st₂ h2
 
 /-- The mirror's first of two computations that succeeds. -/
 theorem pmOr_rel {α : Type} (e : α → Tree) (a' b' : Tree → Tree → Tree) (a b : PM α)
     (ha : PMRel e a' a) (hb : PMRel e b' b) :
-    PMRel e (GebMirror.Metalogic.pmOr a' b') (a <|> b) := by
+    PMRel e («Combinator.pmOr» a' b') (a <|> b) := by
   intro sc st' st h
   have h1 := ha sc st' st h
   simp only [ReaderT.run_orElse, StateT.run_orElse]
   rcases hr : (a.run sc).run st with _ | ⟨x, st₂⟩
   · rw [hr] at h1
-    simp only [GebMirror.Metalogic.pmOr, h1]
+    simp only [«Combinator.pmOr», h1]
     exact hb sc st' st h
   · rw [hr] at h1
     obtain ⟨st₂', h2, h3⟩ := h1
-    simp only [GebMirror.Metalogic.pmOr, h3]
+    simp only [«Combinator.pmOr», h3]
     exact ⟨st₂', h2, rfl⟩
 
 /-- The mirror's values of computations from a list's elements, in turn. -/
 theorem pmMapM_rel {α β : Type} (e : α → Tree) (g : β → Tree) (f' : Tree → Tree → Tree → Tree)
     (f : β → PM α) :
     ∀ xs : List β, (∀ x ∈ xs, PMRel e (f' (g x)) (f x)) →
-      PMRel (fun ys ↦ RoseTree.node 0 (ys.map e)) (GebMirror.Metalogic.pmMapM f' (xs.map g))
+      PMRel (fun ys ↦ RoseTree.node 0 (ys.map e)) («Combinator.pmMapM» f' (xs.map g))
         (xs.mapM f) := by
   refine List.rec (fun _ ↦ ?_) fun x xs ih hx ↦ ?_
-  · simp only [GebMirror.Metalogic.pmMapM, List.map_nil, foldr_eq, List.foldr_nil, List.mapM_nil]
+  · simp only [«Combinator.pmMapM», List.map_nil, foldr_eq, List.foldr_nil, List.mapM_nil]
     exact pmPure_rel (fun ys ↦ RoseTree.node 0 (ys.map e)) []
   · have ih' := ih fun y hy ↦ hx y (List.mem_cons_of_mem x hy)
-    simp only [GebMirror.Metalogic.pmMapM, foldr_eq] at ih' ⊢
+    simp only [«Combinator.pmMapM», foldr_eq] at ih' ⊢
     simp only [List.map_cons, List.foldr_cons, List.mapM_cons]
     refine pmBind_rel e _ _ _ (hx x List.mem_cons_self) _ _ fun y ↦ ?_
     refine pmBind_rel (fun ys ↦ RoseTree.node 0 (ys.map e)) _ _ _ ih' _ _ fun ys ↦ ?_
@@ -203,7 +205,7 @@ theorem pmMapM_rel {α β : Type} (e : α → Tree) (g : β → Tree) (f' : Tree
 
 /-- The mirror's guard. -/
 theorem pmGuard_rel (b : Bool) :
-    PMRel (fun _ ↦ leaf 0) (GebMirror.Metalogic.pmGuard (ofBool b)) (guard b : PM Unit) := by
+    PMRel (fun _ ↦ leaf 0) («Combinator.pmGuard» (ofBool b)) (guard b : PM Unit) := by
   intro sc st' st h
   cases b
   · simp only [guard, ite_false, Bool.false_eq_true, ReaderT.run_failure, StateT.run_failure]
@@ -213,48 +215,48 @@ theorem pmGuard_rel (b : Bool) :
 
 /-! Certificates, scopes and lemmas. -/
 
-@[simp] theorem cHyp_eq (i : ℕ) : GebMirror.Metalogic.cHyp (leaf i) = PartialHorn.Cert.hyp i :=
+@[simp] theorem cHyp_eq (i : ℕ) : «Combinator.cHyp» (leaf i) = PartialHorn.Cert.hyp i :=
   rfl
 
 @[simp] theorem cRefl_eq (i : ℕ) :
-    GebMirror.Metalogic.cRefl (leaf i) = PartialHorn.Cert.refl i := rfl
+    «Combinator.cRefl» (leaf i) = PartialHorn.Cert.refl i := rfl
 
-@[simp] theorem cSymm_eq (p : Tree) : GebMirror.Metalogic.cSymm p = PartialHorn.Cert.symm p := rfl
+@[simp] theorem cSymm_eq (p : Tree) : «Combinator.cSymm» p = PartialHorn.Cert.symm p := rfl
 
 @[simp] theorem cTrans_eq (p q : Tree) :
-    GebMirror.Metalogic.cTrans p q = PartialHorn.Cert.trans p q := rfl
+    «Combinator.cTrans» p q = PartialHorn.Cert.trans p q := rfl
 
 @[simp] theorem cCong_eq (d : Tree) (ps : List Tree) :
-    GebMirror.Metalogic.cCong d ps = PartialHorn.Cert.cong d ps := rfl
+    «Combinator.cCong» d ps = PartialHorn.Cert.cong d ps := rfl
 
 @[simp] theorem cStrict_eq (j : ℕ) (p : Tree) :
-    GebMirror.Metalogic.cStrict (leaf j) p = PartialHorn.Cert.strict j p := rfl
+    «Combinator.cStrict» (leaf j) p = PartialHorn.Cert.strict j p := rfl
 
 @[simp] theorem cAx_eq (j : ℕ) (ts ds hs : List Tree) :
-    GebMirror.Metalogic.cAx (leaf j) ts ds hs = PartialHorn.Cert.ax j ts ds hs := by
-  simp only [GebMirror.Metalogic.cAx, append_eq, PartialHorn.Cert.ax, List.append_assoc]
+    «Combinator.cAx» (leaf j) ts ds hs = PartialHorn.Cert.ax j ts ds hs := by
+  simp only [«Combinator.cAx», append_eq, PartialHorn.Cert.ax, List.append_assoc]
   rfl
 
 @[simp] theorem cThm_eq (j : ℕ) (ts ds hs : List Tree) :
-    GebMirror.Metalogic.cThm (leaf j) ts ds hs = PartialHorn.Cert.thm j ts ds hs := by
-  simp only [GebMirror.Metalogic.cThm, append_eq, PartialHorn.Cert.thm, List.append_assoc]
+    «Combinator.cThm» (leaf j) ts ds hs = PartialHorn.Cert.thm j ts ds hs := by
+  simp only [«Combinator.cThm», append_eq, PartialHorn.Cert.thm, List.append_assoc]
   rfl
 
 @[simp] theorem scCtx_eq (sc : Scope) :
-    GebMirror.Metalogic.scCtx (encScope sc) = sc.ctx.map leaf := by
-  simp [GebMirror.Metalogic.scCtx, encScope]
+    «Combinator.scCtx» (encScope sc) = sc.ctx.map leaf := by
+  simp [«Combinator.scCtx», encScope]
 
 @[simp] theorem scHyps_eq (sc : Scope) :
-    GebMirror.Metalogic.scHyps (encScope sc) = sc.hyps.map encEqn := by
-  simp [GebMirror.Metalogic.scHyps, encScope]
+    «Combinator.scHyps» (encScope sc) = sc.hyps.map encEqn := by
+  simp [«Combinator.scHyps», encScope]
 
 @[simp] theorem scSeq_eq (sc : Scope) (q : Eqn) :
-    GebMirror.Metalogic.scSeq (encScope sc) (encEqn q) = encSeq (sc.seq q) := by
-  simp [GebMirror.Metalogic.scSeq, Scope.seq]
+    «Combinator.scSeq» (encScope sc) (encEqn q) = encSeq (sc.seq q) := by
+  simp [«Combinator.scSeq», Scope.seq]
 
 @[simp] theorem scCite_eq (sc : Scope) (j : ℕ) :
-    GebMirror.Metalogic.scCite (encScope sc) (leaf j) = sc.cite j := by
-  simp [GebMirror.Metalogic.scCite, Scope.cite, Function.comp_def]
+    «Combinator.scCite» (encScope sc) (leaf j) = sc.cite j := by
+  simp [«Combinator.scCite», Scope.cite, Function.comp_def]
 
 /-- The failure of an optional value. -/
 theorem option_failure {α : Type} : (failure : Option α) = none := rfl
@@ -286,13 +288,13 @@ theorem addLemma_run (q : Eqn) (c : Tree) (sc : Scope) (st : St) :
 
 /-- The mirror's addition of a lemma. -/
 theorem addLemma_rel (q : Eqn) (c : Tree) :
-    PMRel id (GebMirror.Metalogic.addLemma (encEqn q) c) (addLemma q c) := by
+    PMRel id («Combinator.addLemma» (encEqn q) c) (addLemma q c) := by
   intro sc st' st h
   rw [addLemma_run]
   obtain ⟨lm, ln, hm, hn, rfl⟩ := h
   refine ⟨_, ⟨lm, ln, hm, hn, rfl⟩, ?_⟩
-  mirror_simp [GebMirror.Metalogic.addLemma, GebMirror.Metalogic.stDev,
-    GebMirror.Metalogic.withDev, GebMirror.Metalogic.pst, GebMirror.Metalogic.l2, scSeq_eq,
+  mirror_simp [«Combinator.addLemma», «Combinator.stDev»,
+    «Combinator.withDev», «Combinator.pst», «Theory.l2», scSeq_eq,
     scCite_eq, Array.toList_push, Array.size_eq_length_toList, List.map_append, List.map_cons,
     List.map_nil, encDevEntry, id]
   rfl
@@ -301,10 +303,10 @@ theorem addLemma_rel (q : Eqn) (c : Tree) :
 
 /-- The mirror's value of a key in a list of keys with encoded values, the latest first. -/
 theorem tableFind_eq {β : Type} (e : β → Tree) (t : Tree) :
-    ∀ l : List (Tree × β), GebMirror.Metalogic.tableFind (l.map (encKV e)) t =
+    ∀ l : List (Tree × β), «Combinator.tableFind» (l.map (encKV e)) t =
       encOpt ((l.find? (·.1 == t)).map (e ∘ Prod.snd)) :=
   List.rec rfl fun p l ih ↦ by
-    simp only [GebMirror.Metalogic.tableFind, foldr_eq, List.map_cons, List.foldr_cons,
+    simp only [«Combinator.tableFind», foldr_eq, List.map_cons, List.foldr_cons,
       List.find?_cons] at ih ⊢
     rw [ih]
     by_cases h : p.1 = t
@@ -314,63 +316,63 @@ theorem tableFind_eq {β : Type} (e : β → Tree) (t : Tree) :
 
 /-- The mirror's typing of a term, if it has been typed. -/
 theorem lookup_rel (t : Tree) :
-    PMRel (fun o ↦ encOpt (o.map encTy)) (GebMirror.Metalogic.lookup t) (lookup t) := by
+    PMRel (fun o ↦ encOpt (o.map encTy)) («Combinator.lookup» t) (lookup t) := by
   intro sc st' st h
   pm_simp [lookup]
   obtain ⟨lm, ln, hm, hn, rfl⟩ := h
   refine ⟨_, ⟨lm, ln, hm, hn, rfl⟩, ?_⟩
-  mirror_simp [GebMirror.Metalogic.lookup, GebMirror.Metalogic.stMemo, GebMirror.Metalogic.l2,
+  mirror_simp [«Combinator.lookup», «Combinator.stMemo», «Theory.l2»,
     tableFind_eq, ← hm.2 t, Option.map_map]
   rfl
 
 /-- The mirror's record of a typing. -/
 theorem memoize_rel (y : Ty) :
-    PMRel (fun _ ↦ leaf 0) (GebMirror.Metalogic.memoize (encTy y)) (memoize y) := by
+    PMRel (fun _ ↦ leaf 0) («Combinator.memoize» (encTy y)) (memoize y) := by
   intro sc st' st h
   pm_simp [memoize]
   obtain ⟨lm, ln, hm, hn, rfl⟩ := h
   refine ⟨_, ⟨(y.term, y) :: lm, ln, tRel_insert lm st.memo hm y.term y, hn, rfl⟩, ?_⟩
-  mirror_simp [GebMirror.Metalogic.memoize, GebMirror.Metalogic.stMemo,
-    GebMirror.Metalogic.withMemo, GebMirror.Metalogic.tableInsert, GebMirror.Metalogic.pst,
-    GebMirror.Metalogic.l2, GebMirror.Metalogic.tyT]
+  mirror_simp [«Combinator.memoize», «Combinator.stMemo»,
+    «Combinator.withMemo», «Combinator.tableInsert», «Combinator.pst»,
+    «Theory.l2», «Combinator.tyT»]
   rfl
 
 /-- The fields of an encoded state. -/
 theorem stInfer_srel {st' : Tree} {st : St} (h : SRel st' st) :
-    GebMirror.Metalogic.stInfer st' = ofBool st.infer := by
+    «Combinator.stInfer» st' = ofBool st.infer := by
   obtain ⟨lm, ln, hm, hn, rfl⟩ := h
-  mirror_simp [GebMirror.Metalogic.stInfer]
+  mirror_simp [«Combinator.stInfer»]
 
 /-- The mirror's record of a typing, and the typing. -/
 theorem memoRet_rel (y : Ty) :
-    PMRel encTy (GebMirror.Metalogic.memoRet (encTy y)) (memoize y >>= fun _ ↦ pure y) := by
-  unfold GebMirror.Metalogic.memoRet
+    PMRel encTy («Combinator.memoRet» (encTy y)) (memoize y >>= fun _ ↦ pure y) := by
+  unfold «Combinator.memoRet»
   exact pmBind_rel _ _ _ _ (memoize_rel y) _ _ fun _ ↦ pmPure_rel encTy y
 
 /-- The mirror's certificate of a term's definedness. -/
 theorem dfdCert_rel (t c : Tree) :
-    PMRel id (GebMirror.Metalogic.dfdCert t c) (dfdCert t c) := by
+    PMRel id («Combinator.dfdCert» t c) (dfdCert t c) := by
   intro sc st' st h
   have hi := stInfer_srel h
   pm_simp [dfdCert]
   cases hb : st.infer
   · have := addLemma_rel (dfd t) c sc st' st h
-    mirror_simp [GebMirror.Metalogic.dfdCert, hi, hb, dfd_eq] at this ⊢
+    mirror_simp [«Combinator.dfdCert», hi, hb, dfd_eq] at this ⊢
     exact this
-  · mirror_simp [GebMirror.Metalogic.dfdCert, hi, hb]
+  · mirror_simp [«Combinator.dfdCert», hi, hb]
     exact ⟨st', h, rfl⟩
 
 /-- The mirror's certificate of an equation between objects of one canonical form. -/
 theorem eqCert_rel (q : Eqn) (c : Tree) :
-    PMRel id (GebMirror.Metalogic.eqCert (encEqn q) c) (eqCert q c) := by
+    PMRel id («Combinator.eqCert» (encEqn q) c) (eqCert q c) := by
   intro sc st' st h
   have hi := stInfer_srel h
   pm_simp [eqCert]
   cases hb : st.infer
   · have := addLemma_rel q c sc st' st h
-    mirror_simp [GebMirror.Metalogic.eqCert, hi, hb] at this ⊢
+    mirror_simp [«Combinator.eqCert», hi, hb] at this ⊢
     exact this
-  · mirror_simp [GebMirror.Metalogic.eqCert, hi, hb]
+  · mirror_simp [«Combinator.eqCert», hi, hb]
     exact ⟨st', h, rfl⟩
 
 /-- The mirror's quotient of numbers. -/
@@ -379,29 +381,29 @@ theorem eqCert_rel (q : Eqn) (c : Tree) :
 /-- The mirror's remainder of numbers. -/
 @[simp] theorem mod_leaf (a b : ℕ) : Const.mod (leaf a) (leaf b) = leaf (a % b) := rfl
 
-@[simp] theorem tyT_eq (y : Ty) : GebMirror.Metalogic.tyT (encTy y) = y.term := by
-  simp [GebMirror.Metalogic.tyT, encTy]
+@[simp] theorem tyT_eq (y : Ty) : «Combinator.tyT» (encTy y) = y.term := by
+  simp [«Combinator.tyT», encTy]
 
-@[simp] theorem tySort_eq (y : Ty) : GebMirror.Metalogic.tySort (encTy y) = leaf y.sort := by
-  simp [GebMirror.Metalogic.tySort, encTy]
+@[simp] theorem tySort_eq (y : Ty) : «Combinator.tySort» (encTy y) = leaf y.sort := by
+  simp [«Combinator.tySort», encTy]
 
-@[simp] theorem tyDfd_eq (y : Ty) : GebMirror.Metalogic.tyDfd (encTy y) = y.dfd := by
-  simp [GebMirror.Metalogic.tyDfd, encTy]
+@[simp] theorem tyDfd_eq (y : Ty) : «Combinator.tyDfd» (encTy y) = y.dfd := by
+  simp [«Combinator.tyDfd», encTy]
 
-@[simp] theorem tyLo_eq (y : Ty) : GebMirror.Metalogic.tyLo (encTy y) = y.lo := by
-  simp [GebMirror.Metalogic.tyLo, encTy]
+@[simp] theorem tyLo_eq (y : Ty) : «Combinator.tyLo» (encTy y) = y.lo := by
+  simp [«Combinator.tyLo», encTy]
 
-@[simp] theorem tyLoC_eq (y : Ty) : GebMirror.Metalogic.tyLoC (encTy y) = y.loCert := by
-  simp [GebMirror.Metalogic.tyLoC, encTy]
+@[simp] theorem tyLoC_eq (y : Ty) : «Combinator.tyLoC» (encTy y) = y.loCert := by
+  simp [«Combinator.tyLoC», encTy]
 
-@[simp] theorem tyHi_eq (y : Ty) : GebMirror.Metalogic.tyHi (encTy y) = y.hi := by
-  simp [GebMirror.Metalogic.tyHi, encTy]
+@[simp] theorem tyHi_eq (y : Ty) : «Combinator.tyHi» (encTy y) = y.hi := by
+  simp [«Combinator.tyHi», encTy]
 
-@[simp] theorem tyHiC_eq (y : Ty) : GebMirror.Metalogic.tyHiC (encTy y) = y.hiCert := by
-  simp [GebMirror.Metalogic.tyHiC, encTy]
+@[simp] theorem tyHiC_eq (y : Ty) : «Combinator.tyHiC» (encTy y) = y.hiCert := by
+  simp [«Combinator.tyHiC», encTy]
 
 @[simp] theorem pty_eq (t : Tree) (s : ℕ) (d lo lc hi hc : Tree) :
-    GebMirror.Metalogic.pty t (leaf s) d lo lc hi hc = encTy ⟨t, s, d, lo, lc, hi, hc⟩ := rfl
+    «Combinator.pty» t (leaf s) d lo lc hi hc = encTy ⟨t, s, d, lo, lc, hi, hc⟩ := rfl
 
 /-- The simplification of the mirror's prover: the mirror's primitives, the certificates, the
 scopes and the typings, with the given lemmas. -/
@@ -409,12 +411,12 @@ local macro "comb_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* "]"
     loc:(Lean.Parser.Tactic.location)? : tactic => `(tactic|
   mirror_simp [cHyp_eq, cRefl_eq, cSymm_eq, cTrans_eq, cCong_eq, cStrict_eq, cAx_eq, cThm_eq,
     scCtx_eq, scHyps_eq, scSeq_eq, scCite_eq, div_leaf, mod_leaf, tyT_eq, tySort_eq, tyDfd_eq,
-    tyLo_eq, tyLoC_eq, tyHi_eq, tyHiC_eq, pty_eq, GebMirror.Metalogic.l2, GebMirror.Metalogic.l3,
-    GebMirror.Metalogic.l4, $ls,*] $(loc)?)
+    tyLo_eq, tyLoC_eq, tyHi_eq, tyHiC_eq, pty_eq, «Theory.l2», «Theory.l3»,
+    «Theory.l4», $ls,*] $(loc)?)
 
 /-- The mirror's certificate of an equation between two objects, from their typings. -/
 theorem objEq_rel (l r : Ty) :
-    PMRel id (GebMirror.Metalogic.objEq (encTy l) (encTy r)) (objEq l r) := by
+    PMRel id («Combinator.objEq» (encTy l) (encTy r)) (objEq l r) := by
   intro sc st' st h
   have hi := stInfer_srel h
   pm_simp [objEq, guard, ReaderT.run_failure, StateT.run_failure]
@@ -428,40 +430,40 @@ theorem objEq_rel (l r : Ty) :
   · simp only [key, decide_eq_true hc, ↓reduceIte]
     cases hb : st.infer
     · pm_simp [hb, Bool.false_eq_true, ↓reduceIte]
-      comb_simp [GebMirror.Metalogic.objEq, hi, hb, key', decide_eq_true hc]
+      comb_simp [«Combinator.objEq», hi, hb, key', decide_eq_true hc]
       exact ⟨st', h, rfl⟩
     · pm_simp [hb, ↓reduceIte]
-      comb_simp [GebMirror.Metalogic.objEq, hi, hb, key', decide_eq_true hc]
+      comb_simp [«Combinator.objEq», hi, hb, key', decide_eq_true hc]
       exact ⟨st', h, rfl⟩
   · simp only [key, decide_eq_false hc, Bool.false_eq_true, ↓reduceIte]
     pm_simp []
-    comb_simp [GebMirror.Metalogic.objEq, key', decide_eq_false hc]
+    comb_simp [«Combinator.objEq», key', decide_eq_false hc]
     rfl
 
 /-- The definitions in force of an encoded state. -/
 theorem stDefs_srel {st' : Tree} {st : St} (h : SRel st' st) :
-    GebMirror.Metalogic.stDefs st' = st.defs.map encDefn := by
+    «Combinator.stDefs» st' = st.defs.map encDefn := by
   obtain ⟨lm, ln, hm, hn, rfl⟩ := h
-  mirror_simp [GebMirror.Metalogic.stDefs]
+  mirror_simp [«Combinator.stDefs»]
 
 set_option maxRecDepth 100000 in
 /-- The mirror's axiom of an index of the theory extended by the definitions in force. -/
-theorem axiomAt_rel (j : ℕ) : PMRel encSeq (GebMirror.Metalogic.axiomAt (leaf j)) (axiomAt j) := by
+theorem axiomAt_rel (j : ℕ) : PMRel encSeq («Combinator.axiomAt» (leaf j)) (axiomAt j) := by
   intro sc st' st h
   have hd := stDefs_srel h
-  unfold axiomAt GebMirror.Metalogic.axiomAt
+  unfold axiomAt «Combinator.axiomAt»
   rw [axioms_eq, sig_eq]
   generalize axioms = A
   generalize sig = S
   by_cases hj : j < A.length
   · rw [dite_eq_left_of_eq_true (eq_true hj)]
     pm_simp []
-    comb_simp [hj, GebMirror.Metalogic.pmPure]
+    comb_simp [hj, «Combinator.pmPure»]
     refine ⟨st', h, ?_⟩
     simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hj]
     rfl
   · rw [dite_eq_right_of_eq_false (eq_false hj)]
-    comb_simp [hj, GebMirror.Metalogic.pmBind, GebMirror.Metalogic.pmGet, hd]
+    comb_simp [hj, «Combinator.pmBind», «Combinator.pmGet», hd]
     simp only [decide_false, Bool.false_eq_true, ↓reduceIte, some_eq, bindO_eq, Option.elim_some,
       RoseTree.children_node, List.getD_cons_zero, List.getD_cons_succ, hd, List.getElem?_map]
     pm_simp []
@@ -483,12 +485,12 @@ theorem axiomAt_rel (j : ℕ) : PMRel encSeq (GebMirror.Metalogic.axiomAt (leaf 
 /-- The mirror's computation from the state read. -/
 theorem pmGetBind_rel {α : Type} (e : α → Tree) (k' : Tree → Tree → Tree → Tree)
     (k : St → PM α) (hk : ∀ st' st, SRel st' st → PMRel e (k' st') (k st)) :
-    PMRel e (GebMirror.Metalogic.pmBind GebMirror.Metalogic.pmGet k') (get >>= k) := by
+    PMRel e («Combinator.pmBind» «Combinator.pmGet» k') (get >>= k) := by
   intro sc st' st h
   have := hk st' st h sc st' st h
   pm_simp []
-  simp only [GebMirror.Metalogic.pmBind, GebMirror.Metalogic.pmGet, some_eq, bindO_eq,
-    Option.elim_some, GebMirror.Metalogic.l2, at_eq]
+  simp only [«Combinator.pmBind», «Combinator.pmGet», some_eq, bindO_eq,
+    Option.elim_some, «Theory.l2», at_eq]
   exact this
 
 /-! The typing of patterns and terms. -/
@@ -501,9 +503,9 @@ def PatRel (pt' : List Tree → Tree → Tree → Tree → Tree) (pt : List Ty �
 /-- The mirror's certificate of an axiom's hypothesis at typed arguments. -/
 theorem proveHyp_rel (pt' : List Tree → Tree → Tree → Tree → Tree) (pt : List Ty → Tree → PM Ty)
     (hpt : PatRel pt' pt) (tys : List Ty) (q : Eqn) :
-    PMRel id (GebMirror.Metalogic.proveHyp pt' (tys.map encTy) (encEqn q))
+    PMRel id («Combinator.proveHyp» pt' (tys.map encTy) (encEqn q))
       (proveHyp pt tys q) := by
-  unfold GebMirror.Metalogic.proveHyp proveHyp
+  unfold «Combinator.proveHyp» proveHyp
   simp only [eqLhs_eq, eqRhs_eq]
   refine pmBind_rel encTy id _ _ (hpt tys q.lhs) _ _ fun l ↦ ?_
   by_cases hq : q.lhs = q.rhs
@@ -518,9 +520,9 @@ set_option maxRecDepth 100000 in
 /-- The mirror's canonical bound of an application by an axiom, with its certificate. -/
 theorem pBound_rel (pt' : List Tree → Tree → Tree → Tree → Tree) (pt : List Ty → Tree → PM Ty)
     (hpt : PatRel pt' pt) (tys : List Ty) (k j : ℕ) (d : Tree) :
-    PMRel encPair (GebMirror.Metalogic.pBound pt' (tys.map encTy) (leaf k) (leaf j) d)
+    PMRel encPair («Combinator.pBound» pt' (tys.map encTy) (leaf k) (leaf j) d)
       (Prover.bound pt tys k j d) := by
-  unfold GebMirror.Metalogic.pBound Prover.bound
+  unfold «Combinator.pBound» Prover.bound
   refine pmBind_rel encSeq encPair _ _ (axiomAt_rel j) _ _ fun a ↦ ?_
   simp only [seqHyps_eq, seqConcl_eq, eqRhs_eq, length_eq, List.length_map, opVars_eq, dfd_eq]
   refine pmBind_rel (fun hs ↦ RoseTree.node 0 (hs.map id)) encPair _ _
@@ -544,9 +546,9 @@ theorem pBound_rel (pt' : List Tree → Tree → Tree → Tree → Tree) (pt : L
 /-- The mirror's typing of an application of a definition in force. -/
 theorem typeDefined_rel (pt' : List Tree → Tree → Tree → Tree → Tree)
     (pt : List Ty → Tree → PM Ty) (hpt : PatRel pt' pt) (i s : ℕ) (tys : List Ty) :
-    PMRel encTy (GebMirror.Metalogic.typeDefined pt' (leaf i) (leaf s) (tys.map encTy))
+    PMRel encTy («Combinator.typeDefined» pt' (leaf i) (leaf s) (tys.map encTy))
       (typeDefined pt i s tys) := by
-  unfold GebMirror.Metalogic.typeDefined typeDefined
+  unfold «Combinator.typeDefined» typeDefined
   refine pmGetBind_rel _ _ _ fun st' st h ↦ ?_
   have hd := stDefs_srel h
   simp only [hd, nth_eq, List.getElem?_map]
@@ -581,13 +583,13 @@ theorem typeDefined_rel (pt' : List Tree → Tree → Tree → Tree → Tree)
 
 /-- The extended signature of an encoded state. -/
 theorem stSig_srel {st' : Tree} {st : St} (h : SRel st' st) :
-    GebMirror.Metalogic.stSig st' = st.sig.map encOpSig := by
+    «Combinator.stSig» st' = st.sig.map encOpSig := by
   obtain ⟨lm, ln, hm, hn, rfl⟩ := h
-  mirror_simp [GebMirror.Metalogic.stSig]
+  mirror_simp [«Combinator.stSig»]
 
 /-- The mirror's failure, at a failure composed with a computation. -/
 theorem pmFailBind_rel {α β : Type} (e : β → Tree) (k : α → PM β) :
-    PMRel e GebMirror.Metalogic.pmFail (failure >>= k) := by
+    PMRel e «Combinator.pmFail» (failure >>= k) := by
   intro sc st' st h
   pm_simp []
   rfl
@@ -596,9 +598,9 @@ set_option maxRecDepth 100000 in
 /-- The mirror's certificate of an application's definedness. -/
 theorem typeOpDfd_rel (pt' : List Tree → Tree → Tree → Tree → Tree)
     (pt : List Ty → Tree → PM Ty) (hpt : PatRel pt' pt) (k : ℕ) (tys : List Ty) :
-    PMRel id (GebMirror.Metalogic.typeOpDfd pt' (leaf k) (tys.map encTy))
+    PMRel id («Combinator.typeOpDfd» pt' (leaf k) (tys.map encTy))
       (typeOpDfd pt k tys) := by
-  unfold GebMirror.Metalogic.typeOpDfd typeOpDfd
+  unfold «Combinator.typeOpDfd» typeOpDfd
   simp only [dfdRules_eq, nth_eq, List.getElem?_map]
   generalize dfdRules[k]? = r
   rcases r with _ | _ | (j | j | j)
@@ -620,9 +622,9 @@ theorem typeOpDfd_rel (pt' : List Tree → Tree → Tree → Tree → Tree)
 
 /-- The mirror's typing of an object applied to typed terms. -/
 theorem typeOpObj_rel (k : ℕ) (t d : Tree) (tys : List Ty) :
-    PMRel encTy (GebMirror.Metalogic.typeOpObj (leaf k) t d (tys.map encTy))
+    PMRel encTy («Combinator.typeOpObj» (leaf k) t d (tys.map encTy))
       (typeOpObj k t d tys) := by
-  unfold GebMirror.Metalogic.typeOpObj typeOpObj
+  unfold «Combinator.typeOpObj» typeOpObj
   comb_simp [mapT_eq, List.map_map, Function.comp_def, phOp_eq, eqn_eq, ofBool_bne, Sorts.obj]
   simp only [Bool.beq_eq_decide_eq]
   split_ifs
@@ -634,9 +636,9 @@ set_option maxRecDepth 100000 in
 definedness. -/
 theorem typeOpTy_rel (pt' : List Tree → Tree → Tree → Tree → Tree)
     (pt : List Ty → Tree → PM Ty) (hpt : PatRel pt' pt) (k s : ℕ) (t d : Tree) (tys : List Ty) :
-    PMRel encTy (GebMirror.Metalogic.typeOpTy pt' (leaf k) (leaf s) t d (tys.map encTy))
+    PMRel encTy («Combinator.typeOpTy» pt' (leaf k) (leaf s) t d (tys.map encTy))
       (typeOpTy pt k s t d tys) := by
-  unfold GebMirror.Metalogic.typeOpTy typeOpTy
+  unfold «Combinator.typeOpTy» typeOpTy
   by_cases hs : s = 0
   · subst hs
     simp only [eq_leaf, beq_self_eq_true, ofBool_true, label_leaf, ne_eq, one_ne_zero,
@@ -675,8 +677,8 @@ set_option maxRecDepth 100000 in
 /-- The mirror's typing of an application of an operation. -/
 theorem typeOp_rel (pt' : List Tree → Tree → Tree → Tree → Tree)
     (pt : List Ty → Tree → PM Ty) (hpt : PatRel pt' pt) (k : ℕ) (tys : List Ty) :
-    PMRel encTy (GebMirror.Metalogic.typeOp pt' (leaf k) (tys.map encTy)) (typeOp pt k tys) := by
-  unfold GebMirror.Metalogic.typeOp typeOp
+    PMRel encTy («Combinator.typeOp» pt' (leaf k) (tys.map encTy)) (typeOp pt k tys) := by
+  unfold «Combinator.typeOp» typeOp
   refine pmGetBind_rel _ _ _ fun st' st h ↦ ?_
   simp only [stSig_srel h, nth_eq, List.getElem?_map]
   cases st.sig[k]? with
@@ -704,13 +706,13 @@ theorem typeOp_rel (pt' : List Tree → Tree → Tree → Tree → Tree)
 theorem pmSeq_rel {α : Type} (e : α → Tree) :
     ∀ xs : List (Tree × (Tree → Tree → Tree) × PM α), (∀ x ∈ xs, PMRel e x.2.1 x.2.2) →
       PMRel (fun ys ↦ RoseTree.node 0 (ys.map e))
-        (GebMirror.Metalogic.pmSeq (xs.map fun x ↦ x.2.1))
+        («Combinator.pmSeq» (xs.map fun x ↦ x.2.1))
         ((xs.map fun x ↦ (x.1, x.2.2)).mapM Prod.snd) := by
   refine List.rec (fun _ ↦ ?_) fun x xs ih hx ↦ ?_
-  · simp only [GebMirror.Metalogic.pmSeq, List.map_nil, foldr_eq, List.foldr_nil, List.mapM_nil]
+  · simp only [«Combinator.pmSeq», List.map_nil, foldr_eq, List.foldr_nil, List.mapM_nil]
     exact pmPure_rel (fun ys ↦ RoseTree.node 0 (ys.map e)) []
   · have ih' := ih fun y hy ↦ hx y (List.mem_cons_of_mem x hy)
-    simp only [GebMirror.Metalogic.pmSeq, foldr_eq] at ih' ⊢
+    simp only [«Combinator.pmSeq», foldr_eq] at ih' ⊢
     simp only [List.map_cons, List.foldr_cons, List.mapM_cons]
     refine pmBind_rel e _ _ _ (hx x List.mem_cons_self) _ _ fun y ↦ ?_
     refine pmBind_rel (fun ys ↦ RoseTree.node 0 (ys.map e)) _ _ _ ih' _ _ fun ys ↦ ?_
@@ -724,18 +726,18 @@ theorem typeStep_rel (pt' : List Tree → Tree → Tree → Tree → Tree) (pt :
     (hlf : ∀ n, PMRel encTy (lf' (leaf n)) (lf n)) (term' term : Tree → Tree)
     (hterm : ∀ t, term' t = term t) (l : ℕ)
     (xs : List (Tree × (Tree → Tree → Tree) × PM Ty)) (hx : ∀ x ∈ xs, PMRel encTy x.2.1 x.2.2) :
-    PMRel encTy (GebMirror.Metalogic.typeStep pt' lf' term' (RoseTree.node l (xs.map Prod.fst))
+    PMRel encTy («Combinator.typeStep» pt' lf' term' (RoseTree.node l (xs.map Prod.fst))
         (xs.map fun x ↦ x.2.1))
       (typeStep pt lf term l (xs.map fun x ↦ (x.1, x.2.2))) := by
   rcases l with _ | k
   · rcases xs with _ | ⟨⟨i, v, w⟩, _ | ⟨y, ys⟩⟩
-    · comb_simp [GebMirror.Metalogic.typeStep, typeStep]
+    · comb_simp [«Combinator.typeStep», typeStep]
       exact pmFail_rel encTy
-    · comb_simp [GebMirror.Metalogic.typeStep, typeStep]
+    · comb_simp [«Combinator.typeStep», typeStep]
       exact hlf i.label
-    · comb_simp [GebMirror.Metalogic.typeStep, typeStep]
+    · comb_simp [«Combinator.typeStep», typeStep]
       exact pmFail_rel encTy
-  · comb_simp [GebMirror.Metalogic.typeStep, typeStep, hterm]
+  · comb_simp [«Combinator.typeStep», typeStep, hterm]
     simp only [show (k + 1 == 0) = false from rfl, Bool.false_eq_true, ↓reduceIte,
       Nat.add_sub_cancel]
     refine pmBind_rel (fun o : Option Ty ↦ encOpt (o.map encTy)) encTy _ _ (lookup_rel _) _ _
@@ -753,11 +755,11 @@ theorem typeStep_rel (pt' : List Tree → Tree → Tree → Tree → Tree) (pt :
 theorem findIdxT_eq {α : Type} (f' : Tree → Tree) (g : α → Tree) (p : α → Bool)
     (hf : ∀ x, f' (g x) = ofBool (p x)) :
     ∀ xs : List α,
-      GebMirror.Metalogic.findIdxT f' (xs.map g) = encOpt ((xs.findIdx? p).map leaf) := by
+      «Combinator.findIdxT» f' (xs.map g) = encOpt ((xs.findIdx? p).map leaf) := by
   have gen : ∀ (ys : List α) (m : ℕ), Const.foldr (fun (x : Tree) (s : Tree × Tree) ↦
       (Const.sub s.1 (leaf 1), if (f' x).label ≠ 0 then
-        GebMirror.Metalogic.some (Const.sub s.1 (leaf 1)) else s.2))
-      (leaf (m + ys.length), GebMirror.Metalogic.none) (ys.map g) =
+        «Prelude.some» (Const.sub s.1 (leaf 1)) else s.2))
+      (leaf (m + ys.length), «Prelude.none») (ys.map g) =
       (leaf m, encOpt ((ys.findIdx? p).map fun k ↦ leaf (k + m))) := by
     refine List.rec (fun m ↦ ?_) fun y ys ih m ↦ ?_
     · rfl
@@ -773,7 +775,7 @@ theorem findIdxT_eq {α : Type} (f' : Tree → Tree) (g : α → Tree) (p : α �
           Option.map_some, Nat.zero_add]
         rfl
   intro xs
-  simp only [GebMirror.Metalogic.findIdxT, length_eq, List.length_map]
+  simp only [«Combinator.findIdxT», length_eq, List.length_map]
   have := gen xs 0
   simp only [Nat.zero_add, Nat.add_zero] at this
   rw [this]
@@ -785,10 +787,10 @@ theorem run_get_bind {α : Type} (k : St → PM α) (sc : Scope) (st : St) :
 /-- The mirror's canonical bound of a variable's domain or codomain. -/
 theorem varSide_rel (tt' : Tree → Tree → Tree → Tree) (tt : Tree → PM Ty)
     (htt : ∀ t, PMRel encTy (tt' t) (tt t)) (inf : Bool) (i o j : ℕ) :
-    PMRel encPair (GebMirror.Metalogic.varSide tt' (leaf i) (ofBool inf) (leaf o) (leaf j))
+    PMRel encPair («Combinator.varSide» tt' (leaf i) (ofBool inf) (leaf o) (leaf j))
       (varSide tt inf i o j) := by
   intro sc st' st h
-  unfold GebMirror.Metalogic.varSide varSide
+  unfold «Combinator.varSide» varSide
   simp only [read, readThe, MonadReaderOf.read, ReaderT.run_bind, ReaderT.run_read, pure_bind]
   comb_simp [scHyps_eq, phOp_eq, phVar_eq, single_eq]
   rw [findIdxT_eq _ encEqn (fun q : Eqn ↦ q.lhs == PartialHorn.op o [PartialHorn.var i])
@@ -820,9 +822,9 @@ theorem varSide_rel (tt' : Tree → Tree → Tree → Tree) (tt : Tree → PM Ty
 /-- The mirror's typing of a variable of the scope, at a related typer of terms. -/
 theorem typeVar_rel (tt' : Tree → Tree → Tree → Tree) (tt : Tree → PM Ty)
     (htt : ∀ t, PMRel encTy (tt' t) (tt t)) (i : ℕ) :
-    PMRel encTy (GebMirror.Metalogic.typeVar tt' (leaf i)) (typeVar tt i) := by
+    PMRel encTy («Combinator.typeVar» tt' (leaf i)) (typeVar tt i) := by
   intro sc st' st h
-  unfold GebMirror.Metalogic.typeVar typeVar
+  unfold «Combinator.typeVar» typeVar
   simp only [read, readThe, MonadReaderOf.read, ReaderT.run_bind, ReaderT.run_read, pure_bind,
     scCtx_eq, nth_eq, List.getElem?_map]
   cases sc.ctx[i]? with
@@ -861,8 +863,8 @@ def TypersRel (p' : (List Tree → Tree → Tree → Tree → Tree) × (Tree →
   PatRel p'.1 p.1 ∧ ∀ t, PMRel encTy (p'.2 t) (p.2 t)
 
 /-- The mirror's typers at every fuel. -/
-theorem typers_rel (n : ℕ) : TypersRel (GebMirror.Metalogic.typers (leaf n)) (typers n) := by
-  unfold GebMirror.Metalogic.typers typers
+theorem typers_rel (n : ℕ) : TypersRel («Combinator.typers» (leaf n)) (typers n) := by
+  unfold «Combinator.typers» typers
   simp only [Const.iter, label_leaf]
   refine Nat.rec ⟨fun _ _ ↦ pmFail_rel encTy, fun _ ↦ pmFail_rel encTy⟩ (fun _ ih ↦ ?_) n
   refine ⟨fun tys p ↦ ?_, fun t ↦ ?_⟩
@@ -879,18 +881,18 @@ theorem typers_rel (n : ℕ) : TypersRel (GebMirror.Metalogic.typers (leaf n)) (
       typeStep_rel _ _ ih.1 _ _ (typeVar_rel _ _ ih.2) _ _ (fun _ ↦ rfl) l xs hx) t
 
 /-- The mirror's typing of a term of the scope. -/
-theorem typeTerm_rel (t : Tree) : PMRel encTy (GebMirror.Metalogic.typeTerm t) (typeTerm t) :=
+theorem typeTerm_rel (t : Tree) : PMRel encTy («Combinator.typeTerm» t) (typeTerm t) :=
   (typers_rel typingFuel).2 t
 
 /-- The mirror's typing of an axiom's side instantiated at typed arguments. -/
-theorem typePattern_rel : PatRel (fun env p ↦ GebMirror.Metalogic.typePattern env p) typePattern :=
+theorem typePattern_rel : PatRel (fun env p ↦ «Combinator.typePattern» env p) typePattern :=
   (typers_rel typingFuel).1
 
 /-- The mirror's typings of terms, in turn. -/
 theorem typeTerms_rel (σ : List Tree) :
     PMRel (fun ys ↦ RoseTree.node 0 (ys.map encTy))
-      (GebMirror.Metalogic.pmMapM GebMirror.Metalogic.typeTerm σ) (σ.mapM typeTerm) := by
-  have h := pmMapM_rel encTy id GebMirror.Metalogic.typeTerm typeTerm σ fun x _ ↦ typeTerm_rel x
+      («Combinator.pmMapM» «Combinator.typeTerm» σ) (σ.mapM typeTerm) := by
+  have h := pmMapM_rel encTy id «Combinator.typeTerm» typeTerm σ fun x _ ↦ typeTerm_rel x
   rwa [List.map_id] at h
 
 /-! Rules and the match of a rule's side. -/
@@ -900,48 +902,48 @@ its deferred pairs of objects. -/
 def encMS (ms : MatchSt) : Tree :=
   RoseTree.node 0 [RoseTree.node 0 (ms.σ.map encOpt), RoseTree.node 0 (ms.objs.map encPair)]
 
-@[simp] theorem rwSrc_eq (r : RwRule) : GebMirror.Metalogic.rwSrc (encRw r) = encSrc r.src := by
-  simp [GebMirror.Metalogic.rwSrc, encRw]
+@[simp] theorem rwSrc_eq (r : RwRule) : «Combinator.rwSrc» (encRw r) = encSrc r.src := by
+  simp [«Combinator.rwSrc», encRw]
 
-@[simp] theorem rwFlip_eq (r : RwRule) : GebMirror.Metalogic.rwFlip (encRw r) = ofBool r.flip := by
-  simp [GebMirror.Metalogic.rwFlip, encRw]
+@[simp] theorem rwFlip_eq (r : RwRule) : «Combinator.rwFlip» (encRw r) = ofBool r.flip := by
+  simp [«Combinator.rwFlip», encRw]
 
 @[simp] theorem rwAvoid_eq (r : RwRule) :
-    GebMirror.Metalogic.rwAvoid (encRw r) = r.avoid.map leaf := by
-  simp [GebMirror.Metalogic.rwAvoid, encRw]
+    «Combinator.rwAvoid» (encRw r) = r.avoid.map leaf := by
+  simp [«Combinator.rwAvoid», encRw]
 
 @[simp] theorem msSigma_eq (ms : MatchSt) :
-    GebMirror.Metalogic.msSigma (encMS ms) = ms.σ.map encOpt := by
-  simp [GebMirror.Metalogic.msSigma, encMS]
+    «Combinator.msSigma» (encMS ms) = ms.σ.map encOpt := by
+  simp [«Combinator.msSigma», encMS]
 
 @[simp] theorem msObjs_eq (ms : MatchSt) :
-    GebMirror.Metalogic.msObjs (encMS ms) = ms.objs.map encPair := by
-  simp [GebMirror.Metalogic.msObjs, encMS]
+    «Combinator.msObjs» (encMS ms) = ms.objs.map encPair := by
+  simp [«Combinator.msObjs», encMS]
 
 @[simp] theorem msDefer_eq (ms : MatchSt) (p t : Tree) :
-    GebMirror.Metalogic.msDefer (encMS ms) p t = encMS { ms with objs := (p, t) :: ms.objs } := by
-  simp only [GebMirror.Metalogic.msDefer, GebMirror.Metalogic.matchSt, GebMirror.Metalogic.l2,
+    «Combinator.msDefer» (encMS ms) p t = encMS { ms with objs := (p, t) :: ms.objs } := by
+  simp only [«Combinator.msDefer», «Combinator.matchSt», «Theory.l2»,
     msSigma_eq, msObjs_eq, node_leaf]
   rfl
 
 /-- The development of an encoded state. -/
 theorem stDev_srel {st' : Tree} {st : St} (h : SRel st' st) :
-    GebMirror.Metalogic.stDev st' = st.dev.toList.map encDevEntry := by
+    «Combinator.stDev» st' = st.dev.toList.map encDevEntry := by
   obtain ⟨lm, ln, hm, hn, rfl⟩ := h
-  mirror_simp [GebMirror.Metalogic.stDev]
+  mirror_simp [«Combinator.stDev»]
 
 set_option maxRecDepth 100000 in
 /-- The mirror's sequent of a rule's source. -/
-theorem srcSeq_rel (s : Src) : PMRel encSeq (GebMirror.Metalogic.srcSeq (encSrc s)) s.seq := by
+theorem srcSeq_rel (s : Src) : PMRel encSeq («Combinator.srcSeq» (encSrc s)) s.seq := by
   rcases s with j | j
   · have e :
-        GebMirror.Metalogic.srcSeq (encSrc (.ax j)) = GebMirror.Metalogic.axiomAt (leaf j) := by
-      simp only [GebMirror.Metalogic.srcSeq, encSrc, label_eq, RoseTree.label_node, eq_leaf,
+        «Combinator.srcSeq» (encSrc (.ax j)) = «Combinator.axiomAt» (leaf j) := by
+      simp only [«Combinator.srcSeq», encSrc, label_eq, RoseTree.label_node, eq_leaf,
         children_node, at_eq, List.getD_cons_zero, beq_self_eq_true, ofBool_true, label_leaf, ne_eq,
         one_ne_zero, not_false_eq_true, ↓reduceIte]
     rw [e]
     exact axiomAt_rel j
-  · simp only [GebMirror.Metalogic.srcSeq, encSrc, label_eq, RoseTree.label_node, eq_leaf,
+  · simp only [«Combinator.srcSeq», encSrc, label_eq, RoseTree.label_node, eq_leaf,
       children_node, at_eq, List.getD_cons_zero, Nat.reduceBEq, ofBool_false, label_leaf, ne_eq,
       not_true_eq_false, ↓reduceIte, Src.seq]
     refine pmGetBind_rel _ _ _ fun st' st h ↦ ?_
@@ -953,8 +955,8 @@ theorem srcSeq_rel (s : Src) : PMRel encSeq (GebMirror.Metalogic.srcSeq (encSrc 
       exact pmPure_rel encSeq e.1
 
 @[simp] theorem srcCert_eq (s : Src) (ts ds hs : List Tree) :
-    GebMirror.Metalogic.srcCert (encSrc s) ts ds hs = s.cert ts ds hs := by
-  rcases s with j | j <;> comb_simp [GebMirror.Metalogic.srcCert, encSrc, Src.cert]
+    «Combinator.srcCert» (encSrc s) ts ds hs = s.cert ts ds hs := by
+  rcases s with j | j <;> comb_simp [«Combinator.srcCert», encSrc, Src.cert]
 
 /-- A match written in Geb and a match are related when they agree at every term and encoded
 state. -/
@@ -965,17 +967,17 @@ def MFRel (f' : Tree → Tree → Tree) (f : Tree → MatchSt → Option MatchSt
 theorem matchKids_eq :
     ∀ xs : List (Tree × (Tree → Tree → Tree) × (Tree → MatchSt → Option MatchSt)),
       (∀ x ∈ xs, MFRel x.2.1 x.2.2) → ∀ us ms,
-      GebMirror.Metalogic.matchKids (xs.map fun x ↦ x.2.1) us (encMS ms) =
+      «Combinator.matchKids» (xs.map fun x ↦ x.2.1) us (encMS ms) =
         encOpt ((((xs.map fun (x : Tree × (Tree → Tree → Tree) ×
           (Tree → MatchSt → Option MatchSt)) ↦ (x.1, x.2.2)).zip us).foldlM
           (fun (ms : MatchSt) ((c, u) : (Tree × (Tree → MatchSt → Option MatchSt)) × Tree) ↦
             c.2 u ms) ms).map encMS) := by
   refine List.rec (fun _ us ms ↦ ?_) fun x xs ih hx us ms ↦ ?_
-  · simp [GebMirror.Metalogic.matchKids, some_eq]
+  · simp [«Combinator.matchKids», some_eq]
   · rcases us with _ | ⟨u, us⟩
-    · simp [GebMirror.Metalogic.matchKids, Const.lcase, some_eq]
+    · simp [«Combinator.matchKids», Const.lcase, some_eq]
     · have ih' := ih fun y hy ↦ hx y (List.mem_cons_of_mem x hy)
-      simp only [GebMirror.Metalogic.matchKids, foldr_eq, Const.lcase] at ih' ⊢
+      simp only [«Combinator.matchKids», foldr_eq, Const.lcase] at ih' ⊢
       simp only [List.map_cons, List.foldr_cons, List.zip_cons_cons, List.foldlM_cons,
         hx x List.mem_cons_self u ms, bindO_eq]
       rcases x.2.2 u ms with _ | ms₂
@@ -984,17 +986,17 @@ theorem matchKids_eq :
 
 /-- The mirror's match of a rule's side, in a context of sorts, against a term. -/
 theorem matchPat_eq (S : Sig) (ctx : List ℕ) (p : Tree) :
-    MFRel (GebMirror.Metalogic.matchPat (S.map encOpSig) (ctx.map leaf) p) (matchPat S ctx p) := by
+    MFRel («Combinator.matchPat» (S.map encOpSig) (ctx.map leaf) p) (matchPat S ctx p) := by
   refine para_rel MFRel _ _ (fun l xs hx t ms ↦ ?_) p
   rcases l with _ | k
   · rcases xs with _ | ⟨⟨i, v, w⟩, _ | ⟨y, ys⟩⟩
-    · comb_simp [GebMirror.Metalogic.matchStepP]
+    · comb_simp [«Combinator.matchStepP»]
       rfl
-    · comb_simp [GebMirror.Metalogic.matchStepP, msSigma_eq, msObjs_eq, msDefer_eq,
+    · comb_simp [«Combinator.matchStepP», msSigma_eq, msObjs_eq, msDefer_eq,
         Prove.setAt_eq, List.getElem?_map, some_eq, encOpt_inj]
       rcases hσ : ms.σ[i.label]? with _ | _ | u
       · rfl
-      · simp [encMS, GebMirror.Metalogic.matchSt, List.map_set]
+      · simp [encMS, «Combinator.matchSt», List.map_set]
       · by_cases hu : u = t
         · simp [hu]
         · rcases hc : ctx[i.label]? with _ | c
@@ -1004,13 +1006,13 @@ theorem matchPat_eq (S : Sig) (ctx : List ℕ) (p : Tree) :
             · simp [hu, hc0, Sorts.obj]
             · simp [hu, hc0, Sorts.obj, leaf_inj]
               rfl
-    · comb_simp [GebMirror.Metalogic.matchStepP]
+    · comb_simp [«Combinator.matchStepP»]
       rfl
-  · comb_simp [GebMirror.Metalogic.matchStepP, msDefer_eq, sortOf_eq, some_eq, encOpt_inj,
+  · comb_simp [«Combinator.matchStepP», msDefer_eq, sortOf_eq, some_eq, encOpt_inj,
       Nat.add_one_ne_zero, beq_iff_eq]
     have tail : (if (t.label == k + 1 && t.children.length == xs.length) = true then
-        GebMirror.Metalogic.matchKids (xs.map fun x ↦ x.2.1) t.children (encMS ms)
-        else GebMirror.Metalogic.none) = encOpt (Option.map encMS
+        «Combinator.matchKids» (xs.map fun x ↦ x.2.1) t.children (encMS ms)
+        else «Prelude.none») = encOpt (Option.map encMS
           (if (t.label == k + 1 && t.children.length == xs.length) = true then
             ((xs.map fun x ↦ (x.1, x.2.2)).zip t.children).foldlM (fun ms x ↦ x.1.2 x.2 ms) ms
           else none)) := by
@@ -1035,20 +1037,20 @@ def BRel (f' : Tree → Tree → Tree → Tree) (f : Tree → PM Tree) : Prop :=
 theorem bridgeKids_rel :
     ∀ xs : List (Tree × (Tree → Tree → Tree → Tree) × (Tree → PM Tree)),
       (∀ x ∈ xs, BRel x.2.1 x.2.2) → ∀ us,
-      PMRel (RoseTree.node 0) (GebMirror.Metalogic.bridgeKids (xs.map fun x ↦ x.2.1) us)
+      PMRel (RoseTree.node 0) («Combinator.bridgeKids» (xs.map fun x ↦ x.2.1) us)
         (((xs.map fun (x : Tree × (Tree → Tree → Tree → Tree) × (Tree → PM Tree)) ↦
           (x.1, x.2.2)).zip us).mapM
           fun ((c, u) : (Tree × (Tree → PM Tree)) × Tree) ↦ c.2 u) := by
   refine List.rec (fun _ us ↦ ?_) fun x xs ih hx us ↦ ?_
-  · simp only [GebMirror.Metalogic.bridgeKids, List.map_nil, foldr_eq, List.foldr_nil,
+  · simp only [«Combinator.bridgeKids», List.map_nil, foldr_eq, List.foldr_nil,
       List.zip_nil_left, List.mapM_nil, node_leaf]
     exact pmPure_rel (RoseTree.node 0) []
   · rcases us with _ | ⟨u, us⟩
-    · simp only [GebMirror.Metalogic.bridgeKids, List.map_cons, foldr_eq, List.foldr_cons,
+    · simp only [«Combinator.bridgeKids», List.map_cons, foldr_eq, List.foldr_cons,
         Const.lcase, List.zip_nil_right, List.mapM_nil, node_leaf]
       exact pmPure_rel (RoseTree.node 0) []
     · have ih' := ih (fun y hy ↦ hx y (List.mem_cons_of_mem x hy)) us
-      simp only [GebMirror.Metalogic.bridgeKids, foldr_eq] at ih' ⊢
+      simp only [«Combinator.bridgeKids», foldr_eq] at ih' ⊢
       simp only [List.map_cons, List.foldr_cons, Const.lcase, List.zip_cons_cons, List.mapM_cons,
         node_leaf]
       refine pmBind_rel id _ _ _ (hx x List.mem_cons_self u) _ _ fun y ↦ ?_
@@ -1059,9 +1061,9 @@ theorem bridgeKids_rel :
 /-- The mirror's certificate that a term equals the instance of a rule's side at typed
 arguments. -/
 theorem bridge_rel (tys : List Ty) (p : Tree) :
-    BRel (GebMirror.Metalogic.bridge (tys.map encTy) p) (bridge tys p) := by
+    BRel («Combinator.bridge» (tys.map encTy) p) (bridge tys p) := by
   refine para_rel BRel _ _ (fun l xs hx t ↦ ?_) p
-  simp only [GebMirror.Metalogic.bridgeStep, List.map_map, Function.comp_def]
+  simp only [«Combinator.bridgeStep», List.map_map, Function.comp_def]
   refine pmBind_rel encTy id _ _ (typeTerm_rel t) _ _ fun ty ↦ ?_
   comb_simp [mapT_eq, List.map_map, Function.comp_def, phSubst_eq]
   by_cases h1 : PartialHorn.subst (tys.map Ty.term) (RoseTree.node l (xs.map Prod.fst)) = t
@@ -1087,15 +1089,15 @@ theorem bridge_rel (tys : List Ty) (p : Tree) :
 
 /-- The mirror's initial state of a match. -/
 theorem initMS_eq (ctx : List ℕ) :
-    GebMirror.Metalogic.matchSt (RoseTree.node 0 (ctx.map fun _ ↦ GebMirror.Metalogic.none))
+    «Combinator.matchSt» (RoseTree.node 0 (ctx.map fun _ ↦ «Prelude.none»))
       (RoseTree.node 0 []) = encMS ⟨ctx.map fun _ ↦ none, []⟩ := by
-  simp [GebMirror.Metalogic.matchSt, encMS]
+  simp [«Combinator.matchSt», encMS]
   rfl
 
 /-- The mirror's rewriting step at a term's root by a rule. -/
 theorem applyRule_rel (r : RwRule) (t : Tree) :
-    PMRel encPair (GebMirror.Metalogic.applyRule (encRw r) t) (applyRule r t) := by
-  unfold GebMirror.Metalogic.applyRule applyRule
+    PMRel encPair («Combinator.applyRule» (encRw r) t) (applyRule r t) := by
+  unfold «Combinator.applyRule» applyRule
   refine pmBind_rel (fun _ ↦ leaf 0) encPair _ _ ?_ _ _ fun _ ↦ ?_
   · rw [rwAvoid_eq, anyT_eq _ (fun x ↦ t.label == x.label) _ (fun x hx ↦ ?_), not_eq]
     · have e : (r.avoid.map leaf).any (fun x ↦ t.label == x.label) = r.avoid.contains t.label := by
@@ -1151,10 +1153,10 @@ theorem applyRule_rel (r : RwRule) (t : Tree) :
 
 /-- The mirror's first rule of a list that applies at a term's root. -/
 theorem firstRule_rel (t : Tree) : ∀ rules : List RwRule,
-    PMRel encPair (GebMirror.Metalogic.firstRule (rules.map encRw) t) (firstRule rules t) := by
+    PMRel encPair («Combinator.firstRule» (rules.map encRw) t) (firstRule rules t) := by
   refine List.rec ?_ fun r rules ih ↦ ?_
   · exact pmFail_rel encPair
-  · simp only [GebMirror.Metalogic.firstRule, firstRule, foldr_eq, List.map_cons,
+  · simp only [«Combinator.firstRule», firstRule, foldr_eq, List.map_cons,
       List.foldr_cons] at ih ⊢
     exact pmOr_rel encPair _ _ _ _ (applyRule_rel r t) ih
 
@@ -1163,8 +1165,8 @@ def encQuad (q : Tree × Tree × Tree × Tree) : Tree := RoseTree.node 0 [q.1, q
 
 /-- The mirror's instance of associativity at a term {lit}`comp a (comp b x)`. -/
 theorem assocLeft_rel (t : Tree) :
-    PMRel encQuad (GebMirror.Metalogic.assocLeft t) (assocLeft t) := by
-  unfold GebMirror.Metalogic.assocLeft assocLeft
+    PMRel encQuad («Combinator.assocLeft» t) (assocLeft t) := by
+  unfold «Combinator.assocLeft» assocLeft
   by_cases hl : t.label = 4
   · rcases hc : t.children with _ | ⟨a, _ | ⟨bx, _ | ⟨z, zs⟩⟩⟩
     · comb_simp [hl, hc]
@@ -1203,8 +1205,8 @@ theorem assocLeft_rel (t : Tree) :
 
 /-- The mirror's rewriting step at a term's root. -/
 theorem rewriteRoot_rel (rules : List RwRule) (t : Tree) :
-    PMRel encPair (GebMirror.Metalogic.rewriteRoot (rules.map encRw) t) (rewriteRoot rules t) := by
-  unfold GebMirror.Metalogic.rewriteRoot rewriteRoot
+    PMRel encPair («Combinator.rewriteRoot» (rules.map encRw) t) (rewriteRoot rules t) := by
+  unfold «Combinator.rewriteRoot» rewriteRoot
   refine pmOr_rel encPair _ _ _ _ (firstRule_rel t rules) ?_
   refine pmBind_rel encQuad encPair _ _ (assocLeft_rel t) _ _ fun ⟨a, b, x, c⟩ ↦ ?_
   comb_simp [encQuad, mirror_comp]
@@ -1219,34 +1221,34 @@ theorem rewriteRoot_rel (rules : List RwRule) (t : Tree) :
 
 /-- The mirror's normal form of a term, if recorded in the scope. -/
 theorem lookupNf_rel (t : Tree) :
-    PMRel (fun o ↦ encOpt (o.map encPair)) (GebMirror.Metalogic.lookupNf t) (lookupNf t) := by
+    PMRel (fun o ↦ encOpt (o.map encPair)) («Combinator.lookupNf» t) (lookupNf t) := by
   intro sc st' st h
   pm_simp [lookupNf]
   obtain ⟨lm, ln, hm, hn, rfl⟩ := h
   refine ⟨_, ⟨lm, ln, hm, hn, rfl⟩, ?_⟩
-  mirror_simp [GebMirror.Metalogic.lookupNf, GebMirror.Metalogic.stNfs, GebMirror.Metalogic.l2,
+  mirror_simp [«Combinator.lookupNf», «Combinator.stNfs», «Theory.l2»,
     tableFind_eq, ← hn.2 t, Option.map_map]
   rfl
 
 /-- The mirror's record of a normal form with its certificate in the table of normal forms. -/
 theorem nfsInsert_rel (t n c : Tree) :
-    PMRel encPair (fun _ st ↦ GebMirror.Metalogic.some (Const.node (leaf 0)
-        (GebMirror.Metalogic.l2 (Const.node (leaf 0) (GebMirror.Metalogic.l2 n c))
-          (GebMirror.Metalogic.withNfs st (GebMirror.Metalogic.tableInsert
-            (GebMirror.Metalogic.stNfs st) t (Const.node (leaf 0) (GebMirror.Metalogic.l2 n c)))))))
+    PMRel encPair (fun _ st ↦ «Prelude.some» (Const.node (leaf 0)
+        («Theory.l2» (Const.node (leaf 0) («Theory.l2» n c))
+          («Combinator.withNfs» st («Combinator.tableInsert»
+            («Combinator.stNfs» st) t (Const.node (leaf 0) («Theory.l2» n c)))))))
       (do modify fun st ↦ { st with nfs := st.nfs.insert t (n, c) }; pure (n, c)) := by
   intro sc st' st h
   pm_simp []
   obtain ⟨lm, ln, hm, hn, rfl⟩ := h
   refine ⟨_, ⟨lm, (t, (n, c)) :: ln, hm, tRel_insert ln st.nfs hn t (n, c), rfl⟩, ?_⟩
-  mirror_simp [GebMirror.Metalogic.stNfs, GebMirror.Metalogic.withNfs,
-    GebMirror.Metalogic.tableInsert, GebMirror.Metalogic.pst, GebMirror.Metalogic.l2]
+  mirror_simp [«Combinator.stNfs», «Combinator.withNfs»,
+    «Combinator.tableInsert», «Combinator.pst», «Theory.l2»]
   rfl
 
 /-- The mirror's record of a term's normal form. -/
 theorem memoizeNf_rel (t n c : Tree) :
-    PMRel encPair (GebMirror.Metalogic.memoizeNf t n c) (memoizeNf t n c) := by
-  unfold GebMirror.Metalogic.memoizeNf memoizeNf
+    PMRel encPair («Combinator.memoizeNf» t n c) (memoizeNf t n c) := by
+  unfold «Combinator.memoizeNf» memoizeNf
   by_cases hn : t = n
   · simp only [hn, equal_eq, decide_true, ofBool_true, label_leaf, ne_eq, one_ne_zero,
       not_false_eq_true, ↓reduceIte, beq_self_eq_true]
@@ -1258,9 +1260,9 @@ theorem memoizeNf_rel (t n c : Tree) :
 /-- The mirror's optional value of a computation, none when it fails. -/
 theorem pmOpt_rel {α : Type} (e : α → Tree) (m' : Tree → Tree → Tree) (m : PM α)
     (hm : PMRel e m' m) :
-    PMRel (fun o ↦ encOpt (o.map e)) (GebMirror.Metalogic.pmOr
-        (GebMirror.Metalogic.pmBind m' fun x ↦ GebMirror.Metalogic.pmPure
-          (GebMirror.Metalogic.some x)) (GebMirror.Metalogic.pmPure GebMirror.Metalogic.none))
+    PMRel (fun o ↦ encOpt (o.map e)) («Combinator.pmOr»
+        («Combinator.pmBind» m' fun x ↦ «Combinator.pmPure»
+          («Prelude.some» x)) («Combinator.pmPure» «Prelude.none»))
       ((some <$> m) <|> pure none) := by
   rw [map_eq_bind_pure_comp]
   exact pmOr_rel _ _ _ _ _ (pmBind_rel e _ _ _ hm _ _ fun a ↦ pmPure_rel _ (some a))
@@ -1275,10 +1277,10 @@ theorem normStep_rel (rules : List RwRule) (rec' : Tree → Tree → Tree → Tr
     (rec : Tree → PM (Tree × Tree)) (hrec : NRel rec' rec) (l : ℕ)
     (xs : List (Tree × (Tree → Tree → Tree) × PM (Tree × Tree)))
     (hx : ∀ x ∈ xs, PMRel encPair x.2.1 x.2.2) :
-    PMRel encPair (GebMirror.Metalogic.normStepP (rules.map encRw) rec'
+    PMRel encPair («Combinator.normStepP» (rules.map encRw) rec'
         (RoseTree.node l (xs.map Prod.fst)) (xs.map fun x ↦ x.2.1))
       (normStep rules rec l (xs.map fun x ↦ (x.1, x.2.2))) := by
-  unfold GebMirror.Metalogic.normStepP normStep
+  unfold «Combinator.normStepP» normStep
   simp only [List.map_map, Function.comp_def]
   refine pmBind_rel (fun o ↦ encOpt (o.map encPair)) encPair _ _
     (lookupNf_rel (RoseTree.node l (xs.map Prod.fst))) _ _ fun o ↦ ?_
@@ -1299,7 +1301,7 @@ theorem normStep_rel (rules : List RwRule) (rec' : Tree → Tree → Tree → Tr
         refine pmBind_rel (fun o ↦ encOpt (o.map encPair)) encPair _ _
           (pmOpt_rel encPair _ _ (rewriteRoot_rel rules (RoseTree.node l (rs.map Prod.fst)))) _ _
           fun o ↦ ?_
-        have hc₁ : ∀ c, PMRel encPair (GebMirror.Metalogic.memoizeNf
+        have hc₁ : ∀ c, PMRel encPair («Combinator.memoizeNf»
             (RoseTree.node l (xs.map Prod.fst)) (RoseTree.node l (rs.map Prod.fst)) c)
             (memoizeNf (RoseTree.node l (xs.map Prod.fst)) (RoseTree.node l (rs.map Prod.fst)) c) :=
           fun c ↦ memoizeNf_rel _ _ c
@@ -1323,8 +1325,8 @@ theorem normStep_rel (rules : List RwRule) (rec' : Tree → Tree → Tree → Tr
 
 /-- The mirror's normalizers at every fuel. -/
 theorem normalizers_rel (rules : List RwRule) (n : ℕ) :
-    NRel (GebMirror.Metalogic.normalizers (rules.map encRw) (leaf n)) (normalizers rules n) := by
-  unfold GebMirror.Metalogic.normalizers normalizers
+    NRel («Combinator.normalizers» (rules.map encRw) (leaf n)) (normalizers rules n) := by
+  unfold «Combinator.normalizers» normalizers
   simp only [Const.iter, label_leaf]
   refine Nat.rec (fun _ ↦ pmFail_rel encPair) (fun _ ih t ↦ ?_) n
   simp only [Nat.repeat]
@@ -1333,33 +1335,33 @@ theorem normalizers_rel (rules : List RwRule) (n : ℕ) :
 
 /-- The mirror's normal form of a term under rules. -/
 theorem normalize_rel (rules : List RwRule) (t : Tree) :
-    PMRel encPair (GebMirror.Metalogic.pNormalize (rules.map encRw) t) (normalize rules t) := by
-  unfold GebMirror.Metalogic.pNormalize normalize normFuel
+    PMRel encPair («Combinator.pNormalize» (rules.map encRw) t) (normalize rules t) := by
+  unfold «Combinator.pNormalize» normalize normFuel
   exact normalizers_rel rules 64 t
 
 /-! The tactics. -/
 
-@[simp] theorem srcAx_eq (j : ℕ) : GebMirror.Metalogic.srcAx (leaf j) = encSrc (.ax j) := rfl
+@[simp] theorem srcAx_eq (j : ℕ) : «Combinator.srcAx» (leaf j) = encSrc (.ax j) := rfl
 
-@[simp] theorem srcThm_eq (j : ℕ) : GebMirror.Metalogic.srcThm (leaf j) = encSrc (.thm j) := rfl
+@[simp] theorem srcThm_eq (j : ℕ) : «Combinator.srcThm» (leaf j) = encSrc (.thm j) := rfl
 
 /-- The mirror's index of the terminal object's first axiom. -/
-theorem beforeTerminal_eq : GebMirror.Metalogic.beforeTerminal = leaf (axIdx beforeTerminal 0) :=
+theorem beforeTerminal_eq : «Combinator.beforeTerminal» = leaf (axIdx beforeTerminal 0) :=
   rfl
 
 /-- The mirror's index of the products' first axiom. -/
-theorem beforeProduct_eq : GebMirror.Metalogic.beforeProduct = leaf (axIdx beforeProduct 0) :=
+theorem beforeProduct_eq : «Combinator.beforeProduct» = leaf (axIdx beforeProduct 0) :=
   rfl
 
 /-- The mirror's index of the exponentials' first axiom. -/
 theorem beforeExponential_eq :
-    GebMirror.Metalogic.beforeExponential = leaf (axIdx beforeExponential 0) := rfl
+    «Combinator.beforeExponential» = leaf (axIdx beforeExponential 0) := rfl
 
 /-- The mirror's index of the natural numbers object's first axiom. -/
-theorem beforeNat_eq : GebMirror.Metalogic.beforeNat = leaf (axIdx beforeNat 0) := rfl
+theorem beforeNat_eq : «Combinator.beforeNat» = leaf (axIdx beforeNat 0) := rfl
 
 /-- The mirror's index of the list objects' first axiom. -/
-theorem beforeList_eq : GebMirror.Metalogic.beforeList = leaf (axIdx beforeList 0) := rfl
+theorem beforeList_eq : «Combinator.beforeList» = leaf (axIdx beforeList 0) := rfl
 
 /-- The index of an axiom of a block. -/
 theorem axIdx_add (before : List (List Seq)) (k : ℕ) : axIdx before 0 + k = axIdx before k := by
@@ -1370,8 +1372,8 @@ def encEqC (p : Eqn × Tree) : Tree := RoseTree.node 0 [encEqn p.1, p.2]
 
 /-- The mirror's instance of a source's sequent at terms. -/
 theorem inst_rel (s : Src) (σ : List Tree) :
-    PMRel encEqC (GebMirror.Metalogic.pInst (encSrc s) σ) (inst s σ) := by
-  unfold GebMirror.Metalogic.pInst inst
+    PMRel encEqC («Combinator.pInst» (encSrc s) σ) (inst s σ) := by
+  unfold «Combinator.pInst» inst
   refine pmBind_rel encSeq encEqC _ _ (srcSeq_rel s) _ _ fun a ↦ ?_
   refine pmBind_rel _ encEqC _ _ (typeTerms_rel σ) _ _ fun tys ↦ ?_
   comb_simp [seqHyps_eq]
@@ -1384,8 +1386,8 @@ theorem inst_rel (s : Src) (σ : List Tree) :
 
 /-- The mirror's expansion of an arrow into a product. -/
 theorem etaExpand_rel (f : Tree) :
-    PMRel encPair (GebMirror.Metalogic.etaExpand f) (etaExpand f) := by
-  unfold GebMirror.Metalogic.etaExpand etaExpand
+    PMRel encPair («Combinator.etaExpand» f) (etaExpand f) := by
+  unfold «Combinator.etaExpand» etaExpand
   refine pmBind_rel encTy encPair _ _ (typeTerm_rel f) _ _ fun ty ↦ ?_
   by_cases hl : ty.hi.label = 7
   · rcases hc : ty.hi.children with _ | ⟨a, _ | ⟨b, _ | ⟨z, zs⟩⟩⟩
@@ -1408,15 +1410,15 @@ theorem etaExpand_rel (f : Tree) :
     · exact pmFail_rel encPair
 
 @[simp] theorem deltaRule_eq (i : ℕ) :
-    GebMirror.Metalogic.deltaRule (leaf i) = encRw (deltaRule i) := by
-  simp [GebMirror.Metalogic.deltaRule, GebMirror.Metalogic.rwAx, GebMirror.Metalogic.rwRule,
+    «Combinator.deltaRule» (leaf i) = encRw (deltaRule i) := by
+  simp [«Combinator.deltaRule», «Combinator.rwAx», «Combinator.rwRule»,
     deltaRule, encRw, defAxIdx_eq]
   rfl
 
 /-- The mirror's proof of an equation by normalization. -/
 theorem byNorm_rel (rules : List RwRule) (q : Eqn) :
-    PMRel id (GebMirror.Metalogic.pByNorm (rules.map encRw) (encEqn q)) (byNorm rules q) := by
-  unfold GebMirror.Metalogic.pByNorm byNorm
+    PMRel id («Combinator.pByNorm» (rules.map encRw) (encEqn q)) (byNorm rules q) := by
+  unfold «Combinator.pByNorm» byNorm
   simp only [eqLhs_eq, eqRhs_eq]
   refine pmBind_rel encPair id _ _ (normalize_rel rules q.lhs) _ _ fun ⟨l, cl⟩ ↦ ?_
   refine pmBind_rel encPair id _ _ (normalize_rel rules q.rhs) _ _ fun ⟨r, cr⟩ ↦ ?_
@@ -1430,28 +1432,28 @@ theorem byNorm_rel (rules : List RwRule) (q : Eqn) :
 
 /-- The mirror's initial state of a run is related to the initial state. -/
 theorem runState_srel (dev : Development) (defs : List Defn) (infer : Bool) :
-    SRel (GebMirror.Metalogic.pst (Const.node (leaf 0) (dev.map encDevEntry))
+    SRel («Combinator.pst» (Const.node (leaf 0) (dev.map encDevEntry))
         (Const.node (leaf 0) []) (Const.node (leaf 0) []) (Const.node (leaf 0) (defs.map encDefn))
-        (Const.node (leaf 0) (GebMirror.Metalogic.append GebMirror.Metalogic.sig
-          (GebMirror.Metalogic.mapT (fun d ↦ GebMirror.Metalogic.opSig
-            (Const.node (leaf 0) (GebMirror.Metalogic.pdCtx d)) (GebMirror.Metalogic.pdSort d))
+        (Const.node (leaf 0) («Prelude.append» «Theory.sig»
+          («Base.mapT» (fun d ↦ «PartialHorn.opSig»
+            (Const.node (leaf 0) («PartialHorn.pdCtx» d)) («PartialHorn.pdSort» d))
             (defs.map encDefn))))
         (ofBool infer))
       { dev := dev.toArray, defs := defs, sig := sig ++ defs.map (fun d ↦ (d.ctx, d.sort)),
         infer := infer } := by
   refine ⟨[], [], tRel_empty, tRel_empty, ?_⟩
-  simp [GebMirror.Metalogic.pst, sig_eq, append_eq, mapT_eq, GebMirror.Metalogic.opSig, encOpSig,
+  simp [«Combinator.pst», sig_eq, append_eq, mapT_eq, «PartialHorn.opSig», encOpSig,
     Function.comp_def]
 
 /-- The mirror's run of a computation in a scope from a development. -/
 theorem pmRun_eq {α : Type} (e : α → Tree) (m' : Tree → Tree → Tree) (m : PM α)
     (hm : PMRel e m' m) (sc : Scope) (dev : Development) (defs : List Defn) (infer : Bool) :
-    GebMirror.Metalogic.pmRun (encScope sc) (dev.map encDevEntry) m' (defs.map encDefn)
+    «Combinator.pmRun» (encScope sc) (dev.map encDevEntry) m' (defs.map encDefn)
         (ofBool infer) =
       encOpt ((run sc dev m defs infer).map fun p ↦
         RoseTree.node 0 [e p.1, RoseTree.node 0 (p.2.map encDevEntry)]) := by
   have h1 := hm sc _ _ (runState_srel dev defs infer)
-  unfold GebMirror.Metalogic.pmRun Prover.run
+  unfold «Combinator.pmRun» Prover.run
   simp only []
   split at h1
   · rename_i heq
@@ -1460,7 +1462,7 @@ theorem pmRun_eq {α : Type} (e : α → Tree) (m' : Tree → Tree → Tree) (m 
   · rename_i a st₂ heq
     obtain ⟨st₂', h2, h3⟩ := h1
     rw [heq, h3]
-    change GebMirror.Metalogic.mapO _ (encOpt (some _)) = _
+    change «Base.mapO» _ (encOpt (some _)) = _
     comb_simp [mapO_eq, stDev_srel h2]
 
 /-- An index with a development as the node of the index and the node of the development's
@@ -1470,15 +1472,15 @@ def encIdxDev (p : ℕ × Development) : Tree :=
 
 /-- The mirror's scope of a context and hypotheses. -/
 @[simp] theorem scope_eq (ctx : List ℕ) (hyps : List Eqn) :
-    GebMirror.Metalogic.scope (RoseTree.node 0 (ctx.map leaf)) (RoseTree.node 0 (hyps.map encEqn)) =
+    «Combinator.scope» (RoseTree.node 0 (ctx.map leaf)) (RoseTree.node 0 (hyps.map encEqn)) =
       encScope ⟨ctx, hyps⟩ := rfl
 
 /-- The mirror's proof of a sequent added to a development. -/
 theorem proveSeq_eq (a : Seq) (m' : Tree → Tree → Tree) (m : PM Tree) (hm : PMRel id m' m)
     (defs : List Defn) (infer : Bool) (dev : Development) :
-    GebMirror.Metalogic.proveSeq (encSeq a) m' (defs.map encDefn) (ofBool infer)
+    «Combinator.proveSeq» (encSeq a) m' (defs.map encDefn) (ofBool infer)
         (dev.map encDevEntry) = encOpt ((proveSeq a m defs infer dev).map encIdxDev) := by
-  unfold GebMirror.Metalogic.proveSeq proveSeq
+  unfold «Combinator.proveSeq» proveSeq
   simp only [seqCtx_eq, seqHyps_eq, node_leaf, scope_eq]
   rw [pmRun_eq id m' m hm]
   rcases Prover.run ⟨a.ctx, a.hyps⟩ dev m defs infer with _ | ⟨c, dev'⟩
@@ -1489,9 +1491,9 @@ theorem proveSeq_eq (a : Seq) (m' : Tree → Tree → Tree) (m : PM Tree) (hm : 
 /-- The mirror's normalization of a theorem's left side, added to a development. -/
 theorem normalizeThm_eq (rules : List RwRule) (j : ℕ) (defs : List Defn) (infer : Bool)
     (dev : Development) :
-    GebMirror.Metalogic.normalizeThm (rules.map encRw) (leaf j) (defs.map encDefn) (ofBool infer)
+    «Combinator.normalizeThm» (rules.map encRw) (leaf j) (defs.map encDefn) (ofBool infer)
         (dev.map encDevEntry) = encOpt ((normalizeThm rules j defs infer dev).map encIdxDev) := by
-  unfold GebMirror.Metalogic.normalizeThm normalizeThm
+  unfold «Combinator.normalizeThm» normalizeThm
   simp only [nth_eq, List.getElem?_map]
   rcases dev[j]? with _ | ⟨a, c⟩
   · rfl
@@ -1509,9 +1511,9 @@ theorem normalizeThm_eq (rules : List RwRule) (j : ℕ) (defs : List Defn) (infe
 /-- The mirror's instance of a source's sequent, its hypotheses proved by the typing or by
 normalization. -/
 theorem instBy_rel (rules : List RwRule) (s : Src) (σ : List Tree) :
-    PMRel encEqC (GebMirror.Metalogic.instBy (rules.map encRw) (encSrc s) σ)
+    PMRel encEqC («Combinator.instBy» (rules.map encRw) (encSrc s) σ)
       (instBy rules s σ) := by
-  unfold GebMirror.Metalogic.instBy instBy
+  unfold «Combinator.instBy» instBy
   refine pmBind_rel encSeq encEqC _ _ (srcSeq_rel s) _ _ fun a ↦ ?_
   refine pmBind_rel _ encEqC _ _ (typeTerms_rel σ) _ _ fun tys ↦ ?_
   comb_simp [seqHyps_eq]
@@ -1526,9 +1528,9 @@ theorem instBy_rel (rules : List RwRule) (s : Src) (σ : List Tree) :
 
 /-- The mirror's certificate of an equation's rewriting inside a term. -/
 theorem congBy_rel (e : Eqn) (ce p : Tree) :
-    BRel (GebMirror.Metalogic.congBy (encEqn e) ce p) (congBy e ce p) := by
+    BRel («Combinator.congBy» (encEqn e) ce p) (congBy e ce p) := by
   refine para_rel BRel _ _ (fun l xs hx t ↦ ?_) p
-  simp only [GebMirror.Metalogic.congStep, List.map_map, Function.comp_def]
+  simp only [«Combinator.congStep», List.map_map, Function.comp_def]
   refine pmBind_rel encTy id _ _ (typeTerm_rel _) _ _ fun ty ↦ ?_
   comb_simp [eqLhs_eq, eqRhs_eq]
   simp only [Bool.beq_eq_decide_eq, bne, Bool.or_assoc, Sorts.obj]
@@ -1544,8 +1546,8 @@ theorem congBy_rel (e : Eqn) (ce p : Tree) :
 set_option maxRecDepth 100000 in
 /-- The mirror's certificate that an arrow from the natural numbers object is a recursion. -/
 theorem natRecUniq_rel (rules : List RwRule) (z s f : Tree) :
-    PMRel id (GebMirror.Metalogic.natRecUniq (rules.map encRw) z s f) (natRecUniq rules z s f) := by
-  unfold GebMirror.Metalogic.natRecUniq natRecUniq
+    PMRel id («Combinator.natRecUniq» (rules.map encRw) z s f) (natRecUniq rules z s f) := by
+  unfold «Combinator.natRecUniq» natRecUniq
   comb_simp [beforeNat_eq, axIdx_add, srcAx_eq]
   generalize Src.ax (axIdx beforeNat 12) = src
   refine pmBind_rel encEqC id _ _ (instBy_rel rules src _) _ _ fun qc ↦ ?_
@@ -1555,9 +1557,9 @@ theorem natRecUniq_rel (rules : List RwRule) (z s f : Tree) :
 set_option maxRecDepth 100000 in
 /-- The mirror's certificate that an arrow from a list object is a recursion. -/
 theorem listRecUniq_rel (rules : List RwRule) (a z s f : Tree) :
-    PMRel id (GebMirror.Metalogic.listRecUniq (rules.map encRw) a z s f)
+    PMRel id («Combinator.listRecUniq» (rules.map encRw) a z s f)
       (listRecUniq rules a z s f) := by
-  unfold GebMirror.Metalogic.listRecUniq listRecUniq
+  unfold «Combinator.listRecUniq» listRecUniq
   comb_simp [beforeList_eq, axIdx_add, srcAx_eq]
   generalize Src.ax (axIdx beforeList 13) = src
   refine pmBind_rel encEqC id _ _ (instBy_rel rules src _) _ _ fun qc ↦ ?_
@@ -1567,9 +1569,9 @@ theorem listRecUniq_rel (rules : List RwRule) (a z s f : Tree) :
 set_option maxRecDepth 100000 in
 /-- The mirror's proof by induction on the natural numbers object. -/
 theorem byNatInduction_rel (rules : List RwRule) (z s : Tree) (q : Eqn) :
-    PMRel id (GebMirror.Metalogic.byNatInduction (rules.map encRw) z s (encEqn q))
+    PMRel id («Combinator.byNatInduction» (rules.map encRw) z s (encEqn q))
       (byNatInduction rules z s q) := by
-  unfold GebMirror.Metalogic.byNatInduction byNatInduction
+  unfold «Combinator.byNatInduction» byNatInduction
   simp only [eqLhs_eq, eqRhs_eq]
   refine pmBind_rel id id _ _ (natRecUniq_rel rules z s q.lhs) _ _ fun cl ↦ ?_
   refine pmBind_rel id id _ _ (natRecUniq_rel rules z s q.rhs) _ _ fun cr ↦ ?_
@@ -1579,9 +1581,9 @@ theorem byNatInduction_rel (rules : List RwRule) (z s : Tree) (q : Eqn) :
 set_option maxRecDepth 100000 in
 /-- The mirror's proof by induction on a list object. -/
 theorem byListInduction_rel (rules : List RwRule) (a z s : Tree) (q : Eqn) :
-    PMRel id (GebMirror.Metalogic.byListInduction (rules.map encRw) a z s (encEqn q))
+    PMRel id («Combinator.byListInduction» (rules.map encRw) a z s (encEqn q))
       (byListInduction rules a z s q) := by
-  unfold GebMirror.Metalogic.byListInduction byListInduction
+  unfold «Combinator.byListInduction» byListInduction
   simp only [eqLhs_eq, eqRhs_eq]
   refine pmBind_rel id id _ _ (listRecUniq_rel rules a z s q.lhs) _ _ fun cl ↦ ?_
   refine pmBind_rel id id _ _ (listRecUniq_rel rules a z s q.rhs) _ _ fun cr ↦ ?_
@@ -1591,9 +1593,9 @@ theorem byListInduction_rel (rules : List RwRule) (a z s : Tree) (q : Eqn) :
 set_option maxRecDepth 100000 in
 /-- The mirror's proof by induction on a list object with a parameter. -/
 theorem byListParamInduction_rel (rules : List RwRule) (a z s : Tree) (q : Eqn) :
-    PMRel id (GebMirror.Metalogic.byListParamInduction (rules.map encRw) a z s (encEqn q))
+    PMRel id («Combinator.byListParamInduction» (rules.map encRw) a z s (encEqn q))
       (byListParamInduction rules a z s q) := by
-  unfold GebMirror.Metalogic.byListParamInduction byListParamInduction
+  unfold «Combinator.byListParamInduction» byListParamInduction
   simp only [eqLhs_eq, eqRhs_eq]
   refine pmBind_rel encTy id _ _ (typeTerm_rel q.lhs) _ _ fun ty ↦ ?_
   by_cases hl : ty.lo.label = 7
@@ -1624,47 +1626,47 @@ theorem byListParamInduction_rel (rules : List RwRule) (a z s : Tree) (q : Eqn) 
 /-! The library. -/
 
 @[simp] theorem rwThm_eq (j : ℕ) :
-    GebMirror.Metalogic.rwThm (leaf j) = encRw { src := .thm j } := rfl
+    «Combinator.rwThm» (leaf j) = encRw { src := .thm j } := rfl
 
 set_option maxRecDepth 100000 in
-theorem baseRules_eq : GebMirror.Metalogic.baseRules = baseRules.map encRw := rfl
+theorem baseRules_eq : «Combinator.baseRules» = baseRules.map encRw := rfl
 
 /-- The mirror's distribution of a composite over a pairing. -/
-theorem compPairSeq_eq : GebMirror.Metalogic.compPairSeq = encSeq compPairSeq := rfl
+theorem compPairSeq_eq : «Combinator.compPairSeq» = encSeq compPairSeq := rfl
 
 /-- The mirror's pairing of a product's projections. -/
-theorem pairFstSndSeq_eq : GebMirror.Metalogic.pairFstSndSeq = encSeq pairFstSndSeq := rfl
+theorem pairFstSndSeq_eq : «Combinator.pairFstSndSeq» = encSeq pairFstSndSeq := rfl
 
 /-- The mirror's evaluation after a pairing of a currying after an arrow. -/
-theorem evCurrySeq_eq : GebMirror.Metalogic.evCurrySeq = encSeq evCurrySeq := rfl
+theorem evCurrySeq_eq : «Combinator.evCurrySeq» = encSeq evCurrySeq := rfl
 
 /-- The mirror's evaluation after a pairing of a currying. -/
-theorem evCurry0Seq_eq : GebMirror.Metalogic.evCurry0Seq = encSeq evCurry0Seq := rfl
+theorem evCurry0Seq_eq : «Combinator.evCurry0Seq» = encSeq evCurry0Seq := rfl
 
 /-- The mirror's naturality of currying. -/
-theorem curryNatSeq_eq : GebMirror.Metalogic.curryNatSeq = encSeq curryNatSeq := rfl
+theorem curryNatSeq_eq : «Combinator.curryNatSeq» = encSeq curryNatSeq := rfl
 
 /-- The mirror's morphism from the terminal object to itself. -/
-theorem bangOneSeq_eq : GebMirror.Metalogic.bangOneSeq = encSeq bangOneSeq := rfl
+theorem bangOneSeq_eq : «Combinator.bangOneSeq» = encSeq bangOneSeq := rfl
 
 @[simp] theorem seqLhs_eq (a : Seq) :
-    GebMirror.Metalogic.seqLhs (encSeq a) = a.concl.lhs := by
-  simp [GebMirror.Metalogic.seqLhs, seqConcl_eq, eqLhs_eq]
+    «Combinator.seqLhs» (encSeq a) = a.concl.lhs := by
+  simp [«Combinator.seqLhs», seqConcl_eq, eqLhs_eq]
 
 @[simp] theorem seqRhs_eq (a : Seq) :
-    GebMirror.Metalogic.seqRhs (encSeq a) = a.concl.rhs := by
-  simp [GebMirror.Metalogic.seqRhs, seqConcl_eq, eqRhs_eq]
+    «Combinator.seqRhs» (encSeq a) = a.concl.rhs := by
+  simp [«Combinator.seqRhs», seqConcl_eq, eqRhs_eq]
 
 /-- The mirror's guard of two trees' equality. -/
 theorem pmGuardEq_rel (a b : Tree) :
-    PMRel (fun _ ↦ leaf 0) (GebMirror.Metalogic.pmGuard (Const.equal a b))
+    PMRel (fun _ ↦ leaf 0) («Combinator.pmGuard» (Const.equal a b))
       (guard (a == b) : PM Unit) := by
   rw [equal_eq, ← Bool.beq_eq_decide_eq]
   exact pmGuard_rel (a == b)
 
 /-- The mirror's proof of {lit}`compPairSeq`. -/
-theorem compPairProof_rel : PMRel id GebMirror.Metalogic.compPairProof compPairProof := by
-  unfold GebMirror.Metalogic.compPairProof compPairProof
+theorem compPairProof_rel : PMRel id «Combinator.compPairProof» compPairProof := by
+  unfold «Combinator.compPairProof» compPairProof
   simp only [compPairSeq_eq, seqLhs_eq, seqRhs_eq]
   refine pmBind_rel encPair id _ _ (etaExpand_rel _) _ _ fun ec ↦ ?_
   comb_simp [encPair, baseRules_eq]
@@ -1675,8 +1677,8 @@ theorem compPairProof_rel : PMRel id GebMirror.Metalogic.compPairProof compPairP
 
 set_option maxRecDepth 100000 in
 /-- The mirror's proof of {lit}`pairFstSndSeq`. -/
-theorem pairFstSndProof_rel : PMRel id GebMirror.Metalogic.pairFstSndProof pairFstSndProof := by
-  unfold GebMirror.Metalogic.pairFstSndProof pairFstSndProof
+theorem pairFstSndProof_rel : PMRel id «Combinator.pairFstSndProof» pairFstSndProof := by
+  unfold «Combinator.pairFstSndProof» pairFstSndProof
   comb_simp [beforeProduct_eq, axIdx_add, srcAx_eq, mirror_prod, mirror_idt, mirror_x,
     pairFstSndSeq_eq, seqLhs_eq, baseRules_eq]
   generalize Src.ax (axIdx beforeProduct 11) = src
@@ -1690,8 +1692,8 @@ theorem pairFstSndProof_rel : PMRel id GebMirror.Metalogic.pairFstSndProof pairF
 set_option maxRecDepth 100000 in
 /-- The mirror's proof of {lit}`evCurrySeq`. -/
 theorem evCurryProof_rel (cp : ℕ) :
-    PMRel id (GebMirror.Metalogic.evCurryProof (leaf cp)) (evCurryProof cp) := by
-  unfold GebMirror.Metalogic.evCurryProof evCurryProof
+    PMRel id («Combinator.evCurryProof» (leaf cp)) (evCurryProof cp) := by
+  unfold «Combinator.evCurryProof» evCurryProof
   comb_simp [beforeExponential_eq, axIdx_add, srcAx_eq, mirror_x, mirror_cPair, mirror_comp,
     evCurrySeq_eq, seqLhs_eq, baseRules_eq, rwThm_eq, append_eq, single_eq]
   rw [show baseRules.map encRw ++ [encRw { src := .thm cp }] =
@@ -1710,8 +1712,8 @@ theorem evCurryProof_rel (cp : ℕ) :
 
 /-- The mirror's proof of {lit}`evCurry0Seq`. -/
 theorem evCurry0Proof_rel (ec : ℕ) :
-    PMRel id (GebMirror.Metalogic.evCurry0Proof (leaf ec)) (evCurry0Proof ec) := by
-  unfold GebMirror.Metalogic.evCurry0Proof evCurry0Proof
+    PMRel id («Combinator.evCurry0Proof» (leaf ec)) (evCurry0Proof ec) := by
+  unfold «Combinator.evCurry0Proof» evCurry0Proof
   comb_simp [srcThm_eq, mirror_x, mirror_idt, evCurry0Seq_eq, seqLhs_eq, seqRhs_eq, baseRules_eq]
   refine pmBind_rel encEqC id _ _ (inst_rel _ _) _ _ fun qc ↦ ?_
   comb_simp [encEqC, eqLhs_eq, eqRhs_eq]
@@ -1725,8 +1727,8 @@ theorem evCurry0Proof_rel (ec : ℕ) :
 set_option maxRecDepth 100000 in
 /-- The mirror's proof of {lit}`curryNatSeq`. -/
 theorem curryNatProof_rel (cp ec : ℕ) :
-    PMRel id (GebMirror.Metalogic.curryNatProof (leaf cp) (leaf ec)) (curryNatProof cp ec) := by
-  unfold GebMirror.Metalogic.curryNatProof curryNatProof
+    PMRel id («Combinator.curryNatProof» (leaf cp) (leaf ec)) (curryNatProof cp ec) := by
+  unfold «Combinator.curryNatProof» curryNatProof
   comb_simp [beforeExponential_eq, axIdx_add, srcAx_eq, mirror_x, mirror_dom, mirror_cod,
     curryNatSeq_eq, seqLhs_eq, seqRhs_eq, baseRules_eq, rwThm_eq, append_eq]
   rw [show baseRules.map encRw ++ [encRw { src := .thm cp }, encRw { src := .thm ec }] =
@@ -1742,8 +1744,8 @@ theorem curryNatProof_rel (cp ec : ℕ) :
 
 set_option maxRecDepth 100000 in
 /-- The mirror's proof of {lit}`bangOneSeq`. -/
-theorem bangOneProof_rel : PMRel id GebMirror.Metalogic.bangOneProof bangOneProof := by
-  unfold GebMirror.Metalogic.bangOneProof bangOneProof
+theorem bangOneProof_rel : PMRel id «Combinator.bangOneProof» bangOneProof := by
+  unfold «Combinator.bangOneProof» bangOneProof
   comb_simp [beforeTerminal_eq, axIdx_add, srcAx_eq, mirror_idt, mirror_one, mirror_bang,
     baseRules_eq, single_eq]
   generalize Src.ax (axIdx beforeTerminal 3) = src
@@ -1756,14 +1758,14 @@ theorem bangOneProof_rel : PMRel id GebMirror.Metalogic.bangOneProof bangOneProo
 
 /-- The mirror's rules of the axioms and of the library's derived equations. -/
 theorem libRules_eq (i : LibIdx) :
-    GebMirror.Metalogic.libRules (encIdx i) = (rules i).map encRw := by
-  simp [GebMirror.Metalogic.libRules, GebMirror.Metalogic.l5, GebMirror.Metalogic.l4,
-    GebMirror.Metalogic.l3, GebMirror.Metalogic.l2, encIdx, rules, baseRules_eq, append_eq]
+    «Combinator.libRules» (encIdx i) = (rules i).map encRw := by
+  simp [«Combinator.libRules», «Theory.l5», «Theory.l4»,
+    «Theory.l3», «Theory.l2», encIdx, rules, baseRules_eq, append_eq]
 
 /-- The mirror's proof of a sequent added to a development, with no definitions in force. -/
 theorem proveSeq_nil (a : Seq) (m' : Tree → Tree → Tree) (m : PM Tree) (hm : PMRel id m' m)
     (infer : Bool) (d' : List Tree) (dev : Development) (h : d' = dev.map encDevEntry) :
-    GebMirror.Metalogic.proveSeq (encSeq a) m' [] (ofBool infer) d' =
+    «Combinator.proveSeq» (encSeq a) m' [] (ofBool infer) d' =
       encOpt ((proveSeq a m [] infer dev).map encIdxDev) := by
   subst h
   exact proveSeq_eq a m' m hm [] infer dev
@@ -1771,8 +1773,8 @@ theorem proveSeq_nil (a : Seq) (m' : Tree → Tree → Tree) (m : PM Tree) (hm :
 set_option maxRecDepth 100000 in
 /-- The mirror's library. -/
 theorem libraryWith_eq (infer : Bool) :
-    GebMirror.Metalogic.libraryWith (ofBool infer) = encLib (libraryWith infer) := by
-  unfold GebMirror.Metalogic.libraryWith libraryWith
+    «Combinator.libraryWith» (ofBool infer) = encLib (libraryWith infer) := by
+  unfold «Combinator.libraryWith» libraryWith
   simp only [compPairSeq_eq, pairFstSndSeq_eq, evCurrySeq_eq, evCurry0Seq_eq, curryNatSeq_eq,
     bangOneSeq_eq, StateT.run_bind]
   rw [proveSeq_nil compPairSeq _ _ compPairProof_rel infer [] [] rfl]
@@ -1800,7 +1802,7 @@ theorem libraryWith_eq (infer : Bool) :
   rcases proveSeq bangOneSeq bangOneProof [] infer d5 with _ | ⟨bo, d6⟩
   · rfl
   comb_simp [bindO_eq, encIdxDev, Option.bind_eq_bind, Option.bind_some, encLib, encIdx,
-    GebMirror.Metalogic.l6, some_eq]
+    «Theory.l6», some_eq]
   rfl
 
 end GebTests.Prototypes.FreeTopos.Agreement.Combinator

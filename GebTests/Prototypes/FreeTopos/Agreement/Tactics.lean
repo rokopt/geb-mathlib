@@ -50,6 +50,8 @@ set_option doc.verso true
 
 @[expose] public section
 
+open GebMirror.Metalogic
+
 namespace GebTests.Prototypes.FreeTopos.Agreement.Tactics
 
 open Geb Geb.Kernel Geb.FreeTopos GebTests.Prototypes.FreeTopos.Agreement.Encode
@@ -64,36 +66,36 @@ open scoped FinEnum
 
 /-- The mirror's truth of the connectives from an index. -/
 @[simp] theorem ttL_eq (o : ℕ) :
-    GebMirror.Metalogic.ttL (leaf o) = encTerm (Internal.Logic.tt o) :=
+    «Tactics.ttL» (leaf o) = encTerm (Internal.Logic.tt o) :=
   mDefn_eq o [] []
 
 /-- The mirror's implication of the connectives from an index. -/
 @[simp] theorem impL_eq (o : ℕ) (p q : Term) :
-    GebMirror.Metalogic.impL (leaf o) (encTerm p) (encTerm q) =
+    «Tactics.impL» (leaf o) (encTerm p) (encTerm q) =
       encTerm (Internal.Logic.imp o p q) :=
   mDefn_eq (o + 2) [] [q, p]
 
 /-- The mirror's proof of truth. -/
-@[simp] theorem trueI_eq : GebMirror.Metalogic.trueI = encDeriv Internal.Logic.trueI := by
-  simp only [GebMirror.Metalogic.trueI, Internal.Logic.trueI, Internal.Logic.nd, encDeriv_node,
-    ruleData, GebMirror.Metalogic.dNode, GebMirror.Metalogic.l2, GebMirror.Metalogic.mNode,
+@[simp] theorem trueI_eq : «Tactics.trueI» = encDeriv Internal.Logic.trueI := by
+  simp only [«Tactics.trueI», Internal.Logic.trueI, Internal.Logic.nd, encDeriv_node,
+    ruleData, «Prover.dNode», «Theory.l2», «Language.mNode»,
     single_eq, List.map_cons, List.map_nil, node_leaf]
 
 /-- The mirror's introduction of an implication. -/
 @[simp] theorem impI_eq (j n : ℕ) (p q : Term) (d : Deriv) :
-    GebMirror.Metalogic.impI (leaf j) (leaf n) (encTerm p) (encTerm q) (encDeriv d) =
+    «Tactics.impI» (leaf j) (leaf n) (encTerm p) (encTerm q) (encDeriv d) =
       encDeriv (Internal.Logic.impI j n p q d) := by
-  simp only [GebMirror.Metalogic.impI, Internal.Logic.impI, Internal.Logic.nd, encDeriv_node,
-    ruleData, GebMirror.Metalogic.dNode, GebMirror.Metalogic.l2, GebMirror.Metalogic.l3,
-    GebMirror.Metalogic.single, GebMirror.Metalogic.mNode, List.map_cons, List.map_nil,
+  simp only [«Tactics.impI», Internal.Logic.impI, Internal.Logic.nd, encDeriv_node,
+    ruleData, «Prover.dNode», «Theory.l2», «Theory.l3»,
+    «Prelude.single», «Language.mNode», List.map_cons, List.map_nil,
     node_leaf, add_leaf]
 
 /-! Proofs by reduction. -/
 
 /-- The mirror's application of an encoded term to encoded arguments, the first first. -/
 @[simp] theorem mApps_eq (f : Term) (xs : List Term) :
-    GebMirror.Metalogic.mApps (encTerm f) (xs.map encTerm) = encTerm (Tactics.apps f xs) := by
-  simp only [GebMirror.Metalogic.mApps, foldr_eq, Tactics.apps]
+    «Tactics.mApps» (encTerm f) (xs.map encTerm) = encTerm (Tactics.apps f xs) := by
+  simp only [«Tactics.mApps», foldr_eq, Tactics.apps]
   revert f
   exact xs.rec (fun _ ↦ rfl) fun x xs ih f ↦ by
     simp only [List.map_cons, List.foldr_cons, List.foldl_cons, mApp_eq]
@@ -103,7 +105,7 @@ open scoped FinEnum
 theorem byMode_eq (m : Internal.Depth) (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
     (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) :
-    PRel (GebMirror.Metalogic.byMode (leaf (encDepth m)) (encGlobals G) (E.toList.map encEntry)
+    PRel («Tactics.byMode» (leaf (encDepth m)) (encGlobals G) (E.toList.map encEntry)
         (leaf n) rs')
       (Tactics.byMode m G E n rs) := fun Γ Φ t u ↦
   joinBy_eq _ _ (eval_eq G E n rs' rs hrs 4096 m) Γ Φ t u
@@ -112,7 +114,7 @@ theorem byMode_eq (m : Internal.Depth) (G : Internal.Globals) (E : Array Interna
 theorem byWeak_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
     (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) :
-    PRel (GebMirror.Metalogic.byWeak (encGlobals G) (E.toList.map encEntry) (leaf n) rs')
+    PRel («Tactics.byWeak» (encGlobals G) (E.toList.map encEntry) (leaf n) rs')
       (Tactics.byWeak G E n rs) :=
   byMode_eq .weak G E n rs' rs hrs
 
@@ -123,9 +125,9 @@ local macro "tac_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(
     Option.bind_eq_bind, Option.pure_def, Option.map_bind, Option.bind_map, Option.map_map,
     Option.elim_some, Option.elim_none, Option.map_some, Option.map_none, Option.bind_some,
     Option.bind_none, Function.comp_def, none_eq, some_eq, elim_encOpt, p1_encTDB, p2_encTDB,
-    p1_encDB, p2_encDB, encDeriv_node, ruleData, GebMirror.Metalogic.dNode,
-    GebMirror.Metalogic.mNode, GebMirror.Metalogic.l2, GebMirror.Metalogic.l3,
-    GebMirror.Metalogic.l4, single_eq, node_leaf, List.map_cons, List.map_nil, mapT_weaken1,
+    p1_encDB, p2_encDB, encDeriv_node, ruleData, «Prover.dNode»,
+    «Language.mNode», «Theory.l2», «Theory.l3»,
+    «Theory.l4», single_eq, node_leaf, List.map_cons, List.map_nil, mapT_weaken1,
     mapT_weaken2, length_eq, List.length_map, mApp_eq, mVar_eq, weaken1_eq, weaken2_eq, mEq_eq,
     nth_eq, abstractVar_eq, List.getElem?_map, $ls,*])
 
@@ -135,17 +137,17 @@ theorem byNF_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
     (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (m : Internal.Depth)
     (p' : List Tree → List Tree → Tree → Tree → Tree) (p : Internal.Prover) (hp : PRel p' p) :
-    PRel (GebMirror.Metalogic.byNF (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
+    PRel («Tactics.byNF» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
         (leaf (encDepth m)) p')
       (Tactics.byNF G E n rs m p) := by
   have hp' : ∀ Γ Φ t u, p' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
       encOpt ((p Γ Φ t u).map encDeriv) := hp
-  have hE : ∀ Γ Φ t, GebMirror.Metalogic.eval (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
+  have hE : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
       (leaf 4096) (leaf (encDepth m)) Γ (Φ.map encTerm) (encTerm t) =
       encOpt ((Internal.eval G E n rs 4096 m Γ Φ t).map encTDB) :=
     eval_eq G E n rs' rs hrs 4096 m
   intro Γ Φ t u
-  simp only [GebMirror.Metalogic.byNF, Tactics.byNF, hE]
+  simp only [«Tactics.byNF», Tactics.byNF, hE]
   rcases Internal.eval G E n rs 4096 m Γ Φ t with _ | ⟨t', dt, _⟩
   · rfl
   rcases Internal.eval G E n rs 4096 m Γ Φ u with _ | ⟨u', du, _⟩
@@ -155,17 +157,17 @@ theorem byNF_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
 
 /-- The mirror's rules of the hypotheses below a number. -/
 theorem hypRules_rel (k : ℕ) :
-    List.Forall₂ RRel (GebMirror.Metalogic.hypRules (leaf k))
+    List.Forall₂ RRel («Tactics.hypRules» (leaf k))
       ((List.range k).map NormRule.hyp) := by
-  simp only [GebMirror.Metalogic.hypRules, range_eq, foldr_eq, List.foldr_map]
+  simp only [«Tactics.hypRules», range_eq, foldr_eq, List.foldr_map]
   exact (List.range k).rec List.Forall₂.nil fun i is ih ↦ by
     simp only [List.foldr_cons, List.map_cons]
     exact List.Forall₂.cons rfl ih
 
 /-- The mirror's appending of lists of rules. -/
 @[simp] theorem appendNR_eq (xs ys : List (Tree × (Tree → Tree → List Tree → Tree))) :
-    GebMirror.Metalogic.appendNR xs ys = xs ++ ys := by
-  simp only [GebMirror.Metalogic.appendNR, foldr_eq]
+    «Tactics.appendNR» xs ys = xs ++ ys := by
+  simp only [«Tactics.appendNR», foldr_eq]
   exact xs.rec rfl fun x xs ih ↦ by rw [List.foldr_cons, ih]; rfl
 
 /-- The mirror's proof by normalization, weak head normal forms first, with the hypotheses as
@@ -173,9 +175,9 @@ rewriting rules, at related rules. -/
 theorem normH_eq (G : Internal.Globals) (E : Array Internal.Entry)
     (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) :
-    PRel (GebMirror.Metalogic.normH (encGlobals G) (E.toList.map encEntry) rs')
+    PRel («Tactics.normH» (encGlobals G) (E.toList.map encEntry) rs')
       (Tactics.normH G E rs) := fun Γ Φ t u ↦ by
-  simp only [GebMirror.Metalogic.normH, Tactics.normH, length_eq, List.length_map, appendNR_eq]
+  simp only [«Tactics.normH», Tactics.normH, length_eq, List.length_map, appendNR_eq]
   exact byNormW_eq G E 0 _ _ (List.rel_append (hypRules_rel Φ.length) hrs) 1024 Γ Φ t u
 
 /-! Proofs by induction and case analysis. -/
@@ -183,8 +185,8 @@ theorem normH_eq (G : Internal.Globals) (E : Array Internal.Entry)
 /-- The mirror's prover under new variables of the statement's arguments, at a related prover. -/
 theorem funExts_eq (k : ℕ) (G : Internal.Globals)
     (p' : List Tree → List Tree → Tree → Tree → Tree) (p : Internal.Prover) (hp : PRel p' p) :
-    PRel (GebMirror.Metalogic.funExts (leaf k) (encGlobals G) p') (Tactics.funExts k G p) := by
-  simp only [GebMirror.Metalogic.funExts, iter_leaf, Tactics.funExts]
+    PRel («Tactics.funExts» (leaf k) (encGlobals G) p') (Tactics.funExts k G p) := by
+  simp only [«Tactics.funExts», iter_leaf, Tactics.funExts]
   exact Nat.rec hp (fun k ih ↦ by
     rw [Nat.repeat, List.replicate_succ, List.foldr_cons]
     exact byFunExt_eq G 0 _ _ ih) k
@@ -194,16 +196,16 @@ premise by weak reduction, at related rules. -/
 theorem byListIndWeak_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ) (s : Term)
     (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) :
-    PRel (GebMirror.Metalogic.byListIndWeak (encGlobals G) (E.toList.map encEntry) (leaf n)
+    PRel («Tactics.byListIndWeak» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (encTerm s) rs')
       (Tactics.byListIndWeak G E n s rs) := by
-  have hW : ∀ Γ Φ t u, GebMirror.Metalogic.byWeak (encGlobals G) (E.toList.map encEntry)
+  have hW : ∀ Γ Φ t u, «Tactics.byWeak» (encGlobals G) (E.toList.map encEntry)
       (leaf n) rs' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
       encOpt ((Tactics.byWeak G E n rs Γ Φ t u).map encDeriv) := byWeak_eq G E n rs' rs hrs
   intro Γ Φ t u
   rcases Γ with _ | ⟨c, Γ'⟩
   · rfl
-  simp only [GebMirror.Metalogic.byListIndWeak, Tactics.byListIndWeak, listPart_eq]
+  simp only [«Tactics.byListIndWeak», Tactics.byListIndWeak, listPart_eq]
   tac_simp []
   rcases Internal.listPart c with _ | a
   · rfl
@@ -217,16 +219,16 @@ theorem byListIndWeak_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : 
 fold, each premise by a related prover. -/
 theorem byRoseIndWith_eq (G : Internal.Globals) (n : ℕ) (s : Term)
     (p' : List Tree → List Tree → Tree → Tree → Tree) (p : Internal.Prover) (hp : PRel p' p) :
-    PRel (GebMirror.Metalogic.byRoseIndWith (encGlobals G) (leaf n) (encTerm s) p')
+    PRel («Tactics.byRoseIndWith» (encGlobals G) (leaf n) (encTerm s) p')
       (Tactics.byRoseIndWith G n s p) := by
   have hp' : ∀ Γ t u, p' Γ [] (encTerm t) (encTerm u) = encOpt ((p Γ [] t u).map encDeriv) :=
     fun Γ t u ↦ hp Γ [] t u
   intro Γ Φ t u
   rcases Γ with _ | ⟨r, _ | ⟨r', Γ'⟩⟩ <;>
-    simp only [GebMirror.Metalogic.byRoseIndWith, Tactics.byRoseIndWith]
+    simp only [«Tactics.byRoseIndWith», Tactics.byRoseIndWith]
   · rfl
-  · mirror_simp [roseLabel_eq, typeIn_eq, Theory.mirror_list, GebMirror.Metalogic.l4,
-      GebMirror.Metalogic.l2, Option.bind_eq_bind]
+  · mirror_simp [roseLabel_eq, typeIn_eq, Theory.mirror_list, «Theory.l4»,
+      «Theory.l2», Option.bind_eq_bind]
     rcases Internal.roseParts r with _ | ⟨a, f⟩
     · rfl
     rcases Internal.typeIn G n [r] t with _ | C
@@ -238,13 +240,13 @@ theorem byRoseIndWith_eq (G : Internal.Globals) (n : ℕ) (s : Term)
 /-- The mirror's derivation of an equation from the equation of its sides' abstractions over a
 term, by applying them to the term. -/
 theorem applyAbs_eq (x : Term) (k : ℕ) (F H : Term) (d : Deriv) :
-    GebMirror.Metalogic.applyAbs (encTerm x) (leaf k) (encTerm F) (encTerm H) (encDeriv d) =
+    «Tactics.applyAbs» (encTerm x) (leaf k) (encTerm F) (encTerm H) (encDeriv d) =
       encDeriv (RoseTree.node (.cut (Term.eq F H)) [d, RoseTree.node
         (.convFrom (Term.eq (Term.app F x) (Term.app H x)))
         [RoseTree.node .cong [RoseTree.node .beta [], RoseTree.node .beta []],
           RoseTree.node .join [RoseTree.node .cong [RoseTree.node (.rwHyp k false) [],
             RoseTree.node .refl []], RoseTree.node .refl []]]]) := by
-  simp only [GebMirror.Metalogic.applyAbs]
+  simp only [«Tactics.applyAbs»]
   tac_simp []
   rfl
 
@@ -252,14 +254,14 @@ theorem applyAbs_eq (x : Term) (k : ℕ) (F H : Term) (d : Deriv) :
 theorem byListSplit_eq (G : Internal.Globals) (n i : ℕ)
     (p₀' p₁' : List Tree → List Tree → Tree → Tree → Tree) (p₀ p₁ : Internal.Prover)
     (hp₀ : PRel p₀' p₀) (hp₁ : PRel p₁' p₁) :
-    PRel (GebMirror.Metalogic.byListSplit (encGlobals G) (leaf n) (leaf i) p₀' p₁')
+    PRel («Tactics.byListSplit» (encGlobals G) (leaf n) (leaf i) p₀' p₁')
       (Tactics.byListSplit G n i p₀ p₁) := by
-  have hL : ∀ Γ Φ t u, GebMirror.Metalogic.byListIndWith (encGlobals G) (leaf n) (leaf 0) (leaf 1)
+  have hL : ∀ Γ Φ t u, «Prover.byListIndWith» (encGlobals G) (leaf n) (leaf 0) (leaf 1)
       p₀' p₁' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
       encOpt ((Internal.byListIndWith G n 0 1 p₀ p₁ Γ Φ t u).map encDeriv) :=
     byListIndWith_eq G n 0 1 _ _ _ _ hp₀ hp₁
   intro Γ Φ t u
-  simp only [GebMirror.Metalogic.byListSplit, Tactics.byListSplit]
+  simp only [«Tactics.byListSplit», Tactics.byListSplit]
   tac_simp []
   rcases Γ[i]? with _ | c
   · rfl
@@ -270,14 +272,14 @@ theorem byListSplit_eq (G : Internal.Globals) (n i : ℕ)
 prover. -/
 theorem bySplit2_eq (kl kr i : ℕ) (p₀' p₁' : List Tree → List Tree → Tree → Tree → Tree)
     (p₀ p₁ : Internal.Prover) (hp₀ : PRel p₀' p₀) (hp₁ : PRel p₁' p₁) :
-    PRel (GebMirror.Metalogic.bySplit2 (leaf kl) (leaf kr) (leaf i) p₀' p₁')
+    PRel («Tactics.bySplit2» (leaf kl) (leaf kr) (leaf i) p₀' p₁')
       (Tactics.bySplit2 kl kr i p₀ p₁) := by
   have hp₀' : ∀ Γ Φ t u, p₀' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
       encOpt ((p₀ Γ Φ t u).map encDeriv) := hp₀
   have hp₁' : ∀ Γ Φ t u, p₁' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
       encOpt ((p₁ Γ Φ t u).map encDeriv) := hp₁
   intro Γ Φ t u
-  simp only [GebMirror.Metalogic.bySplit2, Tactics.bySplit2]
+  simp only [«Tactics.bySplit2», Tactics.bySplit2]
   tac_simp []
   rcases Γ[i]? with _ | c
   · rfl
@@ -293,7 +295,7 @@ theorem bySplit2_eq (kl kr i : ℕ) (p₀' p₁' : List Tree → List Tree → T
 prover. -/
 theorem byListCases_eq (G : Internal.Globals) (n : ℕ)
     (p' : List Tree → List Tree → Tree → Tree → Tree) (p : Internal.Prover) (hp : PRel p' p) :
-    PRel (GebMirror.Metalogic.byListCases (encGlobals G) (leaf n) p')
+    PRel («Tactics.byListCases» (encGlobals G) (leaf n) p')
       (Tactics.byListCases G n p) :=
   byListIndWith_eq G n 0 1 _ _ _ _ hp hp
 
@@ -301,7 +303,7 @@ theorem byListCases_eq (G : Internal.Globals) (n : ℕ)
 theorem bitsInd_eq (G : Internal.Globals) (n : ℕ)
     (p₀' p₁' : List Tree → List Tree → Tree → Tree → Tree) (p₀ p₁ : Internal.Prover)
     (hp₀ : PRel p₀' p₀) (hp₁ : PRel p₁' p₁) :
-    PRel (GebMirror.Metalogic.bitsInd (encGlobals G) (leaf n) p₀' p₁')
+    PRel («Tactics.bitsInd» (encGlobals G) (leaf n) p₀' p₁')
       (Tactics.bitsInd G n p₀ p₁) :=
   byListIndWith_eq G n 0 1 _ _ _ _ hp₀ (bySplit_eq 3 4 1 _ _ hp₁)
 
@@ -309,16 +311,16 @@ theorem bitsInd_eq (G : Internal.Globals) (n : ℕ)
 related prover. -/
 theorem bitsCases_eq (G : Internal.Globals) (n : ℕ)
     (p' : List Tree → List Tree → Tree → Tree → Tree) (p : Internal.Prover) (hp : PRel p' p) :
-    PRel (GebMirror.Metalogic.bitsCases (encGlobals G) (leaf n) p') (Tactics.bitsCases G n p) :=
+    PRel («Tactics.bitsCases» (encGlobals G) (leaf n) p') (Tactics.bitsCases G n p) :=
   bitsInd_eq G n _ _ _ _ hp hp
 
 /-- The mirror's proof by case analysis of a bitstring variable to a number of bits, each case by
 a related prover. -/
 theorem byBits_eq (G : Internal.Globals) (p' : List Tree → List Tree → Tree → Tree → Tree)
     (p : Internal.Prover) (hp : PRel p' p) (d i : ℕ) :
-    PRel (GebMirror.Metalogic.byBits (encGlobals G) p' (leaf d) (leaf i))
+    PRel («Tactics.byBits» (encGlobals G) p' (leaf d) (leaf i))
       (Tactics.byBits G p d i) := by
-  simp only [GebMirror.Metalogic.byBits, iter_leaf, Tactics.byBits]
+  simp only [«Tactics.byBits», iter_leaf, Tactics.byBits]
   revert i
   exact Nat.rec (fun _ ↦ hp) (fun d ih i ↦ by
     rw [Nat.repeat]
@@ -329,7 +331,7 @@ provers. -/
 theorem byLength3_eq (G : Internal.Globals) (i : ℕ)
     (p' q' : List Tree → List Tree → Tree → Tree → Tree) (p q : Internal.Prover)
     (hp : PRel p' p) (hq : PRel q' q) :
-    PRel (GebMirror.Metalogic.byLength3 (encGlobals G) (leaf i) p' q')
+    PRel («Tactics.byLength3» (encGlobals G) (leaf i) p' q')
       (Tactics.byLength3 G i p q) :=
   byListSplit_eq G 0 i _ _ _ _ hq (byListSplit_eq G 0 0 _ _ _ _ hq
     (byListSplit_eq G 0 0 _ _ _ _ hq (byListSplit_eq G 0 0 _ _ _ _ hp hq)))
@@ -350,7 +352,7 @@ def ARel (a' : List Tree → List (Tree × (Tree → Tree → List Tree → Tree
   ∀ Φ₁ ex' ex, List.Forall₂ RRel ex' ex → a' (Φ₁.map encTerm) ex' = encOpt ((a Φ₁ ex).map encDeriv)
 
 /-- The mirror's rule of the hypothesis of an index. -/
-theorem hypRule_rel (i : ℕ) : RRel (GebMirror.Metalogic.hypRule (leaf i)) (.hyp i) := rfl
+theorem hypRule_rel (i : ℕ) : RRel («Tactics.hypRule» (leaf i)) (.hyp i) := rfl
 
 /-- The mirror's proof with hypotheses cut in in normal form and used as rewriting rules before
 those given to a related prover from rules, at related rules. -/
@@ -360,15 +362,15 @@ theorem withWeakHyps_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : �
     (k' : List (Tree × (Tree → Tree → List Tree → Tree)) →
       List Tree → List Tree → Tree → Tree → Tree)
     (k : List NormRule → Internal.Prover) (hk : KRel k' k) (m : Internal.Depth) :
-    PRel (GebMirror.Metalogic.withWeakHyps (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
+    PRel («Tactics.withWeakHyps» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
         (is.map leaf) k' (leaf (encDepth m)))
       (Tactics.withWeakHyps G E n rs is k m) := by
-  have hE : ∀ Γ Φ t, GebMirror.Metalogic.eval (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
+  have hE : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
       (leaf 4096) (leaf (encDepth m)) Γ (Φ.map encTerm) (encTerm t) =
       encOpt ((Internal.eval G E n rs 4096 m Γ Φ t).map encTDB) :=
     eval_eq G E n rs' rs hrs 4096 m
   intro Γ Φ t u
-  simp only [GebMirror.Metalogic.withWeakHyps, Tactics.withWeakHyps, foldr_eq]
+  simp only [«Tactics.withWeakHyps», Tactics.withWeakHyps, foldr_eq]
   refine (?_ : ARel _ _) Φ [] [] .nil
   refine List.rel_foldr (R := fun (i' : Tree) (i : ℕ) ↦ i' = leaf i)
     (fun i' i hi a' a ha ↦ ?_) (fun Φ₁ ex' ex hex ↦ hk ex' ex hex Γ Φ₁ t u)
@@ -398,10 +400,10 @@ as a rewriting rule, at related rules. -/
 theorem byListIndHypWeak_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
     (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) :
-    PRel (GebMirror.Metalogic.byListIndHypWeak (encGlobals G) (E.toList.map encEntry) (leaf n)
+    PRel («Tactics.byListIndHypWeak» (encGlobals G) (E.toList.map encEntry) (leaf n)
         rs')
       (Tactics.byListIndHypWeak G E n rs) := by
-  simp only [GebMirror.Metalogic.byListIndHypWeak, Tactics.byListIndHypWeak]
+  simp only [«Tactics.byListIndHypWeak», Tactics.byListIndHypWeak]
   refine byListIndWith_eq G n 0 1 _ _ _ _ (byWeak_eq G E n rs' rs hrs) fun Γ Φ t u ↦ ?_
   have h := withWeakHyps_eq G E n rs' rs hrs [Φ.length - 1] _ _
     (fun ex' ex hex ↦ byWeak_eq G E n _ _ (List.rel_append hex hrs)) .weak Γ Φ t u
@@ -414,10 +416,10 @@ as a rewriting rule, the construction's case by case analysis of its bit, at rel
 theorem byBitsIndHyp_eq (G : Internal.Globals) (E : Array Internal.Entry)
     (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (m : Internal.Depth) :
-    PRel (GebMirror.Metalogic.byBitsIndHyp (encGlobals G) (E.toList.map encEntry) rs'
+    PRel («Tactics.byBitsIndHyp» (encGlobals G) (E.toList.map encEntry) rs'
         (leaf (encDepth m)))
       (Tactics.byBitsIndHyp G E rs m) := by
-  simp only [GebMirror.Metalogic.byBitsIndHyp, Tactics.byBitsIndHyp]
+  simp only [«Tactics.byBitsIndHyp», Tactics.byBitsIndHyp]
   refine byListIndWith_eq G 0 0 1 _ _ _ _ (byMode_eq m G E 0 rs' rs hrs) <|
     bySplit_eq 3 4 1 _ _ fun Γ Φ t u ↦ ?_
   have h := withWeakHyps_eq G E 0 rs' rs hrs [Φ.length - 1] _ _
@@ -428,8 +430,8 @@ theorem byBitsIndHyp_eq (G : Internal.Globals) (E : Array Internal.Entry)
 
 /-- The mirror's rewriting of the function of an application to arguments by a hypothesis. -/
 @[simp] theorem rwFun_eq (i k : ℕ) :
-    GebMirror.Metalogic.rwFun (leaf i) (leaf k) = encDeriv (Tactics.rwFun i k) := by
-  simp only [GebMirror.Metalogic.rwFun, iter_leaf, Tactics.rwFun]
+    «Tactics.rwFun» (leaf i) (leaf k) = encDeriv (Tactics.rwFun i k) := by
+  simp only [«Tactics.rwFun», iter_leaf, Tactics.rwFun]
   exact Nat.rec (by tac_simp []; rfl) (fun k ih ↦ by
     rw [Nat.repeat, ih]
     tac_simp []) k
@@ -437,9 +439,9 @@ theorem byBitsIndHyp_eq (G : Internal.Globals) (E : Array Internal.Entry)
 /-- The mirror's equations of the applications of two encoded functions to encoded lists of
 arguments. -/
 @[simp] theorem instEqs_eq (F H : Term) (αs : List (List Term)) :
-    GebMirror.Metalogic.instEqs (encTerm F) (encTerm H) (αs.map (·.map encTerm)) =
+    «Tactics.instEqs» (encTerm F) (encTerm H) (αs.map (·.map encTerm)) =
       (Tactics.instEqs F H αs).map encTerm := by
-  simp only [GebMirror.Metalogic.instEqs, foldr_eq, Tactics.instEqs]
+  simp only [«Tactics.instEqs», foldr_eq, Tactics.instEqs]
   exact αs.rec rfl fun α αs ih ↦ by
     simp only [List.map_cons, List.foldr_cons, ih, mApps_eq, mEq_eq]
 
@@ -450,10 +452,10 @@ arguments. -/
 
 /-- The mirror's derivation under the equations of the instances, each cut in. -/
 @[simp] theorem cutInsts_eq (F H : Term) (i : ℕ) (αs : List (List Term)) (rest : Deriv) :
-    GebMirror.Metalogic.cutInsts (encTerm F) (encTerm H) (leaf i) (αs.map (·.map encTerm))
+    «Tactics.cutInsts» (encTerm F) (encTerm H) (leaf i) (αs.map (·.map encTerm))
         (encDeriv rest) =
       encDeriv (Tactics.cutInsts F H i αs rest) := by
-  simp only [GebMirror.Metalogic.cutInsts, foldr_eq, Tactics.cutInsts]
+  simp only [«Tactics.cutInsts», foldr_eq, Tactics.cutInsts]
   exact αs.rec rfl fun α αs ih ↦ by
     simp only [List.map_cons, List.foldr_cons, ih]
     tac_simp [mApps_eq, rwFun_eq]
@@ -466,11 +468,11 @@ theorem withInsts_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
     (k' : List (Tree × (Tree → Tree → List Tree → Tree)) →
       List Tree → List Tree → Tree → Tree → Tree)
     (k : List NormRule → Internal.Prover) (hk : KRel k' k) (m : Internal.Depth) :
-    PRel (GebMirror.Metalogic.withInsts (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
+    PRel («Tactics.withInsts» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
         (leaf h) (αs.map (·.map encTerm)) k' (leaf (encDepth m)))
       (Tactics.withInsts G E n rs h αs k m) := by
   intro Γ Φ t u
-  simp only [GebMirror.Metalogic.withInsts, Tactics.withInsts]
+  simp only [«Tactics.withInsts», Tactics.withInsts]
   tac_simp [eqParts_eq]
   rcases Φ[h]? with _ | φ
   · rfl
@@ -487,20 +489,20 @@ theorem withInsts_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
 /-- The mirror's application of a definition of the translation's library, the arguments the
 first first. -/
 @[simp] theorem call_eq (k : ℕ) (θ : List Tree) (args : List Term) :
-    GebMirror.Metalogic.call (leaf k) θ (args.map encTerm) =
+    «Translation.call» (leaf k) θ (args.map encTerm) =
       encTerm (Translation.call k θ args) := by
-  simp only [GebMirror.Metalogic.call, reverse_eq, ← List.map_reverse, mDefn_eq, Translation.call]
+  simp only [«Translation.call», reverse_eq, ← List.map_reverse, mDefn_eq, Translation.call]
 
 /-- The mirror's element of a list of formulas at a position. -/
 @[simp] theorem nthOf_eq (X : Term) (p : ℕ) :
-    GebMirror.Metalogic.nthOf (encTerm X) (leaf p) = encTerm (Tactics.nthOf X p) := by
-  have h : ∀ p : ℕ, Nat.repeat (fun Y ↦ GebMirror.Metalogic.call (leaf 7) [omega] [Y]) p
+    «Tactics.nthOf» (encTerm X) (leaf p) = encTerm (Tactics.nthOf X p) := by
+  have h : ∀ p : ℕ, Nat.repeat (fun Y ↦ «Translation.call» (leaf 7) [omega] [Y]) p
       (encTerm X) =
       encTerm (p.rec X fun _ Y ↦ Translation.call Translation.D.tail [omega] [Y]) :=
     Nat.rec rfl fun p ih ↦ by
       rw [Nat.repeat, ih]
       exact call_eq Translation.D.tail [omega] [_]
-  simp only [GebMirror.Metalogic.nthOf, iter_leaf, single_eq, GebMirror.Metalogic.l2, h,
+  simp only [«Tactics.nthOf», iter_leaf, single_eq, «Theory.l2», h,
     mStar_eq, mEq_eq, Tactics.nthOf, Theory.mirror_omega]
   exact call_eq Translation.D.headD [omega] [_, _]
 
@@ -518,19 +520,19 @@ theorem withChildHyps_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : 
     (hargs : ∀ p, args' (leaf p) = (args p).map (·.map encTerm))
     (k' : List Tree → List Tree → List Tree → Tree → Tree → Tree)
     (k : List ℕ → Internal.Prover) (hk : ∀ is, PRel (k' (is.map leaf)) (k is)) :
-    PRel (GebMirror.Metalogic.withChildHyps (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
+    PRel («Tactics.withChildHyps» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
         (leaf h) (kids.map leaf) args' k')
       (Tactics.withChildHyps G E n rs h kids args k) := by
-  have hE : ∀ Γ Φ t, GebMirror.Metalogic.eval (encGlobals G) (E.toList.map encEntry) (leaf n)
+  have hE : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n)
       rs' (leaf 4096) (leaf 1) Γ (Φ.map encTerm) (encTerm t) =
       encOpt ((Internal.eval G E n rs 4096 .weak Γ Φ t).map encTDB) :=
     eval_eq G E n rs' rs hrs 4096 .weak
-  have hEh : ∀ Γ Φ t, GebMirror.Metalogic.eval (encGlobals G) (E.toList.map encEntry) (leaf n)
-      [GebMirror.Metalogic.hypRule (leaf h)] (leaf 4096) (leaf 1) Γ (Φ.map encTerm) (encTerm t) =
+  have hEh : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n)
+      [«Tactics.hypRule» (leaf h)] (leaf 4096) (leaf 1) Γ (Φ.map encTerm) (encTerm t) =
       encOpt ((Internal.eval G E n [.hyp h] 4096 .weak Γ Φ t).map encTDB) :=
     eval_eq G E n _ _ (.cons (hypRule_rel h) .nil) 4096 .weak
   intro Γ Φ t u
-  simp only [GebMirror.Metalogic.withChildHyps, Tactics.withChildHyps, foldr_eq]
+  simp only [«Tactics.withChildHyps», Tactics.withChildHyps, foldr_eq]
   tac_simp [eqParts_eq]
   rcases Φ[h]? with _ | φ
   · rfl
@@ -565,8 +567,8 @@ theorem withChildHyps_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : 
 
 /-- The mirror's term with a variable moved to a new, innermost variable. -/
 @[simp] theorem subVar_eq (i : ℕ) (x : Term) :
-    GebMirror.Metalogic.subVar (leaf i) (encTerm x) = encTerm (Tactics.subVar i x) := by
-  simp only [GebMirror.Metalogic.subVar, weaken1_eq, Tactics.subVar]
+    «Tactics.subVar» (leaf i) (encTerm x) = encTerm (Tactics.subVar i x) := by
+  simp only [«Tactics.subVar», weaken1_eq, Tactics.subVar]
   exact subst_eq _ _ (fun j ↦ if j = i + 1 then Term.var 0 else Term.var j) fun j ↦ by
     mirror_simp [beq_iff_eq]
     split <;> rfl
@@ -576,7 +578,7 @@ hypothesis reverted, each case by its related prover. -/
 theorem revertCase_eq (G : Internal.Globals) (n o lb i h : ℕ)
     (pNil' pCons' : List Tree → List Tree → Tree → Tree → Tree) (pNil pCons : Internal.Prover)
     (hN : PRel pNil' pNil) (hC : PRel pCons' pCons) :
-    PRel (GebMirror.Metalogic.revertCase (encGlobals G) (leaf n) (leaf o) (leaf lb) (leaf i)
+    PRel («Tactics.revertCase» (encGlobals G) (leaf n) (leaf o) (leaf lb) (leaf i)
         (leaf h) pNil' pCons')
       (Tactics.revertCase G n o lb i h pNil pCons) := by
   have hN' : ∀ Γ Φ t u, pNil' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
@@ -584,7 +586,7 @@ theorem revertCase_eq (G : Internal.Globals) (n o lb i h : ℕ)
   have hC' : ∀ Γ Φ t u, pCons' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
       encOpt ((pCons Γ Φ t u).map encDeriv) := hC
   intro Γ Φ t u
-  simp only [GebMirror.Metalogic.revertCase, Tactics.revertCase]
+  simp only [«Tactics.revertCase», Tactics.revertCase]
   tac_simp [listPart_eq]
   rcases Γ[i]? with _ | c
   · rfl
@@ -618,28 +620,28 @@ theorem labelData_eq_defn (l : Internal.Label) : (labelData l).1 = 11 ↔ ∃ k 
   cases l <;> simp [labelData]
 
 /-- The mirror's rule of β-reduction alone. -/
-theorem betaRule_rel : List.Forall₂ RRel GebMirror.Metalogic.betaRule [.rule .beta] :=
+theorem betaRule_rel : List.Forall₂ RRel «Tactics.betaRule» [.rule .beta] :=
   .cons rfl .nil
 
 /-- The mirror's proof of an equation of an implication and truth by the introduction of the
 implication, at a related prover. -/
 theorem byImpI_eq (G : Internal.Globals) (E : Array Internal.Entry) (o lb : ℕ)
     (p' : List Tree → List Tree → Tree → Tree → Tree) (p : Internal.Prover) (hp : PRel p' p) :
-    PRel (GebMirror.Metalogic.byImpI (encGlobals G) (E.toList.map encEntry) (leaf o) (leaf lb) p')
+    PRel («Tactics.byImpI» (encGlobals G) (E.toList.map encEntry) (leaf o) (leaf lb) p')
       (Tactics.byImpI G E o lb p) := by
   have hp' : ∀ Γ Φ t u, p' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
       encOpt ((p Γ Φ t u).map encDeriv) := hp
-  have hE : ∀ Γ Φ t, GebMirror.Metalogic.eval (encGlobals G) (E.toList.map encEntry) (leaf 0)
-      GebMirror.Metalogic.betaRule (leaf 4096) (leaf 0) Γ (Φ.map encTerm) (encTerm t) =
+  have hE : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf 0)
+      «Tactics.betaRule» (leaf 4096) (leaf 0) Γ (Φ.map encTerm) (encTerm t) =
       encOpt ((Internal.eval G E 0 [.rule .beta] 4096 .head Γ Φ t).map encTDB) :=
     eval_eq G E 0 _ _ betaRule_rel 4096 .head
   intro Γ Φ t u
   simp only [Tactics.byImpI]
   rcases ht : Internal.eval G E 0 [.rule .beta] 4096 .head Γ Φ t with _ | ⟨t', dt, _⟩
-  · simp only [GebMirror.Metalogic.byImpI, hE, ht]
+  · simp only [«Tactics.byImpI», hE, ht]
     rfl
   rcases hu : Internal.eval G E 0 [.rule .beta] 4096 .head Γ Φ u with _ | ⟨u', du, _⟩
-  · simp only [GebMirror.Metalogic.byImpI, hE, ht, hu]
+  · simp only [«Tactics.byImpI», hE, ht, hu]
     rfl
   obtain ⟨l, ts, rfl⟩ : ∃ l ts, t' = RoseTree.node l ts :=
     ⟨t'.label, t'.children, (RoseTree.node_label_children t').symm⟩
@@ -648,7 +650,7 @@ theorem byImpI_eq (G : Internal.Globals) (E : Array Internal.Entry) (o lb : ℕ)
   simp only [Option.bind_eq_bind, Option.bind_some, RoseTree.label_node, RoseTree.children_node]
   split
   · rename_i k θ q a k' θ'
-    simp only [GebMirror.Metalogic.byImpI, hE, ht, hu]
+    simp only [«Tactics.byImpI», hE, ht, hu]
     mirror_simp [p1_encTDB, p2_encTDB, mIs_eq, labelData, mD_eq, mArg_eq, beq_iff_eq,
       label_encTerm, RoseTree.label_node, Bool.and_eq_true]
     by_cases hk : k = o + 2 ∧ k' = o
@@ -663,7 +665,7 @@ theorem byImpI_eq (G : Internal.Globals) (E : Array Internal.Entry) (o lb : ℕ)
     · simp only [hk, ↓reduceIte, Option.map_none]
       rfl
   · rename_i hne
-    simp only [GebMirror.Metalogic.byImpI, hE, ht, hu]
+    simp only [«Tactics.byImpI», hE, ht, hu]
     mirror_simp [p1_encTDB, mIs_eq, label_encTerm, RoseTree.label_node, Bool.and_eq_true,
       beq_iff_eq]
     split
@@ -681,10 +683,10 @@ theorem withImpElim_eq (o lb h : ℕ) (is : List ℕ)
     (k' : List (Tree × (Tree → Tree → List Tree → Tree)) →
       List Tree → List Tree → Tree → Tree → Tree)
     (k : List NormRule → Internal.Prover) (hk : KRel k' k) :
-    PRel (GebMirror.Metalogic.withImpElim (leaf o) (leaf lb) (leaf h) (is.map leaf) k')
+    PRel («Tactics.withImpElim» (leaf o) (leaf lb) (leaf h) (is.map leaf) k')
       (Tactics.withImpElim o lb h is k) := by
   intro Γ Φ t u
-  simp only [GebMirror.Metalogic.withImpElim, Tactics.withImpElim, foldr_eq]
+  simp only [«Tactics.withImpElim», Tactics.withImpElim, foldr_eq]
   refine (?_ : ARel _ _) Φ [] [] .nil
   refine List.rel_foldr (R := fun (i' : Tree) (i : ℕ) ↦ i' = leaf i)
     (fun i' i hi a' a ha ↦ ?_) (fun Φ₁ ex' ex hex ↦ hk ex' ex hex Γ Φ₁ t u)
@@ -724,20 +726,20 @@ theorem withImpElim_eq (o lb h : ℕ) (is : List ℕ)
 /-- The mirror's index of a hypothesis rule's hypothesis, at a related rule. -/
 theorem hypIndex_eq (r' : Tree × (Tree → Tree → List Tree → Tree)) (r : NormRule)
     (hr : RRel r' r) :
-    GebMirror.Metalogic.hypIndex r' = encOpt ((Tactics.hypIndex r).map leaf) := by
+    «Tactics.hypIndex» r' = encOpt ((Tactics.hypIndex r).map leaf) := by
   cases r with
   | thmAt j θ root m k =>
     obtain ⟨p, -, h1, -⟩ := hr
-    simp only [GebMirror.Metalogic.hypIndex, h1]
+    simp only [«Tactics.hypIndex», h1]
     rfl
   | _ =>
     change r'.1 = _ at hr
-    simp only [GebMirror.Metalogic.hypIndex, hr]
+    simp only [«Tactics.hypIndex», hr]
     rfl
 
 /-- The mirror's rewriting of an application's argument backward by a theorem. -/
 theorem succPredRw_eq (j : ℕ) (l s : Term) :
-    GebMirror.Metalogic.succPredRw (leaf j) (encTerm l) (encTerm s) =
+    «Tactics.succPredRw» (leaf j) (encTerm l) (encTerm s) =
       encOpt ((Tactics.succPredRw j l s).map encTD) := by
   obtain ⟨lab, cs, rfl⟩ : ∃ l cs, s = RoseTree.node l cs :=
     ⟨s.label, s.children, (RoseTree.node_label_children s).symm⟩
@@ -747,11 +749,11 @@ theorem succPredRw_eq (j : ℕ) (l s : Term) :
     | [f, x], _ =>
       have hI := instTerm_eq [] [Term.var 1, Term.var 0] l
       simp only [List.map_cons, List.map_nil] at hI
-      simp only [GebMirror.Metalogic.succPredRw, Tactics.succPredRw]
+      simp only [«Tactics.succPredRw», Tactics.succPredRw]
       mirror_simp [mIs_eq, labelData, mArg_eq]
       tac_simp [hI]
       rfl
-  · mirror_simp [GebMirror.Metalogic.succPredRw, mIs_eq, Bool.and_eq_true, beq_iff_eq,
+  · mirror_simp [«Tactics.succPredRw», mIs_eq, Bool.and_eq_true, beq_iff_eq,
       label_encTerm, RoseTree.label_node, RoseTree.children_node, hc]
     simp only [Tactics.succPredRw, RoseTree.label_node, RoseTree.children_node]
     split
@@ -762,12 +764,12 @@ theorem succPredRw_eq (j : ℕ) (l s : Term) :
 by a theorem, at a related prover. -/
 theorem bySuccPred_eq (E : Array Internal.Entry) (j : ℕ)
     (p' : List Tree → List Tree → Tree → Tree → Tree) (p : Internal.Prover) (hp : PRel p' p) :
-    PRel (GebMirror.Metalogic.bySuccPred (E.toList.map encEntry) (leaf j) p')
+    PRel («Tactics.bySuccPred» (E.toList.map encEntry) (leaf j) p')
       (Tactics.bySuccPred E j p) := by
   have hp' : ∀ Γ Φ t u, p' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
       encOpt ((p Γ Φ t u).map encDeriv) := hp
   intro Γ Φ t u
-  simp only [GebMirror.Metalogic.bySuccPred, Tactics.bySuccPred]
+  simp only [«Tactics.bySuccPred», Tactics.bySuccPred]
   tac_simp [Array.getElem?_toList, entryLanguage_eq]
   rcases E[j]? with _ | (b | s)
   · rfl
@@ -786,37 +788,37 @@ theorem bySuccPred_eq (E : Array Internal.Entry) (j : ℕ)
 /-! Proof search. -/
 
 /-- The mirror's list of lists without its head. -/
-@[simp] theorem tailTss_eq (xs : List (List Tree)) : GebMirror.Metalogic.tailTss xs = xs.tail := by
+@[simp] theorem tailTss_eq (xs : List (List Tree)) : «Tactics.tailTss» xs = xs.tail := by
   cases xs <;> rfl
 
 /-- The mirror's concatenation of a list of lists. -/
 @[simp] theorem concatTss_eq (xs : List (List Tree)) :
-    GebMirror.Metalogic.concatTss xs = xs.flatten := by
-  simp only [GebMirror.Metalogic.concatTss, foldr_eq]
+    «Tactics.concatTss» xs = xs.flatten := by
+  simp only [«Tactics.concatTss», foldr_eq]
   exact xs.rec rfl fun x xs ih ↦ by rw [List.foldr_cons, ih, append_eq, List.flatten_cons]
 
 /-- The mirror's subterms of an encoded term outside binders and folds' starts and steps. -/
 theorem openSubterms_eq (t : Term) :
-    GebMirror.Metalogic.openSubterms (encTerm t) = (Tactics.openSubterms t).map encTerm := by
-  simp only [GebMirror.Metalogic.openSubterms, Tactics.openSubterms]
+    «Tactics.openSubterms» (encTerm t) = (Tactics.openSubterms t).map encTerm := by
+  simp only [«Tactics.openSubterms», Tactics.openSubterms]
   refine para_enc _ _ (fun (v : List Tree) (w : List Term) ↦ v = w.map encTerm)
-    GebMirror.Metalogic.subtermsStep _ (fun l v xs hx ↦ ?_) t
+    «Tactics.subtermsStep» _ (fun l v xs hx ↦ ?_) t
   have hc : ∀ k, ((xs.map fun x ↦ x.2.1).drop k).flatten =
       (((xs.map fun x ↦ (x.1, x.2.2)).drop k).flatMap (·.2)).map encTerm := fun k ↦ by
     rw [← List.map_drop, ← List.map_drop, List.flatMap_map, List.map_flatMap]
     simp only [List.flatten_eq_flatMap, List.flatMap_map]
     exact List.flatMap_congr fun x hx' ↦ hx x (List.mem_of_mem_drop hx')
-  have hr : ∀ k : ℕ, Nat.repeat GebMirror.Metalogic.tailTss (k + 1)
+  have hr : ∀ k : ℕ, Nat.repeat «Tactics.tailTss» (k + 1)
       (v :: xs.map fun x ↦ x.2.1) = (xs.map fun x ↦ x.2.1).drop k :=
     Nat.rec rfl fun k ih ↦ by rw [Nat.repeat, ih, tailTss_eq, List.tail_drop]
   have h0 := hc 0
   simp only [List.drop_zero] at h0
-  change GebMirror.Metalogic.subtermsStep (encTerm (RoseTree.node l (xs.map Prod.fst))) _ = _
-  have h2 : Nat.repeat GebMirror.Metalogic.tailTss 2 (v :: xs.map fun x ↦ x.2.1) =
+  change «Tactics.subtermsStep» (encTerm (RoseTree.node l (xs.map Prod.fst))) _ = _
+  have h2 : Nat.repeat «Tactics.tailTss» 2 (v :: xs.map fun x ↦ x.2.1) =
       (xs.map fun x ↦ x.2.1).drop 1 := hr 1
-  have h3 : Nat.repeat GebMirror.Metalogic.tailTss 3 (v :: xs.map fun x ↦ x.2.1) =
+  have h3 : Nat.repeat «Tactics.tailTss» 3 (v :: xs.map fun x ↦ x.2.1) =
       (xs.map fun x ↦ x.2.1).drop 2 := hr 2
-  simp only [GebMirror.Metalogic.subtermsStep]
+  simp only [«Tactics.subtermsStep»]
   cases l <;> mirror_simp [labelData, label_encTerm, RoseTree.label_node, tailTss_eq,
     concatTss_eq, iter_leaf]
   all_goals first
@@ -827,16 +829,16 @@ theorem openSubterms_eq (t : Term) :
 /-- The mirror's first image of an element of a list that is present, at a related function. -/
 theorem findSomeT_eq {α β : Type} (e : α → Tree) (g : β → Tree) (f' : Tree → Tree)
     (f : α → Option β) (hf : ∀ x, f' (e x) = encOpt ((f x).map g)) (xs : List α) :
-    GebMirror.Metalogic.findSomeT f' (xs.map e) = encOpt ((xs.findSome? f).map g) := by
-  simp only [GebMirror.Metalogic.findSomeT, foldr_eq]
+    «Tactics.findSomeT» f' (xs.map e) = encOpt ((xs.findSome? f).map g) := by
+  simp only [«Tactics.findSomeT», foldr_eq]
   exact xs.rec rfl fun x xs ih ↦ by
     simp only [List.map_cons, List.foldr_cons, ih, hf, List.findSome?_cons]
     cases f x <;> rfl
 
 /-- The mirror's test that an encoded term mentions a variable. -/
 @[simp] theorem mentions_eq (t : Term) (i : ℕ) :
-    GebMirror.Metalogic.mentions (encTerm t) (leaf i) = ofBool (Tactics.mentions t i) := by
-  simp only [GebMirror.Metalogic.mentions, uses_eq, lt_leaf, Tactics.mentions]
+    «Tactics.mentions» (encTerm t) (leaf i) = ofBool (Tactics.mentions t i) := by
+  simp only [«Tactics.mentions», uses_eq, lt_leaf, Tactics.mentions]
 
 /-- A predicate on variables' indices and the mirror's are related when they agree at every
 index. -/
@@ -845,11 +847,11 @@ def SkipRel (skip' : Tree → Tree) (skip : ℕ → Bool) : Prop := ∀ i, skip'
 /-- The mirror's index of an encoded term that is a variable a predicate does not hold of. -/
 theorem varUnless_eq (skip' : Tree → Tree) (skip : ℕ → Bool) (hs : SkipRel skip' skip)
     (m : Term) :
-    GebMirror.Metalogic.varUnless skip' (encTerm m) =
+    «Tactics.varUnless» skip' (encTerm m) =
       encOpt ((Tactics.varUnless skip m).map leaf) := by
   obtain ⟨l, cs, rfl⟩ : ∃ l cs, m = RoseTree.node l cs :=
     ⟨m.label, m.children, (RoseTree.node_label_children m).symm⟩
-  cases l <;> mirror_simp [GebMirror.Metalogic.varUnless, Tactics.varUnless, labelData,
+  cases l <;> mirror_simp [«Tactics.varUnless», Tactics.varUnless, labelData,
     label_encTerm, mD_eq, none_eq]
   rename_i i
   rw [hs i]
@@ -857,12 +859,12 @@ theorem varUnless_eq (skip' : Tree → Tree) (skip : ℕ → Bool) (hs : SkipRel
 
 /-- The mirror's variable an encoded case analysis is stuck on. -/
 theorem scrutVar_eq (skip' : Tree → Tree) (skip : ℕ → Bool) (hs : SkipRel skip' skip) (u : Term) :
-    GebMirror.Metalogic.scrutVar skip' (encTerm u) =
+    «Tactics.scrutVar» skip' (encTerm u) =
       encOpt ((Tactics.scrutVar skip u).map leaf) := by
   obtain ⟨l, cs, rfl⟩ : ∃ l cs, u = RoseTree.node l cs :=
     ⟨u.label, u.children, (RoseTree.node_label_children u).symm⟩
   cases l <;> rcases cs with _ | ⟨f, _ | ⟨m, _ | ⟨e, cs⟩⟩⟩ <;>
-    mirror_simp [GebMirror.Metalogic.scrutVar, Tactics.scrutVar, labelData, mIs_eq, none_eq,
+    mirror_simp [«Tactics.scrutVar», Tactics.scrutVar, labelData, mIs_eq, none_eq,
       beq_iff_eq, Nat.reduceEqDiff]
   obtain ⟨lf, fcs, rfl⟩ : ∃ l cs, f = RoseTree.node l cs :=
     ⟨f.label, f.children, (RoseTree.node_label_children f).symm⟩
@@ -879,26 +881,26 @@ theorem scrutVar_eq (skip' : Tree → Tree) (skip : ℕ → Bool) (hs : SkipRel 
 
 /-- The mirror's variable an encoded fold is stuck on. -/
 theorem datumVar_eq (skip' : Tree → Tree) (skip : ℕ → Bool) (hs : SkipRel skip' skip) (u : Term) :
-    GebMirror.Metalogic.datumVar skip' (encTerm u) =
+    «Tactics.datumVar» skip' (encTerm u) =
       encOpt ((Tactics.datumVar skip u).map leaf) := by
   obtain ⟨l, cs, rfl⟩ : ∃ l cs, u = RoseTree.node l cs :=
     ⟨u.label, u.children, (RoseTree.node_label_children u).symm⟩
   cases l <;> rcases cs with _ | ⟨a, _ | ⟨b, _ | ⟨c, _ | ⟨e, cs⟩⟩⟩⟩ <;>
-    mirror_simp [GebMirror.Metalogic.datumVar, Tactics.datumVar, labelData, mIs_eq, none_eq,
+    mirror_simp [«Tactics.datumVar», Tactics.datumVar, labelData, mIs_eq, none_eq,
       beq_iff_eq, Nat.reduceEqDiff, mArg_eq, varUnless_eq skip' skip hs]
 
 /-- The mirror's type, test and branches of an encoded conditional of the library. -/
 theorem condParts_eq (w : Term) :
-    GebMirror.Metalogic.condParts (encTerm w) = encOpt ((Tactics.condParts w).map encCond) := by
+    «Tactics.condParts» (encTerm w) = encOpt ((Tactics.condParts w).map encCond) := by
   obtain ⟨l, cs, rfl⟩ : ∃ l cs, w = RoseTree.node l cs :=
     ⟨w.label, w.children, (RoseTree.node_label_children w).symm⟩
   cases l <;> rcases cs with _ | ⟨d, _ | ⟨y, _ | ⟨c, _ | ⟨e, cs⟩⟩⟩⟩ <;>
-    mirror_simp [GebMirror.Metalogic.condParts, Tactics.condParts, labelData, mIs_eq, none_eq,
+    mirror_simp [«Tactics.condParts», Tactics.condParts, labelData, mIs_eq, none_eq,
       beq_iff_eq, Nat.reduceEqDiff]
   · rename_i k θ
     rcases θ with _ | ⟨a, _ | ⟨b, θ⟩⟩ <;>
       mirror_simp [mD_eq, mArg_eq, labelData, beq_iff_eq, Nat.reduceEqDiff, some_eq, none_eq,
-        GebMirror.Metalogic.l4]
+        «Theory.l4»]
     · by_cases hk : k = 6
       · simp only [hk, ↓reduceIte, Translation.D.cond, Option.map_some, encCond]
         rfl
@@ -916,8 +918,8 @@ theorem condParts_eq (w : Term) :
 
 /-- The mirror's variable an encoded folded conditional is stuck on. -/
 theorem condVar_eq (skip' : Tree → Tree) (skip : ℕ → Bool) (hs : SkipRel skip' skip) (u : Term) :
-    GebMirror.Metalogic.condVar skip' (encTerm u) = encOpt ((Tactics.condVar skip u).map leaf) := by
-  simp only [GebMirror.Metalogic.condVar, Tactics.condVar, condParts_eq, bindO_eq]
+    «Tactics.condVar» skip' (encTerm u) = encOpt ((Tactics.condVar skip u).map leaf) := by
+  simp only [«Tactics.condVar», Tactics.condVar, condParts_eq, bindO_eq]
   rcases Tactics.condParts u with _ | ⟨a, c, y, d⟩
   · rfl
   · simp only [Option.map_some, Option.elim_some, encCond, children_eq, RoseTree.children_node]
@@ -925,9 +927,9 @@ theorem condVar_eq (skip' : Tree → Tree) (skip : ℕ → Bool) (hs : SkipRel s
 
 /-- The mirror's variable an encoded weak normal form is stuck on. -/
 theorem stuckVar_eq (skip' : Tree → Tree) (skip : ℕ → Bool) (hs : SkipRel skip' skip) (t : Term) :
-    GebMirror.Metalogic.stuckVar skip' (encTerm t) =
+    «Tactics.stuckVar» skip' (encTerm t) =
       encOpt ((Tactics.stuckVar skip t).map leaf) := by
-  simp only [GebMirror.Metalogic.stuckVar, Tactics.stuckVar, openSubterms_eq,
+  simp only [«Tactics.stuckVar», Tactics.stuckVar, openSubterms_eq,
     findSomeT_eq encTerm leaf _ _ (scrutVar_eq skip' skip hs),
     findSomeT_eq encTerm leaf _ _ (datumVar_eq skip' skip hs), isSome_eq]
   cases (Tactics.openSubterms t).findSome? (Tactics.scrutVar skip) <;> rfl
@@ -936,24 +938,24 @@ theorem stuckVar_eq (skip' : Tree → Tree) (skip : ℕ → Bool) (hs : SkipRel 
 among them. -/
 theorem stuckVarC_eq (skip' : Tree → Tree) (skip : ℕ → Bool) (hs : SkipRel skip' skip)
     (t : Term) :
-    GebMirror.Metalogic.stuckVarC skip' (encTerm t) =
+    «Tactics.stuckVarC» skip' (encTerm t) =
       encOpt ((Tactics.stuckVarC skip t).map leaf) := by
-  simp only [GebMirror.Metalogic.stuckVarC, Tactics.stuckVarC, GebMirror.Metalogic.orO,
+  simp only [«Tactics.stuckVarC», Tactics.stuckVarC, «Tactics.orO»,
     openSubterms_eq, findSomeT_eq encTerm leaf _ _ (condVar_eq skip' skip hs),
     stuckVar_eq skip' skip hs, isSome_eq]
   cases (Tactics.openSubterms t).findSome? (Tactics.condVar skip) <;> rfl
 
 /-- The mirror's conjunction with a true first conjunct. -/
-@[simp] theorem and_true_left (x : Tree) : GebMirror.Metalogic.and (ofBool true) x = x := rfl
+@[simp] theorem and_true_left (x : Tree) : «Prelude.and» (ofBool true) x = x := rfl
 
 /-- The mirror's test of an encoded term's being an application of a definition to two
 arguments. -/
 theorem isApps2_eq (k : ℕ) (u : Term) :
-    GebMirror.Metalogic.isApps2 (leaf k) (encTerm u) = ofBool (Tactics.isApps2 k u) := by
+    «Tactics.isApps2» (leaf k) (encTerm u) = ofBool (Tactics.isApps2 k u) := by
   obtain ⟨l, cs, rfl⟩ : ∃ l cs, u = RoseTree.node l cs :=
     ⟨u.label, u.children, (RoseTree.node_label_children u).symm⟩
   cases l <;> rcases cs with _ | ⟨f, _ | ⟨x, _ | ⟨e, cs⟩⟩⟩ <;>
-    mirror_simp [GebMirror.Metalogic.isApps2, Tactics.isApps2, labelData, mIs_eq,
+    mirror_simp [«Tactics.isApps2», Tactics.isApps2, labelData, mIs_eq,
       beq_iff_eq, Nat.reduceEqDiff, and_false_left, and_true_left]
   · obtain ⟨lf, fcs, rfl⟩ : ∃ l cs, f = RoseTree.node l cs :=
       ⟨f.label, f.children, (RoseTree.node_label_children f).symm⟩
@@ -981,8 +983,8 @@ theorem isApps2_eq (k : ℕ) (u : Term) :
 /-- The mirror's applications of a definition to two arguments among an encoded term's
 subterms. -/
 theorem appsOf_eq (k : ℕ) (t : Term) :
-    GebMirror.Metalogic.appsOf (leaf k) (encTerm t) = (Tactics.appsOf k t).map encTerm := by
-  simp only [GebMirror.Metalogic.appsOf, Tactics.appsOf, openSubterms_eq, foldr_eq]
+    «Tactics.appsOf» (leaf k) (encTerm t) = (Tactics.appsOf k t).map encTerm := by
+  simp only [«Tactics.appsOf», Tactics.appsOf, openSubterms_eq, foldr_eq]
   exact (Tactics.openSubterms t).rec rfl fun u us ih ↦ by
     simp only [List.map_cons, List.foldr_cons, ih, isApps2_eq, List.filter_cons]
     cases Tactics.isApps2 k u <;> rfl
@@ -1013,17 +1015,17 @@ theorem revOnto_eq (acc : List (List Tree)) : ∀ a : List (List Tree),
 
 /-- The mirror's removal of duplicates from a list of lists, the first occurrences kept. -/
 theorem eraseDupsTss_loop (xss : List (List Tree)) :
-    GebMirror.Metalogic.eraseDupsTss xss =
+    «Tactics.eraseDupsTss» xss =
       List.eraseDupsBy.loop (fun a b ↦ decide (b = a)) xss [] := by
   have hany (x : List Tree) (acc : List (List Tree)) :
-      List.foldr (fun (y : List Tree) (b : Tree) ↦ GebMirror.Metalogic.or
-        (GebMirror.Metalogic.equalTs y x) b) (leaf 0) acc =
+      List.foldr (fun (y : List Tree) (b : Tree) ↦ «Prelude.or»
+        («Base.equalTs» y x) b) (leaf 0) acc =
         ofBool (acc.any fun y ↦ decide (y = x)) :=
     acc.rec rfl fun y ys ih ↦ by
       rw [List.foldr_cons, ih, equalTs_eq, or_eq, List.any_cons]
   have h : ∀ acc, Const.foldr (fun (x : List Tree) (k : List (List Tree) → List (List Tree))
       (acc : List (List Tree)) ↦ if (Const.foldr (fun (y : List Tree) (b : Tree) ↦
-        GebMirror.Metalogic.or (GebMirror.Metalogic.equalTs y x) b) (leaf 0) acc).label ≠ 0
+        «Prelude.or» («Base.equalTs» y x) b) (leaf 0) acc).label ≠ 0
         then k acc else k (x :: acc))
       (fun acc ↦ Const.foldr (fun (x : List Tree) (k : List (List Tree) → List (List Tree)) b ↦
         k (x :: b)) (fun b ↦ b) acc []) xss acc =
@@ -1037,7 +1039,7 @@ theorem eraseDupsTss_loop (xss : List (List Tree)) :
 
 /-- The mirror's removal of duplicates from encoded lists of terms. -/
 theorem eraseDupsTss_eq (xss : List (List Term)) :
-    GebMirror.Metalogic.eraseDupsTss (xss.map (·.map encTerm)) =
+    «Tactics.eraseDupsTss» (xss.map (·.map encTerm)) =
       xss.eraseDups.map (·.map encTerm) := by
   rw [eraseDupsTss_loop, List.eraseDups, List.eraseDupsBy,
     ← eraseDupsBy_loop_map (·.map encTerm) (· == ·) _ ?_ xss []]
@@ -1051,21 +1053,21 @@ matches an encoded term's subterms. -/
 theorem matchesWith_eq (m' : Tree → Tree → List Tree → Tree)
     (m : ℕ → Term → List (Option Term) → Option (List (Option Term))) (hm : MRel m' m) (k : ℕ)
     (t : Term) :
-    GebMirror.Metalogic.matchesWith m' (leaf k) (encTerm t) =
+    «Tactics.matchesWith» m' (leaf k) (encTerm t) =
       (Tactics.matchesWith m k t).map (·.map encTerm) := by
-  simp only [GebMirror.Metalogic.matchesWith, Tactics.matchesWith, openSubterms_eq, foldr_eq]
+  simp only [«Tactics.matchesWith», Tactics.matchesWith, openSubterms_eq, foldr_eq]
   generalize hσ : (List.range (k + 64)).map (fun j ↦
     if j < k then none else some (Translation.v (j - k))) = σ₀
-  have hs : GebMirror.Metalogic.mapT (fun j ↦ if (Const.lt j (leaf k)).label ≠ 0 then
-      GebMirror.Metalogic.none else GebMirror.Metalogic.some
-        (GebMirror.Metalogic.mVar (Const.sub j (leaf k))))
-      (GebMirror.Metalogic.range (Const.add (leaf k) (leaf 64))) = σ₀.map encOT := by
+  have hs : «Base.mapT» (fun j ↦ if (Const.lt j (leaf k)).label ≠ 0 then
+      «Prelude.none» else «Prelude.some»
+        («Language.mVar» (Const.sub j (leaf k))))
+      («Base.range» (Const.add (leaf k) (leaf 64))) = σ₀.map encOT := by
     rw [← hσ]
     simp only [add_leaf, range_eq, mapT_eq, List.map_map]
     refine List.map_congr_left fun j _ ↦ ?_
     by_cases h : j < k <;> simp [h, lt_leaf, sub_leaf, mVar_eq, encOT, none_eq, some_eq]
-  have hr (u : Term) : GebMirror.Metalogic.bindO (m' (leaf 0) (encTerm u) (σ₀.map encOT))
-      (fun s ↦ GebMirror.Metalogic.allSomeT (GebMirror.Metalogic.take (leaf k)
+  have hr (u : Term) : «Base.bindO» (m' (leaf 0) (encTerm u) (σ₀.map encOT))
+      (fun s ↦ «Base.allSomeT» («Base.take» (leaf k)
         (Const.children s))) =
       encOpt (((m 0 u σ₀).bind fun σ ↦ (σ.take k).mapM id).map
         fun σ ↦ RoseTree.node 0 (σ.map encTerm)) := by
@@ -1089,14 +1091,14 @@ theorem matchesWith_eq (m' : Tree → Tree → List Tree → Tree)
 /-- The mirror's arguments at which the body of an abstraction of {lit}`k` variables matches an
 encoded term's subterms. -/
 theorem matchesOf_eq (body : Term) (k : ℕ) (t : Term) :
-    GebMirror.Metalogic.matchesOf (encTerm body) (leaf k) (encTerm t) =
+    «Tactics.matchesOf» (encTerm body) (leaf k) (encTerm t) =
       (Tactics.matchesOf body k t).map (·.map encTerm) :=
   matchesWith_eq _ _ (matchTerm_eq body) k t
 
 /-- The mirror's appending of lists of lists. -/
 @[simp] theorem appendTss_eq (xs ys : List (List Tree)) :
-    GebMirror.Metalogic.appendTss xs ys = xs ++ ys := by
-  simp only [GebMirror.Metalogic.appendTss, foldr_eq]
+    «Tactics.appendTss» xs ys = xs ++ ys := by
+  simp only [«Tactics.appendTss», foldr_eq]
   exact xs.rec rfl fun x xs ih ↦ by rw [List.foldr_cons, ih, List.cons_append]
 
 /-- The mirror's arguments at which the body of a hypothesis's abstraction of one variable, in
@@ -1104,10 +1106,10 @@ normal form to a depth, matches the subterms of encoded terms, at related rules.
 theorem instArgs_eq (m : Internal.Depth) (G : Internal.Globals) (E : Array Internal.Entry)
     (n : ℕ) (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (Γ : List Tree) (Φ : List Term) (t' u' : Term) (h : ℕ) :
-    GebMirror.Metalogic.instArgs (leaf (encDepth m)) (encGlobals G) (E.toList.map encEntry)
+    «Tactics.instArgs» (leaf (encDepth m)) (encGlobals G) (E.toList.map encEntry)
         (leaf n) rs' Γ (Φ.map encTerm) (encTerm t') (encTerm u') (leaf h) =
       (Tactics.instArgs m G E n rs Γ Φ t' u' h).map (·.map encTerm) := by
-  simp only [GebMirror.Metalogic.instArgs, Tactics.instArgs]
+  simp only [«Tactics.instArgs», Tactics.instArgs]
   tac_simp [eqParts_eq]
   rcases Φ[h]? with _ | φ
   · rfl
@@ -1159,8 +1161,8 @@ theorem foldr_withInsts_rel (G : Internal.Globals) (E : Array Internal.Entry) (n
     KRel (Const.foldr (fun (ha : Tree × List (List Tree))
         (k : List (Tree × (Tree → Tree → List Tree → Tree)) →
           List Tree → List Tree → Tree → Tree → Tree) extra ↦
-        GebMirror.Metalogic.withInsts (encGlobals G) (E.toList.map encEntry) (leaf n) rs' ha.1
-          ha.2 (fun ex ↦ k (GebMirror.Metalogic.appendNR extra ex)) (leaf (encDepth m)))
+        «Tactics.withInsts» (encGlobals G) (E.toList.map encEntry) (leaf n) rs' ha.1
+          ha.2 (fun ex ↦ k («Tactics.appendNR» extra ex)) (leaf (encDepth m)))
         next' (found.map fun p ↦ (leaf p.1, p.2.map (·.map encTerm))))
       (found.foldr (fun (p : ℕ × List (List Term)) (k : List NormRule → Internal.Prover) extra ↦
         Tactics.withInsts G E n rs p.1 p.2 (fun ex ↦ k (extra ++ ex)) m) next) := by
@@ -1178,15 +1180,15 @@ theorem byInstsOnce_eq (m : Internal.Depth) (G : Internal.Globals) (E : Array In
     (next' : List (Tree × (Tree → Tree → List Tree → Tree)) →
       List Tree → List Tree → Tree → Tree → Tree)
     (next : List NormRule → Internal.Prover) (hn : KRel next' next) :
-    PRel (GebMirror.Metalogic.byInstsOnce (leaf (encDepth m)) (encGlobals G)
+    PRel («Tactics.byInstsOnce» (leaf (encDepth m)) (encGlobals G)
         (E.toList.map encEntry) (leaf n) rs' (leaf hs) next')
       (Tactics.byInstsOnce m G E n rs hs next) := by
-  have hE : ∀ Γ Φ t, GebMirror.Metalogic.eval (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
+  have hE : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
       (leaf 4096) (leaf (encDepth m)) Γ (Φ.map encTerm) (encTerm t) =
       encOpt ((Internal.eval G E n rs 4096 m Γ Φ t).map encTDB) :=
     eval_eq G E n rs' rs hrs 4096 m
   intro Γ Φ t u
-  simp only [GebMirror.Metalogic.byInstsOnce, Tactics.byInstsOnce, hE]
+  simp only [«Tactics.byInstsOnce», Tactics.byInstsOnce, hE]
   rcases Internal.eval G E n rs 4096 m Γ Φ t with _ | ⟨t', dt, _⟩
   · rfl
   tac_simp [hE]
@@ -1216,7 +1218,7 @@ theorem byInstsOnce_eq (m : Internal.Depth) (G : Internal.Globals) (E : Array In
 
 /-- The mirror's first present one of two optional trees. -/
 @[simp] theorem orO_eq {α : Type} (f : α → Tree) (o o' : Option α) :
-    GebMirror.Metalogic.orO (encOpt (o.map f)) (encOpt (o'.map f)) =
+    «Tactics.orO» (encOpt (o.map f)) (encOpt (o'.map f)) =
       encOpt ((o.orElse fun _ ↦ o').map f) := by
   cases o <;> rfl
 
@@ -1224,10 +1226,10 @@ theorem byInstsOnce_eq (m : Internal.Depth) (G : Internal.Globals) (E : Array In
 theorem instsLast_rel (m : Internal.Depth) (G : Internal.Globals) (E : Array Internal.Entry)
     (n : ℕ) (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) :
-    KRel (GebMirror.Metalogic.instsLast (leaf (encDepth m)) (encGlobals G)
+    KRel («Tactics.instsLast» (leaf (encDepth m)) (encGlobals G)
         (E.toList.map encEntry) (leaf n) rs')
       (fun extra ↦ Tactics.byMode m G E n (extra ++ rs)) := fun ex' ex hex ↦ by
-  simp only [GebMirror.Metalogic.instsLast, appendNR_eq]
+  simp only [«Tactics.instsLast», appendNR_eq]
   exact byMode_eq m G E n _ _ (List.rel_append hex hrs)
 
 /-- The mirror's round of the instance search, after rules added, at related rules and a
@@ -1238,7 +1240,7 @@ theorem instsRound_rel (m : Internal.Depth) (G : Internal.Globals) (E : Array In
     (next' : List (Tree × (Tree → Tree → List Tree → Tree)) →
       List Tree → List Tree → Tree → Tree → Tree)
     (next : List NormRule → Internal.Prover) (hn : KRel next' next) :
-    KRel (GebMirror.Metalogic.instsRound (leaf (encDepth m)) (encGlobals G)
+    KRel («Tactics.instsRound» (leaf (encDepth m)) (encGlobals G)
         (E.toList.map encEntry) (leaf n) rs' (leaf hs) next')
       (fun extra Γ Φ t u ↦ (Tactics.byMode m G E n (extra ++ rs) Γ Φ t u).orElse fun _ ↦
         Tactics.byInstsOnce m G E n (extra ++ rs) hs (fun ex ↦ next (extra ++ ex)) Γ Φ t u) := by
@@ -1246,7 +1248,7 @@ theorem instsRound_rel (m : Internal.Depth) (G : Internal.Globals) (E : Array In
   have hr := List.rel_append hex hrs
   have hI := byInstsOnce_eq m G E n _ _ hr hs (fun a ↦ next' (ex' ++ a)) _
     (fun a' a ha ↦ hn _ _ (List.rel_append hex ha)) Γ Φ t u
-  simp only [GebMirror.Metalogic.instsRound, appendNR_eq, byMode_eq m G E n _ _ hr Γ Φ t u]
+  simp only [«Tactics.instsRound», appendNR_eq, byMode_eq m G E n _ _ hr Γ Φ t u]
   rcases Tactics.byMode m G E n (ex ++ rs) Γ Φ t u with _ | d
   · exact hI
   · rfl
@@ -1255,7 +1257,7 @@ theorem instsRound_rel (m : Internal.Depth) (G : Internal.Globals) (E : Array In
 theorem byInsts_eq (m : Internal.Depth) (G : Internal.Globals) (E : Array Internal.Entry)
     (n : ℕ) (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (hs : ℕ) :
-    PRel (GebMirror.Metalogic.byInsts (leaf (encDepth m)) (encGlobals G)
+    PRel («Tactics.byInsts» (leaf (encDepth m)) (encGlobals G)
         (E.toList.map encEntry) (leaf n) rs' (leaf hs))
       (Tactics.byInsts m G E n rs hs) :=
   instsRound_rel m G E n rs' rs hrs hs _ _ (instsRound_rel m G E n rs' rs hrs hs _ _
@@ -1263,10 +1265,10 @@ theorem byInsts_eq (m : Internal.Depth) (G : Internal.Globals) (E : Array Intern
 
 /-- The mirror's test that some encoded hypothesis among the first mentions a variable. -/
 theorem mentionsAny_rel (hs : ℕ) (Φ : List Term) :
-    SkipRel (fun i ↦ GebMirror.Metalogic.anyT (fun x ↦ GebMirror.Metalogic.mentions x i)
-        (GebMirror.Metalogic.take (leaf hs) (Φ.map encTerm)))
+    SkipRel (fun i ↦ «Base.anyT» (fun x ↦ «Tactics.mentions» x i)
+        («Base.take» (leaf hs) (Φ.map encTerm)))
       (fun i ↦ (Φ.take hs).any (Tactics.mentions · i)) := fun i ↦ by
-  simp only [take_eq, ← List.map_take, GebMirror.Metalogic.anyT, foldr_eq, List.foldr_map]
+  simp only [take_eq, ← List.map_take, «Base.anyT», foldr_eq, List.foldr_map]
   exact (Φ.take hs).rec rfl fun x xs ih ↦ by
     rw [List.foldr_cons, ih, mentions_eq, or_eq, List.any_cons]
 
@@ -1285,15 +1287,15 @@ normal forms are stuck on, each case the same way, to a depth, at related rules.
 theorem byAuto_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
     (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (d : ℕ) (m : Internal.Depth) :
-    PRel (GebMirror.Metalogic.byAuto (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
+    PRel («Tactics.byAuto» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
         (leaf d) (leaf (encDepth m)))
       (Tactics.byAuto G E n rs d m) := by
-  have hE : ∀ Γ Φ t, GebMirror.Metalogic.eval (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
+  have hE : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
       (leaf 4096) (leaf (encDepth m)) Γ (Φ.map encTerm) (encTerm t) =
       encOpt ((Internal.eval G E n rs 4096 m Γ Φ t).map encTDB) :=
     eval_eq G E n rs' rs hrs 4096 m
   intro Γ₀ Φ₀ t₀ u₀
-  simp only [GebMirror.Metalogic.byAuto, Tactics.byAuto, length_eq, List.length_map, iter_leaf]
+  simp only [«Tactics.byAuto», Tactics.byAuto, length_eq, List.length_map, iter_leaf]
   refine (?_ : PRel _ _) Γ₀ Φ₀ t₀ u₀
   generalize Φ₀.length = hs
   refine repeat_rel _ _ _ _ (byInsts_eq m G E n rs' rs hrs hs) (fun rec' rec hrec ↦ ?_) d
@@ -1305,7 +1307,7 @@ theorem byAuto_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
   swap
   · rfl
   have h0 : SkipRel (fun _ ↦ leaf 0) fun _ ↦ false := fun _ ↦ rfl
-  have hn : ∀ x, GebMirror.Metalogic.orO (encOpt none) x = x := fun _ ↦ rfl
+  have hn : ∀ x, «Tactics.orO» (encOpt none) x = x := fun _ ↦ rfl
   rw [Option.map_none, hn, Option.orElse_none]
   tac_simp [hE]
   rcases Internal.eval G E n rs 4096 m Γ Φ t with _ | ⟨t', dt, _⟩
@@ -1334,8 +1336,8 @@ theorem byAuto_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
 /-! Trees. -/
 
 /-- The mirror's step of the unfolding of trees, the library's. -/
-theorem unnodeStep_eq : GebMirror.Metalogic.unnodeStep = encTerm Tactics.unnodeStep := by
-  simp only [GebMirror.Metalogic.unnodeStep, Tactics.unnodeStep,
+theorem unnodeStep_eq : «Tactics.unnodeStep» = encTerm Tactics.unnodeStep := by
+  simp only [«Tactics.unnodeStep», Tactics.unnodeStep,
     GebTests.Prototypes.FreeTopos.Agreement.Translation.lib_eq, nth_eq, List.getElem?_map]
   change _ = encTerm (match Translation.lib[4]? with
     | some d => d.body.children.headD Term.star
@@ -1348,14 +1350,14 @@ theorem unnodeStep_eq : GebMirror.Metalogic.unnodeStep = encTerm Tactics.unnodeS
 
 /-- The mirror's unfolding of an encoded tree. -/
 @[simp] theorem unnodeU_eq (t : Term) :
-    GebMirror.Metalogic.unnodeU (encTerm t) = encTerm (Tactics.unnodeU t) := by
-  simp only [GebMirror.Metalogic.unnodeU, unnodeStep_eq, mRoseRec_eq]
+    «Tactics.unnodeU» (encTerm t) = encTerm (Tactics.unnodeU t) := by
+  simp only [«Tactics.unnodeU», unnodeStep_eq, mRoseRec_eq]
   rfl
 
 /-- The mirror's length of a list of functions. -/
 @[simp] theorem lenUF_eq (rs : List (Tree → Tree)) :
-    GebMirror.Metalogic.lenUF rs = leaf rs.length := by
-  simp only [GebMirror.Metalogic.lenUF, foldr_eq]
+    «Tactics.lenUF» rs = leaf rs.length := by
+  simp only [«Tactics.lenUF», foldr_eq]
   exact rs.rec rfl fun _ _ ih ↦ by rw [List.foldr_cons, ih, add_leaf, List.length_cons]
 
 /-- The mirror's list over a node's children's positions of a child's result at a position and
@@ -1388,38 +1390,38 @@ theorem foldr_ufApply {β : Type} (e : β → Tree) (d : ℕ) :
 /-- The mirror's rewriting of an encoded term in which a tree rebuilt from the unfolding of a
 variable stands for the variable, back to the term. -/
 theorem occRewrite_eq (lk i : ℕ) (t : Term) (d : ℕ) :
-    GebMirror.Metalogic.occRewrite (leaf lk) (leaf i) (encTerm t) (leaf d) =
+    «Tactics.occRewrite» (leaf lk) (leaf i) (encTerm t) (leaf d) =
       encDeriv (Tactics.occRewrite lk i t d) := by
-  simp only [GebMirror.Metalogic.occRewrite, Tactics.occRewrite]
+  simp only [«Tactics.occRewrite», Tactics.occRewrite]
   refine para_enc _ _ (fun (v : Tree → Tree) (w : ℕ → Deriv) ↦ ∀ d, v (leaf d) = encDeriv (w d))
-    (GebMirror.Metalogic.occStep (leaf lk) (leaf i)) _ (fun l v xs hx d ↦ ?_) t d
-  change GebMirror.Metalogic.occStep (leaf lk) (leaf i)
+    («Tactics.occStep» (leaf lk) (leaf i)) _ (fun l v xs hx d ↦ ?_) t d
+  change «Tactics.occStep» (leaf lk) (leaf i)
     (encTerm (RoseTree.node l (xs.map Prod.fst))) _ (leaf d) = _
   have hr := range_ufAt encDeriv xs hx
   cases l with
   | var k =>
-    mirror_simp [GebMirror.Metalogic.occStep, labelData, mD_eq, label_encTerm]
+    mirror_simp [«Tactics.occStep», labelData, mD_eq, label_encTerm]
     by_cases h : k = i + d
     · tac_simp [h, beq_self_eq_true, ↓reduceIte, ite_true]
       rfl
     · tac_simp [h, beq_false_of_ne h, Bool.false_eq_true, ↓reduceIte, ite_false]
   | lam a =>
-    mirror_simp [GebMirror.Metalogic.occStep, labelData, label_encTerm, ufTail_eq]
+    mirror_simp [«Tactics.occStep», labelData, label_encTerm, ufTail_eq]
     tac_simp [foldr_ufApply encDeriv (d + 1) xs hx]
   | natRec | listRec =>
-    mirror_simp [GebMirror.Metalogic.occStep, labelData, label_encTerm, ufTail_eq, lenUF_eq,
+    mirror_simp [«Tactics.occStep», labelData, label_encTerm, ufTail_eq, lenUF_eq,
       ufAt_eq, List.getElem?_cons_succ, beq_iff_eq, ← List.getElem?_map]
-    rw [hr 2 d (fun _ ↦ GebMirror.Metalogic.dNode (leaf 0) [] []) (fun _ ↦ RoseTree.node .refl [])
+    rw [hr 2 d (fun _ ↦ «Prover.dNode» (leaf 0) [] []) (fun _ ↦ RoseTree.node .refl [])
       fun _ _ ↦ rfl]
     tac_simp [List.zipIdx_map, List.map_map, Prod.map, id_eq]
   | roseRec c =>
-    mirror_simp [GebMirror.Metalogic.occStep, labelData, label_encTerm, ufTail_eq, lenUF_eq,
+    mirror_simp [«Tactics.occStep», labelData, label_encTerm, ufTail_eq, lenUF_eq,
       ufAt_eq, List.getElem?_cons_succ, beq_iff_eq, ← List.getElem?_map]
-    rw [hr 1 d (fun _ ↦ GebMirror.Metalogic.dNode (leaf 0) [] []) (fun _ ↦ RoseTree.node .refl [])
+    rw [hr 1 d (fun _ ↦ «Prover.dNode» (leaf 0) [] []) (fun _ ↦ RoseTree.node .refl [])
       fun _ _ ↦ rfl]
     tac_simp [List.zipIdx_map, List.map_map, Prod.map, id_eq]
   | _ =>
-    mirror_simp [GebMirror.Metalogic.occStep, labelData, label_encTerm, ufTail_eq, mArgs_eq,
+    mirror_simp [«Tactics.occStep», labelData, label_encTerm, ufTail_eq, mArgs_eq,
       uses_eq, allT_label]
     all_goals
       simp only [Bool.beq_eq_decide_eq, foldr_ufApply encDeriv d xs hx]
@@ -1428,10 +1430,10 @@ theorem occRewrite_eq (lk i : ℕ) (t : Term) (d : ℕ) :
 /-- The mirror's abstraction, over a new variable of a type, of an encoded term's occurrences of
 an encoded term. -/
 @[simp] theorem abstractTerm_eq (b : Tree) (x y : Term) :
-    GebMirror.Metalogic.abstractTerm b (encTerm x) (encTerm y) =
+    «Tactics.abstractTerm» b (encTerm x) (encTerm y) =
       encTerm (Tactics.abstractTerm b x y) := by
-  simp only [GebMirror.Metalogic.abstractTerm, Tactics.abstractTerm, weaken1_eq]
-  have hgo : ∀ (w : Term) (d : ℕ), Const.para (GebMirror.Metalogic.absStep
+  simp only [«Tactics.abstractTerm», Tactics.abstractTerm, weaken1_eq]
+  have hgo : ∀ (w : Term) (d : ℕ), Const.para («Tactics.absStep»
       (encTerm (Internal.weaken1 x))) (encTerm w) (leaf d) =
       encTerm (RoseTree.para (fun l cs d ↦
         if RoseTree.node l (cs.map (·.1)) = Term.rename (Internal.weaken1 x) (· + d) then
@@ -1444,14 +1446,14 @@ an encoded term. -/
             if k = 1 then r d else c)
         | _ => RoseTree.node l (cs.map fun (_, r) ↦ r d)) w d) := fun w d ↦ by
     refine para_enc _ _ (fun (v : Tree → Tree) (w : ℕ → Term) ↦ ∀ d, v (leaf d) = encTerm (w d))
-      (GebMirror.Metalogic.absStep (encTerm (Internal.weaken1 x))) _ (fun l v xs hx d ↦ ?_) w d
-    change GebMirror.Metalogic.absStep (encTerm (Internal.weaken1 x))
+      («Tactics.absStep» (encTerm (Internal.weaken1 x))) _ (fun l v xs hx d ↦ ?_) w d
+    change «Tactics.absStep» (encTerm (Internal.weaken1 x))
       (encTerm (RoseTree.node l (xs.map Prod.fst))) _ (leaf d) = _
     have hr := range_ufAt encTerm xs hx
-    have hn : GebMirror.Metalogic.rename (encTerm (Internal.weaken1 x))
+    have hn : «Language.rename» (encTerm (Internal.weaken1 x))
         (fun j ↦ Const.add j (leaf d)) = encTerm (Term.rename (Internal.weaken1 x) (· + d)) :=
       rename_eq _ _ _ fun _ ↦ rfl
-    simp only [GebMirror.Metalogic.absStep, hn, equal_eq, encTerm_eq_iff, List.map_map,
+    simp only [«Tactics.absStep», hn, equal_eq, encTerm_eq_iff, List.map_map,
       Function.comp_def]
     by_cases h : RoseTree.node l (xs.map fun x ↦ x.1) = (Internal.weaken1 x).rename (· + d)
     · simp only [h, decide_true, ofBool_true, label_leaf, ne_eq, one_ne_zero, not_false_eq_true,
@@ -1464,7 +1466,7 @@ an encoded term. -/
     | natRec | listRec =>
       mirror_simp [labelData, label_encTerm, ufTail_eq, lenUF_eq, ufAt_eq,
         List.getElem?_cons_succ, beq_iff_eq, ← List.getElem?_map, encTerm_node,
-        GebMirror.Metalogic.mArgs, tail_eq, List.tail_cons, at_eq]
+        «Language.mArgs», tail_eq, List.tail_cons, at_eq]
       rw [hr 2 d (fun k ↦ (xs.map fun x ↦ encTerm x.1).getD k (leaf 0)) id fun k h ↦ by
         simp only [List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_eq_getElem h,
           Option.map_some, Option.getD_some, id_eq]]
@@ -1472,7 +1474,7 @@ an encoded term. -/
     | roseRec c =>
       mirror_simp [labelData, label_encTerm, ufTail_eq, lenUF_eq, ufAt_eq,
         List.getElem?_cons_succ, beq_iff_eq, ← List.getElem?_map, encTerm_node,
-        GebMirror.Metalogic.mArgs, tail_eq, List.tail_cons, at_eq]
+        «Language.mArgs», tail_eq, List.tail_cons, at_eq]
       rw [hr 1 d (fun k ↦ (xs.map fun x ↦ encTerm x.1).getD k (leaf 0)) id fun k h ↦ by
         simp only [List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_eq_getElem h,
           Option.map_some, Option.getD_some, id_eq]]
@@ -1485,26 +1487,26 @@ an encoded term. -/
 
 /-- The mirror's tree constructor at an encoded pair. -/
 @[simp] theorem nodeT_eq (p : Term) :
-    GebMirror.Metalogic.nodeT (encTerm p) = encTerm (Translation.nodeT p) :=
+    «Translation.nodeT» (encTerm p) = encTerm (Translation.nodeT p) :=
   mArr_eq 2 [Translation.bitsTy] p
 
 /-- The mirror's type of trees. -/
-theorem treeTy_eq : GebMirror.Metalogic.treeTy = Translation.treeTy := rfl
+theorem treeTy_eq : «Translation.treeTy» = Translation.treeTy := rfl
 
 /-- The mirror's type of bitstrings. -/
-theorem bitsTy_eq : GebMirror.Metalogic.bitsTy = Translation.bitsTy := rfl
+theorem bitsTy_eq : «Translation.bitsTy» = Translation.bitsTy := rfl
 
 /-- The mirror's type of lists. -/
-theorem list_eq (a : Tree) : GebMirror.Metalogic.list a = Geb.FreeTopos.list a := rfl
+theorem list_eq (a : Tree) : «Theory.list» a = Geb.FreeTopos.list a := rfl
 
 /-- The mirror's proof by case analysis on a tree variable, by a related prover. -/
 theorem byTreeSplit_eq (lk i : ℕ) (p' : List Tree → List Tree → Tree → Tree → Tree)
     (p : Internal.Prover) (hp : PRel p' p) :
-    PRel (GebMirror.Metalogic.byTreeSplit (leaf lk) (leaf i) p') (Tactics.byTreeSplit lk i p) := by
+    PRel («Tactics.byTreeSplit» (leaf lk) (leaf i) p') (Tactics.byTreeSplit lk i p) := by
   have hp' : ∀ Γ Φ t u, p' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
       encOpt ((p Γ Φ t u).map encDeriv) := hp
   intro Γ Φ t u
-  simp only [GebMirror.Metalogic.byTreeSplit, Tactics.byTreeSplit]
+  simp only [«Tactics.byTreeSplit», Tactics.byTreeSplit]
   tac_simp []
   rcases Γ[i]? with _ | c
   · rfl
@@ -1522,10 +1524,10 @@ by a related prover. -/
 theorem splitStuck_eq (G : Internal.Globals) (n lk i : ℕ)
     (rec' : List Tree → List Tree → Tree → Tree → Tree) (rec : Internal.Prover)
     (hrec : PRel rec' rec) :
-    PRel (GebMirror.Metalogic.splitStuck (encGlobals G) (leaf n) (leaf lk) (leaf i) rec')
+    PRel («Tactics.splitStuck» (encGlobals G) (leaf n) (leaf lk) (leaf i) rec')
       (Tactics.splitStuck G n lk i rec) := by
   intro Γ Φ t u
-  simp only [GebMirror.Metalogic.splitStuck, Tactics.splitStuck]
+  simp only [«Tactics.splitStuck», Tactics.splitStuck]
   tac_simp []
   rcases Γ[i]? with _ | c
   · rfl
@@ -1550,21 +1552,21 @@ coproduct or a tree, each case the same way, to a depth, at related rules. -/
 theorem byAutoT_eq (G : Internal.Globals) (E : Array Internal.Entry) (n lk : ℕ)
     (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (d : ℕ) (m : Internal.Depth) :
-    PRel (GebMirror.Metalogic.byAutoT (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf lk)
+    PRel («Tactics.byAutoT» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf lk)
         rs' (leaf d) (leaf (encDepth m)))
       (Tactics.byAutoT G E n lk rs d m) := by
-  have hE : ∀ Γ Φ t, GebMirror.Metalogic.eval (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
+  have hE : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
       (leaf 4096) (leaf (encDepth m)) Γ (Φ.map encTerm) (encTerm t) =
       encOpt ((Internal.eval G E n rs 4096 m Γ Φ t).map encTDB) :=
     eval_eq G E n rs' rs hrs 4096 m
   have h0 : SkipRel (fun _ ↦ leaf 0) fun _ ↦ false := fun _ ↦ rfl
-  have hn : ∀ x, GebMirror.Metalogic.orO (encOpt none) x = x := fun _ ↦ rfl
+  have hn : ∀ x, «Tactics.orO» (encOpt none) x = x := fun _ ↦ rfl
   intro Γ₀ Φ₀ t₀ u₀
-  simp only [GebMirror.Metalogic.byAutoT, Tactics.byAutoT, length_eq, List.length_map, iter_leaf]
+  simp only [«Tactics.byAutoT», Tactics.byAutoT, length_eq, List.length_map, iter_leaf]
   refine (?_ : PRel _ _) Γ₀ Φ₀ t₀ u₀
   generalize Φ₀.length = hs
-  have hV : ∀ Γ Φ t u, (if (Const.eq (leaf hs) (leaf 0)).label ≠ 0 then GebMirror.Metalogic.none
-      else GebMirror.Metalogic.byInsts (leaf (encDepth m)) (encGlobals G)
+  have hV : ∀ Γ Φ t u, (if (Const.eq (leaf hs) (leaf 0)).label ≠ 0 then «Prelude.none»
+      else «Tactics.byInsts» (leaf (encDepth m)) (encGlobals G)
         (E.toList.map encEntry) (leaf n) rs' (leaf hs) Γ (Φ.map encTerm) (encTerm t)
         (encTerm u)) =
       encOpt ((if hs = 0 then none else Tactics.byInsts m G E n rs hs Γ Φ t u).map encDeriv) := by
@@ -1631,16 +1633,16 @@ same way, to a depth, at related rules. -/
 theorem byAutoC_eq (G : Internal.Globals) (E : Array Internal.Entry) (n lk : ℕ)
     (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (d : ℕ) :
-    PRel (GebMirror.Metalogic.byAutoC (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf lk)
+    PRel («Tactics.byAutoC» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf lk)
         rs' (leaf d))
       (Tactics.byAutoC G E n lk rs d) := by
-  have hE : ∀ Γ Φ t, GebMirror.Metalogic.eval (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
+  have hE : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
       (leaf 4096) (leaf 1) Γ (Φ.map encTerm) (encTerm t) =
       encOpt ((Internal.eval G E n rs 4096 .weak Γ Φ t).map encTDB) :=
     eval_eq G E n rs' rs hrs 4096 .weak
   have h0 : SkipRel (fun _ ↦ leaf 0) fun _ ↦ false := fun _ ↦ rfl
-  have hn : ∀ x, GebMirror.Metalogic.orO (encOpt none) x = x := fun _ ↦ rfl
-  simp only [GebMirror.Metalogic.byAutoC, Tactics.byAutoC, iter_leaf]
+  have hn : ∀ x, «Tactics.orO» (encOpt none) x = x := fun _ ↦ rfl
+  simp only [«Tactics.byAutoC», Tactics.byAutoC, iter_leaf]
   refine repeat_rel _ _ _ _ (byWeak_eq G E n rs' rs hrs) (fun rec' rec hrec ↦ ?_) d
   intro Γ Φ t u
   beta_reduce
@@ -1665,22 +1667,22 @@ theorem byAutoC_eq (G : Internal.Globals) (E : Array Internal.Entry) (n lk : ℕ
 /-- The mirror's proof that a conditional is the conditional with a term's occurrences rewritten
 in its first branch, by absorption and a derivation of the rewriting under the mask. -/
 @[simp] theorem maskRwD_eq (a b : Tree) (ab : ℕ) (dM : Deriv) (c d x x' z y : Term) :
-    GebMirror.Metalogic.maskRwD a b (leaf ab) (encDeriv dM) (encTerm c) (encTerm d) (encTerm x)
+    «Tactics.maskRwD» a b (leaf ab) (encDeriv dM) (encTerm c) (encTerm d) (encTerm x)
         (encTerm x') (encTerm z) (encTerm y) =
       encDeriv (Tactics.maskRwD a b ab dM c d x x' z y) := by
-  simp only [GebMirror.Metalogic.maskRwD, Tactics.maskRwD]
+  simp only [«Tactics.maskRwD», Tactics.maskRwD]
   tac_simp [abstractTerm_eq, GebTests.Prototypes.FreeTopos.Agreement.Translation.condT_eq,
-    GebMirror.Metalogic.l5]
+    «Theory.l5»]
   rfl
 
 /-- The mirror's proof that a conditional is the conditional with a term's occurrences rewritten
 in its first branch, by a masked lemma. -/
 @[simp] theorem maskRw_eq (a b : Tree) (ab j : ℕ) (θ : List Tree) (σ : List Term)
     (c d x x' z y : Term) :
-    GebMirror.Metalogic.maskRw a b (leaf ab) (leaf j) θ (σ.map encTerm) (encTerm c) (encTerm d)
+    «Tactics.maskRw» a b (leaf ab) (leaf j) θ (σ.map encTerm) (encTerm c) (encTerm d)
         (encTerm x) (encTerm x') (encTerm z) (encTerm y) =
       encDeriv (Tactics.maskRw a b ab j θ σ c d x x' z y) := by
-  simp only [GebMirror.Metalogic.maskRw, Tactics.maskRw, ← maskRwD_eq]
+  simp only [«Tactics.maskRw», Tactics.maskRw, ← maskRwD_eq]
   tac_simp []
   rfl
 
@@ -1690,10 +1692,10 @@ def encMask (p : Term × Term × Deriv) : Tree :=
 
 /-- The mirror's rewriting of a conditional subterm by a hypothesis under its mask. -/
 theorem maskAt_eq (ab cs : ℕ) (Φ : List Term) (a : Tree) (c y d S : Term) (i : ℕ) :
-    GebMirror.Metalogic.maskAt (leaf ab) (leaf cs) (Φ.map encTerm) a (encTerm c) (encTerm y)
+    «Tactics.maskAt» (leaf ab) (leaf cs) (Φ.map encTerm) a (encTerm c) (encTerm y)
         (encTerm d) (encTerm S) (leaf i) =
       encOpt ((Tactics.maskAt ab cs Φ a c y d S i).map encMask) := by
-  simp only [GebMirror.Metalogic.maskAt, Tactics.maskAt]
+  simp only [«Tactics.maskAt», Tactics.maskAt]
   tac_simp [eqParts_eq]
   rcases Φ[i]? with _ | φ
   · rfl
@@ -1767,9 +1769,9 @@ theorem maskAt_eq (ab cs : ℕ) (Φ : List Term) (a : Tree) (c y d S : Term) (i 
 /-- The mirror's rewriting of the first conditional subterm of an encoded term by a hypothesis
 under its mask, the latest hypothesis first. -/
 theorem maskSub_eq (ab cs : ℕ) (Φ : List Term) (w : Term) :
-    GebMirror.Metalogic.maskSub (leaf ab) (leaf cs) (Φ.map encTerm) (encTerm w) =
+    «Tactics.maskSub» (leaf ab) (leaf cs) (Φ.map encTerm) (encTerm w) =
       encOpt ((Tactics.maskSub ab cs Φ w).map encMask) := by
-  simp only [GebMirror.Metalogic.maskSub, Tactics.maskSub, openSubterms_eq]
+  simp only [«Tactics.maskSub», Tactics.maskSub, openSubterms_eq]
   refine findSomeT_eq encTerm encMask _ _ (fun S ↦ ?_) _
   simp only [condParts_eq, bindO_eq]
   rcases Tactics.condParts S with _ | ⟨a, c, y, d⟩
@@ -1818,10 +1820,10 @@ theorem byMaskSubs_eq (G : Internal.Globals) (E : Array Internal.Entry) (ab cs :
     (p' : List (Tree × (Tree → Tree → List Tree → Tree)) →
       List Tree → List Tree → Tree → Tree → Tree)
     (p : List NormRule → Internal.Prover) (hp : KRel p' p) :
-    PRel (GebMirror.Metalogic.byMaskSubs (encGlobals G) (E.toList.map encEntry) (leaf ab)
+    PRel («Tactics.byMaskSubs» (encGlobals G) (E.toList.map encEntry) (leaf ab)
         (leaf cs) rs' (leaf n) p')
       (Tactics.byMaskSubs G E ab cs rs n p) := by
-  simp only [GebMirror.Metalogic.byMaskSubs, Tactics.byMaskSubs, iter_leaf]
+  simp only [«Tactics.byMaskSubs», Tactics.byMaskSubs, iter_leaf]
   refine repeat_msRel _ _ _ _ (fun ex' ex hex p' p hp ↦ hp ex' ex hex)
     (fun rec' rec hrec ↦ ?_) n [] [] .nil p' p hp
   intro ex' ex hex p' p hp
@@ -1846,11 +1848,11 @@ theorem byMaskSubs_eq (G : Internal.Globals) (E : Array Internal.Entry) (ab cs :
 innermost variable. -/
 theorem byGeneralize_eq (a : Tree) (c : Term) (p' : List Tree → List Tree → Tree → Tree → Tree)
     (p : Internal.Prover) (hp : PRel p' p) :
-    PRel (GebMirror.Metalogic.byGeneralize a (encTerm c) p') (Tactics.byGeneralize a c p) := by
+    PRel («Tactics.byGeneralize» a (encTerm c) p') (Tactics.byGeneralize a c p) := by
   have hp' : ∀ Γ Φ t u, p' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
       encOpt ((p Γ Φ t u).map encDeriv) := hp
   intro Γ Φ t u
-  simp only [GebMirror.Metalogic.byGeneralize, Tactics.byGeneralize]
+  simp only [«Tactics.byGeneralize», Tactics.byGeneralize]
   tac_simp [abstractTerm_eq, hp', applyAbs_eq]
   rcases p (a :: Γ) (Φ.map Internal.weaken1) _ _ with _ | q <;> rfl
 

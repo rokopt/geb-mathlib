@@ -41,6 +41,8 @@ set_option doc.verso true
 
 @[expose] public section
 
+open GebMirror.Metalogic
+
 namespace GebTests.Prototypes.FreeTopos.Agreement.Translation
 
 open Geb Geb.Kernel Geb.FreeTopos GebTests.Prototypes.FreeTopos.Agreement.Encode
@@ -57,8 +59,8 @@ def encProgram (p : List Tree × List Internal.Defn) : Tree :=
   encPair (RoseTree.node 0 p.1, RoseTree.node 0 (p.2.map encLDefn))
 
 /-- The mirror's translation of a kernel type. -/
-theorem trTy_eq (t : Tree) : GebMirror.Metalogic.trTy t = encOpt (Translation.ty t) := by
-  unfold GebMirror.Metalogic.trTy Translation.ty
+theorem trTy_eq (t : Tree) : «Translation.trTy» t = encOpt (Translation.ty t) := by
+  unfold «Translation.trTy» Translation.ty
   refine fold_rel (fun v w ↦ v = encOpt w) _ _ (fun l xs hx ↦ ?_) t
   have e : xs.map Prod.fst = (xs.map Prod.snd).map encOpt := by
     rw [List.map_map]
@@ -73,67 +75,67 @@ theorem trTy_eq (t : Tree) : GebMirror.Metalogic.trTy t = encOpt (Translation.ty
     | rcases x with _ | x <;> first | rfl | rcases y with _ | y <;> rfl
 
 /-- The mirror's primitive arrows of a translated program. -/
-theorem trPrims_eq : GebMirror.Metalogic.trPrims = Translation.prims.map encPrim := by rfl
+theorem trPrims_eq : «Translation.trPrims» = Translation.prims.map encPrim := by rfl
 
 set_option maxRecDepth 100000 in
 /-- The mirror's library of definitions. -/
-theorem lib_eq : GebMirror.Metalogic.lib = Translation.lib.map encLDefn := by rfl
+theorem lib_eq : «Translation.lib» = Translation.lib.map encLDefn := by rfl
 
 /-- The mirror's empty list. -/
-@[simp] theorem nilT_eq (a : Tree) : GebMirror.Metalogic.nilT a = encTerm (Translation.nilT a) :=
+@[simp] theorem nilT_eq (a : Tree) : «Translation.nilT» a = encTerm (Translation.nilT a) :=
   rfl
 
 /-- The mirror's construction of a list. -/
 @[simp] theorem consT_eq (a : Tree) (h t : Term) :
-    GebMirror.Metalogic.consT a (encTerm h) (encTerm t) = encTerm (Translation.consT a h t) :=
+    «Translation.consT» a (encTerm h) (encTerm t) = encTerm (Translation.consT a h t) :=
   rfl
 
 /-- The mirror's conditional on a bitstring. -/
 @[simp] theorem condT_eq (a : Tree) (c t u : Term) :
-    GebMirror.Metalogic.condT a (encTerm c) (encTerm t) (encTerm u) =
+    «Translation.condT» a (encTerm c) (encTerm t) (encTerm u) =
       encTerm (Translation.condT a c t u) :=
   rfl
 
 /-- The mirror's label of a tree. -/
 @[simp] theorem labT_eq (t : Term) :
-    GebMirror.Metalogic.labT (encTerm t) = encTerm (Translation.call Translation.D.lab [] [t]) :=
+    «Translation.labT» (encTerm t) = encTerm (Translation.call Translation.D.lab [] [t]) :=
   rfl
 
 /-- The mirror's application of a definition to no arguments. -/
 @[simp] theorem call_nil_eq (k : ℕ) :
-    GebMirror.Metalogic.call (leaf k) [] [] = encTerm (Translation.call k [] []) :=
+    «Translation.call» (leaf k) [] [] = encTerm (Translation.call k [] []) :=
   rfl
 
 /-- The mirror's fold of trees. -/
-@[simp] theorem foldT_eq (a : Tree) : GebMirror.Metalogic.foldT a = encTerm (Translation.foldT a) :=
+@[simp] theorem foldT_eq (a : Tree) : «Translation.foldT» a = encTerm (Translation.foldT a) :=
   rfl
 
 set_option maxRecDepth 10000 in
 /-- The mirror's fold of trees whose step sees the node. -/
-@[simp] theorem paraT_eq (a : Tree) : GebMirror.Metalogic.paraT a = encTerm (Translation.paraT a) :=
+@[simp] theorem paraT_eq (a : Tree) : «Translation.paraT» a = encTerm (Translation.paraT a) :=
   rfl
 
 /-- The mirror's iteration. -/
-@[simp] theorem iterT_eq (a : Tree) : GebMirror.Metalogic.iterT a = encTerm (Translation.iterT a) :=
+@[simp] theorem iterT_eq (a : Tree) : «Translation.iterT» a = encTerm (Translation.iterT a) :=
   rfl
 
 /-- The mirror's right fold of lists. -/
 @[simp] theorem foldrT_eq (a b : Tree) :
-    GebMirror.Metalogic.foldrT a b = encTerm (Translation.foldrT a b) :=
+    «Translation.foldrT» a b = encTerm (Translation.foldrT a b) :=
   rfl
 
 /-- The mirror's case analysis of lists. -/
 @[simp] theorem lcaseT_eq (a b : Tree) :
-    GebMirror.Metalogic.lcaseT a b = encTerm (Translation.lcaseT a b) :=
+    «Translation.lcaseT» a b = encTerm (Translation.lcaseT a b) :=
   rfl
 
 /-- The mirror's primitive of an index. -/
 theorem primT_eq (k : ℕ) :
-    GebMirror.Metalogic.primT (leaf k) = encOpt ((Translation.primT k).map encTerm) := by
+    «Translation.primT» (leaf k) = encOpt ((Translation.primT k).map encTerm) := by
   match k with
   | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 => rfl
   | n + 14 =>
-    mirror_simp [GebMirror.Metalogic.primT, Translation.primT, none_eq, beq_iff_eq,
+    mirror_simp [«Translation.primT», Translation.primT, none_eq, beq_iff_eq,
       Nat.reduceEqDiff]
 
 /-- The iteration of the mirror's low digits in base two: after {lit}`k` steps, the quotient by
@@ -150,9 +152,9 @@ theorem digits_repeat (m : ℕ) : ∀ k : ℕ,
 
 /-- The mirror's low digits of a number in base two, the least significant first. -/
 theorem digitsLsb_two (m k : ℕ) :
-    GebMirror.Metalogic.digitsLsb (leaf 2) (leaf m) (leaf k) =
+    «Prelude.digitsLsb» (leaf 2) (leaf m) (leaf k) =
       (List.range k).map fun i ↦ leaf (m / 2 ^ i % 2) := by
-  simp only [GebMirror.Metalogic.digitsLsb, GebMirror.Metalogic.digitsMsb, Const.iter,
+  simp only [«Prelude.digitsLsb», «Prelude.digitsMsb», Const.iter,
     label_leaf, digits_repeat, reverse_eq, List.reverse_reverse]
 
 /-- A nonzero number's binary digits: the least significant, and those of half the number. -/
@@ -198,8 +200,8 @@ theorem range_bits : ∀ k m : ℕ, m.log2 = k → m ≠ 0 →
 the least significant first. -/
 theorem foldr_bits_eq (bs : List Bool) :
     List.foldr
-        (fun d w ↦ if d.label ≠ 0 then GebMirror.Metalogic.b1T w else GebMirror.Metalogic.b0T w)
-        GebMirror.Metalogic.bnilT (bs.map fun b ↦ leaf (if b then 1 else 0)) =
+        (fun d w ↦ if d.label ≠ 0 then «Translation.b1T» w else «Translation.b0T» w)
+        «Translation.bnilT» (bs.map fun b ↦ leaf (if b then 1 else 0)) =
       encTerm (bs.foldr (fun b w ↦ if b then Translation.b1T w else Translation.b0T w)
         Translation.bnilT) :=
   bs.rec rfl fun b bs ih ↦ by
@@ -208,26 +210,26 @@ theorem foldr_bits_eq (bs : List Bool) :
 
 /-- The mirror's numeral of a label. -/
 @[simp] theorem trNumeral_eq (n : ℕ) :
-    GebMirror.Metalogic.trNumeral (leaf n) = encTerm (Translation.numeral n) := by
-  have hd : GebMirror.Metalogic.digitsLsb (leaf 2) (leaf (n + 1)) (leaf (n + 1).log2) =
+    «Translation.trNumeral» (leaf n) = encTerm (Translation.numeral n) := by
+  have hd : «Prelude.digitsLsb» (leaf 2) (leaf (n + 1)) (leaf (n + 1).log2) =
       (Oitavem.unrank n).map fun b ↦ leaf (if b then 1 else 0) := by
     rw [digitsLsb_two, Oitavem.unrank, ← range_bits _ (n + 1) rfl (Nat.succ_ne_zero n),
       List.map_map]
     refine List.map_congr_left fun i _ ↦ ?_
     rcases Nat.mod_two_eq_zero_or_one ((n + 1) / 2 ^ i) with h | h <;> simp [h]
-  simp only [GebMirror.Metalogic.trNumeral, add_leaf, Const.log2, label_leaf, foldr_eq, hd]
+  simp only [«Translation.trNumeral», add_leaf, Const.log2, label_leaf, foldr_eq, hd]
   exact foldr_bits_eq _
 
 /-- The mirror's translation of a quoted tree. -/
 @[simp] theorem quoteT_eq (t : Tree) :
-    GebMirror.Metalogic.quoteT t = encTerm (Translation.quoteT t) := by
-  unfold GebMirror.Metalogic.quoteT Translation.quoteT
+    «Translation.quoteT» t = encTerm (Translation.quoteT t) := by
+  unfold «Translation.quoteT» Translation.quoteT
   refine fold_rel (fun v w ↦ v = encTerm w) _ _ (fun l xs hx ↦ ?_) t
   have e : xs.map Prod.fst = (xs.map Prod.snd).map encTerm := by
     rw [List.map_map]
     exact List.map_congr_left hx
-  have hf : ∀ cs : List Term, List.foldr (GebMirror.Metalogic.consT GebMirror.Metalogic.treeTy)
-      (GebMirror.Metalogic.nilT GebMirror.Metalogic.treeTy) (cs.map encTerm) =
+  have hf : ∀ cs : List Term, List.foldr («Translation.consT» «Translation.treeTy»)
+      («Translation.nilT» «Translation.treeTy») (cs.map encTerm) =
         encTerm (cs.foldr (Translation.consT Translation.treeTy)
           (Translation.nilT Translation.treeTy)) :=
     fun cs ↦ cs.rec rfl fun c cs ih ↦ by rw [List.map_cons, List.foldr_cons, ih]; rfl
@@ -237,70 +239,70 @@ theorem foldr_bits_eq (bs : List Bool) :
 /-! The kernel checker's functions, which the program shares with the checker of Gödel's T. -/
 
 /-- The mirror's test of a kernel type. -/
-theorem kIsTy_eq (t : Tree) : GebMirror.Metalogic.isTy t = ofBool (Ty.IsTy t) :=
-  (rfl : GebMirror.Metalogic.isTy t = GebMirror.GoedelT.isTy t).trans
+theorem kIsTy_eq (t : Tree) : «Check.isTy» t = ofBool (Ty.IsTy t) :=
+  (rfl : «Check.isTy» t = GebMirror.GoedelT.«Check.isTy» t).trans
     (GoedelT.MirrorTyping.isTy_eq t)
 
 /-- The mirror's kernel function type. -/
-@[simp] theorem kTyArrow_eq (A B : Tree) : GebMirror.Metalogic.tyArrow A B = tArrow A B :=
+@[simp] theorem kTyArrow_eq (A B : Tree) : «Check.tyArrow» A B = tArrow A B :=
   GoedelT.MirrorTyping.tyArrow_eq A B
 
 /-- The mirror's kernel list type. -/
-@[simp] theorem kTyList_eq (A : Tree) : GebMirror.Metalogic.tyList A = tList A :=
+@[simp] theorem kTyList_eq (A : Tree) : «Check.tyList» A = tList A :=
   GoedelT.MirrorTyping.tyList_eq A
 
 /-- The mirror's type of the fold of trees. -/
-@[simp] theorem kFoldTy_eq (A : Tree) : GebMirror.Metalogic.foldTy A = foldTy A :=
+@[simp] theorem kFoldTy_eq (A : Tree) : «Check.foldTy» A = foldTy A :=
   GoedelT.MirrorTyping.foldTy_eq A
 
 /-- The mirror's type of iteration. -/
-@[simp] theorem kIterTy_eq (A : Tree) : GebMirror.Metalogic.iterTy A = iterTy A :=
+@[simp] theorem kIterTy_eq (A : Tree) : «Check.iterTy» A = iterTy A :=
   GoedelT.MirrorTyping.iterTy_eq A
 
 /-- The mirror's type of the right fold of lists. -/
-@[simp] theorem kFoldrTy_eq (A B : Tree) : GebMirror.Metalogic.foldrTy A B = foldrTy A B :=
+@[simp] theorem kFoldrTy_eq (A B : Tree) : «Check.foldrTy» A B = foldrTy A B :=
   GoedelT.MirrorTyping.foldrTy_eq A B
 
 /-- The mirror's type of case analysis of lists. -/
-@[simp] theorem kLcaseTy_eq (A B : Tree) : GebMirror.Metalogic.lcaseTy A B = lcaseTy A B :=
+@[simp] theorem kLcaseTy_eq (A B : Tree) : «Check.lcaseTy» A B = lcaseTy A B :=
   GoedelT.MirrorTyping.lcaseTy_eq A B
 
 /-- The mirror's types of the kernel's primitives. -/
-@[simp] theorem kPrimTypes_eq : GebMirror.Metalogic.primTypes = Kernel.prims.map (·.1) :=
+@[simp] theorem kPrimTypes_eq : «Check.primTypes» = Kernel.prims.map (·.1) :=
   GoedelT.MirrorTyping.primTypes_eq
 
 /-- The mirror's kernel product type. -/
-@[simp] theorem kProd_eq (A B : Tree) : GebMirror.Metalogic.node2 (leaf 2) A B = tProd A B := by
+@[simp] theorem kProd_eq (A B : Tree) : «Reader.node2» (leaf 2) A B = tProd A B := by
   rw [tProd, GoedelT.MirrorTyping.node2_eq]
   rfl
 
 /-- The mirror's domain and codomain of a kernel function type. -/
 theorem kArrowParts_eq (t : Tree) :
-    GebMirror.Metalogic.kArrowParts t = encOpt ((Translation.arrowParts t).map encPair) := by
+    «Translation.kArrowParts» t = encOpt ((Translation.arrowParts t).map encPair) := by
   obtain ⟨l, cs, rfl⟩ : ∃ l cs, t = RoseTree.node l cs :=
     ⟨t.label, t.children, (RoseTree.node_label_children t).symm⟩
   rcases cs with _ | ⟨a, _ | ⟨b, _ | ⟨c, cs⟩⟩⟩ <;>
-    mirror_simp [GebMirror.Metalogic.kArrowParts, Translation.arrowParts, none_eq, some_eq,
+    mirror_simp [«Translation.kArrowParts», Translation.arrowParts, none_eq, some_eq,
       beq_iff_eq, Nat.add_one_ne_zero, Nat.reduceEqDiff]
   all_goals split_ifs <;> first | rfl | simp_all
 
 /-- The mirror's factors of a kernel product type. -/
 theorem kProdParts_eq (t : Tree) :
-    GebMirror.Metalogic.kProdParts t = encOpt ((Translation.prodParts t).map encPair) := by
+    «Translation.kProdParts» t = encOpt ((Translation.prodParts t).map encPair) := by
   obtain ⟨l, cs, rfl⟩ : ∃ l cs, t = RoseTree.node l cs :=
     ⟨t.label, t.children, (RoseTree.node_label_children t).symm⟩
   rcases cs with _ | ⟨a, _ | ⟨b, _ | ⟨c, cs⟩⟩⟩ <;>
-    mirror_simp [GebMirror.Metalogic.kProdParts, Translation.prodParts, none_eq, some_eq,
+    mirror_simp [«Translation.kProdParts», Translation.prodParts, none_eq, some_eq,
       beq_iff_eq, Nat.add_one_ne_zero, Nat.reduceEqDiff]
   all_goals split_ifs <;> first | rfl | simp_all
 
 /-- The mirror's element type of a kernel list type. -/
 theorem kListPart_eq (t : Tree) :
-    GebMirror.Metalogic.kListPart t = encOpt (Translation.listPart t) := by
+    «Translation.kListPart» t = encOpt (Translation.listPart t) := by
   obtain ⟨l, cs, rfl⟩ : ∃ l cs, t = RoseTree.node l cs :=
     ⟨t.label, t.children, (RoseTree.node_label_children t).symm⟩
   rcases cs with _ | ⟨a, _ | ⟨b, cs⟩⟩ <;>
-    mirror_simp [GebMirror.Metalogic.kListPart, Translation.listPart, none_eq, some_eq,
+    mirror_simp [«Translation.kListPart», Translation.listPart, none_eq, some_eq,
       beq_iff_eq, Nat.add_one_ne_zero, Nat.reduceEqDiff]
   all_goals split_ifs <;> first | rfl | simp_all
 
@@ -313,15 +315,15 @@ def TRel (v : List Tree → List Tree → Tree) (w : Translation.Tr) : Prop :=
 
 /-- A list of translations without its head. -/
 @[simp] theorem trTail_eq (rs : List (List Tree → List Tree → Tree)) :
-    GebMirror.Metalogic.trTail rs = rs.tail := by
+    «Translation.trTail» rs = rs.tail := by
   cases rs <;> rfl
 
 /-- The translation of a child at a position, nothing out of range. -/
 @[simp] theorem trAt_eq (rs : List (List Tree → List Tree → Tree)) (i : ℕ) :
-    GebMirror.Metalogic.trAt rs (leaf i) = rs[i]?.getD fun _ _ ↦ GebMirror.Metalogic.none := by
-  have hr : ∀ i : ℕ, Nat.repeat GebMirror.Metalogic.trTail i rs = rs.drop i :=
+    «Translation.trAt» rs (leaf i) = rs[i]?.getD fun _ _ ↦ «Prelude.none» := by
+  have hr : ∀ i : ℕ, Nat.repeat «Translation.trTail» i rs = rs.drop i :=
     Nat.rec rfl fun i ih ↦ by rw [Nat.repeat, ih, trTail_eq, List.tail_drop]
-  simp only [GebMirror.Metalogic.trAt, iter_leaf, hr]
+  simp only [«Translation.trAt», iter_leaf, hr]
   cases h : rs.drop i with
   | nil =>
     rw [List.drop_eq_nil_iff] at h
@@ -334,7 +336,7 @@ def TRel (v : List Tree → List Tree → Tree) (w : Translation.Tr) : Prop :=
 /-- The simplification of a case of the mirror's step of the translation of terms: the lemmas of
 {lit}`mirror_simp`, the step's lists, pairs and term builders, and the given lemmas. -/
 local macro "tr_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(tactic|
-  mirror_simp [GebMirror.Metalogic.termStep, Translation.termStep, trAt_eq, none_eq, some_eq,
+  mirror_simp [«Translation.termStep», Translation.termStep, trAt_eq, none_eq, some_eq,
     pr_eq, p1_eq, p2_eq, encTr, beq_iff_eq, Nat.add_one_ne_zero, Nat.reduceEqDiff,
     Option.map_bind, Option.bind_eq_bind, Option.pure_def, Option.map_map, Option.bind_map,
     Option.elim_map, Option.map_some, Option.map_none, Option.bind_some, Option.bind_none,
@@ -352,7 +354,7 @@ set_option maxHeartbeats 4000000 in
 node, at related translations of the children. -/
 theorem termStep_eq (l : ℕ) (xs : List (Tree × (List Tree → List Tree → Tree) × Translation.Tr))
     (hx : ∀ x ∈ xs, TRel x.2.1 x.2.2) :
-    TRel (GebMirror.Metalogic.termStep (RoseTree.node l (xs.map Prod.fst)) (xs.map fun x ↦ x.2.1))
+    TRel («Translation.termStep» (RoseTree.node l (xs.map Prod.fst)) (xs.map fun x ↦ x.2.1))
       (Translation.termStep l (xs.map fun x ↦ (x.1, x.2.2))) := by
   intro gt Γ
   have h0 : ∀ x ∈ xs, ∀ gt Γ, x.2.1 gt Γ = encOpt ((x.2.2 gt Γ).map encTr) := hx
@@ -419,22 +421,22 @@ theorem termStep_eq (l : ℕ) (xs : List (Tree × (List Tree → List Tree → T
 
 /-- The mirror's translation of a term in a context, with the types of the globals. -/
 theorem term_eq (gt Γ : List Tree) (t : Tree) :
-    GebMirror.Metalogic.term gt Γ t = encOpt ((Translation.term gt Γ t).map encTr) :=
-  para_rel TRel GebMirror.Metalogic.termStep Translation.termStep
+    «Translation.term» gt Γ t = encOpt ((Translation.term gt Γ t).map encTr) :=
+  para_rel TRel «Translation.termStep» Translation.termStep
     (fun l xs hx ↦ termStep_eq l xs hx) t gt Γ
 
 /-! Programs, their constants, and theorems of Gödel's T. -/
 
 /-- The mirror's definition in object parameters from parameters of types. -/
 @[simp] theorem mkDefn_eq (n : ℕ) (ps : List Tree) (ty : Tree) (b : Term) :
-    GebMirror.Metalogic.mkDefn (leaf n) ps ty (encTerm b) =
+    «Translation.mkDefn» (leaf n) ps ty (encTerm b) =
       encLDefn (Translation.mkDefn n ps ty b) := by
-  simp [GebMirror.Metalogic.mkDefn, GebMirror.Metalogic.ldefn, Translation.mkDefn, encLDefn]
+  simp [«Translation.mkDefn», «Language.ldefn», Translation.mkDefn, encLDefn]
 
 /-- The mirror's translation of a program's definitions. -/
 theorem program_eq (ds : List Tree) :
-    GebMirror.Metalogic.program ds = encOpt ((Translation.program ds).map encProgram) := by
-  simp only [GebMirror.Metalogic.program, foldr_eq, reverse_eq, List.foldr_reverse,
+    «Translation.program» ds = encOpt ((Translation.program ds).map encProgram) := by
+  simp only [«Translation.program», foldr_eq, reverse_eq, List.foldr_reverse,
     Translation.program]
   refine List.foldl_hom
     (fun o : Option (List Tree × List Internal.Defn) ↦ encOpt (o.map encProgram))
@@ -447,13 +449,13 @@ theorem program_eq (ds : List Tree) :
 
 /-- The mirror's definition of the language as a definition of either kind. -/
 @[simp] theorem defLang_eq (d : Internal.Defn) :
-    GebMirror.Metalogic.defLang (encLDefn d) = encDefinition (.language d) :=
+    «Language.defLang» (encLDefn d) = encDefinition (.language d) :=
   rfl
 
 /-- The mirror's constants of a translated program. -/
 theorem trGlobals_eq (defs : List Internal.Defn) :
-    GebMirror.Metalogic.trGlobals (defs.map encLDefn) = encGlobals (Translation.globals defs) := by
-  simp only [GebMirror.Metalogic.trGlobals, trPrims_eq, lib_eq, append_eq, mapT_eq,
+    «Translation.trGlobals» (defs.map encLDefn) = encGlobals (Translation.globals defs) := by
+  simp only [«Translation.trGlobals», trPrims_eq, lib_eq, append_eq, mapT_eq,
     ← List.map_append, List.map_map, Function.comp_def, defLang_eq, length_eq,
     Theory.sig_eq, List.length_map, Translation.globals]
   rw [← globals_eq, List.map_map]
@@ -461,11 +463,11 @@ theorem trGlobals_eq (defs : List Internal.Defn) :
 
 /-- The mirror's translation of a theorem of Gödel's T, with the types of the globals. -/
 theorem thm_eq (gt : List Tree) (a : GoedelT.Thm) :
-    GebMirror.Metalogic.thm gt (GoedelT.MirrorEquations.encThm a) =
+    «Translation.thm» gt (GoedelT.MirrorEquations.encThm a) =
       encOpt ((Translation.thm gt a).map encThm) := by
-  have hc : a.ctx.map GebMirror.Metalogic.trTy = a.ctx.map fun t ↦ encOpt (Translation.ty t) :=
+  have hc : a.ctx.map «Translation.trTy» = a.ctx.map fun t ↦ encOpt (Translation.ty t) :=
     List.map_congr_left fun t _ ↦ trTy_eq t
-  tr_simp [GebMirror.Metalogic.thm, GoedelT.MirrorEquations.encThm,
+  tr_simp [«Translation.thm», GoedelT.MirrorEquations.encThm,
     GoedelT.MirrorEquations.encEqn, List.getD_cons_zero, List.getD_cons_succ, hc, allSomeT_eq,
     term_eq, Translation.thm]
   rcases a.ctx.mapM Translation.ty with _ | Γ <;> tr_simp []

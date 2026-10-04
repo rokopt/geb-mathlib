@@ -87,7 +87,7 @@ kernel_rfl checker_last : checker.pre204[203]? = some checker.g203
 
 /-- The last global of the checker's program is the mirror's checker, at the checker's type. -/
 theorem checker_checkCert :
-    checker.pre204[203]? = some (⟨checkCertTy, GebMirror.GoedelT.checkCert⟩ : Glob) :=
+    checker.pre204[203]? = some (⟨checkCertTy, GebMirror.GoedelT.«Equations.checkCert»⟩ : Glob) :=
   checker_last.trans (congrArg some (Sigma.ext checkCert_type (checker.last_heq.trans HEq.rfl)))
 
 end GebTests.Prototypes.GoedelT.MirrorLoad

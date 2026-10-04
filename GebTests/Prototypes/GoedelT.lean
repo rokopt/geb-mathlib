@@ -397,8 +397,12 @@ def mutants (x : Input) : List Input :=
 -- for value
 open Lean Elab Command Meta in
 run_cmd do
+  -- a source's forms and the forms of the modules it declares
+  let forms (e : SExp) : List SExp :=
+    if (e.children.head?.bind (·.label)).map String.ofList == some "module" then e.children
+    else [e]
   let defnums (text : String) : List (String × ℕ) :=
-    ((readSExps text.toList).getD []).filterMap fun e ↦
+    (((readSExps text.toList).getD []).flatMap forms).filterMap fun e ↦
       match e.children with
       | [kw, n, v] =>
         if kw.label.map String.ofList == some "defnum" then

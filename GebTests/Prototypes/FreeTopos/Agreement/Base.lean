@@ -38,6 +38,8 @@ set_option doc.verso true
 
 @[expose] public section
 
+open GebMirror.Metalogic
+
 namespace GebTests.Prototypes.FreeTopos.Agreement.Base
 
 open Geb Geb.Kernel GebTests.Prototypes.FreeTopos.Agreement.Encode
@@ -140,89 +142,89 @@ theorem ofBool_label_eq_zero (b : Bool) : ((ofBool b).label = 0) = (b = false) :
   List.map_inj_right fun _ _ ↦ leaf_inj.mp
 
 /-- The mirror's present optional tree. -/
-theorem some_eq (t : Tree) : GebMirror.Metalogic.some t = encOpt (some t) := rfl
+theorem some_eq (t : Tree) : «Prelude.some» t = encOpt (some t) := rfl
 
 /-- The mirror's absent optional tree. -/
-theorem none_eq : GebMirror.Metalogic.none = encOpt none := rfl
+theorem none_eq : «Prelude.none» = encOpt none := rfl
 
 /-- The mirror's test of an optional tree's presence. -/
 @[simp] theorem isSome_eq (o : Option Tree) :
-    GebMirror.Metalogic.isSome (encOpt o) = ofBool o.isSome := by
+    «Prelude.isSome» (encOpt o) = ofBool o.isSome := by
   cases o <;> rfl
 
 /-- The mirror's tree of a present optional tree. -/
-theorem get_eq (t : Tree) : GebMirror.Metalogic.get (encOpt (some t)) = t := by
-  simp [GebMirror.Metalogic.get, encOpt]
+theorem get_eq (t : Tree) : «Prelude.get» (encOpt (some t)) = t := by
+  simp [«Prelude.get», encOpt]
 
 /-- The mirror's tree of an optional tree, or a default. -/
 @[simp] theorem getD_eq (o : Option Tree) (d : Tree) :
-    GebMirror.Metalogic.getD (encOpt o) d = o.getD d := by
-  cases o <;> simp [GebMirror.Metalogic.getD, get_eq]
+    «Base.getD» (encOpt o) d = o.getD d := by
+  cases o <;> simp [«Base.getD», get_eq]
 
 /-- The mirror's image of an optional tree. -/
 @[simp] theorem mapO_eq (f : Tree → Tree) (o : Option Tree) :
-    GebMirror.Metalogic.mapO f (encOpt o) = encOpt (o.map f) := by
-  cases o <;> simp [GebMirror.Metalogic.mapO, some_eq, none_eq, get_eq]
+    «Base.mapO» f (encOpt o) = encOpt (o.map f) := by
+  cases o <;> simp [«Base.mapO», some_eq, none_eq, get_eq]
 
 /-- The mirror's binding of an optional tree. -/
 @[simp] theorem bindO_eq (o : Option Tree) (f : Tree → Tree) :
-    GebMirror.Metalogic.bindO (encOpt o) f = o.elim (encOpt none) f := by
-  cases o <;> simp [GebMirror.Metalogic.bindO, none_eq, get_eq]
+    «Base.bindO» (encOpt o) f = o.elim (encOpt none) f := by
+  cases o <;> simp [«Base.bindO», none_eq, get_eq]
 
 /-- The mirror's conjunction of truth values. -/
 @[simp] theorem and_eq (a b : Bool) :
-    GebMirror.Metalogic.and (ofBool a) (ofBool b) = ofBool (a && b) := by
+    «Prelude.and» (ofBool a) (ofBool b) = ofBool (a && b) := by
   cases a <;> cases b <;> rfl
 
 /-- The mirror's disjunction of truth values. -/
 @[simp] theorem or_eq (a b : Bool) :
-    GebMirror.Metalogic.or (ofBool a) (ofBool b) = ofBool (a || b) := by
+    «Prelude.or» (ofBool a) (ofBool b) = ofBool (a || b) := by
   cases a <;> cases b <;> rfl
 
 /-- The mirror's negation of a truth value. -/
-@[simp] theorem not_eq (a : Bool) : GebMirror.Metalogic.not (ofBool a) = ofBool (!a) := by
+@[simp] theorem not_eq (a : Bool) : «Base.not» (ofBool a) = ofBool (!a) := by
   cases a <;> rfl
 
 /-- The mirror's length of a list. -/
-@[simp] theorem length_eq (xs : List Tree) : GebMirror.Metalogic.length xs = leaf xs.length :=
+@[simp] theorem length_eq (xs : List Tree) : «Prelude.length» xs = leaf xs.length :=
   xs.rec rfl fun _ _ ih ↦ by
-    simp only [GebMirror.Metalogic.length, foldr_eq, List.foldr_cons] at ih ⊢
+    simp only [«Prelude.length», foldr_eq, List.foldr_cons] at ih ⊢
     rw [ih]
     rfl
 
 /-- The mirror's appending of lists. -/
-@[simp] theorem append_eq (xs ys : List Tree) : GebMirror.Metalogic.append xs ys = xs ++ ys :=
+@[simp] theorem append_eq (xs ys : List Tree) : «Prelude.append» xs ys = xs ++ ys :=
   xs.rec rfl fun _ _ ih ↦ by
-    simp only [GebMirror.Metalogic.append, foldr_eq, List.foldr_cons] at ih ⊢
+    simp only [«Prelude.append», foldr_eq, List.foldr_cons] at ih ⊢
     rw [ih]
     rfl
 
 /-- The mirror's list of one tree. -/
-@[simp] theorem single_eq (x : Tree) : GebMirror.Metalogic.single x = [x] := rfl
+@[simp] theorem single_eq (x : Tree) : «Prelude.single» x = [x] := rfl
 
 /-- The mirror's reversal of a list. -/
-@[simp] theorem reverse_eq (xs : List Tree) : GebMirror.Metalogic.reverse xs = xs.reverse := by
+@[simp] theorem reverse_eq (xs : List Tree) : «Prelude.reverse» xs = xs.reverse := by
   have h : ∀ acc : List Tree, xs.foldr (fun x (k : List Tree → List Tree) acc ↦ k (x :: acc))
       (fun acc ↦ acc) acc = xs.reverse ++ acc :=
     xs.rec (fun _ ↦ rfl) fun x r ih acc ↦ by simp [ih]
-  simp only [GebMirror.Metalogic.reverse, foldr_eq]
+  simp only [«Prelude.reverse», foldr_eq]
   exact (h []).trans (List.append_nil _)
 
 /-- The mirror's list of copies of a tree. -/
 @[simp] theorem replicate_eq (n : ℕ) (x : Tree) :
-    GebMirror.Metalogic.replicate (leaf n) x = List.replicate n x := by
-  simp only [GebMirror.Metalogic.replicate, iter_leaf]
+    «Prelude.replicate» (leaf n) x = List.replicate n x := by
+  simp only [«Prelude.replicate», iter_leaf]
   exact Nat.rec rfl (fun n ih ↦ by rw [Nat.repeat, ih]; rfl) n
 
 /-- The mirror's element of a list at a position, the leaf of label zero when out of range. -/
 @[simp] theorem at_eq (xs : List Tree) (i : ℕ) :
-    GebMirror.Metalogic.at xs (leaf i) = xs.getD i (leaf 0) :=
+    «Prelude.at» xs (leaf i) = xs.getD i (leaf 0) :=
   child_node 0 i xs
 
 /-- The mirror's element of a list at a position. -/
 @[simp] theorem nth_eq (xs : List Tree) (i : ℕ) :
-    GebMirror.Metalogic.nth xs (leaf i) = encOpt xs[i]? := by
-  simp only [GebMirror.Metalogic.nth, length_eq, lt_leaf, ofBool_label, decide_eq_true_eq]
+    «Prelude.nth» xs (leaf i) = encOpt xs[i]? := by
+  simp only [«Prelude.nth», length_eq, lt_leaf, ofBool_label, decide_eq_true_eq]
   split
   · rename_i h
     simp [some_eq, h]
@@ -231,83 +233,83 @@ theorem get_eq (t : Tree) : GebMirror.Metalogic.get (encOpt (some t)) = t := by
 
 /-- The mirror's test of a list's emptiness. -/
 @[simp] theorem isEmpty_eq (xs : List Tree) :
-    GebMirror.Metalogic.isEmpty xs = ofBool xs.isEmpty := by
+    «Base.isEmpty» xs = ofBool xs.isEmpty := by
   cases xs <;> rfl
 
 /-- The mirror's comparison of two lists' equality. -/
 @[simp] theorem equalTs_eq (xs ys : List Tree) :
-    GebMirror.Metalogic.equalTs xs ys = ofBool (decide (xs = ys)) := by
-  simp only [GebMirror.Metalogic.equalTs, node_leaf, equal_eq]
+    «Base.equalTs» xs ys = ofBool (decide (xs = ys)) := by
+  simp only [«Base.equalTs», node_leaf, equal_eq]
   congr 1
   exact decide_eq_decide.mpr
     ⟨fun h ↦ (RoseTree.node_eq_iff.mp h).2.trans (RoseTree.children_node 0 ys), fun h ↦ h ▸ rfl⟩
 
 /-- The mirror's list without its head. -/
-@[simp] theorem tail_eq (xs : List Tree) : GebMirror.Metalogic.tail xs = xs.tail := by
+@[simp] theorem tail_eq (xs : List Tree) : «Prelude.tail» xs = xs.tail := by
   cases xs <;> rfl
 
 /-- The mirror's list without its first elements. -/
 @[simp] theorem drop_eq (n : ℕ) (xs : List Tree) :
-    GebMirror.Metalogic.drop (leaf n) xs = xs.drop n := by
-  simp only [GebMirror.Metalogic.drop, iter_leaf]
+    «Prelude.drop» (leaf n) xs = xs.drop n := by
+  simp only [«Prelude.drop», iter_leaf]
   exact Nat.rec rfl (fun n ih ↦ by rw [Nat.repeat, ih, tail_eq, List.tail_drop]) n
 
 /-- The mirror's image of a list. -/
 @[simp] theorem mapT_eq (f : Tree → Tree) (xs : List Tree) :
-    GebMirror.Metalogic.mapT f xs = xs.map f :=
+    «Base.mapT» f xs = xs.map f :=
   xs.rec rfl fun _ _ ih ↦ by
-    simp only [GebMirror.Metalogic.mapT, foldr_eq, List.foldr_cons] at ih ⊢
+    simp only [«Base.mapT», foldr_eq, List.foldr_cons] at ih ⊢
     rw [ih]
     rfl
 
 /-- The mirror's test that every element of a list passes a test. -/
 theorem allT_eq (f : Tree → Tree) (p : Tree → Bool) :
     ∀ xs : List Tree, (∀ x ∈ xs, f x = ofBool (p x)) →
-      GebMirror.Metalogic.allT f xs = ofBool (xs.all p) :=
+      «Base.allT» f xs = ofBool (xs.all p) :=
   List.rec (fun _ ↦ rfl) fun x r ih h ↦ by
     have ih' := ih fun y hy ↦ h y (List.mem_cons_of_mem x hy)
-    simp only [GebMirror.Metalogic.allT, foldr_eq, List.foldr_cons] at ih' ⊢
+    simp only [«Base.allT», foldr_eq, List.foldr_cons] at ih' ⊢
     rw [ih', h x List.mem_cons_self, and_eq, List.all_cons]
 
 /-- The mirror's test that every element of an encoded list passes a test. -/
 theorem allT_map {α : Type} (f : Tree → Tree) (e : α → Tree) (p : α → Bool) :
     ∀ xs : List α, (∀ x ∈ xs, f (e x) = ofBool (p x)) →
-      GebMirror.Metalogic.allT f (xs.map e) = ofBool (xs.all p) :=
+      «Base.allT» f (xs.map e) = ofBool (xs.all p) :=
   List.rec (fun _ ↦ rfl) fun x r ih h ↦ by
     have ih' := ih fun y hy ↦ h y (List.mem_cons_of_mem x hy)
-    simp only [GebMirror.Metalogic.allT, foldr_eq, List.map_cons, List.foldr_cons] at ih' ⊢
+    simp only [«Base.allT», foldr_eq, List.map_cons, List.foldr_cons] at ih' ⊢
     rw [ih', h x List.mem_cons_self, and_eq, List.all_cons]
 
 /-- The mirror's conjunction of a list of truth values. -/
 theorem allT_ofBool {α : Type} (q : α → Bool) (xs : List α) :
-    GebMirror.Metalogic.allT (fun t ↦ t) (xs.map fun x ↦ ofBool (q x)) = ofBool (xs.all q) :=
+    «Base.allT» (fun t ↦ t) (xs.map fun x ↦ ofBool (q x)) = ofBool (xs.all q) :=
   xs.rec rfl fun x r ih ↦ by
-    simp only [GebMirror.Metalogic.allT, foldr_eq, List.map_cons, List.foldr_cons] at ih ⊢
+    simp only [«Base.allT», foldr_eq, List.map_cons, List.foldr_cons] at ih ⊢
     rw [ih, and_eq, List.all_cons]
 
 /-- The label test of the mirror's conjunction. -/
 @[simp] theorem and_label (a b : Tree) :
-    ((GebMirror.Metalogic.and a b).label != 0) = ((a.label != 0) && (b.label != 0)) := by
-  simp only [GebMirror.Metalogic.and]
+    ((«Prelude.and» a b).label != 0) = ((a.label != 0) && (b.label != 0)) := by
+  simp only [«Prelude.and»]
   by_cases h : a.label = 0 <;> simp [h, leaf]
 
 /-- The label test of the mirror's disjunction. -/
 @[simp] theorem or_label (a b : Tree) :
-    ((GebMirror.Metalogic.or a b).label != 0) = ((a.label != 0) || (b.label != 0)) := by
-  simp only [GebMirror.Metalogic.or]
+    ((«Prelude.or» a b).label != 0) = ((a.label != 0) || (b.label != 0)) := by
+  simp only [«Prelude.or»]
   by_cases h : a.label = 0 <;> simp [h, leaf]
 
 /-- The label test of the mirror's negation. -/
 @[simp] theorem not_label (a : Tree) :
-    ((GebMirror.Metalogic.not a).label != 0) = !(a.label != 0) := by
-  simp only [GebMirror.Metalogic.not]
+    ((«Base.not» a).label != 0) = !(a.label != 0) := by
+  simp only [«Base.not»]
   by_cases h : a.label = 0 <;> simp [h, leaf]
 
 /-- The label test of the mirror's test that every element of a list passes a test. -/
 @[simp] theorem allT_label (f : Tree → Tree) (xs : List Tree) :
-    ((GebMirror.Metalogic.allT f xs).label != 0) = xs.all fun x ↦ (f x).label != 0 :=
+    ((«Base.allT» f xs).label != 0) = xs.all fun x ↦ (f x).label != 0 :=
   xs.rec rfl fun x r ih ↦ by
-    simp only [GebMirror.Metalogic.allT, foldr_eq, List.foldr_cons, List.all_cons] at ih ⊢
+    simp only [«Base.allT», foldr_eq, List.foldr_cons, List.all_cons] at ih ⊢
     rw [and_label, ih]
 
 /-- The label test of a comparison of trees. -/
@@ -326,10 +328,10 @@ theorem equal_label (a b : Tree) : ((Const.equal a b).label != 0) = decide (a = 
 /-- The mirror's test that some element of a list passes a test. -/
 theorem anyT_eq (f : Tree → Tree) (p : Tree → Bool) :
     ∀ xs : List Tree, (∀ x ∈ xs, f x = ofBool (p x)) →
-      GebMirror.Metalogic.anyT f xs = ofBool (xs.any p) :=
+      «Base.anyT» f xs = ofBool (xs.any p) :=
   List.rec (fun _ ↦ rfl) fun x r ih h ↦ by
     have ih' := ih fun y hy ↦ h y (List.mem_cons_of_mem x hy)
-    simp only [GebMirror.Metalogic.anyT, foldr_eq, List.foldr_cons] at ih' ⊢
+    simp only [«Base.anyT», foldr_eq, List.foldr_cons] at ih' ⊢
     rw [ih', h x List.mem_cons_self, or_eq, List.any_cons]
 
 /-- The traversal of a list by a function to optional trees: the list of the trees where each
@@ -343,7 +345,7 @@ theorem mapM_option {α : Type} (f : α → Option Tree) :
 
 /-- The mirror's tree of an optional tree, the leaf of label zero when absent. -/
 @[simp] theorem get_encOpt (o : Option Tree) :
-    GebMirror.Metalogic.get (encOpt o) = o.getD (leaf 0) := by
+    «Prelude.get» (encOpt o) = o.getD (leaf 0) := by
   cases o
   · exact child_node 0 0 []
   · exact get_eq _
@@ -354,10 +356,10 @@ theorem encOpt_label (o : Option Tree) : ((encOpt o).label == 1) = o.isSome := b
 
 /-- The mirror's list of the trees of a list of optional trees where each is present. -/
 theorem allSomeT_eq {α : Type} (f : α → Option Tree) (xs : List α) :
-    GebMirror.Metalogic.allSomeT (xs.map fun x ↦ encOpt (f x)) =
+    «Base.allSomeT» (xs.map fun x ↦ encOpt (f x)) =
       encOpt ((xs.mapM f).map (RoseTree.node 0)) := by
-  rw [mapM_option, GebMirror.Metalogic.allSomeT,
-    allT_eq GebMirror.Metalogic.isSome (fun t ↦ t.label == 1) _ fun _ _ ↦ rfl]
+  rw [mapM_option, «Base.allSomeT»,
+    allT_eq «Prelude.isSome» (fun t ↦ t.label == 1) _ fun _ _ ↦ rfl]
   simp only [mapT_eq, List.map_map, Function.comp_def, get_encOpt, List.all_map, encOpt_label]
   cases xs.all (fun x ↦ (f x).isSome) <;> rfl
 
@@ -380,20 +382,20 @@ theorem take_foldr (L n : ℕ) : ∀ ys : List Tree, ys.length ≤ L →
 
 /-- The mirror's first elements of a list. -/
 @[simp] theorem take_eq (n : ℕ) (xs : List Tree) :
-    GebMirror.Metalogic.take (leaf n) xs = xs.take n := by
-  simp only [GebMirror.Metalogic.take, length_eq, foldr_eq]
+    «Base.take» (leaf n) xs = xs.take n := by
+  simp only [«Base.take», length_eq, foldr_eq]
   rw [take_foldr xs.length n xs le_rfl, Nat.sub_self, Nat.sub_zero]
 
 /-- The mirror's labels below a number, in order. -/
 @[simp] theorem range_eq (n : ℕ) :
-    GebMirror.Metalogic.range (leaf n) = (List.range n).map leaf := by
+    «Base.range» (leaf n) = (List.range n).map leaf := by
   have h : ∀ n : ℕ, Nat.repeat (fun (s : Tree × List Tree) ↦ (Const.add s.1 (leaf 1),
-      GebMirror.Metalogic.append s.2 (GebMirror.Metalogic.single s.1))) n (leaf 0, []) =
+      «Prelude.append» s.2 («Prelude.single» s.1))) n (leaf 0, []) =
       (leaf n, (List.range n).map leaf) :=
     Nat.rec rfl fun n ih ↦ by
       rw [Nat.repeat, ih]
       simp [List.range_succ]
-  simp only [GebMirror.Metalogic.range, iter_leaf]
+  simp only [«Base.range», iter_leaf]
   rw [h]
 
 /-- A list of leaves equals the leaves of a list's images exactly when the labels equal the
@@ -412,7 +414,7 @@ labels. -/
 /-- The right fold that keeps the first element of an encoded list passing a test finds it. -/
 theorem foldr_find {α : Type} (e : α → Tree) (p : Tree → Bool) (xs : List α) :
     (xs.map e).foldr (fun x r ↦ if p x = true then encOpt (some x) else r)
-        GebMirror.Metalogic.none =
+        «Prelude.none» =
       encOpt ((xs.find? fun y ↦ p (e y)).map e) :=
   xs.rec rfl fun y ys ih ↦ by
     rw [List.map_cons, List.foldr_cons, ih, List.find?_cons]

@@ -195,7 +195,7 @@ def firstRose : Term → Option (Tree × Term) := RoseTree.para fun l cs ↦ mat
 /-- The conditional lemmas: a projection, an application and the type checker's fold moved
 through a conditional, and a conditional in the branch its own test rejects. -/
 def condLemmas (P : Prog) : Option (List (String × Internal.Thm)) := do
-  let (C, s₀) ← ((P.G.defs[P.idx "typeIn"]?).bind Definition.language?).bind
+  let (C, s₀) ← ((P.G.defs[P.idx "Check.typeIn"]?).bind Definition.language?).bind
     fun d ↦ firstRose d.body
   let (F, a) ← Internal.expParts C
   let b := v 0
@@ -240,9 +240,9 @@ fold's type and step, and the traversal's step function in the traversal's funct
 variable, of index two, and the checker's in the environment of index one. -/
 def folds (P : Prog) : Option ((Tree × Term × Term) × (Tree × Term × Term)) := do
   let w := weakNF P (baseNorm P) 0 [treeTy, treeTy, varFnTy]
-    (apps (call (P.idx "trav") [] []) [v 2, v 0, v 1])
+    (apps (call (P.idx "Equations.trav") [] []) [v 2, v 0, v 1])
   let t := weakNF P (baseNorm P) 0 [treeTy, list treeTy]
-    (apps (call (P.idx "typeIn") [] []) [v 1, nilT treeTy, v 0])
+    (apps (call (P.idx "Check.typeIn") [] []) [v 1, nilT treeTy, v 0])
   pure (← firstFoldApp w, ← firstFoldApp t)
 
 /-- The list of the children of a translated node. -/
@@ -289,12 +289,12 @@ def foldLemmas (P : Prog) : Option (List Step) := do
   let (FR, aR) ← Internal.expParts CR
   let lenOf (t : Term) : Term := call D.length [treeTy] [t]
   let lenR := weakThm P 0 [list treeTy, list treeTy]
-    (lenOf (apps (call (P.idx "rrTrees") [] [])
+    (lenOf (apps (call (P.idx "Reader.rrTrees") [] [])
       [call D.mapApp [FR, aR] [Term.listRec (nilT CR) (consT CR (Term.roseRec CR sR (v 1)) (v 0))
         (v 0), fG]]))
     (lenOf (v 0))
   let lenT := weakThm P 0 [list treeTy, treeTy, VT]
-    (lenOf (apps (call (P.idx "trAll") [] [])
+    (lenOf (apps (call (P.idx "Equations.trAll") [] [])
       [call D.mapApp [FT, aT] [Term.listRec (nilT CT) (consT CT (Term.roseRec CT sT (v 1)) (v 0))
         (v 0), stepAt 2], v 1]))
     (lenOf (v 0))
@@ -358,7 +358,8 @@ def arithLemmas (P : Prog) : Option (List Step) := do
   let addOne := weakThm P 0 [bitsTy] (call D.add [] [v 0, numeral 1]) (call D.succ [] [v 0])
   let addOne₂ := weakThm P 0 [bitsTy] (call D.add [] [v 0, oneN]) (call D.succ [] [v 0])
   let lenK := weakThm P 0 [list treeTy]
-    (call D.lab [] [apps (call (P.idx "length") [] []) [v 0]]) (call D.length [treeTy] [v 0])
+    (call D.lab [] [apps (call (P.idx "Prelude.length") [] []) [v 0]])
+    (call D.length [treeTy] [v 0])
   let rsA (ix : String → ℕ) : List NormRule :=
     [.thm (ix "rebA") [], .thm (ix "rebA₂") [], .thm (ix "rebS") []] ++ rs
   -- the addition of a successor, first as the fold of addition at a successor, a function of the
@@ -570,7 +571,7 @@ def numLemmas (P : Prog) : Option (List Step) := do
         (Internal.byFunExt P.G 0 (byInsts .open P.G E 0 rules 1))
         skipThm.ctx [] (sides skipThm).1 (sides skipThm).2),
     pointwise P rsNth .open "nthSkipP" "nthSkip" bitsTy,
-    step "nth" nthThm (fun ix E ↦
+    step "Prelude.nth" nthThm (fun ix E ↦
       let rules := [.thm (ix "nthSkipP") [], .thm (ix "addSuccLP") []] ++ rsNth ix
       Internal.byListIndWith P.G 0 0 1
         (Internal.byFunExt P.G 0 (byAuto P.G E 0 rules 2 .open))
@@ -578,7 +579,7 @@ def numLemmas (P : Prog) : Option (List Step) := do
           (byAuto P.G E 0 rules 1 .open)
           (bySuccPred E (ix "succPredP") (byInsts .open P.G E 0 rules 1))))
         nthThm.ctx [] (sides nthThm).1 (sides nthThm).2),
-    pointwise P (fun ix ↦ lemmaRules ix ++ rs) .weak "nthP" "nth" bitsTy]
+    pointwise P (fun ix ↦ lemmaRules ix ++ rs) .weak "nthP" "Prelude.nth" bitsTy]
 
 /-- The development: the lemmas on the unfolding of trees, the connectives' rules, and the
 lemmas on conditionals, on the folds, on labels and on bitstrings. -/

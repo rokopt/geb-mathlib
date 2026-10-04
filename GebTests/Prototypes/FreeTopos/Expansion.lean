@@ -194,7 +194,7 @@ values, the trees their names give, the first component at each; the first compo
 fold, the tree, by the uniqueness of the fold; and the first components of the children's
 values, the children. -/
 def firstLemmas (P : Prog) : Option (List Step) := do
-  let kF ← kfoldOf P "expandExpr" [treeTy, list treeTy]
+  let kF ← kfoldOf P "Datatype.expandExpr" [treeTy, list treeTy]
   let kK ← kfoldOf P "ke" [treeTy]
   let steps (tag name : String) (k : KFold) : Option (List Step) := do
     let kids ← k.children
@@ -211,7 +211,7 @@ def firstLemmas (P : Prog) : Option (List Step) := do
           (byWeak P.G E 0 rs))),
       step s!"trees{tag}" wh (fun ix E ↦ side wh (byMode .full P.G E 0 (baseNorm P ++
         [.thm (ix s!"fu{tag}") [], .thm (ix s!"first{tag}") [], .thm (ix "mapId") []])))]
-  pure ((← steps "F" "rrTrees" kF) ++ (← steps "K" "kTrees" kK))
+  pure ((← steps "F" "Reader.rrTrees" kF) ++ (← steps "K" "kTrees" kK))
 
 /-- The conjunction of the predicate's values at the children is the conjunction of the predicate
 at the children. -/
@@ -231,7 +231,7 @@ split into the empty one, false, and a bit before a bitstring, true; each truth 
 def byNamedCases (P : Prog) (E : Array Entry) (lk : ℕ) (rs : List NormRule)
     (p q : Internal.Prover) (d : ℕ) : Internal.Prover :=
   d.rec q fun _ rec ↦ byNF P.G E 0 rs .weak fun Γ Φ t u ↦
-    match (appsOf (P.idx "named") t ++ appsOf (P.idx "named") u).head? with
+    match (appsOf (P.idx "Reader.named") t ++ appsOf (P.idx "Reader.named") u).head? with
     | none => q Γ Φ t u
     | some N => byGeneralize treeTy N (byTreeSplit lk 0
         (byListSplit P.G 0 1 rec p)) Γ Φ t u
@@ -333,7 +333,7 @@ present. At a construction, the induction hypothesis's instance at the scope, th
 first child generalized and split, and in the true case the tail's accumulation rewritten under the
 mask by that instance. -/
 def accSteps (P : Prog) : List Step :=
-  let folded := ["ke", "named", "expandCase", "expandCata"]
+  let folded := ["ke", "Reader.named", "Datatype.expandCase", "Datatype.expandCata"]
   let accLemma (name l r : String) : Step :=
     let a : Internal.Thm := ⟨0, [list treeTy], [], Term.eq (apps (call (P.idx l) [] []) [v 0])
       (apps (call (P.idx r) [] []) [v 0])⟩
@@ -356,10 +356,10 @@ def accSteps (P : Prog) : List Step :=
 /-- The applications of the children's folds of the expansion to a scope are the expansions of
 the children at it, by induction on the children. -/
 def applySteps (P : Prog) : Option (List Step) := do
-  let kF ← kfoldOf P "expandExpr" [treeTy, list treeTy]
+  let kF ← kfoldOf P "Datatype.expandExpr" [treeTy, list treeTy]
   let kids ← kF.children
   let a := weakThm P 0 [list treeTy, list treeTy]
-    (apps (call (P.idx "rrApply") [] []) [kids, v 1])
+    (apps (call (P.idx "Reader.rrApply") [] []) [kids, v 1])
     (apps (call (P.idx "expAll") [] []) [v 0, v 1])
   pure [step "applyF" a (fun _ E ↦ side a (byListIndHypWeak P.G E 0 (baseNorm P)))]
 
@@ -373,7 +373,8 @@ def exprSteps (P : Prog) : List Step :=
   let a : Internal.Thm := ⟨0, [treeTy], [], Term.eq (apps (call (P.idx "xL") [] []) [v 0])
     (apps (call (P.idx "xR") [] []) [v 0])⟩
   [step "exprId" a (fun ix E ↦
-    let rs := rsC P ix ["named", "expandCase", "expandCata"] ++ [.thm (ix "applyF") []]
+    let rs := rsC P ix ["Reader.named", "Datatype.expandCase", "Datatype.expandCata"] ++
+      [.thm (ix "applyF") []]
     let w := byWeak P.G E 0 rs
     let refl : Deriv := RoseTree.node .refl []
     let rest : Internal.Prover := fun Γ Φ t u ↦ do
@@ -415,8 +416,9 @@ def formLemmas (P : Prog) (rs : (String → ℕ) → List NormRule) : List Step 
   let raw : Term × Term :=
     (condT X (lab (condT treeTy (lab (v 4)) (v 3) (v 2))) (v 1) (v 0),
       condT X (lab (v 4)) (condT X (lab (v 3)) (v 1) (v 0)) (condT X (lab (v 2)) (v 1) (v 0)))
-  let named (h : Term) : Term := apps (call (P.idx "named") [] []) [h, call (P.idx "kwDef") [] []]
-  let aDef := call (P.idx "aDef") [] []
+  let named (h : Term) : Term :=
+    apps (call (P.idx "Reader.named") [] []) [h, call (P.idx "Reader.kwDef") [] []]
+  let aDef := call (P.idx "Datatype.aDef") [] []
   let hdRaw : Term × Term := (condT treeTy (lab (named (v 0))) (v 0) aDef, aDef)
   let nf (G : Internal.Globals) (E : Array Entry) (ix : String → ℕ) (n : ℕ) (Γ : List Tree)
       (t : Term) : Option (Term × Deriv) :=
@@ -461,8 +463,9 @@ definition's body's expansion rewritten under the mask of its predicate by the e
 identity; and the tests of {lit}`deftype` and {lit}`defnum` generalized and split. -/
 def formSteps (P : Prog) : List Step :=
   let XP := prod treeTy (prod (list treeTy) (list treeTy))
-  let foldedF := ["ke", "expandExpr", "expandCase", "expandCata", "expandAliases", "dataDecl",
-    "named", "kwData", "kwDef", "kwDeftype", "kwDefnum"]
+  let foldedF := ["ke", "Datatype.expandExpr", "Datatype.expandCase", "Datatype.expandCata",
+    "Datatype.expandAliases", "Datatype.dataDecl", "Reader.named", "Datatype.kwData",
+    "Reader.kwDef", "Reader.kwDeftype", "Reader.kwDefnum"]
   let rsF (ix : String → ℕ) : List NormRule := rsC P ix foldedF
   let rsFS (ix : String → ℕ) : List NormRule :=
     .thm (ix "maskSplit") [XP] :: .thm (ix "long") [] :: rsF ix
@@ -475,7 +478,7 @@ def formSteps (P : Prog) : List Step :=
     let w := byWeak P.G E 0 rs
     let refl : Deriv := RoseTree.node .refl []
     let kw (name : String) (t : Term) : Option Term :=
-      (appsOf (P.idx "named") t).find? fun u ↦ match u.children with
+      (appsOf (P.idx "Reader.named") t).find? fun u ↦ match u.children with
         | [_, k] => k = call (P.idx name) [] [] | _ => false
     -- the generalization and split of a keyword's test, the true case by p and the false by q
     let byKw (name : String) (p q : Internal.Prover) : Internal.Prover :=
@@ -486,7 +489,7 @@ def formSteps (P : Prog) : List Step :=
     let defCase : Internal.Prover :=
       byMaskSubs P.G E (ix "absorb") (ix "condSame") (rsU ix) 2 fun extra ↦
         byWeak P.G E 0 (extra ++ rsU ix)
-    let tyCase : Internal.Prover := byKw "kwDeftype" w (byKw "kwDefnum" w w)
+    let tyCase : Internal.Prover := byKw "Reader.kwDeftype" w (byKw "Reader.kwDefnum" w w)
     let three : Internal.Prover := fun Γ Φ t u ↦ do
       let n := Γ.length
       let bv := v 1
@@ -500,9 +503,9 @@ def formSteps (P : Prog) : List Step :=
       let ψ := Internal.instTerm [] [hv] hd.concl
       let dψ := RoseTree.node .join [RoseTree.node (.thm (ix "headDefN") [] [hv] false) [], refl]
       let k ← withWeakHyps P.G E 0 (rsU ix) [Φ.length] (fun _ ↦
-          byKw "kwData" w (byNF P.G E 0 (rsFS ix) .weak
+          byKw "Datatype.kwData" w (byNF P.G E 0 (rsFS ix) .weak
             (byMaskSubs P.G E (ix "absorb") (ix "condSame") (rsFS ix) 6 fun _ ↦
-              byKw "kwDef" defCase tyCase))) (m := .weak) Γ (Φ ++ [χ, ψ]) t u
+              byKw "Reader.kwDef" defCase tyCase))) (m := .weak) Γ (Φ ++ [χ, ψ]) t u
       pure (RoseTree.node (.cut χ) [dχ, RoseTree.node (.cut ψ) [dψ, k]])
     let listCase : Internal.Prover := fun Γ Φ t u ↦
       byLength3 P.G (Γ.length - 5) three (byWeak P.G E 0 (rsFS ix)) Γ Φ t u
@@ -518,7 +521,7 @@ the other, by induction on the list as a function of the accumulator, and its in
 accumulators. -/
 def revSteps (P : Prog) : List Step :=
   let appNil := weakThm P 0 [list treeTy]
-    (apps (call (P.idx "append") [] []) [v 0, nilT treeTy]) (v 0)
+    (apps (call (P.idx "Prelude.append") [] []) [v 0, nilT treeTy]) (v 0)
   let side2 (name : String) : Term :=
     Term.lam (list treeTy) (apps (call (P.idx name) [] []) [v 1, v 2, v 0])
   let revGen : Internal.Thm := ⟨0, [list treeTy, list treeTy], [],
@@ -548,8 +551,9 @@ def runSteps (P : Prog) : List Step :=
   let XP := prod treeTy (prod (list treeTy) (list treeTy))
   let a : Internal.Thm := ⟨0, [list treeTy], [], Term.eq (apps (call (P.idx "rL") [] []) [v 0])
     (apps (call (P.idx "rR") [] []) [v 0])⟩
-  let folded := ["formOk", "xpStep", "envAfter", "ke", "expandExpr", "expandCase", "expandCata",
-    "expandAliases", "dataDecl", "named"]
+  let folded := ["formOk", "Datatype.xpStep", "envAfter", "ke", "Datatype.expandExpr",
+    "Datatype.expandCase", "Datatype.expandCata", "Datatype.expandAliases", "Datatype.dataDecl",
+    "Reader.named"]
   [step "run" a (fun ix E ↦
     let rs := [.thm (ix "maskSplit") [prodTs], .thm (ix "maskSplit") [XP]] ++ rsC P ix folded
     let refl : Deriv := RoseTree.node .refl []
@@ -593,8 +597,9 @@ conditional, both rewritten under the mask, and the reversal of the output rever
 def programSteps (P : Prog) : List Step :=
   let a : Internal.Thm := ⟨0, [list treeTy], [], Term.eq (apps (call (P.idx "pL") [] []) [v 0])
     (apps (call (P.idx "pR") [] []) [v 0])⟩
-  let folded := ["formOk", "xpStep", "envAfter", "ke", "expandExpr", "expandCase", "expandCata",
-    "expandAliases", "dataDecl", "named"]
+  let folded := ["formOk", "Datatype.xpStep", "envAfter", "ke", "Datatype.expandExpr",
+    "Datatype.expandCase", "Datatype.expandCata", "Datatype.expandAliases", "Datatype.dataDecl",
+    "Reader.named"]
   [step "expansion" a (fun ix E ↦
     let rs := [.thm (ix "condFst") [treeTy, list treeTy], .thm (ix "condSnd") [treeTy, list treeTy],
       .thm (ix "revRev") [], .thm (ix "maskSplit") [treeTy]] ++ rsC P ix folded

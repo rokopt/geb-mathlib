@@ -91,26 +91,26 @@ def terms : List Term := sides.flatMap Tactics.openSubterms
 /-- The comparison of the loaded tactics, each found by its name as {lit}`nm` spells it, with
 Lean's: the functions of terms at each term, and the proofs at each theorem. -/
 def agree (P : List (List Char × Kernel.Glob)) (nm : String → List Char) : Option Bool := do
-  let subs : Tree → List Tree ← fn P (nm "openSubterms") (arrow tyT tyTs)
+  let subs : Tree → List Tree ← fn P (nm "Tactics.openSubterms") (arrow tyT tyTs)
   let stuck : (Tree → Tree) → Tree → Tree ←
-    fn P (nm "stuckVar") (arrow (arrow tyT tyT) (arrow tyT tyT))
+    fn P (nm "Tactics.stuckVar") (arrow (arrow tyT tyT) (arrow tyT tyT))
   let stuckC : (Tree → Tree) → Tree → Tree ←
-    fn P (nm "stuckVarC") (arrow (arrow tyT tyT) (arrow tyT tyT))
-  let ment : Tree → Tree → Tree ← fn P (nm "mentions") (arrow tyT (arrow tyT tyT))
-  let appsOf : Tree → Tree → List Tree ← fn P (nm "appsOf") (arrow tyT (arrow tyT tyTs))
-  let cond : Tree → Tree ← fn P (nm "condParts") (arrow tyT tyT)
+    fn P (nm "Tactics.stuckVarC") (arrow (arrow tyT tyT) (arrow tyT tyT))
+  let ment : Tree → Tree → Tree ← fn P (nm "Tactics.mentions") (arrow tyT (arrow tyT tyT))
+  let appsOf : Tree → Tree → List Tree ← fn P (nm "Tactics.appsOf") (arrow tyT (arrow tyT tyTs))
+  let cond : Tree → Tree ← fn P (nm "Tactics.condParts") (arrow tyT tyT)
   let absT : Tree → Tree → Tree → Tree ←
-    fn P (nm "abstractTerm") (arrow tyT (arrow tyT (arrow tyT tyT)))
+    fn P (nm "Tactics.abstractTerm") (arrow tyT (arrow tyT (arrow tyT tyT)))
   let occ : Tree → Tree → Tree → Tree → Tree ←
-    fn P (nm "occRewrite") (arrow tyT (arrow tyT (arrow tyT (arrow tyT tyT))))
+    fn P (nm "Tactics.occRewrite") (arrow tyT (arrow tyT (arrow tyT (arrow tyT tyT))))
   let mats : Tree → Tree → Tree → List (List Tree) ←
-    fn P (nm "matchesOf") (arrow tyT (arrow tyT (arrow tyT tyTss)))
-  let unnode : Tree → Tree ← fn P (nm "unnodeU") (arrow tyT tyT)
+    fn P (nm "Tactics.matchesOf") (arrow tyT (arrow tyT (arrow tyT tyTss)))
+  let unnode : Tree → Tree ← fn P (nm "Tactics.unnodeU") (arrow tyT tyT)
   let byMode : Tree → Tree → List Tree → Tree → RulesF → PvF ←
-    fn P (nm "byMode") (arrow tyT (arrow tyT (arrow tyTs (arrow tyT (arrow tyNRs tyPv)))))
+    fn P (nm "Tactics.byMode") (arrow tyT (arrow tyT (arrow tyTs (arrow tyT (arrow tyNRs tyPv)))))
   let byCases : Tree → Tree → PvF → PvF ←
-    fn P (nm "byListCases") (arrow tyT (arrow tyT (arrow tyPv tyPv)))
-  let byAuto : Tree → List Tree → Tree → RulesF → Tree → Tree → PvF ← fn P (nm "byAuto")
+    fn P (nm "Tactics.byListCases") (arrow tyT (arrow tyT (arrow tyPv tyPv)))
+  let byAuto : Tree → List Tree → Tree → RulesF → Tree → Tree → PvF ← fn P (nm "Tactics.byAuto")
     (arrow tyT (arrow tyTs (arrow tyT (arrow tyNRs (arrow tyT (arrow tyT tyPv))))))
   let none₀ : Tree → Tree := fun _ ↦ Kernel.leaf 0
   let byTerm := terms.all fun t ↦

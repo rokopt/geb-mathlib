@@ -3783,7 +3783,8 @@ checklist and in CI.
   across bootstrap revisions describes document preservation, migration
   contracts, the remaining hole interface and synthesis.
   The Geb-written
-  stage 0 is under `bootstrap/`, in the kernel's syntax: `prelude.geb`
+  stage 0 is under `bootstrap/`, in the kernel's syntax, each source a module
+  named after its file with an export list, imported at the root after it: `prelude.geb`
   names the kernel's labels and primitives by numeral abbreviations and
   holds list and digit utilities, `serialize.geb` writes a tree's image,
   `reader.geb` reads a program's text, in the authoring profile, into its

@@ -77,6 +77,8 @@ set_option doc.verso true
 
 @[expose] public section
 
+open GebMirror.Metalogic
+
 namespace GebTests.Prototypes.FreeTopos.Agreement
 
 open Geb Geb.Kernel Geb.FreeTopos GebTests.Prototypes.FreeTopos.Agreement.Encode
@@ -93,7 +95,7 @@ theorem checkDev_agree : ∃ G' : List Glob, load metalogic = some G' ∧
       ∀ (G : Internal.Globals) (E : Array Internal.Entry) (ds : List Internal.Decl),
         f (encGlobals G) (E.toList.map encEntry) (ds.map encDecl) =
           encOpt ((Internal.checkDev G E ds).map encState) :=
-  ⟨_, metalogic.load_globals, GebMirror.Metalogic.checkDev, metalogic_checkDev, checkDev_eq⟩
+  ⟨_, metalogic.load_globals, «Derivation.checkDev», metalogic_checkDev, checkDev_eq⟩
 
 /-- The translation written in Geb translates as the translation in Lean: its program loads to
 globals among which are functions of their types that, at a program's definitions, at encoded
@@ -109,9 +111,9 @@ theorem translation_agree : ∃ G' : List Glob, load metalogic = some G' ∧
       ∀ (gt : List Tree) (a : GoedelT.Thm),
         f gt (GebTests.Prototypes.GoedelT.MirrorEquations.encThm a) =
           encOpt ((Translation.thm gt a).map encThm)) :=
-  ⟨_, metalogic.load_globals, ⟨GebMirror.Metalogic.program, metalogic_program, program_eq⟩,
-    ⟨GebMirror.Metalogic.trGlobals, metalogic_trGlobals, trGlobals_eq⟩,
-    ⟨GebMirror.Metalogic.thm, metalogic_thm, thm_eq⟩⟩
+  ⟨_, metalogic.load_globals, ⟨«Translation.program», metalogic_program, program_eq⟩,
+    ⟨«Translation.trGlobals», metalogic_trGlobals, trGlobals_eq⟩,
+    ⟨«Translation.thm», metalogic_thm, thm_eq⟩⟩
 
 /-- The prover written in Geb proves as the prover in Lean: its program loads to globals among
 which are the prover's entry points, each a function of its type. The preparation of encoded

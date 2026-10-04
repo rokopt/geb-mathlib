@@ -13,685 +13,701 @@
 ; prelude, the reader, the kernel's checker, the base, partial Horn logic, the theory, the
 ; inference, the language and the checker of derivations.
 
-; the types of bits, bitstrings, trees and comparisons
-(def bitTy (coprod one one))
-(def bitsTy (list bitTy))
-(def treeTy (lrose bitsTy))
-(def ordTy (coprod one bitTy))
+(module Translation
+  (export bitsTy treeTy nodeT call D.unnode D.cond D.tail D.headD condT lib term program thm)
+  ; the types of bits, bitstrings, trees and comparisons
+  (def bitTy (coprod one one))
+  (def bitsTy (list bitTy))
+  (def treeTy (lrose bitsTy))
+  (def ordTy (coprod one bitTy))
 
-; the translation of a kernel type, or nothing for a tree that is not a type
-(defn trTy ((t T)) T
-  (fold T
-    (lam ((l T) (rs Ts))
-      (let k T (length rs)
-        (if (eq k 0) (if (eq l Label.tyTree) (some treeTy) (if (eq l Label.tyUnit) (some one) none))
-          (if (eq k 1) (if (eq l Label.tyList) (mapO list (at rs 0)) none)
-            (if (eq k 2)
-              (if (eq l Label.tyProd) (bindO (at rs 0) (lam ((a T)) (mapO (prod a) (at rs 1))))
-                (if (eq l Label.tyArrow) (bindO (at rs 0) (lam ((a T)) (mapO (exp a) (at rs 1))))
-                  none))
-              none)))))
-    t))
+  ; the translation of a kernel type, or nothing for a tree that is not a type
+  (defn trTy ((t T)) T
+    (fold T
+      (lam ((l T) (rs Ts))
+        (let k T (length rs)
+          (if (eq k 0)
+            (if (eq l Label.tyTree) (some treeTy) (if (eq l Label.tyUnit) (some one) none))
+            (if (eq k 1) (if (eq l Label.tyList) (mapO list (at rs 0)) none)
+              (if (eq k 2)
+                (if (eq l Label.tyProd) (bindO (at rs 0) (lam ((a T)) (mapO (prod a) (at rs 1))))
+                  (if (eq l Label.tyArrow) (bindO (at rs 0) (lam ((a T)) (mapO (exp a) (at rs 1))))
+                    none))
+                none)))))
+      t))
 
-; the primitive arrows, and the terms built with them
-(def trPrims (l6 nilPrim consPrim lnodePrim inlPrim inrPrim casePrim))
-(defn nilT ((a T)) T (mArr 0 (single a) mStar))
-(defn consT ((a T) (h T) (t T)) T (mArr 1 (single a) (mPair h t)))
-(defn nodeT ((p T)) T (mArr 2 (single bitsTy) p))
-(def bit0T (mArr 3 (l2 one one) mStar))
-(def bit1T (mArr 4 (l2 one one) mStar))
-; the case analysis of a bit, each branch the body of an abstraction over the terminal object
-(defn ifBit ((c T) (b T) (t T) (u T)) T
-  (mApp (mArr 5 (l3 one one c) (mPair (mLam one (weaken1 t)) (mLam one (weaken1 u)))) b))
-(def ltO (mArr 3 (l2 one bitTy) mStar))
-(def eqO (mArr 4 (l2 one bitTy) bit0T))
-(def gtO (mArr 4 (l2 one bitTy) bit1T))
-; the case analysis of a comparison: the terms at less, equal and greater
-(defn ifOrd ((c T) (o T) (l T) (e T) (g T)) T
-  (mApp
-    (mArr 5 (l3 one bitTy c)
-      (mPair (mLam one (weaken1 l)) (mLam bitTy (ifBit c (mVar 0) (weaken1 e) (weaken1 g)))))
-    o))
-(defn leafT ((l T)) T (nodeT (mPair l (nilT treeTy))))
-
-; the application of a definition at objects to arguments, the first first, and a definition in
-; object parameters from parameters of types, the first first
-(defn call ((k T) (th Ts) (args Ts)) T (mDefn k th (reverse args)))
-(defn mkDefn ((n T) (ps Ts) (ty T) (b T)) T (ldefn n (node 0 (reverse ps)) ty b))
-
-; the indices of the library's definitions
-(defnum D.bnil 0)
-(defnum D.b0 1)
-(defnum D.b1 2)
-(defnum D.lab 3)
-(defnum D.unnode 4)
-(defnum D.children 5)
-(defnum D.cond 6)
-(defnum D.tail 7)
-(defnum D.headD 8)
-(defnum D.lcase 9)
-(defnum D.isNil 10)
-(defnum D.succ 11)
-(defnum D.length 12)
-(defnum D.pred 13)
-(defnum D.dbl 14)
-(defnum D.add 15)
-(defnum D.cmp 16)
-(defnum D.ltB 17)
-(defnum D.eqB 18)
-(defnum D.subE 19)
-(defnum D.sub 20)
-(defnum D.mul 21)
-(defnum D.divMod 22)
-(defnum D.log2 23)
-(defnum D.iter 24)
-(defnum D.mapApp 25)
-(defnum D.and 26)
-(defnum D.allZip 27)
-(defnum D.equal 28)
-
-; the empty bitstring, a bit before a bitstring, and one
-(def bnilT (call D.bnil (nil T) (nil T)))
-(defn b0T ((w T)) T (call D.b0 (nil T) (single w)))
-(defn b1T ((w T)) T (call D.b1 (nil T) (single w)))
-(def trueT (b0T bnilT))
-
-; the numeral of a label: the binary digits of its successor, least significant first, without
-; the most significant, each the bit zero for the digit 0 and the bit one for the digit 1, which is
-; the bijective numeration's string of the label
-(defn trNumeral ((n T)) T
-  (let m T (add n 1)
-    (foldr T T (lam ((d T) (w T)) (if d (b1T w) (b0T w))) bnilT (digitsLsb 2 m (log2 m)))))
-
-; the translation of a quoted tree
-(defn quoteT ((t T)) T
-  (fold T
-    (lam ((l T) (cs Ts)) (nodeT (mPair (trNumeral l) (foldr T T (consT treeTy) (nilT treeTy) cs))))
-    t))
-
-; conditionals, case analysis of lists and comparison, as applications of the library
-(defn condT ((a T) (c T) (t T) (u T)) T (call D.cond (single a) (l3 c t u)))
-(defn lcaseB ((a T) (b T) (l T) (n T) (c T)) T
-  (call D.lcase (l2 a b) (l3 l (mLam one (weaken1 n)) c)))
-(defn cmpT ((m T) (n T)) T (call D.cmp (nil T) (l2 m n)))
-(defn digitT ((d T) (e T)) T
-  (ifBit bitTy d (ifBit bitTy e bit1T bit0T) (ifBit bitTy e bit0T bit1T)))
-(defn bitOrdT ((d T) (e T)) T (ifBit ordTy d (ifBit ordTy e eqO ltO) (ifBit ordTy e gtO eqO)))
-
-; the object variables of a definition's first two object parameters
-(def X0 (x 0))
-(def X1 (x 1))
-
-; the library's definitions, by the indices above, each over those before it
-; the empty bitstring, and a bit before a bitstring
-(def lbBnil (mkDefn 0 (nil T) bitsTy (nilT bitTy)))
-(def lbB0 (mkDefn 0 (single bitsTy) bitsTy (consT bitTy bit0T (mVar 0))))
-(def lbB1 (mkDefn 0 (single bitsTy) bitsTy (consT bitTy bit1T (mVar 0))))
-; the label of a tree: the fold taking each node to its label
-(def lbLab (mkDefn 0 (single treeTy) bitsTy (mRoseRec bitsTy (mFst (mVar 0)) (mVar 0))))
-; the label and the children: the fold rebuilding each child from its own
-(def lbUnnode
-  (mkDefn 0 (single treeTy) (prod bitsTy (list treeTy))
-    (mRoseRec (prod bitsTy (list treeTy))
-      (mPair (mFst (mVar 0))
-        (mListRec (nilT treeTy) (consT treeTy (nodeT (mVar 1)) (mVar 0)) (mSnd (mVar 0))))
-      (mVar 0))))
-; the children
-(def lbChildren
-  (mkDefn 0 (single treeTy) (list treeTy) (mSnd (call D.unnode (nil T) (single (mVar 0))))))
-; the conditional on a bitstring, by its fold into functions of the two branches
-(def lbCond
-  (mkDefn 1 (l3 bitsTy X0 X0) X0
+  ; the primitive arrows, and the terms built with them
+  (def trPrims (l6 nilPrim consPrim lnodePrim inlPrim inrPrim casePrim))
+  (defn nilT ((a T)) T (mArr 0 (single a) mStar))
+  (defn consT ((a T) (h T) (t T)) T (mArr 1 (single a) (mPair h t)))
+  (defn nodeT ((p T)) T (mArr 2 (single bitsTy) p))
+  (def bit0T (mArr 3 (l2 one one) mStar))
+  (def bit1T (mArr 4 (l2 one one) mStar))
+  ; the case analysis of a bit, each branch the body of an abstraction over the terminal object
+  (defn ifBit ((c T) (b T) (t T) (u T)) T
+    (mApp (mArr 5 (l3 one one c) (mPair (mLam one (weaken1 t)) (mLam one (weaken1 u)))) b))
+  (def ltO (mArr 3 (l2 one bitTy) mStar))
+  (def eqO (mArr 4 (l2 one bitTy) bit0T))
+  (def gtO (mArr 4 (l2 one bitTy) bit1T))
+  ; the case analysis of a comparison: the terms at less, equal and greater
+  (defn ifOrd ((c T) (o T) (l T) (e T) (g T)) T
     (mApp
-      (mApp (mListRec (mLam X0 (mLam X0 (mVar 0))) (mLam X0 (mLam X0 (mVar 1))) (mVar 2)) (mVar 1))
-      (mVar 0))))
-; the tail of a list: the second component of the pair of the list and its tail
-(def lbTail
-  (mkDefn 1 (single (list X0)) (list X0)
-    (mSnd
-      (mListRec (mPair (nilT X0) (nilT X0))
-        (mPair (consT X0 (mVar 1) (mFst (mVar 0))) (mFst (mVar 0)))
-        (mVar 0)))))
-; the head of a list, or the default for the empty list
-(def lbHeadD
-  (mkDefn 1 (l2 X0 (list X0)) X0
-    (mApp (mListRec (mLam X0 (mVar 0)) (mLam X0 (mVar 2)) (mVar 0)) (mVar 1))))
-; the case analysis of a list: the fold into functions of the pair of the two cases, whose value
-; is the pair of the list and the case's value, the empty list's case a function of the terminal
-; object
-(def lbLcase
-  (let C T (exp X0 (exp (list X0) X1))
-    (let P T (prod (exp one X1) C)
-      (let tl T (mFst (mApp (mVar 1) (mVar 0)))
-        (mkDefn 2 (l3 (list X0) (exp one X1) C) X1
-          (mSnd
-            (mApp
-              (mListRec (mLam P (mPair (nilT X0) (mApp (mFst (mVar 0)) mStar)))
-                (mLam P (mPair (consT X0 (mVar 2) tl) (mApp (mApp (mSnd (mVar 0)) (mVar 2)) tl)))
-                (mVar 2))
-              (mPair (mVar 1) (mVar 0)))))))))
-; whether a list is empty
-(def lbIsNil (mkDefn 1 (single (list X0)) bitsTy (mListRec trueT bnilT (mVar 0))))
-; the successor, of the pair of the bitstring and its successor
-(def lbSucc
-  (mkDefn 0 (single bitsTy) bitsTy
-    (mSnd
-      (mListRec (mPair bnilT trueT)
-        (mPair (consT bitTy (mVar 1) (mFst (mVar 0)))
-          (ifBit bitsTy (mVar 1) (b1T (mFst (mVar 0))) (b0T (mSnd (mVar 0)))))
-        (mVar 0)))))
-; the length of a list of the object parameter
-(def lbLength
-  (mkDefn 1 (single (list X0)) bitsTy
-    (mListRec bnilT (call D.succ (nil T) (single (mVar 0))) (mVar 0))))
-; the predecessor, zero at zero
-(def lbPred
-  (mkDefn 0 (single bitsTy) bitsTy
-    (mSnd
-      (mListRec (mPair bnilT bnilT)
-        (mPair (consT bitTy (mVar 1) (mFst (mVar 0)))
-          (ifBit bitsTy (mVar 1) (condT bitsTy (mFst (mVar 0)) (b1T (mSnd (mVar 0))) bnilT)
-            (b0T (mFst (mVar 0)))))
-        (mVar 0)))))
-; doubling
-(def lbDbl
-  (mkDefn 0 (single bitsTy) bitsTy
-    (mSnd
-      (mListRec (mPair bnilT bnilT)
-        (mPair (consT bitTy (mVar 1) (mFst (mVar 0)))
-          (ifBit bitsTy (mVar 1) (b1T (mSnd (mVar 0))) (b1T (b0T (mFst (mVar 0))))))
-        (mVar 0)))))
-; addition, by recursion on the second summand into functions of the first
-(def lbAdd
-  (mkDefn 0 (l2 bitsTy bitsTy) bitsTy
-    (mApp
+      (mArr 5 (l3 one bitTy c)
+        (mPair (mLam one (weaken1 l)) (mLam bitTy (ifBit c (mVar 0) (weaken1 e) (weaken1 g)))))
+      o))
+  (defn leafT ((l T)) T (nodeT (mPair l (nilT treeTy))))
+
+  ; the application of a definition at objects to arguments, the first first, and a definition in
+  ; object parameters from parameters of types, the first first
+  (defn call ((k T) (th Ts) (args Ts)) T (mDefn k th (reverse args)))
+  (defn mkDefn ((n T) (ps Ts) (ty T) (b T)) T (ldefn n (node 0 (reverse ps)) ty b))
+
+  ; the indices of the library's definitions
+  (defnum D.bnil 0)
+  (defnum D.b0 1)
+  (defnum D.b1 2)
+  (defnum D.lab 3)
+  (defnum D.unnode 4)
+  (defnum D.children 5)
+  (defnum D.cond 6)
+  (defnum D.tail 7)
+  (defnum D.headD 8)
+  (defnum D.lcase 9)
+  (defnum D.isNil 10)
+  (defnum D.succ 11)
+  (defnum D.length 12)
+  (defnum D.pred 13)
+  (defnum D.dbl 14)
+  (defnum D.add 15)
+  (defnum D.cmp 16)
+  (defnum D.ltB 17)
+  (defnum D.eqB 18)
+  (defnum D.subE 19)
+  (defnum D.sub 20)
+  (defnum D.mul 21)
+  (defnum D.divMod 22)
+  (defnum D.log2 23)
+  (defnum D.iter 24)
+  (defnum D.mapApp 25)
+  (defnum D.and 26)
+  (defnum D.allZip 27)
+  (defnum D.equal 28)
+
+  ; the empty bitstring, a bit before a bitstring, and one
+  (def bnilT (call D.bnil (nil T) (nil T)))
+  (defn b0T ((w T)) T (call D.b0 (nil T) (single w)))
+  (defn b1T ((w T)) T (call D.b1 (nil T) (single w)))
+  (def trueT (b0T bnilT))
+
+  ; the numeral of a label: the binary digits of its successor, least significant first, without
+  ; the most significant, each the bit zero for the digit 0 and the bit one for the digit 1, which is
+  ; the bijective numeration's string of the label
+  (defn trNumeral ((n T)) T
+    (let m T (add n 1)
+      (foldr T T (lam ((d T) (w T)) (if d (b1T w) (b0T w))) bnilT (digitsLsb 2 m (log2 m)))))
+
+  ; the translation of a quoted tree
+  (defn quoteT ((t T)) T
+    (fold T
+      (lam ((l T) (cs Ts))
+        (nodeT (mPair (trNumeral l) (foldr T T (consT treeTy) (nilT treeTy) cs))))
+      t))
+
+  ; conditionals, case analysis of lists and comparison, as applications of the library
+  (defn condT ((a T) (c T) (t T) (u T)) T (call D.cond (single a) (l3 c t u)))
+  (defn lcaseB ((a T) (b T) (l T) (n T) (c T)) T
+    (call D.lcase (l2 a b) (l3 l (mLam one (weaken1 n)) c)))
+  (defn cmpT ((m T) (n T)) T (call D.cmp (nil T) (l2 m n)))
+  (defn digitT ((d T) (e T)) T
+    (ifBit bitTy d (ifBit bitTy e bit1T bit0T) (ifBit bitTy e bit0T bit1T)))
+  (defn bitOrdT ((d T) (e T)) T (ifBit ordTy d (ifBit ordTy e eqO ltO) (ifBit ordTy e gtO eqO)))
+
+  ; the object variables of a definition's first two object parameters
+  (def X0 (x 0))
+  (def X1 (x 1))
+
+  ; the library's definitions, by the indices above, each over those before it
+  ; the empty bitstring, and a bit before a bitstring
+  (def lbBnil (mkDefn 0 (nil T) bitsTy (nilT bitTy)))
+  (def lbB0 (mkDefn 0 (single bitsTy) bitsTy (consT bitTy bit0T (mVar 0))))
+  (def lbB1 (mkDefn 0 (single bitsTy) bitsTy (consT bitTy bit1T (mVar 0))))
+  ; the label of a tree: the fold taking each node to its label
+  (def lbLab (mkDefn 0 (single treeTy) bitsTy (mRoseRec bitsTy (mFst (mVar 0)) (mVar 0))))
+  ; the label and the children: the fold rebuilding each child from its own
+  (def lbUnnode
+    (mkDefn 0 (single treeTy) (prod bitsTy (list treeTy))
+      (mRoseRec (prod bitsTy (list treeTy))
+        (mPair (mFst (mVar 0))
+          (mListRec (nilT treeTy) (consT treeTy (nodeT (mVar 1)) (mVar 0)) (mSnd (mVar 0))))
+        (mVar 0))))
+  ; the children
+  (def lbChildren
+    (mkDefn 0 (single treeTy) (list treeTy) (mSnd (call D.unnode (nil T) (single (mVar 0))))))
+  ; the conditional on a bitstring, by its fold into functions of the two branches
+  (def lbCond
+    (mkDefn 1 (l3 bitsTy X0 X0) X0
+      (mApp
+        (mApp (mListRec (mLam X0 (mLam X0 (mVar 0))) (mLam X0 (mLam X0 (mVar 1))) (mVar 2))
+          (mVar 1))
+        (mVar 0))))
+  ; the tail of a list: the second component of the pair of the list and its tail
+  (def lbTail
+    (mkDefn 1 (single (list X0)) (list X0)
       (mSnd
-        (mListRec (mPair bnilT (mLam bitsTy (mVar 0)))
-          (mPair (consT bitTy (mVar 1) (mFst (mVar 0)))
-            (mLam bitsTy
-              (lcaseB bitTy bitsTy (mVar 0) (consT bitTy (mVar 2) (mFst (mVar 1)))
-                (mLam bitTy
-                  (mLam bitsTy
-                    (consT bitTy (digitT (mVar 1) (mVar 4))
-                      (mApp
-                        (mLam bitsTy
-                          (ifBit bitsTy (mVar 2)
-                            (ifBit bitsTy (mVar 5) (mVar 0) (call D.succ (nil T) (single (mVar 0))))
-                            (call D.succ (nil T) (single (mVar 0)))))
-                        (mApp (mSnd (mVar 3)) (mVar 0)))))))))
-          (mVar 0)))
-      (mVar 1))))
-; comparison, by recursion on the second number into functions of the first
-(def lbCmp
-  (mkDefn 0 (l2 bitsTy bitsTy) ordTy
-    (mApp
-      (mListRec (mLam bitsTy (condT ordTy (mVar 0) gtO eqO))
-        (mLam bitsTy
-          (lcaseB bitTy ordTy (mVar 0) ltO
-            (mLam bitTy
-              (mLam bitsTy
-                (ifOrd ordTy (mApp (mVar 3) (mVar 0)) ltO (bitOrdT (mVar 1) (mVar 4)) gtO)))))
-        (mVar 0))
-      (mVar 1))))
-; less, by the comparison
-(def lbLtB
-  (mkDefn 0 (l2 bitsTy bitsTy) bitsTy (ifOrd bitsTy (cmpT (mVar 1) (mVar 0)) trueT bnilT bnilT)))
-; equality, by recursion on the second number into functions of the first
-(def lbEqB
-  (mkDefn 0 (l2 bitsTy bitsTy) bitsTy
-    (mApp
-      (mListRec (mLam bitsTy (call D.isNil (single bitTy) (single (mVar 0))))
-        (mLam bitsTy
-          (lcaseB bitTy bitsTy (mVar 0) bnilT
-            (mLam bitTy
-              (mLam bitsTy
-                (ifBit bitsTy (mVar 1) (ifBit bitsTy (mVar 4) (mApp (mVar 3) (mVar 0)) bnilT)
-                  (ifBit bitsTy (mVar 4) bnilT (mApp (mVar 3) (mVar 0))))))))
-        (mVar 0))
-      (mVar 1))))
-; subtraction of a number at most the first, by recursion on it into functions of the first
-(def lbSubE
-  (mkDefn 0 (l2 bitsTy bitsTy) bitsTy
-    (mApp
-      (mListRec (mLam bitsTy (mVar 0))
-        (mLam bitsTy
-          (lcaseB bitTy bitsTy (mVar 0) bnilT
-            (mLam bitTy
-              (mLam bitsTy
-                (mApp
-                  (mLam bitsTy
-                    (ifBit bitsTy (mVar 2)
-                      (ifBit bitsTy (mVar 5) (call D.dbl (nil T) (single (mVar 0)))
-                        (b0T (call D.pred (nil T) (single (mVar 0)))))
-                      (ifBit bitsTy (mVar 5) (b0T (mVar 0))
-                        (call D.dbl (nil T) (single (mVar 0))))))
-                  (mApp (mVar 3) (mVar 0)))))))
-        (mVar 0))
-      (mVar 1))))
-; truncated subtraction
-(def lbSub
-  (mkDefn 0 (l2 bitsTy bitsTy) bitsTy
-    (condT bitsTy (call D.ltB (nil T) (l2 (mVar 1) (mVar 0))) bnilT
-      (call D.subE (nil T) (l2 (mVar 1) (mVar 0))))))
-; multiplication, by recursion on the second factor into functions of the first
-(def lbMul
-  (mkDefn 0 (l2 bitsTy bitsTy) bitsTy
-    (mApp
-      (mListRec (mLam bitsTy bnilT)
-        (mLam bitsTy
-          (call D.add (nil T)
-            (l2 (call D.dbl (nil T) (single (mApp (mVar 1) (mVar 0))))
-              (ifBit bitsTy (mVar 2) (mVar 0) (call D.dbl (nil T) (single (mVar 0)))))))
-        (mVar 0))
-      (mVar 1))))
-; the quotient and the remainder, by long division
-(def lbDivMod
-  (let P T (prod bitsTy bitsTy)
-    (mkDefn 0 (l2 bitsTy bitsTy) P
-      (condT P (mVar 0)
-        (mApp
-          (mListRec (mLam bitsTy (mPair bnilT bnilT))
-            (mLam bitsTy
+        (mListRec (mPair (nilT X0) (nilT X0))
+          (mPair (consT X0 (mVar 1) (mFst (mVar 0))) (mFst (mVar 0)))
+          (mVar 0)))))
+  ; the head of a list, or the default for the empty list
+  (def lbHeadD
+    (mkDefn 1 (l2 X0 (list X0)) X0
+      (mApp (mListRec (mLam X0 (mVar 0)) (mLam X0 (mVar 2)) (mVar 0)) (mVar 1))))
+  ; the case analysis of a list: the fold into functions of the pair of the two cases, whose value
+  ; is the pair of the list and the case's value, the empty list's case a function of the terminal
+  ; object
+  (def lbLcase
+    (let C T (exp X0 (exp (list X0) X1))
+      (let P T (prod (exp one X1) C)
+        (let tl T (mFst (mApp (mVar 1) (mVar 0)))
+          (mkDefn 2 (l3 (list X0) (exp one X1) C) X1
+            (mSnd
               (mApp
-                (mLam P
+                (mListRec (mLam P (mPair (nilT X0) (mApp (mFst (mVar 0)) mStar)))
+                  (mLam P (mPair (consT X0 (mVar 2) tl) (mApp (mApp (mSnd (mVar 0)) (mVar 2)) tl)))
+                  (mVar 2))
+                (mPair (mVar 1) (mVar 0)))))))))
+  ; whether a list is empty
+  (def lbIsNil (mkDefn 1 (single (list X0)) bitsTy (mListRec trueT bnilT (mVar 0))))
+  ; the successor, of the pair of the bitstring and its successor
+  (def lbSucc
+    (mkDefn 0 (single bitsTy) bitsTy
+      (mSnd
+        (mListRec (mPair bnilT trueT)
+          (mPair (consT bitTy (mVar 1) (mFst (mVar 0)))
+            (ifBit bitsTy (mVar 1) (b1T (mFst (mVar 0))) (b0T (mSnd (mVar 0)))))
+          (mVar 0)))))
+  ; the length of a list of the object parameter
+  (def lbLength
+    (mkDefn 1 (single (list X0)) bitsTy
+      (mListRec bnilT (call D.succ (nil T) (single (mVar 0))) (mVar 0))))
+  ; the predecessor, zero at zero
+  (def lbPred
+    (mkDefn 0 (single bitsTy) bitsTy
+      (mSnd
+        (mListRec (mPair bnilT bnilT)
+          (mPair (consT bitTy (mVar 1) (mFst (mVar 0)))
+            (ifBit bitsTy (mVar 1) (condT bitsTy (mFst (mVar 0)) (b1T (mSnd (mVar 0))) bnilT)
+              (b0T (mFst (mVar 0)))))
+          (mVar 0)))))
+  ; doubling
+  (def lbDbl
+    (mkDefn 0 (single bitsTy) bitsTy
+      (mSnd
+        (mListRec (mPair bnilT bnilT)
+          (mPair (consT bitTy (mVar 1) (mFst (mVar 0)))
+            (ifBit bitsTy (mVar 1) (b1T (mSnd (mVar 0))) (b1T (b0T (mFst (mVar 0))))))
+          (mVar 0)))))
+  ; addition, by recursion on the second summand into functions of the first
+  (def lbAdd
+    (mkDefn 0 (l2 bitsTy bitsTy) bitsTy
+      (mApp
+        (mSnd
+          (mListRec (mPair bnilT (mLam bitsTy (mVar 0)))
+            (mPair (consT bitTy (mVar 1) (mFst (mVar 0)))
+              (mLam bitsTy
+                (lcaseB bitTy bitsTy (mVar 0) (consT bitTy (mVar 2) (mFst (mVar 1)))
+                  (mLam bitTy
+                    (mLam bitsTy
+                      (consT bitTy (digitT (mVar 1) (mVar 4))
+                        (mApp
+                          (mLam bitsTy
+                            (ifBit bitsTy (mVar 2)
+                              (ifBit bitsTy (mVar 5) (mVar 0)
+                                (call D.succ (nil T) (single (mVar 0))))
+                              (call D.succ (nil T) (single (mVar 0)))))
+                          (mApp (mSnd (mVar 3)) (mVar 0)))))))))
+            (mVar 0)))
+        (mVar 1))))
+  ; comparison, by recursion on the second number into functions of the first
+  (def lbCmp
+    (mkDefn 0 (l2 bitsTy bitsTy) ordTy
+      (mApp
+        (mListRec (mLam bitsTy (condT ordTy (mVar 0) gtO eqO))
+          (mLam bitsTy
+            (lcaseB bitTy ordTy (mVar 0) ltO
+              (mLam bitTy
+                (mLam bitsTy
+                  (ifOrd ordTy (mApp (mVar 3) (mVar 0)) ltO (bitOrdT (mVar 1) (mVar 4)) gtO)))))
+          (mVar 0))
+        (mVar 1))))
+  ; less, by the comparison
+  (def lbLtB
+    (mkDefn 0 (l2 bitsTy bitsTy) bitsTy (ifOrd bitsTy (cmpT (mVar 1) (mVar 0)) trueT bnilT bnilT)))
+  ; equality, by recursion on the second number into functions of the first
+  (def lbEqB
+    (mkDefn 0 (l2 bitsTy bitsTy) bitsTy
+      (mApp
+        (mListRec (mLam bitsTy (call D.isNil (single bitTy) (single (mVar 0))))
+          (mLam bitsTy
+            (lcaseB bitTy bitsTy (mVar 0) bnilT
+              (mLam bitTy
+                (mLam bitsTy
+                  (ifBit bitsTy (mVar 1) (ifBit bitsTy (mVar 4) (mApp (mVar 3) (mVar 0)) bnilT)
+                    (ifBit bitsTy (mVar 4) bnilT (mApp (mVar 3) (mVar 0))))))))
+          (mVar 0))
+        (mVar 1))))
+  ; subtraction of a number at most the first, by recursion on it into functions of the first
+  (def lbSubE
+    (mkDefn 0 (l2 bitsTy bitsTy) bitsTy
+      (mApp
+        (mListRec (mLam bitsTy (mVar 0))
+          (mLam bitsTy
+            (lcaseB bitTy bitsTy (mVar 0) bnilT
+              (mLam bitTy
+                (mLam bitsTy
                   (mApp
                     (mLam bitsTy
-                      (ifOrd P (cmpT (mVar 0) (mVar 2))
-                        (mPair (call D.dbl (nil T) (single (mFst (mVar 1)))) (mVar 0))
-                        (mPair (b0T (mFst (mVar 1))) bnilT)
-                        (ifOrd P (cmpT (mVar 0) (call D.dbl (nil T) (single (mVar 2))))
-                          (mPair (b0T (mFst (mVar 1))) (call D.subE (nil T) (l2 (mVar 0) (mVar 2))))
-                          (mPair (b1T (mFst (mVar 1))) bnilT)
-                          (mPair (b1T (mFst (mVar 1))) bnilT))))
-                    (consT bitTy (mVar 3) (mSnd (mVar 0)))))
-                (mApp (mVar 1) (mVar 0))))
-            (mVar 1))
+                      (ifBit bitsTy (mVar 2)
+                        (ifBit bitsTy (mVar 5) (call D.dbl (nil T) (single (mVar 0)))
+                          (b0T (call D.pred (nil T) (single (mVar 0)))))
+                        (ifBit bitsTy (mVar 5) (b0T (mVar 0))
+                          (call D.dbl (nil T) (single (mVar 0))))))
+                    (mApp (mVar 3) (mVar 0)))))))
           (mVar 0))
-        (mPair bnilT (mVar 1))))))
-; the base-two logarithm, from the fold into the pair of the length and whether a bit is one
-(def lbLog2
-  (let P T (prod bitsTy bitsTy)
-    (mkDefn 0 (single bitsTy) bitsTy
+        (mVar 1))))
+  ; truncated subtraction
+  (def lbSub
+    (mkDefn 0 (l2 bitsTy bitsTy) bitsTy
+      (condT bitsTy (call D.ltB (nil T) (l2 (mVar 1) (mVar 0))) bnilT
+        (call D.subE (nil T) (l2 (mVar 1) (mVar 0))))))
+  ; multiplication, by recursion on the second factor into functions of the first
+  (def lbMul
+    (mkDefn 0 (l2 bitsTy bitsTy) bitsTy
       (mApp
-        (mLam P
-          (condT bitsTy (mSnd (mVar 0)) (mFst (mVar 0))
-            (call D.pred (nil T) (single (mFst (mVar 0))))))
-        (mListRec (mPair bnilT bnilT)
+        (mListRec (mLam bitsTy bnilT)
+          (mLam bitsTy
+            (call D.add (nil T)
+              (l2 (call D.dbl (nil T) (single (mApp (mVar 1) (mVar 0))))
+                (ifBit bitsTy (mVar 2) (mVar 0) (call D.dbl (nil T) (single (mVar 0)))))))
+          (mVar 0))
+        (mVar 1))))
+  ; the quotient and the remainder, by long division
+  (def lbDivMod
+    (let P T (prod bitsTy bitsTy)
+      (mkDefn 0 (l2 bitsTy bitsTy) P
+        (condT P (mVar 0)
           (mApp
-            (mLam P
-              (mPair (call D.succ (nil T) (single (mFst (mVar 0))))
-                (ifBit bitsTy (mVar 2) (mSnd (mVar 0)) trueT)))
-            (mVar 0))
-          (mVar 0))))))
-; iteration, by recursion on the number into functions of the function and the start
-(def lbIter
-  (let F T (exp X0 X0)
-    (mkDefn 1 (l3 bitsTy F X0) X0
-      (mApp
-        (mApp
-          (mListRec (mLam F (mLam X0 (mVar 0)))
-            (mLam F
-              (mLam X0
+            (mListRec (mLam bitsTy (mPair bnilT bnilT))
+              (mLam bitsTy
                 (mApp
-                  (mLam X0
-                    (ifBit X0 (mVar 4) (mApp (mVar 2) (mVar 0))
-                      (mApp (mVar 2) (mApp (mVar 2) (mVar 0)))))
-                  (mApp (mApp (mVar 2) (mVar 1)) (mApp (mApp (mVar 2) (mVar 1)) (mVar 0))))))
-            (mVar 2))
-          (mVar 1))
-        (mVar 0)))))
-; the applications of a list of functions to one argument
-(def lbMapApp
-  (mkDefn 2 (l2 (list (exp X0 X1)) X0) (list X1)
-    (mApp
-      (mListRec (mLam X0 (nilT X1))
-        (mLam X0 (consT X1 (mApp (mVar 2) (mVar 0)) (mApp (mVar 1) (mVar 0))))
-        (mVar 1))
-      (mVar 0))))
-; conjunction
-(def lbAnd (mkDefn 0 (l2 bitsTy bitsTy) bitsTy (condT bitsTy (mVar 1) (mVar 0) bnilT)))
-; whether a list of functions holds of a list of trees of its length, elementwise
-(def lbAllZip
-  (mkDefn 0 (l2 (list (exp treeTy bitsTy)) (list treeTy)) bitsTy
-    (mApp
-      (mListRec (mLam (list treeTy) (call D.isNil (single treeTy) (single (mVar 0))))
-        (mLam (list treeTy)
-          (condT bitsTy (call D.isNil (single treeTy) (single (mVar 0))) bnilT
-            (call D.and (nil T)
-              (l2 (mApp (mVar 2) (call D.headD (single treeTy) (l2 (leafT bnilT) (mVar 0))))
-                (mApp (mVar 1) (call D.tail (single treeTy) (single (mVar 0))))))))
-        (mVar 1))
-      (mVar 0))))
-; equality of trees: the fold into functions of the second tree
-(def lbEqual
-  (mkDefn 0 (l2 treeTy treeTy) bitsTy
-    (mApp
-      (mRoseRec (exp treeTy bitsTy)
-        (mLam treeTy
-          (call D.and (nil T)
-            (l2 (call D.eqB (nil T) (l2 (mFst (mVar 1)) (call D.lab (nil T) (single (mVar 0)))))
-              (call D.allZip (nil T)
-                (l2 (mSnd (mVar 1)) (call D.children (nil T) (single (mVar 0))))))))
-        (mVar 1))
-      (mVar 0))))
-(def lib
-  (cons lbBnil
-    (cons lbB0
-      (cons lbB1
-        (cons lbLab
-          (cons lbUnnode
-            (cons lbChildren
-              (cons lbCond
-                (cons lbTail
-                  (cons lbHeadD
-                    (cons lbLcase
-                      (cons lbIsNil
-                        (cons lbSucc
-                          (cons lbLength
-                            (cons lbPred
-                              (cons lbDbl
-                                (cons lbAdd
-                                  (cons lbCmp
-                                    (cons lbLtB
-                                      (cons lbEqB
-                                        (cons lbSubE
-                                          (cons lbSub
-                                            (cons lbMul
-                                              (cons lbDivMod
-                                                (cons lbLog2
-                                                  (cons lbIter
-                                                    (cons lbMapApp
-                                                      (cons lbAnd
-                                                        (cons lbAllZip
-                                                          (cons lbEqual
-                                                            (nil T)))))))))))))))))))))))))))))))
-
-; the kernel's constants at their result types: the fold of trees, into functions of the step;
-; the fold whose step sees the node, at pairs of the rebuilt node and its value; iteration; the
-; right fold of lists, into functions of the pair of the step and the start; and case analysis
-(defn foldT ((a T)) T
-  (let F T (exp treeTy (exp (list a) a))
-    (mLam F
-      (mLam treeTy
-        (mApp
-          (mRoseRec (exp F a)
-            (mLam F
-              (mApp (mApp (mVar 0) (leafT (mFst (mVar 1))))
-                (call D.mapApp (l2 F a) (l2 (mSnd (mVar 1)) (mVar 0)))))
+                  (mLam P
+                    (mApp
+                      (mLam bitsTy
+                        (ifOrd P (cmpT (mVar 0) (mVar 2))
+                          (mPair (call D.dbl (nil T) (single (mFst (mVar 1)))) (mVar 0))
+                          (mPair (b0T (mFst (mVar 1))) bnilT)
+                          (ifOrd P (cmpT (mVar 0) (call D.dbl (nil T) (single (mVar 2))))
+                            (mPair (b0T (mFst (mVar 1)))
+                              (call D.subE (nil T) (l2 (mVar 0) (mVar 2))))
+                            (mPair (b1T (mFst (mVar 1))) bnilT)
+                            (mPair (b1T (mFst (mVar 1))) bnilT))))
+                      (consT bitTy (mVar 3) (mSnd (mVar 0)))))
+                  (mApp (mVar 1) (mVar 0))))
+              (mVar 1))
             (mVar 0))
-          (mVar 1))))))
-(defn fstsT ((ps T)) T (mListRec (nilT treeTy) (consT treeTy (mFst (mVar 1)) (mVar 0)) ps))
-(defn sndsT ((a T) (ps T)) T (mListRec (nilT a) (consT a (mSnd (mVar 1)) (mVar 0)) ps))
-(defn paraT ((a T)) T
-  (let F T (exp treeTy (exp (list a) a))
-    (let P T (prod treeTy a)
+          (mPair bnilT (mVar 1))))))
+  ; the base-two logarithm, from the fold into the pair of the length and whether a bit is one
+  (def lbLog2
+    (let P T (prod bitsTy bitsTy)
+      (mkDefn 0 (single bitsTy) bitsTy
+        (mApp
+          (mLam P
+            (condT bitsTy (mSnd (mVar 0)) (mFst (mVar 0))
+              (call D.pred (nil T) (single (mFst (mVar 0))))))
+          (mListRec (mPair bnilT bnilT)
+            (mApp
+              (mLam P
+                (mPair (call D.succ (nil T) (single (mFst (mVar 0))))
+                  (ifBit bitsTy (mVar 2) (mSnd (mVar 0)) trueT)))
+              (mVar 0))
+            (mVar 0))))))
+  ; iteration, by recursion on the number into functions of the function and the start
+  (def lbIter
+    (let F T (exp X0 X0)
+      (mkDefn 1 (l3 bitsTy F X0) X0
+        (mApp
+          (mApp
+            (mListRec (mLam F (mLam X0 (mVar 0)))
+              (mLam F
+                (mLam X0
+                  (mApp
+                    (mLam X0
+                      (ifBit X0 (mVar 4) (mApp (mVar 2) (mVar 0))
+                        (mApp (mVar 2) (mApp (mVar 2) (mVar 0)))))
+                    (mApp (mApp (mVar 2) (mVar 1)) (mApp (mApp (mVar 2) (mVar 1)) (mVar 0))))))
+              (mVar 2))
+            (mVar 1))
+          (mVar 0)))))
+  ; the applications of a list of functions to one argument
+  (def lbMapApp
+    (mkDefn 2 (l2 (list (exp X0 X1)) X0) (list X1)
+      (mApp
+        (mListRec (mLam X0 (nilT X1))
+          (mLam X0 (consT X1 (mApp (mVar 2) (mVar 0)) (mApp (mVar 1) (mVar 0))))
+          (mVar 1))
+        (mVar 0))))
+  ; conjunction
+  (def lbAnd (mkDefn 0 (l2 bitsTy bitsTy) bitsTy (condT bitsTy (mVar 1) (mVar 0) bnilT)))
+  ; whether a list of functions holds of a list of trees of its length, elementwise
+  (def lbAllZip
+    (mkDefn 0 (l2 (list (exp treeTy bitsTy)) (list treeTy)) bitsTy
+      (mApp
+        (mListRec (mLam (list treeTy) (call D.isNil (single treeTy) (single (mVar 0))))
+          (mLam (list treeTy)
+            (condT bitsTy (call D.isNil (single treeTy) (single (mVar 0))) bnilT
+              (call D.and (nil T)
+                (l2 (mApp (mVar 2) (call D.headD (single treeTy) (l2 (leafT bnilT) (mVar 0))))
+                  (mApp (mVar 1) (call D.tail (single treeTy) (single (mVar 0))))))))
+          (mVar 1))
+        (mVar 0))))
+  ; equality of trees: the fold into functions of the second tree
+  (def lbEqual
+    (mkDefn 0 (l2 treeTy treeTy) bitsTy
+      (mApp
+        (mRoseRec (exp treeTy bitsTy)
+          (mLam treeTy
+            (call D.and (nil T)
+              (l2 (call D.eqB (nil T) (l2 (mFst (mVar 1)) (call D.lab (nil T) (single (mVar 0)))))
+                (call D.allZip (nil T)
+                  (l2 (mSnd (mVar 1)) (call D.children (nil T) (single (mVar 0))))))))
+          (mVar 1))
+        (mVar 0))))
+  (def lib
+    (cons lbBnil
+      (cons lbB0
+        (cons lbB1
+          (cons lbLab
+            (cons lbUnnode
+              (cons lbChildren
+                (cons lbCond
+                  (cons lbTail
+                    (cons lbHeadD
+                      (cons lbLcase
+                        (cons lbIsNil
+                          (cons lbSucc
+                            (cons lbLength
+                              (cons lbPred
+                                (cons lbDbl
+                                  (cons lbAdd
+                                    (cons lbCmp
+                                      (cons lbLtB
+                                        (cons lbEqB
+                                          (cons lbSubE
+                                            (cons lbSub
+                                              (cons lbMul
+                                                (cons lbDivMod
+                                                  (cons lbLog2
+                                                    (cons lbIter
+                                                      (cons lbMapApp
+                                                        (cons lbAnd
+                                                          (cons lbAllZip
+                                                            (cons lbEqual
+                                                              (nil T)))))))))))))))))))))))))))))))
+
+  ; the kernel's constants at their result types: the fold of trees, into functions of the step;
+  ; the fold whose step sees the node, at pairs of the rebuilt node and its value; iteration; the
+  ; right fold of lists, into functions of the pair of the step and the start; and case analysis
+  (defn foldT ((a T)) T
+    (let F T (exp treeTy (exp (list a) a))
       (mLam F
         (mLam treeTy
-          (mSnd
-            (mApp
-              (mRoseRec (exp F P)
-                (mLam F
-                  (mApp
-                    (mLam (list P)
-                      (mApp
-                        (mLam treeTy
-                          (mPair (mVar 0) (mApp (mApp (mVar 2) (mVar 0)) (sndsT a (mVar 1)))))
-                        (nodeT (mPair (mFst (mVar 2)) (fstsT (mVar 0))))))
-                    (call D.mapApp (l2 F P) (l2 (mSnd (mVar 1)) (mVar 0)))))
-                (mVar 0))
-              (mVar 1))))))))
-(defn iterT ((a T)) T
-  (mLam (exp a a)
-    (mLam a
-      (mLam treeTy
-        (call D.iter (single a) (l3 (call D.lab (nil T) (single (mVar 0))) (mVar 2) (mVar 1)))))))
-(defn foldrT ((a T) (b T)) T
-  (let P T (prod (exp a (exp b b)) b)
-    (mLam (exp a (exp b b))
-      (mLam b
-        (mLam (list a)
           (mApp
-            (mListRec (mLam P (mSnd (mVar 0)))
-              (mLam P (mApp (mApp (mFst (mVar 0)) (mVar 2)) (mApp (mVar 1) (mVar 0))))
+            (mRoseRec (exp F a)
+              (mLam F
+                (mApp (mApp (mVar 0) (leafT (mFst (mVar 1))))
+                  (call D.mapApp (l2 F a) (l2 (mSnd (mVar 1)) (mVar 0)))))
               (mVar 0))
-            (mPair (mVar 2) (mVar 1))))))))
-(defn lcaseT ((a T) (b T)) T
-  (mLam (list a) (mLam b (mLam (exp a (exp (list a) b)) (lcaseB a b (mVar 2) (mVar 1) (mVar 0))))))
-
-; the kernel's primitives, each a function of the labels and the children of trees
-(defn labT ((t T)) T (call D.lab (nil T) (single t)))
-(defn binT ((f (Arrow T (Arrow T T)))) T
-  (mLam treeTy (mLam treeTy (leafT (f (labT (mVar 1)) (labT (mVar 0)))))))
-(defn primT ((k T)) T
-  (if (eq k Prim.label) (some (mLam treeTy (leafT (labT (mVar 0)))))
-    (if (eq k Prim.arity)
-      (some
+            (mVar 1))))))
+  (defn fstsT ((ps T)) T (mListRec (nilT treeTy) (consT treeTy (mFst (mVar 1)) (mVar 0)) ps))
+  (defn sndsT ((a T) (ps T)) T (mListRec (nilT a) (consT a (mSnd (mVar 1)) (mVar 0)) ps))
+  (defn paraT ((a T)) T
+    (let F T (exp treeTy (exp (list a) a))
+      (let P T (prod treeTy a)
+        (mLam F
+          (mLam treeTy
+            (mSnd
+              (mApp
+                (mRoseRec (exp F P)
+                  (mLam F
+                    (mApp
+                      (mLam (list P)
+                        (mApp
+                          (mLam treeTy
+                            (mPair (mVar 0) (mApp (mApp (mVar 2) (mVar 0)) (sndsT a (mVar 1)))))
+                          (nodeT (mPair (mFst (mVar 2)) (fstsT (mVar 0))))))
+                      (call D.mapApp (l2 F P) (l2 (mSnd (mVar 1)) (mVar 0)))))
+                  (mVar 0))
+                (mVar 1))))))))
+  (defn iterT ((a T)) T
+    (mLam (exp a a)
+      (mLam a
         (mLam treeTy
-          (leafT
-            (call D.length (single treeTy) (single (call D.children (nil T) (single (mVar 0))))))))
-      (if (eq k Prim.child)
+          (call D.iter (single a) (l3 (call D.lab (nil T) (single (mVar 0))) (mVar 2) (mVar 1)))))))
+  (defn foldrT ((a T) (b T)) T
+    (let P T (prod (exp a (exp b b)) b)
+      (mLam (exp a (exp b b))
+        (mLam b
+          (mLam (list a)
+            (mApp
+              (mListRec (mLam P (mSnd (mVar 0)))
+                (mLam P (mApp (mApp (mFst (mVar 0)) (mVar 2)) (mApp (mVar 1) (mVar 0))))
+                (mVar 0))
+              (mPair (mVar 2) (mVar 1))))))))
+  (defn lcaseT ((a T) (b T)) T
+    (mLam (list a)
+      (mLam b (mLam (exp a (exp (list a) b)) (lcaseB a b (mVar 2) (mVar 1) (mVar 0))))))
+
+  ; the kernel's primitives, each a function of the labels and the children of trees
+  (defn labT ((t T)) T (call D.lab (nil T) (single t)))
+  (defn binT ((f (Arrow T (Arrow T T)))) T
+    (mLam treeTy (mLam treeTy (leafT (f (labT (mVar 1)) (labT (mVar 0)))))))
+  (defn primT ((k T)) T
+    (if (eq k Prim.label) (some (mLam treeTy (leafT (labT (mVar 0)))))
+      (if (eq k Prim.arity)
         (some
           (mLam treeTy
+            (leafT
+              (call D.length (single treeTy)
+                (single (call D.children (nil T) (single (mVar 0))))))))
+        (if (eq k Prim.child)
+          (some
             (mLam treeTy
-              (call D.headD (single treeTy)
-                (l2 (leafT bnilT)
-                  (call D.iter (single (list treeTy))
-                    (l3 (labT (mVar 0))
-                      (mLam (list treeTy) (call D.tail (single treeTy) (single (mVar 0))))
-                      (call D.children (nil T) (single (mVar 1))))))))))
-        (if (eq k Prim.node)
-          (some (mLam treeTy (mLam (list treeTy) (nodeT (mPair (labT (mVar 1)) (mVar 0))))))
-          (if (eq k Prim.children) (some (mLam treeTy (call D.children (nil T) (single (mVar 0)))))
-            (if (eq k Prim.add) (some (binT (lam ((m T) (n T)) (call D.add (nil T) (l2 m n)))))
-              (if (eq k Prim.sub) (some (binT (lam ((m T) (n T)) (call D.sub (nil T) (l2 m n)))))
-                (if (eq k Prim.mul) (some (binT (lam ((m T) (n T)) (call D.mul (nil T) (l2 m n)))))
-                  (if (eq k Prim.div)
-                    (some (binT (lam ((m T) (n T)) (mFst (call D.divMod (nil T) (l2 m n))))))
-                    (if (eq k Prim.mod)
-                      (some (binT (lam ((m T) (n T)) (mSnd (call D.divMod (nil T) (l2 m n))))))
-                      (if (eq k Prim.eq)
-                        (some (binT (lam ((m T) (n T)) (call D.eqB (nil T) (l2 m n)))))
-                        (if (eq k Prim.lt)
-                          (some (binT (lam ((m T) (n T)) (call D.ltB (nil T) (l2 m n)))))
-                          (if (eq k Prim.equal)
-                            (some
-                              (mLam treeTy
-                                (mLam treeTy
-                                  (leafT (call D.equal (nil T) (l2 (mVar 1) (mVar 0)))))))
-                            (if (eq k Prim.log2)
+              (mLam treeTy
+                (call D.headD (single treeTy)
+                  (l2 (leafT bnilT)
+                    (call D.iter (single (list treeTy))
+                      (l3 (labT (mVar 0))
+                        (mLam (list treeTy) (call D.tail (single treeTy) (single (mVar 0))))
+                        (call D.children (nil T) (single (mVar 1))))))))))
+          (if (eq k Prim.node)
+            (some (mLam treeTy (mLam (list treeTy) (nodeT (mPair (labT (mVar 1)) (mVar 0))))))
+            (if (eq k Prim.children)
+              (some (mLam treeTy (call D.children (nil T) (single (mVar 0)))))
+              (if (eq k Prim.add) (some (binT (lam ((m T) (n T)) (call D.add (nil T) (l2 m n)))))
+                (if (eq k Prim.sub) (some (binT (lam ((m T) (n T)) (call D.sub (nil T) (l2 m n)))))
+                  (if (eq k Prim.mul)
+                    (some (binT (lam ((m T) (n T)) (call D.mul (nil T) (l2 m n)))))
+                    (if (eq k Prim.div)
+                      (some (binT (lam ((m T) (n T)) (mFst (call D.divMod (nil T) (l2 m n))))))
+                      (if (eq k Prim.mod)
+                        (some (binT (lam ((m T) (n T)) (mSnd (call D.divMod (nil T) (l2 m n))))))
+                        (if (eq k Prim.eq)
+                          (some (binT (lam ((m T) (n T)) (call D.eqB (nil T) (l2 m n)))))
+                          (if (eq k Prim.lt)
+                            (some (binT (lam ((m T) (n T)) (call D.ltB (nil T) (l2 m n)))))
+                            (if (eq k Prim.equal)
                               (some
                                 (mLam treeTy
-                                  (leafT (call D.log2 (nil T) (single (labT (mVar 0)))))))
-                              none)))))))))))))))
-
-; the parts of a kernel function type, product type and list type
-(defn kArrowParts ((t T)) T
-  (if (and (eq (label t) Label.tyArrow) (eq (arity t) 2)) (some (pr (child t 0) (child t 1))) none))
-(defn kProdParts ((t T)) T
-  (if (and (eq (label t) Label.tyProd) (eq (arity t) 2)) (some (pr (child t 0) (child t 1))) none))
-(defn kListPart ((t T)) T
-  (if (and (eq (label t) Label.tyList) (eq (arity t) 1)) (some (child t 0)) none))
-
-; the translation of a term, as a function of the types of the globals and of the context: the
-; pair of the term's kernel type and its translation, by the fold whose step sees the node
-(deftype TrF (Arrow Ts (Arrow Ts T)))
-(deftype TrFs (List TrF))
-(defn trTail ((rs TrFs)) TrFs (lcase TrF TrFs rs (nil TrF) (lam ((r TrF) (rest TrFs)) rest)))
-(defn trAt ((rs TrFs) (i T)) TrF
-  (lcase TrF TrF (iter TrFs trTail rs i) (lam ((g Ts) (c Ts)) none) (lam ((r TrF) (rest TrFs)) r)))
-(defn termStep ((nd T) (rs TrFs)) TrF
-  (lam ((gt Ts) (ctx Ts))
-    (let l T (label nd)
-      (let k T (arity nd)
-        (let c0 T (child nd 0)
-          (let c1 T (child nd 1)
-            (if (eq l Label.var)
-              (if (eq k 1)
-                (bindO (nth ctx (label c0)) (lam ((A T)) (some (pr A (mVar (label c0))))))
-                none)
-              (if (eq l Label.lam)
-                (if (eq k 2)
-                  (if (isTy c0)
-                    (bindO ((trAt rs 1) gt (cons c0 ctx))
-                      (lam ((p T))
-                        (mapO (lam ((a T)) (pr (tyArrow c0 (p1 p)) (mLam a (p2 p)))) (trTy c0))))
-                    none)
-                  none)
-                (if (eq l Label.app)
-                  (if (eq k 2)
-                    (bindO ((trAt rs 0) gt ctx)
-                      (lam ((pf T))
-                        (bindO ((trAt rs 1) gt ctx)
-                          (lam ((px T))
-                            (bindO (kArrowParts (p1 pf))
-                              (lam ((ab T))
-                                (if (equal (p1 px) (p1 ab))
-                                  (some (pr (p2 ab) (mApp (p2 pf) (p2 px))))
-                                  none)))))))
-                    none)
-                  (if (eq l Label.unit) (if (eq k 0) (some (pr Label.tyUnit mStar)) none)
-                    (if (eq l Label.pair)
-                      (if (eq k 2)
-                        (bindO ((trAt rs 0) gt ctx)
-                          (lam ((pa T))
-                            (bindO ((trAt rs 1) gt ctx)
-                              (lam ((pb T))
+                                  (mLam treeTy
+                                    (leafT (call D.equal (nil T) (l2 (mVar 1) (mVar 0)))))))
+                              (if (eq k Prim.log2)
                                 (some
-                                  (pr (node2 Label.tyProd (p1 pa) (p1 pb))
-                                    (mPair (p2 pa) (p2 pb))))))))
-                        none)
-                      (if (eq l Label.fst)
-                        (if (eq k 1)
+                                  (mLam treeTy
+                                    (leafT (call D.log2 (nil T) (single (labT (mVar 0)))))))
+                                none)))))))))))))))
+
+  ; the parts of a kernel function type, product type and list type
+  (defn kArrowParts ((t T)) T
+    (if (and (eq (label t) Label.tyArrow) (eq (arity t) 2)) (some (pr (child t 0) (child t 1)))
+      none))
+  (defn kProdParts ((t T)) T
+    (if (and (eq (label t) Label.tyProd) (eq (arity t) 2)) (some (pr (child t 0) (child t 1)))
+      none))
+  (defn kListPart ((t T)) T
+    (if (and (eq (label t) Label.tyList) (eq (arity t) 1)) (some (child t 0)) none))
+
+  ; the translation of a term, as a function of the types of the globals and of the context: the
+  ; pair of the term's kernel type and its translation, by the fold whose step sees the node
+  (deftype TrF (Arrow Ts (Arrow Ts T)))
+  (deftype TrFs (List TrF))
+  (defn trTail ((rs TrFs)) TrFs (lcase TrF TrFs rs (nil TrF) (lam ((r TrF) (rest TrFs)) rest)))
+  (defn trAt ((rs TrFs) (i T)) TrF
+    (lcase TrF TrF (iter TrFs trTail rs i) (lam ((g Ts) (c Ts)) none)
+      (lam ((r TrF) (rest TrFs)) r)))
+  (defn termStep ((nd T) (rs TrFs)) TrF
+    (lam ((gt Ts) (ctx Ts))
+      (let l T (label nd)
+        (let k T (arity nd)
+          (let c0 T (child nd 0)
+            (let c1 T (child nd 1)
+              (if (eq l Label.var)
+                (if (eq k 1)
+                  (bindO (nth ctx (label c0)) (lam ((A T)) (some (pr A (mVar (label c0))))))
+                  none)
+                (if (eq l Label.lam)
+                  (if (eq k 2)
+                    (if (isTy c0)
+                      (bindO ((trAt rs 1) gt (cons c0 ctx))
+                        (lam ((p T))
+                          (mapO (lam ((a T)) (pr (tyArrow c0 (p1 p)) (mLam a (p2 p)))) (trTy c0))))
+                      none)
+                    none)
+                  (if (eq l Label.app)
+                    (if (eq k 2)
+                      (bindO ((trAt rs 0) gt ctx)
+                        (lam ((pf T))
+                          (bindO ((trAt rs 1) gt ctx)
+                            (lam ((px T))
+                              (bindO (kArrowParts (p1 pf))
+                                (lam ((ab T))
+                                  (if (equal (p1 px) (p1 ab))
+                                    (some (pr (p2 ab) (mApp (p2 pf) (p2 px))))
+                                    none)))))))
+                      none)
+                    (if (eq l Label.unit) (if (eq k 0) (some (pr Label.tyUnit mStar)) none)
+                      (if (eq l Label.pair)
+                        (if (eq k 2)
                           (bindO ((trAt rs 0) gt ctx)
-                            (lam ((pp T))
-                              (bindO (kProdParts (p1 pp))
-                                (lam ((ab T)) (some (pr (p1 ab) (mFst (p2 pp))))))))
+                            (lam ((pa T))
+                              (bindO ((trAt rs 1) gt ctx)
+                                (lam ((pb T))
+                                  (some
+                                    (pr (node2 Label.tyProd (p1 pa) (p1 pb))
+                                      (mPair (p2 pa) (p2 pb))))))))
                           none)
-                        (if (eq l Label.snd)
+                        (if (eq l Label.fst)
                           (if (eq k 1)
                             (bindO ((trAt rs 0) gt ctx)
                               (lam ((pp T))
                                 (bindO (kProdParts (p1 pp))
-                                  (lam ((ab T)) (some (pr (p2 ab) (mSnd (p2 pp))))))))
+                                  (lam ((ab T)) (some (pr (p1 ab) (mFst (p2 pp))))))))
                             none)
-                          (if (eq l Label.quote)
-                            (if (eq k 1) (some (pr Label.tyTree (quoteT c0))) none)
-                            (if (eq l Label.cond)
-                              (if (eq k 3)
-                                (bindO ((trAt rs 0) gt ctx)
-                                  (lam ((pc T))
-                                    (bindO ((trAt rs 1) gt ctx)
-                                      (lam ((pa T))
-                                        (bindO ((trAt rs 2) gt ctx)
-                                          (lam ((pb T))
-                                            (if
-                                              (and (equal (p1 pc) Label.tyTree)
-                                                (equal (p1 pb) (p1 pa)))
-                                              (mapO
-                                                (lam ((a T))
-                                                  (pr (p1 pa)
-                                                    (condT a (labT (p2 pc)) (p2 pa) (p2 pb))))
-                                                (trTy (p1 pa)))
-                                              none)))))))
-                                none)
-                              (if (eq l Label.fold)
-                                (if (eq k 1)
-                                  (mapO (lam ((a T)) (pr (foldTy c0) (foldT a))) (trTy c0))
-                                  none)
-                                (if (eq l Label.iter)
-                                  (if (eq k 1)
-                                    (mapO (lam ((a T)) (pr (iterTy c0) (iterT a))) (trTy c0))
-                                    none)
-                                  (if (eq l Label.nil)
-                                    (if (eq k 1)
-                                      (mapO (lam ((a T)) (pr (tyList c0) (nilT a))) (trTy c0))
-                                      none)
-                                    (if (eq l Label.cons)
-                                      (if (eq k 2)
-                                        (bindO ((trAt rs 0) gt ctx)
-                                          (lam ((px T))
-                                            (bindO ((trAt rs 1) gt ctx)
-                                              (lam ((pl T))
-                                                (bindO (kListPart (p1 pl))
-                                                  (lam ((A T))
-                                                    (if (equal (p1 px) A)
-                                                      (mapO
-                                                        (lam ((a T))
-                                                          (pr (p1 pl) (consT a (p2 px) (p2 pl))))
-                                                        (trTy A))
-                                                      none)))))))
-                                        none)
-                                      (if (eq l Label.foldr)
-                                        (if (eq k 2)
-                                          (bindO (trTy c0)
-                                            (lam ((a T))
-                                              (mapO (lam ((b T)) (pr (foldrTy c0 c1) (foldrT a b)))
-                                                (trTy c1))))
-                                          none)
-                                        (if (eq l Label.prim)
-                                          (if (eq k 1)
-                                            (bindO (nth primTypes (label c0))
-                                              (lam ((P T))
-                                                (mapO (lam ((t T)) (pr P t)) (primT (label c0)))))
-                                            none)
-                                          (if (eq l Label.ref)
-                                            (if (eq k 1)
-                                              (bindO (nth gt (label c0))
-                                                (lam ((A T))
-                                                  (some
-                                                    (pr A
-                                                      (call (add (length lib) (label c0)) (nil T)
-                                                        (nil T))))))
-                                              none)
-                                            (if (eq l Label.lcase)
-                                              (if (eq k 2)
-                                                (bindO (trTy c0)
+                          (if (eq l Label.snd)
+                            (if (eq k 1)
+                              (bindO ((trAt rs 0) gt ctx)
+                                (lam ((pp T))
+                                  (bindO (kProdParts (p1 pp))
+                                    (lam ((ab T)) (some (pr (p2 ab) (mSnd (p2 pp))))))))
+                              none)
+                            (if (eq l Label.quote)
+                              (if (eq k 1) (some (pr Label.tyTree (quoteT c0))) none)
+                              (if (eq l Label.cond)
+                                (if (eq k 3)
+                                  (bindO ((trAt rs 0) gt ctx)
+                                    (lam ((pc T))
+                                      (bindO ((trAt rs 1) gt ctx)
+                                        (lam ((pa T))
+                                          (bindO ((trAt rs 2) gt ctx)
+                                            (lam ((pb T))
+                                              (if
+                                                (and (equal (p1 pc) Label.tyTree)
+                                                  (equal (p1 pb) (p1 pa)))
+                                                (mapO
                                                   (lam ((a T))
-                                                    (mapO
-                                                      (lam ((b T))
-                                                        (pr (lcaseTy c0 c1) (lcaseT a b)))
-                                                      (trTy c1))))
+                                                    (pr (p1 pa)
+                                                      (condT a (labT (p2 pc)) (p2 pa) (p2 pb))))
+                                                  (trTy (p1 pa)))
+                                                none)))))))
+                                  none)
+                                (if (eq l Label.fold)
+                                  (if (eq k 1)
+                                    (mapO (lam ((a T)) (pr (foldTy c0) (foldT a))) (trTy c0))
+                                    none)
+                                  (if (eq l Label.iter)
+                                    (if (eq k 1)
+                                      (mapO (lam ((a T)) (pr (iterTy c0) (iterT a))) (trTy c0))
+                                      none)
+                                    (if (eq l Label.nil)
+                                      (if (eq k 1)
+                                        (mapO (lam ((a T)) (pr (tyList c0) (nilT a))) (trTy c0))
+                                        none)
+                                      (if (eq l Label.cons)
+                                        (if (eq k 2)
+                                          (bindO ((trAt rs 0) gt ctx)
+                                            (lam ((px T))
+                                              (bindO ((trAt rs 1) gt ctx)
+                                                (lam ((pl T))
+                                                  (bindO (kListPart (p1 pl))
+                                                    (lam ((A T))
+                                                      (if (equal (p1 px) A)
+                                                        (mapO
+                                                          (lam ((a T))
+                                                            (pr (p1 pl) (consT a (p2 px) (p2 pl))))
+                                                          (trTy A))
+                                                        none)))))))
+                                          none)
+                                        (if (eq l Label.foldr)
+                                          (if (eq k 2)
+                                            (bindO (trTy c0)
+                                              (lam ((a T))
+                                                (mapO
+                                                  (lam ((b T)) (pr (foldrTy c0 c1) (foldrT a b)))
+                                                  (trTy c1))))
+                                            none)
+                                          (if (eq l Label.prim)
+                                            (if (eq k 1)
+                                              (bindO (nth primTypes (label c0))
+                                                (lam ((P T))
+                                                  (mapO (lam ((t T)) (pr P t)) (primT (label c0)))))
+                                              none)
+                                            (if (eq l Label.ref)
+                                              (if (eq k 1)
+                                                (bindO (nth gt (label c0))
+                                                  (lam ((A T))
+                                                    (some
+                                                      (pr A
+                                                        (call (add (length lib) (label c0)) (nil T)
+                                                          (nil T))))))
                                                 none)
-                                              (if (eq l Label.para)
-                                                (if (eq k 1)
-                                                  (mapO (lam ((a T)) (pr (foldTy c0) (paraT a)))
-                                                    (trTy c0))
+                                              (if (eq l Label.lcase)
+                                                (if (eq k 2)
+                                                  (bindO (trTy c0)
+                                                    (lam ((a T))
+                                                      (mapO
+                                                        (lam ((b T))
+                                                          (pr (lcaseTy c0 c1) (lcaseT a b)))
+                                                        (trTy c1))))
                                                   none)
-                                                none))))))))))))))))))))))))
-(defn term ((gt Ts) (ctx Ts) (t T)) T ((para TrF termStep t) gt ctx))
+                                                (if (eq l Label.para)
+                                                  (if (eq k 1)
+                                                    (mapO (lam ((a T)) (pr (foldTy c0) (paraT a)))
+                                                      (trTy c0))
+                                                    none)
+                                                  none))))))))))))))))))))))))
+  (defn term ((gt Ts) (ctx Ts) (t T)) T ((para TrF termStep t) gt ctx))
 
-; the translation of a program's definitions, each closed, over those before it: the pair of the
-; node of the globals' kernel types and the node of the definitions of the language
-(defn program ((ds Ts)) T
-  (foldr T T
-    (lam ((t T) (acc T))
-      (bindO acc
-        (lam ((st T))
-          (let gt Ts (children (p1 st))
-            (let defs Ts (children (p2 st))
-              (bindO (term gt (nil T) t)
-                (lam ((au T))
-                  (mapO
-                    (lam ((a T))
-                      (pr (node 0 (append gt (single (p1 au))))
-                        (node 0 (append defs (single (mkDefn 0 (nil T) a (p2 au)))))))
-                    (trTy (p1 au))))))))))
-    (some (pr (node 0 (nil T)) (node 0 (nil T))))
-    (reverse ds)))
+  ; the translation of a program's definitions, each closed, over those before it: the pair of the
+  ; node of the globals' kernel types and the node of the definitions of the language
+  (defn program ((ds Ts)) T
+    (foldr T T
+      (lam ((t T) (acc T))
+        (bindO acc
+          (lam ((st T))
+            (let gt Ts (children (p1 st))
+              (let defs Ts (children (p2 st))
+                (bindO (term gt (nil T) t)
+                  (lam ((au T))
+                    (mapO
+                      (lam ((a T))
+                        (pr (node 0 (append gt (single (p1 au))))
+                          (node 0 (append defs (single (mkDefn 0 (nil T) a (p2 au)))))))
+                      (trTy (p1 au))))))))))
+      (some (pr (node 0 (nil T)) (node 0 (nil T))))
+      (reverse ds)))
 
-; the constants of a translated program: the primitive arrows, and the library's definitions
-; followed by the program's, whose operations follow the signature's
-(defn trGlobals ((defs Ts)) T
-  (globals (node 0 trPrims) (node 0 (mapT defLang (append lib defs))) (length sig)))
+  ; the constants of a translated program: the primitive arrows, and the library's definitions
+  ; followed by the program's, whose operations follow the signature's
+  (defn trGlobals ((defs Ts)) T
+    (globals (node 0 trPrims) (node 0 (mapT defLang (append lib defs))) (length sig)))
 
-; the translation of a theorem of Gödel's T, with the types of the globals: the equality of its
-; sides' translations, in the translation of its context
-(defn thm ((gt Ts) (th T)) T
-  (let ctx Ts (children (child th 0))
-    (let q T (child th 1)
-      (bindO (allSomeT (mapT trTy ctx))
-        (lam ((cn T))
-          (bindO (term gt ctx (child q 1))
-            (lam ((l T))
-              (mapO (lam ((r T)) (mkThm 0 cn (node 0 (nil T)) (mEq (p2 l) (p2 r))))
-                (term gt ctx (child q 2))))))))))
+  ; the translation of a theorem of Gödel's T, with the types of the globals: the equality of its
+  ; sides' translations, in the translation of its context
+  (defn thm ((gt Ts) (th T)) T
+    (let ctx Ts (children (child th 0))
+      (let q T (child th 1)
+        (bindO (allSomeT (mapT trTy ctx))
+          (lam ((cn T))
+            (bindO (term gt ctx (child q 1))
+              (lam ((l T))
+                (mapO (lam ((r T)) (mkThm 0 cn (node 0 (nil T)) (mEq (p2 l) (p2 r))))
+                  (term gt ctx (child q 2)))))))))))
+(import Translation)
