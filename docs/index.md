@@ -3776,8 +3776,10 @@ checklist and in CI.
   (`Geb.Kernel.elabTree`). `ModuleIdentity.lean` identifies each module by
   the CID of its members' and exports' identifiers
   (`Geb.Kernel.Identity.moduleCids`). `Printer.lean` writes a bundle in the
-  readable syntax (`Geb.Kernel.printProgram`), which the reader retracts on
-  well-formed terms (`Geb.Kernel.resolve_printTerm`) and bundles
+  readable syntax (`Geb.Kernel.printProgram`), printing nothing for a term
+  that is not well formed or names of definitions that would not read
+  back, which the reader retracts without hypotheses on terms
+  (`Geb.Kernel.resolve_of_printTerm?`) and bundles
   (`Geb.Kernel.readForms_printProgram`).
   Tested in
   `GebTests/Prototypes/Kernel.lean`,
@@ -4073,10 +4075,11 @@ checklist and in CI.
   normalizer's and provers related to Lean's. The reader's resolution,
   `bootstrap/reader.geb`, and the printer of kernel terms,
   `bootstrap/printer.geb`, are in the same program, the printer in its
-  last layer: `Agreement/Printer.lean` proves the printer equal to
-  `Geb.Kernel.printTerm` at every well-formed term, `Agreement/Reader.lean`
-  the resolution equal to `Geb.Kernel.resolve` at every S-expression,
-  and the two carry `Geb.Kernel.resolve_printTerm` across,
+  last layer: `Agreement/Printer.lean` proves the printer and its test of
+  well-formed terms equal to `Geb.Kernel.printTerm` and `Geb.Kernel.TermWf`,
+  `Agreement/Reader.lean` the resolution equal to `Geb.Kernel.resolve` at
+  every S-expression and the partial printer to `Geb.Kernel.printTerm?` at
+  every term, and the two carry `Geb.Kernel.resolve_of_printTerm?` across,
   so that the reader written in Geb inverts the printer written in Geb.
   Depends on the modules of `Geb/Prototypes/FreeTopos/` above and
   `Geb.Prototypes.PartialHorn.Completeness`.

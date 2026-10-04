@@ -41,10 +41,10 @@ points, at encoded arguments and related states, gives the encoding of the Lean 
 the same equations with the same certificates. The reader's resolution written in Geb,
 {lit}`bootstrap/reader.geb`, and the printer of kernel terms written in Geb,
 {lit}`bootstrap/printer.geb`, are part of the same program too: the resolution agrees with the Lean
-reader's ({name}`Geb.Kernel.resolve`) at every well-formed S-expression, the printer with the Lean
-printer ({name}`Geb.Kernel.printTerm`) at every well-formed term, and so the reader written in Geb
-inverts the printer written in Geb, the Lean retraction
-({name}`Geb.Kernel.resolve_printTerm`) carried across the two agreements.
+reader's ({name}`Geb.Kernel.resolve`) at every S-expression, the partial printer with the Lean
+printer ({name}`Geb.Kernel.printTerm?`) at every term, printing nothing where it prints nothing, and
+so the reader written in Geb inverts the printer written in Geb without hypotheses, the Lean
+retraction ({name}`Geb.Kernel.resolve_of_printTerm?`) carried across the two agreements.
 
 Constants are encoded by
 {name}`GebTests.Prototypes.FreeTopos.Agreement.Encode.encGlobals`, entries by
@@ -383,26 +383,26 @@ theorem combinator_agree : ∃ G' : List Glob, load metalogic = some G' ∧
     ⟨_, metalogic_libRules, Combinator.libRules_eq⟩⟩
 
 /-- The reader written in Geb inverts the printer written in Geb: the program loads to globals
-among which are the printer of kernel terms and the reader's resolution with no type
-abbreviations, at their types; the printer gives the encoding of the Lean printer's S-expression
-of every well-formed term; the resolution, at encoded names of definitions and names in scope,
-gives the encoding of the Lean reader's resolution of every S-expression; and the
-resolution of a well-formed term the printer writes, under binders to a depth, in the scope of
-those binders, is the term. -/
+among which are the partial printer of kernel terms and the reader's resolution with no type
+abbreviations, at their types; the printer gives the encoding of what the Lean printer gives at
+every term, names of definitions and depth; the resolution, at encoded names of definitions and
+names in scope, gives the encoding of the Lean reader's resolution of every S-expression; and
+whatever the printer writes for a term under binders to a depth resolves, in the scope of those
+binders, to the term. -/
 theorem reader_inverse_agree : ∃ G' : List Glob, load metalogic = some G' ∧
-    ∃ pr : Ty.den printTermTy, G'[935]? = some ⟨printTermTy, pr⟩ ∧
+    ∃ pr : Ty.den printTermTy, G'[946]? = some ⟨printTermTy, pr⟩ ∧
     ∃ rb : Ty.den readBackTy, G'[936]? = some ⟨readBackTy, rb⟩ ∧
-      (∀ (defs : List (List Char)) (t : Tree) (d : ℕ), TermWf defs.length t d = true →
-        pr (defs.map nameTree) t (leaf d) = sexpTree (printTerm defs t d)) ∧
+      (∀ (defs : List (List Char)) (t : Tree) (d : ℕ),
+        pr (defs.map nameTree) t (leaf d) = encOpt ((printTerm? defs t d).map sexpTree)) ∧
       (∀ (defs : List (List Char)) (e : SExp) (scope : List (List Char)),
-          rb (defs.map nameTree) (sexpTree e) (scope.map nameTree) =
-            encOpt (resolve [] defs e scope)) ∧
-      (∀ defs : List (List Char), defs.Nodup → (∀ n ∈ defs, NameOk n) →
-        ∀ (t : Tree) (d : ℕ), TermWf defs.length t d = true →
-          rb (defs.map nameTree) (pr (defs.map nameTree) t (leaf d))
-            ((scopeOf d).map nameTree) = encOpt (some t)) :=
-  ⟨_, metalogic.load_globals, «Printer.printTerm», metalogic_printTerm, «Printer.readBack»,
-    metalogic_readBack, Printer.printTerm_eq, Reader.readBack_eq, Reader.readBack_printTerm_eq⟩
+        rb (defs.map nameTree) (sexpTree e) (scope.map nameTree) =
+          encOpt (resolve [] defs e scope)) ∧
+      (∀ (defs : List (List Char)) (t : Tree) (d : ℕ) (e : Tree),
+        pr (defs.map nameTree) t (leaf d) = encOpt (some e) →
+          rb (defs.map nameTree) e ((scopeOf d).map nameTree) = encOpt (some t)) :=
+  ⟨_, metalogic.load_globals, «Printer.printTermOpt», metalogic_printTermOpt, «Printer.readBack»,
+    metalogic_readBack, Reader.printTermOpt_eq, Reader.readBack_eq,
+    Reader.readBack_printTermOpt_eq⟩
 
 end GebTests.Prototypes.FreeTopos.Agreement
 

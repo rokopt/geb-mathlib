@@ -4,16 +4,21 @@
 ;
 ; The printer of kernel terms, written in the kernel's syntax: a bundle's definitions as
 ; S-expressions of the readable syntax, which the reader reads back, printing as the seed's
-; printer prints.
-; Requires the prelude, the reader and decimalChars of the datatype language.
+; printer prints. The printer is partial: it prints a term only when the term is well formed and
+; the names of the definitions may be read back as theirs, and a bundle only when each of its
+; definitions is.
+; Requires the prelude, the reader, the checker's isTy and decimalChars of the datatype language.
 ;
 ; Representations. As in the reader: an S-expression is a node of label 1 over an atom's
 ; characters or a node of label 2 over a list's elements, and a name is a node of label 0 over
 ; its characters. A bundle is the node of label 100 over the node of label 101 over the terms and
 ; the node of label 102 over the names.
 
-(module Printer (export printType printDatum printTerm readBack printProgram) (import Prelude)
+(module Printer
+  (export printType printDatum printTerm readBack termWf nameOk namesOk printTermOpt printProgram)
+  (import Prelude)
   (import Reader)
+  (import Check)
   ; atoms and lists
   (def atomOf (lam ((n T)) (node 1 (children n))))
   (def listOf (lam ((xs Ts)) (node 2 xs)))
@@ -98,17 +103,99 @@
   ; definitions and the names in scope: what reads back what the printer writes
   (def readBack (lam ((defs Ts) (e T) (scope Ts)) ((lam ((r T)) r) (resolve (nil T) defs e scope))))
 
+  ; well-formedness: whether the only one of trees is a leaf below a bound
+  (def leafBelow
+    (lam ((cs Ts) (n T))
+      (if (eq (length cs) 1) (if (nonEmpty (children (at cs 0))) 0 (lt (label (at cs 0)) n)) 0)))
+  ; whether every child is well formed at a depth
+  (def allAt (lam ((rs PRs) (d T)) (foldr PR T (lam ((r PR) (ok T)) (if ((snd r) d) ok 0)) 1 rs)))
+  ; whether there are a number of children, each a type
+  (def tysOf
+    (lam ((k T) (cs Ts))
+      (if (eq (length cs) k) (foldr T T (lam ((c T) (ok T)) (if (isTy c) ok 0)) 1 cs) 0)))
+  ; one node's well-formedness under binders to a depth, from its children with their
+  ; well-formedness as a function of the depth, given the number of definitions
+  (def wfStep
+    (lam ((nDefs T) (l T) (rs PRs) (d T))
+      (let cs Ts (prTrees rs)
+        (if (eq l Label.var) (leafBelow cs d)
+          (if (eq l Label.lam)
+            (if (eq (length cs) 2) (if (isTy (at cs 0)) (at (prAt rs (add d 1)) 1) 0) 0)
+            (if (eq l Label.app) (if (eq (length cs) 2) (allAt rs d) 0)
+              (if (eq l Label.unit) (if (nonEmpty cs) 0 1)
+                (if (eq l Label.pair) (allAt rs d)
+                  (if (eq l Label.fst) (allAt rs d)
+                    (if (eq l Label.snd) (allAt rs d)
+                      (if (eq l Label.cond) (allAt rs d)
+                        (if (eq l Label.cons) (allAt rs d)
+                          (if (eq l Label.quote) (eq (length cs) 1)
+                            (if (eq l Label.nil) (tysOf 1 cs)
+                              (if (eq l Label.fold) (tysOf 1 cs)
+                                (if (eq l Label.para) (tysOf 1 cs)
+                                  (if (eq l Label.iter) (tysOf 1 cs)
+                                    (if (eq l Label.foldr) (tysOf 2 cs)
+                                      (if (eq l Label.lcase) (tysOf 2 cs)
+                                        (if (eq l Label.prim) (leafBelow cs (length primNames))
+                                          (if (eq l Label.ref) (leafBelow cs nDefs)
+                                            0)))))))))))))))))))))
+  ; whether a term is well formed under binders to a depth, given the number of definitions
+  (def termWf
+    (lam ((nDefs T) (t T) (d T))
+      ((snd
+         (fold PR
+           (lam ((l T) (rs PRs)) (pair (node l (prTrees rs)) (lam ((e T)) (wfStep nDefs l rs e))))
+           t)) d)))
+  ; whether a name is a binder's: an underscore followed by a numeral as the printer writes it
+  (def isBinderName
+    (lam ((n T))
+      (let k T (numeral (tail (children n)))
+        (if (isSome k) (equal (node 0 (cons 95 (Datatype.decimalChars (get k)))) n) 0))))
+  ; whether a name may be a definition's: no numeral, no binder's name and not reserved
+  (def nameOk
+    (lam ((n T))
+      (if (isSome (numeral (children n))) 0
+        (if (isBinderName n) 0 (if (isSome (indexOf n reservedNames)) 0 1)))))
+  ; whether names are distinct
+  (deftype Seen (Prod T Ts))
+  (def distinct
+    (lam ((ns Ts))
+      (fst
+        (foldr T Seen
+          (lam ((n T) (s Seen))
+            (pair (if (fst s) (if (isSome (indexOf n (snd s))) 0 1) 0) (cons n (snd s))))
+          (pair 1 (nil T))
+          ns))))
+  ; whether names may be a program's definitions': distinct, and each a definition's
+  (def namesOk
+    (lam ((ns Ts)) (if (distinct ns) (foldr T T (lam ((n T) (ok T)) (if (nameOk n) ok 0)) 1 ns) 0)))
+  ; a term printed under binders to a depth, given the names of the definitions, when the names
+  ; may be a program's definitions' and the term is well formed; none otherwise
+  (def printTermOpt
+    (lam ((defs Ts) (t T) (d T))
+      ((lam ((r T)) r)
+       (if (namesOk defs) (if (termWf (length defs) t d) (some (printTerm defs t d)) none) none))))
+
   ; a bundle's definitions printed, each (def name term), its references named by the names of
-  ; the definitions before it
-  (deftype PK (Arrow Ts Ts))
+  ; the definitions before it, or none when a name may not be a definition's or is declared
+  ; already, or a term is not well formed among the definitions before it
+  (deftype PK (Arrow Ts T))
   (def printProgram
     (lam ((b T))
       (let names Ts (children (child b 1))
-        (node 0
-          ((foldr T PK
-             (lam ((t T) (k PK) (pre Ts))
-               (let n T (at names (length pre))
-                 (cons (kwList1 kwDef (cons (atomOf n) (single (printTerm pre t 0))))
-                   (k (append pre (single n))))))
-             (lam ((pre Ts)) (nil T))
-             (children (child b 0))) (nil T)))))))
+        ((foldr T PK
+           (lam ((t T) (k PK) (pre Ts))
+             (let n T (at names (length pre))
+               (if (nameOk n)
+                 (if (isSome (indexOf n pre)) none
+                   (if (termWf (length pre) t 0)
+                     (let r T (k (append pre (single n)))
+                       (if (isSome r)
+                         (some
+                           (node 0
+                             (cons (kwList1 kwDef (cons (atomOf n) (single (printTerm pre t 0))))
+                               (children (get r)))))
+                         none))
+                     none))
+                 none)))
+           (lam ((pre Ts)) (some (node 0 (nil T))))
+           (children (child b 0))) (nil T))))))

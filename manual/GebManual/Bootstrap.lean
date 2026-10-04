@@ -1669,15 +1669,20 @@ tag := "kernel-in-lean"
   binder, `_d` for the binder at depth `d`, an abstraction with one binder
   and its type written structurally, an application of several arguments
   as applications of one, and a reference by the name of the definition it
-  refers to. The reader retracts it: a well-formed term
-  ({name}`Geb.Kernel.TermWf`) printed resolves to itself
-  ({name}`Geb.Kernel.resolve_printTerm`), and the definitions of a
-  well-formed bundle ({name}`Geb.Kernel.ProgramWf`), printed, read back to
-  the bundle ({name}`Geb.Kernel.readForms_printProgram`). The printer
-  written in Geb, `bootstrap/printer.geb`, and the resolution of the
-  reader written in Geb are proved equal to the Lean printer and
-  resolution, on well-formed terms and on every S-expression, so that
-  the reader written in Geb inverts the printer written in Geb
+  refers to. The printer is partial: it prints nothing for a term that
+  is not well formed ({name}`Geb.Kernel.TermWf`), such as one with a
+  variable or reference out of range, or for names of definitions that
+  are repeated or would read back as something else
+  ({name}`Geb.Kernel.namesOk`). The reader retracts it without
+  hypotheses: what it prints for a term resolves to the term
+  ({name}`Geb.Kernel.resolve_of_printTerm?`), and what it prints for a
+  bundle reads back to the bundle
+  ({name}`Geb.Kernel.readForms_printProgram`), and it prints every
+  well-formed bundle ({name}`Geb.Kernel.isSome_printProgram`). The
+  printer written in Geb, `bootstrap/printer.geb`, and the resolution of
+  the reader written in Geb are proved equal to the Lean printer and
+  resolution at every term and S-expression, so that the reader written
+  in Geb inverts the printer written in Geb
   ({ref "the-next-phase"}[The next phase]).
 
 Acceptance: a program written by hand in S-expressions is read, type

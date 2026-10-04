@@ -30,8 +30,8 @@ prover's entry points, the preparation of rules, the proofs by normalization and
 the provers built from provers; the tactics' entry points, the proofs by reduction, case
 analysis, induction, hypotheses and search; and the combinator prover's entry points, the typing,
 normalization, the proofs by normalization and by induction, the proof of a sequent added to a
-development and the library; and the printer of kernel terms and the reader's resolution of what
-it prints. Each
+development and the library; and the partial printer of kernel terms and the reader's resolution
+of what it prints. Each
 type is read from the definition, whose abstractions carry their types and whose body the front end
 applies the identity at the result type to, by inverting the checker-evaluator: for the tactics,
 the combinator prover and the printer, by one lemma over the list of the abstractions'
@@ -65,7 +65,7 @@ type the checker-evaluator infers, which the kernel evaluates.
 * {lit}`metalogic_checkDev`, {lit}`metalogic_program`, {lit}`metalogic_trGlobals`,
   {lit}`metalogic_thm`, {lit}`metalogic_byNorm` with the prover's other entry points, and
   {lit}`metalogic_byMode` with the tactics' other entry points, and {lit}`metalogic_proveSeq`
-  with the combinator prover's other entry points, and {lit}`metalogic_printTerm` and
+  with the combinator prover's other entry points, and {lit}`metalogic_printTermOpt` and
   {lit}`metalogic_readBack` — those globals are the mirror's definitions, at those types.
 
 ## Tags
@@ -110,7 +110,7 @@ geb_program _root_.GebMirror.metalogic from "bootstrap/prelude.geb" "bootstrap/f
     «Combinator.pNormalize» «Combinator.pInst» «Combinator.etaExpand» «Combinator.deltaRule»
     «Combinator.pByNorm» «Combinator.proveSeq» «Combinator.normalizeThm» «Combinator.instBy»
     «Combinator.byNatInduction» «Combinator.byListInduction» «Combinator.byListParamInduction»
-    «Combinator.libraryWith» «Combinator.libRules» «Printer.printTerm» «Printer.readBack»
+    «Combinator.libraryWith» «Combinator.libRules» «Printer.printTermOpt» «Printer.readBack»
 
 open GebMirror (metalogic)
 
@@ -1204,29 +1204,20 @@ theorem metalogic_libRules :
       infer_lams (tList tT) _ [tT] h)
     (metalogic.«Combinator.libRules_heq».trans HEq.rfl)))
 
-/-! The printer of kernel terms and the reader's resolution of what it prints. -/
+/-! The partial printer of kernel terms and the reader's resolution of what it prints. -/
 
-/-- The type of the printer of kernel terms: from the names of the definitions, a term and a depth
-to an S-expression. -/
+/-- The type of the partial printer of kernel terms: from the names of the definitions, a term and
+a depth to an optional S-expression. -/
 def printTermTy : Tree := [tList tT, tT, tT].foldr tArrow tT
 
 /-- The type of the reader's resolution with no type abbreviations: from the names of the
 definitions, an S-expression and the names in scope to an optional term. -/
 def readBackTy : Tree := [tList tT, tT, tList tT].foldr tArrow tT
 
--- the printer and the reader's resolution of what it prints are the program's globals of
--- indices 935 and 936
-kernel_rfl metalogic_g935 : metalogic.globals[935]? = some metalogic.g935
+-- the reader's resolution of what the printer prints and the partial printer are the program's
+-- globals of indices 936 and 946
 kernel_rfl metalogic_g936 : metalogic.globals[936]? = some metalogic.g936
-
-set_option maxRecDepth 100000 in
-/-- The program's global of index 935 is the mirror's printer of kernel terms, at its type. -/
-theorem metalogic_printTerm :
-    metalogic.globals[935]? = some (⟨printTermTy, «Printer.printTerm»⟩ : Glob) :=
-  metalogic_g935.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step935).elim fun _ h ↦
-      infer_lams tT _ [tList tT, tT, tT] h)
-    (metalogic.«Printer.printTerm_heq».trans HEq.rfl)))
+kernel_rfl metalogic_g946 : metalogic.globals[946]? = some metalogic.g946
 
 set_option maxRecDepth 100000 in
 /-- The program's global of index 936 is the mirror's resolution of what the printer writes, at its
@@ -1237,6 +1228,16 @@ theorem metalogic_readBack :
     ((infer_of_loadStep metalogic.step936).elim fun _ h ↦
       infer_lams tT _ [tList tT, tT, tList tT] h)
     (metalogic.«Printer.readBack_heq».trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 946 is the mirror's partial printer of kernel terms, at its
+type. -/
+theorem metalogic_printTermOpt :
+    metalogic.globals[946]? = some (⟨printTermTy, «Printer.printTermOpt»⟩ : Glob) :=
+  metalogic_g946.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step946).elim fun _ h ↦
+      infer_lams tT _ [tList tT, tT, tT] h)
+    (metalogic.«Printer.printTermOpt_heq».trans HEq.rfl)))
 
 end GebTests.Prototypes.FreeTopos.Agreement.Load
 

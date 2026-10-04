@@ -9,6 +9,7 @@ public import GebTests.Prototypes.FreeTopos.Agreement.Base
 public import GebTests.Prototypes.FreeTopos.Agreement.Fold
 public import GebTests.Prototypes.Kernel.Modules
 public import Geb.Prototypes.Kernel.Printer
+public import GebTests.Prototypes.GoedelT.MirrorTyping
 
 set_option doc.verso true in
 /-!
@@ -17,7 +18,9 @@ set_option doc.verso true in
 The functions of {lit}`bootstrap/printer.geb`, in the Lean the bootstrap compiler emits
 ({lit}`GebMirror.Metalogic`), agree with the Lean printer of kernel terms
 ({name}`Geb.Kernel.printTerm`): the numerals the datatype language writes, types, quoted trees
-and well-formed terms, each printed as the encoding of the Lean S-expression.
+and well-formed terms, each printed as the encoding of the Lean S-expression, and the test of
+well-formed terms ({name}`Geb.Kernel.TermWf`) by which the partial printer decides what it
+prints.
 
 ## Main definitions
 
@@ -26,6 +29,7 @@ and well-formed terms, each printed as the encoding of the Lean S-expression.
 * {lit}`decimalChars_eq` — the numeral of a natural number.
 * {lit}`printType_eq`, {lit}`printDatum_eq` — types and quoted trees.
 * {lit}`printTerm_eq` — a well-formed term printed under binders to a depth.
+* {lit}`termWf_eq` — the well-formedness of a term under binders to a depth.
 
 ## Tags
 
@@ -502,6 +506,113 @@ theorem printTerm_eq (defs : List (List Char)) : ∀ (t : Tree) (d : ℕ),
       rw [show «Prelude.at» [leaf k] (leaf 0) = leaf k from rfl, label_eq, label_leaf, at_eq,
         getD_map_nameTree hlt, atomOf_eq]
       rfl
+
+/-! ## Well-formed terms -/
+
+/-- The mirror's test of a kernel type, which the program shares with Gödel's T. -/
+theorem isTy_eq (t : Tree) : «Check.isTy» t = ofBool (Ty.IsTy t) :=
+  (rfl : «Check.isTy» t = GebMirror.GoedelT.«Check.isTy» t).trans (GoedelT.MirrorTyping.isTy_eq t)
+
+/-- The mirror's test of a single leaf below a bound among trees. -/
+theorem leafBelow_eq (cs : List Tree) (n : ℕ) :
+    «Printer.leafBelow» cs (leaf n) = ofBool (match cs with
+      | [c] => c.children.isEmpty && decide (c.label < n)
+      | _ => false) := by
+  match cs with
+  | [] => rfl
+  | [c] =>
+    obtain ⟨l, ccs, rfl⟩ : ∃ l ccs, c = RoseTree.node l ccs :=
+      ⟨_, _, (RoseTree.node_label_children c).symm⟩
+    cases ccs with
+    | nil => rfl
+    | cons x xs =>
+      unfold «Printer.leafBelow»
+      simp only [length_eq, eq_leaf, at_eq, children_eq, nonEmpty_eq, List.getD_cons_zero,
+        RoseTree.children_node, List.length_singleton]
+      rfl
+  | _ :: _ :: _ => rfl
+
+/-- The mirror's test of every child's well-formedness at a depth. -/
+theorem allAt_eq (cs : List Tree) (F : Tree → Tree → Tree) (G : Tree → ℕ → Bool) (d : ℕ)
+    (h : ∀ c ∈ cs, F c (leaf d) = ofBool (G c d)) :
+    «Printer.allAt» (cs.map fun c ↦ (c, F c)) (leaf d) =
+      ofBool ((cs.map fun c ↦ (c, G c)).all (·.2 d)) := by
+  unfold «Printer.allAt»
+  rw [foldr_eq]
+  revert h
+  refine List.rec (fun _ ↦ rfl) (fun c cs ih h ↦ ?_) cs
+  rw [List.map_cons, List.foldr_cons, ih fun x hx ↦ h x (List.mem_cons_of_mem c hx)]
+  simp only [h c List.mem_cons_self, List.map_cons, List.all_cons]
+  cases G c d <;> rfl
+
+/-- The mirror's test of a number of children, each a type. -/
+theorem tysOf_eq (k : ℕ) (cs : List Tree) :
+    «Printer.tysOf» (leaf k) cs = ofBool (cs.length == k && cs.all Ty.IsTy) := by
+  unfold «Printer.tysOf»
+  rw [length_eq, eq_leaf]
+  cases cs.length == k
+  · rfl
+  · change Const.foldr _ (leaf 1) cs = ofBool (cs.all Ty.IsTy)
+    rw [foldr_eq]
+    exact List.rec rfl (fun c cs ih ↦ by
+      rw [List.foldr_cons, ih, isTy_eq, List.all_cons]
+      cases Ty.IsTy c <;> rfl) cs
+
+/-- One node's well-formedness, as the mirror decides it, from its children's. -/
+theorem wfStep_eq (n l d : ℕ) (cs : List Tree) (F : Tree → Tree → Tree)
+    (h : ∀ c ∈ cs, ∀ d, F c (leaf d) = ofBool (TermWf n c d)) :
+    «Printer.wfStep» (leaf n) (leaf l) (cs.map fun c ↦ (c, F c)) (leaf d) =
+      ofBool (wfStep n l (cs.map fun c ↦ (c, TermWf n c)) d) := by
+  have hT : «Printer.prTrees» (cs.map fun c ↦ (c, F c)) = cs := by
+    rw [prTrees_eq, List.map_map]
+    exact List.map_id' cs
+  have hS : (cs.map fun c ↦ (c, TermWf n c)).map Prod.fst = cs := by
+    rw [List.map_map]
+    exact List.map_id' cs
+  have hA := allAt_eq cs F (TermWf n) d fun c hc ↦ h c hc d
+  match l with
+  | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 => rfl
+  | m + 26 => rfl
+  | 9 =>
+    match cs, h with
+    | [A, b], h =>
+      change (if («Check.isTy» A).label ≠ 0 then F b (leaf (d + 1)) else leaf 0) =
+        ofBool (Ty.IsTy A && TermWf n b (d + 1))
+      rw [isTy_eq, h b (List.mem_cons_of_mem _ List.mem_cons_self) (d + 1)]
+      cases Ty.IsTy A <;> rfl
+    | [], _ => rfl
+    | [_], _ => rfl
+    | _ :: _ :: _ :: _, _ => rfl
+  | 8 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 =>
+    simp only [«Printer.wfStep», wfStep, hT, hS, hA, length_eq, eq_leaf, nonEmpty_eq, tysOf_eq,
+      Nat.reduceBEq, ofBool_true, ofBool_false, label_leaf, ne_eq, one_ne_zero,
+      not_false_eq_true, not_true_eq_false, ofBool_label_eq_zero, Bool.not_eq_false, ↓reduceIte,
+      Label.var, Label.lam, Label.app, Label.unit, Label.pair, Label.fst, Label.snd, Label.cond,
+      Label.cons, Label.quote, Label.nil, Label.fold, Label.para, Label.iter, Label.foldr,
+      Label.lcase, Label.prim, Label.ref, Nat.reduceEqDiff, or_false, or_true]
+    all_goals first
+      | rfl
+      | exact leafBelow_eq _ _
+      | (cases cs.length == 2 <;> rfl)
+      | (cases cs.isEmpty <;> rfl)
+
+/-- The step of the mirror's well-formedness of terms, which pairs each node with its
+well-formedness. -/
+def wfFold (n : Tree) (l : Tree) (rs : List (Tree × (Tree → Tree))) : Tree × (Tree → Tree) :=
+  (Const.node l («Printer.prTrees» rs), fun e ↦ «Printer.wfStep» n l rs e)
+
+/-- The mirror's well-formedness of terms pairs each node with its well-formedness. -/
+theorem pairStep_wfFold (n : Tree) : PairStep (wfFold n) := fun l rs ↦ by
+  simp [wfFold]
+
+/-- A term's well-formedness under binders to a depth, given the number of definitions, as the
+mirror decides it. -/
+theorem termWf_eq (n : ℕ) : ∀ (t : Tree) (d : ℕ),
+    «Printer.termWf» (leaf n) t (leaf d) = ofBool (TermWf n t d) :=
+  RoseTree.ind fun l cs ih d ↦ by
+    change (Const.fold (wfFold (leaf n)) (RoseTree.node l cs)).2 (leaf d) = _
+    rw [fold_node, map_fold_pair (pairStep_wfFold _), termWf_node]
+    exact wfStep_eq n l d cs _ ih
 
 end GebTests.Prototypes.FreeTopos.Agreement.Printer
 

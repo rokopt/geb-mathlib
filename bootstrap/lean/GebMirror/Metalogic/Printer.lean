@@ -1174,24 +1174,219 @@ def «Printer.readBack» :=
   fun (x0 : List T) (x1 : T) (x2 : List T) =>
     let x3 : T := «Reader.resolve» ([] : List T) x0 x1 x2; x3
 
+def «Printer.leafBelow» :=
+  fun (x0 : List T) (x1 : T) =>
+    if (Const.eq («Prelude.length» x0) (leaf 1)).label ≠ 0 then
+      if («Reader.nonEmpty»
+        (Const.children («Prelude.at» x0 (leaf 0)))).label ≠ 0 then
+        leaf 0
+      else
+        Const.lt (Const.label («Prelude.at» x0 (leaf 0))) x1
+    else
+      leaf 0
+
+def «Printer.allAt» :=
+  fun (x0 : List (T × (T → T))) (x1 : T) =>
+    Const.foldr
+      (α := T × (T → T))
+      (β := T)
+      (fun (x2 : T × (T → T)) (x3 : T) =>
+        if ((x2).2 x1).label ≠ 0 then x3 else leaf 0)
+      (leaf 1)
+      x0
+
+def «Printer.tysOf» :=
+  fun (x0 : T) (x1 : List T) =>
+    if (Const.eq («Prelude.length» x1) x0).label ≠ 0 then
+      Const.foldr
+        (α := T)
+        (β := T)
+        (fun (x2 : T) (x3 : T) =>
+          if («Check.isTy» x2).label ≠ 0 then x3 else leaf 0)
+        (leaf 1)
+        x1
+    else
+      leaf 0
+
+def «Printer.wfStep» :=
+  fun (x0 : T) (x1 : T) (x2 : List (T × (T → T))) (x3 : T) =>
+    let x4 : List T := «Printer.prTrees» x2;
+    if (Const.eq x1 (leaf 8)).label ≠ 0 then
+      «Printer.leafBelow» x4 x3
+    else
+      if (Const.eq x1 (leaf 9)).label ≠ 0 then
+        if (Const.eq («Prelude.length» x4) (leaf 2)).label ≠ 0 then
+          if («Check.isTy» («Prelude.at» x4 (leaf 0))).label ≠ 0 then
+            «Prelude.at» («Printer.prAt» x2 (Const.add x3 (leaf 1))) (leaf 1)
+          else
+            leaf 0
+        else
+          leaf 0
+      else
+        if (Const.eq x1 (leaf 10)).label ≠ 0 then
+          if (Const.eq («Prelude.length» x4) (leaf 2)).label ≠ 0 then
+            «Printer.allAt» x2 x3
+          else
+            leaf 0
+        else
+          if (Const.eq x1 (leaf 11)).label ≠ 0 then
+            if («Reader.nonEmpty» x4).label ≠ 0 then leaf 0 else leaf 1
+          else
+            if (Const.eq x1 (leaf 12)).label ≠ 0 then
+              «Printer.allAt» x2 x3
+            else
+              if (Const.eq x1 (leaf 13)).label ≠ 0 then
+                «Printer.allAt» x2 x3
+              else
+                if (Const.eq x1 (leaf 14)).label ≠ 0 then
+                  «Printer.allAt» x2 x3
+                else
+                  if (Const.eq x1 (leaf 16)).label ≠ 0 then
+                    «Printer.allAt» x2 x3
+                  else
+                    if (Const.eq x1 (leaf 20)).label ≠ 0 then
+                      «Printer.allAt» x2 x3
+                    else
+                      if (Const.eq x1 (leaf 15)).label ≠ 0 then
+                        Const.eq («Prelude.length» x4) (leaf 1)
+                      else
+                        if (Const.eq x1 (leaf 19)).label ≠ 0 then
+                          «Printer.tysOf» (leaf 1) x4
+                        else
+                          if (Const.eq x1 (leaf 17)).label ≠ 0 then
+                            «Printer.tysOf» (leaf 1) x4
+                          else
+                            if (Const.eq x1 (leaf 25)).label ≠ 0 then
+                              «Printer.tysOf» (leaf 1) x4
+                            else
+                              if (Const.eq x1 (leaf 18)).label ≠ 0 then
+                                «Printer.tysOf» (leaf 1) x4
+                              else
+                                if (Const.eq x1 (leaf 21)).label ≠ 0 then
+                                  «Printer.tysOf» (leaf 2) x4
+                                else
+                                  if (Const.eq x1 (leaf 24)).label ≠ 0 then
+                                    «Printer.tysOf» (leaf 2) x4
+                                  else
+                                    if (Const.eq x1 (leaf 22)).label ≠ 0 then
+                                      «Printer.leafBelow» x4 («Prelude.length» «Reader.primNames»)
+                                    else
+                                      if (Const.eq x1 (leaf 23)).label ≠ 0 then
+                                        «Printer.leafBelow» x4 x0
+                                      else
+                                        leaf 0
+
+def «Printer.termWf» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    (Const.fold
+      (α := T × (T → T))
+      (fun (x3 : T) (x4 : List (T × (T → T))) =>
+        (Const.node x3 («Printer.prTrees» x4),
+          fun (x5 : T) => «Printer.wfStep» x0 x3 x4 x5))
+      x1).2
+      x2
+
+def «Printer.isBinderName» :=
+  fun (x0 : T) =>
+    let x1 : T := «Reader.numeral» («Prelude.tail» (Const.children x0));
+    if («Prelude.isSome» x1).label ≠ 0 then
+      Const.equal
+        (Const.node
+          (leaf 0)
+          ((leaf 95) :: («Datatype.decimalChars» («Prelude.get» x1))))
+        x0
+    else
+      leaf 0
+
+def «Printer.nameOk» :=
+  fun (x0 : T) =>
+    if («Prelude.isSome»
+      («Reader.numeral» (Const.children x0))).label ≠ 0 then
+      leaf 0
+    else
+      if («Printer.isBinderName» x0).label ≠ 0 then
+        leaf 0
+      else
+        if («Prelude.isSome»
+          («Reader.indexOf» x0 «Reader.reservedNames»)).label ≠ 0 then
+          leaf 0
+        else
+          leaf 1
+
+def «Printer.distinct» :=
+  fun (x0 : List T) =>
+    (Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        (if ((x2).1).label ≠ 0 then
+          if («Prelude.isSome» («Reader.indexOf» x1 (x2).2)).label ≠ 0 then
+            leaf 0
+          else
+            leaf 1
+        else
+          leaf 0,
+          (x1 :: (x2).2)))
+      (leaf 1, ([] : List T))
+      x0).1
+
+def «Printer.namesOk» :=
+  fun (x0 : List T) =>
+    if («Printer.distinct» x0).label ≠ 0 then
+      Const.foldr
+        (α := T)
+        (β := T)
+        (fun (x1 : T) (x2 : T) =>
+          if («Printer.nameOk» x1).label ≠ 0 then x2 else leaf 0)
+        (leaf 1)
+        x0
+    else
+      leaf 0
+
+def «Printer.printTermOpt» :=
+  fun (x0 : List T) (x1 : T) (x2 : T) =>
+    let x3 : T := (if («Printer.namesOk» x0).label ≠ 0 then
+      if («Printer.termWf» («Prelude.length» x0) x1 x2).label ≠ 0 then
+        «Prelude.some» («Printer.printTerm» x0 x1 x2)
+      else
+        «Prelude.none»
+    else
+      «Prelude.none»);
+    x3
+
 def «Printer.printProgram» :=
   fun (x0 : T) =>
     let x1 : List T := Const.children (Const.child x0 (leaf 1));
-    Const.node
-      (leaf 0)
-      (Const.foldr
-        (α := T)
-        (β := List T → List T)
-        (fun (x2 : T) (x3 : List T → List T) (x4 : List T) =>
-          let x5 : T := «Prelude.at» x1 («Prelude.length» x4);
-          ((«Printer.kwList1»
-            «Reader.kwDef»
-            ((«Printer.atomOf» x5) ::
-              («Prelude.single» («Printer.printTerm» x4 x2 (leaf 0))))) ::
-            (x3 («Prelude.append» x4 («Prelude.single» x5)))))
-        (fun (_ : List T) => ([] : List T))
-        (Const.children (Const.child x0 (leaf 0)))
-        ([] : List T))
+    Const.foldr
+      (α := T)
+      (β := List T → T)
+      (fun (x2 : T) (x3 : List T → T) (x4 : List T) =>
+        let x5 : T := «Prelude.at» x1 («Prelude.length» x4);
+        if («Printer.nameOk» x5).label ≠ 0 then
+          if («Prelude.isSome» («Reader.indexOf» x5 x4)).label ≠ 0 then
+            «Prelude.none»
+          else
+            if («Printer.termWf» («Prelude.length» x4) x2 (leaf 0)).label ≠ 0 then
+              let x6 : T := x3 («Prelude.append» x4 («Prelude.single» x5));
+              if («Prelude.isSome» x6).label ≠ 0 then
+                «Prelude.some»
+                  (Const.node
+                    (leaf 0)
+                    ((«Printer.kwList1»
+                      «Reader.kwDef»
+                      ((«Printer.atomOf» x5) ::
+                        («Prelude.single» («Printer.printTerm» x4 x2 (leaf 0))))) ::
+                      (Const.children («Prelude.get» x6))))
+              else
+                «Prelude.none»
+            else
+              «Prelude.none»
+        else
+          «Prelude.none»)
+      (fun (_ : List T) =>
+        «Prelude.some» (Const.node (leaf 0) ([] : List T)))
+      (Const.children (Const.child x0 (leaf 0)))
+      ([] : List T)
 
 end GebMirror.Metalogic
 

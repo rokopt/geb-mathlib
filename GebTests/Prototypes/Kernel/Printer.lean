@@ -41,12 +41,12 @@ open scoped FinEnum
 -- binders are named by their depth, references by the definitions' names, and an application
 -- of several arguments is written as applications of one
 #guard (readProgram ("(def double (lam ((x T)) (add x x)))" ++
-    " (def quad (lam ((x T) (y (List T))) (double (double x))))").toList).map printProgram =
+    " (def quad (lam ((x T) (y (List T))) (double (double x))))").toList).bind printProgram =
   readSExps ("(def double (lam (_0 T) ((add _0) _0)))" ++
     " (def quad (lam (_0 T) (lam (_1 (List T)) (double (double _0)))))").toList
 
 -- a quoted leaf is printed as its numeral, another quoted tree as a datum
-#guard (readProgram "(def k (lam ((t T)) (pair 7 (quote (1 2 (3 4))))))".toList).map
+#guard (readProgram "(def k (lam ((t T)) (pair 7 (quote (1 2 (3 4))))))".toList).bind
     printProgram =
   readSExps "(def k (lam (_0 T) (pair 7 (quote (1 2 (3 4))))))".toList
 
@@ -54,16 +54,34 @@ open scoped FinEnum
 #guard (readProgram compiler.toList).all fun ds ↦ ds.zipIdx.all fun (d, i) ↦ TermWf i d.2 0
 
 -- printed, they read back to themselves
-#guard (readProgram compiler.toList).bind (fun ds ↦ readForms (printProgram ds)) =
+#guard (readProgram compiler.toList).bind (fun ds ↦ (printProgram ds).bind readForms) =
   readProgram compiler.toList
 
 -- and through their canonical encoding
 #guard (readProgram compiler.toList).bind
-    (fun ds ↦ (readSExps ((printProgram ds).flatMap Document.canonOf)).bind readForms) =
+    (fun ds ↦ (printProgram ds).bind fun es ↦
+      (readSExps (es.flatMap Document.canonOf)).bind readForms) =
   readProgram compiler.toList
 
--- a variable that no binder binds is not well formed
+-- a variable that no binder binds, and a reference to no definition, are not well formed, and
+-- are not printed
 #guard !TermWf 0 (mk Label.var [leaf 0]) 0
+#guard printTerm? [] (mk Label.var [leaf 0]) 0 = none
+#guard printTerm? [] (mk Label.ref [leaf 0]) 0 = none
+
+/-- Bundles the printer does not print: a reference to a definition after it, a name that is a
+numeral, a binder's name or reserved, and a repeated name. -/
+def unprintable : List (List (List Char × Tree)) :=
+  [[(['f'], mk Label.ref [leaf 0])], [(['3'], mk Label.unit [])], [(['_', '0'], mk Label.unit [])],
+    [(['l', 'a', 'm'], mk Label.unit [])], [(['f'], mk Label.unit []), (['f'], mk Label.unit [])]]
+
+#guard unprintable.all fun ds ↦ printProgram ds = none
+
+-- names that are not a binder's may begin with an underscore, and a term printed among them reads
+-- back
+#guard isBinderName "_0".toList && !isBinderName "_00".toList && !isBinderName "_x".toList
+#guard (printTerm? ["_00".toList] (mk Label.ref [leaf 0]) 0).bind
+    (resolve [] ["_00".toList] · (scopeOf 0)) = some (mk Label.ref [leaf 0])
 
 /-- The source of the printer written in Geb. -/
 def printerGeb : String := include_str "../../../bootstrap/printer.geb"
@@ -73,9 +91,12 @@ def printer : String :=
   compiler ++ printerGeb ++ "\n(import Prelude) (import Printer)\n" ++
     "(def printMain (lam ((b T)) (printProgram b)))"
 
-/-- What the printer written in Geb gives for a bundle, computed in Lean. -/
+/-- What the printer written in Geb gives for a bundle, computed in Lean: the node of label 1 over
+the node of the printed definitions, or the leaf 0. -/
 def printed (ds : List (List Char × Tree)) : Tree :=
-  mk 0 ((printProgram ds).map ModulesTests.sexpTree)
+  match printProgram ds with
+  | some es => mk 1 [mk 0 (es.map ModulesTests.sexpTree)]
+  | none => leaf 0
 
 -- the printer written in Geb agrees with Lean's
 #guard ["(def double (lam ((x T)) (add x x)))" ++
@@ -85,6 +106,9 @@ def printed (ds : List (List Char × Tree)) : Tree :=
   match readProgram src.toList with
   | some ds => runMain printer.toList (bundle ds) == some (printed ds)
   | none => false
+
+-- and does not print what Lean's does not
+#guard unprintable.all fun ds ↦ runMain printer.toList (bundle ds) == some (leaf 0)
 
 end Geb.Kernel.PrinterTests
 
