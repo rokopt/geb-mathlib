@@ -3787,6 +3787,61 @@ follow from the measurements, within their small number.
   Rust, did not find the shortest derivation in 60 s; it specifies the
   algorithm rather than serving as a solver.
 
+The first route below has a prototype, `Geb/Prototypes/LF/`: canonical LF
+{citep HarperLicata2007}[], in which every expression is β-normal and
+η-long and an application is a head with its spine, as in Canonical's
+format, with hereditary substitution and its judgements decided by a
+fold, the formation of a signature among them; its extension by rewrite
+rules on constants {citep CousineauDowek2007}[], which Canonical's
+reduction rules are; and a fragment of the internal language of the free
+topos with a natural numbers object as a signature: object types, terms
+in higher-order abstract syntax, and derivations by reflexivity, the
+substitution of equals, the computation and η rules, extensionality and
+induction, with the computation rules also given as rewrite rules. The
+library `GebExperiments` translates a goal of that signature to
+Canonical's input and each term returned back to canonical LF, where the
+prototype's checker decides it (`lake exe lf-canonical`). The terms are
+derivations of the signature; their decoding into derivations of
+`Geb.FreeTopos.Internal` is not made. On the same machine, with a timeout
+of 120 s, every term returned checked:
+
+:::table +header
+*
+  * Goal
+  * Pure LF
+  * Modulo the rules
+*
+  * Symmetry and transitivity of equality, congruence of `succ`
+  * Found, under 25 ms each, by substitution of equals
+  * The same
+*
+  * `natRec C z s (succ zero) = s z`
+  * Found, 9 ms, by the fold's rules and substitution of equals
+  * Found, 2 ms, by reflexivity
+*
+  * `n + 0 = n` and `m + succ n = succ (m + n)`
+  * Found, 1 ms each, by a rule of the fold
+  * Found, 2 ms or less each, by reflexivity
+*
+  * `0 + n = n`
+  * Found, 23 ms, by induction
+  * Found, 19 ms, by induction
+*
+  * `succ m + n = succ (m + n)`
+  * Not found in 120 s
+  * Found, 53 ms, by induction
+*
+  * `lam (λ x. x) = lam (λ x. app (lam (λ y. y)) x)`
+  * Found, 82 ms, by extensionality and β
+  * Found, 2 ms, by reflexivity
+:::
+
+Addition is the fold of its second argument from the first by the
+successor, a fold with a parameter. The measurements agree with the
+second conclusion above: the goal that needs both an induction and
+computation under its hypothesis is found only modulo the rules, where
+the search is left the induction and its motive.
+
 The operations that transfer to Geb are three: each unknown has its
 declaring context and an explicit substitution at each use, and a
 candidate application is its head with all its argument holes; a check
