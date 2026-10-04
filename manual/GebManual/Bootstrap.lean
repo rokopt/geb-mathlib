@@ -1676,8 +1676,8 @@ tag := "kernel-in-lean"
   the bundle ({name}`Geb.Kernel.readForms_printProgram`). The printer
   written in Geb, `bootstrap/printer.geb`, and the resolution of the
   reader written in Geb are proved equal to the Lean printer and
-  resolution, on well-formed terms and S-expressions, so that the reader
-  written in Geb inverts the printer written in Geb
+  resolution, on well-formed terms and on every S-expression, so that
+  the reader written in Geb inverts the printer written in Geb
   ({ref "the-next-phase"}[The next phase]).
 
 Acceptance: a program written by hand in S-expressions is read, type

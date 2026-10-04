@@ -164,11 +164,13 @@ abbrev mk (l : ℕ) (cs : List Tree) : Tree := RoseTree.node l cs
 /-- A term applied to arguments in turn. -/
 def apps (f : Tree) (xs : List Tree) : Tree := xs.foldl (fun g x ↦ mk Label.app [g, x]) f
 
-/-- The binders of an abstraction: one binder {lit}`(x A)`, or a list of them. -/
+/-- The binders of an abstraction: one binder {lit}`(x A)`, or a list of them; an atom has
+none. -/
 def binders (b : SExp) : List SExp :=
-  match b.children with
-  | [x, _] => if x.label.isSome then [b] else b.children
-  | bs => bs
+  match b.label, b.children with
+  | some _, _ => []
+  | none, [x, _] => if x.label.isSome then [b] else b.children
+  | none, bs => bs
 
 /-- Resolve one S-expression node: its atom or its elements, each with its resolution as a
 function of the names bound around it. -/
@@ -188,9 +190,9 @@ def resolveStep (tys : TypeNames) (defs : List (List Char)) (a : Option (List Ch
     match h.label, rest with
     | some ['l', 'a', 'm'], [(b, _), (_, body)] => do
       let bs ← (binders b).mapM fun c ↦
-        match c.children with
-        | [x, A] => do some (← x.label, ← readType tys A)
-        | _ => none
+        match c.label, c.children with
+        | none, [x, A] => do some (← x.label, ← readType tys A)
+        | _, _ => none
       if bs.isEmpty then none
       else
         let t ← body ((bs.map Prod.fst).reverse ++ scope)

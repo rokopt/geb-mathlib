@@ -4075,8 +4075,8 @@ checklist and in CI.
   `bootstrap/printer.geb`, are in the same program, the printer in its
   last layer: `Agreement/Printer.lean` proves the printer equal to
   `Geb.Kernel.printTerm` at every well-formed term, `Agreement/Reader.lean`
-  the resolution equal to `Geb.Kernel.resolve` at every well-formed
-  S-expression, and the two carry `Geb.Kernel.resolve_printTerm` across,
+  the resolution equal to `Geb.Kernel.resolve` at every S-expression,
+  and the two carry `Geb.Kernel.resolve_printTerm` across,
   so that the reader written in Geb inverts the printer written in Geb.
   Depends on the modules of `Geb/Prototypes/FreeTopos/` above and
   `Geb.Prototypes.PartialHorn.Completeness`.
