@@ -172,6 +172,16 @@ def samples : List Tree :=
     "(def f (lam (x T) (add x unit)))", "(def f (lam (x T) (x x)))", "(defnum n m)",
     "(defnum n (1 2))"].all fun p ↦
   runMain compiler.toList (nameTree p.toList) == some (seedCompile p.toList)
+-- and on the authoring profile: quoted atoms and their escapes, comments, holes, other spellings,
+-- characters outside strings that no token admits, and reserved and repeated names
+#guard ["(def f (lam (x T) (quote (0 let \"a b\" 007))))",
+    "(def f (lam (x T) (quote (0 \"\\t\\x41\\101\\\"\\\\\\?\" \"a\\\nb\"))))",
+    "; a ( comment\n(def f (lam (x T) x)) ; after\n; last", "(def f (lam (x T) ?x))",
+    "(def f (lam (x T) 12b))", "(def f (lam (x T) (quote (0 #61#))))",
+    "(def f (lam (x T) (quote (0 \"ab))))", "(def f (lam (x T) (quote let)))",
+    "(def f (lam (x T) (quote (0 \"\\q\"))))", "(def f (lam (x T) x)) (def f (lam (x T) x))",
+    "(def lam (lam (x T) x))", "(deftype f T) (def f (lam (x T) x))"].all fun p ↦
+  runMain compiler.toList (nameTree p.toList) == some (seedCompile p.toList)
 -- Programs in the datatype language, compiled by the stage-0 compiler and run from their images
 #guard runDatatype compiler.toList naturals.toList (leaf 5) = some (mk 0 [leaf 10, leaf 4])
 #guard runDatatype compiler.toList roses.toList (leaf 0) = some (mk 0 [leaf 4, leaf 1, leaf 0])

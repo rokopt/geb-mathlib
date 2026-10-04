@@ -54,7 +54,7 @@ open Geb Geb.Kernel Geb.GoedelT GebTests.Prototypes.GoedelT.MirrorTyping
 globals whose last is a function of the checker's type that, at encoded inputs, gives the encoding
 of the Lean checker's result. -/
 theorem checker_eq : ∃ G' : List Glob, load checker = some G' ∧
-    ∃ f : Ty.den checkCertTy, G'[178]? = some ⟨checkCertTy, f⟩ ∧
+    ∃ f : Ty.den checkCertTy, G'[195]? = some ⟨checkCertTy, f⟩ ∧
       ∀ (E : Env) (G : List Glob) (c : Tree) (Γ : Ctx) (H : List Eqn),
         f E.defs (E.thms.map encThm) (G.map (·.1)) c Γ (H.map encEqn) =
           enc ((check c E G Γ H).map encEqn) :=

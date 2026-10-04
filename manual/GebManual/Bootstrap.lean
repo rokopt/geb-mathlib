@@ -293,10 +293,10 @@ Extension:
   references through format changes. Checked filling of one contextual
   term hole in Lean, source documents keeping comments as decorations with
   their retraction and formatter, adopted over `bootstrap/`, and the
-  authoring profile read by the seed, are complete. Ready, in the order of
-  {ref "authoring-sequence"}[the sequence]: the Geb reader of the profile,
-  rejecting duplicate and reserved names as the seed does, the strict
-  encodings of
+  authoring profile read by the seed and by the Geb reader, rejecting
+  duplicate and reserved names, are complete. Ready, in the order of
+  {ref "authoring-sequence"}[the sequence]: quoted atoms in place of the
+  sources' lists of character codes, the strict encodings of
   RFC 9804, modules with parameters, imports and export lists, the
   datatype language's completion, manifests with editions and the record of
   elaborated definitions, a durable document with versioned profiles,
@@ -1546,9 +1546,8 @@ section below opens with a table of the states of its parts.
   * In progress
   * Checked contextual-hole filling, source documents with their
     formatter, the formatter's adoption and the authoring profile read by
-    the seed: complete; the Geb reader of the profile and the rest of the
-    sequence: ready, but the parts that follow their consumers, which wait
-    on them
+    the seed and the Geb reader: complete; the rest of the sequence: ready,
+    but the parts that follow their consumers, which wait on them
 *
   * {ref "goedel-t"}[Gödel's T]
   * In progress
@@ -2390,9 +2389,10 @@ tag := "authoring-compatibility"
   * The authoring profile and the importer, the kernel's readers reading
     it and rejecting duplicate and ambiguous names
   * In progress: the profile's reader and printer in Lean with their
-    retraction, the seed's reader of the profile rejecting duplicate and
-    reserved names, and the import of the sources, complete; the Geb
-    reader of the profile and quoted atoms in its sources, ready
+    retraction, the seed's reader and the Geb reader of the profile
+    rejecting duplicate and reserved names, and the import of the sources,
+    complete; quoted atoms in place of the sources' lists of character
+    codes, ready
 *
   * The strict encodings of RFC 9804
   * Ready
@@ -2897,9 +2897,11 @@ the semicolon. They were files of the profile already but for two names
 beyond ASCII, which were renamed, so the importer is the profile's reader
 itself; its acceptance, that the sources compile to the same checked
 bundles with names and comments kept, is that of the fixed points, and
-every source is a fixed point of the profile's formatter. The Geb reader
-reads the legacy syntax until it reads the profile, and the sources lie
-in both meanwhile, so no converter between them is needed.
+every source is a fixed point of the profile's formatter. The Geb reader,
+`bootstrap/reader.geb`, reads the profile as the seed does, rejecting the
+same texts and the same declarations; the stage tests compare the two on
+programs with quoted atoms and their escapes, comments, holes, the
+spellings the profile does not admit, and reserved and repeated names.
 
 Identifiers are tokens of {citet RFC9804}[]: ASCII letters, digits and
 `- . / _ : * + =`, not beginning with a digit. Every identifier of the

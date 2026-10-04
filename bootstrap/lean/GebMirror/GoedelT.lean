@@ -126,65 +126,365 @@ def «allSome» :=
     else
       «none»
 
-def «flush» :=
-  fun (x0 : List T × (List T × T)) =>
-    if («nonEmpty» ((x0).2).1).label ≠ 0 then
-      (((Const.node (leaf 3) («reverse» ((x0).2).1)) :: (x0).1),
-        (([] : List T), ((x0).2).2))
+def «lexFail» := (([] : List T), (([] : List T), leaf 11))
+
+def «lexIn» :=
+  fun (x0 : List T) (x1 : List T) (x2 : T) => (x0, (x1, x2))
+
+def «lexIdle» :=
+  fun (x0 : List T) => «lexIn» x0 ([] : List T) (leaf 0)
+
+def «inRange» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    if (Const.lt x0 x1).label ≠ 0 then
+      leaf 0
     else
-      x0
+      Const.lt x0 (Const.add x2 (leaf 1))
+
+def «isDigit» := fun (x0 : T) => «inRange» x0 (leaf 48) (leaf 57)
 
 def «isSpace» :=
   fun (x0 : T) =>
     if (Const.eq x0 (leaf 32)).label ≠ 0 then
       leaf 1
     else
-      if (Const.eq x0 (leaf 9)).label ≠ 0 then
+      if (Const.eq x0 (leaf 10)).label ≠ 0 then
+        leaf 1
+      else
+        if (Const.eq x0 (leaf 9)).label ≠ 0 then
+          leaf 1
+        else
+          if (Const.eq x0 (leaf 13)).label ≠ 0 then
+            leaf 1
+          else
+            if (Const.eq x0 (leaf 11)).label ≠ 0 then
+              leaf 1
+            else
+              Const.eq x0 (leaf 12)
+
+def «isTokenStart» :=
+  fun (x0 : T) =>
+    if («inRange» x0 (leaf 65) (leaf 90)).label ≠ 0 then
+      leaf 1
+    else
+      if («inRange» x0 (leaf 97) (leaf 122)).label ≠ 0 then
+        leaf 1
+      else
+        if (Const.eq x0 (leaf 45)).label ≠ 0 then
+          leaf 1
+        else
+          if (Const.eq x0 (leaf 46)).label ≠ 0 then
+            leaf 1
+          else
+            if (Const.eq x0 (leaf 47)).label ≠ 0 then
+              leaf 1
+            else
+              if (Const.eq x0 (leaf 95)).label ≠ 0 then
+                leaf 1
+              else
+                if (Const.eq x0 (leaf 58)).label ≠ 0 then
+                  leaf 1
+                else
+                  if (Const.eq x0 (leaf 42)).label ≠ 0 then
+                    leaf 1
+                  else
+                    if (Const.eq x0 (leaf 43)).label ≠ 0 then
+                      leaf 1
+                    else
+                      Const.eq x0 (leaf 61)
+
+def «isTokenChar» :=
+  fun (x0 : T) =>
+    if («isTokenStart» x0).label ≠ 0 then leaf 1 else «isDigit» x0
+
+def «isPlainIn» :=
+  fun (x0 : T) =>
+    if («inRange» x0 (leaf 32) (leaf 126)).label ≠ 0 then
+      if (Const.eq x0 (leaf 34)).label ≠ 0 then
+        leaf 0
+      else
+        if (Const.eq x0 (leaf 92)).label ≠ 0 then leaf 0 else leaf 1
+    else
+      if (Const.eq x0 (leaf 10)).label ≠ 0 then
         leaf 1
       else
         if (Const.eq x0 (leaf 13)).label ≠ 0 then
           leaf 1
         else
-          Const.eq x0 (leaf 10)
+          Const.lt (leaf 127) x0
 
-def «tokStep» :=
-  fun (x0 : List T × (List T × T)) (x1 : T) =>
-    if (((x0).2).2).label ≠ 0 then
-      ((x0).1,
-        (((x0).2).1,
-          if (Const.eq x1 (leaf 10)).label ≠ 0 then leaf 0 else leaf 1))
+def «atomTok» :=
+  fun (x0 : List T) => Const.node (leaf 3) («reverse» x0)
+
+def «kwHole» := mk 0 [leaf 104, leaf 111, leaf 108, leaf 101]
+
+def «holeToks» :=
+  fun (x0 : List T) (x1 : List T) =>
+    ((leaf 2) ::
+      ((«atomTok» x0) ::
+        ((Const.node (leaf 3) (Const.children «kwHole»)) ::
+          ((leaf 1) :: x1))))
+
+def «idleStep» :=
+  fun (x0 : List T) (x1 : T) =>
+    if (Const.eq x1 (leaf 59)).label ≠ 0 then
+      «lexIn» x0 ([] : List T) (leaf 4)
     else
-      if (Const.eq x1 (leaf 59)).label ≠ 0 then
-        let x2 : List T × (List T × T) := «flush» x0;
-        ((x2).1, (((x2).2).1, leaf 1))
+      if (Const.eq x1 (leaf 40)).label ≠ 0 then
+        «lexIdle» ((leaf 1) :: x0)
       else
-        if (Const.eq x1 (leaf 40)).label ≠ 0 then
-          let x2 : List T × (List T × T) := «flush» x0;
-          (((leaf 1) :: (x2).1), (x2).2)
+        if (Const.eq x1 (leaf 41)).label ≠ 0 then
+          «lexIdle» ((leaf 2) :: x0)
         else
-          if (Const.eq x1 (leaf 41)).label ≠ 0 then
-            let x2 : List T × (List T × T) := «flush» x0;
-            (((leaf 2) :: (x2).1), (x2).2)
+          if (Const.eq x1 (leaf 34)).label ≠ 0 then
+            «lexIn» x0 ([] : List T) (leaf 5)
           else
-            if («isSpace» x1).label ≠ 0 then
-              «flush» x0
+            if (Const.eq x1 (leaf 38)).label ≠ 0 then
+              «lexIdle» ((Const.node (leaf 3) («single» (leaf 38))) :: x0)
             else
-              ((x0).1, ((x1 :: ((x0).2).1), leaf 0))
+              if (Const.eq x1 (leaf 63)).label ≠ 0 then
+                «lexIn» x0 ([] : List T) (leaf 3)
+              else
+                if («isSpace» x1).label ≠ 0 then
+                  «lexIdle» x0
+                else
+                  if («isDigit» x1).label ≠ 0 then
+                    «lexIn» x0 («single» x1) (leaf 2)
+                  else
+                    if («isTokenStart» x1).label ≠ 0 then
+                      «lexIn» x0 («single» x1) (leaf 1)
+                    else
+                      «lexFail»
+
+def «strStep» :=
+  fun (x0 : List T) (x1 : List T) (x2 : T) =>
+    if (Const.eq x2 (leaf 34)).label ≠ 0 then
+      «lexIdle» ((«atomTok» x1) :: x0)
+    else
+      if (Const.eq x2 (leaf 92)).label ≠ 0 then
+        «lexIn» x0 x1 (leaf 6)
+      else
+        if («isPlainIn» x2).label ≠ 0 then
+          «lexIn» x0 (x2 :: x1) (leaf 5)
+        else
+          «lexFail»
+
+def «escChar» :=
+  fun (x0 : T) =>
+    if (Const.eq x0 (leaf 97)).label ≠ 0 then
+      «some» (leaf 7)
+    else
+      if (Const.eq x0 (leaf 98)).label ≠ 0 then
+        «some» (leaf 8)
+      else
+        if (Const.eq x0 (leaf 116)).label ≠ 0 then
+          «some» (leaf 9)
+        else
+          if (Const.eq x0 (leaf 118)).label ≠ 0 then
+            «some» (leaf 11)
+          else
+            if (Const.eq x0 (leaf 110)).label ≠ 0 then
+              «some» (leaf 10)
+            else
+              if (Const.eq x0 (leaf 102)).label ≠ 0 then
+                «some» (leaf 12)
+              else
+                if (Const.eq x0 (leaf 114)).label ≠ 0 then
+                  «some» (leaf 13)
+                else
+                  if (Const.eq x0 (leaf 34)).label ≠ 0 then
+                    «some» x0
+                  else
+                    if (Const.eq x0 (leaf 39)).label ≠ 0 then
+                      «some» x0
+                    else
+                      if (Const.eq x0 (leaf 63)).label ≠ 0 then
+                        «some» x0
+                      else
+                        if (Const.eq x0 (leaf 92)).label ≠ 0 then «some» x0 else «none»
+
+def «hexVal» :=
+  fun (x0 : T) =>
+    if («isDigit» x0).label ≠ 0 then
+      «some» (Const.sub x0 (leaf 48))
+    else
+      if («inRange» x0 (leaf 65) (leaf 70)).label ≠ 0 then
+        «some» (Const.sub x0 (leaf 55))
+      else
+        if («inRange» x0 (leaf 97) (leaf 102)).label ≠ 0 then
+          «some» (Const.sub x0 (leaf 87))
+        else
+          «none»
+
+def «lexStep» :=
+  fun (x0 : List T × (List T × T)) (x1 : T) =>
+    let x2 : List T := (x0).1;
+    let x3 : List T := ((x0).2).1;
+    let x4 : T := ((x0).2).2;
+    let x5 : T := Const.label x4;
+    if (Const.eq x5 (leaf 0)).label ≠ 0 then
+      «idleStep» x2 x1
+    else
+      if (Const.eq x5 (leaf 4)).label ≠ 0 then
+        if (Const.eq x1 (leaf 10)).label ≠ 0 then «lexIdle» x2 else x0
+      else
+        if (Const.eq x5 (leaf 1)).label ≠ 0 then
+          if («isTokenChar» x1).label ≠ 0 then
+            «lexIn» x2 (x1 :: x3) x4
+          else
+            «idleStep» ((«atomTok» x3) :: x2) x1
+        else
+          if (Const.eq x5 (leaf 2)).label ≠ 0 then
+            if («isDigit» x1).label ≠ 0 then
+              «lexIn» x2 (x1 :: x3) x4
+            else
+              if (if («isTokenChar» x1).label ≠ 0 then
+                leaf 1
+              else
+                if (Const.eq x1 (leaf 34)).label ≠ 0 then
+                  leaf 1
+                else
+                  if (Const.eq x1 (leaf 35)).label ≠ 0 then
+                    leaf 1
+                  else
+                    Const.eq x1 (leaf 124)).label ≠ 0 then
+                «lexFail»
+              else
+                «idleStep» ((«atomTok» x3) :: x2) x1
+          else
+            if (Const.eq x5 (leaf 3)).label ≠ 0 then
+              if (if («isTokenChar» x1).label ≠ 0 then
+                if («nonEmpty» x3).label ≠ 0 then
+                  leaf 1
+                else
+                  if («isDigit» x1).label ≠ 0 then leaf 0 else leaf 1
+              else
+                leaf 0).label ≠ 0 then
+                «lexIn» x2 (x1 :: x3) x4
+              else
+                if («nonEmpty» x3).label ≠ 0 then
+                  «idleStep» («holeToks» x3 x2) x1
+                else
+                  «lexFail»
+            else
+              if (Const.eq x5 (leaf 5)).label ≠ 0 then
+                «strStep» x2 x3 x1
+              else
+                if (Const.eq x5 (leaf 6)).label ≠ 0 then
+                  let x6 : T := «escChar» x1;
+                  if («isSome» x6).label ≠ 0 then
+                    «lexIn» x2 ((«get» x6) :: x3) (leaf 5)
+                  else
+                    if (Const.eq x1 (leaf 120)).label ≠ 0 then
+                      «lexIn» x2 x3 (Const.node (leaf 9) ((leaf 0) :: («single» (leaf 0))))
+                    else
+                      if («inRange» x1 (leaf 48) (leaf 55)).label ≠ 0 then
+                        «lexIn»
+                          x2
+                          x3
+                          (Const.node
+                            (leaf 10)
+                            ((leaf 1) :: («single» (Const.sub x1 (leaf 48)))))
+                      else
+                        if (Const.eq x1 (leaf 13)).label ≠ 0 then
+                          «lexIn» x2 x3 (leaf 7)
+                        else
+                          if (Const.eq x1 (leaf 10)).label ≠ 0 then
+                            «lexIn» x2 x3 (leaf 8)
+                          else
+                            «lexFail»
+                else
+                  if (Const.eq x5 (leaf 7)).label ≠ 0 then
+                    if (Const.eq x1 (leaf 10)).label ≠ 0 then
+                      «lexIn» x2 x3 (leaf 5)
+                    else
+                      «strStep» x2 x3 x1
+                  else
+                    if (Const.eq x5 (leaf 8)).label ≠ 0 then
+                      if (Const.eq x1 (leaf 13)).label ≠ 0 then
+                        «lexIn» x2 x3 (leaf 5)
+                      else
+                        «strStep» x2 x3 x1
+                    else
+                      if (Const.eq x5 (leaf 9)).label ≠ 0 then
+                        let x6 : T := «hexVal» x1;
+                        if («isSome» x6).label ≠ 0 then
+                          if (Const.eq (Const.child x4 (leaf 0)) (leaf 1)).label ≠ 0 then
+                            «lexIn»
+                              x2
+                              ((Const.add
+                                (Const.mul (leaf 16) (Const.child x4 (leaf 1)))
+                                («get» x6)) ::
+                                x3)
+                              (leaf 5)
+                          else
+                            «lexIn»
+                              x2
+                              x3
+                              (Const.node (leaf 9) ((leaf 1) :: («single» («get» x6))))
+                        else
+                          «lexFail»
+                      else
+                        if (Const.eq x5 (leaf 10)).label ≠ 0 then
+                          if («inRange» x1 (leaf 48) (leaf 55)).label ≠ 0 then
+                            let x6 : T := Const.add
+                              (Const.mul (leaf 8) (Const.child x4 (leaf 1)))
+                              (Const.sub x1 (leaf 48));
+                            if (Const.eq (Const.child x4 (leaf 0)) (leaf 2)).label ≠ 0 then
+                              if (Const.lt x6 (leaf 256)).label ≠ 0 then
+                                «lexIn» x2 (x6 :: x3) (leaf 5)
+                              else
+                                «lexFail»
+                            else
+                              «lexIn»
+                                x2
+                                x3
+                                (Const.node
+                                  (leaf 10)
+                                  ((Const.add (Const.child x4 (leaf 0)) (leaf 1)) :: («single» x6)))
+                          else
+                            «lexFail»
+                        else
+                          x0
+
+def «lexEnd» :=
+  fun (x0 : List T × (List T × T)) =>
+    let x1 : List T := (x0).1;
+    let x2 : List T := ((x0).2).1;
+    let x3 : T := Const.label ((x0).2).2;
+    if (if (Const.eq x3 (leaf 0)).label ≠ 0 then
+      leaf 1
+    else
+      Const.eq x3 (leaf 4)).label ≠ 0 then
+      «some» (Const.node (leaf 0) («reverse» x1))
+    else
+      if (if (Const.eq x3 (leaf 1)).label ≠ 0 then
+        leaf 1
+      else
+        Const.eq x3 (leaf 2)).label ≠ 0 then
+        «some» (Const.node (leaf 0) («reverse» ((«atomTok» x2) :: x1)))
+      else
+        if (Const.eq x3 (leaf 3)).label ≠ 0 then
+          if («nonEmpty» x2).label ≠ 0 then
+            «some» (Const.node (leaf 0) («reverse» («holeToks» x2 x1)))
+          else
+            «none»
+        else
+          «none»
 
 def «tokenize» :=
   fun (x0 : List T) =>
-    «reverse»
-      («flush»
-        (Const.foldr
-          (α := T)
-          (β := (List T × (List T × T)) → List T × (List T × T))
-          (fun (x1 : T)
-             (x2 : (List T × (List T × T)) → List T × (List T × T))
-             (x3 : List T × (List T × T)) =>
-            x2 («tokStep» x3 x1))
-          (fun (x1 : List T × (List T × T)) => x1)
-          x0
-          (([] : List T), (([] : List T), leaf 0)))).1
+    «lexEnd»
+      (Const.foldr
+        (α := T)
+        (β := (List T × (List T × T)) → List T × (List T × T))
+        (fun (x1 : T)
+           (x2 : (List T × (List T × T)) → List T × (List T × T))
+           (x3 : List T × (List T × T)) =>
+          x2 («lexStep» x3 x1))
+        (fun (x1 : List T × (List T × T)) => x1)
+        x0
+        («lexIdle» ([] : List T)))
 
 def «fail» := (leaf 0, ([] : List (List T)))
 
@@ -215,32 +515,36 @@ def «parseStep» :=
 
 def «readSExps» :=
   fun (x0 : List T) =>
-    let x1 : T ×
-      List
-        (List
-          T) := Const.foldr
-      (α := T)
-      (β := (T × List (List T)) → T × List (List T))
-      (fun (x1 : T)
-         (x2 : (T × List (List T)) → T × List (List T))
-         (x3 : T × List (List T)) =>
-        x2 («parseStep» x3 x1))
-      (fun (x1 : T × List (List T)) => x1)
-      («tokenize» x0)
-      (leaf 1, (([] : List T) :: ([] : List (List T))));
-    if ((x1).1).label ≠ 0 then
-      Const.lcase
-        (α := List T)
-        (β := T)
-        (x1).2
+    let x1 : T := «tokenize» x0;
+    if («isSome» x1).label ≠ 0 then
+      let x2 : T ×
+        List
+          (List
+            T) := Const.foldr
+        (α := T)
+        (β := (T × List (List T)) → T × List (List T))
+        (fun (x2 : T)
+           (x3 : (T × List (List T)) → T × List (List T))
+           (x4 : T × List (List T)) =>
+          x3 («parseStep» x4 x2))
+        (fun (x2 : T × List (List T)) => x2)
+        (Const.children («get» x1))
+        (leaf 1, (([] : List T) :: ([] : List (List T))));
+      if ((x2).1).label ≠ 0 then
+        Const.lcase
+          (α := List T)
+          (β := T)
+          (x2).2
+          «none»
+          (fun (x3 : List T) (x4 : List (List T)) =>
+            Const.lcase
+              (α := List T)
+              (β := T)
+              x4
+              («some» (Const.node (leaf 0) («reverse» x3)))
+              (fun (_ : List T) (_ : List (List T)) => «none»))
+      else
         «none»
-        (fun (x2 : List T) (x3 : List (List T)) =>
-          Const.lcase
-            (α := List T)
-            (β := T)
-            x3
-            («some» (Const.node (leaf 0) («reverse» x2)))
-            (fun (_ : List T) (_ : List (List T)) => «none»))
     else
       «none»
 
@@ -493,37 +797,60 @@ def «readType» :=
 
 def «readDatum» :=
   fun (x0 : T) =>
-    (Const.fold
-      (α := T × T)
-      (fun (x1 : T) (x2 : List (T × T)) =>
-        let x3 : T := Const.node x1 («rtTrees» x2);
-        (x3,
-          if («isAtom» x3).label ≠ 0 then
-            let x4 : T := «numeral» (Const.children x3);
-            if («isSome» x4).label ≠ 0 then
-              «some» (Const.node («get» x4) ([] : List T))
+    if («isAtom» x0).label ≠ 0 then
+      let x1 : T := «numeral» (Const.children x0);
+      if («isSome» x1).label ≠ 0 then
+        «some» (Const.node («get» x1) ([] : List T))
+      else
+        «none»
+    else
+      let x1 : T := (Const.fold
+        (α := T × T)
+        (fun (x1 : T) (x2 : List (T × T)) =>
+          let x3 : T := Const.node x1 («rtTrees» x2);
+          (x3,
+            if («isAtom» x3).label ≠ 0 then
+              let x4 : T := «numeral» (Const.children x3);
+              if («isSome» x4).label ≠ 0 then
+                «some»
+                  (Const.node (leaf 0) («single» (Const.node («get» x4) ([] : List T))))
+              else
+                «some» (Const.node (leaf 0) (Const.children x3))
             else
-              «none»
-          else
-            if («isList» x3).label ≠ 0 then
-              Const.lcase
-                (α := T)
-                (β := T)
-                (Const.children x3)
-                «none»
-                (fun (x4 : T) (_ : List T) =>
-                  let x6 : T := (if («isAtom» x4).label ≠ 0 then
-                    «numeral» (Const.children x4)
-                  else
-                    «none»);
-                  let x7 : T := «allSome» («tail» («rtValues» x2));
-                  if («both» x6 x7).label ≠ 0 then
-                    «some» (Const.node («get» x6) (Const.children («get» x7)))
-                  else
-                    «none»)
-            else
-              «none»))
-      x0).2
+              if («isList» x3).label ≠ 0 then
+                Const.lcase
+                  (α := T)
+                  (β := T)
+                  (Const.children x3)
+                  «none»
+                  (fun (x4 : T) (_ : List T) =>
+                    let x6 : T := (if («isAtom» x4).label ≠ 0 then
+                      «numeral» (Const.children x4)
+                    else
+                      «none»);
+                    let x7 : T := «allSome» («tail» («rtValues» x2));
+                    if («both» x6 x7).label ≠ 0 then
+                      «some»
+                        (Const.node
+                          (leaf 0)
+                          («single»
+                            (Const.node
+                              («get» x6)
+                              (Const.foldr
+                                (α := T)
+                                (β := List T)
+                                (fun (x8 : T) (x9 : List T) => «append» (Const.children x8) x9)
+                                ([] : List T)
+                                (Const.children («get» x7))))))
+                    else
+                      «none»)
+              else
+                «none»))
+        x0).2;
+      if («isSome» x1).label ≠ 0 then
+        «some» (Const.child («get» x1) (leaf 0))
+      else
+        «none»
 
 def «rrTrees» :=
   fun (x0 : List (T × (List T → T))) =>
@@ -836,6 +1163,47 @@ def «resolve» :=
       x2).2
       x3
 
+def «reservedNames» :=
+  «append»
+    («kwLam» ::
+      («kwLet» ::
+        («kwPair» ::
+          («kwFst» ::
+            («kwSnd» ::
+              («kwIf» ::
+                («kwQuote» ::
+                  («kwCons» ::
+                    («kwNil» ::
+                      («kwFold» ::
+                        («kwPara» ::
+                          («kwIter» ::
+                            («kwFoldr» ::
+                              («kwLcase» ::
+                                («kwUnitValue» ::
+                                  («kwDef» ::
+                                    («kwDeftype» ::
+                                      («kwDefnum» ::
+                                        («kwHole» ::
+                                          («kwT» ::
+                                            («kwUnit» ::
+                                              («kwProd» ::
+                                                («kwArrow» ::
+                                                  («single» «kwList»))))))))))))))))))))))))
+    «primNames»
+
+def «isFresh» :=
+  fun (x0 : List T) (x1 : List T) (x2 : List T) (x3 : T) =>
+    if («isSome» («indexOf» x3 «reservedNames»)).label ≠ 0 then
+      leaf 0
+    else
+      if («isSome» («indexOf» x3 x2)).label ≠ 0 then
+        leaf 0
+      else
+        if («isSome» («lookupAbbrev» x3 x0)).label ≠ 0 then
+          leaf 0
+        else
+          if («isSome» («lookupAbbrev» x3 x1)).label ≠ 0 then leaf 0 else leaf 1
+
 def «progStep» :=
   fun (x0 : T × (List T × (List T × (List T × List T)))) (x1 : T) =>
     let x2 : List T := ((x0).2).1;
@@ -845,7 +1213,10 @@ def «progStep» :=
     if (if ((x0).1).label ≠ 0 then
       if («isList» x1).label ≠ 0 then
         if (Const.eq (Const.arity x1) (leaf 3)).label ≠ 0 then
-          «isAtom» (Const.child x1 (leaf 1))
+          if («isAtom» (Const.child x1 (leaf 1))).label ≠ 0 then
+            «isFresh» x2 x3 x4 («nameOf» (Const.child x1 (leaf 1)))
+          else
+            leaf 0
         else
           leaf 0
       else
