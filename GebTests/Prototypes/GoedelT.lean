@@ -253,7 +253,8 @@ about it, the types of its global environment, a context and a list of hypothese
 def gebChecker : String :=
   Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
     Kernel.Stage0Tests.check ++ "\n" ++ equationsGeb ++ "\n" ++
-    "(def main (lam ((x T)) (checkCert (children (child x 1)) (children (child x 2)) " ++
+    "(import Equations) (def main (lam ((x T)) (checkCert (children (child x 1)) " ++
+    "(children (child x 2)) " ++
     "(children (child x 3)) (child x 0) (children (child x 4)) (children (child x 5)))))"
 
 /-- The Geb checker, compiled by the stage-0 compiler and loaded, as a function on trees, given

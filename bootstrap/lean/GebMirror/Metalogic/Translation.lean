@@ -107,7 +107,7 @@ def «Translation.bit1T» :=
 
 def «Translation.ifBit» :=
   fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) =>
-    let x4 : T := «Language.mApp»
+    let x4 : T := «Language.app»
       («Language.mArr»
         (leaf 5)
         («Theory.l3» «Theory.one» «Theory.one» x0)
@@ -137,7 +137,7 @@ def «Translation.gtO» :=
 
 def «Translation.ifOrd» :=
   fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
-    let x5 : T := «Language.mApp»
+    let x5 : T := «Language.app»
       («Language.mArr»
         (leaf 5)
         («Theory.l3» «Theory.one» «Translation.bitTy» x0)
@@ -147,7 +147,7 @@ def «Translation.ifOrd» :=
             «Translation.bitTy»
             («Translation.ifBit»
               x0
-              («Language.mVar» (leaf 0))
+              («Language.var» (leaf 0))
               («Derivation.weaken1» x3)
               («Derivation.weaken1» x4)))))
       x1;
@@ -302,7 +302,7 @@ def «Translation.lbB0» :=
     («Translation.consT»
       «Translation.bitTy»
       «Translation.bit0T»
-      («Language.mVar» (leaf 0)))
+      («Language.var» (leaf 0)))
 
 def «Translation.lbB1» :=
   «Translation.mkDefn»
@@ -312,7 +312,7 @@ def «Translation.lbB1» :=
     («Translation.consT»
       «Translation.bitTy»
       «Translation.bit1T»
-      («Language.mVar» (leaf 0)))
+      («Language.var» (leaf 0)))
 
 def «Translation.lbLab» :=
   «Translation.mkDefn»
@@ -321,8 +321,8 @@ def «Translation.lbLab» :=
     «Translation.bitsTy»
     («Language.mRoseRec»
       «Translation.bitsTy»
-      («Language.mFst» («Language.mVar» (leaf 0)))
-      («Language.mVar» (leaf 0)))
+      («Language.mFst» («Language.var» (leaf 0)))
+      («Language.var» (leaf 0)))
 
 def «Translation.lbUnnode» :=
   «Translation.mkDefn»
@@ -336,15 +336,15 @@ def «Translation.lbUnnode» :=
         «Translation.bitsTy»
         («Theory.list» «Translation.treeTy»))
       («Language.mPair»
-        («Language.mFst» («Language.mVar» (leaf 0)))
+        («Language.mFst» («Language.var» (leaf 0)))
         («Language.mListRec»
           («Translation.nilT» «Translation.treeTy»)
           («Translation.consT»
             «Translation.treeTy»
-            («Translation.nodeT» («Language.mVar» (leaf 1)))
-            («Language.mVar» (leaf 0)))
-          («Language.mSnd» («Language.mVar» (leaf 0)))))
-      («Language.mVar» (leaf 0)))
+            («Translation.nodeT» («Language.var» (leaf 1)))
+            («Language.var» (leaf 0)))
+          («Language.mSnd» («Language.var» (leaf 0)))))
+      («Language.var» (leaf 0)))
 
 def «Translation.lbChildren» :=
   «Translation.mkDefn»
@@ -355,25 +355,25 @@ def «Translation.lbChildren» :=
       («Translation.call»
         (leaf 4)
         ([] : List T)
-        («Prelude.single» («Language.mVar» (leaf 0)))))
+        («Prelude.single» («Language.var» (leaf 0)))))
 
 def «Translation.lbCond» :=
   «Translation.mkDefn»
     (leaf 1)
     («Theory.l3» «Translation.bitsTy» «Translation.X0» «Translation.X0»)
     «Translation.X0»
-    («Language.mApp»
-      («Language.mApp»
+    («Language.app»
+      («Language.app»
         («Language.mListRec»
           («Language.mLam»
             «Translation.X0»
-            («Language.mLam» «Translation.X0» («Language.mVar» (leaf 0))))
+            («Language.mLam» «Translation.X0» («Language.var» (leaf 0))))
           («Language.mLam»
             «Translation.X0»
-            («Language.mLam» «Translation.X0» («Language.mVar» (leaf 1))))
-          («Language.mVar» (leaf 2)))
-        («Language.mVar» (leaf 1)))
-      («Language.mVar» (leaf 0)))
+            («Language.mLam» «Translation.X0» («Language.var» (leaf 1))))
+          («Language.var» (leaf 2)))
+        («Language.var» (leaf 1)))
+      («Language.var» (leaf 0)))
 
 def «Translation.lbTail» :=
   «Translation.mkDefn»
@@ -388,22 +388,22 @@ def «Translation.lbTail» :=
         («Language.mPair»
           («Translation.consT»
             «Translation.X0»
-            («Language.mVar» (leaf 1))
-            («Language.mFst» («Language.mVar» (leaf 0))))
-          («Language.mFst» («Language.mVar» (leaf 0))))
-        («Language.mVar» (leaf 0))))
+            («Language.var» (leaf 1))
+            («Language.mFst» («Language.var» (leaf 0))))
+          («Language.mFst» («Language.var» (leaf 0))))
+        («Language.var» (leaf 0))))
 
 def «Translation.lbHeadD» :=
   «Translation.mkDefn»
     (leaf 1)
     («Theory.l2» «Translation.X0» («Theory.list» «Translation.X0»))
     «Translation.X0»
-    («Language.mApp»
+    («Language.app»
       («Language.mListRec»
-        («Language.mLam» «Translation.X0» («Language.mVar» (leaf 0)))
-        («Language.mLam» «Translation.X0» («Language.mVar» (leaf 2)))
-        («Language.mVar» (leaf 0)))
-      («Language.mVar» (leaf 1)))
+        («Language.mLam» «Translation.X0» («Language.var» (leaf 0)))
+        («Language.mLam» «Translation.X0» («Language.var» (leaf 2)))
+        («Language.var» (leaf 0)))
+      («Language.var» (leaf 1)))
 
 def «Translation.lbLcase» :=
   let x0 : T := «Theory.exp»
@@ -413,9 +413,7 @@ def «Translation.lbLcase» :=
     («Theory.exp» «Theory.one» «Translation.X1»)
     x0;
   let x2 : T := «Language.mFst»
-    («Language.mApp»
-      («Language.mVar» (leaf 1))
-      («Language.mVar» (leaf 0)));
+    («Language.app» («Language.var» (leaf 1)) («Language.var» (leaf 0)));
   «Translation.mkDefn»
     (leaf 2)
     («Theory.l3»
@@ -424,28 +422,28 @@ def «Translation.lbLcase» :=
       x0)
     «Translation.X1»
     («Language.mSnd»
-      («Language.mApp»
+      («Language.app»
         («Language.mListRec»
           («Language.mLam»
             x1
             («Language.mPair»
               («Translation.nilT» «Translation.X0»)
-              («Language.mApp»
-                («Language.mFst» («Language.mVar» (leaf 0)))
+              («Language.app»
+                («Language.mFst» («Language.var» (leaf 0)))
                 «Language.mStar»)))
           («Language.mLam»
             x1
             («Language.mPair»
-              («Translation.consT» «Translation.X0» («Language.mVar» (leaf 2)) x2)
-              («Language.mApp»
-                («Language.mApp»
-                  («Language.mSnd» («Language.mVar» (leaf 0)))
-                  («Language.mVar» (leaf 2)))
+              («Translation.consT» «Translation.X0» («Language.var» (leaf 2)) x2)
+              («Language.app»
+                («Language.app»
+                  («Language.mSnd» («Language.var» (leaf 0)))
+                  («Language.var» (leaf 2)))
                 x2)))
-          («Language.mVar» (leaf 2)))
+          («Language.var» (leaf 2)))
         («Language.mPair»
-          («Language.mVar» (leaf 1))
-          («Language.mVar» (leaf 0)))))
+          («Language.var» (leaf 1))
+          («Language.var» (leaf 0)))))
 
 def «Translation.lbIsNil» :=
   «Translation.mkDefn»
@@ -455,7 +453,7 @@ def «Translation.lbIsNil» :=
     («Language.mListRec»
       «Translation.trueT»
       «Translation.bnilT»
-      («Language.mVar» (leaf 0)))
+      («Language.var» (leaf 0)))
 
 def «Translation.lbSucc» :=
   «Translation.mkDefn»
@@ -468,14 +466,14 @@ def «Translation.lbSucc» :=
         («Language.mPair»
           («Translation.consT»
             «Translation.bitTy»
-            («Language.mVar» (leaf 1))
-            («Language.mFst» («Language.mVar» (leaf 0))))
+            («Language.var» (leaf 1))
+            («Language.mFst» («Language.var» (leaf 0))))
           («Translation.ifBit»
             «Translation.bitsTy»
-            («Language.mVar» (leaf 1))
-            («Translation.b1T» («Language.mFst» («Language.mVar» (leaf 0))))
-            («Translation.b0T» («Language.mSnd» («Language.mVar» (leaf 0))))))
-        («Language.mVar» (leaf 0))))
+            («Language.var» (leaf 1))
+            («Translation.b1T» («Language.mFst» («Language.var» (leaf 0))))
+            («Translation.b0T» («Language.mSnd» («Language.var» (leaf 0))))))
+        («Language.var» (leaf 0))))
 
 def «Translation.lbLength» :=
   «Translation.mkDefn»
@@ -487,8 +485,8 @@ def «Translation.lbLength» :=
       («Translation.call»
         (leaf 11)
         ([] : List T)
-        («Prelude.single» («Language.mVar» (leaf 0))))
-      («Language.mVar» (leaf 0)))
+        («Prelude.single» («Language.var» (leaf 0))))
+      («Language.var» (leaf 0)))
 
 def «Translation.lbPred» :=
   «Translation.mkDefn»
@@ -501,18 +499,18 @@ def «Translation.lbPred» :=
         («Language.mPair»
           («Translation.consT»
             «Translation.bitTy»
-            («Language.mVar» (leaf 1))
-            («Language.mFst» («Language.mVar» (leaf 0))))
+            («Language.var» (leaf 1))
+            («Language.mFst» («Language.var» (leaf 0))))
           («Translation.ifBit»
             «Translation.bitsTy»
-            («Language.mVar» (leaf 1))
+            («Language.var» (leaf 1))
             («Translation.condT»
               «Translation.bitsTy»
-              («Language.mFst» («Language.mVar» (leaf 0)))
-              («Translation.b1T» («Language.mSnd» («Language.mVar» (leaf 0))))
+              («Language.mFst» («Language.var» (leaf 0)))
+              («Translation.b1T» («Language.mSnd» («Language.var» (leaf 0))))
               «Translation.bnilT»)
-            («Translation.b0T» («Language.mFst» («Language.mVar» (leaf 0))))))
-        («Language.mVar» (leaf 0))))
+            («Translation.b0T» («Language.mFst» («Language.var» (leaf 0))))))
+        («Language.var» (leaf 0))))
 
 def «Translation.lbDbl» :=
   «Translation.mkDefn»
@@ -525,42 +523,42 @@ def «Translation.lbDbl» :=
         («Language.mPair»
           («Translation.consT»
             «Translation.bitTy»
-            («Language.mVar» (leaf 1))
-            («Language.mFst» («Language.mVar» (leaf 0))))
+            («Language.var» (leaf 1))
+            («Language.mFst» («Language.var» (leaf 0))))
           («Translation.ifBit»
             «Translation.bitsTy»
-            («Language.mVar» (leaf 1))
-            («Translation.b1T» («Language.mSnd» («Language.mVar» (leaf 0))))
+            («Language.var» (leaf 1))
+            («Translation.b1T» («Language.mSnd» («Language.var» (leaf 0))))
             («Translation.b1T»
-              («Translation.b0T» («Language.mFst» («Language.mVar» (leaf 0)))))))
-        («Language.mVar» (leaf 0))))
+              («Translation.b0T» («Language.mFst» («Language.var» (leaf 0)))))))
+        («Language.var» (leaf 0))))
 
 def «Translation.lbAdd» :=
   «Translation.mkDefn»
     (leaf 0)
     («Theory.l2» «Translation.bitsTy» «Translation.bitsTy»)
     «Translation.bitsTy»
-    («Language.mApp»
+    («Language.app»
       («Language.mSnd»
         («Language.mListRec»
           («Language.mPair»
             «Translation.bnilT»
-            («Language.mLam» «Translation.bitsTy» («Language.mVar» (leaf 0))))
+            («Language.mLam» «Translation.bitsTy» («Language.var» (leaf 0))))
           («Language.mPair»
             («Translation.consT»
               «Translation.bitTy»
-              («Language.mVar» (leaf 1))
-              («Language.mFst» («Language.mVar» (leaf 0))))
+              («Language.var» (leaf 1))
+              («Language.mFst» («Language.var» (leaf 0))))
             («Language.mLam»
               «Translation.bitsTy»
               («Translation.lcaseB»
                 «Translation.bitTy»
                 «Translation.bitsTy»
-                («Language.mVar» (leaf 0))
+                («Language.var» (leaf 0))
                 («Translation.consT»
                   «Translation.bitTy»
-                  («Language.mVar» (leaf 2))
-                  («Language.mFst» («Language.mVar» (leaf 1))))
+                  («Language.var» (leaf 2))
+                  («Language.mFst» («Language.var» (leaf 1))))
                 («Language.mLam»
                   «Translation.bitTy»
                   («Language.mLam»
@@ -568,44 +566,44 @@ def «Translation.lbAdd» :=
                     («Translation.consT»
                       «Translation.bitTy»
                       («Translation.digitT»
-                        («Language.mVar» (leaf 1))
-                        («Language.mVar» (leaf 4)))
-                      («Language.mApp»
+                        («Language.var» (leaf 1))
+                        («Language.var» (leaf 4)))
+                      («Language.app»
                         («Language.mLam»
                           «Translation.bitsTy»
                           («Translation.ifBit»
                             «Translation.bitsTy»
-                            («Language.mVar» (leaf 2))
+                            («Language.var» (leaf 2))
                             («Translation.ifBit»
                               «Translation.bitsTy»
-                              («Language.mVar» (leaf 5))
-                              («Language.mVar» (leaf 0))
+                              («Language.var» (leaf 5))
+                              («Language.var» (leaf 0))
                               («Translation.call»
                                 (leaf 11)
                                 ([] : List T)
-                                («Prelude.single» («Language.mVar» (leaf 0)))))
+                                («Prelude.single» («Language.var» (leaf 0)))))
                             («Translation.call»
                               (leaf 11)
                               ([] : List T)
-                              («Prelude.single» («Language.mVar» (leaf 0))))))
-                        («Language.mApp»
-                          («Language.mSnd» («Language.mVar» (leaf 3)))
-                          («Language.mVar» (leaf 0))))))))))
-          («Language.mVar» (leaf 0))))
-      («Language.mVar» (leaf 1)))
+                              («Prelude.single» («Language.var» (leaf 0))))))
+                        («Language.app»
+                          («Language.mSnd» («Language.var» (leaf 3)))
+                          («Language.var» (leaf 0))))))))))
+          («Language.var» (leaf 0))))
+      («Language.var» (leaf 1)))
 
 def «Translation.lbCmp» :=
   «Translation.mkDefn»
     (leaf 0)
     («Theory.l2» «Translation.bitsTy» «Translation.bitsTy»)
     «Translation.ordTy»
-    («Language.mApp»
+    («Language.app»
       («Language.mListRec»
         («Language.mLam»
           «Translation.bitsTy»
           («Translation.condT»
             «Translation.ordTy»
-            («Language.mVar» (leaf 0))
+            («Language.var» (leaf 0))
             «Translation.gtO»
             «Translation.eqO»))
         («Language.mLam»
@@ -613,7 +611,7 @@ def «Translation.lbCmp» :=
           («Translation.lcaseB»
             «Translation.bitTy»
             «Translation.ordTy»
-            («Language.mVar» (leaf 0))
+            («Language.var» (leaf 0))
             «Translation.ltO»
             («Language.mLam»
               «Translation.bitTy»
@@ -621,16 +619,14 @@ def «Translation.lbCmp» :=
                 «Translation.bitsTy»
                 («Translation.ifOrd»
                   «Translation.ordTy»
-                  («Language.mApp»
-                    («Language.mVar» (leaf 3))
-                    («Language.mVar» (leaf 0)))
+                  («Language.app» («Language.var» (leaf 3)) («Language.var» (leaf 0)))
                   «Translation.ltO»
                   («Translation.bitOrdT»
-                    («Language.mVar» (leaf 1))
-                    («Language.mVar» (leaf 4)))
+                    («Language.var» (leaf 1))
+                    («Language.var» (leaf 4)))
                   «Translation.gtO»)))))
-        («Language.mVar» (leaf 0)))
-      («Language.mVar» (leaf 1)))
+        («Language.var» (leaf 0)))
+      («Language.var» (leaf 1)))
 
 def «Translation.lbLtB» :=
   «Translation.mkDefn»
@@ -640,8 +636,8 @@ def «Translation.lbLtB» :=
     («Translation.ifOrd»
       «Translation.bitsTy»
       («Translation.cmpT»
-        («Language.mVar» (leaf 1))
-        («Language.mVar» (leaf 0)))
+        («Language.var» (leaf 1))
+        («Language.var» (leaf 0)))
       «Translation.trueT»
       «Translation.bnilT»
       «Translation.bnilT»)
@@ -651,20 +647,20 @@ def «Translation.lbEqB» :=
     (leaf 0)
     («Theory.l2» «Translation.bitsTy» «Translation.bitsTy»)
     «Translation.bitsTy»
-    («Language.mApp»
+    («Language.app»
       («Language.mListRec»
         («Language.mLam»
           «Translation.bitsTy»
           («Translation.call»
             (leaf 10)
             («Prelude.single» «Translation.bitTy»)
-            («Prelude.single» («Language.mVar» (leaf 0)))))
+            («Prelude.single» («Language.var» (leaf 0)))))
         («Language.mLam»
           «Translation.bitsTy»
           («Translation.lcaseB»
             «Translation.bitTy»
             «Translation.bitsTy»
-            («Language.mVar» (leaf 0))
+            («Language.var» (leaf 0))
             «Translation.bnilT»
             («Language.mLam»
               «Translation.bitTy»
@@ -672,74 +668,72 @@ def «Translation.lbEqB» :=
                 «Translation.bitsTy»
                 («Translation.ifBit»
                   «Translation.bitsTy»
-                  («Language.mVar» (leaf 1))
+                  («Language.var» (leaf 1))
                   («Translation.ifBit»
                     «Translation.bitsTy»
-                    («Language.mVar» (leaf 4))
-                    («Language.mApp»
-                      («Language.mVar» (leaf 3))
-                      («Language.mVar» (leaf 0)))
+                    («Language.var» (leaf 4))
+                    («Language.app» («Language.var» (leaf 3)) («Language.var» (leaf 0)))
                     «Translation.bnilT»)
                   («Translation.ifBit»
                     «Translation.bitsTy»
-                    («Language.mVar» (leaf 4))
+                    («Language.var» (leaf 4))
                     «Translation.bnilT»
-                    («Language.mApp»
-                      («Language.mVar» (leaf 3))
-                      («Language.mVar» (leaf 0)))))))))
-        («Language.mVar» (leaf 0)))
-      («Language.mVar» (leaf 1)))
+                    («Language.app»
+                      («Language.var» (leaf 3))
+                      («Language.var» (leaf 0)))))))))
+        («Language.var» (leaf 0)))
+      («Language.var» (leaf 1)))
 
 def «Translation.lbSubE» :=
   «Translation.mkDefn»
     (leaf 0)
     («Theory.l2» «Translation.bitsTy» «Translation.bitsTy»)
     «Translation.bitsTy»
-    («Language.mApp»
+    («Language.app»
       («Language.mListRec»
-        («Language.mLam» «Translation.bitsTy» («Language.mVar» (leaf 0)))
+        («Language.mLam» «Translation.bitsTy» («Language.var» (leaf 0)))
         («Language.mLam»
           «Translation.bitsTy»
           («Translation.lcaseB»
             «Translation.bitTy»
             «Translation.bitsTy»
-            («Language.mVar» (leaf 0))
+            («Language.var» (leaf 0))
             «Translation.bnilT»
             («Language.mLam»
               «Translation.bitTy»
               («Language.mLam»
                 «Translation.bitsTy»
-                («Language.mApp»
+                («Language.app»
                   («Language.mLam»
                     «Translation.bitsTy»
                     («Translation.ifBit»
                       «Translation.bitsTy»
-                      («Language.mVar» (leaf 2))
+                      («Language.var» (leaf 2))
                       («Translation.ifBit»
                         «Translation.bitsTy»
-                        («Language.mVar» (leaf 5))
+                        («Language.var» (leaf 5))
                         («Translation.call»
                           (leaf 14)
                           ([] : List T)
-                          («Prelude.single» («Language.mVar» (leaf 0))))
+                          («Prelude.single» («Language.var» (leaf 0))))
                         («Translation.b0T»
                           («Translation.call»
                             (leaf 13)
                             ([] : List T)
-                            («Prelude.single» («Language.mVar» (leaf 0))))))
+                            («Prelude.single» («Language.var» (leaf 0))))))
                       («Translation.ifBit»
                         «Translation.bitsTy»
-                        («Language.mVar» (leaf 5))
-                        («Translation.b0T» («Language.mVar» (leaf 0)))
+                        («Language.var» (leaf 5))
+                        («Translation.b0T» («Language.var» (leaf 0)))
                         («Translation.call»
                           (leaf 14)
                           ([] : List T)
-                          («Prelude.single» («Language.mVar» (leaf 0)))))))
-                  («Language.mApp»
-                    («Language.mVar» (leaf 3))
-                    («Language.mVar» (leaf 0))))))))
-        («Language.mVar» (leaf 0)))
-      («Language.mVar» (leaf 1)))
+                          («Prelude.single» («Language.var» (leaf 0)))))))
+                  («Language.app»
+                    («Language.var» (leaf 3))
+                    («Language.var» (leaf 0))))))))
+        («Language.var» (leaf 0)))
+      («Language.var» (leaf 1)))
 
 def «Translation.lbSub» :=
   «Translation.mkDefn»
@@ -751,19 +745,19 @@ def «Translation.lbSub» :=
       («Translation.call»
         (leaf 17)
         ([] : List T)
-        («Theory.l2» («Language.mVar» (leaf 1)) («Language.mVar» (leaf 0))))
+        («Theory.l2» («Language.var» (leaf 1)) («Language.var» (leaf 0))))
       «Translation.bnilT»
       («Translation.call»
         (leaf 19)
         ([] : List T)
-        («Theory.l2» («Language.mVar» (leaf 1)) («Language.mVar» (leaf 0)))))
+        («Theory.l2» («Language.var» (leaf 1)) («Language.var» (leaf 0)))))
 
 def «Translation.lbMul» :=
   «Translation.mkDefn»
     (leaf 0)
     («Theory.l2» «Translation.bitsTy» «Translation.bitsTy»)
     «Translation.bitsTy»
-    («Language.mApp»
+    («Language.app»
       («Language.mListRec»
         («Language.mLam» «Translation.bitsTy» «Translation.bnilT»)
         («Language.mLam»
@@ -776,19 +770,17 @@ def «Translation.lbMul» :=
                 (leaf 14)
                 ([] : List T)
                 («Prelude.single»
-                  («Language.mApp»
-                    («Language.mVar» (leaf 1))
-                    («Language.mVar» (leaf 0)))))
+                  («Language.app» («Language.var» (leaf 1)) («Language.var» (leaf 0)))))
               («Translation.ifBit»
                 «Translation.bitsTy»
-                («Language.mVar» (leaf 2))
-                («Language.mVar» (leaf 0))
+                («Language.var» (leaf 2))
+                («Language.var» (leaf 0))
                 («Translation.call»
                   (leaf 14)
                   ([] : List T)
-                  («Prelude.single» («Language.mVar» (leaf 0))))))))
-        («Language.mVar» (leaf 0)))
-      («Language.mVar» (leaf 1)))
+                  («Prelude.single» («Language.var» (leaf 0))))))))
+        («Language.var» (leaf 0)))
+      («Language.var» (leaf 1)))
 
 def «Translation.lbDivMod» :=
   let x0 : T := «Theory.prod» «Translation.bitsTy» «Translation.bitsTy»;
@@ -798,64 +790,62 @@ def «Translation.lbDivMod» :=
     x0
     («Translation.condT»
       x0
-      («Language.mVar» (leaf 0))
-      («Language.mApp»
+      («Language.var» (leaf 0))
+      («Language.app»
         («Language.mListRec»
           («Language.mLam»
             «Translation.bitsTy»
             («Language.mPair» «Translation.bnilT» «Translation.bnilT»))
           («Language.mLam»
             «Translation.bitsTy»
-            («Language.mApp»
+            («Language.app»
               («Language.mLam»
                 x0
-                («Language.mApp»
+                («Language.app»
                   («Language.mLam»
                     «Translation.bitsTy»
                     («Translation.ifOrd»
                       x0
                       («Translation.cmpT»
-                        («Language.mVar» (leaf 0))
-                        («Language.mVar» (leaf 2)))
+                        («Language.var» (leaf 0))
+                        («Language.var» (leaf 2)))
                       («Language.mPair»
                         («Translation.call»
                           (leaf 14)
                           ([] : List T)
-                          («Prelude.single» («Language.mFst» («Language.mVar» (leaf 1)))))
-                        («Language.mVar» (leaf 0)))
+                          («Prelude.single» («Language.mFst» («Language.var» (leaf 1)))))
+                        («Language.var» (leaf 0)))
                       («Language.mPair»
-                        («Translation.b0T» («Language.mFst» («Language.mVar» (leaf 1))))
+                        («Translation.b0T» («Language.mFst» («Language.var» (leaf 1))))
                         «Translation.bnilT»)
                       («Translation.ifOrd»
                         x0
                         («Translation.cmpT»
-                          («Language.mVar» (leaf 0))
+                          («Language.var» (leaf 0))
                           («Translation.call»
                             (leaf 14)
                             ([] : List T)
-                            («Prelude.single» («Language.mVar» (leaf 2)))))
+                            («Prelude.single» («Language.var» (leaf 2)))))
                         («Language.mPair»
-                          («Translation.b0T» («Language.mFst» («Language.mVar» (leaf 1))))
+                          («Translation.b0T» («Language.mFst» («Language.var» (leaf 1))))
                           («Translation.call»
                             (leaf 19)
                             ([] : List T)
-                            («Theory.l2» («Language.mVar» (leaf 0)) («Language.mVar» (leaf 2)))))
+                            («Theory.l2» («Language.var» (leaf 0)) («Language.var» (leaf 2)))))
                         («Language.mPair»
-                          («Translation.b1T» («Language.mFst» («Language.mVar» (leaf 1))))
+                          («Translation.b1T» («Language.mFst» («Language.var» (leaf 1))))
                           «Translation.bnilT»)
                         («Language.mPair»
-                          («Translation.b1T» («Language.mFst» («Language.mVar» (leaf 1))))
+                          («Translation.b1T» («Language.mFst» («Language.var» (leaf 1))))
                           «Translation.bnilT»))))
                   («Translation.consT»
                     «Translation.bitTy»
-                    («Language.mVar» (leaf 3))
-                    («Language.mSnd» («Language.mVar» (leaf 0))))))
-              («Language.mApp»
-                («Language.mVar» (leaf 1))
-                («Language.mVar» (leaf 0)))))
-          («Language.mVar» (leaf 1)))
-        («Language.mVar» (leaf 0)))
-      («Language.mPair» «Translation.bnilT» («Language.mVar» (leaf 1))))
+                    («Language.var» (leaf 3))
+                    («Language.mSnd» («Language.var» (leaf 0))))))
+              («Language.app» («Language.var» (leaf 1)) («Language.var» (leaf 0)))))
+          («Language.var» (leaf 1)))
+        («Language.var» (leaf 0)))
+      («Language.mPair» «Translation.bnilT» («Language.var» (leaf 1))))
 
 def «Translation.lbLog2» :=
   let x0 : T := «Theory.prod» «Translation.bitsTy» «Translation.bitsTy»;
@@ -863,34 +853,34 @@ def «Translation.lbLog2» :=
     (leaf 0)
     («Prelude.single» «Translation.bitsTy»)
     «Translation.bitsTy»
-    («Language.mApp»
+    («Language.app»
       («Language.mLam»
         x0
         («Translation.condT»
           «Translation.bitsTy»
-          («Language.mSnd» («Language.mVar» (leaf 0)))
-          («Language.mFst» («Language.mVar» (leaf 0)))
+          («Language.mSnd» («Language.var» (leaf 0)))
+          («Language.mFst» («Language.var» (leaf 0)))
           («Translation.call»
             (leaf 13)
             ([] : List T)
-            («Prelude.single» («Language.mFst» («Language.mVar» (leaf 0)))))))
+            («Prelude.single» («Language.mFst» («Language.var» (leaf 0)))))))
       («Language.mListRec»
         («Language.mPair» «Translation.bnilT» «Translation.bnilT»)
-        («Language.mApp»
+        («Language.app»
           («Language.mLam»
             x0
             («Language.mPair»
               («Translation.call»
                 (leaf 11)
                 ([] : List T)
-                («Prelude.single» («Language.mFst» («Language.mVar» (leaf 0)))))
+                («Prelude.single» («Language.mFst» («Language.var» (leaf 0)))))
               («Translation.ifBit»
                 «Translation.bitsTy»
-                («Language.mVar» (leaf 2))
-                («Language.mSnd» («Language.mVar» (leaf 0)))
+                («Language.var» (leaf 2))
+                («Language.mSnd» («Language.var» (leaf 0)))
                 «Translation.trueT»)))
-          («Language.mVar» (leaf 0)))
-        («Language.mVar» (leaf 0))))
+          («Language.var» (leaf 0)))
+        («Language.var» (leaf 0))))
 
 def «Translation.lbIter» :=
   let x0 : T := «Theory.exp» «Translation.X0» «Translation.X0»;
@@ -898,42 +888,36 @@ def «Translation.lbIter» :=
     (leaf 1)
     («Theory.l3» «Translation.bitsTy» x0 «Translation.X0»)
     «Translation.X0»
-    («Language.mApp»
-      («Language.mApp»
+    («Language.app»
+      («Language.app»
         («Language.mListRec»
           («Language.mLam»
             x0
-            («Language.mLam» «Translation.X0» («Language.mVar» (leaf 0))))
+            («Language.mLam» «Translation.X0» («Language.var» (leaf 0))))
           («Language.mLam»
             x0
             («Language.mLam»
               «Translation.X0»
-              («Language.mApp»
+              («Language.app»
                 («Language.mLam»
                   «Translation.X0»
                   («Translation.ifBit»
                     «Translation.X0»
-                    («Language.mVar» (leaf 4))
-                    («Language.mApp»
-                      («Language.mVar» (leaf 2))
-                      («Language.mVar» (leaf 0)))
-                    («Language.mApp»
-                      («Language.mVar» (leaf 2))
-                      («Language.mApp»
-                        («Language.mVar» (leaf 2))
-                        («Language.mVar» (leaf 0))))))
-                («Language.mApp»
-                  («Language.mApp»
-                    («Language.mVar» (leaf 2))
-                    («Language.mVar» (leaf 1)))
-                  («Language.mApp»
-                    («Language.mApp»
-                      («Language.mVar» (leaf 2))
-                      («Language.mVar» (leaf 1)))
-                    («Language.mVar» (leaf 0)))))))
-          («Language.mVar» (leaf 2)))
-        («Language.mVar» (leaf 1)))
-      («Language.mVar» (leaf 0)))
+                    («Language.var» (leaf 4))
+                    («Language.app» («Language.var» (leaf 2)) («Language.var» (leaf 0)))
+                    («Language.app»
+                      («Language.var» (leaf 2))
+                      («Language.app»
+                        («Language.var» (leaf 2))
+                        («Language.var» (leaf 0))))))
+                («Language.app»
+                  («Language.app» («Language.var» (leaf 2)) («Language.var» (leaf 1)))
+                  («Language.app»
+                    («Language.app» («Language.var» (leaf 2)) («Language.var» (leaf 1)))
+                    («Language.var» (leaf 0)))))))
+          («Language.var» (leaf 2)))
+        («Language.var» (leaf 1)))
+      («Language.var» (leaf 0)))
 
 def «Translation.lbMapApp» :=
   «Translation.mkDefn»
@@ -942,7 +926,7 @@ def «Translation.lbMapApp» :=
       («Theory.list» («Theory.exp» «Translation.X0» «Translation.X1»))
       «Translation.X0»)
     («Theory.list» «Translation.X1»)
-    («Language.mApp»
+    («Language.app»
       («Language.mListRec»
         («Language.mLam»
           «Translation.X0»
@@ -951,14 +935,10 @@ def «Translation.lbMapApp» :=
           «Translation.X0»
           («Translation.consT»
             «Translation.X1»
-            («Language.mApp»
-              («Language.mVar» (leaf 2))
-              («Language.mVar» (leaf 0)))
-            («Language.mApp»
-              («Language.mVar» (leaf 1))
-              («Language.mVar» (leaf 0)))))
-        («Language.mVar» (leaf 1)))
-      («Language.mVar» (leaf 0)))
+            («Language.app» («Language.var» (leaf 2)) («Language.var» (leaf 0)))
+            («Language.app» («Language.var» (leaf 1)) («Language.var» (leaf 0)))))
+        («Language.var» (leaf 1)))
+      («Language.var» (leaf 0)))
 
 def «Translation.lbAnd» :=
   «Translation.mkDefn»
@@ -967,8 +947,8 @@ def «Translation.lbAnd» :=
     «Translation.bitsTy»
     («Translation.condT»
       «Translation.bitsTy»
-      («Language.mVar» (leaf 1))
-      («Language.mVar» (leaf 0))
+      («Language.var» (leaf 1))
+      («Language.var» (leaf 0))
       «Translation.bnilT»)
 
 def «Translation.lbAllZip» :=
@@ -979,14 +959,14 @@ def «Translation.lbAllZip» :=
         («Theory.exp» «Translation.treeTy» «Translation.bitsTy»))
       («Theory.list» «Translation.treeTy»))
     «Translation.bitsTy»
-    («Language.mApp»
+    («Language.app»
       («Language.mListRec»
         («Language.mLam»
           («Theory.list» «Translation.treeTy»)
           («Translation.call»
             (leaf 10)
             («Prelude.single» «Translation.treeTy»)
-            («Prelude.single» («Language.mVar» (leaf 0)))))
+            («Prelude.single» («Language.var» (leaf 0)))))
         («Language.mLam»
           («Theory.list» «Translation.treeTy»)
           («Translation.condT»
@@ -994,35 +974,35 @@ def «Translation.lbAllZip» :=
             («Translation.call»
               (leaf 10)
               («Prelude.single» «Translation.treeTy»)
-              («Prelude.single» («Language.mVar» (leaf 0))))
+              («Prelude.single» («Language.var» (leaf 0))))
             «Translation.bnilT»
             («Translation.call»
               (leaf 26)
               ([] : List T)
               («Theory.l2»
-                («Language.mApp»
-                  («Language.mVar» (leaf 2))
+                («Language.app»
+                  («Language.var» (leaf 2))
                   («Translation.call»
                     (leaf 8)
                     («Prelude.single» «Translation.treeTy»)
                     («Theory.l2»
                       («Translation.leafT» «Translation.bnilT»)
-                      («Language.mVar» (leaf 0)))))
-                («Language.mApp»
-                  («Language.mVar» (leaf 1))
+                      («Language.var» (leaf 0)))))
+                («Language.app»
+                  («Language.var» (leaf 1))
                   («Translation.call»
                     (leaf 7)
                     («Prelude.single» «Translation.treeTy»)
-                    («Prelude.single» («Language.mVar» (leaf 0)))))))))
-        («Language.mVar» (leaf 1)))
-      («Language.mVar» (leaf 0)))
+                    («Prelude.single» («Language.var» (leaf 0)))))))))
+        («Language.var» (leaf 1)))
+      («Language.var» (leaf 0)))
 
 def «Translation.lbEqual» :=
   «Translation.mkDefn»
     (leaf 0)
     («Theory.l2» «Translation.treeTy» «Translation.treeTy»)
     «Translation.bitsTy»
-    («Language.mApp»
+    («Language.app»
       («Language.mRoseRec»
         («Theory.exp» «Translation.treeTy» «Translation.bitsTy»)
         («Language.mLam»
@@ -1035,22 +1015,22 @@ def «Translation.lbEqual» :=
                 (leaf 18)
                 ([] : List T)
                 («Theory.l2»
-                  («Language.mFst» («Language.mVar» (leaf 1)))
+                  («Language.mFst» («Language.var» (leaf 1)))
                   («Translation.call»
                     (leaf 3)
                     ([] : List T)
-                    («Prelude.single» («Language.mVar» (leaf 0))))))
+                    («Prelude.single» («Language.var» (leaf 0))))))
               («Translation.call»
                 (leaf 27)
                 ([] : List T)
                 («Theory.l2»
-                  («Language.mSnd» («Language.mVar» (leaf 1)))
+                  («Language.mSnd» («Language.var» (leaf 1)))
                   («Translation.call»
                     (leaf 5)
                     ([] : List T)
-                    («Prelude.single» («Language.mVar» (leaf 0)))))))))
-        («Language.mVar» (leaf 1)))
-      («Language.mVar» (leaf 0)))
+                    («Prelude.single» («Language.var» (leaf 0)))))))))
+        («Language.var» (leaf 1)))
+      («Language.var» (leaf 0)))
 
 def «Translation.lib» :=
   («Translation.lbBnil» ::
@@ -1093,23 +1073,23 @@ def «Translation.foldT» :=
                      x1
                      («Language.mLam»
                        «Translation.treeTy»
-                       («Language.mApp»
+                       («Language.app»
                          («Language.mRoseRec»
                            («Theory.exp» x1 x0)
                            («Language.mLam»
                              x1
-                             («Language.mApp»
-                               («Language.mApp»
-                                 («Language.mVar» (leaf 0))
-                                 («Translation.leafT» («Language.mFst» («Language.mVar» (leaf 1)))))
+                             («Language.app»
+                               («Language.app»
+                                 («Language.var» (leaf 0))
+                                 («Translation.leafT» («Language.mFst» («Language.var» (leaf 1)))))
                                («Translation.call»
                                  (leaf 25)
                                  («Theory.l2» x1 x0)
                                  («Theory.l2»
-                                   («Language.mSnd» («Language.mVar» (leaf 1)))
-                                   («Language.mVar» (leaf 0))))))
-                           («Language.mVar» (leaf 0)))
-                         («Language.mVar» (leaf 1)))));
+                                   («Language.mSnd» («Language.var» (leaf 1)))
+                                   («Language.var» (leaf 0))))))
+                           («Language.var» (leaf 0)))
+                         («Language.var» (leaf 1)))));
     x1
 
 def «Translation.fstsT» :=
@@ -1118,8 +1098,8 @@ def «Translation.fstsT» :=
       («Translation.nilT» «Translation.treeTy»)
       («Translation.consT»
         «Translation.treeTy»
-        («Language.mFst» («Language.mVar» (leaf 1)))
-        («Language.mVar» (leaf 0)))
+        («Language.mFst» («Language.var» (leaf 1)))
+        («Language.var» (leaf 0)))
       x0;
     x1
 
@@ -1129,8 +1109,8 @@ def «Translation.sndsT» :=
       («Translation.nilT» x0)
       («Translation.consT»
         x0
-        («Language.mSnd» («Language.mVar» (leaf 1)))
-        («Language.mVar» (leaf 0)))
+        («Language.mSnd» («Language.var» (leaf 1)))
+        («Language.var» (leaf 0)))
       x1;
     x2
 
@@ -1145,36 +1125,36 @@ def «Translation.paraT» :=
                      («Language.mLam»
                        «Translation.treeTy»
                        («Language.mSnd»
-                         («Language.mApp»
+                         («Language.app»
                            («Language.mRoseRec»
                              («Theory.exp» x1 x2)
                              («Language.mLam»
                                x1
-                               («Language.mApp»
+                               («Language.app»
                                  («Language.mLam»
                                    («Theory.list» x2)
-                                   («Language.mApp»
+                                   («Language.app»
                                      («Language.mLam»
                                        «Translation.treeTy»
                                        («Language.mPair»
-                                         («Language.mVar» (leaf 0))
-                                         («Language.mApp»
-                                           («Language.mApp»
-                                             («Language.mVar» (leaf 2))
-                                             («Language.mVar» (leaf 0)))
-                                           («Translation.sndsT» x0 («Language.mVar» (leaf 1))))))
+                                         («Language.var» (leaf 0))
+                                         («Language.app»
+                                           («Language.app»
+                                             («Language.var» (leaf 2))
+                                             («Language.var» (leaf 0)))
+                                           («Translation.sndsT» x0 («Language.var» (leaf 1))))))
                                      («Translation.nodeT»
                                        («Language.mPair»
-                                         («Language.mFst» («Language.mVar» (leaf 2)))
-                                         («Translation.fstsT» («Language.mVar» (leaf 0)))))))
+                                         («Language.mFst» («Language.var» (leaf 2)))
+                                         («Translation.fstsT» («Language.var» (leaf 0)))))))
                                  («Translation.call»
                                    (leaf 25)
                                    («Theory.l2» x1 x2)
                                    («Theory.l2»
-                                     («Language.mSnd» («Language.mVar» (leaf 1)))
-                                     («Language.mVar» (leaf 0))))))
-                             («Language.mVar» (leaf 0)))
-                           («Language.mVar» (leaf 1))))));
+                                     («Language.mSnd» («Language.var» (leaf 1)))
+                                     («Language.var» (leaf 0))))))
+                             («Language.var» (leaf 0)))
+                           («Language.var» (leaf 1))))));
     x1
 
 def «Translation.iterT» :=
@@ -1192,9 +1172,9 @@ def «Translation.iterT» :=
               («Translation.call»
                 (leaf 3)
                 ([] : List T)
-                («Prelude.single» («Language.mVar» (leaf 0))))
-              («Language.mVar» (leaf 2))
-              («Language.mVar» (leaf 1))))));
+                («Prelude.single» («Language.var» (leaf 0))))
+              («Language.var» (leaf 2))
+              («Language.var» (leaf 1))))));
     x1
 
 def «Translation.foldrT» :=
@@ -1206,22 +1186,22 @@ def «Translation.foldrT» :=
                        x1
                        («Language.mLam»
                          («Theory.list» x0)
-                         («Language.mApp»
+                         («Language.app»
                            («Language.mListRec»
-                             («Language.mLam» x2 («Language.mSnd» («Language.mVar» (leaf 0))))
+                             («Language.mLam» x2 («Language.mSnd» («Language.var» (leaf 0))))
                              («Language.mLam»
                                x2
-                               («Language.mApp»
-                                 («Language.mApp»
-                                   («Language.mFst» («Language.mVar» (leaf 0)))
-                                   («Language.mVar» (leaf 2)))
-                                 («Language.mApp»
-                                   («Language.mVar» (leaf 1))
-                                   («Language.mVar» (leaf 0)))))
-                             («Language.mVar» (leaf 0)))
+                               («Language.app»
+                                 («Language.app»
+                                   («Language.mFst» («Language.var» (leaf 0)))
+                                   («Language.var» (leaf 2)))
+                                 («Language.app»
+                                   («Language.var» (leaf 1))
+                                   («Language.var» (leaf 0)))))
+                             («Language.var» (leaf 0)))
                            («Language.mPair»
-                             («Language.mVar» (leaf 2))
-                             («Language.mVar» (leaf 1)))))));
+                             («Language.var» (leaf 2))
+                             («Language.var» (leaf 1)))))));
     x2
 
 def «Translation.lcaseT» :=
@@ -1235,9 +1215,9 @@ def «Translation.lcaseT» :=
           («Translation.lcaseB»
             x0
             x1
-            («Language.mVar» (leaf 2))
-            («Language.mVar» (leaf 1))
-            («Language.mVar» (leaf 0)))));
+            («Language.var» (leaf 2))
+            («Language.var» (leaf 1))
+            («Language.var» (leaf 0)))));
     x2
 
 def «Translation.labT» :=
@@ -1256,8 +1236,8 @@ def «Translation.binT» :=
         «Translation.treeTy»
         («Translation.leafT»
           (x0
-            («Translation.labT» («Language.mVar» (leaf 1)))
-            («Translation.labT» («Language.mVar» (leaf 0))))));
+            («Translation.labT» («Language.var» (leaf 1)))
+            («Translation.labT» («Language.var» (leaf 0))))));
     x1
 
 def «Translation.primT» :=
@@ -1266,7 +1246,7 @@ def «Translation.primT» :=
       «Prelude.some»
         («Language.mLam»
           «Translation.treeTy»
-          («Translation.leafT» («Translation.labT» («Language.mVar» (leaf 0)))))
+          («Translation.leafT» («Translation.labT» («Language.var» (leaf 0)))))
     else
       if (Const.eq x0 (leaf 1)).label ≠ 0 then
         «Prelude.some»
@@ -1280,7 +1260,7 @@ def «Translation.primT» :=
                   («Translation.call»
                     (leaf 5)
                     ([] : List T)
-                    («Prelude.single» («Language.mVar» (leaf 0))))))))
+                    («Prelude.single» («Language.var» (leaf 0))))))))
       else
         if (Const.eq x0 (leaf 2)).label ≠ 0 then
           «Prelude.some»
@@ -1297,17 +1277,17 @@ def «Translation.primT» :=
                       (leaf 24)
                       («Prelude.single» («Theory.list» «Translation.treeTy»))
                       («Theory.l3»
-                        («Translation.labT» («Language.mVar» (leaf 0)))
+                        («Translation.labT» («Language.var» (leaf 0)))
                         («Language.mLam»
                           («Theory.list» «Translation.treeTy»)
                           («Translation.call»
                             (leaf 7)
                             («Prelude.single» «Translation.treeTy»)
-                            («Prelude.single» («Language.mVar» (leaf 0)))))
+                            («Prelude.single» («Language.var» (leaf 0)))))
                         («Translation.call»
                           (leaf 5)
                           ([] : List T)
-                          («Prelude.single» («Language.mVar» (leaf 1))))))))))
+                          («Prelude.single» («Language.var» (leaf 1))))))))))
         else
           if (Const.eq x0 (leaf 3)).label ≠ 0 then
             «Prelude.some»
@@ -1317,8 +1297,8 @@ def «Translation.primT» :=
                   («Theory.list» «Translation.treeTy»)
                   («Translation.nodeT»
                     («Language.mPair»
-                      («Translation.labT» («Language.mVar» (leaf 1)))
-                      («Language.mVar» (leaf 0))))))
+                      («Translation.labT» («Language.var» (leaf 1)))
+                      («Language.var» (leaf 0))))))
           else
             if (Const.eq x0 (leaf 4)).label ≠ 0 then
               «Prelude.some»
@@ -1327,7 +1307,7 @@ def «Translation.primT» :=
                   («Translation.call»
                     (leaf 5)
                     ([] : List T)
-                    («Prelude.single» («Language.mVar» (leaf 0)))))
+                    («Prelude.single» («Language.var» (leaf 0)))))
             else
               if (Const.eq x0 (leaf 5)).label ≠ 0 then
                 «Prelude.some»
@@ -1384,8 +1364,8 @@ def «Translation.primT» :=
                                         (leaf 28)
                                         ([] : List T)
                                         («Theory.l2»
-                                          («Language.mVar» (leaf 1))
-                                          («Language.mVar» (leaf 0)))))))
+                                          («Language.var» (leaf 1))
+                                          («Language.var» (leaf 0)))))))
                             else
                               if (Const.eq x0 (leaf 13)).label ≠ 0 then
                                 «Prelude.some»
@@ -1396,7 +1376,7 @@ def «Translation.primT» :=
                                         (leaf 23)
                                         ([] : List T)
                                         («Prelude.single»
-                                          («Translation.labT» («Language.mVar» (leaf 0)))))))
+                                          («Translation.labT» («Language.var» (leaf 0)))))))
                               else
                                 «Prelude.none»);
     x1
@@ -1433,19 +1413,15 @@ def «Translation.kListPart» :=
       «Prelude.none»);
     x1
 
-def «Translation.trTail» :=
+def «Translation/TrFs.tail» :=
   fun (x0 : List (List T → List T → T)) =>
-    let x1 : List
-      (List T →
-        List T →
-          T) := Const.lcase
+    Const.lcase
       (α := List T → List T → T)
       (β := List (List T → List T → T))
       x0
       ([] : List (List T → List T → T))
       (fun (_ : List T → List T → T) (x2 : List (List T → List T → T)) =>
-        x2);
-    x1
+        x2)
 
 def «Translation.trAt» :=
   fun (x0 : List (List T → List T → T)) (x1 : T) =>
@@ -1456,7 +1432,7 @@ def «Translation.trAt» :=
       (β := List T → List T → T)
       (Const.iter
         (α := List (List T → List T → T))
-        «Translation.trTail»
+        «Translation/TrFs.tail»
         x0
         x1)
       (fun (_ : List T) (_ : List T) => «Prelude.none»)
@@ -1478,7 +1454,7 @@ def «Translation.termStep» :=
           «Base.bindO»
             («Prelude.nth» x3 (Const.label x6))
             (fun (x8 : T) =>
-              «Prelude.some» («Language.pr» x8 («Language.mVar» (Const.label x6))))
+              «Prelude.some» («Language.pr» x8 («Language.var» (Const.label x6))))
         else
           «Prelude.none»
       else
@@ -1514,7 +1490,7 @@ def «Translation.termStep» :=
                             «Prelude.some»
                               («Language.pr»
                                 («Language.p2» x10)
-                                («Language.mApp» («Language.p2» x8) («Language.p2» x9)))
+                                («Language.app» («Language.p2» x8) («Language.p2» x9)))
                           else
                             «Prelude.none»)))
             else

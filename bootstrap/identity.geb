@@ -15,6 +15,10 @@
 
 (module Identity
   (export pick put g round words push blake3 member cidsOf migrate link nameNotes moduleCids)
+  (import Prelude)
+  (import Reader)
+  (import Datatype)
+  (import Modules)
   ; words of 32 bits
   (defnum wordSize 4294967296)
   (def addw (lam ((a T) (b T)) (mod (add a b) wordSize)))
@@ -448,4 +452,3 @@
            (k (append done (single (node2 0 (child m 0) (moduleCidIn byName done m))))))
          (lam ((done Ts)) done)
          mods) (nil T)))))
-(import Identity)

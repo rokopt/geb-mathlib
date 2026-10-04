@@ -34,6 +34,8 @@
     xpFail
     xpStep
     expandProgram)
+  (import Prelude)
+  (import Reader)
   ; S-expressions under construction
   (def sx1 (lam ((a T)) (node 2 (single a))))
   (def sx2 (lam ((a T) (b T)) (node 2 (cons a (single b)))))
@@ -506,4 +508,3 @@
         ((foldr T XPK (lam ((e T) (k XPK) (s XP)) (k (xpStep s e))) (lam ((s XP)) s) es)
          (pair 1 (pair (nil T) (nil T))))
         (if (fst s) (some (node 0 (reverse (snd (snd s))))) none)))))
-(import Datatype)

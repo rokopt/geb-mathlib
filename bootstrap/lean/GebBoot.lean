@@ -1245,7 +1245,7 @@ def «Reader.rrApply» :=
       ([] : List T)
       x0
 
-def «Reader.rrTail» :=
+def «Reader/RRs.tail» :=
   fun (x0 : List (T × (List T → T))) =>
     Const.lcase
       (α := T × (List T → T))
@@ -1259,7 +1259,7 @@ def «Reader.rrAt» :=
     Const.lcase
       (α := T × (List T → T))
       (β := List T → T)
-      (Const.iter (α := List (T × (List T → T))) «Reader.rrTail» x0 x1)
+      (Const.iter (α := List (T × (List T → T))) «Reader/RRs.tail» x0 x1)
       (fun (_ : List T) => «Prelude.none»)
       (fun (x3 : T × (List T → T)) (_ : List (T × (List T → T))) => (x3).2)
       x2
@@ -1287,7 +1287,7 @@ def «Reader.argsOf» :=
   fun (x0 : List (T × (List T → T))) (x1 : T) (x2 : List T) =>
     «Reader.allSome»
       («Reader.rrApply»
-        (Const.iter (α := List (T × (List T → T))) «Reader.rrTail» x0 x1)
+        (Const.iter (α := List (T × (List T → T))) «Reader/RRs.tail» x0 x1)
         x2)
 
 def «Reader.mkArgs» :=

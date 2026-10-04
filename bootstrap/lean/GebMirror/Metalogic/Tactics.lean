@@ -66,12 +66,12 @@ def «Tactics.impI» :=
                 x4)))));
     x5
 
-def «Tactics.mApps» :=
+def «Tactics.apps» :=
   fun (x0 : T) (x1 : List T) =>
     let x2 : T := Const.foldr
       (α := T)
       (β := T → T)
-      (fun (x2 : T) (x3 : T → T) (x4 : T) => x3 («Language.mApp» x4 x2))
+      (fun (x2 : T) (x3 : T → T) (x4 : T) => x3 («Language.app» x4 x2))
       (fun (x2 : T) => x2)
       x1
       x0;
@@ -298,7 +298,7 @@ def «Tactics.byRoseIndWith» :=
           («Language.roseLabel» x8)
           (fun (x9 : T) =>
             «Base.bindO»
-              («Derivation.mTypeIn» x0 x1 x4 x6)
+              («Derivation.typeIn» x0 x1 x4 x6)
               (fun (x10 : T) =>
                 let x11 : List T := «Theory.l2» («Theory.list» x8) x9;
                 «Base.bindO»
@@ -339,7 +339,7 @@ def «Tactics.applyAbs» :=
         («Prover.dNode»
           (leaf 24)
           («Prelude.single»
-            («Language.mEq» («Language.mApp» x2 x0) («Language.mApp» x3 x0)))
+            («Language.mEq» («Language.app» x2 x0) («Language.app» x3 x0)))
           («Theory.l2»
             («Prover.dNode»
               (leaf 2)
@@ -379,7 +379,7 @@ def «Tactics.byListSplit» :=
           «Base.mapO»
             (fun (x12 : T) =>
               «Tactics.applyAbs»
-                («Language.mVar» x2)
+                («Language.var» x2)
                 («Prelude.length» x6)
                 x10
                 x11
@@ -393,12 +393,10 @@ def «Tactics.byListSplit» :=
               x4
               (x9 :: x5)
               («Base.mapT» «Derivation.weaken1» x6)
-              («Language.mApp»
-                («Derivation.weaken1» x10)
-                («Language.mVar» (leaf 0)))
-              («Language.mApp»
+              («Language.app» («Derivation.weaken1» x10) («Language.var» (leaf 0)))
+              («Language.app»
                 («Derivation.weaken1» x11)
-                («Language.mVar» (leaf 0))))));
+                («Language.var» (leaf 0))))));
     x5
 
 def «Tactics.bySplit2» :=
@@ -425,12 +423,12 @@ def «Tactics.bySplit2» :=
               let x15 : T →
                 T →
                   T := (fun (x15 : T) (x16 : T) =>
-                «Language.mApp»
+                «Language.app»
                   («Derivation.weaken1» x16)
                   («Language.mArr»
                     x15
                     («Theory.l2» x11 x12)
-                    («Language.mVar» (leaf 0))));
+                    («Language.var» (leaf 0))));
               «Base.bindO»
                 (x3
                   (x11 :: x5)
@@ -441,7 +439,7 @@ def «Tactics.bySplit2» :=
                   «Base.mapO»
                     (fun (x17 : T) =>
                       «Tactics.applyAbs»
-                        («Language.mVar» x2)
+                        («Language.var» x2)
                         («Prelude.length» x6)
                         x13
                         x14
@@ -692,7 +690,7 @@ def «Tactics.instEqs» :=
       (α := List T)
       (β := List T)
       (fun (x3 : List T) (x4 : List T) =>
-        ((«Language.mEq» («Tactics.mApps» x0 x3) («Tactics.mApps» x1 x3)) ::
+        ((«Language.mEq» («Tactics.apps» x0 x3) («Tactics.apps» x1 x3)) ::
           x4))
       ([] : List T)
       x2;
@@ -707,7 +705,7 @@ def «Tactics.cutInsts» :=
         «Prover.dNode»
           (leaf 22)
           («Prelude.single»
-            («Language.mEq» («Tactics.mApps» x0 x5) («Tactics.mApps» x1 x5)))
+            («Language.mEq» («Tactics.apps» x0 x5) («Tactics.apps» x1 x5)))
           («Theory.l2»
             («Prover.dNode»
               (leaf 18)
@@ -909,9 +907,9 @@ def «Tactics.subVar» :=
       («Derivation.weaken1» x1)
       (fun (x2 : T) =>
         if (Const.eq x2 (Const.add x0 (leaf 1))).label ≠ 0 then
-          «Language.mVar» (leaf 0)
+          «Language.var» (leaf 0)
         else
-          «Language.mVar» x2);
+          «Language.var» x2);
     x2
 
 def «Tactics.revertCase» :=
@@ -1019,7 +1017,7 @@ def «Tactics.revertCase» :=
                                           («Prover.dNode»
                                             (leaf 24)
                                             («Prelude.single»
-                                              («Language.mApp» x17 («Language.mVar» x4)))
+                                              («Language.app» x17 («Language.var» x4)))
                                             («Theory.l2»
                                               («Prover.dNode» (leaf 3) ([] : List T) ([] : List T))
                                               («Prover.dNode»
@@ -1238,11 +1236,11 @@ def «Tactics.succPredRw» :=
     let x3 : T := (if («Language.mIs» (leaf 6) (leaf 2) x2).label ≠ 0 then
       let x3 : List
         T := «Theory.l2»
-        («Language.mVar» (leaf 1))
-        («Language.mVar» (leaf 0));
+        («Language.var» (leaf 1))
+        («Language.var» (leaf 0));
       «Prelude.some»
         («Language.pr»
-          («Language.mApp»
+          («Language.app»
             («Language.mArg» x2 (leaf 0))
             («Derivation.instTerm» ([] : List T) x3 x1))
           («Prover.dNode»
@@ -1450,7 +1448,7 @@ def «Tactics.matchesWith» :=
                    if (Const.lt x3 x1).label ≠ 0 then
                      «Prelude.none»
                    else
-                     «Prelude.some» («Language.mVar» (Const.sub x3 x1)))
+                     «Prelude.some» («Language.var» (Const.sub x3 x1)))
                  («Base.range» (Const.add x1 (leaf 64)));
                «Tactics.eraseDupsTss»
                  (Const.foldr
@@ -1896,7 +1894,7 @@ def «Tactics.occStep» :=
                 («Theory.l4»
                   x0
                   (Const.node (leaf 0) ([] : List T))
-                  (Const.node (leaf 0) («Prelude.single» («Language.mVar» x6)))
+                  (Const.node (leaf 0) («Prelude.single» («Language.var» x6)))
                   (leaf 0))
                 ([] : List T)))
         else
@@ -1912,7 +1910,7 @@ def «Tactics.occStep» :=
               (fun (x8 : T → T) (x9 : List T) =>
                 ((x8 (Const.add x4 (leaf 1))) :: x9))
               ([] : List T)
-              («Prover.ufTail» x3))
+              («Prover/UFs.tail» x3))
         else
           if («Prelude.or»
             (Const.eq x7 (leaf 8))
@@ -1926,7 +1924,7 @@ def «Tactics.occStep» :=
                     «Prover.ufAt» x3 (Const.add x8 (leaf 1)) x4
                   else
                     x5)
-                («Base.range» («Tactics.lenUF» («Prover.ufTail» x3))))
+                («Base.range» («Tactics.lenUF» («Prover/UFs.tail» x3))))
           else
             if (Const.eq x7 (leaf 10)).label ≠ 0 then
               «Prover.dNode»
@@ -1938,7 +1936,7 @@ def «Tactics.occStep» :=
                       «Prover.ufAt» x3 (Const.add x8 (leaf 1)) x4
                     else
                       x5)
-                  («Base.range» («Tactics.lenUF» («Prover.ufTail» x3))))
+                  («Base.range» («Tactics.lenUF» («Prover/UFs.tail» x3))))
             else
               if («Base.allT»
                 (fun (x8 : T) => Const.eq («Prover.uses» x8 x6) (leaf 0))
@@ -1953,7 +1951,7 @@ def «Tactics.occStep» :=
                     (β := List T)
                     (fun (x8 : T → T) (x9 : List T) => ((x8 x4) :: x9))
                     ([] : List T)
-                    («Prover.ufTail» x3)));
+                    («Prover/UFs.tail» x3)));
     x4
 
 def «Tactics.occRewrite» :=
@@ -1976,10 +1974,10 @@ def «Tactics.byTreeSplit» :=
             let x9 : T := «Prover.abstractVar» x1 x7 x6;
             let x10 : T := «Translation.nodeT»
               («Language.mPair»
-                («Language.mVar» (leaf 1))
-                («Language.mVar» (leaf 0)));
-            let x11 : T := «Language.mApp» («Derivation.weaken2» x8) x10;
-            let x12 : T := «Language.mApp» («Derivation.weaken2» x9) x10;
+                («Language.var» (leaf 1))
+                («Language.var» (leaf 0)));
+            let x11 : T := «Language.app» («Derivation.weaken2» x8) x10;
+            let x12 : T := «Language.app» («Derivation.weaken2» x9) x10;
             «Base.mapO»
               (fun (x13 : T) =>
                 let x14 : T := «Language.mLam»
@@ -2008,11 +2006,11 @@ def «Tactics.byTreeSplit» :=
                           ([] : List T)
                           («Prelude.single»
                             («Prover.dNode» (leaf 23) ([] : List T) («Theory.l2» x18 x13)))))));
-                let x20 : T := «Tactics.unnodeU» («Language.mVar» x1);
+                let x20 : T := «Tactics.unnodeU» («Language.var» x1);
                 let x21 : T →
                   T := (fun (x21 : T) =>
-                  «Language.mApp»
-                    («Language.mApp» x21 («Language.mFst» x20))
+                  «Language.app»
+                    («Language.app» x21 («Language.mFst» x20))
                     («Language.mSnd» x20));
                 let x22 : T →
                   T := (fun (x22 : T) =>
@@ -2240,7 +2238,7 @@ def «Tactics.absStep» :=
         («Language.rename»
           x0
           (fun (x4 : T) => Const.add x4 x3))).label ≠ 0 then
-        «Language.mVar» x3
+        «Language.var» x3
       else
         let x4 : T := Const.label x1;
         let x5 : List T := «Language.mArgs» x1;
@@ -2255,7 +2253,7 @@ def «Tactics.absStep» :=
               (fun (x7 : T → T) (x8 : List T) =>
                 ((x7 (Const.add x3 (leaf 1))) :: x8))
               ([] : List T)
-              («Prover.ufTail» x2))
+              («Prover/UFs.tail» x2))
         else
           if («Prelude.or»
             (Const.eq x4 (leaf 8))
@@ -2267,7 +2265,7 @@ def «Tactics.absStep» :=
                     «Prover.ufAt» x2 (Const.add x7 (leaf 1)) x3
                   else
                     «Prelude.at» x5 x7)
-                («Base.range» («Tactics.lenUF» («Prover.ufTail» x2))))
+                («Base.range» («Tactics.lenUF» («Prover/UFs.tail» x2))))
           else
             if (Const.eq x4 (leaf 10)).label ≠ 0 then
               x6
@@ -2277,7 +2275,7 @@ def «Tactics.absStep» :=
                       «Prover.ufAt» x2 (Const.add x7 (leaf 1)) x3
                     else
                       «Prelude.at» x5 x7)
-                  («Base.range» («Tactics.lenUF» («Prover.ufTail» x2))))
+                  («Base.range» («Tactics.lenUF» («Prover/UFs.tail» x2))))
             else
               x6
                 (Const.foldr
@@ -2285,7 +2283,7 @@ def «Tactics.absStep» :=
                   (β := List T)
                   (fun (x7 : T → T) (x8 : List T) => ((x7 x3) :: x8))
                   ([] : List T)
-                  («Prover.ufTail» x2)));
+                  («Prover/UFs.tail» x2)));
     x3
 
 def «Tactics.abstractTerm» :=
@@ -2314,8 +2312,8 @@ def «Tactics.maskRwD» :=
                     let x11 : T := «Prover.dNode» (leaf 0) ([] : List T) ([] : List T);
                     let x12 : T := «Prover.dNode» (leaf 3) ([] : List T) ([] : List T);
                     let x13 : T := «Language.mEq»
-                      («Translation.condT» x0 x4 («Language.mApp» x10 x6) x5)
-                      («Translation.condT» x0 x4 («Language.mApp» x10 x7) x5);
+                      («Translation.condT» x0 x4 («Language.app» x10 x6) x5)
+                      («Translation.condT» x0 x4 («Language.app» x10 x7) x5);
                     let x14 : T := «Prover.dNode»
                       (leaf 18)
                       ([] : List T)
@@ -2606,10 +2604,10 @@ def «Tactics.byGeneralize» :=
         (x2
           (x0 :: x3)
           («Base.mapT» «Derivation.weaken1» x4)
-          («Language.mApp» («Derivation.weaken1» x7) («Language.mVar» (leaf 0)))
-          («Language.mApp»
+          («Language.app» («Derivation.weaken1» x7) («Language.var» (leaf 0)))
+          («Language.app»
             («Derivation.weaken1» x8)
-            («Language.mVar» (leaf 0)))));
+            («Language.var» (leaf 0)))));
     x3
 
 end GebMirror.Metalogic

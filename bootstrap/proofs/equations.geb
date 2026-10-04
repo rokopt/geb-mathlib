@@ -6,6 +6,11 @@
 ; bootstrap/goedel-t/equations.geb, checked by bootstrap/goedel-t/prove.geb against its
 ; definitions, the datatypes and case analyses expanded as the compiler expands them.
 
+(import Prelude)
+(import Reader)
+(import Check)
+(import Equations)
+
 ; the sides and the type of an equation are the fields it is built from
 (theorem eqTyEqn ((a T) (s T) (t T)) (eqTy (eqn a s t)) a
   (simp (unfold eqTy eqn single) (rw childDef childrenNode)))

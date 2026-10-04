@@ -227,13 +227,13 @@ theorem para_enc {L V W : Type} (tag : L → ℕ) (dat : L → Tree) (R : V → 
 
 /-- A list of matchings without its head. -/
 @[simp] theorem mtTail_eq (rs : List (Tree → Tree → List Tree → Tree)) :
-    «Prover.mtTail» rs = rs.tail := by
+    «Prover/Mts.tail» rs = rs.tail := by
   cases rs <;> rfl
 
 /-- The matching of a child at a position, one matching nothing out of range. -/
 @[simp] theorem mtAt_eq (rs : List (Tree → Tree → List Tree → Tree)) (i : ℕ) :
     «Prover.mtAt» rs (leaf i) = rs[i]?.getD fun _ _ _ ↦ «Prelude.none» := by
-  have hr : ∀ i : ℕ, Nat.repeat «Prover.mtTail» i rs = rs.drop i :=
+  have hr : ∀ i : ℕ, Nat.repeat «Prover/Mts.tail» i rs = rs.drop i :=
     Nat.rec rfl fun i ih ↦ by rw [Nat.repeat, ih, mtTail_eq, List.tail_drop]
   simp only [«Prover.mtAt», iter_leaf, hr]
   cases h : rs.drop i with
@@ -899,13 +899,13 @@ theorem byListIndHyp_eq (kn kc : ℕ) (rs' : List (Tree × (Tree → Tree → Li
 /-! The reduction to a depth. -/
 
 /-- A list of use counts without its head. -/
-@[simp] theorem ufTail_eq (rs : List (Tree → Tree)) : «Prover.ufTail» rs = rs.tail := by
+@[simp] theorem ufTail_eq (rs : List (Tree → Tree)) : «Prover/UFs.tail» rs = rs.tail := by
   cases rs <;> rfl
 
 /-- The use count of a child at a position, none out of range. -/
 @[simp] theorem ufAt_eq (rs : List (Tree → Tree)) (i : ℕ) :
     «Prover.ufAt» rs (leaf i) = rs[i]?.getD fun _ ↦ leaf 0 := by
-  have hr : ∀ i : ℕ, Nat.repeat «Prover.ufTail» i rs = rs.drop i :=
+  have hr : ∀ i : ℕ, Nat.repeat «Prover/UFs.tail» i rs = rs.drop i :=
     Nat.rec rfl fun i ih ↦ by rw [Nat.repeat, ih, ufTail_eq, List.tail_drop]
   simp only [«Prover.ufAt», iter_leaf, hr]
   cases h : rs.drop i with
@@ -1052,7 +1052,7 @@ theorem headStep_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))
       · rfl
       have hL : ∀ (u' : Term) (du : Deriv × Bool), «Prover.atRoot» (encGlobals G)
           (E.toList.map encEntry) (leaf n) rs' rec' Γ (Φ.map encTerm) (leaf 0)
-          («Language.mApp» (encTerm f') (encTerm u'))
+          («Language.app» (encTerm f') (encTerm u'))
           («Prover.dCong» («Theory.l2» (encDB df) (encDB du))) =
           encOpt ((Internal.atRoot G E n rs rec Γ Φ .head (Term.app f' u')
             (Internal.dCong [df, du])).map encTDB) := fun u' du ↦ by

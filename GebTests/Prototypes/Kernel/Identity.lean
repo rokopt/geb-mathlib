@@ -101,7 +101,9 @@ def sameCids (src src' : List Char) : Option (List Bool) := do
 def identity : String := include_str "../../../bootstrap/identity.geb"
 
 /-- The stage-0 compiler's sources and content identity, followed by a definition. -/
-def withIdentity (main : String) : String := compiler ++ identity ++ "\n" ++ main
+def withIdentity (main : String) : String :=
+  compiler ++ identity ++ "\n(import Prelude) (import Reader) (import Datatype) " ++
+    "(import Modules) (import Identity)\n" ++ main
 
 /-- BLAKE3 written in Geb, applied to the bytes of its input's children. -/
 def hasher : String := withIdentity "(def hashMain (lam ((t T)) (node 0 (blake3 (children t)))))"

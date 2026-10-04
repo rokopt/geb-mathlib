@@ -51,6 +51,8 @@
     opVars
     pdAxioms
     thyExtendAll)
+  (import Prelude)
+  (import Base)
   ; the labels of the certificates' rules, as Geb.PartialHorn.Rule names them
   (defnum PRule.hyp 0)
   (defnum PRule.refl 1)
@@ -147,9 +149,9 @@
   (defn pcTrees ((rs PCs)) Ts (foldr PC Ts (lam ((r PC) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
   (defn pcResults ((rs PCs) (ctx Ts) (hs Ts)) Ts
     (foldr PC Ts (lam ((r PC) (acc Ts)) (cons ((snd r) ctx hs) acc)) (nil T) rs))
-  (defn pcTail ((rs PCs)) PCs (lcase PC PCs rs (nil PC) (lam ((r PC) (rest PCs)) rest)))
+  (import (Lists PC) as PCs)
   (defn pcPrem ((rs PCs) (i T)) PhChk
-    (lcase PC PhChk (iter PCs pcTail rs i) (lam ((ctx Ts) (hs Ts)) none)
+    (lcase PC PhChk (iter PCs PCs.tail rs i) (lam ((ctx Ts) (hs Ts)) none)
       (lam ((r PC) (rest PCs)) (snd r))))
 
   ; the index a leaf names
@@ -191,7 +193,7 @@
                 (if (and (eq l PRule.cong) (lt 0 k))
                   (bindO ((pcPrem rs 0) ctx hs)
                     (lam ((q T))
-                      (let res Ts (pcResults (pcTail rs) ctx hs)
+                      (let res Ts (pcResults (PCs.tail rs) ctx hs)
                         (if
                           (and (not (eq (label (eqLhs q)) 0))
                             (equalTs (mapT (mapO eqLhs) res) (mapT some (children (eqLhs q)))))
@@ -211,14 +213,14 @@
                       (bindO (leafIndex c0)
                         (lam ((j T))
                           (bindO (nth (thyAxioms th) j)
-                            (lam ((a T)) (inst (thySig th) a (pcTail rs) ctx hs)))))
+                            (lam ((a T)) (inst (thySig th) a (PCs.tail rs) ctx hs)))))
                       (if (pShape l k PRule.cut 2)
                         (bindO ((pcPrem rs 0) ctx hs) (lam ((h T)) ((pcPrem rs 1) ctx (cons h hs))))
                         (if (and (eq l PRule.thm) (lt 0 k))
                           (bindO (leafIndex c0)
                             (lam ((j T))
                               (bindO (nth E j)
-                                (lam ((a T)) (inst (thySig th) a (pcTail rs) ctx hs)))))
+                                (lam ((a T)) (inst (thySig th) a (PCs.tail rs) ctx hs)))))
                           none))))))))))))
 
   ; the checker: the conclusion of a certificate in a theory and an environment of theorems, as a
@@ -255,4 +257,3 @@
         (node 0 (append (thyAxioms th) (pdAxioms (length S) d))))))
   (defn thyExtendAll ((th T) (ds Ts)) T
     (foldr T T (lam ((d T) (acc T)) (thyExtend acc d)) th (reverse ds))))
-(import PartialHorn)

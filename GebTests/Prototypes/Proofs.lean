@@ -71,12 +71,13 @@ def prover : String :=
   Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
     Kernel.Stage0Tests.check ++ "\n" ++ Kernel.Stage0Tests.datatype ++ "\n" ++
     Kernel.Stage0Tests.modules ++ "\n" ++ Tests.equationsGeb ++ "\n" ++ proveGeb ++
-    "\n(def main (lam ((file T)) (proveFile 256 file)))"
+    "\n(import EquationProver) (def main (lam ((file T)) (proveFile 256 file)))"
 
 /-- The stage-0 compiler with an entry point giving a program's bundle: its text read and its
 forms of the datatype language expanded, without the image written. -/
 def bundler : String :=
-  Kernel.Stage0Tests.compiler ++ "(def bundleMain (lam ((file T)) (let sx T (readSExps " ++
+  Kernel.Stage0Tests.compiler ++ "(import Prelude) (import Reader) (import Datatype) " ++
+    "(import Modules) (def bundleMain (lam ((file T)) (let sx T (readSExps " ++
     "(children file)) (let mx T (if (isSome sx) (expandModules (children (get sx))) none) " ++
     "(if (isSome mx) (let kx T (expandProgram (children (get mx))) " ++
     "(if (isSome kx) (readProgram (children (get kx))) none)) none)))))"
@@ -122,7 +123,7 @@ def recheck (D : List Tree) (rs : List Tree) : Bool :=
 /-- Theorems the prover does not accept: a false equation, and a true one whose tactic, without
 induction, does not prove it. -/
 def rejected : String :=
-  "(theorem wrong ((xs Ts)) (append xs xs) xs (simp (unfold append)))\n" ++
+  "(import Prelude)\n(theorem wrong ((xs Ts)) (append xs xs) xs (simp (unfold append)))\n" ++
   "(theorem unproved ((xs Ts)) (append xs (nil T)) xs (simp (unfold append)))"
 
 /-- Whether every theorem of a file checks, in Geb and again in Lean. -/

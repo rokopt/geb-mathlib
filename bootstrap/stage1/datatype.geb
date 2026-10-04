@@ -22,6 +22,8 @@
     xpFail
     xpStep
     expandProgram)
+  (import Prelude)
+  (import Reader)
   ; optional trees and S-expressions, as the reader represents them: nothing is the leaf 0 and
   ; just the node of label 1 over the tree; an atom is the node of label 1 over its characters
   ; and a list the node of label 2 over its elements
@@ -466,4 +468,3 @@
       ((foldr T XPK (lam ((e T) (k XPK) (s XP)) (k (xpStep s e))) (lam ((s XP)) s) es)
        (pair 1 (pair (nil T) (nil T))))
       (if (fst s) (just (node 0 (reverse (snd (snd s))))) nothing))))
-(import Datatype)

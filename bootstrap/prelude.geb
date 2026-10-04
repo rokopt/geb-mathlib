@@ -138,4 +138,8 @@
           (pair m (nil T))
           n))))
   (def digitsLsb (lam ((base T) (m T) (n T)) (reverse (digitsMsb base m n)))))
-(import Prelude)
+
+; lists of the elements of a type, the module's parameter, instantiated at each element type
+; whose lists the sources take apart: the list without its first element
+(module Lists (parameter A) (export tail)
+  (def tail (lam ((xs (List A))) (lcase A (List A) xs (nil A) (lam ((x A) (r (List A))) r)))))

@@ -9,6 +9,14 @@
     unnodeU
     occRewrite
     abstractTerm)
+  (import Prelude)
+  (import Base)
+  (import Theory)
+  (import Infer)
+  (import Language)
+  (import Derivation)
+  (import Translation)
+  (import Prover)
   ; the connectives, the definitions from an index: truth, and the implication of one formula by
   ; another; the proof of truth, and the introduction of an implication under hypotheses, the rules
   ; the theorems from an index
@@ -30,8 +38,8 @@
 
   ; proofs by reduction: both sides to one normal form at a depth, and the equation of the normal
   ; forms by a prover; normalization with the hypotheses as rewriting rules
-  (defn mApps ((f T) (xs Ts)) T
-    (foldr T RW (lam ((x T) (k RW) (acc T)) (k (mApp acc x))) (lam ((acc T)) acc) xs f))
+  (defn apps ((f T) (xs Ts)) T
+    (foldr T RW (lam ((x T) (k RW) (acc T)) (k (app acc x))) (lam ((acc T)) acc) xs f))
   (defn byMode ((m T) (G T) (E Ts) (n T) (rs NRs)) Pv
     (lam ((g Ts) (hs Ts) (t T) (u T)) (joinBy (eval G E n rs 4096 m) g hs t u)))
   (defn byWeak ((G T) (E Ts) (n T) (rs NRs)) Pv (byMode 1 G E n rs))
@@ -82,7 +90,7 @@
         (let r T (at g 0)
           (bindO (roseLabel r)
             (lam ((a T))
-              (bindO (mTypeIn G n g t)
+              (bindO (typeIn G n g t)
                 (lam ((C T))
                   (let g2 Ts (l2 (list r) a)
                     (bindO
@@ -97,7 +105,7 @@
   (defn applyAbs ((x T) (nh T) (F T) (H T) (dF T)) T
     (dNode 22 (single (mEq F H))
       (l2 dF
-        (dNode 24 (single (mEq (mApp F x) (mApp H x)))
+        (dNode 24 (single (mEq (app F x) (app H x)))
           (l2 (dNode 2 (nil T) (l2 (dNode 3 (nil T) (nil T)) (dNode 3 (nil T) (nil T))))
             (dNode 18 (nil T)
               (l2 (dNode 2 (nil T) (l2 (dNode 17 (l2 nh 0) (nil T)) (dNode 0 (nil T) (nil T))))
@@ -108,10 +116,10 @@
         (lam ((c T))
           (let F T (abstractVar i c t)
             (let H T (abstractVar i c u)
-              (mapO (lam ((q T)) (applyAbs (mVar i) (length hs) F H (dNode 26 (nil T) (single q))))
+              (mapO (lam ((q T)) (applyAbs (var i) (length hs) F H (dNode 26 (nil T) (single q))))
                 ((byListIndWith G n 0 1 p0 p1v) (cons c g) (mapT weaken1 hs)
-                 (mApp (weaken1 F) (mVar 0))
-                 (mApp (weaken1 H) (mVar 0))))))))))
+                 (app (weaken1 F) (var 0))
+                 (app (weaken1 H) (var 0))))))))))
   (defn bySplit2 ((kl T) (kr T) (i T) (p0 Pv) (p1v Pv)) Pv
     (lam ((g Ts) (hs Ts) (t T) (u T))
       (bindO (nth g i)
@@ -123,12 +131,12 @@
                   (let F T (abstractVar i c t)
                     (let H T (abstractVar i c u)
                       (let inj (Arrow T (Arrow T T))
-                        (lam ((k T) (s T)) (mApp (weaken1 s) (mArr k (l2 a b) (mVar 0))))
+                        (lam ((k T) (s T)) (app (weaken1 s) (mArr k (l2 a b) (var 0))))
                         (bindO (p0 (cons a g) (mapT weaken1 hs) (inj kl F) (inj kl H))
                           (lam ((q0 T))
                             (mapO
                               (lam ((q1 T))
-                                (applyAbs (mVar i) (length hs) F H
+                                (applyAbs (var i) (length hs) F H
                                   (dNode 26 (nil T) (single (dNode 34 (l2 kl kr) (l2 q0 q1))))))
                               (p1v (cons b g) (mapT weaken1 hs) (inj kr F) (inj kr H))))))))))))))))
   (defn byListCases ((G T) (n T) (p Pv)) Pv (byListIndWith G n 0 1 p p))
@@ -197,11 +205,11 @@
       k))
   (deftype Tss (List Ts))
   (defn instEqs ((F T) (H T) (als Tss)) Ts
-    (foldr Ts Ts (lam ((al Ts) (acc Ts)) (cons (mEq (mApps F al) (mApps H al)) acc)) (nil T) als))
+    (foldr Ts Ts (lam ((al Ts) (acc Ts)) (cons (mEq (apps F al) (apps H al)) acc)) (nil T) als))
   (defn cutInsts ((F T) (H T) (i T) (als Tss) (rest T)) T
     (foldr Ts T
       (lam ((al Ts) (r T))
-        (dNode 22 (single (mEq (mApps F al) (mApps H al)))
+        (dNode 22 (single (mEq (apps F al) (apps H al)))
           (l2 (dNode 18 (nil T) (l2 (rwFun i (length al)) (dNode 0 (nil T) (nil T)))) r)))
       rest
       als))
@@ -272,7 +280,7 @@
              (lam ((h1 Ts) (insts Ts)) (k insts g h1 t u))
              kids) hs (nil T))))))
   (defn subVar ((i T) (x T)) T
-    (subst (weaken1 x) (lam ((j T)) (if (eq j (add i 1)) (mVar 0) (mVar j)))))
+    (subst (weaken1 x) (lam ((j T)) (if (eq j (add i 1)) (var 0) (var j)))))
   (defn revertCase ((G T) (n T) (o T) (lb T) (i T) (h T) (pNil Pv) (pCons Pv)) Pv
     (lam ((g Ts) (hs Ts) (t T) (u T))
       (bindO (nth g i)
@@ -330,8 +338,7 @@
                                                                       (single (mEq Fx (mLam c tt)))
                                                                       (l2 dF
                                                                         (dNode 24
-                                                                          (single
-                                                                            (mApp Fx (mVar i)))
+                                                                          (single (app Fx (var i)))
                                                                           (l2
                                                                             (dNode 3 (nil T)
                                                                               (nil T))
@@ -416,9 +423,9 @@
   (defn hypIndex ((r NR)) T (let rt T (fst r) (if (eq (label rt) 6) (some (child rt 0)) none)))
   (defn succPredRw ((j T) (l T) (s T)) T
     (if (mIs 6 2 s)
-      (let sg Ts (l2 (mVar 1) (mVar 0))
+      (let sg Ts (l2 (var 1) (var 0))
         (some
-          (pr (mApp (mArg s 0) (instTerm (nil T) sg l))
+          (pr (app (mArg s 0) (instTerm (nil T) sg l))
             (dNode 2 (nil T)
               (l2 (dNode 0 (nil T) (nil T))
                 (dNode 16 (l4 j (node 0 (nil T)) (node 0 sg) 1) (nil T)))))))
@@ -478,7 +485,7 @@
            (nil Ts)))
        xs) (nil Ts)))
   (defn matchesWith ((mt Mt) (k T) (t T)) Tss
-    (let s0 Ts (mapT (lam ((j T)) (if (lt j k) none (some (mVar (sub j k))))) (range (add k 64)))
+    (let s0 Ts (mapT (lam ((j T)) (if (lt j k) none (some (var (sub j k))))) (range (add k 64)))
       (eraseDupsTss
         (foldr T Tss
           (lam ((u T) (acc Tss))
@@ -603,24 +610,24 @@
               (if (eq (mD nd 0) j)
                 (dNode 1 (nil T)
                   (l2 (dNode 2 (nil T) (single (dNode 6 (nil T) (nil T))))
-                    (dNode 16 (l4 lk (node 0 (nil T)) (node 0 (single (mVar j))) 0) (nil T))))
+                    (dNode 16 (l4 lk (node 0 (nil T)) (node 0 (single (var j))) 0) (nil T))))
                 refl)
               (if (eq l 5)
                 (dNode 2 (nil T)
                   (foldr UF Ts (lam ((r UF) (acc Ts)) (cons (r (add d 1)) acc)) (nil T)
-                    (ufTail rs)))
+                    (UFs.tail rs)))
                 (if (or (eq l 8) (eq l 9))
                   (dNode 2 (nil T)
                     (mapT (lam ((k T)) (if (eq k 2) ((ufAt rs (add k 1)) d) refl))
-                      (range (lenUF (ufTail rs)))))
+                      (range (lenUF (UFs.tail rs)))))
                   (if (eq l 10)
                     (dNode 2 (nil T)
                       (mapT (lam ((k T)) (if (eq k 1) ((ufAt rs (add k 1)) d) refl))
-                        (range (lenUF (ufTail rs)))))
+                        (range (lenUF (UFs.tail rs)))))
                     (if (allT (lam ((c T)) (eq (uses c j) 0)) (mArgs nd)) refl
                       (dNode 2 (nil T)
                         (foldr UF Ts (lam ((r UF) (acc Ts)) (cons (r d) acc)) (nil T)
-                          (ufTail rs)))))))))))))
+                          (UFs.tail rs)))))))))))))
   (defn occRewrite ((lk T) (i T) (t T) (d T)) T ((para UF (occStep lk i) t) d))
   (defn byTreeSplit ((lk T) (i T) (p Pv)) Pv
     (lam ((g Ts) (hs Ts) (t T) (u T))
@@ -629,9 +636,9 @@
           (if (equal c treeTy)
             (let F T (abstractVar i c t)
               (let H T (abstractVar i c u)
-                (let N0 T (nodeT (mPair (mVar 1) (mVar 0)))
-                  (let A T (mApp (weaken2 F) N0)
-                    (let B T (mApp (weaken2 H) N0)
+                (let N0 T (nodeT (mPair (var 1) (var 0)))
+                  (let A T (app (weaken2 F) N0)
+                    (let B T (app (weaken2 H) N0)
                       (mapO
                         (lam ((q T))
                           (let Fl T (mLam bitsTy (mLam (list treeTy) A))
@@ -646,8 +653,8 @@
                                             (l2 bb
                                               (dNode 26 (nil T)
                                                 (single (dNode 23 (nil T) (l2 bb q))))))))
-                                      (let U T (unnodeU (mVar i))
-                                        (let ap RW (lam ((L T)) (mApp (mApp L (mFst U)) (mSnd U)))
+                                      (let U T (unnodeU (var i))
+                                        (let ap RW (lam ((L T)) (app (app L (mFst U)) (mSnd U)))
                                           (let side RW
                                             (lam ((w T))
                                               (dNode 1 (nil T)
@@ -726,31 +733,31 @@
       d))
   (defn absStep ((xw T) (nd T) (rs UFs)) UF
     (lam ((d T))
-      (if (equal nd (rename xw (lam ((j T)) (add j d)))) (mVar d)
+      (if (equal nd (rename xw (lam ((j T)) (add j d)))) (var d)
         (let l T (label nd)
           (let cs Ts (mArgs nd)
             (let rebuild0 (Arrow Ts T) (lam ((ks Ts)) (node l (cons (child nd 0) ks)))
               (if (eq l 5)
                 (rebuild0
                   (foldr UF Ts (lam ((r UF) (acc Ts)) (cons (r (add d 1)) acc)) (nil T)
-                    (ufTail rs)))
+                    (UFs.tail rs)))
                 (if (or (eq l 8) (eq l 9))
                   (rebuild0
                     (mapT (lam ((k T)) (if (eq k 2) ((ufAt rs (add k 1)) d) (at cs k)))
-                      (range (lenUF (ufTail rs)))))
+                      (range (lenUF (UFs.tail rs)))))
                   (if (eq l 10)
                     (rebuild0
                       (mapT (lam ((k T)) (if (eq k 1) ((ufAt rs (add k 1)) d) (at cs k)))
-                        (range (lenUF (ufTail rs)))))
+                        (range (lenUF (UFs.tail rs)))))
                     (rebuild0
                       (foldr UF Ts (lam ((r UF) (acc Ts)) (cons (r d) acc)) (nil T)
-                        (ufTail rs))))))))))))
+                        (UFs.tail rs))))))))))))
   (defn abstractTerm ((b T) (x T) (y T)) T (mLam b ((para UF (absStep (weaken1 x)) (weaken1 y)) 0)))
   (defn maskRwD ((a T) (b T) (ab T) (dM T) (c T) (d T) (x T) (x1 T) (z T) (y T)) T
     (let F T (abstractTerm b x y)
       (let refl T (dNode 0 (nil T) (nil T))
         (let beta T (dNode 3 (nil T) (nil T))
-          (let chi T (mEq (condT a c (mApp F x) d) (condT a c (mApp F x1) d))
+          (let chi T (mEq (condT a c (app F x) d) (condT a c (app F x1) d))
             (let dchi T
               (dNode 18 (nil T)
                 (l2
@@ -842,6 +849,5 @@
       (let F T (abstractTerm a c t)
         (let H T (abstractTerm a c u)
           (mapO (lam ((q T)) (applyAbs c (length hs) F H (dNode 26 (nil T) (single q))))
-            (p (cons a g) (mapT weaken1 hs) (mApp (weaken1 F) (mVar 0))
-              (mApp (weaken1 H) (mVar 0)))))))))
-(import Tactics)
+            (p (cons a g) (mapT weaken1 hs) (app (weaken1 F) (var 0))
+              (app (weaken1 H) (var 0)))))))))

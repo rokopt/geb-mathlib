@@ -12,6 +12,8 @@
   (export tyArrow tyList isTy isProd isArrow isListTy foldTy iterTy foldrTy lcaseTy primTypes typeIn
     checkProgram
     checkNode)
+  (import Prelude)
+  (import Reader)
   ; types
   (def tyArrow (lam ((a T) (b T)) (node2 Label.tyArrow a b)))
   (def tyList (lam ((a T)) (node Label.tyList (single a))))
@@ -177,4 +179,3 @@
            (lam ((s Chk)) s)
            terms) (pair 1 (nil T)))
         (if (fst s) (some (node 0 (snd s))) none)))))
-(import Check)

@@ -16,6 +16,9 @@
     moduleCount
     expandModulesTree
     expandModules)
+  (import Prelude)
+  (import Reader)
+  (import Datatype)
   (def kwModule (quote (0 module)))
   (def kwParameter (quote (0 parameter)))
   (def kwImport (quote (0 import)))
@@ -572,4 +575,3 @@
   ; a program's forms with its modules elaborated, as a node over them, when they elaborate
   (def expandModules
     (lam ((es Ts)) (let r T (expandModulesTree es) (if (isSome r) (some (child (get r) 0)) none)))))
-(import Modules)

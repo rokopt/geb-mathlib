@@ -207,10 +207,10 @@ theorem eqParts_eq (φ : Term) :
 
 /-- The mirror's type of a term in a context. -/
 @[simp] theorem typeIn_eq (G : Internal.Globals) (n : ℕ) (Γ : List Tree) (t : Term) :
-    «Derivation.mTypeIn» (encGlobals G) (leaf n) Γ (encTerm t) =
+    «Derivation.typeIn» (encGlobals G) (leaf n) Γ (encTerm t) =
       encOpt (Internal.typeIn G n Γ t) := by
   have hc := compile_eq G n t (Internal.ctxObj Γ) (Internal.stdEnv Γ)
-  simp only [«Derivation.mTypeIn», ctxObj_eq, stdEnv_eq, hc, mapO_eq, Option.map_map,
+  simp only [«Derivation.typeIn», ctxObj_eq, stdEnv_eq, hc, mapO_eq, Option.map_map,
     Internal.typeIn]
   rfl
 
@@ -285,7 +285,7 @@ theorem instOk_eq (G : Internal.Globals) (n : ℕ) (Γ : List Tree) (a : Interna
   simp only [«Derivation.instOk», thArity_eq, thCtx_eq, length_eq, List.length_map,
     eq_leaf, allT_isTy, range_eq, Internal.instOk]
   by_cases hl : σ.length = a.ctx.length
-  · have hr := allT_map (fun t ↦ Const.equal («Derivation.mTypeIn» (encGlobals G) (leaf n) Γ
+  · have hr := allT_map (fun t ↦ Const.equal («Derivation.typeIn» (encGlobals G) (leaf n) Γ
         («Prelude.at» (σ.map encTerm) t))
         («Prelude.some» («PartialHorn.phSubst» θ («Prelude.at» a.ctx t))))
       leaf (fun i ↦ decide (Internal.typeIn G n Γ (σ.getD i Internal.Term.star) =
@@ -721,12 +721,12 @@ def DRel (v : DV) (w : Internal.Checks) : Prop :=
     rfl
 
 /-- A list of derivations with their results without its head. -/
-@[simp] theorem dpTail_eq (rs : List (Tree × DV)) : «Derivation.dpTail» rs = rs.tail := by
+@[simp] theorem dpTail_eq (rs : List (Tree × DV)) : «Derivation/DPs.tail» rs = rs.tail := by
   cases rs <;> rfl
 
 /-- Dropping the head of a list of derivations with their results as many times as a label. -/
 theorem repeat_dpTail (rs : List (Tree × DV)) :
-    ∀ i : ℕ, Nat.repeat «Derivation.dpTail» i rs = rs.drop i :=
+    ∀ i : ℕ, Nat.repeat «Derivation/DPs.tail» i rs = rs.drop i :=
   Nat.rec rfl fun i ih ↦ by rw [Nat.repeat, ih, dpTail_eq, List.tail_drop]
 
 /-- The results of a derivation at a position, none and false out of range. -/
