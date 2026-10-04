@@ -297,7 +297,8 @@ Extension:
   complete, as are the canonical and basic transport encodings of the
   strict encodings of RFC 9804 with their retraction. Ready, in the order
   of {ref "authoring-sequence"}[the sequence]: modules with parameters,
-  imports and export lists, with content identity and before the reader's
+  imports and export lists, their elaboration complete and the sources'
+  organization into them next, with content identity and before the reader's
   inverse ({ref "the-next-phase"}[The next phase]); the printer of the
   advanced encoding, after the reader's inverse; the datatype language's
   completion, manifests
@@ -2456,7 +2457,10 @@ tag := "authoring-compatibility"
     encoding, ready
 *
   * Modules with parameters, imports and export lists
-  * Ready
+  * In progress: the elaboration of modules, imports, export lists and
+    parameters of sorts and operations, in Lean and Geb, complete; the
+    sources organized into modules, ready; named telescopes and
+    certificates as parameters, with their first consumers
 *
   * The datatype language's completion
     ({ref "datatype-completion"}[The datatype language's completion])
@@ -3260,10 +3264,31 @@ abstracts each module's definitions over its parameters and instantiates
 an import by substitution, type parameters being instantiated at
 elaboration, and the correctness of the step is the substitution lemma.
 Imports and exports are otherwise a matter of the reader; names are
-annotations and bear no identity, so modules migrate mechanically. Now:
-duplicates are rejected and `.` is reserved for qualification. Then the
-present sources are organized into modules with export lists, before the
-sources grow. Prefixes that avoid collisions, such as `mTypeIn` beside
+annotations and bear no identity, so modules migrate mechanically.
+
+The elaboration is a pass of its own, before the expansion of the
+datatype language, in the seed's reading of a program
+(`Geb/Prototypes/Kernel/Modules.lean`) and in the stage-0 compiler
+(`bootstrap/modules.geb`), which agree on the tests of
+`GebTests/Prototypes/Kernel/Modules.lean`. It flattens a program's
+blocks into declarations under qualified names, renaming every name of a
+body to what it denotes; each form of the kernel and of the datatype
+language gives its children their roles, so a name bound in a term, a
+quoted datum and a hole's name are not renamed. A qualified name that is
+not visible becomes the reserved atom `hole`, which denotes nothing, so a
+declaration a module does not export cannot be reached by its qualified
+name. A module with parameters is a template elaborated at each import
+that supplies all of them: a sort parameter is bound by a type
+abbreviation of its argument, and an operation parameter by a definition
+of its argument applied to fresh variables of the argument types with its
+result bound at the result type, so that the argument's type is checked;
+the body is then elaborated under the instance's prefix. Binding a
+parameter by a definition is substitution of the argument for it, the
+kernel's types being monomorphic. A program without modules is unchanged,
+and the stage-0 compiler and the committed image reproduce themselves.
+Named telescopes and certificates as parameters follow their first
+consumers. Then the present sources are organized into modules with
+export lists, before the sources grow. Prefixes that avoid collisions, such as `mTypeIn` beside
 `typeIn`, otherwise accumulate, and removing them later is renaming by
 hand. A whole module written as one block is one form, so an unbalanced
 parenthesis inside it leaves the block unreadable; the kernel's reader

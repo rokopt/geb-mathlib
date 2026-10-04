@@ -228,10 +228,9 @@ reserved nor declared already, as a definition or an abbreviation of either kind
 def isFresh (taken : List (List Char)) (name : List Char) : Bool :=
   !reservedNames.contains (String.ofList name) && !taken.contains name
 
-/-- The definitions of a program, as names with kernel terms; abbreviations are expanded where
-they are used. A declaration whose name is reserved or declared before it is rejected. -/
-def readProgram (text : List Char) : Option (List (List Char × Tree)) := do
-  let es ← readSExps text
+/-- The definitions of a program's forms, as names with kernel terms; abbreviations are expanded
+where they are used. A declaration whose name is reserved or declared before it is rejected. -/
+def readForms (es : List SExp) : Option (List (List Char × Tree)) :=
   let step (acc : Option (TypeNames × NumNames × List (List Char × Tree))) (e : SExp) :
       Option (TypeNames × NumNames × List (List Char × Tree)) := do
     let (tys, nums, ds) ← acc
@@ -256,50 +255,40 @@ def load (ds : List Tree) : Option (List Glob) :=
     let m ← infer G [] t
     some (G ++ [⟨m.1, m.2 ()⟩])) (some [])
 
-/-- The first failure of a program, as a message: text that is not well formed or whose
-parentheses do not balance, a form that is neither a definition nor an abbreviation, a name
-reserved or declared twice, or the first definition that does not resolve or is ill-typed;
-nothing when the program reads and loads. -/
-def diagnose (text : List Char) : Option String :=
-  match readSExps text with
-  | none => some "the text is not well formed or its parentheses do not balance"
-  | some es =>
-    let other := "a form is neither a def, a deftype nor a defnum"
-    let step (acc : TypeNames × NumNames × List (List Char) × List Glob × Option String)
-        (e : SExp) :=
-      let (tys, nums, names, G, err) := acc
-      if err.isSome then acc else
-      match e.children with
-      | [kw, n, body] =>
-        if n.label.any (!isFresh (tys.map Prod.fst ++ nums.map Prod.fst ++ names) ·) then
-          (tys, nums, names, G,
-            some s!"{String.ofList (n.label.getD [])} is reserved or declared before")
-        else
-        match n.label, kw.label.map String.ofList with
-        | some name, some "def" =>
-          match resolve tys names (expandNums nums body) [] with
-          | none => (tys, nums, names, G, some s!"{String.ofList name} does not resolve")
-          | some t =>
-            match infer G [] t with
-            | none => (tys, nums, names, G, some s!"{String.ofList name} is ill-typed")
-            | some m => (tys, nums, names ++ [name], G ++ [⟨m.1, m.2 ()⟩], none)
-        | some name, some "deftype" =>
-          match readType tys body with
-          | none => (tys, nums, names, G, some s!"{String.ofList name} is not a type")
-          | some A => ((name, A) :: tys, nums, names, G, none)
-        | some name, some "defnum" =>
-          match numOf nums body with
-          | none => (tys, nums, names, G, some s!"{String.ofList name} is not a numeral")
-          | some v => (tys, (name, v) :: nums, names, G, none)
-        | _, _ => (tys, nums, names, G, some other)
-      | _ => (tys, nums, names, G, some other)
-    (es.foldl step ([], [], [], [], none)).2.2.2.2
-
-/-- Apply the last definition of a program, of type {lit}`T → T`, to an input tree. -/
-def runMain (text : List Char) (input : Tree) : Option Tree := do
-  let ds ← readProgram text
-  let G ← load (ds.map Prod.snd)
-  (← G.getLast?).apply input
+/-- The first failure of a program's forms, as a message: a form that is neither a definition
+nor an abbreviation, a name reserved or declared twice, or the first definition that does not
+resolve or is ill-typed; nothing when the forms read and load. -/
+def diagnoseForms (es : List SExp) : Option String :=
+  let other := "a form is neither a def, a deftype nor a defnum"
+  let step (acc : TypeNames × NumNames × List (List Char) × List Glob × Option String)
+      (e : SExp) :=
+    let (tys, nums, names, G, err) := acc
+    if err.isSome then acc else
+    match e.children with
+    | [kw, n, body] =>
+      if n.label.any (!isFresh (tys.map Prod.fst ++ nums.map Prod.fst ++ names) ·) then
+        (tys, nums, names, G,
+          some s!"{String.ofList (n.label.getD [])} is reserved or declared before")
+      else
+      match n.label, kw.label.map String.ofList with
+      | some name, some "def" =>
+        match resolve tys names (expandNums nums body) [] with
+        | none => (tys, nums, names, G, some s!"{String.ofList name} does not resolve")
+        | some t =>
+          match infer G [] t with
+          | none => (tys, nums, names, G, some s!"{String.ofList name} is ill-typed")
+          | some m => (tys, nums, names ++ [name], G ++ [⟨m.1, m.2 ()⟩], none)
+      | some name, some "deftype" =>
+        match readType tys body with
+        | none => (tys, nums, names, G, some s!"{String.ofList name} is not a type")
+        | some A => ((name, A) :: tys, nums, names, G, none)
+      | some name, some "defnum" =>
+        match numOf nums body with
+        | none => (tys, nums, names, G, some s!"{String.ofList name} is not a numeral")
+        | some v => (tys, (name, v) :: nums, names, G, none)
+      | _, _ => (tys, nums, names, G, some other)
+    | _ => (tys, nums, names, G, some other)
+  (es.foldl step ([], [], [], [], none)).2.2.2.2
 
 end Geb.Kernel
 

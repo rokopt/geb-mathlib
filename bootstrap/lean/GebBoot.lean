@@ -2968,22 +2968,1016 @@ def «expandProgram» :=
                      «nothing»);
     x1
 
+def «kwModule» :=
+  mk 0 [leaf 109, leaf 111, leaf 100, leaf 117, leaf 108, leaf 101]
+
+def «kwParameter» :=
+  mk 0 [leaf 112,
+    leaf 97,
+    leaf 114,
+    leaf 97,
+    leaf 109,
+    leaf 101,
+    leaf 116,
+    leaf 101,
+    leaf 114]
+
+def «kwImport» :=
+  mk 0 [leaf 105, leaf 109, leaf 112, leaf 111, leaf 114, leaf 116]
+
+def «kwExport» :=
+  mk 0 [leaf 101, leaf 120, leaf 112, leaf 111, leaf 114, leaf 116]
+
+def «kwInterface» :=
+  mk 0 [leaf 105,
+    leaf 110,
+    leaf 116,
+    leaf 101,
+    leaf 114,
+    leaf 102,
+    leaf 97,
+    leaf 99,
+    leaf 101]
+
+def «kwAs» := mk 0 [leaf 97, leaf 115]
+
+def «moduleKeywords» :=
+  («kwModule» ::
+    («kwParameter» ::
+      («kwImport» :: («kwExport» :: («single» «kwInterface»)))))
+
+def «concat» :=
+  fun (x0 : List (List T)) =>
+    Const.foldr (α := List T) (β := List T) «append» ([] : List T) x0
+
+def «mkList» := fun (x0 : List T) => Const.node (leaf 2) x0
+
+def «atomOf» :=
+  fun (x0 : T) => Const.node (leaf 1) (Const.children x0)
+
+def «nameCat» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    Const.node
+      (leaf 0)
+      («append» (Const.children x0) (x1 :: (Const.children x2)))
+
+def «hasDot» :=
+  fun (x0 : T) =>
+    Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x1 : T) (x2 : T) => «or» (Const.eq x1 (leaf 46)) x2)
+      (leaf 0)
+      (Const.children x0)
+
+def «flatName» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := «lookupAbbrev» x1 x0;
+    if («isSome» x2).label ≠ 0 then
+      «get» x2
+    else
+      if («hasDot» x1).label ≠ 0 then «kwHole» else x1
+
+def «boundBy» :=
+  fun (x0 : T) =>
+    Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x1 : T) (x2 : List T) =>
+        if («nonEmpty» (Const.children x1)).label ≠ 0 then
+          if («isAtom» (Const.child x1 (leaf 0))).label ≠ 0 then
+            ((«nameOf» (Const.child x1 (leaf 0))) :: x2)
+          else
+            x2
+        else
+          x2)
+      ([] : List T)
+      («binders» x0)
+
+def «patternVars» :=
+  fun (x0 : T) =>
+    Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x1 : T) (x2 : List T) =>
+        if («isAtom» x1).label ≠ 0 then ((«nameOf» x1) :: x2) else x2)
+      ([] : List T)
+      («drop» (leaf 1) (Const.children x0))
+
+def «renPattern» :=
+  fun (x0 : List T) (x1 : T) =>
+    Const.lcase
+      (α := T)
+      (β := T)
+      (Const.children x1)
+      x1
+      (fun (x2 : T) (x3 : List T) =>
+        «mkList»
+          ((if («isAtom» x2).label ≠ 0 then
+            «atomOf» («flatName» x0 («nameOf» x2))
+          else
+            Const.node (leaf 1) ([] : List T)) ::
+            x3))
+
+def «rkDrop» :=
+  fun (x0 : T) (x1 : List (T → List T → T)) =>
+    Const.iter
+      (α := List (T → List T → T))
+      (fun (x2 : List (T → List T → T)) =>
+        Const.lcase
+          (α := T → List T → T)
+          (β := List (T → List T → T))
+          x2
+          x2
+          (fun (_ : T → List T → T) (x4 : List (T → List T → T)) => x4))
+      x1
+      x0
+
+def «rkAt» :=
+  fun (x0 : List (T → List T → T)) (x1 : T) (x2 : T) (x3 : List T) =>
+    Const.lcase
+      (α := T → List T → T)
+      (β := T → List T → T)
+      («rkDrop» x1 x0)
+      (fun (_ : T) (_ : List T) => leaf 0)
+      (fun (x4 : T → List T → T) (_ : List (T → List T → T)) => x4)
+      x2
+      x3
+
+def «rkAll» :=
+  fun (x0 : List (T → List T → T)) (x1 : T) (x2 : List T) =>
+    Const.foldr
+      (α := T → List T → T)
+      (β := List T)
+      (fun (x3 : T → List T → T) (x4 : List T) => ((x3 x1 x2) :: x4))
+      ([] : List T)
+      x0
+
+def «renTermList» :=
+  fun (_ : List T)
+    (x1 : T)
+    (x2 : List (T → List T → T))
+    (x3 : List T) =>
+    let x4 : List T := Const.children x1;
+    let x5 : T := Const.arity x1;
+    let x6 : T := «at» x4 (leaf 0);
+    if (Const.eq x5 (leaf 0)).label ≠ 0 then
+      x1
+    else
+      if («or» («named» x6 «kwQuote») («named» x6 «kwHole»)).label ≠ 0 then
+        x1
+      else
+        if («named» x6 «kwLam»).label ≠ 0 then
+          if (Const.eq x5 (leaf 3)).label ≠ 0 then
+            «mkList»
+              (x6 ::
+                ((«rkAt» x2 (leaf 1) (leaf 3) ([] : List T)) ::
+                  («single»
+                    («rkAt»
+                      x2
+                      (leaf 2)
+                      (leaf 0)
+                      («append» («boundBy» («at» x4 (leaf 1))) x3)))))
+          else
+            x1
+        else
+          if («named» x6 «kwLet»).label ≠ 0 then
+            if (Const.eq x5 (leaf 5)).label ≠ 0 then
+              let x7 : T := «at» x4 (leaf 1);
+              «mkList»
+                (x6 ::
+                  (x7 ::
+                    ((«rkAt» x2 (leaf 2) (leaf 1) ([] : List T)) ::
+                      ((«rkAt» x2 (leaf 3) (leaf 0) x3) ::
+                        («single»
+                          («rkAt»
+                            x2
+                            (leaf 4)
+                            (leaf 0)
+                            (if («isAtom» x7).label ≠ 0 then ((«nameOf» x7) :: x3) else x3)))))))
+            else
+              x1
+          else
+            if («named» x6 «kwNil»).label ≠ 0 then
+              «mkList»
+                (x6 :: («rkAll» («rkDrop» (leaf 1) x2) (leaf 1) ([] : List T)))
+            else
+              if («or»
+                («named» x6 «kwFold»)
+                («or» («named» x6 «kwPara») («named» x6 «kwIter»))).label ≠ 0 then
+                if (Const.lt (leaf 1) x5).label ≠ 0 then
+                  «mkList»
+                    (x6 ::
+                      ((«rkAt» x2 (leaf 1) (leaf 1) ([] : List T)) ::
+                        («rkAll» («rkDrop» (leaf 2) x2) (leaf 0) x3)))
+                else
+                  x1
+              else
+                if («or» («named» x6 «kwFoldr») («named» x6 «kwLcase»)).label ≠ 0 then
+                  if (Const.lt (leaf 2) x5).label ≠ 0 then
+                    «mkList»
+                      (x6 ::
+                        ((«rkAt» x2 (leaf 1) (leaf 1) ([] : List T)) ::
+                          ((«rkAt» x2 (leaf 2) (leaf 1) ([] : List T)) ::
+                            («rkAll» («rkDrop» (leaf 3) x2) (leaf 0) x3))))
+                  else
+                    x1
+                else
+                  if («named» x6 «kwCase»).label ≠ 0 then
+                    if (Const.lt (leaf 1) x5).label ≠ 0 then
+                      «mkList»
+                        (x6 ::
+                          ((«rkAt» x2 (leaf 1) (leaf 0) x3) ::
+                            («rkAll» («rkDrop» (leaf 2) x2) (leaf 2) x3)))
+                    else
+                      x1
+                  else
+                    if («named» x6 «kwCata»).label ≠ 0 then
+                      if (Const.lt (leaf 3) x5).label ≠ 0 then
+                        «mkList»
+                          (x6 ::
+                            ((«rkAt» x2 (leaf 1) (leaf 1) ([] : List T)) ::
+                              ((«rkAt» x2 (leaf 2) (leaf 1) ([] : List T)) ::
+                                ((«rkAt» x2 (leaf 3) (leaf 0) x3) ::
+                                  («rkAll» («rkDrop» (leaf 4) x2) (leaf 2) x3)))))
+                      else
+                        x1
+                    else
+                      «mkList» («rkAll» x2 (leaf 0) x3)
+
+def «renStep» :=
+  fun (x0 : List T)
+    (x1 : T)
+    (x2 : List (T → List T → T))
+    (x3 : T)
+    (x4 : List T) =>
+    let x5 : List T := Const.children x1;
+    let x6 : T := Const.arity x1;
+    if (Const.eq x3 (leaf 4)).label ≠ 0 then
+      x1
+    else
+      if («isAtom» x1).label ≠ 0 then
+        if (Const.eq x3 (leaf 1)).label ≠ 0 then
+          «atomOf» («flatName» x0 («nameOf» x1))
+        else
+          if (Const.eq x3 (leaf 0)).label ≠ 0 then
+            if («isSome» («indexOf» («nameOf» x1) x4)).label ≠ 0 then
+              x1
+            else
+              «atomOf» («flatName» x0 («nameOf» x1))
+          else
+            x1
+      else
+        if (Const.eq x3 (leaf 1)).label ≠ 0 then
+          «mkList» («rkAll» x2 (leaf 1) ([] : List T))
+        else
+          if (Const.eq x3 (leaf 3)).label ≠ 0 then
+            if (Const.eq x6 (leaf 0)).label ≠ 0 then
+              x1
+            else
+              if («isAtom» («at» x5 (leaf 0))).label ≠ 0 then
+                «mkList»
+                  ((«at» x5 (leaf 0)) ::
+                    («rkAll» («rkDrop» (leaf 1) x2) (leaf 1) ([] : List T)))
+              else
+                «mkList» («rkAll» x2 (leaf 3) ([] : List T))
+          else
+            if (Const.eq x3 (leaf 2)).label ≠ 0 then
+              if (Const.eq x6 (leaf 2)).label ≠ 0 then
+                let x7 : T := «at» x5 (leaf 0);
+                if («isAtom» x7).label ≠ 0 then
+                  «mkList» (x7 :: («single» («rkAt» x2 (leaf 1) (leaf 0) x4)))
+                else
+                  «mkList»
+                    ((«renPattern» x0 x7) ::
+                      («single»
+                        («rkAt» x2 (leaf 1) (leaf 0) («append» («patternVars» x7) x4))))
+              else
+                x1
+            else
+              «renTermList» x0 x1 x2 x4
+
+def «rename» :=
+  fun (x0 : List T) (x1 : T) (x2 : T) (x3 : List T) =>
+    Const.para
+      (α := T → List T → T)
+      (fun (x4 : T) (x5 : List (T → List T → T)) (x6 : T) (x7 : List T) =>
+        «renStep» x0 x4 x5 x6 x7)
+      x1
+      x2
+      x3
+
+def «mkSt» :=
+  fun (x0 : List T) (x1 : List T) (x2 : List T) (x3 : List T) =>
+    (leaf 1, (x0, (x1, (x2, x3))))
+
+def «stFail» :=
+  (leaf 0,
+    (([] : List T), (([] : List T), (([] : List T), ([] : List T)))))
+
+def «stVis» :=
+  fun (x0 : T × (List T × (List T × (List T × List T)))) => ((x0).2).1
+
+def «stOut» :=
+  fun (x0 : T × (List T × (List T × (List T × List T)))) =>
+    (((x0).2).2).1
+
+def «stReg» :=
+  fun (x0 : T × (List T × (List T × (List T × List T)))) =>
+    ((((x0).2).2).2).1
+
+def «stEx» :=
+  fun (x0 : T × (List T × (List T × (List T × List T)))) =>
+    ((((x0).2).2).2).2
+
+def «withVis» :=
+  fun (x0 : T × (List T × (List T × (List T × List T))))
+    (x1 : List T) =>
+    if ((x0).1).label ≠ 0 then
+      «mkSt» x1 («stOut» x0) («stReg» x0) («stEx» x0)
+    else
+      x0
+
+def «emitTo» :=
+  fun (x0 : T × (List T × (List T × (List T × List T)))) (x1 : T) =>
+    if ((x0).1).label ≠ 0 then
+      «mkSt»
+        («stVis» x0)
+        («append» («stOut» x0) («single» x1))
+        («stReg» x0)
+        («stEx» x0)
+    else
+      x0
+
+def «qualify» :=
+  fun (x0 : T) (x1 : T) =>
+    if («nonEmpty» (Const.children x0)).label ≠ 0 then
+      «nameCat» x0 (leaf 46) x1
+    else
+      x1
+
+def «declare» :=
+  fun (x0 : T × (List T × (List T × (List T × List T))))
+    (x1 : T)
+    (x2 : T) =>
+    if ((x0).1).label ≠ 0 then
+      if («isSome» («lookupAbbrev» x1 («stVis» x0))).label ≠ 0 then
+        «stFail»
+      else
+        if («isSome» («indexOf» x1 «reservedNames»)).label ≠ 0 then
+          «stFail»
+        else
+          if («isSome» («indexOf» x1 «moduleKeywords»)).label ≠ 0 then
+            «stFail»
+          else
+            «withVis»
+              x0
+              («append» («stVis» x0) («single» («node2» (leaf 0) x1 x2)))
+    else
+      x0
+
+def «declareAll» :=
+  fun (x0 : T × (List T × (List T × (List T × List T))))
+    (x1 : List T) =>
+    Const.foldr
+      (α := T)
+      (β := (T × (List T × (List T × (List T × List T)))) →
+        T × (List T × (List T × (List T × List T))))
+      (fun (x2 : T)
+         (x3 : (T × (List T × (List T × (List T × List T)))) →
+           T × (List T × (List T × (List T × List T))))
+         (x4 : T × (List T × (List T × (List T × List T)))) =>
+        x3 («declare» x4 (Const.child x2 (leaf 0)) (Const.child x2 (leaf 1))))
+      (fun (x2 : T × (List T × (List T × (List T × List T)))) => x2)
+      x1
+      x0
+
+def «exportsOf» :=
+  fun (x0 : T × (List T × (List T × (List T × List T)))) =>
+    «allSome»
+      (Const.foldr
+        (α := T)
+        (β := List T)
+        (fun (x1 : T) (x2 : List T) =>
+          ((let x3 : T := «lookupAbbrev» x1 («stVis» x0);
+            if («isSome» x3).label ≠ 0 then
+              «some» («node2» (leaf 0) x1 («get» x3))
+            else
+              «none») ::
+            x2))
+        ([] : List T)
+        («stEx» x0))
+
+def «headed» :=
+  fun (x0 : T) (x1 : T) =>
+    if («isList» x1).label ≠ 0 then
+      if («nonEmpty» (Const.children x1)).label ≠ 0 then
+        «named» (Const.child x1 (leaf 0)) x0
+      else
+        leaf 0
+    else
+      leaf 0
+
+def «withHead» :=
+  fun (x0 : T) (x1 : List T) =>
+    Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) =>
+        if («headed» x0 x2).label ≠ 0 then (x2 :: x3) else x3)
+      ([] : List T)
+      x1
+
+def «withoutHead» :=
+  fun (x0 : T) (x1 : List T) =>
+    Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) =>
+        if («headed» x0 x2).label ≠ 0 then x3 else (x2 :: x3))
+      ([] : List T)
+      x1
+
+def «atomNames» :=
+  fun (x0 : List T) =>
+    Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x1 : T) (x2 : List T) =>
+        if («isAtom» x1).label ≠ 0 then ((«nameOf» x1) :: x2) else x2)
+      ([] : List T)
+      x0
+
+def «aDeftypeM» :=
+  mk 1 [leaf 100,
+    leaf 101,
+    leaf 102,
+    leaf 116,
+    leaf 121,
+    leaf 112,
+    leaf 101]
+
+def «aDefM» := mk 1 [leaf 100, leaf 101, leaf 102]
+
+def «aLetM» := mk 1 [leaf 108, leaf 101, leaf 116]
+
+def «aLamM» := mk 1 [leaf 108, leaf 97, leaf 109]
+
+def «aResultM» := mk 1 [leaf 37, leaf 114]
+
+def «paramVar» :=
+  fun (x0 : T) =>
+    Const.node (leaf 1) ((leaf 37) :: ((leaf 109) :: («decimalChars» x0)))
+
+def «paramVars» :=
+  fun (x0 : List T) =>
+    (Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (_ : T) (x2 : T × List T) =>
+        (Const.sub (x2).1 (leaf 1),
+          ((«paramVar» (Const.sub (x2).1 (leaf 1))) :: (x2).2)))
+      («length» x0, ([] : List T))
+      x0).2
+
+def «zipWith2» :=
+  fun (x0 : T → T → T) (x1 : List T) (x2 : List T) =>
+    (Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x3 : T) (x4 : T × List T) =>
+        (Const.sub (x4).1 (leaf 1),
+          ((x0 x3 («at» x2 (Const.sub (x4).1 (leaf 1)))) :: (x4).2)))
+      («length» x1, ([] : List T))
+      x1).2
+
+def «bindParam» :=
+  fun (x0 : T)
+    (x1 : List T)
+    (x2 : T × (List T × (List T × (List T × List T))))
+    (x3 : T)
+    (x4 : T) =>
+    if (if ((x2).1).label ≠ 0 then
+      Const.eq (Const.arity x3) (leaf 2)
+    else
+      leaf 0).label ≠ 0 then
+      let x5 : T := Const.child x3 (leaf 1);
+      if («isAtom» x5).label ≠ 0 then
+        let x6 : T := «qualify» x0 («nameOf» x5);
+        «emitTo»
+          («declare» x2 («nameOf» x5) x6)
+          («mkList»
+            («aDeftypeM» ::
+              ((«atomOf» x6) ::
+                («single» («rename» x1 x4 (leaf 1) ([] : List T))))))
+      else
+        if (if (Const.eq (Const.arity x5) (leaf 3)).label ≠ 0 then
+          «isAtom» (Const.child x5 (leaf 0))
+        else
+          leaf 0).label ≠ 0 then
+          let x6 : T := «nameOf» (Const.child x5 (leaf 0));
+          let x7 : T := «qualify» x0 x6;
+          let x8 : List T := Const.children (Const.child x5 (leaf 1));
+          let x9 : List T := «paramVars» x8;
+          let x10 : T := «rename» x1 x4 (leaf 0) ([] : List T);
+          let x11 : T := (if («nonEmpty» x9).label ≠ 0 then
+            «mkList» (x10 :: x9)
+          else
+            x10);
+          let x12 : T := «mkList»
+            («aLetM» ::
+              («aResultM» ::
+                ((«rename»
+                  («stVis» x2)
+                  (Const.child x5 (leaf 2))
+                  (leaf 1)
+                  ([] : List T)) ::
+                  (x11 :: («single» «aResultM»)))));
+          let x13 : T := (if («nonEmpty» x9).label ≠ 0 then
+            «mkList»
+              («aLamM» ::
+                ((«mkList»
+                  («zipWith2»
+                    (fun (x13 : T) (x14 : T) =>
+                      «mkList»
+                        (x14 ::
+                          («single» («rename» («stVis» x2) x13 (leaf 1) ([] : List T)))))
+                    x8
+                    x9)) ::
+                  («single» x12)))
+          else
+            x12);
+          «emitTo»
+            («declare» x2 x6 x7)
+            («mkList» («aDefM» :: ((«atomOf» x7) :: («single» x13))))
+        else
+          «stFail»
+    else
+      «stFail»
+
+def «elabDecl» :=
+  fun (x0 : T)
+    (x1 : T × (List T × (List T × (List T × List T))))
+    (x2 : T) =>
+    let x3 : List T := Const.children x2;
+    let x4 : T := Const.arity x2;
+    let x5 : T := «at» x3 (leaf 0);
+    let x6 : T := «at» x3 (leaf 1);
+    if (if (Const.lt (leaf 1) x4).label ≠ 0 then
+      «isAtom» x6
+    else
+      leaf 0).label ≠ 0 then
+      let x7 : T := «nameOf» x6;
+      let x8 : T := «qualify» x0 x7;
+      let x9 : List T := «stVis» x1;
+      let x10 : List T →
+        T := (fun (x10 : List T) =>
+        «mkList» (x5 :: ((«atomOf» x8) :: x10)));
+      if («named» x5 «kwDef»).label ≠ 0 then
+        if (Const.eq x4 (leaf 3)).label ≠ 0 then
+          «emitTo»
+            («declare» x1 x7 x8)
+            (x10
+              («single» («rename» x9 («at» x3 (leaf 2)) (leaf 0) ([] : List T))))
+        else
+          «stFail»
+      else
+        if («or»
+          («named» x5 «kwDeftype»)
+          («named» x5 «kwDefnum»)).label ≠ 0 then
+          if (Const.eq x4 (leaf 3)).label ≠ 0 then
+            «emitTo»
+              («declare» x1 x7 x8)
+              (x10
+                («single» («rename» x9 («at» x3 (leaf 2)) (leaf 1) ([] : List T))))
+          else
+            «stFail»
+        else
+          if («named» x5 «kwDefn»).label ≠ 0 then
+            if (Const.eq x4 (leaf 5)).label ≠ 0 then
+              «emitTo»
+                («declare» x1 x7 x8)
+                (x10
+                  ((«rename» x9 («at» x3 (leaf 2)) (leaf 3) ([] : List T)) ::
+                    ((«rename» x9 («at» x3 (leaf 3)) (leaf 1) ([] : List T)) ::
+                      («single»
+                        («rename»
+                          x9
+                          («at» x3 (leaf 4))
+                          (leaf 0)
+                          («boundBy» («at» x3 (leaf 2))))))))
+            else
+              «stFail»
+          else
+            if («named» x5 «kwData»).label ≠ 0 then
+              let x11 : List T := «drop» (leaf 2) x3;
+              if (Const.foldr
+                (α := T)
+                (β := T)
+                (fun (x12 : T) (x13 : T) =>
+                  «and»
+                    (if («isList» x12).label ≠ 0 then
+                      if («nonEmpty» (Const.children x12)).label ≠ 0 then
+                        «isAtom» (Const.child x12 (leaf 0))
+                      else
+                        leaf 0
+                    else
+                      leaf 0)
+                    x13)
+                (leaf 1)
+                x11).label ≠ 0 then
+                let x12 : T ×
+                  (List T × (List T × (List T × List T))) := «declare» x1 x7 x8;
+                let x13 : T ×
+                  (List T ×
+                    (List T ×
+                      (List T ×
+                        List
+                          T))) := «declareAll»
+                  x12
+                  (Const.foldr
+                    (α := T)
+                    (β := List T)
+                    (fun (x13 : T) (x14 : List T) =>
+                      ((«node2»
+                        (leaf 0)
+                        («nameOf» (Const.child x13 (leaf 0)))
+                        («qualify» x0 («nameOf» (Const.child x13 (leaf 0))))) ::
+                        x14))
+                    ([] : List T)
+                    x11);
+                if ((x13).1).label ≠ 0 then
+                  «mkSt»
+                    («stVis» x13)
+                    («append»
+                      («stOut» x1)
+                      («single»
+                        (x10
+                          (Const.foldr
+                            (α := T)
+                            (β := List T)
+                            (fun (x14 : T) (x15 : List T) =>
+                              ((«mkList»
+                                ((«atomOf» («qualify» x0 («nameOf» (Const.child x14 (leaf 0))))) ::
+                                  (Const.foldr
+                                    (α := T)
+                                    (β := List T)
+                                    (fun (x16 : T) (x17 : List T) =>
+                                      ((«rename» («stVis» x12) x16 (leaf 1) ([] : List T)) :: x17))
+                                    ([] : List T)
+                                    («drop» (leaf 1) (Const.children x14))))) ::
+                                x15))
+                            ([] : List T)
+                            x11))))
+                    («stReg» x13)
+                    («stEx» x13)
+                else
+                  «stFail»
+              else
+                «stFail»
+            else
+              «stFail»
+    else
+      «stFail»
+
+def «importSpec» :=
+  fun (x0 : T) =>
+    let x1 : List T := Const.children x0;
+    let x2 : T := Const.arity x0;
+    let x3 : T := «at» x1 (leaf 1);
+    let x4 : T := (if («isAtom» x3).label ≠ 0 then
+      «some»
+        («node2» (leaf 0) («nameOf» x3) (Const.node (leaf 0) ([] : List T)))
+    else
+      if (if («isList» x3).label ≠ 0 then
+        if («nonEmpty» (Const.children x3)).label ≠ 0 then
+          «isAtom» (Const.child x3 (leaf 0))
+        else
+          leaf 0
+      else
+        leaf 0).label ≠ 0 then
+        «some»
+          («node2»
+            (leaf 0)
+            («nameOf» (Const.child x3 (leaf 0)))
+            (Const.node (leaf 0) («drop» (leaf 1) (Const.children x3))))
+      else
+        «none»);
+    if («isSome» x4).label ≠ 0 then
+      if (Const.eq x2 (leaf 2)).label ≠ 0 then
+        «some»
+          (Const.node
+            (leaf 0)
+            ((Const.child («get» x4) (leaf 0)) ::
+              ((Const.child («get» x4) (leaf 1)) :: («single» «none»))))
+      else
+        if (if (Const.eq x2 (leaf 4)).label ≠ 0 then
+          if («named» («at» x1 (leaf 2)) «kwAs»).label ≠ 0 then
+            «isAtom» («at» x1 (leaf 3))
+          else
+            leaf 0
+        else
+          leaf 0).label ≠ 0 then
+          «some»
+            (Const.node
+              (leaf 0)
+              ((Const.child («get» x4) (leaf 0)) ::
+                ((Const.child («get» x4) (leaf 1)) ::
+                  («single» («some» («nameOf» («at» x1 (leaf 3))))))))
+        else
+          «none»
+    else
+      «none»
+
+def «importAs» :=
+  fun (x0 : T) (x1 : List T) =>
+    Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) =>
+        ((«node2»
+          (leaf 0)
+          (if («isSome» x0).label ≠ 0 then
+            «nameCat» («get» x0) (leaf 46) (Const.child x2 (leaf 0))
+          else
+            Const.child x2 (leaf 0))
+          (Const.child x2 (leaf 1))) ::
+          x3))
+      ([] : List T)
+      x1
+
+def «elabForms» :=
+  fun (x0 : T →
+      (T × (List T × (List T × (List T × List T)))) →
+        T → T × (List T × (List T × (List T × List T))))
+    (x1 : T)
+    (x2 : T × (List T × (List T × (List T × List T))))
+    (x3 : List T) =>
+    Const.foldr
+      (α := T)
+      (β := (T × (List T × (List T × (List T × List T)))) →
+        T × (List T × (List T × (List T × List T))))
+      (fun (x4 : T)
+         (x5 : (T × (List T × (List T × (List T × List T)))) →
+           T × (List T × (List T × (List T × List T))))
+         (x6 : T × (List T × (List T × (List T × List T)))) =>
+        x5 (x0 x1 x6 x4))
+      (fun (x4 : T × (List T × (List T × (List T × List T)))) => x4)
+      x3
+      x2
+
+def «elabStep» :=
+  fun (x0 : T →
+      (T × (List T × (List T × (List T × List T)))) →
+        T → T × (List T × (List T × (List T × List T))))
+    (x1 : T)
+    (x2 : T × (List T × (List T × (List T × List T))))
+    (x3 : T) =>
+    if (if ((x2).1).label ≠ 0 then
+      if («isList» x3).label ≠ 0 then
+        «nonEmpty» (Const.children x3)
+      else
+        leaf 0
+    else
+      leaf 0).label ≠ 0 then
+      let x4 : List T := Const.children x3;
+      let x5 : T := «at» x4 (leaf 0);
+      if («named» x5 «kwExport»).label ≠ 0 then
+        «mkSt»
+          («stVis» x2)
+          («stOut» x2)
+          («stReg» x2)
+          («append» («stEx» x2) («atomNames» («drop» (leaf 1) x4)))
+      else
+        if («named» x5 «kwImport»).label ≠ 0 then
+          let x6 : T := «importSpec» x3;
+          if («isSome» x6).label ≠ 0 then
+            let x7 : T := Const.child («get» x6) (leaf 0);
+            let x8 : List T := Const.children (Const.child («get» x6) (leaf 1));
+            let x9 : T := Const.child («get» x6) (leaf 2);
+            let x10 : T := «lookupAbbrev» x7 («stReg» x2);
+            if («isSome» x10).label ≠ 0 then
+              let x11 : T := «get» x10;
+              if (Const.eq (Const.label x11) (leaf 0)).label ≠ 0 then
+                if («nonEmpty» x8).label ≠ 0 then
+                  «stFail»
+                else
+                  «declareAll»
+                    x2
+                    («importAs» x9 (Const.children (Const.child x11 (leaf 0))))
+              else
+                let x12 : List T := Const.children (Const.child x11 (leaf 0));
+                if (Const.eq («length» x12) («length» x8)).label ≠ 0 then
+                  let x13 : T := «nameCat»
+                    x1
+                    (leaf 47)
+                    (if («isSome» x9).label ≠ 0 then «get» x9 else x7);
+                  let x14 : T ×
+                    (List T ×
+                      (List T ×
+                        (List T ×
+                          List
+                            T))) := Const.foldr
+                    (α := T)
+                    (β := T →
+                      (T × (List T × (List T × (List T × List T)))) →
+                        T × (List T × (List T × (List T × List T))))
+                    (fun (x14 : T)
+                       (x15 : T →
+                         (T × (List T × (List T × (List T × List T)))) →
+                           T × (List T × (List T × (List T × List T))))
+                       (x16 : T)
+                       (x17 : T × (List T × (List T × (List T × List T)))) =>
+                      x15
+                        (Const.add x16 (leaf 1))
+                        («bindParam» x13 («stVis» x2) x17 x14 («at» x8 x16)))
+                    (fun (_ : T) (x15 : T × (List T × (List T × (List T × List T)))) =>
+                      x15)
+                    x12
+                    (leaf 0)
+                    («mkSt»
+                      (Const.children (Const.child x11 (leaf 3)))
+                      («stOut» x2)
+                      («stReg» x2)
+                      (Const.children (Const.child x11 (leaf 1))));
+                  let x15 : T ×
+                    (List T ×
+                      (List T ×
+                        (List T ×
+                          List
+                            T))) := «elabForms»
+                    x0
+                    x13
+                    x14
+                    (Const.children (Const.child x11 (leaf 2)));
+                  let x16 : T := (if ((x15).1).label ≠ 0 then
+                    «exportsOf» x15
+                  else
+                    «none»);
+                  if («isSome» x16).label ≠ 0 then
+                    «declareAll»
+                      («mkSt» («stVis» x2) («stOut» x15) («stReg» x15) («stEx» x2))
+                      («importAs» x9 (Const.children («get» x16)))
+                  else
+                    «stFail»
+                else
+                  «stFail»
+            else
+              «stFail»
+          else
+            «stFail»
+        else
+          if («named» x5 «kwModule»).label ≠ 0 then
+            if (if (Const.lt (leaf 1) («length» x4)).label ≠ 0 then
+              «isAtom» («at» x4 (leaf 1))
+            else
+              leaf 0).label ≠ 0 then
+              let x6 : T := «nameOf» («at» x4 (leaf 1));
+              let x7 : T := «qualify» x1 x6;
+              let x8 : List T := «drop» (leaf 2) x4;
+              let x9 : List T := «withHead» «kwParameter» x8;
+              if («nonEmpty» x9).label ≠ 0 then
+                let x10 : List T := «withoutHead» «kwParameter» x8;
+                «mkSt»
+                  («stVis» x2)
+                  («stOut» x2)
+                  («append»
+                    («stReg» x2)
+                    («single»
+                      («node2»
+                        (leaf 0)
+                        x7
+                        (Const.node
+                          (leaf 1)
+                          ((Const.node (leaf 0) x9) ::
+                            ((Const.node
+                              (leaf 0)
+                              («concat»
+                                (Const.foldr
+                                  (α := T)
+                                  (β := List (List T))
+                                  (fun (x11 : T) (x12 : List (List T)) =>
+                                    ((«atomNames» («drop» (leaf 1) (Const.children x11))) :: x12))
+                                  ([] : List (List T))
+                                  («withHead» «kwExport» x10)))) ::
+                              ((Const.node (leaf 0) («withoutHead» «kwExport» x10)) ::
+                                («single» (Const.node (leaf 0) («stVis» x2))))))))))
+                  («stEx» x2)
+              else
+                let x10 : T ×
+                  (List T ×
+                    (List T ×
+                      (List T ×
+                        List
+                          T))) := «elabForms»
+                  x0
+                  x7
+                  («mkSt» («stVis» x2) («stOut» x2) («stReg» x2) ([] : List T))
+                  x8;
+                let x11 : T := (if ((x10).1).label ≠ 0 then
+                  «exportsOf» x10
+                else
+                  «none»);
+                if («isSome» x11).label ≠ 0 then
+                  «declareAll»
+                    («mkSt»
+                      («stVis» x2)
+                      («stOut» x10)
+                      («append»
+                        («stReg» x10)
+                        («single»
+                          («node2» (leaf 0) x7 (Const.node (leaf 0) («single» («get» x11))))))
+                      («stEx» x2))
+                    («importAs» («some» x6) (Const.children («get» x11)))
+                else
+                  «stFail»
+            else
+              «stFail»
+          else
+            «elabDecl» x1 x2 x3
+    else
+      «stFail»
+
+def «elabAt» :=
+  fun (x0 : T) =>
+    Const.iter
+      (α := T →
+        (T × (List T × (List T × (List T × List T)))) →
+          T → T × (List T × (List T × (List T × List T))))
+      (fun (x1 : T →
+           (T × (List T × (List T × (List T × List T)))) →
+             T → T × (List T × (List T × (List T × List T))))
+         (x2 : T)
+         (x3 : T × (List T × (List T × (List T × List T))))
+         (x4 : T) =>
+        «elabStep» x1 x2 x3 x4)
+      (fun (_ : T)
+         (_ : T × (List T × (List T × (List T × List T))))
+         (_ : T) =>
+        «stFail»)
+      x0
+
+def «moduleCount» :=
+  fun (x0 : List T) =>
+    Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x1 : T) (x2 : T) =>
+        Const.add
+          x2
+          (Const.para
+            (α := T)
+            (fun (x3 : T) (x4 : List T) =>
+              Const.foldr
+                (α := T)
+                (β := T)
+                Const.add
+                (if («named» x3 «kwModule»).label ≠ 0 then leaf 1 else leaf 0)
+                x4)
+            x1))
+      (leaf 0)
+      x0
+
+def «expandModules» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      (List T ×
+        (List T ×
+          (List T ×
+            List
+              T))) := «elabForms»
+      («elabAt» (Const.add («moduleCount» x0) (leaf 1)))
+      (Const.node (leaf 0) ([] : List T))
+      («mkSt» ([] : List T) ([] : List T) ([] : List T) ([] : List T))
+      x0;
+    if ((x1).1).label ≠ 0 then
+      if («nonEmpty» («stEx» x1)).label ≠ 0 then
+        «none»
+      else
+        «some» (Const.node (leaf 0) («stOut» x1))
+    else
+      «none»
+
 def «compileWith» :=
   fun (x0 : T → T) (x1 : T) =>
     let x2 : T := «readSExps» (Const.children x1);
     let x3 : T := (if («isSome» x2).label ≠ 0 then
-      «expandProgram» (Const.children («get» x2))
+      «expandModules» (Const.children («get» x2))
     else
       «none»);
     let x4 : T := (if («isSome» x3).label ≠ 0 then
-      «readProgram» (Const.children («get» x3))
+      «expandProgram» (Const.children («get» x3))
     else
       «none»);
-    if («isSome» x4).label ≠ 0 then
+    let x5 : T := (if («isSome» x4).label ≠ 0 then
+      «readProgram» (Const.children («get» x4))
+    else
+      «none»);
+    if («isSome» x5).label ≠ 0 then
       if («isSome»
         («checkProgram»
-          (Const.children (Const.child («get» x4) (leaf 0))))).label ≠ 0 then
-        x0 («get» x4)
+          (Const.children (Const.child («get» x5) (leaf 0))))).label ≠ 0 then
+        x0 («get» x5)
       else
         Const.node (leaf 0) ([] : List T)
     else

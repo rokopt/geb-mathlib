@@ -45,7 +45,7 @@ def stage1Datatype : String := include_str "../../bootstrap/stage1/datatype.geb"
 /-- The stage-1 compiler's source. -/
 def stage1 : String :=
   prelude ++ "\n" ++ serialize ++ "\n" ++ reader ++ "\n" ++ check ++ "\n" ++ stage1Datatype ++
-    "\n" ++ compile ++ "\n"
+    "\n" ++ modules ++ "\n" ++ compile ++ "\n"
 
 /-- Run an image, given as a file's tree, on an input tree: apply its definition named
 {lit}`main`. -/

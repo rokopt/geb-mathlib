@@ -10,7 +10,7 @@
 ; a word, so a word of 32 bits is a natural number below 2^32, and the exclusive or, the
 ; rotations and the addition modulo 2^32 are computed by arithmetic. Bytes are leaves, and a
 ; list of bytes is a node's children where a tree is needed. Requires the prelude, indexOf of
-; the reader and decimalChars of the datatype language.
+; the reader, concat of the modules and decimalChars of the datatype language.
 
 ; words of 32 bits
 (defnum wordSize 4294967296)
@@ -228,7 +228,6 @@
       (or (eq l Label.unit)
         (or (eq l Label.pair)
           (or (eq l Label.fst) (or (eq l Label.snd) (or (eq l Label.cond) (eq l Label.cons)))))))))
-(def concat (lam ((xss (List Ts))) (foldr Ts Ts append (nil T) xss)))
 (def refsOf
   (lam ((t T))
     (para Ts
