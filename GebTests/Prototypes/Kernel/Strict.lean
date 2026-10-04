@@ -17,8 +17,8 @@ set_option doc.verso true in
 The authoring profile reads the spellings of atoms of the advanced encoding: verbatim, quoted
 with a length, hexadecimal and base-64, each with or without a length, and rejects a length
 that the bytes do not match or that is not in shortest form. A document with comments, and each
-source of the stage-0 compiler, is read back from its canonical encoding, and from the basic
-transport encoding's base-64 form.
+source of the stage-0 compiler, is read back from its canonical encoding, from the basic
+transport encoding's base-64 form, and from its advanced encoding, which is ASCII.
 
 The texts are string constants, converted to lists of characters inside each {lit}`#guard`,
 as in the kernel's examples.
@@ -71,6 +71,19 @@ open Geb.Kernel.Stage0Tests Geb.Kernel.Document.Tests
   (readBasic "(4:*doc()1:x)".toList).map Doc.tokens
 #guard (readBasic "{KDQ6KmRvYygpKDE6YTI6YmMpKQ==}".toList).map Doc.tokens =
   (readStrictDoc "(4:*doc()(1:a2:bc))".toList).map Doc.tokens
+
+-- the advanced encoding of an S-expression: a token bare, a numeral quoted, and a byte beyond
+-- ASCII and a line feed escaped
+#guard ((readSExps "(def x (quote (0 \"é\\n\")))".toList).map fun es ↦
+    es.map (advancedOf fun _ ↦ (false, 0))) =
+  some ["(def x (quote (\"0\" \"\\xE9\\x0A\")))\n".toList]
+
+-- a document with comments and each source of the stage-0 compiler written in the advanced
+-- encoding as ASCII, and read back from it
+#guard [sample, sampleFormatted, prelude, serialize, reader, check, datatype, compile].all
+  fun src ↦ (readDoc src.toList).all fun d ↦
+    (printAdvancedDoc 100 d).all (·.toNat < 128) &&
+      (readStrictDoc (printAdvancedDoc 100 d)).map Doc.tokens == some d.tokens
 
 -- a list headed by the reserved atom *ann of the annotation forms is excluded from strict form
 #guard ((readDoc "(*ann a b c d)".toList).map Doc.strictWf) = some false

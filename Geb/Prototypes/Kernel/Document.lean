@@ -29,12 +29,15 @@ redecoration. A comment is placed by its position alone, so reading attaches no 
 definition it documents; that attachment is a redecoration of the trivia.
 
 An atom is a string of bytes, one character per byte as the kernel's readers read text; the
-printer chooses its spelling from its bytes ({lit}`spell`): bare when it is a numeral, a token
-of {cite}`RFC9804` or the ampersand, and otherwise a quoted string, whose double quotes and
-backslashes are escaped, and whose other control characters are written as hexadecimal
-escapes. The reader admits the escapes of {cite}`RFC9804`; its other spellings of atoms,
-hexadecimal, base-64, verbatim and with lengths, and its display hints are rejected, the
-first four being the strict encodings' to add.
+printer chooses its spelling from its bytes by a spelling ({lit}`Spelling`). The profile's
+({lit}`Spelling.profile`) writes an atom bare when it is a numeral, a token of {cite}`RFC9804`
+or the ampersand, and otherwise as a quoted string, whose double quotes and backslashes are
+escaped, and whose other control characters are written as hexadecimal escapes; the advanced
+encoding's ({lit}`Spelling.advanced`) writes only a token bare and escapes every character
+beyond printable ASCII, so that its text is ASCII when every character is a byte. The lexer
+reads back what every lawful spelling writes ({lit}`lex_print`). The reader admits the escapes
+of {cite}`RFC9804` and its other spellings of atoms, verbatim, hexadecimal and base-64, each
+with or without a length; display hints are rejected.
 
 The printer {lit}`print` is parameterized by a layout, a choice at each token of whether a line
 break precedes it and of the indentation of the new line, and the retraction law holds at every
@@ -48,7 +51,7 @@ what is proved.
 * {lit}`SExp` — the kernel's S-expressions, the labels of the trees read.
 * {lit}`Line`, {lit}`Trivia`, {lit}`SExpr`, {lit}`Doc` — comment lines, the trivia an
   S-expression is decorated with, S-expressions with comments, and source documents.
-* {lit}`spell` — the spelling of an atom.
+* {lit}`Spelling` — the spellings of atoms, the profile's and the advanced encoding's.
 * {lit}`lex`, {lit}`readDoc` — the lexer and reader keeping comments and empty lines.
 * {lit}`sepFor`, {lit}`arrangeFrom`, {lit}`print` — the separators a layout chooses, and the
   printer.
@@ -172,17 +175,64 @@ def hexVal (c : Char) : Option ℕ :=
   else if 97 ≤ c.toNat && c.toNat ≤ 102 then some (c.toNat - 87)
   else none
 
-/-- A character of a quoted string as the printer writes it: as it is, after a backslash when
-it is the double quote or the backslash, and otherwise as a hexadecimal escape. -/
-def escape (c : Char) : List Char :=
-  if isPlain c then [c]
+/-- A spelling of atoms: which atoms are written bare, which characters of a quoted string are
+written as they are, and whether the form of a hole is written {lit}`?name`. -/
+structure Spelling where
+  /-- Whether an atom is written bare. -/
+  bare : List Char → Bool
+  /-- Whether a character of a quoted string is written as it is. -/
+  plain : Char → Bool
+  /-- Whether the form of a hole is written {lit}`?name`. -/
+  holes : Bool
+
+/-- The authoring profile's spelling: a numeral, a token and the ampersand bare, the characters
+{name}`isPlain` admits as they are in a quoted string, and holes as {lit}`?name`. -/
+def Spelling.profile : Spelling := ⟨fun s ↦ isBare s || s == ['&'], isPlain, true⟩
+
+/-- Whether a character is printable ASCII, of code point 32 to 126, other than the double quote
+and the backslash. -/
+def isPlainAscii (c : Char) : Bool := 32 ≤ c.toNat && c.toNat ≤ 126 && c != '"' && c != '\\'
+
+/-- The spelling of the advanced encoding of {cite}`RFC9804` in ASCII alone: a token bare, every
+other atom quoted, its characters other than printable ASCII escaped, and no hole's form
+abbreviated. -/
+def Spelling.advanced : Spelling := ⟨isToken, isPlainAscii, false⟩
+
+/-- The spellings the lexer reads back: a bare atom is a numeral, a token or the ampersand, and
+a character written as it is in a quoted string is one the lexer reads as itself. -/
+structure Spelling.Lawful (sp : Spelling) : Prop where
+  /-- A bare atom is a numeral, a token or the ampersand. -/
+  bare : ∀ s, sp.bare s = true → isBare s = true ∨ s = ['&']
+  /-- A character written as it is is one the lexer reads as itself. -/
+  plain : ∀ c, sp.plain c = true → isPlain c = true
+
+/-- The authoring profile's spelling is lawful. -/
+theorem Spelling.lawful_profile : Spelling.profile.Lawful where
+  bare s h := by simpa only [Spelling.profile, Bool.or_eq_true, beq_iff_eq] using h
+  plain _ h := h
+
+/-- The advanced encoding's spelling is lawful. -/
+theorem Spelling.lawful_advanced : Spelling.advanced.Lawful where
+  bare s h := Or.inl (by simp only [isBare, Bool.or_eq_true]; exact Or.inr h)
+  plain c h := by
+    simp only [Spelling.advanced, isPlainAscii, Bool.and_eq_true, decide_eq_true_eq] at h
+    simp only [isPlain, Bool.or_eq_true, Bool.and_eq_true, decide_eq_true_eq]
+    exact Or.inl (Or.inl h)
+
+/-- Whether a spelling can write a character of a quoted string: as it is, or as an escape of a
+byte. -/
+def Spelling.escapable (sp : Spelling) (c : Char) : Bool := sp.plain c || c.toNat < 256
+
+/-- A character of a quoted string as a spelling writes it: as it is, after a backslash when it
+is the double quote or the backslash, and otherwise as a hexadecimal escape. -/
+def Spelling.escape (sp : Spelling) (c : Char) : List Char :=
+  if sp.plain c then [c]
   else if c == '"' || c == '\\' then ['\\', c]
   else ['\\', 'x', hexDigit (c.toNat / 16), hexDigit (c.toNat % 16)]
 
-/-- An atom as the printer writes it: bare when it is a numeral, a token or the ampersand, and
-otherwise quoted. -/
-def spell (s : List Char) : List Char :=
-  if isBare s || s == ['&'] then s else '"' :: s.flatMap escape ++ ['"']
+/-- An atom as a spelling writes it: bare, or quoted. -/
+def Spelling.spell (sp : Spelling) (s : List Char) : List Char :=
+  if sp.bare s then s else '"' :: s.flatMap sp.escape ++ ['"']
 
 /-! ## Tokens and the lexer -/
 
@@ -549,11 +599,11 @@ def Sep.render : Sep → List Char
   | .line k => '\n' :: List.replicate k ' '
   | .blank k => '\n' :: '\n' :: List.replicate k ' '
 
-/-- A token's characters. -/
-def Tok.render : Tok → List Char
+/-- A token's characters, its atom spelled by a spelling. -/
+def Tok.render (sp : Spelling) : Tok → List Char
   | .lp _ => ['(']
   | .rp => [')']
-  | .atom _ s => spell s
+  | .atom _ s => sp.spell s
   | .comment _ s => ';' :: s
   | .hole _ s => '?' :: s
 
@@ -574,9 +624,9 @@ def arrangeFrom (L : ℕ → Bool × ℕ) (toks : List Tok) : Option Tok → ℕ
   List.rec (motive := fun _ ↦ Option Tok → ℕ → List (Sep × Tok)) (fun _ _ ↦ [])
     (fun t _ ih prev i ↦ (sepFor prev t (L i).1 (L i).2, t) :: ih (some t) (i + 1)) toks
 
-/-- The characters of tokens with their separators. -/
-def render (ps : List (Sep × Tok)) : List Char :=
-  ps.flatMap fun p ↦ p.1.render ++ p.2.render
+/-- The characters of tokens with their separators, atoms spelled by a spelling. -/
+def render (sp : Spelling) (ps : List (Sep × Tok)) : List Char :=
+  ps.flatMap fun p ↦ p.1.render ++ p.2.render sp
 
 /-! ## Lexing what the printer writes -/
 
@@ -587,10 +637,10 @@ def Sep.breaks : Sep → ℕ
   | .line _ => 1
   | .blank _ => 2
 
-/-- The token a token leaves pending, a bare atom, a comment or a hole, whose end the lexer has
-not yet read. -/
-def pendOf : Option Tok → Option Tok
-  | some (.atom g s) => if isBare s then some (.atom g s) else none
+/-- The token a token leaves pending, an atom a spelling writes bare as a numeral or a token, a
+comment or a hole, whose end the lexer has not yet read. -/
+def pendOf (sp : Spelling) : Option Tok → Option Tok
+  | some (.atom g s) => if sp.bare s && isBare s then some (.atom g s) else none
   | some (.comment g s) => some (.comment g s)
   | some (.hole g s) => some (.hole g s)
   | _ => none
@@ -602,13 +652,13 @@ def state (done : List Tok) : Option Tok → LexState
   | some (.hole g s) => ⟨done, s.reverse, .hole, 0, g, true⟩
   | _ => .idle done 0
 
-/-- The tokens the lexer emits as soon as it reads a token: a parenthesis, or an atom that is
-not bare. -/
-def Tok.emitted (t : Tok) : List Tok :=
+/-- The tokens the lexer emits as soon as it reads a token: a parenthesis, or an atom a spelling
+does not write bare as a numeral or a token. -/
+def Tok.emitted (sp : Spelling) (t : Tok) : List Tok :=
   match t with
   | .lp _ => [t]
   | .rp => [t]
-  | .atom _ s => if isBare s then [] else [t]
+  | .atom _ s => if sp.bare s && isBare s then [] else [t]
   | _ => []
 
 /-- Spaces leave a state between tokens as it is. -/
@@ -786,24 +836,26 @@ theorem lexStep_hex_last {d : List Tok} {b : List Char} {g : Bool} {v k : ℕ} {
   rw [h]
   rfl
 
-/-- A character of a quoted string, as the printer writes it, extends the string being read. -/
-theorem foldl_escape (c : Char) (d : List Tok) (b : List Char) (g : Bool) :
-    (escape c).foldl lexStep ⟨d, b, .str none, 0, g, true⟩ =
+/-- A character of a quoted string, as a lawful spelling writes it, extends the string being
+read. -/
+theorem foldl_escape {sp : Spelling} (hsp : sp.Lawful) (c : Char) (hc : sp.escapable c)
+    (d : List Tok) (b : List Char) (g : Bool) :
+    (sp.escape c).foldl lexStep ⟨d, b, .str none, 0, g, true⟩ =
       ⟨d, c :: b, .str none, 0, g, true⟩ := by
-  unfold escape
+  unfold Spelling.escape
   split_ifs with hp hq
-  · have h1 : c ≠ '"' := by rintro rfl; exact absurd hp (by decide)
-    have h2 : c ≠ '\\' := by rintro rfl; exact absurd hp (by decide)
+  · have hp' := hsp.plain c hp
+    have h1 : c ≠ '"' := by rintro rfl; exact absurd hp' (by decide)
+    have h2 : c ≠ '\\' := by rintro rfl; exact absurd hp' (by decide)
     simp only [List.foldl_cons, List.foldl_nil, lexStep, Bool.not_true, Bool.false_eq_true,
-      ↓reduceIte, strStep, beq_iff_eq, h1, h2, hp, Bool.true_or]
+      ↓reduceIte, strStep, beq_iff_eq, h1, h2, hp', Bool.true_or]
   · simp only [Bool.or_eq_true, beq_iff_eq] at hq
     rcases hq with rfl | rfl <;> rfl
-  · have hlt : c.toNat < 128 := by
-      simp only [isPlain, Bool.or_eq_true, decide_eq_true_eq, not_or] at hp
-      exact Nat.lt_of_not_le hp.2
+  · have hlt : c.toNat < 256 := by
+      simp only [Spelling.escapable, hp, Bool.false_or, decide_eq_true_eq] at hc
+      exact hc
     have hx : hexVal (hexDigit (c.toNat / 16)) = some (c.toNat / 16) :=
-      hexVal_hexDigit ⟨c.toNat / 16,
-        (Nat.div_lt_iff_lt_mul (by decide)).mpr (Nat.lt_trans hlt (by decide))⟩
+      hexVal_hexDigit ⟨c.toNat / 16, (Nat.div_lt_iff_lt_mul (by decide)).mpr hlt⟩
     have hy : hexVal (hexDigit (c.toNat % 16)) = some (c.toNat % 16) :=
       hexVal_hexDigit ⟨c.toNat % 16, Nat.mod_lt _ (by decide)⟩
     have e1 : lexStep ⟨d, b, .str none, 0, g, true⟩ '\\' = ⟨d, b, .esc none, 0, g, true⟩ := rfl
@@ -817,15 +869,19 @@ theorem foldl_escape (c : Char) (d : List Tok) (b : List Char) (g : Bool) :
       rw [lexStep_hex_last hy, Nat.div_add_mod, Char.ofNat_toNat]
     simp only [List.foldl_cons, List.foldl_nil, e1, e2, e3, e4]
 
-/-- The characters of a quoted string, as the printer writes them, extend the string being
+/-- The characters of a quoted string, as a lawful spelling writes them, extend the string being
 read. -/
-theorem foldl_escapes (cs : List Char) :
-    ∀ (d : List Tok) (b : List Char) (g : Bool),
-      (cs.flatMap escape).foldl lexStep ⟨d, b, .str none, 0, g, true⟩ =
+theorem foldl_escapes {sp : Spelling} (hsp : sp.Lawful) (cs : List Char)
+    (hcs : cs.all sp.escapable) : ∀ (d : List Tok) (b : List Char) (g : Bool),
+      (cs.flatMap sp.escape).foldl lexStep ⟨d, b, .str none, 0, g, true⟩ =
         ⟨d, cs.reverse ++ b, .str none, 0, g, true⟩ :=
-  List.rec (fun _ _ _ ↦ rfl) (fun c cs ih d b g ↦ by
-    rw [List.flatMap_cons, List.foldl_append, foldl_escape, ih]
-    simp) cs
+  List.rec (motive := fun cs ↦ cs.all sp.escapable → ∀ (d : List Tok) (b : List Char) (g : Bool),
+      (cs.flatMap sp.escape).foldl lexStep ⟨d, b, .str none, 0, g, true⟩ =
+        ⟨d, cs.reverse ++ b, .str none, 0, g, true⟩)
+    (fun _ _ _ _ ↦ rfl) (fun c cs ih hall d b g ↦ by
+      simp only [List.all_cons, Bool.and_eq_true] at hall
+      rw [List.flatMap_cons, List.foldl_append, foldl_escape hsp c hall.1, ih hall.2]
+      simp) cs hcs
 
 /-- A line break between tokens is counted. -/
 theorem idleStep_newline (d : List Tok) (n : ℕ) : idleStep d n '\n' = .idle d (n + 1) := rfl
@@ -837,11 +893,28 @@ theorem gap_sepFor (prev : Option Tok) (t : Tok) (b : Bool) (k : ℕ) :
   unfold sepFor
   split_ifs with h1 h2 h3 <;> simp_all [Sep.breaks]
 
+/-- Whether a spelling can write a token: every character of an atom is escapable. -/
+def Tok.escapable (sp : Spelling) : Tok → Bool
+  | .atom _ s => s.all sp.escapable
+  | _ => true
+
+/-- In the authoring profile every token can be written. -/
+theorem Tok.escapable_profile (t : Tok) : t.escapable .profile := by
+  cases t with
+  | atom g s =>
+    refine List.all_eq_true.mpr fun c _ ↦ ?_
+    simp only [Spelling.escapable, Spelling.profile, isPlain, Bool.or_eq_true, Bool.and_eq_true,
+      decide_eq_true_eq, bne_iff_ne, ne_eq]
+    omega
+  | _ => rfl
+
 /-- A token read between tokens, after a separator of as many line breaks as the token's record
 of an empty line requires, is emitted, or left pending when it is a bare atom, a comment or a
-hole. -/
-theorem foldl_tok (t : Tok) (d : List Tok) (n : ℕ) (ht : t.wf) (hg : t.gap = decide (2 ≤ n)) :
-    t.render.foldl lexStep (.idle d n) = state (t.emitted ++ d) (pendOf (some t)) := by
+hole, its atom written by a lawful spelling. -/
+theorem foldl_tok {sp : Spelling} (hsp : sp.Lawful) (t : Tok) (d : List Tok) (n : ℕ)
+    (ht : t.wf) (he : t.escapable sp) (hg : t.gap = decide (2 ≤ n)) :
+    (t.render sp).foldl lexStep (.idle d n) =
+      state (t.emitted sp ++ d) (pendOf sp (some t)) := by
   cases t with
   | lp g =>
     simp only [Tok.gap] at hg
@@ -873,47 +946,50 @@ theorem foldl_tok (t : Tok) (d : List Tok) (n : ℕ) (ht : t.wf) (hg : t.gap = d
       simp [state, pendOf, Tok.emitted]
   | atom g s =>
     simp only [Tok.gap] at hg
+    simp only [Tok.escapable] at he
     subst hg
-    by_cases hb : isBare s = true
-    · have hsp : spell s = s := by simp [spell, hb]
-      have hb' := hb
-      simp only [isBare, Bool.or_eq_true] at hb'
-      cases s with
-      | nil => simp [isNumeral, isToken] at hb'
-      | cons c cs =>
-        rcases hb' with hn | htk
-        · simp only [isNumeral, List.isEmpty_cons, Bool.not_false, List.all_cons, Bool.true_and,
-            Bool.and_eq_true] at hn
-          rw [Tok.render, hsp, List.foldl_cons,
-            show lexStep (.idle d n) c = idleStep d n c from rfl, idleStep_digit d n hn.1,
-            foldl_numChars cs hn.2]
-          simp [state, pendOf, Tok.emitted, hb, isNumeral, hn.1, hn.2]
-        · simp only [isToken, Bool.and_eq_true] at htk
-          have hnn : isNumeral (c :: cs) = false := by
-            simp [isNumeral, isDigit_of_isTokenStart htk.1]
-          rw [Tok.render, hsp, List.foldl_cons,
-            show lexStep (.idle d n) c = idleStep d n c from rfl, idleStep_tokenStart d n htk.1,
-            foldl_bareChars cs htk.2]
-          simp [state, pendOf, Tok.emitted, hb, hnn]
+    by_cases hb : sp.bare s = true
+    · have hsp' : sp.spell s = s := by simp [Spelling.spell, hb]
+      rcases hsp.bare s hb with hB | hamp
+      · have hb' := hB
+        simp only [isBare, Bool.or_eq_true] at hb'
+        cases s with
+        | nil => simp [isNumeral, isToken] at hb'
+        | cons c cs =>
+          rcases hb' with hn | htk
+          · simp only [isNumeral, List.isEmpty_cons, Bool.not_false, List.all_cons,
+              Bool.true_and, Bool.and_eq_true] at hn
+            rw [Tok.render, hsp', List.foldl_cons,
+              show lexStep (.idle d n) c = idleStep d n c from rfl, idleStep_digit d n hn.1,
+              foldl_numChars cs hn.2]
+            simp [state, pendOf, Tok.emitted, hb, hB, isNumeral, hn.1, hn.2]
+          · simp only [isToken, Bool.and_eq_true] at htk
+            have hnn : isNumeral (c :: cs) = false := by
+              simp [isNumeral, isDigit_of_isTokenStart htk.1]
+            rw [Tok.render, hsp', List.foldl_cons,
+              show lexStep (.idle d n) c = idleStep d n c from rfl, idleStep_tokenStart d n htk.1,
+              foldl_bareChars cs htk.2]
+            simp [state, pendOf, Tok.emitted, hb, hB, hnn]
+      · subst hamp
+        rw [Tok.render, hsp']
+        simp only [Tok.emitted, pendOf, hb, Bool.true_and,
+          show isBare ['&'] = false from rfl, Bool.false_eq_true, ↓reduceIte]
+        rfl
     · simp only [Bool.not_eq_true] at hb
-      by_cases ha : s = ['&']
-      · subst ha
+      have hsp' : sp.spell s = '"' :: (s.flatMap sp.escape ++ ['"']) := by
+        unfold Spelling.spell
+        rw [hb]
         rfl
-      · have ha' : (s == ['&']) = false := beq_eq_false_iff_ne.mpr ha
-        have hsp : spell s = '"' :: (s.flatMap escape ++ ['"']) := by
-          unfold spell
-          rw [hb, ha']
-          rfl
-        rw [Tok.render, hsp, List.foldl_cons,
-          show lexStep (.idle d n) '"' = ⟨d, [], .str none, 0, decide (2 ≤ n), true⟩ from rfl,
-          List.foldl_append, foldl_escapes, List.append_nil]
-        change LexState.idle (.atom _ s.reverse.reverse :: d) 0 = _
-        simp only [List.reverse_reverse, Tok.emitted, pendOf, hb, Bool.false_eq_true, ↓reduceIte,
-          List.singleton_append]
-        rfl
+      rw [Tok.render, hsp', List.foldl_cons,
+        show lexStep (.idle d n) '"' = ⟨d, [], .str none, 0, decide (2 ≤ n), true⟩ from rfl,
+        List.foldl_append, foldl_escapes hsp s he, List.append_nil]
+      change LexState.idle (.atom _ s.reverse.reverse :: d) 0 = _
+      simp only [List.reverse_reverse, Tok.emitted, pendOf, hb, Bool.false_and,
+        Bool.false_eq_true, ↓reduceIte, List.singleton_append]
+      rfl
 
 /-- The token a token leaves pending is the token itself. -/
-theorem eq_of_pendOf {prev : Option Tok} {p : Tok} (h : pendOf prev = some p) :
+theorem eq_of_pendOf {sp : Spelling} {prev : Option Tok} {p : Tok} (h : pendOf sp prev = some p) :
     prev = some p := by
   rcases prev with _ | ⟨_ | _ | ⟨g, s⟩ | ⟨g, s⟩ | ⟨g, s⟩⟩ <;>
     simp only [pendOf, reduceCtorEq, Option.some.injEq, Option.ite_none_right_eq_some] at h
@@ -953,7 +1029,7 @@ theorem lexStep_hole_end {d : List Tok} {b : List Char} {g : Bool} {ch : Char}
 
 /-- A space, a line break or a closing parenthesis ends a pending bare atom or hole, and a line
 break a pending comment, as if read between tokens after it. -/
-theorem lexStep_pend {prev : Option Tok} {p : Tok} (hp : pendOf prev = some p)
+theorem lexStep_pend {sp : Spelling} {prev : Option Tok} {p : Tok} (hp : pendOf sp prev = some p)
     (hw : prev.all Tok.wf) (d : List Tok) (ch : Char) (hch : ch = ' ' ∨ ch = '\n' ∨ ch = ')')
     (hc : p.isComment → ch = '\n') :
     lexStep (state d (some p)) ch = idleStep (p :: d) 0 ch := by
@@ -982,8 +1058,8 @@ theorem lexStep_pend {prev : Option Tok} {p : Tok} (hp : pendOf prev = some p)
 
 /-- After a pending token, {name}`sepFor` writes nothing only before a closing parenthesis, and
 after a comment it writes a line break. -/
-theorem sepFor_pend {prev : Option Tok} {p : Tok} (hp : pendOf prev = some p) (t : Tok) (b : Bool)
-    (k : ℕ) :
+theorem sepFor_pend {sp : Spelling} {prev : Option Tok} {p : Tok} (hp : pendOf sp prev = some p)
+    (t : Tok) (b : Bool) (k : ℕ) :
     (sepFor prev t b k = .none → t = .rp) ∧
       (p.isComment → sepFor prev t b k = .line k ∨ sepFor prev t b k = .blank k) := by
   obtain rfl := eq_of_pendOf hp
@@ -999,16 +1075,16 @@ theorem sepFor_pend {prev : Option Tok} {p : Tok} (hp : pendOf prev = some p) (t
 /-- A token read after the separator {name}`sepFor` chooses, from the state its predecessor
 left, emits the predecessor if it was pending and leaves the lexer in the state after the
 token. -/
-theorem foldl_step (prev : Option Tok) (t : Tok) (b : Bool) (k : ℕ) (done : List Tok)
-    (hp : prev.all Tok.wf) (ht : t.wf) :
-    ((sepFor prev t b k).render ++ t.render).foldl lexStep (state done (pendOf prev)) =
-      state (t.emitted ++ ((pendOf prev).toList ++ done)) (pendOf (some t)) := by
+theorem foldl_step {sp : Spelling} (hsp : sp.Lawful) (prev : Option Tok) (t : Tok) (b : Bool)
+    (k : ℕ) (done : List Tok) (hp : prev.all Tok.wf) (ht : t.wf) (he : t.escapable sp) :
+    ((sepFor prev t b k).render ++ t.render sp).foldl lexStep (state done (pendOf sp prev)) =
+      state (t.emitted sp ++ ((pendOf sp prev).toList ++ done)) (pendOf sp (some t)) := by
   have hg := gap_sepFor prev t b k
   rw [List.foldl_append]
-  cases hq : pendOf prev with
+  cases hq : pendOf sp prev with
   | none =>
     rw [show state done none = .idle done 0 from rfl, foldl_sep]
-    simpa using foldl_tok t done _ ht hg
+    simpa using foldl_tok hsp t done _ ht he hg
   | some p =>
     obtain ⟨hnone, hcom⟩ := sepFor_pend hq t b k
     simp only [Option.toList_some, List.singleton_append]
@@ -1022,39 +1098,41 @@ theorem foldl_step (prev : Option Tok) (t : Tok) (b : Bool) (k : ℕ) (done : Li
       rw [hs] at hg
       simp only [Sep.render, List.foldl_cons, List.foldl_nil]
       rw [lexStep_pend hq hp done ' ' (by simp) (fun h ↦ by simpa [hs] using hcom h)]
-      exact foldl_tok t _ 0 ht hg
+      exact foldl_tok hsp t _ 0 ht he hg
     | line j =>
       rw [hs] at hg
       simp only [Sep.render, List.foldl_cons]
       rw [lexStep_pend hq hp done '\n' (by simp) (fun _ ↦ rfl)]
-      exact (congrArg (fun s ↦ t.render.foldl lexStep s) (foldl_spaces _ 1 j)).trans
-        (foldl_tok t _ 1 ht hg)
+      exact (congrArg (fun s ↦ (t.render sp).foldl lexStep s) (foldl_spaces _ 1 j)).trans
+        (foldl_tok hsp t _ 1 ht he hg)
     | blank j =>
       rw [hs] at hg
       simp only [Sep.render, List.foldl_cons]
       rw [lexStep_pend hq hp done '\n' (by simp) (fun _ ↦ rfl)]
-      exact (congrArg (fun s ↦ t.render.foldl lexStep s) (foldl_spaces _ 2 j)).trans
-        (foldl_tok t _ 2 ht hg)
+      exact (congrArg (fun s ↦ (t.render sp).foldl lexStep s) (foldl_spaces _ 2 j)).trans
+        (foldl_tok hsp t _ 2 ht he hg)
 
 /-- A token is what it emits followed by what it leaves pending. -/
-theorem emitted_pendOf (t : Tok) : t.emitted ++ (pendOf (some t)).toList = [t] := by
+theorem emitted_pendOf (sp : Spelling) (t : Tok) :
+    t.emitted sp ++ (pendOf sp (some t)).toList = [t] := by
   cases t with
-  | atom g s => by_cases hb : isBare s <;> simp [Tok.emitted, pendOf, hb]
+  | atom g s => by_cases hb : (sp.bare s && isBare s) = true <;> simp [Tok.emitted, pendOf, hb]
   | _ => rfl
 
 /-- The lexer reads back the tokens a layout arranges, after those already emitted and the
 one pending, whatever the layout chooses. -/
-theorem lexEnd_arrangeFrom (L : ℕ → Bool × ℕ) (toks : List Tok) (htoks : toks.all Tok.wf) :
+theorem lexEnd_arrangeFrom {sp : Spelling} (hsp : sp.Lawful) (L : ℕ → Bool × ℕ) (toks : List Tok)
+    (htoks : toks.all fun t ↦ t.wf && t.escapable sp) :
     ∀ (prev : Option Tok) (i : ℕ) (done : List Tok), prev.all Tok.wf →
-      lexEnd ((render (arrangeFrom L toks prev i) ++ ['\n']).foldl lexStep
-        (state done (pendOf prev))) = some (done.reverse ++ (pendOf prev).toList ++ toks) :=
-  List.rec (motive := fun toks ↦ toks.all Tok.wf → ∀ (prev : Option Tok) (i : ℕ)
-      (done : List Tok), prev.all Tok.wf →
-      lexEnd ((render (arrangeFrom L toks prev i) ++ ['\n']).foldl lexStep
-        (state done (pendOf prev))) = some (done.reverse ++ (pendOf prev).toList ++ toks))
+      lexEnd ((render sp (arrangeFrom L toks prev i) ++ ['\n']).foldl lexStep
+        (state done (pendOf sp prev))) = some (done.reverse ++ (pendOf sp prev).toList ++ toks) :=
+  List.rec (motive := fun toks ↦ (toks.all fun t ↦ t.wf && t.escapable sp) →
+      ∀ (prev : Option Tok) (i : ℕ) (done : List Tok), prev.all Tok.wf →
+      lexEnd ((render sp (arrangeFrom L toks prev i) ++ ['\n']).foldl lexStep
+        (state done (pendOf sp prev))) = some (done.reverse ++ (pendOf sp prev).toList ++ toks))
     (fun _ prev _ done hp ↦ by
-      change lexEnd (lexStep (state done (pendOf prev)) '\n') = _
-      cases hq : pendOf prev with
+      change lexEnd (lexStep (state done (pendOf sp prev)) '\n') = _
+      cases hq : pendOf sp prev with
       | none =>
         rw [show state done none = .idle done 0 from rfl, lexStep_newline]
         simp [LexState.idle, lexEnd]
@@ -1063,20 +1141,21 @@ theorem lexEnd_arrangeFrom (L : ℕ → Bool × ℕ) (toks : List Tok) (htoks : 
         simp [LexState.idle, lexEnd])
     (fun t rest ih hall prev i done hp ↦ by
       simp only [List.all_cons, Bool.and_eq_true] at hall
-      have hstep := foldl_step prev t (L i).1 (L i).2 done hp hall.1
+      have hstep := foldl_step hsp prev t (L i).1 (L i).2 done hp hall.1.1 hall.1.2
       have harr : arrangeFrom L (t :: rest) prev i =
           (sepFor prev t (L i).1 (L i).2, t) :: arrangeFrom L rest (some t) (i + 1) := rfl
       rw [harr, render, List.flatMap_cons, ← render, List.append_assoc, List.foldl_append,
-        hstep, ih hall.2 (some t) (i + 1) _ (by simpa using hall.1)]
-      have he := emitted_pendOf t
+        hstep, ih hall.2 (some t) (i + 1) _ (by simpa using hall.1.1)]
+      have he := emitted_pendOf sp t
       congr 1
-      rcases hq : pendOf prev with _ | q <;> cases t <;>
+      rcases hq : pendOf sp prev with _ | q <;> cases t <;>
         simp_all [Tok.emitted, pendOf] <;> split_ifs <;> simp_all) toks htoks
 
 /-- The lexer reads back the tokens a layout arranges, whatever the layout. -/
-theorem lex_print (L : ℕ → Bool × ℕ) (toks : List Tok) (h : toks.all Tok.wf) :
-    lex (render (arrangeFrom L toks none 0) ++ ['\n']) = some toks := by
-  have h' := lexEnd_arrangeFrom L _ h none 0 [] rfl
+theorem lex_print {sp : Spelling} (hsp : sp.Lawful) (L : ℕ → Bool × ℕ) (toks : List Tok)
+    (h : toks.all fun t ↦ t.wf && t.escapable sp) :
+    lex (render sp (arrangeFrom L toks none 0) ++ ['\n']) = some toks := by
+  have h' := lexEnd_arrangeFrom hsp L _ h none 0 [] rfl
   simp only [pendOf, Option.toList_none, List.reverse_nil, List.nil_append] at h'
   exact h'
 
@@ -1114,7 +1193,7 @@ def Doc.tokens (d : Doc) : List Tok := d.items.flatMap tokensOf ++ d.trail.map L
 /-- A document's characters, laid out by a layout, a choice at each position of the document's
 tokens; the text ends with a line break. -/
 def print (L : ℕ → Bool × ℕ) (d : Doc) : List Char :=
-  render (arrangeFrom L d.tokens none 0) ++ ['\n']
+  render .profile (arrangeFrom L d.tokens none 0) ++ ['\n']
 
 /-! ## Reading what the printer writes -/
 
@@ -1283,7 +1362,10 @@ theorem readDoc_print (L : ℕ → Bool × ℕ) (d : Doc) (h : d.wf) :
     simp only [Doc.tokens, List.all_append, List.all_flatMap, all_wf_toks h.2, Bool.and_true,
       List.all_eq_true]
     exact fun c hc ↦ List.all_eq_true.mp (all_wf_tokensOf c (hw c hc))
-  rw [readDoc, print, lex_print L d.tokens htoks, Option.bind_some, Doc.tokens,
+  have htoks' : d.tokens.all fun t ↦ t.wf && t.escapable .profile := by
+    simpa only [Tok.escapable_profile, Bool.and_true] using htoks
+  rw [readDoc, print, lex_print Spelling.lawful_profile L d.tokens htoks', Option.bind_some,
+    Doc.tokens,
     List.foldl_append,
     foldl_readStep_items d.items (fun t _ ↦ foldl_readStep_tokensOf t) hw _ [] rfl,
     foldl_readStep_lines]
@@ -1356,27 +1438,28 @@ def planElem (lim ind n trail : ℕ) (fits : Bool) (s : PlanState) (e : Elem) : 
   ⟨endCol, s.broken || (brk && s.pos != 0) || e.gap, e.isComment, s.pos + 1, out⟩
 
 /-- An S-expression's comment lines before it and its element, from its children with their
-elements. A hole is one token; an atom is as wide as its spelling. A list that fits within the
+elements, given a spelling. A hole the spelling abbreviates is one token; an atom is as wide as
+its spelling. A list that fits within the
 line width is written on one line; otherwise its elements after the first fill the first line
 while they fit, and the rest begin lines indented past the list's opening parenthesis, by two
 columns after an atom at its head and by one otherwise, so that no line is indented beyond a
 parenthesis closed at the end of the line before. A list holding a comment line, or an element
 after an empty line, is not written on one line. -/
-def planStep (lim : ℕ) (l : Trivia × Option (List Char))
+def planStep (sp : Spelling) (lim : ℕ) (l : Trivia × Option (List Char))
     (rs : List (SExpr × (List Line × Elem))) : List Line × Elem :=
-  match holeName? l (rs.map Prod.fst) with
+  match if sp.holes then holeName? l (rs.map Prod.fst) else none with
   | some n => (l.1.lead, ⟨l.1.gap, false, false, some (n.length + 1),
       fun c _ acc ↦ (acc, c + 1 + n.length)⟩)
   | none =>
     let es := elemsOf (rs.map Prod.snd) l.1.close
     let w : Option ℕ := match l.2 with
-      | some s => some (spell s).length
+      | some s => some (sp.spell s).length
       | none =>
         if es.any (fun e : Elem ↦ e.gap) then none
         else (es.mapM fun e : Elem ↦ e.width).map fun w ↦ w.sum + w.length - 1 + 2
     (l.1.lead, ⟨l.1.gap, false, l.2.isSome, w, fun c trail acc ↦
       match l.2 with
-      | some s => (acc, c + (spell s).length)
+      | some s => (acc, c + (sp.spell s).length)
       | none =>
         let fits := match w with
           | some w => decide (c + w + trail ≤ lim)
@@ -1387,10 +1470,10 @@ def planStep (lim : ℕ) (l : Trivia × Option (List Char))
         (s.out.push (false, ind), rpCol + 1)⟩)
 
 /-- The layout of a document within a line width, as the choices at the positions of its
-tokens: each element after the first, an S-expression or a comment line, begins a line at the
-first column, and each is laid out by {name}`planStep`. -/
-def defaultLayout (lim : ℕ) (d : Doc) : Array (Bool × ℕ) :=
-  (elemsOf (d.items.map (RoseTree.para (planStep lim))) d.trail).foldl
+tokens, given a spelling: each element after the first, an S-expression or a comment line, begins
+a line at the first column, and each is laid out by {name}`planStep`. -/
+def defaultLayout (sp : Spelling) (lim : ℕ) (d : Doc) : Array (Bool × ℕ) :=
+  (elemsOf (d.items.map (RoseTree.para (planStep sp lim))) d.trail).foldl
     (fun (acc : Array (Bool × ℕ) × Bool) e ↦ ((e.plan 0 0 (acc.1.push (acc.2, 0))).1, true))
     (#[], false) |>.1
 
@@ -1402,7 +1485,8 @@ def printAt (ds : Array (Bool × ℕ)) (d : Doc) : List Char :=
 /-- The formatter: a text read and printed within a line width, or nothing when its
 parentheses do not balance. -/
 def format (lim : ℕ) (text : List Char) : Option (List Char) :=
-  (readDoc text).bind fun d ↦ if d.wf then some (printAt (defaultLayout lim d) d) else none
+  (readDoc text).bind fun d ↦
+    if d.wf then some (printAt (defaultLayout .profile lim d) d) else none
 
 /-- The formatter is idempotent: formatting a formatted text gives it back. -/
 theorem format_format (lim : ℕ) (text out : List Char) (h : format lim text = some out) :

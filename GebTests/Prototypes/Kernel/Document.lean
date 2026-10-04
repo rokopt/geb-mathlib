@@ -97,13 +97,13 @@ def sampleFormatted : String := "; a header
 
 -- an atom is written bare when it is a numeral, a token or the ampersand, and otherwise
 -- quoted, its double quotes and backslashes escaped and its control characters in hexadecimal
-#guard spell "let".toList = "let".toList
-#guard spell "12".toList = "12".toList
-#guard spell "&".toList = "&".toList
-#guard spell "a b".toList = "\"a b\"".toList
-#guard spell "2x".toList = "\"2x\"".toList
-#guard spell ['"', '\\', Char.ofNat 9, 'σ'] = "\"\\\"\\\\\\x09σ\"".toList
-#guard spell [] = "\"\"".toList
+#guard Spelling.profile.spell "let".toList = "let".toList
+#guard Spelling.profile.spell "12".toList = "12".toList
+#guard Spelling.profile.spell "&".toList = "&".toList
+#guard Spelling.profile.spell "a b".toList = "\"a b\"".toList
+#guard Spelling.profile.spell "2x".toList = "\"2x\"".toList
+#guard Spelling.profile.spell ['"', '\\', Char.ofNat 9, 'σ'] = "\"\\\"\\\\\\x09σ\"".toList
+#guard Spelling.profile.spell [] = "\"\"".toList
 
 -- quoted strings read the escapes of RFC 9804, and a backslash before a line break continues the
 -- string
