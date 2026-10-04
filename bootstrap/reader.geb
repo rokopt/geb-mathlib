@@ -32,19 +32,26 @@
     isList
     nameOf
     named
+    kwT
     kwUnit
     kwProd
     kwArrow
     kwList
     kwLam
     kwLet
+    kwPair
+    kwFst
+    kwSnd
+    kwIf
     kwQuote
+    kwCons
     kwNil
     kwFold
     kwPara
     kwIter
     kwFoldr
     kwLcase
+    kwUnitValue
     kwDef
     kwDeftype
     kwDefnum

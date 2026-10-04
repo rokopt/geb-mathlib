@@ -1,0 +1,106 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The printer of kernel terms, written in the kernel's syntax: a bundle's definitions as
+; S-expressions of the readable syntax, which the reader reads back, printing as the seed's
+; printer prints.
+; Requires the prelude, the reader and decimalChars of the datatype language.
+;
+; Representations. As in the reader: an S-expression is a node of label 1 over an atom's
+; characters or a node of label 2 over a list's elements, and a name is a node of label 0 over
+; its characters. A bundle is the node of label 100 over the node of label 101 over the terms and
+; the node of label 102 over the names.
+
+(module Printer (export printType printDatum printTerm printProgram) (import Prelude)
+  (import Reader)
+  ; atoms and lists
+  (def atomOf (lam ((n T)) (node 1 (children n))))
+  (def listOf (lam ((xs Ts)) (node 2 xs)))
+  (def numAtom (lam ((n T)) (node 1 (Datatype.decimalChars n))))
+  ; the name of the binder at a depth, an underscore followed by the depth's numeral
+  (def binderAtom (lam ((d T)) (node 1 (cons 95 (Datatype.decimalChars d)))))
+  ; the atom of the name at a position of a list of names
+  (def nameAt (lam ((ns Ts) (i T)) (atomOf (at ns i))))
+
+  ; a type written structurally
+  (def printType
+    (lam ((A T))
+      (fold T
+        (lam ((l T) (rs Ts))
+          (if (eq l Label.tyTree) (atomOf kwT)
+            (if (eq l Label.tyUnit) (atomOf kwUnit)
+              (if (eq l Label.tyProd) (listOf (cons (atomOf kwProd) rs))
+                (if (eq l Label.tyArrow) (listOf (cons (atomOf kwArrow) rs))
+                  (listOf (cons (atomOf kwList) rs)))))))
+        A)))
+  (def printTypes
+    (lam ((cs Ts)) (foldr T Ts (lam ((c T) (acc Ts)) (cons (printType c) acc)) (nil T) cs)))
+  ; a quoted tree as a datum: a leaf as its label's numeral, and a node of children as the list
+  ; of its label's numeral and its children's data
+  (def printDatum
+    (lam ((t T))
+      (fold T (lam ((l T) (rs Ts)) (if (nonEmpty rs) (listOf (cons (numAtom l) rs)) (numAtom l)))
+        t)))
+
+  ; a term printed under binders to a depth: each node's result is its subtree with its printing
+  ; as a function of the depth
+  (deftype PF (Arrow T T))
+  (deftype PR (Prod T PF))
+  (deftype PRs (List PR))
+  (def prTrees (lam ((rs PRs)) (foldr PR Ts (lam ((r PR) (acc Ts)) (cons (fst r) acc)) (nil T) rs)))
+  (def prAt
+    (lam ((rs PRs) (d T)) (foldr PR Ts (lam ((r PR) (acc Ts)) (cons ((snd r) d) acc)) (nil T) rs)))
+  (def kwList1 (lam ((kw T) (xs Ts)) (listOf (cons (atomOf kw) xs))))
+  ; one node printed, from its children with their printings, given the names of the definitions
+  (def printStep
+    (lam ((defs Ts) (l T) (rs PRs) (d T))
+      (let cs Ts (prTrees rs)
+        (let ps Ts (prAt rs d)
+          (let i T (label (at cs 0))
+            (if (eq l Label.var) (binderAtom (sub (sub d 1) i))
+              (if (eq l Label.lam)
+                (kwList1 kwLam
+                  (cons (listOf (cons (binderAtom d) (single (printType (at cs 0)))))
+                    (single (at (prAt rs (add d 1)) 1))))
+                (if (eq l Label.app) (listOf ps)
+                  (if (eq l Label.unit) (atomOf kwUnitValue)
+                    (if (eq l Label.pair) (kwList1 kwPair ps)
+                      (if (eq l Label.fst) (kwList1 kwFst ps)
+                        (if (eq l Label.snd) (kwList1 kwSnd ps)
+                          (if (eq l Label.cond) (kwList1 kwIf ps)
+                            (if (eq l Label.cons) (kwList1 kwCons ps)
+                              (if (eq l Label.quote)
+                                (let c T (at cs 0)
+                                  (if (nonEmpty (children c))
+                                    (kwList1 kwQuote (single (printDatum c)))
+                                    (numAtom (label c))))
+                                (if (eq l Label.nil) (kwList1 kwNil (printTypes cs))
+                                  (if (eq l Label.fold) (kwList1 kwFold (printTypes cs))
+                                    (if (eq l Label.para) (kwList1 kwPara (printTypes cs))
+                                      (if (eq l Label.iter) (kwList1 kwIter (printTypes cs))
+                                        (if (eq l Label.foldr) (kwList1 kwFoldr (printTypes cs))
+                                          (if (eq l Label.lcase) (kwList1 kwLcase (printTypes cs))
+                                            (if (eq l Label.prim) (nameAt primNames i)
+                                              (nameAt defs i)))))))))))))))))))))))
+  (def printTerm
+    (lam ((defs Ts) (t T) (d T))
+      ((snd
+         (fold PR
+           (lam ((l T) (rs PRs)) (pair (node l (prTrees rs)) (lam ((e T)) (printStep defs l rs e))))
+           t)) d)))
+
+  ; a bundle's definitions printed, each (def name term), its references named by the names of
+  ; the definitions before it
+  (deftype PK (Arrow Ts Ts))
+  (def printProgram
+    (lam ((b T))
+      (let names Ts (children (child b 1))
+        (node 0
+          ((foldr T PK
+             (lam ((t T) (k PK) (pre Ts))
+               (let n T (at names (length pre))
+                 (cons (kwList1 kwDef (cons (atomOf n) (single (printTerm pre t 0))))
+                   (k (append pre (single n))))))
+             (lam ((pre Ts)) (nil T))
+             (children (child b 0))) (nil T)))))))

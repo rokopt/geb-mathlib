@@ -3814,7 +3814,9 @@ checklist and in CI.
   `bootstrap/modules.geb` elaborates modules in the stage-0 compiler, before
   the expansion of the datatype language, and
   `GebTests/Prototypes/Kernel/Modules.lean` compares it with
-  `Geb.Kernel.expandModules`.
+  `Geb.Kernel.expandModules`. `bootstrap/printer.geb` prints a bundle in the
+  readable syntax, which `GebTests/Prototypes/Kernel/Printer.lean` compares
+  with `Geb.Kernel.printProgram`.
   `bootstrap/stage1/datatype.geb` rewrites the expansion in the datatype
   language, and `bootstrap/stage1/lean.geb` is a
   backend emitting a Lean module in place of an image; the stage-1 compiler
