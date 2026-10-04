@@ -216,6 +216,180 @@ theorem Sig.ok_closed {sig : Sig} (h : sig.ok = true) : SigClosed sig := by
   · exact ScopedBelow.rename_eq (judgeWith_scoped _ [] _ hd) ρ
   · exact ScopedBelow.rename_eq (judgeWith_scoped _ [] _ hd) ρ
 
+/-- One step of whether an expression's free variables are below a bound, at a node of a label,
+from its children's: an application's head variable is below the bound, and each child's free
+variables are below the bound raised by the variables the node binds over it. -/
+def freeBelowStep (l : Label) (cs : List (ℕ → Bool)) (k : ℕ) : Bool :=
+  (match l with
+    | .app (.var i) => decide (i < k)
+    | _ => true) &&
+  (cs.zipIdx.map fun p ↦ p.1 (k + l.binders p.2)).all id
+
+/-- Whether an expression's free variables are below a bound, decided by a fold. -/
+def Expr.FreeBelow (e : Expr) (k : ℕ) : Bool := RoseTree.elim freeBelowStep e k
+
+/-- The computation rule of the bound on free variables. -/
+theorem freeBelow_node (l : Label) (cs : List Expr) (k : ℕ) :
+    Expr.FreeBelow (RoseTree.node l cs) k = freeBelowStep l (cs.map fun c ↦ c.FreeBelow) k := by
+  unfold Expr.FreeBelow
+  rw [RoseTree.elim_node]
+
+/-- The instantiation along a spine depends on its arguments' checks only. -/
+theorem spine_congr {Γ Γ' : Ctx} :
+    ∀ (ms : List Expr) (J J' : Expr → Ctx → Mode → Bool) (c : Expr),
+      (∀ m ∈ ms, ∀ a, J m Γ (.check a) = J' m Γ' (.check a)) →
+      spine Γ c (ms.map fun m ↦ (m, J m)) = spine Γ' c (ms.map fun m ↦ (m, J' m)) :=
+  fun ms ↦ ms.rec (motive := fun ms ↦ ∀ (J J' : Expr → Ctx → Mode → Bool) (c : Expr),
+      (∀ m ∈ ms, ∀ a, J m Γ (.check a) = J' m Γ' (.check a)) →
+      spine Γ c (ms.map fun m ↦ (m, J m)) = spine Γ' c (ms.map fun m ↦ (m, J' m)))
+    (fun _ _ _ _ ↦ rfl)
+    (fun m ms ih J J' c h ↦ by
+      simp only [spine, List.map_cons, List.foldlM_cons]
+      obtain ⟨l, cs, rfl⟩ := exists_node c
+      rw [RoseTree.label_node, RoseTree.children_node]
+      rcases l with _ | _ | _ | _
+      · rfl
+      · rcases cs with _ | ⟨a, _ | ⟨b, _ | ⟨d, cs⟩⟩⟩
+        · rfl
+        · rfl
+        · simp only
+          rw [h m (by simp) a]
+          by_cases hJ : J' m Γ' (.check a) = true
+          · simp only [hJ, ↓reduceIte]
+            cases hsub (Expr.erase a) m b 0 with
+            | none => rfl
+            | some c' => exact ih J J' c' fun m' hm' ↦ h m' (List.mem_cons_of_mem _ hm')
+          · simp only [hJ, Bool.false_eq_true, ↓reduceIte]
+            rfl
+        · rfl
+      · rfl
+      · rfl)
+
+/-- An expression's free variables are below a bound exactly when its head variable, where it
+has one, is, and each child's are below the bound raised by the variables the node binds over
+it. -/
+theorem freeBelow_node_iff {l : Label} {cs : List Expr} {k : ℕ} :
+    Expr.FreeBelow (RoseTree.node l cs) k = true ↔
+      (∀ i, l = .app (.var i) → i < k) ∧
+        ∀ (idx : ℕ) (h : idx < cs.length), Expr.FreeBelow cs[idx] (k + l.binders idx) = true := by
+  have hall : ((cs.map fun c ↦ c.FreeBelow).zipIdx.map fun p ↦ p.1 (k + l.binders p.2)).all id =
+      true ↔ ∀ (idx : ℕ) (h : idx < cs.length),
+        Expr.FreeBelow cs[idx] (k + l.binders idx) = true := by
+    rw [List.all_eq_true]
+    constructor
+    · intro h idx hidx
+      have := h _ (List.getElem_mem (l := (cs.map fun c ↦ c.FreeBelow).zipIdx.map
+        fun p ↦ p.1 (k + l.binders p.2)) (n := idx) (by simpa using hidx))
+      simpa only [List.getElem_map, List.getElem_zipIdx, zero_add, id] using this
+    · intro h x hx
+      obtain ⟨idx, hidx, rfl⟩ := List.mem_iff_getElem.mp hx
+      simp only [List.getElem_map, List.getElem_zipIdx, zero_add, id]
+      exact h idx (by simpa using hidx)
+  rw [freeBelow_node]
+  rcases l with _ | _ | _ | (i | c)
+  · rw [freeBelowStep, Bool.true_and, hall]
+    · exact ⟨fun h ↦ ⟨(fun _ h' ↦ nomatch h'), h⟩, fun h ↦ h.2⟩
+    · exact fun _ h ↦ nomatch h
+  · rw [freeBelowStep, Bool.true_and, hall]
+    · exact ⟨fun h ↦ ⟨(fun _ h' ↦ nomatch h'), h⟩, fun h ↦ h.2⟩
+    · exact fun _ h ↦ nomatch h
+  · rw [freeBelowStep, Bool.true_and, hall]
+    · exact ⟨fun h ↦ ⟨(fun _ h' ↦ nomatch h'), h⟩, fun h ↦ h.2⟩
+    · exact fun _ h ↦ nomatch h
+  · rw [freeBelowStep, Bool.and_eq_true, hall, decide_eq_true_eq]
+    exact ⟨fun h ↦ ⟨fun i' h' ↦ (by cases h'; exact h.1), h.2⟩, fun h ↦ ⟨h.1 i rfl, h.2⟩⟩
+  · rw [freeBelowStep, Bool.true_and, hall]
+    · exact ⟨fun h ↦ ⟨(fun _ h' ↦ nomatch h'), h⟩, fun h ↦ h.2⟩
+    · exact fun _ h ↦ nomatch h
+
+/-- The judgments of an expression depend on its context only at its free variables: in two
+contexts that agree below a bound on its free variables, they agree. -/
+theorem judgeWith_congr_ctx {eqv : Expr → Expr → Bool} {sig : Sig} :
+    ∀ (e : Expr) (Γ Γ' : Ctx) (k : ℕ) (md : Mode), (∀ i < k, Γ[i]? = Γ'[i]?) →
+      e.FreeBelow k = true → judgeWith eqv sig e Γ md = judgeWith eqv sig e Γ' md :=
+  RoseTree.ind fun l cs ih Γ Γ' k md hΓ hfb ↦ by
+    obtain ⟨hhead, hc⟩ := freeBelow_node_iff.mp hfb
+    have hext : ∀ a, ∀ i < k + 1, (a :: Γ)[i]? = (a :: Γ')[i]? := fun a i hi ↦ by
+      rcases i with _ | i
+      · rfl
+      · exact hΓ i (by omega)
+    have hargs : (∀ i, l ≠ .pi ∧ l ≠ .lam) → ∀ m ∈ cs, ∀ a,
+        judgeWith eqv sig m Γ (.check a) = judgeWith eqv sig m Γ' (.check a) := fun hl m hm a ↦ by
+      obtain ⟨idx, hidx, rfl⟩ := List.mem_iff_getElem.mp hm
+      have hb : l.binders idx = 0 := by
+        rcases l with _ | _ | _ | _
+        · rfl
+        · exact absurd rfl (hl 0).1
+        · exact absurd rfl (hl 0).2
+        · rfl
+      have := hc idx hidx
+      rw [hb, Nat.add_zero] at this
+      exact ih _ hm Γ Γ' k _ hΓ this
+    have hclass : ∀ h : Head, (∀ i, h = .var i → i < k) → classOf sig Γ h = classOf sig Γ' h :=
+      fun h hh ↦ by
+        rcases h with i | c
+        · change Γ[i]?.map _ = Γ'[i]?.map _
+          rw [hΓ i (hh i rfl)]
+        · rfl
+    rw [judgeWith_node]
+    rcases md with _ | _ | p
+    · rcases l with _ | _ | _ | (i | c)
+      · rcases cs with _ | ⟨d, cs⟩
+        · rfl
+        · rfl
+      · rcases cs with _ | ⟨a, _ | ⟨b, _ | ⟨d, cs⟩⟩⟩
+        · rfl
+        · rfl
+        · simp only [judgeStep, List.map_cons, List.map_nil]
+          rw [ih a (by simp) Γ Γ' k _ hΓ (by simpa [Label.binders] using hc 0 (by simp)),
+            ih b (by simp) _ _ (k + 1) _ (hext a) (by simpa [Label.binders] using hc 1 (by simp))]
+        · rfl
+      · rfl
+      · rfl
+      · rfl
+    · rcases l with _ | _ | _ | (i | c)
+      · rfl
+      · rcases cs with _ | ⟨a, _ | ⟨b, _ | ⟨d, cs⟩⟩⟩
+        · rfl
+        · rfl
+        · simp only [judgeStep, List.map_cons, List.map_nil]
+          rw [ih a (by simp) Γ Γ' k _ hΓ (by simpa [Label.binders] using hc 0 (by simp)),
+            ih b (by simp) _ _ (k + 1) _ (hext a) (by simpa [Label.binders] using hc 1 (by simp))]
+        · rfl
+      · rfl
+      · rfl
+      · simp only [judgeStep]
+        rcases sig[c]? with _ | K
+        · rfl
+        · simp only [Option.bind_some]
+          rw [spine_congr (Γ := Γ) (Γ' := Γ') cs _ _ K (hargs fun _ ↦ ⟨nofun, nofun⟩)]
+    · rcases l with _ | _ | _ | hd
+      · rfl
+      · rfl
+      · rcases cs with _ | ⟨m, _ | ⟨d, cs⟩⟩
+        · rfl
+        · obtain ⟨pl, pcs, rfl⟩ := exists_node p
+          simp only [judgeStep, List.map_cons, List.map_nil, RoseTree.label_node,
+            RoseTree.children_node]
+          rcases pl with _ | _ | _ | _
+          · rfl
+          · rcases pcs with _ | ⟨a, _ | ⟨b, _ | ⟨d', pcs⟩⟩⟩
+            · rfl
+            · rfl
+            · simp only
+              exact ih m (by simp) _ _ (k + 1) _ (hext a)
+                (by simpa [Label.binders] using hc 0 (by simp))
+            · rfl
+          · rfl
+          · rfl
+        · rfl
+      · simp only [judgeStep]
+        rw [hclass hd fun i h ↦ hhead i (by rw [h])]
+        rcases classOf sig Γ' hd with _ | C
+        · rfl
+        · simp only [Option.bind_some]
+          rw [spine_congr (Γ := Γ) (Γ' := Γ') cs _ _ C (hargs fun _ ↦ ⟨nofun, nofun⟩)]
+
 end Geb.LF
 
 end

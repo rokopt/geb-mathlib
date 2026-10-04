@@ -64,11 +64,13 @@ def sndPairRule : Rule where
   lhs := snd (v 3) (v 2) (pair (v 3) (v 2) (v 1) (v 0))
   rhs := v 0
 
-/-- {lit}`natRec C z s zero ↦ z`, in {lit}`C : tp, z : tm C, s : tm C → tm C`. -/
+/-- {lit}`natRec C z s (zeroAt t) ↦ z`, in {lit}`C : tp, z : tm C, s : tm C → tm C, t : tm 1`:
+zero at any element of the terminal object, all of which are its element by the η rule of the
+terminal type. -/
 def natZeroRule : Rule where
-  vars := [arrow (tm (v 1)) (tm (v 1)), tm (v 0), tp]
-  lhs := natRec (v 2) (v 1) (v 0) zero
-  rhs := v 1
+  vars := [tm one, arrow (tm (v 1)) (tm (v 1)), tm (v 0), tp]
+  lhs := natRec (v 3) (v 2) (v 1) (zeroAt (v 0))
+  rhs := v 2
 
 /-- {lit}`natRec C z s (succ n) ↦ s (natRec C z (λ x. s x) n)`, in
 {lit}`C : tp, z : tm C, s : tm C → tm C, n : tm N`. -/

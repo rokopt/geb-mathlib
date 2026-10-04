@@ -18,7 +18,8 @@ a natural numbers object ({cite}`MacLaneMoerdijk1992`, Section VI.5), whose term
 derivations are those of {lit}`Geb.FreeTopos.Internal`: the types built from the terminal object,
 binary products, exponentials, the subobject classifier and the natural numbers object; the
 terms built from variables by the element of the terminal object, pairs and their components,
-abstraction and application, zero, the successor and the fold of the natural numbers, and the
+abstraction and application, zero and the successor, each applied to a term as the primitive
+arrows of {lit}`Geb.FreeTopos.Internal` are, the fold of the natural numbers, and the
 equality of two terms, a formula; and the derivability of formulas.
 
 The object types are the canonical terms of the type {lit}`tp`. A term of an object type
@@ -110,8 +111,11 @@ def lam (a b f : Expr) : Expr := Expr.const 11 [a, b, f]
 /-- The application of a term of an exponential to an argument (12). -/
 def app (a b f s : Expr) : Expr := Expr.const 12 [a, b, f, s]
 
-/-- Zero (13). -/
-def zero : Expr := Expr.const 13
+/-- Zero, the primitive arrow from the terminal object applied to a term of it (13). -/
+def zeroAt (t : Expr) : Expr := Expr.const 13 [t]
+
+/-- Zero at the element of the terminal object. -/
+def zero : Expr := zeroAt star
 
 /-- The successor (14). -/
 def succ (n : Expr) : Expr := Expr.const 14 [n]
@@ -143,7 +147,7 @@ def objSig : Sig :=
     pi tp (pi tp (arrow (tm (prod (v 1) (v 0))) (tm (v 0)))),
     pi tp (pi tp (arrow (arrow (tm (v 1)) (tm (v 0))) (tm (exp (v 1) (v 0))))),
     pi tp (pi tp (arrow (tm (exp (v 1) (v 0))) (arrow (tm (v 1)) (tm (v 0))))),
-    tm nat,
+    arrow (tm one) (tm nat),
     arrow (tm nat) (tm nat),
     pi tp (arrow (tm (v 0)) (arrow (arrow (tm (v 0)) (tm (v 0))) (arrow (tm nat) (tm (v 0))))),
     pi tp (arrow (tm (v 0)) (arrow (tm (v 0)) (tm omega))),
