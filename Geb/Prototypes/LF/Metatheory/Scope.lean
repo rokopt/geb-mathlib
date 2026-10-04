@@ -390,6 +390,44 @@ theorem judgeWith_congr_ctx {eqv : Expr → Expr → Bool} {sig : Sig} :
         · simp only [Option.bind_some]
           rw [spine_congr (Γ := Γ) (Γ' := Γ') cs _ _ C (hargs fun _ ↦ ⟨nofun, nofun⟩)]
 
+/-- An expression whose free variables are below a bound is in scope below it. -/
+theorem freeBelow_scoped : ∀ (e : Expr) (k : ℕ), e.FreeBelow k = true → ScopedBelow k e :=
+  RoseTree.ind fun l cs ih k hfb ρ σ hρσ ↦ by
+    obtain ⟨hhead, hc⟩ := freeBelow_node_iff.mp hfb
+    rw [rename_node, rename_node]
+    congr 1
+    · rcases l with _ | _ | _ | (i | c)
+      · rfl
+      · rfl
+      · rfl
+      · simp only [Label.rename, Head.rename, hρσ i (hhead i rfl)]
+      · rfl
+    · refine List.ext_getElem (by simp) fun idx h₁ h₂ ↦ ?_
+      simp only [List.getElem_map, List.getElem_zipIdx, zero_add]
+      exact ih _ (List.getElem_mem _) _ (hc idx (by simpa using h₁)) _ _
+        (iterate_liftR_agree hρσ _)
+
+/-- A judged expression's free variables are below its context's length. -/
+theorem judgeWith_freeBelow {eqv : Expr → Expr → Bool} {sig : Sig} :
+    ∀ (e : Expr) (Γ : Ctx) (md : Mode), judgeWith eqv sig e Γ md = true →
+      e.FreeBelow Γ.length = true :=
+  RoseTree.ind fun l cs ih Γ md h ↦ by
+    obtain ⟨hvar, hch⟩ := judgeWith_node_inv h
+    refine freeBelow_node_iff.mpr ⟨hvar, fun idx hidx ↦ ?_⟩
+    obtain ⟨Γ', md', hlen, hj⟩ := hch idx hidx
+    rw [← hlen]
+    exact ih _ (List.getElem_mem _) Γ' md' hj
+
+/-- Renaming leaves a closed expression in place. -/
+theorem rename_closed {e : Expr} (h : e.FreeBelow 0 = true) (ρ : ℕ → ℕ) : e.rename ρ = e :=
+  ScopedBelow.rename_eq (freeBelow_scoped e 0 h) ρ
+
+/-- Substitution into a closed expression leaves it in place, whatever the reduction. -/
+theorem hsubWith_closed {e : Expr} (h : e.FreeBelow 0 = true)
+    (red : Expr → List Expr → Option Expr) (n : Expr) (j : ℕ) : hsubWith red e n j = some e := by
+  have := hsubWith_vacuous red e n j
+  rwa [rename_closed h] at this
+
 end Geb.LF
 
 end
