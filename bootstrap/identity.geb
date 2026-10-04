@@ -307,7 +307,7 @@
   (def importsOf (lam ((p T)) (children (child p 0))))
   (def bodyOf (lam ((p T)) (child p 1)))
 
-  ; a payload, (geb-def/v1 geb-kernel/v1 (imports …) body), in the canonical encoding, and its
+  ; a payload, (geb-def/v1 geb-kernel/v1 (imports ...) body), in the canonical encoding, and its
   ; identifier
   (def payloadBytes
     (lam ((p T))

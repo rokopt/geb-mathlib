@@ -23,13 +23,13 @@ S-expression ({lit}`toStrict`): its S-expressions, each node with trivia written
 annotation form {lit}`(*ann node lead gap close)` in its place, its comment lines as lists of
 a flag of an empty line and the line's characters, inside a list headed by {lit}`*doc` with the
 comment lines after the last S-expression. A document no list of which is headed by
-{lit}`*ann` is read back from that form ({lit}`fromStrictDoc_toStrict`), and so from its
-canonical encoding ({lit}`readStrictDoc_printCanonDoc`). The basic transport encoding is the
+{lit}`*ann`, and whose characters are bytes, as every document read is, is read back from that
+form ({lit}`fromStrictDoc_toStrict`), and so from its canonical encoding
+({lit}`readStrictDoc_printCanonDoc`). The basic transport encoding is the
 canonical one or the base-64 encoding of it between braces; its printer writes the first. The
 advanced encoding writes the same tokens laid out as the formatter lays out source, a token bare
-and every other atom quoted with escapes of ASCII alone ({lit}`advancedOf`); when every
-character of a document's strict form is a byte, its text is ASCII and reads back to the
-document ({lit}`readStrictDoc_printAdvancedDoc`).
+and every other atom quoted with escapes of ASCII alone ({lit}`advancedOf`); its text is ASCII
+and reads back to the document ({lit}`readStrictDoc_printAdvancedDoc`).
 
 ## Main definitions
 
@@ -88,6 +88,10 @@ def Tok.renderCanon : Tok → List Char
 /-- An S-expression in the canonical encoding: atoms verbatim and lists in parentheses, with no
 whitespace. -/
 def canonOf (t : SExp) : List Char := (canonToks t).flatMap Tok.renderCanon
+
+/-- Whether every character of an S-expression's atoms is a byte. -/
+def SExp.bytes : SExp → Bool :=
+  RoseTree.elim fun a rs ↦ (a.all fun s ↦ s.all isByte) && rs.all id
 
 /-- Whether an S-expression is well formed: an atom has no children. -/
 def SExp.wf : SExp → Bool :=
@@ -200,9 +204,47 @@ theorem canonToks_kinds : ∀ t : SExp, ∀ x ∈ canonToks t,
       · exact ih c hc x hx
       · exact Or.inr (Or.inl rfl)
 
-/-- The lexer reads the canonical encoding of an S-expression to its canonical tokens. -/
-theorem lex_canonOf (t : SExp) : lex (canonOf t) = some (canonToks t) := by
-  rw [lex, canonOf, show (LexState.init) = .idle [] 0 from rfl,
+/-- The canonical tokens of an S-expression of bytes are well formed. -/
+theorem canonToks_wf : ∀ t : SExp, SExp.bytes t → ∀ x ∈ canonToks t, x.wf :=
+  RoseTree.ind fun a cs ih hb x hx ↦ by
+    simp only [SExp.bytes, RoseTree.elim_node, Bool.and_eq_true] at hb
+    cases a with
+    | some s =>
+      simp only [canonToks, RoseTree.elim_node, List.mem_singleton] at hx
+      subst hx
+      exact hb.1
+    | none =>
+      simp only [canonToks, RoseTree.elim_node, List.cons_append, List.mem_cons, List.mem_append,
+        List.mem_flatten, List.mem_map, List.not_mem_nil, or_false] at hx
+      rcases hx with rfl | ⟨⟨_, ⟨c, hc, rfl⟩, hx⟩ | rfl⟩
+      · rfl
+      · simp only [List.all_map, List.all_eq_true, Function.comp_apply, id] at hb
+        exact ih c hc (hb.2 c hc) x hx
+      · rfl
+
+/-- A digit is a byte. -/
+theorem isByte_of_isDigit {c : Char} (h : isDigit c) : isByte c := by
+  unfold isDigit at h
+  simp only [Bool.and_eq_true, decide_eq_true_eq] at h
+  exact decide_eq_true (by omega)
+
+/-- The canonical encoding of an S-expression of bytes is of bytes. -/
+theorem canonOf_bytes (t : SExp) (hb : SExp.bytes t) : (canonOf t).all isByte := by
+  rw [canonOf, List.all_flatMap]
+  refine List.all_eq_true.mpr fun x hx ↦ ?_
+  rcases canonToks_kinds t x hx with rfl | rfl | ⟨s, rfl⟩
+  · rfl
+  · rfl
+  · have hs : s.all isByte := canonToks_wf t hb _ hx
+    rw [Tok.renderCanon, verbatim, List.all_append, List.all_cons, hs,
+      List.all_eq_true.mpr fun c hc ↦ isByte_of_isDigit (isDigit_of_charDigit
+        (Csexp.decOf_all_digits s.length c hc))]
+    rfl
+
+/-- The lexer reads the canonical encoding of an S-expression of bytes to its canonical
+tokens. -/
+theorem lex_canonOf (t : SExp) (hb : SExp.bytes t) : lex (canonOf t) = some (canonToks t) := by
+  rw [lex_of_bytes (canonOf_bytes t hb), canonOf, show (LexState.init) = .idle [] 0 from rfl,
     foldl_renderCanons _ (canonToks_kinds t) []]
   simp [lexEnd, LexState.idle]
 
@@ -255,11 +297,11 @@ theorem foldl_readStep_canonToks : ∀ t : SExp, SExp.wf t → ∀ (f : Frame) f
         List.reverse_nil]
       rfl
 
-/-- The canonical encoding of a well-formed S-expression reads back to it, as a document of that
-S-expression alone, without trivia. -/
-theorem readDoc_canonOf (t : SExp) (ht : SExp.wf t) :
+/-- The canonical encoding of a well-formed S-expression of bytes reads back to it, as a document
+of that S-expression alone, without trivia. -/
+theorem readDoc_canonOf (t : SExp) (ht : SExp.wf t) (hb : SExp.bytes t) :
     readDoc (canonOf t) = some ⟨[plain t], []⟩ := by
-  rw [readDoc, lex_canonOf, Option.bind_some, foldl_readStep_canonToks t ht _ [] rfl]
+  rw [readDoc, lex_canonOf t hb, Option.bind_some, foldl_readStep_canonToks t ht _ [] rfl]
   simp [Frame.start, Frame.push]
 
 /-! ## Documents in a strict encoding -/
@@ -358,8 +400,9 @@ def strictWf : SExpr → Bool :=
       | some _ => rs.isEmpty
       | none => !(rs.head?.any fun r ↦ r.1.label == (Trivia.none, some kwAnn))
 
-/-- Whether a document can be written in strict form and read back. -/
-def Doc.strictWf (d : Doc) : Bool := d.items.all Document.strictWf
+/-- Whether a document can be written in strict form and read back: its S-expressions can, and
+the characters of its strict form are bytes. -/
+def Doc.strictWf (d : Doc) : Bool := d.items.all Document.strictWf && SExp.bytes (toStrict d)
 
 /-- A flag of an empty line reads back. -/
 theorem gapOf?_gapAtom (g : Bool) : gapOf? (gapAtom g) = some g := by
@@ -496,7 +539,7 @@ theorem fromStrictDoc_toStrict (d : Doc) (h : d.strictWf) :
   simp only [toStrict, fromStrictDoc, listOf, atomOf, kwDoc, RoseTree.label_node,
     RoseTree.children_node, linesOf?_linesSExp,
     mapM_map_of fromStrict strictOf d.items fun c hc ↦
-      fromStrict_strictOf c (List.all_eq_true.mp h c hc)]
+      fromStrict_strictOf c (List.all_eq_true.mp (Bool.and_eq_true _ _ ▸ h).1 c hc)]
   rfl
 
 /-- An atom is well formed. -/
@@ -547,50 +590,24 @@ theorem readStrictDoc_printCanonDoc (d : Doc) (h : d.strictWf) :
   have hw : SExp.wf (toStrict d) := by
     simp only [toStrict, listOf, SExp.wf_list, List.all_cons, wf_atomOf, wf_linesSExp,
       List.all_map, Bool.true_and, List.all_eq_true, Function.comp_apply]
-    exact fun c hc ↦ wf_strictOf c (List.all_eq_true.mp h c hc)
-  rw [readStrictDoc, printCanonDoc, readDoc_canonOf _ hw, Option.bind_some]
+    exact fun c hc ↦ wf_strictOf c (List.all_eq_true.mp (Bool.and_eq_true _ _ ▸ h).1 c hc)
+  rw [readStrictDoc, printCanonDoc, readDoc_canonOf _ hw (Bool.and_eq_true _ _ ▸ h).2,
+    Option.bind_some]
   simp only [erase_plain]
   exact fromStrictDoc_toStrict d h
 
 /-! ## The advanced encoding -/
-
-/-- Whether every character of an S-expression's atoms is a byte. -/
-def SExp.bytes : SExp → Bool :=
-  RoseTree.elim fun a rs ↦ (a.all fun s ↦ s.all fun c ↦ decide (c.toNat < 256)) && rs.all id
 
 /-- An S-expression in the advanced encoding, laid out by a layout: its canonical tokens, a
 token bare and every other atom quoted with escapes of ASCII alone. -/
 def advancedOf (L : ℕ → Bool × ℕ) (t : SExp) : List Char :=
   render .advanced (arrangeFrom L (canonToks t) none 0) ++ ['\n']
 
-/-- The advanced encoding can write the canonical tokens of an S-expression whose characters are
-bytes. -/
-theorem canonToks_escapable : ∀ t : SExp, SExp.bytes t →
-    ∀ x ∈ canonToks t, x.wf && x.escapable .advanced :=
-  RoseTree.ind fun a cs ih hb x hx ↦ by
-    simp only [SExp.bytes, RoseTree.elim_node, Bool.and_eq_true] at hb
-    cases a with
-    | some s =>
-      simp only [canonToks, RoseTree.elim_node, List.mem_singleton] at hx
-      subst hx
-      simp only [Option.all_some, List.all_eq_true, decide_eq_true_eq] at hb
-      simp only [Tok.wf, Tok.escapable, Spelling.escapable, Bool.true_and, List.all_eq_true,
-        Bool.or_eq_true, decide_eq_true_eq]
-      exact fun c hc ↦ Or.inr (hb.1 c hc)
-    | none =>
-      simp only [canonToks, RoseTree.elim_node, List.cons_append, List.mem_cons, List.mem_append,
-        List.mem_flatten, List.mem_map, List.not_mem_nil, or_false] at hx
-      rcases hx with rfl | ⟨⟨_, ⟨c, hc, rfl⟩, hx⟩ | rfl⟩
-      · rfl
-      · simp only [List.all_map, List.all_eq_true, Function.comp_apply, id] at hb
-        exact ih c hc (hb.2 c hc) x hx
-      · rfl
-
 /-- The lexer reads the advanced encoding of an S-expression whose characters are bytes to its
 canonical tokens, whatever the layout. -/
 theorem lex_advancedOf (L : ℕ → Bool × ℕ) (t : SExp) (hb : SExp.bytes t) :
     lex (advancedOf L t) = some (canonToks t) :=
-  lex_print Spelling.lawful_advanced L _ (List.all_eq_true.mpr (canonToks_escapable t hb))
+  lex_print Spelling.lawful_advanced L _ (List.all_eq_true.mpr (canonToks_wf t hb))
 
 /-- The advanced encoding of a well-formed S-expression whose characters are bytes reads back to
 it, as a document of that S-expression alone, without trivia, whatever the layout. -/
@@ -605,14 +622,15 @@ def printAdvancedDoc (lim : ℕ) (d : Doc) : List Char :=
   advancedOf (fun i ↦ (defaultLayout .advanced lim ⟨[plain (toStrict d)], []⟩).getD i (false, 0))
     (toStrict d)
 
-/-- The retraction law of the advanced encoding of documents whose characters are bytes. -/
-theorem readStrictDoc_printAdvancedDoc (lim : ℕ) (d : Doc) (h : d.strictWf)
-    (hb : SExp.bytes (toStrict d)) : readStrictDoc (printAdvancedDoc lim d) = some d := by
+/-- The retraction law of the advanced encoding of documents. -/
+theorem readStrictDoc_printAdvancedDoc (lim : ℕ) (d : Doc) (h : d.strictWf) :
+    readStrictDoc (printAdvancedDoc lim d) = some d := by
   have hw : SExp.wf (toStrict d) := by
     simp only [toStrict, listOf, SExp.wf_list, List.all_cons, wf_atomOf, wf_linesSExp,
       List.all_map, Bool.true_and, List.all_eq_true, Function.comp_apply]
-    exact fun c hc ↦ wf_strictOf c (List.all_eq_true.mp h c hc)
-  rw [readStrictDoc, printAdvancedDoc, readDoc_advancedOf _ _ hw hb, Option.bind_some]
+    exact fun c hc ↦ wf_strictOf c (List.all_eq_true.mp (Bool.and_eq_true _ _ ▸ h).1 c hc)
+  rw [readStrictDoc, printAdvancedDoc, readDoc_advancedOf _ _ hw (Bool.and_eq_true _ _ ▸ h).2,
+    Option.bind_some]
   simp only [erase_plain]
   exact fromStrictDoc_toStrict d h
 

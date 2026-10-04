@@ -144,10 +144,10 @@
     (foldr T T (lam ((r T) (acc T)) (let x T (applyRule G ctx t r) (if (isSome x) x acc))) none
       rules))
 
-  ; the head redexes: unfolding a chosen definition, β, the projections of a pair, the
+  ; the head redexes: unfolding a chosen definition, beta, the projections of a pair, the
   ; conditional at a quoted tree, and the computation rules of iteration, the right fold, case
-  ; analysis of lists and the fold of trees, literals first put in constructor form by a δ rule
-  ; used backward; and δ at literals, weakened into the context
+  ; analysis of lists and the fold of trees, literals first put in constructor form by a delta rule
+  ; used backward; and delta at literals, weakened into the context
   (defn primArity ((k T)) T
     (if (eq k Prim.label) 1
       (if (eq k Prim.arity) 1 (if (eq k Prim.children) 1 (if (eq k Prim.log2) 1 2)))))

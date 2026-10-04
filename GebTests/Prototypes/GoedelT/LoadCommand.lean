@@ -72,10 +72,11 @@ syntax (name := gebProgram)
   let paths := stx[3].getArgs.filterMap (·.isStrLit?)
   let m := stx[5].getId
   let exported := if stx[6].isNone then #[] else stx[6][1].getArgs.map (·.getId)
-  let mut text := ""
+  -- the sources are read as bytes, a character to a byte, as the hosts read them
+  let mut text : List Char := []
   for p in paths do
-    text := text ++ (← IO.FS.readFile p) ++ "\n"
-  let r ← match runMain GoedelT.ProofTests.bundler.toList (nameTree text.toList) with
+    text := text ++ (← IO.FS.readBinFile p).data.toList.map (fun x ↦ Char.ofNat x.toNat) ++ ['\n']
+  let r ← match runMain GoedelT.ProofTests.bundler.toList (nameTree text) with
     | some r => pure r
     | none => throwError "the front end does not run"
   let some b := (if r.label == 1 then r.children.head? else none)

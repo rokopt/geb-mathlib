@@ -97,6 +97,11 @@ def sampleFormatted : String := "; a header
 
 -- an atom is written bare when it is a numeral, a token or the ampersand, and otherwise
 -- quoted, its double quotes and backslashes escaped and its control characters in hexadecimal
+-- text is bytes: a character beyond a byte is rejected, and UTF-8 text is read as its bytes
+#guard readDoc "(a \"…\")".toList = none
+#guard (readDoc ("(a \"".toList ++ [Char.ofNat 226, Char.ofNat 128, Char.ofNat 166] ++
+    "\")".toList)).isSome
+
 #guard Spelling.profile.spell "let".toList = "let".toList
 #guard Spelling.profile.spell "12".toList = "12".toList
 #guard Spelling.profile.spell "&".toList = "&".toList
@@ -113,7 +118,7 @@ def sampleFormatted : String := "; a header
 #guard readSExps "\"\\t\\x41\\101\\\"\\\\\\?\"".toList =
   some [RoseTree.node (some [Char.ofNat 9, 'A', 'A', '"', '\\', '?']) []]
 #guard readSExps "\"ab\\\ncd\"".toList = some [RoseTree.node (some "abcd".toList) []]
-#guard readSExps "\"a\nσ\"".toList = some [RoseTree.node (some "a\nσ".toList) []]
+#guard readSExps "\"a\né\"".toList = some [RoseTree.node (some "a\né".toList) []]
 
 -- a hole is the form (hole name), written ?name
 #guard readSExps "(f ?x)".toList = readSExps "(f (hole x))".toList
