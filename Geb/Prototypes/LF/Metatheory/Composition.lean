@@ -70,7 +70,7 @@ theorem hsub_eq (α : SimpleTy) (n e : Expr) (j : ℕ) : hsub α n e j = hsubWit
   rfl
 
 /-- Renaming by adding zero is the identity. -/
-@[simp] theorem rename_add_zero (e : Expr) : e.rename (· + 0) = e :=
+theorem rename_add_zero (e : Expr) : e.rename (· + 0) = e :=
   rename_id e
 
 /-- The composition of the hereditary substitution of {lit}`M`, at {lit}`α₂`, for the variable

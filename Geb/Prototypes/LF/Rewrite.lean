@@ -36,7 +36,7 @@ neither terminating nor confluent for the check to be sound, only to be complete
 
 A rule is well typed ({lit}`Rule.ok`) when its context is, its left side, its pattern variables
 η-expanded ({lit}`eta`), synthesizes a type, and its right side checks against that type. The
-η-expansion of a head at a simple type ({cite}`HarperLicata2007`, Section 2.3) abstracts over
+η-expansion of a head at a simple type ({cite}`WatkinsEtAl2002`, Definition 15) abstracts over
 one variable for each argument the type takes and applies the head to their η-expansions.
 
 ## Main definitions
@@ -53,7 +53,7 @@ one variable for each argument the type takes and applies the head to their η-e
 
 * {cite}`CousineauDowek2007`
 * {cite}`NormanAvigad2025`, Section 3.1.
-* {cite}`HarperLicata2007`, Section 2.3, for η-expansion.
+* {cite}`WatkinsEtAl2002`, Definition 15, for η-expansion.
 
 ## Tags
 

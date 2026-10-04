@@ -45,7 +45,7 @@ theorem getElem_zipIdx_map {α β : Type} (l : List α) (f : α × ℕ → β) (
   simp only [List.getElem_map, List.getElem_zipIdx, zero_add]
 
 /-- A list paired with positions and mapped has the list's length. -/
-@[simp] theorem length_zipIdx_map {α β : Type} (l : List α) (f : α × ℕ → β) :
+theorem length_zipIdx_map {α β : Type} (l : List α) (f : α × ℕ → β) :
     (l.zipIdx.map f).length = l.length := by
   simp
 
