@@ -71,8 +71,13 @@ jobs:
           # arranged per subdirectory; there is no flat root
           # aggregator for mk_all to check.
           mk_all-check: false
+      # The parinfer release whose fixed points the bootstrap's check
+      # tests, from scripts/parinfer/package-lock.json.
+      - name: install parinfer
+        run: npm ci --prefix scripts/parinfer
       # The bootstrap's committed image and emitted Lean regenerate
-      # byte for byte, and the compiled compiler reproduces both.
+      # byte for byte, the compiled compiler reproduces both, and the
+      # sources are fixed points of geb-fmt and of parinfer.
       - name: bootstrap fixed points
         run: bash scripts/bootstrap.sh check
       # `lake shake` requires built oleans for every library it

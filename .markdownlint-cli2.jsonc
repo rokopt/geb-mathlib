@@ -19,7 +19,7 @@
     ".agents/**",
     ".remember/**",
     ".superpowers/**",
-    "node_modules/**",
+    "**/node_modules/**",
     "styles/**"
   ]
 }

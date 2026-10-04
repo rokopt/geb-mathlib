@@ -11,52 +11,58 @@
 
 ; the Elias delta code of n: the size of the size in unary zeros and a one, then the size and
 ; n + 1 below their leading ones, most significant first
-(def deltaBits (lam ((n T))
-  (let m T (add n 1)
-    (let s T (add (log2 m) 1)
-      (let z T (log2 s)
-        (append (replicate z 0)
-          (cons 1 (append (digitsMsb 2 s z) (digitsMsb 2 m (sub s 1))))))))))
+(def deltaBits
+  (lam ((n T))
+    (let m T (add n 1)
+      (let s T (add (log2 m) 1)
+        (let z T (log2 s)
+          (append (replicate z 0)
+            (cons 1 (append (digitsMsb 2 s z) (digitsMsb 2 m (sub s 1))))))))))
 
 ; one node's header
-(def nodeBits (lam ((arity T) (l T))
-  (let m T (add l 1)
-    (append (replicate arity 1)
-      (cons 0 (append (deltaBits (log2 m)) (digitsLsb 2 m (log2 m))))))))
+(def nodeBits
+  (lam ((arity T) (l T))
+    (let m T (add l 1)
+      (append (replicate arity 1)
+        (cons 0 (append (deltaBits (log2 m)) (digitsLsb 2 m (log2 m))))))))
 
 ; the serialization, as a list of bits, by a fold whose result prepends a subtree's bits to
 ; what follows it; one pass over the children's results gives their number and their
 ; composition, so that no result is used twice
-(def treeBits (lam ((t T))
-  ((fold Endo
-     (lam ((l T) (rs (List Endo)))
-       (let q (Prod T Endo)
-         (foldr Endo (Prod T Endo)
-           (lam ((r Endo) (p (Prod T Endo))) (pair (add (fst p) 1) (lam ((acc Ts)) (r ((snd p) acc)))))
-           (pair 0 (lam ((acc Ts)) acc)) rs)
-         (lam ((tail Ts)) (append (nodeBits (fst q) l) ((snd q) tail)))))
-     t)
-   (nil T))))
+(def treeBits
+  (lam ((t T))
+    ((fold Endo
+       (lam ((l T) (rs (List Endo)))
+         (let q (Prod T Endo)
+           (foldr Endo (Prod T Endo)
+             (lam ((r Endo) (p (Prod T Endo)))
+               (pair (add (fst p) 1) (lam ((acc Ts)) (r ((snd p) acc)))))
+             (pair 0 (lam ((acc Ts)) acc))
+             rs)
+           (lam ((tail Ts)) (append (nodeBits (fst q) l) ((snd q) tail)))))
+       t) (nil T))))
 
 ; bits packed into bytes, least significant first; the state is the byte being filled, the
 ; weight of the next bit, and the bytes filled, most recent first
 (deftype Pack (Prod T (Prod T Ts)))
 (deftype PackK (Arrow Pack Pack))
-(def packBits (lam ((bits Ts))
-  (let s Pack
-    ((foldr T PackK
-       (lam ((b T) (k PackK) (s Pack))
-         (let byte T (add (fst s) (mul b (fst (snd s))))
-           (k (if (eq (fst (snd s)) 128)
-                (pair 0 (pair 1 (cons byte (snd (snd s)))))
-                (pair byte (pair (mul 2 (fst (snd s))) (snd (snd s))))))))
-       (lam ((s Pack)) s)
-       bits)
-     (pair 0 (pair 1 (nil T))))
-    (reverse (if (eq (fst (snd s)) 1) (snd (snd s)) (cons (fst s) (snd (snd s))))))))
+(def packBits
+  (lam ((bits Ts))
+    (let s Pack
+      ((foldr T PackK
+         (lam ((b T) (k PackK) (s Pack))
+           (let byte T (add (fst s) (mul b (fst (snd s))))
+             (k
+               (if (eq (fst (snd s)) 128) (pair 0 (pair 1 (cons byte (snd (snd s)))))
+                 (pair byte (pair (mul 2 (fst (snd s))) (snd (snd s))))))))
+         (lam ((s Pack)) s)
+         bits) (pair 0 (pair 1 (nil T))))
+      (reverse (if (eq (fst (snd s)) 1) (snd (snd s)) (cons (fst s) (snd (snd s))))))))
 
 ; the image, as a file: a node whose children are the leaves of the bytes
-(def image (lam ((t T))
-  (let bits Ts (treeBits t)
-    (node 0 (append (cons 71 (cons 69 (cons 66 (cons 75 (cons 1 (nil T))))))
-              (append (digitsLsb 256 (length bits) 8) (packBits bits)))))))
+(def image
+  (lam ((t T))
+    (let bits Ts (treeBits t)
+      (node 0
+        (append (cons 71 (cons 69 (cons 66 (cons 75 (cons 1 (nil T))))))
+          (append (digitsLsb 256 (length bits) 8) (packBits bits)))))))

@@ -292,8 +292,8 @@ Extension:
   revisions]: preservation of source documents, bindings and dependency
   references through format changes. Checked filling of one contextual
   term hole in Lean, and source documents keeping comments with their
-  retraction and formatter, are complete. Ready, in the order of
-  {ref "authoring-sequence"}[the sequence]: the formatter's adoption, the
+  retraction and formatter, adopted over `bootstrap/`, are complete.
+  Ready, in the order of {ref "authoring-sequence"}[the sequence]: the
   authoring profile with its importer and the kernel's readers reading it
   and rejecting duplicate and ambiguous names, the strict encodings of
   RFC 9804, modules with parameters, imports and export lists, the
@@ -1544,8 +1544,9 @@ section below opens with a table of the states of its parts.
   * {ref "authoring-compatibility"}[Authoring across bootstrap revisions]
   * In progress
   * Checked contextual-hole filling and source documents with their
-    formatter, in Lean: complete; the rest of the sequence: ready, but the
-    parts that follow their consumers, which wait on them
+    formatter, in Lean, and the formatter's adoption: complete; the rest
+    of the sequence: ready, but the parts that follow their consumers,
+    which wait on them
 *
   * {ref "goedel-t"}[Gödel's T]
   * In progress
@@ -2382,7 +2383,7 @@ tag := "authoring-compatibility"
   * Complete
 *
   * Source documents keeping comments, their retraction and the formatter
-  * Complete; their adoption over `bootstrap/` is ready
+  * Complete, and adopted over `bootstrap/`
 *
   * The authoring profile and the importer, the kernel's readers reading
     it and rejecting duplicate and ambiguous names
@@ -6005,8 +6006,8 @@ property of the kernel's reader, so it follows the change of that
 reader's syntax: the next phase is the authoring profile, its importer
 and the kernel's readers reading it and rejecting duplicate and
 ambiguous names, the decorated trees of the decision on annotations
-among it, after the formatter's adoption
-({ref "authoring-sequence"}[The sequence and its acceptance]), and the
+among it ({ref "authoring-sequence"}[The sequence and its acceptance]),
+and the
 second item follows it:
 
 * The metalogic's checker, its prover and the translation of kernel

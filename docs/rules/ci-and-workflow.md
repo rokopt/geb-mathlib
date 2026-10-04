@@ -87,7 +87,10 @@ own requires a prior `lake build`.
 - `scripts/bootstrap.sh check`: the bootstrap's committed image and
   emitted Lean regenerate byte for byte, and the compiler built from
   the emitted Lean reproduces both (the manual's Bootstrap chapter,
-  § Speed and a second host).
+  § Speed and a second host); every source under `bootstrap/` is a
+  fixed point of `geb-fmt` and, where the release pinned in
+  `scripts/parinfer/` is installed, of both of parinfer's modes (§ Source
+  documents and the formatter).
 - `lake build GebTests` then `lake exe batteries/runLinter GebTests`, then
   `scripts/literate.sh build` (§ Literate site build), whose
   `lake lint` lints `Geb` and whose direct `batteries/runLinter` invocation
