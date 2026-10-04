@@ -13,10 +13,14 @@ set_option doc.verso true in
 # The printer of kernel terms
 
 The printer writes a kernel term as an S-expression of the kernel's readable syntax, which the
-reader resolves back to the term: the retraction law {lit}`resolve (printTerm t) = some t`, for
-every well-formed term ({lit}`resolve_printTerm`), and its program form, reading the printed
-definitions of a well-formed bundle gives back the bundle ({lit}`readForms_printProgram`), each
-definition referring to those before it by name. A variable is written as the
+reader resolves back to the term. The printer is partial: it writes nothing for a term that is not
+well formed ({lit}`TermWf`), a variable or reference out of range among them, or for names of
+definitions that are repeated or could be read as something else ({lit}`namesOk`), so the
+retraction law holds of whatever it writes, without hypotheses: {lit}`printTerm? t = some e`
+implies {lit}`resolve e = some t` ({lit}`resolve_of_printTerm?`). Its program form reads the
+printed definitions of a bundle back to the bundle ({lit}`readForms_printProgram`), each
+definition referring to those before it by name, and every well-formed bundle is printed
+({lit}`isSome_printProgram`). A variable is written as the
 name of its binder, {lit}`_d` for the binder at depth {lit}`d`; an abstraction as
 {lit}`(lam (_d A) body)`, its type written structurally; an application as {lit}`(f x)`; a
 reference and a primitive by name; a quoted leaf as its numeral and another quoted tree as a
@@ -26,14 +30,17 @@ documents, keeps what a person wrote.
 
 ## Main definitions
 
-* {lit}`printType`, {lit}`printDatum`, {lit}`printTerm` — types, quoted trees and terms.
-* {lit}`printProgram` — the definitions of a bundle.
-* {lit}`TermWf`, {lit}`ProgramWf` — the well-formed terms and bundles.
+* {lit}`printType`, {lit}`printDatum` — types and quoted trees.
+* {lit}`printTerm`, {lit}`printTerm?` — terms, on any tree and on well-formed terms alone.
+* {lit}`printProgram` — the definitions of a well-formed bundle.
+* {lit}`TermWf`, {lit}`nameOk`, {lit}`namesOk`, {lit}`ProgramWf` — the well-formed terms, names
+  and bundles.
 
 ## Main statements
 
-* {lit}`resolve_printTerm` — the reader retracts the printer on well-formed terms.
+* {lit}`resolve_of_printTerm?` — the reader retracts the printer.
 * {lit}`readForms_printProgram` — the reader retracts the printer on programs.
+* {lit}`isSome_printProgram` — the printer prints every well-formed bundle.
 
 ## Tags
 
@@ -118,16 +125,6 @@ def printStep (defs : List (List Char)) (l : ℕ) (rs : List (Tree × (ℕ → S
 /-- A term printed under binders to a depth, given the names of the definitions. -/
 def printTerm (defs : List (List Char)) (t : Tree) (d : ℕ) : SExp :=
   RoseTree.para (printStep defs) t d
-
-/-- Definitions printed after definitions of the names given: each {lit}`(def name term)`, its
-references named by the names of the definitions before it. -/
-def printFrom (ds : List (List Char × Tree)) : List (List Char) → List SExp :=
-  List.rec (motive := fun _ ↦ List (List Char) → List SExp) (fun _ ↦ [])
-    (fun d _ ih names ↦
-      listS [atomS ['d', 'e', 'f'], atomS d.1, printTerm names d.2 0] :: ih (names ++ [d.1])) ds
-
-/-- A bundle's definitions printed, each referring to those before it by name. -/
-def printProgram (ds : List (List Char × Tree)) : List SExp := printFrom ds []
 
 /-! ## Numerals and names -/
 
@@ -286,6 +283,43 @@ theorem scopeOf_nodup (d : ℕ) : (scopeOf d).Nodup :=
 name, and no reserved name. -/
 def NameOk (n : List Char) : Prop :=
   numeral? n = none ∧ (∀ k, n ≠ binderName k) ∧ n ∉ reservedNames
+
+/-- Whether a name is a binder's: an underscore followed by a numeral as the printer writes it. -/
+def isBinderName (n : List Char) : Bool := (numeral? n.tail).any fun k ↦ binderName k == n
+
+/-- A name is a binder's exactly when it is the name of the binder at some depth. -/
+theorem isBinderName_iff (n : List Char) : isBinderName n = true ↔ ∃ k, n = binderName k := by
+  constructor
+  · intro h
+    obtain ⟨k, -, hk⟩ := (Option.any_eq_true _ _).mp h
+    exact ⟨k, (beq_iff_eq.mp hk).symm⟩
+  · rintro ⟨k, rfl⟩
+    rw [isBinderName, show (binderName k).tail = Csexp.decOf k from rfl, numeral?_decOf,
+      Option.any_some]
+    exact beq_iff_eq.mpr rfl
+
+/-- Whether a name may be a definition's, decided. -/
+def nameOk (n : List Char) : Bool :=
+  (numeral? n).isNone && !isBinderName n && !reservedNames.contains n
+
+/-- The decision of the names that may be definitions'. -/
+theorem nameOk_iff (n : List Char) : nameOk n = true ↔ NameOk n := by
+  rw [nameOk, Bool.and_eq_true, Bool.and_eq_true, Option.isNone_iff_eq_none, Bool.not_eq_true',
+    Bool.not_eq_true', Bool.eq_false_iff, Bool.eq_false_iff, and_assoc]
+  unfold NameOk
+  refine and_congr_right fun _ ↦
+    and_congr ?_ (not_congr (List.contains_iff_mem (as := reservedNames) (a := n)))
+  exact ⟨fun h k hk ↦ h ((isBinderName_iff n).mpr ⟨k, hk⟩),
+    fun h hb ↦ ((isBinderName_iff n).mp hb).elim h⟩
+
+/-- Whether names may be a program's definitions': distinct, and each a definition's. -/
+def namesOk (defs : List (List Char)) : Bool := decide defs.Nodup && defs.all nameOk
+
+/-- The decision of the names that may be a program's definitions'. -/
+theorem namesOk_iff (defs : List (List Char)) :
+    namesOk defs = true ↔ defs.Nodup ∧ ∀ n ∈ defs, NameOk n := by
+  rw [namesOk, Bool.and_eq_true, decide_eq_true_iff, List.all_eq_true]
+  exact and_congr_right fun _ ↦ forall₂_congr fun n _ ↦ nameOk_iff n
 
 /-- A name that may be a definition's is no primitive's name. -/
 theorem NameOk.not_prim {n : List Char} (h : NameOk n) : n ∉ primNames :=
@@ -774,7 +808,40 @@ theorem resolve_printTerm (tys : TypeNames) (defs : List (List Char)) (hnd : def
       rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hlt, Option.getD_some,
         resolve_ref tys defs hnd hok d c.label hlt, leaf_label hc]
 
+/-- A term printed under binders to a depth, given the names of the definitions, when the names
+may be a program's definitions' and the term is well formed; nothing otherwise. -/
+def printTerm? (defs : List (List Char)) (t : Tree) (d : ℕ) : Option SExp :=
+  if namesOk defs && TermWf defs.length t d then some (printTerm defs t d) else none
+
+/-- The reader retracts the printer: what the printer writes for a term under binders to a depth
+resolves, in the scope of those binders, to the term. -/
+theorem resolve_of_printTerm? (tys : TypeNames) (defs : List (List Char)) (t : Tree) (d : ℕ)
+    (e : SExp) (h : printTerm? defs t d = some e) : resolve tys defs e (scopeOf d) = some t := by
+  unfold printTerm? at h
+  split at h
+  · rename_i hc
+    rw [Bool.and_eq_true, namesOk_iff] at hc
+    rw [← Option.some.inj h]
+    exact resolve_printTerm tys defs hc.1.1 hc.1.2 t d hc.2
+  · exact absurd h (fun h' ↦ nomatch h')
+
 /-! ## Programs -/
+
+/-- Definitions printed after definitions of the names given: each {lit}`(def name term)`, its
+references named by the names of the definitions before it; nothing when a name may not be a
+definition's or is declared already, or a term is not well formed among the definitions before
+it. -/
+def printFrom (ds : List (List Char × Tree)) : List (List Char) → Option (List SExp) :=
+  List.rec (motive := fun _ ↦ List (List Char) → Option (List SExp)) (fun _ ↦ some [])
+    (fun d _ ih names ↦
+      if nameOk d.1 && !names.contains d.1 && TermWf names.length d.2 0 then
+        (ih (names ++ [d.1])).map
+          (listS [atomS ['d', 'e', 'f'], atomS d.1, printTerm names d.2 0] :: ·)
+      else none) ds
+
+/-- A bundle's definitions printed, each referring to those before it by name, or nothing when
+the bundle is not well formed. -/
+def printProgram (ds : List (List Char × Tree)) : Option (List SExp) := printFrom ds []
 
 /-- Expanding no numeral abbreviations leaves an S-expression as it is. -/
 theorem expandNums_nil : ∀ e : SExp, expandNums [] e = e :=
@@ -791,8 +858,10 @@ def ProgramWf (ds : List (List Char × Tree)) : Prop :=
 /-- The printing of a definition followed by others. -/
 theorem printFrom_cons (d : List Char × Tree) (ds : List (List Char × Tree))
     (names : List (List Char)) : printFrom (d :: ds) names =
-      listS [atomS ['d', 'e', 'f'], atomS d.1, printTerm names d.2 0] ::
-        printFrom ds (names ++ [d.1]) := rfl
+      if nameOk d.1 && !names.contains d.1 && TermWf names.length d.2 0 then
+        (printFrom ds (names ++ [d.1])).map
+          (listS [atomS ['d', 'e', 'f'], atomS d.1, printTerm names d.2 0] :: ·)
+      else none := rfl
 
 /-- A printed definition after the definitions before it reads back to itself. -/
 theorem readFormStep_printed (pre : List (List Char × Tree)) (n : List Char) (t : Tree)
@@ -819,11 +888,63 @@ theorem readFormStep_printed (pre : List (List Char × Tree)) (n : List Char) (t
   rfl
 
 /-- Printed definitions after those before them read back to themselves. -/
-theorem foldl_readFormStep_printFrom : ∀ (rest pre : List (List Char × Tree)),
-    ProgramWf (pre ++ rest) →
-      (printFrom rest (pre.map Prod.fst)).foldl readFormStep (some ([], [], pre)) =
-        some ([], [], pre ++ rest) :=
-  List.rec (fun pre _ ↦ by rw [List.append_nil]; rfl) fun d rest ih pre h ↦ by
+theorem foldl_readFormStep_printFrom : ∀ (rest pre : List (List Char × Tree)) (es : List SExp),
+    (pre.map Prod.fst).Nodup → (∀ m ∈ pre.map Prod.fst, NameOk m) →
+      printFrom rest (pre.map Prod.fst) = some es →
+        es.foldl readFormStep (some ([], [], pre)) = some ([], [], pre ++ rest) :=
+  List.rec (fun pre es _ _ h ↦ by
+      cases Option.some.inj h
+      rw [List.append_nil]
+      rfl)
+    fun d rest ih pre es hnd hok h ↦ by
+      rw [printFrom_cons] at h
+      split at h
+      · rename_i hc
+        rw [Bool.and_eq_true, Bool.and_eq_true, Bool.not_eq_true', nameOk_iff] at hc
+        obtain ⟨⟨hnok, hc⟩, hwf⟩ := hc
+        have hn : d.1 ∉ pre.map Prod.fst := fun hm ↦
+          Bool.false_ne_true (hc.symm.trans (List.contains_iff_mem.mpr hm))
+        rcases hr : printFrom rest (pre.map Prod.fst ++ [d.1]) with _ | es'
+        · rw [hr] at h
+          exact nomatch h
+        · rw [hr, Option.map_some] at h
+          cases Option.some.inj h
+          have hmap : pre.map Prod.fst ++ [d.1] = (pre ++ [d]).map Prod.fst := by
+            rw [List.map_append]
+            rfl
+          rw [List.foldl_cons,
+            readFormStep_printed pre d.1 d.2 hnd hn hok hnok (by rwa [List.length_map] at hwf),
+            ih (pre ++ [d]) es'
+              (hmap ▸ List.nodup_append.mpr ⟨hnd, List.nodup_singleton _,
+                fun a ha b hb ↦ by
+                  rw [List.mem_singleton] at hb
+                  intro hab
+                  subst hb
+                  subst hab
+                  exact hn ha⟩)
+              (fun m hm ↦ by
+                rw [← hmap, List.mem_append, List.mem_singleton] at hm
+                rcases hm with hm | rfl
+                · exact hok m hm
+                · exact hnok)
+              (hmap ▸ hr),
+            List.append_assoc]
+          rfl
+      · exact nomatch h
+
+/-- The reader retracts the printer on programs: what the printer writes for a bundle reads back
+to the bundle. -/
+theorem readForms_printProgram (ds : List (List Char × Tree)) (es : List SExp)
+    (h : printProgram ds = some es) : readForms es = some ds := by
+  unfold readForms
+  rw [foldl_readFormStep_printFrom ds [] es List.nodup_nil (fun _ hm ↦ nomatch hm) h]
+  rfl
+
+/-- The printer prints definitions after well-formed definitions before them, when the whole is
+well formed. -/
+theorem isSome_printFrom : ∀ (rest pre : List (List Char × Tree)),
+    ProgramWf (pre ++ rest) → (printFrom rest (pre.map Prod.fst)).isSome :=
+  List.rec (fun _ _ ↦ rfl) fun d rest ih pre h ↦ by
     obtain ⟨hnd, hok, hwf⟩ := h
     have hassoc : pre ++ d :: rest = (pre ++ [d]) ++ rest := by rw [List.append_assoc]; rfl
     have hnd' : ((pre ++ [d]).map Prod.fst).Nodup := by
@@ -835,25 +956,24 @@ theorem foldl_readFormStep_printFrom : ∀ (rest pre : List (List Char × Tree))
     have hd : (pre ++ d :: rest)[pre.length] = d := by
       rw [List.getElem_append_right (Nat.le_refl _)]
       simp only [Nat.sub_self, List.getElem_cons_zero]
-    rw [printFrom_cons, List.foldl_cons,
-      readFormStep_printed pre d.1 d.2 hnd'.of_append_left
-        (fun hm ↦ List.disjoint_of_nodup_append hnd' hm List.mem_cons_self)
-        (fun m hm ↦ hok m (by rw [List.map_append]; exact List.mem_append_left _ hm))
-        (hok d.1 (by rw [List.map_append]; exact List.mem_append_right _ List.mem_cons_self))
-        (hd ▸ hwf pre.length hlen),
-      show pre.map Prod.fst ++ [d.1] = (pre ++ [d]).map Prod.fst by
-        rw [List.map_append]; rfl,
-      ih (pre ++ [d]) (hassoc ▸ ⟨hnd, hok, hwf⟩), ← hassoc]
+    have hc : (nameOk d.1 && !(pre.map Prod.fst).contains d.1 &&
+        TermWf (pre.map Prod.fst).length d.2 0) = true := by
+      have hmem : d.1 ∈ (pre ++ d :: rest).map Prod.fst := by
+        rw [List.map_append]
+        exact List.mem_append_right _ List.mem_cons_self
+      rw [Bool.and_eq_true, Bool.and_eq_true, Bool.not_eq_true', nameOk_iff, List.length_map]
+      exact ⟨⟨hok d.1 hmem, Bool.eq_false_iff.mpr fun hm ↦
+          List.disjoint_of_nodup_append hnd' (List.contains_iff_mem.mp hm) List.mem_cons_self⟩,
+        hd ▸ hwf pre.length hlen⟩
+    rw [printFrom_cons]
+    simp only [hc, ↓reduceIte, Option.isSome_map]
+    rw [show pre.map Prod.fst ++ [d.1] = (pre ++ [d]).map Prod.fst by rw [List.map_append]; rfl]
+    exact ih (pre ++ [d]) (hassoc ▸ ⟨hnd, hok, hwf⟩)
 
-/-- The reader retracts the printer on programs: a well-formed bundle's printed definitions
-read back to the bundle. -/
-theorem readForms_printProgram (ds : List (List Char × Tree)) (h : ProgramWf ds) :
-    readForms (printProgram ds) = some ds := by
-  unfold readForms printProgram
-  rw [show ([] : List (List Char)) = ([] : List (List Char × Tree)).map Prod.fst from rfl,
-    foldl_readFormStep_printFrom ds [] h]
-  rfl
-
+/-- The printer prints every well-formed bundle. -/
+theorem isSome_printProgram (ds : List (List Char × Tree)) (h : ProgramWf ds) :
+    (printProgram ds).isSome :=
+  isSome_printFrom ds [] h
 
 end Geb.Kernel
 

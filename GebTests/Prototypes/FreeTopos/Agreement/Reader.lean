@@ -28,7 +28,9 @@ across: the reader written in Geb inverts the printer written in Geb.
 * {lit}`numeral_eq`, {lit}`indexOf_eq` — the value of a numeral and the position of a name.
 * {lit}`readType_eq`, {lit}`readDatum_eq` — types and quoted data.
 * {lit}`resolve_eq` — the resolution of an S-expression.
-* {lit}`readBack_printTerm_eq` — the reader written in Geb inverts the printer written in Geb.
+* {lit}`nameOk_eq`, {lit}`namesOk_eq` — the names that may be a program's definitions'.
+* {lit}`printTermOpt_eq` — the partial printer.
+* {lit}`readBack_printTermOpt_eq` — the reader written in Geb inverts the printer written in Geb.
 
 ## Tags
 
@@ -1491,15 +1493,107 @@ theorem readBack_eq (defs : List (List Char)) (e : SExp) (scope : List (List Cha
       encOpt (resolve [] defs e scope) :=
   resolve_eq [] defs e scope
 
-/-- The reader written in Geb inverts the printer written in Geb: a well-formed term printed by
-the mirror's printer under binders to a depth, given the names of the definitions, is read back,
-in the scope of those binders, to itself. -/
-theorem readBack_printTerm_eq (defs : List (List Char)) (hnd : defs.Nodup)
-    (hok : ∀ n ∈ defs, NameOk n) (t : Tree) (d : ℕ) (ht : TermWf defs.length t d = true) :
-    «Printer.readBack» (defs.map nameTree) («Printer.printTerm» (defs.map nameTree) t (leaf d))
-      ((scopeOf d).map nameTree) = encOpt (some t) := by
-  rw [printTerm_eq defs t d ht, readBack_eq defs _ (scopeOf d),
-    resolve_printTerm [] defs hnd hok t d ht]
+/-! ## The partial printer -/
+
+/-- The mirror's reserved names. -/
+theorem reservedNames_eq : «Reader.reservedNames» = reservedNames.map nameTree := rfl
+
+/-- A list holds a name when the name has a position in it. -/
+theorem isSome_idxOf?_eq (l : List (List Char)) (n : List Char) :
+    (l.idxOf? n).isSome = l.contains n :=
+  Bool.eq_iff_iff.mpr (List.isSome_idxOf?.trans List.contains_iff_mem.symm)
+
+/-- A name's characters, as the mirror takes them. -/
+theorem children_nameTree (s : List Char) : Const.children (nameTree s) = charsT s := by
+  rw [children_eq, nameTree, mk, RoseTree.children_node]
+  rfl
+
+/-- The mirror's test of a binder's name. -/
+theorem isBinderName_eq (s : List Char) :
+    «Printer.isBinderName» (nameTree s) = ofBool (isBinderName s) := by
+  have ht : «Prelude.tail» (Const.children (nameTree s)) = charsT s.tail := by
+    rw [tail_eq, children_nameTree]
+    cases s <;> rfl
+  unfold «Printer.isBinderName» isBinderName
+  simp only [ht, numeral_eq]
+  rcases numeral? s.tail with _ | k
+  · rfl
+  · rw [Option.map_some, Option.any_some, isSome_eq, Option.isSome_some, get_eq,
+      decimalChars_eq, ← equal_nameTree]
+    rfl
+
+/-- The mirror's test of a name that may be a definition's. -/
+theorem nameOk_eq (s : List Char) : «Printer.nameOk» (nameTree s) = ofBool (nameOk s) := by
+  unfold «Printer.nameOk» nameOk
+  rw [children_nameTree, numeral_eq, isSome_eq,
+    isBinderName_eq, reservedNames_eq, indexOf_eq, isSome_eq, Option.isSome_map,
+    Option.isSome_map, isSome_idxOf?_eq]
+  rcases numeral? s with _ | k
+  · cases isBinderName s <;> cases reservedNames.contains s <;> rfl
+  · rfl
+
+/-- The mirror's test of distinct names. -/
+theorem distinct_eq (names : List (List Char)) :
+    «Printer.distinct» (names.map nameTree) = ofBool (decide names.Nodup) := by
+  unfold «Printer.distinct»
+  rw [foldr_eq]
+  suffices h : ∀ ns : List (List Char), (ns.map nameTree).foldr
+      (fun (x1 : Tree) (x2 : Tree × List Tree) ↦
+        (if x2.1.label ≠ 0 then
+          if («Prelude.isSome» («Reader.indexOf» x1 x2.2)).label ≠ 0 then leaf 0 else leaf 1
+        else leaf 0, x1 :: x2.2)) (leaf 1, []) =
+        (ofBool (decide ns.Nodup), ns.map nameTree) by
+    rw [h]
+  refine List.rec rfl fun n ns ih ↦ ?_
+  rw [List.map_cons, List.foldr_cons, ih]
+  dsimp only
+  rw [indexOf_eq, isSome_eq, Option.isSome_map, isSome_idxOf?_eq]
+  have hd : decide (n :: ns).Nodup = (!ns.contains n && decide ns.Nodup) :=
+    Bool.eq_iff_iff.mpr (by
+      rw [decide_eq_true_iff, List.nodup_cons, Bool.and_eq_true, Bool.not_eq_true',
+        decide_eq_true_iff, Bool.eq_false_iff, Ne, List.contains_iff_mem])
+  rw [hd]
+  cases decide ns.Nodup <;> cases ns.contains n <;> rfl
+
+/-- The mirror's test of names that may be a program's definitions'. -/
+theorem namesOk_eq (defs : List (List Char)) :
+    «Printer.namesOk» (defs.map nameTree) = ofBool (namesOk defs) := by
+  unfold «Printer.namesOk» namesOk
+  rw [distinct_eq]
+  cases decide defs.Nodup
+  · rfl
+  · change Const.foldr _ (leaf 1) (defs.map nameTree) = ofBool (defs.all nameOk)
+    rw [foldr_eq]
+    exact List.rec rfl (fun n ns ih ↦ by
+      rw [List.map_cons, List.foldr_cons, ih, nameOk_eq, List.all_cons]
+      cases nameOk n <;> rfl) defs
+
+/-- The printer written in Geb agrees with the Lean printer at every term, under binders to every
+depth, given any names of definitions: it prints what the Lean printer prints, and nothing where
+the Lean printer prints nothing. -/
+theorem printTermOpt_eq (defs : List (List Char)) (t : Tree) (d : ℕ) :
+    «Printer.printTermOpt» (defs.map nameTree) t (leaf d) =
+      encOpt ((printTerm? defs t d).map sexpTree) := by
+  unfold «Printer.printTermOpt» printTerm?
+  dsimp only
+  rw [namesOk_eq, length_eq, List.length_map, termWf_eq]
+  rcases hn : namesOk defs
+  · rfl
+  · rcases ht : TermWf defs.length t d
+    · rfl
+    · change «Prelude.some» _ = _
+      rw [printTerm_eq defs t d ht]
+      rfl
+
+/-- The reader written in Geb inverts the printer written in Geb: what the printer writes for a
+term under binders to a depth, given the names of the definitions, is read back, in the scope of
+those binders, to the term. -/
+theorem readBack_printTermOpt_eq (defs : List (List Char)) (t : Tree) (d : ℕ) (e : Tree)
+    (h : «Printer.printTermOpt» (defs.map nameTree) t (leaf d) = encOpt (some e)) :
+    «Printer.readBack» (defs.map nameTree) e ((scopeOf d).map nameTree) = encOpt (some t) := by
+  rw [printTermOpt_eq, encOpt_inj] at h
+  obtain ⟨s, hs, rfl⟩ := Option.map_eq_some_iff.mp h
+  rw [readBack_eq defs s (scopeOf d), resolve_of_printTerm? [] defs t d s hs]
 
 end GebTests.Prototypes.FreeTopos.Agreement.Reader
 
