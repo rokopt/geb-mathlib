@@ -4070,7 +4070,14 @@ checklist and in CI.
   proofs of `InternalDerivation.lean` and `InternalLogic.lean`, and
   `Agreement/Prove.lean` proves each of its entry points equal to the
   Lean prover's at every encoded input, at rules related to the
-  normalizer's and provers related to Lean's.
+  normalizer's and provers related to Lean's. The reader's resolution,
+  `bootstrap/reader.geb`, and the printer of kernel terms,
+  `bootstrap/printer.geb`, are in the same program, the printer in its
+  last layer: `Agreement/Printer.lean` proves the printer equal to
+  `Geb.Kernel.printTerm` at every well-formed term, `Agreement/Reader.lean`
+  the resolution equal to `Geb.Kernel.resolve` at every well-formed
+  S-expression, and the two carry `Geb.Kernel.resolve_printTerm` across,
+  so that the reader written in Geb inverts the printer written in Geb.
   Depends on the modules of `Geb/Prototypes/FreeTopos/` above and
   `Geb.Prototypes.PartialHorn.Completeness`.
 - `Geb/Prototypes/FreeTopos/Translation.lean` — the translation of the

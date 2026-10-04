@@ -48,7 +48,8 @@ f=$b/free-topos
 checker="$b/prelude.geb $f/base.geb $f/partial-horn.geb $f/theory.geb $f/infer.geb"
 checker+=" $f/language.geb $f/derivation.geb $b/reader.geb $b/check.geb"
 layers=("Checker $checker" "Translation $f/translation.geb" "Prover $f/prove.geb"
-        "Tactics $f/tactics.geb" "Combinator $f/combinator.geb")
+        "Tactics $f/tactics.geb" "Combinator $f/combinator.geb"
+        "Printer $b/datatype.geb $b/printer.geb")
 kernel=.lake/build/bin/geb-kernel
 
 tmp=$(mktemp -d)
