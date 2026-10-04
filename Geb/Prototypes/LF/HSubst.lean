@@ -58,18 +58,18 @@ open Expr
 
 /-- One step of the substitution of {lit}`N` for the variable of index {lit}`j`, at a node of a
 label, from the substitutions into its children, given the reduction {lit}`red` of the substituted
-term applied to a spine. -/
+term applied to a spine. At an application of the substituted variable the reduction applies to
+the substituted spine; at an application of another variable, the variable is renumbered past the
+removed one; at every other node each child is substituted into under the variables the node binds
+over it, {lit}`N` weakened past them and {lit}`j` raised by their number. -/
 def hsubStep (red : Expr → List Expr → Option Expr) (l : Label)
     (cs : List (Expr → ℕ → Option Expr)) (n : Expr) (j : ℕ) : Option Expr :=
-  match l, cs with
-    | .type, [] => some type
-    | .pi, [a, b] => do pure (pi (← a n j) (← b n.shift (j + 1)))
-    | .lam, [m] => lam <$> m n.shift (j + 1)
-    | .app (.var i), cs => do
+  match l with
+    | .app (.var i) => do
       let ms ← cs.mapM fun c ↦ c n j
       if i = j then red n ms else pure (var (if j < i then i - 1 else i) ms)
-    | .app (.const c), cs => (const c ·) <$> cs.mapM fun c ↦ c n j
-    | _, _ => none
+    | l => RoseTree.node l <$>
+      (cs.mapIdx fun k c ↦ c (Expr.shift^[l.binders k] n) (j + l.binders k)).mapM id
 
 /-- The substitution of a term for a variable in an expression, given the reduction of the term
 applied to a spine. -/

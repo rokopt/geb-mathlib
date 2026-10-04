@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.LF.HSubst
+public import Geb.Prototypes.LF.Metatheory
 public import Geb.Prototypes.LF.Rewrite
 public import Geb.Prototypes.LF.Syntax
 public import Geb.Prototypes.LF.Topos

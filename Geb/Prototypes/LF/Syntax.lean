@@ -40,6 +40,7 @@ it is the index on which hereditary substitution recurses.
 
 * {lit}`Head`, {lit}`Label`, {lit}`Expr` — the heads, the labels of the nodes, and the
   expressions.
+* {lit}`Label.binders` — the binding signature: the variables a node binds over each child.
 * {lit}`Expr.rename`, {lit}`Expr.shift` — the renaming of an expression's variables.
 * {lit}`SimpleLabel`, {lit}`SimpleTy`, {lit}`Expr.erase` — the simple types and the erasure.
 * {lit}`Sig`, {lit}`Ctx` — signatures and contexts.
@@ -48,6 +49,7 @@ it is the index on which hereditary substitution recurses.
 
 * {cite}`HarperLicata2007`, Section 2.1 and Figures 1 and 4.
 * {cite}`HarperHonsellPlotkin1993`
+* {cite}`Fiore2008`, for binding signatures.
 
 ## Tags
 
@@ -110,6 +112,14 @@ def const (c : ℕ) (ms : List Expr := []) : Expr := app (.const c) ms
 
 end Expr
 
+/-- The number of variables a node of a label binds over its child at a position: a product's
+codomain and an abstraction's body are in the scope of one, every other child in the scope of
+none. These numbers are the binding signature of the syntax ({cite}`Fiore2008`). -/
+def Label.binders : Label → ℕ → ℕ
+  | .pi, 1 => 1
+  | .lam, 0 => 1
+  | _, _ => 0
+
 /-- The lifting of a renaming of variables under a binder. -/
 def liftR (ρ : ℕ → ℕ) : ℕ → ℕ := fun i ↦ match i with
   | 0 => 0
@@ -120,15 +130,17 @@ def Head.rename (ρ : ℕ → ℕ) : Head → Head
   | .var i => .var (ρ i)
   | .const c => .const c
 
+/-- The renaming of a label: the head of an application renamed, every other label left in
+place. -/
+def Label.rename (ρ : ℕ → ℕ) : Label → Label
+  | .app h => .app (h.rename ρ)
+  | l => l
+
 /-- One step of the renaming of an expression's variables, at a node of a label, from the
-renamings of its children: a product's codomain and an abstraction's body are renamed under
-their binder. -/
+renamings of its children: the label is renamed, and each child is renamed by the renaming lifted
+under the variables the node binds over it. -/
 def renameStep (l : Label) (cs : List ((ℕ → ℕ) → Expr)) (ρ : ℕ → ℕ) : Expr :=
-  match l, cs with
-    | .pi, [a, b] => Expr.pi (a ρ) (b (liftR ρ))
-    | .lam, [m] => Expr.lam (m (liftR ρ))
-    | .app h, cs => Expr.app (h.rename ρ) (cs.map fun c ↦ c ρ)
-    | l, cs => RoseTree.node l (cs.map fun c ↦ c ρ)
+  RoseTree.node (l.rename ρ) (cs.mapIdx fun k c ↦ c (liftR^[l.binders k] ρ))
 
 /-- The renaming of an expression's variables. -/
 def Expr.rename : Expr → (ℕ → ℕ) → Expr := RoseTree.elim renameStep
