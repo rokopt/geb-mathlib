@@ -14,12 +14,12 @@ set_option doc.verso true in
 /-!
 # Source document examples
 
-A text with comments, empty lines and nested lists is read into items that keep them, and
-formatted to a pinned text: a list that fits on a line is written on it, one that does not
-fills its first line and indents the rest past its opening parenthesis, comments begin lines,
-and empty lines between items are kept. Formatting is idempotent, and the formatted text reads
-to the S-expressions the kernel's reader reads from the original, on that text and on the
-sources of the stage-0 compiler. Unbalanced text does not read.
+A text with comments, empty lines and nested lists is read into S-expressions decorated with
+them, and formatted to a pinned text: a list that fits on a line is written on it, one that
+does not fills its first line and indents the rest past its opening parenthesis, comments begin
+lines, and empty lines between items are kept. Formatting is idempotent, and the formatted
+text reads to the S-expressions the kernel's reader reads from the original, on that text and
+on the sources of the stage-0 compiler. Unbalanced text does not read.
 
 The texts are string constants, converted to lists of characters inside each {lit}`#guard`,
 as in the kernel's examples.
@@ -67,11 +67,18 @@ def sampleFormatted : String := "; a header
   (lam ((alpha T) (beta T) (gamma T) (delta T)) (pair (pair alpha beta) (pair gamma delta))))
 "
 
--- the sample's items: two comments and three definitions, the second comment after an empty
--- line
-#guard ((readDoc sample.toList).map List.length) = some 5
-#guard ((readDoc sample.toList).map fun ds ↦ ds.map (·.label.gap)) =
-  some [false, true, false, false, false]
+-- the sample's S-expressions: three definitions, the first decorated with the two comment
+-- lines before it, the second after an empty line, and no comment lines after the last
+#guard ((readDoc sample.toList).map (·.items.length)) = some 3
+#guard ((readDoc sample.toList).map fun d ↦
+    d.items.map fun t ↦ (RoseTree.extract t).lead.map (·.gap)) =
+  some [[false, true], [], []]
+#guard ((readDoc sample.toList).map (·.trail)) = some []
+-- a comment line before a list's end decorates the list, and one after the last S-expression
+-- the document
+#guard ((readDoc "(a\n ; x\n )\n; y\n".toList).map fun d ↦
+    (d.items.map fun t ↦ (RoseTree.extract t).close.map (·.text), d.trail.map (·.text))) =
+  some ([[" x".toList]], [" y".toList])
 
 #guard format 100 sample.toList = some sampleFormatted.toList
 #guard format 100 sampleFormatted.toList = some sampleFormatted.toList

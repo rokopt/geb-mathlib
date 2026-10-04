@@ -9,6 +9,7 @@ public import Geb.Prototypes.RoseTree.Basic
 public import Geb.Prototypes.RoseTree.Bits
 public import Geb.Prototypes.RoseTree.Spine
 public import Geb.Prototypes.RoseTree.Packed
+public import Geb.Prototypes.RoseTree.Decorated
 
 set_option doc.verso true in
 /-!

@@ -2716,34 +2716,31 @@ measured at revision `b3aa139a`.
 tag := "source-documents"
 %%%
 
-In the prototype, a document is a list of items, each a `RoseTree Lab`
-with `Lab = {gap : Bool, kind : atom s | list | comment s}`. Comments are
-items in document order, as in the lossless syntax trees of the survey
-({ref "source-tools"}[Source and its tools]), and an empty line is a flag
-on the item after it, as gofmt and ormolu keep at most one empty line
-between items. The lexer reads one character per byte, as the kernel's
-readers do, so atoms and comments keep their bytes.
-
-The decision on annotations replaces the comment items by decorations:
-the reader returns S-expressions with comments, rose trees whose nodes
-are atoms and lists, each decorated with its trivia, the comment lines,
-each with its empty-line flag, before the node and the node's own
-empty-line flag, and a list also with the comment lines before its
-closing parenthesis; the comment lines after the last S-expression of a
-file decorate the file. Placing each comment by its position is a rule
-of the syntax, so reading and printing keep their retraction, while
-which definition a comment documents is a redecoration outside them
-({ref "documents-annotations"}[Documents and annotations]). The layout
-policy and the theorems below carry over unchanged.
+A document is read into S-expressions with comments
+({name}`Geb.Kernel.Document.SExpr`), rose trees whose nodes are atoms and
+lists, each decorated ({name}`Geb.RoseTree.Decorated`, the decision on
+annotations) with its trivia ({name}`Geb.Kernel.Document.Trivia`): the
+comment lines before the node, each with whether an empty line precedes
+it, whether an empty line precedes the node itself, and, for a list, the
+comment lines before its closing parenthesis; the comment lines after the
+last S-expression belong to the document
+({name}`Geb.Kernel.Document.Doc`). An empty line is a flag, as gofmt and
+ormolu keep at most one empty line between items. Placing each comment by
+its position is a rule of the syntax, so reading and printing keep their
+retraction, while which definition a comment documents is a redecoration
+outside them ({ref "documents-annotations"}[Documents and annotations]).
+The lexer reads one character per byte, as the kernel's readers do, so
+atoms and comments keep their bytes.
 
 Three theorems hold, none depending on `Classical.choice`:
 
 * {name}`Geb.Kernel.Document.readDoc_erase`:
-  `(readDoc t).map (·.filterMap eraseItem) = readSExps t` at every text
-  `t`. Erasing the comments of what the new reader reads gives what the
-  kernel's reader reads, so adopting it changes the meaning of no file.
+  `(readDoc t).map (·.items.map RoseTree.erase) = readSExps t` at every
+  text `t`. Erasing the decorations of what the new reader reads gives what
+  the kernel's reader reads, so adopting it changes the meaning of no
+  file.
 * {name}`Geb.Kernel.Document.readDoc_print`:
-  `readDoc (print L items) = some items` at every well-formed document and
+  `readDoc (print L d) = some d` at every well-formed document and
   every layout `L`, a function from the positions of tokens to a choice
   of line break and indentation. The separator before a token is a fixed
   function of the token before it, the token and the layout's choice

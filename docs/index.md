@@ -3642,6 +3642,11 @@ checklist and in CI.
   the fold `Geb.RoseTree.elim` with the paramorphism `Geb.RoseTree.para`,
   whose step also sees each child as a tree; it generalizes `Geb.Rose k` of
   `Geb/Prototypes/ConcreteSyntax.lean`, whose labels are `Fin k`.
+  `Decorated.lean` decorates each node with a value beside its label
+  (`Geb.RoseTree.Decorated`), the cofree recursive comonad on the rose
+  functor [UustaluVene2011]: the counit `Geb.RoseTree.extract`, the
+  redecoration `Geb.RoseTree.redecorate` with the laws of its extension,
+  and the erasure `Geb.RoseTree.erase`, which redecoration leaves fixed.
   `Bits.lean` represents a bitstring label by its enumeration index
   `Geb.Oitavem.rank`, a natural number that is an unboxed scalar in Lean's
   runtime up to sixty-two bits, and states length, bit access,
@@ -3726,8 +3731,9 @@ checklist and in CI.
   acceptance of well-typed inputs and the type and denotation of every
   accepted result (`Geb.Kernel.fillHole_of_infer`,
   `Geb.Kernel.infer_fillHole`). `Document.lean` reads a text as a source
-  document keeping its comments and empty lines (`Geb.Kernel.Document.readDoc`),
-  proves that erasing the comments gives the kernel reader's S-expressions
+  document, S-expressions decorated with the comment lines and empty lines
+  around them (`Geb.Kernel.Document.readDoc`), proves that erasing the
+  decorations gives the kernel reader's S-expressions
   and that reading a document printed at any layout gives it back
   (`Geb.Kernel.Document.readDoc_erase`, `Geb.Kernel.Document.readDoc_print`),
   and formats text idempotently (`Geb.Kernel.Document.format`), which the
