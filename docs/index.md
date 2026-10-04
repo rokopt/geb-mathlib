@@ -1943,7 +1943,10 @@ checklist and in CI.
   syntax, the canonical S-expression encoding of [RFC9804] restricted
   to the bare tree, with `Csexp.parse_print` the retraction and
   `Csexp.format_idem`/`Csexp.print_injective` its two instantiated
-  corollaries. `finEnumFin` and `finEnumEmpty` name choice-free
+  corollaries; the decimal spelling of its lengths, `Geb.Csexp.decOf`, with
+  its round trip `Geb.Csexp.digitsVal_decOf`, is in
+  `ConcreteSyntax/Decimal.lean`, which the source documents share.
+  `finEnumFin` and `finEnumEmpty` name choice-free
   `FinEnum` constructions, mathlib's going through `FinEnum.ofList` and
   depending on `Classical.choice`. No theorem here depends on an axiom
   beyond `propext` and `Quot.sound`, and no declaration depends on
@@ -3741,9 +3744,16 @@ checklist and in CI.
   (`Geb.Kernel.Document.spell`), proves that reading a document printed at
   any layout gives it back (`Geb.Kernel.Document.readDoc_print`), and
   formats text idempotently (`Geb.Kernel.Document.format`), which the
-  executable `geb-fmt` applies to files. Tested in
-  `GebTests/Prototypes/Kernel.lean` and
-  `GebTests/Prototypes/Kernel/Document.lean`. The
+  executable `geb-fmt` applies to files. `Strict.lean` writes an
+  S-expression in the canonical encoding of [RFC9804]
+  (`Geb.Kernel.Document.canonOf`), which reads back to it
+  (`Geb.Kernel.Document.readDoc_canonOf`), writes a document in strict form,
+  its decorations as annotation forms, and reads it back from its canonical
+  encoding (`Geb.Kernel.Document.readStrictDoc_printCanonDoc`) or from the
+  basic transport encoding (`Geb.Kernel.Document.readBasic`). Tested in
+  `GebTests/Prototypes/Kernel.lean`,
+  `GebTests/Prototypes/Kernel/Document.lean` and
+  `GebTests/Prototypes/Kernel/Strict.lean`. The
   [Bootstrap chapter](../manual/GebManual/Bootstrap.lean) § Authoring
   across bootstrap revisions describes document preservation, migration
   contracts, the remaining hole interface and synthesis.

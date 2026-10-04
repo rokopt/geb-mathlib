@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Prototypes.ConcreteSyntax.Decimal
 public import Geb.Prototypes.RoseTree.Decorated
 meta import GebMeta -- shake: keep
 
@@ -231,9 +232,11 @@ def Tok.wf : Tok → Bool
   | _ => true
 
 /-- What the lexer is reading: nothing, a bare atom, a numeral, a hole's name, a comment, a
-quoted string, or an escape in a quoted string, after its backslash, after a backslash and a
+quoted string, an escape in a quoted string, after its backslash, after a backslash and a
 carriage return or a line feed, or among the digits of a hexadecimal or octal escape, with the
-digits read and their value. -/
+digits read and their value, a verbatim atom, with the bytes left, or a hexadecimal or base-64
+atom. A quoted string, its escapes, and a hexadecimal or base-64 atom carry the length a decimal
+prefix declares, if one does. -/
 inductive Mode where
   /-- Between tokens. -/
   | idle
@@ -246,17 +249,23 @@ inductive Mode where
   /-- A comment. -/
   | comment
   /-- A quoted string. -/
-  | str
+  | str (want : Option ℕ)
   /-- An escape, after its backslash. -/
-  | esc
+  | esc (want : Option ℕ)
   /-- After a backslash and a carriage return. -/
-  | escCR
+  | escCR (want : Option ℕ)
   /-- After a backslash and a line feed. -/
-  | escLF
+  | escLF (want : Option ℕ)
   /-- A hexadecimal escape, with the digits read and their value. -/
-  | hex (n v : ℕ)
+  | hex (n v : ℕ) (want : Option ℕ)
   /-- An octal escape, with the digits read and their value. -/
-  | oct (n v : ℕ)
+  | oct (n v : ℕ) (want : Option ℕ)
+  /-- A verbatim atom, with the bytes left to read. -/
+  | verbatim (left : ℕ)
+  /-- A hexadecimal atom. -/
+  | hexAtom (want : Option ℕ)
+  /-- A base-64 atom. -/
+  | base64 (want : Option ℕ)
   deriving DecidableEq
 
 /-- The lexer's state. -/
@@ -287,19 +296,26 @@ def idleStep (toks : List Tok) (n : ℕ) (ch : Char) : LexState :=
   if ch == ';' then ⟨toks, [], .comment, 0, g, true⟩
   else if ch == '(' then .idle (.lp g :: toks) 0
   else if ch == ')' then .idle (.rp :: toks) 0
-  else if ch == '"' then ⟨toks, [], .str, 0, g, true⟩
+  else if ch == '"' then ⟨toks, [], .str none, 0, g, true⟩
   else if ch == '&' then .idle (.atom g ['&'] :: toks) 0
   else if ch == '?' then ⟨toks, [], .hole, 0, g, true⟩
+  else if ch == '#' then ⟨toks, [], .hexAtom none, 0, g, true⟩
+  else if ch == '|' then ⟨toks, [], .base64 none, 0, g, true⟩
   else if isSpace ch then .idle toks (if ch == '\n' then n + 1 else n)
   else if isDigit ch then ⟨toks, [ch], .numeral, 0, g, true⟩
   else if isTokenStart ch then ⟨toks, [ch], .bare, 0, g, true⟩
   else .fail
 
+/-- An atom's bytes ended, as the token after the tokens read, when they number what the
+length declared requires. -/
+def endAtom (toks : List Tok) (g : Bool) (want : Option ℕ) (bs : List Char) : LexState :=
+  if want.all (· == bs.length) then .idle (.atom g bs :: toks) 0 else .fail
+
 /-- Read a character of a quoted string. -/
-def strStep (s : LexState) (ch : Char) : LexState :=
-  if ch == '"' then .idle (.atom s.gap s.cur.reverse :: s.toks) 0
-  else if ch == '\\' then { s with mode := .esc }
-  else if isPlain ch || ch == '\r' then { s with cur := ch :: s.cur }
+def strStep (s : LexState) (want : Option ℕ) (ch : Char) : LexState :=
+  if ch == '"' then endAtom s.toks s.gap want s.cur.reverse
+  else if ch == '\\' then { s with mode := .esc want }
+  else if isPlain ch || ch == '\r' then { s with cur := ch :: s.cur, mode := .str want }
   else .fail
 
 /-- The character an escape of one character after its backslash denotes, the escapes of the C
@@ -311,6 +327,66 @@ def escChar (ch : Char) : Option Char :=
   else if ch == 'r' then some '\r'
   else if ch == '"' || ch == '\'' || ch == '?' || ch == '\\' then some ch
   else none
+
+/-- The value of a decimal length, written in the shortest form, as {cite}`RFC9804` requires. -/
+def decimal? (cs : List Char) : Option ℕ :=
+  (Csexp.digitsVal cs).bind fun n ↦ if Csexp.decOf n == cs then some n else none
+
+/-- One digit of a hexadecimal atom read onto the bytes decoded, the latest first, and the high
+digit of a byte not yet complete. -/
+def hexStep (st : Option (List Char × Option ℕ)) (c : Char) : Option (List Char × Option ℕ) :=
+  st.bind fun p ↦ (hexVal c).map fun d ↦
+    match p.2 with
+    | none => (p.1, some d)
+    | some h => (Char.ofNat (16 * h + d) :: p.1, none)
+
+/-- The bytes of a hexadecimal atom's digits, an even number of them. -/
+def decodeHex (cs : List Char) : Option (List Char) :=
+  match cs.foldl hexStep (some ([], none)) with
+  | some (bs, none) => some bs.reverse
+  | _ => none
+
+/-- The value of a base-64 character of {cite}`RFC4648`. -/
+def base64Val (c : Char) : Option ℕ :=
+  if 65 ≤ c.toNat && c.toNat ≤ 90 then some (c.toNat - 65)
+  else if 97 ≤ c.toNat && c.toNat ≤ 122 then some (c.toNat - 71)
+  else if isDigit c then some (c.toNat + 4)
+  else if c == '+' then some 62 else if c == '/' then some 63 else none
+
+/-- One character of a base-64 atom read onto the bytes decoded, the latest first, the bits
+not yet a byte with their number, and the padding read, after which only padding may follow. -/
+def base64Step (st : Option (List Char × ℕ × ℕ × ℕ)) (c : Char) :
+    Option (List Char × ℕ × ℕ × ℕ) :=
+  st.bind fun (bs, acc, bits, pad) ↦
+    if c == '=' then (if pad < 2 then some (bs, acc, bits, pad + 1) else none)
+    else if pad != 0 then none
+    else (base64Val c).map fun v ↦
+      if bits + 6 ≥ 8 then
+        let w := 64 * acc + v
+        let r := bits + 6 - 8
+        (Char.ofNat (w / 2 ^ r) :: bs, w % 2 ^ r, r, 0)
+      else (bs, 64 * acc + v, bits + 6, 0)
+
+/-- The bytes of a base-64 atom's characters, unless a group ends after a single character. -/
+def decodeBase64 (cs : List Char) : Option (List Char) :=
+  match cs.foldl base64Step (some ([], 0, 0, 0)) with
+  | some (bs, _, bits, _) => if bits < 6 then some bs.reverse else none
+  | none => none
+
+/-- Read a character after a numeral: a further digit, or the colon, double quote, number sign
+or vertical bar after a decimal length, beginning a verbatim, quoted, hexadecimal or base-64
+atom of that length. -/
+def lengthStep (s : LexState) (ch : Char) : LexState :=
+  match decimal? s.cur.reverse with
+  | none => .fail
+  | some n =>
+    if ch == ':' then
+      if n == 0 then .idle (.atom s.gap [] :: s.toks) 0
+      else ⟨s.toks, [], .verbatim n, 0, s.gap, true⟩
+    else if ch == '"' then ⟨s.toks, [], .str (some n), 0, s.gap, true⟩
+    else if ch == '#' then ⟨s.toks, [], .hexAtom (some n), 0, s.gap, true⟩
+    else if ch == '|' then ⟨s.toks, [], .base64 (some n), 0, s.gap, true⟩
+    else .fail
 
 /-- Read one character. -/
 def lexStep (s : LexState) (ch : Char) : LexState :=
@@ -325,36 +401,59 @@ def lexStep (s : LexState) (ch : Char) : LexState :=
     else idleStep (.atom s.gap s.cur.reverse :: s.toks) 0 ch
   | .numeral =>
     if isDigit ch then { s with cur := ch :: s.cur }
-    else if isTokenChar ch || ch == '"' || ch == '#' || ch == '|' then .fail
+    else if isTokenChar ch || ch == '"' || ch == '#' || ch == '|' then lengthStep s ch
     else idleStep (.atom s.gap s.cur.reverse :: s.toks) 0 ch
   | .hole =>
     if isTokenChar ch && !(s.cur.isEmpty && isDigit ch) then { s with cur := ch :: s.cur }
     else if s.cur.isEmpty then .fail
     else idleStep (.hole s.gap s.cur.reverse :: s.toks) 0 ch
-  | .str => strStep s ch
-  | .esc =>
+  | .str want => strStep s want ch
+  | .esc want =>
     match escChar ch with
-    | some c => { s with cur := c :: s.cur, mode := .str }
+    | some c => { s with cur := c :: s.cur, mode := .str want }
     | none =>
-      if ch == 'x' then { s with mode := .hex 0 0 }
-      else if 48 ≤ ch.toNat && ch.toNat ≤ 55 then { s with mode := .oct 1 (ch.toNat - 48) }
-      else if ch == '\r' then { s with mode := .escCR }
-      else if ch == '\n' then { s with mode := .escLF }
+      if ch == 'x' then { s with mode := .hex 0 0 want }
+      else if 48 ≤ ch.toNat && ch.toNat ≤ 55 then { s with mode := .oct 1 (ch.toNat - 48) want }
+      else if ch == '\r' then { s with mode := .escCR want }
+      else if ch == '\n' then { s with mode := .escLF want }
       else .fail
-  | .escCR => if ch == '\n' then { s with mode := .str } else strStep { s with mode := .str } ch
-  | .escLF => if ch == '\r' then { s with mode := .str } else strStep { s with mode := .str } ch
-  | .hex n v =>
+  | .escCR want =>
+    if ch == '\n' then { s with mode := .str want }
+    else strStep { s with mode := .str want } want ch
+  | .escLF want =>
+    if ch == '\r' then { s with mode := .str want }
+    else strStep { s with mode := .str want } want ch
+  | .hex n v want =>
     match hexVal ch with
     | some d =>
-      if n == 1 then { s with cur := Char.ofNat (16 * v + d) :: s.cur, mode := .str }
-      else { s with mode := .hex 1 d }
+      if n == 1 then { s with cur := Char.ofNat (16 * v + d) :: s.cur, mode := .str want }
+      else { s with mode := .hex 1 d want }
     | none => .fail
-  | .oct n v =>
+  | .oct n v want =>
     if 48 ≤ ch.toNat && ch.toNat ≤ 55 then
       let w := 8 * v + (ch.toNat - 48)
       if n == 2 then
-        if w < 256 then { s with cur := Char.ofNat w :: s.cur, mode := .str } else .fail
-      else { s with mode := .oct (n + 1) w }
+        if w < 256 then { s with cur := Char.ofNat w :: s.cur, mode := .str want } else .fail
+      else { s with mode := .oct (n + 1) w want }
+    else .fail
+  | .verbatim left =>
+    if left ≤ 1 then .idle (.atom s.gap (ch :: s.cur).reverse :: s.toks) 0
+    else { s with cur := ch :: s.cur, mode := .verbatim (left - 1) }
+  | .hexAtom want =>
+    if isSpace ch then s
+    else if (hexVal ch).isSome then { s with cur := ch :: s.cur }
+    else if ch == '#' then
+      match decodeHex s.cur.reverse with
+      | some bs => endAtom s.toks s.gap want bs
+      | none => .fail
+    else .fail
+  | .base64 want =>
+    if isSpace ch then s
+    else if (base64Val ch).isSome || ch == '=' then { s with cur := ch :: s.cur }
+    else if ch == '|' then
+      match decodeBase64 s.cur.reverse with
+      | some bs => endAtom s.toks s.gap want bs
+      | none => .fail
     else .fail
 
 /-- The lexer's initial state. -/
@@ -558,23 +657,60 @@ theorem lt_toNat_of_isTokenStart {c : Char} (h : isTokenStart c) : 32 < c.toNat 
   rcases h with ((((((((h | h) | rfl) | rfl) | rfl) | rfl) | rfl) | rfl) | rfl) | rfl
   all_goals first | decide | omega
 
+/-- Characters of different code points differ. -/
+theorem beq_false_of_toNat {c d : Char} (h : c.toNat ≠ d.toNat) : (c == d) = false :=
+  beq_eq_false_iff_ne.mpr fun e ↦ h (congrArg Char.toNat e)
+
+/-- A character that may begin a token is none of the characters with which another token
+begins: the semicolon, the parentheses, the double quote, the ampersand, the question mark,
+the number sign and the vertical bar. -/
+theorem toNat_ne_of_isTokenStart {c : Char} (h : isTokenStart c) :
+    c.toNat ≠ 59 ∧ c.toNat ≠ 40 ∧ c.toNat ≠ 41 ∧ c.toNat ≠ 34 ∧ c.toNat ≠ 38 ∧
+      c.toNat ≠ 63 ∧ c.toNat ≠ 35 ∧ c.toNat ≠ 124 := by
+  simp only [isTokenStart, Bool.or_eq_true, Bool.and_eq_true, decide_eq_true_eq,
+    beq_iff_eq] at h
+  rcases h with ((((((((h | h) | rfl) | rfl) | rfl) | rfl) | rfl) | rfl) | rfl) | rfl
+  all_goals first
+    | decide
+    | exact ⟨fun e ↦ by omega, fun e ↦ by omega, fun e ↦ by omega, fun e ↦ by omega,
+        fun e ↦ by omega, fun e ↦ by omega, fun e ↦ by omega, fun e ↦ by omega⟩
+
+/-- Reading a character between tokens that is none of the characters with which a token other
+than a bare atom or a numeral begins, nor whitespace, gives the state its classes give. -/
+theorem idleStep_of_ne (d : List Tok) (n : ℕ) {c : Char}
+    (h : c.toNat ≠ 59 ∧ c.toNat ≠ 40 ∧ c.toNat ≠ 41 ∧ c.toNat ≠ 34 ∧ c.toNat ≠ 38 ∧
+      c.toNat ≠ 63 ∧ c.toNat ≠ 35 ∧ c.toNat ≠ 124) (hs : isSpace c = false) :
+    idleStep d n c =
+      if isDigit c then ⟨d, [c], .numeral, 0, decide (2 ≤ n), true⟩
+      else if isTokenStart c then ⟨d, [c], .bare, 0, decide (2 ≤ n), true⟩
+      else .fail := by
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8⟩ := h
+  unfold idleStep
+  rw [beq_false_of_toNat (d := ';') h1, beq_false_of_toNat (d := '(') h2,
+    beq_false_of_toNat (d := ')') h3, beq_false_of_toNat (d := '"') h4,
+    beq_false_of_toNat (d := '&') h5, beq_false_of_toNat (d := '?') h6,
+    beq_false_of_toNat (d := '#') h7, beq_false_of_toNat (d := '|') h8, hs]
+  rfl
+
 /-- Reading a digit between tokens begins a numeral. -/
 theorem idleStep_digit (d : List Tok) (n : ℕ) {c : Char} (hc : isDigit c) :
     idleStep d n c = ⟨d, [c], .numeral, 0, decide (2 ≤ n), true⟩ := by
+  have hb : 48 ≤ c.toNat ∧ c.toNat ≤ 57 := by
+    simpa only [isDigit, Bool.and_eq_true, decide_eq_true_eq] using hc
   have hs : isSpace c = false := by
     cases h : isSpace c
     · rfl
     · have := toNat_le_of_isSpace h
-      simp only [isDigit, Bool.and_eq_true, decide_eq_true_eq] at hc
       exfalso
       omega
-  unfold idleStep
-  split_ifs <;> simp_all (config := { decide := true })
+  rw [idleStep_of_ne d n ⟨fun e ↦ by omega, fun e ↦ by omega, fun e ↦ by omega,
+    fun e ↦ by omega, fun e ↦ by omega, fun e ↦ by omega, fun e ↦ by omega,
+    fun e ↦ by omega⟩ hs, hc]
+  rfl
 
 /-- Reading a character that may begin a token, between tokens, begins a bare atom. -/
 theorem idleStep_tokenStart (d : List Tok) (n : ℕ) {c : Char} (hc : isTokenStart c) :
     idleStep d n c = ⟨d, [c], .bare, 0, decide (2 ≤ n), true⟩ := by
-  have hd := isDigit_of_isTokenStart hc
   have hs : isSpace c = false := by
     cases h : isSpace c
     · rfl
@@ -582,8 +718,8 @@ theorem idleStep_tokenStart (d : List Tok) (n : ℕ) {c : Char} (hc : isTokenSta
       have := lt_toNat_of_isTokenStart hc
       exfalso
       omega
-  unfold idleStep
-  split_ifs <;> simp_all (config := { decide := true })
+  rw [idleStep_of_ne d n (toNat_ne_of_isTokenStart hc) hs, isDigit_of_isTokenStart hc, hc]
+  rfl
 
 /-- The characters of a token after its first extend the bare atom being read. -/
 theorem foldl_bareChars (cs : List Char) (hcs : cs.all isTokenChar) :
@@ -644,15 +780,16 @@ theorem foldl_commentChars (cs : List Char) (hcs : cs.all (· != '\n')) :
 character the two digits give. -/
 theorem lexStep_hex_last {d : List Tok} {b : List Char} {g : Bool} {v k : ℕ} {ch : Char}
     (h : hexVal ch = some k) :
-    lexStep ⟨d, b, .hex 1 v, 0, g, true⟩ ch =
-      ⟨d, Char.ofNat (16 * v + k) :: b, .str, 0, g, true⟩ := by
+    lexStep ⟨d, b, .hex 1 v none, 0, g, true⟩ ch =
+      ⟨d, Char.ofNat (16 * v + k) :: b, .str none, 0, g, true⟩ := by
   unfold lexStep
   rw [h]
   rfl
 
 /-- A character of a quoted string, as the printer writes it, extends the string being read. -/
 theorem foldl_escape (c : Char) (d : List Tok) (b : List Char) (g : Bool) :
-    (escape c).foldl lexStep ⟨d, b, .str, 0, g, true⟩ = ⟨d, c :: b, .str, 0, g, true⟩ := by
+    (escape c).foldl lexStep ⟨d, b, .str none, 0, g, true⟩ =
+      ⟨d, c :: b, .str none, 0, g, true⟩ := by
   unfold escape
   split_ifs with hp hq
   · have h1 : c ≠ '"' := by rintro rfl; exact absurd hp (by decide)
@@ -669,14 +806,14 @@ theorem foldl_escape (c : Char) (d : List Tok) (b : List Char) (g : Bool) :
         (Nat.div_lt_iff_lt_mul (by decide)).mpr (Nat.lt_trans hlt (by decide))⟩
     have hy : hexVal (hexDigit (c.toNat % 16)) = some (c.toNat % 16) :=
       hexVal_hexDigit ⟨c.toNat % 16, Nat.mod_lt _ (by decide)⟩
-    have e1 : lexStep ⟨d, b, .str, 0, g, true⟩ '\\' = ⟨d, b, .esc, 0, g, true⟩ := rfl
-    have e2 : lexStep ⟨d, b, .esc, 0, g, true⟩ 'x' = ⟨d, b, .hex 0 0, 0, g, true⟩ := rfl
-    have e3 : lexStep ⟨d, b, .hex 0 0, 0, g, true⟩ (hexDigit (c.toNat / 16)) =
-        ⟨d, b, .hex 1 (c.toNat / 16), 0, g, true⟩ := by
+    have e1 : lexStep ⟨d, b, .str none, 0, g, true⟩ '\\' = ⟨d, b, .esc none, 0, g, true⟩ := rfl
+    have e2 : lexStep ⟨d, b, .esc none, 0, g, true⟩ 'x' = ⟨d, b, .hex 0 0 none, 0, g, true⟩ := rfl
+    have e3 : lexStep ⟨d, b, .hex 0 0 none, 0, g, true⟩ (hexDigit (c.toNat / 16)) =
+        ⟨d, b, .hex 1 (c.toNat / 16) none, 0, g, true⟩ := by
       simp only [lexStep, hx, Bool.not_true, Bool.false_eq_true, ↓reduceIte]
       rfl
-    have e4 : lexStep ⟨d, b, .hex 1 (c.toNat / 16), 0, g, true⟩ (hexDigit (c.toNat % 16)) =
-        ⟨d, c :: b, .str, 0, g, true⟩ := by
+    have e4 : lexStep ⟨d, b, .hex 1 (c.toNat / 16) none, 0, g, true⟩ (hexDigit (c.toNat % 16)) =
+        ⟨d, c :: b, .str none, 0, g, true⟩ := by
       rw [lexStep_hex_last hy, Nat.div_add_mod, Char.ofNat_toNat]
     simp only [List.foldl_cons, List.foldl_nil, e1, e2, e3, e4]
 
@@ -684,8 +821,8 @@ theorem foldl_escape (c : Char) (d : List Tok) (b : List Char) (g : Bool) :
 read. -/
 theorem foldl_escapes (cs : List Char) :
     ∀ (d : List Tok) (b : List Char) (g : Bool),
-      (cs.flatMap escape).foldl lexStep ⟨d, b, .str, 0, g, true⟩ =
-        ⟨d, cs.reverse ++ b, .str, 0, g, true⟩ :=
+      (cs.flatMap escape).foldl lexStep ⟨d, b, .str none, 0, g, true⟩ =
+        ⟨d, cs.reverse ++ b, .str none, 0, g, true⟩ :=
   List.rec (fun _ _ _ ↦ rfl) (fun c cs ih d b g ↦ by
     rw [List.flatMap_cons, List.foldl_append, foldl_escape, ih]
     simp) cs
@@ -768,7 +905,7 @@ theorem foldl_tok (t : Tok) (d : List Tok) (n : ℕ) (ht : t.wf) (hg : t.gap = d
           rw [hb, ha']
           rfl
         rw [Tok.render, hsp, List.foldl_cons,
-          show lexStep (.idle d n) '"' = ⟨d, [], .str, 0, decide (2 ≤ n), true⟩ from rfl,
+          show lexStep (.idle d n) '"' = ⟨d, [], .str none, 0, decide (2 ≤ n), true⟩ from rfl,
           List.foldl_append, foldl_escapes, List.append_nil]
         change LexState.idle (.atom _ s.reverse.reverse :: d) 0 = _
         simp only [List.reverse_reverse, Tok.emitted, pendOf, hb, Bool.false_eq_true, ↓reduceIte,
@@ -797,7 +934,8 @@ theorem lexStep_numeral_end {d : List Tok} {b : List Char} {g : Bool} {ch : Char
     (h₂ : (isTokenChar ch || ch == '"' || ch == '#' || ch == '|') = false) :
     lexStep ⟨d, b, .numeral, 0, g, true⟩ ch = idleStep (.atom g b.reverse :: d) 0 ch := by
   change (if isDigit ch then (⟨d, ch :: b, .numeral, 0, g, true⟩ : LexState)
-    else if isTokenChar ch || ch == '"' || ch == '#' || ch == '|' then .fail
+    else if isTokenChar ch || ch == '"' || ch == '#' || ch == '|' then
+      lengthStep ⟨d, b, .numeral, 0, g, true⟩ ch
     else idleStep (.atom g b.reverse :: d) 0 ch) = _
   rw [h₁, h₂]
   rfl

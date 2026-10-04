@@ -32,13 +32,17 @@
 ; read, the latest first, and the mode, a tree whose label is what is being read: 0 nothing, 1
 ; a bare atom, 2 a numeral, 3 a hole's name, 4 a comment, 5 a quoted string, 6 an escape after
 ; its backslash, 7 after a backslash and a carriage return, 8 after a backslash and a line feed,
-; 9 a hexadecimal and 10 an octal escape, each over the digits read and their value, and 11 a
-; text that is not well formed
+; 9 a hexadecimal and 10 an octal escape, 11 a text that is not well formed, 12 a verbatim atom
+; over the bytes left, 13 a hexadecimal atom and 14 a base-64 atom. The modes 5 to 10, 13 and
+; 14 are over the optional length a decimal prefix declares first, and the escapes 9 and 10
+; then over the digits read and their value.
 (deftype Lex (Prod Ts (Prod Ts T)))
 (deftype LexK (Arrow Lex Lex))
 (def lexFail (pair (nil T) (pair (nil T) 11)))
 (def lexIn (lam ((toks Ts) (cur Ts) (m T)) (pair toks (pair cur m))))
 (def lexIdle (lam ((toks Ts)) (lexIn toks (nil T) 0)))
+; the mode of a label over an optional length
+(def withLen (lam ((k T) (want T)) (node k (single want))))
 (def inRange (lam ((c T) (lo T) (hi T)) (if (lt c lo) 0 (lt c (add hi 1)))))
 (def isDigit (lam ((c T)) (inRange c 48 57)))
 (def isSpace
@@ -72,17 +76,25 @@
     (if (eq c 59) (lexIn toks (nil T) 4)
       (if (eq c 40) (lexIdle (cons 1 toks))
         (if (eq c 41) (lexIdle (cons 2 toks))
-          (if (eq c 34) (lexIn toks (nil T) 5)
+          (if (eq c 34) (lexIn toks (nil T) (withLen 5 none))
             (if (eq c 38) (lexIdle (cons (node 3 (single 38)) toks))
               (if (eq c 63) (lexIn toks (nil T) 3)
-                (if (isSpace c) (lexIdle toks)
-                  (if (isDigit c) (lexIn toks (single c) 2)
-                    (if (isTokenStart c) (lexIn toks (single c) 1) lexFail)))))))))))
+                (if (eq c 35) (lexIn toks (nil T) (withLen 13 none))
+                  (if (eq c 124) (lexIn toks (nil T) (withLen 14 none))
+                    (if (isSpace c) (lexIdle toks)
+                      (if (isDigit c) (lexIn toks (single c) 2)
+                        (if (isTokenStart c) (lexIn toks (single c) 1) lexFail)))))))))))))
+; an atom's bytes, in order, ended, when they number the optional length declared
+(def endAtom
+  (lam ((toks Ts) (want T) (bs Ts))
+    (if (if (isSome want) (eq (get want) (length bs)) 1) (lexIdle (cons (node 3 bs) toks))
+      lexFail)))
 ; a character of a quoted string
 (def strStep
-  (lam ((toks Ts) (cur Ts) (c T))
-    (if (eq c 34) (lexIdle (cons (atomTok cur) toks))
-      (if (eq c 92) (lexIn toks cur 6) (if (isPlainIn c) (lexIn toks (cons c cur) 5) lexFail)))))
+  (lam ((toks Ts) (cur Ts) (want T) (c T))
+    (if (eq c 34) (endAtom toks want (reverse cur))
+      (if (eq c 92) (lexIn toks cur (withLen 6 want))
+        (if (isPlainIn c) (lexIn toks (cons c cur) (withLen 5 want)) lexFail)))))
 ; the character an escape of one character after its backslash denotes
 (def escChar
   (lam ((c T))
@@ -100,6 +112,79 @@
   (lam ((c T))
     (if (isDigit c) (some (sub c 48))
       (if (inRange c 65 70) (some (sub c 55)) (if (inRange c 97 102) (some (sub c 87)) none)))))
+; the bytes of a hexadecimal atom's digits, an even number of them, paired from the right
+(deftype Hex (Prod T (Prod Ts T)))
+(def decodeHex
+  (lam ((cs Ts))
+    (if (eq (mod (length cs) 2) 0)
+      (let r Hex
+        (foldr T Hex
+          (lam ((c T) (acc Hex))
+            (let v T (hexVal c)
+              (if (if (fst acc) (isSome v) 0)
+                (if (isSome (snd (snd acc)))
+                  (pair 1
+                    (pair (cons (add (mul 16 (get v)) (get (snd (snd acc)))) (fst (snd acc))) none))
+                  (pair 1 (pair (fst (snd acc)) (some (get v)))))
+                (pair 0 (snd acc)))))
+          (pair 1 (pair (nil T) none))
+          cs)
+        (if (fst r) (some (node 0 (fst (snd r)))) none))
+      none)))
+; the value of a base-64 character of RFC 4648
+(def base64Val
+  (lam ((c T))
+    (if (inRange c 65 90) (some (sub c 65))
+      (if (inRange c 97 122) (some (sub c 71))
+        (if (isDigit c) (some (add c 4)) (if (eq c 43) (some 62) (if (eq c 47) (some 63) none)))))))
+; the state of decoding base 64: whether every character so far is admitted, the bytes decoded,
+; the latest first, the bits not yet a byte with their number, and the padding read
+(deftype B64 (Prod T (Prod Ts (Prod T (Prod T T)))))
+(deftype B64K (Arrow B64 B64))
+(def b64Fail (pair 0 (pair (nil T) (pair 0 (pair 0 0)))))
+(def base64Step
+  (lam ((st B64) (c T))
+    (if (fst st)
+      (let bs Ts (fst (snd st))
+        (let acc T (fst (snd (snd st)))
+          (let bits T (fst (snd (snd (snd st))))
+            (let pad T (snd (snd (snd (snd st))))
+              (if (eq c 61)
+                (if (lt pad 2) (pair 1 (pair bs (pair acc (pair bits (add pad 1))))) b64Fail)
+                (if (eq pad 0)
+                  (let v T (base64Val c)
+                    (if (isSome v)
+                      (if (lt (add bits 6) 8)
+                        (pair 1 (pair bs (pair (add (mul 64 acc) (get v)) (pair (add bits 6) 0))))
+                        (let w T (add (mul 64 acc) (get v))
+                          (let r T (sub (add bits 6) 8)
+                            (let p T (iter T (lam ((x T)) (mul x 2)) 1 r)
+                              (pair 1 (pair (cons (div w p) bs) (pair (mod w p) (pair r 0))))))))
+                      b64Fail))
+                  b64Fail))))))
+      st)))
+; the bytes of a base-64 atom's characters, unless a group ends after a single character
+(def decodeBase64
+  (lam ((cs Ts))
+    (let st B64
+      ((foldr T B64K (lam ((c T) (k B64K) (s B64)) (k (base64Step s c))) (lam ((s B64)) s) cs)
+       (pair 1 (pair (nil T) (pair 0 (pair 0 0)))))
+      (if (if (fst st) (lt (fst (snd (snd (snd st)))) 6) 0) (some (node 0 (reverse (fst (snd st)))))
+        none))))
+; a character after a numeral beginning an atom of the length it declares, in shortest form: a
+; colon a verbatim atom, a double quote a quoted string, a number sign a hexadecimal and a
+; vertical bar a base-64 atom
+(def lengthStep
+  (lam ((toks Ts) (cur Ts) (c T))
+    (let ds Ts (reverse cur)
+      (if (if (lt 1 (length ds)) (eq (at ds 0) 48) 0) lexFail
+        (let n T (foldr T T (lam ((d T) (acc T)) (add (sub d 48) (mul 10 acc))) 0 cur)
+          (if (eq c 58)
+            (if (eq n 0) (lexIdle (cons (node 3 (nil T)) toks))
+              (lexIn toks (nil T) (node 12 (single n))))
+            (if (eq c 34) (lexIn toks (nil T) (withLen 5 (some n)))
+              (if (eq c 35) (lexIn toks (nil T) (withLen 13 (some n)))
+                (if (eq c 124) (lexIn toks (nil T) (withLen 14 (some n))) lexFail)))))))))
 (def lexStep
   (lam ((s Lex) (c T))
     (let toks Ts (fst s)
@@ -114,39 +199,75 @@
                   (if (eq k 2)
                     (if (isDigit c) (lexIn toks (cons c cur) m)
                       (if (if (isTokenChar c) 1 (if (eq c 34) 1 (if (eq c 35) 1 (eq c 124))))
-                        lexFail
+                        (lengthStep toks cur c)
                         (idleStep (cons (atomTok cur) toks) c)))
                     (if (eq k 3)
                       (if (if (isTokenChar c) (if (nonEmpty cur) 1 (if (isDigit c) 0 1)) 0)
                         (lexIn toks (cons c cur) m)
                         (if (nonEmpty cur) (idleStep (holeToks cur toks) c) lexFail))
-                      (if (eq k 5) (strStep toks cur c)
-                        (if (eq k 6)
-                          (let e T (escChar c)
-                            (if (isSome e) (lexIn toks (cons (get e) cur) 5)
-                              (if (eq c 120) (lexIn toks cur (node 9 (cons 0 (single 0))))
-                                (if (inRange c 48 55)
-                                  (lexIn toks cur (node 10 (cons 1 (single (sub c 48)))))
-                                  (if (eq c 13) (lexIn toks cur 7)
-                                    (if (eq c 10) (lexIn toks cur 8) lexFail))))))
-                          (if (eq k 7) (if (eq c 10) (lexIn toks cur 5) (strStep toks cur c))
-                            (if (eq k 8) (if (eq c 13) (lexIn toks cur 5) (strStep toks cur c))
-                              (if (eq k 9)
-                                (let d T (hexVal c)
-                                  (if (isSome d)
-                                    (if (eq (child m 0) 1)
-                                      (lexIn toks (cons (add (mul 16 (child m 1)) (get d)) cur) 5)
-                                      (lexIn toks cur (node 9 (cons 1 (single (get d))))))
-                                    lexFail))
-                                (if (eq k 10)
-                                  (if (inRange c 48 55)
-                                    (let w T (add (mul 8 (child m 1)) (sub c 48))
-                                      (if (eq (child m 0) 2)
-                                        (if (lt w 256) (lexIn toks (cons w cur) 5) lexFail)
+                      (if (eq k 11) s
+                        (if (eq k 12)
+                          (if (lt (child m 0) 2) (lexIdle (cons (atomTok (cons c cur)) toks))
+                            (lexIn toks (cons c cur) (node 12 (single (sub (child m 0) 1)))))
+                          (let want T (child m 0)
+                            (if (eq k 5) (strStep toks cur want c)
+                              (if (eq k 6)
+                                (let e T (escChar c)
+                                  (if (isSome e) (lexIn toks (cons (get e) cur) (withLen 5 want))
+                                    (if (eq c 120)
+                                      (lexIn toks cur (node 9 (cons want (cons 0 (single 0)))))
+                                      (if (inRange c 48 55)
                                         (lexIn toks cur
-                                          (node 10 (cons (add (child m 0) 1) (single w))))))
-                                    lexFail)
-                                  s)))))))))))))))))
+                                          (node 10 (cons want (cons 1 (single (sub c 48))))))
+                                        (if (eq c 13) (lexIn toks cur (withLen 7 want))
+                                          (if (eq c 10) (lexIn toks cur (withLen 8 want))
+                                            lexFail))))))
+                                (if (eq k 7)
+                                  (if (eq c 10) (lexIn toks cur (withLen 5 want))
+                                    (strStep toks cur want c))
+                                  (if (eq k 8)
+                                    (if (eq c 13) (lexIn toks cur (withLen 5 want))
+                                      (strStep toks cur want c))
+                                    (if (eq k 9)
+                                      (let d T (hexVal c)
+                                        (if (isSome d)
+                                          (if (eq (child m 1) 1)
+                                            (lexIn toks
+                                              (cons (add (mul 16 (child m 2)) (get d)) cur)
+                                              (withLen 5 want))
+                                            (lexIn toks cur
+                                              (node 9 (cons want (cons 1 (single (get d)))))))
+                                          lexFail))
+                                      (if (eq k 10)
+                                        (if (inRange c 48 55)
+                                          (let w T (add (mul 8 (child m 2)) (sub c 48))
+                                            (if (eq (child m 1) 2)
+                                              (if (lt w 256)
+                                                (lexIn toks (cons w cur) (withLen 5 want))
+                                                lexFail)
+                                              (lexIn toks cur
+                                                (node 10
+                                                  (cons want
+                                                    (cons (add (child m 1) 1) (single w)))))))
+                                          lexFail)
+                                        (if (eq k 13)
+                                          (if (isSpace c) s
+                                            (if (isSome (hexVal c)) (lexIn toks (cons c cur) m)
+                                              (if (eq c 35)
+                                                (let bs T (decodeHex (reverse cur))
+                                                  (if (isSome bs)
+                                                    (endAtom toks want (children (get bs)))
+                                                    lexFail))
+                                                lexFail)))
+                                          (if (isSpace c) s
+                                            (if (if (isSome (base64Val c)) 1 (eq c 61))
+                                              (lexIn toks (cons c cur) m)
+                                              (if (eq c 124)
+                                                (let bs T (decodeBase64 (reverse cur))
+                                                  (if (isSome bs)
+                                                    (endAtom toks want (children (get bs)))
+                                                    lexFail))
+                                                lexFail))))))))))))))))))))))))
 ; the tokens of a text, in order, when it is well formed
 (def lexEnd
   (lam ((s Lex))
@@ -497,7 +618,8 @@
          e)) scope)))
 
 ; the names no declaration takes: the keywords of terms and of declarations, the form of a hole,
-; the names of the types and of the primitives
+; the heads of the strict encodings' annotation forms and documents, the names of the types and of
+; the primitives
 (def reservedNames
   (append
     (cons kwLam
@@ -519,10 +641,13 @@
                                     (cons kwDeftype
                                       (cons kwDefnum
                                         (cons kwHole
-                                          (cons kwT
-                                            (cons kwUnit
-                                              (cons kwProd
-                                                (cons kwArrow (single kwList))))))))))))))))))))))))
+                                          (cons (quote (0 *ann))
+                                            (cons (quote (0 *doc))
+                                              (cons kwT
+                                                (cons kwUnit
+                                                  (cons kwProd
+                                                    (cons kwArrow
+                                                      (single kwList))))))))))))))))))))))))))
     primNames))
 ; whether a name may be declared after the type abbreviations, numeral abbreviations and
 ; definitions given: it is neither reserved nor declared already

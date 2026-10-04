@@ -123,12 +123,10 @@ def sampleFormatted : String := "; a header
 -- formatting writes each atom in its spelling
 #guard format 100 "(a \"x\\x41\" \"1 2\" \"007\")".toList = some "(a xA \"1 2\" 007)\n".toList
 
--- the profile admits no other spelling, a character outside a quoted string that no token
--- admits, a hole without a name, or a string that does not end
+-- the profile admits no digits followed by a token's characters, no display hint, no character
+-- outside a quoted string that no token admits, no hole without a name, and no string that does
+-- not end; the strict encodings' spellings of atoms it admits, as their tests show
 #guard readDoc "(a 12b)".toList = none
-#guard readDoc "(a 3:abc)".toList = none
-#guard readDoc "(a #616263#)".toList = none
-#guard readDoc "(a |YWJj|)".toList = none
 #guard readDoc "(a [h]x)".toList = none
 #guard readDoc "(a σ)".toList = none
 #guard readDoc "(a ?)".toList = none

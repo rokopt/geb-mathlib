@@ -134,6 +134,8 @@ def «lexIn» :=
 def «lexIdle» :=
   fun (x0 : List T) => «lexIn» x0 ([] : List T) (leaf 0)
 
+def «withLen» := fun (x0 : T) (x1 : T) => Const.node x0 («single» x1)
+
 def «inRange» :=
   fun (x0 : T) (x1 : T) (x2 : T) =>
     if (Const.lt x0 x1).label ≠ 0 then
@@ -237,7 +239,7 @@ def «idleStep» :=
           «lexIdle» ((leaf 2) :: x0)
         else
           if (Const.eq x1 (leaf 34)).label ≠ 0 then
-            «lexIn» x0 ([] : List T) (leaf 5)
+            «lexIn» x0 ([] : List T) («withLen» (leaf 5) «none»)
           else
             if (Const.eq x1 (leaf 38)).label ≠ 0 then
               «lexIdle» ((Const.node (leaf 3) («single» (leaf 38))) :: x0)
@@ -245,27 +247,43 @@ def «idleStep» :=
               if (Const.eq x1 (leaf 63)).label ≠ 0 then
                 «lexIn» x0 ([] : List T) (leaf 3)
               else
-                if («isSpace» x1).label ≠ 0 then
-                  «lexIdle» x0
+                if (Const.eq x1 (leaf 35)).label ≠ 0 then
+                  «lexIn» x0 ([] : List T) («withLen» (leaf 13) «none»)
                 else
-                  if («isDigit» x1).label ≠ 0 then
-                    «lexIn» x0 («single» x1) (leaf 2)
+                  if (Const.eq x1 (leaf 124)).label ≠ 0 then
+                    «lexIn» x0 ([] : List T) («withLen» (leaf 14) «none»)
                   else
-                    if («isTokenStart» x1).label ≠ 0 then
-                      «lexIn» x0 («single» x1) (leaf 1)
+                    if («isSpace» x1).label ≠ 0 then
+                      «lexIdle» x0
                     else
-                      «lexFail»
+                      if («isDigit» x1).label ≠ 0 then
+                        «lexIn» x0 («single» x1) (leaf 2)
+                      else
+                        if («isTokenStart» x1).label ≠ 0 then
+                          «lexIn» x0 («single» x1) (leaf 1)
+                        else
+                          «lexFail»
+
+def «endAtom» :=
+  fun (x0 : List T) (x1 : T) (x2 : List T) =>
+    if (if («isSome» x1).label ≠ 0 then
+      Const.eq («get» x1) («length» x2)
+    else
+      leaf 1).label ≠ 0 then
+      «lexIdle» ((Const.node (leaf 3) x2) :: x0)
+    else
+      «lexFail»
 
 def «strStep» :=
-  fun (x0 : List T) (x1 : List T) (x2 : T) =>
-    if (Const.eq x2 (leaf 34)).label ≠ 0 then
-      «lexIdle» ((«atomTok» x1) :: x0)
+  fun (x0 : List T) (x1 : List T) (x2 : T) (x3 : T) =>
+    if (Const.eq x3 (leaf 34)).label ≠ 0 then
+      «endAtom» x0 x2 («reverse» x1)
     else
-      if (Const.eq x2 (leaf 92)).label ≠ 0 then
-        «lexIn» x0 x1 (leaf 6)
+      if (Const.eq x3 (leaf 92)).label ≠ 0 then
+        «lexIn» x0 x1 («withLen» (leaf 6) x2)
       else
-        if («isPlainIn» x2).label ≠ 0 then
-          «lexIn» x0 (x2 :: x1) (leaf 5)
+        if («isPlainIn» x3).label ≠ 0 then
+          «lexIn» x0 (x3 :: x1) («withLen» (leaf 5) x2)
         else
           «lexFail»
 
@@ -316,6 +334,149 @@ def «hexVal» :=
         else
           «none»
 
+def «decodeHex» :=
+  fun (x0 : List T) =>
+    if (Const.eq
+      (Const.mod («length» x0) (leaf 2))
+      (leaf 0)).label ≠ 0 then
+      let x1 : T ×
+        (List T ×
+          T) := Const.foldr
+        (α := T)
+        (β := T × (List T × T))
+        (fun (x1 : T) (x2 : T × (List T × T)) =>
+          let x3 : T := «hexVal» x1;
+          if (if ((x2).1).label ≠ 0 then «isSome» x3 else leaf 0).label ≠ 0 then
+            if («isSome» ((x2).2).2).label ≠ 0 then
+              (leaf 1,
+                (((Const.add (Const.mul (leaf 16) («get» x3)) («get» ((x2).2).2)) ::
+                  ((x2).2).1),
+                  «none»))
+            else
+              (leaf 1, (((x2).2).1, «some» («get» x3)))
+          else
+            (leaf 0, (x2).2))
+        (leaf 1, (([] : List T), «none»))
+        x0;
+      if ((x1).1).label ≠ 0 then
+        «some» (Const.node (leaf 0) ((x1).2).1)
+      else
+        «none»
+    else
+      «none»
+
+def «base64Val» :=
+  fun (x0 : T) =>
+    if («inRange» x0 (leaf 65) (leaf 90)).label ≠ 0 then
+      «some» (Const.sub x0 (leaf 65))
+    else
+      if («inRange» x0 (leaf 97) (leaf 122)).label ≠ 0 then
+        «some» (Const.sub x0 (leaf 71))
+      else
+        if («isDigit» x0).label ≠ 0 then
+          «some» (Const.add x0 (leaf 4))
+        else
+          if (Const.eq x0 (leaf 43)).label ≠ 0 then
+            «some» (leaf 62)
+          else
+            if (Const.eq x0 (leaf 47)).label ≠ 0 then «some» (leaf 63) else «none»
+
+def «b64Fail» := (leaf 0, (([] : List T), (leaf 0, (leaf 0, leaf 0))))
+
+def «base64Step» :=
+  fun (x0 : T × (List T × (T × (T × T)))) (x1 : T) =>
+    if ((x0).1).label ≠ 0 then
+      let x2 : List T := ((x0).2).1;
+      let x3 : T := (((x0).2).2).1;
+      let x4 : T := ((((x0).2).2).2).1;
+      let x5 : T := ((((x0).2).2).2).2;
+      if (Const.eq x1 (leaf 61)).label ≠ 0 then
+        if (Const.lt x5 (leaf 2)).label ≠ 0 then
+          (leaf 1, (x2, (x3, (x4, Const.add x5 (leaf 1)))))
+        else
+          «b64Fail»
+      else
+        if (Const.eq x5 (leaf 0)).label ≠ 0 then
+          let x6 : T := «base64Val» x1;
+          if («isSome» x6).label ≠ 0 then
+            if (Const.lt (Const.add x4 (leaf 6)) (leaf 8)).label ≠ 0 then
+              (leaf 1,
+                (x2,
+                  (Const.add (Const.mul (leaf 64) x3) («get» x6),
+                    (Const.add x4 (leaf 6), leaf 0))))
+            else
+              let x7 : T := Const.add (Const.mul (leaf 64) x3) («get» x6);
+              let x8 : T := Const.sub (Const.add x4 (leaf 6)) (leaf 8);
+              let x9 : T := Const.iter
+                (α := T)
+                (fun (x9 : T) => Const.mul x9 (leaf 2))
+                (leaf 1)
+                x8;
+              (leaf 1, (((Const.div x7 x9) :: x2), (Const.mod x7 x9, (x8, leaf 0))))
+          else
+            «b64Fail»
+        else
+          «b64Fail»
+    else
+      x0
+
+def «decodeBase64» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      (List T ×
+        (T ×
+          (T ×
+            T))) := Const.foldr
+      (α := T)
+      (β := (T × (List T × (T × (T × T)))) → T × (List T × (T × (T × T))))
+      (fun (x1 : T)
+         (x2 : (T × (List T × (T × (T × T)))) → T × (List T × (T × (T × T))))
+         (x3 : T × (List T × (T × (T × T)))) =>
+        x2 («base64Step» x3 x1))
+      (fun (x1 : T × (List T × (T × (T × T)))) => x1)
+      x0
+      (leaf 1, (([] : List T), (leaf 0, (leaf 0, leaf 0))));
+    if (if ((x1).1).label ≠ 0 then
+      Const.lt ((((x1).2).2).2).1 (leaf 6)
+    else
+      leaf 0).label ≠ 0 then
+      «some» (Const.node (leaf 0) («reverse» ((x1).2).1))
+    else
+      «none»
+
+def «lengthStep» :=
+  fun (x0 : List T) (x1 : List T) (x2 : T) =>
+    let x3 : List T := «reverse» x1;
+    if (if (Const.lt (leaf 1) («length» x3)).label ≠ 0 then
+      Const.eq («at» x3 (leaf 0)) (leaf 48)
+    else
+      leaf 0).label ≠ 0 then
+      «lexFail»
+    else
+      let x4 : T := Const.foldr
+        (α := T)
+        (β := T)
+        (fun (x4 : T) (x5 : T) =>
+          Const.add (Const.sub x4 (leaf 48)) (Const.mul (leaf 10) x5))
+        (leaf 0)
+        x1;
+      if (Const.eq x2 (leaf 58)).label ≠ 0 then
+        if (Const.eq x4 (leaf 0)).label ≠ 0 then
+          «lexIdle» ((Const.node (leaf 3) ([] : List T)) :: x0)
+        else
+          «lexIn» x0 ([] : List T) (Const.node (leaf 12) («single» x4))
+      else
+        if (Const.eq x2 (leaf 34)).label ≠ 0 then
+          «lexIn» x0 ([] : List T) («withLen» (leaf 5) («some» x4))
+        else
+          if (Const.eq x2 (leaf 35)).label ≠ 0 then
+            «lexIn» x0 ([] : List T) («withLen» (leaf 13) («some» x4))
+          else
+            if (Const.eq x2 (leaf 124)).label ≠ 0 then
+              «lexIn» x0 ([] : List T) («withLen» (leaf 14) («some» x4))
+            else
+              «lexFail»
+
 def «lexStep» :=
   fun (x0 : List T × (List T × T)) (x1 : T) =>
     let x2 : List T := (x0).1;
@@ -348,7 +509,7 @@ def «lexStep» :=
                     leaf 1
                   else
                     Const.eq x1 (leaf 124)).label ≠ 0 then
-                «lexFail»
+                «lengthStep» x2 x3 x1
               else
                 «idleStep» ((«atomTok» x3) :: x2) x1
           else
@@ -367,85 +528,137 @@ def «lexStep» :=
                 else
                   «lexFail»
             else
-              if (Const.eq x5 (leaf 5)).label ≠ 0 then
-                «strStep» x2 x3 x1
+              if (Const.eq x5 (leaf 11)).label ≠ 0 then
+                x0
               else
-                if (Const.eq x5 (leaf 6)).label ≠ 0 then
-                  let x6 : T := «escChar» x1;
-                  if («isSome» x6).label ≠ 0 then
-                    «lexIn» x2 ((«get» x6) :: x3) (leaf 5)
+                if (Const.eq x5 (leaf 12)).label ≠ 0 then
+                  if (Const.lt (Const.child x4 (leaf 0)) (leaf 2)).label ≠ 0 then
+                    «lexIdle» ((«atomTok» (x1 :: x3)) :: x2)
                   else
-                    if (Const.eq x1 (leaf 120)).label ≠ 0 then
-                      «lexIn» x2 x3 (Const.node (leaf 9) ((leaf 0) :: («single» (leaf 0))))
-                    else
-                      if («inRange» x1 (leaf 48) (leaf 55)).label ≠ 0 then
-                        «lexIn»
-                          x2
-                          x3
-                          (Const.node
-                            (leaf 10)
-                            ((leaf 1) :: («single» (Const.sub x1 (leaf 48)))))
-                      else
-                        if (Const.eq x1 (leaf 13)).label ≠ 0 then
-                          «lexIn» x2 x3 (leaf 7)
-                        else
-                          if (Const.eq x1 (leaf 10)).label ≠ 0 then
-                            «lexIn» x2 x3 (leaf 8)
-                          else
-                            «lexFail»
+                    «lexIn»
+                      x2
+                      (x1 :: x3)
+                      (Const.node
+                        (leaf 12)
+                        («single» (Const.sub (Const.child x4 (leaf 0)) (leaf 1))))
                 else
-                  if (Const.eq x5 (leaf 7)).label ≠ 0 then
-                    if (Const.eq x1 (leaf 10)).label ≠ 0 then
-                      «lexIn» x2 x3 (leaf 5)
-                    else
-                      «strStep» x2 x3 x1
+                  let x6 : T := Const.child x4 (leaf 0);
+                  if (Const.eq x5 (leaf 5)).label ≠ 0 then
+                    «strStep» x2 x3 x6 x1
                   else
-                    if (Const.eq x5 (leaf 8)).label ≠ 0 then
-                      if (Const.eq x1 (leaf 13)).label ≠ 0 then
-                        «lexIn» x2 x3 (leaf 5)
+                    if (Const.eq x5 (leaf 6)).label ≠ 0 then
+                      let x7 : T := «escChar» x1;
+                      if («isSome» x7).label ≠ 0 then
+                        «lexIn» x2 ((«get» x7) :: x3) («withLen» (leaf 5) x6)
                       else
-                        «strStep» x2 x3 x1
-                    else
-                      if (Const.eq x5 (leaf 9)).label ≠ 0 then
-                        let x6 : T := «hexVal» x1;
-                        if («isSome» x6).label ≠ 0 then
-                          if (Const.eq (Const.child x4 (leaf 0)) (leaf 1)).label ≠ 0 then
-                            «lexIn»
-                              x2
-                              ((Const.add
-                                (Const.mul (leaf 16) (Const.child x4 (leaf 1)))
-                                («get» x6)) ::
-                                x3)
-                              (leaf 5)
-                          else
+                        if (Const.eq x1 (leaf 120)).label ≠ 0 then
+                          «lexIn»
+                            x2
+                            x3
+                            (Const.node (leaf 9) (x6 :: ((leaf 0) :: («single» (leaf 0)))))
+                        else
+                          if («inRange» x1 (leaf 48) (leaf 55)).label ≠ 0 then
                             «lexIn»
                               x2
                               x3
-                              (Const.node (leaf 9) ((leaf 1) :: («single» («get» x6))))
+                              (Const.node
+                                (leaf 10)
+                                (x6 :: ((leaf 1) :: («single» (Const.sub x1 (leaf 48))))))
+                          else
+                            if (Const.eq x1 (leaf 13)).label ≠ 0 then
+                              «lexIn» x2 x3 («withLen» (leaf 7) x6)
+                            else
+                              if (Const.eq x1 (leaf 10)).label ≠ 0 then
+                                «lexIn» x2 x3 («withLen» (leaf 8) x6)
+                              else
+                                «lexFail»
+                    else
+                      if (Const.eq x5 (leaf 7)).label ≠ 0 then
+                        if (Const.eq x1 (leaf 10)).label ≠ 0 then
+                          «lexIn» x2 x3 («withLen» (leaf 5) x6)
                         else
-                          «lexFail»
+                          «strStep» x2 x3 x6 x1
                       else
-                        if (Const.eq x5 (leaf 10)).label ≠ 0 then
-                          if («inRange» x1 (leaf 48) (leaf 55)).label ≠ 0 then
-                            let x6 : T := Const.add
-                              (Const.mul (leaf 8) (Const.child x4 (leaf 1)))
-                              (Const.sub x1 (leaf 48));
-                            if (Const.eq (Const.child x4 (leaf 0)) (leaf 2)).label ≠ 0 then
-                              if (Const.lt x6 (leaf 256)).label ≠ 0 then
-                                «lexIn» x2 (x6 :: x3) (leaf 5)
+                        if (Const.eq x5 (leaf 8)).label ≠ 0 then
+                          if (Const.eq x1 (leaf 13)).label ≠ 0 then
+                            «lexIn» x2 x3 («withLen» (leaf 5) x6)
+                          else
+                            «strStep» x2 x3 x6 x1
+                        else
+                          if (Const.eq x5 (leaf 9)).label ≠ 0 then
+                            let x7 : T := «hexVal» x1;
+                            if («isSome» x7).label ≠ 0 then
+                              if (Const.eq (Const.child x4 (leaf 1)) (leaf 1)).label ≠ 0 then
+                                «lexIn»
+                                  x2
+                                  ((Const.add
+                                    (Const.mul (leaf 16) (Const.child x4 (leaf 2)))
+                                    («get» x7)) ::
+                                    x3)
+                                  («withLen» (leaf 5) x6)
+                              else
+                                «lexIn»
+                                  x2
+                                  x3
+                                  (Const.node (leaf 9) (x6 :: ((leaf 1) :: («single» («get» x7)))))
+                            else
+                              «lexFail»
+                          else
+                            if (Const.eq x5 (leaf 10)).label ≠ 0 then
+                              if («inRange» x1 (leaf 48) (leaf 55)).label ≠ 0 then
+                                let x7 : T := Const.add
+                                  (Const.mul (leaf 8) (Const.child x4 (leaf 2)))
+                                  (Const.sub x1 (leaf 48));
+                                if (Const.eq (Const.child x4 (leaf 1)) (leaf 2)).label ≠ 0 then
+                                  if (Const.lt x7 (leaf 256)).label ≠ 0 then
+                                    «lexIn» x2 (x7 :: x3) («withLen» (leaf 5) x6)
+                                  else
+                                    «lexFail»
+                                else
+                                  «lexIn»
+                                    x2
+                                    x3
+                                    (Const.node
+                                      (leaf 10)
+                                      (x6 ::
+                                        ((Const.add (Const.child x4 (leaf 1)) (leaf 1)) ::
+                                          («single» x7))))
                               else
                                 «lexFail»
                             else
-                              «lexIn»
-                                x2
-                                x3
-                                (Const.node
-                                  (leaf 10)
-                                  ((Const.add (Const.child x4 (leaf 0)) (leaf 1)) :: («single» x6)))
-                          else
-                            «lexFail»
-                        else
-                          x0
+                              if (Const.eq x5 (leaf 13)).label ≠ 0 then
+                                if («isSpace» x1).label ≠ 0 then
+                                  x0
+                                else
+                                  if («isSome» («hexVal» x1)).label ≠ 0 then
+                                    «lexIn» x2 (x1 :: x3) x4
+                                  else
+                                    if (Const.eq x1 (leaf 35)).label ≠ 0 then
+                                      let x7 : T := «decodeHex» («reverse» x3);
+                                      if («isSome» x7).label ≠ 0 then
+                                        «endAtom» x2 x6 (Const.children («get» x7))
+                                      else
+                                        «lexFail»
+                                    else
+                                      «lexFail»
+                              else
+                                if («isSpace» x1).label ≠ 0 then
+                                  x0
+                                else
+                                  if (if («isSome» («base64Val» x1)).label ≠ 0 then
+                                    leaf 1
+                                  else
+                                    Const.eq x1 (leaf 61)).label ≠ 0 then
+                                    «lexIn» x2 (x1 :: x3) x4
+                                  else
+                                    if (Const.eq x1 (leaf 124)).label ≠ 0 then
+                                      let x7 : T := «decodeBase64» («reverse» x3);
+                                      if («isSome» x7).label ≠ 0 then
+                                        «endAtom» x2 x6 (Const.children («get» x7))
+                                      else
+                                        «lexFail»
+                                    else
+                                      «lexFail»
 
 def «lexEnd» :=
   fun (x0 : List T × (List T × T)) =>
@@ -1184,11 +1397,13 @@ def «reservedNames» :=
                                     («kwDeftype» ::
                                       («kwDefnum» ::
                                         («kwHole» ::
-                                          («kwT» ::
-                                            («kwUnit» ::
-                                              («kwProd» ::
-                                                («kwArrow» ::
-                                                  («single» «kwList»))))))))))))))))))))))))
+                                          ((mk 0 [leaf 42, leaf 97, leaf 110, leaf 110]) ::
+                                            ((mk 0 [leaf 42, leaf 100, leaf 111, leaf 99]) ::
+                                              («kwT» ::
+                                                («kwUnit» ::
+                                                  («kwProd» ::
+                                                    («kwArrow» ::
+                                                      («single» «kwList»))))))))))))))))))))))))))
     «primNames»
 
 def «isFresh» :=

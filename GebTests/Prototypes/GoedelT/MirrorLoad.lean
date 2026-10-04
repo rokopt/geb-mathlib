@@ -66,9 +66,9 @@ def checkCertTy : Tree :=
 /-- The type the kernel computes for the checker's definition is the checker's type: the six
 abstractions' annotations, over the declared result type, at which the front end applies the
 identity to the definition's body. -/
-theorem checkCert_type : checker.g195.1 = checkCertTy := by
-  have h := infer_of_loadStep checker.step195
-  generalize checker.g195.1 = T at h ⊢
+theorem checkCert_type : checker.g203.1 = checkCertTy := by
+  have h := infer_of_loadStep checker.step203
+  generalize checker.g203.1 = T at h ⊢
   obtain ⟨f, h0⟩ := h
   obtain ⟨_, _, rfl, h1⟩ := infer_lam_inv h0
   obtain ⟨_, _, rfl, h2⟩ := infer_lam_inv h1
@@ -82,12 +82,12 @@ theorem checkCert_type : checker.g195.1 = checkCertTy := by
     (Sigma.mk.inj_iff.mp (Option.some.inj (h8.symm.trans (infer_var0 _ _ _)))).1]
   rfl
 
--- the last of the checker's globals is its global of index 195
-kernel_rfl checker_last : checker.pre196[195]? = some checker.g195
+-- the last of the checker's globals is its global of index 203
+kernel_rfl checker_last : checker.pre204[203]? = some checker.g203
 
 /-- The last global of the checker's program is the mirror's checker, at the checker's type. -/
 theorem checker_checkCert :
-    checker.pre196[195]? = some (⟨checkCertTy, GebMirror.GoedelT.checkCert⟩ : Glob) :=
+    checker.pre204[203]? = some (⟨checkCertTy, GebMirror.GoedelT.checkCert⟩ : Glob) :=
   checker_last.trans (congrArg some (Sigma.ext checkCert_type (checker.last_heq.trans HEq.rfl)))
 
 end GebTests.Prototypes.GoedelT.MirrorLoad
