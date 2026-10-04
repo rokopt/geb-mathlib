@@ -81,16 +81,6 @@ of its label's numeral and its children's data. -/
 def printDatum : Tree → SExp :=
   RoseTree.elim fun l rs ↦ if rs.isEmpty then numeralS l else listS (numeralS l :: rs)
 
-/-- The names of the primitives, as {name}`primNames` spells them, as lists of characters. -/
-def primChars : List (List Char) :=
-  [['l', 'a', 'b', 'e', 'l'], ['a', 'r', 'i', 't', 'y'], ['c', 'h', 'i', 'l', 'd'],
-    ['n', 'o', 'd', 'e'], ['c', 'h', 'i', 'l', 'd', 'r', 'e', 'n'], ['a', 'd', 'd'],
-    ['s', 'u', 'b'], ['m', 'u', 'l'], ['d', 'i', 'v'], ['m', 'o', 'd'], ['e', 'q'], ['l', 't'],
-    ['e', 'q', 'u', 'a', 'l'], ['l', 'o', 'g', '2']]
-
-/-- The primitives' names spelled as characters are their names. -/
-theorem primChars_ofList : primChars.map String.ofList = primNames := rfl
-
 /-- One node of a term printed, from its children with their printings, under binders to a
 depth, given the names of the definitions. -/
 def printStep (defs : List (List Char)) (l : ℕ) (rs : List (Tree × (ℕ → SExp))) (d : ℕ) :
@@ -122,7 +112,7 @@ def printStep (defs : List (List Char)) (l : ℕ) (rs : List (Tree × (ℕ → S
   else if l = Label.foldr then listS (atomS ['f', 'o', 'l', 'd', 'r'] :: cs.map printType)
   else if l = Label.lcase then listS (atomS ['l', 'c', 'a', 's', 'e'] :: cs.map printType)
   else if l = Label.prim then
-    atomS (primChars.getD ((cs.head?.map RoseTree.label).getD 0) [])
+    atomS (primNames.getD ((cs.head?.map RoseTree.label).getD 0) [])
   else atomS (defs.getD ((cs.head?.map RoseTree.label).getD 0) [])
 
 /-- A term printed under binders to a depth, given the names of the definitions. -/
@@ -295,10 +285,10 @@ theorem scopeOf_nodup (d : ℕ) : (scopeOf d).Nodup :=
 /-- The names a program's definitions may take, apart from distinctness: no numeral, no binder's
 name, and no reserved name. -/
 def NameOk (n : List Char) : Prop :=
-  numeral? n = none ∧ (∀ k, n ≠ binderName k) ∧ String.ofList n ∉ reservedNames
+  numeral? n = none ∧ (∀ k, n ≠ binderName k) ∧ n ∉ reservedNames
 
 /-- A name that may be a definition's is no primitive's name. -/
-theorem NameOk.not_prim {n : List Char} (h : NameOk n) : String.ofList n ∉ primNames :=
+theorem NameOk.not_prim {n : List Char} (h : NameOk n) : n ∉ primNames :=
   fun hm ↦ h.2.2 (List.mem_append_right _ hm)
 
 /-- A name that may be a definition's is not the unit's. -/
@@ -331,9 +321,9 @@ theorem head?_binderName (k : ℕ) : (binderName k).head? = some '_' := rfl
 
 /-- What resolution asks of a primitive's name: it is no numeral, does not begin with an
 underscore, and is found at its index among the primitives' names. -/
-theorem primChars_facts (k : ℕ) (hk : k < primNames.length) :
-    numeral? (primChars.getD k []) = none ∧ (primChars.getD k []).head? ≠ some '_' ∧
-      primNames.idxOf? (String.ofList (primChars.getD k [])) = some k := by
+theorem primNames_facts (k : ℕ) (hk : k < primNames.length) :
+    numeral? (primNames.getD k []) = none ∧ (primNames.getD k []).head? ≠ some '_' ∧
+      primNames.idxOf? (primNames.getD k []) = some k := by
   match k, hk with
   | 0, _ | 1, _ | 2, _ | 3, _ | 4, _ | 5, _ | 6, _ | 7, _ | 8, _ | 9, _ | 10, _ | 11, _
   | 12, _ | 13, _ => exact ⟨rfl, by decide, rfl⟩
@@ -348,15 +338,14 @@ theorem idxOf?_scopeOf_of_head {n : List Char} (h : n.head? ≠ some '_') (d : �
 /-- A primitive's name resolves to the primitive. -/
 theorem resolve_prim (tys : TypeNames) (defs : List (List Char)) (hok : ∀ n ∈ defs, NameOk n)
     (d k : ℕ) (hk : k < primNames.length) :
-    resolve tys defs (atomS (primChars.getD k [])) (scopeOf d) =
+    resolve tys defs (atomS (primNames.getD k [])) (scopeOf d) =
       some (mk Label.prim [leaf k]) := by
-  obtain ⟨hn, hh, hp⟩ := primChars_facts k hk
-  have hlen : k < primChars.length := hk
-  have hmem : String.ofList (primChars.getD k []) ∈ primNames := by
-    rw [← primChars_ofList, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hlen,
-      Option.getD_some]
-    exact List.mem_map_of_mem (List.getElem_mem hlen)
-  have hd : defs.idxOf? (primChars.getD k []) = none :=
+  obtain ⟨hn, hh, hp⟩ := primNames_facts k hk
+  have hlen : k < primNames.length := hk
+  have hmem : primNames.getD k [] ∈ primNames := by
+    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hlen, Option.getD_some]
+    exact List.getElem_mem hlen
+  have hd : defs.idxOf? (primNames.getD k []) = none :=
     List.idxOf?_eq_none_iff.mpr fun hm ↦ (hok _ hm).not_prim hmem
   simp only [atomS, resolve_node, resolveStep, hn, idxOf?_scopeOf_of_head hh, hd, hp]
 
@@ -366,7 +355,7 @@ theorem resolve_unit (tys : TypeNames) (defs : List (List Char)) (hok : ∀ n �
       some (mk Label.unit []) := by
   have hd : defs.idxOf? ['u', 'n', 'i', 't'] = none :=
     List.idxOf?_eq_none_iff.mpr fun hm ↦ (hok _ hm).ne_unit rfl
-  have hp : primNames.idxOf? (String.ofList ['u', 'n', 'i', 't']) = none := rfl
+  have hp : primNames.idxOf? ['u', 'n', 'i', 't'] = none := rfl
   have hn : numeral? ['u', 'n', 'i', 't'] = none := rfl
   have hs : (scopeOf d).idxOf? ['u', 'n', 'i', 't'] = none :=
     idxOf?_scopeOf_of_head (n := ['u', 'n', 'i', 't']) (by decide) d
@@ -440,7 +429,7 @@ theorem printType_list (a : Tree) : printType (RoseTree.node Label.tyList [a]) =
 /-- A printed type reads back to the type, with the atom it is if it is one. -/
 theorem elim_readTypeStep_printType (tys : TypeNames) : ∀ A : Tree, Ty.IsTy A = true →
     RoseTree.elim (readTypeStep tys) (printType A) =
-      ((printType A).label.map String.ofList, some A) :=
+      ((printType A).label, some A) :=
   RoseTree.ind fun l cs ih h ↦ by
     rcases isTy_cases h with h0 | h1 | ⟨a, b, he, ha, hb⟩ | ⟨a, b, he, ha, hb⟩ | ⟨a, he, ha⟩
     · rw [h0]; rfl
@@ -517,9 +506,9 @@ theorem binderName_not_mem_formKeywords (d : ℕ) : binderName d ∉ formKeyword
   exact this _ hm (head?_binderName d)
 
 /-- A name that is not reserved is no keyword. -/
-theorem not_mem_formKeywords_of_reserved {n : List Char} (h : String.ofList n ∉ reservedNames) :
+theorem not_mem_formKeywords_of_reserved {n : List Char} (h : n ∉ reservedNames) :
     n ∉ formKeywords := fun hm ↦ by
-  have : ∀ k ∈ formKeywords, String.ofList k ∈ reservedNames := by decide
+  have : ∀ k ∈ formKeywords, k ∈ reservedNames := by decide
   exact h (this n hm)
 
 /-- A numeral is no keyword. -/
@@ -543,7 +532,7 @@ theorem headOk_printTerm (defs : List (List Char)) (hok : ∀ n ∈ defs, NameOk
     (d : ℕ) : HeadOk (printTerm defs t d) := by
   rw [← RoseTree.node_label_children t, printTerm_node]
   unfold printStep
-  have hp : ∀ n ∈ primChars, n ∉ formKeywords := by decide
+  have hp : ∀ n ∈ primNames, n ∉ formKeywords := by decide
   have hd : ∀ n ∈ defs, n ∉ formKeywords := fun n hn ↦
     not_mem_formKeywords_of_reserved (hok n hn).2.2
   dsimp only
@@ -779,7 +768,7 @@ theorem resolve_printTerm (tys : TypeNames) (defs : List (List Char)) (hnd : def
         simp only [List.map_cons, List.map_nil, resolveStep, atomS, RoseTree.label_node,
           readType_printType tys A hA, readType_printType tys B hB]
         rfl
-    · change resolve tys defs (atomS (primChars.getD c.label [])) (scopeOf d) = _
+    · change resolve tys defs (atomS (primNames.getD c.label [])) (scopeOf d) = _
       rw [resolve_prim tys defs hok d c.label hlt, leaf_label hc]
     · change resolve tys defs (atomS (defs.getD c.label [])) (scopeOf d) = _
       rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hlt, Option.getD_some,

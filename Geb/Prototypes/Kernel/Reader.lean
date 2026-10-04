@@ -68,9 +68,9 @@ program erases.
 Both stages are folds: the lexer and the parser of the source document fold over the text,
 the parser with an explicit stack, and resolution is a fold over the S-expression whose
 result is a function of the names in scope. Text is a list of characters and atoms are lists
-of characters, compared with keywords through {name}`String.ofList`: core's
-{lit}`String.toList`, and the numeral parser built on it, depend on {lit}`Classical.choice`,
-which this module avoids.
+of characters, compared with keywords and reserved names as lists of characters: core's
+{lit}`String.toList`, the numeral parser built on it, and the injectivity of
+{name}`String.ofList` depend on {lit}`Classical.choice`, which this module avoids.
 
 ## Tags
 
@@ -96,9 +96,11 @@ def numeral? (s : List Char) : Option ℕ :=
     if c.isDigit then some (10 * n + (c.toNat - '0'.toNat)) else none) (some 0)
 
 /-- The names of the primitives, in the order of {name}`prims`. -/
-def primNames : List String :=
-  ["label", "arity", "child", "node", "children", "add", "sub", "mul", "div", "mod", "eq",
-   "lt", "equal", "log2"]
+def primNames : List (List Char) :=
+  [['l', 'a', 'b', 'e', 'l'], ['a', 'r', 'i', 't', 'y'], ['c', 'h', 'i', 'l', 'd'],
+    ['n', 'o', 'd', 'e'], ['c', 'h', 'i', 'l', 'd', 'r', 'e', 'n'], ['a', 'd', 'd'],
+    ['s', 'u', 'b'], ['m', 'u', 'l'], ['d', 'i', 'v'], ['m', 'o', 'd'], ['e', 'q'], ['l', 't'],
+    ['e', 'q', 'u', 'a', 'l'], ['l', 'o', 'g', '2']]
 
 /-- Type abbreviations: names with the types they abbreviate, the latest first. -/
 abbrev TypeNames : Type := List (List Char × Tree)
@@ -118,14 +120,15 @@ def numOf (nums : NumNames) (e : SExp) : Option (List Char) :=
 /-- One node of an S-expression read as a type: its atom, if it is one, and the type it denotes,
 from its children's. -/
 def readTypeStep (tys : TypeNames) (a : Option (List Char))
-    (rs : List (Option String × Option Tree)) : Option String × Option Tree :=
-  match a.map String.ofList, rs with
-  | some "T", _ => (some "T", some tT)
-  | some "Unit", _ => (some "Unit", some tUnit)
-  | some s, _ => (some s, a.bind fun n ↦ List.lookup n tys)
-  | none, [(some "Prod", _), (_, some A), (_, some B)] => (none, some (tProd A B))
-  | none, [(some "Arrow", _), (_, some A), (_, some B)] => (none, some (tArrow A B))
-  | none, [(some "List", _), (_, some A)] => (none, some (tList A))
+    (rs : List (Option (List Char) × Option Tree)) : Option (List Char) × Option Tree :=
+  match a, rs with
+  | some ['T'], _ => (a, some tT)
+  | some ['U', 'n', 'i', 't'], _ => (a, some tUnit)
+  | some s, _ => (a, List.lookup s tys)
+  | none, [(some ['P', 'r', 'o', 'd'], _), (_, some A), (_, some B)] => (none, some (tProd A B))
+  | none, [(some ['A', 'r', 'r', 'o', 'w'], _), (_, some A), (_, some B)] =>
+    (none, some (tArrow A B))
+  | none, [(some ['L', 'i', 's', 't'], _), (_, some A)] => (none, some (tList A))
   | none, _ => (none, none)
 
 /-- An S-expression read as a type, given the type abbreviations in force. -/
@@ -175,7 +178,7 @@ def resolveStep (tys : TypeNames) (defs : List (List Char)) (a : Option (List Ch
   let args (xs : List (SExp × (List (List Char) → Option Tree))) := xs.mapM (·.2 scope)
   match a, cs with
   | some s, _ =>
-    match numeral? s, scope.idxOf? s, defs.idxOf? s, primNames.idxOf? (String.ofList s) with
+    match numeral? s, scope.idxOf? s, defs.idxOf? s, primNames.idxOf? s with
     | some n, _, _, _ => some (mk Label.quote [leaf n])
     | _, some i, _, _ => some (mk Label.var [leaf i])
     | _, _, some j, _ => some (mk Label.ref [leaf j])
@@ -224,15 +227,19 @@ def resolve (tys : TypeNames) (defs : List (List Char)) (e : SExp) (scope : List
 /-- The names no declaration takes: the keywords of terms and of declarations, the form of a
 hole, the heads of the strict encodings' annotation forms and documents, the names of the types
 and of the primitives. -/
-def reservedNames : List String :=
-  ["lam", "let", "pair", "fst", "snd", "if", "quote", "cons", "nil", "fold", "para", "iter",
-    "foldr", "lcase", "unit", "def", "deftype", "defnum", "hole", "*ann", "*doc", "T", "Unit",
-    "Prod", "Arrow", "List"] ++ primNames
+def reservedNames : List (List Char) :=
+  [['l', 'a', 'm'], ['l', 'e', 't'], ['p', 'a', 'i', 'r'], ['f', 's', 't'], ['s', 'n', 'd'],
+    ['i', 'f'], ['q', 'u', 'o', 't', 'e'], ['c', 'o', 'n', 's'], ['n', 'i', 'l'],
+    ['f', 'o', 'l', 'd'], ['p', 'a', 'r', 'a'], ['i', 't', 'e', 'r'], ['f', 'o', 'l', 'd', 'r'],
+    ['l', 'c', 'a', 's', 'e'], ['u', 'n', 'i', 't'], ['d', 'e', 'f'],
+    ['d', 'e', 'f', 't', 'y', 'p', 'e'], ['d', 'e', 'f', 'n', 'u', 'm'], ['h', 'o', 'l', 'e'],
+    ['*', 'a', 'n', 'n'], ['*', 'd', 'o', 'c'], ['T'], ['U', 'n', 'i', 't'], ['P', 'r', 'o', 'd'],
+    ['A', 'r', 'r', 'o', 'w'], ['L', 'i', 's', 't']] ++ primNames
 
 /-- Whether a name may be declared after declarations of the names given: it is neither
 reserved nor declared already, as a definition or an abbreviation of either kind. -/
 def isFresh (taken : List (List Char)) (name : List Char) : Bool :=
-  !reservedNames.contains (String.ofList name) && !taken.contains name
+  !reservedNames.contains name && !taken.contains name
 
 /-- One form of a program read after those before it, given their abbreviations and
 definitions: a definition, a type abbreviation or a numeral abbreviation under a fresh name. -/
