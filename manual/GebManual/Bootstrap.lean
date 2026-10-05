@@ -2060,12 +2060,11 @@ tag := "datatype-completion"
 
 State: in progress.
 
-The sources annotate every value of a declared datatype as `T`:
-`bootstrap/free-topos/partial-horn.geb` declares `(tree-data Eqn (eqn T T))`,
-and functions over optional trees take `(m T)`. The expansion of the
-datatype language ignores the types of fields. Which datatype a value is
-meant to belong to is therefore recorded nowhere, and it is information
-no tool recovers later. The layers of the decisions make the datatype
+A source whose types are trees annotates every value of a declared
+datatype as `T`, declaring `(tree-data Eqn (eqn T T))` and taking optional
+trees as `(m T)`, and an expansion that ignores the types of fields
+accepts it. Which datatype a value is meant to belong to is then recorded
+nowhere, and it is information no tool recovers later. The layers of the decisions make the datatype
 language's types denote recognized types instead, a datatype being the
 subset of trees its recognizer accepts, a subobject
 `{t : T | rec_D t}` of the tree object in the metalogic, whose language
@@ -2187,11 +2186,14 @@ retyped, its typing, expansion and Lean backend declaring their forms,
 types, documents and terms by `data` with the representations they had,
 and its lists and optional values instances of the templates `Seq` and
 `Option` of `bootstrap/seq.geb`; a template's instances are distinct
-types, so modules share an instance by exporting it. Remaining, in order:
-the sources of Gödel's T, the proofs and the printer retyped, and the
-metalogic's last, its mirror regenerated and the agreement proofs
-repaired where a definition's erasure changes; `tree-data` removed; and
-the soundness of the typing.
+types, so modules share an instance by exporting it. Complete also: the
+metalogic's sources retyped, their records declared by `data`, their
+lists and optional values instances of the templates, and the combinator
+prover's computations instances of a template `Comp` at each type of
+values, composed by a copy of the composition for each pair of types it
+composes; its mirror regenerated, and the agreement proofs repaired by
+equations of each copy with one Lean function. Remaining, in order:
+`tree-data` removed; and the soundness of the typing.
 
 Abstraction is mathematical, not syntactic, and needs no mark of its
 own. An interface is a theory, a presentation of operations and axioms
@@ -6094,13 +6096,16 @@ the change that removes it.
   the leaf and the node by those names; qualifying them as the constants
   are qualified, as the hygiene of generated names requires, removes the
   restriction.
-* The sources annotate every value of a datatype as the type of trees,
-  declaring their datatypes by `tree-data`, so the datatype a value
-  belongs to is recorded nowhere, which the rest of its completion
-  removes
-  ({ref "datatype-completion"}[The datatype language's completion]); a
-  pattern omits the `&` that a declaration writes; and every pattern
-  variable is bound whether or not the clause uses it.
+* Patterns. A pattern omits the `&` that a declaration writes, and every
+  pattern variable is bound whether or not the clause uses it.
+* Monomorphic compositions. The datatype language has no polymorphic
+  definitions, and a template's instances are distinct types, so a
+  composition of computations at two types of values is a definition of
+  its own: the combinator prover holds one for each pair of types it
+  composes
+  ({ref "datatype-completion"}[The datatype language's completion]).
+  Polymorphic definitions, or templates over the instances of another,
+  remove the copies.
 * Only the names of definitions are kept beside a bundle; the names of
   bound variables and comments are not. The source documents keep the
   comments, and the durable document of the authoring sequence keeps

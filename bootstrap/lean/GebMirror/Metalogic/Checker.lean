@@ -238,16 +238,92 @@ def «PartialHorn.ptValues» :=
       x0;
     x1
 
+def «PartialHorn.sorts» := fun (x0 : List T) => Const.node (leaf 0) x0
+
 def «PartialHorn.opSig» :=
   fun (x0 : T) (x1 : T) =>
     Const.node (leaf 0) (x0 :: (x1 :: ([] : List T)))
+
+def «PartialHorn/OOpSig.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «PartialHorn/OOpSig.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «PartialHorn/OOpSig.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «PartialHorn/OOpSig.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «PartialHorn/OOpSig.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «PartialHorn/OOpSig.nothing»
+      (fun (x2 : T) (_ : List T) => «PartialHorn/OOpSig.just» x2);
+    x2
+
+def «PartialHorn/OOpSig.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
 
 def «PartialHorn.opArgs» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
             let x2 : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1); Const.children x2);
+            let _ : T := Const.child x1 (leaf 1);
+            let x4 : T := x2;
+            let x5 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x5 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x5
+                  ([] : List T)
+                  (fun (_ : T) (x7 : List T) => x7))
+              (Const.children x4)
+              (leaf 0);
+            x5);
     x1
 
 def «PartialHorn.opSort» :=
@@ -256,6 +332,15 @@ def «PartialHorn.opSort» :=
                    let _ : T := Const.child x1 (leaf 0);
                    let x3 : T := Const.child x1 (leaf 1); x3);
     x1
+
+def «PartialHorn.bindOT» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Prelude.none»);
+    x2
 
 def «PartialHorn.sortOf» :=
   fun (x0 : List T) (x1 : List T) (x2 : T) =>
@@ -274,8 +359,8 @@ def «PartialHorn.sortOf» :=
             else
               «Prelude.none»
           else
-            «Base.bindO»
-              («Prelude.nth» x0 (Const.sub x3 (leaf 1)))
+            «PartialHorn.bindOT»
+              («PartialHorn/OOpSig.nthOf» x0 (Const.sub x3 (leaf 1)))
               (fun (x6 : T) =>
                 if («Base.equalTs»
                   («PartialHorn.ptValues» x4)
@@ -360,9 +445,386 @@ def «PartialHorn.eqScoped» :=
       («PartialHorn.scoped» x0 («PartialHorn.eqRhs» x1));
     x2
 
+def «PartialHorn.eqns» := fun (x0 : List T) => Const.node (leaf 0) x0
+
+def «PartialHorn/Eqns.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «PartialHorn/Eqns.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «PartialHorn/Eqns.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «PartialHorn/Eqns.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «PartialHorn/Eqns.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «PartialHorn/Eqns.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «PartialHorn/Eqns.tail» x1 x0;
+    x2
+
+def «PartialHorn/Eqns.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («PartialHorn/Eqns.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «PartialHorn/EachEqn.all» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) => «Prelude.and» (x0 x2) x3)
+      (leaf 1)
+      x1;
+    x2
+
+def «PartialHorn/EachEqn.any» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) => «Prelude.or» (x0 x2) x3)
+      (leaf 0)
+      x1;
+    x2
+
+def «PartialHorn/EachEqn.isEmpty» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.eq
+      (Const.foldr
+        (α := T)
+        (β := T)
+        (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+        (leaf 0)
+        x0)
+      (leaf 0);
+    x1
+
+def «PartialHorn/EachEqn.take» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := (let x2 : T := Const.foldr
+              (α := T)
+              (β := T)
+              (fun (_ : T) (x3 : T) => Const.add x3 (leaf 1))
+              (leaf 0)
+              x1;
+            (Const.foldr
+              (α := T)
+              (β := T × List T)
+              (fun (x3 : T) (x4 : T × List T) =>
+                (Const.add (x4).1 (leaf 1),
+                  if (Const.lt
+                    (Const.sub (Const.sub x2 (x4).1) (leaf 1))
+                    x0).label ≠ 0 then
+                    (x3 :: (x4).2)
+                  else
+                    (x4).2))
+              (leaf 0, ([] : List T))
+              x1).2);
+    x2
+
+def «PartialHorn/OEqn.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «PartialHorn/OEqn.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «PartialHorn/OEqn.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «PartialHorn/OEqn.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «PartialHorn/OEqn.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «PartialHorn/OEqn.nothing»
+      (fun (x2 : T) (_ : List T) => «PartialHorn/OEqn.just» x2);
+    x2
+
+def «PartialHorn/OEqn.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «PartialHorn/OEqns.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «PartialHorn/OEqns.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «PartialHorn/OEqns.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «PartialHorn/OEqns.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «PartialHorn/OEqns.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «PartialHorn/OEqns.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «PartialHorn/OEqns.tail» x1 x0;
+    x2
+
+def «PartialHorn/OEqns.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («PartialHorn/OEqns.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «PartialHorn/EachOEqn.all» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) => «Prelude.and» (x0 x2) x3)
+      (leaf 1)
+      x1;
+    x2
+
+def «PartialHorn/EachOEqn.any» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) => «Prelude.or» (x0 x2) x3)
+      (leaf 0)
+      x1;
+    x2
+
+def «PartialHorn/EachOEqn.isEmpty» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.eq
+      (Const.foldr
+        (α := T)
+        (β := T)
+        (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+        (leaf 0)
+        x0)
+      (leaf 0);
+    x1
+
+def «PartialHorn/EachOEqn.take» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := (let x2 : T := Const.foldr
+              (α := T)
+              (β := T)
+              (fun (_ : T) (x3 : T) => Const.add x3 (leaf 1))
+              (leaf 0)
+              x1;
+            (Const.foldr
+              (α := T)
+              (β := T × List T)
+              (fun (x3 : T) (x4 : T × List T) =>
+                (Const.add (x4).1 (leaf 1),
+                  if (Const.lt
+                    (Const.sub (Const.sub x2 (x4).1) (leaf 1))
+                    x0).label ≠ 0 then
+                    (x3 :: (x4).2)
+                  else
+                    (x4).2))
+              (leaf 0, ([] : List T))
+              x1).2);
+    x2
+
+def «PartialHorn.oeqns» := fun (x0 : List T) => Const.node (leaf 0) x0
+
+def «PartialHorn.sameEqns» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : T := Const.equal
+      («PartialHorn.eqns» x0)
+      («PartialHorn.eqns» x1);
+    x2
+
+def «PartialHorn.sameOEqns» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : T := Const.equal
+      («PartialHorn.oeqns» x0)
+      («PartialHorn.oeqns» x1);
+    x2
+
 def «PartialHorn.seq» :=
   fun (x0 : T) (x1 : T) (x2 : T) =>
     Const.node (leaf 0) (x0 :: (x1 :: (x2 :: ([] : List T))))
+
+def «PartialHorn/OSequent.nothing» :=
+  Const.node (leaf 0) ([] : List T)
+
+def «PartialHorn/OSequent.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «PartialHorn/OSequent.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «PartialHorn/OSequent.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «PartialHorn/OSequent.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «PartialHorn/OSequent.nothing»
+      (fun (x2 : T) (_ : List T) => «PartialHorn/OSequent.just» x2);
+    x2
+
+def «PartialHorn/OSequent.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
 
 def «PartialHorn.seqCtx» :=
   fun (x0 : T) =>
@@ -370,7 +832,21 @@ def «PartialHorn.seqCtx» :=
       T := (let x1 : T := x0;
             let x2 : T := Const.child x1 (leaf 0);
             let _ : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2); Const.children x2);
+            let _ : T := Const.child x1 (leaf 2);
+            let x5 : T := x2;
+            let x6 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x6 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x6
+                  ([] : List T)
+                  (fun (_ : T) (x8 : List T) => x8))
+              (Const.children x5)
+              (leaf 0);
+            x6);
     x1
 
 def «PartialHorn.seqHyps» :=
@@ -379,7 +855,21 @@ def «PartialHorn.seqHyps» :=
       T := (let x1 : T := x0;
             let _ : T := Const.child x1 (leaf 0);
             let x3 : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2); Const.children x3);
+            let _ : T := Const.child x1 (leaf 2);
+            let x5 : T := x3;
+            let x6 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x6 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x6
+                  ([] : List T)
+                  (fun (_ : T) (x8 : List T) => x8))
+              (Const.children x5)
+              (leaf 0);
+            x6);
     x1
 
 def «PartialHorn.seqConcl» :=
@@ -393,8 +883,8 @@ def «PartialHorn.seqConcl» :=
 def «PartialHorn.mkSeq» :=
   fun (x0 : List T) (x1 : List T) (x2 : T) =>
     let x3 : T := «PartialHorn.seq»
-      (Const.node (leaf 0) x0)
-      (Const.node (leaf 0) x1)
+      («PartialHorn.sorts» x0)
+      («PartialHorn.eqns» x1)
       x2;
     x3
 
@@ -402,9 +892,16 @@ def «PartialHorn.seqScoped» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := «Prelude.length» («PartialHorn.seqCtx» x0);
                    «Prelude.and»
-                     («Base.allT» («PartialHorn.eqScoped» x1) («PartialHorn.seqHyps» x0))
+                     («PartialHorn/EachEqn.all»
+                       («PartialHorn.eqScoped» x1)
+                       («PartialHorn.seqHyps» x0))
                      («PartialHorn.eqScoped» x1 («PartialHorn.seqConcl» x0)));
     x1
+
+def «PartialHorn.opSigs» :=
+  fun (x0 : List T) => Const.node (leaf 0) x0
+
+def «PartialHorn.seqs» := fun (x0 : List T) => Const.node (leaf 0) x0
 
 def «PartialHorn.theory» :=
   fun (x0 : T) (x1 : T) =>
@@ -415,7 +912,21 @@ def «PartialHorn.thySig» :=
     let x1 : List
       T := (let x1 : T := x0;
             let x2 : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1); Const.children x2);
+            let _ : T := Const.child x1 (leaf 1);
+            let x4 : T := x2;
+            let x5 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x5 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x5
+                  ([] : List T)
+                  (fun (_ : T) (x7 : List T) => x7))
+              (Const.children x4)
+              (leaf 0);
+            x5);
     x1
 
 def «PartialHorn.thyAxioms» :=
@@ -423,7 +934,21 @@ def «PartialHorn.thyAxioms» :=
     let x1 : List
       T := (let x1 : T := x0;
             let _ : T := Const.child x1 (leaf 0);
-            let x3 : T := Const.child x1 (leaf 1); Const.children x3);
+            let x3 : T := Const.child x1 (leaf 1);
+            let x4 : T := x3;
+            let x5 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x5 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x5
+                  ([] : List T)
+                  (fun (_ : T) (x7 : List T) => x7))
+              (Const.children x4)
+              (leaf 0);
+            x5);
     x1
 
 def «PartialHorn.pcTrees» :=
@@ -474,10 +999,73 @@ def «PartialHorn.pcPrem» :=
         «PartialHorn/PCs.tail»
         x0
         x1)
-      (fun (_ : List T) (_ : List T) => «Prelude.none»)
+      (fun (_ : List T) (_ : List T) => «PartialHorn/OEqn.nothing»)
       (fun (x2 : T × (List T → List T → T))
          (_ : List (T × (List T → List T → T))) =>
         (x2).2);
+    x2
+
+def «PartialHorn.lhsOf» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let x2 : T := Const.child x1 (leaf 0);
+                     «Prelude.some» («PartialHorn.eqLhs» x2)
+                   else
+                     «Prelude.none»);
+    x1
+
+def «PartialHorn.rhsOf» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let x2 : T := Const.child x1 (leaf 0);
+                     «Prelude.some» («PartialHorn.eqRhs» x2)
+                   else
+                     «Prelude.none»);
+    x1
+
+def «PartialHorn.bindE» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «PartialHorn/OEqn.nothing»);
+    x2
+
+def «PartialHorn.mapE» :=
+  fun (x0 : T → T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); «PartialHorn/OEqn.just» (x0 x3)
+                   else
+                     «PartialHorn/OEqn.nothing»);
+    x2
+
+def «PartialHorn.bindSE» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «PartialHorn/OEqn.nothing»);
+    x2
+
+def «PartialHorn.bindTE» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (if («Prelude.isSome» x0).label ≠ 0 then
+      x1 («Prelude.get» x0)
+    else
+      «PartialHorn/OEqn.nothing»);
+    x2
+
+def «PartialHorn.mapTE» :=
+  fun (x0 : T → T) (x1 : T) =>
+    let x2 : T := (if («Prelude.isSome» x1).label ≠ 0 then
+      «PartialHorn/OEqn.just» (x0 («Prelude.get» x1))
+    else
+      «PartialHorn/OEqn.nothing»);
     x2
 
 def «PartialHorn.leafIndex» :=
@@ -487,6 +1075,28 @@ def «PartialHorn.leafIndex» :=
     else
       «Prelude.none»);
     x1
+
+def «PartialHorn/LhsOf.map» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => ((x0 x2) :: x3))
+      ([] : List T)
+      x1;
+    x2
+
+def «PartialHorn/JustEqn.map» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => ((x0 x2) :: x3))
+      ([] : List T)
+      x1;
+    x2
 
 def «PartialHorn.inst» :=
   fun (x0 : List T)
@@ -505,18 +1115,20 @@ def «PartialHorn.inst» :=
                          («Base.mapT» «Prelude.some» («PartialHorn.seqCtx» x1)))
                        («Prelude.and»
                          («Base.equalTs»
-                           («Base.mapT»
-                             («Base.mapO» «PartialHorn.eqLhs»)
-                             («Base.take» x5 («Prelude.drop» x5 x7)))
+                           («PartialHorn/LhsOf.map»
+                             «PartialHorn.lhsOf»
+                             («PartialHorn/EachOEqn.take» x5 («PartialHorn/OEqns.drop» x5 x7)))
                            («Base.mapT» «Prelude.some» x6))
-                         («Base.equalTs»
-                           («Prelude.drop» (Const.add x5 x5) x7)
-                           («Base.mapT»
-                             (fun (x8 : T) => «Prelude.some» («PartialHorn.eqSubst» x6 x8))
+                         («PartialHorn.sameOEqns»
+                           («PartialHorn/OEqns.drop» (Const.add x5 x5) x7)
+                           («PartialHorn/JustEqn.map»
+                             (fun (x8 : T) =>
+                               «PartialHorn/OEqn.just» («PartialHorn.eqSubst» x6 x8))
                              («PartialHorn.seqHyps» x1)))))).label ≠ 0 then
-                     «Prelude.some» («PartialHorn.eqSubst» x6 («PartialHorn.seqConcl» x1))
+                     «PartialHorn/OEqn.just»
+                       («PartialHorn.eqSubst» x6 («PartialHorn.seqConcl» x1))
                    else
-                     «Prelude.none»);
+                     «PartialHorn/OEqn.nothing»);
     x5
 
 def «PartialHorn.pShape» :=
@@ -534,47 +1146,47 @@ def «PartialHorn.pcheckStep» :=
     let x7 : T := (let x7 : T := «Prelude.length» x3;
                    let x8 : T := «Prelude.at» x3 (leaf 0);
                    if («PartialHorn.pShape» x2 x7 (leaf 0) (leaf 1)).label ≠ 0 then
-                     «Base.bindO»
+                     «PartialHorn.bindTE»
                        («PartialHorn.leafIndex» x8)
-                       (fun (x9 : T) => «Prelude.nth» x6 x9)
+                       (fun (x9 : T) => «PartialHorn/OEqn.nthOf» x6 x9)
                    else
                      if («PartialHorn.pShape» x2 x7 (leaf 1) (leaf 1)).label ≠ 0 then
-                       «Base.bindO»
+                       «PartialHorn.bindTE»
                          («PartialHorn.leafIndex» x8)
                          (fun (x9 : T) =>
                            if (Const.lt x9 («Prelude.length» x5)).label ≠ 0 then
-                             «Prelude.some»
+                             «PartialHorn/OEqn.just»
                                («PartialHorn.eqn» («PartialHorn.phVar» x9) («PartialHorn.phVar» x9))
                            else
-                             «Prelude.none»)
+                             «PartialHorn/OEqn.nothing»)
                      else
                        if («PartialHorn.pShape» x2 x7 (leaf 2) (leaf 1)).label ≠ 0 then
-                         «Base.mapO»
+                         «PartialHorn.mapE»
                            (fun (x9 : T) =>
                              «PartialHorn.eqn» («PartialHorn.eqRhs» x9) («PartialHorn.eqLhs» x9))
                            («PartialHorn.pcPrem» x4 (leaf 0) x5 x6)
                        else
                          if («PartialHorn.pShape» x2 x7 (leaf 3) (leaf 2)).label ≠ 0 then
-                           «Base.bindO»
+                           «PartialHorn.bindE»
                              («PartialHorn.pcPrem» x4 (leaf 0) x5 x6)
                              (fun (x9 : T) =>
-                               «Base.bindO»
+                               «PartialHorn.bindE»
                                  («PartialHorn.pcPrem» x4 (leaf 1) x5 x6)
                                  (fun (x10 : T) =>
                                    if (Const.equal
                                      («PartialHorn.eqRhs» x9)
                                      («PartialHorn.eqLhs» x10)).label ≠ 0 then
-                                     «Prelude.some»
+                                     «PartialHorn/OEqn.just»
                                        («PartialHorn.eqn»
                                          («PartialHorn.eqLhs» x9)
                                          («PartialHorn.eqRhs» x10))
                                    else
-                                     «Prelude.none»))
+                                     «PartialHorn/OEqn.nothing»))
                          else
                            if («Prelude.and»
                              (Const.eq x2 (leaf 4))
                              (Const.lt (leaf 0) x7)).label ≠ 0 then
-                             «Base.bindO»
+                             «PartialHorn.bindE»
                                («PartialHorn.pcPrem» x4 (leaf 0) x5 x6)
                                (fun (x9 : T) =>
                                  let x10 : List
@@ -583,11 +1195,11 @@ def «PartialHorn.pcheckStep» :=
                                    («Base.not»
                                      (Const.eq (Const.label («PartialHorn.eqLhs» x9)) (leaf 0)))
                                    («Base.equalTs»
-                                     («Base.mapT» («Base.mapO» «PartialHorn.eqLhs») x10)
+                                     («PartialHorn/LhsOf.map» «PartialHorn.lhsOf» x10)
                                      («Base.mapT»
                                        «Prelude.some»
                                        (Const.children («PartialHorn.eqLhs» x9))))).label ≠ 0 then
-                                   «Base.mapO»
+                                   «PartialHorn.mapTE»
                                      (fun (x11 : T) =>
                                        «PartialHorn.eqn»
                                          («PartialHorn.eqLhs» x9)
@@ -595,37 +1207,39 @@ def «PartialHorn.pcheckStep» :=
                                            (Const.label («PartialHorn.eqLhs» x9))
                                            (Const.children x11)))
                                      («Base.allSomeT»
-                                       («Base.mapT» («Base.mapO» «PartialHorn.eqRhs») x10))
+                                       («PartialHorn/LhsOf.map» «PartialHorn.rhsOf» x10))
                                  else
-                                   «Prelude.none»)
+                                   «PartialHorn/OEqn.nothing»)
                            else
                              if («PartialHorn.pShape» x2 x7 (leaf 5) (leaf 2)).label ≠ 0 then
-                               «Base.bindO»
+                               «PartialHorn.bindTE»
                                  («PartialHorn.leafIndex» x8)
                                  (fun (x9 : T) =>
-                                   «Base.bindO»
+                                   «PartialHorn.bindE»
                                      («PartialHorn.pcPrem» x4 (leaf 1) x5 x6)
                                      (fun (x10 : T) =>
                                        if («Base.not»
                                          (Const.eq
                                            (Const.label («PartialHorn.eqLhs» x10))
                                            (leaf 0))).label ≠ 0 then
-                                         «Base.mapO»
+                                         «PartialHorn.mapTE»
                                            (fun (x11 : T) => «PartialHorn.eqn» x11 x11)
                                            («Prelude.nth»
                                              (Const.children («PartialHorn.eqLhs» x10))
                                              x9)
                                        else
-                                         «Prelude.none»))
+                                         «PartialHorn/OEqn.nothing»))
                              else
                                if («Prelude.and»
                                  (Const.eq x2 (leaf 6))
                                  (Const.lt (leaf 0) x7)).label ≠ 0 then
-                                 «Base.bindO»
+                                 «PartialHorn.bindTE»
                                    («PartialHorn.leafIndex» x8)
                                    (fun (x9 : T) =>
-                                     «Base.bindO»
-                                       («Prelude.nth» («PartialHorn.thyAxioms» x0) x9)
+                                     «PartialHorn.bindSE»
+                                       («PartialHorn/OSequent.nthOf»
+                                         («PartialHorn.thyAxioms» x0)
+                                         x9)
                                        (fun (x10 : T) =>
                                          «PartialHorn.inst»
                                            («PartialHorn.thySig» x0)
@@ -635,7 +1249,7 @@ def «PartialHorn.pcheckStep» :=
                                            x6))
                                else
                                  if («PartialHorn.pShape» x2 x7 (leaf 7) (leaf 2)).label ≠ 0 then
-                                   «Base.bindO»
+                                   «PartialHorn.bindE»
                                      («PartialHorn.pcPrem» x4 (leaf 0) x5 x6)
                                      (fun (x9 : T) =>
                                        «PartialHorn.pcPrem» x4 (leaf 1) x5 (x9 :: x6))
@@ -643,11 +1257,11 @@ def «PartialHorn.pcheckStep» :=
                                    if («Prelude.and»
                                      (Const.eq x2 (leaf 8))
                                      (Const.lt (leaf 0) x7)).label ≠ 0 then
-                                     «Base.bindO»
+                                     «PartialHorn.bindTE»
                                        («PartialHorn.leafIndex» x8)
                                        (fun (x9 : T) =>
-                                         «Base.bindO»
-                                           («Prelude.nth» x1 x9)
+                                         «PartialHorn.bindSE»
+                                           («PartialHorn/OSequent.nthOf» x1 x9)
                                            (fun (x10 : T) =>
                                              «PartialHorn.inst»
                                                («PartialHorn.thySig» x0)
@@ -656,7 +1270,7 @@ def «PartialHorn.pcheckStep» :=
                                                x5
                                                x6))
                                    else
-                                     «Prelude.none»);
+                                     «PartialHorn/OEqn.nothing»);
     x7
 
 def «PartialHorn.pcheck» :=
@@ -677,13 +1291,151 @@ def «PartialHorn.pdefn» :=
   fun (x0 : T) (x1 : T) (x2 : T) =>
     Const.node (leaf 0) (x0 :: (x1 :: (x2 :: ([] : List T))))
 
+def «PartialHorn.pdefns» :=
+  fun (x0 : List T) => Const.node (leaf 0) x0
+
+def «PartialHorn/OPDefn.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «PartialHorn/OPDefn.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «PartialHorn/OPDefn.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «PartialHorn/OPDefn.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «PartialHorn/OPDefn.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «PartialHorn/OPDefn.nothing»
+      (fun (x2 : T) (_ : List T) => «PartialHorn/OPDefn.just» x2);
+    x2
+
+def «PartialHorn/OPDefn.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «PartialHorn/OPDefnList.nothing» :=
+  Const.node (leaf 0) ([] : List T)
+
+def «PartialHorn/OPDefnList.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «PartialHorn/OPDefnList.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «PartialHorn/OPDefnList.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «PartialHorn/OPDefnList.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «PartialHorn/OPDefnList.nothing»
+      (fun (x2 : T) (_ : List T) => «PartialHorn/OPDefnList.just» x2);
+    x2
+
+def «PartialHorn/OPDefnList.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
 def «PartialHorn.pdCtx» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
             let x2 : T := Const.child x1 (leaf 0);
             let _ : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2); Const.children x2);
+            let _ : T := Const.child x1 (leaf 2);
+            let x5 : T := x2;
+            let x6 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x6 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x6
+                  ([] : List T)
+                  (fun (_ : T) (x8 : List T) => x8))
+              (Const.children x5)
+              (leaf 0);
+            x6);
     x1
 
 def «PartialHorn.pdSort» :=
@@ -709,6 +1461,132 @@ def «PartialHorn.opVars» :=
       («Base.mapT» «PartialHorn.phVar» («Base.range» x1));
     x2
 
+def «PartialHorn/Seqs.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «PartialHorn/Seqs.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «PartialHorn/Seqs.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «PartialHorn/Seqs.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «PartialHorn/Seqs.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «PartialHorn/Seqs.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «PartialHorn/Seqs.tail» x1 x0;
+    x2
+
+def «PartialHorn/Seqs.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («PartialHorn/Seqs.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «PartialHorn/OpSigs.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «PartialHorn/OpSigs.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «PartialHorn/OpSigs.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «PartialHorn/OpSigs.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «PartialHorn/OpSigs.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «PartialHorn/OpSigs.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «PartialHorn/OpSigs.tail» x1 x0;
+    x2
+
+def «PartialHorn/OpSigs.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («PartialHorn/OpSigs.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
 def «PartialHorn.pdAxioms» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : List
@@ -718,12 +1596,12 @@ def «PartialHorn.pdAxioms» :=
             let x3 : T := «PartialHorn.pdBody» x1;
             ((«PartialHorn.mkSeq»
               («PartialHorn.pdCtx» x1)
-              («Prelude.single» («PartialHorn.eqn» x3 x3))
+              («PartialHorn/Eqns.single» («PartialHorn.eqn» x3 x3))
               («PartialHorn.eqn» x2 x3)) ::
-              («Prelude.single»
+              («PartialHorn/Seqs.single»
                 («PartialHorn.mkSeq»
                   («PartialHorn.pdCtx» x1)
-                  («Prelude.single» («PartialHorn.eqn» x2 x2))
+                  («PartialHorn/Eqns.single» («PartialHorn.eqn» x2 x2))
                   («PartialHorn.eqn» x3 x3)))));
     x2
 
@@ -731,20 +1609,81 @@ def «PartialHorn.thyExtend» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : List T := «PartialHorn.thySig» x0;
                    «PartialHorn.theory»
-                     (Const.node
-                       (leaf 0)
-                       («Prelude.append»
+                     («PartialHorn.opSigs»
+                       («PartialHorn/OpSigs.append»
                          x2
-                         («Prelude.single»
+                         («PartialHorn/OpSigs.single»
                            («PartialHorn.opSig»
-                             (Const.node (leaf 0) («PartialHorn.pdCtx» x1))
+                             («PartialHorn.sorts» («PartialHorn.pdCtx» x1))
                              («PartialHorn.pdSort» x1)))))
-                     (Const.node
-                       (leaf 0)
-                       («Prelude.append»
+                     («PartialHorn.seqs»
+                       («PartialHorn/Seqs.append»
                          («PartialHorn.thyAxioms» x0)
-                         («PartialHorn.pdAxioms» («Prelude.length» x2) x1))));
+                         («PartialHorn.pdAxioms» («PartialHorn/OpSigs.length» x2) x1))));
     x2
+
+def «PartialHorn/PDefns.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «PartialHorn/PDefns.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «PartialHorn/PDefns.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «PartialHorn/PDefns.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «PartialHorn/PDefns.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «PartialHorn/PDefns.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «PartialHorn/PDefns.tail» x1 x0;
+    x2
+
+def «PartialHorn/PDefns.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («PartialHorn/PDefns.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
 
 def «PartialHorn.thyExtendAll» :=
   fun (x0 : T) (x1 : List T) =>
@@ -753,8 +1692,255 @@ def «PartialHorn.thyExtendAll» :=
       (β := T)
       (fun (x2 : T) (x3 : T) => «PartialHorn.thyExtend» x3 x2)
       x0
-      («Prelude.reverse» x1);
+      («PartialHorn/PDefns.reverse» x1);
     x2
+
+def «Theory/OpSigs.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Theory/OpSigs.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Theory/OpSigs.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Theory/OpSigs.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Theory/OpSigs.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Theory/OpSigs.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «Theory/OpSigs.tail» x1 x0;
+    x2
+
+def «Theory/OpSigs.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Theory/OpSigs.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Theory/OpSigL.l2» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : List T := (x0 :: (x1 :: ([] : List T))); x2
+
+def «Theory/OpSigL.l3» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    let x3 : List T := (x0 :: («Theory/OpSigL.l2» x1 x2)); x3
+
+def «Theory/OpSigL.l4» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) =>
+    let x4 : List T := (x0 :: («Theory/OpSigL.l3» x1 x2 x3)); x4
+
+def «Theory/OpSigL.l5» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
+    let x5 : List T := (x0 :: («Theory/OpSigL.l4» x1 x2 x3 x4)); x5
+
+def «Theory/OpSigL.l6» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) =>
+    let x6 : List T := (x0 :: («Theory/OpSigL.l5» x1 x2 x3 x4 x5)); x6
+
+def «Theory/Seqs.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Theory/Seqs.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Theory/Seqs.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Theory/Seqs.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Theory/Seqs.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Theory/Seqs.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List T := Const.iter (α := List T) «Theory/Seqs.tail» x1 x0;
+    x2
+
+def «Theory/Seqs.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Theory/Seqs.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Theory/SeqL.l2» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : List T := (x0 :: (x1 :: ([] : List T))); x2
+
+def «Theory/SeqL.l3» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    let x3 : List T := (x0 :: («Theory/SeqL.l2» x1 x2)); x3
+
+def «Theory/SeqL.l4» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) =>
+    let x4 : List T := (x0 :: («Theory/SeqL.l3» x1 x2 x3)); x4
+
+def «Theory/SeqL.l5» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
+    let x5 : List T := (x0 :: («Theory/SeqL.l4» x1 x2 x3 x4)); x5
+
+def «Theory/SeqL.l6» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) =>
+    let x6 : List T := (x0 :: («Theory/SeqL.l5» x1 x2 x3 x4 x5)); x6
+
+def «Theory/Eqns.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Theory/Eqns.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Theory/Eqns.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Theory/Eqns.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Theory/Eqns.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Theory/Eqns.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List T := Const.iter (α := List T) «Theory/Eqns.tail» x1 x0;
+    x2
+
+def «Theory/Eqns.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Theory/Eqns.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Theory/EqnL.l2» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : List T := (x0 :: (x1 :: ([] : List T))); x2
+
+def «Theory/EqnL.l3» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    let x3 : List T := (x0 :: («Theory/EqnL.l2» x1 x2)); x3
+
+def «Theory/EqnL.l4» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) =>
+    let x4 : List T := (x0 :: («Theory/EqnL.l3» x1 x2 x3)); x4
+
+def «Theory/EqnL.l5» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
+    let x5 : List T := (x0 :: («Theory/EqnL.l4» x1 x2 x3 x4)); x5
+
+def «Theory/EqnL.l6» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) =>
+    let x6 : List T := (x0 :: («Theory/EqnL.l5» x1 x2 x3 x4 x5)); x6
 
 def «Theory.l2» :=
   fun (x0 : T) (x1 : T) =>
@@ -778,74 +1964,74 @@ def «Theory.l6» :=
 
 def «Theory.os» :=
   fun (x0 : List T) (x1 : T) =>
-    let x2 : T := «PartialHorn.opSig» (Const.node (leaf 0) x0) x1; x2
+    let x2 : T := «PartialHorn.opSig» («PartialHorn.sorts» x0) x1; x2
 
 def «Theory.sig» :=
-  «Prelude.append»
-    («Theory.l4»
+  «Theory/OpSigs.append»
+    («Theory/OpSigL.l4»
       («Theory.os» («Prelude.single» (leaf 1)) (leaf 0))
       («Theory.os» («Prelude.single» (leaf 1)) (leaf 0))
       («Theory.os» («Prelude.single» (leaf 0)) (leaf 1))
       («Theory.os» («Theory.l2» (leaf 1) (leaf 1)) (leaf 1)))
-    («Prelude.append»
-      («Theory.l2»
+    («Theory/OpSigs.append»
+      («Theory/OpSigL.l2»
         («Theory.os» ([] : List T) (leaf 0))
         («Theory.os» («Prelude.single» (leaf 0)) (leaf 1)))
-      («Prelude.append»
-        («Theory.l4»
+      («Theory/OpSigs.append»
+        («Theory/OpSigL.l4»
           («Theory.os» («Theory.l2» (leaf 0) (leaf 0)) (leaf 0))
           («Theory.os» («Theory.l2» (leaf 0) (leaf 0)) (leaf 1))
           («Theory.os» («Theory.l2» (leaf 0) (leaf 0)) (leaf 1))
           («Theory.os» («Theory.l2» (leaf 1) (leaf 1)) (leaf 1)))
-        («Prelude.append»
-          («Theory.l3»
+        («Theory/OpSigs.append»
+          («Theory/OpSigL.l3»
             («Theory.os» («Theory.l2» (leaf 1) (leaf 1)) (leaf 0))
             («Theory.os» («Theory.l2» (leaf 1) (leaf 1)) (leaf 1))
             («Theory.os» («Theory.l3» (leaf 1) (leaf 1) (leaf 1)) (leaf 1)))
-          («Prelude.append»
-            («Theory.l2»
+          («Theory/OpSigs.append»
+            («Theory/OpSigL.l2»
               («Theory.os» ([] : List T) (leaf 0))
               («Theory.os» («Prelude.single» (leaf 0)) (leaf 1)))
-            («Prelude.append»
-              («Theory.l4»
+            («Theory/OpSigs.append»
+              («Theory/OpSigL.l4»
                 («Theory.os» («Theory.l2» (leaf 0) (leaf 0)) (leaf 0))
                 («Theory.os» («Theory.l2» (leaf 0) (leaf 0)) (leaf 1))
                 («Theory.os» («Theory.l2» (leaf 0) (leaf 0)) (leaf 1))
                 («Theory.os» («Theory.l2» (leaf 1) (leaf 1)) (leaf 1)))
-              («Prelude.append»
-                («Theory.l3»
+              («Theory/OpSigs.append»
+                («Theory/OpSigL.l3»
                   («Theory.os» («Theory.l2» (leaf 1) (leaf 1)) (leaf 0))
                   («Theory.os» («Theory.l2» (leaf 1) (leaf 1)) (leaf 1))
                   («Theory.os» («Theory.l3» (leaf 1) (leaf 1) (leaf 1)) (leaf 1)))
-                («Prelude.append»
-                  («Theory.l3»
+                («Theory/OpSigs.append»
+                  («Theory/OpSigL.l3»
                     («Theory.os» («Theory.l2» (leaf 0) (leaf 0)) (leaf 0))
                     («Theory.os» («Theory.l2» (leaf 0) (leaf 0)) (leaf 1))
                     («Theory.os» («Theory.l3» (leaf 0) (leaf 0) (leaf 1)) (leaf 1)))
-                  («Prelude.append»
-                    («Theory.l4»
+                  («Theory/OpSigs.append»
+                    («Theory/OpSigL.l4»
                       («Theory.os» ([] : List T) (leaf 0))
                       («Theory.os» ([] : List T) (leaf 1))
                       («Theory.os» («Prelude.single» (leaf 1)) (leaf 1))
                       («Theory.os» («Prelude.single» (leaf 1)) (leaf 1)))
-                    («Prelude.append»
-                      («Theory.l4»
+                    («Theory/OpSigs.append»
+                      («Theory/OpSigL.l4»
                         («Theory.os» ([] : List T) (leaf 0))
                         («Theory.os» ([] : List T) (leaf 1))
                         («Theory.os» ([] : List T) (leaf 1))
                         («Theory.os» («Theory.l2» (leaf 1) (leaf 1)) (leaf 1)))
-                      («Prelude.append»
-                        («Theory.l4»
+                      («Theory/OpSigs.append»
+                        («Theory/OpSigL.l4»
                           («Theory.os» («Prelude.single» (leaf 0)) (leaf 0))
                           («Theory.os» («Prelude.single» (leaf 0)) (leaf 1))
                           («Theory.os» («Prelude.single» (leaf 0)) (leaf 1))
                           («Theory.os» («Theory.l3» (leaf 0) (leaf 1) (leaf 1)) (leaf 1)))
-                        («Prelude.append»
-                          («Theory.l3»
+                        («Theory/OpSigs.append»
+                          («Theory/OpSigL.l3»
                             («Theory.os» ([] : List T) (leaf 0))
                             («Theory.os» ([] : List T) (leaf 1))
                             («Theory.os» («Prelude.single» (leaf 1)) (leaf 1)))
-                          («Theory.l3»
+                          («Theory/OpSigL.l3»
                             («Theory.os» («Prelude.single» (leaf 0)) (leaf 0))
                             («Theory.os» («Prelude.single» (leaf 0)) (leaf 1))
                             («Theory.os» («Theory.l2» (leaf 0) (leaf 1)) (leaf 1))))))))))))))
@@ -1086,8 +2272,8 @@ def «Theory.ctxA» := «Prelude.single» (leaf 1)
 def «Theory.ctxO» := «Prelude.single» (leaf 0)
 
 def «Theory.categoryAxioms» :=
-  «Prelude.append»
-    («Theory.l6»
+  «Theory/Seqs.append»
+    («Theory/SeqL.l6»
       («Theory.sq»
         «Theory.ctxA»
         ([] : List T)
@@ -1102,7 +2288,7 @@ def «Theory.categoryAxioms» :=
         («Theory.dfd» («Theory.idt» («Theory.x» (leaf 0)))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.comp» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
@@ -1110,7 +2296,7 @@ def «Theory.categoryAxioms» :=
           («Theory.dom» («Theory.x» (leaf 0)))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («PartialHorn.eqn»
             («Theory.cod» («Theory.x» (leaf 1)))
             («Theory.dom» («Theory.x» (leaf 0)))))
@@ -1118,17 +2304,17 @@ def «Theory.categoryAxioms» :=
           («Theory.comp» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.comp» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
           («Theory.dom»
             («Theory.comp» («Theory.x» (leaf 0)) («Theory.x» (leaf 1))))
           («Theory.dom» («Theory.x» (leaf 1))))))
-    («Theory.l6»
+    («Theory/SeqL.l6»
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.comp» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
@@ -1137,7 +2323,7 @@ def «Theory.categoryAxioms» :=
           («Theory.cod» («Theory.x» (leaf 0)))))
       («Theory.sq»
         «Theory.ctxAAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.comp»
               («Theory.x» (leaf 0))
@@ -1179,7 +2365,7 @@ def «Theory.categoryAxioms» :=
           («Theory.x» (leaf 0)))))
 
 def «Theory.terminalAxioms» :=
-  «Theory.l4»
+  «Theory/SeqL.l4»
     («Theory.sq» ([] : List T) ([] : List T) («Theory.dfd» «Theory.one»))
     («Theory.sq»
       «Theory.ctxO»
@@ -1195,15 +2381,15 @@ def «Theory.terminalAxioms» :=
         «Theory.one»))
     («Theory.sq»
       «Theory.ctxA»
-      («Prelude.single»
+      («Theory/Eqns.single»
         («PartialHorn.eqn» («Theory.cod» («Theory.x» (leaf 0))) «Theory.one»))
       («PartialHorn.eqn»
         («Theory.x» (leaf 0))
         («Theory.bang» («Theory.dom» («Theory.x» (leaf 0))))))
 
 def «Theory.productAxioms» :=
-  «Prelude.append»
-    («Theory.l6»
+  «Theory/Seqs.append»
+    («Theory/SeqL.l6»
       («Theory.sq»
         «Theory.ctxOO»
         ([] : List T)
@@ -1239,16 +2425,16 @@ def «Theory.productAxioms» :=
           («Theory.x» (leaf 1))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.cPair» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
           («Theory.dom» («Theory.x» (leaf 0)))
           («Theory.dom» («Theory.x» (leaf 1))))))
-    («Theory.l6»
+    («Theory/SeqL.l6»
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («PartialHorn.eqn»
             («Theory.dom» («Theory.x» (leaf 0)))
             («Theory.dom» («Theory.x» (leaf 1)))))
@@ -1256,7 +2442,7 @@ def «Theory.productAxioms» :=
           («Theory.cPair» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.cPair» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
@@ -1265,7 +2451,7 @@ def «Theory.productAxioms» :=
           («Theory.dom» («Theory.x» (leaf 0)))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.cPair» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
@@ -1276,7 +2462,7 @@ def «Theory.productAxioms» :=
             («Theory.cod» («Theory.x» (leaf 1))))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.cPair» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
@@ -1288,7 +2474,7 @@ def «Theory.productAxioms» :=
           («Theory.x» (leaf 0))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.cPair» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
@@ -1300,7 +2486,7 @@ def «Theory.productAxioms» :=
           («Theory.x» (leaf 1))))
       («Theory.sq»
         («Theory.l3» (leaf 1) (leaf 0) (leaf 0))
-        («Prelude.single»
+        («Theory/Eqns.single»
           («PartialHorn.eqn»
             («Theory.cod» («Theory.x» (leaf 0)))
             («Theory.prod» («Theory.x» (leaf 1)) («Theory.x» (leaf 2)))))
@@ -1315,11 +2501,11 @@ def «Theory.productAxioms» :=
           («Theory.x» (leaf 0)))))
 
 def «Theory.equalizerAxioms» :=
-  «Prelude.append»
-    («Theory.l6»
+  «Theory/Seqs.append»
+    («Theory/SeqL.l6»
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.eqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
@@ -1327,7 +2513,7 @@ def «Theory.equalizerAxioms» :=
           («Theory.dom» («Theory.x» (leaf 1)))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.eqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
@@ -1335,7 +2521,7 @@ def «Theory.equalizerAxioms» :=
           («Theory.cod» («Theory.x» (leaf 1)))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Theory.l2»
+        («Theory/EqnL.l2»
           («PartialHorn.eqn»
             («Theory.dom» («Theory.x» (leaf 0)))
             («Theory.dom» («Theory.x» (leaf 1))))
@@ -1346,32 +2532,32 @@ def «Theory.equalizerAxioms» :=
           («Theory.eqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.eqIncl» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («Theory.dfd»
           («Theory.eqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.eqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («Theory.dfd»
           («Theory.eqIncl» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.eqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
           («Theory.dom»
             («Theory.eqIncl» («Theory.x» (leaf 0)) («Theory.x» (leaf 1))))
           («Theory.eqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1))))))
-    («Prelude.append»
-      («Theory.l6»
+    («Theory/Seqs.append»
+      («Theory/SeqL.l6»
         («Theory.sq»
           «Theory.ctxAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.eqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
           («PartialHorn.eqn»
@@ -1380,7 +2566,7 @@ def «Theory.equalizerAxioms» :=
             («Theory.dom» («Theory.x» (leaf 0)))))
         («Theory.sq»
           «Theory.ctxAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.eqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
           («PartialHorn.eqn»
@@ -1392,7 +2578,7 @@ def «Theory.equalizerAxioms» :=
               («Theory.eqIncl» («Theory.x» (leaf 0)) («Theory.x» (leaf 1))))))
         («Theory.sq»
           «Theory.ctxAAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.eqLift»
                 («Theory.x» (leaf 0))
@@ -1402,7 +2588,7 @@ def «Theory.equalizerAxioms» :=
             («Theory.eqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («Theory.sq»
           «Theory.ctxAAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.eqLift»
                 («Theory.x» (leaf 0))
@@ -1413,7 +2599,7 @@ def «Theory.equalizerAxioms» :=
             («Theory.comp» («Theory.x» (leaf 1)) («Theory.x» (leaf 2)))))
         («Theory.sq»
           «Theory.ctxAAA»
-          («Theory.l2»
+          («Theory/EqnL.l2»
             («Theory.dfd»
               («Theory.eqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1))))
             («PartialHorn.eqn»
@@ -1426,7 +2612,7 @@ def «Theory.equalizerAxioms» :=
               («Theory.x» (leaf 2)))))
         («Theory.sq»
           «Theory.ctxAAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.eqLift»
                 («Theory.x» (leaf 0))
@@ -1439,10 +2625,10 @@ def «Theory.equalizerAxioms» :=
                 («Theory.x» (leaf 1))
                 («Theory.x» (leaf 2))))
             («Theory.dom» («Theory.x» (leaf 2))))))
-      («Theory.l3»
+      («Theory/SeqL.l3»
         («Theory.sq»
           «Theory.ctxAAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.eqLift»
                 («Theory.x» (leaf 0))
@@ -1457,7 +2643,7 @@ def «Theory.equalizerAxioms» :=
             («Theory.eqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («Theory.sq»
           «Theory.ctxAAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.eqLift»
                 («Theory.x» (leaf 0))
@@ -1473,7 +2659,7 @@ def «Theory.equalizerAxioms» :=
             («Theory.x» (leaf 2))))
         («Theory.sq»
           «Theory.ctxAAA»
-          («Theory.l2»
+          («Theory/EqnL.l2»
             («Theory.dfd»
               («Theory.eqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1))))
             («PartialHorn.eqn»
@@ -1489,7 +2675,7 @@ def «Theory.equalizerAxioms» :=
             («Theory.x» (leaf 2))))))
 
 def «Theory.initialAxioms» :=
-  «Theory.l4»
+  «Theory/SeqL.l4»
     («Theory.sq»
       ([] : List T)
       ([] : List T)
@@ -1508,7 +2694,7 @@ def «Theory.initialAxioms» :=
         («Theory.x» (leaf 0))))
     («Theory.sq»
       «Theory.ctxA»
-      («Prelude.single»
+      («Theory/Eqns.single»
         («PartialHorn.eqn»
           («Theory.dom» («Theory.x» (leaf 0)))
           «Theory.cZero»))
@@ -1517,8 +2703,8 @@ def «Theory.initialAxioms» :=
         («Theory.absurd» («Theory.cod» («Theory.x» (leaf 0))))))
 
 def «Theory.coproductAxioms» :=
-  «Prelude.append»
-    («Theory.l6»
+  «Theory/Seqs.append»
+    («Theory/SeqL.l6»
       («Theory.sq»
         «Theory.ctxOO»
         ([] : List T)
@@ -1554,16 +2740,16 @@ def «Theory.coproductAxioms» :=
           («Theory.coprod» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.copair» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
           («Theory.cod» («Theory.x» (leaf 0)))
           («Theory.cod» («Theory.x» (leaf 1))))))
-    («Theory.l6»
+    («Theory/SeqL.l6»
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («PartialHorn.eqn»
             («Theory.cod» («Theory.x» (leaf 0)))
             («Theory.cod» («Theory.x» (leaf 1)))))
@@ -1571,7 +2757,7 @@ def «Theory.coproductAxioms» :=
           («Theory.copair» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.copair» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
@@ -1582,7 +2768,7 @@ def «Theory.coproductAxioms» :=
             («Theory.dom» («Theory.x» (leaf 1))))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.copair» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
@@ -1591,7 +2777,7 @@ def «Theory.coproductAxioms» :=
           («Theory.cod» («Theory.x» (leaf 0)))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.copair» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
@@ -1603,7 +2789,7 @@ def «Theory.coproductAxioms» :=
           («Theory.x» (leaf 0))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.copair» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
@@ -1615,7 +2801,7 @@ def «Theory.coproductAxioms» :=
           («Theory.x» (leaf 1))))
       («Theory.sq»
         («Theory.l3» (leaf 1) (leaf 0) (leaf 0))
-        («Prelude.single»
+        («Theory/Eqns.single»
           («PartialHorn.eqn»
             («Theory.dom» («Theory.x» (leaf 0)))
             («Theory.coprod» («Theory.x» (leaf 1)) («Theory.x» (leaf 2)))))
@@ -1630,11 +2816,11 @@ def «Theory.coproductAxioms» :=
           («Theory.x» (leaf 0)))))
 
 def «Theory.coequalizerAxioms» :=
-  «Prelude.append»
-    («Theory.l6»
+  «Theory/Seqs.append»
+    («Theory/SeqL.l6»
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.coeqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
@@ -1642,7 +2828,7 @@ def «Theory.coequalizerAxioms» :=
           («Theory.dom» («Theory.x» (leaf 1)))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.coeqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
@@ -1650,7 +2836,7 @@ def «Theory.coequalizerAxioms» :=
           («Theory.cod» («Theory.x» (leaf 1)))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Theory.l2»
+        («Theory/EqnL.l2»
           («PartialHorn.eqn»
             («Theory.dom» («Theory.x» (leaf 0)))
             («Theory.dom» («Theory.x» (leaf 1))))
@@ -1661,32 +2847,32 @@ def «Theory.coequalizerAxioms» :=
           («Theory.coeqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.coeqProj» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («Theory.dfd»
           («Theory.coeqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.coeqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («Theory.dfd»
           («Theory.coeqProj» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.coeqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
           («Theory.dom»
             («Theory.coeqProj» («Theory.x» (leaf 0)) («Theory.x» (leaf 1))))
           («Theory.cod» («Theory.x» (leaf 0))))))
-    («Prelude.append»
-      («Theory.l6»
+    («Theory/Seqs.append»
+      («Theory/SeqL.l6»
         («Theory.sq»
           «Theory.ctxAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.coeqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
           («PartialHorn.eqn»
@@ -1695,7 +2881,7 @@ def «Theory.coequalizerAxioms» :=
             («Theory.coeqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («Theory.sq»
           «Theory.ctxAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.coeqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
           («PartialHorn.eqn»
@@ -1707,7 +2893,7 @@ def «Theory.coequalizerAxioms» :=
               («Theory.x» (leaf 1)))))
         («Theory.sq»
           «Theory.ctxAAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.coeqDesc»
                 («Theory.x» (leaf 0))
@@ -1717,7 +2903,7 @@ def «Theory.coequalizerAxioms» :=
             («Theory.coeqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («Theory.sq»
           «Theory.ctxAAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.coeqDesc»
                 («Theory.x» (leaf 0))
@@ -1728,7 +2914,7 @@ def «Theory.coequalizerAxioms» :=
             («Theory.comp» («Theory.x» (leaf 2)) («Theory.x» (leaf 1)))))
         («Theory.sq»
           «Theory.ctxAAA»
-          («Theory.l2»
+          («Theory/EqnL.l2»
             («Theory.dfd»
               («Theory.coeqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1))))
             («PartialHorn.eqn»
@@ -1741,7 +2927,7 @@ def «Theory.coequalizerAxioms» :=
               («Theory.x» (leaf 2)))))
         («Theory.sq»
           «Theory.ctxAAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.coeqDesc»
                 («Theory.x» (leaf 0))
@@ -1754,10 +2940,10 @@ def «Theory.coequalizerAxioms» :=
                 («Theory.x» (leaf 1))
                 («Theory.x» (leaf 2))))
             («Theory.coeqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1))))))
-      («Theory.l3»
+      («Theory/SeqL.l3»
         («Theory.sq»
           «Theory.ctxAAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.coeqDesc»
                 («Theory.x» (leaf 0))
@@ -1772,7 +2958,7 @@ def «Theory.coequalizerAxioms» :=
             («Theory.cod» («Theory.x» (leaf 2)))))
         («Theory.sq»
           «Theory.ctxAAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.coeqDesc»
                 («Theory.x» (leaf 0))
@@ -1788,7 +2974,7 @@ def «Theory.coequalizerAxioms» :=
             («Theory.x» (leaf 2))))
         («Theory.sq»
           «Theory.ctxAAA»
-          («Theory.l2»
+          («Theory/EqnL.l2»
             («Theory.dfd»
               («Theory.coeqz» («Theory.x» (leaf 0)) («Theory.x» (leaf 1))))
             («PartialHorn.eqn»
@@ -1806,8 +2992,8 @@ def «Theory.coequalizerAxioms» :=
 def «Theory.ctxOOA» := «Theory.l3» (leaf 0) (leaf 0) (leaf 1)
 
 def «Theory.exponentialAxioms» :=
-  «Prelude.append»
-    («Theory.l6»
+  «Theory/Seqs.append»
+    («Theory/SeqL.l6»
       («Theory.sq»
         «Theory.ctxOO»
         ([] : List T)
@@ -1831,7 +3017,7 @@ def «Theory.exponentialAxioms» :=
           («Theory.x» (leaf 1))))
       («Theory.sq»
         «Theory.ctxOOA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.curry»
               («Theory.x» (leaf 0))
@@ -1842,7 +3028,7 @@ def «Theory.exponentialAxioms» :=
           («Theory.prod» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
       («Theory.sq»
         «Theory.ctxOOA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («PartialHorn.eqn»
             («Theory.dom» («Theory.x» (leaf 2)))
             («Theory.prod» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
@@ -1853,7 +3039,7 @@ def «Theory.exponentialAxioms» :=
             («Theory.x» (leaf 2)))))
       («Theory.sq»
         «Theory.ctxOOA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.curry»
               («Theory.x» (leaf 0))
@@ -1866,10 +3052,10 @@ def «Theory.exponentialAxioms» :=
               («Theory.x» (leaf 1))
               («Theory.x» (leaf 2))))
           («Theory.x» (leaf 0)))))
-    («Theory.l3»
+    («Theory/SeqL.l3»
       («Theory.sq»
         «Theory.ctxOOA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.curry»
               («Theory.x» (leaf 0))
@@ -1886,7 +3072,7 @@ def «Theory.exponentialAxioms» :=
             («Theory.cod» («Theory.x» (leaf 2))))))
       («Theory.sq»
         «Theory.ctxOOA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.curry»
               («Theory.x» (leaf 0))
@@ -1906,7 +3092,7 @@ def «Theory.exponentialAxioms» :=
           («Theory.x» (leaf 2))))
       («Theory.sq»
         («Theory.l4» (leaf 0) (leaf 0) (leaf 0) (leaf 1))
-        («Theory.l2»
+        («Theory/EqnL.l2»
           («PartialHorn.eqn»
             («Theory.dom» («Theory.x» (leaf 3)))
             («Theory.x» (leaf 0)))
@@ -1923,8 +3109,8 @@ def «Theory.exponentialAxioms» :=
           («Theory.x» (leaf 3)))))
 
 def «Theory.classifierAxioms» :=
-  «Prelude.append»
-    («Theory.l6»
+  «Theory/Seqs.append»
+    («Theory/SeqL.l6»
       («Theory.sq»
         ([] : List T)
         ([] : List T)
@@ -1939,29 +3125,33 @@ def «Theory.classifierAxioms» :=
         («PartialHorn.eqn» («Theory.cod» «Theory.tru») «Theory.omega»))
       («Theory.sq»
         «Theory.ctxA»
-        («Prelude.single» («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
+        («Theory/Eqns.single»
+          («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
         («Theory.monoCond» («Theory.x» (leaf 0))))
       («Theory.sq»
         «Theory.ctxA»
-        («Prelude.single» («Theory.monoCond» («Theory.x» (leaf 0))))
+        («Theory/Eqns.single» («Theory.monoCond» («Theory.x» (leaf 0))))
         («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
       («Theory.sq»
         «Theory.ctxA»
-        («Prelude.single» («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
+        («Theory/Eqns.single»
+          («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
         («PartialHorn.eqn»
           («Theory.dom» («Theory.chi» («Theory.x» (leaf 0))))
           («Theory.cod» («Theory.x» (leaf 0))))))
-    («Prelude.append»
-      («Theory.l6»
+    («Theory/Seqs.append»
+      («Theory/SeqL.l6»
         («Theory.sq»
           «Theory.ctxA»
-          («Prelude.single» («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
+          («Theory/Eqns.single»
+            («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
           («PartialHorn.eqn»
             («Theory.cod» («Theory.chi» («Theory.x» (leaf 0))))
             «Theory.omega»))
         («Theory.sq»
           «Theory.ctxA»
-          («Prelude.single» («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
+          («Theory/Eqns.single»
+            («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
           («PartialHorn.eqn»
             («Theory.comp»
               («Theory.chi» («Theory.x» (leaf 0)))
@@ -1971,29 +3161,33 @@ def «Theory.classifierAxioms» :=
               («Theory.bang» («Theory.dom» («Theory.x» (leaf 0)))))))
         («Theory.sq»
           «Theory.ctxA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd» («Theory.chiInv» («Theory.x» (leaf 0)))))
           («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
         («Theory.sq»
           «Theory.ctxA»
-          («Prelude.single» («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
+          («Theory/Eqns.single»
+            («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
           («Theory.dfd» («Theory.chiInv» («Theory.x» (leaf 0)))))
         («Theory.sq»
           «Theory.ctxA»
-          («Prelude.single» («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
+          («Theory/Eqns.single»
+            («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
           («PartialHorn.eqn»
             («Theory.dom» («Theory.chiInv» («Theory.x» (leaf 0))))
             («Theory.truthEq» («Theory.chi» («Theory.x» (leaf 0))))))
         («Theory.sq»
           «Theory.ctxA»
-          («Prelude.single» («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
+          («Theory/Eqns.single»
+            («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
           («PartialHorn.eqn»
             («Theory.cod» («Theory.chiInv» («Theory.x» (leaf 0))))
             («Theory.dom» («Theory.x» (leaf 0))))))
-      («Theory.l3»
+      («Theory/SeqL.l3»
         («Theory.sq»
           «Theory.ctxA»
-          («Prelude.single» («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
+          («Theory/Eqns.single»
+            («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
           («PartialHorn.eqn»
             («Theory.comp»
               («Theory.truthLift»
@@ -2004,7 +3198,8 @@ def «Theory.classifierAxioms» :=
               («Theory.truthEq» («Theory.chi» («Theory.x» (leaf 0)))))))
         («Theory.sq»
           «Theory.ctxA»
-          («Prelude.single» («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
+          («Theory/Eqns.single»
+            («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0)))))
           («PartialHorn.eqn»
             («Theory.comp»
               («Theory.chiInv» («Theory.x» (leaf 0)))
@@ -2014,7 +3209,7 @@ def «Theory.classifierAxioms» :=
             («Theory.idt» («Theory.dom» («Theory.x» (leaf 0))))))
         («Theory.sq»
           («Theory.l4» (leaf 1) (leaf 1) (leaf 1) (leaf 1))
-          («Theory.l6»
+          («Theory/EqnL.l6»
             («Theory.dfd» («Theory.chi» («Theory.x» (leaf 0))))
             («PartialHorn.eqn»
               («Theory.dom» («Theory.x» (leaf 1)))
@@ -2038,8 +3233,8 @@ def «Theory.classifierAxioms» :=
             («Theory.chi» («Theory.x» (leaf 0)))))))
 
 def «Theory.natAxioms» :=
-  «Prelude.append»
-    («Theory.l6»
+  «Theory/Seqs.append»
+    («Theory/SeqL.l6»
       («Theory.sq»
         ([] : List T)
         ([] : List T)
@@ -2058,23 +3253,23 @@ def «Theory.natAxioms» :=
         («PartialHorn.eqn» («Theory.cod» «Theory.succ») «Theory.nat»))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.natRec» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn» («Theory.dom» («Theory.x» (leaf 0))) «Theory.one»))
       («Theory.sq»
         «Theory.ctxAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.natRec» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
           («Theory.cod» («Theory.x» (leaf 0)))
           («Theory.dom» («Theory.x» (leaf 1))))))
-    («Prelude.append»
-      («Theory.l6»
+    («Theory/Seqs.append»
+      («Theory/SeqL.l6»
         («Theory.sq»
           «Theory.ctxAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.natRec» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
           («PartialHorn.eqn»
@@ -2082,7 +3277,7 @@ def «Theory.natAxioms» :=
             («Theory.cod» («Theory.x» (leaf 1)))))
         («Theory.sq»
           «Theory.ctxAA»
-          («Theory.l3»
+          («Theory/EqnL.l3»
             («PartialHorn.eqn» («Theory.dom» («Theory.x» (leaf 0))) «Theory.one»)
             («PartialHorn.eqn»
               («Theory.cod» («Theory.x» (leaf 0)))
@@ -2094,7 +3289,7 @@ def «Theory.natAxioms» :=
             («Theory.natRec» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («Theory.sq»
           «Theory.ctxAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.natRec» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
           («PartialHorn.eqn»
@@ -2103,7 +3298,7 @@ def «Theory.natAxioms» :=
             «Theory.nat»))
         («Theory.sq»
           «Theory.ctxAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.natRec» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
           («PartialHorn.eqn»
@@ -2112,7 +3307,7 @@ def «Theory.natAxioms» :=
             («Theory.cod» («Theory.x» (leaf 0)))))
         («Theory.sq»
           «Theory.ctxAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.natRec» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
           («PartialHorn.eqn»
@@ -2122,7 +3317,7 @@ def «Theory.natAxioms» :=
             («Theory.x» (leaf 0))))
         («Theory.sq»
           «Theory.ctxAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.natRec» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
           («PartialHorn.eqn»
@@ -2132,10 +3327,10 @@ def «Theory.natAxioms» :=
             («Theory.comp»
               («Theory.x» (leaf 1))
               («Theory.natRec» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))))
-      («Prelude.single»
+      («Theory/Seqs.single»
         («Theory.sq»
           «Theory.ctxAAA»
-          («Theory.l4»
+          («Theory/EqnL.l4»
             («Theory.dfd»
               («Theory.natRec» («Theory.x» (leaf 0)) («Theory.x» (leaf 1))))
             («PartialHorn.eqn» («Theory.dom» («Theory.x» (leaf 2))) «Theory.nat»)
@@ -2152,8 +3347,8 @@ def «Theory.natAxioms» :=
 def «Theory.ctxOAA» := «Theory.l3» (leaf 0) (leaf 1) (leaf 1)
 
 def «Theory.listAxioms» :=
-  «Prelude.append»
-    («Theory.l6»
+  «Theory/Seqs.append»
+    («Theory/SeqL.l6»
       («Theory.sq»
         «Theory.ctxO»
         ([] : List T)
@@ -2186,7 +3381,7 @@ def «Theory.listAxioms» :=
           («Theory.list» («Theory.x» (leaf 0)))))
       («Theory.sq»
         «Theory.ctxOAA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.listRec»
               («Theory.x» (leaf 0))
@@ -2195,11 +3390,11 @@ def «Theory.listAxioms» :=
         («PartialHorn.eqn»
           («Theory.dom» («Theory.x» (leaf 1)))
           «Theory.one»)))
-    («Prelude.append»
-      («Theory.l6»
+    («Theory/Seqs.append»
+      («Theory/SeqL.l6»
         («Theory.sq»
           «Theory.ctxOAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.listRec»
                 («Theory.x» (leaf 0))
@@ -2210,7 +3405,7 @@ def «Theory.listAxioms» :=
             («Theory.cod» («Theory.x» (leaf 2)))))
         («Theory.sq»
           «Theory.ctxOAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.listRec»
                 («Theory.x» (leaf 0))
@@ -2223,7 +3418,7 @@ def «Theory.listAxioms» :=
               («Theory.cod» («Theory.x» (leaf 2))))))
         («Theory.sq»
           «Theory.ctxOAA»
-          («Theory.l3»
+          («Theory/EqnL.l3»
             («PartialHorn.eqn» («Theory.dom» («Theory.x» (leaf 1))) «Theory.one»)
             («PartialHorn.eqn»
               («Theory.cod» («Theory.x» (leaf 1)))
@@ -2240,7 +3435,7 @@ def «Theory.listAxioms» :=
               («Theory.x» (leaf 2)))))
         («Theory.sq»
           «Theory.ctxOAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.listRec»
                 («Theory.x» (leaf 0))
@@ -2255,7 +3450,7 @@ def «Theory.listAxioms» :=
             («Theory.list» («Theory.x» (leaf 0)))))
         («Theory.sq»
           «Theory.ctxOAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.listRec»
                 («Theory.x» (leaf 0))
@@ -2270,7 +3465,7 @@ def «Theory.listAxioms» :=
             («Theory.cod» («Theory.x» (leaf 1)))))
         («Theory.sq»
           «Theory.ctxOAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.listRec»
                 («Theory.x» (leaf 0))
@@ -2284,10 +3479,10 @@ def «Theory.listAxioms» :=
                 («Theory.x» (leaf 2)))
               («Theory.cNil» («Theory.x» (leaf 0))))
             («Theory.x» (leaf 1)))))
-      («Theory.l2»
+      («Theory/SeqL.l2»
         («Theory.sq»
           «Theory.ctxOAA»
-          («Prelude.single»
+          («Theory/Eqns.single»
             («Theory.dfd»
               («Theory.listRec»
                 («Theory.x» (leaf 0))
@@ -2310,7 +3505,7 @@ def «Theory.listAxioms» :=
                   («Theory.x» (leaf 2)))))))
         («Theory.sq»
           («Theory.l4» (leaf 0) (leaf 1) (leaf 1) (leaf 1))
-          («Theory.l4»
+          («Theory/EqnL.l4»
             («Theory.dfd»
               («Theory.listRec»
                 («Theory.x» (leaf 0))
@@ -2339,8 +3534,8 @@ def «Theory.listAxioms» :=
               («Theory.x» (leaf 2)))))))
 
 def «Theory.roseAxioms» :=
-  «Prelude.append»
-    («Theory.l6»
+  «Theory/Seqs.append»
+    («Theory/SeqL.l6»
       («Theory.sq»
         ([] : List T)
         ([] : List T)
@@ -2353,7 +3548,7 @@ def «Theory.roseAxioms» :=
         («PartialHorn.eqn» («Theory.cod» «Theory.cNode») «Theory.rose»))
       («Theory.sq»
         «Theory.ctxA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd» («Theory.roseRec» («Theory.x» (leaf 0)))))
         («PartialHorn.eqn»
           («Theory.dom» («Theory.x» (leaf 0)))
@@ -2362,7 +3557,7 @@ def «Theory.roseAxioms» :=
             («Theory.list» («Theory.cod» («Theory.x» (leaf 0)))))))
       («Theory.sq»
         «Theory.ctxA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («PartialHorn.eqn»
             («Theory.dom» («Theory.x» (leaf 0)))
             («Theory.prod»
@@ -2371,22 +3566,22 @@ def «Theory.roseAxioms» :=
         («Theory.dfd» («Theory.roseRec» («Theory.x» (leaf 0)))))
       («Theory.sq»
         «Theory.ctxA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd» («Theory.roseRec» («Theory.x» (leaf 0)))))
         («PartialHorn.eqn»
           («Theory.dom» («Theory.roseRec» («Theory.x» (leaf 0))))
           «Theory.rose»))
       («Theory.sq»
         «Theory.ctxA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd» («Theory.roseRec» («Theory.x» (leaf 0)))))
         («PartialHorn.eqn»
           («Theory.cod» («Theory.roseRec» («Theory.x» (leaf 0))))
           («Theory.cod» («Theory.x» (leaf 0))))))
-    («Theory.l2»
+    («Theory/SeqL.l2»
       («Theory.sq»
         «Theory.ctxA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd» («Theory.roseRec» («Theory.x» (leaf 0)))))
         («PartialHorn.eqn»
           («Theory.comp»
@@ -2399,7 +3594,7 @@ def «Theory.roseAxioms» :=
               («Theory.listMap» («Theory.roseRec» («Theory.x» (leaf 0))))))))
       («Theory.sq»
         «Theory.ctxAA»
-        («Theory.l3»
+        («Theory/EqnL.l3»
           («Theory.dfd» («Theory.roseRec» («Theory.x» (leaf 0))))
           («PartialHorn.eqn» («Theory.dom» («Theory.x» (leaf 1))) «Theory.rose»)
           («PartialHorn.eqn»
@@ -2416,8 +3611,8 @@ def «Theory.roseAxioms» :=
 def «Theory.ctxOA» := «Theory.l2» (leaf 0) (leaf 1)
 
 def «Theory.lroseAxioms» :=
-  «Prelude.append»
-    («Theory.l6»
+  «Theory/Seqs.append»
+    («Theory/SeqL.l6»
       («Theory.sq»
         «Theory.ctxO»
         ([] : List T)
@@ -2438,7 +3633,7 @@ def «Theory.lroseAxioms» :=
           («Theory.lrose» («Theory.x» (leaf 0)))))
       («Theory.sq»
         «Theory.ctxOA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.lroseRec» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
@@ -2448,7 +3643,7 @@ def «Theory.lroseAxioms» :=
             («Theory.list» («Theory.cod» («Theory.x» (leaf 1)))))))
       («Theory.sq»
         «Theory.ctxOA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («PartialHorn.eqn»
             («Theory.dom» («Theory.x» (leaf 1)))
             («Theory.prod»
@@ -2458,17 +3653,17 @@ def «Theory.lroseAxioms» :=
           («Theory.lroseRec» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
       («Theory.sq»
         «Theory.ctxOA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.lroseRec» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
           («Theory.dom»
             («Theory.lroseRec» («Theory.x» (leaf 0)) («Theory.x» (leaf 1))))
           («Theory.lrose» («Theory.x» (leaf 0))))))
-    («Theory.l3»
+    («Theory/SeqL.l3»
       («Theory.sq»
         «Theory.ctxOA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.lroseRec» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
@@ -2477,7 +3672,7 @@ def «Theory.lroseAxioms» :=
           («Theory.cod» («Theory.x» (leaf 1)))))
       («Theory.sq»
         «Theory.ctxOA»
-        («Prelude.single»
+        («Theory/Eqns.single»
           («Theory.dfd»
             («Theory.lroseRec» («Theory.x» (leaf 0)) («Theory.x» (leaf 1)))))
         («PartialHorn.eqn»
@@ -2492,7 +3687,7 @@ def «Theory.lroseAxioms» :=
                 («Theory.lroseRec» («Theory.x» (leaf 0)) («Theory.x» (leaf 1))))))))
       («Theory.sq»
         «Theory.ctxOAA»
-        («Theory.l3»
+        («Theory/EqnL.l3»
           («Theory.dfd»
             («Theory.lroseRec» («Theory.x» (leaf 0)) («Theory.x» (leaf 1))))
           («PartialHorn.eqn»
@@ -2512,34 +3707,278 @@ def «Theory.lroseAxioms» :=
           («Theory.lroseRec» («Theory.x» (leaf 0)) («Theory.x» (leaf 1))))))
 
 def «Theory.axioms» :=
-  «Prelude.append»
+  «Theory/Seqs.append»
     «Theory.categoryAxioms»
-    («Prelude.append»
+    («Theory/Seqs.append»
       «Theory.terminalAxioms»
-      («Prelude.append»
+      («Theory/Seqs.append»
         «Theory.productAxioms»
-        («Prelude.append»
+        («Theory/Seqs.append»
           «Theory.equalizerAxioms»
-          («Prelude.append»
+          («Theory/Seqs.append»
             «Theory.initialAxioms»
-            («Prelude.append»
+            («Theory/Seqs.append»
               «Theory.coproductAxioms»
-              («Prelude.append»
+              («Theory/Seqs.append»
                 «Theory.coequalizerAxioms»
-                («Prelude.append»
+                («Theory/Seqs.append»
                   «Theory.exponentialAxioms»
-                  («Prelude.append»
+                  («Theory/Seqs.append»
                     «Theory.classifierAxioms»
-                    («Prelude.append»
+                    («Theory/Seqs.append»
                       «Theory.natAxioms»
-                      («Prelude.append»
+                      («Theory/Seqs.append»
                         «Theory.listAxioms»
-                        («Prelude.append» «Theory.roseAxioms» «Theory.lroseAxioms»)))))))))))
+                        («Theory/Seqs.append»
+                          «Theory.roseAxioms»
+                          «Theory.lroseAxioms»)))))))))))
 
 def «Theory.toposTheory» :=
   «PartialHorn.theory»
-    (Const.node (leaf 0) «Theory.sig»)
-    (Const.node (leaf 0) «Theory.axioms»)
+    («PartialHorn.opSigs» «Theory.sig»)
+    («PartialHorn.seqs» «Theory.axioms»)
+
+def «Infer/OpSigs.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Infer/OpSigs.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Infer/OpSigs.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Infer/OpSigs.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Infer/OpSigs.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Infer/OpSigs.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List T := Const.iter (α := List T) «Infer/OpSigs.tail» x1 x0;
+    x2
+
+def «Infer/OpSigs.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Infer/OpSigs.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Infer/Seqs.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Infer/Seqs.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Infer/Seqs.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Infer/Seqs.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Infer/Seqs.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Infer/Seqs.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List T := Const.iter (α := List T) «Infer/Seqs.tail» x1 x0;
+    x2
+
+def «Infer/Seqs.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Infer/Seqs.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Infer/Eqns.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Infer/Eqns.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Infer/Eqns.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Infer/Eqns.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Infer/Eqns.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Infer/Eqns.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List T := Const.iter (α := List T) «Infer/Eqns.tail» x1 x0;
+    x2
+
+def «Infer/Eqns.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Infer/Eqns.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Infer/EachEqn.all» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) => «Prelude.and» (x0 x2) x3)
+      (leaf 1)
+      x1;
+    x2
+
+def «Infer/EachEqn.any» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) => «Prelude.or» (x0 x2) x3)
+      (leaf 0)
+      x1;
+    x2
+
+def «Infer/EachEqn.isEmpty» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.eq
+      (Const.foldr
+        (α := T)
+        (β := T)
+        (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+        (leaf 0)
+        x0)
+      (leaf 0);
+    x1
+
+def «Infer/EachEqn.take» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := (let x2 : T := Const.foldr
+              (α := T)
+              (β := T)
+              (fun (_ : T) (x3 : T) => Const.add x3 (leaf 1))
+              (leaf 0)
+              x1;
+            (Const.foldr
+              (α := T)
+              (β := T × List T)
+              (fun (x3 : T) (x4 : T × List T) =>
+                (Const.add (x4).1 (leaf 1),
+                  if (Const.lt
+                    (Const.sub (Const.sub x2 (x4).1) (leaf 1))
+                    x0).label ≠ 0 then
+                    (x3 :: (x4).2)
+                  else
+                    (x4).2))
+              (leaf 0, ([] : List T))
+              x1).2);
+    x2
 
 def «Infer.direct» :=
   fun (x0 : T) => Const.node (leaf 0) (x0 :: ([] : List T))
@@ -2550,14 +3989,160 @@ def «Infer.strict» :=
 def «Infer.rhsRule» :=
   fun (x0 : T) => Const.node (leaf 2) (x0 :: ([] : List T))
 
+def «Infer/ODfd.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Infer/ODfd.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Infer/ODfd.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Infer/ODfd.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Infer/ODfd.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Infer/ODfd.nothing»
+      (fun (x2 : T) (_ : List T) => «Infer/ODfd.just» x2);
+    x2
+
+def «Infer/ODfd.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Infer/OODfd.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Infer/OODfd.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Infer/OODfd.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Infer/OODfd.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Infer/OODfd.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Infer/OODfd.nothing»
+      (fun (x2 : T) (_ : List T) => «Infer/OODfd.just» x2);
+    x2
+
+def «Infer/OODfd.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Infer.mapOT» :=
+  fun (x0 : T → T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); «Prelude.some» (x0 x3)
+                   else
+                     «Prelude.none»);
+    x2
+
+def «Infer.mapTD» :=
+  fun (x0 : T → T) (x1 : T) =>
+    let x2 : T := (if («Prelude.isSome» x1).label ≠ 0 then
+      «Infer/ODfd.just» (x0 («Prelude.get» x1))
+    else
+      «Infer/ODfd.nothing»);
+    x2
+
+def «Infer.bindST» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Prelude.none»);
+    x2
+
 def «Infer.argSorts» :=
   fun (x0 : T) =>
     let x1 : List
       T := Const.children
       («Base.getD»
-        («Base.mapO»
+        («Infer.mapOT»
           (fun (x1 : T) => Const.node (leaf 0) («PartialHorn.opArgs» x1))
-          («Prelude.nth» «Theory.sig» x0))
+          («PartialHorn/OOpSig.nthOf» «Theory.sig» x0))
         (Const.node (leaf 0) ([] : List T)));
     x1
 
@@ -2572,7 +4157,7 @@ def «Infer.findAxiom» :=
             «Prelude.some» (Const.sub (x2).1 (leaf 1))
           else
             (x2).2))
-      («Prelude.length» «Theory.axioms», «Prelude.none»)
+      («Infer/Seqs.length» «Theory.axioms», «Prelude.none»)
       «Theory.axioms»).2;
     x1
 
@@ -2588,14 +4173,14 @@ def «Infer.dfdRule» :=
                            (Const.equal («PartialHorn.eqLhs» («PartialHorn.seqConcl» x3)) x2)
                            (Const.equal («PartialHorn.eqRhs» («PartialHorn.seqConcl» x3)) x2)));
                    if («Prelude.isSome» x3).label ≠ 0 then
-                     «Prelude.some» («Infer.direct» («Prelude.get» x3))
+                     «Infer/ODfd.just» («Infer.direct» («Prelude.get» x3))
                    else
                      let x4 : T := «Infer.findAxiom»
                        (fun (x4 : T) =>
                          «Prelude.and»
                            («Base.equalTs» («PartialHorn.seqCtx» x4) x1)
                            («Prelude.and»
-                             («Base.isEmpty» («PartialHorn.seqHyps» x4))
+                             («Infer/EachEqn.isEmpty» («PartialHorn.seqHyps» x4))
                              («Prelude.and»
                                («Base.not»
                                  (Const.eq
@@ -2605,16 +4190,16 @@ def «Infer.dfdRule» :=
                                  (Const.children («PartialHorn.eqLhs» («PartialHorn.seqConcl» x4)))
                                  («Prelude.single» x2)))));
                      if («Prelude.isSome» x4).label ≠ 0 then
-                       «Prelude.some» («Infer.strict» («Prelude.get» x4))
+                       «Infer/ODfd.just» («Infer.strict» («Prelude.get» x4))
                      else
-                       «Base.mapO»
+                       «Infer.mapTD»
                          «Infer.rhsRule»
                          («Infer.findAxiom»
                            (fun (x5 : T) =>
                              «Prelude.and»
                                («Base.isEmpty» («PartialHorn.seqCtx» x5))
                                («Prelude.and»
-                                 («Base.isEmpty» («PartialHorn.seqHyps» x5))
+                                 («Infer/EachEqn.isEmpty» («PartialHorn.seqHyps» x5))
                                  (Const.equal
                                    («PartialHorn.eqRhs» («PartialHorn.seqConcl» x5))
                                    x2)))));
@@ -2632,37 +4217,170 @@ def «Infer.boundRule» :=
                            (Const.equal
                              («PartialHorn.eqLhs» («PartialHorn.seqConcl» x4))
                              («PartialHorn.phOp» x0 («Prelude.single» x3)))
-                           («Base.allT»
+                           («Infer/EachEqn.all»
                              (fun (x5 : T) =>
                                Const.equal («PartialHorn.eqLhs» x5) («PartialHorn.eqRhs» x5))
                              («PartialHorn.seqHyps» x4)))));
     x2
 
+def «Infer/DfdRuleOf.map» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => ((x0 x2) :: x3))
+      ([] : List T)
+      x1;
+    x2
+
 def «Infer.dfdRules» :=
-  «Base.mapT»
+  «Infer/DfdRuleOf.map»
     «Infer.dfdRule»
-    («Base.range» («Prelude.length» «Theory.sig»))
+    («Base.range» («Infer/OpSigs.length» «Theory.sig»))
 
 def «Infer.domRules» :=
   «Base.mapT»
     («Infer.boundRule» (leaf 0))
-    («Base.range» («Prelude.length» «Theory.sig»))
+    («Base.range» («Infer/OpSigs.length» «Theory.sig»))
 
 def «Infer.codRules» :=
   «Base.mapT»
     («Infer.boundRule» (leaf 1))
-    («Base.range» («Prelude.length» «Theory.sig»))
+    («Base.range» («Infer/OpSigs.length» «Theory.sig»))
 
 def «Infer.defAxIdx» :=
   fun (x0 : T) =>
     let x1 : T := Const.add
-      («Prelude.length» «Theory.axioms»)
+      («Infer/Seqs.length» «Theory.axioms»)
       (Const.mul (leaf 2) x0);
     x1
 
 def «Infer.ann» :=
   fun (x0 : T) (x1 : T) (x2 : T) =>
     Const.node (leaf 0) (x0 :: (x1 :: (x2 :: ([] : List T))))
+
+def «Infer/OAnn.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Infer/OAnn.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Infer/OAnn.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Infer/OAnn.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Infer/OAnn.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Infer/OAnn.nothing»
+      (fun (x2 : T) (_ : List T) => «Infer/OAnn.just» x2);
+    x2
+
+def «Infer/OAnn.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Infer/Anns.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Infer/Anns.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Infer/Anns.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Infer/Anns.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Infer/Anns.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Infer/Anns.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List T := Const.iter (α := List T) «Infer/Anns.tail» x1 x0;
+    x2
+
+def «Infer/Anns.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Infer/Anns.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
 
 def «Infer.annSort» :=
   fun (x0 : T) =>
@@ -2692,6 +4410,184 @@ def «Infer.typed» :=
   fun (x0 : T) (x1 : T) =>
     Const.node (leaf 0) (x0 :: (x1 :: ([] : List T)))
 
+def «Infer/OTyped.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Infer/OTyped.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Infer/OTyped.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Infer/OTyped.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Infer/OTyped.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Infer/OTyped.nothing»
+      (fun (x2 : T) (_ : List T) => «Infer/OTyped.just» x2);
+    x2
+
+def «Infer/OTyped.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Infer/Typeds.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Infer/Typeds.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Infer/Typeds.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Infer/Typeds.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Infer/Typeds.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Infer/Typeds.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List T := Const.iter (α := List T) «Infer/Typeds.tail» x1 x0;
+    x2
+
+def «Infer/Typeds.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Infer/Typeds.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Infer/EachTyped.all» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) => «Prelude.and» (x0 x2) x3)
+      (leaf 1)
+      x1;
+    x2
+
+def «Infer/EachTyped.any» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) => «Prelude.or» (x0 x2) x3)
+      (leaf 0)
+      x1;
+    x2
+
+def «Infer/EachTyped.isEmpty» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.eq
+      (Const.foldr
+        (α := T)
+        (β := T)
+        (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+        (leaf 0)
+        x0)
+      (leaf 0);
+    x1
+
+def «Infer/EachTyped.take» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := (let x2 : T := Const.foldr
+              (α := T)
+              (β := T)
+              (fun (_ : T) (x3 : T) => Const.add x3 (leaf 1))
+              (leaf 0)
+              x1;
+            (Const.foldr
+              (α := T)
+              (β := T × List T)
+              (fun (x3 : T) (x4 : T × List T) =>
+                (Const.add (x4).1 (leaf 1),
+                  if (Const.lt
+                    (Const.sub (Const.sub x2 (x4).1) (leaf 1))
+                    x0).label ≠ 0 then
+                    (x3 :: (x4).2)
+                  else
+                    (x4).2))
+              (leaf 0, ([] : List T))
+              x1).2);
+    x2
+
 def «Infer.tyTerm» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
@@ -2706,9 +4602,17 @@ def «Infer.tyAnn» :=
                    let x3 : T := Const.child x1 (leaf 1); x3);
     x1
 
+def «Infer.ann0» := «Infer.ann» (leaf 0) (leaf 0) (leaf 0)
+
+def «Infer.typed0» := «Infer.typed» (leaf 0) «Infer.ann0»
+
 def «Infer.ext» :=
   fun (x0 : List T) =>
     let x1 : T := «PartialHorn.thyExtendAll» «Theory.toposTheory» x0; x1
+
+def «Infer.dfds» := fun (x0 : List T) => Const.node (leaf 0) x0
+
+def «Infer.bounds» := fun (x0 : List T) => Const.node (leaf 0) x0
 
 def «Infer.extEnv» :=
   fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) =>
@@ -2725,7 +4629,21 @@ def «Infer.envDefs» :=
             let _ : T := Const.child x1 (leaf 2);
             let _ : T := Const.child x1 (leaf 3);
             let _ : T := Const.child x1 (leaf 4);
-            let _ : T := Const.child x1 (leaf 5); Const.children x2);
+            let _ : T := Const.child x1 (leaf 5);
+            let x8 : T := x2;
+            let x9 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x9 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x9
+                  ([] : List T)
+                  (fun (_ : T) (x11 : List T) => x11))
+              (Const.children x8)
+              (leaf 0);
+            x9);
     x1
 
 def «Infer.envAxs» :=
@@ -2737,7 +4655,21 @@ def «Infer.envAxs» :=
             let _ : T := Const.child x1 (leaf 2);
             let _ : T := Const.child x1 (leaf 3);
             let _ : T := Const.child x1 (leaf 4);
-            let _ : T := Const.child x1 (leaf 5); Const.children x3);
+            let _ : T := Const.child x1 (leaf 5);
+            let x8 : T := x3;
+            let x9 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x9 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x9
+                  ([] : List T)
+                  (fun (_ : T) (x11 : List T) => x11))
+              (Const.children x8)
+              (leaf 0);
+            x9);
     x1
 
 def «Infer.envSg» :=
@@ -2749,7 +4681,21 @@ def «Infer.envSg» :=
             let x4 : T := Const.child x1 (leaf 2);
             let _ : T := Const.child x1 (leaf 3);
             let _ : T := Const.child x1 (leaf 4);
-            let _ : T := Const.child x1 (leaf 5); Const.children x4);
+            let _ : T := Const.child x1 (leaf 5);
+            let x8 : T := x4;
+            let x9 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x9 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x9
+                  ([] : List T)
+                  (fun (_ : T) (x11 : List T) => x11))
+              (Const.children x8)
+              (leaf 0);
+            x9);
     x1
 
 def «Infer.envDfds» :=
@@ -2761,7 +4707,21 @@ def «Infer.envDfds» :=
             let _ : T := Const.child x1 (leaf 2);
             let x5 : T := Const.child x1 (leaf 3);
             let _ : T := Const.child x1 (leaf 4);
-            let _ : T := Const.child x1 (leaf 5); Const.children x5);
+            let _ : T := Const.child x1 (leaf 5);
+            let x8 : T := x5;
+            let x9 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x9 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x9
+                  ([] : List T)
+                  (fun (_ : T) (x11 : List T) => x11))
+              (Const.children x8)
+              (leaf 0);
+            x9);
     x1
 
 def «Infer.envDoms» :=
@@ -2773,7 +4733,21 @@ def «Infer.envDoms» :=
             let _ : T := Const.child x1 (leaf 2);
             let _ : T := Const.child x1 (leaf 3);
             let x6 : T := Const.child x1 (leaf 4);
-            let _ : T := Const.child x1 (leaf 5); Const.children x6);
+            let _ : T := Const.child x1 (leaf 5);
+            let x8 : T := x6;
+            let x9 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x9 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x9
+                  ([] : List T)
+                  (fun (_ : T) (x11 : List T) => x11))
+              (Const.children x8)
+              (leaf 0);
+            x9);
     x1
 
 def «Infer.envCods» :=
@@ -2785,43 +4759,147 @@ def «Infer.envCods» :=
             let _ : T := Const.child x1 (leaf 2);
             let _ : T := Const.child x1 (leaf 3);
             let _ : T := Const.child x1 (leaf 4);
-            let x7 : T := Const.child x1 (leaf 5); Const.children x7);
+            let x7 : T := Const.child x1 (leaf 5);
+            let x8 : T := x7;
+            let x9 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x9 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x9
+                  ([] : List T)
+                  (fun (_ : T) (x11 : List T) => x11))
+              (Const.children x8)
+              (leaf 0);
+            x9);
     x1
 
 def «Infer.envOfDefs» :=
   fun (x0 : List T) =>
     let x1 : T := (let x1 : T := «Infer.ext» x0;
                    «Infer.extEnv»
-                     (Const.node (leaf 0) x0)
-                     (Const.node (leaf 0) («PartialHorn.thyAxioms» x1))
-                     (Const.node (leaf 0) («PartialHorn.thySig» x1))
-                     (Const.node (leaf 0) «Infer.dfdRules»)
-                     (Const.node (leaf 0) «Infer.domRules»)
-                     (Const.node (leaf 0) «Infer.codRules»));
+                     («PartialHorn.pdefns» x0)
+                     («PartialHorn.seqs» («PartialHorn.thyAxioms» x1))
+                     («PartialHorn.opSigs» («PartialHorn.thySig» x1))
+                     («Infer.dfds» «Infer.dfdRules»)
+                     («Infer.bounds» «Infer.domRules»)
+                     («Infer.bounds» «Infer.codRules»));
     x1
+
+def «Infer/SortOf.map» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => ((x0 x2) :: x3))
+      ([] : List T)
+      x1;
+    x2
 
 def «Infer.argSortsOf» :=
   fun (x0 : List T) =>
     let x1 : List
-      T := «Base.mapT»
+      T := «Infer/SortOf.map»
       (fun (x1 : T) => «Infer.annSort» («Infer.tyAnn» x1))
       x0;
     x1
+
+def «Infer.bindYT» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Prelude.none»);
+    x2
+
+def «Infer.bindAT» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Prelude.none»);
+    x2
+
+def «Infer.mapYA» :=
+  fun (x0 : T → T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); «Infer/OAnn.just» (x0 x3)
+                   else
+                     «Infer/OAnn.nothing»);
+    x2
+
+def «Infer.mapAY» :=
+  fun (x0 : T → T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); «Infer/OTyped.just» (x0 x3)
+                   else
+                     «Infer/OTyped.nothing»);
+    x2
+
+def «Infer.bindOA» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Infer/OAnn.nothing»);
+    x2
+
+def «Infer.bindTA» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (if («Prelude.isSome» x0).label ≠ 0 then
+      x1 («Prelude.get» x0)
+    else
+      «Infer/OAnn.nothing»);
+    x2
+
+def «Infer.mapTA» :=
+  fun (x0 : T → T) (x1 : T) =>
+    let x2 : T := (if («Prelude.isSome» x1).label ≠ 0 then
+      «Infer/OAnn.just» (x0 («Prelude.get» x1))
+    else
+      «Infer/OAnn.nothing»);
+    x2
+
+def «Infer.seq0» :=
+  «PartialHorn.mkSeq»
+    ([] : List T)
+    ([] : List T)
+    («PartialHorn.eqn» (leaf 0) (leaf 0))
+
+def «Infer.eqn0» := «PartialHorn.eqn» (leaf 0) (leaf 0)
+
+def «Infer.pdefn0» :=
+  «PartialHorn.pdefn»
+    («PartialHorn.sorts» ([] : List T))
+    (leaf 0)
+    (leaf 0)
+
+def «Infer.dfd0» := «Infer.direct» (leaf 0)
 
 def «Infer.hypOk» :=
   fun (x0 : List T → T → T) (x1 : List T) (x2 : T) =>
     let x3 : T := (if (Const.equal
       («PartialHorn.eqLhs» x2)
       («PartialHorn.eqRhs» x2)).label ≠ 0 then
-      «Prelude.isSome» (x0 x1 («PartialHorn.eqLhs» x2))
+      «Infer/OTyped.isJust» (x0 x1 («PartialHorn.eqLhs» x2))
     else
       let x3 : T := x0 x1 («PartialHorn.eqLhs» x2);
       let x4 : T := x0 x1 («PartialHorn.eqRhs» x2);
       if («Prelude.and»
-        («Prelude.isSome» x3)
-        («Prelude.isSome» x4)).label ≠ 0 then
-        let x5 : T := «Infer.tyAnn» («Prelude.get» x3);
-        let x6 : T := «Infer.tyAnn» («Prelude.get» x4);
+        («Infer/OTyped.isJust» x3)
+        («Infer/OTyped.isJust» x4)).label ≠ 0 then
+        let x5 : T := «Infer.tyAnn»
+          («Infer/OTyped.fromMaybe» «Infer.typed0» x3);
+        let x6 : T := «Infer.tyAnn»
+          («Infer/OTyped.fromMaybe» «Infer.typed0» x4);
         «Prelude.and»
           (Const.eq («Infer.annSort» x5) (leaf 0))
           («Prelude.and»
@@ -2838,10 +4916,10 @@ def «Infer.bound» :=
     (x3 : T)
     (x4 : T)
     (x5 : T) =>
-    let x6 : T := «Base.bindO»
-      («Prelude.nth» («Infer.envAxs» x0) x5)
+    let x6 : T := «Infer.bindST»
+      («PartialHorn/OSequent.nthOf» («Infer.envAxs» x0) x5)
       (fun (x6 : T) =>
-        let x7 : T := «PartialHorn.opVars» x4 («Prelude.length» x2);
+        let x7 : T := «PartialHorn.opVars» x4 («Infer/Typeds.length» x2);
         if («Prelude.and»
           («PartialHorn.seqScoped» x6)
           («Prelude.and»
@@ -2850,15 +4928,15 @@ def «Infer.bound» :=
               (Const.equal
                 («PartialHorn.eqLhs» («PartialHorn.seqConcl» x6))
                 («PartialHorn.phOp» x3 («Prelude.single» x7)))
-              («Base.allT»
+              («Infer/EachEqn.all»
                 (fun (x8 : T) =>
                   «Prelude.and»
                     (Const.equal («PartialHorn.eqLhs» x8) («PartialHorn.eqRhs» x8))
                     («Prelude.or»
                       (Const.equal («PartialHorn.eqLhs» x8) x7)
-                      («Prelude.isSome» (x1 x2 («PartialHorn.eqLhs» x8)))))
+                      («Infer/OTyped.isJust» (x1 x2 («PartialHorn.eqLhs» x8)))))
                 («PartialHorn.seqHyps» x6))))).label ≠ 0 then
-          «Base.bindO»
+          «Infer.bindYT»
             (x1 x2 («PartialHorn.eqRhs» («PartialHorn.seqConcl» x6)))
             (fun (x8 : T) =>
               if (Const.eq
@@ -2874,18 +4952,21 @@ def «Infer.bound» :=
 def «Infer.dfdOk» :=
   fun (x0 : T) (x1 : List T → T → T) (x2 : List T) (x3 : T) =>
     let x4 : T := (let x4 : List T := «Infer.argSortsOf» x2;
-                   let x5 : T := «PartialHorn.opVars» x3 («Prelude.length» x2);
-                   let x6 : T := «Prelude.nth» («Infer.envDfds» x0) x3;
+                   let x5 : T := «PartialHorn.opVars» x3 («Infer/Typeds.length» x2);
+                   let x6 : T := «Infer/OODfd.nthOf» («Infer.envDfds» x0) x3;
                    if («Prelude.and»
-                     («Prelude.isSome» x6)
-                     («Prelude.isSome» («Prelude.get» x6))).label ≠ 0 then
-                     let x7 : T := «Prelude.get» («Prelude.get» x6);
+                     («Infer/OODfd.isJust» x6)
+                     («Infer/ODfd.isJust»
+                       («Infer/OODfd.fromMaybe» «Infer/ODfd.nothing» x6))).label ≠ 0 then
+                     let x7 : T := «Infer/ODfd.fromMaybe»
+                       «Infer.dfd0»
+                       («Infer/OODfd.fromMaybe» «Infer/ODfd.nothing» x6);
                      let x8 : T := x7;
                      if (Const.eq (Const.label x8) (leaf 0)).label ≠ 0 then
                        let x9 : T := Const.child x8 (leaf 0);
-                       let x10 : T := «Prelude.nth» («Infer.envAxs» x0) x9;
-                       if («Prelude.isSome» x10).label ≠ 0 then
-                         let x11 : T := «Prelude.get» x10;
+                       let x10 : T := «PartialHorn/OSequent.nthOf» («Infer.envAxs» x0) x9;
+                       if («PartialHorn/OSequent.isJust» x10).label ≠ 0 then
+                         let x11 : T := «PartialHorn/OSequent.fromMaybe» «Infer.seq0» x10;
                          «Prelude.and»
                            («PartialHorn.seqScoped» x11)
                            («Prelude.and»
@@ -2894,19 +4975,21 @@ def «Infer.dfdOk» :=
                                (Const.equal («PartialHorn.eqLhs» («PartialHorn.seqConcl» x11)) x5)
                                («Prelude.and»
                                  (Const.equal («PartialHorn.eqRhs» («PartialHorn.seqConcl» x11)) x5)
-                                 («Base.allT» («Infer.hypOk» x1 x2) («PartialHorn.seqHyps» x11)))))
+                                 («Infer/EachEqn.all»
+                                   («Infer.hypOk» x1 x2)
+                                   («PartialHorn.seqHyps» x11)))))
                        else
                          leaf 0
                      else
                        if (Const.eq (Const.label x8) (leaf 1)).label ≠ 0 then
                          let x9 : T := Const.child x8 (leaf 0);
-                         let x10 : T := «Prelude.nth» («Infer.envAxs» x0) x9;
-                         if («Prelude.isSome» x10).label ≠ 0 then
-                           let x11 : T := «Prelude.get» x10;
+                         let x10 : T := «PartialHorn/OSequent.nthOf» («Infer.envAxs» x0) x9;
+                         if («PartialHorn/OSequent.isJust» x10).label ≠ 0 then
+                           let x11 : T := «PartialHorn/OSequent.fromMaybe» «Infer.seq0» x10;
                            «Prelude.and»
                              («Base.equalTs» («PartialHorn.seqCtx» x11) x4)
                              («Prelude.and»
-                               («Base.isEmpty» («PartialHorn.seqHyps» x11))
+                               («Infer/EachEqn.isEmpty» («PartialHorn.seqHyps» x11))
                                («Prelude.and»
                                  («Base.not»
                                    (Const.eq
@@ -2921,15 +5004,15 @@ def «Infer.dfdOk» :=
                            leaf 0
                        else
                          let x9 : T := Const.child x8 (leaf 0);
-                         let x10 : T := «Prelude.nth» («Infer.envAxs» x0) x9;
-                         if («Prelude.isSome» x10).label ≠ 0 then
-                           let x11 : T := «Prelude.get» x10;
+                         let x10 : T := «PartialHorn/OSequent.nthOf» («Infer.envAxs» x0) x9;
+                         if («PartialHorn/OSequent.isJust» x10).label ≠ 0 then
+                           let x11 : T := «PartialHorn/OSequent.fromMaybe» «Infer.seq0» x10;
                            «Prelude.and»
                              («Base.isEmpty» («PartialHorn.seqCtx» x11))
                              («Prelude.and»
-                               («Base.isEmpty» («PartialHorn.seqHyps» x11))
+                               («Infer/EachEqn.isEmpty» («PartialHorn.seqHyps» x11))
                                («Prelude.and»
-                                 («Base.isEmpty» x2)
+                                 («Infer/EachTyped.isEmpty» x2)
                                  (Const.equal
                                    («PartialHorn.eqRhs» («PartialHorn.seqConcl» x11))
                                    x5)))
@@ -2941,28 +5024,29 @@ def «Infer.dfdOk» :=
 
 def «Infer.inferObj» :=
   fun (x0 : T) (x1 : List T) =>
-    let x2 : T := (let x2 : T := «Infer.tyAnn» («Prelude.at» x1 (leaf 0));
+    let x2 : T := (let x2 : T := «Infer.tyAnn»
+                     («Infer/Typeds.atOr» «Infer.typed0» x1 (leaf 0));
                    if («Prelude.and»
                      (Const.eq x0 (leaf 0))
-                     (Const.eq («Prelude.length» x1) (leaf 1))).label ≠ 0 then
+                     (Const.eq («Infer/Typeds.length» x1) (leaf 1))).label ≠ 0 then
                      if (Const.eq («Infer.annSort» x2) (leaf 1)).label ≠ 0 then
-                       «Prelude.some»
+                       «Infer/OAnn.just»
                          («Infer.ann» (leaf 0) («Infer.annLo» x2) («Infer.annLo» x2))
                      else
-                       «Prelude.none»
+                       «Infer/OAnn.nothing»
                    else
                      if («Prelude.and»
                        (Const.eq x0 (leaf 1))
-                       (Const.eq («Prelude.length» x1) (leaf 1))).label ≠ 0 then
+                       (Const.eq («Infer/Typeds.length» x1) (leaf 1))).label ≠ 0 then
                        if (Const.eq («Infer.annSort» x2) (leaf 1)).label ≠ 0 then
-                         «Prelude.some»
+                         «Infer/OAnn.just»
                            («Infer.ann» (leaf 0) («Infer.annHi» x2) («Infer.annHi» x2))
                        else
-                         «Prelude.none»
+                         «Infer/OAnn.nothing»
                      else
                        let x3 : T := «PartialHorn.phOp»
                          x0
-                         («Base.mapT»
+                         («Infer/SortOf.map»
                            (fun (x3 : T) =>
                              if (Const.eq
                                («Infer.annSort» («Infer.tyAnn» x3))
@@ -2971,7 +5055,7 @@ def «Infer.inferObj» :=
                              else
                                «Infer.tyTerm» x3)
                            x1);
-                       «Prelude.some» («Infer.ann» (leaf 0) x3 x3));
+                       «Infer/OAnn.just» («Infer.ann» (leaf 0) x3 x3));
     x2
 
 def «Infer.inferArr» :=
@@ -2989,51 +5073,54 @@ def «Infer.inferArr» :=
                    if («Prelude.and»
                      («Prelude.isSome» x4)
                      («Prelude.isSome» x5)).label ≠ 0 then
-                     «Prelude.some»
+                     «Infer/OAnn.just»
                        («Infer.ann» (leaf 1) («Prelude.get» x4) («Prelude.get» x5))
                    else
-                     «Prelude.none»);
+                     «Infer/OAnn.nothing»);
     x4
 
 def «Infer.inferDef» :=
   fun (x0 : T) (x1 : List T → T → T) (x2 : T) (x3 : List T) =>
-    let x4 : T := (let x4 : T := Const.sub x2 («Prelude.length» «Theory.sig»);
-                   let x5 : T := «Prelude.nth» («Infer.envDefs» x0) x4;
-                   let x6 : T := «Prelude.nth» («Infer.envAxs» x0) («Infer.defAxIdx» x4);
+    let x4 : T := (let x4 : T := Const.sub x2 («Infer/OpSigs.length» «Theory.sig»);
+                   let x5 : T := «PartialHorn/OPDefn.nthOf» («Infer.envDefs» x0) x4;
+                   let x6 : T := «PartialHorn/OSequent.nthOf»
+                     («Infer.envAxs» x0)
+                     («Infer.defAxIdx» x4);
                    if («Prelude.and»
-                     («Prelude.isSome» x5)
-                     («Prelude.isSome» x6)).label ≠ 0 then
-                     let x7 : T := «PartialHorn.pdBody» («Prelude.get» x5);
-                     let x8 : T := «Prelude.get» x6;
+                     («PartialHorn/OPDefn.isJust» x5)
+                     («PartialHorn/OSequent.isJust» x6)).label ≠ 0 then
+                     let x7 : T := «PartialHorn.pdBody»
+                       («PartialHorn/OPDefn.fromMaybe» «Infer.pdefn0» x5);
+                     let x8 : T := «PartialHorn/OSequent.fromMaybe» «Infer.seq0» x6;
                      if («Prelude.and»
                        («PartialHorn.seqScoped» x8)
                        («Prelude.and»
                          («Base.equalTs» («PartialHorn.seqCtx» x8) («Infer.argSortsOf» x3))
                          («Prelude.and»
-                           («Base.equalTs»
+                           («PartialHorn.sameEqns»
                              («PartialHorn.seqHyps» x8)
-                             («Prelude.single» («PartialHorn.eqn» x7 x7)))
+                             («Infer/Eqns.single» («PartialHorn.eqn» x7 x7)))
                            (Const.equal
                              («PartialHorn.seqConcl» x8)
                              («PartialHorn.eqn»
-                               («PartialHorn.opVars» x2 («Prelude.length» x3))
+                               («PartialHorn.opVars» x2 («Infer/Typeds.length» x3))
                                x7))))).label ≠ 0 then
-                       «Base.mapO» «Infer.tyAnn» (x1 x3 x7)
+                       «Infer.mapYA» «Infer.tyAnn» (x1 x3 x7)
                      else
-                       «Prelude.none»
+                       «Infer/OAnn.nothing»
                    else
-                     «Prelude.none»);
+                     «Infer/OAnn.nothing»);
     x4
 
 def «Infer.inferOp» :=
   fun (x0 : T) (x1 : List T → T → T) (x2 : T) (x3 : List T) =>
-    let x4 : T := «Base.bindO»
-      («Prelude.nth» («Infer.envSg» x0) x2)
+    let x4 : T := «Infer.bindOA»
+      («PartialHorn/OOpSig.nthOf» («Infer.envSg» x0) x2)
       (fun (x4 : T) =>
         if («Base.equalTs»
           («Infer.argSortsOf» x3)
           («PartialHorn.opArgs» x4)).label ≠ 0 then
-          if (Const.lt x2 («Prelude.length» «Theory.sig»)).label ≠ 0 then
+          if (Const.lt x2 («Infer/OpSigs.length» «Theory.sig»)).label ≠ 0 then
             if («Infer.dfdOk» x0 x1 x3 x2).label ≠ 0 then
               if (Const.eq («PartialHorn.opSort» x4) (leaf 0)).label ≠ 0 then
                 «Infer.inferObj» x2 x3
@@ -3041,25 +5128,25 @@ def «Infer.inferOp» :=
                 if (Const.eq («PartialHorn.opSort» x4) (leaf 1)).label ≠ 0 then
                   «Infer.inferArr» x0 x1 x2 x3
                 else
-                  «Prelude.none»
+                  «Infer/OAnn.nothing»
             else
-              «Prelude.none»
+              «Infer/OAnn.nothing»
           else
             «Infer.inferDef» x0 x1 x2 x3
         else
-          «Prelude.none»);
+          «Infer/OAnn.nothing»);
     x4
 
 def «Infer.inferSide» :=
   fun (x0 : T) (x1 : List T) (x2 : T → T) (x3 : T) (x4 : T) =>
-    let x5 : T := (let x5 : T := «Base.bindO»
-                     («Prelude.nth» («Infer.envAxs» x0) x4)
+    let x5 : T := (let x5 : T := «Infer.bindST»
+                     («PartialHorn/OSequent.nthOf» («Infer.envAxs» x0) x4)
                      (fun (x5 : T) =>
                        «Prelude.some»
                          («Prelude.and»
                            («Base.equalTs» («PartialHorn.seqCtx» x5) («Prelude.single» (leaf 1)))
                            («Prelude.and»
-                             («Base.isEmpty» («PartialHorn.seqHyps» x5))
+                             («Infer/EachEqn.isEmpty» («PartialHorn.seqHyps» x5))
                              (Const.equal
                                («PartialHorn.seqConcl» x5)
                                («Theory.dfd»
@@ -3078,14 +5165,15 @@ def «Infer.inferSide» :=
                            («PartialHorn.phOp»
                              x4
                              («Prelude.single» («PartialHorn.phVar» x3)))).label ≠ 0 then
-                           «Prelude.some» x6
+                           «PartialHorn/OEqn.just» x6
                          else
                            x7)
-                       «Prelude.none»
+                       «PartialHorn/OEqn.nothing»
                        x1;
-                     if («Prelude.isSome» x6).label ≠ 0 then
-                       «Base.bindO»
-                         (x2 («PartialHorn.eqRhs» («Prelude.get» x6)))
+                     if («PartialHorn/OEqn.isJust» x6).label ≠ 0 then
+                       «Infer.bindAT»
+                         (x2
+                           («PartialHorn.eqRhs» («PartialHorn/OEqn.fromMaybe» «Infer.eqn0» x6)))
                          (fun (x7 : T) =>
                            if (Const.eq («Infer.annSort» x7) (leaf 0)).label ≠ 0 then
                              «Prelude.some» («Infer.annLo» x7)
@@ -3100,26 +5188,186 @@ def «Infer.inferSide» :=
 
 def «Infer.inferVar» :=
   fun (x0 : T) (x1 : List T) (x2 : List T) (x3 : T → T) (x4 : T) =>
-    let x5 : T := «Base.bindO»
+    let x5 : T := «Infer.bindTA»
       («Prelude.nth» x1 x4)
       (fun (x5 : T) =>
         if (Const.eq x5 (leaf 0)).label ≠ 0 then
-          «Prelude.some»
+          «Infer/OAnn.just»
             («Infer.ann»
               (leaf 0)
               («PartialHorn.phVar» x4)
               («PartialHorn.phVar» x4))
         else
           if (Const.eq x5 (leaf 1)).label ≠ 0 then
-            «Base.bindO»
+            «Infer.bindTA»
               («Infer.inferSide» x0 x2 x3 x4 (leaf 0))
               (fun (x6 : T) =>
-                «Base.mapO»
+                «Infer.mapTA»
                   (fun (x7 : T) => «Infer.ann» (leaf 1) x6 x7)
                   («Infer.inferSide» x0 x2 x3 x4 (leaf 1)))
           else
-            «Prelude.none»);
+            «Infer/OAnn.nothing»);
     x5
+
+def «Infer.typeds» := fun (x0 : List T) => Const.node (leaf 0) x0
+
+def «Infer/OTypedList.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Infer/OTypedList.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Infer/OTypedList.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Infer/OTypedList.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Infer/OTypedList.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Infer/OTypedList.nothing»
+      (fun (x2 : T) (_ : List T) => «Infer/OTypedList.just» x2);
+    x2
+
+def «Infer/OTypedList.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Infer.anns» := fun (x0 : List T) => Const.node (leaf 0) x0
+
+def «Infer/OAnnList.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Infer/OAnnList.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Infer/OAnnList.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Infer/OAnnList.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Infer/OAnnList.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Infer/OAnnList.nothing»
+      (fun (x2 : T) (_ : List T) => «Infer/OAnnList.just» x2);
+    x2
+
+def «Infer/OAnnList.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Infer.allSomeY» :=
+  fun (x0 : List T) =>
+    let x1 : T := (let x1 : T × List T := «Infer/OTyped.allJust» x0;
+                   if ((x1).1).label ≠ 0 then
+                     «Infer/OTypedList.just» («Infer.typeds» (x1).2)
+                   else
+                     «Infer/OTypedList.nothing»);
+    x1
+
+def «Infer.allSomeA» :=
+  fun (x0 : List T) =>
+    let x1 : T := (let x1 : T × List T := «Infer/OAnn.allJust» x0;
+                   if ((x1).1).label ≠ 0 then
+                     «Infer/OAnnList.just» («Infer.anns» (x1).2)
+                   else
+                     «Infer/OAnnList.nothing»);
+    x1
+
+def «Infer.bindLY» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Infer/OTyped.nothing»);
+    x2
+
+def «Infer.bindLA» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Infer/OAnn.nothing»);
+    x2
 
 def «Infer.poTrees» :=
   fun (x0 : List (T × T)) =>
@@ -3143,6 +5391,28 @@ def «Infer.poValues» :=
       x0;
     x1
 
+def «Infer.paTrees» :=
+  fun (x0 : List (T × T)) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T × T)
+      (β := List T)
+      (fun (x1 : T × T) (x2 : List T) => ((x1).1 :: x2))
+      ([] : List T)
+      x0;
+    x1
+
+def «Infer.paValues» :=
+  fun (x0 : List (T × T)) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T × T)
+      (β := List T)
+      (fun (x1 : T × T) (x2 : List T) => ((x1).2 :: x2))
+      ([] : List T)
+      x0;
+    x1
+
 def «Infer.patInfer» :=
   fun (x0 : T) (x1 : List T → T → T) (x2 : List T) (x3 : T) =>
     let x4 : T := (Const.fold
@@ -3154,22 +5424,36 @@ def «Infer.patInfer» :=
             if (Const.eq («Prelude.length» x6) (leaf 1)).label ≠ 0 then
               let x7 : T := «Prelude.at» x6 (leaf 0);
               if (Const.eq (Const.arity x7) (leaf 0)).label ≠ 0 then
-                «Prelude.nth» x2 (Const.label x7)
+                «Infer/OTyped.nthOf» x2 (Const.label x7)
               else
-                «Prelude.none»
+                «Infer/OTyped.nothing»
             else
-              «Prelude.none»
+              «Infer/OTyped.nothing»
           else
-            «Base.bindO»
-              («Base.allSomeT» («Infer.poValues» x5))
+            «Infer.bindLY»
+              («Infer.allSomeY» («Infer.poValues» x5))
               (fun (x7 : T) =>
-                let x8 : List T := Const.children x7;
-                «Base.mapO»
+                let x8 : List
+                  T := (let x8 : T := x7;
+                        let x9 : List
+                          T := Const.iter
+                          (α := List T)
+                          (fun (x9 : List T) =>
+                            Const.lcase
+                              (α := T)
+                              (β := List T)
+                              x9
+                              ([] : List T)
+                              (fun (_ : T) (x11 : List T) => x11))
+                          (Const.children x8)
+                          (leaf 0);
+                        x9);
+                «Infer.mapAY»
                   (fun (x9 : T) =>
                     «Infer.typed»
                       («PartialHorn.phOp»
                         (Const.sub x4 (leaf 1))
-                        («Base.mapT» «Infer.tyTerm» x8))
+                        («Infer/SortOf.map» «Infer.tyTerm» x8))
                       x9)
                   («Infer.inferOp» x0 x1 (Const.sub x4 (leaf 1)) x8))))
       x3).2;
@@ -3185,7 +5469,7 @@ def «Infer.treeInfer» :=
     let x6 : T := (Const.fold
       (α := T × T)
       (fun (x6 : T) (x7 : List (T × T)) =>
-        let x8 : List T := «Infer.poTrees» x7;
+        let x8 : List T := «Infer.paTrees» x7;
         (Const.node x6 x8,
           if (Const.eq x6 (leaf 0)).label ≠ 0 then
             if (Const.eq («Prelude.length» x8) (leaf 1)).label ≠ 0 then
@@ -3193,12 +5477,12 @@ def «Infer.treeInfer» :=
               if (Const.eq (Const.arity x9) (leaf 0)).label ≠ 0 then
                 «Infer.inferVar» x0 x1 x2 x4 (Const.label x9)
               else
-                «Prelude.none»
+                «Infer/OAnn.nothing»
             else
-              «Prelude.none»
+              «Infer/OAnn.nothing»
           else
-            «Base.bindO»
-              («Base.allSomeT» («Infer.poValues» x7))
+            «Infer.bindLA»
+              («Infer.allSomeA» («Infer.paValues» x7))
               (fun (x9 : T) =>
                 «Infer.inferOp»
                   x0
@@ -3208,9 +5492,27 @@ def «Infer.treeInfer» :=
                     (α := T)
                     (β := List T × List T)
                     (fun (x10 : T) (x11 : List T × List T) =>
-                      («Prelude.tail» (x11).1,
-                        ((«Infer.typed» x10 («Prelude.at» (x11).1 (leaf 0))) :: (x11).2)))
-                    («Prelude.reverse» (Const.children x9), ([] : List T))
+                      («Infer/Anns.tail» (x11).1,
+                        ((«Infer.typed»
+                          x10
+                          («Infer/Anns.atOr» «Infer.ann0» (x11).1 (leaf 0))) ::
+                          (x11).2)))
+                    («Infer/Anns.reverse»
+                      (let x10 : T := x9;
+                       let x11 : List
+                         T := Const.iter
+                         (α := List T)
+                         (fun (x11 : List T) =>
+                           Const.lcase
+                             (α := T)
+                             (β := List T)
+                             x11
+                             ([] : List T)
+                             (fun (_ : T) (x13 : List T) => x13))
+                         (Const.children x10)
+                         (leaf 0);
+                       x11),
+                      ([] : List T))
                     x8).2)))
       x5).2;
     x6
@@ -3224,22 +5526,294 @@ def «Infer.infers» :=
       (fun (x4 : (List T → T → T) × (T → T)) =>
         (fun (x5 : List T) (x6 : T) => «Infer.patInfer» x0 (x4).1 x5 x6,
           fun (x5 : T) => «Infer.treeInfer» x0 x1 x2 (x4).1 (x4).2 x5))
-      (fun (_ : List T) (_ : T) => «Prelude.none»,
-        fun (_ : T) => «Prelude.none»)
+      (fun (_ : List T) (_ : T) => «Infer/OTyped.nothing»,
+        fun (_ : T) => «Infer/OAnn.nothing»)
       x3;
     x4
 
 def «Infer.inferFuel» := leaf 8
 
+def «Language/Eqns.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Language/Eqns.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Language/Eqns.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Language/Eqns.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Language/Eqns.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Language/Eqns.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «Language/Eqns.tail» x1 x0;
+    x2
+
+def «Language/Eqns.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Language/Eqns.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
 def «Language.pr» :=
   fun (x0 : T) (x1 : T) =>
-    let x2 : T := Const.node (leaf 0) («Theory.l2» x0 x1); x2
+    Const.node (leaf 0) (x0 :: (x1 :: ([] : List T)))
 
 def «Language.p1» :=
-  fun (x0 : T) => let x1 : T := Const.child x0 (leaf 0); x1
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   let x2 : T := Const.child x1 (leaf 0);
+                   let _ : T := Const.child x1 (leaf 1); x2);
+    x1
 
 def «Language.p2» :=
-  fun (x0 : T) => let x1 : T := Const.child x0 (leaf 1); x1
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   let _ : T := Const.child x1 (leaf 0);
+                   let x3 : T := Const.child x1 (leaf 1); x3);
+    x1
+
+def «Language/OTPair.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Language/OTPair.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Language/OTPair.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Language/OTPair.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Language/OTPair.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Language/OTPair.nothing»
+      (fun (x2 : T) (_ : List T) => «Language/OTPair.just» x2);
+    x2
+
+def «Language/OTPair.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Language/TPairs.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Language/TPairs.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Language/TPairs.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Language/TPairs.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Language/TPairs.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Language/TPairs.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «Language/TPairs.tail» x1 x0;
+    x2
+
+def «Language/TPairs.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Language/TPairs.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Language/EachTPair.all» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) => «Prelude.and» (x0 x2) x3)
+      (leaf 1)
+      x1;
+    x2
+
+def «Language/EachTPair.any» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) => «Prelude.or» (x0 x2) x3)
+      (leaf 0)
+      x1;
+    x2
+
+def «Language/EachTPair.isEmpty» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.eq
+      (Const.foldr
+        (α := T)
+        (β := T)
+        (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+        (leaf 0)
+        x0)
+      (leaf 0);
+    x1
+
+def «Language/EachTPair.take» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := (let x2 : T := Const.foldr
+              (α := T)
+              (β := T)
+              (fun (_ : T) (x3 : T) => Const.add x3 (leaf 1))
+              (leaf 0)
+              x1;
+            (Const.foldr
+              (α := T)
+              (β := T × List T)
+              (fun (x3 : T) (x4 : T × List T) =>
+                (Const.add (x4).1 (leaf 1),
+                  if (Const.lt
+                    (Const.sub (Const.sub x2 (x4).1) (leaf 1))
+                    x0).label ≠ 0 then
+                    (x3 :: (x4).2)
+                  else
+                    (x4).2))
+              (leaf 0, ([] : List T))
+              x1).2);
+    x2
+
+def «Language/TPairMap.map» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => ((x0 x2) :: x3))
+      ([] : List T)
+      x1;
+    x2
+
+def «Language/TPairOut.map» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => ((x0 x2) :: x3))
+      ([] : List T)
+      x1;
+    x2
 
 def «Language.mNode» :=
   fun (x0 : T) (x1 : List T) (x2 : List T) =>
@@ -3552,7 +6126,7 @@ def «Language.tyOps» :=
               ((«Language.pr» (leaf 29) (leaf 0)) ::
                 ((«Language.pr» (leaf 33) (leaf 1)) ::
                   ((«Language.pr» (leaf 37) (leaf 0)) ::
-                    («Prelude.single» («Language.pr» (leaf 40) (leaf 1))))))))))))
+                    («Language/TPairs.single» («Language.pr» (leaf 40) (leaf 1))))))))))))
 
 def «Language.binParts» :=
   fun (x0 : T → T → T) (x1 : T) =>
@@ -3560,11 +6134,11 @@ def «Language.binParts» :=
       let x2 : T := Const.child x1 (leaf 0);
       let x3 : T := Const.child x1 (leaf 1);
       if (Const.equal x1 (x0 x2 x3)).label ≠ 0 then
-        «Prelude.some» («Language.pr» x2 x3)
+        «Language/OTPair.just» («Language.pr» x2 x3)
       else
-        «Prelude.none»
+        «Language/OTPair.nothing»
     else
-      «Prelude.none»);
+      «Language/OTPair.nothing»);
     x2
 
 def «Language.prodParts» :=
@@ -3627,7 +6201,7 @@ def «Language.extendEnv» :=
   fun (x0 : T) (x1 : T) (x2 : List T) =>
     let x3 : List
       T := ((«Language.pr» («Theory.cSnd» x0 x1) x1) ::
-      («Base.mapT»
+      («Language/TPairMap.map»
         (fun (x3 : T) =>
           «Language.pr»
             («Theory.comp» («Language.p1» x3) («Theory.cFst» x0 x1))
@@ -3643,7 +6217,7 @@ def «Language.stdEnv» :=
       (β := List T × List T)
       (fun (x1 : T) (x2 : List T × List T) =>
         (if («Base.isEmpty» (x2).2).label ≠ 0 then
-          «Prelude.single» («Language.pr» («Theory.idt» x1) x1)
+          «Language/TPairs.single» («Language.pr» («Theory.idt» x1) x1)
         else
           «Language.extendEnv» («Language.ctxObj» (x2).2) x1 (x2).1,
           (x1 :: (x2).2)))
@@ -3661,6 +6235,8 @@ def «Language.tuple» :=
       («Theory.bang» x0, leaf 0)
       x1).1;
     x2
+
+def «Language.objs» := fun (x0 : List T) => Const.node (leaf 0) x0
 
 def «Language.ldefn» :=
   fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) =>
@@ -3682,7 +6258,21 @@ def «Language.ldParams» :=
             let _ : T := Const.child x1 (leaf 0);
             let x3 : T := Const.child x1 (leaf 1);
             let _ : T := Const.child x1 (leaf 2);
-            let _ : T := Const.child x1 (leaf 3); Const.children x3);
+            let _ : T := Const.child x1 (leaf 3);
+            let x6 : T := x3;
+            let x7 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x7 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x7
+                  ([] : List T)
+                  (fun (_ : T) (x9 : List T) => x9))
+              (Const.children x6)
+              (leaf 0);
+            x7);
     x1
 
 def «Language.ldType» :=
@@ -3701,6 +6291,66 @@ def «Language.ldBody» :=
                    let _ : T := Const.child x1 (leaf 1);
                    let _ : T := Const.child x1 (leaf 2);
                    let x5 : T := Const.child x1 (leaf 3); x5);
+    x1
+
+def «Language/OLDefn.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Language/OLDefn.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Language/OLDefn.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Language/OLDefn.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Language/OLDefn.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Language/OLDefn.nothing»
+      (fun (x2 : T) (_ : List T) => «Language/OLDefn.just» x2);
+    x2
+
+def «Language/OLDefn.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
     x1
 
 def «Language.primitive» :=
@@ -3743,6 +6393,66 @@ def «Language.prCod» :=
                    let x5 : T := Const.child x1 (leaf 3); x5);
     x1
 
+def «Language/OPrimitive.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Language/OPrimitive.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Language/OPrimitive.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Language/OPrimitive.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Language/OPrimitive.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Language/OPrimitive.nothing»
+      (fun (x2 : T) (_ : List T) => «Language/OPrimitive.just» x2);
+    x2
+
+def «Language/OPrimitive.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
 def «Language.defLang» :=
   fun (x0 : T) => Const.node (leaf 0) (x0 :: ([] : List T))
 
@@ -3754,11 +6464,195 @@ def «Language.defLanguage» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 0)).label ≠ 0 then
-                     let x2 : T := Const.child x1 (leaf 0); «Prelude.some» x2
+                     let x2 : T := Const.child x1 (leaf 0); «Language/OLDefn.just» x2
                    else
                      let _ : T := Const.child x1 (leaf 0);
-                     let _ : T := Const.child x1 (leaf 1); «Prelude.none»);
+                     let _ : T := Const.child x1 (leaf 1); «Language/OLDefn.nothing»);
     x1
+
+def «Language/ODefinition.nothing» :=
+  Const.node (leaf 0) ([] : List T)
+
+def «Language/ODefinition.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Language/ODefinition.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Language/ODefinition.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Language/ODefinition.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Language/ODefinition.nothing»
+      (fun (x2 : T) (_ : List T) => «Language/ODefinition.just» x2);
+    x2
+
+def «Language/ODefinition.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Language/Defs.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Language/Defs.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Language/Defs.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Language/Defs.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Language/Defs.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Language/Defs.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «Language/Defs.tail» x1 x0;
+    x2
+
+def «Language/Defs.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Language/Defs.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Language/EachDef.all» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) => «Prelude.and» (x0 x2) x3)
+      (leaf 1)
+      x1;
+    x2
+
+def «Language/EachDef.any» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) => «Prelude.or» (x0 x2) x3)
+      (leaf 0)
+      x1;
+    x2
+
+def «Language/EachDef.isEmpty» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.eq
+      (Const.foldr
+        (α := T)
+        (β := T)
+        (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+        (leaf 0)
+        x0)
+      (leaf 0);
+    x1
+
+def «Language/EachDef.take» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := (let x2 : T := Const.foldr
+              (α := T)
+              (β := T)
+              (fun (_ : T) (x3 : T) => Const.add x3 (leaf 1))
+              (leaf 0)
+              x1;
+            (Const.foldr
+              (α := T)
+              (β := T × List T)
+              (fun (x3 : T) (x4 : T × List T) =>
+                (Const.add (x4).1 (leaf 1),
+                  if (Const.lt
+                    (Const.sub (Const.sub x2 (x4).1) (leaf 1))
+                    x0).label ≠ 0 then
+                    (x3 :: (x4).2)
+                  else
+                    (x4).2))
+              (leaf 0, ([] : List T))
+              x1).2);
+    x2
+
+def «Language.prims» := fun (x0 : List T) => Const.node (leaf 0) x0
+
+def «Language.defs» := fun (x0 : List T) => Const.node (leaf 0) x0
 
 def «Language.globals» :=
   fun (x0 : T) (x1 : T) (x2 : T) =>
@@ -3770,7 +6664,21 @@ def «Language.gPrims» :=
       T := (let x1 : T := x0;
             let x2 : T := Const.child x1 (leaf 0);
             let _ : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2); Const.children x2);
+            let _ : T := Const.child x1 (leaf 2);
+            let x5 : T := x2;
+            let x6 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x6 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x6
+                  ([] : List T)
+                  (fun (_ : T) (x8 : List T) => x8))
+              (Const.children x5)
+              (leaf 0);
+            x6);
     x1
 
 def «Language.gDefs» :=
@@ -3779,7 +6687,21 @@ def «Language.gDefs» :=
       T := (let x1 : T := x0;
             let _ : T := Const.child x1 (leaf 0);
             let x3 : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2); Const.children x3);
+            let _ : T := Const.child x1 (leaf 2);
+            let x5 : T := x3;
+            let x6 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x6 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x6
+                  ([] : List T)
+                  (fun (_ : T) (x8 : List T) => x8))
+              (Const.children x5)
+              (leaf 0);
+            x6);
     x1
 
 def «Language.gBase» :=
@@ -3790,19 +6712,21 @@ def «Language.gBase» :=
                    let x4 : T := Const.child x1 (leaf 2); x4);
     x1
 
+def «Language.def0» := «Language.defObj» (leaf 0) (leaf 0)
+
 def «Language.isTyOp» :=
   fun (x0 : T) (x1 : T) (x2 : T) =>
     let x3 : T := «Prelude.or»
-      («Base.anyT»
+      («Language/EachTPair.any»
         (fun (x3 : T) => Const.equal x3 («Language.pr» x1 x2))
         «Language.tyOps»)
       («Prelude.and»
         («Base.not» (Const.lt x1 («Language.gBase» x0)))
-        (let x3 : T := «Prelude.nth»
+        (let x3 : T := «Language/ODefinition.nthOf»
            («Language.gDefs» x0)
            (Const.sub x1 («Language.gBase» x0));
-         if («Prelude.isSome» x3).label ≠ 0 then
-           let x4 : T := «Prelude.get» x3;
+         if («Language/ODefinition.isJust» x3).label ≠ 0 then
+           let x4 : T := «Language/ODefinition.fromMaybe» «Language.def0» x3;
            if (Const.eq (Const.label x4) (leaf 0)).label ≠ 0 then
              let _ : T := Const.child x4 (leaf 0); leaf 0
            else
@@ -3867,7 +6791,7 @@ def «Language.cpAt» :=
         «Language/CPs.tail»
         x0
         x1)
-      (fun (_ : T) (_ : List T) => «Prelude.none»)
+      (fun (_ : T) (_ : List T) => «Language/OTPair.nothing»)
       (fun (x2 : T × (T → List T → T)) (_ : List (T × (T → List T → T))) =>
         (x2).2);
     x2
@@ -3883,6 +6807,150 @@ def «Language.cpAll» :=
       ([] : List T)
       x0;
     x3
+
+def «Language.bindPP» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Language/OTPair.nothing»);
+    x2
+
+def «Language.bindTP» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (if («Prelude.isSome» x0).label ≠ 0 then
+      x1 («Prelude.get» x0)
+    else
+      «Language/OTPair.nothing»);
+    x2
+
+def «Language.bindRP» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Language/OTPair.nothing»);
+    x2
+
+def «Language.bindDL» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Language/OLDefn.nothing»);
+    x2
+
+def «Language.bindLP» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Language/OTPair.nothing»);
+    x2
+
+def «Language.tpairs» := fun (x0 : List T) => Const.node (leaf 0) x0
+
+def «Language/OTPairList.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Language/OTPairList.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Language/OTPairList.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Language/OTPairList.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Language/OTPairList.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Language/OTPairList.nothing»
+      (fun (x2 : T) (_ : List T) => «Language/OTPairList.just» x2);
+    x2
+
+def «Language/OTPairList.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Language.allSomeP» :=
+  fun (x0 : List T) =>
+    let x1 : T := (let x1 : T × List T := «Language/OTPair.allJust» x0;
+                   if ((x1).1).label ≠ 0 then
+                     «Language/OTPairList.just» («Language.tpairs» (x1).2)
+                   else
+                     «Language/OTPairList.nothing»);
+    x1
+
+def «Language.bindQP» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Language/OTPair.nothing»);
+    x2
+
+def «Language/TPairF.l2» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : List T := (x0 :: (x1 :: ([] : List T))); x2
+
+def «Language/TPairF.l3» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    let x3 : List T := (x0 :: («Language/TPairF.l2» x1 x2)); x3
+
+def «Language/TPairF.l4» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) =>
+    let x4 : List T := (x0 :: («Language/TPairF.l3» x1 x2 x3)); x4
+
+def «Language/TPairF.l5» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
+    let x5 : List T := (x0 :: («Language/TPairF.l4» x1 x2 x3 x4)); x5
+
+def «Language/TPairF.l6» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) =>
+    let x6 : List T := (x0 :: («Language/TPairF.l5» x1 x2 x3 x4 x5)); x6
 
 def «Language.compileStep» :=
   fun (x0 : T)
@@ -3901,23 +6969,23 @@ def «Language.compileStep» :=
                    if («Prelude.and»
                      (Const.eq x2 (leaf 0))
                      (Const.eq x8 (leaf 0))).label ≠ 0 then
-                     «Prelude.nth» x5 («Prelude.at» x6 (leaf 0))
+                     «Language/OTPair.nthOf» x5 («Prelude.at» x6 (leaf 0))
                    else
                      if («Prelude.and»
                        (Const.eq x2 (leaf 1))
                        (Const.eq x8 (leaf 0))).label ≠ 0 then
-                       «Prelude.some» («Language.pr» («Theory.bang» x4) «Theory.one»)
+                       «Language/OTPair.just» («Language.pr» («Theory.bang» x4) «Theory.one»)
                      else
                        if («Prelude.and»
                          (Const.eq x2 (leaf 2))
                          (Const.eq x8 (leaf 2))).label ≠ 0 then
-                         «Base.bindO»
+                         «Language.bindPP»
                            (x9 x4 x5)
                            (fun (x12 : T) =>
-                             «Base.bindO»
+                             «Language.bindPP»
                                (x10 x4 x5)
                                (fun (x13 : T) =>
-                                 «Prelude.some»
+                                 «Language/OTPair.just»
                                    («Language.pr»
                                      («Theory.cPair» («Language.p1» x12) («Language.p1» x13))
                                      («Theory.prod» («Language.p2» x12) («Language.p2» x13)))))
@@ -3925,21 +6993,21 @@ def «Language.compileStep» :=
                          if («Prelude.and»
                            («Prelude.or» (Const.eq x2 (leaf 3)) (Const.eq x2 (leaf 4)))
                            (Const.eq x8 (leaf 1))).label ≠ 0 then
-                           «Base.bindO»
+                           «Language.bindPP»
                              (x9 x4 x5)
                              (fun (x12 : T) =>
-                               «Base.bindO»
+                               «Language.bindPP»
                                  («Language.prodParts» («Language.p2» x12))
                                  (fun (x13 : T) =>
                                    if (Const.eq x2 (leaf 3)).label ≠ 0 then
-                                     «Prelude.some»
+                                     «Language/OTPair.just»
                                        («Language.pr»
                                          («Theory.comp»
                                            («Theory.cFst» («Language.p1» x13) («Language.p2» x13))
                                            («Language.p1» x12))
                                          («Language.p1» x13))
                                    else
-                                     «Prelude.some»
+                                     «Language/OTPair.just»
                                        («Language.pr»
                                          («Theory.comp»
                                            («Theory.cSnd» («Language.p1» x13) («Language.p2» x13))
@@ -3951,32 +7019,32 @@ def «Language.compileStep» :=
                              (Const.eq x8 (leaf 1))).label ≠ 0 then
                              let x12 : T := «Prelude.at» x6 (leaf 0);
                              if («Language.isTy» x0 x1 x12).label ≠ 0 then
-                               «Base.bindO»
+                               «Language.bindPP»
                                  (x9 («Theory.prod» x4 x12) («Language.extendEnv» x4 x12 x5))
                                  (fun (x13 : T) =>
-                                   «Prelude.some»
+                                   «Language/OTPair.just»
                                      («Language.pr»
                                        («Theory.curry» x4 x12 («Language.p1» x13))
                                        («Theory.exp» x12 («Language.p2» x13))))
                              else
-                               «Prelude.none»
+                               «Language/OTPair.nothing»
                            else
                              if («Prelude.and»
                                (Const.eq x2 (leaf 6))
                                (Const.eq x8 (leaf 2))).label ≠ 0 then
-                               «Base.bindO»
+                               «Language.bindPP»
                                  (x9 x4 x5)
                                  (fun (x12 : T) =>
-                                   «Base.bindO»
+                                   «Language.bindPP»
                                      («Language.expParts» («Language.p2» x12))
                                      (fun (x13 : T) =>
-                                       «Base.bindO»
+                                       «Language.bindPP»
                                          (x10 x4 x5)
                                          (fun (x14 : T) =>
                                            if (Const.equal
                                              («Language.p2» x14)
                                              («Language.p1» x13)).label ≠ 0 then
-                                             «Prelude.some»
+                                             «Language/OTPair.just»
                                                («Language.pr»
                                                  («Theory.comp»
                                                    («Theory.ev»
@@ -3987,16 +7055,18 @@ def «Language.compileStep» :=
                                                      («Language.p1» x14)))
                                                  («Language.p2» x13))
                                            else
-                                             «Prelude.none»)))
+                                             «Language/OTPair.nothing»)))
                              else
                                if («Prelude.and»
                                  (Const.eq x2 (leaf 7))
                                  (Const.eq x8 (leaf 1))).label ≠ 0 then
                                  let x12 : List T := Const.children («Prelude.at» x6 (leaf 1));
-                                 «Base.bindO»
-                                   («Prelude.nth» («Language.gPrims» x0) («Prelude.at» x6 (leaf 0)))
+                                 «Language.bindRP»
+                                   («Language/OPrimitive.nthOf»
+                                     («Language.gPrims» x0)
+                                     («Prelude.at» x6 (leaf 0)))
                                    (fun (x13 : T) =>
-                                     «Base.bindO»
+                                     «Language.bindPP»
                                        (x9 x4 x5)
                                        (fun (x14 : T) =>
                                          if («Prelude.and»
@@ -4010,7 +7080,7 @@ def «Language.compileStep» :=
                                                («PartialHorn.phSubst»
                                                  x12
                                                  («Language.prDom» x13))))).label ≠ 0 then
-                                           «Prelude.some»
+                                           «Language/OTPair.just»
                                              («Language.pr»
                                                («Theory.comp»
                                                  («PartialHorn.phSubst»
@@ -4019,22 +7089,22 @@ def «Language.compileStep» :=
                                                  («Language.p1» x14))
                                                («PartialHorn.phSubst» x12 («Language.prCod» x13)))
                                          else
-                                           «Prelude.none»))
+                                           «Language/OTPair.nothing»))
                                else
                                  if («Prelude.and»
                                    (Const.eq x2 (leaf 8))
                                    (Const.eq x8 (leaf 3))).label ≠ 0 then
-                                   «Base.bindO»
+                                   «Language.bindPP»
                                      (x9 «Theory.one» ([] : List T))
                                      (fun (x12 : T) =>
                                        let x13 : T := «Language.p2» x12;
-                                       «Base.bindO»
+                                       «Language.bindPP»
                                          (x10
                                            x13
-                                           («Prelude.single»
+                                           («Language/TPairs.single»
                                              («Language.pr» («Theory.idt» x13) x13)))
                                          (fun (x14 : T) =>
-                                           «Base.bindO»
+                                           «Language.bindPP»
                                              (x11 x4 x5)
                                              (fun (x15 : T) =>
                                                if («Prelude.and»
@@ -4042,7 +7112,7 @@ def «Language.compileStep» :=
                                                  (Const.equal
                                                    («Language.p2» x15)
                                                    «Theory.nat»)).label ≠ 0 then
-                                                 «Prelude.some»
+                                                 «Language/OTPair.just»
                                                    («Language.pr»
                                                      («Theory.comp»
                                                        («Theory.natRec»
@@ -4051,32 +7121,32 @@ def «Language.compileStep» :=
                                                        («Language.p1» x15))
                                                      x13)
                                                else
-                                                 «Prelude.none»)))
+                                                 «Language/OTPair.nothing»)))
                                  else
                                    if («Prelude.and»
                                      (Const.eq x2 (leaf 9))
                                      (Const.eq x8 (leaf 3))).label ≠ 0 then
-                                     «Base.bindO»
+                                     «Language.bindPP»
                                        (x11 x4 x5)
                                        (fun (x12 : T) =>
-                                         «Base.bindO»
+                                         «Language.bindTP»
                                            («Language.listPart» («Language.p2» x12))
                                            (fun (x13 : T) =>
-                                             «Base.bindO»
+                                             «Language.bindPP»
                                                (x9 «Theory.one» ([] : List T))
                                                (fun (x14 : T) =>
                                                  let x15 : T := «Language.p2» x14;
-                                                 «Base.bindO»
+                                                 «Language.bindPP»
                                                    (x10
                                                      («Theory.prod» x13 x15)
-                                                     («Theory.l2»
+                                                     («Language/TPairF.l2»
                                                        («Language.pr» («Theory.cSnd» x13 x15) x15)
                                                        («Language.pr» («Theory.cFst» x13 x15) x13)))
                                                    (fun (x16 : T) =>
                                                      if (Const.equal
                                                        («Language.p2» x16)
                                                        x15).label ≠ 0 then
-                                                       «Prelude.some»
+                                                       «Language/OTPair.just»
                                                          («Language.pr»
                                                            («Theory.comp»
                                                              («Theory.listRec»
@@ -4086,32 +7156,32 @@ def «Language.compileStep» :=
                                                              («Language.p1» x12))
                                                            x15)
                                                      else
-                                                       «Prelude.none»))))
+                                                       «Language/OTPair.nothing»))))
                                    else
                                      if («Prelude.and»
                                        (Const.eq x2 (leaf 10))
                                        (Const.eq x8 (leaf 2))).label ≠ 0 then
                                        let x12 : T := «Prelude.at» x6 (leaf 0);
                                        if («Language.isTy» x0 x1 x12).label ≠ 0 then
-                                         «Base.bindO»
+                                         «Language.bindPP»
                                            (x10 x4 x5)
                                            (fun (x13 : T) =>
-                                             «Base.bindO»
+                                             «Language.bindTP»
                                                («Language.roseLabel» («Language.p2» x13))
                                                (fun (x14 : T) =>
                                                  let x15 : T := «Theory.prod»
                                                    x14
                                                    («Theory.list» x12);
-                                                 «Base.bindO»
+                                                 «Language.bindPP»
                                                    (x9
                                                      x15
-                                                     («Prelude.single»
+                                                     («Language/TPairs.single»
                                                        («Language.pr» («Theory.idt» x15) x15)))
                                                    (fun (x16 : T) =>
                                                      if (Const.equal
                                                        («Language.p2» x16)
                                                        x12).label ≠ 0 then
-                                                       «Prelude.some»
+                                                       «Language/OTPair.just»
                                                          («Language.pr»
                                                            («Theory.comp»
                                                              («Language.roseFold»
@@ -4120,23 +7190,23 @@ def «Language.compileStep» :=
                                                              («Language.p1» x13))
                                                            x12)
                                                      else
-                                                       «Prelude.none»)))
+                                                       «Language/OTPair.nothing»)))
                                        else
-                                         «Prelude.none»
+                                         «Language/OTPair.nothing»
                                      else
                                        if («Prelude.and»
                                          (Const.eq x2 (leaf 12))
                                          (Const.eq x8 (leaf 2))).label ≠ 0 then
-                                         «Base.bindO»
+                                         «Language.bindPP»
                                            (x9 x4 x5)
                                            (fun (x12 : T) =>
-                                             «Base.bindO»
+                                             «Language.bindPP»
                                                (x10 x4 x5)
                                                (fun (x13 : T) =>
                                                  if (Const.equal
                                                    («Language.p2» x12)
                                                    («Language.p2» x13)).label ≠ 0 then
-                                                   «Prelude.some»
+                                                   «Language/OTPair.just»
                                                      («Language.pr»
                                                        («Theory.comp»
                                                          («Theory.chi»
@@ -4146,22 +7216,37 @@ def «Language.compileStep» :=
                                                            («Language.p1» x13)))
                                                        «Theory.omega»)
                                                  else
-                                                   «Prelude.none»))
+                                                   «Language/OTPair.nothing»))
                                        else
                                          if (Const.eq x2 (leaf 11)).label ≠ 0 then
                                            let x12 : List
                                              T := Const.children («Prelude.at» x6 (leaf 1));
-                                           «Base.bindO»
-                                             («Base.bindO»
-                                               («Prelude.nth»
+                                           «Language.bindLP»
+                                             («Language.bindDL»
+                                               («Language/ODefinition.nthOf»
                                                  («Language.gDefs» x0)
                                                  («Prelude.at» x6 (leaf 0)))
                                                «Language.defLanguage»)
                                              (fun (x13 : T) =>
-                                               «Base.bindO»
-                                                 («Base.allSomeT» («Language.cpAll» x7 x4 x5))
+                                               «Language.bindQP»
+                                                 («Language.allSomeP» («Language.cpAll» x7 x4 x5))
                                                  (fun (x14 : T) =>
-                                                   let x15 : List T := Const.children x14;
+                                                   let x15 : List
+                                                     T := (let x15 : T := x14;
+                                                           let x16 : List
+                                                             T := Const.iter
+                                                             (α := List T)
+                                                             (fun (x16 : List T) =>
+                                                               Const.lcase
+                                                                 (α := T)
+                                                                 (β := List T)
+                                                                 x16
+                                                                 ([] : List T)
+                                                                 (fun (_ : T) (x18 : List T) =>
+                                                                   x18))
+                                                             (Const.children x15)
+                                                             (leaf 0);
+                                                           x16);
                                                    if («Prelude.and»
                                                      (Const.eq
                                                        («Prelude.length» x12)
@@ -4169,12 +7254,12 @@ def «Language.compileStep» :=
                                                      («Prelude.and»
                                                        («Base.allT» («Language.isTy» x0 x1) x12)
                                                        («Base.equalTs»
-                                                         («Base.mapT» «Language.p2» x15)
+                                                         («Language/TPairOut.map» «Language.p2» x15)
                                                          («Base.mapT»
                                                            («PartialHorn.phSubst» x12)
                                                            («Language.ldParams»
                                                              x13))))).label ≠ 0 then
-                                                     «Prelude.some»
+                                                     «Language/OTPair.just»
                                                        («Language.pr»
                                                          («Theory.comp»
                                                            («PartialHorn.phOp»
@@ -4184,14 +7269,16 @@ def «Language.compileStep» :=
                                                              x12)
                                                            («Language.tuple»
                                                              x4
-                                                             («Base.mapT» «Language.p1» x15)))
+                                                             («Language/TPairOut.map»
+                                                               «Language.p1»
+                                                               x15)))
                                                          («PartialHorn.phSubst»
                                                            x12
                                                            («Language.ldType» x13)))
                                                    else
-                                                     «Prelude.none»))
+                                                     «Language/OTPair.nothing»))
                                          else
-                                           «Prelude.none»);
+                                           «Language/OTPair.nothing»);
     x6
 
 def «Language.compile» :=
@@ -4207,9 +7294,36 @@ def «Language.compile» :=
       x2).2;
     x3
 
+def «Language.bindPD» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «PartialHorn/OPDefn.nothing»);
+    x2
+
+def «Language.bindPS» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «PartialHorn/OSequent.nothing»);
+    x2
+
+def «Language.allSomeD» :=
+  fun (x0 : List T) =>
+    let x1 : T := (let x1 : T × List T := «PartialHorn/OPDefn.allJust» x0;
+                   if ((x1).1).label ≠ 0 then
+                     «PartialHorn/OPDefnList.just» («PartialHorn.pdefns» (x1).2)
+                   else
+                     «PartialHorn/OPDefnList.nothing»);
+    x1
+
 def «Language.ldCompile» :=
   fun (x0 : T) (x1 : T) =>
-    let x2 : T := «Base.bindO»
+    let x2 : T := «Language.bindPD»
       («Language.compile»
         x0
         («Language.ldArity» x1)
@@ -4224,15 +7338,14 @@ def «Language.ldCompile» :=
           (Const.equal
             («Language.p2» x2)
             («Language.ldType» x1))).label ≠ 0 then
-          «Prelude.some»
+          «PartialHorn/OPDefn.just»
             («PartialHorn.pdefn»
-              (Const.node
-                (leaf 0)
+              («PartialHorn.sorts»
                 («Prelude.replicate» («Language.ldArity» x1) (leaf 0)))
               (leaf 1)
               («Language.p1» x2))
         else
-          «Prelude.none»);
+          «PartialHorn/OPDefn.nothing»);
     x2
 
 def «Language.defCompile» :=
@@ -4243,31 +7356,42 @@ def «Language.defCompile» :=
                    else
                      let x3 : T := Const.child x2 (leaf 0);
                      let x4 : T := Const.child x2 (leaf 1);
-                     «Prelude.some»
+                     «PartialHorn/OPDefn.just»
                        («PartialHorn.pdefn»
-                         (Const.node (leaf 0) («Prelude.replicate» x3 (leaf 0)))
+                         («PartialHorn.sorts» («Prelude.replicate» x3 (leaf 0)))
                          (leaf 0)
                          x4));
+    x2
+
+def «Language/CompileAt.map» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => ((x0 x2) :: x3))
+      ([] : List T)
+      x1;
     x2
 
 def «Language.compileDefs» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : List T := «Language.gDefs» x0;
-                   «Base.allSomeT»
-                     («Base.mapT»
+                   «Language.allSomeD»
+                     («Language/CompileAt.map»
                        (fun (x2 : T) =>
                          «Language.defCompile»
                            («Language.globals»
-                             (Const.node (leaf 0) («Language.gPrims» x0))
-                             (Const.node (leaf 0) («Base.take» x2 x1))
+                             («Language.prims» («Language.gPrims» x0))
+                             («Language.defs» («Language/EachDef.take» x2 x1))
                              («Language.gBase» x0))
-                           («Prelude.at» x1 x2))
-                       («Base.range» («Prelude.length» x1))));
+                           («Language/Defs.atOr» «Language.def0» x1 x2))
+                       («Base.range» («Language/Defs.length» x1))));
     x1
 
 def «Language.compileEq» :=
   fun (x0 : T) (x1 : T) (x2 : List T) (x3 : T) (x4 : T) =>
-    let x5 : T := «Base.bindO»
+    let x5 : T := «Language.bindPS»
       («Language.compile»
         x0
         x1
@@ -4275,7 +7399,7 @@ def «Language.compileEq» :=
         («Language.ctxObj» x2)
         («Language.stdEnv» x2))
       (fun (x5 : T) =>
-        «Base.bindO»
+        «Language.bindPS»
           («Language.compile»
             x0
             x1
@@ -4286,14 +7410,16 @@ def «Language.compileEq» :=
             if («Prelude.and»
               («Base.allT» («Language.isTy» x0 x1) x2)
               (Const.equal («Language.p2» x5) («Language.p2» x6))).label ≠ 0 then
-              «Prelude.some»
+              «PartialHorn/OSequent.just»
                 («PartialHorn.mkSeq»
                   («Prelude.replicate» x1 (leaf 0))
                   ([] : List T)
                   («PartialHorn.eqn» («Language.p1» x5) («Language.p1» x6)))
             else
-              «Prelude.none»));
+              «PartialHorn/OSequent.nothing»));
     x5
+
+def «Language.ann1» := «Infer.ann» (leaf 0) (leaf 0) (leaf 0)
 
 def «Language.primWf» :=
   fun (x0 : T) (x1 : List T) (x2 : T) =>
@@ -4326,13 +7452,13 @@ def «Language.primOk» :=
        let x5 : T := x3 («Language.prDom» x2);
        let x6 : T := x3 («Language.prCod» x2);
        if («Prelude.and»
-         («Prelude.isSome» x4)
+         («Infer/OAnn.isJust» x4)
          («Prelude.and»
-           («Prelude.isSome» x5)
-           («Prelude.isSome» x6))).label ≠ 0 then
-         let x7 : T := «Prelude.get» x4;
-         let x8 : T := «Prelude.get» x5;
-         let x9 : T := «Prelude.get» x6;
+           («Infer/OAnn.isJust» x5)
+           («Infer/OAnn.isJust» x6))).label ≠ 0 then
+         let x7 : T := «Infer/OAnn.fromMaybe» «Language.ann1» x4;
+         let x8 : T := «Infer/OAnn.fromMaybe» «Language.ann1» x5;
+         let x9 : T := «Infer/OAnn.fromMaybe» «Language.ann1» x6;
          «Prelude.and»
            (Const.eq («Infer.annSort» x7) (leaf 1))
            («Prelude.and»
@@ -4355,13 +7481,265 @@ def «Language.objOk» :=
           («Prelude.replicate» x1 (leaf 0))
           x2)
         («Prelude.some» (leaf 0)))
-      («Prelude.isSome»
+      («Infer/OAnn.isJust»
         ((«Infer.infers»
           x0
           («Prelude.replicate» x1 (leaf 0))
           ([] : List T)
           «Infer.inferFuel»).2
           x2));
+    x3
+
+def «Derivation/Eqns.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Derivation/Eqns.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Derivation/Eqns.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Derivation/Eqns.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Derivation/Eqns.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Derivation/Eqns.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «Derivation/Eqns.tail» x1 x0;
+    x2
+
+def «Derivation/Eqns.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Derivation/Eqns.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Derivation/OpSigs.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Derivation/OpSigs.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Derivation/OpSigs.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Derivation/OpSigs.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Derivation/OpSigs.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Derivation/OpSigs.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «Derivation/OpSigs.tail» x1 x0;
+    x2
+
+def «Derivation/OpSigs.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Derivation/OpSigs.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Derivation/Prims.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Derivation/Prims.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Derivation/Prims.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Derivation/Prims.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Derivation/Prims.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Derivation/Prims.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «Derivation/Prims.tail» x1 x0;
+    x2
+
+def «Derivation/Prims.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Derivation/Prims.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Derivation/Defs.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Derivation/Defs.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Derivation/Defs.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Derivation/Defs.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Derivation/Defs.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Derivation/Defs.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «Derivation/Defs.tail» x1 x0;
+    x2
+
+def «Derivation/Defs.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Derivation/Defs.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
     x3
 
 def «Derivation.copairIn» :=
@@ -4483,8 +7861,8 @@ def «Derivation.casePrim» :=
 def «Derivation.primIs» :=
   fun (x0 : T) (x1 : T) (x2 : T) =>
     let x3 : T := Const.equal
-      («Prelude.nth» («Language.gPrims» x0) x1)
-      («Prelude.some» x2);
+      («Language/OPrimitive.nthOf» («Language.gPrims» x0) x1)
+      («Language/OPrimitive.just» x2);
     x3
 
 def «Derivation.objVars» :=
@@ -4664,18 +8042,29 @@ def «Derivation.roseHyp» :=
         («Language.mEq» «Language.mStar» «Language.mStar»));
     x3
 
+def «Derivation.mapPT» :=
+  fun (x0 : T → T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); «Prelude.some» (x0 x3)
+                   else
+                     «Prelude.none»);
+    x2
+
+def «Derivation.pr0» := «Language.pr» (leaf 0) (leaf 0)
+
 def «Derivation.eqParts» :=
   fun (x0 : T) =>
     let x1 : T := (if («Language.mIs»
       (leaf 12)
       (leaf 2)
       x0).label ≠ 0 then
-      «Prelude.some»
+      «Language/OTPair.just»
         («Language.pr»
           («Language.mArg» x0 (leaf 0))
           («Language.mArg» x0 (leaf 1)))
     else
-      «Prelude.none»);
+      «Language/OTPair.nothing»);
     x1
 
 def «Derivation.instTerm» :=
@@ -4687,7 +8076,7 @@ def «Derivation.instTerm» :=
 
 def «Derivation.typeIn» :=
   fun (x0 : T) (x1 : T) (x2 : List T) (x3 : T) =>
-    let x4 : T := «Base.mapO»
+    let x4 : T := «Derivation.mapPT»
       «Language.p2»
       («Language.compile»
         x0
@@ -4704,9 +8093,104 @@ def «Derivation.isFormula» :=
       («Prelude.some» «Theory.omega»);
     x4
 
+def «Derivation.terms» := fun (x0 : List T) => Const.node (leaf 0) x0
+
+def «Derivation/OTerms.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Derivation/OTerms.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Derivation/OTerms.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Derivation/OTerms.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Derivation/OTerms.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Derivation/OTerms.nothing»
+      (fun (x2 : T) (_ : List T) => «Derivation/OTerms.just» x2);
+    x2
+
+def «Derivation/OTerms.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Derivation.allSomeTerms» :=
+  fun (x0 : List T) =>
+    let x1 : T := (if («Base.allT» «Prelude.isSome» x0).label ≠ 0 then
+      «Derivation/OTerms.just»
+        («Derivation.terms» («Base.mapT» «Prelude.get» x0))
+    else
+      «Derivation/OTerms.nothing»);
+    x1
+
+def «Derivation.termsOr» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (let x1 : T := x0;
+            if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+              let x2 : T := Const.child x1 (leaf 0);
+              let x3 : T := x2;
+              let x4 : List
+                T := Const.iter
+                (α := List T)
+                (fun (x4 : List T) =>
+                  Const.lcase
+                    (α := T)
+                    (β := List T)
+                    x4
+                    ([] : List T)
+                    (fun (_ : T) (x6 : List T) => x6))
+                (Const.children x3)
+                (leaf 0);
+              x4
+            else
+              ([] : List T));
+    x1
+
 def «Derivation.lowerHyps» :=
   fun (x0 : T) (x1 : T) (x2 : List T) (x3 : List T) =>
-    let x4 : T := «Base.allSomeT»
+    let x4 : T := «Derivation.allSomeTerms»
       («Base.mapT»
         (fun (x4 : T) =>
           let x5 : T := «Derivation.lower1» x4;
@@ -4739,7 +8223,21 @@ def «Derivation.thCtx» :=
             let _ : T := Const.child x1 (leaf 0);
             let x3 : T := Const.child x1 (leaf 1);
             let _ : T := Const.child x1 (leaf 2);
-            let _ : T := Const.child x1 (leaf 3); Const.children x3);
+            let _ : T := Const.child x1 (leaf 3);
+            let x6 : T := x3;
+            let x7 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x7 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x7
+                  ([] : List T)
+                  (fun (_ : T) (x9 : List T) => x9))
+              (Const.children x6)
+              (leaf 0);
+            x7);
     x1
 
 def «Derivation.thHyps» :=
@@ -4749,7 +8247,21 @@ def «Derivation.thHyps» :=
             let _ : T := Const.child x1 (leaf 0);
             let _ : T := Const.child x1 (leaf 1);
             let x4 : T := Const.child x1 (leaf 2);
-            let _ : T := Const.child x1 (leaf 3); Const.children x4);
+            let _ : T := Const.child x1 (leaf 3);
+            let x6 : T := x4;
+            let x7 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x7 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x7
+                  ([] : List T)
+                  (fun (_ : T) (x9 : List T) => x9))
+              (Const.children x6)
+              (leaf 0);
+            x7);
     x1
 
 def «Derivation.thConcl» :=
@@ -4760,6 +8272,73 @@ def «Derivation.thConcl» :=
                    let _ : T := Const.child x1 (leaf 2);
                    let x5 : T := Const.child x1 (leaf 3); x5);
     x1
+
+def «Derivation/OThm.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Derivation/OThm.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Derivation/OThm.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Derivation/OThm.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Derivation/OThm.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Derivation/OThm.nothing»
+      (fun (x2 : T) (_ : List T) => «Derivation/OThm.just» x2);
+    x2
+
+def «Derivation/OThm.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Derivation.thm0» :=
+  «Derivation.mkThm»
+    (leaf 0)
+    («Language.objs» ([] : List T))
+    («Derivation.terms» ([] : List T))
+    (leaf 0)
 
 def «Derivation.instOk» :=
   fun (x0 : T)
@@ -4802,7 +8381,7 @@ def «Derivation.truthSub» :=
 def «Derivation.thmArrow» :=
   fun (x0 : T) (x1 : T) (x2 : T) =>
     let x3 : T := «Base.getD»
-      («Base.mapO»
+      («Derivation.mapPT»
         «Language.p1»
         («Language.compile»
           x0
@@ -4835,16 +8414,22 @@ def «Derivation.thmSeq» :=
                    «PartialHorn.mkSeq»
                      («Prelude.replicate» («Derivation.thArity» x1) (leaf 0))
                      ([] : List T)
-                     (if («Prelude.isSome» x2).label ≠ 0 then
+                     (if («Language/OTPair.isJust» x2).label ≠ 0 then
                        «PartialHorn.eqn»
                          («Derivation.thmSide»
                            x0
                            x1
-                           («Derivation.thmArrow» x0 x1 («Language.p1» («Prelude.get» x2))))
+                           («Derivation.thmArrow»
+                             x0
+                             x1
+                             («Language.p1» («Language/OTPair.fromMaybe» «Derivation.pr0» x2))))
                          («Derivation.thmSide»
                            x0
                            x1
-                           («Derivation.thmArrow» x0 x1 («Language.p2» («Prelude.get» x2))))
+                           («Derivation.thmArrow»
+                             x0
+                             x1
+                             («Language.p2» («Language/OTPair.fromMaybe» «Derivation.pr0» x2))))
                      else
                        «PartialHorn.eqn»
                          («Derivation.thmSide»
@@ -4865,14 +8450,153 @@ def «Derivation.entLang» :=
 def «Derivation.entComb» :=
   fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
 
+def «Derivation/OEntry.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Derivation/OEntry.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Derivation/OEntry.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Derivation/OEntry.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Derivation/OEntry.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Derivation/OEntry.nothing»
+      (fun (x2 : T) (_ : List T) => «Derivation/OEntry.just» x2);
+    x2
+
+def «Derivation/OEntry.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Derivation/Entries.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Derivation/Entries.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Derivation/Entries.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Derivation/Entries.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Derivation/Entries.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Derivation/Entries.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «Derivation/Entries.tail» x1 x0;
+    x2
+
+def «Derivation/Entries.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Derivation/Entries.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
 def «Derivation.entryLanguage» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 0)).label ≠ 0 then
-                     let x2 : T := Const.child x1 (leaf 0); «Prelude.some» x2
+                     let x2 : T := Const.child x1 (leaf 0); «Derivation/OThm.just» x2
                    else
-                     let _ : T := Const.child x1 (leaf 0); «Prelude.none»);
+                     let _ : T := Const.child x1 (leaf 0); «Derivation/OThm.nothing»);
     x1
+
+def «Derivation.bindEH» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Derivation/OThm.nothing»);
+    x2
+
+def «Derivation.thmAt» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := «Derivation.bindEH»
+      («Derivation/OEntry.nthOf» x0 x1)
+      «Derivation.entryLanguage»;
+    x2
 
 def «Derivation.entrySeq» :=
   fun (x0 : T) (x1 : T) =>
@@ -4883,13 +8607,47 @@ def «Derivation.entrySeq» :=
                      let x3 : T := Const.child x2 (leaf 0); x3);
     x2
 
+def «Derivation.pdl0» := «PartialHorn.pdefns» ([] : List T)
+
+def «Derivation.pdefnsOf» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (let x1 : T := x0;
+            let x2 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x2 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x2
+                  ([] : List T)
+                  (fun (_ : T) (x4 : List T) => x4))
+              (Const.children x1)
+              (leaf 0);
+            x2);
+    x1
+
 def «Derivation.anyDefs» :=
   fun (x0 : T) (x1 : List T → T) =>
     let x2 : T := (let x2 : T := «Language.compileDefs» x0;
-                   if («Prelude.isSome» x2).label ≠ 0 then
-                     x1 (Const.children («Prelude.get» x2))
+                   if («PartialHorn/OPDefnList.isJust» x2).label ≠ 0 then
+                     x1
+                       («Derivation.pdefnsOf»
+                         («PartialHorn/OPDefnList.fromMaybe» «Derivation.pdl0» x2))
                    else
                      leaf 0);
+    x2
+
+def «Derivation/SeqOf.map» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => ((x0 x2) :: x3))
+      ([] : List T)
+      x1;
     x2
 
 def «Derivation.certifies» :=
@@ -4899,24 +8657,267 @@ def «Derivation.certifies» :=
       (fun (x4 : List T) =>
         if (Const.eq
           («Language.gBase» x0)
-          («Prelude.length» «Theory.sig»)).label ≠ 0 then
+          («Derivation/OpSigs.length» «Theory.sig»)).label ≠ 0 then
           Const.equal
             («PartialHorn.pcheck»
               («Infer.ext» x4)
-              («Base.mapT» («Derivation.entrySeq» x0) x1)
+              («Derivation/SeqOf.map» («Derivation.entrySeq» x0) x1)
               x2
               («PartialHorn.seqCtx» x3)
               («PartialHorn.seqHyps» x3))
-            («Prelude.some» («PartialHorn.seqConcl» x3))
+            («PartialHorn/OEqn.just» («PartialHorn.seqConcl» x3))
         else
           leaf 0);
     x4
 
+def «Derivation.scope» :=
+  fun (x0 : T) (x1 : T) =>
+    Const.node (leaf 0) (x0 :: (x1 :: ([] : List T)))
+
+def «Derivation.scopeCtx» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (let x1 : T := x0;
+            let x2 : T := Const.child x1 (leaf 0);
+            let _ : T := Const.child x1 (leaf 1);
+            let x4 : T := x2;
+            let x5 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x5 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x5
+                  ([] : List T)
+                  (fun (_ : T) (x7 : List T) => x7))
+              (Const.children x4)
+              (leaf 0);
+            x5);
+    x1
+
+def «Derivation.scopeHyps» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (let x1 : T := x0;
+            let _ : T := Const.child x1 (leaf 0);
+            let x3 : T := Const.child x1 (leaf 1);
+            let x4 : T := x3;
+            let x5 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x5 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x5
+                  ([] : List T)
+                  (fun (_ : T) (x7 : List T) => x7))
+              (Const.children x4)
+              (leaf 0);
+            x5);
+    x1
+
 def «Derivation.ctxPair» :=
   fun (x0 : List T) (x1 : List T) =>
-    let x2 : T := «Language.pr»
-      (Const.node (leaf 0) x0)
-      (Const.node (leaf 0) x1);
+    let x2 : T := «Derivation.scope»
+      («Language.objs» x0)
+      («Derivation.terms» x1);
+    x2
+
+def «Derivation/ScopeL.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Derivation/ScopeL.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Derivation/ScopeL.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Derivation/ScopeL.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Derivation/ScopeL.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Derivation/ScopeL.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «Derivation/ScopeL.tail» x1 x0;
+    x2
+
+def «Derivation/ScopeL.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Derivation/ScopeL.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Derivation/ScopeF.l2» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : List T := (x0 :: (x1 :: ([] : List T))); x2
+
+def «Derivation/ScopeF.l3» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    let x3 : List T := (x0 :: («Derivation/ScopeF.l2» x1 x2)); x3
+
+def «Derivation/ScopeF.l4» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) =>
+    let x4 : List T := (x0 :: («Derivation/ScopeF.l3» x1 x2 x3)); x4
+
+def «Derivation/ScopeF.l5» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
+    let x5 : List T := (x0 :: («Derivation/ScopeF.l4» x1 x2 x3 x4)); x5
+
+def «Derivation/ScopeF.l6» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) =>
+    let x6 : List T := (x0 :: («Derivation/ScopeF.l5» x1 x2 x3 x4 x5)); x6
+
+def «Derivation/ScopeAt.map» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => ((x0 x2) :: x3))
+      ([] : List T)
+      x1;
+    x2
+
+def «Derivation.scopes» := fun (x0 : List T) => Const.node (leaf 0) x0
+
+def «Derivation.scopesOf» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (let x1 : T := x0;
+            let x2 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x2 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x2
+                  ([] : List T)
+                  (fun (_ : T) (x4 : List T) => x4))
+              (Const.children x1)
+              (leaf 0);
+            x2);
+    x1
+
+def «Derivation/OScopes.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Derivation/OScopes.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Derivation/OScopes.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Derivation/OScopes.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Derivation/OScopes.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Derivation/OScopes.nothing»
+      (fun (x2 : T) (_ : List T) => «Derivation/OScopes.just» x2);
+    x2
+
+def «Derivation/OScopes.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Derivation.scope0» :=
+  «Derivation.ctxPair» ([] : List T) ([] : List T)
+
+def «Derivation.bindTS» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (if («Prelude.isSome» x0).label ≠ 0 then
+      x1 («Prelude.get» x0)
+    else
+      «Derivation/OScopes.nothing»);
+    x2
+
+def «Derivation.bindST» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Prelude.none»);
     x2
 
 def «Derivation.childCtxs» :=
@@ -4927,10 +8928,9 @@ def «Derivation.childCtxs» :=
                    if («Prelude.and»
                      (Const.eq x5 (leaf 5))
                      (Const.eq x7 (leaf 1))).label ≠ 0 then
-                     «Prelude.some»
-                       (Const.node
-                         (leaf 0)
-                         («Prelude.single»
+                     «Derivation/OScopes.just»
+                       («Derivation.scopes»
+                         («Derivation/ScopeL.single»
                            («Derivation.ctxPair»
                              ((«Language.mD» x2 (leaf 0)) :: x3)
                              («Base.mapT» «Derivation.weaken1» x4))))
@@ -4938,13 +8938,12 @@ def «Derivation.childCtxs» :=
                      if («Prelude.and»
                        (Const.eq x5 (leaf 8))
                        (Const.eq x7 (leaf 3))).label ≠ 0 then
-                       «Base.bindO»
+                       «Derivation.bindTS»
                          («Derivation.typeIn» x0 x1 ([] : List T) («Prelude.at» x6 (leaf 0)))
                          (fun (x8 : T) =>
-                           «Prelude.some»
-                             (Const.node
-                               (leaf 0)
-                               («Theory.l3»
+                           «Derivation/OScopes.just»
+                             («Derivation.scopes»
+                               («Derivation/ScopeF.l3»
                                  («Derivation.ctxPair» ([] : List T) ([] : List T))
                                  («Derivation.ctxPair» («Prelude.single» x8) ([] : List T))
                                  («Derivation.ctxPair» x3 x4))))
@@ -4952,18 +8951,17 @@ def «Derivation.childCtxs» :=
                        if («Prelude.and»
                          (Const.eq x5 (leaf 9))
                          (Const.eq x7 (leaf 3))).label ≠ 0 then
-                         «Base.bindO»
+                         «Derivation.bindTS»
                            («Derivation.typeIn» x0 x1 ([] : List T) («Prelude.at» x6 (leaf 0)))
                            (fun (x8 : T) =>
-                             «Base.bindO»
+                             «Derivation.bindTS»
                                («Base.bindO»
                                  («Derivation.typeIn» x0 x1 x3 («Prelude.at» x6 (leaf 2)))
                                  «Language.listPart»)
                                (fun (x9 : T) =>
-                                 «Prelude.some»
-                                   (Const.node
-                                     (leaf 0)
-                                     («Theory.l3»
+                                 «Derivation/OScopes.just»
+                                   («Derivation.scopes»
+                                     («Derivation/ScopeF.l3»
                                        («Derivation.ctxPair» ([] : List T) ([] : List T))
                                        («Derivation.ctxPair» («Theory.l2» x8 x9) ([] : List T))
                                        («Derivation.ctxPair» x3 x4)))))
@@ -4971,15 +8969,14 @@ def «Derivation.childCtxs» :=
                          if («Prelude.and»
                            (Const.eq x5 (leaf 10))
                            (Const.eq x7 (leaf 2))).label ≠ 0 then
-                           «Base.bindO»
+                           «Derivation.bindTS»
                              («Base.bindO»
                                («Derivation.typeIn» x0 x1 x3 («Prelude.at» x6 (leaf 1)))
                                «Language.roseLabel»)
                              (fun (x8 : T) =>
-                               «Prelude.some»
-                                 (Const.node
-                                   (leaf 0)
-                                   («Theory.l2»
+                               «Derivation/OScopes.just»
+                                 («Derivation.scopes»
+                                   («Derivation/ScopeF.l2»
                                      («Derivation.ctxPair»
                                        («Prelude.single»
                                          («Theory.prod»
@@ -4988,10 +8985,11 @@ def «Derivation.childCtxs» :=
                                        ([] : List T))
                                      («Derivation.ctxPair» x3 x4))))
                          else
-                           «Prelude.some»
-                             (Const.node
-                               (leaf 0)
-                               («Base.mapT» (fun (_ : T) => «Derivation.ctxPair» x3 x4) x6)));
+                           «Derivation/OScopes.just»
+                             («Derivation.scopes»
+                               («Derivation/ScopeAt.map»
+                                 (fun (_ : T) => «Derivation.ctxPair» x3 x4)
+                                 x6)));
     x5
 
 def «Derivation.sameCtx» :=
@@ -5023,10 +9021,9 @@ def «Derivation.congCtxs» :=
           («Derivation.sameCtx» (Const.label x2) x6)
           (Const.eq (Const.label («Prelude.at» x5 x6)) (leaf 0)))
       («Base.range» («Prelude.length» x5))).label ≠ 0 then
-      «Prelude.some»
-        (Const.node
-          (leaf 0)
-          («Base.mapT»
+      «Derivation/OScopes.just»
+        («Derivation.scopes»
+          («Derivation/ScopeAt.map»
             (fun (_ : T) => «Derivation.ctxPair» x3 x4)
             («Language.mArgs» x2)))
     else
@@ -5088,6 +9085,33 @@ def «Derivation.rootPairEta» :=
                      «Prelude.none»);
     x1
 
+def «Derivation.mapLT» :=
+  fun (x0 : T → T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); «Prelude.some» (x0 x3)
+                   else
+                     «Prelude.none»);
+    x2
+
+def «Derivation.bindPT» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Prelude.none»);
+    x2
+
+def «Derivation.bindHT» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Prelude.none»);
+    x2
+
 def «Derivation.rootUnitEta» :=
   fun (x0 : T) (x1 : T) (x2 : List T) (x3 : T) =>
     let x4 : T := (if (Const.equal
@@ -5101,15 +9125,17 @@ def «Derivation.rootUnitEta» :=
 def «Derivation.rootDelta» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (if (Const.eq (Const.label x1) (leaf 11)).label ≠ 0 then
-      «Base.mapO»
+      «Derivation.mapLT»
         (fun (x2 : T) =>
           «Language.subst»
             («Language.osubst»
               (Const.children («Language.mD» x1 (leaf 1)))
               («Language.ldBody» x2))
             («Language.substList» («Language.mArgs» x1)))
-        («Base.bindO»
-          («Prelude.nth» («Language.gDefs» x0) («Language.mD» x1 (leaf 0)))
+        («Language.bindDL»
+          («Language/ODefinition.nthOf»
+            («Language.gDefs» x0)
+            («Language.mD» x1 (leaf 0)))
           «Language.defLanguage»)
     else
       «Prelude.none»);
@@ -5295,16 +9321,16 @@ def «Derivation.rootThm» :=
     let x6 : T := (let x6 : List T := Const.children («Prelude.at» x4 (leaf 1));
                    let x7 : List T := Const.children («Prelude.at» x4 (leaf 2));
                    let x8 : T := «Prelude.at» x4 (leaf 3);
-                   «Base.bindO»
-                     («Base.bindO»
-                       («Prelude.nth» x1 («Prelude.at» x4 (leaf 0)))
+                   «Derivation.bindHT»
+                     («Derivation.bindEH»
+                       («Derivation/OEntry.nthOf» x1 («Prelude.at» x4 (leaf 0)))
                        «Derivation.entryLanguage»)
                      (fun (x9 : T) =>
-                       «Base.bindO»
+                       «Derivation.bindPT»
                          (if («Base.isEmpty» («Derivation.thHyps» x9)).label ≠ 0 then
                            «Derivation.eqParts» («Derivation.thConcl» x9)
                          else
-                           «Prelude.none»)
+                           «Language/OTPair.nothing»)
                          (fun (x10 : T) =>
                            if («Prelude.and»
                              («Derivation.instOk» x0 x2 x3 x9 x6 x7)
@@ -5329,8 +9355,8 @@ def «Derivation.rootThm» :=
 def «Derivation.rootHyp» :=
   fun (x0 : List T) (x1 : List T) (x2 : T) =>
     let x3 : T := (let x3 : T := «Prelude.at» x1 (leaf 1);
-                   «Base.bindO»
-                     («Base.bindO»
+                   «Derivation.bindPT»
+                     («Language.bindTP»
                        («Prelude.nth» x0 («Prelude.at» x1 (leaf 0)))
                        «Derivation.eqParts»)
                      (fun (x4 : T) =>
@@ -5494,15 +9520,15 @@ def «Derivation.rewriteStep» :=
                           («Derivation.rw» x6 (leaf 1) x7 x8)
                       else
                         if (Const.eq x3 (leaf 2)).label ≠ 0 then
-                          «Base.bindO»
+                          «Derivation.bindST»
                             («Derivation.congCtxs» x0 x2 x9 x7 x8 x5)
                             (fun (x11 : T) =>
-                              let x12 : List T := Const.children x11;
+                              let x12 : List T := «Derivation.scopesOf» x11;
                               let x13 : List T := «Language.mArgs» x9;
                               if («Prelude.and»
                                 (Const.eq x10 («Prelude.length» x13))
                                 (Const.eq
-                                  («Prelude.length» x12)
+                                  («Derivation/ScopeL.length» x12)
                                   («Prelude.length» x13))).label ≠ 0 then
                                 «Base.mapO»
                                   (fun (x14 : T) =>
@@ -5512,12 +9538,15 @@ def «Derivation.rewriteStep» :=
                                   («Base.allSomeT»
                                     («Base.mapT»
                                       (fun (x14 : T) =>
-                                        let x15 : T := «Prelude.at» x12 x14;
+                                        let x15 : T := «Derivation/ScopeL.atOr»
+                                          «Derivation.scope0»
+                                          x12
+                                          x14;
                                         «Derivation.rw»
                                           x6
                                           x14
-                                          (Const.children («Language.p1» x15))
-                                          (Const.children («Language.p2» x15))
+                                          («Derivation.scopeCtx» x15)
+                                          («Derivation.scopeHyps» x15)
                                           («Prelude.at» x13 x14))
                                       («Base.range» x10)))
                               else
@@ -5544,6 +9573,15 @@ def «Derivation.rosePrimsOk» :=
         («Derivation.primIs» x0 x3 «Derivation.consPrim»));
     x6
 
+def «Derivation.prim0» :=
+  «Language.primitive» (leaf 0) (leaf 0) (leaf 0) (leaf 0)
+
+def «Derivation.seq0» :=
+  «PartialHorn.mkSeq»
+    ([] : List T)
+    ([] : List T)
+    («PartialHorn.eqn» (leaf 0) (leaf 0))
+
 def «Derivation.proveStep» :=
   fun (x0 : T)
     (x1 : List T)
@@ -5558,14 +9596,16 @@ def «Derivation.proveStep» :=
     (x9 : T) =>
     let x10 : T := (let x10 : T := «Prelude.length» x5;
                     let x11 : T := «Derivation.eqParts» x9;
-                    let x12 : T := «Language.p1» («Prelude.get» x11);
-                    let x13 : T := «Language.p2» («Prelude.get» x11);
+                    let x12 : T := «Language.p1»
+                      («Language/OTPair.fromMaybe» «Derivation.pr0» x11);
+                    let x13 : T := «Language.p2»
+                      («Language/OTPair.fromMaybe» «Derivation.pr0» x11);
                     let x14 : T := «Prelude.at» x4 (leaf 0);
                     let x15 : T := «Prelude.at» x4 (leaf 1);
                     if («Prelude.and»
                       (Const.eq x3 (leaf 18))
                       (Const.eq x10 (leaf 2))).label ≠ 0 then
-                      if («Prelude.isSome» x11).label ≠ 0 then
+                      if («Language/OTPair.isJust» x11).label ≠ 0 then
                         let x16 : T := «Derivation.rw» x6 (leaf 0) x7 x8 x12;
                         let x17 : T := «Derivation.rw» x6 (leaf 1) x7 x8 x13;
                         «Prelude.and»
@@ -5580,7 +9620,7 @@ def «Derivation.proveStep» :=
                         (Const.eq x3 (leaf 19))
                         (Const.eq x10 (leaf 3))).label ≠ 0 then
                         if («Prelude.and»
-                          («Prelude.isSome» x11)
+                          («Language/OTPair.isJust» x11)
                           («Base.not» («Base.isEmpty» x7))).label ≠ 0 then
                           let x16 : T := «Prelude.at» x7 (leaf 0);
                           let x17 : List T := «Prelude.tail» x7;
@@ -5589,7 +9629,7 @@ def «Derivation.proveStep» :=
                           let x20 : T := «Derivation.lowerHyps» x0 x2 x17 x8;
                           if («Prelude.and»
                             («Prelude.isSome» x19)
-                            («Prelude.isSome» x20)).label ≠ 0 then
+                            («Derivation/OTerms.isJust» x20)).label ≠ 0 then
                             let x21 : T := «Prelude.get» x19;
                             let x22 : T := «Language.mArr» x14 ([] : List T) «Language.mStar»;
                             if («Prelude.and»
@@ -5609,7 +9649,7 @@ def «Derivation.proveStep» :=
                                 x6
                                 (leaf 0)
                                 x17
-                                (Const.children («Prelude.get» x20))
+                                («Derivation.termsOr» x20)
                                 («Language.mEq»
                                   («Language.subst» x12 («Derivation.instVar» x22))
                                   («Language.subst» x13 («Derivation.instVar» x22)))).label ≠ 0 then
@@ -5646,7 +9686,7 @@ def «Derivation.proveStep» :=
                           (Const.eq x3 (leaf 20))
                           (Const.eq x10 (leaf 3))).label ≠ 0 then
                           if («Prelude.and»
-                            («Prelude.isSome» x11)
+                            («Language/OTPair.isJust» x11)
                             («Base.not» («Base.isEmpty» x7))).label ≠ 0 then
                             let x16 : T := «Prelude.at» x7 (leaf 0);
                             let x17 : List T := «Prelude.tail» x7;
@@ -5658,14 +9698,12 @@ def «Derivation.proveStep» :=
                               («Prelude.isSome» x19)
                               («Prelude.and»
                                 («Prelude.isSome» x20)
-                                («Prelude.isSome» x21))).label ≠ 0 then
+                                («Derivation/OTerms.isJust» x21))).label ≠ 0 then
                               let x22 : T := «Prelude.get» x19;
                               let x23 : T := «Prelude.get» x20;
                               let x24 : List T := (x16 :: (x23 :: x17));
                               let x25 : List
-                                T := «Base.mapT»
-                                «Derivation.weaken2»
-                                (Const.children («Prelude.get» x21));
+                                T := «Base.mapT» «Derivation.weaken2» («Derivation.termsOr» x21);
                               let x26 : T := «Language.mArr»
                                 x14
                                 («Prelude.single» x23)
@@ -5685,7 +9723,7 @@ def «Derivation.proveStep» :=
                                   x6
                                   (leaf 0)
                                   x17
-                                  (Const.children («Prelude.get» x21))
+                                  («Derivation.termsOr» x21)
                                   («Language.mEq»
                                     («Language.subst» x12 («Derivation.instVar» x26))
                                     («Language.subst»
@@ -5768,7 +9806,7 @@ def «Derivation.proveStep» :=
                                   if («Prelude.and»
                                     (Const.eq x3 (leaf 25))
                                     (Const.eq x10 (leaf 2))).label ≠ 0 then
-                                    if («Prelude.isSome» x11).label ≠ 0 then
+                                    if («Language/OTPair.isJust» x11).label ≠ 0 then
                                       if («Prelude.and»
                                         («Derivation.isFormula» x0 x2 x7 x12)
                                         («Derivation.isFormula» x0 x2 x7 x13)).label ≠ 0 then
@@ -5794,15 +9832,23 @@ def «Derivation.proveStep» :=
                                     if («Prelude.and»
                                       (Const.eq x3 (leaf 26))
                                       (Const.eq x10 (leaf 1))).label ≠ 0 then
-                                      if («Prelude.isSome» x11).label ≠ 0 then
-                                        let x16 : T := «Base.bindO»
-                                          («Derivation.typeIn» x0 x2 x7 x12)
-                                          «Language.expParts»;
-                                        if («Prelude.isSome» x16).label ≠ 0 then
+                                      if («Language/OTPair.isJust» x11).label ≠ 0 then
+                                        let x16 : T := (let x16 : T := «Derivation.typeIn»
+                                                          x0
+                                                          x2
+                                                          x7
+                                                          x12;
+                                                        if («Prelude.isSome» x16).label ≠ 0 then
+                                                          «Language.expParts» («Prelude.get» x16)
+                                                        else
+                                                          «Language/OTPair.nothing»);
+                                        if («Language/OTPair.isJust» x16).label ≠ 0 then
                                           «Derivation.pf»
                                             x6
                                             (leaf 0)
-                                            ((«Language.p1» («Prelude.get» x16)) :: x7)
+                                            ((«Language.p1»
+                                              («Language/OTPair.fromMaybe» «Derivation.pr0» x16)) ::
+                                              x7)
                                             («Base.mapT» «Derivation.weaken1» x8)
                                             («Language.mEq»
                                               («Language.app»
@@ -5820,11 +9866,11 @@ def «Derivation.proveStep» :=
                                         let x16 : List T := Const.children x15;
                                         let x17 : List
                                           T := Const.children («Prelude.at» x4 (leaf 2));
-                                        let x18 : T := «Base.bindO»
-                                          («Prelude.nth» x1 x14)
-                                          «Derivation.entryLanguage»;
-                                        if («Prelude.isSome» x18).label ≠ 0 then
-                                          let x19 : T := «Prelude.get» x18;
+                                        let x18 : T := «Derivation.thmAt» x1 x14;
+                                        if («Derivation/OThm.isJust» x18).label ≠ 0 then
+                                          let x19 : T := «Derivation/OThm.fromMaybe»
+                                            «Derivation.thm0»
+                                            x18;
                                           if («Prelude.and»
                                             («Derivation.instOk» x0 x2 x7 x19 x16 x17)
                                             («Prelude.and»
@@ -5862,7 +9908,7 @@ def «Derivation.proveStep» :=
                                             let x16 : T := «Prelude.at» x7 (leaf 0);
                                             let x17 : List T := «Prelude.tail» x7;
                                             let x18 : T := «Derivation.lowerHyps» x0 x2 x17 x8;
-                                            if («Prelude.isSome» x18).label ≠ 0 then
+                                            if («Derivation/OTerms.isJust» x18).label ≠ 0 then
                                               if («Prelude.and»
                                                 (Const.equal x16 «Theory.nat»)
                                                 («Prelude.and»
@@ -5881,7 +9927,7 @@ def «Derivation.proveStep» :=
                                                   x6
                                                   (leaf 0)
                                                   x17
-                                                  (Const.children («Prelude.get» x18))
+                                                  («Derivation.termsOr» x18)
                                                   («Language.subst»
                                                     x9
                                                     («Derivation.instVar»
@@ -5914,7 +9960,7 @@ def «Derivation.proveStep» :=
                                               let x19 : T := «Derivation.lowerHyps» x0 x2 x17 x8;
                                               if («Prelude.and»
                                                 («Prelude.isSome» x18)
-                                                («Prelude.isSome» x19)).label ≠ 0 then
+                                                («Derivation/OTerms.isJust» x19)).label ≠ 0 then
                                                 let x20 : T := «Prelude.get» x18;
                                                 if («Prelude.and»
                                                   («Derivation.primIs» x0 x14 «Derivation.nilPrim»)
@@ -5932,7 +9978,7 @@ def «Derivation.proveStep» :=
                                                     x6
                                                     (leaf 0)
                                                     x17
-                                                    (Const.children («Prelude.get» x19))
+                                                    («Derivation.termsOr» x19)
                                                     («Language.subst»
                                                       x9
                                                       («Derivation.instVar»
@@ -5947,7 +9993,7 @@ def «Derivation.proveStep» :=
                                                       («Prelude.append»
                                                         («Base.mapT»
                                                           «Derivation.weaken2»
-                                                          (Const.children («Prelude.get» x19)))
+                                                          («Derivation.termsOr» x19))
                                                         («Prelude.single»
                                                           («Derivation.weakenElem» x9)))
                                                       («Derivation.listConsAt» x15 x20 x9)
@@ -5969,10 +10015,16 @@ def «Derivation.proveStep» :=
                                                 let x18 : T := «Language.coprodParts» x16;
                                                 let x19 : T := «Derivation.lowerHyps» x0 x2 x17 x8;
                                                 if («Prelude.and»
-                                                  («Prelude.isSome» x18)
-                                                  («Prelude.isSome» x19)).label ≠ 0 then
-                                                  let x20 : T := «Language.p1» («Prelude.get» x18);
-                                                  let x21 : T := «Language.p2» («Prelude.get» x18);
+                                                  («Language/OTPair.isJust» x18)
+                                                  («Derivation/OTerms.isJust» x19)).label ≠ 0 then
+                                                  let x20 : T := «Language.p1»
+                                                    («Language/OTPair.fromMaybe»
+                                                      «Derivation.pr0»
+                                                      x18);
+                                                  let x21 : T := «Language.p2»
+                                                    («Language/OTPair.fromMaybe»
+                                                      «Derivation.pr0»
+                                                      x18);
                                                   if («Prelude.and»
                                                     («Derivation.primIs»
                                                       x0
@@ -6035,18 +10087,21 @@ def «Derivation.proveStep» :=
                                                   (Const.eq x3 (leaf 36))
                                                   (Const.eq x10 (leaf 1))).label ≠ 0 then
                                                   let x16 : List T := Const.children x15;
-                                                  let x17 : T := «Prelude.nth»
+                                                  let x17 : T := «Language/OPrimitive.nthOf»
                                                     («Language.gPrims» x0)
                                                     x14;
                                                   if («Prelude.and»
                                                     («Base.not» («Base.isEmpty» x7))
-                                                    («Prelude.isSome» x17)).label ≠ 0 then
+                                                    («Language/OPrimitive.isJust»
+                                                      x17)).label ≠ 0 then
                                                     let x18 : T := «Prelude.at» x7 (leaf 0);
                                                     let x19 : List T := «Prelude.tail» x7;
-                                                    let x20 : T := «Prelude.get» x17;
+                                                    let x20 : T := «Language/OPrimitive.fromMaybe»
+                                                      «Derivation.prim0»
+                                                      x17;
                                                     if («Prelude.and»
                                                       («Derivation.isCoeqProj» x20)
-                                                      («Prelude.isSome»
+                                                      («Derivation/OTerms.isJust»
                                                         («Derivation.lowerHyps»
                                                           x0
                                                           x2
@@ -6094,19 +10149,22 @@ def «Derivation.proveStep» :=
                                                   if («Prelude.and»
                                                     (Const.eq x3 (leaf 30))
                                                     (Const.eq x10 (leaf 0))).label ≠ 0 then
-                                                    if («Prelude.isSome» x11).label ≠ 0 then
+                                                    if («Language/OTPair.isJust» x11).label ≠ 0 then
                                                       let x16 : T := «Language.compileEq»
                                                         x0
                                                         x2
                                                         x7
                                                         x12
                                                         x13;
-                                                      if («Prelude.isSome» x16).label ≠ 0 then
+                                                      if («PartialHorn/OSequent.isJust»
+                                                        x16).label ≠ 0 then
                                                         «Derivation.certifies»
                                                           x0
                                                           x1
                                                           x14
-                                                          («Prelude.get» x16)
+                                                          («PartialHorn/OSequent.fromMaybe»
+                                                            «Derivation.seq0»
+                                                            x16)
                                                       else
                                                         leaf 0
                                                     else
@@ -6132,8 +10190,8 @@ def «Derivation.proveStep» :=
                                                             x0
                                                             («Derivation.mkThm»
                                                               x2
-                                                              (Const.node (leaf 0) x7)
-                                                              (Const.node (leaf 0) x8)
+                                                              («Language.objs» x7)
+                                                              («Derivation.terms» x8)
                                                               x9))
                                                       else
                                                         leaf 0
@@ -6142,7 +10200,7 @@ def «Derivation.proveStep» :=
                                                         (Const.eq x3 (leaf 32))
                                                         (Const.eq x10 (leaf 2))).label ≠ 0 then
                                                         if («Prelude.and»
-                                                          («Prelude.isSome» x11)
+                                                          («Language/OTPair.isJust» x11)
                                                           (Const.eq
                                                             («Prelude.length» x7)
                                                             (leaf 1))).label ≠ 0 then
@@ -6372,7 +10430,7 @@ def «Derivation.primConfirms» :=
         (fun (x4 : List T) =>
           if (Const.eq
             («Language.gBase» x0)
-            («Prelude.length» «Theory.sig»)).label ≠ 0 then
+            («Derivation/OpSigs.length» «Theory.sig»)).label ≠ 0 then
             «Language.primOk» x0 («Infer.envOfDefs» x4) x2
           else
             leaf 0));
@@ -6406,7 +10464,7 @@ def «Derivation.objConfirms» :=
         (fun (x5 : List T) =>
           if (Const.eq
             («Language.gBase» x0)
-            («Prelude.length» «Theory.sig»)).label ≠ 0 then
+            («Derivation/OpSigs.length» «Theory.sig»)).label ≠ 0 then
             «Language.objOk» («Infer.envOfDefs» x5) x2 x3
           else
             leaf 0));
@@ -6415,7 +10473,7 @@ def «Derivation.objConfirms» :=
 def «Derivation.ldChecks» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := «Prelude.and»
-      («Prelude.isSome» («Language.ldCompile» x0 x1))
+      («PartialHorn/OPDefn.isJust» («Language.ldCompile» x0 x1))
       («Language.isTy» x0 («Language.ldArity» x1) («Language.ldType» x1));
     x2
 
@@ -6446,29 +10504,113 @@ def «Derivation.declDesc» :=
   fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) =>
     Const.node (leaf 6) (x0 :: (x1 :: (x2 :: (x3 :: ([] : List T)))))
 
+def «Derivation.entries» :=
+  fun (x0 : List T) => Const.node (leaf 0) x0
+
 def «Derivation.devState» :=
+  fun (x0 : T) (x1 : T) =>
+    Const.node (leaf 0) (x0 :: (x1 :: ([] : List T)))
+
+def «Derivation/ODevState.nothing» :=
+  Const.node (leaf 0) ([] : List T)
+
+def «Derivation/ODevState.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Derivation/ODevState.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Derivation/ODevState.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Derivation/ODevState.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Derivation/ODevState.nothing»
+      (fun (x2 : T) (_ : List T) => «Derivation/ODevState.just» x2);
+    x2
+
+def «Derivation/ODevState.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Derivation.stateOf» :=
   fun (x0 : T) (x1 : List T) =>
-    let x2 : T := «Language.pr» x0 (Const.node (leaf 0) x1); x2
+    let x2 : T := «Derivation.devState» x0 («Derivation.entries» x1); x2
 
 def «Derivation.withPrims» :=
   fun (x0 : T) (x1 : List T) =>
     let x2 : T := «Language.globals»
-      (Const.node (leaf 0) x1)
-      (Const.node (leaf 0) («Language.gDefs» x0))
+      («Language.prims» x1)
+      («Language.defs» («Language.gDefs» x0))
       («Language.gBase» x0);
     x2
 
 def «Derivation.withDefs» :=
   fun (x0 : T) (x1 : List T) =>
     let x2 : T := «Language.globals»
-      (Const.node (leaf 0) («Language.gPrims» x0))
-      (Const.node (leaf 0) x1)
+      («Language.prims» («Language.gPrims» x0))
+      («Language.defs» x1)
       («Language.gBase» x0);
     x2
 
 def «Derivation.push» :=
   fun (x0 : List T) (x1 : T) =>
-    let x2 : List T := «Prelude.append» x0 («Prelude.single» x1); x2
+    let x2 : List
+      T := «Derivation/Entries.append»
+      x0
+      («Derivation/Entries.single» x1);
+    x2
+
+def «Derivation.pushPrim» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : List
+      T := «Derivation/Prims.append» x0 («Derivation/Prims.single» x1);
+    x2
+
+def «Derivation.pushDef» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : List
+      T := «Derivation/Defs.append» x0 («Derivation/Defs.single» x1);
+    x2
 
 def «Derivation.sortsArr» :=
   fun (x0 : T) (x1 : T) (x2 : T) =>
@@ -6483,10 +10625,83 @@ def «Derivation.sortsArr» :=
           («Prelude.some» (leaf 1)));
     x3
 
+def «Derivation.bindPD» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Derivation/ODevState.nothing»);
+    x2
+
+def «Derivation.bindRD» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Derivation/ODevState.nothing»);
+    x2
+
+def «Derivation.bindHD» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Derivation/ODevState.nothing»);
+    x2
+
+def «Derivation.bindTD» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (if («Prelude.isSome» x0).label ≠ 0 then
+      x1 («Prelude.get» x0)
+    else
+      «Derivation/ODevState.nothing»);
+    x2
+
+def «Derivation.bindSD» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Derivation/ODevState.nothing»);
+    x2
+
+def «Derivation.stConsts» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   let x2 : T := Const.child x1 (leaf 0);
+                   let _ : T := Const.child x1 (leaf 1); x2);
+    x1
+
+def «Derivation.stEntries» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (let x1 : T := x0;
+            let _ : T := Const.child x1 (leaf 0);
+            let x3 : T := Const.child x1 (leaf 1);
+            let x4 : T := x3;
+            let x5 : List
+              T := Const.iter
+              (α := List T)
+              (fun (x5 : List T) =>
+                Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x5
+                  ([] : List T)
+                  (fun (_ : T) (x7 : List T) => x7))
+              (Const.children x4)
+              (leaf 0);
+            x5);
+    x1
+
 def «Derivation.quotStep» :=
   fun (x0 : T) (x1 : List T) (x2 : T) (x3 : T) (x4 : T) =>
     let x5 : T := (let x5 : List T := «Theory.l2» x3 x3;
-                   «Base.bindO»
+                   «Derivation.bindPD»
                      («Language.compile»
                        x0
                        x2
@@ -6503,21 +10718,20 @@ def «Derivation.quotStep» :=
                          («PartialHorn.phOp»
                            (Const.add
                              («Language.gBase» x0)
-                             («Prelude.length» («Language.gDefs» x0)))
+                             («Derivation/Defs.length» («Language.gDefs» x0)))
                            («Derivation.objVars» x2));
                        let x10 : T := «Language.globals»
-                         (Const.node (leaf 0) («Derivation.push» («Language.gPrims» x0) x9))
-                         (Const.node
-                           (leaf 0)
-                           («Derivation.push»
+                         («Language.prims» («Derivation.pushPrim» («Language.gPrims» x0) x9))
+                         («Language.defs»
+                           («Derivation.pushDef»
                              («Language.gDefs» x0)
                              («Language.defObj» x2 («Theory.coeqz» x7 x8))))
                          («Language.gBase» x0);
-                       let x11 : T := «Prelude.length» («Language.gPrims» x0);
+                       let x11 : T := «Derivation/Prims.length» («Language.gPrims» x0);
                        let x12 : T := «Derivation.mkThm»
                          x2
-                         (Const.node (leaf 0) x5)
-                         (Const.node (leaf 0) («Prelude.single» x4))
+                         («Language.objs» x5)
+                         («Derivation.terms» («Prelude.single» x4))
                          («Language.mEq»
                            («Language.mArr»
                              x11
@@ -6528,7 +10742,9 @@ def «Derivation.quotStep» :=
                              («Derivation.objVars» x2)
                              («Language.var» (leaf 0))));
                        if («Prelude.and»
-                         (Const.eq («Language.gBase» x0) («Prelude.length» «Theory.sig»))
+                         (Const.eq
+                           («Language.gBase» x0)
+                           («Derivation/OpSigs.length» «Theory.sig»))
                          («Prelude.and»
                            («Language.isTy» x0 x2 x3)
                            («Prelude.and»
@@ -6544,28 +10760,30 @@ def «Derivation.quotStep» :=
                                      x2
                                      x5
                                      («Derivation.thConcl» x12)))))))).label ≠ 0 then
-                         «Prelude.some»
-                           («Derivation.devState»
+                         «Derivation/ODevState.just»
+                           («Derivation.stateOf»
                              x10
                              («Derivation.push» x1 («Derivation.entLang» x12)))
                        else
-                         «Prelude.none»));
+                         «Derivation/ODevState.nothing»));
     x5
 
 def «Derivation.descStep» :=
   fun (x0 : T) (x1 : List T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) =>
-    let x6 : T := «Base.bindO»
-      («Prelude.nth» («Language.gPrims» x0) x2)
+    let x6 : T := «Derivation.bindRD»
+      («Language/OPrimitive.nthOf» («Language.gPrims» x0) x2)
       (fun (x6 : T) =>
-        «Base.bindO»
-          («Base.bindO» («Prelude.nth» x1 x5) «Derivation.entryLanguage»)
+        «Derivation.bindHD»
+          («Derivation.bindEH»
+            («Derivation/OEntry.nthOf» x1 x5)
+            «Derivation.entryLanguage»)
           (fun (x7 : T) =>
-            «Base.bindO»
+            «Derivation.bindTD»
               («Derivation.primRel» x6)
               (fun (x8 : T) =>
                 let x9 : T := «Language.prArity» x6;
                 let x10 : List T := «Prelude.single» («Language.prDom» x6);
-                «Base.bindO»
+                «Derivation.bindPD»
                   («Language.compile»
                     x0
                     x9
@@ -6589,9 +10807,9 @@ def «Derivation.descStep» :=
                         x3;
                       let x15 : T := «Derivation.withPrims»
                         x0
-                        («Derivation.push» («Language.gPrims» x0) x14);
+                        («Derivation.pushPrim» («Language.gPrims» x0) x14);
                       let x16 : T := «Language.mArr»
-                        («Prelude.length» («Language.gPrims» x0))
+                        («Derivation/Prims.length» («Language.gPrims» x0))
                         («Derivation.objVars» x9)
                         («Language.mArr»
                           x2
@@ -6599,11 +10817,13 @@ def «Derivation.descStep» :=
                           («Language.var» (leaf 0)));
                       let x17 : T := «Derivation.mkThm»
                         x9
-                        (Const.node (leaf 0) x10)
-                        (Const.node (leaf 0) ([] : List T))
+                        («Language.objs» x10)
+                        («Derivation.terms» ([] : List T))
                         («Language.mEq» x16 x4);
                       if («Prelude.and»
-                        (Const.eq («Language.gBase» x0) («Prelude.length» «Theory.sig»))
+                        (Const.eq
+                          («Language.gBase» x0)
+                          («Derivation/OpSigs.length» «Theory.sig»))
                         («Prelude.and»
                           (Const.equal («Language.p2» x11) x3)
                           («Prelude.and»
@@ -6624,7 +10844,7 @@ def «Derivation.descStep» :=
                                         x12
                                         («Language.ctxObj» x13)
                                         («Language.stdEnv» x13))
-                                      («Prelude.some» («Language.pr» x8 «Theory.omega»)))
+                                      («Language/OTPair.just» («Language.pr» x8 «Theory.omega»)))
                                     («Prelude.and»
                                       («PartialHorn.scoped» x9 («Language.prArrow» x14))
                                       («Prelude.and»
@@ -6634,14 +10854,14 @@ def «Derivation.descStep» :=
                                           x9
                                           x10
                                           («Derivation.thConcl» x17))))))))))).label ≠ 0 then
-                        «Prelude.some»
-                          («Derivation.devState»
+                        «Derivation/ODevState.just»
+                          («Derivation.stateOf»
                             x15
                             («Derivation.push» x1 («Derivation.entLang» x17)))
                       else
-                        «Prelude.none»
+                        «Derivation/ODevState.nothing»
                     else
-                      «Prelude.none»))));
+                      «Derivation/ODevState.nothing»))));
     x6
 
 def «Derivation.declStep» :=
@@ -6651,64 +10871,66 @@ def «Derivation.declStep» :=
                      let x4 : T := Const.child x3 (leaf 0);
                      let x5 : T := Const.child x3 (leaf 1);
                      if («Derivation.thmChecks» x0 x1 x4 x5).label ≠ 0 then
-                       «Prelude.some»
-                         («Derivation.devState»
+                       «Derivation/ODevState.just»
+                         («Derivation.stateOf»
                            x0
                            («Derivation.push» x1 («Derivation.entLang» x4)))
                      else
-                       «Prelude.none»
+                       «Derivation/ODevState.nothing»
                    else
                      if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
                        let x4 : T := Const.child x3 (leaf 0);
                        let x5 : T := Const.child x3 (leaf 1);
                        if («Derivation.certifies» x0 x1 x5 x4).label ≠ 0 then
-                         «Prelude.some»
-                           («Derivation.devState»
+                         «Derivation/ODevState.just»
+                           («Derivation.stateOf»
                              x0
                              («Derivation.push» x1 («Derivation.entComb» x4)))
                        else
-                         «Prelude.none»
+                         «Derivation/ODevState.nothing»
                      else
                        if (Const.eq (Const.label x3) (leaf 2)).label ≠ 0 then
                          let x4 : T := Const.child x3 (leaf 0);
                          if («Derivation.ldChecks» x0 x4).label ≠ 0 then
-                           «Prelude.some»
-                             («Derivation.devState»
+                           «Derivation/ODevState.just»
+                             («Derivation.stateOf»
                                («Derivation.withDefs»
                                  x0
-                                 («Derivation.push» («Language.gDefs» x0) («Language.defLang» x4)))
+                                 («Derivation.pushDef»
+                                   («Language.gDefs» x0)
+                                   («Language.defLang» x4)))
                                x1)
                          else
-                           «Prelude.none»
+                           «Derivation/ODevState.nothing»
                        else
                          if (Const.eq (Const.label x3) (leaf 3)).label ≠ 0 then
                            let x4 : T := Const.child x3 (leaf 0);
                            let x5 : T := Const.child x3 (leaf 1);
                            if («Derivation.primConfirms» x0 x1 x4 x5).label ≠ 0 then
-                             «Prelude.some»
-                               («Derivation.devState»
+                             «Derivation/ODevState.just»
+                               («Derivation.stateOf»
                                  («Derivation.withPrims»
                                    x0
-                                   («Derivation.push» («Language.gPrims» x0) x4))
+                                   («Derivation.pushPrim» («Language.gPrims» x0) x4))
                                  x1)
                            else
-                             «Prelude.none»
+                             «Derivation/ODevState.nothing»
                          else
                            if (Const.eq (Const.label x3) (leaf 4)).label ≠ 0 then
                              let x4 : T := Const.child x3 (leaf 0);
                              let x5 : T := Const.child x3 (leaf 1);
                              let x6 : T := Const.child x3 (leaf 2);
                              if («Derivation.objConfirms» x0 x1 x4 x5 x6).label ≠ 0 then
-                               «Prelude.some»
-                                 («Derivation.devState»
+                               «Derivation/ODevState.just»
+                                 («Derivation.stateOf»
                                    («Derivation.withDefs»
                                      x0
-                                     («Derivation.push»
+                                     («Derivation.pushDef»
                                        («Language.gDefs» x0)
                                        («Language.defObj» x4 x5)))
                                    x1)
                              else
-                               «Prelude.none»
+                               «Derivation/ODevState.nothing»
                            else
                              if (Const.eq (Const.label x3) (leaf 5)).label ≠ 0 then
                                let x4 : T := Const.child x3 (leaf 0);
@@ -6723,21 +10945,84 @@ def «Derivation.declStep» :=
                                «Derivation.descStep» x0 x1 x4 x5 x6 x7);
     x3
 
+def «Derivation/Decls.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Derivation/Decls.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Derivation/Decls.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Derivation/Decls.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Derivation/Decls.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Derivation/Decls.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «Derivation/Decls.tail» x1 x0;
+    x2
+
+def «Derivation/Decls.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Derivation/Decls.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
 def «Derivation.checkDev» :=
   fun (x0 : T) (x1 : List T) (x2 : List T) =>
     let x3 : T := Const.foldr
       (α := T)
       (β := T)
       (fun (x3 : T) (x4 : T) =>
-        «Base.bindO»
+        «Derivation.bindSD»
           x4
           (fun (x5 : T) =>
             «Derivation.declStep»
-              («Language.p1» x5)
-              (Const.children («Language.p2» x5))
+              («Derivation.stConsts» x5)
+              («Derivation.stEntries» x5)
               x3))
-      («Prelude.some» («Derivation.devState» x0 x1))
-      («Prelude.reverse» x2);
+      («Derivation/ODevState.just» («Derivation.stateOf» x0 x1))
+      («Derivation/Decls.reverse» x2);
     x3
 
 def «Reader.both» :=

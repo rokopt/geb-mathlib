@@ -10,11 +10,46 @@
 ; from proofs of others. A derivation is encoded as the checker of derivations encodes it, a
 ; derivation with a mark whether it rewrites as the pair of the two, and a rule of the normalizer
 ; as the node of its constructor's position over its fields, paired with its left side's
-; matching where it has one. Requires the prelude, the base, partial Horn logic, the theory, the
-; inference, the language and the checker of derivations.
+; matching where it has one, as their datatypes declare them. Requires the prelude, the lists of
+; bootstrap/seq.geb, the base, partial Horn logic, the theory, the inference, the language and the
+; checker of derivations.
 
 (module Prover
-  (export dNode setAt Mt matchTerm NR NRs noMatch RW NF rebuild marked zipTs normalize joinBy byNorm
+  (export dNode Marked mark mDeriv mFlag NFR nfr nfTerm nfMarked ONFR.Maybe ONFR.nothing ONFR.just
+    ONFR.isJust
+    ONFR.fromMaybe
+    bindNT
+    termsOf
+    bindHT
+    setAt
+    Assign
+    assign
+    assigned
+    bindP
+    OAssign.Maybe
+    OAssign.nothing
+    OAssign.just
+    Mt
+    matchTerm
+    NormRule
+    nrRule
+    nrDelta
+    nrBelow
+    nrUnit
+    nrThm
+    nrThmAt
+    nrHyp
+    NR
+    NRs
+    noMatch
+    RW
+    NF
+    rebuild
+    marked
+    zipTs
+    normalize
+    joinBy
+    byNorm
     instAt
     byNatInd
     byListInd
@@ -26,6 +61,7 @@
     ufAt
     uses
     headStep
+    EV
     eval
     byNormW
     Pv
@@ -40,10 +76,18 @@
   (import Derivation)
   ; derivations, and a rewriting's derivation marked when it rewrites
   (defn dNode ((r T) (d Ts) (cs Ts)) T (mNode r d cs))
-  (def dRefl (pr (dNode 0 (nil T) (nil T)) 0))
-  (defn dTrans ((d1 T) (d2 T)) T
-    (if (p2 d1) (if (p2 d2) (pr (dNode 1 (nil T) (l2 (p1 d1) (p1 d2))) 1) d1) d2))
-  (defn dCong ((cs Ts)) T (if (anyT p2 cs) (pr (dNode 2 (nil T) (mapT p1 cs)) 1) dRefl))
+  (data Marked (mark T T))
+  (defn mDeriv ((m Marked)) T (case m ((mark d f) d)))
+  (defn mFlag ((m Marked)) T (case m ((mark d f) f)))
+  (import (Each Marked) as EachMarked)
+  (import (Map Marked T) as MarkedOut)
+  (import (Few Marked) as MarkedF)
+  (import (Map T Marked) as MarkedAt)
+  (def dRefl (mark (dNode 0 (nil T) (nil T)) 0))
+  (defn dTrans ((d1 Marked) (d2 Marked)) Marked
+    (if (mFlag d1) (if (mFlag d2) (mark (dNode 1 (nil T) (l2 (mDeriv d1) (mDeriv d2))) 1) d1) d2))
+  (defn dCong ((cs (List Marked))) Marked
+    (if (EachMarked.any mFlag cs) (mark (dNode 2 (nil T) (MarkedOut.map mDeriv cs)) 1) dRefl))
 
   ; whether a pattern's root may match a term's root: the pattern's root is a variable, or the two
   ; roots are of one kind, of one index for a primitive or a definition
@@ -57,32 +101,39 @@
     (mapT (lam ((j T)) (if (eq j i) x (at xs j))) (range (length xs))))
 
   ; the matching of a pattern against a term under d binders, extending an assignment of the
-  ; pattern's variables to optional terms: the optional node of the extended assignment
-  (deftype Mt (Arrow T (Arrow T (Arrow Ts T))))
+  ; pattern's variables to optional terms: the optional extended assignment
+  (data Assign (assign & T))
+  (import (Option Assign) as OAssign)
+  (defn assigned ((a Assign)) Ts (case a ((assign s) s)))
+  (defn bindAA ((m OAssign.Maybe) (f (Arrow Assign OAssign.Maybe))) OAssign.Maybe
+    (case m ((OAssign.just a) (f a)) ((OAssign.nothing) OAssign.nothing)))
+  (deftype Mt (Arrow T (Arrow T (Arrow Ts OAssign.Maybe))))
   (deftype Mts (List Mt))
   (import (Lists Mt) as Mts)
   (defn mtAt ((rs Mts) (i T)) Mt
-    (lcase Mt Mt (iter Mts Mts.tail rs i) (lam ((d T) (t T) (s Ts)) none)
+    (lcase Mt Mt (iter Mts Mts.tail rs i) (lam ((d T) (t T) (s Ts)) OAssign.nothing)
       (lam ((r Mt) (rest Mts)) r)))
-  (defn matchVar ((i T) (d T) (t T) (s Ts)) T
-    (if (lt i d) (if (equal t (var i)) (some (node 0 s)) none)
+  (defn matchVar ((i T) (d T) (t T) (s Ts)) OAssign.Maybe
+    (if (lt i d) (if (equal t (var i)) (OAssign.just (assign s)) OAssign.nothing)
       (let t1 T (if (eq d 0) t (rename t (lam ((j T)) (sub j d))))
         (if (or (eq d 0) (equal (rename t1 (lam ((j T)) (add j d))) t))
           (let e T (nth s (sub i d))
             (if (isSome e)
-              (if (isSome (get e)) (if (equal (get (get e)) t1) (some (node 0 s)) none)
-                (some (node 0 (setAt s (sub i d) (some t1)))))
-              (if (equal t1 (var (sub i d))) (some (node 0 s)) none)))
-          none))))
-  (deftype MA (Arrow Ts (Arrow T T)))
-  (defn matchAll ((rs Mts) (d T) (us Ts) (s Ts)) T
+              (if (isSome (get e))
+                (if (equal (get (get e)) t1) (OAssign.just (assign s)) OAssign.nothing)
+                (OAssign.just (assign (setAt s (sub i d) (some t1)))))
+              (if (equal t1 (var (sub i d))) (OAssign.just (assign s)) OAssign.nothing)))
+          OAssign.nothing))))
+  (deftype MA (Arrow Ts (Arrow OAssign.Maybe OAssign.Maybe)))
+  (defn matchAll ((rs Mts) (d T) (us Ts) (s Ts)) OAssign.Maybe
     ((foldr Mt MA
        (lam ((q Mt) (k MA))
-         (lam ((ts Ts) (acc T))
-           (lcase T T ts acc
-             (lam ((u T) (rest Ts)) (k rest (bindO acc (lam ((sn T)) (q d u (children sn)))))))))
-       (lam ((ts Ts) (acc T)) acc)
-       (Mts.tail rs)) us (some (node 0 s))))
+         (lam ((ts Ts) (acc OAssign.Maybe))
+           (lcase T OAssign.Maybe ts acc
+             (lam ((u T) (rest Ts))
+               (k rest (bindAA acc (lam ((sn Assign)) (q d u (assigned sn)))))))))
+       (lam ((ts Ts) (acc OAssign.Maybe)) acc)
+       (Mts.tail rs)) us (OAssign.just (assign s))))
   (defn matchStep ((nd T) (rs Mts)) Mt
     (lam ((d T) (t T) (s Ts))
       (let l T (label nd)
@@ -96,162 +147,216 @@
                   (if (and (or (eq l 8) (eq l 9)) (eq k 3))
                     (if (and (equal (mArg nd 0) (at us 0)) (equal (mArg nd 1) (at us 1)))
                       ((mtAt rs 3) d (at us 2) s)
-                      none)
+                      OAssign.nothing)
                     (if (and (eq l 10) (eq k 2))
-                      (if (equal (mArg nd 0) (at us 0)) ((mtAt rs 2) d (at us 1) s) none)
+                      (if (equal (mArg nd 0) (at us 0)) ((mtAt rs 2) d (at us 1) s) OAssign.nothing)
                       (matchAll rs d us s))))
-                none)))))))
+                OAssign.nothing)))))))
   (defn matchTerm ((p T)) Mt (para Mt matchStep p))
 
-  ; the rules of the normalizer: the node of a rule of the checker's position and data, of the
-  ; unfolding of one definition, of the definitions below an index but a list, of the terminal
-  ; type's element, of a theorem at objects, of a theorem at objects with its left side, and of a
-  ; hypothesis; each paired with its left side's matching, or with none
-  (deftype NR (Prod T Mt))
+  ; the rules of the normalizer: a rule of the checker's position and data, the unfolding of one
+  ; definition, of the definitions below an index but a list, the terminal type's element, a
+  ; theorem at objects, a theorem at objects with its left side, and a hypothesis; each paired
+  ; with its left side's matching, or with none
+  (data NormRule (nrRule T Terms) (nrDelta T) (nrBelow T Terms) (nrUnit) (nrThm T Objs)
+    (nrThmAt T Objs T T)
+    (nrHyp T))
+  (deftype NR (Prod NormRule Mt))
   (deftype NRs (List NR))
-  (def noMatch (lam ((d T) (t T) (s Ts)) none))
+  (def noMatch (lam ((d T) (t T) (s Ts)) OAssign.nothing))
+
+  ; the bindings and images of optional values into optional pairs, as the base binds and maps
+  ; optional trees
+  (defn bindP ((m OTPair.Maybe) (f (Arrow TPair T))) T
+    (case m ((OTPair.just q) (f q)) ((OTPair.nothing) none)))
+  (defn bindAP ((m OAssign.Maybe) (f (Arrow Assign OTPair.Maybe))) OTPair.Maybe
+    (case m ((OAssign.just a) (f a)) ((OAssign.nothing) OTPair.nothing)))
+  (defn bindHP ((m OThm.Maybe) (f (Arrow Thm OTPair.Maybe))) OTPair.Maybe
+    (case m ((OThm.just a) (f a)) ((OThm.nothing) OTPair.nothing)))
+  (defn mapTP ((f (Arrow T TPair)) (m T)) OTPair.Maybe
+    (if (isSome m) (OTPair.just (f (get m))) OTPair.nothing))
+  (defn termsOf ((h Terms)) Ts (case h ((terms xs) xs)))
+  (defn objsOf ((h Objs)) Ts (case h ((objs xs) xs)))
 
   ; the first rule that rewrites a term at its root: the pair of the result and its derivation
   (deftype RW (Arrow T T))
-  (defn thmRewrite ((G T) (E Ts) (n T) (g Ts) (hs Ts) (j T) (th Ts) (m Mt) (k T) (t T)) T
-    (bindO (m 0 t (replicate k none))
-      (lam ((sn T))
-        (bindO (allSomeT (children sn))
+  (deftype RootRw (Arrow T OTPair.Maybe))
+  (defn thmRewrite
+    ((G Globals) (E (List Entry)) (n T) (g Ts) (hs Ts) (j T) (th Ts) (m Mt) (k T) (t T))
+    OTPair.Maybe
+    (bindAP (m 0 t (replicate k none))
+      (lam ((sn Assign))
+        (bindTP (allSomeT (assigned sn))
           (lam ((sg T))
             (let rd Ts (l4 j (node 0 th) sg 0)
-              (mapO (lam ((t2 T)) (pr t2 (dNode 16 rd (nil T))))
+              (mapTP (lam ((t2 T)) (pr t2 (dNode 16 rd (nil T))))
                 (rootStep G E n g hs 16 rd t))))))))
-  (defn tryRule ((G T) (E Ts) (n T) (g Ts) (hs Ts) (r NR) (t T)) T
-    (let rt T (fst r)
-      (let k T (label rt)
-        (if (eq k 0)
-          (let rl T (child rt 0)
-            (let rd Ts (children (child rt 1))
-              (mapO (lam ((t2 T)) (pr t2 (dNode rl rd (nil T)))) (rootStep G E n g hs rl rd t))))
-          (if (eq k 1)
-            (if (and (eq (label t) 11) (eq (mD t 0) (child rt 0)))
-              (mapO (lam ((t2 T)) (pr t2 (dNode 8 (nil T) (nil T))))
-                (rootStep G E n g hs 8 (nil T) t))
-              none)
-            (if (eq k 2)
-              (if
-                (and (eq (label t) 11)
-                  (and (lt (mD t 0) (child rt 0))
-                    (not (anyT (lam ((x T)) (eq x (mD t 0))) (children (child rt 1))))))
-                (mapO (lam ((t2 T)) (pr t2 (dNode 8 (nil T) (nil T))))
-                  (rootStep G E n g hs 8 (nil T) t))
-                none)
-              (if (eq k 3)
-                (if (and (eq (label t) 0) (equal (nth g (mD t 0)) (some one)))
-                  (mapO (lam ((t2 T)) (pr t2 (dNode 7 (nil T) (nil T))))
-                    (rootStep G E n g hs 7 (nil T) t))
-                  none)
-                (if (eq k 4)
-                  (let j T (child rt 0)
-                    (let th Ts (children (child rt 1))
-                      (bindO (bindO (nth E j) entryLanguage)
-                        (lam ((a T))
-                          (bindO (eqParts (thConcl a))
-                            (lam ((lr T))
-                              (if (sameShape (p1 lr) t)
-                                (thmRewrite G E n g hs j th
-                                  (matchTerm (if (isEmpty th) (p1 lr) (osubst th (p1 lr))))
-                                  (length (thCtx a))
-                                  t)
-                                none)))))))
-                  (if (eq k 5)
-                    (if (sameShape (child rt 2) t)
-                      (thmRewrite G E n g hs (child rt 0) (children (child rt 1)) (snd r)
-                        (child rt 3)
-                        t)
-                      none)
-                    (if (eq k 6)
-                      (let rd Ts (l2 (child rt 0) 0)
-                        (mapO (lam ((t2 T)) (pr t2 (dNode 17 rd (nil T))))
-                          (rootStep G E n g hs 17 rd t)))
-                      none))))))))))
-  (defn rootRewrite ((G T) (E Ts) (n T) (rs NRs) (g Ts) (hs Ts) (t T)) T
-    ((foldr NR RW
-       (lam ((r NR) (rest RW))
-         (lam ((u T)) (let v T (tryRule G E n g hs r u) (if (isSome v) v (rest u)))))
-       (lam ((u T)) none)
+  (defn tryRule ((G Globals) (E (List Entry)) (n T) (g Ts) (hs Ts) (r NR) (t T)) OTPair.Maybe
+    (case (fst r)
+      ((nrRule rl rdN)
+       (let rd Ts (termsOf rdN)
+         (mapTP (lam ((t2 T)) (pr t2 (dNode rl rd (nil T)))) (rootStep G E n g hs rl rd t))))
+      ((nrDelta k)
+       (if (and (eq (label t) 11) (eq (mD t 0) k))
+         (mapTP (lam ((t2 T)) (pr t2 (dNode 8 (nil T) (nil T)))) (rootStep G E n g hs 8 (nil T) t))
+         OTPair.nothing))
+      ((nrBelow m ks)
+       (if
+         (and (eq (label t) 11)
+           (and (lt (mD t 0) m) (not (anyT (lam ((x T)) (eq x (mD t 0))) (termsOf ks)))))
+         (mapTP (lam ((t2 T)) (pr t2 (dNode 8 (nil T) (nil T)))) (rootStep G E n g hs 8 (nil T) t))
+         OTPair.nothing))
+      ((nrUnit)
+       (if (and (eq (label t) 0) (equal (nth g (mD t 0)) (some one)))
+         (mapTP (lam ((t2 T)) (pr t2 (dNode 7 (nil T) (nil T)))) (rootStep G E n g hs 7 (nil T) t))
+         OTPair.nothing))
+      ((nrThm j thN)
+       (let th Ts (objsOf thN)
+         (bindHP (thmAt E j)
+           (lam ((a Thm))
+             (bindPP (eqParts (thConcl a))
+               (lam ((lr TPair))
+                 (if (sameShape (p1 lr) t)
+                   (thmRewrite G E n g hs j th
+                     (matchTerm (if (isEmpty th) (p1 lr) (osubst th (p1 lr))))
+                     (length (thCtx a))
+                     t)
+                   OTPair.nothing)))))))
+      ((nrThmAt j thN p k)
+       (if (sameShape p t) (thmRewrite G E n g hs j (objsOf thN) (snd r) k t) OTPair.nothing))
+      ((nrHyp i)
+       (let rd Ts (l2 i 0)
+         (mapTP (lam ((t2 T)) (pr t2 (dNode 17 rd (nil T)))) (rootStep G E n g hs 17 rd t))))))
+  (defn rootRewrite ((G Globals) (E (List Entry)) (n T) (rs NRs) (g Ts) (hs Ts) (t T)) OTPair.Maybe
+    ((foldr NR RootRw
+       (lam ((r NR) (rest RootRw))
+         (lam ((u T))
+           (let v OTPair.Maybe (tryRule G E n g hs r u) (if (OTPair.isJust v) v (rest u)))))
+       (lam ((u T)) OTPair.nothing)
        rs) t))
 
   ; the rules with each theorem's matching prepared, its left side instantiated at its objects
-  (defn prepareRule ((E Ts) (r T)) NR
-    (if (eq (label r) 4)
-      (let j T (child r 0)
-        (let th Ts (children (child r 1))
-          (let a T (bindO (nth E j) entryLanguage)
-            (let lr T (bindO a (lam ((a1 T)) (eqParts (thConcl a1))))
-              (if (isSome lr)
-                (let p T (if (isEmpty th) (p1 (get lr)) (osubst th (p1 (get lr))))
-                  (pair (node 5 (l4 j (node 0 th) p (length (thCtx (get a))))) (matchTerm p)))
-                (pair r noMatch))))))
-      (pair r noMatch)))
-  (defn prepareRules ((E Ts) (rs Ts)) NRs
-    (foldr T NRs (lam ((r T) (acc NRs)) (cons (prepareRule E r) acc)) (nil NR) rs))
+  (def pr0 (pr 0 0))
+  (def thm0 (mkThm 0 (objs (nil T)) (terms (nil T)) 0))
+  (defn prepareRule ((E (List Entry)) (r NormRule)) NR
+    (case r
+      ((nrThm j thN)
+       (let th Ts (objsOf thN)
+         (let a OThm.Maybe (thmAt E j)
+           (let lr OTPair.Maybe (bindHP a (lam ((a1 Thm)) (eqParts (thConcl a1))))
+             (if (OTPair.isJust lr)
+               (let p T
+                 (if (isEmpty th) (p1 (OTPair.fromMaybe pr0 lr))
+                   (osubst th (p1 (OTPair.fromMaybe pr0 lr))))
+                 (pair (nrThmAt j thN p (length (thCtx (OThm.fromMaybe thm0 a)))) (matchTerm p)))
+               (pair r noMatch))))))
+      (else (pair r noMatch))))
+  (defn prepareRules ((E (List Entry)) (rs (List NormRule))) NRs
+    (foldr NormRule NRs (lam ((r NormRule) (acc NRs)) (cons (prepareRule E r) acc)) (nil NR) rs))
 
   ; the normal form of a term in a context under hypotheses, innermost first, within a depth of
   ; fuel: the optional pair of the normal form and its rewriting derivation, marked
-  (deftype NF (Arrow Ts (Arrow Ts (Arrow T T))))
-  (defn rebuild ((t T) (cs Ts)) T (node (label t) (cons (child t 0) (mapT p1 cs))))
-  (defn marked ((cs Ts)) T (anyT (lam ((c T)) (p2 (p2 c))) cs))
+  (data NFR (nfr T Marked))
+  (defn nfTerm ((r NFR)) T (case r ((nfr t d) t)))
+  (defn nfMarked ((r NFR)) Marked (case r ((nfr t d) d)))
+  (import (Option NFR) as ONFR)
+  (import (Each NFR) as EachNFR)
+  (import (Map NFR T) as NFRTerm)
+  (import (Map NFR Marked) as NFRMarked)
+  (data NFRList (nfrs & NFR))
+  (import (Option NFRList) as ONFRList)
+  (defn nfrsOf ((l NFRList)) (List NFR) (case l ((nfrs xs) xs)))
+  ; the bindings, images and collections of optional normal forms, as the base's of optional trees
+  (defn bindNT ((m ONFR.Maybe) (f (Arrow NFR T))) T
+    (case m ((ONFR.just r) (f r)) ((ONFR.nothing) none)))
+  (defn bindNN ((m ONFR.Maybe) (f (Arrow NFR ONFR.Maybe))) ONFR.Maybe
+    (case m ((ONFR.just r) (f r)) ((ONFR.nothing) ONFR.nothing)))
+  (defn mapNN ((f (Arrow NFR NFR)) (m ONFR.Maybe)) ONFR.Maybe
+    (case m ((ONFR.just r) (ONFR.just (f r))) ((ONFR.nothing) ONFR.nothing)))
+  (defn bindTN ((m T) (f (Arrow T ONFR.Maybe))) ONFR.Maybe (if (isSome m) (f (get m)) ONFR.nothing))
+  (defn bindSN ((m OScopes.Maybe) (f (Arrow Scopes ONFR.Maybe))) ONFR.Maybe
+    (case m ((OScopes.just c) (f c)) ((OScopes.nothing) ONFR.nothing)))
+  (defn allSomeN ((ms (List ONFR.Maybe))) ONFRList.Maybe
+    (let r (Prod T (List NFR)) (ONFR.allJust ms)
+      (if (fst r) (ONFRList.just (nfrs (snd r))) ONFRList.nothing)))
+  (defn bindLN ((m ONFRList.Maybe) (f (Arrow NFRList ONFR.Maybe))) ONFR.Maybe
+    (case m ((ONFRList.just l) (f l)) ((ONFRList.nothing) ONFR.nothing)))
+  (defn bindHT ((m OTerms.Maybe) (f (Arrow Terms T))) T
+    (case m ((OTerms.just h) (f h)) ((OTerms.nothing) none)))
+  (deftype NF (Arrow Ts (Arrow Ts (Arrow T ONFR.Maybe))))
+  (defn rebuild ((t T) (cs (List NFR))) T
+    (node (label t) (cons (child t 0) (NFRTerm.map nfTerm cs))))
+  (defn marked ((cs (List NFR))) T (EachNFR.any (lam ((c NFR)) (mFlag (nfMarked c))) cs))
   ; the pairs of the elements of two lists at the positions of the shorter
-  (defn zipTs ((xs Ts) (ys Ts)) Ts
-    ((foldr T (Arrow Ts Ts)
-       (lam ((x T) (k (Arrow Ts Ts)))
-         (lam ((zs Ts)) (lcase T Ts zs (nil T) (lam ((y T) (rest Ts)) (cons (pr x y) (k rest))))))
-       (lam ((zs Ts)) (nil T))
+  (data ScopeTerm (scopeTerm Scope T))
+  (import (Seq ScopeTerm) as ScopeTerms)
+  (defn scopeOf ((cu ScopeTerm)) Scope (case cu ((scopeTerm c u) c)))
+  (defn termOf ((cu ScopeTerm)) T (case cu ((scopeTerm c u) u)))
+  (defn zipTs ((xs (List Scope)) (ys Ts)) (List ScopeTerm)
+    ((foldr Scope (Arrow Ts (List ScopeTerm))
+       (lam ((x Scope) (k (Arrow Ts (List ScopeTerm))))
+         (lam ((zs Ts))
+           (lcase T (List ScopeTerm) zs (nil ScopeTerm)
+             (lam ((y T) (rest Ts)) (cons (scopeTerm x y) (k rest))))))
+       (lam ((zs Ts)) (nil ScopeTerm))
        xs) ys))
-  (defn normStep ((G T) (E Ts) (n T) (rs NRs) (rec NF)) NF
+  (import (Map ScopeTerm ONFR.Maybe) as NormEach)
+  (defn normStep ((G Globals) (E (List Entry)) (n T) (rs NRs) (rec NF)) NF
     (lam ((g Ts) (hs Ts) (t T))
-      (bindO (childCtxs G n t g hs)
-        (lam ((cxn T))
-          (let cx Ts (children cxn)
-            (bindO
-              (allSomeT
-                (mapT
-                  (lam ((cu T)) (let c T (p1 cu) (rec (children (p1 c)) (children (p2 c)) (p2 cu))))
+      (bindSN (childCtxs G n t g hs)
+        (lam ((cxn Scopes))
+          (let cx (List Scope) (scopesOf cxn)
+            (bindLN
+              (allSomeN
+                (NormEach.map
+                  (lam ((cu ScopeTerm))
+                    (let c Scope (scopeOf cu) (rec (scopeCtx c) (scopeHyps c) (termOf cu))))
                   (zipTs cx (mArgs t))))
-              (lam ((csn T))
-                (let cs Ts (children csn)
+              (lam ((csn NFRList))
+                (let cs (List NFR) (nfrsOf csn)
                   (let t1 T (rebuild t cs)
-                    (let d1 T
-                      (if (marked cs) (pr (dNode 2 (nil T) (mapT (lam ((c T)) (p1 (p2 c))) cs)) 1)
+                    (let d1 Marked
+                      (if (marked cs)
+                        (mark
+                          (dNode 2 (nil T) (NFRTerm.map (lam ((c NFR)) (mDeriv (nfMarked c))) cs))
+                          1)
                         dRefl)
-                      (let rr T (rootRewrite G E n rs g hs t1)
-                        (if (isSome rr)
-                          (let r T (get rr)
-                            (mapO
-                              (lam ((r3 T)) (pr (p1 r3) (dTrans d1 (dTrans (pr (p2 r) 1) (p2 r3)))))
+                      (let rr OTPair.Maybe (rootRewrite G E n rs g hs t1)
+                        (if (OTPair.isJust rr)
+                          (let r TPair (OTPair.fromMaybe pr0 rr)
+                            (mapNN
+                              (lam ((r3 NFR))
+                                (nfr (nfTerm r3)
+                                  (dTrans d1 (dTrans (mark (p2 r) 1) (nfMarked r3)))))
                               (rec g hs (p1 r))))
-                          (some (pr t1 d1))))))))))))))
-  (defn normalize ((G T) (E Ts) (n T) (rs NRs) (fuel T)) NF
-    (iter NF (normStep G E n rs) (lam ((g Ts) (hs Ts) (t T)) (some (pr t dRefl))) fuel))
+                          (ONFR.just (nfr t1 d1))))))))))))))
+  (defn normalize ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T)) NF
+    (iter NF (normStep G E n rs) (lam ((g Ts) (hs Ts) (t T)) (ONFR.just (nfr t dRefl))) fuel))
 
   ; the proof of an equation by normalizing both sides to one term
   (defn joinBy ((nf NF) (g Ts) (hs Ts) (t T) (u T)) T
-    (bindO (nf g hs t)
-      (lam ((a T))
-        (bindO (nf g hs u)
-          (lam ((b T))
-            (if (equal (p1 a) (p1 b)) (some (dNode 18 (nil T) (l2 (p1 (p2 a)) (p1 (p2 b)))))
+    (bindNT (nf g hs t)
+      (lam ((a NFR))
+        (bindNT (nf g hs u)
+          (lam ((b NFR))
+            (if (equal (nfTerm a) (nfTerm b))
+              (some (dNode 18 (nil T) (l2 (mDeriv (nfMarked a)) (mDeriv (nfMarked b)))))
               none))))))
-  (defn byNorm ((G T) (E Ts) (n T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T) (u T)) T
+  (defn byNorm ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T) (u T)) T
     (joinBy (normalize G E n rs fuel) g hs t u))
 
   ; induction on the innermost variable, of the natural numbers or a list, with a step, each premise
   ; by normalization
   (defn instAt ((k T) (th Ts) (t T)) T (subst t (instVar (mArr k th mStar))))
   (defn byNatInd
-    ((G T) (E Ts) (n T) (kz T) (ks T) (s T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T) (u T))
+    ((G Globals) (E (List Entry)) (n T) (kz T) (ks T) (s T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T)
+     (u T))
     T
     (lcase T T g none
       (lam ((c T) (g1 Ts))
-        (bindO (lowerHyps G n g1 hs)
-          (lam ((hn T))
-            (let h1 Ts (children hn)
+        (bindHT (lowerHyps G n g1 hs)
+          (lam ((hn Terms))
+            (let h1 Ts (termsOf hn)
               (bindO (byNorm G E n rs fuel g1 h1 (instAt kz (nil T) t) (instAt kz (nil T) u))
                 (lam ((p0 T))
                   (bindO (byNorm G E n rs fuel g hs (natSuccAt ks t) (subst s (atVar0 t)))
@@ -259,15 +364,16 @@
                       (mapO (lam ((p2d T)) (dNode 19 (l3 kz ks s) (l3 p0 p1d p2d)))
                         (byNorm G E n rs fuel g hs (natSuccAt ks u) (subst s (atVar0 u))))))))))))))
   (defn byListInd
-    ((G T) (E Ts) (n T) (kn T) (kc T) (s T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T) (u T))
+    ((G Globals) (E (List Entry)) (n T) (kn T) (kc T) (s T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T)
+     (u T))
     T
     (lcase T T g none
       (lam ((c T) (g1 Ts))
         (bindO (listPart c)
           (lam ((a T))
-            (bindO (lowerHyps G n g1 hs)
-              (lam ((hn T))
-                (let h1 Ts (children hn)
+            (bindHT (lowerHyps G n g1 hs)
+              (lam ((hn Terms))
+                (let h1 Ts (termsOf hn)
                   (let g2 Ts (cons c (cons a g1))
                     (let h2 Ts (mapT weaken2 h1)
                       (bindO
@@ -285,22 +391,22 @@
   ; induction with the induction hypothesis: the step's, normalized, cut in to rewrite by, the rules
   ; followed by the rewriting by the hypothesis of an index
   (defn withHyp ((rs NRs) (i T)) NRs
-    (foldr NR NRs (lam ((x NR) (acc NRs)) (cons x acc))
-      (cons (pair (node 6 (single i)) noMatch) (nil NR))
+    (foldr NR NRs (lam ((x NR) (acc NRs)) (cons x acc)) (cons (pair (nrHyp i) noMatch) (nil NR))
       rs))
-  (defn byNatIndHyp ((G T) (E Ts) (n T) (kz T) (ks T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T) (u T))
+  (defn byNatIndHyp
+    ((G Globals) (E (List Entry)) (n T) (kz T) (ks T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T) (u T))
     T
     (lcase T T g none
       (lam ((c T) (g1 Ts))
-        (bindO (lowerHyps G n g1 hs)
-          (lam ((hn T))
-            (let h1 Ts (children hn)
+        (bindHT (lowerHyps G n g1 hs)
+          (lam ((hn Terms))
+            (let h1 Ts (termsOf hn)
               (bindO (byNorm G E n rs fuel g1 h1 (instAt kz (nil T) t) (instAt kz (nil T) u))
                 (lam ((p0 T))
                   (let f1 Ts (append hs (single (mEq t u)))
-                    (bindO ((normalize G E n rs fuel) g f1 (mEq t u))
-                      (lam ((npsi T))
-                        (let psi T (p1 npsi)
+                    (bindNT ((normalize G E n rs fuel) g f1 (mEq t u))
+                      (lam ((npsi NFR))
+                        (let psi T (nfTerm npsi)
                           (bindO
                             (byNorm G E n (withHyp rs (length f1)) fuel g (append f1 (single psi))
                               (natSuccAt ks t)
@@ -308,28 +414,30 @@
                             (lam ((q T))
                               (let ih T
                                 (dNode 24 (single (mEq t u))
-                                  (l2 (p1 (p2 npsi)) (dNode 21 (single (length hs)) (nil T))))
+                                  (l2 (mDeriv (nfMarked npsi))
+                                    (dNode 21 (single (length hs)) (nil T))))
                                 (some
                                   (dNode 28 (l2 kz ks)
                                     (l2 p0 (dNode 22 (single psi) (l2 ih q))))))))))))))))))))
-  (defn byListIndHyp ((G T) (E Ts) (n T) (kn T) (kc T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T) (u T))
+  (defn byListIndHyp
+    ((G Globals) (E (List Entry)) (n T) (kn T) (kc T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T) (u T))
     T
     (lcase T T g none
       (lam ((c T) (g1 Ts))
         (bindO (listPart c)
           (lam ((a T))
-            (bindO (lowerHyps G n g1 hs)
-              (lam ((hn T))
-                (let h1 Ts (children hn)
+            (bindHT (lowerHyps G n g1 hs)
+              (lam ((hn Terms))
+                (let h1 Ts (termsOf hn)
                   (bindO
                     (byNorm G E n rs fuel g1 h1 (instAt kn (single a) t) (instAt kn (single a) u))
                     (lam ((p0 T))
                       (let dl Ts (cons c (cons a g1))
                         (let e T (weakenElem (mEq t u))
                           (let f1 Ts (append (mapT weaken2 h1) (single e))
-                            (bindO ((normalize G E n rs fuel) dl f1 e)
-                              (lam ((npsi T))
-                                (let psi T (p1 npsi)
+                            (bindNT ((normalize G E n rs fuel) dl f1 e)
+                              (lam ((npsi NFR))
+                                (let psi T (nfTerm npsi)
                                   (bindO
                                     (byNorm G E n (withHyp rs (length f1)) fuel dl
                                       (append f1 (single psi))
@@ -338,7 +446,7 @@
                                     (lam ((q T))
                                       (let ih T
                                         (dNode 24 (single e)
-                                          (l2 (p1 (p2 npsi))
+                                          (l2 (mDeriv (nfMarked npsi))
                                             (dNode 21 (single (length h1)) (nil T))))
                                         (some
                                           (dNode 29 (l2 kn kc)
@@ -378,107 +486,122 @@
   ; the reduction of a term to a depth, 0 the weak head normal form, 1 the weak normal form, 2 the
   ; normal form but for folds' starts and steps and 3 the normal form, within a depth of fuel
   (deftype EV (Arrow T NF))
-  (defn atRoot ((G T) (E Ts) (n T) (rs NRs) (rec EV) (g Ts) (hs Ts) (dp T) (t1 T) (d1 T)) T
-    (let rr T (rootRewrite G E n rs g hs t1)
-      (if (isSome rr)
-        (let r T (get rr)
-          (mapO (lam ((r3 T)) (pr (p1 r3) (dTrans d1 (dTrans (pr (p2 r) 1) (p2 r3)))))
+  (defn atRoot
+    ((G Globals) (E (List Entry)) (n T) (rs NRs) (rec EV) (g Ts) (hs Ts) (dp T) (t1 T) (d1 Marked))
+    ONFR.Maybe
+    (let rr OTPair.Maybe (rootRewrite G E n rs g hs t1)
+      (if (OTPair.isJust rr)
+        (let r TPair (OTPair.fromMaybe pr0 rr)
+          (mapNN
+            (lam ((r3 NFR)) (nfr (nfTerm r3) (dTrans d1 (dTrans (mark (p2 r) 1) (nfMarked r3)))))
             (rec dp g hs (p1 r))))
-        (some (pr t1 d1)))))
-  (defn headStep ((G T) (E Ts) (n T) (rs NRs) (rec EV) (g Ts) (hs Ts) (t T)) T
+        (ONFR.just (nfr t1 d1)))))
+  (defn headStep ((G Globals) (E (List Entry)) (n T) (rs NRs) (rec EV) (g Ts) (hs Ts) (t T))
+    ONFR.Maybe
     (if (mIs 6 2 t)
-      (bindO (rec 0 g hs (mArg t 0))
-        (lam ((rf T))
-          (let f1 T (p1 rf)
+      (bindNN (rec 0 g hs (mArg t 0))
+        (lam ((rf NFR))
+          (let f1 T (nfTerm rf)
             (let u T (mArg t 1)
-              (bindO
-                (if (mIs 5 1 f1) (if (lt (uses (mArg f1 0) 0) 2) (some (pr u dRefl)) (rec 1 g hs u))
+              (bindNN
+                (if (mIs 5 1 f1)
+                  (if (lt (uses (mArg f1 0) 0) 2) (ONFR.just (nfr u dRefl)) (rec 1 g hs u))
                   (rec 0 g hs u))
-                (lam ((ru T))
-                  (atRoot G E n rs rec g hs 0 (app f1 (p1 ru)) (dCong (l2 (p2 rf) (p2 ru))))))))))
-      (let rr T (rootRewrite G E n rs g hs t)
-        (if (isSome rr)
-          (let r T (get rr)
-            (mapO (lam ((r2 T)) (pr (p1 r2) (dTrans (pr (p2 r) 1) (p2 r2)))) (rec 0 g hs (p1 r))))
+                (lam ((ru NFR))
+                  (atRoot G E n rs rec g hs 0 (app f1 (nfTerm ru))
+                    (dCong (MarkedF.l2 (nfMarked rf) (nfMarked ru))))))))))
+      (let rr OTPair.Maybe (rootRewrite G E n rs g hs t)
+        (if (OTPair.isJust rr)
+          (let r TPair (OTPair.fromMaybe pr0 rr)
+            (mapNN (lam ((r2 NFR)) (nfr (nfTerm r2) (dTrans (mark (p2 r) 1) (nfMarked r2))))
+              (rec 0 g hs (p1 r))))
           (let hc T (headChild t)
             (if (isSome hc)
               (let i T (get hc)
                 (let cs Ts (mArgs t)
-                  (bindO (nth cs i)
+                  (bindTN (nth cs i)
                     (lam ((c T))
-                      (bindO (rec 0 g hs c)
-                        (lam ((rc T))
-                          (if (p2 (p2 rc))
+                      (bindNN (rec 0 g hs c)
+                        (lam ((rc NFR))
+                          (if (mFlag (nfMarked rc))
                             (atRoot G E n rs rec g hs 0
-                              (node (label t) (cons (child t 0) (setAt cs i (p1 rc))))
+                              (node (label t) (cons (child t 0) (setAt cs i (nfTerm rc))))
                               (dCong
-                                (mapT (lam ((j T)) (if (eq j i) (p2 rc) dRefl))
+                                (MarkedAt.map (lam ((j T)) (if (eq j i) (nfMarked rc) dRefl))
                                   (range (length cs)))))
-                            (some (pr t dRefl)))))))))
-              (some (pr t dRefl))))))))
-  (defn deepStep ((G T) (E Ts) (n T) (rs NRs) (rec EV) (dp T) (g Ts) (hs Ts) (w T) (dw T)) T
+                            (ONFR.just (nfr t dRefl)))))))))
+              (ONFR.just (nfr t dRefl))))))))
+  (import (Map T ONFR.Maybe) as NormAt)
+  (defn deepStep
+    ((G Globals) (E (List Entry)) (n T) (rs NRs) (rec EV) (dp T) (g Ts) (hs Ts) (w T) (dw Marked))
+    ONFR.Maybe
     (let l T (label w)
       (let ws Ts (mArgs w)
         (if (eq dp 1)
-          (bindO
-            (allSomeT
-              (mapT
+          (bindLN
+            (allSomeN
+              (NormAt.map
                 (lam ((i T))
-                  (if (keepsWeak l i) (some (pr (at ws i) dRefl)) (rec 1 g hs (at ws i))))
+                  (if (keepsWeak l i) (ONFR.just (nfr (at ws i) dRefl)) (rec 1 g hs (at ws i))))
                 (range (length ws))))
-            (lam ((csn T))
-              (let cs Ts (children csn)
+            (lam ((csn NFRList))
+              (let cs (List NFR) (nfrsOf csn)
                 (let t1 T (rebuild w cs)
-                  (let d1 T (dTrans dw (dCong (mapT p2 cs)))
-                    (if (marked cs) (atRoot G E n rs rec g hs 1 t1 d1) (some (pr t1 d1))))))))
-          (bindO (childCtxs G n w g hs)
-            (lam ((cxn T))
-              (let cx Ts (children cxn)
-                (bindO
-                  (let z Ts (zipTs cx ws)
-                    (allSomeT
-                      (mapT
+                  (let d1 Marked (dTrans dw (dCong (NFRMarked.map nfMarked cs)))
+                    (if (marked cs) (atRoot G E n rs rec g hs 1 t1 d1) (ONFR.just (nfr t1 d1))))))))
+          (bindSN (childCtxs G n w g hs)
+            (lam ((cxn Scopes))
+              (let cx (List Scope) (scopesOf cxn)
+                (bindLN
+                  (let z (List ScopeTerm) (zipTs cx ws)
+                    (allSomeN
+                      (NormAt.map
                         (lam ((i T))
-                          (let cu T (at z i)
-                            (let c T (p1 cu)
-                              (if (and (eq dp 2) (keepsFold l i)) (some (pr (p2 cu) dRefl))
-                                (rec dp (children (p1 c)) (children (p2 c)) (p2 cu))))))
-                        (range (length z)))))
-                  (lam ((csn T))
-                    (let cs Ts (children csn)
+                          (let cu ScopeTerm (ScopeTerms.atOr (scopeTerm scope0 0) z i)
+                            (let c Scope (scopeOf cu)
+                              (if (and (eq dp 2) (keepsFold l i))
+                                (ONFR.just (nfr (termOf cu) dRefl))
+                                (rec dp (scopeCtx c) (scopeHyps c) (termOf cu))))))
+                        (range (ScopeTerms.length z)))))
+                  (lam ((csn NFRList))
+                    (let cs (List NFR) (nfrsOf csn)
                       (let t1 T (rebuild w cs)
                         (if (eq dp 2)
-                          (let d1 T (dTrans dw (dCong (mapT p2 cs)))
-                            (if (marked cs) (atRoot G E n rs rec g hs 2 t1 d1) (some (pr t1 d1))))
-                          (let d1 T (dCong (mapT p2 cs))
-                            (let rr T (rootRewrite G E n rs g hs t1)
-                              (if (isSome rr)
-                                (let r T (get rr)
-                                  (mapO
-                                    (lam ((r3 T))
-                                      (pr (p1 r3)
-                                        (dTrans dw (dTrans d1 (dTrans (pr (p2 r) 1) (p2 r3))))))
+                          (let d1 Marked (dTrans dw (dCong (NFRMarked.map nfMarked cs)))
+                            (if (marked cs) (atRoot G E n rs rec g hs 2 t1 d1)
+                              (ONFR.just (nfr t1 d1))))
+                          (let d1 Marked (dCong (NFRMarked.map nfMarked cs))
+                            (let rr OTPair.Maybe (rootRewrite G E n rs g hs t1)
+                              (if (OTPair.isJust rr)
+                                (let r TPair (OTPair.fromMaybe pr0 rr)
+                                  (mapNN
+                                    (lam ((r3 NFR))
+                                      (nfr (nfTerm r3)
+                                        (dTrans dw
+                                          (dTrans d1 (dTrans (mark (p2 r) 1) (nfMarked r3))))))
                                     (rec 3 g hs (p1 r))))
-                                (some (pr t1 (dTrans dw d1))))))))))))))))))
-  (defn evalStep ((G T) (E Ts) (n T) (rs NRs) (rec EV)) EV
+                                (ONFR.just (nfr t1 (dTrans dw d1))))))))))))))))))
+  (defn evalStep ((G Globals) (E (List Entry)) (n T) (rs NRs) (rec EV)) EV
     (lam ((dp T) (g Ts) (hs Ts) (t T))
-      (bindO (headStep G E n rs rec g hs t)
-        (lam ((w T)) (if (eq dp 0) (some w) (deepStep G E n rs rec dp g hs (p1 w) (p2 w)))))))
-  (defn eval ((G T) (E Ts) (n T) (rs NRs) (fuel T)) EV
-    (iter EV (evalStep G E n rs) (lam ((dp T) (g Ts) (hs Ts) (t T)) (some (pr t dRefl))) fuel))
-  (defn whnf ((G T) (E Ts) (n T) (rs NRs) (fuel T)) NF (eval G E n rs fuel 0))
-  (defn normalizeW ((G T) (E Ts) (n T) (rs NRs) (fuel T)) NF (eval G E n rs fuel 3))
-  (defn byNormW ((G T) (E Ts) (n T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T) (u T)) T
+      (bindNN (headStep G E n rs rec g hs t)
+        (lam ((w NFR))
+          (if (eq dp 0) (ONFR.just w) (deepStep G E n rs rec dp g hs (nfTerm w) (nfMarked w)))))))
+  (defn eval ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T)) EV
+    (iter EV (evalStep G E n rs) (lam ((dp T) (g Ts) (hs Ts) (t T)) (ONFR.just (nfr t dRefl)))
+      fuel))
+  (defn whnf ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T)) NF (eval G E n rs fuel 0))
+  (defn normalizeW ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T)) NF (eval G E n rs fuel 3))
+  (defn byNormW ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T) (u T)) T
     (joinBy (normalizeW G E n rs fuel) g hs t u))
 
   ; provers of equations, and the proofs of an equation from proofs of others
   (deftype Pv (Arrow Ts (Arrow Ts (Arrow T (Arrow T T)))))
   (defn abstractVar ((i T) (c T) (t T)) T
     (mLam c (subst (weaken1 t) (lam ((j T)) (if (eq j (add i 1)) (var 0) (var j))))))
-  (defn byFunExt ((G T) (n T) (prove Pv)) Pv
+  (defn byFunExt ((G Globals) (n T) (prove Pv)) Pv
     (lam ((g Ts) (hs Ts) (f T) (h T))
-      (bindO (bindO (typeIn G n g f) expParts)
-        (lam ((ab T))
+      (bindPT (bindTP (typeIn G n g f) expParts)
+        (lam ((ab TPair))
           (mapO (lam ((d T)) (dNode 26 (nil T) (single d)))
             (prove (cons (p1 ab) g) (mapT weaken1 hs) (app (weaken1 f) (var 0))
               (app (weaken1 h) (var 0))))))))
@@ -486,8 +609,8 @@
     (lam ((g Ts) (hs Ts) (t T) (u T))
       (bindO (nth g i)
         (lam ((c T))
-          (bindO (coprodParts c)
-            (lam ((ab T))
+          (bindP (coprodParts c)
+            (lam ((ab TPair))
               (let a T (p1 ab)
                 (let b T (p2 ab)
                   (let F T (abstractVar i c t)
@@ -516,15 +639,15 @@
                                             (l2 pp
                                               (dNode 24 (single chi)
                                                 (l2 dx px))))))))))))))))))))))))
-  (defn byListIndWith ((G T) (n T) (kn T) (kc T) (p0 Pv) (p1v Pv)) Pv
+  (defn byListIndWith ((G Globals) (n T) (kn T) (kc T) (p0 Pv) (p1v Pv)) Pv
     (lam ((g Ts) (hs Ts) (t T) (u T))
       (lcase T T g none
         (lam ((c T) (g1 Ts))
           (bindO (listPart c)
             (lam ((a T))
-              (bindO (lowerHyps G n g1 hs)
-                (lam ((hn T))
-                  (let h1 Ts (children hn)
+              (bindHT (lowerHyps G n g1 hs)
+                (lam ((hn Terms))
+                  (let h1 Ts (termsOf hn)
                     (bindO (p0 g1 h1 (instAt kn (single a) t) (instAt kn (single a) u))
                       (lam ((d0 T))
                         (mapO (lam ((d1 T)) (dNode 29 (l2 kn kc) (l2 d0 d1)))
@@ -536,7 +659,8 @@
   ; induction on a rose tree alone, in the form of the uniqueness of its fold, each premise by
   ; normalization; and with the hypothesis at each child, the premise by a prover
   (defn byRoseInd
-    ((G T) (E Ts) (n T) (kn T) (kl T) (kc T) (s T) (rs NRs) (fuel T) (g Ts) (t T) (u T))
+    ((G Globals) (E (List Entry)) (n T) (kn T) (kl T) (kc T) (s T) (rs NRs) (fuel T) (g Ts) (t T)
+     (u T))
     T
     (if (eq (length g) 1)
       (let r T (at g 0)

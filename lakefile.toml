@@ -153,6 +153,11 @@ path = "bootstrap/modules.geb"
 text = true
 
 [[input_file]]
+name = "seqSource"
+path = "bootstrap/seq.geb"
+text = true
+
+[[input_file]]
 name = "substSource"
 path = "bootstrap/subst.geb"
 text = true
@@ -216,7 +221,7 @@ name = "GebTestsFreeTopos"
 globs = ["GebTests.Prototypes.FreeTopos.GebCheck", "GebTests.Prototypes.FreeTopos.GebCheckInternal",
   "GebTests.Prototypes.FreeTopos.GebProve", "GebTests.Prototypes.FreeTopos.GebTactics",
   "GebTests.Prototypes.FreeTopos.GebCombinator", "GebTests.Prototypes.FreeTopos.Agreement.Load"]
-needs = ["@/freeToposSources", "@/printerSource"]
+needs = ["@/freeToposSources", "@/printerSource", "@/seqSource"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]

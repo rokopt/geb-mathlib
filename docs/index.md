@@ -4074,7 +4074,12 @@ checklist and in CI.
   input. At every development, its constants, entries and declarations
   encoded, the loaded check gives the encoding of the Lean checker's
   state, without `Classical.choice`; the tests' encodings are the
-  proof's (`Agreement/Encode.lean`). `bootstrap/free-topos/prove.geb`,
+  proof's (`Agreement/Encode.lean`). The program's lists, optional values
+  and the combinator prover's computations are instances of templates,
+  whose copies of a definition the mirror emits each as a Lean function
+  of its own: `Agreement/Templates.lean` states each such definition
+  once, and the command of `Agreement/TemplateEquations.lean` equates
+  every copy with it. `bootstrap/free-topos/prove.geb`,
   in the same program, is the prover written again in the datatype
   language: `GebProve.lean` compares it with the Lean prover at the
   proofs of `InternalDerivation.lean` and `InternalLogic.lean`, and

@@ -8,60 +8,102 @@
 ; domain and codomain, the environment of an extension, and the inference at a fuel of a
 ; pattern instance's typing and of a term's. A typing is the node of label 0 over a sort and two
 ; canonical forms, a typed term the node of label 0 over a term and its typing, and a
-; definedness rule the node of its kind's position over an axiom's index. Requires the prelude,
-; the base, partial Horn logic and the theory.
+; definedness rule the node of its kind's position over an axiom's index, as their datatypes
+; declare them. Requires the prelude, the lists of bootstrap/seq.geb, the base, partial Horn logic
+; and the theory.
 
 (module Infer
-  (export direct strict dfdRules domRules codRules defAxIdx annSort annLo annHi Typed typed ext
+  (export DfdRule direct strict rhsRule ODfd.Maybe ODfd.nothing ODfd.just dfdRules domRules codRules
+    defAxIdx
+    Ann
+    ann
+    annSort
+    annLo
+    annHi
+    Typed
+    typed
+    ext
+    ExtEnv
     envSg
     envOfDefs
+    PatInf
     TreeInf
     bound
     infers
-    inferFuel)
+    inferFuel
+    OAnn.Maybe
+    OAnn.nothing
+    OAnn.just
+    OAnn.isJust
+    OAnn.fromMaybe
+    OAnn.nthOf
+    OAnn.allJust
+    OTyped.Maybe
+    OTyped.nothing
+    OTyped.just
+    OTyped.isJust
+    OTyped.fromMaybe
+    OTyped.nthOf
+    OTyped.allJust)
   (import Prelude)
   (import Base)
   (import PartialHorn)
   (import Theory)
+  (import (Seq OpSig) as OpSigs)
+  (import (Seq Sequent) as Seqs)
+  (import (Seq Eqn) as Eqns)
+  (import (Each Eqn) as EachEqn)
   ; the rules by which an axiom proves an operation's application defined
-  (tree-data DfdRule (direct T) (strict T) (rhsRule T))
+  (data DfdRule (direct T) (strict T) (rhsRule T))
+  (import (Option DfdRule) as ODfd)
+  (import (Option ODfd.Maybe) as OODfd)
+
+  ; the images and bindings of optional values, as the base maps and binds optional trees
+  (defn mapOT ((f (Arrow OpSig T)) (m OOpSig.Maybe)) T
+    (case m ((OOpSig.just o) (some (f o))) ((OOpSig.nothing) none)))
+  (defn mapTD ((f (Arrow T DfdRule)) (m T)) ODfd.Maybe
+    (if (isSome m) (ODfd.just (f (get m))) ODfd.nothing))
+  (defn bindST ((m OSequent.Maybe) (f (Arrow Sequent T))) T
+    (case m ((OSequent.just a) (f a)) ((OSequent.nothing) none)))
 
   ; the argument sorts of an operation of the signature
   (defn argSorts ((k T)) Ts
-    (children (getD (mapO (lam ((o T)) (node 0 (opArgs o))) (nth sig k)) (node 0 (nil T)))))
+    (children
+      (getD (mapOT (lam ((o OpSig)) (node 0 (opArgs o))) (OOpSig.nthOf sig k)) (node 0 (nil T)))))
 
   ; the index of the first axiom whose sequent passes a test, or nothing
-  (defn findAxiom ((f (Arrow T T))) T
+  (defn findAxiom ((f (Arrow Sequent T))) T
     (snd
-      (foldr T (Prod T T)
-        (lam ((a T) (s (Prod T T)))
+      (foldr Sequent (Prod T T)
+        (lam ((a Sequent) (s (Prod T T)))
           (pair (sub (fst s) 1) (if (f a) (some (sub (fst s) 1)) (snd s))))
-        (pair (length axioms) none)
+        (pair (Seqs.length axioms) none)
         axioms)))
 
   ; the rule by which the axioms prove an application of operation k defined
-  (defn dfdRule ((k T)) T
+  (defn dfdRule ((k T)) ODfd.Maybe
     (let as Ts (argSorts k)
       (let t T (opVars k (length as))
         (let dir T
           (findAxiom
-            (lam ((a T))
+            (lam ((a Sequent))
               (and (equalTs (seqCtx a) as)
                 (and (equal (eqLhs (seqConcl a)) t) (equal (eqRhs (seqConcl a)) t)))))
-          (if (isSome dir) (some (direct (get dir)))
+          (if (isSome dir) (ODfd.just (direct (get dir)))
             (let str T
               (findAxiom
-                (lam ((a T))
+                (lam ((a Sequent))
                   (and (equalTs (seqCtx a) as)
-                    (and (isEmpty (seqHyps a))
+                    (and (EachEqn.isEmpty (seqHyps a))
                       (and (not (eq (label (eqLhs (seqConcl a))) 0))
                         (equalTs (children (eqLhs (seqConcl a))) (single t)))))))
-              (if (isSome str) (some (strict (get str)))
-                (mapO rhsRule
+              (if (isSome str) (ODfd.just (strict (get str)))
+                (mapTD rhsRule
                   (findAxiom
-                    (lam ((a T))
+                    (lam ((a Sequent))
                       (and (isEmpty (seqCtx a))
-                        (and (isEmpty (seqHyps a)) (equal (eqRhs (seqConcl a)) t)))))))))))))
+                        (and (EachEqn.isEmpty (seqHyps a))
+                          (equal (eqRhs (seqConcl a)) t)))))))))))))
 
   ; the axiom whose left side applies operation o to an application of operation k, under
   ; hypotheses of definedness alone
@@ -69,203 +111,266 @@
     (let as Ts (argSorts k)
       (let t T (opVars k (length as))
         (findAxiom
-          (lam ((a T))
+          (lam ((a Sequent))
             (and (equalTs (seqCtx a) as)
               (and (equal (eqLhs (seqConcl a)) (phOp o (single t)))
-                (allT (lam ((h T)) (equal (eqLhs h) (eqRhs h))) (seqHyps a)))))))))
+                (EachEqn.all (lam ((h Eqn)) (equal (eqLhs h) (eqRhs h))) (seqHyps a)))))))))
 
   ; the rule tables, by operation
-  (def dfdRules (mapT dfdRule (range (length sig))))
-  (def domRules (mapT (boundRule 0) (range (length sig))))
-  (def codRules (mapT (boundRule 1) (range (length sig))))
+  (import (Map T ODfd.Maybe) as DfdRuleOf)
+  (def dfdRules (DfdRuleOf.map dfdRule (range (OpSigs.length sig))))
+  (def domRules (mapT (boundRule 0) (range (OpSigs.length sig))))
+  (def codRules (mapT (boundRule 1) (range (OpSigs.length sig))))
 
   ; the index of the first axiom of the definition at position i among the extension's axioms
-  (defn defAxIdx ((i T)) T (add (length axioms) (mul 2 i)))
+  (defn defAxIdx ((i T)) T (add (Seqs.length axioms) (mul 2 i)))
 
   ; typings, and typed terms
-  (tree-data Ann (ann T T T))
-  (defn annSort ((a T)) T (case a ((ann s l h) s)))
-  (defn annLo ((a T)) T (case a ((ann s l h) l)))
-  (defn annHi ((a T)) T (case a ((ann s l h) h)))
-  (tree-data Typed (typed T T))
-  (defn tyTerm ((p T)) T (case p ((typed t a) t)))
-  (defn tyAnn ((p T)) T (case p ((typed t a) a)))
+  (data Ann (ann T T T))
+  (import (Option Ann) as OAnn)
+  (import (Seq Ann) as Anns)
+  (defn annSort ((a Ann)) T (case a ((ann s l h) s)))
+  (defn annLo ((a Ann)) T (case a ((ann s l h) l)))
+  (defn annHi ((a Ann)) T (case a ((ann s l h) h)))
+  (data Typed (typed T Ann))
+  (import (Option Typed) as OTyped)
+  (import (Seq Typed) as Typeds)
+  (import (Each Typed) as EachTyped)
+  (defn tyTerm ((p Typed)) T (case p ((typed t a) t)))
+  (defn tyAnn ((p Typed)) Ann (case p ((typed t a) a)))
+  (def ann0 (ann 0 0 0))
+  (def typed0 (typed 0 ann0))
 
   ; the theory extended by definitions, with its axioms, its signature and the rule tables
-  (defn ext ((ds Ts)) T (thyExtendAll toposTheory ds))
-  (tree-data ExtEnv (extEnv T T T T T T))
-  (defn envDefs ((E T)) Ts (case E ((extEnv d a s f o c) (children d))))
-  (defn envAxs ((E T)) Ts (case E ((extEnv d a s f o c) (children a))))
-  (defn envSg ((E T)) Ts (case E ((extEnv d a s f o c) (children s))))
-  (defn envDfds ((E T)) Ts (case E ((extEnv d a s f o c) (children f))))
-  (defn envDoms ((E T)) Ts (case E ((extEnv d a s f o c) (children o))))
-  (defn envCods ((E T)) Ts (case E ((extEnv d a s f o c) (children c))))
-  (defn envOfDefs ((ds Ts)) T
-    (let th T (ext ds)
-      (extEnv (node 0 ds) (node 0 (thyAxioms th)) (node 0 (thySig th)) (node 0 dfdRules)
-        (node 0 domRules)
-        (node 0 codRules))))
+  (defn ext ((ds (List PDefn))) Theory (thyExtendAll toposTheory ds))
+  (data DfdTable (dfds & ODfd.Maybe))
+  (data Bounds (bounds & T))
+  (data ExtEnv (extEnv PDefnList SeqList OpSigList DfdTable Bounds Bounds))
+  (defn envDefs ((E ExtEnv)) (List PDefn) (case E ((extEnv d a s f o c) (case d ((pdefns xs) xs)))))
+  (defn envAxs ((E ExtEnv)) (List Sequent) (case E ((extEnv d a s f o c) (case a ((seqs xs) xs)))))
+  (defn envSg ((E ExtEnv)) (List OpSig) (case E ((extEnv d a s f o c) (case s ((opSigs xs) xs)))))
+  (defn envDfds ((E ExtEnv)) (List ODfd.Maybe)
+    (case E ((extEnv d a s f o c) (case f ((dfds xs) xs)))))
+  (defn envDoms ((E ExtEnv)) Ts (case E ((extEnv d a s f o c) (case o ((bounds xs) xs)))))
+  (defn envCods ((E ExtEnv)) Ts (case E ((extEnv d a s f o c) (case c ((bounds xs) xs)))))
+  (defn envOfDefs ((ds (List PDefn))) ExtEnv
+    (let th Theory (ext ds)
+      (extEnv (pdefns ds) (seqs (thyAxioms th)) (opSigs (thySig th)) (dfds dfdRules)
+        (bounds domRules)
+        (bounds codRules))))
 
   ; the inference of a pattern instance's typing at typed arguments, with the instance, and of a
   ; term's typing
-  (deftype PatInf (Arrow Ts (Arrow T T)))
-  (deftype TreeInf (Arrow T T))
+  (deftype PatInf (Arrow (List Typed) (Arrow T OTyped.Maybe)))
+  (deftype TreeInf (Arrow T OAnn.Maybe))
   (deftype Infs (Prod PatInf TreeInf))
-  (defn argSortsOf ((args Ts)) Ts (mapT (lam ((p T)) (annSort (tyAnn p))) args))
+  (import (Map Typed T) as SortOf)
+  (defn argSortsOf ((args (List Typed))) Ts (SortOf.map (lam ((p Typed)) (annSort (tyAnn p))) args))
+  ; the images and bindings of optional typings and typed terms
+  (defn bindYT ((m OTyped.Maybe) (f (Arrow Typed T))) T
+    (case m ((OTyped.just p) (f p)) ((OTyped.nothing) none)))
+  (defn bindAT ((m OAnn.Maybe) (f (Arrow Ann T))) T
+    (case m ((OAnn.just a) (f a)) ((OAnn.nothing) none)))
+  (defn mapYA ((f (Arrow Typed Ann)) (m OTyped.Maybe)) OAnn.Maybe
+    (case m ((OTyped.just p) (OAnn.just (f p))) ((OTyped.nothing) OAnn.nothing)))
+  (defn mapAY ((f (Arrow Ann Typed)) (m OAnn.Maybe)) OTyped.Maybe
+    (case m ((OAnn.just a) (OTyped.just (f a))) ((OAnn.nothing) OTyped.nothing)))
+  (defn bindOA ((m OOpSig.Maybe) (f (Arrow OpSig OAnn.Maybe))) OAnn.Maybe
+    (case m ((OOpSig.just o) (f o)) ((OOpSig.nothing) OAnn.nothing)))
+  (defn bindTA ((m T) (f (Arrow T OAnn.Maybe))) OAnn.Maybe (if (isSome m) (f (get m)) OAnn.nothing))
+  (defn mapTA ((f (Arrow T Ann)) (m T)) OAnn.Maybe
+    (if (isSome m) (OAnn.just (f (get m))) OAnn.nothing))
+  (def seq0 (mkSeq (nil T) (nil Eqn) (eqn 0 0)))
+  (def eqn0 (eqn 0 0))
+  (def pdefn0 (pdefn (sorts (nil T)) 0 0))
+  (def dfd0 (direct 0))
 
   ; whether a hypothesis of an axiom holds at arguments of the given typings
-  (defn hypOk ((pinf PatInf) (args Ts) (h T)) T
-    (if (equal (eqLhs h) (eqRhs h)) (isSome (pinf args (eqLhs h)))
-      (let l T (pinf args (eqLhs h))
-        (let r T (pinf args (eqRhs h))
-          (if (and (isSome l) (isSome r))
-            (let la T (tyAnn (get l))
-              (let ra T (tyAnn (get r))
+  (defn hypOk ((pinf PatInf) (args (List Typed)) (h Eqn)) T
+    (if (equal (eqLhs h) (eqRhs h)) (OTyped.isJust (pinf args (eqLhs h)))
+      (let l OTyped.Maybe (pinf args (eqLhs h))
+        (let r OTyped.Maybe (pinf args (eqRhs h))
+          (if (and (OTyped.isJust l) (OTyped.isJust r))
+            (let la Ann (tyAnn (OTyped.fromMaybe typed0 l))
+              (let ra Ann (tyAnn (OTyped.fromMaybe typed0 r))
                 (and (eq (annSort la) Sorts.obj)
                   (and (eq (annSort ra) Sorts.obj) (equal (annLo la) (annLo ra))))))
             0)))))
 
   ; the canonical bound of an application of operation k, by the axiom j whose left side applies
   ; operation o to it
-  (defn bound ((E T) (pinf PatInf) (args Ts) (o T) (k T) (j T)) T
-    (bindO (nth (envAxs E) j)
-      (lam ((a T))
-        (let t T (opVars k (length args))
+  (defn bound ((E ExtEnv) (pinf PatInf) (args (List Typed)) (o T) (k T) (j T)) T
+    (bindST (OSequent.nthOf (envAxs E) j)
+      (lam ((a Sequent))
+        (let t T (opVars k (Typeds.length args))
           (if
             (and (seqScoped a)
               (and (equalTs (seqCtx a) (argSortsOf args))
                 (and (equal (eqLhs (seqConcl a)) (phOp o (single t)))
-                  (allT
-                    (lam ((h T))
+                  (EachEqn.all
+                    (lam ((h Eqn))
                       (and (equal (eqLhs h) (eqRhs h))
-                        (or (equal (eqLhs h) t) (isSome (pinf args (eqLhs h))))))
+                        (or (equal (eqLhs h) t) (OTyped.isJust (pinf args (eqLhs h))))))
                     (seqHyps a)))))
-            (bindO (pinf args (eqRhs (seqConcl a)))
-              (lam ((r T)) (if (eq (annSort (tyAnn r)) Sorts.obj) (some (annLo (tyAnn r))) none)))
+            (bindYT (pinf args (eqRhs (seqConcl a)))
+              (lam ((r Typed))
+                (if (eq (annSort (tyAnn r)) Sorts.obj) (some (annLo (tyAnn r))) none)))
             none)))))
 
   ; whether an axiom proves an application of operation k defined at arguments of the given
   ; typings, by the rule the table names for it
-  (defn dfdOk ((E T) (pinf PatInf) (args Ts) (k T)) T
+  (defn dfdOk ((E ExtEnv) (pinf PatInf) (args (List Typed)) (k T)) T
     (let as Ts (argSortsOf args)
-      (let t T (opVars k (length args))
-        (let r T (nth (envDfds E) k)
-          (if (and (isSome r) (isSome (get r)))
-            (let rule T (get (get r))
+      (let t T (opVars k (Typeds.length args))
+        (let r OODfd.Maybe (OODfd.nthOf (envDfds E) k)
+          (if (and (OODfd.isJust r) (ODfd.isJust (OODfd.fromMaybe ODfd.nothing r)))
+            (let rule DfdRule (ODfd.fromMaybe dfd0 (OODfd.fromMaybe ODfd.nothing r))
               (case rule
                 ((direct j)
-                 (let m T (nth (envAxs E) j)
-                   (if (isSome m)
-                     (let a T (get m)
+                 (let m OSequent.Maybe (OSequent.nthOf (envAxs E) j)
+                   (if (OSequent.isJust m)
+                     (let a Sequent (OSequent.fromMaybe seq0 m)
                        (and (seqScoped a)
                          (and (equalTs (seqCtx a) as)
                            (and (equal (eqLhs (seqConcl a)) t)
                              (and (equal (eqRhs (seqConcl a)) t)
-                               (allT (hypOk pinf args) (seqHyps a)))))))
+                               (EachEqn.all (hypOk pinf args) (seqHyps a)))))))
                      0)))
                 ((strict j)
-                 (let m T (nth (envAxs E) j)
-                   (if (isSome m)
-                     (let a T (get m)
+                 (let m OSequent.Maybe (OSequent.nthOf (envAxs E) j)
+                   (if (OSequent.isJust m)
+                     (let a Sequent (OSequent.fromMaybe seq0 m)
                        (and (equalTs (seqCtx a) as)
-                         (and (isEmpty (seqHyps a))
+                         (and (EachEqn.isEmpty (seqHyps a))
                            (and (not (eq (label (eqLhs (seqConcl a))) 0))
                              (equalTs (children (eqLhs (seqConcl a))) (single t))))))
                      0)))
                 ((rhsRule j)
-                 (let m T (nth (envAxs E) j)
-                   (if (isSome m)
-                     (let a T (get m)
+                 (let m OSequent.Maybe (OSequent.nthOf (envAxs E) j)
+                   (if (OSequent.isJust m)
+                     (let a Sequent (OSequent.fromMaybe seq0 m)
                        (and (isEmpty (seqCtx a))
-                         (and (isEmpty (seqHyps a))
-                           (and (isEmpty args) (equal (eqRhs (seqConcl a)) t)))))
+                         (and (EachEqn.isEmpty (seqHyps a))
+                           (and (EachTyped.isEmpty args) (equal (eqRhs (seqConcl a)) t)))))
                      0)))))
             0)))))
 
   ; the typing of an object-valued application of an operation of the signature
-  (defn inferObj ((k T) (args Ts)) T
-    (let f T (tyAnn (at args 0))
-      (if (and (eq k 0) (eq (length args) 1))
-        (if (eq (annSort f) Sorts.arr) (some (ann Sorts.obj (annLo f) (annLo f))) none)
-        (if (and (eq k 1) (eq (length args) 1))
-          (if (eq (annSort f) Sorts.arr) (some (ann Sorts.obj (annHi f) (annHi f))) none)
+  (defn inferObj ((k T) (args (List Typed))) OAnn.Maybe
+    (let f Ann (tyAnn (Typeds.atOr typed0 args 0))
+      (if (and (eq k 0) (eq (Typeds.length args) 1))
+        (if (eq (annSort f) Sorts.arr) (OAnn.just (ann Sorts.obj (annLo f) (annLo f))) OAnn.nothing)
+        (if (and (eq k 1) (eq (Typeds.length args) 1))
+          (if (eq (annSort f) Sorts.arr) (OAnn.just (ann Sorts.obj (annHi f) (annHi f)))
+            OAnn.nothing)
           (let c T
             (phOp k
-              (mapT
-                (lam ((p T)) (if (eq (annSort (tyAnn p)) Sorts.obj) (annLo (tyAnn p)) (tyTerm p)))
+              (SortOf.map
+                (lam ((p Typed))
+                  (if (eq (annSort (tyAnn p)) Sorts.obj) (annLo (tyAnn p)) (tyTerm p)))
                 args))
-            (some (ann Sorts.obj c c)))))))
+            (OAnn.just (ann Sorts.obj c c)))))))
 
   ; the typing of an arrow-valued application of an operation of the signature
-  (defn inferArr ((E T) (pinf PatInf) (k T) (args Ts)) T
+  (defn inferArr ((E ExtEnv) (pinf PatInf) (k T) (args (List Typed))) OAnn.Maybe
     (let lo T (bindO (bindO (nth (envDoms E) k) (lam ((m T)) m)) (bound E pinf args 0 k))
       (let hi T (bindO (bindO (nth (envCods E) k) (lam ((m T)) m)) (bound E pinf args 1 k))
-        (if (and (isSome lo) (isSome hi)) (some (ann Sorts.arr (get lo) (get hi))) none))))
+        (if (and (isSome lo) (isSome hi)) (OAnn.just (ann Sorts.arr (get lo) (get hi)))
+          OAnn.nothing))))
 
   ; the typing of an application of the definition of operation k
-  (defn inferDef ((E T) (pinf PatInf) (k T) (args Ts)) T
-    (let i T (sub k (length sig))
-      (let md T (nth (envDefs E) i)
-        (let ma T (nth (envAxs E) (defAxIdx i))
-          (if (and (isSome md) (isSome ma))
-            (let b T (pdBody (get md))
-              (let a T (get ma)
+  (defn inferDef ((E ExtEnv) (pinf PatInf) (k T) (args (List Typed))) OAnn.Maybe
+    (let i T (sub k (OpSigs.length sig))
+      (let md OPDefn.Maybe (OPDefn.nthOf (envDefs E) i)
+        (let ma OSequent.Maybe (OSequent.nthOf (envAxs E) (defAxIdx i))
+          (if (and (OPDefn.isJust md) (OSequent.isJust ma))
+            (let b T (pdBody (OPDefn.fromMaybe pdefn0 md))
+              (let a Sequent (OSequent.fromMaybe seq0 ma)
                 (if
                   (and (seqScoped a)
                     (and (equalTs (seqCtx a) (argSortsOf args))
-                      (and (equalTs (seqHyps a) (single (eqn b b)))
-                        (equal (seqConcl a) (eqn (opVars k (length args)) b)))))
-                  (mapO tyAnn (pinf args b))
-                  none)))
-            none)))))
+                      (and (sameEqns (seqHyps a) (Eqns.single (eqn b b)))
+                        (equal (rep (seqConcl a)) (rep (eqn (opVars k (Typeds.length args)) b))))))
+                  (mapYA tyAnn (pinf args b))
+                  OAnn.nothing)))
+            OAnn.nothing)))))
 
   ; the typing of an application of operation k to terms of the given typings
-  (defn inferOp ((E T) (pinf PatInf) (k T) (args Ts)) T
-    (bindO (nth (envSg E) k)
-      (lam ((o T))
+  (defn inferOp ((E ExtEnv) (pinf PatInf) (k T) (args (List Typed))) OAnn.Maybe
+    (bindOA (OOpSig.nthOf (envSg E) k)
+      (lam ((o OpSig))
         (if (equalTs (argSortsOf args) (opArgs o))
-          (if (lt k (length sig))
+          (if (lt k (OpSigs.length sig))
             (if (dfdOk E pinf args k)
               (if (eq (opSort o) Sorts.obj) (inferObj k args)
-                (if (eq (opSort o) Sorts.arr) (inferArr E pinf k args) none))
-              none)
+                (if (eq (opSort o) Sorts.arr) (inferArr E pinf k args) OAnn.nothing))
+              OAnn.nothing)
             (inferDef E pinf k args))
-          none))))
+          OAnn.nothing))))
 
   ; the typing of a variable of a context under hypotheses
-  (defn inferSide ((E T) (hs Ts) (tinf TreeInf) (v T) (o T)) T
+  (defn inferSide ((E ExtEnv) (hs (List Eqn)) (tinf TreeInf) (v T) (o T)) T
     (let ok T
-      (bindO (nth (envAxs E) o)
-        (lam ((a T))
+      (bindST (OSequent.nthOf (envAxs E) o)
+        (lam ((a Sequent))
           (some
             (and (equalTs (seqCtx a) (single Sorts.arr))
-              (and (isEmpty (seqHyps a)) (equal (seqConcl a) (dfd (phOp o (single (x 0))))))))))
+              (and (EachEqn.isEmpty (seqHyps a))
+                (equal (rep (seqConcl a)) (rep (dfd (phOp o (single (x 0)))))))))))
       (if (and (isSome ok) (get ok))
-        (let found T
-          (foldr T T
-            (lam ((q T) (r T)) (if (equal (eqLhs q) (phOp o (single (phVar v)))) (some q) r))
-            none
+        (let found OEqn.Maybe
+          (foldr Eqn OEqn.Maybe
+            (lam ((q Eqn) (r OEqn.Maybe))
+              (if (equal (eqLhs q) (phOp o (single (phVar v)))) (OEqn.just q) r))
+            OEqn.nothing
             hs)
-          (if (isSome found)
-            (bindO (tinf (eqRhs (get found)))
-              (lam ((a T)) (if (eq (annSort a) Sorts.obj) (some (annLo a)) none)))
+          (if (OEqn.isJust found)
+            (bindAT (tinf (eqRhs (OEqn.fromMaybe eqn0 found)))
+              (lam ((a Ann)) (if (eq (annSort a) Sorts.obj) (some (annLo a)) none)))
             (some (phOp o (single (phVar v))))))
         none)))
-  (defn inferVar ((E T) (ctx Ts) (hs Ts) (tinf TreeInf) (v T)) T
-    (bindO (nth ctx v)
+  (defn inferVar ((E ExtEnv) (ctx Ts) (hs (List Eqn)) (tinf TreeInf) (v T)) OAnn.Maybe
+    (bindTA (nth ctx v)
       (lam ((s T))
-        (if (eq s Sorts.obj) (some (ann Sorts.obj (phVar v) (phVar v)))
+        (if (eq s Sorts.obj) (OAnn.just (ann Sorts.obj (phVar v) (phVar v)))
           (if (eq s Sorts.arr)
-            (bindO (inferSide E hs tinf v 0)
-              (lam ((lo T)) (mapO (lam ((hi T)) (ann Sorts.arr lo hi)) (inferSide E hs tinf v 1))))
-            none)))))
+            (bindTA (inferSide E hs tinf v 0)
+              (lam ((lo T)) (mapTA (lam ((hi T)) (ann Sorts.arr lo hi)) (inferSide E hs tinf v 1))))
+            OAnn.nothing)))))
+
+  ; the optional lists of the values of lists of optional typed terms and typings, each present
+  ; where every value is
+  (data TypedList (typeds & Typed))
+  (import (Option TypedList) as OTypedList)
+  (data AnnList (anns & Ann))
+  (import (Option AnnList) as OAnnList)
+  (defn allSomeY ((ms (List OTyped.Maybe))) OTypedList.Maybe
+    (let r (Prod T (List Typed)) (OTyped.allJust ms)
+      (if (fst r) (OTypedList.just (typeds (snd r))) OTypedList.nothing)))
+  (defn allSomeA ((ms (List OAnn.Maybe))) OAnnList.Maybe
+    (let r (Prod T (List Ann)) (OAnn.allJust ms)
+      (if (fst r) (OAnnList.just (anns (snd r))) OAnnList.nothing)))
+  (defn bindLY ((m OTypedList.Maybe) (f (Arrow TypedList OTyped.Maybe))) OTyped.Maybe
+    (case m ((OTypedList.just xs) (f xs)) ((OTypedList.nothing) OTyped.nothing)))
+  (defn bindLA ((m OAnnList.Maybe) (f (Arrow AnnList OAnn.Maybe))) OAnn.Maybe
+    (case m ((OAnnList.just xs) (f xs)) ((OAnnList.nothing) OAnn.nothing)))
 
   ; one step of inferring a pattern instance's typing, and of a term's
-  (deftype PO (Prod T T))
+  (deftype PO (Prod T OTyped.Maybe))
   (deftype POs (List PO))
   (defn poTrees ((rs POs)) Ts (foldr PO Ts (lam ((r PO) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
-  (defn poValues ((rs POs)) Ts (foldr PO Ts (lam ((r PO) (acc Ts)) (cons (snd r) acc)) (nil T) rs))
-  (defn patInfer ((E T) (pinf PatInf) (env Ts) (p T)) T
+  (defn poValues ((rs POs)) (List OTyped.Maybe)
+    (foldr PO (List OTyped.Maybe) (lam ((r PO) (acc (List OTyped.Maybe))) (cons (snd r) acc))
+      (nil OTyped.Maybe)
+      rs))
+  (deftype PA (Prod T OAnn.Maybe))
+  (deftype PAs (List PA))
+  (defn paTrees ((rs PAs)) Ts (foldr PA Ts (lam ((r PA) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
+  (defn paValues ((rs PAs)) (List OAnn.Maybe)
+    (foldr PA (List OAnn.Maybe) (lam ((r PA) (acc (List OAnn.Maybe))) (cons (snd r) acc))
+      (nil OAnn.Maybe)
+      rs))
+  (defn patInfer ((E ExtEnv) (pinf PatInf) (env (List Typed)) (p T)) OTyped.Maybe
     (snd
       (fold PO
         (lam ((l T) (rs POs))
@@ -273,42 +378,46 @@
             (pair (node l cs)
               (if (eq l 0)
                 (if (eq (length cs) 1)
-                  (let v T (at cs 0) (if (eq (arity v) 0) (nth env (label v)) none))
-                  none)
-                (bindO (allSomeT (poValues rs))
-                  (lam ((argsN T))
-                    (let args Ts (children argsN)
-                      (mapO (lam ((a T)) (typed (phOp (sub l 1) (mapT tyTerm args)) a))
+                  (let v T (at cs 0)
+                    (if (eq (arity v) 0) (OTyped.nthOf env (label v)) OTyped.nothing))
+                  OTyped.nothing)
+                (bindLY (allSomeY (poValues rs))
+                  (lam ((argsN TypedList))
+                    (let args (List Typed) (case argsN ((typeds xs) xs))
+                      (mapAY (lam ((a Ann)) (typed (phOp (sub l 1) (SortOf.map tyTerm args)) a))
                         (inferOp E pinf (sub l 1) args)))))))))
         p)))
-  (defn treeInfer ((E T) (ctx Ts) (hs Ts) (pinf PatInf) (tinf TreeInf) (t T)) T
+  (defn treeInfer ((E ExtEnv) (ctx Ts) (hs (List Eqn)) (pinf PatInf) (tinf TreeInf) (t T))
+    OAnn.Maybe
     (snd
-      (fold PO
-        (lam ((l T) (rs POs))
-          (let cs Ts (poTrees rs)
+      (fold PA
+        (lam ((l T) (rs PAs))
+          (let cs Ts (paTrees rs)
             (pair (node l cs)
               (if (eq l 0)
                 (if (eq (length cs) 1)
-                  (let v T (at cs 0) (if (eq (arity v) 0) (inferVar E ctx hs tinf (label v)) none))
-                  none)
-                (bindO (allSomeT (poValues rs))
-                  (lam ((asN T))
+                  (let v T (at cs 0)
+                    (if (eq (arity v) 0) (inferVar E ctx hs tinf (label v)) OAnn.nothing))
+                  OAnn.nothing)
+                (bindLA (allSomeA (paValues rs))
+                  (lam ((asN AnnList))
                     (inferOp E pinf (sub l 1)
                       (snd
-                        (foldr T (Prod Ts Ts)
-                          (lam ((c T) (s (Prod Ts Ts)))
-                            (pair (tail (fst s)) (cons (typed c (at (fst s) 0)) (snd s))))
-                          (pair (reverse (children asN)) (nil T))
+                        (foldr T (Prod (List Ann) (List Typed))
+                          (lam ((c T) (s (Prod (List Ann) (List Typed))))
+                            (pair (Anns.tail (fst s))
+                              (cons (typed c (Anns.atOr ann0 (fst s) 0)) (snd s))))
+                          (pair (Anns.reverse (case asN ((anns xs) xs))) (nil Typed))
                           cs)))))))))
         t)))
 
   ; the inferences at a fuel, each typing the instances of axioms' sides it meets at the fuel
   ; below
-  (defn infers ((E T) (ctx Ts) (hs Ts) (fuel T)) Infs
+  (defn infers ((E ExtEnv) (ctx Ts) (hs (List Eqn)) (fuel T)) Infs
     (iter Infs
       (lam ((r Infs))
-        (pair (lam ((env Ts) (p T)) (patInfer E (fst r) env p))
+        (pair (lam ((env (List Typed)) (p T)) (patInfer E (fst r) env p))
           (lam ((t T)) (treeInfer E ctx hs (fst r) (snd r) t))))
-      (pair (lam ((env Ts) (p T)) none) (lam ((t T)) none))
+      (pair (lam ((env (List Typed)) (p T)) OTyped.nothing) (lam ((t T)) OAnn.nothing))
       fuel))
   (def inferFuel 8))

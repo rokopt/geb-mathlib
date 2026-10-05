@@ -56,6 +56,95 @@ open Geb Geb.Kernel Geb.FreeTopos GebTests.Prototypes.FreeTopos.Agreement.Encode
 open Internal (Term Label)
 open scoped FinEnum
 
+/-- The mirror's bindings and images of optional values are the base's of optional trees. -/
+@[template] theorem bindPT_def : «Derivation.bindPT» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindPT_def] theorem bindHT_def : «Derivation.bindHT» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindPT_def] theorem bindEH_def : «Derivation.bindEH» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindPT_def] theorem bindTS_def : «Derivation.bindTS» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindPT_def] theorem bindST_def : «Derivation.bindST» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindPT_def] theorem bindPD_def : «Derivation.bindPD» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindPT_def] theorem bindRD_def : «Derivation.bindRD» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindPT_def] theorem bindHD_def : «Derivation.bindHD» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindPT_def] theorem bindTD_def : «Derivation.bindTD» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindPT_def] theorem bindSD_def : «Derivation.bindSD» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindPT_def] theorem mapPT_def : «Derivation.mapPT» = «Base.mapO» := rfl
+
+@[template, inherit_doc bindPT_def] theorem mapLT_def : «Derivation.mapLT» = «Base.mapO» := rfl
+
+/-- The mirror's theorem among the entries at a position is the base's binding of the entry. -/
+@[template] theorem thmAt_def :
+    «Derivation.thmAt» = fun E i ↦ «Base.bindO» («Prelude.nth» E i) «Derivation.entryLanguage» := by
+  funext E i
+  simp only [«Derivation.thmAt», template]
+
+/-- The mirror's optional hypotheses, each present, are the base's optional trees. -/
+@[template] theorem allSomeTerms_def : «Derivation.allSomeTerms» = «Base.allSomeT» := rfl
+
+/-- The mirror's extensions of the primitive arrows and the definitions are its pushing of an
+entry. -/
+@[template] theorem pushPrim_def : «Derivation.pushPrim» = «Derivation.push» := rfl
+
+@[template, inherit_doc pushPrim_def] theorem pushDef_def :
+    «Derivation.pushDef» = «Derivation.push» := rfl
+
+/-- The mirror's scope of a context and hypotheses is their pair. -/
+@[template] theorem scope_def : «Derivation.scope» = «Language.pr» := rfl
+
+/-- The mirror's state of a development is the pair of its constants and the node of its entries. -/
+@[template] theorem devState_def : «Derivation.devState» = «Language.pr» := rfl
+
+@[template, inherit_doc devState_def] theorem stateOf_def :
+    «Derivation.stateOf» = fun G E ↦ «Language.pr» G (RoseTree.node 0 E) := rfl
+
+/-- The mirror's constants and entries of a state are the pair's components. -/
+@[template] theorem stConsts_def : «Derivation.stConsts» = «Language.p1» := rfl
+
+@[template, inherit_doc stConsts_def] theorem stEntries_def :
+    «Derivation.stEntries» = fun s ↦ Const.children («Language.p2» s) := rfl
+
+/-- The mirror's lists of definitions and of scopes, each the elements of a node. -/
+@[simp, template] theorem pdefnsOf_node (xs : List Tree) :
+    «Derivation.pdefnsOf» (RoseTree.node 0 xs) = xs := by
+  simp [«Derivation.pdefnsOf»]
+
+@[simp, template, inherit_doc pdefnsOf_node] theorem scopesOf_node (xs : List Tree) :
+    «Derivation.scopesOf» (RoseTree.node 0 xs) = xs := by
+  simp [«Derivation.scopesOf»]
+
+/-- The mirror's present hypotheses. -/
+@[simp, template] theorem termsOr_some (xs : List Tree) :
+    «Derivation.termsOr» (encOpt (some (RoseTree.node 0 xs))) = xs := by
+  simp [«Derivation.termsOr», encOpt]
+
+/-- The mirror's context and hypotheses of a scope. -/
+@[simp, template] theorem scopeCtx_pair (a b : List Tree) :
+    «Derivation.scopeCtx» (encPair (RoseTree.node 0 a, RoseTree.node 0 b)) = a := by
+  simp [«Derivation.scopeCtx», encPair]
+
+@[simp, template, inherit_doc scopeCtx_pair] theorem scopeHyps_pair (a b : List Tree) :
+    «Derivation.scopeHyps» (encPair (RoseTree.node 0 a, RoseTree.node 0 b)) = b := by
+  simp [«Derivation.scopeHyps», encPair]
+
+/-- The mirror's lists wrapped as datatypes, each the node of label zero over its elements. -/
+@[simp, template] theorem terms_wrap (xs : List Tree) :
+    «Derivation.terms» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc terms_wrap] theorem scopes_wrap (xs : List Tree) :
+    «Derivation.scopes» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc terms_wrap] theorem entries_wrap (xs : List Tree) :
+    «Derivation.entries» xs = RoseTree.node 0 xs := rfl
+
 /-- The leaf of label zero is a truth value exactly when it is false. -/
 theorem leaf_zero_eq_ofBool (b : Bool) : (leaf 0 = ofBool b) = (b = false) := by
   cases b <;> simp [ofBool_false, ofBool_true, leaf_inj]
@@ -111,7 +200,7 @@ theorem encPrim_inj {p q : Internal.Prim} : encPrim p = encPrim q ↔ p = q := b
 theorem primIs_eq (G : Internal.Globals) (k : ℕ) (p : Internal.Prim) :
     «Derivation.primIs» (encGlobals G) (leaf k) (encPrim p) =
       ofBool (decide (G.prims[k]? = some p)) := by
-  simp only [«Derivation.primIs», gPrims_eq, nth_eq, List.getElem?_map, some_eq, equal_eq]
+  simp only [«Derivation.primIs», template, gPrims_eq, nth_eq, List.getElem?_map, some_eq, equal_eq]
   congr 1
   cases G.prims[k]? <;> simp [encOpt_inj, encPrim_inj]
 
@@ -135,14 +224,14 @@ theorem atVar0_eq (u : Term) (i : ℕ) :
 /-- The mirror's term at the successor of its natural number variable. -/
 @[simp] theorem natSuccAt_eq (ks : ℕ) (t : Term) :
     «Derivation.natSuccAt» (leaf ks) (encTerm t) = encTerm (Internal.natSuccAt ks t) := by
-  simp only [«Derivation.natSuccAt», Internal.natSuccAt, mVar_eq, mArr_eq]
+  simp only [«Derivation.natSuccAt», template, Internal.natSuccAt, mVar_eq, mArr_eq]
   exact subst_eq _ _ _ (atVar0_eq _)
 
 /-- The mirror's term at the construction of a list before its list variable. -/
 @[simp] theorem listConsAt_eq (kc : ℕ) (a : Tree) (t : Term) :
     «Derivation.listConsAt» (leaf kc) a (encTerm t) =
       encTerm (Internal.listConsAt kc a t) := by
-  simp only [«Derivation.listConsAt», Internal.listConsAt]
+  simp only [«Derivation.listConsAt», template, Internal.listConsAt]
   refine subst_eq _ _ _ fun i ↦ ?_
   cases i <;> mirror_simp [mVar_eq, mPair_eq, mArr_eq, beq_iff_eq, Nat.add_one_ne_zero]
 
@@ -150,7 +239,7 @@ theorem atVar0_eq (u : Term) (i : ℕ) :
 @[simp] theorem roseNodeAt_eq (kn : ℕ) (r a : Tree) (t : Term) :
     «Derivation.roseNodeAt» (leaf kn) r a (encTerm t) =
       encTerm (Internal.roseNodeAt kn r a t) := by
-  simp only [«Derivation.roseNodeAt», Internal.roseNodeAt, mVar_eq, mPair_eq, mArr_eq,
+  simp only [«Derivation.roseNodeAt», template, Internal.roseNodeAt, mVar_eq, mPair_eq, mArr_eq,
     equal_eq, mirror_rose, label_ne_zero, ofBool_bne, decide_eq_true_eq, single_eq]
   split_ifs <;> exact subst_eq _ _ _ (instVar_eq _)
 
@@ -179,14 +268,14 @@ theorem atVar0_eq (u : Term) (i : ℕ) :
 @[simp] theorem roseMapAt_eq (kl kc : ℕ) (c : Tree) (t : Term) :
     «Derivation.roseMapAt» (leaf kl) (leaf kc) c (encTerm t) =
       encTerm (Internal.roseMapAt kl kc c t) := by
-  simp only [«Derivation.roseMapAt», Internal.roseMapAt, weaken1_eq, mVar_eq, mPair_eq,
+  simp only [«Derivation.roseMapAt», template, Internal.roseMapAt, weaken1_eq, mVar_eq, mPair_eq,
     mStar_eq, single_eq, mArr_eq, mListRec_eq]
 
 /-- The mirror's hypothesis of induction on rose trees. -/
 @[simp] theorem roseHyp_eq (kl kc : ℕ) (φ : Term) :
     «Derivation.roseHyp» (leaf kl) (leaf kc) (encTerm φ) =
       encTerm (Internal.roseHyp kl kc φ) := by
-  simp only [«Derivation.roseHyp», Internal.roseHyp, mStar_eq, mEq_eq, roseMapAt_eq,
+  simp only [«Derivation.roseHyp», template, Internal.roseHyp, mStar_eq, mEq_eq, roseMapAt_eq,
     mirror_omega]
 
 /-- The mirror's sides of an equation. -/
@@ -202,7 +291,7 @@ theorem eqParts_eq (φ : Term) :
 @[simp] theorem instTerm_eq (θ : List Tree) (σ : List Term) (s : Term) :
     «Derivation.instTerm» θ (σ.map encTerm) (encTerm s) =
       encTerm (Internal.instTerm θ σ s) := by
-  simp only [«Derivation.instTerm», Internal.instTerm, osubst_eq]
+  simp only [«Derivation.instTerm», template, Internal.instTerm, osubst_eq]
   exact subst_eq _ _ _ (substList_eq σ)
 
 /-- The mirror's type of a term in a context. -/
@@ -210,7 +299,7 @@ theorem eqParts_eq (φ : Term) :
     «Derivation.typeIn» (encGlobals G) (leaf n) Γ (encTerm t) =
       encOpt (Internal.typeIn G n Γ t) := by
   have hc := compile_eq G n t (Internal.ctxObj Γ) (Internal.stdEnv Γ)
-  simp only [«Derivation.typeIn», ctxObj_eq, stdEnv_eq, hc, mapO_eq, Option.map_map,
+  simp only [«Derivation.typeIn», template, ctxObj_eq, stdEnv_eq, hc, mapO_eq, Option.map_map,
     Internal.typeIn]
   rfl
 
@@ -235,7 +324,7 @@ theorem lowerHyps_eq (G : Internal.Globals) (n : ℕ) (Γ : List Tree) (Φ : Lis
     mirror_simp [lower1_eq, weaken1_eq, isFormula_eq, encTerm_eq_iff, some_eq, none_eq,
       Bool.and_eq_true, decide_eq_true_eq]
     split_ifs <;> rfl
-  simp only [«Derivation.lowerHyps», mapT_eq, List.map_map, Function.comp_def, hf]
+  simp only [«Derivation.lowerHyps», template, mapT_eq, List.map_map, Function.comp_def, hf]
   rw [allSomeT_eq, mapM_map_option, Option.map_map]
   rfl
 
@@ -282,7 +371,7 @@ theorem instOk_eq (G : Internal.Globals) (n : ℕ) (Γ : List Tree) (a : Interna
     (θ : List Tree) (σ : List Term) :
     «Derivation.instOk» (encGlobals G) (leaf n) Γ (encThm a) θ (σ.map encTerm) =
       ofBool (Internal.instOk G n Γ a θ σ) := by
-  simp only [«Derivation.instOk», thArity_eq, thCtx_eq, length_eq, List.length_map,
+  simp only [«Derivation.instOk», template, thArity_eq, thCtx_eq, length_eq, List.length_map,
     eq_leaf, allT_isTy, range_eq, Internal.instOk]
   by_cases hl : σ.length = a.ctx.length
   · have hr := allT_map (fun t ↦ Const.equal («Derivation.typeIn» (encGlobals G) (leaf n) Γ
@@ -305,7 +394,7 @@ theorem instOk_eq (G : Internal.Globals) (n : ℕ) (Γ : List Tree) (a : Interna
 inclusion. -/
 @[simp] theorem truthSub_eq (X : Tree) (Hs : List Tree) :
     «Derivation.truthSub» X Hs = encPair (Internal.truthSub X Hs) := by
-  simp only [«Derivation.truthSub», reverse_eq, foldr_eq, List.foldr_reverse, pr_eq,
+  simp only [«Derivation.truthSub», template, reverse_eq, foldr_eq, List.foldr_reverse, pr_eq,
     mirror_idt, Internal.truthSub]
   exact List.foldl_hom encPair fun _ _ ↦ rfl
 
@@ -313,7 +402,7 @@ inclusion. -/
 @[simp] theorem thmArrow_eq (G : Internal.Globals) (a : Internal.Thm) (φ : Term) :
     «Derivation.thmArrow» (encGlobals G) (encThm a) (encTerm φ) = a.arrow G φ := by
   have hc := compile_eq G a.arity φ (Internal.ctxObj a.ctx) (Internal.stdEnv a.ctx)
-  simp only [«Derivation.thmArrow», thArity_eq, thCtx_eq, ctxObj_eq, stdEnv_eq, hc,
+  simp only [«Derivation.thmArrow», template, thArity_eq, thCtx_eq, ctxObj_eq, stdEnv_eq, hc,
     mapO_eq, getD_eq, mirror_idt, Option.map_map, Internal.Thm.arrow]
   rfl
 
@@ -326,7 +415,7 @@ inclusion. -/
 /-- The mirror's sequent of the combinators a theorem compiles to. -/
 theorem thmSeq_eq (G : Internal.Globals) (a : Internal.Thm) :
     «Derivation.thmSeq» (encGlobals G) (encThm a) = encSeq (a.seq G) := by
-  simp only [«Derivation.thmSeq», thConcl_eq, eqParts_eq, Internal.Thm.seq]
+  simp only [«Derivation.thmSeq», template, thConcl_eq, eqParts_eq, Internal.Thm.seq]
   rcases Internal.eqParts a.concl with _ | ⟨t, u⟩ <;>
     der_simp [thmSide_eq, thmArrow_eq, thArity_eq, thCtx_eq, ctxObj_eq, mirror_comp, mirror_tru,
       mirror_bang, «PartialHorn.mkSeq», «PartialHorn.seq», eqn_eq, encSeq,
@@ -356,7 +445,7 @@ theorem thmSeq_eq (G : Internal.Globals) (a : Internal.Thm) :
 theorem anyDefs_eq (G : Internal.Globals) (f : List Tree → Tree)
     (g : List PartialHorn.Defn → Bool) (h : ∀ cds, f (cds.map encDefn) = ofBool (g cds)) :
     «Derivation.anyDefs» (encGlobals G) f = ofBool ((Internal.compileDefs G).any g) := by
-  simp only [«Derivation.anyDefs», compileDefs_eq]
+  simp only [«Derivation.anyDefs», template, compileDefs_eq]
   cases Internal.compileDefs G <;> mirror_simp [h, Option.any_some]
   rfl
 
@@ -365,7 +454,7 @@ theorem certifies_eq (G : Internal.Globals) (E : Array Internal.Entry) (c : Tree
     (s : PartialHorn.Seq) :
     «Derivation.certifies» (encGlobals G) (E.toList.map encEntry) c (encSeq s) =
       ofBool (Internal.certifies G E c s) := by
-  simp only [«Derivation.certifies», Internal.certifies]
+  simp only [«Derivation.certifies», template, Internal.certifies]
   refine anyDefs_eq G _ _ fun cds ↦ ?_
   have hE : (E.toList.map encEntry).map («Derivation.entrySeq» (encGlobals G)) =
       (E.map (Internal.Entry.seq G)).toList.map encSeq := by
@@ -421,7 +510,7 @@ theorem allT_range_zipIdx (ds : List Internal.Deriv) (F : Tree → Tree)
   rw [allT_map F leaf (fun i ↦ q i ((ds.map encDeriv).getD i (leaf 0))) _ fun i _ ↦ h i]
   congr 1
   simpa [List.all_map, Function.comp_def] using
-    congrArg (List.all · id) (range_getD_eq ds encDeriv q)
+    congrArg (List.all · id) (range_getD_eq ds encDeriv (leaf 0) q)
 
 /-- The label of an encoded derivation. -/
 @[simp] theorem label_encDeriv (d : Internal.Deriv) :
@@ -437,7 +526,7 @@ theorem congCtxs_eq (G : Internal.Globals) (n : ℕ) (l : Label) (ts : List Term
         (Φ.map encTerm) (ds.map encDeriv) =
       encOpt ((Internal.congCtxs G n l ts Γ Φ ds).map fun cs ↦
         RoseTree.node 0 (cs.map encCtx)) := by
-  simp only [«Derivation.congCtxs», length_eq, List.length_map, range_eq]
+  simp only [«Derivation.congCtxs», template, length_eq, List.length_map, range_eq]
   rw [allT_range_zipIdx ds _ (fun i t ↦ Internal.sameCtx l i || t.label == 0) fun i ↦ by
     der_simp [sameCtx_eq, at_eq]]
   simp only [label_encDeriv, ruleData_eq_zero, childCtxs_eq, Internal.congCtxs]
@@ -662,7 +751,7 @@ theorem rootCaseInr_eq (kc kr : ℕ) (t : Term) :
 theorem rootHyp_eq (i : ℕ) (flip : Bool) (t : Term) :
     «Derivation.rootHyp» (Φ.map encTerm) [leaf i, ofBool flip] (encTerm t) =
       encOpt ((Internal.rootStep G E n Γ Φ (.rwHyp i flip) t).map encTerm) := by
-  simp only [«Derivation.rootHyp», Internal.rootStep, at_eq, List.getD_cons_zero,
+  simp only [«Derivation.rootHyp», template, Internal.rootStep, at_eq, List.getD_cons_zero,
     List.getD_cons_succ, nth_eq, List.getElem?_map]
   rcases Φ[i]? with _ | φ
   · der_simp []
@@ -674,7 +763,7 @@ theorem rootThm_eq (j : ℕ) (θ : List Tree) (σ : List Term) (flip : Bool) (t 
     «Derivation.rootThm» (encGlobals G) (E.toList.map encEntry) (leaf n) Γ
         [leaf j, RoseTree.node 0 θ, RoseTree.node 0 (σ.map encTerm), ofBool flip] (encTerm t) =
       encOpt ((Internal.rootStep G E n Γ Φ (.thm j θ σ flip) t).map encTerm) := by
-  simp only [«Derivation.rootThm», Internal.rootStep, at_eq, List.getD_cons_zero,
+  simp only [«Derivation.rootThm», template, Internal.rootStep, at_eq, List.getD_cons_zero,
     List.getD_cons_succ, nth_eq, List.getElem?_map, Array.getElem?_toList, children_eq,
     RoseTree.children_node]
   rcases E[j]? with _ | (a | s)
@@ -716,7 +805,7 @@ def DRel (v : DV) (w : Internal.Checks) : Prop :=
 @[simp] theorem dpTrees_eq (rs : List (Tree × DV)) :
     «Derivation.dpTrees» rs = rs.map Prod.fst :=
   rs.rec rfl fun _ _ ih ↦ by
-    simp only [«Derivation.dpTrees», foldr_eq, List.foldr_cons] at ih ⊢
+    simp only [«Derivation.dpTrees», template, foldr_eq, List.foldr_cons] at ih ⊢
     rw [ih]
     rfl
 
@@ -733,7 +822,7 @@ theorem repeat_dpTail (rs : List (Tree × DV)) :
 @[simp] theorem dpAt_eq (rs : List (Tree × DV)) (i : ℕ) :
     «Derivation.dpAt» rs (leaf i) = (rs[i]?.map Prod.snd).getD
       (fun _ _ _ ↦ «Prelude.none», fun _ _ _ ↦ leaf 0) := by
-  simp only [«Derivation.dpAt», iter_leaf, repeat_dpTail]
+  simp only [«Derivation.dpAt», template, iter_leaf, repeat_dpTail]
   cases h : rs.drop i with
   | nil =>
     rw [List.drop_eq_nil_iff] at h
@@ -798,7 +887,7 @@ theorem rewriteStep_eq (l : Internal.Rule) (xs : List (Internal.Deriv × DV × I
         encTerm) := by
   have h1 : ∀ x ∈ xs, ∀ Γ Φ t, x.2.1.1 Γ (Φ.map encTerm) (encTerm t) =
       encOpt ((x.2.2.1 Γ Φ t).map encTerm) := fun x h ↦ (hx x h).1
-  simp only [«Derivation.rewriteStep», rootStep_eq G E n Γ Φ l t]
+  simp only [«Derivation.rewriteStep», template, rootStep_eq G E n Γ Φ l t]
   -- the rules have no decidable equality, but the tests against a constructor are decidable
   have : Decidable (l = .refl) := by cases l <;> first | exact isTrue rfl | exact isFalse nofun
   have : Decidable (l = .trans) := by cases l <;> first | exact isTrue rfl | exact isFalse nofun
@@ -835,7 +924,7 @@ theorem rewriteStep_eq (l : Internal.Rule) (xs : List (Internal.Deriv × DV × I
           simp only [List.getElem_zip, List.getD_eq_getElem?_getD, List.getElem?_map,
             List.getElem?_eq_getElem hΓi, List.getElem?_eq_getElem hui,
             List.getElem?_eq_getElem hxi, Option.map_some, Option.getD_some, rw_eq, dpAt_eq,
-            encCtx, p1_eq, p2_eq, RoseTree.children_node]
+            encCtx, scopeCtx_pair, scopeHyps_pair]
           exact h1 _ (List.getElem_mem hxi) _ _ _
       · der_simp [hl]
   have h3 := three_le_ruleData l hr ht hc
@@ -1015,7 +1104,7 @@ theorem proveFunExt_eq (xs : List (Internal.Deriv × DV × Internal.Checks))
 theorem isCoeqProj_eq (p : Internal.Prim) :
     «Derivation.isCoeqProj» (encPrim p) = ofBool p.coeqParts.isSome := by
   obtain ⟨m, a, d, c⟩ := p
-  simp only [«Derivation.isCoeqProj», prArrow_eq, Internal.Prim.coeqParts]
+  simp only [«Derivation.isCoeqProj», template, prArrow_eq, Internal.Prim.coeqParts]
   obtain ⟨la, as, rfl⟩ := exists_node a
   rcases as with _ | ⟨f, _ | ⟨g, _ | ⟨h, as⟩⟩⟩ <;> der_simp []
   obtain ⟨lf, fs, rfl⟩ := exists_node f
@@ -1033,7 +1122,7 @@ theorem isCoeqProj_eq (p : Internal.Prim) :
 theorem primRel_eq (p : Internal.Prim) :
     «Derivation.primRel» (encPrim p) = encOpt p.rel? := by
   obtain ⟨m, a, d, c⟩ := p
-  simp only [«Derivation.primRel», prArrow_eq, prDom_eq, Internal.Prim.rel?]
+  simp only [«Derivation.primRel», template, prArrow_eq, prDom_eq, Internal.Prim.rel?]
   obtain ⟨la, as, rfl⟩ := exists_node a
   rcases as with _ | ⟨f, _ | ⟨g, _ | ⟨h, as⟩⟩⟩ <;> der_simp []
   obtain ⟨lf, fs, rfl⟩ := exists_node f
@@ -1050,7 +1139,7 @@ theorem rosePrimsOk_eq (kn kl kc : ℕ) (r a : Tree) :
       ofBool (decide (((G.prims[kn]? = some Internal.nodePrim ∧ r = rose) ∨
         (G.prims[kn]? = some Internal.lnodePrim ∧ r = lrose a)) ∧
         G.prims[kl]? = some Internal.nilPrim ∧ G.prims[kc]? = some Internal.consPrim)) := by
-  simp only [«Derivation.rosePrimsOk», primIs_eq, nodePrim_eq, lnodePrim_eq, nilPrim_eq,
+  simp only [«Derivation.rosePrimsOk», template, primIs_eq, nodePrim_eq, lnodePrim_eq, nilPrim_eq,
     consPrim_eq, mirror_rose, mirror_lrose, equal_eq, and_eq, or_eq]
   congr 1
 
@@ -1331,15 +1420,17 @@ theorem proveApply_eq (j : ℕ) (θ : List Tree) (σ : List Term)
     exact (hx _ (List.getElem_mem hxi)).2 Γ Φ _
   simp only [«Derivation.proveStep»]
   select_rule
-  simp only [at_eq, List.getD_cons_zero, List.getD_cons_succ, children_eq,
+  simp only [template, at_eq, List.getD_cons_zero, List.getD_cons_succ, children_eq,
     RoseTree.children_node, nth_eq, List.getElem?_map, Array.getElem?_toList]
   rcases hE : E[j]? with _ | (a | s)
   · prove_simp [hE]
   · by_cases hl : xs.length = a.hyps.length
-    · simp only [Option.map_some, bindO_eq, Option.elim_some, entryLanguage_eq,
-        Internal.Entry.language?, isSome_eq, Option.isSome_some, get_encOpt, Option.getD_some,
-        hr a hl]
-      prove_simp [hE, instOk_eq, instTerm_eq, thConcl_eq, thHyps_eq, hl, List.zip_map_left,
+    · have hr' := hr a hl
+      simp only [thHyps_eq, range_eq, hl] at hr'
+      simp only [Option.map_some, bindO_eq, Option.elim_some, entryLanguage_eq,
+        Internal.Entry.language?, isSome_eq, Option.isSome_some, 
+        ]
+      prove_simp [hE, hr', instOk_eq, instTerm_eq, thConcl_eq, thHyps_eq, hl, List.zip_map_left,
         List.all_map, Function.comp_def, Internal.Entry.language?, Prod.map_fst, Prod.map_snd,
         decide_true, Bool.decide_and, id_eq]
     · prove_simp [hE, entryLanguage_eq, Internal.Entry.language?, instOk_eq, instTerm_eq,
@@ -1466,19 +1557,19 @@ theorem objConfirms_eq (m : ℕ) (b : Tree) (c : Option Tree) :
 
 /-- The mirror's state of a development. -/
 @[simp] theorem devState_eq (s : Internal.Globals × Array Internal.Entry) :
-    «Derivation.devState» (encGlobals s.1) (s.2.toList.map encEntry) = encState s := rfl
+    «Derivation.stateOf» (encGlobals s.1) (s.2.toList.map encEntry) = encState s := rfl
 
 /-- The mirror's constants with new primitive arrows. -/
 @[simp] theorem withPrims_eq (ps : List Internal.Prim) :
     «Derivation.withPrims» (encGlobals G) (ps.map encPrim) =
       encGlobals { G with prims := ps } := by
-  simp only [«Derivation.withPrims», gDefs_eq, gBase_eq, node_leaf, globals_eq]
+  simp only [«Derivation.withPrims», template, gDefs_eq, gBase_eq, globals_eq]
 
 /-- The mirror's constants with new definitions. -/
 @[simp] theorem withDefs_eq (ds : List Internal.Definition) :
     «Derivation.withDefs» (encGlobals G) (ds.map encDefinition) =
       encGlobals { G with defs := ds } := by
-  simp only [«Derivation.withDefs», gPrims_eq, gBase_eq, node_leaf, globals_eq]
+  simp only [«Derivation.withDefs», template, gPrims_eq, gBase_eq, globals_eq]
 
 /-- The mirror's list with an element at its end. -/
 @[simp] theorem push_eq (xs : List Tree) (x : Tree) :
@@ -1535,7 +1626,7 @@ theorem quotStep_eq (m : ℕ) (A : Tree) (R : Term) :
     «Derivation.quotStep» (encGlobals G) (E.toList.map encEntry) (leaf m) A (encTerm R) =
       encOpt ((Internal.Decl.step G E (.quotient m A R)).map encState) := by
   have hc := compile_eq G m R (Internal.ctxObj [A, A]) (Internal.stdEnv [A, A])
-  simp only [«Derivation.quotStep», «Theory.l2», single_eq, ctxObj_eq,
+  simp only [«Derivation.quotStep», template, «Theory.l2», single_eq, ctxObj_eq,
     stdEnv_eq, hc, Internal.Decl.step]
   rcases Internal.compile G m R (Internal.ctxObj [A, A]) (Internal.stdEnv [A, A]) with _ | ⟨r, t⟩
   · der_simp []
@@ -1543,7 +1634,7 @@ theorem quotStep_eq (m : ℕ) (A : Tree) (R : Term) :
       defObj_eq, mirror_coeqProj, mirror_coeqz, «Derivation.relL»,
       «Derivation.relR», mirror_comp, mirror_cFst, mirror_cSnd, mirror_truthIncl,
       map_push, globals_eq, isTy_eq, scoped_eq, prArrow_eq, prCod_eq, sortsArr_eq,
-      isFormula_eq, mkThm_single, thConcl_eq, entLang_eq, «Derivation.devState», encState,
+      isFormula_eq, mkThm_single, thConcl_eq, entLang_eq, «Derivation.stateOf», encState,
       Array.toList_push, mirror_omega, ite_leaf_zero, Internal.relPair, push_eq, encPair, p1_node,
       p2_node]
     refine ite_encOpt _ _ _ _ ?_
@@ -1558,7 +1649,7 @@ theorem encOpt_pair_eq_some (o : Option (Tree × Tree)) (q : Tree × Tree) :
 theorem descStep_eq (kq : ℕ) (C : Tree) (h : Term) (jr : ℕ) :
     «Derivation.descStep» (encGlobals G) (E.toList.map encEntry) (leaf kq) C (encTerm h)
         (leaf jr) = encOpt ((Internal.Decl.step G E (.descent kq C h jr)).map encState) := by
-  simp only [«Derivation.descStep», Internal.Decl.step, gPrims_eq, nth_eq,
+  simp only [«Derivation.descStep», template, Internal.Decl.step, gPrims_eq, nth_eq,
     List.getElem?_map, Array.getElem?_toList]
   rcases hp : G.prims[kq]? with _ | p
   · der_simp []
@@ -1581,7 +1672,7 @@ theorem descStep_eq (kq : ℕ) (C : Tree) (h : Term) (jr : ℕ) :
         «Derivation.relL», «Derivation.relR», mirror_comp, mirror_cFst,
         mirror_cSnd, mirror_truthIncl, Internal.relPair, push_eq, map_push, withPrims_eq,
         objVars_eq, weaken1_eq, isTy_eq, scoped_eq, sortsArr_eq, isFormula_eq, mkThm_nil,
-        entLang_eq, «Derivation.devState», sig_eq, gBase_eq, equalTs_eq,
+        entLang_eq, «Derivation.stateOf», sig_eq, gBase_eq, equalTs_eq,
         encOpt_pair_eq_some, encTerm_eq_iff, mirror_omega, ite_leaf_zero]
     refine ite_encOpt _ _ _ _ ?_
     simp [encState, encPair, Array.toList_push]
@@ -1597,7 +1688,7 @@ theorem declStep_eq (d : Internal.Decl) :
       encOpt ((d.step G E).map encState) := by
   cases d with
   | quotient m A R =>
-    simp only [«Derivation.declStep», encDecl, Internal.Decl.step] at ⊢
+    simp only [«Derivation.declStep», template, encDecl, Internal.Decl.step] at ⊢
     der_simp []
     exact quotStep_eq G E m A R
   | descent kq C h jr =>
@@ -1605,27 +1696,27 @@ theorem declStep_eq (d : Internal.Decl) :
     exact descStep_eq G E kq C h jr
   | language a dv =>
     der_simp [«Derivation.declStep», encDecl, Internal.Decl.step, thmChecks_eq,
-      entLang_eq, push_eq, map_push, «Derivation.devState»]
+      entLang_eq, push_eq, map_push, «Derivation.stateOf»]
     refine ite_encOpt _ _ _ _ ?_
     simp [encState, encPair, Array.toList_push]
   | combinators s c =>
     der_simp [«Derivation.declStep», encDecl, Internal.Decl.step, certifies_eq,
-      entComb_eq, push_eq, map_push, «Derivation.devState»]
+      entComb_eq, push_eq, map_push, «Derivation.stateOf»]
     refine ite_encOpt _ _ _ _ ?_
     simp [encState, encPair, Array.toList_push]
   | definition df =>
     der_simp [«Derivation.declStep», encDecl, Internal.Decl.step, ldChecks_eq, gDefs_eq,
-      defLang_eq, push_eq, map_push, withDefs_eq, «Derivation.devState»]
+      defLang_eq, push_eq, map_push, withDefs_eq, «Derivation.stateOf»]
     refine ite_encOpt _ _ _ _ ?_
     simp [encState, encPair]
   | constant p c =>
     der_simp [«Derivation.declStep», encDecl, Internal.Decl.step, primConfirms_eq,
-      gPrims_eq, push_eq, map_push, withPrims_eq, «Derivation.devState»]
+      gPrims_eq, push_eq, map_push, withPrims_eq, «Derivation.stateOf»]
     refine ite_encOpt _ _ _ _ ?_
     simp [encState, encPair]
   | object m b c =>
     der_simp [«Derivation.declStep», encDecl, Internal.Decl.step, objConfirms_eq,
-      gDefs_eq, defObj_eq, push_eq, map_push, withDefs_eq, «Derivation.devState»]
+      gDefs_eq, defObj_eq, push_eq, map_push, withDefs_eq, «Derivation.stateOf»]
     refine ite_encOpt _ _ _ _ ?_
     simp [encState, encPair]
 
@@ -1660,7 +1751,7 @@ checker's. -/
 theorem checkDev_eq (ds : List Internal.Decl) :
     «Derivation.checkDev» (encGlobals G) (E.toList.map encEntry) (ds.map encDecl) =
       encOpt ((Internal.checkDev G E ds).map encState) := by
-  simp only [«Derivation.checkDev», reverse_eq, foldr_eq, List.foldr_reverse]
+  simp only [«Derivation.checkDev», template, reverse_eq, foldr_eq, List.foldr_reverse]
   exact foldl_declStep ds (some (G, E))
 
 end GebTests.Prototypes.FreeTopos.Agreement.Derivation

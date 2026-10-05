@@ -7,6 +7,8 @@ module
 
 public import GebMirror.Metalogic
 public import GebTests.Prototypes.FreeTopos.Agreement.Encode
+public import GebTests.Prototypes.FreeTopos.Agreement.TemplateEquations
+public import GebTests.Prototypes.FreeTopos.Agreement.Templates
 public import GebTests.Prototypes.CheckMirror
 
 set_option doc.verso true in
@@ -16,7 +18,8 @@ set_option doc.verso true in
 The values the prelude and {lit}`bootstrap/free-topos/base.geb` compute, in the Lean the
 bootstrap compiler emits from the metalogic's checker ({lit}`GebMirror.Metalogic`): the kernel's
 primitives at leaves and nodes, optional trees, truth values and lists, each stated as the
-encoding of the Lean value it represents.
+encoding of the Lean value it represents, and the functions of the templates' instances, through
+their equations with the templates' functions.
 
 ## Main definitions
 
@@ -28,6 +31,7 @@ encoding of the Lean value it represents.
 * {lit}`bindO_eq`, {lit}`mapO_eq` — the binding and mapping of optional trees.
 * {lit}`nth_eq`, {lit}`take_eq`, {lit}`drop_eq`, {lit}`range_eq` — lists by position.
 * {lit}`allT_eq`, {lit}`allSomeT_eq` — tests and traversals of lists.
+* {lit}`tmpl_nthOf_eq`, {lit}`tmpl_allJust_eq`, {lit}`tmpl_all_eq` — the templates' functions.
 
 ## Tags
 
@@ -50,7 +54,7 @@ simplifications of the mirrors use: where the imports reach the order's derivati
 depends on {name}`Classical.choice`, instance search would otherwise select that. -/
 instance (priority := high) natReflBEq : ReflBEq ℕ := Nat.instLawfulBEq.toReflBEq
 
--- the kernel's primitives at leaves and nodes, shared with the mirror of Gödel's T
+-- the kernel's primitives at leaves and nodes, shared with the mirror of the kernel's checker
 export GebTests.Prototypes.CheckMirror (label_leaf ofBool_label label_node children_node
   arity_node child_node)
 
@@ -184,6 +188,9 @@ theorem get_eq (t : Tree) : «Prelude.get» (encOpt (some t)) = t := by
 /-- The mirror's negation of a truth value. -/
 @[simp] theorem not_eq (a : Bool) : «Base.not» (ofBool a) = ofBool (!a) := by
   cases a <;> rfl
+
+/-- No repetition of a function. -/
+@[simp] theorem repeat_zero {α : Type} (f : α → α) (a : α) : Nat.repeat f 0 a = a := rfl
 
 /-- The mirror's length of a list. -/
 @[simp] theorem length_eq (xs : List Tree) : «Prelude.length» xs = leaf xs.length :=
@@ -354,6 +361,16 @@ theorem mapM_option {α : Type} (f : α → Option Tree) :
 theorem encOpt_label (o : Option Tree) : ((encOpt o).label == 1) = o.isSome := by
   cases o <;> rfl
 
+/-- The label of a present optional tree. -/
+@[simp] theorem encOpt_some_label (x : Tree) : (encOpt (some x)).label = 1 := rfl
+
+/-- The label of an absent optional tree. -/
+@[simp] theorem encOpt_none_label : (encOpt none).label = 0 := rfl
+
+/-- The tree of a present optional tree. -/
+@[simp] theorem child_encOpt_some (x : Tree) : Const.child (encOpt (some x)) (leaf 0) = x := by
+  simp [encOpt]
+
 /-- The mirror's list of the trees of a list of optional trees where each is present. -/
 theorem allSomeT_eq {α : Type} (f : α → Option Tree) (xs : List α) :
     «Base.allSomeT» (xs.map fun x ↦ encOpt (f x)) =
@@ -420,9 +437,218 @@ theorem foldr_find {α : Type} (e : α → Tree) (p : Tree → Bool) (xs : List 
     rw [List.map_cons, List.foldr_cons, ih, List.find?_cons]
     cases p (e y) <;> rfl
 
+/-- {name}`foldr_find`, the absent optional tree written as its encoding. -/
+theorem foldr_find_none {α : Type} (e : α → Tree) (p : Tree → Bool) (xs : List α) :
+    (xs.map e).foldr (fun x r ↦ if p x = true then encOpt (some x) else r) (encOpt none) =
+      encOpt ((xs.find? fun y ↦ p (e y)).map e) :=
+  foldr_find e p xs
+
 /-- The label test of a tree, as a Boolean. -/
 theorem label_ne_zero (t : Tree) : (t.label ≠ 0) = ((t.label != 0) = true) := by
   simp
+
+/-! The templates' functions at encoded arguments, and the equations of the mirror's instances
+with them. -/
+
+/-- The templates' functions that are the prelude's and the base's at the trees, in the simp set
+{lit}`template`, which so rewrites an instance's definition to the prelude's or the base's. -/
+@[template] theorem tmpl_length_def : Templates.length = «Prelude.length» := rfl
+
+@[template, inherit_doc tmpl_length_def] theorem tmpl_single_def :
+    Templates.single = «Prelude.single» := rfl
+
+@[template, inherit_doc tmpl_length_def] theorem tmpl_append_def :
+    Templates.append = «Prelude.append» := rfl
+
+@[template, inherit_doc tmpl_length_def] theorem tmpl_reverse_def :
+    Templates.reverse = «Prelude.reverse» := rfl
+
+@[template, inherit_doc tmpl_length_def] theorem tmpl_tail_def :
+    Templates.tail = «Prelude.tail» := rfl
+
+@[template, inherit_doc tmpl_length_def] theorem tmpl_drop_def :
+    Templates.drop = «Prelude.drop» := rfl
+
+@[template, inherit_doc tmpl_length_def] theorem tmpl_nothing_def :
+    Templates.nothing = «Prelude.none» := rfl
+
+@[template, inherit_doc tmpl_length_def] theorem tmpl_just_def :
+    Templates.just = «Prelude.some» := rfl
+
+@[template, inherit_doc tmpl_length_def] theorem tmpl_all_def : Templates.all = «Base.allT» :=
+  rfl
+
+@[template, inherit_doc tmpl_length_def] theorem tmpl_any_def : Templates.any = «Base.anyT» :=
+  rfl
+
+@[template, inherit_doc tmpl_length_def] theorem tmpl_map_def : Templates.map = «Base.mapT» :=
+  rfl
+
+@[template, inherit_doc tmpl_length_def] theorem tmpl_isEmpty_def :
+    Templates.isEmpty = «Base.isEmpty» := rfl
+
+@[template, inherit_doc tmpl_length_def] theorem tmpl_l2_def : Templates.l2 = «Theory.l2» := rfl
+
+@[template, inherit_doc tmpl_length_def] theorem tmpl_l3_def : Templates.l3 = «Theory.l3» := rfl
+
+@[template, inherit_doc tmpl_length_def] theorem tmpl_l4_def : Templates.l4 = «Theory.l4» := rfl
+
+@[template, inherit_doc tmpl_length_def] theorem tmpl_l5_def : Templates.l5 = «Theory.l5» := rfl
+
+@[template, inherit_doc tmpl_length_def] theorem tmpl_l6_def : Templates.l6 = «Theory.l6» := rfl
+
+@[template, inherit_doc tmpl_length_def] theorem tmpl_take_def : Templates.take = «Base.take» :=
+  rfl
+
+/-- A template's list of one tree. -/
+@[simp] theorem tmpl_single_eq (x : Tree) : Templates.single x = [x] := rfl
+
+/-- A template's length of a list. -/
+@[simp] theorem tmpl_length_eq (xs : List Tree) : Templates.length xs = leaf xs.length :=
+  length_eq xs
+
+/-- A template's appending of lists. -/
+@[simp] theorem tmpl_append_eq (xs ys : List Tree) : Templates.append xs ys = xs ++ ys :=
+  append_eq xs ys
+
+/-- A template's reversal of a list. -/
+@[simp] theorem tmpl_reverse_eq (xs : List Tree) : Templates.reverse xs = xs.reverse :=
+  reverse_eq xs
+
+/-- A template's list without its head. -/
+@[simp] theorem tmpl_tail_eq (xs : List Tree) : Templates.tail xs = xs.tail := tail_eq xs
+
+/-- A template's list without its first elements. -/
+@[simp] theorem tmpl_drop_eq (n : ℕ) (xs : List Tree) : Templates.drop (leaf n) xs = xs.drop n :=
+  drop_eq n xs
+
+/-- A template's element of a list at a position, or a default. -/
+@[simp] theorem tmpl_atOr_eq (d : Tree) (xs : List Tree) (i : ℕ) :
+    Templates.atOr d xs (leaf i) = xs.getD i d := by
+  simp only [Templates.atOr, tmpl_drop_eq, List.getD_eq_getElem?_getD, ← List.head?_drop]
+  cases xs.drop i <;> rfl
+
+/-- A template's absent optional value. -/
+@[simp] theorem tmpl_nothing_eq : Templates.nothing = encOpt none := rfl
+
+/-- A template's present optional value. -/
+@[simp] theorem tmpl_just_eq (x : Tree) : Templates.just x = encOpt (some x) := rfl
+
+/-- A template's test of an optional value's presence. -/
+@[simp] theorem tmpl_isJust_eq (o : Option Tree) :
+    Templates.isJust (encOpt o) = ofBool o.isSome := by
+  cases o <;> rfl
+
+/-- A template's value of an optional value, or a default. -/
+@[simp] theorem tmpl_fromMaybe_eq (d : Tree) (o : Option Tree) :
+    Templates.fromMaybe d (encOpt o) = o.getD d := by
+  cases o <;> simp [Templates.fromMaybe, encOpt]
+
+/-- A template's element of a list at a position. -/
+@[simp] theorem tmpl_nthOf_eq (xs : List Tree) (i : ℕ) :
+    Templates.nthOf xs (leaf i) = encOpt xs[i]? := by
+  have h : Const.iter (fun ys : List Tree ↦ Const.lcase ys [] fun _ r ↦ r) xs (leaf i) =
+      xs.drop i :=
+    tmpl_drop_eq i xs
+  simp only [Templates.nthOf, h, ← List.head?_drop]
+  cases xs.drop i <;> rfl
+
+/-- A template's test of an optional value's presence is the prelude's. -/
+@[template] theorem tmpl_isJust_def : Templates.isJust = «Prelude.isSome» := by
+  funext t
+  simp only [Templates.isJust, «Prelude.isSome», Const.eq, Const.label, ofBool, leaf]
+  by_cases h : RoseTree.label t = 1 <;> simp [h]
+
+/-- A template's element of a list at a position is the prelude's. -/
+@[template] theorem tmpl_nthOf_def : Templates.nthOf = «Prelude.nth» := by
+  funext xs t
+  have h₁ : Templates.nthOf xs t = Templates.nthOf xs (leaf t.label) := rfl
+  have h₂ : «Prelude.nth» xs t = «Prelude.nth» xs (leaf t.label) := rfl
+  rw [h₁, h₂, tmpl_nthOf_eq, nth_eq]
+
+/-- A template's test that every optional value of a list is present, with the present values. -/
+@[simp] theorem tmpl_allJust_eq (ms : List (Option Tree)) :
+    Templates.allJust (ms.map encOpt) = (ofBool (ms.all Option.isSome), ms.filterMap id) :=
+  ms.rec rfl fun m r ih ↦ by
+    simp only [Templates.allJust, foldr_eq, List.map_cons, List.foldr_cons] at ih ⊢
+    rw [ih]
+    cases m <;> simp [encOpt, ofBool]
+
+/-- A template's test that every optional tree of a list is present is the base's, and where it
+holds, the present trees are the trees of the optional trees. -/
+theorem tmpl_allJust_allT (ms : List Tree) :
+    (Templates.allJust ms).1 = «Base.allT» «Prelude.isSome» ms ∧
+      ((«Base.allT» «Prelude.isSome» ms).label ≠ 0 →
+        (Templates.allJust ms).2 = «Base.mapT» «Prelude.get» ms) :=
+  ms.rec ⟨rfl, fun _ ↦ rfl⟩ fun m r ih ↦ by
+    simp only [Templates.allJust, «Base.allT», «Base.mapT», foldr_eq, List.foldr_cons,
+      «Prelude.and», «Prelude.isSome», «Prelude.get»] at ih ⊢
+    by_cases h : RoseTree.label (Const.eq (Const.label m) (leaf 1)) = 0
+    · simp only [h, ne_eq, not_true_eq_false, ↓reduceIte]
+      exact ⟨trivial, fun h' ↦ absurd rfl h'⟩
+    · simp only [h, ne_eq, not_false_eq_true, ↓reduceIte]
+      exact ⟨ih.1, fun h' ↦ by rw [ih.2 h']⟩
+
+/-- The optional node of the trees of a list of optional trees, each present, by a template's
+test, is the base's. -/
+theorem allJust_allSomeT (ms : List Tree) :
+    (if (Templates.allJust ms).1.label ≠ 0 then
+        «Prelude.some» (Const.node (leaf 0) (Templates.allJust ms).2)
+      else «Prelude.none») = «Base.allSomeT» ms := by
+  obtain ⟨h₁, h₂⟩ := tmpl_allJust_allT ms
+  simp only [«Base.allSomeT», h₁]
+  split
+  · rename_i h
+    rw [h₂ h]
+  · rfl
+
+/-- A template's test that every element of a list passes a test. -/
+theorem tmpl_all_eq (f : Tree → Tree) (p : Tree → Bool) (xs : List Tree)
+    (h : ∀ x ∈ xs, f x = ofBool (p x)) : Templates.all f xs = ofBool (xs.all p) :=
+  allT_eq f p xs h
+
+/-- The label test of a template's test that every element of a list passes a test. -/
+@[simp] theorem tmpl_all_label (f : Tree → Tree) (xs : List Tree) :
+    ((Templates.all f xs).label != 0) = xs.all fun x ↦ (f x).label != 0 :=
+  allT_label f xs
+
+/-- A template's test that some element of a list passes a test. -/
+theorem tmpl_any_eq (f : Tree → Tree) (p : Tree → Bool) (xs : List Tree)
+    (h : ∀ x ∈ xs, f x = ofBool (p x)) : Templates.any f xs = ofBool (xs.any p) :=
+  anyT_eq f p xs h
+
+/-- A template's first elements of a list. -/
+@[simp] theorem tmpl_take_eq (n : ℕ) (xs : List Tree) : Templates.take (leaf n) xs = xs.take n :=
+  take_eq n xs
+
+/-- A template's image of a list. -/
+@[simp] theorem tmpl_map_eq (f : Tree → Tree) (xs : List Tree) : Templates.map f xs = xs.map f :=
+  mapT_eq f xs
+
+/-- A template's lists of a few trees. -/
+@[simp] theorem tmpl_l2_eq (a b : Tree) : Templates.l2 a b = [a, b] := rfl
+
+@[simp, inherit_doc tmpl_l2_eq] theorem tmpl_l3_eq (a b c : Tree) :
+    Templates.l3 a b c = [a, b, c] := rfl
+
+@[simp, inherit_doc tmpl_l2_eq] theorem tmpl_l4_eq (a b c d : Tree) :
+    Templates.l4 a b c d = [a, b, c, d] := rfl
+
+@[simp, inherit_doc tmpl_l2_eq] theorem tmpl_l5_eq (a b c d e : Tree) :
+    Templates.l5 a b c d e = [a, b, c, d, e] := rfl
+
+@[simp, inherit_doc tmpl_l2_eq] theorem tmpl_l6_eq (a b c d e f : Tree) :
+    Templates.l6 a b c d e f = [a, b, c, d, e, f] := rfl
+
+end GebTests.Prototypes.FreeTopos.Agreement.Base
+
+-- the equations of the mirror's instances with the templates' functions
+template_equations GebMirror.Metalogic
+
+namespace GebTests.Prototypes.FreeTopos.Agreement.Base
+
+open Geb Geb.Kernel GebTests.Prototypes.FreeTopos.Agreement.Encode
+open scoped FinEnum
 
 /-- Rewrites the mirror's primitives, optional trees, truth values and lists at encoded inputs
 into the Lean values they encode, with further lemmas. -/
@@ -430,7 +656,8 @@ macro (name := mirrorSimp) "mirror_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* 
     loc:(Lean.Parser.Tactic.location)? : tactic => `(tactic|
   simp only [label_leaf, eq_leaf, lt_leaf, add_leaf, sub_leaf, mul_leaf, equal_eq, label_node,
     node_leaf, children_node, arity_node, label_eq, children_eq, arity_eq, child_node, foldr_eq,
-    lcase_nil, lcase_cons, iter_leaf, isSome_eq, get_eq, getD_eq, mapO_eq, bindO_eq, and_eq, or_eq,
+    lcase_nil, lcase_cons, iter_leaf, repeat_zero, isSome_eq, get_eq, getD_eq, mapO_eq, bindO_eq,
+    and_eq, or_eq,
     not_eq, length_eq, append_eq, single_eq, reverse_eq, replicate_eq, at_eq, nth_eq, isEmpty_eq,
     equalTs_eq, tail_eq, drop_eq, mapT_eq, take_eq, range_eq, get_encOpt, and_label, or_label,
     not_label, allT_label, equal_label, eq_label, lt_label, ofBool_bne, map_leaf_inj,
@@ -443,7 +670,11 @@ macro (name := mirrorSimp) "mirror_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* 
     RoseTree.label_node, RoseTree.children_node, List.getD_cons_zero, List.getD_cons_succ,
     Bool.false_eq_true, List.tail_cons, List.map_cons, List.map_nil, List.length_cons,
     List.length_nil, List.getElem?_cons_zero, List.getElem?_cons_succ, Bool.or_false, Bool.false_or,
-    Bool.or_true, Bool.true_or, zero_add, Nat.reduceAdd, $ls,*] $(loc)?)
+    Bool.or_true, Bool.true_or, zero_add, Nat.reduceAdd, template, tmpl_single_eq, tmpl_length_eq,
+    tmpl_append_eq, tmpl_reverse_eq, tmpl_tail_eq, tmpl_drop_eq, tmpl_atOr_eq, tmpl_nothing_eq,
+    tmpl_just_eq, tmpl_isJust_eq, tmpl_fromMaybe_eq, tmpl_nthOf_eq, tmpl_allJust_eq, tmpl_all_label,
+    tmpl_take_eq, tmpl_map_eq, tmpl_l2_eq, tmpl_l3_eq, tmpl_l4_eq, tmpl_l5_eq, tmpl_l6_eq,
+    encOpt_some_label, encOpt_none_label, child_encOpt_some, $ls,*] $(loc)?)
 
 end GebTests.Prototypes.FreeTopos.Agreement.Base
 

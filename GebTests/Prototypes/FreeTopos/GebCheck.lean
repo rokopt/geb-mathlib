@@ -46,6 +46,9 @@ open scoped FinEnum
 /-- The prelude. -/
 def preludeGeb : String := include_str "../../../bootstrap/prelude.geb"
 
+/-- The lists and optional values at any element type. -/
+def seqGeb : String := include_str "../../../bootstrap/seq.geb"
+
 /-- The base of the metalogic's checker. -/
 def baseGeb : String := include_str "../../../bootstrap/free-topos/base.geb"
 
@@ -58,9 +61,10 @@ def theoryGeb : String := include_str "../../../bootstrap/free-topos/theory.geb"
 /-- The inference of typings. -/
 def inferGeb : String := include_str "../../../bootstrap/free-topos/infer.geb"
 
-/-- The program: the prelude and the metalogic's checker, each followed by a newline. -/
+/-- The program: the prelude, the lists and optional values and the metalogic's checker, each
+followed by a newline. -/
 def program : String :=
-  String.join ([preludeGeb, baseGeb, partialHornGeb, theoryGeb, inferGeb].map (· ++ "\n"))
+  String.join ([preludeGeb, seqGeb, baseGeb, partialHornGeb, theoryGeb, inferGeb].map (· ++ "\n"))
 
 /-- A program's definitions, read by the front end whose text is {lit}`fe` and loaded, by name. -/
 def loaded (fe text : List Char) : Option (List (List Char × Kernel.Glob)) := do

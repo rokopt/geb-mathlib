@@ -55,6 +55,49 @@ open Geb Geb.Kernel Geb.FreeTopos GebTests.Prototypes.FreeTopos.Agreement.Encode
 open Internal (Term Label)
 open scoped FinEnum
 
+/-- The mirror's lists wrapped as datatypes, each the node of label zero over its elements. -/
+@[simp, template] theorem objs_wrap (xs : List Tree) :
+    «Language.objs» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc objs_wrap] theorem prims_wrap (xs : List Tree) :
+    «Language.prims» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc objs_wrap] theorem defs_wrap (xs : List Tree) :
+    «Language.defs» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc objs_wrap] theorem tpairs_wrap (xs : List Tree) :
+    «Language.tpairs» xs = RoseTree.node 0 xs := rfl
+
+/-- The mirror's bindings of optional values are the base's of optional trees. -/
+@[template] theorem bindPP_def : «Language.bindPP» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindPP_def] theorem bindTP_def : «Language.bindTP» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindPP_def] theorem bindRP_def : «Language.bindRP» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindPP_def] theorem bindDL_def : «Language.bindDL» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindPP_def] theorem bindLP_def : «Language.bindLP» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindPP_def] theorem bindQP_def : «Language.bindQP» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindPP_def] theorem bindPD_def : «Language.bindPD» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindPP_def] theorem bindPS_def : «Language.bindPS» = «Base.bindO» := rfl
+
+/-- The mirror's optional lists of present arrows with their types and of present definitions are
+the base's of optional trees. -/
+@[template] theorem allSomeP_def : «Language.allSomeP» = «Base.allSomeT» := by
+  funext ms
+  simp only [«Language.allSomeP», template, «Language.tpairs»]
+  exact allJust_allSomeT ms
+
+@[template, inherit_doc allSomeP_def] theorem allSomeD_def :
+    «Language.allSomeD» = «Base.allSomeT» := by
+  funext ms
+  simp only [«Language.allSomeD», template, «PartialHorn.pdefns»]
+  exact allJust_allSomeT ms
+
 /-- The encoding of a node of a term. -/
 theorem encTerm_node (l : Label) (cs : List Term) :
     encTerm (RoseTree.node l cs) =
@@ -536,7 +579,9 @@ theorem isTyOp_eq (G : Internal.Globals) (k m : ℕ) :
     congr 1
     rw [Bool.eq_iff_iff]
     simp [encPair_inj, leaf_inj]
-  rw [«Language.isTyOp», pr_eq, ht]
+  rw [«Language.isTyOp», pr_eq]
+  simp only [template]
+  rw [ht]
   mirror_simp [gBase_eq, gDefs_eq, Internal.Globals.isTyOp]
   cases G.defs[k - G.base]? with
   | none => mirror_simp [none_eq, ← ofBool_false, Bool.or_false]
@@ -755,8 +800,9 @@ theorem defCompile_eq (G : Internal.Globals) (d : Internal.Definition) :
       some_eq, «PartialHorn.pdefn», encDefn, List.map_replicate]
 
 /-- The positions of a list, each with its encoded element, are the list's indexed elements. -/
-theorem range_getD_eq {α β : Type} (ds : List α) (enc : α → Tree) (f : ℕ → Tree → β) :
-    (List.range ds.length).map (fun i ↦ f i ((ds.map enc).getD i (leaf 0))) =
+theorem range_getD_eq {α β : Type} (ds : List α) (enc : α → Tree) (d : Tree)
+    (f : ℕ → Tree → β) :
+    (List.range ds.length).map (fun i ↦ f i ((ds.map enc).getD i d)) =
       ds.zipIdx.map fun p ↦ f p.2 (enc p.1) := by
   refine List.ext_getElem (by simp) fun i h₁ h₂ ↦ ?_
   simp only [List.getElem_map, List.getElem_range, List.getElem_zipIdx, zero_add,
@@ -768,10 +814,10 @@ theorem range_getD_eq {α β : Type} (ds : List α) (enc : α → Tree) (f : ℕ
 theorem compileDefs_eq (G : Internal.Globals) :
     «Language.compileDefs» (encGlobals G) =
       encOpt ((Internal.compileDefs G).map fun ds ↦ RoseTree.node 0 (ds.map encDefn)) := by
-  simp only [«Language.compileDefs», gDefs_eq, gPrims_eq, gBase_eq, length_eq,
-    List.length_map, range_eq, mapT_eq, List.map_map, Function.comp_def, take_eq, at_eq,
-    ← List.map_take, node_leaf, globals_eq]
-  rw [range_getD_eq G.defs encDefinition fun i t ↦ «Language.defCompile»
+  simp only [«Language.compileDefs», template, gDefs_eq, gPrims_eq, gBase_eq, length_eq,
+    List.length_map, range_eq, mapT_eq, List.map_map, Function.comp_def, take_eq, tmpl_atOr_eq,
+    ← List.map_take, globals_eq]
+  rw [range_getD_eq G.defs encDefinition «Language.def0» fun i t ↦ «Language.defCompile»
     (encGlobals ⟨G.prims, G.defs.take i, G.base⟩) t]
   simp only [defCompile_eq, allSomeT_eq, mapM_map_option, Option.map_map, Function.comp_def,
     Internal.compileDefs]

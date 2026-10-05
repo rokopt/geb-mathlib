@@ -2,10 +2,11 @@
 ; Released under Apache 2.0 license as described in the file LICENSE.
 ; Authors: Terence Rokop
 ;
-; Optional trees, truth values and lists of trees, for the metalogic's checker written in the
-; datatype language. An optional tree is represented as the reader represents it: nothing is the
-; leaf of label 0, and a tree is the node of label 1 over it; a truth value is a label, 0 false
-; and any other true. Requires the prelude.
+; Optional trees, truth values and lists, for the metalogic's checker written in the datatype
+; language. An optional tree is represented as the reader represents it: nothing is the leaf of
+; label 0, and a tree is the node of label 1 over it, as the optional values of
+; bootstrap/seq.geb are; a truth value is a label, 0 false and any other true. The templates
+; give functions on lists at any element type. Requires the prelude.
 
 (module Base (export getD mapO bindO not isEmpty equalTs take range mapT allT anyT allSomeT)
   (import Prelude)
@@ -42,3 +43,30 @@
   (defn anyT ((f (Arrow T T)) (xs Ts)) T (foldr T T (lam ((x T) (r T)) (or (f x) r)) 0 xs))
   ; the node of label 0 over the trees of a list of optional trees when each is present
   (defn allSomeT ((ms Ts)) T (if (allT isSome ms) (some (node 0 (mapT get ms))) none)))
+
+; the tests and prefixes of lists, at any element type
+(module Each (parameter A) (export all any isEmpty take) (import Prelude)
+  (defn all ((f (Arrow A T)) (xs (List A))) T (foldr A T (lam ((x A) (r T)) (and (f x) r)) 1 xs))
+  (defn any ((f (Arrow A T)) (xs (List A))) T (foldr A T (lam ((x A) (r T)) (or (f x) r)) 0 xs))
+  (defn isEmpty ((xs (List A))) T (eq (foldr A T (lam ((x A) (k T)) (add k 1)) 0 xs) 0))
+  (defn take ((n T) (xs (List A))) (List A)
+    (let len T (foldr A T (lam ((x A) (k T)) (add k 1)) 0 xs)
+      (snd
+        (foldr A (Prod T (List A))
+          (lam ((x A) (s (Prod T (List A))))
+            (pair (add (fst s) 1) (if (lt (sub (sub len (fst s)) 1) n) (cons x (snd s)) (snd s))))
+          (pair 0 (nil A))
+          xs)))))
+
+; the image of a list under a function, at any element and result types
+(module Map (parameter A) (parameter B) (export map)
+  (defn map ((f (Arrow A B)) (xs (List A))) (List B)
+    (foldr A (List B) (lam ((x A) (r (List B))) (cons (f x) r)) (nil B) xs)))
+
+; lists of a few elements, at any element type
+(module Few (parameter A) (export l2 l3 l4 l5 l6)
+  (defn l2 ((a A) (b A)) (List A) (cons a (cons b (nil A))))
+  (defn l3 ((a A) (b A) (c A)) (List A) (cons a (l2 b c)))
+  (defn l4 ((a A) (b A) (c A) (d A)) (List A) (cons a (l3 b c d)))
+  (defn l5 ((a A) (b A) (c A) (d A) (e A)) (List A) (cons a (l4 b c d e)))
+  (defn l6 ((a A) (b A) (c A) (d A) (e A) (f A)) (List A) (cons a (l5 b c d e f))))

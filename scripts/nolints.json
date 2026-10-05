@@ -5,5 +5,7 @@
   ["docBlame", "GebManual.QuotientPRA.«the canonical document object name»"],
   ["docBlame", "GebManual.Root.«the canonical document object name»"],
   ["docBlame", "GebManual.ValueRepresentation.«the canonical document object name»"],
-  ["docBlame", "GebManual.WTypes.«the canonical document object name»"]
+  ["docBlame", "GebManual.WTypes.«the canonical document object name»"],
+  ["defsWithUnderscore",
+    "GebTests.Prototypes.FreeTopos.Agreement.TemplateEquations.Parser.Attr.template_proc"]
 ]

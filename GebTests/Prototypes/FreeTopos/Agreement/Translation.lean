@@ -50,6 +50,58 @@ open Geb Geb.Kernel Geb.FreeTopos GebTests.Prototypes.FreeTopos.Agreement.Encode
 open Internal (Term)
 open scoped FinEnum
 
+/-- The mirror's bindings and images of optional values are the base's of optional trees. -/
+@[template] theorem bindP_def : «Translation.bindP» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindP_def] theorem bindTy_def : «Translation.bindTy» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindP_def] theorem bindSS_def : «Translation.bindSS» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindP_def] theorem bindPS_def : «Translation.bindPS» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindP_def] theorem bindOH_def : «Translation.bindOH» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindP_def] theorem bindPH_def : «Translation.bindPH» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindP_def] theorem mapTy_def : «Translation.mapTy» = «Base.mapO» := rfl
+
+@[template, inherit_doc bindP_def] theorem mapTS_def : «Translation.mapTS» = «Base.mapO» := rfl
+
+@[template, inherit_doc bindP_def] theorem mapPH_def : «Translation.mapPH» = «Base.mapO» := rfl
+
+/-- The mirror's optional list of present objects is the base's optional trees. -/
+@[template] theorem allSomeObjs_def : «Translation.allSomeObjs» = «Base.allSomeT» := rfl
+
+/-- The mirror's state of a translation is the pair of the node of the types and the node of the
+definitions, and its components are the pair's. -/
+@[template] theorem trState_def : «Translation.trState» = «Language.pr» := rfl
+
+@[template, inherit_doc trState_def] theorem stTypes_def :
+    «Translation.stTypes» = fun s ↦ Const.children («Language.p1» s) := rfl
+
+@[template, inherit_doc trState_def] theorem stDefns_def :
+    «Translation.stDefns» = fun s ↦ Const.children («Language.p2» s) := rfl
+
+/-- The mirror's context and sides of a theorem of Gödel's T are its tree's. -/
+@[template] theorem gthmCtx_def :
+    «Translation.gthmCtx» = fun th ↦ Const.children (Const.child th (leaf 0)) := rfl
+
+@[template, inherit_doc gthmCtx_def] theorem gthmEqn_def :
+    «Translation.gthmEqn» = fun th ↦ Const.child th (leaf 1) := rfl
+
+@[template, inherit_doc gthmCtx_def] theorem geqnLhs_def :
+    «Translation.geqnLhs» = fun q ↦ Const.child q (leaf 1) := rfl
+
+@[template, inherit_doc gthmCtx_def] theorem geqnRhs_def :
+    «Translation.geqnRhs» = fun q ↦ Const.child q (leaf 2) := rfl
+
+/-- The mirror's lists wrapped as datatypes, each the node of label zero over its elements. -/
+@[simp, template] theorem ktys_wrap (xs : List Tree) :
+    «Translation.ktys» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc ktys_wrap] theorem ldefns_wrap (xs : List Tree) :
+    «Translation.ldefns» xs = RoseTree.node 0 xs := rfl
+
 /-- An equation between kernel terms, a statement of Gödel's T, as the translation written in Geb
 reads it: the node of label zero over its type and its two sides. -/
 def encGoedelEqn (q : GoedelT.Eqn) : Tree := RoseTree.node 0 [q.ty, q.lhs, q.rhs]
@@ -463,7 +515,7 @@ theorem program_eq (ds : List Tree) :
 /-- The mirror's constants of a translated program. -/
 theorem trGlobals_eq (defs : List Internal.Defn) :
     «Translation.trGlobals» (defs.map encLDefn) = encGlobals (Translation.globals defs) := by
-  simp only [«Translation.trGlobals», trPrims_eq, lib_eq, append_eq, mapT_eq,
+  simp only [«Translation.trGlobals», template, trPrims_eq, lib_eq, append_eq, mapT_eq,
     ← List.map_append, List.map_map, Function.comp_def, defLang_eq, length_eq,
     Theory.sig_eq, List.length_map, Translation.globals]
   rw [← globals_eq, List.map_map]

@@ -242,7 +242,7 @@ theorem lroseAxioms_eq :
 
 /-- The mirror's axioms. -/
 theorem axioms_eq : «Theory.axioms» = axioms.map encSeq := by
-  simp only [«Theory.axioms», append_eq, categoryAxioms_eq, terminalAxioms_eq,
+  simp only [«Theory.axioms», template, append_eq, categoryAxioms_eq, terminalAxioms_eq,
     productAxioms_eq, equalizerAxioms_eq, initialAxioms_eq, coproductAxioms_eq,
     coequalizerAxioms_eq, exponentialAxioms_eq, classifierAxioms_eq, natAxioms_eq, listAxioms_eq,
     roseAxioms_eq, lroseAxioms_eq, axioms, List.map_append, List.append_assoc]
