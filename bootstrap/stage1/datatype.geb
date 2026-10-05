@@ -590,10 +590,16 @@
       (if (and (isList f) (and (eq (arity f) 3) (named (child f 0) kwDef)))
         (sx3 (child f 0) (child f 1) (eraseExpr (child f 2)))
         f)))
+  ; the typing's verdict on a program's typed forms, read as its forms: none when each definition
+  ; checks, and otherwise the name of the first that does not
+  (defn typeError ((fs Ts)) T
+    (decode Tx (node 2 fs)
+      (lam ((x Tx)) (case x ((tList xs) (rep (checkForms xs))) (else (some (node 0 (nil T))))))
+      (some (node 0 (nil T)))))
   (defn expandProgram ((es Ts)) T
     (case (expandTyped es)
       ((just fs)
-       (if (isSome (checkForms (children fs))) nothing
+       (if (isSome (typeError (children fs))) nothing
          (just
            (node 0
              (foldr T Ts (lam ((f T) (acc Ts)) (if (eq (label f) 15) acc (cons (eraseForm f) acc)))
@@ -605,6 +611,6 @@
     (let sx T (readSExps (children file))
       (if (isSome sx)
         (case (expandTyped (children (get sx)))
-          ((just fs) (let r T (checkForms (children fs)) (if (isSome r) (get r) (node 0 (nil T)))))
+          ((just fs) (let r T (typeError (children fs)) (if (isSome r) (get r) (node 0 (nil T)))))
           ((nothing) (node 0 (nil T))))
         (node 0 (nil T))))))
