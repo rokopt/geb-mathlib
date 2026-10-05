@@ -138,7 +138,7 @@
         hs)))
 
   ; theorems: an arity, a context, hypotheses and a conclusion
-  (data Thm (mkThm T T T T))
+  (tree-data Thm (mkThm T T T T))
   (defn thArity ((a T)) T (case a ((mkThm m c h q) m)))
   (defn thCtx ((a T)) Ts (case a ((mkThm m c h q) (children c))))
   (defn thHyps ((a T)) Ts (case a ((mkThm m c h q) (children h))))
@@ -176,7 +176,7 @@
             (thmSide G a (comp tru (bang (ctxObj (thCtx a))))))))))
 
   ; the entries of a development: theorems of the language and sequents of the combinators
-  (data Entry (entLang T) (entComb T))
+  (tree-data Entry (entLang T) (entComb T))
   (defn entryLanguage ((e T)) T (case e ((entLang a) (some a)) ((entComb s) none)))
   (defn entrySeq ((G T) (e T)) T (case e ((entLang a) (thmSeq G a)) ((entComb s) s)))
 
@@ -755,7 +755,7 @@
   (defn ldChecks ((G T) (d T)) T (and (isSome (ldCompile G d)) (isTy G (ldArity d) (ldType d))))
 
   ; declarations, and the state of a development
-  (data Decl (declLang T T) (declComb T T) (declDef T) (declConst T T) (declObj T T T)
+  (tree-data Decl (declLang T T) (declComb T T) (declDef T) (declConst T T) (declObj T T T)
     (declQuot T T T)
     (declDesc T T T T))
   (defn devState ((G T) (E Ts)) T (pr G (node 0 E)))

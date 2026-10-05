@@ -107,7 +107,7 @@ order of dependence.
   the rest of Geb in, with diagnostics that name what fails. In
   progress: closed bundles, the datatype language as it stands, content
   identity and modules are complete; the datatype language's completion,
-  the next step of the authoring sequence, is ready.
+  the next step of the authoring sequence, is in progress.
 
 ## The bootstrap
 
@@ -130,9 +130,10 @@ Computation:
   second host]):
   `bootstrap/stage1/lean.geb`, the committed `bootstrap/compiler.img`
   and `bootstrap/lean/GebBoot.lean`, and the executable `geb-compile`.
-* Ready. The datatype language's completion
+* In progress. The datatype language's completion
   ({ref "datatype-completion"}[The datatype language's completion]),
-  before substantial authoring:
+  before substantial authoring, its typing in the stage-1 compiler, the
+  representation, decoding and data, and the recognizers complete:
   datatype names as types distinct from the type of trees, checked at
   every use, a datatype reaching the trees only through its
   representation and its decoding by its generated recognizer, both
@@ -1542,7 +1543,7 @@ section below opens with a table of the states of its parts.
   * Complete
   * The datatype language's completion
     ({ref "datatype-completion"}[The datatype language's completion]):
-    ready
+    in progress
 *
   * {ref "speed-and-second-host"}[Speed and a second host]
   * In progress
@@ -1966,7 +1967,7 @@ tag := "geb-grows-in-itself"
 *
   * The libraries and serializer, the reader, the type checker, the
     elaborator, and its self-compilation
-  * Complete; the datatype language's completion is ready
+  * Complete; the datatype language's completion is in progress
 *
   * Acceptance
   * Met
@@ -2056,10 +2057,10 @@ the independent route from the seed.
 tag := "datatype-completion"
 %%%
 
-State: ready.
+State: in progress.
 
 The sources annotate every value of a declared datatype as `T`:
-`bootstrap/free-topos/partial-horn.geb` declares `(data Eqn (eqn T T))`,
+`bootstrap/free-topos/partial-horn.geb` declares `(tree-data Eqn (eqn T T))`,
 and functions over optional trees take `(m T)`. The expansion of the
 datatype language ignores the types of fields. Which datatype a value is
 meant to belong to is therefore recorded nowhere, and it is information
@@ -2128,6 +2129,52 @@ written in the kernel's syntax, keep the kernel's types, exact for a
 kernel whose only type of data is the trees. The soundness theorem lets
 a proof use a datatype's type as a hypothesis; it is proved by induction
 on the check.
+
+The typing is written in the datatype language
+(`bootstrap/stage1/typing.geb`) and runs in the stage-1 compiler alone. The
+stage-1 expansion first writes a program's forms with their datatypes,
+marking by nodes that no reader writes the declarations of datatypes and
+the coercions it knows to hold: a field's tree at the field's type, the
+node of a constructor at its datatype, and a scrutinee at its tree. The
+typing synthesizes each definition's type from its term, resolving names
+as the reader does, and names the first definition it rejects
+(`Datatype.typeErrorOf`); the erasure of the checked forms is the program
+the stage-0 expansion writes, which erases the same forms without
+checking them, so the two compilers agree on every program the typing
+accepts and the fixed points hold. The keyword `data` declares a datatype
+distinct from the trees and from every other datatype, and `tree-data`
+one standing for the trees, which the sources keep until they are
+retyped and which is then removed. Three forms cross between a datatype
+and the trees:
+
+:::table +header
+*
+  * Form
+  * Meaning
+*
+  * `(rep e)`
+  * the representation of a value `e` of a datatype: its tree
+*
+  * `(decode D e f c)`
+  * `f` applied to the tree `e` when `e` is a member of `D`, and `c`
+    otherwise: the universal property of the coproduct `1 + D`, used
+    directly, so that no type of optional values is needed
+*
+  * `(datum D d)`
+  * the quoted tree `d`, checked at elaboration to be a member of `D`
+:::
+
+Decoding is decided by the recognizer `D.member`, which the stage-0
+compiler writes where a program refers to it (`bootstrap/recognize.geb`),
+from a marker the expansion leaves after the constructors of each
+datatype `data` declares: one fold of the tree whose result at a node
+holds the bit of its membership in `D` and in each datatype on which `D`
+depends. Complete: the typing, the three forms and the recognizers.
+Remaining, in order: type parameters checked opaquely; the sources
+retyped, the stage-1 compiler's first, then those of Gödel's T, the
+proofs and the printer, and the metalogic's last, its mirror regenerated
+and the agreement proofs repaired where a definition's erasure changes;
+`tree-data` removed; and the soundness of the typing.
 
 Abstraction is mathematical, not syntactic, and needs no mark of its
 own. An interface is a theory, a presentation of operations and axioms
@@ -2497,7 +2544,7 @@ tag := "authoring-compatibility"
 *
   * The datatype language's completion
     ({ref "datatype-completion"}[The datatype language's completion])
-  * Ready
+  * In progress
 *
   * Manifests with editions, and the record of elaborated definitions
   * Ready
@@ -6177,10 +6224,10 @@ the change that removes it.
   the leaf and the node by those names; qualifying them as the constants
   are qualified, as the hygiene of generated names requires, removes the
   restriction.
-* The datatype language annotates every value of a datatype as the type
-  of trees and lacks generated recognizers, type parameters and a static
-  check of datatypes, so the datatype a value belongs to is recorded
-  nowhere, which its completion removes
+* The sources annotate every value of a datatype as the type of trees,
+  declaring their datatypes by `tree-data`, and type parameters are not
+  checked opaquely, so the datatype a value belongs to is recorded
+  nowhere, which the rest of its completion removes
   ({ref "datatype-completion"}[The datatype language's completion]); a
   pattern omits the `&` that a declaration writes; and every pattern
   variable is bound whether or not the clause uses it.
@@ -6247,7 +6294,7 @@ What is ready, each item independent of the others except as stated:
   decides the rules of the checker with a step of conversion.
 * The datatype language's completion
   ({ref "datatype-completion"}[The datatype language's completion]),
-  the next step of the authoring sequence
+  in progress, the next step of the authoring sequence
   ({ref "authoring-sequence"}[The sequence and its acceptance]), which
   precedes substantial authoring in Geb; the soundness of its typing is
   proved with the prover written in Geb. The steps of the sequence after

@@ -3,25 +3,31 @@
 ; Authors: Terence Rokop
 ;
 ; The stage-0 compiler: a program's source file to the image of its bundle, or the empty file
-; when the program does not read or is ill-typed. The program's modules are elaborated and its
-; forms of the datatype language expanded first; for a program of kernel forms alone the image is
-; byte for byte the one the seed builds. compileWith takes the backend applied to a checked
-; program's bundle. Requires the prelude, the serializer, the reader, the checker, the expansion
-; and the modules.
+; when the program does not read or is ill-typed. The program's modules are elaborated, its forms
+; of the datatype language expanded and the recognizers it refers to written first; for a program
+; of kernel forms alone the image is byte for byte the one the seed builds. bundleOf is the
+; program's bundle before its types are checked, and compileWith takes the backend applied to a
+; checked program's bundle. Requires the prelude, the serializer, the reader, the checker, the
+; expansion, the modules and the recognizers.
 
-(module Compile (export compileWith compile) (import Prelude) (import Serialize) (import Reader)
+(module Compile (export bundleOf compileWith compile) (import Prelude) (import Serialize)
+  (import Reader)
   (import Check)
   (import Datatype)
   (import Modules)
-  (def compileWith
-    (lam ((back (Arrow T T)) (file T))
+  (import Recognize)
+  (def bundleOf
+    (lam ((file T))
       (let sx T (readSExps (children file))
         (let mx T (if (isSome sx) (expandModules (children (get sx))) none)
           (let kx T (if (isSome mx) (expandProgram (children (get mx))) none)
-            (let b T (if (isSome kx) (readProgram (children (get kx))) none)
-              (if (isSome b)
-                (if (isSome (checkProgram (children (child (get b) 0)))) (back (get b))
-                  (node 0 (nil T)))
-                (node 0 (nil T)))))))))
+            (let rx T (if (isSome kx) (insertRecognizers (children (get kx))) none)
+              (if (isSome rx) (readProgram (children (get rx))) none)))))))
+  (def compileWith
+    (lam ((back (Arrow T T)) (file T))
+      (let b T (bundleOf file)
+        (if (isSome b)
+          (if (isSome (checkProgram (children (child (get b) 0)))) (back (get b)) (node 0 (nil T)))
+          (node 0 (nil T))))))
   (def compile (lam ((file T)) (compileWith image file))))
 (def main (lam ((file T)) (Compile.compile file)))

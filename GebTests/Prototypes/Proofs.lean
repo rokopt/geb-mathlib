@@ -76,11 +76,7 @@ def prover : String :=
 /-- The stage-0 compiler with an entry point giving a program's bundle: its text read and its
 forms of the datatype language expanded, without the image written. -/
 def bundler : String :=
-  Kernel.Stage0Tests.compiler ++ "(import Prelude) (import Reader) (import Datatype) " ++
-    "(import Modules) (def bundleMain (lam ((file T)) (let sx T (readSExps " ++
-    "(children file)) (let mx T (if (isSome sx) (expandModules (children (get sx))) none) " ++
-    "(if (isSome mx) (let kx T (expandProgram (children (get mx))) " ++
-    "(if (isSome kx) (readProgram (children (get kx))) none)) none)))))"
+  Kernel.Stage0Tests.compiler ++ "(def bundleMain (lam ((file T)) (Compile.bundleOf file)))"
 
 /-- The prover, its program bundled by the stage-0 compiler's reader and expansion and loaded by
 the seed, which checks each definition's type, as a function on trees. -/

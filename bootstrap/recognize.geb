@@ -1,0 +1,227 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The recognizers of datatypes, written in the kernel's syntax. The expansion of the datatype
+; language leaves, after the constructors of each datatype the keyword data declares, a marker:
+; the node of label 9 over the datatype's atom and, for each constructor, the node of label 0
+; over its position, the node over its field types, whether a last field takes the remaining
+; children, and that field's type, the types with their abbreviations expanded. Where a
+; program refers to the recognizer D.member of a datatype D, the marker becomes its definition;
+; any other marker is dropped. The recognizer decides membership in D by one fold of the tree:
+; a node's result holds, at the position of each datatype on which D depends, including D, the
+; bit of its membership in that datatype, from its label, its arity and its children's bits.
+; The fields of a decoded datatype are trees and datatypes. The recognizers refer to the
+; primitives label, child, node, arity, eq, lt, add, div and mod by name. Requires the prelude,
+; the reader and decimalChars of the datatype language.
+
+(module Recognize (export insertRecognizers) (import Prelude) (import Reader)
+  ; S-expressions under construction
+  (def sx (lam ((xs Ts)) (node 2 xs)))
+  (def s2 (lam ((a T) (b T)) (sx (cons a (single b)))))
+  (def s3 (lam ((a T) (b T) (c T)) (sx (cons a (cons b (single c))))))
+  (def s4 (lam ((a T) (b T) (c T) (d T)) (sx (cons a (cons b (cons c (single d)))))))
+  (def num (lam ((n T)) (node 1 (Datatype.decimalChars n))))
+  (def pow2 (lam ((i T)) (iter T (lam ((x T)) (mul x 2)) 1 i)))
+
+  ; the atoms of the recognizers
+  (def rT (quote (1 T)))
+  (def rList (quote (1 List)))
+  (def rLam (quote (1 lam)))
+  (def rLet (quote (1 let)))
+  (def rIf (quote (1 if)))
+  (def rDef (quote (1 def)))
+  (def rFold (quote (1 fold)))
+  (def rFoldr (quote (1 foldr)))
+  (def rIter (quote (1 iter)))
+  (def rLcase (quote (1 lcase)))
+  (def rNil (quote (1 nil)))
+  (def rNode (quote (1 node)))
+  (def rChild (quote (1 child)))
+  (def rArity (quote (1 arity)))
+  (def rEq (quote (1 eq)))
+  (def rLt (quote (1 lt)))
+  (def rAdd (quote (1 add)))
+  (def rDiv (quote (1 div)))
+  (def rMod (quote (1 mod)))
+  (def vT (quote (1 "%t")))
+  (def vL (quote (1 "%l")))
+  (def vR (quote (1 "%r")))
+  (def vN (quote (1 "%n")))
+  (def vC (quote (1 "%c")))
+  (def vA (quote (1 "%a")))
+  (def vX (quote (1 "%x")))
+  (def vH (quote (1 "%h")))
+  (def vU (quote (1 "%u")))
+  (def zero (quote (1 48)))
+  (def one (quote (1 49)))
+  (def tList (s2 rList rT))
+  (def bind1 (lam ((x T) (a T)) (sx (single (s2 x a)))))
+  (def bind2 (lam ((x T) (a T) (y T) (b T)) (sx (cons (s2 x a) (single (s2 y b))))))
+
+  ; a conjunction, which a test that always holds leaves out
+  (def conj (lam ((a T) (b T)) (if (equal a one) b (if (equal b one) a (s4 rIf a b zero)))))
+  ; the bit of the position p in a tree's bits e
+  (def bitOf (lam ((e T) (p T)) (s3 rMod (s3 rDiv e (num (pow2 p))) (num 2))))
+  ; the children after the first n
+  (def tailE
+    (s3 rLam (bind1 vX tList)
+      (sx
+        (cons rLcase
+          (cons rT
+            (cons tList
+              (cons vX (cons (s2 rNil rT) (single (s3 rLam (bind2 vH rT vU tList) vU))))))))))
+  (def dropE (lam ((n T)) (sx (cons rIter (cons tList (cons tailE (cons vR (single (num n)))))))))
+
+  ; the markers, a marker by its datatype's atom, and the datatypes a marker's fields name
+  (def markers
+    (lam ((fs Ts))
+      (foldr T Ts (lam ((f T) (acc Ts)) (if (eq (label f) 9) (cons f acc) acc)) (nil T) fs)))
+  (def markerOf
+    (lam ((ms Ts) (d T))
+      (foldr T T (lam ((m T) (r T)) (if (equal (child m 0) d) (some m) r)) none ms)))
+  (def fieldTypes
+    (lam ((c T))
+      (if (child c 2) (append (children (child c 1)) (single (child c 3))) (children (child c 1)))))
+  (def depsOf
+    (lam ((ms Ts) (m T))
+      (foldr T Ts
+        (lam ((c T) (acc Ts))
+          (foldr T Ts (lam ((ty T) (a Ts)) (if (isSome (markerOf ms ty)) (cons ty a) a)) acc
+            (fieldTypes c)))
+        (nil T)
+        (tail (children m)))))
+  ; the datatypes a datatype depends on, itself first, each once
+  (def addNew
+    (lam ((xs Ts) (cl Ts))
+      (foldr T Ts (lam ((x T) (acc Ts)) (if (isSome (indexOf x acc)) acc (append acc (single x))))
+        cl
+        (reverse xs))))
+  (def closure
+    (lam ((ms Ts) (d T))
+      (iter Ts
+        (lam ((cl Ts))
+          (foldr T Ts
+            (lam ((n T) (acc Ts))
+              (let m T (markerOf ms n) (if (isSome m) (addNew (depsOf ms (get m)) acc) acc)))
+            cl
+            cl))
+        (single d)
+        (length ms))))
+
+  ; the test of a value of a field type, given the expression of the value and the datatypes'
+  ; positions: always for trees, its bit for a datatype, and none for any other type
+  (def fieldTest
+    (lam ((cl Ts) (ty T) (e T))
+      (if (named ty kwT) (some one)
+        (let p T (indexOf ty cl) (if (isSome p) (some (bitOf e (get p))) none)))))
+  ; the test of a node of a constructor: its arity and its fields
+  (def ctorTest
+    (lam ((cl Ts) (c T))
+      (let fts Ts (children (child c 1))
+        (let nf T (length fts)
+          (let ar T
+            (if (child c 2) (s3 rLt (num nf) (s3 rAdd (s2 rArity vN) one))
+              (s3 rEq (s2 rArity vN) (num nf)))
+            (let fs T
+              (allSome
+                (snd
+                  (foldr T (Prod T Ts)
+                    (lam ((ty T) (acc (Prod T Ts)))
+                      (pair (sub (fst acc) 1)
+                        (cons (fieldTest cl ty (s3 rChild vN (num (sub (fst acc) 1)))) (snd acc))))
+                    (pair nf (nil T))
+                    fts)))
+              (let vt T
+                (if (child c 2)
+                  (let t T (fieldTest cl (child c 3) vC)
+                    (if (isSome t)
+                      (if (equal (get t) one) t
+                        (some
+                          (sx
+                            (cons rFoldr
+                              (cons rT
+                                (cons rT
+                                  (cons (s3 rLam (bind2 vC rT vA rT) (s4 rIf (get t) vA zero))
+                                    (cons one (single (dropE nf))))))))))
+                      none))
+                  (some one))
+                (if (both fs vt) (some (conj ar (foldr T T conj (get vt) (children (get fs)))))
+                  none))))))))
+  ; the bit of a node's membership in a datatype: the test of the constructor its label names
+  (def dataTest
+    (lam ((cl Ts) (m T))
+      (foldr T T
+        (lam ((c T) (r T))
+          (let t T (ctorTest cl c)
+            (if (both t r) (some (s4 rIf (s3 rEq vL (num (child c 0))) (get t) (get r))) none)))
+        (some zero)
+        (tail (children m)))))
+
+  ; a datatype's recognizer, when each datatype it depends on has trees and datatypes as fields
+  (def recognizer
+    (lam ((ms Ts) (m T))
+      (let cl Ts (closure ms (child m 0))
+        (let bits T
+          (allSome
+            (foldr T Ts
+              (lam ((n T) (acc Ts))
+                (let mn T (markerOf ms n)
+                  (cons
+                    (if (isSome mn)
+                      (let t T (dataTest cl (get mn))
+                        (if (isSome t)
+                          (some (s4 rIf (get t) (num (pow2 (get (indexOf n cl)))) zero))
+                          none))
+                      none)
+                    acc)))
+              (nil T)
+              cl))
+          (if (isSome bits)
+            (let step T
+              (s3 rLam (bind2 vL rT vR tList)
+                (sx
+                  (cons rLet
+                    (cons vN
+                      (cons rT
+                        (cons (s3 rNode zero vR)
+                          (single
+                            (foldr T T (lam ((b T) (acc T)) (s3 rAdd b acc)) zero
+                              (children (get bits))))))))))
+              (some
+                (s3 rDef (Datatype.memberName (child m 0))
+                  (s3 rLam (bind1 vT rT) (bitOf (s4 rFold rT step vT) 0)))))
+            none)))))
+
+  ; whether an atom occurs in a form
+  (def occurs
+    (lam ((a T) (f T)) (para T (lam ((n T) (rs Ts)) (if (equal n a) 1 (foldr T T or 0 rs))) f)))
+  ; a program's forms with its markers replaced by the recognizers it refers to, when each of
+  ; those can be written
+  (def insertRecognizers
+    (lam ((fs Ts))
+      (let ms Ts (markers fs)
+        (let r T
+          (allSome
+            (foldr T Ts
+              (lam ((f T) (acc Ts))
+                (cons
+                  (if (eq (label f) 9)
+                    (if
+                      (foldr T T
+                        (lam ((g T) (u T)) (or (occurs (Datatype.memberName (child f 0)) g) u))
+                        0
+                        fs)
+                      (let d T (recognizer ms f)
+                        (if (isSome d) (some (node 0 (single (get d)))) none))
+                      (some (node 0 (nil T))))
+                    (some (node 0 (single f))))
+                  acc))
+              (nil T)
+              fs))
+          (if (isSome r)
+            (some
+              (node 0
+                (foldr T Ts (lam ((x T) (acc Ts)) (append (children x) acc)) (nil T)
+                  (children (get r)))))
+            none))))))

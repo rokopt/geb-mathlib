@@ -10,6 +10,11 @@
 ;
 ;   (data D (c A ...) ... (c B ... & E))   declares the datatype D and its constructors; a last
 ;                                        field & E takes the remaining children as a list
+;   (tree-data D (c A ...) ...)          declares D as data does, D standing for the trees
+;   (rep e)                              the representation of a value of a datatype: the tree
+;   (decode D e f c)                     f applied to the tree e when e is a member of D, c
+;                                        otherwise, decided by D's recognizer D.member
+;   (datum D d)                          the quoted datum d, a member of D
 ;   (case e ((c x ...) body) ... (else body))
 ;                                        case analysis; without else, it is exhaustive
 ;   (cata D R e ((c x ...) body) ...)    structural recursion over D at result type R: a field
@@ -17,15 +22,24 @@
 ;                                        results, any other field to its value
 ;   (defn f ((x A) ...) R body)          a function with its result type
 ;
+; The expansion erases datatypes, which stand for the trees in its output. After the
+; constructors of a datatype the keyword data declares, it leaves the marker from which the
+; recognizers are written (bootstrap/recognize.geb).
+;
 ; A pattern (c x ...) names one variable for each field of c, the last standing for the
 ; remaining children when c has a & field; the & is not repeated in the pattern.
 ;
 ; Names beginning with % are reserved for the expansion. The expansion refers to the
 ; primitives label, child, children, node and eq by name, so a program does not rebind
-; them around case and cata. Requires the prelude, the reader and the checker.
+; them around case and cata; nor does it declare D.member for a datatype D it decodes. Requires
+; the prelude, the reader and the checker.
 
 (module Datatype
-  (export aDef kwData kwCase kwCata kwDefn decimalChars sTail zipTs expandAliases expandCase
+  (export aDef kwData kwTreeData kwCase kwCata kwRep kwDecode kwDatum kwDefn decimalChars memberName
+    sTail
+    zipTs
+    expandAliases
+    expandCase
     expandCata
     expandExpr
     dataDecl
@@ -88,12 +102,18 @@
   (def aR (quote (1 "%r")))
   (def aD (quote (1 "%d")))
   (def aRest (quote (1 "%rest")))
+  (def aE (quote (1 "%e")))
+  (def aQuote (quote (1 quote)))
   (def aK (quote (1 "%k")))
   (def kwData (quote (0 data)))
+  (def kwTreeData (quote (0 tree-data)))
   (def kwCase (quote (0 case)))
   (def kwCata (quote (0 cata)))
   (def kwDefn (quote (0 defn)))
   (def kwElse (quote (0 else)))
+  (def kwRep (quote (0 rep)))
+  (def kwDecode (quote (0 decode)))
+  (def kwDatum (quote (0 datum)))
   (def kwAmp (quote (0 &)))
 
   ; a numeral's characters and atom
@@ -108,6 +128,8 @@
               (add (log2 n) 1)))
           (foldr T Ts (lam ((d T) (acc Ts)) (cons (add d 48) acc)) (nil T) (digitsMsb 10 n k))))))
   (def numAtom (lam ((n T)) (node 1 (decimalChars n))))
+  ; the name of a datatype's recognizer: the datatype's atom followed by .member
+  (def memberName (lam ((d T)) (node 1 (append (children d) (children (quote (1 .member)))))))
   (def fieldAtom (lam ((k T)) (node 1 (cons 37 (cons 102 (decimalChars k))))))
 
   ; types and expressions under construction
@@ -369,6 +391,18 @@
                         aUnitV))
                     none)))))))))
 
+  ; decoding: the tree bound once, tested by the datatype's recognizer, and given to the function
+  ; when it is a member
+  (def expandDecode
+    (lam ((env Ts) (raw T) (rs RRs))
+      (let d T (at (children raw) 1)
+        (let e T (rrAt rs 2 env)
+          (let f T (rrAt rs 3 env)
+            (let c T (rrAt rs 4 env)
+              (if (and (isAtom d) (both e (both f c)))
+                (some (sLet aE aT (get e) (sIf (sx2 (memberName d) aE) (sx2 (get f) aE) (get c))))
+                none)))))))
+
   ; an expression expanded, given the declarations before it
   (def expandExpr
     (lam ((env Ts) (e T))
@@ -383,8 +417,13 @@
                        (let k T (arity raw)
                          (if (and (named h kwCase) (lt 2 k)) (expandCase env raw rs)
                            (if (and (named h kwCata) (lt 4 k)) (expandCata env raw rs)
-                             (let xs T (allSome (rrApply rs env))
-                               (if (isSome xs) (some (node 2 (children (get xs)))) none))))))
+                             (if (and (named h kwRep) (eq k 2)) (rrAt rs 1 env)
+                               (if (and (named h kwDecode) (eq k 5)) (expandDecode env raw rs)
+                                 (if (and (named h kwDatum) (eq k 3))
+                                   (some (sx2 aQuote (at (children raw) 2)))
+                                   (let xs T (allSome (rrApply rs env))
+                                     (if (isSome xs) (some (node 2 (children (get xs))))
+                                       none)))))))))
                      (some raw))))))
            e)) env)))
 
@@ -458,6 +497,29 @@
                               ds))))))
                   none))))))))
 
+  ; the marker the recognizers read of a datatype the keyword data declares: the node of label 9
+  ; over its atom and, for each constructor, the node over its position, its field types, whether
+  ; a last field takes the remaining children, and that field's type, abbreviations expanded
+  (def marker
+    (lam ((env Ts) (d T) (ds Ts))
+      (node 9
+        (cons d
+          (foldr T Ts
+            (lam ((c T) (acc Ts))
+              (if (eq (label c) 5)
+                (cons
+                  (node 0
+                    (cons (child c 1)
+                      (cons
+                        (node 0
+                          (foldr T Ts (lam ((ty T) (a Ts)) (cons (expandAliases env ty) a)) (nil T)
+                            (children (child c 3))))
+                        (cons (child c 4) (single (expandAliases env (child c 5)))))))
+                  acc)
+                acc))
+            (nil T)
+            ds)))))
+
   ; a program's forms expanded: the state is whether every form has expanded, the declarations,
   ; and the kernel forms, the most recent first
   (deftype XP (Prod T (Prod Ts Ts)))
@@ -471,12 +533,19 @@
             (let es Ts (children e)
               (let h T (at es 0)
                 (let k T (arity e)
-                  (if (named h kwData)
+                  (if (or (named h kwData) (named h kwTreeData))
                     (let dd T (dataDecl e)
                       (if (isSome dd)
-                        (pair 1
-                          (pair (append env (children (child (get dd) 0)))
-                            (append (reverse (children (child (get dd) 1))) out)))
+                        (let ds Ts (children (child (get dd) 0))
+                          (pair 1
+                            (pair (append env ds)
+                              (append
+                                (reverse
+                                  (if (named h kwData)
+                                    (append (children (child (get dd) 1))
+                                      (single (marker env (at es 1) ds)))
+                                    (children (child (get dd) 1))))
+                                out))))
                         xpFail))
                     (if (and (named h kwDefn) (eq k 5))
                       (let b T (expandExpr env (at es 4))

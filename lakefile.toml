@@ -153,6 +153,11 @@ path = "bootstrap/modules.geb"
 text = true
 
 [[input_file]]
+name = "recognizeSource"
+path = "bootstrap/recognize.geb"
+text = true
+
+[[input_file]]
 name = "compileSource"
 path = "bootstrap/compile.geb"
 text = true
@@ -195,7 +200,7 @@ path = "bootstrap/compiler.img"
 name = "GebTestsStage0"
 globs = ["GebTests.Prototypes.Stage0"]
 needs = ["@/preludeSource", "@/serializeSource", "@/readerSource", "@/checkSource",
-  "@/datatypeSource", "@/modulesSource", "@/compileSource"]
+  "@/datatypeSource", "@/modulesSource", "@/recognizeSource", "@/compileSource"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]

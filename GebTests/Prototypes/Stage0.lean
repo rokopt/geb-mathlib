@@ -76,6 +76,9 @@ def datatype : String := include_str "../../bootstrap/datatype.geb"
 /-- The elaboration of modules' source. -/
 def modules : String := include_str "../../bootstrap/modules.geb"
 
+/-- The recognizers' source. -/
+def recognize : String := include_str "../../bootstrap/recognize.geb"
+
 /-- The compiler's entry point. -/
 def compile : String := include_str "../../bootstrap/compile.geb"
 
@@ -87,7 +90,7 @@ def serializer : String :=
 joins them. -/
 def compiler : String :=
   prelude ++ "\n" ++ serialize ++ "\n" ++ reader ++ "\n" ++ check ++ "\n" ++ datatype ++ "\n" ++
-    modules ++ "\n" ++ compile ++ "\n"
+    modules ++ "\n" ++ recognize ++ "\n" ++ compile ++ "\n"
 
 /-- Compile a program with the stage-0 compiler, given as text, read the image back, and apply
 its definition named {lit}`main` to an input tree. -/
@@ -114,11 +117,26 @@ def roses : String := "
   (cata Rose T t ((rnode l rs) (add 1 (foldr T T (lam ((a T) (b T)) (add a b)) 0 rs)))))
 (data Color (red) (green) (blue))
 (defn isRed ((c Color)) T (case c ((red) 1) (else 0)))
-(def leafRose (lam ((l T)) (rnode l (nil T))))
+(def leafRose (lam ((l T)) (rnode l (nil Rose))))
 (def main (lam ((t T))
   (node 0
-    (cons (count (rnode 7 (cons (leafRose 1) (cons (rnode 2 (cons (leafRose 3) (nil T))) (nil T)))))
+    (cons
+      (count
+        (rnode 7 (cons (leafRose 1) (cons (rnode 2 (cons (leafRose 3) (nil Rose))) (nil Rose)))))
     (cons (isRed red) (cons (isRed blue) (nil T)))))))"
+
+/-- Datatypes decoded from trees by their recognizers, one of whose fields are datatypes, one a
+field taking the remaining children; a value given as a datum; and the representation. -/
+def decoding : String := "
+(data Nat (zero) (succ Nat))
+(data Rose (rnode T & Rose))
+(data Both (both2 Nat Rose))
+(def isNat (lam ((t T)) (decode Nat t (lam ((n Nat)) 1) 0)))
+(def isRose (lam ((t T)) (decode Rose t (lam ((r Rose)) 1) 0)))
+(def isBoth (lam ((t T)) (decode Both t (lam ((b Both)) 1) 0)))
+(def two (datum Nat (1 (1 (0)))))
+(def main (lam ((t T))
+  (node 0 (cons (isNat t) (cons (isRose t) (cons (isBoth t) (cons (rep two) (nil T))))))))"
 
 /-- The type checker, returning the types of the definitions of the bundle it is given. -/
 def checker : String :=
@@ -196,6 +214,15 @@ def samples : List Tree :=
 -- Programs in the datatype language, compiled by the stage-0 compiler and run from their images
 #guard runDatatype compiler.toList naturals.toList (leaf 5) = some (mk 0 [leaf 10, leaf 4])
 #guard runDatatype compiler.toList roses.toList (leaf 0) = some (mk 0 [leaf 4, leaf 1, leaf 0])
+-- membership decided by the recognizers, at a natural, a rose tree, a pair of the two and the
+-- leaf zero
+#guard [(mk 1 [mk 1 [leaf 0]], [1, 0, 0]), (mk 0 [leaf 5, mk 0 [leaf 7]], [0, 1, 0]),
+    (mk 0 [mk 1 [leaf 0], mk 0 [leaf 3]], [0, 1, 1]), (leaf 0, [1, 0, 0])].all fun (t, bs) ↦
+  runDatatype compiler.toList decoding.toList t ==
+    some (mk 0 (bs.map leaf ++ [mk 1 [mk 1 [leaf 0]]]))
+-- a datatype tree-data declares compiles as one data declares, which no program decodes
+#guard runMain compiler.toList (nameTree naturals.toList) ==
+  runMain compiler.toList (nameTree (naturals.replace "(data " "(tree-data ").toList)
 #guard ["(data Nat (zero) (succ Nat)) (defn f ((n Nat)) T (case n ((zero) 1))) (def main f)",
     "(data A (a)) (data B (b)) (defn f ((n A)) T (case n ((a) 1) ((b) 0))) (def main f)",
     "(data A (a)) (defn f ((n A)) T (case n ((c) 1) (else 0))) (def main f)",

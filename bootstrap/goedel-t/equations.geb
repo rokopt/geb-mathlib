@@ -119,7 +119,7 @@
   (defnum Rule.thm 36)
   (defnum Rule.paraNode 37)
 
-  (data Eqn (eqn T T T))
+  (tree-data Eqn (eqn T T T))
   (defn eqTy ((q T)) T (case q ((eqn a s t) a)))
   (defn eqLhs ((q T)) T (case q ((eqn a s t) s)))
   (defn eqRhs ((q T)) T (case q ((eqn a s t) t)))

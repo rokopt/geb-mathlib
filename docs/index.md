@@ -3806,13 +3806,14 @@ checklist and in CI.
   bundle as the seed does,
   `check.geb` is the kernel's type checker, `datatype.geb` expands the
   forms of the datatype language (datatypes, case analysis, structural
-  recursion and
-  functions with result types) into kernel forms, and `compile.geb`
+  recursion, functions with result types, representation, decoding and
+  data) into kernel forms, `recognize.geb` writes the recognizers of the
+  datatypes a program decodes, and `compile.geb`
   composes them into the stage-0 compiler from source to image, rejecting
   ill-typed programs. `GebTests/Prototypes/Stage0.lean` compares the
   serializer with `Geb.Kernel.writeImage`, the checker with the seed's, and
   the compiler with the seed on the kernel's examples, runs programs in
-  the datatype language compiled by the compiler.
+  the datatype language compiled by the compiler, decoding included.
   `bootstrap/identity.geb` computes content identity in Geb, BLAKE3 by
   arithmetic on natural numbers, a definition's payload, its CID, the
   migration, the linker, the names re-keyed by identifiers and the
@@ -3827,7 +3828,9 @@ checklist and in CI.
   readable syntax, which `GebTests/Prototypes/Kernel/Printer.lean` compares
   with `Geb.Kernel.printProgram`.
   `bootstrap/stage1/datatype.geb` rewrites the expansion in the datatype
-  language, and `bootstrap/stage1/lean.geb` is a
+  language, checking the datatypes `data` declares, each a type distinct
+  from the trees, by the typing of `bootstrap/stage1/typing.geb` before
+  erasing them, and `bootstrap/stage1/lean.geb` is a
   backend emitting a Lean module in place of an image; the stage-1 compiler
   they make, built by the stage-0 compiler, is committed as
   `bootstrap/compiler.img`, and the Lean it emits from its own source as

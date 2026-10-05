@@ -2,16 +2,23 @@
 ; Released under Apache 2.0 license as described in the file LICENSE.
 ; Authors: Terence Rokop
 ;
-; The expansion of the datatype language written in the datatype language: the same function of
-; a program's forms as bootstrap/datatype.geb, which is written in the kernel's syntax, with
-; datatypes for optional trees, S-expressions and declarations, case analysis and structural
-; recursion in place of tests of labels and folds, and functions with result types. The stage-1
-; compiler is the stage-0 compiler with this expansion in place of that one; built by the
-; stage-0 compiler, it produces the image the stage-0 compiler produces of it. Requires the
-; prelude, the reader and the checker.
+; The expansion of the datatype language written in the datatype language: the function of a
+; program's forms that bootstrap/datatype.geb, written in the kernel's syntax, computes, on every
+; program the typing accepts, with datatypes for optional trees, S-expressions and declarations,
+; case analysis and structural recursion in place of tests of labels and folds, and functions
+; with result types. The expansion first writes the program's forms with their datatypes, the
+; coercions it knows to hold marked by nodes no reader writes; the typing
+; (bootstrap/stage1/typing.geb) checks them; and their erasure is the program the stage-0
+; expansion writes. The stage-1 compiler is the stage-0 compiler with this expansion in place of
+; that one; built by the stage-0 compiler, it produces the image the stage-0 compiler produces of
+; it. Requires the prelude, the reader, the checker and the typing.
 
 (module Datatype
-  (export Opt nothing just atom aDef kwData kwCase kwCata kwDefn decimalChars sTail Decl
+  (export Opt nothing just atom aDef kwData kwTreeData kwCase kwCata kwRep kwDecode kwDatum kwDefn
+    decimalChars
+    memberName
+    sTail
+    Decl
     expandAliases
     expandCase
     expandCata
@@ -21,14 +28,17 @@
     XPK
     xpFail
     xpStep
-    expandProgram)
+    expandProgram
+    expandTyped
+    typeErrorOf)
   (import Prelude)
   (import Reader)
+  (import Typing)
   ; optional trees and S-expressions, as the reader represents them: nothing is the leaf 0 and
   ; just the node of label 1 over the tree; an atom is the node of label 1 over its characters
   ; and a list the node of label 2 over its elements
-  (data Opt (nothing) (just T))
-  (data Sx (sx0) (atom & T) (lst & Sx))
+  (tree-data Opt (nothing) (just T))
+  (tree-data Sx (sx0) (atom & T) (lst & Sx))
 
   ; S-expressions under construction
   (defn sx1 ((a T)) T (lst (single a)))
@@ -80,12 +90,18 @@
   (def aR (quote (1 "%r")))
   (def aD (quote (1 "%d")))
   (def aRest (quote (1 "%rest")))
+  (def aE (quote (1 "%e")))
+  (def aQuote (quote (1 quote)))
   (def aK (quote (1 "%k")))
   (def kwData (quote (0 data)))
+  (def kwTreeData (quote (0 tree-data)))
   (def kwCase (quote (0 case)))
   (def kwCata (quote (0 cata)))
   (def kwDefn (quote (0 defn)))
   (def kwElse (quote (0 else)))
+  (def kwRep (quote (0 rep)))
+  (def kwDecode (quote (0 decode)))
+  (def kwDatum (quote (0 datum)))
   (def kwAmp (quote (0 &)))
 
   ; a numeral's characters and atom
@@ -99,6 +115,8 @@
             (add (log2 n) 1)))
         (foldr T Ts (lam ((d T) (acc Ts)) (cons (add d 48) acc)) (nil T) (digitsMsb 10 n k)))))
   (defn numAtom ((n T)) T (atom (decimalChars n)))
+  ; the name of a datatype's recognizer: the datatype's atom followed by .member
+  (defn memberName ((d T)) T (node 1 (append (children d) (children (quote (1 .member))))))
   (defn fieldAtom ((k T)) T (atom (cons 37 (cons 102 (decimalChars k)))))
 
   ; types and expressions under construction
@@ -122,7 +140,7 @@
   ; declarations: a constructor with its name, position, datatype, field types, whether a last
   ; field takes the remaining children, and that field's type; a datatype with its name; a type
   ; abbreviation with its name and its type, abbreviations expanded
-  (data Decl (ctorD T T T T T T) (dataD T) (aliasD T T))
+  (tree-data Decl (ctorD T T T T T T) (dataD T) (aliasD T T))
   (defn findCtor ((n T) (env Ts)) T
     (foldr T T
       (lam ((e T) (r T)) (case e ((ctorD m j d fs v w) (if (equal m n) (just e) r)) (else r)))
@@ -140,14 +158,18 @@
       (nil T)
       env))
 
-  ; a type with its abbreviations expanded, and a value of each type
+  ; a type with its abbreviations expanded, and a value of each type, at the trees and at a
+  ; datatype the leaf zero, given to a datatype by the expansion's coercion: a structural recursion
+  ; takes it only at a node with fewer children than its constructor has fields, which no member is
   (defn expandAliases ((env Ts) (ty T)) T
     (cata Sx T ty ((atom cs) (case (findAlias (node 0 cs) env) ((just a) a) ((nothing) (atom cs))))
       ((lst rs) (lst rs))
       ((sx0) sx0)))
   (defn defaultOf ((ty T)) T
     (snd
-      (cata Sx RT ty ((atom cs) (pair (atom cs) (if (equal (node 0 cs) kwUnit) aUnitV aZero)))
+      (cata Sx RT ty
+        ((atom cs)
+         (pair (atom cs) (if (equal (node 0 cs) kwUnit) aUnitV (node2 11 (atom cs) aZero))))
         ((lst rs)
          (let raw T (lst (rtTrees rs))
            (let vs Ts (rtValues rs)
@@ -280,18 +302,29 @@
          nothing))
       ((nothing) nothing)))
 
+  ; the expansion's coercions, which no reader writes (bootstrap/stage1/typing.geb): a term of a
+  ; type's erasure at the type, where the expansion knows it to be a member, and a term of a type
+  ; at its erasure
+  (defn asTy ((ty T) (e T)) T (node2 11 ty e))
+  (defn ofTy ((ty T) (e T)) T (node2 12 ty e))
+
   ; case analysis: the scrutinee bound once, its label tested, its children bound to the clause's
   ; variables
-  (defn caseField ((k T) (ty T) (v T) (b T)) T (sLet v aT (sx3 aChild aS (numAtom k)) b))
+  (defn caseField ((k T) (ty T) (v T) (b T)) T (sLet v ty (asTy ty (sx3 aChild aS (numAtom k))) b))
   (defn caseRest ((nf T) (ty T) (v T) (b T)) T
-    (sLet v (sList aT) (sDrop aT (sx2 aChildren aS) nf) b))
+    (sLet v (sList ty) (asTy (sList ty) (sDrop aT (sx2 aChildren aS) nf)) b))
   (defn expandCase ((env Ts) (raw T) (rs RRs)) T
-    (let scr T (rrAt rs 1 env)
-      (let chain T
-        (clauseChain env nothing (drop 2 (children raw)) (argsOf rs 2 env) aS
-          (bindWith caseField caseRest))
-        (case scr ((just s) (case chain ((just c) (just (sLet aS aT s c))) ((nothing) nothing)))
-          ((nothing) nothing)))))
+    (let cls Ts (drop 2 (children raw))
+      (let scr T (rrAt rs 1 env)
+        (let chain T
+          (clauseChain env nothing cls (argsOf rs 2 env) aS (bindWith caseField caseRest))
+          (let d T
+            (case (clauseCtor env (at cls 0)) ((just c) (node 1 (children (child c 2))))
+              ((nothing) aT))
+            (case scr
+              ((just s)
+               (case chain ((just c) (just (sLet aS aT (ofTy d s) c))) ((nothing) nothing)))
+              ((nothing) nothing)))))))
 
   ; structural recursion: the kernel's fold of trees whose step sees the node itself, at the
   ; suspended result; the clause's fields take the children's suspended results in order, one
@@ -308,7 +341,7 @@
         (sx3 aPair (sLam1 aU aUnit dr) (sx2 aNil (thTy r)))
         (sLam2 aH (thTy r) aTl (sList (thTy r)) (sx3 aPair aH aTl)))
       (if (named ty d) (sLet v r (sx2 (sx2 aFst (qAtom k)) aUnitV) b)
-        (sLet v aT (sx3 aChild aO (numAtom k)) b))))
+        (sLet v ty (asTy ty (sx3 aChild aO (numAtom k))) b))))
   (defn cataRest ((d T) (r T) (nf T) (ty T) (v T) (b T)) T
     (if (named ty d)
       (sLet v (sList r)
@@ -317,7 +350,7 @@
           (sx2 aNil r)
           (resultsAt nf))
         b)
-      (sLet v (sList aT) (sDrop aT (sx2 aChildren aO) nf) b)))
+      (sLet v (sList ty) (asTy (sList ty) (sDrop aT (sx2 aChildren aO) nf)) b)))
   (defn expandCata ((env Ts) (raw T) (rs RRs)) T
     (let es Ts (children raw)
       (let d T (nameOf (at es 1))
@@ -332,7 +365,9 @@
                (case chain
                  ((just c)
                   (just
-                    (sx2 (sx4 aPara (thTy r) (sLam2 aO aT aK (sList (thTy r)) (sLam1 aU aUnit c)) s)
+                    (sx2
+                      (sx4 aPara (thTy r) (sLam2 aO aT aK (sList (thTy r)) (sLam1 aU aUnit c))
+                        (ofTy (at es 1) s))
                       aUnitV)))
                  ((nothing) nothing)))
               ((nothing) nothing)))))))
@@ -369,7 +404,7 @@
                      (foldr T (Prod T Ts)
                        (lam ((f T) (acc (Prod T Ts)))
                          (pair (add (fst acc) 1)
-                           (cons (sx2 (fieldAtom (sub (sub nf 1) (fst acc))) aT) (snd acc))))
+                           (cons (sx2 (fieldAtom (sub (sub nf 1) (fst acc))) f) (snd acc))))
                        (pair 0 (nil T))
                        fields))
                    (let listE T
@@ -377,11 +412,12 @@
                        (foldr T (Prod T T)
                          (lam ((f T) (acc (Prod T T)))
                            (pair (add (fst acc) 1)
-                             (sx3 aCons (fieldAtom (sub (sub nf 1) (fst acc))) (snd acc))))
-                         (pair 0 (if isVar aRest (sx2 aNil aT)))
+                             (sx3 aCons (ofTy f (fieldAtom (sub (sub nf 1) (fst acc)))) (snd acc))))
+                         (pair 0 (if isVar (ofTy (sList (at rest (sub nr 1))) aRest) (sx2 aNil aT)))
                          fields))
-                     (let allPs Ts (if isVar (append ps (single (sx2 aRest (sList aT)))) ps)
-                       (let body T (sx3 aNode (numAtom j) listE)
+                     (let allPs Ts
+                       (if isVar (append ps (single (sx2 aRest (sList (at rest (sub nr 1)))))) ps)
+                       (let body T (asTy (node 1 (children d)) (sx3 aNode (numAtom j) listE))
                          (if (isAtom (at es 0))
                            (just
                              (node2 0
@@ -420,6 +456,29 @@
                  nothing))
               ((nothing) nothing)))))))
 
+  ; the marker the recognizers read of a datatype the keyword data declares: the node of label 9
+  ; over its atom and, for each constructor, the node over its position, its field types, whether
+  ; a last field takes the remaining children, and that field's type, abbreviations expanded
+  (defn marker ((env Ts) (d T) (ds Ts)) T
+    (node 9
+      (cons d
+        (foldr T Ts
+          (lam ((c T) (acc Ts))
+            (case c
+              ((ctorD m j dd fs v w)
+               (cons
+                 (node 0
+                   (cons j
+                     (cons
+                       (node 0
+                         (foldr T Ts (lam ((ty T) (a Ts)) (cons (expandAliases env ty) a)) (nil T)
+                           (children fs)))
+                       (cons v (single (expandAliases env w))))))
+                 acc))
+              (else acc)))
+          (nil T)
+          ds))))
+
   ; a program's forms expanded: the state is whether every form has expanded, the declarations,
   ; and the kernel forms, the most recent first
   (deftype XP (Prod T (Prod Ts Ts)))
@@ -432,12 +491,21 @@
           (let es Ts (children e)
             (let h T (at es 0)
               (let k T (arity e)
-                (if (named h kwData)
+                (if (or (named h kwData) (named h kwTreeData))
                   (case (dataDecl e)
                     ((just dd)
-                     (pair 1
-                       (pair (append env (children (child dd 0)))
-                         (append (reverse (children (child dd 1))) out))))
+                     (let ds Ts (children (child dd 0))
+                       (pair 1
+                         (pair (append env ds)
+                           (append
+                             (reverse
+                               (if (named h kwData)
+                                 (append
+                                   (cons (node 10 (single (at es 1)))
+                                     (tail (children (child dd 1))))
+                                   (single (marker env (at es 1) ds)))
+                                 (children (child dd 1))))
+                             out)))))
                     ((nothing) xpFail))
                   (if (and (named h kwDefn) (eq k 5))
                     (case (expandExpr env (at es 4))
@@ -463,8 +531,50 @@
                         (if (and (named h kwDefnum) (eq k 3)) (pair 1 (pair env (cons e out)))
                           xpFail))))))))))
       xpFail))
-  (defn expandProgram ((es Ts)) T
+  ; a program's forms expanded with their datatypes, before they are checked
+  (defn expandTyped ((es Ts)) T
     (let s XP
       ((foldr T XPK (lam ((e T) (k XPK) (s XP)) (k (xpStep s e))) (lam ((s XP)) s) es)
        (pair 1 (pair (nil T) (nil T))))
-      (if (fst s) (just (node 0 (reverse (snd (snd s))))) nothing))))
+      (if (fst s) (just (node 0 (reverse (snd (snd s))))) nothing)))
+
+  ; the erasure of a checked program: the declaration of a datatype becomes its abbreviation for
+  ; the trees; the coercions and representations become the terms they apply to; decoding binds
+  ; the tree once, tests it by the datatype's recognizer and gives it to the function when it is a
+  ; member; and the datum of a member, the quotation of the tree
+  (defn eraseExpr ((e T)) T
+    (fold T
+      (lam ((l T) (rs Ts))
+        (if (or (eq l 11) (eq l 12)) (at rs 1)
+          (let raw T (node l rs)
+            (if (and (isList raw) (lt 1 (length rs)))
+              (let h T (at rs 0)
+                (let k T (length rs)
+                  (if (and (named h kwRep) (eq k 2)) (at rs 1)
+                    (if (and (named h kwDecode) (eq k 5))
+                      (sLet aE aT (at rs 2)
+                        (sIf (sx2 (memberName (at rs 1)) aE) (sx2 (at rs 3) aE) (at rs 4)))
+                      (if (and (named h kwDatum) (eq k 3)) (sx2 aQuote (at rs 2)) raw)))))
+              raw))))
+      e))
+  (defn eraseForm ((f T)) T
+    (if (eq (label f) 10) (sx3 aDeftype (child f 0) aT)
+      (if (and (isList f) (and (eq (arity f) 3) (named (child f 0) kwDef)))
+        (sx3 (child f 0) (child f 1) (eraseExpr (child f 2)))
+        f)))
+  (defn expandProgram ((es Ts)) T
+    (case (expandTyped es)
+      ((just fs)
+       (if (isSome (checkForms (children fs))) nothing
+         (just
+           (node 0
+             (foldr T Ts (lam ((f T) (acc Ts)) (cons (eraseForm f) acc)) (nil T) (children fs))))))
+      ((nothing) nothing)))
+  ; the name of the first definition of a program's text that does not check, or the empty tree
+  (defn typeErrorOf ((file T)) T
+    (let sx T (readSExps (children file))
+      (if (isSome sx)
+        (case (expandTyped (children (get sx)))
+          ((just fs) (let r T (checkForms (children fs)) (if (isSome r) (get r) (node 0 (nil T)))))
+          ((nothing) (node 0 (nil T))))
+        (node 0 (nil T))))))

@@ -138,6 +138,14 @@ def renameStep (vis : Visible) (a : Option Ident)
     | [] => orig
     | (h, rh) :: rest =>
       if isKw h "quote" || isKw h "hole" then orig
+      else if isKw h "datum" then
+        match rest with
+        | [(_, rD), (d, _)] => slist [h, rD .type [], d]
+        | _ => orig
+      else if isKw h "decode" then
+        match rest with
+        | (_, rD) :: xs => slist (h :: rD .type [] :: as .term bound xs)
+        | [] => orig
       else if isKw h "lam" then
         match rest with
         | [(b, rb), (_, body)] => slist [h, rb .binders [], body .term (boundBy b ++ bound)]
@@ -315,7 +323,7 @@ def elabDecl (pre : Ident) (st : ElabState) (e : SExp) : Elab ElabState := do
       | [ps, res, b] => return emit (← declare st s fl) [rename st.vis ps .binders [],
           rename st.vis res .type [], rename st.vis b .term (boundBy ps)] [.decl fl]
       | _ => throw other
-    else if isKw kw "data" then do
+    else if isKw kw "data" || isKw kw "tree-data" then do
       let st1 ← declare st s fl
       let ctors ← rest.mapM fun c ↦ match c.children with
         | n :: fs => need (n.label.map fun cn ↦ (cn, fs)) other
