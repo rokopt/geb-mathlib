@@ -23,7 +23,10 @@ elaborated at each import that supplies all of its parameters, {lit}`(import (P 
 parameter {lit}`(parameter A)` becomes a type abbreviation of its argument and an operation
 parameter {lit}`(parameter (f (A …) R))` a definition of its argument at that type, and the body
 is elaborated under the instance's prefix. Instantiation by definitions is substitution of the
-arguments for the parameters, the kernel's types being monomorphic.
+arguments for the parameters, the kernel's types being monomorphic. Where a module with
+parameters is declared, it is elaborated once more at opaque arguments, into a form
+{lit}`(%generic …)` that the stage-1 compiler checks and every reader drops
+({lit}`genericOf`).
 
 Every name of a declaration's body is renamed to what it denotes in the flat program, a name
 bound around it in a term excepted; the forms of the kernel and of the datatype language give
@@ -354,6 +357,45 @@ def importSpec (e : SExp) : Option (Ident × List SExp × Option Ident) :=
 def importAs (as? : Option Ident) (exports : Visible) : Visible :=
   exports.map fun (s, fl) ↦ ((as?.map fun n ↦ n ++ '.' :: s).getD s, fl)
 
+/-- A template's instance under a path at arguments, elaborated from its importer's state: its
+parameters bound to the arguments and its forms elaborated in the scope of its declaration. -/
+def instantiate (rec : Ident → ElabState → SExp → Elab ElabState) (st : ElabState)
+    (params : List SExp) (exports : List Ident) (forms : List SExp) (scope : Visible)
+    (inst : Ident) (args : List SExp) : Elab ElabState := do
+  let st1 ← (params.zip args).foldlM (fun acc (prm, arg) ↦ bindParam inst st.vis acc prm arg)
+    ⟨scope, st.out, st.reg, exports, [], st.mods⟩
+  forms.foldlM (rec inst) st1
+
+/-- A template's instance at opaque arguments, which the stage-1 compiler checks and every
+compiler then drops: the form {lit}`(%generic …)` over the declarations of fresh arguments, a sort
+{lit}`(%sort S)` for each sort parameter and a constant {lit}`(%postulate P A)` of the parameter's
+type for each operation, the parameter's sorts read as their arguments, followed by the
+instance's forms. -/
+def genericOf (rec : Ident → ElabState → SExp → Elab ElabState) (st : ElabState)
+    (params : List SExp) (exports : List Ident) (forms : List SExp) (scope : Visible)
+    (path : Ident) : Elab SExp := do
+  let isSort (p : SExp) : Bool := (p.children[1]?.bind (·.label)).isSome
+  let args := params.zipIdx.map fun (p, i) ↦
+    atom ('%' :: (if isSort p then 's' else 'p') :: Csexp.decOf i)
+  let sorts : Visible := (params.zip args).filterMap fun (p, a) ↦ do
+    pure ((← (← p.children[1]?).label), ← a.label)
+  let vis := sorts ++ scope
+  let sortKw := atom ['%', 's', 'o', 'r', 't']
+  let postulateKw := atom ['%', 'p', 'o', 's', 't', 'u', 'l', 'a', 't', 'e']
+  let arrowKw := atom ['A', 'r', 'r', 'o', 'w']
+  let decls := (params.zip args).map fun (p, a) ↦
+    match p.children[1]? with
+    | some sig =>
+      match sig.label, sig.children with
+      | some _, _ => slist [sortKw, a]
+      | none, [_, xs, res] => slist [postulateKw, a, xs.children.foldr
+          (fun A r ↦ slist [arrowKw, rename vis A .type [], r]) (rename vis res .type [])]
+      | none, _ => slist [postulateKw, a]
+    | none => slist [postulateKw, a]
+  let st2 ← instantiate rec { st with out := [] } params exports forms scope
+    (path ++ '%' :: ['g', 'e', 'n', 'e', 'r', 'i', 'c']) args
+  pure (slist (atom ['%', 'g', 'e', 'n', 'e', 'r', 'i', 'c'] :: decls ++ st2.out))
+
 /-- The elaboration of one form of a block, given the elaboration of the forms of the modules
 nested in it and of the templates it instantiates, one level of nesting fewer. -/
 def elabStep (rec : Ident → ElabState → SExp → Elab ElabState) (pre : Ident)
@@ -372,9 +414,7 @@ def elabStep (rec : Ident → ElabState → SExp → Elab ElabState) (pre : Iden
           throw s!"the import of {String.ofList p} supplies {args.length} of its \
             {params.length} parameters"
         let inst := pre ++ '/' :: (as?.getD p)
-        let st1 ← (params.zip args).foldlM (fun acc (prm, arg) ↦ bindParam inst st.vis acc prm arg)
-          ⟨scope, st.out, st.reg, exports, [], st.mods⟩
-        let st2 ← forms.foldlM (rec inst) st1
+        let st2 ← instantiate rec st params exports forms scope inst args
         let ex ← exportsOf st2
         declareAll { st with
           out := st2.out
@@ -395,8 +435,10 @@ def elabStep (rec : Ident → ElabState → SExp → Elab ElabState) (pre : Iden
             (importAs (some s) ex)
         else
           let (exs, body) := splitHead "export" others
-          pure { st with reg := st.reg ++ [(path, .template params
-            (exs.flatMap fun x ↦ (x.children.drop 1).filterMap (·.label)) body st.vis)] }
+          let exports := exs.flatMap fun x ↦ (x.children.drop 1).filterMap (·.label)
+          let g ← genericOf rec st params exports body st.vis path
+          pure { st with out := st.out ++ [g]
+                         reg := st.reg ++ [(path, .template params exports body st.vis)] }
       | [] => throw "a module is not named"
     else elabDecl pre st e
   | [] => throw "a form is neither a declaration, a module, an import nor an export"
@@ -435,9 +477,14 @@ def expandModules (es : List SExp) : Option (List SExp) :=
 
 /-! ## Reading -/
 
+/-- A program's forms without the instances of templates at opaque arguments, which only the
+stage-1 compiler reads. -/
+def dropGeneric (fs : List SExp) : List SExp :=
+  fs.filter fun f ↦ !(f.children.head?.any (isKw · "%generic"))
+
 /-- The definitions of a program, its modules elaborated, as names with kernel terms. -/
 def readProgram (text : List Char) : Option (List (List Char × Tree)) := do
-  readForms (← expandModules (← readSExps text))
+  readForms (dropGeneric (← expandModules (← readSExps text)))
 
 /-- The first failure of a program, as a message: text that is not well formed, modules that do
 not elaborate, or the first failure of {name}`diagnoseForms`; nothing when the program reads and
@@ -448,7 +495,7 @@ def diagnose (text : List Char) : Option String :=
   | some es =>
     match elabModules es with
     | .error msg => some msg
-    | .ok fs => diagnoseForms fs
+    | .ok fs => diagnoseForms (dropGeneric fs)
 
 /-- Apply the last definition of a program, of type {lit}`T → T`, to an input tree. -/
 def runMain (text : List Char) (input : Tree) : Option Tree := do

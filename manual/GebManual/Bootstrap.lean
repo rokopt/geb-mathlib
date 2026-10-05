@@ -133,7 +133,8 @@ Computation:
 * In progress. The datatype language's completion
   ({ref "datatype-completion"}[The datatype language's completion]),
   before substantial authoring, its typing in the stage-1 compiler, the
-  representation, decoding and data, and the recognizers complete:
+  representation, decoding and data, the recognizers and the opaque check
+  of type parameters complete:
   datatype names as types distinct from the type of trees, checked at
   every use, a datatype reaching the trees only through its
   representation and its decoding by its generated recognizer, both
@@ -2169,8 +2170,19 @@ compiler writes where a program refers to it (`bootstrap/recognize.geb`),
 from a marker the expansion leaves after the constructors of each
 datatype `data` declares: one fold of the tree whose result at a node
 holds the bit of its membership in `D` and in each datatype on which `D`
-depends. Complete: the typing, the three forms and the recognizers.
-Remaining, in order: type parameters checked opaquely; the sources
+depends.
+
+A template, a module with parameters, is checked once at opaque
+arguments, as well as at each import that instantiates it: module
+elaboration, in Geb and in Lean, writes at its declaration the form
+`(%generic …)`, its instance at a fresh sort `(%sort S)` for each sort
+parameter and a fresh constant `(%postulate P A)` of the parameter's type
+for each operation. The stage-1 compiler checks it after the
+declarations before it, a sort being distinct from every other type and
+without representation, and every compiler then drops it, so a template
+whose code inspects the trees of its sort is rejected though no import
+instantiates it. Complete: the typing, the three forms, the recognizers
+and the opaque check of templates. Remaining, in order: the sources
 retyped, the stage-1 compiler's first, then those of Gödel's T, the
 proofs and the printer, and the metalogic's last, its mirror regenerated
 and the agreement proofs repaired where a definition's erasure changes;
@@ -6225,9 +6237,9 @@ the change that removes it.
   are qualified, as the hygiene of generated names requires, removes the
   restriction.
 * The sources annotate every value of a datatype as the type of trees,
-  declaring their datatypes by `tree-data`, and type parameters are not
-  checked opaquely, so the datatype a value belongs to is recorded
-  nowhere, which the rest of its completion removes
+  declaring their datatypes by `tree-data`, so the datatype a value
+  belongs to is recorded nowhere, which the rest of its completion
+  removes
   ({ref "datatype-completion"}[The datatype language's completion]); a
   pattern omits the `&` that a declaration writes; and every pattern
   variable is bound whether or not the clause uses it.

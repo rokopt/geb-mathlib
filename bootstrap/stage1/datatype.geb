@@ -102,6 +102,9 @@
   (def kwRep (quote (0 rep)))
   (def kwDecode (quote (0 decode)))
   (def kwDatum (quote (0 datum)))
+  (def kwGeneric (quote (0 "%generic")))
+  (def kwSort (quote (0 "%sort")))
+  (def kwPostulate (quote (0 "%postulate")))
   (def kwAmp (quote (0 &)))
 
   ; a numeral's characters and atom
@@ -531,11 +534,36 @@
                         (if (and (named h kwDefnum) (eq k 3)) (pair 1 (pair env (cons e out)))
                           xpFail))))))))))
       xpFail))
+  ; the instance of a template at opaque arguments that module elaboration writes, (%generic ...):
+  ; its forms expanded with the declarations before it, the declarations of its arguments kept,
+  ; and the node of label 15 over them written for the typing, the declarations after it
+  ; unchanged; an instance nested in one is not expanded
+  (defn genericStep ((s XP) (e T)) XP
+    (if (fst s)
+      (let r XP
+        ((foldr T XPK
+           (lam ((f T) (k XPK) (t XP))
+             (k
+               (if (and (fst t) (isList f))
+                 (let h T (child f 0)
+                   (if (or (named h kwSort) (named h kwPostulate))
+                     (pair 1 (pair (fst (snd t)) (cons f (snd (snd t)))))
+                     (if (named h kwGeneric) xpFail (xpStep t f))))
+                 xpFail)))
+           (lam ((t XP)) t)
+           (tail (children e))) (pair 1 (pair (fst (snd s)) (nil T))))
+        (if (fst r)
+          (pair 1 (pair (fst (snd s)) (cons (node 15 (reverse (snd (snd r)))) (snd (snd s)))))
+          xpFail))
+      s))
   ; a program's forms expanded with their datatypes, before they are checked
   (defn expandTyped ((es Ts)) T
     (let s XP
-      ((foldr T XPK (lam ((e T) (k XPK) (s XP)) (k (xpStep s e))) (lam ((s XP)) s) es)
-       (pair 1 (pair (nil T) (nil T))))
+      ((foldr T XPK
+         (lam ((e T) (k XPK) (s XP))
+           (k (if (and (isList e) (named (child e 0) kwGeneric)) (genericStep s e) (xpStep s e))))
+         (lam ((s XP)) s)
+         es) (pair 1 (pair (nil T) (nil T))))
       (if (fst s) (just (node 0 (reverse (snd (snd s))))) nothing)))
 
   ; the erasure of a checked program: the declaration of a datatype becomes its abbreviation for
@@ -568,7 +596,9 @@
        (if (isSome (checkForms (children fs))) nothing
          (just
            (node 0
-             (foldr T Ts (lam ((f T) (acc Ts)) (cons (eraseForm f) acc)) (nil T) (children fs))))))
+             (foldr T Ts (lam ((f T) (acc Ts)) (if (eq (label f) 15) acc (cons (eraseForm f) acc)))
+               (nil T)
+               (children fs))))))
       ((nothing) nothing)))
   ; the name of the first definition of a program's text that does not check, or the empty tree
   (defn typeErrorOf ((file T)) T

@@ -86,6 +86,29 @@ def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
   unless accepted.all fun p ↦ typeErrorOf p == some (mk 0 []) do
     throw (IO.userError "the typing rejects a well-typed program")
 
+-- the stage-1 compiler checks a template at opaque sorts, which have no representation: it
+-- rejects a template applying a primitive of trees to a value of its sort, or representing it,
+-- though no import instantiates it and the stage-0 compiler compiles it; it compiles, as the
+-- stage-0 compiler does, a template over a sort and an operation, and one declaring a datatype
+-- whose field is of its sort
+#eval show IO Unit from do
+  let img ← IO.FS.readBinFile "bootstrap/compiler.img"
+  let main := " (def main (lam ((t T)) t))"
+  for p in ["(module Bad (parameter A) (export f) (def f (lam ((x A)) (label x))))" ++ main,
+      "(module Peek (parameter A) (export f) (def f (lam ((x A)) (rep x))))" ++ main] do
+    unless runImage img (nameTree p.toList) == some (mk 0 []) do
+      throw (IO.userError s!"the stage-1 compiler compiles {p}")
+    if runMain compiler.toList (nameTree p.toList) == some (mk 0 []) then
+      throw (IO.userError s!"the stage-0 compiler rejects {p}")
+  unless ["(module Twice (parameter A) (parameter (f (A) A)) (export twice)" ++
+        " (def twice (lam ((x A)) (f (f x))))) (def inc (lam ((x T)) (add x 1)))" ++
+        " (import (Twice T inc)) (def main (lam ((t T)) (twice t)))",
+      "(module Box (parameter A) (export box unbox) (data Box (box A))" ++
+        " (defn unbox ((b Box)) A (case b ((box x) x)))) (import (Box T))" ++
+        " (def main (lam ((t T)) (unbox (box t))))"].all fun p ↦
+      runImage img (nameTree p.toList) != some (mk 0 []) && agreesOn img compiler.toList p.toList do
+    throw (IO.userError "the stage-1 compiler rejects a template the typing admits")
+
 end Geb.Kernel.Stage1Tests
 
 end
