@@ -19,19 +19,24 @@
   ; documents: text with its width in columns and its bytes, a concatenation, the line breaks of
   ; a document indented by two more columns, a line break or, in a flat group, a space, a group,
   ; and the line breaks of a document indented to the column where it starts
-  (tree-data Doc (txt T T) (cat & Doc) (nest Doc) (line) (grp Doc) (align Doc))
+  (data Bytes (bytes & T))
+  (data Doc (txt T Bytes) (cat & Doc) (nest Doc) (line) (grp Doc) (align Doc))
+  (import (Seq Doc) as Docs)
   (defn cols ((bs Ts)) T
     (foldr T T (lam ((b T) (n T)) (if (and (lt 127 b) (lt b 192)) n (add n 1))) 0 bs))
-  (defn text ((bs Ts)) T (txt (cols bs) (node 0 bs)))
-  (defn cat2 ((a T) (b T)) T (cat (cons a (single b))))
-  (defn cat3 ((a T) (b T) (c T)) T (cat (cons a (cons b (single c)))))
-  (defn cat5 ((a T) (b T) (c T) (d T) (e T)) T (cat (cons a (cons b (cons c (cons d (single e)))))))
-  (defn indented ((d T)) T (nest (cat2 line d)))
-  (defn joinWith ((sep T) (ds Ts)) T
+  (defn text ((bs Ts)) Doc (txt (cols bs) (bytes bs)))
+  (defn cat2 ((a Doc) (b Doc)) Doc (cat (cons a (Docs.single b))))
+  (defn cat3 ((a Doc) (b Doc) (c Doc)) Doc (cat (cons a (cons b (Docs.single c)))))
+  (defn cat5 ((a Doc) (b Doc) (c Doc) (d Doc) (e Doc)) Doc
+    (cat (cons a (cons b (cons c (cons d (Docs.single e)))))))
+  (defn indented ((d Doc)) Doc (nest (cat2 line d)))
+  (defn joinWith ((sep Doc) (ds (List Doc))) Doc
     (cat
-      (lcase T Ts ds (nil T)
-        (lam ((d T) (r Ts))
-          (cons d (foldr T Ts (lam ((x T) (acc Ts)) (cons sep (cons x acc))) (nil T) r))))))
+      (lcase Doc (List Doc) ds (nil Doc)
+        (lam ((d Doc) (r (List Doc)))
+          (cons d
+            (foldr Doc (List Doc) (lam ((x Doc) (acc (List Doc))) (cons sep (cons x acc))) (nil Doc)
+              r))))))
 
   ; the text the backend writes
   (def tLp (text (children (quote (0 "(")))))
@@ -120,12 +125,13 @@ end
         (if (hbOf x) (ldOf x) (add (wOf x) (ldOf y))))
       (lam ((i T) (f T) (t T) (s St))
         ((snd y) i f t ((snd x) i f (add (ldOf y) (if (hbOf y) 0 t)) s)))))
-  (defn layout ((d T)) T
+  (defn layout ((d Doc)) T
     (let r WP
       (cata Doc WP d
         ((txt w bs)
          (pair (ms w 0 w)
-           (lam ((i T) (f T) (t T) (s St)) (pair (add (fst s) w) (revOnto (children bs) (snd s))))))
+           (lam ((i T) (f T) (t T) (s St))
+             (pair (add (fst s) w) (revOnto (case bs ((bytes cs) cs)) (snd s))))))
         ((cat xs) (foldr WP WP catWP (pair (ms 0 0 0) (lam ((i T) (f T) (t T) (s St)) s)) xs))
         ((nest x) (pair (fst x) (lam ((i T) (f T) (t T) (s St)) ((snd x) (add i 2) f t s))))
         ((line)
@@ -149,27 +155,38 @@ end
 
   ; a term's shape: text that needs no parentheses as an argument, text that does, a run of
   ; abstractions with its binders and body, or a run of applications with its head and arguments
-  (tree-data Sh (atomic T) (compound T) (fn T T) (ap T & T))
-  (defn binderDocs ((bs T)) T
-    (joinWith line
-      (foldr T Ts (lam ((x T) (acc Ts)) (cons (cat5 tLp (child x 0) tColon (child x 1) tRp) acc))
-        (nil T)
-        (children bs))))
-  (defn shDoc ((s T)) T
+  (data Param (param Doc Doc))
+  (data Params (params & Param))
+  (import (Seq Param) as Ps)
+  (data Sh (atomic Doc) (compound Doc) (fn Params Doc) (ap Doc & Doc))
+  (defn binderDocs ((bs Params)) Doc
+    (case bs
+      ((params xs)
+       (joinWith line
+         (foldr Param (List Doc)
+           (lam ((x Param) (acc (List Doc)))
+             (case x ((param n ty) (cons (cat5 tLp n tColon ty tRp) acc))))
+           (nil Doc)
+           xs)))))
+  (defn shDoc ((s Sh)) Doc
     (case s ((atomic d) d) ((compound d) d)
       ((fn bs b)
        (grp (cat2 (align (grp (cat3 tFun (nest (binderDocs bs)) tDoubleArrow))) (indented b))))
       ((ap h as)
        (grp
          (cat2 h
-           (nest (cat (foldr T Ts (lam ((a T) (acc Ts)) (cons line (cons a acc))) (nil T) as))))))))
-  (defn argDoc ((s T)) T (case s ((atomic d) d) (else (cat3 tLp (shDoc s) tRp))))
-  (defn valDoc ((s T)) T
+           (nest
+             (cat
+               (foldr Doc (List Doc) (lam ((a Doc) (acc (List Doc))) (cons line (cons a acc)))
+                 (nil Doc)
+                 as))))))))
+  (defn argDoc ((s Sh)) Doc (case s ((atomic d) d) (else (cat3 tLp (shDoc s) tRp))))
+  (defn valDoc ((s Sh)) Doc
     (case s ((atomic d) d) ((ap h as) (shDoc s)) (else (cat3 tLp (shDoc s) tRp))))
-  (defn opDoc ((s T)) T (case s ((compound d) (cat3 tLp d tRp)) (else (shDoc s))))
+  (defn opDoc ((s Sh)) Doc (case s ((compound d) (cat3 tLp d tRp)) (else (shDoc s))))
 
   ; kernel types and terms, by label
-  (tree-data Kt (ktT) (ktUnit) (ktProd Kt Kt) (ktArrow Kt Kt) (ktList Kt) (kt5) (kt6) (kt7) (kVar T)
+  (data Kt (ktT) (ktUnit) (ktProd Kt Kt) (ktArrow Kt Kt) (ktList Kt) (kt5) (kt6) (kt7) (kVar T)
     (kLam Kt Kt)
     (kApp Kt Kt)
     (kUnit)
@@ -190,55 +207,56 @@ end
 
   ; a type or term emitted: the free variables it uses, as a list whose entry at a de Bruijn
   ; index is 1 when that variable occurs, and its shape as a function of the binding depth
-  (deftype Em (Prod Ts (Arrow T T)))
+  (deftype Em (Prod Ts (Arrow T Sh)))
   (defn orList ((xs Ts) (ys Ts)) Ts
     ((foldr T Endo
        (lam ((x T) (k Endo) (zs Ts))
          (lcase T Ts zs (cons x (k (nil T))) (lam ((z T) (r Ts)) (cons (or x z) (k r)))))
        (lam ((zs Ts)) zs)
        xs) ys))
-  (defn closedSh ((s T)) Em (pair (nil T) (lam ((k T)) s)))
-  (defn closed ((d T)) Em (closedSh (atomic d)))
-  (defn tyDoc ((e Em)) T (shDoc ((snd e) 0)))
-  (defn varDoc ((v T)) T (text (cons 120 (decimalChars v))))
-  (defn namedArg ((n T) (e Em)) T (cat5 tLp n tColonEq (tyDoc e) tRp))
-  (defn quoteDoc ((q T)) T
-    (fold T
-      (lam ((l T) (rs Ts))
-        (if (nonEmpty rs)
+  (defn closedSh ((s Sh)) Em (pair (nil T) (lam ((k T)) s)))
+  (defn closed ((d Doc)) Em (closedSh (atomic d)))
+  (defn tyDoc ((e Em)) Doc (shDoc ((snd e) 0)))
+  (defn varDoc ((v T)) Doc (text (cons 120 (decimalChars v))))
+  (defn namedArg ((n Doc) (e Em)) Doc (cat5 tLp n tColonEq (tyDoc e) tRp))
+  (defn quoteDoc ((q T)) Doc
+    (fold Doc
+      (lam ((l T) (rs (List Doc)))
+        (if (lt 0 (Docs.length rs))
           (grp
             (cat
               (cons tMk
                 (cons (text (decimalChars l))
-                  (cons tSpLb (cons (nest (joinWith (cat2 tComma line) rs)) (single tRb)))))))
+                  (cons tSpLb (cons (nest (joinWith (cat2 tComma line) rs)) (Docs.single tRb)))))))
           (cat2 tLeaf (text (decimalChars l)))))
       q))
   ; an abstraction applied to a value, as a let binding its first binder; Lean requires the
   ; lines continuing a let to start to the right of it, so they are indented from its column
-  (defn letDoc ((bs Ts) (body T) (v T)) T
-    (let b0 T (at bs 0)
-      (let rest Ts (tail bs)
-        (align
-          (grp
-            (cat
-              (cons tLet
-                (cons (child b0 0)
-                  (cons tColon
-                    (cons (child b0 1)
-                      (cons tColonEq
-                        (cons (valDoc v)
-                          (cons tSemi
-                            (cons line
-                              (single
-                                (if (nonEmpty rest) (shDoc (fn (node 0 rest) body))
-                                  body))))))))))))))))
-  (defn emTerm ((nm T) (t T)) Em
+  (defn letDoc ((bs (List Param)) (body Doc) (v Sh)) Doc
+    (let rest (List Param) (Ps.tail bs)
+      (case (Ps.atOr (param tUnder tUnder) bs 0)
+        ((param n ty)
+         (align
+           (grp
+             (cat
+               (cons tLet
+                 (cons n
+                   (cons tColon
+                     (cons ty
+                       (cons tColonEq
+                         (cons (valDoc v)
+                           (cons tSemi
+                             (cons line
+                               (Docs.single
+                                 (if (lt 0 (Ps.length rest)) (shDoc (fn (params rest) body))
+                                   body)))))))))))))))))
+  (defn emTerm ((nm T) (t Kt)) Em
     (cata Kt Em t ((ktT) (closed tT)) ((ktUnit) (closed tUnitTy))
       ((ktProd a b)
        (closedSh (compound (grp (cat3 (opDoc ((snd a) 0)) tTimes (indented (opDoc ((snd b) 0))))))))
       ((ktArrow a b)
        (closedSh (compound (grp (cat3 (opDoc ((snd a) 0)) tTo (indented (tyDoc b)))))))
-      ((ktList a) (closedSh (ap tList (single (argDoc ((snd a) 0))))))
+      ((ktList a) (closedSh (ap tList (Docs.single (argDoc ((snd a) 0))))))
       ((kVar i)
        (pair (append (replicate (label i) 0) (single 1))
          (lam ((d T)) (atomic (varDoc (sub (sub d 1) (label i)))))))
@@ -246,18 +264,18 @@ end
        (pair (tail (fst b))
          (lam ((d T))
            (let used T (lcase T T (fst b) 0 (lam ((x T) (r Ts)) x))
-             (let bd T (node2 0 (if used (varDoc d) tUnder) (tyDoc a))
-               (let sb T ((snd b) (add d 1))
-                 (case sb ((fn bs body) (fn (node 0 (cons bd (children bs))) body))
-                   (else (fn (node 0 (single bd)) (shDoc sb))))))))))
+             (let bd Param (param (if used (varDoc d) tUnder) (tyDoc a))
+               (let sb Sh ((snd b) (add d 1))
+                 (case sb ((fn bs body) (case bs ((params xs) (fn (params (cons bd xs)) body))))
+                   (else (fn (params (Ps.single bd)) (shDoc sb))))))))))
       ((kApp f x)
        (pair (orList (fst f) (fst x))
          (lam ((d T))
-           (let sf T ((snd f) d)
-             (let sx T ((snd x) d)
-               (case sf ((ap h as) (ap h (append as (single (argDoc sx)))))
-                 ((fn bs body) (compound (letDoc (children bs) body sx)))
-                 (else (ap (argDoc sf) (single (argDoc sx))))))))))
+           (let sf Sh ((snd f) d)
+             (let sx Sh ((snd x) d)
+               (case sf ((ap h as) (ap h (Docs.append as (Docs.single (argDoc sx)))))
+                 ((fn bs body) (compound (case bs ((params xs) (letDoc xs body sx)))))
+                 (else (ap (argDoc sf) (Docs.single (argDoc sx))))))))))
       ((kUnit) (closed tUnitV))
       ((kPair a b)
        (pair (orList (fst a) (fst b))
@@ -277,9 +295,10 @@ end
                    (cons (shDoc ((snd c) d))
                      (cons tThen
                        (cons (indented (shDoc ((snd a) d)))
-                         (cons line (cons tElse (single (indented (shDoc ((snd b) d))))))))))))))))
-      ((kFold a) (pair (nil T) (lam ((d T)) (ap tFold (single (namedArg tAlpha a))))))
-      ((kIter a) (pair (nil T) (lam ((d T)) (ap tIter (single (namedArg tAlpha a))))))
+                         (cons line
+                           (cons tElse (Docs.single (indented (shDoc ((snd b) d))))))))))))))))
+      ((kFold a) (pair (nil T) (lam ((d T)) (ap tFold (Docs.single (namedArg tAlpha a))))))
+      ((kIter a) (pair (nil T) (lam ((d T)) (ap tIter (Docs.single (namedArg tAlpha a))))))
       ((kNil a) (closed (cat3 tNilLp (argDoc ((snd a) 0)) tRp)))
       ((kCons x xs)
        (pair (orList (fst x) (fst xs))
@@ -288,20 +307,22 @@ end
              (grp (cat5 tLp (argDoc ((snd x) d)) tConsOp (indented (argDoc ((snd xs) d))) tRp))))))
       ((kFoldr a b)
        (pair (nil T)
-         (lam ((d T)) (ap tFoldr (cons (namedArg tAlpha a) (single (namedArg tBeta b)))))))
+         (lam ((d T)) (ap tFoldr (cons (namedArg tAlpha a) (Docs.single (namedArg tBeta b)))))))
       ((kPrim k) (closed (cat2 tConstDot (text (children (at primNames (label k)))))))
       ((kRef j) (closed (cat3 tLg (text (children (child nm (label j)))) tRg)))
       ((kLcase a b)
        (pair (nil T)
-         (lam ((d T)) (ap tLcase (cons (namedArg tAlpha a) (single (namedArg tBeta b)))))))
-      ((kPara a) (pair (nil T) (lam ((d T)) (ap tPara (single (namedArg tAlpha a))))))
+         (lam ((d T)) (ap tLcase (cons (namedArg tAlpha a) (Docs.single (namedArg tBeta b)))))))
+      ((kPara a) (pair (nil T) (lam ((d T)) (ap tPara (Docs.single (namedArg tAlpha a))))))
       (else (closed tUnder))))
 
-  ; a bundle's module: the header, each definition under its name, and the footer
-  (defn defDoc ((name T) (body T)) T
+  ; a bundle's module: the header, each definition under its name, and the footer, the bundle's
+  ; terms decoded as kernel terms
+  (defn defDoc ((name T) (body Doc)) Doc
     (cat3 line line
       (grp
-        (cat (cons tDef (cons (text (children name)) (cons tAssign (single (indented body)))))))))
+        (cat
+          (cons tDef (cons (text (children name)) (cons tAssign (Docs.single (indented body)))))))))
   (defn emitLean ((b T)) T
     (let nm T (child b 1)
       (let ds Ts (children (child b 0))
@@ -309,16 +330,16 @@ end
           (layout
             (cat
               (cons tHeader
-                (append
+                (Docs.append
                   (snd
-                    (foldr T (Prod T Ts)
-                      (lam ((t T) (acc (Prod T Ts)))
+                    (foldr T (Prod T (List Doc))
+                      (lam ((t T) (acc (Prod T (List Doc))))
                         (pair (add (fst acc) 1)
                           (cons
                             (defDoc (child nm (sub (sub n 1) (fst acc)))
-                              (shDoc ((snd (emTerm nm t)) 0)))
+                              (decode Kt t (lam ((k Kt)) (shDoc ((snd (emTerm nm k)) 0))) tUnder))
                             (snd acc))))
-                      (pair 0 (nil T))
+                      (pair 0 (nil Doc))
                       ds))
-                  (single tFooter))))))))))
+                  (Docs.single tFooter))))))))))
 (defn mainLean ((file T)) T (Compile.compileWith LeanBackend.emitLean file))
