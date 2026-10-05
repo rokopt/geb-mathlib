@@ -9,6 +9,7 @@ public import Geb.Prototypes.Kernel -- shake: keep
 public meta import Geb.Prototypes.Kernel -- shake: keep
 public import GebTests.Prototypes.Kernel -- shake: keep
 public meta import GebTests.Prototypes.Kernel -- shake: keep
+public meta import Lean.Elab.Command -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -76,6 +77,10 @@ def datatype : String := include_str "../../bootstrap/datatype.geb"
 /-- The elaboration of modules' source. -/
 def modules : String := include_str "../../bootstrap/modules.geb"
 
+/-- The traversal of kernel terms, with weakening and substitution, written in Geb: the source of
+the operations the proofs about the type checker's preservation of types state. -/
+def subst : String := include_str "../../bootstrap/subst.geb"
+
 /-- The recognizers' source. -/
 def recognize : String := include_str "../../bootstrap/recognize.geb"
 
@@ -91,6 +96,11 @@ joins them. -/
 def compiler : String :=
   prelude ++ "\n" ++ serialize ++ "\n" ++ reader ++ "\n" ++ check ++ "\n" ++ datatype ++ "\n" ++
     modules ++ "\n" ++ recognize ++ "\n" ++ compile ++ "\n"
+
+/-- The stage-0 compiler with an entry point giving a program's bundle: its text read, its modules
+elaborated and its forms of the datatype language expanded, without the image written. -/
+def bundler : String :=
+  compiler ++ "(def bundleMain (lam ((file T)) (Compile.bundleOf file)))"
 
 /-- Compile a program with the stage-0 compiler, given as text, read the image back, and apply
 its definition named {lit}`main` to an input tree. -/
@@ -229,6 +239,32 @@ def samples : List Tree :=
     "(data A (a T)) (defn f ((n A)) T (case n ((a x y) x))) (def main f)",
     "(defn f ((n T)) T (cata T T n ((a) 1))) (def main f)"].all fun p ↦
   runMain compiler.toList (nameTree p.toList) == some (mk 0 [])
+
+-- the numeral abbreviations of the prelude are the Lean abbreviations of the kernel's labels and
+-- the primitives' indices, name for name and value for value
+open Lean Elab Command Meta in
+run_cmd do
+  -- a source's forms and the forms of the modules it declares
+  let forms (e : SExp) : List SExp :=
+    if (e.children.head?.bind (·.label)).map String.ofList == some "module" then e.children
+    else [e]
+  let defnums (text : String) : List (String × ℕ) :=
+    (((readSExps text.toList).getD []).flatMap forms).filterMap fun e ↦
+      match e.children with
+      | [kw, n, v] =>
+        if kw.label.map String.ofList == some "defnum" then
+          do some (String.ofList (← n.label), ← numeral? (← v.label))
+        else none
+      | _ => none
+  let geb := defnums (← IO.FS.readFile "bootstrap/prelude.geb")
+  let spaces := [`Geb.Kernel.Label, `Geb.Kernel.Prim]
+  let consts := (← getEnv).constants.fold (init := #[]) fun acc c info ↦
+    if spaces.contains c.getPrefix then acc.push (c, info) else acc
+  let lean ← liftTermElabM <| consts.toList.filterMapM fun (c, info) ↦ do
+    let some v := info.value? | return none
+    return (← (evalNat v).run).map ((c.replacePrefix c.getPrefix.getPrefix .anonymous).toString, ·)
+  unless geb.length == lean.length && geb.all lean.contains do
+    throwError "the Geb abbreviations {geb} are not the Lean abbreviations {lean}"
 
 end Geb.Kernel.Stage0Tests
 

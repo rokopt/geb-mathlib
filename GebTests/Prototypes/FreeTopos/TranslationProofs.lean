@@ -7,8 +7,8 @@ module
 
 public import GebTests.Prototypes.FreeTopos.Translation -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos.Translation -- shake: keep
-public import GebTests.Prototypes.Proofs -- shake: keep
-public meta import GebTests.Prototypes.Proofs -- shake: keep
+public import GebTests.Prototypes.Stage0 -- shake: keep
+public meta import GebTests.Prototypes.Stage0 -- shake: keep
 public import Geb.Prototypes.FreeTopos.Internal.Prove -- shake: keep
 public meta import Geb.Prototypes.FreeTopos.Internal.Prove -- shake: keep
 public import Geb.Prototypes.FreeTopos.Tactics -- shake: keep
@@ -16,26 +16,24 @@ public meta import Geb.Prototypes.FreeTopos.Tactics -- shake: keep
 
 set_option doc.verso true in
 /-!
-# The theorems of Gödel's T, translated
+# Theorems about kernel programs, translated
 
-The theorems of the proofs in Gödel's T, with the programs they are about, translated into the
+Equations between kernel programs, statements of Gödel's T, each given as two definitions
+abstracting its sides over its context, with the programs they are about, translated into the
 internal language, whose labels are bitstrings, and proved there by its prover: the prelude's
 appending by normalization and induction; the labels' addition by rewriting with lemmas on the
 bitstrings' addition, which the development proves first by induction on the bitstrings, case
-analysis of their bits and, for the functions of the first summand, extensionality, where Gödel's T
-instead takes addition's recursion as an axiom; the kernel's type checker at a quoted tree, the
-accessors of the checker of Gödel's T and a program by structural recursion by normalization, weak
-head normal forms first, rewriting by Lambek's lemma, which follows from two lemmas on lists by the
+analysis of their bits and, for the functions of the first summand, extensionality; the kernel's
+type checker at a quoted tree and a program by structural recursion by normalization, weak head
+normal forms first, rewriting by Lambek's lemma, which follows from two lemmas on lists by the
 uniqueness of the rose tree's fold. Each development checks, and the report prints, for each file,
-the nodes of the certificates of Gödel's T and of the language's derivations of its theorems, the
-bit steps among the latter, and the times each checker takes, and the same for the lemmas proved
-before the theorems.
+the nodes of the language's derivations of its theorems, the bit steps among them, and the time
+the checker takes, and the same for the lemmas proved before the theorems.
 
 ## Main definitions
 
-* {lit}`files` — the texts of the proof files, each after the programs it is about.
-* {lit}`goedelTResults` — the results in Gödel's T of each file: the program's definitions, and each
-  theorem with its certificate.
+* {lit}`files` — the texts of the files, each the programs and the theorems' statements.
+* {lit}`theoremsOf` — a file's program and its theorems, from the statements' definitions.
 * {lit}`treeLemmas` — the fold of a list by construction, the fusion of the rebuilding of trees
   with their unfolding, and Lambek's lemma.
 * {lit}`preludeDev`, {lit}`natDev`, {lit}`checkDev`, {lit}`treeDev` — the developments.
@@ -53,28 +51,92 @@ set_option doc.verso true
 namespace GebTests.Prototypes.FreeTopos.TranslationProofs
 
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation Geb.FreeTopos.Tactics
-open Geb.GoedelT.ProofTests
-open GebTests.Prototypes.FreeTopos.Translation (sizeK sizeM baseRules)
+open GebTests.Prototypes.FreeTopos.Translation (sizeM baseRules)
 open scoped FinEnum
 
-/-- The texts of the proof files, each after the programs it is about: the prelude, the labels,
-the kernel's type checker, the metalogic's checker and a program by structural recursion. -/
-def files : List String :=
+/-- The statements of the prelude's theorems: appending the empty list on either side, the
+associativity of appending, and appending the empty list twice. -/
+def preludeStatements : String := "
+(import Prelude)
+(def appendNilLeftL (lam ((ys Ts)) (append (nil T) ys)))
+(def appendNilLeftR (lam ((ys Ts)) ys))
+(def appendNilL (lam ((xs Ts)) (append xs (nil T))))
+(def appendNilR (lam ((xs Ts)) xs))
+(def appendAssocL (lam ((ys Ts) (zs Ts) (xs Ts)) (append (append xs ys) zs)))
+(def appendAssocR (lam ((ys Ts) (zs Ts) (xs Ts)) (append xs (append ys zs))))
+(def appendNilTwiceL (lam ((xs Ts)) (append (append xs (nil T)) (nil T))))
+(def appendNilTwiceR (lam ((xs Ts)) xs))"
+
+/-- The statements of the labels' addition: zero on the right, the successor on the right, and
+zero on the left. -/
+def natStatements : String := "
+(import Prelude)
+(def addZeroL (lam ((m T)) (add m 0)))
+(def addZeroR (lam ((m T)) (label m)))
+(def addSuccL (lam ((m T) (n T)) (add m (add n 1))))
+(def addSuccR (lam ((m T) (n T)) (add (add m n) 1)))
+(def addZeroLeftL (lam ((n T)) (add 0 n)))
+(def addZeroLeftR (lam ((n T)) (label n)))"
+
+/-- The statement of the type checker's type of a quoted tree. -/
+def checkStatements : String := "
+(import Prelude) (import Reader) (import Check)
+(def typeQuoteL (lam ((G Ts) (ctx Ts) (x T)) (typeIn G ctx (node Label.quote (single x)))))
+(def typeQuoteR (lam ((G Ts) (ctx Ts) (x T)) (some Label.tyTree)))"
+
+/-- A program by structural recursion over a datatype, and the statements of its recursion
+equations. -/
+def datatypeStatements : String := "
+(import Prelude) (import Reader) (import Check)
+(data Nat (zero) (succ Nat))
+(defn plus ((m Nat) (n Nat)) Nat (cata Nat Nat m ((zero) n) ((succ r) (succ r))))
+(def plusZeroL (lam ((n Nat)) (plus zero n)))
+(def plusZeroR (lam ((n Nat)) n))
+(def plusSuccL (lam ((m Nat) (n Nat)) (plus (succ m) n)))
+(def plusSuccR (lam ((m Nat) (n Nat)) (succ (plus m n))))"
+
+/-- The texts of the files, each the programs its theorems are about and their statements, with
+the number of its theorems: the prelude, the labels, the kernel's type checker and a program by
+structural recursion. -/
+def files : List (String × ℕ) :=
   let pr := Kernel.Stage0Tests.prelude
   let prc := pr ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++ Kernel.Stage0Tests.check
-  [pr ++ "\n" ++ preludeProofs, pr ++ "\n" ++ natProofs, prc ++ "\n" ++ checkProofs,
-    prc ++ "\n" ++ GoedelT.Tests.equationsGeb ++ "\n" ++ equationsProofs,
-    prc ++ "\n" ++ datatypeProofs]
+  [(pr ++ "\n" ++ preludeStatements, 4), (pr ++ "\n" ++ natStatements, 3),
+    (prc ++ "\n" ++ checkStatements, 1), (prc ++ "\n" ++ datatypeStatements, 2)]
 
-/-- The results in Gödel's T of each file, from the texts of the bundler, the prover and the files:
-the program's definitions, and each theorem with its certificate. -/
-def goedelTResults (bundler prover : List Char) (files : List (List Char)) :
-    Option (List (List Tree × List (GoedelT.Thm × Tree))) := do
-  let f ← proverFn? bundler prover
-  files.mapM fun text ↦ do
-    let (D, rs) ← results f text
-    pure (D, rs.map fun x ↦ (thmOf (x.children.getD 1 (Kernel.leaf 0)),
-      x.children.getD 2 (Kernel.leaf 0)))
+/-- The binders' types of a term's abstractions, innermost first, and the body under them, at most
+{lit}`n` of them. -/
+def unLams : ℕ → Tree → List Tree × Tree
+  | 0, t => ([], t)
+  | n + 1, t =>
+    match t.children with
+    | [A, b] => if t.label == Kernel.Label.lam then
+        let r := unLams n b
+        (r.1 ++ [A], r.2)
+      else ([], t)
+    | _ => ([], t)
+
+/-- A file's program and theorems, from its definitions, the last two for each theorem its
+statement: the program's definitions before them, and each theorem, whose context and sides are
+the abstractions of its two definitions and whose type is its left side's. -/
+def theoremsOf (ds : List (List Char × Tree)) (k : ℕ) : List Tree × List GoedelT.Thm :=
+  let n := ds.length - 2 * k
+  let D := (ds.take n).map Prod.snd
+  let G := (Kernel.load D).getD []
+  let ss := (ds.drop n).map Prod.snd
+  (D, (List.range k).map fun i ↦
+    let (Γ, l) := unLams 64 (ss.getD (2 * i) (Kernel.leaf 0))
+    let r := (unLams 64 (ss.getD (2 * i + 1) (Kernel.leaf 0))).2
+    ⟨Γ, ⟨(GoedelT.typeOf G Γ l).getD (Kernel.leaf 0), l, r⟩⟩)
+
+/-- The programs and theorems of the files, each read and expanded by the stage-0 compiler's front
+end. -/
+def results (bundler : List Char) (files : List (List Char × ℕ)) :
+    Option (List (List Tree × List GoedelT.Thm)) :=
+  files.mapM fun (text, k) ↦ do
+    let r ← Kernel.runMain bundler (Kernel.nameTree text)
+    let b ← if r.label == 1 then r.children.head? else none
+    pure (theoremsOf (← Kernel.unbundle b) k)
 
 open Internal (Term Deriv Decl Entry NormRule Rule)
 
@@ -104,10 +166,10 @@ def develop (ts : List (Internal.Thm × (Array Entry → Option Deriv))) : Optio
 
 /-- The translation of a file's program and theorems: the constants, the number of definitions,
 and the translated theorems. -/
-def translate (D : List Tree) (rs : List (GoedelT.Thm × Tree)) :
+def translate (D : List Tree) (ts : List GoedelT.Thm) :
     Option (Internal.Globals × ℕ × List Internal.Thm) := do
   let (gt, defs) ← program D
-  pure (globals defs, lib.length + defs.length, ← rs.mapM fun p ↦ thm gt p.1)
+  pure (globals defs, lib.length + defs.length, ← ts.mapM (thm gt))
 
 /-- The sides of a translated theorem's equation. -/
 def sides (a : Internal.Thm) : Term × Term :=
@@ -273,51 +335,45 @@ def bitSteps : Deriv → ℕ := RoseTree.elim fun l rs ↦
   (match l with | .caseInl _ _ | .caseInr _ _ => 1 | _ => 0) + rs.sum
 
 /-- The report of a file, printed, and an error when a development does not check: the nodes of the
-certificates of Gödel's T and of the language's derivations of the file's theorems, the bit steps
-among the latter, and the least of three times each checker takes, in microseconds; and a row of the
-same for the lemmas the development proves before the theorems, which the proofs in Gödel's T do not
-prove; the file's name alone where no development is computed. -/
-def report (name : String) (D : List Tree) (rs : List (GoedelT.Thm × Tree))
+language's derivations of the file's theorems, the bit steps among them, and the least of three
+times the checker takes, in microseconds; and a row of the same for the lemmas the development
+proves before the theorems; the file's name alone where no development is computed. -/
+def report (name : String) (D : List Tree) (ts : List GoedelT.Thm)
     (dev : Internal.Globals → ℕ → List Internal.Thm → Option (List Decl)) : IO Unit := do
-  match translate D rs with
+  match translate D ts with
   | none => throw (IO.userError s!"{name}: no translation")
   | some (G, m, ts) => match dev G m ts with
     | none => IO.println s!"{name},no development"
     | some ds => do
       let k := ds.length - ts.length
-      let (okC, tC) ← timeUs fun _ ↦ recheck D (rs.map fun p ↦ RoseTree.node 0
-        [Kernel.leaf 0, RoseTree.node 0 [RoseTree.node 0 p.1.ctx,
-          RoseTree.node 0 [p.1.eqn.ty, p.1.eqn.lhs, p.1.eqn.rhs]], p.2])
       let (okA, tA) ← timeUs fun _ ↦ Internal.checkThms G (ds.take k) #[]
       let some (G₁, E₁) := Internal.checkDev G #[] (ds.take k)
         | throw (IO.userError s!"{name}: the lemmas do not check")
       let (okL, tL) ← timeUs fun _ ↦ Internal.checkThms G₁ (ds.drop k) E₁
-      if !(okC && okA && okL) then throw (IO.userError s!"{name}: a development does not check")
+      if !(okA && okL) then throw (IO.userError s!"{name}: a development does not check")
       let dvs (l : List Decl) : List Deriv :=
         l.filterMap fun | Decl.language _ d => some d | _ => none
       let row (xs : List ℕ) : String := ",".intercalate (xs.map toString)
       if k > 0 then
-        IO.println (name ++ "-lemmas,0," ++ row [((dvs (ds.take k)).map derivSize).sum,
-          ((dvs (ds.take k)).map bitSteps).sum, 0, tA])
-      IO.println (name ++ "," ++ row [(rs.map fun p ↦ sizeK p.2).sum,
-        ((dvs (ds.drop k)).map derivSize).sum, ((dvs (ds.drop k)).map bitSteps).sum, tC, tL])
+        IO.println (name ++ "-lemmas," ++ row [((dvs (ds.take k)).map derivSize).sum,
+          ((dvs (ds.take k)).map bitSteps).sum, tA])
+      IO.println (name ++ "," ++ row [((dvs (ds.drop k)).map derivSize).sum,
+        ((dvs (ds.drop k)).map bitSteps).sum, tL])
 
-/-- The reports of the files, from the results in Gödel's T, the prelude's development both by
-innermost normalization and weak head normal forms first. -/
-def reports (goedelT : Option (List (List Tree × List (GoedelT.Thm × Tree)))) : IO Unit := do
-  match goedelT with
-  | some [(D₀, r₀), (D₁, r₁), (D₂, r₂), (D₃, r₃), (D₄, r₄)] => do
-    IO.println ("file,goedel_t_nodes,language_nodes,bit_steps,goedel_t_microseconds," ++
-      "language_microseconds")
-    report "prelude" D₀ r₀ preludeDev
-    report "prelude-whnf" D₀ r₀ preludeDevW
-    report "nat" D₁ r₁ natDev
-    report "check" D₂ r₂ checkDev
-    report "equations" D₃ r₃ treeDev
-    report "datatype" D₄ r₄ treeDev
-  | _ => throw (IO.userError "the results in Gödel's T are missing")
+/-- The reports of the files, the prelude's development both by innermost normalization and weak
+head normal forms first. -/
+def reports (rs : Option (List (List Tree × List GoedelT.Thm))) : IO Unit := do
+  match rs with
+  | some [(D₀, t₀), (D₁, t₁), (D₂, t₂), (D₃, t₃)] => do
+    IO.println "file,language_nodes,bit_steps,language_microseconds"
+    report "prelude" D₀ t₀ preludeDev
+    report "prelude-whnf" D₀ t₀ preludeDevW
+    report "nat" D₁ t₁ natDev
+    report "check" D₂ t₂ checkDev
+    report "datatype" D₃ t₃ treeDev
+  | _ => throw (IO.userError "the files do not read")
 
-#eval reports (goedelTResults bundler.toList prover.toList (files.map String.toList))
+#eval reports (results Kernel.Stage0Tests.bundler.toList (files.map fun (t, k) ↦ (t.toList, k)))
 
 end GebTests.Prototypes.FreeTopos.TranslationProofs
 

@@ -51,11 +51,11 @@ Constants are encoded by
 {name}`GebTests.Prototypes.FreeTopos.Agreement.Encode.encEntry`, declarations by
 {name}`GebTests.Prototypes.FreeTopos.Agreement.Encode.encDecl`, states by
 {name}`GebTests.Prototypes.FreeTopos.Agreement.Encode.encState`, translated programs by
-{name}`GebTests.Prototypes.FreeTopos.Agreement.Translation.encProgram` and theorems of Gödel's T by
-{name}`GebTests.Prototypes.GoedelT.MirrorEquations.encThm`. The proofs compose the kernel's
-evaluation of the loading ({lit}`GebTests.Prototypes.FreeTopos.Agreement.Load`) with the agreement
-of the program's Lean mirror with the Lean definitions, proved definition by definition
-({name}`GebTests.Prototypes.FreeTopos.Agreement.Derivation.checkDev_eq`,
+{name}`GebTests.Prototypes.FreeTopos.Agreement.Translation.encProgram` and theorems of Gödel's T
+by {name}`GebTests.Prototypes.FreeTopos.Agreement.Translation.encGoedelThm`. The proofs compose
+the kernel's evaluation of the loading ({lit}`GebTests.Prototypes.FreeTopos.Agreement.Load`) with
+the agreement of the program's Lean mirror with the Lean definitions, proved definition by
+definition ({name}`GebTests.Prototypes.FreeTopos.Agreement.Derivation.checkDev_eq`,
 {name}`GebTests.Prototypes.FreeTopos.Agreement.Translation.program_eq`,
 {name}`GebTests.Prototypes.FreeTopos.Agreement.Translation.trGlobals_eq`,
 {name}`GebTests.Prototypes.FreeTopos.Agreement.Translation.thm_eq`,
@@ -119,7 +119,7 @@ theorem translation_agree : ∃ G' : List Glob, load metalogic = some G' ∧
         f (defs.map encLDefn) = encGlobals (Translation.globals defs)) ∧
     (∃ f : Ty.den thmTy, G'[560]? = some ⟨thmTy, f⟩ ∧
       ∀ (gt : List Tree) (a : GoedelT.Thm),
-        f gt (GebTests.Prototypes.GoedelT.MirrorEquations.encThm a) =
+        f gt (GebTests.Prototypes.FreeTopos.Agreement.Translation.encGoedelThm a) =
           encOpt ((Translation.thm gt a).map encThm)) :=
   ⟨_, metalogic.load_globals, ⟨«Translation.program», metalogic_program, program_eq⟩,
     ⟨«Translation.trGlobals», metalogic_trGlobals, trGlobals_eq⟩,

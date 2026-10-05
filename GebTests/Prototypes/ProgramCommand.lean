@@ -7,7 +7,7 @@ module
 
 public import Geb.Prototypes.Kernel.LoadCommand
 public import Mathlib.Tactic.NormNum
-public meta import GebTests.Prototypes.Proofs -- shake: keep
+public meta import GebTests.Prototypes.Stage0 -- shake: keep
 public meta import Lean.Elab.Command
 
 set_option doc.verso true in
@@ -42,7 +42,7 @@ set_option doc.verso true
 
 @[expose] public section
 
-namespace GebTests.Prototypes.GoedelT.LoadCommand
+namespace GebTests.Prototypes.ProgramCommand
 
 open Geb Geb.Kernel Geb.Kernel.LoadCommand Lean Elab Command
 
@@ -76,7 +76,7 @@ syntax (name := gebProgram)
   let mut text : List Char := []
   for p in paths do
     text := text ++ (← IO.FS.readBinFile p).data.toList.map (fun x ↦ Char.ofNat x.toNat) ++ ['\n']
-  let r ← match runMain GoedelT.ProofTests.bundler.toList (nameTree text) with
+  let r ← match runMain Geb.Kernel.Stage0Tests.bundler.toList (nameTree text) with
     | some r => pure r
     | none => throwError "the front end does not run"
   let some b := (if r.label == 1 then r.children.head? else none)
@@ -163,6 +163,6 @@ syntax (name := kernelRfl) "kernel_rfl " ident " : " term : command
       | none, none => throwError "not an equation"
     addDecl <| .thmDecl { name := n, levelParams := [], type := ty, value := prf }
 
-end GebTests.Prototypes.GoedelT.LoadCommand
+end GebTests.Prototypes.ProgramCommand
 
 end

@@ -153,7 +153,7 @@ def agree (P : List (List Char × Kernel.Glob)) (nm : String → List Char) : Op
   pure (byTerm && byThm.all (fun p ↦ p.2) && byThm.any (fun p ↦ p.1))
 
 -- the tactics written in Geb compute as the Lean tactics do
-#guard ((loaded GoedelT.ProofTests.bundler.toList tacticsProgram.toList).bind fun P ↦
+#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList tacticsProgram.toList).bind fun P ↦
   agree P String.toList).getD false
 
 end GebTests.Prototypes.FreeTopos.GebTactics

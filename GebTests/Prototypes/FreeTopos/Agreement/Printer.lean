@@ -9,7 +9,7 @@ public import GebTests.Prototypes.FreeTopos.Agreement.Base
 public import GebTests.Prototypes.FreeTopos.Agreement.Fold
 public import GebTests.Prototypes.Kernel.Modules
 public import Geb.Prototypes.Kernel.Printer
-public import GebTests.Prototypes.GoedelT.MirrorTyping
+public import GebTests.Prototypes.CheckMirror
 
 set_option doc.verso true in
 /-!
@@ -509,9 +509,10 @@ theorem printTerm_eq (defs : List (List Char)) : ∀ (t : Tree) (d : ℕ),
 
 /-! ## Well-formed terms -/
 
-/-- The mirror's test of a kernel type, which the program shares with Gödel's T. -/
+/-- The mirror's test of a kernel type, which the program shares with the kernel's checker. -/
 theorem isTy_eq (t : Tree) : «Check.isTy» t = ofBool (Ty.IsTy t) :=
-  (rfl : «Check.isTy» t = GebMirror.GoedelT.«Check.isTy» t).trans (GoedelT.MirrorTyping.isTy_eq t)
+  (rfl : «Check.isTy» t = GebMirror.Check.«Check.isTy» t).trans
+    (GebTests.Prototypes.CheckMirror.isTy_eq t)
 
 /-- The mirror's test of a single leaf below a bound among trees. -/
 theorem leafBelow_eq (cs : List Tree) (n : ℕ) :

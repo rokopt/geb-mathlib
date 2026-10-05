@@ -18,9 +18,9 @@ language about the translation of the programs: for every environment {lit}`G`, 
 type {lit}`a` for {lit}`u` in {lit}`c`, then the type it infers for {lit}`t` with {lit}`u`,
 weakened past {lit}`c1`, substituted for the variable below {lit}`c1`, in the context of
 {lit}`c1` and {lit}`c`, is the type it infers for {lit}`t` in the context of {lit}`c1`,
-{lit}`a` and {lit}`c`. The substitution of Gödel's T for the innermost variable is the instance
-at the empty {lit}`c1`. The program is the weakening proof's, with the statement's two sides as
-definitions.
+{lit}`a` and {lit}`c`. The substitution for the innermost variable ({lit}`bootstrap/subst.geb`)
+is the instance at the empty {lit}`c1`. The program is the weakening proof's, with the
+statement's two sides as definitions.
 
 The statement is an equation between two functions, into the subobject classifier, of the
 environment, the contexts, the type and the substituted term: the implication of the equation of
@@ -123,7 +123,7 @@ def weakeningSteps (P : Prog) : List Step :=
   let wkZ := weakThm P 0 [treeTy, list treeTy, list treeTy, list treeTy]
     (apps (call (P.idx "Check.typeIn") [] [])
       [v 1, apps (call (P.idx "Prelude.append") [] []) [v 2, v 3],
-        apps (call (P.idx "Equations.wk") [] [])
+        apps (call (P.idx "Subst.wk") [] [])
           [apps (call (P.idx "Prelude.length") [] []) [v 2], v 0]])
     (apps (call (P.idx "Check.typeIn") [] []) [v 1, v 3, v 0])
   let a := weakening P
@@ -299,7 +299,7 @@ def checkSubstitution (ds : List (List Char × Tree)) (idx : String → ℕ) : I
   IO.println s!"{devNodes},{derivSize d},{t₁ - t₀},{t₂ - t₁}"
 
 #eval do
-  let some ds := bundled GoedelT.ProofTests.bundler.toList programText.toList
+  let some ds := bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
     | throw (IO.userError "the program does not read")
   checkSubstitution ds fun name ↦ (defIndex ds name.toList).getD 0
 

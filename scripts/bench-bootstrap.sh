@@ -9,14 +9,9 @@
 #
 #   compile/native  geb-compile, the compiler built from the emitted Lean,
 #                   compiling the stage-1 source S to its image;
-#   compile/seed    the seed evaluating bootstrap/compiler.img on S;
-#   prove/<file>    the seed evaluating the prover of Gödel's T, built by the
-#                   stage-0 compiler, on each file of theorems that
-#                   GebTests/Prototypes/Proofs.lean checks, with the number
-#                   of theorems the Geb checker accepts.
+#   compile/seed    the seed evaluating bootstrap/compiler.img on S.
 #
-# S and the prover's program are assembled as scripts/bootstrap.sh and
-# GebTests/Prototypes/Proofs.lean assemble them.
+# S is assembled as scripts/bootstrap.sh assembles it.
 #
 # A build is a directory holding bin/geb-kernel, bin/geb-compile and the
 # bootstrap/ sources. `snapshot DIR` builds the working copy's binaries and
@@ -76,21 +71,9 @@ import os, random, shutil, statistics, subprocess, sys, time
 rounds, copies, tmp = int(sys.argv[1]), int(sys.argv[2]), sys.argv[3]
 builds = sys.argv[4:]
 
-STAGE0 = ["prelude", "serialize", "reader", "check", "datatype", "compile"]
-STAGE1 = ["prelude", "serialize", "reader", "check", "stage1/datatype", "compile",
-          "stage1/lean"]
-PROVER = ["prelude", "reader", "check", "datatype", "goedel-t/equations", "goedel-t/prove"]
-# the prover's entry point, giving the number of theorems the Geb checker accepts
-PROVER_MAIN = b"""(def main (lam ((file T)) (node 0 (single (foldr T T (lam ((x T) (n T))
-    (if (eq (label (child x 3)) 1) (add n 1) n)) 0 (children (child (child (proveFile 256 file) 0) 1)))))))
-"""
-PROOFS = {
-    "prelude": ["prelude", "proofs/prelude"],
-    "nat": ["prelude", "proofs/nat"],
-    "check": ["prelude", "reader", "check", "proofs/check"],
-    "equations": ["prelude", "reader", "check", "goedel-t/equations", "proofs/equations"],
-    "datatype": ["prelude", "reader", "check", "proofs/datatype"],
-}
+STAGE0 = ["prelude", "serialize", "reader", "check", "datatype", "modules", "recognize", "compile"]
+STAGE1 = ["prelude", "serialize", "reader", "check", "seq", "stage1/typing", "stage1/datatype",
+          "modules", "recognize", "compile", "stage1/lean"]
 
 
 def join(paths, out):
@@ -111,22 +94,11 @@ def prepare(i, d):
     join(src(STAGE1), at("S.geb"))
     subprocess.run([kernel, "build", *src(STAGE0), at("stage0.img")], check=True,
                    stdout=subprocess.DEVNULL)
-    join(src(PROVER), at("prover.geb"))
-    with open(at("prover.geb"), "ab") as f:
-        f.write(PROVER_MAIN)
-    subprocess.run([kernel, "run", at("stage0.img"), "main", at("prover.geb"), at("prover.img")],
-                   check=True)
-    if os.path.getsize(at("prover.img")) == 0:
-        sys.exit(f"bench-bootstrap: the stage-0 compiler of {d} rejects the prover")
     work = {
         "compile/native": ("geb-compile", ["image", at("S.geb"), at("out.img")]),
         "compile/seed": ("geb-kernel", ["run", os.path.join(b, "compiler.img"), "main",
                                         at("S.geb"), at("out.img")]),
     }
-    for f, xs in PROOFS.items():
-        join(src(xs), at(f + ".in"))
-        work["prove/" + f] = ("geb-kernel", ["run", at("prover.img"), "main", at(f + ".in"),
-                                             at(f + ".out")])
     bins = []
     for c in range(copies):
         cb = at(f"bin{c}")
@@ -151,8 +123,6 @@ for p in preps:
     for c in range(copies):
         for f in names:
             once(cmd(p, c, f))
-accepted = [{f: "".join(str(x) for x in open(os.path.join(p[2], f[6:] + ".out"), "rb").read())
-             for f in names if f.startswith("prove/")} for p in preps]
 times = [{f: [[] for _ in range(copies)] for f in names} for _ in preps]
 for r in range(rounds):
     order = list(range(len(preps)))
@@ -180,8 +150,7 @@ def per_copy(i, f):
 
 
 def name(f):
-    ok = " | ".join(a[f] for a in accepted) if f in accepted[0] else ""
-    return f + (f" ({ok} ok)" if ok else "")
+    return f
 
 
 width = max(len(name(f)) for f in names)

@@ -130,7 +130,7 @@ def variants : List Staged :=
         | _ => alterations d).map (·, s)
 
 -- the checker of developments at every development, which the Lean checker accepts
-#guard ((loaded GoedelT.ProofTests.bundler.toList internalProgram.toList).bind fun P ↦ do
+#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList internalProgram.toList).bind fun P ↦ do
   let cd : Tree → List Tree → List Tree → Tree ←
     fn P "Derivation.checkDev".toList (arrow tyT (arrow tyTs (arrow tyTs tyT)))
   pure <| developments.all fun (_, G, ds) ↦ (Internal.checkDev G #[] ds).isSome &&
@@ -139,7 +139,7 @@ def variants : List Staged :=
 
 -- the checker of developments at every development of at most sixteen declarations with each
 -- declaration removed
-#guard ((loaded GoedelT.ProofTests.bundler.toList internalProgram.toList).bind fun P ↦ do
+#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList internalProgram.toList).bind fun P ↦ do
   let cd : Tree → List Tree → List Tree → Tree ←
     fn P "Derivation.checkDev".toList (arrow tyT (arrow tyTs (arrow tyTs tyT)))
   pure <| developments.all fun (_, G, ds) ↦ ds.length > 16 ||
@@ -148,7 +148,7 @@ def variants : List Staged :=
         encOpt ((Internal.checkDev G #[] (ds.eraseIdx i)).map encState)).getD false
 
 -- one declaration's check at each variant, in the state before the declaration it varies
-#guard ((loaded GoedelT.ProofTests.bundler.toList internalProgram.toList).bind fun P ↦ do
+#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList internalProgram.toList).bind fun P ↦ do
   let st : Tree → List Tree → Tree → Tree ←
     fn P "Derivation.declStep".toList (arrow tyT (arrow tyTs (arrow tyT tyT)))
   pure <| variants.all fun (d, G, E) ↦

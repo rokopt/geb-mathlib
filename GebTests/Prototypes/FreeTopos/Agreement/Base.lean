@@ -7,7 +7,7 @@ module
 
 public import GebMirror.Metalogic
 public import GebTests.Prototypes.FreeTopos.Agreement.Encode
-public import GebTests.Prototypes.GoedelT.MirrorTyping
+public import GebTests.Prototypes.CheckMirror
 
 set_option doc.verso true in
 /-!
@@ -51,7 +51,7 @@ depends on {name}`Classical.choice`, instance search would otherwise select that
 instance (priority := high) natReflBEq : ReflBEq ℕ := Nat.instLawfulBEq.toReflBEq
 
 -- the kernel's primitives at leaves and nodes, shared with the mirror of Gödel's T
-export GebTests.Prototypes.GoedelT.MirrorTyping (label_leaf ofBool_label label_node children_node
+export GebTests.Prototypes.CheckMirror (label_leaf ofBool_label label_node children_node
   arity_node child_node)
 
 attribute [simp] label_node arity_node child_node

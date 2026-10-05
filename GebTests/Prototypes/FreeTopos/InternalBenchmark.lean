@@ -16,7 +16,8 @@ set_option doc.verso true in
 /-!
 # The theorems of Gödel's T, stated in the internal language
 
-The theorems of {lit}`bootstrap/proofs/prelude.geb` and {lit}`bootstrap/proofs/nat.geb`, stated
+The theorems of Gödel's T about the prelude's lists and the labels' addition, which
+{lit}`GebTests.Prototypes.FreeTopos.TranslationProofs.files` states, stated
 as equations of the internal language between terms applying its definitions of appending and
 addition, compiled to sequents of the combinators and proved by the prover: by unfolding the
 definitions and normalizing, by induction through the uniqueness of recursion, or by rewriting

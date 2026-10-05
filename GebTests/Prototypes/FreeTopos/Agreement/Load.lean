@@ -6,8 +6,8 @@ Authors: Terence Rokop
 module
 
 public import GebMirror.Metalogic.Load
-public import GebTests.Prototypes.GoedelT.LoadCommand
-public import GebTests.Prototypes.GoedelT.MirrorDelta
+public import GebTests.Prototypes.ProgramCommand
+public import GebTests.Prototypes.CheckMirror
 
 set_option doc.verso true in
 /-!
@@ -22,7 +22,7 @@ loading mode {lit}`rfl` the kernel checks, that loading the program with {name}`
 gives globals whose denotations are the mirror's definitions; in the mode {lit}`native` the steps
 of the loading are axioms ({lit}`docs/rules/ci-and-workflow.md` § Loading modes).
 
-The command {lit}`geb_program` of {lit}`GebTests.Prototypes.GoedelT.LoadCommand` declares the
+The command {lit}`geb_program` of {lit}`GebTests.Prototypes.ProgramCommand` declares the
 program's definitions, globals and loading, one definition at a time. Among the globals are the
 check of a development, at the type of the function from constants, entries and declarations to a
 state; the translations of a program, of its constants and of a theorem of Gödel's T; and the
@@ -82,7 +82,7 @@ open GebMirror.Metalogic
 
 namespace GebTests.Prototypes.FreeTopos.Agreement.Load
 
-open Geb Geb.Kernel GebTests.Prototypes.GoedelT.MirrorDelta
+open Geb Geb.Kernel GebTests.Prototypes.CheckMirror
 
 set_option maxHeartbeats 20000000 in
 -- the generated modules of GebMirror.Metalogic.Load declare the program's definitions and the

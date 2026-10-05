@@ -620,8 +620,7 @@
         0
         es)))
   ; a program's forms with its modules elaborated, with its tree of modules, the root block last,
-  ; and the names visible at the root with what they denote, as a node over the node of the forms,
-  ; the node of the modules and the node of the names, when they elaborate
+  ; as a node over the node of the forms and the node of the modules, when they elaborate
   (def expandModulesTree
     (lam ((es Ts))
       (let s ModSt
@@ -631,12 +630,9 @@
         (if (fst s)
           (if (nonEmpty (stEx s)) none
             (some
-              (node 0
-                (cons (node 0 (stOut s))
-                  (cons
-                    (node 0
-                      (append (stMods s) (single (modNode (node 0 (nil T)) (stMem s) (nil T)))))
-                    (single (node 0 (stVis s))))))))
+              (node2 0 (node 0 (stOut s))
+                (node 0
+                  (append (stMods s) (single (modNode (node 0 (nil T)) (stMem s) (nil T))))))))
           none))))
   ; a program's forms with its modules elaborated, as a node over them, when they elaborate
   (def expandModules
