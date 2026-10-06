@@ -159,7 +159,7 @@ theorem typeIn_weaken1 {s : Term} {C a : PartialHorn.Tree} (h : typeIn G 0 Γ s 
     rfl
   obtain ⟨f, hf⟩ := FreeTopos.Internal.compile_retype s _ _ r hr (ctxObj (a :: Γ)) _ hsnd
   rw [typeIn, weaken1, FreeTopos.Internal.compile_rename s _ _ _ (· + 1) _ hf
-    fun i _ ↦ List.getElem?_tail.symm]
+    (fun i _ ↦ List.getElem?_tail.symm) fun _ _ ↦ Nat.succ_lt_succ]
   rfl
 
 /-- The renaming of a context extended by a term variable, after the weakening of an LF term, is
@@ -707,15 +707,17 @@ theorem weaken1_iterate_defn (k₀ : ℕ) (θ : List PartialHorn.Tree) (a b : Te
       Function.iterate_succ_apply']
     rfl
 
-/-- Iterated weakening of an application of a fold, whose start and step it leaves in place. -/
-theorem weaken1_iterate_app_natRec (Z S m p : Term) :
+/-- Iterated weakening of an application of a fold whose start and step weakening leaves in
+place. -/
+theorem weaken1_iterate_app_natRec {Z S : Term} (hZ : Term.rename Z (· + 1) = Z)
+    (hS : Term.rename S (Term.liftR (· + 1)) = S) (m p : Term) :
     ∀ k : ℕ, weaken1^[k] (Term.app (Term.natRec Z S m) p) =
       Term.app (Term.natRec Z S (weaken1^[k] m)) (weaken1^[k] p) :=
   Nat.rec rfl fun k ih ↦ by
     rw [Function.iterate_succ_apply', ih, Function.iterate_succ_apply',
       Function.iterate_succ_apply']
     simp only [weaken1, Term.app, Term.natRec, Term.rename_node, Term.renameStep, List.map_cons,
-      List.map_nil]
+      List.map_nil, hZ, hS]
 
 /-- The innermost term variable decodes to the innermost variable. -/
 theorem termOf_var0 : termOf kz ks ki (none :: env) (Expr.var 0) = some (Term.var 0) := rfl
@@ -1024,7 +1026,7 @@ theorem sound_natSucc (hc : PfCtx G kz ks ki ΓLF env Γ Φ) {C z s n F : Expr} 
           (weaken1^[k] (Term.defn ki [xc] [sn, Term.pair sz (Term.lam xc ss)])) =
         some (weaken1^[k] (Term.app (Term.natRec (iterStart xc) (iterStep xc) sn)
           (Term.pair sz (Term.lam xc ss)))) := fun k Δ ↦ by
-      rw [weaken1_iterate_defn, weaken1_iterate_app_natRec]
+      rw [weaken1_iterate_defn, weaken1_iterate_app_natRec rfl rfl]
       exact check_delta_iter hi _ _ _
     have := check_congAlong hd ss (termOf_simple hss) 0 Γ
     simp only [Function.iterate_zero, id, substAt_zero] at this

@@ -406,6 +406,7 @@ theorem check_natSuccLhs (hi : G.defs[ki]? = some (.language FreeTopos.Internal.
       List.map_nil, Term.subst_node, Term.substStep]
     rw [Term.subst_rename m (· + 1) (instVar p) Term.var fun _ ↦ rfl,
       Term.subst_id m hm _ fun _ ↦ rfl]
+    rfl
   have h₂ : (check G E n (ruleD .beta)).1 Γ Φ (Term.app (Term.subst (iterStep c) (instVar R)) p) =
       some (Term.app (Term.snd p) (Term.app R p)) := by
     rw [subst_iterStep, check_beta]

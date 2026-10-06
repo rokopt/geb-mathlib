@@ -33,9 +33,9 @@ that the constants of the signature take as arguments; decoding ({lit}`dec`) for
 fold of the signature, whose start and step may mention the variables around it, corresponds to
 the application of the fold with parameters ({name}`Geb.FreeTopos.Internal.iterDefn`), a
 definition of the language at the index {lit}`ki`, to the number and the pair of the start and
-the step as an abstraction: the language's own fold, whose start and step are closed, is outside
-the fragment. The encoding of such an application reads the start and the step's body off the
-encoding of the pair ({lit}`natRecOfPair`).
+the step as an abstraction: the language's own fold is outside the fragment. The encoding of
+such an application reads the start and the step's body off the encoding of the pair
+({lit}`natRecOfPair`).
 
 ## Main definitions
 

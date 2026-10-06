@@ -285,22 +285,6 @@ theorem matchVar_eq (i d : ℕ) (t : Term) (σ : List (Option Term)) :
         simp [h3]
       simp [h3', h3]
 
-/-- The kernel's fold whose step sees the node, over an encoded tree, is related to a
-paramorphism of the tree it encodes when their steps are related at every node whose children's
-results are related, whatever the result at the tree of the label's data. -/
-theorem para_enc {L V W : Type} (tag : L → ℕ) (dat : L → Tree) (R : V → W → Prop)
-    (f : Tree → List V → V) (g : L → List (RoseTree L × W) → W)
-    (h : ∀ (l : L) (v : V) (xs : List (RoseTree L × V × W)), (∀ x ∈ xs, R x.2.1 x.2.2) →
-      R (f (encWith tag dat (RoseTree.node l (xs.map Prod.fst))) (v :: xs.map fun x ↦ x.2.1))
-        (g l (xs.map fun x ↦ (x.1, x.2.2))))
-    (s : RoseTree L) : R (Const.para f (encWith tag dat s)) (RoseTree.para g s) := by
-  refine RoseTree.ind (P := fun s ↦ R (Const.para f (encWith tag dat s)) (RoseTree.para g s))
-    (fun a cs ih ↦ ?_) s
-  have := h a (Const.para f (dat a))
-    (cs.map fun c ↦ (c, Const.para f (encWith tag dat c), RoseTree.para g c)) (by simpa using ih)
-  rw [encWith_node, Const.para_node, RoseTree.para_node, List.map_cons]
-  simpa only [List.map_map, Function.comp_def, encWith_node, List.map_id'] using this
-
 /-- A list of matchings without its head. -/
 @[simp] theorem mtTail_eq (rs : List (Tree → Tree → List Tree → Tree)) :
     «Prover/Mts.tail» rs = rs.tail := by
@@ -422,10 +406,25 @@ theorem matchNode_eq (l : Internal.Label) (hl : ∀ i, l ≠ .var i)
     rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, _ | ⟨x3, xs⟩⟩⟩⟩ <;>
       rcases us with _ | ⟨u0, _ | ⟨u1, _ | ⟨u2, _ | ⟨u3, us⟩⟩⟩⟩ <;>
       simp only [List.length_cons, List.length_nil] at hlen <;> try omega
-    all_goals simp [labelData, hm, «Language.mArg», «Language.mArgs»]
+    -- more than three children are matched in turn on both sides
+    all_goals try (simp [labelData, hm]; done)
+    all_goals simp only [List.length_cons, List.length_nil, zero_add, Nat.reduceAdd,
+      Nat.reduceBEq, Bool.and_false, Bool.false_eq_true, ↓reduceIte, BEq.rfl, Bool.and_true,
+      Bool.or_eq_true, List.map_cons, List.map_nil, List.getD_eq_getElem?_getD,
+      Nat.zero_lt_succ, getElem?_pos, List.getElem_cons_zero, Option.getD_some, mtAt_eq,
+      Nat.reduceLT, List.getElem_cons_succ, Nat.lt_add_one, List.zip_cons_cons,
+      List.zip_nil_right, List.foldl_cons, Option.bind_some, List.foldl_nil, Option.map_bind,
+      Function.comp_apply, labelData]
     all_goals
-      by_cases h1 : x0.1 = u0 <;> by_cases h2 : x1.1 = u1 <;>
-        simp [h1, h2, «Prelude.none», encOpt]
+      simp only [true_or, or_true, ↓reduceIte, add_leaf, hm x0 (by simp), bindO_eq]
+      rcases x0.2.2 d u0 σ with _ | σ₁
+      · rfl
+      · simp only [Option.map_some, Option.elim_some, encSigma, RoseTree.children_node,
+          hm x1 (by simp), bindO_eq, Option.bind_some]
+        rcases x1.2.2 _ u1 σ₁ with _ | σ₂
+        · rfl
+        · simp only [Option.map_some, Option.elim_some, encSigma, RoseTree.children_node,
+            hm x2 (by simp), Option.bind_some]
   | roseRec c =>
     rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, xs⟩⟩⟩ <;>
       rcases us with _ | ⟨u0, _ | ⟨u1, _ | ⟨u2, us⟩⟩⟩ <;>
@@ -1026,7 +1025,7 @@ theorem uses_eq (t : Term) (d : ℕ) :
       simp only [List.map_cons, List.map_nil] at hs <;>
       mirror_simp [«Prover.usesStep», labelData, hs, mArgs_eq, label_encTerm,
         beq_iff_eq, Nat.reduceEqDiff, ufAt_eq, hx]
-    all_goals exact hx _ (by simp) d
+    all_goals rw [hx x0 (by simp), hx x1 (by simp), hx x2 (by simp), mul_leaf, add_leaf, add_leaf]
   | roseRec c =>
     rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, xs⟩⟩⟩ <;>
       simp only [List.map_cons, List.map_nil] at hs <;>

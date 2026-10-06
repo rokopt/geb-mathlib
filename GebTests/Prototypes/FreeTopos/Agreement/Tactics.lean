@@ -1407,6 +1407,19 @@ theorem range_ufAt {β : Type} (e : β → Tree) (xs : List (Term × (Tree → T
   · exact hx _ (List.getElem_mem hk) d
   · exact hg k hk
 
+/-- The mirror's list over a node's children's positions of each child's result, the child of
+position one's under more binders. -/
+theorem range_ufAt_step {β : Type} (e : β → Tree) (xs : List (Term × (Tree → Tree) × (ℕ → β)))
+    (hx : ∀ x ∈ xs, ∀ d, x.2.1 (leaf d) = e (x.2.2 d)) (d c : ℕ) :
+    (List.range xs.length).map (fun k ↦ ((xs.map (·.2.1))[k]?.getD fun _ ↦ leaf 0)
+        (if k = 1 then leaf (d + c) else leaf d)) =
+      (xs.zipIdx.map fun p ↦ p.1.2.2 (if p.2 = 1 then d + c else d)).map e := by
+  refine List.ext_getElem (by simp) fun k h₁ h₂ ↦ ?_
+  have hk : k < xs.length := by simpa using h₁
+  simp only [List.getElem_map, List.getElem_range, List.getElem_zipIdx, zero_add,
+    List.getElem?_map, List.getElem?_eq_getElem hk, Option.map_some, Option.getD_some]
+  split <;> exact hx _ (List.getElem_mem hk) _
+
 /-- The mirror's list of the children's results at one argument. -/
 theorem foldr_ufApply {β : Type} (e : β → Tree) (d : ℕ) :
     ∀ xs : List (Term × (Tree → Tree) × (ℕ → β)),
@@ -1442,9 +1455,11 @@ theorem occRewrite_eq (lk i : ℕ) (t : Term) (d : ℕ) :
   | natRec | listRec =>
     mirror_simp [«Tactics.occStep», labelData, label_encTerm, ufTail_eq, lenUF_eq,
       ufAt_eq, List.getElem?_cons_succ, beq_iff_eq, ← List.getElem?_map]
-    rw [hr 2 d (fun _ ↦ «Prover.dNode» (leaf 0) [] []) (fun _ ↦ RoseTree.node .refl [])
-      fun _ _ ↦ rfl]
-    tac_simp [List.zipIdx_map, List.map_map, Prod.map, id_eq]
+    all_goals
+      first
+        | erw [range_ufAt_step encDeriv xs hx d 1]
+        | erw [range_ufAt_step encDeriv xs hx d 2]
+      tac_simp [List.zipIdx_map, List.map_map, Prod.map, id_eq]
   | roseRec c =>
     mirror_simp [«Tactics.occStep», labelData, label_encTerm, ufTail_eq, lenUF_eq,
       ufAt_eq, List.getElem?_cons_succ, beq_iff_eq, ← List.getElem?_map]
@@ -1471,8 +1486,10 @@ an encoded term. -/
           Term.var d else
         match l with
         | .lam _ => RoseTree.node l (cs.map fun (_, r) ↦ r (d + 1))
-        | .natRec | .listRec => RoseTree.node l (cs.zipIdx.map fun ((c, r), k) ↦
-            if k = 2 then r d else c)
+        | .natRec => RoseTree.node l (cs.zipIdx.map fun ((_, r), k) ↦
+            r (if k = 1 then d + 1 else d))
+        | .listRec => RoseTree.node l (cs.zipIdx.map fun ((_, r), k) ↦
+            r (if k = 1 then d + 2 else d))
         | .roseRec _ => RoseTree.node l (cs.zipIdx.map fun ((c, r), k) ↦
             if k = 1 then r d else c)
         | _ => RoseTree.node l (cs.map fun (_, r) ↦ r d)) w d) := fun w d ↦ by
@@ -1498,10 +1515,11 @@ an encoded term. -/
       mirror_simp [labelData, label_encTerm, ufTail_eq, lenUF_eq, ufAt_eq,
         List.getElem?_cons_succ, beq_iff_eq, ← List.getElem?_map, encTerm_node,
         «Language.mArgs», tail_eq, List.tail_cons, at_eq]
-      rw [hr 2 d (fun k ↦ (xs.map fun x ↦ encTerm x.1).getD k (leaf 0)) id fun k h ↦ by
-        simp only [List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_eq_getElem h,
-          Option.map_some, Option.getD_some, id_eq]]
-      simp only [List.zipIdx_map, List.map_map, Function.comp_def, Prod.map, id_eq]
+      all_goals
+        first
+          | erw [range_ufAt_step encTerm xs hx d 1]
+          | erw [range_ufAt_step encTerm xs hx d 2]
+        simp only [List.zipIdx_map, List.map_map, Function.comp_def, Prod.map, id_eq]
     | roseRec c =>
       mirror_simp [labelData, label_encTerm, ufTail_eq, lenUF_eq, ufAt_eq,
         List.getElem?_cons_succ, beq_iff_eq, ← List.getElem?_map, encTerm_node,

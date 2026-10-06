@@ -145,9 +145,11 @@
                   (eq (length (mArgs nd)) k))
                 (if (and (eq l 5) (eq k 1)) ((mtAt rs 1) (add d 1) (at us 0) s)
                   (if (and (or (eq l 8) (eq l 9)) (eq k 3))
-                    (if (and (equal (mArg nd 0) (at us 0)) (equal (mArg nd 1) (at us 1)))
-                      ((mtAt rs 3) d (at us 2) s)
-                      OAssign.nothing)
+                    (bindAA
+                      (bindAA ((mtAt rs 1) d (at us 0) s)
+                        (lam ((sn Assign))
+                          ((mtAt rs 2) (add d (if (eq l 8) 1 2)) (at us 1) (assigned sn))))
+                      (lam ((sn Assign)) ((mtAt rs 3) d (at us 2) (assigned sn))))
                     (if (and (eq l 10) (eq k 2))
                       (if (equal (mArg nd 0) (at us 0)) ((mtAt rs 2) d (at us 1) s) OAssign.nothing)
                       (matchAll rs d us s))))
@@ -464,8 +466,8 @@
   (defn keepsFold ((l T) (i T)) T (if (or (eq l 8) (eq l 9)) (lt i 2) (if (eq l 10) (eq i 0) 0)))
   (defn keepsWeak ((l T) (i T)) T (if (eq l 5) 1 (keepsFold l i)))
 
-  ; the uses of the variable of an index in a term, each under an abstraction counted twice, a
-  ; fold's start and step having none
+  ; the uses of the variable of an index in a term, each under an abstraction and in a fold's step
+  ; counted twice, a rose-tree fold's step having none
   (deftype UF (Arrow T T))
   (deftype UFs (List UF))
   (import (Lists UF) as UFs)
@@ -479,7 +481,9 @@
         (let k T (length (mArgs nd))
           (if (eq l 0) (if (eq (mD nd 0) d) 1 0)
             (if (eq l 5) (mul 2 (ufSum rs (add d 1)))
-              (if (and (or (eq l 8) (eq l 9)) (eq k 3)) ((ufAt rs 3) d)
+              (if (and (or (eq l 8) (eq l 9)) (eq k 3))
+                (add (add ((ufAt rs 1) d) (mul 2 ((ufAt rs 2) (add d (if (eq l 8) 1 2)))))
+                  ((ufAt rs 3) d))
                 (if (and (eq l 10) (eq k 2)) ((ufAt rs 2) d) (ufSum rs d)))))))))
   (defn uses ((t T) (d T)) T ((para UF usesStep t) d))
 

@@ -209,7 +209,7 @@ theorem funExt_sound {Γ : List Tree} {Φ : List Term} {f g : Term} {a b : Tree}
       (fst_hom hM hX hA) (envEq_refl _)
     obtain rfl : B' = exp a b := hr₁₂
     have hw' := compile_rename w (prod X a) (extEnv X a e) (precomp (fst X a) e) (· + 1) _ hr₁
-      fun i hi ↦ by simp [extEnv, precomp]
+      (fun i hi ↦ by simp [extEnv, precomp]) fun _ _ ↦ Nat.succ_lt_succ
     exact ⟨W', compile_app_iff.mpr ⟨_, _, rfl, W', a, b, hw', snd X a,
       compile_var_iff.mpr ⟨rfl, rfl⟩, rfl⟩, hr₁₁⟩
   obtain ⟨F₁, hF₁, hF₁v⟩ := app hF
@@ -256,7 +256,8 @@ theorem hypsHold_lower {Γ' : List Tree} {Φ Φ' : List Term} (hlow : lowerHyps 
   intro ψ hψ
   obtain ⟨f, hf⟩ := compile_of_typeIn (hty ψ hψ) (X := X) hΓ'
   obtain ⟨r, hr, hH⟩ := hΦ (weaken1 ψ) (by rw [hΦeq]; exact List.mem_map_of_mem hψ)
-  have hw := compile_rename ψ X ((x, B) :: e') e' (· + 1) _ hf fun i _ ↦ by simp
+  have hw := compile_rename ψ X ((x, B) :: e') e' (· + 1) _ hf (fun i _ ↦ by simp)
+    fun _ _ ↦ Nat.succ_lt_succ
   obtain rfl := Option.some_inj.mp (hr.symm.trans hw)
   exact ⟨_, hf, hH⟩
 
@@ -565,35 +566,47 @@ the context of a label and the children, to the term's arrow's action on the lis
 children's projection. -/
 theorem roseMapAt_compile {kl kc : ℕ} (hkl : G.prims[kl]? = some nilPrim)
     (hkc : G.prims[kc]? = some consPrim) {r a : Tree} (hrt : IsTy G n r = true)
-    {t : Term} {T C : Tree} (ht : compile G n t r [(idt r, r)] = some (T, C)) :
+    (hat : IsTy G n a = true) {t : Term} {T C : Tree}
+    (ht : compile G n t r [(idt r, r)] = some (T, C)) :
     ∃ q, compile G n (roseMapAt kl kc C t) (prod a (list r)) (stdEnv [list r, a]) = some q ∧
       ResEq M ρ (comp (listMap T) (snd a (list r)), list C) q := by
   have hR := isObj_of_isTy hM hds.2 hρ r hrt
+  have hA := isObj_of_isTy hM hds.2 hρ a hat
+  have hLr := isObj_list hM hR
+  have hP := isObj_prod hM hA hLr
+  have hPr := isObj_prod hM hP hR
   have hEr : EnvHom M ρ G n r [(idt r, r)] := ⟨hR, by simpa using ⟨idt_hom hM hR, hrt⟩⟩
   obtain ⟨hT, hCt⟩ := compile_hom hM hG hρ hps hds _ _ _ _ ht hEr
   have hLC := isObj_list hM (isObj_of_isTy hM hds.2 hρ C hCt)
-  have hf := fst_hom hM hR hLC
+  have hg := comp_hom hM (fst_hom hM hPr hLC) (snd_hom hM hP hR)
   -- the term, weakened past the accumulated list, at the element
-  obtain ⟨⟨Q, C'⟩, hq₀, hC', hQ⟩ := compile_precomp hM hG hρ hps hds ht hEr hf
-    (e' := [(fst r (list C), r)]) fun i p hp ↦ by
+  obtain ⟨⟨Q, C'⟩, hq₀, hC', hQ⟩ := compile_precomp hM hG hρ hps hds ht hEr hg
+    (e' := [(comp (snd (prod a (list r)) r) (fst (prod (prod a (list r)) r) (list C)), r)])
+    fun i p hp ↦ by
       rcases i with _ | j
-      · obtain rfl : (comp (idt r) (fst r (list C)), r) = p := by simpa [precomp] using hp
-        exact ⟨_, rfl, rfl, (idt_comp hM hf).symm⟩
+      · obtain rfl : (comp (idt r) (comp (snd (prod a (list r)) r)
+            (fst (prod (prod a (list r)) r) (list C))), r) = p := by simpa [precomp] using hp
+        exact ⟨_, rfl, rfl, (idt_comp hM hg).symm⟩
       · simp [precomp] at hp
   have hCC : C = C' := hC'.symm
   subst hCC
-  have hw : compile G n (weaken1 t) (prod r (list C))
-      [(snd r (list C), list C), (fst r (list C), r)] = some (Q, C) :=
-    compile_rename t _ _ _ (· + 1) _ hq₀ fun i hi ↦ by
+  have hw : compile G n (weaken1 t) (prod (prod (prod a (list r)) r) (list C))
+      (extEnv (prod (prod a (list r)) r) (list C)
+        (extEnv (prod a (list r)) r (stdEnv [list r, a]))) = some (Q, C) :=
+    compile_rename t _ _ _ (· + 1) _ hq₀ (fun i hi ↦ by
       rcases i with _ | j
       · rfl
-      · simp at hi
-  refine ⟨_, compile_listRec_iff.mpr ⟨_, _, _, rfl, snd a (list r), r,
-    compile_var_iff.mpr ⟨rfl, rfl⟩, _, _, compile_nilT hkl hCt one [], _,
-    compile_consT hkc hCt (compile_pair_iff.mpr ⟨_, _, _, _, _, _, rfl, hw,
-      compile_var_iff.mpr ⟨rfl, rfl⟩, rfl⟩), rfl⟩, rfl, ?_⟩
-  exact eval_op₂_congr 3 ((eval_op₃_congr 36 rfl rfl (eval_op₂_congr 3 rfl
-    (eval_op₂_congr 9 hQ rfl))).trans (eval_listMap hM hT).symm) rfl
+      · simp at hi) fun _ _ ↦ Nat.succ_lt_succ
+  have hE : EnvHom M ρ G n (prod a (list r)) (stdEnv [list r, a]) :=
+    stdEnv_hom hM hds.2 hρ [list r, a] (by simp [isTy_list, hrt, hat])
+  obtain ⟨q, hq, hrq⟩ := compile_listRec_of_full hM hG hρ hps hds (m := Term.var 0)
+    (s := Term.arr kc [C] (Term.pair (weaken1 t) (Term.var 0))) hE
+    (compile_var_iff.mpr ⟨rfl, rfl⟩) (compile_nilT hkl hCt _ _)
+    (compile_consT hkc hCt (compile_pair_iff.mpr ⟨_, _, _, _, _, _, rfl, hw,
+      compile_var_iff.mpr ⟨rfl, rfl⟩, rfl⟩))
+  refine ⟨q, hq, hrq.1, hrq.2.trans ?_⟩
+  exact (eval_op₂_congr 3 (eval_listRecP_congr _ _ _ rfl (eval_op₂_congr 3 rfl
+    (eval_op₂_congr 9 hQ rfl))) rfl).trans (listRecP_map hM hP hT (snd_hom hM hA hLr))
 
 /-- Induction on rose trees, in the form of the uniqueness of the fold, is sound: two terms in a
 context of a rose tree alone, each of which at a construction is the step at the label and the
@@ -649,7 +662,7 @@ theorem roseInd_sound {kn kl kc : ℕ} {r a : Tree} {F : Tree → Tree}
     have hWh := (hty _ _ _ _ hw hEr).1
     have hmap := listMap_hom hM hWh
     obtain ⟨nd, q₁, -, huniq, -, hq₁, hrq₁⟩ := roseNodeAt_compile hM hG hρ hps hds hr hkn hrt hw
-    obtain ⟨q₂, hq₂, hrq₂⟩ := roseMapAt_compile hM hG hρ hps hds hkl hkc (a := a) hrt hw
+    obtain ⟨q₂, hq₂, hrq₂⟩ := roseMapAt_compile hM hG hρ hps hds hkl hkc hrt hat hw
     have hm := comp_hom hM (snd_hom hM hA hLr) hmap
     have hk := pair_hom hM hfA hm
     obtain ⟨q₃, hq₃, hrq₃⟩ := compile_precomp hM hG hρ hps hds hS hEs hk
@@ -735,8 +748,8 @@ theorem roseIndHyp_sound {kn kl kc : ℕ} {r a : Tree} {F : Tree → Tree}
   -- the structure map with its folds, the formula at a construction and the values at the children
   obtain ⟨nd, q₁, hnd, huniq, hfold, hq₁, hrq₁⟩ :=
     roseNodeAt_compile hM hG hρ hps hds hr hkn hrt hT
-  obtain ⟨q₂, hq₂, hrq₂⟩ := roseMapAt_compile hM hG hρ hps hds hkl hkc (a := a) hrt hT
-  obtain ⟨q₃, hq₃, hrq₃⟩ := roseMapAt_compile hM hG hρ hps hds hkl hkc (a := a) hrt htt
+  obtain ⟨q₂, hq₂, hrq₂⟩ := roseMapAt_compile hM hG hρ hps hds hkl hkc hrt hat hT
+  obtain ⟨q₃, hq₃, hrq₃⟩ := roseMapAt_compile hM hG hρ hps hds hkl hkc hrt hat htt
   -- the environment of a label and a list of elements of the formula's pullback of truth
   obtain ⟨hi, hTi⟩ := truthIncl_hom hM hTh
   have hLi := listMap_hom hM hi
@@ -1062,10 +1075,11 @@ theorem weakenElemAt {X W B a : Tree} {e' : List (Tree × Tree)} {w : Term}
   exact ⟨q₂, compile_rename w _ (extEnv (prod X a) (list a) (extEnv X a e')) _
     (fun i ↦ match i with
       | 0 => 0
-      | j + 1 => j + 2) q₂ hq₂ fun i _ ↦ by
+      | j + 1 => j + 2) q₂ hq₂ (fun i _ ↦ by
       rcases i with _ | j
       · rfl
-      · simp [extEnv, precomp], hr₂⟩
+      · simp [extEnv, precomp]) (strictMono_liftR (f := (· + 1)) fun _ _ ↦ Nat.succ_lt_succ),
+    hr₂⟩
 
 /-- An induction's step at the element and a term's value at the tail, in the environment
 extended by a list variable and a new element, is the step's arrow after the parameters and
@@ -1109,21 +1123,6 @@ theorem listStepAt {X W S C a : Tree} {e' : List (Tree × Tree)} {w s : Term}
           ResEq.refl p⟩
   exact ⟨q₄, hq₄, hr₃.trans hr₄⟩
 
-/-- Hypotheses that hold in an environment hold, weakened past two variables, in its extension
-by an element and a list. -/
-theorem hypsHold_weaken2 {Φ : List Term} {X a : Tree} {e' : List (Tree × Tree)}
-    (hΦ : HypsHold M ρ G n Φ X e') (he' : EnvHom M ρ G n X e') (hat : IsTy G n a = true) :
-    HypsHold M ρ G n (Φ.map weaken2) (prod (prod X a) (list a))
-      (extEnv (prod X a) (list a) (extEnv X a e')) := by
-  have hA := isObj_of_isTy hM hds.2 hρ a hat
-  have hL := isObj_list hM hA
-  have hXa := (he'.ext hM hA hat).1
-  have hfQ := fst_hom hM hXa hL
-  have hfXa := fst_hom hM he'.1 hA
-  exact hypsHold_rename hM hG hρ hps hds hΦ he' (comp_hom hM hfQ hfXa)
-    (envEq_precomp_comp hM (fun p hp ↦ (he'.2 p hp).1) hfXa hfQ) fun i _ ↦ by
-      simp [extEnv, precomp]
-
 /-- Induction on a list type, in the form of the uniqueness of recursion, is sound: an equation,
 in a context of a list variable, whose sides agree at the empty list and are each, at a
 construction, a step of their type applied to the element and their value at the tail, holds,
@@ -1161,7 +1160,8 @@ theorem listInd_sound {kn kc : ℕ} (hkn : G.prims[kn]? = some nilPrim)
   have hê₁ := (he'.ext hM hA hat).ext hM hL hLt
   have hê₁Γ : (extEnv (prod X a) (list a) (extEnv X a e')).map Prod.snd = list a :: a :: Γ' := by
     simp [extEnv, hΓ', Function.comp_def]
-  have hΦ₁ := hypsHold_weaken2 hM hG hρ hps hds hΦ' he' hat
+  have hΦ₁ := hypsHold_weaken2 hM hG hρ hps hds hΦ' he' (isObj_of_isTy hM hds.2 hρ a hat)
+    (isObj_list hM (isObj_of_isTy hM hds.2 hρ a hat))
   -- the sides' type, and their arrows in the generic environment
   obtain ⟨f₀, hf₀⟩ := compile_of_typeIn htC (X := X) (e := (x₀, list a) :: e') (by simp [hΓ'])
   obtain rfl : A = C := (Prod.mk.inj (Option.some_inj.mp (ht.symm.trans hf₀))).2
@@ -1240,7 +1240,8 @@ theorem listIndHyp_sound {kn kc : ℕ} (hkn : G.prims[kn]? = some nilPrim)
   have hê₁ := hea.ext hM hL hLt
   have hê₁Γ : (extEnv (prod X a) (list a) (extEnv X a e')).map Prod.snd = list a :: a :: Γ' := by
     simp [extEnv, hΓ', Function.comp_def]
-  have hΦ₁ := hypsHold_weaken2 hM hG hρ hps hds hΦ' he' hat
+  have hΦ₁ := hypsHold_weaken2 hM hG hρ hps hds hΦ' he' (isObj_of_isTy hM hds.2 hρ a hat)
+    (isObj_list hM (isObj_of_isTy hM hds.2 hρ a hat))
   obtain ⟨F, hF⟩ := compile_of_typeIn hφ (X := prod X (list a)) hêΓ
   have hFh : Hom M ρ F (prod X (list a)) omega :=
     (compile_hom hM hG hρ hps hds _ _ _ _ hF hê).1

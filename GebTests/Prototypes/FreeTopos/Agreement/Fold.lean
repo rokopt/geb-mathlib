@@ -33,6 +33,8 @@ steps are related node by node, the results at the children related.
 * {lit}`elim_eq_para` — a fold is a paramorphism.
 * {lit}`fold_rel`, {lit}`para_rel` — a fold, and the kernel's fold whose step sees the node, is
   related to a fold, and a paramorphism, of the same tree.
+* {lit}`para_enc` — the kernel's fold whose step sees the node, at an encoded tree, is related to
+  a paramorphism of the tree it encodes.
 * {lit}`encWith_inj` — the encoding is injective where a label's position and data determine it.
 
 ## Tags
@@ -183,6 +185,22 @@ theorem para_rel {V W : Type} (R : V → W → Prop) (f : Tree → List V → V)
   have := h a (cs.map fun c ↦ (c, Const.para f c, RoseTree.para g c)) (by simpa using ih)
   rw [Const.para_node, RoseTree.para_node]
   simpa only [List.map_map, Function.comp_def, List.map_id'] using this
+
+/-- The kernel's fold whose step sees the node, over an encoded tree, is related to a
+paramorphism of the tree it encodes when their steps are related at every node whose children's
+results are related, whatever the result at the tree of the label's data. -/
+theorem para_enc {L V W : Type} (tag : L → ℕ) (dat : L → Tree) (R : V → W → Prop)
+    (f : Tree → List V → V) (g : L → List (RoseTree L × W) → W)
+    (h : ∀ (l : L) (v : V) (xs : List (RoseTree L × V × W)), (∀ x ∈ xs, R x.2.1 x.2.2) →
+      R (f (encWith tag dat (RoseTree.node l (xs.map Prod.fst))) (v :: xs.map fun x ↦ x.2.1))
+        (g l (xs.map fun x ↦ (x.1, x.2.2))))
+    (s : RoseTree L) : R (Const.para f (encWith tag dat s)) (RoseTree.para g s) := by
+  refine RoseTree.ind (P := fun s ↦ R (Const.para f (encWith tag dat s)) (RoseTree.para g s))
+    (fun a cs ih ↦ ?_) s
+  have := h a (Const.para f (dat a))
+    (cs.map fun c ↦ (c, Const.para f (encWith tag dat c), RoseTree.para g c)) (by simpa using ih)
+  rw [encWith_node, Const.para_node, RoseTree.para_node, List.map_cons]
+  simpa only [List.map_map, Function.comp_def, encWith_node, List.map_id'] using this
 
 end GebTests.Prototypes.FreeTopos.Agreement.Fold
 

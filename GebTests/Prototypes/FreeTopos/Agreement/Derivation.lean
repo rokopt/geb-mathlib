@@ -215,6 +215,16 @@ theorem instVar_eq (u : Term) (i : ℕ) :
   cases i <;> mirror_simp [«Derivation.instVar», Internal.instVar, mVar_eq, beq_iff_eq,
     Nat.add_one_ne_zero, Nat.add_sub_cancel]
 
+/-- The mirror's substitution of two terms for the two innermost variables, the others
+lowered. -/
+theorem instVar2_eq (u v : Term) (i : ℕ) :
+    «Derivation.instVar2» (encTerm u) (encTerm v) (leaf i) =
+      encTerm (Internal.instVar2 u v i) := by
+  rcases i with _ | _ | i <;> mirror_simp [«Derivation.instVar2», Internal.instVar2, mVar_eq,
+    beq_iff_eq, Nat.add_one_ne_zero, Nat.add_sub_cancel]
+  simp only [eq_false fun h : i + 1 + 1 = 1 ↦ Nat.succ_ne_zero i (Nat.succ.inj h), ↓reduceIte,
+    show i + 1 + 1 - 2 = i from Nat.add_sub_cancel i 2]
+
 /-- The mirror's substitution of a term for the innermost variable, the others in place. -/
 theorem atVar0_eq (u : Term) (i : ℕ) :
     «Derivation.atVar0» (encTerm u) (leaf i) = encTerm (Internal.atVar0 u i) := by
@@ -488,7 +498,7 @@ theorem childCtxs_eq (G : Internal.Globals) (n : ℕ) (l : Label) (ts : List Ter
       encOpt ((Internal.childCtxs G n l ts Γ Φ).map fun cs ↦ RoseTree.node 0 (cs.map encCtx)) := by
   cases l <;> rcases ts with _ | ⟨z, _ | ⟨s, _ | ⟨m, _ | ⟨w, ts⟩⟩⟩⟩ <;>
     der_simp [«Derivation.childCtxs», Internal.childCtxs, labelData,
-      «Derivation.ctxPair», encCtx, typeIn_eq, weaken1_eq, funext listPart_eq,
+      «Derivation.ctxPair», encCtx, typeIn_eq, weaken1_eq, weaken2_eq, funext listPart_eq,
       funext roseLabel_eq, elim_encOpt, «Theory.l2», «Theory.l3»,
       mirror_prod, mirror_list, Option.bind_assoc, Option.bind_map]
 
@@ -542,6 +552,12 @@ theorem exists_node {L : Type} (t : RoseTree L) : ∃ l cs, t = RoseTree.node l 
     «Language.subst» (encTerm b) («Derivation.instVar» (encTerm u)) =
       encTerm (Internal.Term.subst b (Internal.instVar u)) :=
   subst_eq _ _ _ (instVar_eq u)
+
+/-- The mirror's substitution of two terms for the two innermost variables of an encoded term. -/
+@[simp] theorem subst_instVar2 (b u v : Term) :
+    «Language.subst» (encTerm b) («Derivation.instVar2» (encTerm u) (encTerm v)) =
+      encTerm (Internal.Term.subst b (Internal.instVar2 u v)) :=
+  subst_eq _ _ _ (instVar2_eq u v)
 
 /-- The mirror's substitution of a term for the innermost variable, the others in place. -/
 @[simp] theorem subst_atVar0 (b u : Term) :
@@ -654,12 +670,6 @@ theorem rootNatSucc_eq (ks : ℕ) (t : Term) :
     der_simp [primIs_eq, succPrim_eq, subst_instVar]
   split_ifs <;> simp_all
 
-/-- The mirror's substitution of two encoded terms for the two innermost variables. -/
-@[simp] theorem subst_substList₂ (b u v : Term) :
-    «Language.subst» (encTerm b) («Language.substList» [encTerm u, encTerm v]) =
-      encTerm (Internal.Term.subst b (Internal.Term.substList [u, v])) :=
-  subst_substList b [u, v]
-
 /-- The mirror's rewriting of an encoded term by the fold of lists at the empty list. -/
 theorem rootListNil_eq (kn : ℕ) (t : Term) :
     «Derivation.rootListNil» (encGlobals G) [leaf kn] (encTerm t) =
@@ -688,7 +698,7 @@ theorem rootListCons_eq (kc : ℕ) (t : Term) :
   obtain ⟨pl, ps, rfl⟩ := exists_node p
   cases pl <;> der_simp [labelData]
   rcases ps with _ | ⟨h, _ | ⟨tl, _ | ⟨w', ps⟩⟩⟩ <;>
-    der_simp [primIs_eq, consPrim_eq, «Theory.l2», subst_substList₂]
+    der_simp [primIs_eq, consPrim_eq, subst_instVar2]
   split_ifs <;> simp_all
 
 /-- The mirror's rewriting of an encoded term by the fold of rose trees at a construction. -/
