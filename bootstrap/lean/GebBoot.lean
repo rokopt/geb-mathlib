@@ -8594,6 +8594,8 @@ def «Compile.compile» :=
 
 def «main» := fun (x0 : T) => «Compile.compile» x0
 
+def «LeanBackend.bytes» := fun (x0 : List T) => Const.node (leaf 0) x0
+
 def «LeanBackend.txt» :=
   fun (x0 : T) (x1 : T) =>
     Const.node (leaf 0) (x0 :: (x1 :: ([] : List T)))
@@ -8610,6 +8612,69 @@ def «LeanBackend.grp» :=
 
 def «LeanBackend.align» :=
   fun (x0 : T) => Const.node (leaf 5) (x0 :: ([] : List T))
+
+def «LeanBackend/Docs.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «LeanBackend/Docs.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «LeanBackend/Docs.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «LeanBackend/Docs.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «LeanBackend/Docs.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «LeanBackend/Docs.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «LeanBackend/Docs.tail» x1 x0;
+    x2
+
+def «LeanBackend/Docs.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («LeanBackend/Docs.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
 
 def «LeanBackend.cols» :=
   fun (x0 : List T) =>
@@ -8631,22 +8696,25 @@ def «LeanBackend.text» :=
   fun (x0 : List T) =>
     let x1 : T := «LeanBackend.txt»
       («LeanBackend.cols» x0)
-      (Const.node (leaf 0) x0);
+      («LeanBackend.bytes» x0);
     x1
 
 def «LeanBackend.cat2» :=
   fun (x0 : T) (x1 : T) =>
-    let x2 : T := «LeanBackend.cat» (x0 :: («Prelude.single» x1)); x2
+    let x2 : T := «LeanBackend.cat»
+      (x0 :: («LeanBackend/Docs.single» x1));
+    x2
 
 def «LeanBackend.cat3» :=
   fun (x0 : T) (x1 : T) (x2 : T) =>
-    let x3 : T := «LeanBackend.cat» (x0 :: (x1 :: («Prelude.single» x2)));
+    let x3 : T := «LeanBackend.cat»
+      (x0 :: (x1 :: («LeanBackend/Docs.single» x2)));
     x3
 
 def «LeanBackend.cat5» :=
   fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
     let x5 : T := «LeanBackend.cat»
-      (x0 :: (x1 :: (x2 :: (x3 :: («Prelude.single» x4)))));
+      (x0 :: (x1 :: (x2 :: (x3 :: («LeanBackend/Docs.single» x4)))));
     x5
 
 def «LeanBackend.indented» :=
@@ -9276,7 +9344,22 @@ def «LeanBackend.layout» :=
                          («LeanBackend.ms» x5 (leaf 0) x5,
                            fun (_ : T) (_ : T) (_ : T) (x11 : T × List T) =>
                              (Const.add (x11).1 x5,
-                               «LeanBackend.revOnto» (Const.children x7) (x11).2))
+                               «LeanBackend.revOnto»
+                                 (let x12 : T := x7;
+                                  let x13 : List
+                                    T := Const.iter
+                                    (α := List T)
+                                    (fun (x13 : List T) =>
+                                      Const.lcase
+                                        (α := T)
+                                        (β := List T)
+                                        x13
+                                        ([] : List T)
+                                        (fun (_ : T) (x15 : List T) => x15))
+                                    (Const.children x12)
+                                    (leaf 0);
+                                  x13)
+                                 (x11).2))
                        else
                          if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
                            let x4 : List
@@ -9458,6 +9541,76 @@ def «LeanBackend.layout» :=
                        ((x1).2 (leaf 0) (leaf 0) (leaf 0) (leaf 0, ([] : List T))).2));
     x1
 
+def «LeanBackend.param» :=
+  fun (x0 : T) (x1 : T) =>
+    Const.node (leaf 0) (x0 :: (x1 :: ([] : List T)))
+
+def «LeanBackend.params» :=
+  fun (x0 : List T) => Const.node (leaf 0) x0
+
+def «LeanBackend/Ps.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «LeanBackend/Ps.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «LeanBackend/Ps.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «LeanBackend/Ps.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «LeanBackend/Ps.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «LeanBackend/Ps.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «LeanBackend/Ps.tail» x1 x0;
+    x2
+
+def «LeanBackend/Ps.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («LeanBackend/Ps.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
 def «LeanBackend.atomic» :=
   fun (x0 : T) => Const.node (leaf 0) (x0 :: ([] : List T))
 
@@ -9473,21 +9626,37 @@ def «LeanBackend.ap» :=
 
 def «LeanBackend.binderDocs» :=
   fun (x0 : T) =>
-    let x1 : T := «LeanBackend.joinWith»
-      «LeanBackend.line»
-      (Const.foldr
-        (α := T)
-        (β := List T)
-        (fun (x1 : T) (x2 : List T) =>
-          ((«LeanBackend.cat5»
-            «LeanBackend.tLp»
-            (Const.child x1 (leaf 0))
-            «LeanBackend.tColon»
-            (Const.child x1 (leaf 1))
-            «LeanBackend.tRp») ::
-            x2))
-        ([] : List T)
-        (Const.children x0));
+    let x1 : T := (let x1 : T := x0;
+                   let x2 : List
+                     T := Const.iter
+                     (α := List T)
+                     (fun (x2 : List T) =>
+                       Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x2
+                         ([] : List T)
+                         (fun (_ : T) (x4 : List T) => x4))
+                     (Const.children x1)
+                     (leaf 0);
+                   «LeanBackend.joinWith»
+                     «LeanBackend.line»
+                     (Const.foldr
+                       (α := T)
+                       (β := List T)
+                       (fun (x3 : T) (x4 : List T) =>
+                         let x5 : T := x3;
+                         let x6 : T := Const.child x5 (leaf 0);
+                         let x7 : T := Const.child x5 (leaf 1);
+                         ((«LeanBackend.cat5»
+                           «LeanBackend.tLp»
+                           x6
+                           «LeanBackend.tColon»
+                           x7
+                           «LeanBackend.tRp») ::
+                           x4))
+                       ([] : List T)
+                       x2));
     x1
 
 def «LeanBackend.shDoc» :=
@@ -9670,6 +9839,268 @@ def «LeanBackend.kLcase» :=
 def «LeanBackend.kPara» :=
   fun (x0 : T) => Const.node (leaf 25) (x0 :: ([] : List T))
 
+def «LeanBackend.Kt.member» :=
+  fun (x0 : T) =>
+    Const.mod
+      (Const.div
+        (Const.fold
+          (α := T)
+          (fun (x1 : T) (x2 : List T) =>
+            let x3 : T := Const.node (leaf 0) x2;
+            Const.add
+              (if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
+                Const.eq (Const.arity x3) (leaf 0)
+              else
+                if (Const.eq x1 (leaf 1)).label ≠ 0 then
+                  Const.eq (Const.arity x3) (leaf 0)
+                else
+                  if (Const.eq x1 (leaf 2)).label ≠ 0 then
+                    if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
+                      if (Const.mod
+                        (Const.div (Const.child x3 (leaf 0)) (leaf 1))
+                        (leaf 2)).label ≠ 0 then
+                        Const.mod (Const.div (Const.child x3 (leaf 1)) (leaf 1)) (leaf 2)
+                      else
+                        leaf 0
+                    else
+                      leaf 0
+                  else
+                    if (Const.eq x1 (leaf 3)).label ≠ 0 then
+                      if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
+                        if (Const.mod
+                          (Const.div (Const.child x3 (leaf 0)) (leaf 1))
+                          (leaf 2)).label ≠ 0 then
+                          Const.mod (Const.div (Const.child x3 (leaf 1)) (leaf 1)) (leaf 2)
+                        else
+                          leaf 0
+                      else
+                        leaf 0
+                    else
+                      if (Const.eq x1 (leaf 4)).label ≠ 0 then
+                        if (Const.eq (Const.arity x3) (leaf 1)).label ≠ 0 then
+                          Const.mod (Const.div (Const.child x3 (leaf 0)) (leaf 1)) (leaf 2)
+                        else
+                          leaf 0
+                      else
+                        if (Const.eq x1 (leaf 5)).label ≠ 0 then
+                          Const.eq (Const.arity x3) (leaf 0)
+                        else
+                          if (Const.eq x1 (leaf 6)).label ≠ 0 then
+                            Const.eq (Const.arity x3) (leaf 0)
+                          else
+                            if (Const.eq x1 (leaf 7)).label ≠ 0 then
+                              Const.eq (Const.arity x3) (leaf 0)
+                            else
+                              if (Const.eq x1 (leaf 8)).label ≠ 0 then
+                                Const.eq (Const.arity x3) (leaf 1)
+                              else
+                                if (Const.eq x1 (leaf 9)).label ≠ 0 then
+                                  if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
+                                    if (Const.mod
+                                      (Const.div (Const.child x3 (leaf 0)) (leaf 1))
+                                      (leaf 2)).label ≠ 0 then
+                                      Const.mod
+                                        (Const.div (Const.child x3 (leaf 1)) (leaf 1))
+                                        (leaf 2)
+                                    else
+                                      leaf 0
+                                  else
+                                    leaf 0
+                                else
+                                  if (Const.eq x1 (leaf 10)).label ≠ 0 then
+                                    if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
+                                      if (Const.mod
+                                        (Const.div (Const.child x3 (leaf 0)) (leaf 1))
+                                        (leaf 2)).label ≠ 0 then
+                                        Const.mod
+                                          (Const.div (Const.child x3 (leaf 1)) (leaf 1))
+                                          (leaf 2)
+                                      else
+                                        leaf 0
+                                    else
+                                      leaf 0
+                                  else
+                                    if (Const.eq x1 (leaf 11)).label ≠ 0 then
+                                      Const.eq (Const.arity x3) (leaf 0)
+                                    else
+                                      if (Const.eq x1 (leaf 12)).label ≠ 0 then
+                                        if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
+                                          if (Const.mod
+                                            (Const.div (Const.child x3 (leaf 0)) (leaf 1))
+                                            (leaf 2)).label ≠ 0 then
+                                            Const.mod
+                                              (Const.div (Const.child x3 (leaf 1)) (leaf 1))
+                                              (leaf 2)
+                                          else
+                                            leaf 0
+                                        else
+                                          leaf 0
+                                      else
+                                        if (Const.eq x1 (leaf 13)).label ≠ 0 then
+                                          if (Const.eq (Const.arity x3) (leaf 1)).label ≠ 0 then
+                                            Const.mod
+                                              (Const.div (Const.child x3 (leaf 0)) (leaf 1))
+                                              (leaf 2)
+                                          else
+                                            leaf 0
+                                        else
+                                          if (Const.eq x1 (leaf 14)).label ≠ 0 then
+                                            if (Const.eq (Const.arity x3) (leaf 1)).label ≠ 0 then
+                                              Const.mod
+                                                (Const.div (Const.child x3 (leaf 0)) (leaf 1))
+                                                (leaf 2)
+                                            else
+                                              leaf 0
+                                          else
+                                            if (Const.eq x1 (leaf 15)).label ≠ 0 then
+                                              Const.eq (Const.arity x3) (leaf 1)
+                                            else
+                                              if (Const.eq x1 (leaf 16)).label ≠ 0 then
+                                                if (Const.eq
+                                                  (Const.arity x3)
+                                                  (leaf 3)).label ≠ 0 then
+                                                  if (Const.mod
+                                                    (Const.div (Const.child x3 (leaf 0)) (leaf 1))
+                                                    (leaf 2)).label ≠ 0 then
+                                                    if (Const.mod
+                                                      (Const.div (Const.child x3 (leaf 1)) (leaf 1))
+                                                      (leaf 2)).label ≠ 0 then
+                                                      Const.mod
+                                                        (Const.div
+                                                          (Const.child x3 (leaf 2))
+                                                          (leaf 1))
+                                                        (leaf 2)
+                                                    else
+                                                      leaf 0
+                                                  else
+                                                    leaf 0
+                                                else
+                                                  leaf 0
+                                              else
+                                                if (Const.eq x1 (leaf 17)).label ≠ 0 then
+                                                  if (Const.eq
+                                                    (Const.arity x3)
+                                                    (leaf 1)).label ≠ 0 then
+                                                    Const.mod
+                                                      (Const.div (Const.child x3 (leaf 0)) (leaf 1))
+                                                      (leaf 2)
+                                                  else
+                                                    leaf 0
+                                                else
+                                                  if (Const.eq x1 (leaf 18)).label ≠ 0 then
+                                                    if (Const.eq
+                                                      (Const.arity x3)
+                                                      (leaf 1)).label ≠ 0 then
+                                                      Const.mod
+                                                        (Const.div
+                                                          (Const.child x3 (leaf 0))
+                                                          (leaf 1))
+                                                        (leaf 2)
+                                                    else
+                                                      leaf 0
+                                                  else
+                                                    if (Const.eq x1 (leaf 19)).label ≠ 0 then
+                                                      if (Const.eq
+                                                        (Const.arity x3)
+                                                        (leaf 1)).label ≠ 0 then
+                                                        Const.mod
+                                                          (Const.div
+                                                            (Const.child x3 (leaf 0))
+                                                            (leaf 1))
+                                                          (leaf 2)
+                                                      else
+                                                        leaf 0
+                                                    else
+                                                      if (Const.eq x1 (leaf 20)).label ≠ 0 then
+                                                        if (Const.eq
+                                                          (Const.arity x3)
+                                                          (leaf 2)).label ≠ 0 then
+                                                          if (Const.mod
+                                                            (Const.div
+                                                              (Const.child x3 (leaf 0))
+                                                              (leaf 1))
+                                                            (leaf 2)).label ≠ 0 then
+                                                            Const.mod
+                                                              (Const.div
+                                                                (Const.child x3 (leaf 1))
+                                                                (leaf 1))
+                                                              (leaf 2)
+                                                          else
+                                                            leaf 0
+                                                        else
+                                                          leaf 0
+                                                      else
+                                                        if (Const.eq x1 (leaf 21)).label ≠ 0 then
+                                                          if (Const.eq
+                                                            (Const.arity x3)
+                                                            (leaf 2)).label ≠ 0 then
+                                                            if (Const.mod
+                                                              (Const.div
+                                                                (Const.child x3 (leaf 0))
+                                                                (leaf 1))
+                                                              (leaf 2)).label ≠ 0 then
+                                                              Const.mod
+                                                                (Const.div
+                                                                  (Const.child x3 (leaf 1))
+                                                                  (leaf 1))
+                                                                (leaf 2)
+                                                            else
+                                                              leaf 0
+                                                          else
+                                                            leaf 0
+                                                        else
+                                                          if (Const.eq x1 (leaf 22)).label ≠ 0 then
+                                                            Const.eq (Const.arity x3) (leaf 1)
+                                                          else
+                                                            if (Const.eq
+                                                              x1
+                                                              (leaf 23)).label ≠ 0 then
+                                                              Const.eq (Const.arity x3) (leaf 1)
+                                                            else
+                                                              if (Const.eq
+                                                                x1
+                                                                (leaf 24)).label ≠ 0 then
+                                                                if (Const.eq
+                                                                  (Const.arity x3)
+                                                                  (leaf 2)).label ≠ 0 then
+                                                                  if (Const.mod
+                                                                    (Const.div
+                                                                      (Const.child x3 (leaf 0))
+                                                                      (leaf 1))
+                                                                    (leaf 2)).label ≠ 0 then
+                                                                    Const.mod
+                                                                      (Const.div
+                                                                        (Const.child x3 (leaf 1))
+                                                                        (leaf 1))
+                                                                      (leaf 2)
+                                                                  else
+                                                                    leaf 0
+                                                                else
+                                                                  leaf 0
+                                                              else
+                                                                if (Const.eq
+                                                                  x1
+                                                                  (leaf 25)).label ≠ 0 then
+                                                                  if (Const.eq
+                                                                    (Const.arity x3)
+                                                                    (leaf 1)).label ≠ 0 then
+                                                                    Const.mod
+                                                                      (Const.div
+                                                                        (Const.child x3 (leaf 0))
+                                                                        (leaf 1))
+                                                                      (leaf 2)
+                                                                  else
+                                                                    leaf 0
+                                                                else
+                                                                  leaf 0).label ≠ 0 then
+                leaf 1
+              else
+                leaf 0)
+              (leaf 0))
+          x0)
+        (leaf 1))
+      (leaf 2)
+
 def «LeanBackend.orList» :=
   fun (x0 : List T) (x1 : List T) =>
     let x2 : List
@@ -9723,7 +10154,7 @@ def «LeanBackend.quoteDoc» :=
     let x1 : T := Const.fold
       (α := T)
       (fun (x1 : T) (x2 : List T) =>
-        if («Reader.nonEmpty» x2).label ≠ 0 then
+        if (Const.lt (leaf 0) («LeanBackend/Docs.length» x2)).label ≠ 0 then
           «LeanBackend.grp»
             («LeanBackend.cat»
               («LeanBackend.tMk» ::
@@ -9733,7 +10164,7 @@ def «LeanBackend.quoteDoc» :=
                       («LeanBackend.joinWith»
                         («LeanBackend.cat2» «LeanBackend.tComma» «LeanBackend.line»)
                         x2)) ::
-                      («Prelude.single» «LeanBackend.tRb»))))))
+                      («LeanBackend/Docs.single» «LeanBackend.tRb»))))))
         else
           «LeanBackend.cat2»
             «LeanBackend.tLeaf»
@@ -9743,23 +10174,30 @@ def «LeanBackend.quoteDoc» :=
 
 def «LeanBackend.letDoc» :=
   fun (x0 : List T) (x1 : T) (x2 : T) =>
-    let x3 : T := (let x3 : T := «Prelude.at» x0 (leaf 0);
-                   let x4 : List T := «Prelude.tail» x0;
+    let x3 : T := (let x3 : List T := «LeanBackend/Ps.tail» x0;
+                   let x4 : T := «LeanBackend/Ps.atOr»
+                     («LeanBackend.param» «LeanBackend.tUnder» «LeanBackend.tUnder»)
+                     x0
+                     (leaf 0);
+                   let x5 : T := Const.child x4 (leaf 0);
+                   let x6 : T := Const.child x4 (leaf 1);
                    «LeanBackend.align»
                      («LeanBackend.grp»
                        («LeanBackend.cat»
                          («LeanBackend.tLet» ::
-                           ((Const.child x3 (leaf 0)) ::
+                           (x5 ::
                              («LeanBackend.tColon» ::
-                               ((Const.child x3 (leaf 1)) ::
+                               (x6 ::
                                  («LeanBackend.tColonEq» ::
                                    ((«LeanBackend.valDoc» x2) ::
                                      («LeanBackend.tSemi» ::
                                        («LeanBackend.line» ::
-                                         («Prelude.single»
-                                           (if («Reader.nonEmpty» x4).label ≠ 0 then
+                                         («LeanBackend/Docs.single»
+                                           (if (Const.lt
+                                             (leaf 0)
+                                             («LeanBackend/Ps.length» x3)).label ≠ 0 then
                                              «LeanBackend.shDoc»
-                                               («LeanBackend.fn» (Const.node (leaf 0) x4) x1)
+                                               («LeanBackend.fn» («LeanBackend.params» x3) x1)
                                            else
                                              x1)))))))))))));
     x3
@@ -9874,7 +10312,7 @@ def «LeanBackend.emTerm» :=
                   «LeanBackend.closedSh»
                     («LeanBackend.ap»
                       «LeanBackend.tList»
-                      («Prelude.single» («LeanBackend.argDoc» ((x6).2 (leaf 0)))))
+                      («LeanBackend/Docs.single» («LeanBackend.argDoc» ((x6).2 (leaf 0)))))
                 else
                   if (Const.eq (Const.label x2) (leaf 8)).label ≠ 0 then
                     let _ : (Unit → List T × (T → T)) ×
@@ -9939,8 +10377,7 @@ def «LeanBackend.emTerm» :=
                             (x8).1
                             (leaf 0)
                             (fun (x10 : T) (_ : List T) => x10);
-                          let x11 : T := «Reader.node2»
-                            (leaf 0)
+                          let x11 : T := «LeanBackend.param»
                             (if (x10).label ≠ 0 then
                               «LeanBackend.varDoc» x9
                             else
@@ -9951,12 +10388,23 @@ def «LeanBackend.emTerm» :=
                           if (Const.eq (Const.label x13) (leaf 2)).label ≠ 0 then
                             let x14 : T := Const.child x13 (leaf 0);
                             let x15 : T := Const.child x13 (leaf 1);
-                            «LeanBackend.fn»
-                              (Const.node (leaf 0) (x11 :: (Const.children x14)))
-                              x15
+                            let x16 : T := x14;
+                            let x17 : List
+                              T := Const.iter
+                              (α := List T)
+                              (fun (x17 : List T) =>
+                                Const.lcase
+                                  (α := T)
+                                  (β := List T)
+                                  x17
+                                  ([] : List T)
+                                  (fun (_ : T) (x19 : List T) => x19))
+                              (Const.children x16)
+                              (leaf 0);
+                            «LeanBackend.fn» («LeanBackend.params» (x11 :: x17)) x15
                           else
                             «LeanBackend.fn»
-                              (Const.node (leaf 0) («Prelude.single» x11))
+                              («LeanBackend.params» («LeanBackend/Ps.single» x11))
                               («LeanBackend.shDoc» x12))
                     else
                       if (Const.eq (Const.label x2) (leaf 10)).label ≠ 0 then
@@ -10011,17 +10459,32 @@ def «LeanBackend.emTerm» :=
                                 (leaf 1);
                               «LeanBackend.ap»
                                 x13
-                                («Prelude.append» x14 («Prelude.single» («LeanBackend.argDoc» x11)))
+                                («LeanBackend/Docs.append»
+                                  x14
+                                  («LeanBackend/Docs.single» («LeanBackend.argDoc» x11)))
                             else
                               if (Const.eq (Const.label x12) (leaf 2)).label ≠ 0 then
                                 let x13 : T := Const.child x12 (leaf 0);
                                 let x14 : T := Const.child x12 (leaf 1);
                                 «LeanBackend.compound»
-                                  («LeanBackend.letDoc» (Const.children x13) x14 x11)
+                                  (let x15 : T := x13;
+                                   let x16 : List
+                                     T := Const.iter
+                                     (α := List T)
+                                     (fun (x16 : List T) =>
+                                       Const.lcase
+                                         (α := T)
+                                         (β := List T)
+                                         x16
+                                         ([] : List T)
+                                         (fun (_ : T) (x18 : List T) => x18))
+                                     (Const.children x15)
+                                     (leaf 0);
+                                   «LeanBackend.letDoc» x16 x14 x11)
                               else
                                 «LeanBackend.ap»
                                   («LeanBackend.argDoc» x10)
-                                  («Prelude.single» («LeanBackend.argDoc» x11)))
+                                  («LeanBackend/Docs.single» («LeanBackend.argDoc» x11)))
                       else
                         if (Const.eq (Const.label x2) (leaf 11)).label ≠ 0 then
                           «LeanBackend.closed» «LeanBackend.tUnitV»
@@ -10200,7 +10663,7 @@ def «LeanBackend.emTerm» :=
                                                       («LeanBackend.shDoc» ((x8).2 x11))) ::
                                                       («LeanBackend.line» ::
                                                         («LeanBackend.tElse» ::
-                                                          («Prelude.single»
+                                                          («LeanBackend/Docs.single»
                                                             («LeanBackend.indented»
                                                               («LeanBackend.shDoc»
                                                                 ((x10).2 x11)))))))))))))
@@ -10226,7 +10689,7 @@ def «LeanBackend.emTerm» :=
                                         fun (_ : T) =>
                                           «LeanBackend.ap»
                                             «LeanBackend.tFold»
-                                            («Prelude.single»
+                                            («LeanBackend/Docs.single»
                                               («LeanBackend.namedArg» «LeanBackend.tAlpha» x6)))
                                     else
                                       if (Const.eq (Const.label x2) (leaf 18)).label ≠ 0 then
@@ -10250,7 +10713,7 @@ def «LeanBackend.emTerm» :=
                                           fun (_ : T) =>
                                             «LeanBackend.ap»
                                               «LeanBackend.tIter»
-                                              («Prelude.single»
+                                              («LeanBackend/Docs.single»
                                                 («LeanBackend.namedArg» «LeanBackend.tAlpha» x6)))
                                       else
                                         if (Const.eq (Const.label x2) (leaf 19)).label ≠ 0 then
@@ -10366,7 +10829,7 @@ def «LeanBackend.emTerm» :=
                                                     ((«LeanBackend.namedArg»
                                                       «LeanBackend.tAlpha»
                                                       x6) ::
-                                                      («Prelude.single»
+                                                      («LeanBackend/Docs.single»
                                                         («LeanBackend.namedArg»
                                                           «LeanBackend.tBeta»
                                                           x8))))
@@ -10472,7 +10935,7 @@ def «LeanBackend.emTerm» :=
                                                           ((«LeanBackend.namedArg»
                                                             «LeanBackend.tAlpha»
                                                             x6) ::
-                                                            («Prelude.single»
+                                                            («LeanBackend/Docs.single»
                                                               («LeanBackend.namedArg»
                                                                 «LeanBackend.tBeta»
                                                                 x8))))
@@ -10501,7 +10964,7 @@ def «LeanBackend.emTerm» :=
                                                         fun (_ : T) =>
                                                           «LeanBackend.ap»
                                                             «LeanBackend.tPara»
-                                                            («Prelude.single»
+                                                            («LeanBackend/Docs.single»
                                                               («LeanBackend.namedArg»
                                                                 «LeanBackend.tAlpha»
                                                                 x6)))
@@ -10521,7 +10984,7 @@ def «LeanBackend.defDoc» :=
           («LeanBackend.tDef» ::
             ((«LeanBackend.text» (Const.children x0)) ::
               («LeanBackend.tAssign» ::
-                («Prelude.single» («LeanBackend.indented» x1)))))));
+                («LeanBackend/Docs.single» («LeanBackend.indented» x1)))))));
     x2
 
 def «LeanBackend.emitLean» :=
@@ -10532,7 +10995,7 @@ def «LeanBackend.emitLean» :=
                    «LeanBackend.layout»
                      («LeanBackend.cat»
                        («LeanBackend.tHeader» ::
-                         («Prelude.append»
+                         («LeanBackend/Docs.append»
                            (Const.foldr
                              (α := T)
                              (β := T × List T)
@@ -10540,12 +11003,16 @@ def «LeanBackend.emitLean» :=
                                (Const.add (x5).1 (leaf 1),
                                  ((«LeanBackend.defDoc»
                                    (Const.child x1 (Const.sub (Const.sub x3 (leaf 1)) (x5).1))
-                                   («LeanBackend.shDoc»
-                                     ((«LeanBackend.emTerm» x1 x4).2 (leaf 0)))) ::
+                                   (let x6 : T := x4;
+                                    if («LeanBackend.Kt.member» x6).label ≠ 0 then
+                                      let x7 : T := x6;
+                                      «LeanBackend.shDoc» ((«LeanBackend.emTerm» x1 x7).2 (leaf 0))
+                                    else
+                                      «LeanBackend.tUnder»)) ::
                                    (x5).2)))
                              (leaf 0, ([] : List T))
                              x2).2
-                           («Prelude.single» «LeanBackend.tFooter»)))));
+                           («LeanBackend/Docs.single» «LeanBackend.tFooter»)))));
     x1
 
 def «mainLean» :=

@@ -2181,12 +2181,17 @@ for each operation. The stage-1 compiler checks it after the
 declarations before it, a sort being distinct from every other type and
 without representation, and every compiler then drops it, so a template
 whose code inspects the trees of its sort is rejected though no import
-instantiates it. Complete: the typing, the three forms, the recognizers
-and the opaque check of templates. Remaining, in order: the sources
-retyped, the stage-1 compiler's first, then those of Gödel's T, the
-proofs and the printer, and the metalogic's last, its mirror regenerated
-and the agreement proofs repaired where a definition's erasure changes;
-`tree-data` removed; and the soundness of the typing.
+instantiates it. Complete: the typing, the three forms, the recognizers,
+the opaque check of templates, and the stage-1 compiler's own sources
+retyped, its typing, expansion and Lean backend declaring their forms,
+types, documents and terms by `data` with the representations they had,
+and its lists and optional values instances of the templates `Seq` and
+`Option` of `bootstrap/seq.geb`; a template's instances are distinct
+types, so modules share an instance by exporting it. Remaining, in order:
+the sources of Gödel's T, the proofs and the printer retyped, and the
+metalogic's last, its mirror regenerated and the agreement proofs
+repaired where a definition's erasure changes; `tree-data` removed; and
+the soundness of the typing.
 
 Abstraction is mathematical, not syntactic, and needs no mark of its
 own. An interface is a theory, a presentation of operations and axioms
