@@ -35,7 +35,8 @@ cd "$(dirname "$0")/.."
 b=bootstrap
 stage0=("$b/prelude.geb" "$b/serialize.geb" "$b/reader.geb" "$b/check.geb" "$b/datatype.geb"
         "$b/modules.geb" "$b/recognize.geb" "$b/compile.geb")
-stage1=("$b/prelude.geb" "$b/serialize.geb" "$b/reader.geb" "$b/check.geb" "$b/stage1/typing.geb"
+stage1=("$b/prelude.geb" "$b/serialize.geb" "$b/reader.geb" "$b/check.geb" "$b/seq.geb"
+        "$b/stage1/typing.geb"
         "$b/stage1/datatype.geb"
         "$b/modules.geb" "$b/recognize.geb" "$b/compile.geb" "$b/stage1/lean.geb")
 img=$b/compiler.img

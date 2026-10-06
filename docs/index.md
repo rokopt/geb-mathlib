@@ -3830,7 +3830,8 @@ checklist and in CI.
   `bootstrap/stage1/datatype.geb` rewrites the expansion in the datatype
   language, checking the datatypes `data` declares, each a type distinct
   from the trees, by the typing of `bootstrap/stage1/typing.geb` before
-  erasing them, and `bootstrap/stage1/lean.geb` is a
+  erasing them, the typing written with exact datatypes and the lists and
+  optional values of `bootstrap/seq.geb`, and `bootstrap/stage1/lean.geb` is a
   backend emitting a Lean module in place of an image; the stage-1 compiler
   they make, built by the stage-0 compiler, is committed as
   `bootstrap/compiler.img`, and the Lean it emits from its own source as

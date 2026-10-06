@@ -2055,18 +2055,870 @@ def «Check.checkProgram» :=
     else
       «Prelude.none»
 
-def «Typing/Tss.tail» :=
-  fun (x0 : List (List T)) =>
-    Const.lcase
-      (α := List T)
-      (β := List (List T))
-      x0
-      ([] : List (List T))
-      (fun (_ : List T) (x2 : List (List T)) => x2)
+def «Typing.name» := fun (x0 : List T) => Const.node (leaf 0) x0
 
-def «Typing.tyNominal» :=
+def «Typing.sameName» :=
+  fun (x0 : T) (x1 : T) => let x2 : T := Const.equal x0 x1; x2
+
+def «Typing.tx0» := Const.node (leaf 0) ([] : List T)
+
+def «Typing.tAtom» := fun (x0 : List T) => Const.node (leaf 1) x0
+
+def «Typing.tList» := fun (x0 : List T) => Const.node (leaf 2) x0
+
+def «Typing.tx3» := Const.node (leaf 3) ([] : List T)
+
+def «Typing.tx4» := Const.node (leaf 4) ([] : List T)
+
+def «Typing.tx5» := Const.node (leaf 5) ([] : List T)
+
+def «Typing.tx6» := Const.node (leaf 6) ([] : List T)
+
+def «Typing.tx7» := Const.node (leaf 7) ([] : List T)
+
+def «Typing.tx8» := Const.node (leaf 8) ([] : List T)
+
+def «Typing.tMarker» := fun (x0 : List T) => Const.node (leaf 9) x0
+
+def «Typing.tData» :=
+  fun (x0 : T) => Const.node (leaf 10) (x0 :: ([] : List T))
+
+def «Typing.tAs» :=
+  fun (x0 : T) (x1 : T) =>
+    Const.node (leaf 11) (x0 :: (x1 :: ([] : List T)))
+
+def «Typing.tOf» :=
+  fun (x0 : T) (x1 : T) =>
+    Const.node (leaf 12) (x0 :: (x1 :: ([] : List T)))
+
+def «Typing.tx13» := Const.node (leaf 13) ([] : List T)
+
+def «Typing.tx14» := Const.node (leaf 14) ([] : List T)
+
+def «Typing.tGeneric» := fun (x0 : List T) => Const.node (leaf 15) x0
+
+def «Typing.Tx.member» :=
   fun (x0 : T) =>
-    let x1 : T := Const.node (leaf 5) («Prelude.single» x0); x1
+    Const.mod
+      (Const.div
+        (Const.fold
+          (α := T)
+          (fun (x1 : T) (x2 : List T) =>
+            let x3 : T := Const.node (leaf 0) x2;
+            Const.add
+              (if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
+                Const.eq (Const.arity x3) (leaf 0)
+              else
+                if (Const.eq x1 (leaf 1)).label ≠ 0 then
+                  Const.lt (leaf 0) (Const.add (Const.arity x3) (leaf 1))
+                else
+                  if (Const.eq x1 (leaf 2)).label ≠ 0 then
+                    if (Const.lt
+                      (leaf 0)
+                      (Const.add (Const.arity x3) (leaf 1))).label ≠ 0 then
+                      Const.foldr
+                        (α := T)
+                        (β := T)
+                        (fun (x4 : T) (x5 : T) =>
+                          if (Const.mod (Const.div x4 (leaf 1)) (leaf 2)).label ≠ 0 then
+                            x5
+                          else
+                            leaf 0)
+                        (leaf 1)
+                        (Const.iter
+                          (α := List T)
+                          (fun (x4 : List T) =>
+                            Const.lcase
+                              (α := T)
+                              (β := List T)
+                              x4
+                              ([] : List T)
+                              (fun (_ : T) (x6 : List T) => x6))
+                          x2
+                          (leaf 0))
+                    else
+                      leaf 0
+                  else
+                    if (Const.eq x1 (leaf 3)).label ≠ 0 then
+                      Const.eq (Const.arity x3) (leaf 0)
+                    else
+                      if (Const.eq x1 (leaf 4)).label ≠ 0 then
+                        Const.eq (Const.arity x3) (leaf 0)
+                      else
+                        if (Const.eq x1 (leaf 5)).label ≠ 0 then
+                          Const.eq (Const.arity x3) (leaf 0)
+                        else
+                          if (Const.eq x1 (leaf 6)).label ≠ 0 then
+                            Const.eq (Const.arity x3) (leaf 0)
+                          else
+                            if (Const.eq x1 (leaf 7)).label ≠ 0 then
+                              Const.eq (Const.arity x3) (leaf 0)
+                            else
+                              if (Const.eq x1 (leaf 8)).label ≠ 0 then
+                                Const.eq (Const.arity x3) (leaf 0)
+                              else
+                                if (Const.eq x1 (leaf 9)).label ≠ 0 then
+                                  Const.lt (leaf 0) (Const.add (Const.arity x3) (leaf 1))
+                                else
+                                  if (Const.eq x1 (leaf 10)).label ≠ 0 then
+                                    if (Const.eq (Const.arity x3) (leaf 1)).label ≠ 0 then
+                                      Const.mod
+                                        (Const.div (Const.child x3 (leaf 0)) (leaf 1))
+                                        (leaf 2)
+                                    else
+                                      leaf 0
+                                  else
+                                    if (Const.eq x1 (leaf 11)).label ≠ 0 then
+                                      if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
+                                        if (Const.mod
+                                          (Const.div (Const.child x3 (leaf 0)) (leaf 1))
+                                          (leaf 2)).label ≠ 0 then
+                                          Const.mod
+                                            (Const.div (Const.child x3 (leaf 1)) (leaf 1))
+                                            (leaf 2)
+                                        else
+                                          leaf 0
+                                      else
+                                        leaf 0
+                                    else
+                                      if (Const.eq x1 (leaf 12)).label ≠ 0 then
+                                        if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
+                                          if (Const.mod
+                                            (Const.div (Const.child x3 (leaf 0)) (leaf 1))
+                                            (leaf 2)).label ≠ 0 then
+                                            Const.mod
+                                              (Const.div (Const.child x3 (leaf 1)) (leaf 1))
+                                              (leaf 2)
+                                          else
+                                            leaf 0
+                                        else
+                                          leaf 0
+                                      else
+                                        if (Const.eq x1 (leaf 13)).label ≠ 0 then
+                                          Const.eq (Const.arity x3) (leaf 0)
+                                        else
+                                          if (Const.eq x1 (leaf 14)).label ≠ 0 then
+                                            Const.eq (Const.arity x3) (leaf 0)
+                                          else
+                                            if (Const.eq x1 (leaf 15)).label ≠ 0 then
+                                              if (Const.lt
+                                                (leaf 0)
+                                                (Const.add
+                                                  (Const.arity x3)
+                                                  (leaf 1))).label ≠ 0 then
+                                                Const.foldr
+                                                  (α := T)
+                                                  (β := T)
+                                                  (fun (x4 : T) (x5 : T) =>
+                                                    if (Const.mod
+                                                      (Const.div x4 (leaf 1))
+                                                      (leaf 2)).label ≠ 0 then
+                                                      x5
+                                                    else
+                                                      leaf 0)
+                                                  (leaf 1)
+                                                  (Const.iter
+                                                    (α := List T)
+                                                    (fun (x4 : List T) =>
+                                                      Const.lcase
+                                                        (α := T)
+                                                        (β := List T)
+                                                        x4
+                                                        ([] : List T)
+                                                        (fun (_ : T) (x6 : List T) => x6))
+                                                    x2
+                                                    (leaf 0))
+                                              else
+                                                leaf 0
+                                            else
+                                              leaf 0).label ≠ 0 then
+                leaf 1
+              else
+                leaf 0)
+              (leaf 0))
+          x0)
+        (leaf 1))
+      (leaf 2)
+
+def «Typing/Txs.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Typing/Txs.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Typing/Txs.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Typing/Txs.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Typing/Txs.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Typing/Txs.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List T := Const.iter (α := List T) «Typing/Txs.tail» x1 x0;
+    x2
+
+def «Typing/Txs.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Typing/Txs.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Typing.tyT» := Const.node (leaf 0) ([] : List T)
+
+def «Typing.tyUnit» := Const.node (leaf 1) ([] : List T)
+
+def «Typing.tyProd» :=
+  fun (x0 : T) (x1 : T) =>
+    Const.node (leaf 2) (x0 :: (x1 :: ([] : List T)))
+
+def «Typing.tyArrow» :=
+  fun (x0 : T) (x1 : T) =>
+    Const.node (leaf 3) (x0 :: (x1 :: ([] : List T)))
+
+def «Typing.tyList» :=
+  fun (x0 : T) => Const.node (leaf 4) (x0 :: ([] : List T))
+
+def «Typing.tyData» :=
+  fun (x0 : T) => Const.node (leaf 5) (x0 :: ([] : List T))
+
+def «Typing.tySort» :=
+  fun (x0 : T) => Const.node (leaf 6) (x0 :: ([] : List T))
+
+def «Typing.sameTy» :=
+  fun (x0 : T) (x1 : T) => let x2 : T := Const.equal x0 x1; x2
+
+def «Typing/Tys.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Typing/Tys.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Typing/Tys.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Typing/Tys.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Typing/Tys.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Typing/Tys.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List T := Const.iter (α := List T) «Typing/Tys.tail» x1 x0;
+    x2
+
+def «Typing/Tys.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Typing/Tys.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Typing/OTy.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Typing/OTy.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Typing/OTy.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Typing/OTy.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Typing/OTy.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Typing/OTy.nothing»
+      (fun (x2 : T) (_ : List T) => «Typing/OTy.just» x2);
+    x2
+
+def «Typing/OTy.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Typing/MTys.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Typing/MTys.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Typing/MTys.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Typing/MTys.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Typing/MTys.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Typing/MTys.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List T := Const.iter (α := List T) «Typing/MTys.tail» x1 x0;
+    x2
+
+def «Typing/MTys.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Typing/MTys.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Typing.eraseTy» :=
+  fun (x0 : T) =>
+    let x1 : T := Const.para
+      (α := Unit → T)
+      (fun (x1 : T) (x2 : List (Unit → T)) (_ : Unit) =>
+        if (Const.eq (Const.label x1) (leaf 0)).label ≠ 0 then
+          «Typing.tyT»
+        else
+          if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+            «Typing.tyUnit»
+          else
+            if (Const.eq (Const.label x1) (leaf 2)).label ≠ 0 then
+              let x4 : (Unit → T) ×
+                List
+                  (Unit →
+                    T) := Const.lcase
+                (α := Unit → T)
+                (β := (Unit → T) × List (Unit → T))
+                x2
+                (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
+                (fun (x4 : Unit → T) (x5 : List (Unit → T)) => (x4, x5));
+              let x5 : T := (x4).1 ();
+              let x6 : (Unit → T) ×
+                List
+                  (Unit →
+                    T) := Const.lcase
+                (α := Unit → T)
+                (β := (Unit → T) × List (Unit → T))
+                (x4).2
+                (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
+                (fun (x6 : Unit → T) (x7 : List (Unit → T)) => (x6, x7));
+              let x7 : T := (x6).1 (); «Typing.tyProd» x5 x7
+            else
+              if (Const.eq (Const.label x1) (leaf 3)).label ≠ 0 then
+                let x4 : (Unit → T) ×
+                  List
+                    (Unit →
+                      T) := Const.lcase
+                  (α := Unit → T)
+                  (β := (Unit → T) × List (Unit → T))
+                  x2
+                  (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
+                  (fun (x4 : Unit → T) (x5 : List (Unit → T)) => (x4, x5));
+                let x5 : T := (x4).1 ();
+                let x6 : (Unit → T) ×
+                  List
+                    (Unit →
+                      T) := Const.lcase
+                  (α := Unit → T)
+                  (β := (Unit → T) × List (Unit → T))
+                  (x4).2
+                  (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
+                  (fun (x6 : Unit → T) (x7 : List (Unit → T)) => (x6, x7));
+                let x7 : T := (x6).1 (); «Typing.tyArrow» x5 x7
+              else
+                if (Const.eq (Const.label x1) (leaf 4)).label ≠ 0 then
+                  let x4 : (Unit → T) ×
+                    List
+                      (Unit →
+                        T) := Const.lcase
+                    (α := Unit → T)
+                    (β := (Unit → T) × List (Unit → T))
+                    x2
+                    (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
+                    (fun (x4 : Unit → T) (x5 : List (Unit → T)) => (x4, x5));
+                  let x5 : T := (x4).1 (); «Typing.tyList» x5
+                else
+                  if (Const.eq (Const.label x1) (leaf 5)).label ≠ 0 then
+                    let _ : (Unit → T) ×
+                      List
+                        (Unit →
+                          T) := Const.lcase
+                      (α := Unit → T)
+                      (β := (Unit → T) × List (Unit → T))
+                      x2
+                      (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
+                      (fun (x4 : Unit → T) (x5 : List (Unit → T)) => (x4, x5));
+                    let _ : T := Const.child x1 (leaf 0); «Typing.tyT»
+                  else
+                    let _ : (Unit → T) ×
+                      List
+                        (Unit →
+                          T) := Const.lcase
+                      (α := Unit → T)
+                      (β := (Unit → T) × List (Unit → T))
+                      x2
+                      (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
+                      (fun (x4 : Unit → T) (x5 : List (Unit → T)) => (x4, x5));
+                    let _ : T := Const.child x1 (leaf 0); «Typing.tyT»)
+      x0
+      ();
+    x1
+
+def «Typing.isData» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 5)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Typing.foldTyOf» :=
+  fun (x0 : T) =>
+    let x1 : T := «Typing.tyArrow»
+      («Typing.tyArrow»
+        «Typing.tyT»
+        («Typing.tyArrow» («Typing.tyList» x0) x0))
+      («Typing.tyArrow» «Typing.tyT» x0);
+    x1
+
+def «Typing.iterTyOf» :=
+  fun (x0 : T) =>
+    let x1 : T := «Typing.tyArrow»
+      («Typing.tyArrow» x0 x0)
+      («Typing.tyArrow» x0 («Typing.tyArrow» «Typing.tyT» x0));
+    x1
+
+def «Typing.foldrTyOf» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := «Typing.tyArrow»
+      («Typing.tyArrow» x0 («Typing.tyArrow» x1 x1))
+      («Typing.tyArrow» x1 («Typing.tyArrow» («Typing.tyList» x0) x1));
+    x2
+
+def «Typing.lcaseTyOf» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := «Typing.tyArrow»
+      («Typing.tyList» x0)
+      («Typing.tyArrow»
+        x1
+        («Typing.tyArrow»
+          («Typing.tyArrow» x0 («Typing.tyArrow» («Typing.tyList» x0) x1))
+          x1));
+    x2
+
+def «Typing.tt» := «Typing.tyArrow» «Typing.tyT» «Typing.tyT»
+
+def «Typing.ttt» := «Typing.tyArrow» «Typing.tyT» «Typing.tt»
+
+def «Typing.primTys» :=
+  («Typing.tt» ::
+    («Typing.tt» ::
+      («Typing.ttt» ::
+        ((«Typing.tyArrow»
+          «Typing.tyT»
+          («Typing.tyArrow» («Typing.tyList» «Typing.tyT») «Typing.tyT»)) ::
+          ((«Typing.tyArrow» «Typing.tyT» («Typing.tyList» «Typing.tyT»)) ::
+            («Typing.ttt» ::
+              («Typing.ttt» ::
+                («Typing.ttt» ::
+                  («Typing.ttt» ::
+                    («Typing.ttt» ::
+                      («Typing.ttt» ::
+                        («Typing.ttt» ::
+                          («Typing.ttt» :: («Typing.tt» :: ([] : List T)))))))))))))))
+
+def «Typing.abbr» :=
+  fun (x0 : T) (x1 : T) =>
+    Const.node (leaf 0) (x0 :: (x1 :: ([] : List T)))
+
+def «Typing/Abbrs.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Typing/Abbrs.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Typing/Abbrs.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Typing/Abbrs.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Typing/Abbrs.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Typing/Abbrs.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List T := Const.iter (α := List T) «Typing/Abbrs.tail» x1 x0;
+    x2
+
+def «Typing/Abbrs.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Typing/Abbrs.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Typing/Names.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Typing/Names.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Typing/Names.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Typing/Names.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Typing/Names.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Typing/Names.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List T := Const.iter (α := List T) «Typing/Names.tail» x1 x0;
+    x2
+
+def «Typing/Names.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Typing/Names.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Typing.mkEnv» :=
+  fun (x0 : List T)
+    (x1 : List T)
+    (x2 : List T)
+    (x3 : List T)
+    (x4 : List T)
+    (x5 : List T) =>
+    let x6 : List T ×
+      (List T ×
+        (List T ×
+          (List T × (List T × List T)))) := (x0,
+      (x1, (x2, (x3, (x4, x5)))));
+    x6
+
+def «Typing.envAl» :=
+  fun (x0 : List T ×
+      (List T × (List T × (List T × (List T × List T))))) =>
+    let x1 : List T := (x0).1; x1
+
+def «Typing.envDefs» :=
+  fun (x0 : List T ×
+      (List T × (List T × (List T × (List T × List T))))) =>
+    let x1 : List T := ((x0).2).1; x1
+
+def «Typing.envNoms» :=
+  fun (x0 : List T ×
+      (List T × (List T × (List T × (List T × List T))))) =>
+    let x1 : List T := (((x0).2).2).1; x1
+
+def «Typing.envSorts» :=
+  fun (x0 : List T ×
+      (List T × (List T × (List T × (List T × List T))))) =>
+    let x1 : List T := ((((x0).2).2).2).1; x1
+
+def «Typing.envNums» :=
+  fun (x0 : List T ×
+      (List T × (List T × (List T × (List T × List T))))) =>
+    let x1 : List T := (((((x0).2).2).2).2).1; x1
+
+def «Typing.envMs» :=
+  fun (x0 : List T ×
+      (List T × (List T × (List T × (List T × List T))))) =>
+    let x1 : List T := (((((x0).2).2).2).2).2; x1
+
+def «Typing.env0» :=
+  «Typing.mkEnv»
+    ([] : List T)
+    ([] : List T)
+    ([] : List T)
+    ([] : List T)
+    ([] : List T)
+    ([] : List T)
+
+def «Typing.lookupName» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) =>
+        let x4 : T := x2;
+        let x5 : T := Const.child x4 (leaf 0);
+        let x6 : T := Const.child x4 (leaf 1);
+        if («Typing.sameName» x5 x0).label ≠ 0 then
+          «Typing/OTy.just» x6
+        else
+          x3)
+      «Typing/OTy.nothing»
+      x1;
+    x2
+
+def «Typing.hasName» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) => «Prelude.or» («Typing.sameName» x2 x0) x3)
+      (leaf 0)
+      x1;
+    x2
+
+def «Typing.atomName» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let x2 : List
+                       T := Const.iter
+                       (α := List T)
+                       (fun (x2 : List T) =>
+                         Const.lcase
+                           (α := T)
+                           (β := List T)
+                           x2
+                           ([] : List T)
+                           (fun (_ : T) (x4 : List T) => x4))
+                       (Const.children x1)
+                       (leaf 0);
+                     «Typing.name» x2
+                   else
+                     «Typing.name» ([] : List T));
+    x1
+
+def «Typing.isAtomTx» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : List
+                       T := Const.iter
+                       (α := List T)
+                       (fun (x2 : List T) =>
+                         Const.lcase
+                           (α := T)
+                           (β := List T)
+                           x2
+                           ([] : List T)
+                           (fun (_ : T) (x4 : List T) => x4))
+                       (Const.children x1)
+                       (leaf 0);
+                     leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Typing.namedTx» :=
+  fun (x0 : T) (x1 : T) => let x2 : T := «Reader.named» x0 x1; x2
 
 def «Typing.kwRep» := mk 0 [leaf 114, leaf 101, leaf 112]
 
@@ -2076,113 +2928,277 @@ def «Typing.kwDecode» :=
 def «Typing.kwDatum» :=
   mk 0 [leaf 100, leaf 97, leaf 116, leaf 117, leaf 109]
 
-def «Typing.isNominal» :=
-  fun (x0 : T) => let x1 : T := Const.eq (Const.label x0) (leaf 5); x1
+def «Typing.kwSort» :=
+  mk 0 [leaf 37, leaf 115, leaf 111, leaf 114, leaf 116]
 
-def «Typing.eraseTy» :=
-  fun (x0 : T) =>
-    let x1 : T := Const.fold
-      (α := T)
-      (fun (x1 : T) (x2 : List T) =>
-        if («Prelude.or»
-          (Const.eq x1 (leaf 5))
-          (Const.eq x1 (leaf 6))).label ≠ 0 then
-          leaf 0
-        else
-          Const.node x1 x2)
+def «Typing.kwPostulate» :=
+  mk 0 [leaf 37,
+    leaf 112,
+    leaf 111,
+    leaf 115,
+    leaf 116,
+    leaf 117,
+    leaf 108,
+    leaf 97,
+    leaf 116,
+    leaf 101]
+
+def «Typing/RT1s.single» :=
+  fun (x0 : T × T) =>
+    let x1 : List (T × T) := (x0 :: ([] : List (T × T))); x1
+
+def «Typing/RT1s.length» :=
+  fun (x0 : List (T × T)) =>
+    let x1 : T := Const.foldr
+      (α := T × T)
+      (β := T)
+      (fun (_ : T × T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
       x0;
     x1
 
-def «Typing.env» :=
-  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) =>
-    Const.node
-      (leaf 0)
-      (x0 :: (x1 :: (x2 :: (x3 :: (x4 :: (x5 :: ([] : List T)))))))
+def «Typing/RT1s.append» :=
+  fun (x0 : List (T × T)) (x1 : List (T × T)) =>
+    let x2 : List
+      (T ×
+        T) := Const.foldr
+      (α := T × T)
+      (β := List (T × T))
+      (fun (x2 : T × T) (x3 : List (T × T)) => (x2 :: x3))
+      x1
+      x0;
+    x2
 
-def «Typing.env0» :=
-  «Typing.env»
-    (Const.node (leaf 0) ([] : List T))
-    (Const.node (leaf 0) ([] : List T))
-    (Const.node (leaf 0) ([] : List T))
-    (Const.node (leaf 0) ([] : List T))
-    (Const.node (leaf 0) ([] : List T))
-    (Const.node (leaf 0) ([] : List T))
+def «Typing/RT1s.reverse» :=
+  fun (x0 : List (T × T)) =>
+    let x1 : List
+      (T ×
+        T) := Const.foldr
+      (α := T × T)
+      (β := List (T × T) → List (T × T))
+      (fun (x1 : T × T)
+         (x2 : List (T × T) → List (T × T))
+         (x3 : List (T × T)) =>
+        x2 (x1 :: x3))
+      (fun (x1 : List (T × T)) => x1)
+      x0
+      ([] : List (T × T));
+    x1
+
+def «Typing/RT1s.tail» :=
+  fun (x0 : List (T × T)) =>
+    let x1 : List
+      (T ×
+        T) := Const.lcase
+      (α := T × T)
+      (β := List (T × T))
+      x0
+      ([] : List (T × T))
+      (fun (_ : T × T) (x2 : List (T × T)) => x2);
+    x1
+
+def «Typing/RT1s.drop» :=
+  fun (x0 : T) (x1 : List (T × T)) =>
+    let x2 : List
+      (T × T) := Const.iter (α := List (T × T)) «Typing/RT1s.tail» x1 x0;
+    x2
+
+def «Typing/RT1s.atOr» :=
+  fun (x0 : T × T) (x1 : List (T × T)) (x2 : T) =>
+    let x3 : T ×
+      T := Const.lcase
+      (α := T × T)
+      (β := T × T)
+      («Typing/RT1s.drop» x2 x1)
+      x0
+      (fun (x3 : T × T) (_ : List (T × T)) => x3);
+    x3
+
+def «Typing.rtForms» :=
+  fun (x0 : List (T × T)) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T × T)
+      (β := List T)
+      (fun (x1 : T × T) (x2 : List T) => ((x1).1 :: x2))
+      ([] : List T)
+      x0;
+    x1
 
 def «Typing.readTy» :=
-  fun (x0 : List T) (x1 : List T) (x2 : List T) (x3 : T) =>
-    let x4 : T := (Const.fold
-      (α := T × T)
-      (fun (x4 : T) (x5 : List (T × T)) =>
-        let x6 : T := Const.node x4 («Reader.rtTrees» x5);
-        let x7 : List T := «Reader.rtValues» x5;
-        (x6,
-          if («Reader.isAtom» x6).label ≠ 0 then
-            let x8 : T := «Reader.nameOf» x6;
-            if (Const.equal x8 «Reader.kwT»).label ≠ 0 then
-              «Prelude.some» (leaf 0)
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : T) =>
+    let x2 : T := (Const.para
+      (α := Unit → T × T)
+      (fun (x2 : T) (x3 : List (Unit → T × T)) (_ : Unit) =>
+        if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+          let x5 : List
+            T := Const.iter
+            (α := List T)
+            (fun (x5 : List T) =>
+              Const.lcase
+                (α := T)
+                (β := List T)
+                x5
+                ([] : List T)
+                (fun (_ : T) (x7 : List T) => x7))
+            (Const.children x2)
+            (leaf 0);
+          («Typing.tAtom» x5,
+            let x6 : T := «Typing.name» x5;
+            if («Typing.namedTx» («Typing.tAtom» x5) «Reader.kwT»).label ≠ 0 then
+              «Typing/OTy.just» «Typing.tyT»
             else
-              if (Const.equal x8 «Reader.kwUnit»).label ≠ 0 then
-                «Prelude.some» (leaf 1)
+              if («Typing.namedTx»
+                («Typing.tAtom» x5)
+                «Reader.kwUnit»).label ≠ 0 then
+                «Typing/OTy.just» «Typing.tyUnit»
               else
-                let x9 : T := «Reader.lookupAbbrev» x8 x0;
-                if («Prelude.isSome» x9).label ≠ 0 then
-                  x9
+                let x7 : T := «Typing.lookupName» x6 («Typing.envAl» x0);
+                if (Const.eq (Const.label x7) (leaf 1)).label ≠ 0 then
+                  let x8 : T := Const.child x7 (leaf 0); «Typing/OTy.just» x8
                 else
-                  if («Prelude.isSome» («Reader.indexOf» x8 x1)).label ≠ 0 then
-                    «Prelude.some» («Typing.tyNominal» x8)
+                  if («Typing.hasName» x6 («Typing.envNoms» x0)).label ≠ 0 then
+                    «Typing/OTy.just» («Typing.tyData» x6)
                   else
-                    if («Prelude.isSome» («Reader.indexOf» x8 x2)).label ≠ 0 then
-                      «Prelude.some» (Const.node (leaf 6) («Prelude.single» x8))
+                    if («Typing.hasName» x6 («Typing.envSorts» x0)).label ≠ 0 then
+                      «Typing/OTy.just» («Typing.tySort» x6)
                     else
-                      «Prelude.none»
+                      «Typing/OTy.nothing»)
+        else
+          if (Const.eq (Const.label x2) (leaf 2)).label ≠ 0 then
+            let x5 : List
+              (T ×
+                T) := Const.foldr
+              (α := Unit → T × T)
+              (β := List (T × T))
+              (fun (x5 : Unit → T × T) (x6 : List (T × T)) => ((x5 ()) :: x6))
+              ([] : List (T × T))
+              x3;
+            let x6 : List T := «Typing.rtForms» x5;
+            let x7 : T := «Typing/RT1s.length» x5;
+            let x8 : T := «Typing/Txs.atOr» «Typing.tx0» x6 (leaf 0);
+            let x9 : T →
+              T := (fun (x9 : T) =>
+              («Typing/RT1s.atOr» («Typing.tx0», «Typing/OTy.nothing») x5 x9).2);
+            («Typing.tList» x6,
+              if («Prelude.and»
+                («Typing.namedTx» x8 «Reader.kwProd»)
+                (Const.eq x7 (leaf 3))).label ≠ 0 then
+                let x10 : T := x9 (leaf 1);
+                if (Const.eq (Const.label x10) (leaf 1)).label ≠ 0 then
+                  let x11 : T := Const.child x10 (leaf 0);
+                  let x12 : T := x9 (leaf 2);
+                  if (Const.eq (Const.label x12) (leaf 1)).label ≠ 0 then
+                    let x13 : T := Const.child x12 (leaf 0);
+                    «Typing/OTy.just» («Typing.tyProd» x11 x13)
+                  else
+                    «Typing/OTy.nothing»
+                else
+                  «Typing/OTy.nothing»
+              else
+                if («Prelude.and»
+                  («Typing.namedTx» x8 «Reader.kwArrow»)
+                  (Const.eq x7 (leaf 3))).label ≠ 0 then
+                  let x10 : T := x9 (leaf 1);
+                  if (Const.eq (Const.label x10) (leaf 1)).label ≠ 0 then
+                    let x11 : T := Const.child x10 (leaf 0);
+                    let x12 : T := x9 (leaf 2);
+                    if (Const.eq (Const.label x12) (leaf 1)).label ≠ 0 then
+                      let x13 : T := Const.child x12 (leaf 0);
+                      «Typing/OTy.just» («Typing.tyArrow» x11 x13)
+                    else
+                      «Typing/OTy.nothing»
+                  else
+                    «Typing/OTy.nothing»
+                else
+                  if («Prelude.and»
+                    («Typing.namedTx» x8 «Reader.kwList»)
+                    (Const.eq x7 (leaf 2))).label ≠ 0 then
+                    let x10 : T := x9 (leaf 1);
+                    if (Const.eq (Const.label x10) (leaf 1)).label ≠ 0 then
+                      let x11 : T := Const.child x10 (leaf 0);
+                      «Typing/OTy.just» («Typing.tyList» x11)
+                    else
+                      «Typing/OTy.nothing»
+                  else
+                    «Typing/OTy.nothing»)
           else
-            if («Reader.isList» x6).label ≠ 0 then
-              let x8 : T := «Prelude.at» (Const.children x6) (leaf 0);
-              let x9 : T := Const.arity x6;
-              if («Reader.named» x8 «Reader.kwProd»).label ≠ 0 then
-                if (Const.eq x9 (leaf 3)).label ≠ 0 then
-                  «Reader.some2»
-                    (leaf 2)
-                    («Prelude.at» x7 (leaf 1))
-                    («Prelude.at» x7 (leaf 2))
-                else
-                  «Prelude.none»
-              else
-                if («Reader.named» x8 «Reader.kwArrow»).label ≠ 0 then
-                  if (Const.eq x9 (leaf 3)).label ≠ 0 then
-                    «Reader.some2»
-                      (leaf 3)
-                      («Prelude.at» x7 (leaf 1))
-                      («Prelude.at» x7 (leaf 2))
-                  else
-                    «Prelude.none»
-                else
-                  if («Reader.named» x8 «Reader.kwList»).label ≠ 0 then
-                    if (Const.eq x9 (leaf 2)).label ≠ 0 then
-                      if («Prelude.isSome» («Prelude.at» x7 (leaf 1))).label ≠ 0 then
-                        «Prelude.some»
-                          («Check.tyList» («Prelude.get» («Prelude.at» x7 (leaf 1))))
-                      else
-                        «Prelude.none»
-                    else
-                      «Prelude.none»
-                  else
-                    «Prelude.none»
-            else
-              «Prelude.none»))
-      x3).2;
-    x4
+            («Typing.tx0», «Typing/OTy.nothing»))
+      x1
+      ()).2;
+    x2
 
-def «Typing.atTs» :=
-  fun (x0 : List (List T)) (x1 : T) =>
+def «Typing/Tss.single» :=
+  fun (x0 : List T) =>
+    let x1 : List (List T) := (x0 :: ([] : List (List T))); x1
+
+def «Typing/Tss.length» :=
+  fun (x0 : List (List T)) =>
+    let x1 : T := Const.foldr
+      (α := List T)
+      (β := T)
+      (fun (_ : List T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Typing/Tss.append» :=
+  fun (x0 : List (List T)) (x1 : List (List T)) =>
     let x2 : List
+      (List
+        T) := Const.foldr
+      (α := List T)
+      (β := List (List T))
+      (fun (x2 : List T) (x3 : List (List T)) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Typing/Tss.reverse» :=
+  fun (x0 : List (List T)) =>
+    let x1 : List
+      (List
+        T) := Const.foldr
+      (α := List T)
+      (β := List (List T) → List (List T))
+      (fun (x1 : List T)
+         (x2 : List (List T) → List (List T))
+         (x3 : List (List T)) =>
+        x2 (x1 :: x3))
+      (fun (x1 : List (List T)) => x1)
+      x0
+      ([] : List (List T));
+    x1
+
+def «Typing/Tss.tail» :=
+  fun (x0 : List (List T)) =>
+    let x1 : List
+      (List
+        T) := Const.lcase
+      (α := List T)
+      (β := List (List T))
+      x0
+      ([] : List (List T))
+      (fun (_ : List T) (x2 : List (List T)) => x2);
+    x1
+
+def «Typing/Tss.drop» :=
+  fun (x0 : T) (x1 : List (List T)) =>
+    let x2 : List
+      (List T) := Const.iter (α := List (List T)) «Typing/Tss.tail» x1 x0;
+    x2
+
+def «Typing/Tss.atOr» :=
+  fun (x0 : List T) (x1 : List (List T)) (x2 : T) =>
+    let x3 : List
       T := Const.lcase
       (α := List T)
       (β := List T)
-      (Const.iter (α := List (List T)) «Typing/Tss.tail» x0 x1)
-      ([] : List T)
-      (fun (x2 : List T) (_ : List (List T)) => x2);
-    x2
+      («Typing/Tss.drop» x2 x1)
+      x0
+      (fun (x3 : List T) (_ : List (List T)) => x3);
+    x3
 
 def «Typing.markerNames» :=
   fun (x0 : List T) =>
@@ -2208,12 +3224,7 @@ def «Typing.ctorOk» :=
   fun (x0 : List T) (x1 : T) (x2 : T) (x3 : List (List T)) =>
     let x4 : T := (let x4 : List T := Const.children (Const.child x1 (leaf 1));
                    let x5 : T := «Prelude.length» x4;
-                   let x6 : T := Const.foldr
-                     (α := List T)
-                     (β := T)
-                     (fun (_ : List T) (x7 : T) => Const.add x7 (leaf 1))
-                     (leaf 0)
-                     x3;
+                   let x6 : T := «Typing/Tss.length» x3;
                    «Prelude.and»
                      (Const.eq (Const.child x1 (leaf 0)) x2)
                      («Prelude.and»
@@ -2231,7 +3242,7 @@ def «Typing.ctorOk» :=
                                  («Typing.fieldOk»
                                    x0
                                    x7
-                                   («Typing.atTs» x3 (Const.sub (x8).1 (leaf 1))))
+                                   («Typing/Tss.atOr» ([] : List T) x3 (Const.sub (x8).1 (leaf 1))))
                                  (x8).2))
                            (x5, leaf 1)
                            x4).2
@@ -2242,7 +3253,7 @@ def «Typing.ctorOk» :=
                              (fun (x7 : List T) (x8 : T) =>
                                «Prelude.and» («Typing.fieldOk» x0 (Const.child x1 (leaf 3)) x7) x8)
                              (leaf 1)
-                             (Const.iter (α := List (List T)) «Typing/Tss.tail» x3 x5)
+                             («Typing/Tss.drop» x5 x3)
                          else
                            leaf 1))));
     x4
@@ -2279,16 +3290,91 @@ def «Typing.memberOf» :=
                      leaf 0);
     x3
 
+def «Typing/SRs.single» :=
+  fun (x0 : T × (List T → T)) =>
+    let x1 : List
+      (T × (List T → T)) := (x0 :: ([] : List (T × (List T → T))));
+    x1
+
+def «Typing/SRs.length» :=
+  fun (x0 : List (T × (List T → T))) =>
+    let x1 : T := Const.foldr
+      (α := T × (List T → T))
+      (β := T)
+      (fun (_ : T × (List T → T)) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Typing/SRs.append» :=
+  fun (x0 : List (T × (List T → T))) (x1 : List (T × (List T → T))) =>
+    let x2 : List
+      (T ×
+        (List T →
+          T)) := Const.foldr
+      (α := T × (List T → T))
+      (β := List (T × (List T → T)))
+      (fun (x2 : T × (List T → T)) (x3 : List (T × (List T → T))) =>
+        (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Typing/SRs.reverse» :=
+  fun (x0 : List (T × (List T → T))) =>
+    let x1 : List
+      (T ×
+        (List T →
+          T)) := Const.foldr
+      (α := T × (List T → T))
+      (β := List (T × (List T → T)) → List (T × (List T → T)))
+      (fun (x1 : T × (List T → T))
+         (x2 : List (T × (List T → T)) → List (T × (List T → T)))
+         (x3 : List (T × (List T → T))) =>
+        x2 (x1 :: x3))
+      (fun (x1 : List (T × (List T → T))) => x1)
+      x0
+      ([] : List (T × (List T → T)));
+    x1
+
 def «Typing/SRs.tail» :=
   fun (x0 : List (T × (List T → T))) =>
-    Const.lcase
+    let x1 : List
+      (T ×
+        (List T →
+          T)) := Const.lcase
       (α := T × (List T → T))
       (β := List (T × (List T → T)))
       x0
       ([] : List (T × (List T → T)))
-      (fun (_ : T × (List T → T)) (x2 : List (T × (List T → T))) => x2)
+      (fun (_ : T × (List T → T)) (x2 : List (T × (List T → T))) => x2);
+    x1
 
-def «Typing.srTrees» :=
+def «Typing/SRs.drop» :=
+  fun (x0 : T) (x1 : List (T × (List T → T))) =>
+    let x2 : List
+      (T ×
+        (List T →
+          T)) := Const.iter
+      (α := List (T × (List T → T)))
+      «Typing/SRs.tail»
+      x1
+      x0;
+    x2
+
+def «Typing/SRs.atOr» :=
+  fun (x0 : T × (List T → T)) (x1 : List (T × (List T → T))) (x2 : T) =>
+    let x3 : T ×
+      (List T →
+        T) := Const.lcase
+      (α := T × (List T → T))
+      (β := T × (List T → T))
+      («Typing/SRs.drop» x2 x1)
+      x0
+      (fun (x3 : T × (List T → T)) (_ : List (T × (List T → T))) => x3);
+    x3
+
+def «Typing.srForms» :=
   fun (x0 : List (T × (List T → T))) =>
     let x1 : List
       T := Const.foldr
@@ -2301,605 +3387,921 @@ def «Typing.srTrees» :=
 
 def «Typing.srAt» :=
   fun (x0 : List (T × (List T → T))) (x1 : T) (x2 : List T) =>
-    let x3 : T := Const.lcase
-      (α := T × (List T → T))
-      (β := List T → T)
-      (Const.iter (α := List (T × (List T → T))) «Typing/SRs.tail» x0 x1)
-      (fun (_ : List T) => «Prelude.none»)
-      (fun (x3 : T × (List T → T)) (_ : List (T × (List T → T))) => (x3).2)
+    let x3 : T := («Typing/SRs.atOr»
+      («Typing.tx0», fun (_ : List T) => «Typing/OTy.nothing»)
+      x0
+      x1).2
       x2;
     x3
 
 def «Typing.srFrom» :=
   fun (x0 : List (T × (List T → T))) (x1 : T) (x2 : List T) =>
-    let x3 : T := «Reader.allSome»
-      (Const.foldr
-        (α := T × (List T → T))
-        (β := List T)
-        (fun (x3 : T × (List T → T)) (x4 : List T) => (((x3).2 x2) :: x4))
-        ([] : List T)
-        (Const.iter (α := List (T × (List T → T))) «Typing/SRs.tail» x0 x1));
+    let x3 : List
+      T := Const.foldr
+      (α := T × (List T → T))
+      (β := List T)
+      (fun (x3 : T × (List T → T)) (x4 : List T) => (((x3).2 x2) :: x4))
+      ([] : List T)
+      («Typing/SRs.drop» x1 x0);
     x3
 
 def «Typing.applyTy» :=
-  fun (x0 : T) (x1 : T) =>
-    let x2 : T := (if («Reader.both» x0 x1).label ≠ 0 then
-      Const.foldr
-        (α := T)
-        (β := T)
-        (fun (x2 : T) (x3 : T) =>
-          if («Prelude.isSome» x3).label ≠ 0 then
-            if («Check.isArrow» («Prelude.get» x3)).label ≠ 0 then
-              if (Const.equal
-                (Const.child («Prelude.get» x3) (leaf 0))
-                x2).label ≠ 0 then
-                «Prelude.some» (Const.child («Prelude.get» x3) (leaf 1))
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) =>
+        let x4 : T := x3;
+        if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
+          let x5 : T := Const.child x4 (leaf 0);
+          let x6 : T := x5;
+          if (Const.eq (Const.label x6) (leaf 3)).label ≠ 0 then
+            let x7 : T := Const.child x6 (leaf 0);
+            let x8 : T := Const.child x6 (leaf 1);
+            let x9 : T := x2;
+            if (Const.eq (Const.label x9) (leaf 1)).label ≠ 0 then
+              let x10 : T := Const.child x9 (leaf 0);
+              if («Typing.sameTy» x7 x10).label ≠ 0 then
+                «Typing/OTy.just» x8
               else
-                «Prelude.none»
+                «Typing/OTy.nothing»
             else
-              «Prelude.none»
+              «Typing/OTy.nothing»
           else
-            «Prelude.none»)
+            «Typing/OTy.nothing»
+        else
+          «Typing/OTy.nothing»)
+      x0
+      («Typing/MTys.reverse» x1);
+    x2
+
+def «Typing/OAbbr.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Typing/OAbbr.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Typing/OAbbr.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Typing/OAbbr.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Typing/OAbbr.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
         x0
-        («Prelude.reverse» (Const.children («Prelude.get» x1)))
-    else
-      «Prelude.none»);
+        x1)
+      «Typing/OAbbr.nothing»
+      (fun (x2 : T) (_ : List T) => «Typing/OAbbr.just» x2);
+    x2
+
+def «Typing/OAbbr.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Typing.bindersOf» :=
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : T) =>
+    let x2 : T ×
+      List
+        T := (let x2 : List
+                T := (let x2 : T := x1;
+                      if (Const.eq (Const.label x2) (leaf 2)).label ≠ 0 then
+                        let x3 : List
+                          T := Const.iter
+                          (α := List T)
+                          (fun (x3 : List T) =>
+                            Const.lcase
+                              (α := T)
+                              (β := List T)
+                              x3
+                              ([] : List T)
+                              (fun (_ : T) (x5 : List T) => x5))
+                          (Const.children x2)
+                          (leaf 0);
+                        if («Prelude.and»
+                          (Const.eq («Typing/Txs.length» x3) (leaf 2))
+                          («Typing.isAtomTx»
+                            («Typing/Txs.atOr» «Typing.tx0» x3 (leaf 0)))).label ≠ 0 then
+                          «Typing/Txs.single» x1
+                        else
+                          x3
+                      else
+                        ([] : List T));
+              «Typing/OAbbr.allJust»
+                (Const.foldr
+                  (α := T)
+                  (β := List T)
+                  (fun (x3 : T) (x4 : List T) =>
+                    ((let x5 : T := x3;
+                      if (Const.eq (Const.label x5) (leaf 2)).label ≠ 0 then
+                        let x6 : List
+                          T := Const.iter
+                          (α := List T)
+                          (fun (x6 : List T) =>
+                            Const.lcase
+                              (α := T)
+                              (β := List T)
+                              x6
+                              ([] : List T)
+                              (fun (_ : T) (x8 : List T) => x8))
+                          (Const.children x5)
+                          (leaf 0);
+                        if («Prelude.and»
+                          (Const.eq («Typing/Txs.length» x6) (leaf 2))
+                          («Typing.isAtomTx»
+                            («Typing/Txs.atOr» «Typing.tx0» x6 (leaf 0)))).label ≠ 0 then
+                          let x7 : T := «Typing.readTy»
+                            x0
+                            («Typing/Txs.atOr» «Typing.tx0» x6 (leaf 1));
+                          if (Const.eq (Const.label x7) (leaf 1)).label ≠ 0 then
+                            let x8 : T := Const.child x7 (leaf 0);
+                            «Typing/OAbbr.just»
+                              («Typing.abbr»
+                                («Typing.atomName» («Typing/Txs.atOr» «Typing.tx0» x6 (leaf 0)))
+                                x8)
+                          else
+                            «Typing/OAbbr.nothing»
+                        else
+                          «Typing/OAbbr.nothing»
+                      else
+                        «Typing/OAbbr.nothing») ::
+                      x4))
+                  ([] : List T)
+                  x2));
     x2
 
 def «Typing.synAtom» :=
-  fun (x0 : T) (x1 : T) (x2 : List T) =>
-    let x3 : T := (let x3 : T := x0;
-                   let _ : T := Const.child x3 (leaf 0);
-                   let x5 : T := Const.child x3 (leaf 1);
-                   let _ : T := Const.child x3 (leaf 2);
-                   let _ : T := Const.child x3 (leaf 3);
-                   let x8 : T := Const.child x3 (leaf 4);
-                   let _ : T := Const.child x3 (leaf 5);
-                   if («Prelude.isSome»
-                     («Reader.numeral» (Const.children x1))).label ≠ 0 then
-                     «Prelude.some» (leaf 0)
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : List T)
+    (x2 : List T) =>
+    let x3 : T := (let x3 : T := «Typing.name» x1;
+                   if («Prelude.isSome» («Reader.numeral» x1)).label ≠ 0 then
+                     «Typing/OTy.just» «Typing.tyT»
                    else
-                     let x10 : T := «Reader.nameOf» x1;
-                     if («Prelude.isSome»
-                       («Reader.indexOf» x10 (Const.children x8))).label ≠ 0 then
-                       «Prelude.some» (leaf 0)
+                     if («Typing.hasName» x3 («Typing.envNums» x0)).label ≠ 0 then
+                       «Typing/OTy.just» «Typing.tyT»
                      else
-                       let x11 : T := «Reader.lookupAbbrev» x10 x2;
-                       if («Prelude.isSome» x11).label ≠ 0 then
-                         x11
+                       let x4 : T := «Typing.lookupName» x3 x2;
+                       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
+                         let x5 : T := Const.child x4 (leaf 0); «Typing/OTy.just» x5
                        else
-                         let x12 : T := «Reader.lookupAbbrev» x10 (Const.children x5);
-                         if («Prelude.isSome» x12).label ≠ 0 then
-                           x12
+                         let x5 : T := «Typing.lookupName» x3 («Typing.envDefs» x0);
+                         if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
+                           let x6 : T := Const.child x5 (leaf 0); «Typing/OTy.just» x6
                          else
-                           let x13 : T := «Reader.indexOf» x10 «Reader.primNames»;
-                           if («Prelude.isSome» x13).label ≠ 0 then
-                             «Prelude.nth» «Check.primTypes» («Prelude.get» x13)
+                           let x6 : T := «Reader.indexOf» x3 «Reader.primNames»;
+                           if («Prelude.isSome» x6).label ≠ 0 then
+                             «Typing/OTy.just»
+                               («Typing/Tys.atOr» «Typing.tyT» «Typing.primTys» («Prelude.get» x6))
                            else
-                             if (Const.equal x10 «Reader.kwUnitValue»).label ≠ 0 then
-                               «Prelude.some» (leaf 1)
+                             if («Typing.namedTx»
+                               («Typing.tAtom» x1)
+                               «Reader.kwUnitValue»).label ≠ 0 then
+                               «Typing/OTy.just» «Typing.tyUnit»
                              else
-                               «Prelude.none»);
+                               «Typing/OTy.nothing»);
     x3
 
+def «Typing.both2» :=
+  fun (x0 : T) (x1 : T) (x2 : T → T → T) =>
+    let x3 : T := (let x3 : T := x0;
+                   if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+                     let x4 : T := Const.child x3 (leaf 0);
+                     let x5 : T := x1;
+                     if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
+                       let x6 : T := Const.child x5 (leaf 0); x2 x4 x6
+                     else
+                       «Typing/OTy.nothing»
+                   else
+                     «Typing/OTy.nothing»);
+    x3
+
+def «Typing.then1» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Typing/OTy.nothing»);
+    x2
+
+def «Typing.when» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (if (x0).label ≠ 0 then
+      «Typing/OTy.just» x1
+    else
+      «Typing/OTy.nothing»);
+    x2
+
 def «Typing.synList» :=
-  fun (x0 : T) (x1 : T) (x2 : List (T × (List T → T))) (x3 : List T) =>
-    let x4 : T := (let x4 : T := x0;
-                   let x5 : T := Const.child x4 (leaf 0);
-                   let _ : T := Const.child x4 (leaf 1);
-                   let x7 : T := Const.child x4 (leaf 2);
-                   let x8 : T := Const.child x4 (leaf 3);
-                   let _ : T := Const.child x4 (leaf 4);
-                   let x10 : T := Const.child x4 (leaf 5);
-                   let x11 : List T := Const.children x1;
-                   let x12 : T := Const.arity x1;
-                   let x13 : T := «Prelude.at» x11 (leaf 0);
-                   let x14 : T →
-                     T := (fun (x14 : T) =>
-                     «Typing.readTy»
-                       (Const.children x5)
-                       (Const.children x7)
-                       (Const.children x8)
-                       x14);
-                   if (Const.eq x12 (leaf 0)).label ≠ 0 then
-                     «Prelude.none»
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : List T)
+    (x2 : List (T × (List T → T)))
+    (x3 : List T) =>
+    let x4 : T := (let x4 : T := «Typing/SRs.length» x2;
+                   let x5 : T := «Typing/Txs.atOr» «Typing.tx0» x1 (leaf 0);
+                   let x6 : T →
+                     T := (fun (x6 : T) => «Typing/Txs.atOr» «Typing.tx0» x1 x6);
+                   let x7 : T → T := (fun (x7 : T) => «Typing.srAt» x2 x7 x3);
+                   if (Const.eq x4 (leaf 0)).label ≠ 0 then
+                     «Typing/OTy.nothing»
                    else
                      if («Prelude.and»
-                       («Reader.named» x13 «Reader.kwLam»)
-                       (Const.eq x12 (leaf 3))).label ≠ 0 then
-                       let x15 : List T := «Reader.binders» («Prelude.at» x11 (leaf 1));
-                       let x16 : T := «Reader.allSome»
-                         (Const.foldr
-                           (α := T)
-                           (β := List T)
-                           (fun (x16 : T) (x17 : List T) =>
-                             ((if («Prelude.and»
-                               («Reader.isList» x16)
-                               (Const.eq (Const.arity x16) (leaf 2))).label ≠ 0 then
-                               if («Reader.isAtom» (Const.child x16 (leaf 0))).label ≠ 0 then
-                                 let x18 : T := x14 (Const.child x16 (leaf 1));
-                                 if («Prelude.isSome» x18).label ≠ 0 then
-                                   «Prelude.some»
-                                     («Reader.node2»
-                                       (leaf 0)
-                                       («Reader.nameOf» (Const.child x16 (leaf 0)))
-                                       («Prelude.get» x18))
-                                 else
-                                   «Prelude.none»
-                               else
-                                 «Prelude.none»
-                             else
-                               «Prelude.none») ::
-                               x17))
-                           ([] : List T)
-                           x15);
+                       («Typing.namedTx» x5 «Reader.kwLam»)
+                       (Const.eq x4 (leaf 3))).label ≠ 0 then
+                       let x8 : T × List T := «Typing.bindersOf» x0 (x6 (leaf 1));
                        if («Prelude.and»
-                         («Prelude.isSome» x16)
-                         («Reader.nonEmpty» x15)).label ≠ 0 then
-                         let x17 : T := «Typing.srAt»
-                           x2
-                           (leaf 2)
-                           («Prelude.append»
-                             («Prelude.reverse» (Const.children («Prelude.get» x16)))
-                             x3);
-                         if («Prelude.isSome» x17).label ≠ 0 then
-                           «Prelude.some»
-                             (Const.foldr
-                               (α := T)
-                               (β := T)
-                               (fun (x18 : T) (x19 : T) =>
-                                 «Check.tyArrow» (Const.child x18 (leaf 1)) x19)
-                               («Prelude.get» x17)
-                               (Const.children («Prelude.get» x16)))
-                         else
-                           «Prelude.none»
+                         (x8).1
+                         (Const.lt (leaf 0) («Typing/Abbrs.length» (x8).2))).label ≠ 0 then
+                         «Typing.then1»
+                           («Typing.srAt»
+                             x2
+                             (leaf 2)
+                             («Typing/Abbrs.append» («Typing/Abbrs.reverse» (x8).2) x3))
+                           (fun (x9 : T) =>
+                             «Typing/OTy.just»
+                               (Const.foldr
+                                 (α := T)
+                                 (β := T)
+                                 (fun (x10 : T) (x11 : T) =>
+                                   let x12 : T := x10;
+                                   let _ : T := Const.child x12 (leaf 0);
+                                   let x14 : T := Const.child x12 (leaf 1);
+                                   «Typing.tyArrow» x14 x11)
+                                 x9
+                                 (x8).2))
                        else
-                         «Prelude.none»
+                         «Typing/OTy.nothing»
                      else
                        if («Prelude.and»
-                         («Reader.named» x13 «Reader.kwLet»)
-                         (Const.eq x12 (leaf 5))).label ≠ 0 then
-                         let x15 : T := «Prelude.at» x11 (leaf 1);
-                         let x16 : T := x14 («Prelude.at» x11 (leaf 2));
-                         let x17 : T := «Typing.srAt» x2 (leaf 3) x3;
-                         if («Prelude.and»
-                           («Reader.isAtom» x15)
-                           («Reader.both» x16 x17)).label ≠ 0 then
-                           if (Const.equal
-                             («Prelude.get» x16)
-                             («Prelude.get» x17)).label ≠ 0 then
-                             «Typing.srAt»
-                               x2
-                               (leaf 4)
-                               ((«Reader.node2»
-                                 (leaf 0)
-                                 («Reader.nameOf» x15)
-                                 («Prelude.get» x16)) ::
-                                 x3)
-                           else
-                             «Prelude.none»
-                         else
-                           «Prelude.none»
+                         («Typing.namedTx» x5 «Reader.kwLet»)
+                         (Const.eq x4 (leaf 5))).label ≠ 0 then
+                         «Typing.both2»
+                           («Typing.readTy» x0 (x6 (leaf 2)))
+                           (x7 (leaf 3))
+                           (fun (x8 : T) (x9 : T) =>
+                             if («Prelude.and»
+                               («Typing.isAtomTx» (x6 (leaf 1)))
+                               («Typing.sameTy» x8 x9)).label ≠ 0 then
+                               «Typing.srAt»
+                                 x2
+                                 (leaf 4)
+                                 ((«Typing.abbr» («Typing.atomName» (x6 (leaf 1))) x8) :: x3)
+                             else
+                               «Typing/OTy.nothing»)
                        else
                          if («Prelude.and»
-                           («Reader.named» x13 «Reader.kwPair»)
-                           (Const.eq x12 (leaf 3))).label ≠ 0 then
-                           «Reader.some2»
-                             (leaf 2)
-                             («Typing.srAt» x2 (leaf 1) x3)
-                             («Typing.srAt» x2 (leaf 2) x3)
+                           («Typing.namedTx» x5 «Reader.kwPair»)
+                           (Const.eq x4 (leaf 3))).label ≠ 0 then
+                           «Typing.both2»
+                             (x7 (leaf 1))
+                             (x7 (leaf 2))
+                             (fun (x8 : T) (x9 : T) => «Typing/OTy.just» («Typing.tyProd» x8 x9))
                          else
                            if («Prelude.and»
                              («Prelude.or»
-                               («Reader.named» x13 «Reader.kwFst»)
-                               («Reader.named» x13 «Reader.kwSnd»))
-                             (Const.eq x12 (leaf 2))).label ≠ 0 then
-                             let x15 : T := «Typing.srAt» x2 (leaf 1) x3;
-                             if («Prelude.isSome» x15).label ≠ 0 then
-                               if («Check.isProd» («Prelude.get» x15)).label ≠ 0 then
-                                 «Prelude.some»
-                                   (Const.child
-                                     («Prelude.get» x15)
-                                     (if («Reader.named» x13 «Reader.kwFst»).label ≠ 0 then
-                                       leaf 0
+                               («Typing.namedTx» x5 «Reader.kwFst»)
+                               («Typing.namedTx» x5 «Reader.kwSnd»))
+                             (Const.eq x4 (leaf 2))).label ≠ 0 then
+                             «Typing.then1»
+                               (x7 (leaf 1))
+                               (fun (x8 : T) =>
+                                 let x9 : T := x8;
+                                 if (Const.eq (Const.label x9) (leaf 2)).label ≠ 0 then
+                                   let x10 : T := Const.child x9 (leaf 0);
+                                   let x11 : T := Const.child x9 (leaf 1);
+                                   «Typing/OTy.just»
+                                     (if («Typing.namedTx» x5 «Reader.kwFst»).label ≠ 0 then
+                                       x10
                                      else
-                                       leaf 1))
-                               else
-                                 «Prelude.none»
-                             else
-                               «Prelude.none»
+                                       x11)
+                                 else
+                                   «Typing/OTy.nothing»)
                            else
                              if («Prelude.and»
-                               («Reader.named» x13 «Reader.kwIf»)
-                               (Const.eq x12 (leaf 4))).label ≠ 0 then
-                               let x15 : T := «Typing.srAt» x2 (leaf 1) x3;
-                               let x16 : T := «Typing.srAt» x2 (leaf 2) x3;
-                               let x17 : T := «Typing.srAt» x2 (leaf 3) x3;
-                               if («Reader.both» x15 («Reader.both» x16 x17)).label ≠ 0 then
-                                 if («Prelude.and»
-                                   (Const.equal («Prelude.get» x15) (leaf 0))
-                                   (Const.equal
-                                     («Prelude.get» x16)
-                                     («Prelude.get» x17))).label ≠ 0 then
-                                   x16
-                                 else
-                                   «Prelude.none»
-                               else
-                                 «Prelude.none»
+                               («Typing.namedTx» x5 «Reader.kwIf»)
+                               (Const.eq x4 (leaf 4))).label ≠ 0 then
+                               «Typing.then1»
+                                 (x7 (leaf 1))
+                                 (fun (x8 : T) =>
+                                   «Typing.both2»
+                                     (x7 (leaf 2))
+                                     (x7 (leaf 3))
+                                     (fun (x9 : T) (x10 : T) =>
+                                       «Typing.when»
+                                         («Prelude.and»
+                                           («Typing.sameTy» x8 «Typing.tyT»)
+                                           («Typing.sameTy» x9 x10))
+                                         x9))
                              else
                                if («Prelude.and»
-                                 («Reader.named» x13 «Reader.kwCons»)
-                                 (Const.eq x12 (leaf 3))).label ≠ 0 then
-                                 let x15 : T := «Typing.srAt» x2 (leaf 1) x3;
-                                 let x16 : T := «Typing.srAt» x2 (leaf 2) x3;
-                                 if («Reader.both» x15 x16).label ≠ 0 then
-                                   if (Const.equal
-                                     («Check.tyList» («Prelude.get» x15))
-                                     («Prelude.get» x16)).label ≠ 0 then
-                                     x16
-                                   else
-                                     «Prelude.none»
-                                 else
-                                   «Prelude.none»
+                                 («Typing.namedTx» x5 «Reader.kwCons»)
+                                 (Const.eq x4 (leaf 3))).label ≠ 0 then
+                                 «Typing.both2»
+                                   (x7 (leaf 1))
+                                   (x7 (leaf 2))
+                                   (fun (x8 : T) (x9 : T) =>
+                                     «Typing.when» («Typing.sameTy» («Typing.tyList» x8) x9) x9)
                                else
                                  if («Prelude.and»
-                                   («Reader.named» x13 «Reader.kwNil»)
-                                   (Const.eq x12 (leaf 2))).label ≠ 0 then
-                                   let x15 : T := x14 («Prelude.at» x11 (leaf 1));
-                                   if («Prelude.isSome» x15).label ≠ 0 then
-                                     «Prelude.some» («Check.tyList» («Prelude.get» x15))
-                                   else
-                                     «Prelude.none»
+                                   («Typing.namedTx» x5 «Reader.kwNil»)
+                                   (Const.eq x4 (leaf 2))).label ≠ 0 then
+                                   «Typing.then1»
+                                     («Typing.readTy» x0 (x6 (leaf 1)))
+                                     (fun (x8 : T) => «Typing/OTy.just» («Typing.tyList» x8))
                                  else
                                    if («Prelude.and»
-                                     («Reader.named» x13 «Reader.kwQuote»)
-                                     (Const.eq x12 (leaf 2))).label ≠ 0 then
-                                     «Prelude.some» (leaf 0)
+                                     («Typing.namedTx» x5 «Reader.kwQuote»)
+                                     (Const.eq x4 (leaf 2))).label ≠ 0 then
+                                     «Typing/OTy.just» «Typing.tyT»
                                    else
                                      if («Prelude.and»
-                                       («Reader.named» x13 «Typing.kwDatum»)
-                                       (Const.eq x12 (leaf 3))).label ≠ 0 then
-                                       let x15 : T := x14 («Prelude.at» x11 (leaf 1));
-                                       let x16 : T := «Reader.readDatum»
-                                         («Prelude.at» x11 (leaf 2));
-                                       if («Reader.both» x15 x16).label ≠ 0 then
-                                         if («Typing.isNominal» («Prelude.get» x15)).label ≠ 0 then
-                                           if («Typing.memberOf»
-                                             (Const.children x10)
-                                             («Prelude.at» x11 (leaf 1))
-                                             («Prelude.get» x16)).label ≠ 0 then
-                                             x15
-                                           else
-                                             «Prelude.none»
-                                         else
-                                           «Prelude.none»
-                                       else
-                                         «Prelude.none»
+                                       («Typing.namedTx» x5 «Typing.kwDatum»)
+                                       (Const.eq x4 (leaf 3))).label ≠ 0 then
+                                       «Typing.then1»
+                                         («Typing.readTy» x0 (x6 (leaf 1)))
+                                         (fun (x8 : T) =>
+                                           let x9 : T := «Reader.readDatum» (x6 (leaf 2));
+                                           «Typing.when»
+                                             («Prelude.and»
+                                               («Typing.isData» x8)
+                                               («Prelude.and»
+                                                 («Prelude.isSome» x9)
+                                                 («Typing.memberOf»
+                                                   («Typing.envMs» x0)
+                                                   (x6 (leaf 1))
+                                                   («Prelude.get» x9))))
+                                             x8)
                                      else
                                        if («Prelude.and»
-                                         («Reader.named» x13 «Typing.kwRep»)
-                                         (Const.eq x12 (leaf 2))).label ≠ 0 then
-                                         let x15 : T := «Typing.srAt» x2 (leaf 1) x3;
-                                         if («Prelude.isSome» x15).label ≠ 0 then
-                                           if («Typing.isNominal»
-                                             («Prelude.get» x15)).label ≠ 0 then
-                                             «Prelude.some» (leaf 0)
-                                           else
-                                             «Prelude.none»
-                                         else
-                                           «Prelude.none»
+                                         («Typing.namedTx» x5 «Typing.kwRep»)
+                                         (Const.eq x4 (leaf 2))).label ≠ 0 then
+                                         «Typing.then1»
+                                           (x7 (leaf 1))
+                                           (fun (x8 : T) =>
+                                             «Typing.when» («Typing.isData» x8) «Typing.tyT»)
                                        else
                                          if («Prelude.and»
-                                           («Reader.named» x13 «Typing.kwDecode»)
-                                           (Const.eq x12 (leaf 5))).label ≠ 0 then
-                                           let x15 : T := x14 («Prelude.at» x11 (leaf 1));
-                                           let x16 : T := «Typing.srAt» x2 (leaf 2) x3;
-                                           let x17 : T := «Typing.srAt» x2 (leaf 3) x3;
-                                           let x18 : T := «Typing.srAt» x2 (leaf 4) x3;
-                                           if («Reader.both»
-                                             x15
-                                             («Reader.both»
-                                               x16
-                                               («Reader.both» x17 x18))).label ≠ 0 then
-                                             if («Prelude.and»
-                                               («Typing.isNominal» («Prelude.get» x15))
-                                               («Prelude.and»
-                                                 (Const.equal («Prelude.get» x16) (leaf 0))
-                                                 (Const.equal
-                                                   («Prelude.get» x17)
-                                                   («Check.tyArrow»
-                                                     («Prelude.get» x15)
-                                                     («Prelude.get» x18))))).label ≠ 0 then
-                                               x18
-                                             else
-                                               «Prelude.none»
-                                           else
-                                             «Prelude.none»
+                                           («Typing.namedTx» x5 «Typing.kwDecode»)
+                                           (Const.eq x4 (leaf 5))).label ≠ 0 then
+                                           «Typing.then1»
+                                             («Typing.readTy» x0 (x6 (leaf 1)))
+                                             (fun (x8 : T) =>
+                                               «Typing.then1»
+                                                 (x7 (leaf 2))
+                                                 (fun (x9 : T) =>
+                                                   «Typing.both2»
+                                                     (x7 (leaf 3))
+                                                     (x7 (leaf 4))
+                                                     (fun (x10 : T) (x11 : T) =>
+                                                       «Typing.when»
+                                                         («Prelude.and»
+                                                           («Typing.isData» x8)
+                                                           («Prelude.and»
+                                                             («Typing.sameTy» x9 «Typing.tyT»)
+                                                             («Typing.sameTy»
+                                                               x10
+                                                               («Typing.tyArrow» x8 x11))))
+                                                         x11)))
                                          else
                                            if («Prelude.and»
                                              («Prelude.or»
-                                               («Reader.named» x13 «Reader.kwFold»)
+                                               («Typing.namedTx» x5 «Reader.kwFold»)
                                                («Prelude.or»
-                                                 («Reader.named» x13 «Reader.kwPara»)
-                                                 («Reader.named» x13 «Reader.kwIter»)))
-                                             (Const.lt (leaf 1) x12)).label ≠ 0 then
-                                             let x15 : T := x14 («Prelude.at» x11 (leaf 1));
-                                             if («Prelude.isSome» x15).label ≠ 0 then
-                                               «Typing.applyTy»
-                                                 («Prelude.some»
-                                                   (if («Reader.named»
-                                                     x13
-                                                     «Reader.kwIter»).label ≠ 0 then
-                                                     «Check.iterTy» («Prelude.get» x15)
-                                                   else
-                                                     «Check.foldTy» («Prelude.get» x15)))
-                                                 («Typing.srFrom» x2 (leaf 2) x3)
-                                             else
-                                               «Prelude.none»
+                                                 («Typing.namedTx» x5 «Reader.kwPara»)
+                                                 («Typing.namedTx» x5 «Reader.kwIter»)))
+                                             (Const.lt (leaf 1) x4)).label ≠ 0 then
+                                             «Typing.then1»
+                                               («Typing.readTy» x0 (x6 (leaf 1)))
+                                               (fun (x8 : T) =>
+                                                 «Typing.applyTy»
+                                                   («Typing/OTy.just»
+                                                     (if («Typing.namedTx»
+                                                       x5
+                                                       «Reader.kwIter»).label ≠ 0 then
+                                                       «Typing.iterTyOf» x8
+                                                     else
+                                                       «Typing.foldTyOf» x8))
+                                                   («Typing.srFrom» x2 (leaf 2) x3))
                                            else
                                              if («Prelude.and»
                                                («Prelude.or»
-                                                 («Reader.named» x13 «Reader.kwFoldr»)
-                                                 («Reader.named» x13 «Reader.kwLcase»))
-                                               (Const.lt (leaf 2) x12)).label ≠ 0 then
-                                               let x15 : T := x14 («Prelude.at» x11 (leaf 1));
-                                               let x16 : T := x14 («Prelude.at» x11 (leaf 2));
-                                               if («Reader.both» x15 x16).label ≠ 0 then
-                                                 «Typing.applyTy»
-                                                   («Prelude.some»
-                                                     (if («Reader.named»
-                                                       x13
-                                                       «Reader.kwFoldr»).label ≠ 0 then
-                                                       «Check.foldrTy»
-                                                         («Prelude.get» x15)
-                                                         («Prelude.get» x16)
-                                                     else
-                                                       «Check.lcaseTy»
-                                                         («Prelude.get» x15)
-                                                         («Prelude.get» x16)))
-                                                   («Typing.srFrom» x2 (leaf 3) x3)
-                                               else
-                                                 «Prelude.none»
+                                                 («Typing.namedTx» x5 «Reader.kwFoldr»)
+                                                 («Typing.namedTx» x5 «Reader.kwLcase»))
+                                               (Const.lt (leaf 2) x4)).label ≠ 0 then
+                                               «Typing.both2»
+                                                 («Typing.readTy» x0 (x6 (leaf 1)))
+                                                 («Typing.readTy» x0 (x6 (leaf 2)))
+                                                 (fun (x8 : T) (x9 : T) =>
+                                                   «Typing.applyTy»
+                                                     («Typing/OTy.just»
+                                                       (if («Typing.namedTx»
+                                                         x5
+                                                         «Reader.kwFoldr»).label ≠ 0 then
+                                                         «Typing.foldrTyOf» x8 x9
+                                                       else
+                                                         «Typing.lcaseTyOf» x8 x9))
+                                                     («Typing.srFrom» x2 (leaf 3) x3))
                                              else
                                                «Typing.applyTy»
-                                                 («Typing.srAt» x2 (leaf 0) x3)
+                                                 (x7 (leaf 0))
                                                  («Typing.srFrom» x2 (leaf 1) x3));
     x4
 
 def «Typing.synIn» :=
-  fun (x0 : T) (x1 : List T) (x2 : T) =>
-    let x3 : T := (let x3 : T := x0;
-                   let x4 : T := Const.child x3 (leaf 0);
-                   let _ : T := Const.child x3 (leaf 1);
-                   let x6 : T := Const.child x3 (leaf 2);
-                   let x7 : T := Const.child x3 (leaf 3);
-                   let _ : T := Const.child x3 (leaf 4);
-                   let _ : T := Const.child x3 (leaf 5);
-                   (Const.fold
-                     (α := T × (List T → T))
-                     (fun (x10 : T) (x11 : List (T × (List T → T))) =>
-                       let x12 : T := Const.node x10 («Typing.srTrees» x11);
-                       (x12,
-                         fun (x13 : List T) =>
-                           if («Reader.isAtom» x12).label ≠ 0 then
-                             «Typing.synAtom» x0 x12 x13
-                           else
-                             if («Reader.isList» x12).label ≠ 0 then
-                               «Typing.synList» x0 x12 x11 x13
-                             else
-                               if («Prelude.and»
-                                 (Const.eq x10 (leaf 11))
-                                 (Const.eq (Const.arity x12) (leaf 2))).label ≠ 0 then
-                                 let x14 : T := «Typing.readTy»
-                                   (Const.children x4)
-                                   (Const.children x6)
-                                   (Const.children x7)
-                                   (Const.child x12 (leaf 0));
-                                 let x15 : T := «Typing.srAt» x11 (leaf 1) x13;
-                                 if («Reader.both» x14 x15).label ≠ 0 then
-                                   if (Const.equal
-                                     («Typing.eraseTy» («Prelude.get» x14))
-                                     («Prelude.get» x15)).label ≠ 0 then
-                                     x14
-                                   else
-                                     «Prelude.none»
-                                 else
-                                   «Prelude.none»
-                               else
-                                 if («Prelude.and»
-                                   (Const.eq x10 (leaf 12))
-                                   (Const.eq (Const.arity x12) (leaf 2))).label ≠ 0 then
-                                   let x14 : T := «Typing.readTy»
-                                     (Const.children x4)
-                                     (Const.children x6)
-                                     (Const.children x7)
-                                     (Const.child x12 (leaf 0));
-                                   let x15 : T := «Typing.srAt» x11 (leaf 1) x13;
-                                   if («Reader.both» x14 x15).label ≠ 0 then
-                                     if (Const.equal
-                                       («Prelude.get» x14)
-                                       («Prelude.get» x15)).label ≠ 0 then
-                                       «Prelude.some» («Typing.eraseTy» («Prelude.get» x14))
-                                     else
-                                       «Prelude.none»
-                                   else
-                                     «Prelude.none»
-                                 else
-                                   «Prelude.none»))
-                     x2).2
-                     x1);
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : List T)
+    (x2 : T) =>
+    let x3 : T := (Const.para
+      (α := Unit → T × (List T → T))
+      (fun (x3 : T) (x4 : List (Unit → T × (List T → T))) (_ : Unit) =>
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x6 : List
+            T := Const.iter
+            (α := List T)
+            (fun (x6 : List T) =>
+              Const.lcase
+                (α := T)
+                (β := List T)
+                x6
+                ([] : List T)
+                (fun (_ : T) (x8 : List T) => x8))
+            (Const.children x3)
+            (leaf 0);
+          («Typing.tAtom» x6, fun (x7 : List T) => «Typing.synAtom» x0 x6 x7)
+        else
+          if (Const.eq (Const.label x3) (leaf 2)).label ≠ 0 then
+            let x6 : List
+              (T ×
+                (List T →
+                  T)) := Const.foldr
+              (α := Unit → T × (List T → T))
+              (β := List (T × (List T → T)))
+              (fun (x6 : Unit → T × (List T → T)) (x7 : List (T × (List T → T))) =>
+                ((x6 ()) :: x7))
+              ([] : List (T × (List T → T)))
+              x4;
+            let x7 : List T := «Typing.srForms» x6;
+            («Typing.tList» x7, fun (x8 : List T) => «Typing.synList» x0 x7 x6 x8)
+          else
+            if (Const.eq (Const.label x3) (leaf 11)).label ≠ 0 then
+              let x6 : (Unit → T × (List T → T)) ×
+                List
+                  (Unit →
+                    T ×
+                      (List T →
+                        T)) := Const.lcase
+                (α := Unit → T × (List T → T))
+                (β := (Unit → T × (List T → T)) × List (Unit → T × (List T → T)))
+                x4
+                (fun (_ : Unit) => (leaf 0, fun (_ : List T) => leaf 0),
+                  ([] : List (Unit → T × (List T → T))))
+                (fun (x6 : Unit → T × (List T → T))
+                   (x7 : List (Unit → T × (List T → T))) =>
+                  (x6, x7));
+              let x7 : T × (List T → T) := (x6).1 ();
+              let x8 : (Unit → T × (List T → T)) ×
+                List
+                  (Unit →
+                    T ×
+                      (List T →
+                        T)) := Const.lcase
+                (α := Unit → T × (List T → T))
+                (β := (Unit → T × (List T → T)) × List (Unit → T × (List T → T)))
+                (x6).2
+                (fun (_ : Unit) => (leaf 0, fun (_ : List T) => leaf 0),
+                  ([] : List (Unit → T × (List T → T))))
+                (fun (x8 : Unit → T × (List T → T))
+                   (x9 : List (Unit → T × (List T → T))) =>
+                  (x8, x9));
+              let x9 : T × (List T → T) := (x8).1 ();
+              («Typing.tAs» (x7).1 (x9).1,
+                fun (x10 : List T) =>
+                  «Typing.both2»
+                    («Typing.readTy» x0 (x7).1)
+                    ((x9).2 x10)
+                    (fun (x11 : T) (x12 : T) =>
+                      «Typing.when» («Typing.sameTy» («Typing.eraseTy» x11) x12) x11))
+            else
+              if (Const.eq (Const.label x3) (leaf 12)).label ≠ 0 then
+                let x6 : (Unit → T × (List T → T)) ×
+                  List
+                    (Unit →
+                      T ×
+                        (List T →
+                          T)) := Const.lcase
+                  (α := Unit → T × (List T → T))
+                  (β := (Unit → T × (List T → T)) × List (Unit → T × (List T → T)))
+                  x4
+                  (fun (_ : Unit) => (leaf 0, fun (_ : List T) => leaf 0),
+                    ([] : List (Unit → T × (List T → T))))
+                  (fun (x6 : Unit → T × (List T → T))
+                     (x7 : List (Unit → T × (List T → T))) =>
+                    (x6, x7));
+                let x7 : T × (List T → T) := (x6).1 ();
+                let x8 : (Unit → T × (List T → T)) ×
+                  List
+                    (Unit →
+                      T ×
+                        (List T →
+                          T)) := Const.lcase
+                  (α := Unit → T × (List T → T))
+                  (β := (Unit → T × (List T → T)) × List (Unit → T × (List T → T)))
+                  (x6).2
+                  (fun (_ : Unit) => (leaf 0, fun (_ : List T) => leaf 0),
+                    ([] : List (Unit → T × (List T → T))))
+                  (fun (x8 : Unit → T × (List T → T))
+                     (x9 : List (Unit → T × (List T → T))) =>
+                    (x8, x9));
+                let x9 : T × (List T → T) := (x8).1 ();
+                («Typing.tOf» (x7).1 (x9).1,
+                  fun (x10 : List T) =>
+                    «Typing.both2»
+                      («Typing.readTy» x0 (x7).1)
+                      ((x9).2 x10)
+                      (fun (x11 : T) (x12 : T) =>
+                        «Typing.when» («Typing.sameTy» x11 x12) («Typing.eraseTy» x11)))
+              else
+                («Typing.tx0», fun (_ : List T) => «Typing/OTy.nothing»))
+      x2
+      ()).2
+      x1;
     x3
 
-def «Typing.kwSort» :=
-  mk 0 [leaf 37, leaf 115, leaf 111, leaf 114, leaf 116]
+def «Typing/OName.nothing» := Const.node (leaf 0) ([] : List T)
 
-def «Typing.kwPostulate» :=
-  mk 0 [leaf 37,
-    leaf 112,
-    leaf 111,
-    leaf 115,
-    leaf 116,
-    leaf 117,
-    leaf 108,
-    leaf 97,
-    leaf 116,
-    leaf 101]
+def «Typing/OName.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Typing/OName.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Typing/OName.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Typing/OName.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Typing/OName.nothing»
+      (fun (x2 : T) (_ : List T) => «Typing/OName.just» x2);
+    x2
+
+def «Typing/OName.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Typing.withAl» :=
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : List T) =>
+    let x2 : List T ×
+      (List T ×
+        (List T ×
+          (List T ×
+            (List T ×
+              List
+                T)))) := «Typing.mkEnv»
+      x1
+      («Typing.envDefs» x0)
+      («Typing.envNoms» x0)
+      («Typing.envSorts» x0)
+      («Typing.envNums» x0)
+      («Typing.envMs» x0);
+    x2
+
+def «Typing.withDefs» :=
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : List T) =>
+    let x2 : List T ×
+      (List T ×
+        (List T ×
+          (List T ×
+            (List T ×
+              List
+                T)))) := «Typing.mkEnv»
+      («Typing.envAl» x0)
+      x1
+      («Typing.envNoms» x0)
+      («Typing.envSorts» x0)
+      («Typing.envNums» x0)
+      («Typing.envMs» x0);
+    x2
+
+def «Typing.withNoms» :=
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : List T) =>
+    let x2 : List T ×
+      (List T ×
+        (List T ×
+          (List T ×
+            (List T ×
+              List
+                T)))) := «Typing.mkEnv»
+      («Typing.envAl» x0)
+      («Typing.envDefs» x0)
+      x1
+      («Typing.envSorts» x0)
+      («Typing.envNums» x0)
+      («Typing.envMs» x0);
+    x2
+
+def «Typing.withSorts» :=
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : List T) =>
+    let x2 : List T ×
+      (List T ×
+        (List T ×
+          (List T ×
+            (List T ×
+              List
+                T)))) := «Typing.mkEnv»
+      («Typing.envAl» x0)
+      («Typing.envDefs» x0)
+      («Typing.envNoms» x0)
+      x1
+      («Typing.envNums» x0)
+      («Typing.envMs» x0);
+    x2
+
+def «Typing.withNums» :=
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : List T) =>
+    let x2 : List T ×
+      (List T ×
+        (List T ×
+          (List T ×
+            (List T ×
+              List
+                T)))) := «Typing.mkEnv»
+      («Typing.envAl» x0)
+      («Typing.envDefs» x0)
+      («Typing.envNoms» x0)
+      («Typing.envSorts» x0)
+      x1
+      («Typing.envMs» x0);
+    x2
+
+def «Typing.withMs» :=
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : List T) =>
+    let x2 : List T ×
+      (List T ×
+        (List T ×
+          (List T ×
+            (List T ×
+              List
+                T)))) := «Typing.mkEnv»
+      («Typing.envAl» x0)
+      («Typing.envDefs» x0)
+      («Typing.envNoms» x0)
+      («Typing.envSorts» x0)
+      («Typing.envNums» x0)
+      x1;
+    x2
 
 def «Typing.checkStep» :=
-  fun (x0 : T × T) (x1 : T) =>
-    let x2 : T ×
-      T := (if («Prelude.isSome» (x0).2).label ≠ 0 then
-      x0
-    else
-      let x2 : T := (x0).1;
-      let x3 : T := Const.child x2 (leaf 0);
-      let x4 : T := Const.child x2 (leaf 1);
-      let x5 : T := Const.child x2 (leaf 2);
-      let x6 : T := Const.child x2 (leaf 3);
-      let x7 : T := Const.child x2 (leaf 4);
-      let x8 : T := Const.child x2 (leaf 5);
-      let x9 : T := «Prelude.some»
-        (if («Prelude.and»
-          («Reader.isList» x1)
-          (Const.lt (leaf 1) (Const.arity x1))).label ≠ 0 then
-          «Reader.nameOf» (Const.child x1 (leaf 1))
-        else
-          Const.node (leaf 0) ([] : List T));
-      let x10 : T →
-        T →
-          T ×
-            T := (fun (x10 : T) (x11 : T) =>
-        («Typing.env»
-          x3
-          (Const.node
-            (leaf 0)
-            («Prelude.append»
-              (Const.children x4)
-              («Prelude.single» («Reader.node2» (leaf 0) x10 x11))))
-          x5
-          x6
-          x7
-          x8,
-          «Prelude.none»));
-      if (Const.eq (Const.label x1) (leaf 10)).label ≠ 0 then
-        («Typing.env»
-          x3
-          x4
-          (Const.node
-            (leaf 0)
-            («Prelude.append»
-              (Const.children x5)
-              («Prelude.single» («Reader.nameOf» (Const.child x1 (leaf 0))))))
-          x6
-          x7
-          x8,
-          «Prelude.none»)
-      else
-        if (Const.eq (Const.label x1) (leaf 9)).label ≠ 0 then
-          («Typing.env»
-            x3
-            x4
-            x5
-            x6
-            x7
-            (Const.node
-              (leaf 0)
-              («Prelude.append» (Const.children x8) («Prelude.single» x1))),
-            «Prelude.none»)
-        else
-          if («Prelude.and»
-            («Reader.isList» x1)
-            («Prelude.and»
-              (Const.eq (Const.arity x1) (leaf 2))
-              («Reader.named»
-                (Const.child x1 (leaf 0))
-                «Typing.kwSort»))).label ≠ 0 then
-            («Typing.env»
-              x3
-              x4
-              x5
-              (Const.node
-                (leaf 0)
-                («Prelude.append»
-                  (Const.children x6)
-                  («Prelude.single» («Reader.nameOf» (Const.child x1 (leaf 1))))))
-              x7
-              x8,
-              «Prelude.none»)
-          else
-            if («Prelude.and»
-              («Reader.isList» x1)
-              (Const.eq (Const.arity x1) (leaf 3))).label ≠ 0 then
-              let x11 : T := Const.child x1 (leaf 0);
-              let x12 : T := «Reader.nameOf» (Const.child x1 (leaf 1));
-              if («Reader.named» x11 «Reader.kwDef»).label ≠ 0 then
-                let x13 : T := «Typing.synIn»
-                  (x0).1
-                  ([] : List T)
-                  (Const.child x1 (leaf 2));
-                if («Prelude.isSome» x13).label ≠ 0 then
-                  x10 x12 («Prelude.get» x13)
-                else
-                  ((x0).1, x9)
-              else
-                if («Reader.named» x11 «Typing.kwPostulate»).label ≠ 0 then
-                  let x13 : T := «Typing.readTy»
-                    (Const.children x3)
-                    (Const.children x5)
-                    (Const.children x6)
-                    (Const.child x1 (leaf 2));
-                  if («Prelude.isSome» x13).label ≠ 0 then
-                    x10 x12 («Prelude.get» x13)
-                  else
-                    ((x0).1, x9)
-                else
-                  if («Reader.named» x11 «Reader.kwDeftype»).label ≠ 0 then
-                    let x13 : T := «Typing.readTy»
-                      (Const.children x3)
-                      (Const.children x5)
-                      (Const.children x6)
-                      (Const.child x1 (leaf 2));
-                    if («Prelude.isSome» x13).label ≠ 0 then
-                      («Typing.env»
-                        (Const.node
-                          (leaf 0)
-                          ((«Reader.node2» (leaf 0) x12 («Prelude.get» x13)) ::
-                            (Const.children x3)))
-                        x4
-                        x5
-                        x6
-                        x7
-                        x8,
-                        «Prelude.none»)
-                    else
-                      ((x0).1, x9)
-                  else
-                    if («Reader.named» x11 «Reader.kwDefnum»).label ≠ 0 then
-                      («Typing.env»
-                        x3
-                        x4
-                        x5
-                        x6
-                        (Const.node
-                          (leaf 0)
-                          («Prelude.append» (Const.children x7) («Prelude.single» x12)))
-                        x8,
-                        «Prelude.none»)
-                    else
-                      ((x0).1, x9)
+  fun (x0 : (List T ×
+      (List T × (List T × (List T × (List T × List T))))) ×
+      T)
+    (x1 : T) =>
+    let x2 : (List T ×
+      (List T × (List T × (List T × (List T × List T))))) ×
+      T := (let x2 : T := (x0).2;
+            if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+              let _ : T := Const.child x2 (leaf 0); x0
             else
-              ((x0).1, x9));
+              let x3 : List T ×
+                (List T × (List T × (List T × (List T × List T)))) := (x0).1;
+              let x4 : (List T ×
+                (List T × (List T × (List T × (List T × List T))))) →
+                (List T × (List T × (List T × (List T × (List T × List T))))) ×
+                  T := (fun (x4 : List T ×
+                            (List T × (List T × (List T × (List T × List T))))) =>
+                (x4, «Typing/OName.nothing»));
+              let x5 : (List T ×
+                (List T × (List T × (List T × (List T × List T))))) ×
+                T := (x3,
+                «Typing/OName.just»
+                  (let x5 : T := x1;
+                   if (Const.eq (Const.label x5) (leaf 2)).label ≠ 0 then
+                     let x6 : List
+                       T := Const.iter
+                       (α := List T)
+                       (fun (x6 : List T) =>
+                         Const.lcase
+                           (α := T)
+                           (β := List T)
+                           x6
+                           ([] : List T)
+                           (fun (_ : T) (x8 : List T) => x8))
+                       (Const.children x5)
+                       (leaf 0);
+                     if (Const.lt (leaf 1) («Typing/Txs.length» x6)).label ≠ 0 then
+                       «Typing.atomName» («Typing/Txs.atOr» «Typing.tx0» x6 (leaf 1))
+                     else
+                       «Typing.name» ([] : List T)
+                   else
+                     «Typing.name» ([] : List T)));
+              let x6 : T := x1;
+              if (Const.eq (Const.label x6) (leaf 10)).label ≠ 0 then
+                let x7 : T := Const.child x6 (leaf 0);
+                x4
+                  («Typing.withNoms»
+                    x3
+                    («Typing/Names.append»
+                      («Typing.envNoms» x3)
+                      («Typing/Names.single» («Typing.atomName» x7))))
+              else
+                if (Const.eq (Const.label x6) (leaf 9)).label ≠ 0 then
+                  let _ : List
+                    T := Const.iter
+                    (α := List T)
+                    (fun (x7 : List T) =>
+                      Const.lcase
+                        (α := T)
+                        (β := List T)
+                        x7
+                        ([] : List T)
+                        (fun (_ : T) (x9 : List T) => x9))
+                    (Const.children x6)
+                    (leaf 0);
+                  x4
+                    («Typing.withMs»
+                      x3
+                      («Typing/Txs.append» («Typing.envMs» x3) («Typing/Txs.single» x1)))
+                else
+                  if (Const.eq (Const.label x6) (leaf 2)).label ≠ 0 then
+                    let x7 : List
+                      T := Const.iter
+                      (α := List T)
+                      (fun (x7 : List T) =>
+                        Const.lcase
+                          (α := T)
+                          (β := List T)
+                          x7
+                          ([] : List T)
+                          (fun (_ : T) (x9 : List T) => x9))
+                      (Const.children x6)
+                      (leaf 0);
+                    let x8 : T := «Typing/Txs.atOr» «Typing.tx0» x7 (leaf 0);
+                    let x9 : T := «Typing/Txs.atOr» «Typing.tx0» x7 (leaf 1);
+                    let x10 : T := «Typing/Txs.length» x7;
+                    if («Prelude.and»
+                      («Typing.namedTx» x8 «Typing.kwSort»)
+                      (Const.eq x10 (leaf 2))).label ≠ 0 then
+                      x4
+                        («Typing.withSorts»
+                          x3
+                          («Typing/Names.append»
+                            («Typing.envSorts» x3)
+                            («Typing/Names.single» («Typing.atomName» x9))))
+                    else
+                      if (Const.eq x10 (leaf 3)).label ≠ 0 then
+                        let x11 : T := «Typing.atomName» x9;
+                        let x12 : T := «Typing/Txs.atOr» «Typing.tx0» x7 (leaf 2);
+                        let x13 : T →
+                          (List T × (List T × (List T × (List T × (List T × List T))))) ×
+                            T := (fun (x13 : T) =>
+                          let x14 : T := x13;
+                          if (Const.eq (Const.label x14) (leaf 1)).label ≠ 0 then
+                            let x15 : T := Const.child x14 (leaf 0);
+                            x4
+                              («Typing.withDefs»
+                                x3
+                                («Typing/Abbrs.append»
+                                  («Typing.envDefs» x3)
+                                  («Typing/Abbrs.single» («Typing.abbr» x11 x15))))
+                          else
+                            x5);
+                        if («Typing.namedTx» x8 «Reader.kwDef»).label ≠ 0 then
+                          x13 («Typing.synIn» x3 ([] : List T) x12)
+                        else
+                          if («Typing.namedTx» x8 «Typing.kwPostulate»).label ≠ 0 then
+                            x13 («Typing.readTy» x3 x12)
+                          else
+                            if («Typing.namedTx» x8 «Reader.kwDeftype»).label ≠ 0 then
+                              let x14 : T := «Typing.readTy» x3 x12;
+                              if (Const.eq (Const.label x14) (leaf 1)).label ≠ 0 then
+                                let x15 : T := Const.child x14 (leaf 0);
+                                x4
+                                  («Typing.withAl»
+                                    x3
+                                    ((«Typing.abbr» x11 x15) :: («Typing.envAl» x3)))
+                              else
+                                x5
+                            else
+                              if («Typing.namedTx» x8 «Reader.kwDefnum»).label ≠ 0 then
+                                x4
+                                  («Typing.withNums»
+                                    x3
+                                    («Typing/Names.append»
+                                      («Typing.envNums» x3)
+                                      («Typing/Names.single» x11)))
+                              else
+                                x5
+                      else
+                        x5
+                  else
+                    x5);
     x2
 
 def «Typing.checkRun» :=
-  fun (x0 : T × T) (x1 : List T) =>
-    let x2 : T ×
+  fun (x0 : (List T ×
+      (List T × (List T × (List T × (List T × List T))))) ×
+      T)
+    (x1 : List T) =>
+    let x2 : (List T ×
+      (List T × (List T × (List T × (List T × List T))))) ×
       T := Const.foldr
       (α := T)
-      (β := (T × T) → T × T)
-      (fun (x2 : T) (x3 : (T × T) → T × T) (x4 : T × T) =>
+      (β := ((List T × (List T × (List T × (List T × (List T × List T))))) ×
+        T) →
+        (List T × (List T × (List T × (List T × (List T × List T))))) × T)
+      (fun (x2 : T)
+         (x3 : ((List T × (List T × (List T × (List T × (List T × List T))))) ×
+           T) →
+           (List T × (List T × (List T × (List T × (List T × List T))))) × T)
+         (x4 : (List T × (List T × (List T × (List T × (List T × List T))))) ×
+           T) =>
         x3 («Typing.checkStep» x4 x2))
-      (fun (x2 : T × T) => x2)
+      (fun (x2 : (List T ×
+           (List T × (List T × (List T × (List T × List T))))) ×
+           T) =>
+        x2)
       x1
       x0;
     x2
@@ -2908,19 +4310,43 @@ def «Typing.checkForms» :=
   fun (x0 : List T) =>
     let x1 : T := (Const.foldr
       (α := T)
-      (β := (T × T) → T × T)
-      (fun (x1 : T) (x2 : (T × T) → T × T) (x3 : T × T) =>
+      (β := ((List T × (List T × (List T × (List T × (List T × List T))))) ×
+        T) →
+        (List T × (List T × (List T × (List T × (List T × List T))))) × T)
+      (fun (x1 : T)
+         (x2 : ((List T × (List T × (List T × (List T × (List T × List T))))) ×
+           T) →
+           (List T × (List T × (List T × (List T × (List T × List T))))) × T)
+         (x3 : (List T × (List T × (List T × (List T × (List T × List T))))) ×
+           T) =>
         x2
-          (if (Const.eq (Const.label x1) (leaf 15)).label ≠ 0 then
-            if («Prelude.isSome» (x3).2).label ≠ 0 then
-              x3
-            else
-              ((x3).1, («Typing.checkRun» x3 (Const.children x1)).2)
-          else
-            «Typing.checkStep» x3 x1))
-      (fun (x1 : T × T) => x1)
+          (let x4 : T := x1;
+           if (Const.eq (Const.label x4) (leaf 15)).label ≠ 0 then
+             let x5 : List
+               T := Const.iter
+               (α := List T)
+               (fun (x5 : List T) =>
+                 Const.lcase
+                   (α := T)
+                   (β := List T)
+                   x5
+                   ([] : List T)
+                   (fun (_ : T) (x7 : List T) => x7))
+               (Const.children x4)
+               (leaf 0);
+             let x6 : T := (x3).2;
+             if (Const.eq (Const.label x6) (leaf 1)).label ≠ 0 then
+               let _ : T := Const.child x6 (leaf 0); x3
+             else
+               ((x3).1, («Typing.checkRun» x3 x5).2)
+           else
+             «Typing.checkStep» x3 x1))
+      (fun (x1 : (List T ×
+           (List T × (List T × (List T × (List T × List T))))) ×
+           T) =>
+        x1)
       x0
-      («Typing.env0», «Prelude.none»)).2;
+      («Typing.env0», «Typing/OName.nothing»)).2;
     x1
 
 def «Datatype.nothing» := Const.node (leaf 0) ([] : List T)
@@ -4401,13 +5827,39 @@ def «Datatype.eraseForm» :=
         x0);
     x1
 
+def «Datatype.typeError» :=
+  fun (x0 : List T) =>
+    let x1 : T := (let x1 : T := Const.node (leaf 2) x0;
+                   if («Typing.Tx.member» x1).label ≠ 0 then
+                     let x2 : T := x1;
+                     let x3 : T := x2;
+                     if (Const.eq (Const.label x3) (leaf 2)).label ≠ 0 then
+                       let x4 : List
+                         T := Const.iter
+                         (α := List T)
+                         (fun (x4 : List T) =>
+                           Const.lcase
+                             (α := T)
+                             (β := List T)
+                             x4
+                             ([] : List T)
+                             (fun (_ : T) (x6 : List T) => x6))
+                         (Const.children x3)
+                         (leaf 0);
+                       «Typing.checkForms» x4
+                     else
+                       «Prelude.some» (Const.node (leaf 0) ([] : List T))
+                   else
+                     «Prelude.some» (Const.node (leaf 0) ([] : List T)));
+    x1
+
 def «Datatype.expandProgram» :=
   fun (x0 : List T) =>
     let x1 : T := (let x1 : T := «Datatype.expandTyped» x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
                      let x2 : T := Const.child x1 (leaf 0);
                      if («Prelude.isSome»
-                       («Typing.checkForms» (Const.children x2))).label ≠ 0 then
+                       («Datatype.typeError» (Const.children x2))).label ≠ 0 then
                        «Datatype.nothing»
                      else
                        «Datatype.just»
@@ -4435,7 +5887,7 @@ def «Datatype.typeErrorOf» :=
                        (Const.children («Prelude.get» x1));
                      if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
                        let x3 : T := Const.child x2 (leaf 0);
-                       let x4 : T := «Typing.checkForms» (Const.children x3);
+                       let x4 : T := «Datatype.typeError» (Const.children x3);
                        if («Prelude.isSome» x4).label ≠ 0 then
                          «Prelude.get» x4
                        else

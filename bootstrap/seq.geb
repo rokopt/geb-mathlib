@@ -1,0 +1,46 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; Lists of the values of a type and optional values, written in the datatype language: the
+; functions of the prelude's lists of trees at any element type, and the optional values of a
+; type the trees represent. Each module's parameter is the element type, which its functions do
+; not inspect; a program imports an instance at each element type it uses, under a name of its
+; own, (import (Seq A) as As). The optional values of the trees are the prelude's: nothing the
+; leaf 0 and just the node of label 1 over the value. Requires the prelude.
+
+(module Seq (parameter A) (export single length append reverse tail drop atOr)
+  (defn single ((x A)) (List A) (cons x (nil A)))
+  (defn length ((xs (List A))) T (foldr A T (lam ((x A) (n T)) (add n 1)) 0 xs))
+  (defn append ((xs (List A)) (ys (List A))) (List A)
+    (foldr A (List A) (lam ((x A) (r (List A))) (cons x r)) ys xs))
+  (defn reverse ((xs (List A))) (List A)
+    ((foldr A (Arrow (List A) (List A))
+       (lam ((x A) (k (Arrow (List A) (List A))) (acc (List A))) (k (cons x acc)))
+       (lam ((acc (List A))) acc)
+       xs) (nil A)))
+  (defn tail ((xs (List A))) (List A) (lcase A (List A) xs (nil A) (lam ((x A) (r (List A))) r)))
+  (defn drop ((n T) (xs (List A))) (List A) (iter (List A) tail xs n))
+  ; the element at a position, or a default when the list is not longer
+  (defn atOr ((d A) (xs (List A)) (i T)) A (lcase A A (drop i xs) d (lam ((x A) (r (List A))) x))))
+
+(module Option (parameter A) (export Maybe nothing just isJust fromMaybe nthOf allJust)
+  (data Maybe (nothing) (just A))
+  (defn isJust ((m Maybe)) T (case m ((just x) 1) ((nothing) 0)))
+  (defn fromMaybe ((d A) (m Maybe)) A (case m ((just x) x) ((nothing) d)))
+  ; the element at a position, when the list is longer
+  (defn nthOf ((xs (List A)) (i T)) Maybe
+    (lcase A Maybe
+      (iter (List A)
+        (lam ((ys (List A))) (lcase A (List A) ys (nil A) (lam ((y A) (r (List A))) r)))
+        xs
+        i)
+      nothing
+      (lam ((x A) (r (List A))) (just x))))
+  ; the values of a list of optional values, when every one is present
+  (defn allJust ((ms (List Maybe))) (Prod T (List A))
+    (foldr Maybe (Prod T (List A))
+      (lam ((m Maybe) (acc (Prod T (List A))))
+        (case m ((just x) (pair (fst acc) (cons x (snd acc)))) ((nothing) (pair 0 (snd acc)))))
+      (pair 1 (nil A))
+      ms)))
