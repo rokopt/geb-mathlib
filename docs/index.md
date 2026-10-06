@@ -3946,13 +3946,36 @@ checklist and in CI.
   gives the one-point model. `Completeness.lean` constructs the term
   model of a context under hypotheses [Kawase2024] and proves derivability
   by a certificate equivalent to validity in every model
-  (`Geb.PartialHorn.derivable_iff_valid`). `Shared.lean` checks
+  (`Geb.PartialHorn.derivable_iff_valid`). `Initial.lean` defines
+  homomorphisms preserving defined operations and proves the closed
+  term model strictly initial in models of the theory
+  (`Geb.PartialHorn.TermModel.existsUnique_hom`). `Shared.lean` checks
   certificates over a store of shared terms
   (`Geb.PartialHorn.checkShared_sound`), and `Share.lean` converts a
   development into one, a conversion whose output is checked rather than
   trusted. Tested through the theory of `Geb/Prototypes/FreeTopos/`.
   Depends on `Geb.Prototypes.RoseTree.Basic`, `Geb.Mathlib.Data.W.Basic`,
   `Geb.Mathlib.Data.FinEnum` and `Mathlib.Data.Part`.
+- [FreeLCCC](../Geb/Prototypes/FreeLCCC.lean) — a partial Horn
+  presentation of finite limits, finite colimits, local cartesian
+  closure, and an NNO, with no additional generators. Slice objects
+  are arrows to a base; dependent sum is composition, base change is
+  a pullback built from a product and an equalizer, and dependent
+  product has evaluation and abstraction with beta and eta equations
+  [Seely1984, Section 2.4]. The closed term model is strictly initial
+  (`Geb.FreeLCCC.existsUnique_interpretation`), and equality of closed
+  term classes is exactly derivable equality
+  (`Geb.FreeLCCC.ofTerm_eq_iff`). `Category.lean` constructs the
+  underlying category and interpretation functors. `Examples.lean`
+  constructs typed zero and successor maps, a dependent product along
+  zero, and the NNO identity recursion equation.
+  The comparison with ordinary structured categories, the packaging
+  of the universal equations as mathlib slice adjunctions, and
+  freeness for structure-preserving functors up to natural isomorphism
+  are not formalized. The module records the iso-comma argument for
+  toposes [ForssellLumsdaineSwan2026, Proposition 1.22] as a route to the
+  required coherence theorem. Tested in
+  [FreeLCCC tests](../GebTests/Prototypes/FreeLCCC.lean).
 - `Geb/Prototypes/FreeTopos/` — the metalogic: the free elementary topos
   with the natural numbers, list and rose-tree objects, presented as the
   initial model of one partial Horn theory. `Theory.lean` states the
