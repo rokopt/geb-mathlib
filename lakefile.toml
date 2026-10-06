@@ -182,6 +182,11 @@ name = "printerSource"
 path = "bootstrap/printer.geb"
 text = true
 
+[[input_file]]
+name = "evalSource"
+path = "bootstrap/eval.geb"
+text = true
+
 [[input_dir]]
 name = "freeToposSources"
 path = "bootstrap/free-topos"
@@ -227,11 +232,12 @@ moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 [lean_lib.moreServerOptions]
 weak.linter.hashCommand = false
 
-# The hash and the printer of the kernel's terms.
+# The hash, the printer and the evaluator of the kernel's terms.
 [[lean_lib]]
 name = "GebTestsKernel"
-globs = ["GebTests.Prototypes.Kernel.Identity", "GebTests.Prototypes.Kernel.Printer"]
-needs = ["@/identitySource", "@/printerSource"]
+globs = ["GebTests.Prototypes.Kernel.Identity", "GebTests.Prototypes.Kernel.Printer",
+  "GebTests.Prototypes.Kernel.Eval"]
+needs = ["@/identitySource", "@/printerSource", "@/evalSource"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]

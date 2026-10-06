@@ -9,7 +9,7 @@ public import Geb.Prototypes.Kernel.Reader
 open Geb.Kernel
 open Geb.Kernel renaming Tree → T
 
-namespace GebMirror.Check
+namespace GebMirror.Kernel
 
 def «Prelude.append» :=
   fun (x0 : List T) (x1 : List T) =>
@@ -1974,6 +1974,642 @@ def «Check.checkProgram» :=
     else
       «Prelude.none»
 
-end GebMirror.Check
+def «Eval.bindO» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (if («Prelude.isSome» x0).label ≠ 0 then
+      x1 («Prelude.get» x0)
+    else
+      «Prelude.none»);
+    x2
+
+def «Eval.mapT» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => ((x0 x2) :: x3))
+      ([] : List T)
+      x1;
+    x2
+
+def «Eval.allSomeT» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x1 : T) (x2 : T) =>
+        if («Prelude.isSome» x1).label ≠ 0 then
+          «Eval.bindO»
+            x2
+            (fun (x3 : T) =>
+              «Prelude.some»
+                (Const.node (leaf 0) ((«Prelude.get» x1) :: (Const.children x3))))
+        else
+          «Prelude.none»)
+      («Prelude.some» (Const.node (leaf 0) ([] : List T)))
+      x0;
+    x1
+
+def «Eval.valQuote» :=
+  fun (x0 : T) =>
+    let x1 : T := Const.node (leaf 15) («Prelude.single» x0); x1
+
+def «Eval.valUnit» := Const.node (leaf 11) ([] : List T)
+
+def «Eval.valPair» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := Const.node (leaf 12) (x0 :: («Prelude.single» x1)); x2
+
+def «Eval.valClo» :=
+  fun (x0 : List T) (x1 : T) (x2 : T) =>
+    let x3 : T := Const.node
+      (leaf 26)
+      ((Const.node (leaf 0) x0) :: (x1 :: («Prelude.single» x2)));
+    x3
+
+def «Eval.valApp» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := Const.node (leaf 10) (x0 :: («Prelude.single» x1)); x2
+
+def «Eval.ofList» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) =>
+        Const.node (leaf 20) (x2 :: («Prelude.single» x3)))
+      (Const.node (leaf 19) («Prelude.single» x0))
+      x1;
+    x2
+
+def «Eval.unquote» :=
+  fun (x0 : T) =>
+    let x1 : T := (if («Prelude.and»
+      (Const.eq (Const.label x0) (leaf 15))
+      (Const.eq (Const.arity x0) (leaf 1))).label ≠ 0 then
+      «Prelude.some» (Const.child x0 (leaf 0))
+    else
+      «Prelude.none»);
+    x1
+
+def «Eval.listOf» :=
+  fun (x0 : T) =>
+    let x1 : T := Const.para
+      (α := T)
+      (fun (x1 : T) (x2 : List T) =>
+        if («Prelude.and»
+          (Const.eq (Const.label x1) (leaf 19))
+          (Const.eq (Const.arity x1) (leaf 1))).label ≠ 0 then
+          «Prelude.some» (Const.node (leaf 0) ([] : List T))
+        else
+          if («Prelude.and»
+            (Const.eq (Const.label x1) (leaf 20))
+            (Const.eq (Const.arity x1) (leaf 2))).label ≠ 0 then
+            «Eval.bindO»
+              («Prelude.at» x2 (leaf 1))
+              (fun (x3 : T) =>
+                «Prelude.some»
+                  (Const.node
+                    (leaf 0)
+                    ((Const.child x1 (leaf 0)) :: (Const.children x3))))
+          else
+            «Prelude.none»)
+      x0;
+    x1
+
+def «Eval.spine» :=
+  fun (x0 : T) =>
+    let x1 : T ×
+      List
+        T := Const.para
+      (α := T × List T)
+      (fun (x1 : T) (x2 : List (T × List T)) =>
+        if («Prelude.and»
+          (Const.eq (Const.label x1) (leaf 10))
+          (Const.eq (Const.arity x1) (leaf 2))).label ≠ 0 then
+          Const.lcase
+            (α := T × List T)
+            (β := T × List T)
+            x2
+            (x1, ([] : List T))
+            (fun (x3 : T × List T) (_ : List (T × List T)) =>
+              ((x3).1,
+                «Prelude.append» (x3).2 («Prelude.single» (Const.child x1 (leaf 1)))))
+        else
+          (x1, ([] : List T)))
+      x0;
+    x1
+
+def «Eval.primArity» :=
+  fun (x0 : T) =>
+    let x1 : T := (if («Prelude.or»
+      (Const.eq x0 (leaf 0))
+      («Prelude.or»
+        (Const.eq x0 (leaf 1))
+        («Prelude.or»
+          (Const.eq x0 (leaf 4))
+          (Const.eq x0 (leaf 13))))).label ≠ 0 then
+      leaf 1
+    else
+      if (Const.lt x0 (leaf 14)).label ≠ 0 then leaf 2 else leaf 0);
+    x1
+
+def «Eval.constArity» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := Const.label x0;
+                   let x2 : T := Const.arity x0;
+                   if («Prelude.and»
+                     («Prelude.or» (Const.eq x1 (leaf 17)) (Const.eq x1 (leaf 25)))
+                     (Const.eq x2 (leaf 1))).label ≠ 0 then
+                     leaf 2
+                   else
+                     if («Prelude.or»
+                       («Prelude.and» (Const.eq x1 (leaf 18)) (Const.eq x2 (leaf 1)))
+                       («Prelude.and»
+                         («Prelude.or» (Const.eq x1 (leaf 21)) (Const.eq x1 (leaf 24)))
+                         (Const.eq x2 (leaf 2)))).label ≠ 0 then
+                       leaf 3
+                     else
+                       if («Prelude.and»
+                         (Const.eq x1 (leaf 22))
+                         (Const.eq x2 (leaf 1))).label ≠ 0 then
+                         «Eval.primArity» (Const.label (Const.child x0 (leaf 0)))
+                       else
+                         leaf 0);
+    x1
+
+def «Eval.primApply» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : T := «Eval.bindO»
+      («Eval.allSomeT» («Eval.mapT» «Eval.unquote» x1))
+      (fun (x2 : T) =>
+        let x3 : List T := Const.children x2;
+        let x4 : T := «Prelude.length» x3;
+        let x5 : T := «Prelude.at» x3 (leaf 0);
+        let x6 : T := «Prelude.at» x3 (leaf 1);
+        if (Const.eq x4 (leaf 1)).label ≠ 0 then
+          if (Const.eq x0 (leaf 0)).label ≠ 0 then
+            «Prelude.some» («Eval.valQuote» (Const.label x5))
+          else
+            if (Const.eq x0 (leaf 1)).label ≠ 0 then
+              «Prelude.some» («Eval.valQuote» (Const.arity x5))
+            else
+              if (Const.eq x0 (leaf 4)).label ≠ 0 then
+                «Prelude.some»
+                  («Eval.ofList»
+                    (leaf 0)
+                    («Eval.mapT» «Eval.valQuote» (Const.children x5)))
+              else
+                if (Const.eq x0 (leaf 13)).label ≠ 0 then
+                  «Prelude.some» («Eval.valQuote» (Const.log2 x5))
+                else
+                  «Prelude.none»
+        else
+          if (Const.eq x4 (leaf 2)).label ≠ 0 then
+            if (Const.eq x0 (leaf 2)).label ≠ 0 then
+              «Prelude.some» («Eval.valQuote» (Const.child x5 x6))
+            else
+              if (Const.eq x0 (leaf 5)).label ≠ 0 then
+                «Prelude.some» («Eval.valQuote» (Const.add x5 x6))
+              else
+                if (Const.eq x0 (leaf 6)).label ≠ 0 then
+                  «Prelude.some» («Eval.valQuote» (Const.sub x5 x6))
+                else
+                  if (Const.eq x0 (leaf 7)).label ≠ 0 then
+                    «Prelude.some» («Eval.valQuote» (Const.mul x5 x6))
+                  else
+                    if (Const.eq x0 (leaf 8)).label ≠ 0 then
+                      «Prelude.some» («Eval.valQuote» (Const.div x5 x6))
+                    else
+                      if (Const.eq x0 (leaf 9)).label ≠ 0 then
+                        «Prelude.some» («Eval.valQuote» (Const.mod x5 x6))
+                      else
+                        if (Const.eq x0 (leaf 10)).label ≠ 0 then
+                          «Prelude.some» («Eval.valQuote» (Const.eq x5 x6))
+                        else
+                          if (Const.eq x0 (leaf 11)).label ≠ 0 then
+                            «Prelude.some» («Eval.valQuote» (Const.lt x5 x6))
+                          else
+                            if (Const.eq x0 (leaf 12)).label ≠ 0 then
+                              «Prelude.some» («Eval.valQuote» (Const.equal x5 x6))
+                            else
+                              «Prelude.none»
+          else
+            «Prelude.none»);
+    x2
+
+def «Eval.primNode» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := «Eval.bindO»
+      («Eval.unquote» x0)
+      (fun (x2 : T) =>
+        «Eval.bindO»
+          («Eval.listOf» x1)
+          (fun (x3 : T) =>
+            «Eval.bindO»
+              («Eval.allSomeT» («Eval.mapT» «Eval.unquote» (Const.children x3)))
+              (fun (x4 : T) =>
+                «Prelude.some»
+                  («Eval.valQuote» (Const.node x2 (Const.children x4))))));
+    x2
+
+def «Eval.foldVal» :=
+  fun (x0 : T → T → T) (x1 : T) (x2 : T) (x3 : T) =>
+    let x4 : T := Const.fold
+      (α := T)
+      (fun (x4 : T) (x5 : List T) =>
+        «Eval.bindO»
+          («Eval.allSomeT» x5)
+          (fun (x6 : T) =>
+            «Eval.bindO»
+              (x0 x2 («Eval.valQuote» (Const.node x4 ([] : List T))))
+              (fun (x7 : T) => x0 x7 («Eval.ofList» x1 (Const.children x6)))))
+      x3;
+    x4
+
+def «Eval.paraVal» :=
+  fun (x0 : T → T → T) (x1 : T) (x2 : T) (x3 : T) =>
+    let x4 : T := Const.para
+      (α := T)
+      (fun (x4 : T) (x5 : List T) =>
+        «Eval.bindO»
+          («Eval.allSomeT» x5)
+          (fun (x6 : T) =>
+            «Eval.bindO»
+              (x0 x2 («Eval.valQuote» x4))
+              (fun (x7 : T) => x0 x7 («Eval.ofList» x1 (Const.children x6)))))
+      x3;
+    x4
+
+def «Eval.iterVal» :=
+  fun (x0 : T → T → T) (x1 : T) (x2 : T) (x3 : T) =>
+    let x4 : T := Const.iter
+      (α := T)
+      (fun (x4 : T) => «Eval.bindO» x4 (x0 x1))
+      («Prelude.some» x2)
+      x3;
+    x4
+
+def «Eval.foldrVal» :=
+  fun (x0 : T → T → T) (x1 : T) (x2 : T) (x3 : List T) =>
+    let x4 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x4 : T) (x5 : T) =>
+        «Eval.bindO»
+          x5
+          (fun (x6 : T) => «Eval.bindO» (x0 x1 x4) (fun (x7 : T) => x0 x7 x6)))
+      («Prelude.some» x2)
+      x3;
+    x4
+
+def «Eval.lcaseVal» :=
+  fun (x0 : T → T → T) (x1 : T) (x2 : T) (x3 : T) =>
+    let x4 : T := (if («Prelude.and»
+      (Const.eq (Const.label x1) (leaf 19))
+      (Const.eq (Const.arity x1) (leaf 1))).label ≠ 0 then
+      «Prelude.some» x2
+    else
+      if («Prelude.and»
+        (Const.eq (Const.label x1) (leaf 20))
+        (Const.eq (Const.arity x1) (leaf 2))).label ≠ 0 then
+        «Eval.bindO»
+          (x0 x3 (Const.child x1 (leaf 0)))
+          (fun (x4 : T) => x0 x4 (Const.child x1 (leaf 1)))
+      else
+        «Prelude.none»);
+    x4
+
+def «Eval.sat» :=
+  fun (x0 : T → T → T) (x1 : T) (x2 : List T) =>
+    let x3 : T := (let x3 : T := Const.label x1;
+                   let x4 : T := Const.arity x1;
+                   let x5 : T := «Prelude.length» x2;
+                   let x6 : T := «Prelude.at» x2 (leaf 0);
+                   let x7 : T := «Prelude.at» x2 (leaf 1);
+                   let x8 : T := «Prelude.at» x2 (leaf 2);
+                   if («Prelude.and»
+                     (Const.eq x3 (leaf 17))
+                     («Prelude.and»
+                       (Const.eq x4 (leaf 1))
+                       (Const.eq x5 (leaf 2)))).label ≠ 0 then
+                     «Eval.bindO»
+                       («Eval.unquote» x7)
+                       («Eval.foldVal» x0 (Const.child x1 (leaf 0)) x6)
+                   else
+                     if («Prelude.and»
+                       (Const.eq x3 (leaf 25))
+                       («Prelude.and»
+                         (Const.eq x4 (leaf 1))
+                         (Const.eq x5 (leaf 2)))).label ≠ 0 then
+                       «Eval.bindO»
+                         («Eval.unquote» x7)
+                         («Eval.paraVal» x0 (Const.child x1 (leaf 0)) x6)
+                     else
+                       if («Prelude.and»
+                         (Const.eq x3 (leaf 18))
+                         («Prelude.and»
+                           (Const.eq x4 (leaf 1))
+                           (Const.eq x5 (leaf 3)))).label ≠ 0 then
+                         «Eval.bindO»
+                           («Eval.unquote» x8)
+                           (fun (x9 : T) => «Eval.iterVal» x0 x6 x7 (Const.label x9))
+                       else
+                         if («Prelude.and»
+                           (Const.eq x3 (leaf 21))
+                           («Prelude.and»
+                             (Const.eq x4 (leaf 2))
+                             (Const.eq x5 (leaf 3)))).label ≠ 0 then
+                           «Eval.bindO»
+                             («Eval.listOf» x8)
+                             (fun (x9 : T) => «Eval.foldrVal» x0 x6 x7 (Const.children x9))
+                         else
+                           if («Prelude.and»
+                             (Const.eq x3 (leaf 24))
+                             («Prelude.and»
+                               (Const.eq x4 (leaf 2))
+                               (Const.eq x5 (leaf 3)))).label ≠ 0 then
+                             «Eval.lcaseVal» x0 x6 x7 x8
+                           else
+                             if («Prelude.and»
+                               (Const.eq x3 (leaf 22))
+                               («Prelude.and»
+                                 (Const.eq x4 (leaf 1))
+                                 (Const.eq x5 (leaf 2)))).label ≠ 0 then
+                               if (Const.eq
+                                 (Const.label (Const.child x1 (leaf 0)))
+                                 (leaf 3)).label ≠ 0 then
+                                 «Eval.primNode» x6 x7
+                               else
+                                 «Eval.primApply» (Const.label (Const.child x1 (leaf 0))) x2
+                             else
+                               if («Prelude.and»
+                                 (Const.eq x3 (leaf 22))
+                                 («Prelude.and»
+                                   (Const.eq x4 (leaf 1))
+                                   (Const.eq x5 (leaf 1)))).label ≠ 0 then
+                                 «Eval.primApply» (Const.label (Const.child x1 (leaf 0))) x2
+                               else
+                                 «Prelude.none»);
+    x3
+
+def «Eval.pairFst» :=
+  fun (x0 : T) =>
+    let x1 : T := (if («Prelude.and»
+      (Const.eq (Const.label x0) (leaf 12))
+      (Const.eq (Const.arity x0) (leaf 2))).label ≠ 0 then
+      «Prelude.some» (Const.child x0 (leaf 0))
+    else
+      «Prelude.none»);
+    x1
+
+def «Eval.pairSnd» :=
+  fun (x0 : T) =>
+    let x1 : T := (if («Prelude.and»
+      (Const.eq (Const.label x0) (leaf 12))
+      (Const.eq (Const.arity x0) (leaf 2))).label ≠ 0 then
+      «Prelude.some» (Const.child x0 (leaf 1))
+    else
+      «Prelude.none»);
+    x1
+
+def «Eval.evStep» :=
+  fun (x0 : List T)
+    (x1 : (List T → T → T) × (T → T → T))
+    (x2 : T)
+    (x3 : List (List T → T))
+    (x4 : List T) =>
+    let x5 : T := (let x5 : T := Const.label x2;
+                   let x6 : T := Const.arity x2;
+                   let x7 : List T →
+                     T := Const.lcase
+                     (α := List T → T)
+                     (β := List T → T)
+                     x3
+                     (fun (_ : List T) => «Prelude.none»)
+                     (fun (x7 : List T → T) (_ : List (List T → T)) => x7);
+                   let x8 : List T →
+                     T := Const.lcase
+                     (α := List T → T)
+                     (β := List T → T)
+                     x3
+                     (fun (_ : List T) => «Prelude.none»)
+                     (fun (_ : List T → T) (x9 : List (List T → T)) =>
+                       Const.lcase
+                         (α := List T → T)
+                         (β := List T → T)
+                         x9
+                         (fun (_ : List T) => «Prelude.none»)
+                         (fun (x10 : List T → T) (_ : List (List T → T)) => x10));
+                   let x9 : List T →
+                     T := Const.lcase
+                     (α := List T → T)
+                     (β := List T → T)
+                     x3
+                     (fun (_ : List T) => «Prelude.none»)
+                     (fun (_ : List T → T) (x10 : List (List T → T)) =>
+                       Const.lcase
+                         (α := List T → T)
+                         (β := List T → T)
+                         x10
+                         (fun (_ : List T) => «Prelude.none»)
+                         (fun (_ : List T → T) (x12 : List (List T → T)) =>
+                           Const.lcase
+                             (α := List T → T)
+                             (β := List T → T)
+                             x12
+                             (fun (_ : List T) => «Prelude.none»)
+                             (fun (x13 : List T → T) (_ : List (List T → T)) => x13)));
+                   if («Prelude.and»
+                     (Const.eq x5 (leaf 8))
+                     (Const.eq x6 (leaf 1))).label ≠ 0 then
+                     «Prelude.nth» x4 (Const.label (Const.child x2 (leaf 0)))
+                   else
+                     if («Prelude.and»
+                       (Const.eq x5 (leaf 9))
+                       (Const.eq x6 (leaf 2))).label ≠ 0 then
+                       «Prelude.some»
+                         («Eval.valClo» x4 (Const.child x2 (leaf 0)) (Const.child x2 (leaf 1)))
+                     else
+                       if («Prelude.and»
+                         (Const.eq x5 (leaf 10))
+                         (Const.eq x6 (leaf 2))).label ≠ 0 then
+                         «Eval.bindO»
+                           (x7 x4)
+                           (fun (x10 : T) =>
+                             «Eval.bindO» (x8 x4) (fun (x11 : T) => (x1).2 x10 x11))
+                       else
+                         if («Prelude.and»
+                           (Const.eq x5 (leaf 11))
+                           (Const.eq x6 (leaf 0))).label ≠ 0 then
+                           «Prelude.some» «Eval.valUnit»
+                         else
+                           if («Prelude.and»
+                             (Const.eq x5 (leaf 12))
+                             (Const.eq x6 (leaf 2))).label ≠ 0 then
+                             «Eval.bindO»
+                               (x7 x4)
+                               (fun (x10 : T) =>
+                                 «Eval.bindO»
+                                   (x8 x4)
+                                   (fun (x11 : T) => «Prelude.some» («Eval.valPair» x10 x11)))
+                           else
+                             if («Prelude.and»
+                               (Const.eq x5 (leaf 13))
+                               (Const.eq x6 (leaf 1))).label ≠ 0 then
+                               «Eval.bindO» (x7 x4) «Eval.pairFst»
+                             else
+                               if («Prelude.and»
+                                 (Const.eq x5 (leaf 14))
+                                 (Const.eq x6 (leaf 1))).label ≠ 0 then
+                                 «Eval.bindO» (x7 x4) «Eval.pairSnd»
+                               else
+                                 if («Prelude.and»
+                                   (Const.eq x5 (leaf 15))
+                                   (Const.eq x6 (leaf 1))).label ≠ 0 then
+                                   «Prelude.some» («Eval.valQuote» (Const.child x2 (leaf 0)))
+                                 else
+                                   if («Prelude.and»
+                                     (Const.eq x5 (leaf 16))
+                                     (Const.eq x6 (leaf 3))).label ≠ 0 then
+                                     «Eval.bindO»
+                                       (x7 x4)
+                                       (fun (x10 : T) =>
+                                         «Eval.bindO»
+                                           («Eval.unquote» x10)
+                                           (fun (x11 : T) =>
+                                             if (Const.eq (Const.label x11) (leaf 0)).label ≠ 0 then
+                                               x9 x4
+                                             else
+                                               x8 x4))
+                                   else
+                                     if («Prelude.and»
+                                       (Const.eq x5 (leaf 19))
+                                       (Const.eq x6 (leaf 1))).label ≠ 0 then
+                                       «Prelude.some»
+                                         (Const.node
+                                           (leaf 19)
+                                           («Prelude.single» (Const.child x2 (leaf 0))))
+                                     else
+                                       if («Prelude.and»
+                                         (Const.eq x5 (leaf 20))
+                                         (Const.eq x6 (leaf 2))).label ≠ 0 then
+                                         «Eval.bindO»
+                                           (x7 x4)
+                                           (fun (x10 : T) =>
+                                             «Eval.bindO»
+                                               (x8 x4)
+                                               (fun (x11 : T) =>
+                                                 «Prelude.some»
+                                                   (Const.node
+                                                     (leaf 20)
+                                                     (x10 :: («Prelude.single» x11)))))
+                                       else
+                                         if («Prelude.or»
+                                           («Prelude.and»
+                                             («Prelude.or»
+                                               (Const.eq x5 (leaf 17))
+                                               («Prelude.or»
+                                                 (Const.eq x5 (leaf 25))
+                                                 (Const.eq x5 (leaf 18))))
+                                             (Const.eq x6 (leaf 1)))
+                                           («Prelude.and»
+                                             («Prelude.or»
+                                               (Const.eq x5 (leaf 21))
+                                               (Const.eq x5 (leaf 24)))
+                                             (Const.eq x6 (leaf 2)))).label ≠ 0 then
+                                           «Prelude.some» x2
+                                         else
+                                           if («Prelude.and»
+                                             (Const.eq x5 (leaf 22))
+                                             (Const.eq x6 (leaf 1))).label ≠ 0 then
+                                             «Prelude.some»
+                                               (Const.node
+                                                 (leaf 22)
+                                                 («Prelude.single»
+                                                   (Const.node
+                                                     (Const.label (Const.child x2 (leaf 0)))
+                                                     ([] : List T))))
+                                           else
+                                             if («Prelude.and»
+                                               (Const.eq x5 (leaf 23))
+                                               (Const.eq x6 (leaf 1))).label ≠ 0 then
+                                               «Eval.bindO»
+                                                 («Prelude.nth»
+                                                   x0
+                                                   (Const.label (Const.child x2 (leaf 0))))
+                                                 ((x1).1 ([] : List T))
+                                             else
+                                               «Prelude.none»);
+    x5
+
+def «Eval.apStep» :=
+  fun (x0 : (List T → T → T) × (T → T → T)) (x1 : T) (x2 : T) =>
+    let x3 : T := (let x3 : T := Const.label x1;
+                   if («Prelude.or»
+                     (Const.eq x3 (leaf 10))
+                     («Prelude.or»
+                       (Const.eq x3 (leaf 17))
+                       («Prelude.or»
+                         (Const.eq x3 (leaf 25))
+                         («Prelude.or»
+                           (Const.eq x3 (leaf 18))
+                           («Prelude.or»
+                             (Const.eq x3 (leaf 21))
+                             («Prelude.or»
+                               (Const.eq x3 (leaf 24))
+                               (Const.eq x3 (leaf 22)))))))).label ≠ 0 then
+                     let x4 : T × List T := «Eval.spine» x1;
+                     let x5 : List T := «Prelude.append» (x4).2 («Prelude.single» x2);
+                     if (Const.lt
+                       («Prelude.length» x5)
+                       («Eval.constArity» (x4).1)).label ≠ 0 then
+                       «Prelude.some» («Eval.valApp» x1 x2)
+                     else
+                       «Eval.sat» (x0).2 (x4).1 x5
+                   else
+                     if («Prelude.and»
+                       (Const.eq x3 (leaf 26))
+                       (Const.eq (Const.arity x1) (leaf 3))).label ≠ 0 then
+                       (x0).1
+                         (x2 :: (Const.children (Const.child x1 (leaf 0))))
+                         (Const.child x1 (leaf 2))
+                     else
+                       «Prelude.none»);
+    x3
+
+def «Eval.next» :=
+  fun (x0 : List T) (x1 : (List T → T → T) × (T → T → T)) =>
+    let x2 : (List T → T → T) ×
+      (T →
+        T →
+          T) := (fun (x2 : List T) (x3 : T) =>
+      Const.para (α := List T → T) («Eval.evStep» x0 x1) x3 x2,
+      «Eval.apStep» x1);
+    x2
+
+def «Eval.level» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : (List T → T → T) ×
+      (T →
+        T →
+          T) := Const.iter
+      (α := (List T → T → T) × (T → T → T))
+      («Eval.next» x0)
+      (fun (_ : List T) (_ : T) => «Prelude.none»,
+        fun (_ : T) (_ : T) => «Prelude.none»)
+      x1;
+    x2
+
+def «Eval.eval» :=
+  fun (x0 : List T) (x1 : T) (x2 : List T) (x3 : T) =>
+    let x4 : T := («Eval.level» x0 x1).1 x2 x3; x4
+
+def «Eval.apply» :=
+  fun (x0 : List T) (x1 : T) (x2 : T) (x3 : T) =>
+    let x4 : T := («Eval.level» x0 x1).2 x2 x3; x4
+
+end GebMirror.Kernel
 
 end

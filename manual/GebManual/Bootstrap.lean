@@ -4249,15 +4249,22 @@ written in Lean and in Geb, preceded the metalogic and were removed
 once it replaced them.
 
 The kernel's type checker written in Geb, `bootstrap/check.geb`, is
-proved in Lean to agree with {name}`Geb.Kernel.infer`. The stage-1
-compiler's Lean backend emits the program of the prelude, the reader
-and the checker as Lean definitions, one for each of its definitions,
-committed as `bootstrap/lean/GebMirror/Check.lean` and compared with a
-fresh emission by `scripts/bootstrap.sh check`, and
+proved in Lean to agree with {name}`Geb.Kernel.infer`, and its
+evaluator, `bootstrap/eval.geb`, with `Geb.Kernel.Eval.eval`, an
+evaluator of kernel terms with fuel proved adequate to the
+denotation by a logical relation in the manner of
+{citet Tait1967}[]. The stage-1
+compiler's Lean backend emits the program of the prelude, the reader,
+the checker and the evaluator as Lean definitions, one for each of its
+definitions, committed as `bootstrap/lean/GebMirror/Kernel.lean` and
+compared with a fresh emission by `scripts/bootstrap.sh check`;
 `GebTests/Prototypes/CheckMirror.lean` proves, following the mirror's
 fold over a term with one lemma for each of the kernel's rules, that
 the mirror's type of every term is the one
-{name}`Geb.Kernel.infer` gives. The labels of the kernel's constructors
+{name}`Geb.Kernel.infer` gives, and
+`GebTests/Prototypes/EvalMirror.lean`, by recursion on fuel with one
+lemma for each shape of term, that the mirror's evaluation is the
+Lean evaluator's. The labels of the kernel's constructors
 and the primitives' indices are named by numeral abbreviations in
 `bootstrap/prelude.geb` and by abbreviations in Lean,
 `Geb.Kernel.Label` and `Geb.Kernel.Prim`, which

@@ -1,0 +1,251 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The big-step evaluator of kernel terms, as Geb.Kernel.Eval defines it in Lean: values are
+; trees, a tree as its quotation, the unit value, a pair of values, a list of values as the
+; kernel's list nodes, a function as the closure of its environment, its argument's type and its
+; body, and a constant applied to fewer arguments than it takes as the application of the
+; constant to their values. The evaluator runs with fuel: at each level it evaluates a term by
+; structural recursion on the term, and applies a value to a value, and evaluates a reference's
+; definition, by the level below. An optional result is the prelude's optional tree, and an
+; optional list the optional node of label 0 over the list. Requires the prelude.
+
+(module Eval
+  (export Label.clo valQuote valClo ofList unquote listOf spine sat evStep apStep level eval apply)
+  (import Prelude)
+  ; the label of a closure: the node of its environment, its argument's type and its body
+  (defnum Label.clo 26)
+  (defn bindO ((m T) (f (Arrow T T))) T (if (isSome m) (f (get m)) none))
+  (defn mapT ((f (Arrow T T)) (xs Ts)) Ts
+    (foldr T Ts (lam ((x T) (r Ts)) (cons (f x) r)) (nil T) xs))
+  (defn allSomeT ((ms Ts)) T
+    (foldr T T
+      (lam ((m T) (acc T))
+        (if (isSome m) (bindO acc (lam ((xs T)) (some (node 0 (cons (get m) (children xs))))))
+          none))
+      (some (node 0 (nil T)))
+      ms))
+
+  ; values
+  (defn valQuote ((t T)) T (node Label.quote (single t)))
+  (def valUnit (node Label.unit (nil T)))
+  (defn valPair ((a T) (b T)) T (node Label.pair (cons a (single b))))
+  (defn valClo ((env Ts) (A T) (b T)) T (node Label.clo (cons (node 0 env) (cons A (single b)))))
+  (defn valApp ((f T) (x T)) T (node Label.app (cons f (single x))))
+  (defn ofList ((A T) (vs Ts)) T
+    (foldr T T (lam ((x T) (acc T)) (node Label.cons (cons x (single acc))))
+      (node Label.nil (single A))
+      vs))
+  ; the tree a value quotes, the elements of a list value, and a partial application's head and
+  ; arguments, the first first
+  (defn unquote ((v T)) T
+    (if (and (eq (label v) Label.quote) (eq (arity v) 1)) (some (child v 0)) none))
+  (defn listOf ((v T)) T
+    (para T
+      (lam ((nd T) (rs Ts))
+        (if (and (eq (label nd) Label.nil) (eq (arity nd) 1)) (some (node 0 (nil T)))
+          (if (and (eq (label nd) Label.cons) (eq (arity nd) 2))
+            (bindO (at rs 1) (lam ((r T)) (some (node 0 (cons (child nd 0) (children r))))))
+            none)))
+      v))
+  (deftype Sp (Prod T Ts))
+  (defn spine ((v T)) Sp
+    (para Sp
+      (lam ((nd T) (rs (List Sp)))
+        (if (and (eq (label nd) Label.app) (eq (arity nd) 2))
+          (lcase Sp Sp rs (pair nd (nil T))
+            (lam ((r Sp) (rest (List Sp))) (pair (fst r) (append (snd r) (single (child nd 1))))))
+          (pair nd (nil T))))
+      v))
+
+  ; the number of arguments a primitive or a constant takes, zero at a tree that is no constant
+  (defn primArity ((k T)) T
+    (if (or (eq k Prim.label) (or (eq k Prim.arity) (or (eq k Prim.children) (eq k Prim.log2)))) 1
+      (if (lt k 14) 2 0)))
+  (defn constArity ((h T)) T
+    (let l T (label h)
+      (let n T (arity h)
+        (if (and (or (eq l Label.fold) (eq l Label.para)) (eq n 1)) 2
+          (if
+            (or (and (eq l Label.iter) (eq n 1))
+              (and (or (eq l Label.foldr) (eq l Label.lcase)) (eq n 2)))
+            3
+            (if (and (eq l Label.prim) (eq n 1)) (primArity (label (child h 0))) 0))))))
+
+  ; a primitive applied to the trees its arguments quote, and the node primitive applied to the
+  ; value of a label and a list value of children
+  (defn primApply ((k T) (args Ts)) T
+    (bindO (allSomeT (mapT unquote args))
+      (lam ((tsN T))
+        (let ts Ts (children tsN)
+          (let n T (length ts)
+            (let a T (at ts 0)
+              (let b T (at ts 1)
+                (if (eq n 1)
+                  (if (eq k Prim.label) (some (valQuote (label a)))
+                    (if (eq k Prim.arity) (some (valQuote (arity a)))
+                      (if (eq k Prim.children)
+                        (some (ofList Label.tyTree (mapT valQuote (children a))))
+                        (if (eq k Prim.log2) (some (valQuote (log2 a))) none))))
+                  (if (eq n 2)
+                    (if (eq k Prim.child) (some (valQuote (child a b)))
+                      (if (eq k Prim.add) (some (valQuote (add a b)))
+                        (if (eq k Prim.sub) (some (valQuote (sub a b)))
+                          (if (eq k Prim.mul) (some (valQuote (mul a b)))
+                            (if (eq k Prim.div) (some (valQuote (div a b)))
+                              (if (eq k Prim.mod) (some (valQuote (mod a b)))
+                                (if (eq k Prim.eq) (some (valQuote (eq a b)))
+                                  (if (eq k Prim.lt) (some (valQuote (lt a b)))
+                                    (if (eq k Prim.equal) (some (valQuote (equal a b)))
+                                      none)))))))))
+                    none)))))))))
+  (defn primNode ((l T) (cs T)) T
+    (bindO (unquote l)
+      (lam ((a T))
+        (bindO (listOf cs)
+          (lam ((vsN T))
+            (bindO (allSomeT (mapT unquote (children vsN)))
+              (lam ((tsN T)) (some (valQuote (node a (children tsN)))))))))))
+
+  ; the constants' computations, applying values to values by ap
+  (deftype Ap (Arrow T (Arrow T T)))
+  (defn foldVal ((ap Ap) (A T) (f T) (t T)) T
+    (fold T
+      (lam ((l T) (rs Ts))
+        (bindO (allSomeT rs)
+          (lam ((vsN T))
+            (bindO (ap f (valQuote (node l (nil T))))
+              (lam ((g T)) (ap g (ofList A (children vsN))))))))
+      t))
+  (defn paraVal ((ap Ap) (A T) (f T) (t T)) T
+    (para T
+      (lam ((nd T) (rs Ts))
+        (bindO (allSomeT rs)
+          (lam ((vsN T))
+            (bindO (ap f (valQuote nd)) (lam ((g T)) (ap g (ofList A (children vsN))))))))
+      t))
+  (defn iterVal ((ap Ap) (s T) (z T) (n T)) T
+    (iter T (lam ((acc T)) (bindO acc (ap s))) (some z) n))
+  (defn foldrVal ((ap Ap) (g T) (z T) (vs Ts)) T
+    (foldr T T
+      (lam ((x T) (acc T)) (bindO acc (lam ((a T)) (bindO (ap g x) (lam ((g1 T)) (ap g1 a))))))
+      (some z)
+      vs))
+  (defn lcaseVal ((ap Ap) (xs T) (n T) (c T)) T
+    (if (and (eq (label xs) Label.nil) (eq (arity xs) 1)) (some n)
+      (if (and (eq (label xs) Label.cons) (eq (arity xs) 2))
+        (bindO (ap c (child xs 0)) (lam ((g T)) (ap g (child xs 1))))
+        none)))
+  ; a constant applied to all its arguments
+  (defn sat ((ap Ap) (h T) (args Ts)) T
+    (let l T (label h)
+      (let n T (arity h)
+        (let k T (length args)
+          (let a0 T (at args 0)
+            (let a1 T (at args 1)
+              (let a2 T (at args 2)
+                (if (and (eq l Label.fold) (and (eq n 1) (eq k 2)))
+                  (bindO (unquote a1) (foldVal ap (child h 0) a0))
+                  (if (and (eq l Label.para) (and (eq n 1) (eq k 2)))
+                    (bindO (unquote a1) (paraVal ap (child h 0) a0))
+                    (if (and (eq l Label.iter) (and (eq n 1) (eq k 3)))
+                      (bindO (unquote a2) (lam ((n0 T)) (iterVal ap a0 a1 (label n0))))
+                      (if (and (eq l Label.foldr) (and (eq n 2) (eq k 3)))
+                        (bindO (listOf a2) (lam ((vsN T)) (foldrVal ap a0 a1 (children vsN))))
+                        (if (and (eq l Label.lcase) (and (eq n 2) (eq k 3))) (lcaseVal ap a0 a1 a2)
+                          (if (and (eq l Label.prim) (and (eq n 1) (eq k 2)))
+                            (if (eq (label (child h 0)) Prim.node) (primNode a0 a1)
+                              (primApply (label (child h 0)) args))
+                            (if (and (eq l Label.prim) (and (eq n 1) (eq k 1)))
+                              (primApply (label (child h 0)) args)
+                              none))))))))))))))
+
+  ; the components of a pair value
+  (defn pairFst ((vp T)) T
+    (if (and (eq (label vp) Label.pair) (eq (arity vp) 2)) (some (child vp 0)) none))
+  (defn pairSnd ((vp T)) T
+    (if (and (eq (label vp) Label.pair) (eq (arity vp) 2)) (some (child vp 1)) none))
+
+  ; the evaluation and the application at a level, from those of the level below: a node's value
+  ; in an environment, from its children's values as functions of the environment, and a value
+  ; applied to a value
+  (deftype Ev (Arrow Ts (Arrow T T)))
+  (deftype Fns (Prod Ev Ap))
+  (deftype EvE (Arrow Ts T))
+  (defn evStep ((G Ts) (p Fns) (nd T) (rs (List EvE)) (env Ts)) T
+    (let l T (label nd)
+      (let n T (arity nd)
+        (let r0 EvE (lcase EvE EvE rs (lam ((e Ts)) none) (lam ((r EvE) (rest (List EvE))) r))
+          (let r1 EvE
+            (lcase EvE EvE rs (lam ((e Ts)) none)
+              (lam ((r EvE) (rest (List EvE)))
+                (lcase EvE EvE rest (lam ((e Ts)) none) (lam ((r1 EvE) (rest1 (List EvE))) r1))))
+            (let r2 EvE
+              (lcase EvE EvE rs (lam ((e Ts)) none)
+                (lam ((r EvE) (rest (List EvE)))
+                  (lcase EvE EvE rest (lam ((e Ts)) none)
+                    (lam ((r1 EvE) (rest1 (List EvE)))
+                      (lcase EvE EvE rest1 (lam ((e Ts)) none)
+                        (lam ((r2 EvE) (rest2 (List EvE))) r2))))))
+              (if (and (eq l Label.var) (eq n 1)) (nth env (label (child nd 0)))
+                (if (and (eq l Label.lam) (eq n 2)) (some (valClo env (child nd 0) (child nd 1)))
+                  (if (and (eq l Label.app) (eq n 2))
+                    (bindO (r0 env) (lam ((vf T)) (bindO (r1 env) (lam ((vx T)) ((snd p) vf vx)))))
+                    (if (and (eq l Label.unit) (eq n 0)) (some valUnit)
+                      (if (and (eq l Label.pair) (eq n 2))
+                        (bindO (r0 env)
+                          (lam ((va T)) (bindO (r1 env) (lam ((vb T)) (some (valPair va vb))))))
+                        (if (and (eq l Label.fst) (eq n 1)) (bindO (r0 env) pairFst)
+                          (if (and (eq l Label.snd) (eq n 1)) (bindO (r0 env) pairSnd)
+                            (if (and (eq l Label.quote) (eq n 1)) (some (valQuote (child nd 0)))
+                              (if (and (eq l Label.cond) (eq n 3))
+                                (bindO (r0 env)
+                                  (lam ((vc T))
+                                    (bindO (unquote vc)
+                                      (lam ((t T)) (if (eq (label t) 0) (r2 env) (r1 env))))))
+                                (if (and (eq l Label.nil) (eq n 1))
+                                  (some (node Label.nil (single (child nd 0))))
+                                  (if (and (eq l Label.cons) (eq n 2))
+                                    (bindO (r0 env)
+                                      (lam ((vx T))
+                                        (bindO (r1 env)
+                                          (lam ((vxs T))
+                                            (some (node Label.cons (cons vx (single vxs))))))))
+                                    (if
+                                      (or
+                                        (and
+                                          (or (eq l Label.fold)
+                                            (or (eq l Label.para) (eq l Label.iter)))
+                                          (eq n 1))
+                                        (and (or (eq l Label.foldr) (eq l Label.lcase)) (eq n 2)))
+                                      (some nd)
+                                      (if (and (eq l Label.prim) (eq n 1))
+                                        (some
+                                          (node Label.prim
+                                            (single (node (label (child nd 0)) (nil T)))))
+                                        (if (and (eq l Label.ref) (eq n 1))
+                                          (bindO (nth G (label (child nd 0))) ((fst p) (nil T)))
+                                          none))))))))))))))))))))
+  (defn apStep ((p Fns) (f T) (x T)) T
+    (let l T (label f)
+      (if
+        (or (eq l Label.app)
+          (or (eq l Label.fold)
+            (or (eq l Label.para)
+              (or (eq l Label.iter)
+                (or (eq l Label.foldr) (or (eq l Label.lcase) (eq l Label.prim)))))))
+        (let s Sp (spine f)
+          (let args Ts (append (snd s) (single x))
+            (if (lt (length args) (constArity (fst s))) (some (valApp f x))
+              (sat (snd p) (fst s) args))))
+        (if (and (eq l Label.clo) (eq (arity f) 3))
+          ((fst p) (cons x (children (child f 0))) (child f 2))
+          none))))
+  ; the functions at a level of fuel, given the program's definitions; the level zero fails
+  (defn next ((G Ts) (p Fns)) Fns
+    (pair (lam ((env Ts) (t T)) ((para EvE (evStep G p) t) env)) (apStep p)))
+  (defn level ((G Ts) (n T)) Fns
+    (iter Fns (next G) (pair (lam ((env Ts) (t T)) none) (lam ((f T) (x T)) none)) n))
+  (defn eval ((G Ts) (n T) (env Ts) (t T)) T ((fst (level G n)) env t))
+  (defn apply ((G Ts) (n T) (f T) (x T)) T ((snd (level G n)) f x)))

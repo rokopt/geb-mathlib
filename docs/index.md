@@ -3735,7 +3735,16 @@ checklist and in CI.
   trees to a file. `Subst.lean` weakens terms and substitutes for their
   innermost variable, through one traversal replacing variables
   (`Geb.Kernel.trav`), and proves both agree with the denotation
-  (`Geb.Kernel.infer_wk`, `Geb.Kernel.infer_subst`). `Hole.lean` checks
+  (`Geb.Kernel.infer_wk`, `Geb.Kernel.infer_subst`). `Eval.lean` is a
+  big-step evaluator of kernel terms with fuel, whose values are trees,
+  functions as closures, and proves it adequate to the denotation by
+  Tait's method [Tait1967]: a logical relation between values and
+  denotations, by recursion on types, whose fundamental lemma gives every
+  term the kernel types a value related to its denotation at some level of
+  fuel, so that each definition of a loaded program evaluates to a value
+  related to its global (`Geb.Kernel.Eval.load_rel`) and the evaluator
+  computes every loaded global from trees to trees
+  (`Geb.Kernel.Eval.eval_apply`). `Hole.lean` checks
   a proposed filling of the innermost free variable against its expected
   type and the sketch's context (`Geb.Kernel.fillHole`), and proves
   acceptance of well-typed inputs and the type and denotation of every
@@ -3815,11 +3824,15 @@ checklist and in CI.
   the compiler with the seed on the kernel's examples, runs programs in
   the datatype language compiled by the compiler, decoding included.
   `bootstrap/subst.geb` is the traversal of kernel terms with weakening
-  and substitution, as `Subst.lean` defines them.
+  and substitution, as `Subst.lean` defines them, and `bootstrap/eval.geb`
+  the evaluator of kernel terms, as `Eval.lean` defines it, compared with
+  it at examples in `GebTests/Prototypes/Kernel/Eval.lean`.
   `GebTests/Prototypes/CheckMirror.lean` proves the Lean the bootstrap
-  compiler emits from the checker's program,
-  `bootstrap/lean/GebMirror/Check.lean`, equal to `Geb.Kernel.infer` at
-  every term, and `GebTests/Prototypes/ProgramCommand.lean` declares a
+  compiler emits from the program of the kernel's checker and evaluator,
+  `bootstrap/lean/GebMirror/Kernel.lean`, equal to `Geb.Kernel.infer` at
+  every term, `GebTests/Prototypes/EvalMirror.lean` its evaluator equal to
+  `Geb.Kernel.Eval.eval` at every level of fuel, environment and term, and
+  `GebTests/Prototypes/ProgramCommand.lean` declares a
   program's loading from its text through the stage-0 compiler's front
   end (the command `geb_program`), which
   `GebTests/Prototypes/FreeTopos/Agreement/Load.lean` uses for the

@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import GebMirror.Check
+public import GebMirror.Kernel
 public import Geb.Prototypes.Kernel.Subst
 
 set_option doc.verso true in
@@ -43,7 +43,7 @@ set_option doc.verso true
 
 @[expose] public section
 
-open GebMirror.Check
+open GebMirror.Kernel
 
 namespace GebTests.Prototypes.CheckMirror
 
