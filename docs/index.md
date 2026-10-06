@@ -3893,41 +3893,45 @@ checklist and in CI.
   Gödel's T, whose checker the internal language replaced. Depends on
   `Geb.Prototypes.Kernel.Subst` and `Geb.Prototypes.Kernel.Reader`.
 - `Geb/Prototypes/LF/` — the logical framework LF [HarperHonsellPlotkin1993]
-  in its canonical-forms presentation [HarperLicata2007], the input format
-  of the type inhabitation solver Canonical [NormanAvigad2025].
-  `Syntax.lean`: expressions as one rose tree in spine form, with de Bruijn
-  indices, renaming and the erasure of types to simple types.
-  `HSubst.lean`: hereditary substitution, a fold over the simple type of
-  the reduction of an application and a fold over the expression
-  substituted into. `Typing.lean`: the formation judgments of signatures,
-  contexts, kinds, types and terms, bidirectional and decided by a
-  paramorphism, with the equality of types a parameter. `Rewrite.lean`:
-  the extension by rewrite rules on constants [CousineauDowek2007], with
-  first-order matching of patterns, instantiation by hereditary
-  substitution, η-expansion, normalization to a bound and the typing of a
-  rule. `Metatheory/`: the laws of renaming and its commutation with
-  hereditary substitution, vacuous substitution, the composition of
-  hereditary substitutions, weakening, the scoping of judged expressions,
-  the invariance of erasure under substitution, the substitution theorem
-  [HarperLicata2007], and the identity principles: the η-expansion of a
-  variable is an identity for hereditary substitution, and the
-  η-expansion of an atomic term checks against the type it synthesizes
-  [WatkinsEtAl2002]. `Topos/`: a fragment of the internal language of
-  `Geb/Prototypes/FreeTopos/` as a signature, its object types, terms in
-  higher-order abstract syntax and derivations, and its computation rules
-  as rewrite rules; `Topos/Adequacy.lean` encodes the fragment's types and
-  compiled terms as canonical LF terms and decodes them, the signature's
-  fold corresponding to the fold with parameters of the language, and
-  proves the encoding sound and complete. Tested in
-  `GebTests/Prototypes/LF.lean`, `GebTests/Prototypes/LF/Topos.lean` and
-  `GebTests/Prototypes/LF/Adequacy.lean`. The library `GebExperiments`, which
-  no module of `Geb`, `GebLang` or `GebTests` imports, translates goals of
-  the signature to Canonical's input and the terms it returns back, and
-  checks them (`lake exe lf-canonical`); the
-  [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
-  measurements. Depends on `Geb.Prototypes.RoseTree.Basic`,
-  `Geb.Prototypes.ConcreteSyntax`, `Geb.Mathlib.Data.W.Basic` and
-  `Geb.Prototypes.FreeTopos.Internal`.
+  in its canonical-forms presentation [HarperLicata2007], the input format of
+  the type inhabitation solver Canonical [NormanAvigad2025]. `Syntax.lean`:
+  expressions as one rose tree in spine form, with de Bruijn indices, renaming
+  and the erasure of types to simple types. `HSubst.lean`: hereditary
+  substitution, a fold over the simple type of the reduction of an application
+  and a fold over the expression substituted into. `Typing.lean`: the
+  formation judgments of signatures, contexts, kinds, types and terms,
+  bidirectional and decided by a paramorphism, with the equality of types a
+  parameter. `Rewrite.lean`: the extension by rewrite rules on constants
+  [CousineauDowek2007], with first-order matching of patterns, instantiation
+  by hereditary substitution, η-expansion, normalization to a bound and the
+  typing of a rule. `Metatheory/`: the laws of renaming and its commutation
+  with hereditary substitution, vacuous substitution, the composition of
+  hereditary substitutions, weakening, strengthening, the scoping of judged
+  expressions, the invariance of erasure under substitution, the substitution
+  theorem [HarperLicata2007], and the identity principles: the η-expansion of
+  a variable is an identity for hereditary substitution, and the η-expansion
+  of an atomic term checks against the type it synthesizes [WatkinsEtAl2002].
+  `Topos/`: a fragment of the internal language of `Geb/Prototypes/FreeTopos/`
+  as a signature, its object types, terms in higher-order abstract syntax and
+  derivations, and its computation rules as rewrite rules;
+  `Topos/Adequacy.lean` encodes the fragment's types and compiled terms as
+  canonical LF terms and decodes them, the signature's fold corresponding to
+  the fold with parameters of the language, and proves the encoding sound and
+  complete; `Topos/Compose.lean` proves the decoding compositional, commuting
+  with renaming and hereditary substitution; `Topos/Proofs.lean` decodes the
+  canonical terms of the families of proofs, in contexts of term and proof
+  variables, as derivations of the language, `Topos/ProofCheck.lean` computes
+  the checker at the derivations it builds, and `Topos/ProofSound.lean` proves
+  the decoding sound: a proof decodes to a derivation the checker accepts as a
+  proof of the decoded formula. Tested in `GebTests/Prototypes/LF.lean`,
+  `GebTests/Prototypes/LF/Topos.lean`, `GebTests/Prototypes/LF/Adequacy.lean`
+  and `GebTests/Prototypes/LF/Proofs.lean`. The library `GebExperiments`,
+  which no module of `Geb`, `GebLang` or `GebTests` imports, translates goals
+  of the signature to Canonical's input and the terms it returns back, and
+  checks them (`lake exe lf-canonical`); the [bootstrap
+  chapter](../manual/GebManual/Bootstrap.lean) records the measurements.
+  Depends on `Geb.Prototypes.RoseTree.Basic`, `Geb.Prototypes.ConcreteSyntax`,
+  `Geb.Mathlib.Data.W.Basic` and `Geb.Prototypes.FreeTopos.Internal`.
 - `Geb/Prototypes/PartialHorn/` — the logic of partial Horn theories
   [PalmgrenVickers2007] over rose trees, in which the metalogic presents
   the free topos. `Basic.lean` carries signatures and theories, terms as

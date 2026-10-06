@@ -197,6 +197,22 @@ theorem headDepth_node (l : Label) (cs : List Expr) :
     Expr.headDepth (RoseTree.node l cs) = headDepthStep l (cs.map Expr.headDepth) :=
   RoseTree.elim_node _ l cs
 
+/-- Renaming keeps the head and depth. -/
+theorem headDepth_rename : ∀ (e : Expr) (ρ : ℕ → ℕ), (e.rename ρ).headDepth = e.headDepth :=
+  RoseTree.ind fun l cs ih ρ ↦ by
+    rw [rename_node, headDepth_node, headDepth_node]
+    rcases l with _ | _ | _ | (i | c)
+    · rfl
+    · rcases cs with _ | ⟨a, _ | ⟨b, _ | ⟨d, cs⟩⟩⟩
+      · rfl
+      · rfl
+      · simp only [Label.rename, List.zipIdx_cons, List.zipIdx_nil, List.map_cons, List.map_nil,
+          headDepthStep, Label.binders, Function.iterate_one, zero_add, ih b (by simp)]
+      · rfl
+    · rfl
+    · rfl
+    · rfl
+
 /-- Substitution keeps the head and depth of an expression of the shape of types, whatever the
 reduction ({cite}`HarperLicata2007`, Lemma 2.15: the head is invariant under substitution). -/
 theorem headDepth_hsubWith (red : Expr → List Expr → Option Expr) :
