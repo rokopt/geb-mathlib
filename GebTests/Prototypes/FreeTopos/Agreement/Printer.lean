@@ -511,7 +511,7 @@ theorem printTerm_eq (defs : List (List Char)) : ∀ (t : Tree) (d : ℕ),
 
 /-- The mirror's test of a kernel type, which the program shares with the kernel's checker. -/
 theorem isTy_eq (t : Tree) : «Check.isTy» t = ofBool (Ty.IsTy t) :=
-  (rfl : «Check.isTy» t = GebMirror.Check.«Check.isTy» t).trans
+  (rfl : «Check.isTy» t = GebMirror.Kernel.«Check.isTy» t).trans
     (GebTests.Prototypes.CheckMirror.isTy_eq t)
 
 /-- The mirror's test of a single leaf below a bound among trees. -/

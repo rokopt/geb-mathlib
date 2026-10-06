@@ -15,6 +15,7 @@ import GebTests.Prototypes.CheckMirror
 import GebTests.Prototypes.Computability
 import GebTests.Prototypes.ConcreteSyntax
 import GebTests.Prototypes.Definition
+import GebTests.Prototypes.EvalMirror
 import GebTests.Prototypes.FamBoundary
 import GebTests.Prototypes.FinCardUniverse
 import GebTests.Prototypes.FiniteChoice
@@ -46,6 +47,7 @@ import GebTests.Prototypes.FreeTopos.TreeCases
 import GebTests.Prototypes.FreeTopos.Weakening
 import GebTests.Prototypes.Kernel
 import GebTests.Prototypes.Kernel.Document
+import GebTests.Prototypes.Kernel.Eval
 import GebTests.Prototypes.Kernel.Identity
 import GebTests.Prototypes.Kernel.Modules
 import GebTests.Prototypes.Kernel.Printer
