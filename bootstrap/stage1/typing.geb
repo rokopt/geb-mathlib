@@ -22,6 +22,9 @@
     tyList
     tyData
     tySort
+    OName.Maybe
+    OName.just
+    OName.nothing
     checkForms)
   (import Prelude)
   (import Reader)
