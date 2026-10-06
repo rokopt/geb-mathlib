@@ -60,6 +60,7 @@ import GebTests.Prototypes.LF.Topos
 import GebTests.Prototypes.LargeIR
 import GebTests.Prototypes.MType
 import GebTests.Prototypes.ParanaturalRank
+import GebTests.Prototypes.PHOAS
 import GebTests.Prototypes.PresheafIRUniv
 import GebTests.Prototypes.ProgramCommand
 import GebTests.Prototypes.PresheafUniverse
