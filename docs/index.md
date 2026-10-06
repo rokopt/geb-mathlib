@@ -3916,10 +3916,11 @@ checklist and in CI.
   `Geb/Prototypes/FreeTopos/` as a signature, its object types, terms in
   higher-order abstract syntax and derivations, and its computation rules
   as rewrite rules; `Topos/Adequacy.lean` encodes the fragment's types and
-  compiled terms as canonical LF terms and decodes them, and proves the
-  encoding sound and complete, complete for the terms whose folds have
-  closed starts and steps. Tested in `GebTests/Prototypes/LF.lean` and
-  `GebTests/Prototypes/LF/Topos.lean`. The library `GebExperiments`, which
+  compiled terms as canonical LF terms and decodes them, the signature's
+  fold corresponding to the fold with parameters of the language, and
+  proves the encoding sound and complete. Tested in
+  `GebTests/Prototypes/LF.lean`, `GebTests/Prototypes/LF/Topos.lean` and
+  `GebTests/Prototypes/LF/Adequacy.lean`. The library `GebExperiments`, which
   no module of `Geb`, `GebLang` or `GebTests` imports, translates goals of
   the signature to Canonical's input and the terms it returns back, and
   checks them (`lake exe lf-canonical`); the
@@ -4049,7 +4050,11 @@ checklist and in CI.
   types and natural, and substitution composition
   (`Geb.FreeTopos.Internal.compile_subst`); `Square.lean` proves that
   compiling agrees with unfolding the language's definitions in every
-  model (`Geb.FreeTopos.Internal.compile_unfold`). `Derivation.lean` is
+  model (`Geb.FreeTopos.Internal.compile_unfold`). `Iterate.lean`
+  defines the fold of the natural numbers with parameters
+  (`Geb.FreeTopos.Internal.iterDefn`), the fold into the exponential of
+  the parameters applied to them [EscardoSimpson2025], whose start and
+  step are values in the environment of its application. `Derivation.lean` is
   the checker of derivations, `Geb.FreeTopos.Internal.check`: rewriting
   by the language's equations, and proof by rewriting, cut, propositional
   and function extensionality, the instances of earlier theorems,
