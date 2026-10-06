@@ -11,6 +11,7 @@ import GebTests.Prototypes.BitStream.Oitavem
 import GebTests.Prototypes.BitStream.WConstruction
 import GebTests.Prototypes.Bootstrap
 import GebTests.Prototypes.CanonicalSExpr
+import GebTests.Prototypes.CheckMirror
 import GebTests.Prototypes.Computability
 import GebTests.Prototypes.ConcreteSyntax
 import GebTests.Prototypes.Definition
@@ -43,16 +44,6 @@ import GebTests.Prototypes.FreeTopos.Translation
 import GebTests.Prototypes.FreeTopos.TranslationProofs
 import GebTests.Prototypes.FreeTopos.TreeCases
 import GebTests.Prototypes.FreeTopos.Weakening
-import GebTests.Prototypes.GoedelT
-import GebTests.Prototypes.GoedelT.Agreement
-import GebTests.Prototypes.GoedelT.LoadCommand
-import GebTests.Prototypes.GoedelT.MirrorChecker
-import GebTests.Prototypes.GoedelT.MirrorDelta
-import GebTests.Prototypes.GoedelT.MirrorEquations
-import GebTests.Prototypes.GoedelT.MirrorLoad
-import GebTests.Prototypes.GoedelT.MirrorRules
-import GebTests.Prototypes.GoedelT.MirrorTerms
-import GebTests.Prototypes.GoedelT.MirrorTyping
 import GebTests.Prototypes.Kernel
 import GebTests.Prototypes.Kernel.Document
 import GebTests.Prototypes.Kernel.Identity
@@ -63,9 +54,9 @@ import GebTests.Prototypes.LF
 import GebTests.Prototypes.LF.Topos
 import GebTests.Prototypes.LargeIR
 import GebTests.Prototypes.MType
-import GebTests.Prototypes.Proofs
 import GebTests.Prototypes.ParanaturalRank
 import GebTests.Prototypes.PresheafIRUniv
+import GebTests.Prototypes.ProgramCommand
 import GebTests.Prototypes.PresheafUniverse
 import GebTests.Prototypes.QuotientPRA
 import GebTests.Prototypes.ReadableSExpr

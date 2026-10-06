@@ -83,8 +83,7 @@ fi
 if [ "$loading" = rfl ]; then
   step "delete the outputs of the programs' loading and its dependents (mode rfl)"
   for m in GebMirror/Metalogic/Load GebTests/Prototypes/FreeTopos/Agreement/Load \
-           GebTests/Prototypes/FreeTopos/Agreement GebTests/Prototypes/GoedelT/MirrorLoad \
-           GebTests/Prototypes/GoedelT/Agreement; do
+           GebTests/Prototypes/FreeTopos/Agreement; do
     rm -rf .lake/build/lib/lean/"$m".* .lake/build/ir/"$m".*
   done
   rm -rf .lake/build/lib/lean/GebMirror/Metalogic/Load .lake/build/ir/GebMirror/Metalogic/Load

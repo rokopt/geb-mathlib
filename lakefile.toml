@@ -153,6 +153,11 @@ path = "bootstrap/modules.geb"
 text = true
 
 [[input_file]]
+name = "substSource"
+path = "bootstrap/subst.geb"
+text = true
+
+[[input_file]]
 name = "recognizeSource"
 path = "bootstrap/recognize.geb"
 text = true
@@ -173,18 +178,6 @@ path = "bootstrap/printer.geb"
 text = true
 
 [[input_dir]]
-name = "goedelTSources"
-path = "bootstrap/goedel-t"
-text = true
-filter = {extension = ["geb"]}
-
-[[input_dir]]
-name = "proofSources"
-path = "bootstrap/proofs"
-text = true
-filter = {extension = ["geb"]}
-
-[[input_dir]]
 name = "freeToposSources"
 path = "bootstrap/free-topos"
 text = true
@@ -195,12 +188,13 @@ filter = {extension = ["geb"]}
 name = "compilerImage"
 path = "bootstrap/compiler.img"
 
-# The stage-0 compiler's sources.
+# The stage-0 compiler's sources, and the traversal of kernel terms.
 [[lean_lib]]
 name = "GebTestsStage0"
 globs = ["GebTests.Prototypes.Stage0"]
 needs = ["@/preludeSource", "@/serializeSource", "@/readerSource", "@/checkSource",
-  "@/datatypeSource", "@/modulesSource", "@/recognizeSource", "@/compileSource"]
+  "@/datatypeSource", "@/modulesSource", "@/recognizeSource", "@/compileSource",
+  "@/substSource"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]
@@ -211,17 +205,6 @@ weak.linter.hashCommand = false
 name = "GebTestsStage1"
 globs = ["GebTests.Prototypes.Stage1"]
 needs = ["@/compilerImage"]
-moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
-
-[lean_lib.moreServerOptions]
-weak.linter.hashCommand = false
-
-# The checker and prover of Gödel's T and the proofs they check.
-[[lean_lib]]
-name = "GebTestsGoedelT"
-globs = ["GebTests.Prototypes.GoedelT", "GebTests.Prototypes.GoedelT.MirrorLoad",
-  "GebTests.Prototypes.Proofs"]
-needs = ["@/goedelTSources", "@/proofSources"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]

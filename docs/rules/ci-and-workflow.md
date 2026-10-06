@@ -239,10 +239,9 @@ checkout provides an `https` remote, so the workflows set nothing.
 
 ## Loading modes
 
-The loading of the programs whose agreement with Lean is proved, the
+The loading of the program whose agreement with Lean is proved, the
 metalogic's, declared by the modules `scripts/bootstrap.sh` generates
-under `bootstrap/lean/GebMirror/Metalogic/Load/`, and the checker of
-Gödel's T, declared by `GebTests/Prototypes/GoedelT/MirrorLoad.lean`, is
+under `bootstrap/lean/GebMirror/Metalogic/Load/`, is
 checked in one of two modes, which the environment variable
 `GEB_LOADING` selects (`Geb/Prototypes/Kernel/LoadCommand.lean`). In
 the mode `native`, the default, each definition's equation of types and

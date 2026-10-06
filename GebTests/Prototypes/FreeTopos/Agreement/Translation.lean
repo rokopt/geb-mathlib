@@ -6,7 +6,6 @@ Authors: Terence Rokop
 module
 
 public import GebTests.Prototypes.FreeTopos.Agreement.Language
-public import GebTests.Prototypes.GoedelT.MirrorEquations
 public import Geb.Prototypes.FreeTopos.Translation
 
 set_option doc.verso true in
@@ -50,6 +49,15 @@ open Geb Geb.Kernel Geb.FreeTopos GebTests.Prototypes.FreeTopos.Agreement.Encode
   GebTests.Prototypes.FreeTopos.Agreement.Language
 open Internal (Term)
 open scoped FinEnum
+
+/-- An equation between kernel terms, a statement of Gödel's T, as the translation written in Geb
+reads it: the node of label zero over its type and its two sides. -/
+def encGoedelEqn (q : GoedelT.Eqn) : Tree := RoseTree.node 0 [q.ty, q.lhs, q.rhs]
+
+/-- A theorem of Gödel's T as the translation written in Geb reads it: the node of label zero over
+the node of its context and its equation. -/
+def encGoedelThm (th : GoedelT.Thm) : Tree :=
+  RoseTree.node 0 [RoseTree.node 0 th.ctx, encGoedelEqn th.eqn]
 
 /-- A kernel type with a term of the language, as the node of the type and the term. -/
 def encTr (p : Tree × Term) : Tree := encPair (p.1, encTerm p.2)
@@ -236,44 +244,44 @@ theorem foldr_bits_eq (bs : List Bool) :
   simp only [e, foldr_eq, hf, trNumeral_eq]
   rfl
 
-/-! The kernel checker's functions, which the program shares with the checker of Gödel's T. -/
+/-! The functions of the kernel's checker, which the program shares with the checker's mirror. -/
 
 /-- The mirror's test of a kernel type. -/
 theorem kIsTy_eq (t : Tree) : «Check.isTy» t = ofBool (Ty.IsTy t) :=
-  (rfl : «Check.isTy» t = GebMirror.GoedelT.«Check.isTy» t).trans
-    (GoedelT.MirrorTyping.isTy_eq t)
+  (rfl : «Check.isTy» t = GebMirror.Check.«Check.isTy» t).trans
+    (GebTests.Prototypes.CheckMirror.isTy_eq t)
 
 /-- The mirror's kernel function type. -/
 @[simp] theorem kTyArrow_eq (A B : Tree) : «Check.tyArrow» A B = tArrow A B :=
-  GoedelT.MirrorTyping.tyArrow_eq A B
+  GebTests.Prototypes.CheckMirror.tyArrow_eq A B
 
 /-- The mirror's kernel list type. -/
 @[simp] theorem kTyList_eq (A : Tree) : «Check.tyList» A = tList A :=
-  GoedelT.MirrorTyping.tyList_eq A
+  GebTests.Prototypes.CheckMirror.tyList_eq A
 
 /-- The mirror's type of the fold of trees. -/
 @[simp] theorem kFoldTy_eq (A : Tree) : «Check.foldTy» A = foldTy A :=
-  GoedelT.MirrorTyping.foldTy_eq A
+  GebTests.Prototypes.CheckMirror.foldTy_eq A
 
 /-- The mirror's type of iteration. -/
 @[simp] theorem kIterTy_eq (A : Tree) : «Check.iterTy» A = iterTy A :=
-  GoedelT.MirrorTyping.iterTy_eq A
+  GebTests.Prototypes.CheckMirror.iterTy_eq A
 
 /-- The mirror's type of the right fold of lists. -/
 @[simp] theorem kFoldrTy_eq (A B : Tree) : «Check.foldrTy» A B = foldrTy A B :=
-  GoedelT.MirrorTyping.foldrTy_eq A B
+  GebTests.Prototypes.CheckMirror.foldrTy_eq A B
 
 /-- The mirror's type of case analysis of lists. -/
 @[simp] theorem kLcaseTy_eq (A B : Tree) : «Check.lcaseTy» A B = lcaseTy A B :=
-  GoedelT.MirrorTyping.lcaseTy_eq A B
+  GebTests.Prototypes.CheckMirror.lcaseTy_eq A B
 
 /-- The mirror's types of the kernel's primitives. -/
 @[simp] theorem kPrimTypes_eq : «Check.primTypes» = Kernel.prims.map (·.1) :=
-  GoedelT.MirrorTyping.primTypes_eq
+  GebTests.Prototypes.CheckMirror.primTypes_eq
 
 /-- The mirror's kernel product type. -/
 @[simp] theorem kProd_eq (A B : Tree) : «Reader.node2» (leaf 2) A B = tProd A B := by
-  rw [tProd, GoedelT.MirrorTyping.node2_eq]
+  rw [tProd, GebTests.Prototypes.CheckMirror.node2_eq]
   rfl
 
 /-- The mirror's domain and codomain of a kernel function type. -/
@@ -463,12 +471,12 @@ theorem trGlobals_eq (defs : List Internal.Defn) :
 
 /-- The mirror's translation of a theorem of Gödel's T, with the types of the globals. -/
 theorem thm_eq (gt : List Tree) (a : GoedelT.Thm) :
-    «Translation.thm» gt (GoedelT.MirrorEquations.encThm a) =
+    «Translation.thm» gt (encGoedelThm a) =
       encOpt ((Translation.thm gt a).map encThm) := by
   have hc : a.ctx.map «Translation.trTy» = a.ctx.map fun t ↦ encOpt (Translation.ty t) :=
     List.map_congr_left fun t _ ↦ trTy_eq t
-  tr_simp [«Translation.thm», GoedelT.MirrorEquations.encThm,
-    GoedelT.MirrorEquations.encEqn, List.getD_cons_zero, List.getD_cons_succ, hc, allSomeT_eq,
+  tr_simp [«Translation.thm», encGoedelThm,
+    encGoedelEqn, List.getD_cons_zero, List.getD_cons_succ, hc, allSomeT_eq,
     term_eq, Translation.thm]
   rcases a.ctx.mapM Translation.ty with _ | Γ <;> tr_simp []
   rcases Translation.term gt a.ctx a.eqn.lhs with _ | ⟨A, l⟩ <;> tr_simp []

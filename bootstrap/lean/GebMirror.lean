@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import GebMirror.GoedelT
+public import GebMirror.Check
 public import GebMirror.Metalogic
 
 /-!

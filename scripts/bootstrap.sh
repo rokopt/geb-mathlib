@@ -42,7 +42,7 @@ stage1=("$b/prelude.geb" "$b/serialize.geb" "$b/reader.geb" "$b/check.geb" "$b/s
 img=$b/compiler.img
 lean=$b/lean/GebBoot.lean
 # each mirror emitted as one module: its name, then its sources
-mirrors=("GoedelT $b/prelude.geb $b/reader.geb $b/check.geb $b/goedel-t/equations.geb")
+mirrors=("Check $b/prelude.geb $b/reader.geb $b/check.geb")
 # the metalogic's layers, each its name, then its sources: its mirror and the loading of its
 # program are emitted a module per layer, each importing the layer before it, so that a change to
 # a layer's sources changes only the modules of that layer and the layers after it

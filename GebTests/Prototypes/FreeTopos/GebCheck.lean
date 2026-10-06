@@ -9,7 +9,7 @@ public import Geb.Prototypes.Kernel
 public import GebTests.Prototypes.FreeTopos
 public meta import GebTests.Prototypes.FreeTopos.Agreement.Encode -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos -- shake: keep
-public meta import GebTests.Prototypes.Proofs -- shake: keep
+public meta import GebTests.Prototypes.Stage0 -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -91,7 +91,7 @@ def terms : List Tree :=
   notVar :: axioms.flatMap fun a ↦ (a.concl :: a.hyps).flatMap fun q ↦ [q.lhs, q.rhs]
 
 -- the sorts, the scope and the substitution of the terms, in the context of every axiom
-#guard ((loaded GoedelT.ProofTests.bundler.toList program.toList).bind fun P ↦ do
+#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList program.toList).bind fun P ↦ do
   let so : List Tree → List Tree → Tree → Tree ←
     fn P "PartialHorn.sortOf".toList (arrow tyTs (arrow tyTs (arrow tyT tyT)))
   let sc : Tree → Tree → Tree ← fn P "PartialHorn.scoped".toList (arrow tyT (arrow tyT tyT))
@@ -136,7 +136,7 @@ def mutants (c : Tree) : List Tree :=
     [RoseTree.node c.label c.children.dropLast]
 
 -- the checker at every certificate and its malformed variants
-#guard ((loaded GoedelT.ProofTests.bundler.toList program.toList).bind fun P ↦ do
+#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList program.toList).bind fun P ↦ do
   let pc : Tree → List Tree → Tree → List Tree → List Tree → Tree ←
     fn P "PartialHorn.pcheck".toList
       (arrow tyT (arrow tyTs (arrow tyT (arrow tyTs (arrow tyTs tyT)))))
@@ -146,26 +146,26 @@ def mutants (c : Tree) : List Tree :=
       encOpt ((check T E.toArray c Γ H).map encEqn)).getD false
 
 -- the extension of the theory by one definition and by two
-#guard ((loaded GoedelT.ProofTests.bundler.toList program.toList).bind fun P ↦ do
+#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList program.toList).bind fun P ↦ do
   let te : Tree → List Tree → Tree ←
     fn P "PartialHorn.thyExtendAll".toList (arrow tyT (arrow tyTs tyT))
   pure <| [[swapDefn], [swapDefn, swapDefn]].all fun ds ↦
     te (encTheory theory) (ds.map encDefn) == encTheory (theory.extendAll ds)).getD false
 
 -- the theory of an elementary topos with data objects: its signature and its axioms
-#guard ((loaded GoedelT.ProofTests.bundler.toList program.toList).bind fun P ↦ do
+#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList program.toList).bind fun P ↦ do
   let th : Tree ← fn P "Theory.toposTheory".toList tyT
   pure (th == encTheory theory)).getD false
 
 -- the rule tables, and the environments of the theory and of its extension by a definition
-#guard ((loaded GoedelT.ProofTests.bundler.toList program.toList).bind fun P ↦ do
+#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList program.toList).bind fun P ↦ do
   let eo : List Tree → Tree ← fn P "Infer.envOfDefs".toList (arrow tyTs tyT)
   pure <| [[], [swapDefn]].all fun ds ↦ eo (ds.map encDefn) == encExtEnv (ExtEnv.ofDefs ds)).getD
     false
 
 -- the inference of the typing of the sides of every axiom's equations, in its context and under
 -- its hypotheses
-#guard ((loaded GoedelT.ProofTests.bundler.toList program.toList).bind fun P ↦ do
+#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList program.toList).bind fun P ↦ do
   let eo : List Tree → Tree ← fn P "Infer.envOfDefs".toList (arrow tyTs tyT)
   let inf : Tree → List Tree → List Tree → Tree → (List Tree → Tree → Tree) × (Tree → Tree) ←
     fn P "Infer.infers".toList (arrow tyT (arrow tyTs (arrow tyTs (arrow tyT

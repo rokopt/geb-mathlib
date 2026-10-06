@@ -661,7 +661,7 @@ def checkDevelopment (P : Prog) : IO Unit := do
   IO.println s!"{nodes},{t₁ - t₀},{t₂ - t₁}"
 
 #eval show IO Unit from do
-  let some ds := bundled GoedelT.ProofTests.bundler.toList programText.toList
+  let some ds := bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
     | throw (IO.userError "the program does not read")
   let some P := prog? ds fun name ↦ (defIndex ds name.toList).getD 0
     | throw (IO.userError "the program does not translate")

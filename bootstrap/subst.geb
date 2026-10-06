@@ -1,0 +1,47 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The traversal of a kernel term replacing its variables, with weakening and substitution, as
+; Geb.Kernel.Subst defines them in Lean: a variable is the node of its label over the leaf of its
+; de Bruijn index. Requires the prelude and the reader.
+
+(module Subst (export mk1 var trAll termNode trav wkVar wk wkAt substVar subst) (import Prelude)
+  (import Reader)
+  ; kernel terms
+  (defn mk1 ((l T) (a T)) T (node l (single a)))
+  (defn var ((i T)) T (mk1 Label.var i))
+
+  ; the traversal of a term replacing each variable: the variable of index i under k binders
+  ; becomes v k i, and every other node is rebuilt, descending only into the children that are
+  ; terms, the body of an abstraction at one more binder
+  (deftype TR (Prod T (Arrow T T)))
+  (deftype TRs (List TR))
+  (defn trTrees ((rs TRs)) Ts (foldr TR Ts (lam ((r TR) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
+  (defn trAll ((rs TRs) (k T)) Ts
+    (foldr TR Ts (lam ((r TR) (acc Ts)) (cons ((snd r) k) acc)) (nil T) rs))
+  (defn termNode ((l T)) T
+    (or (eq l Label.app)
+      (or (eq l Label.unit)
+        (or (eq l Label.pair)
+          (or (eq l Label.fst) (or (eq l Label.snd) (or (eq l Label.cond) (eq l Label.cons))))))))
+  (defn trav ((v (Arrow T (Arrow T T))) (t T) (k0 T)) T
+    ((snd
+       (fold TR
+         (lam ((l T) (rs TRs))
+           (let cs Ts (trTrees rs)
+             (let n T (length cs)
+               (pair (node l cs)
+                 (lam ((k T))
+                   (if (and (eq l Label.var) (eq n 1)) (v k (label (at cs 0)))
+                     (if (and (eq l Label.lam) (eq n 2))
+                       (node2 Label.lam (at cs 0) (at (trAll rs (add k 1)) 1))
+                       (if (termNode l) (node l (trAll rs k)) (node l cs)))))))))
+         t)) k0))
+
+  ; weakening by n variables below k bound ones, and substitution for the innermost variable
+  (defn wkVar ((n T) (k T) (i T)) T (var (if (lt i k) i (add i n))))
+  (defn wk ((n T) (t T)) T (trav (wkVar n) t 0))
+  (defn wkAt ((k T) (n T) (t T)) T (trav (wkVar n) t k))
+  (defn substVar ((u T) (k T) (i T)) T (if (lt i k) (var i) (if (eq i k) (wk k u) (var (sub i 1)))))
+  (defn subst ((u T) (t T)) T (trav (substVar u) t 0)))

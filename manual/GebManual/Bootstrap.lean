@@ -3399,12 +3399,9 @@ export list of the definitions other sources and the tests use, and
 imports of the modules whose exports it uses, so that a program is still
 the concatenation of its sources. The entry points `main` and `mainLean`
 stay at the root and refer to the modules qualified, as a test's root
-definitions and the theorems of `bootstrap/proofs/` import what they use.
-A definition's name in the flat program, and so in the mirrors and the
-proofs about them, is its name qualified by its module. The elaboration
-also gives the names visible at the root with what they denote, through
-which the prover of Gödel's T reads the definitions a theorem's tactic
-names as the theorem writes them.
+definitions import what they use. A definition's name in the flat
+program, and so in the mirrors and the proofs about them, is its name
+qualified by its module.
 
 A name carries no prefix that would only keep the flat program's names
 apart: the Mitchell–Bénabou language's `var`, `app` and `isTy`, the
@@ -4174,19 +4171,15 @@ tag := "logic"
   * Part
   * State
 *
-  * Gödel's T: the rule set and its soundness
+  * Gödel's T: the judgment and its validity
   * Complete
 *
-  * Gödel's T: the checker in Geb
-  * Complete
-*
-  * Gödel's T: proof construction and proofs
-  * In progress: the proofs of the prelude's lists and labels and of the
-    checker's accessors are complete in Gödel's T, whose checker and
-    prover are retired; the rest are proved in the metalogic, the
-    preservation of types by weakening and by substitution, the identity
-    of the datatype language's expansion and the reader's inverse to the
-    printer complete, and the admission of stronger checkers ready
+  * Proofs about kernel programs, in the metalogic
+  * In progress: the prelude's lists and labels, a structural recursion,
+    the preservation of types by weakening and by substitution, the
+    identity of the datatype language's expansion and the reader's
+    inverse to the printer complete, and the admission of stronger
+    checkers ready
 *
   * Metalogic: the rule set and its soundness
   * Complete: the rule set, its checker and their soundness in every
@@ -4203,22 +4196,20 @@ tag := "logic"
 :::
 
 The metalogic's checker ({ref "metalogic-and-checker"}[The metalogic and
-its checker]) is built by the parts below, as that of Gödel's T was
-built first; the checker of Gödel's T is retired.
+its checker]) is built by the parts below; Gödel's T supplies the
+statements its proofs about kernel programs conclude
+({ref "functional-relations"}[Functional relations and the checker of
+Gödel's T]).
 
 * The rule set and its soundness, in Lean, without `Classical.choice`,
-  in the model of Lean types, and for the metalogic also in a model that
-  is not Boolean. For Gödel's T this part depends only on
-  {ref "kernel-in-lean"}[The kernel runs in Lean].
+  in the model of Lean types and in a model that is not Boolean.
 * The checker in Geb, a fold over proof objects, compared with the
-  Lean checker on valid and malformed certificates; for the metalogic,
-  also proved in Lean to agree with the Lean checker, its denotation at
-  every development being the Lean checker's result.
+  Lean checker on valid and malformed certificates and proved in Lean
+  to agree with it, its denotation at every development being the Lean
+  checker's result.
 * Proof construction in Geb, and proofs about Geb programs that
   exercise it, the compiler's components first, each in the metalogic
-  about the programs' translations, the checker of Gödel's T being
-  retired ({ref "functional-relations"}[Functional relations and the
-  checker of Gödel's T]); and stronger checkers admitted by relative
+  about the programs' translations; and stronger checkers admitted by relative
   soundness proofs, each a translation of their certificates into the
   metalogic's derivations, proved in the metalogic. The rest of what the
   metalogic states, the richer definitions, the setoid language, the
@@ -4227,134 +4218,48 @@ built first; the checker of Gödel's T is retired.
    the free topos with a natural numbers object, is written in Geb
    after the bootstrap (the road map).
 
-Acceptance, for each checker: a theorem with hypotheses, a substitution
-and an induction checks, and certificates with altered binders, invalid
-dependencies or false conclusions fail; for the metalogic, a
-characteristic map checks as well, and the checker written in Geb is
-proved in Lean to agree with the Lean checker.
+Acceptance: a theorem with hypotheses, a substitution, an induction and
+a characteristic map check, certificates with altered binders, invalid
+dependencies or false conclusions fail, and the checker written in Geb
+is proved in Lean to agree with the Lean checker.
 
-For Gödel's T, the rule set and its soundness are constructed.
+For Gödel's T, the judgment and its validity are constructed.
 `Geb/Prototypes/Kernel/Subst.lean` weakens kernel terms and
 substitutes for their innermost variable through one traversal
 ({name}`Geb.Kernel.trav`), and proves that both agree with the
-denotation ({name}`Geb.Kernel.infer_wk`, {name}`Geb.Kernel.infer_subst`).
+denotation ({name}`Geb.Kernel.infer_wk`, {name}`Geb.Kernel.infer_subst`);
+`bootstrap/subst.geb` is the same traversal written in Geb.
 `Geb/Prototypes/GoedelT/Equations.lean` defines a sequent as a
 context, a list of hypotheses and a conclusion, each an equation
 between two kernel terms of a type, valid when both sides of the
 conclusion have its type and their denotations agree at every value of
-the context at which the hypotheses hold ({name}`Geb.GoedelT.Valid`).
-A certificate is a rose tree whose label names a rule, and the checker
-{name}`Geb.GoedelT.check` is a paramorphism over it whose result, as
-the denotation's, is a function of an environment of a program's
-definitions and theorems about it, the global environment the
-definitions load, the context and the hypotheses. Its rules are
-equality's; congruence of every term former; the β and η rules of
-functions, pairs and the unit type; the δ rules, each a primitive
-applied to literals, which are quoted trees and lists of them, equal to
-the literal of its value; weakening, cut and instantiation of the
-innermost variable by a term; the computation rules of the conditional
-at a quoted tree, of the right fold and case analysis of lists, of
-iteration at the label zero and at a successor, and of the fold of
-trees at a node; induction on a list, on a tree,
-under the hypothesis that its children satisfy the equation, and on a
-label; references to definitions, each the definition weakened into
-the context; iteration's reading of its argument's label, and the
-conditional as the iteration of a constant function; and instances of
-the axioms and of proved theorems, each cited by its index in its own
-table, each variable replaced by a term of its type. An induction's
-hypotheses must not mention its variable: the checker lowers them and
-checks that they are typed below it, which
-replaces a converse of weakening by a decidable check. A reference's
-rule rests on {name}`Geb.GoedelT.load_loaded`, by which each of a
-loaded program's definitions denotes its global in the whole
-environment, since extending an environment keeps every denotation
-({name}`Geb.Kernel.infer_append`). {name}`Geb.GoedelT.check_sound`
-proves every computed conclusion valid, without `Classical.choice`. The
-examples of `GebTests/Prototypes/GoedelT.lean` meet the acceptance for
-Gödel's T: a theorem from a hypothesis by congruence, an
-instantiation, the proofs by induction that appending the empty list to
-a list gives the list, that iterating the identity from a tree as many
-times as a label gives the tree, and that a fold whose step ignores its
-arguments is constant, a reference to a definition of a loaded program,
-and the rejection of certificates with an annotation that is not a
-type, a β step whose argument has another type, a missing hypothesis or
-definition, a transitivity whose middle terms differ, an induction
-whose step does not prove its case, and an induction on a label whose
-variable is not a tree.
+the context at which the hypotheses hold ({name}`Geb.GoedelT.Valid`),
+and a theorem as a sequent without hypotheses valid in the global
+environment a program loads ({name}`Geb.GoedelT.Thm.Valid`), in which
+each of the program's definitions denotes its global
+({name}`Geb.GoedelT.load_loaded`), since extending an environment keeps
+every denotation ({name}`Geb.Kernel.infer_append`). A theorem is proved
+in the metalogic about the programs' translations and carried back by
+the translation's soundness
+({ref "functional-relations"}[Functional relations and the checker of
+Gödel's T]); a checker of certificates of Gödel's T and its prover,
+written in Lean and in Geb, preceded the metalogic and were removed
+once it replaced them.
 
-The axioms are the defining equations of the kernel's primitives, each
-from the universal property of the object the primitive acts on
-({name}`Geb.GoedelT.axioms`). The rose-tree object's structure map
-is inverse to the label and the children, by Lambek's lemma, and the
-labels are leaves. The labels are the natural numbers object, zero
-and the successor, the sum with one, and its arithmetic is defined by
-iteration, its universal property: addition iterates the successor,
-the predecessor is the first component of an iteration on pairs,
-truncated subtraction iterates the predecessor, multiplication
-iterates addition, and the quotient and the remainder are the two
-components of one iteration; equality and order of labels are tests
-for zero of truncated differences, and the logarithm has its recursion
-equation. The arity and the children by index are defined by the right
-fold and case analysis of lists, and equality of trees is the
-characteristic map of the diagonal: reflexive, licensing replacement,
-and Boolean. Each is proved valid in every global environment
-({name}`Geb.GoedelT.axioms_valid`), and one rule cites an axiom or a
-theorem at terms for its variables ({name}`Geb.GoedelT.valid_thm_inst`).
-
-The checker evaluates no term but a primitive at literals. A Geb
-program that evaluates kernel terms takes a step bound (the section on
-the metalogic and its checker), so a checker written in Geb could not
-apply a rule evaluating every closed term, and a Lean checker with that
-rule would not be the Geb checker's specification. The evaluation of a
-closed term is derived instead, from the δ rules, the computation rules
-and congruence, by a certificate whose size grows with the length of
-the evaluation.
-
-For Gödel's T, the checker in Geb is constructed as well.
-`bootstrap/goedel-t/equations.geb` is the checker written in the
-datatype language,
-deciding as {name}`Geb.GoedelT.check` decides: a fold over the
-certificate whose result at each node is the node paired with its
-conclusion as a function of the context and the hypotheses, over the
-traversal, weakening and substitution of kernel terms and the values of
-the primitives written in Geb, with `bootstrap/check.geb` typing terms
-in a context. The examples of `GebTests/Prototypes/GoedelT.lean`
-compile it with the stage-0 compiler and compare its conclusion with
-the Lean checker's at the certificates above, one certificate of
-each rule besides, and malformed variants of each, the certificate's
-root relabelled with every rule's label and one beyond or deprived of
-its last child; the two agree on every one, the tables of axioms
-included. The labels of the kernel's constructors, the primitives'
-indices and the checker's rules are named by numeral abbreviations in
-`bootstrap/prelude.geb` and `bootstrap/goedel-t/equations.geb` and by
-abbreviations in Lean, `Geb.Kernel.Label`,
-`Geb.Kernel.Prim` and `Geb.GoedelT.Rule`, which the
-tests hold equal name for name.
-
-The checker of Gödel's T written in Geb is also proved in Lean to agree
-with the Lean checker, by a method the metalogic's checker reuses. The
-stage-1 compiler's Lean backend emits the checker's program as Lean
-definitions, one for each of its definitions, committed as
-`bootstrap/lean/GebMirror/GoedelT.lean` and compared with a fresh
-emission by `scripts/bootstrap.sh check`.
-`GebTests/Prototypes/GoedelT/MirrorLoad.lean` states that loading the
-program with {name}`Geb.Kernel.load` gives globals whose denotations are
-those definitions, one definition at a time, each step closed by
-reflexivity, which the kernel checks by evaluating the checker-evaluator
-in the loading mode `rfl`, and stated as an axiom in the mode `native`
-(`docs/rules/ci-and-workflow.md` § Loading modes). The other modules of
-`GebTests/Prototypes/GoedelT/` prove, side by side, that the emitted
-definitions compute what the Lean checker computes: the type checker,
-the traversal of terms with weakening and substitution, the operations
-on equations and theorems, the values of primitives at literals, and
-each rule, assembled by induction on the certificate.
-`GebTests/Prototypes/GoedelT/Agreement.lean` states the result: at every
-certificate, program, theorems, global environment, context and
-hypotheses, encoded, the loaded checker gives the encoding of what
-{name}`Geb.GoedelT.check` gives, so the two accept the same certificates
-with the same conclusions. In the loading mode `rfl` the proof depends
-on no axiom beyond `propext` and `Quot.sound`; in the mode `native` it
-depends also on the axioms stating the loading.
+The kernel's type checker written in Geb, `bootstrap/check.geb`, is
+proved in Lean to agree with {name}`Geb.Kernel.infer`. The stage-1
+compiler's Lean backend emits the program of the prelude, the reader
+and the checker as Lean definitions, one for each of its definitions,
+committed as `bootstrap/lean/GebMirror/Check.lean` and compared with a
+fresh emission by `scripts/bootstrap.sh check`, and
+`GebTests/Prototypes/CheckMirror.lean` proves, following the mirror's
+fold over a term with one lemma for each of the kernel's rules, that
+the mirror's type of every term is the one
+{name}`Geb.Kernel.infer` gives. The labels of the kernel's constructors
+and the primitives' indices are named by numeral abbreviations in
+`bootstrap/prelude.geb` and by abbreviations in Lean,
+`Geb.Kernel.Label` and `Geb.Kernel.Prim`, which
+`GebTests/Prototypes/Stage0.lean` holds equal name for name.
 
 The metalogic's checker is written in Geb in `bootstrap/free-topos/`, in
 the datatype language, deciding as the Lean definitions it transcribes
@@ -4385,8 +4290,8 @@ derivations, each checked in the state before the declaration it
 alters.
 
 `GebTests/Prototypes/FreeTopos/Agreement.lean` proves the checker
-written in Geb equal to {name}`Geb.FreeTopos.Internal.checkDev`, by the
-method of the checker of Gödel's T. The Lean the bootstrap compiler
+written in Geb equal to {name}`Geb.FreeTopos.Internal.checkDev`. The
+Lean the bootstrap compiler
 emits from the program, `GebMirror.Metalogic`, is the denotation of each
 of the program's definitions as {name}`Geb.Kernel.load` loads them,
 checked by the kernel's evaluation in the loading mode `rfl`, and agrees
@@ -4476,43 +4381,6 @@ table when their lookups agree. In the loading mode `rfl` the proof
 depends on no axiom beyond `propext` and `Quot.sound`; in the mode
 `native` it depends also on the axioms stating the loading.
 
-Proof construction was begun for Gödel's T. `bootstrap/goedel-t/prove.geb`
-constructs certificates by derived rules, so that nothing in it is
-trusted. Normalization, innermost first, contracts the redexes of the
-computation rules, with literals put in constructor form by δ rules
-used backward, unfolds chosen definitions and rewrites with chosen
-axioms and theorems, found by first-order matching, and with the
-hypotheses; each node's children are normalized under one congruence,
-so that a certificate restates a term once per contraction at its
-node rather than once per step. Tactics simplify both sides of a goal,
-rewrite a side at a chosen occurrence, and split a goal by induction on
-a list, a tree or a label into the goals the checker's induction rules
-expect. A file of a program's forms and theorems is read with each
-theorem's statement read as a definition of the program, so that it is
-expanded, resolved and typed as the program is, its forms of the
-datatype language
-expanded by the stage-0 expansion that the prover carries, and each
-theorem's certificate is checked against its statement, citing the
-theorems before it. `bootstrap/proofs/prelude.geb` proves the empty
-list a unit of appending and appending associative;
-`bootstrap/proofs/nat.geb` derives addition's recursion equations from
-its definition by iteration and proves zero a left unit of addition by
-induction on labels; `bootstrap/proofs/check.geb` proves, about the
-kernel's type checker written in Geb, that a quoted tree has the type of
-trees in every context and environment; `bootstrap/proofs/equations.geb`
-proves, about the checker of Gödel's T written in the datatype
-language, that the
-accessors of an equation return the fields it is built from; and
-`bootstrap/proofs/datatype.geb` derives the recursion equations of a
-function by structural recursion over a declared datatype from its
-expansion. The examples of
-`GebTests/Prototypes/Proofs.lean` check every certificate in Geb and
-again with {name}`Geb.GoedelT.check`, and reject a false equation and
-an unproved one. This checker and its prover are retired
-({ref "functional-relations"}[Functional relations and the checker of
-Gödel's T]): their proofs remain and are checked, and the proofs that
-follow them are made in the metalogic, about the programs' translations.
-
 ### Gödel's T
 %%%
 tag := "goedel-t"
@@ -4525,12 +4393,11 @@ equations between terms of one type, and it has a rule of induction
 the kernel's terms is a variant of it, called Gödel's T in this
 chapter: the functionals are the kernel's terms, of the unit, product,
 function, list and tree types, the rose trees with natural-number labels
-standing in place of the natural numbers; a formula is a sequent, an
-equation under equational hypotheses; and the rules are the laws of a
-cartesian closed category with list objects and a rose-tree object, the
-η rules among them. Its checker, the bootstrap's first, is built by the
-parts above, and is retired: a kernel program is interpreted soundly in
-the free topos by its translation into the Mitchell–Bénabou language
+standing in place of the natural numbers; and a formula is a sequent, an
+equation under equational hypotheses, valid in the kernel's denotation.
+Its theorems are proved in the metalogic: a kernel program is
+interpreted soundly in the free topos by its translation into the
+Mitchell–Bénabou language
 ({ref "functional-relations"}[Functional relations and the checker of Gödel's T]).
 
 Its category of contexts under equational hypotheses is conjectured to
@@ -4545,38 +4412,24 @@ which every kernel type has; and the empty object as the terminal object under t
 that two distinct leaves are equal. That these coproducts are disjoint
 and stable under pullback is not proved.
 
-Gödel's T states and proves the following.
+Gödel's T states the following, and the metalogic proves it.
 
 * Judgment: a context of kernel types, a list of equations as
   hypotheses, and an equation between kernel terms of a type; valid
   when both sides denote one value at every value of the context that
   satisfies the hypotheses ({name}`Geb.GoedelT.Valid`). Complete.
 * Types and terms: the kernel's, of every type. Complete.
-* Rules: equality, congruence of every term former, the β and η rules,
-  the δ rules at literals, weakening, cut, instantiation, the
-  computation rules of the kernel's eliminators, induction on lists,
-  trees and labels, the unfolding of definitions, iteration's reading
-  of the label, the conditional as an iteration, and citations of
-  axioms and of theorems, each named in `Geb.GoedelT.Rule`.
-  Complete.
-* Axioms: the defining equations of the primitives
-  ({name}`Geb.GoedelT.axioms`). Complete.
-* In Lean: soundness in the model of Lean types
-  ({name}`Geb.GoedelT.check_sound`). Complete.
-* In Geb: the checker `bootstrap/goedel-t/equations.geb`, complete;
-  the prover `bootstrap/goedel-t/prove.geb`, with normalization,
-  rewriting, induction and the forms of the datatype language, begun;
-  both retired, equations between kernel programs being proved in the
-  metalogic.
-* Proofs of the bootstrap, which exercise a prover on the compiler's
-  components, in order, those of lists and labels and of the checker's
-  accessors in Gödel's T and the rest in the metalogic, about the
-  components' translations:
+* Theorems: a sequent without hypotheses, valid in the global
+  environment a program loads ({name}`Geb.GoedelT.Thm.Valid`), proved
+  about the program's translation
+  ({name}`Geb.FreeTopos.Translation.thm`,
+  {name}`Geb.FreeTopos.Translation.thm_valid`). Complete.
+* Proofs of the bootstrap, which exercise the metalogic's prover on the
+  compiler's components, in order, about the components' translations:
   * lists and labels: the prelude's appending, addition's recursion
     equations and zero as a unit of addition, complete;
-  * the accessors of the checker's equations, and the recursion
-    equations of a structural recursion, through the expansion of the
-    datatype language, complete;
+  * the recursion equations of a structural recursion, through the
+    expansion of the datatype language, complete;
   * the type checker's preservation of types by weakening and by
     substitution, complete;
   * the identity of the datatype language's expansion on programs of
@@ -4599,8 +4452,8 @@ The preservation of types by weakening is proved in the metalogic
 equals `typeIn G (append c1 c2) t`, weakening past a list of types, of
 which weakening past one is the instance at a list of one, about the
 translations of the prelude, the reader, the type checker and the
-checker of Gödel's T, read and expanded by the stage-0 compiler's front
-end. The two sides, as functions of `G`, `c1`, `c0` and `c2`, are equal
+traversal of kernel terms, `bootstrap/subst.geb`, read and expanded by
+the stage-0 compiler's front end. The two sides, as functions of `G`, `c1`, `c0` and `c2`, are equal
 by induction on rose trees with an
 induction hypothesis ({name}`Geb.FreeTopos.Internal.roseIndHyp_sound`).
 At a construction the label's bits are split, which decides every test
@@ -4956,10 +4809,9 @@ structure to the partial Horn theory of
 two sorts, a defined operation being defined where its body is and equal
 to it there, iterated, so that a definition refers to earlier ones; a
 theorem of a development is cited by its sequent, not unfolded into its
-certificate. In Gödel's T a reference unfolds
-one step at a time ({name}`Geb.GoedelT.valid_unfold`), resting on
-{name}`Geb.GoedelT.load_loaded`; no theorem yet unfolds every
-reference of a kernel term. The families of definitions of
+certificate. In Gödel's T each of a loaded program's definitions
+denotes its global ({name}`Geb.GoedelT.load_loaded`); no theorem yet
+unfolds every reference of a kernel term. The families of definitions of
 `Geb/Prototypes/Definition/` and their linking form the Kleisli category
 of the free monad of the signature, linking associative and the
 variables its units ({name}`Geb.Definition.link_assoc`,
@@ -5051,10 +4903,10 @@ State: complete; the Mitchell–Bénabou language is written during the
 bootstrap.
 
 The choice is made by measurement. Once the rule set's models are
-established, the theorems proved in Gödel's T in
-`bootstrap/proofs/prelude.geb` and `bootstrap/proofs/nat.geb` are
-proved again in the combinators, and the two are compared on the size
-of their certificates and the time to check them, and on how they read.
+established, the theorems proved in Gödel's T about the prelude's
+appending and the labels' addition are proved again in the combinators,
+and the two are compared on the size of their certificates and the time
+to check them, and on how they read.
 Programs remain kernel terms, so the choice does not change the speed
 of the compiler, only that of checking the development written in the
 combinators, whose certificates bind no variables and are the larger
@@ -5978,8 +5830,9 @@ The choice is made by measurement, in these parts, in order:
   of bits among the latter, and the least of three times each checker
   takes, the lemmas each development proves before the theorems of
   Gödel's T in
-  rows of their own (`GebTests/Prototypes/FreeTopos/TranslationProofs.lean`,
-  which prints them):
+  rows of their own, as `GebTests/Prototypes/FreeTopos/TranslationProofs.lean`
+  printed them while it also checked the certificates of Gödel's T; it
+  prints the language's columns alone:
 
 :::table +header
 *
@@ -6130,16 +5983,18 @@ language, about the programs' translations. Its consequences are these.
 * The translation joins it in what is trusted, written in Geb, since a
   Geb program states what the checker checks; its agreement with the
   translation in Lean is proved, as the checker's is.
-* The checker of Gödel's T, its prover and their proofs remain, checked by
-  their tests, and nothing is added to them. The weakening and the
-  substitution of kernel terms that `bootstrap/goedel-t/equations.geb`
-  defines are programs, which the proofs about the type checker are
-  about.
+* The checker of Gödel's T, its prover and their proofs are removed. Its
+  statements remain ({name}`Geb.GoedelT.Thm`), and the theorems its
+  proofs proved are stated as pairs of definitions and proved in the
+  language (`GebTests/Prototypes/FreeTopos/TranslationProofs.lean`).
+  The weakening and the substitution of kernel terms,
+  `bootstrap/subst.geb`, are programs, which the proofs about the type
+  checker are about.
 * A stronger checker is admitted by the proof, in the metalogic, that a
   Geb program translates its certificates into the metalogic's
   derivations with the same conclusions.
 * The bootstrap's fixed points are unchanged: the checker and prover of
-  Gödel's T are outside the compiler's source closure, which
+  Gödel's T were outside the compiler's source closure, which
   `scripts/bootstrap.sh` compiles.
 
 ## Improvements
@@ -6173,10 +6028,8 @@ the change that removes it.
   ({ref "editing"}[Editing]).
 * Chains of tests and bindings. The kernel's conditional and `let` are
   binary, so chains of tests and of bindings nest, and under a layout
-  parinfer admits, nesting is indentation. The chain of tests of rules in
-  `bootstrap/goedel-t/equations.geb` gives the only lines the formatter
-  cannot keep within 100 columns, and the written files' flat chains are
-  what parinfer's Indent Mode restructures
+  parinfer admits, nesting is indentation. The written files' flat chains
+  are what parinfer's Indent Mode restructures
   ({ref "source-documents"}[Source documents and the formatter]). Forms
   `let*`, of several bindings, and `cond`, of several guarded branches,
   expanded by the reader as the lists of binders of `lam` are, remove

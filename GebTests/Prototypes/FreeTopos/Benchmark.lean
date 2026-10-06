@@ -14,7 +14,8 @@ set_option doc.verso true in
 /-!
 # The theorems of Gödel's T, proved in the combinators
 
-The theorems of {lit}`bootstrap/proofs/prelude.geb` and {lit}`bootstrap/proofs/nat.geb`, proved
+The theorems of Gödel's T about the prelude's lists and the labels' addition, which
+{lit}`GebTests.Prototypes.FreeTopos.TranslationProofs.files` states, proved
 again in the theory of an elementary topos by the prover: appending lists, and addition on the
 natural numbers object. A function of several arguments is an arrow from their product;
 appending is recursion on the first list into the exponential of lists, evaluated at the

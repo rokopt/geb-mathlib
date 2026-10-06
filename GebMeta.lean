@@ -284,7 +284,7 @@ def classicalAllowedModules : NameSet :=
    `GebTests.Prototypes.Computability.SizeBounded.Logspace.Machine,
    `Geb.Prototypes.Typechecker.Instances,
    `GebTests.Prototypes.Typechecker.Instances,
-   `GebTests.Prototypes.GoedelT.LoadCommand,
+   `GebTests.Prototypes.ProgramCommand,
    `Geb.Prototypes.Kernel.LoadCommand,
    `Geb.Prototypes.FreeTopos.Topos,
    `Geb.Prototypes.FreeTopos.Elementary,
@@ -316,13 +316,11 @@ def upstreamChoiceRoots : NameSet :=
 agreement with Lean is proved, which in that mode state each
 definition's equation of types and loading step as axioms
 (`Geb.Kernel.LoadCommand.declareLoading`): those `scripts/bootstrap.sh`
-generates for the metalogic's program, a layer to a module, and the
-test module that loads the checker of Gödel's T. -/
+generates for the metalogic's program, a layer to a module. -/
 def loadingAxiomModules : NameSet :=
   NameSet.ofList [`GebMirror.Metalogic.Load.Checker, `GebMirror.Metalogic.Load.Translation,
     `GebMirror.Metalogic.Load.Prover, `GebMirror.Metalogic.Load.Tactics,
-    `GebMirror.Metalogic.Load.Combinator, `GebMirror.Metalogic.Load.Printer,
-    `GebTests.Prototypes.GoedelT.MirrorLoad]
+    `GebMirror.Metalogic.Load.Combinator, `GebMirror.Metalogic.Load.Printer]
 
 /-- Whether the environment variable `GEB_LOADING` selects the loading
 mode `native`, as it does unless it is `rfl`. -/

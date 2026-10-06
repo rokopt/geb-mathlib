@@ -12,9 +12,10 @@ set_option doc.verso true in
 /-!
 # The theorems of Gödel's T, derived in the internal language
 
-The theorems of {lit}`bootstrap/proofs/prelude.geb` and {lit}`bootstrap/proofs/nat.geb` about
-appending and addition, defined in the internal language, proved by derivations of the language
-that its own checker checks: by unfolding the definitions and normalizing, by induction on a list
+The theorems of Gödel's T about the prelude's lists and the labels' addition, which
+{lit}`GebTests.Prototypes.FreeTopos.TranslationProofs.files` states, with appending and addition
+defined in the internal language, proved by derivations of the language that its own checker
+checks: by unfolding the definitions and normalizing, by induction on a list
 or a number with the step of its recursion, and by rewriting with an earlier theorem.
 
 ## Main definitions

@@ -111,13 +111,13 @@ def replay (G : List (List Char × Kernel.Glob)) (nm : String → List Char) :
 
 -- the library written in Geb is the Lean library, its typing certified by lemmas and by the
 -- checker's oracle rules
-#guard ((loaded GoedelT.ProofTests.bundler.toList combinatorProgram.toList).bind fun P ↦ do
+#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList combinatorProgram.toList).bind fun P ↦ do
   let lib : Tree → Tree ← fn P "Combinator.libraryWith".toList (arrow tyT tyT)
   pure (lib (Kernel.leaf 1) == encLib (libraryWith true) &&
     lib (Kernel.leaf 0) == encLib (libraryWith false))).getD false
 
 -- the benchmark's development proved by the prover written in Geb is the Lean prover's
-#guard ((loaded GoedelT.ProofTests.bundler.toList combinatorProgram.toList).map fun P ↦
+#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList combinatorProgram.toList).map fun P ↦
   benchmark.isSome && replay P String.toList == benchmark.map (·.map encDevEntry)).getD false
 
 end GebTests.Prototypes.FreeTopos.GebCombinator

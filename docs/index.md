@@ -3814,6 +3814,16 @@ checklist and in CI.
   serializer with `Geb.Kernel.writeImage`, the checker with the seed's, and
   the compiler with the seed on the kernel's examples, runs programs in
   the datatype language compiled by the compiler, decoding included.
+  `bootstrap/subst.geb` is the traversal of kernel terms with weakening
+  and substitution, as `Subst.lean` defines them.
+  `GebTests/Prototypes/CheckMirror.lean` proves the Lean the bootstrap
+  compiler emits from the checker's program,
+  `bootstrap/lean/GebMirror/Check.lean`, equal to `Geb.Kernel.infer` at
+  every term, and `GebTests/Prototypes/ProgramCommand.lean` declares a
+  program's loading from its text through the stage-0 compiler's front
+  end (the command `geb_program`), which
+  `GebTests/Prototypes/FreeTopos/Agreement/Load.lean` uses for the
+  metalogic's program.
   `bootstrap/identity.geb` computes content identity in Geb, BLAKE3 by
   arithmetic on natural numbers, a definition's payload, its CID, the
   migration, the linker, the names re-keyed by identifiers and the
@@ -3850,69 +3860,24 @@ checklist and in CI.
   `Geb.Prototypes.RoseTree.Packed` and `Mathlib.Data.Fin.VecNotation`.
 - `Geb/Prototypes/GoedelT/` — Gödel's T over rose trees, a variant of
   Gödel's quantifier-free theory T of the primitive recursive functionals
-  of finite type [Goedel1958] whose functionals are the kernel's terms and
-  whose rules are the laws of a cartesian closed category with list
-  objects and a rose-tree object; its category of contexts under
-  hypotheses is conjectured to be a cartesian closed locos, a finitely
-  complete category with stable disjoint finite coproducts and
-  parameterized list objects [Cockett1990], [Maietti2010].
+  of finite type [Goedel1958] whose functionals are the kernel's terms;
+  its statements are what a proof about kernel programs concludes.
   `Equations.lean`: sequents of equations between kernel terms of every
-  type under equational hypotheses, certificates as
-  rose trees, and the checker `Geb.GoedelT.check`, a paramorphism
-  computing each conclusion from its premises' conclusions, with rules of
-  equality, congruence, the β and η rules of functions, pairs and the unit
-  type, the δ rules of the primitives at literals, weakening, cut,
-  instantiation, the computation rules of the conditional at a quoted
-  tree, of the right fold and case analysis of lists, of iteration, of
-  the fold of trees and of the fold whose step sees the node, induction on
-  lists, trees and labels, and references
-  to the definitions of a loaded program
-  (`Geb.GoedelT.Loaded`, `Geb.GoedelT.load_loaded`).
-  `Geb.GoedelT.check_sound` proves every computed conclusion valid in
-  the kernel's denotation, without `Classical.choice`. Tested in
-  `GebTests/Prototypes/GoedelT.lean`, including inductive proofs that
-  appending the empty list to a list gives the list, that iterating the
-  identity leaves its start unchanged, and that a fold whose step ignores
-  its arguments is constant. `bootstrap/goedel-t/equations.geb` is the
-  same checker written in the datatype language; the tests compile it
-  with the stage-0
-  compiler and compare it with `Geb.GoedelT.check` on their
-  certificates and on malformed variants of each, and check that its
-  numeral abbreviations and the prelude's name the rules
-  (`Geb.GoedelT.Rule`), the labels and the primitives as the Lean
-  abbreviations do. `GebTests/Prototypes/GoedelT/` proves the checker
-  written in Geb equal to `Geb.GoedelT.check`: the Lean the bootstrap
-  compiler emits from the checker's program,
-  `bootstrap/lean/GebMirror/GoedelT.lean`, is the denotation of each of
-  the program's definitions as `Geb.Kernel.load` loads them, checked by
-  the kernel's evaluation in the loading mode `rfl` (`MirrorLoad.lean`;
-  `docs/rules/ci-and-workflow.md` § Loading modes), and agrees definition by
-  definition with the Lean checker: its type checker with
-  `Geb.Kernel.infer`, its traversal, weakening and substitution with the
-  kernel's, its operations on equations and theorems, its δ rule and each
-  of its rules with the Lean checker's. `Agreement.lean` combines these
-  into the equality of the two checkers' results at every encoded input,
-  without `Classical.choice`.
-  `bootstrap/goedel-t/prove.geb` constructs certificates by derived
-  rules: normalization, innermost first, simplification of both sides of
-  a goal, and induction; it reads a file of a program's forms and
-  theorems, whose statements the reader reads as the program's own
-  definitions, its forms of the datatype language expanded, and checks
-  each theorem's
-  certificate.
-  `bootstrap/proofs/prelude.geb` proves theorems about the prelude's
-  lists, `bootstrap/proofs/nat.geb` about the labels, addition's
-  recursion equations from its definition by iteration and a theorem by
-  induction on labels, `bootstrap/proofs/check.geb` about the
-  kernel's type checker written in Geb, `bootstrap/proofs/equations.geb`
-  about the checker of Gödel's T written in the datatype language, and
-  `bootstrap/proofs/datatype.geb` about a function by structural
-  recursion over a declared datatype, which
-  `GebTests/Prototypes/Proofs.lean` checks in Geb and again in Lean. The
+  type under equational hypotheses, their validity in the kernel's
+  denotation (`Geb.GoedelT.Valid`), theorems in a global environment
+  (`Geb.GoedelT.Thm.Valid`), and the agreement of a loaded program's
+  definitions with its environment (`Geb.GoedelT.Loaded`,
+  `Geb.GoedelT.load_loaded`). Such a theorem is proved in the internal
+  language of `Geb/Prototypes/FreeTopos/`, about the programs'
+  translations, and carried back by the translation's soundness
+  (`Geb.FreeTopos.Translation.thm`);
+  `GebTests/Prototypes/FreeTopos/TranslationProofs.lean` states theorems
+  about the prelude's lists, the labels' addition, the kernel's type
+  checker written in Geb and a function by structural recursion over a
+  declared datatype as pairs of definitions and proves their
+  translations. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records
-  Gödel's T, whose checker is retired in favour of the internal language
-  of `Geb/Prototypes/FreeTopos/`, the proofs
-  above remaining and checked. Depends on
+  Gödel's T, whose checker the internal language replaced. Depends on
   `Geb.Prototypes.Kernel.Subst` and `Geb.Prototypes.Kernel.Reader`.
 - `Geb/Prototypes/LF/` — the logical framework LF [HarperHonsellPlotkin1993]
   in its canonical-forms presentation [HarperLicata2007], the input format
@@ -4149,17 +4114,17 @@ checklist and in CI.
   which `TranslationSoundClassical.lean` discharges by
   `Classical.choice`. Tested in `GebTests/Prototypes/FreeTopos/`:
   `Translation.lean` computes with the library, `TranslationProofs.lean`
-  proves the theorems of Gödel's T about the translated
+  proves theorems of Gödel's T about the translated
   programs, `Agreement/Translation.lean` proves the translation written
   again in the datatype language, `bootstrap/free-topos/translation.geb`,
   equal to it at every program, translated program's constants and
   theorem of Gödel's T, by the method of the checker's agreement, and
   `Weakening.lean` and `Substitution.lean` prove that the kernel's type
   checker written in Geb, `bootstrap/check.geb`, preserves
-  types by weakening and by substitution; `TreeCases.lean` exercises
-  the case analysis of a tree variable in any context and rewriting
-  under a test, and `Expansion.lean` proves with them that the
-  expansion of the datatype language,
+  types by the weakening and substitution of `bootstrap/subst.geb`;
+  `TreeCases.lean` exercises the case analysis of a tree variable in any
+  context and rewriting under a test, and `Expansion.lean` proves with
+  them that the expansion of the datatype language,
   `bootstrap/datatype.geb`, is the
   identity on programs of kernel forms. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the

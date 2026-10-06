@@ -5,8 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
-public import GebMirror.GoedelT
-public import Geb.Prototypes.Kernel.Basic
+public import GebMirror.Check
+public import Geb.Prototypes.Kernel.Subst
 
 set_option doc.verso true in
 /-!
@@ -31,6 +31,8 @@ types; nodes of a label or arity no rule has give nothing on both sides.
 ## Main statements
 
 * {lit}`typeIn_eq` — the mirror's type of a term is the checker-evaluator's.
+* {lit}`infer_app_inv`, {lit}`infer_lam_inv` — the checker-evaluator's meaning of an application
+  and the type of an abstraction, from their children's.
 
 ## Tags
 
@@ -41,9 +43,9 @@ set_option doc.verso true
 
 @[expose] public section
 
-open GebMirror.GoedelT
+open GebMirror.Check
 
-namespace GebTests.Prototypes.GoedelT.MirrorTyping
+namespace GebTests.Prototypes.CheckMirror
 
 open Geb Geb.Kernel
 open scoped FinEnum
@@ -856,5 +858,55 @@ theorem typeIn_eq (G : List Glob) (Γ : Ctx) (t : Tree) :
   change (Const.fold (typeStep (G.map (·.1))) t).2 Γ = _
   rw [fold_typeStep]
 
-end GebTests.Prototypes.GoedelT.MirrorTyping
+/-! The inversion of the checker-evaluator at applications and abstractions. -/
+
+/-- A tree the kernel reads as a function type is that function type. -/
+theorem arrow?_eq {F A B : Tree} {h : Ty.den F = (Ty.den A → Ty.den B)}
+    (hF : Ty.arrow? F = some ⟨A, B, h⟩) : F = tArrow A B := by
+  obtain ⟨⟨a, k⟩, g⟩ := F
+  by_cases hak : a = 3 ∧ k = 2
+  · obtain ⟨rfl, rfl⟩ := hak
+    rw [Ty.arrow?.eq_1] at hF
+    cases hF
+    exact congrArg (WType.mk (3, 2)) (funext fun i ↦ match i with | 0 => rfl | 1 => rfl)
+  · rw [Ty.arrow?.eq_2 _ fun _ h ↦ hak (Prod.mk.inj (mk_index_eq h))] at hF
+    cases hF
+
+/-- Function types with equal parts, and only they, are equal. -/
+theorem tArrow_inj {A B A' B' : Tree} (h : tArrow A B = tArrow A' B') : A = A' ∧ B = B' := by
+  have := congrArg RoseTree.children h
+  simp only [tArrow, node2_eq, RoseTree.children_node, List.cons.injEq, and_true] at this
+  exact this
+
+/-- The children of an application's node, with the application's meaning. -/
+theorem infer_app_inv {G : List Glob} {Γ : Ctx} {F X B : Tree} {f : Γ.den → Ty.den B}
+    (h : infer G Γ (mk Label.app [F, X]) = some ⟨B, f⟩) :
+    ∃ A ff fx, infer G Γ F = some ⟨tArrow A B, ff⟩ ∧ infer G Γ X = some ⟨A, fx⟩ ∧
+      ∀ e, f e = ff e (fx e) := by
+  rw [mk, infer_node] at h
+  simp only [List.map_cons, List.map_nil, inferStep, Option.bind_eq_bind,
+    Option.bind_eq_some_iff] at h
+  obtain ⟨⟨F1, ff⟩, hf, ⟨X1, fx⟩, hx, ⟨A, B', hAB⟩, harr, h⟩ := h
+  obtain rfl := arrow?_eq harr
+  split at h
+  · rename_i hA
+    cases hA
+    have h' := Sigma.mk.inj_iff.mp (Option.some.inj h)
+    obtain rfl := h'.1
+    obtain rfl := eq_of_heq h'.2
+    exact ⟨_, ff, fx, hf, hx, fun _ ↦ rfl⟩
+  · cases h
+
+/-- The body of an abstraction's node, with the abstraction's type. -/
+theorem infer_lam_inv {G : List Glob} {Γ : Ctx} {A b T : Tree} {f : Γ.den → Ty.den T}
+    (h : infer G Γ (mk Label.lam [A, b]) = some ⟨T, f⟩) :
+    ∃ B fb, T = tArrow A B ∧ infer G (A :: Γ) b = some ⟨B, fb⟩ := by
+  rw [mk, infer_node] at h
+  simp only [List.map_cons, List.map_nil, inferStep] at h
+  split at h
+  · obtain ⟨⟨B, fb⟩, hb, hm⟩ := Option.map_eq_some_iff.mp h
+    exact ⟨B, fb, (congrArg Sigma.fst hm).symm, hb⟩
+  · cases h
+
+end GebTests.Prototypes.CheckMirror
 end

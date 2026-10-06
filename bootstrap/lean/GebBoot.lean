@@ -8070,19 +8070,18 @@ def «Modules.expandModulesTree» :=
         «Prelude.none»
       else
         «Prelude.some»
-          (Const.node
+          («Reader.node2»
             (leaf 0)
-            ((Const.node (leaf 0) («Modules.stOut» x1)) ::
-              ((Const.node
-                (leaf 0)
-                («Prelude.append»
-                  («Modules.stMods» x1)
-                  («Prelude.single»
-                    («Modules.modNode»
-                      (Const.node (leaf 0) ([] : List T))
-                      («Modules.stMem» x1)
-                      ([] : List T))))) ::
-                («Prelude.single» (Const.node (leaf 0) («Modules.stVis» x1))))))
+            (Const.node (leaf 0) («Modules.stOut» x1))
+            (Const.node
+              (leaf 0)
+              («Prelude.append»
+                («Modules.stMods» x1)
+                («Prelude.single»
+                  («Modules.modNode»
+                    (Const.node (leaf 0) ([] : List T))
+                    («Modules.stMem» x1)
+                    ([] : List T))))))
     else
       «Prelude.none»
 

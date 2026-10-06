@@ -149,7 +149,7 @@ def calls : List (Internal.Globals × Theorems × ℕ × Call) :=
    (InternalLogic.GL, Lg, Lg.length - 1, .listIndHyp 1 0 1 (eqns ++ [.delta 0]) 64)]
 
 -- the prover written in Geb proves each theorem as the Lean prover does
-#guard ((loaded GoedelT.ProofTests.bundler.toList proverProgram.toList).map fun P ↦
+#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList proverProgram.toList).map fun P ↦
   calls.all fun (G, ts, k, c) ↦ match ts[k]?, ts[k]?.bind (Internal.eqParts ·.1.concl) with
     | some (a, _), some (t, u) =>
       let E := entries ts k
