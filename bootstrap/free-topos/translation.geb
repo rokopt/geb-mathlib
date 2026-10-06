@@ -9,17 +9,37 @@
 ; library the translation applies. A term of the language is encoded as the language's checker
 ; encodes it, a kernel type or term is the tree the kernel reads, a pair of trees is the node of
 ; label 0 over them, and a theorem of Gödel's T is the node of label 0 over the node of its
-; context and its equation, the node of label 0 over its type and its sides. Requires the
-; prelude, the reader, the kernel's checker, the base, partial Horn logic, the theory, the
-; inference, the language and the checker of derivations.
+; context and its equation, the node of label 0 over its type and its sides, as their datatypes
+; declare them. Requires the prelude, the lists of bootstrap/seq.geb, the reader, the kernel's
+; checker, the base, partial Horn logic, the theory, the inference, the language and the checker
+; of derivations.
 
 (module Translation
-  (export bitsTy treeTy nodeT call D.unnode D.cond D.tail D.headD condT lib term program thm)
+  (export bitsTy treeTy nodeT call D.unnode D.cond D.tail D.headD condT lib KTys ktys TrState
+    trState
+    LDefns
+    ldefns
+    OTrState.Maybe
+    OTrState.nothing
+    OTrState.just
+    term
+    program
+    GEqn
+    geqn
+    GThm
+    gthm
+    thm)
   (import Prelude)
   (import Base)
+  (import PartialHorn)
   (import Theory)
   (import Language)
   (import Derivation)
+  (import (Seq OpSig) as OpSigs)
+  (import (Few Primitive) as PrimF)
+  (import (Seq LDefn) as LDefnL)
+  (import (Seq T) as KTyL)
+  (import (Map LDefn Definition) as DefLang)
   ; the types of bits, bitstrings, trees and comparisons
   (def bitTy (coprod one one))
   (def bitsTy (list bitTy))
@@ -42,7 +62,7 @@
       t))
 
   ; the primitive arrows, and the terms built with them
-  (def trPrims (l6 nilPrim consPrim lnodePrim inlPrim inrPrim casePrim))
+  (def trPrims (PrimF.l6 nilPrim consPrim lnodePrim inlPrim inrPrim casePrim))
   (defn nilT ((a T)) T (mArr 0 (single a) mStar))
   (defn consT ((a T) (h T) (t T)) T (mArr 1 (single a) (mPair h t)))
   (defn nodeT ((p T)) T (mArr 2 (single bitsTy) p))
@@ -65,7 +85,7 @@
   ; the application of a definition at objects to arguments, the first first, and a definition in
   ; object parameters from parameters of types, the first first
   (defn call ((k T) (th Ts) (args Ts)) T (mDefn k th (reverse args)))
-  (defn mkDefn ((n T) (ps Ts) (ty T) (b T)) T (ldefn n (node 0 (reverse ps)) ty b))
+  (defn mkDefn ((n T) (ps Ts) (ty T) (b T)) LDefn (ldefn n (objs (reverse ps)) ty b))
 
   ; the indices of the library's definitions
   (defnum D.bnil 0)
@@ -410,7 +430,8 @@
                                                         (cons lbAnd
                                                           (cons lbAllZip
                                                             (cons lbEqual
-                                                              (nil T)))))))))))))))))))))))))))))))
+                                                              (nil
+                                                                LDefn)))))))))))))))))))))))))))))))
 
   ; the kernel's constants at their result types: the fold of trees, into functions of the step;
   ; the fold whose step sees the node, at pairs of the rebuilt node and its value; iteration; the
@@ -512,23 +533,32 @@
                                 none)))))))))))))))
 
   ; the parts of a kernel function type, product type and list type
-  (defn kArrowParts ((t T)) T
-    (if (and (eq (label t) Label.tyArrow) (eq (arity t) 2)) (some (pr (child t 0) (child t 1)))
-      none))
-  (defn kProdParts ((t T)) T
-    (if (and (eq (label t) Label.tyProd) (eq (arity t) 2)) (some (pr (child t 0) (child t 1)))
-      none))
+  (defn kArrowParts ((t T)) OTPair.Maybe
+    (if (and (eq (label t) Label.tyArrow) (eq (arity t) 2))
+      (OTPair.just (pr (child t 0) (child t 1)))
+      OTPair.nothing))
+  (defn kProdParts ((t T)) OTPair.Maybe
+    (if (and (eq (label t) Label.tyProd) (eq (arity t) 2))
+      (OTPair.just (pr (child t 0) (child t 1)))
+      OTPair.nothing))
   (defn kListPart ((t T)) T
     (if (and (eq (label t) Label.tyList) (eq (arity t) 1)) (some (child t 0)) none))
 
   ; the translation of a term, as a function of the types of the globals and of the context: the
   ; pair of the term's kernel type and its translation, by the fold whose step sees the node
-  (deftype TrF (Arrow Ts (Arrow Ts T)))
+  (deftype TrF (Arrow Ts (Arrow Ts OTPair.Maybe)))
   (deftype TrFs (List TrF))
   (import (Lists TrF) as TrFs)
   (defn trAt ((rs TrFs) (i T)) TrF
-    (lcase TrF TrF (iter TrFs TrFs.tail rs i) (lam ((g Ts) (c Ts)) none)
+    (lcase TrF TrF (iter TrFs TrFs.tail rs i) (lam ((g Ts) (c Ts)) OTPair.nothing)
       (lam ((r TrF) (rest TrFs)) r)))
+  ; the optional pair a function gives of a present pair or tree, and the pair of a present tree
+  (defn bindP ((m OTPair.Maybe) (f (Arrow TPair OTPair.Maybe))) OTPair.Maybe
+    (case m ((OTPair.just q) (f q)) ((OTPair.nothing) OTPair.nothing)))
+  (defn bindTy ((m T) (f (Arrow T OTPair.Maybe))) OTPair.Maybe
+    (if (isSome m) (f (get m)) OTPair.nothing))
+  (defn mapTy ((f (Arrow T TPair)) (m T)) OTPair.Maybe
+    (if (isSome m) (OTPair.just (f (get m))) OTPair.nothing))
   (defn termStep ((nd T) (rs TrFs)) TrF
     (lam ((gt Ts) (ctx Ts))
       (let l T (label nd)
@@ -537,177 +567,214 @@
             (let c1 T (child nd 1)
               (if (eq l Label.var)
                 (if (eq k 1)
-                  (bindO (nth ctx (label c0)) (lam ((A T)) (some (pr A (var (label c0))))))
-                  none)
+                  (bindTy (nth ctx (label c0)) (lam ((A T)) (OTPair.just (pr A (var (label c0))))))
+                  OTPair.nothing)
                 (if (eq l Label.lam)
                   (if (eq k 2)
                     (if (Check.isTy c0)
-                      (bindO ((trAt rs 1) gt (cons c0 ctx))
-                        (lam ((p T))
-                          (mapO (lam ((a T)) (pr (Check.tyArrow c0 (p1 p)) (mLam a (p2 p))))
+                      (bindP ((trAt rs 1) gt (cons c0 ctx))
+                        (lam ((p TPair))
+                          (mapTy (lam ((a T)) (pr (Check.tyArrow c0 (p1 p)) (mLam a (p2 p))))
                             (trTy c0))))
-                      none)
-                    none)
+                      OTPair.nothing)
+                    OTPair.nothing)
                   (if (eq l Label.app)
                     (if (eq k 2)
-                      (bindO ((trAt rs 0) gt ctx)
-                        (lam ((pf T))
-                          (bindO ((trAt rs 1) gt ctx)
-                            (lam ((px T))
-                              (bindO (kArrowParts (p1 pf))
-                                (lam ((ab T))
+                      (bindP ((trAt rs 0) gt ctx)
+                        (lam ((pf TPair))
+                          (bindP ((trAt rs 1) gt ctx)
+                            (lam ((px TPair))
+                              (bindP (kArrowParts (p1 pf))
+                                (lam ((ab TPair))
                                   (if (equal (p1 px) (p1 ab))
-                                    (some (pr (p2 ab) (app (p2 pf) (p2 px))))
-                                    none)))))))
-                      none)
-                    (if (eq l Label.unit) (if (eq k 0) (some (pr Label.tyUnit mStar)) none)
+                                    (OTPair.just (pr (p2 ab) (app (p2 pf) (p2 px))))
+                                    OTPair.nothing)))))))
+                      OTPair.nothing)
+                    (if (eq l Label.unit)
+                      (if (eq k 0) (OTPair.just (pr Label.tyUnit mStar)) OTPair.nothing)
                       (if (eq l Label.pair)
                         (if (eq k 2)
-                          (bindO ((trAt rs 0) gt ctx)
-                            (lam ((pa T))
-                              (bindO ((trAt rs 1) gt ctx)
-                                (lam ((pb T))
-                                  (some
+                          (bindP ((trAt rs 0) gt ctx)
+                            (lam ((pa TPair))
+                              (bindP ((trAt rs 1) gt ctx)
+                                (lam ((pb TPair))
+                                  (OTPair.just
                                     (pr (Reader.node2 Label.tyProd (p1 pa) (p1 pb))
                                       (mPair (p2 pa) (p2 pb))))))))
-                          none)
+                          OTPair.nothing)
                         (if (eq l Label.fst)
                           (if (eq k 1)
-                            (bindO ((trAt rs 0) gt ctx)
-                              (lam ((pp T))
-                                (bindO (kProdParts (p1 pp))
-                                  (lam ((ab T)) (some (pr (p1 ab) (mFst (p2 pp))))))))
-                            none)
+                            (bindP ((trAt rs 0) gt ctx)
+                              (lam ((pp TPair))
+                                (bindP (kProdParts (p1 pp))
+                                  (lam ((ab TPair)) (OTPair.just (pr (p1 ab) (mFst (p2 pp))))))))
+                            OTPair.nothing)
                           (if (eq l Label.snd)
                             (if (eq k 1)
-                              (bindO ((trAt rs 0) gt ctx)
-                                (lam ((pp T))
-                                  (bindO (kProdParts (p1 pp))
-                                    (lam ((ab T)) (some (pr (p2 ab) (mSnd (p2 pp))))))))
-                              none)
+                              (bindP ((trAt rs 0) gt ctx)
+                                (lam ((pp TPair))
+                                  (bindP (kProdParts (p1 pp))
+                                    (lam ((ab TPair)) (OTPair.just (pr (p2 ab) (mSnd (p2 pp))))))))
+                              OTPair.nothing)
                             (if (eq l Label.quote)
-                              (if (eq k 1) (some (pr Label.tyTree (quoteT c0))) none)
+                              (if (eq k 1) (OTPair.just (pr Label.tyTree (quoteT c0)))
+                                OTPair.nothing)
                               (if (eq l Label.cond)
                                 (if (eq k 3)
-                                  (bindO ((trAt rs 0) gt ctx)
-                                    (lam ((pc T))
-                                      (bindO ((trAt rs 1) gt ctx)
-                                        (lam ((pa T))
-                                          (bindO ((trAt rs 2) gt ctx)
-                                            (lam ((pb T))
+                                  (bindP ((trAt rs 0) gt ctx)
+                                    (lam ((pc TPair))
+                                      (bindP ((trAt rs 1) gt ctx)
+                                        (lam ((pa TPair))
+                                          (bindP ((trAt rs 2) gt ctx)
+                                            (lam ((pb TPair))
                                               (if
                                                 (and (equal (p1 pc) Label.tyTree)
                                                   (equal (p1 pb) (p1 pa)))
-                                                (mapO
+                                                (mapTy
                                                   (lam ((a T))
                                                     (pr (p1 pa)
                                                       (condT a (labT (p2 pc)) (p2 pa) (p2 pb))))
                                                   (trTy (p1 pa)))
-                                                none)))))))
-                                  none)
+                                                OTPair.nothing)))))))
+                                  OTPair.nothing)
                                 (if (eq l Label.fold)
                                   (if (eq k 1)
-                                    (mapO (lam ((a T)) (pr (Check.foldTy c0) (foldT a))) (trTy c0))
-                                    none)
+                                    (mapTy (lam ((a T)) (pr (Check.foldTy c0) (foldT a))) (trTy c0))
+                                    OTPair.nothing)
                                   (if (eq l Label.iter)
                                     (if (eq k 1)
-                                      (mapO (lam ((a T)) (pr (Check.iterTy c0) (iterT a)))
+                                      (mapTy (lam ((a T)) (pr (Check.iterTy c0) (iterT a)))
                                         (trTy c0))
-                                      none)
+                                      OTPair.nothing)
                                     (if (eq l Label.nil)
                                       (if (eq k 1)
-                                        (mapO (lam ((a T)) (pr (Check.tyList c0) (nilT a)))
+                                        (mapTy (lam ((a T)) (pr (Check.tyList c0) (nilT a)))
                                           (trTy c0))
-                                        none)
+                                        OTPair.nothing)
                                       (if (eq l Label.cons)
                                         (if (eq k 2)
-                                          (bindO ((trAt rs 0) gt ctx)
-                                            (lam ((px T))
-                                              (bindO ((trAt rs 1) gt ctx)
-                                                (lam ((pl T))
-                                                  (bindO (kListPart (p1 pl))
+                                          (bindP ((trAt rs 0) gt ctx)
+                                            (lam ((px TPair))
+                                              (bindP ((trAt rs 1) gt ctx)
+                                                (lam ((pl TPair))
+                                                  (bindTy (kListPart (p1 pl))
                                                     (lam ((A T))
                                                       (if (equal (p1 px) A)
-                                                        (mapO
+                                                        (mapTy
                                                           (lam ((a T))
                                                             (pr (p1 pl) (consT a (p2 px) (p2 pl))))
                                                           (trTy A))
-                                                        none)))))))
-                                          none)
+                                                        OTPair.nothing)))))))
+                                          OTPair.nothing)
                                         (if (eq l Label.foldr)
                                           (if (eq k 2)
-                                            (bindO (trTy c0)
+                                            (bindTy (trTy c0)
                                               (lam ((a T))
-                                                (mapO
+                                                (mapTy
                                                   (lam ((b T))
                                                     (pr (Check.foldrTy c0 c1) (foldrT a b)))
                                                   (trTy c1))))
-                                            none)
+                                            OTPair.nothing)
                                           (if (eq l Label.prim)
                                             (if (eq k 1)
-                                              (bindO (nth Check.primTypes (label c0))
+                                              (bindTy (nth Check.primTypes (label c0))
                                                 (lam ((P T))
-                                                  (mapO (lam ((t T)) (pr P t)) (primT (label c0)))))
-                                              none)
+                                                  (mapTy (lam ((t T)) (pr P t))
+                                                    (primT (label c0)))))
+                                              OTPair.nothing)
                                             (if (eq l Label.ref)
                                               (if (eq k 1)
-                                                (bindO (nth gt (label c0))
+                                                (bindTy (nth gt (label c0))
                                                   (lam ((A T))
-                                                    (some
+                                                    (OTPair.just
                                                       (pr A
-                                                        (call (add (length lib) (label c0)) (nil T)
+                                                        (call (add (LDefnL.length lib) (label c0))
+                                                          (nil T)
                                                           (nil T))))))
-                                                none)
+                                                OTPair.nothing)
                                               (if (eq l Label.lcase)
                                                 (if (eq k 2)
-                                                  (bindO (trTy c0)
+                                                  (bindTy (trTy c0)
                                                     (lam ((a T))
-                                                      (mapO
+                                                      (mapTy
                                                         (lam ((b T))
                                                           (pr (Check.lcaseTy c0 c1) (lcaseT a b)))
                                                         (trTy c1))))
-                                                  none)
+                                                  OTPair.nothing)
                                                 (if (eq l Label.para)
                                                   (if (eq k 1)
-                                                    (mapO
+                                                    (mapTy
                                                       (lam ((a T)) (pr (Check.foldTy c0) (paraT a)))
                                                       (trTy c0))
-                                                    none)
-                                                  none))))))))))))))))))))))))
-  (defn term ((gt Ts) (ctx Ts) (t T)) T ((para TrF termStep t) gt ctx))
+                                                    OTPair.nothing)
+                                                  OTPair.nothing))))))))))))))))))))))))
+  (defn term ((gt Ts) (ctx Ts) (t T)) OTPair.Maybe ((para TrF termStep t) gt ctx))
 
   ; the translation of a program's definitions, each closed, over those before it: the pair of the
   ; node of the globals' kernel types and the node of the definitions of the language
-  (defn program ((ds Ts)) T
-    (foldr T T
-      (lam ((t T) (acc T))
-        (bindO acc
-          (lam ((st T))
-            (let gt Ts (children (p1 st))
-              (let defs Ts (children (p2 st))
-                (bindO (term gt (nil T) t)
-                  (lam ((au T))
-                    (mapO
+  (data KTys (ktys & T))
+  (data LDefns (ldefns & LDefn))
+  (data TrState (trState KTys LDefns))
+  (import (Option TrState) as OTrState)
+  (defn stTypes ((st TrState)) Ts (case st ((trState kg kd) (case kg ((ktys xs) xs)))))
+  (defn stDefns ((st TrState)) (List LDefn) (case st ((trState kg kd) (case kd ((ldefns xs) xs)))))
+  ; the bindings and images of optional values into optional states, as the base binds and maps
+  ; optional trees
+  (defn bindSS ((m OTrState.Maybe) (f (Arrow TrState OTrState.Maybe))) OTrState.Maybe
+    (case m ((OTrState.just st) (f st)) ((OTrState.nothing) OTrState.nothing)))
+  (defn bindPS ((m OTPair.Maybe) (f (Arrow TPair OTrState.Maybe))) OTrState.Maybe
+    (case m ((OTPair.just p) (f p)) ((OTPair.nothing) OTrState.nothing)))
+  (defn mapTS ((f (Arrow T TrState)) (m T)) OTrState.Maybe
+    (if (isSome m) (OTrState.just (f (get m))) OTrState.nothing))
+  (defn program ((ds Ts)) OTrState.Maybe
+    (foldr T OTrState.Maybe
+      (lam ((t T) (acc OTrState.Maybe))
+        (bindSS acc
+          (lam ((st TrState))
+            (let gt Ts (stTypes st)
+              (let lds (List LDefn) (stDefns st)
+                (bindPS (term gt (nil T) t)
+                  (lam ((au TPair))
+                    (mapTS
                       (lam ((a T))
-                        (pr (node 0 (append gt (single (p1 au))))
-                          (node 0 (append defs (single (mkDefn 0 (nil T) a (p2 au)))))))
+                        (trState (ktys (KTyL.append gt (KTyL.single (p1 au))))
+                          (ldefns
+                            (LDefnL.append lds (LDefnL.single (mkDefn 0 (nil T) a (p2 au)))))))
                       (trTy (p1 au))))))))))
-      (some (pr (node 0 (nil T)) (node 0 (nil T))))
+      (OTrState.just (trState (ktys (nil T)) (ldefns (nil LDefn))))
       (reverse ds)))
 
   ; the constants of a translated program: the primitive arrows, and the library's definitions
   ; followed by the program's, whose operations follow the signature's
-  (defn trGlobals ((defs Ts)) T
-    (globals (node 0 trPrims) (node 0 (mapT defLang (append lib defs))) (length sig)))
+  (defn trGlobals ((lds (List LDefn))) Globals
+    (globals (prims trPrims) (defs (DefLang.map defLang (LDefnL.append lib lds)))
+      (OpSigs.length sig)))
 
   ; the translation of a theorem of Gödel's T, with the types of the globals: the equality of its
   ; sides' translations, in the translation of its context
-  (defn thm ((gt Ts) (th T)) T
-    (let ctx Ts (children (child th 0))
-      (let q T (child th 1)
-        (bindO (allSomeT (mapT trTy ctx))
-          (lam ((cn T))
-            (bindO (term gt ctx (child q 1))
-              (lam ((l T))
-                (mapO (lam ((r T)) (mkThm 0 cn (node 0 (nil T)) (mEq (p2 l) (p2 r))))
-                  (term gt ctx (child q 2)))))))))))
+  (data GEqn (geqn T T T))
+  (data GThm (gthm KTys GEqn))
+  (defn gthmCtx ((th GThm)) Ts (case th ((gthm kc q) (case kc ((ktys xs) xs)))))
+  (defn gthmEqn ((th GThm)) GEqn (case th ((gthm kc q) q)))
+  (defn geqnLhs ((q GEqn)) T (case q ((geqn a l r) l)))
+  (defn geqnRhs ((q GEqn)) T (case q ((geqn a l r) r)))
+  ; the optional list of present objects, and the bindings and images of optional values into
+  ; optional theorems, as the base collects, binds and maps optional trees
+  (import (Option Objs) as OObjs)
+  (defn allSomeObjs ((ms Ts)) OObjs.Maybe
+    (if (allT isSome ms) (OObjs.just (objs (mapT get ms))) OObjs.nothing))
+  (defn bindOH ((m OObjs.Maybe) (f (Arrow Objs OThm.Maybe))) OThm.Maybe
+    (case m ((OObjs.just c) (f c)) ((OObjs.nothing) OThm.nothing)))
+  (defn bindPH ((m OTPair.Maybe) (f (Arrow TPair OThm.Maybe))) OThm.Maybe
+    (case m ((OTPair.just p) (f p)) ((OTPair.nothing) OThm.nothing)))
+  (defn mapPH ((f (Arrow TPair Thm)) (m OTPair.Maybe)) OThm.Maybe
+    (case m ((OTPair.just p) (OThm.just (f p))) ((OTPair.nothing) OThm.nothing)))
+  (defn thm ((gt Ts) (th GThm)) OThm.Maybe
+    (let ctx Ts (gthmCtx th)
+      (let q GEqn (gthmEqn th)
+        (bindOH (allSomeObjs (mapT trTy ctx))
+          (lam ((cn Objs))
+            (bindPH (term gt ctx (geqnLhs q))
+              (lam ((l TPair))
+                (mapPH (lam ((r TPair)) (mkThm 0 cn (terms (nil T)) (mEq (p2 l) (p2 r))))
+                  (term gt ctx (geqnRhs q)))))))))))

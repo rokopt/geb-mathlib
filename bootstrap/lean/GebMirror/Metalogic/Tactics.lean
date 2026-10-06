@@ -11,6 +11,92 @@ open Geb.Kernel renaming Tree → T
 
 namespace GebMirror.Metalogic
 
+def «Tactics/LDefnL.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Tactics/LDefnL.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Tactics/LDefnL.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Tactics/LDefnL.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Tactics/LDefnL.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Tactics/LDefnL.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «Tactics/LDefnL.tail» x1 x0;
+    x2
+
+def «Tactics/LDefnL.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Tactics/LDefnL.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Tactics.bindTh» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Prelude.none»);
+    x2
+
+def «Tactics.bindAT» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Prelude.none»);
+    x2
+
+def «Tactics.pr0» := «Language.pr» (leaf 0) (leaf 0)
+
+def «Tactics.nfr0» :=
+  «Prover.nfr» (leaf 0) («Prover.mark» (leaf 0) (leaf 0))
+
 def «Tactics.ttL» :=
   fun (x0 : T) =>
     let x1 : T := «Language.mDefn» x0 ([] : List T) ([] : List T); x1
@@ -117,10 +203,10 @@ def «Tactics.byNF» :=
         T →
           T →
             T := (fun (x6 : List T) (x7 : List T) (x8 : T) (x9 : T) =>
-      «Base.bindO»
+      «Prover.bindNT»
         («Prover.eval» x0 x1 x2 x3 (leaf 4096) x4 x6 x7 x8)
         (fun (x10 : T) =>
-          «Base.bindO»
+          «Prover.bindNT»
             («Prover.eval» x0 x1 x2 x3 (leaf 4096) x4 x6 x7 x9)
             (fun (x11 : T) =>
               «Base.mapO»
@@ -133,10 +219,10 @@ def «Tactics.byNF» :=
                         (leaf 2)
                         ([] : List T)
                         («Theory.l2»
-                          («Language.p1» («Language.p2» x10))
-                          («Language.p1» («Language.p2» x11))))
+                          («Prover.mDeriv» («Prover.nfMarked» x10))
+                          («Prover.mDeriv» («Prover.nfMarked» x11))))
                       x12))
-                (x5 x6 x7 («Language.p1» x10) («Language.p1» x11)))));
+                (x5 x6 x7 («Prover.nfTerm» x10) («Prover.nfTerm» x11)))));
     x6
 
 def «Tactics.appendNR» :=
@@ -160,11 +246,7 @@ def «Tactics.appendNR» :=
 def «Tactics.hypRule» :=
   fun (x0 : T) =>
     let x1 : T ×
-      (T →
-        T →
-          List T →
-            T) := (Const.node (leaf 6) («Prelude.single» x0),
-      «Prover.noMatch»);
+      (T → T → List T → T) := («Prover.nrHyp» x0, «Prover.noMatch»);
     x1
 
 def «Tactics.hypRules» :=
@@ -236,10 +318,10 @@ def «Tactics.byListIndWeak» :=
           «Base.bindO»
             («Language.listPart» x9)
             (fun (x11 : T) =>
-              «Base.bindO»
+              «Prover.bindHT»
                 («Derivation.lowerHyps» x0 x2 x10 x6)
                 (fun (x12 : T) =>
-                  let x13 : List T := Const.children x12;
+                  let x13 : List T := «Prover.termsOf» x12;
                   let x14 : List T := (x9 :: (x11 :: x10));
                   let x15 : List T := «Base.mapT» «Derivation.weaken2» x13;
                   «Base.bindO»
@@ -413,7 +495,7 @@ def «Tactics.bySplit2» :=
       «Base.bindO»
         («Prelude.nth» x5 x2)
         (fun (x9 : T) =>
-          «Base.bindO»
+          «Derivation.bindPT»
             («Language.coprodParts» x9)
             (fun (x10 : T) =>
               let x11 : T := «Language.p1» x10;
@@ -560,16 +642,18 @@ def «Tactics.withWeakHyps» :=
            (x12 : List T → List (T × (T → T → List T → T)) → T)
            (x13 : List T)
            (x14 : List (T × (T → T → List T → T))) =>
-          «Base.bindO»
-            («Base.bindO» («Prelude.nth» x13 x11) «Derivation.eqParts»)
+          «Derivation.bindPT»
+            («Language.bindTP» («Prelude.nth» x13 x11) «Derivation.eqParts»)
             (fun (x15 : T) =>
-              «Base.bindO»
+              «Prover.bindNT»
                 («Prover.eval» x0 x1 x2 x3 (leaf 4096) x6 x7 x13 («Language.p1» x15))
                 (fun (x16 : T) =>
-                  «Base.bindO»
+                  «Prover.bindNT»
                     («Prover.eval» x0 x1 x2 x3 (leaf 4096) x6 x7 x13 («Language.p2» x15))
                     (fun (x17 : T) =>
-                      let x18 : T := «Language.mEq» («Language.p1» x16) («Language.p1» x17);
+                      let x18 : T := «Language.mEq»
+                        («Prover.nfTerm» x16)
+                        («Prover.nfTerm» x17);
                       «Base.mapO»
                         (fun (x19 : T) =>
                           «Prover.dNode»
@@ -585,8 +669,8 @@ def «Tactics.withWeakHyps» :=
                                     (leaf 2)
                                     ([] : List T)
                                     («Theory.l2»
-                                      («Language.p1» («Language.p2» x16))
-                                      («Language.p1» («Language.p2» x17))))
+                                      («Prover.mDeriv» («Prover.nfMarked» x16))
+                                      («Prover.mDeriv» («Prover.nfMarked» x17))))
                                   («Prover.dNode» (leaf 21) («Prelude.single» x11) ([] : List T))))
                               x19))
                         (x12
@@ -732,8 +816,8 @@ def «Tactics.withInsts» :=
         T →
           T →
             T := (fun (x8 : List T) (x9 : List T) (x10 : T) (x11 : T) =>
-      «Base.bindO»
-        («Base.bindO» («Prelude.nth» x9 x4) «Derivation.eqParts»)
+      «Derivation.bindPT»
+        («Language.bindTP» («Prelude.nth» x9 x4) «Derivation.eqParts»)
         (fun (x12 : T) =>
           let x13 : List
             T := «Tactics.instEqs» («Language.p1» x12) («Language.p2» x12) x5;
@@ -788,8 +872,8 @@ def «Tactics.withChildHyps» :=
         T →
           T →
             T := (fun (x8 : List T) (x9 : List T) (x10 : T) (x11 : T) =>
-      «Base.bindO»
-        («Base.bindO» («Prelude.nth» x9 x4) «Derivation.eqParts»)
+      «Derivation.bindPT»
+        («Language.bindTP» («Prelude.nth» x9 x4) «Derivation.eqParts»)
         (fun (x12 : T) =>
           Const.foldr
             (α := T)
@@ -800,13 +884,13 @@ def «Tactics.withChildHyps» :=
                (x16 : List T) =>
               let x17 : T := «Tactics.nthOf» («Language.p1» x12) x13;
               let x18 : T := «Tactics.nthOf» («Language.p2» x12) x13;
-              «Base.bindO»
+              «Prover.bindNT»
                 («Prover.eval» x0 x1 x2 x3 (leaf 4096) (leaf 1) x8 x15 x17)
                 (fun (x19 : T) =>
-                  «Base.bindO»
+                  «Prover.bindNT»
                     («Prover.eval» x0 x1 x2 x3 (leaf 4096) (leaf 1) x8 x15 x18)
                     (fun (x20 : T) =>
-                      «Base.bindO»
+                      «Prover.bindNT»
                         («Prover.eval»
                           x0
                           x1
@@ -818,8 +902,8 @@ def «Tactics.withChildHyps» :=
                           x15
                           x17)
                         (fun (x21 : T) =>
-                          «Base.bindO»
-                            («Derivation.eqParts» («Language.p1» x19))
+                          «Derivation.bindPT»
+                            («Derivation.eqParts» («Prover.nfTerm» x19))
                             (fun (x22 : T) =>
                               let x23 : T := «Prelude.length» x15;
                               let x24 : T := Const.add x23 (leaf 1);
@@ -831,7 +915,7 @@ def «Tactics.withChildHyps» :=
                                   «Prover.dNode»
                                     (leaf 22)
                                     («Prelude.single»
-                                      («Language.mEq» («Language.p1» x19) («Language.p1» x20)))
+                                      («Language.mEq» («Prover.nfTerm» x19) («Prover.nfTerm» x20)))
                                     («Theory.l2»
                                       («Prover.dNode»
                                         (leaf 24)
@@ -841,20 +925,20 @@ def «Tactics.withChildHyps» :=
                                             (leaf 2)
                                             ([] : List T)
                                             («Theory.l2»
-                                              («Language.p1» («Language.p2» x19))
-                                              («Language.p1» («Language.p2» x20))))
+                                              («Prover.mDeriv» («Prover.nfMarked» x19))
+                                              («Prover.mDeriv» («Prover.nfMarked» x20))))
                                           («Prover.dNode»
                                             (leaf 18)
                                             ([] : List T)
                                             («Theory.l2»
-                                              («Language.p1» («Language.p2» x21))
+                                              («Prover.mDeriv» («Prover.nfMarked» x21))
                                               («Prover.dNode»
                                                 (leaf 0)
                                                 ([] : List T)
                                                 ([] : List T))))))
                                       («Prover.dNode»
                                         (leaf 22)
-                                        («Prelude.single» («Language.p1» x19))
+                                        («Prelude.single» («Prover.nfTerm» x19))
                                         («Theory.l2»
                                           («Prover.dNode»
                                             (leaf 23)
@@ -887,8 +971,8 @@ def «Tactics.withChildHyps» :=
                                     («Prelude.append»
                                       x15
                                       («Theory.l2»
-                                        («Language.mEq» («Language.p1» x19) («Language.p1» x20))
-                                        («Language.p1» x19)))
+                                        («Language.mEq» («Prover.nfTerm» x19) («Prover.nfTerm» x20))
+                                        («Prover.nfTerm» x19)))
                                     x26)
                                   («Prelude.append»
                                     x16
@@ -944,7 +1028,7 @@ def «Tactics.revertCase» :=
                   let x18 : T → T := (fun (x18 : T) => «Tactics.subVar» x4 x18);
                   let x19 : T := x18 x14;
                   let x20 : T := x18 x15;
-                  «Base.bindO»
+                  «Prover.bindHT»
                     («Derivation.lowerHyps»
                       x0
                       x1
@@ -953,10 +1037,10 @@ def «Tactics.revertCase» :=
                         («Base.mapT» «Derivation.weaken1» x9)
                         («Prelude.single» x16)))
                     (fun (x21 : T) =>
-                      let x22 : List T := Const.children x21;
+                      let x22 : List T := «Prover.termsOf» x21;
                       let x23 : T := «Prover.instAt» (leaf 0) («Prelude.single» x13) x19;
                       let x24 : T := «Prover.instAt» (leaf 0) («Prelude.single» x13) x20;
-                      «Base.bindO»
+                      «Derivation.bindPT»
                         («Derivation.eqParts» x24)
                         (fun (x25 : T) =>
                           «Base.bindO»
@@ -973,7 +1057,7 @@ def «Tactics.revertCase» :=
                                   («Derivation.weakenElem» («Tactics.impL» x2 x19 x20)));
                               let x28 : T := «Derivation.listConsAt» (leaf 1) x13 x19;
                               let x29 : T := «Derivation.listConsAt» (leaf 1) x13 x20;
-                              «Base.bindO»
+                              «Derivation.bindPT»
                                 («Derivation.eqParts» x29)
                                 (fun (x30 : T) =>
                                   «Base.mapO»
@@ -1067,9 +1151,7 @@ def «Tactics.revertCase» :=
     x8
 
 def «Tactics.betaRule» :=
-  ((Const.node
-    (leaf 0)
-    («Theory.l2» (leaf 3) (Const.node (leaf 0) ([] : List T))),
+  ((«Prover.nrRule» (leaf 3) («Derivation.terms» ([] : List T)),
     «Prover.noMatch») ::
     ([] : List (T × (T → T → List T → T))))
 
@@ -1084,7 +1166,7 @@ def «Tactics.byImpI» :=
         T →
           T →
             T := (fun (x5 : List T) (x6 : List T) (x7 : T) (x8 : T) =>
-      «Base.bindO»
+      «Prover.bindNT»
         («Prover.eval»
           x0
           x1
@@ -1096,7 +1178,7 @@ def «Tactics.byImpI» :=
           x6
           x7)
         (fun (x9 : T) =>
-          «Base.bindO»
+          «Prover.bindNT»
             («Prover.eval»
               x0
               x1
@@ -1108,8 +1190,8 @@ def «Tactics.byImpI» :=
               x6
               x8)
             (fun (x10 : T) =>
-              let x11 : T := «Language.p1» x9;
-              let x12 : T := «Language.p1» x10;
+              let x11 : T := «Prover.nfTerm» x9;
+              let x12 : T := «Prover.nfTerm» x10;
               if («Prelude.and»
                 («Language.mIs» (leaf 11) (leaf 2) x11)
                 (Const.eq (Const.label x12) (leaf 11))).label ≠ 0 then
@@ -1118,7 +1200,7 @@ def «Tactics.byImpI» :=
                   (Const.eq («Language.mD» x12 (leaf 0)) x2)).label ≠ 0 then
                   let x13 : T := «Language.mArg» x11 (leaf 0);
                   let x14 : T := «Language.mArg» x11 (leaf 1);
-                  «Base.bindO»
+                  «Derivation.bindPT»
                     («Derivation.eqParts» x13)
                     (fun (x15 : T) =>
                       «Base.mapO»
@@ -1131,8 +1213,8 @@ def «Tactics.byImpI» :=
                                 (leaf 2)
                                 ([] : List T)
                                 («Theory.l2»
-                                  («Language.p1» («Language.p2» x9))
-                                  («Language.p1» («Language.p2» x10))))
+                                  («Prover.mDeriv» («Prover.nfMarked» x9))
+                                  («Prover.mDeriv» («Prover.nfMarked» x10))))
                               («Prover.dNode»
                                 (leaf 25)
                                 ([] : List T)
@@ -1174,8 +1256,8 @@ def «Tactics.withImpElim» :=
            (x10 : List T → List (T × (T → T → List T → T)) → T)
            (x11 : List T)
            (x12 : List (T × (T → T → List T → T))) =>
-          «Base.bindO»
-            («Base.bindO» («Prelude.nth» x11 x9) «Derivation.eqParts»)
+          «Derivation.bindPT»
+            («Language.bindTP» («Prelude.nth» x11 x9) «Derivation.eqParts»)
             (fun (x13 : T) =>
               let x14 : T := «Language.p1» x13;
               if («Language.mIs» (leaf 11) (leaf 2) x14).label ≠ 0 then
@@ -1226,7 +1308,7 @@ def «Tactics.hypIndex» :=
   fun (x0 : T × (T → T → List T → T)) =>
     let x1 : T := (let x1 : T := (x0).1;
                    if (Const.eq (Const.label x1) (leaf 6)).label ≠ 0 then
-                     «Prelude.some» (Const.child x1 (leaf 0))
+                     let x2 : T := Const.child x1 (leaf 0); «Prelude.some» x2
                    else
                      «Prelude.none»);
     x1
@@ -1238,7 +1320,7 @@ def «Tactics.succPredRw» :=
         T := «Theory.l2»
         («Language.var» (leaf 1))
         («Language.var» (leaf 0));
-      «Prelude.some»
+      «Language/OTPair.just»
         («Language.pr»
           («Language.app»
             («Language.mArg» x2 (leaf 0))
@@ -1257,7 +1339,7 @@ def «Tactics.succPredRw» :=
                   (leaf 1))
                 ([] : List T)))))
     else
-      «Prelude.none»);
+      «Language/OTPair.nothing»);
     x3
 
 def «Tactics.bySuccPred» :=
@@ -1267,16 +1349,16 @@ def «Tactics.bySuccPred» :=
         T →
           T →
             T := (fun (x3 : List T) (x4 : List T) (x5 : T) (x6 : T) =>
-      «Base.bindO»
-        («Base.bindO» («Prelude.nth» x0 x1) «Derivation.entryLanguage»)
+      «Tactics.bindTh»
+        («Derivation.thmAt» x0 x1)
         (fun (x7 : T) =>
-          «Base.bindO»
+          «Derivation.bindPT»
             («Derivation.eqParts» («Derivation.thConcl» x7))
             (fun (x8 : T) =>
-              «Base.bindO»
+              «Derivation.bindPT»
                 («Tactics.succPredRw» x1 («Language.p1» x8) x5)
                 (fun (x9 : T) =>
-                  «Base.bindO»
+                  «Derivation.bindPT»
                     («Tactics.succPredRw» x1 («Language.p1» x8) x6)
                     (fun (x10 : T) =>
                       «Base.mapO»
@@ -1455,10 +1537,10 @@ def «Tactics.matchesWith» :=
                    (α := T)
                    (β := List (List T))
                    (fun (x4 : T) (x5 : List (List T)) =>
-                     let x6 : T := «Base.bindO»
+                     let x6 : T := «Tactics.bindAT»
                        (x0 (leaf 0) x4 x3)
                        (fun (x6 : T) =>
-                         «Base.allSomeT» («Base.take» x1 (Const.children x6)));
+                         «Base.allSomeT» («Base.take» x1 («Prover.assigned» x6)));
                      if («Prelude.isSome» x6).label ≠ 0 then
                        ((«Prelude.reverse» (Const.children («Prelude.get» x6))) :: x5)
                      else
@@ -1498,11 +1580,12 @@ def «Tactics.instArgs» :=
     (x9 : T) =>
     let x10 : List
       (List
-        T) := (let x10 : T := «Base.bindO»
+        T) := (let x10 : T := «Language.bindTP»
                  («Prelude.nth» x6 x9)
                  «Derivation.eqParts»;
-               if («Prelude.isSome» x10).label ≠ 0 then
-                 let x11 : T := «Language.p1» («Prelude.get» x10);
+               if («Language/OTPair.isJust» x10).label ≠ 0 then
+                 let x11 : T := «Language.p1»
+                   («Language/OTPair.fromMaybe» «Tactics.pr0» x10);
                  if («Language.mIs» (leaf 5) (leaf 1) x11).label ≠ 0 then
                    let x12 : T := «Prover.eval»
                      x1
@@ -1514,8 +1597,9 @@ def «Tactics.instArgs» :=
                      ((«Language.mD» x11 (leaf 0)) :: x5)
                      («Base.mapT» «Derivation.weaken1» x6)
                      («Language.mArg» x11 (leaf 0));
-                   if («Prelude.isSome» x12).label ≠ 0 then
-                     let x13 : T := «Language.p1» («Prelude.get» x12);
+                   if («Prover/ONFR.isJust» x12).label ≠ 0 then
+                     let x13 : T := «Prover.nfTerm»
+                       («Prover/ONFR.fromMaybe» «Tactics.nfr0» x12);
                      «Tactics.eraseDupsTss»
                        («Tactics.appendTss»
                          («Tactics.matchesOf» x13 (leaf 1) x7)
@@ -1542,14 +1626,14 @@ def «Tactics.byInstsOnce» :=
         T →
           T →
             T := (fun (x7 : List T) (x8 : List T) (x9 : T) (x10 : T) =>
-      «Base.bindO»
+      «Prover.bindNT»
         («Prover.eval» x1 x2 x3 x4 (leaf 4096) x0 x7 x8 x9)
         (fun (x11 : T) =>
-          «Base.bindO»
+          «Prover.bindNT»
             («Prover.eval» x1 x2 x3 x4 (leaf 4096) x0 x7 x8 x10)
             (fun (x12 : T) =>
-              let x13 : T := «Language.p1» x11;
-              let x14 : T := «Language.p1» x12;
+              let x13 : T := «Prover.nfTerm» x11;
+              let x14 : T := «Prover.nfTerm» x12;
               if (Const.equal x13 x14).label ≠ 0 then
                 «Tactics.byMode» x0 x1 x2 x3 x4 x7 x8 x9 x10
               else
@@ -1730,10 +1814,10 @@ def «Tactics.byAuto» :=
            (x15 : T) =>
           «Tactics.orO»
             («Tactics.byInsts» x5 x0 x1 x2 x3 x10 x12 x13 x14 x15)
-            («Base.bindO»
+            («Prover.bindNT»
               («Prover.eval» x0 x1 x2 x3 (leaf 4096) x5 x12 x13 x14)
               (fun (x16 : T) =>
-                «Base.bindO»
+                «Prover.bindNT»
                   («Prover.eval» x0 x1 x2 x3 (leaf 4096) x5 x12 x13 x15)
                   (fun (x17 : T) =>
                     let x18 : T →
@@ -1745,11 +1829,11 @@ def «Tactics.byAuto» :=
                     «Base.bindO»
                       («Tactics.orO»
                         («Tactics.orO»
-                          («Tactics.stuckVar» x18 («Language.p1» x16))
-                          («Tactics.stuckVar» x18 («Language.p1» x17)))
+                          («Tactics.stuckVar» x18 («Prover.nfTerm» x16))
+                          («Tactics.stuckVar» x18 («Prover.nfTerm» x17)))
                         («Tactics.orO»
-                          («Tactics.stuckVar» x19 («Language.p1» x16))
-                          («Tactics.stuckVar» x19 («Language.p1» x17))))
+                          («Tactics.stuckVar» x19 («Prover.nfTerm» x16))
+                          («Tactics.stuckVar» x19 («Prover.nfTerm» x17))))
                       (fun (x20 : T) =>
                         «Base.bindO»
                           («Prelude.nth» x12 x20)
@@ -1757,7 +1841,8 @@ def «Tactics.byAuto» :=
                             if («Prelude.isSome» («Language.listPart» x21)).label ≠ 0 then
                               «Tactics.byListSplit» x0 x2 x20 x11 x11 x12 x13 x14 x15
                             else
-                              if («Prelude.isSome» («Language.coprodParts» x21)).label ≠ 0 then
+                              if («Language/OTPair.isJust»
+                                («Language.coprodParts» x21)).label ≠ 0 then
                                 «Tactics.bySplit2» (leaf 3) (leaf 4) x20 x11 x11 x12 x13 x14 x15
                               else
                                 «Prelude.none»))))))
@@ -1769,6 +1854,79 @@ def «Tactics.byAuto» :=
         x9);
     x6
 
+def «Tactics.condOf» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) =>
+    Const.node (leaf 0) (x0 :: (x1 :: (x2 :: (x3 :: ([] : List T)))))
+
+def «Tactics/OCond.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Tactics/OCond.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Tactics/OCond.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Tactics/OCond.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Tactics/OCond.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Tactics/OCond.nothing»
+      (fun (x2 : T) (_ : List T) => «Tactics/OCond.just» x2);
+    x2
+
+def «Tactics/OCond.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Tactics.bindCT» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Prelude.none»);
+    x2
+
 def «Tactics.condParts» :=
   fun (x0 : T) =>
     let x1 : T := (if («Prelude.and»
@@ -1778,21 +1936,19 @@ def «Tactics.condParts» :=
         (Const.eq
           («Prelude.length» (Const.children («Language.mD» x0 (leaf 1))))
           (leaf 1)))).label ≠ 0 then
-      «Prelude.some»
-        (Const.node
-          (leaf 0)
-          («Theory.l4»
-            («Prelude.at» (Const.children («Language.mD» x0 (leaf 1))) (leaf 0))
-            («Language.mArg» x0 (leaf 2))
-            («Language.mArg» x0 (leaf 1))
-            («Language.mArg» x0 (leaf 0))))
+      «Tactics/OCond.just»
+        («Tactics.condOf»
+          («Prelude.at» (Const.children («Language.mD» x0 (leaf 1))) (leaf 0))
+          («Language.mArg» x0 (leaf 2))
+          («Language.mArg» x0 (leaf 1))
+          («Language.mArg» x0 (leaf 0)))
     else
-      «Prelude.none»);
+      «Tactics/OCond.nothing»);
     x1
 
 def «Tactics.condVar» :=
   fun (x0 : T → T) (x1 : T) =>
-    let x2 : T := «Base.bindO»
+    let x2 : T := «Tactics.bindCT»
       («Tactics.condParts» x1)
       (fun (x2 : T) =>
         «Tactics.varUnless» x0 («Prelude.at» (Const.children x2) (leaf 1)));
@@ -1836,18 +1992,26 @@ def «Tactics.appsOf» :=
       («Tactics.openSubterms» x1);
     x2
 
+def «Tactics.ldefn0» :=
+  «Language.ldefn»
+    (leaf 0)
+    («Language.objs» ([] : List T))
+    (leaf 0)
+    (leaf 0)
+
 def «Tactics.unnodeTy» :=
   «Theory.prod»
     «Translation.bitsTy»
     («Theory.list» «Translation.treeTy»)
 
 def «Tactics.unnodeStep» :=
-  let x0 : T := «Prelude.nth» «Translation.lib» (leaf 4);
-  if («Prelude.isSome» x0).label ≠ 0 then
+  let x0 : T := «Language/OLDefn.nthOf» «Translation.lib» (leaf 4);
+  if («Language/OLDefn.isJust» x0).label ≠ 0 then
     Const.lcase
       (α := T)
       (β := T)
-      («Language.mArgs» («Language.ldBody» («Prelude.get» x0)))
+      («Language.mArgs»
+        («Language.ldBody» («Language/OLDefn.fromMaybe» «Tactics.ldefn0» x0)))
       «Language.mStar»
       (fun (x1 : T) (_ : List T) => x1)
   else
@@ -2086,7 +2250,8 @@ def «Tactics.splitStuck» :=
         if («Prelude.isSome» («Language.listPart» x9)).label ≠ 0 then
           «Tactics.byListSplit» x0 x1 x3 x4 x4 x5 x6 x7 x8
         else
-          if («Prelude.isSome» («Language.coprodParts» x9)).label ≠ 0 then
+          if («Language/OTPair.isJust»
+            («Language.coprodParts» x9)).label ≠ 0 then
             «Tactics.bySplit2» (leaf 3) (leaf 4) x3 x4 x4 x5 x6 x7 x8
           else
             if (Const.equal x9 «Translation.treeTy»).label ≠ 0 then
@@ -2114,22 +2279,22 @@ def «Tactics.byAutoT» :=
           T →
             T →
               T := (fun (x12 : List T) (x13 : List T) (x14 : T) (x15 : T) =>
-        «Base.bindO»
+        «Prover.bindNT»
           («Prover.eval» x0 x1 x2 x4 (leaf 4096) x6 x12 x13 x14)
           (fun (x16 : T) =>
-            «Base.bindO»
+            «Prover.bindNT»
               («Prover.eval» x0 x1 x2 x4 (leaf 4096) x6 x12 x13 x15)
               (fun (x17 : T) =>
                 if (Const.equal
-                  («Language.p1» x16)
-                  («Language.p1» x17)).label ≠ 0 then
+                  («Prover.nfTerm» x16)
+                  («Prover.nfTerm» x17)).label ≠ 0 then
                   «Prelude.some»
                     («Prover.dNode»
                       (leaf 18)
                       ([] : List T)
                       («Theory.l2»
-                        («Language.p1» («Language.p2» x16))
-                        («Language.p1» («Language.p2» x17))))
+                        («Prover.mDeriv» («Prover.nfMarked» x16))
+                        («Prover.mDeriv» («Prover.nfMarked» x17))))
                 else
                   «Prelude.none»)));
       let x13 : List T →
@@ -2148,22 +2313,22 @@ def «Tactics.byAutoT» :=
            (x16 : List T)
            (x17 : T)
            (x18 : T) =>
-          «Base.bindO»
+          «Prover.bindNT»
             («Prover.eval» x0 x1 x2 x4 (leaf 4096) x6 x15 x16 x17)
             (fun (x19 : T) =>
-              «Base.bindO»
+              «Prover.bindNT»
                 («Prover.eval» x0 x1 x2 x4 (leaf 4096) x6 x15 x16 x18)
                 (fun (x20 : T) =>
                   if (Const.equal
-                    («Language.p1» x19)
-                    («Language.p1» x20)).label ≠ 0 then
+                    («Prover.nfTerm» x19)
+                    («Prover.nfTerm» x20)).label ≠ 0 then
                     «Prelude.some»
                       («Prover.dNode»
                         (leaf 18)
                         ([] : List T)
                         («Theory.l2»
-                          («Language.p1» («Language.p2» x19))
-                          («Language.p1» («Language.p2» x20))))
+                          («Prover.mDeriv» («Prover.nfMarked» x19))
+                          («Prover.mDeriv» («Prover.nfMarked» x20))))
                   else
                     «Tactics.orO»
                       (x13 x15 x16 x17 x18)
@@ -2176,11 +2341,11 @@ def «Tactics.byAutoT» :=
                        «Base.bindO»
                          («Tactics.orO»
                            («Tactics.orO»
-                             («Tactics.stuckVar» x21 («Language.p1» x19))
-                             («Tactics.stuckVar» x21 («Language.p1» x20)))
+                             («Tactics.stuckVar» x21 («Prover.nfTerm» x19))
+                             («Tactics.stuckVar» x21 («Prover.nfTerm» x20)))
                            («Tactics.orO»
-                             («Tactics.stuckVar» x22 («Language.p1» x19))
-                             («Tactics.stuckVar» x22 («Language.p1» x20))))
+                             («Tactics.stuckVar» x22 («Prover.nfTerm» x19))
+                             («Tactics.stuckVar» x22 («Prover.nfTerm» x20))))
                          (fun (x23 : T) =>
                            «Tactics.splitStuck» x0 x2 x3 x23 x14 x15 x16 x17 x18)))))
         (fun (x14 : List T) (x15 : List T) (x16 : T) (x17 : T) =>
@@ -2212,17 +2377,17 @@ def «Tactics.byAutoC» :=
          (x10 : T) =>
         «Tactics.orO»
           («Tactics.byWeak» x0 x1 x2 x4 x7 x8 x9 x10)
-          («Base.bindO»
+          («Prover.bindNT»
             («Prover.eval» x0 x1 x2 x4 (leaf 4096) (leaf 1) x7 x8 x9)
             (fun (x11 : T) =>
-              «Base.bindO»
+              «Prover.bindNT»
                 («Prover.eval» x0 x1 x2 x4 (leaf 4096) (leaf 1) x7 x8 x10)
                 (fun (x12 : T) =>
                   let x13 : T → T := (fun (_ : T) => leaf 0);
                   «Base.bindO»
                     («Tactics.orO»
-                      («Tactics.stuckVarC» x13 («Language.p1» x11))
-                      («Tactics.stuckVarC» x13 («Language.p1» x12)))
+                      («Tactics.stuckVarC» x13 («Prover.nfTerm» x11))
+                      («Tactics.stuckVarC» x13 («Prover.nfTerm» x12)))
                     (fun (x14 : T) =>
                       «Tactics.splitStuck» x0 x2 x3 x14 x6 x7 x8 x9 x10)))))
       («Tactics.byWeak» x0 x1 x2 x4)
@@ -2396,6 +2561,121 @@ def «Tactics.maskRw» :=
       x11;
     x12
 
+def «Tactics.maskStep» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    Const.node (leaf 0) (x0 :: (x1 :: (x2 :: ([] : List T))))
+
+def «Tactics/OMask.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Tactics/OMask.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Tactics/OMask.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                   else
+                     leaf 0);
+    x1
+
+def «Tactics/OMask.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x3
+                   else
+                     x0);
+    x2
+
+def «Tactics/OMask.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Tactics/OMask.nothing»
+      (fun (x2 : T) (_ : List T) => «Tactics/OMask.just» x2);
+    x2
+
+def «Tactics/OMask.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+        else
+          (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Tactics.cond0» :=
+  «Tactics.condOf» (leaf 0) (leaf 0) (leaf 0) (leaf 0)
+
+def «Tactics.mask0» := «Tactics.maskStep» (leaf 0) (leaf 0) (leaf 0)
+
+def «Tactics.bindPM» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Tactics/OMask.nothing»);
+    x2
+
+def «Tactics.bindCM» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                   else
+                     «Tactics/OMask.nothing»);
+    x2
+
+def «Tactics.bindTM» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (if («Prelude.isSome» x0).label ≠ 0 then
+      x1 («Prelude.get» x0)
+    else
+      «Tactics/OMask.nothing»);
+    x2
+
+def «Tactics.findMask» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) =>
+        let x4 : T := x0 x2;
+        if («Tactics/OMask.isJust» x4).label ≠ 0 then x4 else x3)
+      «Tactics/OMask.nothing»
+      x1;
+    x2
+
+def «Tactics.orMask» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (if («Tactics/OMask.isJust» x0).label ≠ 0 then
+      x0
+    else
+      x1);
+    x2
+
 def «Tactics.maskAt» :=
   fun (x0 : T)
     (x1 : T)
@@ -2406,12 +2686,12 @@ def «Tactics.maskAt» :=
     (x6 : T)
     (x7 : T)
     (x8 : T) =>
-    let x9 : T := «Base.bindO»
-      («Base.bindO» («Prelude.nth» x2 x8) «Derivation.eqParts»)
+    let x9 : T := «Tactics.bindPM»
+      («Language.bindTP» («Prelude.nth» x2 x8) «Derivation.eqParts»)
       (fun (x9 : T) =>
         let x10 : T := «Language.p1» x9;
         let x11 : T := «Language.p2» x9;
-        «Base.bindO»
+        «Tactics.bindCM»
           («Tactics.condParts» x10)
           (fun (x12 : T) =>
             let x13 : T := «Prelude.at» (Const.children x12) (leaf 0);
@@ -2421,26 +2701,26 @@ def «Tactics.maskAt» :=
               (Const.equal
                 («Prelude.at» (Const.children x12) (leaf 1))
                 x4)).label ≠ 0 then
-              «Prelude.none»
+              «Tactics/OMask.nothing»
             else
-              «Base.bindO»
+              «Tactics.bindPM»
                 (let x16 : T := «Tactics.condParts» x11;
-                 if («Prelude.isSome» x16).label ≠ 0 then
-                   let x17 : T := «Prelude.get» x16;
+                 if («Tactics/OCond.isJust» x16).label ≠ 0 then
+                   let x17 : T := «Tactics/OCond.fromMaybe» «Tactics.cond0» x16;
                    if («Prelude.and»
                      (Const.equal («Prelude.at» (Const.children x17) (leaf 1)) x4)
                      (Const.equal
                        («Prelude.at» (Const.children x17) (leaf 3))
                        x15)).label ≠ 0 then
-                     «Prelude.some»
+                     «Language/OTPair.just»
                        («Language.pr»
                          («Prelude.at» (Const.children x17) (leaf 2))
                          («Prover.dNode» (leaf 17) («Theory.l2» x8 (leaf 0)) ([] : List T)))
                    else
-                     «Prelude.none»
+                     «Language/OTPair.nothing»
                  else
                    if (Const.equal x11 x15).label ≠ 0 then
-                     «Prelude.some»
+                     «Language/OTPair.just»
                        («Language.pr»
                          x11
                          («Prover.dNode»
@@ -2457,14 +2737,14 @@ def «Tactics.maskAt» :=
                                  (leaf 1))
                                ([] : List T)))))
                    else
-                     «Prelude.none»)
+                     «Language/OTPair.nothing»)
                 (fun (x16 : T) =>
                   let x17 : T := «Language.p1» x16;
                   if (Const.equal x14 x17).label ≠ 0 then
-                    «Prelude.none»
+                    «Tactics/OMask.nothing»
                   else
                     let x18 : T := «Tactics.abstractTerm» x13 x14 x5;
-                    «Base.bindO»
+                    «Tactics.bindTM»
                       (Const.lcase
                         (α := T)
                         (β := T)
@@ -2473,39 +2753,37 @@ def «Tactics.maskAt» :=
                         (fun (x19 : T) (_ : List T) => «Prelude.some» x19))
                       (fun (x19 : T) =>
                         if (Const.eq («Prover.uses» x19 (leaf 0)) (leaf 0)).label ≠ 0 then
-                          «Prelude.none»
+                          «Tactics/OMask.nothing»
                         else
-                          «Prelude.some»
-                            (Const.node
-                              (leaf 0)
-                              («Theory.l3»
-                                x7
-                                («Translation.condT»
-                                  x3
-                                  x4
-                                  («Language.subst» x19 («Derivation.instVar» x17))
-                                  x6)
-                                («Tactics.maskRwD»
-                                  x3
-                                  x13
-                                  x0
-                                  («Language.p2» x16)
-                                  x4
-                                  x6
-                                  x14
-                                  x17
-                                  x15
-                                  x5)))))));
+                          «Tactics/OMask.just»
+                            («Tactics.maskStep»
+                              x7
+                              («Translation.condT»
+                                x3
+                                x4
+                                («Language.subst» x19 («Derivation.instVar» x17))
+                                x6)
+                              («Tactics.maskRwD»
+                                x3
+                                x13
+                                x0
+                                («Language.p2» x16)
+                                x4
+                                x6
+                                x14
+                                x17
+                                x15
+                                x5))))));
     x9
 
 def «Tactics.maskSub» :=
   fun (x0 : T) (x1 : T) (x2 : List T) (x3 : T) =>
-    let x4 : T := «Tactics.findSomeT»
+    let x4 : T := «Tactics.findMask»
       (fun (x4 : T) =>
-        «Base.bindO»
+        «Tactics.bindCM»
           («Tactics.condParts» x4)
           (fun (x5 : T) =>
-            «Tactics.findSomeT»
+            «Tactics.findMask»
               («Tactics.maskAt»
                 x0
                 x1
@@ -2549,15 +2827,15 @@ def «Tactics.byMaskSubs» :=
           («Tactics.appendNR» x7 x4)
           (leaf 1)
           (fun (x9 : List T) (x10 : List T) (x11 : T) (x12 : T) =>
-            let x13 : T := «Tactics.orO»
+            let x13 : T := «Tactics.orMask»
               («Tactics.maskSub» x2 x3 x10 x11)
               («Tactics.maskSub» x2 x3 x10 x12);
-            if («Prelude.isSome» x13).label ≠ 0 then
+            if («Tactics/OMask.isJust» x13).label ≠ 0 then
               let x14 : T := «Prelude.at»
-                (Const.children («Prelude.get» x13))
+                (Const.children («Tactics/OMask.fromMaybe» «Tactics.mask0» x13))
                 (leaf 0);
               let x15 : T := «Prelude.at»
-                (Const.children («Prelude.get» x13))
+                (Const.children («Tactics/OMask.fromMaybe» «Tactics.mask0» x13))
                 (leaf 1);
               «Base.mapO»
                 (fun (x16 : T) =>
@@ -2565,7 +2843,9 @@ def «Tactics.byMaskSubs» :=
                     (leaf 22)
                     («Prelude.single» («Language.mEq» x14 x15))
                     («Theory.l2»
-                      («Prelude.at» (Const.children («Prelude.get» x13)) (leaf 2))
+                      («Prelude.at»
+                        (Const.children («Tactics/OMask.fromMaybe» «Tactics.mask0» x13))
+                        (leaf 2))
                       x16))
                 (x6
                   ((«Tactics.hypRule» («Prelude.length» x10)) :: x7)

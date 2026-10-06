@@ -47,7 +47,7 @@ mirrors=("Check $b/prelude.geb $b/reader.geb $b/check.geb")
 # program are emitted a module per layer, each importing the layer before it, so that a change to
 # a layer's sources changes only the modules of that layer and the layers after it
 f=$b/free-topos
-checker="$b/prelude.geb $f/base.geb $f/partial-horn.geb $f/theory.geb $f/infer.geb"
+checker="$b/prelude.geb $b/seq.geb $f/base.geb $f/partial-horn.geb $f/theory.geb $f/infer.geb"
 checker+=" $f/language.geb $f/derivation.geb $b/reader.geb $b/check.geb"
 layers=("Checker $checker" "Translation $f/translation.geb" "Prover $f/prove.geb"
         "Tactics $f/tactics.geb" "Combinator $f/combinator.geb"

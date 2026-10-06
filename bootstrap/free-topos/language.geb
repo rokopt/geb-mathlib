@@ -13,10 +13,13 @@
 ; and codomain, a definition of the language the node of label 0 over its arity, the node of its
 ; parameters' types, its type and its body, and the constants the node of label 0 over the node of
 ; the primitive arrows, the node of the definitions and the index of the first definition's
-; operation. Requires the prelude, the base, partial Horn logic, the theory and the inference.
+; operation, as their datatypes declare them. Requires the prelude, the lists of
+; bootstrap/seq.geb, the base, partial Horn logic, the theory and the inference.
 
 (module Language
-  (export pr p1 p2 mNode var mStar mPair mFst mSnd mLam app mArr mNatRec mListRec mRoseRec mDefn mEq
+  (export TPair pr p1 p2 mNode var mStar mPair mFst mSnd mLam app mArr mNatRec mListRec mRoseRec
+    mDefn
+    mEq
     mArgs
     mIs
     mArg
@@ -33,10 +36,14 @@
     ctxObj
     stdEnv
     tuple
+    Objs
+    objs
+    LDefn
     ldefn
     ldArity
     ldType
     ldBody
+    Primitive
     primitive
     prArity
     prArrow
@@ -46,27 +53,70 @@
     defLang
     defObj
     defLanguage
+    PrimList
+    prims
+    DefList
+    defs
+    Globals
     globals
     gPrims
     gDefs
     gBase
     isTy
+    CV
     compile
     ldCompile
     compileDefs
     compileEq
     primWf
     primOk
-    objOk)
+    objOk
+    bindDL
+    bindPP
+    bindTP
+    OTPair.Maybe
+    OTPair.nothing
+    OTPair.just
+    OTPair.isJust
+    OTPair.fromMaybe
+    OTPair.nthOf
+    OTPair.allJust
+    OLDefn.Maybe
+    OLDefn.nothing
+    OLDefn.just
+    OLDefn.isJust
+    OLDefn.fromMaybe
+    OLDefn.nthOf
+    OLDefn.allJust
+    OPrimitive.Maybe
+    OPrimitive.nothing
+    OPrimitive.just
+    OPrimitive.isJust
+    OPrimitive.fromMaybe
+    OPrimitive.nthOf
+    OPrimitive.allJust
+    ODefinition.Maybe
+    ODefinition.nothing
+    ODefinition.just
+    ODefinition.isJust
+    ODefinition.fromMaybe
+    ODefinition.nthOf
+    ODefinition.allJust)
   (import Prelude)
   (import Base)
   (import PartialHorn)
   (import Theory)
   (import Infer)
+  (import (Seq Eqn) as Eqns)
   ; pairs of trees
-  (defn pr ((a T) (b T)) T (node 0 (l2 a b)))
-  (defn p1 ((p T)) T (child p 0))
-  (defn p2 ((p T)) T (child p 1))
+  (data TPair (pr T T))
+  (defn p1 ((p TPair)) T (case p ((pr a b) a)))
+  (defn p2 ((p TPair)) T (case p ((pr a b) b)))
+  (import (Option TPair) as OTPair)
+  (import (Seq TPair) as TPairs)
+  (import (Each TPair) as EachTPair)
+  (import (Map TPair TPair) as TPairMap)
+  (import (Map TPair T) as TPairOut)
 
   ; terms, by their labels' constructors
   (defn mNode ((l T) (d Ts) (cs Ts)) T (node l (cons (node 0 d) cs)))
@@ -155,16 +205,17 @@
           (cons (pr 15 2)
             (cons (pr 22 2)
               (cons (pr 25 0)
-                (cons (pr 29 0) (cons (pr 33 1) (cons (pr 37 0) (single (pr 40 1))))))))))))
+                (cons (pr 29 0) (cons (pr 33 1) (cons (pr 37 0) (TPairs.single (pr 40 1))))))))))))
 
   ; the parts of products, coproducts, exponentials, list objects and rose-tree objects
-  (defn binParts ((mk (Arrow T (Arrow T T))) (p T)) T
+  (defn binParts ((mk (Arrow T (Arrow T T))) (p T)) OTPair.Maybe
     (if (eq (arity p) 2)
-      (let a T (child p 0) (let b T (child p 1) (if (equal p (mk a b)) (some (pr a b)) none)))
-      none))
-  (defn prodParts ((p T)) T (binParts prod p))
-  (defn coprodParts ((p T)) T (binParts coprod p))
-  (defn expParts ((p T)) T (binParts exp p))
+      (let a T (child p 0)
+        (let b T (child p 1) (if (equal p (mk a b)) (OTPair.just (pr a b)) OTPair.nothing)))
+      OTPair.nothing))
+  (defn prodParts ((p T)) OTPair.Maybe (binParts prod p))
+  (defn coprodParts ((p T)) OTPair.Maybe (binParts coprod p))
+  (defn expParts ((p T)) OTPair.Maybe (binParts exp p))
   (defn listPart ((p T)) T
     (if (eq (arity p) 1) (let a T (child p 0) (if (equal p (list a)) (some a) none)) none))
   ; the type of labels of a rose-tree object, and its fold by a step
@@ -179,16 +230,18 @@
       (foldr T (Prod T T) (lam ((a T) (s (Prod T T))) (pair (if (snd s) (prod (fst s) a) a) 1))
         (pair one 0)
         g)))
-  (defn extendEnv ((X T) (a T) (e Ts)) Ts
-    (cons (pr (cSnd X a) a) (mapT (lam ((p T)) (pr (comp (p1 p) (cFst X a)) (p2 p))) e)))
-  (defn stdEnv ((g Ts)) Ts
+  (defn extendEnv ((X T) (a T) (e (List TPair))) (List TPair)
+    (cons (pr (cSnd X a) a)
+      (TPairMap.map (lam ((p TPair)) (pr (comp (p1 p) (cFst X a)) (p2 p))) e)))
+  (defn stdEnv ((g Ts)) (List TPair)
     (fst
-      (foldr T (Prod Ts Ts)
-        (lam ((a T) (s (Prod Ts Ts)))
+      (foldr T (Prod (List TPair) Ts)
+        (lam ((a T) (s (Prod (List TPair) Ts)))
           (pair
-            (if (isEmpty (snd s)) (single (pr (idt a) a)) (extendEnv (ctxObj (snd s)) a (fst s)))
+            (if (isEmpty (snd s)) (TPairs.single (pr (idt a) a))
+              (extendEnv (ctxObj (snd s)) a (fst s)))
             (cons a (snd s))))
-        (pair (nil T) (nil T))
+        (pair (nil TPair) (nil T))
         g)))
   (defn tuple ((X T) (fs Ts)) T
     (fst
@@ -197,30 +250,43 @@
         fs)))
 
   ; definitions of the language, primitive arrows, definitions of either kind, and the constants
-  (tree-data LDefn (ldefn T T T T))
-  (defn ldArity ((d T)) T (case d ((ldefn m ps a b) m)))
-  (defn ldParams ((d T)) Ts (case d ((ldefn m ps a b) (children ps))))
-  (defn ldType ((d T)) T (case d ((ldefn m ps a b) a)))
-  (defn ldBody ((d T)) T (case d ((ldefn m ps a b) b)))
-  (tree-data Primitive (primitive T T T T))
-  (defn prArity ((p T)) T (case p ((primitive m f a b) m)))
-  (defn prArrow ((p T)) T (case p ((primitive m f a b) f)))
-  (defn prDom ((p T)) T (case p ((primitive m f a b) a)))
-  (defn prCod ((p T)) T (case p ((primitive m f a b) b)))
-  (tree-data Definition (defLang T) (defObj T T))
-  (defn defLanguage ((d T)) T (case d ((defLang l) (some l)) ((defObj m b) none)))
-  (tree-data Globals (globals T T T))
-  (defn gPrims ((G T)) Ts (case G ((globals p d b) (children p))))
-  (defn gDefs ((G T)) Ts (case G ((globals p d b) (children d))))
-  (defn gBase ((G T)) T (case G ((globals p d b) b)))
+  (data Objs (objs & T))
+  (data LDefn (ldefn T Objs T T))
+  (defn ldArity ((d LDefn)) T (case d ((ldefn m ps a b) m)))
+  (defn ldParams ((d LDefn)) Ts (case d ((ldefn m ps a b) (case ps ((objs xs) xs)))))
+  (defn ldType ((d LDefn)) T (case d ((ldefn m ps a b) a)))
+  (defn ldBody ((d LDefn)) T (case d ((ldefn m ps a b) b)))
+  (import (Option LDefn) as OLDefn)
+  (data Primitive (primitive T T T T))
+  (defn prArity ((p Primitive)) T (case p ((primitive m f a b) m)))
+  (defn prArrow ((p Primitive)) T (case p ((primitive m f a b) f)))
+  (defn prDom ((p Primitive)) T (case p ((primitive m f a b) a)))
+  (defn prCod ((p Primitive)) T (case p ((primitive m f a b) b)))
+  (import (Option Primitive) as OPrimitive)
+  (data Definition (defLang LDefn) (defObj T T))
+  (defn defLanguage ((d Definition)) OLDefn.Maybe
+    (case d ((defLang l) (OLDefn.just l)) ((defObj m b) OLDefn.nothing)))
+  (import (Option Definition) as ODefinition)
+  (import (Seq Definition) as Defs)
+  (import (Each Definition) as EachDef)
+  (data PrimList (prims & Primitive))
+  (data DefList (defs & Definition))
+  (data Globals (globals PrimList DefList T))
+  (defn gPrims ((G Globals)) (List Primitive) (case G ((globals p d b) (case p ((prims xs) xs)))))
+  (defn gDefs ((G Globals)) (List Definition) (case G ((globals p d b) (case d ((defs xs) xs)))))
+  (defn gBase ((G Globals)) T (case G ((globals p d b) b)))
+
+  (def def0 (defObj 0 0))
 
   ; whether an operation builds types from a number of types, and whether an object is a type
-  (defn isTyOp ((G T) (k T) (m T)) T
-    (or (anyT (lam ((p T)) (equal p (pr k m))) tyOps)
+  (defn isTyOp ((G Globals) (k T) (m T)) T
+    (or (EachTPair.any (lam ((p TPair)) (equal (rep p) (rep (pr k m)))) tyOps)
       (and (not (lt k (gBase G)))
-        (let d T (nth (gDefs G) (sub k (gBase G)))
-          (if (isSome d) (case (get d) ((defLang l) 0) ((defObj m2 b) (eq m2 m))) 0)))))
-  (defn isTy ((G T) (n T) (t T)) T
+        (let d ODefinition.Maybe (ODefinition.nthOf (gDefs G) (sub k (gBase G)))
+          (if (ODefinition.isJust d)
+            (case (ODefinition.fromMaybe def0 d) ((defLang l) 0) ((defObj m2 b) (eq m2 m)))
+            0)))))
+  (defn isTy ((G Globals) (n T) (t T)) T
     (snd
       (fold PT
         (lam ((l T) (rs PTs))
@@ -233,202 +299,244 @@
         t)))
 
   ; the fold of a term with the term at each node, its values the compilations in an environment
-  (deftype CV (Arrow T (Arrow Ts T)))
+  (deftype CV (Arrow T (Arrow (List TPair) OTPair.Maybe)))
   (deftype CP (Prod T CV))
   (deftype CPs (List CP))
   (defn cpTrees ((rs CPs)) Ts (foldr CP Ts (lam ((r CP) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
   (import (Lists CP) as CPs)
   (defn cpAt ((rs CPs) (i T)) CV
-    (lcase CP CV (iter CPs CPs.tail rs i) (lam ((X T) (e Ts)) none)
+    (lcase CP CV (iter CPs CPs.tail rs i) (lam ((X T) (e (List TPair))) OTPair.nothing)
       (lam ((r CP) (rest CPs)) (snd r))))
-  (defn cpAll ((rs CPs) (X T) (e Ts)) Ts
-    (foldr CP Ts (lam ((r CP) (acc Ts)) (cons ((snd r) X e) acc)) (nil T) rs))
+  (defn cpAll ((rs CPs) (X T) (e (List TPair))) (List OTPair.Maybe)
+    (foldr CP (List OTPair.Maybe) (lam ((r CP) (acc (List OTPair.Maybe))) (cons ((snd r) X e) acc))
+      (nil OTPair.Maybe)
+      rs))
+
+  ; the bindings of optional values, as the base binds optional trees
+  (defn bindPP ((m OTPair.Maybe) (f (Arrow TPair OTPair.Maybe))) OTPair.Maybe
+    (case m ((OTPair.just p) (f p)) ((OTPair.nothing) OTPair.nothing)))
+  (defn bindTP ((m T) (f (Arrow T OTPair.Maybe))) OTPair.Maybe
+    (if (isSome m) (f (get m)) OTPair.nothing))
+  (defn bindRP ((m OPrimitive.Maybe) (f (Arrow Primitive OTPair.Maybe))) OTPair.Maybe
+    (case m ((OPrimitive.just p) (f p)) ((OPrimitive.nothing) OTPair.nothing)))
+  (defn bindDL ((m ODefinition.Maybe) (f (Arrow Definition OLDefn.Maybe))) OLDefn.Maybe
+    (case m ((ODefinition.just d) (f d)) ((ODefinition.nothing) OLDefn.nothing)))
+  (defn bindLP ((m OLDefn.Maybe) (f (Arrow LDefn OTPair.Maybe))) OTPair.Maybe
+    (case m ((OLDefn.just d) (f d)) ((OLDefn.nothing) OTPair.nothing)))
+  (data TPairList (tpairs & TPair))
+  (import (Option TPairList) as OTPairList)
+  (defn allSomeP ((ms (List OTPair.Maybe))) OTPairList.Maybe
+    (let r (Prod T (List TPair)) (OTPair.allJust ms)
+      (if (fst r) (OTPairList.just (tpairs (snd r))) OTPairList.nothing)))
+  (defn bindQP ((m OTPairList.Maybe) (f (Arrow TPairList OTPair.Maybe))) OTPair.Maybe
+    (case m ((OTPairList.just xs) (f xs)) ((OTPairList.nothing) OTPair.nothing)))
+  (import (Few TPair) as TPairF)
 
   ; one step of the compilation, at a node, from the compilations of its children: the arrow and
   ; the type of the node's term in n object variables, in an environment over X
-  (defn compileStep ((G T) (n T) (l T) (rs CPs) (X T) (e Ts)) T
+  (defn compileStep ((G Globals) (n T) (l T) (rs CPs) (X T) (e (List TPair))) OTPair.Maybe
     (let d Ts (children (at (cpTrees rs) 0))
       (let as CPs (CPs.tail rs)
         (let k T (length (cpTrees as))
           (let r0 CV (cpAt as 0)
             (let r1 CV (cpAt as 1)
               (let r2 CV (cpAt as 2)
-                (if (and (eq l 0) (eq k 0)) (nth e (at d 0))
-                  (if (and (eq l 1) (eq k 0)) (some (pr (bang X) one))
+                (if (and (eq l 0) (eq k 0)) (OTPair.nthOf e (at d 0))
+                  (if (and (eq l 1) (eq k 0)) (OTPair.just (pr (bang X) one))
                     (if (and (eq l 2) (eq k 2))
-                      (bindO (r0 X e)
-                        (lam ((p T))
-                          (bindO (r1 X e)
-                            (lam ((q T)) (some (pr (cPair (p1 p) (p1 q)) (prod (p2 p) (p2 q))))))))
+                      (bindPP (r0 X e)
+                        (lam ((p TPair))
+                          (bindPP (r1 X e)
+                            (lam ((q TPair))
+                              (OTPair.just (pr (cPair (p1 p) (p1 q)) (prod (p2 p) (p2 q))))))))
                       (if (and (or (eq l 3) (eq l 4)) (eq k 1))
-                        (bindO (r0 X e)
-                          (lam ((p T))
-                            (bindO (prodParts (p2 p))
-                              (lam ((ab T))
+                        (bindPP (r0 X e)
+                          (lam ((p TPair))
+                            (bindPP (prodParts (p2 p))
+                              (lam ((ab TPair))
                                 (if (eq l 3)
-                                  (some (pr (comp (cFst (p1 ab) (p2 ab)) (p1 p)) (p1 ab)))
-                                  (some (pr (comp (cSnd (p1 ab) (p2 ab)) (p1 p)) (p2 ab))))))))
+                                  (OTPair.just (pr (comp (cFst (p1 ab) (p2 ab)) (p1 p)) (p1 ab)))
+                                  (OTPair.just
+                                    (pr (comp (cSnd (p1 ab) (p2 ab)) (p1 p)) (p2 ab))))))))
                         (if (and (eq l 5) (eq k 1))
                           (let a T (at d 0)
                             (if (isTy G n a)
-                              (bindO (r0 (prod X a) (extendEnv X a e))
-                                (lam ((p T)) (some (pr (curry X a (p1 p)) (exp a (p2 p))))))
-                              none))
+                              (bindPP (r0 (prod X a) (extendEnv X a e))
+                                (lam ((p TPair))
+                                  (OTPair.just (pr (curry X a (p1 p)) (exp a (p2 p))))))
+                              OTPair.nothing))
                           (if (and (eq l 6) (eq k 2))
-                            (bindO (r0 X e)
-                              (lam ((p T))
-                                (bindO (expParts (p2 p))
-                                  (lam ((ab T))
-                                    (bindO (r1 X e)
-                                      (lam ((q T))
+                            (bindPP (r0 X e)
+                              (lam ((p TPair))
+                                (bindPP (expParts (p2 p))
+                                  (lam ((ab TPair))
+                                    (bindPP (r1 X e)
+                                      (lam ((q TPair))
                                         (if (equal (p2 q) (p1 ab))
-                                          (some
+                                          (OTPair.just
                                             (pr (comp (ev (p1 ab) (p2 ab)) (cPair (p1 p) (p1 q)))
                                               (p2 ab)))
-                                          none)))))))
+                                          OTPair.nothing)))))))
                             (if (and (eq l 7) (eq k 1))
                               (let th Ts (children (at d 1))
-                                (bindO (nth (gPrims G) (at d 0))
-                                  (lam ((pm T))
-                                    (bindO (r0 X e)
-                                      (lam ((q T))
+                                (bindRP (OPrimitive.nthOf (gPrims G) (at d 0))
+                                  (lam ((pm Primitive))
+                                    (bindPP (r0 X e)
+                                      (lam ((q TPair))
                                         (if
                                           (and (eq (length th) (prArity pm))
                                             (and (allT (isTy G n) th)
                                               (equal (p2 q) (phSubst th (prDom pm)))))
-                                          (some
+                                          (OTPair.just
                                             (pr (comp (phSubst th (prArrow pm)) (p1 q))
                                               (phSubst th (prCod pm))))
-                                          none))))))
+                                          OTPair.nothing))))))
                               (if (and (eq l 8) (eq k 3))
-                                (bindO (r0 one (nil T))
-                                  (lam ((z T))
+                                (bindPP (r0 one (nil TPair))
+                                  (lam ((z TPair))
                                     (let c T (p2 z)
-                                      (bindO (r1 c (single (pr (idt c) c)))
-                                        (lam ((s T))
-                                          (bindO (r2 X e)
-                                            (lam ((m T))
+                                      (bindPP (r1 c (TPairs.single (pr (idt c) c)))
+                                        (lam ((s TPair))
+                                          (bindPP (r2 X e)
+                                            (lam ((m TPair))
                                               (if (and (equal (p2 s) c) (equal (p2 m) nat))
-                                                (some (pr (comp (natRec (p1 z) (p1 s)) (p1 m)) c))
-                                                none))))))))
+                                                (OTPair.just
+                                                  (pr (comp (natRec (p1 z) (p1 s)) (p1 m)) c))
+                                                OTPair.nothing))))))))
                                 (if (and (eq l 9) (eq k 3))
-                                  (bindO (r2 X e)
-                                    (lam ((m T))
-                                      (bindO (listPart (p2 m))
+                                  (bindPP (r2 X e)
+                                    (lam ((m TPair))
+                                      (bindTP (listPart (p2 m))
                                         (lam ((a T))
-                                          (bindO (r0 one (nil T))
-                                            (lam ((z T))
+                                          (bindPP (r0 one (nil TPair))
+                                            (lam ((z TPair))
                                               (let c T (p2 z)
-                                                (bindO
+                                                (bindPP
                                                   (r1 (prod a c)
-                                                    (l2 (pr (cSnd a c) c) (pr (cFst a c) a)))
-                                                  (lam ((s T))
+                                                    (TPairF.l2 (pr (cSnd a c) c) (pr (cFst a c) a)))
+                                                  (lam ((s TPair))
                                                     (if (equal (p2 s) c)
-                                                      (some
+                                                      (OTPair.just
                                                         (pr (comp (listRec a (p1 z) (p1 s)) (p1 m))
                                                           c))
-                                                      none))))))))))
+                                                      OTPair.nothing))))))))))
                                   (if (and (eq l 10) (eq k 2))
                                     (let c T (at d 0)
                                       (if (isTy G n c)
-                                        (bindO (r1 X e)
-                                          (lam ((m T))
-                                            (bindO (roseLabel (p2 m))
+                                        (bindPP (r1 X e)
+                                          (lam ((m TPair))
+                                            (bindTP (roseLabel (p2 m))
                                               (lam ((a T))
                                                 (let pc T (prod a (list c))
-                                                  (bindO (r0 pc (single (pr (idt pc) pc)))
-                                                    (lam ((s T))
+                                                  (bindPP (r0 pc (TPairs.single (pr (idt pc) pc)))
+                                                    (lam ((s TPair))
                                                       (if (equal (p2 s) c)
-                                                        (some
+                                                        (OTPair.just
                                                           (pr (comp (roseFold (p2 m) (p1 s)) (p1 m))
                                                             c))
-                                                        none))))))))
-                                        none))
+                                                        OTPair.nothing))))))))
+                                        OTPair.nothing))
                                     (if (and (eq l 12) (eq k 2))
-                                      (bindO (r0 X e)
-                                        (lam ((p T))
-                                          (bindO (r1 X e)
-                                            (lam ((q T))
+                                      (bindPP (r0 X e)
+                                        (lam ((p TPair))
+                                          (bindPP (r1 X e)
+                                            (lam ((q TPair))
                                               (if (equal (p2 p) (p2 q))
-                                                (some
+                                                (OTPair.just
                                                   (pr
                                                     (comp (chi (diag (p2 p))) (cPair (p1 p) (p1 q)))
                                                     omega))
-                                                none)))))
+                                                OTPair.nothing)))))
                                       (if (eq l 11)
                                         (let th Ts (children (at d 1))
-                                          (bindO (bindO (nth (gDefs G) (at d 0)) defLanguage)
-                                            (lam ((df T))
-                                              (bindO (allSomeT (cpAll as X e))
-                                                (lam ((rsN T))
-                                                  (let rl Ts (children rsN)
+                                          (bindLP
+                                            (bindDL (ODefinition.nthOf (gDefs G) (at d 0))
+                                              defLanguage)
+                                            (lam ((df LDefn))
+                                              (bindQP (allSomeP (cpAll as X e))
+                                                (lam ((rsN TPairList))
+                                                  (let rl (List TPair) (case rsN ((tpairs xs) xs))
                                                     (if
                                                       (and (eq (length th) (ldArity df))
                                                         (and (allT (isTy G n) th)
-                                                          (equalTs (mapT p2 rl)
+                                                          (equalTs (TPairOut.map p2 rl)
                                                             (mapT (phSubst th) (ldParams df)))))
-                                                      (some
+                                                      (OTPair.just
                                                         (pr
                                                           (comp (phOp (add (gBase G) (at d 0)) th)
-                                                            (tuple X (mapT p1 rl)))
+                                                            (tuple X (TPairOut.map p1 rl)))
                                                           (phSubst th (ldType df))))
-                                                      none)))))))
-                                        none)))))))))))))))))))
+                                                      OTPair.nothing)))))))
+                                        OTPair.nothing)))))))))))))))))))
 
   ; the arrow and the type of a term in n object variables, in an environment over X
-  (defn compile ((G T) (n T) (t T)) CV
+  (defn compile ((G Globals) (n T) (t T)) CV
     (snd
       (fold CP
         (lam ((l T) (rs CPs))
-          (pair (node l (cpTrees rs)) (lam ((X T) (e Ts)) (compileStep G n l rs X e))))
+          (pair (node l (cpTrees rs)) (lam ((X T) (e (List TPair))) (compileStep G n l rs X e))))
         t)))
 
+  ; the bindings of optional arrows with their types into optional definitions and sequents, and
+  ; the optional list of present definitions, as the base binds and collects optional trees
+  (defn bindPD ((m OTPair.Maybe) (f (Arrow TPair OPDefn.Maybe))) OPDefn.Maybe
+    (case m ((OTPair.just p) (f p)) ((OTPair.nothing) OPDefn.nothing)))
+  (defn bindPS ((m OTPair.Maybe) (f (Arrow TPair OSequent.Maybe))) OSequent.Maybe
+    (case m ((OTPair.just p) (f p)) ((OTPair.nothing) OSequent.nothing)))
+  (defn allSomeD ((ms (List OPDefn.Maybe))) OPDefnList.Maybe
+    (let r (Prod T (List PDefn)) (OPDefn.allJust ms)
+      (if (fst r) (OPDefnList.just (pdefns (snd r))) OPDefnList.nothing)))
+
   ; the definition of the combinators a definition compiles to, over the definitions before it
-  (defn ldCompile ((G T) (d T)) T
-    (bindO ((compile G (ldArity d) (ldBody d)) (ctxObj (ldParams d)) (stdEnv (ldParams d)))
-      (lam ((p T))
+  (defn ldCompile ((G Globals) (d LDefn)) OPDefn.Maybe
+    (bindPD ((compile G (ldArity d) (ldBody d)) (ctxObj (ldParams d)) (stdEnv (ldParams d)))
+      (lam ((p TPair))
         (if (and (allT (isTy G (ldArity d)) (ldParams d)) (equal (p2 p) (ldType d)))
-          (some (pdefn (node 0 (replicate (ldArity d) Sorts.obj)) Sorts.arr (p1 p)))
-          none))))
-  (defn defCompile ((G T) (d T)) T
+          (OPDefn.just (pdefn (sorts (replicate (ldArity d) Sorts.obj)) Sorts.arr (p1 p)))
+          OPDefn.nothing))))
+  (defn defCompile ((G Globals) (d Definition)) OPDefn.Maybe
     (case d ((defLang l) (ldCompile G l))
-      ((defObj m b) (some (pdefn (node 0 (replicate m Sorts.obj)) Sorts.obj b)))))
-  (defn compileDefs ((G T)) T
-    (let ds Ts (gDefs G)
-      (allSomeT
-        (mapT
+      ((defObj m b) (OPDefn.just (pdefn (sorts (replicate m Sorts.obj)) Sorts.obj b)))))
+  (import (Map T OPDefn.Maybe) as CompileAt)
+  (defn compileDefs ((G Globals)) OPDefnList.Maybe
+    (let ds (List Definition) (gDefs G)
+      (allSomeD
+        (CompileAt.map
           (lam ((i T))
-            (defCompile (globals (node 0 (gPrims G)) (node 0 (take i ds)) (gBase G)) (at ds i)))
-          (range (length ds))))))
+            (defCompile (globals (prims (gPrims G)) (defs (EachDef.take i ds)) (gBase G))
+              (Defs.atOr def0 ds i)))
+          (range (Defs.length ds))))))
 
   ; the sequent of the combinators an equation of two terms in a context compiles to
-  (defn compileEq ((G T) (n T) (g Ts) (t T) (u T)) T
-    (bindO ((compile G n t) (ctxObj g) (stdEnv g))
-      (lam ((p T))
-        (bindO ((compile G n u) (ctxObj g) (stdEnv g))
-          (lam ((q T))
+  (defn compileEq ((G Globals) (n T) (g Ts) (t T) (u T)) OSequent.Maybe
+    (bindPS ((compile G n t) (ctxObj g) (stdEnv g))
+      (lam ((p TPair))
+        (bindPS ((compile G n u) (ctxObj g) (stdEnv g))
+          (lam ((q TPair))
             (if (and (allT (isTy G n) g) (equal (p2 p) (p2 q)))
-              (some (mkSeq (replicate n Sorts.obj) (nil T) (eqn (p1 p) (p1 q))))
-              none))))))
+              (OSequent.just (mkSeq (replicate n Sorts.obj) (nil Eqn) (eqn (p1 p) (p1 q))))
+              OSequent.nothing))))))
+
+  (def ann1 (ann 0 0 0))
 
   ; whether a primitive arrow is an arrow of a signature in its object parameters between types,
   ; and whether the checker's inference confirms its domain and codomain
-  (defn primWf ((G T) (S Ts) (p T)) T
+  (defn primWf ((G Globals) (S (List OpSig)) (p Primitive)) T
     (let m T (prArity p)
       (and (scoped m (prArrow p))
         (and (isTy G m (prDom p))
           (and (isTy G m (prCod p))
             (equal (sortOf S (replicate m Sorts.obj) (prArrow p)) (some Sorts.arr)))))))
-  (defn primOk ((G T) (E T) (p T)) T
+  (defn primOk ((G Globals) (E ExtEnv) (p Primitive)) T
     (and (primWf G (envSg E) p)
-      (let inf TreeInf (snd (infers E (replicate (prArity p) Sorts.obj) (nil T) inferFuel))
-        (let a T (inf (prArrow p))
-          (let d T (inf (prDom p))
-            (let c T (inf (prCod p))
-              (if (and (isSome a) (and (isSome d) (isSome c)))
-                (let a2 T (get a)
-                  (let d2 T (get d)
-                    (let c2 T (get c)
+      (let inf TreeInf (snd (infers E (replicate (prArity p) Sorts.obj) (nil Eqn) inferFuel))
+        (let a OAnn.Maybe (inf (prArrow p))
+          (let d OAnn.Maybe (inf (prDom p))
+            (let c OAnn.Maybe (inf (prCod p))
+              (if (and (OAnn.isJust a) (and (OAnn.isJust d) (OAnn.isJust c)))
+                (let a2 Ann (OAnn.fromMaybe ann1 a)
+                  (let d2 Ann (OAnn.fromMaybe ann1 d)
+                    (let c2 Ann (OAnn.fromMaybe ann1 c)
                       (and (eq (annSort a2) Sorts.arr)
                         (and (eq (annSort d2) Sorts.obj)
                           (and (eq (annSort c2) Sorts.obj)
@@ -436,6 +544,6 @@
                 0)))))))
 
   ; whether an object in object parameters is an object defined by the checker's inference
-  (defn objOk ((E T) (m T) (b T)) T
+  (defn objOk ((E ExtEnv) (m T) (b T)) T
     (and (equal (sortOf (envSg E) (replicate m Sorts.obj) b) (some Sorts.obj))
-      (isSome ((snd (infers E (replicate m Sorts.obj) (nil T) inferFuel)) b)))))
+      (OAnn.isJust ((snd (infers E (replicate m Sorts.obj) (nil Eqn) inferFuel)) b)))))

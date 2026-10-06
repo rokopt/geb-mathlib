@@ -11,8 +11,8 @@
 ; equation the node of label 0 over its sides, a sequent the node of label 0 over the node of
 ; its context's sorts, the node of its hypotheses and its conclusion, a theory the node of label
 ; 0 over the node of its signature and the node of its axioms, and a definition the node of
-; label 0 over the node of its arguments' sorts, its sort and its body. Requires the prelude and
-; the base.
+; label 0 over the node of its arguments' sorts, its sort and its body, as their datatypes
+; declare them. Requires the prelude, the lists of bootstrap/seq.geb and the base.
 
 (module PartialHorn
   (export PRule.hyp PRule.refl PRule.symm PRule.trans PRule.cong PRule.strict PRule.ax PRule.thm
@@ -22,6 +22,9 @@
     PTs
     ptTrees
     ptValues
+    SortList
+    sorts
+    OpSig
     opSig
     opArgs
     opSort
@@ -33,24 +36,70 @@
     eqLhs
     eqRhs
     eqSubst
+    EqnList
+    eqns
+    sameEqns
+    Sequent
     seq
     seqCtx
     seqHyps
     seqConcl
     mkSeq
     seqScoped
+    OpSigList
+    opSigs
+    SeqList
+    seqs
+    Theory
     theory
     thySig
     thyAxioms
+    PhChk
     inst
     pcheck
+    PDefn
     pdefn
+    PDefnList
+    pdefns
     pdCtx
     pdSort
     pdBody
     opVars
     pdAxioms
-    thyExtendAll)
+    thyExtendAll
+    OOpSig.Maybe
+    OOpSig.nothing
+    OOpSig.just
+    OOpSig.isJust
+    OOpSig.fromMaybe
+    OOpSig.nthOf
+    OOpSig.allJust
+    OEqn.Maybe
+    OEqn.nothing
+    OEqn.just
+    OEqn.isJust
+    OEqn.fromMaybe
+    OEqn.nthOf
+    OEqn.allJust
+    OSequent.Maybe
+    OSequent.nothing
+    OSequent.just
+    OSequent.isJust
+    OSequent.fromMaybe
+    OSequent.nthOf
+    OSequent.allJust
+    OPDefn.Maybe
+    OPDefn.nothing
+    OPDefn.just
+    OPDefn.isJust
+    OPDefn.fromMaybe
+    OPDefn.nthOf
+    OPDefn.allJust
+    OPDefnList.Maybe
+    OPDefnList.nothing
+    OPDefnList.just
+    OPDefnList.isJust
+    OPDefnList.fromMaybe)
   (import Prelude)
   (import Base)
   ; the labels of the certificates' rules, as Geb.PartialHorn.Rule names them
@@ -75,12 +124,18 @@
   (defn ptValues ((rs PTs)) Ts (foldr PT Ts (lam ((r PT) (acc Ts)) (cons (snd r) acc)) (nil T) rs))
 
   ; signatures: an operation's arguments' sorts and its sort
-  (tree-data OpSig (opSig T T))
-  (defn opArgs ((o T)) Ts (case o ((opSig as s) (children as))))
-  (defn opSort ((o T)) T (case o ((opSig as s) s)))
+  (data SortList (sorts & T))
+  (data OpSig (opSig SortList T))
+  (import (Option OpSig) as OOpSig)
+  (defn opArgs ((o OpSig)) Ts (case o ((opSig as s) (case as ((sorts xs) xs)))))
+  (defn opSort ((o OpSig)) T (case o ((opSig as s) s)))
+
+  ; the binding of an optional signature into an optional tree, as the base binds optional trees
+  (defn bindOT ((m OOpSig.Maybe) (f (Arrow OpSig T))) T
+    (case m ((OOpSig.just o) (f o)) ((OOpSig.nothing) none)))
 
   ; the sort of a term in a context of sorts, or nothing when it is not well sorted
-  (defn sortOf ((S Ts) (ctx Ts) (t T)) T
+  (defn sortOf ((S (List OpSig)) (ctx Ts) (t T)) T
     (snd
       (fold PT
         (lam ((l T) (rs PTs))
@@ -90,8 +145,8 @@
                 (if (eq (length cs) 1)
                   (let i T (at cs 0) (if (eq (arity i) 0) (nth ctx (label i)) none))
                   none)
-                (bindO (nth S (sub l 1))
-                  (lam ((o T))
+                (bindOT (OOpSig.nthOf S (sub l 1))
+                  (lam ((o OpSig))
                     (if (equalTs (ptValues rs) (mapT some (opArgs o))) (some (opSort o)) none)))))))
         t)))
 
@@ -123,36 +178,67 @@
         t)))
 
   ; equations and sequents
-  (tree-data Eqn (eqn T T))
-  (defn eqLhs ((q T)) T (case q ((eqn s t) s)))
-  (defn eqRhs ((q T)) T (case q ((eqn s t) t)))
-  (defn eqSubst ((ts Ts) (q T)) T (eqn (phSubst ts (eqLhs q)) (phSubst ts (eqRhs q))))
-  (defn eqScoped ((n T) (q T)) T (and (scoped n (eqLhs q)) (scoped n (eqRhs q))))
-  (tree-data Seq (seq T T T))
-  (defn seqCtx ((a T)) Ts (case a ((seq c h q) (children c))))
-  (defn seqHyps ((a T)) Ts (case a ((seq c h q) (children h))))
-  (defn seqConcl ((a T)) T (case a ((seq c h q) q)))
-  (defn mkSeq ((ctx Ts) (hs Ts) (q T)) T (seq (node 0 ctx) (node 0 hs) q))
-  (defn seqScoped ((a T)) T
-    (let n T (length (seqCtx a)) (and (allT (eqScoped n) (seqHyps a)) (eqScoped n (seqConcl a)))))
+  (data Eqn (eqn T T))
+  (defn eqLhs ((q Eqn)) T (case q ((eqn s t) s)))
+  (defn eqRhs ((q Eqn)) T (case q ((eqn s t) t)))
+  (defn eqSubst ((ts Ts) (q Eqn)) Eqn (eqn (phSubst ts (eqLhs q)) (phSubst ts (eqRhs q))))
+  (defn eqScoped ((n T) (q Eqn)) T (and (scoped n (eqLhs q)) (scoped n (eqRhs q))))
+  (data EqnList (eqns & Eqn))
+  (import (Seq Eqn) as Eqns)
+  (import (Each Eqn) as EachEqn)
+  (import (Option Eqn) as OEqn)
+  (import (Seq OEqn.Maybe) as OEqns)
+  (import (Each OEqn.Maybe) as EachOEqn)
+  (data OEqnList (oeqns & OEqn.Maybe))
+  (defn sameEqns ((xs (List Eqn)) (ys (List Eqn))) T (equal (rep (eqns xs)) (rep (eqns ys))))
+  (defn sameOEqns ((xs (List OEqn.Maybe)) (ys (List OEqn.Maybe))) T
+    (equal (rep (oeqns xs)) (rep (oeqns ys))))
+  (data Sequent (seq SortList EqnList Eqn))
+  (import (Option Sequent) as OSequent)
+  (defn seqCtx ((a Sequent)) Ts (case a ((seq c h q) (case c ((sorts xs) xs)))))
+  (defn seqHyps ((a Sequent)) (List Eqn) (case a ((seq c h q) (case h ((eqns xs) xs)))))
+  (defn seqConcl ((a Sequent)) Eqn (case a ((seq c h q) q)))
+  (defn mkSeq ((ctx Ts) (hs (List Eqn)) (q Eqn)) Sequent (seq (sorts ctx) (eqns hs) q))
+  (defn seqScoped ((a Sequent)) T
+    (let n T (length (seqCtx a))
+      (and (EachEqn.all (eqScoped n) (seqHyps a)) (eqScoped n (seqConcl a)))))
 
   ; theories: a signature and axioms
-  (tree-data Theory (theory T T))
-  (defn thySig ((th T)) Ts (case th ((theory s a) (children s))))
-  (defn thyAxioms ((th T)) Ts (case th ((theory s a) (children a))))
+  (data OpSigList (opSigs & OpSig))
+  (data SeqList (seqs & Sequent))
+  (data Theory (theory OpSigList SeqList))
+  (defn thySig ((th Theory)) (List OpSig) (case th ((theory s a) (case s ((opSigs xs) xs)))))
+  (defn thyAxioms ((th Theory)) (List Sequent) (case th ((theory s a) (case a ((seqs xs) xs)))))
 
   ; the checker's result at a certificate: an optional equation, as a function of the context's
   ; sorts and the hypotheses
-  (deftype PhChk (Arrow Ts (Arrow Ts T)))
+  (deftype PhChk (Arrow Ts (Arrow (List Eqn) OEqn.Maybe)))
   (deftype PC (Prod T PhChk))
   (deftype PCs (List PC))
   (defn pcTrees ((rs PCs)) Ts (foldr PC Ts (lam ((r PC) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
-  (defn pcResults ((rs PCs) (ctx Ts) (hs Ts)) Ts
-    (foldr PC Ts (lam ((r PC) (acc Ts)) (cons ((snd r) ctx hs) acc)) (nil T) rs))
+  (defn pcResults ((rs PCs) (ctx Ts) (hs (List Eqn))) (List OEqn.Maybe)
+    (foldr PC (List OEqn.Maybe) (lam ((r PC) (acc (List OEqn.Maybe))) (cons ((snd r) ctx hs) acc))
+      (nil OEqn.Maybe)
+      rs))
   (import (Lists PC) as PCs)
   (defn pcPrem ((rs PCs) (i T)) PhChk
-    (lcase PC PhChk (iter PCs PCs.tail rs i) (lam ((ctx Ts) (hs Ts)) none)
+    (lcase PC PhChk (iter PCs PCs.tail rs i) (lam ((ctx Ts) (hs (List Eqn))) OEqn.nothing)
       (lam ((r PC) (rest PCs)) (snd r))))
+  ; an optional equation's left and right sides, as optional trees
+  (defn lhsOf ((m OEqn.Maybe)) T (case m ((OEqn.just q) (some (eqLhs q))) ((OEqn.nothing) none)))
+  (defn rhsOf ((m OEqn.Maybe)) T (case m ((OEqn.just q) (some (eqRhs q))) ((OEqn.nothing) none)))
+
+  ; the binding and image of optional equations, sequents and trees into optional equations, as
+  ; the base binds and maps optional trees
+  (defn bindE ((m OEqn.Maybe) (f (Arrow Eqn OEqn.Maybe))) OEqn.Maybe
+    (case m ((OEqn.just q) (f q)) ((OEqn.nothing) OEqn.nothing)))
+  (defn mapE ((f (Arrow Eqn Eqn)) (m OEqn.Maybe)) OEqn.Maybe
+    (case m ((OEqn.just q) (OEqn.just (f q))) ((OEqn.nothing) OEqn.nothing)))
+  (defn bindSE ((m OSequent.Maybe) (f (Arrow Sequent OEqn.Maybe))) OEqn.Maybe
+    (case m ((OSequent.just a) (f a)) ((OSequent.nothing) OEqn.nothing)))
+  (defn bindTE ((m T) (f (Arrow T OEqn.Maybe))) OEqn.Maybe (if (isSome m) (f (get m)) OEqn.nothing))
+  (defn mapTE ((f (Arrow T Eqn)) (m T)) OEqn.Maybe
+    (if (isSome m) (OEqn.just (f (get m))) OEqn.nothing))
 
   ; the index a leaf names
   (defn leafIndex ((t T)) T (if (eq (arity t) 0) (some (label t)) none))
@@ -160,100 +246,112 @@
   ; the instance of a sequent at the terms of a certificate's node: the terms for the context's
   ; variables, then a premise for each term whose conclusion's left side is that term, then a
   ; premise for each hypothesis whose conclusion is its instance
-  (defn inst ((S Ts) (a T) (cs PCs) (ctx Ts) (hs Ts)) T
+  (import (Map OEqn.Maybe T) as LhsOf)
+  (import (Map Eqn OEqn.Maybe) as JustEqn)
+  (defn inst ((S (List OpSig)) (a Sequent) (cs PCs) (ctx Ts) (hs (List Eqn))) OEqn.Maybe
     (let n T (length (seqCtx a))
       (let ts Ts (take n (pcTrees cs))
-        (let rs Ts (pcResults cs ctx hs)
+        (let rs (List OEqn.Maybe) (pcResults cs ctx hs)
           (if
             (and (seqScoped a)
               (and (equalTs (mapT (sortOf S ctx) ts) (mapT some (seqCtx a)))
-                (and (equalTs (mapT (mapO eqLhs) (take n (drop n rs))) (mapT some ts))
-                  (equalTs (drop (add n n) rs)
-                    (mapT (lam ((h T)) (some (eqSubst ts h))) (seqHyps a))))))
-            (some (eqSubst ts (seqConcl a)))
-            none)))))
+                (and (equalTs (LhsOf.map lhsOf (EachOEqn.take n (OEqns.drop n rs))) (mapT some ts))
+                  (sameOEqns (OEqns.drop (add n n) rs)
+                    (JustEqn.map (lam ((h Eqn)) (OEqn.just (eqSubst ts h))) (seqHyps a))))))
+            (OEqn.just (eqSubst ts (seqConcl a)))
+            OEqn.nothing)))))
 
   ; one rule of the checker, by the label of a certificate's node
   (defn pShape ((l T) (k T) (l0 T) (k0 T)) T (and (eq l l0) (eq k k0)))
-  (defn pcheckStep ((th T) (E Ts) (l T) (cs Ts) (rs PCs) (ctx Ts) (hs Ts)) T
+  (defn pcheckStep ((th Theory) (E (List Sequent)) (l T) (cs Ts) (rs PCs) (ctx Ts) (hs (List Eqn)))
+    OEqn.Maybe
     (let k T (length cs)
       (let c0 T (at cs 0)
-        (if (pShape l k PRule.hyp 1) (bindO (leafIndex c0) (lam ((i T)) (nth hs i)))
+        (if (pShape l k PRule.hyp 1) (bindTE (leafIndex c0) (lam ((i T)) (OEqn.nthOf hs i)))
           (if (pShape l k PRule.refl 1)
-            (bindO (leafIndex c0)
-              (lam ((i T)) (if (lt i (length ctx)) (some (eqn (phVar i) (phVar i))) none)))
+            (bindTE (leafIndex c0)
+              (lam ((i T))
+                (if (lt i (length ctx)) (OEqn.just (eqn (phVar i) (phVar i))) OEqn.nothing)))
             (if (pShape l k PRule.symm 1)
-              (mapO (lam ((q T)) (eqn (eqRhs q) (eqLhs q))) ((pcPrem rs 0) ctx hs))
+              (mapE (lam ((q Eqn)) (eqn (eqRhs q) (eqLhs q))) ((pcPrem rs 0) ctx hs))
               (if (pShape l k PRule.trans 2)
-                (bindO ((pcPrem rs 0) ctx hs)
-                  (lam ((q T))
-                    (bindO ((pcPrem rs 1) ctx hs)
-                      (lam ((q2 T))
-                        (if (equal (eqRhs q) (eqLhs q2)) (some (eqn (eqLhs q) (eqRhs q2))) none)))))
+                (bindE ((pcPrem rs 0) ctx hs)
+                  (lam ((q Eqn))
+                    (bindE ((pcPrem rs 1) ctx hs)
+                      (lam ((q2 Eqn))
+                        (if (equal (eqRhs q) (eqLhs q2)) (OEqn.just (eqn (eqLhs q) (eqRhs q2)))
+                          OEqn.nothing)))))
                 (if (and (eq l PRule.cong) (lt 0 k))
-                  (bindO ((pcPrem rs 0) ctx hs)
-                    (lam ((q T))
-                      (let res Ts (pcResults (PCs.tail rs) ctx hs)
+                  (bindE ((pcPrem rs 0) ctx hs)
+                    (lam ((q Eqn))
+                      (let res (List OEqn.Maybe) (pcResults (PCs.tail rs) ctx hs)
                         (if
                           (and (not (eq (label (eqLhs q)) 0))
-                            (equalTs (mapT (mapO eqLhs) res) (mapT some (children (eqLhs q)))))
-                          (mapO
+                            (equalTs (LhsOf.map lhsOf res) (mapT some (children (eqLhs q)))))
+                          (mapTE
                             (lam ((ts T)) (eqn (eqLhs q) (node (label (eqLhs q)) (children ts))))
-                            (allSomeT (mapT (mapO eqRhs) res)))
-                          none))))
+                            (allSomeT (LhsOf.map rhsOf res)))
+                          OEqn.nothing))))
                   (if (pShape l k PRule.strict 2)
-                    (bindO (leafIndex c0)
+                    (bindTE (leafIndex c0)
                       (lam ((j T))
-                        (bindO ((pcPrem rs 1) ctx hs)
-                          (lam ((q T))
+                        (bindE ((pcPrem rs 1) ctx hs)
+                          (lam ((q Eqn))
                             (if (not (eq (label (eqLhs q)) 0))
-                              (mapO (lam ((t T)) (eqn t t)) (nth (children (eqLhs q)) j))
-                              none)))))
+                              (mapTE (lam ((t T)) (eqn t t)) (nth (children (eqLhs q)) j))
+                              OEqn.nothing)))))
                     (if (and (eq l PRule.ax) (lt 0 k))
-                      (bindO (leafIndex c0)
+                      (bindTE (leafIndex c0)
                         (lam ((j T))
-                          (bindO (nth (thyAxioms th) j)
-                            (lam ((a T)) (inst (thySig th) a (PCs.tail rs) ctx hs)))))
+                          (bindSE (OSequent.nthOf (thyAxioms th) j)
+                            (lam ((a Sequent)) (inst (thySig th) a (PCs.tail rs) ctx hs)))))
                       (if (pShape l k PRule.cut 2)
-                        (bindO ((pcPrem rs 0) ctx hs) (lam ((h T)) ((pcPrem rs 1) ctx (cons h hs))))
+                        (bindE ((pcPrem rs 0) ctx hs)
+                          (lam ((h Eqn)) ((pcPrem rs 1) ctx (cons h hs))))
                         (if (and (eq l PRule.thm) (lt 0 k))
-                          (bindO (leafIndex c0)
+                          (bindTE (leafIndex c0)
                             (lam ((j T))
-                              (bindO (nth E j)
-                                (lam ((a T)) (inst (thySig th) a (PCs.tail rs) ctx hs)))))
-                          none))))))))))))
+                              (bindSE (OSequent.nthOf E j)
+                                (lam ((a Sequent)) (inst (thySig th) a (PCs.tail rs) ctx hs)))))
+                          OEqn.nothing))))))))))))
 
   ; the checker: the conclusion of a certificate in a theory and an environment of theorems, as a
   ; function of the context's sorts and the hypotheses
-  (defn pcheck ((th T) (E Ts) (c T)) PhChk
+  (defn pcheck ((th Theory) (E (List Sequent)) (c T)) PhChk
     (snd
       (fold PC
         (lam ((l T) (rs PCs))
           (let cs Ts (pcTrees rs)
-            (pair (node l cs) (lam ((ctx Ts) (hs Ts)) (pcheckStep th E l cs rs ctx hs)))))
+            (pair (node l cs) (lam ((ctx Ts) (hs (List Eqn))) (pcheckStep th E l cs rs ctx hs)))))
         c)))
 
   ; definitions of operations: the arguments' sorts, the sort and the body
-  (tree-data PDefn (pdefn T T T))
-  (defn pdCtx ((d T)) Ts (case d ((pdefn c s b) (children c))))
-  (defn pdSort ((d T)) T (case d ((pdefn c s b) s)))
-  (defn pdBody ((d T)) T (case d ((pdefn c s b) b)))
+  (data PDefn (pdefn SortList T T))
+  (data PDefnList (pdefns & PDefn))
+  (import (Option PDefn) as OPDefn)
+  (import (Option PDefnList) as OPDefnList)
+  (defn pdCtx ((d PDefn)) Ts (case d ((pdefn c s b) (case c ((sorts xs) xs)))))
+  (defn pdSort ((d PDefn)) T (case d ((pdefn c s b) s)))
+  (defn pdBody ((d PDefn)) T (case d ((pdefn c s b) b)))
 
   ; the application of the operation of index n to the first m variables
   (defn opVars ((n T) (m T)) T (phOp n (mapT phVar (range m))))
 
   ; the axioms of a definition as the operation of index n: the operation is defined where the
   ; body is and equal to it there, and defined only where the body is
-  (defn pdAxioms ((n T) (d T)) Ts
+  (import (Seq Sequent) as Seqs)
+  (import (Seq OpSig) as OpSigs)
+  (defn pdAxioms ((n T) (d PDefn)) (List Sequent)
     (let t T (opVars n (length (pdCtx d)))
       (let b T (pdBody d)
-        (cons (mkSeq (pdCtx d) (single (eqn b b)) (eqn t b))
-          (single (mkSeq (pdCtx d) (single (eqn t t)) (eqn b b)))))))
+        (cons (mkSeq (pdCtx d) (Eqns.single (eqn b b)) (eqn t b))
+          (Seqs.single (mkSeq (pdCtx d) (Eqns.single (eqn t t)) (eqn b b)))))))
 
   ; the extension of a theory by a definition, and by a list of definitions in order
-  (defn thyExtend ((th T) (d T)) T
-    (let S Ts (thySig th)
-      (theory (node 0 (append S (single (opSig (node 0 (pdCtx d)) (pdSort d)))))
-        (node 0 (append (thyAxioms th) (pdAxioms (length S) d))))))
-  (defn thyExtendAll ((th T) (ds Ts)) T
-    (foldr T T (lam ((d T) (acc T)) (thyExtend acc d)) th (reverse ds))))
+  (defn thyExtend ((th Theory) (d PDefn)) Theory
+    (let S (List OpSig) (thySig th)
+      (theory (opSigs (OpSigs.append S (OpSigs.single (opSig (sorts (pdCtx d)) (pdSort d)))))
+        (seqs (Seqs.append (thyAxioms th) (pdAxioms (OpSigs.length S) d))))))
+  (import (Seq PDefn) as PDefns)
+  (defn thyExtendAll ((th Theory) (ds (List PDefn))) Theory
+    (foldr PDefn Theory (lam ((d PDefn) (acc Theory)) (thyExtend acc d)) th (PDefns.reverse ds))))

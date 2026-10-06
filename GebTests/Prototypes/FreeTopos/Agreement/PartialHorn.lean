@@ -44,6 +44,25 @@ open Geb Geb.Kernel GebTests.Prototypes.FreeTopos.Agreement.Encode
   GebTests.Prototypes.FreeTopos.Agreement.Fold GebTests.Prototypes.FreeTopos.Agreement.Base
 open scoped FinEnum
 
+/-- The mirror's lists wrapped as datatypes, each the node of label zero over its elements. -/
+@[simp, template] theorem sorts_wrap (xs : List Tree) :
+    «PartialHorn.sorts» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc sorts_wrap] theorem eqns_wrap (xs : List Tree) :
+    «PartialHorn.eqns» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc sorts_wrap] theorem oeqns_wrap (xs : List Tree) :
+    «PartialHorn.oeqns» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc sorts_wrap] theorem opSigs_wrap (xs : List Tree) :
+    «PartialHorn.opSigs» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc sorts_wrap] theorem seqs_wrap (xs : List Tree) :
+    «PartialHorn.seqs» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc sorts_wrap] theorem pdefns_wrap (xs : List Tree) :
+    «PartialHorn.pdefns» xs = RoseTree.node 0 xs := rfl
+
 /-- The trees of a list of trees with their results. -/
 @[simp] theorem ptTrees_eq (rs : List (Tree × Tree)) :
     «PartialHorn.ptTrees» rs = rs.map Prod.fst :=
@@ -75,6 +94,9 @@ theorem encOptLeaf_inj {a b : Option ℕ} : encOpt (a.map leaf) = encOpt (b.map 
   rw [encOpt_inj]
   exact Option.map_injective (fun _ _ ↦ leaf_inj.mp) |>.eq_iff
 
+/-- The mirror's binding of an optional signature is the base's of optional trees. -/
+@[template] theorem bindOT_def : «PartialHorn.bindOT» = «Base.bindO» := rfl
+
 /-- The mirror's sort of a term in a context of sorts is the encoding of its sort. -/
 theorem sortOf_eq (S : PartialHorn.Sig) (Γ : List ℕ) (t : Tree) :
     «PartialHorn.sortOf» (S.map encOpSig) (Γ.map leaf) t =
@@ -89,8 +111,8 @@ theorem sortOf_eq (S : PartialHorn.Sig) (Γ : List ℕ) (t : Tree) :
     rcases xs with _ | ⟨x, _ | ⟨y, r⟩⟩ <;> simp [none_eq, List.getElem?_map]
     split <;> rfl
   | succ k =>
-    simp only [eq_leaf, ofBool_label, sub_leaf, nth_eq, bindO_eq, List.getElem?_map, beq_iff_eq,
-      Nat.add_one_ne_zero, ↓reduceIte, Nat.add_sub_cancel]
+    simp only [eq_leaf, ofBool_label, sub_leaf, template, bindOT_def, nth_eq, bindO_eq,
+      List.getElem?_map, beq_iff_eq, Nat.add_one_ne_zero, ↓reduceIte, Nat.add_sub_cancel]
     cases S[k]? with
     | none => rfl
     | some o =>
@@ -194,7 +216,7 @@ theorem phSubst_eq (ts : List Tree) (t : Tree) :
 @[simp] theorem seqScoped_eq (a : PartialHorn.Seq) :
     «PartialHorn.seqScoped» (encSeq a) = ofBool a.Scoped := by
   simp only [«PartialHorn.seqScoped», seqCtx_eq, seqHyps_eq, seqConcl_eq, length_eq,
-    List.length_map, PartialHorn.Seq.Scoped]
+    List.length_map, PartialHorn.Seq.Scoped, template, tmpl_all_def]
   rw [allT_map _ encEqn (fun h ↦ h.Scoped a.ctx.length) _ fun q _ ↦ eqScoped_eq _ q,
     eqScoped_eq, and_eq]
 
@@ -294,6 +316,37 @@ theorem sortOf_fun (S : PartialHorn.Sig) (Γ : List ℕ) :
 /-- The encoding of optional trees is injective. -/
 theorem encOpt_injective : Function.Injective encOpt := fun _ _ h ↦ encOpt_inj.mp h
 
+/-- The mirror's comparison of lists of equations, and of optional equations, is the comparison of
+lists of trees. -/
+@[template] theorem sameEqns_def : «PartialHorn.sameEqns» = «Base.equalTs» := rfl
+
+@[template, inherit_doc sameEqns_def] theorem sameOEqns_def :
+    «PartialHorn.sameOEqns» = «Base.equalTs» := rfl
+
+/-- The mirror's binding and image of optional equations, sequents and trees into optional
+equations are the base's of optional trees. -/
+@[template] theorem bindE_def : «PartialHorn.bindE» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindE_def] theorem mapE_def : «PartialHorn.mapE» = «Base.mapO» := rfl
+
+@[template, inherit_doc bindE_def] theorem bindSE_def : «PartialHorn.bindSE» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindE_def] theorem bindTE_def : «PartialHorn.bindTE» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindE_def] theorem mapTE_def : «PartialHorn.mapTE» = «Base.mapO» := rfl
+
+/-- The mirror's optional left side of an optional equation is its image under the left side. -/
+@[template] theorem lhsOf_def : «PartialHorn.lhsOf» = «Base.mapO» «PartialHorn.eqLhs» := by
+  funext t
+  simp only [«PartialHorn.lhsOf», «Base.mapO», «Prelude.isSome»]
+  rfl
+
+/-- The mirror's optional right side of an optional equation is its image under the right side. -/
+@[template] theorem rhsOf_def : «PartialHorn.rhsOf» = «Base.mapO» «PartialHorn.eqRhs» := by
+  funext t
+  simp only [«PartialHorn.rhsOf», «Base.mapO», «Prelude.isSome»]
+  rfl
+
 /-- The mirror's instance of a sequent at the terms and premises of a certificate's node. -/
 theorem inst_eq (S : PartialHorn.Sig) (a : PartialHorn.Seq)
     (xs : List (Tree × (List Tree → List Tree → Tree) × PartialHorn.Chk))
@@ -340,8 +393,9 @@ theorem inst_eq (S : PartialHorn.Sig) (a : PartialHorn.Seq)
     rw [decide_eq_decide, ← (List.map_injective_iff.mpr encOptEqn_inj).eq_iff]
     simp only [List.map_map, Function.comp_def, ← List.map_drop, eqSubst_eq, some_eq,
       Option.map_some]
-  simp only [«PartialHorn.inst», seqCtx_eq, length_eq, List.length_map, pcTrees_eq,
-    take_eq, pcResults_eq, hres, seqScoped_eq, mapT_eq, drop_eq, add_leaf,
+  simp only [«PartialHorn.inst», template, lhsOf_def, sameOEqns_def, seqCtx_eq, length_eq,
+    List.length_map, pcTrees_eq, take_eq, pcResults_eq, hres, seqScoped_eq, mapT_eq, drop_eq,
+    add_leaf,
     seqHyps_eq, seqConcl_eq, eqSubst_eq, equalTs_eq, and_eq, ofBool_label, PartialHorn.inst]
   rw [hts, c2, c3, c4]
   simp only [Bool.and_eq_true, decide_eq_true_eq]
@@ -360,8 +414,9 @@ theorem pcheckStep_eq (T : PartialHorn.Theory) (E : Array PartialHorn.Seq) (l : 
         («PartialHorn.pcTrees» (xs.map fun x ↦ (x.1, x.2.1))) (xs.map fun x ↦ (x.1, x.2.1)))
       (PartialHorn.checkStep T E l (xs.map fun x ↦ (x.1, x.2.2))) := by
   intro Γ H
-  simp only [«PartialHorn.pcheckStep», pcTrees_eq, List.map_map, Function.comp_def,
-    length_eq, List.length_map, at_eq, pShape_eq]
+  simp only [«PartialHorn.pcheckStep», template, bindE_def, mapE_def, bindSE_def, bindTE_def,
+    mapTE_def, lhsOf_def, rhsOf_def, pcTrees_eq, List.map_map, Function.comp_def, length_eq,
+    List.length_map, at_eq, pShape_eq]
   have hx0 := fun x (h : x ∈ xs) ↦ hx x h Γ H
   rcases l with _ | _ | _ | _ | _ | _ | _ | _ | _ | l
   · -- a hypothesis
@@ -548,14 +603,14 @@ theorem pcheck_eq (T : PartialHorn.Theory) (E : Array PartialHorn.Seq) (c : Tree
 /-- The mirror's axioms of a definition. -/
 @[simp] theorem pdAxioms_eq (n : ℕ) (d : PartialHorn.Defn) :
     «PartialHorn.pdAxioms» (leaf n) (encDefn d) = (d.axioms n).map encSeq := by
-  simp only [«PartialHorn.pdAxioms», pdCtx_eq, length_eq, List.length_map, opVars_eq,
+  simp only [«PartialHorn.pdAxioms», template, pdCtx_eq, length_eq, List.length_map, opVars_eq,
     pdBody_eq, single_eq, eqn_eq, PartialHorn.Defn.axioms, List.map_cons, List.map_nil]
   rfl
 
 /-- The mirror's extension of a theory by a definition. -/
 @[simp] theorem thyExtend_eq (T : PartialHorn.Theory) (d : PartialHorn.Defn) :
     «PartialHorn.thyExtend» (encTheory T) (encDefn d) = encTheory (T.extend d) := by
-  simp only [«PartialHorn.thyExtend», thySig_eq, thyAxioms_eq, length_eq, List.length_map,
+  simp only [«PartialHorn.thyExtend», template, thySig_eq, thyAxioms_eq, length_eq, List.length_map,
     pdAxioms_eq, pdCtx_eq, pdSort_eq, single_eq, append_eq, PartialHorn.Theory.extend,
     PartialHorn.Sig.extend]
   simp only [encTheory, List.map_append, List.map_cons, List.map_nil]
@@ -570,7 +625,7 @@ theorem thyExtendAll_eq (T : PartialHorn.Theory) (ds : List PartialHorn.Defn) :
         encTheory (l.foldr (fun d T ↦ T.extend d) T) :=
     List.rec rfl fun d l ih ↦ by
       rw [List.map_cons, List.foldr_cons, ih, List.foldr_cons, thyExtend_eq]
-  simp only [«PartialHorn.thyExtendAll», foldr_eq, reverse_eq, ← List.map_reverse,
+  simp only [«PartialHorn.thyExtendAll», template, foldr_eq, reverse_eq, ← List.map_reverse,
     PartialHorn.Theory.extendAll, List.foldl_eq_foldr_reverse]
   exact h ds.reverse
 

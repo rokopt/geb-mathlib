@@ -47,6 +47,57 @@ open Geb Geb.Kernel Geb.FreeTopos GebTests.Prototypes.FreeTopos.Agreement.Encode
   GebTests.Prototypes.FreeTopos.Agreement.Theory GebTests.Prototypes.FreeTopos.Agreement.Fold
 open scoped FinEnum
 
+/-- The mirror's lists wrapped as datatypes, each the node of label zero over its elements. -/
+@[simp, template] theorem dfds_wrap (xs : List Tree) :
+    «Infer.dfds» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc dfds_wrap] theorem bounds_wrap (xs : List Tree) :
+    «Infer.bounds» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc dfds_wrap] theorem typeds_wrap (xs : List Tree) :
+    «Infer.typeds» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc dfds_wrap] theorem anns_wrap (xs : List Tree) :
+    «Infer.anns» xs = RoseTree.node 0 xs := rfl
+
+/-- The mirror's images and bindings of optional values are the base's of optional trees. -/
+@[template] theorem mapOT_def : «Infer.mapOT» = «Base.mapO» := rfl
+
+@[template, inherit_doc mapOT_def] theorem mapTD_def : «Infer.mapTD» = «Base.mapO» := rfl
+
+@[template, inherit_doc mapOT_def] theorem mapYA_def : «Infer.mapYA» = «Base.mapO» := rfl
+
+@[template, inherit_doc mapOT_def] theorem mapAY_def : «Infer.mapAY» = «Base.mapO» := rfl
+
+@[template, inherit_doc mapOT_def] theorem mapTA_def : «Infer.mapTA» = «Base.mapO» := rfl
+
+@[template, inherit_doc mapOT_def] theorem bindST_def : «Infer.bindST» = «Base.bindO» := rfl
+
+@[template, inherit_doc mapOT_def] theorem bindYT_def : «Infer.bindYT» = «Base.bindO» := rfl
+
+@[template, inherit_doc mapOT_def] theorem bindAT_def : «Infer.bindAT» = «Base.bindO» := rfl
+
+@[template, inherit_doc mapOT_def] theorem bindOA_def : «Infer.bindOA» = «Base.bindO» := rfl
+
+@[template, inherit_doc mapOT_def] theorem bindTA_def : «Infer.bindTA» = «Base.bindO» := rfl
+
+@[template, inherit_doc mapOT_def] theorem bindLY_def : «Infer.bindLY» = «Base.bindO» := rfl
+
+/-- The mirror's optional lists of the values of lists of optional typed terms and typings are
+the base's of optional trees. -/
+@[template] theorem allSomeY_def : «Infer.allSomeY» = «Base.allSomeT» := by
+  funext ms
+  simp only [«Infer.allSomeY», template, «Infer.typeds»]
+  exact allJust_allSomeT ms
+
+@[template, inherit_doc allSomeY_def] theorem allSomeA_def :
+    «Infer.allSomeA» = «Base.allSomeT» := by
+  funext ms
+  simp only [«Infer.allSomeA», template, «Infer.anns»]
+  exact allJust_allSomeT ms
+
+@[template, inherit_doc mapOT_def] theorem bindLA_def : «Infer.bindLA» = «Base.bindO» := rfl
+
 /-- The right fold that counts indices down from an encoded list's end finds the first element
 passing a test, with its index. -/
 theorem foldr_countdown {α : Type} (e : α → Tree) (f : Tree → Tree) (L : ℕ) :
@@ -66,20 +117,20 @@ theorem foldr_countdown {α : Type} (e : α → Tree) (f : Tree → Tree) (L : �
 @[simp] theorem findAxiom_eq (f : Tree → Tree) :
     «Infer.findAxiom» f = encOpt ((indexedAxioms.find? fun q ↦
       (f (encSeq q.1)).label != 0).map fun q ↦ leaf q.2) := by
-  simp only [«Infer.findAxiom», axioms_eq, length_eq, List.length_map, foldr_eq]
+  simp only [«Infer.findAxiom», template, axioms_eq, length_eq, List.length_map, foldr_eq]
   rw [foldr_countdown encSeq f axioms.length axioms 0 (Nat.zero_add _)]
   rfl
 
 /-- The mirror's argument sorts of an operation of the signature. -/
 @[simp] theorem argSorts_eq (k : ℕ) :
     «Infer.argSorts» (leaf k) = (argSorts k).map leaf := by
-  simp only [«Infer.argSorts», sig_eq, nth_eq, List.getElem?_map, argSorts]
+  simp only [«Infer.argSorts», template, sig_eq, nth_eq, List.getElem?_map, argSorts]
   cases sig[k]? <;> simp [opArgs_eq]
 
 /-- The mirror's rule by which the axioms prove an application of an operation defined. -/
 theorem dfdRule_eq (k : ℕ) :
     «Infer.dfdRule» (leaf k) = encOpt ((dfdRule k).map encDfdRule) := by
-  simp only [«Infer.dfdRule», argSorts_eq, length_eq, List.length_map, opVars_eq,
+  simp only [«Infer.dfdRule», template, argSorts_eq, length_eq, List.length_map, opVars_eq,
     findAxiom_eq, seqCtx_eq, seqHyps_eq, seqConcl_eq, eqLhs_eq, eqRhs_eq, equalTs_eq, equal_eq,
     and_eq, not_eq, isEmpty_eq, eq_leaf, label_eq, children_eq, single_eq, ofBool_bne,
     map_leaf_inj, isSome_eq, ofBool_label, dfdRule, List.isEmpty_map]
@@ -92,7 +143,7 @@ theorem dfdRule_eq (k : ℕ) :
 /-- The mirror's axiom that bounds an application of an operation by another's. -/
 theorem boundRule_eq (o k : ℕ) :
     «Infer.boundRule» (leaf o) (leaf k) = encOpt ((boundRule o k).map leaf) := by
-  simp only [«Infer.boundRule», argSorts_eq, length_eq, List.length_map, opVars_eq,
+  simp only [«Infer.boundRule», template, argSorts_eq, length_eq, List.length_map, opVars_eq,
     findAxiom_eq, and_label, equalTs_eq, ofBool_bne, map_leaf_inj, seqCtx_eq, seqConcl_eq,
     seqHyps_eq, eqLhs_eq, eqRhs_eq, equal_label, allT_label, List.all_map, Function.comp_def,
     phOp_eq, single_eq, boundRule]
@@ -101,28 +152,28 @@ theorem boundRule_eq (o k : ℕ) :
 /-- The mirror's definedness rules, by operation. -/
 theorem dfdRules_eq :
     «Infer.dfdRules» = dfdRules.map fun r ↦ encOpt (r.map encDfdRule) := by
-  simp only [«Infer.dfdRules», sig_eq, length_eq, List.length_map, range_eq, mapT_eq,
+  simp only [«Infer.dfdRules», template, sig_eq, length_eq, List.length_map, range_eq, mapT_eq,
     List.map_map, Function.comp_def, dfdRule_eq, dfdRules]
 
 /-- The mirror's domain rules, by operation. -/
 theorem domRules_eq : «Infer.domRules» = domRules.map fun r ↦ encOpt (r.map leaf) := by
-  simp only [«Infer.domRules», sig_eq, length_eq, List.length_map, range_eq, mapT_eq,
+  simp only [«Infer.domRules», template, sig_eq, length_eq, List.length_map, range_eq, mapT_eq,
     List.map_map, Function.comp_def, boundRule_eq, domRules]
 
 /-- The mirror's codomain rules, by operation. -/
 theorem codRules_eq : «Infer.codRules» = codRules.map fun r ↦ encOpt (r.map leaf) := by
-  simp only [«Infer.codRules», sig_eq, length_eq, List.length_map, range_eq, mapT_eq,
+  simp only [«Infer.codRules», template, sig_eq, length_eq, List.length_map, range_eq, mapT_eq,
     List.map_map, Function.comp_def, boundRule_eq, codRules]
 
 /-- The mirror's theory extended by definitions. -/
 @[simp] theorem ext_eq (ds : List PartialHorn.Defn) :
     «Infer.ext» (ds.map encDefn) = encTheory (ext ds) := by
-  simp only [«Infer.ext», Theory.toposTheory_eq, thyExtendAll_eq]
+  simp only [«Infer.ext», template, Theory.toposTheory_eq, thyExtendAll_eq]
 
 /-- The mirror's environment of the theory extended by definitions. -/
 theorem envOfDefs_eq (ds : List PartialHorn.Defn) :
     «Infer.envOfDefs» (ds.map encDefn) = encExtEnv (ExtEnv.ofDefs ds) := by
-  simp only [«Infer.envOfDefs», ext_eq, thyAxioms_eq, thySig_eq, dfdRules_eq,
+  simp only [«Infer.envOfDefs», template, ext_eq, thyAxioms_eq, thySig_eq, dfdRules_eq,
     domRules_eq, codRules_eq]
   rfl
 
@@ -206,7 +257,7 @@ def TreeRel (v : Tree → Tree) (w : Tree → Option Ann) : Prop :=
 theorem hypOk_eq {v : List Tree → Tree → Tree} {w : List (Tree × Ann) → Tree → Option (Tree × Ann)}
     (hvw : PatRel v w) (args : List (Tree × Ann)) (h : PartialHorn.Eqn) :
     «Infer.hypOk» v (args.map encTyped) (encEqn h) = ofBool (hypOk w args h) := by
-  simp only [«Infer.hypOk», eqLhs_eq, eqRhs_eq, hvw args, equal_eq, ofBool_label,
+  simp only [«Infer.hypOk», template, eqLhs_eq, eqRhs_eq, hvw args, equal_eq, ofBool_label,
     decide_eq_true_eq, hypOk, beq_eq_decide]
   by_cases he : h.lhs = h.rhs
   · simp [he]
@@ -277,9 +328,9 @@ theorem inferObj_eq (k : ℕ) (args : List (Tree × Ann)) :
   rcases k with _ | _ | k <;> rcases args with _ | ⟨p, _ | ⟨q, r⟩⟩ <;>
     first
     | (by_cases hs : p.2.sort = 1 <;>
-        simp [«Infer.inferObj», inferObj, some_eq, none_eq, beq_eq_decide, Sorts.obj,
+        simp [«Infer.inferObj», inferObj, beq_eq_decide, Sorts.obj,
           Sorts.arr, Function.comp_def, ofBool_label_eq_zero, hs, -Nat.add_eq_right])
-    | simp [«Infer.inferObj», inferObj, some_eq, beq_eq_decide, Sorts.obj,
+    | simp [«Infer.inferObj», inferObj, beq_eq_decide, Sorts.obj,
         ofBool_label_eq_zero, -Nat.add_eq_right]
 
 /-- The mirror's typing of an arrow-valued application of an operation of the signature. -/
@@ -320,7 +371,7 @@ theorem inferDef_eq {v : List Tree → Tree → Tree}
       have hh : a.hyps.map encEqn = [encEqn ⟨d.body, d.body⟩] ↔ a.hyps = [⟨d.body, d.body⟩] := by
         exact map_encEqn_inj (hs' := [⟨d.body, d.body⟩])
       simp only [hh]
-      split_ifs <;> simp [Option.map_map, Function.comp_def, none_eq]
+      split_ifs <;> simp [Option.map_map, Function.comp_def]
 
 /-- The mirror's typing of an application of an operation to typed arguments. -/
 theorem inferOp_eq {v : List Tree → Tree → Tree}
@@ -335,7 +386,7 @@ theorem inferOp_eq {v : List Tree → Tree → Tree}
     obtain ⟨as, srt⟩ := o
     mirror_simp [argSortsOf_eq, opArgs_eq, opSort_eq, sig_eq, dfdOk_eq hvw, inferObj_eq,
       inferArr_eq hvw, inferDef_eq hvw, beq_eq_decide, Sorts.obj, Sorts.arr, decide_eq_true_eq]
-    split_ifs <;> simp [none_eq]
+    split_ifs <;> simp []
 
 /-- The mirror's definedness of a term. -/
 @[simp] theorem dfd_eq (t : Tree) : «Theory.dfd» t = encEqn (dfd t) := rfl
@@ -362,7 +413,7 @@ theorem inferSide_eq {tv : Tree → Tree} {tw : Tree → Option Ann} (htv : Tree
       map_leaf_inj (ys := [Sorts.arr])
     mirror_simp [seqCtx_eq, seqHyps_eq, seqConcl_eq, dfd_eq, mirror_x, phOp_eq, phVar_eq,
       encEqn_inj,
-      hc, beq_eq_decide, Bool.and_assoc, some_eq, foldr_find, eqLhs_eq, eqRhs_eq]
+      hc, beq_eq_decide, Bool.and_assoc, some_eq, foldr_find, foldr_find_none, eqLhs_eq, eqRhs_eq]
     cases H.find? (fun y ↦ decide (y.lhs = PartialHorn.op o [PartialHorn.var v])) with
     | none =>
       mirror_simp [none_eq]
@@ -395,13 +446,13 @@ theorem inferVar_eq {tv : Tree → Tree} {tw : Tree → Option Ann} (htv : TreeR
     rfl
   · mirror_simp [inferSide_eq htv, ann_eq, zero_add]
     exact sides_eq _ _
-  · simp [none_eq, -Nat.add_eq_right]
+  · simp [-Nat.add_eq_right]
 
 /-- The trees of a list of trees with their results. -/
 @[simp] theorem poTrees_eq (rs : List (Tree × Tree)) :
     «Infer.poTrees» rs = rs.map Prod.fst :=
   rs.rec rfl fun _ _ ih ↦ by
-    simp only [«Infer.poTrees», foldr_eq, List.foldr_cons] at ih ⊢
+    simp only [«Infer.poTrees», template, foldr_eq, List.foldr_cons] at ih ⊢
     rw [ih]
     rfl
 
@@ -409,7 +460,23 @@ theorem inferVar_eq {tv : Tree → Tree} {tw : Tree → Option Ann} (htv : TreeR
 @[simp] theorem poValues_eq (rs : List (Tree × Tree)) :
     «Infer.poValues» rs = rs.map Prod.snd :=
   rs.rec rfl fun _ _ ih ↦ by
-    simp only [«Infer.poValues», foldr_eq, List.foldr_cons] at ih ⊢
+    simp only [«Infer.poValues», template, foldr_eq, List.foldr_cons] at ih ⊢
+    rw [ih]
+    rfl
+
+/-- The terms of a list of terms with their typings. -/
+@[simp] theorem paTrees_eq (rs : List (Tree × Tree)) :
+    «Infer.paTrees» rs = rs.map Prod.fst :=
+  rs.rec rfl fun _ _ ih ↦ by
+    simp only [«Infer.paTrees», template, foldr_eq, List.foldr_cons] at ih ⊢
+    rw [ih]
+    rfl
+
+/-- The typings of a list of terms with their typings. -/
+@[simp] theorem paValues_eq (rs : List (Tree × Tree)) :
+    «Infer.paValues» rs = rs.map Prod.snd :=
+  rs.rec rfl fun _ _ ih ↦ by
+    simp only [«Infer.paValues», template, foldr_eq, List.foldr_cons] at ih ⊢
     rw [ih]
     rfl
 
@@ -440,7 +507,7 @@ theorem foldr_zip (cs : List Tree) : ∀ (bs : List Ann) (rest : List Tree),
     cs.length = bs.length →
       cs.foldr (fun (c : Tree) (s : List Tree × List Tree) ↦
           («Prelude.tail» s.1,
-            «Infer.typed» c («Prelude.at» s.1 (leaf 0)) :: s.2))
+            «Infer.typed» c (Templates.atOr «Infer.ann0» s.1 (leaf 0)) :: s.2))
         ((bs.map encAnn).reverse ++ rest, []) = (rest, (cs.zip bs).map encTyped) :=
   cs.rec (fun bs rest h ↦ by
       obtain rfl := List.length_eq_zero_iff.mp h.symm
@@ -449,7 +516,7 @@ theorem foldr_zip (cs : List Tree) : ∀ (bs : List Ann) (rest : List Tree),
       obtain ⟨b, bs', rfl⟩ := List.exists_cons_of_length_eq_add_one h.symm
       rw [List.foldr_cons, List.map_cons, List.reverse_cons, List.append_assoc,
         ih bs' _ (by simpa using h)]
-      simp [tail_eq, at_eq, typed_eq]
+      simp [tail_eq, tmpl_atOr_eq, typed_eq]
 
 /-- The mirror's inference of a pattern instance's typing at typed arguments. -/
 theorem patInfer_eq {v : List Tree → Tree → Tree}
@@ -470,8 +537,8 @@ theorem patInfer_eq {v : List Tree → Tree → Tree}
   | zero =>
     rcases xs with _ | ⟨x, _ | ⟨y, r⟩⟩ <;>
       first
-      | (by_cases hc : x.1.children = [] <;> simp [patStep, none_eq, List.getElem?_map, hc])
-      | simp [patStep, none_eq]
+      | (by_cases hc : x.1.children = [] <;> simp [patStep, List.getElem?_map, hc])
+      | simp [patStep]
   | succ k =>
     mirror_simp [poTrees_eq, poValues_eq, hv, allSomeT_eq, mapM_map_option, patStep,
       beq_iff_eq, Nat.add_one_ne_zero, Nat.add_sub_cancel, List.mapM_map]
@@ -502,10 +569,10 @@ theorem treeInfer_eq {v : List Tree → Tree → Tree}
     rcases xs with _ | ⟨x, _ | ⟨y, r⟩⟩ <;>
       first
       | (by_cases hc : x.1.children = [] <;>
-          simp [treeStep, none_eq, hc, inferVar_eq htv E Γ H])
-      | simp [treeStep, none_eq]
+          simp [treeStep, hc, inferVar_eq htv E Γ H])
+      | simp [treeStep]
   | succ k =>
-    mirror_simp [poTrees_eq, poValues_eq, hv, allSomeT_eq, mapM_map_option, treeStep,
+    mirror_simp [paTrees_eq, paValues_eq, hv, allSomeT_eq, mapM_map_option, treeStep,
       beq_iff_eq, Nat.add_one_ne_zero, Nat.add_sub_cancel, List.mapM_map]
     cases hm : xs.mapM (fun x ↦ x.2.2) with
     | none => rfl
@@ -523,7 +590,7 @@ theorem infers_eq (E : ExtEnv) (Γ : List ℕ) (H : List PartialHorn.Eqn) :
       TreeRel («Infer.infers» (encExtEnv E) (Γ.map leaf) (H.map encEqn) (leaf fuel)).2
         (infers E Γ H fuel).2 :=
   Nat.rec ⟨fun _ _ ↦ rfl, fun _ ↦ rfl⟩ fun n ih ↦ by
-    simp only [«Infer.infers», iter_leaf] at ih ⊢
+    simp only [«Infer.infers», template, iter_leaf] at ih ⊢
     rw [Nat.repeat]
     exact ⟨fun env p ↦ patInfer_eq ih.1 E env p, fun t ↦ treeInfer_eq ih.1 ih.2 E Γ H t⟩
 

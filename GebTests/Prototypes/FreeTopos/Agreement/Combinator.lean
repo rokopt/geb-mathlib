@@ -141,15 +141,182 @@ def PMRel {α : Type} (e : α → Tree) (m' : Tree → Tree → Tree) (m : PM α
 
 /-! The monad. -/
 
+/-- The composition of a computation with a computation from its value, which each of the mirror's
+compositions at a pair of types of values is. -/
+def pmBind (m : Tree → Tree → Tree) (k : Tree → Tree → Tree → Tree) : Tree → Tree → Tree :=
+  fun sc st ↦
+  if (Const.eq (Const.label (m sc st)) (leaf 1)).label ≠ 0 then
+    k (Const.child (Const.child (m sc st) (leaf 0)) (leaf 0)) sc
+      (Const.child (Const.child (m sc st) (leaf 0)) (leaf 1))
+  else Templates.bad
+
+/-- The mirror's compositions at each pair of types of values are one function. -/
+@[template] theorem bindTToT_def : «Combinator.bindTToT» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindTToY_def : «Combinator.bindTToY» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindTToP_def : «Combinator.bindTToP» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindTToC_def : «Combinator.bindTToC» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindYToT_def : «Combinator.bindYToT» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindYToY_def : «Combinator.bindYToY» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindYToP_def : «Combinator.bindYToP» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindYToYs_def : «Combinator.bindYToYs» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindYToA_def : «Combinator.bindYToA» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindQToT_def : «Combinator.bindQToT» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindQToP_def : «Combinator.bindQToP» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindQToE_def : «Combinator.bindQToE» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindSToY_def : «Combinator.bindSToY» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindSToQ_def : «Combinator.bindSToQ» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindSToP_def : «Combinator.bindSToP» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindPToT_def : «Combinator.bindPToT» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindPToY_def : «Combinator.bindPToY» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindPToP_def : «Combinator.bindPToP» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindPToPs_def : «Combinator.bindPToPs» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindPToOP_def : «Combinator.bindPToOP» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindEToT_def : «Combinator.bindEToT» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindEToP_def : «Combinator.bindEToP» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindCToT_def : «Combinator.bindCToT» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindCToP_def : «Combinator.bindCToP» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindCToE_def : «Combinator.bindCToE» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindCToC_def : «Combinator.bindCToC» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindYsToY_def : «Combinator.bindYsToY» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindYsToP_def : «Combinator.bindYsToP» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindYsToE_def : «Combinator.bindYsToE» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindYsToYs_def :
+    «Combinator.bindYsToYs» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindPsToP_def : «Combinator.bindPsToP» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindPsToPs_def :
+    «Combinator.bindPsToPs» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindOYToY_def : «Combinator.bindOYToY» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindOPToP_def : «Combinator.bindOPToP» = pmBind := rfl
+
+@[template, inherit_doc bindTToT_def] theorem bindAToP_def : «Combinator.bindAToP» = pmBind := rfl
+
+/-- The mirror's bindings of optional matches and of optional proofs added to a development are
+the base's of optional trees. -/
+@[template] theorem bindM_def : «Combinator.bindM» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindM_def] theorem bindPr_def : «Combinator.bindPr» = «Base.bindO» := rfl
+
+/-- The mirror's fields of an equation with its certificate and of an index with a development
+are those of a pair. -/
+@[template] theorem ecEqn_def : «Combinator.ecEqn» = «Language.p1» := rfl
+
+@[template, inherit_doc ecEqn_def] theorem ecCert_def : «Combinator.ecCert» = «Language.p2» := rfl
+
+@[template, inherit_doc ecEqn_def] theorem provedIdx_def : «Combinator.provedIdx» = «Language.p1» :=
+  rfl
+
+/-- The mirror's development of an index with a development. -/
+@[simp] theorem provedDev_node (i : Tree) (ds : List Tree) :
+    «Combinator.provedDev» (RoseTree.node 0 [i, RoseTree.node 0 ds]) = ds := by
+  mirror_simp [«Combinator.provedDev»]
+
+/-- The values of computations from a list's elements, in turn, as the node of label 0 over them,
+which each of the mirror's at a pair of types is. -/
+def pmMapM (f : Tree → Tree → Tree → Tree) (xs : List Tree) : Tree → Tree → Tree :=
+  Const.foldr (fun x acc ↦ pmBind (f x) fun y ↦ pmBind acc fun ys ↦
+    Templates.pure (Const.node (leaf 0) (y :: Const.children ys)))
+    (Templates.pure (Const.node (leaf 0) [])) xs
+
+/-- The values of a list's computations, in turn, as the node of label 0 over them, which each of
+the mirror's at a type is. -/
+def pmSeq (ms : List (Tree → Tree → Tree)) : Tree → Tree → Tree :=
+  Const.foldr (fun m acc ↦ pmBind m fun y ↦ pmBind acc fun ys ↦
+    Templates.pure (Const.node (leaf 0) (y :: Const.children ys)))
+    (Templates.pure (Const.node (leaf 0) [])) ms
+
+/-- The mirror's lists of certificates, typings, pairs, optional terms, labels, indices and the
+state's entries are the nodes of label 0 over them. -/
+@[simp, template] theorem certs_wrap (xs : List Tree) :
+    «Combinator.certs» xs = RoseTree.node 0 xs :=
+  rfl
+
+@[simp, template, inherit_doc certs_wrap] theorem ptys_wrap (xs : List Tree) :
+    «Combinator.ptys» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc certs_wrap] theorem pairs_wrap (xs : List Tree) :
+    «Combinator.pairs» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc certs_wrap] theorem opts_wrap (xs : List Tree) :
+    «Combinator.opts» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc certs_wrap] theorem labels_wrap (xs : List Tree) :
+    «Combinator.labels» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc certs_wrap] theorem indices_wrap (xs : List Tree) :
+    «Combinator.indices» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc certs_wrap] theorem devs_wrap (xs : List Tree) :
+    «Combinator.devs» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc certs_wrap] theorem memos_wrap (xs : List Tree) :
+    «Combinator.memos» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc certs_wrap] theorem nfList_wrap (xs : List Tree) :
+    «Combinator.nfList» xs = RoseTree.node 0 xs := rfl
+
+/-- The mirror's elements of a list of certificates, typings or pairs are its children. -/
+@[template] theorem certsOf_def : «Combinator.certsOf» = Const.children := rfl
+
+@[template, inherit_doc certsOf_def] theorem ptysOf_def : «Combinator.ptysOf» = Const.children :=
+  rfl
+
+@[template, inherit_doc certsOf_def] theorem pairsOf_def : «Combinator.pairsOf» = Const.children :=
+  rfl
+
+/-- The mirror's values of computations from the elements of lists of each type. -/
+@[template] theorem mapMEqC_def : «Combinator.mapMEqC» = pmMapM := rfl
+
+@[template, inherit_doc mapMEqC_def] theorem mapMPairC_def : «Combinator.mapMPairC» = pmMapM := rfl
+
+@[template, inherit_doc mapMEqC_def] theorem mapMTY_def : «Combinator.mapMTY» = pmMapM := rfl
+
+/-- The mirror's values of lists of computations at each type. -/
+@[template] theorem seqY_def : «Combinator.seqY» = pmSeq := rfl
+
+@[template, inherit_doc seqY_def] theorem seqP_def : «Combinator.seqP» = pmSeq := rfl
+
 /-- The mirror's computation of a value. -/
 theorem pmPure_rel {α : Type} (e : α → Tree) (a : α) :
-    PMRel e («Combinator.pmPure» (e a)) (pure a) := fun sc st' st h ↦ by
+    PMRel e (Templates.pure (e a)) (pure a) := fun sc st' st h ↦ by
   simp only [ReaderT.run_pure, StateT.run_pure]
   exact ⟨st', h, rfl⟩
 
 /-- The mirror's failure. -/
 theorem pmFail_rel {α : Type} (e : α → Tree) :
-    PMRel e «Combinator.pmFail» (failure : PM α) := fun _ _ _ _ ↦ by
+    PMRel e Templates.fail (failure : PM α) := fun _ _ _ _ ↦ by
   simp only [ReaderT.run_failure, StateT.run_failure]
   rfl
 
@@ -157,46 +324,46 @@ theorem pmFail_rel {α : Type} (e : α → Tree) :
 theorem pmBind_rel {α β : Type} (e₁ : α → Tree) (e₂ : β → Tree) (m' : Tree → Tree → Tree)
     (m : PM α) (hm : PMRel e₁ m' m) (k' : Tree → Tree → Tree → Tree) (k : α → PM β)
     (hk : ∀ a, PMRel e₂ (k' (e₁ a)) (k a)) :
-    PMRel e₂ («Combinator.pmBind» m' k') (m >>= k) := by
+    PMRel e₂ (pmBind m' k') (m >>= k) := by
   intro sc st' st h
   have h1 := hm sc st' st h
   simp only [ReaderT.run_bind, StateT.run_bind]
   rcases hr : (m.run sc).run st with _ | ⟨a, st₂⟩
   · rw [hr] at h1
-    simp only [«Combinator.pmBind», h1]
+    simp only [pmBind, h1]
     rfl
   · rw [hr] at h1
     obtain ⟨st₂', h2, h3⟩ := h1
-    simp only [«Combinator.pmBind», h3]
+    simp only [pmBind, h3]
     exact hk a sc st₂' st₂ h2
 
 /-- The mirror's first of two computations that succeeds. -/
 theorem pmOr_rel {α : Type} (e : α → Tree) (a' b' : Tree → Tree → Tree) (a b : PM α)
     (ha : PMRel e a' a) (hb : PMRel e b' b) :
-    PMRel e («Combinator.pmOr» a' b') (a <|> b) := by
+    PMRel e (Templates.orElse a' b') (a <|> b) := by
   intro sc st' st h
   have h1 := ha sc st' st h
   simp only [ReaderT.run_orElse, StateT.run_orElse]
   rcases hr : (a.run sc).run st with _ | ⟨x, st₂⟩
   · rw [hr] at h1
-    simp only [«Combinator.pmOr», h1]
+    simp only [Templates.orElse, h1]
     exact hb sc st' st h
   · rw [hr] at h1
     obtain ⟨st₂', h2, h3⟩ := h1
-    simp only [«Combinator.pmOr», h3]
+    simp only [Templates.orElse, h3]
     exact ⟨st₂', h2, rfl⟩
 
 /-- The mirror's values of computations from a list's elements, in turn. -/
 theorem pmMapM_rel {α β : Type} (e : α → Tree) (g : β → Tree) (f' : Tree → Tree → Tree → Tree)
     (f : β → PM α) :
     ∀ xs : List β, (∀ x ∈ xs, PMRel e (f' (g x)) (f x)) →
-      PMRel (fun ys ↦ RoseTree.node 0 (ys.map e)) («Combinator.pmMapM» f' (xs.map g))
+      PMRel (fun ys ↦ RoseTree.node 0 (ys.map e)) (pmMapM f' (xs.map g))
         (xs.mapM f) := by
   refine List.rec (fun _ ↦ ?_) fun x xs ih hx ↦ ?_
-  · simp only [«Combinator.pmMapM», List.map_nil, foldr_eq, List.foldr_nil, List.mapM_nil]
+  · simp only [pmMapM, List.map_nil, foldr_eq, List.foldr_nil, List.mapM_nil]
     exact pmPure_rel (fun ys ↦ RoseTree.node 0 (ys.map e)) []
   · have ih' := ih fun y hy ↦ hx y (List.mem_cons_of_mem x hy)
-    simp only [«Combinator.pmMapM», foldr_eq] at ih' ⊢
+    simp only [pmMapM, foldr_eq] at ih' ⊢
     simp only [List.map_cons, List.foldr_cons, List.mapM_cons]
     refine pmBind_rel e _ _ _ (hx x List.mem_cons_self) _ _ fun y ↦ ?_
     refine pmBind_rel (fun ys ↦ RoseTree.node 0 (ys.map e)) _ _ _ ih' _ _ fun ys ↦ ?_
@@ -234,29 +401,29 @@ theorem pmGuard_rel (b : Bool) :
 
 @[simp] theorem cAx_eq (j : ℕ) (ts ds hs : List Tree) :
     «Combinator.cAx» (leaf j) ts ds hs = PartialHorn.Cert.ax j ts ds hs := by
-  simp only [«Combinator.cAx», append_eq, PartialHorn.Cert.ax, List.append_assoc]
+  simp only [«Combinator.cAx», template, append_eq, PartialHorn.Cert.ax, List.append_assoc]
   rfl
 
 @[simp] theorem cThm_eq (j : ℕ) (ts ds hs : List Tree) :
     «Combinator.cThm» (leaf j) ts ds hs = PartialHorn.Cert.thm j ts ds hs := by
-  simp only [«Combinator.cThm», append_eq, PartialHorn.Cert.thm, List.append_assoc]
+  simp only [«Combinator.cThm», template, append_eq, PartialHorn.Cert.thm, List.append_assoc]
   rfl
 
 @[simp] theorem scCtx_eq (sc : Scope) :
     «Combinator.scCtx» (encScope sc) = sc.ctx.map leaf := by
-  simp [«Combinator.scCtx», encScope]
+  simp [template, «Combinator.scCtx», encScope]
 
 @[simp] theorem scHyps_eq (sc : Scope) :
     «Combinator.scHyps» (encScope sc) = sc.hyps.map encEqn := by
-  simp [«Combinator.scHyps», encScope]
+  simp [template, «Combinator.scHyps», encScope]
 
 @[simp] theorem scSeq_eq (sc : Scope) (q : Eqn) :
     «Combinator.scSeq» (encScope sc) (encEqn q) = encSeq (sc.seq q) := by
-  simp [«Combinator.scSeq», Scope.seq]
+  simp [template, «Combinator.scSeq», Scope.seq]
 
 @[simp] theorem scCite_eq (sc : Scope) (j : ℕ) :
     «Combinator.scCite» (encScope sc) (leaf j) = sc.cite j := by
-  simp [«Combinator.scCite», Scope.cite, Function.comp_def]
+  simp [template, «Combinator.scCite», Scope.cite, Function.comp_def]
 
 /-- The failure of an optional value. -/
 theorem option_failure {α : Type} : (failure : Option α) = none := rfl
@@ -301,17 +468,27 @@ theorem addLemma_rel (q : Eqn) (c : Tree) :
 
 /-! The table of typings and the certificates of definedness and of equations. -/
 
-/-- The mirror's value of a key in a list of keys with encoded values, the latest first. -/
+/-- The value of a key in a list of keys with values, the latest first, which each of the mirror's
+lookups in a table is. -/
+def tableFind (tb : List Tree) (k : Tree) : Tree :=
+  Const.foldr (fun e acc ↦ if (Const.equal (Const.child e (leaf 0)) k).label ≠ 0 then
+    Templates.just (Const.child e (leaf 1)) else acc) Templates.nothing tb
+
+/-- The mirror's lookups in the tables of typings and of normal forms. -/
+@[template] theorem memoFind_def : «Combinator.memoFind» = tableFind := rfl
+
+@[template, inherit_doc memoFind_def] theorem nfFind_def : «Combinator.nfFind» = tableFind := rfl
+
+/-- The value of a key in a list of keys with encoded values, the latest first. -/
 theorem tableFind_eq {β : Type} (e : β → Tree) (t : Tree) :
-    ∀ l : List (Tree × β), «Combinator.tableFind» (l.map (encKV e)) t =
+    ∀ l : List (Tree × β), tableFind (l.map (encKV e)) t =
       encOpt ((l.find? (·.1 == t)).map (e ∘ Prod.snd)) :=
   List.rec rfl fun p l ih ↦ by
-    simp only [«Combinator.tableFind», foldr_eq, List.map_cons, List.foldr_cons,
+    simp only [tableFind, foldr_eq, List.map_cons, List.foldr_cons,
       List.find?_cons] at ih ⊢
     rw [ih]
     by_cases h : p.1 = t
     · simp [encKV, h]
-      rfl
     · simp [encKV, h, beq_false_of_ne h]
 
 /-- The mirror's typing of a term, if it has been typed. -/
@@ -333,7 +510,7 @@ theorem memoize_rel (y : Ty) :
   obtain ⟨lm, ln, hm, hn, rfl⟩ := h
   refine ⟨_, ⟨(y.term, y) :: lm, ln, tRel_insert lm st.memo hm y.term y, hn, rfl⟩, ?_⟩
   mirror_simp [«Combinator.memoize», «Combinator.stMemo»,
-    «Combinator.withMemo», «Combinator.tableInsert», «Combinator.pst»,
+    «Combinator.withMemo», «Combinator.memoEntry», «Combinator.pst»,
     «Theory.l2», «Combinator.tyT»]
   rfl
 
@@ -347,6 +524,7 @@ theorem stInfer_srel {st' : Tree} {st : St} (h : SRel st' st) :
 theorem memoRet_rel (y : Ty) :
     PMRel encTy («Combinator.memoRet» (encTy y)) (memoize y >>= fun _ ↦ pure y) := by
   unfold «Combinator.memoRet»
+  simp only [template]
   exact pmBind_rel _ _ _ _ (memoize_rel y) _ _ fun _ ↦ pmPure_rel encTy y
 
 /-- The mirror's certificate of a term's definedness. -/
@@ -382,25 +560,25 @@ theorem eqCert_rel (q : Eqn) (c : Tree) :
 @[simp] theorem mod_leaf (a b : ℕ) : Const.mod (leaf a) (leaf b) = leaf (a % b) := rfl
 
 @[simp] theorem tyT_eq (y : Ty) : «Combinator.tyT» (encTy y) = y.term := by
-  simp [«Combinator.tyT», encTy]
+  simp [template, «Combinator.tyT», encTy]
 
 @[simp] theorem tySort_eq (y : Ty) : «Combinator.tySort» (encTy y) = leaf y.sort := by
-  simp [«Combinator.tySort», encTy]
+  simp [template, «Combinator.tySort», encTy]
 
 @[simp] theorem tyDfd_eq (y : Ty) : «Combinator.tyDfd» (encTy y) = y.dfd := by
-  simp [«Combinator.tyDfd», encTy]
+  simp [template, «Combinator.tyDfd», encTy]
 
 @[simp] theorem tyLo_eq (y : Ty) : «Combinator.tyLo» (encTy y) = y.lo := by
-  simp [«Combinator.tyLo», encTy]
+  simp [template, «Combinator.tyLo», encTy]
 
 @[simp] theorem tyLoC_eq (y : Ty) : «Combinator.tyLoC» (encTy y) = y.loCert := by
-  simp [«Combinator.tyLoC», encTy]
+  simp [template, «Combinator.tyLoC», encTy]
 
 @[simp] theorem tyHi_eq (y : Ty) : «Combinator.tyHi» (encTy y) = y.hi := by
-  simp [«Combinator.tyHi», encTy]
+  simp [template, «Combinator.tyHi», encTy]
 
 @[simp] theorem tyHiC_eq (y : Ty) : «Combinator.tyHiC» (encTy y) = y.hiCert := by
-  simp [«Combinator.tyHiC», encTy]
+  simp [template, «Combinator.tyHiC», encTy]
 
 @[simp] theorem pty_eq (t : Tree) (s : ℕ) (d lo lc hi hc : Tree) :
     «Combinator.pty» t (leaf s) d lo lc hi hc = encTy ⟨t, s, d, lo, lc, hi, hc⟩ := rfl
@@ -412,7 +590,7 @@ local macro "comb_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* "]"
   mirror_simp [cHyp_eq, cRefl_eq, cSymm_eq, cTrans_eq, cCong_eq, cStrict_eq, cAx_eq, cThm_eq,
     scCtx_eq, scHyps_eq, scSeq_eq, scCite_eq, div_leaf, mod_leaf, tyT_eq, tySort_eq, tyDfd_eq,
     tyLo_eq, tyLoC_eq, tyHi_eq, tyHiC_eq, pty_eq, «Theory.l2», «Theory.l3»,
-    «Theory.l4», $ls,*] $(loc)?)
+    «Theory.l4», Derivation.p1_node, Derivation.p2_node, $ls,*] $(loc)?)
 
 /-- The mirror's certificate of an equation between two objects, from their typings. -/
 theorem objEq_rel (l r : Ty) :
@@ -452,20 +630,19 @@ theorem axiomAt_rel (j : ℕ) : PMRel encSeq («Combinator.axiomAt» (leaf j)) (
   intro sc st' st h
   have hd := stDefs_srel h
   unfold axiomAt «Combinator.axiomAt»
+  simp only [ite_apply]
+  simp only [template]
   rw [axioms_eq, sig_eq]
   generalize axioms = A
   generalize sig = S
   by_cases hj : j < A.length
   · rw [dite_eq_left_of_eq_true (eq_true hj)]
     pm_simp []
-    comb_simp [hj, «Combinator.pmPure»]
+    comb_simp [hj, Templates.pure]
     refine ⟨st', h, ?_⟩
-    simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hj]
-    rfl
+    simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hj, Templates.ok, Templates.res]
   · rw [dite_eq_right_of_eq_false (eq_false hj)]
-    comb_simp [hj, «Combinator.pmBind», «Combinator.pmGet», hd]
-    simp only [decide_false, Bool.false_eq_true, ↓reduceIte, some_eq, bindO_eq, Option.elim_some,
-      RoseTree.children_node, List.getD_cons_zero, List.getD_cons_succ, hd, List.getElem?_map]
+    comb_simp [hj, pmBind, «Combinator.pmGet», hd, Templates.ok, Templates.res, List.getElem?_map]
     pm_simp []
     rcases hdm : st.defs[(j - A.length) / 2]? with _ | d
     · simp only [Option.map_none, Option.isSome_none, Bool.false_eq_true, ↓reduceIte]
@@ -485,12 +662,11 @@ theorem axiomAt_rel (j : ℕ) : PMRel encSeq («Combinator.axiomAt» (leaf j)) (
 /-- The mirror's computation from the state read. -/
 theorem pmGetBind_rel {α : Type} (e : α → Tree) (k' : Tree → Tree → Tree → Tree)
     (k : St → PM α) (hk : ∀ st' st, SRel st' st → PMRel e (k' st') (k st)) :
-    PMRel e («Combinator.pmBind» «Combinator.pmGet» k') (get >>= k) := by
+    PMRel e (pmBind «Combinator.pmGet» k') (get >>= k) := by
   intro sc st' st h
   have := hk st' st h sc st' st h
   pm_simp []
-  simp only [«Combinator.pmBind», «Combinator.pmGet», some_eq, bindO_eq,
-    Option.elim_some, «Theory.l2», at_eq]
+  mirror_simp [pmBind, «Combinator.pmGet», Templates.ok, Templates.res]
   exact this
 
 /-! The typing of patterns and terms. -/
@@ -506,6 +682,7 @@ theorem proveHyp_rel (pt' : List Tree → Tree → Tree → Tree → Tree) (pt :
     PMRel id («Combinator.proveHyp» pt' (tys.map encTy) (encEqn q))
       (proveHyp pt tys q) := by
   unfold «Combinator.proveHyp» proveHyp
+  simp only [template]
   simp only [eqLhs_eq, eqRhs_eq]
   refine pmBind_rel encTy id _ _ (hpt tys q.lhs) _ _ fun l ↦ ?_
   by_cases hq : q.lhs = q.rhs
@@ -523,6 +700,7 @@ theorem pBound_rel (pt' : List Tree → Tree → Tree → Tree → Tree) (pt : L
     PMRel encPair («Combinator.pBound» pt' (tys.map encTy) (leaf k) (leaf j) d)
       (Prover.bound pt tys k j d) := by
   unfold «Combinator.pBound» Prover.bound
+  simp only [template]
   refine pmBind_rel encSeq encPair _ _ (axiomAt_rel j) _ _ fun a ↦ ?_
   simp only [seqHyps_eq, seqConcl_eq, eqRhs_eq, length_eq, List.length_map, opVars_eq, dfd_eq]
   refine pmBind_rel (fun hs ↦ RoseTree.node 0 (hs.map id)) encPair _ _
@@ -549,6 +727,7 @@ theorem typeDefined_rel (pt' : List Tree → Tree → Tree → Tree → Tree)
     PMRel encTy («Combinator.typeDefined» pt' (leaf i) (leaf s) (tys.map encTy))
       (typeDefined pt i s tys) := by
   unfold «Combinator.typeDefined» typeDefined
+  simp only [template]
   refine pmGetBind_rel _ _ _ fun st' st h ↦ ?_
   have hd := stDefs_srel h
   simp only [hd, nth_eq, List.getElem?_map]
@@ -589,7 +768,7 @@ theorem stSig_srel {st' : Tree} {st : St} (h : SRel st' st) :
 
 /-- The mirror's failure, at a failure composed with a computation. -/
 theorem pmFailBind_rel {α β : Type} (e : β → Tree) (k : α → PM β) :
-    PMRel e «Combinator.pmFail» (failure >>= k) := by
+    PMRel e Templates.fail (failure >>= k) := by
   intro sc st' st h
   pm_simp []
   rfl
@@ -601,6 +780,7 @@ theorem typeOpDfd_rel (pt' : List Tree → Tree → Tree → Tree → Tree)
     PMRel id («Combinator.typeOpDfd» pt' (leaf k) (tys.map encTy))
       (typeOpDfd pt k tys) := by
   unfold «Combinator.typeOpDfd» typeOpDfd
+  simp only [template]
   simp only [dfdRules_eq, nth_eq, List.getElem?_map]
   generalize dfdRules[k]? = r
   rcases r with _ | _ | (j | j | j)
@@ -625,6 +805,7 @@ theorem typeOpObj_rel (k : ℕ) (t d : Tree) (tys : List Ty) :
     PMRel encTy («Combinator.typeOpObj» (leaf k) t d (tys.map encTy))
       (typeOpObj k t d tys) := by
   unfold «Combinator.typeOpObj» typeOpObj
+  simp only [template]
   comb_simp [mapT_eq, List.map_map, Function.comp_def, phOp_eq, eqn_eq, ofBool_bne, Sorts.obj]
   simp only [Bool.beq_eq_decide_eq]
   split_ifs
@@ -639,6 +820,7 @@ theorem typeOpTy_rel (pt' : List Tree → Tree → Tree → Tree → Tree)
     PMRel encTy («Combinator.typeOpTy» pt' (leaf k) (leaf s) t d (tys.map encTy))
       (typeOpTy pt k s t d tys) := by
   unfold «Combinator.typeOpTy» typeOpTy
+  simp only [template]
   by_cases hs : s = 0
   · subst hs
     simp only [eq_leaf, beq_self_eq_true, ofBool_true, label_leaf, ne_eq, one_ne_zero,
@@ -679,6 +861,7 @@ theorem typeOp_rel (pt' : List Tree → Tree → Tree → Tree → Tree)
     (pt : List Ty → Tree → PM Ty) (hpt : PatRel pt' pt) (k : ℕ) (tys : List Ty) :
     PMRel encTy («Combinator.typeOp» pt' (leaf k) (tys.map encTy)) (typeOp pt k tys) := by
   unfold «Combinator.typeOp» typeOp
+  simp only [template]
   refine pmGetBind_rel _ _ _ fun st' st h ↦ ?_
   simp only [stSig_srel h, nth_eq, List.getElem?_map]
   cases st.sig[k]? with
@@ -706,13 +889,13 @@ theorem typeOp_rel (pt' : List Tree → Tree → Tree → Tree → Tree)
 theorem pmSeq_rel {α : Type} (e : α → Tree) :
     ∀ xs : List (Tree × (Tree → Tree → Tree) × PM α), (∀ x ∈ xs, PMRel e x.2.1 x.2.2) →
       PMRel (fun ys ↦ RoseTree.node 0 (ys.map e))
-        («Combinator.pmSeq» (xs.map fun x ↦ x.2.1))
+        (pmSeq (xs.map fun x ↦ x.2.1))
         ((xs.map fun x ↦ (x.1, x.2.2)).mapM Prod.snd) := by
   refine List.rec (fun _ ↦ ?_) fun x xs ih hx ↦ ?_
-  · simp only [«Combinator.pmSeq», List.map_nil, foldr_eq, List.foldr_nil, List.mapM_nil]
+  · simp only [pmSeq, List.map_nil, foldr_eq, List.foldr_nil, List.mapM_nil]
     exact pmPure_rel (fun ys ↦ RoseTree.node 0 (ys.map e)) []
   · have ih' := ih fun y hy ↦ hx y (List.mem_cons_of_mem x hy)
-    simp only [«Combinator.pmSeq», foldr_eq] at ih' ⊢
+    simp only [pmSeq, foldr_eq] at ih' ⊢
     simp only [List.map_cons, List.foldr_cons, List.mapM_cons]
     refine pmBind_rel e _ _ _ (hx x List.mem_cons_self) _ _ fun y ↦ ?_
     refine pmBind_rel (fun ys ↦ RoseTree.node 0 (ys.map e)) _ _ _ ih' _ _ fun ys ↦ ?_
@@ -755,7 +938,7 @@ theorem typeStep_rel (pt' : List Tree → Tree → Tree → Tree → Tree) (pt :
 theorem findIdxT_eq {α : Type} (f' : Tree → Tree) (g : α → Tree) (p : α → Bool)
     (hf : ∀ x, f' (g x) = ofBool (p x)) :
     ∀ xs : List α,
-      «Combinator.findIdxT» f' (xs.map g) = encOpt ((xs.findIdx? p).map leaf) := by
+      «Combinator.findIdx» f' (xs.map g) = encOpt ((xs.findIdx? p).map leaf) := by
   have gen : ∀ (ys : List α) (m : ℕ), Const.foldr (fun (x : Tree) (s : Tree × Tree) ↦
       (Const.sub s.1 (leaf 1), if (f' x).label ≠ 0 then
         «Prelude.some» (Const.sub s.1 (leaf 1)) else s.2))
@@ -775,7 +958,7 @@ theorem findIdxT_eq {α : Type} (f' : Tree → Tree) (g : α → Tree) (p : α �
           Option.map_some, Nat.zero_add]
         rfl
   intro xs
-  simp only [«Combinator.findIdxT», length_eq, List.length_map]
+  simp only [«Combinator.findIdx», template, length_eq, List.length_map]
   have := gen xs 0
   simp only [Nat.zero_add, Nat.add_zero] at this
   rw [this]
@@ -791,6 +974,7 @@ theorem varSide_rel (tt' : Tree → Tree → Tree → Tree) (tt : Tree → PM Ty
       (varSide tt inf i o j) := by
   intro sc st' st h
   unfold «Combinator.varSide» varSide
+  simp only [template]
   simp only [read, readThe, MonadReaderOf.read, ReaderT.run_bind, ReaderT.run_read, pure_bind]
   comb_simp [scHyps_eq, phOp_eq, phVar_eq, single_eq]
   rw [findIdxT_eq _ encEqn (fun q : Eqn ↦ q.lhs == PartialHorn.op o [PartialHorn.var i])
@@ -810,7 +994,7 @@ theorem varSide_rel (tt' : Tree → Tree → Tree → Tree) (tt : Tree → PM Ty
       pm_simp []
       rfl
     | some q =>
-      simp only [Option.map_some, Option.isSome_some, ↓reduceIte, get_eq, eqRhs_eq]
+      simp only [Option.map_some, Option.isSome_some, ↓reduceIte]
       refine (pmBind_rel encTy encPair _ _ (htt q.rhs) _ _ fun r ↦ ?_) sc st' st h
       cases inf
       · comb_simp []
@@ -825,6 +1009,7 @@ theorem typeVar_rel (tt' : Tree → Tree → Tree → Tree) (tt : Tree → PM Ty
     PMRel encTy («Combinator.typeVar» tt' (leaf i)) (typeVar tt i) := by
   intro sc st' st h
   unfold «Combinator.typeVar» typeVar
+  simp only [template]
   simp only [read, readThe, MonadReaderOf.read, ReaderT.run_bind, ReaderT.run_read, pure_bind,
     scCtx_eq, nth_eq, List.getElem?_map]
   cases sc.ctx[i]? with
@@ -865,6 +1050,7 @@ def TypersRel (p' : (List Tree → Tree → Tree → Tree → Tree) × (Tree →
 /-- The mirror's typers at every fuel. -/
 theorem typers_rel (n : ℕ) : TypersRel («Combinator.typers» (leaf n)) (typers n) := by
   unfold «Combinator.typers» typers
+  simp only [template]
   simp only [Const.iter, label_leaf]
   refine Nat.rec ⟨fun _ _ ↦ pmFail_rel encTy, fun _ ↦ pmFail_rel encTy⟩ (fun _ ih ↦ ?_) n
   refine ⟨fun tys p ↦ ?_, fun t ↦ ?_⟩
@@ -891,7 +1077,7 @@ theorem typePattern_rel : PatRel (fun env p ↦ «Combinator.typePattern» env p
 /-- The mirror's typings of terms, in turn. -/
 theorem typeTerms_rel (σ : List Tree) :
     PMRel (fun ys ↦ RoseTree.node 0 (ys.map encTy))
-      («Combinator.pmMapM» «Combinator.typeTerm» σ) (σ.mapM typeTerm) := by
+      (pmMapM «Combinator.typeTerm» σ) (σ.mapM typeTerm) := by
   have h := pmMapM_rel encTy id «Combinator.typeTerm» typeTerm σ fun x _ ↦ typeTerm_rel x
   rwa [List.map_id] at h
 
@@ -903,26 +1089,26 @@ def encMS (ms : MatchSt) : Tree :=
   RoseTree.node 0 [RoseTree.node 0 (ms.σ.map encOpt), RoseTree.node 0 (ms.objs.map encPair)]
 
 @[simp] theorem rwSrc_eq (r : RwRule) : «Combinator.rwSrc» (encRw r) = encSrc r.src := by
-  simp [«Combinator.rwSrc», encRw]
+  simp [template, «Combinator.rwSrc», encRw]
 
 @[simp] theorem rwFlip_eq (r : RwRule) : «Combinator.rwFlip» (encRw r) = ofBool r.flip := by
-  simp [«Combinator.rwFlip», encRw]
+  simp [template, «Combinator.rwFlip», encRw]
 
 @[simp] theorem rwAvoid_eq (r : RwRule) :
     «Combinator.rwAvoid» (encRw r) = r.avoid.map leaf := by
-  simp [«Combinator.rwAvoid», encRw]
+  simp [template, «Combinator.rwAvoid», encRw]
 
 @[simp] theorem msSigma_eq (ms : MatchSt) :
     «Combinator.msSigma» (encMS ms) = ms.σ.map encOpt := by
-  simp [«Combinator.msSigma», encMS]
+  simp [template, «Combinator.msSigma», encMS]
 
 @[simp] theorem msObjs_eq (ms : MatchSt) :
     «Combinator.msObjs» (encMS ms) = ms.objs.map encPair := by
-  simp [«Combinator.msObjs», encMS]
+  simp [template, «Combinator.msObjs», encMS]
 
 @[simp] theorem msDefer_eq (ms : MatchSt) (p t : Tree) :
     «Combinator.msDefer» (encMS ms) p t = encMS { ms with objs := (p, t) :: ms.objs } := by
-  simp only [«Combinator.msDefer», «Combinator.matchSt», «Theory.l2»,
+  simp only [«Combinator.msDefer», template, «Combinator.matchSt», 
     msSigma_eq, msObjs_eq, node_leaf]
   rfl
 
@@ -938,20 +1124,21 @@ theorem srcSeq_rel (s : Src) : PMRel encSeq («Combinator.srcSeq» (encSrc s)) s
   rcases s with j | j
   · have e :
         «Combinator.srcSeq» (encSrc (.ax j)) = «Combinator.axiomAt» (leaf j) := by
-      simp only [«Combinator.srcSeq», encSrc, label_eq, RoseTree.label_node, eq_leaf,
-        children_node, at_eq, List.getD_cons_zero, beq_self_eq_true, ofBool_true, label_leaf, ne_eq,
+      simp only [«Combinator.srcSeq», template, encSrc, label_eq, RoseTree.label_node, eq_leaf,
+        child_node, List.getD_cons_zero, beq_self_eq_true, ofBool_true,
+        label_leaf, ne_eq,
         one_ne_zero, not_false_eq_true, ↓reduceIte]
     rw [e]
     exact axiomAt_rel j
-  · simp only [«Combinator.srcSeq», encSrc, label_eq, RoseTree.label_node, eq_leaf,
-      children_node, at_eq, List.getD_cons_zero, Nat.reduceBEq, ofBool_false, label_leaf, ne_eq,
+  · simp only [«Combinator.srcSeq», template, encSrc, label_eq, RoseTree.label_node, eq_leaf,
+      Nat.reduceBEq, ofBool_false, label_leaf, ne_eq,
       not_true_eq_false, ↓reduceIte, Src.seq]
     refine pmGetBind_rel _ _ _ fun st' st h ↦ ?_
-    simp only [stDev_srel h, nth_eq, List.getElem?_map, Array.getElem?_toList]
-    rcases st.dev[j]? with _ | e
-    · comb_simp []
+    simp only [stDev_srel h]
+    rcases he : st.dev[j]? with _ | e
+    · comb_simp [he]
       exact pmFail_rel encSeq
-    · comb_simp [get_eq, encDevEntry]
+    · comb_simp [he, get_eq, encDevEntry, «Combinator.devSeq»]
       exact pmPure_rel encSeq e.1
 
 @[simp] theorem srcCert_eq (s : Src) (ts ds hs : List Tree) :
@@ -973,11 +1160,11 @@ theorem matchKids_eq :
           (fun (ms : MatchSt) ((c, u) : (Tree × (Tree → MatchSt → Option MatchSt)) × Tree) ↦
             c.2 u ms) ms).map encMS) := by
   refine List.rec (fun _ us ms ↦ ?_) fun x xs ih hx us ms ↦ ?_
-  · simp [«Combinator.matchKids», some_eq]
+  · simp [template, «Combinator.matchKids», some_eq]
   · rcases us with _ | ⟨u, us⟩
-    · simp [«Combinator.matchKids», Const.lcase, some_eq]
+    · simp [template, «Combinator.matchKids», Const.lcase, some_eq]
     · have ih' := ih fun y hy ↦ hx y (List.mem_cons_of_mem x hy)
-      simp only [«Combinator.matchKids», foldr_eq, Const.lcase] at ih' ⊢
+      simp only [«Combinator.matchKids», template, foldr_eq, Const.lcase] at ih' ⊢
       simp only [List.map_cons, List.foldr_cons, List.zip_cons_cons, List.foldlM_cons,
         hx x List.mem_cons_self u ms, bindO_eq]
       rcases x.2.2 u ms with _ | ms₂
@@ -991,33 +1178,30 @@ theorem matchPat_eq (S : Sig) (ctx : List ℕ) (p : Tree) :
   rcases l with _ | k
   · rcases xs with _ | ⟨⟨i, v, w⟩, _ | ⟨y, ys⟩⟩
     · comb_simp [«Combinator.matchStepP»]
-      rfl
     · comb_simp [«Combinator.matchStepP», msSigma_eq, msObjs_eq, msDefer_eq,
         Prove.setAt_eq, List.getElem?_map, some_eq, encOpt_inj]
       rcases hσ : ms.σ[i.label]? with _ | _ | u
       · rfl
-      · simp [encMS, «Combinator.matchSt», List.map_set]
+      · simp [template, encMS, «Combinator.matchSt», List.map_set]
       · by_cases hu : u = t
         · simp [hu]
         · rcases hc : ctx[i.label]? with _ | c
           · simp [hu]
-            rfl
           · by_cases hc0 : c = 0
             · simp [hu, hc0, Sorts.obj]
             · simp [hu, hc0, Sorts.obj, leaf_inj]
-              rfl
     · comb_simp [«Combinator.matchStepP»]
       rfl
   · comb_simp [«Combinator.matchStepP», msDefer_eq, sortOf_eq, some_eq, encOpt_inj,
       Nat.add_one_ne_zero, beq_iff_eq]
-    have tail : (if (t.label == k + 1 && t.children.length == xs.length) = true then
+    have tail : (if t.label = k + 1 ∧ t.children.length = xs.length then
         «Combinator.matchKids» (xs.map fun x ↦ x.2.1) t.children (encMS ms)
-        else «Prelude.none») = encOpt (Option.map encMS
-          (if (t.label == k + 1 && t.children.length == xs.length) = true then
+        else encOpt none) = encOpt (Option.map encMS
+          (if t.label = k + 1 ∧ t.children.length = xs.length then
             ((xs.map fun x ↦ (x.1, x.2.2)).zip t.children).foldlM (fun ms x ↦ x.1.2 x.2 ms) ms
           else none)) := by
-      by_cases hl : (t.label == k + 1 && t.children.length == xs.length) = true
-      · simp only [hl, ↓reduceIte]
+      by_cases hl : t.label = k + 1 ∧ t.children.length = xs.length
+      · simp only [hl]
         exact matchKids_eq xs hx _ ms
       · simp only [hl]
         rfl
@@ -1042,17 +1226,17 @@ theorem bridgeKids_rel :
           (x.1, x.2.2)).zip us).mapM
           fun ((c, u) : (Tree × (Tree → PM Tree)) × Tree) ↦ c.2 u) := by
   refine List.rec (fun _ us ↦ ?_) fun x xs ih hx us ↦ ?_
-  · simp only [«Combinator.bridgeKids», List.map_nil, foldr_eq, List.foldr_nil,
-      List.zip_nil_left, List.mapM_nil, node_leaf]
+  · simp only [«Combinator.bridgeKids», template, List.map_nil, foldr_eq, List.foldr_nil,
+      List.zip_nil_left, List.mapM_nil]
     exact pmPure_rel (RoseTree.node 0) []
   · rcases us with _ | ⟨u, us⟩
-    · simp only [«Combinator.bridgeKids», List.map_cons, foldr_eq, List.foldr_cons,
-        Const.lcase, List.zip_nil_right, List.mapM_nil, node_leaf]
+    · simp only [«Combinator.bridgeKids», template, List.map_cons, foldr_eq, List.foldr_cons,
+        Const.lcase, List.zip_nil_right, List.mapM_nil]
       exact pmPure_rel (RoseTree.node 0) []
     · have ih' := ih (fun y hy ↦ hx y (List.mem_cons_of_mem x hy)) us
-      simp only [«Combinator.bridgeKids», foldr_eq] at ih' ⊢
+      simp only [«Combinator.bridgeKids», template, foldr_eq] at ih' ⊢
       simp only [List.map_cons, List.foldr_cons, Const.lcase, List.zip_cons_cons, List.mapM_cons,
-        node_leaf]
+        ]
       refine pmBind_rel id _ _ _ (hx x List.mem_cons_self u) _ _ fun y ↦ ?_
       refine pmBind_rel (RoseTree.node 0) _ _ _ ih' _ _ fun ys ↦ ?_
       simp only [children_node, id]
@@ -1063,7 +1247,7 @@ arguments. -/
 theorem bridge_rel (tys : List Ty) (p : Tree) :
     BRel («Combinator.bridge» (tys.map encTy) p) (bridge tys p) := by
   refine para_rel BRel _ _ (fun l xs hx t ↦ ?_) p
-  simp only [«Combinator.bridgeStep», List.map_map, Function.comp_def]
+  simp only [«Combinator.bridgeStep», template, List.map_map, Function.comp_def]
   refine pmBind_rel encTy id _ _ (typeTerm_rel t) _ _ fun ty ↦ ?_
   comb_simp [mapT_eq, List.map_map, Function.comp_def, phSubst_eq]
   by_cases h1 : PartialHorn.subst (tys.map Ty.term) (RoseTree.node l (xs.map Prod.fst)) = t
@@ -1091,13 +1275,14 @@ theorem bridge_rel (tys : List Ty) (p : Tree) :
 theorem initMS_eq (ctx : List ℕ) :
     «Combinator.matchSt» (RoseTree.node 0 (ctx.map fun _ ↦ «Prelude.none»))
       (RoseTree.node 0 []) = encMS ⟨ctx.map fun _ ↦ none, []⟩ := by
-  simp [«Combinator.matchSt», encMS]
+  simp [template, «Combinator.matchSt», encMS]
   rfl
 
 /-- The mirror's rewriting step at a term's root by a rule. -/
 theorem applyRule_rel (r : RwRule) (t : Tree) :
     PMRel encPair («Combinator.applyRule» (encRw r) t) (applyRule r t) := by
   unfold «Combinator.applyRule» applyRule
+  simp only [template]
   refine pmBind_rel (fun _ ↦ leaf 0) encPair _ _ ?_ _ _ fun _ ↦ ?_
   · rw [rwAvoid_eq, anyT_eq _ (fun x ↦ t.label == x.label) _ (fun x hx ↦ ?_), not_eq]
     · have e : (r.avoid.map leaf).any (fun x ↦ t.label == x.label) = r.avoid.contains t.label := by
@@ -1123,8 +1308,8 @@ theorem applyRule_rel (r : RwRule) (t : Tree) :
         ↓reduceIte]
       exact pmFail_rel encPair
     | some ms =>
-      simp only [Option.map_some, isSome_eq, Option.isSome_some, ofBool_bne, ↓reduceIte, get_eq,
-        msSigma_eq, msObjs_eq]
+      simp only [Option.map_some, isSome_eq, Option.isSome_some, ofBool_bne, ↓reduceIte, 
+        tmpl_fromMaybe_eq, Option.getD_some, msSigma_eq, msObjs_eq]
       rw [show ms.σ.map encOpt = ms.σ.map (fun x ↦ encOpt (id x)) from rfl, allSomeT_eq]
       cases ms.σ.mapM id with
       | none =>
@@ -1138,7 +1323,7 @@ theorem applyRule_rel (r : RwRule) (t : Tree) :
         simp only [RoseTree.children_node]
         refine pmBind_rel (fun cs ↦ RoseTree.node 0 (cs.map id)) encPair _ _
           (pmMapM_rel id encPair _ _ ms.objs fun ou _ ↦ ?_) _ _ fun _ ↦ ?_
-        · simp only [encPair, RoseTree.children_node, List.getD_cons_zero, List.getD_cons_succ]
+        · simp only [encPair]
           exact pmBind_rel encTy id _ _ (typePattern_rel tys ou.1) _ _ fun lo ↦
             pmBind_rel encTy id _ _ (typeTerm_rel ou.2) _ _ fun lu ↦ objEq_rel lo lu
         · refine pmBind_rel id encPair _ _ (bridge_rel tys p t) _ _ fun b ↦ ?_
@@ -1156,7 +1341,7 @@ theorem firstRule_rel (t : Tree) : ∀ rules : List RwRule,
     PMRel encPair («Combinator.firstRule» (rules.map encRw) t) (firstRule rules t) := by
   refine List.rec ?_ fun r rules ih ↦ ?_
   · exact pmFail_rel encPair
-  · simp only [«Combinator.firstRule», firstRule, foldr_eq, List.map_cons,
+  · simp only [«Combinator.firstRule», template, firstRule, foldr_eq, List.map_cons,
       List.foldr_cons] at ih ⊢
     exact pmOr_rel encPair _ _ _ _ (applyRule_rel r t) ih
 
@@ -1167,6 +1352,7 @@ def encQuad (q : Tree × Tree × Tree × Tree) : Tree := RoseTree.node 0 [q.1, q
 theorem assocLeft_rel (t : Tree) :
     PMRel encQuad («Combinator.assocLeft» t) (assocLeft t) := by
   unfold «Combinator.assocLeft» assocLeft
+  simp only [template]
   by_cases hl : t.label = 4
   · rcases hc : t.children with _ | ⟨a, _ | ⟨bx, _ | ⟨z, zs⟩⟩⟩
     · comb_simp [hl, hc]
@@ -1207,6 +1393,7 @@ theorem assocLeft_rel (t : Tree) :
 theorem rewriteRoot_rel (rules : List RwRule) (t : Tree) :
     PMRel encPair («Combinator.rewriteRoot» (rules.map encRw) t) (rewriteRoot rules t) := by
   unfold «Combinator.rewriteRoot» rewriteRoot
+  simp only [template]
   refine pmOr_rel encPair _ _ _ _ (firstRule_rel t rules) ?_
   refine pmBind_rel encQuad encPair _ _ (assocLeft_rel t) _ _ fun ⟨a, b, x, c⟩ ↦ ?_
   comb_simp [encQuad, mirror_comp]
@@ -1232,23 +1419,23 @@ theorem lookupNf_rel (t : Tree) :
 
 /-- The mirror's record of a normal form with its certificate in the table of normal forms. -/
 theorem nfsInsert_rel (t n c : Tree) :
-    PMRel encPair (fun _ st ↦ «Prelude.some» (Const.node (leaf 0)
-        («Theory.l2» (Const.node (leaf 0) («Theory.l2» n c))
-          («Combinator.withNfs» st («Combinator.tableInsert»
-            («Combinator.stNfs» st) t (Const.node (leaf 0) («Theory.l2» n c)))))))
+    PMRel encPair (fun _ st ↦ Templates.ok (Templates.res («Language.pr» n c)
+        («Combinator.withNfs» st
+          («Combinator.nfEntry» t («Language.pr» n c) :: «Combinator.stNfs» st))))
       (do modify fun st ↦ { st with nfs := st.nfs.insert t (n, c) }; pure (n, c)) := by
   intro sc st' st h
   pm_simp []
   obtain ⟨lm, ln, hm, hn, rfl⟩ := h
   refine ⟨_, ⟨lm, (t, (n, c)) :: ln, hm, tRel_insert ln st.nfs hn t (n, c), rfl⟩, ?_⟩
-  mirror_simp [«Combinator.stNfs», «Combinator.withNfs»,
-    «Combinator.tableInsert», «Combinator.pst», «Theory.l2»]
+  mirror_simp [«Combinator.stNfs», «Combinator.withNfs», «Combinator.nfEntry»,
+    «Language.pr», «Combinator.pst», Templates.ok, Templates.res]
   rfl
 
 /-- The mirror's record of a term's normal form. -/
 theorem memoizeNf_rel (t n c : Tree) :
     PMRel encPair («Combinator.memoizeNf» t n c) (memoizeNf t n c) := by
   unfold «Combinator.memoizeNf» memoizeNf
+  simp only [template]
   by_cases hn : t = n
   · simp only [hn, equal_eq, decide_true, ofBool_true, label_leaf, ne_eq, one_ne_zero,
       not_false_eq_true, ↓reduceIte, beq_self_eq_true]
@@ -1260,9 +1447,9 @@ theorem memoizeNf_rel (t n c : Tree) :
 /-- The mirror's optional value of a computation, none when it fails. -/
 theorem pmOpt_rel {α : Type} (e : α → Tree) (m' : Tree → Tree → Tree) (m : PM α)
     (hm : PMRel e m' m) :
-    PMRel (fun o ↦ encOpt (o.map e)) («Combinator.pmOr»
-        («Combinator.pmBind» m' fun x ↦ «Combinator.pmPure»
-          («Prelude.some» x)) («Combinator.pmPure» «Prelude.none»))
+    PMRel (fun o ↦ encOpt (o.map e)) (Templates.orElse
+        (pmBind m' fun x ↦ Templates.pure
+          («Prelude.some» x)) (Templates.pure «Prelude.none»))
       ((some <$> m) <|> pure none) := by
   rw [map_eq_bind_pure_comp]
   exact pmOr_rel _ _ _ _ _ (pmBind_rel e _ _ _ hm _ _ fun a ↦ pmPure_rel _ (some a))
@@ -1281,6 +1468,7 @@ theorem normStep_rel (rules : List RwRule) (rec' : Tree → Tree → Tree → Tr
         (RoseTree.node l (xs.map Prod.fst)) (xs.map fun x ↦ x.2.1))
       (normStep rules rec l (xs.map fun x ↦ (x.1, x.2.2))) := by
   unfold «Combinator.normStepP» normStep
+  simp only [template]
   simp only [List.map_map, Function.comp_def]
   refine pmBind_rel (fun o ↦ encOpt (o.map encPair)) encPair _ _
     (lookupNf_rel (RoseTree.node l (xs.map Prod.fst))) _ _ fun o ↦ ?_
@@ -1327,6 +1515,7 @@ theorem normStep_rel (rules : List RwRule) (rec' : Tree → Tree → Tree → Tr
 theorem normalizers_rel (rules : List RwRule) (n : ℕ) :
     NRel («Combinator.normalizers» (rules.map encRw) (leaf n)) (normalizers rules n) := by
   unfold «Combinator.normalizers» normalizers
+  simp only [template]
   simp only [Const.iter, label_leaf]
   refine Nat.rec (fun _ ↦ pmFail_rel encPair) (fun _ ih t ↦ ?_) n
   simp only [Nat.repeat]
@@ -1337,6 +1526,7 @@ theorem normalizers_rel (rules : List RwRule) (n : ℕ) :
 theorem normalize_rel (rules : List RwRule) (t : Tree) :
     PMRel encPair («Combinator.pNormalize» (rules.map encRw) t) (normalize rules t) := by
   unfold «Combinator.pNormalize» normalize normFuel
+  simp only [template]
   exact normalizers_rel rules 64 t
 
 /-! The tactics. -/
@@ -1374,6 +1564,7 @@ def encEqC (p : Eqn × Tree) : Tree := RoseTree.node 0 [encEqn p.1, p.2]
 theorem inst_rel (s : Src) (σ : List Tree) :
     PMRel encEqC («Combinator.pInst» (encSrc s) σ) (inst s σ) := by
   unfold «Combinator.pInst» inst
+  simp only [template]
   refine pmBind_rel encSeq encEqC _ _ (srcSeq_rel s) _ _ fun a ↦ ?_
   refine pmBind_rel _ encEqC _ _ (typeTerms_rel σ) _ _ fun tys ↦ ?_
   comb_simp [seqHyps_eq]
@@ -1388,6 +1579,7 @@ theorem inst_rel (s : Src) (σ : List Tree) :
 theorem etaExpand_rel (f : Tree) :
     PMRel encPair («Combinator.etaExpand» f) (etaExpand f) := by
   unfold «Combinator.etaExpand» etaExpand
+  simp only [template]
   refine pmBind_rel encTy encPair _ _ (typeTerm_rel f) _ _ fun ty ↦ ?_
   by_cases hl : ty.hi.label = 7
   · rcases hc : ty.hi.children with _ | ⟨a, _ | ⟨b, _ | ⟨z, zs⟩⟩⟩
@@ -1411,7 +1603,7 @@ theorem etaExpand_rel (f : Tree) :
 
 @[simp] theorem deltaRule_eq (i : ℕ) :
     «Combinator.deltaRule» (leaf i) = encRw (deltaRule i) := by
-  simp [«Combinator.deltaRule», «Combinator.rwAx», «Combinator.rwRule»,
+  simp [template, «Combinator.deltaRule», «Combinator.rwAx», «Combinator.rwRule»,
     deltaRule, encRw, defAxIdx_eq]
   rfl
 
@@ -1419,6 +1611,7 @@ theorem etaExpand_rel (f : Tree) :
 theorem byNorm_rel (rules : List RwRule) (q : Eqn) :
     PMRel id («Combinator.pByNorm» (rules.map encRw) (encEqn q)) (byNorm rules q) := by
   unfold «Combinator.pByNorm» byNorm
+  simp only [template]
   simp only [eqLhs_eq, eqRhs_eq]
   refine pmBind_rel encPair id _ _ (normalize_rel rules q.lhs) _ _ fun ⟨l, cl⟩ ↦ ?_
   refine pmBind_rel encPair id _ _ (normalize_rel rules q.rhs) _ _ fun ⟨r, cr⟩ ↦ ?_
@@ -1431,39 +1624,34 @@ theorem byNorm_rel (rules : List RwRule) (q : Eqn) :
 /-! Running the prover from a development. -/
 
 /-- The mirror's initial state of a run is related to the initial state. -/
-theorem runState_srel (dev : Development) (defs : List Defn) (infer : Bool) :
-    SRel («Combinator.pst» (Const.node (leaf 0) (dev.map encDevEntry))
-        (Const.node (leaf 0) []) (Const.node (leaf 0) []) (Const.node (leaf 0) (defs.map encDefn))
-        (Const.node (leaf 0) («Prelude.append» «Theory.sig»
-          («Base.mapT» (fun d ↦ «PartialHorn.opSig»
-            (Const.node (leaf 0) («PartialHorn.pdCtx» d)) («PartialHorn.pdSort» d))
-            (defs.map encDefn))))
-        (ofBool infer))
+theorem pmStart_srel (dev : Development) (defs : List Defn) (infer : Bool) :
+    SRel («Combinator.pmStart» (dev.map encDevEntry) (defs.map encDefn) (ofBool infer))
       { dev := dev.toArray, defs := defs, sig := sig ++ defs.map (fun d ↦ (d.ctx, d.sort)),
         infer := infer } := by
   refine ⟨[], [], tRel_empty, tRel_empty, ?_⟩
-  simp [«Combinator.pst», sig_eq, append_eq, mapT_eq, «PartialHorn.opSig», encOpSig,
-    Function.comp_def]
+  simp [template, «Combinator.pmStart», «Combinator.pst», sig_eq, append_eq, mapT_eq,
+    «PartialHorn.opSig», encOpSig, Function.comp_def]
 
-/-- The mirror's run of a computation in a scope from a development. -/
-theorem pmRun_eq {α : Type} (e : α → Tree) (m' : Tree → Tree → Tree) (m : PM α)
+/-- The mirror's run of a computation in a scope from a development: it fails with the run, or
+gives the value's encoding and a state of the development the run gives. -/
+theorem pmStart_run {α : Type} (e : α → Tree) (m' : Tree → Tree → Tree) (m : PM α)
     (hm : PMRel e m' m) (sc : Scope) (dev : Development) (defs : List Defn) (infer : Bool) :
-    «Combinator.pmRun» (encScope sc) (dev.map encDevEntry) m' (defs.map encDefn)
-        (ofBool infer) =
-      encOpt ((run sc dev m defs infer).map fun p ↦
-        RoseTree.node 0 [e p.1, RoseTree.node 0 (p.2.map encDevEntry)]) := by
-  have h1 := hm sc _ _ (runState_srel dev defs infer)
-  unfold «Combinator.pmRun» Prover.run
-  simp only []
+    match run sc dev m defs infer with
+    | none => m' (encScope sc) («Combinator.pmStart» (dev.map encDevEntry) (defs.map encDefn)
+        (ofBool infer)) = leaf 0
+    | some (a, dev') => ∃ st', «Combinator.stDev» st' = dev'.map encDevEntry ∧
+        m' (encScope sc) («Combinator.pmStart» (dev.map encDevEntry) (defs.map encDefn)
+          (ofBool infer)) = RoseTree.node 1 [RoseTree.node 0 [e a, st']] := by
+  have h1 := hm sc _ _ (pmStart_srel dev defs infer)
+  unfold Prover.run
   split at h1
   · rename_i heq
-    rw [heq, h1]
-    rfl
+    simp only [heq, Option.map_none]
+    exact h1
   · rename_i a st₂ heq
     obtain ⟨st₂', h2, h3⟩ := h1
-    rw [heq, h3]
-    change «Base.mapO» _ (encOpt (some _)) = _
-    comb_simp [mapO_eq, stDev_srel h2]
+    simp only [heq, Option.map_some]
+    exact ⟨st₂', stDev_srel h2, h3⟩
 
 /-- An index with a development as the node of the index and the node of the development's
 entries. -/
@@ -1481,11 +1669,17 @@ theorem proveSeq_eq (a : Seq) (m' : Tree → Tree → Tree) (m : PM Tree) (hm : 
     «Combinator.proveSeq» (encSeq a) m' (defs.map encDefn) (ofBool infer)
         (dev.map encDevEntry) = encOpt ((proveSeq a m defs infer dev).map encIdxDev) := by
   unfold «Combinator.proveSeq» proveSeq
-  simp only [seqCtx_eq, seqHyps_eq, node_leaf, scope_eq]
-  rw [pmRun_eq id m' m hm]
-  rcases Prover.run ⟨a.ctx, a.hyps⟩ dev m defs infer with _ | ⟨c, dev'⟩
-  · rfl
-  · comb_simp [bindO_eq, encIdxDev, encDevEntry, some_eq]
+  simp only [template]
+  simp only [seqCtx_eq, seqHyps_eq, scope_eq]
+  have h := pmStart_run id m' m hm ⟨a.ctx, a.hyps⟩ dev defs infer
+  rcases hr : Prover.run ⟨a.ctx, a.hyps⟩ dev m defs infer with _ | ⟨c, dev'⟩
+  · simp only [hr] at h
+    comb_simp [h]
+    rfl
+  · simp only [hr] at h
+    obtain ⟨st', hd, h3⟩ := h
+    comb_simp [h3, hd, encIdxDev, encDevEntry, some_eq, «Combinator.proved»,
+      «Combinator.devEntry»]
     simp [encIdxDev, encDevEntry, List.map_append]
 
 /-- The mirror's normalization of a theorem's left side, added to a development. -/
@@ -1494,16 +1688,23 @@ theorem normalizeThm_eq (rules : List RwRule) (j : ℕ) (defs : List Defn) (infe
     «Combinator.normalizeThm» (rules.map encRw) (leaf j) (defs.map encDefn) (ofBool infer)
         (dev.map encDevEntry) = encOpt ((normalizeThm rules j defs infer dev).map encIdxDev) := by
   unfold «Combinator.normalizeThm» normalizeThm
+  simp only [template]
   simp only [nth_eq, List.getElem?_map]
   rcases dev[j]? with _ | ⟨a, c⟩
   · rfl
-  · comb_simp [bindO_eq, encDevEntry, seqCtx_eq, seqHyps_eq, scope_eq, seqConcl_eq, eqLhs_eq,
-      eqRhs_eq, Option.bind_eq_bind, Option.bind_some]
-    rw [pmRun_eq encPair _ _ (normalize_rel rules a.concl.lhs)]
-    rcases Prover.run ⟨a.ctx, a.hyps⟩ dev (normalize rules a.concl.lhs) defs infer with
+  · comb_simp [encDevEntry, «Combinator.devSeq», seqCtx_eq, seqHyps_eq, sorts_wrap, eqns_wrap,
+      scope_eq, seqConcl_eq, eqLhs_eq, eqRhs_eq, Option.bind_eq_bind, Option.bind_some]
+    have h := pmStart_run encPair _ _ (normalize_rel rules a.concl.lhs) ⟨a.ctx, a.hyps⟩ dev defs
+      infer
+    rcases hr : Prover.run ⟨a.ctx, a.hyps⟩ dev (normalize rules a.concl.lhs) defs infer with
       _ | ⟨⟨n, cn⟩, dev'⟩
-    · rfl
-    · comb_simp [bindO_eq, encIdxDev, encDevEntry, some_eq, encPair, eqn_eq]
+    · simp only [hr] at h
+      comb_simp [h]
+      rfl
+    · simp only [hr] at h
+      obtain ⟨st', hd, h3⟩ := h
+      comb_simp [h3, hd, encIdxDev, encDevEntry, some_eq, encPair, eqn_eq, «Combinator.proved»,
+        «Combinator.devEntry»]
       simp [encIdxDev, encDevEntry, List.map_append]
 
 /-! Induction. -/
@@ -1514,6 +1715,7 @@ theorem instBy_rel (rules : List RwRule) (s : Src) (σ : List Tree) :
     PMRel encEqC («Combinator.instBy» (rules.map encRw) (encSrc s) σ)
       (instBy rules s σ) := by
   unfold «Combinator.instBy» instBy
+  simp only [template]
   refine pmBind_rel encSeq encEqC _ _ (srcSeq_rel s) _ _ fun a ↦ ?_
   refine pmBind_rel _ encEqC _ _ (typeTerms_rel σ) _ _ fun tys ↦ ?_
   comb_simp [seqHyps_eq]
@@ -1530,7 +1732,7 @@ theorem instBy_rel (rules : List RwRule) (s : Src) (σ : List Tree) :
 theorem congBy_rel (e : Eqn) (ce p : Tree) :
     BRel («Combinator.congBy» (encEqn e) ce p) (congBy e ce p) := by
   refine para_rel BRel _ _ (fun l xs hx t ↦ ?_) p
-  simp only [«Combinator.congStep», List.map_map, Function.comp_def]
+  simp only [«Combinator.congStep», template, List.map_map, Function.comp_def]
   refine pmBind_rel encTy id _ _ (typeTerm_rel _) _ _ fun ty ↦ ?_
   comb_simp [eqLhs_eq, eqRhs_eq]
   simp only [Bool.beq_eq_decide_eq, bne, Bool.or_assoc, Sorts.obj]
@@ -1548,6 +1750,7 @@ set_option maxRecDepth 100000 in
 theorem natRecUniq_rel (rules : List RwRule) (z s f : Tree) :
     PMRel id («Combinator.natRecUniq» (rules.map encRw) z s f) (natRecUniq rules z s f) := by
   unfold «Combinator.natRecUniq» natRecUniq
+  simp only [template]
   comb_simp [beforeNat_eq, axIdx_add, srcAx_eq]
   generalize Src.ax (axIdx beforeNat 12) = src
   refine pmBind_rel encEqC id _ _ (instBy_rel rules src _) _ _ fun qc ↦ ?_
@@ -1560,6 +1763,7 @@ theorem listRecUniq_rel (rules : List RwRule) (a z s f : Tree) :
     PMRel id («Combinator.listRecUniq» (rules.map encRw) a z s f)
       (listRecUniq rules a z s f) := by
   unfold «Combinator.listRecUniq» listRecUniq
+  simp only [template]
   comb_simp [beforeList_eq, axIdx_add, srcAx_eq]
   generalize Src.ax (axIdx beforeList 13) = src
   refine pmBind_rel encEqC id _ _ (instBy_rel rules src _) _ _ fun qc ↦ ?_
@@ -1572,6 +1776,7 @@ theorem byNatInduction_rel (rules : List RwRule) (z s : Tree) (q : Eqn) :
     PMRel id («Combinator.byNatInduction» (rules.map encRw) z s (encEqn q))
       (byNatInduction rules z s q) := by
   unfold «Combinator.byNatInduction» byNatInduction
+  simp only [template]
   simp only [eqLhs_eq, eqRhs_eq]
   refine pmBind_rel id id _ _ (natRecUniq_rel rules z s q.lhs) _ _ fun cl ↦ ?_
   refine pmBind_rel id id _ _ (natRecUniq_rel rules z s q.rhs) _ _ fun cr ↦ ?_
@@ -1584,6 +1789,7 @@ theorem byListInduction_rel (rules : List RwRule) (a z s : Tree) (q : Eqn) :
     PMRel id («Combinator.byListInduction» (rules.map encRw) a z s (encEqn q))
       (byListInduction rules a z s q) := by
   unfold «Combinator.byListInduction» byListInduction
+  simp only [template]
   simp only [eqLhs_eq, eqRhs_eq]
   refine pmBind_rel id id _ _ (listRecUniq_rel rules a z s q.lhs) _ _ fun cl ↦ ?_
   refine pmBind_rel id id _ _ (listRecUniq_rel rules a z s q.rhs) _ _ fun cr ↦ ?_
@@ -1596,6 +1802,7 @@ theorem byListParamInduction_rel (rules : List RwRule) (a z s : Tree) (q : Eqn) 
     PMRel id («Combinator.byListParamInduction» (rules.map encRw) a z s (encEqn q))
       (byListParamInduction rules a z s q) := by
   unfold «Combinator.byListParamInduction» byListParamInduction
+  simp only [template]
   simp only [eqLhs_eq, eqRhs_eq]
   refine pmBind_rel encTy id _ _ (typeTerm_rel q.lhs) _ _ fun ty ↦ ?_
   by_cases hl : ty.lo.label = 7
@@ -1651,11 +1858,11 @@ theorem bangOneSeq_eq : «Combinator.bangOneSeq» = encSeq bangOneSeq := rfl
 
 @[simp] theorem seqLhs_eq (a : Seq) :
     «Combinator.seqLhs» (encSeq a) = a.concl.lhs := by
-  simp [«Combinator.seqLhs», seqConcl_eq, eqLhs_eq]
+  simp [template, «Combinator.seqLhs», seqConcl_eq, eqLhs_eq]
 
 @[simp] theorem seqRhs_eq (a : Seq) :
     «Combinator.seqRhs» (encSeq a) = a.concl.rhs := by
-  simp [«Combinator.seqRhs», seqConcl_eq, eqRhs_eq]
+  simp [template, «Combinator.seqRhs», seqConcl_eq, eqRhs_eq]
 
 /-- The mirror's guard of two trees' equality. -/
 theorem pmGuardEq_rel (a b : Tree) :
@@ -1667,6 +1874,7 @@ theorem pmGuardEq_rel (a b : Tree) :
 /-- The mirror's proof of {lit}`compPairSeq`. -/
 theorem compPairProof_rel : PMRel id «Combinator.compPairProof» compPairProof := by
   unfold «Combinator.compPairProof» compPairProof
+  simp only [template]
   simp only [compPairSeq_eq, seqLhs_eq, seqRhs_eq]
   refine pmBind_rel encPair id _ _ (etaExpand_rel _) _ _ fun ec ↦ ?_
   comb_simp [encPair, baseRules_eq]
@@ -1679,6 +1887,7 @@ set_option maxRecDepth 100000 in
 /-- The mirror's proof of {lit}`pairFstSndSeq`. -/
 theorem pairFstSndProof_rel : PMRel id «Combinator.pairFstSndProof» pairFstSndProof := by
   unfold «Combinator.pairFstSndProof» pairFstSndProof
+  simp only [template]
   comb_simp [beforeProduct_eq, axIdx_add, srcAx_eq, mirror_prod, mirror_idt, mirror_x,
     pairFstSndSeq_eq, seqLhs_eq, baseRules_eq]
   generalize Src.ax (axIdx beforeProduct 11) = src
@@ -1694,6 +1903,7 @@ set_option maxRecDepth 100000 in
 theorem evCurryProof_rel (cp : ℕ) :
     PMRel id («Combinator.evCurryProof» (leaf cp)) (evCurryProof cp) := by
   unfold «Combinator.evCurryProof» evCurryProof
+  simp only [template]
   comb_simp [beforeExponential_eq, axIdx_add, srcAx_eq, mirror_x, mirror_cPair, mirror_comp,
     evCurrySeq_eq, seqLhs_eq, baseRules_eq, rwThm_eq, append_eq, single_eq]
   rw [show baseRules.map encRw ++ [encRw { src := .thm cp }] =
@@ -1714,6 +1924,7 @@ theorem evCurryProof_rel (cp : ℕ) :
 theorem evCurry0Proof_rel (ec : ℕ) :
     PMRel id («Combinator.evCurry0Proof» (leaf ec)) (evCurry0Proof ec) := by
   unfold «Combinator.evCurry0Proof» evCurry0Proof
+  simp only [template]
   comb_simp [srcThm_eq, mirror_x, mirror_idt, evCurry0Seq_eq, seqLhs_eq, seqRhs_eq, baseRules_eq]
   refine pmBind_rel encEqC id _ _ (inst_rel _ _) _ _ fun qc ↦ ?_
   comb_simp [encEqC, eqLhs_eq, eqRhs_eq]
@@ -1729,6 +1940,7 @@ set_option maxRecDepth 100000 in
 theorem curryNatProof_rel (cp ec : ℕ) :
     PMRel id («Combinator.curryNatProof» (leaf cp) (leaf ec)) (curryNatProof cp ec) := by
   unfold «Combinator.curryNatProof» curryNatProof
+  simp only [template]
   comb_simp [beforeExponential_eq, axIdx_add, srcAx_eq, mirror_x, mirror_dom, mirror_cod,
     curryNatSeq_eq, seqLhs_eq, seqRhs_eq, baseRules_eq, rwThm_eq, append_eq]
   rw [show baseRules.map encRw ++ [encRw { src := .thm cp }, encRw { src := .thm ec }] =
@@ -1746,6 +1958,7 @@ set_option maxRecDepth 100000 in
 /-- The mirror's proof of {lit}`bangOneSeq`. -/
 theorem bangOneProof_rel : PMRel id «Combinator.bangOneProof» bangOneProof := by
   unfold «Combinator.bangOneProof» bangOneProof
+  simp only [template]
   comb_simp [beforeTerminal_eq, axIdx_add, srcAx_eq, mirror_idt, mirror_one, mirror_bang,
     baseRules_eq, single_eq]
   generalize Src.ax (axIdx beforeTerminal 3) = src
@@ -1759,7 +1972,7 @@ theorem bangOneProof_rel : PMRel id «Combinator.bangOneProof» bangOneProof := 
 /-- The mirror's rules of the axioms and of the library's derived equations. -/
 theorem libRules_eq (i : LibIdx) :
     «Combinator.libRules» (encIdx i) = (rules i).map encRw := by
-  simp [«Combinator.libRules», «Theory.l5», «Theory.l4»,
+  simp [template, «Combinator.libRules», «Theory.l5», «Theory.l4»,
     «Theory.l3», «Theory.l2», encIdx, rules, baseRules_eq, append_eq]
 
 /-- The mirror's proof of a sequent added to a development, with no definitions in force. -/
@@ -1775,34 +1988,36 @@ set_option maxRecDepth 100000 in
 theorem libraryWith_eq (infer : Bool) :
     «Combinator.libraryWith» (ofBool infer) = encLib (libraryWith infer) := by
   unfold «Combinator.libraryWith» libraryWith
+  simp only [template]
   simp only [compPairSeq_eq, pairFstSndSeq_eq, evCurrySeq_eq, evCurry0Seq_eq, curryNatSeq_eq,
     bangOneSeq_eq, StateT.run_bind]
   rw [proveSeq_nil compPairSeq _ _ compPairProof_rel infer [] [] rfl]
   simp only [StateT.run]
   rcases proveSeq compPairSeq compPairProof [] infer [] with _ | ⟨cp, d1⟩
   · rfl
-  comb_simp [bindO_eq, encIdxDev, Option.bind_eq_bind, Option.bind_some]
+  comb_simp [bindO_eq, encIdxDev, provedDev_node, Option.bind_eq_bind, Option.bind_some]
   rw [proveSeq_nil pairFstSndSeq _ _ pairFstSndProof_rel infer _ d1 rfl]
   rcases proveSeq pairFstSndSeq pairFstSndProof [] infer d1 with _ | ⟨pf, d2⟩
   · rfl
-  comb_simp [bindO_eq, encIdxDev, Option.bind_eq_bind, Option.bind_some]
+  comb_simp [bindO_eq, encIdxDev, provedDev_node, Option.bind_eq_bind, Option.bind_some]
   rw [proveSeq_nil evCurrySeq _ _ (evCurryProof_rel cp) infer _ d2 rfl]
   rcases proveSeq evCurrySeq (evCurryProof cp) [] infer d2 with _ | ⟨ec, d3⟩
   · rfl
-  comb_simp [bindO_eq, encIdxDev, Option.bind_eq_bind, Option.bind_some]
+  comb_simp [bindO_eq, encIdxDev, provedDev_node, Option.bind_eq_bind, Option.bind_some]
   rw [proveSeq_nil evCurry0Seq _ _ (evCurry0Proof_rel ec) infer _ d3 rfl]
   rcases proveSeq evCurry0Seq (evCurry0Proof ec) [] infer d3 with _ | ⟨e0, d4⟩
   · rfl
-  comb_simp [bindO_eq, encIdxDev, Option.bind_eq_bind, Option.bind_some]
+  comb_simp [bindO_eq, encIdxDev, provedDev_node, Option.bind_eq_bind, Option.bind_some]
   rw [proveSeq_nil curryNatSeq _ _ (curryNatProof_rel cp ec) infer _ d4 rfl]
   rcases proveSeq curryNatSeq (curryNatProof cp ec) [] infer d4 with _ | ⟨cn, d5⟩
   · rfl
-  comb_simp [bindO_eq, encIdxDev, Option.bind_eq_bind, Option.bind_some]
+  comb_simp [bindO_eq, encIdxDev, provedDev_node, Option.bind_eq_bind, Option.bind_some]
   rw [proveSeq_nil bangOneSeq _ _ bangOneProof_rel infer _ d5 rfl]
   rcases proveSeq bangOneSeq bangOneProof [] infer d5 with _ | ⟨bo, d6⟩
   · rfl
-  comb_simp [bindO_eq, encIdxDev, Option.bind_eq_bind, Option.bind_some, encLib, encIdx,
-    «Theory.l6», some_eq]
+  comb_simp [bindO_eq, encIdxDev, provedDev_node, Option.bind_eq_bind, Option.bind_some, encLib,
+    encIdx,
+    «Theory.l6», some_eq, «Combinator.library»]
   rfl
 
 end GebTests.Prototypes.FreeTopos.Agreement.Combinator
