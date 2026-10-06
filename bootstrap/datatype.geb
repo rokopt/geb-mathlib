@@ -22,6 +22,9 @@
 ;                                        results, any other field to its value
 ;   (defn f ((x A) ...) R body)          a function with its result type
 ;
+; The instance of a template at opaque arguments that module elaboration writes, (%generic ...),
+; is checked by the stage-1 expansion alone and dropped here.
+;
 ; The expansion erases datatypes, which stand for the trees in its output. After the
 ; constructors of a datatype the keyword data declares, it leaves the marker from which the
 ; recognizers are written (bootstrap/recognize.geb).
@@ -114,6 +117,7 @@
   (def kwRep (quote (0 rep)))
   (def kwDecode (quote (0 decode)))
   (def kwDatum (quote (0 datum)))
+  (def kwGeneric (quote (0 "%generic")))
   (def kwAmp (quote (0 &)))
 
   ; a numeral's characters and atom
@@ -569,7 +573,7 @@
                                 (single (node2 7 (nameOf (at es 1)) (expandAliases env (at es 2)))))
                               (cons e out)))
                           (if (and (named h kwDefnum) (eq k 3)) (pair 1 (pair env (cons e out)))
-                            xpFail))))))))))
+                            (if (named h kwGeneric) (pair 1 (pair env out)) xpFail)))))))))))
         xpFail)))
   (def expandProgram
     (lam ((es Ts))

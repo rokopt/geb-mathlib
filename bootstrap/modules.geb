@@ -4,7 +4,8 @@
 ;
 ; Modules, elaborated before the datatype language's expansion as Geb.Kernel.expandModules
 ; elaborates them: a program's module blocks flattened into declarations under qualified names,
-; the instances of modules with parameters at their imports, and every name renamed to what it
+; the instances of modules with parameters at their imports, each also at opaque arguments where
+; it is declared, for the stage-1 compiler to check (genericOf), and every name renamed to what it
 ; denotes. A name is a node of label 0 over its characters; the names visible in a block are
 ; nodes over a name and the name it denotes in the flat program, looked up as abbreviations
 ; are. Requires the prelude, the reader and decimalChars of the datatype language.
@@ -449,6 +450,74 @@
          (lam ((e T) (k (Arrow ModSt ModSt)) (s ModSt)) (k (rec pre s e)))
          (lam ((s ModSt)) s)
          es) s)))
+  ; a template's instance under a path at arguments, elaborated from its importer's state: its
+  ; parameters bound to the arguments and its forms elaborated in the scope of its declaration
+  (def instantiate
+    (lam ((rec ElabK) (s ModSt) (d T) (inst T) (args Ts))
+      (elabForms rec inst
+        ((foldr T (Arrow T (Arrow ModSt ModSt))
+           (lam ((prm T) (k (Arrow T (Arrow ModSt ModSt))) (i T) (acc ModSt))
+             (k (add i 1) (bindParam inst (stVis s) acc prm (at args i))))
+           (lam ((i T) (acc ModSt)) acc)
+           (children (child d 0))) 0
+         (mkSt (children (child d 3)) (stOut s) (stReg s) (children (child d 1)) (nil T)
+           (stMods s)))
+        (children (child d 2)))))
+  ; a template's instance at opaque arguments, which the stage-1 compiler checks and every
+  ; compiler then drops: the form (%generic ...) over the declarations of fresh arguments, a sort
+  ; (%sort S) for each sort parameter and a constant (%postulate P A) of the parameter's type for
+  ; each operation, the parameter's sorts read as their arguments, followed by the instance's forms
+  (def aGeneric (quote (1 "%generic")))
+  (def aSort (quote (1 "%sort")))
+  (def aPostulate (quote (1 "%postulate")))
+  (def aArrowM (quote (1 Arrow)))
+  (def freshArg (lam ((c T) (i T)) (node 1 (cons 37 (cons c (decimalChars i))))))
+  (def genericArgs
+    (lam ((ps Ts))
+      (snd
+        (foldr T (Prod T Ts)
+          (lam ((p T) (acc (Prod T Ts)))
+            (pair (sub (fst acc) 1)
+              (cons (freshArg (if (isAtom (child p 1)) 115 112) (sub (fst acc) 1)) (snd acc))))
+          (pair (length ps) (nil T))
+          ps))))
+  (def genericOf
+    (lam ((rec ElabK) (s ModSt) (d T) (path T))
+      (let ps Ts (children (child d 0))
+        (let args Ts (genericArgs ps)
+          (let sorts Ts
+            (foldr T Ts
+              (lam ((x T) (acc Ts))
+                (if (isAtom (child (child x 0) 1))
+                  (cons (node2 0 (nameOf (child (child x 0) 1)) (nameOf (child x 1))) acc)
+                  acc))
+              (nil T)
+              (zipWith2 (lam ((p T) (a T)) (node2 0 p a)) ps args))
+            (let vis Ts (append sorts (children (child d 3)))
+              (let decls Ts
+                (zipWith2
+                  (lam ((p T) (a T))
+                    (let sig T (child p 1)
+                      (if (isAtom sig) (mkList (cons aSort (single a)))
+                        (mkList
+                          (cons aPostulate
+                            (cons a
+                              (single
+                                (foldr T T
+                                  (lam ((A T) (r T))
+                                    (mkList
+                                      (cons aArrowM (cons (rename vis A 1 (nil T)) (single r)))))
+                                  (rename vis (child sig 2) 1 (nil T))
+                                  (children (child sig 1))))))))))
+                  ps
+                  args)
+                (let s2 ModSt
+                  (instantiate rec (mkSt (stVis s) (nil T) (stReg s) (stEx s) (stMem s) (stMods s))
+                    d
+                    (nameCat path 37 (quote (0 generic)))
+                    args)
+                  (if (fst s2) (some (mkList (cons aGeneric (append decls (stOut s2)))))
+                    none)))))))))
   (def elabStep
     (lam ((rec ElabK) (pre T) (s ModSt) (e T))
       (if (if (fst s) (if (isList e) (nonEmpty (children e)) 0) 0)
@@ -473,32 +542,18 @@
                                   (let params Ts (children (child d 0))
                                     (if (eq (length params) (length args))
                                       (let inst T (nameCat pre 47 (if (isSome as) (get as) p))
-                                        (let s1 ModSt
-                                          ((foldr T (Arrow T (Arrow ModSt ModSt))
-                                             (lam
-                                               ((prm T) (k (Arrow T (Arrow ModSt ModSt))) (i T)
-                                                (acc ModSt))
-                                               (k (add i 1)
-                                                 (bindParam inst (stVis s) acc prm (at args i))))
-                                             (lam ((i T) (acc ModSt)) acc)
-                                             params) 0
-                                           (mkSt (children (child d 3)) (stOut s) (stReg s)
-                                             (children (child d 1))
-                                             (nil T)
-                                             (stMods s)))
-                                          (let s2 ModSt
-                                            (elabForms rec inst s1 (children (child d 2)))
-                                            (let ex T (if (fst s2) (exportsOf s2) none)
-                                              (if (isSome ex)
-                                                (declareAll
-                                                  (mkSt (stVis s) (stOut s2) (stReg s2) (stEx s)
-                                                    (append (stMem s) (single (memberSub inst)))
-                                                    (append (stMods s2)
-                                                      (single
-                                                        (modNode inst (stMem s2)
-                                                          (children (get ex))))))
-                                                  (importAs as (children (get ex))))
-                                                stFail)))))
+                                        (let s2 ModSt (instantiate rec s d inst args)
+                                          (let ex T (if (fst s2) (exportsOf s2) none)
+                                            (if (isSome ex)
+                                              (declareAll
+                                                (mkSt (stVis s) (stOut s2) (stReg s2) (stEx s)
+                                                  (append (stMem s) (single (memberSub inst)))
+                                                  (append (stMods s2)
+                                                    (single
+                                                      (modNode inst (stMem s2)
+                                                        (children (get ex))))))
+                                                (importAs as (children (get ex))))
+                                              stFail))))
                                       stFail))))
                               stFail)))))
                     stFail))
@@ -510,25 +565,27 @@
                           (let params Ts (withHead kwParameter forms)
                             (if (nonEmpty params)
                               (let others Ts (withoutHead kwParameter forms)
-                                (mkSt (stVis s) (stOut s)
-                                  (append (stReg s)
-                                    (single
-                                      (node2 0 path
-                                        (node 1
-                                          (cons (node 0 params)
-                                            (cons
-                                              (node 0
-                                                (concat
-                                                  (foldr T (List Ts)
-                                                    (lam ((x T) (r (List Ts)))
-                                                      (cons (atomNames (drop 1 (children x))) r))
-                                                    (nil Ts)
-                                                    (withHead kwExport others))))
-                                              (cons (node 0 (withoutHead kwExport others))
-                                                (single (node 0 (stVis s))))))))))
-                                  (stEx s)
-                                  (stMem s)
-                                  (stMods s)))
+                                (let d T
+                                  (node 1
+                                    (cons (node 0 params)
+                                      (cons
+                                        (node 0
+                                          (concat
+                                            (foldr T (List Ts)
+                                              (lam ((x T) (r (List Ts)))
+                                                (cons (atomNames (drop 1 (children x))) r))
+                                              (nil Ts)
+                                              (withHead kwExport others))))
+                                        (cons (node 0 (withoutHead kwExport others))
+                                          (single (node 0 (stVis s)))))))
+                                  (let g T (genericOf rec s d path)
+                                    (if (isSome g)
+                                      (mkSt (stVis s) (append (stOut s) (single (get g)))
+                                        (append (stReg s) (single (node2 0 path d)))
+                                        (stEx s)
+                                        (stMem s)
+                                        (stMods s))
+                                      stFail))))
                               (let s1 ModSt
                                 (elabForms rec path
                                   (mkSt (stVis s) (stOut s) (stReg s) (nil T) (nil T) (stMods s))

@@ -84,7 +84,7 @@ def exportNotes (mods : List ModNode) (cids : List (Ident × List UInt8)) :
 empty: its modules elaborated, its definitions read and migrated to their payloads. -/
 def programModules (text : List Char) : Option (List (Ident × List UInt8)) := do
   let (fs, mods) ← (elabTree (← readSExps text)).toOption
-  let ds ← readForms fs
+  let ds ← readForms (dropGeneric fs)
   let byName := (ds.map Prod.fst).zip ((migrate (ds.map Prod.snd)).map Payload.cid)
   pure (moduleCids (fun fl ↦ byName.lookup fl) mods)
 

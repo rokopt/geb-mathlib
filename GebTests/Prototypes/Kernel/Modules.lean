@@ -148,6 +148,8 @@ def moduleTexts : List String :=
     "(module N (export Nat isNat two) (data Nat (zero) (succ Nat)) (tree-data Old (old T))" ++
       " (def tail 0) (def two (datum Nat (1 (1 (0)))))" ++
       " (def isNat (lam ((t T)) (decode Nat t (lam ((n Nat)) (rep n)) (datum Nat (0 tail))))))",
+    "(module Box (parameter A) (parameter (f (A A) A)) (export box) (data Box (box A))" ++
+      " (def g (lam ((b Box)) (case b ((box x) (f x x))))))",
     "(def x 1) (module M (def x 2))", "(import Nowhere)", "(module M (export ghost))"]
 
 -- the elaboration written in Geb agrees with Lean's

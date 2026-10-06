@@ -175,6 +175,16 @@ def «Datatype.kwDecode» :=
 def «Datatype.kwDatum» :=
   mk 0 [leaf 100, leaf 97, leaf 116, leaf 117, leaf 109]
 
+def «Datatype.kwGeneric» :=
+  mk 0 [leaf 37,
+    leaf 103,
+    leaf 101,
+    leaf 110,
+    leaf 101,
+    leaf 114,
+    leaf 105,
+    leaf 99]
+
 def «Datatype.kwAmp» := mk 0 [leaf 38]
 
 def «Datatype.decimalChars» :=
@@ -1104,7 +1114,10 @@ def «Datatype.xpStep» :=
                 (Const.eq x6 (leaf 3))).label ≠ 0 then
                 (leaf 1, (x2, (x1 :: x3)))
               else
-                «Datatype.xpFail»
+                if («Reader.named» x5 «Datatype.kwGeneric»).label ≠ 0 then
+                  (leaf 1, (x2, x3))
+                else
+                  «Datatype.xpFail»
     else
       «Datatype.xpFail»
 
