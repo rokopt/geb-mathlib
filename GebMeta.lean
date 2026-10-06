@@ -138,6 +138,7 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.BitStream.Oitavem.Machine,
    `Geb.Prototypes.BitStream.Oitavem.Tree,
    `GebTests.Prototypes.BitStream.Oitavem,
+   `GebTests.Prototypes.FreeTopos.StoredDevelopments,
    `GebManual.BibTeX,
    `GebManual.Bibliography,
    `GebManual.Bootstrap,

@@ -4213,6 +4213,14 @@ checklist and in CI.
   `Weakening.lean` and `Substitution.lean` prove that the kernel's type
   checker written in Geb, `bootstrap/check.geb`, preserves
   types by the weakening and substitution of `bootstrap/subst.geb`;
+  `NormalizationBase.lean`, `NormalizationConst.lean`,
+  `NormalizationRel.lean` and `Normalization.lean` prove, as one theorem
+  of the internal language over all terms, the fundamental lemma of a
+  logical relation [Tait1967] between the values of the evaluator written
+  in Geb, `bootstrap/eval.geb`, and the types `bootstrap/check.geb`
+  gives: a well-typed term's evaluation converges, from some level of
+  fuel on, to a value related at its type, each module storing its
+  checked theorems for the next (`Stored.lean`);
   `TreeCases.lean` exercises the case analysis of a tree variable in any
   context and rewriting under a test, and `Expansion.lean` proves with
   them that the expansion of the datatype language,

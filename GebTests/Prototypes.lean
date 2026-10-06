@@ -40,7 +40,13 @@ import GebTests.Prototypes.FreeTopos.InternalDerivation
 import GebTests.Prototypes.FreeTopos.InternalLogic
 import GebTests.Prototypes.FreeTopos.InternalQuotients
 import GebTests.Prototypes.FreeTopos.InternalRoseTrees
+import GebTests.Prototypes.FreeTopos.Normalization
+import GebTests.Prototypes.FreeTopos.NormalizationBase
+import GebTests.Prototypes.FreeTopos.NormalizationConst
+import GebTests.Prototypes.FreeTopos.NormalizationRel
 import GebTests.Prototypes.FreeTopos.Prover
+import GebTests.Prototypes.FreeTopos.Stored
+import GebTests.Prototypes.FreeTopos.StoredDevelopments
 import GebTests.Prototypes.FreeTopos.Substitution
 import GebTests.Prototypes.FreeTopos.Translation
 import GebTests.Prototypes.FreeTopos.TranslationProofs

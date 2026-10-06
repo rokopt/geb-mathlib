@@ -4264,7 +4264,21 @@ the mirror's type of every term is the one
 {name}`Geb.Kernel.infer` gives, and
 `GebTests/Prototypes/EvalMirror.lean`, by recursion on fuel with one
 lemma for each shape of term, that the mirror's evaluation is the
-Lean evaluator's. The labels of the kernel's constructors
+Lean evaluator's. The same adequacy is proved in the metalogic about
+the programs written in Geb: in their translations, the relation is the
+fold of the type tree into the subobject classifier, and its conclusion
+a stable convergence, from some level of fuel on one value. Its
+fundamental lemma, one theorem of the internal language proved by
+induction on rose trees over all terms, states that a term to which
+`check.geb` gives a type in a context evaluates, in an environment
+related to the context and with definitions related to the types of the
+globals, to a value related at that type.
+`GebTests/Prototypes/FreeTopos/NormalizationBase.lean` holds the
+vocabulary the proof rewrites by, `NormalizationConst.lean` the
+convergence of the evaluator's folds, `NormalizationRel.lean` each
+constant's relation at its type, and `Normalization.lean` the lemma,
+each module checking its theorems and storing them, with those it was
+given, for the next. The labels of the kernel's constructors
 and the primitives' indices are named by numeral abbreviations in
 `bootstrap/prelude.geb` and by abbreviations in Lean,
 `Geb.Kernel.Label` and `Geb.Kernel.Prim`, which
