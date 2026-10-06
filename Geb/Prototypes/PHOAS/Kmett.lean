@@ -35,8 +35,10 @@ satisfy the end's wedge condition explicitly.
 
 ## Implementation notes
 
-The scoped unfolding is a structural equivalence. Initiality in a category of binding
-signatures and equivalence with a separately defined de Bruijn syntax are not asserted.
+The categorical wrapper's {lit}`PProfunctor.scopedIsInitial` specializes to this signature,
+characterizing the whole scoped family as an initial binding-signature algebra. The
+closed end is its empty-context component. The diagonal obstructions concern different
+categories of algebras and coalgebras.
 
 ## References
 

@@ -1471,7 +1471,14 @@ checklist and in CI.
   arities. With contexts and binder arities in the quantified universe,
   `Scoped.unfold` gives the whole family's recursive equation: a context
   variable or an operation with children in the contexts extended by their
-  binder arities. `Algebra.lean` defines the derived profunctors
+  binder arities. `Initial.lean` proves structural recursion by erasing
+  variables to the singleton type, and supplies unique folds, their
+  fusion law, and compatibility with context renaming. `Category.lean`
+  packages the whole scoped family as the initial algebra of the
+  binding-signature endofunctor on context functors, following the
+  binding-signature formulation of [FiorePlotkinTuri1999] with arbitrary
+  arities. Its empty-context component is the original closed end.
+  `Algebra.lean` defines the derived profunctors
   `H(X, Y) = P(Y, X) → Y` and `K(X, Y) = X → P(X, Y)` and their
   diagonal elements and morphisms. It obstructs initiality for inhabited
   `H`-algebras by constructing two distinct morphisms into a tagged copy.
@@ -1486,9 +1493,9 @@ checklist and in CI.
   coalgebra category has no terminal object. `Cofree.lean` uses the labelled
   M-type and
   proves that its diagonal families are empty, since the empty-type
-  component would have an empty root label. Initiality for binding
-  signatures and a de Bruijn representation theorem are not asserted.
-  `GebTests/Prototypes/PHOAS.lean` executes the folds and scoped destructor.
+  component would have an empty root label.
+  `GebTests/Prototypes/PHOAS.lean` executes the folds and scoped destructor,
+  including interpretations that distinguish bound and free variables.
 - `Geb/Prototypes/QuotientPRA/Basic.lean` — proof-relevant relations internal
   to the presheaves on a category `I`, as presheaves on
   `I × WalkingParallelPair`: terms over `(i, zero)`, witnesses over

@@ -6,6 +6,8 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.PHOAS.Dual
+public import Geb.Prototypes.PHOAS.Initial
+public import Mathlib.CategoryTheory.Endofunctor.Algebra
 public import Mathlib.CategoryTheory.Limits.Types.End
 public import Mathlib.CategoryTheory.Limits.Shapes.Terminal
 public import Mathlib.CategoryTheory.Whiskering
@@ -23,10 +25,16 @@ explicit end, which has the limiting-wedge universal property.
 * {lit}`profunctor` and {lit}`freeProfunctor` package the two interpretations.
 * {lit}`endEquiv` identifies compatible families with mathlib's explicit end.
 * {lit}`algebraProfunctor` and {lit}`coalgebraProfunctor` package the derived profunctors.
+* {lit}`bindingFunctor` is the binding-signature endofunctor on functors of contexts.
+* {lit}`scopedAlgebra` equips the scoped family with its variable and binding constructors.
 
 ## Main statements
 
 * {lit}`endIsLimit` supplies the universal property of the end.
+* {lit}`scopedIsInitial` characterizes the whole scoped family as the initial binding algebra.
+  Its morphism to a model is the natural fold, uniquely determined by the constructors.
+* {lit}`endIsoInitial` identifies the closed end with the empty-context component of any
+  initial binding algebra, independently of its implementation.
 * {lit}`not_isInitial` and {lit}`not_isTerminal` rule out diagonal universal objects when
   the signature has distinct positions.
 * {lit}`kmett_not_isInitial` and {lit}`kmett_not_isTerminal` exclude the corresponding
@@ -36,6 +44,9 @@ explicit end, which has the limiting-wedge universal property.
 
 The value universe is raised before taking the end over a universe of types. This module
 packages the constructive data in mathlib's category theory, whose proofs use choice.
+The binding algebra uses {lit}`Type u` as its category of contexts and
+{lit}`Type (max uA uB (u + 1))` as its value category, accommodating the end's universe.
+Its initiality applies to functors on all contexts in that universe, with arbitrary arities.
 
 ## Tags
 
@@ -175,5 +186,125 @@ theorem kmett_not_isTerminal (t : Kmett.signature.Coalgebra.{0, 0, 0, u}) :
   apply Kmett.no_terminal_coalgebra t
   intro s
   exact ⟨{ default := h.from s, uniq := fun f ↦ h.hom_ext f (h.from s) }⟩
+
+section Binding
+
+variable (Q : PProfunctor.{uA, uB, u})
+
+/-- Adjoin a fixed type of bound variables to each context. -/
+def contextExtension (C : Type u) : Type u ⥤ Type u where
+  obj Γ := Γ ⊕ C
+  map f := ↾(Sum.map f.hom id)
+  map_id Γ := by ext x; cases x <;> rfl
+  map_comp f g := by ext x; cases x <;> rfl
+
+/-- The binding-signature operator applied to a functor of contexts. -/
+def bindingObj (M : Type u ⥤ Type v) : Type u ⥤ Type (max uA uB u v) where
+  obj Γ := Q.BindingLayer M.obj Γ
+  map f := ↾(Sum.map f.hom (fun n ↦
+    ⟨n.1, fun b ↦ (M.map ((contextExtension ((Q.B n.1).B b)).map f)) (n.2 b)⟩))
+  map_id Γ := by
+    ext x
+    rcases x with x | ⟨a, k⟩
+    · rfl
+    · change (Sum.inr ⟨a, fun b ↦
+        (M.map ((contextExtension ((Q.B a).B b)).map (𝟙 Γ))) (k b)⟩ : Q.BindingLayer M.obj Γ) = _
+      apply congrArg Sum.inr
+      apply congrArg (Sigma.mk a)
+      funext b
+      rw [(contextExtension ((Q.B a).B b)).map_id, M.map_id]
+      rfl
+  map_comp f g := by
+    ext x
+    rcases x with x | ⟨a, k⟩
+    · rfl
+    · simp only [Functor.map_comp]
+      rfl
+
+/-- The binding-signature operator maps a natural transformation at each extended context. -/
+def bindingMap {M N : Type u ⥤ Type v} (h : M ⟶ N) : bindingObj Q M ⟶ bindingObj Q N where
+  app Γ := ↾(Sum.map id (fun n ↦ ⟨n.1, fun b ↦ h.app _ (n.2 b)⟩))
+  naturality {Γ Δ} f := by
+    ext x
+    rcases x with x | ⟨a, k⟩
+    · rfl
+    · apply congrArg Sum.inr
+      apply congrArg (Sigma.mk a)
+      funext b
+      exact congrArg (fun h ↦ h (k b)) (h.naturality ((contextExtension ((Q.B a).B b)).map f))
+
+/-- The binding-signature endofunctor on functors of contexts. -/
+def bindingFunctor : (Type u ⥤ Type (max uA uB u v)) ⥤ (Type u ⥤ Type (max uA uB u v)) where
+  obj := bindingObj Q
+  map := bindingMap Q
+  map_id _ := by ext Γ x; cases x <;> rfl
+  map_comp _ _ := by ext Γ x; cases x <;> rfl
+
+/-- Scoped terms form a functor of contexts by variable renaming. -/
+def scopedFunctor : Type u ⥤ Type (max uA uB (u + 1)) where
+  obj Γ := Q.Scoped.{uA, uB, u, u, u} Γ
+  map f := ↾(Scoped.rename f.hom)
+  map_id _ := rfl
+  map_comp _ _ := rfl
+
+/-- The variable and binding constructors give an algebra on the scoped family. -/
+def scopedAlgebra : Endofunctor.Algebra (bindingFunctor.{uA, uB, u, u + 1} Q) where
+  a := scopedFunctor Q
+  str :=
+    { app Γ := ↾Scoped.roll
+      naturality {Γ Δ} f := by
+        ext x
+        rcases x with x | ⟨a, k⟩
+        · rfl
+        · exact (Scoped.rename_node f.hom a k).symm }
+
+/-- The scoped fold is natural for every algebra of the binding-signature functor. -/
+def scopedFold (M : Endofunctor.Algebra (bindingFunctor.{uA, uB, u, u + 1} Q)) :
+    scopedFunctor Q ⟶ M.a where
+  app Γ := ↾(Scoped.fold (fun Γ x ↦ M.str.app Γ (.inl x))
+    (fun Γ a k ↦ M.str.app Γ (.inr ⟨a, k⟩)))
+  naturality {Γ Δ} f := by
+    ext t
+    symm
+    refine Scoped.fold_rename (P := Q) (fun Γ x ↦ M.str.app Γ (.inl x))
+      (fun Γ a k ↦ M.str.app Γ (.inr ⟨a, k⟩)) (fun f ↦ (M.a.map (↾f)).hom) ?_ ?_ f.hom t
+    · intro Γ Δ f x
+      exact (congrArg (fun h ↦ h (.inl x)) (M.str.naturality (↾f))).symm
+    · intro Γ Δ f a k
+      exact (congrArg (fun h ↦ h (.inr ⟨a, k⟩)) (M.str.naturality (↾f))).symm
+
+/-- The natural scoped fold preserves the algebra structure. -/
+def scopedFoldHom (M : Endofunctor.Algebra (bindingFunctor.{uA, uB, u, u + 1} Q)) :
+    scopedAlgebra Q ⟶ M where
+  f := scopedFold Q M
+  h := by
+    ext Γ x
+    rcases x with x | ⟨a, k⟩
+    · rfl
+    · exact (Scoped.fold_node (P := Q) (fun Γ x ↦ M.str.app Γ (.inl x))
+        (fun Γ a k ↦ M.str.app Γ (.inr ⟨a, k⟩)) a k).symm
+
+/-- Every algebra homomorphism from scoped syntax is its fold. -/
+theorem scopedFold_unique (M : Endofunctor.Algebra (bindingFunctor.{uA, uB, u, u + 1} Q))
+    (h : scopedAlgebra Q ⟶ M) : h = scopedFoldHom Q M := by
+  have he := Scoped.fold_unique (fun Γ x ↦ M.str.app Γ (.inl x))
+    (fun Γ a k ↦ M.str.app Γ (.inr ⟨a, k⟩)) (fun Γ t ↦ h.f.app Γ t)
+    (fun Γ x ↦ (congrArg (fun α ↦ α.app Γ (.inl x)) h.h).symm)
+    (fun Γ a k ↦ (congrArg (fun α ↦ α.app Γ (.inr ⟨a, k⟩)) h.h).symm)
+  apply Endofunctor.Algebra.Hom.ext
+  ext Γ t
+  exact congrFun (congrFun he Γ) t
+
+/-- The free-monad/end scoped family is the initial algebra of the binding-signature functor. -/
+def scopedIsInitial : Limits.IsInitial (scopedAlgebra Q) :=
+  Limits.IsInitial.ofUniqueHom (scopedFoldHom Q) (scopedFold_unique Q)
+
+/-- The closed end is the empty-context component of any initial binding algebra. -/
+def endIsoInitial (M : Endofunctor.Algebra (bindingFunctor.{uA, uB, u, u + 1} Q))
+    (h : Limits.IsInitial M) : Q.End.{uA, uB, u, u} ≅ M.a.obj PEmpty.{u + 1} :=
+  (Scoped.emptyEquivEnd (P := Q)).symm.toIso ≪≫
+    ((Endofunctor.Algebra.forget _).mapIso ((scopedIsInitial Q).uniqueUpToIso h)).app PEmpty
+
+end Binding
 
 end Geb.PHOAS.PProfunctor
