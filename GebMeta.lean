@@ -143,6 +143,7 @@ def classicalAllowedModules : NameSet :=
    `GebManual.Bootstrap,
    `GebManual.DecisionProblems,
    `GebManual.Introduction,
+   `GebManual.PHOAS,
    `GebManual.QuotientPRA,
    `GebManual.Root,
    `GebManual.ValueRepresentation,

@@ -8,6 +8,7 @@ module
 public import VersoManual
 public import GebManual.Introduction
 public import GebManual.WTypes
+public import GebManual.PHOAS
 public import GebManual.DecisionProblems
 public import GebManual.ValueRepresentation
 public import GebManual.QuotientPRA
@@ -25,6 +26,8 @@ open Verso.Genre Manual
 {include 0 GebManual.Introduction}
 
 {include 0 GebManual.WTypes}
+
+{include 0 GebManual.PHOAS}
 
 {include 0 GebManual.DecisionProblems}
 

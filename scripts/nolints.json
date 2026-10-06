@@ -2,6 +2,7 @@
   ["docBlame", "GebManual.Bootstrap.«the canonical document object name»"],
   ["docBlame", "GebManual.DecisionProblems.«the canonical document object name»"],
   ["docBlame", "GebManual.Introduction.«the canonical document object name»"],
+  ["docBlame", "GebManual.PHOAS.«the canonical document object name»"],
   ["docBlame", "GebManual.QuotientPRA.«the canonical document object name»"],
   ["docBlame", "GebManual.Root.«the canonical document object name»"],
   ["docBlame", "GebManual.ValueRepresentation.«the canonical document object name»"],
