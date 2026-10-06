@@ -4086,8 +4086,8 @@ them may discard the document, binding or dependency information already
 kept. The limits that more Geb code meets are among the improvements
 ({ref "improvements"}[Improvements]): the Geb reader's stack in
 proportion to a program's length, about 480 bytes of memory per byte of
-input, the rebuilding of every test module on a change of a Geb source,
-and a Geb compiler that names no failing definition.
+input, the tests that a change of a Geb source rebuilds, and a Geb
+compiler that names no failing definition.
 
 Acceptance: a documented module survives conversion among the syntaxes
 of RFC 9804 and the authoring profile, retaining names, comments,
@@ -6145,11 +6145,12 @@ the change that removes it.
 * Test time. The stage tests compare the Geb compilers with the seed in
   Lean's interpreter, tens of seconds each; running those comparisons
   with the compiled executables, as `scripts/bootstrap.sh` runs the
-  fixed points, shortens them. A change to a Geb source rebuilds every
-  test module, since the test library as a whole depends on the
-  sources that some of its modules read by `include_str`; a library of
-  those modules alone would confine the rebuild to them and their
-  importers.
+  fixed points, shortens them. A change to a Geb source rebuilds the
+  test modules that read it at elaboration and their importers, each
+  group of sources being a dependency of a library of the modules that
+  read it (`lakefile.toml`); a change to a source of the stage-0
+  compiler, which most of the tests import, still rebuilds most of
+  them.
 * Load time. The kernel checks the loading of the metalogic's program
   by evaluating the checker-evaluator {name}`Geb.Kernel.infer`, by
   reduction, on each definition in the globals before it, and comparing

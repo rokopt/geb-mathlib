@@ -267,8 +267,10 @@ its own `MathlibTest`.
   registers no dependency on it, so Lake does not rebuild the module
   when the file alone changes. Such a file is covered by an input
   target (`input_file`, `input_dir`) that the module's library
-  `needs` in `lakefile.toml`, as the Geb sources under `bootstrap/`
-  are for `GebTests`.
+  `needs` in `lakefile.toml`. The test modules reading the Geb
+  sources under `bootstrap/` are held in libraries of their own, one
+  for each group of sources, so that a change to a source rebuilds
+  only the tests that read it and their importers.
 
 ## Coding technique
 

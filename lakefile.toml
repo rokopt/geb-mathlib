@@ -88,28 +88,12 @@ rev = "v4.35.0-rc3"
 name = "Geb"
 globs = ["Geb.*"]
 
-# The test modules that compare Geb programs with Lean ones read the
-# programs' sources at elaboration by `include_str`, which registers no
-# dependency on the file read. The library's `needs` mixes the sources'
-# trace into the trace of every GebTests module, so a change to a source
-# rebuilds the tests that read it, and the rest of GebTests with them; a
-# library of the reading modules alone would confine the rebuild to them
-# and their importers.
-[[input_dir]]
-name = "gebSources"
-path = "bootstrap"
-text = true
-filter = {extension = ["geb"]}
-
-# The committed stage-1 compiler, which a test runs, read at elaboration.
-[[input_file]]
-name = "compilerImage"
-path = "bootstrap/compiler.img"
-
+# The test library: its root, every module the root imports but for the
+# modules below that read files at elaboration, and the one test module
+# the root does not import.
 [[lean_lib]]
 name = "GebTests"
-globs = ["GebTests.*"]
-needs = ["@/gebSources", "@/compilerImage"]
+globs = ["GebTests", "GebTests.Prototypes.Typechecker.Instances"]
 
 # `linter.hashCommand`, a member of `mathlibStandardSet`, rejects every
 # `#`-command outside `#adaptation_note`. Its purpose is to keep them
@@ -124,7 +108,139 @@ needs = ["@/gebSources", "@/compilerImage"]
 # The entry below disables the one linter, an option of its own taking
 # precedence over the set that would otherwise enable it; it is a
 # mathlib option, so it goes in `moreLeanArgs` (see the note above the
-# package options).
+# package options). The test libraries below repeat it.
+moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
+
+[lean_lib.moreServerOptions]
+weak.linter.hashCommand = false
+
+# The test modules that compare Geb programs with Lean ones read the
+# programs' sources at elaboration, by `include_str`, `IO.FS.readFile` or
+# `geb_program`, none of which registers a dependency on the file read.
+# Each library below holds the modules reading one group of sources, and
+# its `needs` mixes the trace of those sources into the trace of its
+# modules, so a change to a source rebuilds the modules that read it and
+# their importers and no other test. A source a module reads that one of
+# its imports already reads is covered by the import. Lake resolves a
+# module to the last library declared that can build it, so these
+# libraries follow `GebTests`, whose root covers every test module.
+[[input_file]]
+name = "preludeSource"
+path = "bootstrap/prelude.geb"
+text = true
+
+[[input_file]]
+name = "serializeSource"
+path = "bootstrap/serialize.geb"
+text = true
+
+[[input_file]]
+name = "readerSource"
+path = "bootstrap/reader.geb"
+text = true
+
+[[input_file]]
+name = "checkSource"
+path = "bootstrap/check.geb"
+text = true
+
+[[input_file]]
+name = "datatypeSource"
+path = "bootstrap/datatype.geb"
+text = true
+
+[[input_file]]
+name = "modulesSource"
+path = "bootstrap/modules.geb"
+text = true
+
+[[input_file]]
+name = "compileSource"
+path = "bootstrap/compile.geb"
+text = true
+
+[[input_file]]
+name = "identitySource"
+path = "bootstrap/identity.geb"
+text = true
+
+[[input_file]]
+name = "printerSource"
+path = "bootstrap/printer.geb"
+text = true
+
+[[input_dir]]
+name = "goedelTSources"
+path = "bootstrap/goedel-t"
+text = true
+filter = {extension = ["geb"]}
+
+[[input_dir]]
+name = "proofSources"
+path = "bootstrap/proofs"
+text = true
+filter = {extension = ["geb"]}
+
+[[input_dir]]
+name = "freeToposSources"
+path = "bootstrap/free-topos"
+text = true
+filter = {extension = ["geb"]}
+
+# The committed stage-1 compiler, which a test runs, read at elaboration.
+[[input_file]]
+name = "compilerImage"
+path = "bootstrap/compiler.img"
+
+# The stage-0 compiler's sources.
+[[lean_lib]]
+name = "GebTestsStage0"
+globs = ["GebTests.Prototypes.Stage0"]
+needs = ["@/preludeSource", "@/serializeSource", "@/readerSource", "@/checkSource",
+  "@/datatypeSource", "@/modulesSource", "@/compileSource"]
+moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
+
+[lean_lib.moreServerOptions]
+weak.linter.hashCommand = false
+
+# The stage-1 compiler's image.
+[[lean_lib]]
+name = "GebTestsStage1"
+globs = ["GebTests.Prototypes.Stage1"]
+needs = ["@/compilerImage"]
+moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
+
+[lean_lib.moreServerOptions]
+weak.linter.hashCommand = false
+
+# The checker and prover of Gödel's T and the proofs they check.
+[[lean_lib]]
+name = "GebTestsGoedelT"
+globs = ["GebTests.Prototypes.GoedelT", "GebTests.Prototypes.GoedelT.MirrorLoad",
+  "GebTests.Prototypes.Proofs"]
+needs = ["@/goedelTSources", "@/proofSources"]
+moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
+
+[lean_lib.moreServerOptions]
+weak.linter.hashCommand = false
+
+# The metalogic's program and the printer it loads.
+[[lean_lib]]
+name = "GebTestsFreeTopos"
+globs = ["GebTests.Prototypes.FreeTopos.GebCheck", "GebTests.Prototypes.FreeTopos.GebCheckInternal",
+  "GebTests.Prototypes.FreeTopos.GebProve", "GebTests.Prototypes.FreeTopos.GebTactics",
+  "GebTests.Prototypes.FreeTopos.GebCombinator", "GebTests.Prototypes.FreeTopos.Agreement.Load"]
+needs = ["@/freeToposSources", "@/printerSource"]
+moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
+
+[lean_lib.moreServerOptions]
+weak.linter.hashCommand = false
+
+# The hash and the printer of the kernel's terms.
+[[lean_lib]]
+name = "GebTestsKernel"
+globs = ["GebTests.Prototypes.Kernel.Identity", "GebTests.Prototypes.Kernel.Printer"]
+needs = ["@/identitySource", "@/printerSource"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]
