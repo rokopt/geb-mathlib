@@ -1462,6 +1462,33 @@ checklist and in CI.
   from the property of the new value and of the old ones. The
   mirror `GebTests/Prototypes/FiniteChoice.lean` applies the congruence to the
   sum of a pair of naturals.
+- `Geb/Prototypes/PHOAS/` — polynomial profunctors with polynomial
+  directions, their pointwise CSLib free monads, and the end of those
+  monads as compatible families. `Basic.lean` proves the fixed-parameter
+  unfolding and unique fold, and decomposes the end into a uniform
+  operation and coherent children. `Scoped.lean` curries each direction
+  polynomial to identify those children with terms scoped by its binder
+  arities. With contexts and binder arities in the quantified universe,
+  `Scoped.unfold` gives the whole family's recursive equation: a context
+  variable or an operation with children in the contexts extended by their
+  binder arities. `Algebra.lean` defines the derived profunctors
+  `H(X, Y) = P(Y, X) → Y` and `K(X, Y) = X → P(X, Y)` and their
+  diagonal elements and morphisms. It obstructs initiality for inhabited
+  `H`-algebras by constructing two distinct morphisms into a tagged copy.
+  `Category.lean` identifies the compatible families with
+  mathlib's explicit end and supplies its limiting-wedge property; the
+  category of diagonal elements has neither an initial nor a terminal
+  object when there are distinct operation positions. `Kmett.lean`
+  models application and abstraction from [Kmett2013], proves the closed
+  equation `E ≃ (E × E) ⊕ Scoped PUnit`, and proves that no type `X`
+  satisfies `P(X, X) ≃ X`. Its derived algebra category has no initial
+  object; `Dual.lean` uses two-state coalgebras to prove that the derived
+  coalgebra category has no terminal object. `Cofree.lean` uses the labelled
+  M-type and
+  proves that its diagonal families are empty, since the empty-type
+  component would have an empty root label. Initiality for binding
+  signatures and a de Bruijn representation theorem are not asserted.
+  `GebTests/Prototypes/PHOAS.lean` executes the folds and scoped destructor.
 - `Geb/Prototypes/QuotientPRA/Basic.lean` — proof-relevant relations internal
   to the presheaves on a category `I`, as presheaves on
   `I × WalkingParallelPair`: terms over `(i, zero)`, witnesses over
