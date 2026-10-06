@@ -19,7 +19,7 @@
   ; documents: text with its width in columns and its bytes, a concatenation, the line breaks of
   ; a document indented by two more columns, a line break or, in a flat group, a space, a group,
   ; and the line breaks of a document indented to the column where it starts
-  (data Doc (txt T T) (cat & Doc) (nest Doc) (line) (grp Doc) (align Doc))
+  (tree-data Doc (txt T T) (cat & Doc) (nest Doc) (line) (grp Doc) (align Doc))
   (defn cols ((bs Ts)) T
     (foldr T T (lam ((b T) (n T)) (if (and (lt 127 b) (lt b 192)) n (add n 1))) 0 bs))
   (defn text ((bs Ts)) T (txt (cols bs) (node 0 bs)))
@@ -149,7 +149,7 @@ end
 
   ; a term's shape: text that needs no parentheses as an argument, text that does, a run of
   ; abstractions with its binders and body, or a run of applications with its head and arguments
-  (data Sh (atomic T) (compound T) (fn T T) (ap T & T))
+  (tree-data Sh (atomic T) (compound T) (fn T T) (ap T & T))
   (defn binderDocs ((bs T)) T
     (joinWith line
       (foldr T Ts (lam ((x T) (acc Ts)) (cons (cat5 tLp (child x 0) tColon (child x 1) tRp) acc))
@@ -169,7 +169,7 @@ end
   (defn opDoc ((s T)) T (case s ((compound d) (cat3 tLp d tRp)) (else (shDoc s))))
 
   ; kernel types and terms, by label
-  (data Kt (ktT) (ktUnit) (ktProd Kt Kt) (ktArrow Kt Kt) (ktList Kt) (kt5) (kt6) (kt7) (kVar T)
+  (tree-data Kt (ktT) (ktUnit) (ktProd Kt Kt) (ktArrow Kt Kt) (ktList Kt) (kt5) (kt6) (kt7) (kVar T)
     (kLam Kt Kt)
     (kApp Kt Kt)
     (kUnit)

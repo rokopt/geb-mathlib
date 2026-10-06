@@ -145,6 +145,9 @@ def moduleTexts : List String :=
       " (def q (lam ((x T)) (quote (0 tail)))))",
     "(module D (export Maybe nothing just get) (data Maybe (nothing) (just T))" ++
       " (defn get ((d T) (m Maybe)) T (case m ((nothing) d) ((just x) x))))",
+    "(module N (export Nat isNat two) (data Nat (zero) (succ Nat)) (tree-data Old (old T))" ++
+      " (def tail 0) (def two (datum Nat (1 (1 (0)))))" ++
+      " (def isNat (lam ((t T)) (decode Nat t (lam ((n Nat)) (rep n)) (datum Nat (0 tail))))))",
     "(def x 1) (module M (def x 2))", "(import Nowhere)", "(module M (export ghost))"]
 
 -- the elaboration written in Geb agrees with Lean's
@@ -157,6 +160,12 @@ def moduleTexts : List String :=
     " (data Maybe (nothing) (just T))" ++
     " (defn fromMaybe ((d T) (m Maybe)) T (case m ((nothing) d) ((just x) x))))" ++
     " (defn main ((t T)) T (Opt.fromMaybe 7 (Opt.just 3)))").toList (leaf 0) = some (leaf 3)
+
+-- a datatype of a module decoded, its name qualified in the recognizer the decoding refers to
+#guard [(leaf 0, leaf 1), (mk 1 [leaf 0], leaf 1), (mk 2 [], leaf 0)].all fun (t, r) ↦
+  runDatatype compiler.toList ("(module N (export Nat zero succ isNat)" ++
+    " (data Nat (zero) (succ Nat)) (def isNat (lam ((t T)) (decode Nat t (lam ((n Nat)) 1) 0))))" ++
+    " (def main (lam ((t T)) (N.isNat t)))").toList t == some r
 
 /-- Two modules, the first exporting one of its definitions. -/
 def twoModules (m f g n h : String) (k : ℕ) : String :=

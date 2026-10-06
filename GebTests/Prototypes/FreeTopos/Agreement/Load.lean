@@ -1215,27 +1215,27 @@ definitions, an S-expression and the names in scope to an optional term. -/
 def readBackTy : Tree := [tList tT, tT, tList tT].foldr tArrow tT
 
 -- the reader's resolution of what the printer prints and the partial printer are the program's
--- globals of indices 936 and 946
-kernel_rfl metalogic_g936 : metalogic.globals[936]? = some metalogic.g936
-kernel_rfl metalogic_g946 : metalogic.globals[946]? = some metalogic.g946
+-- globals of indices 945 and 955
+kernel_rfl metalogic_g945 : metalogic.globals[945]? = some metalogic.g945
+kernel_rfl metalogic_g955 : metalogic.globals[955]? = some metalogic.g955
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 936 is the mirror's resolution of what the printer writes, at its
+/-- The program's global of index 945 is the mirror's resolution of what the printer writes, at its
 type. -/
 theorem metalogic_readBack :
-    metalogic.globals[936]? = some (⟨readBackTy, «Printer.readBack»⟩ : Glob) :=
-  metalogic_g936.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step936).elim fun _ h ↦
+    metalogic.globals[945]? = some (⟨readBackTy, «Printer.readBack»⟩ : Glob) :=
+  metalogic_g945.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step945).elim fun _ h ↦
       infer_lams tT _ [tList tT, tT, tList tT] h)
     (metalogic.«Printer.readBack_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 946 is the mirror's partial printer of kernel terms, at its
+/-- The program's global of index 955 is the mirror's partial printer of kernel terms, at its
 type. -/
 theorem metalogic_printTermOpt :
-    metalogic.globals[946]? = some (⟨printTermTy, «Printer.printTermOpt»⟩ : Glob) :=
-  metalogic_g946.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step946).elim fun _ h ↦
+    metalogic.globals[955]? = some (⟨printTermTy, «Printer.printTermOpt»⟩ : Glob) :=
+  metalogic_g955.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step955).elim fun _ h ↦
       infer_lams tT _ [tList tT, tT, tT] h)
     (metalogic.«Printer.printTermOpt_heq».trans HEq.rfl)))
 

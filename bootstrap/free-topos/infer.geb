@@ -24,7 +24,7 @@
   (import PartialHorn)
   (import Theory)
   ; the rules by which an axiom proves an operation's application defined
-  (data DfdRule (direct T) (strict T) (rhsRule T))
+  (tree-data DfdRule (direct T) (strict T) (rhsRule T))
 
   ; the argument sorts of an operation of the signature
   (defn argSorts ((k T)) Ts
@@ -83,17 +83,17 @@
   (defn defAxIdx ((i T)) T (add (length axioms) (mul 2 i)))
 
   ; typings, and typed terms
-  (data Ann (ann T T T))
+  (tree-data Ann (ann T T T))
   (defn annSort ((a T)) T (case a ((ann s l h) s)))
   (defn annLo ((a T)) T (case a ((ann s l h) l)))
   (defn annHi ((a T)) T (case a ((ann s l h) h)))
-  (data Typed (typed T T))
+  (tree-data Typed (typed T T))
   (defn tyTerm ((p T)) T (case p ((typed t a) t)))
   (defn tyAnn ((p T)) T (case p ((typed t a) a)))
 
   ; the theory extended by definitions, with its axioms, its signature and the rule tables
   (defn ext ((ds Ts)) T (thyExtendAll toposTheory ds))
-  (data ExtEnv (extEnv T T T T T T))
+  (tree-data ExtEnv (extEnv T T T T T T))
   (defn envDefs ((E T)) Ts (case E ((extEnv d a s f o c) (children d))))
   (defn envAxs ((E T)) Ts (case E ((extEnv d a s f o c) (children a))))
   (defn envSg ((E T)) Ts (case E ((extEnv d a s f o c) (children s))))

@@ -139,9 +139,25 @@ def «Datatype.aD» := mk 1 [leaf 37, leaf 100]
 def «Datatype.aRest» :=
   mk 1 [leaf 37, leaf 114, leaf 101, leaf 115, leaf 116]
 
+def «Datatype.aE» := mk 1 [leaf 37, leaf 101]
+
+def «Datatype.aQuote» :=
+  mk 1 [leaf 113, leaf 117, leaf 111, leaf 116, leaf 101]
+
 def «Datatype.aK» := mk 1 [leaf 37, leaf 107]
 
 def «Datatype.kwData» := mk 0 [leaf 100, leaf 97, leaf 116, leaf 97]
+
+def «Datatype.kwTreeData» :=
+  mk 0 [leaf 116,
+    leaf 114,
+    leaf 101,
+    leaf 101,
+    leaf 45,
+    leaf 100,
+    leaf 97,
+    leaf 116,
+    leaf 97]
 
 def «Datatype.kwCase» := mk 0 [leaf 99, leaf 97, leaf 115, leaf 101]
 
@@ -150,6 +166,14 @@ def «Datatype.kwCata» := mk 0 [leaf 99, leaf 97, leaf 116, leaf 97]
 def «Datatype.kwDefn» := mk 0 [leaf 100, leaf 101, leaf 102, leaf 110]
 
 def «Datatype.kwElse» := mk 0 [leaf 101, leaf 108, leaf 115, leaf 101]
+
+def «Datatype.kwRep» := mk 0 [leaf 114, leaf 101, leaf 112]
+
+def «Datatype.kwDecode» :=
+  mk 0 [leaf 100, leaf 101, leaf 99, leaf 111, leaf 100, leaf 101]
+
+def «Datatype.kwDatum» :=
+  mk 0 [leaf 100, leaf 97, leaf 116, leaf 117, leaf 109]
 
 def «Datatype.kwAmp» := mk 0 [leaf 38]
 
@@ -176,6 +200,21 @@ def «Datatype.decimalChars» :=
 
 def «Datatype.numAtom» :=
   fun (x0 : T) => Const.node (leaf 1) («Datatype.decimalChars» x0)
+
+def «Datatype.memberName» :=
+  fun (x0 : T) =>
+    Const.node
+      (leaf 1)
+      («Prelude.append»
+        (Const.children x0)
+        (Const.children
+          (mk 1 [leaf 46,
+            leaf 109,
+            leaf 101,
+            leaf 109,
+            leaf 98,
+            leaf 101,
+            leaf 114])))
 
 def «Datatype.fieldAtom» :=
   fun (x0 : T) =>
@@ -740,6 +779,27 @@ def «Datatype.expandCata» :=
     else
       «Prelude.none»
 
+def «Datatype.expandDecode» :=
+  fun (x0 : List T) (x1 : T) (x2 : List (T × (List T → T))) =>
+    let x3 : T := «Prelude.at» (Const.children x1) (leaf 1);
+    let x4 : T := «Reader.rrAt» x2 (leaf 2) x0;
+    let x5 : T := «Reader.rrAt» x2 (leaf 3) x0;
+    let x6 : T := «Reader.rrAt» x2 (leaf 4) x0;
+    if («Prelude.and»
+      («Reader.isAtom» x3)
+      («Reader.both» x4 («Reader.both» x5 x6))).label ≠ 0 then
+      «Prelude.some»
+        («Datatype.sLet»
+          «Datatype.aE»
+          «Datatype.aT»
+          («Prelude.get» x4)
+          («Datatype.sIf»
+            («Datatype.sx2» («Datatype.memberName» x3) «Datatype.aE»)
+            («Datatype.sx2» («Prelude.get» x5) «Datatype.aE»)
+            («Prelude.get» x6)))
+    else
+      «Prelude.none»
+
 def «Datatype.expandExpr» :=
   fun (x0 : List T) (x1 : T) =>
     (Const.fold
@@ -761,12 +821,30 @@ def «Datatype.expandExpr» :=
                   (Const.lt (leaf 4) x7)).label ≠ 0 then
                   «Datatype.expandCata» x5 x4 x3
                 else
-                  let x8 : T := «Reader.allSome» («Reader.rrApply» x3 x5);
-                  if («Prelude.isSome» x8).label ≠ 0 then
-                    «Prelude.some»
-                      (Const.node (leaf 2) (Const.children («Prelude.get» x8)))
+                  if («Prelude.and»
+                    («Reader.named» x6 «Datatype.kwRep»)
+                    (Const.eq x7 (leaf 2))).label ≠ 0 then
+                    «Reader.rrAt» x3 (leaf 1) x5
                   else
-                    «Prelude.none»
+                    if («Prelude.and»
+                      («Reader.named» x6 «Datatype.kwDecode»)
+                      (Const.eq x7 (leaf 5))).label ≠ 0 then
+                      «Datatype.expandDecode» x5 x4 x3
+                    else
+                      if («Prelude.and»
+                        («Reader.named» x6 «Datatype.kwDatum»)
+                        (Const.eq x7 (leaf 3))).label ≠ 0 then
+                        «Prelude.some»
+                          («Datatype.sx2»
+                            «Datatype.aQuote»
+                            («Prelude.at» (Const.children x4) (leaf 2)))
+                      else
+                        let x8 : T := «Reader.allSome» («Reader.rrApply» x3 x5);
+                        if («Prelude.isSome» x8).label ≠ 0 then
+                          «Prelude.some»
+                            (Const.node (leaf 2) (Const.children («Prelude.get» x8)))
+                        else
+                          «Prelude.none»
             else
               «Prelude.some» x4))
       x1).2
@@ -905,6 +983,37 @@ def «Datatype.dataDecl» :=
     else
       «Prelude.none»
 
+def «Datatype.marker» :=
+  fun (x0 : List T) (x1 : T) (x2 : List T) =>
+    Const.node
+      (leaf 9)
+      (x1 ::
+        (Const.foldr
+          (α := T)
+          (β := List T)
+          (fun (x3 : T) (x4 : List T) =>
+            if (Const.eq (Const.label x3) (leaf 5)).label ≠ 0 then
+              ((Const.node
+                (leaf 0)
+                ((Const.child x3 (leaf 1)) ::
+                  ((Const.node
+                    (leaf 0)
+                    (Const.foldr
+                      (α := T)
+                      (β := List T)
+                      (fun (x5 : T) (x6 : List T) =>
+                        ((«Datatype.expandAliases» x0 x5) :: x6))
+                      ([] : List T)
+                      (Const.children (Const.child x3 (leaf 3))))) ::
+                    ((Const.child x3 (leaf 4)) ::
+                      («Prelude.single»
+                        («Datatype.expandAliases» x0 (Const.child x3 (leaf 5)))))))) ::
+                x4)
+            else
+              x4)
+          ([] : List T)
+          x2))
+
 def «Datatype.xpFail» := (leaf 0, (([] : List T), ([] : List T)))
 
 def «Datatype.xpStep» :=
@@ -915,16 +1024,24 @@ def «Datatype.xpStep» :=
       let x4 : List T := Const.children x1;
       let x5 : T := «Prelude.at» x4 (leaf 0);
       let x6 : T := Const.arity x1;
-      if («Reader.named» x5 «Datatype.kwData»).label ≠ 0 then
+      if («Prelude.or»
+        («Reader.named» x5 «Datatype.kwData»)
+        («Reader.named» x5 «Datatype.kwTreeData»)).label ≠ 0 then
         let x7 : T := «Datatype.dataDecl» x1;
         if («Prelude.isSome» x7).label ≠ 0 then
+          let x8 : List
+            T := Const.children (Const.child («Prelude.get» x7) (leaf 0));
           (leaf 1,
-            («Prelude.append»
-              x2
-              (Const.children (Const.child («Prelude.get» x7) (leaf 0))),
+            («Prelude.append» x2 x8,
               «Prelude.append»
                 («Prelude.reverse»
-                  (Const.children (Const.child («Prelude.get» x7) (leaf 1))))
+                  (if («Reader.named» x5 «Datatype.kwData»).label ≠ 0 then
+                    «Prelude.append»
+                      (Const.children (Const.child («Prelude.get» x7) (leaf 1)))
+                      («Prelude.single»
+                        («Datatype.marker» x2 («Prelude.at» x4 (leaf 1)) x8))
+                  else
+                    Const.children (Const.child («Prelude.get» x7) (leaf 1))))
                 x3))
         else
           «Datatype.xpFail»

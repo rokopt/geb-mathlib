@@ -48,7 +48,7 @@
   (defnum PRule.objEq 10)
 
   ; scopes: the variables' sorts and the hypotheses
-  (data PhScope (scope T T))
+  (tree-data PhScope (scope T T))
   (defn scCtx ((sc T)) Ts (case sc ((scope c h) (children c))))
   (defn scHyps ((sc T)) Ts (case sc ((scope c h) (children h))))
   (defn scSeq ((sc T) (q T)) T (mkSeq (scCtx sc) (scHyps sc) q))
@@ -58,7 +58,7 @@
         (mapT cHyp (range (length (scHyps sc)))))))
 
   ; states
-  (data PSt (pst T T T T T T))
+  (tree-data PSt (pst T T T T T T))
   (defn stDev ((st T)) Ts (case st ((pst v m f d s i) (children v))))
   (defn stMemo ((st T)) Ts (case st ((pst v m f d s i) (children m))))
   (defn stNfs ((st T)) Ts (case st ((pst v m f d s i) (children f))))
@@ -77,7 +77,7 @@
   (defn tableInsert ((tb Ts) (k T) (v T)) Ts (cons (node 0 (l2 k v)) tb))
 
   ; typings
-  (data PTy (pty T T T T T T T))
+  (tree-data PTy (pty T T T T T T T))
   (defn tyT ((y T)) T (case y ((pty t s d l lc h hc) t)))
   (defn tySort ((y T)) T (case y ((pty t s d l lc h hc) s)))
   (defn tyDfd ((y T)) T (case y ((pty t s d l lc h hc) d)))
@@ -385,7 +385,7 @@
   ; read from right to left and the node of the root labels it avoids, and the match of a rule's
   ; side against a term, a match's state the node of label 0 over the node of the assignment's
   ; optional terms and the node of the pairs of objects deferred to their canonical forms
-  (data Src (srcAx T) (srcThm T))
+  (tree-data Src (srcAx T) (srcThm T))
   (defn srcSeq ((s T)) PM
     (let j T (at (children s) 0)
       (if (eq (label s) 0) (axiomAt j)
@@ -395,11 +395,11 @@
               (if (isSome me) (pmPure (at (children (get me)) 0)) pmFail)))))))
   (defn srcCert ((s T) (ts Ts) (ds Ts) (hs Ts)) T
     (if (eq (label s) 0) (cAx (at (children s) 0) ts ds hs) (cThm (at (children s) 0) ts ds hs)))
-  (data RwRule (rwRule T T T))
+  (tree-data RwRule (rwRule T T T))
   (defn rwSrc ((r T)) T (case r ((rwRule s f a) s)))
   (defn rwFlip ((r T)) T (case r ((rwRule s f a) f)))
   (defn rwAvoid ((r T)) Ts (case r ((rwRule s f a) (children a))))
-  (data MatchSt (matchSt T T))
+  (tree-data MatchSt (matchSt T T))
   (defn msSigma ((m T)) Ts (case m ((matchSt s o) (children s))))
   (defn msObjs ((m T)) Ts (case m ((matchSt s o) (children o))))
   (defn msDefer ((m T) (p T) (t T)) T

@@ -59,6 +59,7 @@
     indexOf
     lookupAbbrev
     numeral
+    readDatum
     RT
     RTs
     rtTrees

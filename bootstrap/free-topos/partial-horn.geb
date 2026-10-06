@@ -75,7 +75,7 @@
   (defn ptValues ((rs PTs)) Ts (foldr PT Ts (lam ((r PT) (acc Ts)) (cons (snd r) acc)) (nil T) rs))
 
   ; signatures: an operation's arguments' sorts and its sort
-  (data OpSig (opSig T T))
+  (tree-data OpSig (opSig T T))
   (defn opArgs ((o T)) Ts (case o ((opSig as s) (children as))))
   (defn opSort ((o T)) T (case o ((opSig as s) s)))
 
@@ -123,12 +123,12 @@
         t)))
 
   ; equations and sequents
-  (data Eqn (eqn T T))
+  (tree-data Eqn (eqn T T))
   (defn eqLhs ((q T)) T (case q ((eqn s t) s)))
   (defn eqRhs ((q T)) T (case q ((eqn s t) t)))
   (defn eqSubst ((ts Ts) (q T)) T (eqn (phSubst ts (eqLhs q)) (phSubst ts (eqRhs q))))
   (defn eqScoped ((n T) (q T)) T (and (scoped n (eqLhs q)) (scoped n (eqRhs q))))
-  (data Seq (seq T T T))
+  (tree-data Seq (seq T T T))
   (defn seqCtx ((a T)) Ts (case a ((seq c h q) (children c))))
   (defn seqHyps ((a T)) Ts (case a ((seq c h q) (children h))))
   (defn seqConcl ((a T)) T (case a ((seq c h q) q)))
@@ -137,7 +137,7 @@
     (let n T (length (seqCtx a)) (and (allT (eqScoped n) (seqHyps a)) (eqScoped n (seqConcl a)))))
 
   ; theories: a signature and axioms
-  (data Theory (theory T T))
+  (tree-data Theory (theory T T))
   (defn thySig ((th T)) Ts (case th ((theory s a) (children s))))
   (defn thyAxioms ((th T)) Ts (case th ((theory s a) (children a))))
 
@@ -234,7 +234,7 @@
         c)))
 
   ; definitions of operations: the arguments' sorts, the sort and the body
-  (data PDefn (pdefn T T T))
+  (tree-data PDefn (pdefn T T T))
   (defn pdCtx ((d T)) Ts (case d ((pdefn c s b) (children c))))
   (defn pdSort ((d T)) T (case d ((pdefn c s b) s)))
   (defn pdBody ((d T)) T (case d ((pdefn c s b) b)))

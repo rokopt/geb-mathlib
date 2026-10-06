@@ -1,0 +1,343 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The typing of the datatype language, written in the datatype language: the check of a
+; program's forms as the stage-1 expansion writes them, before it erases their datatypes. The
+; types are the kernel's and the datatypes the keyword data declares, each the node of label 5
+; over its name, distinct from the trees and from one another; tree-data declares a datatype
+; standing for the trees. The expansion's forms are the kernel's, with three nodes no reader
+; writes: the node of label 10 over a datatype's name declares it; the node of label 11 over a
+; type A and a term of A's erasure gives that term the type A, where the expansion knows it to
+; be a member of A; and the node of label 12 over a type A and a term of A gives that term the
+; type of A's erasure. Its markers
+; give the datatypes' constructors; besides, the forms rep, decode and datum, a member's quoted datum
+; are checked here. A definition's type is synthesized from its term, names resolved as the
+; reader resolves them: a numeral, a numeral abbreviation, a variable bound around the term, a
+; definition before it, a primitive, the unit value. Requires the prelude, the reader and the
+; checker.
+
+(module Typing (export tyNominal eraseTy readTy memberOf checkForms) (import Prelude)
+  (import Reader)
+  (import Check)
+  (import (Lists Ts) as Tss)
+  ; types: a datatype declared by data, and the erasure of a type, which writes the trees for
+  ; each datatype
+  (defn tyNominal ((n T)) T (node 5 (single n)))
+  (def kwRep (quote (0 rep)))
+  (def kwDecode (quote (0 decode)))
+  (def kwDatum (quote (0 datum)))
+  (defn isNominal ((t T)) T (eq (label t) 5))
+  (defn eraseTy ((t T)) T (fold T (lam ((l T) (rs Ts)) (if (eq l 5) Label.tyTree (node l rs))) t))
+
+  ; the environment: the type abbreviations and the definitions, each a node over a name and a
+  ; type; the datatypes' names; the numeral abbreviations' names; and the markers
+  (tree-data Env (env T T T T T))
+  (def env0
+    (env (node 0 (nil T)) (node 0 (nil T)) (node 0 (nil T)) (node 0 (nil T)) (node 0 (nil T))))
+
+  ; an S-expression read as a type, given the abbreviations and the datatypes
+  (defn readTy ((al Ts) (noms Ts) (e T)) T
+    (snd
+      (fold RT
+        (lam ((l T) (rs RTs))
+          (let raw T (node l (rtTrees rs))
+            (let vs Ts (rtValues rs)
+              (pair raw
+                (if (isAtom raw)
+                  (let n T (nameOf raw)
+                    (if (equal n kwT) (some Label.tyTree)
+                      (if (equal n kwUnit) (some Label.tyUnit)
+                        (let a T (lookupAbbrev n al)
+                          (if (isSome a) a
+                            (if (isSome (indexOf n noms)) (some (tyNominal n)) none))))))
+                  (if (isList raw)
+                    (let h T (at (children raw) 0)
+                      (let k T (arity raw)
+                        (if (named h kwProd)
+                          (if (eq k 3) (some2 Label.tyProd (at vs 1) (at vs 2)) none)
+                          (if (named h kwArrow)
+                            (if (eq k 3) (some2 Label.tyArrow (at vs 1) (at vs 2)) none)
+                            (if (named h kwList)
+                              (if (eq k 2)
+                                (if (isSome (at vs 1)) (some (tyList (get (at vs 1)))) none)
+                                none)
+                              none)))))
+                    none))))))
+        e)))
+
+  ; membership of a tree in each datatype a marker declares, as the recognizers decide it: a
+  ; node's result is the list of its memberships, in the markers' order, from its label, its
+  ; arity and its children's results; a field of a datatype without a marker holds any tree
+  (defn atTs ((xss (List Ts)) (k T)) Ts
+    (lcase Ts Ts (iter (List Ts) Tss.tail xss k) (nil T) (lam ((h Ts) (r (List Ts))) h)))
+  (defn markerNames ((ms Ts)) Ts
+    (foldr T Ts (lam ((m T) (acc Ts)) (cons (child m 0) acc)) (nil T) ms))
+  (defn fieldOk ((ms Ts) (ty T) (r Ts)) T
+    (let i T (indexOf ty (markerNames ms)) (if (isSome i) (at r (get i)) 1)))
+  (defn ctorOk ((ms Ts) (c T) (l T) (rs (List Ts))) T
+    (let fts Ts (children (child c 1))
+      (let nf T (length fts)
+        (let n T (foldr Ts T (lam ((x Ts) (a T)) (add a 1)) 0 rs)
+          (and (eq (child c 0) l)
+            (and (if (child c 2) (lt nf (add n 1)) (eq n nf))
+              (and
+                (snd
+                  (foldr T (Prod T T)
+                    (lam ((ty T) (acc (Prod T T)))
+                      (pair (sub (fst acc) 1)
+                        (and (fieldOk ms ty (atTs rs (sub (fst acc) 1))) (snd acc))))
+                    (pair nf 1)
+                    fts))
+                (if (child c 2)
+                  (foldr Ts T (lam ((r Ts) (acc T)) (and (fieldOk ms (child c 3) r) acc)) 1
+                    (iter (List Ts) Tss.tail rs nf))
+                  1))))))))
+  (defn memberships ((ms Ts) (t T)) Ts
+    (fold Ts
+      (lam ((l T) (rs (List Ts)))
+        (foldr T Ts
+          (lam ((m T) (acc Ts))
+            (cons (foldr T T (lam ((c T) (r T)) (or (ctorOk ms c l rs) r)) 0 (tail (children m)))
+              acc))
+          (nil T)
+          ms))
+      t))
+  (defn memberOf ((ms Ts) (d T) (t T)) T
+    (let i T (indexOf d (markerNames ms)) (if (isSome i) (at (memberships ms t) (get i)) 0)))
+
+  ; the types of a term's subterms as functions of the variables bound around them, innermost
+  ; first, each a node over a name and a type
+  (deftype Cx Ts)
+  (deftype Syn (Arrow Cx T))
+  (deftype SR (Prod T Syn))
+  (deftype SRs (List SR))
+  (import (Lists SR) as SRs)
+  (defn srTrees ((rs SRs)) Ts (foldr SR Ts (lam ((r SR) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
+  (defn srAt ((rs SRs) (i T) (cx Cx)) T
+    ((lcase SR Syn (iter SRs SRs.tail rs i) (lam ((c Cx)) none) (lam ((r SR) (rest SRs)) (snd r)))
+     cx))
+  (defn srFrom ((rs SRs) (i T) (cx Cx)) T
+    (allSome
+      (foldr SR Ts (lam ((r SR) (acc Ts)) (cons ((snd r) cx) acc)) (nil T)
+        (iter SRs SRs.tail rs i))))
+  ; the type of an application of a function of a type to arguments of types
+  (defn applyTy ((f T) (args T)) T
+    (if (both f args)
+      (foldr T T
+        (lam ((a T) (r T))
+          (if (isSome r)
+            (if (isArrow (get r)) (if (equal (child (get r) 0) a) (some (child (get r) 1)) none)
+              none)
+            none))
+        f
+        (reverse (children (get args))))
+      none))
+
+  ; an atom's type
+  (defn synAtom ((E Env) (raw T) (cx Cx)) T
+    (case E
+      ((env al defs noms nums ms)
+       (if (isSome (numeral (children raw))) (some Label.tyTree)
+         (let n T (nameOf raw)
+           (if (isSome (indexOf n (children nums))) (some Label.tyTree)
+             (let v T (lookupAbbrev n cx)
+               (if (isSome v) v
+                 (let d T (lookupAbbrev n (children defs))
+                   (if (isSome d) d
+                     (let k T (indexOf n primNames)
+                       (if (isSome k) (nth primTypes (get k))
+                         (if (equal n kwUnitValue) (some Label.tyUnit) none)))))))))))))
+
+  ; a list's type, from its elements' types as functions of the context
+  (defn synList ((E Env) (raw T) (rs SRs) (cx Cx)) T
+    (case E
+      ((env al defs noms nums ms)
+       (let es Ts (children raw)
+         (let k T (arity raw)
+           (let h T (at es 0)
+             (let ty (Arrow T T) (lam ((e T)) (readTy (children al) (children noms) e))
+               (if (eq k 0) none
+                 (if (and (named h kwLam) (eq k 3))
+                   (let bs Ts (binders (at es 1))
+                     (let ps T
+                       (allSome
+                         (foldr T Ts
+                           (lam ((b T) (acc Ts))
+                             (cons
+                               (if (and (isList b) (eq (arity b) 2))
+                                 (if (isAtom (child b 0))
+                                   (let A T (ty (child b 1))
+                                     (if (isSome A) (some (node2 0 (nameOf (child b 0)) (get A)))
+                                       none))
+                                   none)
+                                 none)
+                               acc))
+                           (nil T)
+                           bs))
+                       (if (and (isSome ps) (nonEmpty bs))
+                         (let body T (srAt rs 2 (append (reverse (children (get ps))) cx))
+                           (if (isSome body)
+                             (some
+                               (foldr T T (lam ((p T) (u T)) (tyArrow (child p 1) u)) (get body)
+                                 (children (get ps))))
+                             none))
+                         none)))
+                   (if (and (named h kwLet) (eq k 5))
+                     (let x T (at es 1)
+                       (let A T (ty (at es 2))
+                         (let e T (srAt rs 3 cx)
+                           (if (and (isAtom x) (both A e))
+                             (if (equal (get A) (get e))
+                               (srAt rs 4 (cons (node2 0 (nameOf x) (get A)) cx))
+                               none)
+                             none))))
+                     (if (and (named h kwPair) (eq k 3))
+                       (some2 Label.tyProd (srAt rs 1 cx) (srAt rs 2 cx))
+                       (if (and (or (named h kwFst) (named h kwSnd)) (eq k 2))
+                         (let p T (srAt rs 1 cx)
+                           (if (isSome p)
+                             (if (isProd (get p)) (some (child (get p) (if (named h kwFst) 0 1)))
+                               none)
+                             none))
+                         (if (and (named h kwIf) (eq k 4))
+                           (let c T (srAt rs 1 cx)
+                             (let a T (srAt rs 2 cx)
+                               (let b T (srAt rs 3 cx)
+                                 (if (both c (both a b))
+                                   (if (and (equal (get c) Label.tyTree) (equal (get a) (get b))) a
+                                     none)
+                                   none))))
+                           (if (and (named h kwCons) (eq k 3))
+                             (let x T (srAt rs 1 cx)
+                               (let xs T (srAt rs 2 cx)
+                                 (if (both x xs) (if (equal (tyList (get x)) (get xs)) xs none)
+                                   none)))
+                             (if (and (named h kwNil) (eq k 2))
+                               (let A T (ty (at es 1)) (if (isSome A) (some (tyList (get A))) none))
+                               (if (and (named h kwQuote) (eq k 2)) (some Label.tyTree)
+                                 (if (and (named h kwDatum) (eq k 3))
+                                   (let D T (ty (at es 1))
+                                     (let d T (readDatum (at es 2))
+                                       (if (both D d)
+                                         (if (isNominal (get D))
+                                           (if (memberOf (children ms) (at es 1) (get d)) D none)
+                                           none)
+                                         none)))
+                                   (if (and (named h kwRep) (eq k 2))
+                                     (let a T (srAt rs 1 cx)
+                                       (if (isSome a)
+                                         (if (isNominal (get a)) (some Label.tyTree) none)
+                                         none))
+                                     (if (and (named h kwDecode) (eq k 5))
+                                       (let D T (ty (at es 1))
+                                         (let e T (srAt rs 2 cx)
+                                           (let f T (srAt rs 3 cx)
+                                             (let c T (srAt rs 4 cx)
+                                               (if (both D (both e (both f c)))
+                                                 (if
+                                                   (and (isNominal (get D))
+                                                     (and (equal (get e) Label.tyTree)
+                                                       (equal (get f) (tyArrow (get D) (get c)))))
+                                                   c
+                                                   none)
+                                                 none)))))
+                                       (if
+                                         (and
+                                           (or (named h kwFold)
+                                             (or (named h kwPara) (named h kwIter)))
+                                           (lt 1 k))
+                                         (let A T (ty (at es 1))
+                                           (if (isSome A)
+                                             (applyTy
+                                               (some
+                                                 (if (named h kwIter) (iterTy (get A))
+                                                   (foldTy (get A))))
+                                               (srFrom rs 2 cx))
+                                             none))
+                                         (if (and (or (named h kwFoldr) (named h kwLcase)) (lt 2 k))
+                                           (let A T (ty (at es 1))
+                                             (let B T (ty (at es 2))
+                                               (if (both A B)
+                                                 (applyTy
+                                                   (some
+                                                     (if (named h kwFoldr) (foldrTy (get A) (get B))
+                                                       (lcaseTy (get A) (get B))))
+                                                   (srFrom rs 3 cx))
+                                                 none)))
+                                           (applyTy (srAt rs 0 cx)
+                                             (srFrom rs 1 cx)))))))))))))))))))))))
+
+  ; a term's type in a context: lists and atoms as above; the node of label 11 over a type and a
+  ; term of its erasure, that type; the node of label 12 over a type and a term of it, its erasure
+  (defn synIn ((E Env) (cx Cx) (t T)) T
+    (case E
+      ((env al defs noms nums ms)
+       ((snd
+          (fold SR
+            (lam ((l T) (rs SRs))
+              (let raw T (node l (srTrees rs))
+                (pair raw
+                  (lam ((cx Cx))
+                    (if (isAtom raw) (synAtom E raw cx)
+                      (if (isList raw) (synList E raw rs cx)
+                        (if (and (eq l 11) (eq (arity raw) 2))
+                          (let A T (readTy (children al) (children noms) (child raw 0))
+                            (let e T (srAt rs 1 cx)
+                              (if (both A e) (if (equal (eraseTy (get A)) (get e)) A none) none)))
+                          (if (and (eq l 12) (eq (arity raw) 2))
+                            (let A T (readTy (children al) (children noms) (child raw 0))
+                              (let e T (srAt rs 1 cx)
+                                (if (both A e)
+                                  (if (equal (get A) (get e)) (some (eraseTy (get A))) none)
+                                  none)))
+                            none))))))))
+            t)) cx))))
+
+  ; a program's forms checked in order: none when each definition has its type, and otherwise
+  ; the name of the first that does not
+  (deftype CS (Prod Env T))
+  (defn checkStep ((s CS) (f T)) CS
+    (if (isSome (snd s)) s
+      (case (fst s)
+        ((env al defs noms nums ms)
+         (let bad T
+           (some (if (and (isList f) (lt 1 (arity f))) (nameOf (child f 1)) (node 0 (nil T))))
+           (if (eq (label f) 10)
+             (pair
+               (env al defs (node 0 (append (children noms) (single (nameOf (child f 0))))) nums ms)
+               none)
+             (if (eq (label f) 9)
+               (pair (env al defs noms nums (node 0 (append (children ms) (single f)))) none)
+               (if (and (isList f) (eq (arity f) 3))
+                 (let h T (child f 0)
+                   (let n T (nameOf (child f 1))
+                     (if (named h kwDef)
+                       (let A T (synIn (fst s) (nil T) (child f 2))
+                         (if (isSome A)
+                           (pair
+                             (env al (node 0 (append (children defs) (single (node2 0 n (get A)))))
+                               noms
+                               nums
+                               ms)
+                             none)
+                           (pair (fst s) bad)))
+                       (if (named h kwDeftype)
+                         (let A T (readTy (children al) (children noms) (child f 2))
+                           (if (isSome A)
+                             (pair
+                               (env (node 0 (cons (node2 0 n (get A)) (children al))) defs noms nums
+                                 ms)
+                               none)
+                             (pair (fst s) bad)))
+                         (if (named h kwDefnum)
+                           (pair (env al defs noms (node 0 (append (children nums) (single n))) ms)
+                             none)
+                           (pair (fst s) bad))))))
+                 (pair (fst s) bad)))))))))
+  (defn checkForms ((fs Ts)) T
+    (snd
+      (foldr T (Arrow CS CS) (lam ((f T) (k (Arrow CS CS)) (s CS)) (k (checkStep s f)))
+        (lam ((s CS)) s)
+        fs
+        (pair env0 none)))))

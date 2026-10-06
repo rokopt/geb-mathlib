@@ -60,7 +60,8 @@
 
   ; a node renamed in each role, from its children renamed in each; a role is 0 for a term, 1 for
   ; a type, 2 for a clause of a case analysis, 3 for binders and 4 for a quoted datum, and a
-  ; renaming takes the role and the names bound around the node
+  ; renaming takes the role and the names bound around the node; the datatype of datum and decode
+  ; is a type, and the datum of datum is quoted
   (deftype RenK (Arrow T (Arrow Ts T)))
   (deftype RenKs (List RenK))
   (def rkDrop
@@ -81,52 +82,60 @@
           (let h T (at es 0)
             (if (eq k 0) u
               (if (or (named h kwQuote) (named h kwHole)) u
-                (if (named h kwLam)
-                  (if (eq k 3)
-                    (mkList
-                      (cons h
-                        (cons (rkAt rs 1 3 (nil T))
-                          (single (rkAt rs 2 0 (append (boundBy (at es 1)) bound))))))
-                    u)
-                  (if (named h kwLet)
-                    (if (eq k 5)
-                      (let x T (at es 1)
+                (if (named h kwDatum)
+                  (if (eq k 3) (mkList (cons h (cons (rkAt rs 1 1 (nil T)) (single (at es 2))))) u)
+                  (if (named h kwDecode)
+                    (if (lt 1 k)
+                      (mkList (cons h (cons (rkAt rs 1 1 (nil T)) (rkAll (rkDrop 2 rs) 0 bound))))
+                      u)
+                    (if (named h kwLam)
+                      (if (eq k 3)
                         (mkList
                           (cons h
-                            (cons x
-                              (cons (rkAt rs 2 1 (nil T))
-                                (cons (rkAt rs 3 0 bound)
-                                  (single
-                                    (rkAt rs 4 0
-                                      (if (isAtom x) (cons (nameOf x) bound) bound)))))))))
-                      u)
-                    (if (named h kwNil) (mkList (cons h (rkAll (rkDrop 1 rs) 1 (nil T))))
-                      (if (or (named h kwFold) (or (named h kwPara) (named h kwIter)))
-                        (if (lt 1 k)
-                          (mkList
-                            (cons h (cons (rkAt rs 1 1 (nil T)) (rkAll (rkDrop 2 rs) 0 bound))))
-                          u)
-                        (if (or (named h kwFoldr) (named h kwLcase))
-                          (if (lt 2 k)
+                            (cons (rkAt rs 1 3 (nil T))
+                              (single (rkAt rs 2 0 (append (boundBy (at es 1)) bound))))))
+                        u)
+                      (if (named h kwLet)
+                        (if (eq k 5)
+                          (let x T (at es 1)
                             (mkList
                               (cons h
-                                (cons (rkAt rs 1 1 (nil T))
-                                  (cons (rkAt rs 2 1 (nil T)) (rkAll (rkDrop 3 rs) 0 bound)))))
-                            u)
-                          (if (named h kwCase)
+                                (cons x
+                                  (cons (rkAt rs 2 1 (nil T))
+                                    (cons (rkAt rs 3 0 bound)
+                                      (single
+                                        (rkAt rs 4 0
+                                          (if (isAtom x) (cons (nameOf x) bound) bound)))))))))
+                          u)
+                        (if (named h kwNil) (mkList (cons h (rkAll (rkDrop 1 rs) 1 (nil T))))
+                          (if (or (named h kwFold) (or (named h kwPara) (named h kwIter)))
                             (if (lt 1 k)
                               (mkList
-                                (cons h (cons (rkAt rs 1 0 bound) (rkAll (rkDrop 2 rs) 2 bound))))
+                                (cons h (cons (rkAt rs 1 1 (nil T)) (rkAll (rkDrop 2 rs) 0 bound))))
                               u)
-                            (if (named h kwCata)
-                              (if (lt 3 k)
+                            (if (or (named h kwFoldr) (named h kwLcase))
+                              (if (lt 2 k)
                                 (mkList
                                   (cons h
                                     (cons (rkAt rs 1 1 (nil T))
-                                      (cons (rkAt rs 2 1 (nil T))
-                                        (cons (rkAt rs 3 0 bound) (rkAll (rkDrop 4 rs) 2 bound))))))
+                                      (cons (rkAt rs 2 1 (nil T)) (rkAll (rkDrop 3 rs) 0 bound)))))
                                 u)
-                              (mkList (rkAll rs 0 bound))))))))))))))))
+                              (if (named h kwCase)
+                                (if (lt 1 k)
+                                  (mkList
+                                    (cons h
+                                      (cons (rkAt rs 1 0 bound) (rkAll (rkDrop 2 rs) 2 bound))))
+                                  u)
+                                (if (named h kwCata)
+                                  (if (lt 3 k)
+                                    (mkList
+                                      (cons h
+                                        (cons (rkAt rs 1 1 (nil T))
+                                          (cons (rkAt rs 2 1 (nil T))
+                                            (cons (rkAt rs 3 0 bound)
+                                              (rkAll (rkDrop 4 rs) 2 bound))))))
+                                    u)
+                                  (mkList (rkAll rs 0 bound))))))))))))))))))
   (def renStep
     (lam ((vis Ts) (u T) (rs RenKs) (role T) (bound Ts))
       (let es Ts (children u)
@@ -336,7 +345,7 @@
                                         (single (rename vis (at es 4) 0 (boundBy (at es 2)))))))
                                   (single (memberDecl fl)))
                                 stFail)
-                              (if (named kw kwData)
+                              (if (or (named kw kwData) (named kw kwTreeData))
                                 (let ctors Ts (drop 2 es)
                                   (if
                                     (foldr T T
