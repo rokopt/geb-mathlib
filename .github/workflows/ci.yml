@@ -64,6 +64,12 @@ jobs:
       - uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865  # v1
         with:
           build: true
+          # `defaultTargets` (Geb and GebLang) and the test library.
+          # lean-action saves the GitHub cache of `.lake` after its
+          # build step and before `lake test`, so a test module built
+          # by the build step is cached and is rebuilt by a later run
+          # only when its inputs change.
+          build-args: Geb GebLang GebTests
           test: true
           lint: true
           # Everything builds via the `Geb.*`/`GebTests.*`/`GebLang.*`
@@ -80,11 +86,6 @@ jobs:
       # sources are fixed points of geb-fmt and of parinfer.
       - name: bootstrap fixed points
         run: bash scripts/bootstrap.sh check
-      # `lake shake` requires built oleans for every library it
-      # scans. `build: true` above honours `defaultTargets` (Geb and
-      # GebLang), so build `GebTests` explicitly here.
-      - name: lake build GebTests (prerequisite for lake shake)
-        run: lake build GebTests
       - name: lint GebTests (axiom + style linters on tests)
         run: lake exe batteries/runLinter GebTests
       - name: lint GebLang (axiom + style linters on the language library)
