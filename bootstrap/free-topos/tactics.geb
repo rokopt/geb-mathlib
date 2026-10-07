@@ -647,7 +647,8 @@
                     (UFs.tail rs)))
                 (if (or (eq l 8) (eq l 9))
                   (dNode 2 (nil T)
-                    (mapT (lam ((k T)) (if (eq k 2) ((ufAt rs (add k 1)) d) refl))
+                    (mapT
+                      (lam ((k T)) ((ufAt rs (add k 1)) (if (eq k 1) (add d (if (eq l 8) 1 2)) d)))
                       (range (lenUF (UFs.tail rs)))))
                   (if (eq l 10)
                     (dNode 2 (nil T)
@@ -775,7 +776,8 @@
                     (UFs.tail rs)))
                 (if (or (eq l 8) (eq l 9))
                   (rebuild0
-                    (mapT (lam ((k T)) (if (eq k 2) ((ufAt rs (add k 1)) d) (at cs k)))
+                    (mapT
+                      (lam ((k T)) ((ufAt rs (add k 1)) (if (eq k 1) (add d (if (eq l 8) 1 2)) d)))
                       (range (lenUF (UFs.tail rs)))))
                   (if (eq l 10)
                     (rebuild0

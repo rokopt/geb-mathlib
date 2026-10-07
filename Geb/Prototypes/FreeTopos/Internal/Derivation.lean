@@ -280,6 +280,13 @@ def instVar (u : Term) : ℕ → Term := fun i ↦ match i with
   | 0 => u
   | j + 1 => Term.var j
 
+/-- The substitution of two terms for the two innermost variables, the first for the innermost,
+the others lowered by two. -/
+def instVar2 (u v : Term) : ℕ → Term := fun i ↦ match i with
+  | 0 => u
+  | 1 => v
+  | j + 2 => Term.var j
+
 /-- The substitution of one term for the innermost variable, the others in place. -/
 def atVar0 (u : Term) : ℕ → Term := fun i ↦ match i with
   | 0 => u
@@ -409,28 +416,29 @@ def certifies (G : Globals) (E : Array Entry) (c : Tree) (s : Seq) : Bool :=
     decide (PartialHorn.check (ext cds) (E.map (Entry.seq G)) c s.ctx s.hyps = some s.concl)
 
 /-- The contexts and hypotheses of a node's children, in the node's context and under its
-hypotheses: an abstraction's body extends the context, the hypotheses weakened, and the start
-and the step of a fold are in contexts of their own, under no hypotheses. -/
+hypotheses: an abstraction's body extends the context by its variable, a natural-number fold's
+step by the value and a list fold's step by the element and the value, the hypotheses weakened
+past them, and a rose-tree fold's step is in a context of its own, under no hypotheses. -/
 def childCtxs (G : Globals) (n : ℕ) (l : Label) (ts : List Term) (Γ : List Tree)
     (Φ : List Term) : Option (List (List Tree × List Term)) := match l, ts with
   | .lam a, [_] => some [(a :: Γ, Φ.map weaken1)]
   | .natRec, [z, _, _] => do
-    let c ← typeIn G n [] z
-    pure [([], []), ([c], []), (Γ, Φ)]
+    let c ← typeIn G n Γ z
+    pure [(Γ, Φ), (c :: Γ, Φ.map weaken1), (Γ, Φ)]
   | .listRec, [z, _, m] => do
-    let c ← typeIn G n [] z
+    let c ← typeIn G n Γ z
     let a ← (typeIn G n Γ m).bind listPart
-    pure [([], []), ([c, a], []), (Γ, Φ)]
+    pure [(Γ, Φ), (c :: a :: Γ, Φ.map weaken2), (Γ, Φ)]
   | .roseRec c, [_, m] => do
     let p ← (typeIn G n Γ m).bind roseParts
     pure [([prod p.1 (list c)], []), (Γ, Φ)]
   | _, ts => some (ts.map fun _ ↦ (Γ, Φ))
 
 /-- Whether a node's child of an index is in the node's context: every child but an
-abstraction's body and a fold's start and step. -/
+abstraction's body and a fold's step. -/
 def sameCtx (l : Label) (i : ℕ) : Bool := match l with
   | .lam _ => false
-  | .natRec | .listRec => i = 2
+  | .natRec | .listRec => i != 1
   | .roseRec _ => i = 1
   | _ => true
 
@@ -484,7 +492,7 @@ def rootStep (G : Globals) (E : Array Entry) (n : ℕ) (Γ : List Tree) (Φ : Li
   | .listCons kc, .listRec, [z, s, m] => match m.label, m.children with
     | .arr k [_], [p] => match p.label, p.children with
       | .pair, [h, tl] => if k = kc ∧ G.prims[kc]? = some consPrim then
-          some (Term.subst s (Term.substList [Term.listRec z s tl, h])) else none
+          some (Term.subst s (instVar2 (Term.listRec z s tl) h)) else none
       | _, _ => none
     | _, _ => none
   | .roseNode kn kl kc, .roseRec c, [s, m] => match m.label, m.children with

@@ -34,6 +34,8 @@
     cNil
     cCons
     listRec
+    natRecP
+    listRecP
     rose
     cNode
     roseRec
@@ -178,6 +180,31 @@
   (defn prodMapRight ((a T) (f T)) T (cPair (cFst a (dom f)) (comp f (cSnd a (dom f)))))
   (defn listMap ((f T)) T
     (listRec (dom f) (cNil (cod f)) (comp (cCons (cod f)) (prodMapLeft f (list (cod f))))))
+  ; the folds of the natural numbers object and of a list object with a parameter, into the
+  ; exponential of the parameters, evaluated at the parameter
+  (defn natRecP ((p T) (c T) (z T) (s T)) T
+    (comp (ev p c)
+      (cPair
+        (comp
+          (natRec (curry one p (comp z (cSnd one p)))
+            (curry (exp p c) p (comp s (cPair (cSnd (exp p c) p) (ev p c)))))
+          (cSnd p nat))
+        (cFst p nat))))
+  (defn listRecP ((p T) (a T) (c T) (z T) (s T)) T
+    (comp (ev p c)
+      (cPair
+        (comp
+          (listRec a (curry one p (comp z (cSnd one p)))
+            (curry (prod a (exp p c)) p
+              (comp s
+                (cPair
+                  (cPair (cSnd (prod a (exp p c)) p)
+                    (comp (cFst a (exp p c)) (cFst (prod a (exp p c)) p)))
+                  (comp (ev p c)
+                    (cPair (comp (cSnd a (exp p c)) (cFst (prod a (exp p c)) p))
+                      (cSnd (prod a (exp p c)) p)))))))
+          (cSnd p (list a)))
+        (cFst p (list a)))))
   (defn diag ((a T)) T (cPair (idt a) (idt a)))
   (defn monoCond ((m T)) Eqn
     (let a T (dom m)

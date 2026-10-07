@@ -17,7 +17,8 @@
 ; theory, the inference and the language.
 
 (module Derivation
-  (export nilPrim consPrim lnodePrim inlPrim inrPrim casePrim instVar atVar0 natSuccAt listConsAt
+  (export nilPrim consPrim lnodePrim inlPrim inrPrim casePrim instVar instVar2 atVar0 natSuccAt
+    listConsAt
     roseNodeAt
     weakenElem
     weaken1
@@ -155,6 +156,7 @@
 
   ; substitutions for the innermost variables, and weakenings
   (defn instVar ((u T) (i T)) T (if (eq i 0) u (var (sub i 1))))
+  (defn instVar2 ((u T) (v T) (i T)) T (if (eq i 0) u (if (eq i 1) v (var (sub i 2)))))
   (defn atVar0 ((u T) (i T)) T (if (eq i 0) u (var i)))
   (defn natSuccAt ((ks T) (t T)) T (subst t (atVar0 (mArr ks (nil T) (var 0)))))
   (defn listConsAt ((kc T) (a T) (t T)) T
@@ -289,20 +291,21 @@
           (if (and (eq l 5) (eq k 1))
             (OScopes.just (scopes (ScopeL.single (ctxPair (cons (mD t 0) g) (mapT weaken1 hs)))))
             (if (and (eq l 8) (eq k 3))
-              (bindTS (typeIn G n (nil T) (at ts 0))
+              (bindTS (typeIn G n g (at ts 0))
                 (lam ((c T))
                   (OScopes.just
                     (scopes
-                      (ScopeF.l3 (ctxPair (nil T) (nil T)) (ctxPair (single c) (nil T))
+                      (ScopeF.l3 (ctxPair g hs) (ctxPair (cons c g) (mapT weaken1 hs))
                         (ctxPair g hs))))))
               (if (and (eq l 9) (eq k 3))
-                (bindTS (typeIn G n (nil T) (at ts 0))
+                (bindTS (typeIn G n g (at ts 0))
                   (lam ((c T))
                     (bindTS (bindO (typeIn G n g (at ts 2)) listPart)
                       (lam ((a T))
                         (OScopes.just
                           (scopes
-                            (ScopeF.l3 (ctxPair (nil T) (nil T)) (ctxPair (l2 c a) (nil T))
+                            (ScopeF.l3 (ctxPair g hs)
+                              (ctxPair (cons c (cons a g)) (mapT weaken2 hs))
                               (ctxPair g hs))))))))
                 (if (and (eq l 10) (eq k 2))
                   (bindTS (bindO (typeIn G n g (at ts 1)) roseLabel)
@@ -313,7 +316,7 @@
                             (ctxPair g hs))))))
                   (OScopes.just (scopes (ScopeAt.map (lam ((u T)) (ctxPair g hs)) ts)))))))))))
   (defn sameCtx ((l T) (i T)) T
-    (if (eq l 5) 0 (if (or (eq l 8) (eq l 9)) (eq i 2) (if (eq l 10) (eq i 1) 1))))
+    (if (eq l 5) 0 (if (or (eq l 8) (eq l 9)) (not (eq i 1)) (if (eq l 10) (eq i 1) 1))))
   (defn congCtxs ((G Globals) (n T) (t T) (g Ts) (hs Ts) (ds Ts)) OScopes.Maybe
     (if (allT (lam ((i T)) (or (sameCtx (label t) i) (eq (label (at ds i)) 0))) (range (length ds)))
       (OScopes.just (scopes (ScopeAt.map (lam ((u T)) (ctxPair g hs)) (mArgs t))))
@@ -381,7 +384,7 @@
             (if (and (mIs 2 2 p) (and (eq (mD a2 0) k) (primIs G k consPrim)))
               (some
                 (subst (mArg t 1)
-                  (substList (l2 (mListRec (mArg t 0) (mArg t 1) (mArg p 1)) (mArg p 0)))))
+                  (instVar2 (mListRec (mArg t 0) (mArg t 1) (mArg p 1)) (mArg p 0))))
               none)))
         none)))
   (defn rootRoseNode ((G Globals) (rd Ts) (t T)) T

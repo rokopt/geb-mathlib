@@ -113,18 +113,19 @@ def matchVar (i d : ℕ) (t : Term) (σ : List (Option Term)) : Option (List (Op
 
 /-- The matching of a node of a pattern other than a variable, of a label, against a term under
 {lit}`d` binders, from the pattern's children with their matchings: the term's node has the
-label and as many children, which the children match in turn, the start and the step of a fold
-in contexts of their own matching only themselves. -/
+label and as many children, which the children match in turn, under one more binder in an
+abstraction's body and a natural-number fold's step and two more in a list fold's step, the step
+of a rose-tree fold, in a context of its own, matching only itself. -/
 def matchNode (l : Label)
     (ps : List (Term × (ℕ → Term → List (Option Term) → Option (List (Option Term)))))
     (d : ℕ) (t : Term) (σ : List (Option Term)) : Option (List (Option Term)) :=
   if l = t.label ∧ ps.length = t.children.length then
     match l, ps, t.children with
     | .lam _, [(_, q)], [u] => q (d + 1) u σ
-    | .natRec, [(z, _), (s, _), (_, q)], [z', s', u] =>
-      if z = z' ∧ s = s' then q d u σ else none
-    | .listRec, [(z, _), (s, _), (_, q)], [z', s', u] =>
-      if z = z' ∧ s = s' then q d u σ else none
+    | .natRec, [(_, qz), (_, qs), (_, q)], [z', s', u] =>
+      ((qz d z' σ).bind (qs (d + 1) s')).bind (q d u)
+    | .listRec, [(_, qz), (_, qs), (_, q)], [z', s', u] =>
+      ((qz d z' σ).bind (qs (d + 2) s')).bind (q d u)
     | .roseRec _, [(s, _), (_, q)], [s', u] => if s = s' then q d u σ else none
     | _, ps, us => (ps.zip us).foldl (fun acc (q, u) ↦ acc.bind (q.2 d u)) (some σ)
   else none
@@ -323,15 +324,14 @@ def headChild : Label → List Term → Option ℕ
   | _, _ => none
 
 /-- How far the evaluator reduces a term: to its weak head normal form; to its weak normal form,
-every subterm reduced but those under an abstraction and a fold's start and step, which have
-contexts of their own; to its normal form but for folds' starts and steps; or to its normal
-form. -/
+every subterm reduced but those under an abstraction and a fold's start and step; to its normal
+form but for folds' starts and steps; or to its normal form. -/
 inductive Depth where
   /-- The weak head normal form. -/
   | head
   /-- The weak normal form. -/
   | weak
-  /-- The normal form but for the starts and steps of folds, which have contexts of their own. -/
+  /-- The normal form but for the starts and steps of folds. -/
   | open
   /-- The normal form. -/
   | full
@@ -352,14 +352,16 @@ def keepsWeak (l : Label) (i : ℕ) : Bool := match l with
   | .roseRec _ => i = 0
   | _ => false
 
-/-- The uses of the variable of index {lit}`d` in a term, each under an abstraction counted
-twice, since the abstraction may be applied more than once; a fold's start and step, in contexts
-of their own, have none. -/
+/-- The uses of the variable of index {lit}`d` in a term, each under an abstraction and in a
+fold's step counted twice, since the abstraction may be applied and the step is applied more
+than once; a rose-tree fold's step, in a context of its own, has none. -/
 def uses : Term → ℕ → ℕ :=
   RoseTree.elim fun l cs d ↦ match l, cs with
     | .var i, _ => if i = d then 1 else 0
     | .lam _, cs => 2 * (cs.map (· (d + 1))).sum
-    | .natRec, [_, _, m] | .listRec, [_, _, m] | .roseRec _, [_, m] => m d
+    | .natRec, [z, s, m] => z d + 2 * s (d + 1) + m d
+    | .listRec, [z, s, m] => z d + 2 * s (d + 2) + m d
+    | .roseRec _, [_, m] => m d
     | _, cs => (cs.map (· d)).sum
 
 /-- The derivation of a node's rewriting from its children's, marked when one rewrites. -/

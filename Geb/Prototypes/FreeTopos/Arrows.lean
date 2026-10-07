@@ -198,6 +198,19 @@ theorem subst_nat (θ : List Tree) : subst θ nat = nat := subst_const θ 29
 /-- Substitution leaves the rose-tree object. -/
 theorem subst_rose (θ : List Tree) : subst θ rose = rose := subst_const θ 37
 
+/-- Substitution in a fold of the natural numbers object with a parameter. -/
+theorem subst_natRecP (θ : List Tree) (P C z S : Tree) :
+    subst θ (natRecP P C z S) = natRecP (subst θ P) (subst θ C) (subst θ z) (subst θ S) := by
+  simp only [natRecP, subst_comp, subst_pair, subst_ev, subst_natRec, subst_curry, subst_snd,
+    subst_fst, subst_one, subst_exp, subst_nat]
+
+/-- Substitution in a fold of a list object with a parameter. -/
+theorem subst_listRecP (θ : List Tree) (P A C z S : Tree) :
+    subst θ (listRecP P A C z S) =
+      listRecP (subst θ P) (subst θ A) (subst θ C) (subst θ z) (subst θ S) := by
+  simp only [listRecP, subst_comp, subst_pair, subst_ev, subst_listRec, subst_curry, subst_snd,
+    subst_fst, subst_one, subst_exp, subst_prod, subst_list]
+
 variable {defs : List Defn} {M : Model.{v} (ext defs).sig} {ρ : List M.Val}
 
 /-- Applications of an operation to arguments of equal values have equal values. -/

@@ -221,14 +221,15 @@ theorem mNode_eq (l : Label) (cs : List Term) :
 
 /-- One step of a traversal of a term's variables by a map, lifted under each binder, of which
 renaming and substitution are the instances: the variable of an index is the map's value there,
-and the start and the step of a fold are left in place. -/
+the map is lifted once under an abstraction's body and a natural-number fold's step and twice
+under a list fold's step, and the step of a rose-tree fold is left in place. -/
 def travL {M : Type} (V : M → ℕ → Term) (L : M → M) (l : Label)
     (cs : List (Term × (M → Term))) (f : M) : Term :=
   match l, cs with
     | .var i, _ => V f i
     | .lam a, [(_, t)] => RoseTree.node (.lam a) [t (L f)]
-    | .natRec, [(z, _), (s, _), (_, n)] => RoseTree.node .natRec [z, s, n f]
-    | .listRec, [(z, _), (s, _), (_, n)] => RoseTree.node .listRec [z, s, n f]
+    | .natRec, [(_, z), (_, s), (_, n)] => RoseTree.node .natRec [z f, s (L f), n f]
+    | .listRec, [(_, z), (_, s), (_, n)] => RoseTree.node .listRec [z f, s (L (L f)), n f]
     | .roseRec c, [(s, _), (_, n)] => RoseTree.node (.roseRec c) [s, n f]
     | l, cs => RoseTree.node l (cs.map fun c ↦ c.2 f)
 
@@ -300,6 +301,8 @@ theorem travStep_eq {M : Type} (Rel : (Tree → Tree) → M → Prop) (V : M →
   have h0 : ∀ x ∈ xs, x.2.1 f = encTerm (x.2.2 f') := fun x h ↦ hx x h f f' hf
   have h1 : ∀ x ∈ xs, x.2.1 (lift f) = encTerm (x.2.2 (L f')) :=
     fun x h ↦ hx x h (lift f) (L f') (hL f f' hf)
+  have h2 : ∀ x ∈ xs, x.2.1 (lift (lift f)) = encTerm (x.2.2 (L (L f'))) :=
+    fun x h ↦ hx x h _ _ (hL _ _ (hL f f' hf))
   have hxs : xs.map (fun x ↦ x.2.1 f) = xs.map (fun x ↦ encTerm (x.2.2 f')) :=
     List.map_congr_left h0
   cases l
@@ -309,7 +312,7 @@ theorem travStep_eq {M : Type} (Rel : (Tree → Tree) → M → Prop) (V : M →
   all_goals
     rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, _ | ⟨x3, r⟩⟩⟩⟩ <;>
       mirror_simp [«Language.travStep», labelData, travL, rpTrees_eq, rpTail_eq,
-        rpAt_eq, rpAll_eq, encTerm_node, h0, h1, List.mem_cons, true_or, or_true, beq_iff_eq,
+        rpAt_eq, rpAll_eq, encTerm_node, h0, h1, h2, List.mem_cons, true_or, or_true, beq_iff_eq,
         Nat.add_right_cancel_iff, Nat.add_one_ne_zero, «Theory.l2»,
         «Theory.l3»]
   all_goals
@@ -658,6 +661,153 @@ theorem repeat_cpTail (rs : List (Tree × (Tree → List Tree → Tree))) :
     rw [ih]
     rfl
 
+/-! The parameters of folds. -/
+
+/-- A list of the children's tests of a variable's occurrence without its head. -/
+@[simp] theorem ofTail_eq (rs : List (Tree → Tree)) : «Language/OFs.tail» rs = rs.tail := by
+  cases rs <;> rfl
+
+/-- The test of a child at a position, none out of range. -/
+@[simp] theorem ofAt_eq (rs : List (Tree → Tree)) (i : ℕ) :
+    «Language.ofAt» rs (leaf i) = rs[i]?.getD fun _ ↦ leaf 0 := by
+  have hr : ∀ i : ℕ, Nat.repeat «Language/OFs.tail» i rs = rs.drop i :=
+    Nat.rec rfl fun i ih ↦ by rw [Nat.repeat, ih, ofTail_eq, List.tail_drop]
+  simp only [«Language.ofAt», template, iter_leaf, hr]
+  cases h : rs.drop i with
+  | nil =>
+    rw [List.drop_eq_nil_iff] at h
+    rw [List.getElem?_eq_none h]
+    rfl
+  | cons r rest =>
+    rw [← List.head?_drop, h]
+    rfl
+
+/-- The mirror's test of a variable's occurrence in any of the children. -/
+theorem ofAny_eq (v : Tree → Tree) (d : ℕ) :
+    ∀ xs : List (Term × (Tree → Tree) × (ℕ → Bool)),
+      (∀ x ∈ xs, ∀ d, x.2.1 (leaf d) = ofBool (x.2.2 d)) →
+      «Language.ofAny» (v :: xs.map fun x ↦ x.2.1) (leaf d) = ofBool (xs.any fun x ↦ x.2.2 d) :=
+  List.rec (fun _ ↦ rfl) fun x xs ih hx ↦ by
+    have ih' := ih fun y hy ↦ hx y (List.mem_cons_of_mem x hy)
+    simp only [«Language.ofAny», template, foldr_eq, ofTail_eq, List.tail_cons, List.map_cons,
+      List.foldr_cons, List.any_cons] at ih' ⊢
+    rw [ih', hx x List.mem_cons_self d, or_eq]
+
+/-- The mirror's test of a variable's occurrence in an encoded term. -/
+theorem occurs_eq (t : Term) (d : ℕ) :
+    «Language.occurs» (encTerm t) (leaf d) = ofBool (Internal.Term.occurs t d) := by
+  simp only [«Language.occurs», template, Internal.Term.occurs]
+  refine para_enc _ _ (fun (v : Tree → Tree) (w : ℕ → Bool) ↦ ∀ d, v (leaf d) = ofBool (w d))
+    «Language.occursStep» _ (fun l v xs hx d ↦ ?_) t d
+  change «Language.occursStep» (encTerm (RoseTree.node l (xs.map Prod.fst))) _ (leaf d) = _
+  have hs := ofAny_eq v d xs hx
+  cases l with
+  | var i =>
+    mirror_simp [«Language.occursStep», labelData, mArgs_eq, label_encTerm, mD_eq,
+      Internal.Term.occursStep]
+  | lam a =>
+    rcases xs with _ | ⟨x0, _ | ⟨x1, xs⟩⟩ <;> simp only [List.map_cons, List.map_nil] at hs <;>
+      mirror_simp [«Language.occursStep», labelData, hs, mArgs_eq, label_encTerm, ofAt_eq, hx,
+        Internal.Term.occursStep, beq_iff_eq, Nat.reduceEqDiff, List.any_map, List.mem_cons]
+    all_goals first
+      | exact hx _ (by simp) _
+      | simp [List.any_map, Function.comp_def]
+  | natRec | listRec =>
+    rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, _ | ⟨x3, xs⟩⟩⟩⟩ <;>
+      simp only [List.map_cons, List.map_nil] at hs <;>
+      mirror_simp [«Language.occursStep», labelData, hs, mArgs_eq, label_encTerm, ofAt_eq, hx,
+        Internal.Term.occursStep, beq_iff_eq, Nat.reduceEqDiff, List.any_map, List.mem_cons]
+    all_goals first
+      | exact hx _ (by simp) _
+      | simp only [hx x0 (by simp), hx x1 (by simp), hx x2 (by simp), or_eq]
+      | simp [List.any_map, Function.comp_def]
+  | roseRec c =>
+    rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, xs⟩⟩⟩ <;>
+      simp only [List.map_cons, List.map_nil] at hs <;>
+      mirror_simp [«Language.occursStep», labelData, hs, mArgs_eq, label_encTerm, ofAt_eq, hx,
+        Internal.Term.occursStep, beq_iff_eq, Nat.reduceEqDiff, List.any_map, List.mem_cons]
+    all_goals first
+      | exact hx _ (by simp) _
+      | simp [List.any_map, Function.comp_def]
+  | _ =>
+    mirror_simp [«Language.occursStep», labelData, hs, mArgs_eq, label_encTerm,
+      Internal.Term.occursStep, List.any_map]
+
+/-- The mirror's parameters of a fold of encoded terms. -/
+@[simp] theorem foldParams_eq (k N : ℕ) (z s : Term) :
+    «Language.foldParams» (leaf k) (leaf N) (encTerm z) (encTerm s) =
+      (Internal.foldParams k N z s).map leaf := by
+  simp only [«Language.foldParams», range_eq, foldr_eq, Internal.foldParams, List.foldr_map]
+  refine (List.range N).rec rfl fun i l ih ↦ ?_
+  rw [List.foldr_cons, ih, List.filter_cons]
+  mirror_simp [occurs_eq]
+  cases Internal.Term.occurs z i || Internal.Term.occurs s (i + k) <;> rfl
+
+/-- The mirror's number of variables of a parameters' environment. -/
+@[simp] theorem selBound_eq (ws : List ℕ) :
+    «Language.selBound» (ws.map leaf) = leaf (Internal.selBound ws) := by
+  simp only [«Language.selBound», foldr_eq, Internal.selBound, List.foldr_map]
+  refine ws.rec rfl fun i ws ih ↦ ?_
+  rw [List.foldr_cons, List.foldr_cons, ih]
+  mirror_simp []
+  simp only [Nat.max_def]
+  split_ifs with h₁ h₂ h₂ <;> simp only [decide_eq_true_eq] at h₁ <;> first | rfl | omega
+
+/-- The mirror's position of an index among indices. -/
+@[simp] theorem idxOf_eq (i : ℕ) (ws : List ℕ) :
+    «Language.idxOf» (leaf i) (ws.map leaf) = encOpt ((ws.idxOf? i).map leaf) := by
+  simp only [«Language.idxOf», foldr_eq, List.foldr_map]
+  refine ws.rec rfl fun w ws ih ↦ ?_
+  rw [List.foldr_cons, ih, List.idxOf?_cons]
+  by_cases h : w = i
+  · subst h
+    mirror_simp []
+    rfl
+  · simp [h, Option.map_map, Function.comp_def]
+
+/-- The mirror's environment of variables of indices. -/
+@[simp] theorem selEnv_eq (ws : List ℕ) (P : Tree) (E : List (Tree × Tree)) :
+    «Language.selEnv» (ws.map leaf) P (E.map encPair) = (Internal.selEnv ws P E).map encPair := by
+  simp only [«Language.selEnv», Internal.selEnv]
+  mirror_simp [selBound_eq, idxOf_eq, pr_eq, mirror_idt]
+  refine List.map_congr_left fun i _ ↦ ?_
+  cases ws.idxOf? i <;> mirror_simp [some_eq, none_eq]
+  rename_i j
+  cases E[j]? <;> rfl
+
+/-- The mirror's entries of an encoded environment at a fold's parameters. -/
+@[simp] theorem foldPs_eq (k : ℕ) (e : List (Tree × Tree)) (z s : Term) :
+    «Language.foldPs» (leaf k) (e.map encPair) (encTerm z) (encTerm s) =
+      (Internal.foldPs k e z s).map encPair := by
+  simp only [«Language.foldPs», Internal.foldPs]
+  mirror_simp [foldParams_eq]
+  refine (Internal.foldParams k e.length z s).rec rfl fun i l ih ↦ ?_
+  rw [List.map_cons, List.foldr_cons, ih, List.filterMap_cons]
+  rcases h : e[i]? with _ | q <;> simp [h, encOpt]
+
+/-- The mirror's environment of a fold's start or step. -/
+@[simp] theorem foldEnvIn_eq (bs : List Tree) (k : ℕ) (e : List (Tree × Tree)) (z s : Term) :
+    «Language.foldEnvIn» bs (leaf k) (e.map encPair) (encTerm z) (encTerm s) =
+      ((Internal.foldEnvIn bs k e z s).1, (Internal.foldEnvIn bs k e z s).2.map encPair) := by
+  simp only [«Language.foldEnvIn», «Language.foldEnv», Internal.foldEnvIn, Internal.foldEnv]
+  mirror_simp [foldParams_eq, foldPs_eq, p2_eq, ctxObj_eq, stdEnv_eq, selEnv_eq]
+  rw [show (List.range bs.length).map leaf ++
+      (Internal.foldParams k e.length z s).map (fun x ↦ leaf (x + bs.length)) =
+      (List.range bs.length ++ (Internal.foldParams k e.length z s).map (· + bs.length)).map leaf
+    by simp, selEnv_eq]
+
+/-- The mirror's fold of the natural numbers object at parameters. -/
+@[simp] theorem natFold_eq (Γ : List Tree) (c z s t m : Tree) :
+    «Language.natFold» Γ c z s t m = Internal.natFold Γ c z s t m := by
+  cases Γ <;> mirror_simp [«Language.natFold», Internal.natFold, ctxObj_eq, mirror_comp,
+    mirror_natRec, mirror_natRecP, mirror_cPair, List.isEmpty_nil, List.isEmpty_cons]
+
+/-- The mirror's fold of a list object at parameters. -/
+@[simp] theorem listFold_eq (Γ : List Tree) (a c z s t m : Tree) :
+    «Language.listFold» Γ a c z s t m = Internal.listFold Γ a c z s t m := by
+  cases Γ <;> mirror_simp [«Language.listFold», Internal.listFold, ctxObj_eq, mirror_comp,
+    mirror_listRec, mirror_listRecP, mirror_cPair, List.isEmpty_nil, List.isEmpty_cons]
+
 /-- The simplification of a case of the mirror's compilation step: the lemmas of
 {lit}`mirror_simp`, the step's lists, pairs and combinators, and the given lemmas. -/
 local macro "compile_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(tactic|
@@ -680,13 +830,8 @@ theorem compileStep_eq (G : Internal.Globals) (n : ℕ) (l : Label) (v : Tree �
         (e.map encPair) =
       encOpt ((Internal.compileStep G n l (xs.map fun x ↦ (x.1, x.2.2)) X e).map encPair) := by
   have h0 : ∀ x ∈ xs, ∀ X e, x.2.1 X (e.map encPair) = encOpt ((x.2.2 X e).map encPair) := hx
-  have h1 : ∀ x ∈ xs, ∀ X, x.2.1 X [] = encOpt ((x.2.2 X []).map encPair) :=
-    fun x h X ↦ hx x h X []
   have h2 : ∀ x ∈ xs, ∀ X p, x.2.1 X [encPair p] = encOpt ((x.2.2 X [p]).map encPair) :=
     fun x h X p ↦ hx x h X [p]
-  have h3 : ∀ x ∈ xs, ∀ X p q,
-      x.2.1 X [encPair p, encPair q] = encOpt ((x.2.2 X [p, q]).map encPair) :=
-    fun x h X p q ↦ hx x h X [p, q]
   cases l
   case var i => rcases xs with _ | ⟨x0, r⟩ <;> compile_simp []
   case star => rcases xs with _ | ⟨x0, r⟩ <;> compile_simp []
@@ -712,18 +857,23 @@ theorem compileStep_eq (G : Internal.Globals) (n : ℕ) (l : Label) (v : Tree �
     rcases x0.2.2 X e with _ | ⟨f, a⟩ <;> rcases x1.2.2 X e with _ | ⟨g, b⟩ <;> compile_simp []
     split_ifs with h <;> simp [h]
   case natRec =>
-    rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, _ | ⟨x3, r⟩⟩⟩⟩ <;> compile_simp [h0, h1, h2]
-    rcases x0.2.2 one [] with _ | ⟨z, c⟩ <;> compile_simp []
-    rcases x1.2.2 c [(idt c, c)] with _ | ⟨s, c'⟩ <;> compile_simp []
+    rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, _ | ⟨x3, r⟩⟩⟩⟩ <;>
+      compile_simp [h0, foldEnvIn_eq, foldPs_eq, natFold_eq, tuple_eq]
+    rcases x0.2.2 (Internal.foldEnvIn [] 1 e x0.1 x1.1).1 (Internal.foldEnvIn [] 1 e x0.1 x1.1).2
+      with _ | ⟨z, c⟩ <;> compile_simp []
+    rcases x1.2.2 (Internal.foldEnvIn [c] 1 e x0.1 x1.1).1
+      (Internal.foldEnvIn [c] 1 e x0.1 x1.1).2 with _ | ⟨s, c'⟩ <;> compile_simp []
     rcases x2.2.2 X e with _ | ⟨m, t⟩ <;> compile_simp []
     split_ifs with h <;> simp [h]
   case listRec =>
     rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, _ | ⟨x3, r⟩⟩⟩⟩ <;>
-      compile_simp [h0, h1, h3, listPart_eq, «Theory.l2»]
+      compile_simp [h0, listPart_eq, foldEnvIn_eq, foldPs_eq, listFold_eq, tuple_eq, «Theory.l2»]
     rcases x2.2.2 X e with _ | ⟨m, t⟩ <;> compile_simp []
     rcases Internal.listPart t with _ | a <;> compile_simp []
-    rcases x0.2.2 one [] with _ | ⟨z, c⟩ <;> compile_simp []
-    rcases x1.2.2 (prod a c) [(snd a c, c), (fst a c, a)] with _ | ⟨s, c'⟩ <;> compile_simp []
+    rcases x0.2.2 (Internal.foldEnvIn [] 2 e x0.1 x1.1).1 (Internal.foldEnvIn [] 2 e x0.1 x1.1).2
+      with _ | ⟨z, c⟩ <;> compile_simp []
+    rcases x1.2.2 (Internal.foldEnvIn [c, a] 2 e x0.1 x1.1).1
+      (Internal.foldEnvIn [c, a] 2 e x0.1 x1.1).2 with _ | ⟨s, c'⟩ <;> compile_simp []
     split_ifs with h <;> simp [h]
   case roseRec c =>
     rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, r⟩⟩⟩ <;>

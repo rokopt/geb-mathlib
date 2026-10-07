@@ -401,14 +401,25 @@ def «Prover.matchStep» :=
             if («Prelude.and»
               («Prelude.or» (Const.eq x5 (leaf 8)) (Const.eq x5 (leaf 9)))
               (Const.eq x7 (leaf 3))).label ≠ 0 then
-              if («Prelude.and»
-                (Const.equal («Language.mArg» x0 (leaf 0)) («Prelude.at» x6 (leaf 0)))
-                (Const.equal
-                  («Language.mArg» x0 (leaf 1))
-                  («Prelude.at» x6 (leaf 1)))).label ≠ 0 then
-                «Prover.mtAt» x1 (leaf 3) x2 («Prelude.at» x6 (leaf 2)) x4
-              else
-                «Prover/OAssign.nothing»
+              «Prover.bindAA»
+                («Prover.bindAA»
+                  («Prover.mtAt» x1 (leaf 1) x2 («Prelude.at» x6 (leaf 0)) x4)
+                  (fun (x8 : T) =>
+                    «Prover.mtAt»
+                      x1
+                      (leaf 2)
+                      (Const.add
+                        x2
+                        (if (Const.eq x5 (leaf 8)).label ≠ 0 then leaf 1 else leaf 2))
+                      («Prelude.at» x6 (leaf 1))
+                      («Prover.assigned» x8)))
+                (fun (x8 : T) =>
+                  «Prover.mtAt»
+                    x1
+                    (leaf 3)
+                    x2
+                    («Prelude.at» x6 (leaf 2))
+                    («Prover.assigned» x8))
             else
               if («Prelude.and»
                 (Const.eq x5 (leaf 10))
@@ -1715,7 +1726,18 @@ def «Prover.usesStep» :=
           if («Prelude.and»
             («Prelude.or» (Const.eq x3 (leaf 8)) (Const.eq x3 (leaf 9)))
             (Const.eq x4 (leaf 3))).label ≠ 0 then
-            «Prover.ufAt» x1 (leaf 3) x2
+            Const.add
+              (Const.add
+                («Prover.ufAt» x1 (leaf 1) x2)
+                (Const.mul
+                  (leaf 2)
+                  («Prover.ufAt»
+                    x1
+                    (leaf 2)
+                    (Const.add
+                      x2
+                      (if (Const.eq x3 (leaf 8)).label ≠ 0 then leaf 1 else leaf 2)))))
+              («Prover.ufAt» x1 (leaf 3) x2)
           else
             if («Prelude.and»
               (Const.eq x3 (leaf 10))

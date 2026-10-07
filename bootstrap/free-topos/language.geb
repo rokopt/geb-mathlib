@@ -117,6 +117,7 @@
   (import (Each TPair) as EachTPair)
   (import (Map TPair TPair) as TPairMap)
   (import (Map TPair T) as TPairOut)
+  (import (Map T TPair) as TPairIn)
 
   ; terms, by their labels' constructors
   (defn mNode ((l T) (d Ts) (cs Ts)) T (node l (cons (node 0 d) cs)))
@@ -154,8 +155,9 @@
   (defn rpAt ((rs RPs) (i T) (f Ren)) T
     (lcase RP T (iter RPs RPs.tail rs i) 0 (lam ((r RP) (rest RPs)) ((snd r) f))))
 
-  ; one step of a traversal of a term's variables, by a map lifted under each binder; the start and
-  ; the step of a fold, in contexts of their own, are left in place
+  ; one step of a traversal of a term's variables, by a map lifted under each binder: once under an
+  ; abstraction's body and a natural-number fold's step, twice under a list fold's step; the step
+  ; of a rose-tree fold, in a context of its own, is left in place
   (defn travStep ((lift (Arrow Ren Ren)) (wrap (Arrow T T)) (l T) (rs RPs) (f Ren)) T
     (let d T (at (rpTrees rs) 0)
       (let as RPs (RPs.tail rs)
@@ -163,10 +165,12 @@
           (let k T (length ts)
             (if (eq l 0) (wrap (f (at (children d) 0)))
               (if (and (eq l 5) (eq k 1)) (node l (cons d (single (rpAt as 0 (lift f)))))
-                (if (and (or (eq l 8) (eq l 9)) (eq k 3))
-                  (node l (cons d (l3 (at ts 0) (at ts 1) (rpAt as 2 f))))
-                  (if (and (eq l 10) (eq k 2)) (node l (cons d (l2 (at ts 0) (rpAt as 1 f))))
-                    (node l (cons d (rpAll as f))))))))))))
+                (if (and (eq l 8) (eq k 3))
+                  (node l (cons d (l3 (rpAt as 0 f) (rpAt as 1 (lift f)) (rpAt as 2 f))))
+                  (if (and (eq l 9) (eq k 3))
+                    (node l (cons d (l3 (rpAt as 0 f) (rpAt as 1 (lift (lift f))) (rpAt as 2 f))))
+                    (if (and (eq l 10) (eq k 2)) (node l (cons d (l2 (at ts 0) (rpAt as 1 f))))
+                      (node l (cons d (rpAll as f)))))))))))))
   (defn trav ((lift (Arrow Ren Ren)) (wrap (Arrow T T)) (t T)) RV
     (snd
       (fold RP
@@ -248,6 +252,73 @@
       (foldr T (Prod T T) (lam ((f T) (s (Prod T T))) (pair (if (snd s) (cPair (fst s) f) f) 1))
         (pair (bang X) 0)
         fs)))
+
+  ; whether the variable of an index occurs free in a term, its index raised under each binder:
+  ; once under an abstraction's body and a natural-number fold's step, twice under a list fold's
+  ; step; the step of a rose-tree fold, in a context of its own, has none
+  (deftype OF (Arrow T T))
+  (deftype OFs (List OF))
+  (import (Lists OF) as OFs)
+  (defn ofAt ((rs OFs) (i T)) OF
+    (lcase OF OF (iter OFs OFs.tail rs i) (lam ((d T)) 0) (lam ((r OF) (rest OFs)) r)))
+  (defn ofAny ((rs OFs) (d T)) T (foldr OF T (lam ((r OF) (acc T)) (or (r d) acc)) 0 (OFs.tail rs)))
+  (defn occursStep ((nd T) (rs OFs)) OF
+    (lam ((d T))
+      (let l T (label nd)
+        (let k T (length (mArgs nd))
+          (if (eq l 0) (eq (mD nd 0) d)
+            (if (and (eq l 5) (eq k 1)) ((ofAt rs 1) (add d 1))
+              (if (and (eq l 8) (eq k 3))
+                (or (or ((ofAt rs 1) d) ((ofAt rs 2) (add d 1))) ((ofAt rs 3) d))
+                (if (and (eq l 9) (eq k 3))
+                  (or (or ((ofAt rs 1) d) ((ofAt rs 2) (add d 2))) ((ofAt rs 3) d))
+                  (if (and (eq l 10) (eq k 2)) ((ofAt rs 2) d) (ofAny rs d))))))))))
+  (defn occurs ((t T) (d T)) T ((para OF occursStep t) d))
+
+  ; the parameters of a fold whose start is z and whose step s binds k variables, in an
+  ; environment of N variables: the variables the start or the step mentions, in increasing order
+  (defn foldParams ((k T) (N T) (z T) (s T)) Ts
+    (foldr T Ts (lam ((i T) (r Ts)) (if (or (occurs z i) (occurs s (add i k))) (cons i r) r))
+      (nil T)
+      (range N)))
+  ; the number of variables of an environment whose variables of the indices ws are its entries,
+  ; and the position of an index among them
+  (defn selBound ((ws Ts)) T (foldr T T (lam ((i T) (b T)) (if (lt b (add i 1)) (add i 1) b)) 0 ws))
+  (defn idxOf ((i T) (ws Ts)) T
+    (foldr T T (lam ((w T) (r T)) (if (eq w i) (some 0) (mapO (lam ((j T)) (add j 1)) r))) none ws))
+  ; the environment over P whose variables of the indices ws are the entries of E at their
+  ; positions in ws, and each other variable below them the identity of P
+  (defn selEnv ((ws Ts) (P T) (E (List TPair))) (List TPair)
+    (TPairIn.map
+      (lam ((i T))
+        (let j T (idxOf i ws)
+          (if (isSome j) (OTPair.fromMaybe (pr (idt P) P) (OTPair.nthOf E (get j)))
+            (pr (idt P) P))))
+      (range (selBound ws))))
+  ; the environment of a fold's start, for the bound types bs none, and of its step, for bs the
+  ; types of the variables it binds, over the product of the bound types and the types g of the
+  ; parameters vs
+  (defn foldEnv ((bs Ts) (vs Ts) (g Ts)) (Prod T (List TPair))
+    (let bg Ts (append bs g)
+      (pair (ctxObj bg)
+        (selEnv (append (range (length bs)) (mapT (lam ((v T)) (add v (length bs))) vs)) (ctxObj bg)
+          (stdEnv bg)))))
+  ; the entries of an environment at a fold's parameters, and the environment of the fold's start
+  ; or step
+  (defn foldPs ((k T) (e (List TPair)) (z T) (s T)) (List TPair)
+    (foldr T (List TPair)
+      (lam ((i T) (r (List TPair)))
+        (case (OTPair.nthOf e i) ((OTPair.just p) (cons p r)) ((OTPair.nothing) r)))
+      (nil TPair)
+      (foldParams k (TPairs.length e) z s)))
+  (defn foldEnvIn ((bs Ts) (k T) (e (List TPair)) (z T) (s T)) (Prod T (List TPair))
+    (foldEnv bs (foldParams k (TPairs.length e) z s) (TPairOut.map p2 (foldPs k e z s))))
+  ; the folds of the natural numbers and list objects at a datum, at the tuple t of the values of
+  ; parameters of the types g: for none the fold itself, and else the fold with the parameter
+  (defn natFold ((g Ts) (c T) (z T) (s T) (t T) (m T)) T
+    (if (isEmpty g) (comp (natRec z s) m) (comp (natRecP (ctxObj g) c z s) (cPair t m))))
+  (defn listFold ((g Ts) (a T) (c T) (z T) (s T) (t T) (m T)) T
+    (if (isEmpty g) (comp (listRec a z s) m) (comp (listRecP (ctxObj g) a c z s) (cPair t m))))
 
   ; definitions of the language, primitive arrows, definitions of either kind, and the constants
   (data Objs (objs & T))
@@ -392,34 +463,57 @@
                                               (phSubst th (prCod pm))))
                                           OTPair.nothing))))))
                               (if (and (eq l 8) (eq k 3))
-                                (bindPP (r0 one (nil TPair))
-                                  (lam ((z TPair))
-                                    (let c T (p2 z)
-                                      (bindPP (r1 c (TPairs.single (pr (idt c) c)))
-                                        (lam ((s TPair))
-                                          (bindPP (r2 X e)
-                                            (lam ((m TPair))
-                                              (if (and (equal (p2 s) c) (equal (p2 m) nat))
-                                                (OTPair.just
-                                                  (pr (comp (natRec (p1 z) (p1 s)) (p1 m)) c))
-                                                OTPair.nothing))))))))
+                                (let z0 T (at (cpTrees as) 0)
+                                  (let s0 T (at (cpTrees as) 1)
+                                    (let ps (List TPair) (foldPs 1 e z0 s0)
+                                      (let ez (Prod T (List TPair)) (foldEnvIn (nil T) 1 e z0 s0)
+                                        (bindPP (r0 (fst ez) (snd ez))
+                                          (lam ((z TPair))
+                                            (let c T (p2 z)
+                                              (let es (Prod T (List TPair))
+                                                (foldEnvIn (single c) 1 e z0 s0)
+                                                (bindPP (r1 (fst es) (snd es))
+                                                  (lam ((s TPair))
+                                                    (bindPP (r2 X e)
+                                                      (lam ((m TPair))
+                                                        (if
+                                                          (and (equal (p2 s) c) (equal (p2 m) nat))
+                                                          (OTPair.just
+                                                            (pr
+                                                              (natFold (TPairOut.map p2 ps) c (p1 z)
+                                                                (p1 s)
+                                                                (tuple X (TPairOut.map p1 ps))
+                                                                (p1 m))
+                                                              c))
+                                                          OTPair.nothing)))))))))))))
                                 (if (and (eq l 9) (eq k 3))
                                   (bindPP (r2 X e)
                                     (lam ((m TPair))
                                       (bindTP (listPart (p2 m))
                                         (lam ((a T))
-                                          (bindPP (r0 one (nil TPair))
-                                            (lam ((z TPair))
-                                              (let c T (p2 z)
-                                                (bindPP
-                                                  (r1 (prod a c)
-                                                    (TPairF.l2 (pr (cSnd a c) c) (pr (cFst a c) a)))
-                                                  (lam ((s TPair))
-                                                    (if (equal (p2 s) c)
-                                                      (OTPair.just
-                                                        (pr (comp (listRec a (p1 z) (p1 s)) (p1 m))
-                                                          c))
-                                                      OTPair.nothing))))))))))
+                                          (let z0 T (at (cpTrees as) 0)
+                                            (let s0 T (at (cpTrees as) 1)
+                                              (let ps (List TPair) (foldPs 2 e z0 s0)
+                                                (let ez (Prod T (List TPair))
+                                                  (foldEnvIn (nil T) 2 e z0 s0)
+                                                  (bindPP (r0 (fst ez) (snd ez))
+                                                    (lam ((z TPair))
+                                                      (let c T (p2 z)
+                                                        (let es (Prod T (List TPair))
+                                                          (foldEnvIn (l2 c a) 2 e z0 s0)
+                                                          (bindPP (r1 (fst es) (snd es))
+                                                            (lam ((s TPair))
+                                                              (if (equal (p2 s) c)
+                                                                (OTPair.just
+                                                                  (pr
+                                                                    (listFold (TPairOut.map p2 ps) a
+                                                                      c
+                                                                      (p1 z)
+                                                                      (p1 s)
+                                                                      (tuple X (TPairOut.map p1 ps))
+                                                                      (p1 m))
+                                                                    c))
+                                                                OTPair.nothing)))))))))))))))
                                   (if (and (eq l 10) (eq k 2))
                                     (let c T (at d 0)
                                       (if (isTy G n c)

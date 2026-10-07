@@ -2220,6 +2220,63 @@ def «Theory.listMap» :=
         («Theory.prodMapLeft» x0 («Theory.list» («Theory.cod» x0))));
     x1
 
+def «Theory.natRecP» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) =>
+    let x4 : T := «Theory.comp»
+      («Theory.ev» x0 x1)
+      («Theory.cPair»
+        («Theory.comp»
+          («Theory.natRec»
+            («Theory.curry»
+              «Theory.one»
+              x0
+              («Theory.comp» x2 («Theory.cSnd» «Theory.one» x0)))
+            («Theory.curry»
+              («Theory.exp» x0 x1)
+              x0
+              («Theory.comp»
+                x3
+                («Theory.cPair»
+                  («Theory.cSnd» («Theory.exp» x0 x1) x0)
+                  («Theory.ev» x0 x1)))))
+          («Theory.cSnd» x0 «Theory.nat»))
+        («Theory.cFst» x0 «Theory.nat»));
+    x4
+
+def «Theory.listRecP» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
+    let x5 : T := «Theory.comp»
+      («Theory.ev» x0 x2)
+      («Theory.cPair»
+        («Theory.comp»
+          («Theory.listRec»
+            x1
+            («Theory.curry»
+              «Theory.one»
+              x0
+              («Theory.comp» x3 («Theory.cSnd» «Theory.one» x0)))
+            («Theory.curry»
+              («Theory.prod» x1 («Theory.exp» x0 x2))
+              x0
+              («Theory.comp»
+                x4
+                («Theory.cPair»
+                  («Theory.cPair»
+                    («Theory.cSnd» («Theory.prod» x1 («Theory.exp» x0 x2)) x0)
+                    («Theory.comp»
+                      («Theory.cFst» x1 («Theory.exp» x0 x2))
+                      («Theory.cFst» («Theory.prod» x1 («Theory.exp» x0 x2)) x0)))
+                  («Theory.comp»
+                    («Theory.ev» x0 x2)
+                    («Theory.cPair»
+                      («Theory.comp»
+                        («Theory.cSnd» x1 («Theory.exp» x0 x2))
+                        («Theory.cFst» («Theory.prod» x1 («Theory.exp» x0 x2)) x0))
+                      («Theory.cSnd» («Theory.prod» x1 («Theory.exp» x0 x2)) x0)))))))
+          («Theory.cSnd» x0 («Theory.list» x1)))
+        («Theory.cFst» x0 («Theory.list» x1)));
+    x5
+
 def «Theory.diag» :=
   fun (x0 : T) =>
     let x1 : T := «Theory.cPair» («Theory.idt» x0) («Theory.idt» x0); x1
@@ -5815,6 +5872,17 @@ def «Language/TPairOut.map» :=
       x1;
     x2
 
+def «Language/TPairIn.map» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => ((x0 x2) :: x3))
+      ([] : List T)
+      x1;
+    x2
+
 def «Language.mNode» :=
   fun (x0 : T) (x1 : List T) (x2 : List T) =>
     let x3 : T := Const.node x0 ((Const.node (leaf 0) x1) :: x2); x3
@@ -6004,27 +6072,38 @@ def «Language.travStep» :=
                          (x5 :: («Prelude.single» («Language.rpAt» x6 (leaf 0) (x0 x4))))
                      else
                        if («Prelude.and»
-                         («Prelude.or» (Const.eq x2 (leaf 8)) (Const.eq x2 (leaf 9)))
+                         (Const.eq x2 (leaf 8))
                          (Const.eq x8 (leaf 3))).label ≠ 0 then
                          Const.node
                            x2
                            (x5 ::
                              («Theory.l3»
-                               («Prelude.at» x7 (leaf 0))
-                               («Prelude.at» x7 (leaf 1))
+                               («Language.rpAt» x6 (leaf 0) x4)
+                               («Language.rpAt» x6 (leaf 1) (x0 x4))
                                («Language.rpAt» x6 (leaf 2) x4)))
                        else
                          if («Prelude.and»
-                           (Const.eq x2 (leaf 10))
-                           (Const.eq x8 (leaf 2))).label ≠ 0 then
+                           (Const.eq x2 (leaf 9))
+                           (Const.eq x8 (leaf 3))).label ≠ 0 then
                            Const.node
                              x2
                              (x5 ::
-                               («Theory.l2»
-                                 («Prelude.at» x7 (leaf 0))
-                                 («Language.rpAt» x6 (leaf 1) x4)))
+                               («Theory.l3»
+                                 («Language.rpAt» x6 (leaf 0) x4)
+                                 («Language.rpAt» x6 (leaf 1) (x0 (x0 x4)))
+                                 («Language.rpAt» x6 (leaf 2) x4)))
                          else
-                           Const.node x2 (x5 :: («Language.rpAll» x6 x4)));
+                           if («Prelude.and»
+                             (Const.eq x2 (leaf 10))
+                             (Const.eq x8 (leaf 2))).label ≠ 0 then
+                             Const.node
+                               x2
+                               (x5 ::
+                                 («Theory.l2»
+                                   («Prelude.at» x7 (leaf 0))
+                                   («Language.rpAt» x6 (leaf 1) x4)))
+                           else
+                             Const.node x2 (x5 :: («Language.rpAll» x6 x4)));
     x5
 
 def «Language.trav» :=
@@ -6235,6 +6314,208 @@ def «Language.tuple» :=
       («Theory.bang» x0, leaf 0)
       x1).1;
     x2
+
+def «Language/OFs.tail» :=
+  fun (x0 : List (T → T)) =>
+    Const.lcase
+      (α := T → T)
+      (β := List (T → T))
+      x0
+      ([] : List (T → T))
+      (fun (_ : T → T) (x2 : List (T → T)) => x2)
+
+def «Language.ofAt» :=
+  fun (x0 : List (T → T)) (x1 : T) =>
+    let x2 : T →
+      T := Const.lcase
+      (α := T → T)
+      (β := T → T)
+      (Const.iter (α := List (T → T)) «Language/OFs.tail» x0 x1)
+      (fun (_ : T) => leaf 0)
+      (fun (x2 : T → T) (_ : List (T → T)) => x2);
+    x2
+
+def «Language.ofAny» :=
+  fun (x0 : List (T → T)) (x1 : T) =>
+    let x2 : T := Const.foldr
+      (α := T → T)
+      (β := T)
+      (fun (x2 : T → T) (x3 : T) => «Prelude.or» (x2 x1) x3)
+      (leaf 0)
+      («Language/OFs.tail» x0);
+    x2
+
+def «Language.occursStep» :=
+  fun (x0 : T) (x1 : List (T → T)) =>
+    let x2 : T →
+      T := (fun (x2 : T) =>
+      let x3 : T := Const.label x0;
+      let x4 : T := «Prelude.length» («Language.mArgs» x0);
+      if (Const.eq x3 (leaf 0)).label ≠ 0 then
+        Const.eq («Language.mD» x0 (leaf 0)) x2
+      else
+        if («Prelude.and»
+          (Const.eq x3 (leaf 5))
+          (Const.eq x4 (leaf 1))).label ≠ 0 then
+          «Language.ofAt» x1 (leaf 1) (Const.add x2 (leaf 1))
+        else
+          if («Prelude.and»
+            (Const.eq x3 (leaf 8))
+            (Const.eq x4 (leaf 3))).label ≠ 0 then
+            «Prelude.or»
+              («Prelude.or»
+                («Language.ofAt» x1 (leaf 1) x2)
+                («Language.ofAt» x1 (leaf 2) (Const.add x2 (leaf 1))))
+              («Language.ofAt» x1 (leaf 3) x2)
+          else
+            if («Prelude.and»
+              (Const.eq x3 (leaf 9))
+              (Const.eq x4 (leaf 3))).label ≠ 0 then
+              «Prelude.or»
+                («Prelude.or»
+                  («Language.ofAt» x1 (leaf 1) x2)
+                  («Language.ofAt» x1 (leaf 2) (Const.add x2 (leaf 2))))
+                («Language.ofAt» x1 (leaf 3) x2)
+            else
+              if («Prelude.and»
+                (Const.eq x3 (leaf 10))
+                (Const.eq x4 (leaf 2))).label ≠ 0 then
+                «Language.ofAt» x1 (leaf 2) x2
+              else
+                «Language.ofAny» x1 x2);
+    x2
+
+def «Language.occurs» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := Const.para (α := T → T) «Language.occursStep» x0 x1; x2
+
+def «Language.foldParams» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) =>
+    let x4 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x4 : T) (x5 : List T) =>
+        if («Prelude.or»
+          («Language.occurs» x2 x4)
+          («Language.occurs» x3 (Const.add x4 x0))).label ≠ 0 then
+          (x4 :: x5)
+        else
+          x5)
+      ([] : List T)
+      («Base.range» x1);
+    x4
+
+def «Language.selBound» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x1 : T) (x2 : T) =>
+        if (Const.lt x2 (Const.add x1 (leaf 1))).label ≠ 0 then
+          Const.add x1 (leaf 1)
+        else
+          x2)
+      (leaf 0)
+      x0;
+    x1
+
+def «Language.idxOf» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) =>
+        if (Const.eq x2 x0).label ≠ 0 then
+          «Prelude.some» (leaf 0)
+        else
+          «Base.mapO» (fun (x4 : T) => Const.add x4 (leaf 1)) x3)
+      «Prelude.none»
+      x1;
+    x2
+
+def «Language.selEnv» :=
+  fun (x0 : List T) (x1 : T) (x2 : List T) =>
+    let x3 : List
+      T := «Language/TPairIn.map»
+      (fun (x3 : T) =>
+        let x4 : T := «Language.idxOf» x3 x0;
+        if («Prelude.isSome» x4).label ≠ 0 then
+          «Language/OTPair.fromMaybe»
+            («Language.pr» («Theory.idt» x1) x1)
+            («Language/OTPair.nthOf» x2 («Prelude.get» x4))
+        else
+          «Language.pr» («Theory.idt» x1) x1)
+      («Base.range» («Language.selBound» x0));
+    x3
+
+def «Language.foldEnv» :=
+  fun (x0 : List T) (x1 : List T) (x2 : List T) =>
+    let x3 : T ×
+      List
+        T := (let x3 : List T := «Prelude.append» x0 x2;
+              («Language.ctxObj» x3,
+                «Language.selEnv»
+                  («Prelude.append»
+                    («Base.range» («Prelude.length» x0))
+                    («Base.mapT» (fun (x4 : T) => Const.add x4 («Prelude.length» x0)) x1))
+                  («Language.ctxObj» x3)
+                  («Language.stdEnv» x3)));
+    x3
+
+def «Language.foldPs» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : T) =>
+    let x4 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x4 : T) (x5 : List T) =>
+        let x6 : T := «Language/OTPair.nthOf» x1 x4;
+        if (Const.eq (Const.label x6) (leaf 1)).label ≠ 0 then
+          let x7 : T := Const.child x6 (leaf 0); (x7 :: x5)
+        else
+          x5)
+      ([] : List T)
+      («Language.foldParams» x0 («Language/TPairs.length» x1) x2 x3);
+    x4
+
+def «Language.foldEnvIn» :=
+  fun (x0 : List T) (x1 : T) (x2 : List T) (x3 : T) (x4 : T) =>
+    let x5 : T ×
+      List
+        T := «Language.foldEnv»
+      x0
+      («Language.foldParams» x1 («Language/TPairs.length» x2) x3 x4)
+      («Language/TPairOut.map»
+        «Language.p2»
+        («Language.foldPs» x1 x2 x3 x4));
+    x5
+
+def «Language.natFold» :=
+  fun (x0 : List T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) =>
+    let x6 : T := (if («Base.isEmpty» x0).label ≠ 0 then
+      «Theory.comp» («Theory.natRec» x2 x3) x5
+    else
+      «Theory.comp»
+        («Theory.natRecP» («Language.ctxObj» x0) x1 x2 x3)
+        («Theory.cPair» x4 x5));
+    x6
+
+def «Language.listFold» :=
+  fun (x0 : List T)
+    (x1 : T)
+    (x2 : T)
+    (x3 : T)
+    (x4 : T)
+    (x5 : T)
+    (x6 : T) =>
+    let x7 : T := (if («Base.isEmpty» x0).label ≠ 0 then
+      «Theory.comp» («Theory.listRec» x1 x3 x4) x6
+    else
+      «Theory.comp»
+        («Theory.listRecP» («Language.ctxObj» x0) x1 x2 x3 x4)
+        («Theory.cPair» x5 x6));
+    x7
 
 def «Language.objs» := fun (x0 : List T) => Const.node (leaf 0) x0
 
@@ -7094,32 +7375,49 @@ def «Language.compileStep» :=
                                  if («Prelude.and»
                                    (Const.eq x2 (leaf 8))
                                    (Const.eq x8 (leaf 3))).label ≠ 0 then
+                                   let x12 : T := «Prelude.at» («Language.cpTrees» x7) (leaf 0);
+                                   let x13 : T := «Prelude.at» («Language.cpTrees» x7) (leaf 1);
+                                   let x14 : List T := «Language.foldPs» (leaf 1) x5 x12 x13;
+                                   let x15 : T ×
+                                     List
+                                       T := «Language.foldEnvIn» ([] : List T) (leaf 1) x5 x12 x13;
                                    «Language.bindPP»
-                                     (x9 «Theory.one» ([] : List T))
-                                     (fun (x12 : T) =>
-                                       let x13 : T := «Language.p2» x12;
+                                     (x9 (x15).1 (x15).2)
+                                     (fun (x16 : T) =>
+                                       let x17 : T := «Language.p2» x16;
+                                       let x18 : T ×
+                                         List
+                                           T := «Language.foldEnvIn»
+                                         («Prelude.single» x17)
+                                         (leaf 1)
+                                         x5
+                                         x12
+                                         x13;
                                        «Language.bindPP»
-                                         (x10
-                                           x13
-                                           («Language/TPairs.single»
-                                             («Language.pr» («Theory.idt» x13) x13)))
-                                         (fun (x14 : T) =>
+                                         (x10 (x18).1 (x18).2)
+                                         (fun (x19 : T) =>
                                            «Language.bindPP»
                                              (x11 x4 x5)
-                                             (fun (x15 : T) =>
+                                             (fun (x20 : T) =>
                                                if («Prelude.and»
-                                                 (Const.equal («Language.p2» x14) x13)
+                                                 (Const.equal («Language.p2» x19) x17)
                                                  (Const.equal
-                                                   («Language.p2» x15)
+                                                   («Language.p2» x20)
                                                    «Theory.nat»)).label ≠ 0 then
                                                  «Language/OTPair.just»
                                                    («Language.pr»
-                                                     («Theory.comp»
-                                                       («Theory.natRec»
-                                                         («Language.p1» x12)
-                                                         («Language.p1» x14))
-                                                       («Language.p1» x15))
-                                                     x13)
+                                                     («Language.natFold»
+                                                       («Language/TPairOut.map» «Language.p2» x14)
+                                                       x17
+                                                       («Language.p1» x16)
+                                                       («Language.p1» x19)
+                                                       («Language.tuple»
+                                                         x4
+                                                         («Language/TPairOut.map»
+                                                           «Language.p1»
+                                                           x14))
+                                                       («Language.p1» x20))
+                                                     x17)
                                                else
                                                  «Language/OTPair.nothing»)))
                                  else
@@ -7132,29 +7430,57 @@ def «Language.compileStep» :=
                                          «Language.bindTP»
                                            («Language.listPart» («Language.p2» x12))
                                            (fun (x13 : T) =>
+                                             let x14 : T := «Prelude.at»
+                                               («Language.cpTrees» x7)
+                                               (leaf 0);
+                                             let x15 : T := «Prelude.at»
+                                               («Language.cpTrees» x7)
+                                               (leaf 1);
+                                             let x16 : List
+                                               T := «Language.foldPs» (leaf 2) x5 x14 x15;
+                                             let x17 : T ×
+                                               List
+                                                 T := «Language.foldEnvIn»
+                                               ([] : List T)
+                                               (leaf 2)
+                                               x5
+                                               x14
+                                               x15;
                                              «Language.bindPP»
-                                               (x9 «Theory.one» ([] : List T))
-                                               (fun (x14 : T) =>
-                                                 let x15 : T := «Language.p2» x14;
+                                               (x9 (x17).1 (x17).2)
+                                               (fun (x18 : T) =>
+                                                 let x19 : T := «Language.p2» x18;
+                                                 let x20 : T ×
+                                                   List
+                                                     T := «Language.foldEnvIn»
+                                                   («Theory.l2» x19 x13)
+                                                   (leaf 2)
+                                                   x5
+                                                   x14
+                                                   x15;
                                                  «Language.bindPP»
-                                                   (x10
-                                                     («Theory.prod» x13 x15)
-                                                     («Language/TPairF.l2»
-                                                       («Language.pr» («Theory.cSnd» x13 x15) x15)
-                                                       («Language.pr» («Theory.cFst» x13 x15) x13)))
-                                                   (fun (x16 : T) =>
+                                                   (x10 (x20).1 (x20).2)
+                                                   (fun (x21 : T) =>
                                                      if (Const.equal
-                                                       («Language.p2» x16)
-                                                       x15).label ≠ 0 then
+                                                       («Language.p2» x21)
+                                                       x19).label ≠ 0 then
                                                        «Language/OTPair.just»
                                                          («Language.pr»
-                                                           («Theory.comp»
-                                                             («Theory.listRec»
-                                                               x13
-                                                               («Language.p1» x14)
-                                                               («Language.p1» x16))
+                                                           («Language.listFold»
+                                                             («Language/TPairOut.map»
+                                                               «Language.p2»
+                                                               x16)
+                                                             x13
+                                                             x19
+                                                             («Language.p1» x18)
+                                                             («Language.p1» x21)
+                                                             («Language.tuple»
+                                                               x4
+                                                               («Language/TPairOut.map»
+                                                                 «Language.p1»
+                                                                 x16))
                                                              («Language.p1» x12))
-                                                           x15)
+                                                           x19)
                                                      else
                                                        «Language/OTPair.nothing»))))
                                    else
@@ -7939,6 +8265,17 @@ def «Derivation.instVar» :=
     else
       «Language.var» (Const.sub x1 (leaf 1)));
     x2
+
+def «Derivation.instVar2» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    let x3 : T := (if (Const.eq x2 (leaf 0)).label ≠ 0 then
+      x0
+    else
+      if (Const.eq x2 (leaf 1)).label ≠ 0 then
+        x1
+      else
+        «Language.var» (Const.sub x2 (leaf 2)));
+    x3
 
 def «Derivation.atVar0» :=
   fun (x0 : T) (x1 : T) =>
@@ -8939,20 +9276,22 @@ def «Derivation.childCtxs» :=
                        (Const.eq x5 (leaf 8))
                        (Const.eq x7 (leaf 3))).label ≠ 0 then
                        «Derivation.bindTS»
-                         («Derivation.typeIn» x0 x1 ([] : List T) («Prelude.at» x6 (leaf 0)))
+                         («Derivation.typeIn» x0 x1 x3 («Prelude.at» x6 (leaf 0)))
                          (fun (x8 : T) =>
                            «Derivation/OScopes.just»
                              («Derivation.scopes»
                                («Derivation/ScopeF.l3»
-                                 («Derivation.ctxPair» ([] : List T) ([] : List T))
-                                 («Derivation.ctxPair» («Prelude.single» x8) ([] : List T))
+                                 («Derivation.ctxPair» x3 x4)
+                                 («Derivation.ctxPair»
+                                   (x8 :: x3)
+                                   («Base.mapT» «Derivation.weaken1» x4))
                                  («Derivation.ctxPair» x3 x4))))
                      else
                        if («Prelude.and»
                          (Const.eq x5 (leaf 9))
                          (Const.eq x7 (leaf 3))).label ≠ 0 then
                          «Derivation.bindTS»
-                           («Derivation.typeIn» x0 x1 ([] : List T) («Prelude.at» x6 (leaf 0)))
+                           («Derivation.typeIn» x0 x1 x3 («Prelude.at» x6 (leaf 0)))
                            (fun (x8 : T) =>
                              «Derivation.bindTS»
                                («Base.bindO»
@@ -8962,8 +9301,10 @@ def «Derivation.childCtxs» :=
                                  «Derivation/OScopes.just»
                                    («Derivation.scopes»
                                      («Derivation/ScopeF.l3»
-                                       («Derivation.ctxPair» ([] : List T) ([] : List T))
-                                       («Derivation.ctxPair» («Theory.l2» x8 x9) ([] : List T))
+                                       («Derivation.ctxPair» x3 x4)
+                                       («Derivation.ctxPair»
+                                         (x8 :: (x9 :: x3))
+                                         («Base.mapT» «Derivation.weaken2» x4))
                                        («Derivation.ctxPair» x3 x4)))))
                        else
                          if («Prelude.and»
@@ -9000,7 +9341,7 @@ def «Derivation.sameCtx» :=
       if («Prelude.or»
         (Const.eq x0 (leaf 8))
         (Const.eq x0 (leaf 9))).label ≠ 0 then
-        Const.eq x1 (leaf 2)
+        «Base.not» (Const.eq x1 (leaf 1))
       else
         if (Const.eq x0 (leaf 10)).label ≠ 0 then
           Const.eq x1 (leaf 1)
@@ -9225,13 +9566,12 @@ def «Derivation.rootListCons» :=
                        «Prelude.some»
                          («Language.subst»
                            («Language.mArg» x2 (leaf 1))
-                           («Language.substList»
-                             («Theory.l2»
-                               («Language.mListRec»
-                                 («Language.mArg» x2 (leaf 0))
-                                 («Language.mArg» x2 (leaf 1))
-                                 («Language.mArg» x4 (leaf 1)))
-                               («Language.mArg» x4 (leaf 0)))))
+                           («Derivation.instVar2»
+                             («Language.mListRec»
+                               («Language.mArg» x2 (leaf 0))
+                               («Language.mArg» x2 (leaf 1))
+                               («Language.mArg» x4 (leaf 1)))
+                             («Language.mArg» x4 (leaf 0))))
                      else
                        «Prelude.none»
                    else

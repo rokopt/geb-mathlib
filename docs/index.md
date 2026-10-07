@@ -4081,11 +4081,18 @@ checklist and in CI.
   [AltenkirchChapmanUustalu2015]. `Compile.lean` types a term and
   compiles it to an arrow of the combinators in one pass, the
   interpretation of Part I of [LambekScott1986] as the categorical
-  abstract machine [CousineauCurienMauny1987] compiles it, and compiles
-  the language's definitions and object definitions to definitions of
-  the combinators. `Sorting.lean`, `Semantics.lean`, `Inversion.lean` and
-  `Substitution.lean` prove the compiled arrows well sorted, of their
-  types and natural, and substitution composition
+  abstract machine [CousineauCurienMauny1987] compiles it, a fold of the
+  natural numbers or of a list, whose start is in the fold's context and
+  whose step in its extension, to the fold with a parameter
+  [EscardoSimpson2025] (`Geb.FreeTopos.natRecP`,
+  `Geb.FreeTopos.listRecP`) at the variables its start or step mentions,
+  and to the combinators' fold when they mention none, and compiles the
+  language's definitions and object definitions to definitions of the
+  combinators. `Params.lean` describes the parameters and the
+  environments a fold's start and step compile in. `Sorting.lean`,
+  `Semantics.lean`, `Inversion.lean` and `Substitution.lean` prove the
+  compiled arrows well sorted, of their types and natural, and
+  substitution composition
   (`Geb.FreeTopos.Internal.compile_subst`); `Square.lean` proves that
   compiling agrees with unfolding the language's definitions in every
   model (`Geb.FreeTopos.Internal.compile_unfold`). `Iterate.lean`

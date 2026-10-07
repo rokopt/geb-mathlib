@@ -13,20 +13,17 @@ set_option doc.verso true in
 /-!
 # The fold of the natural numbers with parameters
 
-The fold of the natural numbers of the internal language compiles its start and its step to
-closed arrows, the combinators' fold being from the natural numbers object alone. A fold whose
-start and step mention variables around it is one with parameters, which the natural numbers
-object of a cartesian closed category admits ({cite}`EscardoSimpson2025`, Proposition 2.3), by
-the fold into the exponential of the parameters evaluated at the parameter
-({lit}`Geb.FreeTopos.natRec_param_exists`). It is a definition of the language
-({lit}`iterDefn`): the function from a start and a step, as a pair of a term and a function, and
-a natural number to the step's iterate at the start. Its body is the fold, at the exponential of
-the type of the pair into the result type, whose start is the first projection and whose step
-applies the pair's second component to the value of the previous function at the pair, applied
-to the pair: both the start and the step are closed, so that the fold compiles, and the
-parameters enter through the argument. Its application takes the start and the step as values
-compiled in the environment of the application, as the case analysis of a coproduct takes its
-functions.
+The iteration of a step from a start, both values, as a definition of the language
+({lit}`iterDefn`): the function from a natural number and a pair of a start and a step, as a
+term and a function, to the step's iterate at the start. Its body is the fold with parameters of
+the natural numbers object of a cartesian closed category ({cite}`EscardoSimpson2025`,
+Proposition 2.3), the fold into the exponential of the parameters evaluated at the parameter,
+the parameter the pair: the fold, at the exponential of the type of the pair into the result
+type, whose start is the first projection and whose step applies the pair's second component to
+the value of the previous function at the pair, applied to the pair. Neither the start nor the
+step of that fold mentions a variable around it, and the parameters enter through the argument.
+Its application takes the start and the step as values compiled in the environment of the
+application, as the case analysis of a coproduct takes its functions.
 
 ## Main definitions
 
@@ -75,6 +72,8 @@ def iterDefn : Defn where
       (Term.var 0))
     (Term.var 1)
 
+set_option maxHeartbeats 400000 in
+-- the reduction computes the fold's parameters from the variables its start and step mention
 /-- The fold with parameters compiles, whatever the constants. -/
 theorem iterDefn_compile (G : Globals) : (iterDefn.compile G).isSome = true := rfl
 

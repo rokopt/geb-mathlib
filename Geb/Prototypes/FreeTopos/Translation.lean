@@ -31,14 +31,13 @@ kernel's folds and iteration, its case analysis of lists and its primitives are 
 definitions of the language. The fold whose step sees the node is the rose-tree fold at pairs of
 a rebuilt node and its value, as the kernel's is.
 
-The language's folds take their start and their step in contexts of their own, so a fold whose
-step uses a variable of the context folds into the exponential of that variable's type and is
-applied to it, as the benchmark's appending does. The primitives are functions of the labels and
-the children of trees, the labels' arithmetic structural recursion on the bits: the numeral
-{lit}`b :: w` denotes {lit}`2 w + 1 + b`, so that addition, subtraction and comparison proceed
-from the least significant bits with a successor as the carry, multiplication by doubling, and
-division by the long division of the bits, and iteration applies the step twice the tail's
-number of times and then once or twice.
+A fold of the library whose step uses a variable of the context folds into the exponential of that
+variable's type and is applied to it, as the benchmark's appending does. The primitives are
+functions of the labels and the children of trees, the labels' arithmetic structural recursion on
+the bits: the numeral {lit}`b :: w` denotes {lit}`2 w + 1 + b`, so that addition, subtraction and
+comparison proceed from the least significant bits with a successor as the carry, multiplication by
+doubling, and division by the long division of the bits, and iteration applies the step twice the
+tail's number of times and then once or twice.
 
 ## Main definitions
 

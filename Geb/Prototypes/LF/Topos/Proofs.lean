@@ -96,8 +96,7 @@ abbrev ruleD (r : FreeTopos.Internal.Rule) : Deriv := nd r []
 
 /-- One step of the rewriting by a derivation at the occurrences of a variable in a term: the
 derivation at the variable, the identity at another, and the congruence elsewhere, under a
-binder at the variable's successor; the start and the step of a fold, closed, are left in
-place. -/
+binder at the variable's successor; the start and the step of a fold are left in place. -/
 def congAlongStep (d : Deriv) (l : FreeTopos.Internal.Label) (cs : List (Term × (ℕ → Deriv)))
     (j : ℕ) : Deriv :=
   match l, cs with

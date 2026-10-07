@@ -153,6 +153,14 @@ open Geb Geb.Kernel Geb.FreeTopos GebTests.Prototypes.FreeTopos.Agreement.Encode
 @[simp] theorem mirror_listRec (a z s :
     Tree) : «Theory.listRec» a z s = listRec a z s := rfl
 
+/-- The mirror's fold of the natural numbers with a parameter. -/
+@[simp] theorem mirror_natRecP (p c z s : Tree) :
+    «Theory.natRecP» p c z s = natRecP p c z s := rfl
+
+/-- The mirror's fold of lists with a parameter. -/
+@[simp] theorem mirror_listRecP (p a c z s : Tree) :
+    «Theory.listRecP» p a c z s = listRecP p a c z s := rfl
+
 /-- The mirror's rose-tree object. -/
 @[simp] theorem mirror_rose : «Theory.rose» = rose := rfl
 

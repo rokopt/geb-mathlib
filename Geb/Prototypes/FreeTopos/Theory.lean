@@ -40,6 +40,7 @@ equalizer is the monomorphism's characteristic map.
 * {lit}`sig` — the signature.
 * {lit}`axioms` — the axioms, by block.
 * {lit}`theory` — the theory.
+* {lit}`natRecP`, {lit}`listRecP` — the folds with a parameter, composites of the operations.
 
 ## References
 
@@ -239,6 +240,25 @@ def lnode (a : Tree) : Tree := op 41 [a]
 
 /-- The fold of the rose-tree object over the object of labels {lit}`a` into an algebra. -/
 def lroseRec (a f : Tree) : Tree := op 42 [a, f]
+
+/-- The fold of the natural numbers object with a parameter, from the product of the object of
+parameters {lit}`P` with the natural numbers object into {lit}`C`: the fold into the exponential
+of the parameters, from the curried start {lit}`z` by the curried step {lit}`S`, evaluated at the
+parameter. -/
+def natRecP (P C z S : Tree) : Tree :=
+  comp (ev P C) (pair (comp (natRec (curry one P (comp z (snd one P)))
+    (curry (exp P C) P (comp S (pair (snd (exp P C) P) (ev P C))))) (snd P nat)) (fst P nat))
+
+/-- The fold of the list object of {lit}`A` with a parameter, from the product of the object of
+parameters {lit}`P` with the list object into {lit}`C`: the fold into the exponential of the
+parameters, from the curried start {lit}`z` by the curried step {lit}`S`, whose arguments are the
+parameter paired with the element, and the value at the tail, evaluated at the parameter. -/
+def listRecP (P A C z S : Tree) : Tree :=
+  comp (ev P C) (pair (comp (listRec A (curry one P (comp z (snd one P)))
+    (curry (prod A (exp P C)) P (comp S
+      (pair (pair (snd (prod A (exp P C)) P) (comp (fst A (exp P C)) (fst (prod A (exp P C)) P)))
+        (comp (ev P C) (pair (comp (snd A (exp P C)) (fst (prod A (exp P C)) P))
+          (snd (prod A (exp P C)) P))))))) (snd P (list A))) (fst P (list A)))
 
 /-- The equation stating that a term is defined. -/
 def dfd (t : Tree) : Eqn := ⟨t, t⟩

@@ -2084,10 +2084,15 @@ def «Tactics.occStep» :=
               ([] : List T)
               («Base.mapT»
                 (fun (x8 : T) =>
-                  if (Const.eq x8 (leaf 2)).label ≠ 0 then
-                    «Prover.ufAt» x3 (Const.add x8 (leaf 1)) x4
-                  else
-                    x5)
+                  «Prover.ufAt»
+                    x3
+                    (Const.add x8 (leaf 1))
+                    (if (Const.eq x8 (leaf 1)).label ≠ 0 then
+                      Const.add
+                        x4
+                        (if (Const.eq x7 (leaf 8)).label ≠ 0 then leaf 1 else leaf 2)
+                    else
+                      x4))
                 («Base.range» («Tactics.lenUF» («Prover/UFs.tail» x3))))
           else
             if (Const.eq x7 (leaf 10)).label ≠ 0 then
@@ -2426,10 +2431,15 @@ def «Tactics.absStep» :=
             x6
               («Base.mapT»
                 (fun (x7 : T) =>
-                  if (Const.eq x7 (leaf 2)).label ≠ 0 then
-                    «Prover.ufAt» x2 (Const.add x7 (leaf 1)) x3
-                  else
-                    «Prelude.at» x5 x7)
+                  «Prover.ufAt»
+                    x2
+                    (Const.add x7 (leaf 1))
+                    (if (Const.eq x7 (leaf 1)).label ≠ 0 then
+                      Const.add
+                        x3
+                        (if (Const.eq x4 (leaf 8)).label ≠ 0 then leaf 1 else leaf 2)
+                    else
+                      x3))
                 («Base.range» («Tactics.lenUF» («Prover/UFs.tail» x2))))
           else
             if (Const.eq x4 (leaf 10)).label ≠ 0 then
