@@ -617,10 +617,11 @@ theorem readDoc_advancedOf (L : ℕ → Bool × ℕ) (t : SExp) (ht : SExp.wf t)
   simp [Frame.start, Frame.push]
 
 /-- A document in the advanced encoding, its strict form laid out within a line width by the
-layout policy. -/
+layout policy. The layout is bound outside the function of positions, so that it is computed
+once rather than at every position. -/
 def printAdvancedDoc (lim : ℕ) (d : Doc) : List Char :=
-  advancedOf (fun i ↦ (defaultLayout .advanced lim ⟨[plain (toStrict d)], []⟩).getD i (false, 0))
-    (toStrict d)
+  let ds := defaultLayout .advanced lim ⟨[plain (toStrict d)], []⟩
+  advancedOf (fun i ↦ ds.getD i (false, 0)) (toStrict d)
 
 /-- The retraction law of the advanced encoding of documents. -/
 theorem readStrictDoc_printAdvancedDoc (lim : ℕ) (d : Doc) (h : d.strictWf) :
