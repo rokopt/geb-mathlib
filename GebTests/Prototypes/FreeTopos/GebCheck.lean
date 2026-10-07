@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.Kernel
 public import GebTests.Prototypes.FreeTopos
+public import GebTests.Prototypes.FreeTopos.Agreement.Encode
 public meta import GebTests.Prototypes.FreeTopos.Agreement.Encode -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos -- shake: keep
 public meta import GebTests.Prototypes.Stage0 -- shake: keep
@@ -94,8 +95,9 @@ equation of every axiom, and a node of label zero that is not a variable. -/
 def terms : List Tree :=
   notVar :: axioms.flatMap fun a ↦ (a.concl :: a.hyps).flatMap fun q ↦ [q.lhs, q.rhs]
 
--- the sorts, the scope and the substitution of the terms, in the context of every axiom
-#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList program.toList).bind fun P ↦ do
+/-- The sorts, the scope and the substitution of the terms, in the context of every axiom, as the
+program computes them and as Lean does. -/
+def sortsAgree (P : List (List Char × Kernel.Glob)) : Option Bool := do
   let so : List Tree → List Tree → Tree → Tree ←
     fn P "PartialHorn.sortOf".toList (arrow tyTs (arrow tyTs (arrow tyT tyT)))
   let sc : Tree → Tree → Tree ← fn P "PartialHorn.scoped".toList (arrow tyT (arrow tyT tyT))
@@ -104,7 +106,7 @@ def terms : List Tree :=
     so (sig.map encOpSig) (a.ctx.map Kernel.leaf) t ==
         encOpt ((sortOf sig a.ctx t).map Kernel.leaf) &&
       sc (Kernel.leaf a.ctx.length) t == Kernel.ofBool (Scoped a.ctx.length t) &&
-      su [x 1, op 4 []] t == subst [x 1, op 4 []] t).getD false
+      su [x 1, op 4 []] t == subst [x 1, op 4 []] t
 
 /-- The certificates the checkers are compared on, each with its theory's extension, the
 theorems it may cite, and the context and hypotheses it checks in: those of
@@ -139,37 +141,40 @@ def mutants (c : Tree) : List Tree :=
   ((List.range 10).map fun l ↦ RoseTree.node l c.children) ++
     [RoseTree.node c.label c.children.dropLast]
 
--- the checker at every certificate and its malformed variants
-#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList program.toList).bind fun P ↦ do
+/-- The checker at every certificate and its malformed variants, as the program computes it and as
+Lean does. -/
+def checkerAgrees (P : List (List Char × Kernel.Glob)) : Option Bool := do
   let pc : Tree → List Tree → Tree → List Tree → List Tree → Tree ←
     fn P "PartialHorn.pcheck".toList
       (arrow tyT (arrow tyTs (arrow tyT (arrow tyTs (arrow tyTs tyT)))))
   pure <| certs.all fun (ds, E, c, Γ, H) ↦ (c :: mutants c).all fun c ↦
     let T := theory.extendAll ds
     pc (encTheory T) (E.map encSeq) c (Γ.map Kernel.leaf) (H.map encEqn) ==
-      encOpt ((check T E.toArray c Γ H).map encEqn)).getD false
+      encOpt ((check T E.toArray c Γ H).map encEqn)
 
--- the extension of the theory by one definition and by two
-#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList program.toList).bind fun P ↦ do
+/-- The extension of the theory by one definition and by two, as the program computes it and as
+Lean does. -/
+def extensionAgrees (P : List (List Char × Kernel.Glob)) : Option Bool := do
   let te : Tree → List Tree → Tree ←
     fn P "PartialHorn.thyExtendAll".toList (arrow tyT (arrow tyTs tyT))
   pure <| [[swapDefn], [swapDefn, swapDefn]].all fun ds ↦
-    te (encTheory theory) (ds.map encDefn) == encTheory (theory.extendAll ds)).getD false
+    te (encTheory theory) (ds.map encDefn) == encTheory (theory.extendAll ds)
 
--- the theory of an elementary topos with data objects: its signature and its axioms
-#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList program.toList).bind fun P ↦ do
+/-- The theory of an elementary topos with data objects, its signature and its axioms, as the
+program encodes it and as Lean does. -/
+def theoryAgrees (P : List (List Char × Kernel.Glob)) : Option Bool := do
   let th : Tree ← fn P "Theory.toposTheory".toList tyT
-  pure (th == encTheory theory)).getD false
+  pure (th == encTheory theory)
 
--- the rule tables, and the environments of the theory and of its extension by a definition
-#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList program.toList).bind fun P ↦ do
+/-- The rule tables, and the environments of the theory and of its extension by a definition, as
+the program computes them and as Lean does. -/
+def envAgrees (P : List (List Char × Kernel.Glob)) : Option Bool := do
   let eo : List Tree → Tree ← fn P "Infer.envOfDefs".toList (arrow tyTs tyT)
-  pure <| [[], [swapDefn]].all fun ds ↦ eo (ds.map encDefn) == encExtEnv (ExtEnv.ofDefs ds)).getD
-    false
+  pure <| [[], [swapDefn]].all fun ds ↦ eo (ds.map encDefn) == encExtEnv (ExtEnv.ofDefs ds)
 
--- the inference of the typing of the sides of every axiom's equations, in its context and under
--- its hypotheses
-#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList program.toList).bind fun P ↦ do
+/-- The inference of the typing of the sides of every axiom's equations, in its context and under
+its hypotheses, as the program computes it and as Lean does. -/
+def inferenceAgrees (P : List (List Char × Kernel.Glob)) : Option Bool := do
   let eo : List Tree → Tree ← fn P "Infer.envOfDefs".toList (arrow tyTs tyT)
   let inf : Tree → List Tree → List Tree → Tree → (List Tree → Tree → Tree) × (Tree → Tree) ←
     fn P "Infer.infers".toList (arrow tyT (arrow tyTs (arrow tyTs (arrow tyT
@@ -178,7 +183,18 @@ def mutants (c : Tree) : List Tree :=
   let e := eo []
   pure <| axioms.all fun a ↦ ((a.concl :: a.hyps).flatMap fun q ↦ [q.lhs, q.rhs]).all fun t ↦
     (inf e (a.ctx.map Kernel.leaf) (a.hyps.map encEqn) (Kernel.leaf inferFuel)).2 t ==
-      encOpt (((infers E a.ctx a.hyps inferFuel).2 t).map encAnn)).getD false
+      encOpt (((infers E a.ctx a.hyps inferFuel).2 t).map encAnn)
+
+#eval show IO Unit from do
+  let some P := loaded Geb.Kernel.Stage0Tests.bundler.toList program.toList
+    | throw (IO.userError "the program does not load")
+  let comparisons : List (String × (List (List Char × Kernel.Glob) → Option Bool)) :=
+    [("sortsAgree", sortsAgree), ("checkerAgrees", checkerAgrees),
+     ("extensionAgrees", extensionAgrees), ("theoryAgrees", theoryAgrees),
+     ("envAgrees", envAgrees), ("inferenceAgrees", inferenceAgrees)]
+  for (name, agrees) in comparisons do
+    unless (agrees P).getD false do
+      throw (IO.userError s!"{name}: the program and Lean disagree")
 
 end GebTests.Prototypes.FreeTopos.GebCheck
 
