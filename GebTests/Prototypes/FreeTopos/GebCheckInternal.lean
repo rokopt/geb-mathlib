@@ -129,31 +129,41 @@ def variants : List Staged :=
         | .language _ _ | .combinators _ _ => if i % 32 = 0 then alterations d else []
         | _ => alterations d).map (·, s)
 
--- the checker of developments at every development, which the Lean checker accepts
-#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList internalProgram.toList).bind fun P ↦ do
+/-- The checker of developments at every development, which the Lean checker accepts, as the
+program computes it and as Lean does. -/
+def developmentsAgree (P : List (List Char × Kernel.Glob)) : Option Bool := do
   let cd : Tree → List Tree → List Tree → Tree ←
     fn P "Derivation.checkDev".toList (arrow tyT (arrow tyTs (arrow tyTs tyT)))
   pure <| developments.all fun (_, G, ds) ↦ (Internal.checkDev G #[] ds).isSome &&
     cd (encGlobals G) [] (ds.map encDecl) == encOpt ((Internal.checkDev G #[] ds).map encState)
-  ).getD false
 
--- the checker of developments at every development of at most sixteen declarations with each
--- declaration removed
-#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList internalProgram.toList).bind fun P ↦ do
+/-- The checker of developments at every development of at most sixteen declarations with each
+declaration removed, as the program computes it and as Lean does. -/
+def removalsAgree (P : List (List Char × Kernel.Glob)) : Option Bool := do
   let cd : Tree → List Tree → List Tree → Tree ←
     fn P "Derivation.checkDev".toList (arrow tyT (arrow tyTs (arrow tyTs tyT)))
   pure <| developments.all fun (_, G, ds) ↦ ds.length > 16 ||
     (List.range ds.length).all fun i ↦
       cd (encGlobals G) [] ((ds.eraseIdx i).map encDecl) ==
-        encOpt ((Internal.checkDev G #[] (ds.eraseIdx i)).map encState)).getD false
+        encOpt ((Internal.checkDev G #[] (ds.eraseIdx i)).map encState)
 
--- one declaration's check at each variant, in the state before the declaration it varies
-#guard ((loaded Geb.Kernel.Stage0Tests.bundler.toList internalProgram.toList).bind fun P ↦ do
+/-- One declaration's check at each variant, in the state before the declaration it varies, as
+the program computes it and as Lean does. -/
+def variantsAgree (P : List (List Char × Kernel.Glob)) : Option Bool := do
   let st : Tree → List Tree → Tree → Tree ←
     fn P "Derivation.declStep".toList (arrow tyT (arrow tyTs (arrow tyT tyT)))
   pure <| variants.all fun (d, G, E) ↦
     st (encGlobals G) (E.toList.map encEntry) (encDecl d) == encOpt ((d.step G E).map encState)
-  ).getD false
+
+#eval show IO Unit from do
+  let some P := loaded Geb.Kernel.Stage0Tests.bundler.toList internalProgram.toList
+    | throw (IO.userError "the program does not load")
+  let comparisons : List (String × (List (List Char × Kernel.Glob) → Option Bool)) :=
+    [("developmentsAgree", developmentsAgree), ("removalsAgree", removalsAgree),
+     ("variantsAgree", variantsAgree)]
+  for (name, agrees) in comparisons do
+    unless (agrees P).getD false do
+      throw (IO.userError s!"{name}: the program and Lean disagree")
 
 end GebTests.Prototypes.FreeTopos.GebCheckInternal
 
