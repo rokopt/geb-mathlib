@@ -10,7 +10,7 @@ public import Mathlib.Algebra.Group.Submonoid.Defs
 public import Mathlib.Basic.Nontrivial.Defs
 public import Mathlib.CategoryTheory.SingleObj
 public import Mathlib.CategoryTheory.Types.Basic
-public import Mathlib.Data.Setoid.Basic
+public import Mathlib.Order.Setoid.Basic
 
 set_option doc.verso true in
 /-!

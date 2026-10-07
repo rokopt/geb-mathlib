@@ -9,6 +9,7 @@ public import Geb.Prototypes.Computability.BitTree.BinaryMachine.Machine
 public import Geb.Prototypes.Computability.BitTree.BinaryMachine.Difference
 public import Geb.Prototypes.Computability.BitTree.Counter
 public import Mathlib.Data.Nat.Bitwise
+import Mathlib.Data.List.GetD
 
 set_option doc.verso true in
 /-!
