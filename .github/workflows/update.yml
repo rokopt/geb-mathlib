@@ -31,7 +31,10 @@ jobs:
     needs: detect
     if: ${{ needs.detect.outputs.target != '' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    # lean-update builds, tests and lints at the new revisions with no
+    # cache to restore, which compiles the test library in full; 360
+    # minutes is the limit GitHub-hosted runners allow.
+    timeout-minutes: 360
     permissions:
       contents: write
       pull-requests: write
