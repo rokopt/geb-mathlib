@@ -223,9 +223,7 @@ weak.linter.hashCommand = false
 # The metalogic's program and the printer it loads.
 [[lean_lib]]
 name = "GebTestsFreeTopos"
-globs = ["GebTests.Prototypes.FreeTopos.GebCheck", "GebTests.Prototypes.FreeTopos.GebCheckInternal",
-  "GebTests.Prototypes.FreeTopos.GebProve", "GebTests.Prototypes.FreeTopos.GebTactics",
-  "GebTests.Prototypes.FreeTopos.GebCombinator", "GebTests.Prototypes.FreeTopos.Agreement.Load"]
+globs = ["GebTests.Prototypes.FreeTopos.Agreement.Load"]
 needs = ["@/freeToposSources", "@/printerSource", "@/seqSource"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 

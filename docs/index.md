@@ -4059,9 +4059,8 @@ checklist and in CI.
   folds, and its certificates are checked.
   `bootstrap/free-topos/combinator.geb`, in the metalogic's program, is
   the prover written again in the datatype language:
-  `GebTests/Prototypes/FreeTopos/GebCombinator.lean` compares it with the
-  Lean prover at the library and at the benchmark's development, and
-  `Agreement/Combinator.lean` proves each of its definitions equal to the
+  `GebTests/Prototypes/FreeTopos/Agreement/Combinator.lean` proves each
+  of its definitions equal to the
   Lean definition it transcribes at every encoded input and related
   state. `UniqueChoice.lean` states
   unique choice [ContenteMaietti2024] as a proposition, a hypothesis of
@@ -4137,15 +4136,11 @@ checklist and in CI.
   extension by definitions (`partial-horn.geb`), the theory
   (`theory.geb`), the inference of typings (`infer.geb`), the language's
   terms and compilation (`language.geb`), and the checker of derivations
-  and developments (`derivation.geb`). `GebCheck.lean` and
-  `GebCheckInternal.lean` load it with the stage-0 compiler and compare
-  its definitions with the Lean definitions they transcribe: the checker
-  of certificates at certificates and malformed variants of each, the
-  theory, the inference at the sides of every axiom, and the checker of
-  developments at the developments of the `Internal*.lean` modules, at
-  each small development with a declaration removed, and at altered
-  declarations. `GebTests/Prototypes/FreeTopos/Agreement.lean` proves the
-  checker written in Geb equal to `Geb.FreeTopos.Internal.checkDev`, by
+  and developments (`derivation.geb`).
+  `GebTests/Prototypes/FreeTopos/Agreement.lean` proves the checker
+  written in Geb equal to `Geb.FreeTopos.Internal.checkDev`, and the
+  functions it is built from equal to the Lean definitions they
+  transcribe, by
   the method of the checker of Gödel's T: the Lean the bootstrap compiler
   emits from the program, `bootstrap/lean/GebMirror/Metalogic/`, a module
   per layer of the program, is the denotation of each of the program's
@@ -4167,9 +4162,8 @@ checklist and in CI.
   once, and the command of `Agreement/TemplateEquations.lean` equates
   every copy with it. `bootstrap/free-topos/prove.geb`,
   in the same program, is the prover written again in the datatype
-  language: `GebProve.lean` compares it with the Lean prover at the
-  proofs of `InternalDerivation.lean` and `InternalLogic.lean`, and
-  `Agreement/Prove.lean` proves each of its entry points equal to the
+  language: `Agreement/Prove.lean` proves each of its entry points equal
+  to the
   Lean prover's at every encoded input, at rules related to the
   normalizer's and provers related to Lean's. The reader's resolution,
   `bootstrap/reader.geb`, and the printer of kernel terms,
@@ -4248,10 +4242,8 @@ checklist and in CI.
   `Weakening.lean`, `Substitution.lean`, `TreeCases.lean` and
   `Expansion.lean`. `bootstrap/free-topos/tactics.geb`, in the
   metalogic's program, is the tactics written again in the datatype
-  language: `GebTactics.lean` compares it with the Lean tactics at the
-  theorems of `InternalDerivation.lean` and `InternalLogic.lean` and at
-  their subterms, and `Agreement/Tactics.lean` proves each of its
-  definitions equal to the Lean definition it transcribes at every
+  language: `Agreement/Tactics.lean` proves each of its definitions
+  equal to the Lean definition it transcribes at every
   encoded input, at rules related to the normalizer's and provers related
   to Lean's. Depends on `Geb/Prototypes/FreeTopos/Translation.lean` and
   the modules of `Geb/Prototypes/FreeTopos/Internal/`.

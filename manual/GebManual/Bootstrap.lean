@@ -4300,20 +4300,12 @@ Lean structure or inductive type is the node of its constructor's
 position over its fields, and a term or a derivation is the node of its
 label's or its rule's position over the node of the label's or the
 rule's data, followed by its children.
-`GebTests/Prototypes/FreeTopos/GebCheck.lean` and
-`GebTests/Prototypes/FreeTopos/GebCheckInternal.lean` load the program
-with the stage-0 compiler's front end and compare its definitions with
-the Lean definitions they transcribe: the checker of certificates at
-valid certificates and malformed variants of each, the theory, the
-inference at the sides of every axiom, and the checker of developments
-at the developments of the language's tests, at each small development
-with a declaration removed, and at declarations altered in their
-equations, types, arities, objects, indices, certificates and
-derivations, each checked in the state before the declaration it
-alters.
 
 `GebTests/Prototypes/FreeTopos/Agreement.lean` proves the checker
-written in Geb equal to {name}`Geb.FreeTopos.Internal.checkDev`. The
+written in Geb equal to {name}`Geb.FreeTopos.Internal.checkDev`, and the
+functions it is built from, the partial Horn checker of certificates,
+the theory, the inference and the step of a development, each equal to
+the Lean definition it transcribes. The
 Lean the bootstrap compiler
 emits from the program, `GebMirror.Metalogic`, is the denotation of each
 of the program's definitions as {name}`Geb.Kernel.load` loads them,
@@ -4355,8 +4347,6 @@ depth through weak head normal forms, and the proofs of an equation by
 normalization, by induction, by extensionality and by case analysis. A
 rule of the normalizer is its encoding paired with a matching, which the
 preparation of a theorem computes once from the theorem's left side.
-`GebTests/Prototypes/FreeTopos/GebProve.lean` compares it with the Lean
-prover at the proofs of the test modules, and
 `GebTests/Prototypes/FreeTopos/Agreement/Prove.lean` proves it equal to
 the Lean prover by the same method: at encoded arguments, rules related
 to the normalizer's and provers related to Lean's, each of its entry
@@ -4374,12 +4364,11 @@ case analysis of lists, bitstrings, rose trees, coproducts and trees,
 with hypotheses and their instances cut in as rewriting rules, by the
 search of the hypotheses' instances and of the variables the sides are
 stuck on, and by rewriting under a conditional's mask.
-`GebTests/Prototypes/FreeTopos/GebTactics.lean` compares them with the
-Lean tactics at the theorems of the test modules and at their subterms,
-and `GebTests/Prototypes/FreeTopos/Agreement/Tactics.lean` proves each
-of their definitions equal to the Lean definition it transcribes by the
-same method, at encoded arguments, rules related to the normalizer's,
-provers related to Lean's and provers from rules related to Lean's. In
+`GebTests/Prototypes/FreeTopos/Agreement/Tactics.lean` proves each of
+their definitions, the functions of terms the search uses among them,
+equal to the Lean definition it transcribes by the same method, at
+encoded arguments, rules related to the normalizer's, provers related to
+Lean's and provers from rules related to Lean's. In
 the loading mode `rfl` the proof depends on no axiom beyond `propext`
 and `Quot.sound`; in the mode `native` it depends also on the axioms
 stating the loading.
@@ -4395,8 +4384,6 @@ the proofs by normalization and by induction on the natural numbers
 object and on list objects, and the library of derived equations. Its
 state records typings and normal forms in association lists where the
 Lean prover's records them in hash tables.
-`GebTests/Prototypes/FreeTopos/GebCombinator.lean` compares it with the
-Lean prover at the library and at the benchmark's development, and
 `GebTests/Prototypes/FreeTopos/Agreement/Combinator.lean` proves each of
 its definitions equal to the Lean definition it transcribes by the same
 method, at encoded arguments and related states, a list related to a
