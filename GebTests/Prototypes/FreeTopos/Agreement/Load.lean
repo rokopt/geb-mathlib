@@ -30,13 +30,15 @@ prover's entry points, the preparation of rules, the proofs by normalization and
 the provers built from provers; the tactics' entry points, the proofs by reduction, case
 analysis, induction, hypotheses and search; and the combinator prover's entry points, the typing,
 normalization, the proofs by normalization and by induction, the proof of a sequent added to a
-development and the library; and the partial printer of kernel terms and the reader's resolution
-of what it prints. Each
+development and the library; the partial printer of kernel terms and the reader's resolution
+of what it prints; and the checker's functions the checker of a development is built from, the
+partial Horn checker of the combinators' certificates, the theory, the inference of typings and
+the step of a development, with the tactics' functions of terms. Each
 type is read from the definition, whose abstractions carry their types and whose body the front end
 applies the identity at the result type to, by inverting the checker-evaluator: for the tactics,
-the combinator prover and the printer, by one lemma over the list of the abstractions'
-annotations, {lit}`infer_lams`. The library, a definition without a declared result type, has the
-type the checker-evaluator infers, which the kernel evaluates.
+the combinator prover, the printer and the checker's functions, by one lemma over the list of the
+abstractions' annotations, {lit}`infer_lams`. The library and the theory, definitions without a
+declared result type, have the type the checker-evaluator infers, which the kernel evaluates.
 
 ## Main definitions
 
@@ -51,6 +53,8 @@ type the checker-evaluator infers, which the kernel evaluates.
   computation of the combinator prover and of its entry points.
 * {lit}`printTermTy`, {lit}`readBackTy` — the types of the printer of kernel terms and of the
   reader's resolution of what it prints.
+* {lit}`pcheckTy`, {lit}`infersTy` — the types of the checker of a certificate and of the
+  inferences at a fuel.
 
 ## Main statements
 
@@ -66,7 +70,9 @@ type the checker-evaluator infers, which the kernel evaluates.
   {lit}`metalogic_thm`, {lit}`metalogic_byNorm` with the prover's other entry points, and
   {lit}`metalogic_byMode` with the tactics' other entry points, and {lit}`metalogic_proveSeq`
   with the combinator prover's other entry points, and {lit}`metalogic_printTermOpt` and
-  {lit}`metalogic_readBack` — those globals are the mirror's definitions, at those types.
+  {lit}`metalogic_readBack`, and {lit}`metalogic_pcheck` with the checker's other functions and
+  {lit}`metalogic_openSubterms` with the tactics' other functions of terms — those globals are the
+  mirror's definitions, at those types.
 
 ## Tags
 
@@ -113,6 +119,11 @@ geb_program _root_.GebMirror.metalogic from "bootstrap/prelude.geb" "bootstrap/s
     «Combinator.pByNorm» «Combinator.proveSeq» «Combinator.normalizeThm» «Combinator.instBy»
     «Combinator.byNatInduction» «Combinator.byListInduction» «Combinator.byListParamInduction»
     «Combinator.libraryWith» «Combinator.libRules» «Printer.printTermOpt» «Printer.readBack»
+    «PartialHorn.sortOf» «PartialHorn.scoped» «PartialHorn.phSubst» «PartialHorn.pcheck»
+    «PartialHorn.thyExtendAll» «Theory.toposTheory» «Infer.envOfDefs» «Infer.infers»
+    «Derivation.declStep» «Tactics.openSubterms» «Tactics.stuckVar» «Tactics.mentions»
+    «Tactics.matchesOf» «Tactics.condParts» «Tactics.stuckVarC» «Tactics.appsOf»
+    «Tactics.unnodeU» «Tactics.occRewrite» «Tactics.abstractTerm»
 
 open GebMirror (metalogic)
 
@@ -1241,6 +1252,221 @@ theorem metalogic_printTermOpt :
     ((infer_of_loadStep metalogic.step1815).elim fun _ h ↦
       infer_lams tT _ [tList tT, tT, tT] h)
     (metalogic.«Printer.printTermOpt_heq».trans HEq.rfl)))
+
+/-! The checker's functions: the partial Horn checker, the theory, the inference of typings and
+the step of a development. -/
+
+/-- The type of the inferences at a fuel: from an environment, a context, hypotheses and the fuel
+to the inference of a pattern's instance at arguments of given typings and the inference of a
+term. -/
+def infersTy : Tree :=
+  [tT, tList tT, tList tT, tT].foldr tArrow
+    (tProd (tArrow (tList tT) (tArrow tT tT)) (tArrow tT tT))
+
+/-- The type of the checker of a certificate: from a theory, an environment of theorems and a
+certificate to its conclusion as a function of the context and the hypotheses. -/
+def pcheckTy : Tree :=
+  [tT, tList tT, tT].foldr tArrow (tArrow (tList tT) (tArrow (tList tT) tT))
+
+-- the checker's functions are the program's globals of indices 44 to 819
+kernel_rfl metalogic_g44 : metalogic.globals[44]? = some metalogic.g44
+kernel_rfl metalogic_g45 : metalogic.globals[45]? = some metalogic.g45
+kernel_rfl metalogic_g46 : metalogic.globals[46]? = some metalogic.g46
+kernel_rfl metalogic_g118 : metalogic.globals[118]? = some metalogic.g118
+kernel_rfl metalogic_g160 : metalogic.globals[160]? = some metalogic.g160
+kernel_rfl metalogic_g384 : metalogic.globals[384]? = some metalogic.g384
+kernel_rfl metalogic_g431 : metalogic.globals[431]? = some metalogic.g431
+kernel_rfl metalogic_g819 : metalogic.globals[819]? = some metalogic.g819
+
+/-- The program's global of index 44 is the mirror's sort of a term in a context of sorts, at its
+type. -/
+theorem metalogic_sortOf :
+    metalogic.globals[44]? =
+      some (⟨[tList tT, tList tT, tT].foldr tArrow tT, «PartialHorn.sortOf»⟩ : Glob) :=
+  metalogic_g44.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step44).elim fun _ h ↦
+      infer_lams tT _ [tList tT, tList tT, tT] h)
+    (metalogic.«PartialHorn.sortOf_heq».trans HEq.rfl)))
+
+/-- The program's global of index 45 is the mirror's test that every variable of a term has an
+index below a bound, at its type. -/
+theorem metalogic_scoped :
+    metalogic.globals[45]? = some (⟨[tT, tT].foldr tArrow tT, «PartialHorn.scoped»⟩ : Glob) :=
+  metalogic_g45.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step45).elim fun _ h ↦ infer_lams tT _ [tT, tT] h)
+    (metalogic.«PartialHorn.scoped_heq».trans HEq.rfl)))
+
+/-- The program's global of index 46 is the mirror's substitution of terms for the variables of a
+term, at its type. -/
+theorem metalogic_phSubst :
+    metalogic.globals[46]? =
+      some (⟨[tList tT, tT].foldr tArrow tT, «PartialHorn.phSubst»⟩ : Glob) :=
+  metalogic_g46.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step46).elim fun _ h ↦ infer_lams tT _ [tList tT, tT] h)
+    (metalogic.«PartialHorn.phSubst_heq».trans HEq.rfl)))
+
+/-- The program's global of index 118 is the mirror's checker of a certificate in a theory and an
+environment of theorems, at its type. -/
+theorem metalogic_pcheck :
+    metalogic.globals[118]? =
+      some (⟨pcheckTy, «PartialHorn.pcheck»⟩ : Glob) :=
+  metalogic_g118.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step118).elim fun _ h ↦
+      infer_lams (tArrow (tList tT) (tArrow (tList tT) tT)) _ [tT, tList tT, tT] h)
+    (metalogic.«PartialHorn.pcheck_heq».trans HEq.rfl)))
+
+/-- The program's global of index 160 is the mirror's extension of a theory by definitions, at its
+type. -/
+theorem metalogic_thyExtendAll :
+    metalogic.globals[160]? =
+      some (⟨[tT, tList tT].foldr tArrow tT, «PartialHorn.thyExtendAll»⟩ : Glob) :=
+  metalogic_g160.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step160).elim fun _ h ↦ infer_lams tT _ [tT, tList tT] h)
+    (metalogic.«PartialHorn.thyExtendAll_heq».trans HEq.rfl)))
+
+-- The program's global of index 282 is the mirror's theory of an elementary topos, a tree, checked
+-- by the kernel: elaborating the global's equality with its mirror makes the elaborator evaluate
+-- the checker-evaluator on the definition.
+set_option maxRecDepth 100000 in
+kernel_rfl metalogic_toposTheory :
+    metalogic.globals[282]? = some (⟨tT, «Theory.toposTheory»⟩ : Glob)
+
+/-- The program's global of index 384 is the mirror's environment of a list of definitions, at its
+type. -/
+theorem metalogic_envOfDefs :
+    metalogic.globals[384]? = some (⟨listFnTy, «Infer.envOfDefs»⟩ : Glob) :=
+  metalogic_g384.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step384).elim fun _ h ↦ infer_lams tT _ [tList tT] h)
+    (metalogic.«Infer.envOfDefs_heq».trans HEq.rfl)))
+
+/-- The program's global of index 431 is the mirror's inferences at a fuel, at its type. -/
+theorem metalogic_infers :
+    metalogic.globals[431]? = some (⟨infersTy, «Infer.infers»⟩ : Glob) :=
+  metalogic_g431.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step431).elim fun _ h ↦
+      infer_lams (tProd (tArrow (tList tT) (tArrow tT tT)) (tArrow tT tT)) _
+        [tT, tList tT, tList tT, tT] h)
+    (metalogic.«Infer.infers_heq».trans HEq.rfl)))
+
+/-- The program's global of index 819 is the mirror's constants and environment after a
+declaration, at its type. -/
+theorem metalogic_declStep :
+    metalogic.globals[819]? =
+      some (⟨[tT, tList tT, tT].foldr tArrow tT, «Derivation.declStep»⟩ : Glob) :=
+  metalogic_g819.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step819).elim fun _ h ↦ infer_lams tT _ [tT, tList tT, tT] h)
+    (metalogic.«Derivation.declStep_heq».trans HEq.rfl)))
+
+/-! The tactics' functions of terms. -/
+
+-- the tactics' functions of terms are the program's globals of indices 1264 to 1307
+kernel_rfl metalogic_g1264 : metalogic.globals[1264]? = some metalogic.g1264
+kernel_rfl metalogic_g1269 : metalogic.globals[1269]? = some metalogic.g1269
+kernel_rfl metalogic_g1270 : metalogic.globals[1270]? = some metalogic.g1270
+kernel_rfl metalogic_g1273 : metalogic.globals[1273]? = some metalogic.g1273
+kernel_rfl metalogic_g1290 : metalogic.globals[1290]? = some metalogic.g1290
+kernel_rfl metalogic_g1292 : metalogic.globals[1292]? = some metalogic.g1292
+kernel_rfl metalogic_g1294 : metalogic.globals[1294]? = some metalogic.g1294
+kernel_rfl metalogic_g1298 : metalogic.globals[1298]? = some metalogic.g1298
+kernel_rfl metalogic_g1301 : metalogic.globals[1301]? = some metalogic.g1301
+kernel_rfl metalogic_g1307 : metalogic.globals[1307]? = some metalogic.g1307
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 1264 is the mirror's subterms of a term outside binders and
+folds' starts and steps, at its type. -/
+theorem metalogic_openSubterms :
+    metalogic.globals[1264]? =
+      some (⟨[tT].foldr tArrow (tList tT), «Tactics.openSubterms»⟩ : Glob) :=
+  metalogic_g1264.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1264).elim fun _ h ↦ infer_lams (tList tT) _ [tT] h)
+    (metalogic.«Tactics.openSubterms_heq».trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 1269 is the mirror's variable a weak normal form is stuck on, at
+its type. -/
+theorem metalogic_stuckVar :
+    metalogic.globals[1269]? =
+      some (⟨[tArrow tT tT, tT].foldr tArrow tT, «Tactics.stuckVar»⟩ : Glob) :=
+  metalogic_g1269.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1269).elim fun _ h ↦ infer_lams tT _ [tArrow tT tT, tT] h)
+    (metalogic.«Tactics.stuckVar_heq».trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 1270 is the mirror's test that a term mentions a variable, at
+its type. -/
+theorem metalogic_mentions :
+    metalogic.globals[1270]? = some (⟨[tT, tT].foldr tArrow tT, «Tactics.mentions»⟩ : Glob) :=
+  metalogic_g1270.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1270).elim fun _ h ↦ infer_lams tT _ [tT, tT] h)
+    (metalogic.«Tactics.mentions_heq».trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 1273 is the mirror's arguments at which the body of an
+abstraction matches the subterms of a term, at its type. -/
+theorem metalogic_matchesOf :
+    metalogic.globals[1273]? =
+      some (⟨[tT, tT, tT].foldr tArrow (tList (tList tT)), «Tactics.matchesOf»⟩ : Glob) :=
+  metalogic_g1273.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1273).elim fun _ h ↦
+      infer_lams (tList (tList tT)) _ [tT, tT, tT] h)
+    (metalogic.«Tactics.matchesOf_heq».trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 1290 is the mirror's type, test and branches of a conditional of
+the library, at its type. -/
+theorem metalogic_condParts :
+    metalogic.globals[1290]? = some (⟨[tT].foldr tArrow tT, «Tactics.condParts»⟩ : Glob) :=
+  metalogic_g1290.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1290).elim fun _ h ↦ infer_lams tT _ [tT] h)
+    (metalogic.«Tactics.condParts_heq».trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 1292 is the mirror's variable a weak normal form is stuck on,
+including the test of a folded conditional, at its type. -/
+theorem metalogic_stuckVarC :
+    metalogic.globals[1292]? =
+      some (⟨[tArrow tT tT, tT].foldr tArrow tT, «Tactics.stuckVarC»⟩ : Glob) :=
+  metalogic_g1292.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1292).elim fun _ h ↦ infer_lams tT _ [tArrow tT tT, tT] h)
+    (metalogic.«Tactics.stuckVarC_heq».trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 1294 is the mirror's applications of a definition to two
+arguments among a term's subterms, at its type. -/
+theorem metalogic_appsOf :
+    metalogic.globals[1294]? =
+      some (⟨[tT, tT].foldr tArrow (tList tT), «Tactics.appsOf»⟩ : Glob) :=
+  metalogic_g1294.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1294).elim fun _ h ↦ infer_lams (tList tT) _ [tT, tT] h)
+    (metalogic.«Tactics.appsOf_heq».trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 1298 is the mirror's unfolding of a tree term, at its type. -/
+theorem metalogic_unnodeU :
+    metalogic.globals[1298]? = some (⟨[tT].foldr tArrow tT, «Tactics.unnodeU»⟩ : Glob) :=
+  metalogic_g1298.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1298).elim fun _ h ↦ infer_lams tT _ [tT] h)
+    (metalogic.«Tactics.unnodeU_heq».trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 1301 is the mirror's rewriting of a term in which a tree rebuilt
+from the unfolding of a variable stands for the variable, back to the term, at its type. -/
+theorem metalogic_occRewrite :
+    metalogic.globals[1301]? =
+      some (⟨[tT, tT, tT, tT].foldr tArrow tT, «Tactics.occRewrite»⟩ : Glob) :=
+  metalogic_g1301.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1301).elim fun _ h ↦ infer_lams tT _ [tT, tT, tT, tT] h)
+    (metalogic.«Tactics.occRewrite_heq».trans HEq.rfl)))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 1307 is the mirror's abstraction of a term's occurrences of a
+term, at its type. -/
+theorem metalogic_abstractTerm :
+    metalogic.globals[1307]? =
+      some (⟨[tT, tT, tT].foldr tArrow tT, «Tactics.abstractTerm»⟩ : Glob) :=
+  metalogic_g1307.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1307).elim fun _ h ↦ infer_lams tT _ [tT, tT, tT] h)
+    (metalogic.«Tactics.abstractTerm_heq».trans HEq.rfl)))
 
 end GebTests.Prototypes.FreeTopos.Agreement.Load
 

@@ -67,10 +67,14 @@ combinator prover's other agreements).
 ## Main statements
 
 * {lit}`checkDev_agree` — the loaded checker written in Geb decides as the checker in Lean.
+* {lit}`checker_agree` — the loaded functions the checker is built from, the partial Horn checker
+  of the combinators' certificates, the theory, the inferences and the step of a development,
+  compute as Lean's.
 * {lit}`translation_agree` — the loaded translation written in Geb translates as the translation
   in Lean.
 * {lit}`prover_agree` — the loaded prover written in Geb proves as the prover in Lean.
 * {lit}`tactics_agree` — the loaded tactics written in Geb prove as the tactics in Lean.
+* {lit}`tacticTerms_agree` — the loaded tactics' functions of terms compute as Lean's.
 * {lit}`combinator_agree` — the loaded combinator prover written in Geb proves as the combinator
   prover in Lean.
 * {lit}`reader_inverse_agree` — the loaded printer and resolution written in Geb agree with
@@ -106,6 +110,52 @@ theorem checkDev_agree : ∃ G' : List Glob, load metalogic = some G' ∧
         f (encGlobals G) (E.toList.map encEntry) (ds.map encDecl) =
           encOpt ((Internal.checkDev G E ds).map encState) :=
   ⟨_, metalogic.load_globals, «Derivation.checkDev», metalogic_checkDev, checkDev_eq⟩
+
+/-- The functions the checker written in Geb is built from compute as Lean's: the program loads to
+globals among which are the sort of a term, the test of its scope, substitution, the partial Horn
+checker, the extension of a theory, the theory of an elementary topos, the environment of
+definitions, the inferences at a fuel and the step of a development, each a function of its type
+that, at encoded arguments, gives the encoding of what the Lean definition gives, or, for the
+checker and the inferences, a value related to it. -/
+theorem checker_agree : ∃ G' : List Glob, load metalogic = some G' ∧
+    (∃ f : Ty.den ([tList tT, tList tT, tT].foldr tArrow tT),
+      G'[44]? = some ⟨[tList tT, tList tT, tT].foldr tArrow tT, f⟩ ∧
+      ∀ (S : PartialHorn.Sig) (Γ : List ℕ) (t : Tree),
+        f (S.map encOpSig) (Γ.map leaf) t = encOpt ((PartialHorn.sortOf S Γ t).map leaf)) ∧
+    (∃ f : Ty.den ([tT, tT].foldr tArrow tT), G'[45]? = some ⟨[tT, tT].foldr tArrow tT, f⟩ ∧
+      ∀ (n : ℕ) (t : Tree), f (leaf n) t = ofBool (PartialHorn.Scoped n t)) ∧
+    (∃ f : Ty.den ([tList tT, tT].foldr tArrow tT),
+      G'[46]? = some ⟨[tList tT, tT].foldr tArrow tT, f⟩ ∧
+      ∀ (ts : List Tree) (t : Tree), f ts t = PartialHorn.subst ts t) ∧
+    (∃ f : Ty.den pcheckTy, G'[118]? = some ⟨pcheckTy, f⟩ ∧
+      ∀ (T : PartialHorn.Theory) (E : Array PartialHorn.Seq) (c : Tree),
+        PartialHorn.ChkRel (f (encTheory T) (E.toList.map encSeq) c) (PartialHorn.check T E c)) ∧
+    (∃ f : Ty.den ([tT, tList tT].foldr tArrow tT),
+      G'[160]? = some ⟨[tT, tList tT].foldr tArrow tT, f⟩ ∧
+      ∀ (T : PartialHorn.Theory) (ds : List PartialHorn.Defn),
+        f (encTheory T) (ds.map encDefn) = encTheory (T.extendAll ds)) ∧
+    (∃ f : Ty.den tT, G'[282]? = some ⟨tT, f⟩ ∧ f = encTheory theory) ∧
+    (∃ f : Ty.den listFnTy, G'[384]? = some ⟨listFnTy, f⟩ ∧
+      ∀ ds : List PartialHorn.Defn, f (ds.map encDefn) = encExtEnv (ExtEnv.ofDefs ds)) ∧
+    (∃ f : Ty.den infersTy, G'[431]? = some ⟨infersTy, f⟩ ∧
+      ∀ (E : ExtEnv) (Γ : List ℕ) (H : List PartialHorn.Eqn) (fuel : ℕ),
+        Infer.PatRel (f (encExtEnv E) (Γ.map leaf) (H.map encEqn) (leaf fuel)).1
+          (infers E Γ H fuel).1 ∧
+        Infer.TreeRel (f (encExtEnv E) (Γ.map leaf) (H.map encEqn) (leaf fuel)).2
+          (infers E Γ H fuel).2) ∧
+    (∃ f : Ty.den ([tT, tList tT, tT].foldr tArrow tT),
+      G'[819]? = some ⟨[tT, tList tT, tT].foldr tArrow tT, f⟩ ∧
+      ∀ (G : Internal.Globals) (E : Array Internal.Entry) (d : Internal.Decl),
+        f (encGlobals G) (E.toList.map encEntry) (encDecl d) =
+          encOpt ((d.step G E).map encState)) :=
+  ⟨_, metalogic.load_globals, ⟨_, metalogic_sortOf, PartialHorn.sortOf_eq⟩,
+    ⟨_, metalogic_scoped, PartialHorn.scoped_eq⟩, ⟨_, metalogic_phSubst, PartialHorn.phSubst_eq⟩,
+    ⟨_, metalogic_pcheck, PartialHorn.pcheck_eq⟩,
+    ⟨_, metalogic_thyExtendAll, PartialHorn.thyExtendAll_eq⟩,
+    ⟨_, metalogic_toposTheory, Theory.toposTheory_eq⟩,
+    ⟨_, metalogic_envOfDefs, Infer.envOfDefs_eq⟩,
+    ⟨_, metalogic_infers, fun E Γ H fuel ↦ Infer.infers_eq E Γ H fuel⟩,
+    ⟨_, metalogic_declStep, declStep_eq⟩⟩
 
 /-- The translation written in Geb translates as the translation in Lean: its program loads to
 globals among which are functions of their types that, at a program's definitions, at encoded
@@ -325,6 +375,54 @@ theorem tactics_agree : ∃ G' : List Glob, load metalogic = some G' ∧
     ⟨_, metalogic_byAutoT, byAutoT_eq⟩, ⟨_, metalogic_byAutoC, byAutoC_eq⟩,
     ⟨_, metalogic_maskRw, maskRw_eq⟩, ⟨_, metalogic_byMaskSubs, byMaskSubs_eq⟩,
     ⟨_, metalogic_byGeneralize, byGeneralize_eq⟩⟩
+
+/-- The tactics' functions of terms written in Geb compute as Lean's: the program loads to globals
+among which are the subterms of a term outside binders and folds' starts and steps, the variable a
+weak normal form is stuck on, with and without folded conditionals' tests, the test that a term
+mentions a variable, the matchings of an abstraction's body, the parts of a conditional, the
+applications of a definition, the unfolding of a tree, the rewriting back from a tree's unfolding
+and the abstraction of a term's occurrences, each a function of its type that, at encoded
+arguments and related predicates on variables, gives the encoding of what the Lean definition
+gives. -/
+theorem tacticTerms_agree : ∃ G' : List Glob, load metalogic = some G' ∧
+    (∃ f : Ty.den ([tT].foldr tArrow (tList tT)),
+      G'[1264]? = some ⟨[tT].foldr tArrow (tList tT), f⟩ ∧
+      ∀ t, f (encTerm t) = (Tactics.openSubterms t).map encTerm) ∧
+    (∃ f : Ty.den ([tArrow tT tT, tT].foldr tArrow tT),
+      G'[1269]? = some ⟨[tArrow tT tT, tT].foldr tArrow tT, f⟩ ∧
+      ∀ skip' skip, SkipRel skip' skip → ∀ t,
+        f skip' (encTerm t) = encOpt ((Tactics.stuckVar skip t).map leaf)) ∧
+    (∃ f : Ty.den ([tT, tT].foldr tArrow tT), G'[1270]? = some ⟨[tT, tT].foldr tArrow tT, f⟩ ∧
+      ∀ t i, f (encTerm t) (leaf i) = ofBool (Tactics.mentions t i)) ∧
+    (∃ f : Ty.den ([tT, tT, tT].foldr tArrow (tList (tList tT))),
+      G'[1273]? = some ⟨[tT, tT, tT].foldr tArrow (tList (tList tT)), f⟩ ∧
+      ∀ body k t,
+        f (encTerm body) (leaf k) (encTerm t) = (Tactics.matchesOf body k t).map (·.map encTerm)) ∧
+    (∃ f : Ty.den ([tT].foldr tArrow tT), G'[1290]? = some ⟨[tT].foldr tArrow tT, f⟩ ∧
+      ∀ w, f (encTerm w) = encOpt ((Tactics.condParts w).map encCond)) ∧
+    (∃ f : Ty.den ([tArrow tT tT, tT].foldr tArrow tT),
+      G'[1292]? = some ⟨[tArrow tT tT, tT].foldr tArrow tT, f⟩ ∧
+      ∀ skip' skip, SkipRel skip' skip → ∀ t,
+        f skip' (encTerm t) = encOpt ((Tactics.stuckVarC skip t).map leaf)) ∧
+    (∃ f : Ty.den ([tT, tT].foldr tArrow (tList tT)),
+      G'[1294]? = some ⟨[tT, tT].foldr tArrow (tList tT), f⟩ ∧
+      ∀ k t, f (leaf k) (encTerm t) = (Tactics.appsOf k t).map encTerm) ∧
+    (∃ f : Ty.den ([tT].foldr tArrow tT), G'[1298]? = some ⟨[tT].foldr tArrow tT, f⟩ ∧
+      ∀ t, f (encTerm t) = encTerm (Tactics.unnodeU t)) ∧
+    (∃ f : Ty.den ([tT, tT, tT, tT].foldr tArrow tT),
+      G'[1301]? = some ⟨[tT, tT, tT, tT].foldr tArrow tT, f⟩ ∧
+      ∀ lk i t d,
+        f (leaf lk) (leaf i) (encTerm t) (leaf d) = encDeriv (Tactics.occRewrite lk i t d)) ∧
+    (∃ f : Ty.den ([tT, tT, tT].foldr tArrow tT),
+      G'[1307]? = some ⟨[tT, tT, tT].foldr tArrow tT, f⟩ ∧
+      ∀ b x y, f b (encTerm x) (encTerm y) = encTerm (Tactics.abstractTerm b x y)) :=
+  ⟨_, metalogic.load_globals, ⟨_, metalogic_openSubterms, openSubterms_eq⟩,
+    ⟨_, metalogic_stuckVar, fun _ _ h t ↦ stuckVar_eq _ _ h t⟩,
+    ⟨_, metalogic_mentions, mentions_eq⟩, ⟨_, metalogic_matchesOf, matchesOf_eq⟩,
+    ⟨_, metalogic_condParts, condParts_eq⟩,
+    ⟨_, metalogic_stuckVarC, fun _ _ h t ↦ stuckVarC_eq _ _ h t⟩,
+    ⟨_, metalogic_appsOf, appsOf_eq⟩, ⟨_, metalogic_unnodeU, unnodeU_eq⟩,
+    ⟨_, metalogic_occRewrite, occRewrite_eq⟩, ⟨_, metalogic_abstractTerm, abstractTerm_eq⟩⟩
 
 set_option maxRecDepth 100000 in
 /-- The combinator prover written in Geb proves as the combinator prover in Lean: the program
