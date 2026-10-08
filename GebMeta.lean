@@ -309,11 +309,17 @@ lemmas of `Init.Data.Order.Lemmas`, which are proved with `classical`
 for an arbitrary total order. mathlib's `Fin.instLinearOrder` is built
 on the first four, so the order of `Fin n`, with every declaration
 over the walking arrow `Fin 2`, would otherwise depend on
+`Classical.choice`. Lean core's `String.toList` (`Init.Data.String.Basic`)
+decodes a string's UTF-8 bytes by `ByteArray.utf8Decode?`, defined in
+the same module; `Classical.choice` enters its closure only
+through the proofs of that decoder's bounds, which reach
+`Nat.testBit_two_pow_sub_succ` (`Init.Data.Nat.Bitwise.Lemmas`), so the
+name of a function given as a string literal would otherwise depend on
 `Classical.choice`. An entry is removed once the upstream proof is
 constructive. -/
 def upstreamChoiceRoots : NameSet :=
   NameSet.ofList [``Fin.instMin, ``Fin.instMax, ``Fin.val_min, ``Fin.val_max,
-    ``Fin.instLinearOrderPackage]
+    ``Fin.instLinearOrderPackage, ``String.toList]
 
 /-- Exact module names whose axioms are permitted in the loading mode
 `native`: the modules that declare the loading of a program whose

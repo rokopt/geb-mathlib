@@ -56,6 +56,7 @@ namespace GebTests.Prototypes.FreeTopos.GebCheckInternal
 
 open Geb Geb.PartialHorn Geb.FreeTopos GebTests.Prototypes.FreeTopos.GebCheck
   GebTests.Prototypes.FreeTopos.Agreement.Encode
+open scoped FinEnum
 
 /-- The language and the checker of derivations. -/
 def languageGeb : String := include_str "../../../bootstrap/free-topos/language.geb"
