@@ -58,7 +58,12 @@ jobs:
   build:
     name: Build / test / lint / shake
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # A build with no cache to restore compiles the test library in
+    # full, which takes longer than an hour; lean-action saves the cache
+    # only after its build step completes, so a limit below that time
+    # leaves every later run without a cache. 360 minutes is the limit
+    # GitHub-hosted runners allow.
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865  # v1
