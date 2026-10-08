@@ -15,14 +15,15 @@ set_option doc.verso true in
 Interpreting all variables in the singleton type supplies a well-founded tree for
 recursion on scoped terms, even though each child extends its parent's context.
 The binding-signature operator is the arbitrary-arity version of the operator in
-{cite}`FiorePlotkinTuri1999`, Section 2. Its definition is independent of scoped terms:
-{lit}`H(M)(Γ) = Γ ⊕ Σ a, Π b, M(Γ ⊕ C(a,b))`, where {lit}`C(a,b) = (P.B a).B b`.
-The free-monad/end construction realizes its initial algebra.
+{cite}`FiorePlotkinTuri1999`, Section 2. The context-extension construction
+{name}`Geb.PHOAS.PProfunctor.BindingNode` gives
+{lit}`H(M)(Γ) = Σ a, Π b, M(Γ ⊕ C(a,b))`, where
+{lit}`C(a,b) = (P.B a).B b`. The free-monad/end construction realizes the initial
+algebra of {lit}`Id + H`, namely {name}`Geb.PHOAS.PProfunctor.BindingLayer`.
 
 ## Main definitions
 
 * {lit}`Scoped.recOn` eliminates scoped terms by variables and binding operations.
-* {lit}`BindingLayer` specifies one layer in an arbitrary family of contexts.
 * {lit}`Scoped.fold` interprets scoped terms in any such family with constructors.
 
 ## Main statements
@@ -62,10 +63,6 @@ open PFunctor
 universe uA uB u v w
 
 variable {P : PProfunctor.{uA, uB, u}}
-
-/-- The binding-signature operator on families, with a summand of context variables. -/
-abbrev BindingLayer (P : PProfunctor.{uA, uB, u}) (M : Type u → Type v) (Γ : Type u) :=
-  Γ ⊕ ((a : P.A) × ((b : (P.B a).A) → M (Γ ⊕ (P.B a).B b)))
 
 namespace Scoped
 

@@ -22,6 +22,10 @@ and, at each inner position, either a context variable or a bound variable.
 The pointwise free monad cannot in general replace a scoped family: for the signature
 consisting only of unary abstraction, the empty diagonal of the free monad is a
 singleton, whereas closed scoped terms distinguish one abstraction from two.
+Writing {lit}`H` for the context-extension node operator {lit}`BindingNode`, the one-layer
+representation is {lit}`ScopedObj Γ ≃ H(Id)(Γ)`. For full expressions,
+{lit}`Scoped.equivTerm` in {lit}`PHOAS.Term` gives a tree representation of the existing
+{lit}`Scoped` family, which already targets the pointwise free monad.
 
 ## Main definitions
 
@@ -122,7 +126,7 @@ def ofChoices (a : P.A) (k : (b : (P.B a).A) → Γ ⊕ (P.B a).B b) : P.ScopedO
 
 /-- Paranatural families into a polynomial signature are operations whose continuations
 select context or bound variables. -/
-def equiv : P.ScopedObj Γ ≃ ((a : P.A) × ((b : (P.B a).A) → Γ ⊕ (P.B a).B b)) where
+def equiv : P.ScopedObj Γ ≃ P.BindingNode id Γ where
   toFun t := ⟨(t.val Γ id).fst, t.choices⟩
   invFun n := ofChoices n.1 n.2
   left_inv t := by

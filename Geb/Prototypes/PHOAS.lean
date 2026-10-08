@@ -6,9 +6,11 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.PHOAS.Basic
+public import Geb.Prototypes.PHOAS.Binding
 public import Geb.Prototypes.PHOAS.Scoped
 public import Geb.Prototypes.PHOAS.Initial
 public import Geb.Prototypes.PHOAS.Paranatural
+public import Geb.Prototypes.PHOAS.Term
 public import Geb.Prototypes.PHOAS.Algebra
 public import Geb.Prototypes.PHOAS.Category
 public import Geb.Prototypes.PHOAS.Kmett
@@ -23,6 +25,9 @@ Polynomial directions, their pointwise free monads, and ends of compatible famil
 The end is the empty-context component of scoped syntax. The whole scoped family is the
 initial algebra of the binding-signature endofunctor on functors of contexts, with
 structural recursion, unique folds, and fold fusion.
+The one-layer paranatural representation is the context-extension node operator at
+the identity family. Full scoped expressions are equivalent to operation trees with
+variables in extended leaf contexts, providing constructors without compatibility proofs.
 Kmett's signature has no diagonal fixed point, no initial derived algebra, and no terminal
 derived coalgebra. Distinct positions rule out initial and terminal diagonal elements of
 the original profunctor, and the diagonal family of pointwise cofree carriers is empty.
