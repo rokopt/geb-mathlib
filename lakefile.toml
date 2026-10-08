@@ -47,12 +47,12 @@ weak.linter.style.header = true
 [[require]]
 name = "verso"
 scope = "leanprover"
-rev = "v4.35.0-rc3"
+rev = "v4.35.0-rc4"
 
 [[require]]
 name = "cslib"
 scope = "leanprover"
-rev = "v4.35.0-rc3"
+rev = "v4.35.0-rc4"
 
 # Canonical, a solver for type inhabitation (the Bootstrap chapter of the
 # manual, § Search and synthesis), for experiments only: no module of `Geb`, `GebLang` or
@@ -72,7 +72,7 @@ rev = "v4.34.0"
 [[require]]
 name = "doc-gen4"
 git = "https://github.com/leanprover/doc-gen4.git"
-rev = "v4.35.0-rc3"
+rev = "v4.35.0-rc4"
 
 # Declared last so mathlib's transitive dependency pins
 # (plausible, importGraph) take precedence over other requires';
@@ -82,7 +82,7 @@ rev = "v4.35.0-rc3"
 [[require]]
 name = "mathlib"
 git = "https://github.com/leanprover-community/mathlib4.git"
-rev = "v4.35.0-rc3"
+rev = "v4.35.0-rc4"
 
 [[lean_lib]]
 name = "Geb"

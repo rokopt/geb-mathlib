@@ -7,6 +7,7 @@ module
 
 public import GebMirror.Kernel
 public import Geb.Prototypes.Kernel.Subst
+public import Batteries.Tactic.SeqFocus
 
 set_option doc.verso true in
 /-!
