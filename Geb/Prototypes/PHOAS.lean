@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.PHOAS.Basic
 public import Geb.Prototypes.PHOAS.Scoped
 public import Geb.Prototypes.PHOAS.Initial
+public import Geb.Prototypes.PHOAS.Paranatural
 public import Geb.Prototypes.PHOAS.Algebra
 public import Geb.Prototypes.PHOAS.Category
 public import Geb.Prototypes.PHOAS.Kmett
