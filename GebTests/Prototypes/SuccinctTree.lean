@@ -19,17 +19,15 @@ set_option doc.verso true in
 # Executed storage experiments
 
 These checks cover malformed parentheses, word boundaries, independently scanned
-blocks, and the repository's worked Elias encodings. The benchmark evaluates the
-existing native scanner and shared algebra interpretation in Lean's interpreter.
-Routine elaboration uses small payloads; {lit}`benchmarkRecognition` accepts a
-list of payload lengths for explicit larger measurements.
-Its timings are diagnostic, not compiled-C or end-to-end typechecking measurements.
-The syntax experiment uses the repository's rose-tree parser and printer, including
-the one-child orientation exercised by its concrete-syntax examples.
+blocks, the repository's worked Elias encodings, the native scanner's and the shared
+algebra's acceptance of them, and the rose-tree parser's inversion of the printer on
+deep and wide trees, including the one-child orientation exercised by its
+concrete-syntax examples. The recognizers and the syntax are timed by
+{lit}`GebBench.Prototypes.SuccinctTree`.
 
 ## Tags
 
-balanced parentheses, differential test, benchmark, Elias code
+balanced parentheses, differential test, Elias code
 -/
 
 set_option doc.verso true
@@ -48,43 +46,16 @@ example (a b : ℕ) : summarize (bitSteps (wordBits 8 a ++ wordBits 8 b)) =
     (wordSummary 8 a).append (wordSummary 8 b) := by
   simp [bitSteps, wordSummary, summarize_append]
 
-/-- Evaluate and time one recognizer; the input is prepared before the timer starts. -/
-def timeRecognition (label : String) (recognize : List Bool → Bool) (w : List Bool) : IO Unit := do
-  let start ← IO.monoNanosNow
-  let accepted := recognize w
-  if !accepted then throw (IO.userError s!"{label}: expected a valid encoding")
-  let stop ← IO.monoNanosNow
-  IO.println s!"{label},{w.length},{stop - start}"
+-- both recognizers accept the Elias encodings of payloads of lengths zero and one
+#guard [0, 1].all fun payload ↦
+  let w := Geb.BitTree.Elias.encode (Geb.BitTree.leaf (List.replicate payload true))
+  Geb.BitTree.Elias.Scanner.validBool w &&
+    !(Geb.SizeBounded.Logspace.EliasTree.isEliasTree.1.semVec ![w]).isEmpty
 
-/-- Compare the native scanner with the shared expression interpreter at the
-given payload lengths. -/
-def benchmarkRecognition (payloads : List ℕ) : IO Unit := do
-  IO.println "implementation,input_bits,nanoseconds"
-  for payload in payloads do
-    let w := Geb.BitTree.Elias.encode (Geb.BitTree.leaf (List.replicate payload true))
-    timeRecognition "native-scanner" Geb.BitTree.Elias.Scanner.validBool w
-    timeRecognition "shared-algebra" (fun w ↦
-      !(Geb.SizeBounded.Logspace.EliasTree.isEliasTree.1.semVec ![w]).isEmpty) w
-
-#eval benchmarkRecognition [0, 1]
-
-/-- Time parsing and exact comparison of the existing rose syntax, with printing excluded. -/
-def timeSyntax (label : String) (tree : Geb.Rose 3) : IO Unit := do
-  let input := Geb.Rose.print tree
-  let start ← IO.monoNanosNow
-  if Geb.Rose.parse 3 input != some tree then
-    throw (IO.userError s!"{label}: parse/print disagreement")
-  let stop ← IO.monoNanosNow
-  IO.println s!"{label},{input.length},{stop - start}"
-
-/-- Exercise deep and wide syntax trees using the existing parser, printer, and equality. -/
-def benchmarkSyntax : IO Unit := do
-  IO.println "syntax_shape,input_characters,parse_and_equality_nanoseconds"
-  for n in [16, 64, 256] do
-    let tip : Geb.Rose 3 := Geb.Rose.node 2 Fin.elim0
-    let chain := n.rec tip (fun _ t ↦ Geb.Rose.node 1 ![t])
-    let wide : Geb.Rose 3 := Geb.Rose.node 0 (fun _ : Fin n ↦ tip)
-    timeSyntax s!"chain-{n}" chain
-    timeSyntax s!"wide-{n}" wide
-
-#eval benchmarkSyntax
+-- the rose syntax parses what it prints, at chains and fans of 16, 64 and 256 nodes
+#guard [16, 64, 256].all fun n ↦
+  let tip : Geb.Rose 3 := Geb.Rose.node 2 Fin.elim0
+  let chain := n.rec tip (fun _ t ↦ Geb.Rose.node 1 ![t])
+  let wide : Geb.Rose 3 := Geb.Rose.node 0 (fun _ : Fin n ↦ tip)
+  Geb.Rose.parse 3 (Geb.Rose.print chain) == some chain &&
+    Geb.Rose.parse 3 (Geb.Rose.print wide) == some wide

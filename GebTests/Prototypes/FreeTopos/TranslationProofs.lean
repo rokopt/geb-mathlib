@@ -26,9 +26,8 @@ bitstrings' addition, which the development proves first by induction on the bit
 analysis of their bits and, for the functions of the first summand, extensionality; the kernel's
 type checker at a quoted tree and a program by structural recursion by normalization, weak head
 normal forms first, rewriting by Lambek's lemma, which follows from two lemmas on lists by the
-uniqueness of the rose tree's fold. Each development checks, and the report prints, for each file,
-the nodes of the language's derivations of its theorems, the bit steps among them, and the time
-the checker takes, and the same for the lemmas proved before the theorems.
+uniqueness of the rose tree's fold. Each development checks; the time the checker takes is
+measured by {lit}`GebBench.Prototypes.FreeTopos.TranslationProofs`.
 
 ## Main definitions
 
@@ -37,11 +36,11 @@ the checker takes, and the same for the lemmas proved before the theorems.
 * {lit}`treeLemmas` — the fold of a list by construction, the fusion of the rebuilding of trees
   with their unfolding, and Lambek's lemma.
 * {lit}`preludeDev`, {lit}`natDev`, {lit}`checkDev`, {lit}`treeDev` — the developments.
-* {lit}`reports` — the measurement.
+* {lit}`checks` — whether a file's development checks.
 
 ## Tags
 
-internal language, Gödel's T, translation, measurement, test
+internal language, Gödel's T, translation, test
 -/
 
 set_option doc.verso true
@@ -139,16 +138,6 @@ def results (bundler : List Char) (files : List (List Char × ℕ)) :
     pure (theoremsOf (← Kernel.unbundle b) k)
 
 open Internal (Term Deriv Decl Entry NormRule Rule)
-
-/-- The terms a rule names. -/
-def ruleTerms : Rule → List Term
-  | .thm _ _ σ _ | .apply _ _ σ => σ
-  | .natInd _ _ s | .listInd _ _ s | .roseInd _ _ _ s => [s]
-  | .cut φ | .convFrom φ => [φ]
-  | _ => []
-
-/-- The number of nodes of a derivation, the terms its rules name counted. -/
-def derivSize : Deriv → ℕ := RoseTree.elim fun l rs ↦ 1 + rs.sum + ((ruleTerms l).map sizeM).sum
 
 /-- The unfolding of every definition below an index. -/
 def deltas (m : ℕ) : List NormRule := (List.range m).map NormRule.delta
@@ -268,19 +257,6 @@ def natDev (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (L
       (normH G E ([.thm 3 [], .thm 6 []] ++ baseRules ++ deltasExcept m [D.add, D.succ]))),
     (t₂, fun E ↦ side t₂ (normH G E (.thm 4 [] :: baseRules ++ deltasExcept m [D.add])))]
 
-/-- The least time, over three evaluations, to evaluate a Boolean, in microseconds, with its
-value. -/
-def timeUs (f : Unit → Bool) : IO (Bool × ℕ) := do
-  let mut best := 0
-  let mut b := false
-  for i in [0, 1, 2] do
-    let t₀ ← IO.monoNanosNow
-    b ← IO.lazyPure fun _ ↦ f ()
-    let t₁ ← IO.monoNanosNow
-    let d := (t₁ - t₀) / 1000
-    if i = 0 ∨ d < best then best := d
-  pure (b, best)
-
 /-- The fold of a list of trees by construction is the list. -/
 def mapId : Internal.Thm :=
   ⟨0, [list treeTy], [], Term.eq (Term.listRec (nilT treeTy)
@@ -329,51 +305,23 @@ def treeDev (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (
   develop (treeLemmas G ++
     ts.map fun t ↦ (t, normW G (.thm 2 [] :: baseRules ++ deltas m) 4096 t))
 
-/-- The bit steps of a derivation: the case analyses of bits, which only the arithmetic of the
-labels performs. -/
-def bitSteps : Deriv → ℕ := RoseTree.elim fun l rs ↦
-  (match l with | .caseInl _ _ | .caseInr _ _ => 1 | _ => 0) + rs.sum
-
-/-- The report of a file, printed, and an error when a development does not check: the nodes of the
-language's derivations of the file's theorems, the bit steps among them, and the least of three
-times the checker takes, in microseconds; and a row of the same for the lemmas the development
-proves before the theorems; the file's name alone where no development is computed. -/
-def report (name : String) (D : List Tree) (ts : List GoedelT.Thm)
-    (dev : Internal.Globals → ℕ → List Internal.Thm → Option (List Decl)) : IO Unit := do
+/-- Whether a file's development checks, the lemmas it proves first and its theorems, where it
+computes one. -/
+def checks (D : List Tree) (ts : List GoedelT.Thm)
+    (dev : Internal.Globals → ℕ → List Internal.Thm → Option (List Decl)) : Bool :=
   match translate D ts with
-  | none => throw (IO.userError s!"{name}: no translation")
+  | none => false
   | some (G, m, ts) => match dev G m ts with
-    | none => IO.println s!"{name},no development"
-    | some ds => do
-      let k := ds.length - ts.length
-      let (okA, tA) ← timeUs fun _ ↦ Internal.checkThms G (ds.take k) #[]
-      let some (G₁, E₁) := Internal.checkDev G #[] (ds.take k)
-        | throw (IO.userError s!"{name}: the lemmas do not check")
-      let (okL, tL) ← timeUs fun _ ↦ Internal.checkThms G₁ (ds.drop k) E₁
-      if !(okA && okL) then throw (IO.userError s!"{name}: a development does not check")
-      let dvs (l : List Decl) : List Deriv :=
-        l.filterMap fun | Decl.language _ d => some d | _ => none
-      let row (xs : List ℕ) : String := ",".intercalate (xs.map toString)
-      if k > 0 then
-        IO.println (name ++ "-lemmas," ++ row [((dvs (ds.take k)).map derivSize).sum,
-          ((dvs (ds.take k)).map bitSteps).sum, tA])
-      IO.println (name ++ "," ++ row [((dvs (ds.drop k)).map derivSize).sum,
-        ((dvs (ds.drop k)).map bitSteps).sum, tL])
+    | none => true
+    | some ds => Internal.checkThms G ds #[]
 
-/-- The reports of the files, the prelude's development both by innermost normalization and weak
-head normal forms first. -/
-def reports (rs : Option (List (List Tree × List GoedelT.Thm))) : IO Unit := do
-  match rs with
-  | some [(D₀, t₀), (D₁, t₁), (D₂, t₂), (D₃, t₃)] => do
-    IO.println "file,language_nodes,bit_steps,language_microseconds"
-    report "prelude" D₀ t₀ preludeDev
-    report "prelude-whnf" D₀ t₀ preludeDevW
-    report "nat" D₁ t₁ natDev
-    report "check" D₂ t₂ checkDev
-    report "datatype" D₃ t₃ treeDev
-  | _ => throw (IO.userError "the files do not read")
-
-#eval reports (results Kernel.Stage0Tests.bundler.toList (files.map fun (t, k) ↦ (t.toList, k)))
+-- each file's development checks, the prelude's both by innermost normalization and through weak
+-- head normal forms
+#guard match results Kernel.Stage0Tests.bundler.toList (files.map fun (t, k) ↦ (t.toList, k)) with
+  | some [(D₀, t₀), (D₁, t₁), (D₂, t₂), (D₃, t₃)] =>
+    checks D₀ t₀ preludeDev && checks D₀ t₀ preludeDevW && checks D₁ t₁ natDev &&
+      checks D₂ t₂ checkDev && checks D₃ t₃ treeDev
+  | _ => false
 
 end GebTests.Prototypes.FreeTopos.TranslationProofs
 

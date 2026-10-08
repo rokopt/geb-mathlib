@@ -15,6 +15,7 @@ paths:
 - [Literate site build](#literate-site-build)
 - [Loading modes](#loading-modes)
 - [Certificates](#certificates)
+- [Benchmarks](#benchmarks)
 - [Action pinning policy](#action-pinning-policy)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -288,6 +289,22 @@ committed ones. A change to a development's proofs, or to a program it is
 about, is followed by `regen`. `slow-checks.yml` runs `check` daily and on
 demand; the pre-push checklist and the other workflows check the committed
 certificates and do not search.
+
+## Benchmarks
+
+Measurements of the prototypes' programs are the modules of the library
+`GebBench`, run by `lake exe geb-bench`, each printing a table of its
+timings; they are not tests, and neither `lake build` nor `lake test`
+builds them. Lake has no command of its own for benchmarks, and an
+executable runs its measurements anew each time, where a module's
+elaboration is cached and replays the timings of the run that built it.
+The executable is compiled, and each benchmark's measured computations
+are not extracted as closed terms, so that they run when they are timed
+rather than when the program starts. `slow-checks.yml` runs the
+benchmarks daily and on demand, beside the other slow checks, and the
+correctness facts a benchmark observes are checked by the tests.
+`scripts/bench-bootstrap.sh` times the bootstrap's compilers, and
+compares two builds, on demand.
 
 ## Action pinning policy
 

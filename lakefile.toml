@@ -238,6 +238,11 @@ moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 [lean_lib.moreServerOptions]
 weak.linter.hashCommand = false
 
+# The benchmarks, run by `lake exe geb-bench` and by slow-checks.yml, and built by neither
+# `lake build` nor `lake test`.
+[[lean_lib]]
+name = "GebBench"
+
 # The developments of the internal language, each read from its certificate.
 [[lean_lib]]
 name = "GebTestsCertified"
@@ -375,6 +380,10 @@ root = "GebFmtMain"
 [[lean_exe]]
 name = "geb-certify"
 root = "GebCertifyMain"
+
+[[lean_exe]]
+name = "geb-bench"
+root = "GebBenchMain"
 
 [[lean_exe]]
 name = "geb-manual"
