@@ -62,6 +62,17 @@ theorem foldl_loadStep_cons {D : List Tree} {t : Tree} {G G' : List Glob} {g : G
     (t :: D).foldl loadStep (some G) = some G' := by
   rw [List.foldl_cons, h, h']
 
+/-- Globals with one more appended, followed by a list, are the globals followed by that one and
+the list. -/
+theorem snoc_append {G S T : List Glob} {g : Glob} (h : G ++ g :: S = T) : snoc G g ++ S = T := by
+  rw [snoc, List.append_assoc]
+  exact h
+
+/-- A program that loads to globals loads to a list they are equal to, followed by nothing. -/
+theorem load_eq_of_append_nil {D : List Tree} {G G' : List Glob} (h : load D = some G)
+    (h' : G ++ [] = G') : load D = some G' := by
+  rw [h, ← h', List.append_nil]
+
 /-- A definition that loads after globals has, in them, a meaning at the type of the global it
 appends. -/
 theorem infer_of_loadStep {G : List Glob} {t : Tree} {g : Glob}

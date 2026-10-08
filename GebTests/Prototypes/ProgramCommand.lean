@@ -117,15 +117,27 @@ syntax (name := gebProgram)
       (eqOf (optOf (listOf globT)) (mkApp (mkConst ``Kernel.load) (mkConst n))
         (some' (listOf globT) final))
       chain
-    -- the last list of globals, built by appending, which the kernel unfolds once here, rather
-    -- than at every lookup of an entry
+    -- the globals listed one by one, so that the kernel reaches an entry without unfolding the
+    -- appends that build the last list of them; the suffixes of the list, each the tail of the one
+    -- before, are shared by the list and by the proof below
+    let nilG := mkApp (mkConst ``List.nil [0]) globT
+    let suffixes := (List.range count).foldr (fun k acc ↦
+        mkApp3 (mkConst ``List.cons [0]) globT (mkConst (nm "g" k)) (acc.headD nilG) :: acc)
+      [nilG]
     let globals := n ++ `globals
-    defn globals "The program's globals, listed one by one." (listOf globT)
-      (listExpr globT ((List.range count).map fun k ↦ mkConst (nm "g" k)))
+    defn globals "The program's globals, listed one by one." (listOf globT) (suffixes.headD nilG)
+    -- the globals before each definition, followed by the suffix from it, are the list, by one
+    -- associativity of appending for each definition rather than by the kernel's unfolding of the
+    -- appends, whose cost is quadratic in the number of definitions
+    let append := (List.range count).foldl (fun acc k ↦
+        mkAppN (mkConst ``snoc_append) #[mkConst (nm "pre" k), suffixes.getD (k + 1) nilG,
+          mkConst globals, mkConst (nm "g" k), acc])
+      (mkApp2 (mkConst ``Eq.refl [1]) (listOf globT) (mkConst globals))
     thm (n ++ `load_globals) "The program loads to its globals, listed one by one."
       (eqOf (optOf (listOf globT)) (mkApp (mkConst ``Kernel.load) (mkConst n))
         (some' (listOf globT) (mkConst globals)))
-      (mkConst (n ++ `load_eq))
+      (mkAppN (mkConst ``load_eq_of_append_nil)
+        #[mkConst n, final, mkConst globals, mkConst (n ++ `load_eq), append])
     -- the global of the definition of index k is its mirror, cast along the equation of their
     -- types, stated without elaborating the global's type, whose reduction evaluates the checker
     let heq (k : ℕ) (thmName : Name) (doc : String) : CoreM Unit := do

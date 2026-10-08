@@ -37,8 +37,8 @@ the step of a development, with the tactics' functions of terms. Each
 type is read from the definition, whose abstractions carry their types and whose body the front end
 applies the identity at the result type to, by inverting the checker-evaluator: for the tactics,
 the combinator prover, the printer and the checker's functions, by one lemma over the list of the
-abstractions' annotations, {lit}`infer_lams`. The library and the theory, definitions without a
-declared result type, have the type the checker-evaluator infers, which the kernel evaluates.
+abstractions' annotations, {lit}`infer_lams`. The theory, a definition without a declared result
+type, has the type the checker-evaluator infers, which the kernel evaluates.
 
 ## Main definitions
 
@@ -1080,6 +1080,7 @@ kernel_rfl metalogic_g1654 : metalogic.globals[1654]? = some metalogic.g1654
 kernel_rfl metalogic_g1659 : metalogic.globals[1659]? = some metalogic.g1659
 kernel_rfl metalogic_g1660 : metalogic.globals[1660]? = some metalogic.g1660
 kernel_rfl metalogic_g1661 : metalogic.globals[1661]? = some metalogic.g1661
+kernel_rfl metalogic_g1686 : metalogic.globals[1686]? = some metalogic.g1686
 kernel_rfl metalogic_g1687 : metalogic.globals[1687]? = some metalogic.g1687
 
 set_option maxRecDepth 100000 in
@@ -1201,12 +1202,21 @@ theorem metalogic_byListParamInduction :
       infer_lams pmTy _ [tList tT, tT, tT, tT, tT] h)
     (metalogic.«Combinator.byListParamInduction_heq».trans HEq.rfl)))
 
--- The program's global of index 1686 is the mirror's library of derived equations and its
--- development, at its type, checked by the kernel: elaborating the global's equality with its
--- mirror makes the elaborator evaluate the checker-evaluator on the definition.
+/-- A global is the pair of a type and a value when its type is that type and its value is
+heterogeneously equal to that value. The value is an argument, rather than the second projection
+of a pair, so that elaboration assigns it rather than unfolding it. -/
+theorem glob_eq_mk {g : Glob} {T : Tree} {x : Ty.den T} (hT : g.1 = T) (hx : HEq g.2 x) :
+    g = ⟨T, x⟩ :=
+  Sigma.ext hT hx
+
 set_option maxRecDepth 100000 in
-kernel_rfl metalogic_libraryWith :
-    metalogic.globals[1686]? = some (⟨treeFnTy, «Combinator.libraryWith»⟩ : Glob)
+/-- The program's global of index 1686 is the mirror's library of derived equations and its
+development, at its type. -/
+theorem metalogic_libraryWith :
+    metalogic.globals[1686]? = some (⟨treeFnTy, «Combinator.libraryWith»⟩ : Glob) :=
+  metalogic_g1686.trans (congrArg some (glob_eq_mk
+    ((infer_of_loadStep metalogic.step1686).elim fun _ h ↦ infer_lams tT _ [tT] h)
+    metalogic.«Combinator.libraryWith_heq»))
 
 set_option maxRecDepth 100000 in
 /-- The program's global of index 1687 is the mirror's rules of the axioms and of the library's
