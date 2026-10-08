@@ -9,27 +9,32 @@ public import Geb.Prototypes.FreeTopos.Internal.Derivation -- shake: keep
 
 set_option doc.verso true in
 /-!
-# Stored theorems
+# Stored developments
 
-The encoding of a theorem of the internal language as a list of natural numbers, in which a
-development checked in one module is carried to the modules that import it
-({lit}`StoredDevelopments`), so that an importing module proves its own theorems from the stored
-ones and checks only its own, and a development is checked once along the chain of modules.
+The encoding of a development of the internal language, the declarations of its theorems with
+their derivations, as text, in which a certificate of {lit}`bootstrap/certificates/` stores a
+development ({lit}`GebTests.Prototypes.FreeTopos.StoredWriter`), to be read and checked
+({lit}`GebTests.Prototypes.FreeTopos.Certified`).
 
-A tree and a term are functions of their children's positions, which an environment cannot
-store, so a theorem is stored as a list of natural numbers: a tree as its nodes in postorder,
-each its label and its number of children; a term likewise, each node's label as the index of
-its kind followed by its data, a tree among them as the length of its list followed by the list.
-Reading a list back runs a stack of the trees or terms read so far, one node at a time, for as
-many steps as the list is long.
+A development is first a tree of natural numbers: a term's node is its label's kind over the trees
+of the label's data and the node's children, a derivation's node its rule's position over the
+trees of the rule's data and the node's children, a number a leaf, and a list the node of its
+elements. A derivation repeats its terms many times over, so the tree is stored as the table of
+its distinct nodes, each its label and its children's indices, in an order in which a node follows
+its children; reading the table back builds each node once, its children shared. The table is
+written as its numbers in decimal, separated by spaces, by
+{lit}`GebTests.Prototypes.FreeTopos.StoredWriter`, which finds the distinct nodes.
 
 ## Main definitions
 
-* {lit}`thmToNats`, {lit}`thmOfNats` — a theorem as a list of natural numbers, and back.
+* {lit}`termTree`, {lit}`derivTree`, {lit}`declsTree` — terms, derivations and declarations as
+  trees, and {lit}`termOfTree`, {lit}`derivOfTree`, {lit}`declsOfTree` back.
+* {lit}`treeOfNats` — the tree the table of its distinct nodes stores.
+* {lit}`natsOfText`, {lit}`declsOfText` — the numbers and the declarations a text stores.
 
 ## Tags
 
-internal language, development, serialization, test
+internal language, development, serialization, hash-consing, certificate, test
 -/
 
 set_option doc.verso true
@@ -39,133 +44,235 @@ set_option doc.verso true
 namespace GebTests.Prototypes.FreeTopos.Stored
 
 open Geb Geb.FreeTopos
-open Internal (Term Label Thm)
+open Internal (Term Label Thm Rule Deriv Decl)
 open PartialHorn (Tree)
 
-/-! Trees and terms as lists of natural numbers. -/
+/-! Developments as trees. -/
 
-/-- A tree's nodes in postorder, each its label and its number of children. -/
-def treeToNats : Tree → List ℕ := RoseTree.para fun l cs ↦ cs.flatMap (·.2) ++ [l, cs.length]
+/-- The leaf of a number. -/
+def leafN (n : ℕ) : Tree := RoseTree.node n []
 
-/-- A list prefixed by its length. -/
-def withLength (ns : List ℕ) : List ℕ := ns.length :: ns
+/-- The node of a list of trees. -/
+def listT (ts : List Tree) : Tree := RoseTree.node 0 ts
 
-/-- The kind of a term's label, followed by its data. -/
-def labelToNats : Label → List ℕ
-  | .var i => [0, i]
-  | .star => [1]
-  | .pair => [2]
-  | .fst => [3]
-  | .snd => [4]
-  | .lam a => 5 :: withLength (treeToNats a)
-  | .app => [6]
-  | .arr k θ => [7, k, θ.length] ++ θ.flatMap (withLength ∘ treeToNats)
-  | .natRec => [8]
-  | .listRec => [9]
-  | .roseRec c => 10 :: withLength (treeToNats c)
-  | .defn k θ => [11, k, θ.length] ++ θ.flatMap (withLength ∘ treeToNats)
-  | .eq => [12]
+/-- A label's kind and its data, as trees. -/
+def labelData : Label → ℕ × List Tree
+  | .var i => (0, [leafN i])
+  | .star => (1, [])
+  | .pair => (2, [])
+  | .fst => (3, [])
+  | .snd => (4, [])
+  | .lam a => (5, [a])
+  | .app => (6, [])
+  | .arr k θ => (7, [leafN k, listT θ])
+  | .natRec => (8, [])
+  | .listRec => (9, [])
+  | .roseRec c => (10, [c])
+  | .defn k θ => (11, [leafN k, listT θ])
+  | .eq => (12, [])
 
-/-- A term's nodes in postorder, each its label's kind and data and its number of children. -/
-def termToNats : Term → List ℕ :=
-  RoseTree.para fun l cs ↦ cs.flatMap (·.2) ++ labelToNats l ++ [cs.length]
+/-- The label of a kind, read off the trees of its data: the label and the trees after them. -/
+def labelOf (k : ℕ) (ts : List Tree) : Option (Label × List Tree) := match k, ts with
+  | 0, i :: rest => some (.var i.label, rest)
+  | 1, rest => some (.star, rest)
+  | 2, rest => some (.pair, rest)
+  | 3, rest => some (.fst, rest)
+  | 4, rest => some (.snd, rest)
+  | 5, a :: rest => some (.lam a, rest)
+  | 6, rest => some (.app, rest)
+  | 7, k :: θ :: rest => some (.arr k.label θ.children, rest)
+  | 8, rest => some (.natRec, rest)
+  | 9, rest => some (.listRec, rest)
+  | 10, c :: rest => some (.roseRec c, rest)
+  | 11, k :: θ :: rest => some (.defn k.label θ.children, rest)
+  | 12, rest => some (.eq, rest)
+  | _, _ => none
 
-/-- The node of a label over the last {lit}`n` elements of a stack, the topmost last. -/
-def pushNode {α : Type} (l : α) (n : ℕ) (stack : List (RoseTree α)) :
-    Option (List (RoseTree α)) :=
-  if n ≤ stack.length then
-    some (RoseTree.node l (stack.take n).reverse :: stack.drop n)
-  else none
+/-- A term as a tree: each node its label's kind over the trees of the label's data and the
+node's children. -/
+def termTree : Term → Tree :=
+  RoseTree.elim fun l cs ↦ let (k, ds) := labelData l; RoseTree.node k (ds ++ cs)
 
-/-- The trees a list of nodes in postorder builds, the last built first. -/
-def treesOfNats (ns : List ℕ) : Option (List Tree) :=
-  (Nat.rec (motive := fun _ ↦ List ℕ × List Tree → Option (List Tree))
-    (fun _ ↦ some []) (fun _ rec st ↦ match st.1 with
-      | [] => some st.2
-      | l :: n :: rest => do rec (rest, ← pushNode l n st.2)
-      | [_] => none) ns.length) (ns, [])
+/-- The children's values after the trees of a node's data, where the data leave {lit}`rest`. -/
+def after {β : Type} (cs : List (Tree × β)) (rest : List Tree) : List β :=
+  (cs.drop (cs.length - rest.length)).map (·.2)
 
-/-- The tree a list of nodes in postorder builds, where it builds one. -/
-def treeOfNats (ns : List ℕ) : Option Tree := do
-  let [t] ← treesOfNats ns | none
-  pure t
+/-- The term a tree is, where it is one. -/
+def termOfTree : Tree → Option Term := RoseTree.para fun k cs ↦ do
+  let (l, rest) ← labelOf k (cs.map (·.1))
+  pure (RoseTree.node l (← (after cs rest).mapM id))
 
-/-- A list prefixed by its length, read off a list: the list and the rest. -/
-def readLength (ns : List ℕ) : Option (List ℕ × List ℕ) := match ns with
-  | k :: rest => if k ≤ rest.length then some (rest.take k, rest.drop k) else none
+/-- A flag as a number. -/
+def flagN (b : Bool) : Tree := leafN b.toNat
+
+/-- The flag a tree is, where it is one. -/
+def flagOf (t : Tree) : Option Bool := match t.label with
+  | 0 => some false
+  | 1 => some true
+  | _ => none
+
+/-- A rule's position among the rules and its data, as trees. -/
+def ruleData : Rule → ℕ × List Tree
+  | .refl => (0, [])
+  | .trans => (1, [])
+  | .cong => (2, [])
+  | .beta => (3, [])
+  | .fstPair => (4, [])
+  | .sndPair => (5, [])
+  | .pairEta => (6, [])
+  | .unitEta => (7, [])
+  | .delta => (8, [])
+  | .natZero k => (9, [leafN k])
+  | .natSucc k => (10, [leafN k])
+  | .listNil k => (11, [leafN k])
+  | .listCons k => (12, [leafN k])
+  | .roseNode kn kl kc => (13, [leafN kn, leafN kl, leafN kc])
+  | .caseInl kc kl => (14, [leafN kc, leafN kl])
+  | .caseInr kc kr => (15, [leafN kc, leafN kr])
+  | .thm j θ σ flip => (16, [leafN j, listT θ, listT (σ.map termTree), flagN flip])
+  | .rwHyp i flip => (17, [leafN i, flagN flip])
+  | .join => (18, [])
+  | .natInd kz ks s => (19, [leafN kz, leafN ks, termTree s])
+  | .listInd kn kc s => (20, [leafN kn, leafN kc, termTree s])
+  | .hyp i => (21, [leafN i])
+  | .cut φ => (22, [termTree φ])
+  | .conv => (23, [])
+  | .convFrom φ => (24, [termTree φ])
+  | .propExt => (25, [])
+  | .funExt => (26, [])
+  | .apply j θ σ => (27, [leafN j, listT θ, listT (σ.map termTree)])
+  | .natIndHyp kz ks => (28, [leafN kz, leafN ks])
+  | .listIndHyp kn kc => (29, [leafN kn, leafN kc])
+  | .cert c => (30, [c])
+  | .certSeq c => (31, [c])
+  | .roseInd kn kl kc s => (32, [leafN kn, leafN kl, leafN kc, termTree s])
+  | .roseIndHyp kn kl kc => (33, [leafN kn, leafN kl, leafN kc])
+  | .coprodInd kl kr => (34, [leafN kl, leafN kr])
+  | .zeroInd i => (35, [leafN i])
+  | .quotInd kq θ => (36, [leafN kq, listT θ])
+
+/-- The rule of a position, read off the trees of its data: the rule and the trees after them. -/
+def ruleOf (k : ℕ) (ts : List Tree) : Option (Rule × List Tree) := match k, ts with
+  | 0, rest => some (.refl, rest)
+  | 1, rest => some (.trans, rest)
+  | 2, rest => some (.cong, rest)
+  | 3, rest => some (.beta, rest)
+  | 4, rest => some (.fstPair, rest)
+  | 5, rest => some (.sndPair, rest)
+  | 6, rest => some (.pairEta, rest)
+  | 7, rest => some (.unitEta, rest)
+  | 8, rest => some (.delta, rest)
+  | 9, k :: rest => some (.natZero k.label, rest)
+  | 10, k :: rest => some (.natSucc k.label, rest)
+  | 11, k :: rest => some (.listNil k.label, rest)
+  | 12, k :: rest => some (.listCons k.label, rest)
+  | 13, kn :: kl :: kc :: rest => some (.roseNode kn.label kl.label kc.label, rest)
+  | 14, kc :: kl :: rest => some (.caseInl kc.label kl.label, rest)
+  | 15, kc :: kr :: rest => some (.caseInr kc.label kr.label, rest)
+  | 16, j :: θ :: σ :: flip :: rest => do
+    pure (.thm j.label θ.children (← σ.children.mapM termOfTree) (← flagOf flip), rest)
+  | 17, i :: flip :: rest => do pure (.rwHyp i.label (← flagOf flip), rest)
+  | 18, rest => some (.join, rest)
+  | 19, kz :: ks :: s :: rest => do pure (.natInd kz.label ks.label (← termOfTree s), rest)
+  | 20, kn :: kc :: s :: rest => do pure (.listInd kn.label kc.label (← termOfTree s), rest)
+  | 21, i :: rest => some (.hyp i.label, rest)
+  | 22, φ :: rest => do pure (.cut (← termOfTree φ), rest)
+  | 23, rest => some (.conv, rest)
+  | 24, φ :: rest => do pure (.convFrom (← termOfTree φ), rest)
+  | 25, rest => some (.propExt, rest)
+  | 26, rest => some (.funExt, rest)
+  | 27, j :: θ :: σ :: rest => do
+    pure (.apply j.label θ.children (← σ.children.mapM termOfTree), rest)
+  | 28, kz :: ks :: rest => some (.natIndHyp kz.label ks.label, rest)
+  | 29, kn :: kc :: rest => some (.listIndHyp kn.label kc.label, rest)
+  | 30, c :: rest => some (.cert c, rest)
+  | 31, c :: rest => some (.certSeq c, rest)
+  | 32, kn :: kl :: kc :: s :: rest => do
+    pure (.roseInd kn.label kl.label kc.label (← termOfTree s), rest)
+  | 33, kn :: kl :: kc :: rest => some (.roseIndHyp kn.label kl.label kc.label, rest)
+  | 34, kl :: kr :: rest => some (.coprodInd kl.label kr.label, rest)
+  | 35, i :: rest => some (.zeroInd i.label, rest)
+  | 36, kq :: θ :: rest => some (.quotInd kq.label θ.children, rest)
+  | _, _ => none
+
+/-- A derivation as a tree: each node its rule's position over the trees of the rule's data and
+the node's children. -/
+def derivTree : Deriv → Tree :=
+  RoseTree.elim fun r cs ↦ let (k, ds) := ruleData r; RoseTree.node k (ds ++ cs)
+
+/-- The derivation a tree is, where it is one. -/
+def derivOfTree : Tree → Option Deriv := RoseTree.para fun k cs ↦ do
+  let (r, rest) ← ruleOf k (cs.map (·.1))
+  pure (RoseTree.node r (← (after cs rest).mapM id))
+
+/-- A theorem as a tree: its arity, its context, its hypotheses and its conclusion. -/
+def thmTree (a : Thm) : Tree :=
+  listT [leafN a.arity, listT a.ctx, listT (a.hyps.map termTree), termTree a.concl]
+
+/-- The theorem a tree is, where it is one. -/
+def thmOfTree (t : Tree) : Option Thm := match t.children with
+  | [n, ctx, hyps, c] => do pure ⟨n.label, ctx.children, ← hyps.children.mapM termOfTree,
+      ← termOfTree c⟩
+  | _ => none
+
+/-- A declaration of a theorem as a tree, the theorem and its derivation; nothing for a
+declaration of another kind. -/
+def declTree : Decl → Option Tree
+  | .language a d => some (listT [thmTree a, derivTree d])
+  | _ => none
+
+/-- The declaration of a theorem a tree is, where it is one. -/
+def declOfTree (t : Tree) : Option Decl := match t.children with
+  | [a, d] => do pure (.language (← thmOfTree a) (← derivOfTree d))
+  | _ => none
+
+/-- Declarations of theorems as a tree; nothing where one is of another kind. -/
+def declsTree (ds : List Decl) : Option Tree := (ds.mapM declTree).map listT
+
+/-- The declarations of theorems a tree is, where it is them. -/
+def declsOfTree (t : Tree) : Option (List Decl) := t.children.mapM declOfTree
+
+/-! Trees as tables of their distinct nodes. -/
+
+/-- The tree a list of natural numbers stores, where it stores one: its number of distinct nodes,
+then each, in an order in which a node follows its children, as its label, its number of children
+and their indices, the root last; each child an index of a node read before it. -/
+def treeOfNats (ns : List ℕ) : Option Tree := match ns with
+  | count :: rest =>
+    (Nat.rec (motive := fun _ ↦ List ℕ × Array Tree → Option (List ℕ × Array Tree))
+      (fun st ↦ some st) (fun _ rec st ↦ match st.1 with
+        | l :: n :: more =>
+          if n ≤ more.length then do
+            let cs ← (more.take n).mapM (st.2[·]?)
+            rec (more.drop n, st.2.push (RoseTree.node l cs))
+          else none
+        | _ => none) count (rest, #[])).bind fun (left, nodes) ↦
+      if left.isEmpty then nodes.back? else none
   | [] => none
 
-/-- The trees of lists prefixed by their lengths, read off a list. -/
-def readTrees (k : ℕ) (ns : List ℕ) : Option (List Tree × List ℕ) :=
-  k.rec (some ([], ns)) fun _ rec ↦ do
-    let (ts, rest) ← rec
-    let (t, rest') ← readLength rest
-    pure (ts ++ [← treeOfNats t], rest')
+/-! Lists of natural numbers as text. -/
 
-/-- A label read off a list: the label and the rest. -/
-def readLabel (ns : List ℕ) : Option (Label × List ℕ) := match ns with
-  | 0 :: i :: rest => some (.var i, rest)
-  | 1 :: rest => some (.star, rest)
-  | 2 :: rest => some (.pair, rest)
-  | 3 :: rest => some (.fst, rest)
-  | 4 :: rest => some (.snd, rest)
-  | 5 :: rest => do
-    let (a, rest') ← readLength rest
-    pure (.lam (← treeOfNats a), rest')
-  | 6 :: rest => some (.app, rest)
-  | 7 :: k :: m :: rest => do
-    let (θ, rest') ← readTrees m rest
-    pure (.arr k θ, rest')
-  | 8 :: rest => some (.natRec, rest)
-  | 9 :: rest => some (.listRec, rest)
-  | 10 :: rest => do
-    let (c, rest') ← readLength rest
-    pure (.roseRec (← treeOfNats c), rest')
-  | 11 :: k :: m :: rest => do
-    let (θ, rest') ← readTrees m rest
-    pure (.defn k θ, rest')
-  | 12 :: rest => some (.eq, rest)
-  | _ => none
+/-- The step of reading numerals in decimal separated by spaces or newlines: the numbers read and
+the numeral being read, extended by a character; nothing at a character of neither kind. -/
+def readChar (st : Option (List ℕ × Option ℕ)) (c : Char) : Option (List ℕ × Option ℕ) := do
+  let (ns, cur) ← st
+  if c.isDigit then pure (ns, some (cur.getD 0 * 10 + (c.toNat - '0'.toNat)))
+  else if c = ' ' ∨ c = '\n' then pure (match cur with
+    | some n => (n :: ns, none)
+    | none => (ns, none))
+  else none
 
-/-- The terms a list of nodes in postorder builds, the last built first. -/
-def termsOfNats (ns : List ℕ) : Option (List Term) :=
-  (Nat.rec (motive := fun _ ↦ List ℕ × List Term → Option (List Term))
-    (fun _ ↦ some []) (fun _ rec st ↦ match st.1 with
-      | [] => some st.2
-      | ns' => do
-        let (l, rest) ← readLabel ns'
-        let n :: rest' := rest | none
-        rec (rest', ← pushNode l n st.2)) ns.length) (ns, [])
+/-- The list of natural numbers a text spells, numerals in decimal separated by spaces or
+newlines, where it spells one. -/
+def natsOfText (s : String) : Option (List ℕ) := do
+  let (ns, cur) ← s.toList.foldl readChar (some ([], none))
+  pure (match cur with
+    | some n => (n :: ns).reverse
+    | none => ns.reverse)
 
-/-- The term a list of nodes in postorder builds, where it builds one. -/
-def termOfNats (ns : List ℕ) : Option Term := do
-  let [t] ← termsOfNats ns | none
-  pure t
-
-/-- A theorem as a list of natural numbers: its number of object variables, its context's types
-and its hypotheses, each list prefixed by its number and each element by its length, and its
-conclusion prefixed by its length. -/
-def thmToNats (a : Thm) : List ℕ :=
-  [a.arity, a.ctx.length] ++ a.ctx.flatMap (withLength ∘ treeToNats) ++
-    [a.hyps.length] ++ a.hyps.flatMap (withLength ∘ termToNats) ++
-    withLength (termToNats a.concl)
-
-/-- The terms of lists prefixed by their lengths, read off a list. -/
-def readTerms (k : ℕ) (ns : List ℕ) : Option (List Term × List ℕ) :=
-  k.rec (some ([], ns)) fun _ rec ↦ do
-    let (ts, rest) ← rec
-    let (t, rest') ← readLength rest
-    pure (ts ++ [← termOfNats t], rest')
-
-/-- The theorem a list of natural numbers stores, where it stores one. -/
-def thmOfNats (ns : List ℕ) : Option Thm := match ns with
-  | n :: k :: rest => do
-    let (ctx, rest₁) ← readTrees k rest
-    let m :: rest₂ := rest₁ | none
-    let (hyps, rest₃) ← readTerms m rest₂
-    let (c, []) ← readLength rest₃ | none
-    pure ⟨n, ctx, hyps, ← termOfNats c⟩
-  | _ => none
+/-- The declarations of theorems a text stores, the table of their tree, where it stores them. -/
+def declsOfText (s : String) : Option (List Decl) :=
+  (natsOfText s).bind treeOfNats |>.bind declsOfTree
 
 end GebTests.Prototypes.FreeTopos.Stored
 

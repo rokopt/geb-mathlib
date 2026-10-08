@@ -25,7 +25,9 @@ program are declared ahead of the command, a layer to a module, by the command {
 the generated modules of {lit}`GebMirror` run; {lit}`geb_program` then checks that the trees they
 declared are the program's. It declares the loading of the whole program,
 composed from the steps, and the equality of the exported globals with their mirrors. The command
-{lit}`kernel_rfl` declares a theorem proved by reflexivity, checked by the kernel alone.
+{lit}`kernel_rfl` declares a theorem proved by reflexivity, checked by the kernel alone, and the
+command {lit}`evaluation_axiom` an axiom that a Boolean is true, declared after Lean's evaluator
+has evaluated it.
 
 ## Implementation notes
 
@@ -162,6 +164,30 @@ syntax (name := kernelRfl) "kernel_rfl " ident " : " term : command
       | none, some (_, lhs, _, _) => Meta.mkHEqRefl lhs
       | none, none => throwError "not an equation"
     addDecl <| .thmDecl { name := n, levelParams := [], type := ty, value := prf }
+
+/-- {lit}`evaluation_axiom n : b = true` declares the axiom {lit}`n` that the Boolean {lit}`b` is
+true, after Lean's evaluator has evaluated {lit}`b` to {lit}`true`. The fact is established by
+evaluation alone, in either loading mode: a Boolean whose kernel reduction is out of reach, such as
+the check of a development a certificate stores, is stated so, and the axiom is listed by
+{lit}`#print axioms` for every declaration that depends on it. A doc comment before the command
+documents the axiom; it is written in Markdown, under {lit}`set_option doc.verso false in`, since
+elaborating a Verso docstring reduces the declaration's statement. -/
+syntax (name := evaluationAxiom)
+  (docComment)? "evaluation_axiom " ident " : " term : command
+
+/-- The elaborator of {lit}`evaluation_axiom`. -/
+@[command_elab evaluationAxiom] meta def elabEvaluationAxiom : CommandElab := fun stx ↦ do
+  let n := (← getCurrNamespace) ++ stx[2].getId
+  liftTermElabM do
+    let ty ← Term.elabType stx[4]
+    Term.synthesizeSyntheticMVarsNoPostponing
+    let ty ← instantiateMVars ty
+    let some (_, b, t) := ty.eq? | throwError "not an equation"
+    unless t.isConstOf ``Bool.true do throwError "not an equation of a Boolean with true"
+    unless ← unsafe Meta.evalExpr Bool (mkConst ``Bool) b do
+      throwError "the Boolean evaluates to false"
+    addDecl <| .axiomDecl { name := n, levelParams := [], type := ty, isUnsafe := false }
+    addDocString' n mkNullNode (stx[0].getOptional?.map TSyntax.mk)
 
 end GebTests.Prototypes.ProgramCommand
 

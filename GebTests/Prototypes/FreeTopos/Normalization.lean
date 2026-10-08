@@ -30,12 +30,19 @@ waits on, takes the children's convergences from the induction hypothesis, shift
 to their sum, and converges a level above it. A constant's value is the constant itself, related at
 its type by the lemmas of {lit}`NormalizationRel`.
 
+## Main definitions
+
+* {lit}`fundamentalDeriv` — the derivation of the lemma's induction step.
+* {lit}`fundamentalThm` — the lemma.
+* {lit}`certificates` — the developments of the base, the convergence lemmas, the constants'
+  relations and the lemma.
+
 ## Implementation notes
 
-The derivation is found by deducers over the developments stored by the modules it imports,
-assembled once, and checked by the internal language's checker
-({name}`Geb.FreeTopos.Internal.checkDev`) before the theorem is stored, with the theorems it was
-proved from, as the development {lit}`normalization.fundamental`.
+The derivation is found by deducers over the theorems of the developments before it. The
+developments' declarations are stored in the certificates under {lit}`bootstrap/certificates/`,
+whose check by the internal language's checker ({name}`Geb.FreeTopos.Internal.checkDev`)
+{lit}`GebTests.Prototypes.FreeTopos.Certified.Normalization` states.
 
 ## References
 
@@ -59,13 +66,10 @@ open Geb.FreeTopos.Tactics (nthOf)
 open Internal (Term NormRule Entry Deriv Decl Definition)
 open scoped FinEnum
 
-open Lean Elab Command in
-#eval show CommandElabM Unit from do
-  let some ds := bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
-    | throwError "the program is not read"
-  let some (P, S) := extendedOf ds fun name ↦ (defIndex ds name.toList).getD 0
-    | throwError "the program does not extend"
-  let some base ← Stored.stored "normalization.rel" | throwError "no stored relations"
+/-- The derivation of the fundamental lemma's induction step, found by deducers over the
+theorems of the developments before it, each with its name, where they find one. -/
+def fundamentalDeriv (P : Prog) (S : Defs) (base : List (String × Internal.Thm)) :
+    Option Deriv :=
   let G := P.G
   let E : Array Entry := (base.map fun (_, a) ↦ Entry.language a).toArray
   let names := base.map (·.1)
@@ -533,23 +537,25 @@ open Lean Elab Command in
   let intros : Deducer → Deducer := fun k ↦ dAllI L (dAllI L (dAllI L (dAllI L
     (dImpI L (dImpI L (dImpI L k))))))
   let node := Internal.roseNodeAt 2 treeTy bitsTy φ
-  let t₀ ← IO.monoMsNow
-  let d := intros (fun Γ Φ ψ ↦ dBits L G E (ix "listCases") (ix "bitCases") leaf 4 [] (v 5) Γ Φ ψ)
+  intros (fun Γ Φ ψ ↦ dBits L G E (ix "listCases") (ix "bitCases") leaf 4 [] (v 5) Γ Φ ψ)
     [list treeTy, bitsTy] [Internal.roseHyp 0 1 φ] node
-  let t₁ ← IO.monoMsNow
-  logInfo m!"derivation: {d.isSome}, {t₁ - t₀} ms"
-  let some d := d | throwError "the fundamental lemma is not proved"
-  logInfo m!"node derivation checks: {(Internal.check G E 0 d).2 [list treeTy, bitsTy]
-    [Internal.roseHyp 0 1 φ] node}"
-  let thm : Internal.Thm := ⟨0, [treeTy], [], φ⟩
-  let thms ← checkedAfter G base
-    [("fundamental", fun _ _ ↦ some (thm, nd (.roseIndHyp 2 0 1) [d]))]
-  let t₂ ← IO.monoMsNow
-  logInfo m!"fundamental lemma checked, {t₂ - t₁} ms"
-  Stored.store "normalization.fundamental" (base ++ thms)
 
+/-- The fundamental lemma at the extended program: its formula over a tree. -/
+def fundamentalThm (P : Prog) (S : Defs) : Internal.Thm := ⟨0, [treeTy], [], fundamental P S⟩
 
-
+/-- The developments of the fundamental lemma in the extended program, each with the name of its
+certificate: the base, the convergence lemmas, the constants' relations, and the lemma itself, by
+induction on rose trees, each proved after the theorems of those before it; the reason where a
+lemma is not proved. -/
+def certificates (P : Prog) (S : Defs) : Except String (List (String × List Decl)) := do
+  let some base := baseDev P S | throw "the base is not stated"
+  let (n₁, E₁, ds₁) ← developAfter [] #[] base
+  let (n₂, E₂, ds₂) ← developAfter n₁ E₁ (constDev P S)
+  let (n₃, E₃, ds₃) ← developAfter n₂ E₂ (relDev P S)
+  let thms := n₃.zip (E₃.toList.filterMap Entry.language?)
+  let some d := fundamentalDeriv P S thms | throw "the fundamental lemma is not proved"
+  pure [("normalization-base", ds₁), ("normalization-const", ds₂), ("normalization-rel", ds₃),
+    ("normalization", [Decl.language (fundamentalThm P S) (nd (.roseIndHyp 2 0 1) [d])])]
 
 end GebTests.Prototypes.FreeTopos.Normalization
 

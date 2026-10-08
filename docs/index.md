@@ -4213,13 +4213,19 @@ checklist and in CI.
   logical relation [Tait1967] between the values of the evaluator written
   in Geb, `bootstrap/eval.geb`, and the types `bootstrap/check.geb`
   gives: a well-typed term's evaluation converges, from some level of
-  fuel on, to a value related at its type, each module storing its
-  checked theorems for the next (`Stored.lean`);
+  fuel on, to a value related at its type, each module proving its
+  theorems after those of the one before it;
   `TreeCases.lean` exercises the case analysis of a tree variable in any
   context and rewriting under a test, and `Expansion.lean` proves with
   them that the expansion of the datatype language,
   `bootstrap/datatype.geb`, is the
-  identity on programs of kernel forms. The
+  identity on programs of kernel forms. Those modules search for the
+  developments, whose certificates `StoredWriter.lean` writes,
+  `bootstrap/certificates/`, the table of each development's distinct
+  nodes (`Stored.lean`); the modules of `Certified/` read the
+  certificates and state that each development proves its theorem in the
+  program it is about, a fact Lean's evaluator decides
+  (`docs/rules/ci-and-workflow.md` § Certificates). The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   metalogic, the choices that fixed its form, and the proofs about the
   compiler's components made in it. Depends on the modules of

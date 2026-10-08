@@ -459,7 +459,10 @@ rationale.
   constructive. In the loading mode `native`, every declaration also
   permits the axioms of the modules in `GebMeta.loadingAxiomModules`,
   the loading of the programs whose agreement with Lean is proved
-  (`docs/rules/ci-and-workflow.md` § Loading modes).
+  (`docs/rules/ci-and-workflow.md` § Loading modes), and in either
+  mode the axioms of the modules in `GebMeta.evaluationAxiomModules`,
+  the checks of the developments certificates store, which Lean's
+  evaluator decided (§ Certificates there).
   It runs in CI and the pre-push checklist;
   `scripts/tests/test-axiom-linter.sh` smoke-tests it.
 

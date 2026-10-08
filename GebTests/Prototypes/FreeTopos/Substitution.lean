@@ -40,6 +40,8 @@ past the substituted variable's index are the lookup in the context with it, by 
 * {lit}`development` — the lemmas, each with its proof, after the weakening proof's and the
   weakening theorem.
 * {lit}`bySubLabels` — the proof at a construction.
+* {lit}`program`, {lit}`certificate` — the translated program, and the development proving the
+  statement in it, whose declarations {lit}`bootstrap/certificates/substitution.cert` stores.
 
 ## Tags
 
@@ -272,36 +274,26 @@ def bySubLabels (P : Prog) (lemmas : List NormRule) (E : Array Entry) : Internal
       (bySplit2 3 4 1 (rec (bs ++ [false]) 1) (rec (bs ++ [true]) 1))
   go 4 [] 1
 
-/-- The proof of the statement, found and checked with the development, for the program's
-definitions with the index of each named one, and the measurement: the nodes of the development's
-derivations and of the statement's, and the milliseconds its proof and its check take; an error
-where either fails. -/
-def checkSubstitution (ds : List (List Char × Tree)) (idx : String → ℕ) : IO Unit := do
-  let some P := prog? ds idx | throw (IO.userError "the program does not translate")
-  let some dev := development P | throw (IO.userError "the development is not stated")
-  let decls ← match developNamed dev with
-    | .ok decls => pure decls
-    | .error name => throw (IO.userError s!"the lemma {name} is not proved")
-  let some (G, E) := Internal.checkDev P.G #[] decls
-    | throw (IO.userError "the development does not check")
+/-- The program's definitions, read and expanded by the stage-0 compiler's front end, translated,
+with the index of each named one. -/
+def program : Option Prog := do
+  let ds ← bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
+  prog? ds fun name ↦ (defIndex ds name.toList).getD 0
+
+/-- The development proving the statement in a translated program: the lemmas, each with its
+derivation, and the statement, with the derivation found by induction on rose trees; the reason
+where a lemma or the statement is not proved. -/
+def certificate (P : Prog) : Except String (List Decl) := do
+  let some dev := development P | throw "the development is not stated"
+  let decls ← (developNamed dev).mapError fun name ↦ s!"the lemma {name} is not proved"
+  let some (_, E) := Internal.checkDev P.G #[] decls
+    | throw "the development does not check"
   let ix (name : String) : ℕ := (dev.findIdx? (·.1 == name)).getD 0
   let a := substitution P
-  let t₀ ← IO.monoMsNow
   let some d := Internal.byRoseIndHyp 2 0 1
       (bySubLabels P (Internal.prepareRules E (subRules ix)) E) a.ctx [] (sides a).1 (sides a).2
-    | throw (IO.userError "the statement is not proved")
-  let t₁ ← IO.monoMsNow
-  if !Internal.checkThms G [Decl.language a d] E then
-    throw (IO.userError "the statement's derivation does not check")
-  let t₂ ← IO.monoMsNow
-  let devNodes := (decls.filterMap fun | Decl.language _ d => some (derivSize d) | _ => none).sum
-  IO.println "development_nodes,theorem_nodes,proof_milliseconds,check_milliseconds"
-  IO.println s!"{devNodes},{derivSize d},{t₁ - t₀},{t₂ - t₁}"
-
-#eval do
-  let some ds := bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
-    | throw (IO.userError "the program does not read")
-  checkSubstitution ds fun name ↦ (defIndex ds name.toList).getD 0
+    | throw "the statement is not proved"
+  pure (decls ++ [Decl.language a d])
 
 end GebTests.Prototypes.FreeTopos.Substitution
 

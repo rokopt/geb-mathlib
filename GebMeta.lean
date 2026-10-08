@@ -24,7 +24,11 @@ dependency is confined to proof terms. The axioms of the modules in
 `loadingAxiomModules`, the loading of the programs whose agreement with
 Lean is proved, stated without proof in the loading mode `native`, are
 permitted to every declaration in that mode and to none in the mode
-`rfl`, as the environment variable `GEB_LOADING` selects.
+`rfl`, as the environment variable `GEB_LOADING` selects. The axioms of
+the modules in `evaluationAxiomModules`, facts that Lean's evaluator
+established and the command `evaluation_axiom` declared, the checks of
+the developments certificates store, are permitted to every declaration
+in either mode.
 
 `cite` is a docstring role for literate modules
 (`docs/rules/lean-coding.md` § Literate modules): ``{cite}`Key` ``
@@ -42,6 +46,8 @@ parsed bibliography it and the manual's generated entries share.
   axiom collection stops.
 * `GebMeta.loadingAxiomModules` — the exact module names whose axioms
   the loading mode `native` permits.
+* `GebMeta.evaluationAxiomModules` — the exact module names whose
+  axioms every mode permits.
 * `cite` — the docstring role, at the root namespace.
 * `GebMeta.loadBibliography` — the parsed `docs/references.bib` of
   the repository containing a given source file.
@@ -138,7 +144,6 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.BitStream.Oitavem.Machine,
    `Geb.Prototypes.BitStream.Oitavem.Tree,
    `GebTests.Prototypes.BitStream.Oitavem,
-   `GebTests.Prototypes.FreeTopos.StoredDevelopments,
    `GebManual.BibTeX,
    `GebManual.Bibliography,
    `GebManual.Bootstrap,
@@ -289,6 +294,7 @@ def classicalAllowedModules : NameSet :=
    `GebTests.Prototypes.Typechecker.Instances,
    `GebTests.Prototypes.ProgramCommand,
    `GebTests.Prototypes.FreeTopos.Agreement.TemplateEquations,
+   `GebTests.Prototypes.FreeTopos.StoredWriter,
    `Geb.Prototypes.Kernel.LoadCommand,
    `Geb.Prototypes.FreeTopos.Topos,
    `Geb.Prototypes.FreeTopos.Elementary,
@@ -332,6 +338,18 @@ def loadingAxiomModules : NameSet :=
     `GebMirror.Metalogic.Load.Prover, `GebMirror.Metalogic.Load.Tactics,
     `GebMirror.Metalogic.Load.Combinator, `GebMirror.Metalogic.Load.Printer]
 
+/-- Exact module names whose axioms are permitted in either loading
+mode: the modules stating, by `evaluation_axiom`, the checks of the
+developments of the internal language that certificates store, each a
+Boolean Lean's evaluator decided, whose kernel reduction is out of reach
+(`GebTests.Prototypes.FreeTopos.Certified.Basic`). -/
+def evaluationAxiomModules : NameSet :=
+  NameSet.ofList [`GebTests.Prototypes.FreeTopos.Certified.Weakening,
+    `GebTests.Prototypes.FreeTopos.Certified.Substitution,
+    `GebTests.Prototypes.FreeTopos.Certified.TreeCases,
+    `GebTests.Prototypes.FreeTopos.Certified.Expansion,
+    `GebTests.Prototypes.FreeTopos.Certified.Normalization]
+
 /-- Whether the environment variable `GEB_LOADING` selects the loading
 mode `native`, as it does unless it is `rfl`. -/
 def nativeLoading : BaseIO Bool :=
@@ -358,10 +376,11 @@ initialize axiomsCache : IO.Ref (NameMap (Array Name)) ← IO.mkRef {}
 except that collection does not descend into a constant of `stops`,
 whose contribution is empty. Results are memoised in `cache`, which
 must be used with one `stops` only. A constant the environment holds
-as an axiom contributes what `Lean.collectAxioms` records for it: itself
-when it is one, and its recorded axioms when it is an imported theorem
-whose body an elaboration environment under the module system does not
-load; a stop beneath such a body is not seen. -/
+as an axiom contributes itself when it is one, its statement walked
+with the stops as any constant's is, and the axioms `Lean.collectAxioms`
+records for it when it is an imported theorem whose body an elaboration
+environment under the module system does not load; a stop beneath such
+a body is not seen. -/
 partial def collectAxiomsStopping (stops : NameSet) (cache : IO.Ref (NameMap (Array Name)))
     (c : Name) : CoreM (Array Name) := do
   if stops.contains c then return #[]
@@ -371,7 +390,11 @@ partial def collectAxiomsStopping (stops : NameSet) (cache : IO.Ref (NameMap (Ar
   let env ← getEnv
   let mut axs : NameSet := {}
   if let some (.axiomInfo _) := env.find? c then
-    for a in ← collectAxioms c do axs := axs.insert a
+    let recorded ← collectAxioms c
+    -- an axiom is among its own recorded axioms, and its statement is walked below with the
+    -- stops; an imported theorem held as an axiom contributes its recorded axioms
+    if recorded.contains c then axs := axs.insert c
+    else for a in recorded do axs := axs.insert a
   for d in usedConstants env c do
     for a in ← collectAxiomsStopping stops cache d do axs := axs.insert a
   let result := axs.toArray
@@ -402,7 +425,8 @@ def moduleOf? (env : Environment) (declName : Name) : Option Name :=
 set. A declaration in a module listed in `classicalAllowedModules`
 additionally permits `Classical.choice` (and only that); in the loading
 mode `native`, every declaration additionally permits the axioms of the
-modules of `loadingAxiomModules`; every other axiom (`sorryAx`,
+modules of `loadingAxiomModules`, and in either mode those of the modules
+of `evaluationAxiomModules`; every other axiom (`sorryAx`,
 `Lean.ofReduceBool`, …) is forbidden everywhere. A declaration whose
 module is unresolvable is held to the strict set. Collection stops at
 `upstreamChoiceRoots`. -/
@@ -415,7 +439,9 @@ module is unresolvable is held to the strict set. Collection stops at
     let native ← nativeLoading
     let loading (a : Name) : Bool :=
       native && ((moduleOf? env a).map loadingAxiomModules.contains).getD false
-    let bad := (offendingAxioms permitted used).filter (!loading ·)
+    let evaluated (a : Name) : Bool :=
+      ((moduleOf? env a).map evaluationAxiomModules.contains).getD false
+    let bad := (offendingAxioms permitted used).filter fun a ↦ !loading a && !evaluated a
     if bad.isEmpty then return none
     else return some m!"depends on non-standard axiom(s): {bad.toList}"
   noErrorsFound := "All declarations depend only on permitted axioms."

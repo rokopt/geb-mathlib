@@ -40,6 +40,8 @@ case analysis of the tree, of its children and of their labels' bits proves to b
 ## Main definitions
 
 * {lit}`development` — the lemmas, each with its proof.
+* {lit}`program`, {lit}`certificate` — the translated program, and the development found in it,
+  whose declarations {lit}`bootstrap/certificates/tree-cases.cert` stores.
 
 ## Tags
 
@@ -146,27 +148,17 @@ the rewriting under a test, and the lemmas of trees. -/
 def development (P : Prog) : Option (List Step) := do
   pure (unfoldingThms P ++ (← genericLemmas P) ++ maskTest P ++ headLemmas P)
 
-/-- The development found and checked, and the milliseconds each takes; an error where a lemma is
-not proved or the development does not check. -/
-def checkDevelopment (P : Prog) : IO Unit := do
-  let some dev := development P | throw (IO.userError "the development is not stated")
-  let t₀ ← IO.monoMsNow
-  let decls ← match developNamed dev with
-    | .ok decls => pure decls
-    | .error name => throw (IO.userError s!"the lemma {name} is not proved")
-  let t₁ ← IO.monoMsNow
-  let some _ := Internal.checkDev P.G #[] decls
-    | throw (IO.userError "the development does not check")
-  let t₂ ← IO.monoMsNow
-  IO.println "proof_milliseconds,check_milliseconds"
-  IO.println s!"{t₁ - t₀},{t₂ - t₁}"
+/-- The program's definitions, read and expanded by the stage-0 compiler's front end, translated,
+with the index of each named one. -/
+def program : Option Prog := do
+  let ds ← bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
+  prog? ds fun name ↦ (defIndex ds name.toList).getD 0
 
-#eval show IO Unit from do
-  let some ds := bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
-    | throw (IO.userError "the program does not read")
-  let some P := prog? ds fun name ↦ (defIndex ds name.toList).getD 0
-    | throw (IO.userError "the program does not translate")
-  checkDevelopment P
+/-- The development in a translated program; the name of the first lemma not proved, where one is
+not. -/
+def certificate (P : Prog) : Except String (List Decl) := do
+  let some dev := development P | throw "the development is not stated"
+  (developNamed dev).mapError fun name ↦ s!"the lemma {name} is not proved"
 
 end GebTests.Prototypes.FreeTopos.TreeCases
 
