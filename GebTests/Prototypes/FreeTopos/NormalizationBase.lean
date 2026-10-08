@@ -9,8 +9,6 @@ public import GebTests.Prototypes.FreeTopos.Weakening -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos.Weakening -- shake: keep
 public import GebTests.Prototypes.Kernel.Eval -- shake: keep
 public meta import GebTests.Prototypes.Kernel.Eval -- shake: keep
-public import GebTests.Prototypes.FreeTopos.StoredDevelopments -- shake: keep
-public meta import GebTests.Prototypes.FreeTopos.StoredDevelopments -- shake: keep
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -23,9 +21,10 @@ definitions the fundamental lemma states: addition and the fuel of a natural num
 convergence of a function of the fuel, the relation at a type by the fold of the type tree into
 the predicates on values, the relations of an environment to a context and of a program's
 definitions to the types of its globals, and the evaluator's functions at a level of fuel. The
-module proves the development the lemma rests on, checks it, and stores it as the development
-{lit}`normalization.base` ({name}`GebTests.Prototypes.FreeTopos.Stored.store`), for the modules
-importing it to prove their theorems from.
+module states the development the lemma rests on, whose declarations the certificate
+{lit}`bootstrap/certificates/normalization-base.cert` stores, and the proving of a development's
+steps after the theorems of those before it ({lit}`developAfter`), by which the modules importing
+it prove theirs.
 
 The proofs are found by deducers: functions from a context, hypotheses and a goal to a derivation
 of the internal language, where one is found, composed from the language's rules, its
@@ -43,6 +42,8 @@ beside it).
 * {lit}`Kit` — the deducers at a development's entries.
 * {lit}`fundamental` — the fundamental lemma's formula at a term.
 * {lit}`baseDev` — the development.
+* {lit}`developAfter` — a development's steps proved after an earlier one's theorems.
+* {lit}`extended` — the extended program, as the front end reads it.
 
 ## Implementation notes
 
@@ -1101,22 +1102,18 @@ def fundamental (P : Prog) (S : Defs) : Term :=
           (S.conv (Term.lam nat (S.evN (v 3) (v 0) (v 1) (v 5)))
             (S.rel (v 2) (pc P "Prelude.get" [ty])))))))))))))
 
-/-- A development's derivations, each computed with the entries before it, timed and reported:
-each failing theorem's name, and each one taking more than {lit}`slow` milliseconds. -/
-def developTimed (xs : List Step) (slow : ℕ) : IO (List Decl) := do
-  let ix (name : String) : ℕ := (xs.findIdx? (·.1 == name)).getD 0
-  let mut E : Array Entry := #[]
-  let mut ds : List Decl := []
-  for x in xs do
-    let t₀ ← IO.monoMsNow
-    match x.2 ix E with
-    | some (a, d) =>
-      E := E.push (Entry.language a)
-      ds := ds ++ [Decl.language a d]
-    | none => throw (IO.userError s!"the lemma {x.1} is not proved")
-    let t₁ ← IO.monoMsNow
-    if t₁ - t₀ > slow then IO.println s!"{x.1}: {t₁ - t₀} ms"
-  pure ds
+/-- A development's steps after an earlier one, given the names of the earlier one's theorems and
+the entries after it: each step proved with the entries before it, its theorem added to them. The
+names of all the theorems, the entries after the steps and the steps' declarations; the name of
+the first step not proved, where one is not. -/
+def developAfter (names : List String) (E : Array Entry) (xs : List Step) :
+    Except String (List String × Array Entry × List Decl) := do
+  let names' := names ++ xs.map (·.1)
+  let ix (name : String) : ℕ := (names'.findIdx? (· == name)).getD 0
+  let (E', ds) ← xs.foldlM (fun (acc : Array Entry × List Decl) (x : Step) ↦ match x.2 ix acc.1 with
+    | some (a, d) => Except.ok (acc.1.push (Entry.language a), acc.2 ++ [Decl.language a d])
+    | none => Except.error s!"the lemma {x.1} is not proved") (E, [])
+  pure (names', E', ds)
 
 /-- A term under one binder that does not use the binder's variable, outside it. -/
 def lower1 (t : Term) : Term := Term.subst t fun i ↦ v (i - 1)
@@ -1498,33 +1495,10 @@ def baseDev (P : Prog) (S : Defs) : Option (List Step) := do
       typeInv P S "isProdInv" "Check.isProd" Kernel.Label.tyProd 2,
       typeInv P S "isListInv" "Check.isListTy" Kernel.Label.tyList 1])
 
-/-- A development's theorems and derivations, checked, with their names. -/
-def checkedDev (G : Internal.Globals) (E : Array Entry) (xs : List Step) :
-    IO (List (String × Internal.Thm)) := do
-  let ix (name : String) : ℕ := (xs.findIdx? (·.1 == name)).getD 0
-  let _ := ix
-  let ds ← developTimed xs 1000
-  let some _ := Internal.checkDev G E ds | throw (IO.userError "the development does not check")
-  pure ((xs.zip ds).filterMap fun (x, d) ↦ match d with
-    | Decl.language a _ => some (x.1, a)
-    | _ => none)
-
-open Lean Elab Command in
-#eval show CommandElabM Unit from do
-  let some ds := bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
-    | throwError "the program is not read"
-  let some (P, S) := extendedOf ds fun name ↦ (defIndex ds name.toList).getD 0
-    | throwError "the program does not extend"
-  let some dev := baseDev P S | throwError "the base is not stated"
-  let t₀ ← IO.monoMsNow
-  let thms ← checkedDev P.G #[] dev
-  let t₁ ← IO.monoMsNow
-  logInfo m!"base: {thms.length} theorems, {t₁ - t₀} ms"
-  -- every theorem reads back
-  for (n, a) in thms do
-    if (Stored.thmOfNats (Stored.thmToNats a)).map Stored.thmToNats != some (Stored.thmToNats a)
-    then throwError m!"the theorem {n} does not read back"
-  Stored.store "normalization.base" thms
+/-- The extended program, from the program's definitions as the front end reads them. -/
+def extended : Option (Prog × Defs) := do
+  let ds ← bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
+  extendedOf ds fun name ↦ (defIndex ds name.toList).getD 0
 
 end GebTests.Prototypes.FreeTopos.Normalization
 

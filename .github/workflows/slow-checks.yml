@@ -1,8 +1,11 @@
-name: Kernel-checked loading
+name: Slow checks
 
-# The loading of the metalogic's program in the loading mode rfl, every
-# fact of it checked by the kernel, which the other workflows build in
-# the mode native (docs/rules/ci-and-workflow.md § Loading modes).
+# The checks too slow for every push, run daily and on demand: the loading
+# of the metalogic's program in the loading mode rfl, every fact of it
+# checked by the kernel, which the other workflows build in the mode
+# native (docs/rules/ci-and-workflow.md § Loading modes); and the
+# regeneration of the certificates of the internal language's
+# developments, compared with the committed ones (§ Certificates).
 on:
   schedule:
     - cron: '0 6 * * *'
@@ -33,3 +36,17 @@ jobs:
       # In the mode rfl the axiom linter permits no axiom of the loading.
       - name: lint GebTests
         run: lake exe batteries/runLinter GebTests
+
+  certificates:
+    name: Regenerate and compare the certificates
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865  # v1
+        with:
+          build: false
+          test: false
+          lint: false
+      - name: scripts/certificates.sh check
+        run: bash scripts/certificates.sh check

@@ -193,6 +193,14 @@ path = "bootstrap/free-topos"
 text = true
 filter = {extension = ["geb"]}
 
+# The certificates of the internal language's developments, which tests read at elaboration
+# (scripts/certificates.sh).
+[[input_dir]]
+name = "certificates"
+path = "bootstrap/certificates"
+text = true
+filter = {extension = ["cert"]}
+
 # The committed stage-1 compiler, which a test runs, read at elaboration.
 [[input_file]]
 name = "compilerImage"
@@ -225,6 +233,16 @@ weak.linter.hashCommand = false
 name = "GebTestsFreeTopos"
 globs = ["GebTests.Prototypes.FreeTopos.Agreement.Load"]
 needs = ["@/freeToposSources", "@/printerSource", "@/seqSource"]
+moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
+
+[lean_lib.moreServerOptions]
+weak.linter.hashCommand = false
+
+# The developments of the internal language, each read from its certificate.
+[[lean_lib]]
+name = "GebTestsCertified"
+globs = ["GebTests.Prototypes.FreeTopos.Certified.+"]
+needs = ["@/certificates"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]
@@ -353,6 +371,10 @@ root = "GebDefsMain"
 [[lean_exe]]
 name = "geb-fmt"
 root = "GebFmtMain"
+
+[[lean_exe]]
+name = "geb-certify"
+root = "GebCertifyMain"
 
 [[lean_exe]]
 name = "geb-manual"

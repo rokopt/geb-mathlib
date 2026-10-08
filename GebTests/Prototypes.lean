@@ -23,6 +23,8 @@ import GebTests.Prototypes.FreeLCCC
 import GebTests.Prototypes.FreeTopos
 import GebTests.Prototypes.FreeTopos.Agreement
 import GebTests.Prototypes.FreeTopos.Benchmark
+import GebTests.Prototypes.FreeTopos.Certificates
+import GebTests.Prototypes.FreeTopos.Certified
 import GebTests.Prototypes.FreeTopos.Expansion
 import GebTests.Prototypes.FreeTopos.Graphs
 import GebTests.Prototypes.FreeTopos.Internal
@@ -41,7 +43,7 @@ import GebTests.Prototypes.FreeTopos.NormalizationConst
 import GebTests.Prototypes.FreeTopos.NormalizationRel
 import GebTests.Prototypes.FreeTopos.Prover
 import GebTests.Prototypes.FreeTopos.Stored
-import GebTests.Prototypes.FreeTopos.StoredDevelopments
+import GebTests.Prototypes.FreeTopos.StoredWriter
 import GebTests.Prototypes.FreeTopos.Substitution
 import GebTests.Prototypes.FreeTopos.Translation
 import GebTests.Prototypes.FreeTopos.TranslationProofs

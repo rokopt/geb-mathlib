@@ -53,6 +53,9 @@ case analysis of trees then splits.
 * {lit}`exprSteps`, {lit}`formSteps`, {lit}`runSteps`, {lit}`programSteps` — the identities of
   the expression, the step at a form, the run and the program.
 * {lit}`development` — the lemmas, each with its proof.
+* {lit}`expansion` — the statement.
+* {lit}`program`, {lit}`certificate` — the translated program, and the development found in it,
+  whose declarations {lit}`bootstrap/certificates/expansion.cert` stores.
 
 ## Tags
 
@@ -600,12 +603,17 @@ def projSteps (P : Prog) : List Step :=
   [step "condFst" fstC (fun _ E ↦ side fstC (bitsCases P.G 2 (byWeak P.G E 2 rs))),
     step "condSnd" sndC (fun _ E ↦ side sndC (bitsCases P.G 2 (byWeak P.G E 2 rs)))]
 
+/-- The statement: the expansion of a list of kernel forms, under the mask of their predicate, is
+the program of those forms, the two sides as functions of the forms. -/
+def expansion (P : Prog) : Internal.Thm :=
+  ⟨0, [list treeTy], [], Term.eq (apps (call (P.idx "pL") [] []) [v 0])
+    (apps (call (P.idx "pR") [] []) [v 0])⟩
+
 /-- The expansion's identity on a program of kernel forms, under the mask of their predicate: the
 run's lemma at the empty environment and output, its flag and output projected through the
 conditional, both rewritten under the mask, and the reversal of the output reversed. -/
 def programSteps (P : Prog) : List Step :=
-  let a : Internal.Thm := ⟨0, [list treeTy], [], Term.eq (apps (call (P.idx "pL") [] []) [v 0])
-    (apps (call (P.idx "pR") [] []) [v 0])⟩
+  let a := expansion P
   let folded := ["formOk", "Datatype.xpStep", "envAfter", "ke", "Datatype.expandExpr",
     "Datatype.expandCase", "Datatype.expandCata", "Datatype.expandDecode", "Datatype.expandAliases",
     "Datatype.dataDecl", "Datatype.marker", "Reader.named"]
@@ -643,29 +651,17 @@ def development (P : Prog) : Option (List Step) := do
     condSteps P ++ accSteps P ++ (← applySteps P) ++ exprSteps P ++ formSteps P ++ revSteps P ++
     runSteps P ++ projSteps P ++ programSteps P)
 
-/-- The development found and checked, and the measurement: the nodes of its derivations and the
-milliseconds its proof and its check take; an error where a lemma is not proved or the
-development does not check. -/
-def checkDevelopment (P : Prog) : IO Unit := do
-  let some dev := development P | throw (IO.userError "the development is not stated")
-  let t₀ ← IO.monoMsNow
-  let decls ← match developNamed dev with
-    | .ok decls => pure decls
-    | .error name => throw (IO.userError s!"the lemma {name} is not proved")
-  let t₁ ← IO.monoMsNow
-  let some _ := Internal.checkDev P.G #[] decls
-    | throw (IO.userError "the development does not check")
-  let t₂ ← IO.monoMsNow
-  let nodes := (decls.filterMap fun | Decl.language _ d => some (derivSize d) | _ => none).sum
-  IO.println "development_nodes,proof_milliseconds,check_milliseconds"
-  IO.println s!"{nodes},{t₁ - t₀},{t₂ - t₁}"
+/-- The program's definitions, read and expanded by the stage-0 compiler's front end, translated,
+with the index of each named one. -/
+def program : Option Prog := do
+  let ds ← bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
+  prog? ds fun name ↦ (defIndex ds name.toList).getD 0
 
-#eval show IO Unit from do
-  let some ds := bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
-    | throw (IO.userError "the program does not read")
-  let some P := prog? ds fun name ↦ (defIndex ds name.toList).getD 0
-    | throw (IO.userError "the program does not translate")
-  checkDevelopment P
+/-- The development in a translated program, its last lemma the statement; the name of the first
+lemma not proved, where one is not. -/
+def certificate (P : Prog) : Except String (List Decl) := do
+  let some dev := development P | throw "the development is not stated"
+  (developNamed dev).mapError fun name ↦ s!"the lemma {name} is not proved"
 
 end GebTests.Prototypes.FreeTopos.Expansion
 

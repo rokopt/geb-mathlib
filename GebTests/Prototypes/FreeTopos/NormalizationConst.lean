@@ -14,8 +14,8 @@ set_option doc.verso true in
 # Convergence of the evaluator's folds
 
 Lemmas of the internal language on lists of related values and on the evaluator's folds of trees,
-proved after the development of the base ({lit}`normalization.base`) and stored with it as the
-development {lit}`normalization.const`.
+proved after the development of the base ({lit}`baseDev`), whose declarations the certificate
+{lit}`bootstrap/certificates/normalization-const.cert` stores.
 
 A convergence is stable: from some level of fuel on, a function of the fuel has one value, which a
 predicate holds of. The convergences of a function at each element of a list combine into one of
@@ -109,29 +109,6 @@ def conv (n w : List Tree → Term) (stable related : Deducer) : Deducer := fun 
   dConv K.L K.G K.E K.S (n Γ) (w Γ) stable related Γ Φ ψ
 
 end Kit
-
-/-- A development's steps after a stored one: each proved with the stored entries before it,
-checked, with their names. -/
-def checkedAfter (G : Internal.Globals) (base : List (String × Internal.Thm)) (xs : List Step) :
-    IO (List (String × Internal.Thm)) := do
-  let names := base.map (·.1) ++ xs.map (·.1)
-  let ix (name : String) : ℕ := (names.findIdx? (· == name)).getD 0
-  let E₀ : Array Entry := (base.map fun (_, a) ↦ Entry.language a).toArray
-  let mut E := E₀
-  let mut ds : List Decl := []
-  for x in xs do
-    let t₀ ← IO.monoMsNow
-    match x.2 ix E with
-    | some (a, d) =>
-      E := E.push (Entry.language a)
-      ds := ds ++ [Decl.language a d]
-    | none => throw (IO.userError s!"the lemma {x.1} is not proved")
-    let t₁ ← IO.monoMsNow
-    if t₁ - t₀ > 1000 then IO.println s!"{x.1}: {t₁ - t₀} ms"
-  let some _ := Internal.checkDev G E₀ ds | throw (IO.userError "the development does not check")
-  pure ((xs.zip ds).filterMap fun (x, d) ↦ match d with
-    | Decl.language a _ => some (x.1, a)
-    | _ => none)
 
 /-- The type of trees, of lists of a type and of functions, as the checker builds them: the type
 of trees the leaf of its label's numeral. -/
@@ -479,19 +456,6 @@ def constDev (P : Prog) (S : Defs) : List Step :=
   [kidsLemma P "pvKids" "Eval.paraVal" "pvFst",
     foldConvLemma P S "paraConv" "Eval.paraVal" (fun l cs ↦ nodeT (Term.pair l cs))
       ["pvFst", "pvKids"]]
-
-open Lean Elab Command in
-#eval show CommandElabM Unit from do
-  let some ds := bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
-    | throwError "the program is not read"
-  let some (P, S) := extendedOf ds fun name ↦ (defIndex ds name.toList).getD 0
-    | throwError "the program does not extend"
-  let some base ← Stored.stored "normalization.base" | throwError "no stored base"
-  let t₀ ← IO.monoMsNow
-  let thms ← checkedAfter P.G base (constDev P S)
-  let t₁ ← IO.monoMsNow
-  logInfo m!"constants: {thms.length} theorems, {t₁ - t₀} ms"
-  Stored.store "normalization.const" (base ++ thms)
 
 end GebTests.Prototypes.FreeTopos.Normalization
 

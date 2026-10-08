@@ -4277,8 +4277,11 @@ globals, to a value related at that type.
 vocabulary the proof rewrites by, `NormalizationConst.lean` the
 convergence of the evaluator's folds, `NormalizationRel.lean` each
 constant's relation at its type, and `Normalization.lean` the lemma,
-each module checking its theorems and storing them, with those it was
-given, for the next. The labels of the kernel's constructors
+each module proving its theorems after those of the one before it. The
+developments are stored as certificates in `bootstrap/certificates/`,
+and `GebTests/Prototypes/FreeTopos/Certified/Normalization.lean` states
+that, one after another, they prove the lemma, a fact Lean's evaluator
+decides. The labels of the kernel's constructors
 and the primitives' indices are named by numeral abbreviations in
 `bootstrap/prelude.geb` and by abbreviations in Lean,
 `Geb.Kernel.Label` and `Geb.Kernel.Prim`, which
@@ -4494,8 +4497,10 @@ form and splitting a variable the normal form is stuck on. At a label
 it tries the language's rules and the definitions alone first, and the
 lemmas after them, each matched by a matching of its left side prepared
 once ({name}`Geb.FreeTopos.Internal.prepareRules`). The lemmas'
-derivations have 60492 nodes and the theorem's 540159, which the prover
-finds in 60 seconds and the checker checks in 31.
+derivations have 60492 nodes and the theorem's 540159. The compiled
+search (`scripts/certificates.sh`) finds the development in 9
+seconds, and Lean's evaluator checks its certificate, with the program
+read, in 57.
 
 The preservation of types by substitution is proved in the metalogic
 (`GebTests/Prototypes/FreeTopos/Substitution.lean`): for every
@@ -4520,8 +4525,8 @@ predecessor, the double and the difference with one of a successor are
 computed, and two successors are equal as their predecessors are. The
 development, which contains the weakening proof, has 626085 nodes, of
 which the lemmas substitution adds have 25434, and the theorem's
-derivation 604928, which the prover finds in 66 seconds and the checker
-checks in 35.
+derivation 604928. The compiled search finds the development in 24
+seconds, and Lean's evaluator checks its certificate in 124.
 
 The identity of the datatype language's expansion on programs of kernel
 forms is
@@ -4546,8 +4551,9 @@ compound test, such as whether a head names a keyword, is generalized
 to a new tree variable and split by case analysis of trees, and a term
 under a mask is rewritten by a hypothesis that holds under the mask's
 test, the absorption lemma moving the rewriting into the branch the
-test selects. The development has 668870 nodes, which the prover finds
-in 72 seconds and the checker checks in 34.
+test selects. The development has 668870 nodes. The compiled search
+finds it in 15 seconds, and Lean's evaluator checks its certificate in
+117.
 
 ### The metalogic
 %%%

@@ -14,8 +14,9 @@ set_option doc.verso true in
 # The constants' relations
 
 Each constant of the kernel, at its type, related to itself by the relation of the internal
-language, proved after the development {lit}`normalization.const` and stored with it as the
-development {lit}`normalization.rel`. They are the cases of the fundamental lemma in which a term
+language, proved after the development of the convergence lemmas ({lit}`constDev`), whose
+declarations the certificate {lit}`bootstrap/certificates/normalization-rel.cert` stores. They are
+the cases of the fundamental lemma in which a term
 is a constant, whose value is the constant itself.
 
 A constant's relation at a function type unfolds to the convergence of its application to each
@@ -541,19 +542,6 @@ def relDev (P : Prog) (S : Defs) : List Step :=
   [quoteAllLemma P S, unquoteAllLemma P S] ++
   primIndices.flatMap fun k ↦
     apConstLemmas P s!"apPrim{k}" (fun _ ↦ primConst k) 0 (primArgs k) ++ [relPrimLemma P S k]
-
-open Lean Elab Command in
-#eval show CommandElabM Unit from do
-  let some ds := bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
-    | throwError "the program is not read"
-  let some (P, S) := extendedOf ds fun name ↦ (defIndex ds name.toList).getD 0
-    | throwError "the program does not extend"
-  let some base ← Stored.stored "normalization.const" | throwError "no stored constants"
-  let t₀ ← IO.monoMsNow
-  let thms ← checkedAfter P.G base (relDev P S)
-  let t₁ ← IO.monoMsNow
-  logInfo m!"relations: {thms.length} theorems, {t₁ - t₀} ms"
-  Stored.store "normalization.rel" (base ++ thms)
 
 end GebTests.Prototypes.FreeTopos.Normalization
 

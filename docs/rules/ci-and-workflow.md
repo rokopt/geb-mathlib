@@ -14,6 +14,7 @@ paths:
 - [Verso manual build](#verso-manual-build)
 - [Literate site build](#literate-site-build)
 - [Loading modes](#loading-modes)
+- [Certificates](#certificates)
 - [Action pinning policy](#action-pinning-policy)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -255,11 +256,38 @@ take `--loading=native` or `--loading=rfl`; every other workflow builds in
 the mode `native`. Lake does not track the variable, so a module built in
 one mode is reused in the other: the mode `rfl` of `scripts/pre-push.sh`
 deletes the outputs of the modules declaring the loading and of those
-depending on them, and `rfl-loading.yml` builds without the GitHub cache. A stale
-module built in the mode `native` that is left in an `rfl` build depends
-on an axiom of the loading, which the linter then rejects.
-`rfl-loading.yml` builds and lints `GebTests` in the mode `rfl` daily and
+depending on them, and `slow-checks.yml` builds without the GitHub cache.
+A stale module built in the mode `native` that is left in an `rfl` build
+depends on an axiom of the loading, which the linter then rejects.
+`slow-checks.yml` builds and lints `GebTests` in the mode `rfl` daily and
 on demand.
+
+## Certificates
+
+The developments the internal language proves about the bootstrap's
+programs (the fundamental lemma of the evaluator, weakening, substitution,
+the expansion of kernel forms and the lemmas of trees) are found by
+searches for derivations, which take tens of minutes compiled, and are
+committed as certificates, `bootstrap/certificates/*.cert`, as the
+bootstrap's image is. A certificate stores a development's declarations,
+each theorem with its derivation, as the table of the distinct nodes of
+their tree (`GebTests/Prototypes/FreeTopos/Stored.lean`). The modules of
+`GebTests/Prototypes/FreeTopos/Certified/` read each certificate and state
+that the development proves its theorem in the program it is about. The
+check is decided by Lean's evaluator and declared by the command
+`evaluation_axiom` as an axiom in either loading mode, the kernel's
+reduction of a check of that size being out of reach. The axiom linter
+permits an axiom so declared only where the modules of
+`GebMeta.evaluationAxiomModules` declare it, and `#print axioms` lists it
+for every declaration that depends on it.
+
+`scripts/certificates.sh regen` runs the searches, by the executable
+`geb-certify`, and writes the certificates; `scripts/certificates.sh
+check` writes them into a temporary directory and compares them with the
+committed ones. A change to a development's proofs, or to a program it is
+about, is followed by `regen`. `slow-checks.yml` runs `check` daily and on
+demand; the pre-push checklist and the other workflows check the committed
+certificates and do not search.
 
 ## Action pinning policy
 
