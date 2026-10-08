@@ -151,7 +151,8 @@ fixtures:
   `scripts/tests/test-jj-bump-detect.sh`,
   `scripts/tests/test-regenerate-integration.sh`,
   `scripts/tests/test-diff-against-main.sh`,
-  `scripts/tests/test-vcs.sh`.
+  `scripts/tests/test-vcs.sh`,
+  `scripts/tests/test-dependency-patches.sh`.
 - `scripts/hooks/tests/test-block-mutating-git.sh`.
 
 The scripts report what the checks found and nothing else. Project
@@ -220,6 +221,15 @@ the manual is; the libraries themselves are the `defaultTargets`,
 so an ordinary `lake build` compiles them without Verso, which the
 first Verso build compiles from source.
 `scripts/tests/test-lint-driver.sh` § 3 guards the workflow step.
+
+The build verbs of `scripts/manual.sh` and `scripts/literate.sh` first
+apply each `scripts/patches/<package>/*.patch` to the checkout of that
+dependency under `.lake/packages/` (`scripts/lib/dependency-patches.sh`).
+A patch carries an upstream fix that the pinned revision lacks, its header
+states the defect, and `TODO.md` § Triggers records when it is removed.
+Application is idempotent, and a patch that no longer applies fails the
+build. Lake keeps the patched checkout across builds, logging a warning
+that the dependency has local changes.
 
 The pre-push and document build scripts default `LEAN_NUM_THREADS` to four,
 preserving an explicit setting. Roots other than `Geb` invoke
