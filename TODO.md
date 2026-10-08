@@ -1253,6 +1253,17 @@ Correcting these is a separate concern from any current branch per
   requirement of the bootstrap; or the bootstrap's completion without
   one, at which point it becomes an early item of the work after the
   bootstrap in the chapter's road map.
+- **The import level of `verso-literate`**:
+  `scripts/patches/verso/literate-import-level.patch` makes
+  `verso-literate` import a `module` file at the level Lean uses for it,
+  which the import artifacts of Lake's module setup presuppose; without
+  it, rendering a module that imports a module-system module fails with
+  "missing data file for module" (the patch's header states the defect).
+  `scripts/manual.sh build` and `scripts/literate.sh build` apply it
+  (`scripts/lib/dependency-patches.sh`). Trigger: the Verso revision a
+  bump pins computes the level itself, or changes the patched lines,
+  either of which fails the patch's application, at which point the
+  patch is deleted, or rebased if the defect persists.
 - **Canonical as a dependency**: `lakefile.toml` requires Canonical
   (the Bootstrap chapter's sections Holes and search, and Search and
   synthesis) for experiments with search, in a library of their own that

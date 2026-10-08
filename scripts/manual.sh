@@ -18,9 +18,12 @@ set -euo pipefail
 export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
+# shellcheck source=scripts/lib/dependency-patches.sh
+source scripts/lib/dependency-patches.sh
 
 case "${1:-}" in
   build)
+    apply_dependency_patches
     # Parallel chapters run independent Lake processes for their literate
     # inclusions. Build the shared executable before any of them can relink it.
     lake build verso/verso-literate

@@ -1,0 +1,33 @@
+verso-literate: import at the level Lean uses for the module
+
+Verso's literate facet passes Lake's module setup to verso-literate,
+whose import artifacts are those of the level at which Lean imports
+for the module: a `module` file is imported at `.exported` (`.server`
+in the language server), and its imports' `.olean.private` parts are
+not listed. verso-literate called `importModules` at the default
+level, `.private`, which reads the private part of every module-system
+import, so finalizing the import failed with "missing data file for
+module" naming the first module whose private part was not listed.
+The level is computed as Lean's `processHeaderCore` and SubVerso's
+`Compat.importModules` compute it, at `.server` so that hovers carry
+the docstrings of imported constants.
+
+Applies to leanprover/verso 01a09f320122475119588526857a07d218aef600
+(tag v4.35.0-rc4).
+
+diff --git a/src/verso-literate/VersoLiterateMain.lean b/src/verso-literate/VersoLiterateMain.lean
+index ba70a386..292202cd 100644
+--- a/src/verso-literate/VersoLiterateMain.lean
++++ b/src/verso-literate/VersoLiterateMain.lean
+@@ -643,7 +643,10 @@ unsafe def go (suppressedNamespaces : Array Name) (extraImports : Array Name) (m
+     let (headerStx, parserState, msgs) ← Parser.parseHeader ictx
+     let imports := headerToImports headerStx
+     enableInitializersExecution
+-    let env ← importModules (extraImports.map ({module := ·}) ++ imports) {} (loadExts := true) (arts := importArts)
++    -- Lake's setup lists the artifacts for the level at which Lean imports for this module, so the
++    -- level must be computed the same way: a `module` does not load its imports' private data.
++    let level := if Compat.isModule headerStx then .server else .private
++    let env ← importModules (extraImports.map ({module := ·}) ++ imports) {} (loadExts := true) (level := level) (arts := importArts)
+     -- Rewrite `weak.` options based on the definitions discovered during imports
+     let leanOptions ← Lean.Language.Lean.reparseOptions leanOptions
+     let pctx : Frontend.Context := {inputCtx := ictx}

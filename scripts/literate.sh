@@ -19,9 +19,12 @@ set -euo pipefail
 export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
+# shellcheck source=scripts/lib/dependency-patches.sh
+source scripts/lib/dependency-patches.sh
 
 case "${1:-}" in
   build)
+    apply_dependency_patches
     lake build
     # Keep the default-driver check's output for pre-push-full's tooling test.
     lake lint 2>&1 | tee "${GEB_LINT_LOG:-/dev/null}"
