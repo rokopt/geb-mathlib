@@ -546,16 +546,16 @@ def byRoseInd (kn kl kc : ℕ) (s : Term) (rs : List NormRule) (fuel : ℕ) (Γ 
     pure (RoseTree.node (.roseInd kn kl kc s) [p₁, p₂])
   | _ => none
 
-/-- The proof of an equation in a context of a rose tree alone by induction on it with the
-induction hypothesis, the premise at a construction proved by {lit}`p` under the hypothesis that
-the equation holds at each child. -/
-def byRoseIndHyp (kn kl kc : ℕ) (p : Prover) : Prover := fun Γ _ t u ↦ match Γ with
-  | [r] => do
+/-- The proof of an equation under no hypotheses by induction on the innermost variable, of a
+rose-tree type, with the induction hypothesis, the premise at a construction proved by {lit}`p`
+under the hypothesis that the equation holds at each child. -/
+def byRoseIndHyp (kn kl kc : ℕ) (p : Prover) : Prover := fun Γ Φ t u ↦ match Γ, Φ with
+  | r :: Γ', [] => do
     let (a, _) ← roseParts r
-    let d ← p [list r, a] [roseHyp kl kc (Term.eq t u)] (roseNodeAt kn r a t)
+    let d ← p (list r :: a :: Γ') [roseHyp kl kc (Term.eq t u)] (roseNodeAt kn r a t)
       (roseNodeAt kn r a u)
     pure (RoseTree.node (.roseIndHyp kn kl kc) [d])
-  | _ => none
+  | _, _ => none
 
 end Geb.FreeTopos.Internal
 

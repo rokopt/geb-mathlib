@@ -3935,16 +3935,17 @@ its proofs, in this order:
    right fold and the associativity of appending, are posed in the
    signature and run end to end. The experiments' bridge to Canonical
    follows the interface of the release its tag names.
-4. Waiting on the generalization of the language's induction on rose
-   trees. That induction, in both its forms, proves a formula in a
-   context of a rose tree alone, under no hypotheses for the equation of
-   two folds; it is generalized to a rose tree innermost in any context,
+4. Complete. The language's induction on rose trees with the induction
+   hypothesis proves a formula of a rose tree innermost in any context,
    under hypotheses, as the inductions on the natural numbers and on
-   lists are. Rose trees then enter the signature: both rose-tree
-   objects, construction, the fold, its step an LF abstraction over the
-   pair of the label and the list of the children's values, its
-   computation rule and induction.
-5. Waiting on the above. Coproducts and the initial object, with case
+   lists do. Its form as the uniqueness of the fold, which the signature
+   does not use, keeps a context of the tree alone.
+5. Ready. Rose trees in the signature: both rose-tree objects,
+   construction, the fold, its step an LF abstraction over the pair of
+   the label and the list of the children's values, its computation
+   rule, also as a rewrite rule, and induction, decoding to the
+   language's induction with the induction hypothesis.
+6. Waiting on the above. Coproducts and the initial object, with case
    analysis; then object variables, so that a goal is polymorphic in its
    types.
 
@@ -5513,18 +5514,21 @@ with the fold that rebuilds a list, the identity by induction on lists,
 cited at the children (`GebTests/Prototypes/FreeTopos/InternalRoseTrees.lean`).
 
 Induction on rose trees with an induction hypothesis is a second rule,
-beside those of the natural numbers and lists: a formula in a context of
-a rose tree alone holds when it holds at a construction under the
-hypothesis that it holds at each child, the list of its values at the
-children being the list of truths of the same length
-({name}`Geb.FreeTopos.Internal.roseIndHyp_sound`). Its soundness is the
-fold of the formula's pullback of truth by the structure map there,
-which the premise gives: that fold followed by the pullback's inclusion
-is the identity, by the uniqueness of the fold, so the formula is true
-({name}`Geb.FreeTopos.truth_of_roseInd`), with the action of the list
-object on arrows functorial ({name}`Geb.FreeTopos.listMap_comp`). The
-rule takes a context of the tree alone for the reason the first does;
-quantifiers, or abstraction, bring other variables under it.
+beside those of the natural numbers and lists: a formula of a rose tree
+innermost in its context holds when it holds at a construction, under
+the hypotheses lowered past the tree and the hypothesis that it holds at
+each child, the list of its values at the children being the list of
+truths of the same length
+({name}`Geb.FreeTopos.Internal.roseIndHyp_sound`). That list is a fold
+of the children whose step mentions the context's other variables, a
+fold with parameters. The rule's soundness is induction on the predicate
+that the formula, curried over the parameters, is the function
+constantly true ({name}`Geb.FreeTopos.truth_of_roseInd_param`): the
+pullback of truth along that predicate is closed under the structure
+map, as the premise gives at every arrow into a label and children at
+each of which the formula is true, so the fold into it followed by its
+inclusion is the identity, by the uniqueness of the fold
+({name}`Geb.FreeTopos.truth_of_roseInd`).
 
 Citations between the two checkers, complete. A development is one list
 of declarations, each checked with the entries before it: a theorem of

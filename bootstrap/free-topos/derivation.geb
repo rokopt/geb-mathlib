@@ -164,14 +164,19 @@
     (subst t
       (lam ((i T)) (if (eq i 0) (mArr kc (single a) (mPair (var 1) (var 0))) (var (add i 1))))))
   (defn roseNodeAt ((kn T) (r T) (a T) (t T)) T
-    (subst t (instVar (mArr kn (if (equal r rose) (nil T) (single a)) (mPair (var 1) (var 0))))))
+    (subst t
+      (lam ((i T))
+        (if (eq i 0) (mArr kn (if (equal r rose) (nil T) (single a)) (mPair (var 1) (var 0)))
+          (var (add i 1))))))
   (defn weakenElem ((t T)) T (rename t (lam ((i T)) (if (eq i 0) 0 (add i 1)))))
   (defn weaken1 ((t T)) T (rename t (lam ((i T)) (add i 1))))
   (defn weaken2 ((t T)) T (rename t (lam ((i T)) (add i 2))))
   (defn weakenStep2 ((s T)) T (rename s (lam ((i T)) (if (eq i 0) 0 (add i 2)))))
   (defn lower1 ((t T)) T (rename t (lam ((i T)) (sub i 1))))
   (defn roseMapAt ((kl T) (kc T) (c T) (t T)) T
-    (mListRec (mArr kl (single c) mStar) (mArr kc (single c) (mPair (weaken1 t) (var 0))) (var 0)))
+    (mListRec (mArr kl (single c) mStar)
+      (mArr kc (single c) (mPair (rename t (lam ((i T)) (if (eq i 0) 1 (add i 3)))) (var 0)))
+      (var 0)))
   (defn roseHyp ((kl T) (kc T) (phi T)) T
     (mEq (roseMapAt kl kc omega phi) (roseMapAt kl kc omega (mEq mStar mStar))))
 
@@ -806,21 +811,32 @@
                                                               0))))
                                                       0)
                                                     (if (and (eq rl 33) (eq k 1))
-                                                      (if (eq (length g) 1)
+                                                      (if (not (isEmpty g))
                                                         (let r T (at g 0)
-                                                          (let ma T (roseLabel r)
-                                                            (if (isSome ma)
-                                                              (let a T (get ma)
-                                                                (let kc T (at rd 2)
-                                                                  (if
-                                                                    (and
-                                                                      (rosePrimsOk G d0 d1 kc r a)
-                                                                      (isFormula G n g phi))
-                                                                    ((pf as 0) (l2 (list r) a)
-                                                                     (single (roseHyp d1 kc phi))
-                                                                     (roseNodeAt d0 r a phi))
-                                                                    0)))
-                                                              0)))
+                                                          (let g1 Ts (tail g)
+                                                            (let ma T (roseLabel r)
+                                                              (let mH OTerms.Maybe
+                                                                (lowerHyps G n g1 hs)
+                                                                (if
+                                                                  (and (isSome ma)
+                                                                    (OTerms.isJust mH))
+                                                                  (let a T (get ma)
+                                                                    (let kc T (at rd 2)
+                                                                      (if
+                                                                        (and
+                                                                          (rosePrimsOk G d0 d1 kc r
+                                                                            a)
+                                                                          (isFormula G n g phi))
+                                                                        ((pf as 0)
+                                                                         (cons (list r) (cons a g1))
+                                                                         (append
+                                                                           (mapT weaken2
+                                                                             (termsOr mH))
+                                                                           (single
+                                                                             (roseHyp d1 kc phi)))
+                                                                         (roseNodeAt d0 r a phi))
+                                                                        0)))
+                                                                  0)))))
                                                         0)
                                                       0))))))))))))))))))))))))))
 

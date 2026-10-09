@@ -28,8 +28,9 @@ formula proved first; the equality of two formulas that entail each other, and o
 whose applications to a new variable are equal; an instance of an earlier theorem, its hypotheses'
 instances proved; a formula by induction on the innermost variable of the natural numbers or of a
 list type, with the formula's instance at the start and, under the induction hypothesis, at a
-successor or a construction; a formula of a rose tree alone by induction on it, with its instance at
-a construction under the hypothesis that it holds at each child; a formula by case analysis on the
+successor or a construction; a formula by induction on the innermost variable of a rose-tree type,
+with its instance at a construction under the hypotheses lowered past the variable and the
+hypothesis that it holds at each child; a formula by case analysis on the
 innermost variable of a coproduct type, with its instances at the two injections; every formula in a
 context with a variable of the initial type; a formula by induction on the innermost variable of the
 codomain of a coequalizer's projection, with its instance at the projection's image of a variable of
@@ -185,9 +186,10 @@ inductive Rule where
   of index {lit}`kn`, is the step {lit}`s` at the label and the list of the side's values at the
   children, the list built by the primitives of indices {lit}`kl` and {lit}`kc`. -/
   | roseInd (kn kl kc : ℕ) (s : Term)
-  /-- A formula in a context of a rose tree alone by induction on it: proved at a construction,
-  the primitive of index {lit}`kn`, under the hypothesis that it holds at each child, its list of
-  values at the children, built by the primitives of indices {lit}`kl` and {lit}`kc`, being that
+  /-- A formula by induction on the innermost variable, of a rose-tree type: proved at a
+  construction, the primitive of index {lit}`kn`, under the hypotheses lowered past the variable and
+  weakened past the label and the children, and the hypothesis that it holds at each child, its list
+  of values at the children, built by the primitives of indices {lit}`kl` and {lit}`kc`, being that
   of truth. -/
   | roseIndHyp (kn kl kc : ℕ)
   /-- A formula by case analysis on the innermost variable, of a coproduct type, with the
@@ -305,12 +307,13 @@ def listConsAt (kc : ℕ) (a : Tree) (t : Term) : Term :=
     | 0 => Term.arr kc [a] (Term.pair (Term.var 1) (Term.var 0))
     | j + 1 => Term.var (j + 2)
 
-/-- A term in a context of a rose tree of the type {lit}`r` over the type of labels {lit}`a`, at
-the construction, the primitive of index {lit}`kn`, of a tree from the next variable's label and
-the innermost variable's children. -/
+/-- A term in a context of a rose tree of the type {lit}`r` over the type of labels {lit}`a`, the
+innermost variable, at the construction, the primitive of index {lit}`kn`, of a tree from the next
+variable's label and the innermost variable's children, the context's others raised past them. -/
 def roseNodeAt (kn : ℕ) (r a : Tree) (t : Term) : Term :=
-  Term.subst t (instVar (Term.arr kn (if r = rose then [] else [a])
-    (Term.pair (Term.var 1) (Term.var 0))))
+  Term.subst t fun i ↦ match i with
+    | 0 => Term.arr kn (if r = rose then [] else [a]) (Term.pair (Term.var 1) (Term.var 0))
+    | j + 1 => Term.var (j + 2)
 
 /-- A term in a context of a list variable, weakened past a new element after the variable. -/
 def weakenElem (t : Term) : Term := Term.rename t fun i ↦ match i with
@@ -328,11 +331,15 @@ variables of the context below the pair. -/
 def weakenStep2 (s : Term) : Term := Term.rename s (Term.liftR (· + 2))
 
 /-- The list of the values at the children, the innermost variable, of a term in a context of a
-rose tree, the list of the type {lit}`c` built by a fold of the children by the primitives of
-indices {lit}`kl` and {lit}`kc`. -/
+rose tree, the innermost variable, the list of the type {lit}`c` built by a fold of the children
+by the primitives of indices {lit}`kl` and {lit}`kc`: in the fold's step, the tree is the element
+and the context's others are raised past the accumulated list, the element, the children and the
+label. -/
 def roseMapAt (kl kc : ℕ) (c : Tree) (t : Term) : Term :=
-  Term.listRec (Term.arr kl [c] Term.star) (Term.arr kc [c] (Term.pair (weaken1 t) (Term.var 0)))
-    (Term.var 0)
+  Term.listRec (Term.arr kl [c] Term.star) (Term.arr kc [c] (Term.pair (Term.rename t fun i ↦
+    match i with
+      | 0 => 1
+      | j + 1 => j + 4) (Term.var 0))) (Term.var 0)
 
 /-- The hypothesis of induction on rose trees: a formula in a context of a rose tree holds at each
 child, the innermost variable, its list of values at the children being that of truth, the
@@ -663,13 +670,13 @@ def checkStep (G : Globals) (E : Array Entry) (n : ℕ) (l : Rule) (cs : List (D
         | _, _ => false
       | _, _ => false
     | .roseIndHyp kn kl kc, [(_, p₁)] => match Γ with
-      | [r] => match roseParts r with
-        | some (a, _) => decide (((G.prims[kn]? = some nodePrim ∧ r = rose) ∨
+      | r :: Γ' => match roseParts r, lowerHyps G n Γ' Φ with
+        | some (a, _), some Φ' => decide (((G.prims[kn]? = some nodePrim ∧ r = rose) ∨
               (G.prims[kn]? = some lnodePrim ∧ r = lrose a)) ∧ G.prims[kl]? = some nilPrim ∧
               G.prims[kc]? = some consPrim ∧ typeIn G n Γ φ = some omega) &&
-            p₁.2 [list r, a] [roseHyp kl kc φ] (roseNodeAt kn r a φ)
-        | none => false
-      | _ => false
+            p₁.2 (list r :: a :: Γ') (Φ'.map weaken2 ++ [roseHyp kl kc φ]) (roseNodeAt kn r a φ)
+        | _, _ => false
+      | [] => false
     | _, _ => false)
 
 /-- The checker: the rewriting a derivation performs on a term in a context under hypotheses,

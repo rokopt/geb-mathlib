@@ -249,9 +249,10 @@ theorem atVar0_eq (u : Term) (i : ℕ) :
 @[simp] theorem roseNodeAt_eq (kn : ℕ) (r a : Tree) (t : Term) :
     «Derivation.roseNodeAt» (leaf kn) r a (encTerm t) =
       encTerm (Internal.roseNodeAt kn r a t) := by
-  simp only [«Derivation.roseNodeAt», template, Internal.roseNodeAt, mVar_eq, mPair_eq, mArr_eq,
-    equal_eq, mirror_rose, label_ne_zero, ofBool_bne, decide_eq_true_eq, single_eq]
-  split_ifs <;> exact subst_eq _ _ _ (instVar_eq _)
+  simp only [«Derivation.roseNodeAt», template, Internal.roseNodeAt]
+  refine subst_eq _ _ _ fun i ↦ ?_
+  cases i <;> mirror_simp [mVar_eq, mPair_eq, mArr_eq, beq_iff_eq, Nat.add_one_ne_zero, equal_eq,
+    mirror_rose, label_ne_zero, ofBool_bne, decide_eq_true_eq, single_eq]
 
 /-- The mirror's weakening of a term past an element after its list variable. -/
 @[simp] theorem weakenElem_eq (t : Term) :
@@ -284,8 +285,14 @@ theorem atVar0_eq (u : Term) (i : ℕ) :
 @[simp] theorem roseMapAt_eq (kl kc : ℕ) (c : Tree) (t : Term) :
     «Derivation.roseMapAt» (leaf kl) (leaf kc) c (encTerm t) =
       encTerm (Internal.roseMapAt kl kc c t) := by
-  simp only [«Derivation.roseMapAt», template, Internal.roseMapAt, weaken1_eq, mVar_eq, mPair_eq,
+  have hw : «Language.rename» (encTerm t) (fun x ↦ if RoseTree.label (Const.eq x (leaf 0)) ≠ 0
+      then leaf 1 else Const.add x (leaf 3)) = encTerm (Internal.Term.rename t fun i ↦ match i with
+        | 0 => 1
+        | j + 1 => j + 4) :=
+    rename_eq _ _ _ fun i ↦ by cases i <;> mirror_simp [beq_iff_eq, Nat.add_one_ne_zero]
+  simp only [«Derivation.roseMapAt», template, Internal.roseMapAt, hw, mVar_eq, mPair_eq,
     mStar_eq, single_eq, mArr_eq, mListRec_eq]
+  rfl
 
 /-- The mirror's hypothesis of induction on rose trees. -/
 @[simp] theorem roseHyp_eq (kl kc : ℕ) (φ : Term) :
@@ -1378,15 +1385,13 @@ theorem proveRoseIndHyp_eq (kn kl kc : ℕ) (xs : List (Internal.Deriv × DV × 
         Φ φ) := by
   have h1 := rw_rel xs hx
   have h2 := pf_rel xs hx
-  have h4 : ∀ x ∈ xs, ∀ Γ ψ φ,
-      x.2.1.2 Γ [encTerm ψ] (encTerm φ) = ofBool (x.2.2.2 Γ [ψ] φ) :=
-    fun x h Γ ψ φ ↦ (hx x h).2 Γ [ψ] φ
   simp only [«Derivation.proveStep»]
   rcases xs with _ | ⟨x0, _ | ⟨x1, xs⟩⟩ <;> select_rule <;> prove_simp []
-  rcases Γ with _ | ⟨r, _ | ⟨r', Γ⟩⟩ <;> prove_simp []
+  rcases Γ with _ | ⟨r, Γ'⟩ <;> prove_simp []
   rcases hp : Internal.roseParts r with _ | ⟨a, fold⟩ <;>
-    prove_simp [h4, roseLabel_eq, hp, rosePrimsOk_eq, roseNodeAt_eq, roseHyp_eq, isFormula_eq,
-      mirror_list, «Theory.l2», Bool.decide_and]
+    rcases hH : Internal.lowerHyps G n Γ' Φ with _ | Φ' <;>
+    prove_simp [roseLabel_eq, hp, lowerHyps_eq, hH, rosePrimsOk_eq, roseNodeAt_eq, roseHyp_eq,
+      isFormula_eq, weaken2_eq, mirror_list, Bool.decide_and]
 
 
 /-- The mirror's test at the positions of a list is the list's test, where the two agree at each

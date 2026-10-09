@@ -19,7 +19,8 @@ takes a tree to its root's label computes the label. The fold that rebuilds a tr
 identity, by induction on rose trees, with the fold that rebuilds a list, the identity by
 induction on lists, cited at the children. Induction on rose trees with an induction hypothesis
 proves a formula from its instance at a construction, and a derivation whose premise does not
-prove that instance is rejected.
+prove that instance is rejected. It applies to a tree innermost in a context of other variables,
+under hypotheses about them, which hold at the construction.
 
 ## Main definitions
 
@@ -101,6 +102,19 @@ def labelRebuild : Thm :=
     nd .trans [nd (.roseNode 5 0 1), nd .fstPair]]], nd .trans [nd (.roseNode 5 0 1),
       nd .fstPair]]])] #[]
 #guard !checkThms GR [.language labelRebuild (nd (.roseIndHyp 5 0 1) [nd (.hyp 0)])] #[]
+
+/-- In a context of a tree innermost and two elements of the object parameter, an equation of the
+elements follows from itself as a hypothesis, by induction on the tree: at a construction, the
+hypothesis, lowered past the tree and weakened past the label and the children, is the
+equation. -/
+def eqUnderTree : Thm :=
+  ⟨1, [lrose (x 0), x 0, x 0], [Term.eq (Term.var 1) (Term.var 2)],
+    Term.eq (Term.var 1) (Term.var 2)⟩
+
+-- the induction in a context of other variables checks with the outer hypothesis at the
+-- construction, and fails with the hypothesis at the children in its place
+#guard checkThms GR [.language eqUnderTree (nd (.roseIndHyp 5 0 1) [nd (.hyp 0)])] #[]
+#guard !checkThms GR [.language eqUnderTree (nd (.roseIndHyp 5 0 1) [nd (.hyp 1)])] #[]
 
 end GebTests.Prototypes.FreeTopos.InternalRoseTrees
 
