@@ -16,13 +16,13 @@ An LF signature ({cite}`HarperHonsellPlotkin1993`; {cite}`HarperLicata2007`, Sec
 method) representing a fragment of the Mitchell–Bénabou language of the free elementary topos with
 a natural numbers object ({cite}`MacLaneMoerdijk1992`, Section VI.5), whose terms and
 derivations are those of {lit}`Geb.FreeTopos.Internal`: the types built from the terminal object,
-binary products, exponentials, the subobject classifier, the natural numbers object, list objects
-and the rose-tree object of natural-number labels; the terms built from variables by the element
-of the terminal object, pairs and their components, abstraction and application, zero and the
-successor, the empty list and the construction of a list, the construction of a rose tree, each
-applied to a term as the primitive arrows of {lit}`Geb.FreeTopos.Internal` are, the folds of the
-natural numbers, of lists and of rose trees, and the equality of two terms, a formula; and the
-derivability of formulas.
+binary products, exponentials, the subobject classifier, the natural numbers object, list objects,
+the rose-tree object of natural-number labels and rose-tree objects of labels of any type; the
+terms built from variables by the element of the terminal object, pairs and their components,
+abstraction and application, zero and the successor, the empty list and the construction of a
+list, the constructions of rose trees, each applied to a term as the primitive arrows of
+{lit}`Geb.FreeTopos.Internal` are, the folds of the natural numbers, of lists and of rose trees,
+and the equality of two terms, a formula; and the derivability of formulas.
 
 The object types are the canonical terms of the type {lit}`tp`. A term of an object type
 {lit}`A` is a canonical term of {lit}`tm A`, a variable of the language a variable of LF, and an
@@ -39,10 +39,11 @@ derivation of a formula
 * the β rule of abstraction, the computation and η rules of pairs, the η rule of the terminal
   type, and the computation rules of the folds ({lit}`beta`, {lit}`fstPair`, {lit}`sndPair`,
   {lit}`pairEta`, {lit}`unitEta`, {lit}`natZero`, {lit}`natSucc`, {lit}`listNil`,
-  {lit}`listCons`, {lit}`roseNode`);
+  {lit}`listCons`, {lit}`roseNode`, {lit}`lroseNode`);
 * the extensionality of functions and of formulas ({lit}`funExt`, {lit}`propExt`);
 * induction over the natural numbers, lists and rose trees, its predicate an LF abstraction
-  ({lit}`natInd`, {lit}`listInd`, {lit}`roseInd`), the hypothesis at a rose tree's children
+  ({lit}`natInd`, {lit}`listInd`, {lit}`roseInd`, {lit}`lroseInd`), the hypothesis at a rose
+  tree's children
   being that the list of the predicate's values at them is the list of truths.
 
 These are rules of a local set theory ({cite}`RuizHernandezSolorzano2021`, Section 3.2) and of
@@ -50,13 +51,15 @@ the derivations of {lit}`Geb.FreeTopos.Internal`, whose induction applies to the
 variable where this one names its predicate. The folds are the language's: a start and a step,
 an LF abstraction, may mention the variables around them, so that the folds have parameters, as
 the folds with a parameter of a cartesian closed category with a natural numbers object or list
-objects do. The declarations of lists, then of rose trees, follow the rules, so that the indices
-of the declarations before each are those of the signature without it.
+objects do. The declarations of lists, then of rose trees of natural-number labels, then of rose
+trees of labels of any type follow the rules, so that the indices of the declarations before each
+are those of the signature without it.
 
 ## Main definitions
 
-* {lit}`objSig`, {lit}`ruleSig`, {lit}`listSig`, {lit}`roseSig`, {lit}`sig` — the declarations of
-  the types and terms, of the rules, of lists and of rose trees, and the signature of all.
+* {lit}`objSig`, {lit}`ruleSig`, {lit}`listSig`, {lit}`roseSig`, {lit}`lroseSig`, {lit}`sig` —
+  the declarations of the types and terms, of the rules, of lists, of rose trees of natural-number
+  labels and of rose trees of labels of any type, and the signature of all.
 * {lit}`tp`, {lit}`tm`, {lit}`pf` and the constants' applications — the expressions of the
   signature.
 
@@ -165,6 +168,17 @@ def node (p : Expr) : Expr := Expr.const 38 [p]
 /-- The fold of a rose tree into the type {lit}`C` by a step, an LF abstraction over the pair of a
 label and the list of the children's values (39). -/
 def roseRec (c s t : Expr) : Expr := Expr.const 39 [c, s, t]
+
+/-- The rose-tree object of labels of the type {lit}`A` (42). -/
+def lrose (a : Expr) : Expr := Expr.const 42 [a]
+
+/-- The construction of a rose tree of labels of the type {lit}`A`, applied to a pair of a label
+and a list of trees (43). -/
+def lnode (a p : Expr) : Expr := Expr.const 43 [a, p]
+
+/-- The fold of a rose tree of labels of the type {lit}`A` into the type {lit}`C` by a step, an LF
+abstraction over the pair of a label and the list of the children's values (44). -/
+def lroseRec (a c s t : Expr) : Expr := Expr.const 44 [a, c, s, t]
 
 open Expr in
 /-- The declarations of the types and terms: {lit}`tp`, the object types, {lit}`tm`, the term
@@ -315,9 +329,48 @@ def roseSig : Sig :=
             (pf (var 2 [node (pair nat (list rose) (v 1) (v 0))])))))
         (pi (tm rose) (pf (var 1 [v 0])))) ]
 
+open Expr in
+/-- The declarations of rose trees of labels of any type, from index 42: the rose-tree object
+{lit}`lrose`, the construction {lit}`lnode` and the fold {lit}`lroseRec`, then the rules
+{lit}`lroseNode` and {lit}`lroseInd`. -/
+def lroseSig : Sig :=
+  [ arrow tp tp,
+    -- lnode : Π A:tp. tm (A × list (lrose A)) → tm (lrose A)
+    pi tp (arrow (tm (prod (v 0) (list (lrose (v 0))))) (tm (lrose (v 0)))),
+    -- lroseRec : Π A C:tp. (tm (A × list C) → tm C) → tm (lrose A) → tm C
+    pi tp (pi tp (arrow (arrow (tm (prod (v 1) (list (v 0)))) (tm (v 0)))
+      (arrow (tm (lrose (v 1))) (tm (v 0))))),
+    -- lroseNode : Π A C:tp. Π s:tm (A × list C) → tm C. Π l:tm A. Π cs:tm (list (lrose A)).
+    --   pf (eq C (lroseRec A C (λx. s x) (lnode A (pair l cs)))
+    --     (s (pair l (listRec (lrose A) (list C) (nil C)
+    --       (λh acc. cons C (pair (lroseRec A C (λx. s x) h) acc)) cs))))
+    pi tp (pi tp (pi (arrow (tm (prod (v 1) (list (v 0)))) (tm (v 0))) (pi (tm (v 2))
+      (pi (tm (list (lrose (v 3))))
+        (pf (eq (v 3) (lroseRec (v 4) (v 3) (Expr.lam (var 3 [v 0]))
+            (lnode (v 4) (pair (v 4) (list (lrose (v 4))) (v 1) (v 0))))
+          (var 2 [pair (v 4) (list (v 3)) (v 1) (listRec (lrose (v 4)) (list (v 3)) (nil (v 3))
+            (Expr.lam (Expr.lam (cons (v 5) (pair (v 5) (list (v 5))
+              (lroseRec (v 6) (v 5) (Expr.lam (var 5 [v 0])) (v 1)) (v 0))))) (v 0))]))))))),
+    -- lroseInd : Π A:tp. Π P:tm (lrose A) → tm Ω.
+    --   (Π l:tm A. Π cs:tm (list (lrose A)).
+    --     pf (eq (list Ω) (listRec (lrose A) (list Ω) (nil Ω) (λh acc. cons Ω (pair (P h) acc)) cs)
+    --       (listRec (lrose A) (list Ω) (nil Ω) (λh acc. cons Ω (pair (eq 1 star star) acc))
+    --         cs)) →
+    --     pf (P (lnode A (pair l cs)))) →
+    --   Π t:tm (lrose A). pf (P t)
+    pi tp (pi (arrow (tm (lrose (v 0))) (tm omega))
+      (arrow (pi (tm (v 1)) (pi (tm (list (lrose (v 2))))
+          (arrow (pf (eq (list omega)
+              (listRec (lrose (v 3)) (list omega) (nil omega) (Expr.lam (Expr.lam (cons omega
+                (pair omega (list omega) (var 4 [v 1]) (v 0))))) (v 0))
+              (listRec (lrose (v 3)) (list omega) (nil omega) (Expr.lam (Expr.lam (cons omega
+                (pair omega (list omega) (eq one star star) (v 0))))) (v 0))))
+            (pf (var 2 [lnode (v 3) (pair (v 3) (list (lrose (v 3))) (v 1) (v 0))])))))
+        (pi (tm (lrose (v 1))) (pf (var 1 [v 0]))))) ]
+
 /-- The signature of the fragment: the types and terms, then the rules, then lists, then rose
-trees. -/
-def sig : Sig := objSig ++ ruleSig ++ listSig ++ roseSig
+trees of natural-number labels, then rose trees of labels of any type. -/
+def sig : Sig := objSig ++ ruleSig ++ listSig ++ roseSig ++ lroseSig
 
 end Geb.LF.Topos
 
