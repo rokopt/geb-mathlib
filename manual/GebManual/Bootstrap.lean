@@ -280,9 +280,9 @@ the sections below detail:
     language's derivations, for experiment
     ({ref "search-synthesis"}[Search and synthesis]): complete for the
     fragment of the natural numbers, lists and rose trees, whose folds
-    are the language's folds with parameters; the decoding of the terms
-    Canonical finds, coproducts and object variables follow, in the order
-    that section gives.
+    are the language's folds with parameters, the terms Canonical finds
+    decoded and checked as derivations of the language; coproducts and
+    object variables follow, in the order that section gives.
 
 Extension:
 
@@ -3874,12 +3874,16 @@ extensionality and induction, with the computation rules also given as
 rewrite rules. The
 library `GebExperiments` translates a goal of that signature to
 Canonical's input and each term returned back to canonical LF, where the
-prototype's checker decides it (`lake exe lf-canonical`). The terms are
-derivations of the signature, and decode to derivations that the
-checker of `Geb.FreeTopos.Internal` accepts
+prototype's checker decides it, and then decodes it to a derivation of
+the internal language and checks it with the checker of
+`Geb.FreeTopos.Internal` (`lake exe lf-canonical`). A term of pure LF
+decodes to a derivation that checker accepts
 (`Geb/Prototypes/LF/Topos/ProofSound.lean`): the signature's fold is the
 language's fold, whose start and step may mention the variables around
-it, and its computation rules are the checker's. On the same machine,
+it, and its computation rules are the checker's. The decoding applies to
+goals whose parameters are term variables and hypotheses, the language
+having no object variables, so symmetry, transitivity and the fold at
+one, stated for every type, are checked in LF alone. On the same machine,
 with Canonical at revision `1d80841` of CanonicalLean (tag `v4.34.0`
 since its release was replaced) under Lean v4.35.0-rc4, the signature
 with its list and rose-tree declarations, and a timeout of 120 s, every
@@ -3914,7 +3918,33 @@ term returned checked:
   * `lam (λ x. x) = lam (λ x. app (lam (λ y. y)) x)`
   * Found, 136 ms, by extensionality and β
   * Found, 2 ms, by reflexivity
+*
+  * `foldr cons nil xs = xs`
+  * Found, 516 ms, by induction
+  * Found, 321 ms, by induction
+*
+  * Uniqueness of the right fold, its hypothesis at a construction an
+    equation of functions
+  * Not found in 120 s
+  * Not found in 120 s
+*
+  * Associativity of appending
+  * Not found in 120 s
+  * Not found in 120 s
 :::
+
+Every term found in pure LF for a goal without type parameters decoded
+to a derivation that the internal language's checker accepts, a
+certificate of the language. Of those found modulo the rules, only the
+congruence of `succ`, which computes nothing, did: the checker compares
+the sides of an equation after the derivation's rewriting and has no
+step of conversion, so a term that leaves a computation to the rules is
+a certificate of the stronger checker of the second conclusion above,
+not of this one. The uniqueness of the fold and the associativity of
+appending, found in seconds with Lean's `List` and its fold's equations
+as reduction rules, were not found here, where the search is offered
+every declaration of the signature and equals are substituted by a
+Leibniz eliminator, the first conclusion's weaker encoding.
 
 Addition is the fold of its second argument from the first by the
 successor, a fold with a parameter. The measurements agree with the
@@ -3945,13 +3975,13 @@ its proofs, in this order:
 2. Complete. Lists: the list type, the empty list and construction, the
    fold, its step an LF abstraction over the element and the value, its
    computation rules, also as rewrite rules, and induction.
-3. Ready. The executable decodes each term found and checks it with the
-   checker of `Geb.FreeTopos.Internal` as well as LF's, so that a
+3. Complete. The executable decodes each term found and checks it with
+   the checker of `Geb.FreeTopos.Internal` as well as LF's, so that a
    measurement reports certificates of the language, and the goals of
    the earlier table, `foldr cons nil xs = xs`, the uniqueness of the
    right fold and the associativity of appending, are posed in the
    signature and run end to end. The experiments' bridge to Canonical
-   follows the interface of the release its tag names.
+   follows the interface of its latest release.
 4. Complete. The language's induction on rose trees with the induction
    hypothesis proves a formula of a rose tree innermost in any context,
    under hypotheses, as the inductions on the natural numbers and on

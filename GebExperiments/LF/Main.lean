@@ -15,9 +15,15 @@ Goals of the fragment of the internal language represented by `Geb.LF.Topos.sig`
 Canonical in two regimes: pure LF, the computation rules derivation rules among the constants; and
 modulo the rewrite rules `Geb.LF.Topos.rules`, the derivation rules they make redundant withheld.
 Each term Canonical returns is translated back to canonical LF and checked by the checker of the
-regime, `Geb.LF.Checks` or `Geb.LF.ChecksMod`. The program prints, for each goal and regime,
-whether a term was found, the time taken, the term, and the checker's verdict. Its argument is the
-timeout in seconds of each search.
+regime, `Geb.LF.Checks` or `Geb.LF.ChecksMod`, and then decoded to a derivation of the internal
+language (`Geb.LF.Topos.decPf`) and checked by its checker, `Geb.FreeTopos.Internal.Thm.checks`.
+The decoding applies to a goal whose parameters are term variables and hypotheses, the language
+having no object variables; a hypothesis's formula is weakened past the parameters after it. The
+soundness of the decoding (`Geb.LF.Topos.decPf_checks`) is proved for terms of pure LF; a term
+found modulo the rules may rely on a computation the internal checker, which compares the sides
+of an equation after rewriting by the derivation, does not perform. The program prints, for each
+goal and regime, whether a term was found, the time taken, the term, and both checkers' verdicts.
+Its argument is the timeout in seconds of each search.
 
 ## Tags
 
@@ -53,6 +59,17 @@ structure Goal where
 /-- The addition of `n` to `m`, the fold of `n` from `m` by the successor. -/
 def add (m n : Expr) : Expr := natRec nat m (Expr.lam (succ (v 0))) n
 
+/-- The construction of a list of natural numbers as a step of a fold:
+`λ h r. cons nat (pair h r)`. -/
+def consLam : Expr := Expr.lam (Expr.lam (cons nat (pair nat (list nat) (v 1) (v 0))))
+
+/-- The concatenation of the lists of natural numbers `xs` and `ys`, the right fold of `xs` by
+construction from `ys`. -/
+def append (xs ys : Expr) : Expr := listRec nat (list nat) ys consLam xs
+
+/-- The type of the pairs of an element and a list of natural numbers. -/
+def natCell : Expr := prod nat (list nat)
+
 /-- The goals. -/
 def goals : List Goal :=
   [ ⟨"symmetry", pi tp (pi (tm (v 0)) (pi (tm (v 1))
@@ -73,7 +90,80 @@ def goals : List Goal :=
       (pf (eq nat (add (succ (v 1)) (v 0)) (succ (add (v 1) (v 0))))))⟩,
     ⟨"η of the identity's application", pf (eq (exp nat nat)
       (lam nat nat (Expr.lam (v 0)))
-      (lam nat nat (Expr.lam (app nat nat (lam nat nat (Expr.lam (v 0))) (v 0)))))⟩ ]
+      (lam nat nat (Expr.lam (app nat nat (lam nat nat (Expr.lam (v 0))) (v 0)))))⟩,
+    ⟨"foldr cons nil xs = xs", pi (tm (list nat))
+      (pf (eq (list nat) (listRec nat (list nat) (nil nat) consLam (v 0)) (v 0)))⟩,
+    -- the uniqueness of the right fold, its hypothesis at a construction an equation of functions
+    ⟨"uniqueness of the right fold", pi (tm nat) (pi (tm (exp nat (exp nat nat)))
+      (pi (tm (exp (list nat) nat))
+        (arrow (pf (eq nat (app (list nat) nat (v 0) (nil nat)) (v 2)))
+          (arrow (pf (eq (exp natCell nat)
+              (lam natCell nat (Expr.lam (app (list nat) nat (v 1) (cons nat (v 0)))))
+              (lam natCell nat (Expr.lam (app nat nat
+                (app nat (exp nat nat) (v 2) (fst nat (list nat) (v 0)))
+                (app (list nat) nat (v 1) (snd nat (list nat) (v 0))))))))
+            (pi (tm (list nat)) (pf (eq nat (app (list nat) nat (v 1) (v 0))
+              (listRec nat nat (v 3)
+                (Expr.lam (Expr.lam (app nat nat (app nat (exp nat nat) (v 4) (v 1)) (v 0))))
+                (v 0)))))))))⟩,
+    ⟨"associativity of appending", pi (tm (list nat)) (pi (tm (list nat)) (pi (tm (list nat))
+      (pf (eq (list nat) (append (append (v 2) (v 1)) (v 0))
+        (append (v 2) (append (v 1) (v 0)))))))⟩ ]
+
+/-- The primitive arrows of the internal language that the signature's constants stand for. -/
+def toposGlobals : FreeTopos.Internal.Globals :=
+  ⟨[FreeTopos.Internal.zeroPrim, FreeTopos.Internal.succPrim, FreeTopos.Internal.nilPrim,
+    FreeTopos.Internal.consPrim, FreeTopos.Internal.nodePrim, FreeTopos.Internal.lnodePrim],
+    [], 0⟩
+
+/-- The indices of the primitive arrows of `toposGlobals`. -/
+def toposIdx : PrimIdx := ⟨0, 1, 2, 3, 4, 5⟩
+
+/-- One step of the parameters of a type and its body, the parameters the outermost first. -/
+def telescopeStep (l : Label) (cs : List (Expr × (List Expr × Expr))) : List Expr × Expr :=
+  match l, cs with
+    | .pi, [(a, _), (_, (as, body))] => (a :: as, body)
+    | l, cs => ([], RoseTree.node l (cs.map (·.1)))
+
+/-- The parameters of a type, the outermost first, and its body. -/
+def telescope : Expr → List Expr × Expr := RoseTree.para telescopeStep
+
+/-- The body of an LF abstraction. -/
+def lfBody (e : Expr) : Option Expr := match e.label, e.children with
+  | .lam, [b] => some b
+  | _, _ => none
+
+/-- The theorem of the internal language that a goal states, with the environment of its
+parameters: a parameter of `tm A` is a variable of the type `A` decodes to, and one of
+`pf F` a hypothesis, `F` decoded after its weakening past the parameters after it. A goal
+with a parameter of another type, or whose body is not a family of proofs, states none. -/
+def internalThm (goal : Expr) : Option (List (Option ℕ) × FreeTopos.Internal.Thm) := do
+  let (ps, body) := telescope goal
+  let F ← match body.label, body.children with
+    | .app (.const 17), [F] => some F
+    | _, _ => none
+  let n := ps.length
+  let (env, Γ, Φ) ← ps.zipIdx.foldlM (init := (([] : List (Option ℕ)), ([] : List _),
+      ([] : List (Expr × ℕ)))) fun (env, Γ, Φ) (p, j) ↦
+    match p.label, p.children with
+      | .app (.const 6), [A] => do pure (none :: env, (← decTy A) :: Γ, Φ)
+      | .app (.const 17), [P] => some (some Φ.length :: env, Γ, (P, n - 1 - j) :: Φ)
+      | _, _ => none
+  let hyps ← Φ.reverse.mapM fun (P, i) ↦ termOf toposIdx env (Expr.rename P (· + (i + 1)))
+  pure (env, ⟨0, Γ, hyps, ← termOf toposIdx env F⟩)
+
+/-- The verdict of the internal language's checker on a term found for a goal: the term's
+abstractions over the goal's parameters removed, its body decoded in their environment and the
+derivation checked against the goal's theorem. -/
+def internalVerdict (goal term : Expr) : String :=
+  match internalThm goal with
+    | none => "outside the internal fragment"
+    | some (env, thm) =>
+      match (List.range env.length).foldlM (fun e _ ↦ lfBody e) term >>= fun b ↦
+          decPf toposIdx b env thm.hyps.length with
+        | none => "undecodable"
+        | some d =>
+          if thm.checks toposGlobals #[] d then "internal checks" else "internal DOES NOT CHECK"
 
 /-- The bound on the steps of normalization modulo the rules. -/
 def fuel : ℕ := 64
@@ -94,7 +184,7 @@ def runGoal (timeout : UInt64) (g : Goal) (modulo : Bool) : IO Unit := do
         | none => "untranslatable"
         | some e =>
           let ok := if modulo then ChecksMod rules fuel sig [] e g.type else Checks sig [] e g.type
-          if ok then "checks" else "DOES NOT CHECK"
+          (if ok then "checks" else "DOES NOT CHECK") ++ ", " ++ internalVerdict g.type e
       IO.println s!"{g.name} [{regime}]: found in {t₁ - t₀} ms, {verdict}: {
         {t with lets := #[]}}"
   (← IO.getStdout).flush
