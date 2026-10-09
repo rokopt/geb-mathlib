@@ -3946,7 +3946,8 @@ checklist and in CI.
   a variable is an identity for hereditary substitution, and the η-expansion
   of an atomic term checks against the type it synthesizes [WatkinsEtAl2002].
   `Topos/`: a fragment of the internal language of `Geb/Prototypes/FreeTopos/`,
-  its natural numbers and lists among its types, as a signature, its object
+  its natural numbers, lists and rose trees of natural-number labels among its
+  types, as a signature, its object
   types, terms in higher-order abstract syntax and derivations, and its
   computation rules as rewrite rules;
   `Topos/Adequacy.lean` encodes the fragment's types and compiled terms as

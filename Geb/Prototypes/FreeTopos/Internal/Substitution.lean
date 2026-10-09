@@ -404,6 +404,51 @@ theorem compile_listRec_parts {z s m : Term} {X : Tree} {e : List (Tree × Tree)
         · exact List.mem_append_left _ (List.mem_range.mpr (by simp))
         · exact List.mem_append_right _ (List.mem_map.mpr ⟨i, hP i (by simp [hi]), rfl⟩))).symm⟩
 
+/-- A fold of a rose tree that compiles has its annotation a type and the fold's type, its datum
+compiled in the environment to a rose-tree object, and its step compiled in the environment
+extended by the pair of a label and the list of the children's values, to the fold's type. -/
+theorem compile_roseRec_parts {c : Tree} {s m : Term} {X : Tree} {e : List (Tree × Tree)}
+    {r : Tree × Tree} (h : compile G n (Term.roseRec c s m) X e = some r) :
+    IsTy G n c = true ∧ r.2 = c ∧ ∃ mf t a F, compile G n m X e = some (mf, t) ∧
+      roseParts t = some (a, F) ∧ ∃ sf, compile G n s (prod X (prod a (list c)))
+        (extEnv X (prod a (list c)) e) = some (sf, c) := by
+  obtain ⟨s₀, m₀, m', t, a, F, s', hcs, hct, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
+  obtain ⟨rfl, rfl⟩ : s = s₀ ∧ m = m₀ := by simpa [Term.roseRec] using hcs
+  -- the parameters are the variables of the environment the step mentions
+  have hP : ∀ i, (Term.occurs Term.star i || Term.occurs s (i + 1)) = true →
+      i ∈ foldParams 1 e.length Term.star s := fun i hi ↦
+    mem_foldParams.mpr ⟨compile_occurs_lt _ X e _ h i (occurs_roseRec_of_step hi), hi⟩
+  exact ⟨hct, rfl, m', t, a, F, hm, ht, compile_retype_on s _ _ _ hs _ _ fun i hi ↦
+    (foldEnvIn_types (foldWs_nat_lt X _ e Term.star s) (foldWs_nat_filterMap X _ e Term.star s)
+      (by simp [extEnv]) i (by
+        rcases i with _ | i
+        · simp
+        · simpa using hP i (by simp [occurs_star, hi]))).symm⟩
+
+/-- A fold of a rose tree whose annotation is a type, whose datum compiles in the environment to a
+rose-tree object and whose step compiles in the environment extended by the pair of a label and
+the list of the children's values, to the annotation, compiles, to the annotation. -/
+theorem compile_roseRec_of_parts {c : Tree} {s m : Term} {X mf t a sf : Tree}
+    {F : Tree → Tree} {e : List (Tree × Tree)} (hct : IsTy G n c = true)
+    (hm : compile G n m X e = some (mf, t)) (ht : roseParts t = some (a, F))
+    (hs : compile G n s (prod X (prod a (list c))) (extEnv X (prod a (list c)) e) =
+      some (sf, c)) :
+    ∃ r, compile G n (Term.roseRec c s m) X e = some r ∧ r.2 = c := by
+  -- the variables the step mentions are the fold's parameters
+  have hP : ∀ i, (Term.occurs Term.star i || Term.occurs s (i + 1)) = true →
+      i ∈ foldParams 1 e.length Term.star s := fun i hi ↦ by
+    refine mem_foldParams.mpr ⟨?_, hi⟩
+    simp only [occurs_star, Bool.false_or] at hi
+    simpa [extEnv] using compile_occurs_lt s _ _ _ hs (i + 1) hi
+  obtain ⟨s', hs'⟩ := compile_retype_on s _ _ _ hs (foldEnvIn [prod a (list c)] 1 e Term.star s).1
+    (foldEnvIn [prod a (list c)] 1 e Term.star s).2 fun i hi ↦
+      foldEnvIn_types (foldWs_nat_lt X _ e Term.star s) (foldWs_nat_filterMap X _ e Term.star s)
+        (by simp [extEnv]) i (by
+          rcases i with _ | i
+          · simp
+          · simpa using hP i (by simp [occurs_star, hi]))
+  exact ⟨_, compile_roseRec_iff.mpr ⟨s, m, mf, t, a, F, s', rfl, hct, hm, ht, hs', rfl⟩, rfl⟩
+
 section Substitution
 
 universe v
@@ -753,21 +798,7 @@ theorem compile_roseRec_of_full (hG : G.WF) (hρ : ρ.map Sigma.fst = List.repli
       some (sf, c)) :
     ∃ r, compile G n (Term.roseRec c s m) X e = some r ∧
       ResEq M ρ (comp (roseRecP F X a t c sf) (pair (idt X) mf), c) r := by
-  -- the variables the step mentions are the fold's parameters
-  have hP : ∀ i, (Term.occurs Term.star i || Term.occurs s (i + 1)) = true →
-      i ∈ foldParams 1 e.length Term.star s := fun i hi ↦ by
-    refine mem_foldParams.mpr ⟨?_, hi⟩
-    simp only [occurs_star, Bool.false_or] at hi
-    simpa [extEnv] using compile_occurs_lt s _ _ _ hs (i + 1) hi
-  obtain ⟨s', hs'⟩ := compile_retype_on s _ _ _ hs (foldEnvIn [prod a (list c)] 1 e Term.star s).1
-    (foldEnvIn [prod a (list c)] 1 e Term.star s).2 fun i hi ↦
-      foldEnvIn_types (foldWs_nat_lt X _ e Term.star s) (foldWs_nat_filterMap X _ e Term.star s)
-        (by simp [extEnv]) i (by
-          rcases i with _ | i
-          · simp
-          · simpa using hP i (by simp [occurs_star, hi]))
-  have hnode : compile G n (Term.roseRec c s m) X e = some _ :=
-    compile_roseRec_iff.mpr ⟨s, m, mf, t, a, F, s', rfl, hct, hm, ht, hs', rfl⟩
+  obtain ⟨_, hnode, -⟩ := compile_roseRec_of_parts hct hm ht hs
   obtain ⟨mf₂, t₂, a₂, F₂, sf₂, -, hm₂, ht₂, hs₂, hr⟩ :=
     compile_roseRec_full hM hG hρ hps hds hnode he
   obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Option.some.inj (hm.symm.trans hm₂))

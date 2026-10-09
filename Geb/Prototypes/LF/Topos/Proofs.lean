@@ -26,8 +26,8 @@ joins of rewritings by the language's rules of the same names; function and prop
 extensionality to the rules of the same names. The substitution of equals decodes to the motive
 as a function applied to the right side of the equation, cut as a hypothesis, whose argument the
 equation rewrites to the left side, and whose β-reducts are the motive at either side
-({lit}`leibD`). The inductions on the natural numbers and on lists prove the motive at a term
-from the equality of the motive and the function constantly true, proved by function
+({lit}`leibD`). The inductions on the natural numbers, on lists and on rose trees prove the motive
+at a term from the equality of the motive and the function constantly true, proved by function
 extensionality and induction on the fresh variable ({lit}`indD`). No derivation cuts through a
 formula that substitutes into a motive, so that each formula the checker types is the decoding of
 a term or built from such by the language's term formers.
@@ -88,18 +88,18 @@ abbrev ruleD (r : FreeTopos.Internal.Rule) : Deriv := nd r []
 def truth : Term := Term.eq Term.star Term.star
 
 /-- The derivation of a motive {lit}`pb`, a formula in a variable of the type {lit}`c`, at a term
-{lit}`n`, by the induction rule {lit}`r` whose base and step are {lit}`D₀` and {lit}`Ds`, under
+{lit}`n`, by the induction rule {lit}`r` whose premises are {lit}`Ds`, under
 {lit}`m` hypotheses: the motive as a function is cut as equal to the function constantly true, by
 function extensionality and propositional extensionality, the converse direction by the
 induction on the fresh variable; the motive at {lit}`n` is the β-reduct of the function's
 application to {lit}`n`, which that equation rewrites to the true one's. -/
 def indD (c : PartialHorn.Tree) (r : FreeTopos.Internal.Rule) (pb n : Term) (m : ℕ)
-    (D₀ Ds : Deriv) : Deriv :=
+    (Ds : List Deriv) : Deriv :=
   let L := Term.lam c pb
   let R := Term.lam c truth
   nd (.cut (Term.eq L R))
     [nd .funExt [nd .conv [nd .cong [ruleD .beta, ruleD .beta],
-        nd .propExt [joinD reflD reflD, nd r [D₀, Ds]]]],
+        nd .propExt [joinD reflD reflD, nd r Ds]]],
       nd (.convFrom (Term.app L n))
         [ruleD .beta, nd .conv [nd .cong [ruleD (.rwHyp m false), reflD],
           nd .conv [ruleD .beta, joinD reflD reflD]]]]
@@ -146,14 +146,19 @@ def decPfStep (l : Label) (cs : List (Expr × (List (Option ℕ) → ℕ → Opt
     | .app (.const 29), [(P, _), (_, d₀), (_, ds), (n, _)] => do
       let pb ← lamBody (← termOf k env P)
       pure (indD FreeTopos.nat (.natIndHyp k.zero k.succ) pb (← termOf k env n) m
-        (← d₀ env (m + 1)) (← ds (some (m + 1) :: none :: env) (m + 2)))
+        [← d₀ env (m + 1), ← ds (some (m + 1) :: none :: env) (m + 2)])
     | .app (.const 34), [_, _, _, _] => some (joinD (ruleD (.listNil k.nil)) reflD)
     | .app (.const 35), [_, _, _, _, _, _] => some (joinD (ruleD (.listCons k.cons)) reflD)
     | .app (.const 36), [(A, _), (P, _), (_, d₀), (_, ds), (l, _)] => do
       let a ← decTy A
       let pb ← lamBody (← termOf k env P)
       pure (indD (FreeTopos.list a) (.listIndHyp k.nil k.cons) pb (← termOf k env l) m
-        (← d₀ env (m + 1)) (← ds (some (m + 1) :: none :: none :: env) (m + 2)))
+        [← d₀ env (m + 1), ← ds (some (m + 1) :: none :: none :: env) (m + 2)])
+    | .app (.const 40), [_, _, _, _] => some (joinD (ruleD (.roseNode k.node k.nil k.cons)) reflD)
+    | .app (.const 41), [(P, _), (_, ds), (t, _)] => do
+      let pb ← lamBody (← termOf k env P)
+      pure (indD FreeTopos.rose (.roseIndHyp k.node k.nil k.cons) pb (← termOf k env t) m
+        [← ds (some (m + 1) :: none :: none :: env) (m + 2)])
     | .lam, [(_, d)] => d env m
     | _, _ => none
 
