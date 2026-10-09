@@ -23,9 +23,12 @@ derivations the decoding builds, the rewriting or the proof they perform.
 ## Main statements
 
 * {lit}`check_join`, {lit}`check_cut`, {lit}`check_conv`, {lit}`check_convFrom`,
-  {lit}`check_propExt`, {lit}`check_funExt`, {lit}`check_natIndHyp` — the proof rules.
-* {lit}`check_natZero`, {lit}`check_natSucc` — the computations of the fold.
-* {lit}`check_leibD`, {lit}`check_natIndD` — the substitution of equals and the induction.
+  {lit}`check_propExt`, {lit}`check_funExt`, {lit}`check_natIndHyp`, {lit}`check_listIndHyp` —
+  the proof rules.
+* {lit}`check_natZero`, {lit}`check_natSucc`, {lit}`check_listNil`, {lit}`check_listCons` — the
+  computations of the folds.
+* {lit}`check_leibD`, {lit}`check_indD`, {lit}`check_natIndD`, {lit}`check_listIndD` — the
+  substitution of equals and the induction.
 
 ## Tags
 
@@ -198,7 +201,7 @@ theorem check_cong₂ {l : FreeTopos.Internal.Label} (h₀ : FreeTopos.Internal.
     | 0, _ => hd₁
     | 1, _ => hd₂
 
-variable {kz ks : ℕ}
+variable {kz ks kn kc : ℕ}
 
 /-- The computation of the fold at zero: the start. -/
 theorem check_natZero (hz : G.prims[kz]? = some FreeTopos.Internal.zeroPrim) (z s : Term) :
@@ -213,6 +216,24 @@ theorem check_natSucc (hs : G.prims[ks]? = some FreeTopos.Internal.succPrim) (z 
       some (Term.subst s (instVar (Term.natRec z s m))) := by
   rw [check_rule _ ⟨by simp, by simp, by simp⟩]
   simp [FreeTopos.Internal.rootStep, Term.natRec, Term.arr, hs]
+
+/-- The computation of the fold of a list at the empty list: the start. -/
+theorem check_listNil (hn : G.prims[kn]? = some FreeTopos.Internal.nilPrim) (a : PartialHorn.Tree)
+    (z s : Term) :
+    (check G E n (ruleD (.listNil kn))).1 Γ Φ (Term.listRec z s (Term.arr kn [a] Term.star)) =
+      some z := by
+  rw [check_rule _ ⟨by simp, by simp, by simp⟩]
+  simp [FreeTopos.Internal.rootStep, Term.listRec, Term.arr, hn, Term.star]
+
+/-- The computation of the fold of a list at a construction: the step at the element and the fold
+of the rest. -/
+theorem check_listCons (hc : G.prims[kc]? = some FreeTopos.Internal.consPrim)
+    (a : PartialHorn.Tree) (z s h t : Term) :
+    (check G E n (ruleD (.listCons kc))).1 Γ Φ
+      (Term.listRec z s (Term.arr kc [a] (Term.pair h t))) =
+      some (Term.subst s (FreeTopos.Internal.instVar2 (Term.listRec z s t) h)) := by
+  rw [check_rule _ ⟨by simp, by simp, by simp⟩]
+  simp [FreeTopos.Internal.rootStep, Term.listRec, Term.arr, Term.pair, hc]
 
 section Typing
 
@@ -306,6 +327,27 @@ theorem check_natIndHyp {Γ₀ : List PartialHorn.Tree} {Φ' : List Term} {φ : 
   rw [decide_eq_true_of ⟨rfl, hz, hs, hφ⟩, hp₀, hp₁]
   rfl
 
+/-- Induction on a list at the innermost variable: the formula at the empty list under the
+hypotheses lowered, and at the construction of an element and the variable under those
+hypotheses weakened past the element and the formula. -/
+theorem check_listIndHyp {Γ₀ : List PartialHorn.Tree} {a : PartialHorn.Tree} {Φ' : List Term}
+    {φ : Term} {p₀ p₁ : Deriv} (hlow : FreeTopos.Internal.lowerHyps G n Γ₀ Φ = some Φ')
+    (hn : G.prims[kn]? = some FreeTopos.Internal.nilPrim)
+    (hc : G.prims[kc]? = some FreeTopos.Internal.consPrim)
+    (hφ : typeIn G n (FreeTopos.list a :: Γ₀) φ = some FreeTopos.omega)
+    (hp₀ : (check G E n p₀).2 Γ₀ Φ' (Term.subst φ (instVar (Term.arr kn [a] Term.star))) = true)
+    (hp₁ : (check G E n p₁).2 (FreeTopos.list a :: a :: Γ₀)
+      (Φ'.map FreeTopos.Internal.weaken2 ++ [FreeTopos.Internal.weakenElem φ])
+      (FreeTopos.Internal.listConsAt kc a φ) = true) :
+    (check G E n (nd (.listIndHyp kn kc) [p₀, p₁])).2 (FreeTopos.list a :: Γ₀) Φ φ = true := by
+  rw [check_node]
+  simp only [List.map_cons, List.map_nil]
+  dsimp only [checkStep]
+  rw [FreeTopos.Internal.listPart_eq_some.mpr rfl, hlow]
+  dsimp only
+  rw [decide_eq_true_of ⟨hn, hc, hφ⟩, hp₀, hp₁]
+  rfl
+
 /-- The substitution at the innermost variable is the instantiation. -/
 theorem substAt_zero (u : Term) : substAt 0 u = instVar u := by
   funext i
@@ -336,43 +378,75 @@ theorem subst_rename_liftR_var0 {pb : Term} (h : Term.VarLeaves pb = true) :
   rw [Term.subst_rename pb _ _ Term.var fun i ↦ by rcases i with _ | i <;> rfl,
     Term.subst_id pb h _ fun _ ↦ rfl]
 
+/-- An induction at a term: the motive at {lit}`n'`, from the induction rule's proof of the
+motive in the context extended by a variable of its type, under the hypotheses weakened past it
+and the hypothesis true, which the derivation's cut and propositional extensionality add. -/
+theorem check_indD {c : PartialHorn.Tree} {r : FreeTopos.Internal.Rule} {pb n' : Term}
+    {D₀ Ds : Deriv} (hc : FreeTopos.Internal.IsTy G 0 c = true)
+    (hpb : typeIn G 0 (c :: Γ) pb = some FreeTopos.omega) (hn : typeIn G 0 Γ n' = some c)
+    (hind : (check G E 0 (nd r [D₀, Ds])).2 (c :: Γ) (Φ.map weaken1 ++ [truth]) pb = true) :
+    (check G E 0 (indD c r pb n' Φ.length D₀ Ds)).2 Γ Φ (Term.subst pb (instVar n')) =
+      true := by
+  have hL := typeIn_lam (Γ := Γ) hc hpb
+  have hR := typeIn_lam (Γ := Γ) hc (typeIn_truth (G := G) (Γ := c :: Γ))
+  refine check_cut (typeIn_eq hL hR) (check_funExt hL ?_) ?_
+  · refine check_conv (φ' := Term.eq pb truth) (check_cong₂ rfl rfl ?_ ?_) ?_
+    · rw [show weaken1 (Term.lam c pb) = Term.lam c (Term.rename pb (Term.liftR (· + 1))) from rfl,
+        check_beta, subst_rename_liftR_var0 (varLeaves_of_typeIn hpb)]
+    · exact check_beta _ _ _
+    · exact check_propExt hpb typeIn_truth (check_join (check_refl _) (check_refl _)) hind
+  · refine check_convFrom (typeIn_app hL hn) (check_beta _ _ _) ?_
+    refine check_conv (φ' := Term.app (Term.lam c truth) n')
+      (check_cong₂ rfl rfl (check_rwHyp (flip := false)
+        (by rw [List.getElem?_append_right (le_refl _), Nat.sub_self]; rfl)) (check_refl _)) ?_
+    exact check_conv (check_beta _ _ _) (check_join (check_refl _) (check_refl _))
+
+/-- The hypotheses weakened past a variable, with the hypothesis true, lower to the hypotheses
+with it. -/
+theorem lowerHyps_truth
+    (hΦ : ∀ φ ∈ Φ, typeIn G 0 Γ φ = some FreeTopos.omega) :
+    FreeTopos.Internal.lowerHyps G 0 Γ (Φ.map weaken1 ++ [truth]) = some (Φ ++ [truth]) := by
+  rw [show Φ.map weaken1 ++ [truth] = (Φ ++ [truth]).map weaken1 by rw [List.map_append]; rfl]
+  refine lowerHyps_map_weaken1 fun φ hφ ↦ ?_
+  rcases List.mem_append.mp hφ with hφ | hφ
+  · exact hΦ φ hφ
+  · obtain rfl := List.mem_singleton.mp hφ
+    exact typeIn_truth
+
 /-- The induction on the natural numbers at a term: the motive at {lit}`n'`, from its base at
 zero and its step, each under the hypothesis true, which the derivation's cut adds. -/
-theorem check_natIndD (hz : G.prims[kz]? = some FreeTopos.Internal.zeroPrim)
-    (hs : G.prims[ks]? = some FreeTopos.Internal.succPrim) {pb n' : Term} {D₀ Ds : Deriv}
+theorem check_natIndD {k : PrimIdx} (hz : G.prims[k.zero]? = some FreeTopos.Internal.zeroPrim)
+    (hs : G.prims[k.succ]? = some FreeTopos.Internal.succPrim) {pb n' : Term} {D₀ Ds : Deriv}
     (hpb : typeIn G 0 (FreeTopos.nat :: Γ) pb = some FreeTopos.omega)
     (hn : typeIn G 0 Γ n' = some FreeTopos.nat)
     (hΦ : ∀ φ ∈ Φ, typeIn G 0 Γ φ = some FreeTopos.omega)
     (hD₀ : (check G E 0 D₀).2 Γ (Φ ++ [truth])
-      (Term.subst pb (instVar (Term.arr kz [] Term.star))) = true)
+      (Term.subst pb (instVar (Term.arr k.zero [] Term.star))) = true)
     (hDs : (check G E 0 Ds).2 (FreeTopos.nat :: Γ) (Φ.map weaken1 ++ [truth] ++ [pb])
-      (FreeTopos.Internal.natSuccAt ks pb) = true) :
-    (check G E 0 (natIndD kz ks pb n' Φ.length D₀ Ds)).2 Γ Φ (Term.subst pb (instVar n')) =
-      true := by
-  have hnat : FreeTopos.Internal.IsTy G 0 FreeTopos.nat = true :=
-    isTy_of_encTy G FreeTopos.nat nat rfl
-  have hL := typeIn_lam (Γ := Γ) hnat hpb
-  have hR := typeIn_lam (Γ := Γ) hnat (typeIn_truth (G := G) (Γ := FreeTopos.nat :: Γ))
-  refine check_cut (typeIn_eq hL hR) (check_funExt hL ?_) ?_
-  · refine check_conv (φ' := Term.eq pb truth) (check_cong₂ rfl rfl ?_ ?_) ?_
-    · rw [show weaken1 (Term.lam FreeTopos.nat pb) =
-        Term.lam FreeTopos.nat (Term.rename pb (Term.liftR (· + 1))) from rfl, check_beta,
-        subst_rename_liftR_var0 (varLeaves_of_typeIn hpb)]
-    · exact check_beta _ _ _
-    · refine check_propExt hpb typeIn_truth (check_join (check_refl _) (check_refl _)) ?_
-      refine check_natIndHyp ?_ hz hs hpb hD₀ hDs
-      rw [show Φ.map weaken1 ++ [truth] = (Φ ++ [truth]).map weaken1 by
-        rw [List.map_append]; rfl]
-      refine lowerHyps_map_weaken1 fun φ hφ ↦ ?_
-      rcases List.mem_append.mp hφ with hφ | hφ
-      · exact hΦ φ hφ
-      · obtain rfl := List.mem_singleton.mp hφ
-        exact typeIn_truth
-  · refine check_convFrom (typeIn_app hL hn) (check_beta _ _ _) ?_
-    refine check_conv (φ' := Term.app (Term.lam FreeTopos.nat truth) n')
-      (check_cong₂ rfl rfl (check_rwHyp (flip := false)
-        (by rw [List.getElem?_append_right (le_refl _), Nat.sub_self]; rfl)) (check_refl _)) ?_
-    exact check_conv (check_beta _ _ _) (check_join (check_refl _) (check_refl _))
+      (FreeTopos.Internal.natSuccAt k.succ pb) = true) :
+    (check G E 0 (indD FreeTopos.nat (.natIndHyp k.zero k.succ) pb n' Φ.length D₀ Ds)).2 Γ Φ
+      (Term.subst pb (instVar n')) = true :=
+  check_indD (isTy_of_encTy G FreeTopos.nat nat rfl) hpb hn
+    (check_natIndHyp (lowerHyps_truth hΦ) hz hs hpb hD₀ hDs)
+
+/-- The induction on a list at a term: the motive at {lit}`n'`, from its base at the empty list
+and its step at a construction, each under the hypothesis true, which the derivation's cut
+adds. -/
+theorem check_listIndD {k : PrimIdx} (hn : G.prims[k.nil]? = some FreeTopos.Internal.nilPrim)
+    (hc : G.prims[k.cons]? = some FreeTopos.Internal.consPrim) {a : PartialHorn.Tree}
+    (ha : FreeTopos.Internal.IsTy G 0 (FreeTopos.list a) = true) {pb n' : Term} {D₀ Ds : Deriv}
+    (hpb : typeIn G 0 (FreeTopos.list a :: Γ) pb = some FreeTopos.omega)
+    (hn' : typeIn G 0 Γ n' = some (FreeTopos.list a))
+    (hΦ : ∀ φ ∈ Φ, typeIn G 0 Γ φ = some FreeTopos.omega)
+    (hD₀ : (check G E 0 D₀).2 Γ (Φ ++ [truth])
+      (Term.subst pb (instVar (Term.arr k.nil [a] Term.star))) = true)
+    (hDs : (check G E 0 Ds).2 (FreeTopos.list a :: a :: Γ)
+      ((Φ ++ [truth]).map FreeTopos.Internal.weaken2 ++ [FreeTopos.Internal.weakenElem pb])
+      (FreeTopos.Internal.listConsAt k.cons a pb) = true) :
+    (check G E 0 (indD (FreeTopos.list a) (.listIndHyp k.nil k.cons) pb n' Φ.length D₀ Ds)).2
+      Γ Φ (Term.subst pb (instVar n')) = true :=
+  check_indD ha hpb hn' (check_listIndHyp (lowerHyps_truth hΦ) hn hc hpb
+    hD₀ hDs)
 
 end Geb.LF.Topos
 

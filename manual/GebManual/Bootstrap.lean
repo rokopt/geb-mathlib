@@ -279,9 +279,10 @@ the sections below detail:
     whose goals Canonical searches and whose proofs decode to the
     language's derivations, for experiment
     ({ref "search-synthesis"}[Search and synthesis]): complete for the
-    fragment of the natural numbers, whose fold is the language's fold
-    with parameters; lists, rose trees, coproducts and object variables
-    follow, in the order that section gives.
+    fragment of the natural numbers and lists, whose folds are the
+    language's folds with parameters; the decoding of the terms Canonical
+    finds, rose trees, coproducts and object variables follow, in the
+    order that section gives.
 
 Extension:
 
@@ -3864,10 +3865,11 @@ format, with hereditary substitution and its judgements decided by a
 fold, the formation of a signature among them; its extension by rewrite
 rules on constants {citep CousineauDowek2007}[], which Canonical's
 reduction rules are; and a fragment of the internal language of the free
-topos with a natural numbers object as a signature: object types, terms
-in higher-order abstract syntax, and derivations by reflexivity, the
-substitution of equals, the computation and η rules, extensionality and
-induction, with the computation rules also given as rewrite rules. The
+topos with a natural numbers object and list objects as a signature:
+object types, terms in higher-order abstract syntax, and derivations by
+reflexivity, the substitution of equals, the computation and η rules,
+extensionality and induction, with the computation rules also given as
+rewrite rules. The
 library `GebExperiments` translates a goal of that signature to
 Canonical's input and each term returned back to canonical LF, where the
 prototype's checker decides it (`lake exe lf-canonical`). The terms are
@@ -3923,15 +3925,16 @@ its proofs, in this order:
 1. Complete. The natural numbers, with the language's fold, whose step
    is an LF abstraction over the value, its computation rules, also as
    rewrite rules, and induction.
-2. Ready. Lists: the list type, the empty list and construction, the
+2. Complete. Lists: the list type, the empty list and construction, the
    fold, its step an LF abstraction over the element and the value, its
-   computation rules, also as rewrite rules, and induction. The goals
-   of the earlier table, `foldr cons nil xs = xs`, the uniqueness of the
-   right fold and the associativity of appending, are then posed in the
-   signature and run end to end.
+   computation rules, also as rewrite rules, and induction.
 3. Ready. The executable decodes each term found and checks it with the
    checker of `Geb.FreeTopos.Internal` as well as LF's, so that a
-   measurement reports certificates of the language.
+   measurement reports certificates of the language, and the goals of
+   the earlier table, `foldr cons nil xs = xs`, the uniqueness of the
+   right fold and the associativity of appending, are posed in the
+   signature and run end to end. The experiments' bridge to Canonical
+   follows the interface of the release its tag names.
 4. Waiting on the generalization of the language's induction on rose
    trees. That induction, in both its forms, proves a formula in a
    context of a rose tree alone, under no hypotheses for the equation of

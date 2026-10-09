@@ -15,17 +15,18 @@ set_option doc.verso true in
 
 The computation rules of the fragment of the Mitchell–Bénabou language represented by
 {name}`Geb.LF.Topos.sig`, as rewrite rules on its constants ({cite}`CousineauDowek2007`): the β
-rule of abstraction, the two computation rules of pairs, and the two of the fold of the natural
-numbers. Modulo these rules a term and the term it computes to are terms of the same types, so
-that an equation that holds by computation is proved by reflexivity alone, the regime in which
-{cite}`NormanAvigad2025` searches with recursors' reduction rules. The η rules of pairs and of the
-terminal type, whose left sides are not applications of a constant, stay derivation rules of the
-signature, as do the computation rules themselves, which are redundant modulo the rules.
+rule of abstraction, the two computation rules of pairs, and the two of each of the folds of the
+natural numbers and of lists. Modulo these rules a term and the term it computes to are terms of
+the same types, so that an equation that holds by computation is proved by reflexivity alone, the
+regime in which {cite}`NormanAvigad2025` searches with recursors' reduction rules. The η rules
+of pairs and of the terminal type, whose left sides are not applications of a constant, stay
+derivation rules of the signature, as do the computation rules themselves, which are redundant
+modulo the rules.
 
 ## Main definitions
 
 * {lit}`betaRule`, {lit}`fstPairRule`, {lit}`sndPairRule`, {lit}`natZeroRule`,
-  {lit}`natSuccRule` — the rules.
+  {lit}`natSuccRule`, {lit}`listNilRule`, {lit}`listConsRule` — the rules.
 * {lit}`rules` — the list of them.
 
 ## References
@@ -79,8 +80,25 @@ def natSuccRule : Rule where
   lhs := natRec (v 3) (v 2) (v 1) (succ (v 0))
   rhs := Expr.var 1 [natRec (v 3) (v 2) (Expr.lam (Expr.var 2 [v 0])) (v 0)]
 
+/-- {lit}`listRec A C z s (nilAt A t) ↦ z`, in
+{lit}`A C : tp, z : tm C, s : tm A → tm C → tm C, t : tm 1`. -/
+def listNilRule : Rule where
+  vars := [tm one, arrow (tm (v 2)) (arrow (tm (v 1)) (tm (v 1))), tm (v 0), tp, tp]
+  lhs := listRec (v 4) (v 3) (v 2) (v 1) (nilAt (v 4) (v 0))
+  rhs := v 2
+
+/-- {lit}`listRec A C z s (cons A (pair A (list A) h t)) ↦ s h (listRec A C z (λ h r. s h r) t)`,
+in {lit}`A C : tp, z : tm C, s : tm A → tm C → tm C, h : tm A, t : tm (list A)`. -/
+def listConsRule : Rule where
+  vars := [tm (list (v 4)), tm (v 3), arrow (tm (v 2)) (arrow (tm (v 1)) (tm (v 1))), tm (v 0),
+    tp, tp]
+  lhs := listRec (v 5) (v 4) (v 3) (v 2) (cons (v 5) (pair (v 5) (list (v 5)) (v 1) (v 0)))
+  rhs := Expr.var 2 [v 1, listRec (v 5) (v 4) (v 3) (Expr.lam (Expr.lam (Expr.var 4 [v 1, v 0])))
+    (v 0)]
+
 /-- The rules. -/
-def rules : List Rule := [betaRule, fstPairRule, sndPairRule, natZeroRule, natSuccRule]
+def rules : List Rule :=
+  [betaRule, fstPairRule, sndPairRule, natZeroRule, natSuccRule, listNilRule, listConsRule]
 
 end Geb.LF.Topos
 

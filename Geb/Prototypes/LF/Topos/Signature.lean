@@ -16,38 +16,44 @@ An LF signature ({cite}`HarperHonsellPlotkin1993`; {cite}`HarperLicata2007`, Sec
 method) representing a fragment of the Mitchell–Bénabou language of the free elementary topos with
 a natural numbers object ({cite}`MacLaneMoerdijk1992`, Section VI.5), whose terms and
 derivations are those of {lit}`Geb.FreeTopos.Internal`: the types built from the terminal object,
-binary products, exponentials, the subobject classifier and the natural numbers object; the
-terms built from variables by the element of the terminal object, pairs and their components,
-abstraction and application, zero and the successor, each applied to a term as the primitive
-arrows of {lit}`Geb.FreeTopos.Internal` are, the fold of the natural numbers, and the
+binary products, exponentials, the subobject classifier, the natural numbers object and list
+objects; the terms built from variables by the element of the terminal object, pairs and their
+components, abstraction and application, zero and the successor, the empty list and the
+construction of a list, each applied to a term as the primitive arrows of
+{lit}`Geb.FreeTopos.Internal` are, the folds of the natural numbers and of lists, and the
 equality of two terms, a formula; and the derivability of formulas.
 
 The object types are the canonical terms of the type {lit}`tp`. A term of an object type
 {lit}`A` is a canonical term of {lit}`tm A`, a variable of the language a variable of LF, and an
 abstraction a constant {lit}`lam` applied to an LF abstraction, so that the language's binders
 are LF's, in the manner of higher-order abstract syntax ({cite}`HarperLicata2007`, Section 3.1).
-The step of a fold is an LF abstraction over the recursion's value. A derivation of a formula
+The step of a fold is an LF abstraction over the recursion's value, and over the element before
+it for a list. A derivation of a formula
 {lit}`φ` is a canonical term of {lit}`pf φ`, built from constants, one for each rule:
 
 * the equality of a term with itself, and the substitution of equals into a predicate, an LF
   abstraction ({lit}`refl`, {lit}`leib`), from which symmetry, transitivity and congruence are
   derived;
 * the β rule of abstraction, the computation and η rules of pairs, the η rule of the terminal
-  type, and the computation rules of the fold ({lit}`beta`, {lit}`fstPair`, {lit}`sndPair`,
-  {lit}`pairEta`, {lit}`unitEta`, {lit}`natZero`, {lit}`natSucc`);
+  type, and the computation rules of the folds ({lit}`beta`, {lit}`fstPair`, {lit}`sndPair`,
+  {lit}`pairEta`, {lit}`unitEta`, {lit}`natZero`, {lit}`natSucc`, {lit}`listNil`,
+  {lit}`listCons`);
 * the extensionality of functions and of formulas ({lit}`funExt`, {lit}`propExt`);
-* induction over the natural numbers, its predicate an LF abstraction ({lit}`natInd`).
+* induction over the natural numbers and over lists, its predicate an LF abstraction
+  ({lit}`natInd`, {lit}`listInd`).
 
 These are rules of a local set theory ({cite}`RuizHernandezSolorzano2021`, Section 3.2) and of
 the derivations of {lit}`Geb.FreeTopos.Internal`, whose induction applies to the innermost
-variable where this one names its predicate. The fold is the language's: its start and its step,
-an LF abstraction, may mention the variables around it, so that the fold has parameters, as the
-folds with a parameter of a cartesian closed category with a natural numbers object do.
+variable where this one names its predicate. The folds are the language's: a start and a step,
+an LF abstraction, may mention the variables around them, so that the folds have parameters, as
+the folds with a parameter of a cartesian closed category with a natural numbers object or list
+objects do. The declarations of lists follow the rules, so that the indices of the declarations
+before them are those of the signature without lists.
 
 ## Main definitions
 
-* {lit}`objSig`, {lit}`ruleSig`, {lit}`sig` — the declarations of the types and terms, of the
-  rules, and the signature of both.
+* {lit}`objSig`, {lit}`ruleSig`, {lit}`listSig`, {lit}`sig` — the declarations of the types and
+  terms, of the rules, and of lists, and the signature of all three.
 * {lit}`tp`, {lit}`tm`, {lit}`pf` and the constants' applications — the expressions of the
   signature.
 
@@ -129,6 +135,24 @@ def eq (a s t : Expr) : Expr := Expr.const 16 [a, s, t]
 /-- The family of derivations of a formula (17). -/
 def pf (φ : Expr) : Expr := Expr.const 17 [φ]
 
+/-- The list object of an object type (30). -/
+def list (a : Expr) : Expr := Expr.const 30 [a]
+
+/-- The empty list of elements of {lit}`A`, the primitive arrow from the terminal object applied
+to a term of it (31). -/
+def nilAt (a t : Expr) : Expr := Expr.const 31 [a, t]
+
+/-- The empty list at the element of the terminal object. -/
+def nil (a : Expr) : Expr := nilAt a star
+
+/-- The construction of a list of elements of {lit}`A`, applied to a pair of an element and a
+list (32). -/
+def cons (a p : Expr) : Expr := Expr.const 32 [a, p]
+
+/-- The fold of a list of elements of {lit}`A` into the type {lit}`C` from a start by a step, an
+LF abstraction over the element and the value (33). -/
+def listRec (a c z s l : Expr) : Expr := Expr.const 33 [a, c, z, s, l]
+
 open Expr in
 /-- The declarations of the types and terms: {lit}`tp`, the object types, {lit}`tm`, the term
 constants, {lit}`eq` and {lit}`pf`. -/
@@ -204,8 +228,46 @@ def ruleSig : Sig :=
         (arrow (pi (tm nat) (arrow (pf (var 1 [v 0])) (pf (var 1 [succ (v 0)]))))
           (pi (tm nat) (pf (var 1 [v 0]))))) ]
 
-/-- The signature of the fragment: the types and terms, then the rules. -/
-def sig : Sig := objSig ++ ruleSig
+open Expr in
+/-- The declarations of lists, from index 30: the list object {lit}`list`, the empty list
+{lit}`nilAt`, the construction {lit}`cons` and the fold {lit}`listRec`, then the rules
+{lit}`listNil`, {lit}`listCons` and {lit}`listInd`. -/
+def listSig : Sig :=
+  [ arrow tp tp,
+    -- nilAt : Π A:tp. tm 1 → tm (list A)
+    pi tp (arrow (tm one) (tm (list (v 0)))),
+    -- cons : Π A:tp. tm (A × list A) → tm (list A)
+    pi tp (arrow (tm (prod (v 0) (list (v 0)))) (tm (list (v 0)))),
+    -- listRec : Π A C:tp. tm C → (tm A → tm C → tm C) → tm (list A) → tm C
+    pi tp (pi tp (arrow (tm (v 0)) (arrow (arrow (tm (v 1)) (arrow (tm (v 0)) (tm (v 0))))
+      (arrow (tm (list (v 1))) (tm (v 0)))))),
+    -- listNil : Π A C:tp. Π z:tm C. Π s:tm A → tm C → tm C.
+    --   pf (eq C (listRec A C z (λh r. s h r) (nil A)) z)
+    pi tp (pi tp (pi (tm (v 0)) (pi (arrow (tm (v 2)) (arrow (tm (v 1)) (tm (v 1))))
+      (pf (eq (v 2) (listRec (v 3) (v 2) (v 1) (Expr.lam (Expr.lam (var 2 [v 1, v 0])))
+        (nil (v 3))) (v 1)))))),
+    -- listCons : Π A C z s. Π h:tm A. Π t:tm (list A).
+    --   pf (eq C (listRec A C z (λh r. s h r) (cons A (pair A (list A) h t)))
+    --     (s h (listRec A C z (λh r. s h r) t)))
+    pi tp (pi tp (pi (tm (v 0)) (pi (arrow (tm (v 2)) (arrow (tm (v 1)) (tm (v 1))))
+      (pi (tm (v 3)) (pi (tm (list (v 4)))
+        (pf (eq (v 4)
+          (listRec (v 5) (v 4) (v 3) (Expr.lam (Expr.lam (var 4 [v 1, v 0])))
+            (cons (v 5) (pair (v 5) (list (v 5)) (v 1) (v 0))))
+          (var 2 [v 1, listRec (v 5) (v 4) (v 3) (Expr.lam (Expr.lam (var 4 [v 1, v 0])))
+            (v 0)])))))))),
+    -- listInd : Π A:tp. Π P:tm (list A) → tm Ω. pf (P (nil A)) →
+    --   (Π h:tm A. Π t:tm (list A). pf (P t) → pf (P (cons A (pair A (list A) h t)))) →
+    --   Π l:tm (list A). pf (P l)
+    pi tp (pi (arrow (tm (list (v 0))) (tm omega))
+      (arrow (pf (var 0 [nil (v 1)]))
+        (arrow (pi (tm (v 1)) (pi (tm (list (v 2)))
+            (arrow (pf (var 2 [v 0]))
+              (pf (var 2 [cons (v 3) (pair (v 3) (list (v 3)) (v 1) (v 0))])))))
+          (pi (tm (list (v 1))) (pf (var 1 [v 0])))))) ]
+
+/-- The signature of the fragment: the types and terms, then the rules, then lists. -/
+def sig : Sig := objSig ++ ruleSig ++ listSig
 
 end Geb.LF.Topos
 
