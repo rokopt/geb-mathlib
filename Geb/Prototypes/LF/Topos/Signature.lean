@@ -40,10 +40,9 @@ The step of a fold is an LF abstraction over the recursion's value. A derivation
 
 These are rules of a local set theory ({cite}`RuizHernandezSolorzano2021`, Section 3.2) and of
 the derivations of {lit}`Geb.FreeTopos.Internal`, whose induction applies to the innermost
-variable where this one names its predicate. The fold's start and step there are terms of
-contexts of their own; an LF abstraction may mention the variables around it, so that a fold
-here may have parameters, the folds with a parameter, which a cartesian closed category with a
-natural numbers object has.
+variable where this one names its predicate. The fold is the language's: its start and its step,
+an LF abstraction, may mention the variables around it, so that the fold has parameters, as the
+folds with a parameter of a cartesian closed category with a natural numbers object do.
 
 ## Main definitions
 

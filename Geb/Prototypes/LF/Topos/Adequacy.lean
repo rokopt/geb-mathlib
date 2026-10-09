@@ -7,7 +7,7 @@ module
 
 public import Geb.Prototypes.FreeTopos.Internal.Derivation
 public import Geb.Prototypes.FreeTopos.Internal.Inversion
-public import Geb.Prototypes.FreeTopos.Internal.Iterate
+public import Geb.Prototypes.FreeTopos.Internal.Substitution
 public import Geb.Prototypes.LF.Metatheory.Substitution
 public import Geb.Prototypes.LF.Topos.Signature
 import Mathlib.Tactic.IntervalCases
@@ -26,16 +26,13 @@ language of the type that {lit}`A` encodes, whose encoding it is. The fragment's
 built from the terminal object, binary products, exponentials, the subobject classifier and the
 natural numbers object, and its terms the variables, the element of the terminal object, pairs
 and their components, abstraction and application, zero and the successor, the fold of the
-natural numbers with parameters, and equality.
+natural numbers, and equality.
 
 The encoding of terms ({lit}`enc`) is computed from the compilation, which supplies the types
 that the constants of the signature take as arguments; decoding ({lit}`dec`) forgets them. The
-fold of the signature, whose start and step may mention the variables around it, corresponds to
-the application of the fold with parameters ({name}`Geb.FreeTopos.Internal.iterDefn`), a
-definition of the language at the index {lit}`ki`, to the number and the pair of the start and
-the step as an abstraction: the language's own fold is outside the fragment. The encoding of
-such an application reads the start and the step's body off the encoding of the pair
-({lit}`natRecOfPair`).
+fold of the signature is the fold of the language: its start a term of the fold's context and its
+step an LF abstraction over the value, whose body is the language's step, a term of the context
+extended by the value, so that both may mention the variables around the fold.
 
 ## Main definitions
 
@@ -274,53 +271,18 @@ abbrev MTerm : Type := FreeTopos.Internal.Term
 variable. -/
 abbrev MEnv : Type := List (PartialHorn.Tree × PartialHorn.Tree)
 
-/-- The fold of a natural number {lit}`Mm` at {lit}`C` from the encoding {lit}`P` of a pair of a
-start and an abstraction, where {lit}`P` is one: the encoding's start and the abstraction's
-body. -/
-def natRecOfPair (C P Mm : Expr) : Option Expr :=
-  match P.label, P.children with
-    | .app (.const 8), [_, _, Mz, Pf] => match Pf.label, Pf.children with
-      | .app (.const 11), [A', _, Mf] => if A' = C then some (natRec C Mz Mf Mm) else none
-      | _, _ => none
-    | _, _ => none
-
-/-- The fold from the encoding of a pair is defined exactly at the encodings of a pair of a start
-and an abstraction over {lit}`C`. -/
-theorem natRecOfPair_eq_some {C P Mm M : Expr} :
-    natRecOfPair C P Mm = some M ↔
-      ∃ A B Mz B' Mf, P = pair A B Mz (lam C B' Mf) ∧ M = natRec C Mz Mf Mm := by
-  constructor
-  · intro h
-    obtain ⟨l, cs, rfl⟩ := exists_node P
-    simp only [natRecOfPair, RoseTree.label_node, RoseTree.children_node] at h
-    split at h
-    · next A B Mz Pf =>
-      obtain ⟨l', cs', rfl⟩ := exists_node Pf
-      simp only [RoseTree.label_node, RoseTree.children_node] at h
-      split at h
-      · next A' B' Mf =>
-        split_ifs at h with hA'
-        subst hA'
-        exact ⟨A, B, Mz, B', Mf, rfl, (Option.some.inj h).symm⟩
-      · exact absurd h (by simp)
-    · exact absurd h (by simp)
-  · rintro ⟨A, B, Mz, B', Mf, rfl, rfl⟩
-    simp only [natRecOfPair, pair, lam, Expr.const, Expr.app, RoseTree.label_node,
-      RoseTree.children_node, ↓reduceIte]
-
 section Encoding
 
-variable (G : FreeTopos.Internal.Globals) (kz ks ki : ℕ)
+variable (G : FreeTopos.Internal.Globals) (kz ks : ℕ)
 
 open FreeTopos.Internal in
 /-- One step of the encoding of a term of the internal language, at a node of a label, from its
 children's encodings, in an environment over {lit}`X`: each constructor of the fragment is the
 constant of the same name, applied to the encodings of the types of its children, which the
-compilation computes, and of the children; an abstraction's body is an LF abstraction; zero and
-the successor are the primitive arrows of indices {lit}`kz` and {lit}`ks`; the fold is the
-application of the definition of index {lit}`ki`, the fold with parameters, to a number and the
-pair of a start and an abstraction, whose encoding gives the start and the abstraction's body. A
-term outside the fragment, or with a type outside it, has no encoding. -/
+compilation computes, and of the children; an abstraction's body and a fold's step are LF
+abstractions, the step over the fold's type, the type of its start; zero and the successor are the
+primitive arrows of indices {lit}`kz` and {lit}`ks`. A term outside the fragment, or with a type
+outside it, has no encoding. -/
 def encStep (l : FreeTopos.Internal.Label)
     (cs : List (MTerm × (PartialHorn.Tree → MEnv → Option Expr)))
     (X : PartialHorn.Tree) (e : MEnv) : Option Expr :=
@@ -348,20 +310,22 @@ def encStep (l : FreeTopos.Internal.Label)
       pure (app (← encTy a) (← encTy b) (← et X e) (← eu X e))
     | .arr k [], [(_, et)] =>
       if k = kz then zeroAt <$> et X e else if k = ks then succ <$> et X e else none
-    | .defn k [c], [(_, em), (_, ep)] =>
-      if k = ki then do natRecOfPair (← encTy c) (← ep X e) (← em X e) else none
+    | .natRec, [(z, ez), (_, es), (_, em)] => do
+      let (_, c) ← compile G 0 z X e
+      pure (natRec (← encTy c) (← ez X e)
+        (Expr.lam (← es (FreeTopos.prod X c) (extEnv X c e))) (← em X e))
     | .eq, [(t, et), (_, eu)] => do
       let (_, a) ← compile G 0 t X e
       pure (eq (← encTy a) (← et X e) (← eu X e))
     | _, _ => none
 
 /-- The encoding of a term of the internal language in an environment. -/
-def enc : MTerm → PartialHorn.Tree → MEnv → Option Expr := RoseTree.para (encStep G kz ks ki)
+def enc : MTerm → PartialHorn.Tree → MEnv → Option Expr := RoseTree.para (encStep G kz ks)
 
 /-- The computation rule of the encoding of terms. -/
 theorem enc_node (l : FreeTopos.Internal.Label) (cs : List MTerm) :
-    enc G kz ks ki (RoseTree.node l cs) =
-      encStep G kz ks ki l (cs.map fun c ↦ (c, enc G kz ks ki c)) :=
+    enc G kz ks (RoseTree.node l cs) =
+      encStep G kz ks l (cs.map fun c ↦ (c, enc G kz ks c)) :=
   RoseTree.para_node _ l cs
 
 end Encoding
@@ -473,18 +437,42 @@ theorem relam_eq_some {a : PartialHorn.Tree} {s r : MTerm} :
   · rintro ⟨a', b, rfl, rfl⟩
     rfl
 
+/-- The body of an abstraction of the internal language. -/
+def lamBody (s : MTerm) : Option MTerm :=
+  match s.label, s.children with
+    | .lam _, [b] => some b
+    | _, _ => none
+
+/-- The body of an abstraction. -/
+@[simp] theorem lamBody_lam (a : PartialHorn.Tree) (b : MTerm) :
+    lamBody (FreeTopos.Internal.Term.lam a b) = some b := rfl
+
+/-- The body of a term as an abstraction is defined exactly at the abstractions. -/
+theorem lamBody_eq_some {s b : MTerm} :
+    lamBody s = some b ↔ ∃ a, s = FreeTopos.Internal.Term.lam a b := by
+  constructor
+  · intro h
+    rw [← RoseTree.node_label_children s] at h ⊢
+    unfold lamBody at h
+    simp only [RoseTree.label_node, RoseTree.children_node] at h
+    split at h
+    · next a b' heq hcs =>
+      rw [heq, hcs, ← Option.some.inj h]
+      exact ⟨a, rfl⟩
+    · exact absurd h (by simp)
+  · rintro ⟨a, rfl⟩
+    rfl
+
 section Decoding
 
-variable (kz ks ki : ℕ)
+variable (kz ks : ℕ)
 
 /-- One step of the decoding of a canonical LF term of the fragment, at a node of a label, from
 its children, each paired with its decoding: each constant is the constructor of the same name,
 its type arguments dropped but for an abstraction's domain, which is decoded as a type; an LF
-abstraction is an abstraction of a placeholder type, which the constant of an abstraction or of a
-fold applied to it replaces by the domain; zero and the successor
-are the primitive arrows of indices {lit}`kz` and {lit}`ks`; the fold is the application of the
-definition of index {lit}`ki` to the number and the pair of the start and the abstraction of the
-step over the type. -/
+abstraction is an abstraction of a placeholder type, which the constant of an abstraction applied
+to it replaces by the domain, and whose body is the step of the fold applied to it; zero and the
+successor are the primitive arrows of indices {lit}`kz` and {lit}`ks`. -/
 def decStep (l : Label) (cs : List (Expr × Option MTerm)) : Option MTerm :=
   match l, cs with
     | .app (.var i), [] => some (FreeTopos.Internal.Term.var i)
@@ -498,29 +486,27 @@ def decStep (l : Label) (cs : List (Expr × Option MTerm)) : Option MTerm :=
       pure (FreeTopos.Internal.Term.app (← t) (← u))
     | .app (.const 13), [(_, t)] => FreeTopos.Internal.Term.arr kz [] <$> t
     | .app (.const 14), [(_, t)] => FreeTopos.Internal.Term.arr ks [] <$> t
-    | .app (.const 15), [(A, _), (_, z), (_, s), (_, m)] => do
-      let c ← decTy A
-      pure (FreeTopos.Internal.Term.defn ki [c]
-        [← m, FreeTopos.Internal.Term.pair (← z) (← relam c (← s))])
+    | .app (.const 15), [(_, _), (_, z), (_, s), (_, m)] => do
+      pure (FreeTopos.Internal.Term.natRec (← z) (← lamBody (← s)) (← m))
     | .app (.const 16), [_, (_, t), (_, u)] => do
       pure (FreeTopos.Internal.Term.eq (← t) (← u))
     | .lam, [(_, d)] => FreeTopos.Internal.Term.lam FreeTopos.one <$> d
     | _, _ => none
 
 /-- The decoding of a canonical LF term of the fragment as a term of the internal language. -/
-def dec : Expr → Option MTerm := RoseTree.para (decStep kz ks ki)
+def dec : Expr → Option MTerm := RoseTree.para (decStep kz ks)
 
 /-- The computation rule of the decoding. -/
 theorem dec_node (l : Label) (cs : List Expr) :
-    dec kz ks ki (RoseTree.node l cs) = decStep kz ks ki l (cs.map fun c ↦ (c, dec kz ks ki c)) :=
+    dec kz ks (RoseTree.node l cs) = decStep kz ks l (cs.map fun c ↦ (c, dec kz ks c)) :=
   RoseTree.para_node _ l cs
 
 end Decoding
 
 /-- Decoding inverts encoding. -/
-theorem dec_enc {G : FreeTopos.Internal.Globals} {kz ks ki : ℕ} :
-    ∀ (s : MTerm) (X : PartialHorn.Tree) (e : MEnv) (M : Expr), enc G kz ks ki s X e = some M →
-      dec kz ks ki M = some s :=
+theorem dec_enc {G : FreeTopos.Internal.Globals} {kz ks : ℕ} :
+    ∀ (s : MTerm) (X : PartialHorn.Tree) (e : MEnv) (M : Expr), enc G kz ks s X e = some M →
+      dec kz ks M = some s :=
   RoseTree.ind fun l cs ih X e M henc ↦ by
     rw [enc_node] at henc
     rcases l with i | _ | _ | _ | _ | a | _ | ⟨k, θ⟩ | _ | _ | c | ⟨k, θ⟩ | _
@@ -606,39 +592,21 @@ theorem dec_enc {G : FreeTopos.Internal.Globals} {kz ks ki : ℕ} :
             · simp [encStep, hkz, hks] at henc
         · simp [encStep] at henc
       · simp [encStep] at henc
-    · simp [encStep] at henc
-    · simp [encStep] at henc
-    · simp [encStep] at henc
-    · rcases θ with _ | ⟨c, _ | ⟨c', θ⟩⟩
+    · rcases cs with _ | ⟨z, _ | ⟨s, _ | ⟨m, _ | ⟨d, cs⟩⟩⟩⟩
       · simp [encStep] at henc
-      · rcases cs with _ | ⟨m, _ | ⟨p, _ | ⟨d, cs⟩⟩⟩
-        · simp [encStep] at henc
-        · simp [encStep] at henc
-        · by_cases hk : k = ki
-          · subst hk
-            simp only [encStep, List.map_cons, List.map_nil, ↓reduceIte, Option.bind_eq_bind,
-              Option.bind_eq_some_iff] at henc
-            obtain ⟨C, hC, P, hP, Mm, hMm, hM⟩ := henc
-            obtain ⟨A, B, Mz, B', Mf, rfl, rfl⟩ := natRecOfPair_eq_some.mp hM
-            have hp := ih p (by simp) X e _ hP
-            have hm := ih m (by simp) X e _ hMm
-            rw [pair, Expr.const, Expr.app, dec_node] at hp
-            simp only [List.map_cons, List.map_nil, decStep, Option.bind_eq_bind,
-              Option.bind_eq_some_iff] at hp
-            obtain ⟨z, hz, l, hl, hpl⟩ := hp
-            rw [lam, Expr.const, Expr.app, dec_node] at hl
-            simp only [List.map_cons, List.map_nil, decStep] at hl
-            simp only [Option.bind_eq_bind, Option.bind_eq_some_iff, decTy_encTy c C hC,
-              Option.some.injEq, exists_eq_left'] at hl
-            obtain ⟨sMf, hsMf, hl⟩ := hl
-            obtain rfl := Option.some.inj hpl
-            rw [natRec, Expr.const, Expr.app, dec_node]
-            simp only [List.map_cons, List.map_nil, decStep, decTy_encTy c C hC, hz, hsMf, hl, hm,
-              Option.bind_eq_bind, Option.bind_some]
-            rfl
-          · simp [encStep, hk] at henc
-        · simp [encStep] at henc
       · simp [encStep] at henc
+      · simp [encStep] at henc
+      · simp only [encStep, List.map_cons, List.map_nil, Option.bind_eq_bind,
+          Option.bind_eq_some_iff, Option.pure_def, Option.some.injEq, Prod.exists] at henc
+        obtain ⟨-, c, -, C, -, Mz, hMz, Ms, hMs, Mm, hMm, rfl⟩ := henc
+        rw [natRec, Expr.const, Expr.app, dec_node]
+        simp only [List.map_cons, List.map_nil, decStep, Expr.lam, dec_node,
+          ih z (by simp) X e Mz hMz, ih s (by simp) _ _ Ms hMs, ih m (by simp) X e Mm hMm]
+        rfl
+      · simp [encStep] at henc
+    · simp [encStep] at henc
+    · simp [encStep] at henc
+    · simp [encStep] at henc
     · rcases cs with _ | ⟨t, _ | ⟨u, _ | ⟨d, cs⟩⟩⟩
       · simp [encStep] at henc
       · simp [encStep] at henc
@@ -917,16 +885,15 @@ theorem judge_pair_lam_inv {Γ : Ctx}
 
 section Soundness
 
-variable {G : FreeTopos.Internal.Globals} {kz ks ki : ℕ}
+variable {G : FreeTopos.Internal.Globals} {kz ks : ℕ}
 
 /-- Encoding is sound: the encoding of a term of the fragment, in an environment whose types are
 encoded, is a canonical LF term of the family of terms of the encoding of its type. -/
 theorem enc_checks (hz : G.prims[kz]? = some FreeTopos.Internal.zeroPrim)
-    (hs : G.prims[ks]? = some FreeTopos.Internal.succPrim)
-    (hi : G.defs[ki]? = some (.language FreeTopos.Internal.iterDefn)) :
+    (hs : G.prims[ks]? = some FreeTopos.Internal.succPrim) :
     ∀ (s : MTerm) (X : PartialHorn.Tree) (e : MEnv) (ΓLF : Ctx) (M : Expr)
       (r : PartialHorn.Tree × PartialHorn.Tree),
-      encCtx (e.map Prod.snd) = some ΓLF → enc G kz ks ki s X e = some M →
+      encCtx (e.map Prod.snd) = some ΓLF → enc G kz ks s X e = some M →
       FreeTopos.Internal.compile G 0 s X e = some r →
       ∃ A, encTy r.2 = some A ∧ judge sig M ΓLF (.check (tm A)) = true :=
   RoseTree.ind fun l cs ih X e ΓLF M r hΓ henc hcomp ↦ by
@@ -1072,44 +1039,34 @@ theorem enc_checks (hz : G.prims[kz]? = some FreeTopos.Internal.zeroPrim)
             lf_spine [hMtJ]
           · simp [encStep, hkz, hks] at henc
       · simp [encStep] at henc
+    · obtain ⟨z, s, m, rfl, -⟩ := FreeTopos.Internal.compile_natRec_iff.mp hcomp
+      obtain ⟨⟨zf, hcz⟩, ⟨sf, hcs⟩, mf, hcm⟩ := FreeTopos.Internal.compile_natRec_parts hcomp
+      simp only [encStep, List.map_cons, List.map_nil, hcz, Option.bind_eq_bind,
+        Option.bind_some, Option.bind_eq_some_iff, Option.pure_def, Option.some.injEq] at henc
+      obtain ⟨C, hC, Mz, hMz, Ms, hMs, Mm, hMm, rfl⟩ := henc
+      have hΓ' : encCtx ((FreeTopos.Internal.extEnv X r.2 e).map Prod.snd) =
+          some (tm C :: ΓLF) := by
+        simp only [FreeTopos.Internal.extEnv, List.map_cons, List.map_map]
+        exact encCtx_cons hC (by simpa [Function.comp_def] using hΓ)
+      obtain ⟨A₁, hA₁, hMzJ⟩ := ih z (by simp) X e ΓLF Mz _ hΓ hMz hcz
+      obtain ⟨A₂, hA₂, hMsJ⟩ := ih s (by simp) _ _ _ Ms _ hΓ' hMs hcs
+      obtain ⟨N, hN, hMmJ⟩ := ih m (by simp) X e ΓLF Mm _ hΓ hMm hcm
+      simp only [hC, Option.some.injEq] at hA₁ hA₂
+      subst hA₁ hA₂
+      rw [show encTy FreeTopos.nat = some nat from rfl, Option.some.injEq] at hN
+      subst hN
+      have hfJ : judge sig (Expr.lam Ms) ΓLF (.check (Expr.pi (tm C) (tm C))) = true :=
+        judge_lam hMsJ
+      refine ⟨C, hC, judge_const (T := Expr.pi tp (Expr.arrow (tm (v 0))
+        (Expr.arrow (Expr.arrow (tm (v 0)) (tm (v 0))) (Expr.arrow (tm nat) (tm (v 0))))))
+        rfl ?_ rfl⟩
+      have hCt := encTy_checks r.2 C hC ΓLF
+      have hCc := encTy_closed r.2 C hC
+      simp only [tm, tp, nat, Expr.const, Expr.app, Expr.pi] at hCt hMzJ hfJ hMmJ ⊢
+      lf_spine [hCt, hMzJ, hfJ, hMmJ, rename_closed hCc, hsubWith_closed hCc]
     · simp [encStep] at henc
     · simp [encStep] at henc
     · simp [encStep] at henc
-    · rcases θ with _ | ⟨c, _ | ⟨c', θ⟩⟩
-      · simp [encStep] at henc
-      · rcases cs with _ | ⟨m, _ | ⟨p, _ | ⟨d', cs⟩⟩⟩
-        · simp [encStep] at henc
-        · simp [encStep] at henc
-        · by_cases hk : k = ki
-          · subst hk
-            simp only [encStep, List.map_cons, List.map_nil, ↓reduceIte, Option.bind_eq_bind,
-              Option.bind_eq_some_iff] at henc
-            obtain ⟨C, hC, P, hP, Mm, hMm, hM⟩ := henc
-            obtain ⟨A, B, Mz, B', Mf, rfl, rfl⟩ := natRecOfPair_eq_some.mp hM
-            obtain ⟨fm, fp, hcm, hcp, -, rfl⟩ := FreeTopos.Internal.compile_iter_inv hi hcomp
-            obtain ⟨N, hN, hMmJ⟩ := ih m (by simp) X e ΓLF Mm _ hΓ hMm hcm
-            obtain ⟨T, hT, hPJ⟩ := ih p (by simp) X e ΓLF _ _ hΓ hP hcp
-            rw [show encTy FreeTopos.nat = some nat from rfl, Option.some.injEq] at hN
-            subst hN
-            have hTe : encTy (FreeTopos.prod c (FreeTopos.exp c c)) = some (prod C (exp C C)) := by
-              rw [encTy_prod, encTy_exp, hC]
-              rfl
-            obtain rfl := Option.some.inj (hT.symm.trans hTe)
-            obtain ⟨hzJ, hfJ, hTAB, hB⟩ := judge_pair_lam_inv (encCtx_heads₀ hΓ) hPJ
-            subst hB
-            simp only [prod, exp, Expr.const, Expr.app, node_inj, List.cons.injEq, and_true,
-              true_and] at hTAB
-            obtain ⟨rfl, rfl⟩ := hTAB
-            refine ⟨C, hC, judge_const (T := Expr.pi tp (Expr.arrow (tm (v 0))
-              (Expr.arrow (Expr.arrow (tm (v 0)) (tm (v 0))) (Expr.arrow (tm nat) (tm (v 0))))))
-              rfl ?_ rfl⟩
-            have hCt := encTy_checks c C hC ΓLF
-            have hCc := encTy_closed c C hC
-            simp only [tm, tp, nat, Expr.const, Expr.app, Expr.pi] at hCt hzJ hfJ hMmJ ⊢
-            lf_spine [hCt, hzJ, hfJ, hMmJ, rename_closed hCc, hsubWith_closed hCc]
-          · simp [encStep, hk] at henc
-        · simp [encStep] at henc
-      · simp [encStep] at henc
     · obtain ⟨t, u, rfl, f, a, hct, g, hcu, rfl⟩ := FreeTopos.Internal.compile_eq_iff.mp hcomp
       simp only [encStep, List.map_cons, List.map_nil, hct, Option.bind_eq_bind,
         Option.bind_some, Option.bind_eq_some_iff, Option.pure_def, Option.some.injEq] at henc
@@ -1129,36 +1086,35 @@ end Soundness
 
 section Completeness
 
-variable {G : FreeTopos.Internal.Globals} {kz ks ki : ℕ}
+variable {G : FreeTopos.Internal.Globals} {kz ks : ℕ}
 
 /-- The conclusion of the completeness of the encoding at a term, an environment and a type: the
 term decodes to a term of the internal language that compiles in the environment to a type that
 the type encodes, and whose encoding it is. -/
-def TmConcl (G : FreeTopos.Internal.Globals) (kz ks ki : ℕ) (M : Expr) (X : PartialHorn.Tree)
+def TmConcl (G : FreeTopos.Internal.Globals) (kz ks : ℕ) (M : Expr) (X : PartialHorn.Tree)
     (e : MEnv) (A : Expr) : Prop :=
-  ∃ s r, dec kz ks ki M = some s ∧ FreeTopos.Internal.compile G 0 s X e = some r ∧
-    encTy r.2 = some A ∧ enc G kz ks ki s X e = some M
+  ∃ s r, dec kz ks M = some s ∧ FreeTopos.Internal.compile G 0 s X e = some r ∧
+    encTy r.2 = some A ∧ enc G kz ks s X e = some M
 
 /-- The completeness of the encoding at a term, of the family of terms of a type, and, where the
 term checks against a product of families of terms, at the body of the abstraction it is, in
 every environment of the extended types. -/
-def TmComplete (G : FreeTopos.Internal.Globals) (kz ks ki : ℕ) (M : Expr) : Prop :=
+def TmComplete (G : FreeTopos.Internal.Globals) (kz ks : ℕ) (M : Expr) : Prop :=
   (∀ (X : PartialHorn.Tree) (e : MEnv) (ΓLF : Ctx) (A : Expr),
     encCtx (e.map Prod.snd) = some ΓLF →
-    judge sig M ΓLF (.check (tm A)) = true → TmConcl G kz ks ki M X e A) ∧
+    judge sig M ΓLF (.check (tm A)) = true → TmConcl G kz ks M X e A) ∧
   (∀ (Γ : List PartialHorn.Tree) (ΓLF : Ctx) (a : PartialHorn.Tree) (A' B' : Expr),
     encCtx Γ = some ΓLF → encTy a = some A' →
     judge sig M ΓLF (.check (Expr.pi (tm A') (tm B'))) = true →
     ∃ body, M = Expr.lam body ∧
-      ∀ (X : PartialHorn.Tree) (e : MEnv), e.map Prod.snd = a :: Γ → TmConcl G kz ks ki body X e B')
+      ∀ (X : PartialHorn.Tree) (e : MEnv), e.map Prod.snd = a :: Γ → TmConcl G kz ks body X e B')
 
 /-- Encoding is onto the canonical LF terms: every canonical term of the family of terms of a type,
 in an encoded context, decodes to a term of the internal language that compiles, in an
 environment of the context's types, to a type the type encodes, and whose encoding it is. -/
 theorem tmComplete (hz : G.prims[kz]? = some FreeTopos.Internal.zeroPrim)
-    (hs : G.prims[ks]? = some FreeTopos.Internal.succPrim)
-    (hi : G.defs[ki]? = some (.language FreeTopos.Internal.iterDefn)) :
-    ∀ M : Expr, TmComplete G kz ks ki M :=
+    (hs : G.prims[ks]? = some FreeTopos.Internal.succPrim) :
+    ∀ M : Expr, TmComplete G kz ks M :=
   RoseTree.ind fun l cs ih ↦ by
     refine ⟨fun X e ΓLF A hΓ hj ↦ ?_, fun Γ ΓLF a A' B' hΓ ha hj ↦ ?_⟩
     rotate_left
@@ -1432,40 +1388,15 @@ theorem tmComplete (hz : G.prims[kz]? = some FreeTopos.Internal.zeroPrim)
         obtain rfl := encTy_inj hc hrz
         obtain rfl := encTy_inj hc hrs
         obtain rfl := encTy_inj hrm (rfl : encTy FreeTopos.nat = some nat)
-        have hcI := isTy_of_encTy G c X1 hc
-        have hcl : FreeTopos.Internal.compile G 0 (FreeTopos.Internal.Term.lam c ss) X e =
-            some (FreeTopos.curry X c fs, FreeTopos.exp c c) :=
-          FreeTopos.Internal.compile_lam_iff.mpr ⟨ss, fs, c, rfl, hcI, hcs, rfl⟩
-        have hcp : FreeTopos.Internal.compile G 0
-            (FreeTopos.Internal.Term.pair sz (FreeTopos.Internal.Term.lam c ss)) X e =
-              some (FreeTopos.pair fz (FreeTopos.curry X c fs),
-                FreeTopos.prod c (FreeTopos.exp c c)) :=
-          FreeTopos.Internal.compile_pair_iff.mpr ⟨sz, _, fz, c, _, _, rfl, hcz, hcl, rfl⟩
-        have hel : enc G kz ks ki (FreeTopos.Internal.Term.lam c ss) X e =
-            some (lam X1 X1 (Expr.lam body)) := by
-          rw [FreeTopos.Internal.Term.lam, enc_node]
-          simp only [encStep, List.map_cons, List.map_nil, hcs, hc, hes, Option.bind_eq_bind,
-            Option.bind_some]
-          rfl
-        have hep : enc G kz ks ki
-            (FreeTopos.Internal.Term.pair sz (FreeTopos.Internal.Term.lam c ss)) X e =
-              some (pair X1 (exp X1 X1) X2 (lam X1 X1 (Expr.lam body))) := by
-          rw [FreeTopos.Internal.Term.pair, enc_node]
-          simp only [encStep, List.map_cons, List.map_nil, hcz, hcl, hc, hez, hel,
-            show encTy (FreeTopos.exp c c) = some (exp X1 X1) by rw [encTy_exp, hc]; rfl,
-            Option.bind_eq_bind, Option.bind_some]
-          rfl
-        refine ⟨FreeTopos.Internal.Term.defn ki [c]
-            [sm, FreeTopos.Internal.Term.pair sz (FreeTopos.Internal.Term.lam c ss)], _, ?_,
-          FreeTopos.Internal.compile_iter hi hcI hcm hcp, hc, ?_⟩
+        obtain ⟨r, hr, hrc⟩ := FreeTopos.Internal.compile_natRec_of_parts hcz hcs hcm
+        refine ⟨FreeTopos.Internal.Term.natRec sz ss sm, r, ?_, hr, by rw [hrc]; exact hc, ?_⟩
         · rw [dec_node]
-          simp only [List.map_cons, List.map_nil, decStep, Expr.lam,
-            dec_node, hdz, hds, hdm, decTy_encTy c X1 hc]
+          simp only [List.map_cons, List.map_nil, decStep, Expr.lam, dec_node, hdz, hds, hdm]
           rfl
-        · rw [FreeTopos.Internal.Term.defn, enc_node]
-          simp only [encStep, List.map_cons, List.map_nil, ↓reduceIte, hc, hep, hem,
+        · rw [FreeTopos.Internal.Term.natRec, enc_node]
+          simp only [encStep, List.map_cons, List.map_nil, hcz, hc, hez, hes, hem,
             Option.bind_eq_bind, Option.bind_some]
-          exact natRecOfPair_eq_some.mpr ⟨_, _, _, _, _, rfl, rfl⟩
+          rfl
       · obtain rfl := Option.some.inj (hC.symm.trans rfl : some C = some
           (Expr.pi tp (Expr.arrow (tm (v 0)) (Expr.arrow (tm (v 0)) (tm omega)))))
         obtain ⟨X1, X2, X3, rfl⟩ := List.length_eq_three.mp (hlen : cs.length = 3)

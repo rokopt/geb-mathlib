@@ -24,9 +24,7 @@ derivations the decoding builds, the rewriting or the proof they perform.
 
 * {lit}`check_join`, {lit}`check_cut`, {lit}`check_conv`, {lit}`check_convFrom`,
   {lit}`check_propExt`, {lit}`check_funExt`, {lit}`check_natIndHyp` — the proof rules.
-* {lit}`check_congAlong` — the rewriting by a derivation along a variable of a simple term.
-* {lit}`check_natZeroLhs`, {lit}`check_natSuccLhs` — the computations of the fold with
-  parameters.
+* {lit}`check_natZero`, {lit}`check_natSucc` — the computations of the fold.
 * {lit}`check_leibD`, {lit}`check_natIndD` — the substitution of equals and the induction.
 
 ## Tags
@@ -47,13 +45,6 @@ variable {G : Globals} {E : Array Entry} {n : ℕ} {Γ : List PartialHorn.Tree} 
 
 /-- The identity rewriting rewrites a term to itself. -/
 @[simp] theorem check_refl (t : Term) : (check G E n reflD).1 Γ Φ t = some t := by
-  rw [check_node]
-  rfl
-
-/-- One rewriting after another rewrites by the first, then by the second. -/
-theorem check_trans (d₁ d₂ : Deriv) (t : Term) :
-    (check G E n (transD d₁ d₂)).1 Γ Φ t =
-      ((check G E n d₁).1 Γ Φ t).bind ((check G E n d₂).1 Γ Φ) := by
   rw [check_node]
   rfl
 
@@ -155,35 +146,6 @@ theorem check_cong_same {l : FreeTopos.Internal.Label} {ds : List Deriv} {ts ts'
         simpa using hk k (by omega) h₁ (by simpa using h₂))]
   rfl
 
-/-- The congruence at an abstraction: its body rewritten in the context extended by the bound
-variable, the hypotheses weakened, or by the identity in any. -/
-theorem check_cong_lam {a : PartialHorn.Tree} {d : Deriv} {b b' : Term}
-    (h : (check G E n d).1 (a :: Γ) (Φ.map weaken1) b = some b')
-    (hrefl : d.label.isRefl = true → b' = b) :
-    (check G E n (nd .cong [d])).1 Γ Φ (Term.lam a b) = some (Term.lam a b') := by
-  obtain ⟨l, cs, rfl⟩ : ∃ l cs, d = RoseTree.node l cs :=
-    ⟨_, _, (RoseTree.node_label_children d).symm⟩
-  by_cases hd : (RoseTree.node l cs : Deriv).label.isRefl = true
-  · obtain rfl := hrefl hd
-    refine check_cong_same (fun _ _ ↦ by simpa using Or.inr hd) rfl rfl fun k h₁ _ _ ↦ ?_
-    obtain rfl : k = 0 := by simpa using h₁
-    cases l <;> simp only [RoseTree.label_node, FreeTopos.Internal.Rule.isRefl,
-      reduceCtorEq] at hd
-    rcases cs with _ | ⟨c, cs⟩
-    · exact check_refl _
-    · rw [check_node] at h
-      simp [checkStep] at h
-  · rw [check_node]
-    have hd' : l.isRefl = false := by simpa using hd
-    have hcc : FreeTopos.Internal.congCtxs G n (.lam a) [b] Γ Φ [RoseTree.node l cs] =
-        some [(a :: Γ, Φ.map weaken1)] := by
-      simp [FreeTopos.Internal.congCtxs, FreeTopos.Internal.sameCtx, hd',
-        FreeTopos.Internal.childCtxs]
-    simp only [checkStep, Term.lam, RoseTree.label_node, RoseTree.children_node, List.map_cons,
-      List.map_nil]
-    rw [hcc]
-    simp [h]
-
 /-- β at an application of an abstraction. -/
 theorem check_beta (a : PartialHorn.Tree) (b u : Term) :
     (check G E n (ruleD .beta)).1 Γ Φ (Term.app (Term.lam a b) u) =
@@ -224,109 +186,6 @@ theorem check_rwHyp {i : ℕ} {flip : Bool} {t u : Term} (h : Φ[i]? = some (Ter
     RoseTree.label_node, RoseTree.children_node, Option.bind_eq_bind]
   cases flip <;> simp
 
-/-- One step of whether a term is built without folds and with unary abstractions: the terms the
-decoding produces. -/
-def simpleStep (l : FreeTopos.Internal.Label) (cs : List Bool) : Bool :=
-  match l with
-    | .natRec | .listRec | .roseRec _ => false
-    | .lam _ => cs.length == 1 && cs.all id
-    | _ => cs.all id
-
-/-- Whether a term is built without folds and with unary abstractions. -/
-def Term.Simple : Term → Bool := RoseTree.elim simpleStep
-
-/-- The computation rule of {name}`Geb.LF.Topos.Term.Simple`. -/
-theorem simple_node (l : FreeTopos.Internal.Label) (cs : List Term) :
-    Term.Simple (RoseTree.node l cs) = simpleStep l (cs.map Term.Simple) :=
-  RoseTree.elim_node _ l cs
-
-/-- The children of a simple term are simple. -/
-theorem simple_child {l : FreeTopos.Internal.Label} {cs : List Term}
-    (h : Term.Simple (RoseTree.node l cs) = true) {c : Term} (hc : c ∈ cs) :
-    Term.Simple c = true := by
-  rw [simple_node] at h
-  have hall : (cs.map Term.Simple).all id = true := by
-    unfold simpleStep at h
-    split at h
-    · exact absurd h (by simp)
-    · exact absurd h (by simp)
-    · exact absurd h (by simp)
-    · exact (Bool.and_eq_true _ _ ▸ h).2
-    · exact h
-  rw [List.all_eq_true] at hall
-  exact hall _ (List.mem_map.mpr ⟨c, hc, rfl⟩)
-
-/-- The computation rule of {name}`Geb.LF.Topos.congAlong`. -/
-theorem congAlong_node (d : Deriv) (l : FreeTopos.Internal.Label) (cs : List Term) :
-    congAlong d (RoseTree.node l cs) = congAlongStep d l (cs.map fun c ↦ (c, congAlong d c)) :=
-  RoseTree.para_node _ l cs
-
-/-- The rewriting by a derivation along a variable: in a simple term, at depth {lit}`j`, where the
-derivation rewrites the term {lit}`u`, weakened past the variables bound so far, to {lit}`u'`,
-weakened alike, under the hypotheses weakened alike, it rewrites the term with {lit}`u`
-substituted for the variable to the term with {lit}`u'` substituted. -/
-theorem check_congAlong {d : Deriv} {u u' : Term} {Φ₀ : List Term}
-    (hd : ∀ (k : ℕ) (Δ : List PartialHorn.Tree),
-      (check G E n d).1 Δ ((List.map weaken1)^[k] Φ₀) (weaken1^[k] u) = some (weaken1^[k] u')) :
-    ∀ (t : Term), Term.Simple t = true → ∀ (j : ℕ) (Δ : List PartialHorn.Tree),
-      (check G E n (congAlong d t j)).1 Δ ((List.map weaken1)^[j] Φ₀)
-        (Term.subst t (substAt j (weaken1^[j] u))) =
-          some (Term.subst t (substAt j (weaken1^[j] u'))) :=
-  RoseTree.ind fun l cs ih hs j Δ ↦ by
-    rw [congAlong_node]
-    rcases Term.shape l cs with ⟨i, rfl⟩ | ⟨a, b, rfl, rfl⟩ | ⟨z, sₛ, m, hl, rfl⟩ |
-      ⟨c, sₛ, m, rfl, rfl⟩ | hp
-    · simp only [congAlongStep, Term.subst_node, Term.substStep]
-      by_cases hij : i = j
-      · subst hij
-        simp only [↓reduceIte, substAt, lt_irrefl]
-        exact hd i Δ
-      · simp only [hij, ↓reduceIte, check_refl, substAt]
-    · simp only [congAlongStep, List.map_cons, List.map_nil, Term.subst_node, Term.substStep]
-      have hb := ih b (by simp) (simple_child hs (by simp)) (j + 1) (a :: Δ)
-      rw [Function.iterate_succ_apply', Function.iterate_succ_apply',
-        Function.iterate_succ_apply'] at hb
-      rw [liftS_substAt, liftS_substAt]
-      exact check_cong_lam hb fun hr ↦ FreeTopos.Internal.check_isRefl hr hb
-    · rcases hl with rfl | rfl <;> simp [simple_node, simpleStep] at hs
-    · simp [simple_node, simpleStep] at hs
-    · have plain : (∀ i, FreeTopos.Internal.sameCtx l i = true) →
-          congAlongStep d l (cs.map fun c ↦ (c, congAlong d c)) j =
-            nd .cong (cs.map fun c ↦ congAlong d c j) →
-          (check G E n (congAlongStep d l (cs.map fun c ↦ (c, congAlong d c)) j)).1 Δ
-              ((List.map weaken1)^[j] Φ₀)
-              (Term.subst (RoseTree.node l cs) (substAt j (weaken1^[j] u))) =
-            some (Term.subst (RoseTree.node l cs) (substAt j (weaken1^[j] u'))) := by
-        intro hsame hstep
-        rw [hstep, Term.subst_plain hp rfl, Term.subst_plain hp rfl]
-        refine check_cong_same (fun k _ ↦ .inl (hsame k)) (by simp) (by simp)
-          fun k h₁ h₂ h₃ ↦ ?_
-        simp only [List.getElem_map]
-        exact ih _ (List.getElem_mem (by simpa using h₁)) (simple_child hs (List.getElem_mem _)) j
-          Δ
-      have hplain : congAlongStep d l (cs.map fun c ↦ (c, congAlong d c)) j =
-          nd .cong (cs.map fun c ↦ congAlong d c j) →
-          (∀ i, FreeTopos.Internal.sameCtx l i = true) → _ := fun h₁ h₂ ↦ plain h₂ h₁
-      rcases l with i | _ | _ | _ | _ | a | _ | ⟨k, θ⟩ | _ | _ | c | ⟨k, θ⟩ | _
-      · have := congrArg RoseTree.label ((hp cs rfl).1 (fun c _ ↦ c) Nat.succ)
-        simp only [Term.renameStep, Term.var, RoseTree.label_node,
-          FreeTopos.Internal.Label.var.injEq] at this
-        exact absurd this (Nat.succ_ne_self i)
-      all_goals first
-        | exact hplain (by simp [congAlongStep, List.map_map, Function.comp_def]) fun _ ↦ rfl
-        | exact absurd ((simple_node _ _).symm.trans hs) Bool.false_ne_true
-        | skip
-      rw [simple_node] at hs
-      simp only [simpleStep, Bool.and_eq_true, beq_iff_eq, List.length_map] at hs
-      obtain ⟨b, rfl⟩ := List.length_eq_one_iff.mp hs.1
-      have := congrArg (fun t ↦ t.children)
-        ((hp [b] rfl).1 (fun _ f ↦ Term.var (f 0)) Nat.succ)
-      simp only [Term.renameStep, Term.var, Term.liftR, List.map_cons, List.map_nil,
-        RoseTree.children_node, List.cons.injEq, and_true] at this
-      have h' := congrArg RoseTree.label this
-      simp only [RoseTree.label_node, FreeTopos.Internal.Label.var.injEq] at h'
-      exact absurd h' (by decide)
-
 /-- The congruence at a node of two children in its context. -/
 theorem check_cong₂ {l : FreeTopos.Internal.Label} (h₀ : FreeTopos.Internal.sameCtx l 0 = true)
     (h₁ : FreeTopos.Internal.sameCtx l 1 = true) {d₁ d₂ : Deriv} {t₁ t₂ t₁' t₂' : Term}
@@ -339,85 +198,21 @@ theorem check_cong₂ {l : FreeTopos.Internal.Label} (h₀ : FreeTopos.Internal.
     | 0, _ => hd₁
     | 1, _ => hd₂
 
-/-- The start of the fold in the body of {name}`Geb.FreeTopos.Internal.iterDefn` at the type
-{lit}`c`: the first component of the pair. -/
-def iterStart (c : PartialHorn.Tree) : Term :=
-  Term.lam (FreeTopos.prod c (FreeTopos.exp c c)) (Term.fst (Term.var 0))
+variable {kz ks : ℕ}
 
-/-- The step of the fold in the body of {name}`Geb.FreeTopos.Internal.iterDefn` at the type
-{lit}`c`: the pair's second component applied to the previous function's value at the pair. -/
-def iterStep (c : PartialHorn.Tree) : Term :=
-  Term.lam (FreeTopos.prod c (FreeTopos.exp c c))
-    (Term.app (Term.snd (Term.var 0)) (Term.app (Term.var 1) (Term.var 0)))
-
-variable {ki kz ks : ℕ}
-
-/-- The unfolding of the fold with parameters. -/
-theorem check_delta_iter (hi : G.defs[ki]? = some (.language FreeTopos.Internal.iterDefn))
-    (c : PartialHorn.Tree) (m p : Term) :
-    (check G E n (ruleD .delta)).1 Γ Φ (Term.defn ki [c] [m, p]) =
-      some (Term.app (Term.natRec (iterStart c) (iterStep c) m) p) := by
+/-- The computation of the fold at zero: the start. -/
+theorem check_natZero (hz : G.prims[kz]? = some FreeTopos.Internal.zeroPrim) (z s : Term) :
+    (check G E n (ruleD (.natZero kz))).1 Γ Φ (Term.natRec z s (Term.arr kz [] Term.star)) =
+      some z := by
   rw [check_rule _ ⟨by simp, by simp, by simp⟩]
-  simp only [rootStep, Term.defn, RoseTree.label_node, RoseTree.children_node, hi,
-    Option.bind_some]
-  rfl
+  simp [FreeTopos.Internal.rootStep, Term.natRec, Term.arr, hz, Term.star]
 
-/-- The computation of the fold with parameters at zero: the start. -/
-theorem check_natZeroLhs (hi : G.defs[ki]? = some (.language FreeTopos.Internal.iterDefn))
-    (hz : G.prims[kz]? = some FreeTopos.Internal.zeroPrim) (c : PartialHorn.Tree) (z s : Term) :
-    (check G E n (natZeroLhsD kz)).1 Γ Φ
-      (Term.defn ki [c] [Term.arr kz [] Term.star, Term.pair z (Term.lam c s)]) = some z := by
-  simp only [natZeroLhsD, check_trans, check_delta_iter hi, Option.bind_some]
-  rw [show Term.app (Term.natRec (iterStart c) (iterStep c) (Term.arr kz [] Term.star))
-      (Term.pair z (Term.lam c s)) = RoseTree.node .app [_, _] from rfl,
-    check_cong₂ rfl rfl (d₁ := ruleD (.natZero kz)) (t₁' := iterStart c) ?_ (check_refl _)]
-  · simp only [Option.bind_some]
-    rw [show RoseTree.node FreeTopos.Internal.Label.app [iterStart c, Term.pair z (Term.lam c s)] =
-      Term.app (Term.lam _ (Term.fst (Term.var 0))) (Term.pair z (Term.lam c s)) from rfl,
-      check_beta, Option.bind_some]
-    exact check_fstPair _ _
-  · rw [check_rule _ ⟨by simp, by simp, by simp⟩]
-    simp [rootStep, Term.natRec, Term.arr, hz, Term.star]
-
-/-- The step of the fold with parameters at the fold of a term. -/
-theorem subst_iterStep (c : PartialHorn.Tree) (r : Term) :
-    Term.subst (iterStep c) (instVar r) = Term.lam (FreeTopos.prod c (FreeTopos.exp c c))
-      (Term.app (Term.snd (Term.var 0)) (Term.app (weaken1 r) (Term.var 0))) := rfl
-
-/-- The computation of the fold with parameters at a successor: the step at the fold of the
-predecessor. -/
-theorem check_natSuccLhs (hi : G.defs[ki]? = some (.language FreeTopos.Internal.iterDefn))
-    (hs : G.prims[ks]? = some FreeTopos.Internal.succPrim) (c : PartialHorn.Tree) {m : Term}
-    (hm : Term.VarLeaves m = true) (z s : Term) :
-    (check G E n (natSuccLhsD ks)).1 Γ Φ
-      (Term.defn ki [c] [Term.arr ks [] m, Term.pair z (Term.lam c s)]) =
-      some (Term.subst s (instVar (Term.app (Term.natRec (iterStart c) (iterStep c) m)
-        (Term.pair z (Term.lam c s))))) := by
-  set p := Term.pair z (Term.lam c s)
-  set R := Term.natRec (iterStart c) (iterStep c) m
-  have h₁ : (check G E n (nd .cong [ruleD (.natSucc ks), reflD])).1 Γ Φ
-      (Term.app (Term.natRec (iterStart c) (iterStep c) (Term.arr ks [] m)) p) =
-      some (Term.app (Term.subst (iterStep c) (instVar R)) p) := by
-    refine check_cong₂ rfl rfl ?_ (check_refl _)
-    rw [check_rule _ ⟨by simp, by simp, by simp⟩]
-    simp [rootStep, Term.natRec, Term.arr, hs, R]
-  have hR : Term.subst (weaken1 R) (instVar p) = R := by
-    simp only [weaken1, R, Term.natRec, Term.rename_node, Term.renameStep, List.map_cons,
-      List.map_nil, Term.subst_node, Term.substStep]
-    rw [Term.subst_rename m (· + 1) (instVar p) Term.var fun _ ↦ rfl,
-      Term.subst_id m hm _ fun _ ↦ rfl]
-    rfl
-  have h₂ : (check G E n (ruleD .beta)).1 Γ Φ (Term.app (Term.subst (iterStep c) (instVar R)) p) =
-      some (Term.app (Term.snd p) (Term.app R p)) := by
-    rw [subst_iterStep, check_beta]
-    simp only [Term.app, Term.snd, Term.subst_node, Term.substStep, List.map_cons,
-      List.map_nil, Term.var, instVar]
-    rw [hR]
-  have h₃ : (check G E n (nd .cong [ruleD .sndPair, reflD])).1 Γ Φ
-      (Term.app (Term.snd p) (Term.app R p)) = some (Term.app (Term.lam c s) (Term.app R p)) :=
-    check_cong₂ rfl rfl (check_sndPair _ _) (check_refl _)
-  simp only [natSuccLhsD, check_trans, check_delta_iter hi, Option.bind_some, h₁, h₂, h₃,
-    check_beta]
+/-- The computation of the fold at a successor: the step at the fold of the predecessor. -/
+theorem check_natSucc (hs : G.prims[ks]? = some FreeTopos.Internal.succPrim) (z s m : Term) :
+    (check G E n (ruleD (.natSucc ks))).1 Γ Φ (Term.natRec z s (Term.arr ks [] m)) =
+      some (Term.subst s (instVar (Term.natRec z s m))) := by
+  rw [check_rule _ ⟨by simp, by simp, by simp⟩]
+  simp [FreeTopos.Internal.rootStep, Term.natRec, Term.arr, hs]
 
 section Typing
 
@@ -511,21 +306,6 @@ theorem check_natIndHyp {Γ₀ : List PartialHorn.Tree} {Φ' : List Term} {φ : 
   rw [decide_eq_true_of ⟨rfl, hz, hs, hφ⟩, hp₀, hp₁]
   rfl
 
-/-- Iterated maps of a list, at an index. -/
-theorem getElem?_iterate_map {α : Type*} (f : α → α) (l : List α) (i : ℕ) :
-    ∀ k : ℕ, ((List.map f)^[k] l)[i]? = (l[i]?).map (f^[k]) :=
-  Nat.rec (by simp) fun k ih ↦ by
-    rw [Function.iterate_succ_apply', List.getElem?_map, ih, Option.map_map,
-      ← Function.iterate_succ']
-
-/-- Iterated weakening of an equation. -/
-theorem weaken1_iterate_eq (t u : Term) :
-    ∀ k : ℕ, weaken1^[k] (Term.eq t u) = Term.eq (weaken1^[k] t) (weaken1^[k] u) :=
-  Nat.rec rfl fun k ih ↦ by
-    rw [Function.iterate_succ_apply', ih, Function.iterate_succ_apply',
-      Function.iterate_succ_apply']
-    rfl
-
 /-- The substitution at the innermost variable is the instantiation. -/
 theorem substAt_zero (u : Term) : substAt 0 u = instVar u := by
   funext i
@@ -535,20 +315,19 @@ theorem substAt_zero (u : Term) : substAt 0 u = instVar u := by
 
 /-- The substitution of equals: the motive at {lit}`u`, from the equation {lit}`t = u` and the
 motive at {lit}`t`. -/
-theorem check_leibD {pb t u : Term} {Dh Dp : Deriv} (hpb : Term.Simple pb = true)
-    (hψ : typeIn G n Γ (Term.eq t u) = some FreeTopos.omega)
-    (hh : (check G E n Dh).2 Γ Φ (Term.eq t u) = true)
+theorem check_leibD {a : PartialHorn.Tree} {pb t u : Term} {Dh Dp : Deriv}
+    (ha : FreeTopos.Internal.IsTy G n a = true)
+    (hpb : typeIn G n (a :: Γ) pb = some FreeTopos.omega) (ht : typeIn G n Γ t = some a)
+    (hu : typeIn G n Γ u = some a) (hh : (check G E n Dh).2 Γ Φ (Term.eq t u) = true)
     (hp : (check G E n Dp).2 Γ (Φ ++ [Term.eq t u]) (Term.subst pb (instVar t)) = true) :
-    (check G E n (leibD pb t u Φ.length Dh Dp)).2 Γ Φ (Term.subst pb (instVar u)) = true := by
-  refine check_cut hψ hh (check_conv ?_ hp)
-  have hd : ∀ (k : ℕ) (Δ : List PartialHorn.Tree),
-      (check G E n (ruleD (.rwHyp Φ.length true))).1 Δ
-        ((List.map weaken1)^[k] (Φ ++ [Term.eq t u])) (weaken1^[k] u) = some (weaken1^[k] t) :=
-    fun k Δ ↦ check_rwHyp (flip := true) (by
-      rw [getElem?_iterate_map, List.getElem?_append_right (le_refl _), Nat.sub_self]
-      simp [weaken1_iterate_eq])
-  have := check_congAlong hd pb hpb 0 Γ
-  simpa only [Function.iterate_zero, id, substAt_zero] using this
+    (check G E n (leibD a pb t u Φ.length Dh Dp)).2 Γ Φ (Term.subst pb (instVar u)) = true := by
+  have hL := typeIn_lam ha hpb
+  refine check_cut (typeIn_eq ht hu) hh
+    (check_convFrom (typeIn_app hL hu) (check_beta _ _ _) ?_)
+  refine check_conv (φ' := Term.app (Term.lam a pb) t) (check_cong₂ rfl rfl (check_refl _)
+    (check_rwHyp (flip := true)
+      (by rw [List.getElem?_append_right (le_refl _), Nat.sub_self]; rfl))) ?_
+  exact check_conv (check_beta _ _ _) hp
 
 /-- The β-reduct of a term's weakening under a binder, abstracted and applied to the bound
 variable, is the term. -/

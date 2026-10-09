@@ -3949,10 +3949,10 @@ checklist and in CI.
   as a signature, its object types, terms in higher-order abstract syntax and
   derivations, and its computation rules as rewrite rules;
   `Topos/Adequacy.lean` encodes the fragment's types and compiled terms as
-  canonical LF terms and decodes them, the signature's fold corresponding to
-  the fold with parameters of the language, and proves the encoding sound and
-  complete; `Topos/Compose.lean` proves the decoding compositional, commuting
-  with renaming and hereditary substitution; `Topos/Proofs.lean` decodes the
+  canonical LF terms and decodes them, the signature's fold being the
+  language's fold, and proves the encoding sound and complete;
+  `Topos/Compose.lean` proves the decoding compositional, commuting with
+  renaming and hereditary substitution; `Topos/Proofs.lean` decodes the
   canonical terms of the families of proofs, in contexts of term and proof
   variables, as derivations of the language, `Topos/ProofCheck.lean` computes
   the checker at the derivations it builds, and `Topos/ProofSound.lean` proves
@@ -3963,7 +3963,8 @@ checklist and in CI.
   which no module of `Geb`, `GebLang` or `GebTests` imports, translates goals
   of the signature to Canonical's input and the terms it returns back, and
   checks them (`lake exe lf-canonical`); the [bootstrap
-  chapter](../manual/GebManual/Bootstrap.lean) records the measurements.
+  chapter](../manual/GebManual/Bootstrap.lean) records the measurements and
+  the signature's extension by further datatypes.
   Depends on `Geb.Prototypes.RoseTree.Basic`, `Geb.Prototypes.ConcreteSyntax`,
   `Geb.Mathlib.Data.W.Basic` and `Geb.Prototypes.FreeTopos.Internal`.
 - `Geb/Prototypes/PartialHorn/` — the logic of partial Horn theories
@@ -4101,11 +4102,7 @@ checklist and in CI.
   substitution composition
   (`Geb.FreeTopos.Internal.compile_subst`); `Square.lean` proves that
   compiling agrees with unfolding the language's definitions in every
-  model (`Geb.FreeTopos.Internal.compile_unfold`). `Iterate.lean`
-  defines the fold of the natural numbers with parameters
-  (`Geb.FreeTopos.Internal.iterDefn`), the fold into the exponential of
-  the parameters applied to them [EscardoSimpson2025], whose start and
-  step are values in the environment of its application. `Derivation.lean` is
+  model (`Geb.FreeTopos.Internal.compile_unfold`). `Derivation.lean` is
   the checker of derivations, `Geb.FreeTopos.Internal.check`: rewriting
   by the language's equations, and proof by rewriting, cut, propositional
   and function extensionality, the instances of earlier theorems,
