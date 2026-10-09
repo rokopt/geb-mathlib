@@ -3788,7 +3788,8 @@ them, the signature as hypotheses:
 
 The machine has 16 threads (AMD Ryzen AI 9 HX 370); Canonical used all
 of them. Canonical-min was measured at the revision the survey names,
-Canonical at tag `v4.34.0` of CanonicalLean. To reproduce: the manifest
+Canonical at revision `9932a00` of CanonicalLean, which its tag `v4.34.0`
+named before the release was replaced. To reproduce: the manifest
 of Canonical-min pins an untagged revision of CanonicalLean, for which no
 release archive exists, so the revision is replaced by the tag's; and the
 tactic's native library is loaded when a goal is built as a module of the
@@ -3865,7 +3866,8 @@ format, with hereditary substitution and its judgements decided by a
 fold, the formation of a signature among them; its extension by rewrite
 rules on constants {citep CousineauDowek2007}[], which Canonical's
 reduction rules are; and a fragment of the internal language of the free
-topos with a natural numbers object and list objects as a signature:
+topos with a natural numbers object, list objects and rose-tree objects
+as a signature:
 object types, terms in higher-order abstract syntax, and derivations by
 reflexivity, the substitution of equals, the computation and η rules,
 extensionality and induction, with the computation rules also given as
@@ -3878,7 +3880,10 @@ checker of `Geb.FreeTopos.Internal` accepts
 (`Geb/Prototypes/LF/Topos/ProofSound.lean`): the signature's fold is the
 language's fold, whose start and step may mention the variables around
 it, and its computation rules are the checker's. On the same machine,
-with a timeout of 120 s, every term returned checked:
+with Canonical at revision `1d80841` of CanonicalLean (tag `v4.34.0`
+since its release was replaced) under Lean v4.35.0-rc4, the signature
+with its list and rose-tree declarations, and a timeout of 120 s, every
+term returned checked:
 
 :::table +header
 *
@@ -3887,27 +3892,27 @@ with a timeout of 120 s, every term returned checked:
   * Modulo the rules
 *
   * Symmetry and transitivity of equality, congruence of `succ`
-  * Found, under 25 ms each, by substitution of equals
+  * Found, under 20 ms each, by substitution of equals
   * The same
 *
   * `natRec C z s (succ zero) = s z`
-  * Found, 9 ms, by the fold's rules and substitution of equals
-  * Found, 2 ms, by reflexivity
+  * Found, 13 ms, by the fold's rules and substitution of equals
+  * Found, 4 ms, by reflexivity
 *
   * `n + 0 = n` and `m + succ n = succ (m + n)`
-  * Found, 1 ms each, by a rule of the fold
-  * Found, 2 ms or less each, by reflexivity
+  * Found, 3 ms each, by a rule of the fold
+  * Found, 3 ms or less each, by reflexivity
 *
   * `0 + n = n`
-  * Found, 23 ms, by induction
-  * Found, 19 ms, by induction
+  * Found, 36 ms, by induction
+  * Found, 53 ms, by induction
 *
   * `succ m + n = succ (m + n)`
   * Not found in 120 s
-  * Found, 53 ms, by induction
+  * Found, 127 ms, by induction
 *
   * `lam (λ x. x) = lam (λ x. app (lam (λ y. y)) x)`
-  * Found, 82 ms, by extensionality and β
+  * Found, 136 ms, by extensionality and β
   * Found, 2 ms, by reflexivity
 :::
 
@@ -3916,6 +3921,18 @@ successor, a fold with a parameter. The measurements agree with the
 second conclusion above: the goal that needs both an induction and
 computation under its hypothesis is found only modulo the rules, where
 the search is left the induction and its motive.
+
+A release of Canonical is a GitHub release named after a Lean version,
+holding the solver's native library and the package's Lean build; Lake
+fetches it for the tag naming the checked-out revision, and the solver's
+source is not published, so only a revision a release tag names can be
+used. The experiments follow the latest version tag. A release replaced
+under its tag leaves an existing checkout without a tag at its revision
+until its tags are fetched again with `--force`, and a release built for
+another Lean version brings a Lean build that the toolchain cannot load:
+its unpacked `lib/lean` and `ir` directories, under the package's
+`.lake/build`, are removed so that Lake builds them from source, the
+native library kept.
 
 The signature grows toward the language one datatype at a time, each
 step with the adequacy of its encoding of types and terms, the
