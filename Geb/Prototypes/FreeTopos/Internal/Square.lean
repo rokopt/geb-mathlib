@@ -310,16 +310,19 @@ theorem compile_unfold_of {G : Globals} (hG : G.WF) {ubs : List (Option Term)}
     exact ⟨r', hr', hrr.1.trans hr.1.symm, hrr.2.trans ((eval_op₂_congr 3
       (eval_listRecP_congr X a _ hzv hsv) (eval_op₂_congr 9 rfl hmv)).trans hr.2.symm)⟩
   | roseRec c =>
-    obtain ⟨s, m, m', t, a, F, s', rfl, hct, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
+    obtain ⟨s, m, -, -, -, -, -, rfl, -⟩ := compile_roseRec_iff.mp h
+    obtain ⟨mf, t, a, F, sf, hct, hm, ht, hs, hr⟩ := compile_roseRec_full hM hG hρ hps hds h he
     rw [unfold_node (by simp)]
     have hat := isTy_of_roseParts ht (hty m X e _ hm he).2
     have hPt : IsTy G n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
     have hP := hobj _ hPt
-    obtain ⟨⟨s'', c'⟩, hs', rfl, hsv⟩ :=
-      ih s (by simp) _ _ _ hs ⟨hP, by simpa using ⟨idt_hom hM hP, hPt⟩⟩
-    obtain ⟨⟨m'', t'⟩, hm', rfl, hmv⟩ := ih m (by simp) X e _ hm he
-    exact ⟨_, compile_roseRec_iff.mpr ⟨_, _, _, _, _, _, _, rfl, hct, hm', ht, hs', rfl⟩, rfl,
-      eval_op₂_congr 3 (eval_roseParts_congr ht hsv) hmv⟩
+    obtain ⟨⟨s'', c₁⟩, hs', hc₁, hsv⟩ := ih s (by simp) _ _ _ hs (he.ext hM hP hPt)
+    obtain ⟨⟨m'', t'⟩, hm', ht', hmv⟩ := ih m (by simp) X e _ hm he
+    subst hc₁ ht'
+    obtain ⟨r', hr', hrr⟩ := compile_roseRec_of_full hM hG hρ hps hds he hct hm' ht hs'
+    exact ⟨r', hr', hrr.1.trans hr.1.symm, hrr.2.trans ((eval_op₂_congr 3
+      (eval_roseRecP_congr (fun hu ↦ eval_roseParts_congr ht hu) X a _ _ hsv)
+        (eval_op₂_congr 9 rfl hmv)).trans hr.2.symm)⟩
   | eq =>
     obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
     rw [unfold_node (by simp)]

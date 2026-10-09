@@ -58,8 +58,7 @@ def unnodeU (t : Term) : Term := Term.roseRec unnodeTy unnodeStep t
 /-- The rewriting of a term in which a tree rebuilt from the unfolding of its variable of index
 {lit}`i` stands for the variable, back to the term: at each occurrence of the variable, the pair
 of the unfolding's components is the unfolding, and the tree rebuilt from it is the variable,
-Lambek's lemma of index {lit}`lk`. A rose-tree fold's step, in a context of its own, does not
-mention it. -/
+Lambek's lemma of index {lit}`lk`. -/
 def occRewrite (lk i : ℕ) : Term → ℕ → Deriv := RoseTree.para fun l cs d ↦
   let refl : Deriv := RoseTree.node .refl []
   let j := i + d
@@ -74,7 +73,7 @@ def occRewrite (lk i : ℕ) : Term → ℕ → Deriv := RoseTree.para fun l cs d
   | .listRec => RoseTree.node .cong (cs.zipIdx.map fun ((_, r), k) ↦
       r (if k = 1 then d + 2 else d))
   | .roseRec _ => RoseTree.node .cong (cs.zipIdx.map fun ((_, r), k) ↦
-      if k = 1 then r d else refl)
+      r (if k = 0 then d + 1 else d))
   | _ =>
     if cs.all fun (c, _) ↦ Internal.uses c j = 0 then refl
     else RoseTree.node .cong (cs.map fun (_, r) ↦ r d)
@@ -156,8 +155,7 @@ def byAutoC (G : Internal.Globals) (E : Array Entry) (n lk : ℕ) (rs : List Nor
     splitStuck G n lk i rec Γ Φ t u
 
 /-- The abstraction, over a new variable of the type {lit}`b`, of a term's occurrences of the
-term {lit}`x`: the function whose application to {lit}`x` is the term. A rose-tree fold's step,
-in a context of its own, is left in place. -/
+term {lit}`x`: the function whose application to {lit}`x` is the term. -/
 def abstractTerm (b : Tree) (x y : Term) : Term :=
   let xw := Internal.weaken1 x
   let go : Term → ℕ → Term := RoseTree.para fun l cs d ↦
@@ -168,8 +166,8 @@ def abstractTerm (b : Tree) (x y : Term) : Term :=
         r (if k = 1 then d + 1 else d))
     | .listRec => RoseTree.node l (cs.zipIdx.map fun ((_, r), k) ↦
         r (if k = 1 then d + 2 else d))
-    | .roseRec _ => RoseTree.node l (cs.zipIdx.map fun ((c, r), k) ↦
-        if k = 1 then r d else c)
+    | .roseRec _ => RoseTree.node l (cs.zipIdx.map fun ((_, r), k) ↦
+        r (if k = 0 then d + 1 else d))
     | _ => RoseTree.node l (cs.map fun (_, r) ↦ r d)
   Term.lam b (go (Internal.weaken1 y) 0)
 

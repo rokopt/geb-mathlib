@@ -30,9 +30,11 @@ environment its start or its step mentions ({lit}`foldParams`); its start, and i
 bound variables, are compiled over the product of the parameters' types ({lit}`foldEnvIn`), and the
 fold compiles to the combinators' fold when it has no parameters and else to the fold with the
 parameter ({name}`Geb.FreeTopos.natRecP`, {name}`Geb.FreeTopos.listRecP`) after the pairing of the
-tuple of the parameters' arrows with the datum. A rose-tree fold compiles to the composite of the
-combinators' fold with the datum, and the equality of two terms to the characteristic map of the
-diagonal after their pairing. A context's terms are compiled in the environment of its projections
+tuple of the parameters' arrows with the datum. A rose-tree fold, whose step binds the pair of a
+label and the list of the children's values, compiles likewise, to the fold with the parameter
+({name}`Geb.FreeTopos.roseRecP`) when its step mentions variables of the environment
+({lit}`roseFold`). The equality of two terms compiles to the characteristic map of the diagonal
+after their pairing. A context's terms are compiled in the environment of its projections
 from the product of its types ({lit}`stdEnv`). A primitive arrow is an arrow of the combinators with
 the domain and codomain it names, in object parameters, which the checker's inference confirms once
 ({lit}`Prim.ok`), for every application at objects.
@@ -193,6 +195,14 @@ def listFold (Γ : List Tree) (a c z s t m : Tree) : Tree := match Γ with
   | [] => comp (listRec a z s) m
   | _ :: _ => comp (listRecP (ctxObj Γ) a c z s) (pair t m)
 
+/-- The fold, by its fold {lit}`F` without a parameter, of the rose-tree object {lit}`t` over the
+labels {lit}`a` at the datum {lit}`m`, from the step {lit}`s` of the parameters of the types
+{lit}`Γ`, at the tuple {lit}`u` of their values: for no parameters the fold itself, and else the
+fold with the parameter. -/
+def roseFold (F : Tree → Tree) (Γ : List Tree) (a t c s u m : Tree) : Tree := match Γ with
+  | [] => comp (F s) m
+  | _ :: _ => comp (roseRecP F (ctxObj Γ) a t c s) (pair u m)
+
 /-- A definition of the internal language: the number of its object parameters, the types of
 its term parameters, the last first, the type of its value, and its body. -/
 structure Defn where
@@ -337,12 +347,16 @@ def compileStep (G : Globals) (n : ℕ) (l : Label)
       if c' = c then
         pure (listFold (ps.map Prod.snd) a c z' s' (tuple X (ps.map Prod.fst)) m', c)
       else none
-    | .roseRec c, [(_, s), (_, m)] =>
+    | .roseRec c, [(s₀, s), (_, m)] =>
       if IsTy G n c then do
         let (m', t) ← m X e
         let (a, fold) ← roseParts t
-        let (s', c') ← s (prod a (list c)) [(idt (prod a (list c)), prod a (list c))]
-        if c' = c then pure (comp (fold s') m', c) else none
+        let ps := foldPs 1 e Term.star s₀
+        let (s', c') ← s (foldEnvIn [prod a (list c)] 1 e Term.star s₀).1
+          (foldEnvIn [prod a (list c)] 1 e Term.star s₀).2
+        if c' = c then
+          pure (roseFold fold (ps.map Prod.snd) a t c s' (tuple X (ps.map Prod.fst)) m', c)
+        else none
       else none
     | .eq, [(_, t), (_, u)] => do
       let (f, a) ← t X e

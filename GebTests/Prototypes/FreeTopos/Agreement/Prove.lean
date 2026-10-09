@@ -1031,7 +1031,7 @@ theorem uses_eq (t : Term) (d : ℕ) :
       simp only [List.map_cons, List.map_nil] at hs <;>
       mirror_simp [«Prover.usesStep», labelData, hs, mArgs_eq, label_encTerm,
         beq_iff_eq, Nat.reduceEqDiff, ufAt_eq, hx]
-    all_goals exact hx _ (by simp) d
+    all_goals rw [hx x0 (by simp), hx x1 (by simp), mul_leaf, add_leaf]
   | _ =>
     mirror_simp [«Prover.usesStep», labelData, hs, hs1, mArgs_eq, label_encTerm, mD_eq]
 

@@ -652,7 +652,7 @@
                       (range (lenUF (UFs.tail rs)))))
                   (if (eq l 10)
                     (dNode 2 (nil T)
-                      (mapT (lam ((k T)) (if (eq k 1) ((ufAt rs (add k 1)) d) refl))
+                      (mapT (lam ((k T)) ((ufAt rs (add k 1)) (if (eq k 0) (add d 1) d)))
                         (range (lenUF (UFs.tail rs)))))
                     (if (allT (lam ((c T)) (eq (uses c j) 0)) (mArgs nd)) refl
                       (dNode 2 (nil T)
@@ -768,24 +768,23 @@
     (lam ((d T))
       (if (equal nd (rename xw (lam ((j T)) (add j d)))) (var d)
         (let l T (label nd)
-          (let cs Ts (mArgs nd)
-            (let rebuild0 (Arrow Ts T) (lam ((ks Ts)) (node l (cons (child nd 0) ks)))
-              (if (eq l 5)
+          (let rebuild0 (Arrow Ts T) (lam ((ks Ts)) (node l (cons (child nd 0) ks)))
+            (if (eq l 5)
+              (rebuild0
+                (foldr UF Ts (lam ((r UF) (acc Ts)) (cons (r (add d 1)) acc)) (nil T)
+                  (UFs.tail rs)))
+              (if (or (eq l 8) (eq l 9))
                 (rebuild0
-                  (foldr UF Ts (lam ((r UF) (acc Ts)) (cons (r (add d 1)) acc)) (nil T)
-                    (UFs.tail rs)))
-                (if (or (eq l 8) (eq l 9))
+                  (mapT
+                    (lam ((k T)) ((ufAt rs (add k 1)) (if (eq k 1) (add d (if (eq l 8) 1 2)) d)))
+                    (range (lenUF (UFs.tail rs)))))
+                (if (eq l 10)
                   (rebuild0
-                    (mapT
-                      (lam ((k T)) ((ufAt rs (add k 1)) (if (eq k 1) (add d (if (eq l 8) 1 2)) d)))
+                    (mapT (lam ((k T)) ((ufAt rs (add k 1)) (if (eq k 0) (add d 1) d)))
                       (range (lenUF (UFs.tail rs)))))
-                  (if (eq l 10)
-                    (rebuild0
-                      (mapT (lam ((k T)) (if (eq k 1) ((ufAt rs (add k 1)) d) (at cs k)))
-                        (range (lenUF (UFs.tail rs)))))
-                    (rebuild0
-                      (foldr UF Ts (lam ((r UF) (acc Ts)) (cons (r d) acc)) (nil T)
-                        (UFs.tail rs))))))))))))
+                  (rebuild0
+                    (foldr UF Ts (lam ((r UF) (acc Ts)) (cons (r d) acc)) (nil T)
+                      (UFs.tail rs)))))))))))
   (defn abstractTerm ((b T) (x T) (y T)) T (mLam b ((para UF (absStep (weaken1 x)) (weaken1 y)) 0)))
   (defn maskRwD ((a T) (b T) (ab T) (dM T) (c T) (d T) (x T) (x1 T) (z T) (y T)) T
     (let F T (abstractTerm b x y)

@@ -467,7 +467,7 @@
   (defn keepsWeak ((l T) (i T)) T (if (eq l 5) 1 (keepsFold l i)))
 
   ; the uses of the variable of an index in a term, each under an abstraction and in a fold's step
-  ; counted twice, a rose-tree fold's step having none
+  ; counted twice
   (deftype UF (Arrow T T))
   (deftype UFs (List UF))
   (import (Lists UF) as UFs)
@@ -484,7 +484,8 @@
               (if (and (or (eq l 8) (eq l 9)) (eq k 3))
                 (add (add ((ufAt rs 1) d) (mul 2 ((ufAt rs 2) (add d (if (eq l 8) 1 2)))))
                   ((ufAt rs 3) d))
-                (if (and (eq l 10) (eq k 2)) ((ufAt rs 2) d) (ufSum rs d)))))))))
+                (if (and (eq l 10) (eq k 2)) (add (mul 2 ((ufAt rs 1) (add d 1))) ((ufAt rs 2) d))
+                  (ufSum rs d)))))))))
   (defn uses ((t T) (d T)) T ((para UF usesStep t) d))
 
   ; the reduction of a term to a depth, 0 the weak head normal form, 1 the weak normal form, 2 the

@@ -154,7 +154,7 @@ theorem rename_rename :
       · simp only [rename_node, renameStep, List.map_cons, List.map_nil]
         rw [ih z (by simp) f g h hfg, ih s (by simp) _ _ _ (lift hlift), ih m (by simp) f g h hfg]
     · simp only [rename_node, renameStep, List.map_cons, List.map_nil]
-      rw [ih m (by simp) f g h hfg]
+      rw [ih s (by simp) _ _ _ hlift, ih m (by simp) f g h hfg]
     · rw [rename_plain hp rfl, rename_plain hp (by simp), rename_plain hp rfl, List.map_map]
       exact congrArg _ (List.map_congr_left fun c hc ↦ ih c hc f g h hfg)
 
@@ -198,8 +198,10 @@ theorem occurs_rename :
             (exists_liftR (fun i ↦ occurs s (i + 1) = true) f j))
         simp only [rename_node, renameStep, occurs_node, occursStep, List.map_cons, List.map_nil,
           Bool.or_eq_true, hz, hs, hm, or_and_right, exists_or]
-    · simp only [rename_node, renameStep, occurs_node, occursStep, List.map_cons, List.map_nil]
-      exact ih m (by simp) f j
+    · have hs := (ih s (by simp) _ (j + 1)).trans (exists_liftR (fun i ↦ occurs s i = true) f j)
+      have hm := ih m (by simp) f j
+      simp only [rename_node, renameStep, occurs_node, occursStep, List.map_cons, List.map_nil,
+        Bool.or_eq_true, hs, hm, or_and_right, exists_or]
     · rw [rename_plain hp rfl, occurs_plain hp (by simp), List.any_map]
       simp only [List.any_eq_true, Function.comp_apply]
       constructor
@@ -235,7 +237,7 @@ theorem rename_id :
         rw [ih z (by simp) (hcs z (by simp)) f hf, ih s (by simp) (hcs s (by simp)) _ (lift hlift),
           ih m (by simp) (hcs m (by simp)) f hf]
     · simp only [rename_node, renameStep, List.map_cons, List.map_nil]
-      rw [ih m (by simp) (hcs m (by simp)) f hf]
+      rw [ih s (by simp) (hcs s (by simp)) _ hlift, ih m (by simp) (hcs m (by simp)) f hf]
     · rw [rename_plain hp rfl]
       exact congrArg _ ((List.map_congr_left fun c hc ↦ ih c hc (hcs c hc) f hf).trans
         (List.map_id cs))
@@ -275,7 +277,7 @@ theorem subst_id :
         rw [ih z (by simp) (hcs z (by simp)) σ hσ, ih s (by simp) (hcs s (by simp)) _ (lift hlift),
           ih m (by simp) (hcs m (by simp)) σ hσ]
     · simp only [subst_node, substStep, List.map_cons, List.map_nil]
-      rw [ih m (by simp) (hcs m (by simp)) σ hσ]
+      rw [ih s (by simp) (hcs s (by simp)) _ hlift, ih m (by simp) (hcs m (by simp)) σ hσ]
     · rw [subst_plain hp rfl]
       exact congrArg _ ((List.map_congr_left fun c hc ↦ ih c hc (hcs c hc) σ hσ).trans
         (List.map_id cs))
@@ -303,7 +305,7 @@ theorem subst_rename :
       · simp only [rename_node, subst_node, renameStep, substStep, List.map_cons, List.map_nil]
         rw [ih z (by simp) f σ τ hστ, ih s (by simp) _ _ _ (lift hlift), ih m (by simp) f σ τ hστ]
     · simp only [rename_node, subst_node, renameStep, substStep, List.map_cons, List.map_nil]
-      rw [ih m (by simp) f σ τ hστ]
+      rw [ih s (by simp) _ _ _ hlift, ih m (by simp) f σ τ hστ]
     · rw [rename_plain hp rfl, subst_plain hp (by simp), subst_plain hp rfl, List.map_map]
       exact congrArg _ (List.map_congr_left fun c hc ↦ ih c hc f σ τ hστ)
 
@@ -332,7 +334,7 @@ theorem rename_subst :
       · simp only [rename_node, subst_node, renameStep, substStep, List.map_cons, List.map_nil]
         rw [ih z (by simp) σ f τ hστ, ih s (by simp) _ _ _ (lift hlift), ih m (by simp) σ f τ hστ]
     · simp only [rename_node, subst_node, renameStep, substStep, List.map_cons, List.map_nil]
-      rw [ih m (by simp) σ f τ hστ]
+      rw [ih s (by simp) _ _ _ hlift, ih m (by simp) σ f τ hστ]
     · rw [subst_plain hp rfl, rename_plain hp (by simp), subst_plain hp rfl, List.map_map]
       exact congrArg _ (List.map_congr_left fun c hc ↦ ih c hc σ f τ hστ)
 
@@ -363,7 +365,7 @@ theorem subst_subst :
       · simp only [subst_node, substStep, List.map_cons, List.map_nil]
         rw [ih z (by simp) σ τ ρ hρ, ih s (by simp) _ _ _ (lift hlift), ih m (by simp) σ τ ρ hρ]
     · simp only [subst_node, substStep, List.map_cons, List.map_nil]
-      rw [ih m (by simp) σ τ ρ hρ]
+      rw [ih s (by simp) _ _ _ hlift, ih m (by simp) σ τ ρ hρ]
     · rw [subst_plain hp rfl, subst_plain hp (by simp), subst_plain hp rfl, List.map_map]
       exact congrArg _ (List.map_congr_left fun c hc ↦ ih c hc σ τ ρ hρ)
 
@@ -389,7 +391,7 @@ theorem rename_eq_subst :
       · simp only [rename_node, subst_node, renameStep, substStep, List.map_cons, List.map_nil]
         rw [ih z (by simp) f σ hσ, ih s (by simp) _ _ (lift hlift), ih m (by simp) f σ hσ]
     · simp only [rename_node, subst_node, renameStep, substStep, List.map_cons, List.map_nil]
-      rw [ih m (by simp) f σ hσ]
+      rw [ih s (by simp) _ _ hlift, ih m (by simp) f σ hσ]
     · rw [rename_plain hp rfl, subst_plain hp rfl]
       exact congrArg _ (List.map_congr_left fun c hc ↦ ih c hc f σ hσ)
 

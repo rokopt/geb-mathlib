@@ -164,6 +164,37 @@ theorem sortOf_roseParts {t a s : Tree} {F : Tree → Tree} (h : roseParts t = s
   · exact sortOf_op rfl (by simp [hs])
   · exact sortOf_op rfl (by simp [ha, hs])
 
+/-- The action of a list object with a parameter is an arrow. -/
+theorem sortOf_listMapP {P A C f : Tree} (hP : sortOf (ext defs).sig Γ P = some obj)
+    (hA : sortOf (ext defs).sig Γ A = some obj) (hC : sortOf (ext defs).sig Γ C = some obj)
+    (hf : sortOf (ext defs).sig Γ f = some arr) :
+    sortOf (ext defs).sig Γ (listMapP P A C f) = some arr := by
+  have hL : sortOf (ext defs).sig Γ (list C) = some obj := sortOf_op rfl (by simp [hC])
+  have hPA := sortOf_prod hP hA
+  exact sortOf_listRecP hP hA hL (sortOf_comp (sortOf_op rfl (by simp [hC])) (sortOf_bang hP))
+    (sortOf_comp (sortOf_op rfl (by simp [hC]))
+      (sortOf_pair (sortOf_comp hf (sortOf_fst hPA hL)) (sortOf_snd hPA hL)))
+
+/-- A fold of a rose-tree object with a parameter is an arrow, where its fold without one is. -/
+theorem sortOf_roseRecP {F : Tree → Tree}
+    (hF : ∀ {s : Tree}, sortOf (ext defs).sig Γ s = some arr →
+      sortOf (ext defs).sig Γ (F s) = some arr) {P a t C S : Tree}
+    (hP : sortOf (ext defs).sig Γ P = some obj) (ha : sortOf (ext defs).sig Γ a = some obj)
+    (ht : sortOf (ext defs).sig Γ t = some obj) (hC : sortOf (ext defs).sig Γ C = some obj)
+    (hS : sortOf (ext defs).sig Γ S = some arr) :
+    sortOf (ext defs).sig Γ (roseRecP F P a t C S) = some arr := by
+  have hE : sortOf (ext defs).sig Γ (exp P C) = some obj := sortOf_op rfl (by simp [hP, hC])
+  have hLE : sortOf (ext defs).sig Γ (list (exp P C)) = some obj := sortOf_op rfl (by simp [hE])
+  have hQ := sortOf_prod ha hLE
+  have hev := sortOf_comp (sortOf_ev hP hC) (sortOf_pair (sortOf_snd hP hE) (sortOf_fst hP hE))
+  have hT : sortOf (ext defs).sig Γ (roseStepP P a C S) = some arr :=
+    sortOf_comp hS (sortOf_pair (sortOf_snd hQ hP) (sortOf_pair
+      (sortOf_comp (sortOf_fst ha hLE) (sortOf_fst hQ hP)) (sortOf_comp
+        (sortOf_listMapP hP hE hC hev) (sortOf_pair (sortOf_snd hQ hP)
+          (sortOf_comp (sortOf_snd ha hLE) (sortOf_fst hQ hP))))))
+  exact sortOf_comp (sortOf_ev hP hC) (sortOf_pair
+    (sortOf_comp (hF (sortOf_curry hQ hP hT)) (sortOf_snd hP ht)) (sortOf_fst hP ht))
+
 end Constructors
 
 section Types
@@ -321,6 +352,21 @@ theorem sortOf_natFold {Γ' : List ℕ} {Γ : List Tree} {X c z s m : Tree} {fs 
   · exact sortOf_comp (sortOf_natRec hz hs) hm
   · exact sortOf_comp (sortOf_natRecP hP hC hz hs) (sortOf_pair (sortOf_tuple hX fs hfs) hm)
 
+/-- A fold of a rose-tree object at parameters is an arrow. -/
+theorem sortOf_roseFold {Γ' : List ℕ} {F : Tree → Tree}
+    (hF : ∀ {s : Tree}, sortOf (ext defs).sig Γ' s = some arr →
+      sortOf (ext defs).sig Γ' (F s) = some arr) {Γ : List Tree} {X a t c s m : Tree}
+    {fs : List Tree} (hX : sortOf (ext defs).sig Γ' X = some obj)
+    (hP : sortOf (ext defs).sig Γ' (ctxObj Γ) = some obj)
+    (ha : sortOf (ext defs).sig Γ' a = some obj) (ht : sortOf (ext defs).sig Γ' t = some obj)
+    (hC : sortOf (ext defs).sig Γ' c = some obj) (hs : sortOf (ext defs).sig Γ' s = some arr)
+    (hm : sortOf (ext defs).sig Γ' m = some arr)
+    (hfs : ∀ f ∈ fs, sortOf (ext defs).sig Γ' f = some arr) :
+    sortOf (ext defs).sig Γ' (roseFold F Γ a t c s (tuple X fs) m) = some arr := by
+  rcases Γ with _ | ⟨b, Γ⟩
+  · exact sortOf_comp (hF hs) hm
+  · exact sortOf_comp (sortOf_roseRecP hF hP ha ht hC hs) (sortOf_pair (sortOf_tuple hX fs hfs) hm)
+
 /-- A fold of a list object at parameters is an arrow. -/
 theorem sortOf_listFold {Γ' : List ℕ} {Γ : List Tree} {X a c z s m : Tree} {fs : List Tree}
     (hX : sortOf (ext defs).sig Γ' X = some obj)
@@ -439,9 +485,14 @@ theorem compile_sortOf {G : Globals} (hG : G.WF) {n : ℕ}
     obtain ⟨hm', htt⟩ := ih m (by simp) X e _ hm hX he
     have hat := isTy_of_roseParts ht htt
     have hPt : IsTy G n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
-    have hP := hty _ hPt
-    obtain ⟨hs', -⟩ := ih s (by simp) _ _ _ hs hP (by simpa using ⟨sortOf_idt hP, hPt⟩)
-    exact ⟨sortOf_comp (sortOf_roseParts ht (hty a hat) hs') hm', hct⟩
+    have hF' := sortOf_foldEnvIn hdefs (bs := [prod a (list c)]) (by simp [hPt]) he (k := 1)
+      Term.star s
+    obtain ⟨hs', -⟩ := ih s (by simp) _ _ _ hs hF'.1 hF'.2
+    have hF0 := sortOf_foldEnvIn hdefs (bs := []) rfl he (k := 1) Term.star s
+    refine ⟨sortOf_roseFold (fun h ↦ sortOf_roseParts ht (hty a hat) h) hX hF0.1 (hty a hat)
+      (hty t htt) (hty c hct) hs' hm' fun f hf ↦ ?_, hct⟩
+    obtain ⟨p, hp, rfl⟩ := List.mem_map.mp hf
+    exact (he p (mem_of_mem_foldPs hp)).1
   | eq =>
     obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
     obtain ⟨hf, hat⟩ := ih t (by simp) X e _ ht hX he

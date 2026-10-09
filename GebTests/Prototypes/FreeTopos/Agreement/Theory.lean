@@ -161,6 +161,18 @@ open Geb Geb.Kernel Geb.FreeTopos GebTests.Prototypes.FreeTopos.Agreement.Encode
 @[simp] theorem mirror_listRecP (p a c z s : Tree) :
     «Theory.listRecP» p a c z s = listRecP p a c z s := rfl
 
+/-- The mirror's action of a list object with a parameter. -/
+@[simp] theorem mirror_listMapP (p a c f : Tree) :
+    «Theory.listMapP» p a c f = listMapP p a c f := rfl
+
+/-- The mirror's step of a fold of a rose-tree object with a parameter. -/
+@[simp] theorem mirror_roseStepP (p a c s : Tree) :
+    «Theory.roseStepP» p a c s = roseStepP p a c s := rfl
+
+/-- The mirror's fold of a rose-tree object with a parameter. -/
+@[simp] theorem mirror_roseRecP (f : Tree → Tree) (p a t c s : Tree) :
+    «Theory.roseRecP» f p a t c s = roseRecP f p a t c s := rfl
+
 /-- The mirror's rose-tree object. -/
 @[simp] theorem mirror_rose : «Theory.rose» = rose := rfl
 

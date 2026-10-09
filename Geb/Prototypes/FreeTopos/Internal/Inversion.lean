@@ -225,13 +225,16 @@ theorem compile_listRec_iff {cs : List Term} {X : Tree} {e : List (Tree × Tree)
   rcases cs with _ | ⟨z, _ | ⟨s, _ | ⟨m, _ | ⟨v, cs⟩⟩⟩⟩ <;>
     simp [compileStep, Option.bind_eq_some_iff, Prod.exists, listPart_eq_some]
 
-/-- The compilation of a fold of a rose tree. -/
+/-- The compilation of a fold of a rose tree: its step compiled in the environment of its
+parameters extended by the pair of a label and the list of the children's values. -/
 theorem compile_roseRec_iff {c : Tree} {cs : List Term} {X : Tree} {e : List (Tree × Tree)}
     {r : Tree × Tree} : compile G n (RoseTree.node (.roseRec c) cs) X e = some r ↔
       ∃ s m m' t a F s', cs = [s, m] ∧ IsTy G n c = true ∧ compile G n m X e = some (m', t) ∧
         roseParts t = some (a, F) ∧
-        compile G n s (prod a (list c)) [(idt (prod a (list c)), prod a (list c))] =
-          some (s', c) ∧ (comp (F s') m', c) = r := by
+        compile G n s (foldEnvIn [prod a (list c)] 1 e Term.star s).1
+          (foldEnvIn [prod a (list c)] 1 e Term.star s).2 = some (s', c) ∧
+        (roseFold F ((foldPs 1 e Term.star s).map Prod.snd) a t c s'
+          (tuple X ((foldPs 1 e Term.star s).map Prod.fst)) m', c) = r := by
   rw [compile_node]
   rcases cs with _ | ⟨s, _ | ⟨m, _ | ⟨v, cs⟩⟩⟩ <;>
     simp [compileStep, Option.bind_eq_some_iff, Prod.exists]
