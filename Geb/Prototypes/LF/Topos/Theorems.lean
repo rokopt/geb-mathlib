@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Prototypes.FreeTopos.Internal.ObjectSubst
 public import Geb.Prototypes.LF.Topos.Compose
 meta import GebMeta -- shake: keep
 
@@ -15,29 +16,34 @@ set_option doc.verso true in
 The theorems of a development of the internal language enter the signature
 {name}`Geb.LF.Topos.sig` as constants of an extension of it, past its own declarations, as a
 logical framework's signature takes each proved lemma as a constant
-({cite}`HarperLicata2007`, Section 2). A theorem in no object variables, of the variables of its
-context, hypotheses and a conclusion, is the constant of the product over a family of terms of
-each variable's type, the outermost first, of the products over the families of proofs of its
-hypotheses, none in the scope of another, into the family of proofs of its conclusion
-({lit}`thmTy`): its context is encoded as {name}`Geb.LF.Topos.encCtx` encodes one, and its
-formulas as {name}`Geb.LF.Topos.enc` encodes them, in the scope of the variables. An application
-of the constant decodes to the language's application of the theorem's entry
-({lit}`Geb.LF.Topos.decPfThm`).
+({cite}`HarperLicata2007`, Section 2). A theorem, of object variables, of variables of types in
+them, of hypotheses and of a conclusion, is the constant of the product over the kind of types,
+one for each object variable, of the product over a family of terms of each variable's type, the
+outermost first, of the products over the families of proofs of its hypotheses, none in the scope
+of another, into the family of proofs of its conclusion ({lit}`thmTy`): its context is encoded as
+{name}`Geb.LF.Topos.encCtx` encodes one, and its formulas as {name}`Geb.LF.Topos.enc` encodes
+them, in the scope of the variables. An application of the constant decodes to the language's
+application of the theorem's entry ({lit}`Geb.LF.Topos.decPfThm`).
 
-The application instantiates the declaration along its spine. The domains of the variables are
-closed, so the leading arguments are substituted, one after another, into the declaration's body
-alone ({lit}`hsubs`, {lit}`spine_piTele`), and the substitution passes into each hypothesis and
-the conclusion ({lit}`hsubs_arrows_pf`). Passing under a hypothesis's binder needs the inversion
-of substitution into a weakened expression, which holds at the base type of the terms, where a
-reduction has a value exactly at the empty spine ({lit}`hsub_shift_inv`). Decoding commutes with
-the substitutions ({lit}`dec_hsubs`), so the substituted formulas decode to the instances of the
-theorem's formulas that the language's checker compares.
+The application instantiates the declaration along its spine, each argument substituted, one
+after another, into the domains after it and into the body ({lit}`hsubs`, {lit}`spine_piTele_gen`),
+and the substitution passes into each hypothesis and the conclusion ({lit}`hsubs_arrows_pf`).
+Passing under a hypothesis's binder needs the inversion of substitution into a weakened
+expression, which holds at the base types of the types and the terms, where a reduction has a
+value exactly at the empty spine ({lit}`hsub_shift_inv`). Decoding commutes with the substitution
+of a type for an object variable ({lit}`encTy_hsub_obj`, {lit}`dec_hsub_obj`) and of a term for a
+variable ({lit}`dec_hsubs`), so the substituted domains are the encodings of the instances of the
+variables' types and the substituted formulas decode to the instances of the theorem's formulas
+that the language's checker compares. The types are substituted with the context's variables of
+terms and proofs renamed away, where the decoding at the offset of the theorem's variables reads
+each remaining LF variable as an object variable ({lit}`dec_hsubsPre_obj`).
 
 ## Main definitions
 
 * {lit}`piTele`, {lit}`arrows` — the products over a list of domains, and the arrows from a list
   of families.
-* {lit}`hsubs` — the substitutions of a list of terms for the variables of a scope.
+* {lit}`hsubs`, {lit}`hsubsPre` — the substitutions of a list of terms for the variables of a
+  scope, and for its outermost variables under further ones.
 * {lit}`thmTy` — the declaration of a theorem.
 * {lit}`ThmsDecl` — an extension of the signature declares the theorems that a table names.
 
@@ -45,8 +51,11 @@ theorem's formulas that the language's checker compares.
 
 * {lit}`hsub_shift_inv` — at a base type, the substitution into a weakened expression is the
   weakened substitution.
-* {lit}`spine_piTele`, {lit}`spine_arrows` — the instantiation of a theorem's declaration.
-* {lit}`dec_hsubs` — decoding commutes with the substitutions.
+* {lit}`spine_piTele_gen`, {lit}`spine_arrows` — the instantiation of a theorem's declaration.
+* {lit}`encTy_hsub_obj`, {lit}`dec_hsub_obj` — encoding and decoding commute with the
+  substitution of a type for an object variable.
+* {lit}`dec_hsubs`, {lit}`dec_hsubsPre_obj`, {lit}`encTy_hsubsPre_obj` — decoding commutes with
+  the substitutions of terms and of types.
 
 ## References
 
@@ -497,18 +506,20 @@ theorem encCtx_closed {G : Globals} :
     rename_closed hcl]
 
 open FreeTopos.Internal (IsTy compile) in
-/-- The encoding of a term of the internal language that compiles in a context of types in no
-object variables is in the scope of the context's variables. -/
-theorem scopedBelow_enc {G : Globals} (hk : k.Valid G) {Γ : List PartialHorn.Tree} {ΓT : Ctx}
-    (hty : ∀ a ∈ Γ, IsTy G 0 a = true) (hΓ : encCtx 0 Γ = some ΓT) {s : MTerm}
-    {r : PartialHorn.Tree × PartialHorn.Tree} (hc : compile G 0 s (ctxObj Γ) (stdEnv Γ) = some r)
-    {X : Expr} (he : enc G 0 k s (ctxObj Γ) (stdEnv Γ) = some X) : ScopedBelow Γ.length X := by
+/-- The encoding of a term of the internal language that compiles in a context of types in
+{lit}`n` object variables is in the scope of the context's variables and the object
+variables. -/
+theorem scopedBelow_enc {G : Globals} {n : ℕ} (hk : k.Valid G) {Γ : List PartialHorn.Tree}
+    {ΓT : Ctx} (hty : ∀ a ∈ Γ, IsTy G n a = true) (hΓ : encCtx n Γ = some ΓT) {s : MTerm}
+    {r : PartialHorn.Tree × PartialHorn.Tree} (hc : compile G n s (ctxObj Γ) (stdEnv Γ) = some r)
+    {X : Expr} (he : enc G n k s (ctxObj Γ) (stdEnv Γ) = some X) :
+    ScopedBelow (Γ.length + n) X := by
   obtain ⟨-, A, -, hj⟩ := enc_checks sigExt_sig hk s _ (stdEnv Γ) ΓT X r
     (fun p hp ↦ hty p.2
       (by rw [← FreeTopos.Internal.map_snd_stdEnv Γ]; exact List.mem_map_of_mem hp))
     (by rw [FreeTopos.Internal.map_snd_stdEnv]; exact hΓ) he hc
   have := judgeWith_freeBelow X ΓT _ hj
-  rw [length_encCtx hΓ, Nat.add_zero] at this
+  rw [length_encCtx hΓ] at this
   exact freeBelow_scoped X _ this
 
 /-- Lists related pointwise to a third by values of a partial function: the function has values
@@ -588,21 +599,1087 @@ theorem hsubs_arrows_pf {c₀ : ℕ} {ms Hs : List Expr} {C X : Expr}
   obtain ⟨Hs', hHs', rfl⟩ := key hHs
   exact ⟨Hs', C', hHs', hC', rfl⟩
 
-/-- The declaration of a theorem of the language: the products over the families of terms of its
-variables' types, the outermost first, each encoded at the offset of the variables outside it,
-of the products over the families of proofs of its hypotheses into the family of proofs of its
+/-- The encodings of two children of a node. -/
+theorem map_encTy_eq_two {off : ℕ} {cs : List PartialHorn.Tree} {a b : Expr}
+    (h : cs.map (encTy off) = [some a, some b]) :
+    ∃ c₁ c₂, cs = [c₁, c₂] ∧ encTy off c₁ = some a ∧ encTy off c₂ = some b := by
+  rcases cs with _ | ⟨c₁, _ | ⟨c₂, _ | ⟨c₃, cs⟩⟩⟩
+  · exact absurd (congrArg List.length h) (by simp)
+  · exact absurd (congrArg List.length h) (by simp)
+  · simp only [List.map_cons, List.map_nil, List.cons.injEq, and_true] at h
+    exact ⟨c₁, c₂, rfl, h.1, h.2⟩
+  · exact absurd (congrArg List.length h) (by simp)
+
+/-- The encoding of the child of a node. -/
+theorem map_encTy_eq_one {off : ℕ} {cs : List PartialHorn.Tree} {a : Expr}
+    (h : cs.map (encTy off) = [some a]) : ∃ c₁, cs = [c₁] ∧ encTy off c₁ = some a := by
+  rcases cs with _ | ⟨c₁, _ | ⟨c₂, cs⟩⟩
+  · exact absurd h FreeTopos.Internal.nil_ne_singleton
+  · simp only [List.map_cons, List.map_nil, List.cons.injEq, and_true] at h
+    exact ⟨c₁, rfl, h⟩
+  · exact absurd h FreeTopos.Internal.cons_cons_ne_singleton
+
+open FreeTopos.Internal (substF objAt substF_node_succ substF_node_zero) in
+/-- At a base type, the substitution of the encoding of an object for the LF variable of an
+object variable of the encoding of a type is the encoding of the type with the object substituted
+for the object variable, the object variables above it lowered by one. -/
+theorem encTy_hsub_obj {c₀ off j : ℕ} {n : Expr} {b : PartialHorn.Tree}
+    (hb : encTy off b = some n) (hj : off ≤ j) :
+    ∀ (a : PartialHorn.Tree) (A A' : Expr), encTy off a = some A →
+      hsub (RoseTree.node (.base c₀) []) n A j = some A' →
+        encTy off (substF (objAt (j - off) b) a) = some A' :=
+  RoseTree.ind fun l cs ih A A' h hs ↦ by
+    rcases encTy_node_eq_some h with ⟨rfl, i, rfl, rfl⟩ | ⟨rfl, rfl, rfl⟩ |
+        ⟨rfl, a₁, a₂, hcs, rfl⟩ | ⟨rfl, a₁, a₂, hcs, rfl⟩ | ⟨rfl, rfl, rfl⟩ | ⟨rfl, rfl, rfl⟩ |
+        ⟨rfl, a₁, hcs, rfl⟩ | ⟨rfl, rfl, rfl⟩ | ⟨rfl, a₁, hcs, rfl⟩ | ⟨rfl, rfl, rfl⟩ |
+        ⟨rfl, a₁, a₂, hcs, rfl⟩
+    · rw [substF_node_zero _ rfl, RoseTree.label_node]
+      rw [hsub_eq, Expr.var, Expr.app, hsubWith_var] at hs
+      change (if off + i = j then reduce (RoseTree.node (.base c₀) []) n []
+        else some (Expr.var (if j < off + i then off + i - 1 else off + i) [])) = some A' at hs
+      unfold objAt
+      by_cases hij : off + i = j
+      · rw [ite_eq_left hij] at hs
+        obtain rfl := Option.some.inj hs
+        rw [ite_eq_right (by omega), ite_eq_left (by omega)]
+        exact hb
+      · rw [ite_eq_right hij] at hs
+        obtain rfl := Option.some.inj hs
+        by_cases hlt : i < j - off
+        · rw [ite_eq_left hlt, ite_eq_right (by omega)]
+          rfl
+        · rw [ite_eq_right hlt, ite_eq_right (by omega), ite_eq_left (by omega)]
+          change some (Expr.var (off + (i - 1))) = _
+          rw [show off + (i - 1) = off + i - 1 by omega]
+    · rw [one, hsub_const] at hs
+      obtain rfl := Option.some.inj hs
+      rw [substF_node_succ]
+      exact h
+    · obtain ⟨c₁, c₂, rfl, h₁, h₂⟩ := map_encTy_eq_two hcs
+      obtain ⟨a₁', a₂', hs₁, hs₂, rfl⟩ := hsub_const₂ hs
+      rw [substF_node_succ]
+      change encTy off (FreeTopos.prod _ _) = _
+      rw [encTy_prod, ih c₁ (by simp) a₁ a₁' h₁ hs₁, ih c₂ (by simp) a₂ a₂' h₂ hs₂]
+      rfl
+    · obtain ⟨c₁, c₂, rfl, h₁, h₂⟩ := map_encTy_eq_two hcs
+      obtain ⟨a₁', a₂', hs₁, hs₂, rfl⟩ := hsub_const₂ hs
+      rw [substF_node_succ]
+      change encTy off (FreeTopos.exp _ _) = _
+      rw [encTy_exp, ih c₁ (by simp) a₁ a₁' h₁ hs₁, ih c₂ (by simp) a₂ a₂' h₂ hs₂]
+      rfl
+    · rw [omega, hsub_const] at hs
+      obtain rfl := Option.some.inj hs
+      rw [substF_node_succ]
+      exact h
+    · rw [nat, hsub_const] at hs
+      obtain rfl := Option.some.inj hs
+      rw [substF_node_succ]
+      exact h
+    · obtain ⟨c₁, rfl, h₁⟩ := map_encTy_eq_one hcs
+      obtain ⟨a₁', hs₁, rfl⟩ := hsub_const₁ hs
+      rw [substF_node_succ]
+      change encTy off (FreeTopos.list _) = _
+      rw [encTy_list, ih c₁ (by simp) a₁ a₁' h₁ hs₁]
+      rfl
+    · rw [rose, hsub_const] at hs
+      obtain rfl := Option.some.inj hs
+      rw [substF_node_succ]
+      exact h
+    · obtain ⟨c₁, rfl, h₁⟩ := map_encTy_eq_one hcs
+      obtain ⟨a₁', hs₁, rfl⟩ := hsub_const₁ hs
+      rw [substF_node_succ]
+      change encTy off (FreeTopos.lrose _) = _
+      rw [encTy_lrose, ih c₁ (by simp) a₁ a₁' h₁ hs₁]
+      rfl
+    · rw [initial, hsub_const] at hs
+      obtain rfl := Option.some.inj hs
+      rw [substF_node_succ]
+      exact h
+    · obtain ⟨c₁, c₂, rfl, h₁, h₂⟩ := map_encTy_eq_two hcs
+      obtain ⟨a₁', a₂', hs₁, hs₂, rfl⟩ := hsub_const₂ hs
+      rw [substF_node_succ]
+      change encTy off (FreeTopos.coprod _ _) = _
+      rw [encTy_coprod, ih c₁ (by simp) a₁ a₁' h₁ hs₁, ih c₂ (by simp) a₂ a₂' h₂ hs₂]
+      rfl
+
+open FreeTopos.Internal (substF objAt) in
+/-- At a base type, the substitution of a type decoding to an object, at an offset, for the LF
+variable of an object variable of a type decoding there gives a type decoding there to the
+decoded type with the object substituted for the object variable, those above it lowered. -/
+theorem decTy_hsub_obj {c₀ off j : ℕ} {A n A' : Expr} {a b : PartialHorn.Tree}
+    (ha : decTy off A = some a) (hn : decTy off n = some b) (hj : off ≤ j)
+    (hA : hsub (RoseTree.node (.base c₀) []) n A j = some A') :
+    decTy off A' = some (substF (objAt (j - off) b) a) :=
+  decTy_encTy _ _ _ (encTy_hsub_obj (encTy_decTy off n b hn) hj a A A'
+    (encTy_decTy off A a ha) hA)
+
+/-- Whether a label's node tests the occurrence of a variable in each child in its own context: a
+label other than a variable and a binder. -/
+def labelPlain : FreeTopos.Internal.Label → Bool
+  | .var _ => false
+  | .lam _ => false
+  | .natRec => false
+  | .listRec => false
+  | .roseRec _ => false
+  | _ => true
+
+/-- A variable occurring in a child of a plain node occurs in the node. -/
+theorem occurs_node_of_mem {l : FreeTopos.Internal.Label} (hl : labelPlain l = true)
+    {cs : List MTerm} {c : MTerm} (hc : c ∈ cs) {d : ℕ} (h : Term.occurs c d = true) :
+    Term.occurs (RoseTree.node l cs) d = true := by
+  rw [Term.occurs_node]
+  have hany : Term.occursStep l (cs.map fun c ↦ (c, Term.occurs c)) d =
+      (cs.map fun c ↦ (c, Term.occurs c)).any fun c ↦ c.2 d := by
+    cases l <;> first
+      | exact absurd hl Bool.false_ne_true
+      | (rcases cs with _ | ⟨_, _ | ⟨_, _ | ⟨_, _ | ⟨_, _⟩⟩⟩⟩ <;> rfl)
+  rw [hany, List.any_eq_true]
+  exact ⟨(c, Term.occurs c), List.mem_map_of_mem hc, h⟩
+
+/-- The variables of a child of a plain node are bounded as the node's are. -/
+theorem bnd_plain {l : FreeTopos.Internal.Label} (hl : labelPlain l = true) {cs : List MTerm}
+    {off : ℕ}
+    (h : ∀ i, Term.occurs (RoseTree.node l cs) i = true → i < off) {c : MTerm} (hc : c ∈ cs) :
+    ∀ i, Term.occurs c i = true → i < off :=
+  fun i hi ↦ h i (occurs_node_of_mem hl hc hi)
+
+/-- A disjunction of two Booleans holds where either does. -/
+theorem or₂_of {a b : Bool} (h : a = true ∨ b = true) : (a || b) = true := by
+  rcases h with rfl | rfl
+  · exact Bool.true_or _
+  · exact Bool.or_true _
+
+/-- A disjunction of three Booleans holds where one does. -/
+theorem or₃_of {a b c : Bool} (h : a = true ∨ b = true ∨ c = true) : (a || b || c) = true := by
+  rcases h with h | h | h
+  · exact or₂_of (.inl (or₂_of (.inl h)))
+  · exact or₂_of (.inl (or₂_of (.inr h)))
+  · exact or₂_of (.inr h)
+
+/-- The variables of an abstraction are those of its body, lowered past the binder. -/
+theorem occurs_of_lamBody {s r : MTerm} (h : lamBody s = some r) (d : ℕ) :
+    Term.occurs s d = Term.occurs r (d + 1) := by
+  obtain ⟨a, rfl⟩ := lamBody_eq_some.mp h
+  rfl
+
+/-- The replacement of an abstraction's type leaves its variables. -/
+theorem occurs_of_relam {a : PartialHorn.Tree} {s r : MTerm} (h : relam a s = some r) :
+    Term.occurs s = Term.occurs r := by
+  obtain ⟨a', b, rfl, rfl⟩ := relam_eq_some.mp h
+  rfl
+
+open FreeTopos.Internal (substF) in
+/-- The replacement of an abstraction's type commutes with the substitution of objects. -/
+theorem relam_osubstF {a : PartialHorn.Tree} {s r : MTerm} (h : relam a s = some r)
+    (τ : ℕ → PartialHorn.Tree) :
+    relam (substF τ a) (Term.osubstF τ s) = some (Term.osubstF τ r) := by
+  obtain ⟨a', b, rfl, rfl⟩ := relam_eq_some.mp h
+  rfl
+
+/-- The body of an abstraction with objects substituted is its body with them substituted. -/
+theorem lamBody_osubstF {s b : MTerm} (h : lamBody s = some b) (τ : ℕ → PartialHorn.Tree) :
+    lamBody (Term.osubstF τ s) = some (Term.osubstF τ b) := by
+  obtain ⟨a, rfl⟩ := lamBody_eq_some.mp h
+  rfl
+
+open FreeTopos.Internal (substF objAt) in
+/-- At a base type, decoding commutes with the substitution of a type for the LF variable of an
+object variable: where an expression decodes at an offset to a term whose variables are below
+the offset, and the type to an object, the substituted expression decodes there to the decoded
+term with the object substituted for the object variable, those above it lowered. -/
+theorem dec_hsub_obj {c₀ : ℕ} : ∀ (e n : Expr) (j off : ℕ) (e' : Expr) (s : MTerm)
+    (β : PartialHorn.Tree), dec k e off = some s →
+    (∀ i, Term.occurs s i = true → i < off) → decTy off n = some β → off ≤ j →
+    hsub (RoseTree.node (.base c₀) []) n e j = some e' →
+      dec k e' off = some (Term.osubstF (objAt (j - off) β) s) :=
+  RoseTree.ind fun l cs ih n j off e' s β h hocc hn hj hs ↦ by
+    rw [dec_node] at h
+    unfold decStep at h
+    split at h
+    · next _ _ i heq =>
+      obtain ⟨rfl, -⟩ := map_dec_eq heq
+      simp only [List.map_nil] at hs
+      obtain rfl := Option.some.inj h
+      have hi : i < off := hocc i (beq_self_eq_true i)
+      rw [show (RoseTree.node (.app (.var i)) [] : Expr) = Expr.var i [] from rfl, hsub_var] at hs
+      simp only [List.map_nil, List.mapM_nil, Option.pure_def, Option.bind_some] at hs
+      rw [ite_eq_right (show i ≠ j by omega), Option.some.injEq] at hs
+      subst hs
+      rw [show renumber j i = i from ite_eq_right (show ¬ j < i by omega), Expr.var, Expr.app,
+        dec_node]
+      rfl
+    · next _ _ heq =>
+      obtain ⟨rfl, -⟩ := map_dec_eq heq
+      simp only [List.map_nil] at hs
+      obtain rfl := Option.some.inj h
+      rw [show (RoseTree.node (.app (.const 7)) [] : Expr) = Expr.const 7 [] from rfl,
+        hsub_const] at hs
+      simp only [List.map_nil, List.mapM_nil, Option.pure_def, Option.map_eq_map,
+        Option.map_some, Option.some.injEq] at hs
+      subst hs
+      rfl
+    · next _ _ p₁ p₂ t dt u du heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨st, hst, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨su, hsu, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain rfl := Option.some.inj h
+      obtain ⟨-, -, t', u', -, -, ht', hu', rfl⟩ := hsub_const₄ hs
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep,
+        ih t (by simp) n j off t' st β (by rw [hd (t, dt) (by simp)]; exact hst)
+          (bnd_plain rfl hocc (by simp)) hn hj ht',
+        ih u (by simp) n j off u' su β
+          (by rw [hd (u, du) (by simp)]; exact hsu)
+          (bnd_plain rfl hocc (by simp)) hn hj hu', Option.bind_eq_bind,
+        Option.bind_some]
+      rfl
+    · next _ _ p₁ p₂ t dt heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨st, hst, rfl⟩ := Option.map_eq_some_iff.mp h
+      obtain ⟨-, -, t', -, -, ht', rfl⟩ := hsub_const₃ hs
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep,
+        ih t (by simp) n j off t' st β
+          (by rw [hd (t, dt) (by simp)]; exact hst)
+          (bnd_plain rfl hocc (by simp)) hn hj ht', Option.map_eq_map,
+        Option.map_some]
+      rfl
+    · next _ _ p₁ p₂ t dt heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨st, hst, rfl⟩ := Option.map_eq_some_iff.mp h
+      obtain ⟨-, -, t', -, -, ht', rfl⟩ := hsub_const₃ hs
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep,
+        ih t (by simp) n j off t' st β
+          (by rw [hd (t, dt) (by simp)]; exact hst)
+          (bnd_plain rfl hocc (by simp)) hn hj ht', Option.map_eq_map,
+        Option.map_some]
+      rfl
+    · next _ _ A dA p₂ f df heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨sf, hsf, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨A', -, f', hA', -, hf', rfl⟩ := hsub_const₃ hs
+      have ha' := decTy_hsub_obj ha hn hj hA'
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep, ha',
+        ih f (by simp) n j off f' sf β
+          (by rw [hd (f, df) (by simp)]; exact hsf)
+          (fun i hi ↦ hocc i (by rw [← occurs_of_relam h]; exact hi)) hn hj hf',
+        Option.bind_eq_bind,
+        Option.bind_some]
+      exact relam_osubstF h _
+    · next _ _ p₁ p₂ t dt u du heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨st, hst, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨su, hsu, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain rfl := Option.some.inj h
+      obtain ⟨-, -, t', u', -, -, ht', hu', rfl⟩ := hsub_const₄ hs
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep,
+        ih t (by simp) n j off t' st β (by rw [hd (t, dt) (by simp)]; exact hst)
+          (bnd_plain rfl hocc (by simp)) hn hj ht',
+        ih u (by simp) n j off u' su β
+          (by rw [hd (u, du) (by simp)]; exact hsu)
+          (bnd_plain rfl hocc (by simp)) hn hj hu', Option.bind_eq_bind,
+        Option.bind_some]
+      rfl
+    · next _ _ t dt heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨st, hst, rfl⟩ := Option.map_eq_some_iff.mp h
+      obtain ⟨t', ht', rfl⟩ := hsub_const₁ hs
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep,
+        ih t (by simp) n j off t' st β
+          (by rw [hd (t, dt) (by simp)]; exact hst)
+          (bnd_plain rfl hocc (by simp)) hn hj ht', Option.map_eq_map,
+        Option.map_some]
+      rfl
+    · next _ _ t dt heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨st, hst, rfl⟩ := Option.map_eq_some_iff.mp h
+      obtain ⟨t', ht', rfl⟩ := hsub_const₁ hs
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep,
+        ih t (by simp) n j off t' st β
+          (by rw [hd (t, dt) (by simp)]; exact hst)
+          (bnd_plain rfl hocc (by simp)) hn hj ht', Option.map_eq_map,
+        Option.map_some]
+      rfl
+    · next _ _ A dA z dz f df m dm heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨sz, hsz, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨sf, hsf, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨r, hr, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨sm, hsm, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain rfl := Option.some.inj h
+      obtain ⟨A', z', f', m', -, hz', hf', hm', rfl⟩ := hsub_const₄ hs
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep,
+        ih z (by simp) n j off z' sz β (by rw [hd (z, dz) (by simp)]; exact hsz)
+          (fun i hi ↦ hocc i (or₃_of (.inl hi))) hn hj hz',
+        ih f (by simp) n j off f' sf β (by rw [hd (f, df) (by simp)]; exact hsf)
+          (fun i hi ↦ hocc i (or₃_of (.inr (.inl ((occurs_of_lamBody hr i).symm.trans hi)))))
+          hn hj hf',
+        ih m (by simp) n j off m' sm β
+          (by rw [hd (m, dm) (by simp)]; exact hsm)
+          (fun i hi ↦ hocc i (or₃_of (.inr (.inr hi)))) hn hj hm', lamBody_osubstF hr _,
+        Option.bind_eq_bind, Option.bind_some]
+      rfl
+    · next _ _ p₁ t dt u du heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨st, hst, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨su, hsu, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain rfl := Option.some.inj h
+      obtain ⟨-, t', u', -, ht', hu', rfl⟩ := hsub_const₃ hs
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep,
+        ih t (by simp) n j off t' st β (by rw [hd (t, dt) (by simp)]; exact hst)
+          (bnd_plain rfl hocc (by simp)) hn hj ht',
+        ih u (by simp) n j off u' su β
+          (by rw [hd (u, du) (by simp)]; exact hsu)
+          (bnd_plain rfl hocc (by simp)) hn hj hu', Option.bind_eq_bind,
+        Option.bind_some]
+      rfl
+    · next _ _ A dA t dt heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨st, hst, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain rfl := Option.some.inj h
+      obtain ⟨A', t', hA', ht', rfl⟩ := hsub_const₂ hs
+      have ha' := decTy_hsub_obj ha hn hj hA'
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep, ha',
+        ih t (by simp) n j off t' st β
+          (by rw [hd (t, dt) (by simp)]; exact hst)
+          (bnd_plain rfl hocc (by simp)) hn hj ht', Option.bind_eq_bind,
+        Option.bind_some]
+      rfl
+    · next _ _ A dA t dt heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨st, hst, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain rfl := Option.some.inj h
+      obtain ⟨A', t', hA', ht', rfl⟩ := hsub_const₂ hs
+      have ha' := decTy_hsub_obj ha hn hj hA'
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep, ha',
+        ih t (by simp) n j off t' st β
+          (by rw [hd (t, dt) (by simp)]; exact hst)
+          (bnd_plain rfl hocc (by simp)) hn hj ht', Option.bind_eq_bind,
+        Option.bind_some]
+      rfl
+    · next _ _ A dA C dC z dz f df m dm heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨sz, hsz, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨sf, hsf, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨r₁, hr₁, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨r, hr, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨sm, hsm, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain rfl := Option.some.inj h
+      obtain ⟨A', C', z', f', m', -, -, hz', hf', hm', rfl⟩ := hsub_const₅ hs
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep,
+        ih z (by simp) n j off z' sz β (by rw [hd (z, dz) (by simp)]; exact hsz)
+          (fun i hi ↦ hocc i (or₃_of (.inl hi))) hn hj hz',
+        ih f (by simp) n j off f' sf β (by rw [hd (f, df) (by simp)]; exact hsf)
+          (fun i hi ↦ hocc i (or₃_of (.inr (.inl ((occurs_of_lamBody hr (i + 1)).symm.trans
+            ((occurs_of_lamBody hr₁ i).symm.trans hi)))))) hn hj hf',
+        ih m (by simp) n j off m' sm β
+          (by rw [hd (m, dm) (by simp)]; exact hsm)
+          (fun i hi ↦ hocc i (or₃_of (.inr (.inr hi)))) hn hj hm', lamBody_osubstF hr₁ _,
+        lamBody_osubstF hr _, Option.bind_eq_bind, Option.bind_some]
+      rfl
+    · next _ _ t dt heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨st, hst, rfl⟩ := Option.map_eq_some_iff.mp h
+      obtain ⟨t', ht', rfl⟩ := hsub_const₁ hs
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep,
+        ih t (by simp) n j off t' st β
+          (by rw [hd (t, dt) (by simp)]; exact hst)
+          (bnd_plain rfl hocc (by simp)) hn hj ht', Option.map_eq_map,
+        Option.map_some]
+      rfl
+    · next _ _ C dC f df t dt heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨c, hc, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨sf, hsf, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨r, hr, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨st, hst, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain rfl := Option.some.inj h
+      obtain ⟨C', f', t', hC', hf', ht', rfl⟩ := hsub_const₃ hs
+      have hc' := decTy_hsub_obj hc hn hj hC'
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep, hc',
+        ih f (by simp) n j off f' sf β (by rw [hd (f, df) (by simp)]; exact hsf)
+          (fun i hi ↦ hocc i (or₂_of (.inl ((occurs_of_lamBody hr i).symm.trans hi)))) hn hj hf',
+        ih t (by simp) n j off t' st β
+          (by rw [hd (t, dt) (by simp)]; exact hst)
+          (fun i hi ↦ hocc i (or₂_of (.inr hi))) hn hj ht', lamBody_osubstF hr _,
+        Option.bind_eq_bind, Option.bind_some]
+      rfl
+    · next _ _ A dA t dt heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨st, hst, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain rfl := Option.some.inj h
+      obtain ⟨A', t', hA', ht', rfl⟩ := hsub_const₂ hs
+      have ha' := decTy_hsub_obj ha hn hj hA'
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep, ha',
+        ih t (by simp) n j off t' st β
+          (by rw [hd (t, dt) (by simp)]; exact hst)
+          (bnd_plain rfl hocc (by simp)) hn hj ht', Option.bind_eq_bind,
+        Option.bind_some]
+      rfl
+    · next _ _ A C dC f df t dt heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨c, hc, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨sf, hsf, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨r, hr, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨st, hst, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain rfl := Option.some.inj h
+      obtain ⟨A', C', f', t', -, hC', hf', ht', rfl⟩ := hsub_const₄ hs
+      have hc' := decTy_hsub_obj hc hn hj hC'
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep, hc',
+        ih f (by simp) n j off f' sf β (by rw [hd (f, df) (by simp)]; exact hsf)
+          (fun i hi ↦ hocc i (or₂_of (.inl ((occurs_of_lamBody hr i).symm.trans hi)))) hn hj hf',
+        ih t (by simp) n j off t' st β
+          (by rw [hd (t, dt) (by simp)]; exact hst)
+          (fun i hi ↦ hocc i (or₂_of (.inr hi))) hn hj ht', lamBody_osubstF hr _,
+        Option.bind_eq_bind, Option.bind_some]
+      rfl
+    · next _ _ A dA B dB t dt heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨b, hb, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨st, hst, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain rfl := Option.some.inj h
+      obtain ⟨A', B', t', hA', hB', ht', rfl⟩ := hsub_const₃ hs
+      have ha' := decTy_hsub_obj ha hn hj hA'
+      have hb' := decTy_hsub_obj hb hn hj hB'
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep, ha', hb',
+        ih t (by simp) n j off t' st β
+          (by rw [hd (t, dt) (by simp)]; exact hst)
+          (bnd_plain rfl hocc (by simp)) hn hj ht', Option.bind_eq_bind,
+        Option.bind_some]
+      rfl
+    · next _ _ A dA B dB t dt heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨b, hb, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨st, hst, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain rfl := Option.some.inj h
+      obtain ⟨A', B', t', hA', hB', ht', rfl⟩ := hsub_const₃ hs
+      have ha' := decTy_hsub_obj ha hn hj hA'
+      have hb' := decTy_hsub_obj hb hn hj hB'
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep, ha', hb',
+        ih t (by simp) n j off t' st β
+          (by rw [hd (t, dt) (by simp)]; exact hst)
+          (bnd_plain rfl hocc (by simp)) hn hj ht', Option.bind_eq_bind,
+        Option.bind_some]
+      rfl
+    · next _ _ A dA B dB C dC p dp heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨b, hb, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨c, hc, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨sp, hsp, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain rfl := Option.some.inj h
+      obtain ⟨A', B', C', p', hA', hB', hC', hp', rfl⟩ := hsub_const₄ hs
+      have ha' := decTy_hsub_obj ha hn hj hA'
+      have hb' := decTy_hsub_obj hb hn hj hB'
+      have hc' := decTy_hsub_obj hc hn hj hC'
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep, ha', hb', hc',
+        ih p (by simp) n j off p' sp β
+          (by rw [hd (p, dp) (by simp)]; exact hsp)
+          (bnd_plain rfl hocc (by simp)) hn hj hp', Option.bind_eq_bind,
+        Option.bind_some]
+      rfl
+    · next _ _ b db heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨sb, hsb, rfl⟩ := Option.map_eq_some_iff.mp h
+      rw [show (RoseTree.node Label.lam [b] : Expr) = Expr.lam b from rfl, hsub_lam,
+        Option.map_eq_map, Option.map_eq_some_iff] at hs
+      obtain ⟨b', hb', rfl⟩ := hs
+      have hb := ih b (by simp) n.shift (j + 1) (off + 1) b' sb β
+        (by rw [hd (b, db) (by simp)]; exact hsb)
+        (fun i hi ↦ by
+          rcases i with _ | i
+          · omega
+          · exact Nat.succ_lt_succ (hocc i hi))
+        (decTy_rename hn fun i _ ↦ by omega) (by omega) hb'
+      rw [show j + 1 - (off + 1) = j - off by omega] at hb
+      rw [Expr.lam, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep, hb, Option.map_eq_map, Option.map_some]
+      rfl
+    · exact absurd h (by simp)
+
+open FreeTopos.Internal (substF substF_node_succ substF_var) in
+/-- The encoding of a type at an offset raised by {lit}`q` is the encoding at the offset of the
+type with its object variables raised by {lit}`q`. -/
+theorem encTy_shiftObj {off q : ℕ} :
+    ∀ (a : PartialHorn.Tree) (A : Expr), encTy (off + q) a = some A →
+      encTy off (FreeTopos.Internal.shiftObj q a) = some A :=
+  RoseTree.ind fun l cs ih A h ↦ by
+    unfold FreeTopos.Internal.shiftObj at ih ⊢
+    rcases encTy_node_eq_some h with ⟨rfl, i, rfl, rfl⟩ | ⟨rfl, rfl, rfl⟩ |
+        ⟨rfl, a₁, a₂, hcs, rfl⟩ | ⟨rfl, a₁, a₂, hcs, rfl⟩ | ⟨rfl, rfl, rfl⟩ | ⟨rfl, rfl, rfl⟩ |
+        ⟨rfl, a₁, hcs, rfl⟩ | ⟨rfl, rfl, rfl⟩ | ⟨rfl, a₁, hcs, rfl⟩ | ⟨rfl, rfl, rfl⟩ |
+        ⟨rfl, a₁, a₂, hcs, rfl⟩
+    · rw [FreeTopos.Internal.substF_node_zero _ rfl, RoseTree.label_node, encTy_var]
+      rw [show off + (i + q) = off + q + i by omega]
+    · rw [substF_node_succ]
+      rfl
+    · obtain ⟨c₁, c₂, rfl, h₁, h₂⟩ := map_encTy_eq_two hcs
+      rw [substF_node_succ]
+      change encTy off (FreeTopos.prod _ _) = _
+      rw [encTy_prod, ih c₁ (by simp) a₁ h₁, ih c₂ (by simp) a₂ h₂]
+      rfl
+    · obtain ⟨c₁, c₂, rfl, h₁, h₂⟩ := map_encTy_eq_two hcs
+      rw [substF_node_succ]
+      change encTy off (FreeTopos.exp _ _) = _
+      rw [encTy_exp, ih c₁ (by simp) a₁ h₁, ih c₂ (by simp) a₂ h₂]
+      rfl
+    · rw [substF_node_succ]
+      rfl
+    · rw [substF_node_succ]
+      rfl
+    · obtain ⟨c₁, rfl, h₁⟩ := map_encTy_eq_one hcs
+      rw [substF_node_succ]
+      change encTy off (FreeTopos.list _) = _
+      rw [encTy_list, ih c₁ (by simp) a₁ h₁]
+      rfl
+    · rw [substF_node_succ]
+      rfl
+    · obtain ⟨c₁, rfl, h₁⟩ := map_encTy_eq_one hcs
+      rw [substF_node_succ]
+      change encTy off (FreeTopos.lrose _) = _
+      rw [encTy_lrose, ih c₁ (by simp) a₁ h₁]
+      rfl
+    · rw [substF_node_succ]
+      rfl
+    · obtain ⟨c₁, c₂, rfl, h₁, h₂⟩ := map_encTy_eq_two hcs
+      rw [substF_node_succ]
+      change encTy off (FreeTopos.coprod _ _) = _
+      rw [encTy_coprod, ih c₁ (by simp) a₁ h₁, ih c₂ (by simp) a₂ h₂]
+      rfl
+
+/-- The hereditary substitutions, at a simple type, of a list of terms, the first outermost, for
+the outermost variables of an expression's scope, inside which are {lit}`d` further variables:
+each term in turn for the outermost variable remaining, weakened past the variables inside it. -/
+def hsubsPre (α : SimpleTy) : List Expr → ℕ → Expr → Option Expr :=
+  List.rec (fun _ X ↦ some X) fun m ms r d X ↦
+    (hsub α (Expr.shift^[ms.length + d] m) X (ms.length + d)).bind (r d)
+
+/-- The substitutions under further variables: the first term, then the rest. -/
+theorem hsubsPre_cons (α : SimpleTy) (m : Expr) (ms : List Expr) (d : ℕ) (X : Expr) :
+    hsubsPre α (m :: ms) d X =
+      (hsub α (Expr.shift^[ms.length + d] m) X (ms.length + d)).bind (hsubsPre α ms d) :=
+  rfl
+
+/-- The substitutions of a list's two parts in turn: the first part's under the second's
+variables, then the second's. -/
+theorem hsubs_append (α : SimpleTy) (bs : List Expr) :
+    ∀ (as : List Expr) (X : Expr),
+      hsubs α (as ++ bs) X = (hsubsPre α as bs.length X).bind (hsubs α bs) := by
+  intro as
+  refine List.rec (motive := fun as ↦ ∀ X : Expr,
+      hsubs α (as ++ bs) X = (hsubsPre α as bs.length X).bind (hsubs α bs))
+    (fun X ↦ rfl) (fun a as ih X ↦ ?_) as
+  rw [List.cons_append, hsubs_cons, hsubsPre_cons, List.length_append, Option.bind_assoc]
+  exact congrArg _ (funext ih)
+
+/-- The substitutions under further variables commute with renaming. -/
+theorem hsubsPre_rename (α : SimpleTy) (ρ : ℕ → ℕ) (d : ℕ) :
+    ∀ (ms : List Expr) (X X' : Expr), hsubsPre α ms d X = some X' →
+      hsubsPre α (ms.map fun m ↦ m.rename ρ) d (X.rename (liftR^[ms.length + d] ρ)) =
+        some (X'.rename (liftR^[d] ρ)) := by
+  intro ms
+  refine List.rec (motive := fun ms ↦ ∀ (X X' : Expr), hsubsPre α ms d X = some X' →
+      hsubsPre α (ms.map fun m ↦ m.rename ρ) d (X.rename (liftR^[ms.length + d] ρ)) =
+        some (X'.rename (liftR^[d] ρ)))
+    (fun X X' h ↦ by
+      obtain rfl := Option.some.inj h
+      rw [List.length_nil, Nat.zero_add]
+      rfl) (fun m ms ih X X' h ↦ ?_) ms
+  rw [hsubsPre_cons] at h
+  obtain ⟨X₁, hX₁, h⟩ := Option.bind_eq_some_iff.mp h
+  have hr := hsubWith_rename (reduce_rename α) X _ (ms.length + d) ρ X₁ hX₁
+  rw [← iterate_shift_rename, ← hsub_eq] at hr
+  rw [List.map_cons, hsubsPre_cons, List.length_map, List.length_cons,
+    show ms.length + 1 + d = ms.length + d + 1 by omega, hr, Option.bind_some]
+  exact ih X₁ X' h
+
+/-- The substitutions into a constant applied to one argument substitute into the argument. -/
+theorem hsubs_const₁ {α : SimpleTy} {c : ℕ} :
+    ∀ {ms : List Expr} {X Y : Expr}, hsubs α ms (Expr.const c [X]) = some Y →
+      ∃ X', hsubs α ms X = some X' ∧ Y = Expr.const c [X'] := by
+  intro ms
+  refine List.rec (motive := fun ms ↦ ∀ {X Y : Expr}, hsubs α ms (Expr.const c [X]) = some Y →
+      ∃ X', hsubs α ms X = some X' ∧ Y = Expr.const c [X'])
+    (fun {X Y} h ↦ ⟨X, rfl, (Option.some.inj h).symm⟩) (fun m ms ih {X Y} h ↦ ?_) ms
+  rw [hsubs_cons] at h
+  obtain ⟨Y₁, hY₁, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨X₁, hX₁, rfl⟩ := hsub_const₁ hY₁
+  obtain ⟨X', hX', rfl⟩ := ih h
+  exact ⟨X', by rw [hsubs_cons, hX₁, Option.bind_some]; exact hX', rfl⟩
+
+/-- The substitutions under further variables into a constant applied to one argument substitute
+into the argument. -/
+theorem hsubsPre_const₁ {α : SimpleTy} {c d : ℕ} :
+    ∀ {ms : List Expr} {X Y : Expr}, hsubsPre α ms d (Expr.const c [X]) = some Y →
+      ∃ X', hsubsPre α ms d X = some X' ∧ Y = Expr.const c [X'] := by
+  intro ms
+  refine List.rec (motive := fun ms ↦ ∀ {X Y : Expr}, hsubsPre α ms d (Expr.const c [X]) =
+      some Y → ∃ X', hsubsPre α ms d X = some X' ∧ Y = Expr.const c [X'])
+    (fun {X Y} h ↦ ⟨X, rfl, (Option.some.inj h).symm⟩) (fun m ms ih {X Y} h ↦ ?_) ms
+  rw [hsubsPre_cons] at h
+  obtain ⟨Y₁, hY₁, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨X₁, hX₁, rfl⟩ := hsub_const₁ hY₁
+  obtain ⟨X', hX', rfl⟩ := ih h
+  exact ⟨X', by rw [hsubsPre_cons, hX₁, Option.bind_some]; exact hX', rfl⟩
+
+open FreeTopos.Internal (shiftObj objScope objScope_cons objScope_nil objAt) in
+/-- At a base type, decoding commutes with the substitutions of types for the outermost
+variables of a scope, the object variables of the decoding inside {lit}`d` term variables: where
+each type is the encoding of an object at every offset, and the expression decodes to a term
+whose variables are below {lit}`d`, the substituted expression decodes to the decoded term with
+the objects substituted for the scope's object variables. -/
+theorem dec_hsubsPre_obj {c₀ d : ℕ} :
+    ∀ (Xs : List Expr) (bs : List PartialHorn.Tree) (X X' : Expr) (y : MTerm),
+      List.Forall₂ (fun Xk b ↦ ∀ e, encTy e b = some (Xk.rename (· + e))) Xs bs →
+      dec k X d = some y → (∀ i, Term.occurs y i = true → i < d) →
+      hsubsPre (RoseTree.node (.base c₀) []) Xs d X = some X' →
+        dec k X' d = some (Term.osubstF (objScope bs) y) := by
+  intro Xs
+  refine List.rec (motive := fun Xs ↦ ∀ (bs : List PartialHorn.Tree) (X X' : Expr) (y : MTerm),
+      List.Forall₂ (fun Xk b ↦ ∀ e, encTy e b = some (Xk.rename (· + e))) Xs bs →
+      dec k X d = some y → (∀ i, Term.occurs y i = true → i < d) →
+      hsubsPre (RoseTree.node (.base c₀) []) Xs d X = some X' →
+        dec k X' d = some (Term.osubstF (objScope bs) y))
+    (fun bs X X' y hbs hX _ h ↦ ?_) (fun X₁ Xs ih bs X X' y hbs hX hocc h ↦ ?_) Xs
+  · cases hbs
+    obtain rfl := Option.some.inj h
+    rw [objScope_nil, Term.osubstF_var]
+    exact hX
+  rcases hbs with _ | ⟨hb₁, hbs⟩
+  rename_i b₁ bs
+  rw [hsubsPre_cons] at h
+  obtain ⟨X₁', hX₁', h⟩ := Option.bind_eq_some_iff.mp h
+  have hq := hbs.length_eq
+  have hn : decTy d (Expr.shift^[Xs.length + d] X₁) = some (shiftObj Xs.length b₁) := by
+    rw [iterate_shift]
+    refine decTy_encTy _ _ _ (encTy_shiftObj (off := d) _ _ ?_)
+    rw [Nat.add_comm d]
+    exact hb₁ _
+  have hy₁ := dec_hsub_obj (k := k) X _ (Xs.length + d) d X₁' y _ hX hocc hn (by omega) hX₁'
+  rw [Nat.add_sub_cancel] at hy₁
+  rw [ih bs X₁' X' _ hbs hy₁ (fun i hi ↦ hocc i (by rwa [Term.occurs_osubstF] at hi)) h,
+    Term.osubstF_comp, hq]
+  exact congrArg (some ∘ (Term.osubstF · y)) (funext (objScope_cons b₁ bs))
+
+open FreeTopos.Internal (substF substF_comp shiftObj objScope objScope_cons objScope_nil
+  substF_var_id) in
+/-- At a base type, the substitutions of types, each the encoding of an object at every offset,
+for the outermost variables of a scope, inside which are {lit}`d` term variables, into the
+encoding of a type at the offset {lit}`d` give the encoding of the type with the objects
+substituted for the scope's object variables. -/
+theorem encTy_hsubsPre_obj {c₀ d : ℕ} :
+    ∀ (Xs : List Expr) (bs : List PartialHorn.Tree) (a : PartialHorn.Tree) (A A' : Expr),
+      List.Forall₂ (fun Xk b ↦ ∀ e, encTy e b = some (Xk.rename (· + e))) Xs bs →
+      encTy d a = some A → hsubsPre (RoseTree.node (.base c₀) []) Xs d A = some A' →
+        encTy d (substF (objScope bs) a) = some A' := by
+  intro Xs
+  refine List.rec (motive := fun Xs ↦ ∀ (bs : List PartialHorn.Tree) (a : PartialHorn.Tree)
+      (A A' : Expr), List.Forall₂ (fun Xk b ↦ ∀ e, encTy e b = some (Xk.rename (· + e))) Xs bs →
+      encTy d a = some A → hsubsPre (RoseTree.node (.base c₀) []) Xs d A = some A' →
+        encTy d (substF (objScope bs) a) = some A')
+    (fun bs a A A' hbs hA h ↦ ?_) (fun X₁ Xs ih bs a A A' hbs hA h ↦ ?_) Xs
+  · cases hbs
+    obtain rfl := Option.some.inj h
+    rw [objScope_nil, substF_var_id]
+    exact hA
+  rcases hbs with _ | ⟨hb₁, hbs⟩
+  rename_i b₁ bs
+  rw [hsubsPre_cons] at h
+  obtain ⟨A₁, hA₁, h⟩ := Option.bind_eq_some_iff.mp h
+  have hq := hbs.length_eq
+  have hn : encTy d (shiftObj Xs.length b₁) = some (Expr.shift^[Xs.length + d] X₁) := by
+    rw [iterate_shift]
+    refine encTy_shiftObj (off := d) _ _ ?_
+    rw [Nat.add_comm d]
+    exact hb₁ _
+  have ha₁ := encTy_hsub_obj hn (by omega) a A A₁ hA hA₁
+  rw [Nat.add_sub_cancel] at ha₁
+  rw [← ih bs _ A₁ A' hbs ha₁ h, substF_comp, hq]
+  exact congrArg (encTy d ∘ (substF · a)) (funext (objScope_cons b₁ bs)).symm
+
+/-- The substitutions of terms for the term variables of the encoding of a type leave it the
+encoding of the type at the offset below them. -/
+theorem hsubs_encTy {α : SimpleTy} :
+    ∀ (ms : List Expr) (a : PartialHorn.Tree) (A A' : Expr), encTy ms.length a = some A →
+      hsubs α ms A = some A' → encTy 0 a = some A' := by
+  intro ms
+  refine List.rec (motive := fun ms ↦ ∀ (a : PartialHorn.Tree) (A A' : Expr),
+      encTy ms.length a = some A → hsubs α ms A = some A' → encTy 0 a = some A')
+    (fun a A A' hA h ↦ by obtain rfl := Option.some.inj h; exact hA)
+    (fun m ms ih a A A' hA h ↦ ?_) ms
+  rw [hsubs_cons] at h
+  obtain ⟨A₁, hA₁, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨A₂, hA₂, hs⟩ := hsubWith_encTy (reduce α) (j := ms.length) hA
+    (by rw [List.length_cons]; omega) (Expr.shift^[ms.length] m)
+  rw [← hsub_eq, hA₁, Option.some.injEq] at hs
+  subst hs
+  exact ih a A₁ A' (by simpa using hA₂) h
+
+/-- At base types, the hereditary substitution does not depend on the base type. -/
+theorem hsub_base_eq (c c' : ℕ) :
+    hsub (RoseTree.node (.base c) []) = hsub (RoseTree.node (.base c') []) := by
+  have : reduce (RoseTree.node (.base c) []) = reduce (RoseTree.node (.base c') []) :=
+    funext fun n ↦ funext fun ms ↦ by
+      rw [reduce_node, reduce_node]
+      rcases ms with _ | _ <;> rfl
+  funext n e j
+  rw [hsub, hsub, this]
+
+/-- Substitution into the kind of types or a family of terms gives the kind of types or a family
+of terms. -/
+theorem hsub_tpTm {α : SimpleTy} {n D D' : Expr} {j : ℕ} (hD : D = tp ∨ ∃ A, D = tm A)
+    (h : hsub α n D j = some D') : D' = tp ∨ ∃ A', D' = tm A' := by
+  rcases hD with rfl | ⟨A, rfl⟩
+  · rw [tp, hsub_const] at h
+    exact .inl (Option.some.inj h).symm
+  · obtain ⟨A', -, rfl⟩ := hsub_const₁ h
+    exact .inr ⟨A', rfl⟩
+
+/-- The substitution into products: into each domain under the products before it, and into the
+body under all of them. -/
+theorem hsub_piTele_gen {α : SimpleTy} {R : Expr} :
+    ∀ {Ds : List Expr} {n c : Expr} {j : ℕ}, hsub α n (piTele Ds R) j = some c →
+      ∃ Ds' R', c = piTele Ds' R' ∧ Ds'.length = Ds.length ∧
+        (∀ i D, Ds[i]? = some D →
+          ∃ D', Ds'[i]? = some D' ∧ hsub α (Expr.shift^[i] n) D (j + i) = some D') ∧
+        hsub α (Expr.shift^[Ds.length] n) R (j + Ds.length) = some R' := by
+  intro Ds
+  refine List.rec (motive := fun Ds ↦ ∀ {n c : Expr} {j : ℕ}, hsub α n (piTele Ds R) j = some c →
+      ∃ Ds' R', c = piTele Ds' R' ∧ Ds'.length = Ds.length ∧
+        (∀ i D, Ds[i]? = some D →
+          ∃ D', Ds'[i]? = some D' ∧ hsub α (Expr.shift^[i] n) D (j + i) = some D') ∧
+        hsub α (Expr.shift^[Ds.length] n) R (j + Ds.length) = some R')
+    (fun {_ _ _} h ↦ ⟨[], _, rfl, rfl, fun _ _ h' ↦ by simp at h', h⟩)
+    (fun D Ds ih {n c j} h ↦ ?_) Ds
+  obtain ⟨a', b', ha, hb, rfl⟩ := hsub_pi α n D (piTele Ds R) j c h
+  obtain ⟨Ds₁, R₁, rfl, hlen, hi, hR⟩ := ih hb
+  refine ⟨a' :: Ds₁, R₁, rfl, by rw [List.length_cons, List.length_cons, hlen],
+    fun i D' hD' ↦ ?_, ?_⟩
+  · rcases i with _ | i
+    · obtain rfl := Option.some.inj hD'
+      exact ⟨a', rfl, ha⟩
+    · obtain ⟨D₁, hD₁, hs⟩ := hi i D' hD'
+      refine ⟨D₁, hD₁, ?_⟩
+      rw [Function.iterate_succ_apply, show j + (i + 1) = j + 1 + i by omega]
+      exact hs
+  · rw [List.length_cons, Function.iterate_succ_apply,
+      show j + (Ds.length + 1) = j + 1 + Ds.length by omega]
+    exact hR
+
+/-- The instantiation of products over the kind of types and families of terms along a spine that
+instantiates them to an atomic family: each leading argument, one for each domain, checks
+against its domain with the arguments before it substituted, and the rest instantiate the body
+with the leading arguments substituted. -/
+theorem spine_piTele_gen {Γ : Ctx} {J : Expr → Ctx → Mode → Bool} {P : Expr}
+    (hP : IsApp P = true) {Ds : List Expr} (hDs : ∀ D ∈ Ds, D = tp ∨ ∃ A, D = tm A)
+    {ms : List Expr} {R : Expr}
+    (h : spine Γ (piTele Ds R) (ms.map fun m ↦ (m, J m)) = some P) :
+    Ds.length ≤ ms.length ∧
+      (∀ i D, Ds[i]? = some D → ∃ D' m,
+        hsubs (RoseTree.node (.base 6) []) (ms.take i) D = some D' ∧ ms[i]? = some m ∧
+          J m Γ (.check D') = true) ∧
+      ∃ R', hsubs (RoseTree.node (.base 6) []) (ms.take Ds.length) R = some R' ∧
+        spine Γ R' ((ms.drop Ds.length).map fun m ↦ (m, J m)) = some P := by
+  refine Nat.rec (motive := fun N ↦ ∀ (Ds : List Expr), Ds.length = N →
+      (∀ D ∈ Ds, D = tp ∨ ∃ A, D = tm A) →
+      ∀ {ms : List Expr} {R : Expr}, spine Γ (piTele Ds R) (ms.map fun m ↦ (m, J m)) = some P →
+        Ds.length ≤ ms.length ∧
+        (∀ i D, Ds[i]? = some D → ∃ D' m,
+          hsubs (RoseTree.node (.base 6) []) (ms.take i) D = some D' ∧ ms[i]? = some m ∧
+            J m Γ (.check D') = true) ∧
+        ∃ R', hsubs (RoseTree.node (.base 6) []) (ms.take Ds.length) R = some R' ∧
+          spine Γ R' ((ms.drop Ds.length).map fun m ↦ (m, J m)) = some P)
+    (fun Ds hN _ {_ _} h ↦ ?_) (fun N ih Ds hN hDs {ms R} h ↦ ?_) Ds.length Ds rfl hDs h
+  · obtain rfl := List.length_eq_zero_iff.mp hN
+    exact ⟨Nat.zero_le _, fun _ _ h' ↦ by simp at h', _, rfl, h⟩
+  obtain ⟨D, Ds, rfl⟩ := List.exists_cons_of_length_eq_add_one hN
+  rcases ms with _ | ⟨m, ms⟩
+  · obtain rfl := Option.some.inj h
+    exact absurd hP (by rw [piTele_cons, Expr.pi]; exact Bool.false_ne_true)
+  rw [List.map_cons, piTele_cons] at h
+  obtain ⟨hm, b', hb', hS⟩ := spine_cons_inv h
+  have hcD : ∃ c, D.erase = RoseTree.node (.base c) [] := by
+    rcases hDs D List.mem_cons_self with rfl | ⟨A, rfl⟩
+    · exact ⟨0, rfl⟩
+    · exact ⟨6, rfl⟩
+  obtain ⟨c, hc⟩ := hcD
+  rw [hc, hsub_base_eq c 6] at hb'
+  obtain ⟨Ds₁, R₁, rfl, hlen, hi, hR⟩ := hsub_piTele_gen hb'
+  have hDs₁ : ∀ D ∈ Ds₁, D = tp ∨ ∃ A, D = tm A := fun D₁ hD₁ ↦ by
+    obtain ⟨i, hi₁, rfl⟩ := List.getElem_of_mem hD₁
+    obtain ⟨D', hD', hs⟩ := hi i Ds[i] (List.getElem?_eq_getElem (by omega))
+    rw [List.getElem?_eq_getElem hi₁, Option.some.injEq] at hD'
+    subst hD'
+    exact hsub_tpTm (hDs _ (List.mem_cons_of_mem _ (List.getElem_mem _))) hs
+  obtain ⟨hle, hix, R', hR', hS'⟩ :=
+    ih Ds₁ (by rw [hlen]; exact Nat.succ.inj hN) hDs₁ hS
+  rw [hlen] at hle hR' hS'
+  refine ⟨by rw [List.length_cons, List.length_cons]; omega, fun i D' hD' ↦ ?_, R', ?_,
+    by rw [List.length_cons, List.drop_succ_cons]; exact hS'⟩
+  · rcases i with _ | i
+    · obtain rfl := Option.some.inj hD'
+      exact ⟨D, m, rfl, rfl, hm⟩
+    · have hD'' : Ds[i]? = some D' := hD'
+      obtain ⟨D₁, hD₁, hs⟩ := hi i D' hD''
+      have hlt : i < Ds.length := (List.getElem?_eq_some_iff.mp hD'').1
+      obtain ⟨D₂, m', hD₂, hm', hJ⟩ := hix i D₁ hD₁
+      refine ⟨D₂, m', ?_, hm', hJ⟩
+      rw [List.take_succ_cons, hsubs_cons, List.length_take, Nat.min_eq_left (by omega)]
+      rw [Nat.zero_add] at hs
+      rw [hs, Option.bind_some]
+      exact hD₂
+  · rw [List.length_cons, List.take_succ_cons, hsubs_cons, List.length_take,
+      Nat.min_eq_left (by omega)]
+    rw [Nat.zero_add] at hR
+    rw [hR, Option.bind_some]
+    exact hR'
+
+/-- The encoding of a context, reversed: the kind of types for each object variable, then the
+families of terms of the variables' types, the outermost first, each encoded at the number of
+variables outside it. -/
+theorem encCtx_reverse {m : ℕ} :
+    ∀ {Γ : List PartialHorn.Tree} {ΓT : Ctx}, encCtx m Γ = some ΓT →
+      ∃ T', ΓT.reverse = List.replicate m tp ++ T' ∧ T'.length = Γ.length ∧
+        ∀ i b, Γ.reverse[i]? = some b → ∃ A, T'[i]? = some (tm A) ∧ encTy i b = some A := by
+  intro Γ
+  refine List.rec (motive := fun Γ ↦ ∀ {ΓT : Ctx}, encCtx m Γ = some ΓT →
+      ∃ T', ΓT.reverse = List.replicate m tp ++ T' ∧ T'.length = Γ.length ∧
+        ∀ i b, Γ.reverse[i]? = some b → ∃ A, T'[i]? = some (tm A) ∧ encTy i b = some A)
+    (fun {ΓT} h ↦ ?_) (fun a Γ ih {ΓT} h ↦ ?_) Γ
+  · obtain rfl := Option.some.inj h
+    exact ⟨[], by rw [List.reverse_replicate, List.append_nil], rfl, fun _ _ h' ↦ by simp at h'⟩
+  obtain ⟨A, ΓT', hA, hΓ', rfl⟩ := encCtx_cons_inv h
+  obtain ⟨T', hT', hlen, hi⟩ := ih hΓ'
+  refine ⟨T' ++ [tm A], by rw [List.reverse_cons, hT', List.append_assoc],
+    by rw [List.length_append, hlen]; rfl, fun i b hb ↦ ?_⟩
+  rw [List.reverse_cons] at hb
+  by_cases hlt : i < Γ.length
+  · rw [List.getElem?_append_left (by rw [List.length_reverse]; exact hlt)] at hb
+    obtain ⟨A', hA', he⟩ := hi i b hb
+    exact ⟨A', by rw [List.getElem?_append_left (by rw [hlen]; exact hlt)]; exact hA', he⟩
+  · rw [List.getElem?_append_right (by rw [List.length_reverse]; omega),
+      List.length_reverse] at hb
+    have hi' : i = Γ.length := by
+      by_contra hne
+      rw [List.getElem?_eq_none (by simp; omega)] at hb
+      exact nomatch hb
+    subst hi'
+    rw [Nat.sub_self, List.getElem?_cons_zero, Option.some.injEq] at hb
+    subst hb
+    exact ⟨A, by rw [List.getElem?_append_right (by omega), hlen, Nat.sub_self]; rfl, hA⟩
+
+/-- The substitutions into the kind of types leave it. -/
+theorem hsubs_tp {α : SimpleTy} :
+    ∀ {ms : List Expr} {D : Expr}, hsubs α ms tp = some D → D = tp := by
+  intro ms
+  refine List.rec (motive := fun ms ↦ ∀ {D : Expr}, hsubs α ms tp = some D → D = tp)
+    (fun {D} h ↦ (Option.some.inj h).symm) (fun m ms ih {D} h ↦ ?_) ms
+  rw [hsubs_cons, tp, hsub_const] at h
+  exact ih h
+
+/-- The encoding of a node of label zero is that of a variable. -/
+theorem encTy_zero_inv {off : ℕ} {ds : List PartialHorn.Tree} {A : Expr}
+    (h : encTy off (RoseTree.node 0 ds) = some A) :
+    ∃ i, ds = [RoseTree.node i []] ∧ A = Expr.var (off + i) := by
+  rcases encTy_node_eq_some h with ⟨-, i, hds, rfl⟩ | ⟨h₁, -⟩ | ⟨h₁, -⟩ | ⟨h₁, -⟩ | ⟨h₁, -⟩ |
+      ⟨h₁, -⟩ | ⟨h₁, -⟩ | ⟨h₁, -⟩ | ⟨h₁, -⟩ | ⟨h₁, -⟩ | ⟨h₁, -⟩
+  · exact ⟨i, hds, rfl⟩
+  all_goals exact absurd h₁ (by decide)
+
+open FreeTopos.Internal (substF substF_node_succ shiftObj) in
+/-- The encoding at an offset of a type with its object variables raised by {lit}`q` is the
+encoding of the type at the offset raised by {lit}`q`. -/
+theorem encTy_of_shiftObj {off q : ℕ} :
+    ∀ (a : PartialHorn.Tree) (A : Expr), encTy off (shiftObj q a) = some A →
+      encTy (off + q) a = some A :=
+  RoseTree.ind fun l cs ih A h ↦ by
+    unfold shiftObj at ih h
+    rcases l with _ | k
+    · rcases cs with _ | ⟨c, _ | ⟨c', cs⟩⟩
+      · rw [FreeTopos.Internal.substF_node_zero_other _ fun _ ↦
+          FreeTopos.Internal.nil_ne_singleton] at h
+        obtain ⟨i, hds, -⟩ := encTy_zero_inv h
+        exact absurd hds FreeTopos.Internal.nil_ne_singleton
+      · rcases hcc : c.children with _ | ⟨d, ds⟩
+        · have hc : c.children = [] := hcc
+          rw [FreeTopos.Internal.substF_node_zero _ hc] at h
+          change encTy off (PartialHorn.var (c.label + q)) = some A at h
+          rw [encTy_var] at h
+          obtain rfl := Option.some.inj h
+          rw [← RoseTree.node_label_children c, hc]
+          change encTy (off + q) (PartialHorn.var c.label) = _
+          rw [encTy_var, show off + q + c.label = off + (c.label + q) by omega]
+          rfl
+        · have hc : c.children ≠ [] := by rw [hcc]; exact List.cons_ne_nil _ _
+          rw [FreeTopos.Internal.substF_node_zero_of_not _ hc] at h
+          obtain ⟨i, hds, -⟩ := encTy_zero_inv h
+          rw [List.cons.injEq] at hds
+          exact absurd (by rw [hds.1]; rfl) hc
+      · rw [FreeTopos.Internal.substF_node_zero_other _ fun _ ↦
+          FreeTopos.Internal.cons_cons_ne_singleton] at h
+        obtain ⟨i, hds, -⟩ := encTy_zero_inv h
+        exact absurd hds FreeTopos.Internal.cons_cons_ne_singleton
+    rw [substF_node_succ] at h
+    rcases encTy_node_eq_some h with ⟨h₁, -⟩ | ⟨h₁, hcs, rfl⟩ |
+        ⟨h₁, a₁, a₂, hcs, rfl⟩ | ⟨h₁, a₁, a₂, hcs, rfl⟩ | ⟨h₁, hcs, rfl⟩ | ⟨h₁, hcs, rfl⟩ |
+        ⟨h₁, a₁, hcs, rfl⟩ | ⟨h₁, hcs, rfl⟩ | ⟨h₁, a₁, hcs, rfl⟩ | ⟨h₁, hcs, rfl⟩ |
+        ⟨h₁, a₁, a₂, hcs, rfl⟩
+    · exact absurd h₁ (Nat.succ_ne_zero k)
+    all_goals
+      obtain rfl := Nat.succ.inj h₁
+    · obtain rfl := List.map_eq_nil_iff.mp hcs
+      rfl
+    · obtain ⟨d₁, d₂, hds, h₁, h₂⟩ := map_encTy_eq_two hcs
+      obtain ⟨c₁, c₂, rfl, rfl, rfl⟩ : ∃ c₁ c₂, cs = [c₁, c₂] ∧ substF _ c₁ = d₁ ∧
+          substF _ c₂ = d₂ := by
+        rcases cs with _ | ⟨c₁, _ | ⟨c₂, _ | ⟨c₃, cs⟩⟩⟩
+        · exact absurd (congrArg List.length hds) (by simp)
+        · exact absurd (congrArg List.length hds) (by simp)
+        · simp only [List.map_cons, List.map_nil, List.cons.injEq, and_true] at hds
+          exact ⟨c₁, c₂, rfl, hds.1, hds.2⟩
+        · exact absurd (congrArg List.length hds) (by simp)
+      change encTy (off + q) (FreeTopos.prod c₁ c₂) = _
+      rw [encTy_prod, ih c₁ (by simp) a₁ h₁, ih c₂ (by simp) a₂ h₂]
+      rfl
+    · obtain ⟨d₁, d₂, hds, h₁, h₂⟩ := map_encTy_eq_two hcs
+      obtain ⟨c₁, c₂, rfl, rfl, rfl⟩ : ∃ c₁ c₂, cs = [c₁, c₂] ∧ substF _ c₁ = d₁ ∧
+          substF _ c₂ = d₂ := by
+        rcases cs with _ | ⟨c₁, _ | ⟨c₂, _ | ⟨c₃, cs⟩⟩⟩
+        · exact absurd (congrArg List.length hds) (by simp)
+        · exact absurd (congrArg List.length hds) (by simp)
+        · simp only [List.map_cons, List.map_nil, List.cons.injEq, and_true] at hds
+          exact ⟨c₁, c₂, rfl, hds.1, hds.2⟩
+        · exact absurd (congrArg List.length hds) (by simp)
+      change encTy (off + q) (FreeTopos.exp c₁ c₂) = _
+      rw [encTy_exp, ih c₁ (by simp) a₁ h₁, ih c₂ (by simp) a₂ h₂]
+      rfl
+    · obtain rfl := List.map_eq_nil_iff.mp hcs
+      rfl
+    · obtain rfl := List.map_eq_nil_iff.mp hcs
+      rfl
+    · obtain ⟨d₁, hds, h₁⟩ := map_encTy_eq_one hcs
+      obtain ⟨c₁, rfl, rfl⟩ : ∃ c₁, cs = [c₁] ∧ substF _ c₁ = d₁ := by
+        rcases cs with _ | ⟨c₁, _ | ⟨c₂, cs⟩⟩
+        · exact absurd hds FreeTopos.Internal.nil_ne_singleton
+        · simp only [List.map_cons, List.map_nil, List.cons.injEq, and_true] at hds
+          exact ⟨c₁, rfl, hds⟩
+        · exact absurd hds FreeTopos.Internal.cons_cons_ne_singleton
+      change encTy (off + q) (FreeTopos.list c₁) = _
+      rw [encTy_list, ih c₁ (by simp) a₁ h₁]
+      rfl
+    · obtain rfl := List.map_eq_nil_iff.mp hcs
+      rfl
+    · obtain ⟨d₁, hds, h₁⟩ := map_encTy_eq_one hcs
+      obtain ⟨c₁, rfl, rfl⟩ : ∃ c₁, cs = [c₁] ∧ substF _ c₁ = d₁ := by
+        rcases cs with _ | ⟨c₁, _ | ⟨c₂, cs⟩⟩
+        · exact absurd hds FreeTopos.Internal.nil_ne_singleton
+        · simp only [List.map_cons, List.map_nil, List.cons.injEq, and_true] at hds
+          exact ⟨c₁, rfl, hds⟩
+        · exact absurd hds FreeTopos.Internal.cons_cons_ne_singleton
+      change encTy (off + q) (FreeTopos.lrose c₁) = _
+      rw [encTy_lrose, ih c₁ (by simp) a₁ h₁]
+      rfl
+    · obtain rfl := List.map_eq_nil_iff.mp hcs
+      rfl
+    · obtain ⟨d₁, d₂, hds, h₁, h₂⟩ := map_encTy_eq_two hcs
+      obtain ⟨c₁, c₂, rfl, rfl, rfl⟩ : ∃ c₁ c₂, cs = [c₁, c₂] ∧ substF _ c₁ = d₁ ∧
+          substF _ c₂ = d₂ := by
+        rcases cs with _ | ⟨c₁, _ | ⟨c₂, _ | ⟨c₃, cs⟩⟩⟩
+        · exact absurd (congrArg List.length hds) (by simp)
+        · exact absurd (congrArg List.length hds) (by simp)
+        · simp only [List.map_cons, List.map_nil, List.cons.injEq, and_true] at hds
+          exact ⟨c₁, c₂, rfl, hds.1, hds.2⟩
+        · exact absurd (congrArg List.length hds) (by simp)
+      change encTy (off + q) (FreeTopos.coprod c₁ c₂) = _
+      rw [encTy_coprod, ih c₁ (by simp) a₁ h₁, ih c₂ (by simp) a₂ h₂]
+      rfl
+
+/-- Lists of one length whose elements at each position are related are related pointwise. -/
+theorem forall₂_of_getElem {α β : Type} {R : α → β → Prop} :
+    ∀ {xs : List α} {ys : List β}, xs.length = ys.length →
+      (∀ i (h₁ : i < xs.length) (h₂ : i < ys.length), R xs[i] ys[i]) → List.Forall₂ R xs ys := by
+  intro xs
+  refine List.rec (motive := fun xs ↦ ∀ {ys : List β}, xs.length = ys.length →
+      (∀ i (h₁ : i < xs.length) (h₂ : i < ys.length), R xs[i] ys[i]) → List.Forall₂ R xs ys)
+    (fun {ys} hl _ ↦ by
+      obtain rfl := List.length_eq_zero_iff.mp hl.symm
+      exact .nil)
+    (fun x xs ih {ys} hl h ↦ ?_) xs
+  rcases ys with _ | ⟨y, ys⟩
+  · exact absurd hl (by simp)
+  · exact .cons (h 0 (by simp) (by simp))
+      (ih (Nat.succ.inj hl) fun i h₁ h₂ ↦ h (i + 1) (by simpa using h₁) (by simpa using h₂))
+
+/-- The first {lit}`m + p` elements of a list are its first {lit}`m` and, after them, the next
+{lit}`p`. -/
+theorem take_add' {α : Type} (p : ℕ) :
+    ∀ (m : ℕ) (l : List α), l.take (m + p) = l.take m ++ (l.drop m).take p :=
+  Nat.rec (fun l ↦ by rw [Nat.zero_add, List.take_zero, List.drop_zero, List.nil_append])
+    fun m ih l ↦ by
+      rcases l with _ | ⟨x, l⟩
+      · rw [List.take_nil, List.take_nil, List.drop_nil, List.take_nil, List.nil_append]
+      · rw [Nat.succ_add, List.take_succ_cons, List.take_succ_cons, List.drop_succ_cons, ih l,
+          List.cons_append]
+
+/-- The declaration of a theorem of the language: the products over the kind of types, one for
+each of its object variables, of the products over the families of terms of its variables'
+types, the outermost first, each encoded at the offset of the variables outside it, of the
+products over the families of proofs of its hypotheses into the family of proofs of its
 conclusion, the formulas encoded in the scope of the variables. -/
 def thmTy (G : Globals) (k : PrimIdx) (a : Thm) : Option Expr := do
-  let ΓT ← encCtx 0 a.ctx
-  let Hs ← a.hyps.mapM fun h ↦ enc G 0 k h (ctxObj a.ctx) (stdEnv a.ctx)
-  let C ← enc G 0 k a.concl (ctxObj a.ctx) (stdEnv a.ctx)
+  let ΓT ← encCtx a.arity a.ctx
+  let Hs ← a.hyps.mapM fun h ↦ enc G a.arity k h (ctxObj a.ctx) (stdEnv a.ctx)
+  let C ← enc G a.arity k a.concl (ctxObj a.ctx) (stdEnv a.ctx)
   pure (piTele ΓT.reverse (arrows (Hs.map pf) (pf C)))
 
 /-- The parts of the declaration of a theorem. -/
 theorem thmTy_eq_some {G : Globals} {k : PrimIdx} {a : Thm} {T : Expr} (h : thmTy G k a = some T) :
-    ∃ ΓT Hs C, encCtx 0 a.ctx = some ΓT ∧
-      a.hyps.mapM (fun h ↦ enc G 0 k h (ctxObj a.ctx) (stdEnv a.ctx)) = some Hs ∧
-      enc G 0 k a.concl (ctxObj a.ctx) (stdEnv a.ctx) = some C ∧
+    ∃ ΓT Hs C, encCtx a.arity a.ctx = some ΓT ∧
+      a.hyps.mapM (fun h ↦ enc G a.arity k h (ctxObj a.ctx) (stdEnv a.ctx)) = some Hs ∧
+      enc G a.arity k a.concl (ctxObj a.ctx) (stdEnv a.ctx) = some C ∧
       T = piTele ΓT.reverse (arrows (Hs.map pf) (pf C)) := by
   simp only [thmTy, Option.bind_eq_bind, Option.pure_def, Option.bind_eq_some_iff,
     Option.some.injEq] at h
@@ -611,12 +1688,11 @@ theorem thmTy_eq_some {G : Globals} {k : PrimIdx} {a : Thm} {T : Expr} (h : thmT
 
 /-- An extension of the signature declares the theorems that the table of the indices names:
 the declaration at each position past the signature is that of the theorem of the entry at the
-table's position, a well-formed theorem in no object variables of as many variables as the table
+table's position, a well-formed theorem of as many object variables and variables as the table
 records. -/
 def ThmsDecl (G : Globals) (E : Array Entry) (k : PrimIdx) (sg : Sig) : Prop :=
-  ∀ i T, sg[sig.length + i]? = some T → ∃ j a, k.thms[i]? = some (j, a.ctx.length) ∧
-    (E[j]?).bind Entry.language? = some a ∧ a.arity = 0 ∧ a.wellFormed G = true ∧
-      thmTy G k a = some T
+  ∀ i T, sg[sig.length + i]? = some T → ∃ j a, k.thms[i]? = some (j, a.arity, a.ctx.length) ∧
+    (E[j]?).bind Entry.language? = some a ∧ a.wellFormed G = true ∧ thmTy G k a = some T
 
 /-- The signature declares no theorems past itself. -/
 theorem thmsDecl_sig (G : Globals) (E : Array Entry) (k : PrimIdx) : ThmsDecl G E k sig :=

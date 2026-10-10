@@ -3954,9 +3954,17 @@ term returned checked:
   * Found, 6.3 s, by induction and congruence
 *
   * `foldr cons nil (foldr cons nil xs) = xs`, the theorem
-    `foldr cons nil xs = xs` declared past the signature
-  * Found, 335 ms, by the theorem twice and substitution of equals
-  * Found, 306 ms, the same
+    `foldr cons nil xs = xs` for every element type declared past the
+    signature
+  * Found, 279 ms, by the theorem at `nat` twice and substitution of
+    equals
+  * Found, 193 ms, the same
+*
+  * `foldr cons nil (foldr cons nil xs) = xs` for every element type,
+    with the same theorem
+  * Found, 156 ms, by the theorem at the object variable twice and
+    substitution of equals
+  * Found, 319 ms, the same
 :::
 
 Every term found for a goal of the internal fragment decoded to a
@@ -4061,6 +4069,14 @@ its proofs, in this order:
    and its application decodes to the language's application of the
    theorem's entry. The soundness of the decoding of proofs holds in
    every extension of the signature by such theorems.
+10. Complete. Earlier theorems in object variables: the declaration of a
+    theorem begins with a product over `tp` for each object variable,
+    and its application decodes to the application of the theorem's
+    entry at the types its leading arguments decode to. Decoding
+    commutes with the substitution of a type for an object variable,
+    the types substituted where the context's variables of terms and
+    proofs are renamed away, so the soundness of the decoding of proofs
+    holds for theorems at every arity.
 
 The route remains an experiment; the Geb-native refinement below is the
 implementation meant to last, and the signature's measurements inform
