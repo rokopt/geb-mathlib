@@ -101,6 +101,9 @@ def goals : List Goal :=
       (lam nat nat (Expr.lam (app nat nat (lam nat nat (Expr.lam (v 0))) (v 0)))))⟩,
     ⟨"foldr cons nil xs = xs", pi (tm (list nat))
       (pf (eq (list nat) (listRec nat (list nat) (nil nat) consLam (v 0)) (v 0)))⟩,
+    ⟨"foldr cons nil xs = xs, for every element type", pi tp (pi (tm (list (v 0)))
+      (pf (eq (list (v 1)) (listRec (v 1) (list (v 1)) (nil (v 1))
+        (Expr.lam (Expr.lam (cons (v 3) (pair (v 3) (list (v 3)) (v 1) (v 0))))) (v 0)) (v 0))))⟩,
     -- the uniqueness of the right fold, its hypothesis at a construction an equation of functions
     ⟨"uniqueness of the right fold", pi (tm nat) (pi (tm (exp nat (exp nat nat)))
       (pi (tm (exp (list nat) nat))
@@ -141,24 +144,33 @@ def lfBody (e : Expr) : Option Expr := match e.label, e.children with
   | .lam, [b] => some b
   | _, _ => none
 
+/-- Whether a parameter is of `tp`, an object variable. -/
+def isTpParam (p : Expr) : Bool := match p.label, p.children with
+  | .app (.const 0), [] => true
+  | _, _ => false
+
 /-- The theorem of the internal language that a goal states, with the environment of its
-parameters: a parameter of `tm A` is a variable of the type `A` decodes to, and one of
-`pf F` a hypothesis, `F` decoded after its weakening past the parameters after it. A goal
-with a parameter of another type, or whose body is not a family of proofs, states none. -/
+parameters: its outermost parameters of `tp` are the theorem's object variables, a parameter of
+`tm A` inside them is a variable of the type `A` decodes to, at the offset of the parameters
+of terms and proofs before it, and one of `pf F` a hypothesis, `F` decoded after its weakening
+past the parameters after it. A goal with a parameter of another type, or of `tp` inside one of
+`tm` or `pf`, or whose body is not a family of proofs, states none. -/
 def internalThm (goal : Expr) : Option (List (Option ℕ) × FreeTopos.Internal.Thm) := do
   let (ps, body) := telescope goal
   let F ← match body.label, body.children with
     | .app (.const 17), [F] => some F
     | _, _ => none
+  let nObj := (ps.takeWhile isTpParam).length
+  let ps := ps.drop nObj
   let n := ps.length
   let (env, Γ, Φ) ← ps.zipIdx.foldlM (init := (([] : List (Option ℕ)), ([] : List _),
       ([] : List (Expr × ℕ)))) fun (env, Γ, Φ) (p, j) ↦
     match p.label, p.children with
-      | .app (.const 6), [A] => do pure (none :: env, (← decTy A) :: Γ, Φ)
+      | .app (.const 6), [A] => do pure (none :: env, (← decTy env.length A) :: Γ, Φ)
       | .app (.const 17), [P] => some (some Φ.length :: env, Γ, (P, n - 1 - j) :: Φ)
       | _, _ => none
   let hyps ← Φ.reverse.mapM fun (P, i) ↦ termOf toposIdx env (Expr.rename P (· + (i + 1)))
-  pure (env, ⟨0, Γ, hyps, ← termOf toposIdx env F⟩)
+  pure (env, ⟨nObj, Γ, hyps, ← termOf toposIdx env F⟩)
 
 /-- The verdict of the internal language's checkers on a term found for a goal: the term's
 abstractions over the goal's parameters removed, its body decoded in their environment and the
@@ -168,7 +180,7 @@ def internalVerdict (modulo : Bool) (goal term : Expr) : String :=
   match internalThm goal with
     | none => "outside the internal fragment"
     | some (env, thm) =>
-      let body := (List.range env.length).foldlM (fun e _ ↦ lfBody e) term
+      let body := (List.range (thm.arity + env.length)).foldlM (fun e _ ↦ lfBody e) term
       let verdict := if modulo then
           (body >>= fun b ↦ decPfMod toposIdx b env thm.hyps.length).map
             (thm.convChecks toposGlobals #[])

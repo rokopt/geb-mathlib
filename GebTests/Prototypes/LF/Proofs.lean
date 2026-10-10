@@ -51,18 +51,23 @@ def pfIdx : PrimIdx := ⟨0, 1, 2, 3, 4, 5, 6, 7, 8⟩
 /-- The successor as an LF abstraction. -/
 def succLam : Expr := Expr.lam (succ (v 0))
 
+/-- Whether a proof, in an LF context of {lit}`n` variables of {lit}`tp` and term variables of the
+types of {lit}`Γ`, decodes to a derivation that proves the decoding of an equation in the
+internal context {lit}`Γ` in {lit}`n` object variables. -/
+def provesIn (n : ℕ) (Γ : List PartialHorn.Tree) (M F : Expr) : Bool :=
+  match decPf pfIdx M (Γ.map fun _ ↦ none) 0, dec pfIdx F Γ.length with
+    | some D, some φ => Thm.checks pfGlobals #[] ⟨n, Γ, [], φ⟩ D
+    | _, _ => false
+
 /-- Whether a proof, in an LF context of term variables of the types of {lit}`Γ`, decodes to a
 derivation that proves the decoding of an equation in the internal context {lit}`Γ`. -/
-def proves (Γ : List PartialHorn.Tree) (M F : Expr) : Bool :=
-  match decPf pfIdx M (Γ.map fun _ ↦ none) 0, dec pfIdx F with
-    | some D, some φ => Thm.checks pfGlobals #[] ⟨0, Γ, [], φ⟩ D
-    | _, _ => false
+def proves (Γ : List PartialHorn.Tree) (M F : Expr) : Bool := provesIn 0 Γ M F
 
 /-- Whether a proof modulo the rules, in an LF context of term variables of the types of
 {lit}`Γ`, decodes to a certificate with steps of conversion that proves the decoding of an equation
 in the internal context {lit}`Γ`. -/
 def provesMod (Γ : List PartialHorn.Tree) (M F : Expr) : Bool :=
-  match decPfMod pfIdx M (Γ.map fun _ ↦ none) 0, dec pfIdx F with
+  match decPfMod pfIdx M (Γ.map fun _ ↦ none) 0, dec pfIdx F Γ.length with
     | some D, some φ => Thm.convChecks pfGlobals #[] ⟨0, Γ, [], φ⟩ D
     | _, _ => false
 
@@ -243,6 +248,24 @@ def zeroFn : Expr := lam nat nat zeroLam
   (Expr.const 55 [nat, nat, Expr.lam (eq nat (caseNat zeroFn zeroFn (v 0)) zero),
     Expr.lam (Expr.const 18 [nat, zero]), Expr.lam (Expr.const 18 [nat, zero]), v 0])
   (eq nat (caseNat zeroFn zeroFn (v 0)) zero)
+
+-- `t = t` for a term `t` of the type of an object variable, by reflexivity: the LF context's
+-- variable of `tp`, outermost, is the object variable.
+#guard provesIn 1 [PartialHorn.var 0] (Expr.const 18 [v 1, v 0]) (eq (v 1) (v 0) (v 0))
+
+/-- The construction of a list as a step of a fold, at the type of the LF variable of index
+{lit}`a` outside the step: {lit}`λ h r. cons A (pair h r)`. -/
+def consLamAt (a : ℕ) : Expr :=
+  Expr.lam (Expr.lam (cons (v (a + 2)) (pair (v (a + 2)) (list (v (a + 2))) (v 1) (v 0))))
+
+-- `foldr cons nil nil = nil` at the list type of an object variable, by the computation of the
+-- fold at the empty list.
+#guard provesIn 1 [] (Expr.const 34 [v 0, list (v 0), nil (v 0), consLamAt 0])
+  (eq (list (v 0)) (listRec (v 0) (list (v 0)) (nil (v 0)) (consLamAt 0) (nil (v 0))) (nil (v 0)))
+
+-- The same in no object variables does not hold: the type mentions an object variable.
+#guard !provesIn 0 [] (Expr.const 34 [v 0, list (v 0), nil (v 0), consLamAt 0])
+  (eq (list (v 0)) (listRec (v 0) (list (v 0)) (nil (v 0)) (consLamAt 0) (nil (v 0))) (nil (v 0)))
 
 -- `n + 0 = n` by reflexivity holds by computation: the conversion checker accepts it, and the base
 -- checker, which does not compute, rejects it.

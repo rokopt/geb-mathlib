@@ -116,7 +116,7 @@ def decPfModStep (l : Label) (cs : List (Expr × (List (Option ℕ) → ℕ → 
     | .app (.const 18), [_, _] => some (eqvC k)
     | .app (.const 19), [(A, _), (P, _), (t, _), (u, _), (_, dh), (_, dp)] => do
       let pb ← lamBody (← termOf k env P)
-      pure (leibC k (← decTy A) pb (← termOf k env t) (← termOf k env u) m (← dh env m)
+      pure (leibC k (← decTy env.length A) pb (← termOf k env t) (← termOf k env u) m (← dh env m)
         (← dp env (m + 1)))
     | .app (.const 20), [_, _, _, _] => some (eqvC k)
     | .app (.const 21), [_, _, _, _] => some (eqvC k)
@@ -136,7 +136,7 @@ def decPfModStep (l : Label) (cs : List (Expr × (List (Option ℕ) → ℕ → 
     | .app (.const 34), [_, _, _, _] => some (eqvC k)
     | .app (.const 35), [_, _, _, _, _, _] => some (eqvC k)
     | .app (.const 36), [(A, _), (P, _), (_, d₀), (_, ds), (l, _)] => do
-      let a ← decTy A
+      let a ← decTy env.length A
       let pb ← lamBody (← termOf k env P)
       pure (indC k (FreeTopos.list a) (.listIndHyp k.nil k.cons) pb (← termOf k env l) m
         [← d₀ env (m + 1), ← ds (some (m + 1) :: none :: none :: env) (m + 2)])
@@ -147,20 +147,20 @@ def decPfModStep (l : Label) (cs : List (Expr × (List (Option ℕ) → ℕ → 
         [← ds (some (m + 1) :: none :: none :: env) (m + 2)])
     | .app (.const 45), [_, _, _, _, _] => some (eqvC k)
     | .app (.const 46), [(A, _), (P, _), (_, ds), (t, _)] => do
-      let a ← decTy A
+      let a ← decTy env.length A
       let pb ← lamBody (← termOf k env P)
       pure (indC k (FreeTopos.lrose a) (.roseIndHyp k.lnode k.nil k.cons) pb (← termOf k env t) m
         [← ds (some (m + 1) :: none :: none :: env) (m + 2)])
     | .app (.const 47), [(A, _), _, (f, _), (a, _), (b, _), (_, dh)] => do
       let fb ← lamBody (← termOf k env f)
       let sa ← termOf k env a
-      pure (leibC k (← decTy A) (congMotive fb sa) sa (← termOf k env b) m (← dh env m)
+      pure (leibC k (← decTy env.length A) (congMotive fb sa) sa (← termOf k env b) m (← dh env m)
         (eqvC k))
     | .app (.const 53), [_, _, _, _, _, _] => some (eqvC k)
     | .app (.const 54), [_, _, _, _, _, _] => some (eqvC k)
     | .app (.const 55), [(A, _), (B, _), (P, _), (_, d₁), (_, d₂), (c, _)] => do
-      let a ← decTy A
-      let b ← decTy B
+      let a ← decTy env.length A
+      let b ← decTy env.length B
       let pb ← lamBody (← termOf k env P)
       pure (indC k (FreeTopos.coprod a b) (.coprodInd k.inl k.inr) pb (← termOf k env c) m
         [← d₁ (none :: env) (m + 1), ← d₂ (none :: env) (m + 1)])

@@ -597,10 +597,10 @@ theorem subst_rename_liftR_var0 {pb : Term} (h : Term.VarLeaves pb = true) :
 motive in the context extended by a variable of its type, under the hypotheses weakened past it
 and the hypothesis true, which the derivation's cut and propositional extensionality add. -/
 theorem check_indD {c : PartialHorn.Tree} {r : FreeTopos.Internal.Rule} {pb n' : Term}
-    {Ds : List Deriv} (hc : FreeTopos.Internal.IsTy G 0 c = true)
-    (hpb : typeIn G 0 (c :: Γ) pb = some FreeTopos.omega) (hn : typeIn G 0 Γ n' = some c)
-    (hind : (check G E 0 (nd r Ds)).2 (c :: Γ) (Φ.map weaken1 ++ [truth]) pb = true) :
-    (check G E 0 (indD c r pb n' Φ.length Ds)).2 Γ Φ (Term.subst pb (instVar n')) =
+    {Ds : List Deriv} (hc : FreeTopos.Internal.IsTy G n c = true)
+    (hpb : typeIn G n (c :: Γ) pb = some FreeTopos.omega) (hn : typeIn G n Γ n' = some c)
+    (hind : (check G E n (nd r Ds)).2 (c :: Γ) (Φ.map weaken1 ++ [truth]) pb = true) :
+    (check G E n (indD c r pb n' Φ.length Ds)).2 Γ Φ (Term.subst pb (instVar n')) =
       true := by
   have hL := typeIn_lam (Γ := Γ) hc hpb
   have hR := typeIn_lam (Γ := Γ) hc (typeIn_truth (G := G) (Γ := c :: Γ))
@@ -619,8 +619,8 @@ theorem check_indD {c : PartialHorn.Tree} {r : FreeTopos.Internal.Rule} {pb n' :
 /-- The hypotheses weakened past a variable, with the hypothesis true, lower to the hypotheses
 with it. -/
 theorem lowerHyps_truth
-    (hΦ : ∀ φ ∈ Φ, typeIn G 0 Γ φ = some FreeTopos.omega) :
-    FreeTopos.Internal.lowerHyps G 0 Γ (Φ.map weaken1 ++ [truth]) = some (Φ ++ [truth]) := by
+    (hΦ : ∀ φ ∈ Φ, typeIn G n Γ φ = some FreeTopos.omega) :
+    FreeTopos.Internal.lowerHyps G n Γ (Φ.map weaken1 ++ [truth]) = some (Φ ++ [truth]) := by
   rw [show Φ.map weaken1 ++ [truth] = (Φ ++ [truth]).map weaken1 by rw [List.map_append]; rfl]
   refine lowerHyps_map_weaken1 fun φ hφ ↦ ?_
   rcases List.mem_append.mp hφ with hφ | hφ
@@ -632,16 +632,16 @@ theorem lowerHyps_truth
 zero and its step, each under the hypothesis true, which the derivation's cut adds. -/
 theorem check_natIndD {k : PrimIdx} (hz : G.prims[k.zero]? = some FreeTopos.Internal.zeroPrim)
     (hs : G.prims[k.succ]? = some FreeTopos.Internal.succPrim) {pb n' : Term} {D₀ Ds : Deriv}
-    (hpb : typeIn G 0 (FreeTopos.nat :: Γ) pb = some FreeTopos.omega)
-    (hn : typeIn G 0 Γ n' = some FreeTopos.nat)
-    (hΦ : ∀ φ ∈ Φ, typeIn G 0 Γ φ = some FreeTopos.omega)
-    (hD₀ : (check G E 0 D₀).2 Γ (Φ ++ [truth])
+    (hpb : typeIn G n (FreeTopos.nat :: Γ) pb = some FreeTopos.omega)
+    (hn : typeIn G n Γ n' = some FreeTopos.nat)
+    (hΦ : ∀ φ ∈ Φ, typeIn G n Γ φ = some FreeTopos.omega)
+    (hD₀ : (check G E n D₀).2 Γ (Φ ++ [truth])
       (Term.subst pb (instVar (Term.arr k.zero [] Term.star))) = true)
-    (hDs : (check G E 0 Ds).2 (FreeTopos.nat :: Γ) (Φ.map weaken1 ++ [truth] ++ [pb])
+    (hDs : (check G E n Ds).2 (FreeTopos.nat :: Γ) (Φ.map weaken1 ++ [truth] ++ [pb])
       (FreeTopos.Internal.natSuccAt k.succ pb) = true) :
-    (check G E 0 (indD FreeTopos.nat (.natIndHyp k.zero k.succ) pb n' Φ.length [D₀, Ds])).2 Γ Φ
+    (check G E n (indD FreeTopos.nat (.natIndHyp k.zero k.succ) pb n' Φ.length [D₀, Ds])).2 Γ Φ
       (Term.subst pb (instVar n')) = true :=
-  check_indD (isTy_of_encTy G FreeTopos.nat nat rfl) hpb hn
+  check_indD FreeTopos.Internal.isTy_nat hpb hn
     (check_natIndHyp (lowerHyps_truth hΦ) hz hs hpb hD₀ hDs)
 
 /-- The induction on a list at a term: the motive at {lit}`n'`, from its base at the empty list
@@ -649,16 +649,16 @@ and its step at a construction, each under the hypothesis true, which the deriva
 adds. -/
 theorem check_listIndD {k : PrimIdx} (hn : G.prims[k.nil]? = some FreeTopos.Internal.nilPrim)
     (hc : G.prims[k.cons]? = some FreeTopos.Internal.consPrim) {a : PartialHorn.Tree}
-    (ha : FreeTopos.Internal.IsTy G 0 (FreeTopos.list a) = true) {pb n' : Term} {D₀ Ds : Deriv}
-    (hpb : typeIn G 0 (FreeTopos.list a :: Γ) pb = some FreeTopos.omega)
-    (hn' : typeIn G 0 Γ n' = some (FreeTopos.list a))
-    (hΦ : ∀ φ ∈ Φ, typeIn G 0 Γ φ = some FreeTopos.omega)
-    (hD₀ : (check G E 0 D₀).2 Γ (Φ ++ [truth])
+    (ha : FreeTopos.Internal.IsTy G n (FreeTopos.list a) = true) {pb n' : Term} {D₀ Ds : Deriv}
+    (hpb : typeIn G n (FreeTopos.list a :: Γ) pb = some FreeTopos.omega)
+    (hn' : typeIn G n Γ n' = some (FreeTopos.list a))
+    (hΦ : ∀ φ ∈ Φ, typeIn G n Γ φ = some FreeTopos.omega)
+    (hD₀ : (check G E n D₀).2 Γ (Φ ++ [truth])
       (Term.subst pb (instVar (Term.arr k.nil [a] Term.star))) = true)
-    (hDs : (check G E 0 Ds).2 (FreeTopos.list a :: a :: Γ)
+    (hDs : (check G E n Ds).2 (FreeTopos.list a :: a :: Γ)
       ((Φ ++ [truth]).map FreeTopos.Internal.weaken2 ++ [FreeTopos.Internal.weakenElem pb])
       (FreeTopos.Internal.listConsAt k.cons a pb) = true) :
-    (check G E 0 (indD (FreeTopos.list a) (.listIndHyp k.nil k.cons) pb n' Φ.length
+    (check G E n (indD (FreeTopos.list a) (.listIndHyp k.nil k.cons) pb n' Φ.length
       [D₀, Ds])).2
       Γ Φ (Term.subst pb (instVar n')) = true :=
   check_indD ha hpb hn' (check_listIndHyp (lowerHyps_truth hΦ) hn hc hpb
@@ -673,15 +673,15 @@ theorem check_roseIndD {r a : PartialHorn.Tree} {F : PartialHorn.Tree → Partia
       (G.prims[kr]? = some FreeTopos.Internal.lnodePrim ∧ r = FreeTopos.lrose a))
     (hn : G.prims[kn]? = some FreeTopos.Internal.nilPrim)
     (hc : G.prims[kc]? = some FreeTopos.Internal.consPrim)
-    (hrt : FreeTopos.Internal.IsTy G 0 r = true) {pb n' : Term} {Ds : Deriv}
-    (hpb : typeIn G 0 (r :: Γ) pb = some FreeTopos.omega)
-    (hn' : typeIn G 0 Γ n' = some r)
-    (hΦ : ∀ φ ∈ Φ, typeIn G 0 Γ φ = some FreeTopos.omega)
-    (hDs : (check G E 0 Ds).2 (FreeTopos.list r :: a :: Γ)
+    (hrt : FreeTopos.Internal.IsTy G n r = true) {pb n' : Term} {Ds : Deriv}
+    (hpb : typeIn G n (r :: Γ) pb = some FreeTopos.omega)
+    (hn' : typeIn G n Γ n' = some r)
+    (hΦ : ∀ φ ∈ Φ, typeIn G n Γ φ = some FreeTopos.omega)
+    (hDs : (check G E n Ds).2 (FreeTopos.list r :: a :: Γ)
       ((Φ ++ [truth]).map FreeTopos.Internal.weaken2 ++
         [FreeTopos.Internal.roseHyp kn kc pb])
       (FreeTopos.Internal.roseNodeAt kr r a pb) = true) :
-    (check G E 0 (indD r (.roseIndHyp kr kn kc) pb n' Φ.length [Ds])).2
+    (check G E n (indD r (.roseIndHyp kr kn kc) pb n' Φ.length [Ds])).2
       Γ Φ (Term.subst pb (instVar n')) = true :=
   check_indD hrt hpb hn' (check_roseIndHyp (lowerHyps_truth hΦ) hra hr hn hc hpb hDs)
 
@@ -689,15 +689,15 @@ theorem check_roseIndD {r a : PartialHorn.Tree} {F : PartialHorn.Tree → Partia
 injections of a fresh variable, under the hypothesis true, which the derivation's cut adds. -/
 theorem check_coprodIndD {k : PrimIdx} (hl : G.prims[k.inl]? = some FreeTopos.Internal.inlPrim)
     (hr : G.prims[k.inr]? = some FreeTopos.Internal.inrPrim) {a b : PartialHorn.Tree}
-    (hab : FreeTopos.Internal.IsTy G 0 (FreeTopos.coprod a b) = true) {pb n' : Term}
-    {D₀ D₁ : Deriv} (hpb : typeIn G 0 (FreeTopos.coprod a b :: Γ) pb = some FreeTopos.omega)
-    (hn' : typeIn G 0 Γ n' = some (FreeTopos.coprod a b))
-    (hΦ : ∀ φ ∈ Φ, typeIn G 0 Γ φ = some FreeTopos.omega)
-    (h₀ : (check G E 0 D₀).2 (a :: Γ) (Φ.map weaken1 ++ [truth])
+    (hab : FreeTopos.Internal.IsTy G n (FreeTopos.coprod a b) = true) {pb n' : Term}
+    {D₀ D₁ : Deriv} (hpb : typeIn G n (FreeTopos.coprod a b :: Γ) pb = some FreeTopos.omega)
+    (hn' : typeIn G n Γ n' = some (FreeTopos.coprod a b))
+    (hΦ : ∀ φ ∈ Φ, typeIn G n Γ φ = some FreeTopos.omega)
+    (h₀ : (check G E n D₀).2 (a :: Γ) (Φ.map weaken1 ++ [truth])
       (Term.subst pb (FreeTopos.Internal.atVar0 (Term.arr k.inl [a, b] (Term.var 0)))) = true)
-    (h₁ : (check G E 0 D₁).2 (b :: Γ) (Φ.map weaken1 ++ [truth])
+    (h₁ : (check G E n D₁).2 (b :: Γ) (Φ.map weaken1 ++ [truth])
       (Term.subst pb (FreeTopos.Internal.atVar0 (Term.arr k.inr [a, b] (Term.var 0)))) = true) :
-    (check G E 0 (indD (FreeTopos.coprod a b) (.coprodInd k.inl k.inr) pb n' Φ.length
+    (check G E n (indD (FreeTopos.coprod a b) (.coprodInd k.inl k.inr) pb n' Φ.length
       [D₀, D₁])).2 Γ Φ (Term.subst pb (instVar n')) = true :=
   check_indD hab hpb hn' (check_coprodInd (lowerHyps_truth hΦ) hl hr hpb h₀ h₁)
 
@@ -709,13 +709,13 @@ theorem subst_weaken1_instVar {t : Term} (ht : Term.VarLeaves t = true) (u : Ter
 
 /-- A formula from a term of the initial object: the formula as a motive at the term, true at a
 fresh variable of the initial type. -/
-theorem check_exfalsoD {φ z : Term} (hφ : typeIn G 0 Γ φ = some FreeTopos.omega)
-    (hz : typeIn G 0 Γ z = some FreeTopos.zero) :
-    (check G E 0 (indD FreeTopos.zero (.zeroInd 0) (weaken1 φ) z Φ.length [])).2 Γ Φ φ =
+theorem check_exfalsoD {φ z : Term} (hφ : typeIn G n Γ φ = some FreeTopos.omega)
+    (hz : typeIn G n Γ z = some FreeTopos.zero) :
+    (check G E n (indD FreeTopos.zero (.zeroInd 0) (weaken1 φ) z Φ.length [])).2 Γ Φ φ =
       true := by
-  have hw : typeIn G 0 (FreeTopos.zero :: Γ) (weaken1 φ) = some FreeTopos.omega :=
+  have hw : typeIn G n (FreeTopos.zero :: Γ) (weaken1 φ) = some FreeTopos.omega :=
     typeIn_rename hφ (fun _ _ ↦ rfl) fun _ _ h ↦ Nat.succ_lt_succ h
-  have h := check_indD (rfl : FreeTopos.Internal.IsTy G 0 FreeTopos.zero = true) hw hz
+  have h := check_indD FreeTopos.Internal.isTy_zero hw hz
     (Ds := []) (r := .zeroInd 0) (E := E) (Φ := Φ) (by
       rw [check_node]
       exact decide_eq_true_of ⟨rfl, hw⟩)

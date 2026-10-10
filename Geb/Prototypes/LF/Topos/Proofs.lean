@@ -14,11 +14,13 @@ set_option doc.verso true in
 
 The canonical LF terms of the families of proofs of {name}`Geb.LF.Topos.sig` decode to
 derivations of the internal language ({name}`Geb.FreeTopos.Internal.check`). An LF context of
-proofs declares variables of families of terms of the fragment's types and of families of proofs
-of its formulas, in any order; the first are the variables of the internal context, the second
-its hypotheses. The decoding of a proof carries an environment that gives, for each LF variable,
-whether it is a term variable or the index of its hypothesis, and the number of hypotheses, which
-grows where the derivation a rule decodes to adds one of its own by a cut.
+proofs declares, outermost, variables of {lit}`tp`, the internal language's object variables, and
+inside them variables of families of terms of the fragment's types and of families of proofs of
+its formulas, in any order; the second are the variables of the internal context, the third its
+hypotheses. The decoding of a proof carries an environment that gives, for each LF variable inside
+the variables of {lit}`tp`, whether it is a term variable or the index of its hypothesis, and the
+number of hypotheses, which grows where the derivation a rule decodes to adds one of its own by a
+cut. A type in the context decodes at the offset of the environment's variables.
 
 Each rule of the signature decodes to the derivation of its conclusion from its premises'
 decodings. Reflexivity, β, the computations of pairs and of the folds and the η rules decode to
@@ -72,10 +74,17 @@ def tmIdx : List (Option ℕ) → ℕ → ℕ :=
       | 0 => 0
       | j + 1 => r j
 
-/-- The decoding of an LF term in an LF context of proofs: its term variables renamed to the
-internal context's, then decoded. -/
+/-- The number of term variables of an environment. -/
+def numTm : List (Option ℕ) → ℕ :=
+  List.rec 0 fun o _ r ↦ match o with
+    | none => r + 1
+    | some _ => r
+
+/-- The decoding of an LF term in an LF context of proofs, whose variables past the environment
+are of {lit}`tp`: its term variables renamed to the internal context's, which moves the variables
+of {lit}`tp` past the term variables, then decoded at the offset of the term variables. -/
 def termOf (k : PrimIdx) (env : List (Option ℕ)) (e : Expr) : Option MTerm :=
-  dec k (e.rename (tmIdx env))
+  dec k (e.rename (tmIdx env)) (numTm env)
 
 /-- A derivation of a rule and its children. -/
 abbrev nd (r : FreeTopos.Internal.Rule) (cs : List Deriv) : Deriv := RoseTree.node r cs
@@ -141,8 +150,8 @@ def decPfStepCoprod (c : ℕ) (cs : List (Expr × (List (Option ℕ) → ℕ →
     | 53, [_, _, _, _, _, _] => some (joinD (ruleD (.caseInl k.case k.inl)) reflD)
     | 54, [_, _, _, _, _, _] => some (joinD (ruleD (.caseInr k.case k.inr)) reflD)
     | 55, [(A, _), (B, _), (P, _), (_, d₁), (_, d₂), (c, _)] => do
-      let a ← decTy A
-      let b ← decTy B
+      let a ← decTy env.length A
+      let b ← decTy env.length B
       let pb ← lamBody (← termOf k env P)
       pure (indD (FreeTopos.coprod a b) (.coprodInd k.inl k.inr) pb (← termOf k env c) m
         [← d₁ (none :: env) (m + 1), ← d₂ (none :: env) (m + 1)])
@@ -162,7 +171,7 @@ def decPfStep (l : Label) (cs : List (Expr × (List (Option ℕ) → ℕ → Opt
     | .app (.const 18), [_, _] => some (joinD reflD reflD)
     | .app (.const 19), [(A, _), (P, _), (t, _), (u, _), (_, dh), (_, dp)] => do
       let pb ← lamBody (← termOf k env P)
-      pure (leibD (← decTy A) pb (← termOf k env t) (← termOf k env u) m (← dh env m)
+      pure (leibD (← decTy env.length A) pb (← termOf k env t) (← termOf k env u) m (← dh env m)
         (← dp env (m + 1)))
     | .app (.const 20), [_, _, _, _] => some (joinD (ruleD .beta) reflD)
     | .app (.const 21), [_, _, _, _] => some (joinD (ruleD .fstPair) reflD)
@@ -182,7 +191,7 @@ def decPfStep (l : Label) (cs : List (Expr × (List (Option ℕ) → ℕ → Opt
     | .app (.const 34), [_, _, _, _] => some (joinD (ruleD (.listNil k.nil)) reflD)
     | .app (.const 35), [_, _, _, _, _, _] => some (joinD (ruleD (.listCons k.cons)) reflD)
     | .app (.const 36), [(A, _), (P, _), (_, d₀), (_, ds), (l, _)] => do
-      let a ← decTy A
+      let a ← decTy env.length A
       let pb ← lamBody (← termOf k env P)
       pure (indD (FreeTopos.list a) (.listIndHyp k.nil k.cons) pb (← termOf k env l) m
         [← d₀ env (m + 1), ← ds (some (m + 1) :: none :: none :: env) (m + 2)])
@@ -194,14 +203,14 @@ def decPfStep (l : Label) (cs : List (Expr × (List (Option ℕ) → ℕ → Opt
     | .app (.const 45), [_, _, _, _, _] =>
       some (joinD (ruleD (.roseNode k.lnode k.nil k.cons)) reflD)
     | .app (.const 46), [(A, _), (P, _), (_, ds), (t, _)] => do
-      let a ← decTy A
+      let a ← decTy env.length A
       let pb ← lamBody (← termOf k env P)
       pure (indD (FreeTopos.lrose a) (.roseIndHyp k.lnode k.nil k.cons) pb (← termOf k env t) m
         [← ds (some (m + 1) :: none :: none :: env) (m + 2)])
     | .app (.const 47), [(A, _), _, (f, _), (a, _), (b, _), (_, dh)] => do
       let fb ← lamBody (← termOf k env f)
       let sa ← termOf k env a
-      pure (leibD (← decTy A) (congMotive fb sa) sa (← termOf k env b) m (← dh env m)
+      pure (leibD (← decTy env.length A) (congMotive fb sa) sa (← termOf k env b) m (← dh env m)
         (joinD reflD reflD))
     | .app (.const c), cs => decPfStepCoprod k c cs env m
     | .lam, [(_, d)] => d env m
