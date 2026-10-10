@@ -43,6 +43,11 @@ an extension declaring them so is {lit}`SigExt`. An application of the definitio
 constant applied to the encodings of the objects, the outermost parameter's first, and then to
 the encodings of the terms, the first parameter's first ({lit}`decDefn`).
 
+The fragment's type operations are a table, each operation of the combinators paired with its
+number of arguments and the constant of the signature that encodes it ({lit}`tyConsts`): a type
+is encoded as the table's constant applied to the encodings of its arguments, and the proofs
+about the encoding of types treat every operation of the table alike.
+
 The encoding of terms ({lit}`enc`) is computed from the compilation, which supplies the types
 that the constants of the signature take as arguments; decoding ({lit}`dec`) forgets them. The
 fold of the signature is the fold of the language: its start a term of the fold's context and its
@@ -51,6 +56,7 @@ extended by the value, so that both may mention the variables around the fold.
 
 ## Main definitions
 
+* {lit}`tyConsts` — the type operations of the fragment and the constants that encode them.
 * {lit}`encTy`, {lit}`decTy` — the encoding of the fragment's types, and its inverse.
 * {lit}`enc`, {lit}`dec` — the encoding of the fragment's terms, and its inverse.
 * {lit}`ExtConst`, {lit}`defTy`, {lit}`SigExt` — the constants past the signature, the
@@ -82,143 +88,241 @@ namespace Geb.LF.Topos
 
 variable {sg : Sig}
 
+/-- The products over each of a list of domains, the outermost first, into a body. -/
+def piTele (Ds : List Expr) (R : Expr) : Expr := Ds.foldr Expr.pi R
+
+/-- The products over a list of domains, at its first. -/
+theorem piTele_cons (D : Expr) (Ds : List Expr) (R : Expr) :
+    piTele (D :: Ds) R = Expr.pi D (piTele Ds R) :=
+  rfl
+
+/-- A partial function's values on a list carry over, element by element, to another's values on
+the list's image. -/
+theorem mapM_transfer {α β γ δ : Type} {f : α → Option β} {g : γ → Option δ} {h : α → γ}
+    {r : β → δ} : ∀ {xs : List α} {ys : List β}, xs.mapM f = some ys →
+      (∀ x ∈ xs, ∀ y, f x = some y → g (h x) = some (r y)) →
+      (xs.map h).mapM g = some (ys.map r) := by
+  intro xs
+  refine List.rec (motive := fun xs ↦ ∀ {ys : List β}, xs.mapM f = some ys →
+      (∀ x ∈ xs, ∀ y, f x = some y → g (h x) = some (r y)) →
+      (xs.map h).mapM g = some (ys.map r))
+    (fun {ys} hm _ ↦ by obtain rfl := Option.some.inj hm.symm; rfl) (fun x xs ih {ys} hm hx ↦ ?_) xs
+  simp only [List.mapM_cons, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+    Option.some.injEq] at hm
+  obtain ⟨y, hy, ys', hys', rfl⟩ := hm
+  rw [List.map_cons, List.mapM_cons, hx x List.mem_cons_self y hy,
+    ih hys' fun x' hx' ↦ hx x' (List.mem_cons_of_mem _ hx')]
+  rfl
+
+/-- A list of the values of a partial function on a list is as long as the list. -/
+theorem length_of_mapM {α β : Type} {f : α → Option β} {xs : List α} {ys : List β}
+    (h : xs.mapM f = some ys) : ys.length = xs.length := by
+  have := congrArg List.length ((PartialHorn.mapM_eq_some_iff xs ys).mp h)
+  rw [List.length_map, List.length_map] at this
+  exact this.symm
+
+/-- A partial function's values on a list are undone by another, element by element, where the
+other undoes it. -/
+theorem mapM_inverse {α β : Type} {f : α → Option β} {g : β → Option α} :
+    ∀ {xs : List α} {ys : List β}, xs.mapM f = some ys →
+      (∀ x ∈ xs, ∀ y, f x = some y → g y = some x) → ys.mapM g = some xs := by
+  intro xs
+  refine List.rec (motive := fun xs ↦ ∀ {ys : List β}, xs.mapM f = some ys →
+      (∀ x ∈ xs, ∀ y, f x = some y → g y = some x) → ys.mapM g = some xs)
+    (fun {ys} hm _ ↦ by obtain rfl := Option.some.inj hm.symm; rfl) (fun x xs ih {ys} hm hx ↦ ?_) xs
+  simp only [List.mapM_cons, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+    Option.some.injEq] at hm
+  obtain ⟨y, hy, ys', hys', rfl⟩ := hm
+  rw [List.mapM_cons, hx x List.mem_cons_self y hy,
+    ih hys' fun x' hx' ↦ hx x' (List.mem_cons_of_mem _ hx')]
+  rfl
+
+/-- Each value of a partial function on a list is its value at an element. -/
+theorem mem_of_mapM {α β : Type} {f : α → Option β} {xs : List α} {ys : List β}
+    (h : xs.mapM f = some ys) : ∀ y ∈ ys, ∃ x ∈ xs, f x = some y := fun y hy ↦ by
+  have hm : some y ∈ xs.map f := by
+    rw [(PartialHorn.mapM_eq_some_iff xs ys).mp h]
+    exact List.mem_map_of_mem hy
+  obtain ⟨x, hx, hfx⟩ := List.mem_map.mp hm
+  exact ⟨x, hx, hfx⟩
+
+/-- A partial function whose values on a list are a list has a value there at each element. -/
+theorem exists_of_mapM {α β : Type} {f : α → Option β} {xs : List α} {ys : List β}
+    (h : xs.mapM f = some ys) : ∀ x ∈ xs, ∃ y ∈ ys, f x = some y := fun x hx ↦ by
+  have hm : f x ∈ ys.map some := by
+    rw [← (PartialHorn.mapM_eq_some_iff xs ys).mp h]
+    exact List.mem_map_of_mem hx
+  obtain ⟨y, hy, hfy⟩ := List.mem_map.mp hm
+  exact ⟨y, hy, hfy.symm⟩
+
+/-- A list each of whose elements is a value of a partial function at an argument of a property
+is the list of its values on a list of such arguments. -/
+theorem mapM_preimage {α β : Type} {f : α → Option β} {P : α → Prop} :
+    ∀ ys : List β, (∀ y ∈ ys, ∃ x, f x = some y ∧ P x) →
+      ∃ xs : List α, xs.mapM f = some ys ∧ ∀ x ∈ xs, P x := by
+  intro ys
+  refine List.rec (motive := fun ys ↦ (∀ y ∈ ys, ∃ x, f x = some y ∧ P x) →
+      ∃ xs : List α, xs.mapM f = some ys ∧ ∀ x ∈ xs, P x)
+    (fun _ ↦ ⟨[], rfl, fun _ h ↦ nomatch h⟩) (fun y ys ih h ↦ ?_) ys
+  obtain ⟨x, hx, hP⟩ := h y List.mem_cons_self
+  obtain ⟨xs, hxs, hPs⟩ := ih fun y' hy' ↦ h y' (List.mem_cons_of_mem _ hy')
+  refine ⟨x :: xs, by rw [List.mapM_cons, hx, hxs]; rfl, fun x' hx' ↦ ?_⟩
+  rcases List.mem_cons.mp hx' with rfl | hx'
+  · exact hP
+  · exact hPs x' hx'
+
+/-- The type operations of the fragment, each the index of an operation of the combinators, the
+number of its arguments and the index of the constant of the signature that encodes it: the
+terminal object, binary products, exponentials, the subobject classifier, the natural numbers
+object, list objects, the rose-tree object of natural-number labels, rose-tree objects of labels
+of a type, the initial object and binary coproducts. -/
+def tyConsts : List (ℕ × ℕ × ℕ) :=
+  [(4, 0, 1), (6, 2, 2), (22, 2, 3), (25, 0, 4), (29, 0, 5), (33, 1, 30), (37, 0, 37),
+    (40, 1, 42), (13, 0, 49), (15, 2, 48)]
+
+/-- The constant that encodes an operation applied to a number of arguments. -/
+def tyConst? (op m : ℕ) : Option ℕ :=
+  (tyConsts.find? fun t ↦ t.1 == op && t.2.1 == m).map fun t ↦ t.2.2
+
+/-- The operation that a constant applied to a number of arguments encodes. -/
+def tyOp? (c m : ℕ) : Option ℕ :=
+  (tyConsts.find? fun t ↦ t.2.2 == c && t.2.1 == m).map fun t ↦ t.1
+
+/-- An entry of the table is determined by its operation and number of arguments, and by its
+constant. -/
+theorem tyConsts_inj : ∀ t ∈ tyConsts, ∀ t' ∈ tyConsts,
+    (t.1 = t'.1 → t.2.1 = t'.2.1 → t = t') ∧ (t.2.2 = t'.2.2 → t = t') := by
+  decide
+
+/-- The search of the table for the entry of a property only it has finds it. -/
+theorem tyConsts_find? {p : ℕ × ℕ × ℕ → Bool} {t : ℕ × ℕ × ℕ} (ht : t ∈ tyConsts)
+    (hp : p t = true) (hu : ∀ t' ∈ tyConsts, p t' = true → t' = t) : tyConsts.find? p = some t := by
+  obtain ⟨t', ht'⟩ := Option.isSome_iff_exists.mp (List.find?_isSome.mpr ⟨t, ht, hp⟩)
+  rw [ht', hu t' (List.mem_of_find?_eq_some ht') (List.find?_some ht')]
+
+/-- The entry the search of the table finds for an operation and a number of arguments, or for a
+constant and a number of arguments. -/
+theorem tyConsts_find?_eq {p : ℕ × ℕ × ℕ → Bool} {t : ℕ × ℕ × ℕ}
+    (h : tyConsts.find? p = some t) : t ∈ tyConsts ∧ p t = true :=
+  ⟨List.mem_of_find?_eq_some h, List.find?_some h⟩
+
+/-- The constant that encodes an operation is the one the table pairs with it. -/
+theorem tyConst?_iff {op m c : ℕ} : tyConst? op m = some c ↔ (op, m, c) ∈ tyConsts := by
+  constructor
+  · intro h
+    obtain ⟨⟨op', m', c'⟩, ht, rfl⟩ := Option.map_eq_some_iff.mp h
+    obtain ⟨hmem, hp⟩ := tyConsts_find?_eq ht
+    rw [Bool.and_eq_true, beq_iff_eq, beq_iff_eq] at hp
+    obtain ⟨rfl, rfl⟩ := hp
+    exact hmem
+  · intro h
+    rw [tyConst?, tyConsts_find? h (by rw [Bool.and_eq_true, beq_iff_eq, beq_iff_eq]; exact
+      ⟨rfl, rfl⟩) fun t' ht' hp ↦ by
+        rw [Bool.and_eq_true, beq_iff_eq, beq_iff_eq] at hp
+        exact (tyConsts_inj t' ht' _ h).1 hp.1 hp.2]
+    rfl
+
+/-- The operation that a constant encodes is the one the table pairs with it. -/
+theorem tyOp?_iff {c m op : ℕ} : tyOp? c m = some op ↔ (op, m, c) ∈ tyConsts := by
+  constructor
+  · intro h
+    obtain ⟨⟨op', m', c'⟩, ht, rfl⟩ := Option.map_eq_some_iff.mp h
+    obtain ⟨hmem, hp⟩ := tyConsts_find?_eq ht
+    rw [Bool.and_eq_true, beq_iff_eq, beq_iff_eq] at hp
+    obtain ⟨rfl, rfl⟩ := hp
+    exact hmem
+  · intro h
+    rw [tyOp?, tyConsts_find? h (by rw [Bool.and_eq_true, beq_iff_eq, beq_iff_eq]; exact
+      ⟨rfl, rfl⟩) fun t' ht' hp ↦ by
+        rw [Bool.and_eq_true, beq_iff_eq, beq_iff_eq] at hp
+        exact (tyConsts_inj t' ht' _ h).2 hp.1]
+    rfl
+
+/-- The constants of the table are declared as the products over the kind of types, one for each
+argument, into the kind of types. -/
+theorem tyConsts_sig :
+    ∀ t ∈ tyConsts, sig[t.2.2]? = some (piTele (List.replicate t.2.1 tp) tp) := by
+  decide +kernel
+
+/-- The operations of the table are the operations of the combinators that build types. -/
+theorem tyConsts_tyOps : ∀ t ∈ tyConsts, (t.1, t.2.1) ∈ FreeTopos.Internal.tyOps := by
+  decide
+
+/-- An operation of the table builds types. -/
+theorem isTyOp_of_tyConsts (G : FreeTopos.Internal.Globals) {op m c : ℕ}
+    (h : (op, m, c) ∈ tyConsts) : G.isTyOp op m = true := by
+  rw [FreeTopos.Internal.Globals.isTyOp, decide_eq_true (tyConsts_tyOps _ h), Bool.true_or]
+
+/-- A type operation of the table applied to arguments is a type exactly when they are. -/
+theorem isTy_of_tyConsts (G : FreeTopos.Internal.Globals) {n op c : ℕ} {cs : List PartialHorn.Tree}
+    (h : (op, cs.length, c) ∈ tyConsts) :
+    FreeTopos.Internal.IsTy G n (PartialHorn.op op cs) = true ↔
+      ∀ a ∈ cs, FreeTopos.Internal.IsTy G n a = true := by
+  rw [FreeTopos.Internal.isTy_op, isTyOp_of_tyConsts G h, Bool.true_and, List.all_eq_true]
+
 /-- One step of the encoding of a type of the fragment at an offset, at a node of an operation's
 label, from its children, each paired with its encoding: the object variable of index {lit}`j`
-is the LF variable of index {lit}`off + j`, past the {lit}`off` variables of terms in scope; the
-terminal object, a product, an exponential, the subobject classifier, the natural numbers
-object, a list object, the rose-tree objects, the initial object and a coproduct, the operations
-of indices 4, 6, 22, 25, 29, 33, 37, 40, 13 and 15 of the combinators, are the constants of the
-same names. -/
+is the LF variable of index {lit}`off + j`, past the {lit}`off` variables of terms in scope, and
+a type operation of the table is its constant applied to the encodings of its arguments. -/
 def encTyStep (off l : ℕ) (cs : List (PartialHorn.Tree × Option Expr)) : Option Expr :=
   match l, cs with
     | 0, [(i, _)] => match i.children with
       | [] => some (Expr.var (off + i.label))
       | _ :: _ => none
-    | 5, [] => some one
-    | 7, [(_, a), (_, b)] => do pure (prod (← a) (← b))
-    | 23, [(_, a), (_, b)] => do pure (exp (← a) (← b))
-    | 26, [] => some omega
-    | 30, [] => some nat
-    | 34, [(_, a)] => do pure (list (← a))
-    | 38, [] => some rose
-    | 41, [(_, a)] => do pure (lrose (← a))
-    | 14, [] => some initial
-    | 16, [(_, a), (_, b)] => do pure (coprod (← a) (← b))
-    | _, _ => none
+    | 0, _ => none
+    | op + 1, cs => do pure (Expr.const (← tyConst? op cs.length) (← cs.mapM Prod.snd))
 
 /-- The encoding of a type of the fragment as a canonical term of {lit}`tp`, at an offset. -/
 def encTy (off : ℕ) : PartialHorn.Tree → Option Expr := RoseTree.para (encTyStep off)
 
 /-- One step of the decoding of a canonical term of {lit}`tp` at an offset, at a node of a label,
 from its children's decodings: a variable past the offset is the object variable of its index
-less the offset. -/
+less the offset, and a constant of the table applied to arguments its operation applied to their
+decodings. -/
 def decTyStep (off : ℕ) (l : Label) (cs : List (Option PartialHorn.Tree)) :
     Option PartialHorn.Tree :=
   match l, cs with
     | .app (.var i), [] => if off ≤ i then some (PartialHorn.var (i - off)) else none
-    | .app (.const 1), [] => some FreeTopos.one
-    | .app (.const 2), [a, b] => do pure (FreeTopos.prod (← a) (← b))
-    | .app (.const 3), [a, b] => do pure (FreeTopos.exp (← a) (← b))
-    | .app (.const 4), [] => some FreeTopos.omega
-    | .app (.const 5), [] => some FreeTopos.nat
-    | .app (.const 30), [a] => do pure (FreeTopos.list (← a))
-    | .app (.const 37), [] => some FreeTopos.rose
-    | .app (.const 42), [a] => do pure (FreeTopos.lrose (← a))
-    | .app (.const 49), [] => some FreeTopos.zero
-    | .app (.const 48), [a, b] => do pure (FreeTopos.coprod (← a) (← b))
+    | .app (.const c), cs => do pure (PartialHorn.op (← tyOp? c cs.length) (← cs.mapM id))
     | _, _ => none
 
 /-- The decoding of a canonical term of {lit}`tp` as a type of the fragment, at an offset. -/
 def decTy (off : ℕ) : Expr → Option PartialHorn.Tree := RoseTree.elim (decTyStep off)
 
-/-- The encodings of the fragment's types, one constructor at a time. -/
+/-- The computation rule of the encoding of types. -/
 theorem encTy_node (off l : ℕ) (cs : List PartialHorn.Tree) :
     encTy off (RoseTree.node l cs) = encTyStep off l (cs.map fun c ↦ (c, encTy off c)) :=
   RoseTree.para_node _ l cs
 
-/-- The steps of the encoding that have a value. -/
-theorem encTyStep_eq_some {off l : ℕ} {cs : List (PartialHorn.Tree × Option Expr)} {A : Expr}
-    (h : encTyStep off l cs = some A) :
-    (l = 0 ∧ ∃ i x, cs = [(RoseTree.node i [], x)] ∧ A = Expr.var (off + i)) ∨
-      (l = 5 ∧ cs = [] ∧ A = one) ∨
-      (l = 7 ∧ ∃ a b, cs.map Prod.snd = [some a, some b] ∧ A = prod a b) ∨
-      (l = 23 ∧ ∃ a b, cs.map Prod.snd = [some a, some b] ∧ A = exp a b) ∨
-      (l = 26 ∧ cs = [] ∧ A = omega) ∨ (l = 30 ∧ cs = [] ∧ A = nat) ∨
-      (l = 34 ∧ ∃ a, cs.map Prod.snd = [some a] ∧ A = list a) ∨ (l = 38 ∧ cs = [] ∧ A = rose) ∨
-      (l = 41 ∧ ∃ a, cs.map Prod.snd = [some a] ∧ A = lrose a) ∨
-      (l = 14 ∧ cs = [] ∧ A = initial) ∨
-      (l = 16 ∧ ∃ a b, cs.map Prod.snd = [some a, some b] ∧ A = coprod a b) := by
-  unfold encTyStep at h
-  split at h
-  · next i x =>
-    split at h
-    · next hi =>
-      refine .inl ⟨rfl, i.label, x, ?_, (Option.some.inj h).symm⟩
-      rw [← hi, RoseTree.node_label_children]
-    · exact absurd h (by simp)
-  · exact .inr (.inl ⟨rfl, rfl, (Option.some.inj h).symm⟩)
-  · obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
-    obtain ⟨b, hb, h⟩ := Option.bind_eq_some_iff.mp h
-    exact .inr (.inr (.inl ⟨rfl, a, b, by rw [List.map_cons, List.map_cons, List.map_nil, ha, hb],
-      (Option.some.inj h).symm⟩))
-  · obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
-    obtain ⟨b, hb, h⟩ := Option.bind_eq_some_iff.mp h
-    exact .inr (.inr (.inr (.inl ⟨rfl, a, b,
-      by rw [List.map_cons, List.map_cons, List.map_nil, ha, hb], (Option.some.inj h).symm⟩)))
-  · exact .inr (.inr (.inr (.inr (.inl ⟨rfl, rfl, (Option.some.inj h).symm⟩))))
-  · exact .inr (.inr (.inr (.inr (.inr (.inl ⟨rfl, rfl, (Option.some.inj h).symm⟩)))))
-  · obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
-    exact .inr (.inr (.inr (.inr (.inr (.inr (.inl ⟨rfl, a,
-      by rw [List.map_cons, List.map_nil, ha], (Option.some.inj h).symm⟩))))))
-  · exact .inr (.inr (.inr (.inr (.inr (.inr (.inr (.inl ⟨rfl, rfl,
-      (Option.some.inj h).symm⟩)))))))
-  · obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
-    exact .inr (.inr (.inr (.inr (.inr (.inr (.inr (.inr (.inl ⟨rfl, a,
-      by rw [List.map_cons, List.map_nil, ha], (Option.some.inj h).symm⟩))))))))
-  · exact .inr (.inr (.inr (.inr (.inr (.inr (.inr (.inr (.inr (.inl ⟨rfl, rfl,
-      (Option.some.inj h).symm⟩)))))))))
-  · obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
-    obtain ⟨b, hb, h⟩ := Option.bind_eq_some_iff.mp h
-    exact .inr (.inr (.inr (.inr (.inr (.inr (.inr (.inr (.inr (.inr ⟨rfl, a, b,
-      by rw [List.map_cons, List.map_cons, List.map_nil, ha, hb], (Option.some.inj h).symm⟩)))))))))
-  · exact absurd h (by simp)
-
-/-- The encodings of a node that have a value: an object variable, or an operation of the
-fragment whose children have encodings. -/
+/-- The encodings of a node that have a value: an object variable, or a type operation of the
+table whose arguments have encodings, its constant applied to them. -/
 theorem encTy_node_eq_some {off l : ℕ} {cs : List PartialHorn.Tree} {A : Expr}
     (h : encTy off (RoseTree.node l cs) = some A) :
     (l = 0 ∧ ∃ i, cs = [RoseTree.node i []] ∧ A = Expr.var (off + i)) ∨
-      (l = 5 ∧ cs = [] ∧ A = one) ∨
-      (l = 7 ∧ ∃ a b, cs.map (encTy off) = [some a, some b] ∧ A = prod a b) ∨
-      (l = 23 ∧ ∃ a b, cs.map (encTy off) = [some a, some b] ∧ A = exp a b) ∨
-      (l = 26 ∧ cs = [] ∧ A = omega) ∨ (l = 30 ∧ cs = [] ∧ A = nat) ∨
-      (l = 34 ∧ ∃ a, cs.map (encTy off) = [some a] ∧ A = list a) ∨
-      (l = 38 ∧ cs = [] ∧ A = rose) ∨
-      (l = 41 ∧ ∃ a, cs.map (encTy off) = [some a] ∧ A = lrose a) ∨
-      (l = 14 ∧ cs = [] ∧ A = initial) ∨
-      (l = 16 ∧ ∃ a b, cs.map (encTy off) = [some a, some b] ∧ A = coprod a b) := by
+      ∃ op c As, l = op + 1 ∧ (op, cs.length, c) ∈ tyConsts ∧ cs.mapM (encTy off) = some As ∧
+        A = Expr.const c As := by
   rw [encTy_node] at h
-  have hsnd : (cs.map fun c ↦ (c, encTy off c)).map Prod.snd = cs.map (encTy off) := by
-    rw [List.map_map]
-    rfl
-  have hnil : (cs.map fun c ↦ (c, encTy off c)) = [] → cs = [] := List.map_eq_nil_iff.mp
-  rcases encTyStep_eq_some h with ⟨rfl, i, x, hcs, rfl⟩ | ⟨rfl, hcs, rfl⟩ | ⟨rfl, a, b, hcs, rfl⟩ |
-      ⟨rfl, a, b, hcs, rfl⟩ | ⟨rfl, hcs, rfl⟩ | ⟨rfl, hcs, rfl⟩ | ⟨rfl, a, hcs, rfl⟩ |
-      ⟨rfl, hcs, rfl⟩ | ⟨rfl, a, hcs, rfl⟩ | ⟨rfl, hcs, rfl⟩ | ⟨rfl, a, b, hcs, rfl⟩
-  · obtain ⟨c, hc, h₁⟩ := List.map_eq_singleton_iff.mp hcs
-    exact .inl ⟨rfl, i, by rw [hc, (Prod.mk.inj h₁).1], rfl⟩
-  · exact .inr (.inl ⟨rfl, hnil hcs, rfl⟩)
-  · exact .inr (.inr (.inl ⟨rfl, a, b, hsnd ▸ hcs, rfl⟩))
-  · exact .inr (.inr (.inr (.inl ⟨rfl, a, b, hsnd ▸ hcs, rfl⟩)))
-  · exact .inr (.inr (.inr (.inr (.inl ⟨rfl, hnil hcs, rfl⟩))))
-  · exact .inr (.inr (.inr (.inr (.inr (.inl ⟨rfl, hnil hcs, rfl⟩)))))
-  · exact .inr (.inr (.inr (.inr (.inr (.inr (.inl ⟨rfl, a, hsnd ▸ hcs, rfl⟩))))))
-  · exact .inr (.inr (.inr (.inr (.inr (.inr (.inr (.inl ⟨rfl, hnil hcs, rfl⟩)))))))
-  · exact .inr (.inr (.inr (.inr (.inr (.inr (.inr (.inr (.inl ⟨rfl, a, hsnd ▸ hcs, rfl⟩))))))))
-  · exact .inr (.inr (.inr (.inr (.inr (.inr (.inr (.inr (.inr (.inl ⟨rfl, hnil hcs,
-      rfl⟩)))))))))
-  · exact .inr (.inr (.inr (.inr (.inr (.inr (.inr (.inr (.inr (.inr ⟨rfl, a, b, hsnd ▸ hcs,
-      rfl⟩)))))))))
+  rcases l with _ | op
+  · rcases cs with _ | ⟨i, _ | ⟨_, _⟩⟩
+    · exact absurd h (by simp [encTyStep])
+    · rcases hi : i.children with _ | _
+      · simp only [List.map_cons, List.map_nil, encTyStep, hi, Option.some.injEq] at h
+        exact .inl ⟨rfl, i.label, by rw [← hi, RoseTree.node_label_children], h.symm⟩
+      · simp [encTyStep, hi] at h
+    · exact absurd h (by simp [encTyStep])
+  · simp only [encTyStep, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq, List.length_map] at h
+    obtain ⟨c, hc, As, hAs, rfl⟩ := h
+    rw [List.mapM_map] at hAs
+    exact .inr ⟨op, c, As, rfl, tyConst?_iff.mp hc, hAs, rfl⟩
+
+/-- The encoding of a type operation of the table applied to arguments that have encodings. -/
+theorem encTy_op {off op c : ℕ} {cs : List PartialHorn.Tree} {As : List Expr}
+    (hc : (op, cs.length, c) ∈ tyConsts) (hAs : cs.mapM (encTy off) = some As) :
+    encTy off (PartialHorn.op op cs) = some (Expr.const c As) := by
+  rw [PartialHorn.op, encTy_node]
+  simp only [encTyStep, List.length_map, tyConst?_iff.mpr hc, List.mapM_map, Function.comp_def,
+    hAs, Option.bind_eq_bind, Option.bind_some, Option.pure_def]
 
 /-- The decoding of a node of a canonical term of {lit}`tp`. -/
 theorem decTy_node (off : ℕ) (l : Label) (cs : List Expr) :
@@ -240,44 +344,24 @@ theorem rename_app_node (h : Head) (cs : List Expr) (ρ : ℕ → ℕ) :
   rw [rename_node]
   exact congrArg _ (List.ext_getElem (by simp) fun k _ _ ↦ by simp [Label.binders])
 
-/-- A list mapped to two values is of two elements, mapped to them. -/
-theorem map_eq_two {α β : Type} {f : α → β} {cs : List α} {a b : β} (h : cs.map f = [a, b]) :
-    ∃ c₁ c₂, cs = [c₁, c₂] ∧ f c₁ = a ∧ f c₂ = b := by
-  rcases cs with _ | ⟨c₁, _ | ⟨c₂, _ | ⟨c₃, cs⟩⟩⟩
-  · exact absurd h (by simp)
-  · exact absurd h (by simp)
-  · simp only [List.map_cons, List.map_nil, List.cons.injEq, and_true] at h
-    exact ⟨c₁, c₂, rfl, h.1, h.2⟩
-  · exact absurd h (by simp)
-
-/-- A list mapped to one value is of one element, mapped to it. -/
-theorem map_eq_one {α β : Type} {f : α → β} {cs : List α} {a : β} (h : cs.map f = [a]) :
-    ∃ c, cs = [c] ∧ f c = a := by
-  obtain ⟨c, rfl, hc⟩ := List.map_eq_singleton_iff.mp h
-  exact ⟨c, rfl, hc⟩
+/-- The decoding of a constant applied to arguments. -/
+theorem decTy_const (off c : ℕ) (As : List Expr) :
+    decTy off (Expr.const c As) =
+      (tyOp? c As.length).bind fun op ↦ (As.mapM (decTy off)).map (PartialHorn.op op) := by
+  rw [Expr.const, Expr.app, decTy_node]
+  simp only [decTyStep, List.length_map, List.mapM_map, Function.comp_def, id_eq,
+    Option.bind_eq_bind, Option.pure_def]
+  rcases tyOp? c As.length with _ | op <;> rcases As.mapM (decTy off) with _ | as <;> rfl
 
 /-- Decoding inverts the encoding of types. -/
 theorem decTy_encTy (off : ℕ) :
     ∀ (a : PartialHorn.Tree) (A : Expr), encTy off a = some A → decTy off A = some a :=
   RoseTree.ind fun l cs ih A h ↦ by
-    rcases encTy_node_eq_some h with ⟨rfl, i, rfl, rfl⟩ | ⟨rfl, rfl, rfl⟩ |
-        ⟨rfl, a, b, hcs, rfl⟩ | ⟨rfl, a, b, hcs, rfl⟩ | ⟨rfl, rfl, rfl⟩ | ⟨rfl, rfl, rfl⟩ |
-        ⟨rfl, a, hcs, rfl⟩ | ⟨rfl, rfl, rfl⟩ | ⟨rfl, a, hcs, rfl⟩ | ⟨rfl, rfl, rfl⟩ |
-        ⟨rfl, a, b, hcs, rfl⟩
+    rcases encTy_node_eq_some h with ⟨rfl, i, rfl, rfl⟩ | ⟨op, c, As, rfl, hc, hAs, rfl⟩
     · exact decTy_var off i
-    any_goals rfl
-    all_goals first
-      | (obtain ⟨c₁, c₂, rfl, h₁, h₂⟩ := map_eq_two hcs
-         simp only [prod, exp, coprod, Expr.const, Expr.app, decTy_node, List.map_cons,
-           List.map_nil, decTyStep, ih c₁ (by simp) a h₁, ih c₂ (by simp) b h₂,
-           Option.bind_eq_bind, Option.bind_some,
-           Option.pure_def]
-         rfl)
-      | (obtain ⟨c₁, rfl, h₁⟩ := map_eq_one hcs
-         simp only [list, lrose, Expr.const, Expr.app, decTy_node, List.map_cons, List.map_nil,
-           decTyStep, ih c₁ (by simp) a h₁, Option.bind_eq_bind, Option.bind_some,
-           Option.pure_def]
-         rfl)
+    · rw [decTy_const, length_of_mapM hAs, tyOp?_iff.mpr hc, Option.bind_some,
+        mapM_inverse hAs fun x hx y hy ↦ ih x hx y hy]
+      rfl
 
 /-- The encoding of types is injective. -/
 theorem encTy_inj {off : ℕ} {a b : PartialHorn.Tree} {A : Expr} (ha : encTy off a = some A)
@@ -291,25 +375,16 @@ theorem encTy_rename :
       ∀ (off' : ℕ) (ρ : ℕ → ℕ), (∀ i, off ≤ i → ρ i + off = i + off') →
         encTy off' a = some (A.rename ρ) :=
   RoseTree.ind fun l cs ih off A h off' ρ hρ ↦ by
-    rcases encTy_node_eq_some h with ⟨rfl, i, rfl, rfl⟩ | ⟨rfl, rfl, rfl⟩ |
-        ⟨rfl, a, b, hcs, rfl⟩ | ⟨rfl, a, b, hcs, rfl⟩ | ⟨rfl, rfl, rfl⟩ | ⟨rfl, rfl, rfl⟩ |
-        ⟨rfl, a, hcs, rfl⟩ | ⟨rfl, rfl, rfl⟩ | ⟨rfl, a, hcs, rfl⟩ | ⟨rfl, rfl, rfl⟩ |
-        ⟨rfl, a, b, hcs, rfl⟩
+    rcases encTy_node_eq_some h with ⟨rfl, i, rfl, rfl⟩ | ⟨op, c, As, rfl, hc, hAs, rfl⟩
     · have := hρ (off + i) (Nat.le_add_right off i)
       rw [Expr.var, Expr.app, rename_app_node, Head.rename, List.map_nil,
         show ρ (off + i) = off' + i by omega]
       rfl
-    any_goals rfl
-    all_goals first
-      | (obtain ⟨c₁, c₂, rfl, h₁, h₂⟩ := map_eq_two hcs
-         simp only [prod, exp, coprod, Expr.const, Expr.app, rename_app_node, Head.rename,
-           List.map_cons, List.map_nil, encTy_node, encTyStep, ih c₁ (by simp) off a h₁ off' ρ hρ,
-           ih c₂ (by simp) off b h₂ off' ρ hρ, Option.bind_eq_bind, Option.bind_some,
-           Option.pure_def])
-      | (obtain ⟨c₁, rfl, h₁⟩ := map_eq_one hcs
-         simp only [list, lrose, Expr.const, Expr.app, rename_app_node, Head.rename,
-           List.map_cons, List.map_nil, encTy_node, encTyStep, ih c₁ (by simp) off a h₁ off' ρ hρ,
-           Option.bind_eq_bind, Option.bind_some, Option.pure_def])
+    · rw [Expr.const, Expr.app, rename_app_node, Head.rename]
+      have hAs' := mapM_transfer (h := id) (r := fun A ↦ A.rename ρ) hAs
+        fun x hx y hy ↦ ih x hx off y hy off' ρ hρ
+      rw [List.map_id] at hAs'
+      exact encTy_op hc hAs'
 
 /-- The encoding of a type at an offset is the weakening of its encoding at a lower offset. -/
 theorem encTy_add {a : PartialHorn.Tree} {off d : ℕ} {A : Expr} (h : encTy off a = some A) :
@@ -442,14 +517,6 @@ abbrev MTerm : Type := FreeTopos.Internal.Term
 /-- An environment of the compilation of the internal language: an arrow and a type for each
 variable. -/
 abbrev MEnv : Type := List (PartialHorn.Tree × PartialHorn.Tree)
-
-/-- The products over each of a list of domains, the outermost first, into a body. -/
-def piTele (Ds : List Expr) (R : Expr) : Expr := Ds.foldr Expr.pi R
-
-/-- The products over a list of domains, at its first. -/
-theorem piTele_cons (D : Expr) (Ds : List Expr) (R : Expr) :
-    piTele (D :: Ds) R = Expr.pi D (piTele Ds R) :=
-  rfl
 
 /-- The declaration of a definition of the language: the products over the kind of types, one
 for each of its object parameters, of the products over the families of terms of its
@@ -608,6 +675,89 @@ theorem judge_var {Γ : Ctx} {i : ℕ} {A : Expr} (hA : IsApp A = true) (h : var
   rw [show classOf sg Γ (.var i) = some A from h, Option.bind_some]
   exact beq_self_eq_true A
 
+/-- The first step of a spine whose classifier is a product: the first argument checks against
+the domain, and the rest instantiates the substituted codomain. -/
+theorem spine_cons_inv {Γ : Ctx} {a b m : Expr} {J : Ctx → Mode → Bool}
+    {ms : List (Expr × (Ctx → Mode → Bool))} {P : Expr}
+    (h : spine Γ (Expr.pi a b) ((m, J) :: ms) = some P) :
+    J Γ (.check a) = true ∧ ∃ b', hsub (Expr.erase a) m b 0 = some b' ∧ spine Γ b' ms = some P := by
+  simp only [spine, List.foldlM_cons] at h
+  obtain ⟨b', hb', hr⟩ := Option.bind_eq_some_iff.mp h
+  rw [Expr.pi, RoseTree.label_node, RoseTree.children_node] at hb'
+  simp only at hb'
+  split_ifs at hb' with hJ
+  exact ⟨hJ, b', hb', hr⟩
+
+/-- The first step of a spine whose classifier is a product, from its parts. -/
+theorem spine_cons_of {Γ : Ctx} {a b m b' P : Expr} {J : Ctx → Mode → Bool}
+    {ms : List (Expr × (Ctx → Mode → Bool))} (hJ : J Γ (.check a) = true)
+    (hb : hsub (Expr.erase a) m b 0 = some b') (hs : spine Γ b' ms = some P) :
+    spine Γ (Expr.pi a b) ((m, J) :: ms) = some P := by
+  simp only [spine, List.foldlM_cons]
+  rw [Expr.pi, RoseTree.label_node, RoseTree.children_node]
+  simp only [hJ, ↓reduceIte, hb]
+  exact hs
+
+/-- Two nodes are equal exactly when their labels and children are. -/
+theorem node_inj {l l' : Label} {cs cs' : List Expr} :
+    (RoseTree.node l cs : Expr) = RoseTree.node l' cs' ↔ l = l' ∧ cs = cs' := by
+  rw [RoseTree.node_eq_iff, RoseTree.label_node, RoseTree.children_node]
+
+/-- The substitution into the products over the kind of types, one for each of a number of
+arguments, into the kind of types leaves them. -/
+theorem hsub_tps {α : SimpleTy} :
+    ∀ (m : ℕ) (n : Expr) (j : ℕ),
+      hsub α n (piTele (List.replicate m tp) tp) j = some (piTele (List.replicate m tp) tp) := by
+  intro m
+  refine Nat.rec (motive := fun m ↦ ∀ (n : Expr) (j : ℕ),
+      hsub α n (piTele (List.replicate m tp) tp) j = some (piTele (List.replicate m tp) tp))
+    (fun n j ↦ by rw [List.replicate_zero, piTele, List.foldr_nil, tp, hsub_const]; rfl)
+    (fun m ih n j ↦ ?_) m
+  rw [List.replicate_succ, piTele_cons]
+  exact hsub_pi_of α n tp _ tp _ j (by rw [tp, hsub_const]; rfl) (ih n.shift (j + 1))
+
+/-- Arguments that check against the kind of types instantiate the products over it, one for
+each, into it. -/
+theorem spine_tps {Γ : Ctx} {J : Expr → Ctx → Mode → Bool} :
+    ∀ As : List Expr, (∀ A ∈ As, J A Γ (.check tp) = true) →
+      spine Γ (piTele (List.replicate As.length tp) tp) (As.map fun A ↦ (A, J A)) = some tp := by
+  intro As
+  refine List.rec (motive := fun As ↦ (∀ A ∈ As, J A Γ (.check tp) = true) →
+      spine Γ (piTele (List.replicate As.length tp) tp) (As.map fun A ↦ (A, J A)) = some tp)
+    (fun _ ↦ rfl) (fun A As ih h ↦ ?_) As
+  rw [List.length_cons, List.replicate_succ, piTele_cons, List.map_cons]
+  exact spine_cons_of (h A List.mem_cons_self) (hsub_tps _ _ _)
+    (ih fun A' hA' ↦ h A' (List.mem_cons_of_mem _ hA'))
+
+/-- The arguments that instantiate the products over the kind of types, one for each of a number
+of arguments, into it, to the kind of types are that many, and check against it. -/
+theorem spine_tps_inv {Γ : Ctx} {J : Expr → Ctx → Mode → Bool} :
+    ∀ (As : List Expr) (m : ℕ),
+      spine Γ (piTele (List.replicate m tp) tp) (As.map fun A ↦ (A, J A)) = some tp →
+        As.length = m ∧ ∀ A ∈ As, J A Γ (.check tp) = true := by
+  intro As
+  refine List.rec (motive := fun As ↦ ∀ m : ℕ,
+      spine Γ (piTele (List.replicate m tp) tp) (As.map fun A ↦ (A, J A)) = some tp →
+        As.length = m ∧ ∀ A ∈ As, J A Γ (.check tp) = true)
+    (fun m h ↦ ?_) (fun A As ih m h ↦ ?_) As
+  · rcases m with _ | m
+    · exact ⟨rfl, fun _ h ↦ nomatch h⟩
+    · rw [List.replicate_succ, piTele_cons] at h
+      obtain ⟨hl, -⟩ := node_inj.mp (Option.some.inj h)
+      exact Label.noConfusion hl
+  · rcases m with _ | m
+    · rw [List.replicate_zero, List.map_cons] at h
+      simp [spine, piTele, tp, Expr.const, Expr.app] at h
+    · rw [List.replicate_succ, piTele_cons, List.map_cons] at h
+      obtain ⟨hJ, b', hb', h⟩ := spine_cons_inv h
+      rw [hsub_tps, Option.some.injEq] at hb'
+      subst hb'
+      obtain ⟨hl, hAs⟩ := ih m h
+      refine ⟨by rw [List.length_cons, hl], fun A' hA' ↦ ?_⟩
+      rcases List.mem_cons.mp hA' with rfl | hA'
+      · exact hJ
+      · exact hAs A' hA'
+
 /-- The encoding of a type in {lit}`n` object variables, at an offset, is a canonical term of
 {lit}`tp` in every context whose variables past the offset are of {lit}`tp`. -/
 theorem encTy_checks_of_prefix (hpre : sig <+: sg) (G : FreeTopos.Internal.Globals) {n : ℕ} :
@@ -615,36 +765,14 @@ theorem encTy_checks_of_prefix (hpre : sig <+: sg) (G : FreeTopos.Internal.Globa
       FreeTopos.Internal.IsTy G n a = true → ∀ Γ : Ctx,
         (∀ j < n, varType Γ (off + j) = some tp) → judge sg A Γ (.check tp) = true :=
   RoseTree.ind fun l cs ih off A h hty Γ hΓ ↦ by
-    rcases encTy_node_eq_some h with ⟨rfl, i, rfl, rfl⟩ | ⟨rfl, rfl, rfl⟩ |
-        ⟨rfl, a, b, hcs, rfl⟩ | ⟨rfl, a, b, hcs, rfl⟩ | ⟨rfl, rfl, rfl⟩ | ⟨rfl, rfl, rfl⟩ |
-        ⟨rfl, a, hcs, rfl⟩ | ⟨rfl, rfl, rfl⟩ | ⟨rfl, a, hcs, rfl⟩ | ⟨rfl, rfl, rfl⟩ |
-        ⟨rfl, a, b, hcs, rfl⟩
+    rcases encTy_node_eq_some h with ⟨rfl, i, rfl, rfl⟩ | ⟨op, c, As, rfl, hc, hAs, rfl⟩
     · exact judge_var rfl (hΓ i (FreeTopos.Internal.isTy_var.mp hty))
-    any_goals exact judge_const (T := tp) (get_of_prefix hpre rfl) rfl rfl
-    all_goals first
-      | (obtain ⟨c₁, c₂, rfl, h₁, h₂⟩ := map_eq_two hcs
-         first
-           | rw [show RoseTree.node 7 [c₁, c₂] = FreeTopos.prod c₁ c₂ from rfl,
-               FreeTopos.Internal.isTy_prod, Bool.and_eq_true] at hty
-           | rw [show RoseTree.node 23 [c₁, c₂] = FreeTopos.exp c₁ c₂ from rfl,
-               FreeTopos.Internal.isTy_exp, Bool.and_eq_true] at hty
-           | rw [show RoseTree.node 16 [c₁, c₂] = FreeTopos.coprod c₁ c₂ from rfl,
-               FreeTopos.Internal.isTy_coprod, Bool.and_eq_true] at hty
-         have ha := ih c₁ (by simp) off a h₁ hty.1 Γ hΓ
-         have hb := ih c₂ (by simp) off b h₂ hty.2 Γ hΓ
-         refine judge_const (T := Expr.arrow tp (Expr.arrow tp tp)) (get_of_prefix hpre rfl) ?_ rfl
-         simp only [tp, Expr.const, Expr.app] at ha hb ⊢
-         lf_spine [ha, hb])
-      | (obtain ⟨c₁, rfl, h₁⟩ := map_eq_one hcs
-         first
-           | rw [show RoseTree.node 34 [c₁] = FreeTopos.list c₁ from rfl,
-               FreeTopos.Internal.isTy_list] at hty
-           | rw [show RoseTree.node 41 [c₁] = FreeTopos.lrose c₁ from rfl,
-               FreeTopos.Internal.isTy_lrose] at hty
-         have ha := ih c₁ (by simp) off a h₁ hty Γ hΓ
-         refine judge_const (T := Expr.arrow tp tp) (get_of_prefix hpre rfl) ?_ rfl
-         simp only [tp, Expr.const, Expr.app] at ha ⊢
-         lf_spine [ha])
+    · have hty' := (isTy_of_tyConsts G hc).mp hty
+      have hsig := tyConsts_sig _ hc
+      rw [← length_of_mapM hAs] at hsig
+      refine judge_const (get_of_prefix hpre hsig) (spine_tps As fun A' hA' ↦ ?_) rfl
+      obtain ⟨c', hc', hA''⟩ := mem_of_mapM hAs A' hA'
+      exact ih c' hc' off A' hA'' (hty' c' hc') Γ hΓ
 
 /-- The encoding of a type in {lit}`n` object variables, at an offset, is a canonical term of
 {lit}`tp` in an extension of the signature, in every context whose variables past the offset are
@@ -1094,47 +1222,6 @@ theorem decDefn_of {c kd m p : ℕ} {cs : List (Expr × (ℕ → Option MTerm))}
 
 end Decoding
 
-/-- A partial function's values on a list carry over, element by element, to another's values on
-the list's image. -/
-theorem mapM_transfer {α β γ δ : Type} {f : α → Option β} {g : γ → Option δ} {h : α → γ}
-    {r : β → δ} : ∀ {xs : List α} {ys : List β}, xs.mapM f = some ys →
-      (∀ x ∈ xs, ∀ y, f x = some y → g (h x) = some (r y)) →
-      (xs.map h).mapM g = some (ys.map r) := by
-  intro xs
-  refine List.rec (motive := fun xs ↦ ∀ {ys : List β}, xs.mapM f = some ys →
-      (∀ x ∈ xs, ∀ y, f x = some y → g (h x) = some (r y)) →
-      (xs.map h).mapM g = some (ys.map r))
-    (fun {ys} hm _ ↦ by obtain rfl := Option.some.inj hm.symm; rfl) (fun x xs ih {ys} hm hx ↦ ?_) xs
-  simp only [List.mapM_cons, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
-    Option.some.injEq] at hm
-  obtain ⟨y, hy, ys', hys', rfl⟩ := hm
-  rw [List.map_cons, List.mapM_cons, hx x List.mem_cons_self y hy,
-    ih hys' fun x' hx' ↦ hx x' (List.mem_cons_of_mem _ hx')]
-  rfl
-
-/-- A list of the values of a partial function on a list is as long as the list. -/
-theorem length_of_mapM {α β : Type} {f : α → Option β} {xs : List α} {ys : List β}
-    (h : xs.mapM f = some ys) : ys.length = xs.length := by
-  have := congrArg List.length ((PartialHorn.mapM_eq_some_iff xs ys).mp h)
-  rw [List.length_map, List.length_map] at this
-  exact this.symm
-
-/-- A partial function's values on a list are undone by another, element by element, where the
-other undoes it. -/
-theorem mapM_inverse {α β : Type} {f : α → Option β} {g : β → Option α} :
-    ∀ {xs : List α} {ys : List β}, xs.mapM f = some ys →
-      (∀ x ∈ xs, ∀ y, f x = some y → g y = some x) → ys.mapM g = some xs := by
-  intro xs
-  refine List.rec (motive := fun xs ↦ ∀ {ys : List β}, xs.mapM f = some ys →
-      (∀ x ∈ xs, ∀ y, f x = some y → g y = some x) → ys.mapM g = some xs)
-    (fun {ys} hm _ ↦ by obtain rfl := Option.some.inj hm.symm; rfl) (fun x xs ih {ys} hm hx ↦ ?_) xs
-  simp only [List.mapM_cons, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
-    Option.some.injEq] at hm
-  obtain ⟨y, hy, ys', hys', rfl⟩ := hm
-  rw [List.mapM_cons, hx x List.mem_cons_self y hy,
-    ih hys' fun x' hx' ↦ hx x' (List.mem_cons_of_mem _ hx')]
-  rfl
-
 /-- A partial function's values on a list carry over, position by position, to another's values on
 a list as long. -/
 theorem mapM_transfer_idx {α β γ δ : Type} {f : α → Option β} {g : γ → Option δ} {r : β → δ} :
@@ -1463,27 +1550,24 @@ theorem dec_enc {G : FreeTopos.Internal.Globals} {n : ℕ} {k : PrimIdx} :
         rfl
       · simp [encStep] at henc
 
-/-- Two nodes are equal exactly when their labels and children are. -/
-theorem node_inj {l l' : Label} {cs cs' : List Expr} :
-    (RoseTree.node l cs : Expr) = RoseTree.node l' cs' ↔ l = l' ∧ cs = cs' := by
-  rw [RoseTree.node_eq_iff, RoseTree.label_node, RoseTree.children_node]
-
 /-- The signature is formed. -/
 theorem sig_ok : sig.ok = true := by decide +kernel
 
-/-- The declarations whose types end in {lit}`tp` are the object types, of indices 1 to 5, of
-index 30, of index 37, of index 42, and of indices 48 and 49. -/
+/-- The declarations whose types end in {lit}`tp` are the constants of the type operations. -/
 theorem sig_head_tp₀ {c : ℕ} {T : Expr} (hc : sig[c]? = some T) (h : T.headDepth.1 = some 0) :
-    c ∈ [1, 2, 3, 4, 5, 30, 37, 42, 48, 49] := by
+    ∃ op m, (op, m, c) ∈ tyConsts := by
   have key : (sig.zipIdx.all fun p ↦ !(p.1.headDepth.1 == some 0) ||
-      decide (p.2 ∈ [1, 2, 3, 4, 5, 30, 37, 42, 48, 49])) = true := by decide +kernel
+      tyConsts.any fun t ↦ t.2.2 == p.2) = true := by
+    decide +kernel
   rw [List.all_eq_true] at key
   obtain ⟨hlt, rfl⟩ := List.getElem?_eq_some_iff.mp hc
   have := key (sig[c], c) (by
     rw [List.mem_iff_getElem]
     exact ⟨c, by simpa using hlt, by simp⟩)
-  simp only [h, beq_self_eq_true, Bool.not_true, Bool.false_or, decide_eq_true_eq] at this
-  exact this
+  rw [h, beq_self_eq_true, Bool.not_true, Bool.false_or, List.any_eq_true] at this
+  obtain ⟨⟨op, m, c'⟩, ht, hc'⟩ := this
+  obtain rfl := beq_iff_eq.mp hc'
+  exact ⟨op, m, ht⟩
 
 /-- The declarations whose types end in {lit}`tm` are the term constructors, of indices from 7
 to 16, from 31 to 33, 38 and 39, 43 and 44, and from 50 to 52. -/
@@ -1502,9 +1586,9 @@ theorem sig_head_tm₀ {c : ℕ} {T : Expr} (hc : sig[c]? = some T) (h : T.headD
   exact this
 
 /-- The declarations of an extension of the signature whose types end in {lit}`tp` are the
-signature's object types. -/
+constants of the type operations. -/
 theorem sig_head_tp (hsg : SigExt G k sg) {c : ℕ} {T : Expr} (hc : sg[c]? = some T)
-    (h : T.headDepth.1 = some 0) : c ∈ [1, 2, 3, 4, 5, 30, 37, 42, 48, 49] ∧ sig[c]? = some T := by
+    (h : T.headDepth.1 = some 0) : (∃ op m, (op, m, c) ∈ tyConsts) ∧ sig[c]? = some T := by
   by_cases hlt : c < sig.length
   · have hc' := hsg.of_lt hc hlt
     exact ⟨sig_head_tp₀ hc' h, hc'⟩
@@ -1585,82 +1669,14 @@ theorem tyComplete {G' : FreeTopos.Internal.Globals} (hsg : SigExt G' k sg)
       exact ⟨PartialHorn.var (i - off), by rw [encTy_var, Nat.add_sub_cancel' hi]; rfl,
         FreeTopos.Internal.isTy_var.mpr (by omega)⟩
     · have hCs := Sig.ok_typeShape hsg.ok c C hC
-      obtain ⟨h₁, h₂⟩ := spine_headDepth _ C tp hCs hS
-      obtain ⟨hc, hC⟩ := sig_head_tp hsg hC (by rw [← h₁]; rfl)
-      have hlen : cs.length = C.headDepth.2 := by
-        rw [show tp.headDepth.2 = 0 from rfl, List.length_map] at h₂
-        omega
-      simp only [List.mem_cons, List.not_mem_nil, or_false] at hc
-      rcases hc with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
-      · obtain rfl := Option.some.inj (hC.symm.trans rfl : some C = some tp)
-        obtain rfl := List.length_eq_zero_iff.mp (hlen : cs.length = 0)
-        exact ⟨FreeTopos.one, rfl, FreeTopos.Internal.isTy_one⟩
-      · obtain rfl := Option.some.inj (hC.symm.trans rfl :
-          some C = some (Expr.arrow tp (Expr.arrow tp tp)))
-        obtain ⟨x, y, rfl⟩ := List.length_eq_two.mp (hlen : cs.length = 2)
-        simp only [List.map_cons, List.map_nil, tp, Expr.const, Expr.app] at hS
-        lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
-        obtain ⟨a, ha, hIa⟩ := ih x (by simp) hS.1
-        obtain ⟨b, hb, hIb⟩ := ih y (by simp) hS.2
-        exact ⟨FreeTopos.prod a b, by rw [encTy_prod, ha, hb]; rfl,
-          by rw [FreeTopos.Internal.isTy_prod, hIa, hIb]; rfl⟩
-      · obtain rfl := Option.some.inj (hC.symm.trans rfl :
-          some C = some (Expr.arrow tp (Expr.arrow tp tp)))
-        obtain ⟨x, y, rfl⟩ := List.length_eq_two.mp (hlen : cs.length = 2)
-        simp only [List.map_cons, List.map_nil, tp, Expr.const, Expr.app] at hS
-        lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
-        obtain ⟨a, ha, hIa⟩ := ih x (by simp) hS.1
-        obtain ⟨b, hb, hIb⟩ := ih y (by simp) hS.2
-        exact ⟨FreeTopos.exp a b, by rw [encTy_exp, ha, hb]; rfl,
-          by rw [FreeTopos.Internal.isTy_exp, hIa, hIb]; rfl⟩
-      · obtain rfl := Option.some.inj (hC.symm.trans rfl : some C = some tp)
-        obtain rfl := List.length_eq_zero_iff.mp (hlen : cs.length = 0)
-        exact ⟨FreeTopos.omega, rfl, FreeTopos.Internal.isTy_omega⟩
-      · obtain rfl := Option.some.inj (hC.symm.trans rfl : some C = some tp)
-        obtain rfl := List.length_eq_zero_iff.mp (hlen : cs.length = 0)
-        exact ⟨FreeTopos.nat, rfl, FreeTopos.Internal.isTy_nat⟩
-      · obtain rfl := Option.some.inj (hC.symm.trans rfl : some C = some (Expr.arrow tp tp))
-        obtain ⟨x, rfl⟩ := List.length_eq_one_iff.mp (hlen : cs.length = 1)
-        simp only [List.map_cons, List.map_nil, tp, Expr.const, Expr.app] at hS
-        lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
-        obtain ⟨a, ha, hIa⟩ := ih x (by simp) hS
-        exact ⟨FreeTopos.list a, by rw [encTy_list, ha]; rfl,
-          by rw [FreeTopos.Internal.isTy_list, hIa]⟩
-      · obtain rfl := Option.some.inj (hC.symm.trans rfl : some C = some tp)
-        obtain rfl := List.length_eq_zero_iff.mp (hlen : cs.length = 0)
-        exact ⟨FreeTopos.rose, rfl, FreeTopos.Internal.isTy_rose⟩
-      · obtain rfl := Option.some.inj (hC.symm.trans rfl : some C = some (Expr.arrow tp tp))
-        obtain ⟨x, rfl⟩ := List.length_eq_one_iff.mp (hlen : cs.length = 1)
-        simp only [List.map_cons, List.map_nil, tp, Expr.const, Expr.app] at hS
-        lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
-        obtain ⟨a, ha, hIa⟩ := ih x (by simp) hS
-        exact ⟨FreeTopos.lrose a, by rw [encTy_lrose, ha]; rfl,
-          by rw [FreeTopos.Internal.isTy_lrose, hIa]⟩
-      · obtain rfl := Option.some.inj (hC.symm.trans rfl :
-          some C = some (Expr.arrow tp (Expr.arrow tp tp)))
-        obtain ⟨x, y, rfl⟩ := List.length_eq_two.mp (hlen : cs.length = 2)
-        simp only [List.map_cons, List.map_nil, tp, Expr.const, Expr.app] at hS
-        lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
-        obtain ⟨a, ha, hIa⟩ := ih x (by simp) hS.1
-        obtain ⟨b, hb, hIb⟩ := ih y (by simp) hS.2
-        exact ⟨FreeTopos.coprod a b, by rw [encTy_coprod, ha, hb]; rfl,
-          by rw [FreeTopos.Internal.isTy_coprod, hIa, hIb]; rfl⟩
-      · obtain rfl := Option.some.inj (hC.symm.trans rfl : some C = some tp)
-        obtain rfl := List.length_eq_zero_iff.mp (hlen : cs.length = 0)
-        exact ⟨FreeTopos.zero, rfl, FreeTopos.Internal.isTy_zero⟩
-
-/-- The first step of a spine whose classifier is a product: the first argument checks against
-the domain, and the rest instantiates the substituted codomain. -/
-theorem spine_cons_inv {Γ : Ctx} {a b m : Expr} {J : Ctx → Mode → Bool}
-    {ms : List (Expr × (Ctx → Mode → Bool))} {P : Expr}
-    (h : spine Γ (Expr.pi a b) ((m, J) :: ms) = some P) :
-    J Γ (.check a) = true ∧ ∃ b', hsub (Expr.erase a) m b 0 = some b' ∧ spine Γ b' ms = some P := by
-  simp only [spine, List.foldlM_cons] at h
-  obtain ⟨b', hb', hr⟩ := Option.bind_eq_some_iff.mp h
-  rw [Expr.pi, RoseTree.label_node, RoseTree.children_node] at hb'
-  simp only at hb'
-  split_ifs at hb' with hJ
-  exact ⟨hJ, b', hb', hr⟩
+      obtain ⟨h₁, -⟩ := spine_headDepth _ C tp hCs hS
+      obtain ⟨⟨op, m, hc⟩, hC⟩ := sig_head_tp hsg hC (by rw [← h₁]; rfl)
+      obtain rfl := Option.some.inj (hC.symm.trans (tyConsts_sig _ hc))
+      obtain ⟨hl, hargs⟩ := spine_tps_inv cs m hS
+      obtain ⟨as, has, hIs⟩ := mapM_preimage (f := encTy off)
+        (P := fun a ↦ FreeTopos.Internal.IsTy G n a = true) cs fun A hA ↦ ih A hA (hargs A hA)
+      have hc' : (op, as.length, c) ∈ tyConsts := by rw [← length_of_mapM has, hl]; exact hc
+      exact ⟨PartialHorn.op op as, encTy_op hc' has, (isTy_of_tyConsts G hc').mpr hIs⟩
 
 /-- The leading arguments of a spine of a classifier that begins with two products over
 {lit}`tp` check against {lit}`tp`. -/
@@ -1734,45 +1750,16 @@ theorem isTy_of_encTy (G : FreeTopos.Internal.Globals) {n : ℕ} :
     ∀ (a : PartialHorn.Tree) (off : ℕ) (A : Expr), encTy off a = some A →
       A.FreeBelow (off + n) = true → FreeTopos.Internal.IsTy G n a = true :=
   RoseTree.ind fun l cs ih off A h hA ↦ by
-    have hch : ∀ (idx : ℕ) (h : idx < A.children.length),
-        Expr.FreeBelow A.children[idx] (off + n) = true := fun idx hidx ↦ by
-      have := (freeBelow_node_iff.mp (by rw [RoseTree.node_label_children]; exact hA)).2 idx hidx
-      rwa [show A.label.binders idx = 0 by
-        rcases encTy_node_eq_some h with ⟨-, -, -, rfl⟩ | ⟨-, -, rfl⟩ | ⟨-, -, -, -, rfl⟩ |
-          ⟨-, -, -, -, rfl⟩ | ⟨-, -, rfl⟩ | ⟨-, -, rfl⟩ | ⟨-, -, -, rfl⟩ | ⟨-, -, rfl⟩ |
-          ⟨-, -, -, rfl⟩ | ⟨-, -, rfl⟩ | ⟨-, -, -, -, rfl⟩ <;> rfl] at this
-    rcases encTy_node_eq_some h with ⟨rfl, i, rfl, rfl⟩ | ⟨rfl, rfl, rfl⟩ |
-        ⟨rfl, a, b, hcs, rfl⟩ | ⟨rfl, a, b, hcs, rfl⟩ | ⟨rfl, rfl, rfl⟩ | ⟨rfl, rfl, rfl⟩ |
-        ⟨rfl, a, hcs, rfl⟩ | ⟨rfl, rfl, rfl⟩ | ⟨rfl, a, hcs, rfl⟩ | ⟨rfl, rfl, rfl⟩ |
-        ⟨rfl, a, b, hcs, rfl⟩
+    rcases encTy_node_eq_some h with ⟨rfl, i, rfl, rfl⟩ | ⟨op, c, As, rfl, hc, hAs, rfl⟩
     · have := (freeBelow_node_iff.mp hA).1 (off + i) rfl
       exact FreeTopos.Internal.isTy_var.mpr (by omega)
-    · exact FreeTopos.Internal.isTy_one
-    · obtain ⟨c₁, c₂, rfl, h₁, h₂⟩ := map_eq_two hcs
-      rw [show RoseTree.node 7 [c₁, c₂] = FreeTopos.prod c₁ c₂ from rfl,
-        FreeTopos.Internal.isTy_prod, ih c₁ (by simp) off a h₁ (hch 0 Nat.zero_lt_two),
-        ih c₂ (by simp) off b h₂ (hch 1 Nat.one_lt_two)]
-      rfl
-    · obtain ⟨c₁, c₂, rfl, h₁, h₂⟩ := map_eq_two hcs
-      rw [show RoseTree.node 23 [c₁, c₂] = FreeTopos.exp c₁ c₂ from rfl,
-        FreeTopos.Internal.isTy_exp, ih c₁ (by simp) off a h₁ (hch 0 Nat.zero_lt_two),
-        ih c₂ (by simp) off b h₂ (hch 1 Nat.one_lt_two)]
-      rfl
-    · exact FreeTopos.Internal.isTy_omega
-    · exact FreeTopos.Internal.isTy_nat
-    · obtain ⟨c₁, rfl, h₁⟩ := map_eq_one hcs
-      rw [show RoseTree.node 34 [c₁] = FreeTopos.list c₁ from rfl, FreeTopos.Internal.isTy_list]
-      exact ih c₁ (by simp) off a h₁ (hch 0 Nat.zero_lt_one)
-    · exact FreeTopos.Internal.isTy_rose
-    · obtain ⟨c₁, rfl, h₁⟩ := map_eq_one hcs
-      rw [show RoseTree.node 41 [c₁] = FreeTopos.lrose c₁ from rfl, FreeTopos.Internal.isTy_lrose]
-      exact ih c₁ (by simp) off a h₁ (hch 0 Nat.zero_lt_one)
-    · exact FreeTopos.Internal.isTy_zero
-    · obtain ⟨c₁, c₂, rfl, h₁, h₂⟩ := map_eq_two hcs
-      rw [show RoseTree.node 16 [c₁, c₂] = FreeTopos.coprod c₁ c₂ from rfl,
-        FreeTopos.Internal.isTy_coprod, ih c₁ (by simp) off a h₁ (hch 0 Nat.zero_lt_two),
-        ih c₂ (by simp) off b h₂ (hch 1 Nat.one_lt_two)]
-      rfl
+    · refine (isTy_of_tyConsts G hc).mpr fun c' hc' ↦ ?_
+      obtain ⟨A', hA', hcA⟩ := exists_of_mapM hAs c' hc'
+      obtain ⟨idx, hidx, rfl⟩ := List.getElem_of_mem hA'
+      rw [Expr.const, Expr.app] at hA
+      have := (freeBelow_node_iff.mp hA).2 idx hidx
+      rw [show (Label.app (.const c)).binders idx = 0 from rfl, Nat.add_zero] at this
+      exact ih c' hc' off _ hcA this
 
 /-- An encoded type that checks against {lit}`tp` in the encoding of a context in {lit}`n`
 object variables, at the offset of the context's variables of terms, is a type in {lit}`n`

@@ -69,86 +69,12 @@ theorem encTy_decTy (off : ℕ) :
           rfl
         · exact absurd h (by simp)
       · exact absurd h (by simp [decTyStep])
-    · unfold decTyStep at h
-      split at h
-      · next i heq hcs => cases heq
-      · next heq hcs =>
-        cases heq
-        obtain rfl := List.map_eq_nil_iff.mp hcs
-        obtain rfl := Option.some.inj h
-        rfl
-      · next x y heq hcs =>
-        cases heq
-        obtain ⟨A₁, cs, rfl, hA₁, hcs⟩ := List.map_eq_cons_iff.mp hcs
-        obtain ⟨A₂, cs, rfl, hA₂, hcs⟩ := List.map_eq_cons_iff.mp hcs
-        obtain rfl := List.map_eq_nil_iff.mp hcs
-        subst hA₁ hA₂
-        obtain ⟨a₁, ha₁, h⟩ := Option.bind_eq_some_iff.mp h
-        obtain ⟨a₂, ha₂, h⟩ := Option.bind_eq_some_iff.mp h
-        obtain rfl := Option.some.inj h
-        rw [encTy_prod, ih A₁ (by simp) a₁ ha₁, ih A₂ (by simp) a₂ ha₂]
-        rfl
-      · next x y heq hcs =>
-        cases heq
-        obtain ⟨A₁, cs, rfl, hA₁, hcs⟩ := List.map_eq_cons_iff.mp hcs
-        obtain ⟨A₂, cs, rfl, hA₂, hcs⟩ := List.map_eq_cons_iff.mp hcs
-        obtain rfl := List.map_eq_nil_iff.mp hcs
-        subst hA₁ hA₂
-        obtain ⟨a₁, ha₁, h⟩ := Option.bind_eq_some_iff.mp h
-        obtain ⟨a₂, ha₂, h⟩ := Option.bind_eq_some_iff.mp h
-        obtain rfl := Option.some.inj h
-        rw [encTy_exp, ih A₁ (by simp) a₁ ha₁, ih A₂ (by simp) a₂ ha₂]
-        rfl
-      · next heq hcs =>
-        cases heq
-        obtain rfl := List.map_eq_nil_iff.mp hcs
-        obtain rfl := Option.some.inj h
-        rfl
-      · next heq hcs =>
-        cases heq
-        obtain rfl := List.map_eq_nil_iff.mp hcs
-        obtain rfl := Option.some.inj h
-        rfl
-      · next x heq hcs =>
-        cases heq
-        obtain ⟨A₁, cs, rfl, hA₁, hcs⟩ := List.map_eq_cons_iff.mp hcs
-        obtain rfl := List.map_eq_nil_iff.mp hcs
-        subst hA₁
-        obtain ⟨a₁, ha₁, h⟩ := Option.bind_eq_some_iff.mp h
-        obtain rfl := Option.some.inj h
-        rw [encTy_list, ih A₁ (by simp) a₁ ha₁]
-        rfl
-      · next heq hcs =>
-        cases heq
-        obtain rfl := List.map_eq_nil_iff.mp hcs
-        obtain rfl := Option.some.inj h
-        rfl
-      · next x heq hcs =>
-        cases heq
-        obtain ⟨A₁, cs, rfl, hA₁, hcs⟩ := List.map_eq_cons_iff.mp hcs
-        obtain rfl := List.map_eq_nil_iff.mp hcs
-        subst hA₁
-        obtain ⟨a₁, ha₁, h⟩ := Option.bind_eq_some_iff.mp h
-        obtain rfl := Option.some.inj h
-        rw [encTy_lrose, ih A₁ (by simp) a₁ ha₁]
-        rfl
-      · next heq hcs =>
-        cases heq
-        obtain rfl := List.map_eq_nil_iff.mp hcs
-        obtain rfl := Option.some.inj h
-        rfl
-      · next x y heq hcs =>
-        cases heq
-        obtain ⟨A₁, cs, rfl, hA₁, hcs⟩ := List.map_eq_cons_iff.mp hcs
-        obtain ⟨A₂, cs, rfl, hA₂, hcs⟩ := List.map_eq_cons_iff.mp hcs
-        obtain rfl := List.map_eq_nil_iff.mp hcs
-        subst hA₁ hA₂
-        obtain ⟨a₁, ha₁, h⟩ := Option.bind_eq_some_iff.mp h
-        obtain ⟨a₂, ha₂, h⟩ := Option.bind_eq_some_iff.mp h
-        obtain rfl := Option.some.inj h
-        rw [encTy_coprod, ih A₁ (by simp) a₁ ha₁, ih A₂ (by simp) a₂ ha₂]
-        rfl
-      · exact absurd h (by simp)
+    · rw [← decTy_node, show RoseTree.node (Label.app (.const c)) cs = Expr.const c cs from rfl,
+        decTy_const] at h
+      obtain ⟨op, hop, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨as, has, rfl⟩ := Option.map_eq_some_iff.mp h
+      rw [← length_of_mapM has] at hop
+      exact encTy_op (tyOp?_iff.mp hop) (mapM_inverse has fun x hx y hy ↦ ih x hx y hy)
 
 /-- A renaming that moves the variables past one offset to the same positions past another moves
 the decoding of a type at the first offset to its decoding at the second. -/
