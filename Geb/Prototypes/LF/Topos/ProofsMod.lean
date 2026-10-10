@@ -26,7 +26,8 @@ Reflexivity and each computation rule decode to an equation whose sides normaliz
 ({lit}`eqvC`). The substitution of equals and the inductions decode as {name}`Geb.LF.Topos.leibD`
 and {name}`Geb.LF.Topos.indD` do, with the formula they prove normalized first, and the β-reduct
 of the motive's application, from which it is proved, normalized to it ({lit}`leibC`,
-{lit}`indC`); function extensionality, with its formula normalized first. The decoding is not
+{lit}`indC`), congruence as the substitution of equals does; function extensionality, with its
+formula normalized first. The decoding is not
 proved to produce certificates that check: the conversion checker, sound relative to the base
 checker, decides each.
 
@@ -148,6 +149,11 @@ def decPfModStep (l : Label) (cs : List (Expr × (List (Option ℕ) → ℕ → 
       let pb ← lamBody (← termOf k env P)
       pure (indC k (FreeTopos.lrose a) (.roseIndHyp k.lnode k.nil k.cons) pb (← termOf k env t) m
         [← ds (some (m + 1) :: none :: none :: env) (m + 2)])
+    | .app (.const 47), [(A, _), _, (f, _), (a, _), (b, _), (_, dh)] => do
+      let fb ← lamBody (← termOf k env f)
+      let sa ← termOf k env a
+      pure (leibC k (← decTy A) (congMotive fb sa) sa (← termOf k env b) m (← dh env m)
+        (eqvC k))
     | .lam, [(_, d)] => d env m
     | _, _ => none
 

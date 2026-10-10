@@ -3894,8 +3894,8 @@ having no object variables, so symmetry, transitivity and the fold at
 one, stated for every type, are checked in LF alone. On the same machine,
 with Canonical at revision `1d80841` of CanonicalLean (tag `v4.34.0`
 since its release was replaced) under Lean v4.35.0-rc4, the signature
-with its list and rose-tree declarations, and a timeout of 120 s, every
-term returned checked:
+with its list, rose-tree and congruence declarations, every declaration
+offered, and a timeout of 120 s, every term returned checked:
 
 :::table +header
 *
@@ -3903,33 +3903,37 @@ term returned checked:
   * Pure LF
   * Modulo the rules
 *
-  * Symmetry and transitivity of equality, congruence of `succ`
-  * Found, under 20 ms each, by substitution of equals
+  * Symmetry and transitivity of equality
+  * Found, under 25 ms each, by substitution of equals
   * The same
 *
+  * Congruence of `succ`
+  * Found, 5 ms, by congruence
+  * Found, 4 ms, by congruence
+*
   * `natRec C z s (succ zero) = s z`
-  * Found, 13 ms, by the fold's rules and substitution of equals
-  * Found, 4 ms, by reflexivity
+  * Found, 20 ms, by the fold's rules and substitution of equals
+  * Found, 3 ms, by reflexivity
 *
   * `n + 0 = n` and `m + succ n = succ (m + n)`
-  * Found, 3 ms each, by a rule of the fold
-  * Found, 3 ms or less each, by reflexivity
+  * Found, 4 ms or less each, by a rule of the fold
+  * Found, 4 ms or less each, by reflexivity
 *
   * `0 + n = n`
-  * Found, 36 ms, by induction
-  * Found, 53 ms, by induction
+  * Found, 45 ms, by induction
+  * Found, 25 ms, by induction
 *
   * `succ m + n = succ (m + n)`
   * Not found in 120 s
-  * Found, 127 ms, by induction
+  * Found, 41 ms, by induction and congruence
 *
   * `lam (λ x. x) = lam (λ x. app (lam (λ y. y)) x)`
-  * Found, 136 ms, by extensionality and β
-  * Found, 2 ms, by reflexivity
+  * Found, 132 ms, by extensionality and β
+  * Found, 3 ms, by reflexivity
 *
   * `foldr cons nil xs = xs`
-  * Found, 516 ms, by induction
-  * Found, 321 ms, by induction
+  * Found, 1095 ms, by induction
+  * Found, 32 ms, by induction and congruence
 *
   * Uniqueness of the right fold, its hypothesis at a construction an
     equation of functions
@@ -3938,34 +3942,39 @@ term returned checked:
 *
   * Associativity of appending
   * Not found in 120 s
-  * Not found in 120 s
+  * Found, 7.7 s, by induction and congruence
 :::
 
 Every term found for a goal without type parameters decoded to a
-certificate of the language that its checker accepts: in pure LF a
+certificate of the language that its checker accepts, the declaration of
+congruence among those offered: in pure LF a
 derivation of the checker of `Geb.FreeTopos.Internal`, and modulo the
 rules a certificate of the checker with a step of conversion, the
 stronger checker of the second conclusion above. The base checker
 compares the sides of an equation after the derivation's rewriting and
 does not compute, so of the terms found modulo the rules only the
 congruence of `succ`, which computes nothing, is one of its derivations.
-The uniqueness of the fold and the associativity of
-appending, found in seconds with Lean's `List` and its fold's equations
-as reduction rules, were not found here, where equals are substituted
-by a Leibniz eliminator, the first conclusion's weaker encoding, though
-each is provable in the signature: a proof of the associativity written
-by hand decodes to a certificate the conversion checker accepts.
+The signature declares congruence, a function applied to equal terms,
+beside the Leibniz eliminator from which it is derived and to whose
+derivation it decodes, following the first conclusion: explicit
+congruence serves search better. Without it, the associativity of
+appending was not found in 300 s in any regime, though a proof written
+by hand decodes to a certificate the conversion checker accepts; with
+it, the associativity is found modulo the rules, and the proofs by
+induction modulo the rules are found faster, `foldr cons nil xs = xs` in
+32 ms rather than 334 ms. The uniqueness of the fold, found in seconds
+with Lean's `List` and its fold's equations as reduction rules, is not
+found here, its hypothesis at a construction an equation of functions
+that a proof must apply.
 
 The search may be offered only the declarations relevant to a goal:
 those it mentions and those their types mention, closed under adding
 every declaration other than a type former whose type mentions only
 declarations so reached, which are the rules and term formers that speak
-of the goal's types. Offered only those, with a timeout of 60 s, every
-goal found before was found again, most in less time, modulo the rules
-`succ m + n = succ (m + n)` in 32 ms rather than 136 ms and
-`foldr cons nil xs = xs` in 220 ms rather than 334 ms, and the
-uniqueness and the associativity were not found, the latter not in
-300 s in any regime.
+of the goal's types. Offered only those, every goal found before was
+found again, most in less time, modulo the rules
+`succ m + n = succ (m + n)` in 23 ms rather than 41 ms; the
+associativity in 15.6 s rather than 7.7 s.
 
 Addition is the fold of its second argument from the first by the
 successor, a fold with a parameter. The measurements agree with the
