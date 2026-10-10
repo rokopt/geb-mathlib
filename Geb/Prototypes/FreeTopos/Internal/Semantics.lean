@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.FreeTopos.Coproducts
 public import Geb.Prototypes.FreeTopos.Internal.Params
+public import Geb.Prototypes.FreeTopos.RoseRecursion
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -168,6 +169,15 @@ theorem eval_listFold_congr (Γ : List Tree) (a c z s : Tree) {t t' m m' : Tree}
   · exact eval_op₂_congr 3 rfl hm
   · exact eval_op₂_congr 3 rfl (eval_op₂_congr 9 ht hm)
 
+/-- The fold of a rose-tree object respects the values of the parameters' tuple and of the
+datum. -/
+theorem eval_roseFold_congr (F : Tree → Tree) (Γ : List Tree) (a t₀ c s : Tree) {t t' m m' : Tree}
+    (ht : eval M ρ t = eval M ρ t') (hm : eval M ρ m = eval M ρ m') :
+    eval M ρ (roseFold F Γ a t₀ c s t m) = eval M ρ (roseFold F Γ a t₀ c s t' m') := by
+  rcases Γ with _ | ⟨b, Γ⟩
+  · exact eval_op₂_congr 3 rfl hm
+  · exact eval_op₂_congr 3 rfl (eval_op₂_congr 9 ht hm)
+
 /-- A fold's parameters in an environment and the entries there are those in an environment of
 equal values at the variables the fold mentions, when the fold compiles in the first. -/
 theorem foldPs_envEqOn {k : ℕ} {z s : Term} {e e' : List (Tree × Tree)}
@@ -288,10 +298,22 @@ theorem compile_envEq_on {G : Globals} {n : ℕ} (s : Term) :
     exact eval_listFold_congr _ _ _ _ _ (eval_tuple_of_forall₂ X hPs) hmv
   | roseRec c =>
     obtain ⟨s, m, m', t, a, F, s', rfl, hc, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
+    -- the step's variables of the environment are the node's
+    have hstep : ∀ i, (Term.occurs Term.star i || Term.occurs s (i + 1)) = true →
+        Term.occurs (RoseTree.node (.roseRec c) [s, m]) i = true := fun i hi ↦ by
+      simp only [occurs_star, Bool.false_or] at hi
+      simp only [Term.occurs_node, Term.occursStep, List.map_cons, List.map_nil, hi,
+        Bool.true_or]
+    obtain ⟨hV, hPs⟩ := foldPs_envEqOn (fun i hi ↦ compile_occurs_lt _ X e _ h i (hstep i hi))
+      (he.mono fun i hi ↦ hstep i hi)
+    have hE : ∀ bs, foldEnvIn bs 1 e' Term.star s = foldEnvIn bs 1 e Term.star s := fun bs ↦ by
+      simp only [foldEnvIn, hV, map_snd_of_forall₂ hPs]
     obtain ⟨⟨m'', t'⟩, hm', rfl, hmv⟩ :=
       sub m (by simp) (fun i hi ↦ by simp [Term.occurs_node, Term.occursStep, hi]) _ hm
-    exact ⟨_, compile_roseRec_iff.mpr ⟨s, m, m'', _, a, F, s', rfl, hc, hm', ht, hs, rfl⟩, rfl,
-      eval_op₂_congr 3 rfl hmv⟩
+    refine ⟨_, compile_roseRec_iff.mpr ⟨s, m, m'', _, a, F, s', rfl, hc, hm', ht,
+      (hE _).symm ▸ hs, rfl⟩, rfl, ?_⟩
+    rw [map_snd_of_forall₂ hPs]
+    exact eval_roseFold_congr _ _ _ _ _ _ (eval_tuple_of_forall₂ X hPs) hmv
   | eq =>
     obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
     obtain ⟨⟨f', a'⟩, ht', rfl, hf⟩ :=
@@ -622,6 +644,24 @@ theorem listFold_hom {Γ : List Tree} {X a c z s t m : Tree} (ha : IsObj M ρ a)
   · exact comp_hom hM hm (listRec_hom hM ha hz hs)
   · exact comp_hom hM (pair_hom hM ht hm) (listRecP_spec hM ht.isObj_cod ha hz hs).1
 
+/-- The parts of a rose-tree object are the labels and the fold of a fold with the laws of a
+rose-tree object. -/
+theorem roseFold_of_roseParts {t a : Tree} {F : Tree → Tree} (h : roseParts t = some (a, F))
+    (ha : IsObj M ρ a) : ∃ nd, RoseFold M ρ F nd t a := by
+  rcases roseParts_eq_some.mp h with ⟨rfl, rfl, rfl⟩ | ⟨rfl, rfl⟩
+  · exact ⟨_, roseFold_rose hM⟩
+  · exact ⟨_, roseFold_lrose hM ha⟩
+
+/-- The fold of a rose-tree object at the parameters is an arrow from the environment's
+object. -/
+theorem roseFold_hom {F : Tree → Tree} {nd t₀ a : Tree} (hF : RoseFold M ρ F nd t₀ a)
+    {Γ : List Tree} {X c s u m : Tree} (hs : Hom M ρ s (ctxObj (prod a (list c) :: Γ)) c)
+    (hu : Hom M ρ u X (ctxObj Γ)) (hm : Hom M ρ m X t₀) :
+    Hom M ρ (roseFold F Γ a t₀ c s u m) X c := by
+  rcases Γ with _ | ⟨b, Γ⟩
+  · exact comp_hom hM hm (hF.hom hs)
+  · exact comp_hom hM (pair_hom hM hu hm) (roseRecP_hom hM hF hu.isObj_cod hs)
+
 /-- The entries of an environment at a fold's parameters are arrows of their types when the
 environment's are. -/
 theorem foldPs_hom {G : Globals} {n : ℕ} {X : Tree} {k : ℕ} {e : List (Tree × Tree)}
@@ -703,9 +743,10 @@ theorem compile_hom {G : Globals} {n : ℕ} (hG : G.WF)
     obtain ⟨hm', htt⟩ := ih m (by simp) X e _ hm he
     have hat := isTy_of_roseParts ht htt
     have hPt : IsTy G n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
-    have hP := hobj _ hPt
-    obtain ⟨hs', -⟩ := ih s (by simp) _ _ _ hs ⟨hP, by simpa using ⟨idt_hom hM hP, hPt⟩⟩
-    exact ⟨comp_hom hM hm' (roseParts_hom hM ht (hobj a hat) hs'), hct⟩
+    obtain ⟨hs', -⟩ := ih s (by simp) _ _ _ hs
+      (envHom_foldEnvIn hM hds.2 hρ he (by simpa using hPt))
+    obtain ⟨nd, hF⟩ := roseFold_of_roseParts hM ht (hobj a hat)
+    exact ⟨roseFold_hom hM hF hs' (foldPs_hom hM he) hm', hct⟩
   | eq =>
     obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
     obtain ⟨hf, hat⟩ := ih t (by simp) X e _ ht he
@@ -810,6 +851,19 @@ theorem eval_listFold_comp {Γ : List Tree} {X Y a c z s t m h : Tree} (ha : IsO
   · exact (comp_assoc hM hh (pair_hom hM ht hm)
       (listRecP_spec hM ht.isObj_cod ha hz hs).1).symm.trans
       (eval_op₂_congr 3 rfl (pair_comp hM ht hm hh))
+
+/-- The fold of a rose-tree object at the parameters, after an arrow, is the fold at the tuple
+and the datum after it. -/
+theorem eval_roseFold_comp {F : Tree → Tree} {nd t₀ a : Tree} (hF : RoseFold M ρ F nd t₀ a)
+    {Γ : List Tree} {X Y c s u m h : Tree} (hs : Hom M ρ s (ctxObj (prod a (list c) :: Γ)) c)
+    (hu : Hom M ρ u X (ctxObj Γ)) (hm : Hom M ρ m X t₀) (hh : Hom M ρ h Y X) :
+    eval M ρ (comp (roseFold F Γ a t₀ c s u m) h) =
+      eval M ρ (roseFold F Γ a t₀ c s (comp u h) (comp m h)) := by
+  rcases Γ with _ | ⟨b, Γ⟩
+  · exact (comp_assoc hM hh hm (hF.hom hs)).symm
+  · exact (comp_assoc hM hh (pair_hom hM hu hm)
+      (roseRecP_hom hM hF hu.isObj_cod hs)).symm.trans
+      (eval_op₂_congr 3 rfl (pair_comp hM hu hm hh))
 
 /-- The tuple of a fold's parameters' entries in an environment after an arrow is their tuple
 after it, of the same types. -/
@@ -935,12 +989,15 @@ theorem compile_comp {G : Globals} {n : ℕ} (hG : G.WF)
     obtain ⟨hmt, htt⟩ := hty m X e _ hm he
     have hat := isTy_of_roseParts ht htt
     have hPt : IsTy G n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
-    have hP := hobj _ hPt
-    obtain ⟨hs', -⟩ := hty s _ _ _ hs ⟨hP, by simpa using ⟨idt_hom hM hP, hPt⟩⟩
-    have hF := roseParts_hom hM ht (hobj a hat) hs'
+    obtain ⟨hs', -⟩ := hty s _ _ _ hs (envHom_foldEnvIn hM hds.2 hρ he (by simpa using hPt))
+    obtain ⟨nd, hF⟩ := roseFold_of_roseParts hM ht (hobj a hat)
     obtain ⟨⟨m'', t'⟩, hm', rfl, hmv⟩ := ih m (by simp) X e _ hm he Y h hh
-    exact ⟨_, compile_roseRec_iff.mpr ⟨s, m, m'', _, a, F, s', rfl, hct, hm', ht, hs, rfl⟩, rfl,
-      (eval_op₂_congr 3 rfl hmv).trans (comp_assoc hM hh hmt hF)⟩
+    obtain ⟨hT, hΓ⟩ := eval_foldPs_precomp hM (k := 1) (z := Term.star) (s := s) he hh
+    refine ⟨_, compile_roseRec_iff.mpr ⟨s, m, m'', _, a, F, s', rfl, hct, hm', ht,
+      (foldEnvIn_precomp [prod a (list c)] 1 h e Term.star s) ▸ hs, rfl⟩, rfl, ?_⟩
+    rw [hΓ]
+    exact (eval_roseFold_congr _ _ _ _ _ _ hT hmv).trans
+      (eval_roseFold_comp hM hF hs' (foldPs_hom hM he) hmt hh).symm
   | eq =>
     obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp hc
     obtain ⟨hft, hat⟩ := hty t X e _ ht he

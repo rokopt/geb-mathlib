@@ -269,6 +269,12 @@ theorem atVar0_eq (u : Term) (i : ℕ) :
     «Derivation.weaken2» (encTerm t) = encTerm (Internal.weaken2 t) :=
   rename_eq _ _ _ fun _ ↦ rfl
 
+/-- The mirror's weakening of a rose-tree fold's step past two variables below its own. -/
+@[simp] theorem weakenStep2_eq (s : Term) :
+    «Derivation.weakenStep2» (encTerm s) = encTerm (Internal.weakenStep2 s) := by
+  refine rename_eq _ _ _ fun i ↦ ?_
+  cases i <;> mirror_simp [beq_iff_eq, Nat.add_one_ne_zero, Internal.Term.liftR, Nat.add_right_comm]
+
 /-- The mirror's lowering of a term's variables by one. -/
 @[simp] theorem lower1_eq (t : Term) :
     «Derivation.lower1» (encTerm t) = encTerm (Internal.Term.rename t (· - 1)) :=

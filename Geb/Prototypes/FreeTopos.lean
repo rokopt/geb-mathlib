@@ -20,6 +20,7 @@ public import Geb.Prototypes.FreeTopos.Internal
 public import Geb.Prototypes.FreeTopos.Model
 public import Geb.Prototypes.FreeTopos.Prover
 public import Geb.Prototypes.FreeTopos.Recursion
+public import Geb.Prototypes.FreeTopos.RoseRecursion
 public import Geb.Prototypes.FreeTopos.Relations
 public import Geb.Prototypes.FreeTopos.Represent
 public import Geb.Prototypes.FreeTopos.Tactics

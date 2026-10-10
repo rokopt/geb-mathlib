@@ -23,6 +23,7 @@
     weakenElem
     weaken1
     weaken2
+    weakenStep2
     roseMapAt
     roseHyp
     eqParts
@@ -167,6 +168,7 @@
   (defn weakenElem ((t T)) T (rename t (lam ((i T)) (if (eq i 0) 0 (add i 1)))))
   (defn weaken1 ((t T)) T (rename t (lam ((i T)) (add i 1))))
   (defn weaken2 ((t T)) T (rename t (lam ((i T)) (add i 2))))
+  (defn weakenStep2 ((s T)) T (rename s (lam ((i T)) (if (eq i 0) 0 (add i 2)))))
   (defn lower1 ((t T)) T (rename t (lam ((i T)) (sub i 1))))
   (defn roseMapAt ((kl T) (kc T) (c T) (t T)) T
     (mListRec (mArr kl (single c) mStar) (mArr kc (single c) (mPair (weaken1 t) (var 0))) (var 0)))
@@ -312,7 +314,7 @@
                     (lam ((a T))
                       (OScopes.just
                         (scopes
-                          (ScopeF.l2 (ctxPair (single (prod a (list (mD t 0)))) (nil T))
+                          (ScopeF.l2 (ctxPair (cons (prod a (list (mD t 0))) g) (mapT weaken1 hs))
                             (ctxPair g hs))))))
                   (OScopes.just (scopes (ScopeAt.map (lam ((u T)) (ctxPair g hs)) ts)))))))))))
   (defn sameCtx ((l T) (i T)) T
@@ -406,7 +408,8 @@
                           (instVar
                             (mPair (mArg p 0)
                               (mListRec (mArr kl (single c) mStar)
-                                (mArr kc (single c) (mPair (mRoseRec c a0 (var 1)) (var 0)))
+                                (mArr kc (single c)
+                                  (mPair (mRoseRec c (weakenStep2 a0) (var 1)) (var 0)))
                                 (mArg p 1))))))
                       none))))))
           none))))

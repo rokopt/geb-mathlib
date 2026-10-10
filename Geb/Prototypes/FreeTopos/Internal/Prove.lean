@@ -354,14 +354,14 @@ def keepsWeak (l : Label) (i : ℕ) : Bool := match l with
 
 /-- The uses of the variable of index {lit}`d` in a term, each under an abstraction and in a
 fold's step counted twice, since the abstraction may be applied and the step is applied more
-than once; a rose-tree fold's step, in a context of its own, has none. -/
+than once. -/
 def uses : Term → ℕ → ℕ :=
   RoseTree.elim fun l cs d ↦ match l, cs with
     | .var i, _ => if i = d then 1 else 0
     | .lam _, cs => 2 * (cs.map (· (d + 1))).sum
     | .natRec, [z, s, m] => z d + 2 * s (d + 1) + m d
     | .listRec, [z, s, m] => z d + 2 * s (d + 2) + m d
-    | .roseRec _, [_, m] => m d
+    | .roseRec _, [s, m] => 2 * s (d + 1) + m d
     | _, cs => (cs.map (· d)).sum
 
 /-- The derivation of a node's rewriting from its children's, marked when one rewrites. -/

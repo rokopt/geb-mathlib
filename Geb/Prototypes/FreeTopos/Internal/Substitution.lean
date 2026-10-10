@@ -138,8 +138,16 @@ theorem compile_rename (s : Term) :
       by rw [hT]⟩
   | roseRec c =>
     obtain ⟨s, m, m', t, a, F, s', rfl, hc, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
-    exact compile_roseRec_iff.mpr ⟨s, _, m', t, a, F, s', rfl, hc,
-      ih m (by simp) X e e' f _ hm hf hmono, ht, hs, rfl⟩
+    obtain ⟨hV, hT⟩ := foldParams_rename_of_lt (k := 1)
+      (fun i hi ↦ compile_occurs_lt _ X e' _ h i (occurs_roseRec_of_step hi)) hf hmono
+      Term.star (Term.rename s (Term.liftR f)) fun j ↦ by
+        simp only [occurs_star, Bool.false_or, Term.occurs_rename,
+          Term.exists_liftR (fun i ↦ Term.occurs s i = true) f j]
+    obtain ⟨hP₁, hE₁⟩ := foldEnvIn_rename (bs := [prod a (list c)]) (strictMono_liftR hmono) hV
+      (congrArg _ hT) (by simp [Term.liftR, Function.comp_def])
+    exact compile_roseRec_iff.mpr ⟨_, _, m', t, a, F, s', rfl, hc,
+      ih m (by simp) X e e' f _ hm hf hmono, ht,
+      hP₁ ▸ ih s (by simp) _ _ _ _ _ hs hE₁ (strictMono_liftR hmono), by rw [hT]⟩
   | eq =>
     obtain ⟨t, u, rfl, f₁, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
     exact compile_eq_iff.mpr ⟨_, _, rfl, f₁, a, ih t (by simp) X e e' f _ ht hf hmono, g,
@@ -252,9 +260,13 @@ theorem compile_retype_on (s : Term) :
       (hE [c, a]).symm ▸ hs, rfl⟩⟩
   | roseRec c =>
     obtain ⟨s, m, m', t, a, F, s', rfl, hc, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
+    have hE := foldEnvIn_retype (k := 1) (z := Term.star) (s := s)
+      (fun i hi ↦ compile_occurs_lt _ X e _ h i (occurs_roseRec_of_step hi))
+      fun i hi ↦ he i (occurs_roseRec_of_step hi)
     obtain ⟨m'', hm''⟩ :=
       sub m (by simp) (fun i hi ↦ by simp [Term.occurs_node, Term.occursStep, hi]) _ hm
-    exact ⟨_, compile_roseRec_iff.mpr ⟨s, m, m'', t, a, F, s', rfl, hc, hm'', ht, hs, rfl⟩⟩
+    exact ⟨_, compile_roseRec_iff.mpr ⟨s, m, m'', t, a, F, s', rfl, hc, hm'', ht,
+      (hE _).symm ▸ hs, rfl⟩⟩
   | eq =>
     obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
     obtain ⟨f', hf'⟩ :=
@@ -646,6 +658,101 @@ theorem compile_listRec_of_full (hG : G.WF) (hρ : ρ.map Sigma.fst = List.repli
   obtain ⟨rfl, -⟩ := Prod.mk.inj (Option.some.inj (hs.symm.trans hs₂))
   exact ⟨_, hnode, hr⟩
 
+/-- A fold of a rose tree that compiles has its datum compiled in the environment, to a rose-tree
+object, its step in the environment extended by the pair of a label and the list of the children's
+values, and the value of the fold with the environment's object as parameter at the identity and
+the datum. -/
+theorem compile_roseRec_full (hG : G.WF) (hρ : ρ.map Sigma.fst = List.replicate n obj)
+    (hps : PrimsHom M ρ G n) (hds : DefsHom M ρ G n) {c : Tree} {s m : Term} {X : Tree}
+    {e : List (Tree × Tree)} {r : Tree × Tree}
+    (h : compile G n (Term.roseRec c s m) X e = some r) (he : EnvHom M ρ G n X e) :
+    ∃ mf t a F sf, IsTy G n c = true ∧ compile G n m X e = some (mf, t) ∧
+      roseParts t = some (a, F) ∧
+      compile G n s (prod X (prod a (list c))) (extEnv X (prod a (list c)) e) = some (sf, c) ∧
+      ResEq M ρ (comp (roseRecP F X a t c sf) (pair (idt X) mf), c) r := by
+  obtain ⟨s₀, m₀, m', t, a, F, s', hcs, hct, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
+  obtain ⟨rfl, rfl⟩ : s = s₀ ∧ m = m₀ := by simpa [Term.roseRec] using hcs
+  have hty := compile_hom hM hG hρ hps hds
+  have hobj := isObj_of_isTy hM hds.2 hρ
+  -- the parameters are the variables of the environment the step mentions
+  have hP : ∀ i, (Term.occurs Term.star i || Term.occurs s (i + 1)) = true →
+      i ∈ foldParams 1 e.length Term.star s := fun i hi ↦
+    mem_foldParams.mpr ⟨compile_occurs_lt _ X e _ h i (occurs_roseRec_of_step hi), hi⟩
+  obtain ⟨hmt, htt⟩ := hty m X e _ hm he
+  have hat := isTy_of_roseParts ht htt
+  have hPt : IsTy G n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
+  have hPo := hobj _ hPt
+  obtain ⟨nd, hF⟩ := roseFold_of_roseParts hM ht (hobj a hat)
+  have hs' : Hom M ρ s' (ctxObj (prod a (list c) :: (foldPs 1 e Term.star s).map Prod.snd)) c :=
+    (hty s _ _ _ hs (envHom_foldEnvIn hM hds.2 hρ he (by simpa using hPt))).1
+  have htp := foldPs_hom hM (k := 1) (z := Term.star) (s := s) he
+  -- the step in the environment
+  obtain ⟨sf, hsf, hsv⟩ := compile_foldEnv_full hM hG hρ hps hds he (bs := [prod a (list c)])
+    (by simpa using hPt) (he.ext hM hPo hPt) (foldWs_nat_lt X _ e Term.star s)
+    (foldWs_nat_filterMap X _ e Term.star s) (by simp [extEnv]) hs fun i hi ↦ by
+      rcases i with _ | i
+      · simp
+      · simpa using hP i (by simp [occurs_star, hi])
+  refine ⟨m', t, a, F, sf, hct, hm, ht, hsf, rfl, ?_⟩
+  change eval M ρ (roseFold F ((foldPs 1 e Term.star s).map Prod.snd) a t c s'
+    (tuple X ((foldPs 1 e Term.star s).map Prod.fst)) m') =
+    eval M ρ (comp (roseRecP F X a t c sf) (pair (idt X) m'))
+  have hpsh : ∀ r ∈ foldPs 1 e Term.star s, Hom M ρ r.1 X r.2 := fun r hr ↦ by
+    obtain ⟨v, -, hv⟩ := List.mem_filterMap.mp hr
+    exact (he.2 r (List.mem_of_getElem? hv)).1
+  have hFc : ∀ {u u' : Tree}, eval M ρ u = eval M ρ u' → eval M ρ (F u) = eval M ρ (F u') :=
+    fun hu ↦ eval_roseParts_congr ht hu
+  generalize foldPs 1 e Term.star s = ps at hs' htp hsv hpsh ⊢
+  rcases ps with _ | ⟨p, ps⟩
+  · -- no parameters: the fold itself
+    exact (roseRecP_const hM hF he.1 hs' (idt_hom hM he.1) hmt).symm.trans
+      (eval_op₂_congr 3 (eval_roseRecP_congr hFc X a t c hsv.symm) rfl)
+  · -- parameters: the fold with them, natural in the parameter
+    have hT : eval M ρ (tuple (prod X (prod a (list c)))
+        ((extEnv X (prod a (list c)) (p :: ps)).map Prod.fst)) =
+        eval M ρ (pair (comp (tuple X ((p :: ps).map Prod.fst)) (fst X (prod a (list c))))
+          (snd X (prod a (list c)))) :=
+      eval_op₂_congr 9 (eval_tuple_comp hM (fst_hom hM he.1 hPo) (List.forall₂_map_right_iff.mpr
+        (List.forall₂_same.mpr fun _ _ ↦ ⟨rfl, rfl⟩)) hpsh).1 rfl
+    exact (roseRecP_pair hM hF htp.isObj_cod hs' htp hmt).trans
+      (eval_op₂_congr 3 (eval_roseRecP_congr hFc X a t c
+        (hsv.trans (eval_op₂_congr 3 rfl hT)).symm) rfl)
+
+/-- A fold of a rose tree whose datum compiles in the environment, to a rose-tree object, and
+whose step compiles in the environment extended by the pair of a label and the list of the
+children's values compiles, to the value of the fold with the environment's object as parameter
+at the identity and the datum. -/
+theorem compile_roseRec_of_full (hG : G.WF) (hρ : ρ.map Sigma.fst = List.replicate n obj)
+    (hps : PrimsHom M ρ G n) (hds : DefsHom M ρ G n) {c : Tree} {s m : Term}
+    {X mf t a sf : Tree} {F : Tree → Tree} {e : List (Tree × Tree)} (he : EnvHom M ρ G n X e)
+    (hct : IsTy G n c = true) (hm : compile G n m X e = some (mf, t))
+    (ht : roseParts t = some (a, F))
+    (hs : compile G n s (prod X (prod a (list c))) (extEnv X (prod a (list c)) e) =
+      some (sf, c)) :
+    ∃ r, compile G n (Term.roseRec c s m) X e = some r ∧
+      ResEq M ρ (comp (roseRecP F X a t c sf) (pair (idt X) mf), c) r := by
+  -- the variables the step mentions are the fold's parameters
+  have hP : ∀ i, (Term.occurs Term.star i || Term.occurs s (i + 1)) = true →
+      i ∈ foldParams 1 e.length Term.star s := fun i hi ↦ by
+    refine mem_foldParams.mpr ⟨?_, hi⟩
+    simp only [occurs_star, Bool.false_or] at hi
+    simpa [extEnv] using compile_occurs_lt s _ _ _ hs (i + 1) hi
+  obtain ⟨s', hs'⟩ := compile_retype_on s _ _ _ hs (foldEnvIn [prod a (list c)] 1 e Term.star s).1
+    (foldEnvIn [prod a (list c)] 1 e Term.star s).2 fun i hi ↦
+      foldEnvIn_types (foldWs_nat_lt X _ e Term.star s) (foldWs_nat_filterMap X _ e Term.star s)
+        (by simp [extEnv]) i (by
+          rcases i with _ | i
+          · simp
+          · simpa using hP i (by simp [occurs_star, hi]))
+  have hnode : compile G n (Term.roseRec c s m) X e = some _ :=
+    compile_roseRec_iff.mpr ⟨s, m, mf, t, a, F, s', rfl, hct, hm, ht, hs', rfl⟩
+  obtain ⟨mf₂, t₂, a₂, F₂, sf₂, -, hm₂, ht₂, hs₂, hr⟩ :=
+    compile_roseRec_full hM hG hρ hps hds hnode he
+  obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Option.some.inj (hm.symm.trans hm₂))
+  obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Option.some.inj (ht.symm.trans ht₂))
+  obtain ⟨rfl, -⟩ := Prod.mk.inj (Option.some.inj (hs.symm.trans hs₂))
+  exact ⟨_, hnode, hr⟩
+
 /-- A substitution whose terms compile to the values of an environment, lifted under a variable,
 compiles in the extended environment to the values of the extended environment. -/
 theorem SubstEq.lift (hG : G.WF) (hρ : ρ.map Sigma.fst = List.replicate n obj)
@@ -770,10 +877,21 @@ theorem compile_subst (hG : G.WF) (hρ : ρ.map Sigma.fst = List.replicate n obj
     exact ⟨r', hr', hrr.1.trans hr.1.symm, hrr.2.trans ((eval_op₂_congr 3
       (eval_listRecP_congr X a _ hzv hsv) (eval_op₂_congr 9 rfl hmv)).trans hr.2.symm)⟩
   | roseRec c =>
-    obtain ⟨s, m, m', t, a, F, s', rfl, hc, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
-    obtain ⟨⟨m'', t'⟩, hm', rfl, hmv⟩ := ih m (by simp) X E _ hm e σ he hσ
-    exact ⟨_, compile_roseRec_iff.mpr ⟨s, _, m'', _, a, F, s', rfl, hc, hm', ht, hs, rfl⟩, rfl,
-      eval_op₂_congr 3 rfl hmv⟩
+    obtain ⟨s, m, -, -, -, -, -, rfl, -⟩ := compile_roseRec_iff.mp h
+    have hE := SubstEq.envHom hM hG hρ hps hds he hσ
+    obtain ⟨mf, t, a, F, sf, hct, hm, ht, hs, hr⟩ := compile_roseRec_full hM hG hρ hps hds h hE
+    obtain ⟨⟨mf', t'⟩, hm₁, rfl, hmv⟩ := ih m (by simp) X E _ hm e σ he hσ
+    have htt := (compile_hom hM hG hρ hps hds m X E _ hm hE).2
+    have hat := isTy_of_roseParts ht htt
+    have hPt : IsTy G n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
+    have hP := isObj_of_isTy hM hds.2 hρ _ hPt
+    obtain ⟨⟨sf', c₂⟩, hs₁, hc₂, hsv⟩ := ih s (by simp) _ _ _ hs _ _ (he.ext hM hP hPt)
+      (SubstEq.lift hM hG hρ hps hds he hP hσ)
+    subst hc₂
+    obtain ⟨r', hr', hrr⟩ := compile_roseRec_of_full hM hG hρ hps hds he hct hm₁ ht hs₁
+    exact ⟨r', hr', hrr.1.trans hr.1.symm, hrr.2.trans ((eval_op₂_congr 3
+      (eval_roseRecP_congr (fun hu ↦ eval_roseParts_congr ht hu) X a _ _ hsv)
+        (eval_op₂_congr 9 rfl hmv)).trans hr.2.symm)⟩
   | eq =>
     obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
     obtain ⟨⟨f', a'⟩, ht', rfl, hf⟩ := ih t (by simp) X E _ ht e σ he hσ
@@ -933,6 +1051,20 @@ theorem subst_listFold (θ Γ : List Tree) (a c z s t m : Tree) :
     rw [subst_ctxObj]
     rfl
 
+/-- The substitution of objects in a fold of a rose-tree object at the parameters substitutes in
+its parts, by a fold without the parameter that commutes with the substitution. -/
+theorem subst_roseFold (θ Γ : List Tree) {F F' : Tree → Tree}
+    (hF : ∀ s, PartialHorn.subst θ (F s) = F' (PartialHorn.subst θ s)) (a t c s u m : Tree) :
+    PartialHorn.subst θ (roseFold F Γ a t c s u m) =
+      roseFold F' (Γ.map (PartialHorn.subst θ)) (PartialHorn.subst θ a) (PartialHorn.subst θ t)
+        (PartialHorn.subst θ c) (PartialHorn.subst θ s) (PartialHorn.subst θ u)
+        (PartialHorn.subst θ m) := by
+  rcases Γ with _ | ⟨b, Γ⟩
+  · simp only [roseFold, List.map_nil, subst_comp, hF]
+  · simp only [roseFold, List.map_cons, subst_comp, subst_roseRecP θ hF, subst_pair]
+    rw [subst_ctxObj]
+    rfl
+
 /-- A term with objects substituted for its object variables compiles, in the substituted
 environment, to its arrow and type with them substituted. -/
 theorem compile_osubst (hG : G.WF) {m : ℕ} {θ : List Tree} (hl : θ.length = n)
@@ -1030,10 +1162,16 @@ theorem compile_osubst (hG : G.WF) {m : ℕ} {θ : List Tree} (hl : θ.length = 
     have hs₁ := ih s (by simp) _ _ _ hs
     have hm₁ := ih mm (by simp) X e _ hm
     obtain ⟨F', ht', hF'⟩ := roseParts_subst θ ht
-    simp only [substPair, List.map_cons, List.map_nil, subst_idt, subst_prod, subst_list] at hs₁
+    have hhs₁ := foldEnvIn_osubst θ [prod a (list c)] 1 e Term.star s
+    simp only [List.map_cons, List.map_nil, subst_prod, subst_list, osubst_star,
+      Prod.ext_iff] at hhs₁
+    rw [← hhs₁.1, ← hhs₁.2] at hs₁
+    have hP := foldPs_osubst θ 1 e Term.star s
+    rw [osubst_star] at hP
     simp only [substPair] at hm₁
-    exact compile_roseRec_iff.mpr ⟨_, _, _, _, _, _, _, rfl, hty c hct, hm₁, ht', hs₁,
-      by simp [substPair, subst_comp, hF']⟩
+    refine compile_roseRec_iff.mpr ⟨_, _, _, _, _, _, _, rfl, hty c hct, hm₁, ht', hs₁, ?_⟩
+    simp only [substPair, subst_roseFold θ _ hF', subst_tuple, hP, List.map_map]
+    rfl
   | eq =>
     obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
     exact compile_eq_iff.mpr ⟨_, _, rfl, _, _, ih t (by simp) X e (f, a) ht, _,

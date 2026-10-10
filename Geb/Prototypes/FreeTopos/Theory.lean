@@ -40,12 +40,16 @@ equalizer is the monomorphism's characteristic map.
 * {lit}`sig` — the signature.
 * {lit}`axioms` — the axioms, by block.
 * {lit}`theory` — the theory.
-* {lit}`natRecP`, {lit}`listRecP` — the folds with a parameter, composites of the operations.
+* {lit}`natRecP`, {lit}`listRecP`, {lit}`roseRecP` — the folds with a parameter, composites of the
+  operations.
+* {lit}`listMapP` — the action of the list object with a parameter.
 
 ## References
 
 * {cite}`PalmgrenVickers2007`, Example 4, for the theory of categories.
 * {cite}`Goldblatt1984`, Section 4.3, for the definition of an elementary topos.
+* {cite}`GoncharovMiliusSchroderTsampasUrbat2022`, the appendix's induction with parameters, for
+  the fold of a rose-tree object with a parameter.
 
 ## Tags
 
@@ -276,6 +280,34 @@ def prodMapRight (a f : Tree) : Tree :=
 /-- The action of the list object on a morphism, by recursion. -/
 def listMap (f : Tree) : Tree :=
   listRec (dom f) (nil (cod f)) (comp (cons (cod f)) (prodMapLeft f (list (cod f))))
+
+/-- The action of the list object with a parameter on an arrow {lit}`f` from the product of the
+object of parameters {lit}`P` with {lit}`A` into {lit}`C`: the fold of the list object with the
+parameter from the empty list by the construction of {lit}`f` at the parameter and the element
+onto the value at the tail. -/
+def listMapP (P A C f : Tree) : Tree :=
+  listRecP P A (list C) (comp (nil C) (bang P))
+    (comp (cons C) (pair (comp f (fst (prod P A) (list C))) (snd (prod P A) (list C))))
+
+/-- The step of the fold of a rose-tree object with a parameter, uncurried: from the product of a
+label, the list of the children's functions on the parameters, and the parameter, the step
+{lit}`S` at the parameter, the label and the list of the functions evaluated at the parameter. -/
+def roseStepP (P a C S : Tree) : Tree :=
+  comp S (pair (snd (prod a (list (exp P C))) P)
+    (pair (comp (fst a (list (exp P C))) (fst (prod a (list (exp P C))) P))
+      (comp (listMapP P (exp P C) C (comp (ev P C) (pair (snd P (exp P C)) (fst P (exp P C)))))
+        (pair (snd (prod a (list (exp P C))) P)
+          (comp (snd a (list (exp P C))) (fst (prod a (list (exp P C))) P))))))
+
+/-- The fold of a rose-tree object {lit}`t` over the object of labels {lit}`a` with a parameter,
+from the product of the object of parameters {lit}`P` with {lit}`t` into {lit}`C`, by its fold
+{lit}`F` at a step: the fold into the exponential of the parameters by the curried step, whose
+arguments are the parameter, the label and the list of the children's functions each evaluated
+at the parameter, evaluated at the parameter ({cite}`GoncharovMiliusSchroderTsampasUrbat2022`,
+the appendix's induction with parameters). -/
+def roseRecP (F : Tree → Tree) (P a t C S : Tree) : Tree :=
+  comp (ev P C) (pair (comp (F (curry (prod a (list (exp P C))) P (roseStepP P a C S))) (snd P t))
+    (fst P t))
 
 /-- The diagonal of an object, the pairing of its identity with itself. -/
 def diag (a : Tree) : Tree := pair (idt a) (idt a)

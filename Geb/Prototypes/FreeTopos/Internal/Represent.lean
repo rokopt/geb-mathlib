@@ -415,13 +415,26 @@ theorem repC_roseRec {X : Tree} {e : List (Tree × Tree)} {s m : Term} {a c : Tr
       (Rep.prod Ra (Rep.list Rc)) Rc Fn)
     (ha : ObjVal ρ (unfoldTerm sig ds a) A') :
     RepC G n ds ρ (Term.roseRec c s m) X e c R Rc
-      fun x ↦ RoseTree.elim (fun l cs ↦ Fn (l, cs)) (M x) :=
-  let ⟨m', hm', hM⟩ := hm
-  let ⟨s', hs', hS⟩ := hs
-  ⟨comp (lroseRec a s') m', compile_roseRec_iff.mpr ⟨s, m, m', lrose a, a, lroseRec a, s', rfl,
-      htc, hm', roseParts_lrose a, hs', rfl⟩, by
-    simp_unfold
-    exact represents_comp hM (represents_lroseRec ha hS)⟩
+      fun x ↦ RoseTree.elim (fun l cs ↦ Fn (l, cs)) (M x) := by
+  obtain ⟨m', hm', hM⟩ := hm
+  obtain ⟨s', hs', hS⟩ := hs
+  -- a step in the environment of its bound variable alone makes a fold without parameters
+  have hq : ∀ i, (Term.occurs Term.star i || Term.occurs s (i + 1)) = false := fun i ↦ by
+    have h₂ : Term.occurs s (i + 1) = false := Bool.eq_false_iff.mpr fun h ↦
+      Nat.lt_irrefl 1 (Nat.lt_of_le_of_lt (Nat.le_add_left 1 i) (compile_occurs_lt s _ _ _ hs' _ h))
+    rw [occurs_star, h₂]
+    rfl
+  have hp : foldParams 1 e.length Term.star s = [] := by
+    unfold foldParams
+    generalize List.range e.length = l
+    exact l.rec rfl fun i l ih ↦ by
+      simp only [List.filter_cons, hq i, Bool.false_eq_true, ↓reduceIte]
+      exact ih
+  refine ⟨comp (lroseRec a s') m', compile_roseRec_iff.mpr ⟨s, m, m', lrose a, a, lroseRec a, s',
+    rfl, htc, hm', roseParts_lrose a, by rw [foldEnvIn_closed hp]; exact hs',
+    by rw [foldPs_closed hp]; rfl⟩, ?_⟩
+  simp_unfold
+  exact represents_comp hM (represents_lroseRec ha hS)
 
 /-! The application of a definition. -/
 

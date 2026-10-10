@@ -2101,10 +2101,13 @@ def «Tactics.occStep» :=
                 ([] : List T)
                 («Base.mapT»
                   (fun (x8 : T) =>
-                    if (Const.eq x8 (leaf 1)).label ≠ 0 then
-                      «Prover.ufAt» x3 (Const.add x8 (leaf 1)) x4
-                    else
-                      x5)
+                    «Prover.ufAt»
+                      x3
+                      (Const.add x8 (leaf 1))
+                      (if (Const.eq x8 (leaf 0)).label ≠ 0 then
+                        Const.add x4 (leaf 1)
+                      else
+                        x4))
                   («Base.range» («Tactics.lenUF» («Prover/UFs.tail» x3))))
             else
               if («Base.allT»
@@ -2411,30 +2414,29 @@ def «Tactics.absStep» :=
         «Language.var» x3
       else
         let x4 : T := Const.label x1;
-        let x5 : List T := «Language.mArgs» x1;
-        let x6 : List T →
-          T := (fun (x6 : List T) =>
-          Const.node x4 ((Const.child x1 (leaf 0)) :: x6));
+        let x5 : List T →
+          T := (fun (x5 : List T) =>
+          Const.node x4 ((Const.child x1 (leaf 0)) :: x5));
         if (Const.eq x4 (leaf 5)).label ≠ 0 then
-          x6
+          x5
             (Const.foldr
               (α := T → T)
               (β := List T)
-              (fun (x7 : T → T) (x8 : List T) =>
-                ((x7 (Const.add x3 (leaf 1))) :: x8))
+              (fun (x6 : T → T) (x7 : List T) =>
+                ((x6 (Const.add x3 (leaf 1))) :: x7))
               ([] : List T)
               («Prover/UFs.tail» x2))
         else
           if («Prelude.or»
             (Const.eq x4 (leaf 8))
             (Const.eq x4 (leaf 9))).label ≠ 0 then
-            x6
+            x5
               («Base.mapT»
-                (fun (x7 : T) =>
+                (fun (x6 : T) =>
                   «Prover.ufAt»
                     x2
-                    (Const.add x7 (leaf 1))
-                    (if (Const.eq x7 (leaf 1)).label ≠ 0 then
+                    (Const.add x6 (leaf 1))
+                    (if (Const.eq x6 (leaf 1)).label ≠ 0 then
                       Const.add
                         x3
                         (if (Const.eq x4 (leaf 8)).label ≠ 0 then leaf 1 else leaf 2)
@@ -2443,20 +2445,23 @@ def «Tactics.absStep» :=
                 («Base.range» («Tactics.lenUF» («Prover/UFs.tail» x2))))
           else
             if (Const.eq x4 (leaf 10)).label ≠ 0 then
-              x6
+              x5
                 («Base.mapT»
-                  (fun (x7 : T) =>
-                    if (Const.eq x7 (leaf 1)).label ≠ 0 then
-                      «Prover.ufAt» x2 (Const.add x7 (leaf 1)) x3
-                    else
-                      «Prelude.at» x5 x7)
+                  (fun (x6 : T) =>
+                    «Prover.ufAt»
+                      x2
+                      (Const.add x6 (leaf 1))
+                      (if (Const.eq x6 (leaf 0)).label ≠ 0 then
+                        Const.add x3 (leaf 1)
+                      else
+                        x3))
                   («Base.range» («Tactics.lenUF» («Prover/UFs.tail» x2))))
             else
-              x6
+              x5
                 (Const.foldr
                   (α := T → T)
                   (β := List T)
-                  (fun (x7 : T → T) (x8 : List T) => ((x7 x3) :: x8))
+                  (fun (x6 : T → T) (x7 : List T) => ((x6 x3) :: x7))
                   ([] : List T)
                   («Prover/UFs.tail» x2)));
     x3

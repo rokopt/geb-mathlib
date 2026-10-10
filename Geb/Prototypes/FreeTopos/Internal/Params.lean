@@ -23,7 +23,9 @@ laws rest on: a term that compiles mentions only variables of its environment
 ({lit}`occurs_osubst`); the environment of a fold's start and step has a parameter's projection at
 its index and a placeholder at each other index below them ({lit}`getElem?_selEnv_of_mem`,
 {lit}`getElem?_selEnv_of_not_mem`), and is the environment of the projections of the bound
-variables' types when the fold has no parameters ({lit}`foldEnvIn_closed`).
+variables' types when the fold has no parameters ({lit}`foldEnvIn_closed`). A rose-tree fold has a
+step and no start, and its parameters are those of a fold whose start is the element of the
+terminal object, which mentions no variable ({lit}`occurs_star`).
 
 ## Main statements
 
@@ -389,6 +391,23 @@ theorem list_inj {a a' : Tree} (h : list a = list a') : a = a' := by
   rw [listPart_eq_some.mpr rfl] at h₁
   simpa using h₁
 
+/-- The element of the terminal object mentions no variable. -/
+theorem occurs_star (d : ℕ) : Term.occurs Term.star d = false := by
+  rw [Term.star, Term.occurs_node]
+  rfl
+
+/-- A variable of the environment a rose-tree fold's step mentions is one the fold mentions. -/
+theorem occurs_roseRec_of_step {c : Tree} {s m : Term} {i : ℕ}
+    (hi : (Term.occurs Term.star i || Term.occurs s (i + 1)) = true) :
+    Term.occurs (RoseTree.node (.roseRec c) [s, m]) i = true := by
+  simp only [occurs_star, Bool.false_or] at hi
+  simp only [Term.occurs_node, Term.occursStep, List.map_cons, List.map_nil, hi, Bool.true_or]
+
+/-- The substitution of objects leaves the element of the terminal object. -/
+theorem osubst_star (θ : List Tree) : Term.osubst θ Term.star = Term.star := by
+  rw [Term.star, Term.osubst_node]
+  rfl
+
 /-- The substitution of objects leaves the variables a term mentions. -/
 theorem occurs_osubst (θ : List Tree) :
     ∀ (t : Term) (d : ℕ), Term.occurs (Term.osubst θ t) d = Term.occurs t d :=
@@ -539,9 +558,14 @@ theorem compile_occurs_lt (t : Term) :
       simpa using this
     · exact same m (by simp) _ hm hi
   | roseRec c =>
-    obtain ⟨s, m, _, _, _, _, _, rfl, -, hm, -⟩ := compile_roseRec_iff.mp h
-    simp only [Term.occurs_node, Term.occursStep, List.map_cons, List.map_nil] at hi
-    exact same m (by simp) _ hm hi
+    obtain ⟨s, m, _, _, _, _, _, rfl, -, hm, -, hs, -⟩ := compile_roseRec_iff.mp h
+    simp only [Term.occurs_node, Term.occursStep, List.map_cons, List.map_nil,
+      Bool.or_eq_true] at hi
+    rcases hi with hi | hi
+    · have := Nat.lt_of_lt_of_le (ih s (by simp) _ _ _ hs (i + 1) hi)
+        (length_foldEnvIn_le [_] 1 e Term.star s)
+      simpa using this
+    · exact same m (by simp) _ hm hi
   | eq =>
     obtain ⟨t, u, rfl, _, _, ht, _, hu, -⟩ := compile_eq_iff.mp h
     simp only [Term.occurs_node, Term.occursStep, List.map_cons, List.map_nil, List.any_cons,
@@ -557,6 +581,26 @@ theorem compile_occurs_lt (t : Term) :
     obtain ⟨r, hr⟩ := compile_of_mapM hrs hc
     exact same c hc r hr hi
 
+/-- A fold whose mentioned variables are below an environment's length, renamed by a strictly
+increasing map into an environment that has at each renamed variable the first's entry, has as
+parameters the renamings of its parameters, of the same entries. -/
+theorem foldParams_rename_of_lt {k : ℕ} {z s : Term} {e e' : List (Tree × Tree)} {f : ℕ → ℕ}
+    (hlt : ∀ i, (Term.occurs z i || Term.occurs s (i + k)) = true → i < e'.length)
+    (hf : ∀ i < e'.length, e[f i]? = e'[i]?) (hmono : StrictMono f) (z₁ s₁ : Term)
+    (hq : ∀ j, (Term.occurs z₁ j || Term.occurs s₁ (j + k)) = true ↔
+      ∃ i, (Term.occurs z i || Term.occurs s (i + k)) = true ∧ f i = j) :
+    foldParams k e.length z₁ s₁ = (foldParams k e'.length z s).map f ∧
+      foldPs k e z₁ s₁ = foldPs k e' z s := by
+  have hV : foldParams k e.length z₁ s₁ = (foldParams k e'.length z s).map f :=
+    filter_range_map hmono hq fun i hi ↦ by
+      have hfi := hf i (hlt i hi)
+      rw [List.getElem?_eq_getElem (hlt i hi)] at hfi
+      exact ⟨hlt i hi, (List.getElem?_eq_some_iff.mp hfi).1⟩
+  refine ⟨hV, ?_⟩
+  unfold foldPs
+  rw [hV, List.filterMap_map]
+  exact List.filterMap_congr fun v hv ↦ hf v (mem_foldParams.mp hv).1
+
 /-- A fold that compiles in an environment, renamed by a strictly increasing map into an
 environment that has at each renamed variable the first's entry, has as parameters the renamings
 of its parameters, of the same entries. -/
@@ -569,18 +613,8 @@ theorem foldParams_rename {k : ℕ} {l : Label} {z s m : Term} {X : Tree}
     (hq : ∀ j, (Term.occurs z₁ j || Term.occurs s₁ (j + k)) = true ↔
       ∃ i, (Term.occurs z i || Term.occurs s (i + k)) = true ∧ f i = j) :
     foldParams k e.length z₁ s₁ = (foldParams k e'.length z s).map f ∧
-      foldPs k e z₁ s₁ = foldPs k e' z s := by
-  have hlt : ∀ i, (Term.occurs z i || Term.occurs s (i + k)) = true → i < e'.length :=
-    fun i hi ↦ compile_occurs_lt _ X e' r h i (hl i hi)
-  have hV : foldParams k e.length z₁ s₁ = (foldParams k e'.length z s).map f :=
-    filter_range_map hmono hq fun i hi ↦ by
-      have hfi := hf i (hlt i hi)
-      rw [List.getElem?_eq_getElem (hlt i hi)] at hfi
-      exact ⟨hlt i hi, (List.getElem?_eq_some_iff.mp hfi).1⟩
-  refine ⟨hV, ?_⟩
-  unfold foldPs
-  rw [hV, List.filterMap_map]
-  exact List.filterMap_congr fun v hv ↦ hf v (mem_foldParams.mp hv).1
+      foldPs k e z₁ s₁ = foldPs k e' z s :=
+  foldParams_rename_of_lt (fun i hi ↦ compile_occurs_lt _ X e' r h i (hl i hi)) hf hmono z₁ s₁ hq
 
 end Geb.FreeTopos.Internal
 

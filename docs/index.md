@@ -4034,7 +4034,13 @@ checklist and in CI.
   [CarboniLackWalters1993], the projection of a coequalizer an
   epimorphism, the uniqueness of characteristic maps
   (`Geb.FreeTopos.omega_ext`), induction on subobjects, and unique choice
-  (`Geb.FreeTopos.unique_choice`, after [DubucSzyld2015]). `Chosen.lean`
+  (`Geb.FreeTopos.unique_choice`, after [DubucSzyld2015]).
+  `RoseRecursion.lean` derives the fold of a rose-tree object with a
+  parameter (`Geb.FreeTopos.roseRecP`) from the fold into the
+  exponential of the parameters, the rose-tree functor being strong
+  [GoncharovMiliusSchroderTsampasUrbat2022], and proves it the unique
+  arrow with its equation at a construction
+  (`Geb.FreeTopos.roseRecP_unique`). `Chosen.lean`
   states a topos with chosen structure and the data objects
   (`Geb.FreeTopos.ChosenTopos`), and `Converse.lean` makes it a model of
   the theory (`Geb.FreeTopos.ChosenTopos.isModel`). `Relations.lean`
@@ -4081,11 +4087,12 @@ checklist and in CI.
   compiles it to an arrow of the combinators in one pass, the
   interpretation of Part I of [LambekScott1986] as the categorical
   abstract machine [CousineauCurienMauny1987] compiles it, a fold of the
-  natural numbers or of a list, whose start is in the fold's context and
-  whose step in its extension, to the fold with a parameter
-  [EscardoSimpson2025] (`Geb.FreeTopos.natRecP`,
-  `Geb.FreeTopos.listRecP`) at the variables its start or step mentions,
-  and to the combinators' fold when they mention none, and compiles the
+  natural numbers, of a list or of a rose tree, whose start is in the
+  fold's context and whose step in its extension, to the fold with a
+  parameter [EscardoSimpson2025] (`Geb.FreeTopos.natRecP`,
+  `Geb.FreeTopos.listRecP`, `Geb.FreeTopos.roseRecP`) at the variables
+  its start or step mentions, and to the combinators' fold when they
+  mention none, and compiles the
   language's definitions and object definitions to definitions of the
   combinators. `Params.lean` describes the parameters and the
   environments a fold's start and step compile in. `Sorting.lean`,

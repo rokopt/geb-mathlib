@@ -573,9 +573,9 @@ theorem childCtxs_isSome {G : Globals} {n : ℕ} {l : Label} {ts : List Term} {�
       change (compile G n m (ctxObj Γ) (stdEnv Γ)).map Prod.snd = some t
       rw [hf₀]
       rfl
-    refine ⟨[([prod a (list c)], []), (Γ, Φ)], ?_⟩
+    refine ⟨[(prod a (list c) :: Γ, Φ.map weaken1), (Γ, Φ)], ?_⟩
     change ((typeIn G n Γ m).bind roseParts).bind
-      (fun p ↦ some [([prod p.1 (list c)], []), (Γ, Φ)]) = _
+      (fun p ↦ some [(prod p.1 (list c) :: Γ, Φ.map weaken1), (Γ, Φ)]) = _
     rw [hmt, Option.bind_some, ht, Option.bind_some]
   | lam a => rcases ts with _ | ⟨b, _ | ⟨b', ts⟩⟩ <;> exact ⟨_, rfl⟩
   | _ => exact ⟨_, rfl⟩
@@ -696,6 +696,48 @@ theorem compile_at2 {X x y W A B C : Tree} {e : List (Tree × Tree)} {w : Term}
       (fst_pair hM hpx hy) (snd_pair hM hpx hy)
       (envEq_precomp_extEnv hM he.1 hAo (fun p hp ↦ (he.2 p hp).1) hpx (fst_pair hM hi hx)
         (snd_pair hM hi hx) (envEq_precomp_idt hM fun p hp ↦ (he.2 p hp).1)))
+
+/-- A rose-tree fold's step weakened past two variables compiles, in the environment extended by
+the two variables and then by the pair it binds, to the step's arrow after the product of the
+projection onto the original environment's object with the identity. -/
+theorem compile_weakenStep2 {X A B D W C : Tree} {e : List (Tree × Tree)} {s : Term}
+    (he : EnvHom M ρ G n X e) (hA : IsTy G n A = true) (hB : IsTy G n B = true)
+    (hD : IsTy G n D = true) (hs : compile G n s (prod X D) (extEnv X D e) = some (W, C)) :
+    ∃ q, compile G n (weakenStep2 s) (prod (prod (prod X A) B) D)
+        (extEnv (prod (prod X A) B) D (extEnv (prod X A) B (extEnv X A e))) = some q ∧
+      ResEq M ρ (comp W (pair (comp (comp (fst X A) (fst (prod X A) B))
+        (fst (prod (prod X A) B) D)) (snd (prod (prod X A) B) D)), C) q := by
+  have hAo := isObj_of_isTy hM hds.2 hρ A hA
+  have hBo := isObj_of_isTy hM hds.2 hρ B hB
+  have hDo := isObj_of_isTy hM hds.2 hρ D hD
+  have hXA := isObj_prod hM he.1 hAo
+  have hY := isObj_prod hM hXA hBo
+  have hf₁ := fst_hom hM he.1 hAo
+  have hf₂ := fst_hom hM hXA hBo
+  have hfY := fst_hom hM hY hDo
+  have hsY := snd_hom hM hY hDo
+  have hπ := comp_hom hM hf₂ hf₁
+  have hπf := comp_hom hM hfY hπ
+  have hk := pair_hom hM hπf hsY
+  have heh : ∀ p ∈ e, Hom M ρ p.1 X p.2 := fun p hp ↦ (he.2 p hp).1
+  -- the step in the extended environment's entries at the original environment's variables
+  have heq : EnvEq M ρ (precomp (comp (comp (fst X A) (fst (prod X A) B))
+      (fst (prod (prod X A) B) D)) e)
+      (precomp (fst (prod (prod X A) B) D) (precomp (fst (prod X A) B) (precomp (fst X A) e))) :=
+    fun i p hp ↦ by
+      simp only [precomp, List.getElem?_map, Option.map_eq_some_iff] at hp
+      obtain ⟨p₀, hp₀, rfl⟩ := hp
+      have hp₀h := heh p₀ (List.mem_of_getElem? hp₀)
+      exact ⟨(comp (comp (comp p₀.1 (fst X A)) (fst (prod X A) B)) (fst (prod (prod X A) B) D),
+        p₀.2), by simp [precomp, hp₀], rfl, ((comp_assoc hM hfY hπ hp₀h).trans
+          (eval_op₂_congr 3 (comp_assoc hM hf₂ hf₁ hp₀h) rfl)).symm⟩
+  obtain ⟨q, hq, hrq⟩ := compile_precomp hM hG hρ hps hds hs (he.ext hM hDo hD) hk
+    (envEq_precomp_extEnv hM he.1 hDo heh hk (fst_pair hM hπf hsY) (snd_pair hM hπf hsY) heq)
+  refine ⟨q, compile_rename s _ _ _ _ q hq (fun i hi ↦ ?_)
+    (strictMono_liftR fun _ _ h ↦ Nat.add_lt_add_right h 2), hrq⟩
+  rcases i with _ | j
+  · rfl
+  · simp [extEnv, precomp, Term.liftR]
 
 /-- β is sound: the application of an abstraction is its body with the argument substituted. -/
 theorem beta_sound {Φ : List Term} (Γ : List Tree) (a : Tree) (b u : Term) :
@@ -1053,73 +1095,109 @@ theorem caseInr_sound {Φ : List Term} {kc kr : ℕ} (hkc : G.prims[kc]? = some 
       (snd_pair hM (hty _ _ _ _ hf he).1 hg') rfl))).symm
 
 omit hG hps in
-/-- The primitive arrow of a rose tree's construction, at its objects, is an arrow from the
-product of the object's type of labels and the list object of the rose-tree object it constructs,
-after which the fold of that object is the step after the product of the labels with the fold's
-action on the children. -/
+/-- The construction of a rose tree, a primitive arrow of a rose-tree object's construction at
+objects, has as domain the product of the labels with the list of trees, and as arrow the
+structure map of a fold with the laws of a rose-tree object. -/
 theorem roseNode_prim {kn : ℕ} {p : Prim} (hp : G.prims[kn]? = some p)
     (hkn : G.prims[kn]? = some nodePrim ∨ G.prims[kn]? = some lnodePrim) {θ : List Tree}
-    (hl : θ.length = p.arity) (hθ : θ.all (IsTy G n) = true) {a c : Tree} {F : Tree → Tree}
+    (hl : θ.length = p.arity) (hθ : θ.all (IsTy G n) = true) {a : Tree} {F : Tree → Tree}
     (ht : roseParts (PartialHorn.subst θ p.cod) = some (a, F)) :
     PartialHorn.subst θ p.dom = prod a (list (PartialHorn.subst θ p.cod)) ∧
-      Hom M ρ (PartialHorn.subst θ p.arrow) (prod a (list (PartialHorn.subst θ p.cod)))
-        (PartialHorn.subst θ p.cod) ∧
-      ∀ {S}, Hom M ρ S (prod a (list c)) c → eval M ρ (comp (F S) (PartialHorn.subst θ p.arrow)) =
-        eval M ρ (comp S (prodMapRight a (listMap (F S)))) := by
+      RoseFold M ρ F (PartialHorn.subst θ p.arrow) (PartialHorn.subst θ p.cod) a := by
   rcases hkn with hkn | hkn <;> obtain rfl := Option.some_inj.mp (hp.symm.trans hkn)
   · obtain rfl := List.length_eq_zero_iff.mp hl
     obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Option.some_inj.mp
       ((show roseParts rose = some (nat, roseRec) by simp [roseParts]).symm.trans ht))
-    exact ⟨rfl, node_hom hM, fun hS ↦ roseRec_node hM hS⟩
+    exact ⟨rfl, roseFold_rose hM⟩
   · obtain ⟨a', rfl⟩ := List.length_eq_one_iff.mp hl
     obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Option.some_inj.mp ((roseParts_lrose a').symm.trans ht))
     have hA : IsObj M ρ a' := isObj_of_isTy hM hds.2 hρ a' (by simpa using hθ)
-    exact ⟨rfl, lnode_hom hM hA, fun hS ↦ lroseRec_node hM hA hS⟩
+    exact ⟨rfl, roseFold_lrose hM hA⟩
 
 /-- The list of the folds of the children of a rose tree, by the fold of a list whose step is
-the construction of the fold at the element onto the list folded, compiles to the value of the
-fold, with the environment's object as parameter, of the fold's action on the children, at the
-identity and the children's arrow. -/
+the construction of the fold, its step weakened past the list fold's variables, at the element
+onto the list folded, compiles to the action of the list object with the environment's object as
+parameter of the fold with it, at the identity and the children's arrow. -/
 theorem compile_roseMap {kl kc : ℕ} (hkl : G.prims[kl]? = some nilPrim)
-    (hkc : G.prims[kc]? = some consPrim) {c t a S CS : Tree} {F : Tree → Tree}
-    {X : Tree} {e : List (Tree × Tree)} {s cs : Term} (hct : IsTy G n c = true)
-    (ht : roseParts t = some (a, F))
-    (hs : compile G n s (prod a (list c)) [(idt (prod a (list c)), prod a (list c))] =
-      some (S, c))
+    (hkc : G.prims[kc]? = some consPrim) {c t a nd sf CS : Tree} {F : Tree → Tree}
+    (hF : RoseFold M ρ F nd t a) {X : Tree} {e : List (Tree × Tree)} {s cs : Term}
+    (hct : IsTy G n c = true) (hat : IsTy G n a = true) (ht : roseParts t = some (a, F))
+    (hs : compile G n s (prod X (prod a (list c))) (extEnv X (prod a (list c)) e) =
+      some (sf, c))
     (hcs : compile G n cs X e = some (CS, list t)) (he : EnvHom M ρ G n X e) :
     ∃ r, compile G n (Term.listRec (Term.arr kl [c] Term.star)
-      (Term.arr kc [c] (Term.pair (Term.roseRec c s (Term.var 1)) (Term.var 0))) cs) X e =
-        some r ∧
-      ResEq M ρ (comp (listRecP X t (list c) (comp (nil c) (bang X))
-        (comp (cons c) (pair (comp (F S) (comp (snd X t) (fst (prod X t) (list c))))
-          (snd (prod X t) (list c))))) (pair (idt X) CS), list c) r :=
-  compile_listRec_of_full hM hG hρ hps hds he hcs (compile_nilT hkl hct X e)
-    (compile_consT hkc hct (compile_pair_iff.mpr ⟨_, _, _, _, _, _, rfl,
-      compile_roseRec_iff.mpr ⟨s, Term.var 1, _, t, a, F, S, rfl, hct,
-        compile_var_iff.mpr ⟨rfl, rfl⟩, ht, hs, rfl⟩,
-      compile_var_iff.mpr ⟨rfl, rfl⟩, rfl⟩))
+      (Term.arr kc [c] (Term.pair (Term.roseRec c (weakenStep2 s) (Term.var 1)) (Term.var 0)))
+        cs) X e = some r ∧
+      ResEq M ρ (comp (listMapP X t c (roseRecP F X a t c sf)) (pair (idt X) CS), list c) r := by
+  have hty := compile_hom hM hG hρ hps hds
+  have hobj := isObj_of_isTy hM hds.2 hρ
+  obtain ⟨hCSh, hLt⟩ := hty _ _ _ _ hcs he
+  rw [isTy_list] at hLt
+  have hT := hobj t hLt
+  have hLct : IsTy G n (list c) = true := by simpa [isTy_list] using hct
+  have hPt : IsTy G n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
+  have hPo := hobj _ hPt
+  have hC := hobj c hct
+  have hLc := hobj _ hLct
+  have hsf := (hty _ _ _ _ hs (he.ext hM hPo hPt)).1
+  have heT := he.ext hM hT hLt
+  have he₂ := heT.ext hM hLc hLct
+  have hXT := isObj_prod hM he.1 hT
+  have hfT := fst_hom hM he.1 hT
+  have hfY := fst_hom hM hXT hLc
+  have hπ := comp_hom hM hfY hfT
+  have hel := comp_hom hM hfY (snd_hom hM he.1 hT)
+  have hFc : ∀ {u u' : Tree}, eval M ρ u = eval M ρ u' → eval M ρ (F u) = eval M ρ (F u') :=
+    fun hu ↦ eval_roseParts_congr ht hu
+  have hR := roseRecP_hom hM hF he.1 hsf
+  -- the weakened step, and the fold with it at the element
+  obtain ⟨⟨sf'', c₁⟩, hs'', hc₁, hsv⟩ := compile_weakenStep2 hM hG hρ hps hds he hLt hLct hPt hs
+  change c₁ = c at hc₁
+  rw [hc₁] at hs''
+  obtain ⟨⟨RI, c₂⟩, hrI, hc₂, hRIv⟩ := compile_roseRec_of_full hM hG hρ hps hds (m := Term.var 1)
+    he₂ hct (compile_var_iff.mpr ⟨rfl, rfl⟩) ht hs''
+  change c₂ = c at hc₂
+  rw [hc₂] at hrI
+  -- the fold at the element is the fold with the environment's object as parameter at the
+  -- parameter and the element
+  have eRI : eval M ρ RI = eval M ρ (comp (roseRecP F X a t c sf) (fst (prod X t) (list c))) := by
+    have hk := pair_hom hM (comp_hom hM (fst_hom hM (isObj_prod hM hXT hLc) hT) hπ)
+      (snd_hom hM (isObj_prod hM hXT hLc) hT)
+    refine hRIv.trans ?_
+    refine (eval_op₂_congr 3 ((eval_roseRecP_congr hFc _ a t c hsv).trans
+      (roseRecP_comp hM hF he.1 hsf hπ).symm) rfl).trans ?_
+    refine (comp_assoc hM (pair_hom hM (idt_hom hM (isObj_prod hM hXT hLc)) hel) hk hR).symm.trans
+      (eval_op₂_congr 3 rfl ?_)
+    refine (prodMapLeft_pair hM hπ (idt_hom hM (isObj_prod hM hXT hLc)) hel).trans ?_
+    refine (eval_op₂_congr 9 (comp_idt hM hπ) rfl).trans ?_
+    exact pair_eta hM he.1 hT hfY
+  obtain ⟨rM, hrM, hrMe⟩ := compile_listRec_of_full hM hG hρ hps hds
+    (s := Term.arr kc [c] (Term.pair (Term.roseRec c (weakenStep2 s) (Term.var 1)) (Term.var 0)))
+    he hcs (compile_nilT hkl hct X e) (compile_consT hkc hct (compile_pair_iff.mpr
+      ⟨_, _, _, _, _, _, rfl, hrI, compile_var_iff.mpr ⟨rfl, rfl⟩, rfl⟩))
+  exact ⟨rM, hrM, hrMe.1, hrMe.2.trans (eval_op₂_congr 3 (eval_listRecP_congr X t (list c) rfl
+    (eval_op₂_congr 3 rfl (eval_op₂_congr 9 eRI rfl))) rfl)⟩
 
 /-- The fold of a rose tree's construction is the step at the pair of the label and the list of
-the folds of the children. -/
+the folds of the children, their step weakened past the list fold's variables. -/
 theorem roseNode_sound {Φ : List Term} {kn kl kc : ℕ}
     (hkn : G.prims[kn]? = some nodePrim ∨ G.prims[kn]? = some lnodePrim)
     (hkl : G.prims[kl]? = some nilPrim) (hkc : G.prims[kc]? = some consPrim) (Γ : List Tree)
     (c : Tree) (θ : List Tree) (s l cs : Term) :
     RwSound M ρ G n Γ Φ (Term.roseRec c s (Term.arr kn θ (Term.pair l cs)))
       (Term.subst s (instVar (Term.pair l (Term.listRec (Term.arr kl [c] Term.star)
-        (Term.arr kc [c] (Term.pair (Term.roseRec c s (Term.var 1)) (Term.var 0))) cs)))) := by
+        (Term.arr kc [c] (Term.pair (Term.roseRec c (weakenStep2 s) (Term.var 1))
+          (Term.var 0))) cs)))) := by
   intro X e he _ _ r h
   have hty := compile_hom hM hG hρ hps hds
   have hobj := isObj_of_isTy hM hds.2 hρ
-  obtain ⟨s₁, m, m', t, a, F, S, hcs, hct, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
-  simp only [List.cons.injEq, and_true] at hcs
-  obtain ⟨rfl, rfl⟩ := hcs
+  obtain ⟨mf, T, a, F, sf, hct, hm, ht, hs, hr⟩ := compile_roseRec_full hM hG hρ hps hds h he
   obtain ⟨u₀, hu₀, p, hp, P, hP, hl, hθ, hm'⟩ := compile_arr_iff.mp hm
   simp only [List.cons.injEq, and_true] at hu₀
   subst hu₀
   simp only [Prod.mk.injEq] at hm'
   obtain ⟨rfl, rfl⟩ := hm'
-  obtain ⟨hdom, hndh, hcomp⟩ := roseNode_prim hM hρ hds (c := c) hp hkn hl hθ ht
+  obtain ⟨hdom, hF⟩ := roseNode_prim hM hρ hds hp hkn hl hθ ht
   rw [hdom] at hP
   obtain ⟨l₁, cs₁, L, A₁, CS, T₁, hlcs, hl₁, hcs₁, hPe⟩ := compile_pair_iff.mp hP
   simp only [List.cons.injEq, and_true] at hlcs
@@ -1128,51 +1206,32 @@ theorem roseNode_sound {Φ : List Term} {kn kl kc : ℕ}
   obtain ⟨rfl, hAT⟩ := hPe
   obtain ⟨hA₁, hT₁⟩ := prod_inj hAT
   subst A₁ T₁
-  generalize PartialHorn.subst θ p.cod = T at *
-  generalize PartialHorn.subst θ p.arrow = nd at *
   -- the typings
   have hLh : Hom M ρ L X a := (hty _ _ _ _ hl₁ he).1
   have hat : IsTy G n a = true := (hty _ _ _ _ hl₁ he).2
-  have hCSh : Hom M ρ CS X (list T) := (hty _ _ _ _ hcs₁ he).1
-  have hA := hobj a hat
+  have hCSh := (hty _ _ _ _ hcs₁ he).1
   have hPt : IsTy G n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
   have hPo := hobj _ hPt
-  have hSe : EnvHom M ρ G n (prod a (list c)) [(idt (prod a (list c)), prod a (list c))] :=
-    ⟨hPo, by simpa using ⟨idt_hom hM hPo, hPt⟩⟩
-  have hS : Hom M ρ S (prod a (list c)) c := (hty _ _ _ _ hs hSe).1
-  have hFS := roseParts_hom hM ht hA hS
-  have hmap := listMap_hom hM hFS
+  have hsf := (hty _ _ _ _ hs (he.ext hM hPo hPt)).1
   obtain ⟨⟨MAPc, Lc⟩, hMAP, hLc, hMAPe⟩ :=
-    compile_roseMap hM hG hρ hps hds hkl hkc hct ht hs hcs₁ he
+    compile_roseMap hM hG hρ hps hds hkl hkc hF hct hat ht hs hcs₁ he
   subst hLc
-  have hMAPv := hMAPe.trans (listRecP_map hM he.1 hFS hCSh)
   have hMAPh : Hom M ρ MAPc X (list c) := (hty _ _ _ _ hMAP he).1
   have hk := pair_hom hM hLh hMAPh
-  obtain ⟨r₁, h₁, hr₁⟩ := compile_precomp hM hG hρ hps hds hs hSe hk
-    (e' := [(pair L MAPc, prod a (list c))]) fun i p hp ↦ by
-      rcases i with _ | j
-      · obtain rfl : (comp (idt (prod a (list c))) (pair L MAPc), prod a (list c)) = p := by
-          simpa [precomp] using hp
-        exact ⟨_, rfl, rfl, (idt_comp hM hk).symm⟩
-      · simp [precomp] at hp
+  obtain ⟨r₁, h₁, hr₁⟩ := compile_at hM hG hρ hps hds he hPt hs hk
   obtain ⟨r₂, h₂, hr₂⟩ := compile_subst hM hG hρ hps hds s X _ r₁ h₁ e
     (instVar (Term.pair l (Term.listRec (Term.arr kl [c] Term.star)
-      (Term.arr kc [c] (Term.pair (Term.roseRec c s (Term.var 1)) (Term.var 0))) cs))) he
+      (Term.arr kc [c] (Term.pair (Term.roseRec c (weakenStep2 s) (Term.var 1)) (Term.var 0)))
+        cs))) he
     fun i p hp ↦ by
       rcases i with _ | j
       · obtain rfl : (pair L MAPc, prod a (list c)) = p := by simpa using hp
         exact ⟨_, compile_pair_iff.mpr ⟨_, _, _, _, _, _, rfl, hl₁, hMAP, rfl⟩, ResEq.refl _⟩
-      · simp at hp
-  refine ⟨r₂, h₂, ResEq.trans (r₂ := (comp S (pair L MAPc), c)) ⟨rfl, ?_⟩ (hr₁.trans hr₂)⟩
-  have hLCS := pair_hom hM hLh hCSh
-  have hLT := isObj_list hM hFS.isObj_dom
-  have hpm : Hom M ρ (prodMapRight a (listMap (F S))) (prod a (list T)) (prod a (list c)) :=
-    (pair_hom hM (fst_hom hM hA hLT) (comp_hom hM (snd_hom hM hA hLT) hmap)).congr
-      (eval_prodMapRight a hmap) rfl rfl
-  exact Eq.symm ((comp_assoc hM hLCS hndh hFS).trans ((eval_op₂_congr 3 (hcomp hS) rfl).trans
-    ((comp_assoc hM hLCS hpm hS).symm.trans (eval_op₂_congr 3 rfl
-      ((prodMapRight_pair hM hLh hCSh hmap).trans
-        (eval_op₂_congr 9 rfl hMAPv.symm))))))
+      · exact ⟨p, compile_var_iff.mpr ⟨rfl, by simpa using hp⟩, ResEq.refl p⟩
+  refine ⟨r₂, h₂, hr.symm.trans (ResEq.trans (r₂ := (comp sf (pair (idt X) (pair L MAPc)), c))
+    ⟨rfl, ?_⟩ (hr₁.trans hr₂))⟩
+  exact (eval_op₂_congr 3 rfl (eval_op₂_congr 9 rfl (eval_op₂_congr 9 rfl hMAPe))).trans
+    (roseRecP_node_at hM hF he.1 hsf (idt_hom hM he.1) hLh hCSh).symm
 
 /-- A side of a theorem, at objects and at terms of the instances of its context's types,
 compiles to its arrow's instance after the terms' tuple. -/
@@ -1743,28 +1802,32 @@ theorem cong_sound {l : Label} {ts ts' : List Term} {Γ : List Tree} {Φ : List 
     exact ⟨r', hr', hrr.1.trans hr.1.symm, hrr.2.trans ((eval_op₂_congr 3
       (eval_listRecP_congr X A _ hzv hsv) (eval_op₂_congr 9 rfl hmv)).trans hr.2.symm)⟩
   | roseRec c =>
-    obtain ⟨s, m, m', t, a, F, s', rfl, hct, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
+    obtain ⟨s, m, -, -, -, -, -, rfl, -⟩ := compile_roseRec_iff.mp h
+    obtain ⟨m', t, a, F, s', hct, hm, ht, hs, hr⟩ := compile_roseRec_full hM hG hρ hps hds h he
     obtain ⟨f₀, hf₀⟩ := compile_retype m X e _ hm (ctxObj Γ) (stdEnv Γ)
       (by rw [map_snd_stdEnv, hΓ])
     have hmt : typeIn G n Γ m = some t := by
       change (compile G n m (ctxObj Γ) (stdEnv Γ)).map Prod.snd = some t
       rw [hf₀]
       rfl
-    obtain rfl : Γs = [([prod a (list c)], []), (Γ, Φ)] := by
+    obtain rfl : Γs = [(prod a (list c) :: Γ, Φ.map weaken1), (Γ, Φ)] := by
       change ((typeIn G n Γ m).bind roseParts).bind
-        (fun p ↦ some [([prod p.1 (list c)], []), (Γ, Φ)]) = some Γs at hΓs
+        (fun p ↦ some [(prod p.1 (list c) :: Γ, Φ.map weaken1), (Γ, Φ)]) = some Γs at hΓs
       rw [hmt, Option.bind_some, ht, Option.bind_some] at hΓs
       exact (Option.some_inj.mp hΓs).symm
     rcases hR with _ | ⟨h₁, _ | ⟨h₂, _ | _⟩⟩
     have hat := isTy_of_roseParts ht (hty _ _ _ _ hm he).2
     have hPt : IsTy G n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
     have hP := hobj _ hPt
-    obtain ⟨⟨s'', c'⟩, hs', rfl, hsv⟩ := h₁ _ [(idt (prod a (list c)), prod a (list c))]
-      ⟨hP, by simpa using ⟨idt_hom hM hP, hPt⟩⟩ rfl hnil _ hs
+    obtain ⟨⟨s'', c₁⟩, hs', hc₁, hsv⟩ := h₁ _ _ (he.ext hM hP hPt)
+      (by simp [extEnv, hΓ, Function.comp_def])
+      (hypsHold_weaken1 hM hG hρ hps hds hΦ he hP) _ hs
     obtain ⟨⟨m'', N⟩, hm', hmN, hmv⟩ := h₂ X e he hΓ hΦ _ hm
-    obtain rfl : t = N := hmN.symm
-    exact ⟨_, compile_roseRec_iff.mpr ⟨_, _, m'', t, a, F, s'', rfl, hct, hm', ht, hs', rfl⟩,
-      rfl, eval_op₂_congr 3 (eval_roseParts_congr ht hsv) hmv⟩
+    subst hc₁ hmN
+    obtain ⟨r', hr', hrr⟩ := compile_roseRec_of_full hM hG hρ hps hds he hct hm' ht hs'
+    exact ⟨r', hr', hrr.1.trans hr.1.symm, hrr.2.trans ((eval_op₂_congr 3
+      (eval_roseRecP_congr (fun hu ↦ eval_roseParts_congr ht hu) X a _ _ hsv)
+        (eval_op₂_congr 9 rfl hmv)).trans hr.2.symm)⟩
   | eq =>
     obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
     obtain rfl : Γs = [(Γ, Φ), (Γ, Φ)] := (Option.some_inj.mp hΓs).symm

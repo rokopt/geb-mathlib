@@ -221,8 +221,8 @@ theorem mNode_eq (l : Label) (cs : List Term) :
 
 /-- One step of a traversal of a term's variables by a map, lifted under each binder, of which
 renaming and substitution are the instances: the variable of an index is the map's value there,
-the map is lifted once under an abstraction's body and a natural-number fold's step and twice
-under a list fold's step, and the step of a rose-tree fold is left in place. -/
+the map is lifted once under an abstraction's body and a natural-number or rose-tree fold's step
+and twice under a list fold's step. -/
 def travL {M : Type} (V : M → ℕ → Term) (L : M → M) (l : Label)
     (cs : List (Term × (M → Term))) (f : M) : Term :=
   match l, cs with
@@ -230,7 +230,7 @@ def travL {M : Type} (V : M → ℕ → Term) (L : M → M) (l : Label)
     | .lam a, [(_, t)] => RoseTree.node (.lam a) [t (L f)]
     | .natRec, [(_, z), (_, s), (_, n)] => RoseTree.node .natRec [z f, s (L f), n f]
     | .listRec, [(_, z), (_, s), (_, n)] => RoseTree.node .listRec [z f, s (L (L f)), n f]
-    | .roseRec c, [(s, _), (_, n)] => RoseTree.node (.roseRec c) [s, n f]
+    | .roseRec c, [(_, s), (_, n)] => RoseTree.node (.roseRec c) [s (L f), n f]
     | l, cs => RoseTree.node l (cs.map fun c ↦ c.2 f)
 
 /-- Renaming is the traversal whose variable is renamed. -/
@@ -728,6 +728,7 @@ theorem occurs_eq (t : Term) (d : ℕ) :
         Internal.Term.occursStep, beq_iff_eq, Nat.reduceEqDiff, List.any_map, List.mem_cons]
     all_goals first
       | exact hx _ (by simp) _
+      | simp only [hx x0 (by simp), hx x1 (by simp), or_eq]
       | simp [List.any_map, Function.comp_def]
   | _ =>
     mirror_simp [«Language.occursStep», labelData, hs, mArgs_eq, label_encTerm,
@@ -808,6 +809,14 @@ theorem occurs_eq (t : Term) (d : ℕ) :
   cases Γ <;> mirror_simp [«Language.listFold», Internal.listFold, ctxObj_eq, mirror_comp,
     mirror_listRec, mirror_listRecP, mirror_cPair, List.isEmpty_nil, List.isEmpty_cons]
 
+/-- The mirror's fold of a rose-tree object at parameters, by the fold of its parts. -/
+theorem roseFoldP_eq (Γ : List Tree) {t a : Tree} {F : Tree → Tree}
+    (h : Internal.roseParts t = some (a, F)) (c s u m : Tree) :
+    «Language.roseFoldP» t Γ a c s u m = Internal.roseFold F Γ a t c s u m := by
+  have hf : «Language.roseFold» t = F := funext fun s ↦ roseFold_eq t s a F h
+  cases Γ <;> mirror_simp [«Language.roseFoldP», Internal.roseFold, hf, ctxObj_eq, mirror_comp,
+    mirror_roseRecP, mirror_cPair, List.isEmpty_nil, List.isEmpty_cons]
+
 /-- The simplification of a case of the mirror's compilation step: the lemmas of
 {lit}`mirror_simp`, the step's lists, pairs and combinators, and the given lemmas. -/
 local macro "compile_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(tactic|
@@ -877,13 +886,15 @@ theorem compileStep_eq (G : Internal.Globals) (n : ℕ) (l : Label) (v : Tree �
     split_ifs with h <;> simp [h]
   case roseRec c =>
     rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, r⟩⟩⟩ <;>
-      compile_simp [h0, h2, isTy_eq, roseLabel_eq]
+      compile_simp [h0, isTy_eq, roseLabel_eq, mStar_eq, foldEnvIn_eq, foldPs_eq, tuple_eq]
     by_cases hc : Internal.IsTy G n c <;> compile_simp [hc]
     rcases x1.2.2 X e with _ | ⟨m, t⟩ <;> compile_simp []
-    rcases hr : Internal.roseParts t with _ | ⟨a, fold⟩ <;> compile_simp []
-    have hf : ∀ s, «Language.roseFold» t s = fold s := fun s ↦ roseFold_eq t s a fold hr
-    rcases x0.2.2 (prod a (list c)) [(idt (prod a (list c)), prod a (list c))] with _ | ⟨s, c'⟩ <;>
-      compile_simp [hf]
+    rcases hr : Internal.roseParts t with _ | ⟨a, fold⟩
+    · compile_simp []
+    compile_simp [roseFoldP_eq _ hr]
+    rcases x0.2.2 (Internal.foldEnvIn [prod a (list c)] 1 e Internal.Term.star x0.1).1
+      (Internal.foldEnvIn [prod a (list c)] 1 e Internal.Term.star x0.1).2 with _ | ⟨s, c'⟩ <;>
+      compile_simp [roseFoldP_eq _ hr]
     split_ifs <;> simp
   case arr k θ =>
     have hall : «Base.allT» («Language.isTy» (encGlobals G) (leaf n)) θ =

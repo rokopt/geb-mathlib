@@ -36,6 +36,9 @@
     listRec
     natRecP
     listRecP
+    listMapP
+    roseStepP
+    roseRecP
     rose
     cNode
     roseRec
@@ -205,6 +208,24 @@
                       (cSnd (prod a (exp p c)) p)))))))
           (cSnd p (list a)))
         (cFst p (list a)))))
+  ; the action of a list object with a parameter, and the fold of a rose-tree object with a
+  ; parameter by its fold f without one, into the exponential of the parameters by the curried
+  ; step, evaluated at the parameter
+  (defn listMapP ((p T) (a T) (c T) (f T)) T
+    (listRecP p a (list c) (comp (cNil c) (bang p))
+      (comp (cCons c) (cPair (comp f (cFst (prod p a) (list c))) (cSnd (prod p a) (list c))))))
+  (defn roseStepP ((p T) (a T) (c T) (s T)) T
+    (comp s
+      (cPair (cSnd (prod a (list (exp p c))) p)
+        (cPair (comp (cFst a (list (exp p c))) (cFst (prod a (list (exp p c))) p))
+          (comp
+            (listMapP p (exp p c) c (comp (ev p c) (cPair (cSnd p (exp p c)) (cFst p (exp p c)))))
+            (cPair (cSnd (prod a (list (exp p c))) p)
+              (comp (cSnd a (list (exp p c))) (cFst (prod a (list (exp p c))) p))))))))
+  (defn roseRecP ((f (Arrow T T)) (p T) (a T) (t T) (c T) (s T)) T
+    (comp (ev p c)
+      (cPair (comp (f (curry (prod a (list (exp p c))) p (roseStepP p a c s))) (cSnd p t))
+        (cFst p t))))
   (defn diag ((a T)) T (cPair (idt a) (idt a)))
   (defn monoCond ((m T)) Eqn
     (let a T (dom m)

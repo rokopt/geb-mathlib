@@ -156,8 +156,8 @@
     (lcase RP T (iter RPs RPs.tail rs i) 0 (lam ((r RP) (rest RPs)) ((snd r) f))))
 
   ; one step of a traversal of a term's variables, by a map lifted under each binder: once under an
-  ; abstraction's body and a natural-number fold's step, twice under a list fold's step; the step
-  ; of a rose-tree fold, in a context of its own, is left in place
+  ; abstraction's body and a natural-number or rose-tree fold's step, twice under a list fold's
+  ; step
   (defn travStep ((lift (Arrow Ren Ren)) (wrap (Arrow T T)) (l T) (rs RPs) (f Ren)) T
     (let d T (at (rpTrees rs) 0)
       (let as RPs (RPs.tail rs)
@@ -169,7 +169,8 @@
                   (node l (cons d (l3 (rpAt as 0 f) (rpAt as 1 (lift f)) (rpAt as 2 f))))
                   (if (and (eq l 9) (eq k 3))
                     (node l (cons d (l3 (rpAt as 0 f) (rpAt as 1 (lift (lift f))) (rpAt as 2 f))))
-                    (if (and (eq l 10) (eq k 2)) (node l (cons d (l2 (at ts 0) (rpAt as 1 f))))
+                    (if (and (eq l 10) (eq k 2))
+                      (node l (cons d (l2 (rpAt as 0 (lift f)) (rpAt as 1 f))))
                       (node l (cons d (rpAll as f)))))))))))))
   (defn trav ((lift (Arrow Ren Ren)) (wrap (Arrow T T)) (t T)) RV
     (snd
@@ -254,8 +255,8 @@
         fs)))
 
   ; whether the variable of an index occurs free in a term, its index raised under each binder:
-  ; once under an abstraction's body and a natural-number fold's step, twice under a list fold's
-  ; step; the step of a rose-tree fold, in a context of its own, has none
+  ; once under an abstraction's body and a natural-number or rose-tree fold's step, twice under a
+  ; list fold's step
   (deftype OF (Arrow T T))
   (deftype OFs (List OF))
   (import (Lists OF) as OFs)
@@ -272,7 +273,8 @@
                 (or (or ((ofAt rs 1) d) ((ofAt rs 2) (add d 1))) ((ofAt rs 3) d))
                 (if (and (eq l 9) (eq k 3))
                   (or (or ((ofAt rs 1) d) ((ofAt rs 2) (add d 2))) ((ofAt rs 3) d))
-                  (if (and (eq l 10) (eq k 2)) ((ofAt rs 2) d) (ofAny rs d))))))))))
+                  (if (and (eq l 10) (eq k 2)) (or ((ofAt rs 1) (add d 1)) ((ofAt rs 2) d))
+                    (ofAny rs d))))))))))
   (defn occurs ((t T) (d T)) T ((para OF occursStep t) d))
 
   ; the parameters of a fold whose start is z and whose step s binds k variables, in an
@@ -319,6 +321,9 @@
     (if (isEmpty g) (comp (natRec z s) m) (comp (natRecP (ctxObj g) c z s) (cPair t m))))
   (defn listFold ((g Ts) (a T) (c T) (z T) (s T) (t T) (m T)) T
     (if (isEmpty g) (comp (listRec a z s) m) (comp (listRecP (ctxObj g) a c z s) (cPair t m))))
+  (defn roseFoldP ((r T) (g Ts) (a T) (c T) (s T) (t T) (m T)) T
+    (if (isEmpty g) (comp (roseFold r s) m)
+      (comp (roseRecP (roseFold r) (ctxObj g) a r c s) (cPair t m))))
 
   ; definitions of the language, primitive arrows, definitions of either kind, and the constants
   (data Objs (objs & T))
@@ -521,14 +526,26 @@
                                           (lam ((m TPair))
                                             (bindTP (roseLabel (p2 m))
                                               (lam ((a T))
-                                                (let pc T (prod a (list c))
-                                                  (bindPP (r0 pc (TPairs.single (pr (idt pc) pc)))
-                                                    (lam ((s TPair))
-                                                      (if (equal (p2 s) c)
-                                                        (OTPair.just
-                                                          (pr (comp (roseFold (p2 m) (p1 s)) (p1 m))
-                                                            c))
-                                                        OTPair.nothing))))))))
+                                                (let s0 T (at (cpTrees as) 0)
+                                                  (let ps (List TPair) (foldPs 1 e mStar s0)
+                                                    (let es (Prod T (List TPair))
+                                                      (foldEnvIn (single (prod a (list c))) 1 e
+                                                        mStar
+                                                        s0)
+                                                      (bindPP (r0 (fst es) (snd es))
+                                                        (lam ((s TPair))
+                                                          (if (equal (p2 s) c)
+                                                            (OTPair.just
+                                                              (pr
+                                                                (roseFoldP (p2 m)
+                                                                  (TPairOut.map p2 ps)
+                                                                  a
+                                                                  c
+                                                                  (p1 s)
+                                                                  (tuple X (TPairOut.map p1 ps))
+                                                                  (p1 m))
+                                                                c))
+                                                            OTPair.nothing))))))))))
                                         OTPair.nothing))
                                     (if (and (eq l 12) (eq k 2))
                                       (bindPP (r0 X e)

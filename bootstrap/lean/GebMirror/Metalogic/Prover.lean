@@ -1742,7 +1742,11 @@ def «Prover.usesStep» :=
             if («Prelude.and»
               (Const.eq x3 (leaf 10))
               (Const.eq x4 (leaf 2))).label ≠ 0 then
-              «Prover.ufAt» x1 (leaf 2) x2
+              Const.add
+                (Const.mul
+                  (leaf 2)
+                  («Prover.ufAt» x1 (leaf 1) (Const.add x2 (leaf 1))))
+                («Prover.ufAt» x1 (leaf 2) x2)
             else
               «Prover.ufSum» x1 x2);
     x2

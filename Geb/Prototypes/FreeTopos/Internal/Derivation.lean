@@ -128,7 +128,8 @@ inductive Rule where
   | listCons (k : ℕ)
   /-- The fold of a rose tree's construction, the primitive of index {lit}`kn`, is the step at
   the pair of the label and the list of the folds of the children, the list built by the
-  primitives of indices {lit}`kl` and {lit}`kc`. -/
+  primitives of indices {lit}`kl` and {lit}`kc`, the folds' step weakened past the list fold's
+  variables. -/
   | roseNode (kn kl kc : ℕ)
   /-- The case analysis of a pair of functions, the primitive of index {lit}`kc`, at a left
   injection, the primitive of index {lit}`kl`, is the first function at the injected term. -/
@@ -322,6 +323,10 @@ def weaken1 (t : Term) : Term := Term.rename t (· + 1)
 /-- A term weakened past two new innermost variables. -/
 def weaken2 (t : Term) : Term := Term.rename t (· + 2)
 
+/-- A rose-tree fold's step, in the context extended by the pair it binds, weakened past two new
+variables of the context below the pair. -/
+def weakenStep2 (s : Term) : Term := Term.rename s (Term.liftR (· + 2))
+
 /-- The list of the values at the children, the innermost variable, of a term in a context of a
 rose tree, the list of the type {lit}`c` built by a fold of the children by the primitives of
 indices {lit}`kl` and {lit}`kc`. -/
@@ -417,8 +422,9 @@ def certifies (G : Globals) (E : Array Entry) (c : Tree) (s : Seq) : Bool :=
 
 /-- The contexts and hypotheses of a node's children, in the node's context and under its
 hypotheses: an abstraction's body extends the context by its variable, a natural-number fold's
-step by the value and a list fold's step by the element and the value, the hypotheses weakened
-past them, and a rose-tree fold's step is in a context of its own, under no hypotheses. -/
+step by the value, a list fold's step by the element and the value and a rose-tree fold's step
+by the pair of the label and the list of the children's values, the hypotheses weakened past
+them. -/
 def childCtxs (G : Globals) (n : ℕ) (l : Label) (ts : List Term) (Γ : List Tree)
     (Φ : List Term) : Option (List (List Tree × List Term)) := match l, ts with
   | .lam a, [_] => some [(a :: Γ, Φ.map weaken1)]
@@ -431,7 +437,7 @@ def childCtxs (G : Globals) (n : ℕ) (l : Label) (ts : List Term) (Γ : List Tr
     pure [(Γ, Φ), (c :: a :: Γ, Φ.map weaken2), (Γ, Φ)]
   | .roseRec c, [_, m] => do
     let p ← (typeIn G n Γ m).bind roseParts
-    pure [([prod p.1 (list c)], []), (Γ, Φ)]
+    pure [(prod p.1 (list c) :: Γ, Φ.map weaken1), (Γ, Φ)]
   | _, ts => some (ts.map fun _ ↦ (Γ, Φ))
 
 /-- Whether a node's child of an index is in the node's context: every child but an
@@ -501,7 +507,8 @@ def rootStep (G : Globals) (E : Array Entry) (n : ℕ) (Γ : List Tree) (Φ : Li
           (G.prims[kn]? = some nodePrim ∨ G.prims[kn]? = some lnodePrim) ∧
           G.prims[kl]? = some nilPrim ∧ G.prims[kc]? = some consPrim then
           some (Term.subst s (instVar (Term.pair l (Term.listRec (Term.arr kl [c] Term.star)
-            (Term.arr kc [c] (Term.pair (Term.roseRec c s (Term.var 1)) (Term.var 0))) cs))))
+            (Term.arr kc [c] (Term.pair (Term.roseRec c (weakenStep2 s) (Term.var 1))
+              (Term.var 0))) cs))))
         else none
       | _, _ => none
     | _, _ => none
