@@ -3951,9 +3951,21 @@ does not compute, so of the terms found modulo the rules only the
 congruence of `succ`, which computes nothing, is one of its derivations.
 The uniqueness of the fold and the associativity of
 appending, found in seconds with Lean's `List` and its fold's equations
-as reduction rules, were not found here, where the search is offered
-every declaration of the signature and equals are substituted by a
-Leibniz eliminator, the first conclusion's weaker encoding.
+as reduction rules, were not found here, where equals are substituted
+by a Leibniz eliminator, the first conclusion's weaker encoding, though
+each is provable in the signature: a proof of the associativity written
+by hand decodes to a certificate the conversion checker accepts.
+
+The search may be offered only the declarations relevant to a goal:
+those it mentions and those their types mention, closed under adding
+every declaration other than a type former whose type mentions only
+declarations so reached, which are the rules and term formers that speak
+of the goal's types. Offered only those, with a timeout of 60 s, every
+goal found before was found again, most in less time, modulo the rules
+`succ m + n = succ (m + n)` in 32 ms rather than 136 ms and
+`foldr cons nil xs = xs` in 220 ms rather than 334 ms, and the
+uniqueness and the associativity were not found, the latter not in
+300 s in any regime.
 
 Addition is the fold of its second argument from the first by the
 successor, a fold with a parameter. The measurements agree with the

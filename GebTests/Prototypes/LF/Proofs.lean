@@ -23,7 +23,8 @@ construction, and the proof by induction on rose trees that the fold by the cons
 zero, for rose trees of natural-number labels and of lists of natural numbers alike. Proofs that
 check only modulo the rewrite rules decode to certificates the checker with a step of conversion
 accepts and the base checker does not: reflexivity at an equation that holds by computation, and
-an induction whose step computes under its hypothesis; a false equation it rejects.
+an induction whose step computes under its hypothesis, and the associativity of concatenation by
+list induction; a false equation it rejects.
 
 ## Tags
 
@@ -211,6 +212,30 @@ def zeroAddStepMod : Expr :=
 #guard provesMod [FreeTopos.nat] (Expr.const 29 [Expr.lam (eq nat (natRec nat zero succLam (v 0))
     (v 0)), Expr.const 18 [nat, zero], zeroAddStepMod, v 0])
   (eq nat (natRec nat zero succLam (v 0)) (v 0))
+
+/-- The concatenation of lists of natural numbers, the right fold of the first by construction
+from the second. -/
+def appendLF (xs ys : Expr) : Expr := listRec nat (list nat) ys consLam xs
+
+/-- The step of the induction for the associativity of concatenation modulo the rules, in the
+context of {lit}`xs`, {lit}`ys` and {lit}`zs`: the substitution of equals at the motive
+{lit}`λ y. cons h ((t ++ ys) ++ zs) = cons h y`, from the hypothesis and reflexivity. -/
+def appendAssocStep : Expr :=
+  Expr.lam (Expr.lam (Expr.lam (Expr.const 19 [list nat,
+    Expr.lam (eq (list nat)
+      (cons nat (pair nat (list nat) (v 3) (appendLF (appendLF (v 2) (v 5)) (v 4))))
+      (cons nat (pair nat (list nat) (v 3) (v 0)))),
+    appendLF (appendLF (v 1) (v 4)) (v 3), appendLF (v 1) (appendLF (v 4) (v 3)), v 0,
+    Expr.const 18 [list nat,
+      cons nat (pair nat (list nat) (v 2) (appendLF (appendLF (v 1) (v 4)) (v 3)))]])))
+
+-- `(xs ++ ys) ++ zs = xs ++ (ys ++ zs)` by induction on `xs` modulo the rules.
+#guard provesMod [FreeTopos.list FreeTopos.nat, FreeTopos.list FreeTopos.nat,
+    FreeTopos.list FreeTopos.nat]
+  (Expr.const 36 [nat, Expr.lam (eq (list nat) (appendLF (appendLF (v 0) (v 2)) (v 1))
+      (appendLF (v 0) (appendLF (v 2) (v 1)))),
+    Expr.const 18 [list nat, appendLF (v 1) (v 0)], appendAssocStep, v 2])
+  (eq (list nat) (appendLF (appendLF (v 2) (v 1)) (v 0)) (appendLF (v 2) (appendLF (v 1) (v 0))))
 
 end Geb.LF.Topos.Tests
 

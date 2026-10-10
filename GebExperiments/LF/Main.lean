@@ -14,6 +14,8 @@ public import Geb.Prototypes.LF.Topos
 Goals of the fragment of the internal language represented by `Geb.LF.Topos.sig`, each given to
 Canonical in two regimes: pure LF, the computation rules derivation rules among the constants; and
 modulo the rewrite rules `Geb.LF.Topos.rules`, the derivation rules they make redundant withheld.
+Each regime is run with every constant offered and with only those relevant to the goal
+(`GebExperiments.LF.relevant`), from the core of the types, terms, formulas and proofs.
 Each term Canonical returns is translated back to canonical LF and checked by the checker of the
 regime, `Geb.LF.Checks` or `Geb.LF.ChecksMod`, and then decoded to a certificate of the internal
 language and checked: a term of pure LF to a derivation (`Geb.LF.Topos.decPf`), checked by the
@@ -23,7 +25,8 @@ certificate with steps of conversion (`Geb.LF.Topos.decPfMod`), checked by the c
 term variables and hypotheses, the language having no object variables; a hypothesis's formula is
 weakened past the parameters after it. The program prints, for each goal and regime, whether a
 term was found, the time taken, the term, and both checkers' verdicts.
-Its argument is the timeout in seconds of each search.
+Its first argument is the timeout in seconds of each search, and a second, if given, restricts
+the goals to those whose names contain it.
 
 ## Tags
 
@@ -48,6 +51,10 @@ def toposNames : List String :=
 /-- The constants the rewrite rules make redundant: `beta`, `fstPair`, `sndPair`, `natZero`,
 `natSucc`, `listNil`, `listCons`, `roseNode` and `lroseNode`. -/
 def redundantModRules : List ℕ := [20, 21, 22, 25, 26, 34, 35, 40, 45]
+
+/-- The core of the constants relevant to every goal: the kind of types, the families of terms
+and of proofs, equality, the subobject classifier and the terminal object with its element. -/
+def coreConsts : List ℕ := [0, 1, 4, 6, 7, 16, 17]
 
 /-- A goal: a name and a closed type to inhabit. -/
 structure Goal where
@@ -175,14 +182,16 @@ def internalVerdict (modulo : Bool) (goal term : Expr) : String :=
 def fuel : ℕ := 64
 
 /-- Run one goal in one regime, printing the outcome. -/
-def runGoal (timeout : UInt64) (g : Goal) (modulo : Bool) : IO Unit := do
+def runGoal (timeout : UInt64) (g : Goal) (modulo select : Bool) : IO Unit := do
   let rs := if modulo then rules else []
-  let usable := fun c ↦ !(modulo && redundantModRules.contains c)
+  let rel := relevant sig 0 coreConsts g.type
+  let usable := fun c ↦ !(modulo && redundantModRules.contains c) && (!select || rel c)
   let decl := problem g.name toposNames sig rs usable [] g.type
   let t₀ ← IO.monoMsNow
   let r ← Canonical.canonical decl timeout 1
   let t₁ ← IO.monoMsNow
-  let regime := if modulo then "modulo rules" else "pure LF"
+  let regime := (if modulo then "modulo rules" else "pure LF") ++
+    (if select then ", relevant constants" else "")
   match r.terms[0]? with
     | none => IO.println s!"{g.name} [{regime}]: not found in {t₁ - t₀} ms"
     | some t =>
@@ -201,9 +210,13 @@ def main (args : List String) : IO UInt32 := do
     IO.eprintln s!"{toposNames.length} names for {sig.length} constants"
     return 1
   let timeout := (args.head? >>= String.toNat?).getD 10
-  for g in goals do
+  let chosen := match args with
+    | [_, part] => goals.filter fun (g : Goal) ↦ (g.name.splitOn part).length > 1
+    | _ => goals
+  for g in chosen do
     for modulo in [false, true] do
-      runGoal timeout.toUInt64 g modulo
+      for select in [false, true] do
+        runGoal timeout.toUInt64 g modulo select
   return 0
 
 end GebExperiments.LF
