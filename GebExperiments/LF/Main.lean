@@ -135,15 +135,24 @@ def toposGlobals : FreeTopos.Internal.Globals :=
 /-- The indices of the primitive arrows of `toposGlobals`. -/
 def toposIdx : PrimIdx := ⟨0, 1, 2, 3, 4, 5, 6, 7, 8, []⟩
 
-/-- The lemmas, goals in no object variables whose theorems the goals posed in the extended
-signature may apply, each a constant past `Geb.LF.Topos.sig` (`Geb.LF.Topos.thmTy`). -/
+/-- The right fold of a list of elements of the type of the LF variable one outside it by
+construction from the empty list. -/
+def foldrIdPoly (xs : Expr) : Expr :=
+  listRec (v 1) (list (v 1)) (nil (v 1))
+    (Expr.lam (Expr.lam (cons (v 3) (pair (v 3) (list (v 3)) (v 1) (v 0))))) xs
+
+/-- The lemmas, goals whose theorems the goals posed in the extended signature may apply, each a
+constant past `Geb.LF.Topos.sig` (`Geb.LF.Topos.thmTy`). -/
 def lemmas : List Goal :=
-  [⟨"foldr cons nil xs = xs", pi (tm (list nat)) (pf (eq (list nat) (foldrId (v 0)) (v 0)))⟩]
+  [⟨"foldr cons nil xs = xs, for every element type", pi tp (pi (tm (list (v 0)))
+    (pf (eq (list (v 1)) (foldrIdPoly (v 0)) (v 0))))⟩]
 
 /-- The goals posed in the signature extended by the lemmas' theorems. -/
 def devGoals : List Goal :=
   [⟨"foldr cons nil applied twice, by the lemma", pi (tm (list nat))
-    (pf (eq (list nat) (foldrId (foldrId (v 0))) (v 0)))⟩]
+      (pf (eq (list nat) (foldrId (foldrId (v 0))) (v 0)))⟩,
+    ⟨"foldr cons nil applied twice, for every element type, by the lemma", pi tp
+      (pi (tm (list (v 0))) (pf (eq (list (v 1)) (foldrIdPoly (foldrIdPoly (v 0))) (v 0))))⟩]
 
 /-- One step of the parameters of a type and its body, the parameters the outermost first. -/
 def telescopeStep (l : Label) (cs : List (Expr × (List Expr × Expr))) : List Expr × Expr :=
@@ -197,7 +206,7 @@ def lemmaEntries : Array FreeTopos.Internal.Entry := (lemmaThms.map .language).t
 /-- The indices of the primitive arrows, with the entries of the lemmas' theorems as the
 theorems the extension declares. -/
 def devIdx : PrimIdx :=
-  { toposIdx with thms := lemmaThms.zipIdx.map fun (a, j) ↦ (j, a.ctx.length) }
+  { toposIdx with thms := lemmaThms.zipIdx.map fun (a, j) ↦ (j, a.arity, a.ctx.length) }
 
 /-- The signature extended by the declarations of the lemmas' theorems. -/
 def devSig : Sig := sig ++ lemmaThms.filterMap (thmTy toposGlobals devIdx)

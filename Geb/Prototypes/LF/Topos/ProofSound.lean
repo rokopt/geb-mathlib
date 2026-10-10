@@ -2607,120 +2607,254 @@ theorem decPfStep_thm {c : ℕ} (hc : sig.length ≤ c)
     ⟨c - 57, by rw [show sig.length = 57 from rfl] at hc; omega⟩
   rfl
 
+include hk in
+/-- The decoding, in a context matching an environment, of a formula of a theorem with types and
+terms substituted for its object variables and variables: the instance of the formula at the
+decoded types and terms. -/
+theorem termOf_inst {a : FreeTopos.Internal.Thm}
+    {xs : List PartialHorn.Tree} {Xs Ms : List Expr} {σ' : List MTerm}
+    (hxs : List.Forall₂ (fun X x ↦ encTy env.length x = some X) Xs xs)
+    (hσ : List.Forall₂ (fun M u ↦ termOf k env M = some u ∧ Term.VarLeaves u = true) Ms σ')
+    (hty : ∀ A ∈ a.ctx, FreeTopos.Internal.IsTy G a.arity A = true)
+    {ΓT : Ctx} (hΓT : encCtx a.arity a.ctx = some ΓT) (hXs : Xs.length = a.arity)
+    (hMs : Ms.length = a.ctx.length) {s : MTerm} {Y Y' : Expr}
+    (hY : enc G a.arity k s (ctxObj a.ctx) (stdEnv a.ctx) = some Y)
+    (hts : FreeTopos.Internal.typeIn G a.arity a.ctx s = some FreeTopos.omega)
+    (h : hsubs (RoseTree.node (.base 6) []) (Xs ++ Ms) Y = some Y') :
+    termOf k env Y' = some (FreeTopos.Internal.instTerm xs.reverse σ'.reverse s) := by
+  obtain ⟨r, hr, -⟩ := Option.map_eq_some_iff.mp hts
+  have hsc := scopedBelow_enc hk hty hΓT hr hY
+  have hcl : ∀ ρ, Y.rename (liftR^[a.arity + a.ctx.length] ρ) = Y := fun ρ ↦ by
+    rw [Nat.add_comm]
+    exact ScopedBelow.rename_iterate hsc ρ
+  have hdec : dec k Y a.ctx.length = some s := by
+    rw [← length_stdEnv]
+    exact dec_enc s _ _ Y hY
+  have hocc : ∀ i, Term.occurs s i = true → i < a.ctx.length := fun i hi ↦ by
+    have := FreeTopos.Internal.compile_occurs_lt s _ _ r hr i hi
+    rwa [length_stdEnv] at this
+  have hvl := Term.varLeaves_of_compile s _ _ r hr
+  have hxl : xs.length = a.arity := hxs.length_eq.symm.trans hXs
+  rw [hsubs_append, hMs] at h
+  obtain ⟨Y₁, hY₁, h₂⟩ := Option.bind_eq_some_iff.mp h
+  -- the substitution of the types, in the context of the object variables alone
+  have hρ := hsubsPre_rename _ (fun i ↦ i - env.length) a.ctx.length Xs Y Y₁ hY₁
+  rw [hXs, hcl] at hρ
+  have hx₀ : ∀ X x, encTy env.length x = some X → encTy 0 x = some (X.rename (· - env.length)) :=
+    fun X x hx ↦ encTy_rename x env.length X hx 0 _ fun i hi ↦ by omega
+  have hxs₀ : List.Forall₂ (fun Xk b ↦ ∀ e, encTy e b = some (Xk.rename (· + e)))
+      (Xs.map fun X ↦ X.rename (· - env.length)) xs :=
+    List.forall₂_map_left_iff.mpr (hxs.imp fun X x hx e ↦ by
+      have := encTy_add (d := e) (hx₀ X x hx)
+      rwa [Nat.zero_add] at this)
+  have hph := dec_hsubsPre_obj (k := k) _ xs Y _ s hxs₀ hdec hocc hρ
+  -- the context's term variables restored
+  have htm := hsubsPre_rename _ (tmIdx env) a.ctx.length Xs Y Y₁ hY₁
+  rw [hXs, hcl] at htm
+  have hsh := hsubsPre_rename _ (· + numTm env) a.ctx.length _ Y _ hρ
+  rw [List.length_map, hXs, hcl] at hsh
+  have hmaps : (Xs.map fun X ↦ X.rename (· - env.length)).map (fun X ↦ X.rename (· + numTm env)) =
+      Xs.map fun X ↦ X.rename (tmIdx env) := by
+    rw [List.map_map]
+    refine List.map_congr_left fun X hX ↦ ?_
+    obtain ⟨x, hx⟩ := forall₂_left_mem hxs X hX
+    have h₁ := encTy_rename x 0 _ (hx₀ X x hx) (numTm env) (· + numTm env) fun i _ ↦ by omega
+    have h₂ := encTy_rename x env.length X hx (numTm env) (tmIdx env) fun i hi ↦
+      tmIdx_ge env i hi
+    exact Option.some.inj (h₁.symm.trans h₂)
+  rw [hmaps] at hsh
+  have heq := Option.some.inj (htm.symm.trans hsh)
+  have hdec₁ : dec k (Y₁.rename (liftR^[a.ctx.length] (tmIdx env)))
+      (numTm env + a.ctx.length) = some (Term.rename
+        (Term.osubstF (FreeTopos.Internal.objScope xs) s)
+          (liftR^[a.ctx.length] (· + numTm env))) := by
+    rw [heq]
+    exact dec_rename _ a.ctx.length _ _ _ hph fun i hi ↦ by
+      obtain ⟨i, rfl⟩ : ∃ i', i = i' + a.ctx.length := ⟨i - a.ctx.length, by omega⟩
+      rw [iterate_liftR_add]
+      omega
+  -- the substitution of the terms
+  have hrn := hsubs_rename _ (tmIdx env) Ms Y₁ Y' h₂
+  rw [hMs] at hrn
+  have hdh := dec_hsubs (k := k) _ _ _ (numTm env) _ σ' _
+    (by rw [List.length_map, hMs]; exact hdec₁)
+    (Term.varLeaves_rename _ (Term.varLeaves_osubstF _ _ hvl) _)
+    (List.forall₂_map_left_iff.mpr hσ) hrn
+  have hσl : σ'.length = a.ctx.length := hσ.length_eq.symm.trans hMs
+  refine hdh.trans (congrArg some ?_)
+  rw [FreeTopos.Internal.instTerm, Term.osubst_eq_osubstF,
+    Term.osubstF_congr_of_compile (τ' := fun z ↦ xs.reverse[z]?.getD (PartialHorn.var z))
+      (fun z hz ↦ by rw [FreeTopos.Internal.objScope, ite_eq_left (by rw [hxl]; exact hz)])
+      s _ _ r hr,
+    Term.subst_rename _ _ _
+      (fun i ↦ scopeSubst σ' (liftR^[a.ctx.length] (· + numTm env) i)) fun _ ↦ rfl]
+  refine Term.subst_congr _ _ _ fun i hi ↦ ?_
+  rw [Term.occurs_osubstF] at hi
+  have hi' := hocc i hi
+  rw [iterate_liftR_lt _ _ i hi', scopeSubst, ite_eq_left (by rw [hσl]; exact hi')]
+
 include hk hsg in
 /-- The soundness of the decoding of an application of a theorem of the extension: its leading
-arguments decode to terms of the types of the theorem's variables, its others are proofs of the
-instances of its hypotheses, which decode soundly, and the application decodes to the
-application of the theorem's entry, which proves the instance of its conclusion. -/
+arguments decode to the types of the theorem's object variables, the next to terms of the
+instances of the types of its variables, its others are proofs of the instances of its
+hypotheses, which decode soundly, and the application decodes to the application of the
+theorem's entry, which proves the instance of its conclusion. -/
 theorem sound_thm (hc : PfCtx G k n ΓLF env Γ Φ) {c j : ℕ} {cs : List Expr}
     {a : FreeTopos.Internal.Thm} {C F : Expr} {φ : MTerm} (hlt : sig.length ≤ c)
-    (hthm : k.thms[c - sig.length]? = some (j, a.ctx.length))
-    (he : (E[j]?).bind FreeTopos.Internal.Entry.language? = some a) (har : a.arity = 0)
+    (hthm : k.thms[c - sig.length]? = some (j, a.arity, a.ctx.length))
+    (he : (E[j]?).bind FreeTopos.Internal.Entry.language? = some a)
     (hwf : a.wellFormed G = true) (hC : thmTy G k a = some C)
     (ih : ∀ M ∈ cs, PfSoundAt sg G k E n M)
     (hS : spine ΓLF C (cs.map fun m ↦ (m, judge sg m)) = some (pf F))
     (hφ : termOf k env F = some φ) :
     ∃ D, decPf k (Expr.const c cs) env Φ.length = some D ∧ (check G E n D).2 Γ Φ φ = true := by
-  -- the theorem is well formed in no object variables
-  rw [FreeTopos.Internal.Thm.wellFormed, har, Bool.and_eq_true, Bool.and_eq_true] at hwf
+  -- the theorem is well formed
+  rw [FreeTopos.Internal.Thm.wellFormed, Bool.and_eq_true, Bool.and_eq_true] at hwf
   have hty := List.all_eq_true.mp hwf.1.1
-  have hhyps : ∀ h ∈ a.hyps, FreeTopos.Internal.typeIn G 0 a.ctx h = some FreeTopos.omega :=
-    fun h hh ↦ of_decide_eq_true_at (List.all_eq_true.mp hwf.1.2 h hh)
+  have hhyps : ∀ h ∈ a.hyps, FreeTopos.Internal.typeIn G a.arity a.ctx h =
+      some FreeTopos.omega := fun h hh ↦ of_decide_eq_true_at (List.all_eq_true.mp hwf.1.2 h hh)
   have hconcl := of_decide_eq_true_at hwf.2
   obtain ⟨ΓT, Hs, X, hΓT, hHs, hX, rfl⟩ := thmTy_eq_some hC
-  have hcl := encCtx_closed hΓT hty
-  have hp : ΓT.reverse.length = a.ctx.length := by
-    rw [List.length_reverse, length_encCtx hΓT, Nat.add_zero]
-  have hDs : ∀ D ∈ ΓT.reverse, D.FreeBelow 0 = true ∧ D.erase = RoseTree.node (.base 6) [] := by
+  obtain ⟨T', hT', hT'len, hT'i⟩ := encCtx_reverse hΓT
+  have hΓlen : ΓT.reverse.length = a.arity + a.ctx.length := by
+    rw [hT', List.length_append, List.length_replicate, hT'len]
+  have hDs : ∀ D ∈ ΓT.reverse, D = tp ∨ ∃ A, D = tm A := by
+    rw [hT']
     intro D hD
-    obtain ⟨_, A, rfl, hA, -⟩ := forall₂_left_mem hcl D (List.mem_reverse.mp hD)
-    exact ⟨freeBelow_tm hA, rfl⟩
-  -- the spine: the terms of the variables, then the proofs of the hypotheses
-  obtain ⟨hargs, R', hR', hS'⟩ := spine_piTele (J := judge sg) (P := pf F) rfl hDs hS
-  rw [hp] at hargs hR' hS'
+    rcases List.mem_append.mp hD with hD | hD
+    · exact .inl (List.eq_of_mem_replicate hD)
+    · obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hD
+      obtain ⟨A, hA, -⟩ := hT'i i _
+        (List.getElem?_eq_getElem (by rw [List.length_reverse, ← hT'len]; exact hi))
+      rw [List.getElem?_eq_getElem hi, Option.some.injEq] at hA
+      exact .inr ⟨A, hA⟩
+  -- the spine: the types, the terms and the proofs
+  obtain ⟨hlen, hargs, R', hR', hS'⟩ := spine_piTele_gen (J := judge sg) (P := pf F) rfl hDs hS
+  rw [hΓlen] at hlen hR' hS'
+  rw [take_add'] at hR'
   obtain ⟨Hs', X', hHs', hX', rfl⟩ := hsubs_arrows_pf hR'
   obtain ⟨hps, hFX⟩ := spine_arrows (J := judge sg) rfl hS'
   obtain rfl := pf_inj hFX
-  -- the terms decode, to terms of the variables' types
-  have hterms : List.Forall₂ (fun m b ↦ ∃ s, termOf k env m = some s ∧
-      (FreeTopos.Internal.typeIn G n Γ s = some b ∧ Term.VarLeaves s = true))
-      (cs.take a.ctx.length) a.ctx.reverse :=
-    forall₂_comp (fun m D b hmD hDb ↦ by
-      obtain ⟨A, rfl, -, hA⟩ := hDb
-      obtain ⟨s, hs, hts⟩ := termOf_typed hk hsg hc.toTmCtx (hA env.length) hmD
-      obtain ⟨r, hr, -⟩ := Option.map_eq_some_iff.mp hts
-      exact ⟨s, hs, hts, Term.varLeaves_of_compile s _ _ r hr⟩) hargs
-      (List.forall₂_reverse_iff.mpr hcl)
-  obtain ⟨σ', hσ', hσt⟩ := mapM_of_forall₂ hterms
-  have hσf := forall₂_of_mapM hσ'
-  have hσlen : σ'.length = a.ctx.length := by
-    rw [← hσf.length_eq, hargs.length_eq, hp]
+  have hXsl : (cs.take a.arity).length = a.arity := by
+    rw [List.length_take]
+    omega
+  have hMsl : ((cs.drop a.arity).take a.ctx.length).length = a.ctx.length := by
+    rw [List.length_take, List.length_drop]
+    omega
+  -- the types decode
+  have htys : List.Forall₂ (fun M M' ↦ ∃ x, decTy env.length M = some x ∧
+      (encTy env.length x = some M' ∧ FreeTopos.Internal.IsTy G n x = true))
+      (cs.take a.arity) (cs.take a.arity) :=
+    forall₂_of_getElem rfl fun i h₁ _ ↦ by
+      have hi : i < a.arity := by omega
+      obtain ⟨D', M, hD', hM, hJ⟩ := hargs i tp (by
+        rw [hT', List.getElem?_append_left (by rw [List.length_replicate]; exact hi),
+          List.getElem?_replicate_of_lt hi])
+      obtain rfl := hsubs_tp hD'
+      rw [List.getElem_take]
+      obtain rfl := Option.some.inj ((List.getElem?_eq_getElem (by omega)).symm.trans hM)
+      obtain ⟨x, hx, hxt⟩ := tyComplete hsg G hc.heads₀ _ hJ
+      exact ⟨x, decTy_encTy _ x _ hx, hx, hxt⟩
+  obtain ⟨xs, hxsM, hxs⟩ := mapM_of_forall₂ htys
+  have hxs' : List.Forall₂ (fun X x ↦ encTy env.length x = some X) (cs.take a.arity) xs :=
+    List.Forall₂.flip (R := fun X x ↦ encTy env.length x = some X) (hxs.imp fun _ _ h ↦ h.1)
+  have hxl : xs.length = a.arity := hxs.length_eq.trans hXsl
+  -- the terms decode, to terms of the instances of the variables' types
+  have hterms : List.Forall₂ (fun M A ↦ ∃ s, termOf k env M = some s ∧
+      (FreeTopos.Internal.typeIn G n Γ s = some (PartialHorn.subst xs.reverse A) ∧
+        Term.VarLeaves s = true))
+      ((cs.drop a.arity).take a.ctx.length) a.ctx.reverse :=
+    forall₂_of_getElem (by rw [hMsl, List.length_reverse]) fun i hi₁ hi₂ ↦ by
+      have hi : i < a.ctx.length := by
+        rw [hMsl] at hi₁
+        exact hi₁
+      obtain ⟨Aenc, hAenc, hAe⟩ := hT'i i _ (List.getElem?_eq_getElem hi₂)
+      obtain ⟨D', M, hD', hM, hJ⟩ := hargs (a.arity + i) (tm Aenc) (by
+        rw [hT', List.getElem?_append_right (by rw [List.length_replicate]; omega),
+          List.length_replicate, Nat.add_sub_cancel_left]
+        exact hAenc)
+      rw [take_add', hsubs_append, List.length_take, List.length_drop,
+        Nat.min_eq_left (by omega)] at hD'
+      obtain ⟨E₀, hE₀, hD'⟩ := Option.bind_eq_some_iff.mp hD'
+      obtain ⟨E₁, hE₁, rfl⟩ := hsubsPre_const₁ hE₀
+      obtain ⟨E₂, hE₂, rfl⟩ := hsubs_const₁ hD'
+      have hbs : List.Forall₂ (fun Xk b ↦ ∀ e, encTy e b = some (Xk.rename (· + e)))
+          (cs.take a.arity) (xs.map (FreeTopos.Internal.shiftObj env.length)) :=
+        List.forall₂_map_right_iff.mpr (hxs'.imp fun X x hx e ↦
+          encTy_shiftObj (off := e) _ _ (by rw [Nat.add_comm]; exact encTy_add hx))
+      have he₁ := encTy_hsubsPre_obj _ _ _ _ _ hbs hAe hE₁
+      have hlm : ((cs.drop a.arity).take i).length = i := by
+        rw [List.length_take, List.length_drop]
+        omega
+      have he₂ := hsubs_encTy _ _ _ _ (by rw [hlm]; exact he₁) hE₂
+      have hA := hty _ (List.mem_reverse.mp (List.getElem_mem hi₂))
+      have hsub : FreeTopos.Internal.substF
+          (FreeTopos.Internal.objScope (xs.map (FreeTopos.Internal.shiftObj env.length)))
+          a.ctx.reverse[i] = FreeTopos.Internal.shiftObj env.length
+            (PartialHorn.subst xs.reverse a.ctx.reverse[i]) := by
+        rw [FreeTopos.Internal.subst_eq_substF, FreeTopos.Internal.shiftObj,
+          FreeTopos.Internal.substF_comp]
+        refine FreeTopos.Internal.substF_congr (n := a.arity) (fun z hz ↦ ?_) _
+          (FreeTopos.Internal.scoped_of_isTy (G := G) _ hA)
+        rw [FreeTopos.Internal.objScope, ite_eq_left (by rw [List.length_map, hxl]; exact hz),
+          ← List.map_reverse, List.getElem?_map,
+          List.getElem?_eq_getElem (by rw [List.length_reverse, hxl]; exact hz)]
+        rfl
+      rw [hsub] at he₂
+      have h₃ := encTy_of_shiftObj (off := 0) _ _ he₂
+      rw [Nat.zero_add] at h₃
+      rw [List.getElem_take, List.getElem_drop]
+      obtain rfl := Option.some.inj ((List.getElem?_eq_getElem (by omega)).symm.trans hM)
+      obtain ⟨u, hu, hut⟩ := termOf_typed hk hsg hc.toTmCtx h₃ hJ
+      obtain ⟨r, hr, -⟩ := Option.map_eq_some_iff.mp hut
+      exact ⟨u, hu, hut, Term.varLeaves_of_compile u _ _ r hr⟩
+  obtain ⟨σ', hσM, hσt⟩ := mapM_of_forall₂ hterms
+  have hσf := forall₂_of_mapM hσM
   have hσl : ∀ u ∈ σ', Term.VarLeaves u = true := fun u hu ↦
     (forall₂_left_mem hσt u hu).elim fun _ h ↦ h.2
-  have hσ2 : List.Forall₂ (fun m u ↦ dec k (m.rename (tmIdx env)) (numTm env) = some u ∧
-      Term.VarLeaves u = true) (cs.take a.ctx.length) σ' :=
-    (List.Forall₂.flip (R := fun m u ↦ u ∈ σ' ∧ termOf k env m = some u)
-      (forall₂_mem (List.Forall₂.flip (R := fun u m ↦ termOf k env m = some u) hσf))).imp
-      fun m u h ↦ ⟨h.2, hσl u h.1⟩
-  -- the substituted formulas decode to the instances of the theorem's formulas
-  have key : ∀ (s : MTerm) (Y Y' : Expr), enc G 0 k s (ctxObj a.ctx) (stdEnv a.ctx) = some Y →
-      FreeTopos.Internal.typeIn G 0 a.ctx s = some FreeTopos.omega →
-      hsubs (RoseTree.node (.base 6) []) (cs.take a.ctx.length) Y = some Y' →
-      termOf k env Y' = some (FreeTopos.Internal.instTerm [] σ'.reverse s) := by
-    intro s Y Y' hY hts h
-    obtain ⟨r, hr, -⟩ := Option.map_eq_some_iff.mp hts
-    have hsc := scopedBelow_enc hk hty hΓT hr hY
-    have hlm : (cs.take a.ctx.length).length = a.ctx.length := hargs.length_eq.trans hp
-    have hrn := hsubs_rename _ (tmIdx env) _ Y Y' h
-    rw [hlm, ScopedBelow.rename_iterate hsc] at hrn
-    have hdec : dec k Y (numTm env + ((cs.take a.ctx.length).map
-        fun m ↦ m.rename (tmIdx env)).length) =
-        some (Term.rename s (liftR^[a.ctx.length] (· + numTm env))) := by
-      rw [List.length_map, hlm]
-      have := dec_rename Y a.ctx.length (numTm env + a.ctx.length)
-        (liftR^[a.ctx.length] (· + numTm env)) s
-        (by rw [← length_stdEnv]; exact dec_enc s _ _ Y hY) fun i hi ↦ by
-          obtain ⟨i, rfl⟩ : ∃ i', i = i' + a.ctx.length := ⟨i - a.ctx.length, by omega⟩
-          rw [iterate_liftR_add]
-          omega
-      rwa [ScopedBelow.rename_iterate hsc] at this
-    have hdh := dec_hsubs (k := k) _ _ Y (numTm env) _ σ' (Y'.rename (tmIdx env)) hdec
-      (Term.varLeaves_rename s (Term.varLeaves_of_compile s _ _ r hr) _)
-      (List.forall₂_map_left_iff.mpr hσ2) hrn
-    refine hdh.trans (congrArg some ?_)
-    rw [FreeTopos.Internal.instTerm, Term.osubst_nil,
-      Term.subst_rename s _ _ (fun i ↦ scopeSubst σ' (liftR^[a.ctx.length] (· + numTm env) i))
-        fun _ ↦ rfl]
-    refine Term.subst_congr s _ _ fun i hi ↦ ?_
-    have hi' := FreeTopos.Internal.compile_occurs_lt s _ _ r hr i hi
-    rw [length_stdEnv] at hi'
-    rw [iterate_liftR_lt _ _ i hi', scopeSubst, ite_eq_left (by rw [hσlen]; exact hi')]
+  have hσ2 : List.Forall₂ (fun M u ↦ termOf k env M = some u ∧ Term.VarLeaves u = true)
+      ((cs.drop a.arity).take a.ctx.length) σ' :=
+    (List.Forall₂.flip (R := fun M u ↦ u ∈ σ' ∧ termOf k env M = some u)
+      (forall₂_mem (List.Forall₂.flip (R := fun u M ↦ termOf k env M = some u) hσf))).imp
+      fun M u h ↦ ⟨h.2, hσl u h.1⟩
+  have hσlen : σ'.length = a.ctx.length := hσf.length_eq.symm.trans hMsl
+  -- the formulas
+  have key : ∀ (s : MTerm) (Y Y' : Expr),
+      enc G a.arity k s (ctxObj a.ctx) (stdEnv a.ctx) = some Y →
+      FreeTopos.Internal.typeIn G a.arity a.ctx s = some FreeTopos.omega →
+      hsubs (RoseTree.node (.base 6) []) (cs.take a.arity ++ (cs.drop a.arity).take a.ctx.length)
+        Y = some Y' →
+      termOf k env Y' = some (FreeTopos.Internal.instTerm xs.reverse σ'.reverse s) :=
+    fun s Y Y' hY hts h ↦ termOf_inst hk hxs' hσ2 hty hΓT hXsl hMsl hY hts h
   obtain rfl := Option.some.inj (hφ.symm.trans (key a.concl X F hX hconcl hX'))
   -- the proofs decode, to proofs of the instances of the hypotheses
   have hhyp : List.Forall₂ (fun h H' ↦ termOf k env H' =
-      some (FreeTopos.Internal.instTerm [] σ'.reverse h)) a.hyps Hs' :=
+      some (FreeTopos.Internal.instTerm xs.reverse σ'.reverse h)) a.hyps Hs' :=
     forall₂_comp (fun h H H' hH hH' ↦ key h H H' hH.2 (hhyps h hH.1) hH')
       (forall₂_mem (forall₂_of_mapM hHs)) hHs'
   have hproofs : List.Forall₂ (fun p h ↦ ∃ D, decPf k p env Φ.length = some D ∧
-      (check G E n D).2 Γ Φ (FreeTopos.Internal.instTerm [] σ'.reverse h) = true)
-      (cs.drop a.ctx.length) a.hyps :=
+      (check G E n D).2 Γ Φ (FreeTopos.Internal.instTerm xs.reverse σ'.reverse h) = true)
+      (cs.drop (a.arity + a.ctx.length)) a.hyps :=
     forall₂_comp (fun p H h hpH hHh ↦ ih p (List.mem_of_mem_drop hpH.1) ΓLF env Γ Φ H
-      (FreeTopos.Internal.instTerm [] σ'.reverse h) hc hpH.2 hHh) (forall₂_mem hps)
+      (FreeTopos.Internal.instTerm xs.reverse σ'.reverse h) hc hpH.2 hHh) (forall₂_mem hps)
       (List.Forall₂.flip (R := fun H' h ↦ termOf k env H' =
-        some (FreeTopos.Internal.instTerm [] σ'.reverse h)) hhyp)
+        some (FreeTopos.Internal.instTerm xs.reverse σ'.reverse h)) hhyp)
   obtain ⟨Ds, hDs', hDchk⟩ := mapM_of_forall₂ hproofs
   refine ⟨_, ?_, check_apply he ?_ rfl hDchk.length_eq fun x hx ↦ ?_⟩
   · rw [decPf_const, decPfStep_thm hlt, decPfThm, ite_eq_left hlt, hthm]
-    simp only [← List.map_take, ← List.map_drop, List.mapM_map, Function.comp_def, hσ', hDs',
-      Option.bind_eq_bind, Option.bind_some, Option.pure_def]
+    simp only [← List.map_take, ← List.map_drop, List.mapM_map, Function.comp_def, hxsM, hσM,
+      hDs', Option.bind_eq_bind, Option.bind_some, Option.pure_def]
   · have hσr : List.Forall₂ (fun s b ↦ FreeTopos.Internal.typeIn G n Γ s = some b) σ'.reverse
-        a.ctx :=
-      List.forall₂_reverse_iff.mp (by rw [List.reverse_reverse]; exact hσt.imp fun _ _ h ↦ h.1)
-    simp only [FreeTopos.Internal.instOk, List.length_nil, har, List.all_nil, List.length_reverse,
-      hσlen, decide_true, Bool.true_and, List.all_eq_true,
-      show a.ctx.map (PartialHorn.subst []) = a.ctx from
-        (List.map_congr_left fun b _ ↦ PartialHorn.subst_nil b).trans (List.map_id _)]
-    intro x hx
+        (a.ctx.map (PartialHorn.subst xs.reverse)) := by
+      rw [← List.reverse_reverse (a.ctx.map _)]
+      refine List.forall₂_reverse_iff.mpr ?_
+      rw [← List.map_reverse]
+      exact List.forall₂_map_right_iff.mpr (hσt.imp fun _ _ h ↦ h.1)
+    have hθ : ∀ x ∈ xs.reverse, FreeTopos.Internal.IsTy G n x = true := fun x hx ↦
+      (forall₂_left_mem hxs x (List.mem_reverse.mp hx)).elim fun _ h ↦ h.2
+    simp only [FreeTopos.Internal.instOk, List.length_reverse, hxl, hσlen, decide_true,
+      Bool.true_and, Bool.and_eq_true, List.all_eq_true]
+    refine ⟨⟨hθ, trivial⟩, fun x hx ↦ ?_⟩
     obtain ⟨u, b⟩ := x
     refine @decide_eq_true _ ?_ ?_
     exact List.forall₂_zip hσr hx
@@ -2751,9 +2885,9 @@ theorem pfSound : ∀ M : Expr, PfSound sg G k E n M :=
       · exact sound_hyp E hc hC hS hφ
       by_cases hlt : c < sig.length
       swap
-      · obtain ⟨j, a, hthm, he, har, hwf, hCd⟩ := hth (c - sig.length) C
+      · obtain ⟨j, a, hthm, he, hwf, hCd⟩ := hth (c - sig.length) C
           (by rw [Nat.add_sub_cancel' (Nat.le_of_not_lt hlt)]; exact hC)
-        exact sound_thm E hk hsg hc (Nat.le_of_not_lt hlt) hthm he har hwf hCd
+        exact sound_thm E hk hsg hc (Nat.le_of_not_lt hlt) hthm he hwf hCd
           (fun M hM ↦ (ih M hM).1) hS hφ
       have hCs := Sig.ok_typeShape hsg.ok c C hC
       obtain ⟨h₁, h₂⟩ := spine_headDepth _ C _ hCs hS

@@ -3963,8 +3963,9 @@ checklist and in CI.
   the checker at the derivations it builds, and `Topos/ProofSound.lean` proves
   the decoding sound: a proof decodes to a derivation the checker accepts as a
   proof of the decoded formula, in the signature and in its extensions by the
-  theorems of a development, which `Topos/Theorems.lean` declares as constants
-  whose applications decode to the language's applications of the theorems.
+  theorems of a development, in any number of object variables, which
+  `Topos/Theorems.lean` declares as constants whose applications decode to the
+  language's applications of the theorems.
   Tested in `GebTests/Prototypes/LF.lean`,
   `GebTests/Prototypes/LF/Topos.lean`, `GebTests/Prototypes/LF/Adequacy.lean`
   and `GebTests/Prototypes/LF/Proofs.lean`. The library `GebExperiments`,
@@ -4092,7 +4093,10 @@ checklist and in CI.
   of the free topos (Section VI.5 of [MacLaneMoerdijk1992]).
   `Syntax.lean` carries its terms, rose trees with de Bruijn variables,
   and `SyntaxLaws.lean` the monad laws of their renaming and substitution
-  [AltenkirchChapmanUustalu2015]. `Compile.lean` types a term and
+  [AltenkirchChapmanUustalu2015]; `ObjectSubst.lean` substitutes objects
+  for a term's object variables by a function of their index, a
+  substitution that composes without a bound on the variables.
+  `Compile.lean` types a term and
   compiles it to an arrow of the combinators in one pass, the
   interpretation of Part I of [LambekScott1986] as the categorical
   abstract machine [CousineauCurienMauny1987] compiles it, a fold of the

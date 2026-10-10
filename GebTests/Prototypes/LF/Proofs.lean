@@ -29,8 +29,9 @@ an induction whose step computes under its hypothesis, and the associativity of 
 list induction, its step by the substitution of equals or by congruence; a false equation it
 rejects. Congruence applies the successor to the computation of the fold at zero. Theorems of
 the language, declared past the signature, decode at their applications to the language's
-applications of their entries: one without hypotheses at a variable and at a compound term, and
-one whose hypothesis is proved by reflexivity.
+applications of their entries: one without hypotheses at a variable and at a compound term, one
+whose hypothesis is proved by reflexivity, and one in an object variable, at the natural numbers
+and at an object variable of the context.
 
 ## Tags
 
@@ -351,28 +352,50 @@ def symmNatThm : Thm :=
     [(dec pfIdx (eq nat (v 1) (v 0)) 2).getD (FreeTopos.Internal.Term.var 0)],
     (dec pfIdx (eq nat (v 0) (v 1)) 2).getD (FreeTopos.Internal.Term.var 0)⟩
 
-/-- The entries of {name}`foldConsThm` and {name}`symmNatThm`. -/
-def thmEntries : Array FreeTopos.Internal.Entry := #[.language foldConsThm, .language symmNatThm]
+/-- The construction of a list of elements of the type of the LF variable two outside its
+binders, as a step of a fold. -/
+def consLamPoly : Expr := Expr.lam (Expr.lam (cons (v 3) (pair (v 3) (list (v 3)) (v 1) (v 0))))
+
+/-- The right fold of a list of elements of the type of the LF variable one outside it by
+construction from the empty list. -/
+def foldConsPoly (x : Expr) : Expr := listRec (v 1) (list (v 1)) (nil (v 1)) consLamPoly x
+
+/-- The theorem that the right fold of a list by construction from the empty list is the
+identity, in one object variable, the type of the elements, and one variable of a list. -/
+def foldConsPolyThm : Thm :=
+  ⟨1, [FreeTopos.list (PartialHorn.var 0)], [],
+    (dec pfIdx (eq (list (v 1)) (foldConsPoly (v 0)) (v 0)) 1).getD
+      (FreeTopos.Internal.Term.var 0)⟩
+
+/-- The entries of {name}`foldConsThm`, {name}`symmNatThm` and {name}`foldConsPolyThm`. -/
+def thmEntries : Array FreeTopos.Internal.Entry :=
+  #[.language foldConsThm, .language symmNatThm, .language foldConsPolyThm]
 
 /-- The indices of the primitive arrows, with the theorems of {name}`thmEntries` as the
 constants past the signature. -/
-def thmIdx : PrimIdx := { pfIdx with thms := [(0, 1), (1, 2)] }
+def thmIdx : PrimIdx := { pfIdx with thms := [(0, 0, 1), (1, 0, 2), (2, 1, 1)] }
 
 /-- The signature extended by the declarations of the theorems of {name}`thmEntries`. -/
 def thmSig : Sig :=
-  sig ++ [foldConsThm, symmNatThm].filterMap (thmTy pfGlobals thmIdx)
+  sig ++ [foldConsThm, symmNatThm, foldConsPolyThm].filterMap (thmTy pfGlobals thmIdx)
+
+/-- Whether a proof, in an LF context of {lit}`n` variables of {lit}`tp` and term variables of the
+types of {lit}`Γ`, decodes, with the theorems of {name}`thmEntries`, to a derivation that proves
+the decoding of an equation in the internal context {lit}`Γ` in {lit}`n` object variables. -/
+def provesThmIn (n : ℕ) (Γ : List PartialHorn.Tree) (M F : Expr) : Bool :=
+  match decPf thmIdx M (Γ.map fun _ ↦ none) 0, dec thmIdx F Γ.length with
+    | some D, some φ => Thm.checks pfGlobals thmEntries ⟨n, Γ, [], φ⟩ D
+    | _, _ => false
 
 /-- Whether a proof, in an LF context of term variables of the types of {lit}`Γ`, decodes, with the
 theorems of {name}`thmEntries`, to a derivation that proves the decoding of an equation in the
 internal context {lit}`Γ`. -/
-def provesThm (Γ : List PartialHorn.Tree) (M F : Expr) : Bool :=
-  match decPf thmIdx M (Γ.map fun _ ↦ none) 0, dec thmIdx F Γ.length with
-    | some D, some φ => Thm.checks pfGlobals thmEntries ⟨0, Γ, [], φ⟩ D
-    | _, _ => false
+def provesThm (Γ : List PartialHorn.Tree) (M F : Expr) : Bool := provesThmIn 0 Γ M F
 
 -- The theorems are well formed and declared.
-#guard foldConsThm.wellFormed pfGlobals && symmNatThm.wellFormed pfGlobals
-#guard thmSig.length == sig.length + 2
+#guard foldConsThm.wellFormed pfGlobals && symmNatThm.wellFormed pfGlobals &&
+  foldConsPolyThm.wellFormed pfGlobals
+#guard thmSig.length == sig.length + 3
 
 -- `foldCons xs = xs` by the theorem, in LF and decoded.
 #guard Checks thmSig [tm (list nat)] (Expr.const 57 [v 0])
@@ -395,6 +418,22 @@ def provesThm (Γ : List PartialHorn.Tree) (M F : Expr) : Bool :=
 -- `n = n` by the symmetry theorem, its hypothesis proved by reflexivity.
 #guard provesThm [FreeTopos.nat] (Expr.const 58 [v 0, v 0, Expr.const 18 [nat, v 0]])
   (eq nat (v 0) (v 0))
+
+-- `foldCons xs = xs` by the polymorphic theorem at the natural numbers, in LF and decoded.
+#guard Checks thmSig [tm (list nat)] (Expr.const 59 [nat, v 0])
+  (pf (eq (list nat) (foldCons (v 0)) (v 0)))
+#guard provesThm [FreeTopos.list FreeTopos.nat] (Expr.const 59 [nat, v 0])
+  (eq (list nat) (foldCons (v 0)) (v 0))
+
+-- The same at an object variable, in a context in one object variable.
+#guard Checks thmSig [tm (list (v 0)), tp] (Expr.const 59 [v 1, v 0])
+  (pf (eq (list (v 1)) (foldConsPoly (v 0)) (v 0)))
+#guard provesThmIn 1 [FreeTopos.list (PartialHorn.var 0)] (Expr.const 59 [v 1, v 0])
+  (eq (list (v 1)) (foldConsPoly (v 0)) (v 0))
+
+-- The polymorphic theorem at the natural numbers does not prove its instance at lists.
+#guard !provesThm [FreeTopos.list FreeTopos.nat]
+  (Expr.const 59 [list nat, v 0]) (eq (list nat) (foldCons (v 0)) (v 0))
 
 end Geb.LF.Topos.Tests
 

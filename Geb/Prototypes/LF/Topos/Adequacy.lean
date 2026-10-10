@@ -538,9 +538,9 @@ structure PrimIdx where
   inr : ℕ
   /-- The index of the case analysis of a coproduct. -/
   case : ℕ
-  /-- For each theorem the extension declares, the index of its entry and the number of its
-  variables. -/
-  thms : List (ℕ × ℕ)
+  /-- For each theorem the extension declares, the index of its entry, the number of its object
+  variables and the number of its variables. -/
+  thms : List (ℕ × ℕ × ℕ)
 
 /-- The primitive arrows of the globals at the indices are those the indices name. -/
 structure PrimIdx.Valid (k : PrimIdx) (G : FreeTopos.Internal.Globals) : Prop where

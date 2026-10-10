@@ -142,18 +142,20 @@ section Decoding
 variable (k : PrimIdx)
 
 /-- The decoding of an application of a constant past the signature, a theorem of the extension,
-to derivations whose nodes {lit}`mk` forms: its first arguments, as many as the theorem's
-variables, the outermost first, are terms, and the rest proofs of the theorem's hypotheses, and
-the application decodes to the language's application of the theorem's entry at the terms, the
-innermost first, with the proofs' decodings. -/
+to derivations whose nodes {lit}`mk` forms: its first arguments, as many as the theorem's object
+variables, the outermost first, are types, the next, as many as its variables, terms, and the
+rest proofs of the theorem's hypotheses, and the application decodes to the language's
+application of the theorem's entry at the types and the terms, the innermost first, with the
+proofs' decodings. -/
 def decPfThm {D : Type} (mk : FreeTopos.Internal.Rule → List D → D) (c : ℕ)
     (cs : List (Expr × (List (Option ℕ) → ℕ → Option D))) (env : List (Option ℕ)) (m : ℕ) :
     Option D :=
   if sig.length ≤ c then match k.thms[c - sig.length]? with
-    | some (j, p) => do
-      let σ ← (cs.take p).mapM fun x ↦ termOf k env x.1
-      let ps ← (cs.drop p).mapM fun x ↦ x.2 env m
-      pure (mk (.apply j [] σ.reverse) ps)
+    | some (j, n, p) => do
+      let θ ← (cs.take n).mapM fun x ↦ decTy env.length x.1
+      let σ ← ((cs.drop n).take p).mapM fun x ↦ termOf k env x.1
+      let ps ← (cs.drop (n + p)).mapM fun x ↦ x.2 env m
+      pure (mk (.apply j θ.reverse σ.reverse) ps)
     | none => none
   else none
 
