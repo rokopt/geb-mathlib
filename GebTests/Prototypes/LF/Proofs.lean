@@ -7,8 +7,10 @@ module
 
 public import Geb.Prototypes.LF.Topos.Proofs
 public import Geb.Prototypes.LF.Topos.ProofsMod
+public import Geb.Prototypes.LF.Topos.Theorems
 public meta import Geb.Prototypes.LF.Topos.Proofs -- shake: keep
 public meta import Geb.Prototypes.LF.Topos.ProofsMod -- shake: keep
+public meta import Geb.Prototypes.LF.Topos.Theorems -- shake: keep
 
 /-!
 # Tests for the decoding of proofs
@@ -25,7 +27,10 @@ check only modulo the rewrite rules decode to certificates the checker with a st
 accepts and the base checker does not: reflexivity at an equation that holds by computation, and
 an induction whose step computes under its hypothesis, and the associativity of concatenation by
 list induction, its step by the substitution of equals or by congruence; a false equation it
-rejects. Congruence applies the successor to the computation of the fold at zero.
+rejects. Congruence applies the successor to the computation of the fold at zero. Theorems of
+the language, declared past the signature, decode at their applications to the language's
+applications of their entries: one without hypotheses at a variable and at a compound term, and
+one whose hypothesis is proved by reflexivity.
 
 ## Tags
 
@@ -46,7 +51,7 @@ def pfGlobals : Globals :=
   ⟨[zeroPrim, succPrim, nilPrim, consPrim, nodePrim, lnodePrim, inlPrim, inrPrim, casePrim], [], 0⟩
 
 /-- The indices of the primitive arrows of {name}`pfGlobals`. -/
-def pfIdx : PrimIdx := ⟨0, 1, 2, 3, 4, 5, 6, 7, 8⟩
+def pfIdx : PrimIdx := ⟨0, 1, 2, 3, 4, 5, 6, 7, 8, []⟩
 
 /-- The successor as an LF abstraction. -/
 def succLam : Expr := Expr.lam (succ (v 0))
@@ -332,6 +337,64 @@ def appendAssocCongStep : Expr :=
       (appendLF (v 0) (appendLF (v 2) (v 1)))),
     Expr.const 18 [list nat, appendLF (v 1) (v 0)], appendAssocCongStep, v 2])
   (eq (list nat) (appendLF (appendLF (v 2) (v 1)) (v 0)) (appendLF (v 2) (appendLF (v 1) (v 0))))
+
+/-- The theorem that the right fold of a list of natural numbers by construction from the empty
+list is the identity, in one variable of a list. -/
+def foldConsThm : Thm :=
+  ⟨0, [FreeTopos.list FreeTopos.nat], [],
+    (dec pfIdx (eq (list nat) (foldCons (v 0)) (v 0)) 1).getD (FreeTopos.Internal.Term.var 0)⟩
+
+/-- The symmetry of equality of natural numbers, in two variables, the first outermost, from the
+equation of the first with the second. -/
+def symmNatThm : Thm :=
+  ⟨0, [FreeTopos.nat, FreeTopos.nat],
+    [(dec pfIdx (eq nat (v 1) (v 0)) 2).getD (FreeTopos.Internal.Term.var 0)],
+    (dec pfIdx (eq nat (v 0) (v 1)) 2).getD (FreeTopos.Internal.Term.var 0)⟩
+
+/-- The entries of {name}`foldConsThm` and {name}`symmNatThm`. -/
+def thmEntries : Array FreeTopos.Internal.Entry := #[.language foldConsThm, .language symmNatThm]
+
+/-- The indices of the primitive arrows, with the theorems of {name}`thmEntries` as the
+constants past the signature. -/
+def thmIdx : PrimIdx := { pfIdx with thms := [(0, 1), (1, 2)] }
+
+/-- The signature extended by the declarations of the theorems of {name}`thmEntries`. -/
+def thmSig : Sig :=
+  sig ++ [foldConsThm, symmNatThm].filterMap (thmTy pfGlobals thmIdx)
+
+/-- Whether a proof, in an LF context of term variables of the types of {lit}`Γ`, decodes, with the
+theorems of {name}`thmEntries`, to a derivation that proves the decoding of an equation in the
+internal context {lit}`Γ`. -/
+def provesThm (Γ : List PartialHorn.Tree) (M F : Expr) : Bool :=
+  match decPf thmIdx M (Γ.map fun _ ↦ none) 0, dec thmIdx F Γ.length with
+    | some D, some φ => Thm.checks pfGlobals thmEntries ⟨0, Γ, [], φ⟩ D
+    | _, _ => false
+
+-- The theorems are well formed and declared.
+#guard foldConsThm.wellFormed pfGlobals && symmNatThm.wellFormed pfGlobals
+#guard thmSig.length == sig.length + 2
+
+-- `foldCons xs = xs` by the theorem, in LF and decoded.
+#guard Checks thmSig [tm (list nat)] (Expr.const 57 [v 0])
+  (pf (eq (list nat) (foldCons (v 0)) (v 0)))
+#guard provesThm [FreeTopos.list FreeTopos.nat] (Expr.const 57 [v 0])
+  (eq (list nat) (foldCons (v 0)) (v 0))
+
+-- `foldCons (foldCons xs) = foldCons xs` by the theorem at a term other than a variable.
+#guard provesThm [FreeTopos.list FreeTopos.nat] (Expr.const 57 [foldCons (v 0)])
+  (eq (list nat) (foldCons (foldCons (v 0))) (foldCons (v 0)))
+
+-- The theorem does not prove an equation other than its instance.
+#guard !provesThm [FreeTopos.list FreeTopos.nat] (Expr.const 57 [v 0])
+  (eq (list nat) (foldCons (v 0)) (nil nat))
+
+-- `n = m` from `m = n` by the symmetry theorem, its hypothesis proved by a hypothesis.
+#guard Checks thmSig [pf (eq nat (v 0) (v 1)), tm nat, tm nat] (Expr.const 58 [v 1, v 2, v 0])
+  (pf (eq nat (v 2) (v 1)))
+
+-- `n = n` by the symmetry theorem, its hypothesis proved by reflexivity.
+#guard provesThm [FreeTopos.nat] (Expr.const 58 [v 0, v 0, Expr.const 18 [nat, v 0]])
+  (eq nat (v 0) (v 0))
 
 end Geb.LF.Topos.Tests
 

@@ -38,7 +38,7 @@ def addGlobals : Globals :=
   ⟨[zeroPrim, succPrim, nilPrim, consPrim, nodePrim, lnodePrim, inlPrim, inrPrim, casePrim], [], 0⟩
 
 /-- The indices of the primitive arrows of {name}`addGlobals`. -/
-def addIdx : PrimIdx := ⟨0, 1, 2, 3, 4, 5, 6, 7, 8⟩
+def addIdx : PrimIdx := ⟨0, 1, 2, 3, 4, 5, 6, 7, 8, []⟩
 
 /-- The environment of two natural numbers {lit}`m` and {lit}`n`, the innermost first. -/
 def addEnv : MEnv := FreeTopos.Internal.stdEnv [FreeTopos.nat, FreeTopos.nat]

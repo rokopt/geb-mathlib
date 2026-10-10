@@ -166,7 +166,7 @@ theorem liftR_off {off off' : ℕ} {ρ : ℕ → ℕ} (hρ : ∀ i, off ≤ i �
     simp only [liftR]
     omega
 
-variable {k : PrimIdx}
+variable {k : PrimIdx} {sg : Sig}
 
 /-- Renaming under a binder in the internal language is renaming under a binder in LF. -/
 theorem term_liftR_eq (ρ : ℕ → ℕ) : Term.liftR ρ = liftR ρ := funext fun i ↦ by cases i <;> rfl
@@ -982,12 +982,24 @@ theorem domsOK_rename : ∀ (e : Expr) (ρ : ℕ → ℕ),
 
 /-- The declarations of the signature whose types end in {lit}`tp` or {lit}`tm` take types and
 terms as arguments. -/
-theorem sig_domsOK {c : ℕ} {T : Expr} (hc : sig[c]? = some T) (h : TermHead T = true) :
+theorem sig_domsOK₀ {c : ℕ} {T : Expr} (hc : sig[c]? = some T) (h : TermHead T = true) :
     Expr.DomsOK T = true := by
   have key : (sig.all fun T ↦ !TermHead T || Expr.DomsOK T) = true := by decide +kernel
   rw [List.all_eq_true] at key
   have := key T (List.mem_of_getElem? hc)
   simpa [h] using this
+
+/-- The declarations of an extension of the signature whose types end in {lit}`tp` or
+{lit}`tm` take types and terms as arguments. -/
+theorem sig_domsOK (hsg : SigExt sg) {c : ℕ} {T : Expr} (hc : sg[c]? = some T)
+    (h : TermHead T = true) : Expr.DomsOK T = true := by
+  by_cases hlt : c < sig.length
+  · exact sig_domsOK₀ (hsg.of_lt hc hlt) h
+  · obtain ⟨h₀, h₆⟩ := hsg.inert c T (Nat.le_of_not_lt hlt) hc
+    simp only [TermHead, Bool.or_eq_true, beq_iff_eq] at h
+    rcases h with h | h
+    · exact absurd h h₀
+    · exact absurd h h₆
 
 /-- The head of a product is its codomain's. -/
 theorem termHead_pi (a b : Expr) : TermHead (Expr.pi a b) = TermHead b := by
@@ -1020,9 +1032,9 @@ theorem spine_args_termHead {J : Expr → Ctx → Mode → Bool} {Γ : Ctx} :
 against a type of the shape whose arguments are types and terms, ending in {lit}`tp` or
 {lit}`tm`, in a context of such types, every variable is of a type ending in {lit}`tp` or
 {lit}`tm`. -/
-theorem judge_occursOnly : ∀ (e : Expr) (Γ : Ctx) (P : Expr),
+theorem judge_occursOnly (hsg : SigExt sg) : ∀ (e : Expr) (Γ : Ctx) (P : Expr),
     (∀ a ∈ Γ, Expr.TypeShape a = true ∧ Expr.DomsOK a = true) → Expr.TypeShape P = true →
-    TermHead P = true → Expr.DomsOK P = true → judge sig e Γ (.check P) = true →
+    TermHead P = true → Expr.DomsOK P = true → judge sg e Γ (.check P) = true →
     e.OccursOnly (fun i ↦ (varType Γ i).any TermHead) = true :=
   RoseTree.ind fun l cs ih Γ P hΓ hPs hPh hPd hj ↦ by
     have hvar : ∀ {i : ℕ} {t : Expr}, varType Γ i = some t →
@@ -1074,8 +1086,8 @@ theorem judge_occursOnly : ∀ (e : Expr) (Γ : Ctx) (P : Expr),
       · simp [judgeStep] at hj
     · simp only [judgeStep, Bool.and_eq_true] at hj
       obtain ⟨hP, hm⟩ := hj
-      obtain ⟨C, hC, hS⟩ : ∃ C, classOf sig Γ hd = some C ∧
-          spine Γ C (cs.map fun c ↦ (c, judge sig c)) = some P := by
+      obtain ⟨C, hC, hS⟩ : ∃ C, classOf sg Γ hd = some C ∧
+          spine Γ C (cs.map fun c ↦ (c, judge sg c)) = some P := by
         split at hm
         · next R hR =>
           obtain ⟨C, hC, hS⟩ := Option.bind_eq_some_iff.mp hR
@@ -1084,18 +1096,18 @@ theorem judge_occursOnly : ∀ (e : Expr) (Γ : Ctx) (P : Expr),
       have hCs : Expr.TypeShape C = true := by
         rcases hd with i | c
         · exact (hvar hC).1
-        · exact Sig.ok_typeShape sig_ok c C hC
+        · exact Sig.ok_typeShape hsg.ok c C hC
       have hCh : TermHead C = true := by
         have := (spine_headDepth _ C P hCs hS).1
         simpa [TermHead, this] using hPh
       have hCd : Expr.DomsOK C = true := by
         rcases hd with i | c
         · exact (hvar hC).2
-        · exact sig_domsOK hC hCh
+        · exact sig_domsOK hsg hC hCh
       refine occursOnly_node_iff.mpr ⟨fun i hi ↦ ?_, fun idx hidx ↦ ?_⟩
       · cases hi
-        change classOf sig Γ (.var i) = some C at hC
-        rw [show varType Γ i = classOf sig Γ (.var i) from rfl, hC]
+        change classOf sg Γ (.var i) = some C at hC
+        rw [show varType Γ i = classOf sg Γ (.var i) from rfl, hC]
         simpa using hCh
       · obtain ⟨a, has, hah, had, haJ⟩ :=
           spine_args_termHead cs C P hCs hCd hS cs[idx] (List.getElem_mem hidx)

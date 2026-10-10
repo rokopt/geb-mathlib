@@ -70,6 +70,26 @@ theorem check_join {d₁ d₂ : Deriv} {t u v : Term} (h₁ : (check G E n d₁)
   simp only [List.map_cons, List.map_nil, checkStep, FreeTopos.Internal.eqParts, Term.eq,
     RoseTree.label_node, RoseTree.children_node, h₁, h₂, decide_true]
 
+/-- The application of a theorem of the language at objects and terms that instantiate its
+variables, from proofs of the instances of its hypotheses: the instance of its conclusion. -/
+theorem check_apply {j : ℕ} {a : FreeTopos.Internal.Thm} {θ : List PartialHorn.Tree}
+    {σ : List Term} {ps : List Deriv} {φ : Term}
+    (he : (E[j]?).bind FreeTopos.Internal.Entry.language? = some a)
+    (hok : FreeTopos.Internal.instOk G n Γ a θ σ = true)
+    (hφ : φ = FreeTopos.Internal.instTerm θ σ a.concl) (hlen : ps.length = a.hyps.length)
+    (hps : ∀ x ∈ ps.zip a.hyps,
+      (check G E n x.1).2 Γ Φ (FreeTopos.Internal.instTerm θ σ x.2) = true) :
+    (check G E n (nd (.apply j θ σ) ps)).2 Γ Φ φ = true := by
+  rw [check_node]
+  simp only [checkStep, he, hok, hφ, decide_true, Bool.true_and, List.length_map, hlen,
+    List.all_eq_true]
+  intro x hx
+  obtain ⟨y, hy, rfl⟩ : ∃ y ∈ ps.zip a.hyps, x = ((y.1, check G E n y.1), y.2) := by
+    rw [List.zip_map_left, List.mem_map] at hx
+    obtain ⟨y, hy, rfl⟩ := hx
+    exact ⟨y, hy, rfl⟩
+  exact hps y hy
+
 /-- A hypothesis proves itself. -/
 theorem check_hyp {h : ℕ} {φ : Term} (hφ : Φ[h]? = some φ) :
     (check G E n (ruleD (.hyp h))).2 Γ Φ φ = true := by
