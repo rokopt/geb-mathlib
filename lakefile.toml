@@ -187,6 +187,13 @@ name = "evalSource"
 path = "bootstrap/eval.geb"
 text = true
 
+# The stage-1 compiler's sources in the datatype language.
+[[input_dir]]
+name = "stage1Sources"
+path = "bootstrap/stage1"
+text = true
+filter = {extension = ["geb"]}
+
 [[input_dir]]
 name = "freeToposSources"
 path = "bootstrap/free-topos"
@@ -218,11 +225,11 @@ moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 [lean_lib.moreServerOptions]
 weak.linter.hashCommand = false
 
-# The stage-1 compiler's image.
+# The stage-1 compiler's image and its sources.
 [[lean_lib]]
 name = "GebTestsStage1"
 globs = ["GebTests.Prototypes.Stage1"]
-needs = ["@/compilerImage"]
+needs = ["@/compilerImage", "@/stage1Sources", "@/seqSource"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]

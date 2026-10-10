@@ -23,6 +23,8 @@ checked natively by the same script, with the Lean backend.
 
 ## Main definitions
 
+* {lit}`seq`, {lit}`typing`, {lit}`datatype` — the sources the stage-1 compiler adds to the
+  stage-0 compiler's, in the datatype language.
 * {lit}`runImage` runs an image's definition named {lit}`main` on an input tree.
 * {lit}`agreesOn` compares the stage-1 compiler's image with the stage-0 compiler on a program.
 * The typing of the stage-1 compiler, {lit}`bootstrap/stage1/typing.geb`, is tested through the
@@ -41,6 +43,15 @@ namespace Geb.Kernel.Stage1Tests
 
 open Stage0Tests
 open scoped FinEnum
+
+/-- The source of the lists of the datatype language, a module with a parameter. -/
+def seq : String := include_str "../../bootstrap/seq.geb"
+
+/-- The source of the stage-1 typing. -/
+def typing : String := include_str "../../bootstrap/stage1/typing.geb"
+
+/-- The source of the stage-1 expansion of the datatype language. -/
+def datatype : String := include_str "../../bootstrap/stage1/datatype.geb"
 
 /-- Run an image on an input tree: apply its definition named {lit}`main`. -/
 def runImage (img : ByteArray) (input : Tree) : Option Tree := do

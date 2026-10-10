@@ -438,7 +438,7 @@ def extend (P : Prog) : Option (Prog × Defs) := do
     ⟨0, [treeTy, fnsTy, list treeTy], RE,
       Term.app (Term.roseRec CE sE (v 0)) (pc "Eval.evStep" [v 2, v 1])⟩]
   pure (⟨⟨P.G.prims ++ [Internal.zeroPrim, Internal.succPrim], P.G.defs ++ defs.map .language,
-    P.G.base⟩, P.o, P.idx⟩, S)
+    P.G.base⟩, P.o, P.idx, P.folded⟩, S)
 
 /-! The development. -/
 
@@ -686,9 +686,11 @@ def termLabels : List ℕ :=
     Kernel.Label.ref, Kernel.Label.lcase, Kernel.Label.para]
 
 /-- The program's constants kept folded: the type checker, its case at a node, the evaluator's
-step and application, and its functions at a level from those below. -/
+step and application, its functions at a level from those below, and the program's further
+folded definitions. -/
 def foldedProg (P : Prog) : List ℕ :=
-  ["Check.typeIn", "Check.checkNode", "Eval.evStep", "Eval.apStep", "Eval.next"].map P.idx
+  (["Check.typeIn", "Check.checkNode", "Eval.evStep", "Eval.apStep", "Eval.next"] ++
+    P.folded).map P.idx
 
 /-- The rules of the vocabulary: the base rules, every definition below the connectives but the
 folded ones unfolded, and the natural numbers' folds. -/
