@@ -692,6 +692,21 @@ def Thm.checks (G : Globals) (E : Array Entry) (a : Thm) (d : Deriv) : Bool :=
     decide (typeIn G a.arity a.ctx a.concl = some omega) &&
     (check G E a.arity d).2 a.ctx a.hyps a.concl
 
+/-- Whether a theorem is well formed with the constants of {lit}`G`: its context is of types, and
+its hypotheses and conclusion are formulas there, the conditions {lit}`Thm.checks` tests besides
+the derivation's proof, for a checker beside it. -/
+def Thm.wellFormed (G : Globals) (a : Thm) : Bool :=
+  a.ctx.all (IsTy G a.arity) && a.hyps.all (fun h ↦ typeIn G a.arity a.ctx h = some omega) &&
+    decide (typeIn G a.arity a.ctx a.concl = some omega)
+
+/-- A theorem is well formed exactly when its context is of types and its hypotheses and
+conclusion are formulas there. -/
+theorem Thm.wellFormed_iff {G : Globals} {a : Thm} :
+    a.wellFormed G = true ↔ a.ctx.all (IsTy G a.arity) = true ∧
+      (∀ h ∈ a.hyps, typeIn G a.arity a.ctx h = some omega) ∧
+        typeIn G a.arity a.ctx a.concl = some omega := by
+  simp only [Thm.wellFormed, Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq, and_assoc]
+
 /-- The sequent of the combinators that a primitive arrow is an arrow from its domain to its
 codomain, in its object parameters: its composite with the identities of its domain and of its
 codomain is itself. -/

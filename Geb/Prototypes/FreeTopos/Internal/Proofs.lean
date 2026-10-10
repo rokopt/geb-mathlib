@@ -15,7 +15,9 @@ set_option doc.verso true in
 
 The checker {name}`Geb.FreeTopos.Internal.check` is sound ({lit}`check_sound`): every rewriting a
 derivation performs is sound, and every formula it proves is sound, in the sense of
-{name}`Geb.FreeTopos.Internal.FmSound`.
+{name}`Geb.FreeTopos.Internal.FmSound`. The soundness is that of each step of the checker from
+children whose results are sound ({lit}`checkStep_sound`), so that a checker whose steps are the
+checker's at the rules of the language inherits it.
 
 The rules of proof are sound by the universal properties of the subobject classifier and of the
 exponential. An equation whose sides rewrite to one term holds; a cut, and a formula rewritten
@@ -60,7 +62,8 @@ compilations of the language's ({lit}`cert_sound`).
 * {lit}`coprodInd_sound`, {lit}`zeroInd_sound` — case analysis on a coproduct, and a context
   with a variable of the initial type, are sound.
 * {lit}`roseInd_sound`, {lit}`roseIndHyp_sound` — induction on rose trees is sound.
-* {lit}`check_sound` — the checker is sound.
+* {lit}`checkStep_sound`, {lit}`check_sound` — one step of the checker, from children whose
+  results are sound, and the checker are sound.
 
 ## Tags
 
@@ -1769,19 +1772,31 @@ theorem certSeq_sound {E : Array Entry}
     exact ⟨hres.1, hres.2.trans ((hside hFh).trans ((eval_op₂_congr 3 (eval_eq_of_holds hv)
       rfl).trans ((hside htX).symm.trans (truth_comp hM hx))))⟩
 
-/-- The checker is sound: every rewriting a derivation performs is sound, and every formula it
-proves holds, with sound unfoldings and valid earlier entries, when the model's definitions are
-the compilations of the definitions of {lit}`G` wherever a certificate is checked. -/
-theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
+variable (M ρ) in
+/-- The results of a node's rewriting and proving are sound: every rewriting is sound and every
+formula proved holds. -/
+def ChecksSound (G : Globals) (n : ℕ) (c : Checks) : Prop :=
+  (∀ Γ Φ t t', c.1 Γ Φ t = some t' → RwSound M ρ G n Γ Φ t t') ∧
+    (∀ Γ Φ φ, c.2 Γ Φ φ = true → FmSound M ρ G n Γ Φ φ)
+
+/-- A child of a node, a derivation and its results, whose results rewrite a term only to itself
+where its derivation is of the identity rule, as a derivation of the identity rule's does. -/
+def ReflFaithful (x : Deriv × Checks) : Prop :=
+  x.1.label.isRefl = true → ∀ Γ Φ t t', x.2.1 Γ Φ t = some t' → t' = t
+
+/-- One step of the checker is sound: from children whose results are sound and faithful to the
+identity rule, a node's rewriting is sound and every formula it proves holds, with sound unfoldings
+and valid earlier entries, when the model's definitions are the compilations of the definitions of
+{lit}`G` wherever a certificate is checked. -/
+theorem checkStep_sound (hδ : DefnsOk M G) {E : Array Entry}
     (hE : ∀ (j : ℕ) (e : Entry), E[j]? = some e → e.Valid M G)
-    (hcert : ∀ cds, compileDefs G = some cds → G.base = sig.length → cds <+: defs) :
-    ∀ d : Deriv, (∀ Γ Φ t t', (check G E n d).1 Γ Φ t = some t' → RwSound M ρ G n Γ Φ t t') ∧
-      (∀ Γ Φ φ, (check G E n d).2 Γ Φ φ = true → FmSound M ρ G n Γ Φ φ) := by
+    (hcert : ∀ cds, compileDefs G = some cds → G.base = sig.length → cds <+: defs)
+    (l : Rule) (cs : List (Deriv × Checks)) (hcs : ∀ x ∈ cs, ChecksSound M ρ G n x.2)
+    (hfaith : ∀ x ∈ cs, ReflFaithful x) : ChecksSound M ρ G n (checkStep G E n l cs) := by
   have hEl : ∀ (j : ℕ) (a : Thm), (E[j]?).bind Entry.language? = some a → a.Valid M G :=
     fun _ _ h ↦ Entry.valid_language hE h
-  refine RoseTree.ind fun l cs ih ↦ ⟨fun Γ Φ t t' h ↦ ?_, fun Γ Φ φ h ↦ ?_⟩
-  · rw [check_node] at h
-    cases l
+  refine ⟨fun Γ Φ t t' h ↦ ?_, fun Γ Φ φ h ↦ ?_⟩
+  · cases l
     case refl =>
       rcases cs with _ | ⟨c, cs⟩
       · obtain rfl : t = t' := Option.some_inj.mp h
@@ -1791,9 +1806,9 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
       rcases cs with _ | ⟨c₁, _ | ⟨c₂, _ | ⟨c₃, cs⟩⟩⟩
       · simp [checkStep, rootStep] at h
       · simp [checkStep] at h
-      · simp only [checkStep, List.map_cons, List.map_nil] at h
+      · simp only [checkStep] at h
         obtain ⟨v, h₁, h₂⟩ := Option.bind_eq_some_iff.mp h
-        exact ((ih c₁ (by simp)).1 _ _ _ _ h₁).trans ((ih c₂ (by simp)).1 _ _ _ _ h₂)
+        exact ((hcs c₁ (by simp)).1 _ _ _ _ h₁).trans ((hcs c₂ (by simp)).1 _ _ _ _ h₂)
       · simp [checkStep] at h
     case cong =>
       obtain ⟨l₀, ts, rfl⟩ : ∃ l cs, t = RoseTree.node l cs :=
@@ -1810,9 +1825,7 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
             RwSound M ρ G n Γ Φ t t')
           (R := fun x r ↦ x.1.2.1 x.2.1.1 x.2.1.2 x.2.2 = some r)
           (fun _ _ _ hx hR ↦ hx _ _ _ _ hR) _ _ _ (by simp [hlen.1, hlen.2])
-          (fun x hx ↦ ?_) (forall₂_of_mapM _ hts')
-        obtain ⟨c, hc, rfl⟩ := List.mem_map.mp hx
-        exact (ih c hc).1
+          (fun x hx ↦ (hcs x hx).1) (forall₂_of_mapM _ hts')
       unfold congCtxs at hΓs
       split_ifs at hΓs with hall
       · obtain rfl := Option.some_inj.mp hΓs
@@ -1822,35 +1835,33 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
         obtain ⟨hl₁, hR₁⟩ := List.forall₂_iff_get.mp (forall₂_of_mapM _ hts')
         simp only [List.length_zip, List.length_map] at hl₁ hlen
         have hi : i < cs.length := by omega
-        have hrefl : cs[i].label.isRefl = true := by
+        have hrefl : cs[i].1.label.isRefl = true := by
           have := List.all_eq_true.mp hall _
-            (List.getElem_mem (l := (List.map Prod.fst
-              (List.map (fun c ↦ (c, check G E n c)) cs)).zipIdx) (n := i) (by simpa using hi))
+            (List.getElem_mem (l := (List.map Prod.fst cs).zipIdx) (n := i) (by simpa using hi))
           simpa [List.getElem_zipIdx, hs] using this
         have hx := hR₁ i (by simp only [List.length_zip, List.length_map]; omega) h₂
         simp only [List.get_eq_getElem, List.getElem_zip, List.getElem_map] at hx
-        exact check_isRefl hrefl hx
+        exact hfaith cs[i] (List.getElem_mem hi) hrefl _ _ _ _ hx
       · exact cong_sound hM hG hρ hps hds hΓs hR
     all_goals
       rcases cs with _ | ⟨c, cs⟩
       · exact rootStep_sound hM hG hρ hps hds hδ hEl
-          (by simpa only [checkStep, List.map_nil] using h)
+          (by simpa only [checkStep] using h)
       · nomatch h
-  · rw [check_node] at h
-    cases l
+  · cases l
     case join =>
       rcases cs with _ | ⟨c₁, _ | ⟨c₂, _ | ⟨c₃, cs⟩⟩⟩
       · simp [checkStep] at h
       · simp [checkStep] at h
-      · simp only [checkStep, List.map_cons, List.map_nil] at h
+      · simp only [checkStep] at h
         split at h
         · rename_i t u htu
           split at h
           · rename_i v v' h₁ h₂
             obtain rfl := of_decide_eq_true h
             rw [eqParts_eq_some htu]
-            exact join_sound hM hG hρ hps hds ((ih c₁ (by simp)).1 _ _ _ _ h₁)
-              ((ih c₂ (by simp)).1 _ _ _ _ h₂)
+            exact join_sound hM hG hρ hps hds ((hcs c₁ (by simp)).1 _ _ _ _ h₁)
+              ((hcs c₂ (by simp)).1 _ _ _ _ h₂)
           · simp at h
         · simp at h
       · simp [checkStep] at h
@@ -1862,54 +1873,54 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
       rcases cs with _ | ⟨c₁, _ | ⟨c₂, _ | ⟨c₃, cs⟩⟩⟩
       · simp [checkStep] at h
       · simp [checkStep] at h
-      · simp only [checkStep, List.map_cons, List.map_nil, Bool.and_eq_true,
+      · simp only [checkStep, Bool.and_eq_true,
           decide_eq_true_eq] at h
         obtain ⟨⟨hψ, hp⟩, hq⟩ := h
-        exact cut_sound hψ ((ih c₁ (by simp)).2 _ _ _ hp) ((ih c₂ (by simp)).2 _ _ _ hq)
+        exact cut_sound hψ ((hcs c₁ (by simp)).2 _ _ _ hp) ((hcs c₂ (by simp)).2 _ _ _ hq)
       · simp [checkStep] at h
     case conv =>
       rcases cs with _ | ⟨c₁, _ | ⟨c₂, _ | ⟨c₃, cs⟩⟩⟩
       · simp [checkStep] at h
       · simp [checkStep] at h
-      · simp only [checkStep, List.map_cons, List.map_nil] at h
+      · simp only [checkStep] at h
         split at h
         · rename_i φ' hd
-          exact conv_sound ((ih c₁ (by simp)).1 _ _ _ _ hd) ((ih c₂ (by simp)).2 _ _ _ h)
+          exact conv_sound ((hcs c₁ (by simp)).1 _ _ _ _ hd) ((hcs c₂ (by simp)).2 _ _ _ h)
         · simp at h
       · simp [checkStep] at h
     case convFrom ψ =>
       rcases cs with _ | ⟨c₁, _ | ⟨c₂, _ | ⟨c₃, cs⟩⟩⟩
       · simp [checkStep] at h
       · simp [checkStep] at h
-      · simp only [checkStep, List.map_cons, List.map_nil, Bool.and_eq_true,
+      · simp only [checkStep, Bool.and_eq_true,
           decide_eq_true_eq] at h
         obtain ⟨⟨hψ, hd⟩, hp⟩ := h
-        exact convFrom_sound hψ ((ih c₁ (by simp)).1 _ _ _ _ hd) ((ih c₂ (by simp)).2 _ _ _ hp)
+        exact convFrom_sound hψ ((hcs c₁ (by simp)).1 _ _ _ _ hd) ((hcs c₂ (by simp)).2 _ _ _ hp)
       · simp [checkStep] at h
     case propExt =>
       rcases cs with _ | ⟨c₁, _ | ⟨c₂, _ | ⟨c₃, cs⟩⟩⟩
       · simp [checkStep] at h
       · simp [checkStep] at h
-      · simp only [checkStep, List.map_cons, List.map_nil] at h
+      · simp only [checkStep] at h
         split at h
         · rename_i α β hαβ
           simp only [Bool.and_eq_true, decide_eq_true_eq] at h
           obtain ⟨⟨⟨hα, -⟩, hp⟩, hq⟩ := h
           rw [eqParts_eq_some hαβ]
-          exact propExt_sound hM hG hρ hps hds hα ((ih c₁ (by simp)).2 _ _ _ hp)
-            ((ih c₂ (by simp)).2 _ _ _ hq)
+          exact propExt_sound hM hG hρ hps hds hα ((hcs c₁ (by simp)).2 _ _ _ hp)
+            ((hcs c₂ (by simp)).2 _ _ _ hq)
         · simp at h
       · simp [checkStep] at h
     case funExt =>
       rcases cs with _ | ⟨c₁, _ | ⟨c₂, cs⟩⟩
       · simp [checkStep] at h
-      · simp only [checkStep, List.map_cons, List.map_nil] at h
+      · simp only [checkStep] at h
         split at h
         · rename_i f g hfg
           split at h
           · rename_i a b hab
             rw [eqParts_eq_some hfg]
-            exact funExt_sound hM hG hρ hps hds hab ((ih c₁ (by simp)).2 _ _ _ h)
+            exact funExt_sound hM hG hρ hps hds hab ((hcs c₁ (by simp)).2 _ _ _ h)
           · simp at h
         · simp at h
       · simp [checkStep] at h
@@ -1918,7 +1929,7 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
       · simp [checkStep] at h
       · simp [checkStep] at h
       · simp [checkStep] at h
-      · simp only [checkStep, List.map_cons, List.map_nil] at h
+      · simp only [checkStep] at h
         split at h
         · split at h
           · rename_i t u c Γ' htu _ _ C Φ' hC hlow
@@ -1926,8 +1937,8 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
             obtain ⟨⟨⟨⟨rfl, hkz, hks, -, hsC⟩, hp₀⟩, hp₁⟩, hp₂⟩ := h
             rw [eqParts_eq_some htu]
             exact natInd_sound hM hG hρ hps hds hkz hks hlow hC hsC
-              ((ih c₀ (by simp)).2 _ _ _ hp₀) ((ih c₁ (by simp)).2 _ _ _ hp₁)
-              ((ih c₂ (by simp)).2 _ _ _ hp₂)
+              ((hcs c₀ (by simp)).2 _ _ _ hp₀) ((hcs c₁ (by simp)).2 _ _ _ hp₁)
+              ((hcs c₂ (by simp)).2 _ _ _ hp₂)
           · simp at h
         · simp at h
       · simp [checkStep] at h
@@ -1936,7 +1947,7 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
       · simp [checkStep] at h
       · simp [checkStep] at h
       · simp [checkStep] at h
-      · simp only [checkStep, List.map_cons, List.map_nil] at h
+      · simp only [checkStep] at h
         split at h
         · split at h
           · rename_i t u c Γ' htu _ _ _ C a Φ' hC ha hlow
@@ -1945,8 +1956,8 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
             obtain ⟨⟨⟨⟨hkn, hkc, -, hsC⟩, hp₀⟩, hp₁⟩, hp₂⟩ := h
             rw [eqParts_eq_some htu]
             exact listInd_sound hM hG hρ hps hds hkn hkc hlow hC hsC
-              ((ih c₀ (by simp)).2 _ _ _ hp₀) ((ih c₁ (by simp)).2 _ _ _ hp₁)
-              ((ih c₂ (by simp)).2 _ _ _ hp₂)
+              ((hcs c₀ (by simp)).2 _ _ _ hp₀) ((hcs c₁ (by simp)).2 _ _ _ hp₁)
+              ((hcs c₂ (by simp)).2 _ _ _ hp₂)
           · simp at h
         · simp at h
       · simp [checkStep] at h
@@ -1958,21 +1969,20 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
         obtain ⟨⟨⟨hok, rfl⟩, hlen⟩, hall⟩ := h
         refine apply_sound hM hG hρ hps hds hEl ha hok fun h hh ↦ ?_
         obtain ⟨x, hx, hxh⟩ := exists_of_all_zip _ _ hlen hall h hh
-        obtain ⟨c, hc, rfl⟩ := List.mem_map.mp hx
-        exact (ih c hc).2 _ _ _ hxh
+        exact (hcs x hx).2 _ _ _ hxh
       · simp at h
     case natIndHyp kz ks =>
       rcases cs with _ | ⟨c₀, _ | ⟨c₁, _ | ⟨c₂, cs⟩⟩⟩
       · simp [checkStep] at h
       · simp [checkStep] at h
-      · simp only [checkStep, List.map_cons, List.map_nil] at h
+      · simp only [checkStep] at h
         split at h
         · split at h
           · rename_i c Γ' _ Φ' hlow
             simp only [Bool.and_eq_true, decide_eq_true_eq] at h
             obtain ⟨⟨⟨rfl, hkz, hks, hφ⟩, hp₀⟩, hp₁⟩ := h
             exact natIndHyp_sound hM hG hρ hps hds hkz hks hlow hφ
-              ((ih c₀ (by simp)).2 _ _ _ hp₀) ((ih c₁ (by simp)).2 _ _ _ hp₁)
+              ((hcs c₀ (by simp)).2 _ _ _ hp₀) ((hcs c₁ (by simp)).2 _ _ _ hp₁)
           · simp at h
         · simp at h
       · simp [checkStep] at h
@@ -1980,7 +1990,7 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
       rcases cs with _ | ⟨c₀, _ | ⟨c₁, _ | ⟨c₂, cs⟩⟩⟩
       · simp [checkStep] at h
       · simp [checkStep] at h
-      · simp only [checkStep, List.map_cons, List.map_nil] at h
+      · simp only [checkStep] at h
         split at h
         · split at h
           · rename_i c Γ' _ _ a Φ' ha hlow
@@ -1988,7 +1998,7 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
             simp only [Bool.and_eq_true, decide_eq_true_eq] at h
             obtain ⟨⟨⟨hkn, hkc, hφ⟩, hp₀⟩, hp₁⟩ := h
             exact listIndHyp_sound hM hG hρ hps hds hkn hkc hlow hφ
-              ((ih c₀ (by simp)).2 _ _ _ hp₀) ((ih c₁ (by simp)).2 _ _ _ hp₁)
+              ((hcs c₀ (by simp)).2 _ _ _ hp₀) ((hcs c₁ (by simp)).2 _ _ _ hp₁)
           · simp at h
         · simp at h
       · simp [checkStep] at h
@@ -1996,7 +2006,7 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
       rcases cs with _ | ⟨c₀, _ | ⟨c₁, _ | ⟨c₂, cs⟩⟩⟩
       · simp [checkStep] at h
       · simp [checkStep] at h
-      · simp only [checkStep, List.map_cons, List.map_nil] at h
+      · simp only [checkStep] at h
         split at h
         · split at h
           · rename_i c Γ' _ _ a b Φ' hab hlow
@@ -2004,7 +2014,7 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
             simp only [Bool.and_eq_true, decide_eq_true_eq] at h
             obtain ⟨⟨⟨hkl, hkr, hφ⟩, hp₀⟩, hp₁⟩ := h
             exact coprodInd_sound hM hG hρ hps hds hkl hkr hlow hφ
-              ((ih c₀ (by simp)).2 _ _ _ hp₀) ((ih c₁ (by simp)).2 _ _ _ hp₁)
+              ((hcs c₀ (by simp)).2 _ _ _ hp₀) ((hcs c₁ (by simp)).2 _ _ _ hp₁)
           · simp at h
         · simp at h
       · simp [checkStep] at h
@@ -2012,7 +2022,7 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
       rcases cs with _ | ⟨c₁, _ | ⟨c₂, _ | ⟨c₃, cs⟩⟩⟩
       · simp [checkStep] at h
       · simp [checkStep] at h
-      · simp only [checkStep, List.map_cons, List.map_nil] at h
+      · simp only [checkStep] at h
         split at h
         · split at h
           · rename_i t u r htu _ _ C a F hC hr
@@ -2020,27 +2030,27 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
             obtain ⟨⟨⟨hkn, hkl, hkc, huC, hsC⟩, hp₁⟩, hp₂⟩ := h
             rw [eqParts_eq_some htu]
             exact roseInd_sound hM hG hρ hps hds hr hkn hkl hkc hC huC hsC
-              ((ih c₁ (by simp)).2 _ _ _ hp₁) ((ih c₂ (by simp)).2 _ _ _ hp₂)
+              ((hcs c₁ (by simp)).2 _ _ _ hp₁) ((hcs c₂ (by simp)).2 _ _ _ hp₂)
           · simp at h
         · simp at h
       · simp [checkStep] at h
     case roseIndHyp kn kl kc =>
       rcases cs with _ | ⟨c₁, _ | ⟨c₂, cs⟩⟩
       · simp [checkStep] at h
-      · simp only [checkStep, List.map_cons, List.map_nil] at h
+      · simp only [checkStep] at h
         split at h
         · split at h
           · rename_i r Γ' _ _ a F Φ' hr hlow
             simp only [Bool.and_eq_true, decide_eq_true_eq] at h
             obtain ⟨⟨hkn, hkl, hkc, hφ⟩, hp₁⟩ := h
             exact roseIndHyp_sound hM hG hρ hps hds hr hkn hkl hkc hlow hφ
-              ((ih c₁ (by simp)).2 _ _ _ hp₁)
+              ((hcs c₁ (by simp)).2 _ _ _ hp₁)
           · simp at h
         · simp at h
       · simp [checkStep] at h
     case cert c =>
       rcases cs with _ | ⟨c₀, cs⟩
-      · simp only [checkStep, List.map_nil] at h
+      · simp only [checkStep] at h
         split at h
         · rename_i t u htu
           split at h
@@ -2052,14 +2062,14 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
       · simp [checkStep] at h
     case certSeq c =>
       rcases cs with _ | ⟨c₀, cs⟩
-      · simp only [checkStep, List.map_nil, Bool.and_eq_true, decide_eq_true_eq] at h
+      · simp only [checkStep, Bool.and_eq_true, decide_eq_true_eq] at h
         obtain ⟨⟨hΦ, hφ⟩, hc⟩ := h
         exact certSeq_sound hM hG hρ hps hds hE hcert hΦ hφ hc
       · simp [checkStep] at h
     case quotInd kq θ =>
       rcases cs with _ | ⟨c₀, _ | ⟨c₁, cs⟩⟩
       · simp [checkStep] at h
-      · simp only [checkStep, List.map_cons, List.map_nil] at h
+      · simp only [checkStep] at h
         split at h
         · rename_i c Γ' p hp
           split at h
@@ -2068,16 +2078,31 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
             simp only [Bool.and_eq_true, decide_eq_true_eq] at h
             obtain ⟨⟨hl, hθ, rfl, hφ⟩, hp₀⟩ := h
             exact quotInd_sound hM hG hρ hps hds hp hfg hl hθ hlow hφ
-              ((ih c₀ (by simp)).2 _ _ _ hp₀)
+              ((hcs c₀ (by simp)).2 _ _ _ hp₀)
           · simp at h
         · simp at h
       · simp [checkStep] at h
     case zeroInd i =>
       rcases cs with _ | ⟨c₀, cs⟩
-      · simp only [checkStep, List.map_nil, decide_eq_true_eq] at h
+      · simp only [checkStep, decide_eq_true_eq] at h
         exact zeroInd_sound hM hG hρ hps hds h.1 h.2
       · simp [checkStep] at h
     all_goals simp [checkStep] at h
+
+/-- The checker is sound: every rewriting a derivation performs is sound, and every formula it
+proves holds, with sound unfoldings and valid earlier entries, when the model's definitions are
+the compilations of the definitions of {lit}`G` wherever a certificate is checked. -/
+theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
+    (hE : ∀ (j : ℕ) (e : Entry), E[j]? = some e → e.Valid M G)
+    (hcert : ∀ cds, compileDefs G = some cds → G.base = sig.length → cds <+: defs) :
+    ∀ d : Deriv, (∀ Γ Φ t t', (check G E n d).1 Γ Φ t = some t' → RwSound M ρ G n Γ Φ t t') ∧
+      (∀ Γ Φ φ, (check G E n d).2 Γ Φ φ = true → FmSound M ρ G n Γ Φ φ) :=
+  RoseTree.ind fun l cs ih ↦ by
+    rw [check_node]
+    refine checkStep_sound hM hG hρ hps hds hδ hE hcert l _ (fun x hx ↦ ?_) fun x hx ↦ ?_
+    all_goals obtain ⟨c, hc, rfl⟩ := List.mem_map.mp hx
+    · exact ih c hc
+    · exact fun hr _ _ _ _ h ↦ check_isRefl hr h
 
 end Proofs
 

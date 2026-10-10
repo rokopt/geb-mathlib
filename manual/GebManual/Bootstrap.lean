@@ -264,14 +264,19 @@ the sections below detail:
     with the Lean checker: its denotation, at every development, is the
     Lean checker's result, by the method of the checker of Gödel's T
     ({ref "logic"}[The logic]).
-  * Ready. Stronger checkers admitted beside it by relative
+  * In progress. Stronger checkers admitted beside it by relative
     soundness, each by a translation of its certificates into the
     metalogic's derivations ({ref "metalogic-and-checker"}[The
     metalogic and its checker]). Two are required by the bootstrap: the
     checker with a step of conversion to a normal form under named
     rules, the evaluation of primitives at literals among its rules, and
     the checker of holes, admitted beside it
-    ({ref "the-next-phase"}[The next phase]). The checker of the shared
+    ({ref "the-next-phase"}[The next phase]). The first is written in
+    Lean beside the Lean checker (`Geb.FreeTopos.Internal.convCheck`),
+    each step of conversion naming its rules and checked as the base
+    checker's derivation of its steps, so that it is sound relative to
+    the base checker; its transcription into Geb, with its agreement, and
+    the evaluation of primitives at literals follow. The checker of the shared
     certificates, by unsharing, is required if measurement shows the
     checking or storage of certificates to need it, and follows the
     bootstrap otherwise.
@@ -3874,10 +3879,13 @@ extensionality and induction, with the computation rules also given as
 rewrite rules. The
 library `GebExperiments` translates a goal of that signature to
 Canonical's input and each term returned back to canonical LF, where the
-prototype's checker decides it, and then decodes it to a derivation of
-the internal language and checks it with the checker of
-`Geb.FreeTopos.Internal` (`lake exe lf-canonical`). A term of pure LF
-decodes to a derivation that checker accepts
+prototype's checker decides it, and then decodes it to a certificate of
+the internal language and checks it (`lake exe lf-canonical`): a term of
+pure LF to a derivation of the checker of `Geb.FreeTopos.Internal`, and
+a term found modulo the rules to a certificate of the checker with a step
+of conversion beside it (`Geb/Prototypes/LF/Topos/ProofsMod.lean`),
+which takes the step where LF compares types after computation. A term
+of pure LF decodes to a derivation the checker accepts
 (`Geb/Prototypes/LF/Topos/ProofSound.lean`): the signature's fold is the
 language's fold, whose start and step may mention the variables around
 it, and its computation rules are the checker's. The decoding applies to
@@ -3933,14 +3941,15 @@ term returned checked:
   * Not found in 120 s
 :::
 
-Every term found in pure LF for a goal without type parameters decoded
-to a derivation that the internal language's checker accepts, a
-certificate of the language. Of those found modulo the rules, only the
-congruence of `succ`, which computes nothing, did: the checker compares
-the sides of an equation after the derivation's rewriting and has no
-step of conversion, so a term that leaves a computation to the rules is
-a certificate of the stronger checker of the second conclusion above,
-not of this one. The uniqueness of the fold and the associativity of
+Every term found for a goal without type parameters decoded to a
+certificate of the language that its checker accepts: in pure LF a
+derivation of the checker of `Geb.FreeTopos.Internal`, and modulo the
+rules a certificate of the checker with a step of conversion, the
+stronger checker of the second conclusion above. The base checker
+compares the sides of an equation after the derivation's rewriting and
+does not compute, so of the terms found modulo the rules only the
+congruence of `succ`, which computes nothing, is one of its derivations.
+The uniqueness of the fold and the associativity of
 appending, found in seconds with Lean's `List` and its fold's equations
 as reduction rules, were not found here, where the search is offered
 every declaration of the signature and equals are substituted by a
@@ -6314,7 +6323,14 @@ step translated into that derivation. Which rules it carries is decided,
 as the choices of when the Mitchell–Bénabou language is written and
 whether Gödel's T keeps its own checker were, by measurement: the nodes
 of the complete proofs' derivations, counted by rule, locate the steps it
-would take at once. The second is the checker of holes, admitted beside
+would take at once. Its prototype in Lean, `Geb.FreeTopos.Internal.convCheck`,
+leaves the choice to each certificate: a step of conversion names its
+rules, and its meaning is the base checker's rewriting by the derivation
+of the prover's normalization under them, so that each step is admitted
+by its translation, and the checker's soundness is the base checker's.
+The terms Canonical finds modulo the computation rules are its first
+certificates ({ref "search-synthesis"}[Search and synthesis]). The second
+is the checker of holes, admitted beside
 the first rather than beside the metalogic's checker: its certificates
 are the first's with leaves for open obligations, its translation targets
 the first, and its soundness rests on the first's, as each of Milawa's

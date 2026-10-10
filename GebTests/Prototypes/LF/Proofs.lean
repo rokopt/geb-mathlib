@@ -6,7 +6,9 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.LF.Topos.Proofs
+public import Geb.Prototypes.LF.Topos.ProofsMod
 public meta import Geb.Prototypes.LF.Topos.Proofs -- shake: keep
+public meta import Geb.Prototypes.LF.Topos.ProofsMod -- shake: keep
 
 /-!
 # Tests for the decoding of proofs
@@ -18,7 +20,10 @@ substitution of equals into a motive whose fold's step mentions the motive's var
 computations of the fold of a list, the proof by induction on lists that the right fold by
 construction from the empty list is the identity, the computation of the fold of a rose tree at a
 construction, and the proof by induction on rose trees that the fold by the constant step zero is
-zero, for rose trees of natural-number labels and of lists of natural numbers alike.
+zero, for rose trees of natural-number labels and of lists of natural numbers alike. Proofs that
+check only modulo the rewrite rules decode to certificates the checker with a step of conversion
+accepts and the base checker does not: reflexivity at an equation that holds by computation, and
+an induction whose step computes under its hypothesis; a false equation it rejects.
 
 ## Tags
 
@@ -46,6 +51,14 @@ derivation that proves the decoding of an equation in the internal context {lit}
 def proves (Γ : List PartialHorn.Tree) (M F : Expr) : Bool :=
   match decPf pfIdx M (Γ.map fun _ ↦ none) 0, dec pfIdx F with
     | some D, some φ => Thm.checks pfGlobals #[] ⟨0, Γ, [], φ⟩ D
+    | _, _ => false
+
+/-- Whether a proof modulo the rules, in an LF context of term variables of the types of
+{lit}`Γ`, decodes to a certificate with steps of conversion that proves the decoding of an equation
+in the internal context {lit}`Γ`. -/
+def provesMod (Γ : List PartialHorn.Tree) (M F : Expr) : Bool :=
+  match decPfMod pfIdx M (Γ.map fun _ ↦ none) 0, dec pfIdx F with
+    | some D, some φ => Thm.convChecks pfGlobals #[] ⟨0, Γ, [], φ⟩ D
     | _, _ => false
 
 /-- Whether a proof, in an LF context of term variables of the natural numbers, decodes to a
@@ -176,6 +189,28 @@ def lZeroFoldStep : Expr :=
   (Expr.const 46 [listNatLF, Expr.lam (eq nat (lroseRec listNatLF nat zeroLam (v 0)) zero),
     lZeroFoldStep, v 0])
   (eq nat (lroseRec listNatLF nat zeroLam (v 0)) zero)
+
+-- `n + 0 = n` by reflexivity holds by computation: the conversion checker accepts it, and the base
+-- checker, which does not compute, rejects it.
+#guard provesMod [FreeTopos.nat] (Expr.const 18 [nat, v 0]) (eq nat addZero (v 0))
+#guard !proves [FreeTopos.nat] (Expr.const 18 [nat, v 0]) (eq nat addZero (v 0))
+
+-- `n + 0 = succ n` does not hold.
+#guard !provesMod [FreeTopos.nat] (Expr.const 18 [nat, v 0]) (eq nat addZero (succ (v 0)))
+
+/-- The step of the induction for {lit}`0 + n = n` modulo the rules: the substitution of equals
+at the motive {lit}`λ y. succ (0 + n) = succ y`, from the hypothesis {lit}`0 + n = n` and
+reflexivity, the computation of the fold at the successor left to the conversion. -/
+def zeroAddStepMod : Expr :=
+  Expr.lam (Expr.lam (Expr.const 19 [nat,
+    Expr.lam (eq nat (succ (natRec nat zero succLam (v 2))) (succ (v 0))),
+    natRec nat zero succLam (v 1), v 1, v 0,
+    Expr.const 18 [nat, succ (natRec nat zero succLam (v 1))]]))
+
+-- `0 + n = n` by induction modulo the rules.
+#guard provesMod [FreeTopos.nat] (Expr.const 29 [Expr.lam (eq nat (natRec nat zero succLam (v 0))
+    (v 0)), Expr.const 18 [nat, zero], zeroAddStepMod, v 0])
+  (eq nat (natRec nat zero succLam (v 0)) (v 0))
 
 end Geb.LF.Topos.Tests
 
