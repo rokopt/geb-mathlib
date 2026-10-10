@@ -282,6 +282,139 @@ theorem subst_id :
       exact congrArg _ ((List.map_congr_left fun c hc ↦ ih c hc (hcs c hc) σ hσ).trans
         (List.map_id cs))
 
+/-- A node other than a variable whose children's variables are leaves has its variables leaves. -/
+theorem varLeaves_of_children {l : Label} {cs : List Term} (hl : ∀ i, l ≠ .var i)
+    (hc : ∀ c ∈ cs, VarLeaves c = true) : VarLeaves (RoseTree.node l cs) = true :=
+  (varLeaves_node l cs).mpr ⟨fun i h ↦ (hl i h).elim, hc⟩
+
+/-- A variable is a leaf. -/
+theorem varLeaves_var (i : ℕ) : VarLeaves (var i) = true :=
+  (varLeaves_node _ _).mpr ⟨fun _ _ ↦ rfl, by simp⟩
+
+/-- Renaming keeps the variables of a term leaves. -/
+theorem varLeaves_rename :
+    ∀ t : Term, VarLeaves t = true → ∀ f : ℕ → ℕ, VarLeaves (rename t f) = true :=
+  RoseTree.ind fun l cs ih ht f ↦ by
+    obtain ⟨hv, hcs⟩ := (varLeaves_node l cs).mp ht
+    have ch : ∀ c ∈ cs, ∀ f, VarLeaves (rename c f) = true := fun c hc f ↦ ih c hc (hcs c hc) f
+    rcases shape l cs with ⟨i, rfl⟩ | ⟨a, t, rfl, rfl⟩ | ⟨z, s, m, hl, rfl⟩ | ⟨c, s, m, rfl, rfl⟩ |
+      hp
+    · obtain rfl := hv i rfl
+      rw [rename_node]
+      exact varLeaves_var _
+    · simp only [rename_node, renameStep, List.map_cons, List.map_nil]
+      exact varLeaves_of_children (fun _ h ↦ by cases h) (by simpa using ch t (by simp) _)
+    · rcases hl with rfl | rfl
+      · simp only [rename_node, renameStep, List.map_cons, List.map_nil]
+        exact varLeaves_of_children (fun _ h ↦ by cases h)
+          (by simpa using ⟨ch z (by simp) _, ch s (by simp) _, ch m (by simp) _⟩)
+      · simp only [rename_node, renameStep, List.map_cons, List.map_nil]
+        exact varLeaves_of_children (fun _ h ↦ by cases h)
+          (by simpa using ⟨ch z (by simp) _, ch s (by simp) _, ch m (by simp) _⟩)
+    · simp only [rename_node, renameStep, List.map_cons, List.map_nil]
+      exact varLeaves_of_children (fun _ h ↦ by cases h)
+        (by simpa using ⟨ch s (by simp) _, ch m (by simp) _⟩)
+    · rw [rename_plain hp rfl]
+      refine (varLeaves_node _ _).mpr ⟨fun i hi ↦ by rw [hv i hi]; rfl, fun x hx ↦ ?_⟩
+      obtain ⟨c, hc, rfl⟩ := List.mem_map.mp hx
+      exact ch c hc f
+
+/-- Substitution of terms whose variables are leaves keeps the variables of a term leaves. -/
+theorem varLeaves_subst :
+    ∀ t : Term, VarLeaves t = true → ∀ σ : ℕ → Term, (∀ i, VarLeaves (σ i) = true) →
+      VarLeaves (subst t σ) = true :=
+  RoseTree.ind fun l cs ih ht σ hσ ↦ by
+    obtain ⟨hv, hcs⟩ := (varLeaves_node l cs).mp ht
+    have ch : ∀ c ∈ cs, ∀ σ : ℕ → Term, (∀ i, VarLeaves (σ i) = true) →
+        VarLeaves (subst c σ) = true := fun c hc σ hσ ↦ ih c hc (hcs c hc) σ hσ
+    have lift : ∀ {σ : ℕ → Term}, (∀ i, VarLeaves (σ i) = true) →
+        ∀ i, VarLeaves (liftS σ i) = true := fun hσ i ↦ by
+      rcases i with _ | i
+      · exact varLeaves_var 0
+      · exact varLeaves_rename _ (hσ i) _
+    rcases shape l cs with ⟨i, rfl⟩ | ⟨a, t, rfl, rfl⟩ | ⟨z, s, m, hl, rfl⟩ | ⟨c, s, m, rfl, rfl⟩ |
+      hp
+    · obtain rfl := hv i rfl
+      rw [subst_var_node]
+      exact hσ i
+    · simp only [subst_node, substStep, List.map_cons, List.map_nil]
+      exact varLeaves_of_children (fun _ h ↦ by cases h) (by simpa using ch t (by simp) _ (lift hσ))
+    · rcases hl with rfl | rfl
+      · simp only [subst_node, substStep, List.map_cons, List.map_nil]
+        exact varLeaves_of_children (fun _ h ↦ by cases h) (by simpa using
+          ⟨ch z (by simp) _ hσ, ch s (by simp) _ (lift hσ), ch m (by simp) _ hσ⟩)
+      · simp only [subst_node, substStep, List.map_cons, List.map_nil]
+        exact varLeaves_of_children (fun _ h ↦ by cases h) (by simpa using
+          ⟨ch z (by simp) _ hσ, ch s (by simp) _ (lift (lift hσ)), ch m (by simp) _ hσ⟩)
+    · simp only [subst_node, substStep, List.map_cons, List.map_nil]
+      exact varLeaves_of_children (fun _ h ↦ by cases h)
+        (by simpa using ⟨ch s (by simp) _ (lift hσ), ch m (by simp) _ hσ⟩)
+    · rw [subst_plain hp rfl]
+      refine (varLeaves_node _ _).mpr ⟨fun i hi ↦ by rw [hv i hi]; rfl, fun x hx ↦ ?_⟩
+      obtain ⟨c, hc, rfl⟩ := List.mem_map.mp hx
+      exact ch c hc σ hσ
+
+/-- The substitution of no objects leaves a label in place. -/
+theorem _root_.Geb.FreeTopos.Internal.Label.osubst_nil (l : Label) : l.osubst [] = l := by
+  have h : PartialHorn.subst [] = id := funext PartialHorn.subst_nil
+  cases l <;> simp only [Label.osubst, h, List.map_id, id]
+
+/-- The substitution of no objects leaves a term in place. -/
+theorem _root_.Geb.FreeTopos.Internal.Term.osubst_nil : ∀ t : Term, Term.osubst [] t = t :=
+  RoseTree.ind fun l cs ih ↦ by
+    rw [Term.osubst_node, Label.osubst_nil]
+    exact congrArg _ ((List.map_congr_left ih).trans (List.map_id cs))
+
+/-- Substitutions that agree at the variables occurring in a term substitute in it alike. -/
+theorem subst_congr :
+    ∀ (t : Term) (σ τ : ℕ → Term), (∀ i, occurs t i = true → σ i = τ i) → subst t σ = subst t τ :=
+  RoseTree.ind fun l cs ih σ τ hστ ↦ by
+    have lift : ∀ {t : Term} {d : ℕ} {σ τ : ℕ → Term},
+        (∀ i, occurs t (i + 1 + d) = true → σ i = τ i) →
+        ∀ i, occurs t (i + d) = true → liftS σ i = liftS τ i := fun h i hi ↦ by
+      rcases i with _ | j
+      · rfl
+      · simp only [liftS, h j hi]
+    have at_ : ∀ i, occursStep l (cs.map fun c ↦ (c, occurs c)) i = true → σ i = τ i :=
+      fun i hi ↦ hστ i (by rw [occurs_node]; exact hi)
+    have or₂ : ∀ {a b : Bool}, a = true ∨ b = true → (a || b) = true := fun h ↦ by
+      rcases h with rfl | rfl
+      · exact Bool.true_or _
+      · exact Bool.or_true _
+    have or₃ : ∀ {a b c : Bool}, a = true ∨ b = true ∨ c = true → (a || b || c) = true :=
+      fun h ↦ by
+        rcases h with h | h
+        · exact or₂ (.inl (or₂ (.inl h)))
+        · rcases h with h | h
+          · exact or₂ (.inl (or₂ (.inr h)))
+          · exact or₂ (.inr h)
+    rcases shape l cs with ⟨i, rfl⟩ | ⟨a, t, rfl, rfl⟩ | ⟨z, s, m, hl, rfl⟩ | ⟨c, s, m, rfl, rfl⟩ |
+      hp
+    · rw [subst_var_node, subst_var_node]
+      exact at_ i (beq_self_eq_true i)
+    · simp only [subst_node, substStep, List.map_cons, List.map_nil]
+      rw [ih t List.mem_cons_self _ _ (lift (t := t) (d := 0) fun i hi ↦ at_ i hi)]
+    · rcases hl with rfl | rfl
+      · simp only [subst_node, substStep, List.map_cons, List.map_nil]
+        rw [ih z List.mem_cons_self σ τ fun i hi ↦ at_ i (or₃ (.inl hi)),
+          ih s (List.mem_cons_of_mem _ List.mem_cons_self) _ _
+            (lift (t := s) (d := 0) fun i hi ↦ at_ i (or₃ (.inr (.inl hi)))),
+          ih m (List.mem_cons_of_mem _ (List.mem_cons_of_mem _ List.mem_cons_self)) σ τ
+            fun i hi ↦ at_ i (or₃ (.inr (.inr hi)))]
+      · simp only [subst_node, substStep, List.map_cons, List.map_nil]
+        rw [ih z List.mem_cons_self σ τ fun i hi ↦ at_ i (or₃ (.inl hi)),
+          ih s (List.mem_cons_of_mem _ List.mem_cons_self) _ _ (lift (t := s) (d := 0)
+            (lift (t := s) (d := 1) fun i hi ↦ at_ i (or₃ (.inr (.inl hi))))),
+          ih m (List.mem_cons_of_mem _ (List.mem_cons_of_mem _ List.mem_cons_self)) σ τ
+            fun i hi ↦ at_ i (or₃ (.inr (.inr hi)))]
+    · simp only [subst_node, substStep, List.map_cons, List.map_nil]
+      rw [ih s List.mem_cons_self _ _
+          (lift (t := s) (d := 0) fun i hi ↦ at_ i (or₂ (.inl hi))),
+        ih m (List.mem_cons_of_mem _ List.mem_cons_self) σ τ fun i hi ↦ at_ i (or₂ (.inr hi))]
+    · rw [subst_plain hp rfl, subst_plain hp rfl]
+      exact congrArg _ (List.map_congr_left fun c hc ↦ ih c hc σ τ fun i hi ↦
+        hστ i (by rw [occurs_plain hp rfl]; exact List.any_eq_true.mpr ⟨c, hc, hi⟩))
+
 /-- Substitution after a renaming is substitution of the renamed indices' terms. -/
 theorem subst_rename :
     ∀ (t : Term) (f : ℕ → ℕ) (σ τ : ℕ → Term), (∀ i, σ (f i) = τ i) →

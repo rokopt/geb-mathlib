@@ -3952,6 +3952,11 @@ term returned checked:
   * Associativity of appending
   * Not found in 120 s
   * Found, 6.3 s, by induction and congruence
+*
+  * `foldr cons nil (foldr cons nil xs) = xs`, the theorem
+    `foldr cons nil xs = xs` declared past the signature
+  * Found, 335 ms, by the theorem twice and substitution of equals
+  * Found, 306 ms, the same
 :::
 
 Every term found for a goal of the internal fragment decoded to a
@@ -4049,6 +4054,13 @@ its proofs, in this order:
    in scope, the object variable of index `j` being the LF variable
    `j` past them. The soundness of the decoding of proofs holds at
    every arity.
+9. Complete. Earlier theorems: a theorem of a development in no object
+   variables is a constant past the signature, the product over the
+   families of terms of its variables' types of the arrows from the
+   families of proofs of its hypotheses into that of its conclusion,
+   and its application decodes to the language's application of the
+   theorem's entry. The soundness of the decoding of proofs holds in
+   every extension of the signature by such theorems.
 
 The route remains an experiment; the Geb-native refinement below is the
 implementation meant to last, and the signature's measurements inform

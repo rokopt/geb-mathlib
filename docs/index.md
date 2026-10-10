@@ -3962,7 +3962,10 @@ checklist and in CI.
   step of conversion, `Topos/ProofCheck.lean` computes
   the checker at the derivations it builds, and `Topos/ProofSound.lean` proves
   the decoding sound: a proof decodes to a derivation the checker accepts as a
-  proof of the decoded formula. Tested in `GebTests/Prototypes/LF.lean`,
+  proof of the decoded formula, in the signature and in its extensions by the
+  theorems of a development, which `Topos/Theorems.lean` declares as constants
+  whose applications decode to the language's applications of the theorems.
+  Tested in `GebTests/Prototypes/LF.lean`,
   `GebTests/Prototypes/LF/Topos.lean`, `GebTests/Prototypes/LF/Adequacy.lean`
   and `GebTests/Prototypes/LF/Proofs.lean`. The library `GebExperiments`,
   which no module of `Geb`, `GebLang` or `GebTests` imports, translates goals

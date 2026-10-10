@@ -13,6 +13,7 @@ public import Geb.Prototypes.LF.Topos.Proofs
 public import Geb.Prototypes.LF.Topos.ProofsMod
 public import Geb.Prototypes.LF.Topos.Rules
 public import Geb.Prototypes.LF.Topos.Signature
+public import Geb.Prototypes.LF.Topos.Theorems
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in

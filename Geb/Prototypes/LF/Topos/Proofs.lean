@@ -34,7 +34,10 @@ side by reflexivity. The inductions on the natural numbers, on lists and on rose
 analysis on a coproduct, prove the motive at a term from the equality of the motive and the
 function constantly true, proved by function extensionality and induction or case analysis on the
 fresh variable ({lit}`indD`); a formula from a term of the initial object is the formula as a
-motive at it, proved on a fresh variable of the initial type. No derivation cuts
+motive at it, proved on a fresh variable of the initial type. A constant past the signature, a
+theorem of an extension of it that the indices' table names, decodes to the language's
+application of the theorem's entry at its leading arguments' decodings, from its other arguments'
+decodings ({lit}`decPfThm`). No derivation cuts
 through a formula that substitutes into a motive, so that each formula the checker types is the
 decoding of a term or built from such by the language's term formers.
 
@@ -138,12 +141,28 @@ section Decoding
 
 variable (k : PrimIdx)
 
+/-- The decoding of an application of a constant past the signature, a theorem of the extension,
+to derivations whose nodes {lit}`mk` forms: its first arguments, as many as the theorem's
+variables, the outermost first, are terms, and the rest proofs of the theorem's hypotheses, and
+the application decodes to the language's application of the theorem's entry at the terms, the
+innermost first, with the proofs' decodings. -/
+def decPfThm {D : Type} (mk : FreeTopos.Internal.Rule → List D → D) (c : ℕ)
+    (cs : List (Expr × (List (Option ℕ) → ℕ → Option D))) (env : List (Option ℕ)) (m : ℕ) :
+    Option D :=
+  if sig.length ≤ c then match k.thms[c - sig.length]? with
+    | some (j, p) => do
+      let σ ← (cs.take p).mapM fun x ↦ termOf k env x.1
+      let ps ← (cs.drop p).mapM fun x ↦ x.2 env m
+      pure (mk (.apply j [] σ.reverse) ps)
+    | none => none
+  else none
+
 /-- One step of the decoding of a proof at a node of a constant of coproducts or of the initial
 object, from its children's decodings, each a function of an environment and the number of
 hypotheses: the computations of the case analysis decode to joins of the rewritings of the
 language's rules of the same names, and the case analysis and a formula from a term of the
 initial object to the derivations of an induction ({lit}`indD`) by the language's case analysis
-and its rule of the initial type. -/
+and its rule of the initial type; a constant past the signature, as {lit}`decPfThm` decodes it. -/
 def decPfStepCoprod (c : ℕ) (cs : List (Expr × (List (Option ℕ) → ℕ → Option Deriv)))
     (env : List (Option ℕ)) (m : ℕ) : Option Deriv :=
   match c, cs with
@@ -158,7 +177,7 @@ def decPfStepCoprod (c : ℕ) (cs : List (Expr × (List (Option ℕ) → ℕ →
     | 56, [(z, _), (φ, _)] => do
       pure (indD FreeTopos.zero (.zeroInd 0) (weaken1 (← termOf k env φ)) (← termOf k env z) m
         [])
-    | _, _ => none
+    | c, cs => decPfThm k nd c cs env m
 
 /-- One step of the decoding of a proof, at a node of a label, from its children's decodings,
 each a function of an environment and the number of hypotheses. -/
