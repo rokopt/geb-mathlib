@@ -284,10 +284,11 @@ the sections below detail:
     whose goals Canonical searches and whose proofs decode to the
     language's derivations, for experiment
     ({ref "search-synthesis"}[Search and synthesis]): complete for the
-    fragment of the natural numbers, lists and rose trees, whose folds
-    are the language's folds with parameters, the terms Canonical finds
-    decoded and checked as derivations of the language; coproducts and
-    object variables follow, in the order that section gives.
+    fragment of the natural numbers, lists, rose trees, binary coproducts
+    and the initial object, whose folds and case analysis are the
+    language's with parameters, the terms Canonical finds decoded and
+    checked as derivations of the language; object variables follow, in
+    the order that section gives.
 
 Extension:
 
@@ -3894,8 +3895,9 @@ having no object variables, so symmetry, transitivity and the fold at
 one, stated for every type, are checked in LF alone. On the same machine,
 with Canonical at revision `1d80841` of CanonicalLean (tag `v4.34.0`
 since its release was replaced) under Lean v4.35.0-rc4, the signature
-with its list, rose-tree and congruence declarations, every declaration
-offered, and a timeout of 120 s, every term returned checked:
+with its list, rose-tree, congruence, coproduct and initial-object
+declarations, every declaration offered, and a timeout of 120 s, every
+term returned checked:
 
 :::table +header
 *
@@ -3908,32 +3910,32 @@ offered, and a timeout of 120 s, every term returned checked:
   * The same
 *
   * Congruence of `succ`
-  * Found, 5 ms, by congruence
-  * Found, 4 ms, by congruence
+  * Found, 6 ms, by congruence
+  * Found, 8 ms, by congruence
 *
   * `natRec C z s (succ zero) = s z`
-  * Found, 20 ms, by the fold's rules and substitution of equals
+  * Found, 19 ms, by the fold's rules and substitution of equals
   * Found, 3 ms, by reflexivity
 *
   * `n + 0 = n` and `m + succ n = succ (m + n)`
-  * Found, 4 ms or less each, by a rule of the fold
-  * Found, 4 ms or less each, by reflexivity
+  * Found, 6 ms or less each, by a rule of the fold
+  * Found, 5 ms or less each, by reflexivity
 *
   * `0 + n = n`
-  * Found, 45 ms, by induction
-  * Found, 25 ms, by induction
+  * Found, 49 ms, by induction
+  * Found, 33 ms, by induction
 *
   * `succ m + n = succ (m + n)`
   * Not found in 120 s
-  * Found, 41 ms, by induction and congruence
+  * Found, 72 ms, by induction and congruence
 *
   * `lam (λ x. x) = lam (λ x. app (lam (λ y. y)) x)`
-  * Found, 132 ms, by extensionality and β
-  * Found, 3 ms, by reflexivity
+  * Found, 228 ms, by extensionality and β
+  * Found, 5 ms, by reflexivity
 *
   * `foldr cons nil xs = xs`
-  * Found, 1095 ms, by induction
-  * Found, 32 ms, by induction and congruence
+  * Found, 1366 ms, by induction
+  * Found, 51 ms, by induction and congruence
 *
   * Uniqueness of the right fold, its hypothesis at a construction an
     equation of functions
@@ -3942,7 +3944,7 @@ offered, and a timeout of 120 s, every term returned checked:
 *
   * Associativity of appending
   * Not found in 120 s
-  * Found, 7.7 s, by induction and congruence
+  * Found, 5.5 s, by induction and congruence
 :::
 
 Every term found for a goal without type parameters decoded to a
@@ -3961,8 +3963,7 @@ congruence serves search better. Without it, the associativity of
 appending was not found in 300 s in any regime, though a proof written
 by hand decodes to a certificate the conversion checker accepts; with
 it, the associativity is found modulo the rules, and the proofs by
-induction modulo the rules are found faster, `foldr cons nil xs = xs` in
-32 ms rather than 334 ms. The uniqueness of the fold, found in seconds
+induction modulo the rules are found faster. The uniqueness of the fold, found in seconds
 with Lean's `List` and its fold's equations as reduction rules, is not
 found here, its hypothesis at a construction an equation of functions
 that a proof must apply.
@@ -3973,8 +3974,8 @@ every declaration other than a type former whose type mentions only
 declarations so reached, which are the rules and term formers that speak
 of the goal's types. Offered only those, every goal found before was
 found again, most in less time, modulo the rules
-`succ m + n = succ (m + n)` in 23 ms rather than 41 ms; the
-associativity in 15.6 s rather than 7.7 s.
+`succ m + n = succ (m + n)` in 24 ms rather than 72 ms; the
+associativity in 15.6 s rather than 5.5 s.
 
 Addition is the fold of its second argument from the first by the
 successor, a fold with a parameter. The measurements agree with the
@@ -4025,9 +4026,16 @@ its proofs, in this order:
 6. Complete. Rose trees of labels of any type: the same, the label type
    an argument of each constant, as the element type is of the constants
    of lists.
-7. Waiting on the above. Coproducts and the initial object, with case
-   analysis; then object variables, so that a goal is polymorphic in its
-   types.
+7. Complete. Binary coproducts and the initial object: the coproduct
+   object, the injections, the case analysis, a term of the exponential
+   from the coproduct applied to the pair of the functions from the
+   summands as the language's primitive is, its computation rules, also
+   as rewrite rules, case analysis on a coproduct as a proof rule,
+   decoding to the language's case analysis on a fresh variable, and
+   every formula from a term of the initial object, decoding to the
+   language's rule of the initial type.
+8. Waiting on the above. Object variables, so that a goal is polymorphic
+   in its types.
 
 The route remains an experiment; the Geb-native refinement below is the
 implementation meant to last, and the signature's measurements inform

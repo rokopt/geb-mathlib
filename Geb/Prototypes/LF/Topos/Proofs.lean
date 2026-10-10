@@ -28,9 +28,11 @@ as a function applied to the right side of the equation, cut as a hypothesis, wh
 equation rewrites to the left side, and whose β-reducts are the motive at either side
 ({lit}`leibD`), and congruence to the substitution of equals into the formula that the function
 at the left side is equal to the function at a variable ({lit}`congMotive`), proved at the left
-side by reflexivity. The inductions on the natural numbers, on lists and on rose trees prove the
-motive at a term from the equality of the motive and the function constantly true, proved by
-function extensionality and induction on the fresh variable ({lit}`indD`). No derivation cuts
+side by reflexivity. The inductions on the natural numbers, on lists and on rose trees, and case
+analysis on a coproduct, prove the motive at a term from the equality of the motive and the
+function constantly true, proved by function extensionality and induction or case analysis on the
+fresh variable ({lit}`indD`); a formula from a term of the initial object is the formula as a
+motive at it, proved on a fresh variable of the initial type. No derivation cuts
 through a formula that substitutes into a motive, so that each formula the checker types is the
 decoding of a term or built from such by the language's term formers.
 
@@ -127,6 +129,28 @@ section Decoding
 
 variable (k : PrimIdx)
 
+/-- One step of the decoding of a proof at a node of a constant of coproducts or of the initial
+object, from its children's decodings, each a function of an environment and the number of
+hypotheses: the computations of the case analysis decode to joins of the rewritings of the
+language's rules of the same names, and the case analysis and a formula from a term of the
+initial object to the derivations of an induction ({lit}`indD`) by the language's case analysis
+and its rule of the initial type. -/
+def decPfStepCoprod (c : ℕ) (cs : List (Expr × (List (Option ℕ) → ℕ → Option Deriv)))
+    (env : List (Option ℕ)) (m : ℕ) : Option Deriv :=
+  match c, cs with
+    | 53, [_, _, _, _, _, _] => some (joinD (ruleD (.caseInl k.case k.inl)) reflD)
+    | 54, [_, _, _, _, _, _] => some (joinD (ruleD (.caseInr k.case k.inr)) reflD)
+    | 55, [(A, _), (B, _), (P, _), (_, d₁), (_, d₂), (c, _)] => do
+      let a ← decTy A
+      let b ← decTy B
+      let pb ← lamBody (← termOf k env P)
+      pure (indD (FreeTopos.coprod a b) (.coprodInd k.inl k.inr) pb (← termOf k env c) m
+        [← d₁ (none :: env) (m + 1), ← d₂ (none :: env) (m + 1)])
+    | 56, [(z, _), (φ, _)] => do
+      pure (indD FreeTopos.zero (.zeroInd 0) (weaken1 (← termOf k env φ)) (← termOf k env z) m
+        [])
+    | _, _ => none
+
 /-- One step of the decoding of a proof, at a node of a label, from its children's decodings,
 each a function of an environment and the number of hypotheses. -/
 def decPfStep (l : Label) (cs : List (Expr × (List (Option ℕ) → ℕ → Option Deriv)))
@@ -179,6 +203,7 @@ def decPfStep (l : Label) (cs : List (Expr × (List (Option ℕ) → ℕ → Opt
       let sa ← termOf k env a
       pure (leibD (← decTy A) (congMotive fb sa) sa (← termOf k env b) m (← dh env m)
         (joinD reflD reflD))
+    | .app (.const c), cs => decPfStepCoprod k c cs env m
     | .lam, [(_, d)] => d env m
     | _, _ => none
 

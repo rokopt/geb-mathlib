@@ -46,11 +46,12 @@ def toposNames : List String :=
     "zero", "succ", "natRec", "eq", "pf", "refl", "leib", "beta", "fstPair", "sndPair", "pairEta",
     "unitEta", "natZero", "natSucc", "funExt", "propExt", "natInd", "list", "nilAt", "cons",
     "listRec", "listNil", "listCons", "listInd", "rose", "node", "roseRec", "roseNode", "roseInd",
-    "lrose", "lnode", "lroseRec", "lroseNode", "lroseInd", "cong"]
+    "lrose", "lnode", "lroseRec", "lroseNode", "lroseInd", "cong", "coprod", "initial", "inl",
+    "inr", "case", "caseInl", "caseInr", "coprodInd", "exfalso"]
 
 /-- The constants the rewrite rules make redundant: `beta`, `fstPair`, `sndPair`, `natZero`,
-`natSucc`, `listNil`, `listCons`, `roseNode` and `lroseNode`. -/
-def redundantModRules : List ℕ := [20, 21, 22, 25, 26, 34, 35, 40, 45]
+`natSucc`, `listNil`, `listCons`, `roseNode`, `lroseNode`, `caseInl` and `caseInr`. -/
+def redundantModRules : List ℕ := [20, 21, 22, 25, 26, 34, 35, 40, 45, 53, 54]
 
 /-- The core of the constants relevant to every goal: the kind of types, the families of terms
 and of proofs, equality, the subobject classifier and the terminal object with its element. -/
@@ -120,11 +121,11 @@ def goals : List Goal :=
 /-- The primitive arrows of the internal language that the signature's constants stand for. -/
 def toposGlobals : FreeTopos.Internal.Globals :=
   ⟨[FreeTopos.Internal.zeroPrim, FreeTopos.Internal.succPrim, FreeTopos.Internal.nilPrim,
-    FreeTopos.Internal.consPrim, FreeTopos.Internal.nodePrim, FreeTopos.Internal.lnodePrim],
-    [], 0⟩
+    FreeTopos.Internal.consPrim, FreeTopos.Internal.nodePrim, FreeTopos.Internal.lnodePrim,
+    FreeTopos.Internal.inlPrim, FreeTopos.Internal.inrPrim, FreeTopos.Internal.casePrim], [], 0⟩
 
 /-- The indices of the primitive arrows of `toposGlobals`. -/
-def toposIdx : PrimIdx := ⟨0, 1, 2, 3, 4, 5⟩
+def toposIdx : PrimIdx := ⟨0, 1, 2, 3, 4, 5, 6, 7, 8⟩
 
 /-- One step of the parameters of a type and its body, the parameters the outermost first. -/
 def telescopeStep (l : Label) (cs : List (Expr × (List Expr × Expr))) : List Expr × Expr :=

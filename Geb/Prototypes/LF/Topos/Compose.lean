@@ -117,6 +117,22 @@ theorem encTy_decTy : ∀ (A : Expr) (a : PartialHorn.Tree), decTy A = some a �
         obtain rfl := Option.some.inj h
         rw [encTy_lrose, ih A₁ (by simp) a₁ ha₁]
         rfl
+      · next heq hcs =>
+        cases heq
+        obtain rfl := List.map_eq_nil_iff.mp hcs
+        obtain rfl := Option.some.inj h
+        rfl
+      · next x y heq hcs =>
+        cases heq
+        obtain ⟨A₁, cs, rfl, hA₁, hcs⟩ := List.map_eq_cons_iff.mp hcs
+        obtain ⟨A₂, cs, rfl, hA₂, hcs⟩ := List.map_eq_cons_iff.mp hcs
+        obtain rfl := List.map_eq_nil_iff.mp hcs
+        subst hA₁ hA₂
+        obtain ⟨a₁, ha₁, h⟩ := Option.bind_eq_some_iff.mp h
+        obtain ⟨a₂, ha₂, h⟩ := Option.bind_eq_some_iff.mp h
+        obtain rfl := Option.some.inj h
+        rw [encTy_coprod, ih A₁ (by simp) a₁ ha₁, ih A₂ (by simp) a₂ ha₂]
+        rfl
       · exact absurd h (by simp)
 
 /-- The decodings of types are closed. -/
@@ -363,6 +379,47 @@ theorem dec_rename : ∀ (e : Expr) (ρ : ℕ → ℕ) (s : MTerm), dec k e = so
       simp only [List.map_cons, List.map_nil, Head.rename, decStep, hf, ht,
         rename_closed (decTy_closed hc), hc, lamBody_rename hr ρ, Option.bind_eq_bind,
         Option.bind_some]
+      rfl
+    · next _ _ A dA B dB t dt heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨b, hb, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨st, hst, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain rfl := Option.some.inj h
+      subst hst
+      have ht := ih t (by simp) ρ st (hd (t, some st) (by simp))
+      rw [List.map_cons, List.map_cons, List.map_cons, List.map_nil, rename_app_node, dec_node]
+      simp only [List.map_cons, List.map_nil, Head.rename, decStep, ht,
+        rename_closed (decTy_closed ha), rename_closed (decTy_closed hb), ha, hb,
+        Option.bind_eq_bind, Option.bind_some]
+      rfl
+    · next _ _ A dA B dB t dt heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨b, hb, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨st, hst, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain rfl := Option.some.inj h
+      subst hst
+      have ht := ih t (by simp) ρ st (hd (t, some st) (by simp))
+      rw [List.map_cons, List.map_cons, List.map_cons, List.map_nil, rename_app_node, dec_node]
+      simp only [List.map_cons, List.map_nil, Head.rename, decStep, ht,
+        rename_closed (decTy_closed ha), rename_closed (decTy_closed hb), ha, hb,
+        Option.bind_eq_bind, Option.bind_some]
+      rfl
+    · next _ _ A dA B dB C dC p dp heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨b, hb, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨c, hc, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨sp, hsp, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain rfl := Option.some.inj h
+      subst hsp
+      have hp := ih p (by simp) ρ sp (hd (p, some sp) (by simp))
+      rw [List.map_cons, List.map_cons, List.map_cons, List.map_cons, List.map_nil,
+        rename_app_node, dec_node]
+      simp only [List.map_cons, List.map_nil, Head.rename, decStep, hp,
+        rename_closed (decTy_closed ha), rename_closed (decTy_closed hb),
+        rename_closed (decTy_closed hc), ha, hb, hc, Option.bind_eq_bind, Option.bind_some]
       rfl
     · next _ _ b db heq =>
       obtain ⟨rfl, hd⟩ := map_dec_eq heq
@@ -763,6 +820,59 @@ theorem dec_hsub (α : SimpleTy) : ∀ (e n : Expr) (j : ℕ) (e' : Expr) (s u :
         ih f (by simp) n j f' sf w (hd (f, some sf) (by simp)) hn hf',
         ih t (by simp) n j t' st w (hd (t, some st) (by simp)) hn ht', lamBody_subst hr _,
         Option.bind_eq_bind, Option.bind_some]
+      rfl
+    · next _ _ A dA B dB t dt heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨b, hb, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨st, hst, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain rfl := Option.some.inj h
+      subst hst
+      obtain ⟨A', B', t', hA', hB', ht', rfl⟩ := hsub_const₃ hs
+      rw [hsub_eq, hsubWith_closed (decTy_closed ha), Option.some.injEq] at hA'
+      rw [hsub_eq, hsubWith_closed (decTy_closed hb), Option.some.injEq] at hB'
+      subst hA' hB'
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep, ha, hb,
+        ih t (by simp) n j t' st w (hd (t, some st) (by simp)) hn ht', Option.bind_eq_bind,
+        Option.bind_some]
+      rfl
+    · next _ _ A dA B dB t dt heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨b, hb, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨st, hst, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain rfl := Option.some.inj h
+      subst hst
+      obtain ⟨A', B', t', hA', hB', ht', rfl⟩ := hsub_const₃ hs
+      rw [hsub_eq, hsubWith_closed (decTy_closed ha), Option.some.injEq] at hA'
+      rw [hsub_eq, hsubWith_closed (decTy_closed hb), Option.some.injEq] at hB'
+      subst hA' hB'
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep, ha, hb,
+        ih t (by simp) n j t' st w (hd (t, some st) (by simp)) hn ht', Option.bind_eq_bind,
+        Option.bind_some]
+      rfl
+    · next _ _ A dA B dB C dC p dp heq =>
+      obtain ⟨rfl, hd⟩ := map_dec_eq heq
+      simp only [List.map_cons, List.map_nil] at hs
+      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨b, hb, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨c, hc, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨sp, hsp, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain rfl := Option.some.inj h
+      subst hsp
+      obtain ⟨A', B', C', p', hA', hB', hC', hp', rfl⟩ := hsub_const₄ hs
+      rw [hsub_eq, hsubWith_closed (decTy_closed ha), Option.some.injEq] at hA'
+      rw [hsub_eq, hsubWith_closed (decTy_closed hb), Option.some.injEq] at hB'
+      rw [hsub_eq, hsubWith_closed (decTy_closed hc), Option.some.injEq] at hC'
+      subst hA' hB' hC'
+      rw [Expr.const, Expr.app, dec_node]
+      simp only [List.map_cons, List.map_nil, decStep, ha, hb, hc,
+        ih p (by simp) n j p' sp w (hd (p, some sp) (by simp)) hn hp', Option.bind_eq_bind,
+        Option.bind_some]
       rfl
     · next _ _ b db heq =>
       obtain ⟨rfl, hd⟩ := map_dec_eq heq
