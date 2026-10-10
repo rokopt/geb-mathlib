@@ -72,7 +72,7 @@ open FreeTopos.Internal (IsTy compile) in
 variables. -/
 theorem scopedBelow_enc {G : Globals} {sg : Sig} (hsg : SigExt G k sg) {n : ℕ} (hk : k.Valid G)
     {Γ : List PartialHorn.Tree}
-    {ΓT : Ctx} (hty : ∀ a ∈ Γ, IsTy G n a = true) (hΓ : encCtx n Γ = some ΓT) {s : MTerm}
+    {ΓT : Ctx} (hty : ∀ a ∈ Γ, IsTy G n a = true) (hΓ : encCtx k n Γ = some ΓT) {s : MTerm}
     {r : PartialHorn.Tree × PartialHorn.Tree} (hc : compile G n s (ctxObj Γ) (stdEnv Γ) = some r)
     {X : Expr} (he : enc G n k s (ctxObj Γ) (stdEnv Γ) = some X) :
     ScopedBelow (Γ.length + n) X := by
@@ -90,14 +90,14 @@ types, the outermost first, each encoded at the offset of the variables outside 
 products over the families of proofs of its hypotheses into the family of proofs of its
 conclusion, the formulas encoded in the scope of the variables. -/
 def thmTy (G : Globals) (k : PrimIdx) (a : Thm) : Option Expr := do
-  let ΓT ← encCtx a.arity a.ctx
+  let ΓT ← encCtx k a.arity a.ctx
   let Hs ← a.hyps.mapM fun h ↦ enc G a.arity k h (ctxObj a.ctx) (stdEnv a.ctx)
   let C ← enc G a.arity k a.concl (ctxObj a.ctx) (stdEnv a.ctx)
   pure (piTele ΓT.reverse (arrows (Hs.map pf) (pf C)))
 
 /-- The parts of the declaration of a theorem. -/
 theorem thmTy_eq_some {G : Globals} {k : PrimIdx} {a : Thm} {T : Expr} (h : thmTy G k a = some T) :
-    ∃ ΓT Hs C, encCtx a.arity a.ctx = some ΓT ∧
+    ∃ ΓT Hs C, encCtx k a.arity a.ctx = some ΓT ∧
       a.hyps.mapM (fun h ↦ enc G a.arity k h (ctxObj a.ctx) (stdEnv a.ctx)) = some Hs ∧
       enc G a.arity k a.concl (ctxObj a.ctx) (stdEnv a.ctx) = some C ∧
       T = piTele ΓT.reverse (arrows (Hs.map pf) (pf C)) := by

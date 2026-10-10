@@ -36,7 +36,10 @@ declared past the signature, encodes and decodes at its applications, and its un
 after it, decodes to the unfolding at the equation's left side, which the base checker and the
 checker with a step of conversion accept, at closed types and at an object variable of the
 context, the latter alone where the instance holds modulo the computation rules, and neither at
-an equation other than its instance.
+an equation other than its instance. An object definition, declared past the signature, encodes
+the type it builds from the natural numbers and decodes from it, and reflexivity at a variable of
+that type decodes to a derivation the checker accepts; one whose operation is the product's is
+shadowed by it.
 
 ## Tags
 
@@ -456,7 +459,7 @@ def defIdx : PrimIdx := { pfIdx with ext := [.defn 0 2 1, .delta 0 2 1] }
 
 /-- The signature extended by the declarations of {name}`swapDefn` and of its unfolding. -/
 def defSig : Sig :=
-  sig ++ [defTy swapDefn, thmTy defGlobals defIdx (deltaThm 0 swapDefn)].reduceOption
+  sig ++ [defTy defIdx swapDefn, thmTy defGlobals defIdx (deltaThm 0 swapDefn)].reduceOption
 
 /-- Whether a proof, in an LF context of {lit}`n` variables of {lit}`tp` and term variables of the
 types of {lit}`Γ`, decodes, with the definition {name}`swapDefn`, to a derivation, and to a
@@ -508,6 +511,41 @@ def provesDefIn (n : ℕ) (Γ : List PartialHorn.Tree) (M F : Expr) : Bool × Bo
 #guard provesDefIn 0 [FreeTopos.prod FreeTopos.nat FreeTopos.nat]
   (Expr.const 58 [nat, nat, v 0])
   (eq (prod nat nat) (Expr.const 57 [nat, nat, v 0]) (v 0)) == (false, false)
+
+/-- The constants of {name}`pfGlobals` with the square of a type, an object definition in one
+object parameter, of operation {lit}`0`. -/
+def objGlobals : Globals :=
+  { pfGlobals with defs := [.object 1 (FreeTopos.prod (PartialHorn.var 0) (PartialHorn.var 0))] }
+
+/-- The indices of the primitive arrows, with the square of a type as the constant past the
+signature. -/
+def objIdx : PrimIdx := { pfIdx with ext := [.obj 0 1] }
+
+/-- The signature extended by the declaration of the square of a type. -/
+def objSig : Sig := sig ++ [piTele [tp] tp]
+
+/-- The square of the natural numbers. -/
+def sqNat : PartialHorn.Tree := PartialHorn.op 0 [FreeTopos.nat]
+
+-- The square of the natural numbers is a type, encoded by the object definition's constant.
+#guard FreeTopos.Internal.IsTy objGlobals 0 sqNat
+#guard encTy objIdx 0 sqNat == some (Expr.const 57 [nat])
+#guard decTy objIdx 0 (Expr.const 57 [nat]) == some sqNat
+#guard Checks objSig [] (Expr.const 57 [nat]) tp
+
+-- An object definition whose operation is the product's is shadowed by it: the product encodes
+-- as itself, and the object definition's constant decodes to nothing.
+#guard encTy { pfIdx with ext := [.obj 6 2] } 0 (FreeTopos.prod FreeTopos.nat FreeTopos.nat) ==
+  some (prod nat nat)
+#guard decTy { pfIdx with ext := [.obj 6 2] } 0 (Expr.const 57 [nat, nat]) == none
+
+-- Reflexivity at a variable of the square, in LF and decoded.
+#guard Checks objSig [tm (Expr.const 57 [nat])] (Expr.const 18 [Expr.const 57 [nat], v 0])
+  (pf (eq (Expr.const 57 [nat]) (v 0) (v 0)))
+#guard match decPf objIdx (Expr.const 18 [Expr.const 57 [nat], v 0]) [none] 0,
+    dec objIdx (eq (Expr.const 57 [nat]) (v 0) (v 0)) 1 with
+  | some D, some φ => Thm.checks objGlobals #[] ⟨0, [sqNat], [], φ⟩ D
+  | _, _ => false
 
 end Geb.LF.Topos.Tests
 

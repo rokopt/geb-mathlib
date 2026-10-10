@@ -462,10 +462,8 @@ theorem ScopedBelow.rename_iterate {b : ℕ} {X : Expr} (h : ScopedBelow b X) (�
 open FreeTopos.Internal (IsTy) in
 /-- The encoding of a type in no object variables is closed. -/
 theorem freeBelow_encTy {G : Globals} {a : PartialHorn.Tree} {off : ℕ} {A : Expr}
-    (h : encTy off a = some A) (hty : IsTy G 0 a = true) : A.FreeBelow 0 = true :=
-  judgeWith_freeBelow A [] _
-    (encTy_checks_of_prefix (sg := sig) (List.prefix_refl _) G (n := 0) a off A h hty []
-      fun _ hj ↦ absurd hj (Nat.not_lt_zero _))
+    (h : encTy k off a = some A) (hty : IsTy G 0 a = true) : A.FreeBelow 0 = true :=
+  encTy_freeBelow G a off A h hty fun _ hi ↦ absurd hi (Nat.not_lt_zero _)
 
 /-- The family of terms of a closed type is closed. -/
 theorem freeBelow_tm {A : Expr} (h : A.FreeBelow 0 = true) : (tm A).FreeBelow 0 = true := by
@@ -478,13 +476,14 @@ open FreeTopos.Internal (IsTy) in
 /-- The encoding of a context of types in no object variables: each declaration the family of
 terms of a closed expression, the encoding of its type at every offset. -/
 theorem encCtx_closed {G : Globals} :
-    ∀ {Γ : List PartialHorn.Tree} {ΓT : Ctx}, encCtx 0 Γ = some ΓT → (∀ a ∈ Γ, IsTy G 0 a = true) →
-      List.Forall₂ (fun D a ↦ ∃ A, D = tm A ∧ A.FreeBelow 0 = true ∧ ∀ off, encTy off a = some A)
+    ∀ {Γ : List PartialHorn.Tree} {ΓT : Ctx}, encCtx k 0 Γ = some ΓT →
+      (∀ a ∈ Γ, IsTy G 0 a = true) →
+      List.Forall₂ (fun D a ↦ ∃ A, D = tm A ∧ A.FreeBelow 0 = true ∧ ∀ off, encTy k off a = some A)
         ΓT Γ := by
   intro Γ
-  refine List.rec (motive := fun Γ ↦ ∀ {ΓT : Ctx}, encCtx 0 Γ = some ΓT →
+  refine List.rec (motive := fun Γ ↦ ∀ {ΓT : Ctx}, encCtx k 0 Γ = some ΓT →
       (∀ a ∈ Γ, IsTy G 0 a = true) →
-      List.Forall₂ (fun D a ↦ ∃ A, D = tm A ∧ A.FreeBelow 0 = true ∧ ∀ off, encTy off a = some A)
+      List.Forall₂ (fun D a ↦ ∃ A, D = tm A ∧ A.FreeBelow 0 = true ∧ ∀ off, encTy k off a = some A)
         ΓT Γ)
     (fun {ΓT} h _ ↦ by obtain rfl := Option.some.inj h; exact .nil)
     (fun a Γ ih {ΓT} h hty ↦ ?_) Γ
@@ -627,10 +626,10 @@ open FreeTopos.Internal (substF substF_node_succ substF_node_zero objAt) in
 object variable of the encoding of a type is the encoding of the type with the object substituted
 for the object variable, the object variables above it lowered by one. -/
 theorem encTy_hsub_obj {c₀ off j : ℕ} {n : Expr} {b : PartialHorn.Tree}
-    (hb : encTy off b = some n) (hj : off ≤ j) :
-    ∀ (a : PartialHorn.Tree) (A A' : Expr), encTy off a = some A →
+    (hb : encTy k off b = some n) (hj : off ≤ j) :
+    ∀ (a : PartialHorn.Tree) (A A' : Expr), encTy k off a = some A →
       hsub (RoseTree.node (.base c₀) []) n A j = some A' →
-        encTy off (substF (objAt (j - off) b) a) = some A' :=
+        encTy k off (substF (objAt (j - off) b) a) = some A' :=
   RoseTree.ind fun l cs ih A A' h hs ↦ by
     rcases encTy_node_eq_some h with ⟨rfl, i, rfl, rfl⟩ | ⟨op, c, As, rfl, hc, hAs, rfl⟩
     · rw [substF_node_zero _ rfl, RoseTree.label_node]
@@ -661,9 +660,9 @@ open FreeTopos.Internal (substF objAt) in
 variable of an object variable of a type decoding there gives a type decoding there to the
 decoded type with the object substituted for the object variable, those above it lowered. -/
 theorem decTy_hsub_obj {c₀ off j : ℕ} {A n A' : Expr} {a b : PartialHorn.Tree}
-    (ha : decTy off A = some a) (hn : decTy off n = some b) (hj : off ≤ j)
+    (ha : decTy k off A = some a) (hn : decTy k off n = some b) (hj : off ≤ j)
     (hA : hsub (RoseTree.node (.base c₀) []) n A j = some A') :
-    decTy off A' = some (substF (objAt (j - off) b) a) :=
+    decTy k off A' = some (substF (objAt (j - off) b) a) :=
   decTy_encTy _ _ _ (encTy_hsub_obj (encTy_decTy off n b hn) hj a A A'
     (encTy_decTy off A a ha) hA)
 
@@ -743,7 +742,7 @@ the offset, and the type to an object, the substituted expression decodes there 
 term with the object substituted for the object variable, those above it lowered. -/
 theorem dec_hsub_obj {c₀ : ℕ} : ∀ (e n : Expr) (j off : ℕ) (e' : Expr) (s : MTerm)
     (β : PartialHorn.Tree), dec k e off = some s →
-    (∀ i, Term.occurs s i = true → i < off) → decTy off n = some β → off ≤ j →
+    (∀ i, Term.occurs s i = true → i < off) → decTy k off n = some β → off ≤ j →
     hsub (RoseTree.node (.base c₀) []) n e j = some e' →
       dec k e' off = some (Term.osubstF (objAt (j - off) β) s) :=
   RoseTree.ind fun l cs ih n j off e' s β h hocc hn hj hs ↦ by
@@ -1137,15 +1136,15 @@ open FreeTopos.Internal (substF substF_node_succ substF_var) in
 /-- The encoding of a type at an offset raised by {lit}`q` is the encoding at the offset of the
 type with its object variables raised by {lit}`q`. -/
 theorem encTy_shiftObj {off q : ℕ} :
-    ∀ (a : PartialHorn.Tree) (A : Expr), encTy (off + q) a = some A →
-      encTy off (FreeTopos.Internal.shiftObj q a) = some A :=
+    ∀ (a : PartialHorn.Tree) (A : Expr), encTy k (off + q) a = some A →
+      encTy k off (FreeTopos.Internal.shiftObj q a) = some A :=
   RoseTree.ind fun l cs ih A h ↦ by
     unfold FreeTopos.Internal.shiftObj at ih ⊢
     rcases encTy_node_eq_some h with ⟨rfl, i, rfl, rfl⟩ | ⟨op, c, As, rfl, hc, hAs, rfl⟩
     · rw [FreeTopos.Internal.substF_node_zero _ rfl, RoseTree.label_node, encTy_var]
       rw [show off + (i + q) = off + q + i by omega]
     · rw [substF_node_succ]
-      have h' := mapM_transfer (f := encTy (off + q)) (g := encTy off) (r := id)
+      have h' := mapM_transfer (f := encTy k (off + q)) (g := encTy k off) (r := id)
         (h := substF fun z ↦ PartialHorn.var (z + q)) hAs fun x hx y hy ↦ ih x hx y hy
       rw [List.map_id] at h'
       exact encTy_op (by rw [List.length_map]; exact hc) h'
@@ -1233,13 +1232,13 @@ whose variables are below {lit}`d`, the substituted expression decodes to the de
 the objects substituted for the scope's object variables. -/
 theorem dec_hsubsPre_obj {c₀ d : ℕ} :
     ∀ (Xs : List Expr) (bs : List PartialHorn.Tree) (X X' : Expr) (y : MTerm),
-      List.Forall₂ (fun Xk b ↦ ∀ e, encTy e b = some (Xk.rename (· + e))) Xs bs →
+      List.Forall₂ (fun Xk b ↦ ∀ e, encTy k e b = some (Xk.rename (· + e))) Xs bs →
       dec k X d = some y → (∀ i, Term.occurs y i = true → i < d) →
       hsubsPre (RoseTree.node (.base c₀) []) Xs d X = some X' →
         dec k X' d = some (Term.osubstF (objScope bs) y) := by
   intro Xs
   refine List.rec (motive := fun Xs ↦ ∀ (bs : List PartialHorn.Tree) (X X' : Expr) (y : MTerm),
-      List.Forall₂ (fun Xk b ↦ ∀ e, encTy e b = some (Xk.rename (· + e))) Xs bs →
+      List.Forall₂ (fun Xk b ↦ ∀ e, encTy k e b = some (Xk.rename (· + e))) Xs bs →
       dec k X d = some y → (∀ i, Term.occurs y i = true → i < d) →
       hsubsPre (RoseTree.node (.base c₀) []) Xs d X = some X' →
         dec k X' d = some (Term.osubstF (objScope bs) y))
@@ -1253,7 +1252,7 @@ theorem dec_hsubsPre_obj {c₀ d : ℕ} :
   rw [hsubsPre_cons] at h
   obtain ⟨X₁', hX₁', h⟩ := Option.bind_eq_some_iff.mp h
   have hq := hbs.length_eq
-  have hn : decTy d (Expr.shift^[Xs.length + d] X₁) = some (shiftObj Xs.length b₁) := by
+  have hn : decTy k d (Expr.shift^[Xs.length + d] X₁) = some (shiftObj Xs.length b₁) := by
     rw [iterate_shift]
     refine decTy_encTy _ _ _ (encTy_shiftObj (off := d) _ _ ?_)
     rw [Nat.add_comm d]
@@ -1272,14 +1271,14 @@ encoding of a type at the offset {lit}`d` give the encoding of the type with the
 substituted for the scope's object variables. -/
 theorem encTy_hsubsPre_obj {c₀ d : ℕ} :
     ∀ (Xs : List Expr) (bs : List PartialHorn.Tree) (a : PartialHorn.Tree) (A A' : Expr),
-      List.Forall₂ (fun Xk b ↦ ∀ e, encTy e b = some (Xk.rename (· + e))) Xs bs →
-      encTy d a = some A → hsubsPre (RoseTree.node (.base c₀) []) Xs d A = some A' →
-        encTy d (substF (objScope bs) a) = some A' := by
+      List.Forall₂ (fun Xk b ↦ ∀ e, encTy k e b = some (Xk.rename (· + e))) Xs bs →
+      encTy k d a = some A → hsubsPre (RoseTree.node (.base c₀) []) Xs d A = some A' →
+        encTy k d (substF (objScope bs) a) = some A' := by
   intro Xs
   refine List.rec (motive := fun Xs ↦ ∀ (bs : List PartialHorn.Tree) (a : PartialHorn.Tree)
-      (A A' : Expr), List.Forall₂ (fun Xk b ↦ ∀ e, encTy e b = some (Xk.rename (· + e))) Xs bs →
-      encTy d a = some A → hsubsPre (RoseTree.node (.base c₀) []) Xs d A = some A' →
-        encTy d (substF (objScope bs) a) = some A')
+      (A A' : Expr), List.Forall₂ (fun Xk b ↦ ∀ e, encTy k e b = some (Xk.rename (· + e))) Xs bs →
+      encTy k d a = some A → hsubsPre (RoseTree.node (.base c₀) []) Xs d A = some A' →
+        encTy k d (substF (objScope bs) a) = some A')
     (fun bs a A A' hbs hA h ↦ ?_) (fun X₁ Xs ih bs a A A' hbs hA h ↦ ?_) Xs
   · cases hbs
     obtain rfl := Option.some.inj h
@@ -1290,7 +1289,7 @@ theorem encTy_hsubsPre_obj {c₀ d : ℕ} :
   rw [hsubsPre_cons] at h
   obtain ⟨A₁, hA₁, h⟩ := Option.bind_eq_some_iff.mp h
   have hq := hbs.length_eq
-  have hn : encTy d (shiftObj Xs.length b₁) = some (Expr.shift^[Xs.length + d] X₁) := by
+  have hn : encTy k d (shiftObj Xs.length b₁) = some (Expr.shift^[Xs.length + d] X₁) := by
     rw [iterate_shift]
     refine encTy_shiftObj (off := d) _ _ ?_
     rw [Nat.add_comm d]
@@ -1298,16 +1297,16 @@ theorem encTy_hsubsPre_obj {c₀ d : ℕ} :
   have ha₁ := encTy_hsub_obj hn (by omega) a A A₁ hA hA₁
   rw [Nat.add_sub_cancel] at ha₁
   rw [← ih bs _ A₁ A' hbs ha₁ h, substF_comp, hq]
-  exact congrArg (encTy d ∘ (substF · a)) (funext (objScope_cons b₁ bs)).symm
+  exact congrArg (encTy k d ∘ (substF · a)) (funext (objScope_cons b₁ bs)).symm
 
 /-- The substitutions of terms for the term variables of the encoding of a type leave it the
 encoding of the type at the offset below them. -/
 theorem hsubs_encTy {α : SimpleTy} :
-    ∀ (ms : List Expr) (a : PartialHorn.Tree) (A A' : Expr), encTy ms.length a = some A →
-      hsubs α ms A = some A' → encTy 0 a = some A' := by
+    ∀ (ms : List Expr) (a : PartialHorn.Tree) (A A' : Expr), encTy k ms.length a = some A →
+      hsubs α ms A = some A' → encTy k 0 a = some A' := by
   intro ms
   refine List.rec (motive := fun ms ↦ ∀ (a : PartialHorn.Tree) (A A' : Expr),
-      encTy ms.length a = some A → hsubs α ms A = some A' → encTy 0 a = some A')
+      encTy k ms.length a = some A → hsubs α ms A = some A' → encTy k 0 a = some A')
     (fun a A A' hA h ↦ by obtain rfl := Option.some.inj h; exact hA)
     (fun m ms ih a A A' hA h ↦ ?_) ms
   rw [hsubs_cons] at h
@@ -1441,13 +1440,13 @@ theorem spine_piTele_gen {Γ : Ctx} {J : Expr → Ctx → Mode → Bool} {P : Ex
 families of terms of the variables' types, the outermost first, each encoded at the number of
 variables outside it. -/
 theorem encCtx_reverse {m : ℕ} :
-    ∀ {Γ : List PartialHorn.Tree} {ΓT : Ctx}, encCtx m Γ = some ΓT →
+    ∀ {Γ : List PartialHorn.Tree} {ΓT : Ctx}, encCtx k m Γ = some ΓT →
       ∃ T', ΓT.reverse = List.replicate m tp ++ T' ∧ T'.length = Γ.length ∧
-        ∀ i b, Γ.reverse[i]? = some b → ∃ A, T'[i]? = some (tm A) ∧ encTy i b = some A := by
+        ∀ i b, Γ.reverse[i]? = some b → ∃ A, T'[i]? = some (tm A) ∧ encTy k i b = some A := by
   intro Γ
-  refine List.rec (motive := fun Γ ↦ ∀ {ΓT : Ctx}, encCtx m Γ = some ΓT →
+  refine List.rec (motive := fun Γ ↦ ∀ {ΓT : Ctx}, encCtx k m Γ = some ΓT →
       ∃ T', ΓT.reverse = List.replicate m tp ++ T' ∧ T'.length = Γ.length ∧
-        ∀ i b, Γ.reverse[i]? = some b → ∃ A, T'[i]? = some (tm A) ∧ encTy i b = some A)
+        ∀ i b, Γ.reverse[i]? = some b → ∃ A, T'[i]? = some (tm A) ∧ encTy k i b = some A)
     (fun {ΓT} h ↦ ?_) (fun a Γ ih {ΓT} h ↦ ?_) Γ
   · obtain rfl := Option.some.inj h
     exact ⟨[], by rw [List.reverse_replicate, List.append_nil], rfl, fun _ _ h' ↦ by simp at h'⟩
@@ -1482,7 +1481,7 @@ theorem hsubs_tp {α : SimpleTy} :
 
 /-- The encoding of a node of label zero is that of a variable. -/
 theorem encTy_zero_inv {off : ℕ} {ds : List PartialHorn.Tree} {A : Expr}
-    (h : encTy off (RoseTree.node 0 ds) = some A) :
+    (h : encTy k off (RoseTree.node 0 ds) = some A) :
     ∃ i, ds = [RoseTree.node i []] ∧ A = Expr.var (off + i) := by
   rcases encTy_node_eq_some h with ⟨-, i, hds, rfl⟩ | ⟨op, -, -, h₁, -⟩
   · exact ⟨i, hds, rfl⟩
@@ -1492,11 +1491,11 @@ open FreeTopos.Internal (substF substF_node_succ shiftObj) in
 /-- The encoding at an offset of a type with its object variables raised by {lit}`q` is the
 encoding of the type at the offset raised by {lit}`q`. -/
 theorem encTy_of_shiftObj {off q : ℕ} :
-    ∀ (a : PartialHorn.Tree) (A : Expr), encTy off (shiftObj q a) = some A →
-      encTy (off + q) a = some A :=
+    ∀ (a : PartialHorn.Tree) (A : Expr), encTy k off (shiftObj q a) = some A →
+      encTy k (off + q) a = some A :=
   RoseTree.ind fun l cs ih A h ↦ by
     unfold shiftObj at ih h
-    rcases l with _ | k
+    rcases l with _ | l
     · rcases cs with _ | ⟨c, _ | ⟨c', cs⟩⟩
       · rw [FreeTopos.Internal.substF_node_zero_other _ fun _ ↦
           FreeTopos.Internal.nil_ne_singleton] at h
@@ -1505,11 +1504,11 @@ theorem encTy_of_shiftObj {off q : ℕ} :
       · rcases hcc : c.children with _ | ⟨d, ds⟩
         · have hc : c.children = [] := hcc
           rw [FreeTopos.Internal.substF_node_zero _ hc] at h
-          change encTy off (PartialHorn.var (c.label + q)) = some A at h
+          change encTy k off (PartialHorn.var (c.label + q)) = some A at h
           rw [encTy_var] at h
           obtain rfl := Option.some.inj h
           rw [← RoseTree.node_label_children c, hc]
-          change encTy (off + q) (PartialHorn.var c.label) = _
+          change encTy k (off + q) (PartialHorn.var c.label) = _
           rw [encTy_var, show off + q + c.label = off + (c.label + q) by omega]
           rfl
         · have hc : c.children ≠ [] := by rw [hcc]; exact List.cons_ne_nil _ _
@@ -1523,11 +1522,11 @@ theorem encTy_of_shiftObj {off q : ℕ} :
         exact absurd hds FreeTopos.Internal.cons_cons_ne_singleton
     rw [substF_node_succ] at h
     rcases encTy_node_eq_some h with ⟨h₁, -⟩ | ⟨op, c, As, h₁, hc, hAs, rfl⟩
-    · exact absurd h₁ (Nat.succ_ne_zero k)
+    · exact absurd h₁ (Nat.succ_ne_zero l)
     obtain rfl := Nat.succ.inj h₁
     rw [List.length_map] at hc
     rw [List.mapM_map] at hAs
-    have h' := mapM_transfer (g := encTy (off + q)) (h := id) (r := id) hAs
+    have h' := mapM_transfer (g := encTy k (off + q)) (h := id) (r := id) hAs
       fun x hx y hy ↦ ih x hx y hy
     rw [List.map_id, List.map_id] at h'
     exact encTy_op hc h'
@@ -1561,7 +1560,7 @@ theorem take_add' {α : Type} (p : ℕ) :
 
 /-- At a base type, the substitution into the encoding of a type has a value. -/
 theorem hsub_encTy_isSome {c₀ off j : ℕ} {n : Expr} :
-    ∀ (a : PartialHorn.Tree) (A : Expr), encTy off a = some A →
+    ∀ (a : PartialHorn.Tree) (A : Expr), encTy k off a = some A →
       ∃ A', hsub (RoseTree.node (.base c₀) []) n A j = some A' :=
   RoseTree.ind fun l cs ih A h ↦ by
     rcases encTy_node_eq_some h with ⟨rfl, i, rfl, rfl⟩ | ⟨op, c, As, rfl, hc, hAs, rfl⟩
@@ -1583,16 +1582,16 @@ open FreeTopos.Internal (shiftObj) in
 for the outermost variables of a scope into the encoding of a type have a value. -/
 theorem hsubsPre_encTy_isSome {c₀ d : ℕ} :
     ∀ (Xs : List Expr) (bs : List PartialHorn.Tree) (a : PartialHorn.Tree) (A : Expr),
-      List.Forall₂ (fun Xk b ↦ ∀ e, encTy e b = some (Xk.rename (· + e))) Xs bs →
-      encTy d a = some A → ∃ A', hsubsPre (RoseTree.node (.base c₀) []) Xs d A = some A' := by
+      List.Forall₂ (fun Xk b ↦ ∀ e, encTy k e b = some (Xk.rename (· + e))) Xs bs →
+      encTy k d a = some A → ∃ A', hsubsPre (RoseTree.node (.base c₀) []) Xs d A = some A' := by
   intro Xs
   refine List.rec (motive := fun Xs ↦ ∀ (bs : List PartialHorn.Tree) (a : PartialHorn.Tree)
-      (A : Expr), List.Forall₂ (fun Xk b ↦ ∀ e, encTy e b = some (Xk.rename (· + e))) Xs bs →
-      encTy d a = some A → ∃ A', hsubsPre (RoseTree.node (.base c₀) []) Xs d A = some A')
+      (A : Expr), List.Forall₂ (fun Xk b ↦ ∀ e, encTy k e b = some (Xk.rename (· + e))) Xs bs →
+      encTy k d a = some A → ∃ A', hsubsPre (RoseTree.node (.base c₀) []) Xs d A = some A')
     (fun _ _ A _ _ ↦ ⟨A, rfl⟩) (fun X₁ Xs ih bs a A hbs hA ↦ ?_) Xs
   rcases hbs with _ | ⟨hb₁, hbs⟩
   rename_i b₁ bs
-  have hn : encTy d (shiftObj Xs.length b₁) = some (Expr.shift^[Xs.length + d] X₁) := by
+  have hn : encTy k d (shiftObj Xs.length b₁) = some (Expr.shift^[Xs.length + d] X₁) := by
     rw [iterate_shift]
     refine encTy_shiftObj (off := d) _ _ ?_
     rw [Nat.add_comm d]
@@ -1605,11 +1604,11 @@ theorem hsubsPre_encTy_isSome {c₀ d : ℕ} :
 
 /-- The substitutions of terms for the term variables of the encoding of a type have a value. -/
 theorem hsubs_encTy_isSome {α : SimpleTy} :
-    ∀ (ms : List Expr) (a : PartialHorn.Tree) (A : Expr), encTy ms.length a = some A →
+    ∀ (ms : List Expr) (a : PartialHorn.Tree) (A : Expr), encTy k ms.length a = some A →
       ∃ A', hsubs α ms A = some A' := by
   intro ms
   refine List.rec (motive := fun ms ↦ ∀ (a : PartialHorn.Tree) (A : Expr),
-      encTy ms.length a = some A → ∃ A', hsubs α ms A = some A')
+      encTy k ms.length a = some A → ∃ A', hsubs α ms A = some A')
     (fun _ A _ ↦ ⟨A, rfl⟩) (fun m ms ih a A hA ↦ ?_) ms
   obtain ⟨A₂, hA₂, hs⟩ := hsubWith_encTy (reduce α) (j := ms.length) hA
     (by rw [List.length_cons]; omega) (Expr.shift^[ms.length] m)
@@ -1751,11 +1750,11 @@ encoding of a type in its object variables: the family of terms of the encoding,
 the type with the objects substituted, the innermost first. -/
 theorem hsubs_tm_encTy {L i : ℕ} {Xs Ms : List Expr} {xs : List PartialHorn.Tree}
     {P : PartialHorn.Tree} {A₀ : Expr}
-    (hxs : List.Forall₂ (fun X x ↦ encTy L x = some X) Xs xs) (hMl : Ms.length = i)
-    (hP : encTy i P = some A₀) (hPs : PartialHorn.Scoped xs.length P = true) :
+    (hxs : List.Forall₂ (fun X x ↦ encTy k L x = some X) Xs xs) (hMl : Ms.length = i)
+    (hP : encTy k i P = some A₀) (hPs : PartialHorn.Scoped xs.length P = true) :
     ∃ E, hsubs (RoseTree.node (.base 6) []) (Xs ++ Ms) (tm A₀) = some (tm E) ∧
-      encTy L (PartialHorn.subst xs.reverse P) = some E := by
-  have hbs : List.Forall₂ (fun Xk b ↦ ∀ e, encTy e b = some (Xk.rename (· + e)))
+      encTy k L (PartialHorn.subst xs.reverse P) = some E := by
+  have hbs : List.Forall₂ (fun Xk b ↦ ∀ e, encTy k e b = some (Xk.rename (· + e)))
       Xs (xs.map (shiftObj L)) :=
     List.forall₂_map_right_iff.mpr (hxs.imp fun X x hx e ↦
       encTy_shiftObj (off := e) _ _ (by rw [Nat.add_comm]; exact encTy_add hx))
