@@ -13,7 +13,8 @@ public meta import Geb.Prototypes.LF.Topos.Proofs -- shake: keep
 
 The proofs that the type inhabitation solver Canonical finds of three equations of addition in
 pure LF decode to derivations of the internal language that its checker accepts: a computation
-of the fold at zero, one at a successor, and an induction whose step substitutes equals.
+of the fold at zero, one at a successor, and an induction whose step substitutes equals. So does
+a substitution of equals into a motive whose fold's step mentions the motive's variable.
 
 ## Tags
 
@@ -24,11 +25,10 @@ prototype, logical framework, LF, proof, derivation
 
 namespace Geb.LF.Topos.Tests
 
-open FreeTopos.Internal (Globals Thm zeroPrim succPrim iterDefn)
+open FreeTopos.Internal (Globals Thm zeroPrim succPrim)
 
-/-- Zero, the successor and the fold with parameters, of indices {lit}`0`, {lit}`1` and
-{lit}`0`. -/
-def pfGlobals : Globals := ⟨[zeroPrim, succPrim], [.language iterDefn], 0⟩
+/-- Zero and the successor, of indices {lit}`0` and {lit}`1`. -/
+def pfGlobals : Globals := ⟨[zeroPrim, succPrim], [], 0⟩
 
 /-- The successor as an LF abstraction. -/
 def succLam : Expr := Expr.lam (succ (v 0))
@@ -37,7 +37,7 @@ def succLam : Expr := Expr.lam (succ (v 0))
 derivation that proves the decoding of an equation in the internal context of as many natural
 numbers. -/
 def provesNat (k : ℕ) (M F : Expr) : Bool :=
-  match decPf 0 1 0 M (List.replicate k none) 0, dec 0 1 0 F with
+  match decPf 0 1 M (List.replicate k none) 0, dec 0 1 F with
     | some D, some φ => Thm.checks pfGlobals #[] ⟨0, List.replicate k FreeTopos.nat, [], φ⟩ D
     | _, _ => false
 
@@ -61,6 +61,18 @@ def zeroAddStep : Expr :=
 #guard provesNat 1 (Expr.const 29 [Expr.lam (eq nat (natRec nat zero succLam (v 0)) (v 0)),
     Expr.const 25 [nat, zero, succLam], zeroAddStep, v 0])
   (eq nat (natRec nat zero succLam (v 0)) (v 0))
+
+/-- {lit}`n + 0`, the fold whose computation at zero proves it equal to {lit}`n`. -/
+def addZero : Expr := natRec nat (v 0) succLam zero
+
+-- `natRec 0 (λ a. n) 1 = n`: the motive `λ x. natRec 0 (λ a. x) 1 = x`, whose fold's step
+-- mentions its variable, holds at `n + 0` by the computation of the fold at a successor, and
+-- `n + 0 = n` by its computation at zero.
+#guard provesNat 1 (Expr.const 19 [nat,
+    Expr.lam (eq nat (natRec nat zero (Expr.lam (v 1)) (succ zero)) (v 0)), addZero, v 0,
+    Expr.const 25 [nat, v 0, succLam],
+    Expr.const 26 [nat, zero, Expr.lam (addZero.rename Nat.succ), zero]])
+  (eq nat (natRec nat zero (Expr.lam (v 1)) (succ zero)) (v 0))
 
 end Geb.LF.Topos.Tests
 

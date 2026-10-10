@@ -275,6 +275,13 @@ the sections below detail:
     certificates, by unsharing, is required if measurement shows the
     checking or storage of certificates to need it, and follows the
     bootstrap otherwise.
+  * In progress. The language as a signature of the Logical Framework,
+    whose goals Canonical searches and whose proofs decode to the
+    language's derivations, for experiment
+    ({ref "search-synthesis"}[Search and synthesis]): complete for the
+    fragment of the natural numbers, whose fold is the language's fold
+    with parameters; lists, rose trees, coproducts and object variables
+    follow, in the order that section gives.
 
 Extension:
 
@@ -3864,9 +3871,12 @@ induction, with the computation rules also given as rewrite rules. The
 library `GebExperiments` translates a goal of that signature to
 Canonical's input and each term returned back to canonical LF, where the
 prototype's checker decides it (`lake exe lf-canonical`). The terms are
-derivations of the signature; their decoding into derivations of
-`Geb.FreeTopos.Internal` is not made. On the same machine, with a timeout
-of 120 s, every term returned checked:
+derivations of the signature, and decode to derivations that the
+checker of `Geb.FreeTopos.Internal` accepts
+(`Geb/Prototypes/LF/Topos/ProofSound.lean`): the signature's fold is the
+language's fold, whose start and step may mention the variables around
+it, and its computation rules are the checker's. On the same machine,
+with a timeout of 120 s, every term returned checked:
 
 :::table +header
 *
@@ -3904,6 +3914,40 @@ successor, a fold with a parameter. The measurements agree with the
 second conclusion above: the goal that needs both an induction and
 computation under its hypothesis is found only modulo the rules, where
 the search is left the induction and its motive.
+
+The signature grows toward the language one datatype at a time, each
+step with the adequacy of its encoding of types and terms, the
+compositionality of its decoding, and the soundness of the decoding of
+its proofs, in this order:
+
+1. Complete. The natural numbers, with the language's fold, whose step
+   is an LF abstraction over the value, its computation rules, also as
+   rewrite rules, and induction.
+2. Ready. Lists: the list type, the empty list and construction, the
+   fold, its step an LF abstraction over the element and the value, its
+   computation rules, also as rewrite rules, and induction. The goals
+   of the earlier table, `foldr cons nil xs = xs`, the uniqueness of the
+   right fold and the associativity of appending, are then posed in the
+   signature and run end to end.
+3. Ready. The executable decodes each term found and checks it with the
+   checker of `Geb.FreeTopos.Internal` as well as LF's, so that a
+   measurement reports certificates of the language.
+4. Waiting on the generalization of the language's induction on rose
+   trees. That induction, in both its forms, proves a formula in a
+   context of a rose tree alone, under no hypotheses for the equation of
+   two folds; it is generalized to a rose tree innermost in any context,
+   under hypotheses, as the inductions on the natural numbers and on
+   lists are. Rose trees then enter the signature: both rose-tree
+   objects, construction, the fold, its step an LF abstraction over the
+   pair of the label and the list of the children's values, its
+   computation rule and induction.
+5. Waiting on the above. Coproducts and the initial object, with case
+   analysis; then object variables, so that a goal is polymorphic in its
+   types.
+
+The route remains an experiment; the Geb-native refinement below is the
+implementation meant to last, and the signature's measurements inform
+its grammar of heads and rules.
 
 The operations that transfer to Geb are three: each unknown has its
 declaring context and an explicit substitution at each use, and a

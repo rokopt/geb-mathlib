@@ -11,7 +11,6 @@ public import Geb.Prototypes.FreeTopos.Internal.Connectives
 public import Geb.Prototypes.FreeTopos.Internal.Derivation
 public import Geb.Prototypes.FreeTopos.Internal.Development
 public import Geb.Prototypes.FreeTopos.Internal.Inversion
-public import Geb.Prototypes.FreeTopos.Internal.Iterate
 public import Geb.Prototypes.FreeTopos.Internal.Logic
 public import Geb.Prototypes.FreeTopos.Internal.Params
 public import Geb.Prototypes.FreeTopos.Internal.Proofs

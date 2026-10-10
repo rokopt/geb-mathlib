@@ -101,7 +101,7 @@ theorem decTy_closed {A : Expr} {a : PartialHorn.Tree} (h : decTy A = some a) :
     Expr.FreeBelow A 0 = true :=
   encTy_closed a A (encTy_decTy A a h)
 
-variable {kz ks ki : ℕ}
+variable {kz ks : ℕ}
 
 /-- Renaming under a binder in the internal language is renaming under a binder in LF. -/
 theorem term_liftR_eq (ρ : ℕ → ℕ) : Term.liftR ρ = liftR ρ := funext fun i ↦ by cases i <;> rfl
@@ -116,8 +116,8 @@ theorem rename_app_node (h : Head) (cs : List Expr) (ρ : ℕ → ℕ) :
 
 /-- The children of a node, recovered from their pairing with their decodings. -/
 theorem map_dec_eq {cs : List Expr} {ps : List (Expr × Option MTerm)}
-    (h : cs.map (fun c ↦ (c, dec kz ks ki c)) = ps) :
-    cs = ps.map Prod.fst ∧ ∀ p ∈ ps, dec kz ks ki p.1 = p.2 := by
+    (h : cs.map (fun c ↦ (c, dec kz ks c)) = ps) :
+    cs = ps.map Prod.fst ∧ ∀ p ∈ ps, dec kz ks p.1 = p.2 := by
   subst h
   refine ⟨by rw [List.map_map]; exact (List.map_id' cs).symm, fun p hp ↦ ?_⟩
   obtain ⟨c, -, rfl⟩ := List.mem_map.mp hp
@@ -129,9 +129,15 @@ theorem relam_rename {a : PartialHorn.Tree} {s r : MTerm} (h : relam a s = some 
   obtain ⟨a', b, rfl, rfl⟩ := relam_eq_some.mp h
   rfl
 
+/-- The body of a renamed abstraction is its body renamed under the binder. -/
+theorem lamBody_rename {s b : MTerm} (h : lamBody s = some b) (ρ : ℕ → ℕ) :
+    lamBody (Term.rename s ρ) = some (Term.rename b (Term.liftR ρ)) := by
+  obtain ⟨a, rfl⟩ := lamBody_eq_some.mp h
+  rfl
+
 /-- Decoding commutes with renaming. -/
-theorem dec_rename : ∀ (e : Expr) (ρ : ℕ → ℕ) (s : MTerm), dec kz ks ki e = some s →
-    dec kz ks ki (e.rename ρ) = some (Term.rename s ρ) :=
+theorem dec_rename : ∀ (e : Expr) (ρ : ℕ → ℕ) (s : MTerm), dec kz ks e = some s →
+    dec kz ks (e.rename ρ) = some (Term.rename s ρ) :=
   RoseTree.ind fun l cs ih ρ s h ↦ by
     rw [dec_node] at h
     unfold decStep at h
@@ -218,11 +224,10 @@ theorem dec_rename : ∀ (e : Expr) (ρ : ℕ → ℕ) (s : MTerm), dec kz ks ki
       rfl
     · next _ _ A dA z dz f df m dm heq =>
       obtain ⟨rfl, hd⟩ := map_dec_eq heq
-      obtain ⟨c, hc, h⟩ := Option.bind_eq_some_iff.mp h
-      obtain ⟨sm, hsm, h⟩ := Option.bind_eq_some_iff.mp h
       obtain ⟨sz, hsz, h⟩ := Option.bind_eq_some_iff.mp h
       obtain ⟨sf, hsf, h⟩ := Option.bind_eq_some_iff.mp h
       obtain ⟨r, hr, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨sm, hsm, h⟩ := Option.bind_eq_some_iff.mp h
       obtain rfl := Option.some.inj h
       subst hsm hsz hsf
       have hz := ih z (by simp) ρ sz (hd (z, some sz) (by simp))
@@ -231,8 +236,7 @@ theorem dec_rename : ∀ (e : Expr) (ρ : ℕ → ℕ) (s : MTerm), dec kz ks ki
       rw [List.map_cons, List.map_cons, List.map_cons, List.map_cons, List.map_nil,
         rename_app_node, dec_node]
       simp only [List.map_cons, List.map_nil, Head.rename, decStep, hz, hf, hm,
-        rename_closed (decTy_closed hc), hc, relam_rename hr ρ, Option.bind_eq_bind,
-        Option.bind_some]
+        lamBody_rename hr ρ, Option.bind_eq_bind, Option.bind_some]
       rfl
     · next _ _ p₁ t dt u du heq =>
       obtain ⟨rfl, hd⟩ := map_dec_eq heq
@@ -347,12 +351,19 @@ theorem relam_subst {a : PartialHorn.Tree} {s r : MTerm} (h : relam a s = some r
   obtain ⟨a', b, rfl, rfl⟩ := relam_eq_some.mp h
   rfl
 
+/-- The body of an abstraction with terms substituted is its body with the substitution lifted
+under the binder. -/
+theorem lamBody_subst {s b : MTerm} (h : lamBody s = some b) (σ : ℕ → MTerm) :
+    lamBody (Term.subst s σ) = some (Term.subst b (Term.liftS σ)) := by
+  obtain ⟨a, rfl⟩ := lamBody_eq_some.mp h
+  rfl
+
 /-- Decoding commutes with hereditary substitution: the decoding of an expression into which a
 term is substituted for a variable is the decoded expression with the decoded term substituted
 for the variable. -/
 theorem dec_hsub (α : SimpleTy) : ∀ (e n : Expr) (j : ℕ) (e' : Expr) (s u : MTerm),
-    dec kz ks ki e = some s → dec kz ks ki n = some u → hsub α n e j = some e' →
-      dec kz ks ki e' = some (Term.subst s (substAt j u)) :=
+    dec kz ks e = some s → dec kz ks n = some u → hsub α n e j = some e' →
+      dec kz ks e' = some (Term.subst s (substAt j u)) :=
   RoseTree.ind fun l cs ih n j e' s w h hn hs ↦ by
     rw [dec_node] at h
     unfold decStep at h
@@ -478,21 +489,18 @@ theorem dec_hsub (α : SimpleTy) : ∀ (e n : Expr) (j : ℕ) (e' : Expr) (s u :
     · next _ _ A dA z dz f df m dm heq =>
       obtain ⟨rfl, hd⟩ := map_dec_eq heq
       simp only [List.map_cons, List.map_nil] at hs
-      obtain ⟨c, hc, h⟩ := Option.bind_eq_some_iff.mp h
-      obtain ⟨sm, hsm, h⟩ := Option.bind_eq_some_iff.mp h
       obtain ⟨sz, hsz, h⟩ := Option.bind_eq_some_iff.mp h
       obtain ⟨sf, hsf, h⟩ := Option.bind_eq_some_iff.mp h
       obtain ⟨r, hr, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨sm, hsm, h⟩ := Option.bind_eq_some_iff.mp h
       obtain rfl := Option.some.inj h
       subst hsm hsz hsf
-      obtain ⟨A', z', f', m', hA', hz', hf', hm', rfl⟩ := hsub_const₄ hs
-      rw [hsub_eq, hsubWith_closed (decTy_closed hc), Option.some.injEq] at hA'
-      subst hA'
+      obtain ⟨A', z', f', m', -, hz', hf', hm', rfl⟩ := hsub_const₄ hs
       rw [Expr.const, Expr.app, dec_node]
-      simp only [List.map_cons, List.map_nil, decStep, hc,
+      simp only [List.map_cons, List.map_nil, decStep,
         ih z (by simp) n j z' sz w (hd (z, some sz) (by simp)) hn hz',
         ih f (by simp) n j f' sf w (hd (f, some sf) (by simp)) hn hf',
-        ih m (by simp) n j m' sm w (hd (m, some sm) (by simp)) hn hm', relam_subst hr _,
+        ih m (by simp) n j m' sm w (hd (m, some sm) (by simp)) hn hm', lamBody_subst hr _,
         Option.bind_eq_bind, Option.bind_some]
       rfl
     · next _ _ p₁ t dt u du heq =>

@@ -320,6 +320,34 @@ theorem compile_natRec_parts {z s m : Term} {X : Tree} {e : List (Tree × Tree)}
         · simp
         · simpa using hP i (by simp [hi]))).symm, m', hm⟩
 
+/-- A fold of the natural numbers whose start compiles in the environment, whose step compiles
+in the environment extended by the value, both to one type, and whose datum compiles in the
+environment to the natural numbers compiles, to that type. -/
+theorem compile_natRec_of_parts {z s m : Term} {X zf c sf mf : Tree} {e : List (Tree × Tree)}
+    (hz : compile G n z X e = some (zf, c))
+    (hs : compile G n s (prod X c) (extEnv X c e) = some (sf, c))
+    (hm : compile G n m X e = some (mf, nat)) :
+    ∃ r, compile G n (Term.natRec z s m) X e = some r ∧ r.2 = c := by
+  -- the variables the start and the step mention are the fold's parameters
+  have hP : ∀ i, (Term.occurs z i || Term.occurs s (i + 1)) = true →
+      i ∈ foldParams 1 e.length z s := fun i hi ↦ by
+    refine mem_foldParams.mpr ⟨?_, hi⟩
+    rcases Bool.or_eq_true _ _ ▸ hi with hi | hi
+    · exact compile_occurs_lt z X e _ hz i hi
+    · simpa [extEnv] using compile_occurs_lt s _ _ _ hs (i + 1) hi
+  obtain ⟨z', hz'⟩ := compile_retype_on z X e _ hz (foldEnvIn [] 1 e z s).1
+    (foldEnvIn [] 1 e z s).2 fun i hi ↦ foldEnvIn_types (foldWs_start_lt 1 e z s)
+      (foldWs_start_filterMap 1 e z s) (by simp) i (by simpa using hP i (by simp [hi]))
+  obtain ⟨s', hs'⟩ := compile_retype_on s _ _ _ hs (foldEnvIn [c] 1 e z s).1
+    (foldEnvIn [c] 1 e z s).2 fun i hi ↦ foldEnvIn_types (foldWs_nat_lt X c e z s)
+      (foldWs_nat_filterMap X c e z s) (by simp [extEnv]) i (by
+        rcases i with _ | i
+        · simp
+        · simpa using hP i (by simp [hi]))
+  have hnode : compile G n (Term.natRec z s m) X e = some _ :=
+    compile_natRec_iff.mpr ⟨z, s, m, rfl, z', c, hz', s', hs', mf, hm, rfl⟩
+  exact ⟨_, hnode, rfl⟩
+
 /-- A fold of a list that compiles has its datum compiled in the environment, to a list type, its
 start in the environment, and its step in the environment extended by the element and the value,
 to the fold's type. -/
@@ -594,24 +622,7 @@ theorem compile_natRec_of_full (hG : G.WF) (hρ : ρ.map Sigma.fst = List.replic
     (hm : compile G n m X e = some (mf, nat)) :
     ∃ r, compile G n (Term.natRec z s m) X e = some r ∧
       ResEq M ρ (comp (natRecP X c zf sf) (pair (idt X) mf), c) r := by
-  -- the variables the start and the step mention are the fold's parameters
-  have hP : ∀ i, (Term.occurs z i || Term.occurs s (i + 1)) = true →
-      i ∈ foldParams 1 e.length z s := fun i hi ↦ by
-    refine mem_foldParams.mpr ⟨?_, hi⟩
-    rcases Bool.or_eq_true _ _ ▸ hi with hi | hi
-    · exact compile_occurs_lt z X e _ hz i hi
-    · simpa [extEnv] using compile_occurs_lt s _ _ _ hs (i + 1) hi
-  obtain ⟨z', hz'⟩ := compile_retype_on z X e _ hz (foldEnvIn [] 1 e z s).1
-    (foldEnvIn [] 1 e z s).2 fun i hi ↦ foldEnvIn_types (foldWs_start_lt 1 e z s)
-      (foldWs_start_filterMap 1 e z s) (by simp) i (by simpa using hP i (by simp [hi]))
-  obtain ⟨s', hs'⟩ := compile_retype_on s _ _ _ hs (foldEnvIn [c] 1 e z s).1
-    (foldEnvIn [c] 1 e z s).2 fun i hi ↦ foldEnvIn_types (foldWs_nat_lt X c e z s)
-      (foldWs_nat_filterMap X c e z s) (by simp [extEnv]) i (by
-        rcases i with _ | i
-        · simp
-        · simpa using hP i (by simp [hi]))
-  have hnode : compile G n (Term.natRec z s m) X e = some _ :=
-    compile_natRec_iff.mpr ⟨z, s, m, rfl, z', c, hz', s', hs', mf, hm, rfl⟩
+  obtain ⟨_, hnode, -⟩ := compile_natRec_of_parts hz hs hm
   obtain ⟨zf₂, c₂, sf₂, mf₂, hz₂, hs₂, hm₂, hr⟩ :=
     compile_natRec_full hM hG hρ hps hds hnode he
   obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Option.some.inj (hz.symm.trans hz₂))
