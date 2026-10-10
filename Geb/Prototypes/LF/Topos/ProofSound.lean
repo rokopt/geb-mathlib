@@ -264,12 +264,12 @@ theorem PfCtx.addHyp (hc : PfCtx G k ΓLF env Γ Φ) {ψ : Term}
       exact hψ
 
 /-- The declarations whose types end in {lit}`pf` are the rules, of indices from 18 to 29, from
-34 to 36, 40 and 41, and 45 and 46. -/
+34 to 36, 40 and 41, 45 and 46, and 47. -/
 theorem sig_head_pf {c : ℕ} {T : Expr} (hc : sig[c]? = some T) (h : T.headDepth.1 = some 17) :
-    c ∈ [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 34, 35, 36, 40, 41, 45, 46] := by
+    c ∈ [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 34, 35, 36, 40, 41, 45, 46, 47] := by
   have key : (sig.zipIdx.all fun p ↦ !(p.1.headDepth.1 == some 17) ||
-      decide (p.2 ∈ [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 34, 35, 36, 40, 41, 45, 46])) =
-        true := by
+      decide (p.2 ∈ [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 34, 35, 36, 40, 41, 45, 46,
+        47])) = true := by
     decide +kernel
   rw [List.all_eq_true] at key
   obtain ⟨hlt, rfl⟩ := List.getElem?_eq_some_iff.mp hc
@@ -1515,6 +1515,113 @@ theorem sound_leib (hc : PfCtx G k ΓLF env Γ Φ) {A P t u dh dp F : Expr} {φ 
     Option.pure_def]
 
 include hk in
+/-- The soundness of the decoding of congruence. -/
+theorem sound_cong (hc : PfCtx G k ΓLF env Γ Φ) {A B f a b dh F : Expr} {φ : MTerm}
+    (ihh : PfSoundAt G k E dh)
+    (hS : spine ΓLF (Expr.pi tp (Expr.pi tp (Expr.pi (Expr.arrow (tm (v 1)) (tm (v 0)))
+      (Expr.pi (tm (v 2)) (Expr.pi (tm (v 3))
+        (Expr.arrow (pf (eq (v 4) (v 1) (v 0)))
+          (pf (eq (v 3) (Expr.var 2 [v 1]) (Expr.var 2 [v 0])))))))))
+      [(A, judge sig A), (B, judge sig B), (f, judge sig f), (a, judge sig a), (b, judge sig b),
+        (dh, judge sig dh)] = some (pf F))
+    (hφ : termOf k env F = some φ) :
+    ∃ D, decPf k (Expr.const 47 [A, B, f, a, b, dh]) env Φ.length = some D ∧
+      (check G E 0 D).2 Γ Φ φ = true := by
+  have hT := spine_tp₂ hS
+  obtain ⟨xa, hxa⟩ := tyComplete hc.heads₀ A hT.1
+  obtain ⟨xb, hxb⟩ := tyComplete hc.heads₀ B hT.2
+  have hAc := encTy_closed xa A hxa
+  have hBc := encTy_closed xb B hxb
+  simp only [tm, tp, pf, eq, Expr.const, Expr.app] at hS
+  lf_spine_at hS [Option.bind_eq_some_iff, rename_closed hAc, hsubWith_closed hAc,
+    rename_closed hBc, hsubWith_closed hBc]
+  obtain ⟨-, -, a₁, b₁, ⟨hf, ha₁, hb₁⟩, a₂, b₂, ⟨ha, ha₂, hb₂⟩, a₃, b₃, ⟨hb, ha₃, hb₃⟩, hdh, a₄,
+    ha₄, b₄, hb₄, hF⟩ := hS
+  obtain ⟨fb, rfl, hfb⟩ := judge_check_pi_inv hf
+  have hΓs := fun a ha ↦ (hc.typeShape a ha).1
+  have hBs : ModeShape (.check (tm B)) = true := by
+    simp only [ModeShape, tm, Expr.const, Expr.app, typeShape_node]; rfl
+  have hApp := appliedAt_of_judge_tm (A := A) hΓs hAc hBs hfb
+  obtain ⟨Xa, hXa⟩ := hsubWith_base_total 6 fb a 0 hApp
+  obtain ⟨Xb, hXb⟩ := hsubWith_base_total 6 fb b 0 hApp
+  have lamL : ∀ X : Expr, RoseTree.label (Expr.lam X) = Label.lam := fun _ ↦ rfl
+  have lamC : ∀ X : Expr, RoseTree.children (Expr.lam X) = [X] := fun _ ↦ rfl
+  have r3 : ∀ e : Expr, ((e.rename Nat.succ).rename Nat.succ).rename Nat.succ = e.rename (· + 3) :=
+    fun e ↦ by rw [rename_rename, rename_rename]; rfl
+  rw [r3, rename_lam] at ha₁ hb₁
+  simp only [lamL, lamC] at ha₁ hb₁
+  -- the function at the variables of the left and the right sides
+  rw [show (RoseTree.node (Label.app (Head.var 2)) [] : Expr) = Expr.var 2 [] from rfl,
+    hsub_var_base hApp (liftR (· + 3)) (fun i ↦ match i with | 0 => 2 | i + 1 => i + 3) rfl
+      (fun _ ↦ rfl) rfl, Option.some.injEq] at ha₁
+  rw [show (RoseTree.node (Label.app (Head.var 1)) [] : Expr) = Expr.var 1 [] from rfl,
+    hsub_var_base hApp (liftR (· + 3)) (fun i ↦ match i with | 0 => 1 | i + 1 => i + 3) rfl
+      (fun _ ↦ rfl) rfl, Option.some.injEq] at hb₁
+  subst ha₁ hb₁
+  -- the left side substituted, at the left side's variable, and past the right side's
+  rw [rename_succ_two, hsub_hole hXa (τ := fun i ↦ match i with | 0 => 2 | i + 1 => i + 3)
+    (σ := (· + 2)) rfl fun i ↦ ⟨show i + 3 ≠ 2 by omega,
+      show renumber 2 (i + 3) = i + 2 by simp only [renumber]; split_ifs <;> omega⟩,
+    Option.some.injEq] at ha₂
+  rw [hsubWith_vacuous' _ _ _ (j := 2) (g := fun i ↦ match i with | 0 => 1 | i + 1 => i + 2)
+    fun i ↦ by rcases i with _ | i <;> rfl, Option.some.injEq] at hb₂
+  subst ha₂ hb₂
+  -- the right side substituted, past the left side's value, and at the right side's variable
+  rw [hsubWith_vacuous' _ _ _ (j := 1) (g := Nat.succ) fun i ↦ by rcases i with _ | i <;> rfl,
+    Option.some.injEq] at ha₃
+  rw [hsub_hole hXb (τ := fun i ↦ match i with | 0 => 1 | i + 1 => i + 2) (σ := Nat.succ) rfl
+    fun i ↦ ⟨show i + 2 ≠ 1 by omega,
+      show renumber 1 (i + 2) = i + 1 by simp only [renumber]; split_ifs <;> omega⟩,
+    Option.some.injEq] at hb₃
+  subst ha₃ hb₃
+  rw [hsubWith_shift, Option.some.injEq] at ha₄ hb₄
+  subst ha₄ hb₄
+  simp only [node_inj, List.cons.injEq, and_true, true_and] at hF
+  subst hF
+  -- the decodings
+  obtain ⟨sfb, hsfb, hfbt⟩ := termOf_typed hk (hc.toTmCtx.consTm hxa) hxb hfb
+  obtain ⟨sa, hsa, hat⟩ := termOf_typed hk hc.toTmCtx hxa ha
+  obtain ⟨sb, hsb, hbt⟩ := termOf_typed hk hc.toTmCtx hxa hb
+  have hXa' := termOf_hsub₀ hXa hsfb hsa
+  have hXb' := termOf_hsub₀ hXb hsfb hsb
+  -- the function at the left side is a term of the codomain, by the substitution theorem
+  obtain ⟨e', he', he'J⟩ := (substAt_reduceAt sig_ok (Expr.erase (tm A))).1 ΓLF (tm A) a rfl
+    (by simp only [tm, Expr.const, Expr.app, typeShape_node]; rfl) ha fb [] []
+    (.check (tm B)) (.check (tm B)) (by simpa using hΓs)
+    (fun _ h ↦ by cases h; simp only [tm, Expr.const, Expr.app, typeShape_node]; rfl) rfl hfb
+    (by simp only [substMode, List.length_nil]
+        rw [hsub_eq, hsubWith_closed (tm_closed hBc)]; rfl)
+  obtain rfl : Xa = e' := (Option.some.inj (he'.symm.trans (by
+    rw [hsub_eq, show Expr.erase (tm A) = RoseTree.node (SimpleLabel.base 6) [] from rfl,
+      reduce_node, List.length_nil, show a.rename (· + 0) = a from rename_id a]
+    exact hXa))).symm
+  obtain ⟨sXa, hsXa, hXat⟩ := termOf_typed hk hc.toTmCtx hxb he'J
+  obtain rfl := Option.some.inj (hsXa.symm.trans hXa')
+  change termOf k env (Expr.const 16 [B, Xa, Xb]) = some φ at hφ
+  simp only [termOf_const, List.map_cons, List.map_nil, decStep, hXa', hXb',
+    Option.bind_eq_bind, Option.bind_some, Option.pure_def, Option.some.injEq] at hφ
+  subst hφ
+  have heq : termOf k env (Expr.const 16 [A, a, b]) = some (Term.eq sa sb) := by
+    simp only [termOf_const, List.map_cons, List.map_nil, decStep, hsa, hsb,
+      Option.bind_eq_bind, Option.bind_some, Option.pure_def]
+  obtain ⟨Dh, hDh, hch⟩ := ihh _ _ _ _ _ _ hc hdh heq
+  have hX := varLeaves_of_typeIn hXat
+  have hpt : typeIn G 0 (xa :: Γ) (congMotive sfb sa) = some FreeTopos.omega :=
+    typeIn_eq (typeIn_weaken1 hXat) hfbt
+  have hmot : ∀ u, Term.subst (congMotive sfb sa) (instVar u) =
+      Term.eq (Term.subst sfb (instVar sa)) (Term.subst sfb (instVar u)) := fun u ↦ by
+    rw [← subst_weaken1_instVar hX u]
+    rfl
+  have hcp := check_leibD (isTy_of_encTy G xa A hxa) hpt hat hbt hch
+    (Dp := joinD reflD reflD) (by rw [hmot]; exact check_join (check_refl _) (check_refl _))
+  rw [hmot] at hcp
+  refine ⟨_, ?_, hcp⟩
+  rw [decPf_const]
+  simp only [List.map_cons, List.map_nil, decPfStep, termOf_lam, hsfb, hsa, hsb, hDh,
+    decTy_encTy xa A hxa, Option.map_some, Option.bind_eq_bind, Option.bind_some, lamBody_lam,
+    Option.pure_def]
+
+include hk in
 /-- The soundness of the decoding of induction on the natural numbers. -/
 theorem sound_natInd (hc : PfCtx G k ΓLF env Γ Φ) {P d₀ ds n F : Expr} {φ : MTerm}
     (ih₀ : PfSoundAt G k E d₀)
@@ -2092,7 +2199,7 @@ theorem pfSound : ∀ M : Expr, PfSound G k E M :=
       have mem' : ∀ {x y : Expr} {xs : List Expr}, x ∈ xs → x ∈ y :: xs := List.mem_cons_of_mem _
       simp only [List.mem_cons, List.not_mem_nil, or_false] at hc'
       rcases hc' with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
-        rfl | rfl | rfl | rfl | rfl | rfl
+        rfl | rfl | rfl | rfl | rfl | rfl | rfl
       · obtain rfl : C = _ := Option.some.inj (hC.symm.trans rfl)
         obtain ⟨A, t, rfl⟩ := List.length_eq_two.mp (hlen : cs.length = 2)
         exact sound_refl E hk hc hS hφ
@@ -2183,6 +2290,13 @@ theorem pfSound : ∀ M : Expr, PfSound G k E M :=
       · obtain rfl : C = _ := Option.some.inj (hC.symm.trans rfl)
         obtain ⟨A, P, ds, t, rfl⟩ := List.length_eq_four.mp (hlen : cs.length = 4)
         exact sound_lroseInd E hk hc (hlam₃ ds (mem' (mem' mem))) hS hφ
+      · obtain rfl : C = _ := Option.some.inj (hC.symm.trans rfl)
+        obtain ⟨A, cs, rfl⟩ := List.exists_cons_of_length_eq_add_one (hlen : cs.length = 5 + 1)
+        obtain ⟨B, cs, rfl⟩ :=
+          List.exists_cons_of_length_eq_add_one (Nat.succ.inj (hlen : cs.length + 1 = 5 + 1))
+        obtain ⟨f, a, b, dh, rfl⟩ := List.length_eq_four.mp
+          (Nat.succ.inj (Nat.succ.inj (hlen : cs.length + 1 + 1 = 4 + 1 + 1)))
+        exact sound_cong E hk hc (ih dh (mem' (mem' (mem' (mem' (mem' mem)))))).1 hS hφ
     · obtain ⟨body, hM, hbJ⟩ := judge_check_pi_inv hj
       obtain ⟨rfl, rfl⟩ := node_inj.mp hM
       exact ⟨body, rfl, hbJ, (ih body List.mem_cons_self).1,

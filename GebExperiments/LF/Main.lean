@@ -46,7 +46,7 @@ def toposNames : List String :=
     "zero", "succ", "natRec", "eq", "pf", "refl", "leib", "beta", "fstPair", "sndPair", "pairEta",
     "unitEta", "natZero", "natSucc", "funExt", "propExt", "natInd", "list", "nilAt", "cons",
     "listRec", "listNil", "listCons", "listInd", "rose", "node", "roseRec", "roseNode", "roseInd",
-    "lrose", "lnode", "lroseRec", "lroseNode", "lroseInd"]
+    "lrose", "lnode", "lroseRec", "lroseNode", "lroseInd", "cong"]
 
 /-- The constants the rewrite rules make redundant: `beta`, `fstPair`, `sndPair`, `natZero`,
 `natSucc`, `listNil`, `listCons`, `roseNode` and `lroseNode`. -/

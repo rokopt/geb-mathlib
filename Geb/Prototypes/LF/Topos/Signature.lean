@@ -35,7 +35,8 @@ derivation of a formula
 
 * the equality of a term with itself, and the substitution of equals into a predicate, an LF
   abstraction ({lit}`refl`, {lit}`leib`), from which symmetry, transitivity and congruence are
-  derived;
+  derived, the congruence of a function, an LF abstraction, also a declaration ({lit}`cong`), so
+  that a search may apply a function where it would otherwise find a predicate;
 * the β rule of abstraction, the computation and η rules of pairs, the η rule of the terminal
   type, and the computation rules of the folds ({lit}`beta`, {lit}`fstPair`, {lit}`sndPair`,
   {lit}`pairEta`, {lit}`unitEta`, {lit}`natZero`, {lit}`natSucc`, {lit}`listNil`,
@@ -52,14 +53,15 @@ variable where this one names its predicate. The folds are the language's: a sta
 an LF abstraction, may mention the variables around them, so that the folds have parameters, as
 the folds with a parameter of a cartesian closed category with a natural numbers object or list
 objects do. The declarations of lists, then of rose trees of natural-number labels, then of rose
-trees of labels of any type follow the rules, so that the indices of the declarations before each
-are those of the signature without it.
+trees of labels of any type, then congruence follow the rules, so that the indices of the
+declarations before each are those of the signature without it.
 
 ## Main definitions
 
-* {lit}`objSig`, {lit}`ruleSig`, {lit}`listSig`, {lit}`roseSig`, {lit}`lroseSig`, {lit}`sig` —
-  the declarations of the types and terms, of the rules, of lists, of rose trees of natural-number
-  labels and of rose trees of labels of any type, and the signature of all.
+* {lit}`objSig`, {lit}`ruleSig`, {lit}`listSig`, {lit}`roseSig`, {lit}`lroseSig`,
+  {lit}`congSig`, {lit}`sig` — the declarations of the types and terms, of the rules, of lists,
+  of rose trees of natural-number labels and of rose trees of labels of any type, and of
+  congruence, and the signature of all.
 * {lit}`tp`, {lit}`tm`, {lit}`pf` and the constants' applications — the expressions of the
   signature.
 
@@ -368,9 +370,17 @@ def lroseSig : Sig :=
             (pf (var 2 [lnode (v 3) (pair (v 3) (list (lrose (v 3))) (v 1) (v 0))])))))
         (pi (tm (lrose (v 1))) (pf (var 1 [v 0]))))) ]
 
+open Expr in
+/-- The declaration of congruence, of index 47: a function, an LF abstraction, applied to equal
+terms gives equal terms. -/
+def congSig : Sig :=
+  -- cong : Π A B:tp. Π f:tm A → tm B. Π a b:tm A. pf (eq A a b) → pf (eq B (f a) (f b))
+  [ pi tp (pi tp (pi (arrow (tm (v 1)) (tm (v 0))) (pi (tm (v 2)) (pi (tm (v 3))
+      (arrow (pf (eq (v 4) (v 1) (v 0))) (pf (eq (v 3) (var 2 [v 1]) (var 2 [v 0])))))))) ]
+
 /-- The signature of the fragment: the types and terms, then the rules, then lists, then rose
-trees of natural-number labels, then rose trees of labels of any type. -/
-def sig : Sig := objSig ++ ruleSig ++ listSig ++ roseSig ++ lroseSig
+trees of natural-number labels, then rose trees of labels of any type, then congruence. -/
+def sig : Sig := objSig ++ ruleSig ++ listSig ++ roseSig ++ lroseSig ++ congSig
 
 end Geb.LF.Topos
 

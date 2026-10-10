@@ -26,16 +26,19 @@ joins of rewritings by the language's rules of the same names; function and prop
 extensionality to the rules of the same names. The substitution of equals decodes to the motive
 as a function applied to the right side of the equation, cut as a hypothesis, whose argument the
 equation rewrites to the left side, and whose β-reducts are the motive at either side
-({lit}`leibD`). The inductions on the natural numbers, on lists and on rose trees prove the motive
-at a term from the equality of the motive and the function constantly true, proved by function
-extensionality and induction on the fresh variable ({lit}`indD`). No derivation cuts through a
-formula that substitutes into a motive, so that each formula the checker types is the decoding of
-a term or built from such by the language's term formers.
+({lit}`leibD`), and congruence to the substitution of equals into the formula that the function
+at the left side is equal to the function at a variable ({lit}`congMotive`), proved at the left
+side by reflexivity. The inductions on the natural numbers, on lists and on rose trees prove the
+motive at a term from the equality of the motive and the function constantly true, proved by
+function extensionality and induction on the fresh variable ({lit}`indD`). No derivation cuts
+through a formula that substitutes into a motive, so that each formula the checker types is the
+decoding of a term or built from such by the language's term formers.
 
 ## Main definitions
 
 * {lit}`tmIdx` — the renaming of an LF context's term variables to the internal context's.
-* {lit}`leibD` — the derivation of the substitution of equals.
+* {lit}`congMotive`, {lit}`leibD` — the motive of congruence, and the derivation of the
+  substitution of equals.
 * {lit}`indD` — the derivation of an induction at a term.
 * {lit}`decPf` — the decoding of a proof.
 
@@ -104,6 +107,11 @@ def indD (c : PartialHorn.Tree) (r : FreeTopos.Internal.Rule) (pb n : Term) (m :
         [ruleD .beta, nd .conv [nd .cong [ruleD (.rwHyp m false), reflD],
           nd .conv [ruleD .beta, joinD reflD reflD]]]]
 
+/-- The motive of the congruence of a function, its body {lit}`fb` in a variable, at a term
+{lit}`a`: the formula in a variable that the function at {lit}`a` is equal to the function at
+it. -/
+def congMotive (fb a : Term) : Term := Term.eq (weaken1 (Term.subst fb (instVar a))) fb
+
 /-- The derivation of the substitution of equals: the motive {lit}`pb`, a formula in a variable of
 the type {lit}`a`, at {lit}`u`, from the proof {lit}`Dh` of {lit}`t = u` and the proof
 {lit}`Dp` of the motive at {lit}`t`, under {lit}`m` hypotheses: the equation is cut as a
@@ -166,6 +174,11 @@ def decPfStep (l : Label) (cs : List (Expr × (List (Option ℕ) → ℕ → Opt
       let pb ← lamBody (← termOf k env P)
       pure (indD (FreeTopos.lrose a) (.roseIndHyp k.lnode k.nil k.cons) pb (← termOf k env t) m
         [← ds (some (m + 1) :: none :: none :: env) (m + 2)])
+    | .app (.const 47), [(A, _), _, (f, _), (a, _), (b, _), (_, dh)] => do
+      let fb ← lamBody (← termOf k env f)
+      let sa ← termOf k env a
+      pure (leibD (← decTy A) (congMotive fb sa) sa (← termOf k env b) m (← dh env m)
+        (joinD reflD reflD))
     | .lam, [(_, d)] => d env m
     | _, _ => none
 
