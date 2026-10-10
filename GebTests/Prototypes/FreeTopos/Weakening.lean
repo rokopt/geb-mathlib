@@ -106,7 +106,8 @@ def defIndex (ds : List (List Char × Tree)) (name : List Char) : Option ℕ :=
   (ds.findIdx? fun d ↦ d.1 == name).map (lib.length + ·)
 
 /-- The translated program: its constants, extended by the connectives' definitions, the index
-of the connectives' first definition, and the index of each named definition of the program. -/
+of the connectives' first definition, the index of each named definition of the program, and the
+names of the definitions the proofs about it keep folded besides those every proof keeps. -/
 structure Prog where
   /-- The constants. -/
   G : Internal.Globals
@@ -114,13 +115,15 @@ structure Prog where
   o : ℕ
   /-- The index of a named definition. -/
   idx : String → ℕ
+  /-- The names of further definitions kept folded. -/
+  folded : List String
 
 /-- The translated program of definitions, with the index of each named definition. -/
 def prog? (ds : List (List Char × Tree)) (idx : String → ℕ) : Option Prog := do
   let (_, defs) ← program (ds.map Prod.snd)
   let o := lib.length + defs.length
   pure ⟨⟨prims, (lib ++ defs ++ Internal.Logic.defs o).map .language, sig.length⟩, o,
-    idx⟩
+    idx, []⟩
 
 /-! Proofs of equations. -/
 
