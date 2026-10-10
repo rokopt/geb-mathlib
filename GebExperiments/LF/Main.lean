@@ -26,8 +26,10 @@ parameters are of `tp`, the object variables, and whose others are term variable
 hypotheses; a hypothesis's formula is weakened past the parameters after it. Further goals are
 posed in the signature extended by the theorems of lemmas (`GebExperiments.LF.lemmas`), each a
 constant past the signature whose application decodes to the language's application of the
-lemma's entry. The program prints, for each goal and regime, whether a
-term was found, the time taken, the term, and both checkers' verdicts.
+lemma's entry, and by a definition of addition (`GebExperiments.LF.addDefn`) and its unfolding,
+whose applications decode to the definition's applications and to the unfolding. The program
+prints, for each goal and regime, whether a term was found, the time taken, the term, and both
+checkers' verdicts.
 Its first argument is the timeout in seconds of each search, and a second, if given, restricts
 the goals to those whose names contain it.
 
@@ -178,8 +180,10 @@ parameters: its outermost parameters of `tp` are the theorem's object variables,
 `tm A` inside them is a variable of the type `A` decodes to, at the offset of the parameters
 of terms and proofs before it, and one of `pf F` a hypothesis, `F` decoded after its weakening
 past the parameters after it. A goal with a parameter of another type, or of `tp` inside one of
-`tm` or `pf`, or whose body is not a family of proofs, states none. -/
-def internalThm (goal : Expr) : Option (List (Option ℕ) × FreeTopos.Internal.Thm) := do
+`tm` or `pf`, or whose body is not a family of proofs, states none. The goal's constants are
+those of the indices `k`. -/
+def internalThm (k : PrimIdx) (goal : Expr) :
+    Option (List (Option ℕ) × FreeTopos.Internal.Thm) := do
   let (ps, body) := telescope goal
   let F ← match body.label, body.children with
     | .app (.const 17), [F] => some F
@@ -193,42 +197,66 @@ def internalThm (goal : Expr) : Option (List (Option ℕ) × FreeTopos.Internal.
       | .app (.const 6), [A] => do pure (none :: env, (← decTy env.length A) :: Γ, Φ)
       | .app (.const 17), [P] => some (some Φ.length :: env, Γ, (P, n - 1 - j) :: Φ)
       | _, _ => none
-  let hyps ← Φ.reverse.mapM fun (P, i) ↦ termOf toposIdx env (Expr.rename P (· + (i + 1)))
-  pure (env, ⟨nObj, Γ, hyps, ← termOf toposIdx env F⟩)
+  let hyps ← Φ.reverse.mapM fun (P, i) ↦ termOf k env (Expr.rename P (· + (i + 1)))
+  pure (env, ⟨nObj, Γ, hyps, ← termOf k env F⟩)
 
 /-- The theorems the lemmas state. -/
 def lemmaThms : List FreeTopos.Internal.Thm :=
-  lemmas.filterMap fun g ↦ (internalThm g.type).map (·.2)
+  lemmas.filterMap fun g ↦ (internalThm toposIdx g.type).map (·.2)
 
 /-- The entries of the lemmas' theorems, in order. -/
 def lemmaEntries : Array FreeTopos.Internal.Entry := (lemmaThms.map .language).toArray
 
-/-- The indices of the primitive arrows, with the entries of the lemmas' theorems as the
-theorems the extension declares. -/
-def devIdx : PrimIdx :=
-  { toposIdx with thms := lemmaThms.zipIdx.map fun (a, j) ↦ (j, a.arity, a.ctx.length) }
+/-- The addition of the second parameter to the first, the fold of the second from the first by
+the successor. -/
+def addDefn : FreeTopos.Internal.Defn :=
+  ⟨0, [FreeTopos.nat, FreeTopos.nat], FreeTopos.nat,
+    FreeTopos.Internal.Term.natRec (FreeTopos.Internal.Term.var 1)
+      (FreeTopos.Internal.Term.arr toposIdx.succ [] (FreeTopos.Internal.Term.var 0))
+      (FreeTopos.Internal.Term.var 0)⟩
 
-/-- The signature extended by the declarations of the lemmas' theorems. -/
-def devSig : Sig := sig ++ lemmaThms.filterMap (thmTy toposGlobals devIdx)
+/-- The constants of `toposGlobals` with the definition `addDefn`. -/
+def devGlobals : FreeTopos.Internal.Globals := { toposGlobals with defs := [.language addDefn] }
+
+/-- The indices of the primitive arrows, with the entries of the lemmas' theorems as the
+theorems the extension declares, followed by the definition `addDefn` and its unfolding. -/
+def devIdx : PrimIdx :=
+  { toposIdx with ext := lemmaThms.zipIdx.map (fun (a, j) ↦ .thm j a.arity a.ctx.length) ++
+      [.defn 0 0 2, .delta 0 0 2] }
+
+/-- The signature extended by the declarations of the lemmas' theorems, of the definition
+`addDefn` and of its unfolding. -/
+def devSig : Sig := sig ++ lemmaThms.filterMap (thmTy devGlobals devIdx) ++
+  [defTy addDefn, thmTy devGlobals devIdx (deltaThm 0 addDefn)].reduceOption
 
 /-- The names of the constants of `devSig`. -/
-def devNames : List String := toposNames ++ (List.range lemmaThms.length).map (s!"lemma{·}")
+def devNames : List String :=
+  toposNames ++ (List.range lemmaThms.length).map (s!"lemma{·}") ++ ["add", "addDelta"]
+
+/-- The application of the definition `addDefn` in `devSig`. -/
+def addC (m n : Expr) : Expr := Expr.const (sig.length + lemmaThms.length) [m, n]
+
+/-- The goals posed in the extended signature that apply the definition `addDefn`. -/
+def defGoals : List Goal :=
+  [⟨"add m n unfolds, by the definition", pi (tm nat) (pi (tm nat)
+      (pf (eq nat (addC (v 1) (v 0)) (add (v 1) (v 0)))))⟩,
+    ⟨"add m 0 = m, by the definition", pi (tm nat) (pf (eq nat (addC (v 0) zero) (v 0)))⟩]
 
 /-- The verdict of the internal language's checkers on a term found for a goal: the term's
 abstractions over the goal's parameters removed, its body decoded in their environment and the
 certificate checked against the goal's theorem, by the base checker for a term of pure LF and by
 the conversion checker for one found modulo the rules. -/
-def internalVerdict (k : PrimIdx) (E : Array FreeTopos.Internal.Entry) (modulo : Bool)
-    (goal term : Expr) : String :=
-  match internalThm goal with
+def internalVerdict (G : FreeTopos.Internal.Globals) (k : PrimIdx)
+    (E : Array FreeTopos.Internal.Entry) (modulo : Bool) (goal term : Expr) : String :=
+  match internalThm k goal with
     | none => "outside the internal fragment"
     | some (env, thm) =>
       let body := (List.range (thm.arity + env.length)).foldlM (fun e _ ↦ lfBody e) term
       let verdict := if modulo then
           (body >>= fun b ↦ decPfMod k b env thm.hyps.length).map
-            (thm.convChecks toposGlobals E)
+            (thm.convChecks G E)
         else (body >>= fun b ↦ decPf k b env thm.hyps.length).map
-            (thm.checks toposGlobals E)
+            (thm.checks G E)
       match verdict with
         | none => "undecodable"
         | some true => "internal checks"
@@ -240,8 +268,8 @@ def fuel : ℕ := 64
 /-- Run one goal in one regime, in the signature or in its extension by the lemmas' theorems,
 printing the outcome. -/
 def runGoal (timeout : UInt64) (dev : Bool) (g : Goal) (modulo select : Bool) : IO Unit := do
-  let (S, names, k, E) := if dev then (devSig, devNames, devIdx, lemmaEntries)
-    else (sig, toposNames, toposIdx, #[])
+  let (S, names, G, k, E) := if dev then (devSig, devNames, devGlobals, devIdx, lemmaEntries)
+    else (sig, toposNames, toposGlobals, toposIdx, #[])
   let rs := if modulo then rules else []
   let rel := relevant S 0 coreConsts g.type
   let usable := fun c ↦ !(modulo && redundantModRules.contains c) && (!select || rel c)
@@ -259,7 +287,7 @@ def runGoal (timeout : UInt64) (dev : Bool) (g : Goal) (modulo select : Bool) : 
         | some e =>
           let ok := if modulo then ChecksMod rules fuel S [] e g.type else Checks S [] e g.type
           (if ok then "checks" else "DOES NOT CHECK") ++ ", " ++
-            internalVerdict k E modulo g.type e
+            internalVerdict G k E modulo g.type e
       IO.println s!"{g.name} [{regime}]: found in {t₁ - t₀} ms, {verdict}: {
         {t with lets := #[]}}"
   (← IO.getStdout).flush
@@ -269,14 +297,14 @@ def main (args : List String) : IO UInt32 := do
   if toposNames.length != sig.length then
     IO.eprintln s!"{toposNames.length} names for {sig.length} constants"
     return 1
-  if devSig.length != sig.length + lemmas.length then
+  if devSig.length != sig.length + lemmas.length + 2 then
     IO.eprintln s!"{devSig.length - sig.length} declarations for {lemmas.length} lemmas"
     return 1
   let timeout := (args.head? >>= String.toNat?).getD 10
   let chosen := fun gs : List Goal ↦ match args with
     | [_, part] => gs.filter fun (g : Goal) ↦ (g.name.splitOn part).length > 1
     | _ => gs
-  for (dev, gs) in [(false, goals), (true, devGoals)] do
+  for (dev, gs) in [(false, goals), (true, devGoals ++ defGoals)] do
     for g in chosen gs do
       for modulo in [false, true] do
         for select in [false, true] do

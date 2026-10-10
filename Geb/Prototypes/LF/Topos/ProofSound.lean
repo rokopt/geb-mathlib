@@ -20,8 +20,9 @@ variables inside variables of {lit}`tp`, decodes ({name}`Geb.LF.Topos.decPf`) to
 that the internal language's checker accepts as a proof of the formula's decoding, in the internal
 context of the term variables' types under the hypotheses of the proof variables' formulas, in as
 many object variables as the context has variables of {lit}`tp`. The signature may be extended
-by the theorems of a development ({name}`Geb.LF.Topos.ThmsDecl`), whose applications decode to
-the language's applications of their entries.
+by the theorems of a development and the unfoldings of definitions
+({name}`Geb.LF.Topos.ExtDecl`), whose applications decode to the language's applications of the
+theorems' entries and to the unfoldings.
 
 ## Main definitions
 
@@ -32,7 +33,10 @@ the language's applications of their entries.
 ## Main statements
 
 * {lit}`termOf_typed` — the adequacy of the representation of terms in an LF context of proofs.
+* {lit}`thm_spine` — the decoding of the spine of an application of a theorem's declaration.
 * {lit}`sound_thm` — the soundness of the decoding of an application of a theorem.
+* {lit}`deltaThm_wellFormed` — the unfolding of a definition the language admits is well formed.
+* {lit}`sound_delta` — the soundness of the decoding of an application of an unfolding.
 * {lit}`pfSound`, {lit}`decPf_sound` — the soundness of the decoding of proofs.
 * {lit}`decPf_checks` — a proof in a context of term variables decodes to a derivation of a
   theorem of the internal language.
@@ -80,10 +84,6 @@ structure TmCtx (n : ℕ) (ΓLF : Ctx) (env : List (Option ℕ)) (Γ : List Part
   enc : ∃ ΓT, encCtx n Γ = some ΓT
 
 variable {sg : Sig} {n : ℕ} {ΓLF : Ctx} {env : List (Option ℕ)} {Γ : List PartialHorn.Tree}
-
-/-- The family of terms is injective. -/
-theorem tm_inj {A B : Expr} (h : tm A = tm B) : A = B := by
-  simpa only [tm, Expr.const, Expr.app, node_inj, List.cons.injEq, and_true, true_and] using h
 
 /-- The family of proofs is injective. -/
 theorem pf_inj {F F' : Expr} (h : pf F = pf F') : F = F' := by
@@ -220,7 +220,7 @@ context, decodes in the environment to a term of the type in the internal contex
 mentions no proof variable, its type's products' domains being of terms, so that its renaming to
 the internal context's variables checks in the context of the term variables and the variables of
 {lit}`tp` alone. -/
-theorem termOf_typed (hk : k.Valid G) (hsg : SigExt sg)
+theorem termOf_typed (hk : k.Valid G) (hsg : SigExt G k sg)
     (hc : TmCtx n ΓLF env Γ) {a : PartialHorn.Tree} {A M : Expr}
     (ha : encTy env.length a = some A) (hj : judge sg M ΓLF (.check (tm A)) = true) :
     ∃ s, termOf k env M = some s ∧ typeIn G n Γ s = some a := by
@@ -418,7 +418,7 @@ theorem sig_head_pf₀ {c : ℕ} {T : Expr} (hc : sig[c]? = some T) (h : T.headD
 
 /-- The declarations of an extension of the signature, within the signature, whose types end in
 {lit}`pf` are the signature's rules. -/
-theorem sig_head_pf (hsg : SigExt sg) {c : ℕ} {T : Expr} (hc : sg[c]? = some T)
+theorem sig_head_pf (hsg : SigExt G k sg) {c : ℕ} {T : Expr} (hc : sg[c]? = some T)
     (h : T.headDepth.1 = some 17) (hlt : c < sig.length) :
     c ∈ [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 34, 35, 36, 40, 41, 45, 46, 47, 53,
       54, 55, 56] ∧ sig[c]? = some T := by
@@ -490,7 +490,7 @@ theorem hsubWith_shift₃ (red : Expr → List Expr → Option Expr) (e n : Expr
 
 /-- In an expression judged with a family of terms innermost, the innermost variable occurs
 unapplied, the family being of base type. -/
-theorem appliedAt_of_judge_tm (hsg : SigExt sg) {E A : Expr} {Γ : Ctx} (hΓ : ∀ a ∈ Γ,
+theorem appliedAt_of_judge_tm (hsg : SigExt G k sg) {E A : Expr} {Γ : Ctx} (hΓ : ∀ a ∈ Γ,
   Expr.TypeShape a = true)
     {md : Mode} (hmd : ModeShape md = true)
     (hj : judge sg E (tm A :: Γ) md = true) :
@@ -505,7 +505,7 @@ theorem appliedAt_of_judge_tm (hsg : SigExt sg) {E A : Expr} {Γ : Ctx} (hΓ : �
 /-- Substituting the innermost variable of a family of terms for the variable it renames, in an
 expression judged with it, gives the expression: its occurrences are unapplied, the family being
 of base type. -/
-theorem hsub_var0_self (hsg : SigExt sg) {E A : Expr} {Γ : Ctx} (hΓ : ∀ a ∈ Γ,
+theorem hsub_var0_self (hsg : SigExt G k sg) {E A : Expr} {Γ : Ctx} (hΓ : ∀ a ∈ Γ,
   Expr.TypeShape a = true)
     {md : Mode} (hmd : ModeShape md = true)
     (hj : judge sg E (tm A :: Γ) md = true) :
@@ -518,7 +518,7 @@ theorem hsub_var0_self (hsg : SigExt sg) {E A : Expr} {Γ : Ctx} (hΓ : ∀ a �
 
 /-- Substituting the innermost variable for itself in an expression weakened under it, where the
 expression is judged with a family of terms innermost, gives the weakened expression. -/
-theorem hsub_var0_self_weak (hsg : SigExt sg) {E A : Expr} {Γ : Ctx} (hΓ : ∀ a ∈ Γ,
+theorem hsub_var0_self_weak (hsg : SigExt G k sg) {E A : Expr} {Γ : Ctx} (hΓ : ∀ a ∈ Γ,
   Expr.TypeShape a = true)
     {P : Expr} (hP : P.TypeShape = true)
     (hj : judge sg E (tm A :: Γ) (.check P) = true) :
@@ -594,7 +594,7 @@ theorem hsub_var_base {c : ℕ} {E : Expr}
 /-- The application of a two-place LF abstraction, weakened past two variables, to the outer of
 them, by hereditary substitution at a base type: the abstraction of its body with the bound
 variable it replaces made the next. -/
-theorem hsub_lam_var₁ (hsg : SigExt sg) {sb A C C' : Expr} {Γ : Ctx} (hΓ : ∀ a ∈ Γ,
+theorem hsub_lam_var₁ (hsg : SigExt G k sg) {sb A C C' : Expr} {Γ : Ctx} (hΓ : ∀ a ∈ Γ,
   Expr.TypeShape a = true)
     (hj : judge sg sb (tm C :: tm A :: Γ) (.check (tm C')) = true) :
     hsubWith (reduceStep (SimpleLabel.base 6) [])
@@ -887,7 +887,7 @@ theorem termOf_consPf_shift (F : Expr) (h : ℕ) :
   rw [termOf, termOf, rename_rename]
   rfl
 
-variable (E : Array Entry) (hk : k.Valid G) (hsg : SigExt sg)
+variable (E : Array Entry) (hk : k.Valid G) (hsg : SigExt G k sg)
 
 include hk hsg in
 /-- The soundness of the decoding of reflexivity. -/
@@ -2602,12 +2602,13 @@ theorem sound_hyp (hc : PfCtx G k n ΓLF env Γ Φ) {i : ℕ} {ms : List Expr} {
 application of a theorem of the extension. -/
 theorem decPfStep_thm {c : ℕ} (hc : sig.length ≤ c)
     (xs : List (Expr × (List (Option ℕ) → ℕ → Option Deriv))) (env : List (Option ℕ)) (m : ℕ) :
-    decPfStep k (.app (.const c)) xs env m = decPfThm k nd c xs env m := by
+    decPfStep k (.app (.const c)) xs env m =
+      decPfThm k nd (joinD (ruleD .delta) reflD) c xs env m := by
   obtain ⟨i, rfl⟩ : ∃ i, c = i + 57 :=
     ⟨c - 57, by rw [show sig.length = 57 from rfl] at hc; omega⟩
   rfl
 
-include hk in
+include hk hsg in
 /-- The decoding, in a context matching an environment, of a formula of a theorem with types and
 terms substituted for its object variables and variables: the instance of the formula at the
 decoded types and terms. -/
@@ -2623,7 +2624,7 @@ theorem termOf_inst {a : FreeTopos.Internal.Thm}
     (h : hsubs (RoseTree.node (.base 6) []) (Xs ++ Ms) Y = some Y') :
     termOf k env Y' = some (FreeTopos.Internal.instTerm xs.reverse σ'.reverse s) := by
   obtain ⟨r, hr, -⟩ := Option.map_eq_some_iff.mp hts
-  have hsc := scopedBelow_enc hk hty hΓT hr hY
+  have hsc := scopedBelow_enc hsg hk hty hΓT hr hY
   have hcl : ∀ ρ, Y.rename (liftR^[a.arity + a.ctx.length] ρ) = Y := fun ρ ↦ by
     rw [Nat.add_comm]
     exact ScopedBelow.rename_iterate hsc ρ
@@ -2694,20 +2695,25 @@ theorem termOf_inst {a : FreeTopos.Internal.Thm}
   rw [iterate_liftR_lt _ _ i hi', scopeSubst, ite_eq_left (by rw [hσl]; exact hi')]
 
 include hk hsg in
-/-- The soundness of the decoding of an application of a theorem of the extension: its leading
+/-- The decoding of the spine of an application of a theorem's declaration: its leading
 arguments decode to the types of the theorem's object variables, the next to terms of the
-instances of the types of its variables, its others are proofs of the instances of its
-hypotheses, which decode soundly, and the application decodes to the application of the
-theorem's entry, which proves the instance of its conclusion. -/
-theorem sound_thm (hc : PfCtx G k n ΓLF env Γ Φ) {c j : ℕ} {cs : List Expr}
-    {a : FreeTopos.Internal.Thm} {C F : Expr} {φ : MTerm} (hlt : sig.length ≤ c)
-    (hthm : k.thms[c - sig.length]? = some (j, a.arity, a.ctx.length))
-    (he : (E[j]?).bind FreeTopos.Internal.Entry.language? = some a)
-    (hwf : a.wellFormed G = true) (hC : thmTy G k a = some C)
-    (ih : ∀ M ∈ cs, PfSoundAt sg G k E n M)
-    (hS : spine ΓLF C (cs.map fun m ↦ (m, judge sg m)) = some (pf F))
-    (hφ : termOf k env F = some φ) :
-    ∃ D, decPf k (Expr.const c cs) env Φ.length = some D ∧ (check G E n D).2 Γ Φ φ = true := by
+instances of the types of its variables, the formula it proves decodes to the instance of the
+theorem's conclusion, and its other arguments are proofs of formulas that decode to the instances
+of its hypotheses. -/
+theorem thm_spine (hc : PfCtx G k n ΓLF env Γ Φ) {cs : List Expr} {a : FreeTopos.Internal.Thm}
+    {C F : Expr} (hwf : a.wellFormed G = true) (hC : thmTy G k a = some C)
+    (hS : spine ΓLF C (cs.map fun m ↦ (m, judge sg m)) = some (pf F)) :
+    ∃ (xs : List PartialHorn.Tree) (σ' : List MTerm),
+      (cs.take a.arity).mapM (fun M ↦ decTy env.length M) = some xs ∧
+      ((cs.drop a.arity).take a.ctx.length).mapM (fun M ↦ termOf k env M) = some σ' ∧
+      xs.length = a.arity ∧ σ'.length = a.ctx.length ∧
+      (∀ x ∈ xs.reverse, FreeTopos.Internal.IsTy G n x = true) ∧
+      List.Forall₂ (fun s b ↦ FreeTopos.Internal.typeIn G n Γ s = some b) σ'.reverse
+        (a.ctx.map (PartialHorn.subst xs.reverse)) ∧
+      termOf k env F = some (FreeTopos.Internal.instTerm xs.reverse σ'.reverse a.concl) ∧
+      List.Forall₂ (fun p h ↦ ∃ H, judge sg p ΓLF (.check (pf H)) = true ∧
+        termOf k env H = some (FreeTopos.Internal.instTerm xs.reverse σ'.reverse h))
+        (cs.drop (a.arity + a.ctx.length)) a.hyps := by
   -- the theorem is well formed
   rw [FreeTopos.Internal.Thm.wellFormed, Bool.and_eq_true, Bool.and_eq_true] at hwf
   have hty := List.all_eq_true.mp hwf.1.1
@@ -2825,34 +2831,53 @@ theorem sound_thm (hc : PfCtx G k n ΓLF env Γ Φ) {c j : ℕ} {cs : List Expr}
       hsubs (RoseTree.node (.base 6) []) (cs.take a.arity ++ (cs.drop a.arity).take a.ctx.length)
         Y = some Y' →
       termOf k env Y' = some (FreeTopos.Internal.instTerm xs.reverse σ'.reverse s) :=
-    fun s Y Y' hY hts h ↦ termOf_inst hk hxs' hσ2 hty hΓT hXsl hMsl hY hts h
-  obtain rfl := Option.some.inj (hφ.symm.trans (key a.concl X F hX hconcl hX'))
-  -- the proofs decode, to proofs of the instances of the hypotheses
+    fun s Y Y' hY hts h ↦ termOf_inst hk hsg hxs' hσ2 hty hΓT hXsl hMsl hY hts h
+  -- the hypotheses
   have hhyp : List.Forall₂ (fun h H' ↦ termOf k env H' =
       some (FreeTopos.Internal.instTerm xs.reverse σ'.reverse h)) a.hyps Hs' :=
     forall₂_comp (fun h H H' hH hH' ↦ key h H H' hH.2 (hhyps h hH.1) hH')
       (forall₂_mem (forall₂_of_mapM hHs)) hHs'
+  have hσr : List.Forall₂ (fun s b ↦ FreeTopos.Internal.typeIn G n Γ s = some b) σ'.reverse
+      (a.ctx.map (PartialHorn.subst xs.reverse)) := by
+    rw [← List.reverse_reverse (a.ctx.map _)]
+    refine List.forall₂_reverse_iff.mpr ?_
+    rw [← List.map_reverse]
+    exact List.forall₂_map_right_iff.mpr (hσt.imp fun _ _ h ↦ h.1)
+  refine ⟨xs, σ', hxsM, hσM, hxl, hσlen, fun x hx ↦
+    (forall₂_left_mem hxs x (List.mem_reverse.mp hx)).elim fun _ h ↦ h.2, hσr,
+    key a.concl X F hX hconcl hX', forall₂_comp (fun p H h hpH hHh ↦ ⟨H, hpH, hHh⟩) hps
+      (List.Forall₂.flip (R := fun H' h ↦ termOf k env H' =
+        some (FreeTopos.Internal.instTerm xs.reverse σ'.reverse h)) hhyp)⟩
+
+include hk hsg in
+/-- The soundness of the decoding of an application of a theorem of the extension: its leading
+arguments decode to the types of the theorem's object variables, the next to terms of the
+instances of the types of its variables, its others are proofs of the instances of its
+hypotheses, which decode soundly, and the application decodes to the application of the
+theorem's entry, which proves the instance of its conclusion. -/
+theorem sound_thm (hc : PfCtx G k n ΓLF env Γ Φ) {c j : ℕ} {cs : List Expr}
+    {a : FreeTopos.Internal.Thm} {C F : Expr} {φ : MTerm} (hlt : sig.length ≤ c)
+    (hthm : k.ext[c - sig.length]? = some (.thm j a.arity a.ctx.length))
+    (he : (E[j]?).bind FreeTopos.Internal.Entry.language? = some a)
+    (hwf : a.wellFormed G = true) (hC : thmTy G k a = some C)
+    (ih : ∀ M ∈ cs, PfSoundAt sg G k E n M)
+    (hS : spine ΓLF C (cs.map fun m ↦ (m, judge sg m)) = some (pf F))
+    (hφ : termOf k env F = some φ) :
+    ∃ D, decPf k (Expr.const c cs) env Φ.length = some D ∧ (check G E n D).2 Γ Φ φ = true := by
+  obtain ⟨xs, σ', hxsM, hσM, hxl, hσlen, hθ, hσr, hF, hhyp⟩ := thm_spine hk hsg hc hwf hC hS
+  obtain rfl := Option.some.inj (hφ.symm.trans hF)
+  -- the proofs decode, to proofs of the instances of the hypotheses
   have hproofs : List.Forall₂ (fun p h ↦ ∃ D, decPf k p env Φ.length = some D ∧
       (check G E n D).2 Γ Φ (FreeTopos.Internal.instTerm xs.reverse σ'.reverse h) = true)
       (cs.drop (a.arity + a.ctx.length)) a.hyps :=
-    forall₂_comp (fun p H h hpH hHh ↦ ih p (List.mem_of_mem_drop hpH.1) ΓLF env Γ Φ H
-      (FreeTopos.Internal.instTerm xs.reverse σ'.reverse h) hc hpH.2 hHh) (forall₂_mem hps)
-      (List.Forall₂.flip (R := fun H' h ↦ termOf k env H' =
-        some (FreeTopos.Internal.instTerm xs.reverse σ'.reverse h)) hhyp)
+    (forall₂_mem hhyp).imp fun p _ ⟨hp, H, hJ, hH⟩ ↦
+      ih p (List.mem_of_mem_drop hp) ΓLF env Γ Φ H _ hc hJ hH
   obtain ⟨Ds, hDs', hDchk⟩ := mapM_of_forall₂ hproofs
   refine ⟨_, ?_, check_apply he ?_ rfl hDchk.length_eq fun x hx ↦ ?_⟩
   · rw [decPf_const, decPfStep_thm hlt, decPfThm, ite_eq_left hlt, hthm]
     simp only [← List.map_take, ← List.map_drop, List.mapM_map, Function.comp_def, hxsM, hσM,
       hDs', Option.bind_eq_bind, Option.bind_some, Option.pure_def]
-  · have hσr : List.Forall₂ (fun s b ↦ FreeTopos.Internal.typeIn G n Γ s = some b) σ'.reverse
-        (a.ctx.map (PartialHorn.subst xs.reverse)) := by
-      rw [← List.reverse_reverse (a.ctx.map _)]
-      refine List.forall₂_reverse_iff.mpr ?_
-      rw [← List.map_reverse]
-      exact List.forall₂_map_right_iff.mpr (hσt.imp fun _ _ h ↦ h.1)
-    have hθ : ∀ x ∈ xs.reverse, FreeTopos.Internal.IsTy G n x = true := fun x hx ↦
-      (forall₂_left_mem hxs x (List.mem_reverse.mp hx)).elim fun _ h ↦ h.2
-    simp only [FreeTopos.Internal.instOk, List.length_reverse, hxl, hσlen, decide_true,
+  · simp only [FreeTopos.Internal.instOk, List.length_reverse, hxl, hσlen, decide_true,
       Bool.true_and, Bool.and_eq_true, List.all_eq_true]
     refine ⟨⟨hθ, trivial⟩, fun x hx ↦ ?_⟩
     obtain ⟨u, b⟩ := x
@@ -2861,7 +2886,110 @@ theorem sound_thm (hc : PfCtx G k n ΓLF env Γ Φ) {c j : ℕ} {cs : List Expr}
   · obtain ⟨d, h⟩ := x
     exact List.forall₂_zip hDchk hx
 
-variable (hth : ThmsDecl G E k sg)
+open FreeTopos.Internal (Defn Definition compile IsTy) in
+/-- The unfolding of a definition the language admits is well formed: the definition at its
+variables, applied to its parameters, and its body are terms of its value's type. -/
+theorem deltaThm_wellFormed {kd : ℕ} {d : Defn} {cd : PartialHorn.Defn}
+    (hd : G.defs[kd]? = some (.language d)) (hok : (Definition.language d).ok G = true)
+    (hc : d.compile G = some cd) : (deltaThm kd d).wellFormed G = true := by
+  simp only [Definition.ok, Bool.and_eq_true] at hok
+  obtain ⟨hps, hty⟩ := hok
+  obtain ⟨cb, hcb, -⟩ := FreeTopos.Internal.Defn.compile_eq_some hc
+  -- the object variables substitute identically into a type in their scope
+  have hid : ∀ A, IsTy G d.arity A = true →
+      PartialHorn.subst ((List.range d.arity).map PartialHorn.var) A = A := fun A hA ↦ by
+    rw [FreeTopos.Internal.subst_eq_substF,
+      FreeTopos.Internal.substF_congr (τ' := PartialHorn.var) (fun i hi ↦ by
+        rw [List.getElem?_map, List.getElem?_range hi]
+        rfl) A (FreeTopos.Internal.scoped_of_isTy A hA),
+      FreeTopos.Internal.substF_var_id]
+  -- the parameters compile to their types
+  have hstd := FreeTopos.Internal.map_snd_stdEnv d.params
+  have hrs : ((List.range d.params.length).map Term.var).mapM
+      (fun c ↦ compile G d.arity c (ctxObj d.params) (stdEnv d.params)) =
+        some (stdEnv d.params) := by
+    rw [List.mapM_map]
+    have hl := congrArg List.length hstd
+    rw [List.length_map] at hl
+    refine mapM_of_forall₂_eq (forall₂_of_getElem (by rw [List.length_range, hl]) fun i h₁ h₂ ↦ ?_)
+    rw [Function.comp_apply, List.getElem_range, Term.var]
+    exact FreeTopos.Internal.compile_var_iff.mpr ⟨rfl, List.getElem?_eq_getElem h₂⟩
+  -- the definition at its variables, applied to its parameters
+  have hdefn : compile G d.arity (Term.defn kd ((List.range d.arity).map PartialHorn.var)
+      ((List.range d.params.length).map Term.var)) (ctxObj d.params) (stdEnv d.params) =
+      some (_, PartialHorn.subst ((List.range d.arity).map PartialHorn.var) d.type) :=
+    FreeTopos.Internal.compile_defn_iff.mpr ⟨d, stdEnv d.params, hd, hrs,
+    by rw [List.length_map, List.length_range],
+    List.all_eq_true.mpr fun x hx ↦ by
+      obtain ⟨i, hi, rfl⟩ := List.mem_map.mp hx
+      exact FreeTopos.Internal.isTy_var.mpr (List.mem_range.mp hi),
+    by
+      rw [hstd]
+      exact ((List.map_congr_left fun A hA ↦ hid A (List.all_eq_true.mp hps A hA)).trans
+        (List.map_id _)).symm,
+    rfl⟩
+  rw [hid _ hty] at hdefn
+  refine FreeTopos.Internal.Thm.wellFormed_iff.mpr
+    ⟨hps, fun h hh ↦ (nomatch (show h ∈ ([] : List Term) from hh)), ?_⟩
+  change (compile G d.arity (Term.eq (Term.defn kd ((List.range d.arity).map PartialHorn.var)
+    ((List.range d.params.length).map Term.var)) d.body) (ctxObj d.params)
+    (stdEnv d.params)).map Prod.snd = some FreeTopos.omega
+  rw [Term.eq, FreeTopos.Internal.compile_eq_iff.mpr ⟨_, _, rfl, _, _, hdefn, _, hcb, rfl⟩]
+  rfl
+
+open FreeTopos.Internal (Defn Definition) in
+/-- The declaration of the unfolding of a definition mentions the definition's constant, so the
+indices name the definition. -/
+theorem defConst_of_thmTy_delta {kd : ℕ} {d : Defn} {T : Expr}
+    (hd : G.defs[kd]? = some (.language d)) (h : thmTy G k (deltaThm kd d) = some T) :
+    ∃ c, k.defConst kd d.arity d.params.length = some c := by
+  obtain ⟨-, -, X, -, -, hX, -⟩ := thmTy_eq_some h
+  change enc G d.arity k (RoseTree.node .eq [Term.defn kd
+    ((List.range d.arity).map PartialHorn.var) ((List.range d.params.length).map Term.var),
+    d.body]) (ctxObj d.params) (stdEnv d.params) = some X at hX
+  rw [enc_node] at hX
+  simp only [List.map_cons, List.map_nil, encStep, Option.bind_eq_bind,
+    Option.bind_eq_some_iff] at hX
+  obtain ⟨_, -, _, -, M₁, hM₁, -⟩ := hX
+  rw [Term.defn, enc_node] at hM₁
+  simp only [encStep, Option.bind_eq_bind, hd, Option.bind_some, Definition.language?,
+    Option.bind_eq_some_iff] at hM₁
+  obtain ⟨c, hc, -⟩ := hM₁
+  exact ⟨c, hc⟩
+
+include hk hsg in
+/-- The soundness of the decoding of an application of the unfolding of a definition: the
+formula it proves decodes to the equation of the definition, at the objects and applied to the
+terms its leading arguments decode to, with the definition's body at them, which the unfolding
+at the left side and reflexivity at the right prove. -/
+theorem sound_delta (hc : PfCtx G k n ΓLF env Γ Φ) {c kd : ℕ} {d : FreeTopos.Internal.Defn}
+    {cs : List Expr} {C F : Expr} {φ : MTerm} (hlt : sig.length ≤ c)
+    (hext : k.ext[c - sig.length]? = some (.delta kd d.arity d.params.length))
+    (hd : G.defs[kd]? = some (.language d)) (hC : thmTy G k (deltaThm kd d) = some C)
+    (hS : spine ΓLF C (cs.map fun m ↦ (m, judge sg m)) = some (pf F))
+    (hφ : termOf k env F = some φ) :
+    ∃ D, decPf k (Expr.const c cs) env Φ.length = some D ∧ (check G E n D).2 Γ Φ φ = true := by
+  -- the definition is admitted, so its unfolding is well formed
+  obtain ⟨c', hc'⟩ := defConst_of_thmTy_delta hd hC
+  obtain ⟨i, hi, -⟩ := Option.map_eq_some_iff.mp hc'
+  obtain ⟨d', T', -, hd', -, -, hok, ⟨cd, hcd⟩, -, -⟩ :=
+    hsg.defs i kd _ _ (ExtConst.find?_spec _ _ _ hi)
+  rw [hd, Option.some.injEq] at hd'
+  cases hd'
+  obtain ⟨xs, σ', -, -, hxl, hσlen, -, -, hF, -⟩ :=
+    thm_spine hk hsg hc (deltaThm_wellFormed hd hok hcd) hC hS
+  obtain rfl := Option.some.inj (hφ.symm.trans hF)
+  refine ⟨joinD (ruleD .delta) reflD, ?_, ?_⟩
+  · rw [decPf_const, decPfStep_thm hlt, decPfThm, ite_eq_left hlt, hext]
+  · have hθl : d.arity = xs.reverse.length := by rw [List.length_reverse, hxl]; rfl
+    have hσl : d.params.length = σ'.reverse.length := by rw [List.length_reverse, hσlen]; rfl
+    change (check G E n (joinD (ruleD .delta) reflD)).2 Γ Φ (FreeTopos.Internal.instTerm
+      xs.reverse σ'.reverse (Term.eq (Term.defn kd ((List.range d.arity).map PartialHorn.var)
+        ((List.range d.params.length).map Term.var)) d.body)) = true
+    rw [instTerm_eq, hθl, hσl, instTerm_defn_vars]
+    exact check_join (check_delta hd _ _) (check_refl _)
+
+variable (hth : ExtDecl G E k sg)
 
 include hk hsg hth in
 /-- The soundness of the decoding of proofs: a canonical LF term of the family of proofs of a
@@ -2885,10 +3013,31 @@ theorem pfSound : ∀ M : Expr, PfSound sg G k E n M :=
       · exact sound_hyp E hc hC hS hφ
       by_cases hlt : c < sig.length
       swap
-      · obtain ⟨j, a, hthm, he, hwf, hCd⟩ := hth (c - sig.length) C
-          (by rw [Nat.add_sub_cancel' (Nat.le_of_not_lt hlt)]; exact hC)
-        exact sound_thm E hk hsg hc (Nat.le_of_not_lt hlt) hthm he hwf hCd
-          (fun M hM ↦ (ih M hM).1) hS hφ
+      · have hle := Nat.le_of_not_lt hlt
+        have hC' : sg[sig.length + (c - sig.length)]? = some C := by
+          rw [Nat.add_sub_cancel' hle]
+          exact hC
+        obtain ⟨x, hx⟩ : ∃ x, k.ext[c - sig.length]? = some x :=
+          ⟨_, List.getElem?_eq_getElem (by
+            have := (List.getElem?_eq_some_iff.mp hC).1
+            rw [hsg.len] at this
+            omega)⟩
+        rcases x with ⟨j, m, p⟩ | ⟨kd, m, p⟩ | ⟨kd, m, p⟩
+        · obtain ⟨a, T, he, rfl, rfl, hwf, hT, hsgT⟩ := hth.1 _ j m p hx
+          obtain rfl := Option.some.inj (hsgT.symm.trans hC')
+          exact sound_thm E hk hsg hc hle hx he hwf hT (fun M hM ↦ (ih M hM).1) hS hφ
+        · -- the declaration of a definition ends in a family of terms
+          obtain ⟨d, T, -, -, -, -, -, -, hT, hsgT⟩ := hsg.defs _ kd m p hx
+          obtain rfl := Option.some.inj (hsgT.symm.trans hC')
+          obtain ⟨h₁, -⟩ := spine_headDepth _ _ _ (Sig.ok_typeShape hsg.ok c _ hC) hS
+          simp only [defTy, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+            Option.some.injEq] at hT
+          obtain ⟨ΓT, -, Td, -, rfl⟩ := hT
+          rw [headDepth_piTele] at h₁
+          exact absurd (show some 17 = some 6 from h₁) (by decide)
+        · obtain ⟨d, T, hd, rfl, rfl, hT, hsgT⟩ := hth.2 _ kd m p hx
+          obtain rfl := Option.some.inj (hsgT.symm.trans hC')
+          exact sound_delta E hk hsg hc hle hx hd hT hS hφ
       have hCs := Sig.ok_typeShape hsg.ok c C hC
       obtain ⟨h₁, h₂⟩ := spine_headDepth _ C _ hCs hS
       obtain ⟨hc', hC⟩ := sig_head_pf hsg hC (by rw [← h₁]; rfl) hlt

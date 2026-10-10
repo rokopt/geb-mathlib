@@ -4077,6 +4077,23 @@ its proofs, in this order:
     the types substituted where the context's variables of terms and
     proofs are renamed away, so the soundness of the decoding of proofs
     holds for theorems at every arity.
+11. Complete. Definitions and their unfolding: a definition of the
+    language is a constant past the signature, the product over `tp`
+    for each object parameter of the products over the families of
+    terms of its parameters' types into the family of terms of its
+    value's type, and its application decodes to the language's
+    application of the definition, so that the encoding is adequate in
+    every extension of the signature by definitions. Its unfolding is a
+    further constant, the theorem that the definition at its variables
+    equals its body, whose application decodes to the language's
+    unfolding at the equation's left side, and, modulo the rewrite
+    rules, to the unfolding with both sides normalized after it. The
+    soundness of the decoding of proofs holds in every extension by
+    definitions the language admits, their unfoldings and theorems, the
+    unfoldings well formed by the admission of their definitions. Canonical proves
+    `add m 0 = m`, stated with a definition of addition, in pure LF by
+    the substitution of the unfolding into the computation of the fold,
+    and modulo the rewrite rules by the unfolding alone.
 
 The route remains an experiment; the Geb-native refinement below is the
 implementation meant to last, and the signature's measurements inform

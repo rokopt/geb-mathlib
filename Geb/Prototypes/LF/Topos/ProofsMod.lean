@@ -28,10 +28,11 @@ and {name}`Geb.LF.Topos.indD` do, with the formula they prove normalized first, 
 of the motive's application, from which it is proved, normalized to it ({lit}`leibC`,
 {lit}`indC`), congruence as the substitution of equals does, and the case analysis on a
 coproduct and a formula from a term of the initial object as the inductions do; function
-extensionality, with its formula normalized first; and an application of a theorem past the
-signature as {name}`Geb.LF.Topos.decPfThm` decodes it. The decoding is not
-proved to produce certificates that check: the conversion checker, sound relative to the base
-checker, decides each.
+extensionality, with its formula normalized first; and an application of a theorem or of the
+unfolding of a definition past the signature as {name}`Geb.LF.Topos.decPfThm` decodes it, the
+unfolding with its sides normalized after it ({lit}`deltaC`). The decoding is not proved to
+produce certificates that check: the conversion checker, sound relative to the base checker,
+decides each.
 
 ## Main definitions
 
@@ -39,6 +40,7 @@ checker, decides each.
   them.
 * {lit}`eqvC`, {lit}`leibC`, {lit}`indC` — the certificates of reflexivity, of the substitution
   of equals and of an induction.
+* {lit}`deltaC` — the certificate of the unfolding of a definition.
 * {lit}`decPfMod` — the decoding of a proof modulo the rules.
 
 ## Tags
@@ -75,6 +77,10 @@ def normC (k : PrimIdx) : ConvDeriv :=
 
 /-- An equation whose sides normalize to one term. -/
 def eqvC (k : PrimIdx) : ConvDeriv := ndC .join [normC k, normC k]
+
+/-- The unfolding of a definition: an equation whose left side, unfolded at its root, and right
+side normalize to one term. -/
+def deltaC (k : PrimIdx) : ConvDeriv := ndC .join [ndC .trans [ndC .delta [], normC k], normC k]
 
 /-- A formula proved after its normalization. -/
 def convertC (k : PrimIdx) (D : ConvDeriv) : ConvDeriv := ndC .conv [normC k, D]
@@ -168,7 +174,7 @@ def decPfModStep (l : Label) (cs : List (Expr × (List (Option ℕ) → ℕ → 
     | .app (.const 56), [(z, _), (φ, _)] => do
       pure (indC k FreeTopos.zero (.zeroInd 0) (weaken1 (← termOf k env φ)) (← termOf k env z) m
         [])
-    | .app (.const c), cs => decPfThm k ndC c cs env m
+    | .app (.const c), cs => decPfThm k ndC (deltaC k) c cs env m
     | .lam, [(_, d)] => d env m
     | _, _ => none
 

@@ -31,7 +31,12 @@ rejects. Congruence applies the successor to the computation of the fold at zero
 the language, declared past the signature, decode at their applications to the language's
 applications of their entries: one without hypotheses at a variable and at a compound term, one
 whose hypothesis is proved by reflexivity, and one in an object variable, at the natural numbers
-and at an object variable of the context.
+and at an object variable of the context. A definition of the language in object parameters,
+declared past the signature, encodes and decodes at its applications, and its unfolding, declared
+after it, decodes to the unfolding at the equation's left side, which the base checker and the
+checker with a step of conversion accept, at closed types and at an object variable of the
+context, the latter alone where the instance holds modulo the computation rules, and neither at
+an equation other than its instance.
 
 ## Tags
 
@@ -373,7 +378,7 @@ def thmEntries : Array FreeTopos.Internal.Entry :=
 
 /-- The indices of the primitive arrows, with the theorems of {name}`thmEntries` as the
 constants past the signature. -/
-def thmIdx : PrimIdx := { pfIdx with thms := [(0, 0, 1), (1, 0, 2), (2, 1, 1)] }
+def thmIdx : PrimIdx := { pfIdx with ext := [.thm 0 0 1, .thm 1 0 2, .thm 2 1 1] }
 
 /-- The signature extended by the declarations of the theorems of {name}`thmEntries`. -/
 def thmSig : Sig :=
@@ -434,6 +439,75 @@ def provesThm (Γ : List PartialHorn.Tree) (M F : Expr) : Bool := provesThmIn 0 
 -- The polymorphic theorem at the natural numbers does not prove its instance at lists.
 #guard !provesThm [FreeTopos.list FreeTopos.nat]
   (Expr.const 59 [list nat, v 0]) (eq (list nat) (foldCons (v 0)) (v 0))
+
+/-- The exchange of the components of a pair, in two object parameters. -/
+def swapDefn : FreeTopos.Internal.Defn :=
+  ⟨2, [FreeTopos.prod (PartialHorn.var 0) (PartialHorn.var 1)],
+    FreeTopos.prod (PartialHorn.var 1) (PartialHorn.var 0),
+    FreeTopos.Internal.Term.pair (FreeTopos.Internal.Term.snd (FreeTopos.Internal.Term.var 0))
+      (FreeTopos.Internal.Term.fst (FreeTopos.Internal.Term.var 0))⟩
+
+/-- The constants of {name}`pfGlobals` with the definition {name}`swapDefn`. -/
+def defGlobals : Globals := { pfGlobals with defs := [.language swapDefn] }
+
+/-- The indices of the primitive arrows, with the definition {name}`swapDefn` and its unfolding
+as the constants past the signature. -/
+def defIdx : PrimIdx := { pfIdx with ext := [.defn 0 2 1, .delta 0 2 1] }
+
+/-- The signature extended by the declarations of {name}`swapDefn` and of its unfolding. -/
+def defSig : Sig :=
+  sig ++ [defTy swapDefn, thmTy defGlobals defIdx (deltaThm 0 swapDefn)].reduceOption
+
+/-- Whether a proof, in an LF context of {lit}`n` variables of {lit}`tp` and term variables of the
+types of {lit}`Γ`, decodes, with the definition {name}`swapDefn`, to a derivation, and to a
+certificate of the checker with a step of conversion, that prove the decoding of an equation in
+the internal context {lit}`Γ` in {lit}`n` object variables: the base checker's verdict and the
+conversion checker's. -/
+def provesDefIn (n : ℕ) (Γ : List PartialHorn.Tree) (M F : Expr) : Bool × Bool :=
+  match decPf defIdx M (Γ.map fun _ ↦ none) 0, decPfMod defIdx M (Γ.map fun _ ↦ none) 0,
+      dec defIdx F Γ.length with
+    | some D, some D', some φ => (Thm.checks defGlobals #[] ⟨n, Γ, [], φ⟩ D,
+        Thm.convChecks defGlobals #[] ⟨n, Γ, [], φ⟩ D')
+    | _, _, _ => (false, false)
+
+-- The definition is admitted, and it and its unfolding are declared, the unfolding well formed.
+#guard (FreeTopos.Internal.Definition.language swapDefn).ok defGlobals &&
+  (swapDefn.compile defGlobals).isSome
+#guard defSig.length == sig.length + 2
+#guard (deltaThm 0 swapDefn).wellFormed defGlobals
+
+-- The definition at the natural numbers and lists, in LF and decoded.
+#guard Checks defSig [tm (prod nat (list nat))] (Expr.const 57 [list nat, nat, v 0])
+  (tm (prod (list nat) nat))
+#guard dec defIdx (Expr.const 57 [list nat, nat, v 0]) 1 ==
+  some (FreeTopos.Internal.Term.defn 0 [FreeTopos.nat, FreeTopos.list FreeTopos.nat]
+    [FreeTopos.Internal.Term.var 0])
+
+-- Its unfolding, in LF and decoded.
+#guard Checks defSig [tm (prod nat (list nat))] (Expr.const 58 [list nat, nat, v 0])
+  (pf (eq (prod (list nat) nat) (Expr.const 57 [list nat, nat, v 0])
+    (pair (list nat) nat (snd nat (list nat) (v 0)) (fst nat (list nat) (v 0)))))
+#guard provesDefIn 0 [FreeTopos.prod FreeTopos.nat (FreeTopos.list FreeTopos.nat)]
+  (Expr.const 58 [list nat, nat, v 0])
+  (eq (prod (list nat) nat) (Expr.const 57 [list nat, nat, v 0])
+    (pair (list nat) nat (snd nat (list nat) (v 0)) (fst nat (list nat) (v 0)))) == (true, true)
+
+-- The same at an object variable, in a context in one object variable.
+#guard provesDefIn 1 [FreeTopos.prod (PartialHorn.var 0) FreeTopos.nat]
+  (Expr.const 58 [nat, v 1, v 0])
+  (eq (prod nat (v 1)) (Expr.const 57 [nat, v 1, v 0])
+    (pair nat (v 1) (snd (v 1) nat (v 0)) (fst (v 1) nat (v 0)))) == (true, true)
+
+-- At a pair, the unfolding proves the exchanged pair modulo the computation rules alone.
+#guard provesDefIn 0 [FreeTopos.nat, FreeTopos.list FreeTopos.nat]
+  (Expr.const 58 [list nat, nat, pair nat (list nat) (v 0) (v 1)])
+  (eq (prod (list nat) nat) (Expr.const 57 [list nat, nat, pair nat (list nat) (v 0) (v 1)])
+    (pair (list nat) nat (v 1) (v 0))) == (false, true)
+
+-- The unfolding does not prove an equation other than its instance.
+#guard provesDefIn 0 [FreeTopos.prod FreeTopos.nat FreeTopos.nat]
+  (Expr.const 58 [nat, nat, v 0])
+  (eq (prod nat nat) (Expr.const 57 [nat, nat, v 0]) (v 0)) == (false, false)
 
 end Geb.LF.Topos.Tests
 

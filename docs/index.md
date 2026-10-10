@@ -3953,9 +3953,13 @@ checklist and in CI.
   computation rules as rewrite rules;
   `Topos/Adequacy.lean` encodes the fragment's types and compiled terms as
   canonical LF terms and decodes them, the signature's folds being the
-  language's folds, and proves the encoding sound and complete;
+  language's folds and the language's definitions constants of an
+  extension of the signature, and `Topos/Complete.lean` proves the
+  encoding sound and complete;
   `Topos/Compose.lean` proves the decoding compositional, commuting with
-  renaming and hereditary substitution; `Topos/Proofs.lean` decodes the
+  renaming and hereditary substitution, and `Topos/Telescope.lean` with the
+  instantiation of the declarations past the signature;
+  `Topos/Proofs.lean` decodes the
   canonical terms of the families of proofs, in contexts of term and proof
   variables, as derivations of the language, and `Topos/ProofsMod.lean` those
   that check modulo the rewrite rules as certificates of the checker with a
@@ -3963,9 +3967,10 @@ checklist and in CI.
   the checker at the derivations it builds, and `Topos/ProofSound.lean` proves
   the decoding sound: a proof decodes to a derivation the checker accepts as a
   proof of the decoded formula, in the signature and in its extensions by the
-  theorems of a development, in any number of object variables, which
-  `Topos/Theorems.lean` declares as constants whose applications decode to the
-  language's applications of the theorems.
+  theorems of a development and the unfoldings of definitions, in any number
+  of object variables, which `Topos/Theorems.lean` declares as constants whose
+  applications decode to the language's applications of the theorems and to
+  the language's unfoldings.
   Tested in `GebTests/Prototypes/LF.lean`,
   `GebTests/Prototypes/LF/Topos.lean`, `GebTests/Prototypes/LF/Adequacy.lean`
   and `GebTests/Prototypes/LF/Proofs.lean`. The library `GebExperiments`,

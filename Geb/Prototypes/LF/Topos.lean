@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.LF.Topos.Adequacy
+public import Geb.Prototypes.LF.Topos.Complete
 public import Geb.Prototypes.LF.Topos.Compose
 public import Geb.Prototypes.LF.Topos.ProofCheck
 public import Geb.Prototypes.LF.Topos.ProofSound
@@ -13,6 +14,7 @@ public import Geb.Prototypes.LF.Topos.Proofs
 public import Geb.Prototypes.LF.Topos.ProofsMod
 public import Geb.Prototypes.LF.Topos.Rules
 public import Geb.Prototypes.LF.Topos.Signature
+public import Geb.Prototypes.LF.Topos.Telescope
 public import Geb.Prototypes.LF.Topos.Theorems
 meta import GebMeta -- shake: keep
 

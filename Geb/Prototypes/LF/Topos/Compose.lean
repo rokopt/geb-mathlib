@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Prototypes.FreeTopos.Internal.SyntaxLaws
 public import Geb.Prototypes.LF.Metatheory.Expansion
 public import Geb.Prototypes.LF.Metatheory.Strengthen
 public import Geb.Prototypes.LF.Topos.Adequacy
@@ -179,6 +180,13 @@ theorem map_dec_eq {cs : List Expr} {ps : List (Expr × (ℕ → Option MTerm))}
   refine ⟨by rw [List.map_map]; exact (List.map_id' cs).symm, fun p hp ↦ ?_⟩
   obtain ⟨c, -, rfl⟩ := List.mem_map.mp hp
   rfl
+
+/-- A node of a definition renames and substitutes in each of its arguments. -/
+theorem plain_defn {kd n : ℕ} {θ : List PartialHorn.Tree} :
+    Term.Plain (.defn kd θ) n := by
+  have h := Term.shape (.defn kd θ) (List.replicate n Term.star)
+  rcases h with ⟨i, h⟩ | ⟨a, t, h, -⟩ | ⟨z, s, m, h | h, -⟩ | ⟨c, s, m, h, -⟩ | hp
+  all_goals first | exact nomatch h | (rw [List.length_replicate] at hp; exact hp)
 
 /-- The replacement of an abstraction's type commutes with renaming. -/
 theorem relam_rename {a : PartialHorn.Tree} {s r : MTerm} (h : relam a s = some r)
@@ -422,6 +430,23 @@ theorem dec_rename : ∀ (e : Expr) (off off' : ℕ) (ρ : ℕ → ℕ) (s : MTe
         decTy_rename ha hρ, decTy_rename hb hρ,
         decTy_rename hc hρ, Option.bind_eq_bind, Option.bind_some]
       rfl
+    · next =>
+      obtain ⟨-, -, -, -, -, hc, -⟩ := decDefn_eq_some k h
+      obtain ⟨kd, θ, args, rfl, hd⟩ := decDefn_transfer (ys := cs.map fun x ↦ Expr.rename x ρ)
+        (fT := id) (fM := fun u ↦ Term.rename u ρ) h (List.length_map _) fun _ _ _ _ ↦
+          ⟨fun i x y a _ hx hy ha ↦ by
+              rw [List.getElem?_map, hx, Option.map_some, Option.some.injEq] at hy
+              subst hy
+              exact decTy_rename ha hρ,
+           fun i x y u _ hx hy hu ↦ by
+              rw [List.getElem?_map, hx, Option.map_some, Option.some.injEq] at hy
+              subst hy
+              exact ih x (List.mem_of_getElem? hx) off off' ρ u hu hρ⟩
+      rw [rename_app_node]
+      dsimp only [Head.rename]
+      rw [dec_node, decStep_defn k hc, hd, List.map_id]
+      simp only [FreeTopos.Internal.Term.defn]
+      rw [FreeTopos.Internal.Term.rename_plain plain_defn rfl, List.map_reverse]
     · next _ _ b db heq =>
       obtain ⟨rfl, hd⟩ := map_dec_eq heq
       obtain ⟨sb, hsb, rfl⟩ := Option.map_eq_some_iff.mp h
@@ -876,6 +901,30 @@ theorem dec_hsub (α : SimpleTy) : ∀ (e n : Expr) (j off : ℕ) (e' : Expr) (s
           (by rw [hd (p, dp) (by simp)]; exact hsp) hn hj hp', Option.bind_eq_bind,
         Option.bind_some]
       rfl
+    · next =>
+      obtain ⟨-, -, -, -, -, hc, -⟩ := decDefn_eq_some k h
+      change hsub α n (Expr.const _ cs) j = some e' at hs
+      rw [hsub_const, Option.map_eq_map, Option.map_eq_some_iff] at hs
+      obtain ⟨ys, hys, rfl⟩ := hs
+      obtain ⟨hyl, hyi⟩ := getElem_of_mapM_id_eq_some hys
+      rw [List.length_map] at hyl
+      obtain ⟨kd, θ, args, rfl, hd⟩ := decDefn_transfer (ys := ys) (off' := off - 1)
+        (fT := id) (fM := fun s ↦ Term.subst s (substAt j w)) h hyl.symm fun _ _ _ _ ↦
+          ⟨fun i x y a _ hx hy ha ↦ by
+              obtain ⟨hi, rfl⟩ := List.getElem?_eq_some_iff.mp hx
+              obtain ⟨hi', rfl⟩ := List.getElem?_eq_some_iff.mp hy
+              have := hyi i (by simpa using hi) hi'
+              simp only [List.getElem_map] at this
+              exact decTy_hsub ha hj this,
+           fun i x y u _ hx hy hu ↦ by
+              obtain ⟨hi, rfl⟩ := List.getElem?_eq_some_iff.mp hx
+              obtain ⟨hi', rfl⟩ := List.getElem?_eq_some_iff.mp hy
+              have := hyi i (by simpa using hi) hi'
+              simp only [List.getElem_map] at this
+              exact ih _ (List.getElem_mem hi) n j off _ u w hu hn hj this⟩
+      rw [Expr.const, Expr.app, dec_node, decStep_defn k hc, hd, List.map_id]
+      simp only [FreeTopos.Internal.Term.defn]
+      rw [FreeTopos.Internal.Term.subst_plain plain_defn rfl, List.map_reverse]
     · next _ _ b db heq =>
       obtain ⟨rfl, hd⟩ := map_dec_eq heq
       simp only [List.map_cons, List.map_nil] at hs
@@ -989,17 +1038,58 @@ theorem sig_domsOK₀ {c : ℕ} {T : Expr} (hc : sig[c]? = some T) (h : TermHead
   have := key T (List.mem_of_getElem? hc)
   simpa [h] using this
 
+/-- Each declaration of the encoding of a context is the kind of types or a family of terms. -/
+theorem encCtx_tpTm {m : ℕ} :
+    ∀ {Γ : List PartialHorn.Tree} {ΓT : Ctx}, encCtx m Γ = some ΓT →
+      ∀ D ∈ ΓT, D = tp ∨ ∃ A, D = tm A := by
+  intro Γ
+  refine List.rec (motive := fun Γ ↦ ∀ {ΓT : Ctx}, encCtx m Γ = some ΓT →
+      ∀ D ∈ ΓT, D = tp ∨ ∃ A, D = tm A)
+    (fun {ΓT} h D hD ↦ ?_) (fun a Γ ih {ΓT} h D hD ↦ ?_) Γ
+  · obtain rfl := Option.some.inj h
+    exact .inl (List.eq_of_mem_replicate hD)
+  · obtain ⟨A, ΓT', -, hΓ', rfl⟩ := encCtx_cons_inv h
+    rcases List.mem_cons.mp hD with rfl | hD
+    · exact .inr ⟨A, rfl⟩
+    · exact ih hΓ' D hD
+
+/-- Products over the kind of types and families of terms into an expression of
+{name}`Geb.LF.Topos.Expr.DomsOK` are of it. -/
+theorem domsOK_piTele {R : Expr} (hR : Expr.DomsOK R = true) :
+    ∀ {Ds : List Expr}, (∀ D ∈ Ds, D = tp ∨ ∃ A, D = tm A) →
+      Expr.DomsOK (piTele Ds R) = true := by
+  intro Ds
+  refine List.rec (motive := fun Ds ↦ (∀ D ∈ Ds, D = tp ∨ ∃ A, D = tm A) →
+      Expr.DomsOK (piTele Ds R) = true) (fun _ ↦ hR) (fun D Ds ih hDs ↦ ?_) Ds
+  rw [piTele_cons, show Expr.pi D (piTele Ds R) = RoseTree.node .pi [D, piTele Ds R] from rfl,
+    domsOK_node]
+  change (TermHead D && Expr.DomsOK D && Expr.DomsOK (piTele Ds R)) = true
+  rw [ih fun D' hD' ↦ hDs D' (List.mem_cons_of_mem _ hD'), Bool.and_true]
+  rcases hDs D List.mem_cons_self with rfl | ⟨A, rfl⟩ <;> rfl
+
+/-- The declaration of a definition takes types and terms as arguments. -/
+theorem domsOK_defTy {d : FreeTopos.Internal.Defn} {T : Expr} (h : defTy d = some T) :
+    Expr.DomsOK T = true := by
+  simp only [defTy, Option.bind_eq_bind, Option.pure_def, Option.bind_eq_some_iff,
+    Option.some.injEq] at h
+  obtain ⟨ΓT, hΓ, A, -, rfl⟩ := h
+  exact domsOK_piTele rfl fun D hD ↦ encCtx_tpTm hΓ D (List.mem_reverse.mp hD)
+
 /-- The declarations of an extension of the signature whose types end in {lit}`tp` or
 {lit}`tm` take types and terms as arguments. -/
-theorem sig_domsOK (hsg : SigExt sg) {c : ℕ} {T : Expr} (hc : sg[c]? = some T)
-    (h : TermHead T = true) : Expr.DomsOK T = true := by
+theorem sig_domsOK {G : FreeTopos.Internal.Globals} (hsg : SigExt G k sg) {c : ℕ} {T : Expr}
+    (hc : sg[c]? = some T) (h : TermHead T = true) : Expr.DomsOK T = true := by
   by_cases hlt : c < sig.length
   · exact sig_domsOK₀ (hsg.of_lt hc hlt) h
-  · obtain ⟨h₀, h₆⟩ := hsg.inert c T (Nat.le_of_not_lt hlt) hc
+  · obtain ⟨i, rfl⟩ : ∃ i, c = sig.length + i := ⟨c - sig.length, by omega⟩
+    have h₀ := hsg.noTp _ T (by omega) hc
     simp only [TermHead, Bool.or_eq_true, beq_iff_eq] at h
     rcases h with h | h
     · exact absurd h h₀
-    · exact absurd h h₆
+    · obtain ⟨kd, m, p, he⟩ := hsg.tmDefs i T hc h
+      obtain ⟨d, T', -, -, -, -, -, -, hd, hT'⟩ := hsg.defs i kd m p he
+      obtain rfl := Option.some.inj (hT'.symm.trans hc)
+      exact domsOK_defTy hd
 
 /-- The head of a product is its codomain's. -/
 theorem termHead_pi (a b : Expr) : TermHead (Expr.pi a b) = TermHead b := by
@@ -1032,7 +1122,8 @@ theorem spine_args_termHead {J : Expr → Ctx → Mode → Bool} {Γ : Ctx} :
 against a type of the shape whose arguments are types and terms, ending in {lit}`tp` or
 {lit}`tm`, in a context of such types, every variable is of a type ending in {lit}`tp` or
 {lit}`tm`. -/
-theorem judge_occursOnly (hsg : SigExt sg) : ∀ (e : Expr) (Γ : Ctx) (P : Expr),
+theorem judge_occursOnly {G : FreeTopos.Internal.Globals} (hsg : SigExt G k sg) :
+    ∀ (e : Expr) (Γ : Ctx) (P : Expr),
     (∀ a ∈ Γ, Expr.TypeShape a = true ∧ Expr.DomsOK a = true) → Expr.TypeShape P = true →
     TermHead P = true → Expr.DomsOK P = true → judge sg e Γ (.check P) = true →
     e.OccursOnly (fun i ↦ (varType Γ i).any TermHead) = true :=
