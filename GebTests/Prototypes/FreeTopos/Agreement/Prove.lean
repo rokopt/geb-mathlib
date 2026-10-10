@@ -1480,19 +1480,21 @@ theorem byRoseIndHyp_eq (kn kl kc : ℕ) (p' : List Tree → List Tree → Tree 
   have hp' : ∀ Γ Φ t u, p' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
       encOpt ((p Γ Φ t u).map encDeriv) := hp
   intro Γ Φ t u
-  rcases Γ with _ | ⟨r, _ | ⟨r', Γ'⟩⟩ <;>
+  rcases Γ with _ | ⟨r, Γ'⟩ <;> rcases Φ with _ | ⟨φ, Φ⟩ <;>
     simp only [«Prover.byRoseIndHyp», template, Internal.byRoseIndHyp]
-  · rfl
-  · mirror_simp [roseLabel_eq, Theory.mirror_list, «Theory.l3»,
-      «Theory.l2», Option.bind_eq_bind]
+  · mirror_simp [none_eq, List.isEmpty_nil, Bool.not_true, Bool.false_and]
+  · mirror_simp [none_eq, List.isEmpty_nil, Bool.not_true, Bool.false_and]
+  · mirror_simp [roseLabel_eq, Theory.mirror_list, «Theory.l3», Option.bind_eq_bind,
+      List.isEmpty_nil, List.isEmpty_cons, Bool.not_false, Bool.true_and, List.getD_cons_zero,
+      List.tail_cons]
     rcases Internal.roseParts r with _ | ⟨a, f⟩
     · rfl
-    have h := hp' [list r, a] [Internal.roseHyp kl kc (Term.eq t u)]
+    have h := hp' (list r :: a :: Γ') [Internal.roseHyp kl kc (Term.eq t u)]
       (Internal.roseNodeAt kn r a t) (Internal.roseNodeAt kn r a u)
     simp only [List.map_cons, List.map_nil] at h
     ind_simp [roseNodeAt_eq, roseHyp_eq, mEq_eq, h]
     simp only [Option.map_eq_bind, Function.comp_def]
-  · mirror_simp [beq_iff_eq, Nat.reduceEqDiff, none_eq]
+  · mirror_simp [none_eq, List.isEmpty_cons, Bool.and_false]
 
 end GebTests.Prototypes.FreeTopos.Agreement.Prove
 

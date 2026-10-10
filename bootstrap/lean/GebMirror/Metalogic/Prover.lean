@@ -2292,8 +2292,10 @@ def «Prover.byRoseIndHyp» :=
       List T →
         T →
           T →
-            T := (fun (x4 : List T) (_ : List T) (x6 : T) (x7 : T) =>
-      if (Const.eq («Prelude.length» x4) (leaf 1)).label ≠ 0 then
+            T := (fun (x4 : List T) (x5 : List T) (x6 : T) (x7 : T) =>
+      if («Prelude.and»
+        («Base.not» («Base.isEmpty» x4))
+        («Base.isEmpty» x5)).label ≠ 0 then
         let x8 : T := «Prelude.at» x4 (leaf 0);
         «Base.bindO»
           («Language.roseLabel» x8)
@@ -2305,7 +2307,7 @@ def «Prover.byRoseIndHyp» :=
                   («Theory.l3» x0 x1 x2)
                   («Prelude.single» x10))
               (x3
-                («Theory.l2» («Theory.list» x8) x9)
+                ((«Theory.list» x8) :: (x9 :: («Prelude.tail» x4)))
                 («Prelude.single» («Derivation.roseHyp» x1 x2 («Language.mEq» x6 x7)))
                 («Derivation.roseNodeAt» x0 x8 x9 x6)
                 («Derivation.roseNodeAt» x0 x8 x9 x7)))
