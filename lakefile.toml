@@ -58,10 +58,10 @@ rev = "v4.35.0-rc4"
 # manual, § Search and synthesis), for experiments only: no module of `Geb`, `GebLang` or
 # `GebTests` imports it, so a default build never fetches its solver
 # library, which Lake downloads from a GitHub release named after a Lean
-# version. It has no dependencies. Its tag `v4.34.0` was measured to build
-# and run under this repository's toolchain; bump `rev` to the tag of the
-# toolchain when Canonical publishes one. `TODO.md` § Triggers records
-# the condition for removing it.
+# version. It has no dependencies. `rev` follows Canonical's latest version
+# tag, the only revisions with a solver being those a release tag names
+# (the Bootstrap chapter records how a replaced release is refetched).
+# `TODO.md` § Triggers records the condition for removing it.
 [[require]]
 name = "Canonical"
 scope = "chasenorman"

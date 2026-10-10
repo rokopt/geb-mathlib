@@ -1273,9 +1273,10 @@ Correcting these is a separate concern from any current branch per
   planned with it, is written in Geb, or writable in Geb by the
   Geb-native refinement search, at which point the require, its manifest
   entry and the experiments that import it are removed, their findings
-  kept in the Bootstrap chapter. Until then, a
-  toolchain bump moves its `rev` to the tag Canonical publishes for the
-  new toolchain, or confirms that the tag in use still builds and loads.
+  kept in the Bootstrap chapter. Until then, its `rev` follows
+  Canonical's latest version tag, and a toolchain bump or a new tag is
+  followed by running `lake exe lf-canonical`, whose results the chapter
+  records with the revision measured.
 - **Choice-free bound for `Fin.divNat` in Batteries**:
   `Geb/Mathlib/Data/Fin/Basic.lean` exists because Batteries' `Fin.divNat`
   proves its bound through `Nat.div_lt_of_lt_mul`, which depends on

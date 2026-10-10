@@ -35,11 +35,13 @@ open Expr (arrow pi)
 def toposNames : List String :=
   ["tp", "one", "prod", "exp", "omega", "nat", "tm", "star", "pair", "fst", "snd", "lam", "app",
     "zero", "succ", "natRec", "eq", "pf", "refl", "leib", "beta", "fstPair", "sndPair", "pairEta",
-    "unitEta", "natZero", "natSucc", "funExt", "propExt", "natInd"]
+    "unitEta", "natZero", "natSucc", "funExt", "propExt", "natInd", "list", "nilAt", "cons",
+    "listRec", "listNil", "listCons", "listInd", "rose", "node", "roseRec", "roseNode", "roseInd",
+    "lrose", "lnode", "lroseRec", "lroseNode", "lroseInd"]
 
-/-- The constants the rewrite rules make redundant: `beta`, `fstPair`, `sndPair`, `natZero` and
-`natSucc`. -/
-def redundantModRules : List ℕ := [20, 21, 22, 25, 26]
+/-- The constants the rewrite rules make redundant: `beta`, `fstPair`, `sndPair`, `natZero`,
+`natSucc`, `listNil`, `listCons`, `roseNode` and `lroseNode`. -/
+def redundantModRules : List ℕ := [20, 21, 22, 25, 26, 34, 35, 40, 45]
 
 /-- A goal: a name and a closed type to inhabit. -/
 structure Goal where
@@ -80,9 +82,9 @@ def fuel : ℕ := 64
 def runGoal (timeout : UInt64) (g : Goal) (modulo : Bool) : IO Unit := do
   let rs := if modulo then rules else []
   let usable := fun c ↦ !(modulo && redundantModRules.contains c)
-  let typ := problem toposNames sig rs usable [] g.type
+  let decl := problem g.name toposNames sig rs usable [] g.type
   let t₀ ← IO.monoMsNow
-  let r ← Canonical.canonical typ g.name timeout 1
+  let r ← Canonical.canonical decl timeout 1
   let t₁ ← IO.monoMsNow
   let regime := if modulo then "modulo rules" else "pure LF"
   match r.terms[0]? with
@@ -95,9 +97,13 @@ def runGoal (timeout : UInt64) (g : Goal) (modulo : Bool) : IO Unit := do
           if ok then "checks" else "DOES NOT CHECK"
       IO.println s!"{g.name} [{regime}]: found in {t₁ - t₀} ms, {verdict}: {
         {t with lets := #[]}}"
+  (← IO.getStdout).flush
 
 /-- Run every goal in both regimes. -/
 def main (args : List String) : IO UInt32 := do
+  if toposNames.length != sig.length then
+    IO.eprintln s!"{toposNames.length} names for {sig.length} constants"
+    return 1
   let timeout := (args.head? >>= String.toNat?).getD 10
   for g in goals do
     for modulo in [false, true] do
