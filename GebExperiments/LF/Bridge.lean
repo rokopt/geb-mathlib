@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Canonical.Main
+public import Geb.Prototypes.LF.Metatheory.TypeShape
 public import Geb.Prototypes.LF.Rewrite
 
 /-!
@@ -27,6 +28,13 @@ to be used; a rewrite rule is an equation of the let declaration of its left sid
 pattern variables named by their indices. The problem is a declaration of the goal whose type is
 the type to inhabit, its products the parameters Canonical abstracts over.
 
+A problem may offer the search only the constants relevant to its goal (`relevant`): those of a
+core and those the goal mentions, closed under adding the constants a reached constant's type
+mentions, and every constant other than a type former whose type mentions only reached constants:
+the term formers and rules that speak of the goal's types alone. A type former's type mentions
+only the kind of types, so that admitting type formers so would admit every type. The others are
+declared without types.
+
 The translation back is by recursion on Canonical's terms, a nested structure of its own; it is
 written as a `partial` function, as the repository's tooling is (`GebMeta`), and its results are
 not trusted: each is checked by the checker of `Geb.LF`.
@@ -35,6 +43,7 @@ not trusted: each is checked by the checker of `Geb.LF`.
 
 * `constName`, `headName`, `toExpr` — the translation of an expression at a scope of names.
 * `toRule`, `problem` — the translation of a rule and of a problem.
+* `consts`, `relevant` — the constants an expression mentions, and those relevant to a goal.
 * `fromTerm` — the translation of a returned term.
 
 ## Tags
@@ -78,6 +87,21 @@ def toExprStep (names : List String) (l : Label) (cs : List (List String → Can
 /-- The translation of an expression to an expression of Canonical at a scope of names. -/
 def toExpr (names : List String) : Expr → List String → Canonical.Expr :=
   RoseTree.elim (toExprStep names)
+
+/-- The constants an expression mentions. -/
+def consts : Expr → List ℕ :=
+  RoseTree.elim fun l cs ↦ (match l with | .app (.const c) => [c] | _ => []) ++ cs.flatten
+
+/-- The constants of a signature relevant to a goal: those of `core` and those the goal mentions,
+closed under adding the constants a reached constant's type mentions and every constant whose
+type mentions only reached constants and does not end in the kind of types, the constant `tpc`;
+the closure iterated as often as the signature has constants, which reaches it. -/
+def relevant (sig : Sig) (tpc : ℕ) (core : List ℕ) (goal : Expr) : ℕ → Bool :=
+  let typeConsts (c : ℕ) : List ℕ := (sig[c]?.map consts).getD []
+  let former (c : ℕ) : Bool := (sig[c]?.map fun T ↦ (Expr.headDepth T).1) == some (some tpc)
+  let step (S : List ℕ) : List ℕ := (S ++ S.flatMap typeConsts ++ (List.range sig.length).filter
+    fun c ↦ !former c && (typeConsts c).all S.contains).eraseDups
+  (Nat.repeat step sig.length (core ++ consts goal)).contains
 
 /-- The name of a rule's pattern variable. -/
 def patName (i : ℕ) : String := s!"p{i}"
