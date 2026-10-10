@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.PHOAS.Scoped
+public import Geb.Prototypes.PHOAS.Term
 public import Geb.Prototypes.PHOAS.Algebra
 public import Mathlib.Logic.Function.Basic
 meta import GebMeta -- shake: keep
@@ -23,11 +23,13 @@ satisfy the end's wedge condition explicitly.
 * {lit}`signature` gives polynomial directions for application and abstraction.
 * {lit}`appObj` and {lit}`lamObj` introduce the two operations.
 * {lit}`exampleTerm` is the closed term binding two variables and applying them.
+* {lit}`exampleTree` builds that full term using only extended-context tree constructors.
 
 ## Main statements
 
 * {lit}`closedUnfold` identifies closed syntax with either two closed children or a
   one-variable scoped child.
+* {lit}`exampleTree_toScoped` identifies the tree's interpretation with the PHOAS family.
 * {lit}`no_fixed_point` excludes a diagonal fixed-point isomorphism on every type.
 * {lit}`no_weakly_initial` and {lit}`no_weakly_terminal` exclude the nLab universal objects.
 * {lit}`no_initial_algebra` also excludes initiality for the derived profunctor
@@ -145,6 +147,25 @@ def exampleTerm : signature.End.{0, 0, 0, u} :=
     intro X Y f
     simp only [map_lam, map_app, comap_lam, comap_app]
     rfl)
+
+/-- The full expression {lit}`λ x. λ y. x y`, built without a compatibility proof. -/
+def exampleTree : signature.Term PEmpty :=
+  Term.node true (fun _ ↦
+    Term.node true (fun _ ↦
+      Term.node false (fun b ↦
+        Term.var (.inl (cond b (.inr PUnit.unit) (.inl (.inr PUnit.unit)))))))
+
+/-- The tree representation gives the same full expression as the explicit PHOAS family. -/
+theorem exampleTree_toScoped : Scoped.emptyEquivEnd exampleTree.toScoped = exampleTerm := by
+  apply Subtype.ext
+  funext X
+  apply congrArg (FreeM.liftBind (P := signature.apply X) true)
+  funext x
+  apply congrArg (FreeM.liftBind (P := signature.apply X) true)
+  funext y
+  apply congrArg (FreeM.liftBind (P := signature.apply X) false)
+  funext d
+  cases d.fst <;> rfl
 
 /-- A fold counting application and abstraction nodes, instantiating inputs at zero. -/
 def countAlgebra : signature.Obj ℕ ℕ → ℕ

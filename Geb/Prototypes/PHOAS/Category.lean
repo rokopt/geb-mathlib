@@ -25,6 +25,7 @@ explicit end, which has the limiting-wedge universal property.
 * {lit}`profunctor` and {lit}`freeProfunctor` package the two interpretations.
 * {lit}`endEquiv` identifies compatible families with mathlib's explicit end.
 * {lit}`algebraProfunctor` and {lit}`coalgebraProfunctor` package the derived profunctors.
+* {lit}`contextExtensionFunctor` precomposes a context functor with adjoining bound variables.
 * {lit}`bindingFunctor` is the binding-signature endofunctor on functors of contexts.
 * {lit}`scopedAlgebra` equips the scoped family with its variable and binding constructors.
 
@@ -198,11 +199,17 @@ def contextExtension (C : Type u) : Type u ⥤ Type u where
   map_id Γ := by ext x; cases x <;> rfl
   map_comp f g := by ext x; cases x <;> rfl
 
+/-- Context extension on the functor category, with object action {lit}`M(Γ ⊕ C)`.
+Its underlying family is {name}`ContextExtension`; binding nodes take a sum of products
+of these extended families. -/
+def contextExtensionFunctor (C : Type u) : (Type u ⥤ Type v) ⥤ (Type u ⥤ Type v) :=
+  (Functor.whiskeringLeft (Type u) (Type u) (Type v)).obj (contextExtension C)
+
 /-- The binding-signature operator applied to a functor of contexts. -/
 def bindingObj (M : Type u ⥤ Type v) : Type u ⥤ Type (max uA uB u v) where
   obj Γ := Q.BindingLayer M.obj Γ
   map f := ↾(Sum.map f.hom (fun n ↦
-    ⟨n.1, fun b ↦ (M.map ((contextExtension ((Q.B n.1).B b)).map f)) (n.2 b)⟩))
+    ⟨n.1, fun b ↦ (((contextExtensionFunctor ((Q.B n.1).B b)).obj M).map f) (n.2 b)⟩))
   map_id Γ := by
     ext x
     rcases x with x | ⟨a, k⟩
@@ -223,7 +230,8 @@ def bindingObj (M : Type u ⥤ Type v) : Type u ⥤ Type (max uA uB u v) where
 
 /-- The binding-signature operator maps a natural transformation at each extended context. -/
 def bindingMap {M N : Type u ⥤ Type v} (h : M ⟶ N) : bindingObj Q M ⟶ bindingObj Q N where
-  app Γ := ↾(Sum.map id (fun n ↦ ⟨n.1, fun b ↦ h.app _ (n.2 b)⟩))
+  app Γ := ↾(Sum.map id (fun n ↦
+    ⟨n.1, fun b ↦ (((contextExtensionFunctor ((Q.B n.1).B b)).map h).app Γ) (n.2 b)⟩))
   naturality {Γ Δ} f := by
     ext x
     rcases x with x | ⟨a, k⟩
@@ -233,7 +241,8 @@ def bindingMap {M N : Type u ⥤ Type v} (h : M ⟶ N) : bindingObj Q M ⟶ bind
       funext b
       exact congrArg (fun h ↦ h (k b)) (h.naturality ((contextExtension ((Q.B a).B b)).map f))
 
-/-- The binding-signature endofunctor on functors of contexts. -/
+/-- The endofunctor {lit}`Id + H` on context functors, where {lit}`Id` is the variable
+family and {lit}`H` takes the sum of products of the specified context extensions. -/
 def bindingFunctor : (Type u ⥤ Type (max uA uB u v)) ⥤ (Type u ⥤ Type (max uA uB u v)) where
   obj := bindingObj Q
   map := bindingMap Q

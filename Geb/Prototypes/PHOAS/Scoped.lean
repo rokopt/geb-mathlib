@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.PHOAS.Basic
+public import Geb.Prototypes.PHOAS.Binding
 
 set_option doc.verso true in
 /-!
@@ -188,7 +188,7 @@ theorem node_child (a : Q.A) (t : Q.Scoped.{uA, uB, u, u, u} Γ)
 
 /-- One layer of scoped syntax: a context variable, or an operation with extended contexts. -/
 abbrev Layer (Q : PProfunctor.{uA, uB, u}) (Γ : Type u) :=
-  Γ ⊕ ((a : Q.A) × ((b : (Q.B a).A) → Q.Scoped.{uA, uB, u, u, u} (Γ ⊕ (Q.B a).B b)))
+  Q.BindingLayer Q.Scoped.{uA, uB, u, u, u} Γ
 
 /-- Expose the root at the identity environment and retain its coherent open children. -/
 def unroll (t : Q.Scoped.{uA, uB, u, u, u} Γ) : Layer Q Γ :=
