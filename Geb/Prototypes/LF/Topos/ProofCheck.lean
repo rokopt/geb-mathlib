@@ -23,12 +23,12 @@ derivations the decoding builds, the rewriting or the proof they perform.
 ## Main statements
 
 * {lit}`check_join`, {lit}`check_cut`, {lit}`check_conv`, {lit}`check_convFrom`,
-  {lit}`check_propExt`, {lit}`check_funExt`, {lit}`check_natIndHyp`, {lit}`check_listIndHyp` —
-  the proof rules.
-* {lit}`check_natZero`, {lit}`check_natSucc`, {lit}`check_listNil`, {lit}`check_listCons` — the
-  computations of the folds.
-* {lit}`check_leibD`, {lit}`check_indD`, {lit}`check_natIndD`, {lit}`check_listIndD` — the
-  substitution of equals and the induction.
+  {lit}`check_propExt`, {lit}`check_funExt`, {lit}`check_natIndHyp`, {lit}`check_listIndHyp`,
+  {lit}`check_roseIndHyp` — the proof rules.
+* {lit}`check_natZero`, {lit}`check_natSucc`, {lit}`check_listNil`, {lit}`check_listCons`,
+  {lit}`check_roseNode` — the computations of the folds.
+* {lit}`check_leibD`, {lit}`check_indD`, {lit}`check_natIndD`, {lit}`check_listIndD`,
+  {lit}`check_roseIndD` — the substitution of equals and the induction.
 
 ## Tags
 
@@ -201,7 +201,7 @@ theorem check_cong₂ {l : FreeTopos.Internal.Label} (h₀ : FreeTopos.Internal.
     | 0, _ => hd₁
     | 1, _ => hd₂
 
-variable {kz ks kn kc : ℕ}
+variable {kz ks kn kc kr : ℕ}
 
 /-- The computation of the fold at zero: the start. -/
 theorem check_natZero (hz : G.prims[kz]? = some FreeTopos.Internal.zeroPrim) (z s : Term) :
@@ -234,6 +234,20 @@ theorem check_listCons (hc : G.prims[kc]? = some FreeTopos.Internal.consPrim)
       some (Term.subst s (FreeTopos.Internal.instVar2 (Term.listRec z s t) h)) := by
   rw [check_rule _ ⟨by simp, by simp, by simp⟩]
   simp [FreeTopos.Internal.rootStep, Term.listRec, Term.arr, Term.pair, hc]
+
+/-- The computation of the fold of a rose tree at a construction: the step at the pair of the
+label and the list of the fold's values at the children. -/
+theorem check_roseNode (hr : G.prims[kr]? = some FreeTopos.Internal.nodePrim)
+    (hn : G.prims[kn]? = some FreeTopos.Internal.nilPrim)
+    (hc : G.prims[kc]? = some FreeTopos.Internal.consPrim) (c : PartialHorn.Tree)
+    (s l cs : Term) :
+    (check G E n (ruleD (.roseNode kr kn kc))).1 Γ Φ
+      (Term.roseRec c s (Term.arr kr [] (Term.pair l cs))) =
+      some (Term.subst s (instVar (Term.pair l (Term.listRec (Term.arr kn [c] Term.star)
+        (Term.arr kc [c] (Term.pair (Term.roseRec c (FreeTopos.Internal.weakenStep2 s)
+          (Term.var 1)) (Term.var 0))) cs)))) := by
+  rw [check_rule _ ⟨by simp, by simp, by simp⟩]
+  simp [FreeTopos.Internal.rootStep, Term.roseRec, Term.arr, Term.pair, hr, hn, hc]
 
 section Typing
 
@@ -288,6 +302,132 @@ theorem varLeaves_of_typeIn {t : Term} {a : PartialHorn.Tree} (h : typeIn G m Γ
     Term.VarLeaves t = true := by
   obtain ⟨r, hr, -⟩ := Option.map_eq_some_iff.mp h
   exact Term.varLeaves_of_compile t _ _ r hr
+
+/-- A variable is of its type in the context. -/
+theorem typeIn_var {i : ℕ} {a : PartialHorn.Tree} (h : Γ[i]? = some a) :
+    typeIn G m Γ (Term.var i) = some a := by
+  have hi : ((stdEnv Γ).map Prod.snd)[i]? = some a := by
+    rw [FreeTopos.Internal.map_snd_stdEnv]
+    exact h
+  rw [List.getElem?_map, Option.map_eq_some_iff] at hi
+  obtain ⟨p, hp, rfl⟩ := hi
+  rw [typeIn, Term.var, FreeTopos.Internal.compile_var_iff.mpr ⟨rfl, hp⟩]
+  rfl
+
+/-- A pair of terms is of the product of their types. -/
+theorem typeIn_pair {t u : Term} {a b : PartialHorn.Tree} (ht : typeIn G m Γ t = some a)
+    (hu : typeIn G m Γ u = some b) : typeIn G m Γ (Term.pair t u) = some (FreeTopos.prod a b) := by
+  obtain ⟨⟨f, a₁⟩, hf, ha₁⟩ := Option.map_eq_some_iff.mp ht
+  obtain ⟨⟨g, b₁⟩, hg, hb₁⟩ := Option.map_eq_some_iff.mp hu
+  dsimp only at ha₁ hb₁
+  subst ha₁ hb₁
+  rw [typeIn, Term.pair, FreeTopos.Internal.compile_pair_iff.mpr ⟨t, u, f, a₁, g, b₁, rfl, hf, hg,
+    rfl⟩]
+  rfl
+
+/-- A primitive arrow at objects that are types, applied to a term of its domain at them, is of
+its codomain at them. -/
+theorem typeIn_arr {k : ℕ} {θ : List PartialHorn.Tree} {t : Term} {p : FreeTopos.Internal.Prim}
+    (hp : G.prims[k]? = some p) (ht : typeIn G m Γ t = some (PartialHorn.subst θ p.dom))
+    (hθ : θ.length = p.arity) (hθt : θ.all (FreeTopos.Internal.IsTy G m) = true) :
+    typeIn G m Γ (Term.arr k θ t) = some (PartialHorn.subst θ p.cod) := by
+  obtain ⟨⟨g, a⟩, hg, ha⟩ := Option.map_eq_some_iff.mp ht
+  dsimp only at ha
+  subst ha
+  rw [typeIn, Term.arr, FreeTopos.Internal.compile_arr_iff.mpr ⟨t, rfl, p, hp, g, hg, hθ, hθt,
+    rfl⟩]
+  rfl
+
+/-- A term renamed by a strictly increasing map into a context whose types at the renamed indices
+are the term's context's is of the type it had. -/
+theorem typeIn_rename {Γ' : List PartialHorn.Tree} {w : Term} {c : PartialHorn.Tree}
+    (hw : typeIn G m Γ' w = some c) {ρ : ℕ → ℕ} (hρ : ∀ i < Γ'.length, Γ[ρ i]? = Γ'[i]?)
+    (hmono : StrictMono ρ) : typeIn G m Γ (Term.rename w ρ) = some c := by
+  obtain ⟨⟨f, c₁⟩, hf, hc₁⟩ := Option.map_eq_some_iff.mp hw
+  dsimp only at hc₁
+  subst hc₁
+  -- the environment of the renamed variables
+  have hstd : ∀ i < Γ'.length, ∃ q, (stdEnv Γ)[ρ i]? = some q ∧ some q.2 = Γ'[i]? := by
+    intro i hi
+    have h := hρ i hi
+    rw [← FreeTopos.Internal.map_snd_stdEnv Γ, List.getElem?_map,
+      List.getElem?_eq_getElem hi] at h
+    obtain ⟨q, hq, hq₂⟩ := Option.map_eq_some_iff.mp h
+    exact ⟨q, hq, by rw [List.getElem?_eq_getElem hi, hq₂]⟩
+  let e' := (List.range Γ'.length).map fun i ↦ (stdEnv Γ).getD (ρ i) (FreeTopos.one, FreeTopos.one)
+  have he' : ∀ i < Γ'.length, e'[i]? = (stdEnv Γ)[ρ i]? := fun i hi ↦ by
+    obtain ⟨q, hq, -⟩ := hstd i hi
+    rw [List.getElem?_map, List.getElem?_range hi, Option.map_some, List.getD_eq_getElem?_getD,
+      hq]
+    rfl
+  have hsnd : e'.map Prod.snd = (stdEnv Γ').map Prod.snd := by
+    rw [FreeTopos.Internal.map_snd_stdEnv]
+    refine List.ext_getElem? fun i ↦ ?_
+    rcases Nat.lt_or_ge i Γ'.length with hi | hi
+    · obtain ⟨q, hq, hq₂⟩ := hstd i hi
+      rw [List.getElem?_map, he' i hi, hq, Option.map_some, hq₂]
+    · rw [List.getElem?_eq_none hi, List.getElem?_eq_none (by simpa [e'] using hi)]
+  obtain ⟨f', hf'⟩ := FreeTopos.Internal.compile_retype w _ _ _ hf (ctxObj Γ) e' hsnd
+  rw [typeIn, FreeTopos.Internal.compile_rename w _ _ _ ρ _ hf' (fun i hi ↦
+    (he' i (by simpa [e'] using hi)).symm) hmono]
+  rfl
+
+/-- A fold of a list by a start and a step of one type, the step in the context extended by the
+element and the value, is of that type. -/
+theorem typeIn_listRec {z s l : Term} {a c : PartialHorn.Tree}
+    (hl : typeIn G m Γ l = some (FreeTopos.list a)) (hz : typeIn G m Γ z = some c)
+    (hs : typeIn G m (c :: a :: Γ) s = some c) : typeIn G m Γ (Term.listRec z s l) = some c := by
+  obtain ⟨⟨fl, al⟩, hfl, hal⟩ := Option.map_eq_some_iff.mp hl
+  obtain ⟨⟨fz, cz⟩, hfz, hcz⟩ := Option.map_eq_some_iff.mp hz
+  obtain ⟨⟨fs, cs⟩, hfs, hcs⟩ := Option.map_eq_some_iff.mp hs
+  dsimp only at hal hcz hcs
+  rw [hal] at hfl
+  rw [hcz] at hfz
+  rw [hcs] at hfs
+  obtain ⟨fs', hfs'⟩ := FreeTopos.Internal.compile_retype s _ _ _ hfs
+    (FreeTopos.prod (FreeTopos.prod (ctxObj Γ) a) c)
+    (extEnv (FreeTopos.prod (ctxObj Γ) a) c (extEnv (ctxObj Γ) a (stdEnv Γ)))
+    (by simp [extEnv, List.map_map, Function.comp_def, FreeTopos.Internal.map_snd_stdEnv])
+  obtain ⟨r, hr, hrc⟩ := FreeTopos.Internal.compile_listRec_of_parts hfl hfz hfs'
+  rw [typeIn, hr, Option.map_some, hrc]
+
+/-- The list of the values at a rose tree's children of a term of a type in the context extended by
+a rose tree, in the context extended by a label and the children, is a list of that type. -/
+theorem typeIn_roseMapAt {kl kc : ℕ} (hkl : G.prims[kl]? = some FreeTopos.Internal.nilPrim)
+    (hkc : G.prims[kc]? = some FreeTopos.Internal.consPrim) {c : PartialHorn.Tree}
+    (hct : FreeTopos.Internal.IsTy G m c = true) {w : Term}
+    (hw : typeIn G m (FreeTopos.rose :: Γ) w = some c) :
+    typeIn G m (FreeTopos.list FreeTopos.rose :: FreeTopos.nat :: Γ)
+      (FreeTopos.Internal.roseMapAt kl kc c w) = some (FreeTopos.list c) := by
+  have hθ : [c].all (FreeTopos.Internal.IsTy G m) = true := by simp [hct]
+  refine typeIn_listRec (a := FreeTopos.rose) (typeIn_var rfl) ?_ ?_
+  · have h := typeIn_arr (Γ := FreeTopos.list FreeTopos.rose :: FreeTopos.nat :: Γ)
+      (t := Term.star) hkl (by rw [typeIn_star]; rfl) rfl hθ
+    rwa [show PartialHorn.subst [c] FreeTopos.Internal.nilPrim.cod = FreeTopos.list c from
+      FreeTopos.Internal.subst_list_x c] at h
+  · have hρ : typeIn G m (FreeTopos.list c :: FreeTopos.rose :: FreeTopos.list FreeTopos.rose ::
+        FreeTopos.nat :: Γ) (Term.rename w fun i ↦ match i with | 0 => 1 | j + 1 => j + 4) =
+        some c := by
+      refine typeIn_rename hw (fun i _ ↦ ?_) fun a b hab ↦ ?_
+      · rcases i with _ | i
+        · rfl
+        · simp only [List.getElem?_cons_succ]
+      · rcases a with _ | a <;> rcases b with _ | b <;> dsimp only <;> omega
+    have h := typeIn_arr (θ := [c]) hkc
+      ((FreeTopos.Internal.subst_prod_list_x c).symm ▸ typeIn_pair hρ (typeIn_var (i := 0) rfl))
+      rfl hθ
+    rwa [show PartialHorn.subst [c] FreeTopos.Internal.consPrim.cod = FreeTopos.list c from
+      FreeTopos.Internal.subst_list_x c] at h
+
+/-- The hypothesis of induction on rose trees at a formula in the context extended by a rose tree
+is a formula in the context extended by a label and the children. -/
+theorem typeIn_roseHyp {kl kc : ℕ} (hkl : G.prims[kl]? = some FreeTopos.Internal.nilPrim)
+    (hkc : G.prims[kc]? = some FreeTopos.Internal.consPrim) {φ : Term}
+    (hφ : typeIn G m (FreeTopos.rose :: Γ) φ = some FreeTopos.omega) :
+    typeIn G m (FreeTopos.list FreeTopos.rose :: FreeTopos.nat :: Γ)
+      (FreeTopos.Internal.roseHyp kl kc φ) = some FreeTopos.omega :=
+  typeIn_eq (typeIn_roseMapAt hkl hkc rfl hφ)
+    (typeIn_roseMapAt hkl hkc rfl (typeIn_eq typeIn_star typeIn_star))
 
 /-- Formulas weakened by a variable lower to themselves. -/
 theorem lowerHyps_map_weaken1 {Φ : List Term}
@@ -348,6 +488,28 @@ theorem check_listIndHyp {Γ₀ : List PartialHorn.Tree} {a : PartialHorn.Tree} 
   rw [decide_eq_true_of ⟨hn, hc, hφ⟩, hp₀, hp₁]
   rfl
 
+/-- Induction on a rose tree of natural-number labels at the innermost variable: the formula at a
+construction under the hypotheses lowered and weakened past the label and the children, and the
+hypothesis that it holds at each child. -/
+theorem check_roseIndHyp {Γ₀ : List PartialHorn.Tree} {Φ' : List Term} {φ : Term} {p₁ : Deriv}
+    (hlow : FreeTopos.Internal.lowerHyps G n Γ₀ Φ = some Φ')
+    (hr : G.prims[kr]? = some FreeTopos.Internal.nodePrim)
+    (hn : G.prims[kn]? = some FreeTopos.Internal.nilPrim)
+    (hc : G.prims[kc]? = some FreeTopos.Internal.consPrim)
+    (hφ : typeIn G n (FreeTopos.rose :: Γ₀) φ = some FreeTopos.omega)
+    (hp₁ : (check G E n p₁).2 (FreeTopos.list FreeTopos.rose :: FreeTopos.nat :: Γ₀)
+      (Φ'.map FreeTopos.Internal.weaken2 ++ [FreeTopos.Internal.roseHyp kn kc φ])
+      (FreeTopos.Internal.roseNodeAt kr FreeTopos.rose FreeTopos.nat φ) = true) :
+    (check G E n (nd (.roseIndHyp kr kn kc) [p₁])).2 (FreeTopos.rose :: Γ₀) Φ φ = true := by
+  rw [check_node]
+  simp only [List.map_cons, List.map_nil]
+  dsimp only [checkStep]
+  rw [show FreeTopos.Internal.roseParts FreeTopos.rose =
+    some (FreeTopos.nat, FreeTopos.roseRec) by simp [FreeTopos.Internal.roseParts], hlow]
+  dsimp only
+  rw [decide_eq_true_of ⟨.inl ⟨hr, rfl⟩, hn, hc, hφ⟩, hp₁]
+  rfl
+
 /-- The substitution at the innermost variable is the instantiation. -/
 theorem substAt_zero (u : Term) : substAt 0 u = instVar u := by
   funext i
@@ -382,10 +544,10 @@ theorem subst_rename_liftR_var0 {pb : Term} (h : Term.VarLeaves pb = true) :
 motive in the context extended by a variable of its type, under the hypotheses weakened past it
 and the hypothesis true, which the derivation's cut and propositional extensionality add. -/
 theorem check_indD {c : PartialHorn.Tree} {r : FreeTopos.Internal.Rule} {pb n' : Term}
-    {D₀ Ds : Deriv} (hc : FreeTopos.Internal.IsTy G 0 c = true)
+    {Ds : List Deriv} (hc : FreeTopos.Internal.IsTy G 0 c = true)
     (hpb : typeIn G 0 (c :: Γ) pb = some FreeTopos.omega) (hn : typeIn G 0 Γ n' = some c)
-    (hind : (check G E 0 (nd r [D₀, Ds])).2 (c :: Γ) (Φ.map weaken1 ++ [truth]) pb = true) :
-    (check G E 0 (indD c r pb n' Φ.length D₀ Ds)).2 Γ Φ (Term.subst pb (instVar n')) =
+    (hind : (check G E 0 (nd r Ds)).2 (c :: Γ) (Φ.map weaken1 ++ [truth]) pb = true) :
+    (check G E 0 (indD c r pb n' Φ.length Ds)).2 Γ Φ (Term.subst pb (instVar n')) =
       true := by
   have hL := typeIn_lam (Γ := Γ) hc hpb
   have hR := typeIn_lam (Γ := Γ) hc (typeIn_truth (G := G) (Γ := c :: Γ))
@@ -424,7 +586,7 @@ theorem check_natIndD {k : PrimIdx} (hz : G.prims[k.zero]? = some FreeTopos.Inte
       (Term.subst pb (instVar (Term.arr k.zero [] Term.star))) = true)
     (hDs : (check G E 0 Ds).2 (FreeTopos.nat :: Γ) (Φ.map weaken1 ++ [truth] ++ [pb])
       (FreeTopos.Internal.natSuccAt k.succ pb) = true) :
-    (check G E 0 (indD FreeTopos.nat (.natIndHyp k.zero k.succ) pb n' Φ.length D₀ Ds)).2 Γ Φ
+    (check G E 0 (indD FreeTopos.nat (.natIndHyp k.zero k.succ) pb n' Φ.length [D₀, Ds])).2 Γ Φ
       (Term.subst pb (instVar n')) = true :=
   check_indD (isTy_of_encTy G FreeTopos.nat nat rfl) hpb hn
     (check_natIndHyp (lowerHyps_truth hΦ) hz hs hpb hD₀ hDs)
@@ -443,10 +605,30 @@ theorem check_listIndD {k : PrimIdx} (hn : G.prims[k.nil]? = some FreeTopos.Inte
     (hDs : (check G E 0 Ds).2 (FreeTopos.list a :: a :: Γ)
       ((Φ ++ [truth]).map FreeTopos.Internal.weaken2 ++ [FreeTopos.Internal.weakenElem pb])
       (FreeTopos.Internal.listConsAt k.cons a pb) = true) :
-    (check G E 0 (indD (FreeTopos.list a) (.listIndHyp k.nil k.cons) pb n' Φ.length D₀ Ds)).2
+    (check G E 0 (indD (FreeTopos.list a) (.listIndHyp k.nil k.cons) pb n' Φ.length
+      [D₀, Ds])).2
       Γ Φ (Term.subst pb (instVar n')) = true :=
   check_indD ha hpb hn' (check_listIndHyp (lowerHyps_truth hΦ) hn hc hpb
     hD₀ hDs)
+
+/-- The induction on a rose tree of natural-number labels at a term: the motive at {lit}`n'`, from
+its step at a construction, under the hypothesis true, which the derivation's cut adds, and the
+hypothesis that it holds at each child. -/
+theorem check_roseIndD {k : PrimIdx} (hr : G.prims[k.node]? = some FreeTopos.Internal.nodePrim)
+    (hn : G.prims[k.nil]? = some FreeTopos.Internal.nilPrim)
+    (hc : G.prims[k.cons]? = some FreeTopos.Internal.consPrim)
+    {pb n' : Term} {Ds : Deriv}
+    (hpb : typeIn G 0 (FreeTopos.rose :: Γ) pb = some FreeTopos.omega)
+    (hn' : typeIn G 0 Γ n' = some FreeTopos.rose)
+    (hΦ : ∀ φ ∈ Φ, typeIn G 0 Γ φ = some FreeTopos.omega)
+    (hDs : (check G E 0 Ds).2 (FreeTopos.list FreeTopos.rose :: FreeTopos.nat :: Γ)
+      ((Φ ++ [truth]).map FreeTopos.Internal.weaken2 ++
+        [FreeTopos.Internal.roseHyp k.nil k.cons pb])
+      (FreeTopos.Internal.roseNodeAt k.node FreeTopos.rose FreeTopos.nat pb) = true) :
+    (check G E 0 (indD FreeTopos.rose (.roseIndHyp k.node k.nil k.cons) pb n' Φ.length [Ds])).2
+      Γ Φ (Term.subst pb (instVar n')) = true :=
+  check_indD (isTy_of_encTy G FreeTopos.rose rose rfl) hpb hn'
+    (check_roseIndHyp (lowerHyps_truth hΦ) hr hn hc hpb hDs)
 
 end Geb.LF.Topos
 

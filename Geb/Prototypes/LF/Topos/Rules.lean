@@ -15,18 +15,18 @@ set_option doc.verso true in
 
 The computation rules of the fragment of the Mitchell–Bénabou language represented by
 {name}`Geb.LF.Topos.sig`, as rewrite rules on its constants ({cite}`CousineauDowek2007`): the β
-rule of abstraction, the two computation rules of pairs, and the two of each of the folds of the
-natural numbers and of lists. Modulo these rules a term and the term it computes to are terms of
-the same types, so that an equation that holds by computation is proved by reflexivity alone, the
-regime in which {cite}`NormanAvigad2025` searches with recursors' reduction rules. The η rules
-of pairs and of the terminal type, whose left sides are not applications of a constant, stay
-derivation rules of the signature, as do the computation rules themselves, which are redundant
-modulo the rules.
+rule of abstraction, the two computation rules of pairs, the two of each of the folds of the
+natural numbers and of lists, and the one of the fold of rose trees. Modulo these rules a term
+and the term it computes to are terms of the same types, so that an equation that holds by
+computation is proved by reflexivity alone, the regime in which {cite}`NormanAvigad2025`
+searches with recursors' reduction rules. The η rules of pairs and of the terminal type, whose
+left sides are not applications of a constant, stay derivation rules of the signature, as do the
+computation rules themselves, which are redundant modulo the rules.
 
 ## Main definitions
 
 * {lit}`betaRule`, {lit}`fstPairRule`, {lit}`sndPairRule`, {lit}`natZeroRule`,
-  {lit}`natSuccRule`, {lit}`listNilRule`, {lit}`listConsRule` — the rules.
+  {lit}`natSuccRule`, {lit}`listNilRule`, {lit}`listConsRule`, {lit}`roseNodeRule` — the rules.
 * {lit}`rules` — the list of them.
 
 ## References
@@ -96,9 +96,20 @@ def listConsRule : Rule where
   rhs := Expr.var 2 [v 1, listRec (v 5) (v 4) (v 3) (Expr.lam (Expr.lam (Expr.var 4 [v 1, v 0])))
     (v 0)]
 
+/-- {lit}`roseRec C s (node (pair l cs)) ↦ s (pair l (listRec rose (list C) (nil C)
+(λ h acc. cons C (pair (roseRec C (λ x. s x) h) acc)) cs))`, in
+{lit}`C : tp, s : tm (N × list C) → tm C, l : tm N, cs : tm (list rose)`. -/
+def roseNodeRule : Rule where
+  vars := [tm (list rose), tm nat, arrow (tm (prod nat (list (v 0)))) (tm (v 0)), tp]
+  lhs := roseRec (v 3) (v 2) (node (pair nat (list rose) (v 1) (v 0)))
+  rhs := Expr.var 2 [pair nat (list (v 3)) (v 1) (listRec rose (list (v 3)) (nil (v 3))
+    (Expr.lam (Expr.lam (cons (v 5) (pair (v 5) (list (v 5))
+      (roseRec (v 5) (Expr.lam (Expr.var 5 [v 0])) (v 1)) (v 0))))) (v 0))]
+
 /-- The rules. -/
 def rules : List Rule :=
-  [betaRule, fstPairRule, sndPairRule, natZeroRule, natSuccRule, listNilRule, listConsRule]
+  [betaRule, fstPairRule, sndPairRule, natZeroRule, natSuccRule, listNilRule, listConsRule,
+    roseNodeRule]
 
 end Geb.LF.Topos
 

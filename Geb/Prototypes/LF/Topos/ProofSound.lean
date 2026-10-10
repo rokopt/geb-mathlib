@@ -263,12 +263,13 @@ theorem PfCtx.addHyp (hc : PfCtx G k ΓLF env Γ Φ) {ψ : Term}
     · obtain rfl := List.mem_singleton.mp hφ
       exact hψ
 
-/-- The declarations whose types end in {lit}`pf` are the rules, of indices from 18 to 29 and from
-34 to 36. -/
+/-- The declarations whose types end in {lit}`pf` are the rules, of indices from 18 to 29, from
+34 to 36, and 40 and 41. -/
 theorem sig_head_pf {c : ℕ} {T : Expr} (hc : sig[c]? = some T) (h : T.headDepth.1 = some 17) :
-    c ∈ [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 34, 35, 36] := by
+    c ∈ [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 34, 35, 36, 40, 41] := by
   have key : (sig.zipIdx.all fun p ↦ !(p.1.headDepth.1 == some 17) ||
-      decide (p.2 ∈ [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 34, 35, 36])) = true := by
+      decide (p.2 ∈ [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 34, 35, 36, 40, 41])) =
+        true := by
     decide +kernel
   rw [List.all_eq_true] at key
   obtain ⟨hlt, rfl⟩ := List.getElem?_eq_some_iff.mp hc
@@ -659,6 +660,43 @@ theorem listCons_rhs {sz ss sh st : Term} (hz : Term.VarLeaves sz = true)
     rfl
   · change Term.subst (weaken1 sh) (instVar st) = sh
     exact subst_weaken1_instVar hh st
+  · rfl
+
+/-- The decoding of the right side of the computation of the fold of a rose tree at a
+construction: the step at the pair of the label and the fold of the children's list by the
+construction of a list from the fold of each child, the step under the weakening past the label
+and the children, and then the label and the children substituted in turn. -/
+theorem roseNode_rhs {kn kc : ℕ} {c : PartialHorn.Tree} (ss : Term) {sl : Term}
+    (hl : Term.VarLeaves sl = true) (scs : Term) :
+    Term.subst (Term.subst (Term.subst (Term.rename ss (liftR (· + 2)))
+        (instVar (Term.pair (Term.var 1) (Term.listRec (Term.arr kn [c] Term.star)
+          (Term.arr kc [c] (Term.pair (Term.roseRec c (Term.rename ss (liftR (· + 4)))
+            (Term.var 1)) (Term.var 0))) (Term.var 0)))))
+        (substAt 1 (weaken1 sl))) (instVar scs) =
+      Term.subst ss (instVar (Term.pair sl (Term.listRec (Term.arr kn [c] Term.star)
+        (Term.arr kc [c] (Term.pair (Term.roseRec c (FreeTopos.Internal.weakenStep2 ss)
+          (Term.var 1)) (Term.var 0))) scs))) := by
+  rw [Term.subst_subst _ _ _ _ fun _ ↦ rfl, Term.subst_subst _ _ _ _ fun _ ↦ rfl]
+  refine Term.subst_rename ss _ _ _ fun i ↦ ?_
+  rcases i with _ | i
+  · set ρ : ℕ → Term := fun i ↦ Term.subst (substAt 1 (weaken1 sl) i) (instVar scs) with hρ
+    have h₁ : ρ 1 = sl := subst_weaken1_instVar hl scs
+    have h₂ : Term.subst (Term.rename ss (liftR (· + 4)))
+        (Term.liftS (Term.liftS (Term.liftS ρ))) = FreeTopos.Internal.weakenStep2 ss := by
+      rw [Term.subst_rename _ _ _ _ fun _ ↦ rfl, FreeTopos.Internal.weakenStep2,
+        Term.rename_eq_subst ss _ _ fun _ ↦ rfl]
+      exact congrArg _ (funext fun j ↦ by rcases j with _ | j <;> rfl)
+    change Term.subst (Term.pair (Term.var 1) (Term.listRec (Term.arr kn [c] Term.star)
+      (Term.arr kc [c] (Term.pair (Term.roseRec c (Term.rename ss (liftR (· + 4)))
+        (Term.var 1)) (Term.var 0))) (Term.var 0))) ρ = _
+    rw [show Term.subst (Term.pair (Term.var 1) (Term.listRec (Term.arr kn [c] Term.star)
+        (Term.arr kc [c] (Term.pair (Term.roseRec c (Term.rename ss (liftR (· + 4)))
+          (Term.var 1)) (Term.var 0))) (Term.var 0))) ρ =
+        Term.pair (ρ 1) (Term.listRec (Term.arr kn [c] Term.star)
+          (Term.arr kc [c] (Term.pair (Term.roseRec c (Term.subst (Term.rename ss (liftR (· + 4)))
+            (Term.liftS (Term.liftS (Term.liftS ρ)))) (Term.var 1)) (Term.var 0))) (ρ 0)) from rfl,
+      h₁, h₂]
+    rfl
   · rfl
 
 /-- The innermost term variable decodes to the innermost variable. -/
@@ -1115,6 +1153,103 @@ theorem sound_listCons (hc : PfCtx G k ΓLF env Γ Φ) {A C z s h t F : Expr} {�
     check_join (check_listCons hk.cons _ _ _ _ _) (check_refl _)⟩
 
 include hk in
+/-- The soundness of the decoding of the computation of the fold of a rose tree at a
+construction. -/
+theorem sound_roseNode (hc : PfCtx G k ΓLF env Γ Φ) {C s l cs F : Expr} {φ : MTerm}
+    (hS : spine ΓLF (Expr.pi tp (Expr.pi (Expr.arrow (tm (prod nat (list (v 0)))) (tm (v 0)))
+      (Expr.pi (tm nat) (Expr.pi (tm (list rose))
+        (pf (eq (v 3) (roseRec (v 3) (Expr.lam (Expr.var 3 [v 0]))
+            (node (pair nat (list rose) (v 1) (v 0))))
+          (Expr.var 2 [pair nat (list (v 3)) (v 1) (listRec rose (list (v 3)) (nil (v 3))
+            (Expr.lam (Expr.lam (cons (v 5) (pair (v 5) (list (v 5))
+              (roseRec (v 5) (Expr.lam (Expr.var 5 [v 0])) (v 1)) (v 0))))) (v 0))])))))))
+      [(C, judge sig C), (s, judge sig s), (l, judge sig l), (cs, judge sig cs)] = some (pf F))
+    (hφ : termOf k env F = some φ) :
+    ∃ D, decPf k (Expr.const 40 [C, s, l, cs]) env Φ.length = some D ∧
+      (check G E 0 D).2 Γ Φ φ = true := by
+  obtain ⟨xc, hxc⟩ := tyComplete hc.heads₀ C (spine_tp₁ hS)
+  have hCc := encTy_closed xc C hxc
+  have hpc : encTy (FreeTopos.prod FreeTopos.nat (FreeTopos.list xc)) =
+      some (prod nat (list C)) := by rw [encTy_prod, encTy_list, hxc]; rfl
+  have hPc := encTy_closed _ _ hpc
+  simp only [tm, tp, pf, eq, roseRec, node, listRec, nil, nilAt, cons, pair, list, prod, nat,
+    rose, star, Expr.const, Expr.app] at hS
+  lf_spine_at hS [Option.bind_eq_some_iff, rename_closed hCc, hsubWith_closed hCc]
+  obtain ⟨-, a₀, b, ⟨hs', ha₀, a', ha', hb⟩, a₁, b₁, ⟨hl, ha₁, hb₁⟩, hcs, a₂, ha₂, b₂, hb₂,
+    hF⟩ := hS
+  obtain ⟨sb, rfl, hsb⟩ := judge_check_pi_inv hs'
+  have hΓs := fun a ha ↦ (hc.typeShape a ha).1
+  have hCs : ModeShape (.check (tm C)) = true := by
+    simp only [ModeShape, tm, Expr.const, Expr.app, typeShape_node]; rfl
+  have hE := appliedAt_of_judge_tm (A := prod nat (list C)) hΓs hPc hCs hsb
+  have lamL : ∀ X : Expr, RoseTree.label (Expr.lam X) = Label.lam := fun _ ↦ rfl
+  have lamC : ∀ X : Expr, RoseTree.children (Expr.lam X) = [X] := fun _ ↦ rfl
+  have v₀ : (RoseTree.node (Label.app (Head.var 0)) [] : Expr) = Expr.var 0 [] := rfl
+  have r3 : ∀ e : Expr, ((e.rename Nat.succ).rename Nat.succ).rename Nat.succ = e.rename (· + 3) :=
+    fun e ↦ by rw [rename_rename, rename_rename]; rfl
+  have r5 : ∀ e : Expr, ((((e.rename Nat.succ).rename Nat.succ).rename Nat.succ).rename
+      Nat.succ).rename Nat.succ = e.rename (· + 5) :=
+    fun e ↦ by rw [rename_rename, rename_rename, rename_rename, rename_rename]; rfl
+  -- the step at the innermost variable, under the weakening past the label and the children
+  rw [r3, rename_lam] at ha₀
+  rw [r5, rename_lam] at ha'
+  simp only [lamL, lamC] at ha₀ ha'
+  rw [v₀, hsub_var_base hE (liftR (· + 3)) (liftR (· + 2)) rfl (fun _ ↦ rfl) (k := 0) rfl,
+    Option.some.injEq] at ha₀
+  rw [v₀, hsub_var_base hE (liftR (· + 5)) (liftR (· + 4)) rfl (fun _ ↦ rfl) (k := 0) rfl,
+    Option.some.injEq] at ha'
+  subst ha₀ ha'
+  -- the label and the children substituted into the outer step, which mentions neither
+  rw [hsubWith_vacuous' _ _ _ (g := liftR (· + 1)) fun i ↦ by rcases i with _ | i <;> rfl,
+    Option.some.injEq] at ha₁
+  subst ha₁
+  rw [hsubWith_vacuous' _ _ _ (g := id) fun i ↦ by rcases i with _ | i <;> rfl, rename_id,
+    Option.some.injEq] at ha₂
+  subst ha₂
+  -- the step applied to the pair, under the weakening past the label and the children
+  rw [rename_succ_two, rename_lam] at hb
+  simp only [lamL, lamC] at hb
+  simp only [node_inj, List.cons.injEq, and_true, true_and] at hF
+  subst hF
+  -- the decodings
+  obtain ⟨ss, hss, hst⟩ := termOf_typed hk (hc.toTmCtx.consTm hpc) hxc hsb
+  obtain ⟨sl, hsl, hlt⟩ := termOf_typed (a := FreeTopos.nat) hk hc.toTmCtx rfl hl
+  obtain ⟨scs, hscs, -⟩ := termOf_typed (a := FreeTopos.list FreeTopos.rose) hk hc.toTmCtx rfl
+    hcs
+  have hS₂ : termOf k (none :: none :: none :: env) (sb.rename (liftR (· + 2))) =
+      some (Term.rename ss (liftR (· + 2))) :=
+    termOf_rename _ _ hss fun i ↦ by rcases i with _ | i <;> rfl
+  have hS₄ : termOf k (none :: none :: none :: none :: none :: env) (sb.rename (liftR (· + 4))) =
+      some (Term.rename ss (liftR (· + 4))) :=
+    termOf_rename _ _ hss fun i ↦ by rcases i with _ | i <;> rfl
+  have hP : termOf k (none :: none :: env) (Expr.const 8 [Expr.const 5 [], Expr.const 30 [C],
+      Expr.var 1 [], Expr.const 33 [Expr.const 37 [], Expr.const 30 [C],
+        Expr.const 31 [C, Expr.const 7 []],
+        Expr.lam (Expr.lam (Expr.const 32 [C, Expr.const 8 [C, Expr.const 30 [C],
+          Expr.const 39 [C, Expr.lam (sb.rename (liftR (· + 4))), Expr.var 1 []],
+          Expr.var 0 []]])), Expr.var 0 []]]) =
+      some (Term.pair (Term.var 1) (Term.listRec (Term.arr k.nil [xc] Term.star)
+        (Term.arr k.cons [xc] (Term.pair (Term.roseRec xc (Term.rename ss (liftR (· + 4)))
+          (Term.var 1)) (Term.var 0))) (Term.var 0))) := by
+    simp only [termOf_const, termOf_lam, List.map_cons, List.map_nil, decStep, hS₄,
+      rename_closed hCc, decTy_encTy xc C hxc, Option.map_some, lamBody_lam, Option.bind_eq_bind,
+      Option.bind_some, Option.pure_def]
+    rfl
+  have hb' := termOf_hsub₀ (env := none :: none :: env) hb hS₂ hP
+  have hb₁' := termOf_hsub₁ hb₁ hb' (termOf_shift hsl)
+  have hb₂' := termOf_hsub₀ hb₂ hb₁' hscs
+  rw [roseNode_rhs ss (varLeaves_of_typeIn hlt)] at hb₂'
+  change termOf k env (Expr.const 16 [C, Expr.const 39 [C, Expr.lam sb,
+    Expr.const 38 [Expr.const 8 [Expr.const 5 [], Expr.const 30 [Expr.const 37 []], l, cs]]],
+    b₂]) = some φ at hφ
+  simp only [termOf_const, termOf_lam, List.map_cons, List.map_nil, decStep, hss, hsl, hscs,
+    hb₂', rename_closed hCc, decTy_encTy xc C hxc, Option.map_eq_map, Option.map_some,
+    lamBody_lam, Option.bind_eq_bind, Option.bind_some, Option.pure_def, Option.some.injEq] at hφ
+  subst hφ
+  exact ⟨joinD (ruleD (.roseNode k.node k.nil k.cons)) reflD, by rw [decPf_const]; rfl,
+    check_join (check_roseNode hk.node hk.nil hk.cons _ _ _ _) (check_refl _)⟩
+
+include hk in
 /-- The soundness of the decoding of function extensionality. -/
 theorem sound_funExt (hc : PfCtx G k ΓLF env Γ Φ) {A B f g dH F : Expr} {φ : MTerm}
     (ihH : PfLam (PfSoundAt G k E) dH)
@@ -1388,7 +1523,7 @@ theorem sound_natInd (hc : PfCtx G k ΓLF env Γ Φ) {P d₀ ds n F : Expr} {φ 
       some Ds := by
     rw [List.length_append, hlen, List.length_singleton] at hDs
     exact hDs
-  refine ⟨indD FreeTopos.nat (.natIndHyp k.zero k.succ) sp sn Φ.length D₀ Ds, ?_,
+  refine ⟨indD FreeTopos.nat (.natIndHyp k.zero k.succ) sp sn Φ.length [D₀, Ds], ?_,
     check_natIndD hk.zero hk.succ hpt hnt hc.typed hc₀ hcs⟩
   rw [decPf_const]
   simp only [List.map_cons, List.map_nil, decPfStep, termOf_lam, hsp, hsn, hD₀, decPf_lam,
@@ -1547,12 +1682,128 @@ theorem sound_listInd (hc : PfCtx G k ΓLF env Γ Φ) {A P d₀ ds l F : Expr} {
     refine congrArg₂ _ (List.map_congr_left fun φ _ ↦ ?_) rfl
     exact (Term.rename_rename φ _ _ _ fun _ ↦ rfl).symm
   have hIs := isTy_of_encTy G (FreeTopos.list xa) (list A) hla
-  refine ⟨indD (FreeTopos.list xa) (.listIndHyp k.nil k.cons) sp sl Φ.length D₀ Ds, ?_,
+  refine ⟨indD (FreeTopos.list xa) (.listIndHyp k.nil k.cons) sp sl Φ.length [D₀, Ds], ?_,
     check_listIndD hk.nil hk.cons hIs hpt hlt hc.typed hc₀ (by rw [hw]; exact hcs)⟩
   rw [decPf_const]
   simp only [List.map_cons, List.map_nil, decPfStep, termOf_lam, hsp, hsl, hD₀, decPf_lam, hDs',
     decTy_encTy xa A hxa, Option.map_some, Option.bind_eq_bind, Option.bind_some, lamBody_lam,
     Option.pure_def]
+
+include hk in
+/-- The soundness of the decoding of induction on rose trees. -/
+theorem sound_roseInd (hc : PfCtx G k ΓLF env Γ Φ) {P ds t F : Expr} {φ : MTerm}
+    (ihs : PfLam (fun b ↦ PfLam (fun b' ↦ PfLam (PfSoundAt G k E) b') b) ds)
+    (hS : spine ΓLF (Expr.pi (Expr.arrow (tm rose) (tm omega))
+      (Expr.arrow (Expr.pi (tm nat) (Expr.pi (tm (list rose))
+          (Expr.arrow (pf (eq (list omega)
+              (listRec rose (list omega) (nil omega) (Expr.lam (Expr.lam (cons omega
+                (pair omega (list omega) (Expr.var 4 [v 1]) (v 0))))) (v 0))
+              (listRec rose (list omega) (nil omega) (Expr.lam (Expr.lam (cons omega
+                (pair omega (list omega) (eq one star star) (v 0))))) (v 0))))
+            (pf (Expr.var 2 [node (pair nat (list rose) (v 1) (v 0))])))))
+        (Expr.pi (tm rose) (pf (Expr.var 1 [v 0])))))
+      [(P, judge sig P), (ds, judge sig ds), (t, judge sig t)] = some (pf F))
+    (hφ : termOf k env F = some φ) :
+    ∃ D, decPf k (Expr.const 41 [P, ds, t]) env Φ.length = some D ∧
+      (check G E 0 D).2 Γ Φ φ = true := by
+  simp only [tm, pf, eq, listRec, nil, nilAt, cons, pair, list, nat, rose, omega, one, star, node,
+    Expr.const, Expr.app] at hS
+  lf_spine_at hS [Option.bind_eq_some_iff]
+  obtain ⟨a, b, a₁, ⟨hP, ha, hb, ha₁⟩, a₂, ⟨hds, ha₂⟩, ht, a₃, ha₃, hF⟩ := hS
+  obtain ⟨Pb, rfl, hPb⟩ := judge_check_pi_inv hP
+  have hΓs := fun a ha ↦ (hc.typeShape a ha).1
+  have hOs : ModeShape (.check (tm omega)) = true := by
+    simp only [ModeShape, tm, Expr.const, Expr.app, typeShape_node]; rfl
+  have hApp := appliedAt_of_judge_tm (A := rose) hΓs rfl hOs hPb
+  have lamL : ∀ X : Expr, RoseTree.label (Expr.lam X) = Label.lam := fun _ ↦ rfl
+  have lamC : ∀ X : Expr, RoseTree.children (Expr.lam X) = [X] := fun _ ↦ rfl
+  have v₁ : (RoseTree.node (Label.app (Head.var 1)) [] : Expr) = Expr.var 1 [] := rfl
+  have v₀ : (RoseTree.node (Label.app (Head.var 0)) [] : Expr) = Expr.var 0 [] := rfl
+  have r3 : ∀ e : Expr, ((e.rename Nat.succ).rename Nat.succ).rename Nat.succ = e.rename (· + 3) :=
+    fun e ↦ by rw [rename_rename, rename_rename]; rfl
+  rw [rename_succ_four, rename_lam] at ha
+  rw [r3, rename_lam] at hb
+  rw [rename_succ_two, rename_lam] at ha₁
+  simp only [lamL, lamC] at ha hb ha₁
+  -- the motive at each child, in the hypothesis
+  rw [v₁, hsub_var_base hApp (liftR (· + 4)) (fun i ↦ match i with | 0 => 1 | i + 1 => i + 4) rfl
+    (fun _ ↦ rfl) rfl, Option.some.injEq] at ha
+  subst ha
+  -- the motive at the conclusion's variable
+  rw [v₀, hsub_var_base hApp (liftR (· + 2)) (liftR (· + 1)) rfl (fun _ ↦ rfl) (k := 0) rfl,
+    Option.some.injEq] at ha₁
+  subst ha₁
+  rw [hsubWith_vacuous' _ _ _ (g := id) fun i ↦ by rcases i with _ | i <;> rfl, rename_id,
+    Option.some.injEq] at ha₂
+  subst ha₂
+  simp only [node_inj, List.cons.injEq, and_true, true_and] at hF
+  subst hF
+  -- the decodings
+  obtain ⟨sp, hsp, hpt⟩ := termOf_typed (a := FreeTopos.omega) hk
+    (hc.toTmCtx.consTm (a := FreeTopos.rose) rfl) rfl hPb
+  obtain ⟨st, hst, htt⟩ := termOf_typed (a := FreeTopos.rose) hk hc.toTmCtx rfl ht
+  obtain rfl := Option.some.inj (hφ.symm.trans (termOf_hsub₀ ha₃ hsp hst))
+  -- the hypothesis that the motive holds at each child
+  have hS₄ : termOf k (none :: none :: none :: none :: env)
+      (Pb.rename fun i ↦ match i with | 0 => 1 | i + 1 => i + 4) =
+      some (Term.rename sp fun i ↦ match i with | 0 => 1 | i + 1 => i + 4) :=
+    termOf_rename _ _ hsp fun i ↦ by rcases i with _ | i <;> rfl
+  have hH : termOf k (none :: none :: env) (Expr.const 16 [Expr.const 30 [Expr.const 4 []],
+      Expr.const 33 [Expr.const 37 [], Expr.const 30 [Expr.const 4 []],
+        Expr.const 31 [Expr.const 4 [], Expr.const 7 []],
+        Expr.lam (Expr.lam (Expr.const 32 [Expr.const 4 [], Expr.const 8 [Expr.const 4 [],
+          Expr.const 30 [Expr.const 4 []], Pb.rename fun i ↦ match i with | 0 => 1 | i + 1 => i + 4,
+          Expr.var 0 []]])), Expr.var 0 []],
+      Expr.const 33 [Expr.const 37 [], Expr.const 30 [Expr.const 4 []],
+        Expr.const 31 [Expr.const 4 [], Expr.const 7 []],
+        Expr.lam (Expr.lam (Expr.const 32 [Expr.const 4 [], Expr.const 8 [Expr.const 4 [],
+          Expr.const 30 [Expr.const 4 []],
+          Expr.const 16 [Expr.const 1 [], Expr.const 7 [], Expr.const 7 []], Expr.var 0 []]])),
+        Expr.var 0 []]]) =
+      some (FreeTopos.Internal.roseHyp k.nil k.cons sp) := by
+    simp only [termOf_const, termOf_lam, List.map_cons, List.map_nil, decStep, hS₄,
+      Option.bind_eq_bind, Option.bind_some, Option.pure_def]
+    rfl
+  have hc₂ := (((hc.consTm (a := FreeTopos.nat) (A := nat) rfl).consTm
+    (a := FreeTopos.list FreeTopos.rose) (A := list rose) rfl).addHyp
+    (typeIn_truth (G := G) (Γ := FreeTopos.list FreeTopos.rose :: FreeTopos.nat :: Γ))).consPf
+    hH (typeIn_roseHyp hk.nil hk.cons hpt)
+  have hlen : ((Φ.map weaken1).map weaken1 ++ [truth]).length = Φ.length + 1 := by
+    rw [List.length_append, List.length_map, List.length_map, List.length_singleton]
+  rw [hlen] at hc₂
+  -- the motive at the construction, the step's conclusion
+  have hY' : termOf k (some (Φ.length + 1) :: none :: none :: env) b =
+      some (FreeTopos.Internal.roseNodeAt k.node FreeTopos.rose FreeTopos.nat sp) := by
+    have h₁ : termOf k (none :: some (Φ.length + 1) :: none :: none :: env)
+        (Pb.rename (liftR (· + 3))) = some (Term.rename sp (liftR (· + 2))) :=
+      termOf_rename _ _ hsp fun i ↦ by rcases i with _ | i <;> rfl
+    have h₂ : termOf k (some (Φ.length + 1) :: none :: none :: env)
+        (Expr.const 38 [Expr.const 8 [Expr.const 5 [], Expr.const 30 [Expr.const 37 []],
+          Expr.var 2 [], Expr.var 1 []]]) =
+        some (Term.arr k.node [] (Term.pair (Term.var 1) (Term.var 0))) := rfl
+    rw [termOf_hsub₀ hb h₁ h₂]
+    refine congrArg some (Term.subst_rename sp _ _ _ fun i ↦ ?_)
+    rcases i with _ | i
+    · exact congrArg (Term.arr k.node · _) (ite_eq_left rfl).symm
+    · rfl
+  obtain ⟨body₁, rfl, hb1, hlam⟩ := ihs ΓLF _ _ hds
+  obtain ⟨body₂, rfl, hb2, hlam'⟩ := hlam _ _ _ hb1
+  obtain ⟨body₃, rfl, hb3, hsound⟩ := hlam' _ _ _ hb2
+  obtain ⟨Ds, hDs, hcs⟩ := hsound _ _ _ _ _ _ hc₂ hb3 hY'
+  have hDs' : decPf k body₃ (some (Φ.length + 1) :: none :: none :: env) (Φ.length + 2) =
+      some Ds := by
+    rw [List.length_append, hlen, List.length_singleton] at hDs
+    exact hDs
+  have hw : (Φ ++ [truth]).map FreeTopos.Internal.weaken2 =
+      (Φ.map weaken1).map weaken1 ++ [truth] := by
+    rw [List.map_append, List.map_map]
+    refine congrArg₂ _ (List.map_congr_left fun φ _ ↦ ?_) rfl
+    exact (Term.rename_rename φ _ _ _ fun _ ↦ rfl).symm
+  refine ⟨indD FreeTopos.rose (.roseIndHyp k.node k.nil k.cons) sp st Φ.length [Ds], ?_,
+    check_roseIndD hk.node hk.nil hk.cons hpt htt hc.typed (by rw [hw]; exact hcs)⟩
+  rw [decPf_const]
+  simp only [List.map_cons, List.map_nil, decPfStep, termOf_lam, hsp, hst, decPf_lam, hDs',
+    Option.map_some, Option.bind_eq_bind, Option.bind_some, lamBody_lam, Option.pure_def]
 
 /-- The soundness of the decoding of a proof variable: the hypothesis the environment indexes. -/
 theorem sound_hyp (hc : PfCtx G k ΓLF env Γ Φ) {i : ℕ} {ms : List Expr} {C F : Expr}
@@ -1612,7 +1863,7 @@ theorem pfSound : ∀ M : Expr, PfSound G k E M :=
       have mem' : ∀ {x y : Expr} {xs : List Expr}, x ∈ xs → x ∈ y :: xs := List.mem_cons_of_mem _
       simp only [List.mem_cons, List.not_mem_nil, or_false] at hc'
       rcases hc' with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
-        rfl | rfl
+        rfl | rfl | rfl | rfl
       · obtain rfl : C = _ := Option.some.inj (hC.symm.trans rfl)
         obtain ⟨A, t, rfl⟩ := List.length_eq_two.mp (hlen : cs.length = 2)
         exact sound_refl E hk hc hS hφ
@@ -1689,6 +1940,12 @@ theorem pfSound : ∀ M : Expr, PfSound G k E M :=
           List.length_eq_four.mp (Nat.succ.inj (hlen : cs.length + 1 = 4 + 1))
         exact sound_listInd E hk hc (ih d₀ (mem' (mem' mem))).1
           (hlam₃ ds (mem' (mem' (mem' mem)))) hS hφ
+      · obtain rfl : C = _ := Option.some.inj (hC.symm.trans rfl)
+        obtain ⟨C', s', l, t, rfl⟩ := List.length_eq_four.mp (hlen : cs.length = 4)
+        exact sound_roseNode E hk hc hS hφ
+      · obtain rfl : C = _ := Option.some.inj (hC.symm.trans rfl)
+        obtain ⟨P, ds, t, rfl⟩ := List.length_eq_three.mp (hlen : cs.length = 3)
+        exact sound_roseInd E hk hc (hlam₃ ds (mem' mem)) hS hφ
     · obtain ⟨body, hM, hbJ⟩ := judge_check_pi_inv hj
       obtain ⟨rfl, rfl⟩ := node_inj.mp hM
       exact ⟨body, rfl, hbJ, (ih body List.mem_cons_self).1,
