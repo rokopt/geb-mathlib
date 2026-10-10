@@ -51,12 +51,12 @@ def addLF : Expr := natRec nat (v 1) (Expr.lam (succ (v 0))) (v 0)
 
 /-- The encoding of addition is the signature's fold from the variable {lit}`m`. -/
 theorem enc_addTerm :
-    enc addGlobals addIdx addTerm (FreeTopos.Internal.ctxObj [FreeTopos.nat, FreeTopos.nat])
+    enc addGlobals 0 addIdx addTerm (FreeTopos.Internal.ctxObj [FreeTopos.nat, FreeTopos.nat])
       addEnv = some addLF := by
   decide +kernel
 
 /-- The fold from a variable decodes to the language's fold from the variable. -/
-theorem dec_addLF : dec addIdx addLF = some addTerm := rfl
+theorem dec_addLF : dec addIdx addLF 2 = some addTerm := rfl
 
 /-- The fold from a variable checks against the family of terms of the natural numbers. -/
 theorem addLF_checks : Checks sig [tm nat, tm nat] addLF (tm nat) = true := by decide +kernel
@@ -73,12 +73,12 @@ def lenLF : Expr := listRec nat nat zero (Expr.lam (Expr.lam (succ (v 0)))) (v 0
 
 /-- The encoding of the length is the signature's fold of lists. -/
 theorem enc_lenTerm :
-    enc addGlobals addIdx lenTerm (FreeTopos.Internal.ctxObj [FreeTopos.list FreeTopos.nat])
+    enc addGlobals 0 addIdx lenTerm (FreeTopos.Internal.ctxObj [FreeTopos.list FreeTopos.nat])
       lenEnv = some lenLF := by
   decide +kernel
 
 /-- The fold of a list decodes to the language's fold of lists. -/
-theorem dec_lenLF : dec addIdx lenLF = some lenTerm := rfl
+theorem dec_lenLF : dec addIdx lenLF 1 = some lenTerm := rfl
 
 /-- The fold of a list checks against the family of terms of the natural numbers. -/
 theorem lenLF_checks : Checks sig [tm (list nat)] lenLF (tm nat) = true := by decide +kernel
@@ -99,12 +99,12 @@ def degLF : Expr := roseRec nat
 
 /-- The encoding of the number of the root's children is the signature's fold of rose trees. -/
 theorem enc_degTerm :
-    enc addGlobals addIdx degTerm (FreeTopos.Internal.ctxObj [FreeTopos.rose]) roseEnv =
+    enc addGlobals 0 addIdx degTerm (FreeTopos.Internal.ctxObj [FreeTopos.rose]) roseEnv =
       some degLF := by
   decide +kernel
 
 /-- The fold of a rose tree decodes to the language's fold of rose trees. -/
-theorem dec_degLF : dec addIdx degLF = some degTerm := rfl
+theorem dec_degLF : dec addIdx degLF 1 = some degTerm := rfl
 
 /-- The fold of a rose tree checks against the family of terms of the natural numbers. -/
 theorem degLF_checks : Checks sig [tm rose] degLF (tm nat) = true := by decide +kernel
@@ -124,12 +124,12 @@ def rootLF : Expr := lroseRec (list nat) (list nat)
 
 /-- The encoding of the root's label is the signature's fold of rose trees of labels of a type. -/
 theorem enc_rootTerm :
-    enc addGlobals addIdx rootTerm (FreeTopos.Internal.ctxObj [FreeTopos.lrose listNat])
+    enc addGlobals 0 addIdx rootTerm (FreeTopos.Internal.ctxObj [FreeTopos.lrose listNat])
       lroseEnv = some rootLF := by
   decide +kernel
 
 /-- The fold of a rose tree of labels of a type decodes to the language's fold of rose trees. -/
-theorem dec_rootLF : dec addIdx rootLF = some rootTerm := rfl
+theorem dec_rootLF : dec addIdx rootLF 1 = some rootTerm := rfl
 
 /-- The fold of a rose tree of labels of a type checks against the family of terms of the label
 type. -/
@@ -155,18 +155,36 @@ def caseLF : Expr :=
 
 /-- The encoding of the case analysis is the application of the signature's case analysis. -/
 theorem enc_caseTerm :
-    enc addGlobals addIdx caseTerm
+    enc addGlobals 0 addIdx caseTerm
       (FreeTopos.Internal.ctxObj [natPlusNat, FreeTopos.exp FreeTopos.nat FreeTopos.nat])
       caseEnv = some caseLF := by
   decide +kernel
 
 /-- The application of the signature's case analysis decodes to the language's. -/
-theorem dec_caseLF : dec addIdx caseLF = some caseTerm := rfl
+theorem dec_caseLF : dec addIdx caseLF 2 = some caseTerm := rfl
 
 /-- The case analysis checks against the family of terms of the natural numbers. -/
 theorem caseLF_checks :
     Checks sig [tm (coprod nat nat), tm (exp nat nat)] caseLF (tm nat) = true := by
   decide +kernel
+
+/-- The identity on the type of the object variable of index zero. -/
+def idTerm : MTerm := Term.lam (PartialHorn.var 0) (Term.var 0)
+
+/-- {lit}`lam A A (λ x. x)`, {lit}`A` the LF variable of {lit}`tp` outermost. -/
+def idLF : Expr := lam (v 0) (v 0) (Expr.lam (v 0))
+
+/-- The encoding of the identity in one object variable: the object variable is the LF variable
+of {lit}`tp`. -/
+theorem enc_idTerm : enc addGlobals 1 addIdx idTerm FreeTopos.one [] = some idLF := by
+  decide +kernel
+
+/-- The identity's encoding decodes to it. -/
+theorem dec_idLF : dec addIdx idLF 0 = some idTerm := rfl
+
+/-- The identity checks, in the context of one variable of {lit}`tp`, against the family of
+terms of the exponential of the variable by itself. -/
+theorem idLF_checks : Checks sig [tp] idLF (tm (exp (v 0) (v 0))) = true := by decide +kernel
 
 end Geb.LF.Topos.Tests
 

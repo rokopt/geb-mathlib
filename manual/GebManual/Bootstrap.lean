@@ -286,9 +286,9 @@ the sections below detail:
     ({ref "search-synthesis"}[Search and synthesis]): complete for the
     fragment of the natural numbers, lists, rose trees, binary coproducts
     and the initial object, whose folds and case analysis are the
-    language's with parameters, the terms Canonical finds decoded and
-    checked as derivations of the language; object variables follow, in
-    the order that section gives.
+    language's with parameters, in any number of object variables, the
+    terms Canonical finds decoded and checked as derivations of the
+    language.
 
 Extension:
 
@@ -3890,9 +3890,12 @@ of pure LF decodes to a derivation the checker accepts
 (`Geb/Prototypes/LF/Topos/ProofSound.lean`): the signature's fold is the
 language's fold, whose start and step may mention the variables around
 it, and its computation rules are the checker's. The decoding applies to
-goals whose parameters are term variables and hypotheses, the language
-having no object variables, so symmetry, transitivity and the fold at
-one, stated for every type, are checked in LF alone. On the same machine,
+goals whose outermost parameters are of `tp`, the object variables,
+and whose other parameters are term variables and hypotheses, so
+symmetry and transitivity, stated for every type, decode to theorems in
+one object variable; the fold at one, whose step is a parameter of a
+family of functions, which no variable of the language is, is checked
+in LF alone. On the same machine,
 with Canonical at revision `1d80841` of CanonicalLean (tag `v4.34.0`
 since its release was replaced) under Lean v4.35.0-rc4, the signature
 with its list, rose-tree, congruence, coproduct and initial-object
@@ -3906,36 +3909,40 @@ term returned checked:
   * Modulo the rules
 *
   * Symmetry and transitivity of equality
-  * Found, under 25 ms each, by substitution of equals
+  * Found, under 35 ms each, by substitution of equals
   * The same
 *
   * Congruence of `succ`
+  * Found, 9 ms, by congruence
   * Found, 6 ms, by congruence
-  * Found, 8 ms, by congruence
 *
   * `natRec C z s (succ zero) = s z`
-  * Found, 19 ms, by the fold's rules and substitution of equals
+  * Found, 25 ms, by the fold's rules and substitution of equals
   * Found, 3 ms, by reflexivity
 *
   * `n + 0 = n` and `m + succ n = succ (m + n)`
-  * Found, 6 ms or less each, by a rule of the fold
+  * Found, 7 ms or less each, by a rule of the fold
   * Found, 5 ms or less each, by reflexivity
 *
   * `0 + n = n`
-  * Found, 49 ms, by induction
-  * Found, 33 ms, by induction
+  * Found, 46 ms, by induction
+  * Found, 29 ms, by induction
 *
   * `succ m + n = succ (m + n)`
   * Not found in 120 s
-  * Found, 72 ms, by induction and congruence
+  * Found, 117 ms, by induction and congruence
 *
   * `lam (λ x. x) = lam (λ x. app (lam (λ y. y)) x)`
-  * Found, 228 ms, by extensionality and β
-  * Found, 5 ms, by reflexivity
+  * Found, 254 ms, by extensionality and β
+  * Found, 6 ms, by reflexivity
 *
   * `foldr cons nil xs = xs`
-  * Found, 1366 ms, by induction
-  * Found, 51 ms, by induction and congruence
+  * Found, 1292 ms, by induction
+  * Found, 39 ms, by induction and congruence
+*
+  * `foldr cons nil xs = xs` for every element type
+  * Found, 1487 ms, by induction
+  * Found, 57 ms, by induction and congruence
 *
   * Uniqueness of the right fold, its hypothesis at a construction an
     equation of functions
@@ -3944,11 +3951,12 @@ term returned checked:
 *
   * Associativity of appending
   * Not found in 120 s
-  * Found, 5.5 s, by induction and congruence
+  * Found, 6.3 s, by induction and congruence
 :::
 
-Every term found for a goal without type parameters decoded to a
-certificate of the language that its checker accepts, the declaration of
+Every term found for a goal of the internal fragment decoded to a
+certificate of the language that its checker accepts, in its object
+variables, the declaration of
 congruence among those offered: in pure LF a
 derivation of the checker of `Geb.FreeTopos.Internal`, and modulo the
 rules a certificate of the checker with a step of conversion, the
@@ -3974,8 +3982,8 @@ every declaration other than a type former whose type mentions only
 declarations so reached, which are the rules and term formers that speak
 of the goal's types. Offered only those, every goal found before was
 found again, most in less time, modulo the rules
-`succ m + n = succ (m + n)` in 24 ms rather than 72 ms; the
-associativity in 15.6 s rather than 5.5 s.
+`succ m + n = succ (m + n)` in 24 ms rather than 117 ms; the
+associativity in 17.4 s rather than 6.3 s.
 
 Addition is the fold of its second argument from the first by the
 successor, a fold with a parameter. The measurements agree with the
@@ -4034,8 +4042,13 @@ its proofs, in this order:
    decoding to the language's case analysis on a fresh variable, and
    every formula from a term of the initial object, decoding to the
    language's rule of the initial type.
-8. Waiting on the above. Object variables, so that a goal is polymorphic
-   in its types.
+8. Complete. Object variables, so that a goal is polymorphic in its
+   types: the outermost variables of `tp` of an LF context are the
+   object variables of the theorem it decodes to, and a type mentioning
+   them is encoded and decoded at the offset of the variables of terms
+   in scope, the object variable of index `j` being the LF variable
+   `j` past them. The soundness of the decoding of proofs holds at
+   every arity.
 
 The route remains an experiment; the Geb-native refinement below is the
 implementation meant to last, and the signature's measurements inform

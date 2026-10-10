@@ -3947,7 +3947,8 @@ checklist and in CI.
   of an atomic term checks against the type it synthesizes [WatkinsEtAl2002].
   `Topos/`: a fragment of the internal language of `Geb/Prototypes/FreeTopos/`,
   its natural numbers, lists, rose trees, binary coproducts and the initial
-  object among its types, as a signature, its
+  object among its types, in any number of object variables, which are LF
+  variables of `tp`, as a signature, its
   object types, terms in higher-order abstract syntax and derivations, and its
   computation rules as rewrite rules;
   `Topos/Adequacy.lean` encodes the fragment's types and compiled terms as
