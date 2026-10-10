@@ -16,7 +16,8 @@ that variable, which checks against the family of terms of the natural numbers, 
 it. The length of a list, the fold of the list from zero by the successor, encodes to the
 signature's fold of lists, and the number of a rose tree's root's children, the fold of the tree
 whose step is the length of the list of the children's values, to the signature's fold of rose
-trees with a fold of lists in its step; each checks and decodes alike.
+trees with a fold of lists in its step, and the label of the root of a rose tree of lists, to the
+signature's fold of rose trees of labels of a type; each checks and decodes alike.
 
 ## Tags
 
@@ -27,14 +28,14 @@ prototype, logical framework, LF, adequacy
 
 namespace Geb.LF.Topos.Tests
 
-open FreeTopos.Internal (Term Globals zeroPrim succPrim nilPrim consPrim nodePrim)
+open FreeTopos.Internal (Term Globals zeroPrim succPrim nilPrim consPrim nodePrim lnodePrim)
 
-/-- Zero, the successor, the empty list, the construction of a list and the construction of a rose
-tree, of indices {lit}`0` to {lit}`4`. -/
-def addGlobals : Globals := ⟨[zeroPrim, succPrim, nilPrim, consPrim, nodePrim], [], 0⟩
+/-- Zero, the successor, the empty list, the construction of a list and the constructions of rose
+trees of natural-number labels and of labels of a type, of indices {lit}`0` to {lit}`5`. -/
+def addGlobals : Globals := ⟨[zeroPrim, succPrim, nilPrim, consPrim, nodePrim, lnodePrim], [], 0⟩
 
 /-- The indices of the primitive arrows of {name}`addGlobals`. -/
-def addIdx : PrimIdx := ⟨0, 1, 2, 3, 4⟩
+def addIdx : PrimIdx := ⟨0, 1, 2, 3, 4, 5⟩
 
 /-- The environment of two natural numbers {lit}`m` and {lit}`n`, the innermost first. -/
 def addEnv : MEnv := FreeTopos.Internal.stdEnv [FreeTopos.nat, FreeTopos.nat]
@@ -104,6 +105,33 @@ theorem dec_degLF : dec addIdx degLF = some degTerm := rfl
 
 /-- The fold of a rose tree checks against the family of terms of the natural numbers. -/
 theorem degLF_checks : Checks sig [tm rose] degLF (tm nat) = true := by decide +kernel
+
+/-- The type of lists of natural numbers. -/
+def listNat : PartialHorn.Tree := FreeTopos.list FreeTopos.nat
+
+/-- The environment of a rose tree {lit}`t` of lists of natural numbers. -/
+def lroseEnv : MEnv := FreeTopos.Internal.stdEnv [FreeTopos.lrose listNat]
+
+/-- The label of the root of {lit}`t`: the fold of the tree whose step is the first component. -/
+def rootTerm : MTerm := Term.roseRec listNat (Term.fst (Term.var 0)) (Term.var 0)
+
+/-- {lit}`lroseRec (list nat) (list nat) (λ p. fst (list nat) (list (list nat)) p) t`. -/
+def rootLF : Expr := lroseRec (list nat) (list nat)
+  (Expr.lam (fst (list nat) (list (list nat)) (v 0))) (v 0)
+
+/-- The encoding of the root's label is the signature's fold of rose trees of labels of a type. -/
+theorem enc_rootTerm :
+    enc addGlobals addIdx rootTerm (FreeTopos.Internal.ctxObj [FreeTopos.lrose listNat])
+      lroseEnv = some rootLF := by
+  decide +kernel
+
+/-- The fold of a rose tree of labels of a type decodes to the language's fold of rose trees. -/
+theorem dec_rootLF : dec addIdx rootLF = some rootTerm := rfl
+
+/-- The fold of a rose tree of labels of a type checks against the family of terms of the label
+type. -/
+theorem rootLF_checks : Checks sig [tm (lrose (list nat))] rootLF (tm (list nat)) = true := by
+  decide +kernel
 
 end Geb.LF.Topos.Tests
 

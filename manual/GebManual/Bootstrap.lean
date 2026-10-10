@@ -279,11 +279,10 @@ the sections below detail:
     whose goals Canonical searches and whose proofs decode to the
     language's derivations, for experiment
     ({ref "search-synthesis"}[Search and synthesis]): complete for the
-    fragment of the natural numbers, lists and rose trees of
-    natural-number labels, whose folds are the language's folds with
-    parameters; the decoding of the terms Canonical finds, rose trees of
-    labels of any type, coproducts and object variables follow, in the
-    order that section gives.
+    fragment of the natural numbers, lists and rose trees, whose folds
+    are the language's folds with parameters; the decoding of the terms
+    Canonical finds, coproducts and object variables follow, in the order
+    that section gives.
 
 Extension:
 
@@ -3946,9 +3945,9 @@ its proofs, in this order:
    pair of the label and the list of the children's values, its
    computation rule, also as a rewrite rule, and induction, decoding to
    the language's induction with the induction hypothesis.
-6. Ready. Rose trees of labels of any type: the same, the label type an
-   argument of each constant, as the element type is of the constants of
-   lists.
+6. Complete. Rose trees of labels of any type: the same, the label type
+   an argument of each constant, as the element type is of the constants
+   of lists.
 7. Waiting on the above. Coproducts and the initial object, with case
    analysis; then object variables, so that a goal is polymorphic in its
    types.

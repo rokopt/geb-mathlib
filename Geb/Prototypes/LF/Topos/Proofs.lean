@@ -159,6 +159,13 @@ def decPfStep (l : Label) (cs : List (Expr × (List (Option ℕ) → ℕ → Opt
       let pb ← lamBody (← termOf k env P)
       pure (indD FreeTopos.rose (.roseIndHyp k.node k.nil k.cons) pb (← termOf k env t) m
         [← ds (some (m + 1) :: none :: none :: env) (m + 2)])
+    | .app (.const 45), [_, _, _, _, _] =>
+      some (joinD (ruleD (.roseNode k.lnode k.nil k.cons)) reflD)
+    | .app (.const 46), [(A, _), (P, _), (_, ds), (t, _)] => do
+      let a ← decTy A
+      let pb ← lamBody (← termOf k env P)
+      pure (indD (FreeTopos.lrose a) (.roseIndHyp k.lnode k.nil k.cons) pb (← termOf k env t) m
+        [← ds (some (m + 1) :: none :: none :: env) (m + 2)])
     | .lam, [(_, d)] => d env m
     | _, _ => none
 

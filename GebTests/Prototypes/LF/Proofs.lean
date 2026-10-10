@@ -18,7 +18,7 @@ substitution of equals into a motive whose fold's step mentions the motive's var
 computations of the fold of a list, the proof by induction on lists that the right fold by
 construction from the empty list is the identity, the computation of the fold of a rose tree at a
 construction, and the proof by induction on rose trees that the fold by the constant step zero is
-zero.
+zero, for rose trees of natural-number labels and of lists of natural numbers alike.
 
 ## Tags
 
@@ -29,14 +29,14 @@ prototype, logical framework, LF, proof, derivation
 
 namespace Geb.LF.Topos.Tests
 
-open FreeTopos.Internal (Globals Thm zeroPrim succPrim nilPrim consPrim nodePrim)
+open FreeTopos.Internal (Globals Thm zeroPrim succPrim nilPrim consPrim nodePrim lnodePrim)
 
-/-- Zero, the successor, the empty list, the construction of a list and the construction of a rose
-tree, of indices {lit}`0` to {lit}`4`. -/
-def pfGlobals : Globals := ⟨[zeroPrim, succPrim, nilPrim, consPrim, nodePrim], [], 0⟩
+/-- Zero, the successor, the empty list, the construction of a list and the constructions of rose
+trees of natural-number labels and of labels of a type, of indices {lit}`0` to {lit}`5`. -/
+def pfGlobals : Globals := ⟨[zeroPrim, succPrim, nilPrim, consPrim, nodePrim, lnodePrim], [], 0⟩
 
 /-- The indices of the primitive arrows of {name}`pfGlobals`. -/
-def pfIdx : PrimIdx := ⟨0, 1, 2, 3, 4⟩
+def pfIdx : PrimIdx := ⟨0, 1, 2, 3, 4, 5⟩
 
 /-- The successor as an LF abstraction. -/
 def succLam : Expr := Expr.lam (succ (v 0))
@@ -146,6 +146,36 @@ def zeroFoldStep : Expr :=
 #guard proves [FreeTopos.rose]
   (Expr.const 41 [Expr.lam (eq nat (roseRec nat zeroLam (v 0)) zero), zeroFoldStep, v 0])
   (eq nat (roseRec nat zeroLam (v 0)) zero)
+
+/-- The type of lists of natural numbers, the labels of the rose trees below. -/
+def listNatLF : Expr := list nat
+
+/-- The label of the root as a step of the fold of a rose tree of lists: {lit}`λ p. fst p`. -/
+def lLabelLam : Expr := Expr.lam (fst listNatLF (list listNatLF) (v 0))
+
+-- `lroseRec lLabelLam (lnode (pair l cs)) = fst (pair l (map (lroseRec lLabelLam) cs))` by the
+-- computation of the fold of a rose tree of lists at a construction.
+#guard proves [FreeTopos.list (FreeTopos.lrose (FreeTopos.list FreeTopos.nat)),
+    FreeTopos.list FreeTopos.nat]
+  (Expr.const 45 [listNatLF, listNatLF, lLabelLam, v 1, v 0])
+  (eq listNatLF (lroseRec listNatLF listNatLF lLabelLam
+      (lnode listNatLF (pair listNatLF (list (lrose listNatLF)) (v 1) (v 0))))
+    (fst listNatLF (list listNatLF) (pair listNatLF (list listNatLF) (v 1)
+      (listRec (lrose listNatLF) (list listNatLF) (nil listNatLF)
+        (Expr.lam (Expr.lam (cons listNatLF (pair listNatLF (list listNatLF)
+          (lroseRec listNatLF listNatLF lLabelLam (v 1)) (v 0))))) (v 0)))))
+
+/-- The step of the induction for {lit}`lroseRec zeroLam t = zero` on rose trees of lists: the
+computation of the fold at the construction, under the label, the children and the hypothesis at
+the children. -/
+def lZeroFoldStep : Expr :=
+  Expr.lam (Expr.lam (Expr.lam (Expr.const 45 [listNatLF, nat, zeroLam, v 2, v 1])))
+
+-- `lroseRec zeroLam t = zero` by induction on rose trees of lists.
+#guard proves [FreeTopos.lrose (FreeTopos.list FreeTopos.nat)]
+  (Expr.const 46 [listNatLF, Expr.lam (eq nat (lroseRec listNatLF nat zeroLam (v 0)) zero),
+    lZeroFoldStep, v 0])
+  (eq nat (lroseRec listNatLF nat zeroLam (v 0)) zero)
 
 end Geb.LF.Topos.Tests
 
