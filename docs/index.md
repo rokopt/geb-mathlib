@@ -3955,7 +3955,9 @@ checklist and in CI.
   `Topos/Compose.lean` proves the decoding compositional, commuting with
   renaming and hereditary substitution; `Topos/Proofs.lean` decodes the
   canonical terms of the families of proofs, in contexts of term and proof
-  variables, as derivations of the language, `Topos/ProofCheck.lean` computes
+  variables, as derivations of the language, and `Topos/ProofsMod.lean` those
+  that check modulo the rewrite rules as certificates of the checker with a
+  step of conversion, `Topos/ProofCheck.lean` computes
   the checker at the derivations it builds, and `Topos/ProofSound.lean` proves
   the decoding sound: a proof decodes to a derivation the checker accepts as a
   proof of the decoded formula. Tested in `GebTests/Prototypes/LF.lean`,
@@ -4131,7 +4133,12 @@ checklist and in CI.
   normalization innermost first or to weak normal forms, earlier theorems
   as rewriting rules found by matching, induction and case analysis;
   every derivation it computes is checked by
-  `Geb.FreeTopos.Internal.check`. Tested in the modules of
+  `Geb.FreeTopos.Internal.check`. `Conversion.lean` is the checker with a
+  step of conversion beside it, `Geb.FreeTopos.Internal.convCheck`: a step
+  of conversion names its rules and is the base checker's rewriting by
+  the derivation of the prover's normalization under them, every other
+  node the base checker's step, so that it is sound relative to the base
+  checker (`Geb.FreeTopos.Internal.convCheck_sound`). Tested in the modules of
   `GebTests/Prototypes/FreeTopos/` named `Internal*.lean`, among them the
   theorems of Gödel's T derived in the language
   (`InternalDerivation.lean`), its logic, coproducts, rose trees,

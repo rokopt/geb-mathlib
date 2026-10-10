@@ -15,14 +15,14 @@ Goals of the fragment of the internal language represented by `Geb.LF.Topos.sig`
 Canonical in two regimes: pure LF, the computation rules derivation rules among the constants; and
 modulo the rewrite rules `Geb.LF.Topos.rules`, the derivation rules they make redundant withheld.
 Each term Canonical returns is translated back to canonical LF and checked by the checker of the
-regime, `Geb.LF.Checks` or `Geb.LF.ChecksMod`, and then decoded to a derivation of the internal
-language (`Geb.LF.Topos.decPf`) and checked by its checker, `Geb.FreeTopos.Internal.Thm.checks`.
-The decoding applies to a goal whose parameters are term variables and hypotheses, the language
-having no object variables; a hypothesis's formula is weakened past the parameters after it. The
-soundness of the decoding (`Geb.LF.Topos.decPf_checks`) is proved for terms of pure LF; a term
-found modulo the rules may rely on a computation the internal checker, which compares the sides
-of an equation after rewriting by the derivation, does not perform. The program prints, for each
-goal and regime, whether a term was found, the time taken, the term, and both checkers' verdicts.
+regime, `Geb.LF.Checks` or `Geb.LF.ChecksMod`, and then decoded to a certificate of the internal
+language and checked: a term of pure LF to a derivation (`Geb.LF.Topos.decPf`), checked by the
+base checker (`Geb.FreeTopos.Internal.Thm.checks`), and a term found modulo the rules to a
+certificate with steps of conversion (`Geb.LF.Topos.decPfMod`), checked by the conversion checker
+(`Geb.FreeTopos.Internal.Thm.convChecks`). The decoding applies to a goal whose parameters are
+term variables and hypotheses, the language having no object variables; a hypothesis's formula is
+weakened past the parameters after it. The program prints, for each goal and regime, whether a
+term was found, the time taken, the term, and both checkers' verdicts.
 Its argument is the timeout in seconds of each search.
 
 ## Tags
@@ -152,18 +152,24 @@ def internalThm (goal : Expr) : Option (List (Option ℕ) × FreeTopos.Internal.
   let hyps ← Φ.reverse.mapM fun (P, i) ↦ termOf toposIdx env (Expr.rename P (· + (i + 1)))
   pure (env, ⟨0, Γ, hyps, ← termOf toposIdx env F⟩)
 
-/-- The verdict of the internal language's checker on a term found for a goal: the term's
+/-- The verdict of the internal language's checkers on a term found for a goal: the term's
 abstractions over the goal's parameters removed, its body decoded in their environment and the
-derivation checked against the goal's theorem. -/
-def internalVerdict (goal term : Expr) : String :=
+certificate checked against the goal's theorem, by the base checker for a term of pure LF and by
+the conversion checker for one found modulo the rules. -/
+def internalVerdict (modulo : Bool) (goal term : Expr) : String :=
   match internalThm goal with
     | none => "outside the internal fragment"
     | some (env, thm) =>
-      match (List.range env.length).foldlM (fun e _ ↦ lfBody e) term >>= fun b ↦
-          decPf toposIdx b env thm.hyps.length with
+      let body := (List.range env.length).foldlM (fun e _ ↦ lfBody e) term
+      let verdict := if modulo then
+          (body >>= fun b ↦ decPfMod toposIdx b env thm.hyps.length).map
+            (thm.convChecks toposGlobals #[])
+        else (body >>= fun b ↦ decPf toposIdx b env thm.hyps.length).map
+            (thm.checks toposGlobals #[])
+      match verdict with
         | none => "undecodable"
-        | some d =>
-          if thm.checks toposGlobals #[] d then "internal checks" else "internal DOES NOT CHECK"
+        | some true => "internal checks"
+        | some false => "internal DOES NOT CHECK"
 
 /-- The bound on the steps of normalization modulo the rules. -/
 def fuel : ℕ := 64
@@ -184,7 +190,7 @@ def runGoal (timeout : UInt64) (g : Goal) (modulo : Bool) : IO Unit := do
         | none => "untranslatable"
         | some e =>
           let ok := if modulo then ChecksMod rules fuel sig [] e g.type else Checks sig [] e g.type
-          (if ok then "checks" else "DOES NOT CHECK") ++ ", " ++ internalVerdict g.type e
+          (if ok then "checks" else "DOES NOT CHECK") ++ ", " ++ internalVerdict modulo g.type e
       IO.println s!"{g.name} [{regime}]: found in {t₁ - t₀} ms, {verdict}: {
         {t with lets := #[]}}"
   (← IO.getStdout).flush
