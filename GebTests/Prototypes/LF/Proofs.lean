@@ -36,14 +36,17 @@ prototype, logical framework, LF, proof, derivation
 
 namespace Geb.LF.Topos.Tests
 
-open FreeTopos.Internal (Globals Thm zeroPrim succPrim nilPrim consPrim nodePrim lnodePrim)
+open FreeTopos.Internal (Globals Thm zeroPrim succPrim nilPrim consPrim nodePrim lnodePrim
+  inlPrim inrPrim casePrim)
 
-/-- Zero, the successor, the empty list, the construction of a list and the constructions of rose
-trees of natural-number labels and of labels of a type, of indices {lit}`0` to {lit}`5`. -/
-def pfGlobals : Globals := ⟨[zeroPrim, succPrim, nilPrim, consPrim, nodePrim, lnodePrim], [], 0⟩
+/-- Zero, the successor, the empty list, the construction of a list, the constructions of rose
+trees of natural-number labels and of labels of a type, the injections into a coproduct and its
+case analysis, of indices {lit}`0` to {lit}`8`. -/
+def pfGlobals : Globals :=
+  ⟨[zeroPrim, succPrim, nilPrim, consPrim, nodePrim, lnodePrim, inlPrim, inrPrim, casePrim], [], 0⟩
 
 /-- The indices of the primitive arrows of {name}`pfGlobals`. -/
-def pfIdx : PrimIdx := ⟨0, 1, 2, 3, 4, 5⟩
+def pfIdx : PrimIdx := ⟨0, 1, 2, 3, 4, 5, 6, 7, 8⟩
 
 /-- The successor as an LF abstraction. -/
 def succLam : Expr := Expr.lam (succ (v 0))
@@ -191,6 +194,55 @@ def lZeroFoldStep : Expr :=
   (Expr.const 46 [listNatLF, Expr.lam (eq nat (lroseRec listNatLF nat zeroLam (v 0)) zero),
     lZeroFoldStep, v 0])
   (eq nat (lroseRec listNatLF nat zeroLam (v 0)) zero)
+
+/-- The case analysis of a coproduct of two copies of the natural numbers into the natural numbers
+by the functions {lit}`g` and {lit}`h`, applied to {lit}`c`. -/
+def caseNat (g h c : Expr) : Expr :=
+  app (coprod nat nat) nat (case nat nat nat (pair (exp nat nat) (exp nat nat) g h)) c
+
+/-- The internal context of an element {lit}`u` of the natural numbers and two functions
+{lit}`h` and {lit}`g` on them, the innermost first. -/
+def caseCtx : List PartialHorn.Tree :=
+  [FreeTopos.nat, FreeTopos.exp FreeTopos.nat FreeTopos.nat,
+    FreeTopos.exp FreeTopos.nat FreeTopos.nat]
+
+-- `case (g, h) (inl u) = g u` by the computation of the case analysis at a left injection.
+#guard proves caseCtx (Expr.const 53 [nat, nat, nat, v 2, v 1, v 0])
+  (eq nat (caseNat (v 2) (v 1) (inl nat nat (v 0))) (app nat nat (v 2) (v 0)))
+
+-- `case (g, h) (inr u) = h u` by the computation of the case analysis at a right injection.
+#guard proves caseCtx (Expr.const 54 [nat, nat, nat, v 2, v 1, v 0])
+  (eq nat (caseNat (v 2) (v 1) (inr nat nat (v 0))) (app nat nat (v 1) (v 0)))
+
+-- `case (g, h) (inl u) = h u` does not hold.
+#guard !proves caseCtx (Expr.const 53 [nat, nat, nat, v 2, v 1, v 0])
+  (eq nat (caseNat (v 2) (v 1) (inl nat nat (v 0))) (app nat nat (v 1) (v 0)))
+
+-- `c = c` by case analysis on `c`, at either injection by reflexivity.
+#guard proves [FreeTopos.coprod FreeTopos.nat FreeTopos.nat]
+  (Expr.const 55 [nat, nat, Expr.lam (eq (coprod nat nat) (v 0) (v 0)),
+    Expr.lam (Expr.const 18 [coprod nat nat, inl nat nat (v 0)]),
+    Expr.lam (Expr.const 18 [coprod nat nat, inr nat nat (v 0)]), v 0])
+  (eq (coprod nat nat) (v 0) (v 0))
+
+-- `0 = 1` from a term of the initial object.
+#guard proves [FreeTopos.zero] (Expr.const 56 [v 0, eq nat zero (succ zero)])
+  (eq nat zero (succ zero))
+
+-- `0 = 1` does not follow from a natural number.
+#guard !proves [FreeTopos.nat] (Expr.const 56 [v 0, eq nat zero (succ zero)])
+  (eq nat zero (succ zero))
+
+/-- The function on the natural numbers constantly zero. -/
+def zeroFn : Expr := lam nat nat zeroLam
+
+-- `case (zeroFn, zeroFn) c = 0` by case analysis on `c` modulo the rules: at either injection
+-- by reflexivity, the computations of the case analysis and of the abstraction left to the
+-- conversion.
+#guard provesMod [FreeTopos.coprod FreeTopos.nat FreeTopos.nat]
+  (Expr.const 55 [nat, nat, Expr.lam (eq nat (caseNat zeroFn zeroFn (v 0)) zero),
+    Expr.lam (Expr.const 18 [nat, zero]), Expr.lam (Expr.const 18 [nat, zero]), v 0])
+  (eq nat (caseNat zeroFn zeroFn (v 0)) zero)
 
 -- `n + 0 = n` by reflexivity holds by computation: the conversion checker accepts it, and the base
 -- checker, which does not compute, rejects it.

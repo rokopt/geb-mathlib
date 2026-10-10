@@ -28,14 +28,17 @@ prototype, logical framework, LF, adequacy
 
 namespace Geb.LF.Topos.Tests
 
-open FreeTopos.Internal (Term Globals zeroPrim succPrim nilPrim consPrim nodePrim lnodePrim)
+open FreeTopos.Internal (Term Globals zeroPrim succPrim nilPrim consPrim nodePrim lnodePrim
+  inlPrim inrPrim casePrim)
 
-/-- Zero, the successor, the empty list, the construction of a list and the constructions of rose
-trees of natural-number labels and of labels of a type, of indices {lit}`0` to {lit}`5`. -/
-def addGlobals : Globals := ⟨[zeroPrim, succPrim, nilPrim, consPrim, nodePrim, lnodePrim], [], 0⟩
+/-- Zero, the successor, the empty list, the construction of a list, the constructions of rose
+trees of natural-number labels and of labels of a type, the injections into a coproduct and its
+case analysis, of indices {lit}`0` to {lit}`8`. -/
+def addGlobals : Globals :=
+  ⟨[zeroPrim, succPrim, nilPrim, consPrim, nodePrim, lnodePrim, inlPrim, inrPrim, casePrim], [], 0⟩
 
 /-- The indices of the primitive arrows of {name}`addGlobals`. -/
-def addIdx : PrimIdx := ⟨0, 1, 2, 3, 4, 5⟩
+def addIdx : PrimIdx := ⟨0, 1, 2, 3, 4, 5, 6, 7, 8⟩
 
 /-- The environment of two natural numbers {lit}`m` and {lit}`n`, the innermost first. -/
 def addEnv : MEnv := FreeTopos.Internal.stdEnv [FreeTopos.nat, FreeTopos.nat]
@@ -131,6 +134,38 @@ theorem dec_rootLF : dec addIdx rootLF = some rootTerm := rfl
 /-- The fold of a rose tree of labels of a type checks against the family of terms of the label
 type. -/
 theorem rootLF_checks : Checks sig [tm (lrose (list nat))] rootLF (tm (list nat)) = true := by
+  decide +kernel
+
+/-- The coproduct of two copies of the natural numbers. -/
+def natPlusNat : PartialHorn.Tree := FreeTopos.coprod FreeTopos.nat FreeTopos.nat
+
+/-- The environment of an element {lit}`c` of {name}`natPlusNat` and a function {lit}`g` on the
+natural numbers. -/
+def caseEnv : MEnv :=
+  FreeTopos.Internal.stdEnv [natPlusNat, FreeTopos.exp FreeTopos.nat FreeTopos.nat]
+
+/-- The case analysis of {lit}`c` by {lit}`g` on either summand. -/
+def caseTerm : MTerm :=
+  Term.app (Term.arr 8 [FreeTopos.nat, FreeTopos.nat, FreeTopos.nat]
+    (Term.pair (Term.var 1) (Term.var 1))) (Term.var 0)
+
+/-- {lit}`app (coprod nat nat) nat (case nat nat nat (pair (exp nat nat) (exp nat nat) g g)) c`. -/
+def caseLF : Expr :=
+  app (coprod nat nat) nat (case nat nat nat (pair (exp nat nat) (exp nat nat) (v 1) (v 1))) (v 0)
+
+/-- The encoding of the case analysis is the application of the signature's case analysis. -/
+theorem enc_caseTerm :
+    enc addGlobals addIdx caseTerm
+      (FreeTopos.Internal.ctxObj [natPlusNat, FreeTopos.exp FreeTopos.nat FreeTopos.nat])
+      caseEnv = some caseLF := by
+  decide +kernel
+
+/-- The application of the signature's case analysis decodes to the language's. -/
+theorem dec_caseLF : dec addIdx caseLF = some caseTerm := rfl
+
+/-- The case analysis checks against the family of terms of the natural numbers. -/
+theorem caseLF_checks :
+    Checks sig [tm (coprod nat nat), tm (exp nat nat)] caseLF (tm nat) = true := by
   decide +kernel
 
 end Geb.LF.Topos.Tests

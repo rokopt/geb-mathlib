@@ -24,11 +24,13 @@ derivations the decoding builds, the rewriting or the proof they perform.
 
 * {lit}`check_join`, {lit}`check_cut`, {lit}`check_conv`, {lit}`check_convFrom`,
   {lit}`check_propExt`, {lit}`check_funExt`, {lit}`check_natIndHyp`, {lit}`check_listIndHyp`,
-  {lit}`check_roseIndHyp` — the proof rules.
+  {lit}`check_roseIndHyp`, {lit}`check_coprodInd` — the proof rules.
 * {lit}`check_natZero`, {lit}`check_natSucc`, {lit}`check_listNil`, {lit}`check_listCons`,
-  {lit}`check_roseNode` — the computations of the folds.
+  {lit}`check_roseNode`, {lit}`check_caseInl`, {lit}`check_caseInr` — the computations of the
+  folds and of the case analysis.
 * {lit}`check_leibD`, {lit}`check_indD`, {lit}`check_natIndD`, {lit}`check_listIndD`,
-  {lit}`check_roseIndD` — the substitution of equals and the induction.
+  {lit}`check_roseIndD`, {lit}`check_coprodIndD`, {lit}`check_exfalsoD` — the substitution of
+  equals and the induction.
 
 ## Tags
 
@@ -251,6 +253,26 @@ theorem check_roseNode {θ : List PartialHorn.Tree}
   rw [check_rule _ ⟨by simp, by simp, by simp⟩]
   rcases hr with hr | hr <;>
     simp [FreeTopos.Internal.rootStep, Term.roseRec, Term.arr, Term.pair, hr, hn, hc]
+
+/-- The computation of the case analysis at a left injection: the first function at the injected
+term. -/
+theorem check_caseInl {kc kl : ℕ} (hc : G.prims[kc]? = some FreeTopos.Internal.casePrim)
+    (hl : G.prims[kl]? = some FreeTopos.Internal.inlPrim) (θ θ' : List PartialHorn.Tree)
+    (g h v : Term) :
+    (check G E n (ruleD (.caseInl kc kl))).1 Γ Φ
+      (Term.app (Term.arr kc θ (Term.pair g h)) (Term.arr kl θ' v)) = some (Term.app g v) := by
+  rw [check_rule _ ⟨by simp, by simp, by simp⟩]
+  simp [FreeTopos.Internal.rootStep, Term.app, Term.arr, Term.pair, hc, hl]
+
+/-- The computation of the case analysis at a right injection: the second function at the
+injected term. -/
+theorem check_caseInr {kc kr : ℕ} (hc : G.prims[kc]? = some FreeTopos.Internal.casePrim)
+    (hr : G.prims[kr]? = some FreeTopos.Internal.inrPrim) (θ θ' : List PartialHorn.Tree)
+    (g h v : Term) :
+    (check G E n (ruleD (.caseInr kc kr))).1 Γ Φ
+      (Term.app (Term.arr kc θ (Term.pair g h)) (Term.arr kr θ' v)) = some (Term.app h v) := by
+  rw [check_rule _ ⟨by simp, by simp, by simp⟩]
+  simp [FreeTopos.Internal.rootStep, Term.app, Term.arr, Term.pair, hc, hr]
 
 section Typing
 
@@ -513,6 +535,34 @@ theorem check_roseIndHyp {Γ₀ : List PartialHorn.Tree} {Φ' : List Term} {φ :
   rw [decide_eq_true_of ⟨hr, hn, hc, hφ⟩, hp₁]
   rfl
 
+/-- The summands of a coproduct object. -/
+theorem coprodParts_coprod (a b : PartialHorn.Tree) :
+    FreeTopos.Internal.coprodParts (FreeTopos.coprod a b) = some (a, b) := by
+  unfold FreeTopos.Internal.coprodParts
+  exact ite_eq_left rfl
+
+/-- Case analysis on a coproduct at the innermost variable: the formula at the left injection of
+a variable of the first summand and at the right injection of a variable of the second, under the
+hypotheses, which do not mention the variable. -/
+theorem check_coprodInd {kl kr : ℕ} {Γ₀ : List PartialHorn.Tree} {Φ' : List Term} {φ : Term}
+    {a b : PartialHorn.Tree} {p₀ p₁ : Deriv}
+    (hlow : FreeTopos.Internal.lowerHyps G n Γ₀ Φ = some Φ')
+    (hl : G.prims[kl]? = some FreeTopos.Internal.inlPrim)
+    (hr : G.prims[kr]? = some FreeTopos.Internal.inrPrim)
+    (hφ : typeIn G n (FreeTopos.coprod a b :: Γ₀) φ = some FreeTopos.omega)
+    (hp₀ : (check G E n p₀).2 (a :: Γ₀) Φ
+      (Term.subst φ (FreeTopos.Internal.atVar0 (Term.arr kl [a, b] (Term.var 0)))) = true)
+    (hp₁ : (check G E n p₁).2 (b :: Γ₀) Φ
+      (Term.subst φ (FreeTopos.Internal.atVar0 (Term.arr kr [a, b] (Term.var 0)))) = true) :
+    (check G E n (nd (.coprodInd kl kr) [p₀, p₁])).2 (FreeTopos.coprod a b :: Γ₀) Φ φ = true := by
+  rw [check_node]
+  simp only [List.map_cons, List.map_nil]
+  dsimp only [checkStep]
+  rw [coprodParts_coprod, hlow]
+  dsimp only
+  rw [decide_eq_true_of ⟨hl, hr, hφ⟩, hp₀, hp₁]
+  rfl
+
 /-- The substitution at the innermost variable is the instantiation. -/
 theorem substAt_zero (u : Term) : substAt 0 u = instVar u := by
   funext i
@@ -634,6 +684,42 @@ theorem check_roseIndD {r a : PartialHorn.Tree} {F : PartialHorn.Tree → Partia
     (check G E 0 (indD r (.roseIndHyp kr kn kc) pb n' Φ.length [Ds])).2
       Γ Φ (Term.subst pb (instVar n')) = true :=
   check_indD hrt hpb hn' (check_roseIndHyp (lowerHyps_truth hΦ) hra hr hn hc hpb hDs)
+
+/-- Case analysis on a coproduct at a term: the motive at {lit}`n'`, from its proofs at the
+injections of a fresh variable, under the hypothesis true, which the derivation's cut adds. -/
+theorem check_coprodIndD {k : PrimIdx} (hl : G.prims[k.inl]? = some FreeTopos.Internal.inlPrim)
+    (hr : G.prims[k.inr]? = some FreeTopos.Internal.inrPrim) {a b : PartialHorn.Tree}
+    (hab : FreeTopos.Internal.IsTy G 0 (FreeTopos.coprod a b) = true) {pb n' : Term}
+    {D₀ D₁ : Deriv} (hpb : typeIn G 0 (FreeTopos.coprod a b :: Γ) pb = some FreeTopos.omega)
+    (hn' : typeIn G 0 Γ n' = some (FreeTopos.coprod a b))
+    (hΦ : ∀ φ ∈ Φ, typeIn G 0 Γ φ = some FreeTopos.omega)
+    (h₀ : (check G E 0 D₀).2 (a :: Γ) (Φ.map weaken1 ++ [truth])
+      (Term.subst pb (FreeTopos.Internal.atVar0 (Term.arr k.inl [a, b] (Term.var 0)))) = true)
+    (h₁ : (check G E 0 D₁).2 (b :: Γ) (Φ.map weaken1 ++ [truth])
+      (Term.subst pb (FreeTopos.Internal.atVar0 (Term.arr k.inr [a, b] (Term.var 0)))) = true) :
+    (check G E 0 (indD (FreeTopos.coprod a b) (.coprodInd k.inl k.inr) pb n' Φ.length
+      [D₀, D₁])).2 Γ Φ (Term.subst pb (instVar n')) = true :=
+  check_indD hab hpb hn' (check_coprodInd (lowerHyps_truth hΦ) hl hr hpb h₀ h₁)
+
+/-- A term weakened by a variable and instantiated at a term is itself. -/
+theorem subst_weaken1_instVar {t : Term} (ht : Term.VarLeaves t = true) (u : Term) :
+    Term.subst (weaken1 t) (instVar u) = t := by
+  rw [weaken1, Term.subst_rename t (· + 1) _ Term.var fun _ ↦ rfl,
+    Term.subst_id t ht _ fun _ ↦ rfl]
+
+/-- A formula from a term of the initial object: the formula as a motive at the term, true at a
+fresh variable of the initial type. -/
+theorem check_exfalsoD {φ z : Term} (hφ : typeIn G 0 Γ φ = some FreeTopos.omega)
+    (hz : typeIn G 0 Γ z = some FreeTopos.zero) :
+    (check G E 0 (indD FreeTopos.zero (.zeroInd 0) (weaken1 φ) z Φ.length [])).2 Γ Φ φ =
+      true := by
+  have hw : typeIn G 0 (FreeTopos.zero :: Γ) (weaken1 φ) = some FreeTopos.omega :=
+    typeIn_rename hφ (fun _ _ ↦ rfl) fun _ _ h ↦ Nat.succ_lt_succ h
+  have h := check_indD (rfl : FreeTopos.Internal.IsTy G 0 FreeTopos.zero = true) hw hz
+    (Ds := []) (r := .zeroInd 0) (E := E) (Φ := Φ) (by
+      rw [check_node]
+      exact decide_eq_true_of ⟨rfl, hw⟩)
+  rwa [subst_weaken1_instVar (varLeaves_of_typeIn hφ)] at h
 
 end Geb.LF.Topos
 

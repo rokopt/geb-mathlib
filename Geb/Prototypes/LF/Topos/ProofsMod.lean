@@ -19,15 +19,16 @@ conversion ({name}`Geb.FreeTopos.Internal.convCheck`). Modulo the rules, LF comp
 type with the type it is checked against after normalizing both by the computation rules, which
 the internal language's derivations do not; the certificates take the step of conversion where
 LF compares. The step normalizes under the computation rules of the language ({lit}`normC`):
-the β rule, the computation rules of pairs, and those of the folds of the natural numbers, of
-lists and of rose trees, at the primitives the indices name.
+the β rule, the computation rules of pairs, those of the folds of the natural numbers, of lists
+and of rose trees, and those of the case analysis, at the primitives the indices name.
 
 Reflexivity and each computation rule decode to an equation whose sides normalize to one term
 ({lit}`eqvC`). The substitution of equals and the inductions decode as {name}`Geb.LF.Topos.leibD`
 and {name}`Geb.LF.Topos.indD` do, with the formula they prove normalized first, and the β-reduct
 of the motive's application, from which it is proved, normalized to it ({lit}`leibC`,
-{lit}`indC`), congruence as the substitution of equals does; function extensionality, with its
-formula normalized first. The decoding is not
+{lit}`indC`), congruence as the substitution of equals does, and the case analysis on a
+coproduct and a formula from a term of the initial object as the inductions do; function
+extensionality, with its formula normalized first. The decoding is not
 proved to produce certificates that check: the conversion checker, sound relative to the base
 checker, decides each.
 
@@ -50,7 +51,7 @@ set_option doc.verso true
 
 namespace Geb.LF.Topos
 
-open FreeTopos.Internal (Term Deriv ConvRule ConvDeriv)
+open FreeTopos.Internal (Term Deriv ConvRule ConvDeriv weaken1)
 
 /-- A node of a certificate at a rule of the language's derivations. -/
 abbrev ndC (r : FreeTopos.Internal.Rule) (cs : List ConvDeriv) : ConvDeriv :=
@@ -60,11 +61,12 @@ abbrev ndC (r : FreeTopos.Internal.Rule) (cs : List ConvDeriv) : ConvDeriv :=
 def normFuel : ℕ := 4096
 
 /-- The computation rules of the language at the primitives the indices name: the β rule, the
-computation rules of pairs, and those of the folds of the natural numbers, of lists and of rose
-trees of either kind. -/
+computation rules of pairs, those of the folds of the natural numbers, of lists and of rose trees
+of either kind, and those of the case analysis. -/
 def computationRules (k : PrimIdx) : List FreeTopos.Internal.Rule :=
   [.beta, .fstPair, .sndPair, .natZero k.zero, .natSucc k.succ, .listNil k.nil, .listCons k.cons,
-    .roseNode k.node k.nil k.cons, .roseNode k.lnode k.nil k.cons]
+    .roseNode k.node k.nil k.cons, .roseNode k.lnode k.nil k.cons, .caseInl k.case k.inl,
+    .caseInr k.case k.inr]
 
 /-- The step of conversion under the computation rules. -/
 def normC (k : PrimIdx) : ConvDeriv :=
@@ -154,6 +156,17 @@ def decPfModStep (l : Label) (cs : List (Expr × (List (Option ℕ) → ℕ → 
       let sa ← termOf k env a
       pure (leibC k (← decTy A) (congMotive fb sa) sa (← termOf k env b) m (← dh env m)
         (eqvC k))
+    | .app (.const 53), [_, _, _, _, _, _] => some (eqvC k)
+    | .app (.const 54), [_, _, _, _, _, _] => some (eqvC k)
+    | .app (.const 55), [(A, _), (B, _), (P, _), (_, d₁), (_, d₂), (c, _)] => do
+      let a ← decTy A
+      let b ← decTy B
+      let pb ← lamBody (← termOf k env P)
+      pure (indC k (FreeTopos.coprod a b) (.coprodInd k.inl k.inr) pb (← termOf k env c) m
+        [← d₁ (none :: env) (m + 1), ← d₂ (none :: env) (m + 1)])
+    | .app (.const 56), [(z, _), (φ, _)] => do
+      pure (indC k FreeTopos.zero (.zeroInd 0) (weaken1 (← termOf k env φ)) (← termOf k env z) m
+        [])
     | .lam, [(_, d)] => d env m
     | _, _ => none
 
