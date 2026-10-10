@@ -3945,12 +3945,13 @@ checklist and in CI.
   theorem [HarperLicata2007], and the identity principles: the η-expansion of
   a variable is an identity for hereditary substitution, and the η-expansion
   of an atomic term checks against the type it synthesizes [WatkinsEtAl2002].
-  `Topos/`: a fragment of the internal language of `Geb/Prototypes/FreeTopos/`
-  as a signature, its object types, terms in higher-order abstract syntax and
-  derivations, and its computation rules as rewrite rules;
+  `Topos/`: a fragment of the internal language of `Geb/Prototypes/FreeTopos/`,
+  its natural numbers and lists among its types, as a signature, its object
+  types, terms in higher-order abstract syntax and derivations, and its
+  computation rules as rewrite rules;
   `Topos/Adequacy.lean` encodes the fragment's types and compiled terms as
-  canonical LF terms and decodes them, the signature's fold being the
-  language's fold, and proves the encoding sound and complete;
+  canonical LF terms and decodes them, the signature's folds being the
+  language's folds, and proves the encoding sound and complete;
   `Topos/Compose.lean` proves the decoding compositional, commuting with
   renaming and hereditary substitution; `Topos/Proofs.lean` decodes the
   canonical terms of the families of proofs, in contexts of term and proof

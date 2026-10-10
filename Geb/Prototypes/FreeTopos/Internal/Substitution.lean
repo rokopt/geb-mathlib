@@ -320,6 +320,35 @@ theorem compile_natRec_parts {z s m : Term} {X : Tree} {e : List (Tree × Tree)}
         · simp
         · simpa using hP i (by simp [hi]))).symm, m', hm⟩
 
+/-- A fold of a list whose datum compiles in the environment to a list type, whose start compiles
+in the environment and whose step compiles in the environment extended by the element and the
+value, both to one type, compiles, to that type. -/
+theorem compile_listRec_of_parts {z s m : Term} {X mf a zf c sf : Tree} {e : List (Tree × Tree)}
+    (hm : compile G n m X e = some (mf, list a)) (hz : compile G n z X e = some (zf, c))
+    (hs : compile G n s (prod (prod X a) c) (extEnv (prod X a) c (extEnv X a e)) =
+      some (sf, c)) :
+    ∃ r, compile G n (Term.listRec z s m) X e = some r ∧ r.2 = c := by
+  -- the variables the start and the step mention are the fold's parameters
+  have hP : ∀ i, (Term.occurs z i || Term.occurs s (i + 2)) = true →
+      i ∈ foldParams 2 e.length z s := fun i hi ↦ by
+    refine mem_foldParams.mpr ⟨?_, hi⟩
+    rcases Bool.or_eq_true _ _ ▸ hi with hi | hi
+    · exact compile_occurs_lt z X e _ hz i hi
+    · simpa [extEnv] using compile_occurs_lt s _ _ _ hs (i + 2) hi
+  obtain ⟨z', hz'⟩ := compile_retype_on z X e _ hz (foldEnvIn [] 2 e z s).1
+    (foldEnvIn [] 2 e z s).2 fun i hi ↦ foldEnvIn_types (foldWs_start_lt 2 e z s)
+      (foldWs_start_filterMap 2 e z s) (by simp) i (by simpa using hP i (by simp [hi]))
+  obtain ⟨s', hs'⟩ := compile_retype_on s _ _ _ hs (foldEnvIn [c, a] 2 e z s).1
+    (foldEnvIn [c, a] 2 e z s).2 fun i hi ↦ foldEnvIn_types (foldWs_list_lt X a c e z s)
+      (foldWs_list_filterMap X a c e z s) (by simp [extEnv]) i (by
+        rcases i with _ | _ | i
+        · exact List.mem_append_left _ (List.mem_range.mpr (by simp))
+        · exact List.mem_append_left _ (List.mem_range.mpr (by simp))
+        · exact List.mem_append_right _ (List.mem_map.mpr ⟨i, hP i (by simp [hi]), rfl⟩))
+  have hnode : compile G n (Term.listRec z s m) X e = some _ :=
+    compile_listRec_iff.mpr ⟨z, s, m, rfl, mf, a, hm, z', c, hz', s', hs', rfl⟩
+  exact ⟨_, hnode, rfl⟩
+
 /-- A fold of the natural numbers whose start compiles in the environment, whose step compiles
 in the environment extended by the value, both to one type, and whose datum compiles in the
 environment to the natural numbers compiles, to that type. -/
@@ -642,25 +671,7 @@ theorem compile_listRec_of_full (hG : G.WF) (hρ : ρ.map Sigma.fst = List.repli
       some (sf, c)) :
     ∃ r, compile G n (Term.listRec z s m) X e = some r ∧
       ResEq M ρ (comp (listRecP X a c zf sf) (pair (idt X) mf), c) r := by
-  -- the variables the start and the step mention are the fold's parameters
-  have hP : ∀ i, (Term.occurs z i || Term.occurs s (i + 2)) = true →
-      i ∈ foldParams 2 e.length z s := fun i hi ↦ by
-    refine mem_foldParams.mpr ⟨?_, hi⟩
-    rcases Bool.or_eq_true _ _ ▸ hi with hi | hi
-    · exact compile_occurs_lt z X e _ hz i hi
-    · simpa [extEnv] using compile_occurs_lt s _ _ _ hs (i + 2) hi
-  obtain ⟨z', hz'⟩ := compile_retype_on z X e _ hz (foldEnvIn [] 2 e z s).1
-    (foldEnvIn [] 2 e z s).2 fun i hi ↦ foldEnvIn_types (foldWs_start_lt 2 e z s)
-      (foldWs_start_filterMap 2 e z s) (by simp) i (by simpa using hP i (by simp [hi]))
-  obtain ⟨s', hs'⟩ := compile_retype_on s _ _ _ hs (foldEnvIn [c, a] 2 e z s).1
-    (foldEnvIn [c, a] 2 e z s).2 fun i hi ↦ foldEnvIn_types (foldWs_list_lt X a c e z s)
-      (foldWs_list_filterMap X a c e z s) (by simp [extEnv]) i (by
-        rcases i with _ | _ | i
-        · exact List.mem_append_left _ (List.mem_range.mpr (by simp))
-        · exact List.mem_append_left _ (List.mem_range.mpr (by simp))
-        · exact List.mem_append_right _ (List.mem_map.mpr ⟨i, hP i (by simp [hi]), rfl⟩))
-  have hnode : compile G n (Term.listRec z s m) X e = some _ :=
-    compile_listRec_iff.mpr ⟨z, s, m, rfl, mf, a, hm, z', c, hz', s', hs', rfl⟩
+  obtain ⟨_, hnode, -⟩ := compile_listRec_of_parts hm hz hs
   obtain ⟨mf₂, a₂, zf₂, c₂, sf₂, hm₂, hz₂, hs₂, hr⟩ :=
     compile_listRec_full hM hG hρ hps hds hnode he
   obtain ⟨rfl, ha⟩ := Prod.mk.inj (Option.some.inj (hm.symm.trans hm₂))
