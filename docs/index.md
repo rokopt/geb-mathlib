@@ -4252,7 +4252,8 @@ checklist and in CI.
   of `bootstrap/stage1/typing.geb` and the expansion and erasure of
   `bootstrap/stage1/datatype.geb` composed with the reader and the
   evaluator, by a relation extending that one at the datatypes, and
-  proves it at atoms;
+  proves it at atoms, and `DatatypeList.lean` at the keywords' forms, one
+  keyword at a time, given it at their elements;
   `TreeCases.lean` exercises the case analysis of a tree variable in any
   context and rewriting under a test, and `Expansion.lean` proves with
   them that the expansion of the datatype language,
