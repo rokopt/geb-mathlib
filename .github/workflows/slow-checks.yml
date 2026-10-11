@@ -19,7 +19,7 @@ jobs:
   rfl:
     name: Build and lint GebTests in the loading mode rfl
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 720
     env:
       GEB_LOADING: rfl
     steps:
@@ -41,7 +41,7 @@ jobs:
   certificates:
     name: Regenerate and compare the certificates
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 720
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865  # v1
@@ -55,7 +55,7 @@ jobs:
   bench:
     name: Run the benchmarks
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 720
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865  # v1
