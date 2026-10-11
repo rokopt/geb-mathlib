@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.LF.Topos.Development
 public import GebTests.Prototypes.LF.Proofs
 public meta import Geb.Prototypes.LF.Topos.Development -- shake: keep
+public meta import Geb.Prototypes.LF.Topos.Rules -- shake: keep
 public meta import GebTests.Prototypes.LF.Proofs -- shake: keep
 
 /-!
@@ -81,6 +82,36 @@ def descStar : Expr :=
 #guard match decPf descIdx descStar [none] 0, dec descIdx (eq one (Expr.const 59 [nat, v 0]) star) 1
     with
   | some D, some φ => Thm.checks descGlobals descEntries ⟨0, [quotNat], [], φ⟩ D
+  | _, _ => false
+
+/-- The development of reflexivity at the natural numbers, a theorem of the language. -/
+def reflDev : Option (Globals × Array Entry) :=
+  FreeTopos.Internal.checkDev pfGlobals #[]
+    [.language ⟨0, [FreeTopos.nat], [], FreeTopos.Internal.Term.eq (FreeTopos.Internal.Term.var 0)
+      (FreeTopos.Internal.Term.var 0)⟩
+      (RoseTree.node .join [RoseTree.node .refl [], RoseTree.node .refl []])]
+
+/-- The constants after the development of reflexivity. -/
+def reflGlobals : Globals := (reflDev.map Prod.fst).getD pfGlobals
+
+/-- The environment after the development of reflexivity. -/
+def reflEntries : Array Entry := (reflDev.map Prod.snd).getD #[]
+
+/-- Reflexivity applied at the first component of the pair of two variables, a proof that the
+first variable equals itself modulo the computation rules of pairs. -/
+def reflFst : Expr := Expr.const sig.length [fst nat nat (pair nat nat (v 1) (v 0))]
+
+-- Reflexivity applied at an instance normal only after the computation rules: the proof checks
+-- in LF modulo the rules, and its decoding, the theorem's instance converted to the formula it
+-- proves, is accepted by the conversion checker.
+#guard reflDev.isSome && (devIdx pfIdx reflGlobals reflEntries).ext == [.thm 0 0 1]
+#guard match devSig pfIdx reflGlobals reflEntries with
+  | some S => ChecksMod rules 64 S [tm nat, tm nat] reflFst (pf (eq nat (v 1) (v 1)))
+  | none => false
+#guard match decPfMod (devIdx pfIdx reflGlobals reflEntries) reflEntries reflFst [none, none] 0,
+    dec (devIdx pfIdx reflGlobals reflEntries) (eq nat (v 1) (v 1)) 2 with
+  | some D, some φ => Thm.convChecks reflGlobals reflEntries ⟨0, [FreeTopos.nat, FreeTopos.nat],
+      [], φ⟩ D
   | _, _ => false
 
 -- An object definition whose operation is the product's: the signature is not formed.

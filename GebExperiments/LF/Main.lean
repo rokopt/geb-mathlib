@@ -355,7 +355,7 @@ def internalVerdict (G : FreeTopos.Internal.Globals) (k : PrimIdx)
     | some (env, thm) =>
       let body := (List.range (thm.arity + env.length)).foldlM (fun e _ ↦ lfBody e) term
       let verdict := if modulo then
-          (body >>= fun b ↦ decPfMod k b env thm.hyps.length).map
+          (body >>= fun b ↦ decPfMod k E b env thm.hyps.length).map
             (thm.convChecks G E)
         else (body >>= fun b ↦ decPf k b env thm.hyps.length).map
             (thm.checks G E)

@@ -30,8 +30,10 @@ of the motive's application, from which it is proved, normalized to it ({lit}`le
 coproduct and a formula from a term of the initial object as the inductions do; function
 extensionality, with its formula normalized first; and an application of a theorem, of the
 unfolding of a definition or of the induction on a quotient past the signature as
-{name}`Geb.LF.Topos.decPfThm` decodes it, the unfolding with its sides normalized after it
-({lit}`deltaC`) and the induction as the inductions do. The decoding is not proved to
+{name}`Geb.LF.Topos.decPfThm` decodes it, the theorem's application converted from its instance
+to the formula it proves, both normalized ({lit}`applyC`), since LF applies the theorem's
+declaration at any type its instance converts to, the unfolding with its sides normalized after
+it ({lit}`deltaC`) and the induction as the inductions do. The decoding is not proved to
 produce certificates that check: the conversion checker, sound relative to the base checker,
 decides each.
 
@@ -42,6 +44,7 @@ decides each.
 * {lit}`eqvC`, {lit}`leibC`, {lit}`indC` — the certificates of reflexivity, of the substitution
   of equals and of an induction.
 * {lit}`deltaC` — the certificate of the unfolding of a definition.
+* {lit}`applyC` — the certificate of the application of a theorem.
 * {lit}`decPfMod` — the decoding of a proof modulo the rules.
 
 ## Tags
@@ -55,7 +58,7 @@ set_option doc.verso true
 
 namespace Geb.LF.Topos
 
-open FreeTopos.Internal (Term Deriv ConvRule ConvDeriv weaken1)
+open FreeTopos.Internal (Term Deriv ConvRule ConvDeriv Entry weaken1)
 
 /-- A node of a certificate at a rule of the language's derivations. -/
 abbrev ndC (r : FreeTopos.Internal.Rule) (cs : List ConvDeriv) : ConvDeriv :=
@@ -109,9 +112,20 @@ def indC (k : PrimIdx) (c : PartialHorn.Tree) (r : FreeTopos.Internal.Rule) (pb 
         ndC .conv [ndC .cong [ndC (.rwHyp m false) [], ndC .refl []],
           ndC .conv [ndC .beta [], refl]]]])
 
+/-- The certificate of a rule at its premises' certificates, the application of a theorem of
+the environment {lit}`E` converted from its instance to the formula it proves, both normalized:
+LF applies the theorem's declaration at any type its instance converts to. -/
+def applyC (k : PrimIdx) (E : Array Entry) (r : FreeTopos.Internal.Rule) (ps : List ConvDeriv) :
+    ConvDeriv := match r with
+  | .apply j θ σ => match (E[j]?).bind Entry.language? with
+    | some a =>
+      convertC k (ndC (.convFrom (FreeTopos.Internal.instTerm θ σ a.concl)) [normC k, ndC r ps])
+    | none => ndC r ps
+  | r => ndC r ps
+
 section Decoding
 
-variable (k : PrimIdx)
+variable (k : PrimIdx) (E : Array Entry)
 
 /-- One step of the decoding of a proof modulo the rules, at a node of a label, from its
 children's decodings, each a function of an environment and the number of hypotheses. -/
@@ -175,12 +189,13 @@ def decPfModStep (l : Label) (cs : List (Expr × (List (Option ℕ) → ℕ → 
     | .app (.const 56), [(z, _), (φ, _)] => do
       pure (indC k FreeTopos.zero (.zeroInd 0) (weaken1 (← termOf k env φ)) (← termOf k env z) m
         [])
-    | .app (.const c), cs => decPfThm k ndC (deltaC k) (indC k) c cs env m
+    | .app (.const c), cs => decPfThm k (applyC k E) (deltaC k) (indC k) c cs env m
     | .lam, [(_, d)] => d env m
     | _, _ => none
 
-/-- The decoding of a proof modulo the rules in an environment, under a number of hypotheses. -/
-def decPfMod : Expr → List (Option ℕ) → ℕ → Option ConvDeriv := RoseTree.para (decPfModStep k)
+/-- The decoding of a proof modulo the rules in an environment, under a number of hypotheses, the
+theorems it applies those of the environment {lit}`E`. -/
+def decPfMod : Expr → List (Option ℕ) → ℕ → Option ConvDeriv := RoseTree.para (decPfModStep k E)
 
 end Decoding
 

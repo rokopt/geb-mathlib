@@ -4059,13 +4059,13 @@ timeout of 60 s, every term returned checking in LF:
     computations of the descents and the unfolding of addition
 :::
 
-Every term found decoded to a certificate its checker accepts but one:
-the decoding modulo the rules leaves an application of a theorem
-unconverted, and its substitution of equals converts the proof of the
-motive at the left side by β alone, so the term found for the descent at
-the image of `(m, 0)`, which applies the computation of the descent at a
-pair, an instance normal only after the computation rules of pairs,
-decodes to a certificate the conversion checker rejects. Offered only
+Every term found decoded to a certificate its checker accepts. Modulo
+the rules, the application of a theorem decodes with a step of
+conversion from its instance to the formula it proves, so that the term
+found for the descent at the image of `(m, 0)`, which applies the
+computation of the descent at a pair, an instance normal only after the
+computation rules of pairs, decodes to a certificate the conversion
+checker accepts. Offered only
 the relevant declarations, the first three goals are found as before;
 the agreement of the descents is not found in 60 s, the projection, the
 induction on the quotient and the computations of the descents excluded,
