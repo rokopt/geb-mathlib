@@ -385,7 +385,8 @@ def datatypeParts (P : Prog) (S : Defs) (T : Defs3) (form : Term) : List Term ×
   let (ty, k) := datatypeTerms P form
   ([T.globT (v 0) (v 6) (v 2), T.envT (v 0) (v 5) (v 1), T.numsT (v 6) (v 3),
       T.defsT (v 6) (v 2),
-      truth P.o (pc P "srcForm" [Term.lam treeTy (pc P "Reader.expandNums" [v 4, v 0]), form]),
+      truth P.o (pc P "srcForm" [Term.lam treeTy (pc P "Reader.expandNums" [v 4, v 0]),
+        get (pc P "Datatype.expandExpr" [v 7, form])]),
       isSomeT (pc P "Datatype.expandExpr" [v 7, form]), isSomeT ty, isSomeT k,
       isSomeT (pc P "Check.typeIn" [v 9, v 8, get k]), T.kwsT (v 3)],
     S.conv
@@ -397,7 +398,7 @@ for all globals' types and contexts of the kernel, declarations of the expansion
 environments, named contexts, type and numeral abbreviations and definitions' names of the reader,
 environments and contexts of the relation, if the definitions are related to the typing
 environment's and the environment to the named context, the reader's numeral abbreviations and
-names cohere with the typing environment's, the form is a source form, it expands, its expansion
+names cohere with the typing environment's, the form expands to a source form, its expansion
 has a type, the expansion's erasure, its numeral abbreviations expanded, resolves in the scope of
 the context's names, the resolved term has a type in the kernel, and no numeral abbreviation is a
 keyword, then the resolved term's evaluation in the environment converges to a value related at
