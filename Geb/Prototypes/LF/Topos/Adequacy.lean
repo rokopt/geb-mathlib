@@ -33,15 +33,20 @@ variables, the element of the terminal object, pairs and their components, abstr
 application, zero and the successor, the empty list and the construction of a list, the
 constructions of rose trees, the injections into a coproduct, the case analysis of a pair of
 functions, the folds of the natural numbers, of lists and of rose trees, equality, and the
-applications of definitions.
+applications of definitions and of further primitive arrows.
 
-A definition of the language is a constant of an extension of the signature past its own
-declarations, at the position a table of the indices names ({lit}`ExtConst`), declared as the
-product over the kind of types, one for each object parameter, of the products over the families
-of terms of its parameters' types into the family of terms of its value's type ({lit}`defTy`);
-an extension declaring them so is {lit}`SigExt`. An application of the definition is the
-constant applied to the encodings of the objects, the outermost parameter's first, and then to
-the encodings of the terms, the first parameter's first ({lit}`decDefn`).
+A definition of the language, or a primitive arrow other than those the signature's own
+constants encode ({lit}`PrimIdx.fixed`), is a constant of an extension of the signature past its
+own declarations, at the position a table of the indices names ({lit}`ExtConst`), declared by its
+rank ({lit}`Rank`), as an operation symbol of a many-sorted signature is: the product over the
+kind of types, one for each object parameter, of the products over the families of terms of its
+parameters' types into the family of terms of its value's type ({lit}`defTy`), a primitive
+arrow's one parameter of its domain and its value of its codomain; an extension declaring them so
+is {lit}`SigExt`. An application of the constant is the constant applied to the encodings of the
+objects, the outermost parameter's first, and then to the encodings of the terms, the first
+parameter's first ({lit}`decTm`). A primitive arrow the signature's own constants encode is
+encoded by them, and a constant of the table naming one decodes to nothing, so that decoding
+inverts encoding whatever the table.
 
 The fragment's type operations are a table, each operation of the combinators paired with its
 number of arguments and the constant of the signature that encodes it ({lit}`tyConsts`): a type
@@ -66,9 +71,9 @@ extended by the value, so that both may mention the variables around the fold.
   extension, and the constants that encode them.
 * {lit}`encTy`, {lit}`decTy` — the encoding of the fragment's types, and its inverse.
 * {lit}`enc`, {lit}`dec` — the encoding of the fragment's terms, and its inverse.
-* {lit}`ExtConst`, {lit}`defTy`, {lit}`SigExt` — the constants past the signature, the
-  declaration of a definition, and an extension of the signature that declares the definitions
-  and the object definitions.
+* {lit}`ExtConst`, {lit}`Rank`, {lit}`defTy`, {lit}`SigExt` — the constants past the
+  signature, the rank of a constant of the language and its declaration, and an extension of the
+  signature that declares the constants of the language and the object definitions.
 
 ## Main statements
 
@@ -85,7 +90,7 @@ extended by the value, so that both may mention the variables around the fold.
 
 ## Tags
 
-logical framework, LF, adequacy, Mitchell–Bénabou language, definition
+logical framework, LF, adequacy, Mitchell–Bénabou language, definition, primitive arrow
 -/
 
 set_option doc.verso true
@@ -179,16 +184,56 @@ theorem mapM_preimage {α β : Type} {f : α → Option β} {P : α → Prop} :
   · exact hP
   · exact hPs x' hx'
 
+/-- A constant of the language that a term applies to objects and to terms: a definition, given
+by its index, or a primitive arrow, given by its index. -/
+inductive TmHead where
+  /-- A definition. -/
+  | defn (kd : ℕ)
+  /-- A primitive arrow. -/
+  | arr (kp : ℕ)
+deriving DecidableEq
+
+/-- The label of the language's terms that applies a constant to objects. -/
+def TmHead.label : TmHead → List PartialHorn.Tree → FreeTopos.Internal.Label
+  | .defn kd, θ => .defn kd θ
+  | .arr kp, θ => .arr kp θ
+
+/-- The rank of a constant of the language, as of an operation symbol of a many-sorted signature:
+the number of its object parameters, the types of its parameters, the last first, and the type of
+its value, in the object parameters. -/
+structure Rank where
+  /-- The number of object parameters. -/
+  arity : ℕ
+  /-- The types of the parameters, the last first. -/
+  params : List PartialHorn.Tree
+  /-- The type of the value. -/
+  type : PartialHorn.Tree
+
+/-- The rank of a definition. -/
+def Rank.ofDefn (d : FreeTopos.Internal.Defn) : Rank := ⟨d.arity, d.params, d.type⟩
+
+/-- The rank of a primitive arrow: its one parameter of its domain, and its codomain. -/
+def Rank.ofPrim (p : FreeTopos.Internal.Prim) : Rank := ⟨p.arity, [p.dom], p.cod⟩
+
+/-- Whether the parameters and the value of a rank are of types in its object parameters. -/
+def Rank.ok (G : FreeTopos.Internal.Globals) (r : Rank) : Bool :=
+  r.params.all (FreeTopos.Internal.IsTy G r.arity) && FreeTopos.Internal.IsTy G r.arity r.type
+
+/-- The rank of a constant of the globals: a definition's of the language, a primitive arrow's. -/
+def TmHead.rank (G : FreeTopos.Internal.Globals) : TmHead → Option Rank
+  | .defn kd => ((G.defs[kd]?).bind FreeTopos.Internal.Definition.language?).map Rank.ofDefn
+  | .arr kp => (G.prims[kp]?).map Rank.ofPrim
+
 /-- A constant an extension of the signature declares past it: a theorem, given by the index of
-its entry, the number of its object variables and the number of its variables; a definition, given
-by its index, the number of its object parameters and the number of its parameters; the
-unfolding of a definition, given likewise; or an object definition, given by the index of its
-operation of the combinators and the number of its object parameters. -/
+its entry, the number of its object variables and the number of its variables; a constant of the
+language, given with the number of its object parameters and the number of its parameters; the
+unfolding of a definition, given by its index and those numbers; or an object definition, given
+by the index of its operation of the combinators and the number of its object parameters. -/
 inductive ExtConst where
   /-- A theorem. -/
   | thm (j m p : ℕ)
-  /-- A definition. -/
-  | defn (kd m p : ℕ)
+  /-- A constant of the language. -/
+  | tm (h : TmHead) (m p : ℕ)
   /-- The unfolding of a definition. -/
   | delta (kd m p : ℕ)
   /-- An object definition. -/
@@ -241,6 +286,22 @@ structure PrimIdx.Valid (k : PrimIdx) (G : FreeTopos.Internal.Globals) : Prop wh
   inr : G.prims[k.inr]? = some FreeTopos.Internal.inrPrim
   /-- The case analysis of a coproduct. -/
   case : G.prims[k.case]? = some FreeTopos.Internal.casePrim
+
+/-- Whether a primitive arrow is one the indices name, which the signature's own constants
+encode. -/
+def PrimIdx.fixed (k : PrimIdx) (i : ℕ) : Bool :=
+  [k.zero, k.succ, k.nil, k.cons, k.node, k.lnode, k.inl, k.inr, k.case].contains i
+
+/-- A primitive arrow the indices name is fixed. -/
+theorem PrimIdx.fixed_of_mem (k : PrimIdx) {i : ℕ}
+    (h : i ∈ [k.zero, k.succ, k.nil, k.cons, k.node, k.lnode, k.inl, k.inr, k.case]) :
+    k.fixed i = true :=
+  List.elem_eq_true_of_mem h
+
+/-- Whether a constant of the language is a primitive arrow the indices name. -/
+def PrimIdx.fixedHead (k : PrimIdx) : TmHead → Bool
+  | .defn _ => false
+  | .arr kp => k.fixed kp
 
 /-- The first position of a constant in a list of constants of an extension. -/
 def ExtConst.find? (x : ExtConst) : List ExtConst → Option ℕ :=
@@ -728,28 +789,28 @@ abbrev MTerm : Type := FreeTopos.Internal.Term
 variable. -/
 abbrev MEnv : Type := List (PartialHorn.Tree × PartialHorn.Tree)
 
-/-- The declaration of a definition of the language: the products over the kind of types, one
-for each of its object parameters, of the products over the families of terms of its
+/-- The declaration of a constant of the language of a rank: the products over the kind of
+types, one for each of its object parameters, of the products over the families of terms of its
 parameters' types, the outermost first, each encoded at the offset of the parameters outside it,
 into the family of terms of its value's type, encoded in the scope of the parameters. -/
-def defTy (k : PrimIdx) (d : FreeTopos.Internal.Defn) : Option Expr := do
-  let ΓT ← encCtx k d.arity d.params
-  pure (piTele ΓT.reverse (tm (← encTy k d.params.length d.type)))
+def defTy (k : PrimIdx) (r : Rank) : Option Expr := do
+  let ΓT ← encCtx k r.arity r.params
+  pure (piTele ΓT.reverse (tm (← encTy k r.params.length r.type)))
 
-/-- The constant past the signature that the indices name for a definition, with its numbers of
-object parameters and parameters. -/
-def PrimIdx.defConst (k : PrimIdx) (kd m p : ℕ) : Option ℕ :=
-  ((ExtConst.defn kd m p).find? k.ext).map (sig.length + ·)
+/-- The constant past the signature that the indices name for a constant of the language, with
+its numbers of object parameters and parameters. -/
+def PrimIdx.tmConst (k : PrimIdx) (h : TmHead) (m p : ℕ) : Option ℕ :=
+  ((ExtConst.tm h m p).find? k.ext).map (sig.length + ·)
 
 /-- An extension of the signature, with the constants of {lit}`G` and the indices {lit}`k`: the
 signature is a prefix of it, it is formed, it declares one constant past the signature for each
 constant of the indices' extension, the object definitions the indices name are the globals' and
 are declared at their positions as type operations, the operations of the type operations are
-unique, its further declarations of types are those object definitions, the definitions the
-indices name, each at its first position among the indices' constants, are definitions the
-language admits, their parameters and values of types and their bodies compiling to their values'
-types, and are declared there as {name}`Geb.LF.Topos.defTy` declares them, and its further
-declarations of terms are those definitions. -/
+unique, its further declarations of types are those object definitions, the constants of the
+language the indices name, each at its first position among the indices' constants, are the
+globals' other than the primitive arrows the indices name, their parameters and values of types,
+and are declared there as {name}`Geb.LF.Topos.defTy` declares their ranks, and its further
+declarations of terms are those constants. -/
 structure SigExt (G : FreeTopos.Internal.Globals) (k : PrimIdx) (sg : Sig) : Prop where
   /-- The extension is formed. -/
   ok : sg.ok = true
@@ -767,16 +828,16 @@ structure SigExt (G : FreeTopos.Internal.Globals) (k : PrimIdx) (sg : Sig) : Pro
   /-- Its further declarations ending in {lit}`tp` are object definitions. -/
   tpObjs : ∀ i T, sg[sig.length + i]? = some T → T.headDepth.1 = some 0 →
     ∃ op m, k.ext[i]? = some (.obj op m)
-  /-- The definitions the indices name are admitted and declared at their positions. -/
-  defs : ∀ i kd m p, k.ext[i]? = some (.defn kd m p) → ∃ d T,
-    (ExtConst.defn kd m p).find? k.ext = some i ∧
-    G.defs[kd]? = some (.language d) ∧ m = d.arity ∧ p = d.params.length ∧
-      (FreeTopos.Internal.Definition.language d).ok G = true ∧
-      (∃ cd, FreeTopos.Internal.Defn.compile G d = some cd) ∧ defTy k d = some T ∧
+  /-- The constants of the language the indices name are the globals' other than the primitive
+  arrows the indices name, of types, and declared at their positions. -/
+  tms : ∀ i h m p, k.ext[i]? = some (.tm h m p) → ∃ r T,
+    (ExtConst.tm h m p).find? k.ext = some i ∧ k.fixedHead h = false ∧ h.rank G = some r ∧
+      m = r.arity ∧
+      p = r.params.length ∧ r.ok G = true ∧ defTy k r = some T ∧
       sg[sig.length + i]? = some T
-  /-- Its further declarations ending in {lit}`tm` are definitions. -/
+  /-- Its further declarations ending in {lit}`tm` are constants of the language. -/
   tmDefs : ∀ i T, sg[sig.length + i]? = some T → T.headDepth.1 = some 6 →
-    ∃ kd m p, k.ext[i]? = some (.defn kd m p)
+    ∃ h m p, k.ext[i]? = some (.tm h m p)
 
 variable {G : FreeTopos.Internal.Globals}
 
@@ -951,6 +1012,46 @@ section Encoding
 
 variable (G : FreeTopos.Internal.Globals) (n : ℕ) (k : PrimIdx)
 
+/-- The encoding of an application of a primitive arrow the indices name to objects and to a
+term, from the term's encoding, with the objects encoded at an offset: the signature's constant of
+the arrow, applied to the encodings of the objects and to the term's. -/
+def encFixed (i : ℕ) (θ : List PartialHorn.Tree) (off : ℕ) (Ms : List (Option Expr)) :
+    Option Expr :=
+  match Ms with
+    | [M] => match θ with
+      | [] =>
+        if i = k.zero then zeroAt <$> M else if i = k.succ then succ <$> M
+        else if i = k.node then node <$> M else none
+      | [a] =>
+        if i = k.nil then do pure (nilAt (← encTy k off a) (← M))
+        else if i = k.cons then do pure (cons (← encTy k off a) (← M))
+        else if i = k.lnode then do pure (lnode (← encTy k off a) (← M)) else none
+      | [a, b] =>
+        if i = k.inl then do pure (inl (← encTy k off a) (← encTy k off b) (← M))
+        else if i = k.inr then do pure (inr (← encTy k off a) (← encTy k off b) (← M))
+        else none
+      | [a, b, c] =>
+        if i = k.case then do
+          pure (case (← encTy k off a) (← encTy k off b) (← encTy k off c) (← M))
+        else none
+      | _ => none
+    | _ => none
+
+/-- The encoding of an application of a constant of the language to objects and to terms, from
+the terms' encodings in an environment: the constant past the signature that the indices name for
+it, applied to the encodings of the objects, the outermost parameter's first, at the offset of the
+environment's variables, and to those of the terms, the first parameter's first. -/
+def encTm (h : TmHead) (θ : List PartialHorn.Tree)
+    (cs : List (MTerm × (PartialHorn.Tree → MEnv → Option Expr))) (X : PartialHorn.Tree)
+    (e : MEnv) : Option Expr := do
+  let r ← h.rank G
+  let c ← k.tmConst h r.arity r.params.length
+  if θ.length = r.arity ∧ cs.length = r.params.length then do
+    let Ts ← θ.reverse.mapM (encTy k e.length)
+    let Ms ← cs.reverse.mapM fun x ↦ x.2 X e
+    pure (Expr.const c (Ts ++ Ms))
+  else none
+
 open FreeTopos.Internal in
 /-- One step of the encoding of a term of the internal language in {lit}`n` object variables, at
 a node of a label, from its children's encodings, in an environment over {lit}`X`: each
@@ -958,10 +1059,10 @@ constructor of the fragment is the constant of the same name, applied to the enc
 types of its children, which the compilation computes, at the offset of the environment's
 variables, and of the children; an abstraction's body and a fold's step are LF abstractions, the
 step over the fold's type, the type of its start, and over the element type before it for a
-list, and over the pair of a label and the list of the children's values for a rose tree; zero,
-the successor, the empty list and the constructions of a list and of a rose tree are the
-primitive arrows the indices name. A term outside the fragment, or with a type outside it, has no
-encoding. -/
+list, and over the pair of a label and the list of the children's values for a rose tree; a
+primitive arrow the indices name is the signature's constant of it, and any other, as a
+definition, the constant past the signature the indices name for it. A term outside the fragment,
+or with a type outside it, has no encoding. -/
 def encStep (l : FreeTopos.Internal.Label)
     (cs : List (MTerm × (PartialHorn.Tree → MEnv → Option Expr)))
     (X : PartialHorn.Tree) (e : MEnv) : Option Expr :=
@@ -988,21 +1089,9 @@ def encStep (l : FreeTopos.Internal.Label)
       let (_, p) ← compile G n t X e
       let (a, b) ← expParts p
       pure (app (← encTy k e.length a) (← encTy k e.length b) (← et X e) (← eu X e))
-    | .arr i [], [(_, et)] =>
-      if i = k.zero then zeroAt <$> et X e else if i = k.succ then succ <$> et X e
-      else if i = k.node then node <$> et X e else none
-    | .arr i [a], [(_, et)] =>
-      if i = k.nil then do pure (nilAt (← encTy k e.length a) (← et X e))
-      else if i = k.cons then do pure (cons (← encTy k e.length a) (← et X e))
-      else if i = k.lnode then do pure (lnode (← encTy k e.length a) (← et X e)) else none
-    | .arr i [a, b], [(_, et)] =>
-      if i = k.inl then do pure (inl (← encTy k e.length a) (← encTy k e.length b) (← et X e))
-      else if i = k.inr then do pure (inr (← encTy k e.length a) (← encTy k e.length b) (← et X e))
-      else none
-    | .arr i [a, b, c], [(_, et)] =>
-      if i = k.case then do
-        pure (case (← encTy k e.length a) (← encTy k e.length b) (← encTy k e.length c) (← et X e))
-      else none
+    | .arr i θ, cs =>
+      if k.fixed i then encFixed k i θ e.length (cs.map fun x ↦ x.2 X e)
+      else encTm G k (.arr i) θ cs X e
     | .natRec, [(z, ez), (_, es), (_, em)] => do
       let (_, c) ← compile G n z X e
       pure (natRec (← encTy k e.length c) (← ez X e)
@@ -1029,14 +1118,7 @@ def encStep (l : FreeTopos.Internal.Label)
     | .eq, [(t, et), (_, eu)] => do
       let (_, a) ← compile G n t X e
       pure (eq (← encTy k e.length a) (← et X e) (← eu X e))
-    | .defn kd θ, cs => do
-      let d ← (G.defs[kd]?).bind FreeTopos.Internal.Definition.language?
-      let c ← k.defConst kd d.arity d.params.length
-      if θ.length = d.arity ∧ cs.length = d.params.length then do
-        let Ts ← θ.reverse.mapM (encTy k e.length)
-        let Ms ← cs.reverse.mapM fun x ↦ x.2 X e
-        pure (Expr.const c (Ts ++ Ms))
-      else none
+    | .defn kd θ, cs => encTm G k (.defn kd) θ cs X e
     | _, _ => none
 
 /-- The encoding of a term of the internal language in an environment. -/
@@ -1047,6 +1129,33 @@ theorem enc_node (l : FreeTopos.Internal.Label) (cs : List MTerm) :
     enc G n k (RoseTree.node l cs) =
       encStep G n k l (cs.map fun c ↦ (c, enc G n k c)) :=
   RoseTree.para_node _ l cs
+
+/-- The step of the encoding at a primitive arrow: the signature's constant of it where the
+indices name it, and else the constant past the signature they name for it. -/
+theorem encStep_arr (i : ℕ) (θ : List PartialHorn.Tree)
+    (cs : List (MTerm × (PartialHorn.Tree → MEnv → Option Expr))) (X : PartialHorn.Tree)
+    (e : MEnv) :
+    encStep G n k (.arr i θ) cs X e = if k.fixed i then encFixed k i θ e.length
+      (cs.map fun x ↦ x.2 X e) else encTm G k (.arr i) θ cs X e := by
+  rcases cs with _ | ⟨_, _ | ⟨_, _ | ⟨_, _ | ⟨_, _⟩⟩⟩⟩ <;> rfl
+
+/-- The step of the encoding at a definition. -/
+theorem encStep_defn (kd : ℕ) (θ : List PartialHorn.Tree)
+    (cs : List (MTerm × (PartialHorn.Tree → MEnv → Option Expr))) (X : PartialHorn.Tree)
+    (e : MEnv) : encStep G n k (.defn kd θ) cs X e = encTm G k (.defn kd) θ cs X e := by
+  rcases cs with _ | ⟨_, _ | ⟨_, _ | ⟨_, _ | ⟨_, _⟩⟩⟩⟩ <;> rfl
+
+/-- The step of the encoding at a constant of the language other than a primitive arrow the
+indices name is the encoding of its application. -/
+theorem encStep_label {h : TmHead} (hf : k.fixedHead h = false) (θ : List PartialHorn.Tree)
+    (cs : List (MTerm × (PartialHorn.Tree → MEnv → Option Expr))) (X : PartialHorn.Tree)
+    (e : MEnv) : encStep G n k (h.label θ) cs X e = encTm G k h θ cs X e := by
+  cases h with
+  | defn kd => exact encStep_defn G n k kd θ cs X e
+  | arr kp =>
+    have hf' : k.fixed kp = false := hf
+    rw [TmHead.label, encStep_arr, hf']
+    rfl
 
 end Encoding
 
@@ -1263,18 +1372,18 @@ section Decoding
 
 variable (k : PrimIdx)
 
-/-- The decoding of an application of a constant past the signature, a definition the indices
-name, from its arguments, each paired with its decoding at each offset: its first arguments, as
-many as the definition's object parameters, the outermost first, are types, decoded at the
-offset, and the rest terms, as many as its parameters, and the application decodes to the
-definition at the decoded types, the innermost first, applied to the decoded terms, the last
-first. -/
-def decDefn (c : ℕ) (cs : List (Expr × (ℕ → Option MTerm))) (off : ℕ) : Option MTerm :=
+/-- The decoding of an application of a constant past the signature, a constant of the language
+the indices name other than a primitive arrow the signature's own constants encode, from its
+arguments, each paired with its decoding at each offset: its first arguments, as many as the
+constant's object parameters, the outermost first, are types, decoded at the offset, and the rest
+terms, as many as its parameters, and the application decodes to the constant at the decoded
+types, the innermost first, applied to the decoded terms, the last first. -/
+def decTm (c : ℕ) (cs : List (Expr × (ℕ → Option MTerm))) (off : ℕ) : Option MTerm :=
   if sig.length ≤ c then match k.ext[c - sig.length]? with
-    | some (.defn kd m p) => if cs.length = m + p then do
+    | some (.tm h m p) => if k.fixedHead h = false ∧ cs.length = m + p then do
         let θ ← (cs.take m).mapM fun x ↦ decTy k off x.1
         let args ← (cs.drop m).mapM fun x ↦ x.2 off
-        pure (FreeTopos.Internal.Term.defn kd θ.reverse args.reverse)
+        pure (RoseTree.node (h.label θ.reverse) args.reverse)
       else none
     | _ => none
   else none
@@ -1327,7 +1436,7 @@ def decStep (l : Label) (cs : List (Expr × (ℕ → Option MTerm))) (off : ℕ)
     | .app (.const 52), [(A, _), (B, _), (C, _), (_, p)] => do
       pure (FreeTopos.Internal.Term.arr k.case [← decTy k off A, ← decTy k off B, ← decTy k off C]
         (← p off))
-    | .app (.const c), cs => decDefn k c cs off
+    | .app (.const c), cs => decTm k c cs off
     | .lam, [(_, d)] => FreeTopos.Internal.Term.lam FreeTopos.one <$> d (off + 1)
     | _, _ => none
 
@@ -1340,50 +1449,53 @@ theorem dec_node (l : Label) (cs : List Expr) (off : ℕ) :
     dec k (RoseTree.node l cs) off = decStep k l (cs.map fun c ↦ (c, dec k c)) off :=
   congrFun (RoseTree.para_node _ l cs) off
 
-/-- The step of the decoding at a constant past the signature is the decoding of a definition. -/
-theorem decStep_defn {c : ℕ} (hc : sig.length ≤ c) (cs : List (Expr × (ℕ → Option MTerm)))
-    (off : ℕ) : decStep k (.app (.const c)) cs off = decDefn k c cs off := by
+/-- The step of the decoding at a constant past the signature is the decoding of a constant of the
+language. -/
+theorem decStep_tm {c : ℕ} (hc : sig.length ≤ c) (cs : List (Expr × (ℕ → Option MTerm)))
+    (off : ℕ) : decStep k (.app (.const c)) cs off = decTm k c cs off := by
   obtain ⟨i, rfl⟩ : ∃ i, c = i + 57 :=
     ⟨c - 57, by rw [show sig.length = 57 from rfl] at hc; omega⟩
   rfl
 
-/-- The decodings of an application of a definition. -/
-theorem decDefn_eq_some {c : ℕ} {cs : List (Expr × (ℕ → Option MTerm))} {off : ℕ}
-    {s : MTerm} (h : decDefn k c cs off = some s) :
-    ∃ kd m p θ args, sig.length ≤ c ∧ k.ext[c - sig.length]? = some (.defn kd m p) ∧
-      cs.length = m + p ∧ (cs.take m).mapM (fun x ↦ decTy k off x.1) = some θ ∧
+/-- The decodings of an application of a constant of the language. -/
+theorem decTm_eq_some {c : ℕ} {cs : List (Expr × (ℕ → Option MTerm))} {off : ℕ}
+    {s : MTerm} (hs : decTm k c cs off = some s) :
+    ∃ h m p θ args, sig.length ≤ c ∧ k.ext[c - sig.length]? = some (.tm h m p) ∧
+      k.fixedHead h = false ∧ cs.length = m + p ∧
+      (cs.take m).mapM (fun x ↦ decTy k off x.1) = some θ ∧
       (cs.drop m).mapM (fun x ↦ x.2 off) = some args ∧
-      s = FreeTopos.Internal.Term.defn kd θ.reverse args.reverse := by
-  unfold decDefn at h
+      s = RoseTree.node (h.label θ.reverse) args.reverse := by
+  unfold decTm at hs
   by_cases hc : sig.length ≤ c
-  · rw [ite_eq_left hc] at h
-    rcases he : k.ext[c - sig.length]? with _ | ⟨_ | ⟨kd, m, p⟩ | _ | _⟩ <;> rw [he] at h <;>
-      dsimp only at h
-    · exact nomatch h
-    · exact nomatch h
-    · by_cases hl : cs.length = m + p
-      · rw [ite_eq_left hl] at h
+  · rw [ite_eq_left hc] at hs
+    rcases he : k.ext[c - sig.length]? with _ | ⟨_ | ⟨h, m, p⟩ | _ | _⟩ <;> rw [he] at hs <;>
+      dsimp only at hs
+    · exact nomatch hs
+    · exact nomatch hs
+    · by_cases hl : k.fixedHead h = false ∧ cs.length = m + p
+      · rw [ite_eq_left hl] at hs
         simp only [Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
-          Option.some.injEq] at h
-        obtain ⟨θ, hθ, args, hargs, rfl⟩ := h
-        exact ⟨kd, m, p, θ, args, hc, rfl, hl, hθ, hargs, rfl⟩
-      · rw [ite_eq_right hl] at h
-        exact nomatch h
-    · exact nomatch h
-    · exact nomatch h
-  · rw [ite_eq_right hc] at h
-    exact nomatch h
+          Option.some.injEq] at hs
+        obtain ⟨θ, hθ, args, hargs, rfl⟩ := hs
+        exact ⟨h, m, p, θ, args, hc, rfl, hl.1, hl.2, hθ, hargs, rfl⟩
+      · rw [ite_eq_right hl] at hs
+        exact nomatch hs
+    · exact nomatch hs
+    · exact nomatch hs
+  · rw [ite_eq_right hc] at hs
+    exact nomatch hs
 
-/-- The decoding of an application of a definition, from its parts. -/
-theorem decDefn_of {c kd m p : ℕ} {cs : List (Expr × (ℕ → Option MTerm))} {off : ℕ}
+/-- The decoding of an application of a constant of the language, from its parts. -/
+theorem decTm_of {c m p : ℕ} {h : TmHead} {cs : List (Expr × (ℕ → Option MTerm))} {off : ℕ}
     {θ : List PartialHorn.Tree} {args : List MTerm} (hc : sig.length ≤ c)
-    (he : k.ext[c - sig.length]? = some (.defn kd m p)) (hl : cs.length = m + p)
-    (hθ : (cs.take m).mapM (fun x ↦ decTy k off x.1) = some θ)
+    (he : k.ext[c - sig.length]? = some (.tm h m p)) (hf : k.fixedHead h = false)
+    (hl : cs.length = m + p) (hθ : (cs.take m).mapM (fun x ↦ decTy k off x.1) = some θ)
     (hargs : (cs.drop m).mapM (fun x ↦ x.2 off) = some args) :
-    decDefn k c cs off = some (FreeTopos.Internal.Term.defn kd θ.reverse args.reverse) := by
-  unfold decDefn
+    decTm k c cs off = some (RoseTree.node (h.label θ.reverse) args.reverse) := by
+  unfold decTm
   rw [ite_eq_left hc, he]
-  simp only [ite_eq_left hl, hθ, hargs, Option.bind_eq_bind, Option.bind_some, Option.pure_def]
+  simp only [ite_eq_left (And.intro hf hl), hθ, hargs, Option.bind_eq_bind, Option.bind_some,
+    Option.pure_def]
 
 end Decoding
 
@@ -1413,25 +1525,25 @@ theorem mapM_transfer_idx {α β γ δ : Type} {f : α → Option β} {g : γ �
     ih hzs' (Nat.succ.inj hl) fun i x' y' z' h₁ h₂ h₃ ↦ hx (i + 1) x' y' z' h₁ h₂ h₃]
   rfl
 
-/-- The decoding of an application of a definition carries over to an application of the same
-constant to arguments related position by position: the type arguments by a function of their
-decodings, the term arguments by another. -/
-theorem decDefn_transfer {c off off' : ℕ} {xs ys : List Expr} {s : MTerm}
+/-- The decoding of an application of a constant of the language carries over to an application
+of the same constant to arguments related position by position: the type arguments by a function
+of their decodings, the term arguments by another. -/
+theorem decTm_transfer {c off off' : ℕ} {xs ys : List Expr} {s : MTerm}
     {fT : PartialHorn.Tree → PartialHorn.Tree} {fM : MTerm → MTerm}
-    (h : decDefn k c (xs.map fun x ↦ (x, dec k x)) off = some s) (hlen : ys.length = xs.length)
-    (hfin : ∀ kd m p, k.ext[c - sig.length]? = some (.defn kd m p) →
+    (hs : decTm k c (xs.map fun x ↦ (x, dec k x)) off = some s) (hlen : ys.length = xs.length)
+    (hfin : ∀ h m p, k.ext[c - sig.length]? = some (.tm h m p) →
       (∀ i x y a, i < m → xs[i]? = some x → ys[i]? = some y → decTy k off x = some a →
         decTy k off' y = some (fT a)) ∧
       (∀ i x y u, m ≤ i → xs[i]? = some x → ys[i]? = some y → dec k x off = some u →
         dec k y off' = some (fM u))) :
-    ∃ (kd : ℕ) (θ : List PartialHorn.Tree) (args : List MTerm),
-      s = FreeTopos.Internal.Term.defn kd θ.reverse args.reverse ∧
-      decDefn k c (ys.map fun y ↦ (y, dec k y)) off' =
-        some (FreeTopos.Internal.Term.defn kd (θ.map fT).reverse (args.map fM).reverse) := by
-  obtain ⟨kd, m, p, θ, args, hc, he, hl, hθ, hargs, rfl⟩ := decDefn_eq_some k h
-  obtain ⟨hT, hM⟩ := hfin kd m p he
+    ∃ (h : TmHead) (θ : List PartialHorn.Tree) (args : List MTerm),
+      s = RoseTree.node (h.label θ.reverse) args.reverse ∧
+      decTm k c (ys.map fun y ↦ (y, dec k y)) off' =
+        some (RoseTree.node (h.label (θ.map fT).reverse) (args.map fM).reverse) := by
+  obtain ⟨h, m, p, θ, args, hc, he, hf, hl, hθ, hargs, rfl⟩ := decTm_eq_some k hs
+  obtain ⟨hT, hM⟩ := hfin h m p he
   rw [List.length_map] at hl
-  refine ⟨kd, θ, args, rfl, decDefn_of k hc he (by rw [List.length_map, hlen, hl]) ?_ ?_⟩
+  refine ⟨h, θ, args, rfl, decTm_of k hc he hf (by rw [List.length_map, hlen, hl]) ?_ ?_⟩
   · rw [← List.map_take, List.mapM_map] at hθ ⊢
     refine mapM_transfer_idx hθ (by rw [List.length_take, List.length_take, hlen])
       fun i x y z h₁ h₂ h₃ ↦ ?_
@@ -1451,6 +1563,44 @@ theorem decDefn_transfer {c off off' : ℕ} {xs ys : List Expr} {s : MTerm}
 @[simp] theorem length_extEnv (X a : PartialHorn.Tree) (e : MEnv) :
     (FreeTopos.Internal.extEnv X a e).length = e.length + 1 := by
   simp [FreeTopos.Internal.extEnv]
+
+/-- Decoding inverts the encoding of an application of a constant of the language other than a
+primitive arrow the indices name, where it inverts the encodings of the terms applied. -/
+theorem dec_encTm {G : FreeTopos.Internal.Globals} {n : ℕ} {k : PrimIdx} {h : TmHead}
+    (hf : k.fixedHead h = false) {θ : List PartialHorn.Tree} {cs : List MTerm}
+    {X : PartialHorn.Tree} {e : MEnv} {M : Expr}
+    (ih : ∀ c ∈ cs, ∀ (X : PartialHorn.Tree) (e : MEnv) (M : Expr), enc G n k c X e = some M →
+      dec k M e.length = some c)
+    (henc : encTm G k h θ (cs.map fun c ↦ (c, enc G n k c)) X e = some M) :
+    dec k M e.length = some (RoseTree.node (h.label θ) cs) := by
+  simp only [encTm, Option.bind_eq_bind] at henc
+  obtain ⟨r, -, henc⟩ := Option.bind_eq_some_iff.mp henc
+  obtain ⟨c, hc, henc⟩ := Option.bind_eq_some_iff.mp henc
+  by_cases hl : θ.length = r.arity ∧
+      (cs.map fun c ↦ (c, enc G n k c)).length = r.params.length
+  · rw [ite_eq_left hl] at henc
+    obtain ⟨Ts, hTs, henc⟩ := Option.bind_eq_some_iff.mp henc
+    obtain ⟨Ms, hMs, henc⟩ := Option.bind_eq_some_iff.mp henc
+    obtain rfl := Option.some.inj henc
+    obtain ⟨i, hi, rfl⟩ := Option.map_eq_some_iff.mp hc
+    have hext := ExtConst.find?_spec _ _ _ hi
+    have hTl : Ts.length = r.arity := by
+      rw [← hl.1, length_of_mapM hTs, List.length_reverse]
+    rw [Expr.const, Expr.app, dec_node, decStep_tm _ (by omega)]
+    rw [decTm_of k (m := r.arity) (p := r.params.length) (θ := θ.reverse) (args := cs.reverse)
+      (by omega) (by rw [Nat.add_sub_cancel_left]; exact hext) hf
+      (by rw [List.length_map, List.length_append, hTl, ← hl.2, length_of_mapM hMs,
+        List.length_reverse])
+      (by
+        rw [← List.map_take, List.take_left' hTl, List.mapM_map]
+        exact mapM_inverse hTs fun a _ A hA ↦ decTy_encTy _ a A hA)
+      (by
+        rw [← List.map_drop, List.drop_left' hTl, List.mapM_map]
+        rw [← List.map_reverse, List.mapM_map] at hMs
+        exact mapM_inverse hMs fun x hx M hM ↦ ih x (List.mem_reverse.mp hx) X e M hM),
+      List.reverse_reverse, List.reverse_reverse]
+  · rw [ite_eq_right hl] at henc
+    exact nomatch henc
 
 /-- Decoding inverts encoding. -/
 theorem dec_enc {G : FreeTopos.Internal.Globals} {n : ℕ} {k : PrimIdx} :
@@ -1521,12 +1671,17 @@ theorem dec_enc {G : FreeTopos.Internal.Globals} {n : ℕ} {k : PrimIdx} :
           ih u (by simp) X e Mu hMu]
         rfl
       · simp [encStep] at henc
-    · rcases cs with _ | ⟨t, _ | ⟨d, cs⟩⟩
-      · simp [encStep] at henc
+    · by_cases hfx : k.fixed j = true
+      swap
+      · rw [encStep_arr, ite_eq_right hfx] at henc
+        exact dec_encTm (h := .arr j) (Bool.not_eq_true _ ▸ hfx) (fun c hc ↦ ih c hc) henc
+      rw [encStep_arr, ite_eq_left hfx] at henc
+      rcases cs with _ | ⟨t, _ | ⟨d, cs⟩⟩
+      · simp [encFixed] at henc
       · rcases θ with _ | ⟨θ₀, _ | ⟨θ₁, θ⟩⟩
         · by_cases hkz : j = k.zero
           · subst hkz
-            simp only [encStep, List.map_cons, List.map_nil, ↓reduceIte, Option.map_eq_map,
+            simp only [encFixed, List.map_cons, List.map_nil, ↓reduceIte, Option.map_eq_map,
               Option.map_eq_some_iff] at henc
             obtain ⟨Mt, hMt, rfl⟩ := henc
             rw [zeroAt, Expr.const, Expr.app, dec_node]
@@ -1534,7 +1689,7 @@ theorem dec_enc {G : FreeTopos.Internal.Globals} {n : ℕ} {k : PrimIdx} :
             rfl
           · by_cases hks : j = k.succ
             · subst hks
-              simp only [encStep, List.map_cons, List.map_nil, hkz, ↓reduceIte,
+              simp only [encFixed, List.map_cons, List.map_nil, hkz, ↓reduceIte,
                 Option.map_eq_map, Option.map_eq_some_iff] at henc
               obtain ⟨Mt, hMt, rfl⟩ := henc
               rw [succ, Expr.const, Expr.app, dec_node]
@@ -1542,16 +1697,16 @@ theorem dec_enc {G : FreeTopos.Internal.Globals} {n : ℕ} {k : PrimIdx} :
               rfl
             · by_cases hkd : j = k.node
               · subst hkd
-                simp only [encStep, List.map_cons, List.map_nil, hkz, hks, ↓reduceIte,
+                simp only [encFixed, List.map_cons, List.map_nil, hkz, hks, ↓reduceIte,
                   Option.map_eq_map, Option.map_eq_some_iff] at henc
                 obtain ⟨Mt, hMt, rfl⟩ := henc
                 rw [node, Expr.const, Expr.app, dec_node]
                 simp only [List.map_cons, List.map_nil, decStep, ih t (by simp) X e Mt hMt]
                 rfl
-              · simp [encStep, hkz, hks, hkd] at henc
+              · simp [encFixed, hkz, hks, hkd] at henc
         · by_cases hkn : j = k.nil
           · subst hkn
-            simp only [encStep, List.map_cons, List.map_nil, ↓reduceIte, Option.bind_eq_bind,
+            simp only [encFixed, List.map_cons, List.map_nil, ↓reduceIte, Option.bind_eq_bind,
               Option.bind_eq_some_iff, Option.pure_def, Option.some.injEq] at henc
             obtain ⟨A, hA, Mt, hMt, rfl⟩ := henc
             rw [nilAt, Expr.const, Expr.app, dec_node]
@@ -1560,7 +1715,7 @@ theorem dec_enc {G : FreeTopos.Internal.Globals} {n : ℕ} {k : PrimIdx} :
             rfl
           · by_cases hkc : j = k.cons
             · subst hkc
-              simp only [encStep, List.map_cons, List.map_nil, hkn, ↓reduceIte,
+              simp only [encFixed, List.map_cons, List.map_nil, hkn, ↓reduceIte,
                 Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
                 Option.some.injEq] at henc
               obtain ⟨A, hA, Mt, hMt, rfl⟩ := henc
@@ -1570,7 +1725,7 @@ theorem dec_enc {G : FreeTopos.Internal.Globals} {n : ℕ} {k : PrimIdx} :
               rfl
             · by_cases hkl : j = k.lnode
               · subst hkl
-                simp only [encStep, List.map_cons, List.map_nil, hkn, hkc, ↓reduceIte,
+                simp only [encFixed, List.map_cons, List.map_nil, hkn, hkc, ↓reduceIte,
                   Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
                   Option.some.injEq] at henc
                 obtain ⟨A, hA, Mt, hMt, rfl⟩ := henc
@@ -1578,11 +1733,11 @@ theorem dec_enc {G : FreeTopos.Internal.Globals} {n : ℕ} {k : PrimIdx} :
                 simp only [List.map_cons, List.map_nil, decStep, ih t (by simp) X e Mt hMt,
                   decTy_encTy _ θ₀ A hA, Option.bind_eq_bind, Option.bind_some, Option.pure_def]
                 rfl
-              · simp [encStep, hkn, hkc, hkl] at henc
+              · simp [encFixed, hkn, hkc, hkl] at henc
         · rcases θ with _ | ⟨θ₂, _ | ⟨θ₃, θ⟩⟩
           · by_cases hkl : j = k.inl
             · subst hkl
-              simp only [encStep, List.map_cons, List.map_nil, ↓reduceIte, Option.bind_eq_bind,
+              simp only [encFixed, List.map_cons, List.map_nil, ↓reduceIte, Option.bind_eq_bind,
                 Option.bind_eq_some_iff, Option.pure_def, Option.some.injEq] at henc
               obtain ⟨A, hA, B, hB, Mt, hMt, rfl⟩ := henc
               rw [inl, Expr.const, Expr.app, dec_node]
@@ -1592,7 +1747,7 @@ theorem dec_enc {G : FreeTopos.Internal.Globals} {n : ℕ} {k : PrimIdx} :
               rfl
             · by_cases hkr : j = k.inr
               · subst hkr
-                simp only [encStep, List.map_cons, List.map_nil, hkl, ↓reduceIte,
+                simp only [encFixed, List.map_cons, List.map_nil, hkl, ↓reduceIte,
                   Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
                   Option.some.injEq] at henc
                 obtain ⟨A, hA, B, hB, Mt, hMt, rfl⟩ := henc
@@ -1601,10 +1756,10 @@ theorem dec_enc {G : FreeTopos.Internal.Globals} {n : ℕ} {k : PrimIdx} :
                   decTy_encTy _ θ₀ A hA, decTy_encTy _ θ₁ B hB, Option.bind_eq_bind,
                   Option.bind_some, Option.pure_def]
                 rfl
-              · simp [encStep, hkl, hkr] at henc
+              · simp [encFixed, hkl, hkr] at henc
           · by_cases hkc : j = k.case
             · subst hkc
-              simp only [encStep, List.map_cons, List.map_nil, ↓reduceIte, Option.bind_eq_bind,
+              simp only [encFixed, List.map_cons, List.map_nil, ↓reduceIte, Option.bind_eq_bind,
                 Option.bind_eq_some_iff, Option.pure_def, Option.some.injEq] at henc
               obtain ⟨A, hA, B, hB, C, hC, Mt, hMt, rfl⟩ := henc
               rw [case, Expr.const, Expr.app, dec_node]
@@ -1612,9 +1767,9 @@ theorem dec_enc {G : FreeTopos.Internal.Globals} {n : ℕ} {k : PrimIdx} :
                 decTy_encTy _ θ₀ A hA, decTy_encTy _ θ₁ B hB, decTy_encTy _ θ₂ C hC,
                 Option.bind_eq_bind, Option.bind_some, Option.pure_def]
               rfl
-            · simp [encStep, hkc] at henc
-          · simp [encStep] at henc
-      · simp [encStep] at henc
+            · simp [encFixed, hkc] at henc
+          · simp [encFixed] at henc
+      · simp [encFixed] at henc
     · rcases cs with _ | ⟨z, _ | ⟨s, _ | ⟨m, _ | ⟨d, cs⟩⟩⟩⟩
       · simp [encStep] at henc
       · simp [encStep] at henc
@@ -1674,35 +1829,8 @@ theorem dec_enc {G : FreeTopos.Internal.Globals} {n : ℕ} {k : PrimIdx} :
           rfl
         · simp at henc
       · simp [encStep] at henc
-    · simp only [encStep, Option.bind_eq_bind] at henc
-      obtain ⟨d, -, henc⟩ := Option.bind_eq_some_iff.mp henc
-      obtain ⟨c, hc, henc⟩ := Option.bind_eq_some_iff.mp henc
-      by_cases hl : θ.length = d.arity ∧
-          (cs.map fun c ↦ (c, enc G n k c)).length = d.params.length
-      · rw [ite_eq_left hl] at henc
-        obtain ⟨Ts, hTs, henc⟩ := Option.bind_eq_some_iff.mp henc
-        obtain ⟨Ms, hMs, henc⟩ := Option.bind_eq_some_iff.mp henc
-        obtain rfl := Option.some.inj henc
-        obtain ⟨i, hi, rfl⟩ := Option.map_eq_some_iff.mp hc
-        have hext := ExtConst.find?_spec _ _ _ hi
-        have hTl : Ts.length = d.arity := by
-          rw [← hl.1, length_of_mapM hTs, List.length_reverse]
-        rw [Expr.const, Expr.app, dec_node, decStep_defn _ (by omega)]
-        rw [decDefn_of k (m := d.arity) (p := d.params.length) (θ := θ.reverse) (args := cs.reverse)
-          (by omega) (by rw [Nat.add_sub_cancel_left]; exact hext)
-          (by rw [List.length_map, List.length_append, hTl, ← hl.2, length_of_mapM hMs,
-            List.length_reverse])
-          (by
-            rw [← List.map_take, List.take_left' hTl, List.mapM_map]
-            exact mapM_inverse hTs fun a _ A hA ↦ decTy_encTy _ a A hA)
-          (by
-            rw [← List.map_drop, List.drop_left' hTl, List.mapM_map]
-            rw [← List.map_reverse, List.mapM_map] at hMs
-            exact mapM_inverse hMs fun x hx M hM ↦ ih x (List.mem_reverse.mp hx) X e M hM),
-          List.reverse_reverse, List.reverse_reverse]
-        rfl
-      · rw [ite_eq_right hl] at henc
-        exact nomatch henc
+    · rw [encStep_defn] at henc
+      exact dec_encTm (h := .defn j) rfl (fun c hc ↦ ih c hc) henc
     · rcases cs with _ | ⟨t, _ | ⟨u, _ | ⟨d, cs⟩⟩⟩
       · simp [encStep] at henc
       · simp [encStep] at henc
@@ -1781,7 +1909,7 @@ theorem sigExt_sig (hk : k.ext = []) : SigExt G k sig where
   objs i _ _ h := by rw [hk] at h; exact nomatch h
   tyUnique := tyUnique_of_noObj fun i _ _ h ↦ by rw [hk] at h; exact nomatch h
   tpObjs _ _ hc := absurd (List.getElem?_eq_some_iff.mp hc).1 (by omega)
-  defs i _ _ _ h := by rw [hk] at h; exact absurd h (by simp)
+  tms i _ _ _ h := by rw [hk] at h; exact nomatch h
   tmDefs i _ hc _ := absurd (List.getElem?_eq_some_iff.mp hc).1 (by omega)
 
 /-- The inversion of the check of an application against an atomic type: the head's classifier

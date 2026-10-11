@@ -18,8 +18,9 @@ canonical LF term of the family of terms of its type's encoding ({lit}`enc_check
 canonical LF term of such a family, in a context of the encoded types, is the encoding of a term
 that compiles, its decoding ({lit}`tmComplete`): the adequacy of the representation of terms
 ({cite}`HarperLicata2007`, Section 3.2). Both hold in an extension of the signature that declares
-the definitions an indices' table names ({name}`Geb.LF.Topos.SigExt`), an application of a
-definition's constant instantiating its declaration as a telescope.
+the constants of the language an indices' table names ({name}`Geb.LF.Topos.SigExt`), definitions
+and primitive arrows alike, an application of such a constant instantiating its declaration as a
+telescope.
 
 ## Main statements
 
@@ -79,6 +80,113 @@ theorem extEnv_isTy {X a : PartialHorn.Tree} {e : MEnv} (ha : FreeTopos.Internal
   rcases hp with rfl | ⟨q, hq, rfl⟩
   · exact ha
   · exact he q hq
+
+/-- The encoding of an application of a constant of the language, other than a primitive arrow
+the indices name, to objects and to terms that compile, whose encodings check, is a canonical LF
+term of the family of terms of the encoding of the instance of its value's type. -/
+theorem enc_checks_tm (hsg : SigExt G k sg) {h : TmHead} {d : Rank} (hd : h.rank G = some d)
+    {θ : List PartialHorn.Tree} {cs : List MTerm} {rs : List (PartialHorn.Tree × PartialHorn.Tree)}
+    {X : PartialHorn.Tree} {e : MEnv} {ΓLF : Ctx} {M : Expr}
+    (he : ∀ p ∈ e, FreeTopos.Internal.IsTy G n p.2 = true)
+    (hΓ : encCtx k n (e.map Prod.snd) = some ΓLF)
+    (hrs : cs.mapM (fun c ↦ FreeTopos.Internal.compile G n c X e) = some rs)
+    (hθl : θ.length = d.arity) (hθty : θ.all (FreeTopos.Internal.IsTy G n) = true)
+    (hrst : rs.map Prod.snd = d.params.map (PartialHorn.subst θ))
+    (ih : ∀ t ∈ cs, ∀ (X : PartialHorn.Tree) (e : MEnv) (ΓLF : Ctx) (M : Expr)
+      (r : PartialHorn.Tree × PartialHorn.Tree), (∀ p ∈ e, FreeTopos.Internal.IsTy G n p.2 = true) →
+      encCtx k n (e.map Prod.snd) = some ΓLF → enc G n k t X e = some M →
+      FreeTopos.Internal.compile G n t X e = some r →
+      FreeTopos.Internal.IsTy G n r.2 = true ∧
+        ∃ A, encTy k e.length r.2 = some A ∧ judge sg M ΓLF (.check (tm A)))
+    (henc : encTm G k h θ (cs.map fun c ↦ (c, enc G n k c)) X e = some M) :
+    FreeTopos.Internal.IsTy G n (PartialHorn.subst θ d.type) = true ∧
+      ∃ A, encTy k e.length (PartialHorn.subst θ d.type) = some A ∧
+        judge sg M ΓLF (.check (tm A)) := by
+  have htp : ∀ j < n, varType ΓLF (e.length + j) = some tp := fun j hj ↦ by
+    simpa only [List.length_map] using varType_encCtx_tp hΓ hj
+  have hcl : cs.length = d.params.length := by
+    rw [← length_of_mapM hrs, ← List.length_map (f := Prod.snd), hrst, List.length_map]
+  simp only [encTm, Option.bind_eq_bind, hd, Option.bind_some] at henc
+  obtain ⟨c, hc, henc⟩ := Option.bind_eq_some_iff.mp henc
+  rw [ite_eq_left ⟨hθl, by rw [List.length_map]; exact hcl⟩] at henc
+  obtain ⟨Ts, hTs, henc⟩ := Option.bind_eq_some_iff.mp henc
+  obtain ⟨Ms, hMs, henc⟩ := Option.bind_eq_some_iff.mp henc
+  obtain rfl := Option.some.inj henc
+  obtain ⟨i, hi, rfl⟩ := Option.map_eq_some_iff.mp hc
+  obtain ⟨d', T, -, -, hd', -, -, hdok, hT, hsgc⟩ :=
+    hsg.tms i h d.arity d.params.length (ExtConst.find?_spec _ _ _ hi)
+  rw [hd, Option.some.injEq] at hd'
+  cases hd'
+  simp only [Rank.ok, Bool.and_eq_true, List.all_eq_true] at hdok
+  simp only [defTy, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+    Option.some.injEq] at hT
+  obtain ⟨ΓT, hΓT, Td, hTd, rfl⟩ := hT
+  obtain ⟨T', hT', hT'len, hT'i⟩ := encCtx_reverse hΓT
+  have hxs : List.Forall₂ (fun X x ↦ encTy k e.length x = some X) Ts θ.reverse :=
+    List.Forall₂.flip (R := fun X x ↦ encTy k e.length x = some X) (forall₂_of_mapM hTs)
+  have hTsl : Ts.length = d.arity := by rw [length_of_mapM hTs, List.length_reverse, hθl]
+  have hMsl : Ms.length = d.params.length := by
+    rw [length_of_mapM hMs, List.length_reverse, List.length_map, hcl]
+  have hθr : θ.reverse.length = d.arity := by rw [List.length_reverse, hθl]
+  obtain ⟨E, hE, hEenc⟩ := hsubs_tm_encTy hxs hMsl hTd
+    (by rw [hθr]; exact FreeTopos.Internal.scoped_of_isTy (G := G) _ hdok.2)
+  rw [List.reverse_reverse] at hEenc
+  refine ⟨FreeTopos.Internal.isTy_subst hθl hθty _ hdok.2, E, hEenc,
+    judge_const hsgc ?_ rfl⟩
+  have hDs : ∀ D ∈ ΓT.reverse, D = tp ∨ ∃ A, D = tm A := fun D hD ↦
+    encCtx_tpTm hΓT D (List.mem_reverse.mp hD)
+  refine spine_piTele_fwd (J := judge sg) hDs
+    (by rw [List.length_append, hTsl, hMsl, hT', List.length_append, List.length_replicate,
+      hT'len]) (fun idx D m hD hm ↦ ?_) hE
+  by_cases hidx : idx < d.arity
+  · rw [hT', List.getElem?_append_left (by rw [List.length_replicate]; exact hidx),
+      List.getElem?_replicate_of_lt hidx, Option.some.injEq] at hD
+    subst hD
+    rw [List.getElem?_append_left (by rw [hTsl]; exact hidx)] at hm
+    obtain ⟨x, hx⟩ : ∃ x, θ.reverse[idx]? = some x :=
+      ⟨_, List.getElem?_eq_getElem (by rw [hθr]; exact hidx)⟩
+    have hxX := forall₂_getElem? hxs idx m x hm hx
+    exact ⟨tp, hsubs_tp_fwd _, encTy_checks hsg G x _ m hxX
+      (List.all_eq_true.mp hθty x (List.mem_reverse.mp (List.mem_of_getElem? hx))) ΓLF htp⟩
+  · obtain ⟨i', rfl⟩ : ∃ i', idx = d.arity + i' := ⟨idx - d.arity, by omega⟩
+    rw [hT', List.getElem?_append_right (by rw [List.length_replicate]; omega),
+      List.length_replicate, Nat.add_sub_cancel_left] at hD
+    have hi' : i' < d.params.length := by
+      rw [← hT'len]; exact (List.getElem?_eq_some_iff.mp hD).1
+    obtain ⟨P, hP⟩ : ∃ P, d.params.reverse[i']? = some P :=
+      ⟨_, List.getElem?_eq_getElem (by rw [List.length_reverse]; exact hi')⟩
+    obtain ⟨A₀, hA₀, hA₀e⟩ := hT'i i' P hP
+    rw [hA₀, Option.some.injEq] at hD
+    subst hD
+    rw [List.getElem?_append_right (by omega), hTsl, Nat.add_sub_cancel_left] at hm
+    rw [take_add', List.take_left' hTsl, List.drop_left' hTsl]
+    have hPty := hdok.1 P (List.mem_reverse.mp (List.mem_of_getElem? hP))
+    have hPs := FreeTopos.Internal.scoped_of_isTy (G := G) _ hPty
+    obtain ⟨E', hE', hE'enc⟩ := hsubs_tm_encTy hxs (Ms := Ms.take i')
+      (by rw [List.length_take]; omega) hA₀e (by rw [hθr]; exact hPs)
+    rw [List.reverse_reverse] at hE'enc
+    refine ⟨tm E', hE', ?_⟩
+    -- the argument is the encoding of the term of the parameter, of its type
+    obtain ⟨t, ht⟩ : ∃ t, cs.reverse[i']? = some t :=
+      ⟨_, List.getElem?_eq_getElem (by rw [List.length_reverse]; omega)⟩
+    obtain ⟨rt, hrt⟩ : ∃ rt, rs.reverse[i']? = some rt :=
+      ⟨_, List.getElem?_eq_getElem (by
+        rw [List.length_reverse, length_of_mapM hrs]; omega)⟩
+    have hct : FreeTopos.Internal.compile G n t X e = some rt :=
+      forall₂_getElem? (List.forall₂_reverse_iff.mpr (forall₂_of_mapM hrs)) i' t rt ht hrt
+    have hmt : enc G n k t X e = some m := by
+      have := forall₂_getElem? (forall₂_of_mapM hMs) i' (t, enc G n k t) m
+        (by rw [← List.map_reverse, List.getElem?_map, ht]; rfl) hm
+      exact this
+    have hrt2 : rt.2 = PartialHorn.subst θ P := by
+      have h₁ := congrArg (·[i']?) (congrArg List.reverse hrst)
+      simp only [← List.map_reverse, List.getElem?_map, hrt, hP, Option.map_some] at h₁
+      exact Option.some.inj h₁
+    obtain ⟨-, A, hA, hJ⟩ := ih t (List.mem_reverse.mp (List.mem_of_getElem? ht)) X e ΓLF m
+      rt he hΓ hmt hct
+    rw [hrt2, hE'enc, Option.some.injEq] at hA
+    rw [← hA] at hJ
+    exact hJ
 
 /-- Encoding is sound: the encoding of a term of the fragment in {lit}`n` object variables, in an
 environment whose types are types in them and encoded, is a canonical LF term of the family of
@@ -201,12 +309,20 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
       simp only [tm, tp, exp, Expr.const, Expr.app] at hAt hBt hMtJ hMuJ ⊢
       lf_spine [hAt, hBt, hMtJ, hMuJ]
     · obtain ⟨t, rfl, p, hp, g, hct, hl, hθ, rfl⟩ := FreeTopos.Internal.compile_arr_iff.mp hcomp
+      by_cases hfx : k.fixed j = true
+      swap
+      · rw [encStep_arr, ite_eq_right hfx] at henc
+        exact enc_checks_tm hsg (h := .arr j) (d := Rank.ofPrim p)
+          (by simp only [TmHead.rank, hp, Option.map_some]) he hΓ
+          (rs := [(g, PartialHorn.subst θ p.dom)]) (by rw [List.mapM_cons, hct]; rfl) hl hθ rfl
+          ih henc
+      rw [encStep_arr, ite_eq_left hfx] at henc
       rcases θ with _ | ⟨θ₀, _ | ⟨θ₁, θ⟩⟩
       · by_cases hkz : j = k.zero
         · subst hkz
           rw [hk.zero, Option.some.injEq] at hp
           subst hp
-          simp only [encStep, List.map_cons, List.map_nil, ↓reduceIte, Option.map_eq_map,
+          simp only [encFixed, List.map_cons, List.map_nil, ↓reduceIte, Option.map_eq_map,
             Option.map_eq_some_iff] at henc
           obtain ⟨Mt, hMt, rfl⟩ := henc
           obtain ⟨hIP, P, hP, hMtJ⟩ := ih t (by simp) X e ΓLF Mt _ he hΓ hMt hct
@@ -221,7 +337,7 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
           · subst hks
             rw [hk.succ, Option.some.injEq] at hp
             subst hp
-            simp only [encStep, List.map_cons, List.map_nil, hkz, ↓reduceIte, Option.map_eq_map,
+            simp only [encFixed, List.map_cons, List.map_nil, hkz, ↓reduceIte, Option.map_eq_map,
               Option.map_eq_some_iff] at henc
             obtain ⟨Mt, hMt, rfl⟩ := henc
             obtain ⟨hIP, P, hP, hMtJ⟩ := ih t (by simp) X e ΓLF Mt _ he hΓ hMt hct
@@ -236,7 +352,7 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
             · subst hkd
               rw [hk.node, Option.some.injEq] at hp
               subst hp
-              simp only [encStep, List.map_cons, List.map_nil, hkz, hks, ↓reduceIte,
+              simp only [encFixed, List.map_cons, List.map_nil, hkz, hks, ↓reduceIte,
                 Option.map_eq_map, Option.map_eq_some_iff] at henc
               obtain ⟨Mt, hMt, rfl⟩ := henc
               obtain ⟨hIP, P, hP, hMtJ⟩ := ih t (by simp) X e ΓLF Mt _ he hΓ hMt hct
@@ -250,13 +366,13 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
                 (tm rose)) (hsg.get rfl) ?_ rfl⟩
               simp only [tm, nat, rose, prod, list, Expr.const, Expr.app] at hMtJ ⊢
               lf_spine [hMtJ]
-            · simp [encStep, hkz, hks, hkd] at henc
+            · simp [encFixed, hkz, hks, hkd] at henc
       · by_cases hkn : j = k.nil
         · subst hkn
           rw [hk.nil, Option.some.injEq] at hp
           subst hp
           have hIθ₀ := List.all_eq_true.mp hθ θ₀ (by simp)
-          simp only [encStep, List.map_cons, List.map_nil, ↓reduceIte, Option.bind_eq_bind,
+          simp only [encFixed, List.map_cons, List.map_nil, ↓reduceIte, Option.bind_eq_bind,
             Option.bind_eq_some_iff, Option.pure_def, Option.some.injEq] at henc
           obtain ⟨A, hA, Mt, hMt, rfl⟩ := henc
           obtain ⟨hIP, P, hP, hMtJ⟩ := ih t (by simp) X e ΓLF Mt _ he hΓ hMt hct
@@ -275,7 +391,7 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
             rw [hk.cons, Option.some.injEq] at hp
             subst hp
             have hIθ₀ := List.all_eq_true.mp hθ θ₀ (by simp)
-            simp only [encStep, List.map_cons, List.map_nil, hkn, ↓reduceIte, Option.bind_eq_bind,
+            simp only [encFixed, List.map_cons, List.map_nil, hkn, ↓reduceIte, Option.bind_eq_bind,
               Option.bind_eq_some_iff, Option.pure_def, Option.some.injEq] at henc
             obtain ⟨A, hA, Mt, hMt, rfl⟩ := henc
             obtain ⟨hIP, P, hP, hMtJ⟩ := ih t (by simp) X e ΓLF Mt _ he hΓ hMt hct
@@ -294,7 +410,7 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
               rw [hk.lnode, Option.some.injEq] at hp
               subst hp
               have hIθ₀ := List.all_eq_true.mp hθ θ₀ (by simp)
-              simp only [encStep, List.map_cons, List.map_nil, hkn, hkc, ↓reduceIte,
+              simp only [encFixed, List.map_cons, List.map_nil, hkn, hkc, ↓reduceIte,
                 Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
                 Option.some.injEq] at henc
               obtain ⟨A, hA, Mt, hMt, rfl⟩ := henc
@@ -309,7 +425,7 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
               have hAt := encTy_checks hsg G θ₀ _ A hA hIθ₀ ΓLF htp
               simp only [tm, tp, prod, list, lrose, Expr.const, Expr.app] at hAt hMtJ ⊢
               lf_spine [hAt, hMtJ]
-            · simp [encStep, hkn, hkc, hkl] at henc
+            · simp [encFixed, hkn, hkc, hkl] at henc
       · rcases θ with _ | ⟨θ₂, _ | ⟨θ₃, θ⟩⟩
         · by_cases hkl : j = k.inl
           · subst hkl
@@ -317,7 +433,7 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
             subst hp
             have hIθ₀ := List.all_eq_true.mp hθ θ₀ (by simp)
             have hIθ₁ := List.all_eq_true.mp hθ θ₁ (by simp)
-            simp only [encStep, List.map_cons, List.map_nil, ↓reduceIte, Option.bind_eq_bind,
+            simp only [encFixed, List.map_cons, List.map_nil, ↓reduceIte, Option.bind_eq_bind,
               Option.bind_eq_some_iff, Option.pure_def, Option.some.injEq] at henc
             obtain ⟨A, hA, B, hB, Mt, hMt, rfl⟩ := henc
             obtain ⟨hIP, P, hP, hMtJ⟩ := ih t (by simp) X e ΓLF Mt _ he hΓ hMt hct
@@ -337,7 +453,7 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
               subst hp
               have hIθ₀ := List.all_eq_true.mp hθ θ₀ (by simp)
               have hIθ₁ := List.all_eq_true.mp hθ θ₁ (by simp)
-              simp only [encStep, List.map_cons, List.map_nil, hkl, ↓reduceIte,
+              simp only [encFixed, List.map_cons, List.map_nil, hkl, ↓reduceIte,
                 Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
                 Option.some.injEq] at henc
               obtain ⟨A, hA, B, hB, Mt, hMt, rfl⟩ := henc
@@ -352,7 +468,7 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
               have hBt := encTy_checks hsg G θ₁ _ B hB hIθ₁ ΓLF htp
               simp only [tm, tp, coprod, Expr.const, Expr.app] at hAt hBt hMtJ ⊢
               lf_spine [hAt, hBt, hMtJ]
-            · simp [encStep, hkl, hkr] at henc
+            · simp [encFixed, hkl, hkr] at henc
         · by_cases hkc : j = k.case
           · subst hkc
             rw [hk.case, Option.some.injEq] at hp
@@ -360,7 +476,7 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
             have hIθ₀ := List.all_eq_true.mp hθ θ₀ (by simp)
             have hIθ₁ := List.all_eq_true.mp hθ θ₁ (by simp)
             have hIθ₂ := List.all_eq_true.mp hθ θ₂ (by simp)
-            simp only [encStep, List.map_cons, List.map_nil, ↓reduceIte, Option.bind_eq_bind,
+            simp only [encFixed, List.map_cons, List.map_nil, ↓reduceIte, Option.bind_eq_bind,
               Option.bind_eq_some_iff, Option.pure_def, Option.some.injEq] at henc
             obtain ⟨A, hA, B, hB, C, hC, Mt, hMt, rfl⟩ := henc
             obtain ⟨hIP, P, hP, hMtJ⟩ := ih t (by simp) X e ΓLF Mt _ he hΓ hMt hct
@@ -378,8 +494,8 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
             have hCt := encTy_checks hsg G θ₂ _ C hC hIθ₂ ΓLF htp
             simp only [tm, tp, prod, exp, coprod, Expr.const, Expr.app] at hAt hBt hCt hMtJ ⊢
             lf_spine [hAt, hBt, hCt, hMtJ]
-          · simp [encStep, hkc] at henc
-        · simp [encStep] at henc
+          · simp [encFixed, hkc] at henc
+        · simp [encFixed] at henc
     · obtain ⟨z, s, m, rfl, -⟩ := FreeTopos.Internal.compile_natRec_iff.mp hcomp
       obtain ⟨⟨zf, hcz⟩, ⟨sf, hcs⟩, mf, hcm⟩ := FreeTopos.Internal.compile_natRec_parts hcomp
       simp only [encStep, List.map_cons, List.map_nil, hcz, Option.bind_eq_bind,
@@ -514,90 +630,10 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
     · -- a definition
       obtain ⟨d, rs, hd, hrs, hθl, hθty, hrst, rfl⟩ :=
         FreeTopos.Internal.compile_defn_iff.mp hcomp
-      have hcl : cs.length = d.params.length := by
-        rw [← length_of_mapM hrs, ← List.length_map (f := Prod.snd), hrst, List.length_map]
-      simp only [encStep, Option.bind_eq_bind, hd, Option.bind_some,
-        FreeTopos.Internal.Definition.language?] at henc
-      obtain ⟨c, hc, henc⟩ := Option.bind_eq_some_iff.mp henc
-      rw [ite_eq_left ⟨hθl, by rw [List.length_map]; exact hcl⟩] at henc
-      obtain ⟨Ts, hTs, henc⟩ := Option.bind_eq_some_iff.mp henc
-      obtain ⟨Ms, hMs, henc⟩ := Option.bind_eq_some_iff.mp henc
-      obtain rfl := Option.some.inj henc
-      obtain ⟨i, hi, rfl⟩ := Option.map_eq_some_iff.mp hc
-      obtain ⟨d', T, -, hd', -, -, hdok, -, hT, hsgc⟩ :=
-        hsg.defs i j d.arity d.params.length (ExtConst.find?_spec _ _ _ hi)
-      rw [hd, Option.some.injEq] at hd'
-      cases hd'
-      simp only [FreeTopos.Internal.Definition.ok, Bool.and_eq_true, List.all_eq_true] at hdok
-      simp only [defTy, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
-        Option.some.injEq] at hT
-      obtain ⟨ΓT, hΓT, Td, hTd, rfl⟩ := hT
-      obtain ⟨T', hT', hT'len, hT'i⟩ := encCtx_reverse hΓT
-      have hxs : List.Forall₂ (fun X x ↦ encTy k e.length x = some X) Ts θ.reverse :=
-        List.Forall₂.flip (R := fun X x ↦ encTy k e.length x = some X) (forall₂_of_mapM hTs)
-      have hTsl : Ts.length = d.arity := by rw [length_of_mapM hTs, List.length_reverse, hθl]
-      have hMsl : Ms.length = d.params.length := by
-        rw [length_of_mapM hMs, List.length_reverse, List.length_map, hcl]
-      have hθr : θ.reverse.length = d.arity := by rw [List.length_reverse, hθl]
-      obtain ⟨E, hE, hEenc⟩ := hsubs_tm_encTy hxs hMsl hTd
-        (by rw [hθr]; exact FreeTopos.Internal.scoped_of_isTy (G := G) _ hdok.2)
-      rw [List.reverse_reverse] at hEenc
-      refine ⟨FreeTopos.Internal.isTy_subst hθl hθty _ hdok.2, E, hEenc,
-        judge_const hsgc ?_ rfl⟩
-      have hDs : ∀ D ∈ ΓT.reverse, D = tp ∨ ∃ A, D = tm A := fun D hD ↦
-        encCtx_tpTm hΓT D (List.mem_reverse.mp hD)
-      refine spine_piTele_fwd (J := judge sg) hDs
-        (by rw [List.length_append, hTsl, hMsl, hT', List.length_append, List.length_replicate,
-          hT'len]) (fun idx D m hD hm ↦ ?_) hE
-      by_cases hidx : idx < d.arity
-      · rw [hT', List.getElem?_append_left (by rw [List.length_replicate]; exact hidx),
-          List.getElem?_replicate_of_lt hidx, Option.some.injEq] at hD
-        subst hD
-        rw [List.getElem?_append_left (by rw [hTsl]; exact hidx)] at hm
-        obtain ⟨x, hx⟩ : ∃ x, θ.reverse[idx]? = some x :=
-          ⟨_, List.getElem?_eq_getElem (by rw [hθr]; exact hidx)⟩
-        have hxX := forall₂_getElem? hxs idx m x hm hx
-        exact ⟨tp, hsubs_tp_fwd _, encTy_checks hsg G x _ m hxX
-          (List.all_eq_true.mp hθty x (List.mem_reverse.mp (List.mem_of_getElem? hx))) ΓLF htp⟩
-      · obtain ⟨i', rfl⟩ : ∃ i', idx = d.arity + i' := ⟨idx - d.arity, by omega⟩
-        rw [hT', List.getElem?_append_right (by rw [List.length_replicate]; omega),
-          List.length_replicate, Nat.add_sub_cancel_left] at hD
-        have hi' : i' < d.params.length := by
-          rw [← hT'len]; exact (List.getElem?_eq_some_iff.mp hD).1
-        obtain ⟨P, hP⟩ : ∃ P, d.params.reverse[i']? = some P :=
-          ⟨_, List.getElem?_eq_getElem (by rw [List.length_reverse]; exact hi')⟩
-        obtain ⟨A₀, hA₀, hA₀e⟩ := hT'i i' P hP
-        rw [hA₀, Option.some.injEq] at hD
-        subst hD
-        rw [List.getElem?_append_right (by omega), hTsl, Nat.add_sub_cancel_left] at hm
-        rw [take_add', List.take_left' hTsl, List.drop_left' hTsl]
-        have hPty := hdok.1 P (List.mem_reverse.mp (List.mem_of_getElem? hP))
-        have hPs := FreeTopos.Internal.scoped_of_isTy (G := G) _ hPty
-        obtain ⟨E', hE', hE'enc⟩ := hsubs_tm_encTy hxs (Ms := Ms.take i')
-          (by rw [List.length_take]; omega) hA₀e (by rw [hθr]; exact hPs)
-        rw [List.reverse_reverse] at hE'enc
-        refine ⟨tm E', hE', ?_⟩
-        -- the argument is the encoding of the term of the parameter, of its type
-        obtain ⟨t, ht⟩ : ∃ t, cs.reverse[i']? = some t :=
-          ⟨_, List.getElem?_eq_getElem (by rw [List.length_reverse]; omega)⟩
-        obtain ⟨rt, hrt⟩ : ∃ rt, rs.reverse[i']? = some rt :=
-          ⟨_, List.getElem?_eq_getElem (by
-            rw [List.length_reverse, length_of_mapM hrs]; omega)⟩
-        have hct : FreeTopos.Internal.compile G n t X e = some rt :=
-          forall₂_getElem? (List.forall₂_reverse_iff.mpr (forall₂_of_mapM hrs)) i' t rt ht hrt
-        have hmt : enc G n k t X e = some m := by
-          have := forall₂_getElem? (forall₂_of_mapM hMs) i' (t, enc G n k t) m
-            (by rw [← List.map_reverse, List.getElem?_map, ht]; rfl) hm
-          exact this
-        have hrt2 : rt.2 = PartialHorn.subst θ P := by
-          have h₁ := congrArg (·[i']?) (congrArg List.reverse hrst)
-          simp only [← List.map_reverse, List.getElem?_map, hrt, hP, Option.map_some] at h₁
-          exact Option.some.inj h₁
-        obtain ⟨-, A, hA, hJ⟩ := ih t (List.mem_reverse.mp (List.mem_of_getElem? ht)) X e ΓLF m
-          rt he hΓ hmt hct
-        rw [hrt2, hE'enc, Option.some.injEq] at hA
-        rw [← hA] at hJ
-        exact hJ
+      rw [encStep_defn] at henc
+      exact enc_checks_tm hsg (h := .defn j) (d := Rank.ofDefn d)
+        (by simp only [TmHead.rank, hd, Option.bind_some, Option.map_some,
+          FreeTopos.Internal.Definition.language?]) he hΓ hrs hθl hθty hrst ih henc
     · obtain ⟨t, u, rfl, f, a, hct, g, hcu, rfl⟩ := FreeTopos.Internal.compile_eq_iff.mp hcomp
       simp only [encStep, List.map_cons, List.map_nil, hct, Option.bind_eq_bind,
         Option.bind_some, Option.bind_eq_some_iff, Option.pure_def, Option.some.injEq] at henc
@@ -618,6 +654,42 @@ end Soundness
 section Completeness
 
 variable {G : FreeTopos.Internal.Globals} {n : ℕ} {k : PrimIdx}
+
+/-- An application of a constant of the language to types in {lit}`n` object variables, as many
+as its object parameters, and to terms that compile to the instances of its parameters' types
+compiles to the instance of its value's type. -/
+theorem compile_label {h : TmHead} {d : Rank} (hd : h.rank G = some d) {θ : List PartialHorn.Tree}
+    {ss : List MTerm} {rs : List (PartialHorn.Tree × PartialHorn.Tree)} {X : PartialHorn.Tree}
+    {e : MEnv} (hrs : ss.mapM (fun s ↦ FreeTopos.Internal.compile G n s X e) = some rs)
+    (hθl : θ.length = d.arity) (hθty : θ.all (FreeTopos.Internal.IsTy G n) = true)
+    (hrst : rs.map Prod.snd = d.params.map (PartialHorn.subst θ)) :
+    ∃ f, FreeTopos.Internal.compile G n (RoseTree.node (h.label θ) ss) X e =
+      some (f, PartialHorn.subst θ d.type) := by
+  cases h with
+  | defn kd =>
+    obtain ⟨d', hd', rfl⟩ := Option.map_eq_some_iff.mp hd
+    obtain ⟨D, hD, hl⟩ := Option.bind_eq_some_iff.mp hd'
+    cases D with
+    | language d₀ =>
+      obtain rfl := Option.some.inj hl
+      exact ⟨_, FreeTopos.Internal.compile_defn_iff.mpr ⟨_, rs, hD, hrs, hθl, hθty, hrst, rfl⟩⟩
+    | object _ _ => exact nomatch hl
+  | arr kp =>
+    obtain ⟨p, hp, rfl⟩ := Option.map_eq_some_iff.mp hd
+    rw [PartialHorn.mapM_eq_some_iff] at hrs
+    rcases rs with _ | ⟨r₀, _ | ⟨_, _⟩⟩
+    · exact nomatch hrst
+    · rcases ss with _ | ⟨s₀, _ | ⟨s₁, ss⟩⟩
+      · exact Nat.noConfusion (congrArg List.length hrs)
+      · obtain ⟨hs₀, -⟩ := List.cons.inj hrs
+        obtain ⟨hr₀, -⟩ := List.cons.inj hrst
+        rw [show r₀ = (r₀.1, PartialHorn.subst θ p.dom) from Prod.ext rfl hr₀] at hs₀
+        exact ⟨_, FreeTopos.Internal.compile_arr_iff.mpr ⟨s₀, rfl, p, hp, r₀.1, hs₀, hθl, hθty,
+          rfl⟩⟩
+      · exact absurd (congrArg List.length hrs)
+          (by simp only [List.length_map, List.length_cons, List.length_nil]; omega)
+    · exact absurd (congrArg List.length hrst)
+        (by simp only [List.length_map, List.length_cons, List.length_nil, Rank.ofPrim]; omega)
 
 /-- The conclusion of the completeness of the encoding in {lit}`n` object variables at a term, an
 environment and a type: the term decodes, at the offset of the environment's variables, to a term
@@ -680,8 +752,9 @@ theorem tmComplete_inl (hsg : SigExt G k sg) (hk : k.Valid G) {X1 X2 X3 : Expr}
   · rw [Expr.const, Expr.app, dec_node]
     simp only [List.map_cons, List.map_nil, decStep, hdt, decTy_encTy _ a X1 ha,
       decTy_encTy _ b X2 hb, Option.bind_eq_bind, Option.bind_some, Option.pure_def]
-  · rw [FreeTopos.Internal.Term.arr, enc_node]
-    simp only [encStep, List.map_cons, List.map_nil, ↓reduceIte, ha, hb, het,
+  · rw [FreeTopos.Internal.Term.arr, enc_node, encStep_arr,
+      ite_eq_left (k.fixed_of_mem (by simp only [List.mem_cons, true_or, or_true]))]
+    simp only [encFixed, List.map_cons, List.map_nil, ↓reduceIte, ha, hb, het,
       Option.bind_eq_bind, Option.bind_some, Option.pure_def]
     rfl
 
@@ -715,8 +788,9 @@ theorem tmComplete_inr (hsg : SigExt G k sg) (hk : k.Valid G) {X1 X2 X3 : Expr}
   · rw [Expr.const, Expr.app, dec_node]
     simp only [List.map_cons, List.map_nil, decStep, hdt, decTy_encTy _ a X1 ha,
       decTy_encTy _ b X2 hb, Option.bind_eq_bind, Option.bind_some, Option.pure_def]
-  · rw [FreeTopos.Internal.Term.arr, enc_node]
-    simp only [encStep, List.map_cons, List.map_nil, hk.inr_ne_inl, ↓reduceIte, ha, hb, het,
+  · rw [FreeTopos.Internal.Term.arr, enc_node, encStep_arr,
+      ite_eq_left (k.fixed_of_mem (by simp only [List.mem_cons, true_or, or_true]))]
+    simp only [encFixed, List.map_cons, List.map_nil, hk.inr_ne_inl, ↓reduceIte, ha, hb, het,
       Option.bind_eq_bind, Option.bind_some, Option.pure_def]
     rfl
 
@@ -758,8 +832,9 @@ theorem tmComplete_case (hsg : SigExt G k sg) (hk : k.Valid G) {X1 X2 X3 X4 : Ex
     simp only [List.map_cons, List.map_nil, decStep, hdt, decTy_encTy _ a X1 ha,
       decTy_encTy _ b X2 hb, decTy_encTy _ c X3 hc, Option.bind_eq_bind, Option.bind_some,
       Option.pure_def]
-  · rw [FreeTopos.Internal.Term.arr, enc_node]
-    simp only [encStep, List.map_cons, List.map_nil, ↓reduceIte, ha, hb, hc, het,
+  · rw [FreeTopos.Internal.Term.arr, enc_node, encStep_arr,
+      ite_eq_left (k.fixed_of_mem (by simp only [List.mem_cons, true_or, or_true]))]
+    simp only [encFixed, List.map_cons, List.map_nil, ↓reduceIte, ha, hb, hc, het,
       Option.bind_eq_bind, Option.bind_some, Option.pure_def]
     rfl
 
@@ -812,10 +887,10 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
       · -- a definition
         obtain ⟨i, rfl⟩ : ∃ i, c = sig.length + i := ⟨c - sig.length, by omega⟩
         have hC' : sg[sig.length + i]? = some C := hC
-        obtain ⟨kd, m, p, he⟩ := hsg.tmDefs i C hC' (by rw [← h₁]; rfl)
-        obtain ⟨d, T, hfind, hd, rfl, rfl, hdok, -, hT, hsgc⟩ := hsg.defs i kd m p he
+        obtain ⟨hh, m, p, he⟩ := hsg.tmDefs i C hC' (by rw [← h₁]; rfl)
+        obtain ⟨d, T, hfind, hfx, hd, rfl, rfl, hdok, hT, hsgc⟩ := hsg.tms i hh m p he
         obtain rfl := Option.some.inj (hsgc.symm.trans hC')
-        simp only [FreeTopos.Internal.Definition.ok, Bool.and_eq_true, List.all_eq_true] at hdok
+        simp only [Rank.ok, Bool.and_eq_true, List.all_eq_true] at hdok
         simp only [defTy, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
           Option.some.injEq] at hT
         obtain ⟨ΓT, hΓT, Td, hTd, rfl⟩ := hT
@@ -915,15 +990,14 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
                 (List.getElem?_eq_getElem (by rw [hssl, ← hrsl]; simpa using h₁))
                 (List.getElem?_eq_getElem (by simpa using h₁))
                 (List.getElem?_eq_getElem (by simpa using h₂))
-        refine ⟨FreeTopos.Internal.Term.defn kd xs.reverse ss.reverse, _, ?_,
-          FreeTopos.Internal.compile_defn_iff.mpr ⟨d, rs.reverse, hd, mapM_reverse_of hrsM,
-            by rw [List.length_reverse, hxl],
-            List.all_eq_true.mpr fun x hx ↦
-              (forall₂_left_mem hxs x (List.mem_reverse.mp hx)).elim fun _ h ↦ h.2,
-            by rw [List.map_reverse, hrs2, List.map_reverse, List.reverse_reverse], rfl⟩,
-          hEenc, ?_⟩
-        · rw [dec_node, decStep_defn k (by omega)]
-          refine decDefn_of k (by omega) (by rw [Nat.add_sub_cancel_left]; exact he)
+        obtain ⟨f, hf⟩ := compile_label hd (mapM_reverse_of hrsM)
+          (by rw [List.length_reverse, hxl])
+          (List.all_eq_true.mpr fun x hx ↦
+            (forall₂_left_mem hxs x (List.mem_reverse.mp hx)).elim fun _ h ↦ h.2)
+          (by rw [List.map_reverse, hrs2, List.map_reverse, List.reverse_reverse])
+        refine ⟨RoseTree.node (hh.label xs.reverse) ss.reverse, _, ?_, hf, hEenc, ?_⟩
+        · rw [dec_node, decStep_tm k (by omega)]
+          refine decTm_of k (by omega) (by rw [Nat.add_sub_cancel_left]; exact he) hfx
             (by rw [List.length_map, hcl]) ?_ ?_
           · rw [← List.map_take, List.mapM_map]
             exact hxsM
@@ -935,9 +1009,9 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
             mapM_of_forall₂_eq (forall₂_of_getElem (by rw [hssl, hMsl]) fun i' h₁ h₂ ↦
               (hssi i' _ _ _ (List.getElem?_eq_getElem h₂) (List.getElem?_eq_getElem h₁)
                 (List.getElem?_eq_getElem (by rw [List.length_reverse]; omega))).1)
-          rw [FreeTopos.Internal.Term.defn, enc_node]
-          simp only [encStep, Option.bind_eq_bind, hd, Option.bind_some,
-            FreeTopos.Internal.Definition.language?, PrimIdx.defConst, hfind, Option.map_some]
+          rw [enc_node, encStep_label G n k hfx]
+          simp only [encTm, Option.bind_eq_bind, hd, Option.bind_some, PrimIdx.tmConst, hfind,
+            Option.map_some]
           rw [ite_eq_left ⟨by rw [List.length_reverse, hxl],
             by rw [List.length_map, List.length_reverse, hssl]⟩, List.reverse_reverse,
             ← List.map_reverse, List.reverse_reverse, List.mapM_map]
@@ -1126,8 +1200,9 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
         · rw [dec_node]
           simp only [List.map_cons, List.map_nil, decStep, hdt]
           rfl
-        · rw [FreeTopos.Internal.Term.arr, enc_node]
-          simp only [encStep, List.map_cons, List.map_nil, ↓reduceIte, het]
+        · rw [FreeTopos.Internal.Term.arr, enc_node, encStep_arr,
+            ite_eq_left (k.fixed_of_mem (by simp only [List.mem_cons, true_or]))]
+          simp only [encFixed, List.map_cons, List.map_nil, ↓reduceIte, het]
           rfl
       · obtain rfl := Option.some.inj (hC.symm.trans rfl : some C = some
           (Expr.arrow (tm nat) (tm nat)))
@@ -1150,8 +1225,9 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
         · rw [dec_node]
           simp only [List.map_cons, List.map_nil, decStep, hdt]
           rfl
-        · rw [FreeTopos.Internal.Term.arr, enc_node]
-          simp only [encStep, List.map_cons, List.map_nil, hne, ↓reduceIte, het]
+        · rw [FreeTopos.Internal.Term.arr, enc_node, encStep_arr,
+            ite_eq_left (k.fixed_of_mem (by simp only [List.mem_cons, true_or, or_true]))]
+          simp only [encFixed, List.map_cons, List.map_nil, hne, ↓reduceIte, het]
           rfl
       · obtain rfl := Option.some.inj (hC.symm.trans rfl : some C = some
           (Expr.pi tp (Expr.arrow (tm (v 0)) (Expr.arrow (Expr.arrow (tm (v 0)) (tm (v 0)))
@@ -1232,8 +1308,9 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
         · rw [dec_node]
           simp only [List.map_cons, List.map_nil, decStep, hdt, decTy_encTy _ a X1 ha,
             Option.bind_eq_bind, Option.bind_some, Option.pure_def]
-        · rw [FreeTopos.Internal.Term.arr, enc_node]
-          simp only [encStep, List.map_cons, List.map_nil, ↓reduceIte, ha, het,
+        · rw [FreeTopos.Internal.Term.arr, enc_node, encStep_arr,
+            ite_eq_left (k.fixed_of_mem (by simp only [List.mem_cons, true_or, or_true]))]
+          simp only [encFixed, List.map_cons, List.map_nil, ↓reduceIte, ha, het,
             Option.bind_eq_bind, Option.bind_some, Option.pure_def]
           rfl
       · obtain rfl := Option.some.inj (hC.symm.trans rfl : some C = some
@@ -1260,8 +1337,9 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
         · rw [dec_node]
           simp only [List.map_cons, List.map_nil, decStep, hdt, decTy_encTy _ a X1 ha,
             Option.bind_eq_bind, Option.bind_some, Option.pure_def]
-        · rw [FreeTopos.Internal.Term.arr, enc_node]
-          simp only [encStep, List.map_cons, List.map_nil, hk.cons_ne_nil, ↓reduceIte, ha, het,
+        · rw [FreeTopos.Internal.Term.arr, enc_node, encStep_arr,
+            ite_eq_left (k.fixed_of_mem (by simp only [List.mem_cons, true_or, or_true]))]
+          simp only [encFixed, List.map_cons, List.map_nil, hk.cons_ne_nil, ↓reduceIte, ha, het,
             Option.bind_eq_bind, Option.bind_some, Option.pure_def]
           rfl
       · obtain rfl := Option.some.inj (hC.symm.trans rfl : some C = some
@@ -1330,8 +1408,9 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
         · rw [dec_node]
           simp only [List.map_cons, List.map_nil, decStep, hdt]
           rfl
-        · rw [FreeTopos.Internal.Term.arr, enc_node]
-          simp only [encStep, List.map_cons, List.map_nil, hk.node_ne.1, hk.node_ne.2, ↓reduceIte,
+        · rw [FreeTopos.Internal.Term.arr, enc_node, encStep_arr,
+            ite_eq_left (k.fixed_of_mem (by simp only [List.mem_cons, true_or, or_true]))]
+          simp only [encFixed, List.map_cons, List.map_nil, hk.node_ne.1, hk.node_ne.2, ↓reduceIte,
             het]
           rfl
       · obtain rfl := Option.some.inj (hC.symm.trans rfl : some C = some
@@ -1393,8 +1472,9 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
         · rw [dec_node]
           simp only [List.map_cons, List.map_nil, decStep, hdt, decTy_encTy _ a X1 ha,
             Option.bind_eq_bind, Option.bind_some, Option.pure_def]
-        · rw [FreeTopos.Internal.Term.arr, enc_node]
-          simp only [encStep, List.map_cons, List.map_nil, hk.lnode_ne.1, hk.lnode_ne.2,
+        · rw [FreeTopos.Internal.Term.arr, enc_node, encStep_arr,
+            ite_eq_left (k.fixed_of_mem (by simp only [List.mem_cons, true_or, or_true]))]
+          simp only [encFixed, List.map_cons, List.map_nil, hk.lnode_ne.1, hk.lnode_ne.2,
             ↓reduceIte, ha, het, Option.bind_eq_bind, Option.bind_some, Option.pure_def]
           rfl
       · obtain rfl := Option.some.inj (hC.symm.trans rfl : some C = some

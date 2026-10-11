@@ -2890,13 +2890,14 @@ theorem sound_thm (hc : PfCtx G k n ΓLF env Γ Φ) {c j : ℕ} {cs : List Expr}
   · obtain ⟨d, h⟩ := x
     exact List.forall₂_zip hDchk hx
 
-open FreeTopos.Internal (Defn Definition compile IsTy) in
-/-- The unfolding of a definition the language admits is well formed: the definition at its
-variables, applied to its parameters, and its body are terms of its value's type. -/
+open FreeTopos.Internal (Defn compile IsTy) in
+/-- The unfolding of a definition of parameters and value of types, whose body compiles, is well
+formed: the definition at its variables, applied to its parameters, and its body are terms of its
+value's type. -/
 theorem deltaThm_wellFormed {kd : ℕ} {d : Defn} {cd : PartialHorn.Defn}
-    (hd : G.defs[kd]? = some (.language d)) (hok : (Definition.language d).ok G = true)
+    (hd : G.defs[kd]? = some (.language d)) (hok : (Rank.ofDefn d).ok G = true)
     (hc : d.compile G = some cd) : (deltaThm kd d).wellFormed G = true := by
-  simp only [Definition.ok, Bool.and_eq_true] at hok
+  simp only [Rank.ok, Rank.ofDefn, Bool.and_eq_true] at hok
   obtain ⟨hps, hty⟩ := hok
   obtain ⟨cb, hcb, -⟩ := FreeTopos.Internal.Defn.compile_eq_some hc
   -- the object variables substitute identically into a type in their scope
@@ -2944,9 +2945,9 @@ theorem deltaThm_wellFormed {kd : ℕ} {d : Defn} {cd : PartialHorn.Defn}
 open FreeTopos.Internal (Defn Definition) in
 /-- The declaration of the unfolding of a definition mentions the definition's constant, so the
 indices name the definition. -/
-theorem defConst_of_thmTy_delta {kd : ℕ} {d : Defn} {T : Expr}
+theorem tmConst_of_thmTy_delta {kd : ℕ} {d : Defn} {T : Expr}
     (hd : G.defs[kd]? = some (.language d)) (h : thmTy G k (deltaThm kd d) = some T) :
-    ∃ c, k.defConst kd d.arity d.params.length = some c := by
+    ∃ c, k.tmConst (.defn kd) d.arity d.params.length = some c := by
   obtain ⟨-, -, X, -, -, hX, -⟩ := thmTy_eq_some h
   change enc G d.arity k (RoseTree.node .eq [Term.defn kd
     ((List.range d.arity).map PartialHorn.var) ((List.range d.params.length).map Term.var),
@@ -2955,9 +2956,9 @@ theorem defConst_of_thmTy_delta {kd : ℕ} {d : Defn} {T : Expr}
   simp only [List.map_cons, List.map_nil, encStep, Option.bind_eq_bind,
     Option.bind_eq_some_iff] at hX
   obtain ⟨_, -, _, -, M₁, hM₁, -⟩ := hX
-  rw [Term.defn, enc_node] at hM₁
-  simp only [encStep, Option.bind_eq_bind, hd, Option.bind_some, Definition.language?,
-    Option.bind_eq_some_iff] at hM₁
+  rw [Term.defn, enc_node, encStep_defn] at hM₁
+  simp only [encTm, Option.bind_eq_bind, TmHead.rank, hd, Option.bind_some, Definition.language?,
+    Option.map_some, Option.bind_eq_some_iff] at hM₁
   obtain ⟨c, hc, -⟩ := hM₁
   exact ⟨c, hc⟩
 
@@ -2969,17 +2970,19 @@ at the left side and reflexivity at the right prove. -/
 theorem sound_delta (hc : PfCtx G k n ΓLF env Γ Φ) {c kd : ℕ} {d : FreeTopos.Internal.Defn}
     {cs : List Expr} {C F : Expr} {φ : MTerm} (hlt : sig.length ≤ c)
     (hext : k.ext[c - sig.length]? = some (.delta kd d.arity d.params.length))
-    (hd : G.defs[kd]? = some (.language d)) (hC : thmTy G k (deltaThm kd d) = some C)
+    (hd : G.defs[kd]? = some (.language d)) {cd : PartialHorn.Defn}
+    (hcd : FreeTopos.Internal.Defn.compile G d = some cd) (hC : thmTy G k (deltaThm kd d) = some C)
     (hS : spine ΓLF C (cs.map fun m ↦ (m, judge sg m)) = some (pf F))
     (hφ : termOf k env F = some φ) :
     ∃ D, decPf k (Expr.const c cs) env Φ.length = some D ∧ (check G E n D).2 Γ Φ φ = true := by
-  -- the definition is admitted, so its unfolding is well formed
-  obtain ⟨c', hc'⟩ := defConst_of_thmTy_delta hd hC
+  -- the definition's parameters and value are of types, so its unfolding is well formed
+  obtain ⟨c', hc'⟩ := tmConst_of_thmTy_delta hd hC
   obtain ⟨i, hi, -⟩ := Option.map_eq_some_iff.mp hc'
-  obtain ⟨d', T', -, hd', -, -, hok, ⟨cd, hcd⟩, -, -⟩ :=
-    hsg.defs i kd _ _ (ExtConst.find?_spec _ _ _ hi)
-  rw [hd, Option.some.injEq] at hd'
-  cases hd'
+  obtain ⟨d', T', -, -, hd', -, -, hok, -, -⟩ :=
+    hsg.tms i (.defn kd) _ _ (ExtConst.find?_spec _ _ _ hi)
+  simp only [TmHead.rank, hd, Option.bind_some, FreeTopos.Internal.Definition.language?,
+    Option.map_some, Option.some.injEq] at hd'
+  subst hd'
   obtain ⟨xs, σ', -, -, hxl, hσlen, -, -, hF, -⟩ :=
     thm_spine hk hsg hc (deltaThm_wellFormed hd hok hcd) hC hS
   obtain rfl := Option.some.inj (hφ.symm.trans hF)
@@ -3026,12 +3029,12 @@ theorem pfSound : ∀ M : Expr, PfSound sg G k E n M :=
             have := (List.getElem?_eq_some_iff.mp hC).1
             rw [hsg.len] at this
             omega)⟩
-        rcases x with ⟨j, m, p⟩ | ⟨kd, m, p⟩ | ⟨kd, m, p⟩ | ⟨op, m⟩
+        rcases x with ⟨j, m, p⟩ | ⟨h, m, p⟩ | ⟨kd, m, p⟩ | ⟨op, m⟩
         · obtain ⟨a, T, he, rfl, rfl, hwf, hT, hsgT⟩ := hth.1 _ j m p hx
           obtain rfl := Option.some.inj (hsgT.symm.trans hC')
           exact sound_thm E hk hsg hc hle hx he hwf hT (fun M hM ↦ (ih M hM).1) hS hφ
-        · -- the declaration of a definition ends in a family of terms
-          obtain ⟨d, T, -, -, -, -, -, -, hT, hsgT⟩ := hsg.defs _ kd m p hx
+        · -- the declaration of a constant of the language ends in a family of terms
+          obtain ⟨d, T, -, -, -, -, -, -, hT, hsgT⟩ := hsg.tms _ h m p hx
           obtain rfl := Option.some.inj (hsgT.symm.trans hC')
           obtain ⟨h₁, -⟩ := spine_headDepth _ _ _ (Sig.ok_typeShape hsg.ok c _ hC) hS
           simp only [defTy, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
@@ -3039,9 +3042,9 @@ theorem pfSound : ∀ M : Expr, PfSound sg G k E n M :=
           obtain ⟨ΓT, -, Td, -, rfl⟩ := hT
           rw [headDepth_piTele] at h₁
           exact absurd (show some 17 = some 6 from h₁) (by decide)
-        · obtain ⟨d, T, hd, rfl, rfl, hT, hsgT⟩ := hth.2 _ kd m p hx
+        · obtain ⟨d, T, hd, rfl, rfl, ⟨cd, hcd⟩, hT, hsgT⟩ := hth.2 _ kd m p hx
           obtain rfl := Option.some.inj (hsgT.symm.trans hC')
-          exact sound_delta E hk hsg hc hle hx hd hT hS hφ
+          exact sound_delta E hk hsg hc hle hx hd hcd hT hS hφ
         · -- the declaration of an object definition ends in the kind of types
           obtain rfl := Option.some.inj (hC'.symm.trans (hsg.objs _ op m hx).2)
           obtain ⟨h₁, -⟩ := spine_headDepth _ _ _ (Sig.ok_typeShape hsg.ok c _ hC) hS
