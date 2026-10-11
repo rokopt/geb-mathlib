@@ -348,7 +348,8 @@ def evaluationAxiomModules : NameSet :=
     `GebTests.Prototypes.FreeTopos.Certified.Substitution,
     `GebTests.Prototypes.FreeTopos.Certified.TreeCases,
     `GebTests.Prototypes.FreeTopos.Certified.Expansion,
-    `GebTests.Prototypes.FreeTopos.Certified.Normalization]
+    `GebTests.Prototypes.FreeTopos.Certified.Normalization,
+    `GebTests.Prototypes.FreeTopos.Certified.Datatype]
 
 /-- Whether the environment variable `GEB_LOADING` selects the loading
 mode `native`, as it does unless it is `rfl`. -/

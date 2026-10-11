@@ -2206,8 +2206,13 @@ lists and optional values instances of the templates, and the combinator
 prover's computations instances of a template `Comp` at each type of
 values, composed by a copy of the composition for each pair of types it
 composes; its mirror regenerated, and the agreement proofs repaired by
-equations of each copy with one Lean function. Remaining, in order:
-`tree-data` removed; and the soundness of the typing.
+equations of each copy with one Lean function. In progress: the
+soundness of the typing, stated in the internal language of the stage-1
+compiler composed with the reader and the evaluator written in Geb, by a
+relation extending the fundamental lemma's at the datatypes, and proved
+at atoms (`GebTests/Prototypes/FreeTopos/DatatypeBase.lean`, its
+certificate checked by `GebTests/Prototypes/FreeTopos/Certified/Datatype.lean`).
+Remaining after it: `tree-data` removed.
 
 Abstraction is mathematical, not syntactic, and needs no mark of its
 own. An interface is a theory, a presentation of operations and axioms

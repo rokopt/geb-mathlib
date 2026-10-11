@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import GebTests.Prototypes.FreeTopos.DatatypeBase
 public import GebTests.Prototypes.FreeTopos.Expansion
 public import GebTests.Prototypes.FreeTopos.Normalization
 
@@ -61,7 +62,9 @@ def searches : List (String × (Unit → Except String (List (String × List Dec
     ("expansion", fun _ ↦ inProgram Expansion.program fun P ↦
       (Expansion.certificate P).map fun ds ↦ [("expansion", ds)]),
     ("normalization", fun _ ↦ inProgram Normalization.extended fun (P, S) ↦
-      Normalization.certificates P S)]
+      Normalization.certificates P S),
+    ("datatype", fun _ ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
+      Datatypes.certificates P S T)]
 
 end GebTests.Prototypes.FreeTopos.Certificates
 

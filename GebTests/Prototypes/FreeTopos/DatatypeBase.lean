@@ -5,16 +5,53 @@ Authors: Terence Rokop
 -/
 module
 
-public import GebTests.Prototypes.FreeTopos.NormalizationBase -- shake: keep
-public meta import GebTests.Prototypes.FreeTopos.NormalizationBase -- shake: keep
+public import GebTests.Prototypes.FreeTopos.NormalizationRel -- shake: keep
+public meta import GebTests.Prototypes.FreeTopos.NormalizationRel -- shake: keep
 public import GebTests.Prototypes.Stage1 -- shake: keep
 public meta import GebTests.Prototypes.Stage1 -- shake: keep
+meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
 /-!
 # The base of the datatype language's soundness
 
-probe
+The soundness of the datatype language's stage-1 compiler, stated in the internal language about
+the programs written in Geb ({lit}`datatypeφ`): a source form that expands, whose expansion the
+stage-1 typing gives a type, and whose expansion's erasure, its numeral abbreviations expanded,
+the reader resolves, resolves to a term whose evaluation converges to a value related at that type
+by the relation of the datatype language ({lit}`relDefn`). The relation extends the fundamental
+lemma's ({lit}`GebTests.Prototypes.FreeTopos.Normalization`) at the kernel's types by the
+datatypes, whose values are their members' quotations. The statement's hypotheses relate the
+environment to the named context, by names, and the definitions to the typing environment's, and
+take the reader's numeral abbreviations and names coherent with the typing environment's and the
+form a source form, one whose atoms' characters the expansion of numeral abbreviations fixes.
+
+The statement composes folds of rose trees, the stage functions of the pipeline, each defined in
+the extended program ({lit}`extend3`) by its argument and its fold, so that the proofs keep it
+folded and rewrite it by its vocabulary ({lit}`foldVocab`): its value at a node, and the fusion of
+its map over the children with the fold of the children's values. This module proves the case of
+an atom ({lit}`atomCase`): the typing's tests at an atom, decided in their order with the reader's,
+give a numeral's quotation, a variable's value in the environment, a definition's, a primitive,
+and the unit value, each related at its type; the primitive's index is decided name by name, and
+the primitive related by the fundamental lemma's relation of the primitives ({lit}`relTPrim`).
+The development is stored as the certificate {lit}`bootstrap/certificates/datatype-base.cert`.
+
+## Main definitions
+
+* {lit}`extend3` — the program extended by the relation, the environments' relations, the
+  coherences, and each fold's definitions.
+* {lit}`datatypeφ` — the soundness of the datatype language's typing at a source form.
+* {lit}`foldVocab` — the vocabulary of a fold.
+* {lit}`atomCase` — the soundness at an atom.
+* {lit}`baseDev3` — the development.
+
+## References
+
+* {cite}`Tait1967`, for the logical relation.
+
+## Tags
+
+internal language, logical relation, datatypes, soundness, test
 -/
 
 set_option doc.verso true
@@ -28,8 +65,29 @@ open GebTests.Prototypes.FreeTopos.Weakening
 open scoped FinEnum
 
 open Internal (Term)
-open GebTests.Prototypes.FreeTopos.Normalization (Defs extendedOf pc truth baseDev developAfter
-  vRules vBase nfE defnObjs rebuildLemmas genRoot showT)
+open GebTests.Prototypes.FreeTopos.Normalization
+
+/-- The source forms the reader gives, at a function on trees: atoms, whose characters the function
+fixes, and lists of source forms. The statement takes the function to be the expansion of numeral
+abbreviations, which fixes the reader's characters, leaves not labelled as atoms, at any
+abbreviations. One fold gives, at each tree and function, the tree rebuilt and whether it is a
+source form. The weakening proof's statement before it imports the prelude. -/
+def sourceForms : String := "
+(deftype SF (Prod T T))
+(def charsFixed (lam ((f (Arrow T T)) (cs Ts))
+  (equal (node 0 (foldr T Ts (lam ((c T) (a Ts)) (cons (f c) a)) (nil T) cs)) (node 0 cs))))
+(def srcForm (lam ((f (Arrow T T)) (e T))
+  (snd ((fold (Arrow (Arrow T T) SF)
+    (lam ((l T) (rs (List (Arrow (Arrow T T) SF))))
+      (lam ((g (Arrow T T)))
+        (let ps (List SF)
+          (foldr (Arrow (Arrow T T) SF) (List SF)
+            (lam ((r (Arrow (Arrow T T) SF)) (a (List SF))) (cons (r g) a)) (nil SF) rs)
+          (let cs Ts (foldr SF Ts (lam ((p SF) (a Ts)) (cons (fst p) a)) (nil T) ps)
+            (pair (node l cs)
+              (if (eq l 1) (charsFixed g cs)
+                (if (eq l 2) (foldr SF T (lam ((p SF) (a T)) (and (snd p) a)) 1 ps) 0)))))))
+    e) f))))"
 
 /-- The program: the prelude, the reader, the kernel's type checker, the lists of the datatype
 language, the stage-1 typing and expansion, the recognizers, the traversal of kernel terms, the
@@ -40,7 +98,10 @@ def programText : String :=
     Kernel.Stage0Tests.check ++ "\n" ++ Kernel.Stage1Tests.seq ++ "\n" ++
     Kernel.Stage1Tests.typing ++ "\n" ++ Kernel.Stage1Tests.datatype ++ "\n" ++
     Kernel.Stage0Tests.recognize ++ "\n" ++ Kernel.Stage0Tests.subst ++ "\n" ++
-    Kernel.EvalTests.evalGeb ++ "\n" ++ Weakening.statement
+    Kernel.EvalTests.evalGeb ++ "\n" ++ Weakening.statement ++ "\n" ++ sourceForms
+
+/-- The number of folds the statement composes, each defined by its argument and its fold. -/
+def nFolds : ℕ := 6
 
 /-- The indices of the definitions the datatype language's soundness states, after the fundamental
 lemma's, and the types its relations take. -/
@@ -72,6 +133,15 @@ def argIdx (k : ℕ) : ℕ := T.q + 3 + 2 * k
 
 /-- The index of the definition of the fold of index k of {lit}`foldSpecs`. -/
 def foldIdx (k : ℕ) : ℕ := T.q + 4 + 2 * k
+
+/-- The coherence of the reader's numeral abbreviations with the typing environment's numeral
+names: each name the environment has abbreviates a numeral's atom, and each name abbreviated is
+one the environment has. -/
+def numsT (E nums : Term) : Term := call (T.q + 3 + 2 * nFolds) [] [E, nums]
+
+/-- The coherence of the reader's names of definitions with the typing environment's definitions:
+each name with an index has a type. -/
+def defsT (E names : Term) : Term := call (T.q + 4 + 2 * nFolds) [] [E, names]
 
 /-- The fold of index k of {lit}`foldSpecs` at a tree, applied to the parameters its step uses,
 the outermost first. -/
@@ -154,13 +224,16 @@ structure FoldSpec where
   args : List Term
 
 /-- The folds the statement composes: the expansion, the typing, the erasure, the expansion of
-numeral abbreviations and the resolution, each at the tree of index 0. -/
-def foldSpecs (envTy : Tree) : List FoldSpec :=
+numeral abbreviations, the resolution, and the test of source forms at the expansion of numeral
+abbreviations, each at the tree of index 0. -/
+def foldSpecs (P : Prog) (envTy : Tree) : List FoldSpec :=
   [⟨"Datatype.expandExpr", [treeTy, list treeTy], [v 1, v 0]⟩,
     ⟨"Typing.synIn", [treeTy, list treeTy, envTy], [v 2, v 1, v 0]⟩,
     ⟨"Datatype.eraseExpr", [treeTy], [v 0]⟩,
     ⟨"Reader.expandNums", [treeTy, list treeTy], [v 1, v 0]⟩,
-    ⟨"Reader.resolve", [treeTy, list treeTy, list treeTy, list treeTy], [v 3, v 2, v 0, v 1]⟩]
+    ⟨"Reader.resolve", [treeTy, list treeTy, list treeTy, list treeTy], [v 3, v 2, v 0, v 1]⟩,
+    ⟨"srcForm", [treeTy, list treeTy],
+      [Term.lam treeTy (pc P "Reader.expandNums" [v 2, v 0]), v 0]⟩]
 
 /-- A fold's definitions: the argument the fold is applied to, in the parameters the argument
 uses; and the fold at the tree, by its step, applied to the argument of index {lit}`argIdx`, in
@@ -182,13 +255,21 @@ def foldDefn (P : Prog) (f : FoldSpec) (argIdx : ℕ) :
   let Fc := call argIdx [] ((List.range used.length).reverse.map fun i ↦ v (i + 1))
   pure (argD, ⟨0, tys, R, Term.app (Term.roseRec C s (v 0)) Fc⟩, C, s, used, Fc)
 
-/-- The definitions of the stage-1 pipeline the proofs keep folded: the steps of the folds the
-statement composes at a node, each decided by a node's label or a list's head, whose equations
-the vocabulary states one keyword at a time. -/
+/-- The definitions of the stage-1 pipeline the proofs keep folded: the folds the statement
+composes and their steps at a node, each decided by a node's label or a list's head, whose
+equations the vocabulary states one keyword at a time; and the lookups of names, which the proofs
+decide by their results. -/
 def foldedStage1 : List String :=
   ["Reader.resolveAtom", "Reader.resolveList", "Typing.synAtom", "Typing.synList",
     "Datatype.expandCase", "Datatype.expandCata", "Datatype.expandExpr", "Typing.synIn",
-    "Datatype.eraseExpr", "Reader.expandNums", "Reader.resolve"]
+    "Datatype.eraseExpr", "Reader.expandNums", "Reader.resolve", "Reader.lookupAbbrev",
+    "Reader.indexOf", "Reader.numeral", "Typing.lookupName", "Typing.hasName", "srcForm",
+    "charsFixed"]
+
+/-- The names of a named context, the scope the reader resolves a term in. -/
+def namesOf (cx : Term) : Term :=
+  Term.listRec (nilT treeTy)
+    (consT treeTy (apps ((primT Kernel.Prim.child).getD Term.star) [v 1, leafT bnilT]) (v 0)) cx
 
 /-- The program extended for the datatype language's soundness: the fundamental lemma's
 extension, and the relation at the datatype language's types, the relation of an environment to a
@@ -203,19 +284,20 @@ def extend3 (P : Prog) (S : Defs) : Option (Prog × Defs3) := do
   let (envTy, _) ← Internal.expParts envDefsD.type
   let T : Defs3 := ⟨P.G.defs.length, envTy⟩
   let R := Defs3.ctxTy
-  let some childT := primT Kernel.Prim.child | none
-  let childAt (t : Term) (k : ℕ) : Term := apps childT [t, leafT (numeral k)]
   let defs : List Internal.Defn := [
     relDefn P S,
-    -- the relation of an environment to a named context: at each index where the context has
-    -- some name with a type, the environment has some value related at the type
+    -- the relation of an environment to a named context: at each name the context gives some
+    -- type, the context's names give an index, at which the environment has some value related at
+    -- that type
     ⟨0, [list treeTy, list treeTy, R], omega,
       all treeTy (Term.lam treeTy (imp
-        (truth o (pc P "Prelude.isSome" [pc P "Prelude.nth" [v 2, v 0]]))
-        (ex treeTy (Term.lam treeTy
-          (conj (Term.eq (pc P "Prelude.nth" [v 2, v 1]) (pc P "Prelude.some" [v 0]))
-            (Term.app (T.relT (v 4) (childAt (pc P "Prelude.get"
-              [pc P "Prelude.nth" [v 3, v 1]]) 1)) (v 0)))))))⟩,
+        (truth o (pc P "Prelude.isSome" [pc P "Typing.lookupName" [v 0, v 2]]))
+        (ex treeTy (Term.lam treeTy (conj (Term.eq (pc P "Reader.indexOf" [v 1, namesOf (v 3)])
+            (pc P "Prelude.some" [v 0]))
+          (ex treeTy (Term.lam treeTy (conj
+            (Term.eq (pc P "Prelude.nth" [v 3, v 1]) (pc P "Prelude.some" [v 0]))
+            (Term.app (T.relT (v 5) (pc P "Prelude.get" [pc P "Typing.lookupName" [v 2, v 4]]))
+              (v 0))))))))))⟩,
     -- the relation of the definitions to the typing environment's definitions: at each name the
     -- environment gives some type, the names of the reader give an index, at which the
     -- definitions have some term whose evaluation in the empty environment converges to a value
@@ -230,41 +312,67 @@ def extend3 (P : Prog) (S : Defs) : Option (Prog × Defs3) := do
             (S.conv (Term.lam nat (S.evN (Term.fst (v 6)) (v 0) (nilT treeTy) (v 1)))
               (T.relT (v 5) (pc P "Prelude.get"
                 [pc P "Typing.lookupName" [v 2, pc P "Typing.envDefs" [v 4]]])))))))))))⟩] ++
-    (← ((foldSpecs envTy).zipIdx.mapM fun (f, k) ↦
-      (foldDefn P f (T.argIdx k)).map fun r ↦ [r.1, r.2.1])).flatten
+    (← ((foldSpecs P envTy).zipIdx.mapM fun (f, k) ↦
+      (foldDefn P f (T.argIdx k)).map fun r ↦ [r.1, r.2.1])).flatten ++ [
+    -- the numeral abbreviations: at each name, the environment's numeral names having it gives an
+    -- abbreviation, the atom of some numeral; and an abbreviation gives the name among them
+    ⟨0, [list treeTy, envTy], omega,
+      all treeTy (Term.lam treeTy (conj
+        (imp (truth o (pc P "Typing.hasName" [v 0, pc P "Typing.envNums" [v 2]]))
+          (ex (list treeTy) (Term.lam (list treeTy) (conj
+            (Term.eq (pc P "Reader.lookupAbbrev" [v 1, v 2])
+              (pc P "Prelude.some" [nodeT (Term.pair (numeral 1) (v 0))]))
+            (truth o (pc P "Prelude.isSome" [pc P "Reader.numeral" [v 0]]))))))
+        (imp (truth o (pc P "Prelude.isSome" [pc P "Reader.lookupAbbrev" [v 0, v 1]]))
+          (truth o (pc P "Typing.hasName" [v 0, pc P "Typing.envNums" [v 2]])))))⟩,
+    -- the reader's names: each name with an index has a type among the environment's definitions
+    ⟨0, [list treeTy, envTy], omega,
+      all treeTy (Term.lam treeTy (imp
+        (truth o (pc P "Prelude.isSome" [pc P "Reader.indexOf" [v 0, v 1]]))
+        (truth o (pc P "Prelude.isSome"
+          [pc P "Typing.lookupName" [v 0, pc P "Typing.envDefs" [v 2]]]))))⟩]
   pure (⟨⟨P.G.prims, P.G.defs ++ defs.map .language, P.G.base⟩, P.o, P.idx, foldedStage1⟩, T)
 
-/-- The names of a named context, the scope the reader resolves a term in. -/
-def namesOf (cx : Term) : Term :=
-  Term.listRec (nilT treeTy)
-    (consT treeTy (apps ((primT Kernel.Prim.child).getD Term.star) [v 1, leafT bnilT]) (v 0)) cx
+/-- The type and the resolved term of a form under the eight quantifiers of
+{lit}`datatypeφ`: the typing's optional type of the form's expansion, and the reader's optional
+resolution of the expansion's erasure, its numeral abbreviations expanded, in the context's
+names. -/
+def datatypeTerms (P : Prog) (form : Term) : Term × Term :=
+  let x := pc P "Prelude.get" [pc P "Datatype.expandExpr" [v 7, form]]
+  (pc P "Typing.synIn" [v 6, v 5, x],
+    pc P "Reader.resolve" [v 4, v 2,
+      pc P "Reader.expandNums" [v 3, pc P "Datatype.eraseExpr" [x]], namesOf (v 5)])
+
+/-- The hypotheses and the conclusion of the soundness at a form, a term under the eight
+quantifiers of {lit}`datatypeφ`: the relation's context R v0, the environment v1, the reader's
+names v2 and numeral abbreviations v3 and type abbreviations v4, the named context v5, the typing
+environment v6 and the expansion's declarations v7. -/
+def datatypeParts (P : Prog) (S : Defs) (T : Defs3) (form : Term) : List Term × Term :=
+  let isSomeT (t : Term) : Term := truth P.o (pc P "Prelude.isSome" [t])
+  let get (t : Term) : Term := pc P "Prelude.get" [t]
+  let (ty, k) := datatypeTerms P form
+  ([T.globT (v 0) (v 6) (v 2), T.envT (v 0) (v 5) (v 1), T.numsT (v 6) (v 3),
+      T.defsT (v 6) (v 2),
+      truth P.o (pc P "srcForm" [Term.lam treeTy (pc P "Reader.expandNums" [v 4, v 0]), form]),
+      isSomeT (pc P "Datatype.expandExpr" [v 7, form]), isSomeT ty, isSomeT k],
+    S.conv
+      (Term.lam nat (S.evN (Term.fst (v 1)) (v 0) (v 2) (get (Term.subst k fun i ↦ v (i + 1)))))
+      (T.relT (v 0) (get ty)))
 
 /-- The soundness of the datatype language's typing at a source form, the variable of index 0:
 for all declarations of the expansion, typing environments, named contexts, type and numeral
 abbreviations and definitions' names of the reader, environments and contexts of the relation,
 if the definitions are related to the typing environment's and the environment to the named
-context, and the form expands, its expansion has a type, and the expansion's erasure, its
+context, the reader's numeral abbreviations and names cohere with the typing environment's, the
+form is a source form, and it expands, its expansion has a type, and the expansion's erasure, its
 numeral abbreviations expanded, resolves in the context's names, then the resolved term's
 evaluation in the environment converges to a value related at the type. -/
 def datatypeφ (P : Prog) (S : Defs) (T : Defs3) : Term :=
-  let all := Internal.Logic.all P.o
-  let imp := Internal.Logic.imp P.o
-  let isSomeT (t : Term) : Term := truth P.o (pc P "Prelude.isSome" [t])
-  let get (t : Term) : Term := pc P "Prelude.get" [t]
-  -- under the eight quantifiers: R v0, env v1, names v2, nums v3, tys v4, cx v5, E v6, Δ v7,
-  -- the form v8
-  let x := get (pc P "Datatype.expandExpr" [v 7, v 8])
-  let ty := pc P "Typing.synIn" [v 6, v 5, x]
-  let k := pc P "Reader.resolve" [v 4, v 2,
-    pc P "Reader.expandNums" [v 3, pc P "Datatype.eraseExpr" [x]], namesOf (v 5)]
-  let body := imp (T.globT (v 0) (v 6) (v 2)) (imp (T.envT (v 0) (v 5) (v 1))
-    (imp (isSomeT (pc P "Datatype.expandExpr" [v 7, v 8])) (imp (isSomeT ty) (imp (isSomeT k)
-      (S.conv
-        (Term.lam nat (S.evN (Term.fst (v 1)) (v 0) (v 2) (get (Term.subst k fun i ↦ v (i + 1)))))
-        (T.relT (v 0) (get ty)))))))
-  let q (A : Tree) (b : Term) : Term := all A (Term.lam A b)
+  let (hs, goal) := datatypeParts P S T (v 8)
+  let q (A : Tree) (b : Term) : Term := Internal.Logic.all P.o A (Term.lam A b)
   q (list treeTy) (q T.envTy (q (list treeTy) (q (list treeTy) (q (list treeTy)
-    (q (list treeTy) (q (list treeTy) (q Defs3.ctxTy body)))))))
+    (q (list treeTy) (q (list treeTy) (q Defs3.ctxTy
+      (hs.foldr (Internal.Logic.imp P.o) goal))))))))
 
 /-- The map of a fold's definition over a list, the list of index 0 and the parameters after it,
 the innermost first, at the fold's value type {lit}`R`. -/
@@ -282,7 +390,7 @@ def mapFold (T : Defs3) (k : ℕ) (R : Tree) (tys : List Tree) : Term :=
 the map of the fold's definition, by induction on the children; or the reason it fails. -/
 def fusion (P : Prog) (T : Defs3) (k : ℕ) (ix : String → ℕ) (E : Array Internal.Entry) :
     Except String (Internal.Thm × Internal.Deriv) := do
-  let some f := (foldSpecs T.envTy)[k]? | throw "no fold"
+  let some f := (foldSpecs P T.envTy)[k]? | throw "no fold"
   let some (_, d, C, st, _, F) := foldDefn P f (T.argIdx k)
     | throw "no definition"
   let rs := vRules P ix
@@ -298,7 +406,7 @@ def fusion (P : Prog) (T : Defs3) (k : ℕ) (ix : String → ℕ) (E : Array Int
         (nfE P.G E (rs.take n) Γ lhs).isNone).getD 0
       let last := match rs[n - 1]? with
         | some (.thm j _) => match E[j]? with
-          | some (Internal.Entry.language a) => s!"theorem {j}: {(showT a.concl).take 600}"
+          | some (Internal.Entry.language a) => s!"theorem {j}: {showT a.concl}"
           | _ => s!"theorem {j}"
         | some (.delta j) => s!"delta {j}"
         | some (.deltaBelow m _) => s!"deltaBelow {m}"
@@ -312,12 +420,24 @@ def fusion (P : Prog) (T : Defs3) (k : ℕ) (ix : String → ℕ) (E : Array Int
     | throw s!"not proved by induction:\n{showT l}\n  =\n{showT r}"
   pure (⟨0, Γ, [], Term.eq l r⟩, dv)
 
+/-- Where a fold rebuilds its tree as the first component of its values: nowhere, in the step,
+or in the argument it is applied to. -/
+inductive Rebuild where
+  /-- The fold's values are not pairs. -/
+  | none
+  /-- The step pairs the node rebuilt with the argument's value. -/
+  | step
+  /-- The argument pairs the node rebuilt with another value. -/
+  | argument
+  /-- The argument gives a function whose values pair the node rebuilt with another value. -/
+  | applied
+
 /-- The vocabulary of the fold of index k: the fusion of the map of the folds at the children,
 applied to the parameters, with the map of the fold's definition, by induction on the children;
 the fold's definition at a node, unfolded at the root alone; and, where the fold's values pair
-the node rebuilt with the value, the rebuilding lemmas. -/
-def foldVocab (P : Prog) (T : Defs3) (k : ℕ) (pairs : Bool) : List Step :=
-  match (foldSpecs T.envTy)[k]? with
+the node rebuilt with another value, the rebuilding lemmas. -/
+def foldVocab (P : Prog) (T : Defs3) (k : ℕ) (rebuilds : Rebuild) : List Step :=
+  match (foldSpecs P T.envTy)[k]? with
   | none => []
   | some f =>
   match foldDefn P f (T.argIdx k) with
@@ -329,14 +449,86 @@ def foldVocab (P : Prog) (T : Defs3) (k : ℕ) (pairs : Bool) : List Step :=
   let fus : Step := (s!"{tag}Fus", fun ix E ↦ (fusion P T k ix E).toOption)
   let node : Step := genRoot P s!"{tag}Node" ([list treeTy, bitsTy] ++ tys)
     (T.foldAt k (ps 1) (nodeT (Term.pair (v 1) (v 0)))) (T.foldIdx k) [s!"{tag}Fus"]
-  let rebuild : List Step := if pairs then
-      match Internal.expParts C with
-      | some (FX, _) => rebuildLemmas P tag FX
-          (fun x G ↦ Term.fst (Term.app (Term.roseRec C st x) G)) tys
-          (T.foldAt k (ps 0) (v 0)) F (some (T.foldIdx k))
+  let rebuild : List Step := match rebuilds, Internal.expParts C, tys with
+    | .step, some (FX, _), _ => rebuildLemmas P tag FX
+        (fun x G ↦ Term.fst (Term.app (Term.roseRec C st x) G)) tys
+        (T.foldAt k (ps 0) (v 0)) F (some (T.foldIdx k))
+    -- the parameters as one value, the fold's argument unfolded
+    | .argument, _, [a] => rebuildLemmas P tag a
+        (fun x G ↦ Term.fst (T.foldAt k [G] x)) tys (T.foldAt k (ps 0) (v 0)) (v 1) none
+        fun ix ↦ [.thm (ix s!"{tag}Node") [], .delta (T.argIdx k)]
+    | .argument, _, [a, b] => rebuildLemmas P tag (prod b a)
+        (fun x G ↦ Term.fst (T.foldAt k [Term.fst G, Term.snd G] x)) tys
+        (T.foldAt k (ps 0) (v 0)) (Term.pair (v 2) (v 1)) none
+        fun ix ↦ [.thm (ix s!"{tag}Node") [], .delta (T.argIdx k)]
+    -- the function's argument a variable after the tree
+    | .applied, some (_, R), [] => match Internal.expParts R with
+      | some (FA, _) => rebuildLemmas P tag FA
+          (fun x G ↦ Term.fst (Term.app (T.foldAt k [] x) G)) [FA]
+          (Term.app (T.foldAt k [] (v 0)) (v 1)) (v 1) none
+          fun ix ↦ [.thm (ix s!"{tag}Node") [], .delta (T.argIdx k)]
       | none => []
-    else []
+    | _, _, _ => []
   fus :: node :: rebuild
+
+/-- The names of the datatype language's vocabulary used as rules after it. -/
+def vocab3 : List String :=
+  (List.range nFolds).flatMap fun k ↦
+    [s!"fold{k}Def", s!"fold{k}Node", s!"fold{k}Fst", s!"fold{k}Kids", s!"atom{k}"]
+
+/-- The rules of the datatype language's vocabulary among the first {lit}`proved` theorems: each
+stage function as its fold, each fold at a node, its rebuilding and its children's where it
+rebuilds, each stage function at an atom, and the rules of the normalization proof's
+vocabulary. -/
+def vRules3 (P : Prog) (ix : String → ℕ) (proved : ℕ) : List Internal.NormRule :=
+  (vocab3 ++ ["charsMap", "handlerAtom3"]).filterMap
+    (fun nm ↦ if 0 < ix nm ∧ ix nm < proved then some (.thm (ix nm) []) else none) ++ vRules P ix
+
+/-- The prelude's right fold of a list of elements of type {lit}`A` into a value of type
+{lit}`B`, by a function and a value. -/
+def foldrT (A B : Tree) (f z xs : Term) : Term :=
+  let X := prod (exp A (exp B B)) B
+  Term.app (Term.listRec (Term.lam X (Term.snd (v 0)))
+    (Term.lam X (Term.app (Term.app (Term.fst (v 0)) (v 2)) (Term.app (v 1) (v 0)))) xs)
+    (Term.pair f z)
+
+/-- How a rebuilding fold's values at the children of a node give the children: the first
+components, by a fold of lists or by the prelude's right fold; or the first components of the
+values' applications to the variable after the list, by the prelude's right folds. -/
+inductive KidsShape where
+  /-- The first components by a fold of lists. -/
+  | list
+  /-- The first components by the prelude's right fold. -/
+  | foldr
+  /-- The values applied to the variable after the list, then the first components, each by the
+  prelude's right fold. -/
+  | applied
+
+/-- The first components of a rebuilding fold's values at the children of a node, the list of
+index 0, its parameters or the argument of its values after it, are the children. -/
+def kidsEq (P : Prog) (T : Defs3) (k : ℕ) (shape : KidsShape) : Step :=
+  (s!"fold{k}Kids", fun ix E ↦ do
+    let f ← (foldSpecs P T.envTy)[k]?
+    let (_, d, _, _, _, _) ← foldDefn P f (T.argIdx k)
+    let tys := d.params.tail
+    let L := list treeTy
+    let M := mapFold T k d.type tys
+    let firstsOf (A : Tree) (xs : Term) : Term :=
+      foldrT A L (Term.lam A (Term.lam L (consT treeTy (Term.fst (v 1)) (v 0)))) (nilT treeTy) xs
+    let (Γ, firsts) ← match shape with
+      | .list => some (L :: tys, Term.listRec (nilT treeTy) (consT treeTy (Term.fst (v 1)) (v 0)) M)
+      | .foldr => some (L :: tys, firstsOf d.type M)
+      | .applied => do
+        let (FA, B) ← Internal.expParts d.type
+        -- the argument the variable of index 1, two binders deeper in the function
+        let applied := foldrT d.type (list B)
+          (Term.lam d.type (Term.lam (list B) (consT B (Term.app (v 1) (v 3)) (v 0)))) (nilT B) M
+        some ([L, FA], firstsOf B applied)
+    let rs := vRules3 P ix E.size
+    let some l := nfE P.G E rs Γ firsts | dbgTrace s!"fold{k}Kids: left" fun _ ↦ none
+    let some dv := Internal.byListIndHyp P.G E 0 0 1 rs 4096 Γ [] l (v 0)
+      | dbgTrace s!"fold{k}Kids: {showT l}" fun _ ↦ none
+    pure (⟨0, Γ, [], Term.eq l (v 0)⟩, dv))
 
 /-- The program, translated and extended for the datatype language's soundness. -/
 def extended3 : Option (Prog × Defs × Defs3) := do
@@ -359,64 +551,585 @@ open Lean Elab Command in
   logInfo m!"the statement is a formula: \
     {Internal.typeIn P.G 0 [treeTy] (datatypeφ P S T) == some omega}"
 
-/-- The rules of the datatype language's vocabulary: each fold at a node, its rebuilding where it
-rebuilds, and the rules of the normalization proof's vocabulary. -/
-def vRules3 (P : Prog) (ix : String → ℕ) : List Internal.NormRule :=
-  ((List.range 5).flatMap fun k ↦ [s!"fold{k}Node", s!"fold{k}Fst"]).filterMap
-    (fun nm ↦ if ix nm = 0 then none else some (.thm (ix nm) [])) ++ vRules P ix
+/-- A term with an application of a rose tree's fold to an argument replaced, the first child
+containing one replaced at each node, with whether the term contains one. -/
+def replaceFold (by_ : Term) (t : Term) : Term :=
+  (RoseTree.para (fun (l : Internal.Label) (cs : List (Term × (Term × Bool))) ↦
+    let isFold := match l, cs with
+      | .app, [(f, _), _] => match f.label with
+        | .roseRec _ => true
+        | _ => false
+      | _, _ => false
+    if isFold then (by_, true) else
+    match cs.findIdx? (·.2.2) with
+    | some i => (RoseTree.node l (cs.mapIdx fun j c ↦ if j = i then c.2.1 else c.1), true)
+    | none => (RoseTree.node l (cs.map Prod.fst), false)) t).1
 
-/-- The base development: the fundamental lemma's base, and each fold's vocabulary. -/
+/-- A stage function in terms of its fold: the function at its arguments equal to its weak normal
+form with the fold replaced by the fold's definition, both sides reducing to one normal form with
+the function, the fold's definition and its argument unfolded and the other stage functions kept
+folded. -/
+def foldDefEq (P : Prog) (T : Defs3) (k : ℕ) : Step :=
+  (s!"fold{k}Def", fun _ E ↦ do
+    let f ← (foldSpecs P T.envTy)[k]?
+    let used ← (foldDefn P f (T.argIdx k)).map (·.2.2.2.2.1)
+    let ps := used.reverse.map v
+    let lhs := pc P f.name f.args
+    let W := replaceFold (T.foldAt k ps (v 0)) (weakNF P (baseNorm P) 0 f.ctx lhs)
+    let rs := vBase P ++ [.delta (P.idx f.name), .delta (T.argIdx k), .delta (T.foldIdx k)]
+    let some dv := byMode .full P.G E 0 rs f.ctx [] lhs W
+      | dbgTrace s!"fold{k}Def: unequal" fun _ ↦ none
+    pure (⟨0, f.ctx, [], Term.eq lhs W⟩, dv))
+
+/-- An atom's node over the characters of index 0. -/
+def atomT : Term := nodeT (Term.pair (numeral 1) (v 0))
+
+/-- Each stage function at an atom's node, the characters of index 0: its context and term. -/
+def atomSpecs (P : Prog) (envTy : Tree) : List (List Tree × Term) :=
+  [([list treeTy, list treeTy], pc P "Datatype.expandExpr" [v 1, atomT]),
+    ([list treeTy, list treeTy, envTy], pc P "Typing.synIn" [v 2, v 1, atomT]),
+    ([list treeTy], pc P "Datatype.eraseExpr" [atomT]),
+    ([list treeTy, list treeTy], pc P "Reader.expandNums" [v 1, atomT]),
+    ([list treeTy, list treeTy, list treeTy, list treeTy],
+      pc P "Reader.resolve" [v 3, v 2, atomT, v 1]),
+    ([list treeTy, list treeTy],
+      pc P "srcForm" [Term.lam treeTy (pc P "Reader.expandNums" [v 2, v 0]), atomT])]
+
+/-- The equations of the stage functions at an atom's node: the term's normal form by the
+vocabulary's rules, and its normal form with the fold's argument unfolded as well. -/
+def atomEqs (P : Prog) (T : Defs3) : List Step :=
+  (atomSpecs P T.envTy).zipIdx.map fun ((Γ, t), k) ↦ (s!"atom{k}", fun ix E ↦ do
+    let rs := vRules3 P ix E.size
+    let some l := nfE P.G E rs Γ t | dbgTrace s!"atom{k}: left" fun _ ↦ none
+    let some (r, d, _) := Internal.eval P.G E 0 (rs ++ [.delta (T.argIdx k)]) 4096 .full Γ [] l
+      | dbgTrace s!"atom{k}: right" fun _ ↦ none
+    pure (⟨0, Γ, [], Term.eq l r⟩, nd .join [d, nd .refl]))
+
+/-- The characters of an atom, the list of index 0, expanded at the numeral abbreviations of
+index 1, as the source forms' test maps them and as the expansion of a node's children does. -/
+def charsMap (P : Prog) (T : Defs3) : Step :=
+  ("charsMap", fun ix E ↦ do
+    let f ← (foldSpecs P T.envTy)[3]?
+    let (_, d, _, _, _, _) ← foldDefn P f (T.argIdx 3)
+    let L := list treeTy
+    let Γ := [L, L]
+    let rs := vRules3 P ix E.size
+    let mapped := foldrT treeTy L
+      (Term.lam treeTy (Term.lam L (consT treeTy (pc P "Reader.expandNums" [v 3, v 1]) (v 0))))
+      (nilT treeTy) (v 0)
+    let some l := nfE P.G E rs Γ mapped | dbgTrace "charsMap: left" fun _ ↦ none
+    let some r := nfE P.G E rs Γ (mapFold T 3 d.type d.params.tail)
+      | dbgTrace "charsMap: right" fun _ ↦ none
+    let some dv := Internal.byListIndHyp P.G E 0 0 1 rs 4096 Γ [] l r
+      | dbgTrace s!"charsMap: {showT l}\n  = {showT r}" fun _ ↦ none
+    pure (⟨0, Γ, [], Term.eq l r⟩, dv))
+
+/-- The characters of an atom, the list of index 0, fixed by the expansion of the numeral
+abbreviations of index 1 when the source forms' test says so: the test unfolded to the equality
+of the names, sound, whose children are the expanded characters and the characters. -/
+def charsFixedEq (P : Prog) (S : Defs) (T : Defs3) : Step :=
+  ("charsFixedEq", fun ix E ↦ do
+    let f ← (foldSpecs P T.envTy)[3]?
+    let (_, d, _, _, _, _) ← foldDefn P f (T.argIdx 3)
+    let L := list treeTy
+    let Γ := [L, L]
+    let fn := Term.lam treeTy (pc P "Reader.expandNums" [v 2, v 0])
+    let φ := Internal.Logic.imp P.o (truth P.o (pc P "charsFixed" [fn, v 0]))
+      (Term.eq (mapFold T 3 d.type d.params.tail) (v 0))
+    let K : Kit := ⟨P, S, E, ix,
+      (vocab3 ++ ["charsMap"]).filter fun nm ↦ 0 < ix nm ∧ ix nm < E.size⟩
+    let mapped := foldrT treeTy L
+      (Term.lam treeTy (Term.lam L (consT treeTy (pc P "Reader.expandNums" [v 3, v 1]) (v 0))))
+      (nilT treeTy) (v 0)
+    let A := nodeT (Term.pair (numeral 0) mapped)
+    let B := nodeT (Term.pair (numeral 0) (v 0))
+    let childrenT ← primT Kernel.Prim.children
+    let deducer : Deducer := dImpI K.L fun Γ Φ ψ ↦
+      -- the test unfolded, then the equality's soundness at the two names
+      dRwHyp (evalRw K.G K.E (K.rules Φ ++ [.delta (P.idx "charsFixed")]) .full) 0
+        (K.cutThm "equalSound" (fun _ ↦ [A]) (K.allEΓ (fun _ ↦ B) (K.impE (K.byHyp 0)
+          (fun Γ Φ ψ ↦ K.image (Φ.length - 1) (fun t ↦ apps childrenT [t]) K.byNorm Γ Φ ψ))))
+        Γ Φ ψ
+    let some dv := deducer Γ [] φ | dbgTrace "charsFixedEq: not proved" fun _ ↦ none
+    pure (⟨0, Γ, [], φ⟩, dv))
+
+/-- The reflexivity of the equality of trees and its symmetry: the equality of bitstrings
+reflexive, by induction on the bitstring, its bits split; the elementwise equality of a list with
+itself given each element's reflexivity, by induction on the list; the induction hypothesis on rose
+trees as every child's reflexivity; the equality of trees reflexive, by induction on the tree, its
+label's test decided; and the equality symmetric, by its soundness and reflexivity. -/
+def equalReflLemmas (P : Prog) (S : Defs) : List Step :=
+  let kit (ix : String → ℕ) (E : Array Internal.Entry) : Kit := ⟨P, S, E, ix, []⟩
+  let reflφ (K : Kit) : Term := K.truthB (call D.equal [] [v 0, v 0])
+  [("eqBRefl", fun ix E ↦ do
+      let K := kit ix E
+      let φ := K.truthB (call D.eqB [] [v 0, v 0])
+      let d₀ ← K.solve 2 [] [] (Term.subst φ (Internal.instVar (Term.arr 0 [bitTy] Term.star)))
+      -- a construction: its bit split, each case by the induction hypothesis
+      let byIH : Deducer := fun Γ Φ ψ ↦ (K.solve 2 Γ Φ ψ).orElse fun _ ↦ K.byHyp 0 Γ Φ ψ
+      let cons : Deducer := fun Γ Φ ψ ↦ (K.bitCase (v 0) byIH byIH Γ Φ ψ).orElse fun _ ↦
+        K.bitCase (v 1) byIH byIH Γ Φ ψ
+      let d₁ ← cons [list bitTy, bitTy] [Internal.weakenElem φ] (Internal.listConsAt 1 bitTy φ)
+      pure (⟨0, [bitsTy], [], φ⟩, nd (.listIndHyp 0 1) [d₀, d₁])),
+    ("allZipRefl", fun ix E ↦ do
+      let K := kit ix E
+      let L := K.L
+      let φ := Internal.Logic.imp P.o (S.allL (Term.lam treeTy (reflφ K)) (v 0))
+        (K.truthB (call D.allZip [] [← mapEq (v 0), v 0]))
+      let d₀ ← dImpI L (K.solve 2) [] [] (Term.subst φ (Internal.instVar
+        (Term.arr 0 [treeTy] Term.star)))
+      -- a construction: the head's reflexivity and the rest's from the hypothesis on all the
+      -- elements; the head's test decided, empty refuted; the rest's by the induction hypothesis
+      let cons : Deducer := dImpI L fun Γ₁ Φ₁ ψ₁ ↦
+        let h := Φ₁.length - 1
+        dRwHyp (evalRw K.G K.E (K.rules Φ₁) .full) h (K.conjE fun Γ Φ ψ ↦
+          -- the conjunction unfolded: the head's formula, then the rest's
+          let hHead := Φ.length - 2
+          let hRest := Φ.length - 1
+          -- the context's outermost variable is the head
+          let head := v (Γ.length - 1)
+          let X := (nfE K.G K.E (K.rules Φ) Γ (call D.equal [] [head, head])).getD Term.star
+          K.listCase bitTy X (K.hypFalse hHead)
+            (dImpE L 0 (K.byHyp hRest) fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ) Γ Φ ψ) Γ₁ Φ₁ ψ₁
+      let d₁ ← cons [list treeTy, treeTy] [Internal.weakenElem φ]
+        (Internal.listConsAt 1 treeTy φ)
+      pure (⟨0, [list treeTy], [], φ⟩, nd (.listIndHyp 0 1) [d₀, d₁])),
+    roseAllFor P S "roseAllRefl" (reflφ ⟨P, S, #[], fun _ ↦ 0, []⟩),
+    ("equalRefl", fun ix E ↦ do
+      let K := kit ix E
+      let φ := reflφ K
+      let withLast (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
+      -- context: the children, the label
+      let node : Deducer := fun Γ Φ ψ ↦
+        -- the label and the children, the outermost variables
+        let l := v (Γ.length - 1)
+        let cs (Γ : List Tree) : Term := v (Γ.length - 2)
+        let X := (nfE K.G K.E (vRules P ix) Γ (call D.eqB [] [l, l])).getD Term.star
+        K.cutThm "eqBRefl" (fun _ ↦ [l]) (withLast fun hl ↦
+          K.listCase bitTy X (K.hypFalse hl)
+            ((K.cutThm "roseAllRefl" (fun Γ ↦ [cs Γ]) (K.impE dHyp
+              (withLast fun all ↦
+              K.cutThm "allZipRefl" (fun Γ ↦ [cs Γ])
+                (K.impE (fun _ _ _ ↦ some (nd (.hyp all)))
+                  fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ)))))) Γ Φ ψ
+      let d ← node [list treeTy, bitsTy] [Internal.roseHyp 0 1 φ]
+        (Internal.roseNodeAt 2 treeTy bitsTy φ)
+      pure (⟨0, [treeTy], [], φ⟩, nd (.roseIndHyp 2 0 1) [d])),
+    ("equalSymm", fun ix E ↦ do
+      let K := kit ix E
+      let L := K.L
+      let φ := Internal.Logic.imp P.o (K.truthB (call D.equal [] [v 1, v 0]))
+        (K.truthB (call D.equal [] [v 0, v 1]))
+      let d ← dImpI L (K.cutThm "equalSound" (fun _ ↦ [v 1]) (K.allEΓ (fun _ ↦ v 0)
+        (K.impE (K.byHyp 0) (K.cutThm "equalRefl" (fun _ ↦ [v 0])
+          (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ))))) [treeTy, treeTy] [] φ
+      pure (⟨0, [treeTy, treeTy], [], φ⟩, d))]
+
+/-- A term with each occurrence of a subterm replaced. -/
+def replaceSub (u w : Term) (t : Term) : Term :=
+  RoseTree.para (fun (l : Internal.Label) (cs : List (Term × Term)) ↦
+    let orig := RoseTree.node l (cs.map Prod.fst)
+    if orig == u then w else RoseTree.node l (cs.map Prod.snd)) t
+
+/-- The equations of a program's fold of lists, kept folded, at the empty list and at a
+construction: the function of {lit}`name` at the arguments {lit}`args` of the list, in the
+context {lit}`Γ` after the list's head and tail, the tail of index 0 and the head of index 1; at
+the empty list its normal form with the function unfolded, and at the construction that normal
+form with the function's normal form at the tail replaced by the function at the tail. -/
+def listFoldEqs (P : Prog) (tag name : String) (Γ : List Tree) (elem : Tree)
+    (args : Term → List Term) : List Step :=
+  let rsU := vBase P ++ [.delta (P.idx name)]
+  let nf (G : Internal.Globals) (E : Array Internal.Entry) (Γ : List Tree) (t : Term) :
+      Option Term := (Internal.eval G E 0 rsU 4096 .full Γ [] t).map Prod.fst
+  let ΓN := Γ.drop 2
+  let lower (t : Term) : Term := Term.subst t fun i ↦ v (i - 2)
+  [(s!"{tag}Nil", fun _ E ↦ do
+      let t := pc P name ((args (nilT elem)).map lower)
+      let r ← nf P.G E ΓN t
+      let d ← byMode .full P.G E 0 rsU ΓN [] t r
+      pure (⟨0, ΓN, [], Term.eq t r⟩, d)),
+    (s!"{tag}Cons", fun _ E ↦ do
+      let t := pc P name (args (consT elem (v 1) (v 0)))
+      let tail := pc P name (args (v 0))
+      let r ← nf P.G E Γ t
+      let rt ← nf P.G E Γ tail
+      let r' := replaceSub rt tail r
+      let d ← byMode .full P.G E 0 rsU Γ [] t r'
+      pure (⟨0, Γ, [], Term.eq t r'⟩, d))]
+
+/-- The names of the lookups' equations at the empty list and at a construction. -/
+def lookupEqNames : List String :=
+  ["indexOfNil", "indexOfCons", "lookupNameNil", "lookupNameCons"]
+
+/-- The lookups' equations: the reader's index of a name among names, and the typing's type of a
+name among named types; each in the context of the tail, the head and the name. -/
+def lookupEqs (P : Prog) : List Step :=
+  let Γ := [list treeTy, treeTy, treeTy]
+  listFoldEqs P "indexOf" "Reader.indexOf" Γ treeTy (fun xs ↦ [v 2, xs]) ++
+    listFoldEqs P "lookupName" "Typing.lookupName" Γ treeTy (fun xs ↦ [v 2, xs])
+
+/-- A name with an index among a named context's names has a type in it: by induction on the
+context; at a construction, the name equal to the head's or not, the first by the equality's
+symmetry, the second by the induction hypothesis at the name, the reader's test of the rest
+decided first. -/
+def nameAgree (P : Prog) (S : Defs) : Step :=
+  ("nameAgree", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, lookupEqNames⟩
+    let L := K.L
+    let φ := Internal.Logic.all P.o treeTy (Term.lam treeTy (Internal.Logic.imp P.o
+      (truth P.o (pc P "Prelude.isSome" [pc P "Reader.indexOf" [v 0, namesOf (v 1)]]))
+      (truth P.o (pc P "Prelude.isSome" [pc P "Typing.lookupName" [v 0, v 1]]))))
+    let childT ← primT Kernel.Prim.child
+    let d₀ ← dAllI L (dImpI L fun Γ Φ ψ ↦ K.hypFalse (Φ.length - 1) Γ Φ ψ) [] []
+      (Term.subst φ (Internal.instVar (Term.arr 0 [treeTy] Term.star)))
+    -- context: the name, the tail, the head; hypotheses: the induction hypothesis, the index's
+    let cons : Deducer := dAllI L (dImpI L fun Γ₁ Φ₁ ψ₁ ↦
+      let h := Φ₁.length - 1
+      let n (Γ : List Tree) : Term := v (Γ.length - Γ₁.length)
+      let head (Γ : List Tree) : Term := v (Γ.length - 1)
+      let m (Γ : List Tree) : Term := apps childT [head Γ, leafT bnilT]
+      -- the head's name equal to the name, its test decided
+      let byHead : Deducer := fun Γ Φ ψ ↦
+        let Y := (nfE K.G K.E (K.rules []) Γ (call D.equal [] [m Γ, n Γ])).getD Term.star
+        K.listCase bitTy Y (K.hypFalse (Φ.length - 1)) (K.solve 3) Γ Φ ψ
+      let equalCase : Deducer :=
+        K.cutThm "equalSymm" (fun Γ ↦ [m Γ, n Γ]) (K.impE (K.solve 3) byHead)
+      -- the names unequal: the reader's test of the rest decided, its index's hypothesis
+      -- refuted where false; the induction hypothesis at the name; the typing's test decided
+      let rest : Deducer := K.splitHyp h (fun Γ Φ ψ ↦
+        dAllE L K.G K.E 0 (n Γ) (K.impE (K.byHyp h) fun Γ Φ ψ ↦
+          let Y := (nfE K.G K.E (K.rules []) Γ (call D.equal [] [m Γ, n Γ])).getD Term.star
+          K.listCase bitTy Y (K.byHyp (Φ.length - 1)) (K.solve 3) Γ Φ ψ) Γ Φ ψ)
+      let X := (nfE K.G K.E (K.rules []) Γ₁ (call D.equal [] [n Γ₁, m Γ₁])).getD Term.star
+      K.listCase bitTy X rest equalCase Γ₁ Φ₁ ψ₁)
+    let d₁ ← cons [list treeTy, treeTy] [Internal.weakenElem φ] (Internal.listConsAt 1 treeTy φ)
+    pure (⟨0, [list treeTy], [], φ⟩, nd (.listIndHyp 0 1) [d₀, d₁]))
+
+/-- The typing's type of the primitive of index k: the element of its list of the primitives'
+types, in normal form. -/
+def primTyT (P : Prog) (k : ℕ) : Term :=
+  let t := pc P "Typing/Tys.atOr" [pc P "Typing.tyT" [], pc P "Typing.primTys" [],
+    leafT (numeral k)]
+  (nfE P.G #[] (vBase P) [] t).getD t
+
+/-- The primitive of index k related at its type in the typing, by the relation of the datatype
+language: the fundamental lemma's relation at the kernel's type, at the definitions of the
+relation's context, both relations unfolded at the types to one formula. -/
+def relTPrim (P : Prog) (S : Defs) (T : Defs3) (k : ℕ) : Step :=
+  (s!"relTPrim{k}", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, []⟩
+    let φ := Term.app (T.relT (v 0) (primTyT P k)) (primConst k)
+    let rs (Φ : List Term) : List Internal.NormRule := K.rules Φ ++ [.delta T.q]
+    let close : Deducer := fun Γ Φ ψ ↦
+      let h := Φ.length - 1
+      let nf (t : Term) : Option Term := (evalRw K.G K.E (rs Φ) .full Γ Φ t).map Prod.fst
+      match (Φ[h]?).bind nf, nf ψ with
+      | some a, some b => if a == b then
+          dRwHyp (evalRw K.G K.E (rs Φ) .full) h (fun Γ Φ ψ ↦
+            dRwBy (evalRw K.G K.E (rs Φ) .full) dHyp Γ Φ ψ) Γ Φ ψ
+        else dbgTrace s!"relTPrim{k}: {(firstDiff a b).map fun (x, y) ↦
+          s!"{showT x}\n  vs {showT y}"}" fun _ ↦ none
+      | _, _ => dbgTrace s!"relTPrim{k}: no normal form" fun _ ↦ none
+    let some d := K.cutThm s!"relPrim{k}" (fun Γ ↦ [Term.fst (v (Γ.length - 1))]) close
+        [Defs3.ctxTy] [] φ
+      | none
+    pure (⟨0, [Defs3.ctxTy], [], φ⟩, d))
+
+/-- The heads and the tails of a list's constructions, in normal form, the outermost first. -/
+def consCells : Term → List (Term × Term) := RoseTree.para fun l cs ↦
+  match l, cs with
+  | .arr 1 _, [(_, r)] => r
+  | .pair, [(h, _), (t, r)] => (h, t) :: r
+  | _, _ => []
+
+/-- The applications of the definition of index k to all its parameters and the arguments its
+curried value takes, among a term's subterms, each once. -/
+def appsOf (G : Internal.Globals) (k : ℕ) (t : Term) : List Term :=
+  -- the parameters, and the arguments the value's curried function type takes
+  let arrows : Tree → ℕ := fun A ↦ (List.range 16).foldl (fun (acc : Tree × ℕ) _ ↦
+    match Internal.expParts acc.1 with
+    | some (_, B) => (B, acc.2 + 1)
+    | none => acc) (A, 0) |>.2
+  let arity := match G.defs[k]? with
+    | some (.language d) => d.params.length + arrows d.type
+    | _ => 0
+  -- at each subterm: the number of arguments of its spine headed by the definition, and the
+  -- applications found
+  (RoseTree.para (fun (l : Internal.Label) (cs : List (Term × (Option ℕ × List Term))) ↦
+    let n : Option ℕ := match l, cs with
+      | .defn k' _, [] => if k' = k then some 0 else none
+      | .app, [(_, (hf, _)), _] => hf.map (· + 1)
+      | _, _ => none
+    let below := cs.flatMap (·.2.2)
+    (n, if n = some arity then RoseTree.node l (cs.map Prod.fst) :: below else below)) t).2
+    |>.eraseDups
+
+/-- The soundness at an atom, the characters of index 0. -/
+def atomThm (P : Prog) (S : Defs) (T : Defs3) : Internal.Thm :=
+  ⟨0, [list treeTy], [], Internal.instTerm [] [atomT] (datatypeφ P S T)⟩
+
+/-- The soundness at an atom: the hypotheses introduced; the characters fixed by the expansion
+of numeral abbreviations; the coherences, the relations and the names' agreement at the atom's
+name; then the typing's tests decided in its order, each with the reader's. -/
+def atomCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
+  ("atomCase", fun ix E ↦ do
+    let a := atomThm P S T
+    let more := (vocab3 ++ ["charsMap", "handlerAtom3"]).filter fun nm ↦
+      0 < ix nm ∧ ix nm < E.size
+    let K : Kit := ⟨P, S, E, ix, more⟩
+    let L := K.L
+    -- the variables, by their positions from the outermost: the characters 0, the declarations
+    -- 1, the typing environment 2, the named context 3, the type abbreviations 4, the numeral
+    -- abbreviations 5, the reader's names 6, the environment 7, the relation's context 8
+    let outer (j : ℕ) (Γ : List Tree) : Term := v (Γ.length - 1 - j)
+    -- the atom's name, its label in normal form, so that the equations instantiated at it match
+    -- normalized terms
+    let label0 := (nfE K.G K.E (vBase P) [] (numeral 0)).getD (numeral 0)
+    let nm (Γ : List Tree) : Term := nodeT (Term.pair label0 (outer 0 Γ))
+    let unfoldAt (h k : ℕ) (next : Deducer) : Deducer :=
+      dRwHyp (evalRw K.G K.E [.delta k] .head) h next
+    let tr (msg : String) : Deducer := fun Γ Φ ψ ↦
+      dbgTrace s!"atomCase {msg}: {Γ.length} vars, {Φ.length} hyps; goal {
+        ((evalRw K.G K.E (K.rules Φ) .full Γ Φ ψ).map fun r ↦ showT r.1).getD "none"}
+        last hyps {(Φ.drop (Φ.length - 8)).map showT}"
+        fun _ ↦ none
+    let link (msg : String) (k : Deducer) : Deducer := fun Γ Φ ψ ↦ (k Γ Φ ψ).orElse fun _ ↦
+      tr msg Γ Φ ψ
+    -- the statement's hypotheses, after the eight variables' truths
+    let hyp (i : ℕ) : ℕ := 8 + i
+    -- the typing's and the reader's steps at an atom, each application in the type's and the
+    -- resolution's hypotheses, outside any binder, evaluated once by the base rules and the
+    -- hypotheses' equations, its equation cut in after the hypotheses
+    let unfoldLocal (k : Deducer) : Deducer := fun Γ₀ Φ₀ ψ₀ ↦ do
+      let ks := [P.idx "Typing.synAtom", P.idx "Reader.resolveAtom"]
+      -- the base rules with the rebuilding of trees by the primitives
+      let base : List Internal.NormRule :=
+        ["kids", "mapId", "lambek"].map (fun nm ↦ .thm (ix nm) []) ++
+          [.thm (ix "rebTail") [treeTy]] ++ rebRules ix ++ vBase P
+      -- each equation among the statement's hypotheses and after, also in those rules'
+      -- normal form, after the hypotheses
+      let eqs := (List.range Φ₀.length).filter fun i ↦
+        8 ≤ i ∧ ((Φ₀[i]?).bind Internal.eqParts).isSome
+      let main : Deducer := fun Γ Φ ψ ↦ do
+        let nfs := [Φ[hyp 6]?, Φ[hyp 7]?].filterMap id |>.filterMap fun t ↦
+          (evalRw K.G K.E (K.rules Φ) .full Γ Φ t).map Prod.fst
+        let apps := (ks.flatMap fun j ↦ nfs.flatMap (appsOf K.G j)).eraseDups
+        let cheap := eqHyps Φ ++ base ++ ks.map .delta
+        let cuts := apps.filterMap fun a ↦ (Internal.eval K.G K.E 0 cheap 4096 .full Γ Φ a).map
+          fun (r, d, _) ↦ (Term.eq a r, nd .join [d, nd .refl])
+        cuts.foldr (fun (e, d) k ↦ dCut e d k) k Γ Φ ψ
+      eqs.foldr (fun i k ↦ dRwHyp (evalRw K.G K.E base .full) i k) main Γ₀ Φ₀ ψ₀
+    -- the relation unfolded at a type
+    let normR (k : Deducer) : Deducer := fun Γ Φ ψ ↦
+      dRwBy (evalRw K.G K.E (K.rules Φ ++ [.delta T.q]) .full) k Γ Φ ψ
+    let byNormR : Deducer := fun Γ Φ ψ ↦
+      dEq (byMode .full K.G K.E 0 (K.rules Φ ++ [.delta T.q])) Γ Φ ψ
+    let hypFalseLast : Deducer := fun Γ Φ ψ ↦ K.hypFalse (Φ.length - 1) Γ Φ ψ
+    let solveD : Deducer := K.solve 3
+    -- the truth of a test decided: its label's bitstring empty or not
+    -- where the test's normal form by the base rules and the rebuildings differs, its equation
+    -- with the vocabulary's normal form cut in first, so that the case's equation applies to both
+    let decide (t : List Tree → Term) (kF kT : Deducer) : Deducer := fun Γ Φ ψ ↦
+      let lt := call D.lab [] [t Γ]
+      let cheap := ["kids", "mapId", "lambek"].map (fun nm ↦ Internal.NormRule.thm (ix nm) []) ++
+        [.thm (ix "rebTail") [treeTy]] ++ rebRules ix ++ vBase P
+      match nfE K.G K.E (K.rules []) Γ lt, nfE K.G K.E cheap Γ lt with
+      | some X, some Xc =>
+        let split := K.listCase bitTy X kF kT
+        if Xc == X then split Γ Φ ψ else do
+          let d ← byMode .full K.G K.E 0 (K.rules []) Γ [] Xc X
+          dCut (Term.eq Xc X) d split Γ Φ ψ
+      | _, _ => dbgTrace s!"atomCase test without a normal form: {showT (t Γ)}" fun _ ↦ none
+    let isSomeOf (t : Term) : Term := pc P "Prelude.isSome" [t]
+    -- the statement's terms in the context
+    let inΓ (Γ : List Tree) (t : Term) : Term := Term.rename t fun i ↦ i + Γ.length - 9
+    let kOf (Γ : List Tree) : Term :=
+      inΓ Γ (datatypeTerms P (nodeT (Term.pair (numeral 1) (v 8)))).2
+    let childT := (primT Kernel.Prim.child).getD Term.star
+    -- the tests: of the typing at an atom, and of the reader
+    let t1 (Γ : List Tree) : Term := isSomeOf (pc P "Reader.numeral" [outer 0 Γ])
+    let r0 (Γ : List Tree) : Term := isSomeOf (pc P "Reader.lookupAbbrev" [nm Γ, outer 5 Γ])
+    let t2 (Γ : List Tree) : Term :=
+      pc P "Typing.hasName" [nm Γ, pc P "Typing.envNums" [outer 2 Γ]]
+    let t3 (Γ : List Tree) : Term := isSomeOf (pc P "Typing.lookupName" [nm Γ, outer 3 Γ])
+    let r2 (Γ : List Tree) : Term := isSomeOf (pc P "Reader.indexOf" [nm Γ, namesOf (outer 3 Γ)])
+    let t4 (Γ : List Tree) : Term :=
+      isSomeOf (pc P "Typing.lookupName" [nm Γ, pc P "Typing.envDefs" [outer 2 Γ]])
+    let r3 (Γ : List Tree) : Term := isSomeOf (pc P "Reader.indexOf" [nm Γ, outer 6 Γ])
+    let t5 (Γ : List Tree) : Term :=
+      isSomeOf (pc P "Reader.indexOf" [nm Γ, pc P "Reader.primNames" []])
+    let t6 (Γ : List Tree) : Term := pc P "Reader.named"
+      [nodeT (Term.pair (numeral 1) (outer 0 Γ)), pc P "Reader.kwUnitValue" []]
+    -- a quotation's value at fuel one, related at the tree type
+    let quoteClose : Deducer := link "quote" <| unfoldLocal <| link "quote, unfolded" <|
+      K.norm fun Γ Φ ψ ↦
+      let c := (evalRw K.G K.E (K.rules Φ) .full Γ Φ
+        (apps childT [pc P "Prelude.get" [kOf Γ], leafT bnilT])).map Prod.fst |>.getD Term.star
+      dConv L K.G K.E S (succN zeroN) (pc P "Eval.valQuote" [c]) K.byNorm
+        (link "quote related" (normR (dExI L K.G K.E c byNormR))) Γ Φ ψ
+    let unitClose : Deducer := link "unit" <| unfoldLocal <| link "unit, unfolded" <|
+      K.norm fun Γ Φ ψ ↦
+      dConv L K.G K.E S (succN zeroN) (pc P "Eval.valUnit" []) (link "unit stable" K.byNorm)
+        (link "unit related" (normR byNormR)) Γ Φ ψ
+    -- a variable: its value in the environment, related by the environment's relation; the
+    -- hypotheses the index's equation, the value's and the relation, the last three
+    let varClose : Deducer := link "variable" fun Γ₀ Φ₀ ψ₀ ↦
+      K.exE (K.conjE (K.exE (K.conjE fun Γ Φ ψ ↦
+        let w := v (Γ.length - Γ₀.length - 2)
+        -- the value's equation, normalized so that it rewrites the evaluator's lookup
+        let e := Φ.length - 2
+        let r := Φ.length - 1
+        dRwHyp (evalRw K.G K.E (K.rulesEx Φ e) .full) e (unfoldLocal (link "variable, unfolded"
+          (K.norm (dConv L K.G K.E S (succN zeroN) w (link "variable stable" K.byNorm)
+            (link "variable related" (K.byHyp r)))))) Γ Φ ψ)))
+        Γ₀ Φ₀ ψ₀
+    -- a reference: the definition's evaluation's threshold and value, its relation
+    let refClose : Deducer := link "reference" fun Γ₀ Φ₀ ψ₀ ↦
+      K.exE (K.conjE (K.exE (K.conjE fun Γ₁ Φ₁ ψ₁ ↦
+        -- the definition's equation, normalized so that it rewrites the evaluator's lookup
+        let e := Φ₁.length - 2
+        K.unfoldConv (K.exE (K.exE (K.conjE fun Γ Φ ψ ↦
+          let st := Φ.length - 2
+          let r := Φ.length - 1
+          let n := v (Γ.length - Γ₁.length - 1)
+          let w := v (Γ.length - Γ₁.length - 2)
+          dRwHyp (evalRw K.G K.E (K.rulesEx Φ e) .full) e (unfoldLocal (link
+            "reference, unfolded" (K.norm (dConv L K.G K.E S (succN n) w
+              (link "reference stable" fun Γ Φ ψ ↦ dAllE L K.G K.E st (v 0) (fun Γ Φ ψ ↦
+                dRwHyp (evalRw K.G K.E (K.rules Φ.dropLast) .full) (Φ.length - 1)
+                  K.byNorm Γ Φ ψ) Γ Φ ψ)
+              (link "reference related" (K.byHyp r)))))) Γ Φ ψ))) Γ₁ Φ₁ ψ₁))) Γ₀ Φ₀ ψ₀
+    -- a primitive: the tests of the name's equality to the primitives' names decided in their
+    -- order; at the first equal name, the index's equation at each suffix of the names, from
+    -- that name's outward, each by the lookup's equation at a construction under the equation
+    -- after it, and the primitive related at its type by its lemma; at none, the index none at
+    -- each suffix, which refutes the index's test, its truth cut in first, from the case's
+    -- equation; the typing and the reader unfolded first, their tests but the index's decided
+    let primClose : Deducer := unfoldLocal fun Γ₀ Φ₀ ψ₀ ↦ do
+      let hT := Φ₀.length
+      let ns ← nfE K.G K.E (K.rules []) [] (pc P "Reader.primNames" [])
+      let cells := consCells ns
+      let equalT ← primT Kernel.Prim.equal
+      let suffix (l : ℕ) : Term := if l = 0 then ns else ((cells[l - 1]?).map Prod.snd).getD ns
+      let headAt (l : ℕ) : Term := ((cells[l]?).map Prod.fst).getD Term.star
+      -- the equations at the suffixes from position l outward, of the values val
+      let chain (l : ℕ) (val : ℕ → Term) (k : Deducer) : Deducer :=
+        (List.range (l + 1)).reverse.foldr (fun i k Γ Φ ψ ↦ do
+          let φ := Term.eq (pc P "Reader.indexOf" [nm Γ, suffix i]) (val i)
+          let pf : Deducer := if i < cells.length then
+              K.cutThm "indexOfCons" (fun Γ ↦ [suffix (i + 1), headAt i, nm Γ]) K.byNorm
+            else K.cutThm "indexOfNil" (fun Γ ↦ [nm Γ]) K.byNorm
+          let d ← (link s!"index at {i}" pf) Γ Φ φ
+          dCut φ d k Γ Φ ψ) k
+      let leaf (j : ℕ) : Deducer := link s!"primitive {j}" <|
+        K.norm fun Γ Φ ψ ↦
+        dConv L K.G K.E S (succN zeroN) (primConst j) (link "primitive stable" K.byNorm)
+          (link "primitive related" (K.cutThm s!"relTPrim{j}"
+            (fun Γ ↦ [outer 8 Γ]) fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ)) Γ Φ ψ
+      let found (j : ℕ) : Deducer :=
+        chain j (fun i ↦ pc P "Prelude.some" [leafT (numeral (j - i))]) (leaf j)
+      let none' : Deducer :=
+        chain cells.length (fun _ ↦ pc P "Prelude.none" []) (link "index refuted" (K.hypFalse hT))
+      let truth := K.truthB (call D.lab [] [t5 Γ₀])
+      let some dT := K.solve 3 Γ₀ Φ₀ truth | tr "index's truth" Γ₀ Φ₀ truth
+      dCut truth dT ((List.range cells.length).foldr (fun l k ↦
+        decide (fun Γ ↦ apps equalT [nm Γ, headAt l]) k (found l)) none') Γ₀ Φ₀ ψ₀
+    -- the cases, after the instances: n₁ and n₂ the numeral abbreviations' coherence, d₁ the
+    -- names', v₁ the environment's relation, g₁ the definitions', a₁ the names' agreement
+    let cases (n₁ n₂ d₁ v₁ g₁ a₁ : ℕ) : Deducer :=
+      -- the abbreviation's numeral atom: its characters' test decided, false refuted by the
+      -- coherence's, true a quotation
+      let numeralAtom : Deducer := fun Γ₀ Φ₀ ψ₀ ↦ K.exE (K.conjE fun Γ Φ ψ ↦
+        let h := Φ.length - 1
+        decide (fun Γ' ↦ isSomeOf (pc P "Reader.numeral" [v (Γ'.length - Γ₀.length - 1)]))
+          (K.hypFalse h) quoteClose Γ Φ ψ) Γ₀ Φ₀ ψ₀
+      let fromAbbrev : Deducer := dImpE L n₁ solveD numeralAtom
+      let notNums : Deducer :=
+        decide t3 (decide r2 (decide t4 (decide r3 (decide t5
+              (decide t6 (link "no type" (unfoldLocal (K.hypFalse (hyp 6)))) unitClose)
+              primClose)
+            (link "names refuted" (dImpE L d₁ solveD hypFalseLast)))
+            (link "definition" (dImpE L g₁ solveD refClose)))
+          (link "scope refuted" (dImpE L a₁ solveD hypFalseLast)))
+          (link "context" (dImpE L v₁ solveD varClose))
+      decide t1
+        (decide t2 (decide r0 notNums
+            (link "abbreviation refuted" (dImpE L n₂ solveD hypFalseLast)))
+          (link "numeral abbreviation" fromAbbrev))
+        (decide r0 quoteClose
+          (link "numeral's abbreviation" (dImpE L n₂ solveD (dImpE L n₁
+            (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ) numeralAtom))))
+    -- the instances at the atom's name, each after the hypotheses: the numeral abbreviations'
+    -- coherence, both parts; the names' coherence; the environment's relation; the definitions'
+    -- relation; and the names' agreement in the named context
+    let instAt (h k : ℕ) (next : ℕ → Deducer) : Deducer :=
+      link s!"unfold {h}" <| unfoldAt h k fun Γ Φ ψ ↦
+        -- the unfolded hypothesis, the last
+        link s!"instance {h}" (dAllE L K.G K.E (Φ.length - 1) (nm Γ) fun Γ Φ ψ ↦
+          next (Φ.length - 1) Γ Φ ψ) Γ Φ ψ
+    let numsI : Deducer := instAt (hyp 2) (T.q + 3 + 2 * nFolds) fun _ ↦ K.conjE fun Γ Φ ψ ↦
+      let n₁ := Φ.length - 2
+      let n₂ := Φ.length - 1
+      instAt (hyp 3) (T.q + 4 + 2 * nFolds) (fun d₁ ↦ instAt (hyp 1) (T.q + 1) fun v₁ ↦
+        instAt (hyp 0) (T.q + 2) fun g₁ ↦
+          link "agree" (K.cutThm "nameAgree" (fun Γ ↦ [outer 3 Γ]) (K.allEΓ nm fun Γ Φ ψ ↦
+            cases n₁ n₂ d₁ v₁ g₁ (Φ.length - 1) Γ Φ ψ))) Γ Φ ψ
+    -- the characters fixed, the equation after the hypotheses
+    let chars : Deducer :=
+      K.cutThm "charsFixedEq" (fun Γ ↦ [outer 0 Γ, outer 5 Γ]) (K.impE (K.byHyp (hyp 4)) numsI)
+    let intros : Deducer → Deducer := fun k ↦
+      (List.range 8).foldr (fun _ k ↦ dAllI L k) ((List.range 8).foldr (fun _ k ↦ dImpI L k) k)
+    let some d := intros chars [list treeTy] [] a.concl
+      | dbgTrace "atomCase: not proved" fun _ ↦ none
+    pure (a, d))
+
+/-- The argument of the expansion of numeral abbreviations at an atom's label, applied to the
+children's values, a list variable of index 0, at the abbreviations of index 1: unfolded. -/
+def handlerAtom3 (P : Prog) (T : Defs3) : Step :=
+  ("handlerAtom3", fun ix E ↦ do
+    let f ← (foldSpecs P T.envTy)[3]?
+    let (_, d, _, _, _, _) ← foldDefn P f (T.argIdx 3)
+    let Γ := [list d.type, list treeTy]
+    let t := Term.app (Term.app (call (T.argIdx 3) [] [v 1]) (nodeT (Term.pair (numeral 1)
+      (nilT treeTy)))) (v 0)
+    let rs := vRules3 P ix E.size
+    let some l := nfE P.G E rs Γ t | dbgTrace "handlerAtom3: left" fun _ ↦ none
+    let some (r, dv, _) := Internal.eval P.G E 0 (rs ++ [.delta (T.argIdx 3)]) 4096 .full Γ [] l
+      | dbgTrace "handlerAtom3: right" fun _ ↦ none
+    pure (⟨0, Γ, [], Term.eq l r⟩, nd .join [dv, nd .refl]))
+
+/-- The fundamental lemma's relations of the primitives at their types, with the lemmas their
+proofs use: the relation of lists and the quotations' and unquotations' lists. -/
+def primRelDev (P : Prog) (S : Defs) : List Step :=
+  [allMonoLemma P S, allConvLemma P S, relOfListLemma P S] ++ spineLemmas P ++
+    [quoteAllLemma P S, unquoteAllLemma P S] ++ primIndices.flatMap fun k ↦
+      apConstLemmas P s!"apPrim{k}" (fun _ ↦ primConst k) 0 (primArgs k) ++ [relPrimLemma P S k]
+
+/-- The base development: the fundamental lemma's base and the primitives' relations, each fold's
+vocabulary, and the soundness at an atom with the lemmas it uses. -/
 def baseDev3 (P : Prog) (S : Defs) (T : Defs3) : Option (List Step) := do
-  pure ((← baseDev P S) ++ [(0, true), (1, true), (2, true), (3, false), (4, false)].flatMap
-    fun (k, pairs) ↦ foldVocab P T k pairs)
+  let modes := [Rebuild.step, .step, .step, .none, .argument, .applied]
+  pure ((← baseDev P S) ++ primRelDev P S ++ (modes.zipIdx.flatMap fun (m, k) ↦
+      foldVocab P T k m ++ [foldDefEq P T k]) ++
+    ([(0, KidsShape.list), (1, .list), (2, .list), (4, .foldr), (5, .applied)].map
+      fun (k, b) ↦ kidsEq P T k b) ++
+    atomEqs P T ++ [handlerAtom3 P T, charsMap P T, charsFixedEq P S T] ++ equalReflLemmas P S ++
+    lookupEqs P ++
+    [nameAgree P S] ++ (List.range 14).map (relTPrim P S T) ++ [atomCase P S T])
 
-open Lean Elab Command in
-#eval show CommandElabM Unit from do
-  let some (P, S, T) := extended3 | throwError "the program does not extend"
-  let some dev := baseDev3 P S T | throwError "the base is not stated"
-  -- each lemma's name before it is proved and its time after, appended to a file as it runs
-  let log := "/tmp/user/1000/claude-1000/datatype-base-progress.txt"
-  IO.FS.writeFile log ""
-  IO.FS.writeFile (log ++ ".nodes") ""
-  let names := dev.map (·.1)
-  let ix (name : String) : ℕ := (names.findIdx? (· == name)).getD 0
-  let mut E : Array Internal.Entry := #[]
-  for x in dev do
-    let h ← IO.FS.Handle.mk log .append
-    h.putStrLn s!"start {x.1}"
-    h.flush
-    let t₀ ← IO.monoMsNow
-    match x.2 ix E with
-    | some (a, _) => E := E.push (Internal.Entry.language a)
-    | none =>
-      let why := if x.1.endsWith "Fus" ∧ x.1.startsWith "fold" then
-          match fusion P T ((x.1.drop 4).takeWhile Char.isDigit).toNat! ix E with
-          | .error e => e
-          | .ok _ => "proved here"
-        else ""
-      IO.FS.writeFile (log ++ ".why") why
-      throwError m!"the lemma {x.1} is not proved: {why.take 3000}"
-    let h ← IO.FS.Handle.mk log .append
-    h.putStrLn s!"done {x.1} {(← IO.monoMsNow) - t₀} ms"
-    h.flush
-  logInfo m!"base: {E.size} theorems"
-  -- each fold at a node of an atom's label and of a list's, its argument unfolded
-  for (f, k) in (foldSpecs T.envTy).zipIdx do
-    let some (_, d, _, _, _, _) := foldDefn P f (T.argIdx k) | throwError "no definition"
-    let tys := d.params.tail
-    let ps := (List.range tys.length).reverse.map fun i ↦ v (i + 1)
-    for lab in [1, 2] do
-      let t := T.foldAt k ps (nodeT (Term.pair (numeral lab) (v 0)))
-      let Γ := list treeTy :: tys
-      let rs := vRules3 P ix ++ [.delta (T.argIdx k)]
-      let t₀ ← IO.monoMsNow
-      let w := (Internal.eval P.G E 0 rs 4096 .weak Γ [] t).map fun (u, _) ↦ showT u
-      let t₁ ← IO.monoMsNow
-      let fl := (Internal.eval P.G E 0 rs 4096 .full Γ [] t).map fun (u, _) ↦ (showT u).length
-      let h ← IO.FS.Handle.mk (log ++ ".nodes") .append
-      h.putStrLn s!"{f.name} at {lab}: weak {t₁ - t₀} ms {w.map String.length}, \
-        full {(← IO.monoMsNow) - t₁} ms {fl}\n  {(w.getD "").take 1500}"
-      h.flush
+/-- The datatype language's development, stored as the certificate {lit}`datatype-base`: the
+fundamental lemma's base and the primitives' relations, each fold's vocabulary, and the soundness
+at an atom with the lemmas it uses, each declaration checked as it is stored. -/
+def certificates (P : Prog) (S : Defs) (T : Defs3) :
+    Except String (List (String × List Internal.Decl)) := do
+  let some dev := baseDev3 P S T | throw "the base is not stated"
+  let (_, _, ds) ← developAfter [] #[] dev
+  -- each declaration checked after those before it, the first that does not named
+  let _ ← (dev.map (·.1)).zip ds |>.foldlM (fun (st : Internal.Globals × Array Internal.Entry)
+      (nm, d) ↦ match d.step st.1 st.2 with
+    | some st' => Except.ok st'
+    | none => Except.error s!"the lemma {nm} does not check") (P.G, #[])
+  pure [("datatype-base", ds)]
 
 end GebTests.Prototypes.FreeTopos.Datatypes
 
