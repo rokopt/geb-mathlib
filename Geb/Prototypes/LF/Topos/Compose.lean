@@ -109,12 +109,18 @@ theorem map_dec_eq {cs : List Expr} {ps : List (Expr × (ℕ → Option MTerm))}
   obtain ⟨c, -, rfl⟩ := List.mem_map.mp hp
   rfl
 
-/-- A node of a definition renames and substitutes in each of its arguments. -/
-theorem plain_defn {kd n : ℕ} {θ : List PartialHorn.Tree} :
-    Term.Plain (.defn kd θ) n := by
-  have h := Term.shape (.defn kd θ) (List.replicate n Term.star)
-  rcases h with ⟨i, h⟩ | ⟨a, t, h, -⟩ | ⟨z, s, m, h | h, -⟩ | ⟨c, s, m, h, -⟩ | hp
-  all_goals first | exact nomatch h | (rw [List.length_replicate] at hp; exact hp)
+/-- A node of a constant of the language renames and substitutes in each of its arguments. -/
+theorem plain_label {h : TmHead} {n : ℕ} {θ : List PartialHorn.Tree} :
+    Term.Plain (h.label θ) n := by
+  rcases Term.shape (h.label θ) (List.replicate n Term.star) with
+    ⟨i, hs⟩ | ⟨a, t, hs, -⟩ | ⟨z, s, m, hs | hs, -⟩ | ⟨c, s, m, hs, -⟩ | hp
+  · cases h <;> exact nomatch hs
+  · cases h <;> exact nomatch hs
+  · cases h <;> exact nomatch hs
+  · cases h <;> exact nomatch hs
+  · cases h <;> exact nomatch hs
+  · rw [List.length_replicate] at hp
+    exact hp
 
 /-- The replacement of an abstraction's type commutes with renaming. -/
 theorem relam_rename {a : PartialHorn.Tree} {s r : MTerm} (h : relam a s = some r)
@@ -359,8 +365,8 @@ theorem dec_rename : ∀ (e : Expr) (off off' : ℕ) (ρ : ℕ → ℕ) (s : MTe
         decTy_rename hc hρ, Option.bind_eq_bind, Option.bind_some]
       rfl
     · next =>
-      obtain ⟨-, -, -, -, -, hc, -⟩ := decDefn_eq_some k h
-      obtain ⟨kd, θ, args, rfl, hd⟩ := decDefn_transfer (ys := cs.map fun x ↦ Expr.rename x ρ)
+      obtain ⟨-, -, -, -, -, hc, -⟩ := decTm_eq_some k h
+      obtain ⟨kd, θ, args, rfl, hd⟩ := decTm_transfer (ys := cs.map fun x ↦ Expr.rename x ρ)
         (fT := id) (fM := fun u ↦ Term.rename u ρ) h (List.length_map _) fun _ _ _ _ ↦
           ⟨fun i x y a _ hx hy ha ↦ by
               rw [List.getElem?_map, hx, Option.map_some, Option.some.injEq] at hy
@@ -372,9 +378,8 @@ theorem dec_rename : ∀ (e : Expr) (off off' : ℕ) (ρ : ℕ → ℕ) (s : MTe
               exact ih x (List.mem_of_getElem? hx) off off' ρ u hu hρ⟩
       rw [rename_app_node]
       dsimp only [Head.rename]
-      rw [dec_node, decStep_defn k hc, hd, List.map_id]
-      simp only [FreeTopos.Internal.Term.defn]
-      rw [FreeTopos.Internal.Term.rename_plain plain_defn rfl, List.map_reverse]
+      rw [dec_node, decStep_tm k hc, hd, List.map_id]
+      rw [FreeTopos.Internal.Term.rename_plain plain_label rfl, List.map_reverse]
     · next _ _ b db heq =>
       obtain ⟨rfl, hd⟩ := map_dec_eq heq
       obtain ⟨sb, hsb, rfl⟩ := Option.map_eq_some_iff.mp h
@@ -830,13 +835,13 @@ theorem dec_hsub (α : SimpleTy) : ∀ (e n : Expr) (j off : ℕ) (e' : Expr) (s
         Option.bind_some]
       rfl
     · next =>
-      obtain ⟨-, -, -, -, -, hc, -⟩ := decDefn_eq_some k h
+      obtain ⟨-, -, -, -, -, hc, -⟩ := decTm_eq_some k h
       change hsub α n (Expr.const _ cs) j = some e' at hs
       rw [hsub_const, Option.map_eq_map, Option.map_eq_some_iff] at hs
       obtain ⟨ys, hys, rfl⟩ := hs
       obtain ⟨hyl, hyi⟩ := getElem_of_mapM_id_eq_some hys
       rw [List.length_map] at hyl
-      obtain ⟨kd, θ, args, rfl, hd⟩ := decDefn_transfer (ys := ys) (off' := off - 1)
+      obtain ⟨kd, θ, args, rfl, hd⟩ := decTm_transfer (ys := ys) (off' := off - 1)
         (fT := id) (fM := fun s ↦ Term.subst s (substAt j w)) h hyl.symm fun _ _ _ _ ↦
           ⟨fun i x y a _ hx hy ha ↦ by
               obtain ⟨hi, rfl⟩ := List.getElem?_eq_some_iff.mp hx
@@ -850,9 +855,8 @@ theorem dec_hsub (α : SimpleTy) : ∀ (e n : Expr) (j off : ℕ) (e' : Expr) (s
               have := hyi i (by simpa using hi) hi'
               simp only [List.getElem_map] at this
               exact ih _ (List.getElem_mem hi) n j off _ u w hu hn hj this⟩
-      rw [Expr.const, Expr.app, dec_node, decStep_defn k hc, hd, List.map_id]
-      simp only [FreeTopos.Internal.Term.defn]
-      rw [FreeTopos.Internal.Term.subst_plain plain_defn rfl, List.map_reverse]
+      rw [Expr.const, Expr.app, dec_node, decStep_tm k hc, hd, List.map_id]
+      rw [FreeTopos.Internal.Term.subst_plain plain_label rfl, List.map_reverse]
     · next _ _ b db heq =>
       obtain ⟨rfl, hd⟩ := map_dec_eq heq
       simp only [List.map_cons, List.map_nil] at hs
@@ -995,8 +999,8 @@ theorem domsOK_piTele {R : Expr} (hR : Expr.DomsOK R = true) :
   rw [ih fun D' hD' ↦ hDs D' (List.mem_cons_of_mem _ hD'), Bool.and_true]
   rcases hDs D List.mem_cons_self with rfl | ⟨A, rfl⟩ <;> rfl
 
-/-- The declaration of a definition takes types and terms as arguments. -/
-theorem domsOK_defTy {d : FreeTopos.Internal.Defn} {T : Expr} (h : defTy k d = some T) :
+/-- The declaration of a constant of the language takes types and terms as arguments. -/
+theorem domsOK_defTy {r : Rank} {T : Expr} (h : defTy k r = some T) :
     Expr.DomsOK T = true := by
   simp only [defTy, Option.bind_eq_bind, Option.pure_def, Option.bind_eq_some_iff,
     Option.some.injEq] at h
@@ -1015,8 +1019,8 @@ theorem sig_domsOK {G : FreeTopos.Internal.Globals} (hsg : SigExt G k sg) {c : �
     · obtain ⟨op, m, hi⟩ := hsg.tpObjs i T hc h
       obtain rfl := Option.some.inj (hc.symm.trans (hsg.objs i op m hi).2)
       exact domsOK_piTele rfl fun D hD ↦ .inl (List.eq_of_mem_replicate hD)
-    · obtain ⟨kd, m, p, he⟩ := hsg.tmDefs i T hc h
-      obtain ⟨d, T', -, -, -, -, -, -, hd, hT'⟩ := hsg.defs i kd m p he
+    · obtain ⟨h, m, p, he⟩ := hsg.tmDefs i T hc h
+      obtain ⟨r, T', -, -, -, -, -, -, hd, hT'⟩ := hsg.tms i h m p he
       obtain rfl := Option.some.inj (hT'.symm.trans hc)
       exact domsOK_defTy hd
 

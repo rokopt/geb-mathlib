@@ -455,11 +455,12 @@ def defGlobals : Globals := { pfGlobals with defs := [.language swapDefn] }
 
 /-- The indices of the primitive arrows, with the definition {name}`swapDefn` and its unfolding
 as the constants past the signature. -/
-def defIdx : PrimIdx := { pfIdx with ext := [.defn 0 2 1, .delta 0 2 1] }
+def defIdx : PrimIdx := { pfIdx with ext := [.tm (.defn 0) 2 1, .delta 0 2 1] }
 
 /-- The signature extended by the declarations of {name}`swapDefn` and of its unfolding. -/
 def defSig : Sig :=
-  sig ++ [defTy defIdx swapDefn, thmTy defGlobals defIdx (deltaThm 0 swapDefn)].reduceOption
+  sig ++ [defTy defIdx (Rank.ofDefn swapDefn),
+    thmTy defGlobals defIdx (deltaThm 0 swapDefn)].reduceOption
 
 /-- Whether a proof, in an LF context of {lit}`n` variables of {lit}`tp` and term variables of the
 types of {lit}`Γ`, decodes, with the definition {name}`swapDefn`, to a derivation, and to a
@@ -474,7 +475,7 @@ def provesDefIn (n : ℕ) (Γ : List PartialHorn.Tree) (M F : Expr) : Bool × Bo
     | _, _, _ => (false, false)
 
 -- The definition is admitted, and it and its unfolding are declared, the unfolding well formed.
-#guard (FreeTopos.Internal.Definition.language swapDefn).ok defGlobals &&
+#guard (Rank.ofDefn swapDefn).ok defGlobals &&
   (swapDefn.compile defGlobals).isSome
 #guard defSig.length == sig.length + 2
 #guard (deltaThm 0 swapDefn).wellFormed defGlobals
@@ -546,6 +547,56 @@ def sqNat : PartialHorn.Tree := PartialHorn.op 0 [FreeTopos.nat]
     dec objIdx (eq (Expr.const 57 [nat]) (v 0) (v 0)) 1 with
   | some D, some φ => Thm.checks objGlobals #[] ⟨0, [sqNat], [], φ⟩ D
   | _, _ => false
+
+/-- The exchange of the components of a pair, in two object parameters, as a primitive arrow. -/
+def swapPrim : FreeTopos.Internal.Prim :=
+  ⟨2, FreeTopos.pair (FreeTopos.snd (FreeTopos.x 0) (FreeTopos.x 1))
+      (FreeTopos.fst (FreeTopos.x 0) (FreeTopos.x 1)),
+    FreeTopos.prod (FreeTopos.x 0) (FreeTopos.x 1), FreeTopos.prod (FreeTopos.x 1) (FreeTopos.x 0)⟩
+
+/-- The constants of {name}`pfGlobals` with the primitive arrow {name}`swapPrim`, of index
+{lit}`9`. -/
+def primGlobals : Globals := { pfGlobals with prims := pfGlobals.prims ++ [swapPrim] }
+
+/-- The indices of the primitive arrows, with {name}`swapPrim` as the constant past the
+signature. -/
+def primIdx : PrimIdx := { pfIdx with ext := [.tm (.arr 9) 2 1] }
+
+/-- The signature extended by the declaration of {name}`swapPrim`. -/
+def primSig : Sig := sig ++ [defTy primIdx (Rank.ofPrim swapPrim)].reduceOption
+
+/-- The application of {name}`swapPrim` at the natural numbers and lists to a variable. -/
+def swapNat : FreeTopos.Internal.Term :=
+  FreeTopos.Internal.Term.arr 9 [FreeTopos.nat, FreeTopos.list FreeTopos.nat]
+    (FreeTopos.Internal.Term.var 0)
+
+/-- The internal context of a pair of a natural number and a list. -/
+def pairCtx : List PartialHorn.Tree := [FreeTopos.prod FreeTopos.nat (FreeTopos.list FreeTopos.nat)]
+
+-- The primitive arrow's parameter and value are of types, and it is declared.
+#guard (Rank.ofPrim swapPrim).ok primGlobals
+#guard primSig.length == sig.length + 1
+
+-- Its application at the natural numbers and lists, in LF, decoded and encoded.
+#guard Checks primSig [tm (prod nat (list nat))] (Expr.const 57 [list nat, nat, v 0])
+  (tm (prod (list nat) nat))
+#guard dec primIdx (Expr.const 57 [list nat, nat, v 0]) 1 == some swapNat
+#guard enc primGlobals 0 primIdx swapNat (FreeTopos.Internal.ctxObj pairCtx)
+  (FreeTopos.Internal.stdEnv pairCtx) == some (Expr.const 57 [list nat, nat, v 0])
+
+-- Reflexivity at the application, in LF and decoded.
+#guard match decPf primIdx (Expr.const 18 [prod (list nat) nat, Expr.const 57 [list nat, nat, v 0]])
+    [none] 0, dec primIdx (eq (prod (list nat) nat) (Expr.const 57 [list nat, nat, v 0])
+      (Expr.const 57 [list nat, nat, v 0])) 1 with
+  | some D, some φ => Thm.checks primGlobals #[] ⟨0, pairCtx, [], φ⟩ D
+  | _, _ => false
+
+-- A primitive arrow the indices name is the signature's constant of it: zero encodes as itself,
+-- and a constant past the signature naming it decodes to nothing.
+#guard enc pfGlobals 0 { pfIdx with ext := [.tm (.arr 0) 0 1] }
+  (FreeTopos.Internal.Term.arr 0 [] FreeTopos.Internal.Term.star) FreeTopos.one [] ==
+  some (zeroAt star)
+#guard dec { pfIdx with ext := [.tm (.arr 0) 0 1] } (Expr.const 57 [star]) 0 == none
 
 end Geb.LF.Topos.Tests
 

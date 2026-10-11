@@ -15,8 +15,8 @@ set_option doc.verso true in
 
 A declaration of an extension of the signature {name}`Geb.LF.Topos.sig` past it is a telescope:
 products over the kind of types and over families of terms ({lit}`piTele`), then, for a theorem,
-the arrows from the families of proofs of its hypotheses ({lit}`arrows`), and, for a definition,
-the family of terms of its value's type. An application of the
+the arrows from the families of proofs of its hypotheses ({lit}`arrows`), and, for a constant of
+the language, the family of terms of its value's type. An application of the
 constant instantiates the telescope along its spine, each argument substituted, one after
 another, into the domains after it and into the body ({lit}`hsubs`, {lit}`spine_piTele_gen`),
 and the substitution passes into each hypothesis and the conclusion ({lit}`hsubs_arrows_pf`).
@@ -1074,15 +1074,15 @@ theorem dec_hsub_obj {c₀ : ℕ} : ∀ (e n : Expr) (j off : ℕ) (e' : Expr) (
         Option.bind_some]
       rfl
     · next =>
-      obtain ⟨kd₀, m₀, p₀, θ₀, args₀, hc, he₀, -, -, hargs₀, rfl⟩ := decDefn_eq_some k h
+      obtain ⟨h₀, m₀, p₀, θ₀, args₀, hc, he₀, -, -, -, hargs₀, rfl⟩ := decTm_eq_some k h
       change hsub (RoseTree.node (.base c₀) []) n (Expr.const _ cs) j = some e' at hs
       rw [hsub_const, Option.map_eq_map, Option.map_eq_some_iff] at hs
       obtain ⟨ys, hys, rfl⟩ := hs
       obtain ⟨hyl, hyi⟩ := getElem_of_mapM_id_eq_some hys
       rw [List.length_map] at hyl
-      obtain ⟨kd, θ, args, heq, hd⟩ := decDefn_transfer (ys := ys) (off' := off)
+      obtain ⟨hh, θ, args, heq, hd⟩ := decTm_transfer (ys := ys) (off' := off)
         (fT := FreeTopos.Internal.substF (objAt (j - off) β))
-        (fM := Term.osubstF (objAt (j - off) β)) h hyl.symm fun kd m p he ↦
+        (fM := Term.osubstF (objAt (j - off) β)) h hyl.symm fun hh m p he ↦
           ⟨fun i x y a _ hx hy ha ↦ by
               obtain ⟨hi, rfl⟩ := List.getElem?_eq_some_iff.mp hx
               obtain ⟨hi', rfl⟩ := List.getElem?_eq_some_iff.mp hy
@@ -1107,11 +1107,11 @@ theorem dec_hsub_obj {c₀ : ℕ} : ∀ (e n : Expr) (j off : ℕ) (e' : Expr) (
                 · rw [h'] at this
                   exact congrArg some (Option.some.inj (Option.some.inj this)).symm
               exact ih _ (List.getElem_mem hi) n j off _ u β hu
-                (bnd_plain rfl hocc (List.mem_reverse.mpr (List.mem_of_getElem? hu'))) hn hj this⟩
-      rw [heq, Expr.const, Expr.app, dec_node, decStep_defn k hc, hd]
-      simp only [Term.defn]
-      rw [Term.osubstF_node, List.map_reverse, ← List.map_reverse]
-      rfl
+                (bnd_plain (by cases h₀ <;> rfl) hocc
+                  (List.mem_reverse.mpr (List.mem_of_getElem? hu'))) hn hj this⟩
+      rw [heq, Expr.const, Expr.app, dec_node, decStep_tm k hc, hd, Term.osubstF_node,
+        List.map_reverse, ← List.map_reverse]
+      cases hh <;> rfl
     · next _ _ b db heq =>
       obtain ⟨rfl, hd⟩ := map_dec_eq heq
       simp only [List.map_cons, List.map_nil] at hs

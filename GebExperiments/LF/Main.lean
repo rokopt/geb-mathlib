@@ -222,12 +222,12 @@ def devGlobals : FreeTopos.Internal.Globals := { toposGlobals with defs := [.lan
 theorems the extension declares, followed by the definition `addDefn` and its unfolding. -/
 def devIdx : PrimIdx :=
   { toposIdx with ext := lemmaThms.zipIdx.map (fun (a, j) ↦ .thm j a.arity a.ctx.length) ++
-      [.defn 0 0 2, .delta 0 0 2] }
+      [.tm (.defn 0) 0 2, .delta 0 0 2] }
 
 /-- The signature extended by the declarations of the lemmas' theorems, of the definition
 `addDefn` and of its unfolding. -/
 def devSig : Sig := sig ++ lemmaThms.filterMap (thmTy devGlobals devIdx) ++
-  [defTy devIdx addDefn, thmTy devGlobals devIdx (deltaThm 0 addDefn)].reduceOption
+  [defTy devIdx (Rank.ofDefn addDefn), thmTy devGlobals devIdx (deltaThm 0 addDefn)].reduceOption
 
 /-- The names of the constants of `devSig`. -/
 def devNames : List String :=

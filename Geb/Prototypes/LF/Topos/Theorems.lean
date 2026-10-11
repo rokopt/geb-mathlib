@@ -155,17 +155,17 @@ theorem instTerm_defn_vars (kd : ℕ) (θ : List PartialHorn.Tree) (σ : List Te
 /-- An extension of the signature declares the theorems that the table of the indices names:
 at the position of each earlier theorem the table names, the declaration of that theorem, a
 well-formed theorem of as many object variables and variables as the table records, and at the
-position of each unfolding of a definition the table names, the declaration of the theorem that
-unfolds it, of as many object variables and parameters as the table records. The unfolding is
-well formed wherever its definition is admitted, which an extension declaring the definition
-records ({name}`Geb.LF.Topos.SigExt`). -/
+position of each unfolding of a definition the table names, of a body that compiles, the
+declaration of the theorem that unfolds it, of as many object variables and parameters as the
+table records. The unfolding is well formed where its definition's parameters and value are also
+of types, which an extension declaring the definition records ({name}`Geb.LF.Topos.SigExt`). -/
 def ExtDecl (G : Globals) (E : Array Entry) (k : PrimIdx) (sg : Sig) : Prop :=
   (∀ i j m p, k.ext[i]? = some (.thm j m p) → ∃ a T,
     (E[j]?).bind Entry.language? = some a ∧ m = a.arity ∧ p = a.ctx.length ∧
     a.wellFormed G = true ∧ thmTy G k a = some T ∧ sg[sig.length + i]? = some T) ∧
   (∀ i kd m p, k.ext[i]? = some (.delta kd m p) → ∃ d T,
     G.defs[kd]? = some (.language d) ∧ m = d.arity ∧ p = d.params.length ∧
-    thmTy G k (deltaThm kd d) = some T ∧
+    (∃ cd, FreeTopos.Internal.Defn.compile G d = some cd) ∧ thmTy G k (deltaThm kd d) = some T ∧
     sg[sig.length + i]? = some T)
 
 /-- The signature, at indices whose table is empty, declares the theorems the table names. -/

@@ -4105,6 +4105,15 @@ its proofs, in this order:
     built-in one is shadowed by it; the adequacy of the encoding and the
     soundness of the decoding of proofs hold in every extension whose
     object definitions are the globals' and whose operations are unique.
+13. Complete. Primitive arrows: a constant of the language that a term
+    applies to objects and terms, a definition or a primitive arrow, is
+    declared by its rank, a primitive arrow's one parameter of its
+    domain and its value of its codomain, so that one constant of the
+    extension's table, and one proof of each property of the encoding,
+    serves both. The primitive arrows the signature's own constants
+    encode keep their encoding, and the table names none of them; the
+    adequacy of the encoding and the soundness of the decoding of proofs
+    hold in every extension by primitive arrows of types.
 
 The route remains an experiment; the Geb-native refinement below is the
 implementation meant to last, and the signature's measurements inform
