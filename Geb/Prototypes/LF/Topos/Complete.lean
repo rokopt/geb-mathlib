@@ -87,10 +87,10 @@ variables. -/
 theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
     ∀ (s : MTerm) (X : PartialHorn.Tree) (e : MEnv) (ΓLF : Ctx) (M : Expr)
       (r : PartialHorn.Tree × PartialHorn.Tree), (∀ p ∈ e, FreeTopos.Internal.IsTy G n p.2 = true) →
-      encCtx n (e.map Prod.snd) = some ΓLF → enc G n k s X e = some M →
+      encCtx k n (e.map Prod.snd) = some ΓLF → enc G n k s X e = some M →
       FreeTopos.Internal.compile G n s X e = some r →
       FreeTopos.Internal.IsTy G n r.2 = true ∧
-        ∃ A, encTy e.length r.2 = some A ∧ judge sg M ΓLF (.check (tm A)) = true :=
+        ∃ A, encTy k e.length r.2 = some A ∧ judge sg M ΓLF (.check (tm A)) = true :=
   RoseTree.ind fun l cs ih X e ΓLF M r he hΓ henc hcomp ↦ by
     have htp : ∀ j < n, varType ΓLF (e.length + j) = some tp := fun j hj ↦ by
       simpa only [List.length_map] using varType_encCtx_tp hΓ hj
@@ -163,7 +163,7 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
       simp only [encStep, List.map_cons, List.map_nil, hct, Option.bind_eq_bind,
         Option.bind_some, Option.bind_eq_some_iff, Option.pure_def, Option.some.injEq] at henc
       obtain ⟨A, hA, B, hB, Mb, hMb, rfl⟩ := henc
-      have hΓ' : encCtx n ((FreeTopos.Internal.extEnv X a e).map Prod.snd) =
+      have hΓ' : encCtx k n ((FreeTopos.Internal.extEnv X a e).map Prod.snd) =
           some (tm A :: ΓLF) := by
         simp only [FreeTopos.Internal.extEnv, List.map_cons, List.map_map]
         exact encCtx_cons (by simpa only [List.length_map] using hA)
@@ -211,7 +211,7 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
           obtain ⟨Mt, hMt, rfl⟩ := henc
           obtain ⟨hIP, P, hP, hMtJ⟩ := ih t (by simp) X e ΓLF Mt _ he hΓ hMt hct
           simp only [FreeTopos.Internal.zeroPrim, PartialHorn.subst_nil] at hP ⊢
-          rw [show encTy e.length FreeTopos.one = some one from rfl, Option.some.injEq] at hP
+          rw [show encTy k e.length FreeTopos.one = some one from rfl, Option.some.injEq] at hP
           subst hP
           refine ⟨FreeTopos.Internal.isTy_nat, nat, rfl,
             judge_const (T := Expr.arrow (tm one) (tm nat)) (hsg.get rfl) ?_ rfl⟩
@@ -226,7 +226,7 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
             obtain ⟨Mt, hMt, rfl⟩ := henc
             obtain ⟨hIP, P, hP, hMtJ⟩ := ih t (by simp) X e ΓLF Mt _ he hΓ hMt hct
             simp only [FreeTopos.Internal.succPrim, PartialHorn.subst_nil] at hP ⊢
-            rw [show encTy e.length FreeTopos.nat = some nat from rfl, Option.some.injEq] at hP
+            rw [show encTy k e.length FreeTopos.nat = some nat from rfl, Option.some.injEq] at hP
             subst hP
             refine ⟨FreeTopos.Internal.isTy_nat, nat, rfl,
               judge_const (T := Expr.arrow (tm nat) (tm nat)) (hsg.get rfl) ?_ rfl⟩
@@ -241,7 +241,7 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
               obtain ⟨Mt, hMt, rfl⟩ := henc
               obtain ⟨hIP, P, hP, hMtJ⟩ := ih t (by simp) X e ΓLF Mt _ he hΓ hMt hct
               simp only [FreeTopos.Internal.nodePrim, PartialHorn.subst_nil] at hP ⊢
-              rw [show encTy e.length
+              rw [show encTy k e.length
                 (FreeTopos.prod FreeTopos.nat (FreeTopos.list FreeTopos.rose)) =
                 some (prod nat (list rose)) from rfl, Option.some.injEq] at hP
               subst hP
@@ -260,7 +260,7 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
             Option.bind_eq_some_iff, Option.pure_def, Option.some.injEq] at henc
           obtain ⟨A, hA, Mt, hMt, rfl⟩ := henc
           obtain ⟨hIP, P, hP, hMtJ⟩ := ih t (by simp) X e ΓLF Mt _ he hΓ hMt hct
-          rw [subst_nilPrim_dom, show encTy e.length FreeTopos.one = some one from rfl,
+          rw [subst_nilPrim_dom, show encTy k e.length FreeTopos.one = some one from rfl,
             Option.some.injEq] at hP
           subst hP
           refine ⟨by rw [subst_nilPrim_cod, FreeTopos.Internal.isTy_list]; exact hIθ₀, list A,
@@ -385,7 +385,7 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
       simp only [encStep, List.map_cons, List.map_nil, hcz, Option.bind_eq_bind,
         Option.bind_some, Option.bind_eq_some_iff, Option.pure_def, Option.some.injEq] at henc
       obtain ⟨C, hC, Mz, hMz, Ms, hMs, Mm, hMm, rfl⟩ := henc
-      have hΓ' : encCtx n ((FreeTopos.Internal.extEnv X r.2 e).map Prod.snd) =
+      have hΓ' : encCtx k n ((FreeTopos.Internal.extEnv X r.2 e).map Prod.snd) =
           some (tm C :: ΓLF) := by
         simp only [FreeTopos.Internal.extEnv, List.map_cons, List.map_map]
         exact encCtx_cons (by simpa only [List.length_map] using hC)
@@ -396,7 +396,7 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
       rw [hC, Option.some.injEq] at hA₁
       rw [length_extEnv, encTy_add hC, Option.some.injEq] at hA₂
       subst hA₁ hA₂
-      rw [show encTy e.length FreeTopos.nat = some nat from rfl, Option.some.injEq] at hN
+      rw [show encTy k e.length FreeTopos.nat = some nat from rfl, Option.some.injEq] at hN
       subst hN
       have hfJ := judge_lam hMsJ
       refine ⟨hIr2, C, hC, judge_const (T := Expr.pi tp (Expr.arrow (tm (v 0))
@@ -411,7 +411,7 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
         FreeTopos.Internal.listPart_eq_some.mpr rfl, Option.bind_eq_bind, Option.bind_some,
         Option.bind_eq_some_iff, Option.pure_def, Option.some.injEq] at henc
       obtain ⟨A, hA, C, hC, Mz, hMz, Ms, hMs, Mm, hMm, rfl⟩ := henc
-      have hΓ' : encCtx n ((FreeTopos.Internal.extEnv (FreeTopos.prod X a) r.2
+      have hΓ' : encCtx k n ((FreeTopos.Internal.extEnv (FreeTopos.prod X a) r.2
           (FreeTopos.Internal.extEnv X a e)).map Prod.snd) =
           some (tm (C.rename (· + 1)) :: tm A :: ΓLF) := by
         simp only [FreeTopos.Internal.extEnv, List.map_cons, List.map_map]
@@ -451,9 +451,9 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
           simpa [FreeTopos.Internal.roseParts] using ht.symm
         simp only [Option.bind_eq_some_iff, Option.pure_def, Option.some.injEq] at henc
         obtain ⟨C, hC, Ms, hMs, Mm, hMm, rfl⟩ := henc
-        have hpc : encTy e.length (FreeTopos.prod FreeTopos.nat (FreeTopos.list c)) =
+        have hpc : encTy k e.length (FreeTopos.prod FreeTopos.nat (FreeTopos.list c)) =
             some (prod nat (list C)) := by rw [encTy_prod, encTy_list, hC]; rfl
-        have hΓ' : encCtx n ((FreeTopos.Internal.extEnv X (FreeTopos.prod FreeTopos.nat
+        have hΓ' : encCtx k n ((FreeTopos.Internal.extEnv X (FreeTopos.prod FreeTopos.nat
             (FreeTopos.list c)) e).map Prod.snd) = some (tm (prod nat (list C)) :: ΓLF) := by
           simp only [FreeTopos.Internal.extEnv, List.map_cons, List.map_map]
           exact encCtx_cons (by simpa only [List.length_map] using hpc)
@@ -465,7 +465,7 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
         obtain ⟨-, T, hT, hMmJ⟩ := ih m (by simp) X e ΓLF Mm _ he hΓ hMm hcm
         rw [length_extEnv, ← hrc, encTy_add (hrc ▸ hC), Option.some.injEq] at hA₂
         subst hA₂
-        rw [show encTy e.length FreeTopos.rose = some rose from rfl, Option.some.injEq] at hT
+        rw [show encTy k e.length FreeTopos.rose = some rose from rfl, Option.some.injEq] at hT
         subst hT
         have hfJ := judge_lam hMsJ
         refine ⟨by rw [hrc]; exact hIc, C, by rw [hrc]; exact hC,
@@ -483,10 +483,10 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
         obtain ⟨rfl, rfl⟩ := ht
         simp only [Option.bind_eq_some_iff, Option.pure_def, Option.some.injEq] at henc
         obtain ⟨A, hA, C, hC, Ms, hMs, Mm, hMm, rfl⟩ := henc
-        have hpc : encTy e.length (FreeTopos.prod a' (FreeTopos.list c)) =
+        have hpc : encTy k e.length (FreeTopos.prod a' (FreeTopos.list c)) =
             some (prod A (list C)) := by
           rw [encTy_prod, encTy_list, hA, hC]; rfl
-        have hΓ' : encCtx n ((FreeTopos.Internal.extEnv X (FreeTopos.prod a'
+        have hΓ' : encCtx k n ((FreeTopos.Internal.extEnv X (FreeTopos.prod a'
             (FreeTopos.list c)) e).map Prod.snd) = some (tm (prod A (list C)) :: ΓLF) := by
           simp only [FreeTopos.Internal.extEnv, List.map_cons, List.map_map]
           exact encCtx_cons (by simpa only [List.length_map] using hpc)
@@ -533,8 +533,8 @@ theorem enc_checks (hsg : SigExt G k sg) (hk : k.Valid G) :
         Option.some.injEq] at hT
       obtain ⟨ΓT, hΓT, Td, hTd, rfl⟩ := hT
       obtain ⟨T', hT', hT'len, hT'i⟩ := encCtx_reverse hΓT
-      have hxs : List.Forall₂ (fun X x ↦ encTy e.length x = some X) Ts θ.reverse :=
-        List.Forall₂.flip (R := fun X x ↦ encTy e.length x = some X) (forall₂_of_mapM hTs)
+      have hxs : List.Forall₂ (fun X x ↦ encTy k e.length x = some X) Ts θ.reverse :=
+        List.Forall₂.flip (R := fun X x ↦ encTy k e.length x = some X) (forall₂_of_mapM hTs)
       have hTsl : Ts.length = d.arity := by rw [length_of_mapM hTs, List.length_reverse, hθl]
       have hMsl : Ms.length = d.params.length := by
         rw [length_of_mapM hMs, List.length_reverse, List.length_map, hcl]
@@ -626,7 +626,7 @@ offset, and whose encoding it is. -/
 def TmConcl (G : FreeTopos.Internal.Globals) (n : ℕ) (k : PrimIdx) (M : Expr)
     (X : PartialHorn.Tree) (e : MEnv) (A : Expr) : Prop :=
   ∃ s r, dec k M e.length = some s ∧ FreeTopos.Internal.compile G n s X e = some r ∧
-    encTy e.length r.2 = some A ∧ enc G n k s X e = some M
+    encTy k e.length r.2 = some A ∧ enc G n k s X e = some M
 
 /-- The completeness of the encoding at a term, of the family of terms of a type, and, where the
 term checks against a product of families of terms, or against a product of families of terms
@@ -635,16 +635,16 @@ in every environment of the extended types. -/
 def TmComplete (sg : Sig) (G : FreeTopos.Internal.Globals) (n : ℕ) (k : PrimIdx) (M : Expr) :
     Prop :=
   (∀ (X : PartialHorn.Tree) (e : MEnv) (ΓLF : Ctx) (A : Expr),
-    encCtx n (e.map Prod.snd) = some ΓLF →
+    encCtx k n (e.map Prod.snd) = some ΓLF →
     judge sg M ΓLF (.check (tm A)) = true → TmConcl G n k M X e A) ∧
   (∀ (Γ : List PartialHorn.Tree) (ΓLF : Ctx) (a : PartialHorn.Tree) (A' B' : Expr),
-    encCtx n Γ = some ΓLF → encTy Γ.length a = some A' →
+    encCtx k n Γ = some ΓLF → encTy k Γ.length a = some A' →
     judge sg M ΓLF (.check (Expr.pi (tm A') (tm B'))) = true →
     ∃ body, M = Expr.lam body ∧
       ∀ (X : PartialHorn.Tree) (e : MEnv), e.map Prod.snd = a :: Γ →
         TmConcl G n k body X e B') ∧
   (∀ (Γ : List PartialHorn.Tree) (ΓLF : Ctx) (a b : PartialHorn.Tree) (A' B' C' : Expr),
-    encCtx n Γ = some ΓLF → encTy Γ.length a = some A' → encTy (Γ.length + 1) b = some B' →
+    encCtx k n Γ = some ΓLF → encTy k Γ.length a = some A' → encTy k (Γ.length + 1) b = some B' →
     judge sg M ΓLF (.check (Expr.pi (tm A') (Expr.pi (tm B') (tm C')))) = true →
     ∃ body, M = Expr.lam (Expr.lam body) ∧
       ∀ (X : PartialHorn.Tree) (e : MEnv), e.map Prod.snd = b :: a :: Γ →
@@ -654,7 +654,7 @@ def TmComplete (sg : Sig) (G : FreeTopos.Internal.Globals) (n : ℕ) (k : PrimId
 theorem tmComplete_inl (hsg : SigExt G k sg) (hk : k.Valid G) {X1 X2 X3 : Expr}
     (ih : TmComplete sg G n k X3)
     {X : PartialHorn.Tree} {e : MEnv} {ΓLF : Ctx} {A : Expr}
-    (hΓ : encCtx n (e.map Prod.snd) = some ΓLF)
+    (hΓ : encCtx k n (e.map Prod.snd) = some ΓLF)
     (hS : spine ΓLF (Expr.pi tp (Expr.pi tp (Expr.arrow (tm (v 1)) (tm (coprod (v 1) (v 0))))))
       ([X1, X2, X3].map fun m ↦ (m, judge sg m)) = some (tm A)) :
     TmConcl G n k (Expr.const 50 [X1, X2, X3]) X e A := by
@@ -663,8 +663,8 @@ theorem tmComplete_inl (hsg : SigExt G k sg) (hk : k.Valid G) {X1 X2 X3 : Expr}
   simp only [List.length_map] at hheads₀
   simp only [List.map_cons, List.map_nil] at hS
   have hT := spine_tp₂ hS
-  obtain ⟨a, ha, hIa⟩ := tyComplete hsg G hheads₀ X1 hT.1
-  obtain ⟨b, hb, hIb⟩ := tyComplete hsg G hheads₀ X2 hT.2
+  obtain ⟨a, ha, hIa⟩ := tyComplete hsg hheads₀ X1 hT.1
+  obtain ⟨b, hb, hIb⟩ := tyComplete hsg hheads₀ X2 hT.2
   simp only [tm, tp, coprod, Expr.const, Expr.app] at hS
   lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
   obtain ⟨-, -, ht, hA⟩ := hS
@@ -689,7 +689,7 @@ theorem tmComplete_inl (hsg : SigExt G k sg) (hk : k.Valid G) {X1 X2 X3 : Expr}
 theorem tmComplete_inr (hsg : SigExt G k sg) (hk : k.Valid G) {X1 X2 X3 : Expr}
     (ih : TmComplete sg G n k X3)
     {X : PartialHorn.Tree} {e : MEnv} {ΓLF : Ctx} {A : Expr}
-    (hΓ : encCtx n (e.map Prod.snd) = some ΓLF)
+    (hΓ : encCtx k n (e.map Prod.snd) = some ΓLF)
     (hS : spine ΓLF (Expr.pi tp (Expr.pi tp (Expr.arrow (tm (v 0)) (tm (coprod (v 1) (v 0))))))
       ([X1, X2, X3].map fun m ↦ (m, judge sg m)) = some (tm A)) :
     TmConcl G n k (Expr.const 51 [X1, X2, X3]) X e A := by
@@ -698,8 +698,8 @@ theorem tmComplete_inr (hsg : SigExt G k sg) (hk : k.Valid G) {X1 X2 X3 : Expr}
   simp only [List.length_map] at hheads₀
   simp only [List.map_cons, List.map_nil] at hS
   have hT := spine_tp₂ hS
-  obtain ⟨a, ha, hIa⟩ := tyComplete hsg G hheads₀ X1 hT.1
-  obtain ⟨b, hb, hIb⟩ := tyComplete hsg G hheads₀ X2 hT.2
+  obtain ⟨a, ha, hIa⟩ := tyComplete hsg hheads₀ X1 hT.1
+  obtain ⟨b, hb, hIb⟩ := tyComplete hsg hheads₀ X2 hT.2
   simp only [tm, tp, coprod, Expr.const, Expr.app] at hS
   lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
   obtain ⟨-, -, ht, hA⟩ := hS
@@ -724,7 +724,7 @@ theorem tmComplete_inr (hsg : SigExt G k sg) (hk : k.Valid G) {X1 X2 X3 : Expr}
 theorem tmComplete_case (hsg : SigExt G k sg) (hk : k.Valid G) {X1 X2 X3 X4 : Expr}
     (ih : TmComplete sg G n k X4)
     {X : PartialHorn.Tree} {e : MEnv} {ΓLF : Ctx} {A : Expr}
-    (hΓ : encCtx n (e.map Prod.snd) = some ΓLF)
+    (hΓ : encCtx k n (e.map Prod.snd) = some ΓLF)
     (hS : spine ΓLF (Expr.pi tp (Expr.pi tp (Expr.pi tp (Expr.arrow (tm (prod (exp (v 2) (v 0))
       (exp (v 1) (v 0)))) (tm (exp (coprod (v 2) (v 1)) (v 0)))))))
       ([X1, X2, X3, X4].map fun m ↦ (m, judge sg m)) = some (tm A)) :
@@ -734,15 +734,15 @@ theorem tmComplete_case (hsg : SigExt G k sg) (hk : k.Valid G) {X1 X2 X3 X4 : Ex
   simp only [List.length_map] at hheads₀
   simp only [List.map_cons, List.map_nil] at hS
   have hT := spine_tp₃ hS
-  obtain ⟨a, ha, hIa⟩ := tyComplete hsg G hheads₀ X1 hT.1
-  obtain ⟨b, hb, hIb⟩ := tyComplete hsg G hheads₀ X2 hT.2.1
-  obtain ⟨c, hc, hIc⟩ := tyComplete hsg G hheads₀ X3 hT.2.2
+  obtain ⟨a, ha, hIa⟩ := tyComplete hsg hheads₀ X1 hT.1
+  obtain ⟨b, hb, hIb⟩ := tyComplete hsg hheads₀ X2 hT.2.1
+  obtain ⟨c, hc, hIc⟩ := tyComplete hsg hheads₀ X3 hT.2.2
   simp only [tm, tp, prod, exp, coprod, Expr.const, Expr.app] at hS
   lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
   obtain ⟨-, -, -, ht, hA⟩ := hS
   simp only [node_inj, List.cons.injEq, and_true, true_and] at hA
   subst hA
-  have hdom : encTy e.length (FreeTopos.prod (FreeTopos.exp a c) (FreeTopos.exp b c)) =
+  have hdom : encTy k e.length (FreeTopos.prod (FreeTopos.exp a c) (FreeTopos.exp b c)) =
       some (prod (exp X1 X3) (exp X2 X3)) := by
     rw [encTy_prod, encTy_exp, encTy_exp, ha, hb, hc]; rfl
   obtain ⟨st, ⟨g, c'⟩, hdt, hct, hrt, het⟩ :=
@@ -828,8 +828,8 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
           spine_piTele_gen (J := judge sg) (P := tm A) rfl hDs hS
         rw [hΓlen] at hlen hR' hS'
         -- the types decode
-        have htys : List.Forall₂ (fun M M' ↦ ∃ x, decTy e.length M = some x ∧
-            (encTy e.length x = some M' ∧ FreeTopos.Internal.IsTy G n x = true))
+        have htys : List.Forall₂ (fun M M' ↦ ∃ x, decTy k e.length M = some x ∧
+            (encTy k e.length x = some M' ∧ FreeTopos.Internal.IsTy G n x = true))
             (cs.take d.arity) (cs.take d.arity) :=
           forall₂_of_getElem rfl fun idx hi₁ _ ↦ by
             have hidx : idx < d.arity := by rw [List.length_take] at hi₁; omega
@@ -839,11 +839,11 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
             obtain rfl := hsubs_tp hD'
             rw [List.getElem_take]
             obtain rfl := Option.some.inj ((List.getElem?_eq_getElem (by omega)).symm.trans hM)
-            obtain ⟨x, hx, hxt⟩ := tyComplete hsg G hheads₀ _ hJ
+            obtain ⟨x, hx, hxt⟩ := tyComplete hsg hheads₀ _ hJ
             exact ⟨x, decTy_encTy _ x _ hx, hx, hxt⟩
         obtain ⟨xs, hxsM, hxs⟩ := mapM_of_forall₂ htys
-        have hxs' : List.Forall₂ (fun X x ↦ encTy e.length x = some X) (cs.take d.arity) xs :=
-          List.Forall₂.flip (R := fun X x ↦ encTy e.length x = some X) (hxs.imp fun _ _ h ↦ h.1)
+        have hxs' : List.Forall₂ (fun X x ↦ encTy k e.length x = some X) (cs.take d.arity) xs :=
+          List.Forall₂.flip (R := fun X x ↦ encTy k e.length x = some X) (hxs.imp fun _ _ h ↦ h.1)
         have hxl : xs.length = d.arity := by
           rw [← hxs'.length_eq, List.length_take]
           omega
@@ -929,7 +929,7 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
             exact hxsM
           · rw [← List.map_drop, List.mapM_map]
             exact hssM
-        · have hTs : xs.mapM (encTy e.length) = some (cs.take d.arity) :=
+        · have hTs : xs.mapM (encTy k e.length) = some (cs.take d.arity) :=
             mapM_of_forall₂_eq (hxs.imp fun _ _ h ↦ h.1)
           have hMs' : ss.mapM (fun s ↦ enc G n k s X e) = some (cs.drop d.arity) :=
             mapM_of_forall₂_eq (forall₂_of_getElem (by rw [hssl, hMsl]) fun i' h₁ h₂ ↦
@@ -969,8 +969,8 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
           List.length_eq_three.mp (Nat.succ.inj (hlen : cs.length + 1 = 3 + 1))
         simp only [List.map_cons, List.map_nil] at hS
         have hT := spine_tp₂ hS
-        obtain ⟨a, ha, hIa⟩ := tyComplete hsg G hheads₀ A' hT.1
-        obtain ⟨b, hb, hIb⟩ := tyComplete hsg G hheads₀ B' hT.2
+        obtain ⟨a, ha, hIa⟩ := tyComplete hsg hheads₀ A' hT.1
+        obtain ⟨b, hb, hIb⟩ := tyComplete hsg hheads₀ B' hT.2
         simp only [tm, tp, prod, Expr.const, Expr.app] at hS
         lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
         obtain ⟨-, -, ht, hu, hA⟩ := hS
@@ -997,14 +997,14 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
         obtain ⟨X1, X2, X3, rfl⟩ := List.length_eq_three.mp (hlen : cs.length = 3)
         simp only [List.map_cons, List.map_nil] at hS
         have hT := spine_tp₂ hS
-        obtain ⟨a, ha, hIa⟩ := tyComplete hsg G hheads₀ X1 hT.1
-        obtain ⟨b, hb, hIb⟩ := tyComplete hsg G hheads₀ X2 hT.2
+        obtain ⟨a, ha, hIa⟩ := tyComplete hsg hheads₀ X1 hT.1
+        obtain ⟨b, hb, hIb⟩ := tyComplete hsg hheads₀ X2 hT.2
         simp only [tm, tp, prod, Expr.const, Expr.app] at hS
         lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
         obtain ⟨-, -, hp, hA⟩ := hS
         simp only [node_inj, List.cons.injEq, and_true, true_and] at hA
         subst hA
-        have hab : encTy e.length (FreeTopos.prod a b) = some (prod X1 X2) := by
+        have hab : encTy k e.length (FreeTopos.prod a b) = some (prod X1 X2) := by
           rw [encTy_prod, ha, hb]; rfl
         obtain ⟨sp, ⟨f, c'⟩, hdp, hcp, hrp, hep⟩ :=
           (ih X3 (by simp)).1 X e ΓLF (prod X1 X2) hΓ hp
@@ -1023,14 +1023,14 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
         obtain ⟨X1, X2, X3, rfl⟩ := List.length_eq_three.mp (hlen : cs.length = 3)
         simp only [List.map_cons, List.map_nil] at hS
         have hT := spine_tp₂ hS
-        obtain ⟨a, ha, hIa⟩ := tyComplete hsg G hheads₀ X1 hT.1
-        obtain ⟨b, hb, hIb⟩ := tyComplete hsg G hheads₀ X2 hT.2
+        obtain ⟨a, ha, hIa⟩ := tyComplete hsg hheads₀ X1 hT.1
+        obtain ⟨b, hb, hIb⟩ := tyComplete hsg hheads₀ X2 hT.2
         simp only [tm, tp, prod, Expr.const, Expr.app] at hS
         lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
         obtain ⟨-, -, hp, hA⟩ := hS
         simp only [node_inj, List.cons.injEq, and_true, true_and] at hA
         subst hA
-        have hab : encTy e.length (FreeTopos.prod a b) = some (prod X1 X2) := by
+        have hab : encTy k e.length (FreeTopos.prod a b) = some (prod X1 X2) := by
           rw [encTy_prod, ha, hb]; rfl
         obtain ⟨sp, ⟨f, c'⟩, hdp, hcp, hrp, hep⟩ :=
           (ih X3 (by simp)).1 X e ΓLF (prod X1 X2) hΓ hp
@@ -1050,8 +1050,8 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
         obtain ⟨X1, X2, X3, rfl⟩ := List.length_eq_three.mp (hlen : cs.length = 3)
         simp only [List.map_cons, List.map_nil] at hS
         have hT := spine_tp₂ hS
-        obtain ⟨a, ha, hIa⟩ := tyComplete hsg G hheads₀ X1 hT.1
-        obtain ⟨b, hb, hIb⟩ := tyComplete hsg G hheads₀ X2 hT.2
+        obtain ⟨a, ha, hIa⟩ := tyComplete hsg hheads₀ X1 hT.1
+        obtain ⟨b, hb, hIb⟩ := tyComplete hsg hheads₀ X2 hT.2
         simp only [tm, tp, exp, Expr.const, Expr.app] at hS
         lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
         obtain ⟨-, -, hf, hA⟩ := hS
@@ -1085,14 +1085,14 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
           List.length_eq_three.mp (Nat.succ.inj (hlen : cs.length + 1 = 3 + 1))
         simp only [List.map_cons, List.map_nil] at hS
         have hT := spine_tp₂ hS
-        obtain ⟨a, ha, hIa⟩ := tyComplete hsg G hheads₀ X1 hT.1
-        obtain ⟨b, hb, hIb⟩ := tyComplete hsg G hheads₀ X2 hT.2
+        obtain ⟨a, ha, hIa⟩ := tyComplete hsg hheads₀ X1 hT.1
+        obtain ⟨b, hb, hIb⟩ := tyComplete hsg hheads₀ X2 hT.2
         simp only [tm, tp, exp, Expr.const, Expr.app] at hS
         lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
         obtain ⟨-, -, ht, hu, hA⟩ := hS
         simp only [node_inj, List.cons.injEq, and_true, true_and] at hA
         subst hA
-        have hab : encTy e.length (FreeTopos.exp a b) = some (exp X1 X2) := by
+        have hab : encTy k e.length (FreeTopos.exp a b) = some (exp X1 X2) := by
           rw [encTy_exp, ha, hb]; rfl
         obtain ⟨st, ⟨f, c'⟩, hdt, hct, hrt, het⟩ :=
           (ih X3 (by simp)).1 X e ΓLF (exp X1 X2) hΓ ht
@@ -1119,7 +1119,7 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
         subst hA
         obtain ⟨st, ⟨g, c'⟩, hdt, hct, hrt, het⟩ :=
           (ih X1 (by simp)).1 X e ΓLF one hΓ ht
-        obtain rfl := encTy_inj hrt (rfl : encTy e.length FreeTopos.one = some one)
+        obtain rfl := encTy_inj hrt (rfl : encTy k e.length FreeTopos.one = some one)
         refine ⟨FreeTopos.Internal.Term.arr k.zero [] st, _, ?_,
           FreeTopos.Internal.compile_arr_iff.mpr ⟨st, rfl, _, hk.zero, g, hct, rfl, rfl, rfl⟩,
           rfl, ?_⟩
@@ -1139,7 +1139,7 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
         subst hA
         obtain ⟨st, ⟨g, c'⟩, hdt, hct, hrt, het⟩ :=
           (ih X1 (by simp)).1 X e ΓLF nat hΓ ht
-        obtain rfl := encTy_inj hrt (rfl : encTy e.length FreeTopos.nat = some nat)
+        obtain rfl := encTy_inj hrt (rfl : encTy k e.length FreeTopos.nat = some nat)
         have hne : k.succ ≠ k.zero := fun h ↦ by
           have hd := congrArg FreeTopos.Internal.Prim.dom
             (Option.some.inj (hk.zero.symm.trans (h ▸ hk.succ)))
@@ -1161,7 +1161,7 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
         obtain ⟨X2, X3, X4, rfl⟩ :=
           List.length_eq_three.mp (Nat.succ.inj (hlen : cs.length + 1 = 3 + 1))
         simp only [List.map_cons, List.map_nil] at hS
-        obtain ⟨c, hc, hIc⟩ := tyComplete hsg G hheads₀ X1 (spine_tp₁ hS)
+        obtain ⟨c, hc, hIc⟩ := tyComplete hsg hheads₀ X1 (spine_tp₁ hS)
         simp only [tm, tp, nat, Expr.const, Expr.app] at hS
         lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
         obtain ⟨-, hzJ, hfJ, hm, hA⟩ := hS
@@ -1177,7 +1177,7 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
         obtain ⟨sm, ⟨fm, cm⟩, hdm, hcm, hrm, hem⟩ := (ih X4 (by simp)).1 X e ΓLF nat hΓ hm
         obtain rfl := encTy_inj hc hrz
         obtain rfl := encTy_inj (encTy_add hc) hrs
-        obtain rfl := encTy_inj hrm (rfl : encTy e.length FreeTopos.nat = some nat)
+        obtain rfl := encTy_inj hrm (rfl : encTy k e.length FreeTopos.nat = some nat)
         obtain ⟨r, hr, hrc⟩ := FreeTopos.Internal.compile_natRec_of_parts hcz hcs hcm
         refine ⟨FreeTopos.Internal.Term.natRec sz ss sm, r, ?_, hr, by rw [hrc]; exact hc, ?_⟩
         · rw [dec_node]
@@ -1191,7 +1191,7 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
           (Expr.pi tp (Expr.arrow (tm (v 0)) (Expr.arrow (tm (v 0)) (tm omega)))))
         obtain ⟨X1, X2, X3, rfl⟩ := List.length_eq_three.mp (hlen : cs.length = 3)
         simp only [List.map_cons, List.map_nil] at hS
-        obtain ⟨a, ha, hIa⟩ := tyComplete hsg G hheads₀ X1 (spine_tp₁ hS)
+        obtain ⟨a, ha, hIa⟩ := tyComplete hsg hheads₀ X1 (spine_tp₁ hS)
         simp only [tm, tp, omega, Expr.const, Expr.app] at hS
         lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
         obtain ⟨-, ht, hu, hA⟩ := hS
@@ -1216,14 +1216,14 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
           (Expr.pi tp (Expr.arrow (tm one) (tm (list (v 0))))))
         obtain ⟨X1, X2, rfl⟩ := List.length_eq_two.mp (hlen : cs.length = 2)
         simp only [List.map_cons, List.map_nil] at hS
-        obtain ⟨a, ha, hIa⟩ := tyComplete hsg G hheads₀ X1 (spine_tp₁ hS)
+        obtain ⟨a, ha, hIa⟩ := tyComplete hsg hheads₀ X1 (spine_tp₁ hS)
         simp only [tm, tp, one, list, Expr.const, Expr.app] at hS
         lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
         obtain ⟨-, ht, hA⟩ := hS
         simp only [node_inj, List.cons.injEq, and_true, true_and] at hA
         subst hA
         obtain ⟨st, ⟨g, c'⟩, hdt, hct, hrt, het⟩ := (ih X2 (by simp)).1 X e ΓLF one hΓ ht
-        obtain rfl := encTy_inj hrt (rfl : encTy e.length FreeTopos.one = some one)
+        obtain rfl := encTy_inj hrt (rfl : encTy k e.length FreeTopos.one = some one)
         refine ⟨FreeTopos.Internal.Term.arr k.nil [a] st, _, ?_,
           FreeTopos.Internal.compile_arr_iff.mpr ⟨st, rfl, _, hk.nil, g,
             by rw [subst_nilPrim_dom]; exact hct, rfl,
@@ -1240,13 +1240,13 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
           (Expr.pi tp (Expr.arrow (tm (prod (v 0) (list (v 0)))) (tm (list (v 0))))))
         obtain ⟨X1, X2, rfl⟩ := List.length_eq_two.mp (hlen : cs.length = 2)
         simp only [List.map_cons, List.map_nil] at hS
-        obtain ⟨a, ha, hIa⟩ := tyComplete hsg G hheads₀ X1 (spine_tp₁ hS)
+        obtain ⟨a, ha, hIa⟩ := tyComplete hsg hheads₀ X1 (spine_tp₁ hS)
         simp only [tm, tp, prod, list, Expr.const, Expr.app] at hS
         lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
         obtain ⟨-, ht, hA⟩ := hS
         simp only [node_inj, List.cons.injEq, and_true, true_and] at hA
         subst hA
-        have hpl : encTy e.length (FreeTopos.prod a (FreeTopos.list a)) =
+        have hpl : encTy k e.length (FreeTopos.prod a (FreeTopos.list a)) =
             some (prod X1 (list X1)) := by
           rw [encTy_prod, encTy_list, ha]; rfl
         obtain ⟨st, ⟨g, c'⟩, hdt, hct, hrt, het⟩ :=
@@ -1276,8 +1276,8 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
           (Nat.succ.inj (Nat.succ.inj (hlen : cs.length + 1 + 1 = 4 + 1)))
         simp only [List.map_cons, List.map_nil] at hS
         have hT := spine_tp₂ hS
-        obtain ⟨a, ha, hIa⟩ := tyComplete hsg G hheads₀ X1 hT.1
-        obtain ⟨c, hc, hIc⟩ := tyComplete hsg G hheads₀ X2 hT.2
+        obtain ⟨a, ha, hIa⟩ := tyComplete hsg hheads₀ X1 hT.1
+        obtain ⟨c, hc, hIc⟩ := tyComplete hsg hheads₀ X2 hT.2
         simp only [tm, tp, list, Expr.const, Expr.app] at hS
         lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
         obtain ⟨-, -, hzJ, hfJ, hm, hA⟩ := hS
@@ -1292,10 +1292,11 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
             (FreeTopos.Internal.extEnv (FreeTopos.prod X a) c (FreeTopos.Internal.extEnv X a e))
             (by simp only [FreeTopos.Internal.extEnv, List.map_cons, List.map_map]; rfl)
         simp only [length_extEnv] at hds hrs
-        have hla : encTy e.length (FreeTopos.list a) = some (list X1) := by rw [encTy_list, ha]; rfl
+        have hla : encTy k e.length (FreeTopos.list a) = some (list X1) := by
+          rw [encTy_list, ha]; rfl
         obtain ⟨sm, ⟨fm, cm⟩, hdm, hcm, hrm, hem⟩ := (ih X5 (by simp)).1 X e ΓLF (list X1) hΓ hm
         obtain rfl := encTy_inj hc hrz
-        have hc₂ : encTy (e.length + 1 + 1) c = some (Expr.rename X2 (· + 2)) := by
+        have hc₂ : encTy k (e.length + 1 + 1) c = some (Expr.rename X2 (· + 2)) := by
           rw [Nat.add_assoc]
           exact encTy_add hc
         obtain rfl := encTy_inj hc₂ hrs
@@ -1321,7 +1322,7 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
         subst hA
         obtain ⟨st, ⟨g, c'⟩, hdt, hct, hrt, het⟩ :=
           (ih X1 (by simp)).1 X e ΓLF (prod nat (list rose)) hΓ ht
-        obtain rfl := encTy_inj hrt (rfl : encTy e.length (FreeTopos.prod FreeTopos.nat
+        obtain rfl := encTy_inj hrt (rfl : encTy k e.length (FreeTopos.prod FreeTopos.nat
           (FreeTopos.list FreeTopos.rose)) = some (prod nat (list rose)))
         refine ⟨FreeTopos.Internal.Term.arr k.node [] st, _, ?_,
           FreeTopos.Internal.compile_arr_iff.mpr ⟨st, rfl, _, hk.node, g, hct, rfl, rfl, rfl⟩,
@@ -1338,13 +1339,13 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
             (Expr.arrow (tm rose) (tm (v 0))))))
         obtain ⟨X1, X2, X3, rfl⟩ := List.length_eq_three.mp (hlen : cs.length = 3)
         simp only [List.map_cons, List.map_nil] at hS
-        obtain ⟨c, hc, hIc⟩ := tyComplete hsg G hheads₀ X1 (spine_tp₁ hS)
+        obtain ⟨c, hc, hIc⟩ := tyComplete hsg hheads₀ X1 (spine_tp₁ hS)
         simp only [tm, tp, nat, rose, prod, list, Expr.const, Expr.app] at hS
         lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
         obtain ⟨-, hfJ, hm, hA⟩ := hS
         simp only [node_inj, List.cons.injEq, and_true, true_and] at hA
         subst hA
-        have hpc : encTy e.length (FreeTopos.prod FreeTopos.nat (FreeTopos.list c)) =
+        have hpc : encTy k e.length (FreeTopos.prod FreeTopos.nat (FreeTopos.list c)) =
             some (prod nat (list X1)) := by rw [encTy_prod, encTy_list, hc]; rfl
         obtain ⟨body, rfl, hbc⟩ := (ih X2 (by simp)).2.1 (e.map Prod.snd) ΓLF _ _ _ hΓ
           (by rw [List.length_map]; exact hpc) hfJ
@@ -1355,7 +1356,7 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
         simp only [length_extEnv] at hds hrs
         obtain ⟨sm, ⟨fm, cm⟩, hdm, hcm, hrm, hem⟩ := (ih X3 (by simp)).1 X e ΓLF rose hΓ hm
         obtain rfl := encTy_inj (encTy_add hc) hrs
-        obtain rfl := encTy_inj hrm (rfl : encTy e.length FreeTopos.rose = some rose)
+        obtain rfl := encTy_inj hrm (rfl : encTy k e.length FreeTopos.rose = some rose)
         obtain ⟨r, hr, hrc⟩ := FreeTopos.Internal.compile_roseRec_of_parts
           (hIc) hcm (show FreeTopos.Internal.roseParts FreeTopos.rose =
             some (FreeTopos.nat, FreeTopos.roseRec) by simp [FreeTopos.Internal.roseParts]) hcs
@@ -1372,13 +1373,13 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
           (Expr.pi tp (Expr.arrow (tm (prod (v 0) (list (lrose (v 0))))) (tm (lrose (v 0))))))
         obtain ⟨X1, X2, rfl⟩ := List.length_eq_two.mp (hlen : cs.length = 2)
         simp only [List.map_cons, List.map_nil] at hS
-        obtain ⟨a, ha, hIa⟩ := tyComplete hsg G hheads₀ X1 (spine_tp₁ hS)
+        obtain ⟨a, ha, hIa⟩ := tyComplete hsg hheads₀ X1 (spine_tp₁ hS)
         simp only [tm, tp, prod, list, lrose, Expr.const, Expr.app] at hS
         lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
         obtain ⟨-, ht, hA⟩ := hS
         simp only [node_inj, List.cons.injEq, and_true, true_and] at hA
         subst hA
-        have hpl : encTy e.length (FreeTopos.prod a (FreeTopos.list (FreeTopos.lrose a))) =
+        have hpl : encTy k e.length (FreeTopos.prod a (FreeTopos.list (FreeTopos.lrose a))) =
             some (prod X1 (list (lrose X1))) := by
           rw [encTy_prod, encTy_list, encTy_lrose, ha]; rfl
         obtain ⟨st, ⟨g, c'⟩, hdt, hct, hrt, het⟩ :=
@@ -1402,14 +1403,14 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
         obtain ⟨X1, X2, X3, X4, rfl⟩ := List.length_eq_four.mp (hlen : cs.length = 4)
         simp only [List.map_cons, List.map_nil] at hS
         have hT := spine_tp₂ hS
-        obtain ⟨a, ha, hIa⟩ := tyComplete hsg G hheads₀ X1 hT.1
-        obtain ⟨c, hc, hIc⟩ := tyComplete hsg G hheads₀ X2 hT.2
+        obtain ⟨a, ha, hIa⟩ := tyComplete hsg hheads₀ X1 hT.1
+        obtain ⟨c, hc, hIc⟩ := tyComplete hsg hheads₀ X2 hT.2
         simp only [tm, tp, prod, list, lrose, Expr.const, Expr.app] at hS
         lf_spine_at hS [Option.bind_eq_some_iff, Option.ite_none_right_eq_some]
         obtain ⟨-, -, hfJ, hm, hA⟩ := hS
         simp only [node_inj, List.cons.injEq, and_true, true_and] at hA
         subst hA
-        have hpc : encTy e.length (FreeTopos.prod a (FreeTopos.list c)) =
+        have hpc : encTy k e.length (FreeTopos.prod a (FreeTopos.list c)) =
             some (prod X1 (list X2)) := by
           rw [encTy_prod, encTy_list, ha, hc]; rfl
         obtain ⟨body, rfl, hbc⟩ := (ih X3 (by simp)).2.1 (e.map Prod.snd) ΓLF _ _ _ hΓ
@@ -1422,7 +1423,7 @@ theorem tmComplete (hsg : SigExt G k sg) (hk : k.Valid G) :
         obtain ⟨sm, ⟨fm, cm⟩, hdm, hcm, hrm, hem⟩ :=
           (ih X4 (by simp)).1 X e ΓLF (lrose X1) hΓ hm
         obtain rfl := encTy_inj (encTy_add hc) hrs
-        obtain rfl := encTy_inj hrm (show encTy e.length (FreeTopos.lrose a) = some (lrose X1) by
+        obtain rfl := encTy_inj hrm (show encTy k e.length (FreeTopos.lrose a) = some (lrose X1) by
           rw [encTy_lrose, ha]; rfl)
         obtain ⟨r, hr, hrc⟩ := FreeTopos.Internal.compile_roseRec_of_parts
           (hIc) hcm (roseParts_lrose a) hcs

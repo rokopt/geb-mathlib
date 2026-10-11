@@ -3953,8 +3953,9 @@ checklist and in CI.
   computation rules as rewrite rules;
   `Topos/Adequacy.lean` encodes the fragment's types and compiled terms as
   canonical LF terms and decodes them, the signature's folds being the
-  language's folds and the language's definitions constants of an
-  extension of the signature, and `Topos/Complete.lean` proves the
+  language's folds, its type operations a table and the language's
+  definitions and object definitions constants of an extension of the
+  signature, and `Topos/Complete.lean` proves the
   encoding sound and complete;
   `Topos/Compose.lean` proves the decoding compositional, commuting with
   renaming and hereditary substitution, and `Topos/Telescope.lean` with the

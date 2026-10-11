@@ -4094,6 +4094,17 @@ its proofs, in this order:
     `add m 0 = m`, stated with a definition of addition, in pure LF by
     the substitution of the unfolding into the computation of the fold,
     and modulo the rewrite rules by the unfolding alone.
+12. Complete. Object definitions: the type operations are a table,
+    each operation of the combinators paired with its number of
+    arguments and its constant, and an object definition, an operation
+    building a type from its object parameters, opaque since types are
+    compared as terms, is a further row whose constant is past the
+    signature, the products over `tp` into `tp`. A constant decodes to
+    the operation the table pairs with it where that operation is
+    encoded by it, so that an object definition whose operation is a
+    built-in one is shadowed by it; the adequacy of the encoding and the
+    soundness of the decoding of proofs hold in every extension whose
+    object definitions are the globals' and whose operations are unique.
 
 The route remains an experiment; the Geb-native refinement below is the
 implementation meant to last, and the signature's measurements inform

@@ -46,7 +46,13 @@ the encodings of the terms, the first parameter's first ({lit}`decDefn`).
 The fragment's type operations are a table, each operation of the combinators paired with its
 number of arguments and the constant of the signature that encodes it ({lit}`tyConsts`): a type
 is encoded as the table's constant applied to the encodings of its arguments, and the proofs
-about the encoding of types treat every operation of the table alike.
+about the encoding of types treat every operation of the table alike. An extension of the
+signature extends the table by the object definitions its indices name ({lit}`PrimIdx.tyTable`),
+each an operation of the combinators that builds a type from its object parameters, opaque, as
+types are compared as terms, and encoded as a constant past the signature, the products over the
+kind of types into it. A constant decodes to the operation the table pairs with it where that
+operation is encoded by it, so that decoding inverts encoding whatever the table; where the
+operations of the table are unique ({lit}`PrimIdx.TyUnique`), every constant of it decodes.
 
 The encoding of terms ({lit}`enc`) is computed from the compilation, which supplies the types
 that the constants of the signature take as arguments; decoding ({lit}`dec`) forgets them. The
@@ -56,11 +62,13 @@ extended by the value, so that both may mention the variables around the fold.
 
 ## Main definitions
 
-* {lit}`tyConsts` — the type operations of the fragment and the constants that encode them.
+* {lit}`tyConsts`, {lit}`PrimIdx.tyTable` — the type operations of the fragment and of an
+  extension, and the constants that encode them.
 * {lit}`encTy`, {lit}`decTy` — the encoding of the fragment's types, and its inverse.
 * {lit}`enc`, {lit}`dec` — the encoding of the fragment's terms, and its inverse.
 * {lit}`ExtConst`, {lit}`defTy`, {lit}`SigExt` — the constants past the signature, the
-  declaration of a definition, and an extension of the signature that declares the definitions.
+  declaration of a definition, and an extension of the signature that declares the definitions
+  and the object definitions.
 
 ## Main statements
 
@@ -171,6 +179,89 @@ theorem mapM_preimage {α β : Type} {f : α → Option β} {P : α → Prop} :
   · exact hP
   · exact hPs x' hx'
 
+/-- A constant an extension of the signature declares past it: a theorem, given by the index of
+its entry, the number of its object variables and the number of its variables; a definition, given
+by its index, the number of its object parameters and the number of its parameters; the
+unfolding of a definition, given likewise; or an object definition, given by the index of its
+operation of the combinators and the number of its object parameters. -/
+inductive ExtConst where
+  /-- A theorem. -/
+  | thm (j m p : ℕ)
+  /-- A definition. -/
+  | defn (kd m p : ℕ)
+  /-- The unfolding of a definition. -/
+  | delta (kd m p : ℕ)
+  /-- An object definition. -/
+  | obj (op m : ℕ)
+deriving DecidableEq
+
+/-- The indices of the primitive arrows of the language that the signature's constants of zero,
+the successor, the empty list, the construction of a list, the constructions of rose trees, the
+injections into a coproduct and the case analysis stand for, and of the theorems that an extension
+of the signature declares, past it, in order. -/
+structure PrimIdx where
+  /-- The index of zero. -/
+  zero : ℕ
+  /-- The index of the successor. -/
+  succ : ℕ
+  /-- The index of the empty list. -/
+  nil : ℕ
+  /-- The index of the construction of a list. -/
+  cons : ℕ
+  /-- The index of the construction of a rose tree of natural-number labels. -/
+  node : ℕ
+  /-- The index of the construction of a rose tree of labels of a type. -/
+  lnode : ℕ
+  /-- The index of the left injection into a coproduct. -/
+  inl : ℕ
+  /-- The index of the right injection into a coproduct. -/
+  inr : ℕ
+  /-- The index of the case analysis of a coproduct. -/
+  case : ℕ
+  /-- The constants an extension of the signature declares past it, in order. -/
+  ext : List ExtConst
+
+/-- The primitive arrows of the globals at the indices are those the indices name. -/
+structure PrimIdx.Valid (k : PrimIdx) (G : FreeTopos.Internal.Globals) : Prop where
+  /-- Zero. -/
+  zero : G.prims[k.zero]? = some FreeTopos.Internal.zeroPrim
+  /-- The successor. -/
+  succ : G.prims[k.succ]? = some FreeTopos.Internal.succPrim
+  /-- The empty list. -/
+  nil : G.prims[k.nil]? = some FreeTopos.Internal.nilPrim
+  /-- The construction of a list. -/
+  cons : G.prims[k.cons]? = some FreeTopos.Internal.consPrim
+  /-- The construction of a rose tree of natural-number labels. -/
+  node : G.prims[k.node]? = some FreeTopos.Internal.nodePrim
+  /-- The construction of a rose tree of labels of a type. -/
+  lnode : G.prims[k.lnode]? = some FreeTopos.Internal.lnodePrim
+  /-- The left injection into a coproduct. -/
+  inl : G.prims[k.inl]? = some FreeTopos.Internal.inlPrim
+  /-- The right injection into a coproduct. -/
+  inr : G.prims[k.inr]? = some FreeTopos.Internal.inrPrim
+  /-- The case analysis of a coproduct. -/
+  case : G.prims[k.case]? = some FreeTopos.Internal.casePrim
+
+/-- The first position of a constant in a list of constants of an extension. -/
+def ExtConst.find? (x : ExtConst) : List ExtConst → Option ℕ :=
+  List.rec none fun y _ r ↦ if y = x then some 0 else r.map (· + 1)
+
+/-- A constant is at the position at which it is found. -/
+theorem ExtConst.find?_spec (x : ExtConst) :
+    ∀ (l : List ExtConst) (i : ℕ), x.find? l = some i → l[i]? = some x := by
+  intro l
+  refine List.rec (motive := fun l ↦ ∀ i, x.find? l = some i → l[i]? = some x)
+    (fun _ h ↦ nomatch h) (fun y l ih i h ↦ ?_) l
+  change (if y = x then some 0 else (x.find? l).map (· + 1)) = some i at h
+  by_cases hy : y = x
+  · rw [ite_eq_left hy] at h
+    obtain rfl := Option.some.inj h
+    rw [hy]
+    rfl
+  · rw [ite_eq_right hy] at h
+    obtain ⟨i', hi', rfl⟩ := Option.map_eq_some_iff.mp h
+    exact ih i' hi'
+
 /-- The type operations of the fragment, each the index of an operation of the combinators, the
 number of its arguments and the index of the constant of the signature that encodes it: the
 terminal object, binary products, exponentials, the subobject classifier, the natural numbers
@@ -180,13 +271,9 @@ def tyConsts : List (ℕ × ℕ × ℕ) :=
   [(4, 0, 1), (6, 2, 2), (22, 2, 3), (25, 0, 4), (29, 0, 5), (33, 1, 30), (37, 0, 37),
     (40, 1, 42), (13, 0, 49), (15, 2, 48)]
 
-/-- The constant that encodes an operation applied to a number of arguments. -/
-def tyConst? (op m : ℕ) : Option ℕ :=
-  (tyConsts.find? fun t ↦ t.1 == op && t.2.1 == m).map fun t ↦ t.2.2
-
-/-- The operation that a constant applied to a number of arguments encodes. -/
-def tyOp? (c m : ℕ) : Option ℕ :=
-  (tyConsts.find? fun t ↦ t.2.2 == c && t.2.1 == m).map fun t ↦ t.1
+/-- The constants of the table are below the signature's length. -/
+theorem tyConsts_lt : ∀ t ∈ tyConsts, t.2.2 < sig.length := by
+  decide +kernel
 
 /-- An entry of the table is determined by its operation and number of arguments, and by its
 constant. -/
@@ -194,49 +281,124 @@ theorem tyConsts_inj : ∀ t ∈ tyConsts, ∀ t' ∈ tyConsts,
     (t.1 = t'.1 → t.2.1 = t'.2.1 → t = t') ∧ (t.2.2 = t'.2.2 → t = t') := by
   decide
 
-/-- The search of the table for the entry of a property only it has finds it. -/
-theorem tyConsts_find? {p : ℕ × ℕ × ℕ → Bool} {t : ℕ × ℕ × ℕ} (ht : t ∈ tyConsts)
-    (hp : p t = true) (hu : ∀ t' ∈ tyConsts, p t' = true → t' = t) : tyConsts.find? p = some t := by
+/-- The type operations of an extension of the signature: those of the fragment, followed, for
+each object definition the indices name, by its operation, its number of object parameters and
+its constant past the signature. -/
+def PrimIdx.tyTable (k : PrimIdx) : List (ℕ × ℕ × ℕ) :=
+  tyConsts ++ k.ext.zipIdx.filterMap fun p ↦ match p.1 with
+    | .obj op m => some (op, m, sig.length + p.2)
+    | _ => none
+
+/-- The constant that encodes an operation applied to a number of arguments. -/
+def tyConst? (k : PrimIdx) (op m : ℕ) : Option ℕ :=
+  (k.tyTable.find? fun t ↦ t.1 == op && t.2.1 == m).map fun t ↦ t.2.2
+
+/-- The operation that a constant applied to a number of arguments encodes: the operation the
+table pairs with the constant, where the constant encodes it. -/
+def tyOp? (k : PrimIdx) (c m : ℕ) : Option ℕ :=
+  (k.tyTable.find? fun t ↦ t.2.2 == c && t.2.1 == m).bind fun t ↦
+    if tyConst? k t.1 m = some c then some t.1 else none
+
+/-- The operations of the type operations of an extension are unique to their entries. -/
+def PrimIdx.TyUnique (k : PrimIdx) : Prop :=
+  ∀ t ∈ k.tyTable, ∀ t' ∈ k.tyTable, t.1 = t'.1 → t.2.1 = t'.2.1 → t = t'
+
+/-- The type operations of an extension are those of the fragment and those of the object
+definitions the indices name, each at its position among the indices' constants. -/
+theorem mem_tyTable {k : PrimIdx} {t : ℕ × ℕ × ℕ} :
+    t ∈ k.tyTable ↔ t ∈ tyConsts ∨ ∃ i, k.ext[i]? = some (.obj t.1 t.2.1) ∧
+      t.2.2 = sig.length + i := by
+  rw [PrimIdx.tyTable, List.mem_append, List.mem_filterMap]
+  refine or_congr Iff.rfl ⟨fun ⟨⟨x, i⟩, hx, ht⟩ ↦ ?_, fun ⟨i, hi, hc⟩ ↦ ?_⟩
+  · rcases x with _ | _ | _ | ⟨op, m⟩
+    all_goals simp only at ht
+    · exact nomatch ht
+    · exact nomatch ht
+    · exact nomatch ht
+    · obtain rfl := Option.some.inj ht
+      exact ⟨i, List.mem_zipIdx_iff_getElem?.mp hx, rfl⟩
+  · obtain ⟨op, m, c⟩ := t
+    refine ⟨(.obj op m, i), List.mem_zipIdx_iff_getElem?.mpr hi, ?_⟩
+    simp only at hc ⊢
+    rw [hc]
+
+/-- An entry of the type operations of an extension is determined by its constant. -/
+theorem tyTable_const_inj {k : PrimIdx} :
+    ∀ t ∈ k.tyTable, ∀ t' ∈ k.tyTable, t.2.2 = t'.2.2 → t = t' := by
+  intro t ht t' ht' hc
+  rcases mem_tyTable.mp ht with ht | ⟨i, hi, hti⟩ <;>
+    rcases mem_tyTable.mp ht' with ht' | ⟨i', hi', hti'⟩
+  · exact (tyConsts_inj t ht t' ht').2 hc
+  · have := tyConsts_lt t ht
+    omega
+  · have := tyConsts_lt t' ht'
+    omega
+  · obtain rfl : i = i' := by omega
+    obtain ⟨op, m, c⟩ := t
+    obtain ⟨op', m', c'⟩ := t'
+    simp only at hi hi' hc
+    rw [hi, Option.some.injEq, ExtConst.obj.injEq] at hi'
+    obtain ⟨rfl, rfl⟩ := hi'
+    rw [hc]
+
+/-- The search of a list for the element of a property only it has finds it. -/
+theorem find?_of_unique {α : Type} {l : List α} {p : α → Bool} {t : α} (ht : t ∈ l)
+    (hp : p t = true) (hu : ∀ t' ∈ l, p t' = true → t' = t) : l.find? p = some t := by
   obtain ⟨t', ht'⟩ := Option.isSome_iff_exists.mp (List.find?_isSome.mpr ⟨t, ht, hp⟩)
   rw [ht', hu t' (List.mem_of_find?_eq_some ht') (List.find?_some ht')]
 
-/-- The entry the search of the table finds for an operation and a number of arguments, or for a
-constant and a number of arguments. -/
-theorem tyConsts_find?_eq {p : ℕ × ℕ × ℕ → Bool} {t : ℕ × ℕ × ℕ}
-    (h : tyConsts.find? p = some t) : t ∈ tyConsts ∧ p t = true :=
-  ⟨List.mem_of_find?_eq_some h, List.find?_some h⟩
-
 /-- The constant that encodes an operation is the one the table pairs with it. -/
-theorem tyConst?_iff {op m c : ℕ} : tyConst? op m = some c ↔ (op, m, c) ∈ tyConsts := by
-  constructor
-  · intro h
-    obtain ⟨⟨op', m', c'⟩, ht, rfl⟩ := Option.map_eq_some_iff.mp h
-    obtain ⟨hmem, hp⟩ := tyConsts_find?_eq ht
-    rw [Bool.and_eq_true, beq_iff_eq, beq_iff_eq] at hp
-    obtain ⟨rfl, rfl⟩ := hp
-    exact hmem
-  · intro h
-    rw [tyConst?, tyConsts_find? h (by rw [Bool.and_eq_true, beq_iff_eq, beq_iff_eq]; exact
-      ⟨rfl, rfl⟩) fun t' ht' hp ↦ by
-        rw [Bool.and_eq_true, beq_iff_eq, beq_iff_eq] at hp
-        exact (tyConsts_inj t' ht' _ h).1 hp.1 hp.2]
-    rfl
+theorem tyConst?_mem {k : PrimIdx} {op m c : ℕ} (h : tyConst? k op m = some c) :
+    (op, m, c) ∈ k.tyTable := by
+  obtain ⟨⟨op', m', c'⟩, ht, rfl⟩ := Option.map_eq_some_iff.mp h
+  have hp := List.find?_some ht
+  rw [Bool.and_eq_true, beq_iff_eq, beq_iff_eq] at hp
+  obtain ⟨rfl, rfl⟩ := hp
+  exact List.mem_of_find?_eq_some ht
 
-/-- The operation that a constant encodes is the one the table pairs with it. -/
-theorem tyOp?_iff {c m op : ℕ} : tyOp? c m = some op ↔ (op, m, c) ∈ tyConsts := by
+/-- Where the operations of the table are unique, an operation the table pairs with a constant is
+encoded by it. -/
+theorem tyConst?_of_mem {k : PrimIdx} (hu : k.TyUnique) {op m c : ℕ}
+    (h : (op, m, c) ∈ k.tyTable) : tyConst? k op m = some c := by
+  rw [tyConst?, find?_of_unique h (by rw [Bool.and_eq_true, beq_iff_eq, beq_iff_eq]; exact
+    ⟨rfl, rfl⟩) fun t' ht' hp ↦ by
+      rw [Bool.and_eq_true, beq_iff_eq, beq_iff_eq] at hp
+      exact hu t' ht' _ h hp.1 hp.2]
+  rfl
+
+/-- A constant encodes an operation exactly when the operation is encoded by it. -/
+theorem tyOp?_iff {k : PrimIdx} {c m op : ℕ} :
+    tyOp? k c m = some op ↔ tyConst? k op m = some c := by
   constructor
   · intro h
-    obtain ⟨⟨op', m', c'⟩, ht, rfl⟩ := Option.map_eq_some_iff.mp h
-    obtain ⟨hmem, hp⟩ := tyConsts_find?_eq ht
-    rw [Bool.and_eq_true, beq_iff_eq, beq_iff_eq] at hp
-    obtain ⟨rfl, rfl⟩ := hp
-    exact hmem
+    obtain ⟨⟨op', m', c'⟩, -, h⟩ := Option.bind_eq_some_iff.mp h
+    by_cases hc : tyConst? k op' m = some c
+    · rw [ite_eq_left hc, Option.some.injEq] at h
+      subst h
+      exact hc
+    · rw [ite_eq_right hc] at h
+      exact nomatch h
   · intro h
-    rw [tyOp?, tyConsts_find? h (by rw [Bool.and_eq_true, beq_iff_eq, beq_iff_eq]; exact
-      ⟨rfl, rfl⟩) fun t' ht' hp ↦ by
-        rw [Bool.and_eq_true, beq_iff_eq, beq_iff_eq] at hp
-        exact (tyConsts_inj t' ht' _ h).2 hp.1]
-    rfl
+    have hmem := tyConst?_mem h
+    have hp : ((op, m, c).2.2 == c && (op, m, c).2.1 == m) = true := by
+      rw [Bool.and_eq_true, beq_iff_eq, beq_iff_eq]
+      exact ⟨rfl, rfl⟩
+    have hu : ∀ t' ∈ k.tyTable, (t'.2.2 == c && t'.2.1 == m) = true → t' = (op, m, c) :=
+      fun t' ht' hp' ↦ by
+        rw [Bool.and_eq_true, beq_iff_eq, beq_iff_eq] at hp'
+        exact tyTable_const_inj t' ht' _ hmem hp'.1
+    rw [tyOp?, find?_of_unique hmem hp hu, Option.bind_some, ite_eq_left h]
+
+/-- The operations of the type operations of an extension whose indices name no object
+definition are unique. -/
+theorem tyUnique_of_noObj {k : PrimIdx}
+    (h : ∀ i op m : ℕ, k.ext[i]? ≠ some (ExtConst.obj op m)) :
+    k.TyUnique := fun t ht t' ht' h₁ h₂ ↦ by
+  rcases mem_tyTable.mp ht with ht | ⟨i, hi, -⟩
+  · rcases mem_tyTable.mp ht' with ht' | ⟨i', hi', -⟩
+    · exact (tyConsts_inj t ht t' ht').1 h₁ h₂
+    · exact absurd hi' (h i' _ _)
+  · exact absurd hi (h i _ _)
 
 /-- The constants of the table are declared as the products over the kind of types, one for each
 argument, into the kind of types. -/
@@ -253,53 +415,101 @@ theorem isTyOp_of_tyConsts (G : FreeTopos.Internal.Globals) {op m c : ℕ}
     (h : (op, m, c) ∈ tyConsts) : G.isTyOp op m = true := by
   rw [FreeTopos.Internal.Globals.isTyOp, decide_eq_true (tyConsts_tyOps _ h), Bool.true_or]
 
-/-- A type operation of the table applied to arguments is a type exactly when they are. -/
-theorem isTy_of_tyConsts (G : FreeTopos.Internal.Globals) {n op c : ℕ} {cs : List PartialHorn.Tree}
-    (h : (op, cs.length, c) ∈ tyConsts) :
-    FreeTopos.Internal.IsTy G n (PartialHorn.op op cs) = true ↔
-      ∀ a ∈ cs, FreeTopos.Internal.IsTy G n a = true := by
-  rw [FreeTopos.Internal.isTy_op, isTyOp_of_tyConsts G h, Bool.true_and, List.all_eq_true]
+/-- The object definitions the indices name are object definitions of the globals, at their
+operations, of their numbers of object parameters. -/
+def PrimIdx.ObjsOk (k : PrimIdx) (G : FreeTopos.Internal.Globals) : Prop :=
+  ∀ i op m : ℕ, k.ext[i]? = some (ExtConst.obj op m) →
+    G.base ≤ op ∧ ∃ b, G.defs[op - G.base]? = some (.object m b)
+
+/-- A signature declares the constants of the type operations of an extension as the products
+over the kind of types, one for each argument, into it. -/
+def PrimIdx.TyDecl (k : PrimIdx) (sg : Sig) : Prop :=
+  ∀ t ∈ k.tyTable, sg[t.2.2]? = some (piTele (List.replicate t.2.1 tp) tp)
+
+/-- An extension of the signature that declares the indices' object definitions as products
+over the kind of types into it declares the type operations of the extension so. -/
+theorem tyDecl_of_prefix {k : PrimIdx} {sg : Sig} (hpre : sig <+: sg)
+    (hobjs : ∀ i op m : ℕ, k.ext[i]? = some (ExtConst.obj op m) →
+      sg[sig.length + i]? = some (piTele (List.replicate m tp) tp)) : k.TyDecl sg := by
+  intro t ht
+  rcases mem_tyTable.mp ht with ht | ⟨i, hi, hc⟩
+  · obtain ⟨u, rfl⟩ := hpre
+    rw [List.getElem?_append_left (tyConsts_lt t ht)]
+    exact tyConsts_sig t ht
+  · rw [hc]
+    exact hobjs i _ _ hi
+
+/-- An operation of the type operations of an extension builds types, where the indices' object
+definitions are the globals'. -/
+theorem isTyOp_of_tyTable {G : FreeTopos.Internal.Globals} {k : PrimIdx} (hobj : k.ObjsOk G)
+    {op m c : ℕ} (h : (op, m, c) ∈ k.tyTable) : G.isTyOp op m = true := by
+  rcases mem_tyTable.mp h with h | ⟨i, hi, -⟩
+  · exact isTyOp_of_tyConsts G h
+  · obtain ⟨hle, b, hb⟩ := hobj i op m hi
+    simp only [FreeTopos.Internal.Globals.isTyOp, decide_eq_true hle, hb, beq_self_eq_true,
+      Bool.and_true, Bool.or_true]
+
+/-- The arguments of a type operation applied to them that is a type are types. -/
+theorem isTy_args {G : FreeTopos.Internal.Globals} {n op : ℕ} {cs : List PartialHorn.Tree}
+    (h : FreeTopos.Internal.IsTy G n (PartialHorn.op op cs) = true) :
+    ∀ a ∈ cs, FreeTopos.Internal.IsTy G n a = true := by
+  rw [FreeTopos.Internal.isTy_op, Bool.and_eq_true, List.all_eq_true] at h
+  exact h.2
+
+/-- A type operation of an extension applied to types is a type, where the indices' object
+definitions are the globals'. -/
+theorem isTy_of_tyTable {G : FreeTopos.Internal.Globals} {k : PrimIdx} (hobj : k.ObjsOk G)
+    {n op c : ℕ} {cs : List PartialHorn.Tree} (h : (op, cs.length, c) ∈ k.tyTable)
+    (hcs : ∀ a ∈ cs, FreeTopos.Internal.IsTy G n a = true) :
+    FreeTopos.Internal.IsTy G n (PartialHorn.op op cs) = true := by
+  rw [FreeTopos.Internal.isTy_op, isTyOp_of_tyTable hobj h, Bool.true_and, List.all_eq_true]
+  exact hcs
 
 /-- One step of the encoding of a type of the fragment at an offset, at a node of an operation's
 label, from its children, each paired with its encoding: the object variable of index {lit}`j`
 is the LF variable of index {lit}`off + j`, past the {lit}`off` variables of terms in scope, and
 a type operation of the table is its constant applied to the encodings of its arguments. -/
-def encTyStep (off l : ℕ) (cs : List (PartialHorn.Tree × Option Expr)) : Option Expr :=
+def encTyStep (k : PrimIdx) (off l : ℕ) (cs : List (PartialHorn.Tree × Option Expr)) :
+    Option Expr :=
   match l, cs with
     | 0, [(i, _)] => match i.children with
       | [] => some (Expr.var (off + i.label))
       | _ :: _ => none
     | 0, _ => none
-    | op + 1, cs => do pure (Expr.const (← tyConst? op cs.length) (← cs.mapM Prod.snd))
+    | op + 1, cs => do pure (Expr.const (← tyConst? k op cs.length) (← cs.mapM Prod.snd))
 
 /-- The encoding of a type of the fragment as a canonical term of {lit}`tp`, at an offset. -/
-def encTy (off : ℕ) : PartialHorn.Tree → Option Expr := RoseTree.para (encTyStep off)
+def encTy (k : PrimIdx) (off : ℕ) : PartialHorn.Tree → Option Expr :=
+  RoseTree.para (encTyStep k off)
 
 /-- One step of the decoding of a canonical term of {lit}`tp` at an offset, at a node of a label,
 from its children's decodings: a variable past the offset is the object variable of its index
 less the offset, and a constant of the table applied to arguments its operation applied to their
 decodings. -/
-def decTyStep (off : ℕ) (l : Label) (cs : List (Option PartialHorn.Tree)) :
+def decTyStep (k : PrimIdx) (off : ℕ) (l : Label) (cs : List (Option PartialHorn.Tree)) :
     Option PartialHorn.Tree :=
   match l, cs with
     | .app (.var i), [] => if off ≤ i then some (PartialHorn.var (i - off)) else none
-    | .app (.const c), cs => do pure (PartialHorn.op (← tyOp? c cs.length) (← cs.mapM id))
+    | .app (.const c), cs => do pure (PartialHorn.op (← tyOp? k c cs.length) (← cs.mapM id))
     | _, _ => none
 
 /-- The decoding of a canonical term of {lit}`tp` as a type of the fragment, at an offset. -/
-def decTy (off : ℕ) : Expr → Option PartialHorn.Tree := RoseTree.elim (decTyStep off)
+def decTy (k : PrimIdx) (off : ℕ) : Expr → Option PartialHorn.Tree :=
+  RoseTree.elim (decTyStep k off)
+
+variable {k : PrimIdx}
 
 /-- The computation rule of the encoding of types. -/
 theorem encTy_node (off l : ℕ) (cs : List PartialHorn.Tree) :
-    encTy off (RoseTree.node l cs) = encTyStep off l (cs.map fun c ↦ (c, encTy off c)) :=
+    encTy k off (RoseTree.node l cs) = encTyStep k off l (cs.map fun c ↦ (c, encTy k off c)) :=
   RoseTree.para_node _ l cs
 
 /-- The encodings of a node that have a value: an object variable, or a type operation of the
 table whose arguments have encodings, its constant applied to them. -/
 theorem encTy_node_eq_some {off l : ℕ} {cs : List PartialHorn.Tree} {A : Expr}
-    (h : encTy off (RoseTree.node l cs) = some A) :
+    (h : encTy k off (RoseTree.node l cs) = some A) :
     (l = 0 ∧ ∃ i, cs = [RoseTree.node i []] ∧ A = Expr.var (off + i)) ∨
-      ∃ op c As, l = op + 1 ∧ (op, cs.length, c) ∈ tyConsts ∧ cs.mapM (encTy off) = some As ∧
+      ∃ op c As, l = op + 1 ∧ tyConst? k op cs.length = some c ∧ cs.mapM (encTy k off) = some As ∧
         A = Expr.const c As := by
   rw [encTy_node] at h
   rcases l with _ | op
@@ -314,26 +524,26 @@ theorem encTy_node_eq_some {off l : ℕ} {cs : List PartialHorn.Tree} {A : Expr}
       Option.some.injEq, List.length_map] at h
     obtain ⟨c, hc, As, hAs, rfl⟩ := h
     rw [List.mapM_map] at hAs
-    exact .inr ⟨op, c, As, rfl, tyConst?_iff.mp hc, hAs, rfl⟩
+    exact .inr ⟨op, c, As, rfl, hc, hAs, rfl⟩
 
 /-- The encoding of a type operation of the table applied to arguments that have encodings. -/
 theorem encTy_op {off op c : ℕ} {cs : List PartialHorn.Tree} {As : List Expr}
-    (hc : (op, cs.length, c) ∈ tyConsts) (hAs : cs.mapM (encTy off) = some As) :
-    encTy off (PartialHorn.op op cs) = some (Expr.const c As) := by
+    (hc : tyConst? k op cs.length = some c) (hAs : cs.mapM (encTy k off) = some As) :
+    encTy k off (PartialHorn.op op cs) = some (Expr.const c As) := by
   rw [PartialHorn.op, encTy_node]
-  simp only [encTyStep, List.length_map, tyConst?_iff.mpr hc, List.mapM_map, Function.comp_def,
+  simp only [encTyStep, List.length_map, hc, List.mapM_map, Function.comp_def,
     hAs, Option.bind_eq_bind, Option.bind_some, Option.pure_def]
 
 /-- The decoding of a node of a canonical term of {lit}`tp`. -/
 theorem decTy_node (off : ℕ) (l : Label) (cs : List Expr) :
-    decTy off (RoseTree.node l cs) = decTyStep off l (cs.map (decTy off)) :=
+    decTy k off (RoseTree.node l cs) = decTyStep k off l (cs.map (decTy k off)) :=
   RoseTree.elim_node _ l cs
 
 /-- The encoding of an object variable. -/
-theorem encTy_var (off i : ℕ) : encTy off (PartialHorn.var i) = some (Expr.var (off + i)) := rfl
+theorem encTy_var (off i : ℕ) : encTy k off (PartialHorn.var i) = some (Expr.var (off + i)) := rfl
 
 /-- The decoding of a variable past the offset. -/
-theorem decTy_var (off i : ℕ) : decTy off (Expr.var (off + i)) = some (PartialHorn.var i) := by
+theorem decTy_var (off i : ℕ) : decTy k off (Expr.var (off + i)) = some (PartialHorn.var i) := by
   rw [Expr.var, Expr.app, decTy_node]
   simp only [List.map_nil, decTyStep, Nat.le_add_right, ↓reduceIte, Nat.add_sub_cancel_left]
 
@@ -346,16 +556,16 @@ theorem rename_app_node (h : Head) (cs : List Expr) (ρ : ℕ → ℕ) :
 
 /-- The decoding of a constant applied to arguments. -/
 theorem decTy_const (off c : ℕ) (As : List Expr) :
-    decTy off (Expr.const c As) =
-      (tyOp? c As.length).bind fun op ↦ (As.mapM (decTy off)).map (PartialHorn.op op) := by
+    decTy k off (Expr.const c As) =
+      (tyOp? k c As.length).bind fun op ↦ (As.mapM (decTy k off)).map (PartialHorn.op op) := by
   rw [Expr.const, Expr.app, decTy_node]
   simp only [decTyStep, List.length_map, List.mapM_map, Function.comp_def, id_eq,
     Option.bind_eq_bind, Option.pure_def]
-  rcases tyOp? c As.length with _ | op <;> rcases As.mapM (decTy off) with _ | as <;> rfl
+  rcases tyOp? k c As.length with _ | op <;> rcases As.mapM (decTy k off) with _ | as <;> rfl
 
 /-- Decoding inverts the encoding of types. -/
 theorem decTy_encTy (off : ℕ) :
-    ∀ (a : PartialHorn.Tree) (A : Expr), encTy off a = some A → decTy off A = some a :=
+    ∀ (a : PartialHorn.Tree) (A : Expr), encTy k off a = some A → decTy k off A = some a :=
   RoseTree.ind fun l cs ih A h ↦ by
     rcases encTy_node_eq_some h with ⟨rfl, i, rfl, rfl⟩ | ⟨op, c, As, rfl, hc, hAs, rfl⟩
     · exact decTy_var off i
@@ -364,16 +574,16 @@ theorem decTy_encTy (off : ℕ) :
       rfl
 
 /-- The encoding of types is injective. -/
-theorem encTy_inj {off : ℕ} {a b : PartialHorn.Tree} {A : Expr} (ha : encTy off a = some A)
-    (hb : encTy off b = some A) : a = b :=
+theorem encTy_inj {off : ℕ} {a b : PartialHorn.Tree} {A : Expr} (ha : encTy k off a = some A)
+    (hb : encTy k off b = some A) : a = b :=
   Option.some.inj ((decTy_encTy off a A ha).symm.trans (decTy_encTy off b A hb))
 
 /-- A renaming that moves the variables past one offset to the same positions past another
 moves the encoding of a type at the first offset to its encoding at the second. -/
 theorem encTy_rename :
-    ∀ (a : PartialHorn.Tree) (off : ℕ) (A : Expr), encTy off a = some A →
+    ∀ (a : PartialHorn.Tree) (off : ℕ) (A : Expr), encTy k off a = some A →
       ∀ (off' : ℕ) (ρ : ℕ → ℕ), (∀ i, off ≤ i → ρ i + off = i + off') →
-        encTy off' a = some (A.rename ρ) :=
+        encTy k off' a = some (A.rename ρ) :=
   RoseTree.ind fun l cs ih off A h off' ρ hρ ↦ by
     rcases encTy_node_eq_some h with ⟨rfl, i, rfl, rfl⟩ | ⟨op, c, As, rfl, hc, hAs, rfl⟩
     · have := hρ (off + i) (Nat.le_add_right off i)
@@ -387,21 +597,21 @@ theorem encTy_rename :
       exact encTy_op hc hAs'
 
 /-- The encoding of a type at an offset is the weakening of its encoding at a lower offset. -/
-theorem encTy_add {a : PartialHorn.Tree} {off d : ℕ} {A : Expr} (h : encTy off a = some A) :
-    encTy (off + d) a = some (A.rename (· + d)) :=
+theorem encTy_add {a : PartialHorn.Tree} {off d : ℕ} {A : Expr} (h : encTy k off a = some A) :
+    encTy k (off + d) a = some (A.rename (· + d)) :=
   encTy_rename a off A h _ _ fun i _ ↦ by omega
 
 /-- The encoding of a type at the next offset is the weakening of its encoding by the
 successor. -/
-theorem encTy_succ {a : PartialHorn.Tree} {off : ℕ} {A : Expr} (h : encTy off a = some A) :
-    encTy (off + 1) a = some (A.rename Nat.succ) :=
+theorem encTy_succ {a : PartialHorn.Tree} {off : ℕ} {A : Expr} (h : encTy k off a = some A) :
+    encTy k (off + 1) a = some (A.rename Nat.succ) :=
   encTy_add h
 
 /-- The encoding of a type at a positive offset weakens its encoding at the offset below past
 any variable below the offset. -/
-theorem encTy_pred {a : PartialHorn.Tree} {off j : ℕ} {A : Expr} (h : encTy off a = some A)
+theorem encTy_pred {a : PartialHorn.Tree} {off j : ℕ} {A : Expr} (h : encTy k off a = some A)
     (hj : j < off) :
-    ∃ A', encTy (off - 1) a = some A' ∧ A = A'.rename (liftR^[j] Nat.succ) := by
+    ∃ A', encTy k (off - 1) a = some A' ∧ A = A'.rename (liftR^[j] Nat.succ) := by
   refine ⟨_, encTy_rename a off A h (off - 1) (· - 1) fun i hi ↦ by omega, ?_⟩
   have h' := encTy_rename a (off - 1) _ (encTy_rename a off A h (off - 1) (· - 1)
     fun i hi ↦ by omega) off (liftR^[j] Nat.succ) fun i hi ↦ by
@@ -412,8 +622,8 @@ theorem encTy_pred {a : PartialHorn.Tree} {off j : ℕ} {A : Expr} (h : encTy of
 /-- Substitution for a variable below the offset of an encoded type is its encoding at the offset
 below. -/
 theorem hsubWith_encTy (red : Expr → List Expr → Option Expr) {a : PartialHorn.Tree} {off j : ℕ}
-    {A : Expr} (h : encTy off a = some A) (hj : j < off) (n : Expr) :
-    ∃ A', encTy (off - 1) a = some A' ∧ hsubWith red A n j = some A' := by
+    {A : Expr} (h : encTy k off a = some A) (hj : j < off) (n : Expr) :
+    ∃ A', encTy k (off - 1) a = some A' ∧ hsubWith red A n j = some A' := by
   obtain ⟨A', hA', rfl⟩ := encTy_pred h hj
   exact ⟨A', hA', hsubWith_vacuous _ _ _ _⟩
 
@@ -497,19 +707,19 @@ local macro "lf_spine_at" h:ident "[" hs:Lean.Parser.Tactic.simpLemma,* "]" : ta
 /-- The encoding of a context of the fragment's types in {lit}`n` object variables: the
 {lit}`n` variables of {lit}`tp`, outermost, and each type {lit}`a` the type {lit}`tm A` of an LF
 variable, {lit}`A` the encoding of {lit}`a` at the offset of the variables of terms outside it. -/
-def encCtx (n : ℕ) : List PartialHorn.Tree → Option Ctx :=
-  List.rec (some (List.replicate n tp)) fun a Γ r ↦ do pure (tm (← encTy Γ.length a) :: (← r))
+def encCtx (k : PrimIdx) (n : ℕ) : List PartialHorn.Tree → Option Ctx :=
+  List.rec (some (List.replicate n tp)) fun a Γ r ↦ do pure (tm (← encTy k Γ.length a) :: (← r))
 
 /-- The encoding of a context extended by a type. -/
 theorem encCtx_cons {n : ℕ} {a : PartialHorn.Tree} {Γ : List PartialHorn.Tree} {A : Expr}
-    (ha : encTy Γ.length a = some A) {ΓLF : Ctx} (h : encCtx n Γ = some ΓLF) :
-    encCtx n (a :: Γ) = some (tm A :: ΓLF) := by
-  change (do pure (tm (← encTy Γ.length a) :: (← encCtx n Γ))) = _
+    (ha : encTy k Γ.length a = some A) {ΓLF : Ctx} (h : encCtx k n Γ = some ΓLF) :
+    encCtx k n (a :: Γ) = some (tm A :: ΓLF) := by
+  change (do pure (tm (← encTy k Γ.length a) :: (← encCtx k n Γ))) = _
   rw [ha, h]
   rfl
 
 /-- The encoding of the empty context is the object variables. -/
-theorem encCtx_nil (n : ℕ) : encCtx n [] = some (List.replicate n tp) := rfl
+theorem encCtx_nil (n : ℕ) : encCtx k n [] = some (List.replicate n tp) := rfl
 
 /-- A term of the internal language. -/
 abbrev MTerm : Type := FreeTopos.Internal.Term
@@ -522,89 +732,9 @@ abbrev MEnv : Type := List (PartialHorn.Tree × PartialHorn.Tree)
 for each of its object parameters, of the products over the families of terms of its
 parameters' types, the outermost first, each encoded at the offset of the parameters outside it,
 into the family of terms of its value's type, encoded in the scope of the parameters. -/
-def defTy (d : FreeTopos.Internal.Defn) : Option Expr := do
-  let ΓT ← encCtx d.arity d.params
-  pure (piTele ΓT.reverse (tm (← encTy d.params.length d.type)))
-
-/-- A constant an extension of the signature declares past it: a theorem, given by the index of
-its entry, the number of its object variables and the number of its variables; a definition, given
-by its index, the number of its object parameters and the number of its parameters; or the
-unfolding of a definition, given likewise. -/
-inductive ExtConst where
-  /-- A theorem. -/
-  | thm (j m p : ℕ)
-  /-- A definition. -/
-  | defn (kd m p : ℕ)
-  /-- The unfolding of a definition. -/
-  | delta (kd m p : ℕ)
-deriving DecidableEq
-
-/-- The indices of the primitive arrows of the language that the signature's constants of zero,
-the successor, the empty list, the construction of a list, the constructions of rose trees, the
-injections into a coproduct and the case analysis stand for, and of the theorems that an extension
-of the signature declares, past it, in order. -/
-structure PrimIdx where
-  /-- The index of zero. -/
-  zero : ℕ
-  /-- The index of the successor. -/
-  succ : ℕ
-  /-- The index of the empty list. -/
-  nil : ℕ
-  /-- The index of the construction of a list. -/
-  cons : ℕ
-  /-- The index of the construction of a rose tree of natural-number labels. -/
-  node : ℕ
-  /-- The index of the construction of a rose tree of labels of a type. -/
-  lnode : ℕ
-  /-- The index of the left injection into a coproduct. -/
-  inl : ℕ
-  /-- The index of the right injection into a coproduct. -/
-  inr : ℕ
-  /-- The index of the case analysis of a coproduct. -/
-  case : ℕ
-  /-- The constants an extension of the signature declares past it, in order. -/
-  ext : List ExtConst
-
-/-- The primitive arrows of the globals at the indices are those the indices name. -/
-structure PrimIdx.Valid (k : PrimIdx) (G : FreeTopos.Internal.Globals) : Prop where
-  /-- Zero. -/
-  zero : G.prims[k.zero]? = some FreeTopos.Internal.zeroPrim
-  /-- The successor. -/
-  succ : G.prims[k.succ]? = some FreeTopos.Internal.succPrim
-  /-- The empty list. -/
-  nil : G.prims[k.nil]? = some FreeTopos.Internal.nilPrim
-  /-- The construction of a list. -/
-  cons : G.prims[k.cons]? = some FreeTopos.Internal.consPrim
-  /-- The construction of a rose tree of natural-number labels. -/
-  node : G.prims[k.node]? = some FreeTopos.Internal.nodePrim
-  /-- The construction of a rose tree of labels of a type. -/
-  lnode : G.prims[k.lnode]? = some FreeTopos.Internal.lnodePrim
-  /-- The left injection into a coproduct. -/
-  inl : G.prims[k.inl]? = some FreeTopos.Internal.inlPrim
-  /-- The right injection into a coproduct. -/
-  inr : G.prims[k.inr]? = some FreeTopos.Internal.inrPrim
-  /-- The case analysis of a coproduct. -/
-  case : G.prims[k.case]? = some FreeTopos.Internal.casePrim
-
-/-- The first position of a constant in a list of constants of an extension. -/
-def ExtConst.find? (x : ExtConst) : List ExtConst → Option ℕ :=
-  List.rec none fun y _ r ↦ if y = x then some 0 else r.map (· + 1)
-
-/-- A constant is at the position at which it is found. -/
-theorem ExtConst.find?_spec (x : ExtConst) :
-    ∀ (l : List ExtConst) (i : ℕ), x.find? l = some i → l[i]? = some x := by
-  intro l
-  refine List.rec (motive := fun l ↦ ∀ i, x.find? l = some i → l[i]? = some x)
-    (fun _ h ↦ nomatch h) (fun y l ih i h ↦ ?_) l
-  change (if y = x then some 0 else (x.find? l).map (· + 1)) = some i at h
-  by_cases hy : y = x
-  · rw [ite_eq_left hy] at h
-    obtain rfl := Option.some.inj h
-    rw [hy]
-    rfl
-  · rw [ite_eq_right hy] at h
-    obtain ⟨i', hi', rfl⟩ := Option.map_eq_some_iff.mp h
-    exact ih i' hi'
+def defTy (k : PrimIdx) (d : FreeTopos.Internal.Defn) : Option Expr := do
+  let ΓT ← encCtx k d.arity d.params
+  pure (piTele ΓT.reverse (tm (← encTy k d.params.length d.type)))
 
 /-- The constant past the signature that the indices name for a definition, with its numbers of
 object parameters and parameters. -/
@@ -613,8 +743,10 @@ def PrimIdx.defConst (k : PrimIdx) (kd m p : ℕ) : Option ℕ :=
 
 /-- An extension of the signature, with the constants of {lit}`G` and the indices {lit}`k`: the
 signature is a prefix of it, it is formed, it declares one constant past the signature for each
-constant of the indices' extension, none of its further declarations is a type, the definitions
-the indices name, each at its first position among the indices' constants, are definitions the
+constant of the indices' extension, the object definitions the indices name are the globals' and
+are declared at their positions as type operations, the operations of the type operations are
+unique, its further declarations of types are those object definitions, the definitions the
+indices name, each at its first position among the indices' constants, are definitions the
 language admits, their parameters and values of types and their bodies compiling to their values'
 types, and are declared there as {name}`Geb.LF.Topos.defTy` declares them, and its further
 declarations of terms are those definitions. -/
@@ -625,20 +757,28 @@ structure SigExt (G : FreeTopos.Internal.Globals) (k : PrimIdx) (sg : Sig) : Pro
   pre : sig <+: sg
   /-- It declares a constant for each constant of the indices' extension. -/
   len : sg.length = sig.length + k.ext.length
-  /-- Its further declarations do not end in {lit}`tp`. -/
-  noTp : ∀ c T, sig.length ≤ c → sg[c]? = some T → T.headDepth.1 ≠ some 0
+  /-- The object definitions the indices name are the globals', declared at their positions as
+  the products over the kind of types, one for each object parameter, into it. -/
+  objs : ∀ i op m : ℕ, k.ext[i]? = some (ExtConst.obj op m) →
+    (G.base ≤ op ∧ ∃ b, G.defs[op - G.base]? = some (.object m b)) ∧
+      sg[sig.length + i]? = some (piTele (List.replicate m tp) tp)
+  /-- The operations of its type operations are unique. -/
+  tyUnique : k.TyUnique
+  /-- Its further declarations ending in {lit}`tp` are object definitions. -/
+  tpObjs : ∀ i T, sg[sig.length + i]? = some T → T.headDepth.1 = some 0 →
+    ∃ op m, k.ext[i]? = some (.obj op m)
   /-- The definitions the indices name are admitted and declared at their positions. -/
   defs : ∀ i kd m p, k.ext[i]? = some (.defn kd m p) → ∃ d T,
     (ExtConst.defn kd m p).find? k.ext = some i ∧
     G.defs[kd]? = some (.language d) ∧ m = d.arity ∧ p = d.params.length ∧
       (FreeTopos.Internal.Definition.language d).ok G = true ∧
-      (∃ cd, FreeTopos.Internal.Defn.compile G d = some cd) ∧ defTy d = some T ∧
+      (∃ cd, FreeTopos.Internal.Defn.compile G d = some cd) ∧ defTy k d = some T ∧
       sg[sig.length + i]? = some T
   /-- Its further declarations ending in {lit}`tm` are definitions. -/
   tmDefs : ∀ i T, sg[sig.length + i]? = some T → T.headDepth.1 = some 6 →
     ∃ kd m p, k.ext[i]? = some (.defn kd m p)
 
-variable {G : FreeTopos.Internal.Globals} {k : PrimIdx}
+variable {G : FreeTopos.Internal.Globals}
 
 /-- A declaration of the signature is one of an extension of it. -/
 theorem get_of_prefix (hpre : sig <+: sg) {c : ℕ} {T : Expr} (hc : sig[c]? = some T) :
@@ -656,6 +796,13 @@ theorem SigExt.of_lt (hsg : SigExt G k sg) {c : ℕ} {T : Expr} (hc : sg[c]? = s
     (hlt : c < sig.length) : sig[c]? = some T := by
   obtain ⟨t, rfl⟩ := hsg.pre
   rwa [List.getElem?_append_left hlt] at hc
+
+/-- The object definitions the indices name are the globals'. -/
+theorem SigExt.objsOk (hsg : SigExt G k sg) : k.ObjsOk G := fun i op m hi ↦ (hsg.objs i op m hi).1
+
+/-- The extension declares its type operations as products over the kind of types into it. -/
+theorem SigExt.tyDecl (hsg : SigExt G k sg) : k.TyDecl sg :=
+  tyDecl_of_prefix hsg.pre fun i op m hi ↦ (hsg.objs i op m hi).2
 
 /-- An application of a constant checks against an atomic type that its type instantiates to
 along its spine. -/
@@ -759,29 +906,46 @@ theorem spine_tps_inv {Γ : Ctx} {J : Expr → Ctx → Mode → Bool} :
       · exact hAs A' hA'
 
 /-- The encoding of a type in {lit}`n` object variables, at an offset, is a canonical term of
-{lit}`tp` in every context whose variables past the offset are of {lit}`tp`. -/
-theorem encTy_checks_of_prefix (hpre : sig <+: sg) (G : FreeTopos.Internal.Globals) {n : ℕ} :
-    ∀ (a : PartialHorn.Tree) (off : ℕ) (A : Expr), encTy off a = some A →
+{lit}`tp` in every context whose variables past the offset are of {lit}`tp`, in a signature that
+declares the type operations. -/
+theorem encTy_checks_of_decl (hdecl : k.TyDecl sg) (G : FreeTopos.Internal.Globals) {n : ℕ} :
+    ∀ (a : PartialHorn.Tree) (off : ℕ) (A : Expr), encTy k off a = some A →
       FreeTopos.Internal.IsTy G n a = true → ∀ Γ : Ctx,
         (∀ j < n, varType Γ (off + j) = some tp) → judge sg A Γ (.check tp) = true :=
   RoseTree.ind fun l cs ih off A h hty Γ hΓ ↦ by
     rcases encTy_node_eq_some h with ⟨rfl, i, rfl, rfl⟩ | ⟨op, c, As, rfl, hc, hAs, rfl⟩
     · exact judge_var rfl (hΓ i (FreeTopos.Internal.isTy_var.mp hty))
-    · have hty' := (isTy_of_tyConsts G hc).mp hty
-      have hsig := tyConsts_sig _ hc
+    · have hsig := hdecl _ (tyConst?_mem hc)
       rw [← length_of_mapM hAs] at hsig
-      refine judge_const (get_of_prefix hpre hsig) (spine_tps As fun A' hA' ↦ ?_) rfl
+      refine judge_const hsig (spine_tps As fun A' hA' ↦ ?_) rfl
       obtain ⟨c', hc', hA''⟩ := mem_of_mapM hAs A' hA'
-      exact ih c' hc' off A' hA'' (hty' c' hc') Γ hΓ
+      exact ih c' hc' off A' hA'' (isTy_args hty c' hc') Γ hΓ
 
 /-- The encoding of a type in {lit}`n` object variables, at an offset, is a canonical term of
 {lit}`tp` in an extension of the signature, in every context whose variables past the offset are
 of {lit}`tp`. -/
 theorem encTy_checks {G' : FreeTopos.Internal.Globals} (hsg : SigExt G' k sg)
     (G : FreeTopos.Internal.Globals) {n : ℕ} (a : PartialHorn.Tree) (off : ℕ) (A : Expr)
-    (h : encTy off a = some A) (hty : FreeTopos.Internal.IsTy G n a = true) (Γ : Ctx)
+    (h : encTy k off a = some A) (hty : FreeTopos.Internal.IsTy G n a = true) (Γ : Ctx)
     (hΓ : ∀ j < n, varType Γ (off + j) = some tp) : judge sg A Γ (.check tp) = true :=
-  encTy_checks_of_prefix hsg.pre G a off A h hty Γ hΓ
+  encTy_checks_of_decl hsg.tyDecl G a off A h hty Γ hΓ
+
+/-- The encoding at an offset of a type in {lit}`n` object variables mentions no LF variable but
+those of its object variables, past the offset. -/
+theorem encTy_freeBelow (G : FreeTopos.Internal.Globals) {n d : ℕ} :
+    ∀ (a : PartialHorn.Tree) (off : ℕ) (A : Expr), encTy k off a = some A →
+      FreeTopos.Internal.IsTy G n a = true → (∀ i < n, off + i < d) → A.FreeBelow d = true :=
+  RoseTree.ind fun l cs ih off A h hty hd ↦ by
+    rcases encTy_node_eq_some h with ⟨rfl, i, rfl, rfl⟩ | ⟨op, c, As, rfl, hc, hAs, rfl⟩
+    · have hi := hd i (FreeTopos.Internal.isTy_var.mp hty)
+      refine freeBelow_node_iff.mpr ⟨fun j hj ↦ ?_, fun idx hidx ↦ absurd hidx (by simp)⟩
+      cases hj
+      exact hi
+    · rw [Expr.const, Expr.app]
+      refine freeBelow_node_iff.mpr ⟨fun j hj ↦ (nomatch hj), fun idx hidx ↦ ?_⟩
+      rw [show (Label.app (.const c)).binders idx = 0 from rfl, Nat.add_zero]
+      obtain ⟨c', hc', hA'⟩ := mem_of_mapM hAs _ (List.getElem_mem hidx)
+      exact ih c' hc' off _ hA' (isTy_args hty c' hc') hd
 
 section Encoding
 
@@ -807,69 +971,69 @@ def encStep (l : FreeTopos.Internal.Label)
     | .pair, [(t, et), (u, eu)] => do
       let (_, a) ← compile G n t X e
       let (_, b) ← compile G n u X e
-      pure (pair (← encTy e.length a) (← encTy e.length b) (← et X e) (← eu X e))
+      pure (pair (← encTy k e.length a) (← encTy k e.length b) (← et X e) (← eu X e))
     | .fst, [(t, et)] => do
       let (_, p) ← compile G n t X e
       let (a, b) ← prodParts p
-      pure (fst (← encTy e.length a) (← encTy e.length b) (← et X e))
+      pure (fst (← encTy k e.length a) (← encTy k e.length b) (← et X e))
     | .snd, [(t, et)] => do
       let (_, p) ← compile G n t X e
       let (a, b) ← prodParts p
-      pure (snd (← encTy e.length a) (← encTy e.length b) (← et X e))
+      pure (snd (← encTy k e.length a) (← encTy k e.length b) (← et X e))
     | .lam a, [(t, et)] => do
       let (_, b) ← compile G n t (FreeTopos.prod X a) (extEnv X a e)
-      pure (lam (← encTy e.length a) (← encTy e.length b)
+      pure (lam (← encTy k e.length a) (← encTy k e.length b)
         (Expr.lam (← et (FreeTopos.prod X a) (extEnv X a e))))
     | .app, [(t, et), (_, eu)] => do
       let (_, p) ← compile G n t X e
       let (a, b) ← expParts p
-      pure (app (← encTy e.length a) (← encTy e.length b) (← et X e) (← eu X e))
+      pure (app (← encTy k e.length a) (← encTy k e.length b) (← et X e) (← eu X e))
     | .arr i [], [(_, et)] =>
       if i = k.zero then zeroAt <$> et X e else if i = k.succ then succ <$> et X e
       else if i = k.node then node <$> et X e else none
     | .arr i [a], [(_, et)] =>
-      if i = k.nil then do pure (nilAt (← encTy e.length a) (← et X e))
-      else if i = k.cons then do pure (cons (← encTy e.length a) (← et X e))
-      else if i = k.lnode then do pure (lnode (← encTy e.length a) (← et X e)) else none
+      if i = k.nil then do pure (nilAt (← encTy k e.length a) (← et X e))
+      else if i = k.cons then do pure (cons (← encTy k e.length a) (← et X e))
+      else if i = k.lnode then do pure (lnode (← encTy k e.length a) (← et X e)) else none
     | .arr i [a, b], [(_, et)] =>
-      if i = k.inl then do pure (inl (← encTy e.length a) (← encTy e.length b) (← et X e))
-      else if i = k.inr then do pure (inr (← encTy e.length a) (← encTy e.length b) (← et X e))
+      if i = k.inl then do pure (inl (← encTy k e.length a) (← encTy k e.length b) (← et X e))
+      else if i = k.inr then do pure (inr (← encTy k e.length a) (← encTy k e.length b) (← et X e))
       else none
     | .arr i [a, b, c], [(_, et)] =>
       if i = k.case then do
-        pure (case (← encTy e.length a) (← encTy e.length b) (← encTy e.length c) (← et X e))
+        pure (case (← encTy k e.length a) (← encTy k e.length b) (← encTy k e.length c) (← et X e))
       else none
     | .natRec, [(z, ez), (_, es), (_, em)] => do
       let (_, c) ← compile G n z X e
-      pure (natRec (← encTy e.length c) (← ez X e)
+      pure (natRec (← encTy k e.length c) (← ez X e)
         (Expr.lam (← es (FreeTopos.prod X c) (extEnv X c e))) (← em X e))
     | .listRec, [(z, ez), (_, es), (m, em)] => do
       let (_, c) ← compile G n z X e
       let (_, t) ← compile G n m X e
       let a ← listPart t
-      pure (listRec (← encTy e.length a) (← encTy e.length c) (← ez X e)
+      pure (listRec (← encTy k e.length a) (← encTy k e.length c) (← ez X e)
         (Expr.lam (Expr.lam (← es (FreeTopos.prod (FreeTopos.prod X a) c)
           (extEnv (FreeTopos.prod X a) c (extEnv X a e))))) (← em X e))
     | .roseRec c, [(_, es), (m, em)] => do
       let (_, t) ← compile G n m X e
       match t.label, t.children with
       | 38, [] =>
-        pure (roseRec (← encTy e.length c) (Expr.lam (← es (FreeTopos.prod X
+        pure (roseRec (← encTy k e.length c) (Expr.lam (← es (FreeTopos.prod X
           (FreeTopos.prod FreeTopos.nat (FreeTopos.list c)))
           (extEnv X (FreeTopos.prod FreeTopos.nat (FreeTopos.list c)) e))) (← em X e))
       | 41, [a] =>
-        pure (lroseRec (← encTy e.length a) (← encTy e.length c) (Expr.lam (← es
+        pure (lroseRec (← encTy k e.length a) (← encTy k e.length c) (Expr.lam (← es
           (FreeTopos.prod X (FreeTopos.prod a (FreeTopos.list c)))
           (extEnv X (FreeTopos.prod a (FreeTopos.list c)) e))) (← em X e))
       | _, _ => none
     | .eq, [(t, et), (_, eu)] => do
       let (_, a) ← compile G n t X e
-      pure (eq (← encTy e.length a) (← et X e) (← eu X e))
+      pure (eq (← encTy k e.length a) (← et X e) (← eu X e))
     | .defn kd θ, cs => do
       let d ← (G.defs[kd]?).bind FreeTopos.Internal.Definition.language?
       let c ← k.defConst kd d.arity d.params.length
       if θ.length = d.arity ∧ cs.length = d.params.length then do
-        let Ts ← θ.reverse.mapM (encTy e.length)
+        let Ts ← θ.reverse.mapM (encTy k e.length)
         let Ms ← cs.reverse.mapM fun x ↦ x.2 X e
         pure (Expr.const c (Ts ++ Ms))
       else none
@@ -905,9 +1069,9 @@ theorem tp_rename (ρ : ℕ → ℕ) : tp.rename ρ = tp := by
 
 /-- The inversion of the encoding of a context extended by a type. -/
 theorem encCtx_cons_inv {n : ℕ} {a : PartialHorn.Tree} {Γ : List PartialHorn.Tree} {ΓLF : Ctx}
-    (h : encCtx n (a :: Γ) = some ΓLF) :
-    ∃ A ΓLF', encTy Γ.length a = some A ∧ encCtx n Γ = some ΓLF' ∧ ΓLF = tm A :: ΓLF' := by
-  change (do pure (tm (← encTy Γ.length a) :: (← encCtx n Γ))) = some ΓLF at h
+    (h : encCtx k n (a :: Γ) = some ΓLF) :
+    ∃ A ΓLF', encTy k Γ.length a = some A ∧ encCtx k n Γ = some ΓLF' ∧ ΓLF = tm A :: ΓLF' := by
+  change (do pure (tm (← encTy k Γ.length a) :: (← encCtx k n Γ))) = some ΓLF at h
   obtain ⟨A, hA, h⟩ := Option.bind_eq_some_iff.mp h
   obtain ⟨ΓLF', hΓ, h⟩ := Option.bind_eq_some_iff.mp h
   exact ⟨A, ΓLF', hA, hΓ, (Option.some.inj h).symm⟩
@@ -915,11 +1079,11 @@ theorem encCtx_cons_inv {n : ℕ} {a : PartialHorn.Tree} {Γ : List PartialHorn.
 /-- The type of a variable of an encoded context, a variable of a term, is the family of terms of
 the encoding of its type at the offset of the context's variables of terms. -/
 theorem varType_encCtx {n : ℕ} {Γ : List PartialHorn.Tree} {ΓLF : Ctx}
-    (hΓ : encCtx n Γ = some ΓLF) {i : ℕ} {a : PartialHorn.Tree} (ha : Γ[i]? = some a) :
-    ∃ A, encTy Γ.length a = some A ∧ varType ΓLF i = some (tm A) := by
-  refine List.rec (motive := fun Γ ↦ ∀ (ΓLF : Ctx), encCtx n Γ = some ΓLF →
+    (hΓ : encCtx k n Γ = some ΓLF) {i : ℕ} {a : PartialHorn.Tree} (ha : Γ[i]? = some a) :
+    ∃ A, encTy k Γ.length a = some A ∧ varType ΓLF i = some (tm A) := by
+  refine List.rec (motive := fun Γ ↦ ∀ (ΓLF : Ctx), encCtx k n Γ = some ΓLF →
       ∀ (i : ℕ) (a : PartialHorn.Tree), Γ[i]? = some a →
-        ∃ A, encTy Γ.length a = some A ∧ varType ΓLF i = some (tm A))
+        ∃ A, encTy k Γ.length a = some A ∧ varType ΓLF i = some (tm A))
     (fun _ _ _ _ ha ↦ absurd ha (by simp)) (fun b Γ ih ΓLF h i a ha ↦ ?_) Γ ΓLF hΓ i a ha
   obtain ⟨B, ΓLF', hB, hΓ, rfl⟩ := encCtx_cons_inv h
   rcases i with _ | i
@@ -933,9 +1097,9 @@ theorem varType_encCtx {n : ℕ} {Γ : List PartialHorn.Tree} {ΓLF : Ctx}
 /-- The variables of an encoded context past its variables of terms, below the number of object
 variables, are of {lit}`tp`. -/
 theorem varType_encCtx_tp {n : ℕ} {Γ : List PartialHorn.Tree} {ΓLF : Ctx}
-    (hΓ : encCtx n Γ = some ΓLF) {j : ℕ} (hj : j < n) :
+    (hΓ : encCtx k n Γ = some ΓLF) {j : ℕ} (hj : j < n) :
     varType ΓLF (Γ.length + j) = some tp := by
-  refine List.rec (motive := fun Γ ↦ ∀ (ΓLF : Ctx), encCtx n Γ = some ΓLF →
+  refine List.rec (motive := fun Γ ↦ ∀ (ΓLF : Ctx), encCtx k n Γ = some ΓLF →
       ∀ (j : ℕ), j < n → varType ΓLF (Γ.length + j) = some tp)
     (fun _ h j hj ↦ ?_) (fun b Γ ih ΓLF h j hj ↦ ?_) Γ ΓLF hΓ j hj
   · obtain rfl := Option.some.inj h
@@ -948,12 +1112,12 @@ theorem varType_encCtx_tp {n : ℕ} {Γ : List PartialHorn.Tree} {ΓLF : Ctx}
 /-- The types of the variables of an encoded context: the families of terms of the encodings of
 the context's types, and {lit}`tp` past them. -/
 theorem varType_encCtx_inv {n : ℕ} {Γ : List PartialHorn.Tree} {ΓLF : Ctx}
-    (hΓ : encCtx n Γ = some ΓLF) {i : ℕ} {t : Expr} (ht : varType ΓLF i = some t) :
-    (∃ a A, Γ[i]? = some a ∧ encTy Γ.length a = some A ∧ t = tm A) ∨
+    (hΓ : encCtx k n Γ = some ΓLF) {i : ℕ} {t : Expr} (ht : varType ΓLF i = some t) :
+    (∃ a A, Γ[i]? = some a ∧ encTy k Γ.length a = some A ∧ t = tm A) ∨
       (Γ.length ≤ i ∧ i < Γ.length + n ∧ t = tp) := by
-  refine List.rec (motive := fun Γ ↦ ∀ (ΓLF : Ctx), encCtx n Γ = some ΓLF →
+  refine List.rec (motive := fun Γ ↦ ∀ (ΓLF : Ctx), encCtx k n Γ = some ΓLF →
       ∀ (i : ℕ) (t : Expr), varType ΓLF i = some t →
-        (∃ a A, Γ[i]? = some a ∧ encTy Γ.length a = some A ∧ t = tm A) ∨
+        (∃ a A, Γ[i]? = some a ∧ encTy k Γ.length a = some A ∧ t = tm A) ∨
           (Γ.length ≤ i ∧ i < Γ.length + n ∧ t = tp))
     (fun _ h i t ht ↦ ?_) (fun b Γ ih ΓLF h i t ht ↦ ?_) Γ ΓLF hΓ i t ht
   · obtain rfl := Option.some.inj h
@@ -977,41 +1141,41 @@ theorem varType_encCtx_inv {n : ℕ} {Γ : List PartialHorn.Tree} {ΓLF : Ctx}
 
 /-- The encoding of a product type. -/
 theorem encTy_prod (off : ℕ) (a b : PartialHorn.Tree) :
-    encTy off (FreeTopos.prod a b) =
-      (encTy off a).bind fun A ↦ (encTy off b).map fun B ↦ prod A B := by
+    encTy k off (FreeTopos.prod a b) =
+      (encTy k off a).bind fun A ↦ (encTy k off b).map fun B ↦ prod A B := by
   rw [FreeTopos.prod, PartialHorn.op, encTy_node]
   simp only [List.map_cons, List.map_nil, encTyStep]
-  cases encTy off a <;> cases encTy off b <;> rfl
+  cases encTy k off a <;> cases encTy k off b <;> rfl
 
 /-- The encoding of a coproduct type. -/
 theorem encTy_coprod (off : ℕ) (a b : PartialHorn.Tree) :
-    encTy off (FreeTopos.coprod a b) =
-      (encTy off a).bind fun A ↦ (encTy off b).map fun B ↦ coprod A B := by
+    encTy k off (FreeTopos.coprod a b) =
+      (encTy k off a).bind fun A ↦ (encTy k off b).map fun B ↦ coprod A B := by
   rw [FreeTopos.coprod, PartialHorn.op, encTy_node]
   simp only [List.map_cons, List.map_nil, encTyStep]
-  cases encTy off a <;> cases encTy off b <;> rfl
+  cases encTy k off a <;> cases encTy k off b <;> rfl
 
 /-- The encoding of an exponential type. -/
 theorem encTy_exp (off : ℕ) (a b : PartialHorn.Tree) :
-    encTy off (FreeTopos.exp a b) =
-      (encTy off a).bind fun A ↦ (encTy off b).map fun B ↦ exp A B := by
+    encTy k off (FreeTopos.exp a b) =
+      (encTy k off a).bind fun A ↦ (encTy k off b).map fun B ↦ exp A B := by
   rw [FreeTopos.exp, PartialHorn.op, encTy_node]
   simp only [List.map_cons, List.map_nil, encTyStep]
-  cases encTy off a <;> cases encTy off b <;> rfl
+  cases encTy k off a <;> cases encTy k off b <;> rfl
 
 /-- The encoding of a list type. -/
 theorem encTy_list (off : ℕ) (a : PartialHorn.Tree) :
-    encTy off (FreeTopos.list a) = (encTy off a).map list := by
+    encTy k off (FreeTopos.list a) = (encTy k off a).map list := by
   rw [FreeTopos.list, PartialHorn.op, encTy_node]
   simp only [List.map_cons, List.map_nil, encTyStep]
-  cases encTy off a <;> rfl
+  cases encTy k off a <;> rfl
 
 /-- The encoding of a rose-tree type of labels of a type. -/
 theorem encTy_lrose (off : ℕ) (a : PartialHorn.Tree) :
-    encTy off (FreeTopos.lrose a) = (encTy off a).map lrose := by
+    encTy k off (FreeTopos.lrose a) = (encTy k off a).map lrose := by
   rw [FreeTopos.lrose, PartialHorn.op, encTy_node]
   simp only [List.map_cons, List.map_nil, encTyStep]
-  cases encTy off a <;> rfl
+  cases encTy k off a <;> rfl
 
 /-- An abstraction checks against a product when its body checks against the codomain in the
 context extended by the domain. -/
@@ -1108,7 +1272,7 @@ first. -/
 def decDefn (c : ℕ) (cs : List (Expr × (ℕ → Option MTerm))) (off : ℕ) : Option MTerm :=
   if sig.length ≤ c then match k.ext[c - sig.length]? with
     | some (.defn kd m p) => if cs.length = m + p then do
-        let θ ← (cs.take m).mapM fun x ↦ decTy off x.1
+        let θ ← (cs.take m).mapM fun x ↦ decTy k off x.1
         let args ← (cs.drop m).mapM fun x ↦ x.2 off
         pure (FreeTopos.Internal.Term.defn kd θ.reverse args.reverse)
       else none
@@ -1133,7 +1297,7 @@ def decStep (l : Label) (cs : List (Expr × (ℕ → Option MTerm))) (off : ℕ)
       pure (FreeTopos.Internal.Term.pair (← t off) (← u off))
     | .app (.const 9), [_, _, (_, t)] => FreeTopos.Internal.Term.fst <$> t off
     | .app (.const 10), [_, _, (_, t)] => FreeTopos.Internal.Term.snd <$> t off
-    | .app (.const 11), [(A, _), _, (_, t)] => do relam (← decTy off A) (← t off)
+    | .app (.const 11), [(A, _), _, (_, t)] => do relam (← decTy k off A) (← t off)
     | .app (.const 12), [_, _, (_, t), (_, u)] => do
       pure (FreeTopos.Internal.Term.app (← t off) (← u off))
     | .app (.const 13), [(_, t)] => FreeTopos.Internal.Term.arr k.zero [] <$> t off
@@ -1143,25 +1307,25 @@ def decStep (l : Label) (cs : List (Expr × (ℕ → Option MTerm))) (off : ℕ)
     | .app (.const 16), [_, (_, t), (_, u)] => do
       pure (FreeTopos.Internal.Term.eq (← t off) (← u off))
     | .app (.const 31), [(A, _), (_, t)] => do
-      pure (FreeTopos.Internal.Term.arr k.nil [← decTy off A] (← t off))
+      pure (FreeTopos.Internal.Term.arr k.nil [← decTy k off A] (← t off))
     | .app (.const 32), [(A, _), (_, t)] => do
-      pure (FreeTopos.Internal.Term.arr k.cons [← decTy off A] (← t off))
+      pure (FreeTopos.Internal.Term.arr k.cons [← decTy k off A] (← t off))
     | .app (.const 33), [(_, _), (_, _), (_, z), (_, s), (_, m)] => do
       pure (FreeTopos.Internal.Term.listRec (← z off) (← lamBody (← lamBody (← s off)))
         (← m off))
     | .app (.const 38), [(_, t)] => FreeTopos.Internal.Term.arr k.node [] <$> t off
     | .app (.const 39), [(C, _), (_, s), (_, t)] => do
-      pure (FreeTopos.Internal.Term.roseRec (← decTy off C) (← lamBody (← s off)) (← t off))
+      pure (FreeTopos.Internal.Term.roseRec (← decTy k off C) (← lamBody (← s off)) (← t off))
     | .app (.const 43), [(A, _), (_, t)] => do
-      pure (FreeTopos.Internal.Term.arr k.lnode [← decTy off A] (← t off))
+      pure (FreeTopos.Internal.Term.arr k.lnode [← decTy k off A] (← t off))
     | .app (.const 44), [_, (C, _), (_, s), (_, t)] => do
-      pure (FreeTopos.Internal.Term.roseRec (← decTy off C) (← lamBody (← s off)) (← t off))
+      pure (FreeTopos.Internal.Term.roseRec (← decTy k off C) (← lamBody (← s off)) (← t off))
     | .app (.const 50), [(A, _), (B, _), (_, t)] => do
-      pure (FreeTopos.Internal.Term.arr k.inl [← decTy off A, ← decTy off B] (← t off))
+      pure (FreeTopos.Internal.Term.arr k.inl [← decTy k off A, ← decTy k off B] (← t off))
     | .app (.const 51), [(A, _), (B, _), (_, t)] => do
-      pure (FreeTopos.Internal.Term.arr k.inr [← decTy off A, ← decTy off B] (← t off))
+      pure (FreeTopos.Internal.Term.arr k.inr [← decTy k off A, ← decTy k off B] (← t off))
     | .app (.const 52), [(A, _), (B, _), (C, _), (_, p)] => do
-      pure (FreeTopos.Internal.Term.arr k.case [← decTy off A, ← decTy off B, ← decTy off C]
+      pure (FreeTopos.Internal.Term.arr k.case [← decTy k off A, ← decTy k off B, ← decTy k off C]
         (← p off))
     | .app (.const c), cs => decDefn k c cs off
     | .lam, [(_, d)] => FreeTopos.Internal.Term.lam FreeTopos.one <$> d (off + 1)
@@ -1187,13 +1351,13 @@ theorem decStep_defn {c : ℕ} (hc : sig.length ≤ c) (cs : List (Expr × (ℕ 
 theorem decDefn_eq_some {c : ℕ} {cs : List (Expr × (ℕ → Option MTerm))} {off : ℕ}
     {s : MTerm} (h : decDefn k c cs off = some s) :
     ∃ kd m p θ args, sig.length ≤ c ∧ k.ext[c - sig.length]? = some (.defn kd m p) ∧
-      cs.length = m + p ∧ (cs.take m).mapM (fun x ↦ decTy off x.1) = some θ ∧
+      cs.length = m + p ∧ (cs.take m).mapM (fun x ↦ decTy k off x.1) = some θ ∧
       (cs.drop m).mapM (fun x ↦ x.2 off) = some args ∧
       s = FreeTopos.Internal.Term.defn kd θ.reverse args.reverse := by
   unfold decDefn at h
   by_cases hc : sig.length ≤ c
   · rw [ite_eq_left hc] at h
-    rcases he : k.ext[c - sig.length]? with _ | ⟨_ | ⟨kd, m, p⟩ | _⟩ <;> rw [he] at h <;>
+    rcases he : k.ext[c - sig.length]? with _ | ⟨_ | ⟨kd, m, p⟩ | _ | _⟩ <;> rw [he] at h <;>
       dsimp only at h
     · exact nomatch h
     · exact nomatch h
@@ -1206,6 +1370,7 @@ theorem decDefn_eq_some {c : ℕ} {cs : List (Expr × (ℕ → Option MTerm))} {
       · rw [ite_eq_right hl] at h
         exact nomatch h
     · exact nomatch h
+    · exact nomatch h
   · rw [ite_eq_right hc] at h
     exact nomatch h
 
@@ -1213,7 +1378,7 @@ theorem decDefn_eq_some {c : ℕ} {cs : List (Expr × (ℕ → Option MTerm))} {
 theorem decDefn_of {c kd m p : ℕ} {cs : List (Expr × (ℕ → Option MTerm))} {off : ℕ}
     {θ : List PartialHorn.Tree} {args : List MTerm} (hc : sig.length ≤ c)
     (he : k.ext[c - sig.length]? = some (.defn kd m p)) (hl : cs.length = m + p)
-    (hθ : (cs.take m).mapM (fun x ↦ decTy off x.1) = some θ)
+    (hθ : (cs.take m).mapM (fun x ↦ decTy k off x.1) = some θ)
     (hargs : (cs.drop m).mapM (fun x ↦ x.2 off) = some args) :
     decDefn k c cs off = some (FreeTopos.Internal.Term.defn kd θ.reverse args.reverse) := by
   unfold decDefn
@@ -1255,8 +1420,8 @@ theorem decDefn_transfer {c off off' : ℕ} {xs ys : List Expr} {s : MTerm}
     {fT : PartialHorn.Tree → PartialHorn.Tree} {fM : MTerm → MTerm}
     (h : decDefn k c (xs.map fun x ↦ (x, dec k x)) off = some s) (hlen : ys.length = xs.length)
     (hfin : ∀ kd m p, k.ext[c - sig.length]? = some (.defn kd m p) →
-      (∀ i x y a, i < m → xs[i]? = some x → ys[i]? = some y → decTy off x = some a →
-        decTy off' y = some (fT a)) ∧
+      (∀ i x y a, i < m → xs[i]? = some x → ys[i]? = some y → decTy k off x = some a →
+        decTy k off' y = some (fT a)) ∧
       (∀ i x y u, m ≤ i → xs[i]? = some x → ys[i]? = some y → dec k x off = some u →
         dec k y off' = some (fM u))) :
     ∃ (kd : ℕ) (θ : List PartialHorn.Tree) (args : List MTerm),
@@ -1586,13 +1751,18 @@ theorem sig_head_tm₀ {c : ℕ} {T : Expr} (hc : sig[c]? = some T) (h : T.headD
   exact this
 
 /-- The declarations of an extension of the signature whose types end in {lit}`tp` are the
-constants of the type operations. -/
+constants of its type operations, declared as products over the kind of types into it. -/
 theorem sig_head_tp (hsg : SigExt G k sg) {c : ℕ} {T : Expr} (hc : sg[c]? = some T)
-    (h : T.headDepth.1 = some 0) : (∃ op m, (op, m, c) ∈ tyConsts) ∧ sig[c]? = some T := by
+    (h : T.headDepth.1 = some 0) :
+    ∃ op m, (op, m, c) ∈ k.tyTable ∧ T = piTele (List.replicate m tp) tp := by
   by_cases hlt : c < sig.length
   · have hc' := hsg.of_lt hc hlt
-    exact ⟨sig_head_tp₀ hc' h, hc'⟩
-  · exact absurd h (hsg.noTp c T (Nat.le_of_not_lt hlt) hc)
+    obtain ⟨op, m, hm⟩ := sig_head_tp₀ hc' h
+    exact ⟨op, m, mem_tyTable.mpr (.inl hm), Option.some.inj (hc'.symm.trans (tyConsts_sig _ hm))⟩
+  · obtain ⟨i, rfl⟩ : ∃ i, c = sig.length + i := ⟨c - sig.length, by omega⟩
+    obtain ⟨op, m, hi⟩ := hsg.tpObjs i T hc h
+    exact ⟨op, m, mem_tyTable.mpr (.inr ⟨i, hi, rfl⟩),
+      Option.some.inj (hc.symm.trans (hsg.objs i op m hi).2)⟩
 
 /-- The declarations of an extension of the signature, within the signature, whose types end in
 {lit}`tm` are the signature's term constructors. -/
@@ -1608,7 +1778,9 @@ theorem sigExt_sig (hk : k.ext = []) : SigExt G k sig where
   ok := sig_ok
   pre := List.prefix_refl _
   len := by rw [hk, List.length_nil, Nat.add_zero]
-  noTp _ _ hle hc := absurd (List.getElem?_eq_some_iff.mp hc).1 (Nat.not_lt_of_le hle)
+  objs i _ _ h := by rw [hk] at h; exact nomatch h
+  tyUnique := tyUnique_of_noObj fun i _ _ h ↦ by rw [hk] at h; exact nomatch h
+  tpObjs _ _ hc := absurd (List.getElem?_eq_some_iff.mp hc).1 (by omega)
   defs i _ _ _ h := by rw [hk] at h; exact absurd h (by simp)
   tmDefs i _ hc _ := absurd (List.getElem?_eq_some_iff.mp hc).1 (by omega)
 
@@ -1648,12 +1820,11 @@ theorem judge_atomic_app {Γ : Ctx} {M P : Expr} (hP : IsApp P = true)
 /-- Every canonical term of {lit}`tp`, in a context whose variables of types ending in
 {lit}`tp` are of {lit}`tp` itself, past an offset and fewer than {lit}`n` past it, is the
 encoding at the offset of a type in {lit}`n` object variables. -/
-theorem tyComplete {G' : FreeTopos.Internal.Globals} (hsg : SigExt G' k sg)
-    (G : FreeTopos.Internal.Globals) {Γ : Ctx} {off n : ℕ}
+theorem tyComplete (hsg : SigExt G k sg) {Γ : Ctx} {off n : ℕ}
     (hΓ : ∀ i t, varType Γ i = some t →
       t.TypeShape = true ∧ (t.headDepth.1 = some 0 → t = tp ∧ off ≤ i ∧ i < off + n)) :
     ∀ A : Expr, judge sg A Γ (.check tp) = true →
-      ∃ a, encTy off a = some A ∧ FreeTopos.Internal.IsTy G n a = true :=
+      ∃ a, encTy k off a = some A ∧ FreeTopos.Internal.IsTy G n a = true :=
   RoseTree.ind fun l cs ih hj ↦ by
     obtain ⟨h, ms, hA⟩ := judge_atomic_app rfl hj
     obtain ⟨rfl, rfl⟩ := node_inj.mp hA
@@ -1670,13 +1841,13 @@ theorem tyComplete {G' : FreeTopos.Internal.Globals} (hsg : SigExt G' k sg)
         FreeTopos.Internal.isTy_var.mpr (by omega)⟩
     · have hCs := Sig.ok_typeShape hsg.ok c C hC
       obtain ⟨h₁, -⟩ := spine_headDepth _ C tp hCs hS
-      obtain ⟨⟨op, m, hc⟩, hC⟩ := sig_head_tp hsg hC (by rw [← h₁]; rfl)
-      obtain rfl := Option.some.inj (hC.symm.trans (tyConsts_sig _ hc))
+      obtain ⟨op, m, hc, rfl⟩ := sig_head_tp hsg hC (by rw [← h₁]; rfl)
       obtain ⟨hl, hargs⟩ := spine_tps_inv cs m hS
-      obtain ⟨as, has, hIs⟩ := mapM_preimage (f := encTy off)
+      obtain ⟨as, has, hIs⟩ := mapM_preimage (f := encTy k off)
         (P := fun a ↦ FreeTopos.Internal.IsTy G n a = true) cs fun A hA ↦ ih A hA (hargs A hA)
-      have hc' : (op, as.length, c) ∈ tyConsts := by rw [← length_of_mapM has, hl]; exact hc
-      exact ⟨PartialHorn.op op as, encTy_op hc' has, (isTy_of_tyConsts G hc').mpr hIs⟩
+      have hc' : (op, as.length, c) ∈ k.tyTable := by rw [← length_of_mapM has, hl]; exact hc
+      exact ⟨PartialHorn.op op as, encTy_op (tyConst?_of_mem hsg.tyUnique hc') has,
+        isTy_of_tyTable hsg.objsOk hc' hIs⟩
 
 /-- The leading arguments of a spine of a classifier that begins with two products over
 {lit}`tp` check against {lit}`tp`. -/
@@ -1722,9 +1893,10 @@ theorem env_of_map_snd {e : MEnv} {i : ℕ} {a : PartialHorn.Tree}
 
 /-- The encoding of a context in {lit}`n` object variables has as many variables as the context
 and {lit}`n` more. -/
-theorem length_encCtx {n : ℕ} {Γ : List PartialHorn.Tree} {ΓLF : Ctx} (h : encCtx n Γ = some ΓLF) :
+theorem length_encCtx {n : ℕ} {Γ : List PartialHorn.Tree} {ΓLF : Ctx}
+    (h : encCtx k n Γ = some ΓLF) :
     ΓLF.length = Γ.length + n := by
-  refine List.rec (motive := fun Γ ↦ ∀ (ΓLF : Ctx), encCtx n Γ = some ΓLF →
+  refine List.rec (motive := fun Γ ↦ ∀ (ΓLF : Ctx), encCtx k n Γ = some ΓLF →
     ΓLF.length = Γ.length + n) (fun ΓLF h ↦ ?_) (fun b Γ ih ΓLF h ↦ ?_) Γ ΓLF h
   · obtain rfl := Option.some.inj h
     simp
@@ -1735,7 +1907,7 @@ theorem length_encCtx {n : ℕ} {Γ : List PartialHorn.Tree} {ΓLF : Ctx} (h : e
 /-- The types of the variables of an encoded context have the shape of types, and those ending in
 {lit}`tp` are {lit}`tp` and past the variables of terms. -/
 theorem encCtx_heads₀ {n : ℕ} {Γ : List PartialHorn.Tree} {ΓLF : Ctx}
-    (h : encCtx n Γ = some ΓLF) :
+    (h : encCtx k n Γ = some ΓLF) :
     ∀ i t, varType ΓLF i = some t → t.TypeShape = true ∧
       (t.headDepth.1 = some 0 → t = tp ∧ Γ.length ≤ i ∧ i < Γ.length + n) := by
   intro i t ht
@@ -1746,14 +1918,14 @@ theorem encCtx_heads₀ {n : ℕ} {Γ : List PartialHorn.Tree} {ΓLF : Ctx}
 /-- The encoded types whose encodings at an offset mention no variable past the offset by
 {lit}`n` or more are types of the internal language in {lit}`n` object variables, built from
 operations of {name}`Geb.FreeTopos.Internal.tyOps`. -/
-theorem isTy_of_encTy (G : FreeTopos.Internal.Globals) {n : ℕ} :
-    ∀ (a : PartialHorn.Tree) (off : ℕ) (A : Expr), encTy off a = some A →
+theorem isTy_of_encTy {G : FreeTopos.Internal.Globals} (hobj : k.ObjsOk G) {n : ℕ} :
+    ∀ (a : PartialHorn.Tree) (off : ℕ) (A : Expr), encTy k off a = some A →
       A.FreeBelow (off + n) = true → FreeTopos.Internal.IsTy G n a = true :=
   RoseTree.ind fun l cs ih off A h hA ↦ by
     rcases encTy_node_eq_some h with ⟨rfl, i, rfl, rfl⟩ | ⟨op, c, As, rfl, hc, hAs, rfl⟩
     · have := (freeBelow_node_iff.mp hA).1 (off + i) rfl
       exact FreeTopos.Internal.isTy_var.mpr (by omega)
-    · refine (isTy_of_tyConsts G hc).mpr fun c' hc' ↦ ?_
+    · refine isTy_of_tyTable hobj (tyConst?_mem hc) fun c' hc' ↦ ?_
       obtain ⟨A', hA', hcA⟩ := exists_of_mapM hAs c' hc'
       obtain ⟨idx, hidx, rfl⟩ := List.getElem_of_mem hA'
       rw [Expr.const, Expr.app] at hA
@@ -1764,11 +1936,12 @@ theorem isTy_of_encTy (G : FreeTopos.Internal.Globals) {n : ℕ} :
 /-- An encoded type that checks against {lit}`tp` in the encoding of a context in {lit}`n`
 object variables, at the offset of the context's variables of terms, is a type in {lit}`n`
 object variables. -/
-theorem isTy_of_judge (G : FreeTopos.Internal.Globals) {n : ℕ} {Γ : List PartialHorn.Tree}
-    {ΓLF : Ctx} (hΓ : encCtx n Γ = some ΓLF) {a : PartialHorn.Tree} {A : Expr}
-    (ha : encTy Γ.length a = some A) (hj : judge sg A ΓLF (.check tp) = true) :
+theorem isTy_of_judge {G : FreeTopos.Internal.Globals} (hobj : k.ObjsOk G) {n : ℕ}
+    {Γ : List PartialHorn.Tree}
+    {ΓLF : Ctx} (hΓ : encCtx k n Γ = some ΓLF) {a : PartialHorn.Tree} {A : Expr}
+    (ha : encTy k Γ.length a = some A) (hj : judge sg A ΓLF (.check tp) = true) :
     FreeTopos.Internal.IsTy G n a = true := by
-  refine isTy_of_encTy G a _ A ha ?_
+  refine isTy_of_encTy hobj a _ A ha ?_
   rw [← length_encCtx hΓ]
   exact judgeWith_freeBelow A ΓLF _ hj
 

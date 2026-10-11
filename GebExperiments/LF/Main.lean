@@ -194,7 +194,7 @@ def internalThm (k : PrimIdx) (goal : Expr) :
   let (env, Γ, Φ) ← ps.zipIdx.foldlM (init := (([] : List (Option ℕ)), ([] : List _),
       ([] : List (Expr × ℕ)))) fun (env, Γ, Φ) (p, j) ↦
     match p.label, p.children with
-      | .app (.const 6), [A] => do pure (none :: env, (← decTy env.length A) :: Γ, Φ)
+      | .app (.const 6), [A] => do pure (none :: env, (← decTy k env.length A) :: Γ, Φ)
       | .app (.const 17), [P] => some (some Φ.length :: env, Γ, (P, n - 1 - j) :: Φ)
       | _, _ => none
   let hyps ← Φ.reverse.mapM fun (P, i) ↦ termOf k env (Expr.rename P (· + (i + 1)))
@@ -227,7 +227,7 @@ def devIdx : PrimIdx :=
 /-- The signature extended by the declarations of the lemmas' theorems, of the definition
 `addDefn` and of its unfolding. -/
 def devSig : Sig := sig ++ lemmaThms.filterMap (thmTy devGlobals devIdx) ++
-  [defTy addDefn, thmTy devGlobals devIdx (deltaThm 0 addDefn)].reduceOption
+  [defTy devIdx addDefn, thmTy devGlobals devIdx (deltaThm 0 addDefn)].reduceOption
 
 /-- The names of the constants of `devSig`. -/
 def devNames : List String :=

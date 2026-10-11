@@ -51,9 +51,11 @@ namespace Geb.LF.Topos
 
 open FreeTopos.Internal (Term)
 
+variable {k : PrimIdx}
+
 /-- The decodings of types are encoded by their decodings. -/
 theorem encTy_decTy (off : ℕ) :
-    ∀ (A : Expr) (a : PartialHorn.Tree), decTy off A = some a → encTy off a = some A :=
+    ∀ (A : Expr) (a : PartialHorn.Tree), decTy k off A = some a → encTy k off a = some A :=
   RoseTree.ind fun l cs ih a h ↦ by
     rw [decTy_node] at h
     rcases l with _ | _ | _ | (i | c)
@@ -79,8 +81,8 @@ theorem encTy_decTy (off : ℕ) :
 /-- A renaming that moves the variables past one offset to the same positions past another moves
 the decoding of a type at the first offset to its decoding at the second. -/
 theorem decTy_rename {off off' : ℕ} {ρ : ℕ → ℕ} {A : Expr} {a : PartialHorn.Tree}
-    (h : decTy off A = some a) (hρ : ∀ i, off ≤ i → ρ i + off = i + off') :
-    decTy off' (A.rename ρ) = some a :=
+    (h : decTy k off A = some a) (hρ : ∀ i, off ≤ i → ρ i + off = i + off') :
+    decTy k off' (A.rename ρ) = some a :=
   decTy_encTy off' a _ (encTy_rename a off A (encTy_decTy off A a h) off' ρ hρ)
 
 /-- A renaming that moves the variables past an offset to the same positions past another, lifted
@@ -93,7 +95,7 @@ theorem liftR_off {off off' : ℕ} {ρ : ℕ → ℕ} (hρ : ∀ i, off ≤ i �
     simp only [liftR]
     omega
 
-variable {k : PrimIdx} {sg : Sig}
+variable {sg : Sig}
 
 /-- Renaming under a binder in the internal language is renaming under a binder in LF. -/
 theorem term_liftR_eq (ρ : ℕ → ℕ) : Term.liftR ρ = liftR ρ := funext fun i ↦ by cases i <;> rfl
@@ -507,8 +509,8 @@ theorem lamBody_subst {s b : MTerm} (h : lamBody s = some b) (σ : ℕ → MTerm
 /-- Substitution for a variable below the offset of a decoded type gives a term of the offset
 below, decoding to the same type. -/
 theorem decTy_hsub {α : SimpleTy} {off j : ℕ} {A n A' : Expr} {a : PartialHorn.Tree}
-    (h : decTy off A = some a) (hj : j < off) (hA : hsub α n A j = some A') :
-    decTy (off - 1) A' = some a := by
+    (h : decTy k off A = some a) (hj : j < off) (hA : hsub α n A j = some A') :
+    decTy k (off - 1) A' = some a := by
   obtain ⟨A'', hA'', hs⟩ := hsubWith_encTy (reduce α) (encTy_decTy off A a h) hj n
   rw [hsub_eq, hs, Option.some.injEq] at hA
   subst hA
@@ -966,10 +968,10 @@ theorem sig_domsOK₀ {c : ℕ} {T : Expr} (hc : sig[c]? = some T) (h : TermHead
 
 /-- Each declaration of the encoding of a context is the kind of types or a family of terms. -/
 theorem encCtx_tpTm {m : ℕ} :
-    ∀ {Γ : List PartialHorn.Tree} {ΓT : Ctx}, encCtx m Γ = some ΓT →
+    ∀ {Γ : List PartialHorn.Tree} {ΓT : Ctx}, encCtx k m Γ = some ΓT →
       ∀ D ∈ ΓT, D = tp ∨ ∃ A, D = tm A := by
   intro Γ
-  refine List.rec (motive := fun Γ ↦ ∀ {ΓT : Ctx}, encCtx m Γ = some ΓT →
+  refine List.rec (motive := fun Γ ↦ ∀ {ΓT : Ctx}, encCtx k m Γ = some ΓT →
       ∀ D ∈ ΓT, D = tp ∨ ∃ A, D = tm A)
     (fun {ΓT} h D hD ↦ ?_) (fun a Γ ih {ΓT} h D hD ↦ ?_) Γ
   · obtain rfl := Option.some.inj h
@@ -994,7 +996,7 @@ theorem domsOK_piTele {R : Expr} (hR : Expr.DomsOK R = true) :
   rcases hDs D List.mem_cons_self with rfl | ⟨A, rfl⟩ <;> rfl
 
 /-- The declaration of a definition takes types and terms as arguments. -/
-theorem domsOK_defTy {d : FreeTopos.Internal.Defn} {T : Expr} (h : defTy d = some T) :
+theorem domsOK_defTy {d : FreeTopos.Internal.Defn} {T : Expr} (h : defTy k d = some T) :
     Expr.DomsOK T = true := by
   simp only [defTy, Option.bind_eq_bind, Option.pure_def, Option.bind_eq_some_iff,
     Option.some.injEq] at h
@@ -1008,10 +1010,11 @@ theorem sig_domsOK {G : FreeTopos.Internal.Globals} (hsg : SigExt G k sg) {c : �
   by_cases hlt : c < sig.length
   · exact sig_domsOK₀ (hsg.of_lt hc hlt) h
   · obtain ⟨i, rfl⟩ : ∃ i, c = sig.length + i := ⟨c - sig.length, by omega⟩
-    have h₀ := hsg.noTp _ T (by omega) hc
     simp only [TermHead, Bool.or_eq_true, beq_iff_eq] at h
     rcases h with h | h
-    · exact absurd h h₀
+    · obtain ⟨op, m, hi⟩ := hsg.tpObjs i T hc h
+      obtain rfl := Option.some.inj (hc.symm.trans (hsg.objs i op m hi).2)
+      exact domsOK_piTele rfl fun D hD ↦ .inl (List.eq_of_mem_replicate hD)
     · obtain ⟨kd, m, p, he⟩ := hsg.tmDefs i T hc h
       obtain ⟨d, T', -, -, -, -, -, -, hd, hT'⟩ := hsg.defs i kd m p he
       obtain rfl := Option.some.inj (hT'.symm.trans hc)
