@@ -3981,8 +3981,9 @@ checklist and in CI.
   `GebTests/Prototypes/LF/Proofs.lean` and
   `GebTests/Prototypes/LF/Development.lean`. The library `GebExperiments`,
   which no module of `Geb`, `GebLang` or `GebTests` imports, translates goals
-  of the signature to Canonical's input and the terms it returns back, and
-  checks them (`lake exe lf-canonical`); the [bootstrap
+  of the signature and of the signatures of developments to Canonical's
+  input and the terms it returns back, and checks them
+  (`lake exe lf-canonical`); the [bootstrap
   chapter](../manual/GebManual/Bootstrap.lean) records the measurements and
   the signature's extension by further datatypes.
   Depends on `Geb.Prototypes.RoseTree.Basic`, `Geb.Prototypes.ConcreteSyntax`,

@@ -7,6 +7,7 @@ module
 
 public import GebExperiments.LF.Bridge
 public import Geb.Prototypes.LF.Topos
+public import Geb.Prototypes.FreeTopos.Internal.Prove
 
 /-!
 # Canonical on the internal language of a topos
@@ -24,10 +25,13 @@ certificate with steps of conversion (`Geb.LF.Topos.decPfMod`), checked by the c
 (`Geb.FreeTopos.Internal.Thm.convChecks`). The decoding applies to a goal whose outermost
 parameters are of `tp`, the object variables, and whose others are term variables and
 hypotheses; a hypothesis's formula is weakened past the parameters after it. Further goals are
-posed in the signature extended by the theorems of lemmas (`GebExperiments.LF.lemmas`), each a
-constant past the signature whose application decodes to the language's application of the
-lemma's entry, and by a definition of addition (`GebExperiments.LF.addDefn`) and its unfolding,
-whose applications decode to the definition's applications and to the unfolding. The program
+posed in the signatures of developments (`Geb.LF.Topos.devSig`): that of the theorems of lemmas
+(`GebExperiments.LF.lemmas`) on a definition of addition (`GebExperiments.LF.addDefn`), whose
+constants past the signature are the definition, its unfolding and the lemmas' theorems, each
+applied as the language applies it; and that of the quotient of the pairs of natural numbers by
+the relation of equal sums, with the descents of the sum and of the sum with zero added
+(`GebExperiments.LF.quotDecls`), whose goals are the declarations of theorems of the internal
+language. The program
 prints, for each goal and regime, whether a term was found, the time taken, the term, and both
 checkers' verdicts.
 Its first argument is the timeout in seconds of each search, and a second, if given, restricts
@@ -215,32 +219,130 @@ def addDefn : FreeTopos.Internal.Defn :=
       (FreeTopos.Internal.Term.arr toposIdx.succ [] (FreeTopos.Internal.Term.var 0))
       (FreeTopos.Internal.Term.var 0)⟩
 
-/-- The constants of `toposGlobals` with the definition `addDefn`. -/
-def devGlobals : FreeTopos.Internal.Globals := { toposGlobals with defs := [.language addDefn] }
+/-- The constants of `toposGlobals` with the definition `addDefn`, the object definitions
+numbered past the signature of the combinators. -/
+def devGlobals : FreeTopos.Internal.Globals :=
+  { toposGlobals with defs := [.language addDefn], base := FreeTopos.sig.length }
 
-/-- The indices of the primitive arrows, with the entries of the lemmas' theorems as the
-theorems the extension declares, followed by the definition `addDefn` and its unfolding. -/
-def devIdx : PrimIdx :=
-  { toposIdx with ext := lemmaThms.zipIdx.map (fun (a, j) ↦ .thm j a.arity a.ctx.length) ++
-      [.tm (.defn 0) 0 2, .delta 0 0 2] }
+/-- The name of a constant of the table of a development. -/
+def extName : ExtConst → String
+  | .obj op _ => s!"obj{op}"
+  | .tm (.defn k) _ _ => s!"defn{k}"
+  | .tm (.arr k) _ _ => s!"arr{k}"
+  | .delta k _ _ => s!"delta{k}"
+  | .quotInd k _ _ => s!"quotInd{k}"
+  | .thm j _ _ => s!"thm{j}"
 
-/-- The signature extended by the declarations of the lemmas' theorems, of the definition
-`addDefn` and of its unfolding. -/
-def devSig : Sig := sig ++ lemmaThms.filterMap (thmTy devGlobals devIdx) ++
-  [defTy devIdx (Rank.ofDefn addDefn), thmTy devGlobals devIdx (deltaThm 0 addDefn)].reduceOption
+/-- A development: the constants and the environment after it. -/
+structure Dev where
+  /-- The constants after the development. -/
+  G : FreeTopos.Internal.Globals
+  /-- The environment after the development. -/
+  E : Array FreeTopos.Internal.Entry
 
-/-- The names of the constants of `devSig`. -/
-def devNames : List String :=
-  toposNames ++ (List.range lemmaThms.length).map (s!"lemma{·}") ++ ["add", "addDelta"]
+/-- The table of a development (`Geb.LF.Topos.devIdx`), from the indices `toposIdx`. -/
+def Dev.idx (d : Dev) : PrimIdx := devIdx toposIdx d.G d.E
 
-/-- The application of the definition `addDefn` in `devSig`. -/
-def addC (m n : Expr) : Expr := Expr.const (sig.length + lemmaThms.length) [m, n]
+/-- The signature of a development (`Geb.LF.Topos.devSig`), where it is formed. -/
+def Dev.sig? (d : Dev) : Option Sig := devSig toposIdx d.G d.E
+
+/-- The names of the constants of the signature of a development. -/
+def Dev.names (d : Dev) : List String := toposNames ++ d.idx.ext.map extName
+
+/-- The application of a constant of the table of a development, in its signature. -/
+def Dev.const (d : Dev) (c : ExtConst) (args : List Expr) : Expr :=
+  Expr.const (sig.length + (c.find? d.idx.ext).getD d.idx.ext.length) args
+
+/-- The goal of inhabiting the declaration of a theorem of the internal language in the
+signature of a development. -/
+def Dev.thmGoal (d : Dev) (name : String) (a : FreeTopos.Internal.Thm) : Option Goal :=
+  (thmTy d.G d.idx a).map (⟨name, ·⟩)
+
+/-- The development of no declarations on `toposGlobals`, whose signature is
+`Geb.LF.Topos.sig`. -/
+def baseDev : Dev := ⟨toposGlobals, #[]⟩
+
+/-- The development of the lemmas' theorems on `devGlobals`. -/
+def lemmaDev : Dev := ⟨devGlobals, lemmaEntries⟩
+
+/-- The application of the definition `addDefn` in the signature of `lemmaDev`. -/
+def addC (m n : Expr) : Expr := lemmaDev.const (.tm (.defn 0) 0 2) [m, n]
 
 /-- The goals posed in the extended signature that apply the definition `addDefn`. -/
 def defGoals : List Goal :=
   [⟨"add m n unfolds, by the definition", pi (tm nat) (pi (tm nat)
       (pf (eq nat (addC (v 1) (v 0)) (add (v 1) (v 0)))))⟩,
     ⟨"add m 0 = m, by the definition", pi (tm nat) (pf (eq nat (addC (v 0) zero) (v 0)))⟩]
+
+section Quotient
+
+open FreeTopos.Internal (Term Decl)
+
+/-- The pairs of natural numbers. -/
+def natPair : PartialHorn.Tree := FreeTopos.prod FreeTopos.nat FreeTopos.nat
+
+/-- The sum of two terms of the natural numbers, by the definition `addDefn`. -/
+def addT (m n : Term) : Term := Term.defn 0 [] [n, m]
+
+/-- The sum of the components of the pair that is the variable of an index. -/
+def sumT (i : ℕ) : Term := addT (Term.fst (Term.var i)) (Term.snd (Term.var i))
+
+/-- The sum of the components of the pair that is the variable of an index, with zero added. -/
+def sum0T (i : ℕ) : Term := addT (sumT i) (Term.arr toposIdx.zero [] Term.star)
+
+/-- The relation of equal sums, between the pairs that are the innermost two variables. -/
+def sameSum : Term := Term.eq (sumT 1) (sumT 0)
+
+/-- The development of the quotient of the pairs of natural numbers by the relation of equal
+sums on `devGlobals`: the quotient, with the theorem that related pairs have equal images; the
+respect of the relation by the sum, the relation itself, and the sum's descent; and the respect
+of the relation by the sum with zero added, by normalization under the relation, and its
+descent. -/
+def quotDecls : Option (List Decl) := do
+  let ds : List Decl := [.quotient 0 natPair sameSum,
+    .language ⟨0, [natPair, natPair], [sameSum], sameSum⟩ (RoseTree.node (.hyp 0) []),
+    .descent 9 FreeTopos.nat (sumT 0) 1]
+  let (G, E) ← FreeTopos.Internal.checkDev devGlobals #[] ds
+  let d ← FreeTopos.Internal.byNorm G E 0 [.hyp 0] 16 [natPair, natPair] [sameSum] (sum0T 1)
+    (sum0T 0)
+  pure (ds ++ [.language ⟨0, [natPair, natPair], [sameSum], Term.eq (sum0T 1) (sum0T 0)⟩ d,
+    .descent 9 FreeTopos.nat (sum0T 0) 3])
+
+/-- The development `quotDecls`, where it checks. -/
+def quotDev? : Option Dev :=
+  quotDecls.bind fun ds ↦ (FreeTopos.Internal.checkDev devGlobals #[] ds).map fun (G, E) ↦ ⟨G, E⟩
+
+/-- The development `quotDecls`, or `lemmaDev` where it does not check. -/
+def quotDev : Dev := quotDev?.getD lemmaDev
+
+/-- The quotient, the object definition after the definition `addDefn`. -/
+def quotT : PartialHorn.Tree := PartialHorn.op (FreeTopos.sig.length + 1) []
+
+/-- The projection to the quotient, the primitive arrow after those of `toposGlobals`. -/
+def qT (t : Term) : Term := Term.arr 9 [] t
+
+/-- The descent of the sum. -/
+def descT (t : Term) : Term := Term.arr 10 [] t
+
+/-- The descent of the sum with zero added. -/
+def desc0T (t : Term) : Term := Term.arr 11 [] t
+
+/-- The goals posed in the signature of the quotient's development, each the declaration of a
+theorem of the internal language. -/
+def quotGoals : List Goal := List.filterMap (fun (name, a) ↦ quotDev.thmGoal name a)
+  [("the descent of the sum computes at an image",
+      ⟨0, [natPair], [], Term.eq (descT (qT (Term.var 0))) (sumT 0)⟩),
+    ("the descent of the sum at the image of (m, 0) is m",
+      ⟨0, [FreeTopos.nat], [], Term.eq (descT (qT (Term.pair (Term.var 0)
+        (Term.arr toposIdx.zero [] Term.star)))) (Term.var 0)⟩),
+    ("a pair and the pair with zero added have one image",
+      ⟨0, [FreeTopos.nat, FreeTopos.nat], [], Term.eq
+        (qT (Term.pair (Term.var 1) (addT (Term.var 0) (Term.arr toposIdx.zero [] Term.star))))
+        (qT (Term.pair (Term.var 1) (Term.var 0)))⟩),
+    ("the descents agree on the quotient",
+      ⟨0, [quotT], [], Term.eq (desc0T (Term.var 0)) (descT (Term.var 0))⟩)]
+
+end Quotient
 
 /-- The verdict of the internal language's checkers on a term found for a goal: the term's
 abstractions over the goal's parameters removed, its body decoded in their environment and the
@@ -265,11 +367,10 @@ def internalVerdict (G : FreeTopos.Internal.Globals) (k : PrimIdx)
 /-- The bound on the steps of normalization modulo the rules. -/
 def fuel : ℕ := 64
 
-/-- Run one goal in one regime, in the signature or in its extension by the lemmas' theorems,
-printing the outcome. -/
-def runGoal (timeout : UInt64) (dev : Bool) (g : Goal) (modulo select : Bool) : IO Unit := do
-  let (S, names, G, k, E) := if dev then (devSig, devNames, devGlobals, devIdx, lemmaEntries)
-    else (sig, toposNames, toposGlobals, toposIdx, #[])
+/-- Run one goal in one regime, in the signature `S` of a development, printing the outcome. -/
+def runGoal (timeout : UInt64) (d : Dev) (S : Sig) (g : Goal) (modulo select : Bool) :
+    IO Unit := do
+  let (names, G, k, E) := (d.names, d.G, d.idx, d.E)
   let rs := if modulo then rules else []
   let rel := relevant S 0 coreConsts g.type
   let usable := fun c ↦ !(modulo && redundantModRules.contains c) && (!select || rel c)
@@ -297,18 +398,24 @@ def main (args : List String) : IO UInt32 := do
   if toposNames.length != sig.length then
     IO.eprintln s!"{toposNames.length} names for {sig.length} constants"
     return 1
-  if devSig.length != sig.length + lemmas.length + 2 then
-    IO.eprintln s!"{devSig.length - sig.length} declarations for {lemmas.length} lemmas"
+  if quotDev?.isNone then
+    IO.eprintln "the quotient's development does not check"
+    return 1
+  if quotGoals.length != 4 then
+    IO.eprintln "a goal of the quotient's development is not declared"
     return 1
   let timeout := (args.head? >>= String.toNat?).getD 10
   let chosen := fun gs : List Goal ↦ match args with
     | [_, part] => gs.filter fun (g : Goal) ↦ (g.name.splitOn part).length > 1
     | _ => gs
-  for (dev, gs) in [(false, goals), (true, devGoals ++ defGoals)] do
+  for (d, gs) in [(baseDev, goals), (lemmaDev, devGoals ++ defGoals), (quotDev, quotGoals)] do
+    let some S := d.sig?
+      | IO.eprintln s!"the signature of a development is not formed"
+        return 1
     for g in chosen gs do
       for modulo in [false, true] do
         for select in [false, true] do
-          runGoal timeout.toUInt64 dev g modulo select
+          runGoal timeout.toUInt64 d S g modulo select
   return 0
 
 end GebExperiments.LF
