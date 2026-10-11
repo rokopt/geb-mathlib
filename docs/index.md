@@ -3972,10 +3972,14 @@ checklist and in CI.
   on quotients, in any number of object variables, which
   `Topos/Theorems.lean` declares as constants whose applications decode to the
   language's applications of the theorems, to the language's unfoldings and
-  to the language's inductions on quotients.
+  to the language's inductions on quotients;
+  `Topos/Development.lean` builds the extension a development determines,
+  its table and its declarations, and proves that, where it is formed, the
+  decoding of proofs is sound in it.
   Tested in `GebTests/Prototypes/LF.lean`,
-  `GebTests/Prototypes/LF/Topos.lean`, `GebTests/Prototypes/LF/Adequacy.lean`
-  and `GebTests/Prototypes/LF/Proofs.lean`. The library `GebExperiments`,
+  `GebTests/Prototypes/LF/Topos.lean`, `GebTests/Prototypes/LF/Adequacy.lean`,
+  `GebTests/Prototypes/LF/Proofs.lean` and
+  `GebTests/Prototypes/LF/Development.lean`. The library `GebExperiments`,
   which no module of `Geb`, `GebLang` or `GebTests` imports, translates goals
   of the signature to Canonical's input and the terms it returns back, and
   checks them (`lake exe lf-canonical`); the [bootstrap
