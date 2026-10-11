@@ -4129,6 +4129,17 @@ its proofs, in this order:
     quotient, and the soundness of the decoding of proofs holds in every
     extension by inductions on quotients whose projections project onto
     coequalizers.
+15. Complete. The signature of a development: a development's constants
+    and environment determine the extension's table, each object
+    definition, definition, primitive arrow, unfolding, induction on a
+    quotient and well-formed theorem it has, and the declarations of its
+    entries; where that extension is formed, the operations of its type
+    operations are unique and its table names each constant once, which
+    the construction decides, it is an extension of the kind items 9 to 14
+    describe, so that the soundness of the decoding of proofs holds in the
+    signature of every development whose primitive arrows include those
+    the signature's own constants encode. A descent, a primitive arrow
+    with the theorem of its computation, enters it as those constants do.
 
 The route remains an experiment; the Geb-native refinement below is the
 implementation meant to last, and the signature's measurements inform

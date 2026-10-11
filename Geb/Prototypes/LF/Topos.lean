@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.LF.Topos.Adequacy
 public import Geb.Prototypes.LF.Topos.Complete
 public import Geb.Prototypes.LF.Topos.Compose
+public import Geb.Prototypes.LF.Topos.Development
 public import Geb.Prototypes.LF.Topos.ProofCheck
 public import Geb.Prototypes.LF.Topos.ProofSound
 public import Geb.Prototypes.LF.Topos.Proofs
