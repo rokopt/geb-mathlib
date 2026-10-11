@@ -37,7 +37,8 @@ fresh variable ({lit}`indD`); a formula from a term of the initial object is the
 motive at it, proved on a fresh variable of the initial type. A constant past the signature, a
 theorem of an extension of it that the indices' table names, decodes to the language's
 application of the theorem's entry at its leading arguments' decodings, from its other arguments'
-decodings ({lit}`decPfThm`). No derivation cuts
+decodings, and one the table names as the unfolding of a definition to the unfolding at the
+equation's left side and reflexivity at its right ({lit}`decPfThm`). No derivation cuts
 through a formula that substitutes into a motive, so that each formula the checker types is the
 decoding of a term or built from such by the language's term formers.
 
@@ -141,22 +142,24 @@ section Decoding
 
 variable (k : PrimIdx)
 
-/-- The decoding of an application of a constant past the signature, a theorem of the extension,
-to derivations whose nodes {lit}`mk` forms: its first arguments, as many as the theorem's object
-variables, the outermost first, are types, the next, as many as its variables, terms, and the
-rest proofs of the theorem's hypotheses, and the application decodes to the language's
+/-- The decoding of an application of a constant past the signature to derivations whose nodes
+{lit}`mk` forms. At a theorem of the extension, its first arguments, as many as the theorem's
+object variables, the outermost first, are types, the next, as many as its variables, terms, and
+the rest proofs of the theorem's hypotheses, and the application decodes to the language's
 application of the theorem's entry at the types and the terms, the innermost first, with the
-proofs' decodings. -/
-def decPfThm {D : Type} (mk : FreeTopos.Internal.Rule → List D → D) (c : ℕ)
+proofs' decodings. At the unfolding of a definition, the application decodes to {lit}`dδ`, the
+proof of the unfolding's equation. -/
+def decPfThm {D : Type} (mk : FreeTopos.Internal.Rule → List D → D) (dδ : D) (c : ℕ)
     (cs : List (Expr × (List (Option ℕ) → ℕ → Option D))) (env : List (Option ℕ)) (m : ℕ) :
     Option D :=
-  if sig.length ≤ c then match k.thms[c - sig.length]? with
-    | some (j, n, p) => do
+  if sig.length ≤ c then match k.ext[c - sig.length]? with
+    | some (.thm j n p) => do
       let θ ← (cs.take n).mapM fun x ↦ decTy env.length x.1
       let σ ← ((cs.drop n).take p).mapM fun x ↦ termOf k env x.1
       let ps ← (cs.drop (n + p)).mapM fun x ↦ x.2 env m
       pure (mk (.apply j θ.reverse σ.reverse) ps)
-    | none => none
+    | some (.delta _ _ _) => some dδ
+    | _ => none
   else none
 
 /-- One step of the decoding of a proof at a node of a constant of coproducts or of the initial
@@ -179,7 +182,7 @@ def decPfStepCoprod (c : ℕ) (cs : List (Expr × (List (Option ℕ) → ℕ →
     | 56, [(z, _), (φ, _)] => do
       pure (indD FreeTopos.zero (.zeroInd 0) (weaken1 (← termOf k env φ)) (← termOf k env z) m
         [])
-    | c, cs => decPfThm k nd c cs env m
+    | c, cs => decPfThm k nd (joinD (ruleD .delta) reflD) c cs env m
 
 /-- One step of the decoding of a proof, at a node of a label, from its children's decodings,
 each a function of an environment and the number of hypotheses. -/

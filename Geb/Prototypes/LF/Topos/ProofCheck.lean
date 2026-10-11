@@ -28,6 +28,7 @@ derivations the decoding builds, the rewriting or the proof they perform.
 * {lit}`check_natZero`, {lit}`check_natSucc`, {lit}`check_listNil`, {lit}`check_listCons`,
   {lit}`check_roseNode`, {lit}`check_caseInl`, {lit}`check_caseInr` — the computations of the
   folds and of the case analysis.
+* {lit}`check_delta` — the unfolding of a definition.
 * {lit}`check_leibD`, {lit}`check_indD`, {lit}`check_natIndD`, {lit}`check_listIndD`,
   {lit}`check_roseIndD`, {lit}`check_coprodIndD`, {lit}`check_exfalsoD` — the substitution of
   equals and the induction.
@@ -176,6 +177,17 @@ theorem check_beta (a : PartialHorn.Tree) (b u : Term) :
     (check G E n (ruleD .beta)).1 Γ Φ (Term.app (Term.lam a b) u) =
       some (Term.subst b (instVar u)) := by
   rw [check_rule _ ⟨by simp, by simp, by simp⟩]
+  rfl
+
+/-- The unfolding of a definition at its application: its body, at the objects and the terms
+the application gives. -/
+theorem check_delta {kd : ℕ} {d : FreeTopos.Internal.Defn}
+    (hd : G.defs[kd]? = some (.language d)) (θ : List PartialHorn.Tree) (args : List Term) :
+    (check G E n (ruleD .delta)).1 Γ Φ (Term.defn kd θ args) =
+      some (FreeTopos.Internal.instTerm θ args d.body) := by
+  rw [check_rule _ ⟨by simp, by simp, by simp⟩]
+  simp only [Term.defn, rootStep, RoseTree.label_node, RoseTree.children_node, hd,
+    Option.bind_some, FreeTopos.Internal.Definition.language?, Option.map_some]
   rfl
 
 /-- The first component of a pair. -/
