@@ -84,7 +84,7 @@ def proves (Γ : List PartialHorn.Tree) (M F : Expr) : Bool := provesIn 0 Γ M F
 {lit}`Γ`, decodes to a certificate with steps of conversion that proves the decoding of an equation
 in the internal context {lit}`Γ`. -/
 def provesMod (Γ : List PartialHorn.Tree) (M F : Expr) : Bool :=
-  match decPfMod pfIdx M (Γ.map fun _ ↦ none) 0, dec pfIdx F Γ.length with
+  match decPfMod pfIdx #[] M (Γ.map fun _ ↦ none) 0, dec pfIdx F Γ.length with
     | some D, some φ => Thm.convChecks pfGlobals #[] ⟨0, Γ, [], φ⟩ D
     | _, _ => false
 
@@ -471,7 +471,7 @@ certificate of the checker with a step of conversion, that prove the decoding of
 the internal context {lit}`Γ` in {lit}`n` object variables: the base checker's verdict and the
 conversion checker's. -/
 def provesDefIn (n : ℕ) (Γ : List PartialHorn.Tree) (M F : Expr) : Bool × Bool :=
-  match decPf defIdx M (Γ.map fun _ ↦ none) 0, decPfMod defIdx M (Γ.map fun _ ↦ none) 0,
+  match decPf defIdx M (Γ.map fun _ ↦ none) 0, decPfMod defIdx #[] M (Γ.map fun _ ↦ none) 0,
       dec defIdx F Γ.length with
     | some D, some D', some φ => (Thm.checks defGlobals #[] ⟨n, Γ, [], φ⟩ D,
         Thm.convChecks defGlobals #[] ⟨n, Γ, [], φ⟩ D')
