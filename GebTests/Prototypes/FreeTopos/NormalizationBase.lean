@@ -810,9 +810,11 @@ parameter {lit}`F` of the type {lit}`FX` given by {lit}`fstAt`, is the identity,
 rose trees with the fusion of the children's first components with the map of the functions, and
 the map of constant functions, each by induction on the children; and its instance at the
 parameter {lit}`inst` in the context {lit}`Γd` below the tree, the folded definition of index
-{lit}`unfold` unfolded first where given, whose first component is thereby the tree. -/
+{lit}`unfold` unfolded first where given, whose first component is thereby the tree. The rules
+{lit}`extra`, given the theorems' indices by name, precede the vocabulary's in each. -/
 def rebuildLemmas (P : Prog) (tag : String) (FX : Tree) (fstAt : Term → Term → Term)
-    (Γd : List Tree) (folded : Term) (inst : Term) (unfold : Option ℕ) : List Step :=
+    (Γd : List Tree) (folded : Term) (inst : Term) (unfold : Option ℕ)
+    (extra : (String → ℕ) → List NormRule := fun _ ↦ []) : List Step :=
   -- the step of the induction, in the children's functions and the label
   let sF := Term.lam FX (nodeT (Term.pair (v 2) (call D.mapApp [FX, treeTy] [v 1, v 0])))
   let mapF := Term.listRec (nilT (exp FX treeTy))
@@ -820,7 +822,7 @@ def rebuildLemmas (P : Prog) (tag : String) (FX : Tree) (fstAt : Term → Term �
   let fstAbs : Internal.Thm := ⟨0, [treeTy], [], Term.eq (Term.lam FX (fstAt (v 1) (v 0)))
     (Term.lam FX (v 1))⟩
   [(s!"{tag}KidsFus", fun ix E ↦ do
-      let rs := vRules P ix
+      let rs := extra ix ++ vRules P ix
       let some t := nfE P.G E rs [list treeTy, bitsTy, FX]
           (fstAt (nodeT (Term.pair (v 1) (v 0))) (v 2))
         | dbgTrace s!"{tag}KidsFus: no normal form" fun _ ↦ none
@@ -831,20 +833,21 @@ def rebuildLemmas (P : Prog) (tag : String) (FX : Tree) (fstAt : Term → Term �
         | dbgTrace s!"{tag}KidsFus: {showT l}\n  = {showT r}" fun _ ↦ none
       pure (⟨0, [list treeTy, FX], [], Term.eq l r⟩, d)),
     (s!"{tag}Const", fun ix E ↦ do
-      let rs := vRules P ix
+      let rs := extra ix ++ vRules P ix
       let Γ := [list treeTy, FX]
       let l ← nfE P.G E rs Γ (call D.mapApp [FX, treeTy] [Term.listRec (nilT (exp FX treeTy))
         (consT (exp FX treeTy) (Term.lam FX (v 2)) (v 0)) (v 0), v 1])
       let d ← Internal.byListIndHyp P.G E 0 0 1 rs 4096 Γ [] l (v 0)
       pure (⟨0, Γ, [], Term.eq l (v 0)⟩, d)),
     (s!"{tag}FstAbs", fun ix E ↦ do
-      let rs := [.thm (ix s!"{tag}KidsFus") [], .thm (ix s!"{tag}Const") []] ++ vRules P ix
+      let rs := [.thm (ix s!"{tag}KidsFus") [], .thm (ix s!"{tag}Const") []] ++ extra ix ++
+        vRules P ix
       let some d := byRoseIndWith P.G 0 sF (Internal.byFunExt P.G 0 (byMode .full P.G E 0 rs))
           fstAbs.ctx [] (sides fstAbs).1 (sides fstAbs).2
         | dbgTrace s!"{tag}FstAbs: not proved" fun _ ↦ none
       pure (fstAbs, d)),
     (s!"{tag}Fst", fun ix E ↦ do
-      let rs := vRules P ix
+      let rs := extra ix ++ vRules P ix
       let Γ := treeTy :: Γd
       let l ← nfE P.G E rs Γ (Term.fst folded)
       -- the instance of the first component as a function of the parameter
@@ -858,9 +861,19 @@ def rebuildLemmas (P : Prog) (tag : String) (FX : Tree) (fstAt : Term → Term �
           let (_, d₁, _) ← Internal.eval P.G E 0 [.delta k] 4096 .head Γ [] (Term.fst folded)
           pure (nd .conv [nd .cong [d₁, nd .refl], de])
         | none => do
-          -- the first component's normal form, from the first component
-          let (_, dn, _) ← Internal.eval P.G E 0 rs 4096 .full Γ [] (Term.fst folded)
-          pure (nd (.convFrom (Term.eq (Term.fst folded) (v 0))) [nd .cong [dn, nd .refl], de])
+          let ψ := Term.eq (Term.fst folded) (v 0)
+          let p := nd .join [nd .cong [nd (.thm (ix s!"{tag}FstAbs") [] [v 0] false), nd .refl],
+            nd .refl]
+          if (Internal.check P.G E 0 (nd .cong [nd .beta, nd .beta])).1 Γ [] e == some ψ then
+            -- the first component's normal form, from the first component
+            let (_, dn, _) ← Internal.eval P.G E 0 rs 4096 .full Γ [] (Term.fst folded)
+            pure (nd (.convFrom ψ) [nd .cong [dn, nd .refl], de])
+          else
+            -- the instance's sides reduced to the normal form, where the parameter is not a
+            -- variable and its components are projections
+            let (r, dr, _) ← Internal.eval P.G E 0 rs 4096 .full Γ [] e
+            if r == Term.eq l (v 0) then pure (nd (.convFrom e) [dr, p]) else
+              dbgTrace s!"{tag}Fst: {showT r}" fun _ ↦ none
       pure (⟨0, Γ, [], Term.eq l (v 0)⟩, d))]
 
 /-- The first subterms, in preorder, at which two terms differ. -/
