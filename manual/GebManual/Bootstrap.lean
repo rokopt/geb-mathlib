@@ -4009,6 +4009,55 @@ second conclusion above: the goal that needs both an induction and
 computation under its hypothesis is found only modulo the rules, where
 the search is left the induction and its motive.
 
+Goals are also posed in the signature of a development (item 15 below),
+each the declaration of a theorem of the internal language. The quotient
+of the pairs of natural numbers by the relation of equal sums, declared
+on the definition of addition with the descents of the sum and of the sum
+with zero added, gives the following, every declaration offered, with a
+timeout of 60 s, every term returned checking in LF:
+
+:::table +header
+*
+  * Goal
+  * Pure LF
+  * Modulo the rules
+*
+  * The descent of the sum at an image is the sum
+  * Found, 24 ms, the computation of the descent under congruence by the
+    identity
+  * Found, 4 ms, the computation of the descent
+*
+  * The descent of the sum at the image of `(m, 0)` is `m`
+  * Not found in 60 s
+  * Found, 17 ms, by substitution of equals into the computation of the
+    descent along the unfolding of addition
+*
+  * A pair and the pair whose second component has zero added have one
+    image
+  * Found, 128 ms, by congruence of the projection and the computation of
+    the fold substituted into the unfolding of addition
+  * Found, 10 ms, by congruence of the projection and the unfolding
+*
+  * The two descents agree on every element of the quotient
+  * Not found in 60 s
+  * Found, in 7.6 s and in 13 s in two runs, by induction on the quotient,
+    its premise the two
+    computations of the descents and the unfolding of addition
+:::
+
+Every term found decoded to a certificate its checker accepts but one:
+the decoding modulo the rules leaves an application of a theorem
+unconverted, and its substitution of equals converts the proof of the
+motive at the left side by β alone, so the term found for the descent at
+the image of `(m, 0)`, which applies the computation of the descent at a
+pair, an instance normal only after the computation rules of pairs,
+decodes to a certificate the conversion checker rejects. Offered only
+the relevant declarations, the first three goals are found as before;
+the agreement of the descents is not found in 60 s, the projection, the
+induction on the quotient and the computations of the descents excluded,
+their types mentioning the product, a type former the goal does not
+mention.
+
 A release of Canonical is a GitHub release named after a Lean version,
 holding the solver's native library and the package's Lean build; Lake
 fetches it for the tag naming the checked-out revision, and the solver's
