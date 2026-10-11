@@ -77,13 +77,14 @@ kind. -/
 def declsToText (ds : List Decl) : Option String :=
   (Stored.declsTree ds).map (natsToText ∘ treeToNats)
 
-/-- The certificates of the developments written into a directory, each search timed; a line for
-each certificate, its name, its number of declarations, the bytes of its text and the
-milliseconds of the search that found it. The exit code is nonzero where a search fails. -/
-def generate (dir : System.FilePath) : IO UInt32 := do
+/-- The certificates of the developments written into a directory, each search timed, the
+searches those named in {lit}`only` where it is not empty; a line for each certificate, its name,
+its number of declarations, the bytes of its text and the milliseconds of the search that found
+it. The exit code is nonzero where a search fails. -/
+def generate (dir : System.FilePath) (only : List String := []) : IO UInt32 := do
   IO.FS.createDirAll dir
   let mut code : UInt32 := 0
-  for (name, search) in Certificates.searches do
+  for (name, search) in Certificates.searches.filter fun x ↦ only.isEmpty ∨ x.1 ∈ only do
     let t₀ ← IO.monoMsNow
     let r ← IO.lazyPure search
     let t₁ ← IO.monoMsNow

@@ -11,19 +11,21 @@ import GebTests.Prototypes.FreeTopos.StoredWriter
 # Certificate generator entry point
 
 Write the certificates of the internal language's developments into a directory with
-`lake exe geb-certify DIR`, as `scripts/certificates.sh` runs it. The generator is
+`lake exe geb-certify DIR`, as `scripts/certificates.sh` runs it, or those of the searches named
+after the directory with `lake exe geb-certify DIR NAME...`. The generator is
 `GebTests.Prototypes.FreeTopos.StoredWriter.generate`; the entry point is outside the library's
 module prefix.
 
 ## Main definitions
 
-* `main`: the certificates written into the directory the one argument names.
+* `main`: the certificates written into the directory the first argument names.
 -/
 
-/-- Write the certificates into the directory the one argument names. -/
+/-- Write the certificates into the directory the first argument names, those of the searches the
+other arguments name where there are any. -/
 public def main (args : List String) : IO UInt32 := do
   match args with
-  | [dir] => GebTests.Prototypes.FreeTopos.StoredWriter.generate dir
+  | dir :: names => GebTests.Prototypes.FreeTopos.StoredWriter.generate dir names
   | _ =>
-    IO.eprintln "usage: geb-certify DIR"
+    IO.eprintln "usage: geb-certify DIR [NAME...]"
     pure 2
