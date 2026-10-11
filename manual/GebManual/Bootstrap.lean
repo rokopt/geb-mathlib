@@ -2225,7 +2225,7 @@ soundness of the typing, stated in the internal language of the stage-1
 compiler composed with the reader and the evaluator written in Geb, by a
 relation extending the fundamental lemma's at the datatypes, and proved
 at atoms (`GebTests/Prototypes/FreeTopos/DatatypeBase.lean`, its
-certificate checked by `GebTests/Prototypes/FreeTopos/Certified/Datatype.lean`).
+certificates checked by `GebTests/Prototypes/FreeTopos/Certified/Datatype.lean`).
 Remaining after it: `tree-data` removed.
 
 Abstraction is mathematical, not syntactic, and needs no mark of its
