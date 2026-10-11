@@ -4114,6 +4114,16 @@ its proofs, in this order:
     encode keep their encoding, and the table names none of them; the
     adequacy of the encoding and the soundness of the decoding of proofs
     hold in every extension by primitive arrows of types.
+14. Complete. Quotients: the quotient type a development declares is an
+    object definition and its projection a primitive arrow, so that both
+    are constants of the extension as items 12 and 13 declare them. The
+    induction on the quotient is a further constant, declared as the
+    signature's case analysis on a coproduct is, with the motive an LF
+    abstraction and the premise its proof at the projection's image of a
+    variable; its application decodes to the language's induction on the
+    quotient, and the soundness of the decoding of proofs holds in every
+    extension by inductions on quotients whose projections project onto
+    coequalizers.
 
 The route remains an experiment; the Geb-native refinement below is the
 implementation meant to last, and the signature's measurements inform

@@ -3968,10 +3968,11 @@ checklist and in CI.
   the checker at the derivations it builds, and `Topos/ProofSound.lean` proves
   the decoding sound: a proof decodes to a derivation the checker accepts as a
   proof of the decoded formula, in the signature and in its extensions by the
-  theorems of a development and the unfoldings of definitions, in any number
-  of object variables, which `Topos/Theorems.lean` declares as constants whose
-  applications decode to the language's applications of the theorems and to
-  the language's unfoldings.
+  theorems of a development, the unfoldings of definitions and the inductions
+  on quotients, in any number of object variables, which
+  `Topos/Theorems.lean` declares as constants whose applications decode to the
+  language's applications of the theorems, to the language's unfoldings and
+  to the language's inductions on quotients.
   Tested in `GebTests/Prototypes/LF.lean`,
   `GebTests/Prototypes/LF/Topos.lean`, `GebTests/Prototypes/LF/Adequacy.lean`
   and `GebTests/Prototypes/LF/Proofs.lean`. The library `GebExperiments`,

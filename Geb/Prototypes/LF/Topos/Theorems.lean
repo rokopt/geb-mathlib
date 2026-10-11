@@ -30,16 +30,25 @@ declares, has its unfolding, δ, as a further constant: the theorem, in the defi
 variables and parameters, that the definition at its variables, applied to its parameters,
 equals its body ({lit}`deltaThm`), declared as any theorem is. Its instance at objects and terms
 is the equation of the definition at them with its body at them ({lit}`instTerm_defn_vars`),
-which the language's unfolding at the left side proves. An extension of the signature declares
-the theorems and the unfoldings that the indices' table names at their positions
-({lit}`ExtDecl`).
+which the language's unfolding at the left side proves.
+
+The quotient a development declares is an object definition, and its projection a primitive
+arrow, each a constant of the extension as {name}`Geb.LF.Topos.SigExt` declares it. The induction
+on the quotient is a further constant, declared as the signature's case analysis on a coproduct
+is: the products over the kind of types, one for each object parameter of the projection, of the
+product over a motive, an LF abstraction from the quotient into the subobject classifier, of the
+arrow from the motive's proof at the projection's image of a variable of its domain into its
+proof at every element of the quotient ({lit}`quotBody`, {lit}`quotIndTy`). An extension of the
+signature declares the theorems, the unfoldings and the inductions on quotients that the
+indices' table names at their positions ({lit}`ExtDecl`).
 
 ## Main definitions
 
 * {lit}`thmTy` — the declaration of a theorem.
 * {lit}`deltaThm` — the theorem that unfolds a definition.
-* {lit}`ExtDecl` — an extension of the signature declares the theorems and the unfoldings that a
-  table names.
+* {lit}`quotBody`, {lit}`quotIndTy` — the declaration of the induction on a quotient.
+* {lit}`ExtDecl` — an extension of the signature declares the theorems, the unfoldings and the
+  inductions on quotients that a table names.
 
 ## Main statements
 
@@ -53,7 +62,8 @@ the theorems and the unfoldings that the indices' table names at their positions
 
 ## Tags
 
-logical framework, LF, signature, theorem, lemma, definition, unfolding, internal language
+logical framework, LF, signature, theorem, lemma, definition, unfolding, quotient, induction,
+internal language
 -/
 
 set_option doc.verso true
@@ -124,6 +134,24 @@ theorem instTerm_eq (θ : List PartialHorn.Tree) (σ : List Term) (t u : Term) :
   rw [instTerm, Term.eq, FreeTopos.Internal.Term.osubst_node, FreeTopos.Internal.Term.subst_node]
   rfl
 
+/-- Objects substituted for the object variables, the first for the innermost, give the
+objects. -/
+theorem map_subst_vars (θ : List PartialHorn.Tree) :
+    ((List.range θ.length).map PartialHorn.var).map (PartialHorn.subst θ) = θ :=
+  List.ext_getElem (by rw [List.length_map, List.length_map, List.length_range])
+    fun i h₁ h₂ ↦ by
+      rw [List.getElem_map, List.getElem_map, List.getElem_range, PartialHorn.var,
+        PartialHorn.subst_node_zero θ rfl, RoseTree.label_node,
+        List.getElem?_eq_getElem h₂, Option.getD_some]
+
+/-- An operation at the object variables, with objects substituted for them, is the operation at
+the objects. -/
+theorem subst_op_vars (op : ℕ) (θ : List PartialHorn.Tree) :
+    PartialHorn.subst θ (PartialHorn.op op (FreeTopos.Internal.objVars θ.length)) =
+      PartialHorn.op op θ := by
+  rw [PartialHorn.op, PartialHorn.subst_node_succ]
+  exact congrArg _ (map_subst_vars θ)
+
 open FreeTopos.Internal (instTerm) in
 /-- The instance of a definition at its variables, applied to its parameters, is the definition
 at the objects, applied to the terms, the instance gives. -/
@@ -132,12 +160,6 @@ theorem instTerm_defn_vars (kd : ℕ) (θ : List PartialHorn.Tree) (σ : List Te
       ((List.range σ.length).map Term.var)) = Term.defn kd θ σ := by
   rw [instTerm, Term.defn, FreeTopos.Internal.Term.osubst_node,
     FreeTopos.Internal.Term.subst_node]
-  have hθ : ((List.range θ.length).map PartialHorn.var).map (PartialHorn.subst θ) = θ :=
-    List.ext_getElem (by rw [List.length_map, List.length_map, List.length_range])
-      fun i h₁ h₂ ↦ by
-        rw [List.getElem_map, List.getElem_map, List.getElem_range, PartialHorn.var,
-          PartialHorn.subst_node_zero θ rfl, RoseTree.label_node,
-          List.getElem?_eq_getElem h₂, Option.getD_some]
   have hσ : (((List.range σ.length).map Term.var).map (Term.osubst θ)).map
       (fun c ↦ Term.subst c (Term.substList σ)) = σ :=
     List.ext_getElem (by rw [List.length_map, List.length_map, List.length_map,
@@ -149,16 +171,46 @@ theorem instTerm_defn_vars (kd : ℕ) (θ : List PartialHorn.Tree) (σ : List Te
   change RoseTree.node (.defn kd (((List.range θ.length).map PartialHorn.var).map
       (PartialHorn.subst θ))) (((((List.range σ.length).map Term.var).map (Term.osubst θ)).map
       fun c ↦ (c, Term.subst c)).map fun c ↦ c.2 (Term.substList σ)) = _
-  rw [hθ, List.map_map]
+  rw [map_subst_vars, List.map_map]
   exact congrArg _ hσ
+
+/-- The body of the declaration of the induction on a quotient, in its object parameters: the
+product over a motive, from the family of terms of the quotient {lit}`Q₀` into the family of terms
+of the subobject classifier, of the arrow from the product over the family of terms of the
+projection's domain {lit}`A` of the family of proofs of the motive at the projection's application
+{lit}`M` to the variable, into the product over the family of terms of the quotient {lit}`Q₁` of
+the family of proofs of the motive at the variable. Each type is encoded at the offset of the
+variables in its scope. -/
+def quotBody (Q₀ A Q₁ M : Expr) : Expr :=
+  Expr.pi (Expr.arrow (tm Q₀) (tm omega))
+    (Expr.arrow (Expr.pi (tm A) (pf (Expr.var 1 [M])))
+      (Expr.pi (tm Q₁) (pf (Expr.var 1 [Expr.var 0]))))
+
+/-- The declaration of the induction on a quotient whose projection is the primitive arrow of
+index {lit}`kq`: the products over the kind of types, one for each object parameter of the
+projection, into the body ({lit}`quotBody`) at the projection's codomain and domain, with the
+projection applied to the object parameters, the outermost first, and to the variable of its
+domain. -/
+def quotIndTy (k : PrimIdx) (kq : ℕ) (p : FreeTopos.Internal.Prim) : Option Expr := do
+  let c ← k.tmConst (.arr kq) p.arity 1
+  let Q₀ ← encTy k 0 p.cod
+  let A ← encTy k 1 p.dom
+  let Q₁ ← encTy k 1 p.cod
+  pure (piTele (List.replicate p.arity tp) (quotBody Q₀ A Q₁
+    (Expr.const c ((List.range p.arity).reverse.map (fun i ↦ Expr.var (2 + i)) ++ [Expr.var 0]))))
 
 /-- An extension of the signature declares the theorems that the table of the indices names:
 at the position of each earlier theorem the table names, the declaration of that theorem, a
 well-formed theorem of as many object variables and variables as the table records, and at the
 position of each unfolding of a definition the table names, of a body that compiles, the
 declaration of the theorem that unfolds it, of as many object variables and parameters as the
-table records. The unfolding is well formed where its definition's parameters and value are also
-of types, which an extension declaring the definition records ({name}`Geb.LF.Topos.SigExt`). -/
+table records, and at the position of each induction on a quotient the table names, whose
+projection is a primitive arrow that projects onto a coequalizer, of as many object parameters
+as the table records and onto the table's object definition at them, the declaration of the
+induction ({lit}`quotIndTy`). The
+unfolding is well formed where its definition's parameters and value are also of types, which an
+extension declaring the definition records ({name}`Geb.LF.Topos.SigExt`), and the induction where
+the projection's domain and codomain are, which an extension declaring the projection records. -/
 def ExtDecl (G : Globals) (E : Array Entry) (k : PrimIdx) (sg : Sig) : Prop :=
   (∀ i j m p, k.ext[i]? = some (.thm j m p) → ∃ a T,
     (E[j]?).bind Entry.language? = some a ∧ m = a.arity ∧ p = a.ctx.length ∧
@@ -166,11 +218,15 @@ def ExtDecl (G : Globals) (E : Array Entry) (k : PrimIdx) (sg : Sig) : Prop :=
   (∀ i kd m p, k.ext[i]? = some (.delta kd m p) → ∃ d T,
     G.defs[kd]? = some (.language d) ∧ m = d.arity ∧ p = d.params.length ∧
     (∃ cd, FreeTopos.Internal.Defn.compile G d = some cd) ∧ thmTy G k (deltaThm kd d) = some T ∧
-    sg[sig.length + i]? = some T)
+    sg[sig.length + i]? = some T) ∧
+  (∀ i kq m op, k.ext[i]? = some (.quotInd kq m op) → ∃ p T,
+    G.prims[kq]? = some p ∧ m = p.arity ∧
+    p.cod = PartialHorn.op op (FreeTopos.Internal.objVars p.arity) ∧ p.coeqParts.isSome = true ∧
+    quotIndTy k kq p = some T ∧ sg[sig.length + i]? = some T)
 
 /-- The signature, at indices whose table is empty, declares the theorems the table names. -/
 theorem extDecl_sig (G : Globals) (E : Array Entry) (hk : k.ext = []) : ExtDecl G E k sig := by
-  refine ⟨fun i _ _ _ h ↦ ?_, fun i _ _ _ h ↦ ?_⟩ <;>
+  refine ⟨fun i _ _ _ h ↦ ?_, fun i _ _ _ h ↦ ?_, fun i _ _ _ h ↦ ?_⟩ <;>
     · rw [hk] at h
       exact nomatch h
 

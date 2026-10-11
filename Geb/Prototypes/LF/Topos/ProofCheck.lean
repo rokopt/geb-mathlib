@@ -24,14 +24,14 @@ derivations the decoding builds, the rewriting or the proof they perform.
 
 * {lit}`check_join`, {lit}`check_cut`, {lit}`check_conv`, {lit}`check_convFrom`,
   {lit}`check_propExt`, {lit}`check_funExt`, {lit}`check_natIndHyp`, {lit}`check_listIndHyp`,
-  {lit}`check_roseIndHyp`, {lit}`check_coprodInd` — the proof rules.
+  {lit}`check_roseIndHyp`, {lit}`check_coprodInd`, {lit}`check_quotInd` — the proof rules.
 * {lit}`check_natZero`, {lit}`check_natSucc`, {lit}`check_listNil`, {lit}`check_listCons`,
   {lit}`check_roseNode`, {lit}`check_caseInl`, {lit}`check_caseInr` — the computations of the
   folds and of the case analysis.
 * {lit}`check_delta` — the unfolding of a definition.
 * {lit}`check_leibD`, {lit}`check_indD`, {lit}`check_natIndD`, {lit}`check_listIndD`,
-  {lit}`check_roseIndD`, {lit}`check_coprodIndD`, {lit}`check_exfalsoD` — the substitution of
-  equals and the induction.
+  {lit}`check_roseIndD`, {lit}`check_coprodIndD`, {lit}`check_quotIndD`, {lit}`check_exfalsoD` —
+  the substitution of equals and the induction.
 
 ## Tags
 
@@ -595,6 +595,30 @@ theorem check_coprodInd {kl kr : ℕ} {Γ₀ : List PartialHorn.Tree} {Φ' : Lis
   rw [decide_eq_true_of ⟨hl, hr, hφ⟩, hp₀, hp₁]
   rfl
 
+/-- Induction on a quotient at the innermost variable, of the codomain of the primitive arrow of
+index {lit}`kq` at the objects {lit}`θ`, which projects onto a coequalizer: the formula at the
+projection's image of a variable of its domain, under the hypotheses, which do not mention the
+variable. -/
+theorem check_quotInd {kq : ℕ} {p : FreeTopos.Internal.Prim} {θ : List PartialHorn.Tree}
+    {Γ₀ : List PartialHorn.Tree} {Φ' : List Term} {φ : Term} {p₀ : Deriv}
+    (hp : G.prims[kq]? = some p) (hq : p.coeqParts.isSome = true)
+    (hlow : FreeTopos.Internal.lowerHyps G n Γ₀ Φ = some Φ') (hθl : θ.length = p.arity)
+    (hθ : θ.all (FreeTopos.Internal.IsTy G n) = true)
+    (hφ : typeIn G n (PartialHorn.subst θ p.cod :: Γ₀) φ = some FreeTopos.omega)
+    (hp₀ : (check G E n p₀).2 (PartialHorn.subst θ p.dom :: Γ₀) Φ
+      (Term.subst φ (FreeTopos.Internal.atVar0 (Term.arr kq θ (Term.var 0)))) = true) :
+    (check G E n (nd (.quotInd kq θ) [p₀])).2 (PartialHorn.subst θ p.cod :: Γ₀) Φ φ = true := by
+  obtain ⟨fg, hfg⟩ := Option.isSome_iff_exists.mp hq
+  rw [check_node]
+  simp only [List.map_cons, List.map_nil]
+  dsimp only [checkStep]
+  rw [hp]
+  dsimp only
+  rw [hfg, hlow]
+  dsimp only
+  rw [decide_eq_true_of ⟨hθl, hθ, rfl, hφ⟩, hp₀]
+  rfl
+
 /-- The substitution at the innermost variable is the instantiation. -/
 theorem substAt_zero (u : Term) : substAt 0 u = instVar u := by
   funext i
@@ -732,6 +756,22 @@ theorem check_coprodIndD {k : PrimIdx} (hl : G.prims[k.inl]? = some FreeTopos.In
     (check G E n (indD (FreeTopos.coprod a b) (.coprodInd k.inl k.inr) pb n' Φ.length
       [D₀, D₁])).2 Γ Φ (Term.subst pb (instVar n')) = true :=
   check_indD hab hpb hn' (check_coprodInd (lowerHyps_truth hΦ) hl hr hpb h₀ h₁)
+
+/-- Induction on a quotient at a term: the motive at {lit}`n'`, from its proof at the
+projection's image of a fresh variable, under the hypothesis true, which the derivation's cut
+adds. -/
+theorem check_quotIndD {kq : ℕ} {p : FreeTopos.Internal.Prim} {θ : List PartialHorn.Tree}
+    (hp : G.prims[kq]? = some p) (hq : p.coeqParts.isSome = true) (hθl : θ.length = p.arity)
+    (hθ : θ.all (FreeTopos.Internal.IsTy G n) = true)
+    (hc : FreeTopos.Internal.IsTy G n (PartialHorn.subst θ p.cod) = true) {pb n' : Term}
+    {D₀ : Deriv} (hpb : typeIn G n (PartialHorn.subst θ p.cod :: Γ) pb = some FreeTopos.omega)
+    (hn' : typeIn G n Γ n' = some (PartialHorn.subst θ p.cod))
+    (hΦ : ∀ φ ∈ Φ, typeIn G n Γ φ = some FreeTopos.omega)
+    (h₀ : (check G E n D₀).2 (PartialHorn.subst θ p.dom :: Γ) (Φ.map weaken1 ++ [truth])
+      (Term.subst pb (FreeTopos.Internal.atVar0 (Term.arr kq θ (Term.var 0)))) = true) :
+    (check G E n (indD (PartialHorn.subst θ p.cod) (.quotInd kq θ) pb n' Φ.length [D₀])).2 Γ Φ
+      (Term.subst pb (instVar n')) = true :=
+  check_indD hc hpb hn' (check_quotInd hp hq (lowerHyps_truth hΦ) hθl hθ hpb h₀)
 
 /-- A term weakened by a variable and instantiated at a term is itself. -/
 theorem subst_weaken1_instVar {t : Term} (ht : Term.VarLeaves t = true) (u : Term) :

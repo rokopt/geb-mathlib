@@ -20,9 +20,13 @@ variables inside variables of {lit}`tp`, decodes ({name}`Geb.LF.Topos.decPf`) to
 that the internal language's checker accepts as a proof of the formula's decoding, in the internal
 context of the term variables' types under the hypotheses of the proof variables' formulas, in as
 many object variables as the context has variables of {lit}`tp`. The signature may be extended
-by the theorems of a development and the unfoldings of definitions
+by the theorems of a development, the unfoldings of definitions and the inductions on quotients
 ({name}`Geb.LF.Topos.ExtDecl`), whose applications decode to the language's applications of the
-theorems' entries and to the unfoldings.
+theorems' entries, to the unfoldings and to the language's inductions on the quotients. The
+declaration of an induction on a quotient, its leading arguments substituted, is its body at the
+encodings of the quotient and of the projection's domain at the objects they decode to
+({lit}`hsubs_quotBody`), and the rest of its spine decodes as that of the case analysis on a
+coproduct does ({lit}`sound_quotBody`).
 
 ## Main definitions
 
@@ -37,6 +41,8 @@ theorems' entries and to the unfoldings.
 * {lit}`sound_thm` — the soundness of the decoding of an application of a theorem.
 * {lit}`deltaThm_wellFormed` — the unfolding of a definition the language admits is well formed.
 * {lit}`sound_delta` — the soundness of the decoding of an application of an unfolding.
+* {lit}`sound_quotInd` — the soundness of the decoding of an application of the induction on a
+  quotient.
 * {lit}`pfSound`, {lit}`decPf_sound` — the soundness of the decoding of proofs.
 * {lit}`decPf_checks` — a proof in a context of term variables decodes to a derivation of a
   theorem of the internal language.
@@ -2606,7 +2612,7 @@ application of a theorem of the extension. -/
 theorem decPfStep_thm {c : ℕ} (hc : sig.length ≤ c)
     (xs : List (Expr × (List (Option ℕ) → ℕ → Option Deriv))) (env : List (Option ℕ)) (m : ℕ) :
     decPfStep k (.app (.const c)) xs env m =
-      decPfThm k nd (joinD (ruleD .delta) reflD) c xs env m := by
+      decPfThm k nd (joinD (ruleD .delta) reflD) indD c xs env m := by
   obtain ⟨i, rfl⟩ : ∃ i, c = i + 57 :=
     ⟨c - 57, by rw [show sig.length = 57 from rfl] at hc; omega⟩
   rfl
@@ -2698,6 +2704,32 @@ theorem termOf_inst {a : FreeTopos.Internal.Thm}
   have hi' := hocc i hi
   rw [iterate_liftR_lt _ _ i hi', scopeSubst, ite_eq_left (by rw [hσl]; exact hi')]
 
+include hsg in
+/-- The leading arguments of a spine, each checking against the kind of types, decode to types
+whose encodings they are. -/
+theorem spine_tys (hc : PfCtx G k n ΓLF env Γ Φ) {cs : List Expr} {m : ℕ}
+    (hargs : ∀ i < m, ∃ D' M, hsubs (RoseTree.node (.base 6) []) (cs.take i) tp = some D' ∧
+      cs[i]? = some M ∧ judge sg M ΓLF (.check D') = true) :
+    ∃ xs, (cs.take m).mapM (fun M ↦ decTy k env.length M) = some xs ∧
+      List.Forall₂ (fun x M ↦ encTy k env.length x = some M ∧
+        FreeTopos.Internal.IsTy G n x = true) xs (cs.take m) := by
+  have htys : List.Forall₂ (fun M M' ↦ ∃ x, decTy k env.length M = some x ∧
+      (encTy k env.length x = some M' ∧ FreeTopos.Internal.IsTy G n x = true))
+      (cs.take m) (cs.take m) :=
+    forall₂_of_getElem rfl fun i h₁ _ ↦ by
+      have hi : i < m := by
+        rw [List.length_take] at h₁
+        omega
+      obtain ⟨D', M, hD', hM, hJ⟩ := hargs i hi
+      obtain rfl := hsubs_tp hD'
+      rw [List.getElem_take]
+      obtain rfl := Option.some.inj ((List.getElem?_eq_getElem (by
+        rw [List.length_take] at h₁
+        omega)).symm.trans hM)
+      obtain ⟨x, hx, hxt⟩ := tyComplete hsg hc.heads₀ _ hJ
+      exact ⟨x, decTy_encTy _ x _ hx, hx, hxt⟩
+  exact mapM_of_forall₂ htys
+
 include hk hsg in
 /-- The decoding of the spine of an application of a theorem's declaration: its leading
 arguments decode to the types of the theorem's object variables, the next to terms of the
@@ -2752,20 +2784,9 @@ theorem thm_spine (hc : PfCtx G k n ΓLF env Γ Φ) {cs : List Expr} {a : FreeTo
     rw [List.length_take, List.length_drop]
     omega
   -- the types decode
-  have htys : List.Forall₂ (fun M M' ↦ ∃ x, decTy k env.length M = some x ∧
-      (encTy k env.length x = some M' ∧ FreeTopos.Internal.IsTy G n x = true))
-      (cs.take a.arity) (cs.take a.arity) :=
-    forall₂_of_getElem rfl fun i h₁ _ ↦ by
-      have hi : i < a.arity := by omega
-      obtain ⟨D', M, hD', hM, hJ⟩ := hargs i tp (by
-        rw [hT', List.getElem?_append_left (by rw [List.length_replicate]; exact hi),
-          List.getElem?_replicate_of_lt hi])
-      obtain rfl := hsubs_tp hD'
-      rw [List.getElem_take]
-      obtain rfl := Option.some.inj ((List.getElem?_eq_getElem (by omega)).symm.trans hM)
-      obtain ⟨x, hx, hxt⟩ := tyComplete hsg hc.heads₀ _ hJ
-      exact ⟨x, decTy_encTy _ x _ hx, hx, hxt⟩
-  obtain ⟨xs, hxsM, hxs⟩ := mapM_of_forall₂ htys
+  obtain ⟨xs, hxsM, hxs⟩ := spine_tys hsg hc fun i hi ↦ hargs i tp (by
+    rw [hT', List.getElem?_append_left (by rw [List.length_replicate]; exact hi),
+      List.getElem?_replicate_of_lt hi])
   have hxs' : List.Forall₂ (fun X x ↦ encTy k env.length x = some X) (cs.take a.arity) xs :=
     List.Forall₂.flip (R := fun X x ↦ encTy k env.length x = some X) (hxs.imp fun _ _ h ↦ h.1)
   have hxl : xs.length = a.arity := hxs.length_eq.trans hXsl
@@ -2996,6 +3017,324 @@ theorem sound_delta (hc : PfCtx G k n ΓLF env Γ Φ) {c kd : ℕ} {d : FreeTopo
     rw [instTerm_eq, hθl, hσl, instTerm_defn_vars]
     exact check_join (check_delta hd _ _) (check_refl _)
 
+/-- At a base type, the substitution into the body of the declaration of the induction on a
+quotient substitutes into the encodings of its types, each under the binders outside it, and into
+the projection's application, under the motive and the variable of its domain. -/
+theorem hsub_quotBody {c₀ j : ℕ} {n Q₀ A Q₁ M R : Expr}
+    (h : hsub (RoseTree.node (.base c₀) []) n (quotBody Q₀ A Q₁ M) j = some R) :
+    ∃ Q₀' A' Q₁' M', hsub (RoseTree.node (.base c₀) []) n Q₀ j = some Q₀' ∧
+      hsub (RoseTree.node (.base c₀) []) n.shift A (j + 1) = some A' ∧
+      hsub (RoseTree.node (.base c₀) []) n.shift Q₁ (j + 1) = some Q₁' ∧
+      hsub (RoseTree.node (.base c₀) []) n.shift.shift M (j + 1 + 1) = some M' ∧
+      R = quotBody Q₀' A' Q₁' M' := by
+  unfold quotBody Expr.arrow at h
+  obtain ⟨a₁, b₁, ha₁, hb₁, rfl⟩ := hsub_pi _ _ _ _ _ _ h
+  obtain ⟨a₂, b₂, ha₂, hb₂, rfl⟩ := hsub_pi _ _ _ _ _ _ ha₁
+  obtain ⟨Q₀', hQ₀, rfl⟩ := hsub_const₁ ha₂
+  obtain ⟨B₂, hB₂, rfl⟩ := hsub_shift_inv hb₂
+  obtain ⟨o, ho, rfl⟩ := hsub_const₁ hB₂
+  rw [omega, hsub_const] at ho
+  obtain rfl := Option.some.inj ho.symm
+  obtain ⟨a₃, b₃, ha₃, hb₃, rfl⟩ := hsub_pi _ _ _ _ _ _ hb₁
+  obtain ⟨A', b₄, hA, hb₄, rfl⟩ := hsub_pi _ _ _ _ _ _ ha₃
+  obtain ⟨v₁, hv₁, rfl⟩ := hsub_const₁ hb₄
+  obtain ⟨Y, hY, rfl⟩ := hsub_shift_inv hb₃
+  obtain ⟨Q₁', b₅, hQ₁, hb₅, rfl⟩ := hsub_pi _ _ _ _ _ _ hY
+  obtain ⟨v₂, hv₂, rfl⟩ := hsub_const₁ hb₅
+  obtain ⟨A'', hA', rfl⟩ := hsub_const₁ hA
+  obtain ⟨Q₁'', hQ₁', rfl⟩ := hsub_const₁ hQ₁
+  have hr : renumber (j + 1 + 1) 1 = 1 := ite_eq_right (by omega)
+  have hr₀ : renumber (j + 1 + 1) 0 = 0 := ite_eq_right (by omega)
+  have hne : ¬ (1 = j + 1 + 1) := by omega
+  rw [hsub_var] at hv₁ hv₂
+  rcases hM : hsub (RoseTree.node (.base c₀) []) n.shift.shift M (j + 1 + 1) with _ | M'
+  · simp only [List.map_cons, List.map_nil, hM, List.mapM_cons, id, Option.bind_eq_bind,
+      Option.bind_none] at hv₁
+    exact nomatch hv₁
+  simp only [List.map_cons, List.map_nil, hM, List.mapM_cons, List.mapM_nil, id,
+    Option.bind_eq_bind, Option.bind_some, Option.pure_def, ite_eq_right hne, hr,
+    Option.some.injEq] at hv₁
+  simp only [List.map_cons, List.map_nil, hsub_var, List.mapM_cons, List.mapM_nil, id,
+    Option.bind_eq_bind, Option.bind_some, Option.pure_def, ite_eq_right hne, hr, hr₀,
+    ite_eq_right (show ¬ (0 = j + 1 + 1) by omega), Option.some.injEq] at hv₂
+  subst hv₁ hv₂
+  exact ⟨Q₀', A'', Q₁'', M', hQ₀, hA', hQ₁', rfl, rfl⟩
+
+/-- At a base type, the substitutions of a list of terms into the body of the declaration of the
+induction on a quotient substitute into the encodings of its types and into the projection's
+application, each under the binders outside it. -/
+theorem hsubs_quotBody {c₀ : ℕ} :
+    ∀ (ms : List Expr) {Q₀ A Q₁ M R : Expr},
+      hsubs (RoseTree.node (.base c₀) []) ms (quotBody Q₀ A Q₁ M) = some R →
+      ∃ Q₀' A' Q₁' M', hsubsPre (RoseTree.node (.base c₀) []) ms 0 Q₀ = some Q₀' ∧
+        hsubsPre (RoseTree.node (.base c₀) []) ms 1 A = some A' ∧
+        hsubsPre (RoseTree.node (.base c₀) []) ms 1 Q₁ = some Q₁' ∧
+        hsubsPre (RoseTree.node (.base c₀) []) ms 2 M = some M' ∧ R = quotBody Q₀' A' Q₁' M' := by
+  intro ms
+  refine List.rec (motive := fun ms ↦ ∀ {Q₀ A Q₁ M R : Expr},
+      hsubs (RoseTree.node (.base c₀) []) ms (quotBody Q₀ A Q₁ M) = some R →
+      ∃ Q₀' A' Q₁' M', hsubsPre (RoseTree.node (.base c₀) []) ms 0 Q₀ = some Q₀' ∧
+        hsubsPre (RoseTree.node (.base c₀) []) ms 1 A = some A' ∧
+        hsubsPre (RoseTree.node (.base c₀) []) ms 1 Q₁ = some Q₁' ∧
+        hsubsPre (RoseTree.node (.base c₀) []) ms 2 M = some M' ∧ R = quotBody Q₀' A' Q₁' M')
+    (fun {Q₀ A Q₁ M R} h ↦ ⟨Q₀, A, Q₁, M, rfl, rfl, rfl, rfl, (Option.some.inj h).symm⟩)
+    (fun m ms ih {Q₀ A Q₁ M R} h ↦ ?_) ms
+  rw [hsubs_cons] at h
+  obtain ⟨R₁, hR₁, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨Q₀₁, A₁, Q₁₁, M₁, h₀, hA, hQ, hM, rfl⟩ := hsub_quotBody hR₁
+  obtain ⟨Q₀', A', Q₁', M', h₀', hA', hQ', hM', rfl⟩ := ih h
+  have hs : ∀ b, Expr.shift^[ms.length + (b + 1)] m = (Expr.shift^[ms.length + b] m).shift :=
+    fun b ↦ Function.iterate_succ_apply' _ _ _
+  refine ⟨Q₀', A', Q₁', M', ?_, ?_, ?_, ?_, rfl⟩
+  · rw [hsubsPre_cons, Nat.add_zero, h₀, Option.bind_some]
+    exact h₀'
+  · rw [hsubsPre_cons, hs 0, Nat.add_zero, hA, Option.bind_some]
+    exact hA'
+  · rw [hsubsPre_cons, hs 0, Nat.add_zero, hQ, Option.bind_some]
+    exact hQ'
+  · rw [hsubsPre_cons, hs 1, hs 0, Nat.add_zero, hM, Option.bind_some]
+    exact hM'
+
+/-- At a base type, the substitutions of a list of terms for the outermost variables of a scope,
+inside which are {lit}`d` further variables, into a constant applied to expressions weakened past
+them, to the variables, the outermost first, and to the innermost variable: the constant applied
+to the expressions and the terms, each weakened past the further variables, and to the innermost
+variable. -/
+theorem hsubsPre_projApp {c₀ c d : ℕ} (hd : 0 < d) :
+    ∀ (ms Zs : List Expr), hsubsPre (RoseTree.node (.base c₀) []) ms d
+      (Expr.const c (Zs.map (·.rename (· + (ms.length + d))) ++
+        ((List.range ms.length).reverse.map fun i ↦ Expr.var (d + i)) ++ [Expr.var 0])) =
+      some (Expr.const c ((Zs ++ ms).map (·.rename (· + d)) ++ [Expr.var 0])) := by
+  intro ms
+  refine List.rec (motive := fun ms ↦ ∀ Zs : List Expr, hsubsPre (RoseTree.node (.base c₀) []) ms d
+      (Expr.const c (Zs.map (·.rename (· + (ms.length + d))) ++
+        ((List.range ms.length).reverse.map fun i ↦ Expr.var (d + i)) ++ [Expr.var 0])) =
+      some (Expr.const c ((Zs ++ ms).map (·.rename (· + d)) ++ [Expr.var 0])))
+    (fun Zs ↦ ?_) (fun m ms ih Zs ↦ ?_) ms
+  · simp only [List.length_nil, Nat.zero_add, List.range_zero, List.reverse_nil, List.map_nil,
+      List.append_nil]
+    rfl
+  have hred : ∀ x, reduce (RoseTree.node (.base c₀) []) x [] = some x := fun x ↦ by
+    rw [reduce_node]
+    rfl
+  have hstep : hsub (RoseTree.node (.base c₀) []) (Expr.shift^[ms.length + d] m)
+      (Expr.const c (Zs.map (·.rename (· + ((m :: ms).length + d))) ++
+        ((List.range (m :: ms).length).reverse.map fun i ↦ Expr.var (d + i)) ++ [Expr.var 0]))
+      (ms.length + d) =
+      some (Expr.const c ((Zs ++ [m]).map (·.rename (· + (ms.length + d))) ++
+        ((List.range ms.length).reverse.map fun i ↦ Expr.var (d + i)) ++ [Expr.var 0])) := by
+    refine hsub_const_of (mapM_of_forall₂_eq ?_)
+    rw [List.length_cons, List.range_succ, List.reverse_append, List.reverse_singleton,
+      List.singleton_append, List.map_cons, List.map_append, List.map_singleton,
+      List.append_assoc, List.append_assoc, List.append_assoc, List.singleton_append,
+      List.cons_append]
+    refine List.rel_append (List.forall₂_map_left_iff.mpr (List.forall₂_map_right_iff.mpr
+      (List.forall₂_same.mpr fun Z _ ↦ ?_))) (.cons ?_ (List.rel_append
+        (List.forall₂_map_left_iff.mpr (List.forall₂_map_right_iff.mpr
+          (List.forall₂_same.mpr fun i hi ↦ ?_))) (.cons ?_ .nil)))
+    · rw [hsub_eq]
+      exact hsubWith_vacuous' _ _ _ fun i ↦ by
+        rw [show i + (ms.length + 1 + d) = i + 1 + (ms.length + d) by omega,
+          iterate_liftR_add]
+    · rw [hsub_var, show d + ms.length = ms.length + d by omega]
+      simp only [List.map_nil, List.mapM_nil, Option.pure_def, Option.bind_some, ite_true, hred,
+        iterate_shift]
+    · have hi' := List.mem_range.mp (List.mem_reverse.mp hi)
+      rw [hsub_var]
+      simp only [List.map_nil, List.mapM_nil, Option.pure_def, Option.bind_some,
+        ite_eq_right (show ¬ (d + i = ms.length + d) by omega),
+        show renumber (ms.length + d) (d + i) = d + i from ite_eq_right (by omega)]
+    · rw [hsub_var]
+      simp only [List.map_nil, List.mapM_nil, Option.pure_def, Option.bind_some,
+        ite_eq_right (show ¬ (0 = ms.length + d) by omega),
+        show renumber (ms.length + d) 0 = 0 from ite_eq_right (by omega)]
+  rw [hsubsPre_cons, hstep, Option.bind_some, ih (Zs ++ [m]), List.append_assoc,
+    List.singleton_append]
+
+include hk hsg in
+/-- The soundness of the decoding of the induction on a quotient, its object parameters
+instantiated at the objects {lit}`θ`: the motive, the proof at the projection's image of a
+variable, whose application {lit}`N` decodes to the projection at the objects, and the term decode,
+and the derivation of the motive at the term by the language's induction on the quotient proves
+the formula the application proves. -/
+theorem sound_quotBody (hc : PfCtx G k n ΓLF env Γ Φ) {kq : ℕ} {p : FreeTopos.Internal.Prim}
+    {θ : List PartialHorn.Tree} {Qe De N P d t F : Expr} {φ : MTerm}
+    (hp : G.prims[kq]? = some p) (hq : p.coeqParts.isSome = true) (hθl : θ.length = p.arity)
+    (hθ : θ.all (FreeTopos.Internal.IsTy G n) = true)
+    (hQt : FreeTopos.Internal.IsTy G n (PartialHorn.subst θ p.cod) = true)
+    (hQ : encTy k env.length (PartialHorn.subst θ p.cod) = some Qe)
+    (hD : encTy k env.length (PartialHorn.subst θ p.dom) = some De)
+    (hN : termOf k (none :: env) N = some (Term.arr kq θ (Term.var 0)))
+    (ih : PfLam sg (PfSoundAt sg G k E n) d)
+    (hS : spine ΓLF (quotBody Qe De.shift Qe.shift (N.rename (liftR Nat.succ)))
+      [(P, judge sg P), (d, judge sg d), (t, judge sg t)] = some (pf F))
+    (hφ : termOf k env F = some φ) :
+    ∃ pb st D, (termOf k env P).bind lamBody = some pb ∧ termOf k env t = some st ∧
+      decPf k d (none :: env) (Φ.length + 1) = some D ∧
+      (check G E n (indD (PartialHorn.subst θ p.cod) (.quotInd kq θ) pb st Φ.length [D])).2
+        Γ Φ φ = true := by
+  simp only [quotBody, tm, pf, omega, Expr.const, Expr.app] at hS
+  lf_spine_open_at hS [Option.bind_eq_some_iff]
+  obtain ⟨a, a₁, ⟨hP, ha, ha₁⟩, a₂, ⟨hd, ha₂⟩, htt, a₃, ha₃, hF⟩ := hS
+  obtain ⟨Pb, rfl, hPb⟩ := judge_check_pi_inv hP
+  simp only [Expr.lam, rename_node, RoseTree.label_node, RoseTree.children_node, List.zipIdx,
+    List.map_cons, List.map_nil, Label.binders, Function.iterate_one, Label.rename] at ha ha₁
+  have hΓs := fun a ha ↦ (hc.typeShape a ha).1
+  have hOs : ModeShape (.check (tm omega)) = true := by
+    simp only [ModeShape, tm, Expr.const, Expr.app, typeShape_node]; rfl
+  have hApp := appliedAt_of_judge_tm (A := Qe) hsg hΓs hOs hPb
+  -- the motive at the conclusion's variable, past the premise
+  rw [rename_rename] at ha₁
+  obtain rfl := Option.some.inj (ha₁.symm.trans (hsub_var_base hApp
+    (liftR Nat.succ ∘ liftR Nat.succ) (fun i ↦ match i with | 0 => 0 | i + 1 => i + 2) rfl
+    (fun _ ↦ rfl) rfl))
+  obtain rfl := Option.some.inj (ha₂.symm.trans
+    (hsubWith_vacuous' _ _ _ (j := 1) (g := id) fun i ↦ by rcases i with _ | i <;> rfl))
+  rw [rename_id] at ha₃
+  simp only [node_inj, List.cons.injEq, and_true, true_and] at hF
+  subst hF
+  -- the decodings
+  obtain ⟨sp, hsp, hpt⟩ := termOf_typed (a := FreeTopos.omega) hk hsg (hc.toTmCtx.consTm hQ) rfl
+    hPb
+  obtain ⟨sc, hsc, hct⟩ := termOf_typed hk hsg hc.toTmCtx hQ htt
+  obtain rfl := Option.some.inj (hφ.symm.trans (termOf_hsub₀ ha₃ hsp hsc))
+  have hS₁ : termOf k (none :: none :: env) (Pb.rename (liftR Nat.succ)) =
+      some (Term.rename sp (liftR Nat.succ)) :=
+    termOf_rename _ _ hsp (fun i ↦ by rcases i with _ | i <;> rfl) fun i hi ↦ by
+      rcases i with _ | i
+      · exact absurd hi (by simp [numTm])
+      · simp only [liftR, numTm]
+        omega
+  have ha' : termOf k (none :: env) a = some (Term.subst sp
+      (FreeTopos.Internal.atVar0 (Term.arr kq θ (Term.var 0)))) :=
+    (termOf_hsub₀ (env := none :: env) ha hS₁ hN).trans (congrArg some
+      (Term.subst_rename sp _ _ _ fun i ↦ by rcases i with _ | i <;> rfl))
+  have hlen : (Φ.map weaken1 ++ [truth]).length = Φ.length + 1 := by
+    rw [List.length_append, List.length_map, List.length_singleton]
+  obtain ⟨body, rfl, hb, hs⟩ := ih ΓLF _ _ hd
+  obtain ⟨D, hD', hcD⟩ := hs _ _ _ _ _ _ ((hc.consTm hD).addHyp
+    (typeIn_truth (G := G) (Γ := PartialHorn.subst θ p.dom :: Γ))) hb ha'
+  rw [hlen] at hD'
+  refine ⟨sp, sc, D, ?_, hsc, by rw [decPf_lam]; exact hD',
+    check_quotIndD hp hq hθl hθ hQt hpt hct hc.typed hcD⟩
+  rw [termOf_lam, hsp]
+  rfl
+
+/-- The body of the declaration of the induction on a quotient has three products. -/
+theorem headDepth_quotBody (Q₀ A Q₁ M : Expr) : (quotBody Q₀ A Q₁ M).headDepth.2 = 3 := by
+  simp only [quotBody, Expr.arrow, Expr.shift, Expr.pi, headDepth_node, headDepth_rename,
+    List.map_cons, List.map_nil, headDepthStep]
+  rfl
+
+include hk hsg in
+/-- The soundness of the decoding of an application of the induction on a quotient: its leading
+arguments decode to the objects of the projection's object parameters, and the motive, the proof
+at the projection's image of a variable and the term decode, so that the application decodes to
+the derivation of the motive at the term by the language's induction on the quotient, which
+proves the formula the application proves. -/
+theorem sound_quotInd (hc : PfCtx G k n ΓLF env Γ Φ) {c kq : ℕ} {p : FreeTopos.Internal.Prim}
+    {cs : List Expr} {C F : Expr} {φ : MTerm} (hlt : sig.length ≤ c)
+    {op : ℕ} (hext : k.ext[c - sig.length]? = some (.quotInd kq p.arity op))
+    (hp : G.prims[kq]? = some p)
+    (hpc : p.cod = PartialHorn.op op (FreeTopos.Internal.objVars p.arity))
+    (hq : p.coeqParts.isSome = true)
+    (hC : quotIndTy k kq p = some C) (hsgC : sg[c]? = some C)
+    (ih : ∀ M ∈ cs, PfLam sg (PfSoundAt sg G k E n) M)
+    (hS : spine ΓLF C (cs.map fun m ↦ (m, judge sg m)) = some (pf F))
+    (hφ : termOf k env F = some φ) :
+    ∃ D, decPf k (Expr.const c cs) env Φ.length = some D ∧ (check G E n D).2 Γ Φ φ = true := by
+  -- the number of arguments
+  obtain ⟨-, h₂⟩ := spine_headDepth _ C _ (Sig.ok_typeShape hsg.ok c C hsgC) hS
+  simp only [quotIndTy, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+    Option.some.injEq] at hC
+  obtain ⟨cq, hcq, Q₀, hQ₀, A₁, hA₁, Q₁, hQ₁, rfl⟩ := hC
+  rw [headDepth_piTele_snd, List.length_replicate, headDepth_quotBody, List.length_map,
+    show (pf F).headDepth.2 = 0 from rfl, Nat.add_zero] at h₂
+  -- the projection is a constant of the language, of types
+  obtain ⟨i, hi, rfl⟩ := Option.map_eq_some_iff.mp hcq
+  have hpe := ExtConst.find?_spec _ _ _ hi
+  obtain ⟨r, T', -, hfx, hr, -, -, hok, -, -⟩ := hsg.tms i (.arr kq) _ _ hpe
+  simp only [TmHead.rank, hp, Option.map_some, Option.some.injEq] at hr
+  subst hr
+  simp only [Rank.ok, Rank.ofPrim, List.all_cons, List.all_nil, Bool.and_true,
+    Bool.and_eq_true] at hok
+  obtain ⟨hdom, hcod⟩ := hok
+  -- the types
+  obtain ⟨-, hargs, R', hR', hS'⟩ := spine_piTele_gen (J := judge sg) (P := pf F) rfl
+    (fun D hD ↦ .inl (List.eq_of_mem_replicate hD)) hS
+  rw [List.length_replicate] at hR' hS'
+  obtain ⟨xs, hxsM, hxs⟩ := spine_tys hsg hc (m := p.arity) fun i hi ↦
+    hargs i tp (List.getElem?_replicate_of_lt hi)
+  have hXsl : (cs.take p.arity).length = p.arity := by
+    rw [List.length_take]
+    omega
+  have hxl : xs.length = p.arity := hxs.length_eq.trans hXsl
+  have hxsE : List.Forall₂ (fun X x ↦ encTy k env.length x = some X) (cs.take p.arity) xs :=
+    List.Forall₂.flip (R := fun X x ↦ encTy k env.length x = some X) (hxs.imp fun _ _ h ↦ h.1)
+  have hθ : xs.reverse.all (FreeTopos.Internal.IsTy G n) = true :=
+    List.all_eq_true.mpr fun x hx ↦
+      (forall₂_left_mem hxs x (List.mem_reverse.mp hx)).elim fun _ h ↦ h.2
+  have hθl : xs.reverse.length = p.arity := by rw [List.length_reverse, hxl]
+  -- the body
+  obtain ⟨Q₀', A', Q₁', M', h₀, hA, hQ, hM, rfl⟩ := hsubs_quotBody _ hR'
+  have hsc : ∀ P, FreeTopos.Internal.IsTy G p.arity P = true →
+      PartialHorn.Scoped xs.length P = true := fun P hP ↦ by
+    rw [hxl]
+    exact FreeTopos.Internal.scoped_of_isTy _ hP
+  have hQe := hsubsPre_encTy_subst hxsE hQ₀ (hsc _ hcod) h₀
+  rw [Nat.zero_add] at hQe
+  have hQ₁e := hsubsPre_encTy_subst hxsE hQ₁ (hsc _ hcod) hQ
+  rw [Nat.add_comm] at hQ₁e
+  obtain rfl := Option.some.inj (hQ₁e.symm.trans (encTy_succ hQe))
+  have hAe := hsubsPre_encTy_subst hxsE hA₁ (hsc _ hdom) hA
+  rw [Nat.add_comm] at hAe
+  obtain ⟨De, hDe, rfl⟩ := encTy_pred (j := 0) hAe (Nat.succ_pos _)
+  rw [Nat.add_sub_cancel] at hDe
+  have hM' := hsubsPre_projApp (c₀ := 6) (c := sig.length + i) (d := 2) (by omega)
+    (cs.take p.arity) []
+  rw [List.map_nil, List.nil_append, List.nil_append, hXsl] at hM'
+  obtain rfl := Option.some.inj (hM.symm.trans hM')
+  -- the projection's application to the variable of its domain
+  have hren : Expr.const (sig.length + i)
+      ((cs.take p.arity).map (·.rename (· + 2)) ++ [Expr.var 0]) =
+      (Expr.const (sig.length + i) ((cs.take p.arity).map Expr.shift ++ [Expr.var 0])).rename
+        (liftR Nat.succ) := by
+    simp only [Expr.const, Expr.app, rename_app_node, List.map_append, List.map_map]
+    refine congrArg₂ RoseTree.node rfl (congrArg₂ (· ++ ·) (List.map_congr_left fun X _ ↦ ?_) rfl)
+    rw [Function.comp_apply, Expr.shift, rename_rename]
+    rfl
+  have hN : termOf k (none :: env)
+      (Expr.const (sig.length + i) ((cs.take p.arity).map Expr.shift ++ [Expr.var 0])) =
+      some (Term.arr kq xs.reverse (Term.var 0)) := by
+    have he : k.ext[sig.length + i - sig.length]? = some (.tm (.arr kq) p.arity 1) := by
+      rw [Nat.add_sub_cancel_left]
+      exact hpe
+    rw [termOf_const, decStep_tm k (Nat.le_add_right _ _)]
+    refine (decTm_of k (θ := xs) (args := [Term.var 0]) (Nat.le_add_right _ _) he hfx ?_ ?_
+      ?_).trans rfl
+    · simp only [List.length_map, List.length_append, hXsl, List.length_singleton]
+    · rw [List.map_append, List.take_left' (by rw [List.length_map, List.length_map, hXsl]),
+        List.mapM_map, List.mapM_map]
+      exact mapM_of_forall₂_eq (hxsE.imp fun X x hx ↦
+        decTy_tmIdx (env := none :: env) (encTy_succ hx))
+    · rw [List.map_append, List.drop_left' (by rw [List.length_map, List.length_map, hXsl])]
+      rfl
+  -- the three arguments past the types
+  obtain ⟨P, d, t, hPdt⟩ : ∃ P d t, cs.drop p.arity = [P, d, t] :=
+    List.length_eq_three.mp (by rw [List.length_drop]; omega)
+  rw [hPdt, hren, List.map_cons, List.map_cons, List.map_cons, List.map_nil] at hS'
+  have hmem : d ∈ cs := List.mem_of_mem_drop (by rw [hPdt]; simp)
+  obtain ⟨pb, st, D, hpb, hst, hD, hchk⟩ := sound_quotBody E hk hsg hc hp hq hθl hθ
+    (FreeTopos.Internal.isTy_subst hθl hθ _ hcod) hQe hDe hN (ih d hmem) hS' hφ
+  rw [hpc, ← hθl, subst_op_vars] at hchk
+  refine ⟨_, ?_, hchk⟩
+  obtain ⟨sP, hsP, hlb⟩ := Option.bind_eq_some_iff.mp hpb
+  rw [decPf_const, decPfStep_thm hlt, decPfThm, ite_eq_left hlt, hext]
+  dsimp only
+  rw [← List.map_drop, hPdt]
+  simp only [List.map_cons, List.map_nil, ← List.map_take, List.mapM_map, Function.comp_def,
+    hxsM, hsP, hlb, hst, hD, Option.bind_eq_bind, Option.bind_some, Option.pure_def]
+
 variable (hth : ExtDecl G E k sg)
 
 include hk hsg hth in
@@ -3029,7 +3368,7 @@ theorem pfSound : ∀ M : Expr, PfSound sg G k E n M :=
             have := (List.getElem?_eq_some_iff.mp hC).1
             rw [hsg.len] at this
             omega)⟩
-        rcases x with ⟨j, m, p⟩ | ⟨h, m, p⟩ | ⟨kd, m, p⟩ | ⟨op, m⟩
+        rcases x with ⟨j, m, p⟩ | ⟨h, m, p⟩ | ⟨kd, m, p⟩ | ⟨op, m⟩ | ⟨kq, m, op⟩
         · obtain ⟨a, T, he, rfl, rfl, hwf, hT, hsgT⟩ := hth.1 _ j m p hx
           obtain rfl := Option.some.inj (hsgT.symm.trans hC')
           exact sound_thm E hk hsg hc hle hx he hwf hT (fun M hM ↦ (ih M hM).1) hS hφ
@@ -3042,7 +3381,7 @@ theorem pfSound : ∀ M : Expr, PfSound sg G k E n M :=
           obtain ⟨ΓT, -, Td, -, rfl⟩ := hT
           rw [headDepth_piTele] at h₁
           exact absurd (show some 17 = some 6 from h₁) (by decide)
-        · obtain ⟨d, T, hd, rfl, rfl, ⟨cd, hcd⟩, hT, hsgT⟩ := hth.2 _ kd m p hx
+        · obtain ⟨d, T, hd, rfl, rfl, ⟨cd, hcd⟩, hT, hsgT⟩ := hth.2.1 _ kd m p hx
           obtain rfl := Option.some.inj (hsgT.symm.trans hC')
           exact sound_delta E hk hsg hc hle hx hd hcd hT hS hφ
         · -- the declaration of an object definition ends in the kind of types
@@ -3050,6 +3389,9 @@ theorem pfSound : ∀ M : Expr, PfSound sg G k E n M :=
           obtain ⟨h₁, -⟩ := spine_headDepth _ _ _ (Sig.ok_typeShape hsg.ok c _ hC) hS
           rw [headDepth_piTele] at h₁
           exact absurd (show some 17 = some 0 from h₁) (by decide)
+        · obtain ⟨p, T, hp, rfl, hpc, hq, hT, hsgT⟩ := hth.2.2 _ kq m op hx
+          obtain rfl := Option.some.inj (hsgT.symm.trans hC')
+          exact sound_quotInd E hk hsg hc hle hx hp hpc hq hT hC hlam hS hφ
       have hCs := Sig.ok_typeShape hsg.ok c C hC
       obtain ⟨h₁, h₂⟩ := spine_headDepth _ C _ hCs hS
       obtain ⟨hc', hC⟩ := sig_head_pf hsg hC (by rw [← h₁]; rfl) hlt
