@@ -48,8 +48,8 @@ the substitutions having values at the encodings of types ({lit}`hsubs_tm_encTy`
   check against its instantiated domains.
 * {lit}`encTy_hsub_obj`, {lit}`dec_hsub_obj` — encoding and decoding commute with the
   substitution of a type for an object variable.
-* {lit}`dec_hsubs`, {lit}`dec_hsubsPre_obj`, {lit}`encTy_hsubsPre_obj` — decoding commutes with
-  the substitutions of terms and of types.
+* {lit}`dec_hsubs`, {lit}`dec_hsubsPre_obj`, {lit}`encTy_hsubsPre_obj`,
+  {lit}`hsubsPre_encTy_subst` — decoding commutes with the substitutions of terms and of types.
 
 ## References
 
@@ -1744,6 +1744,38 @@ theorem hsubs_const₁_fwd {α : SimpleTy} {c : ℕ} :
   exact ih h
 
 open FreeTopos.Internal (substF objScope shiftObj) in
+/-- The objects, their object variables raised by {lit}`L`, substituted for the outermost object
+variables of a scope into a type in them: the type with the objects substituted, the innermost
+first, its object variables raised by {lit}`L`. -/
+theorem substF_objScope_shiftObj {L : ℕ} {xs : List PartialHorn.Tree} {P : PartialHorn.Tree}
+    (hPs : PartialHorn.Scoped xs.length P = true) :
+    substF (objScope (xs.map (shiftObj L))) P = shiftObj L (PartialHorn.subst xs.reverse P) := by
+  rw [FreeTopos.Internal.subst_eq_substF, shiftObj, FreeTopos.Internal.substF_comp]
+  refine FreeTopos.Internal.substF_congr (n := xs.length) (fun z hz ↦ ?_) _ hPs
+  rw [objScope, ite_eq_left (by rw [List.length_map]; exact hz), ← List.map_reverse,
+    List.getElem?_map, List.getElem?_eq_getElem (by rw [List.length_reverse]; exact hz)]
+  rfl
+
+open FreeTopos.Internal (shiftObj) in
+/-- At a base type, the substitutions of the encodings of objects, at the offset {lit}`L`, for
+the outermost variables of a scope, inside which are {lit}`d` further variables, into the
+encoding at {lit}`d` of a type in its object variables: the encoding, at {lit}`d + L`, of the type
+with the objects substituted, the innermost first. -/
+theorem hsubsPre_encTy_subst {c₀ L d : ℕ} {Xs : List Expr} {xs : List PartialHorn.Tree}
+    {P : PartialHorn.Tree} {A₀ A' : Expr}
+    (hxs : List.Forall₂ (fun X x ↦ encTy k L x = some X) Xs xs) (hP : encTy k d P = some A₀)
+    (hPs : PartialHorn.Scoped xs.length P = true)
+    (h : hsubsPre (RoseTree.node (.base c₀) []) Xs d A₀ = some A') :
+    encTy k (d + L) (PartialHorn.subst xs.reverse P) = some A' := by
+  have hbs : List.Forall₂ (fun Xk b ↦ ∀ e, encTy k e b = some (Xk.rename (· + e)))
+      Xs (xs.map (shiftObj L)) :=
+    List.forall₂_map_right_iff.mpr (hxs.imp fun X x hx e ↦
+      encTy_shiftObj (off := e) _ _ (by rw [Nat.add_comm]; exact encTy_add hx))
+  have he := encTy_hsubsPre_obj _ _ _ _ _ hbs hP h
+  rw [substF_objScope_shiftObj hPs] at he
+  exact encTy_of_shiftObj _ _ he
+
+open FreeTopos.Internal (shiftObj) in
 /-- The substitutions of the encodings of objects, at the offset {lit}`L`, for the outermost
 variables of a scope, and of terms for its term variables, into the family of terms of the
 encoding of a type in its object variables: the family of terms of the encoding, at {lit}`L`, of
@@ -1763,15 +1795,7 @@ theorem hsubs_tm_encTy {L i : ℕ} {Xs Ms : List Expr} {xs : List PartialHorn.Tr
   obtain ⟨E₂, hE₂⟩ := hsubs_encTy_isSome (α := RoseTree.node (.base 6) []) Ms _ _
     (by rw [hMl]; exact he₁)
   have he₂ := hsubs_encTy _ _ _ _ (by rw [hMl]; exact he₁) hE₂
-  have hxl : xs.length = (xs.map (shiftObj L)).length := (List.length_map _).symm
-  have hsub : substF (objScope (xs.map (shiftObj L))) P =
-      shiftObj L (PartialHorn.subst xs.reverse P) := by
-    rw [FreeTopos.Internal.subst_eq_substF, shiftObj, FreeTopos.Internal.substF_comp]
-    refine FreeTopos.Internal.substF_congr (n := xs.length) (fun z hz ↦ ?_) _ hPs
-    rw [objScope, ite_eq_left (by rw [← hxl]; exact hz), ← List.map_reverse, List.getElem?_map,
-      List.getElem?_eq_getElem (by rw [List.length_reverse]; exact hz)]
-    rfl
-  rw [hsub] at he₂
+  rw [substF_objScope_shiftObj hPs] at he₂
   have h₃ := encTy_of_shiftObj (off := 0) _ _ he₂
   rw [Nat.zero_add] at h₃
   refine ⟨E₂, ?_, h₃⟩
@@ -1842,6 +1866,19 @@ theorem headDepth_piTele (R : Expr) :
     (fun D Ds ih ↦ ?_) Ds
   rw [piTele_cons, Expr.pi, headDepth_node]
   exact ih
+
+/-- The products over a list of domains have as many products as the domains before those of
+their body. -/
+theorem headDepth_piTele_snd (R : Expr) :
+    ∀ Ds : List Expr, (piTele Ds R).headDepth.2 = Ds.length + R.headDepth.2 := by
+  intro Ds
+  refine List.rec (motive := fun Ds ↦ (piTele Ds R).headDepth.2 = Ds.length + R.headDepth.2) ?_
+    (fun D Ds ih ↦ ?_) Ds
+  · rw [List.length_nil, Nat.zero_add]
+    rfl
+  rw [piTele_cons, Expr.pi, headDepth_node, List.length_cons]
+  change (piTele Ds R).headDepth.2 + 1 = _
+  omega
 
 end Geb.LF.Topos
 

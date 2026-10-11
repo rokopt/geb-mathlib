@@ -39,7 +39,10 @@ context, the latter alone where the instance holds modulo the computation rules,
 an equation other than its instance. An object definition, declared past the signature, encodes
 the type it builds from the natural numbers and decodes from it, and reflexivity at a variable of
 that type decodes to a derivation the checker accepts; one whose operation is the product's is
-shadowed by it.
+shadowed by it. The quotient of a type by a relation, declared in a development, with its
+projection and the induction on it as constants past the signature, proves reflexivity at an
+element of the quotient by induction, and the decoding is accepted by the checker; an induction
+on the codomain of a primitive arrow that is not a coequalizer's projection is rejected.
 
 ## Tags
 
@@ -597,6 +600,68 @@ def pairCtx : List PartialHorn.Tree := [FreeTopos.prod FreeTopos.nat (FreeTopos.
   (FreeTopos.Internal.Term.arr 0 [] FreeTopos.Internal.Term.star) FreeTopos.one [] ==
   some (zeroAt star)
 #guard dec { pfIdx with ext := [.tm (.arr 0) 0 1] } (Expr.const 57 [star]) 0 == none
+
+/-- The constants of {name}`pfGlobals`, extended by developments past the combinators'
+signature. -/
+def quotBase : Globals := { pfGlobals with base := FreeTopos.sig.length }
+
+/-- The constants and the environment after the declaration of the quotient of a type, in one
+object parameter, by the relation true: the quotient, an object definition of operation
+{lit}`FreeTopos.sig.length`, and its projection, the primitive arrow of index {lit}`9`. -/
+def quotDev : Option (Globals × Array FreeTopos.Internal.Entry) :=
+  FreeTopos.Internal.Decl.step quotBase #[] (.quotient 1 (PartialHorn.var 0) truth)
+
+/-- The constants after the declaration of the quotient. -/
+def quotGlobals : Globals := (quotDev.map Prod.fst).getD quotBase
+
+/-- The projection to the quotient. -/
+def quotPrim : FreeTopos.Internal.Prim := quotGlobals.prims[9]?.getD zeroPrim
+
+/-- The indices of the primitive arrows, with the quotient, its projection and the induction on
+it as the constants past the signature. -/
+def quotIdx : PrimIdx :=
+  { pfIdx with ext := [.obj FreeTopos.sig.length 1, .tm (.arr 9) 1 1,
+    .quotInd 9 1 FreeTopos.sig.length] }
+
+/-- The signature extended by the declarations of the quotient, its projection and the induction
+on it. -/
+def quotSig : Sig :=
+  sig ++ [some (piTele [tp] tp), defTy quotIdx (Rank.ofPrim quotPrim),
+    quotIndTy quotIdx 9 quotPrim].reduceOption
+
+/-- The quotient of the natural numbers. -/
+def quotNat : PartialHorn.Tree := PartialHorn.op FreeTopos.sig.length [FreeTopos.nat]
+
+/-- Reflexivity at every element of the quotient of the natural numbers by induction on the
+quotient, at a variable: the motive that an element equals itself, proved at the projection's
+image of a variable by reflexivity. -/
+def quotRefl : Expr :=
+  Expr.const 59 [nat, Expr.lam (eq (Expr.const 57 [nat]) (v 0) (v 0)),
+    Expr.lam (Expr.const 18 [Expr.const 57 [nat], Expr.const 58 [nat, v 0]]), v 0]
+
+-- The quotient is declared, its projection projects onto a coequalizer whose parameter and value
+-- are of types, and the three constants are declared in a formed signature.
+#guard quotDev.isSome
+#guard quotPrim.coeqParts.isSome && (Rank.ofPrim quotPrim).ok quotGlobals &&
+  quotPrim.cod == PartialHorn.op FreeTopos.sig.length (FreeTopos.Internal.objVars 1)
+#guard quotSig.length == sig.length + 3 && quotSig.ok
+
+-- Reflexivity by induction on the quotient, in LF and decoded.
+#guard Checks quotSig [tm (Expr.const 57 [nat])] quotRefl
+  (pf (eq (Expr.const 57 [nat]) (v 0) (v 0)))
+#guard match decPf quotIdx quotRefl [none] 0,
+    dec quotIdx (eq (Expr.const 57 [nat]) (v 0) (v 0)) 1 with
+  | some D, some φ => Thm.checks quotGlobals #[] ⟨0, [quotNat], [], φ⟩ D
+  | _, _ => false
+
+-- An induction on the codomain of the successor, which is not a coequalizer's projection, decodes
+-- to a derivation the checker rejects.
+#guard match decPf { pfIdx with ext := [.quotInd 1 0 29] }
+    (Expr.const 57 [Expr.lam (eq nat (v 0) (v 0)), Expr.lam (Expr.const 18 [nat, succ (v 0)]), v 0])
+    [none] 0 with
+  | some D => !Thm.checks pfGlobals #[] ⟨0, [FreeTopos.nat], [],
+      FreeTopos.Internal.Term.eq (FreeTopos.Internal.Term.var 0) (FreeTopos.Internal.Term.var 0)⟩ D
+  | none => false
 
 end Geb.LF.Topos.Tests
 

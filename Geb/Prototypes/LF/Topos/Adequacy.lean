@@ -227,8 +227,10 @@ def TmHead.rank (G : FreeTopos.Internal.Globals) : TmHead → Option Rank
 /-- A constant an extension of the signature declares past it: a theorem, given by the index of
 its entry, the number of its object variables and the number of its variables; a constant of the
 language, given with the number of its object parameters and the number of its parameters; the
-unfolding of a definition, given by its index and those numbers; or an object definition, given
-by the index of its operation of the combinators and the number of its object parameters. -/
+unfolding of a definition, given by its index and those numbers; an object definition, given by
+the index of its operation of the combinators and the number of its object parameters; or the
+induction on a quotient, given by the index of the primitive arrow of its projection, the number
+of its object parameters and the index of the operation of the quotient's object definition. -/
 inductive ExtConst where
   /-- A theorem. -/
   | thm (j m p : ℕ)
@@ -238,6 +240,8 @@ inductive ExtConst where
   | delta (kd m p : ℕ)
   /-- An object definition. -/
   | obj (op m : ℕ)
+  /-- The induction on a quotient. -/
+  | quotInd (kq m op : ℕ)
 deriving DecidableEq
 
 /-- The indices of the primitive arrows of the language that the signature's constants of zero,
@@ -371,13 +375,14 @@ theorem mem_tyTable {k : PrimIdx} {t : ℕ × ℕ × ℕ} :
       t.2.2 = sig.length + i := by
   rw [PrimIdx.tyTable, List.mem_append, List.mem_filterMap]
   refine or_congr Iff.rfl ⟨fun ⟨⟨x, i⟩, hx, ht⟩ ↦ ?_, fun ⟨i, hi, hc⟩ ↦ ?_⟩
-  · rcases x with _ | _ | _ | ⟨op, m⟩
+  · rcases x with _ | _ | _ | ⟨op, m⟩ | _
     all_goals simp only at ht
     · exact nomatch ht
     · exact nomatch ht
     · exact nomatch ht
     · obtain rfl := Option.some.inj ht
       exact ⟨i, List.mem_zipIdx_iff_getElem?.mp hx, rfl⟩
+    · exact nomatch ht
   · obtain ⟨op, m, c⟩ := t
     refine ⟨(.obj op m, i), List.mem_zipIdx_iff_getElem?.mpr hi, ?_⟩
     simp only at hc ⊢
@@ -1468,7 +1473,7 @@ theorem decTm_eq_some {c : ℕ} {cs : List (Expr × (ℕ → Option MTerm))} {of
   unfold decTm at hs
   by_cases hc : sig.length ≤ c
   · rw [ite_eq_left hc] at hs
-    rcases he : k.ext[c - sig.length]? with _ | ⟨_ | ⟨h, m, p⟩ | _ | _⟩ <;> rw [he] at hs <;>
+    rcases he : k.ext[c - sig.length]? with _ | ⟨_ | ⟨h, m, p⟩ | _ | _ | _⟩ <;> rw [he] at hs <;>
       dsimp only at hs
     · exact nomatch hs
     · exact nomatch hs
@@ -1480,6 +1485,7 @@ theorem decTm_eq_some {c : ℕ} {cs : List (Expr × (ℕ → Option MTerm))} {of
         exact ⟨h, m, p, θ, args, hc, rfl, hl.1, hl.2, hθ, hargs, rfl⟩
       · rw [ite_eq_right hl] at hs
         exact nomatch hs
+    · exact nomatch hs
     · exact nomatch hs
     · exact nomatch hs
   · rw [ite_eq_right hc] at hs

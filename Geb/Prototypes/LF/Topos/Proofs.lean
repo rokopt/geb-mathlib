@@ -37,10 +37,11 @@ fresh variable ({lit}`indD`); a formula from a term of the initial object is the
 motive at it, proved on a fresh variable of the initial type. A constant past the signature, a
 theorem of an extension of it that the indices' table names, decodes to the language's
 application of the theorem's entry at its leading arguments' decodings, from its other arguments'
-decodings, and one the table names as the unfolding of a definition to the unfolding at the
-equation's left side and reflexivity at its right ({lit}`decPfThm`). No derivation cuts
-through a formula that substitutes into a motive, so that each formula the checker types is the
-decoding of a term or built from such by the language's term formers.
+decodings, one the table names as the unfolding of a definition to the unfolding at the
+equation's left side and reflexivity at its right, and one the table names as the induction on a
+quotient as the inductions do, by the language's induction on the quotient ({lit}`decPfThm`).
+No derivation cuts through a formula that substitutes into a motive, so that each formula the
+checker types is the decoding of a term or built from such by the language's term formers.
 
 ## Main definitions
 
@@ -148,8 +149,13 @@ object variables, the outermost first, are types, the next, as many as its varia
 the rest proofs of the theorem's hypotheses, and the application decodes to the language's
 application of the theorem's entry at the types and the terms, the innermost first, with the
 proofs' decodings. At the unfolding of a definition, the application decodes to {lit}`dδ`, the
-proof of the unfolding's equation. -/
-def decPfThm {D : Type} (mk : FreeTopos.Internal.Rule → List D → D) (dδ : D) (c : ℕ)
+proof of the unfolding's equation. At the induction on a quotient, its first arguments, as many
+as the projection's object parameters, the outermost first, are types, and the next the motive,
+the proof at the projection's image of a variable and the term, and the application decodes to
+the derivation {lit}`ind` of the motive at the term by the language's induction on the quotient,
+the quotient's object definition and the projection at the types, the innermost first. -/
+def decPfThm {D : Type} (mk : FreeTopos.Internal.Rule → List D → D) (dδ : D)
+    (ind : PartialHorn.Tree → FreeTopos.Internal.Rule → Term → Term → ℕ → List D → D) (c : ℕ)
     (cs : List (Expr × (List (Option ℕ) → ℕ → Option D))) (env : List (Option ℕ)) (m : ℕ) :
     Option D :=
   if sig.length ≤ c then match k.ext[c - sig.length]? with
@@ -159,6 +165,13 @@ def decPfThm {D : Type} (mk : FreeTopos.Internal.Rule → List D → D) (dδ : D
       let ps ← (cs.drop (n + p)).mapM fun x ↦ x.2 env m
       pure (mk (.apply j θ.reverse σ.reverse) ps)
     | some (.delta _ _ _) => some dδ
+    | some (.quotInd kq n op) => match cs.drop n with
+      | [(P, _), (_, d), (t, _)] => do
+        let θ ← (cs.take n).mapM fun x ↦ decTy k env.length x.1
+        let pb ← lamBody (← termOf k env P)
+        pure (ind (PartialHorn.op op θ.reverse) (.quotInd kq θ.reverse) pb (← termOf k env t) m
+          [← d (none :: env) (m + 1)])
+      | _ => none
     | _ => none
   else none
 
@@ -182,7 +195,7 @@ def decPfStepCoprod (c : ℕ) (cs : List (Expr × (List (Option ℕ) → ℕ →
     | 56, [(z, _), (φ, _)] => do
       pure (indD FreeTopos.zero (.zeroInd 0) (weaken1 (← termOf k env φ)) (← termOf k env z) m
         [])
-    | c, cs => decPfThm k nd (joinD (ruleD .delta) reflD) c cs env m
+    | c, cs => decPfThm k nd (joinD (ruleD .delta) reflD) indD c cs env m
 
 /-- One step of the decoding of a proof, at a node of a label, from its children's decodings,
 each a function of an environment and the number of hypotheses. -/

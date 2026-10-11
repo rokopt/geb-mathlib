@@ -28,9 +28,10 @@ and {name}`Geb.LF.Topos.indD` do, with the formula they prove normalized first, 
 of the motive's application, from which it is proved, normalized to it ({lit}`leibC`,
 {lit}`indC`), congruence as the substitution of equals does, and the case analysis on a
 coproduct and a formula from a term of the initial object as the inductions do; function
-extensionality, with its formula normalized first; and an application of a theorem or of the
-unfolding of a definition past the signature as {name}`Geb.LF.Topos.decPfThm` decodes it, the
-unfolding with its sides normalized after it ({lit}`deltaC`). The decoding is not proved to
+extensionality, with its formula normalized first; and an application of a theorem, of the
+unfolding of a definition or of the induction on a quotient past the signature as
+{name}`Geb.LF.Topos.decPfThm` decodes it, the unfolding with its sides normalized after it
+({lit}`deltaC`) and the induction as the inductions do. The decoding is not proved to
 produce certificates that check: the conversion checker, sound relative to the base checker,
 decides each.
 
@@ -174,7 +175,7 @@ def decPfModStep (l : Label) (cs : List (Expr × (List (Option ℕ) → ℕ → 
     | .app (.const 56), [(z, _), (φ, _)] => do
       pure (indC k FreeTopos.zero (.zeroInd 0) (weaken1 (← termOf k env φ)) (← termOf k env z) m
         [])
-    | .app (.const c), cs => decPfThm k ndC (deltaC k) c cs env m
+    | .app (.const c), cs => decPfThm k ndC (deltaC k) (indC k) c cs env m
     | .lam, [(_, d)] => d env m
     | _, _ => none
 
