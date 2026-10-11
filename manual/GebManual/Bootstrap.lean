@@ -280,15 +280,18 @@ the sections below detail:
     certificates, by unsharing, is required if measurement shows the
     checking or storage of certificates to need it, and follows the
     bootstrap otherwise.
-  * In progress. The language as a signature of the Logical Framework,
+  * Complete. The language as a signature of the Logical Framework,
     whose goals Canonical searches and whose proofs decode to the
     language's derivations, for experiment
-    ({ref "search-synthesis"}[Search and synthesis]): complete for the
-    fragment of the natural numbers, lists, rose trees, binary coproducts
-    and the initial object, whose folds and case analysis are the
-    language's with parameters, in any number of object variables, the
+    ({ref "search-synthesis"}[Search and synthesis]): the fragment of the
+    natural numbers, lists, rose trees, binary coproducts and the initial
+    object, whose folds and case analysis are the language's with
+    parameters, in any number of object variables, and the signature of
+    a development, with its theorems, definitions and their unfoldings,
+    object definitions, primitive arrows, quotients and descents, the
     terms Canonical finds decoded and checked as derivations of the
-    language.
+    language. The Geb-native refinement search that it informs follows
+    the bootstrap.
 
 Extension:
 
@@ -329,15 +332,26 @@ Extension:
   language; then, early in writing, `let*` and `cond`, the
   syntax of holes, the checker of holes in programs in its suspending
   form and the display of their obligations, located diagnostics and the
-  typed enumerator. The rest, the store, a language server, holes in
-  proofs and the Geb-native refinement search among it, waits on its
-  consumers.
+  typed enumerator. The rest, the store, a language server and holes in
+  proofs among it, waits on its consumers; the Geb-native refinement
+  search follows the bootstrap.
 
 ## After the bootstrap
 
 Every item waits on the bootstrap. Each is written in Geb, and each
 proof in the metalogic, a proof about programs being about their
 translations:
+
+* The Geb-native refinement search, first
+  ({ref "search-synthesis"}[Search and synthesis]): refinement over
+  Geb's terms and derivations, with contextual metavariables and
+  suspended constraints, its checker the checker of holes in its
+  suspending form, which the bootstrap writes, and its grammar of heads
+  and rules informed by the measurements of the language as a signature
+  of the Logical Framework. It is the lasting implementation of the
+  search that Canonical serves in experiment during the bootstrap, and
+  Canonical is removed when everything done or planned with it is
+  writable by it (`TODO.md` § Triggers).
 
 * The setoid language: quotients whose respect is proved, subset types by
   propositions, definitions by equations whose unique solution is
@@ -4190,9 +4204,20 @@ its proofs, in this order:
     the signature's own constants encode. A descent, a primitive arrow
     with the theorem of its computation, enters it as those constants do.
 
-The route remains an experiment; the Geb-native refinement below is the
-implementation meant to last, and the signature's measurements inform
-its grammar of heads and rules.
+The route is an experiment, complete with item 15: the signature
+encodes the fragment of the natural numbers, lists, rose trees, binary
+coproducts and the initial object in any number of object variables, and
+the declarations of a development, and the decoding of its proofs is
+sound in the signature of every development. The Geb-native refinement
+below is the implementation meant to last, the first work after the
+bootstrap, and the measurements inform its grammar of heads and rules:
+computation given as rewrite rules leaves the search the inductions and
+their motives; congruence declared beside the substitution of equals,
+from which it is derived, brings within reach proofs not found without
+it; and a selection of the
+declarations relevant to a goal that closes over the types the goal
+mentions excludes the induction on a quotient whose projection's domain
+the goal does not mention.
 
 The operations that transfer to Geb are three: each unknown has its
 declaring context and an explicit substitution at each use, and a
@@ -4260,9 +4285,9 @@ induction serving meanwhile. It needs contextual holes richer than
 
 Nothing in the source format is needed beyond the syntax of holes; the
 checker of holes is written to suspend, so that it serves as the
-search's checker; and the Geb-native refinement is the lasting
-implementation. Canonical is a dependency of the package for experiments
-throughout the bootstrap (the decision on Canonical). It enters
+search's checker; and the Geb-native refinement, the first work after
+the bootstrap, is the lasting implementation. Canonical is a dependency
+of the package for experiments throughout the bootstrap (the decision on Canonical). It enters
 `lakefile.toml` at tag `v4.34.0`, which was measured to build and run
 under the repository's toolchain, and has no dependencies of its own. The
 experiments form a library of their own that no module of `Geb`,
@@ -4430,8 +4455,9 @@ checker of holes in programs and the display of their obligations;
 diagnostics with locations through efm-langserver; literate pages
 generated from documents; and the typed enumerator. When their consumers
 exist: digests and the store, `attach` and hover text, a language
-server, tree-sitter, holes in proofs, the cache of certificates, the
-export to canonical S-expressions, and the Geb-native refinement search.
+server, tree-sitter, holes in proofs, the cache of certificates and the
+export to canonical S-expressions. The Geb-native refinement search
+follows the bootstrap.
 The library then written in Geb drives content storage, richer language
 services, adapters to solvers and optimization of the runtime; none of
 them may discard the document, binding or dependency information already
