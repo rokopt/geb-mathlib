@@ -50,9 +50,10 @@ def inProgram {α : Type} (program : Option α)
   | none => .error "the program does not translate"
 
 /-- A search of developments: the names of the certificates it continues from, and, given their
-declarations in that order, each development's declarations with the name of its certificate, or
-the reason a lemma is not proved. -/
-abbrev Search := List String × (List (List Decl) → Except String (List (String × List Decl)))
+theorems in that order, each development's declarations with the name of its certificate, or the
+reason a lemma is not proved. -/
+abbrev Search :=
+  List String × (List (List Internal.Thm) → Except String (List (String × List Decl)))
 
 set_option compiler.extract_closed false in
 /-- The searches of the developments with certificates, each with its name, after those whose
