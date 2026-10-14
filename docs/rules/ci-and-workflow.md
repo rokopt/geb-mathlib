@@ -300,7 +300,12 @@ of the searches before it, which it reads from the directory it writes
 into. A change to a development's proofs, or to a program it is about, is
 followed by `regen`. `slow-checks.yml` runs `check` daily and on
 demand; the pre-push checklist and the other workflows check the committed
-certificates and do not search.
+certificates and do not search. A certificate whose check by Lean's
+evaluator takes hours is checked instead by a module of the library
+`GebSlow`, which neither `lake build` nor `lake test` builds and which
+`slow-checks.yml` builds and lints daily and on demand; its search's own
+check, as it stores each declaration, still runs with `regen` and
+`check`.
 
 ## Benchmarks
 

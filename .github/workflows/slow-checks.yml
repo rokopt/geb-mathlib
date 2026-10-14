@@ -5,7 +5,8 @@ name: Slow checks
 # checked by the kernel, which the other workflows build in the mode
 # native (docs/rules/ci-and-workflow.md § Loading modes); and the
 # regeneration of the certificates of the internal language's
-# developments, compared with the committed ones (§ Certificates); and the
+# developments, compared with the committed ones, and the checks of the
+# certificates too slow to build with the tests (§ Certificates); and the
 # benchmarks (§ Benchmarks).
 on:
   schedule:
@@ -51,6 +52,22 @@ jobs:
           lint: false
       - name: scripts/certificates.sh check
         run: bash scripts/certificates.sh check
+
+  certified:
+    name: Build and lint the slow checks of the certificates
+    runs-on: ubuntu-latest
+    timeout-minutes: 720
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865  # v1
+        with:
+          build: false
+          test: false
+          lint: false
+      - name: lake build GebSlow
+        run: lake build GebSlow
+      - name: lint GebSlow
+        run: lake exe batteries/runLinter GebSlow
 
   bench:
     name: Run the benchmarks

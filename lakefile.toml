@@ -250,6 +250,16 @@ weak.linter.hashCommand = false
 [[lean_lib]]
 name = "GebBench"
 
+# The checks too slow to build with the tests, built by `lake build GebSlow` and by
+# slow-checks.yml, and built by neither `lake build` nor `lake test`.
+[[lean_lib]]
+name = "GebSlow"
+needs = ["@/certificates"]
+moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
+
+[lean_lib.moreServerOptions]
+weak.linter.hashCommand = false
+
 # The developments of the internal language, each read from its certificate.
 [[lean_lib]]
 name = "GebTestsCertified"
