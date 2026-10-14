@@ -20,6 +20,7 @@ tagged digits that the phase proofs consume.
 
 ## Main statements
 
+* {lit}`machine_tr` identifies the machine's transition with {lit}`transition`.
 * {lit}`outputSymbol_scan` and {lit}`outputSymbol_phase` state that neither table emits.
 * {lit}`step_end` and {lit}`outputSymbol_end` describe the halting transition.
 * {lit}`headBound_add` combines bounds on consecutive execution segments.
@@ -38,6 +39,11 @@ namespace Geb.BitTree.EliasBinary
 open Turing MultiTapeTM
 open Geb.BitTree.BinaryMachine (boolEmb digit origin mismatchMove)
 open Geb.TreeScanner (step_of_state)
+
+/-- The machine's transition is {name}`transition`. -/
+theorem machine_tr (q : Control) (input : Option (Fin 4)) (work : Fin 9 → Option (Fin 4)) :
+    machine.tr q input work = transition q input work :=
+  tr_ofTr _ _ _ _ _
 
 /-- A plain digit reads as its bit. -/
 theorem digit_plain (b : Bool) : digit (some (plain b)) = b := by cases b <;> rfl
@@ -100,7 +106,7 @@ theorem outputSymbol_scan {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control in
   unfold outputSymbol
   rw [hq]
   dsimp only
-  rw [hi, tr_scan q hread]
+  rw [machine_tr, hi, tr_scan q hread]
   rfl
 
 /-- A stationary state emits nothing. -/
@@ -112,7 +118,7 @@ theorem outputSymbol_phase {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control i
   unfold outputSymbol
   rw [hq]
   dsimp only
-  rw [tr_phase q hph]
+  rw [machine_tr, tr_phase q hph]
   rfl
 
 /-- At the right end marker the finite control changes to the halting state and the
@@ -123,7 +129,7 @@ theorem step_end {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input) (q :
     (hi : cfg.inputSymbol = none) :
     machine.step cfg =
       { cfg with state := none, output := cfg.output ++ [boolEmb (q == stDone)] } := by
-  rw [step_of_state _ _ _ hq, hi, tr_end q hread]
+  rw [step_of_state _ _ _ hq, machine_tr, hi, tr_end q hread]
   apply Cfg.ext <;> simp [finish]
 
 /-- The final transition emits exactly the accepting-state decision. -/
@@ -135,7 +141,7 @@ theorem outputSymbol_end {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control inp
   unfold outputSymbol
   rw [hq]
   dsimp only
-  rw [hi, tr_end q hread]
+  rw [machine_tr, hi, tr_end q hread]
   rfl
 
 /-- The input position advances by one when it is not the right end marker. -/

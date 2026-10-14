@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.Computability.Oitavem.Recursion
 public import Cslib.Computability.Machines.Turing.MultiTape.ConfigBound
 public import Geb.Prototypes.Computability.MultiTape.RunFrom
+public import Geb.Prototypes.Computability.MultiTape.Computes
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -141,8 +142,8 @@ theorem computes_of_space {k : ℕ} {State : Type*} [Finite State]
     by_cases h : T ≤ u
     · exact h
     · exact False.elim (hlive u (by omega) hu)
-  refine ⟨T, hTb, tm.spaceUsed (tm.initCfg w) T, hspace w T, hT, ?_, rfl⟩
-  exact (tm.runFrom_output_eq_of_halt (tm.initCfg w) hTu hT).symm.trans hout
+  refine computesInTimeAndSpace_of_halted hT ?_ rfl hTb (hspace w T)
+  exact (congrArg Cfg.output (runFrom_eq_of_halt tm (tm.initCfg w) hTu hT)).symm.trans hout
 
 /-- A halting logarithmic-space transducer computes its function in simultaneous
 polynomial time and logarithmic space, using the very same machine. -/

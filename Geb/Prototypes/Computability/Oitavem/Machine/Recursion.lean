@@ -28,18 +28,24 @@ tapes and nested calls is independent of the iteration count.
 * {lit}`emitPrefix` streams a binary-counted prefix through repeated digit queries.
 * {lit}`retainedVal` describes the countdown and saved word between calls.
 * {lit}`lengthRecLoop` computes recursive length through generated digit queries.
+* Each machine's transition function carries the suffix {lit}`Tr` and takes its
+  argument machines' initial states and transitions.
 
 ## Main statements
 
 * {lit}`retainedLoop_transformsIn` realizes an indexed saved-word invariant.
 * {lit}`lengthRecLoop_transformsIn` instantiates the invariant with
   {name}`Geb.Oitavem.prefixLoop` for {name}`Geb.Oitavem.lengthByRec`.
+* The equations with the suffix {lit}`_ofTr` identify each machine over machines built
+  by {name}`Turing.MultiTapeTM.ofTr` with the machine built from its transition
+  function.
 
 ## Implementation notes
 
 The caller initializes the countdown, saved word, and mask. The step generator
 restores its own registers before the captured prefix replaces the saved register.
-The contracts inherit CSLib's {lit}`Classical.choice` dependency.
+The contracts inherit CSLib's {lit}`Classical.choice` dependency, and the machines,
+sequencing machines whose transitions CSLib selects by choice, are noncomputable.
 
 ## Tags
 
@@ -58,8 +64,25 @@ open Geb.SizeBounded.Logspace.Machine
 public section
 
 /-- An iteration stores a prefix, then decrements its remaining-call counter. -/
-@[expose] def retainedLoop {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (R C : Fin k) :=
+@[expose] noncomputable def retainedLoop {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
+    (R C : Fin k) :=
   whileNonblank (some (oldTape C)) (seq (generatedPrefix P R) (dec (oldTape C)))
+
+/-- The transition of {name}`retainedLoop`, from the generator's initial state and transition. -/
+@[expose] def retainedLoopTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S) (R C : Fin k) :=
+  whileNonblankTr (some (oldTape C))
+    (seqTr (generatedPrefixTr trP q₀P R) (decTr (oldTape C)) (.inl 0))
+    (.inl (.inl (.inl (.inl ()))))
+
+/-- {name}`retainedLoop` of a machine built from a transition function is the machine built
+from {name}`retainedLoopTr`. -/
+theorem retainedLoop_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (R C : Fin k) :
+    retainedLoop (ofTr q₀ tr) R C =
+      ofTr (.inl ()) (retainedLoopTr tr q₀ R C) := by
+  simp only [retainedLoop, generatedPrefix_ofTr, dec_eq_ofTr, seq_ofTr, whileNonblank_ofTr,
+    retainedLoopTr]
 
 /-- The old registers between iterations: saved word and remaining-call counter. -/
 @[expose] def retainedVal {k : ℕ} (σ : Fin k → List Bool) (R C : Fin k)
@@ -207,8 +230,24 @@ theorem retainedLoop_transformsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S
 
 /-- Query the digit immediately before a saved countdown, then clear query and result.
 This is the input-access part of a recursive length step, whose value ignores that digit. -/
-@[expose] def readPrevious {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (C Q D : Fin k) :=
+@[expose] noncomputable def readPrevious {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
+    (C Q D : Fin k) :=
   seq (seq (copy C Q) (dec Q)) (seq P (seq (const [] Q) (const [] D)))
+
+/-- The transition of {name}`readPrevious`, from the reader's initial state and transition. -/
+@[expose] def readPreviousTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S) (C Q D : Fin k) :=
+  seqTr (seqTr (copyTr C Q) (decTr Q) (.inl 0))
+    (seqTr trP (seqTr (constTr [] Q) (constTr [] D) (.inl (.inl ()))) (.inl (.inl (.inl ()))))
+    (.inl q₀P)
+
+/-- {name}`readPrevious` of a machine built from a transition function is the machine built
+from {name}`readPreviousTr`. -/
+theorem readPrevious_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (C Q D : Fin k) :
+    readPrevious (ofTr q₀ tr) C Q D =
+      ofTr (.inl (.inl (.inl (.inl ())))) (readPreviousTr tr q₀ C Q D) := by
+  simp only [readPrevious, copy_eq_ofTr, dec_eq_ofTr, const_eq_ofTr, seq_ofTr, readPreviousTr]
 
 /-- A backwards query restores its initialized query and result registers. -/
 theorem readPrevious_transformsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
@@ -255,9 +294,24 @@ theorem readPrevious_transformsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S
   rw [hD, ← hp.2.1, Function.update_eq_self]
 
 /-- Read the next recursion digit and emit the successor of the saved recursive value. -/
-@[expose] def lengthRecStep {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
+@[expose] noncomputable def lengthRecStep {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
     (C R Q D : Fin k) :=
   seq (readPrevious P C Q D) (numericSuccGenerator (emitStored R))
+
+/-- The transition of {name}`lengthRecStep`, from the reader's initial state and transition. -/
+@[expose] def lengthRecStepTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S) (C R Q D : Fin k) :=
+  seqTr (readPreviousTr trP q₀P C Q D) (numericSuccGeneratorTr (emitStoredTr R))
+    (true, some (.inl (.inl ())))
+
+/-- {name}`lengthRecStep` of a machine built from a transition function is the machine built
+from {name}`lengthRecStepTr`. -/
+theorem lengthRecStep_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (C R Q D : Fin k) :
+    lengthRecStep (ofTr q₀ tr) C R Q D =
+      ofTr (.inl (.inl (.inl (.inl (.inl ()))))) (lengthRecStepTr tr q₀ C R Q D) := by
+  simp only [lengthRecStep, readPrevious_ofTr, emitStored_eq_ofTr, numericSuccGenerator_ofTr,
+    seq_ofTr, lengthRecStepTr]
 
 /-- The length step reads its generated recursion input, preserves its environment,
 and emits the successor of the saved shortlex word. -/
@@ -282,9 +336,24 @@ theorem lengthRecStep_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
 
 /-- The recursive length loop over a digit reader.
 The layout is countdown, saved word, query, and digit result. -/
-@[expose] def lengthRecLoop {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
+@[expose] noncomputable def lengthRecLoop {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
     (r : Fin 4 → Fin k) :=
   retainedLoop (lengthRecStep P (r 0) (r 1) (r 2) (r 3)) (r 1) (r 0)
+
+/-- The transition of {name}`lengthRecLoop`, from the reader's initial state and transition. -/
+@[expose] def lengthRecLoopTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S)
+    (r : Fin 4 → Fin k) :=
+  retainedLoopTr (lengthRecStepTr trP q₀P (r 0) (r 1) (r 2) (r 3))
+    (.inl (.inl (.inl (.inl (.inl ()))))) (r 1) (r 0)
+
+/-- {name}`lengthRecLoop` of a machine built from a transition function is the machine built
+from {name}`lengthRecLoopTr`. -/
+theorem lengthRecLoop_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (r : Fin 4 → Fin k) :
+    lengthRecLoop (ofTr q₀ tr) r =
+      ofTr (.inl ()) (lengthRecLoopTr tr q₀ r) := by
+  simp only [lengthRecLoop, lengthRecStep_ofTr, retainedLoop_ofTr, lengthRecLoopTr]
 
 /-- Recursive length through generated digit queries and a retained shortlex value.
 Every iteration reads the next digit, computes the numerical successor of the old
@@ -357,8 +426,23 @@ theorem lengthRecLoop_transformsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool 
   Function.update (Function.update σ C (counterWord (c - j))) Q (counterWord j)
 
 /-- Emit the current indexed digit, advance the index, and consume one iteration. -/
-@[expose] def concatLoop {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (C Q : Fin k) :=
+@[expose] noncomputable def concatLoop {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
+    (C Q : Fin k) :=
   whileNonblank (some C) (seq P (seq (inc Q) (dec C)))
+
+/-- The transition of {name}`concatLoop`, from the generator's initial state and transition. -/
+@[expose] def concatLoopTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S) (C Q : Fin k) :=
+  whileNonblankTr (some C) (seqTr trP (seqTr (incTr Q) (decTr C) (.inl 0)) (.inl (.inl ())))
+    (.inl q₀P)
+
+/-- {name}`concatLoop` of a machine built from a transition function is the machine built
+from {name}`concatLoopTr`. -/
+theorem concatLoop_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (C Q : Fin k) :
+    concatLoop (ofTr q₀ tr) C Q =
+      ofTr (.inl ()) (concatLoopTr tr q₀ C Q) := by
+  simp only [concatLoop, inc_eq_ofTr, dec_eq_ofTr, seq_ofTr, whileNonblank_ofTr, concatLoopTr]
 
 /-- A generator for each indexed digit gives a streaming word generator.
 Only the two counters change between calls; the generated prefix is never stored. -/
@@ -424,9 +508,23 @@ theorem concatLoop_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
   simpa only [concatLoop, List.take_length] using hs
 
 /-- Stream a saved number of digits through a reader, then clear both loop counters. -/
-@[expose] def emitPrefix {k : ℕ} {S : Type}
+@[expose] noncomputable def emitPrefix {k : ℕ} {S : Type}
     (P : MultiTapeTM k Bool S) (C Q R : Fin k) :=
   seq (concatLoop (readDigitGenerator P R) C Q) (const [] Q)
+
+/-- The transition of {name}`emitPrefix`, from the reader's initial state and transition. -/
+@[expose] def emitPrefixTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S) (C Q R : Fin k) :=
+  seqTr (concatLoopTr (readDigitGeneratorTr trP R) (.inl q₀P) C Q) (constTr [] Q) (.inl (.inl ()))
+
+/-- {name}`emitPrefix` of a machine built from a transition function is the machine built
+from {name}`emitPrefixTr`. -/
+theorem emitPrefix_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (C Q R : Fin k) :
+    emitPrefix (ofTr q₀ tr) C Q R =
+      ofTr (.inl (.inl ())) (emitPrefixTr tr q₀ C Q R) := by
+  simp only [emitPrefix, readDigitGenerator_ofTr, concatLoop_ofTr, const_eq_ofTr, seq_ofTr,
+    emitPrefixTr]
 
 /-- A virtual prefix is emitted without storing it. Its saved length may be polynomially large. -/
 theorem emitPrefix_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
@@ -484,9 +582,26 @@ theorem emitPrefix_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
   rfl
 
 /-- Stream the step digits of concatenation recursion, clear the index, then emit its base. -/
-@[expose] def concatRecGenerator {k : ℕ} {S A : Type}
+@[expose] noncomputable def concatRecGenerator {k : ℕ} {S A : Type}
     (P : MultiTapeTM k Bool S) (G : MultiTapeTM k Bool A) (C Q : Fin k) :=
   seq (concatLoop P C Q) (seq (const [] Q) G)
+
+/-- The transition of {name}`concatRecGenerator`, from the step's and the base's initial states
+    and transitions. -/
+@[expose] def concatRecGeneratorTr {k : ℕ} {S A : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S)
+    (trG : A → Option Bool → (Fin k → Option Bool) → Action k Bool A) (q₀G : A)
+    (C Q : Fin k) :=
+  seqTr (concatLoopTr trP q₀P C Q) (seqTr (constTr [] Q) trG q₀G) (.inl (.inl (.inl ())))
+
+/-- {name}`concatRecGenerator` of machines built from transition functions is the machine built
+from {name}`concatRecGeneratorTr`. -/
+theorem concatRecGenerator_ofTr {k : ℕ} {S A : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀G : A)
+    (trG : A → Option Bool → (Fin k → Option Bool) → Action k Bool A) (C Q : Fin k) :
+    concatRecGenerator (ofTr q₀ tr) (ofTr q₀G trG) C Q =
+      ofTr (.inl (.inl ())) (concatRecGeneratorTr tr q₀ trG q₀G C Q) := by
+  simp only [concatRecGenerator, concatLoop_ofTr, const_eq_ofTr, seq_ofTr, concatRecGeneratorTr]
 
 /-- Concatenation recursion realizes the semantic constructor from its indexed step and base.
 The step receives the suffix after the current digit. No accumulated result is passed to it. -/

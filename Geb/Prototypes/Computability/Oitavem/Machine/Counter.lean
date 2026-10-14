@@ -26,18 +26,25 @@ decrement, and loop programs. All intermediate sums are bounded by the final sum
 * {lit}`subCounter` subtracts and consumes a binary counter, saturating at zero.
 * {lit}`minCounter` clamps a counter to a saved bound using two saturated subtractions.
 * {lit}`maxCounter` retains the larger counter and clears its temporary registers.
+* {lit}`addCounterTr`, {lit}`subCounterTr`, {lit}`minCounterTr` and {lit}`maxCounterTr`
+  are their transition functions.
 
 ## Main statements
 
 * {lit}`addCounter_transformsIn` proves addition, termination, caller preservation,
   and a bound throughout the loop.
 * {lit}`subCounter_transformsIn` proves saturating subtraction at the original bound.
+* {lit}`addCounter_eq_ofTr`, {lit}`subCounter_eq_ofTr`, {lit}`minCounter_eq_ofTr` and
+  {lit}`maxCounter_eq_ofTr` identify each machine with the machine built by
+  {name}`Turing.MultiTapeTM.ofTr` from its transition function.
 
 ## Implementation notes
 
 The loop uses one iteration per unit of the consumed counter. Its termination
 bound is sufficient for the configuration-counting time theorem. The contracts
-inherit CSLib's {lit}`Classical.choice` dependency.
+inherit CSLib's {lit}`Classical.choice` dependency. The machines are sequencings of
+machines, noncomputable since CSLib selects a machine's transition by choice; their
+transition functions are computable.
 
 ## Tags
 
@@ -56,8 +63,17 @@ open Geb.SizeBounded.Logspace.Machine
 public section
 
 /-- Add the second counter to the first, consuming the second counter. -/
-@[expose] def addCounter {k : ℕ} (A C : Fin k) :=
+@[expose] noncomputable def addCounter {k : ℕ} (A C : Fin k) :=
   whileNonblank (some C) (seq (inc A) (dec C))
+
+/-- The transition of {name}`addCounter`. -/
+@[expose] def addCounterTr {k : ℕ} (A C : Fin k) :=
+  whileNonblankTr (some C) (seqTr (incTr A) (decTr C) (.inl 0)) (.inl (.inl ()))
+
+/-- {name}`addCounter` is the machine built from {name}`addCounterTr`. -/
+theorem addCounter_eq_ofTr {k : ℕ} (A C : Fin k) :
+    addCounter A C = ofTr (.inl ()) (addCounterTr A C) := by
+  simp only [addCounter, inc_eq_ofTr, dec_eq_ofTr, seq_ofTr, whileNonblank_ofTr, addCounterTr]
 
 /-- Addition uses only the final sum's binary size and leaves its second counter blank. -/
 theorem addCounter_transformsIn {k : ℕ} (A C : Fin k) (hAC : A ≠ C) (N B : ℕ → ℕ) :
@@ -154,8 +170,17 @@ theorem decL_counterWord (n : ℕ) :
   | succ n => simpa only [Nat.add_sub_cancel] using decL_counterWord_succ n
 
 /-- Subtract the second counter from the first, saturating at zero and consuming the second. -/
-@[expose] def subCounter {k : ℕ} (A C : Fin k) :=
+@[expose] noncomputable def subCounter {k : ℕ} (A C : Fin k) :=
   whileNonblank (some C) (seq (dec A) (dec C))
+
+/-- The transition of {name}`subCounter`. -/
+@[expose] def subCounterTr {k : ℕ} (A C : Fin k) :=
+  whileNonblankTr (some C) (seqTr (decTr A) (decTr C) (.inl 0)) (.inl (.inl 0))
+
+/-- {name}`subCounter` is the machine built from {name}`subCounterTr`. -/
+theorem subCounter_eq_ofTr {k : ℕ} (A C : Fin k) :
+    subCounter A C = ofTr (.inl ()) (subCounterTr A C) := by
+  simp only [subCounter, dec_eq_ofTr, seq_ofTr, whileNonblank_ofTr, subCounterTr]
 
 /-- Saturating subtraction preserves the original register bound throughout the loop. -/
 theorem subCounter_transformsIn {k : ℕ} (A C : Fin k) (hAC : A ≠ C) (N B : ℕ → ℕ) :
@@ -215,8 +240,18 @@ theorem subCounter_transformsIn {k : ℕ} (A C : Fin k) (hAC : A ≠ C) (N B : �
 
 /-- Clamp a counter to a saved upper bound, using one temporary register.
 The bound survives and the temporary register is cleared. -/
-@[expose] def minCounter {k : ℕ} (A L D : Fin k) :=
+@[expose] noncomputable def minCounter {k : ℕ} (A L D : Fin k) :=
   seq (seq (copy L D) (subCounter D A)) (seq (copy L A) (subCounter A D))
+
+/-- The transition of {name}`minCounter`. -/
+@[expose] def minCounterTr {k : ℕ} (A L D : Fin k) :=
+  seqTr (seqTr (copyTr L D) (subCounterTr D A) (.inl ()))
+    (seqTr (copyTr L A) (subCounterTr A D) (.inl ())) (.inl (.inl (.inl ())))
+
+/-- {name}`minCounter` is the machine built from {name}`minCounterTr`. -/
+theorem minCounter_eq_ofTr {k : ℕ} (A L D : Fin k) :
+    minCounter A L D = ofTr (.inl (.inl (.inl (.inl ())))) (minCounterTr A L D) := by
+  simp only [minCounter, copy_eq_ofTr, subCounter_eq_ofTr, seq_ofTr, minCounterTr]
 
 /-- Two saturated subtractions compute a minimum without growing either counter. -/
 theorem minCounter_transformsIn {k : ℕ} (A L D : Fin k)
@@ -257,8 +292,18 @@ theorem minCounter_transformsIn {k : ℕ} (A L D : Fin k)
     · simp [Function.update_of_ne hiA, Function.update_of_ne hiD]
 
 /-- Keep the larger counter, consuming the other and clearing one temporary register. -/
-@[expose] def maxCounter {k : ℕ} (A C D : Fin k) :=
+@[expose] noncomputable def maxCounter {k : ℕ} (A C D : Fin k) :=
   seq (copy A D) (seq (subCounter C D) (addCounter A C))
+
+/-- The transition of {name}`maxCounter`. -/
+@[expose] def maxCounterTr {k : ℕ} (A C D : Fin k) :=
+  seqTr (copyTr A D) (seqTr (subCounterTr C D) (addCounterTr A C) (.inl ())) (.inl (.inl ()))
+
+/-- {name}`maxCounter` is the machine built from {name}`maxCounterTr`. -/
+theorem maxCounter_eq_ofTr {k : ℕ} (A C D : Fin k) :
+    maxCounter A C D = ofTr (.inl (.inl (.inl ()))) (maxCounterTr A C D) := by
+  simp only [maxCounter, copy_eq_ofTr, subCounter_eq_ofTr, addCounter_eq_ofTr, seq_ofTr,
+    maxCounterTr]
 
 /-- Computing a maximum never grows beyond the larger input counter. -/
 theorem maxCounter_transformsIn {k : ℕ} (A C D : Fin k)

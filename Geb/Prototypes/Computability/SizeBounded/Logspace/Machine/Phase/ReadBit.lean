@@ -27,13 +27,21 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {lit}`Classical.choice` through Cslib's
 {name}`Turing.Cfg.inputSymbol`.
 
+Each machine is built by {name}`Turing.MultiTapeTM.ofTr` from a transition
+function named after it with the suffix {lit}`Tr`, which is computable; the
+machine's own transition, selected by choice in CSLib, agrees with it.
+
 # Main definitions
 
+* {lit}`readBitTr`, {lit}`popStepTr` — the transition functions of the
+  machines below.
 * {lit}`readBit` — write the input symbol at one head's cell.
 * {lit}`popStep` — move one bit from one head's cell to another's.
 
 # Main statements
 
+* {lit}`readBit_tr`, {lit}`popStep_tr` — the machines' transitions are their
+  transition functions.
 * {lit}`readBit_runsTo`, {lit}`popStep_runsTo_cons`,
   {lit}`popStep_runsTo_nil` — the run of each machine, naming the halted
   configuration and the step count.
@@ -52,30 +60,44 @@ open Geb.SizeBounded.Machine
 
 public section
 
+/-- The transition of {lit}`readBit`. -/
+@[expose] def readBitTr {k : ℕ} (i : Fin k) (_ : Unit) (inp : Option Bool)
+    (_ : Fin k → Option Bool) : Action k Bool Unit :=
+  { inputTape := 0
+    workTapes := fun j ↦ if j = i then (inp.map some, 0) else (none, 0)
+    output := none, state := none }
+
 /-- Write the input symbol, when there is one, at the head of tape {lit}`i`,
 without moving, and halt. -/
-@[expose] def readBit {k : ℕ} (i : Fin k) : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ inp _ :=
+@[expose] def readBit {k : ℕ} (i : Fin k) : MultiTapeTM k Bool Unit := ofTr () (readBitTr i)
+
+/-- The transition of {name}`readBit` is {name}`readBitTr`. -/
+theorem readBit_tr {k : ℕ} (i : Fin k) (q : Unit) (inp : Option Bool)
+    (work : Fin k → Option Bool) : (readBit i).tr q inp work = readBitTr i q inp work :=
+  tr_ofTr _ _ _ _ _
+
+/-- The transition of {lit}`popStep`. -/
+@[expose] def popStepTr {k : ℕ} (i j : Fin k) (_ : Unit) (_ : Option Bool)
+    (work : Fin k → Option Bool) : Action k Bool Unit :=
+  match work i with
+  | some c =>
     { inputTape := 0
-      workTapes := fun j ↦ if j = i then (inp.map some, 0) else (none, 0)
+      workTapes := fun l ↦ if l = i then (some none, 0) else if l = j then (some (some c), 0)
+        else (none, 0)
+      output := none, state := none }
+  | none =>
+    { inputTape := 0, workTapes := fun l ↦ (none, if l = i then 1 else 0),
       output := none, state := none }
 
 /-- Read the head of tape {lit}`i`: on a bit, blank it and write it at the head
 of tape {lit}`j`; on a blank, move tape {lit}`i`'s head right. Halt either
 way. -/
-@[expose] def popStep {k : ℕ} (i j : Fin k) : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ _ work :=
-    match work i with
-    | some c =>
-      { inputTape := 0
-        workTapes := fun l ↦ if l = i then (some none, 0) else if l = j then (some (some c), 0)
-          else (none, 0)
-        output := none, state := none }
-    | none =>
-      { inputTape := 0, workTapes := fun l ↦ (none, if l = i then 1 else 0),
-        output := none, state := none }
+@[expose] def popStep {k : ℕ} (i j : Fin k) : MultiTapeTM k Bool Unit := ofTr () (popStepTr i j)
+
+/-- The transition of {name}`popStep` is {name}`popStepTr`. -/
+theorem popStep_tr {k : ℕ} (i j : Fin k) (q : Unit) (inp : Option Bool)
+    (work : Fin k → Option Bool) : (popStep i j).tr q inp work = popStepTr i j q inp work :=
+  tr_ofTr _ _ _ _ _
 
 /-- {name}`readBit` at a parked empty register runs one step and leaves it
 holding the input symbol's word. -/
@@ -95,7 +117,7 @@ theorem readBit_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
         (readBit i).tr () inp work =
           { inputTape := 0
             workTapes := fun j ↦ if j = i then (inp.map some, 0) else (none, 0)
-            output := none, state := none } := fun _ _ ↦ rfl
+            output := none, state := none } := fun _ _ ↦ readBit_tr i () _ _
     rw [step_of_state _ _ () hq, htr]
     apply Cfg.ext
     · rfl
@@ -129,8 +151,7 @@ theorem readBit_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
     rw [hq]
     exact Option.some_ne_none _
   have hout : (readBit i).outputSymbol cfg = none := by
-    unfold outputSymbol
-    rw [hq]
+    rw [outputSymbol_of_state hq, readBit_tr]
     rfl
   exact RunsTo.ofFamily (readBit i) (fun _ ↦ cfg) 0 B _ (fun _ _ ↦ hlive)
     (fun _ h ↦ absurd h (by omega)) hhalt rfl (fun _ _ ↦ hout) (fun _ _ j ↦ hpos j)
@@ -160,7 +181,7 @@ theorem popStep_runsTo_cons {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i
             else (none, 0)
           output := none, state := none } := by
     intro inp work hc
-    simp only [popStep, hc]
+    simp only [popStep_tr, popStepTr, hc]
   have hhalt : (popStep i j).step cfg =
       { cfg with
         state := none
@@ -208,10 +229,7 @@ theorem popStep_runsTo_cons {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i
     rw [hq]
     exact Option.some_ne_none _
   have hout : (popStep i j).outputSymbol cfg = none := by
-    unfold outputSymbol
-    rw [hq]
-    change ((popStep i j).tr () cfg.inputSymbol cfg.workTapeSymbols).output = none
-    rw [htr _ _ hsym]
+    rw [outputSymbol_of_state hq, htr _ _ hsym]
   exact RunsTo.ofFamily (popStep i j) (fun _ ↦ cfg) 0 B _ (fun _ _ ↦ hlive)
     (fun _ h ↦ absurd h (by omega)) hhalt rfl (fun _ _ ↦ hout) (fun _ _ l ↦ hpos l)
     (fun l ↦ hpos l)
@@ -232,7 +250,7 @@ theorem popStep_runsTo_nil {k : ℕ} {input : List Bool} (i j : Fin k)
         { inputTape := 0, workTapes := fun l ↦ (none, if l = i then 1 else 0),
           output := none, state := none } := by
     intro inp work hc
-    simp only [popStep, hc]
+    simp only [popStep_tr, popStepTr, hc]
   have hhalt : (popStep i j).step cfg =
       { cfg with state := none, workTapePos := Function.update cfg.workTapePos i 0 } := by
     rw [step_of_state _ _ () hq, htr _ _ hsym]
@@ -254,10 +272,7 @@ theorem popStep_runsTo_nil {k : ℕ} {input : List Bool} (i j : Fin k)
     rw [hq]
     exact Option.some_ne_none _
   have hout : (popStep i j).outputSymbol cfg = none := by
-    unfold outputSymbol
-    rw [hq]
-    change ((popStep i j).tr () cfg.inputSymbol cfg.workTapeSymbols).output = none
-    rw [htr _ _ hsym]
+    rw [outputSymbol_of_state hq, htr _ _ hsym]
   exact RunsTo.ofFamily (popStep i j) (fun _ ↦ cfg) 0 B _ (fun _ _ ↦ hlive)
     (fun _ h ↦ absurd h (by omega)) hhalt rfl (fun _ _ ↦ hout) (fun _ _ l ↦ hpos l)
     (fun l ↦ update_workTapePos_bounds i hpos 0 (by omega) (by omega) l)

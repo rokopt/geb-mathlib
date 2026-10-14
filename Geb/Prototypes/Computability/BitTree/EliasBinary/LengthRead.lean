@@ -173,7 +173,7 @@ theorem step_returnWalk {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input)
   have hw : origin ((headsCfg c q sel z).workTapeSymbols j) = false := by
     simp only [Cfg.workTapeSymbols, headsCfg, hj, ↓reduceIte]
     rw [horig, decide_eq_false hz]
-  rw [step_of_state _ _ q rfl, tr_phase q hph, htr, hw]
+  rw [step_of_state _ _ q rfl, machine_tr, tr_phase q hph, htr, hw]
   refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_ (List.append_nil _)
   funext i
   simp only [headsCfg, act, Bool.false_eq_true, ↓reduceIte]
@@ -195,7 +195,7 @@ theorem step_returnWalk_end {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control in
     simp only [Cfg.workTapeSymbols, headsCfg, hj, ↓reduceIte]
     rw [horig]
     rfl
-  rw [step_of_state _ _ q rfl, tr_phase q hph, htr, hw]
+  rw [step_of_state _ _ q rfl, machine_tr, tr_phase q hph, htr, hw]
   refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_ (List.append_nil _)
   funext i
   simp [headsCfg, act, stay]
@@ -291,8 +291,8 @@ theorem step_eraseSize {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input)
     machine.step (eraseSizeCfg c stEraseSize p) = eraseSizeCfg c stEraseSize (p + 1) := by
   have hw : (eraseSizeCfg c stEraseSize p).workTapeSymbols 3 = c.workTapes 3 p := by
     simp [Cfg.workTapeSymbols, eraseSizeCfg]
-  rw [step_of_state _ _ stEraseSize rfl, tr_phase stEraseSize (by simp), phaseTr_eraseSize, hw,
-    ite_eq_right hp, horig]
+  rw [step_of_state _ _ stEraseSize rfl, machine_tr, tr_phase stEraseSize (by simp),
+    phaseTr_eraseSize, hw, ite_eq_right hp, horig]
   refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ (List.append_nil _)
   · funext i z
     simp only [eraseSizeCfg, act]
@@ -321,8 +321,8 @@ theorem step_eraseSize_end {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control inp
     machine.step (eraseSizeCfg c stEraseSize S) = eraseSizeCfg c stReturnSize S := by
   have hw : (eraseSizeCfg c stEraseSize S).workTapeSymbols 3 = none := by
     simp [Cfg.workTapeSymbols, eraseSizeCfg, hS]
-  rw [step_of_state _ _ stEraseSize rfl, tr_phase stEraseSize (by simp), phaseTr_eraseSize, hw,
-    ite_eq_left rfl]
+  rw [step_of_state _ _ stEraseSize rfl, machine_tr, tr_phase stEraseSize (by simp),
+    phaseTr_eraseSize, hw, ite_eq_left rfl]
   refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_ (List.append_nil _)
   funext i
   simp [eraseSizeCfg, act, stay]
@@ -371,7 +371,7 @@ def lengthEndCfg {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input) :
 /-- The length-end state steps both length heads back. -/
 theorem step_lengthEnd {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input)
     (hq : c.state = some stLengthEnd) : machine.step c = lengthEndCfg c := by
-  rw [step_of_state _ _ _ hq, tr_phase stLengthEnd (by simp), phaseTr_lengthEnd]
+  rw [step_of_state _ _ _ hq, machine_tr, tr_phase stLengthEnd (by simp), phaseTr_lengthEnd]
   refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_ (List.append_nil _)
   funext i
   simp only [lengthEndCfg, act]
@@ -401,7 +401,7 @@ def tagLsbCfg {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input) :
 /-- The tagging state tags the length register's digit and starts the payload counter. -/
 theorem step_tagLsb {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input)
     (hq : c.state = some stTagLsb) : machine.step c = tagLsbCfg c := by
-  rw [step_of_state _ _ _ hq, tr_phase stTagLsb (by simp), phaseTr_tagLsb]
+  rw [step_of_state _ _ _ hq, machine_tr, tr_phase stTagLsb (by simp), phaseTr_tagLsb]
   refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ (List.append_nil _)
   · funext i
     simp only [tagLsbCfg, act]
@@ -437,7 +437,8 @@ increment. -/
 theorem step_lengthBit {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input) (b : Bool)
     (hq : c.state = some stLengthBit) (hi : c.inputSymbol = some (boolEmb b))
     (h0 : c.workTapeSymbols 0 ≠ none) : machine.step c = lengthBitCfg c b := by
-  rw [step_of_state _ _ _ hq, hi, tr_scan stLengthBit (by simp), scanTr_length, ite_eq_right h0]
+  rw [step_of_state _ _ _ hq, machine_tr, hi, tr_scan stLengthBit (by simp), scanTr_length,
+    ite_eq_right h0]
   refine Cfg.ext rfl rfl ?_ ?_ (List.append_nil _)
   · funext i
     simp only [lengthBitCfg, consumeAct]
@@ -451,7 +452,8 @@ theorem step_lengthBit_dead {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control in
     (b : Bool) (hq : c.state = some stLengthBit) (hi : c.inputSymbol = some (boolEmb b))
     (h0 : c.workTapeSymbols 0 = none) :
     machine.step c = { c with state := some stDead, inputPos := moveInputPos c.inputPos 1 } := by
-  rw [step_of_state _ _ _ hq, hi, tr_scan stLengthBit (by simp), scanTr_length, ite_eq_left h0]
+  rw [step_of_state _ _ _ hq, machine_tr, hi, tr_scan stLengthBit (by simp), scanTr_length,
+    ite_eq_left h0]
   refine Cfg.ext rfl rfl ?_ ?_ (List.append_nil _)
   · funext i
     rfl

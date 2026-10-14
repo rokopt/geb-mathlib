@@ -19,9 +19,8 @@ that a proof rewriting along a run matches hypotheses stated about
 
 ## Main statements
 
-* {lit}`Turing.MultiTapeTM.runFrom_zero`, {lit}`Turing.MultiTapeTM.runFrom_succ_eq_step`,
-  {lit}`Turing.MultiTapeTM.runFrom_succ_eq_step'` and {lit}`Turing.MultiTapeTM.runFrom_add`:
-  the iterate laws.
+* {lit}`Turing.MultiTapeTM.runFrom_zero`, {lit}`Turing.MultiTapeTM.runFrom_succ_eq_step` and
+  {lit}`Turing.MultiTapeTM.runFrom_succ_eq_step'`: the iterate laws.
 * {lit}`Turing.MultiTapeTM.runFrom_comm_of_step`: a map of configurations commuting with the
   steps of two machines commutes with their runs.
 * {lit}`Turing.MultiTapeTM.runFrom_of_halt`: a run from a halted configuration stays there.
@@ -54,13 +53,6 @@ lemma runFrom_succ_eq_step {cfg : Cfg k Symbol State input} {t : ℕ} :
 lemma runFrom_succ_eq_step' {cfg : Cfg k Symbol State input} {t : ℕ} :
     tm.runFrom cfg (t + 1) = tm.step (tm.runFrom cfg t) :=
   Function.iterate_succ_apply' tm.step t cfg
-
-/-- A run of {lit}`a + b` steps is a run of {lit}`b` steps from the configuration reached after
-{lit}`a`. -/
-lemma runFrom_add (cfg : Cfg k Symbol State input) (a b : ℕ) :
-    tm.runFrom cfg (a + b) = tm.runFrom (tm.runFrom cfg a) b := by
-  rw [Nat.add_comm]
-  exact Function.iterate_add_apply tm.step b a cfg
 
 /-- A map {lit}`f` of configurations that commutes with the steps of two machines commutes
 with their runs. -/

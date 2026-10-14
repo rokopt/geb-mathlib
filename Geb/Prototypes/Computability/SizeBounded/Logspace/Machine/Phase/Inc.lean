@@ -29,9 +29,16 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {lit}`Classical.choice` through Cslib's
 {name}`Turing.Cfg.inputSymbol`.
 
+Each machine is built by {name}`Turing.MultiTapeTM.ofTr` from a computable
+transition function named after it with the suffix {lit}`Tr`: {lit}`incWalk`
+directly, and {lit}`inc`, the sequencing of machines, by the equation
+{lit}`inc_eq_ofTr`.
+
 # Main definitions
 
 * {lit}`carry` — the number of leading ones of a digit list.
+* {lit}`incWalkTr`, {lit}`incTr` — the transition functions of the walk and of
+  the increment.
 * {lit}`incWalk` — clear the leading ones rightwards and set the digit above.
 * {lit}`inc` — increment a counter register from a parked head.
 * {lit}`incTape`, {lit}`incCfg` — the closed form of {lit}`incWalk`'s tape
@@ -45,6 +52,8 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
   the carry are ones and the digit at it is not.
 * {lit}`incL_getElem?_of_lt`, {lit}`incL_getElem?_carry`,
   {lit}`incL_getElem?_of_gt` — the increment cellwise.
+* {lit}`incWalk_tr`, {lit}`inc_eq_ofTr` — the walk's transition is
+  {lit}`incWalkTr`, and the increment is the machine built from {lit}`incTr`.
 * {lit}`incWalk_runsTo` — the run of the walk, naming the halted
   configuration and the step count.
 * {lit}`inc_transforms` — the contract of the increment.
@@ -168,23 +177,38 @@ theorem tapeOf_reverse_natCast (d : List Bool) (n : ℕ) : tapeOf d.reverse (n :
   unfold tapeOf
   rw [List.reverse_reverse, ite_eq_left (Int.natCast_nonneg n), Int.toNat_natCast]
 
+/-- The transition of {lit}`incWalk`. -/
+@[expose] def incWalkTr {k : ℕ} (i : Fin k) (_ : Unit) (_ : Option Bool)
+    (work : Fin k → Option Bool) : Action k Bool Unit :=
+  { inputTape := 0
+    workTapes := fun j ↦
+      if j = i then
+        (if work i = some true then (some (some false), 1) else (some (some true), 0))
+      else (none, 0)
+    output := none
+    state := if work i = some true then some () else none }
+
 /-- Clear the leading ones of the register on tape {lit}`i` rightwards from
 its head: reading a one, write a zero and move right; reading a zero or a
 blank, write a one and halt. -/
-@[expose] def incWalk {k : ℕ} (i : Fin k) : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ _ work :=
-    { inputTape := 0
-      workTapes := fun j ↦
-        if j = i then
-          (if work i = some true then (some (some false), 1) else (some (some true), 0))
-        else (none, 0)
-      output := none
-      state := if work i = some true then some () else none }
+@[expose] def incWalk {k : ℕ} (i : Fin k) : MultiTapeTM k Bool Unit := ofTr () (incWalkTr i)
+
+/-- The transition of {name}`incWalk` is {name}`incWalkTr`. -/
+theorem incWalk_tr {k : ℕ} (i : Fin k) (q : Unit) (inp : Option Bool)
+    (work : Fin k → Option Bool) : (incWalk i).tr q inp work = incWalkTr i q inp work :=
+  tr_ofTr _ _ _ _ _
+
+/-- The transition of {lit}`inc`: {name}`incWalkTr`, then
+{name}`Geb.SizeBounded.Machine.returnTapeTr`. -/
+@[expose] def incTr {k : ℕ} (i : Fin k) := seqTr (incWalkTr i) (returnTapeTr i) (.inl ())
 
 /-- Increment the counter on tape {lit}`i` from a parked head: clear the
 leading ones, set the digit above, park. -/
-@[expose] def inc {k : ℕ} (i : Fin k) := seq (incWalk i) (returnTape i)
+@[expose] noncomputable def inc {k : ℕ} (i : Fin k) := seq (incWalk i) (returnTape i)
+
+/-- {name}`inc` is the machine built from {name}`incTr`. -/
+theorem inc_eq_ofTr {k : ℕ} (i : Fin k) : inc i = ofTr (.inl ()) (incTr i) := by
+  simp only [inc, incWalk, returnTape_eq_ofTr, seq_ofTr, incTr]
 
 /-- The tape of a counter register holding {lit}`d` whose first {lit}`s`
 cells have been cleared. -/
@@ -269,7 +293,7 @@ theorem incWalk_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
     have hsome : (incCfg i cfg d s).workTapeSymbols i = some true := by
       rw [hsym s]
       exact getElem?_of_lt_carry d s hs
-    have hact : ∀ j : Fin k, ((incWalk i).tr () (incCfg i cfg d s).inputSymbol
+    have hact : ∀ j : Fin k, (incWalkTr i () (incCfg i cfg d s).inputSymbol
         (incCfg i cfg d s).workTapeSymbols).workTapes j =
         if j = i then ((some (some false) : Option (Option Bool)), (1 : SignType))
         else (none, 0) := by
@@ -279,7 +303,7 @@ theorem incWalk_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
           else (some (some true), 0))
         else (none, 0)) = _
       rw [hsome, ite_eq_left rfl]
-    rw [step_of_state _ _ () rfl]
+    rw [step_of_state _ _ () rfl, incWalk_tr]
     apply Cfg.ext
     · change (if (incCfg i cfg d s).workTapeSymbols i = some true then some () else none) =
         some ()
@@ -322,7 +346,7 @@ theorem incWalk_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
     have hne : (incCfg i cfg d (carry d)).workTapeSymbols i ≠ some true := by
       rw [hsym]
       exact getElem?_carry_ne d
-    have hact : ∀ j : Fin k, ((incWalk i).tr () (incCfg i cfg d (carry d)).inputSymbol
+    have hact : ∀ j : Fin k, (incWalkTr i () (incCfg i cfg d (carry d)).inputSymbol
         (incCfg i cfg d (carry d)).workTapeSymbols).workTapes j =
         if j = i then ((some (some true) : Option (Option Bool)), (0 : SignType))
         else (none, 0) := by
@@ -332,7 +356,7 @@ theorem incWalk_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
           else (some (some true), 0))
         else (none, 0)) = _
       rw [ite_eq_right hne]
-    rw [step_of_state _ _ () rfl]
+    rw [step_of_state _ _ () rfl, incWalk_tr]
     apply Cfg.ext
     · change (if (incCfg i cfg d (carry d)).workTapeSymbols i = some true then some ()
         else none) = none
@@ -366,7 +390,8 @@ theorem incWalk_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
           Function.update cfg.workTapePos i (carry d : ℤ) j
         rw [SignType.coe_zero, add_zero]
     · exact List.append_nil _
-  have hout : ∀ s : ℕ, (incWalk i).outputSymbol (incCfg i cfg d s) = none := fun _ ↦ rfl
+  have hout : ∀ s : ℕ, (incWalk i).outputSymbol (incCfg i cfg d s) = none := fun _ ↦
+    outputSymbol_ofTr_eq_none (fun _ _ _ ↦ rfl) _
   have hzero : incCfg i cfg d 0 = cfg := by
     apply Cfg.ext
     · exact hq.symm

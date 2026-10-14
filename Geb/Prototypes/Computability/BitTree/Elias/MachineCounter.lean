@@ -40,26 +40,26 @@ open Geb.TreeScanner (step_of_state)
 /-- A stationary-input counter action with no write changes only its selected head and state. -/
 theorem counterAction_none_run {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (v : Bool) (bs : List Bool) (q q' : Control) (p p' : ℕ) (d : SignType)
-    (htr : machine.tr q (counterCfg cfg v bs q p).inputSymbol
+    (htr : transition q (counterCfg cfg v bs q p).inputSymbol
       (counterCfg cfg v bs q p).workTapeSymbols = counterAction v none d q')
     (hp : (p : ℤ) + d = p') :
     machine.step (counterCfg cfg v bs q p) = counterCfg cfg v bs q' p' ∧
       machine.outputSymbol (counterCfg cfg v bs q p) = none := by
   constructor
-  · rw [step_of_state _ _ q rfl, htr]
+  · rw [step_of_state _ _ q rfl, machine_tr, htr]
     refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ (List.append_nil _)
     · funext i z
       by_cases hi : i = counterTape v <;> simp [counterAction, counterCfg, jump, hi]
     · funext i
       by_cases hi : i = counterTape v <;> simp [counterAction, counterCfg, jump, hi, hp]
   · change (machine.tr q _ _).output = none
-    rw [htr]
+    rw [machine_tr, htr]
     rfl
 
 /-- A writing counter action realizes a prescribed change of the finite digit word. -/
 theorem counterAction_write_run {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (v : Bool) (bs bs' : List Bool) (q q' : Control) (p p' : ℕ) (d : SignType) (b : Bool)
-    (htr : machine.tr q (counterCfg cfg v bs q p).inputSymbol
+    (htr : transition q (counterCfg cfg v bs q p).inputSymbol
       (counterCfg cfg v bs q p).workTapeSymbols =
         counterAction v (some (some (boolEmb b))) d q')
     (hp : (p : ℤ) + d = p')
@@ -67,7 +67,7 @@ theorem counterAction_write_run {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Cont
     machine.step (counterCfg cfg v bs q p) = counterCfg cfg v bs' q' p' ∧
       machine.outputSymbol (counterCfg cfg v bs q p) = none := by
   constructor
-  · rw [step_of_state _ _ q rfl, htr]
+  · rw [step_of_state _ _ q rfl, machine_tr, htr]
     refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ (List.append_nil _)
     · funext i z
       by_cases hi : i = counterTape v
@@ -77,7 +77,7 @@ theorem counterAction_write_run {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Cont
     · funext i
       by_cases hi : i = counterTape v <;> simp [counterAction, counterCfg, jump, hi, hp]
   · change (machine.tr q _ _).output = none
-    rw [htr]
+    rw [machine_tr, htr]
     rfl
 
 /-- Countdown entry moves left from the right-hand blank without writing. -/
@@ -85,7 +85,7 @@ theorem step_decrement {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input
     (v : Bool) (bs : List Bool) :
     machine.step (counterCfg cfg v bs (stDecrement v) (bs.length + 1)) =
       counterCfg cfg v bs (stBorrow v false) bs.length := by
-  rw [step_of_state _ _ (stDecrement v) rfl, tr_decrement]
+  rw [step_of_state _ _ (stDecrement v) rfl, machine_tr, tr_decrement]
   refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ (List.append_nil _)
   · funext i z
     by_cases hi : i = counterTape v <;> simp [counterAction, counterCfg, jump, hi]
@@ -97,7 +97,7 @@ theorem outputSymbol_decrement {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Contr
     (v : Bool) (bs : List Bool) :
     machine.outputSymbol (counterCfg cfg v bs (stDecrement v) (bs.length + 1)) = none := by
   change (machine.tr (stDecrement v) _ _).output = none
-  rw [tr_decrement]
+  rw [machine_tr, tr_decrement]
   rfl
 
 /-- The leftward scan inspects the next higher digit and preserves the stored word. -/

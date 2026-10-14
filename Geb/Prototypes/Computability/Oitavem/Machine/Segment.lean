@@ -20,18 +20,25 @@ are cleared on return. Neither the word nor its segment is stored on a work tape
 
 * {lit}`dropReader` reads the suffix after a saved number of list positions.
 * {lit}`iterPredGenerator` reads two lengths and streams their iterated predecessor.
+* {lit}`dropReaderTr`, {lit}`dropGeneratorTr` and {lit}`iterPredGeneratorTr` are the
+  transition functions of the readers, from their components' initial states and
+  transitions.
 
 ## Main statements
 
 * {lit}`dropReader_readsAt` gives the segment's digit contract, including the first
   out-of-range query and preservation of the source environment.
 * {lit}`iterPredGenerator_emitsIn` also handles offsets beyond the source length.
+* {lit}`dropReader_ofTr`, {lit}`dropGenerator_ofTr` and {lit}`iterPredGenerator_ofTr`
+  identify the readers of machines built by {name}`Turing.MultiTapeTM.ofTr` with the
+  machines built from their transition functions.
 
 ## Implementation notes
 
 The offset lies within the source word. Consequently every permitted segment query
 translates to a permitted source query, and its binary size is bounded by the source
-length. The contracts inherit CSLib's {lit}`Classical.choice` dependency.
+length. The contracts inherit CSLib's {lit}`Classical.choice` dependency, and the
+readers, sequencing machines, are noncomputable.
 
 ## Tags
 
@@ -51,9 +58,26 @@ public section
 
 /-- Read through a saved offset. The layout is offset, caller query, child query,
 addition scratch, and result. The child reads its query from the third register. -/
-@[expose] def dropReader {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (r : Fin 5 → Fin k) :=
+@[expose] noncomputable def dropReader {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
+    (r : Fin 5 → Fin k) :=
   seq (seq (copy (r 1) (r 2)) (seq (copy (r 0) (r 3)) (addCounter (r 2) (r 3))))
     (seq P (const [] (r 2)))
+
+/-- The transition of {name}`dropReader`, from the reader's initial state and
+transition. -/
+@[expose] def dropReaderTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S)
+    (r : Fin 5 → Fin k) :=
+  seqTr (seqTr (copyTr (r 1) (r 2)) (seqTr (copyTr (r 0) (r 3)) (addCounterTr (r 2) (r 3))
+      (.inl ())) (.inl (.inl (.inl ()))))
+    (seqTr trP (constTr [] (r 2)) (.inl (.inl ()))) (.inl q₀P)
+
+/-- {name}`dropReader` of a machine built from a transition function is the machine
+built from {name}`dropReaderTr`. -/
+theorem dropReader_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (r : Fin 5 → Fin k) :
+    dropReader (ofTr q₀ tr) r = ofTr (.inl (.inl (.inl (.inl ())))) (dropReaderTr tr q₀ r) := by
+  simp only [dropReader, copy_eq_ofTr, addCounter_eq_ofTr, const_eq_ofTr, seq_ofTr, dropReaderTr]
 
 /-- Time for a segment query, including copying, addition, and scratch cleanup. -/
 @[expose] def dropReaderTime (T B N : ℕ → ℕ) (n : ℕ) : ℕ :=
@@ -135,10 +159,29 @@ theorem dropReader_readsAt {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
 
 /-- Stream a suffix after clamping its saved offset to the source length.
 The separate length register is preserved; the five reader ports are cleared. -/
-@[expose] def dropGenerator {k : ℕ} {S : Type}
+@[expose] noncomputable def dropGenerator {k : ℕ} {S : Type}
     (P : MultiTapeTM k Bool S) (r : Fin 5 → Fin k) (L : Fin k) :=
   seq (minCounter (r 0) L (r 3))
     (seq (emitReaderClean (dropReader P r) (r 1) (r 4)) (const [] (r 0)))
+
+/-- The transition of {name}`dropGenerator`, from the reader's initial state and
+transition. -/
+@[expose] def dropGeneratorTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S)
+    (r : Fin 5 → Fin k) (L : Fin k) :=
+  seqTr (minCounterTr (r 0) L (r 3))
+    (seqTr (emitReaderCleanTr (dropReaderTr trP q₀P r) (.inl (.inl (.inl (.inl ())))) (r 1) (r 4))
+      (constTr [] (r 0)) (.inl (.inl ()))) (.inl (.inl (.inl (.inl (.inl (.inl ()))))))
+
+/-- {name}`dropGenerator` of a machine built from a transition function is the machine
+built from {name}`dropGeneratorTr`. -/
+theorem dropGenerator_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (r : Fin 5 → Fin k)
+    (L : Fin k) :
+    dropGenerator (ofTr q₀ tr) r L =
+      ofTr (.inl (.inl (.inl (.inl (.inl ()))))) (dropGeneratorTr tr q₀ r L) := by
+  simp only [dropGenerator, minCounter_eq_ofTr, dropReader_ofTr, emitReaderClean_ofTr,
+    const_eq_ofTr, seq_ofTr, dropGeneratorTr]
 
 /-- Time for a suffix generator, including offset clamping and port cleanup. -/
 @[expose] def dropGeneratorTime (T B N : ℕ → ℕ) (n : ℕ) : ℕ :=
@@ -216,10 +259,31 @@ theorem dropGenerator_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
     exact List.drop_eq_drop_min.symm
 
 /-- Read both argument lengths, stream the iterated predecessor, and clear its ports. -/
-@[expose] def iterPredGenerator {k : ℕ} {S₁ S₂ S : Type}
+@[expose] noncomputable def iterPredGenerator {k : ℕ} {S₁ S₂ S : Type}
     (P₁ : MultiTapeTM k Bool S₁) (P₂ : MultiTapeTM k Bool S₂)
     (P : MultiTapeTM k Bool S) (r : Fin 5 → Fin k) (L : Fin k) :=
   seq P₁ (seq P₂ (seq (dropGenerator P r L) (const [] L)))
+
+/-- The transition of {name}`iterPredGenerator`, from the initial states and transitions
+of the two length readers and of the source reader. -/
+@[expose] def iterPredGeneratorTr {k : ℕ} {S₁ S₂ S : Type}
+    (tr₁ : S₁ → Option Bool → (Fin k → Option Bool) → Action k Bool S₁)
+    (tr₂ : S₂ → Option Bool → (Fin k → Option Bool) → Action k Bool S₂) (q₀₂ : S₂)
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S)
+    (r : Fin 5 → Fin k) (L : Fin k) :=
+  seqTr tr₁ (seqTr tr₂ (seqTr (dropGeneratorTr trP q₀P r L) (constTr [] L) (.inl (.inl ())))
+    (.inl (.inl (.inl (.inl (.inl (.inl ()))))))) (.inl q₀₂)
+
+/-- {name}`iterPredGenerator` of machines built from transition functions is the machine
+built from {name}`iterPredGeneratorTr`. -/
+theorem iterPredGenerator_ofTr {k : ℕ} {S₁ S₂ S : Type} (q₀₁ : S₁)
+    (tr₁ : S₁ → Option Bool → (Fin k → Option Bool) → Action k Bool S₁) (q₀₂ : S₂)
+    (tr₂ : S₂ → Option Bool → (Fin k → Option Bool) → Action k Bool S₂) (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (r : Fin 5 → Fin k)
+    (L : Fin k) :
+    iterPredGenerator (ofTr q₀₁ tr₁) (ofTr q₀₂ tr₂) (ofTr q₀ tr) r L =
+      ofTr (.inl q₀₁) (iterPredGeneratorTr tr₁ tr₂ q₀₂ tr q₀ r L) := by
+  simp only [iterPredGenerator, dropGenerator_ofTr, const_eq_ofTr, seq_ofTr, iterPredGeneratorTr]
 
 /-- Iterated predecessor has finite control whenever its readers do. -/
 theorem iterPredGenerator_finite {k : ℕ} {S₁ S₂ S : Type}

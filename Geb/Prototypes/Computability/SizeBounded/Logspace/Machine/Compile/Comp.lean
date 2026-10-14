@@ -50,7 +50,8 @@ set_option doc.verso true
 namespace Geb.SizeBounded.Logspace.Machine
 
 open Geb.SizeBounded (Direction rc nsiValue finMax le_finMax)
-open Geb.SizeBounded.Machine (composeFin composeFin_of_lt le_nsiValue seqFin)
+open Geb.SizeBounded.Machine (composeFin composeFin_of_lt le_nsiValue seqFin seqProg_tm
+  seqFinProg_tm)
 
 public section
 
@@ -187,7 +188,9 @@ theorem correct_comp {k n m : ℕ} (c : Direction (.comp n m) → Σ i, Compiled
       exact hw
     · rw [h1, ← hsuf, hc, counterValue_counterWord]
   refine ⟨fun input σ ↦ G input (composeFin m (fun l ↦ F l input) σ), ?_, ?_, ?_, ?_⟩
-  · refine TransformsIn.mono_pre (TransformsIn.mono_time (TransformsIn.seq hseq hGT) ?_) ?_
+  · refine TransformsIn.of_tm_eq
+      ((seqProg_tm _ _).trans (congrArg (fun P ↦ Machine.seq P _) (seqFinProg_tm _ _)))
+      (TransformsIn.mono_pre (TransformsIn.mono_time (TransformsIn.seq hseq hGT) ?_) ?_)
     · intro n
       change (m * finMax m (fun i ↦ (c (.inr i)).2.time M n) + 1) +
         (transportP (h (.inl ())) (c (.inl ())).2).time M n ≤

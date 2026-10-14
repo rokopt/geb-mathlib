@@ -29,12 +29,17 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 
 # Main definitions
 
-* {lit}`caseLoop` — the loop over a register, with a body per bit.
+* {lit}`caseLoopTr` — the transition of the loop, from the bodies' transitions.
+* {lit}`caseLoop` — the loop over a register, with a body per bit: the machine
+  built from {lit}`caseLoopTr`.
 * {lit}`liftBodyF`, {lit}`liftBodyT` — the embedding of a body's
   configuration into the loop's.
 
 # Main statements
 
+* {lit}`caseLoop_tr` — the transition of {lit}`caseLoop` is {lit}`caseLoopTr`.
+* {lit}`caseLoop_ofTr` — the loop over bodies built from transition functions is
+  the machine built from {lit}`caseLoopTr` of those functions.
 * {lit}`liftBodyF_halt`, {lit}`liftBodyT_halt` — a halted body configuration
   lifts to the seek state.
 * {lit}`caseLoop_step_bodyF`, {lit}`caseLoop_step_bodyT` — the loop's step
@@ -59,9 +64,11 @@ open Turing MultiTapeTM
 
 public section
 
-/-- The loop over register {lit}`R`: peel the head bit of {lit}`R`'s word
-from its last cell, run the body for that bit, repeat; halt when {lit}`R` is
-empty. The control automaton has four states:
+/-- The transition of the loop over register {lit}`R`, from the bodies'
+transitions {lit}`trF`, {lit}`trT` and initial states {lit}`q₀F`, {lit}`q₀T`:
+peel the head bit of {lit}`R`'s word from its last cell, run the body for that
+bit, repeat; halt when {lit}`R` is empty. The control automaton has four
+states:
 
 * state {lit}`0` (seek): {lit}`R` reads a bit: move {lit}`R` right; reads
   blank: move {lit}`R` left, go to {lit}`1`.
@@ -76,41 +83,67 @@ empty. The control automaton has four states:
   in its initial state.
 
 In a body state the transition is that body's, with a halting successor
-replaced by the seek state. -/
-@[expose] def caseLoop {k : ℕ} {SF ST : Type} (R : Fin k) (bodyF : MultiTapeTM k Bool SF)
-    (bodyT : MultiTapeTM k Bool ST) : MultiTapeTM k Bool (Fin 4 ⊕ (SF ⊕ ST)) where
-  q₀ := .inl 0
-  tr q inp work :=
-    match q with
-    | .inl ⟨0, _⟩ =>
+replaced by the seek state. It is not inlined, so that a partial application of
+it holds the bodies' transitions as evaluated arguments rather than recomputing
+them at each application. -/
+@[expose, noinline] def caseLoopTr {k : ℕ} {SF ST : Type} (R : Fin k)
+    (trF : SF → Option Bool → (Fin k → Option Bool) → Action k Bool SF)
+    (trT : ST → Option Bool → (Fin k → Option Bool) → Action k Bool ST) (q₀F : SF) (q₀T : ST)
+    (q : Fin 4 ⊕ (SF ⊕ ST)) (inp : Option Bool) (work : Fin k → Option Bool) :
+    Action k Bool (Fin 4 ⊕ (SF ⊕ ST)) :=
+  match q with
+  | .inl ⟨0, _⟩ =>
+    { inputTape := 0
+      workTapes := fun j ↦ (none, if j = R then (if (work R).isSome then 1 else -1) else 0)
+      output := none
+      state := some (.inl (if (work R).isSome then 0 else 1)) }
+  | .inl ⟨1, _⟩ =>
+    match work R with
+    | none =>
+      { inputTape := 0, workTapes := fun j ↦ (none, if j = R then 1 else 0),
+        output := none, state := none }
+    | some c =>
       { inputTape := 0
-        workTapes := fun j ↦ (none, if j = R then (if (work R).isSome then 1 else -1) else 0)
+        workTapes := fun j ↦ if j = R then (some none, -1) else (none, 0)
         output := none
-        state := some (.inl (if (work R).isSome then 0 else 1)) }
-    | .inl ⟨1, _⟩ =>
-      match work R with
-      | none =>
-        { inputTape := 0, workTapes := fun j ↦ (none, if j = R then 1 else 0),
-          output := none, state := none }
-      | some c =>
-        { inputTape := 0
-          workTapes := fun j ↦ if j = R then (some none, -1) else (none, 0)
-          output := none
-          state := some (.inl (if c then 3 else 2)) }
-    | .inl ⟨2, _⟩ =>
-      { inputTape := 0
-        workTapes := fun j ↦ (none, if j = R then (if (work R).isSome then -1 else 1) else 0)
-        output := none
-        state := some (if (work R).isSome then .inl 2 else .inr (.inl bodyF.q₀)) }
-    | .inl ⟨3, _⟩ =>
-      { inputTape := 0
-        workTapes := fun j ↦ (none, if j = R then (if (work R).isSome then -1 else 1) else 0)
-        output := none
-        state := some (if (work R).isSome then .inl 3 else .inr (.inr bodyT.q₀)) }
-    | .inr (.inl q) => let o := bodyF.tr q inp work
-      { o with state := some (o.state.elim (.inl 0) (fun q ↦ .inr (.inl q))) }
-    | .inr (.inr q) => let o := bodyT.tr q inp work
-      { o with state := some (o.state.elim (.inl 0) (fun q ↦ .inr (.inr q))) }
+        state := some (.inl (if c then 3 else 2)) }
+  | .inl ⟨2, _⟩ =>
+    { inputTape := 0
+      workTapes := fun j ↦ (none, if j = R then (if (work R).isSome then -1 else 1) else 0)
+      output := none
+      state := some (if (work R).isSome then .inl 2 else .inr (.inl q₀F)) }
+  | .inl ⟨3, _⟩ =>
+    { inputTape := 0
+      workTapes := fun j ↦ (none, if j = R then (if (work R).isSome then -1 else 1) else 0)
+      output := none
+      state := some (if (work R).isSome then .inl 3 else .inr (.inr q₀T)) }
+  | .inr (.inl q) => let o := trF q inp work
+    { o with state := some (o.state.elim (.inl 0) (fun q ↦ .inr (.inl q))) }
+  | .inr (.inr q) => let o := trT q inp work
+    { o with state := some (o.state.elim (.inl 0) (fun q ↦ .inr (.inr q))) }
+
+/-- The loop over register {lit}`R` with the bodies {lit}`bodyF` and
+{lit}`bodyT`: the machine built from {name}`caseLoopTr` of their transitions. -/
+@[expose] noncomputable def caseLoop {k : ℕ} {SF ST : Type} (R : Fin k)
+    (bodyF : MultiTapeTM k Bool SF) (bodyT : MultiTapeTM k Bool ST) :
+    MultiTapeTM k Bool (Fin 4 ⊕ (SF ⊕ ST)) :=
+  ofTr (.inl 0) (caseLoopTr R bodyF.tr bodyT.tr bodyF.q₀ bodyT.q₀)
+
+/-- The transition of {name}`caseLoop` is {name}`caseLoopTr`. -/
+theorem caseLoop_tr {k : ℕ} {SF ST : Type} (R : Fin k) (bodyF : MultiTapeTM k Bool SF)
+    (bodyT : MultiTapeTM k Bool ST) (q : Fin 4 ⊕ (SF ⊕ ST)) (inp : Option Bool)
+    (work : Fin k → Option Bool) :
+    (caseLoop R bodyF bodyT).tr q inp work =
+      caseLoopTr R bodyF.tr bodyT.tr bodyF.q₀ bodyT.q₀ q inp work :=
+  tr_ofTr _ _ _ _ _
+
+/-- The loop over bodies built from transition functions is the machine built
+from {name}`caseLoopTr` of those functions. -/
+theorem caseLoop_ofTr {k : ℕ} {SF ST : Type} (R : Fin k) (q₀F : SF)
+    (trF : SF → Option Bool → (Fin k → Option Bool) → Action k Bool SF) (q₀T : ST)
+    (trT : ST → Option Bool → (Fin k → Option Bool) → Action k Bool ST) :
+    caseLoop R (ofTr q₀F trF) (ofTr q₀T trT) = ofTr (.inl 0) (caseLoopTr R trF trT q₀F q₀T) := by
+  rw [caseLoop, tr_ofTr', tr_ofTr', q₀_ofTr, q₀_ofTr]
 
 /-- A body configuration lifted into the loop: a halted one becomes the seek
 state. -/
@@ -146,8 +179,11 @@ theorem caseLoop_step_bodyF {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fi
     (cfg : Cfg k Bool SF input) (q : SF) (hq : cfg.state = some q) :
     (caseLoop R bodyF bodyT).step (liftBodyF (ST := ST) cfg) =
       liftBodyF (ST := ST) (bodyF.step cfg) := by
-  unfold step liftBodyF
-  simp only [hq]
+  have hq' : (liftBodyF (ST := ST) cfg).state = some (.inr (.inl q)) := by
+    change some (cfg.state.elim _ _) = _
+    rw [hq]
+    rfl
+  rw [MultiTapeTM.step_of_state hq', MultiTapeTM.step_of_state hq, caseLoop_tr]
   rfl
 
 /-- As {name}`caseLoop_step_bodyF`, for the body of the bit {lit}`true`. -/
@@ -156,8 +192,11 @@ theorem caseLoop_step_bodyT {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fi
     (cfg : Cfg k Bool ST input) (q : ST) (hq : cfg.state = some q) :
     (caseLoop R bodyF bodyT).step (liftBodyT (SF := SF) cfg) =
       liftBodyT (SF := SF) (bodyT.step cfg) := by
-  unfold step liftBodyT
-  simp only [hq]
+  have hq' : (liftBodyT (SF := SF) cfg).state = some (.inr (.inr q)) := by
+    change some (cfg.state.elim _ _) = _
+    rw [hq]
+    rfl
+  rw [MultiTapeTM.step_of_state hq', MultiTapeTM.step_of_state hq, caseLoop_tr]
   rfl
 
 /-- The loop emits what the body emits from a lifted live configuration. -/
@@ -167,7 +206,7 @@ theorem caseLoop_outputSymbol_bodyF {k : ℕ} {SF ST : Type} {input : List Bool}
     (caseLoop R bodyF bodyT).outputSymbol (liftBodyF (ST := ST) cfg) =
       bodyF.outputSymbol cfg := by
   unfold outputSymbol liftBodyF
-  simp only [hq]
+  simp only [hq, caseLoop_tr]
   rfl
 
 /-- As {name}`caseLoop_outputSymbol_bodyF`, for the body of the bit
@@ -178,7 +217,7 @@ theorem caseLoop_outputSymbol_bodyT {k : ℕ} {SF ST : Type} {input : List Bool}
     (caseLoop R bodyF bodyT).outputSymbol (liftBodyT (SF := SF) cfg) =
       bodyT.outputSymbol cfg := by
   unfold outputSymbol liftBodyT
-  simp only [hq]
+  simp only [hq, caseLoop_tr]
   rfl
 
 /-- While the body has not halted, the loop mirrors it. -/

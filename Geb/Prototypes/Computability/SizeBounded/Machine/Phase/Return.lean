@@ -24,8 +24,16 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {lit}`Classical.choice` through Cslib's
 {name}`Turing.Cfg.inputSymbol`.
 
+Each machine is built by {name}`Turing.MultiTapeTM.ofTr` from a transition
+function named after it with the suffix {lit}`Tr`, which is computable; the
+machine's own transition, selected by choice in CSLib, agrees with it. The
+composite's transition function composes its components' by
+{name}`Geb.SizeBounded.Machine.seqTr`.
+
 # Main definitions
 
+* {lit}`moveLeftTr`, {lit}`retLeftTr`, {lit}`returnTapeTr` — the transition
+  functions of the machines below.
 * {lit}`moveLeft` — move one head one cell left and halt.
 * {lit}`retLeft` — move one head left to the blank before the word, then one
   cell right.
@@ -34,6 +42,10 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 
 # Main statements
 
+* {lit}`moveLeft_tr`, {lit}`retLeft_tr` —
+  the machines' transitions are their transition functions.
+* {lit}`returnTape_eq_ofTr` — the composite is the machine built from its
+  transition function.
 * {lit}`update_workTapePos_bounds` — updating one head to a cell within the
   interval keeps every head within it.
 * {lit}`moveLeft_runsTo`, {lit}`retLeft_runsTo`, {lit}`returnTape_runsTo` —
@@ -65,28 +77,57 @@ theorem update_workTapePos_bounds {k B : ℕ} {f : Fin k → ℤ} (i : Fin k)
   · rw [Function.update_of_ne hj]
     exact hf j
 
+/-- The transition of {lit}`moveLeft`. -/
+@[expose] def moveLeftTr {k : ℕ} (i : Fin k) (_ : Unit) (_ : Option Bool)
+    (_ : Fin k → Option Bool) : Action k Bool Unit :=
+  { inputTape := 0, workTapes := fun j ↦ (none, if j = i then -1 else 0),
+    output := none, state := none }
+
 /-- Move the head of tape {lit}`i` one cell left and halt. -/
-@[expose] def moveLeft {k : ℕ} (i : Fin k) : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ _ _ :=
-    { inputTape := 0, workTapes := fun j ↦ (none, if j = i then -1 else 0),
-      output := none, state := none }
+@[expose] def moveLeft {k : ℕ} (i : Fin k) : MultiTapeTM k Bool Unit :=
+  ofTr () (moveLeftTr i)
+
+/-- The transition of {name}`moveLeft` is {name}`moveLeftTr`. -/
+theorem moveLeft_tr {k : ℕ} (i : Fin k) (q : Unit) (inp : Option Bool)
+    (work : Fin k → Option Bool) :
+    (moveLeft i).tr q inp work = moveLeftTr i q inp work :=
+  tr_ofTr _ _ _ _ _
+
+/-- The transition of {lit}`retLeft`. -/
+@[expose] def retLeftTr {k : ℕ} (i : Fin k) (_ : Unit) (_ : Option Bool)
+    (work : Fin k → Option Bool) : Action k Bool Unit :=
+  { inputTape := 0
+    workTapes := fun j ↦ (none, if j = i then (if (work i).isSome then -1 else 1) else 0)
+    output := none
+    state := if (work i).isSome then some () else none }
 
 /-- Move the head of tape {lit}`i` left while it reads a bit; on reading a
 blank, move right and halt. -/
-@[expose] def retLeft {k : ℕ} (i : Fin k) : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ _ work :=
-    { inputTape := 0
-      workTapes := fun j ↦ (none, if j = i then (if (work i).isSome then -1 else 1) else 0)
-      output := none
-      state := if (work i).isSome then some () else none }
+@[expose] def retLeft {k : ℕ} (i : Fin k) : MultiTapeTM k Bool Unit :=
+  ofTr () (retLeftTr i)
+
+/-- The transition of {name}`retLeft` is {name}`retLeftTr`. -/
+theorem retLeft_tr {k : ℕ} (i : Fin k) (q : Unit) (inp : Option Bool)
+    (work : Fin k → Option Bool) :
+    (retLeft i).tr q inp work = retLeftTr i q inp work :=
+  tr_ofTr _ _ _ _ _
+
+/-- The transition of {lit}`returnTape`: {name}`moveLeftTr`, then
+{name}`retLeftTr`. -/
+@[expose] def returnTapeTr {k : ℕ} (i : Fin k) :
+    Unit ⊕ Unit → Option Bool → (Fin k → Option Bool) → Action k Bool (Unit ⊕ Unit) :=
+  seqTr (moveLeftTr i) (retLeftTr i) ()
 
 /-- Return the head of tape {lit}`i` to cell {lit}`0` from any cell of its
 word or the blank after it: one unconditional move left, then
 {name}`retLeft`. -/
-@[expose] def returnTape {k : ℕ} (i : Fin k) : MultiTapeTM k Bool (Unit ⊕ Unit) :=
+@[expose] noncomputable def returnTape {k : ℕ} (i : Fin k) : MultiTapeTM k Bool (Unit ⊕ Unit) :=
   seq (moveLeft i) (retLeft i)
+
+/-- {name}`returnTape` is the machine built from {name}`returnTapeTr`. -/
+theorem returnTape_eq_ofTr {k : ℕ} (i : Fin k) :
+    returnTape i = ofTr (.inl ()) (returnTapeTr i) := by
+  simp only [returnTape, moveLeft, retLeft, seq_ofTr, returnTapeTr]
 
 /-- {name}`moveLeft` runs one step. -/
 theorem moveLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bool Unit input)
@@ -102,7 +143,7 @@ theorem moveLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k B
       { cfg with
         state := none
         workTapePos := Function.update cfg.workTapePos i (cfg.workTapePos i - 1) } := by
-    rw [step_of_state _ _ () hq]
+    rw [step_of_state _ _ () hq, moveLeft_tr]
     apply Cfg.ext
     · rfl
     · change moveInputPos cfg.inputPos 0 = cfg.inputPos
@@ -120,9 +161,7 @@ theorem moveLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k B
     rw [hq]
     exact Option.some_ne_none _
   have hout : (moveLeft i).outputSymbol cfg = none := by
-    unfold outputSymbol
-    rw [hq]
-    rfl
+    exact outputSymbol_ofTr_eq_none (fun _ _ _ ↦ rfl) cfg
   have hB := (hpos i).2
   exact RunsTo.ofFamily (moveLeft i) (fun _ ↦ cfg) 0 B _ (fun _ _ ↦ hlive)
     (fun _ h ↦ absurd h (by omega)) hhalt rfl (fun _ _ ↦ hout) (fun _ _ j ↦ hpos j)
@@ -156,7 +195,7 @@ theorem retLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
     have hsome : ((retCfg i cfg p s).workTapeSymbols i).isSome = true := by
       rw [hsym s, tapeOf_of_lt w _ (by omega) (by omega)]
       rfl
-    rw [step_of_state _ _ () rfl]
+    rw [step_of_state _ _ () rfl, retLeft_tr]
     apply Cfg.ext
     · change (if ((retCfg i cfg p s).workTapeSymbols i).isSome = true then some () else none) =
         some ()
@@ -183,7 +222,7 @@ theorem retLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
     have hnone : ((retCfg i cfg p (p + 1).toNat).workTapeSymbols i).isSome = false := by
       rw [hsym _, tapeOf_neg w _ (by omega)]
       rfl
-    rw [step_of_state _ _ () rfl]
+    rw [step_of_state _ _ () rfl, retLeft_tr]
     apply Cfg.ext
     · change (if ((retCfg i cfg p (p + 1).toNat).workTapeSymbols i).isSome = true
         then some () else none) = none
@@ -217,7 +256,7 @@ theorem retLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
   rw [show (p + 2).toNat = (p + 1).toNat + 1 by omega]
   have key := RunsTo.ofFamily (retLeft i) (retCfg i cfg p) (p + 1).toNat B _
     (fun _ _ ↦ Option.some_ne_none ()) (fun s hs ↦ hstep s (by omega)) hhalt rfl
-    (fun _ _ ↦ rfl)
+    (fun _ _ ↦ outputSymbol_ofTr_eq_none (fun _ _ _ ↦ rfl) _)
     (fun s hs j ↦ update_workTapePos_bounds i hpos (p - s) (by omega) (by omega) j)
     (fun j ↦ update_workTapePos_bounds i hpos 0 (by omega) (by omega) j)
   rwa [hzero] at key

@@ -25,14 +25,22 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {lit}`Classical.choice` through Cslib's
 {name}`Turing.Cfg.inputSymbol`.
 
+Each machine is built by {name}`Turing.MultiTapeTM.ofTr` from a transition
+function named after it with the suffix {lit}`Tr`, which is computable; the
+machine's own transition, selected by choice in CSLib, agrees with it.
+
 # Main definitions
 
+* {lit}`writeBitTr`, {lit}`constWalkTr` — the transition
+  functions of the machines below.
 * {lit}`writeBit` — write one bit at the head's cell.
 * {lit}`constWalk` — write a constant word on an empty register.
 * {lit}`constCfg` — the closed form of {lit}`constWalk`'s configurations.
 
 # Main statements
 
+* {lit}`writeBit_tr`, {lit}`constWalk_tr` —
+  the machines' transitions are their transition functions.
 * {lit}`writeBit_runsTo`, {lit}`constWalk_runsTo` — the run of each machine,
   naming the halted configuration and the step count.
 
@@ -49,28 +57,46 @@ open Turing MultiTapeTM
 
 public section
 
+/-- The transition of {lit}`writeBit`. -/
+@[expose] def writeBitTr {k : ℕ} (b : Bool) (i : Fin k) (_ : Unit) (_ : Option Bool)
+    (_ : Fin k → Option Bool) : Action k Bool Unit :=
+  { inputTape := 0
+    workTapes := fun j ↦ if j = i then (some (some b), 0) else (none, 0)
+    output := none, state := none }
+
 /-- Write {lit}`b` at the head of tape {lit}`i`, without moving, and halt. -/
-@[expose] def writeBit {k : ℕ} (b : Bool) (i : Fin k) : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ _ _ :=
+@[expose] def writeBit {k : ℕ} (b : Bool) (i : Fin k) : MultiTapeTM k Bool Unit :=
+  ofTr () (writeBitTr b i)
+
+/-- The transition of {name}`writeBit` is {name}`writeBitTr`. -/
+theorem writeBit_tr {k : ℕ} (b : Bool) (i : Fin k) (q : Unit) (inp : Option Bool)
+    (work : Fin k → Option Bool) :
+    (writeBit b i).tr q inp work = writeBitTr b i q inp work :=
+  tr_ofTr _ _ _ _ _
+
+/-- The transition of {lit}`constWalk`. -/
+@[expose] def constWalkTr {k : ℕ} (w : List Bool) (i : Fin k) (s : Fin (w.length + 1))
+    (_ : Option Bool) (_ : Fin k → Option Bool) : Action k Bool (Fin (w.length + 1)) :=
+  if h : s.val < w.length then
     { inputTape := 0
-      workTapes := fun j ↦ if j = i then (some (some b), 0) else (none, 0)
-      output := none, state := none }
+      workTapes := fun j ↦
+        if j = i then (some (some (w.reverse[s.val]'(by simp; omega))), 1) else (none, 0)
+      output := none, state := some ⟨s.val + 1, by omega⟩ }
+  else
+    { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none }
 
 /-- Write {lit}`w` on tape {lit}`i` from the head rightwards in reversed
 layout: state {lit}`s` writes {lit}`w.reverse[s]` and moves right, and state
 {lit}`w.length` halts without moving. -/
 @[expose] def constWalk {k : ℕ} (w : List Bool) (i : Fin k) :
-    MultiTapeTM k Bool (Fin (w.length + 1)) where
-  q₀ := 0
-  tr s _ _ :=
-    if h : s.val < w.length then
-      { inputTape := 0
-        workTapes := fun j ↦
-          if j = i then (some (some (w.reverse[s.val]'(by simp; omega))), 1) else (none, 0)
-        output := none, state := some ⟨s.val + 1, by omega⟩ }
-    else
-      { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none }
+    MultiTapeTM k Bool (Fin (w.length + 1)) :=
+  ofTr 0 (constWalkTr w i)
+
+/-- The transition of {name}`constWalk` is {name}`constWalkTr`. -/
+theorem constWalk_tr {k : ℕ} (w : List Bool) (i : Fin k) (q : Fin (w.length + 1))
+    (inp : Option Bool) (work : Fin k → Option Bool) :
+    (constWalk w i).tr q inp work = constWalkTr w i q inp work :=
+  tr_ofTr _ _ _ _ _
 
 /-- {name}`writeBit` at cell {lit}`w.length` of a register holding {lit}`w`
 runs one step and leaves it holding {lit}`b :: w`. -/
@@ -86,11 +112,11 @@ theorem writeBit_runsTo {k : ℕ} {input : List Bool} (b : Bool) (i : Fin k)
         state := none
         workTapes := Function.update cfg.workTapes i (tapeOf (b :: w)) } := by
     have htr : ∀ (inp : Option Bool) (work : Fin k → Option Bool),
-        (writeBit b i).tr () inp work =
+        writeBitTr b i () inp work =
           { inputTape := 0
             workTapes := fun j ↦ if j = i then (some (some b), 0) else (none, 0)
             output := none, state := none } := fun _ _ ↦ rfl
-    rw [step_of_state _ _ () hq, htr]
+    rw [step_of_state _ _ () hq, writeBit_tr, htr]
     apply Cfg.ext
     · rfl
     · change moveInputPos cfg.inputPos 0 = cfg.inputPos
@@ -119,9 +145,7 @@ theorem writeBit_runsTo {k : ℕ} {input : List Bool} (b : Bool) (i : Fin k)
     rw [hq]
     exact Option.some_ne_none _
   have hout : (writeBit b i).outputSymbol cfg = none := by
-    unfold outputSymbol
-    rw [hq]
-    rfl
+    exact outputSymbol_ofTr_eq_none (fun _ _ _ ↦ rfl) cfg
   exact RunsTo.ofFamily (writeBit b i) (fun _ ↦ cfg) 0 B _ (fun _ _ ↦ hlive)
     (fun _ h ↦ absurd h (by omega)) hhalt rfl (fun _ _ ↦ hout) (fun _ _ j ↦ hpos j)
     (fun j ↦ hpos j)
@@ -151,30 +175,29 @@ theorem constWalk_runsTo {k : ℕ} {input : List Bool} (w : List Bool) (i : Fin 
       (w.length + 1) B := by
   have htrS : ∀ (s : ℕ) (hs : s < w.length) (hidx : s < w.reverse.length)
       (inp : Option Bool) (work : Fin k → Option Bool),
-      (constWalk w i).tr ⟨s, by omega⟩ inp work =
+      constWalkTr w i ⟨s, by omega⟩ inp work =
         { inputTape := 0
           workTapes := fun j ↦
             if j = i then (some (some (w.reverse[s]'hidx)), 1) else (none, 0)
           output := none, state := some ⟨s + 1, by omega⟩ } := by
     intro s hs hidx inp work
-    simp only [constWalk]
+    simp only [constWalkTr]
     rw [dite_eq_left hs]
   have htrN : ∀ (s : ℕ) (hlt : s < w.length + 1) (hs : ¬ s < w.length)
       (inp : Option Bool) (work : Fin k → Option Bool),
-      (constWalk w i).tr ⟨s, hlt⟩ inp work =
+      constWalkTr w i ⟨s, hlt⟩ inp work =
         { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none } := by
     intro s hlt hs inp work
-    simp only [constWalk]
+    simp only [constWalkTr]
     rw [dite_eq_right hs]
   have houtS : ∀ (q : Fin (w.length + 1)) (inp : Option Bool) (work : Fin k → Option Bool),
-      ((constWalk w i).tr q inp work).output = none := by
+      (constWalkTr w i q inp work).output = none := by
     intro q inp work
-    simp only [constWalk]
+    simp only [constWalkTr]
     split <;> rfl
   have hout : ∀ s : ℕ, (constWalk w i).outputSymbol (constCfg w i cfg s) = none := by
     intro s
-    change ((constWalk w i).tr ⟨min s w.length, by omega⟩ (constCfg w i cfg s).inputSymbol
-      (constCfg w i cfg s).workTapeSymbols).output = none
+    rw [outputSymbol_of_state rfl, constWalk_tr]
     exact houtS _ _ _
   have hstate : ∀ (s : ℕ) (hs : s ≤ w.length),
       (constCfg w i cfg s).state = some ⟨s, by omega⟩ := by
@@ -188,7 +211,7 @@ theorem constWalk_runsTo {k : ℕ} {input : List Bool} (w : List Bool) (i : Fin 
       (constWalk w i).step (constCfg w i cfg s) = constCfg w i cfg (s + 1) := by
     intro s hs
     have hidx : s < w.reverse.length := by simp; omega
-    rw [step_of_state _ _ ⟨s, by omega⟩ (hstate s (by omega)), htrS s hs hidx _ _]
+    rw [step_of_state _ _ ⟨s, by omega⟩ (hstate s (by omega)), constWalk_tr, htrS s hs hidx _ _]
     apply Cfg.ext
     · change (some ⟨s + 1, by omega⟩ : Option (Fin (w.length + 1))) =
         some ⟨min (s + 1) w.length, by omega⟩
@@ -232,7 +255,7 @@ theorem constWalk_runsTo {k : ℕ} {input : List Bool} (w : List Bool) (i : Fin 
         state := none
         workTapes := Function.update cfg.workTapes i (tapeOf w)
         workTapePos := Function.update cfg.workTapePos i (w.length : ℤ) } := by
-    rw [step_of_state _ _ ⟨w.length, by omega⟩ (hstate w.length (le_refl _)),
+    rw [step_of_state _ _ ⟨w.length, by omega⟩ (hstate w.length (le_refl _)), constWalk_tr,
       htrN w.length (by omega) (by omega) _ _]
     apply Cfg.ext
     · rfl

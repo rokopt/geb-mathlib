@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.Computability.BitTree.BinaryMachine.Machine
+public import Geb.Prototypes.Computability.BitTree.BinaryMachine.Steps
 public import Geb.Prototypes.Computability.TreeScanner.Steps
 
 set_option doc.verso true in
@@ -40,7 +40,7 @@ theorem step_read {input : List (Fin 4)} (cfg : Cfg 3 (Fin 4) (Fin 10) input)
     (m : Mode) (b : Bool) (hq : cfg.state = some (modeState m))
     (hi : cfg.inputSymbol = some (boolEmb b)) :
     machine.step cfg = consumeCfg cfg (postReadState m b) := by
-  rw [step_of_state _ _ _ hq, hi, tr_read]
+  rw [step_of_state _ _ _ hq, machine_tr, hi, tr_read]
   apply Cfg.ext <;> simp [consume, consumeCfg]
 
 /-- Input transitions emit nothing. -/
@@ -50,7 +50,7 @@ theorem outputSymbol_read {input : List (Fin 4)} (cfg : Cfg 3 (Fin 4) (Fin 10) i
   unfold outputSymbol
   rw [hq]
   dsimp only
-  rw [hi, tr_read]
+  rw [machine_tr, hi, tr_read]
   rfl
 
 /-- The symbol at an interior input position is its next bit. -/
@@ -72,7 +72,7 @@ theorem step_end {input : List (Fin 4)} (cfg : Cfg 3 (Fin 4) (Fin 10) input)
     (m : Mode) (hq : cfg.state = some (modeState m)) (hi : cfg.inputSymbol = none) :
     machine.step cfg =
       { cfg with state := none, output := cfg.output ++ [boolEmb (decide (m = .done))] } := by
-  rw [step_of_state _ _ _ hq, hi, tr_end]
+  rw [step_of_state _ _ _ hq, machine_tr, hi, tr_end]
   apply Cfg.ext <;> simp [finish]
 
 /-- The final transition emits exactly the accepting-mode decision. -/
@@ -82,7 +82,7 @@ theorem outputSymbol_end {input : List (Fin 4)} (cfg : Cfg 3 (Fin 4) (Fin 10) in
   unfold outputSymbol
   rw [hq]
   dsimp only
-  rw [hi, tr_end]
+  rw [machine_tr, hi, tr_end]
   rfl
 
 /-- Bounds on consecutive execution segments combine into a bound on their concatenation. -/

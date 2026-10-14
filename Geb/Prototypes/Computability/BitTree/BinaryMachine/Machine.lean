@@ -20,7 +20,8 @@ binary representations. Each carry changes this number by one at each bit flip.
 
 ## Main definitions
 
-* {lit}`machine` is the three-work-tape machine.
+* {lit}`transition` is the three-work-tape transition table and {lit}`machine` the
+  machine it determines.
 * {lit}`digit` reads a binary digit, including the tagged origin digits.
 * {lit}`flipped` flips a digit while preserving the origin tag.
 * {lit}`modeState` embeds scanner modes into finite machine control.
@@ -124,53 +125,56 @@ def carry (leaf : Bool) (work : Fin 3 → Option (Fin 4)) :
     state := some (if digit (work selected) then
       (if leaf then stCarryLeaf else stCarryFork) else stReturn) }
 
-/-- A three-work-tape recognizer whose counters are incremented monotonically. -/
-def machine : MultiTapeTM 3 (Fin 4) (Fin 10) where
-  q₀ := stInit
-  tr q input work :=
-    if q = stInit then
-      { inputTape := 0
-        workTapes := fun i ↦
-          if i = 0 then (some (some 3), 0)
-          else if i = 1 then (some (some 2), 0)
-          else (some (some 0), 1)
-        output := none
-        state := some stStart }
-    else if q = stStart then
-      { inputTape := 0, workTapes := fun _ ↦ (none, 0),
-        output := none, state := some stTree }
-    else if q = stCarryFork then carry false work
-    else if q = stCarryLeaf then carry true work
-    else if q = stReturn then
-      if origin (work 0) then
-        { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none,
-          state := some (if work 2 == some 0 then stDone else stTree) }
-      else
-        { inputTape := 0,
-          workTapes := fun i ↦ (none, if i = 2 then 0 else -1),
-          output := none, state := some stReturn }
+/-- The transition function of the machine. -/
+def transition (q : Fin 10) (input : Option (Fin 4)) (work : Fin 3 → Option (Fin 4)) :
+    Action 3 (Fin 4) (Fin 10) :=
+  if q = stInit then
+    { inputTape := 0
+      workTapes := fun i ↦
+        if i = 0 then (some (some 3), 0)
+        else if i = 1 then (some (some 2), 0)
+        else (some (some 0), 1)
+      output := none
+      state := some stStart }
+  else if q = stStart then
+    { inputTape := 0, workTapes := fun _ ↦ (none, 0),
+      output := none, state := some stTree }
+  else if q = stCarryFork then carry false work
+  else if q = stCarryLeaf then carry true work
+  else if q = stReturn then
+    if origin (work 0) then
+      { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none,
+        state := some (if work 2 == some 0 then stDone else stTree) }
     else
-      match input with
-      | none => finish (q == stDone)
-      | some b =>
-        if q = stTree then consume (if b == 0 then stString else stCarryFork)
-        else if q = stString then consume (if b == 0 then stCarryLeaf else stBit)
-        else if q = stBit then consume stString
-        else consume stDead
+      { inputTape := 0,
+        workTapes := fun i ↦ (none, if i = 2 then 0 else -1),
+        output := none, state := some stReturn }
+  else
+    match input with
+    | none => finish (q == stDone)
+    | some b =>
+      if q = stTree then consume (if b == 0 then stString else stCarryFork)
+      else if q = stString then consume (if b == 0 then stCarryLeaf else stBit)
+      else if q = stBit then consume stString
+      else consume stDead
+
+/-- A three-work-tape recognizer whose counters are incremented monotonically:
+{name}`transition` started in {name}`stInit`. -/
+def machine : MultiTapeTM 3 (Fin 4) (Fin 10) := ofTr stInit transition
 
 /-- Every input transition is stationary or moves right. -/
 theorem inputMove_ne_neg (q : Fin 10) (input : Option (Fin 4))
-    (work : Fin 3 → Option (Fin 4)) : (machine.tr q input work).inputTape ≠ -1 := by
-  cases input <;> simp only [machine] <;> split_ifs <;> first
+    (work : Fin 3 → Option (Fin 4)) : (transition q input work).inputTape ≠ -1 := by
+  cases input <;> simp only [transition] <;> split_ifs <;> first
     | exact (by decide : (0 : SignType) ≠ -1)
     | exact (by decide : (1 : SignType) ≠ -1)
 
 /-- All transitions move the two binary heads by the same displacement. -/
 theorem binaryHeads_move_eq (q : Fin 10) (input : Option (Fin 4))
     (work : Fin 3 → Option (Fin 4)) :
-    ((machine.tr q input work).workTapes 0).2 =
-      ((machine.tr q input work).workTapes 1).2 := by
-  cases input <;> simp only [machine] <;> split_ifs <;> simp [carry, consume, finish]
+    ((transition q input work).workTapes 0).2 =
+      ((transition q input work).workTapes 1).2 := by
+  cases input <;> simp only [transition] <;> split_ifs <;> simp [carry, consume, finish]
 
 /-- A stationary or right-moving displacement cannot lower an input position. -/
 theorem le_moveInputPos {n : ℕ} (p : Fin (n + 2)) (d : SignType) (h : d ≠ -1) :
@@ -214,7 +218,7 @@ def digits {input : List (Fin 4)} (cfg : Cfg 3 (Fin 4) (Fin 10) input)
 /-- Both carry states resolve to the common carry transition. -/
 theorem tr_carry (leaf : Bool) (input : Option (Fin 4))
     (work : Fin 3 → Option (Fin 4)) :
-    machine.tr (if leaf then stCarryLeaf else stCarryFork) input work = carry leaf work := by
+    transition (if leaf then stCarryLeaf else stCarryFork) input work = carry leaf work := by
   cases leaf <;> rfl
 
 /-- A return configuration with the binary heads at a specified nonnegative position. -/
@@ -262,7 +266,7 @@ def postReadState : Mode → Bool → Fin 10
 
 /-- Reading a bit selects the grammar transition without modifying work tapes. -/
 theorem tr_read (m : Mode) (b : Bool) (work : Fin 3 → Option (Fin 4)) :
-    machine.tr (modeState m) (some (boolEmb b)) work = consume (postReadState m b) := by
+    transition (modeState m) (some (boolEmb b)) work = consume (postReadState m b) := by
   cases m <;> cases b <;> rfl
 
 /-- Reading a bit changes the input position and finite control only. -/
@@ -288,7 +292,7 @@ theorem consumeCfg_inputPos {input : List (Fin 4)} (cfg : Cfg 3 (Fin 4) (Fin 10)
 
 /-- The right end marker emits the accepting-mode test and halts. -/
 theorem tr_end (m : Mode) (work : Fin 3 → Option (Fin 4)) :
-    machine.tr (modeState m) none work = finish (decide (m = .done)) := by
+    transition (modeState m) none work = finish (decide (m = .done)) := by
   cases m <;> rfl
 
 /-- Every work head lies in the nonnegative interval bounded by the chosen width. -/

@@ -36,9 +36,13 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 
 * {lit}`pop` — move the head bit of one register into another.
 * {lit}`push` — prepend a bit to a register.
+* {lit}`popTr`, {lit}`pushTr` — their transition functions, composed of their
+  phases' by {name}`Geb.SizeBounded.Machine.seqTr`.
 
 # Main statements
 
+* {lit}`pop_eq_ofTr`, {lit}`push_eq_ofTr` — each primitive is the machine built
+  from its transition function.
 * {lit}`pop_transforms`, {lit}`push_transforms` — the contract of each
   primitive, naming its transformer and its step bound.
 
@@ -58,12 +62,34 @@ public section
 
 /-- Move the head bit of register {lit}`i` into register {lit}`j`: clear
 {lit}`j`, walk {lit}`i` to its end and one cell back, pop, park {lit}`i`. -/
-@[expose] def pop {k : ℕ} (i j : Fin k) :=
+@[expose] noncomputable def pop {k : ℕ} (i j : Fin k) :=
   seq (clear j) (seq (walkEnd i) (seq (moveLeft i) (seq (popStep i j) (returnTape i))))
 
+/-- The transition of {name}`pop`: {name}`Geb.SizeBounded.Machine.clearTr`,
+{name}`Geb.SizeBounded.Machine.walkEndTr`, {name}`Geb.SizeBounded.Machine.moveLeftTr`,
+{name}`popStepTr`, then {name}`Geb.SizeBounded.Machine.returnTapeTr`. -/
+@[expose] def popTr {k : ℕ} (i j : Fin k) :=
+  seqTr (clearTr j) (seqTr (walkEndTr i)
+    (seqTr (moveLeftTr i) (seqTr (popStepTr i j) (returnTapeTr i) (.inl ())) (.inl ())) (.inl ()))
+    (.inl ())
+
+/-- {name}`pop` is the machine built from {name}`popTr`. -/
+theorem pop_eq_ofTr {k : ℕ} (i j : Fin k) : pop i j = ofTr (.inl (.inl ())) (popTr i j) := by
+  simp only [pop, clear_eq_ofTr, walkEnd, moveLeft, popStep, returnTape_eq_ofTr, seq_ofTr, popTr]
+
 /-- Prepend {lit}`c` to register {lit}`i`: walk to its end, write, park. -/
-@[expose] def push {k : ℕ} (c : Bool) (i : Fin k) :=
+@[expose] noncomputable def push {k : ℕ} (c : Bool) (i : Fin k) :=
   seq (walkEnd i) (seq (writeBit c i) (returnTape i))
+
+/-- The transition of {name}`push`: {name}`Geb.SizeBounded.Machine.walkEndTr`,
+{name}`Geb.SizeBounded.Machine.writeBitTr`, then
+{name}`Geb.SizeBounded.Machine.returnTapeTr`. -/
+@[expose] def pushTr {k : ℕ} (c : Bool) (i : Fin k) :=
+  seqTr (walkEndTr i) (seqTr (writeBitTr c i) (returnTapeTr i) (.inl ())) (.inl ())
+
+/-- {name}`push` is the machine built from {name}`pushTr`. -/
+theorem push_eq_ofTr {k : ℕ} (c : Bool) (i : Fin k) : push c i = ofTr (.inl ()) (pushTr c i) := by
+  simp only [push, walkEnd, writeBit, returnTape_eq_ofTr, seq_ofTr, pushTr]
 
 /-- {name}`pop` transforms the valuation by moving the head bit of {lit}`i`,
 when there is one, into {lit}`j`, in {lit}`4 * B + 12` steps. -/

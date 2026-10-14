@@ -33,11 +33,15 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 # Main definitions
 
 * {lit}`countInput` — the primitive.
-* {lit}`CountBodyState` — the state type of its loop body.
+* {lit}`countInputTr` — its transition function.
+* {lit}`CountBodyState`, {lit}`CountState` — the state types of its loop body
+  and of the primitive.
 * {lit}`countInputTime` — its step bound.
 
 # Main statements
 
+* {lit}`countInput_eq_ofTr` — the primitive is the machine built from
+  {lit}`countInputTr`.
 * {lit}`countInput_runsTo` — the run of the primitive from the first symbol.
 
 # Tags
@@ -59,8 +63,27 @@ abbrev CountBodyState : Type := (Unit ⊕ (Unit ⊕ Unit)) ⊕ Unit
 
 /-- Write the input's length into {lit}`C`, from the input head at the first
 symbol, ending with the head at the blank before the input. -/
-@[expose] def countInput {k : ℕ} (C : Fin k) :=
+@[expose] noncomputable def countInput {k : ℕ} (C : Fin k) :=
   seq (const [] C) (seq (whileNonblank none (seq (inc C) inStepRight)) (seq inBack inHome))
+
+/-- The state type of {name}`countInput`. -/
+abbrev CountState : Type :=
+  ((Unit ⊕ (Unit ⊕ Unit)) ⊕ (Fin (([] : List Bool).length + 1) ⊕ (Unit ⊕ Unit))) ⊕
+    ((Unit ⊕ CountBodyState) ⊕ (Unit ⊕ Unit))
+
+/-- The transition of {name}`countInput`, composed of its phases' by
+{name}`Geb.SizeBounded.Machine.seqTr` and {name}`whileNonblankTr`. -/
+@[expose] def countInputTr {k : ℕ} (C : Fin k) :
+    CountState → Option Bool → (Fin k → Option Bool) → Action k Bool CountState :=
+  seqTr (constTr [] C)
+    (seqTr (whileNonblankTr none (seqTr (incTr C) inStepRightTr ()) (.inl (.inl ())))
+      (seqTr inBackTr inHomeTr ()) (.inl ())) (.inl (.inl ()))
+
+/-- {name}`countInput` is the machine built from {name}`countInputTr`. -/
+theorem countInput_eq_ofTr {k : ℕ} (C : Fin k) :
+    countInput C = ofTr (.inl (.inl (.inl ()))) (countInputTr C) := by
+  simp only [countInput, const_eq_ofTr, inc_eq_ofTr, inStepRight, seq_ofTr, whileNonblank_ofTr,
+    inBack, inHome, countInputTr]
 
 /-- The step bound of {name}`countInput` at a length bound {lit}`B` and an input
 length {lit}`n`. -/

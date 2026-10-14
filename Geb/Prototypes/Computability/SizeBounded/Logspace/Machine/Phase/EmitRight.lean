@@ -24,13 +24,19 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {lit}`Classical.choice` through Cslib's
 {name}`Turing.Cfg.inputSymbol`.
 
+The machine is built by {name}`Turing.MultiTapeTM.ofTr` from the computable
+transition function {lit}`emitRightTr`; the machine's own transition, selected
+by choice in CSLib, agrees with it.
+
 # Main definitions
 
+* {lit}`emitRightTr` — the transition function of the walk.
 * {lit}`emitRight` — walk the input head right, emitting each symbol read.
 * {lit}`emitRightCfg` — the closed form of the walk's configurations.
 
 # Main statements
 
+* {lit}`emitRight_tr` — the machine's transition is {lit}`emitRightTr`.
 * {lit}`emitRight_emits` — the run of the machine, naming the halted
   configuration, the emitted suffix and the step count.
 
@@ -48,15 +54,22 @@ open Geb.SizeBounded.Machine
 
 public section
 
+/-- The transition of {lit}`emitRight`. -/
+@[expose] def emitRightTr {k : ℕ} (_ : Unit) (inp : Option Bool) (_ : Fin k → Option Bool) :
+    Action k Bool Unit :=
+  match inp with
+  | some b =>
+    { inputTape := 1, workTapes := fun _ ↦ (none, 0), output := some b, state := some () }
+  | none => { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none }
+
 /-- Walk the input head right, emitting each symbol read, until it reads a
 blank. -/
-@[expose] def emitRight {k : ℕ} : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ inp _ :=
-    match inp with
-    | some b =>
-      { inputTape := 1, workTapes := fun _ ↦ (none, 0), output := some b, state := some () }
-    | none => { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none }
+@[expose] def emitRight {k : ℕ} : MultiTapeTM k Bool Unit := ofTr () emitRightTr
+
+/-- The transition of {name}`emitRight` is {name}`emitRightTr`. -/
+theorem emitRight_tr {k : ℕ} (q : Unit) (inp : Option Bool) (work : Fin k → Option Bool) :
+    (emitRight (k := k)).tr q inp work = emitRightTr q inp work :=
+  tr_ofTr _ _ _ _ _
 
 /-- The configuration of {name}`emitRight` after {lit}`s` steps from the input
 head at position {lit}`p`: the head has moved {lit}`s` cells right and the
@@ -84,11 +97,11 @@ theorem emitRight_emits {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Unit inp
   have htrSome : ∀ (b : Bool) (work : Fin k → Option Bool),
       (emitRight (k := k)).tr () (some b) work =
         { inputTape := SignType.pos, workTapes := fun _ ↦ (none, 0), output := some b,
-          state := some () } := fun _ _ ↦ rfl
+          state := some () } := fun _ _ ↦ emitRight_tr () _ _
   have htrNone : ∀ work : Fin k → Option Bool,
       (emitRight (k := k)).tr () none work =
         { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none } :=
-    fun _ ↦ rfl
+    fun _ ↦ emitRight_tr () _ _
   have hlen : (input.drop (p - 1)).length = input.length + 1 - p := by
     rw [List.length_drop]
     omega

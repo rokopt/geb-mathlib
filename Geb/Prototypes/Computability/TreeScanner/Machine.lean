@@ -23,7 +23,7 @@ language.
 
 - `boolEmb` — the input alphabet's embedding into the machine alphabet.
 - `stSeek`, `stPlant`, `stLive`, `stDead` — the four states.
-- `treeScanner` — the machine.
+- `transition`, `treeScanner` — the transition function and the machine.
 - `seekCfg`, `plantCfg`, `sweepCfg` — the closed-form configurations.
 
 ## Main statements
@@ -76,42 +76,45 @@ def stLive : Fin 4 := ⟨2, by omega⟩
 /-- The state that sweeps a failed scan right to left. -/
 def stDead : Fin 4 := ⟨3, by omega⟩
 
-/-- The machine. One work tape; the count is the work head's position,
-with a marker at cell `0` and a different marker at cell `1`. -/
-def treeScanner : MultiTapeTM 1 (Fin 2) (Fin 4) where
-  q₀ := stSeek
-  tr q inSym work :=
-    if q = stSeek then
-      match inSym with
-      | none => { inputTape := -1, workTapes := fun _ ↦ (some (some 0), 1),
-                  output := none, state := some stPlant }
-      | some _ => { inputTape := 1, workTapes := fun _ ↦ (none, 0),
-                    output := none, state := some stSeek }
-    else if q = stPlant then
-      { inputTape := 0, workTapes := fun _ ↦ (some (some 1), -1),
-        output := none, state := some stLive }
-    else if q = stLive then
-      match inSym with
-      | some 0 => { inputTape := -1, workTapes := fun _ ↦ (none, 1),
-                    output := none, state := some stLive }
-      | some _ =>
-        match work 0 with
-        | none => { inputTape := -1, workTapes := fun _ ↦ (none, -1),
-                    output := none, state := some stLive }
-        | some _ => { inputTape := -1, workTapes := fun _ ↦ (none, 0),
-                      output := none, state := some stDead }
-      | none =>
-        match work 0 with
-        | some 1 => { inputTape := 0, workTapes := fun _ ↦ (none, 0),
-                      output := some 1, state := none }
-        | _ => { inputTape := 0, workTapes := fun _ ↦ (none, 0),
-                 output := some 0, state := none }
-    else
-      match inSym with
+/-- The machine's transition function. One work tape; the count is the work
+head's position, with a marker at cell `0` and a different marker at cell
+`1`. -/
+def transition (q : Fin 4) (inSym : Option (Fin 2)) (work : Fin 1 → Option (Fin 2)) :
+    Action 1 (Fin 2) (Fin 4) :=
+  if q = stSeek then
+    match inSym with
+    | none => { inputTape := -1, workTapes := fun _ ↦ (some (some 0), 1),
+                output := none, state := some stPlant }
+    | some _ => { inputTape := 1, workTapes := fun _ ↦ (none, 0),
+                  output := none, state := some stSeek }
+  else if q = stPlant then
+    { inputTape := 0, workTapes := fun _ ↦ (some (some 1), -1),
+      output := none, state := some stLive }
+  else if q = stLive then
+    match inSym with
+    | some 0 => { inputTape := -1, workTapes := fun _ ↦ (none, 1),
+                  output := none, state := some stLive }
+    | some _ =>
+      match work 0 with
+      | none => { inputTape := -1, workTapes := fun _ ↦ (none, -1),
+                  output := none, state := some stLive }
       | some _ => { inputTape := -1, workTapes := fun _ ↦ (none, 0),
                     output := none, state := some stDead }
-      | none => { inputTape := 0, workTapes := fun _ ↦ (none, 0),
-                  output := some 0, state := none }
+    | none =>
+      match work 0 with
+      | some 1 => { inputTape := 0, workTapes := fun _ ↦ (none, 0),
+                    output := some 1, state := none }
+      | _ => { inputTape := 0, workTapes := fun _ ↦ (none, 0),
+               output := some 0, state := none }
+  else
+    match inSym with
+    | some _ => { inputTape := -1, workTapes := fun _ ↦ (none, 0),
+                  output := none, state := some stDead }
+    | none => { inputTape := 0, workTapes := fun _ ↦ (none, 0),
+                output := some 0, state := none }
+
+/-- The machine: `transition` started in `stSeek`. -/
+def treeScanner : MultiTapeTM 1 (Fin 2) (Fin 4) := ofTr stSeek transition
 
 /-- The configuration after `t` seek steps: the input head at `t + 1`,
 the work tape blank and its head at cell `0`. At `t = 0` this is

@@ -11,7 +11,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Phase.In
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Phase.Dec
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Primitives.Pop
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Primitives.ReadInput
-public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Basic
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Correct
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -38,6 +38,18 @@ free one and a bound on its step count as a function of the word bound and
 the input's length, both read off the syntax as the program is assembled, so
 that the resource bounds are the compiler's own arithmetic.
 
+A program, {name}`Geb.SizeBounded.Machine.Prog`, carries a transition function
+and its machine is the machine built from it. The programs here are assembled
+from the transition functions of the primitives and the transition-level
+combinators {name}`Geb.SizeBounded.Machine.seqProg`,
+{name}`Geb.SizeBounded.Machine.seqFinProg`,
+{name}`Geb.SizeBounded.Logspace.Machine.whileNonblankTr` and
+{name}`Geb.SizeBounded.Logspace.Machine.caseProbeTr`, so the compiled programs
+and their transitions are computable. The module is admitted to
+{lit}`GebMeta.classicalAllowedModules`: the equations identifying a program's
+machine with the machine-level combination of its components mention
+{name}`Turing.MultiTapeTM.tr`, which CSLib selects by {lit}`Classical.choice`.
+
 # Main definitions
 
 * {lit}`Reg`, {lit}`readRep`, {lit}`writeRep`, {lit}`WF` — a logical register
@@ -47,8 +59,10 @@ that the resource bounds are the compiler's own arithmetic.
   length.
 * {lit}`Compiled`, {lit}`transportP` — the carrier of a compiled expression
   and its transport along an equality of arities.
-* {lit}`Prog.seq`, {lit}`Prog.seqFin`, {lit}`Prog.whileReg`, {lit}`Prog.caseReg`
-  — programs with their enumerations under the combinators.
+* {lit}`readInputProg`, {lit}`incProg`, {lit}`decProg`, {lit}`popProg`,
+  {lit}`pushProg`, {lit}`idleProg` — the programs of the primitives.
+* {lit}`Prog.whileReg`, {lit}`Prog.caseReg` — the loop and the branch on
+  programs.
 * {lit}`regsValue`, {lit}`timeValue` — the tapes and the step bound one node
   needs from its children's.
 * {lit}`srnV`, {lit}`srnVals`, {lit}`srnScr`, {lit}`srnEnv` — the register
@@ -64,10 +78,15 @@ that the resource bounds are the compiler's own arithmetic.
 
 * {lit}`readRep_writeRep`, {lit}`writeRep_of_ne` — reading back a written
   representation, and the tapes a write leaves alone.
-* {lit}`Prog.tm_seq`, {lit}`Prog.tm_ofTM`, {lit}`Prog.tm_seqFin`,
-  {lit}`Prog.tm_whileReg`, {lit}`copyReg_tm` — the machine of a program under
-  each combinator, stated so that a contract can be rewritten to the
-  machine's form without the unifier unfolding the machines.
+* {lit}`TransformsIn.of_tm_eq` — a program's contract read off a machine equal
+  to its machine.
+* {lit}`readInputProg_tm`, {lit}`incProg_tm`, {lit}`decProg_tm`,
+  {lit}`popProg_tm`, {lit}`pushProg_tm`, {lit}`idleProg_tm`,
+  {lit}`Prog.tm_whileReg`, {lit}`Prog.tm_caseReg`, {lit}`copyReg_tm` — the
+  machine of a program assembled by a combinator is the combinator's machine,
+  stated so that a contract can be rewritten to the machine's form.
+* {lit}`srnMiddle_tm`, {lit}`srnBody1_tm`, {lit}`srnBody2_tm` — the machines of
+  the loop bodies and of their shared middle, part by part.
 * {lit}`fst_compile` — the index component of a tree's compilation is its
   arity.
 
@@ -83,7 +102,8 @@ namespace Geb.SizeBounded.Logspace.Machine
 open Turing MultiTapeTM
 open scoped FinEnum
 open Geb.SizeBounded (Shape Direction rc q sig finMax le_finMax stepDir S arity SOf)
-open Geb.SizeBounded.Machine (Prog seq seqFin seqFinEnum idle copy const copyRev)
+open Geb.SizeBounded.Machine (Prog seq seqFin idle idleTr copy const copyRev seqProg seqFinProg
+  constProg copyProg copyRevProg seqProg_tm seqFinProg_tm copyProg_tm)
 
 public section
 
@@ -158,46 +178,75 @@ theorem transportP_transportP {k i j l : ℕ} (h : i = j) (g : j = l) (v : Compi
   subst g
   rfl
 
-/-- A machine with a choice-free enumeration of its state type as a program. -/
-@[expose] def Prog.ofTM {k : ℕ} {S : Type} (e : FinEnum S) (tm : MultiTapeTM k Bool S) : Prog k :=
-  ⟨S, e, tm⟩
+/-- A program's contract read off a machine equal to its machine. -/
+theorem TransformsIn.of_tm_eq {k : ℕ} {p : Prog k} {tm : MultiTapeTM k Bool p.State}
+    {Pre : List Bool → (Fin k → List Bool) → Prop}
+    {F : List Bool → (Fin k → List Bool) → Fin k → List Bool} {T B : ℕ → ℕ} (h : p.tm = tm)
+    (ht : TransformsIn tm Pre F T B) : TransformsIn p.tm Pre F T B :=
+  h ▸ ht
 
-/-- The sequencing of two programs. -/
-@[expose] def Prog.seq {k : ℕ} (P Q : Prog k) : Prog k :=
-  ⟨P.State ⊕ Q.State, @FinEnum.finSum _ _ P.enum Q.enum, Geb.SizeBounded.Machine.seq P.tm Q.tm⟩
+/-- The program of {name}`readInput`. -/
+@[expose] def readInputProg {k : ℕ} (C S F : Fin k) : Prog k :=
+  ⟨_, inferInstance, .inl (.inl (.inl ())), readInputTr C S F⟩
 
-/-- The sequencing of a family of programs. -/
-@[expose] def Prog.seqFin {k : ℕ} (m : ℕ) (P : Fin m → Prog k) : Prog k :=
-  ⟨(Geb.SizeBounded.Machine.seqFin m (fun i ↦ (P i).State) (fun i ↦ (P i).tm)).1,
-    seqFinEnum m _ _ fun i ↦ (P i).enum,
-    (Geb.SizeBounded.Machine.seqFin m (fun i ↦ (P i).State) (fun i ↦ (P i).tm)).2⟩
+/-- The program of {name}`inc`. -/
+@[expose] def incProg {k : ℕ} (i : Fin k) : Prog k := ⟨_, inferInstance, .inl (), incTr i⟩
 
-/-- The machine of a sequence. -/
-theorem Prog.tm_seq {k : ℕ} (P Q : Prog k) :
-    (Prog.seq P Q).tm = Geb.SizeBounded.Machine.seq P.tm Q.tm := rfl
+/-- The program of {name}`dec`. -/
+@[expose] def decProg {k : ℕ} (i : Fin k) : Prog k := ⟨_, inferInstance, .inl 0, decTr i⟩
 
-/-- The machine of a lifted machine. -/
-theorem Prog.tm_ofTM {k : ℕ} {S : Type} (e : FinEnum S) (tm : MultiTapeTM k Bool S) :
-    (Prog.ofTM e tm).tm = tm := rfl
+/-- The program of {name}`pop`. -/
+@[expose] def popProg {k : ℕ} (i j : Fin k) : Prog k :=
+  ⟨_, inferInstance, .inl (.inl ()), popTr i j⟩
 
-/-- The machine of a sequenced family. -/
-theorem Prog.tm_seqFin {k m : ℕ} (P : Fin m → Prog k) :
-    (Prog.seqFin m P).tm =
-      (Geb.SizeBounded.Machine.seqFin m (fun l ↦ (P l).State) (fun l ↦ (P l).tm)).2 := rfl
+/-- The program of {name}`push`. -/
+@[expose] def pushProg {k : ℕ} (c : Bool) (i : Fin k) : Prog k :=
+  ⟨_, inferInstance, .inl (), pushTr c i⟩
 
-/-- The loop of a program while a register is nonempty. -/
+/-- The program of {name}`Geb.SizeBounded.Machine.idle`. -/
+@[expose] def idleProg {k : ℕ} : Prog k := ⟨Unit, FinEnum.unit, (), idleTr⟩
+
+/-- The machine of {name}`readInputProg` is {name}`readInput`. -/
+theorem readInputProg_tm {k : ℕ} (C S F : Fin k) : (readInputProg C S F).tm = readInput C S F :=
+  (readInput_eq_ofTr C S F).symm
+
+/-- The machine of {name}`incProg` is {name}`inc`. -/
+theorem incProg_tm {k : ℕ} (i : Fin k) : (incProg i).tm = inc i := (inc_eq_ofTr i).symm
+
+/-- The machine of {name}`decProg` is {name}`dec`. -/
+theorem decProg_tm {k : ℕ} (i : Fin k) : (decProg i).tm = dec i := (dec_eq_ofTr i).symm
+
+/-- The machine of {name}`popProg` is {name}`pop`. -/
+theorem popProg_tm {k : ℕ} (i j : Fin k) : (popProg i j).tm = pop i j := (pop_eq_ofTr i j).symm
+
+/-- The machine of {name}`pushProg` is {name}`push`. -/
+theorem pushProg_tm {k : ℕ} (c : Bool) (i : Fin k) : (pushProg c i).tm = push c i :=
+  (push_eq_ofTr c i).symm
+
+/-- The machine of {name}`idleProg` is {name}`Geb.SizeBounded.Machine.idle`. -/
+theorem idleProg_tm {k : ℕ} : (idleProg (k := k)).tm = idle := rfl
+
+/-- The loop of a program while a register is nonempty, by
+{name}`whileNonblankTr`. -/
 @[expose] def Prog.whileReg {k : ℕ} (R : Fin k) (P : Prog k) : Prog k :=
-  ⟨Unit ⊕ P.State, @FinEnum.finSum _ _ FinEnum.unit P.enum, whileNonblank (some R) P.tm⟩
+  ⟨Unit ⊕ P.State, @FinEnum.finSum _ _ FinEnum.unit P.enum, .inl (),
+    whileNonblankTr (some R) P.tr P.q₀⟩
 
 /-- The machine of a loop. -/
 theorem Prog.tm_whileReg {k : ℕ} (R : Fin k) (P : Prog k) :
-    (Prog.whileReg R P).tm = whileNonblank (some R) P.tm := rfl
+    (Prog.whileReg R P).tm = whileNonblank (some R) P.tm :=
+  (whileNonblank_ofTr _ _ _).symm
 
-/-- The branch on a register's last bit. -/
+/-- The branch on a register's last bit, by {name}`caseProbeTr`. -/
 @[expose] def Prog.caseReg {k : ℕ} (R : Fin k) (P Q : Prog k) : Prog k :=
   ⟨Unit ⊕ (P.State ⊕ Q.State),
-    @FinEnum.finSum _ _ FinEnum.unit (@FinEnum.finSum _ _ P.enum Q.enum),
-    caseProbe (some R) P.tm Q.tm⟩
+    @FinEnum.finSum _ _ FinEnum.unit (@FinEnum.finSum _ _ P.enum Q.enum), .inl (),
+    caseProbeTr (some R) P.tr Q.tr P.q₀ Q.q₀⟩
+
+/-- The machine of a branch. -/
+theorem Prog.tm_caseReg {k : ℕ} (R : Fin k) (P Q : Prog k) :
+    (Prog.caseReg R P Q).tm = caseProbe (some R) P.tm Q.tm :=
+  (caseProbe_ofTr _ _ _ _ _).symm
 
 /-- The tapes one node needs above its children's: a substitution two per
 argument, a recursion two per value register and per scratch register, two for
@@ -274,41 +323,71 @@ registers and the parameters. -/
 
 /-- The copy of a logical register: its word tape, then its counter tape. -/
 @[expose] def copyReg {k : ℕ} (src dst : Reg k) : Prog k :=
-  Prog.seq (Prog.ofTM inferInstance (copy (src 0) (dst 0)))
-    (Prog.ofTM inferInstance (copy (src 1) (dst 1)))
+  seqProg (copyProg (src 0) (dst 0)) (copyProg (src 1) (dst 1))
 
 /-- The machine of a register copy. -/
 theorem copyReg_tm {k : ℕ} (src dst : Reg k) :
-    (copyReg src dst).tm = seq (copy (src 0) (dst 0)) (copy (src 1) (dst 1)) := rfl
+    (copyReg src dst).tm = seq (copy (src 0) (dst 0)) (copy (src 1) (dst 1)) := by
+  unfold copyReg
+  rw [seqProg_tm, copyProg_tm, copyProg_tm]
+  rfl
 
 /-- The copies of the scratch registers into the value registers. -/
 @[expose] def copyRegs {k b : ℕ} (scr vals : Fin b → Reg k) : Prog k :=
-  Prog.seqFin b fun l ↦ copyReg (scr l) (vals l)
+  seqFinProg b fun l ↦ copyReg (scr l) (vals l)
 
 /-- The middle of both loop bodies: the dispatch on the flag to the steps for
 that bit, into the scratch registers, then the copies into the value
 registers. -/
 @[expose] def srnMiddle {k b : ℕ} (F : Fin k) (vals scr : Fin b → Reg k)
     (steps0 steps1 : Prog k) : Prog k :=
-  Prog.seq (Prog.caseReg F steps0 steps1) (copyRegs scr vals)
+  seqProg (Prog.caseReg F steps0 steps1) (copyRegs scr vals)
 
 /-- The body of the first loop: read the input bit at the cursor's length into
 the flag, the middle, then count the cursor's length up and the loop's counter
 down. -/
 @[expose] def srnBody1 {k b : ℕ} (V : Reg k) (CR S F : Fin k) (vals scr : Fin b → Reg k)
     (steps0 steps1 : Prog k) : Prog k :=
-  Prog.seq (Prog.ofTM inferInstance (readInput (V 1) S F))
-    (Prog.seq (srnMiddle F vals scr steps0 steps1)
-      (Prog.seq (Prog.ofTM inferInstance (inc (V 1))) (Prog.ofTM inferInstance (dec CR))))
+  seqProg (readInputProg (V 1) S F)
+    (seqProg (srnMiddle F vals scr steps0 steps1) (seqProg (incProg (V 1)) (decProg CR)))
 
 /-- The body of the second loop: pop the next bit of the reversed word into the
 flag, the middle, then push the bit onto the cursor's word. -/
 @[expose] def srnBody2 {k b : ℕ} (V : Reg k) (R F : Fin k) (vals scr : Fin b → Reg k)
     (steps0 steps1 : Prog k) : Prog k :=
-  Prog.seq (Prog.ofTM inferInstance (pop R F))
-    (Prog.seq (srnMiddle F vals scr steps0 steps1)
-      (Prog.caseReg F (Prog.ofTM inferInstance (push false (V 0)))
-        (Prog.ofTM inferInstance (push true (V 0)))))
+  seqProg (popProg R F)
+    (seqProg (srnMiddle F vals scr steps0 steps1)
+      (Prog.caseReg F (pushProg false (V 0)) (pushProg true (V 0))))
+
+/-- The machine of the middle of the loop bodies. -/
+theorem srnMiddle_tm {k b : ℕ} (F : Fin k) (vals scr : Fin b → Reg k) (steps0 steps1 : Prog k) :
+    (srnMiddle F vals scr steps0 steps1).tm =
+      seq (caseProbe (some F) steps0.tm steps1.tm)
+        (seqFin b (fun l ↦ (copyReg (scr l) (vals l)).State)
+          fun l ↦ (copyReg (scr l) (vals l)).tm) := by
+  unfold srnMiddle copyRegs
+  rw [seqProg_tm, Prog.tm_caseReg, seqFinProg_tm]
+  rfl
+
+/-- The machine of the first loop's body. -/
+theorem srnBody1_tm {k b : ℕ} (V : Reg k) (CR S F : Fin k) (vals scr : Fin b → Reg k)
+    (steps0 steps1 : Prog k) :
+    (srnBody1 V CR S F vals scr steps0 steps1).tm =
+      seq (readInput (V 1) S F)
+        (seq (srnMiddle F vals scr steps0 steps1).tm (seq (inc (V 1)) (dec CR))) := by
+  unfold srnBody1
+  rw [seqProg_tm, seqProg_tm, seqProg_tm, readInputProg_tm, incProg_tm, decProg_tm]
+  rfl
+
+/-- The machine of the second loop's body. -/
+theorem srnBody2_tm {k b : ℕ} (V : Reg k) (R F : Fin k) (vals scr : Fin b → Reg k)
+    (steps0 steps1 : Prog k) :
+    (srnBody2 V R F vals scr steps0 steps1).tm =
+      seq (pop R F) (seq (srnMiddle F vals scr steps0 steps1).tm
+        (caseProbe (some F) (push false (V 0)) (push true (V 0)))) := by
+  unfold srnBody2
+  rw [seqProg_tm, seqProg_tm, Prog.tm_caseReg, popProg_tm, pushProg_tm, pushProg_tm]
+  rfl
 
 /-- The program of a recursion node: the bases into the value registers, the
 empty cursor, the argument's counter copied into the loop counter, the first
@@ -316,25 +395,24 @@ loop, the argument's word reversed into the reversed-word register, the second
 loop, and the selected value register copied into the output. -/
 @[expose] def srnProg {k b : ℕ} (Y V : Reg k) (CR R : Fin k) (vals : Fin b → Reg k)
     (out : Reg k) (j : Fin b) (bases : Fin b → Prog k) (body1 body2 : Prog k) : Prog k :=
-  Prog.seq (Prog.seqFin b bases)
-    (Prog.seq (Prog.ofTM inferInstance (const [] (V 0)))
-      (Prog.seq (Prog.ofTM inferInstance (const [] (V 1)))
-        (Prog.seq (Prog.ofTM inferInstance (copy (Y 1) CR))
-          (Prog.seq (Prog.whileReg CR body1)
-            (Prog.seq (Prog.ofTM inferInstance (copyRev (Y 0) R))
-              (Prog.seq (Prog.whileReg R body2) (copyReg (vals j) out)))))))
+  seqProg (seqFinProg b bases)
+    (seqProg (constProg [] (V 0))
+      (seqProg (constProg [] (V 1))
+        (seqProg (copyProg (Y 1) CR)
+          (seqProg (Prog.whileReg CR body1)
+            (seqProg (copyRevProg (Y 0) R)
+              (seqProg (Prog.whileReg R body2) (copyReg (vals j) out)))))))
 
 /-- The program of one node from its children's. -/
 @[expose] def compileValue {k : ℕ} : (a : Shape) → (c : Direction a → Σ i, Compiled k i) →
     (∀ b, (c b).1 = rc a b) → Compiled k (q a)
   | .const n w, _, _ =>
     ⟨0, timeValue (.const n w) fun _ ↦ fun _ _ ↦ 0, fun _ out _ _ ↦
-      Prog.seq (Prog.ofTM inferInstance (const w (out 0)))
-        (Prog.ofTM inferInstance (const [] (out 1)))⟩
+      seqProg (constProg w (out 0)) (constProg [] (out 1))⟩
   | .proj n i, _, _ =>
     ⟨0, timeValue (.proj n i) fun _ ↦ fun _ _ ↦ 0, fun env out _ _ ↦ copyReg (env i) out⟩
   | .sbs b, _, _ =>
-    ⟨0, timeValue (.sbs b) fun _ ↦ fun _ _ ↦ 0, fun _ _ _ _ ↦ Prog.ofTM inferInstance idle⟩
+    ⟨0, timeValue (.sbs b) fun _ ↦ fun _ _ ↦ 0, fun _ _ _ _ ↦ idleProg⟩
   | .comp n m, c, h =>
     ⟨regsValue (.comp n m) fun d ↦ (c d).2.regs,
       timeValue (.comp n m) fun d ↦ (c d).2.time,
@@ -354,7 +432,7 @@ loop, and the selected value register copied into the output. -/
           rw [regs_transportP]
           rw [regsValue_comp] at hfree
           omega)
-        Prog.seq (Prog.seqFin m args) head⟩
+        seqProg (seqFinProg m args) head⟩
   | .srn a b j, c, h =>
     ⟨regsValue (.srn a b j) fun d ↦ (c d).2.regs,
       timeValue (.srn a b j) fun d ↦ (c d).2.time,
@@ -393,8 +471,8 @@ loop, and the selected value register copied into the output. -/
                   le_finMax b (fun l ↦ (c (.inr (.inr l))).2.regs) l
                 omega)
         srnProg Y V CR R vals out j bases
-          (srnBody1 V CR S F vals scr (Prog.seqFin b (steps false)) (Prog.seqFin b (steps true)))
-          (srnBody2 V R F vals scr (Prog.seqFin b (steps false)) (Prog.seqFin b (steps true)))⟩
+          (srnBody1 V CR S F vals scr (seqFinProg b (steps false)) (seqFinProg b (steps true)))
+          (srnBody2 V R F vals scr (seqFinProg b (steps false)) (seqFinProg b (steps true)))⟩
 
 /-- {name}`compileValue` as an algebra for {name}`Geb.SizeBounded.sig` in the
 slice over {lit}`ℕ`. -/

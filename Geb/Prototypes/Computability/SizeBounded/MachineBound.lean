@@ -19,6 +19,8 @@ The bounds include the final halting transition and cover empty inputs and outpu
 
 ## Main statements
 
+* {lit}`constantMachine_tr`, {lit}`identityMachine_tr` — the machines' transitions
+  are the transition functions they are built from.
 * {lit}`computableInTimeAndSpace_const` bounds a constant word function.
 * {lit}`computableInTimeAndSpace_id` bounds the unary projection.
 
@@ -44,16 +46,25 @@ namespace Geb.SizeBounded
 open Turing MultiTapeTM
 open Geb.TreeScanner (boolEmb)
 
+/-- The constant machine's transition is {name}`constantMachineTr`. -/
+theorem constantMachine_tr (v : List Bool) (q : Fin (v.length + 1)) (inp : Option (Fin 2))
+    (work : Fin 0 → Option (Fin 2)) :
+    (constantMachine v).tr q inp work = constantMachineTr v q inp work :=
+  tr_ofTr _ _ _ _ _
+
+/-- The copy machine's transition is {name}`identityMachineTr`. -/
+theorem identityMachine_tr (q : Fin 1) (inp : Option (Fin 2)) (work : Fin 0 → Option (Fin 2)) :
+    identityMachine.tr q inp work = identityMachineTr q inp work :=
+  tr_ofTr _ _ _ _ _
+
 /-- Before the final transition, the constant machine's state is the number of bits emitted. -/
 theorem constantMachine_state (v : List Bool) (input : List (Fin 2)) :
     ∀ t, (ht : t ≤ v.length) →
       ((constantMachine v).runFrom ((constantMachine v).initCfg input) t).state =
         some ⟨t, by omega⟩ := by
   refine Nat.rec (fun _ ↦ rfl) (fun t ih ht ↦ ?_)
-  rw [runFrom_succ_eq_step']
-  unfold step
-  rw [ih (by omega)]
-  simp only [constantMachine, show t < v.length by omega, ↓reduceDIte, Action.apply]
+  rw [runFrom_succ_eq_step', step_of_state (ih (by omega)), constantMachine_tr]
+  simp only [constantMachineTr, show t < v.length by omega, ↓reduceDIte, Action.apply]
 
 /-- The constant machine emits the next bit, or nothing at the final transition. -/
 theorem constantMachine_emits (v : List Bool) (input : List (Fin 2)) (t : ℕ)
@@ -63,6 +74,7 @@ theorem constantMachine_emits (v : List Bool) (input : List (Fin 2)) (t : ℕ)
         v[t]?.map boolEmb := by
   unfold outputSymbol
   rw [constantMachine_state v input t ht]
+  simp only [constantMachine_tr]
   rfl
 
 /-- The first transitions emit the corresponding prefix of the constant word. -/
@@ -78,10 +90,9 @@ theorem constantMachine_output (v : List Bool) (input : List (Fin 2)) :
 theorem constantMachine_halts (v : List Bool) (input : List (Fin 2)) :
     ((constantMachine v).runFrom ((constantMachine v).initCfg input) (v.length + 1)).state =
       none := by
-  rw [runFrom_succ_eq_step']
-  unfold step
-  rw [constantMachine_state v input v.length (Nat.le_refl _)]
-  simp only [constantMachine, Nat.lt_irrefl, ↓reduceDIte, Action.apply]
+  rw [runFrom_succ_eq_step', step_of_state (constantMachine_state v input v.length (Nat.le_refl _)),
+    constantMachine_tr]
+  simp only [constantMachineTr, Nat.lt_irrefl, ↓reduceDIte, Action.apply]
 
 /-- A constant word function takes its output length plus one transitions and no work cells. -/
 theorem computableInTimeAndSpace_const (v : List Bool) :
@@ -104,8 +115,7 @@ theorem identityMachine_state_pos (input : List (Fin 2)) :
   have hs := inputSymbolInner (cfg := identityMachine.runFrom (identityMachine.initCfg input) t)
     t (by omega) (by omega : t < input.length)
   simp only [runFrom_succ_eq_step']
-  unfold step
-  rw [hq]
+  rw [step_of_state hq, identityMachine_tr]
   change (identityMachine.runFrom (identityMachine.initCfg input) t).inputSymbol.map
       (fun _ ↦ (0 : Fin 1)) = some 0 ∧
     (moveInputPos (identityMachine.runFrom (identityMachine.initCfg input) t).inputPos 1).val =
@@ -124,6 +134,7 @@ theorem identityMachine_emits (input : List (Fin 2)) (t : ℕ) (ht : t ≤ input
   obtain ⟨hq, hp⟩ := identityMachine_state_pos input t ht
   unfold outputSymbol
   rw [hq]
+  simp only [identityMachine_tr]
   change (identityMachine.runFrom (identityMachine.initCfg input) t).inputSymbol = input[t]?
   by_cases hlt : t < input.length
   · rw [inputSymbolInner t (by omega) hlt, List.getElem?_eq_getElem hlt]
@@ -150,12 +161,11 @@ theorem identityMachine_halts (input : List (Fin 2)) :
   have hs := identityMachine_emits input input.length (Nat.le_refl _)
   unfold outputSymbol at hs
   rw [hq] at hs
+  simp only [identityMachine_tr] at hs
   change (identityMachine.runFrom (identityMachine.initCfg input) input.length).inputSymbol =
     input[input.length]? at hs
   rw [List.getElem?_length] at hs
-  rw [runFrom_succ_eq_step']
-  unfold step
-  rw [hq]
+  rw [runFrom_succ_eq_step', step_of_state hq, identityMachine_tr]
   change Option.map (fun _ ↦ (0 : Fin 1))
     (identityMachine.runFrom (identityMachine.initCfg input) input.length).inputSymbol = none
   rw [hs]

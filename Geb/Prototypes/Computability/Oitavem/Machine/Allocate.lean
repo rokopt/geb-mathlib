@@ -18,11 +18,14 @@ every step, including when the callee emits on its halting transition.
 
 ## Main definitions
 
-* {lit}`onTapes` places a machine in a larger tape layout.
+* {lit}`onTapesTr` places a transition function in a larger tape layout, and
+  {lit}`onTapes` a machine, as the machine built from {lit}`onTapesTr` of its
+  transition.
 * {lit}`onTapesCfg` combines a callee configuration with protected tapes.
 
 ## Main statements
 
+* {lit}`onTapes_tr` and {lit}`onTapes_ofTr` relate {lit}`onTapes` to {lit}`onTapesTr`.
 * {lit}`onTapes_step` and {lit}`onTapes_runFrom` give exact simulation.
 * {lit}`EmitsIn.onTapes` and {lit}`TransformsIn.onTapes` preserve subroutine
   contracts, including their bounds and the caller's protected registers.
@@ -30,7 +33,9 @@ every step, including when the callee emits on its halting transition.
 ## Implementation notes
 
 The layout is an explicit equivalence, so allocation requires no search or
-choice. The run contracts inherit CSLib's {lit}`Classical.choice` dependency.
+choice. The run contracts inherit CSLib's {lit}`Classical.choice` dependency, and
+{lit}`onTapes` reads the transition CSLib selects by choice, so it is
+noncomputable while {lit}`onTapesTr` is computable.
 
 ## Tags
 
@@ -47,16 +52,38 @@ open Geb.SizeBounded.Logspace.Machine
 
 public section
 
-/-- Run a machine on the left part of a tape layout, leaving the right part untouched. -/
-@[expose] def onTapes {k m l : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
-    (e : Fin m ≃ Fin k ⊕ Fin l) : MultiTapeTM m Bool S where
-  q₀ := P.q₀
-  tr q input work :=
-    let a := P.tr q input (fun i ↦ work (e.symm (.inl i)))
-    { inputTape := a.inputTape
-      workTapes := fun i ↦ Sum.elim a.workTapes (fun _ ↦ (none, 0)) (e i)
-      output := a.output
-      state := a.state }
+/-- The transition {lit}`trP` on the left part of a tape layout, leaving the right
+part untouched. It is not inlined, so that a partial application of it holds
+{lit}`trP` as an evaluated argument rather than recomputing it at each
+application. -/
+@[expose, noinline] def onTapesTr {k m l : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S)
+    (e : Fin m ≃ Fin k ⊕ Fin l) (q : S) (input : Option Bool) (work : Fin m → Option Bool) :
+    Action m Bool S :=
+  let a := trP q input (fun i ↦ work (e.symm (.inl i)))
+  { inputTape := a.inputTape
+    workTapes := fun i ↦ Sum.elim a.workTapes (fun _ ↦ (none, 0)) (e i)
+    output := a.output
+    state := a.state }
+
+/-- Run a machine on the left part of a tape layout, leaving the right part untouched:
+the machine built from {name}`onTapesTr` of its transition. -/
+@[expose] noncomputable def onTapes {k m l : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
+    (e : Fin m ≃ Fin k ⊕ Fin l) : MultiTapeTM m Bool S :=
+  ofTr P.q₀ (onTapesTr P.tr e)
+
+/-- The transition of {name}`onTapes` is {name}`onTapesTr`. -/
+theorem onTapes_tr {k m l : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
+    (e : Fin m ≃ Fin k ⊕ Fin l) (q : S) (input : Option Bool) (work : Fin m → Option Bool) :
+    (onTapes P e).tr q input work = onTapesTr P.tr e q input work :=
+  tr_ofTr _ _ _ _ _
+
+/-- Allocating a machine built from a transition function is the machine built from
+{name}`onTapesTr` of that function. -/
+theorem onTapes_ofTr {k m l : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S)
+    (e : Fin m ≃ Fin k ⊕ Fin l) : onTapes (ofTr q₀ tr) e = ofTr q₀ (onTapesTr tr e) := by
+  rw [onTapes, tr_ofTr', q₀_ofTr]
 
 /-- Combine a callee configuration with the caller's protected tapes and heads. -/
 @[expose] def onTapesCfg {k m l : ℕ} {S : Type} {input : List Bool}
@@ -75,10 +102,11 @@ theorem onTapes_step {k m l : ℕ} {S : Type} {input : List Bool}
     (onTapes P e).step (onTapesCfg e cfg tapes heads) =
       onTapesCfg e (P.step cfg) tapes heads := by
   cases hq : cfg.state with
-  | none => simp [step, onTapesCfg, hq]
+  | none => rw [step_of_halt (cfg := onTapesCfg e cfg tapes heads) hq, step_of_halt hq]
   | some q =>
-    simp only [step, onTapesCfg, hq, onTapes, Cfg.workTapeSymbols,
-      Equiv.apply_symm_apply, Sum.elim_inl]
+    rw [MultiTapeTM.step_of_state (cfg := onTapesCfg e cfg tapes heads) hq,
+      MultiTapeTM.step_of_state hq, onTapes_tr]
+    simp only [onTapesTr, onTapesCfg, Cfg.workTapeSymbols, Equiv.apply_symm_apply, Sum.elim_inl]
     apply Cfg.ext
     · rfl
     · rfl
@@ -105,10 +133,15 @@ theorem onTapes_outputSymbol {k m l : ℕ} {S : Type} {input : List Bool}
     (P : MultiTapeTM k Bool S) (e : Fin m ≃ Fin k ⊕ Fin l)
     (cfg : Cfg k Bool S input) (tapes : Fin l → ℤ → Option Bool) (heads : Fin l → ℤ) :
     (onTapes P e).outputSymbol (onTapesCfg e cfg tapes heads) = P.outputSymbol cfg := by
-  cases hq : cfg.state <;>
-    simp only [outputSymbol, onTapesCfg, hq, onTapes, Cfg.workTapeSymbols,
-      Equiv.apply_symm_apply, Sum.elim_inl]
-  rfl
+  cases hq : cfg.state with
+  | none =>
+    rw [outputSymbol_of_halt (tm := onTapes P e) (cfg := onTapesCfg e cfg tapes heads) hq,
+      outputSymbol_of_halt hq]
+  | some q =>
+    rw [outputSymbol_of_state (tm := onTapes P e) (cfg := onTapesCfg e cfg tapes heads) hq,
+      outputSymbol_of_state hq, onTapes_tr]
+    simp only [onTapesTr, onTapesCfg, Cfg.workTapeSymbols, Equiv.apply_symm_apply, Sum.elim_inl]
+    rfl
 
 /-- Allocation preserves the full output, including the halting transition. -/
 theorem onTapes_outputString {k m l : ℕ} {S : Type} {input : List Bool}

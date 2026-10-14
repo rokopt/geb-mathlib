@@ -18,7 +18,8 @@ Two initial steps position the work head and install the marker.
 
 ## Main definitions
 
-* {lit}`unaryScanner` implements the fused structural and payload scan.
+* {lit}`transition` and {lit}`unaryScanner` implement the fused structural and payload scan:
+  the transition function and the machine it determines.
 * {lit}`scanCfg` describes a configuration after a prefix has been consumed.
 
 ## Tags
@@ -50,27 +51,31 @@ def consume (q : Fin 7) (d : SignType) : Action 1 (Fin 2) (Fin 7) where
   output := none
   state := some q
 
-/-- A fused recognizer with one work tape and a unary pending-subtree counter. -/
-def unaryScanner : MultiTapeTM 1 (Fin 2) (Fin 7) where
-  q₀ := 0
-  tr q input work :=
-    if q = 0 then
-      { inputTape := 0, workTapes := fun _ ↦ (none, 1), output := none, state := some 1 }
-    else if q = 1 then
-      { inputTape := 0, workTapes := fun _ ↦ (some (some 0), 0),
-        output := none, state := some 2 }
-    else match input with
-      | none =>
-        { inputTape := 0, workTapes := fun _ ↦ (none, 0),
-          output := some (boolEmb (q == 5)), state := none }
-      | some b =>
-        if q = 2 then
-          if b = 0 then consume 3 0 else consume 2 1
-        else if q = 3 then
-          if b = 0 then consume (if work 0 = some 0 then 5 else 2) (-1)
-          else consume 4 0
-        else if q = 4 then consume 3 0
-        else consume 6 0
+/-- The transition function of a fused recognizer with one work tape and a unary
+pending-subtree counter. -/
+def transition (q : Fin 7) (input : Option (Fin 2)) (work : Fin 1 → Option (Fin 2)) :
+    Action 1 (Fin 2) (Fin 7) :=
+  if q = 0 then
+    { inputTape := 0, workTapes := fun _ ↦ (none, 1), output := none, state := some 1 }
+  else if q = 1 then
+    { inputTape := 0, workTapes := fun _ ↦ (some (some 0), 0),
+      output := none, state := some 2 }
+  else match input with
+    | none =>
+      { inputTape := 0, workTapes := fun _ ↦ (none, 0),
+        output := some (boolEmb (q == 5)), state := none }
+    | some b =>
+      if q = 2 then
+        if b = 0 then consume 3 0 else consume 2 1
+      else if q = 3 then
+        if b = 0 then consume (if work 0 = some 0 then 5 else 2) (-1)
+        else consume 4 0
+      else if q = 4 then consume 3 0
+      else consume 6 0
+
+/-- A fused recognizer with one work tape and a unary pending-subtree counter:
+{name}`transition` started in state {lit}`0`. -/
+def unaryScanner : MultiTapeTM 1 (Fin 2) (Fin 7) := ofTr 0 transition
 
 /-- The configuration between the two initialization steps. -/
 def plantCfg (w : List Bool) : Cfg 1 (Fin 2) (Fin 7) (w.map boolEmb) where
@@ -98,13 +103,13 @@ def counterMove (m : Mode) (b : Bool) : SignType :=
 
 /-- The transition table implements the pure scanner's finite control. -/
 theorem tr_scan (m : Mode) (n : ℕ) (b : Bool) :
-    unaryScanner.tr (modeState m) (some (boolEmb b))
+    transition (modeState m) (some (boolEmb b))
         (fun _ ↦ if n = 1 then some 0 else none) =
       consume (modeState (step (m, n) b).1) (counterMove m b) := by
   have hf : boolEmb false = 0 := rfl
   have ht : boolEmb true = 1 := rfl
   cases m <;> cases b <;> by_cases h : n = 1 <;>
-    simp [unaryScanner, modeState, step, finish, counterMove, hf, ht, h]
+    simp [transition, modeState, step, finish, counterMove, hf, ht, h]
 
 /-- The head displacement agrees with the natural-number counter on live states. -/
 theorem counterMove_add (m : Mode) (n : ℕ) (b : Bool)

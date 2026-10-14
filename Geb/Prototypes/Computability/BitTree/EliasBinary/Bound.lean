@@ -143,9 +143,10 @@ theorem computableInTimeAndSpace_validBool :
       (fun w : List Bool ↦ [Elias.validBool w])
       (fun w ↦ 25 * w.length + 6) (fun w ↦ 9 * ((2 * w.length + 2).size + 3)) := by
   intro w
-  refine ⟨totalCost w + 1, totalCost_le w,
-    machine.spaceUsed (machine.initCfg (w.map boolEmb)) (totalCost w + 1), ?_,
-    halts_at w, by rw [initCfg_runFrom_output]; exact outputString_eq w, rfl⟩
+  refine computesInTimeAndSpace_of_halted (halts_at w)
+    (by rw [initCfg_runFrom_output]; exact outputString_eq w) rfl (totalCost_le w) ?_
+  change machine.spaceUsed (machine.initCfg (w.map boolEmb)) (totalCost w + 1) ≤
+    9 * ((2 * w.length + 2).size + 3)
   have h := spaceUsed_le_of_headBound _ _ _ (headBound_run w)
   unfold widthOf at h
   omega

@@ -115,6 +115,8 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Computability.MultiTape.OutputString,
    `Geb.Prototypes.Computability.MultiTape.Rename,
    `Geb.Prototypes.Computability.MultiTape.RunFrom,
+   `Geb.Prototypes.Computability.MultiTape.Computes,
+   `Geb.Prototypes.Computability.MultiTape.OfTr,
    `Geb.Prototypes.Computability.Oitavem.Machine.SpaceTime,
    `Geb.Prototypes.Computability.Oitavem.Machine.Read,
    `Geb.Prototypes.Computability.Oitavem.Machine.While,

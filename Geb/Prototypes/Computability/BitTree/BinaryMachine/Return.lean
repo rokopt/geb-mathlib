@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.Computability.BitTree.BinaryMachine.Machine
+public import Geb.Prototypes.Computability.BitTree.BinaryMachine.Steps
 public import Geb.Prototypes.Computability.TreeScanner.Steps
 public import Geb.Prototypes.Computability.MultiTape.OutputString
 public import Mathlib.Tactic.FinCases
@@ -40,7 +40,7 @@ open Turing MultiTapeTM
 theorem tr_return_pos {input : List (Fin 4)}
     (cfg : Cfg 3 (Fin 4) (Fin 10) input) (p : ℕ)
     (ho : ∀ z, origin (cfg.workTapes 0 z) = decide (z = 0)) :
-    machine.tr stReturn (returnCfg cfg (p + 1)).inputSymbol
+    transition stReturn (returnCfg cfg (p + 1)).inputSymbol
         (returnCfg cfg (p + 1)).workTapeSymbols =
       { inputTape := 0, workTapes := fun i ↦ (none, if i = 2 then 0 else -1),
         output := none, state := some stReturn } := by
@@ -58,7 +58,7 @@ theorem step_return_pos {input : List (Fin 4)}
     (cfg : Cfg 3 (Fin 4) (Fin 10) input) (p : ℕ)
     (ho : ∀ z, origin (cfg.workTapes 0 z) = decide (z = 0)) :
     machine.step (returnCfg cfg (p + 1)) = returnCfg cfg p := by
-  rw [Geb.TreeScanner.step_of_state _ _ stReturn rfl, tr_return_pos cfg p ho]
+  rw [Geb.TreeScanner.step_of_state _ _ stReturn rfl, machine_tr, tr_return_pos cfg p ho]
   refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_ (List.append_nil _)
   funext i
   fin_cases i <;> simp [returnCfg]
@@ -69,7 +69,7 @@ theorem outputSymbol_return_pos {input : List (Fin 4)}
     (ho : ∀ z, origin (cfg.workTapes 0 z) = decide (z = 0)) :
     machine.outputSymbol (returnCfg cfg (p + 1)) = none := by
   change (machine.tr stReturn _ _).output = none
-  rw [tr_return_pos cfg p ho]
+  rw [machine_tr, tr_return_pos cfg p ho]
 
 /-- Every return configuration and its empty output, before the final state change. -/
 theorem runFrom_return {input : List (Fin 4)}
@@ -95,7 +95,7 @@ theorem runFrom_return {input : List (Fin 4)}
 theorem tr_return_zero {input : List (Fin 4)}
     (cfg : Cfg 3 (Fin 4) (Fin 10) input)
     (ho : ∀ z, origin (cfg.workTapes 0 z) = decide (z = 0)) :
-    machine.tr stReturn (returnCfg cfg 0).inputSymbol (returnCfg cfg 0).workTapeSymbols =
+    transition stReturn (returnCfg cfg 0).inputSymbol (returnCfg cfg 0).workTapeSymbols =
       { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none,
         state := some (if cfg.workTapes 2 (cfg.workTapePos 2) == some 0
           then stDone else stTree) } := by
@@ -112,7 +112,7 @@ theorem step_return_zero {input : List (Fin 4)}
     (cfg : Cfg 3 (Fin 4) (Fin 10) input)
     (ho : ∀ z, origin (cfg.workTapes 0 z) = decide (z = 0)) :
     machine.step (returnCfg cfg 0) = returnedCfg cfg := by
-  rw [Geb.TreeScanner.step_of_state _ _ stReturn rfl, tr_return_zero cfg ho]
+  rw [Geb.TreeScanner.step_of_state _ _ stReturn rfl, machine_tr, tr_return_zero cfg ho]
   refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_ (List.append_nil _)
   funext i
   simp [returnedCfg, returnCfg]
@@ -123,7 +123,7 @@ theorem outputSymbol_return_zero {input : List (Fin 4)}
     (ho : ∀ z, origin (cfg.workTapes 0 z) = decide (z = 0)) :
     machine.outputSymbol (returnCfg cfg 0) = none := by
   change (machine.tr stReturn _ _).output = none
-  rw [tr_return_zero cfg ho]
+  rw [machine_tr, tr_return_zero cfg ho]
 
 /-- From position {lit}`p`, the complete return takes exactly {lit}`p + 1` transitions. -/
 theorem runFrom_return_done {input : List (Fin 4)}

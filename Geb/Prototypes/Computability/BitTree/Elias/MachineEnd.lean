@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.BitTree.Elias.MachineModel
+public import Geb.Prototypes.Computability.BitTree.Elias.MachineSteps
 public import Geb.Prototypes.Computability.TreeScanner.Steps
 public import Geb.Prototypes.Computability.MultiTape.OutputString
 
@@ -39,7 +40,7 @@ theorem runFrom_start (input : List (Fin 3)) :
     machine.runFrom (machine.initCfg input) 1 =
       modelCfg input 1 (.tree, 1) [] [] := by
   rw [runFrom_succ_eq_step']
-  rw [Geb.TreeScanner.step_of_state _ _ stInit rfl]
+  rw [Geb.TreeScanner.step_of_state _ _ stInit rfl, machine_tr]
   refine Cfg.ext rfl ?_ ?_ ?_ rfl
   · change moveInputPos (1 : Fin (input.length + 2)) 0 = 1
     rw [moveInputPos_zero]
@@ -54,7 +55,9 @@ theorem runFrom_start (input : List (Fin 3)) :
 
 /-- Initialization does not emit output. -/
 theorem outputString_start (input : List (Fin 3)) :
-    machine.outputString (machine.initCfg input) 1 = [] := rfl
+    machine.outputString (machine.initCfg input) 1 = [] := by
+  rw [← initCfg_runFrom_output, runFrom_start]
+  rfl
 
 /-- Initialization visits only the origin and its immediate right neighbor. -/
 theorem headBound_start (input : List (Fin 3)) (width : ℕ) (hw : 1 ≤ width) :
@@ -90,7 +93,7 @@ theorem step_end {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (m : Scanner.Mode) (hq : cfg.state = some (modeState m)) (hi : cfg.inputSymbol = none) :
     machine.step cfg =
       { cfg with state := none, output := cfg.output ++ [boolEmb (decide (m = .done))] } := by
-  rw [Geb.TreeScanner.step_of_state _ _ _ hq, hi, tr_end _ _ (modeState_read m)]
+  rw [Geb.TreeScanner.step_of_state _ _ _ hq, machine_tr, hi, tr_end _ _ (modeState_read m)]
   refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ ?_
   · funext i
     rfl
@@ -106,7 +109,7 @@ theorem outputSymbol_end {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control inp
   unfold outputSymbol
   rw [hq]
   dsimp only
-  rw [hi, tr_end _ _ (modeState_read m)]
+  rw [machine_tr, hi, tr_end _ _ (modeState_read m)]
   cases m <;> rfl
 
 end Geb.BitTree.Elias.Machine

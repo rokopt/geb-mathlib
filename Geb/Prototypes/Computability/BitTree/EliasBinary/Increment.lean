@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.Computability.BitTree.EliasBinary.Machine
+public import Geb.Prototypes.Computability.BitTree.EliasBinary.Steps
 public import Geb.Prototypes.Computability.BitTree.Counter
 public import Geb.Prototypes.Computability.TreeScanner.Steps
 public import Mathlib.Tactic.FinCases
@@ -196,7 +196,7 @@ theorem step_carry_digits (lsb : ℤ) (p : ℕ) (hq : cfg.state = some (stCarry 
       Function.update (digitsFrom cfg (siteSelected k) lsb (siteLayout k).dir) p
         (!(digitsFrom cfg (siteSelected k) lsb (siteLayout k).dir p)) := by
   funext j
-  rw [step_of_state _ _ _ hq, tr_carry]
+  rw [step_of_state _ _ _ hq, machine_tr, tr_carry]
   dsimp only [digitsFrom]
   rw [carry_action_selected]
   dsimp only
@@ -214,7 +214,7 @@ theorem step_carry_digits (lsb : ℤ) (p : ℕ) (hq : cfg.state = some (stCarry 
 theorem step_carry_selected_cells (hq : cfg.state = some (stCarry k)) (z : ℤ)
     (hz : z ≠ cfg.workTapePos (siteSelected k)) :
     (machine.step cfg).workTapes (siteSelected k) z = cfg.workTapes (siteSelected k) z := by
-  rw [step_of_state _ _ _ hq, tr_carry]
+  rw [step_of_state _ _ _ hq, machine_tr, tr_carry]
   dsimp only
   rw [carry_action_selected]
   dsimp only
@@ -224,7 +224,7 @@ theorem step_carry_selected_cells (hq : cfg.state = some (stCarry k)) (z : ℤ)
 theorem step_carry_selected_written (hq : cfg.state = some (stCarry k)) :
     (machine.step cfg).workTapes (siteSelected k) (cfg.workTapePos (siteSelected k)) ≠
       none := by
-  rw [step_of_state _ _ _ hq, tr_carry]
+  rw [step_of_state _ _ _ hq, machine_tr, tr_carry]
   dsimp only
   rw [carry_action_selected]
   dsimp only
@@ -233,7 +233,7 @@ theorem step_carry_selected_written (hq : cfg.state = some (stCarry k)) :
 /-- The other digit tape is unchanged by a carry. -/
 theorem step_carry_other (hq : cfg.state = some (stCarry k)) :
     (machine.step cfg).workTapes (siteOther k) = cfg.workTapes (siteOther k) := by
-  rw [step_of_state _ _ _ hq, tr_carry]
+  rw [step_of_state _ _ _ hq, machine_tr, tr_carry]
   dsimp only
   rw [carry_action_other]
 
@@ -247,7 +247,7 @@ theorem step_carry_other_digits (lsb : ℤ) (hq : cfg.state = some (stCarry k)) 
 /-- The mismatch tape is unchanged by a carry. -/
 theorem step_carry_marker (hq : cfg.state = some (stCarry k)) :
     (machine.step cfg).workTapes (siteLayout k).mism = cfg.workTapes (siteLayout k).mism := by
-  rw [step_of_state _ _ _ hq, tr_carry]
+  rw [step_of_state _ _ _ hq, machine_tr, tr_carry]
   dsimp only
   rw [carry_action_mism]
 
@@ -257,7 +257,7 @@ theorem step_carry_untouched (hq : cfg.state = some (stCarry k)) (i : Fin 9)
     (h3 : i ≠ (siteLayout k).mism) :
     (machine.step cfg).workTapes i = cfg.workTapes i ∧
       (machine.step cfg).workTapePos i = cfg.workTapePos i := by
-  rw [step_of_state _ _ _ hq, tr_carry]
+  rw [step_of_state _ _ _ hq, machine_tr, tr_carry]
   dsimp only
   rw [carry_action_untouched _ _ _ h1 h2 h3]
   simp
@@ -268,7 +268,7 @@ theorem step_carry_pos (hq : cfg.state = some (stCarry k)) :
         cfg.workTapePos (siteSelected k) + (siteLayout k).dir ∧
       (machine.step cfg).workTapePos (siteOther k) =
         cfg.workTapePos (siteOther k) + (siteLayout k).dir := by
-  rw [step_of_state _ _ _ hq, tr_carry]
+  rw [step_of_state _ _ _ hq, machine_tr, tr_carry]
   dsimp only
   rw [carry_action_selected, carry_action_other]
   exact ⟨rfl, rfl⟩
@@ -278,14 +278,14 @@ theorem step_carry_mismatchPos (hq : cfg.state = some (stCarry k)) :
     (machine.step cfg).workTapePos (siteLayout k).mism = cfg.workTapePos (siteLayout k).mism +
       (mismatchMove (cfg.workTapeSymbols (siteLayout k).first)
         (cfg.workTapeSymbols (siteLayout k).second)).cast := by
-  rw [step_of_state _ _ _ hq, tr_carry]
+  rw [step_of_state _ _ _ hq, machine_tr, tr_carry]
   dsimp only
   rw [carry_action_mism]
 
 /-- Carry propagation does not move the input head. -/
 theorem step_carry_inputPos (hq : cfg.state = some (stCarry k)) :
     (machine.step cfg).inputPos = cfg.inputPos := by
-  rw [step_of_state _ _ _ hq, tr_carry]
+  rw [step_of_state _ _ _ hq, machine_tr, tr_carry]
   dsimp only
   rw [carry_inputMove]
   exact moveInputPos_zero _
@@ -294,13 +294,13 @@ theorem step_carry_inputPos (hq : cfg.state = some (stCarry k)) :
 theorem step_carry_state (hq : cfg.state = some (stCarry k)) :
     (machine.step cfg).state =
       some (if digit (cfg.workTapeSymbols (siteSelected k)) then stCarry k else stReturn k) := by
-  rw [step_of_state _ _ _ hq, tr_carry]
+  rw [step_of_state _ _ _ hq, machine_tr, tr_carry]
   rfl
 
 /-- Carry propagation emits no output symbols. -/
 theorem outputSymbol_carry (hq : cfg.state = some (stCarry k)) :
     machine.outputSymbol cfg = none := by
-  simp only [outputSymbol, hq, tr_carry]
+  simp only [outputSymbol, hq, machine_tr, tr_carry]
   rfl
 
 /-- A carry preserves every origin tag on the first tape. -/
@@ -311,7 +311,7 @@ theorem step_carry_origin (hq : cfg.state = some (stCarry k)) (z : ℤ) :
   · have hs : siteSelected k = (siteLayout k).first := by simp [siteSelected, hsel]
     by_cases hz : z = cfg.workTapePos (siteSelected k)
     · subst z
-      rw [← hs, step_of_state _ _ _ hq, tr_carry]
+      rw [← hs, step_of_state _ _ _ hq, machine_tr, tr_carry]
       dsimp only
       rw [carry_action_selected]
       dsimp only
@@ -702,7 +702,7 @@ theorem returnCfg_self (p : ℕ) (hq : cfg.state = some (stReturn k))
 /-- Away from the tag, the return transition moves both digit heads back. -/
 theorem tr_return_pos (p : ℕ)
     (ho : ∀ z, origin (cfg.workTapes (siteLayout k).first z) = decide (z = lsb)) :
-    machine.tr (stReturn k) (returnCfg cfg k lsb (p + 1)).inputSymbol
+    transition (stReturn k) (returnCfg cfg k lsb (p + 1)).inputSymbol
         (returnCfg cfg k lsb (p + 1)).workTapeSymbols =
       { inputTape := 0
         workTapes := fun i ↦ (none, if i = (siteLayout k).first ∨ i = (siteLayout k).second
@@ -723,7 +723,7 @@ theorem tr_return_pos (p : ℕ)
 theorem step_return_pos (p : ℕ)
     (ho : ∀ z, origin (cfg.workTapes (siteLayout k).first z) = decide (z = lsb)) :
     machine.step (returnCfg cfg k lsb (p + 1)) = returnCfg cfg k lsb p := by
-  rw [step_of_state _ _ (stReturn k) rfl, tr_return_pos cfg k lsb p ho]
+  rw [step_of_state _ _ (stReturn k) rfl, machine_tr, tr_return_pos cfg k lsb p ho]
   refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_ (List.append_nil _)
   funext i
   simp only [returnCfg]
@@ -737,7 +737,7 @@ theorem outputSymbol_return_pos (p : ℕ)
     (ho : ∀ z, origin (cfg.workTapes (siteLayout k).first z) = decide (z = lsb)) :
     machine.outputSymbol (returnCfg cfg k lsb (p + 1)) = none := by
   change (machine.tr (stReturn k) _ _).output = none
-  rw [tr_return_pos cfg k lsb p ho]
+  rw [machine_tr, tr_return_pos cfg k lsb p ho]
 
 /-- Every return configuration and its empty output, before the final state change. -/
 theorem runFrom_return
@@ -759,7 +759,7 @@ theorem runFrom_return
 /-- At the tag, the return transition reads the mismatch marker. -/
 theorem tr_return_zero
     (ho : ∀ z, origin (cfg.workTapes (siteLayout k).first z) = decide (z = lsb)) :
-    machine.tr (stReturn k) (returnCfg cfg k lsb 0).inputSymbol
+    transition (stReturn k) (returnCfg cfg k lsb 0).inputSymbol
         (returnCfg cfg k lsb 0).workTapeSymbols =
       { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none,
         state := some (if cfg.workTapes (siteLayout k).mism (cfg.workTapePos (siteLayout k).mism)
@@ -780,7 +780,7 @@ theorem tr_return_zero
 theorem step_return_zero
     (ho : ∀ z, origin (cfg.workTapes (siteLayout k).first z) = decide (z = lsb)) :
     machine.step (returnCfg cfg k lsb 0) = returnedCfg cfg k lsb := by
-  rw [step_of_state _ _ (stReturn k) rfl, tr_return_zero cfg k lsb ho]
+  rw [step_of_state _ _ (stReturn k) rfl, machine_tr, tr_return_zero cfg k lsb ho]
   refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_ (List.append_nil _)
   funext i
   simp [returnedCfg, returnCfg]
@@ -790,7 +790,7 @@ theorem outputSymbol_return_zero
     (ho : ∀ z, origin (cfg.workTapes (siteLayout k).first z) = decide (z = lsb)) :
     machine.outputSymbol (returnCfg cfg k lsb 0) = none := by
   change (machine.tr (stReturn k) _ _).output = none
-  rw [tr_return_zero cfg k lsb ho]
+  rw [machine_tr, tr_return_zero cfg k lsb ho]
 
 /-- From significance {lit}`p`, the complete return takes exactly {lit}`p + 1` steps. -/
 theorem runFrom_return_done

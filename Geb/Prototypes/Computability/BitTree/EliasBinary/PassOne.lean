@@ -65,18 +65,21 @@ def startCfg (input : List (Fin 4)) : Cfg 9 (Fin 4) Control input where
 theorem runFrom_init (input : List (Fin 4)) :
     machine.runFrom (machine.initCfg input) 1 = startCfg input := by
   rw [show 1 = 0 + 1 from rfl, runFrom_succ_eq_step', runFrom_zero,
-    step_of_state _ _ stInit rfl, tr_init]
+    step_of_state _ _ stInit rfl, machine_tr, tr_init]
   refine Cfg.ext rfl ?_ ?_ ?_ rfl
   · change moveInputPos 1 initTr.inputTape = 1
     exact moveInputPos_zero _
   · funext i z
-    fin_cases i <;> simp [initTr, act, Function.update_apply, startCfg, startTape, initCfg]
+    fin_cases i <;> simp [initTr, act, Function.update_apply, startCfg, startTape,
+      MultiTapeNTM.initCfg]
   · funext i
-    fin_cases i <;> simp [initTr, act, startCfg, initCfg]
+    fin_cases i <;> simp [initTr, act, startCfg, MultiTapeNTM.initCfg]
 
 /-- Initialization emits nothing. -/
 theorem outputString_init (input : List (Fin 4)) :
-    machine.outputString (machine.initCfg input) 1 = [] := rfl
+    machine.outputString (machine.initCfg input) 1 = [] := by
+  rw [← initCfg_runFrom_output, runFrom_init]
+  rfl
 
 /-- The initialization step keeps every head within any positive width. -/
 theorem headBound_init (input : List (Fin 4)) (width : ℕ) (hw : 1 ≤ width) :
@@ -166,7 +169,7 @@ structure CountRep {input : List (Fin 4)} (width : ℕ) (cfg : Cfg 9 (Fin 4) Con
 theorem step_count {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input) (s : Fin 4)
     (hq : cfg.state = some stCount) (hi : cfg.inputSymbol = some s) :
     machine.step cfg = readCfg cfg (stCarry 0) := by
-  rw [step_of_state _ _ _ hq, hi, tr_count_some]
+  rw [step_of_state _ _ _ hq, machine_tr, hi, tr_count_some]
   refine Cfg.ext rfl rfl ?_ ?_ (List.append_nil _)
   · funext i
     rfl
@@ -179,6 +182,7 @@ theorem outputSymbol_count {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control i
   unfold outputSymbol
   rw [hq]
   dsimp only
+  rw [machine_tr]
   cases cfg.inputSymbol
   · rw [tr_count_none]
     rfl
@@ -420,7 +424,7 @@ def posCfg {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input) (q : Contr
 theorem step_rewind_some {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
     (s : Fin 4) (hq : cfg.state = some stRewind) (hi : cfg.inputSymbol = some s) :
     machine.step cfg = posCfg cfg stRewind (moveInputPos cfg.inputPos (-1)) := by
-  rw [step_of_state _ _ _ hq, hi, tr_rewind_some]
+  rw [step_of_state _ _ _ hq, machine_tr, hi, tr_rewind_some]
   refine Cfg.ext rfl rfl ?_ ?_ (List.append_nil _)
   · funext i
     rfl
@@ -433,6 +437,7 @@ theorem outputSymbol_rewind {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control 
   unfold outputSymbol
   rw [hq]
   dsimp only
+  rw [machine_tr]
   cases cfg.inputSymbol
   · rw [tr_rewind_none]
     rfl
@@ -487,7 +492,7 @@ theorem runFrom_passOne (w : List Bool) :
   have hend : base.inputSymbol = none :=
     inputSymbol_end base (by rw [hrep.inputPos, List.length_map])
   have hstep1 : machine.step base = posCfg base stRewind ⟨w.length, by simp⟩ := by
-    rw [step_of_state _ _ _ hrep.state, hend, tr_count_none]
+    rw [step_of_state _ _ _ hrep.state, machine_tr, hend, tr_count_none]
     refine Cfg.ext rfl ?_ ?_ ?_ (List.append_nil _)
     · apply Fin.ext
       change (moveInputPos base.inputPos (-1)).val = w.length
@@ -511,7 +516,7 @@ theorem runFrom_passOne (w : List Bool) :
     inputSymbol_start _ rfl
   have hstep2 : machine.step (posCfg base stRewind ⟨0, by simp⟩) =
       posCfg base stTree ⟨1, by simp⟩ := by
-    rw [step_of_state _ _ stRewind rfl, hleft, tr_rewind_none]
+    rw [step_of_state _ _ stRewind rfl, machine_tr, hleft, tr_rewind_none]
     refine Cfg.ext rfl ?_ ?_ ?_ (List.append_nil _)
     · apply Fin.ext
       change (moveInputPos (⟨0, _⟩ : Fin _) 1).val = 1

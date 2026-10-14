@@ -24,18 +24,25 @@ and digit. The first missing digit terminates the loop.
 * {lit}`ReadsAt` specifies a digit subroutine preserving all but its result register.
 * {lit}`emitBit` emits the symbol at a parked result head without changing any tape.
 * {lit}`emitReader` streams a word by querying its digits in order.
+* {lit}`emitBitTr`, {lit}`readDigitGeneratorTr`, {lit}`emitReaderLoopTr`,
+  {lit}`emitReaderTr`, {lit}`emitReaderCleanTr` and {lit}`emitStoredTr` are the
+  transition functions of the machines.
 
 ## Main statements
 
 * {lit}`emitReader_emitsIn` proves exact output, termination, and a bound throughout
   every nested reader call. The final query register contains the word's length.
+* {lit}`emitBit_tr`, {lit}`emitStored_eq_ofTr` and the equations with the suffix
+  {lit}`_ofTr` relate the machines to their transition functions.
 
 ## Implementation notes
 
 Reader scratch can be included in the precondition with its initialized contents.
 Its restoration makes repeated calls preserve the valuation. Both the word and
 the precondition must be independent of the query and result registers. The
-contracts inherit CSLib's {lit}`Classical.choice` dependency.
+contracts inherit CSLib's {lit}`Classical.choice` dependency. A machine reading
+another machine's transition, or sequencing machines, is noncomputable, since CSLib
+selects a machine's transition by choice; its transition function is computable.
 
 ## Tags
 
@@ -208,11 +215,19 @@ theorem ReadsLength.onTapes {k m l : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
       (fun input σ ↦ W input (fun i ↦ σ (e.symm (.inl i)))) T B :=
   (TransformsIn.onTapes hP e).congr (fun _ σ _ ↦ onTapesVal_update e σ R _)
 
+/-- The transition of {lit}`emitBit`: emit the symbol under the head of tape
+{lit}`R` and halt. -/
+@[expose] def emitBitTr {k : ℕ} (R : Fin k) (_ : Unit) (_ : Option Bool)
+    (work : Fin k → Option Bool) : Action k Bool Unit :=
+  { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := work R, state := none }
+
 /-- Emit the symbol under a work head in one step, leaving every tape and head unchanged. -/
-@[expose] def emitBit {k : ℕ} (R : Fin k) : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ _ work :=
-    { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := work R, state := none }
+@[expose] def emitBit {k : ℕ} (R : Fin k) : MultiTapeTM k Bool Unit := ofTr () (emitBitTr R)
+
+/-- The transition of {name}`emitBit` is {name}`emitBitTr`. -/
+theorem emitBit_tr {k : ℕ} (R : Fin k) (q : Unit) (inp : Option Bool)
+    (work : Fin k → Option Bool) : (emitBit R).tr q inp work = emitBitTr R q inp work :=
+  tr_ofTr _ _ _ _ _
 
 /-- The one-step emitter preserves the entire workspace. -/
 theorem emitBit_emits {k : ℕ} {input : List Bool} (R : Fin k)
@@ -223,7 +238,7 @@ theorem emitBit_emits {k : ℕ} {input : List Bool} (R : Fin k)
       (cfg.workTapeSymbols R).toList 1 B := by
   have hs : (emitBit R).step cfg =
       { cfg with state := none, output := cfg.output ++ (cfg.workTapeSymbols R).toList } := by
-    rw [step_of_state _ _ () hq]
+    rw [step_of_state _ _ () hq, emitBit_tr]
     apply Cfg.ext
     · rfl
     · exact moveInputPos_zero _
@@ -240,7 +255,7 @@ theorem emitBit_emits {k : ℕ} {input : List Bool} (R : Fin k)
     rcases this with rfl | rfl
     · exact hpos i
     · simpa only [runFrom_succ_eq_step', runFrom_zero, hs] using hpos i
-  · simp [outputString_succ, outputSymbol, hq, emitBit]
+  · simp [outputString_succ, outputSymbol, hq, emitBit_tr, emitBitTr]
     rfl
 
 /-- A parked symbol has a one-step emitter contract preserving the entire valuation. -/
@@ -265,8 +280,21 @@ theorem emitBit_emitsIn {k : ℕ} (R : Fin k) (B : ℕ → ℕ) :
   · rfl
 
 /-- Query and emit one digit, then clear the result port for the next call. -/
-@[expose] def readDigitGenerator {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (R : Fin k) :=
+@[expose] noncomputable def readDigitGenerator {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
+    (R : Fin k) :=
   seq P (seq (emitBit R) (const [] R))
+
+/-- The transition of {name}`readDigitGenerator`, from the reader's transition. -/
+@[expose] def readDigitGeneratorTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (R : Fin k) :=
+  seqTr trP (seqTr (emitBitTr R) (constTr [] R) (.inl (.inl ()))) (.inl ())
+
+/-- {name}`readDigitGenerator` of a machine built from a transition function is the
+machine built from {name}`readDigitGeneratorTr` of that function. -/
+theorem readDigitGenerator_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (R : Fin k) :
+    readDigitGenerator (ofTr q₀ tr) R = ofTr (.inl q₀) (readDigitGeneratorTr tr R) := by
+  simp only [readDigitGenerator, emitBit, const_eq_ofTr, seq_ofTr, readDigitGeneratorTr]
 
 /-- An optional digit query becomes a reusable emitter when its result starts blank. -/
 theorem readDigitGenerator_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
@@ -292,8 +320,24 @@ theorem readDigitGenerator_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool 
     cases (W input σ)[counterValue (σ Q)]? <;> rfl
 
 /-- Emit the current digit, advance the query, and read the next digit until it is missing. -/
-@[expose] def emitReaderLoop {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (Q R : Fin k) :=
+@[expose] noncomputable def emitReaderLoop {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
+    (Q R : Fin k) :=
   whileNonblank (some R) (seq (emitBit R) (seq (inc Q) P))
+
+/-- The transition of {name}`emitReaderLoop`, from the reader's initial state and
+transition. -/
+@[expose] def emitReaderLoopTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S) (Q R : Fin k) :=
+  whileNonblankTr (some R) (seqTr (emitBitTr R) (seqTr (incTr Q) trP q₀P) (.inl (.inl ())))
+    (.inl ())
+
+/-- {name}`emitReaderLoop` of a machine built from a transition function is the
+machine built from {name}`emitReaderLoopTr`. -/
+theorem emitReaderLoop_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (Q R : Fin k) :
+    emitReaderLoop (ofTr q₀ tr) Q R = ofTr (.inl ()) (emitReaderLoopTr tr q₀ Q R) := by
+  simp only [emitReaderLoop, emitBit, inc_eq_ofTr, seq_ofTr, whileNonblank_ofTr,
+    emitReaderLoopTr]
 
 /-- A reader loop emits the represented word while preserving its environment.
 The query and digit ports must not be part of that environment. -/
@@ -413,8 +457,22 @@ theorem emitReaderLoop_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
       rw [List.take_length]
 
 /-- Initialize the query and stream a word through its digit reader. -/
-@[expose] def emitReader {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (Q R : Fin k) :=
+@[expose] noncomputable def emitReader {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
+    (Q R : Fin k) :=
   seq (seq (const [] Q) P) (emitReaderLoop P Q R)
+
+/-- The transition of {name}`emitReader`, from the reader's initial state and
+transition. -/
+@[expose] def emitReaderTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S) (Q R : Fin k) :=
+  seqTr (seqTr (constTr [] Q) trP q₀P) (emitReaderLoopTr trP q₀P Q R) (.inl ())
+
+/-- {name}`emitReader` of a machine built from a transition function is the machine
+built from {name}`emitReaderTr`. -/
+theorem emitReader_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (Q R : Fin k) :
+    emitReader (ofTr q₀ tr) Q R = ofTr (.inl (.inl (.inl (.inl ())))) (emitReaderTr tr q₀ Q R) := by
+  simp only [emitReader, const_eq_ofTr, emitReaderLoop_ofTr, seq_ofTr, emitReaderTr]
 
 /-- Digit readers suffice for streaming. Only the query and result registers
 change, and every subcall obeys the original physical-input space bound. -/
@@ -465,9 +523,23 @@ theorem emitReader_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
   exact ⟨hFB, t, ht, he⟩
 
 /-- Stream a word and clear the query on return. The digit port is cleared by the final query. -/
-@[expose] def emitReaderClean {k : ℕ} {S : Type}
+@[expose] noncomputable def emitReaderClean {k : ℕ} {S : Type}
     (P : MultiTapeTM k Bool S) (Q R : Fin k) :=
   seq (emitReader P Q R) (const [] Q)
+
+/-- The transition of {name}`emitReaderClean`, from the reader's initial state and
+transition. -/
+@[expose] def emitReaderCleanTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S) (Q R : Fin k) :=
+  seqTr (emitReaderTr trP q₀P Q R) (constTr [] Q) (.inl (.inl ()))
+
+/-- {name}`emitReaderClean` of a machine built from a transition function is the
+machine built from {name}`emitReaderCleanTr`. -/
+theorem emitReaderClean_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (Q R : Fin k) :
+    emitReaderClean (ofTr q₀ tr) Q R =
+      ofTr (.inl (.inl (.inl (.inl (.inl ()))))) (emitReaderCleanTr tr q₀ Q R) := by
+  simp only [emitReaderClean, emitReader_ofTr, const_eq_ofTr, seq_ofTr, emitReaderCleanTr]
 
 /-- Streaming with cleanup restores initialized query and result ports, permitting nested calls. -/
 theorem emitReaderClean_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
@@ -493,7 +565,15 @@ theorem emitReaderClean_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
   rw [Function.update_comm hQR.symm, Function.update_idem, Function.update_comm hQR]
 
 /-- Emit a stored word and park its head again, without changing any register. -/
-@[expose] def emitStored {k : ℕ} (R : Fin k) := seq (writer R) (retLeft R)
+@[expose] noncomputable def emitStored {k : ℕ} (R : Fin k) := seq (writer R) (retLeft R)
+
+/-- The transition of {name}`emitStored`. -/
+@[expose] def emitStoredTr {k : ℕ} (R : Fin k) := seqTr (writerTr R) (retLeftTr R) ()
+
+/-- {name}`emitStored` is the machine built from {name}`emitStoredTr`. -/
+theorem emitStored_eq_ofTr {k : ℕ} (R : Fin k) :
+    emitStored R = ofTr (.inl (.inl ())) (emitStoredTr R) := by
+  simp only [emitStored, writer_eq_ofTr, retLeft, seq_ofTr, emitStoredTr]
 
 /-- Stored words supply reusable generators, preserving their exact contents. -/
 theorem emitStored_emitsIn {k : ℕ} (R : Fin k) (B : ℕ → ℕ) :

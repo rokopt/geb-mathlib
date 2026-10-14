@@ -184,7 +184,7 @@ theorem eraseCfg_self (hq : cfg.state = some stEraseLength) (hp6 : cfg.workTapeP
 
 /-- The phase table at a non-blank cell of the erasure. -/
 theorem tr_erase (t : ℕ) (hne : cfg.workTapes 6 (lsb - t) ≠ none) :
-    machine.tr stEraseLength (eraseCfg cfg lsb t).inputSymbol
+    transition stEraseLength (eraseCfg cfg lsb t).inputSymbol
         (eraseCfg cfg lsb t).workTapeSymbols =
       act stEraseLength (fun i ↦ if i = 6 ∨ i = 7 then (some none, -1) else (none, 0)) := by
   have h : (eraseCfg cfg lsb t).workTapeSymbols 6 ≠ none := by
@@ -194,7 +194,7 @@ theorem tr_erase (t : ℕ) (hne : cfg.workTapes 6 (lsb - t) ≠ none) :
 /-- Erasing a non-blank cell moves both length heads down one cell. -/
 theorem step_erase (t : ℕ) (hne : cfg.workTapes 6 (lsb - t) ≠ none) :
     machine.step (eraseCfg cfg lsb t) = eraseCfg cfg lsb (t + 1) := by
-  rw [step_of_state _ _ stEraseLength rfl, tr_erase cfg lsb t hne]
+  rw [step_of_state _ _ stEraseLength rfl, machine_tr, tr_erase cfg lsb t hne]
   refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ (List.append_nil _)
   · funext i z
     simp only [act, eraseCfg]
@@ -213,7 +213,7 @@ theorem step_erase (t : ℕ) (hne : cfg.workTapes 6 (lsb - t) ≠ none) :
 theorem outputSymbol_erase (t : ℕ) (hne : cfg.workTapes 6 (lsb - t) ≠ none) :
     machine.outputSymbol (eraseCfg cfg lsb t) = none := by
   change (machine.tr stEraseLength _ _).output = none
-  rw [tr_erase cfg lsb t hne]
+  rw [machine_tr, tr_erase cfg lsb t hne]
   rfl
 
 /-- The erasure walk over non-blank cells: its configuration and its empty output. -/
@@ -235,7 +235,7 @@ theorem runFrom_erase (m : ℕ) (hfull : ∀ j, j < m → cfg.workTapes 6 (lsb -
 
 /-- The phase table at the blank cell ending the erasure. -/
 theorem tr_erase_exit (t : ℕ) (hb : cfg.workTapes 6 (lsb - t) = none) :
-    machine.tr stEraseLength (eraseCfg cfg lsb t).inputSymbol
+    transition stEraseLength (eraseCfg cfg lsb t).inputSymbol
         (eraseCfg cfg lsb t).workTapeSymbols =
       act (stCarry 3) (fun i ↦ (none, if i = 6 ∨ i = 7 then 1 else 0)) := by
   have h : (eraseCfg cfg lsb t).workTapeSymbols 6 = none := by
@@ -245,7 +245,7 @@ theorem tr_erase_exit (t : ℕ) (hb : cfg.workTapes 6 (lsb - t) = none) :
 /-- At the blank cell, both length heads step back and the pending increment starts. -/
 theorem step_erase_exit (t : ℕ) (hb : cfg.workTapes 6 (lsb - t) = none) :
     machine.step (eraseCfg cfg lsb t) = erasedCfg cfg lsb t := by
-  rw [step_of_state _ _ stEraseLength rfl, tr_erase_exit cfg lsb t hb]
+  rw [step_of_state _ _ stEraseLength rfl, machine_tr, tr_erase_exit cfg lsb t hb]
   refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ (List.append_nil _)
   · funext i
     rfl
@@ -259,7 +259,7 @@ theorem step_erase_exit (t : ℕ) (hb : cfg.workTapes 6 (lsb - t) = none) :
 theorem outputSymbol_erase_exit (t : ℕ) (hb : cfg.workTapes 6 (lsb - t) = none) :
     machine.outputSymbol (eraseCfg cfg lsb t) = none := by
   change (machine.tr stEraseLength _ _).output = none
-  rw [tr_erase_exit cfg lsb t hb]
+  rw [machine_tr, tr_erase_exit cfg lsb t hb]
   rfl
 
 /-- The complete erasure of {lit}`m` cells ending at a blank: {lit}`m + 1` steps. -/
@@ -356,7 +356,7 @@ theorem step_payload {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
     (b : Bool) (hq : cfg.state = some stPayloadBit) (hi : cfg.inputSymbol = some (boolEmb b)) :
     machine.step cfg =
       { cfg with state := some (stCarry 5), inputPos := moveInputPos cfg.inputPos 1 } := by
-  rw [step_of_state _ _ _ hq, hi, tr_scan stPayloadBit (by simp), scanTr_payload]
+  rw [step_of_state _ _ _ hq, machine_tr, hi, tr_scan stPayloadBit (by simp), scanTr_payload]
   refine Cfg.ext rfl rfl ?_ ?_ (List.append_nil _)
   · funext i
     rfl

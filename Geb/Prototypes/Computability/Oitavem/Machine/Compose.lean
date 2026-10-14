@@ -22,6 +22,11 @@ be reused across calls and shared by several argument programs.
 * {lit}`productGenerator` counts its second argument and repeats its first argument.
 * {lit}`emitNumberClean` emits a binary counter in shortlex form, then clears it.
 * {lit}`condGenerator` selects a branch by the length of its generated selector.
+* {lit}`emitSymbol` emits a fixed optional digit, and {lit}`chooseSymbol` selects a
+  program by a work symbol.
+* Each machine's transition function carries the suffix {lit}`Tr`; a combinator's
+  transition function takes its arguments' initial states and transitions, the
+  branches of a selection as (initial state, transition) pairs.
 
 ## Main statements
 
@@ -30,12 +35,16 @@ be reused across calls and shared by several argument programs.
 * {lit}`productGenerator_emitsIn` proves the string-product constructor for arbitrary
   argument generators, with one extra binary counter and preserved caller registers.
 * {lit}`condGenerator_emitsIn` preserves the selected branch's contract and clears the test tape.
+* The equations with the suffix {lit}`_tr`, {lit}`_ofTr` or {lit}`_eq_ofTr` relate the
+  machines to their transition functions.
 
 ## Implementation notes
 
 The counter is initialized by the length reader and consumed by the repetition loop.
 The argument programs have fixed finite control and share the same physical input.
-The contracts inherit CSLib's {lit}`Classical.choice` dependency.
+The contracts inherit CSLib's {lit}`Classical.choice` dependency. A machine reading
+another machine's transition, or sequencing machines, is noncomputable, since CSLib
+selects a machine's transition by choice; its transition function is computable.
 
 ## Tags
 
@@ -54,8 +63,18 @@ open Geb.SizeBounded.Logspace.Machine
 public section
 
 /-- Emit a shortlex number, then park and clear its binary counter. -/
-@[expose] def emitNumberClean {k : ℕ} (C : Fin k) :=
+@[expose] noncomputable def emitNumberClean {k : ℕ} (C : Fin k) :=
   seq (seq (emitNumber C) (returnTape C)) (const [] C)
+
+/-- The transition of {name}`emitNumberClean`. -/
+@[expose] def emitNumberCleanTr {k : ℕ} (C : Fin k) :=
+  seqTr (seqTr (emitNumberTr C) (returnTapeTr C) (.inl ())) (constTr [] C) (.inl (.inl ()))
+
+/-- {name}`emitNumberClean` is the machine built from {name}`emitNumberCleanTr`. -/
+theorem emitNumberClean_eq_ofTr {k : ℕ} (C : Fin k) :
+    emitNumberClean C = ofTr (.inl (.inl (.inl (.inl ())))) (emitNumberCleanTr C) := by
+  simp only [emitNumberClean, emitNumber_eq_ofTr, returnTape_eq_ofTr, const_eq_ofTr, seq_ofTr,
+    emitNumberCleanTr]
 
 /-- A binary counter can be emitted as a numerical word with all heads parked on return. -/
 theorem emitNumberClean_emitsIn {k : ℕ} (C : Fin k) (B : ℕ → ℕ) :
@@ -109,8 +128,23 @@ theorem emitNumberClean_emitsIn {k : ℕ} (C : Fin k) (B : ℕ → ℕ) :
     (hp.seqTransformsIn hc).mono_pre (fun _ _ _ h ↦ ⟨h, trivial⟩)
 
 /-- Numerical length of a generated word, returning the additional counter tape blank. -/
-@[expose] def lengthGenerator {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :=
+@[expose] noncomputable def lengthGenerator {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :=
   seq (generatedLength P) (emitNumberClean 0)
+
+/-- The transition of {name}`lengthGenerator`, from the generator's initial state and
+transition. -/
+@[expose] def lengthGeneratorTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S) :=
+  seqTr (generatedLengthTr trP q₀P) (emitNumberCleanTr 0) (.inl (.inl (.inl (.inl ()))))
+
+/-- {name}`lengthGenerator` of a machine built from a transition function is the machine
+built from {name}`lengthGeneratorTr`. -/
+theorem lengthGenerator_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :
+    lengthGenerator (ofTr q₀ tr) =
+      ofTr (.inl (.inl (.inl (.inl ())))) (lengthGeneratorTr tr q₀) := by
+  simp only [lengthGenerator, generatedLength_ofTr, emitNumberClean_eq_ofTr, seq_ofTr,
+    lengthGeneratorTr]
 
 /-- Numerical length substitutes any generator without storing its output.
 The generator's exact final valuation is retained on its original tapes. -/
@@ -140,10 +174,19 @@ theorem lengthGenerator_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
     exact Fin.cases (by simp) (fun j ↦ by simp) i
   simpa only [lengthGenerator, Fin.cons_zero, counterValue_counterWord, hf] using h
 
+/-- The transition of {lit}`emitSymbol`: emit the optional digit {lit}`b` and halt. -/
+@[expose] def emitSymbolTr {k : ℕ} (b : Option Bool) (_ : Unit) (_ : Option Bool)
+    (_ : Fin k → Option Bool) : Action k Bool Unit :=
+  { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := b, state := none }
+
 /-- Emit an optional fixed digit in one step, leaving every tape and head unchanged. -/
-@[expose] def emitSymbol {k : ℕ} (b : Option Bool) : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ _ _ := { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := b, state := none }
+@[expose] def emitSymbol {k : ℕ} (b : Option Bool) : MultiTapeTM k Bool Unit :=
+  ofTr () (emitSymbolTr b)
+
+/-- The transition of {name}`emitSymbol` is {name}`emitSymbolTr`. -/
+theorem emitSymbol_tr {k : ℕ} (b : Option Bool) (q : Unit) (inp : Option Bool)
+    (work : Fin k → Option Bool) : (emitSymbol b).tr q inp work = emitSymbolTr b q inp work :=
+  tr_ofTr _ _ _ _ _
 
 /-- A fixed optional digit has an emitter contract with no scratch registers. -/
 theorem emitSymbol_emitsIn {k : ℕ} (b : Option Bool) (B : ℕ → ℕ) :
@@ -152,7 +195,7 @@ theorem emitSymbol_emitsIn {k : ℕ} (b : Option Bool) (B : ℕ → ℕ) :
   intro input cfg σ hq hpark _ hσ _ hB
   have hs : (emitSymbol b).step cfg =
       { cfg with state := none, output := cfg.output ++ b.toList } := by
-    rw [step_of_state _ _ () hq]
+    rw [step_of_state _ _ () hq, emitSymbol_tr]
     apply Cfg.ext
     · rfl
     · exact moveInputPos_zero _
@@ -175,7 +218,7 @@ theorem emitSymbol_emitsIn {k : ℕ} (b : Option Bool) (B : ℕ → ℕ) :
     rcases this with rfl | rfl
     · exact hp
     · simpa only [runFrom_succ_eq_step', runFrom_zero, hs] using hp
-  · simp [outputString_succ, outputSymbol, hq, emitSymbol]
+  · simp [outputString_succ, outputSymbol, hq, emitSymbol_tr, emitSymbolTr]
     rfl
 
 /-- String successor emits its fixed first digit before running the argument generator. -/
@@ -191,9 +234,27 @@ theorem succGenerator_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
       (fun _ _ _ h ↦ ⟨trivial, h⟩)
 
 /-- String product of two generated words, using one additional repetition counter. -/
-@[expose] def productGenerator {k : ℕ} {S₁ S₂ : Type}
+@[expose] noncomputable def productGenerator {k : ℕ} {S₁ S₂ : Type}
     (P : MultiTapeTM k Bool S₁) (Q : MultiTapeTM k Bool S₂) :=
   seq (generatedLength Q) (repeatGenerator (onTapes P (reserveTape k)) 0)
+
+/-- The transition of {name}`productGenerator`, from the two generators' initial states
+and transitions. -/
+@[expose] def productGeneratorTr {k : ℕ} {S₁ S₂ : Type}
+    (trP : S₁ → Option Bool → (Fin k → Option Bool) → Action k Bool S₁) (q₀P : S₁)
+    (trQ : S₂ → Option Bool → (Fin k → Option Bool) → Action k Bool S₂) (q₀Q : S₂) :=
+  seqTr (generatedLengthTr trQ q₀Q) (repeatGeneratorTr (onTapesTr trP (reserveTape k)) q₀P 0)
+    (.inl ())
+
+/-- {name}`productGenerator` of machines built from transition functions is the machine
+built from {name}`productGeneratorTr`. -/
+theorem productGenerator_ofTr {k : ℕ} {S₁ S₂ : Type} (q₀P : S₁)
+    (trP : S₁ → Option Bool → (Fin k → Option Bool) → Action k Bool S₁) (q₀Q : S₂)
+    (trQ : S₂ → Option Bool → (Fin k → Option Bool) → Action k Bool S₂) :
+    productGenerator (ofTr q₀P trP) (ofTr q₀Q trQ) =
+      ofTr (.inl (.inl (.inl (.inl ())))) (productGeneratorTr trP q₀P trQ q₀Q) := by
+  simp only [productGenerator, generatedLength_ofTr, onTapes_ofTr, repeatGenerator_ofTr, seq_ofTr,
+    productGeneratorTr]
 
 /-- String product substitutes arbitrary restoring generators into both argument slots.
 The second word need only have a bounded binary length; the first is regenerated. -/
@@ -232,20 +293,48 @@ theorem productGenerator_emitsIn {k : ℕ} {S₁ S₂ : Type}
   simpa only [productGenerator, Function.update_self, counterValue_counterWord,
     Function.update_idem, Function.update_of_ne (Fin.succ_ne_zero _)] using hs
 
-/-- Select one of two programs by a test of the symbol under a work head.
-The Boolean tag is retained in finite control throughout the chosen subcall. -/
-@[expose] def chooseSymbol {k : ℕ} {S : Bool → Type} (R : Fin k) (test : Option Bool → Bool)
-    (P : (b : Bool) → MultiTapeTM k Bool (S b)) :
-    MultiTapeTM k Bool (Option ((b : Bool) × S b)) where
-  q₀ := none
-  tr q input work := match q with
-    | none =>
-      let b := test (work R)
-      { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none,
-        state := some (some ⟨b, (P b).q₀⟩) }
-    | some ⟨b, q⟩ =>
-      let a := (P b).tr q input work
-      { a with state := a.state.map (fun q ↦ some ⟨b, q⟩) }
+/-- The transition selecting one of two programs, given as (initial state, transition)
+pairs {lit}`M`, by a test of the symbol under a work head. The Boolean tag is retained in
+finite control throughout the chosen subcall. It is not inlined, so that a partial
+application of it holds the branches as evaluated arguments rather than recomputing
+them at each application. -/
+@[expose, noinline] def chooseSymbolTr {k : ℕ} {S : Bool → Type} (R : Fin k)
+    (test : Option Bool → Bool)
+    (M : (b : Bool) → S b × (S b → Option Bool → (Fin k → Option Bool) → Action k Bool (S b)))
+    (q : Option ((b : Bool) × S b)) (input : Option Bool) (work : Fin k → Option Bool) :
+    Action k Bool (Option ((b : Bool) × S b)) :=
+  match q with
+  | none =>
+    let b := test (work R)
+    { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none,
+      state := some (some ⟨b, (M b).1⟩) }
+  | some ⟨b, q⟩ =>
+    let a := (M b).2 q input work
+    { a with state := a.state.map (fun q ↦ some ⟨b, q⟩) }
+
+/-- Select one of two programs by a test of the symbol under a work head: the machine
+built from {name}`chooseSymbolTr` of their initial states and transitions. -/
+@[expose] noncomputable def chooseSymbol {k : ℕ} {S : Bool → Type} (R : Fin k)
+    (test : Option Bool → Bool) (P : (b : Bool) → MultiTapeTM k Bool (S b)) :
+    MultiTapeTM k Bool (Option ((b : Bool) × S b)) :=
+  ofTr none (chooseSymbolTr R test fun b ↦ ((P b).q₀, (P b).tr))
+
+/-- The transition of {name}`chooseSymbol` is {name}`chooseSymbolTr`. -/
+theorem chooseSymbol_tr {k : ℕ} {S : Bool → Type} (R : Fin k) (test : Option Bool → Bool)
+    (P : (b : Bool) → MultiTapeTM k Bool (S b)) (q : Option ((b : Bool) × S b))
+    (input : Option Bool) (work : Fin k → Option Bool) :
+    (chooseSymbol R test P).tr q input work =
+      chooseSymbolTr R test (fun b ↦ ((P b).q₀, (P b).tr)) q input work :=
+  tr_ofTr _ _ _ _ _
+
+/-- Selecting between machines built from transition functions is the machine built from
+{name}`chooseSymbolTr` of their initial states and transitions. -/
+theorem chooseSymbol_ofTr {k : ℕ} {S : Bool → Type} (R : Fin k) (test : Option Bool → Bool)
+    (q₀ : (b : Bool) → S b)
+    (tr : (b : Bool) → S b → Option Bool → (Fin k → Option Bool) → Action k Bool (S b)) :
+    chooseSymbol R test (fun b ↦ ofTr (q₀ b) (tr b)) =
+      ofTr none (chooseSymbolTr R test fun b ↦ (q₀ b, tr b)) := by
+  simp only [chooseSymbol, tr_ofTr', q₀_ofTr]
 
 /-- Embed a branch's configuration in the conditional's finite control. -/
 @[expose] def chooseCfg {k : ℕ} {S : Bool → Type} {input : List Bool} (b : Bool)
@@ -259,7 +348,10 @@ theorem chooseSymbol_step {k : ℕ} {S : Bool → Type} {input : List Bool}
     (chooseSymbol R test P).step (chooseCfg b cfg) = chooseCfg b ((P b).step cfg) := by
   cases hq : cfg.state with
   | none => simp [chooseCfg, step_of_halt, hq]
-  | some q => unfold step chooseCfg; simp only [hq]; rfl
+  | some q =>
+    rw [MultiTapeTM.step_of_state (cfg := chooseCfg b cfg) (by simp only [chooseCfg, hq]; rfl),
+      MultiTapeTM.step_of_state hq, chooseSymbol_tr]
+    rfl
 
 /-- Every time in the chosen branch corresponds to the same time in the conditional. -/
 theorem chooseSymbol_runFrom {k : ℕ} {S : Bool → Type} {input : List Bool}
@@ -282,7 +374,12 @@ theorem chooseSymbol_outputString {k : ℕ} {S : Bool → Type} {input : List Bo
   have ho (c : Cfg k Bool (S b) input) :
       (chooseSymbol R test P).outputSymbol (chooseCfg b c) = (P b).outputSymbol c := by
     unfold outputSymbol chooseCfg
-    cases c.state <;> rfl
+    cases c.state with
+    | none => rfl
+    | some q =>
+      dsimp only [Option.map_some]
+      rw [chooseSymbol_tr]
+      rfl
   revert t
   refine Nat.rec ?_ ?_
   · rfl
@@ -308,8 +405,8 @@ theorem chooseSymbol_emitsIn {k : ℕ} {S : Bool → Type} (R : Fin k) (test : O
     change test (cfg.workTapes R (cfg.workTapePos R)) = b
     rw [hpark R, hσ R]
   have hstep : (chooseSymbol R test P).step cfg = chooseCfg b start := by
-    rw [step_of_state _ _ none hq]
-    simp only [chooseSymbol, moveInputPos_zero, Option.toList_none, List.append_nil]
+    rw [step_of_state _ _ none hq, chooseSymbol_tr]
+    simp only [chooseSymbolTr, moveInputPos_zero, Option.toList_none, List.append_nil]
     apply Cfg.ext
     · change some (some (⟨test (cfg.workTapeSymbols R),
           (P (test (cfg.workTapeSymbols R))).q₀⟩ : Sigma S)) =
@@ -348,16 +445,30 @@ theorem chooseSymbol_emitsIn {k : ℕ} {S : Bool → Type} (R : Fin k) (test : O
     · rw [Nat.add_comm t 1, outputString_add_eq_append]
       have ho : (chooseSymbol R test P).outputString cfg 1 = [] := by
         rw [outputString_succ]
-        simp only [runFrom_zero, outputSymbol, hq]
+        simp only [runFrom_zero, outputSymbol, hq, chooseSymbol_tr]
         rfl
       rw [ho, List.nil_append]
       change (chooseSymbol R test P).outputString ((chooseSymbol R test P).step cfg) t = _
       rw [hstep, chooseSymbol_outputString, he.output]
 
 /-- Select a branch according to whether a parked register is empty. -/
-@[expose] def chooseEmpty {k : ℕ} {S : Bool → Type} (R : Fin k)
+@[expose] noncomputable def chooseEmpty {k : ℕ} {S : Bool → Type} (R : Fin k)
     (P : (b : Bool) → MultiTapeTM k Bool (S b)) :=
   chooseSymbol R Option.isNone P
+
+/-- The transition of {name}`chooseEmpty`, from the branches' initial states and
+transitions. -/
+@[expose] def chooseEmptyTr {k : ℕ} {S : Bool → Type} (R : Fin k)
+    (M : (b : Bool) → S b × (S b → Option Bool → (Fin k → Option Bool) → Action k Bool (S b))) :=
+  chooseSymbolTr R Option.isNone M
+
+/-- {name}`chooseEmpty` of machines built from transition functions is the machine built
+from {name}`chooseEmptyTr`. -/
+theorem chooseEmpty_ofTr {k : ℕ} {S : Bool → Type} (R : Fin k) (q₀ : (b : Bool) → S b)
+    (tr : (b : Bool) → S b → Option Bool → (Fin k → Option Bool) → Action k Bool (S b)) :
+    chooseEmpty R (fun b ↦ ofTr (q₀ b) (tr b)) =
+      ofTr none (chooseEmptyTr R fun b ↦ (q₀ b, tr b)) :=
+  chooseSymbol_ofTr R Option.isNone q₀ tr
 
 /-- An empty-register test preserves the selected branch's emitting contract. -/
 theorem chooseEmpty_emitsIn {k : ℕ} {S : Bool → Type} (R : Fin k)
@@ -381,10 +492,29 @@ theorem chooseEmpty_emitsIn {k : ℕ} {S : Bool → Type} (R : Fin k)
   simp [counterWord_eq_nil_iff]
 
 /-- Test a generated word's emptiness, call the selected generator, and clear the length tape. -/
-@[expose] def condGenerator {k : ℕ} {S : Bool → Type} {A : Type}
+@[expose] noncomputable def condGenerator {k : ℕ} {S : Bool → Type} {A : Type}
     (Q : MultiTapeTM k Bool A) (P : (b : Bool) → MultiTapeTM k Bool (S b)) :=
   seq (generatedLength Q)
     (seq (chooseEmpty 0 (fun b ↦ onTapes (P b) (reserveTape k))) (const [] 0))
+
+/-- The transition of {name}`condGenerator`, from the selector's initial state and
+transition and the branches' (initial state, transition) pairs. -/
+@[expose] def condGeneratorTr {k : ℕ} {S : Bool → Type} {A : Type}
+    (trQ : A → Option Bool → (Fin k → Option Bool) → Action k Bool A) (q₀Q : A)
+    (M : (b : Bool) → S b × (S b → Option Bool → (Fin k → Option Bool) → Action k Bool (S b))) :=
+  seqTr (generatedLengthTr trQ q₀Q)
+    (seqTr (chooseEmptyTr 0 (fun b ↦ ((M b).1, onTapesTr (M b).2 (reserveTape k))))
+      (constTr [] 0) (.inl (.inl ()))) (.inl none)
+
+/-- {name}`condGenerator` of machines built from transition functions is the machine built
+from {name}`condGeneratorTr`. -/
+theorem condGenerator_ofTr {k : ℕ} {S : Bool → Type} {A : Type} (q₀Q : A)
+    (trQ : A → Option Bool → (Fin k → Option Bool) → Action k Bool A) (q₀ : (b : Bool) → S b)
+    (tr : (b : Bool) → S b → Option Bool → (Fin k → Option Bool) → Action k Bool (S b)) :
+    condGenerator (ofTr q₀Q trQ) (fun b ↦ ofTr (q₀ b) (tr b)) =
+      ofTr (.inl (.inl (.inl (.inl ())))) (condGeneratorTr trQ q₀Q fun b ↦ (q₀ b, tr b)) := by
+  simp only [condGenerator, generatedLength_ofTr, onTapes_ofTr, chooseEmpty_ofTr, const_eq_ofTr,
+    seq_ofTr, condGeneratorTr]
 
 /-- A conditional has finite control when its selector and both branches do. -/
 theorem condGenerator_finite {k : ℕ} {S : Bool → Type} {A : Type}

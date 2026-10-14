@@ -7,6 +7,7 @@ Authors: Terence Rokop
 module
 
 public import Cslib.Computability.Machines.Turing.MultiTape.Deterministic
+public import Geb.Prototypes.Computability.MultiTape.Computes
 public import Geb.Prototypes.Computability.MultiTape.OutputString
 
 meta import GebMeta -- shake: keep
@@ -28,7 +29,7 @@ predicate requires.
 ## Main statements
 
 * {lit}`step_mapSym` identifies the transitions before and after renaming.
-* {lit}`ComputesInTimeAndSpace.mapTM` preserves both resource counts exactly.
+* {lit}`ComputesInTimeAndSpace.mapTM` preserves both resource bounds.
 * {lit}`computableInTimeAndSpace_of_finite` witnesses CSLib's complexity predicate by a
   machine over any two-symbol alphabet and any finite state type.
 
@@ -37,7 +38,8 @@ predicate requires.
 These correspondence lemmas use the existing CSLib machine semantics. The initial proof
 was drafted with Aristotle and adapted to this repository's toolchain and recursor discipline.
 They supply representation transport, not composition or an algebra compiler. These
-correspondence proofs use classical choice from the external library.
+correspondence proofs use classical choice from the external library, and the renamed
+machine is noncomputable, as CSLib's transition function of a machine is.
 
 ## Tags
 
@@ -75,9 +77,9 @@ lemma moveInputPos_cast {n m : ℕ} (h : n + 2 = m + 2) (p : Fin (n + 2)) (s : S
   rfl
 
 /-- Rename the alphabet and the states of a multi-tape Turing machine along equivalences. -/
-def mapTM (tm : MultiTapeTM k S Q) (e : S ≃ S') (d : Q ≃ Q') : MultiTapeTM k S' Q' where
-  q₀ := d tm.q₀
-  tr q input work :=
+noncomputable def mapTM (tm : MultiTapeTM k S Q) (e : S ≃ S') (d : Q ≃ Q') :
+    MultiTapeTM k S' Q' :=
+  ofTr (d tm.q₀) fun q input work =>
     let o := tm.tr (d.symm q) (input.map e.symm) (fun i => (work i).map e.symm)
     { inputTape := o.inputTape
       workTapes := fun i => (((o.workTapes i).1).map (Option.map e), (o.workTapes i).2)
@@ -153,15 +155,15 @@ lemma tr_mapTM_mapSym (c : Cfg k S Q input) (q : Q) :
     rw [Cfg.workTapeSymbols_mapSym]
     simp
   unfold mapTM
-  simp only [Equiv.symm_apply_apply, hin, hwork]
+  simp only [tr_ofTr, Equiv.symm_apply_apply, hin, hwork]
 
 /-- Renaming commutes with one machine step. -/
 lemma step_mapSym (c : Cfg k S Q input) :
     (tm.mapTM e d).step (c.mapSym e d) = (tm.step c).mapSym e d := by
   rcases hst : c.state with _ | q
   · rw [step_of_halt (by simp [Cfg.mapSym_state, hst]), step_of_halt hst]
-  · unfold step
-    simp only [Cfg.mapSym_state, hst, Option.map_some, tr_mapTM_mapSym]
+  · rw [step_of_state (show (c.mapSym e d).state = some (d q) by simp [hst]),
+      step_of_state hst, tr_mapTM_mapSym]
     refine Cfg.ext rfl ?_ ?_ rfl ?_
     · simp only [Action.apply, Cfg.mapSym, finCongr_apply]
       exact moveInputPos_cast _ _ _
@@ -219,12 +221,13 @@ lemma spaceUsed_mapSym (c : Cfg k S Q input) (t : ℕ) :
 lemma ComputesInTimeAndSpace.mapTM {i o : List S} {t s : ℕ}
     (h : tm.ComputesInTimeAndSpace i o t s) :
     (tm.mapTM e d).ComputesInTimeAndSpace (i.map e) (o.map e) t s := by
-  obtain ⟨hhalt, hout, hspace⟩ := h
-  refine ⟨?_, ?_, ?_⟩
+  obtain ⟨hhalt, hout, hspace⟩ := computesInTimeAndSpace_iff.mp h
+  refine computesInTimeAndSpace_iff.mpr ⟨?_, ?_, ?_⟩
   · rw [initCfg_mapSym, runFrom_mapSym]
-    simp only [Cfg.mapSym_state, hhalt, Option.map_none]
+    simp only [Cfg.Halted, Cfg.mapSym_state, hhalt, Option.map_none]
   · rw [initCfg_mapSym, runFrom_mapSym, Cfg.mapSym_output, hout]
-  · rw [initCfg_mapSym, spaceUsed_mapSym, hspace]
+  · rw [initCfg_mapSym, spaceUsed_mapSym]
+    exact hspace
 
 /-- The embedding of strings induced by an embedding of symbols. -/
 def listEmb (e : S ↪ S') : List S ↪ List S' :=
@@ -235,10 +238,8 @@ alongside. -/
 lemma ComputesFunInTimeAndSpace.mapTM {α β : Type*} {encIn : α ↪ List S} {encOut : β ↪ List S}
     {f : α → β} {t s : α → ℕ} (h : tm.ComputesFunInTimeAndSpace encIn encOut f t s) :
     (tm.mapTM e d).ComputesFunInTimeAndSpace (encIn.trans (listEmb e.toEmbedding))
-      (encOut.trans (listEmb e.toEmbedding)) f t s := by
-  intro a
-  obtain ⟨t', ht, s', hs, hrun⟩ := h a
-  exact ⟨t', ht, s', hs, hrun.mapTM (e := e) (d := d)⟩
+      (encOut.trans (listEmb e.toEmbedding)) f t s :=
+  fun a ↦ (h a).mapTM
 
 /-- A machine over a two-symbol alphabet and a finite state type witnesses CSLib's complexity
 predicate, whose machines read and write {lit}`Bool` and carry a state type in {lit}`Type`:
@@ -250,26 +251,28 @@ theorem computableInTimeAndSpace_of_finite [Finite Q] (e : S ≃ Bool) {α β : 
     ComputableInTimeAndSpace f encIn encOut t s := by
   let := Fintype.ofFinite Q
   refine ⟨k, Fin (Fintype.card Q), inferInstance, tm.mapTM e (Fintype.equivFin Q), fun a ↦ ?_⟩
-  obtain ⟨t', ht, s', hs, hrun⟩ := h a
-  refine ⟨t', ht, s', hs, ?_⟩
-  simpa [listEmb, List.map_map] using hrun.mapTM (e := e) (d := Fintype.equivFin Q)
+  simpa [listEmb, List.map_map] using (h a).mapTM (e := e) (d := Fintype.equivFin Q)
 
 /-- The bit-string form of {lit}`computableInTimeAndSpace_of_finite`: a machine over a
 two-symbol alphabet computing a function on bit strings, each input embedded along
 {lit}`emb`, within bounds in the input length. The embedding is taken separately from the
 equivalence it inverts so that a module held to the standard axiom set can define it
-without {name}`finTwoEquiv`, which depends on {name}`Classical.choice`. -/
+without {name}`finTwoEquiv`, which depends on {name}`Classical.choice`. The hypothesis is a
+run of the machine that has halted within the time bound with the output, having visited at
+most the space bound's cells. -/
 theorem computableInTimeAndSpaceOfLength_of_finite [Finite Q] (e : S ≃ Bool) (emb : Bool ↪ S)
     (he : ∀ b, e.symm b = emb b) {f : List Bool → List Bool} {t s : ℕ → ℕ}
     (h : ∀ w, ∃ t' ≤ t w.length, ∃ s' ≤ s w.length,
-      tm.ComputesInTimeAndSpace (w.map emb) ((f w).map emb) t' s') :
+      (tm.runFrom (tm.initCfg (w.map emb)) t').Halted ∧
+      (tm.runFrom (tm.initCfg (w.map emb)) t').output = (f w).map emb ∧
+      tm.spaceUsed (tm.initCfg (w.map emb)) t' = s') :
     ComputableInTimeAndSpaceOfLength f (.refl _) (.refl _) t s := by
   have hmap : ∀ w : List Bool, w.map e.symm = w.map emb :=
     fun w ↦ List.map_congr_left fun b _ ↦ he b
   refine computableInTimeAndSpace_of_finite (tm := tm) e fun w ↦ ?_
-  change ∃ t' ≤ t w.length, ∃ s' ≤ s w.length,
-    tm.ComputesInTimeAndSpace (w.map e.symm) ((f w).map e.symm) t' s'
+  change tm.ComputesInTimeAndSpace (w.map e.symm) ((f w).map e.symm) (t w.length) (s w.length)
   rw [hmap, hmap]
-  exact h w
+  obtain ⟨t', ht, s', hs, hhalt, hout, hspace⟩ := h w
+  exact computesInTimeAndSpace_of_halted hhalt hout hspace ht hs
 
 end Turing.MultiTapeTM

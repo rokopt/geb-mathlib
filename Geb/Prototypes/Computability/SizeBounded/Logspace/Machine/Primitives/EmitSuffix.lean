@@ -30,10 +30,14 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 # Main definitions
 
 * {lit}`emitSuffix` — the primitive.
+* {lit}`emitSuffixTr`, {lit}`EmitSuffixState` — its transition function and its
+  state type.
 * {lit}`emitSuffixTime` — its step bound.
 
 # Main statements
 
+* {lit}`emitSuffix_eq_ofTr` — the primitive is the machine built from
+  {lit}`emitSuffixTr`.
 * {lit}`emitSuffix_emits` — the emission of the primitive from the head at the
   blank before the input.
 
@@ -53,8 +57,26 @@ public section
 
 /-- Emit the end segment of the input of the length the counter in {lit}`C`
 holds, through the scratch counter {lit}`S`. -/
-@[expose] def emitSuffix {k : ℕ} (C S : Fin k) :=
+@[expose] noncomputable def emitSuffix {k : ℕ} (C S : Fin k) :=
   seq (copy C S) (seq inStepRight (seq inRight (seq (seekLeft S) emitRight)))
+
+/-- The state type of {name}`emitSuffix`. -/
+abbrev EmitSuffixState : Type :=
+  ((Unit ⊕ (Unit ⊕ Unit)) ⊕ (Unit ⊕ ((Unit ⊕ Unit) ⊕ (Unit ⊕ Unit)))) ⊕
+    (Unit ⊕ (Unit ⊕ (SeekState ⊕ Unit)))
+
+/-- The transition of {name}`emitSuffix`, composed of its phases' by
+{name}`Geb.SizeBounded.Machine.seqTr`. -/
+@[expose] def emitSuffixTr {k : ℕ} (C S : Fin k) :
+    EmitSuffixState → Option Bool → (Fin k → Option Bool) → Action k Bool EmitSuffixState :=
+  seqTr (copyTr C S) (seqTr inStepRightTr (seqTr inRightTr (seqTr (seekLeftTr S) emitRightTr ())
+    (.inl (.inl ()))) (.inl ())) (.inl ())
+
+/-- {name}`emitSuffix` is the machine built from {name}`emitSuffixTr`. -/
+theorem emitSuffix_eq_ofTr {k : ℕ} (C S : Fin k) :
+    emitSuffix C S = ofTr (.inl (.inl (.inl ()))) (emitSuffixTr C S) := by
+  simp only [emitSuffix, copy_eq_ofTr, inStepRight, inRight, seekLeft_eq_ofTr, emitRight, seq_ofTr,
+    emitSuffixTr]
 
 /-- The step bound of {name}`emitSuffix` at a length bound {lit}`B` and an
 input length {lit}`n`. -/

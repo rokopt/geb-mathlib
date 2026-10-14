@@ -31,9 +31,16 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {lit}`Classical.choice` through Cslib's
 {name}`Turing.Cfg.inputSymbol`.
 
+Each machine is built by {name}`Turing.MultiTapeTM.ofTr` from a computable
+transition function named after it with the suffix {lit}`Tr`: {lit}`decWalk`
+directly, and {lit}`dec`, the sequencing of machines, by the equation
+{lit}`dec_eq_ofTr`.
+
 # Main definitions
 
 * {lit}`decAct` — an action on one tape.
+* {lit}`decWalkTr`, {lit}`decTr` — the transition functions of the walk and of
+  the decrement.
 * {lit}`decWalk` — decrement the digit list rightwards from cell {lit}`0`.
 * {lit}`dec` — decrement a counter register from a parked head.
 * {lit}`borrowCfg` — the closed form of the borrowing configurations.
@@ -48,6 +55,8 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
   writing a cell of a counter register, as its digit list.
 * {lit}`Reaches.ofStep`, {lit}`RunsTo.ofStep` — one step as a reach and as a
   run.
+* {lit}`decWalk_tr`, {lit}`dec_eq_ofTr` — the walk's transition is
+  {lit}`decWalkTr`, and the decrement is the machine built from {lit}`decTr`.
 * {lit}`decWalk_step` — a step of the walk, given its action.
 * {lit}`decWalk_borrow` — the borrowing sweep.
 * {lit}`decWalk_runsTo` — the run of the walk, naming the halted
@@ -166,42 +175,46 @@ as {lit}`s`. -/
   output := none
   state := s
 
-/-- Decrement the digit list on tape {lit}`i` rightwards from its head. State
-{lit}`0` borrows: reading a zero, set it and move right; reading a one, clear
-it, move right and go to state {lit}`1`; reading a blank, halt. State
-{lit}`1` checks for a leading zero: reading a blank, move left and go to
-state {lit}`2`; reading a digit, halt. State {lit}`2` erases the cell and
-halts. -/
-@[expose] def decWalk {k : ℕ} (i : Fin k) : MultiTapeTM k Bool (Fin 3) where
-  q₀ := 0
-  tr q _ work :=
-    match q.val, work i with
-    | 0, some false => decAct i (some (some true)) 1 (some 0)
-    | 0, some true => decAct i (some (some false)) 1 (some 1)
-    | 0, none => decAct i none 0 none
-    | 1, none => decAct i none (-1) (some 2)
-    | 1, some _ => decAct i none 0 none
-    | _, _ => decAct i (some none) 0 none
+/-- The transition of {lit}`decWalk`. State {lit}`0` borrows: reading a zero,
+set it and move right; reading a one, clear it, move right and go to state
+{lit}`1`; reading a blank, halt. State {lit}`1` checks for a leading zero:
+reading a blank, move left and go to state {lit}`2`; reading a digit, halt.
+State {lit}`2` erases the cell and halts. -/
+@[expose] def decWalkTr {k : ℕ} (i : Fin k) (q : Fin 3) (_ : Option Bool)
+    (work : Fin k → Option Bool) : Action k Bool (Fin 3) :=
+  match q.val, work i with
+  | 0, some false => decAct i (some (some true)) 1 (some 0)
+  | 0, some true => decAct i (some (some false)) 1 (some 1)
+  | 0, none => decAct i none 0 none
+  | 1, none => decAct i none (-1) (some 2)
+  | 1, some _ => decAct i none 0 none
+  | _, _ => decAct i (some none) 0 none
+
+/-- Decrement the digit list on tape {lit}`i` rightwards from its head, by
+{name}`decWalkTr` from state {lit}`0`. -/
+@[expose] def decWalk {k : ℕ} (i : Fin k) : MultiTapeTM k Bool (Fin 3) := ofTr 0 (decWalkTr i)
+
+/-- The transition of {name}`decWalk` is {name}`decWalkTr`. -/
+theorem decWalk_tr {k : ℕ} (i : Fin k) (q : Fin 3) (inp : Option Bool)
+    (work : Fin k → Option Bool) : (decWalk i).tr q inp work = decWalkTr i q inp work :=
+  tr_ofTr _ _ _ _ _
+
+/-- The transition of {lit}`dec`: {name}`decWalkTr`, then
+{name}`Geb.SizeBounded.Machine.returnTapeTr`. -/
+@[expose] def decTr {k : ℕ} (i : Fin k) := seqTr (decWalkTr i) (returnTapeTr i) (.inl ())
 
 /-- Decrement the counter on tape {lit}`i` from a parked head: borrow, clear,
 erase, park. -/
-@[expose] def dec {k : ℕ} (i : Fin k) := seq (decWalk i) (returnTape i)
+@[expose] noncomputable def dec {k : ℕ} (i : Fin k) := seq (decWalk i) (returnTape i)
+
+/-- {name}`dec` is the machine built from {name}`decTr`. -/
+theorem dec_eq_ofTr {k : ℕ} (i : Fin k) : dec i = ofTr (.inl 0) (decTr i) := by
+  simp only [dec, decWalk, returnTape_eq_ofTr, seq_ofTr, decTr]
 
 /-- {name}`decWalk` emits nothing. -/
 theorem decWalk_outputSymbol {k : ℕ} {input : List Bool} (i : Fin k)
-    (cfg : Cfg k Bool (Fin 3) input) : (decWalk i).outputSymbol cfg = none := by
-  unfold outputSymbol
-  cases cfg.state with
-  | none => rfl
-  | some q =>
-    change (match q.val, cfg.workTapeSymbols i with
-      | 0, some false => decAct i (some (some true)) 1 (some 0)
-      | 0, some true => decAct i (some (some false)) 1 (some 1)
-      | 0, none => decAct i none 0 none
-      | 1, none => decAct i none (-1) (some 2)
-      | 1, some _ => decAct i none 0 none
-      | _, _ => decAct i (some none) 0 none).output = none
-    split <;> rfl
+    (cfg : Cfg k Bool (Fin 3) input) : (decWalk i).outputSymbol cfg = none :=
+  outputSymbol_ofTr_eq_none (fun _ _ _ ↦ by unfold decWalkTr; split <;> rfl) cfg
 
 /-- A step of {name}`decWalk` whose transition is a {name}`decAct`: tape
 {lit}`i` is written at the head as the action's write says and its head moved
@@ -240,37 +253,38 @@ theorem decWalk_step {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bool
 theorem decWalk_tr_zero_false {k : ℕ} (i : Fin k) (inp : Option Bool) (work : Fin k → Option Bool)
     (h : work i = some false) :
     (decWalk i).tr 0 inp work = decAct i (some (some true)) 1 (some 0) := by
-  simp only [decWalk, h]
+  simp only [decWalk_tr, decWalkTr, h]
   rfl
 
 /-- The transition of state {lit}`0` at a one. -/
 theorem decWalk_tr_zero_true {k : ℕ} (i : Fin k) (inp : Option Bool) (work : Fin k → Option Bool)
     (h : work i = some true) :
     (decWalk i).tr 0 inp work = decAct i (some (some false)) 1 (some 1) := by
-  simp only [decWalk, h]
+  simp only [decWalk_tr, decWalkTr, h]
   rfl
 
 /-- The transition of state {lit}`0` at a blank. -/
 theorem decWalk_tr_zero_none {k : ℕ} (i : Fin k) (inp : Option Bool) (work : Fin k → Option Bool)
     (h : work i = none) : (decWalk i).tr 0 inp work = decAct i none 0 none := by
-  simp only [decWalk, h]
+  simp only [decWalk_tr, decWalkTr, h]
   rfl
 
 /-- The transition of state {lit}`1` at a blank. -/
 theorem decWalk_tr_one_none {k : ℕ} (i : Fin k) (inp : Option Bool) (work : Fin k → Option Bool)
     (h : work i = none) : (decWalk i).tr 1 inp work = decAct i none (-1) (some 2) := by
-  simp only [decWalk, h]
+  simp only [decWalk_tr, decWalkTr, h]
   rfl
 
 /-- The transition of state {lit}`1` at a digit. -/
 theorem decWalk_tr_one_some {k : ℕ} (i : Fin k) (inp : Option Bool) (work : Fin k → Option Bool)
     (b : Bool) (h : work i = some b) : (decWalk i).tr 1 inp work = decAct i none 0 none := by
-  simp only [decWalk, h]
+  simp only [decWalk_tr, decWalkTr, h]
   rfl
 
 /-- The transition of state {lit}`2`. -/
 theorem decWalk_tr_two {k : ℕ} (i : Fin k) (inp : Option Bool) (work : Fin k → Option Bool) :
-    (decWalk i).tr 2 inp work = decAct i (some none) 0 none := rfl
+    (decWalk i).tr 2 inp work = decAct i (some none) 0 none :=
+  decWalk_tr i 2 inp work
 
 /-- A step of {name}`decWalk` from a configuration whose tape {lit}`i` and
 head are updates of {lit}`cfg`'s, given the transition at the cell read. -/

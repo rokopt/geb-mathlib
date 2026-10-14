@@ -27,14 +27,22 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {lit}`Classical.choice` through Cslib's
 {name}`Turing.Cfg.inputSymbol`.
 
+Each machine is built by {name}`Turing.MultiTapeTM.ofTr` from a transition
+function named after it with the suffix {lit}`Tr`, which is computable; the
+machine's own transition, selected by choice in CSLib, agrees with it.
+
 # Main definitions
 
+* {lit}`inStepRightTr`, {lit}`inHomeTr` — the transition functions of the
+  machines below.
 * {lit}`inStepRight` — move the input head one cell right.
 * {lit}`inHome` — walk the input head left to the blank before the input.
 * {lit}`inHomeCfg` — the closed form of the walk's configurations.
 
 # Main statements
 
+* {lit}`inStepRight_tr`, {lit}`inHome_tr` — the machines' transitions are their
+  transition functions.
 * {lit}`inStepRight_runsTo`, {lit}`inBack_runsTo_of_pos`, {lit}`inHome_runsTo`
   — the run of each machine, naming the halted configuration and the step
   count.
@@ -53,19 +61,34 @@ open Geb.SizeBounded.Machine
 
 public section
 
+/-- The transition of {lit}`inStepRight`. -/
+@[expose] def inStepRightTr {k : ℕ} (_ : Unit) (_ : Option Bool) (_ : Fin k → Option Bool) :
+    Action k Bool Unit :=
+  { inputTape := 1, workTapes := fun _ ↦ (none, 0), output := none, state := none }
+
 /-- Move the input head one cell right. -/
-@[expose] def inStepRight {k : ℕ} : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ _ _ := { inputTape := 1, workTapes := fun _ ↦ (none, 0), output := none, state := none }
+@[expose] def inStepRight {k : ℕ} : MultiTapeTM k Bool Unit := ofTr () inStepRightTr
+
+/-- The transition of {name}`inStepRight` is {name}`inStepRightTr`. -/
+theorem inStepRight_tr {k : ℕ} (q : Unit) (inp : Option Bool) (work : Fin k → Option Bool) :
+    (inStepRight (k := k)).tr q inp work = inStepRightTr q inp work :=
+  tr_ofTr _ _ _ _ _
+
+/-- The transition of {lit}`inHome`. -/
+@[expose] def inHomeTr {k : ℕ} (_ : Unit) (inp : Option Bool) (_ : Fin k → Option Bool) :
+    Action k Bool Unit :=
+  match inp with
+  | some _ =>
+    { inputTape := -1, workTapes := fun _ ↦ (none, 0), output := none, state := some () }
+  | none => { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none }
 
 /-- Walk the input head left until it reads the blank before the input. -/
-@[expose] def inHome {k : ℕ} : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ inp _ :=
-    match inp with
-    | some _ =>
-      { inputTape := -1, workTapes := fun _ ↦ (none, 0), output := none, state := some () }
-    | none => { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none }
+@[expose] def inHome {k : ℕ} : MultiTapeTM k Bool Unit := ofTr () inHomeTr
+
+/-- The transition of {name}`inHome` is {name}`inHomeTr`. -/
+theorem inHome_tr {k : ℕ} (q : Unit) (inp : Option Bool) (work : Fin k → Option Bool) :
+    (inHome (k := k)).tr q inp work = inHomeTr q inp work :=
+  tr_ofTr _ _ _ _ _
 
 /-- {name}`inStepRight` from any position other than the blank past the input
 runs one step and leaves the head one cell right. -/
@@ -76,7 +99,7 @@ theorem inStepRight_runsTo {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Unit 
       { cfg with state := none, inputPos := ⟨cfg.inputPos.val + 1, by omega⟩ } 1 B := by
   have hhalt : (inStepRight (k := k)).step { cfg with state := some () } =
       { cfg with state := none, inputPos := ⟨cfg.inputPos.val + 1, by omega⟩ } := by
-    rw [step_of_state _ _ () rfl]
+    rw [step_of_state _ _ () rfl, inStepRight_tr]
     apply Cfg.ext
     · rfl
     · change moveInputPos cfg.inputPos SignType.pos = (⟨cfg.inputPos.val + 1, by omega⟩ : Fin _)
@@ -96,7 +119,8 @@ theorem inStepRight_runsTo {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Unit 
   have key := RunsTo.ofFamily (inStepRight (k := k)) (fun _ ↦ { cfg with state := some () }) 0 B
     { cfg with state := none, inputPos := ⟨cfg.inputPos.val + 1, by omega⟩ }
     (fun _ _ ↦ Option.some_ne_none ()) (fun _ h ↦ absurd h (by omega)) hhalt rfl
-    (fun _ _ ↦ rfl) (fun _ _ i ↦ hpos i) (fun i ↦ hpos i)
+    (fun _ _ ↦ outputSymbol_ofTr_eq_none (fun _ _ _ ↦ rfl) _) (fun _ _ i ↦ hpos i)
+    (fun i ↦ hpos i)
   rwa [hzero] at key
 
 /-- {name}`Geb.SizeBounded.Machine.inBack` from any position other than the
@@ -112,7 +136,7 @@ theorem inBack_runsTo_of_pos {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Uni
       { cfg with
         state := none
         inputPos := ⟨cfg.inputPos.val - 1, by have := cfg.inputPos.isLt; omega⟩ } := by
-    rw [step_of_state _ _ () rfl]
+    rw [step_of_state _ _ () rfl, inBack_tr]
     apply Cfg.ext
     · rfl
     · change moveInputPos cfg.inputPos SignType.neg =
@@ -135,7 +159,8 @@ theorem inBack_runsTo_of_pos {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Uni
       state := none
       inputPos := ⟨cfg.inputPos.val - 1, by have := cfg.inputPos.isLt; omega⟩ }
     (fun _ _ ↦ Option.some_ne_none ()) (fun _ h ↦ absurd h (by omega)) hhalt rfl
-    (fun _ _ ↦ rfl) (fun _ _ i ↦ hpos i) (fun i ↦ hpos i)
+    (fun _ _ ↦ outputSymbol_ofTr_eq_none (fun _ _ _ ↦ rfl) _) (fun _ _ i ↦ hpos i)
+    (fun i ↦ hpos i)
   rwa [hzero] at key
 
 /-- The configuration of {name}`inHome` after {lit}`s` steps: the input head has
@@ -153,15 +178,15 @@ theorem inHome_runsTo {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Unit input
     RunsTo inHome cfg { cfg with state := none, inputPos := ⟨0, by omega⟩ }
       (cfg.inputPos.val + 1) B := by
   have htrSome : ∀ (b : Bool) (work : Fin k → Option Bool),
-      (inHome (k := k)).tr () (some b) work =
+      inHomeTr (k := k) () (some b) work =
         { inputTape := SignType.neg, workTapes := fun _ ↦ (none, 0), output := none,
           state := some () } := fun _ _ ↦ rfl
   have htrNone : ∀ work : Fin k → Option Bool,
-      (inHome (k := k)).tr () none work =
+      inHomeTr (k := k) () none work =
         { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none } :=
     fun _ ↦ rfl
   have hout : ∀ (inp : Option Bool) (work : Fin k → Option Bool),
-      ((inHome (k := k)).tr () inp work).output = none := by
+      (inHomeTr (k := k) () inp work).output = none := by
     intro inp _
     cases inp <;> rfl
   have hstep : ∀ s < cfg.inputPos.val,
@@ -171,7 +196,7 @@ theorem inHome_runsTo {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Unit input
         some (input[cfg.inputPos.val - s - 1]'(by omega)) :=
       inputSymbolInner (cfg.inputPos.val - s - 1)
         (by change cfg.inputPos.val - s = 1 + (cfg.inputPos.val - s - 1); omega) (by omega)
-    rw [step_of_state _ _ () rfl, hsym, htrSome]
+    rw [step_of_state _ _ () rfl, inHome_tr, hsym, htrSome]
     apply Cfg.ext
     · rfl
     · change moveInputPos (inHomeCfg cfg s).inputPos SignType.neg = (inHomeCfg cfg (s + 1)).inputPos
@@ -196,7 +221,7 @@ theorem inHome_runsTo {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Unit input
         change cfg.inputPos.val - cfg.inputPos.val = (0 : Fin (input.length + 2)).val
         rw [Fin.val_zero]
         omega))]
-    rw [step_of_state _ _ () rfl, hsym, htrNone]
+    rw [step_of_state _ _ () rfl, inHome_tr, hsym, htrNone]
     apply Cfg.ext
     · rfl
     · rw [moveInputPos_zero]
@@ -215,7 +240,8 @@ theorem inHome_runsTo {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Unit input
     · rfl
   have key := RunsTo.ofFamily (inHome (k := k)) (inHomeCfg cfg) cfg.inputPos.val B
     { cfg with state := none, inputPos := ⟨0, by omega⟩ }
-    (fun _ _ ↦ Option.some_ne_none ()) hstep hhalt rfl (fun _ _ ↦ hout _ _)
+    (fun _ _ ↦ Option.some_ne_none ()) hstep hhalt rfl
+    (fun _ _ ↦ outputSymbol_ofTr_eq_none (fun _ inp _ ↦ hout inp _) _)
     (fun _ _ i ↦ hpos i) (fun i ↦ hpos i)
   rwa [hzero] at key
 

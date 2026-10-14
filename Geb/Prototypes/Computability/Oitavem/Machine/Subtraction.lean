@@ -27,12 +27,16 @@ binary counters. Neither argument nor the difference is stored on a work tape.
 * {lit}`subBitStep` performs one digit of signed-carry subtraction.
 * {lit}`subScan` emits raw difference digits while saving the carry and significant index.
 * {lit}`numericSubGenerator` initializes and runs both scans, then clears its working ports.
+* Each machine's transition function carries the suffix {lit}`Tr` and takes its
+  argument machines' initial states and transitions.
 
 ## Main statements
 
 * {lit}`subBitStep_transformsIn` verifies the transition and preservation of all other tapes.
 * {lit}`numericSubGenerator_emitsIn` verifies exact shortlex subtraction, termination,
   caller preservation, and the common work-space bound of the argument readers.
+* The equations with the suffix {lit}`_tr`, {lit}`_eq_ofTr` or {lit}`_ofTr` relate the
+  machines to their transition functions.
 
 ## Implementation notes
 
@@ -40,7 +44,9 @@ Seven caller-assigned ports hold two input digits, the carry, one result digit,
 the countdown, the query, and the significant index. The argument readers restore
 their separate scratch space after every call. Their sentinel encodings are queried
 at arbitrary canonical indices, including positions beyond the shorter argument.
-The machine contracts inherit CSLib's {lit}`Classical.choice` dependency.
+The machine contracts inherit CSLib's {lit}`Classical.choice` dependency, and the
+machines, sequencing machines whose transitions CSLib selects by choice, are
+noncomputable.
 
 ## Tags
 
@@ -76,17 +82,26 @@ theorem tapeOf_update_zero {w : List Bool} (hw : w.length ≤ 1) (b : Option Boo
       have := Option.length_toList_le (o := b)
       omega
 
+/-- The transition of {lit}`subBitStep`. The ports are minuend digit, subtrahend digit,
+carry, result. -/
+@[expose] def subBitStepTr {k : ℕ} (r : Fin 4 → Fin k) (_ : Unit) (_ : Option Bool)
+    (work : Fin k → Option Bool) : Action k Bool Unit :=
+  let v := subBit ((work (r 0)).getD false) ((work (r 1)).getD false) (work (r 2))
+  { inputTape := 0
+    workTapes := fun i ↦
+      if i = r 2 then (some v.1, 0)
+      else if i = r 3 then (some (some v.2), 0) else (none, 0)
+    output := none
+    state := none }
+
 /-- One arithmetic transition. The ports are minuend digit, subtrahend digit, carry, result. -/
-@[expose] def subBitStep {k : ℕ} (r : Fin 4 → Fin k) : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ _ work :=
-    let v := subBit ((work (r 0)).getD false) ((work (r 1)).getD false) (work (r 2))
-    { inputTape := 0
-      workTapes := fun i ↦
-        if i = r 2 then (some v.1, 0)
-        else if i = r 3 then (some (some v.2), 0) else (none, 0)
-      output := none
-      state := none }
+@[expose] def subBitStep {k : ℕ} (r : Fin 4 → Fin k) : MultiTapeTM k Bool Unit :=
+  ofTr () (subBitStepTr r)
+
+/-- The transition of {name}`subBitStep` is {name}`subBitStepTr`. -/
+theorem subBitStep_tr {k : ℕ} (r : Fin 4 → Fin k) (q : Unit) (inp : Option Bool)
+    (work : Fin k → Option Bool) : (subBitStep r).tr q inp work = subBitStepTr r q inp work :=
+  tr_ofTr _ _ _ _ _
 
 /-- Update the optional carry and result words with one finite arithmetic transition. -/
 @[expose] def subBitVal {k : ℕ} (r : Fin 4 → Fin k) (σ : Fin k → List Bool) :=
@@ -106,27 +121,27 @@ theorem subBitStep_transformsIn {k : ℕ} (r : Fin 4 → Fin k) (hr : Function.I
     change cfg.workTapes i (cfg.workTapePos i) = _
     rw [hpark i, hσ i]
   have hs : (subBitStep r).step cfg = after cfg (subBitVal r σ) := by
-    rw [step_of_state _ _ () hq]
+    rw [step_of_state _ _ () hq, subBitStep_tr]
     apply Cfg.ext
     · rfl
     · exact moveInputPos_zero _
     · funext i
       by_cases hi2 : i = r 2
       · subst i
-        simp only [subBitStep, ite_true, after, subBitVal,
+        simp only [subBitStepTr, ite_true, after, subBitVal,
           Function.update_of_ne (hr.ne (by decide : (2 : Fin 4) ≠ 3)), Function.update_self]
         rw [hpark, hσ, hw, hw, hw, tapeOf_update_zero hp.1]
       · by_cases hi3 : i = r 3
         · subst i
-          simp only [subBitStep, hi2, ite_false, ite_true, after, subBitVal,
+          simp only [subBitStepTr, hi2, ite_false, ite_true, after, subBitVal,
             Function.update_self]
           rw [hpark, hσ, hw, hw, hw, tapeOf_update_zero hp.2]
           rfl
-        · simp [subBitStep, hi2, hi3, after, subBitVal, hσ i]
+        · simp [subBitStepTr, hi2, hi3, after, subBitVal, hσ i]
     · funext i
-      simp only [subBitStep, after]
+      simp only [subBitStepTr, after]
       split_ifs <;> simp
-    · simp [subBitStep, after]
+    · simp [subBitStepTr, after]
   refine ⟨(hB.update (Option.length_toList_le.trans (hB1 _))).update (hB1 _),
     1, le_rfl, ⟨⟨⟨?_, ?_, ?_⟩, ?_⟩, rfl⟩⟩
   · intro s hs'
@@ -141,12 +156,21 @@ theorem subBitStep_transformsIn {k : ℕ} (r : Fin 4 → Fin k) (hr : Function.I
     rcases this with rfl | rfl
     · exact hpos
     · simpa only [runFrom_succ_eq_step', runFrom_zero, hs, after] using hpos
-  · simp only [outputString_succ, runFrom_zero, outputSymbol, hq]
+  · simp only [outputString_succ, runFrom_zero, outputSymbol, hq, subBitStep_tr]
     rfl
 
 /-- Save the current index when the result digit is one. -/
-@[expose] def saveLastOne {k : ℕ} (Q R L : Fin k) :=
+@[expose] noncomputable def saveLastOne {k : ℕ} (Q R L : Fin k) :=
   caseProbe (some R) idle (copy Q L)
+
+/-- The transition of {name}`saveLastOne`. -/
+@[expose] def saveLastOneTr {k : ℕ} (Q R L : Fin k) :=
+  caseProbeTr (some R) idleTr (copyTr Q L) () (.inl (.inl ()))
+
+/-- {name}`saveLastOne` is the machine built from {name}`saveLastOneTr`. -/
+theorem saveLastOne_eq_ofTr {k : ℕ} (Q R L : Fin k) :
+    saveLastOne Q R L = ofTr (.inl ()) (saveLastOneTr Q R L) := by
+  simp only [saveLastOne, idle, copy_eq_ofTr, caseProbe_ofTr, saveLastOneTr]
 
 /-- Saving the index preserves the source digit and every other register. -/
 theorem saveLastOne_transformsIn {k : ℕ} (Q R L : Fin k) (hQL : Q ≠ L) (B : ℕ → ℕ) :
@@ -160,10 +184,24 @@ theorem saveLastOne_transformsIn {k : ℕ} (Q R L : Fin k) (hQL : Q ≠ L) (B : 
 
 /-- One subtraction digit, recording its index, emitting it, and clearing digit ports.
 The ports are minuend digit, subtrahend digit, carry, result, countdown, query, and last one. -/
-@[expose] def subDigit {k : ℕ} (r : Fin 7 → Fin k) :=
+@[expose] noncomputable def subDigit {k : ℕ} (r : Fin 7 → Fin k) :=
   seq (subBitStep (r ∘ Fin.castAdd 3))
     (seq (saveLastOne (r 5) (r 3) (r 6))
       (seq (emitBit (r 3)) (seq (const [] (r 0)) (seq (const [] (r 1)) (const [] (r 3))))))
+
+/-- The transition of {name}`subDigit`. -/
+@[expose] def subDigitTr {k : ℕ} (r : Fin 7 → Fin k) :=
+  seqTr (subBitStepTr (r ∘ Fin.castAdd 3))
+    (seqTr (saveLastOneTr (r 5) (r 3) (r 6))
+      (seqTr (emitBitTr (r 3)) (seqTr (constTr [] (r 0)) (seqTr (constTr [] (r 1))
+        (constTr [] (r 3)) (.inl (.inl ()))) (.inl (.inl (.inl ()))))
+        (.inl (.inl (.inl ())))) (.inl ())) (.inl (.inl ()))
+
+/-- {name}`subDigit` is the machine built from {name}`subDigitTr`. -/
+theorem subDigit_eq_ofTr {k : ℕ} (r : Fin 7 → Fin k) :
+    subDigit r = ofTr (.inl ()) (subDigitTr r) := by
+  simp only [subDigit, subBitStep, saveLastOne_eq_ofTr, emitBit, const_eq_ofTr, seq_ofTr,
+    subDigitTr]
 
 /-- The arithmetic result and finite carry read from the parked digit ports. -/
 @[expose] def subDigitValue {k : ℕ} (r : Fin 7 → Fin k) (σ : Fin k → List Bool) :=
@@ -264,8 +302,23 @@ theorem subScanVal_step {k : ℕ} (r : Fin 7 → Fin k) (hr : Function.Injective
       simp [Function.update_of_ne, hn]
 
 /-- Scan a saved number of paired virtual digits, retaining the carry and significant length. -/
-@[expose] def subScan {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (r : Fin 7 → Fin k) :=
+@[expose] noncomputable def subScan {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
+    (r : Fin 7 → Fin k) :=
   concatLoop (seq P (subDigit r)) (r 4) (r 5)
+
+/-- The transition of {name}`subScan`, from the paired reader's initial state and
+transition. -/
+@[expose] def subScanTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S)
+    (r : Fin 7 → Fin k) :=
+  concatLoopTr (seqTr trP (subDigitTr r) (.inl ())) (.inl q₀P) (r 4) (r 5)
+
+/-- {name}`subScan` of a machine built from a transition function is the machine built
+from {name}`subScanTr`. -/
+theorem subScan_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (r : Fin 7 → Fin k) :
+    subScan (ofTr q₀ tr) r = ofTr (.inl ()) (subScanTr tr q₀ r) := by
+  simp only [subScan, subDigit_eq_ofTr, seq_ofTr, concatLoop_ofTr, subScanTr]
 
 /-- A paired reader supplies the subtraction scan. The result consists of its raw digits,
 finite carry, and the binary index of its last significant digit. -/
@@ -382,9 +435,26 @@ theorem subScan_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
   exact hw.mono_time (fun _ ↦ Nat.add_le_add_right (Nat.mul_le_mul_left _ (by omega)) 1)
 
 /-- A negative carry suppresses the entire output by selecting length zero. -/
-@[expose] def subSelectLength {k : ℕ} (K L : Fin k) :=
+@[expose] noncomputable def subSelectLength {k : ℕ} (K L : Fin k) :=
   chooseEmpty (S := fun b ↦ if b then StateOf (const [] L) else Unit) K
     (fun b ↦ match b with | false => idle | true => const [] L)
+
+/-- The transition of {name}`subSelectLength`. -/
+@[expose] def subSelectLengthTr {k : ℕ} (K L : Fin k) :=
+  chooseEmptyTr
+    (S := fun b ↦ if b then (Unit ⊕ Unit ⊕ Unit) ⊕ Fin (([] : List Bool).length + 1) ⊕ Unit ⊕ Unit
+      else Unit) K
+    (fun b ↦ match b with | false => ((), idleTr) | true => (.inl (.inl ()), constTr [] L))
+
+/-- {name}`subSelectLength` is the machine built from {name}`subSelectLengthTr`. -/
+theorem subSelectLength_eq_ofTr {k : ℕ} (K L : Fin k) :
+    subSelectLength K L = ofTr none (subSelectLengthTr K L) := by
+  simp only [subSelectLength, subSelectLengthTr, chooseEmpty, chooseEmptyTr, chooseSymbol]
+  congr 2
+  funext b
+  cases b
+  · simp only [idle, q₀_ofTr, tr_ofTr']
+  · simp only [const_eq_ofTr, q₀_ofTr, tr_ofTr']
 
 /-- Only a negative carry changes the selected output length. -/
 theorem subSelectLength_transformsIn {k : ℕ} (K L : Fin k) (B : ℕ → ℕ) :
@@ -406,9 +476,22 @@ theorem subSelectLength_transformsIn {k : ℕ} (K L : Fin k) (B : ℕ → ℕ) :
     (chooseEmpty_emitsIn K hp).toTransformsIn
 
 /-- Prepare the second scan from the saved sign and significant index. -/
-@[expose] def subRestart {k : ℕ} (r : Fin 7 → Fin k) :=
+@[expose] noncomputable def subRestart {k : ℕ} (r : Fin 7 → Fin k) :=
   seq (subSelectLength (r 2) (r 6))
     (seq (copy (r 6) (r 4)) (seq (const [] (r 5)) (seq (const [true] (r 2)) (const [] (r 6)))))
+
+/-- The transition of {name}`subRestart`. -/
+@[expose] def subRestartTr {k : ℕ} (r : Fin 7 → Fin k) :=
+  seqTr (subSelectLengthTr (r 2) (r 6))
+    (seqTr (copyTr (r 6) (r 4)) (seqTr (constTr [] (r 5)) (seqTr (constTr [true] (r 2))
+      (constTr [] (r 6)) (.inl (.inl ()))) (.inl (.inl (.inl ())))) (.inl (.inl (.inl ()))))
+    (.inl (.inl (.inl ())))
+
+/-- {name}`subRestart` is the machine built from {name}`subRestartTr`. -/
+theorem subRestart_eq_ofTr {k : ℕ} (r : Fin 7 → Fin k) :
+    subRestart r = ofTr (.inl none) (subRestartTr r) := by
+  simp only [subRestart, subSelectLength_eq_ofTr, copy_eq_ofTr, const_eq_ofTr, seq_ofTr,
+    subRestartTr]
 
 /-- The valuation at the beginning of the second scan. -/
 @[expose] def subRestartVal {k : ℕ} (r : Fin 7 → Fin k) (σ : Fin k → List Bool) :=
@@ -488,10 +571,29 @@ theorem subDoneVal_afterScan {k : ℕ} (r : Fin 7 → Fin k) (hr : Function.Inje
     simp [subScanVal, concatVal, subDoneVal, Function.update_of_ne, hn]
 
 /-- Determine the sign and significant length, then recompute exactly the required digits. -/
-@[expose] def subtractionCore {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
+@[expose] noncomputable def subtractionCore {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
     (r : Fin 7 → Fin k) :=
   seq (seq (mute (subScan P r)) (subRestart r)) (seq (subScan P r)
     (seq (const [] (r 2)) (seq (const [] (r 5)) (const [] (r 6)))))
+
+/-- The transition of {name}`subtractionCore`, from the paired reader's initial state and
+transition. -/
+@[expose] def subtractionCoreTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S)
+    (r : Fin 7 → Fin k) :=
+  seqTr (seqTr (muteTr (subScanTr trP q₀P r)) (subRestartTr r) (.inl none))
+    (seqTr (subScanTr trP q₀P r) (seqTr (constTr [] (r 2)) (seqTr (constTr [] (r 5))
+      (constTr [] (r 6)) (.inl (.inl ()))) (.inl (.inl (.inl ())))) (.inl (.inl (.inl ()))))
+    (.inl (.inl ()))
+
+/-- {name}`subtractionCore` of a machine built from a transition function is the machine
+built from {name}`subtractionCoreTr`. -/
+theorem subtractionCore_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (r : Fin 7 → Fin k) :
+    subtractionCore (ofTr q₀ tr) r =
+      ofTr (.inl (.inl ((), some (.inl ())))) (subtractionCoreTr tr q₀ r) := by
+  simp only [subtractionCore, subScan_ofTr, mute_ofTr, subRestart_eq_ofTr, const_eq_ofTr,
+    seq_ofTr, subtractionCoreTr]
 
 /-- Two scans emit the canonical signed difference without storing the generated digits.
 The paired source and its precondition are independent of the seven scan registers. -/
@@ -607,10 +709,28 @@ theorem subtractionCore_numericSub_emitsIn {k : ℕ} {S₁ S₂ : Type}
     (fun input σ _ ↦ shortlexSub_eq_numericSub (V input σ) (W input σ))
 
 /-- Count both arguments and initialize a subtraction scan, including its sentinel position. -/
-@[expose] def subInit {k : ℕ} {S₁ S₂ : Type}
+@[expose] noncomputable def subInit {k : ℕ} {S₁ S₂ : Type}
     (L₁ : MultiTapeTM k Bool S₁) (L₂ : MultiTapeTM k Bool S₂) (r : Fin 7 → Fin k) :=
   seq (seq L₁ L₂) (seq (maxCounter (r 4) (r 5) (r 6))
     (seq (inc (r 4)) (const [true] (r 2))))
+
+/-- The transition of {name}`subInit`, from the length readers' transitions and the
+second reader's initial state. -/
+@[expose] def subInitTr {k : ℕ} {S₁ S₂ : Type}
+    (tr₁ : S₁ → Option Bool → (Fin k → Option Bool) → Action k Bool S₁)
+    (tr₂ : S₂ → Option Bool → (Fin k → Option Bool) → Action k Bool S₂) (q₀₂ : S₂)
+    (r : Fin 7 → Fin k) :=
+  seqTr (seqTr tr₁ tr₂ q₀₂) (seqTr (maxCounterTr (r 4) (r 5) (r 6))
+    (seqTr (incTr (r 4)) (constTr [true] (r 2)) (.inl (.inl ()))) (.inl (.inl ())))
+    (.inl (.inl (.inl (.inl ()))))
+
+/-- {name}`subInit` of machines built from transition functions is the machine built from
+{name}`subInitTr`. -/
+theorem subInit_ofTr {k : ℕ} {S₁ S₂ : Type} (q₀₁ : S₁)
+    (tr₁ : S₁ → Option Bool → (Fin k → Option Bool) → Action k Bool S₁) (q₀₂ : S₂)
+    (tr₂ : S₂ → Option Bool → (Fin k → Option Bool) → Action k Bool S₂) (r : Fin 7 → Fin k) :
+    subInit (ofTr q₀₁ tr₁) (ofTr q₀₂ tr₂) r = ofTr (.inl (.inl q₀₁)) (subInitTr tr₁ tr₂ q₀₂ r) := by
+  simp only [subInit, maxCounter_eq_ofTr, inc_eq_ofTr, const_eq_ofTr, seq_ofTr, subInitTr]
 
 /-- Length readers initialize the countdown using logarithmic binary counters. -/
 theorem subInit_transformsIn {k : ℕ} {S₁ S₂ : Type}
@@ -662,10 +782,33 @@ theorem subInit_transformsIn {k : ℕ} {S₁ S₂ : Type}
     simp [subScanVal, concatVal, Function.update_of_ne, hn]
 
 /-- Numerical subtraction from length readers and sentinel-digit readers. -/
-@[expose] def numericSubGenerator {k : ℕ} {S₁ S₂ S₃ S₄ : Type}
+@[expose] noncomputable def numericSubGenerator {k : ℕ} {S₁ S₂ S₃ S₄ : Type}
     (L₁ : MultiTapeTM k Bool S₁) (L₂ : MultiTapeTM k Bool S₂)
     (P₁ : MultiTapeTM k Bool S₃) (P₂ : MultiTapeTM k Bool S₄) (r : Fin 7 → Fin k) :=
   seq (subInit L₁ L₂ r) (subtractionCore (seq P₁ P₂) r)
+
+/-- The transition of {name}`numericSubGenerator`, from the length readers' and the digit
+readers' transitions and initial states. -/
+@[expose] def numericSubGeneratorTr {k : ℕ} {S₁ S₂ S₃ S₄ : Type}
+    (tr₁ : S₁ → Option Bool → (Fin k → Option Bool) → Action k Bool S₁)
+    (tr₂ : S₂ → Option Bool → (Fin k → Option Bool) → Action k Bool S₂) (q₀₂ : S₂)
+    (tr₃ : S₃ → Option Bool → (Fin k → Option Bool) → Action k Bool S₃) (q₀₃ : S₃)
+    (tr₄ : S₄ → Option Bool → (Fin k → Option Bool) → Action k Bool S₄) (q₀₄ : S₄)
+    (r : Fin 7 → Fin k) :=
+  seqTr (subInitTr tr₁ tr₂ q₀₂ r) (subtractionCoreTr (seqTr tr₃ tr₄ q₀₄) (.inl q₀₃) r)
+    (.inl (.inl ((), some (.inl ()))))
+
+/-- {name}`numericSubGenerator` of machines built from transition functions is the machine
+built from {name}`numericSubGeneratorTr`. -/
+theorem numericSubGenerator_ofTr {k : ℕ} {S₁ S₂ S₃ S₄ : Type} (q₀₁ : S₁)
+    (tr₁ : S₁ → Option Bool → (Fin k → Option Bool) → Action k Bool S₁) (q₀₂ : S₂)
+    (tr₂ : S₂ → Option Bool → (Fin k → Option Bool) → Action k Bool S₂) (q₀₃ : S₃)
+    (tr₃ : S₃ → Option Bool → (Fin k → Option Bool) → Action k Bool S₃) (q₀₄ : S₄)
+    (tr₄ : S₄ → Option Bool → (Fin k → Option Bool) → Action k Bool S₄) (r : Fin 7 → Fin k) :
+    numericSubGenerator (ofTr q₀₁ tr₁) (ofTr q₀₂ tr₂) (ofTr q₀₃ tr₃) (ofTr q₀₄ tr₄) r =
+      ofTr (.inl (.inl (.inl q₀₁))) (numericSubGeneratorTr tr₁ tr₂ q₀₂ tr₃ q₀₃ tr₄ q₀₄ r) := by
+  simp only [numericSubGenerator, subInit_ofTr, seq_ofTr, subtractionCore_ofTr,
+    numericSubGeneratorTr]
 
 /-- The subtraction constructor has finite control whenever its argument routines do. -/
 theorem numericSubGenerator_finite {k : ℕ} {S₁ S₂ S₃ S₄ : Type}

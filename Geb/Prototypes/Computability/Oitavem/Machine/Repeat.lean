@@ -32,9 +32,16 @@ space.
 * {lit}`repeatInput` repeats that scan, consuming the counter.
 * {lit}`squareInput` squares the input while preserving caller registers.
 * {lit}`squareMachine` first counts the input and then repeats it that many times.
+* {lit}`repeatGenerator` repeats a generator, and {lit}`squareSquareMachine` and
+  {lit}`squareViaReaderMachine` compose squaring with generated words.
+* Each machine's transition function carries the suffix {lit}`Tr`, as
+  {lit}`squareMachineTr`.
 
 ## Main statements
 
+* The equations with the suffix {lit}`_eq_ofTr` or {lit}`_ofTr` identify each machine
+  with the machine built by {name}`Turing.MultiTapeTM.ofTr` from its transition
+  function.
 * {lit}`repeatBody_emits` gives the exact effect of one scan.
 * {lit}`repeatInput_emits` gives the full output and the time and space bounds.
 * {lit}`computableInTimeAndSpace_squareWord` proves the machine-computability
@@ -48,6 +55,9 @@ space.
 
 These machine statements inherit {lit}`Classical.choice` from CSLib's
 configurations. This module is included in {lit}`GebMeta.classicalAllowedModules`.
+The machines sequence machines and are noncomputable, since CSLib selects a
+machine's transition by choice; their transition functions are computable, and a
+run is evaluated through them.
 
 ## References
 
@@ -70,8 +80,19 @@ open Geb.SizeBounded.Logspace.Machine
 public section
 
 /-- Emit the entire input, return its head home, and decrement the counter. -/
-@[expose] def repeatBody {k : ℕ} (C : Fin k) :=
+@[expose] noncomputable def repeatBody {k : ℕ} (C : Fin k) :=
   seq inStepRight (seq emitRight (seq inBack (seq inHome (dec C))))
+
+/-- The transition of {name}`repeatBody`. -/
+@[expose] def repeatBodyTr {k : ℕ} (C : Fin k) :=
+  seqTr inStepRightTr (seqTr emitRightTr (seqTr inBackTr (seqTr inHomeTr (decTr C) (.inl 0))
+    (.inl ())) (.inl ())) (.inl ())
+
+/-- {name}`repeatBody` is the machine built from {name}`repeatBodyTr`. -/
+theorem repeatBody_eq_ofTr {k : ℕ} (C : Fin k) :
+    repeatBody C = ofTr (.inl ()) (repeatBodyTr C) := by
+  simp only [repeatBody, inStepRight, emitRight, inBack, inHome, dec_eq_ofTr, seq_ofTr,
+    repeatBodyTr]
 
 /-- A scan emits exactly the input and changes only the repetition counter. -/
 theorem repeatBody_emits {k : ℕ} {input : List Bool} (C : Fin k)
@@ -137,8 +158,17 @@ theorem repeatBody_emits {k : ℕ} {input : List Bool} (C : Fin k)
   · rfl
 
 /-- Repeat the physical input as many times as the counter specifies. -/
-@[expose] def repeatInput {k : ℕ} (C : Fin k) :=
+@[expose] noncomputable def repeatInput {k : ℕ} (C : Fin k) :=
   whileNonblank (some C) (repeatBody C)
+
+/-- The transition of {name}`repeatInput`. -/
+@[expose] def repeatInputTr {k : ℕ} (C : Fin k) :=
+  whileNonblankTr (some C) (repeatBodyTr C) (.inl ())
+
+/-- {name}`repeatInput` is the machine built from {name}`repeatInputTr`. -/
+theorem repeatInput_eq_ofTr {k : ℕ} (C : Fin k) :
+    repeatInput C = ofTr (.inl ()) (repeatInputTr C) := by
+  simp only [repeatInput, repeatBody_eq_ofTr, whileNonblank_ofTr, repeatInputTr]
 
 /-- The repetition loop streams all copies, clears the counter, and returns
 with the same head positions and all other registers preserved. -/
@@ -216,7 +246,16 @@ theorem repeatInput_emits {k : ℕ} {input : List Bool} (C : Fin k)
     rw [← runFrom_output, h.runFrom_eq]
 
 /-- Square the physical input using one designated scratch counter. -/
-@[expose] def squareInput {k : ℕ} (C : Fin k) := seq (countInput C) (repeatInput C)
+@[expose] noncomputable def squareInput {k : ℕ} (C : Fin k) := seq (countInput C) (repeatInput C)
+
+/-- The transition of {name}`squareInput`. -/
+@[expose] def squareInputTr {k : ℕ} (C : Fin k) :=
+  seqTr (countInputTr C) (repeatInputTr C) (.inl ())
+
+/-- {name}`squareInput` is the machine built from {name}`squareInputTr`. -/
+theorem squareInput_eq_ofTr {k : ℕ} (C : Fin k) :
+    squareInput C = ofTr (.inl (.inl (.inl (.inl ())))) (squareInputTr C) := by
+  simp only [squareInput, countInput_eq_ofTr, repeatInput_eq_ofTr, seq_ofTr, squareInputTr]
 
 /-- Squaring clears its scratch counter, parks the input head, and preserves all
 caller registers and the previous output. The scratch counter may initially be dirty. -/
@@ -247,7 +286,15 @@ theorem squareInput_emits {k : ℕ} {input : List Bool} (C : Fin k)
   exact ⟨t₁ + t₂, Nat.add_le_add ht₁ ht₂, h⟩
 
 /-- A one-work-tape machine for {name}`squareWord`. -/
-@[expose] def squareMachine := squareInput (0 : Fin 1)
+@[expose] noncomputable def squareMachine := squareInput (0 : Fin 1)
+
+/-- The transition of {name}`squareMachine`. -/
+@[expose] def squareMachineTr := squareInputTr (0 : Fin 1)
+
+/-- {name}`squareMachine` is the machine built from {name}`squareMachineTr`. -/
+theorem squareMachine_eq_ofTr :
+    squareMachine = ofTr (.inl (.inl (.inl (.inl ())))) squareMachineTr :=
+  squareInput_eq_ofTr 0
 
 /-- The square machine halts with the quadratic output and visits at most a
 logarithmic interval of its single work tape. -/
@@ -270,8 +317,12 @@ theorem computableInTimeAndSpace_squareWord :
       (fun n ↦ 32 * (n.size + 1)) := by
   refine ⟨1, StateOf squareMachine, inferInstance, squareMachine, fun w ↦ ?_⟩
   obtain ⟨cfg', t, ht, h⟩ := squareMachine_emits w
-  refine ⟨t, ?_, squareMachine.spaceUsed (squareMachine.initCfg w) t,
-    ?_, ?_, ?_, rfl⟩
+  refine computesInTimeAndSpace_of_halted (t' := t) ?_ ?_ rfl ?_ ?_
+  · change (squareMachine.runFrom (squareMachine.initCfg w) t).state = none
+    rw [h.runFrom_eq]
+    exact h.halted
+  · rw [initCfg_runFrom_output]
+    exact h.output
   · have hs := size_le_self w.length
     change t ≤ 32 * (w.length + 1) ^ 2
     apply ht.trans
@@ -280,11 +331,6 @@ theorem computableInTimeAndSpace_squareWord :
   · change squareMachine.spaceUsed (squareMachine.initCfg w) t ≤
       32 * (w.length.size + 1)
     exact h.spaceUsed_le.trans (by omega)
-  · change (squareMachine.runFrom (squareMachine.initCfg w) t).state = none
-    rw [h.runFrom_eq]
-    exact h.halted
-  · rw [initCfg_runFrom_output]
-    exact h.output
 
 /-- Counting a quadratic output requires at most twice the input's binary size plus one. -/
 theorem size_square_add_one_le (n : ℕ) : (n * n + 1).size ≤ 2 * n.size + 1 := by
@@ -392,7 +438,16 @@ theorem computableInTimeAndSpace_length_squareWord :
     omega
 
 /-- Square the physical input from the parked input-head convention of subroutines. -/
-@[expose] def squareFromHome {k : ℕ} (C : Fin k) := seq inStepRight (squareInput C)
+@[expose] noncomputable def squareFromHome {k : ℕ} (C : Fin k) := seq inStepRight (squareInput C)
+
+/-- The transition of {name}`squareFromHome`. -/
+@[expose] def squareFromHomeTr {k : ℕ} (C : Fin k) :=
+  seqTr inStepRightTr (squareInputTr C) (.inl (.inl (.inl (.inl ()))))
+
+/-- {name}`squareFromHome` is the machine built from {name}`squareFromHomeTr`. -/
+theorem squareFromHome_eq_ofTr {k : ℕ} (C : Fin k) :
+    squareFromHome C = ofTr (.inl ()) (squareFromHomeTr C) := by
+  simp only [squareFromHome, inStepRight, squareInput_eq_ofTr, seq_ofTr, squareFromHomeTr]
 
 /-- Time for squaring from the home position, including scratch initialization. -/
 @[expose] def squareFromHomeTime (B n : ℕ) : ℕ :=
@@ -448,8 +503,22 @@ theorem squareAt_transformsIn {k : ℕ} (C Q : Fin k) (B : ℕ → ℕ)
     (fun _ _ _ hpre ↦ ⟨hpre, trivial⟩)
 
 /-- Repeat a generator, consuming a binary repetition counter. -/
-@[expose] def repeatGenerator {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (C : Fin k) :=
+@[expose] noncomputable def repeatGenerator {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
+    (C : Fin k) :=
   whileNonblank (some C) (seq P (dec C))
+
+/-- The transition of {name}`repeatGenerator`, from the generator's initial state and
+transition. -/
+@[expose] def repeatGeneratorTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S) (C : Fin k) :=
+  whileNonblankTr (some C) (seqTr trP (decTr C) (.inl 0)) (.inl q₀P)
+
+/-- {name}`repeatGenerator` of a machine built from a transition function is the
+machine built from {name}`repeatGeneratorTr`. -/
+theorem repeatGenerator_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (C : Fin k) :
+    repeatGenerator (ofTr q₀ tr) C = ofTr (.inl ()) (repeatGeneratorTr tr q₀ C) := by
+  simp only [repeatGenerator, dec_eq_ofTr, seq_ofTr, whileNonblank_ofTr, repeatGeneratorTr]
 
 /-- A generator preserving its valuation can be repeated without retaining a call
 context per iteration. Its precondition and word must be independent of the counter. -/
@@ -536,9 +605,21 @@ theorem repeatGenerator_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
 
 /-- Square a generated square: count its output, then regenerate it once per
 counted digit. Only the repetition counter and the generator counter are stored. -/
-@[expose] def squareSquareFromHome :=
+@[expose] noncomputable def squareSquareFromHome :=
   seq (generatedLength (squareFromHome (0 : Fin 1)))
     (repeatGenerator (squareFromHome (1 : Fin 2)) 0)
+
+/-- The transition of {name}`squareSquareFromHome`. -/
+@[expose] def squareSquareFromHomeTr :=
+  seqTr (generatedLengthTr (squareFromHomeTr (0 : Fin 1)) (.inl ()))
+    (repeatGeneratorTr (squareFromHomeTr (1 : Fin 2)) (.inl ()) 0) (.inl ())
+
+/-- {name}`squareSquareFromHome` is the machine built from
+{name}`squareSquareFromHomeTr`. -/
+theorem squareSquareFromHome_eq_ofTr :
+    squareSquareFromHome = ofTr (.inl (.inl (.inl (.inl ())))) squareSquareFromHomeTr := by
+  simp only [squareSquareFromHome, squareFromHome_eq_ofTr, generatedLength_ofTr,
+    repeatGenerator_ofTr, seq_ofTr, squareSquareFromHomeTr]
 
 /-- Time bound for the generated-square composition. -/
 @[expose] def squareSquareTime (n : ℕ) : ℕ :=
@@ -597,7 +678,17 @@ theorem squareSquareFromHome_emitsIn :
   · rfl
 
 /-- The generated-square composition, entered from CSLib's initial input position. -/
-@[expose] def squareSquareMachine := seq inBack squareSquareFromHome
+@[expose] noncomputable def squareSquareMachine := seq inBack squareSquareFromHome
+
+/-- The transition of {name}`squareSquareMachine`. -/
+@[expose] def squareSquareMachineTr :=
+  seqTr inBackTr squareSquareFromHomeTr (.inl (.inl (.inl (.inl ()))))
+
+/-- {name}`squareSquareMachine` is the machine built from {name}`squareSquareMachineTr`. -/
+theorem squareSquareMachine_eq_ofTr :
+    squareSquareMachine = ofTr (.inl ()) squareSquareMachineTr := by
+  simp only [squareSquareMachine, inBack, squareSquareFromHome_eq_ofTr, seq_ofTr,
+    squareSquareMachineTr]
 
 /-- The composed transducer emits the interpretation on two logarithmic tapes. -/
 theorem squareSquareMachine_emits (w : List Bool) :
@@ -640,15 +731,15 @@ theorem computableInTimeAndSpace_squareWord_squareWord :
   · let : Fintype (StateOf (squareFromHome (0 : Fin 1))) := inferInstance
     infer_instance
   obtain ⟨cfg', t, ht, h⟩ := squareSquareMachine_emits w
-  refine ⟨t, ht.trans (squareSquareTime_le _), squareSquareMachine.spaceUsed
-    (squareSquareMachine.initCfg w) t, h.spaceUsed_le.trans ?_, ?_, ?_, rfl⟩
-  · change 2 * (2 * w.length.size + 1 + 2) ≤ 6 * (w.length.size + 1)
-    omega
+  refine computesInTimeAndSpace_of_halted (t' := t) ?_ ?_ rfl
+    (ht.trans (squareSquareTime_le _)) (h.spaceUsed_le.trans ?_)
   · change (squareSquareMachine.runFrom (squareSquareMachine.initCfg w) t).state = none
     rw [h.runFrom_eq]
     exact h.halted
   · rw [initCfg_runFrom_output]
     exact h.output
+  · change 2 * (2 * w.length.size + 1 + 2) ≤ 6 * (w.length.size + 1)
+    omega
 
 /-- The square generator supplies a digit reader on initialized scratch registers. -/
 theorem squareAt_readsAt {k : ℕ} (C Q : Fin k) (B : ℕ → ℕ)
@@ -667,9 +758,23 @@ theorem squareAt_readsAt {k : ℕ} (C Q : Fin k) (B : ℕ → ℕ)
 
 /-- Reconstruct the square word entirely through generated digit queries.
 Countdown and generator scratch are cleared before entering the reader loop. -/
-@[expose] def squareViaReaderFromHome {k : ℕ} (C Q : Fin k) :=
+@[expose] noncomputable def squareViaReaderFromHome {k : ℕ} (C Q : Fin k) :=
   seq (seq (const [] countTape) (const [] (oldTape C)))
     (emitReader (generatedAt (squareFromHome C) Q) (oldTape Q) resultTape)
+
+/-- The transition of {name}`squareViaReaderFromHome`. -/
+@[expose] def squareViaReaderFromHomeTr {k : ℕ} (C Q : Fin k) :=
+  seqTr (seqTr (constTr [] countTape) (constTr [] (oldTape C)) (.inl (.inl ())))
+    (emitReaderTr (generatedAtTr (squareFromHomeTr C) (.inl ()) Q) (.inl (.inl (.inl ())))
+      (oldTape Q) resultTape) (.inl (.inl (.inl (.inl ()))))
+
+/-- {name}`squareViaReaderFromHome` is the machine built from
+{name}`squareViaReaderFromHomeTr`. -/
+theorem squareViaReaderFromHome_eq_ofTr {k : ℕ} (C Q : Fin k) :
+    squareViaReaderFromHome C Q =
+      ofTr (.inl (.inl (.inl (.inl ())))) (squareViaReaderFromHomeTr C Q) := by
+  simp only [squareViaReaderFromHome, const_eq_ofTr, squareFromHome_eq_ofTr, generatedAt_ofTr,
+    emitReader_ofTr, seq_ofTr, squareViaReaderFromHomeTr]
 
 /-- Time bound for streaming a square word through its digit reader. -/
 @[expose] def squareViaReaderTime (B n : ℕ) : ℕ :=
@@ -713,7 +818,19 @@ theorem squareViaReaderFromHome_emitsIn {k : ℕ} (C Q : Fin k) (hCQ : C ≠ Q) 
   exact ⟨hFB, t, ht, hr⟩
 
 /-- A four-work-tape machine reading every output digit of the generated square. -/
-@[expose] def squareViaReaderMachine := seq inBack (squareViaReaderFromHome (0 : Fin 2) 1)
+@[expose] noncomputable def squareViaReaderMachine :=
+  seq inBack (squareViaReaderFromHome (0 : Fin 2) 1)
+
+/-- The transition of {name}`squareViaReaderMachine`. -/
+@[expose] def squareViaReaderMachineTr :=
+  seqTr inBackTr (squareViaReaderFromHomeTr (0 : Fin 2) 1) (.inl (.inl (.inl (.inl ()))))
+
+/-- {name}`squareViaReaderMachine` is the machine built from
+{name}`squareViaReaderMachineTr`. -/
+theorem squareViaReaderMachine_eq_ofTr :
+    squareViaReaderMachine = ofTr (.inl ()) squareViaReaderMachineTr := by
+  simp only [squareViaReaderMachine, inBack, squareViaReaderFromHome_eq_ofTr, seq_ofTr,
+    squareViaReaderMachineTr]
 
 /-- The reader-based square machine has simultaneous polynomial time and logarithmic
 space, by its halting reader contract and the configuration-counting theorem. -/

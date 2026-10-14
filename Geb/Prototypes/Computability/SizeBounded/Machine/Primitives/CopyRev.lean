@@ -29,10 +29,13 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 
 # Main definitions
 
+* {lit}`copyRevTr` — the transition function of the primitive, composed of its
+  phases' by {name}`Geb.SizeBounded.Machine.seqTr`.
 * {lit}`copyRev` — copy the reverse of one register onto another.
 
 # Main statements
 
+* {lit}`copyRev_eq_ofTr` — the primitive is the machine built from {lit}`copyRevTr`.
 * {lit}`copyRev_transforms` — the contract of the primitive, naming its
   transformer and its step bound.
 
@@ -49,11 +52,25 @@ open Turing MultiTapeTM
 
 public section
 
+/-- The transition of {lit}`copyRev`: {name}`clearTr`, {name}`walkEndTr`,
+{name}`moveLeftTr`, {name}`revWalkTr`, then {name}`returnTapeTr`. -/
+@[expose] def copyRevTr {k : ℕ} (i j : Fin k) :=
+  seqTr (clearTr j)
+    (seqTr (walkEndTr i)
+      (seqTr (moveLeftTr i) (seqTr (revWalkTr i j) (returnTapeTr j) (.inl ())) (.inl ())) (.inl ()))
+    (.inl ())
+
 /-- Copy the reverse of register {lit}`i` into register {lit}`j`: clear
 {lit}`j`, walk {lit}`i` to its end and one back, copy leftwards, park
 {lit}`j`. -/
-@[expose] def copyRev {k : ℕ} (i j : Fin k) :=
+@[expose] noncomputable def copyRev {k : ℕ} (i j : Fin k) :=
   seq (clear j) (seq (walkEnd i) (seq (moveLeft i) (seq (revWalk i j) (returnTape j))))
+
+/-- {name}`copyRev` is the machine built from {name}`copyRevTr`. -/
+theorem copyRev_eq_ofTr {k : ℕ} (i j : Fin k) :
+    copyRev i j = ofTr (.inl (.inl ())) (copyRevTr i j) := by
+  simp only [copyRev, clear_eq_ofTr, walkEnd, moveLeft, revWalk, returnTape_eq_ofTr, seq_ofTr,
+    copyRevTr]
 
 /-- {name}`copyRev` transforms the valuation by setting {lit}`j` to the
 reverse of {lit}`i`, in {lit}`5 * B + 12` steps. -/

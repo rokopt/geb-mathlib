@@ -46,6 +46,12 @@ repository's segment form of the output tape.
 # Main statements
 
 * {lit}`step_of_state` — a step from a known state, naming {lit}`tr`.
+* {lit}`tr_ofTr'` — the transition of a machine built from a transition
+  function, as a function.
+* {lit}`outputSymbol_of_state` — the symbol emitted from a known state, naming
+  {lit}`tr`.
+* {lit}`outputSymbol_ofTr_eq_none` — a machine built from a transition that
+  emits nothing emits nothing.
 * {lit}`Arrives.trans`, {lit}`Reaches.trans` — arrivals and reaches compose.
 * {lit}`Reaches.mono`, {lit}`RunsTo.mono` — a larger head bound.
 * {lit}`RunsTo.halt_runFrom` — after a run the machine stays put.
@@ -84,9 +90,33 @@ theorem step_of_state {k : ℕ} {Symbol State : Type} {input : List Symbol}
         workTapePos := fun i ↦ cfg.workTapePos i +
           ((tm.tr q cfg.inputSymbol cfg.workTapeSymbols).workTapes i).2
         output := cfg.output ++ (tm.tr q cfg.inputSymbol cfg.workTapeSymbols).output.toList } := by
-  unfold step
-  rw [hq]
+  rw [MultiTapeTM.step_of_state hq]
   rfl
+
+/-- The transition of a machine built from a transition function, as a function. -/
+theorem tr_ofTr' {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :
+    (ofTr q₀ tr).tr = tr :=
+  funext fun q ↦ funext fun inp ↦ funext fun work ↦ tr_ofTr q₀ tr q inp work
+
+/-- The symbol a machine emits from a known state. -/
+theorem outputSymbol_of_state {k : ℕ} {Symbol State : Type} {input : List Symbol}
+    {tm : MultiTapeTM k Symbol State} {cfg : Cfg k Symbol State input} {q : State}
+    (hq : cfg.state = some q) :
+    tm.outputSymbol cfg = (tm.tr q cfg.inputSymbol cfg.workTapeSymbols).output := by
+  unfold outputSymbol
+  rw [hq]
+
+/-- A machine built from a transition that emits nothing emits nothing. -/
+theorem outputSymbol_ofTr_eq_none {k : ℕ} {State : Type} {input : List Bool} {q₀ : State}
+    {tr : State → Option Bool → (Fin k → Option Bool) → Action k Bool State}
+    (h : ∀ q inp work, (tr q inp work).output = none) (cfg : Cfg k Bool State input) :
+    (ofTr q₀ tr).outputSymbol cfg = none := by
+  unfold outputSymbol
+  split
+  · rfl
+  · rw [tr_ofTr]
+    exact h _ _ _
 
 /-- From {lit}`cfg`, {lit}`tm` arrives at {lit}`cfg'` at step {lit}`t`, halted
 at no earlier step, every head within {lit}`[-1, B]` throughout. -/

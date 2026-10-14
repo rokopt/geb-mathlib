@@ -592,7 +592,6 @@ theorem wfStep_eq (n l d : ℕ) (cs : List Tree) (F : Tree → Tree → Tree)
       Label.cons, Label.quote, Label.nil, Label.fold, Label.para, Label.iter, Label.foldr,
       Label.lcase, Label.prim, Label.ref, Nat.reduceEqDiff, or_false, or_true]
     all_goals first
-      | rfl
       | exact leafBelow_eq _ _
       | (cases cs.length == 2 <;> rfl)
       | (cases cs.isEmpty <;> rfl)

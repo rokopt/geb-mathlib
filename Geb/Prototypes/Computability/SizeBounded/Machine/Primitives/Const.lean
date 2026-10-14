@@ -26,10 +26,13 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 
 # Main definitions
 
+* {lit}`constTr` — the transition function of the primitive, composed of its
+  phases' by {name}`Geb.SizeBounded.Machine.seqTr`.
 * {lit}`const` — write a fixed word into a register.
 
 # Main statements
 
+* {lit}`const_eq_ofTr` — the primitive is the machine built from {lit}`constTr`.
 * {lit}`const_transforms` — the contract of the primitive, naming its
   transformer and its step bound.
 
@@ -46,9 +49,19 @@ open Turing MultiTapeTM
 
 public section
 
+/-- The transition of {lit}`const`: {name}`clearTr`, {name}`constWalkTr`, then
+{name}`returnTapeTr`. -/
+@[expose] def constTr {k : ℕ} (w : List Bool) (j : Fin k) :=
+  seqTr (clearTr j) (seqTr (constWalkTr w j) (returnTapeTr j) (.inl ())) (.inl 0)
+
 /-- Write the constant {lit}`w` into register {lit}`j`: clear, write, park. -/
-@[expose] def const {k : ℕ} (w : List Bool) (j : Fin k) :=
+@[expose] noncomputable def const {k : ℕ} (w : List Bool) (j : Fin k) :=
   seq (clear j) (seq (constWalk w j) (returnTape j))
+
+/-- {name}`const` is the machine built from {name}`constTr`. -/
+theorem const_eq_ofTr {k : ℕ} (w : List Bool) (j : Fin k) :
+    const w j = ofTr (.inl (.inl ())) (constTr w j) := by
+  simp only [const, clear_eq_ofTr, constWalk, returnTape_eq_ofTr, seq_ofTr, constTr]
 
 /-- {name}`const` transforms the valuation by setting {lit}`j` to {lit}`w`, in
 {lit}`4 * B + 9` steps. The bound {lit}`w.length ≤ B` is the contract's

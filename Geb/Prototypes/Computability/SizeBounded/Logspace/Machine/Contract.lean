@@ -265,7 +265,7 @@ theorem TransformsIn.seqFin {k : ℕ} (B T : ℕ → ℕ) : ∀ (m : ℕ) (S : F
     (Pre : Fin m → List Bool → (Fin k → List Bool) → Prop)
     (F : Fin m → List Bool → (Fin k → List Bool) → Fin k → List Bool),
     (∀ i, TransformsIn (P i) (Pre i) (F i) T B) →
-    TransformsIn (seqFin m S P).2 (preFin m Pre F)
+    TransformsIn (seqFin m S P) (preFin m Pre F)
       (fun input σ ↦ composeFin m (fun l ↦ F l input) σ) (fun n ↦ m * T n + 1) B :=
   Nat.rec
     (fun _ _ _ F _ ↦ by

@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Basic
 import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Family
+import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Correct
 
 set_option doc.verso true in
 /-!
@@ -168,7 +169,9 @@ theorem srnBody_transforms {k a b : ℕ} (i : Bool) (free : ℕ)
         (⟨free + 3 + l, by have := l.isLt; omega⟩ : Fin k)
         (σ ⟨free + 3 + b + l, by have := l.isLt; omega⟩)) σ) B :=
     composeFin_bounded B b _ (fun _ _ hσ ↦ hσ.update (hσ _))
-  refine ⟨_, Transforms.mono_time (Transforms.seq
+  refine ⟨_, Transforms.of_tm_eq
+    (by simp only [srnBody, seqProg_tm, seqFinProg_tm, copyProg_tm, sbsProg_tm]; rfl)
+    (Transforms.mono_time (Transforms.seq
     (Transforms.seqFin B T b _ _ F hFT hFB)
     (Transforms.seq
       (Transforms.seqFin B (5 * B + 12) b _ _
@@ -182,7 +185,7 @@ theorem srnBody_transforms {k a b : ℕ} (i : Bool) (free : ℕ)
         (copy_transforms ⟨free + 2, by omega⟩ ⟨free + 1, by omega⟩ hTmpV B)
         (fun _ hσ ↦ hσ.update (length_sbsSem_le i (hσ _) (hσ _))))
       hcopiesB)
-    (composeFin_bounded B b F hFB)) (by omega), ?_, ?_, ?_, ?_⟩
+    (composeFin_bounded B b F hFB)) (by omega)), ?_, ?_, ?_, ?_⟩
   · intro σ
     rw [Function.update_self, Function.update_self, (hcc _).2 _ hVvals, hsFV,
       (hcc _).2 _ hXvals, hsFX]

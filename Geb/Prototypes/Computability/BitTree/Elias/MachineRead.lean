@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.BitTree.Elias.MachineModel
 public import Geb.Prototypes.Computability.BitTree.Elias.MachineConfig
+public import Geb.Prototypes.Computability.BitTree.Elias.MachineSteps
 public import Geb.Prototypes.Computability.TreeScanner.Steps
 public import Mathlib.Tactic.FinCases
 
@@ -58,7 +59,7 @@ theorem step_read {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
         workTapePos := fun i ↦ cfg.workTapePos i +
           ((read q (boolEmb b)).workTapes i).2
         output := cfg.output } := by
-  rw [Geb.TreeScanner.step_of_state _ _ q hq, hin, tr_read q _ _ hr, read_inputMove]
+  rw [Geb.TreeScanner.step_of_state _ _ q hq, machine_tr, hin, tr_read q _ _ hr, read_inputMove]
   refine Cfg.ext rfl rfl ?_ rfl (by rw [read_outS]; exact List.append_nil _)
   funext i z
   rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
@@ -74,7 +75,7 @@ theorem outputSymbol_read {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control in
   unfold outputSymbol
   rw [hq]
   change (machine.tr q cfg.inputSymbol cfg.workTapeSymbols).output = none
-  rw [hin, tr_read q _ _ hr, read_outS]
+  rw [machine_tr, hin, tr_read q _ _ hr, read_outS]
 
 /-- A fork increases pending trees; a leaf initializes its implicit leading length bit. -/
 theorem step_tree (input : List (Fin 3)) (pos : Fin (input.length + 2))
@@ -161,7 +162,7 @@ theorem step_sizeCheck (input : List (Fin 3)) (pos : Fin (input.length + 2))
     machine.step (scanCfg input pos stSizeCheck pending zeros bs cs) =
       scanCfg input pos (if zeros = 0 then stDecrement false else stSizeBit)
         pending zeros bs cs := by
-  have ht : machine.tr stSizeCheck (scanCfg input pos stSizeCheck pending zeros bs cs).inputSymbol
+  have ht : transition stSizeCheck (scanCfg input pos stSizeCheck pending zeros bs cs).inputSymbol
       (scanCfg input pos stSizeCheck pending zeros bs cs).workTapeSymbols =
       jump (if zeros = 0 then stDecrement false else stSizeBit) := by
     change jump (if wordTape [] zeros == some 2 then _ else _) = _
@@ -170,7 +171,7 @@ theorem step_sizeCheck (input : List (Fin 3)) (pos : Fin (input.length + 2))
     | succ zeros =>
       rw [wordTape_succ]
       simp
-  rw [Geb.TreeScanner.step_of_state _ _ stSizeCheck rfl, ht]
+  rw [Geb.TreeScanner.step_of_state _ _ stSizeCheck rfl, machine_tr, ht]
   refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_ rfl
   funext i
   change (scanCfg input pos stSizeCheck pending zeros bs cs).workTapePos i + 0 = _
@@ -180,6 +181,8 @@ theorem step_sizeCheck (input : List (Fin 3)) (pos : Fin (input.length + 2))
 theorem outputSymbol_sizeCheck (input : List (Fin 3)) (pos : Fin (input.length + 2))
     (pending zeros : ℕ) (bs cs : List Bool) :
     machine.outputSymbol (scanCfg input pos stSizeCheck pending zeros bs cs) = none := by
+  change (machine.tr stSizeCheck _ _).output = none
+  rw [machine_tr]
   rfl
 
 end Geb.BitTree.Elias.Machine

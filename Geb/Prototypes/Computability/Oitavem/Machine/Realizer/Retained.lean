@@ -22,11 +22,14 @@ intermediate outputs, then emits the full final step and clears its work tapes.
 * {lit}`Generator.exists_prefixMask` supplies a mask for any fixed logarithmic
   coefficient.
 * {lit}`Generator.retained` assembles a machine from a saved-prefix invariant.
+* {lit}`Generator.retainedProgram_eq_ofTr` identifies its program with the machine built
+  from the transition function {lit}`Generator.retainedProgramTr`.
 
 ## Implementation notes
 
 The mask is constructed from fixed products of the physical input. All machine
-contracts inherit {lit}`Classical.choice` from CSLib.
+contracts inherit {lit}`Classical.choice` from CSLib, and the program, sequencing
+machines whose transitions CSLib selects by choice, is noncomputable.
 
 ## Tags
 
@@ -131,7 +134,8 @@ variable {m : ℕ} {Pre : List Bool → (Fin m → List Bool) → Prop}
 
 /-- Initialize a capture mask and countdown, retain the base and intermediate
 outputs, and emit the final step before clearing the saved prefix and mask. -/
-@[expose] def retainedProgram (G : Generator m Pre W) (Base : Generator m Pre V) (M : Fin m)
+@[expose] noncomputable def retainedProgram (G : Generator m Pre W) (Base : Generator m Pre V)
+    (M : Fin m)
     (P : Generator (m + 2) (RetainedPre Pre M N) (fun input σ ↦
       H input (fun i ↦ σ (i.castAdd 2)) (σ (Fin.natAdd m 0))
         (counterValue (σ (Fin.natAdd m 1))))) :=
@@ -140,13 +144,55 @@ outputs, and emit the final step before clearing the saved prefix and mask. -/
     (padLayout (m + 2) (G.tapes + 1) K (by omega))
   let B := onTapes (Base.call (Fin.castAdd 2))
     (padLayout (m + 2) Base.tapes K (by omega))
-  let S := (P.pad K (by omega)).program
+  let Q := P.pad K (by omega)
+  let S := Q.program
   let r (j : Fin 2) : Fin (m + 2 + K) := (j.natAdd m).castAdd K
   let e := reserveTwo (m + 2 + K)
   seq (copy (oldTape ((M.castAdd 2).castAdd K)) countTape)
     (seq (onTapes L e) (seq (generatedPrefix B (r 0))
       (seq (retainedLoop S (r 0) (r 1)) (seq (onTapes S e)
         (seq (const [] (oldTape (r 0))) (const [] countTape))))))
+
+/-- The initial state and the transition of {name}`retainedProgram`. -/
+@[expose] def retainedProgramTr (G : Generator m Pre W) (Base : Generator m Pre V) (M : Fin m)
+    (P : Generator (m + 2) (RetainedPre Pre M N) (fun input σ ↦
+      H input (fun i ↦ σ (i.castAdd 2)) (σ (Fin.natAdd m 0))
+        (counterValue (σ (Fin.natAdd m 1))))) :=
+  let K := G.tapes + Base.tapes + P.tapes + 1
+  let L := onTapesTr (G.lengthReaderTr (Fin.castAdd 2) (Fin.natAdd m (1 : Fin 2)))
+    (padLayout (m + 2) (G.tapes + 1) K (by omega))
+  let c := Base.callTr (Fin.castAdd 2)
+  let B := onTapesTr c.2 (padLayout (m + 2) Base.tapes K (by omega))
+  let Q := P.pad K (by omega)
+  let r (j : Fin 2) : Fin (m + 2 + K) := (j.natAdd m).castAdd K
+  let e := reserveTwo (m + 2 + K)
+  ((.inl (.inl (.inl ())) : StateOf (G.retainedProgram Base M P)),
+    seqTr (copyTr (oldTape ((M.castAdd 2).castAdd K)) countTape)
+      (seqTr (onTapesTr L e)
+        (seqTr (generatedPrefixTr B c.1 (r 0))
+          (seqTr (retainedLoopTr Q.tr Q.q₀ (r 0) (r 1))
+            (seqTr (onTapesTr Q.tr e)
+              (seqTr (constTr [] (oldTape (r 0))) (constTr [] countTape) (.inl (.inl ())))
+              (.inl (.inl (.inl ()))))
+            (.inl Q.q₀))
+          (.inl (.inl ())))
+        (.inl (.inl (.inl (.inl ())))))
+      (.inl (.inl (.inl (.inl (.inl ()))))))
+
+/-- {name}`retainedProgram` is the machine built from {name}`retainedProgramTr`. -/
+theorem retainedProgram_eq_ofTr (G : Generator m Pre W) (Base : Generator m Pre V) (M : Fin m)
+    (P : Generator (m + 2) (RetainedPre Pre M N) (fun input σ ↦
+      H input (fun i ↦ σ (i.castAdd 2)) (σ (Fin.natAdd m 0))
+        (counterValue (σ (Fin.natAdd m 1))))) :
+    G.retainedProgram Base M P =
+      ofTr (G.retainedProgramTr Base M P).1 (G.retainedProgramTr Base M P).2 := by
+  simp only [retainedProgram, retainedProgramTr, copy_eq_ofTr, lengthReader_eq_ofTr,
+    call_eq_ofTr, onTapes_ofTr, generatedPrefix_ofTr, const_eq_ofTr, seq_ofTr, program]
+  erw [retainedLoop_ofTr, onTapes_ofTr]
+  exact (congrArg (seq _) ((congrArg (seq _) ((congrArg (seq _) ((congrArg (seq _)
+    (seq_ofTr _ _ _ _)).trans (seq_ofTr _ _ _ _))).trans (seq_ofTr _ _ _ _))).trans
+    (seq_ofTr _ _ _ _))).trans (seq_ofTr _ _ _ _)
+
 
 /-- The saved-prefix program has finite control. -/
 theorem retainedProgram_finite (G : Generator m Pre W) (Base : Generator m Pre V) (M : Fin m)
@@ -207,9 +253,11 @@ and only the bounded intermediate prefixes are stored. -/
       env := fun i ↦ oldTape ((i.castAdd 2).castAdd (G.tapes + Base.tapes + P.tapes + 1))
       env_injective := (Fin.succ_injective _).comp ((Fin.succ_injective _).comp
         ((Fin.castAdd_injective _ _).comp (Fin.castAdd_injective _ _)))
-      program := G.retainedProgram Base M P
+      q₀ := (G.retainedProgramTr Base M P).1
+      tr := (G.retainedProgramTr Base M P).2
       space := G.space + Base.space + P.space + C
       correct B hB := by
+        rw [← retainedProgram_eq_ofTr]
         let K := G.tapes + Base.tapes + P.tapes + 1
         let k := m + 2 + K
         let r (j : Fin 2) : Fin k := (j.natAdd m).castAdd K
@@ -262,6 +310,11 @@ and only the bounded intermediate prefixes are stored. -/
         simp only [hbenv] at hb
         change EmitsIn _ Pre₁ (fun _ σ ↦ σ) (fun input σ ↦ V input (fun i ↦ σ (env i)))
           TB B at hb
+        have hBprog : Base'.program = onTapes (Base.call (Fin.castAdd 2 : Fin m → Fin (m + 2)))
+            (padLayout (m + 2) Base.tapes K (by dsimp [K]; omega)) := by
+          rw [call_eq_ofTr, onTapes_ofTr]
+          exact rfl
+        rw [hBprog] at hb
         obtain ⟨TP, hp⟩ := (P.pad K (by dsimp [K]; omega)).correct B hP
         simp only [pad_env] at hp
         have loop := retainedLoop_transformsIn (r 0) (r 1) h01 hp Pre₀

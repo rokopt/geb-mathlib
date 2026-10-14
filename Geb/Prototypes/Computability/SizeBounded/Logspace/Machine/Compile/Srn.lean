@@ -49,7 +49,8 @@ namespace Geb.SizeBounded.Logspace.Machine
 
 open Geb.SizeBounded (Direction rc nsiValue finMax le_finMax stepDir)
 open Geb.SizeBounded.Machine (Prog composeFin composeFin_of_lt le_nsiValue seqFin seq copy const
-  copyRev copy_transforms const_transforms copyRev_transforms Transforms Bounded)
+  copyRev copy_transforms const_transforms copyRev_transforms Transforms Bounded seqProg_tm
+  constProg_tm copyProg_tm copyRevProg_tm seqFinProg_tm)
 
 public section
 
@@ -57,13 +58,14 @@ public section
 theorem srnProg_tm {k b : ℕ} (Y V : Reg k) (CR R : Fin k) (vals : Fin b → Reg k)
     (out : Reg k) (j : Fin b) (bases : Fin b → Prog k) (body1 body2 : Prog k) :
     (srnProg Y V CR R vals out j bases body1 body2).tm =
-      seq (seqFin b (fun l ↦ (bases l).State) (fun l ↦ (bases l).tm)).2
+      seq (seqFin b (fun l ↦ (bases l).State) (fun l ↦ (bases l).tm))
         (seq (const [] (V 0)) (seq (const [] (V 1)) (seq (copy (Y 1) CR)
           (seq (whileNonblank (some CR) body1.tm) (seq (copyRev (Y 0) R)
             (seq (whileNonblank (some R) body2.tm)
               (seq (copy (vals j 0) (out 0)) (copy (vals j 1) (out 1))))))))) := by
   unfold srnProg
-  simp only [Prog.tm_seq, Prog.tm_ofTM, Prog.tm_whileReg, Prog.tm_seqFin, copyReg_tm]
+  simp only [seqProg_tm, constProg_tm, copyProg_tm, copyRevProg_tm, Prog.tm_whileReg,
+    seqFinProg_tm, copyReg_tm]
   rfl
 
 /-- A recursion node is correct when its children are. -/

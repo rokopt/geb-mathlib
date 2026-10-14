@@ -22,11 +22,19 @@ the same private tapes.
 * {lit}`QueryPre` extends a protected environment by a bounded binary query.
 * {lit}`Generator.indexed` streams a word from its length and indexed digits.
 * {lit}`Generator.withLength` lends a generated binary length to a continuation.
+* {lit}`Generator.indexedProgramTr` and {lit}`Generator.withLengthProgramTr` give the
+  initial states and transitions of their programs.
+
+## Main statements
+
+* {lit}`Generator.indexedProgram_eq_ofTr` and {lit}`Generator.withLengthProgram_eq_ofTr`
+  identify the programs with the machines built from their transition functions.
 
 ## Implementation notes
 
 The programs use the existing generated length reader and emitting loop. Their
-contracts inherit {lit}`Classical.choice` from CSLib.
+contracts inherit {lit}`Classical.choice` from CSLib, and the programs, sequencing
+machines whose transitions CSLib selects by choice, are noncomputable.
 
 ## Tags
 
@@ -64,7 +72,7 @@ variable {m : ℕ} {Pre : List Bool → (Fin m → List Bool) → Prop}
   {F : List Bool → (Fin m → List Bool) → ℕ → Bool}
 
 /-- Initialize a countdown, emit indexed digits, and clear the query. -/
-@[expose] def indexedProgram (G : Generator m Pre W)
+@[expose] noncomputable def indexedProgram (G : Generator m Pre W)
     (P : Generator (m + 1) (QueryPre Pre N)
       (fun input σ ↦ [F input (fun i ↦ σ i.castSucc) (counterValue (σ (Fin.last m)))])) :=
   let K := G.tapes + P.tapes + 1
@@ -74,6 +82,28 @@ variable {m : ℕ} {Pre : List Bool → (Fin m → List Bool) → Prop}
     (padLayout (m + 2) P.tapes K (by omega))
   let r (j : Fin 2) : Fin (m + 2 + K) := (j.natAdd m).castAdd K
   seq L (seq (concatLoop S (r 1) (r 0)) (const [] (r 0)))
+
+/-- The initial state and the transition of {name}`indexedProgram`. -/
+@[expose] def indexedProgramTr (G : Generator m Pre W)
+    (P : Generator (m + 1) (QueryPre Pre N)
+      (fun input σ ↦ [F input (fun i ↦ σ i.castSucc) (counterValue (σ (Fin.last m)))])) :=
+  let K := G.tapes + P.tapes + 1
+  let L := onTapesTr (G.lengthReaderTr (Fin.castAdd 2) (Fin.natAdd m (1 : Fin 2)))
+    (padLayout (m + 2) (G.tapes + 1) K (by omega))
+  let c := P.callTr (Fin.castSucc : Fin (m + 1) → Fin (m + 2))
+  let S := onTapesTr c.2 (padLayout (m + 2) P.tapes K (by omega))
+  let r (j : Fin 2) : Fin (m + 2 + K) := (j.natAdd m).castAdd K
+  ((.inl (.inl (.inl (.inl (.inl ())))) : StateOf (G.indexedProgram P)),
+    seqTr L (seqTr (concatLoopTr S c.1 (r 1) (r 0)) (constTr [] (r 0)) (.inl (.inl ())))
+      (.inl (.inl ())))
+
+/-- {name}`indexedProgram` is the machine built from {name}`indexedProgramTr`. -/
+theorem indexedProgram_eq_ofTr (G : Generator m Pre W)
+    (P : Generator (m + 1) (QueryPre Pre N)
+      (fun input σ ↦ [F input (fun i ↦ σ i.castSucc) (counterValue (σ (Fin.last m)))])) :
+    G.indexedProgram P = ofTr (G.indexedProgramTr P).1 (G.indexedProgramTr P).2 := by
+  simp only [indexedProgram, indexedProgramTr, lengthReader_eq_ofTr, call_eq_ofTr, onTapes_ofTr,
+    concatLoop_ofTr, const_eq_ofTr, seq_ofTr]
 
 /-- Indexed assembly has finite control when the length source and step do. -/
 theorem indexedProgram_finite (G : Generator m Pre W)
@@ -102,9 +132,11 @@ The step's behavior past the word's end is immaterial to this loop. -/
     { finite := G.indexedProgram_finite P
       env := fun i ↦ (i.castAdd 2).castAdd (G.tapes + P.tapes + 1)
       env_injective := (Fin.castAdd_injective _ _).comp (Fin.castAdd_injective _ _)
-      program := G.indexedProgram P
+      q₀ := (G.indexedProgramTr P).1
+      tr := (G.indexedProgramTr P).2
       space := G.space + P.space + C
       correct B hB := by
+        rw [← indexedProgram_eq_ofTr]
         let K := G.tapes + P.tapes + 1
         let r (j : Fin 2) : Fin (m + 2 + K) := (j.natAdd m).castAdd K
         let env (j : Fin m) : Fin (m + 2 + K) := (j.castAdd 2).castAdd K
@@ -138,8 +170,13 @@ The step's behavior past the word's end is immaterial to this loop. -/
         let S := (P.rename (Fin.castSucc : Fin (m + 1) → Fin (m + 2))
           (fun _ _ hp ↦ hp)).allocate (padLayout (m + 2) P.tapes K (by dsimp [K]; omega))
         have hSenv : S.env = Fin.castAdd K := funext (fun i ↦ padLayout_env ..)
+        have hSprog : S.program = onTapes (P.call (Fin.castSucc : Fin (m + 1) → Fin (m + 2)))
+            (padLayout (m + 2) P.tapes K (by dsimp [K]; omega)) := by
+          rw [call_eq_ofTr, onTapes_ofTr]
+          exact rfl
         obtain ⟨TS, hs⟩ := S.correct B hP
         simp only [hSenv] at hs
+        rw [hSprog] at hs
         have hloop := concatLoop_emitsIn (r 1) (r 0) (hr.ne (by decide)) hs Pre₀
           (fun input σ ↦ D input (fun i ↦ σ (env i)))
           (fun input σ hp ↦ (hD input _ hp.1).trans_le (hlen input _ hp.1))
@@ -186,13 +223,33 @@ The step's behavior past the word's end is immaterial to this loop. -/
     }⟩
 
 /-- Count a generated word, run a continuation with that count, then clear it. -/
-@[expose] def withLengthProgram {V : List Bool → (Fin m → List Bool) → List Bool}
-    (G : Generator m Pre W)
+@[expose] noncomputable def withLengthProgram
+    {V : List Bool → (Fin m → List Bool) → List Bool} (G : Generator m Pre W)
     (P : Generator (m + 1) (LengthPre Pre W) (fun input σ ↦ V input (fun i ↦ σ i.castSucc))) :=
   let K := G.tapes + P.tapes + 1
   let L := onTapes (G.lengthReader Fin.castSucc (Fin.last m))
     (padLayout (m + 1) (G.tapes + 1) K (by omega))
   seq L (seq (P.pad K (by omega)).program (const [] ((Fin.last m).castAdd K)))
+
+/-- The initial state and the transition of {name}`withLengthProgram`. -/
+@[expose] def withLengthProgramTr {V : List Bool → (Fin m → List Bool) → List Bool}
+    (G : Generator m Pre W)
+    (P : Generator (m + 1) (LengthPre Pre W) (fun input σ ↦ V input (fun i ↦ σ i.castSucc))) :=
+  let K := G.tapes + P.tapes + 1
+  let L := onTapesTr (G.lengthReaderTr Fin.castSucc (Fin.last m))
+    (padLayout (m + 1) (G.tapes + 1) K (by omega))
+  let Q := P.pad K (by omega)
+  ((.inl (.inl (.inl (.inl (.inl ())))) : StateOf (G.withLengthProgram P)),
+    seqTr L (seqTr Q.tr (constTr [] ((Fin.last m).castAdd K)) (.inl (.inl ()))) (.inl Q.q₀))
+
+/-- {name}`withLengthProgram` is the machine built from {name}`withLengthProgramTr`. -/
+theorem withLengthProgram_eq_ofTr {V : List Bool → (Fin m → List Bool) → List Bool}
+    (G : Generator m Pre W)
+    (P : Generator (m + 1) (LengthPre Pre W) (fun input σ ↦ V input (fun i ↦ σ i.castSucc))) :
+    G.withLengthProgram P = ofTr (G.withLengthProgramTr P).1 (G.withLengthProgramTr P).2 := by
+  simp only [withLengthProgram, withLengthProgramTr, lengthReader_eq_ofTr, onTapes_ofTr, program,
+    const_eq_ofTr]
+  exact (congrArg (seq _) (seq_ofTr _ _ _ _)).trans (seq_ofTr _ _ _ _)
 
 /-- A generated-length continuation has finite control. -/
 theorem withLengthProgram_finite {V : List Bool → (Fin m → List Bool) → List Bool}
@@ -217,9 +274,11 @@ register. The register is cleared before returning to the original caller. -/
     { finite := G.withLengthProgram_finite P
       env := fun i ↦ i.castSucc.castAdd (G.tapes + P.tapes + 1)
       env_injective := (Fin.castAdd_injective _ _).comp (Fin.castSucc_injective _)
-      program := G.withLengthProgram P
+      q₀ := (G.withLengthProgramTr P).1
+      tr := (G.withLengthProgramTr P).2
       space := G.space + P.space + C
       correct B hB := by
+        rw [← withLengthProgram_eq_ofTr]
         let K := G.tapes + P.tapes + 1
         let R := (Fin.last m).castAdd K
         let env (i : Fin m) := i.castSucc.castAdd K

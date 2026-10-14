@@ -189,7 +189,12 @@ theorem correct_srn {k a b : ℕ} (j : Fin b) (c : Direction (.srn a b j) → Σ
       cases i with
       | false => exact hGFframe σ _ (by have := hparams p; omega)
       | true => exact hGTframe σ _ (by have := hparams p; omega))
-  refine ⟨_, Transforms.mono_time (Transforms.seq
+  refine ⟨_, Transforms.of_tm_eq
+    (by
+      simp only [compileValue, srnProg, seqProg_tm, seqFinProg_tm, caseLoopProg_tm, copyProg_tm,
+        copyRevProg_tm, constProg_tm]
+      rfl)
+    (Transforms.mono_time (Transforms.seq
       (copyRev_transforms (env 0) (⟨free, by omega⟩ : Fin k)
         (Fin.ne_of_val_ne (by change (env 0).val ≠ free; omega)) B)
       (Transforms.seq (const_transforms [] (⟨free + 1, by omega⟩ : Fin k) B)
@@ -209,7 +214,7 @@ theorem correct_srn {k a b : ℕ} (j : Fin b) (c : Direction (.srn a b j) → Σ
             (fun σ hσ ↦ loopF_bounded _ GF GT B hGFB hGTB (σ _) σ (hσ _) hσ))
           (fun σ hσ ↦ composeFin_bounded B b Fb hFbB σ hσ))
         (fun _ hσ ↦ Bounded.update (w := []) hσ (Nat.zero_le B)))
-      (fun σ hσ ↦ hσ.update (hrev σ hσ))) ?_,
+      (fun σ hσ ↦ hσ.update (hrev σ hσ))) ?_),
     fun σ ↦ ?_, fun σ i hi hio ↦ ?_, fun σ hσ ↦ ?_⟩
   · dsimp only [stepValue]
     omega
