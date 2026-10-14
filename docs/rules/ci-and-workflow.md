@@ -295,10 +295,17 @@ for every declaration that depends on it.
 `scripts/certificates.sh regen` runs the searches, by the executable
 `geb-certify`, and writes the certificates; `scripts/certificates.sh
 check` writes them into a temporary directory and compares them with the
-committed ones. A change to a development's proofs, or to a program it is
-about, is followed by `regen`. `slow-checks.yml` runs `check` daily and on
+committed ones. A search may continue a development from the certificates
+of the searches before it, which it reads from the directory it writes
+into. A change to a development's proofs, or to a program it is about, is
+followed by `regen`. `slow-checks.yml` runs `check` daily and on
 demand; the pre-push checklist and the other workflows check the committed
-certificates and do not search.
+certificates and do not search. A certificate whose check by Lean's
+evaluator takes hours is checked instead by a module of the library
+`GebSlow`, which neither `lake build` nor `lake test` builds and which
+`slow-checks.yml` builds and lints daily and on demand; its search's own
+check, as it stores each declaration, still runs with `regen` and
+`check`.
 
 ## Benchmarks
 

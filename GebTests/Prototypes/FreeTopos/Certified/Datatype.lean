@@ -16,8 +16,9 @@ set_option doc.verso true in
 /-!
 # The datatype language's soundness at an atom, proved in the internal language
 
-The development of {lit}`GebTests.Prototypes.FreeTopos.DatatypeBase`, stored in
-{lit}`bootstrap/certificates/datatype-base.cert`, proves in the program extended for the datatype
+The developments of {lit}`GebTests.Prototypes.FreeTopos.DatatypeBase`, the base and the soundness
+at an atom, stored in {lit}`bootstrap/certificates/datatype-base.cert` and
+{lit}`bootstrap/certificates/datatype-atom.cert`, prove in the program extended for the datatype
 language's soundness the soundness at an atom: an atom that the stage-1 typing written in Geb gives
 a type, and that the reader written in Geb resolves, resolves to a term whose evaluation by the
 evaluator written in Geb converges to a value related at that type.
@@ -43,17 +44,18 @@ namespace GebTests.Prototypes.FreeTopos.Certified.Datatype
 
 open Geb Geb.FreeTopos GebTests.Prototypes.FreeTopos.Datatypes
 
-/-- The development, read from its certificate. -/
+/-- The developments, read from their certificates, one after another. -/
 def decls : List Internal.Decl :=
-  ofText (include_str "../../../../bootstrap/certificates/datatype-base.cert")
+  ofText (include_str "../../../../bootstrap/certificates/datatype-base.cert") ++
+    ofText (include_str "../../../../bootstrap/certificates/datatype-atom.cert")
 
 set_option doc.verso false in
-/-- The development checks in the extended program and its last declaration states the soundness
+/-- The developments check in the extended program and the last declaration states the soundness
 at an atom, as Lean's evaluator decides. -/
 evaluation_axiom proved :
     provedIn extended3 (·.1.G) decls (fun (P, S, T) ↦ atomThm P S T) = true
 
-/-- The development proves the soundness at an atom in the extended program. -/
+/-- The developments prove the soundness at an atom in the extended program. -/
 theorem atom_proved :
     ∃ PST, extended3 = some PST ∧ Proves PST.1.G decls (atomThm PST.1 PST.2.1 PST.2.2) :=
   provedIn_eq_true proved

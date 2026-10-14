@@ -110,10 +110,19 @@ def dRwBy (rw : List Tree → List Term → Term → Option (Term × Deriv)) (k 
   let (φ', d) ← rw Γ Φ φ
   pure (nd .conv [d, ← k Γ Φ φ'])
 
+/-- The hypotheses the rules rewrite by, the others replaced by the unit's element: the
+evaluator reads a hypothesis only to rewrite by it, and weakens every hypothesis under each binder
+it enters, so that the replaced ones cost it nothing, while its derivations, which name the
+hypotheses by their indices, are unchanged. -/
+def rwHyps (rs : List NormRule) (Φ : List Term) : List Term :=
+  Φ.mapIdx fun i φ ↦ if rs.any (fun r ↦ match r with
+    | .hyp j => j == i
+    | _ => false) then φ else Term.star
+
 /-- The rewriting of a term by the evaluator, by rules, to a depth. -/
 def evalRw (G : Internal.Globals) (E : Array Entry) (rs : List NormRule) (m : Internal.Depth) :
     List Tree → List Term → Term → Option (Term × Deriv) := fun Γ Φ t ↦
-  (Internal.eval G E 0 rs 4096 m Γ Φ t).map fun (t', d, _) ↦ (t', d)
+  (Internal.eval G E 0 rs 4096 m Γ (rwHyps rs Φ) t).map fun (t', d, _) ↦ (t', d)
 
 /-- The rewriting of a term by a rewriting derivation, as the checker performs it. -/
 def rwWith (G : Internal.Globals) (E : Array Entry) (d : Deriv) :
@@ -1225,7 +1234,8 @@ def rulesEx (Φ : List Term) (i : ℕ) : List NormRule :=
 def norm (k : Deducer) : Deducer := fun Γ Φ ψ ↦ dRwBy (evalRw K.G K.E (K.rules Φ) .full) k Γ Φ ψ
 
 /-- An equation by normalization. -/
-def byNorm : Deducer := fun Γ Φ ψ ↦ dEq (byMode .full K.G K.E 0 (K.rules Φ)) Γ Φ ψ
+def byNorm : Deducer := fun Γ Φ ψ ↦
+  dEq (fun Γ Φ t u ↦ byMode .full K.G K.E 0 (K.rules Φ) Γ (rwHyps (K.rules Φ) Φ) t u) Γ Φ ψ
 
 /-- A hypothesis normalized, then the goal normalized and found among the hypotheses. -/
 def byHyp (h : ℕ) : Deducer := fun Γ Φ ψ ↦
