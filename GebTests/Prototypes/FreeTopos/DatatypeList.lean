@@ -151,35 +151,38 @@ def decideKnown (K : Kit) (t : List Tree → Term) (kF kT : Deducer) : Deducer :
 /-- An optional value's presence decided by the bits of its tree's label: the label of a value
 present, by {lit}`kT`, any other, by {lit}`kF`. The equations decided are those of the label and of
 its bits, which every test of the label finds, where an equation of the test as a whole would
-rewrite it before its label is reached; a label already constant is decided at once. -/
-def decideOpt (K : Kit) (opt : List Tree → Term) (kF kT : Deducer) : Deducer := fun Γ Φ ψ ↦
+rewrite it before its label is reached; a label already constant is decided at once. Where
+{lit}`minimal` holds, the bits are split only as far as the present label's bitstring, a single
+bit 0, is told from the others: empty, of a first bit 1, or of a bit after the first. -/
+def decideOpt (K : Kit) (opt : List Tree → Term) (kF kT : Deducer) (minimal : Bool := false) :
+    Deducer := fun Γ Φ ψ ↦
   let nf (t : Term) : Option Term := (evalRw K.G K.E (K.rules Φ) .full Γ Φ t).map Prod.fst
+  let listCase (X : Term) := dListCase K.L K.G K.E (K.ix "listCases") bitTy X
   match nf (call D.lab [] [opt Γ]), nf (numeral 1) with
   | some X, some one =>
     if X == one then kT Γ Φ ψ
     else if (List.range Γ.length).all fun i ↦ !Term.occurs X i then kF Γ Φ ψ
+    else if minimal then
+      listCase X kF (dBitCase K.L (K.ix "bitCases") (v 1) (listCase (v 0) kT kF) kF) Γ Φ ψ
     else dBits K.L K.G K.E (K.ix "listCases") (K.ix "bitCases")
       (fun bs ↦ if bs.map Oitavem.rank == some 1 then kT else kF) 2 [] X Γ Φ ψ
   | _, _ => dbgTrace s!"a value without a normal form: {showT (opt Γ)}" fun _ ↦ none
 
-/-- The tests of the soundness's antecedents at a form, under its quantifiers: its expansion a
-source form, and its expansion, its expansion's type, its resolution and the kernel's type of the
-resolved term, each present. -/
-def antecedentTests (P : Prog) (form : Term) : List Term :=
+/-- The tests of the soundness's antecedents at a form's optional expansion, under its
+quantifiers: the expansion a source form, and the expansion, its type, its resolution and the
+kernel's type of the resolved term, each present. -/
+def antecedentTests (P : Prog) (e : Term) : List Term :=
   let isSome (t : Term) : Term := pc P "Prelude.isSome" [t]
-  let (ty, k) := datatypeTerms P form
-  [pc P "srcForm" [Term.lam treeTy (pc P "Reader.expandNums" [v 4, v 0]),
-      pc P "Prelude.get" [pc P "Datatype.expandExpr" [v 7, form]]],
-    isSome (pc P "Datatype.expandExpr" [v 7, form]), isSome ty, isSome k,
-    isSome (pc P "Check.typeIn" [v 9, v 8, pc P "Prelude.get" [k]])]
+  let (ty, k) := expansionTerms P e
+  [pc P "srcForm" [Term.lam treeTy (pc P "Reader.expandNums" [v 4, v 0]), pc P "Prelude.get" [e]],
+    isSome e, isSome ty, isSome k, isSome (pc P "Check.typeIn" [v 9, v 8, pc P "Prelude.get" [k]])]
 
-/-- The optional values the soundness's antecedents at a form test present, under its
-quantifiers: its expansion, its expansion's type, its resolution and the kernel's type of the
+/-- The optional values the soundness's antecedents at a form's optional expansion test present,
+under its quantifiers: the expansion, its type, its resolution and the kernel's type of the
 resolved term. -/
-def antecedentOpts (P : Prog) (form : Term) : List Term :=
-  let (ty, k) := datatypeTerms P form
-  [pc P "Datatype.expandExpr" [v 7, form], ty, k,
-    pc P "Check.typeIn" [v 9, v 8, pc P "Prelude.get" [k]]]
+def antecedentOpts (P : Prog) (e : Term) : List Term :=
+  let (ty, k) := expansionTerms P e
+  [e, ty, k, pc P "Check.typeIn" [v 9, v 8, pc P "Prelude.get" [k]]]
 
 /-- The indices of the soundness's hypotheses that are the antecedents' tests, in their order. -/
 def antecedentHyps : List ℕ := [4, 5, 6, 7, 8]
@@ -234,11 +237,14 @@ node exposed, its elements' values abstracted to variables; and its weak normal 
 and the list's and the atom's cases of the typing and the reader unfolded as well, so that the
 cases on the elements' values reduce as the proofs decide them. With the values abstracted the
 equation applies whatever form the values have reached. The proofs at the keyword use them as
-rules in place of unfolding the steps among their hypotheses. -/
-def kwEqs (P : Prog) (T : Defs3) (kw : String) (n : ℕ) : List Step :=
-  (foldSpecs P T.envTy).zipIdx.map fun (f, k) ↦ (kwEqName kw n k, fun ix E ↦ do
+rules in place of unfolding the steps among their hypotheses. At expanded forms, where
+{lit}`expanded` holds, the expansion's fold is left out. -/
+def kwEqs (P : Prog) (T : Defs3) (kw : String) (n : ℕ) (form : Term := kwForm P kw n)
+    (expanded : Bool := false) : List Step :=
+  -- at expanded forms the statement applies no expansion, the fold of index 0
+  ((foldSpecs P T.envTy).zipIdx.filter fun (_, k) ↦ !expanded || k ≠ 0).map fun (f, k) ↦
+    (kwEqName kw n k, fun ix E ↦ do
     let Γ₀ := List.replicate n treeTy ++ f.ctx.tail
-    let form := kwForm P kw n
     let t := Term.subst (pc P f.name f.args) fun i ↦ if i = 0 then form else v (i - 1 + n)
     let rs := vRules3 P ix E.size
     let unfold := [T.argIdx k, P.idx "Typing.synList", P.idx "Reader.resolveList",
@@ -324,13 +330,16 @@ def srcNode (P : Prog) (T : Defs3) : Step :=
     pure (⟨0, Γ, [], Term.eq l r⟩, nd .join [d, nd .refl]))
 
 /-- The soundness at a keyword applied to the elements of a context of n trees, given the
-soundness at each element {lit}`ihs` marks. -/
+soundness at each element {lit}`ihs` marks: at source forms, or at expanded forms where
+{lit}`expanded` holds; at another form of the elements where {lit}`form` is given. -/
 def kwThm (P : Prog) (S : Defs) (T : Defs3) (kw : String) (n : ℕ)
-    (ihs : List Bool := List.replicate n true) : Internal.Thm :=
+    (ihs : List Bool := List.replicate n true) (expanded : Bool := false)
+    (form : Term := kwForm P kw n) : Internal.Thm :=
+  let φ := if expanded then expandedφ P S T else datatypeφ P S T
   ⟨0, List.replicate n treeTy,
     ((List.range n).filter fun i ↦ ihs.getD i false).map fun i ↦
-      Internal.instTerm [] [v (n - 1 - i)] (datatypeφ P S T),
-    Internal.instTerm [] [kwForm P kw n] (datatypeφ P S T)⟩
+      Internal.instTerm [] [v (n - 1 - i)] φ,
+    Internal.instTerm [] [form] φ⟩
 
 /-- The tools of the soundness at a keyword applied to the elements of a context of n trees: the
 kit, the statement's variables and hypotheses in the context, the stage functions' steps, and the
@@ -346,10 +355,17 @@ structure KwKit where
   ks : List ℕ
   /-- Which elements' soundness is among the hypotheses. -/
   ihs : List Bool
+  /-- Whether the soundness is at expanded forms rather than source forms. -/
+  expanded : Bool
 
 namespace KwKit
 
 variable (W : KwKit)
+
+/-- The optional expansion of a form under the statement's quantifiers: the form itself, present,
+at expanded forms. -/
+def expansion (form : Term) : Term :=
+  if W.expanded then pc W.K.P "Prelude.some" [form] else expansionOf W.K.P form
 
 /-- The number of the statement's hypotheses. -/
 def nH : ℕ := (datatypeParts W.K.P W.K.S W.T (v nQ)).1.length
@@ -401,7 +417,8 @@ hypothesis with the stage functions' steps unfolded. -/
 def sources (k : Deducer) : Deducer :=
   let K := W.K
   (List.range W.n).foldr (fun c k Γ Φ ψ ↦
-    decideIn K (fun Γ ↦ W.inΓ (atPos c) Γ ((antecedentTests K.P (v nQ)).headD Term.star))
+    decideIn K (fun Γ ↦ W.inΓ (atPos c) Γ ((antecedentTests K.P (W.expansion (v nQ))).headD
+        Term.star))
       (verifyK K s!"element {c + 1} not a source form"
         (linkK K s!"element {c + 1} not a source form" (W.hypFalseU (W.hyp 4)))) k Γ Φ ψ) k
 
@@ -414,20 +431,24 @@ def present (msg : String) (opt : List Tree → Term) (i : ℕ) (k : Deducer)
   decideOpt K opt
     (verifyK K s!"{msg} refuted" (linkK K s!"{msg} refuted"
       (if unfolding then W.hypFalseU (W.hyp i) else K.hypFalse (W.hyp i))))
-    (W.generalize (fun Γ ↦ pc K.P "Prelude.get" [opt Γ]) k)
+    (W.generalize (fun Γ ↦ pc K.P "Prelude.get" [opt Γ]) k) (minimal := W.expanded)
 
-/-- An optional value decided present by {name}`decideOpt`, absent refuting the hypothesis of index
-h or that of index h', by the rules, else with the stage functions' steps unfolded; the value
-present generalized. -/
+/-- An optional value decided present, absent refuting the hypothesis of index h or that of index
+h', by the rules, else with the stage functions' steps unfolded where {lit}`unfolding` holds; the
+value present generalized. The presence is decided by {name}`decideOpt`, or, where {lit}`tested`
+holds, by the test of presence as a whole, an equality of trees, which the rules keep folded: its
+equation rewrites every test of the value's presence, so that absence is a single case, and the
+value present is generalized with its label undecided. -/
 def presentAt (msg : String) (opt : List Tree → Term) (h h' : ℕ) (k : Deducer)
-    (unfolding : Bool := true) : Deducer :=
+    (unfolding : Bool := true) (tested : Bool := false) : Deducer :=
   let K := W.K
-  decideOpt K opt
-    (linkK K s!"{msg} refuted" fun Γ Φ ψ ↦
-      (K.hypFalse h Γ Φ ψ).orElse fun _ ↦ (K.hypFalse h' Γ Φ ψ).orElse fun _ ↦
-      if unfolding then (W.hypFalseU h Γ Φ ψ).orElse fun _ ↦ W.hypFalseU h' Γ Φ ψ
-        else none)
-    (W.generalize (fun Γ ↦ pc K.P "Prelude.get" [opt Γ]) k)
+  let absent : Deducer := linkK K s!"{msg} refuted" fun Γ Φ ψ ↦
+    (K.hypFalse h Γ Φ ψ).orElse fun _ ↦ (K.hypFalse h' Γ Φ ψ).orElse fun _ ↦
+    if unfolding then (W.hypFalseU h Γ Φ ψ).orElse fun _ ↦ W.hypFalseU h' Γ Φ ψ
+      else none
+  let present := W.generalize (fun Γ ↦ pc K.P "Prelude.get" [opt Γ]) k
+  if tested then decideIn K (fun Γ ↦ pc K.P "Prelude.isSome" [opt Γ]) absent present
+  else decideOpt K opt absent present (minimal := W.expanded)
 
 /-- The steps the statement's hypotheses expose unfolded. -/
 def unfold (k : Deducer) : Deducer := unfoldApps W.K W.ks ((List.range W.nH).map W.hyp) k
@@ -447,8 +468,8 @@ def decideWith (stages : List (List (ℕ × Term × ℕ))) (k : Deducer) : Deduc
 /-- The elements' antecedents decided, antecedent by antecedent, by {lit}`decideWith`: each
 element's expansion, its type, its resolution and the kernel's type of the resolved term. -/
 def decideAll (k : Deducer) : Deducer :=
-  W.decideWith (((antecedentOpts W.K.P (v nQ)).zip antecedentHyps.tail).map fun (o, i) ↦
-    ((List.range W.n).filter fun c ↦ W.ihs.getD c false).map fun c ↦ (c, o, i)) k
+  W.decideWith (((antecedentOpts W.K.P (W.expansion (v nQ))).zip antecedentHyps.tail).map
+    fun (o, i) ↦ ((List.range W.n).filter fun c ↦ W.ihs.getD c false).map fun c ↦ (c, o, i)) k
 
 /-- The soundness at the element of position c, its hypothesis, at the statement's variables,
 those of the positions {lit}`over` gives at its terms; its antecedents those of the statement or
@@ -509,13 +530,14 @@ end KwKit
 /-- The kit of the soundness at a keyword applied to n elements, after the development's
 theorems, the stage functions' equations at the keyword among its rules where they are proved. -/
 def kwKit (P : Prog) (S : Defs) (T : Defs3) (ix : String → ℕ) (E : Array Internal.Entry)
-    (n : ℕ) (ihs : List Bool := List.replicate n true) (kw : String := "") : KwKit :=
+    (n : ℕ) (ihs : List Bool := List.replicate n true) (kw : String := "")
+    (expanded : Bool := false) : KwKit :=
   let more := (vocab3 ++ ["charsMap", "handlerAtom3", "rawAtom", "rawList", "rawAtomR"] ++
       (List.range nFolds).map (kwEqName kw n)).filter fun nm ↦
     0 < ix nm ∧ ix nm < E.size
   ⟨⟨P, S, E, ix, more⟩, T, n, (List.range nFolds).map T.argIdx ++
     [P.idx "Typing.synList", P.idx "Reader.resolveList", P.idx "Typing.synAtom",
-      P.idx "Reader.resolveAtom"], ihs⟩
+      P.idx "Reader.resolveAtom"], ihs, expanded⟩
 
 /-- The tools of an evaluation's proof after the elements' soundness: the rules, the vocabulary's
 and those of the equations among the hypotheses of the indices kept, after the base, or of
@@ -866,29 +888,39 @@ def lamT (A b : Term) : Term :=
 def appT (f x : Term) : Term :=
   nodeT (Term.pair (numeral Kernel.Label.app) (consT treeTy f (consT treeTy x (nilT treeTy))))
 
-/-- The abstraction compatible with the relation: an abstraction whose body, in the environment
-extended by any value related at a type, converges to a value related at another, converges, at
-the first level, to its closure, related at the arrow type by {lit}`relTArrow`; the closure's
-application to a related value is the body's evaluation a level below. -/
+/-- The statement of the abstraction's compatibility with the relation: an abstraction whose body,
+in the environment extended by any value related at a type, converges to a value related at
+another, converges to a value related at the arrow type; the relation of the conclusion its
+η-expansion, as the arrow's relation unfolds, or itself where {lit}`contracted` holds, as the
+soundness states it. -/
+def lamCompatThm (P : Prog) (S : Defs) (T : Defs3) (contracted : Bool) : Internal.Thm :=
+  let o := P.o
+  -- context: the environment, the body, the annotation, the codomain, the domain, the relation's
+  -- context
+  let Γ := [list treeTy, treeTy, treeTy, treeTy, treeTy, Defs3.ctxTy]
+  let arrowT (A B : Term) : Term := nodeT (Term.pair (numeral Kernel.Label.tyArrow)
+    (consT treeTy A (consT treeTy B (nilT treeTy))))
+  -- the body's convergence related at the codomain as the soundness states it, the relation
+  -- itself rather than its η-expansion
+  let premise := Internal.Logic.all o treeTy (Term.lam treeTy (Internal.Logic.imp o
+    (Term.app (T.relT (v 6) (v 5)) (v 0))
+    (S.conv (Term.lam nat (S.evN (Term.fst (v 7)) (v 0) (consT treeTy (v 1) (v 2)) (v 3)))
+      (T.relT (v 6) (v 4)))))
+  let concl := S.conv (Term.lam nat (S.evN (Term.fst (v 6)) (v 0) (v 1) (lamT (v 3) (v 2))))
+    (if contracted then T.relT (v 5) (arrowT (v 4) (v 3))
+      else Term.lam treeTy (Term.app (T.relT (v 6) (arrowT (v 5) (v 4))) (v 0)))
+  ⟨0, Γ, [], Internal.Logic.imp o premise concl⟩
+
+/-- The abstraction compatible with the relation ({name}`lamCompatThm`): an abstraction whose
+body, in the environment extended by any value related at a type, converges to a value related at
+another, converges, at the first level, to its closure, related at the arrow type by
+{lit}`relTArrow`; the closure's application to a related value is the body's evaluation a level
+below. -/
 def lamCompat (P : Prog) (S : Defs) (T : Defs3) : Step :=
   ("lamCompat", fun ix E ↦ do
-    let o := P.o
     let K : Kit := ⟨P, S, E, ix, ["relTArrow"]⟩
     let L := K.L
-    -- context: the environment, the body, the annotation, the codomain, the domain, the relation's
-    -- context
-    let Γ := [list treeTy, treeTy, treeTy, treeTy, treeTy, Defs3.ctxTy]
-    let arrowT (A B : Term) : Term := nodeT (Term.pair (numeral Kernel.Label.tyArrow)
-      (consT treeTy A (consT treeTy B (nilT treeTy))))
-    -- the body's convergence related at the codomain as the soundness states it, the relation
-    -- itself rather than its η-expansion
-    let premise := Internal.Logic.all o treeTy (Term.lam treeTy (Internal.Logic.imp o
-      (Term.app (T.relT (v 6) (v 5)) (v 0))
-      (S.conv (Term.lam nat (S.evN (Term.fst (v 7)) (v 0) (consT treeTy (v 1) (v 2)) (v 3)))
-        (T.relT (v 6) (v 4)))))
-    let concl := S.conv (Term.lam nat (S.evN (Term.fst (v 6)) (v 0) (v 1) (lamT (v 3) (v 2))))
-      (Term.lam treeTy (Term.app (T.relT (v 6) (arrowT (v 5) (v 4))) (v 0)))
-    let a : Internal.Thm := ⟨0, Γ, [], Internal.Logic.imp o premise concl⟩
+    let a := lamCompatThm P S T false
     let clo (Γ : List Tree) : Term := pc P "Eval.valClo"
       [v (Γ.length - 6), v (Γ.length - 4), v (Γ.length - 5)]
     let d? := dImpI L (fun Γ Φ ψ ↦ K.norm (dConv L K.G K.E S (succN zeroN) (clo Γ)
@@ -1011,6 +1043,146 @@ def envTCons (P : Prog) (T : Defs3) : Step :=
       | dbgTrace "envTCons: not proved" fun _ ↦ none
     pure (a, d))
 
+/-- The tools of the soundness at a form binding a name at an annotation in a body, elements of
+the form of the positions {lit}`binder`, {lit}`ann` and {lit}`body`: the annotation as the typing
+and the reader read it, the body's contexts extended by the binder, the abstraction of the body
+related at the arrow type, and the binder decided an atom. -/
+structure BindKit extends KwKit where
+  /-- The position of the binder's name. -/
+  binder : ℕ
+  /-- The position of the annotation. -/
+  ann : ℕ
+  /-- The position of the body. -/
+  body : ℕ
+  /-- The prefix of the deductions' messages. -/
+  msg : String
+
+namespace BindKit
+
+variable (B : BindKit)
+
+/-- The form's expansion under the statement's quantifiers, the form's variable that of index
+{name}`nQ`. -/
+def x : Term := pc B.K.P "Prelude.get" [B.expansion (v nQ)]
+
+/-- The type and the resolved term of the form under the statement's quantifiers. -/
+def terms : Term × Term := expansionTerms B.K.P (B.expansion (v nQ))
+
+/-- A term under the statement's quantifiers at the element of position c. -/
+def atEl (c : ℕ) (t : Term) (Γ : List Tree) : Term := B.inΓ (atPos c) Γ t
+
+/-- The element of position c's expansion as the typing's fold rebuilds it, the first component of
+its value. -/
+def raw (c : ℕ) (Γ : List Tree) : Term :=
+  Term.fst (Term.app (Term.snd (B.T.foldAt 1 [B.qv 4 Γ] (B.atEl c B.x Γ))) Term.star)
+
+/-- The annotation's optional type as the typing reads it. -/
+def readTyAt (Γ : List Tree) : Term := pc B.K.P "Typing.readTy" [B.qv 4 Γ, B.raw B.ann Γ]
+
+/-- The annotation's type as the typing reads it. -/
+def annTy (Γ : List Tree) : Term := pc B.K.P "Prelude.get" [B.readTyAt Γ]
+
+/-- The annotation's optional kernel type as the reader reads it, from its expansion's erasure, its
+numeral abbreviations expanded. -/
+def readTypeAt : List Tree → Term :=
+  B.atEl B.ann (pc B.K.P "Reader.readType" [v 4,
+    pc B.K.P "Reader.expandNums" [v 3, pc B.K.P "Datatype.eraseExpr" [B.x]]])
+
+/-- The annotation's kernel type as the reader reads it. -/
+def annK (Γ : List Tree) : Term := pc B.K.P "Prelude.get" [B.readTypeAt Γ]
+
+/-- The named context's entry of the binder: its name at the annotation's type. -/
+def entry (Γ : List Tree) : Term :=
+  pc B.K.P "Typing.abbr" [pc B.K.P "Typing.atomName" [B.raw B.binder Γ], B.annTy Γ]
+
+/-- The statement's variables at the body: the named context extended by the binder's entry, the
+kernel's context by the annotation's kernel type. -/
+def overBody (j : ℕ) : Option (List Tree → Term) :=
+  if j = 5 then some fun Γ ↦ consT treeTy (B.entry Γ) (B.qv 5 Γ)
+  else if j = 2 then some fun Γ ↦ consT treeTy (B.annK Γ) (B.qv 2 Γ) else none
+
+/-- A term under the statement's quantifiers at the body and its contexts extended. -/
+def bodyAt (t : Term) (Γ : List Tree) : Term := B.inΓWith B.overBody (atPos B.body) Γ t
+
+/-- A term in normal form by the rules, the generalized values' variables among them. -/
+def nfIn (Γ : List Tree) (Φ : List Term) (t : Term) : Term :=
+  ((evalRw B.K.G B.K.E (B.K.rules Φ) .full Γ Φ t).map Prod.fst).getD t
+
+/-- The abstraction of the body over the annotation's kernel type converging to a value related at
+the arrow type, by the theorem {lit}`thm` of {name}`lamCompatThm`: its premise the body's
+soundness in the environment extended by any value related at the annotation's type, the
+environment related to the named context extended by {lit}`envTCons`; then k. -/
+def lamConv (thm : String) (k : Deducer) : Deducer :=
+  let K := B.K
+  let get (t : Term) : Term := pc K.P "Prelude.get" [t]
+  let (tyT, kT) := B.terms
+  linkK K s!"{B.msg}: the abstraction" fun Γ₀ Φ₀ ψ₀ ↦
+    K.cutThm thm (fun Γ ↦ [B.qv 9 Γ, B.nfIn Γ Φ₀ (get (B.bodyAt kT Γ)), B.nfIn Γ Φ₀ (B.annK Γ),
+        B.nfIn Γ Φ₀ (get (B.bodyAt tyT Γ)), B.nfIn Γ Φ₀ (B.annTy Γ), B.qv 10 Γ]) (K.impE
+      (dAllI K.L <| dImpI K.L fun Γ₁ Φ₁ ψ₁ ↦
+        let w (Γ : List Tree) : Term := v (Γ.length - Γ₁.length)
+        let rel := Φ₁.length - 1
+        let envOk : Deducer := B.cutApply "envTCons" (fun Γ ↦ [w Γ,
+            B.entry Γ, B.qv 9 Γ, B.qv 5 Γ, B.qv 10 Γ])
+          [K.byHyp (B.hyp 1), K.byHyp rel] fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ
+        B.soundAt B.body (fun j ↦ if j = 9 then some fun Γ ↦ consT treeTy (w Γ) (B.qv 9 Γ)
+            else B.overBody j) envOk (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ)
+          Γ₁ Φ₁ ψ₁) k) Γ₀ Φ₀ ψ₀
+
+/-- The binder's expansion a source form; the typing's, the resolution's and the kernel's typing's
+hypotheses normalized, the first of index typed, given to k; then the binder's node decided: a
+label other than the atoms' refutes the typing's, or the source form's test, the steps at the node
+unfolded. The binder an atom: its characters fixed by the expansion of the numeral abbreviations,
+by its being a source form; whether its name is abbreviated decided, where the reader's name of the
+binder and the scope's agree; abbreviated, the abbreviation an atom, as the reader's binder must
+be, else the resolution refuted. The decisions of {lit}`pre`, given the index typed, precede
+those of the abbreviation. -/
+def binderAtom (k : ℕ → Deducer) (pre : ℕ → Deducer → Deducer := fun _ k ↦ k) : Deducer :=
+    fun Γ₀ Φ₀ ψ₀ ↦ do
+  let K := B.K
+  let P := K.P
+  let ix := K.ix
+  let x₀ := B.nfIn Γ₀ Φ₀ (B.atEl B.binder B.x Γ₀)
+  let p₀ := match x₀.label with
+    | .var i => Γ₀.length - 1 - i
+    | _ => 0
+  let src := Φ₀.length
+  let typed := Φ₀.length + 1
+  let srcT (Γ : List Tree) : Term :=
+    truth P.o (B.atEl B.binder ((antecedentTests P (B.expansion (v nQ))).headD Term.star) Γ)
+  let atom (cs : ℕ) : Deducer := fun Γ Φ ψ ↦
+    let abbrevOf (Γ : List Tree) : Term :=
+      pc P "Reader.lookupAbbrev" [nodeT (Term.pair (numeral 0) (atPos cs Γ)), B.qv 7 Γ]
+    let isAtom : Deducer := decideOpt K (fun Γ ↦ nodeT (Term.pair
+        (call D.lab [] [pc P "Prelude.get" [abbrevOf Γ]]) (nilT treeTy)))
+      (linkK K s!"{B.msg}: the abbreviation not an atom" fun Γ Φ ψ ↦
+        (K.hypFalse (typed + 1) Γ Φ ψ).orElse fun _ ↦ K.hypFalse (B.hyp 7) Γ Φ ψ)
+      (K.norm (k typed))
+    let named : Deducer := decideKnown K (fun Γ ↦ pc P "Prelude.isSome" [abbrevOf Γ])
+      (K.norm (k typed)) isAtom
+    dRwHyp (evalRw K.G K.E (K.rulesEx Φ src) .full) src
+      (K.cutThm "charsFixedEq" (fun Γ ↦ [atPos cs Γ, B.qv 7 Γ])
+        (K.impE (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 2) Γ Φ ψ) (pre typed named))) Γ Φ ψ
+  let srcD ← linkK K s!"{B.msg}: the binder's source form" (K.solve 3) Γ₀ Φ₀ (srcT Γ₀)
+  dCut (srcT Γ₀) srcD ([6, 7, 8].foldr (fun i k ↦ fun Γ Φ ψ ↦
+    dRwHyp (evalRw K.G K.E (K.rulesEx Φ (B.hyp i)) .full) (B.hyp i) k Γ Φ ψ)
+    (K.treeNode (atPos p₀ Γ₀) (fun Γ Φ ψ ↦
+      let cs := Γ.length - 1
+      dBits K.L K.G K.E (ix "listCases") (ix "bitCases") (fun bs ↦
+        if bs.map Oitavem.rank == some 1 then
+          linkK K s!"{B.msg}: the binder's characters" (atom cs)
+        else linkK K s!"{B.msg}: the binder's label {bs.map Oitavem.rank} refuted"
+          -- a label past the depth: the binder's expansion's being a source form refuted, which
+          -- tests its label against those of atoms and lists alone, not its rest
+          (fun Γ Φ ψ ↦ if bs.isNone then
+              dRwHyp (evalRw K.G K.E (K.rulesEx Φ src ++ [.thm (ix "srcNode") []]) .full) src
+                (dFalse K.L dHyp) Γ Φ ψ
+            else (K.hypFalse typed Γ Φ ψ).orElse fun _ ↦ B.hypFalseU typed Γ Φ ψ))
+        2 [] (v 1) Γ Φ ψ)))
+    Γ₀ Φ₀ ψ₀
+
+end BindKit
+
 /-- The soundness at a binding of a name to a term of an annotated type in a body: the elements'
 sources, expansions, the binder an atom, the annotation read by the typing and the reader, the
 term's and the body's types, the body's in the context extended by the binder at the annotation,
@@ -1024,66 +1196,31 @@ def letCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
   ("letCase", fun ix E ↦ do
     let ihs := [false, false, true, true]
     let W := kwKit P S T ix E 4 ihs "Reader.kwLet"
+    let B : BindKit := ⟨W, 0, 1, 3, "let"⟩
     let K := W.K
-    let L := K.L
     let a := kwThm P S T "Reader.kwLet" 4 ihs
     let equalT ← primT Kernel.Prim.equal
-    -- terms under the statement's quantifiers, at an element, the variable of index nQ
-    let x := pc P "Prelude.get" [pc P "Datatype.expandExpr" [v 7, v nQ]]
-    let erased := pc P "Reader.expandNums" [v 3, pc P "Datatype.eraseExpr" [x]]
-    let (tyT, kT) := datatypeTerms P (v nQ)
+    let (tyT, kT) := B.terms
     let kernelT := pc P "Check.typeIn" [v 9, v 8, pc P "Prelude.get" [kT]]
     let get (t : Term) : Term := pc P "Prelude.get" [t]
-    let at_ (c : ℕ) (t : Term) (Γ : List Tree) : Term := W.inΓ (atPos c) Γ t
-    -- an element's form as the typing's fold rebuilds it, the first component of its value
-    let raw (c : ℕ) (Γ : List Tree) : Term :=
-      Term.fst (Term.app (Term.snd (T.foldAt 1 [W.qv 4 Γ] (at_ c x Γ))) Term.star)
-    -- the annotation as the typing reads it and as the reader does
-    let readTyAt (Γ : List Tree) : Term := pc P "Typing.readTy" [W.qv 4 Γ, raw 1 Γ]
-    let annTy (Γ : List Tree) : Term := get (readTyAt Γ)
-    let annK (Γ : List Tree) : Term := get (at_ 1 (pc P "Reader.readType" [v 4, erased]) Γ)
-    -- the body's context: the binder's name with the annotation's type; the kernel's context
-    -- extended by the annotation's kernel type; the environment by a value, the innermost
-    let entry (Γ : List Tree) : Term :=
-      pc P "Typing.abbr" [pc P "Typing.atomName" [raw 0 Γ], annTy Γ]
-    let cxBody (Γ : List Tree) : Term := consT treeTy (entry Γ) (W.qv 5 Γ)
-    let cBody (Γ : List Tree) : Term := consT treeTy (annK Γ) (W.qv 2 Γ)
-    let overBody (j : ℕ) : Option (List Tree → Term) :=
-      if j = 5 then some cxBody else if j = 2 then some cBody else none
-    let bodyAt (t : Term) (Γ : List Tree) : Term := W.inΓWith overBody (atPos 3) Γ t
-    -- terms in normal form, the generalized values' variables among them
-    let nfIn (Γ : List Tree) (Φ : List Term) (t : Term) : Term :=
-      ((evalRw K.G K.E (K.rules Φ) .full Γ Φ t).map Prod.fst).getD t
+    let at_ := B.atEl
+    let nfIn := B.nfIn
     let cutThmΦ (name : String) (σ : List Tree → List Term → List Term) (k : Deducer) :
         Deducer := fun Γ Φ ψ ↦ K.cutThm name (fun _ ↦ σ Γ Φ) k Γ Φ ψ
-    -- the value of the body's evaluation: the abstraction related by lamCompat, its premise the
-    -- body's soundness in the environment extended by any value related at the annotation's type
-    let lamConv : Deducer := linkK K "let: the abstraction" <|
-      cutThmΦ "lamCompat" (fun Γ Φ ↦ [W.qv 9 Γ, nfIn Γ Φ (get (bodyAt kT Γ)), nfIn Γ Φ (annK Γ),
-          nfIn Γ Φ (get (bodyAt tyT Γ)), nfIn Γ Φ (annTy Γ), W.qv 10 Γ]) <|
-        K.impE (dAllI L <| dImpI L fun Γ₁ Φ₁ ψ₁ ↦
-          let w (Γ : List Tree) : Term := v (Γ.length - Γ₁.length)
-          let rel := Φ₁.length - 1
-          let envOk : Deducer := W.cutApply "envTCons" (fun Γ ↦ [w Γ,
-              entry Γ, W.qv 9 Γ, W.qv 5 Γ, W.qv 10 Γ])
-            [K.byHyp (W.hyp 1), K.byHyp rel] (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ)
-          W.soundAt 3 (fun j ↦ if j = 9 then some fun Γ ↦ consT treeTy (w Γ) (W.qv 9 Γ)
-              else overBody j) envOk
-            (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ) Γ₁ Φ₁ ψ₁)
-          (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ)
     -- the application of the abstraction to the term, related by appCompat
     let eval : Deducer := linkK K "let: the application" <|
       cutThmΦ "appCompat" (fun Γ Φ ↦ [W.qv 9 Γ, nfIn Γ Φ (get (at_ 2 kT Γ)),
-          lamT (nfIn Γ Φ (annK Γ)) (nfIn Γ Φ (get (bodyAt kT Γ))),
-          nfIn Γ Φ (get (bodyAt tyT Γ)), nfIn Γ Φ (annTy Γ), W.qv 10 Γ]) <|
-        K.impE lamConv <| K.impE (W.soundAt 2 (fun _ ↦ none) (fun _ _ _ ↦ none)
+          lamT (nfIn Γ Φ (B.annK Γ)) (nfIn Γ Φ (get (B.bodyAt kT Γ))),
+          nfIn Γ Φ (get (B.bodyAt tyT Γ)), nfIn Γ Φ (B.annTy Γ), W.qv 10 Γ]) <|
+        K.impE (B.lamConv "lamCompat" fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ) <|
+        K.impE (W.soundAt 2 (fun _ ↦ none) (fun _ _ _ ↦ none)
           (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ)) <|
         fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ
     -- the term's type the annotation's, by the equality's soundness, else no type, refuting the
     -- typing's hypothesis normalized of index typed
     let sameTy (typed : ℕ) (k : Deducer) : Deducer := fun Γ₀ Φ₀ ψ₀ ↦
       let ty (Γ : List Tree) (Φ : List Term) : Term := nfIn Γ Φ (get (at_ 2 tyT Γ))
-      let ann (Γ : List Tree) (Φ : List Term) : Term := nfIn Γ Φ (annTy Γ)
+      let ann (Γ : List Tree) (Φ : List Term) : Term := nfIn Γ Φ (B.annTy Γ)
       let tyPos := match (ty Γ₀ Φ₀).label with
         | .var i => Γ₀.length - 1 - i
         | _ => 0
@@ -1098,80 +1235,31 @@ def letCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
             K.cutThm "equalSymm" (fun Γ ↦ [atPos tyPos Γ, atPos annPos Γ])
               (K.impE (K.solve 3) (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ)) Γ Φ ψ) <|
           normLastK K k) Γ₀ Φ₀ ψ₀
-    -- the binder's expansion a source form; the typing's, the resolution's and the kernel's
-    -- typing's hypotheses normalized, the first of index typed; then the binder's node decided:
-    -- a label other than the atoms' refutes the typing's, or the source form's test, the steps at
-    -- the node unfolded
-    let binderAtom (k : ℕ → Deducer) : Deducer := fun Γ₀ Φ₀ ψ₀ ↦ do
-      let x₀ := nfIn Γ₀ Φ₀ (at_ 0 x Γ₀)
-      let p₀ := match x₀.label with
-        | .var i => Γ₀.length - 1 - i
-        | _ => 0
-      -- the binder's expansion a source form
-      let src := Φ₀.length
-      let typed := Φ₀.length + 1
-      let srcT (Γ : List Tree) : Term :=
-        truth P.o (at_ 0 ((antecedentTests P (v nQ)).headD Term.star) Γ)
-      -- the binder an atom: its characters fixed by the expansion of the numeral abbreviations,
-      -- by its being a source form; whether its name is abbreviated decided, where the reader's
-      -- name of the binder and the scope's agree
-      let atom (cs : ℕ) : Deducer := fun Γ Φ ψ ↦
-        let abbrevOf (Γ : List Tree) : Term :=
-          pc P "Reader.lookupAbbrev" [nodeT (Term.pair (numeral 0) (atPos cs Γ)), W.qv 7 Γ]
-        -- abbreviated, the abbreviation an atom, as the reader's binder must be, else the
-        -- resolution refuted
-        let isAtom : Deducer := decideOpt K (fun Γ ↦ nodeT (Term.pair
-            (call D.lab [] [pc P "Prelude.get" [abbrevOf Γ]]) (nilT treeTy)))
-          (linkK K "let: the abbreviation not an atom" fun Γ Φ ψ ↦
-            (K.hypFalse (typed + 1) Γ Φ ψ).orElse fun _ ↦ K.hypFalse (W.hyp 7) Γ Φ ψ)
-          (K.norm (k typed))
-        let named : Deducer := decideKnown K (fun Γ ↦ pc P "Prelude.isSome" [abbrevOf Γ])
-          (K.norm (k typed)) isAtom
-        dRwHyp (evalRw K.G K.E (K.rulesEx Φ src) .full) src
-          (K.cutThm "charsFixedEq" (fun Γ ↦ [atPos cs Γ, W.qv 7 Γ])
-            (K.impE (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 2) Γ Φ ψ) named)) Γ Φ ψ
-      let srcD ← linkK K "let: the binder's source form" (K.solve 3) Γ₀ Φ₀ (srcT Γ₀)
-      dCut (srcT Γ₀) srcD ([6, 7, 8].foldr (fun i k ↦ fun Γ Φ ψ ↦
-        dRwHyp (evalRw K.G K.E (K.rulesEx Φ (W.hyp i)) .full) (W.hyp i) k Γ Φ ψ)
-        (K.treeNode (atPos p₀ Γ₀) (fun Γ Φ ψ ↦
-          let cs := Γ.length - 1
-          dBits L K.G K.E (ix "listCases") (ix "bitCases") (fun bs ↦
-            if bs.map Oitavem.rank == some 1 then linkK K "let: the binder's characters" (atom cs)
-            else linkK K s!"let: the binder's label {bs.map Oitavem.rank} refuted"
-              -- a label past the depth: the binder's expansion's being a source form refuted,
-              -- which tests its label against those of atoms and lists alone, not its rest
-              (fun Γ Φ ψ ↦ if bs.isNone then
-                  dRwHyp (evalRw K.G K.E (K.rulesEx Φ src ++ [.thm (ix "srcNode") []]) .full) src
-                    (dFalse K.L dHyp) Γ Φ ψ
-                else (K.hypFalse typed Γ Φ ψ).orElse fun _ ↦ W.hypFalseU typed Γ Φ ψ))
-            2 [] (v 1) Γ Φ ψ)))
-        Γ₀ Φ₀ ψ₀
     let decisions : Deducer → Deducer := fun k ↦
       ((List.range 4).foldr (fun c k ↦ W.present s!"element {c + 1}'s expansion"
-        (at_ c (pc P "Datatype.expandExpr" [v 7, v nQ])) 5 k) <|
+        (at_ c (W.expansion (v nQ))) 5 k) <|
       W.sources <|
-      W.present "the annotation's type" readTyAt 6 <|
+      W.present "the annotation's type" B.readTyAt 6 <|
       W.present "the term's type" (at_ 2 tyT) 6 <|
       -- the binder an atom: its expansion a node of the label of atoms, else no type
-      binderAtom fun typed ↦
+      B.binderAtom fun typed ↦
       -- the reader's binder, its numeral abbreviation expanded: whether the binder's name is
       -- abbreviated, and the abbreviation an atom, decided by the tests the resolution's
       -- hypothesis is blocked on
       (fun k ↦ K.splitHyp (typed + 1) k 6) <|
       sameTy typed <|
-      W.presentAt "the body's type" (bodyAt tyT) typed (W.hyp 6) <|
-      W.presentAt "the annotation's kernel type" (at_ 1 (pc P "Reader.readType" [v 4, erased]))
-        (typed + 1) (W.hyp 7) <|
+      W.presentAt "the body's type" (B.bodyAt tyT) typed (W.hyp 6) <|
+      W.presentAt "the annotation's kernel type" B.readTypeAt (typed + 1) (W.hyp 7) <|
       -- the body's resolution before the term's, as the reader tests them
-      W.presentAt "the body's resolution" (bodyAt kT) (typed + 1) (W.hyp 7) <|
+      W.presentAt "the body's resolution" (B.bodyAt kT) (typed + 1) (W.hyp 7) <|
       W.presentAt "the term's resolution" (at_ 2 kT) (typed + 1) (W.hyp 7) <|
       -- the annotation's kernel type a type, as the kernel's abstraction requires, once the
       -- resolved term is known, else the kernel's typing refuted
-      decideKnown K (fun Γ ↦ pc P "Check.isTy" [annK Γ])
+      decideKnown K (fun Γ ↦ pc P "Check.isTy" [B.annK Γ])
         (linkK K "let: the annotation not a kernel type" fun Γ Φ ψ ↦
           (K.hypFalse (W.hyp 8) Γ Φ ψ).orElse fun _ ↦ K.hypFalse (typed + 2) Γ Φ ψ) <|
       -- the body's kernel type before the term's, as the kernel tests them
-      (W.presentAt "the body's kernel type" (bodyAt kernelT) (typed + 2) (W.hyp 8) ·
+      (W.presentAt "the body's kernel type" (B.bodyAt kernelT) (typed + 2) (W.hyp 8) ·
         (unfolding := false)) <|
       (W.presentAt "the term's kernel type" (at_ 2 kernelT) (typed + 2) (W.hyp 8) ·
         (unfolding := false)) <| K.norm k)
