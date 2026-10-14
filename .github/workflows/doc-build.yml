@@ -32,14 +32,14 @@ jobs:
       - run: lake build Geb:docs --log-level=warning
       - run: lake build GebLang:docs --log-level=warning
       - name: Upload generated documentation
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: geb-docs
           path: .lake/build/doc
           if-no-files-found: error
       - run: bash scripts/manual.sh build
       - name: Upload the generated manual
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: geb-manual
           path: manual/_out/html-multi
@@ -50,7 +50,7 @@ jobs:
           site="$(lake query :literateHtml)"
           echo "LITERATE_HTML=$site" >> "$GITHUB_ENV"
       - name: Upload the generated literate site
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: geb-literate
           path: ${{ env.LITERATE_HTML }}
