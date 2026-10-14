@@ -20,7 +20,8 @@ in finite control. Thus a declared length never causes a unary allocation.
 
 ## Main definitions
 
-* {lit}`machine` is the four-work-tape transition table.
+* {lit}`transition` is the four-work-tape transition table and {lit}`machine` the
+  machine it determines.
 * {lit}`borrow`, {lit}`sweepLeft` and {lit}`sweepRight` implement a decrement.
 * {lit}`clear` erases both binary fields when a leaf finishes.
 * {lit}`counterCfg` changes one counter's contents, head and control within a context.
@@ -180,72 +181,75 @@ def read (q : Control) (b : Fin 3) : Action 4 (Fin 3) Control :=
   else if q = stPayloadBit then consume (stDecrement true)
   else consume stDead
 
-/-- The four-work-tape recognizer for delta-length-prefixed bitstring leaves. -/
-def machine : MultiTapeTM 4 (Fin 3) Control where
-  q₀ := stInit
-  tr q input work :=
-    if q = stInit then
-      { jump stTree with
-        workTapes := fun i ↦ (some (some 2), if i = 1 then 0 else 1) }
-    else if q = stSizeCheck then
-      jump (if work 1 == some 2 then stDecrement false else stSizeBit)
-    else if q = stDecrement false then counterAction false none (-1) (stBorrow false false)
-    else if q = stDecrement true then counterAction true none (-1) (stBorrow true false)
-    else if q = stBorrow false false then borrow false false work
-    else if q = stBorrow false true then borrow false true work
-    else if q = stBorrow true false then borrow true false work
-    else if q = stBorrow true true then borrow true true work
-    else if q = stLeft false false then sweepLeft false false work
-    else if q = stLeft false true then sweepLeft false true work
-    else if q = stLeft true false then sweepLeft true false work
-    else if q = stLeft true true then sweepLeft true true work
-    else if q = stRight false false then sweepRight false false work
-    else if q = stRight false true then sweepRight false true work
-    else if q = stRight true false then sweepRight true false work
-    else if q = stRight true true then sweepRight true true work
-    else if q = stClear then clear work
-    else if q = stLeaf then jump (if work 0 == some 2 then stDone else stTree)
-    else match input with
-      | none => finish (q == stDone)
-      | some b => read q b
+/-- The transition function of the machine. -/
+def transition (q : Control) (input : Option (Fin 3)) (work : Fin 4 → Option (Fin 3)) :
+    Action 4 (Fin 3) Control :=
+  if q = stInit then
+    { jump stTree with
+      workTapes := fun i ↦ (some (some 2), if i = 1 then 0 else 1) }
+  else if q = stSizeCheck then
+    jump (if work 1 == some 2 then stDecrement false else stSizeBit)
+  else if q = stDecrement false then counterAction false none (-1) (stBorrow false false)
+  else if q = stDecrement true then counterAction true none (-1) (stBorrow true false)
+  else if q = stBorrow false false then borrow false false work
+  else if q = stBorrow false true then borrow false true work
+  else if q = stBorrow true false then borrow true false work
+  else if q = stBorrow true true then borrow true true work
+  else if q = stLeft false false then sweepLeft false false work
+  else if q = stLeft false true then sweepLeft false true work
+  else if q = stLeft true false then sweepLeft true false work
+  else if q = stLeft true true then sweepLeft true true work
+  else if q = stRight false false then sweepRight false false work
+  else if q = stRight false true then sweepRight false true work
+  else if q = stRight true false then sweepRight true false work
+  else if q = stRight true true then sweepRight true true work
+  else if q = stClear then clear work
+  else if q = stLeaf then jump (if work 0 == some 2 then stDone else stTree)
+  else match input with
+    | none => finish (q == stDone)
+    | some b => read q b
+
+/-- The four-work-tape recognizer for delta-length-prefixed bitstring leaves:
+{name}`transition` started in {name}`stInit`. -/
+def machine : MultiTapeTM 4 (Fin 3) Control := ofTr stInit transition
 
 /-- Both counter-entry states resolve without inspecting input. -/
 theorem tr_decrement (value : Bool) (input : Option (Fin 3))
     (work : Fin 4 → Option (Fin 3)) :
-    machine.tr (stDecrement value) input work =
+    transition (stDecrement value) input work =
       counterAction value none (-1) (stBorrow value false) := by
   cases value <;> rfl
 
 /-- Borrow-state resolution exposes only the selected counter's current digit. -/
 theorem tr_borrow (value seen : Bool) (input : Option (Fin 3))
     (work : Fin 4 → Option (Fin 3)) :
-    machine.tr (stBorrow value seen) input work = borrow value seen work := by
+    transition (stBorrow value seen) input work = borrow value seen work := by
   cases value <;> cases seen <;> rfl
 
 /-- Left-sweep states preserve their two finite-control parameters. -/
 theorem tr_left (value seen : Bool) (input : Option (Fin 3))
     (work : Fin 4 → Option (Fin 3)) :
-    machine.tr (stLeft value seen) input work = sweepLeft value seen work := by
+    transition (stLeft value seen) input work = sweepLeft value seen work := by
   cases value <;> cases seen <;> rfl
 
 /-- Right-sweep states preserve their two finite-control parameters. -/
 theorem tr_right (value seen : Bool) (input : Option (Fin 3))
     (work : Fin 4 → Option (Fin 3)) :
-    machine.tr (stRight value seen) input work = sweepRight value seen work := by
+    transition (stRight value seen) input work = sweepRight value seen work := by
   cases value <;> cases seen <;> rfl
 
 /-- Reading states resolve directly to the external-bit transition table. -/
 theorem tr_read (q : Control) (b : Fin 3) (work : Fin 4 → Option (Fin 3))
     (hq : q = stTree ∨ q = stZeros ∨ q = stSizeBit ∨ q = stLengthBit ∨
       q = stPayloadBit ∨ q = stDone ∨ q = stDead) :
-    machine.tr q (some b) work = read q b := by
+    transition q (some b) work = read q b := by
   rcases hq with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> rfl
 
 /-- An external reading state emits the end-of-input verdict and halts. -/
 theorem tr_end (q : Control) (work : Fin 4 → Option (Fin 3))
     (hq : q = stTree ∨ q = stZeros ∨ q = stSizeBit ∨ q = stLengthBit ∨
       q = stPayloadBit ∨ q = stDone ∨ q = stDead) :
-    machine.tr q none work = finish (q == stDone) := by
+    transition q none work = finish (q == stDone) := by
   rcases hq with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> rfl
 
 /-- Every external-bit transition advances the input head exactly once. -/

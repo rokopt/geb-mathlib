@@ -29,6 +29,12 @@ under contract: the loop transforms by the iterate of the body's transformer
 as many times as leaves the tested register nonempty, its precondition
 supplying that count and the body's precondition at each iterate.
 
+The loop is defined on transition functions first, as {lit}`whileNonblankTr`,
+and {lit}`whileNonblank` is the machine built from the body's transition by
+{name}`Turing.MultiTapeTM.ofTr`. CSLib selects a machine's transition by
+choice, so {lit}`whileNonblank` is noncomputable, while {lit}`whileNonblankTr`
+turns a computable transition into a computable one.
+
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
 statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {name}`Turing.MultiTapeTM.outputString`, each depending on
@@ -38,11 +44,18 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 
 * {lit}`Probe`, {lit}`probeRead`, {lit}`probeOf` — the input head or a work
   head, the symbol under it, and the symbol a configuration's probe reads.
-* {lit}`whileNonblank` — the loop.
+* {lit}`whileNonblankTr` — the transition of the loop, from the body's
+  transition.
+* {lit}`whileNonblank` — the loop: the machine built from
+  {lit}`whileNonblankTr`.
 * {lit}`liftBody` — the embedding of a body configuration into the loop's.
 
 # Main statements
 
+* {lit}`whileNonblank_tr` — the transition of the loop is
+  {lit}`whileNonblankTr`.
+* {lit}`whileNonblank_ofTr` — the loop over a body built from a transition
+  function is the machine built from {lit}`whileNonblankTr` of that function.
 * {lit}`whileNonblank_step_body`, {lit}`whileNonblank_runFrom_body`,
   {lit}`whileNonblank_outputString_body` — the loop mirrors its body from a
   lifted configuration while the body runs.
@@ -84,19 +97,40 @@ abbrev Probe (k : ℕ) : Type := Option (Fin k)
     (cfg : Cfg k Bool State input) : Option Bool :=
   probeRead p cfg.inputSymbol cfg.workTapeSymbols
 
-/-- The loop: in the test state, enter the body when the probe reads a symbol
-and halt otherwise; in a body state, the body's transition with a halting
-successor replaced by the test state. -/
-@[expose] def whileNonblank {k : ℕ} {S : Type} (p : Probe k) (P : MultiTapeTM k Bool S) :
-    MultiTapeTM k Bool (Unit ⊕ S) where
-  q₀ := .inl ()
-  tr q inp work :=
-    match q with
-    | .inl () =>
-      { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none,
-        state := if (probeRead p inp work).isSome then some (.inr P.q₀) else none }
-    | .inr s => let o := P.tr s inp work
-      { o with state := some (o.state.elim (.inl ()) .inr) }
+/-- The transition of the loop, from the body's transition {lit}`trP` and
+initial state {lit}`q₀P`: in the test state, enter the body when the probe reads
+a symbol and halt otherwise; in a body state, the body's transition with a
+halting successor replaced by the test state. It is not inlined, so that a
+partial application of it holds the body's transition as an evaluated argument
+rather than recomputing it at each application. -/
+@[expose, noinline] def whileNonblankTr {k : ℕ} {S : Type} (p : Probe k)
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S)
+    (q : Unit ⊕ S) (inp : Option Bool) (work : Fin k → Option Bool) : Action k Bool (Unit ⊕ S) :=
+  match q with
+  | .inl () =>
+    { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none,
+      state := if (probeRead p inp work).isSome then some (.inr q₀P) else none }
+  | .inr s => let o := trP s inp work
+    { o with state := some (o.state.elim (.inl ()) .inr) }
+
+/-- The loop with the body {lit}`P`: the machine built from {name}`whileNonblankTr`
+of its transition. -/
+@[expose] noncomputable def whileNonblank {k : ℕ} {S : Type} (p : Probe k)
+    (P : MultiTapeTM k Bool S) : MultiTapeTM k Bool (Unit ⊕ S) :=
+  ofTr (.inl ()) (whileNonblankTr p P.tr P.q₀)
+
+/-- The transition of {name}`whileNonblank` is {name}`whileNonblankTr`. -/
+theorem whileNonblank_tr {k : ℕ} {S : Type} (p : Probe k) (P : MultiTapeTM k Bool S)
+    (q : Unit ⊕ S) (inp : Option Bool) (work : Fin k → Option Bool) :
+    (whileNonblank p P).tr q inp work = whileNonblankTr p P.tr P.q₀ q inp work :=
+  tr_ofTr _ _ _ _ _
+
+/-- The loop over a body built from a transition function is the machine built
+from {name}`whileNonblankTr` of that function. -/
+theorem whileNonblank_ofTr {k : ℕ} {S : Type} (p : Probe k) (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :
+    whileNonblank p (ofTr q₀ tr) = ofTr (.inl ()) (whileNonblankTr p tr q₀) := by
+  rw [whileNonblank, tr_ofTr', q₀_ofTr]
 
 /-- A body configuration lifted into the loop: a halted one becomes the test
 state. -/
@@ -130,8 +164,11 @@ body's step. -/
 theorem whileNonblank_step_body {k : ℕ} {S : Type} {input : List Bool} (p : Probe k)
     (P : MultiTapeTM k Bool S) (cfg : Cfg k Bool S input) (s : S) (hq : cfg.state = some s) :
     (whileNonblank p P).step (liftBody cfg) = liftBody (P.step cfg) := by
-  unfold step liftBody
-  simp only [hq]
+  have hq' : (liftBody cfg).state = some (.inr s) := by
+    change some (cfg.state.elim _ _) = _
+    rw [hq]
+    rfl
+  rw [MultiTapeTM.step_of_state hq', MultiTapeTM.step_of_state hq, whileNonblank_tr]
   rfl
 
 /-- The loop emits what the body emits from a lifted live configuration. -/
@@ -139,7 +176,7 @@ theorem whileNonblank_outputSymbol_body {k : ℕ} {S : Type} {input : List Bool}
     (P : MultiTapeTM k Bool S) (cfg : Cfg k Bool S input) (s : S) (hq : cfg.state = some s) :
     (whileNonblank p P).outputSymbol (liftBody cfg) = P.outputSymbol cfg := by
   unfold outputSymbol liftBody
-  simp only [hq]
+  simp only [hq, whileNonblank_tr]
   rfl
 
 /-- While the body has not halted, the loop mirrors it. -/
@@ -198,7 +235,7 @@ theorem whileNonblank_enter {k : ℕ} {S : Type} {input : List Bool} (p : Probe 
         { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none,
           state := some (.inr P.q₀) } := by
       unfold probeOf at hb
-      simp only [whileNonblank, hb, Option.isSome_some, ↓reduceIte]
+      simp only [whileNonblank_tr, whileNonblankTr, hb, Option.isSome_some, ↓reduceIte]
     rw [htr]
     apply Cfg.ext
     · rfl
@@ -210,8 +247,7 @@ theorem whileNonblank_enter {k : ℕ} {S : Type} {input : List Bool} (p : Probe 
       rw [SignType.coe_zero, add_zero]
     · exact List.append_nil _
   have hout : (whileNonblank p P).outputSymbol cfg = none := by
-    unfold outputSymbol
-    rw [hq]
+    rw [outputSymbol_of_state hq, whileNonblank_tr]
     rfl
   refine Reaches.ofFamily (whileNonblank p P) (fun s ↦ if s = 0 then cfg else
     { cfg with state := some (.inr P.q₀) }) 1 B ?_ ?_ ?_ ?_
@@ -243,7 +279,8 @@ theorem whileNonblank_exit {k : ℕ} {S : Type} {input : List Bool} (p : Probe k
     have htr : (whileNonblank p P).tr (.inl ()) cfg.inputSymbol cfg.workTapeSymbols =
         { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none } := by
       unfold probeOf at hprobe
-      simp only [whileNonblank, hprobe, Option.isSome_none, Bool.false_eq_true, ↓reduceIte]
+      simp only [whileNonblank_tr, whileNonblankTr, hprobe, Option.isSome_none, Bool.false_eq_true,
+        ↓reduceIte]
     rw [htr]
     apply Cfg.ext
     · rfl
@@ -255,8 +292,7 @@ theorem whileNonblank_exit {k : ℕ} {S : Type} {input : List Bool} (p : Probe k
       rw [SignType.coe_zero, add_zero]
     · exact List.append_nil _
   have hout : (whileNonblank p P).outputSymbol cfg = none := by
-    unfold outputSymbol
-    rw [hq]
+    rw [outputSymbol_of_state hq, whileNonblank_tr]
     rfl
   have hlive : cfg.state ≠ none := by
     rw [hq]

@@ -33,10 +33,13 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 # Main definitions
 
 * {lit}`readInput` — the primitive.
+* {lit}`readInputTr` — its transition function.
 * {lit}`readInputTime` — its step bound at a length bound and an input length.
 
 # Main statements
 
+* {lit}`readInput_eq_ofTr` — the primitive is the machine built from
+  {lit}`readInputTr`.
 * {lit}`readInput_transformsIn` — the primitive's contract.
 
 # Tags
@@ -56,9 +59,22 @@ public section
 /-- Read the input bit at the head of the end segment one longer than the
 counter in {lit}`C` into the flag {lit}`F`, through the scratch counter
 {lit}`S`. -/
-@[expose] def readInput {k : ℕ} (C S F : Fin k) :=
+@[expose] noncomputable def readInput {k : ℕ} (C S F : Fin k) :=
   seq (copy C S) (seq inStepRight (seq inRight (seq (seekLeft S) (seq inBack
     (seq (const [] F) (seq (readBit F) inHome))))))
+
+/-- The transition of {name}`readInput`, composed of its phases' by
+{name}`Geb.SizeBounded.Machine.seqTr`. -/
+@[expose] def readInputTr {k : ℕ} (C S F : Fin k) :=
+  seqTr (copyTr C S) (seqTr inStepRightTr (seqTr inRightTr (seqTr (seekLeftTr S)
+    (seqTr inBackTr (seqTr (constTr [] F) (seqTr (readBitTr F) inHomeTr ()) (.inl ()))
+      (.inl (.inl (.inl ())))) (.inl ())) (.inl (.inl ()))) (.inl ())) (.inl ())
+
+/-- {name}`readInput` is the machine built from {name}`readInputTr`. -/
+theorem readInput_eq_ofTr {k : ℕ} (C S F : Fin k) :
+    readInput C S F = ofTr (.inl (.inl (.inl ()))) (readInputTr C S F) := by
+  simp only [readInput, copy_eq_ofTr, inStepRight, inRight, seekLeft_eq_ofTr, inBack,
+    const_eq_ofTr, readBit, inHome, seq_ofTr, readInputTr]
 
 /-- The step bound of {name}`readInput` at a length bound {lit}`B` and an input
 length {lit}`n`: the copy, the walk to the end, the seek, the clear, and the

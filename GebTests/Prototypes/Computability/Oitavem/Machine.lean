@@ -50,9 +50,13 @@ word-square transducer on every Boolean word of length at most four.
 
 ## Implementation notes
 
-The executable simulator calls CSLib's configuration operations, inheriting their
-{lit}`Classical.choice` dependency. This module is included in
-{lit}`GebMeta.classicalAllowedModules`.
+CSLib selects a machine's transition by choice, so a machine's own transition does
+not evaluate. Each run is evaluated through the transition function the machine is
+built from, the definition with the suffix {lit}`Tr`, from its initial state; the
+equations with the suffix {lit}`_eq_ofTr` or {lit}`_ofTr` identify that function with
+the machine's transition. The executable simulator calls CSLib's configuration
+operations, inheriting their {lit}`Classical.choice` dependency. This module is
+included in {lit}`GebMeta.classicalAllowedModules`.
 
 ## Tags
 
@@ -88,11 +92,11 @@ public section
 @[expose] def checkEnvironment (w : List Bool) : Bool := Id.run do
   let G := duplicateProduct
   let start : ExecCfg G.tapes G.State [] :=
-    { ExecCfg.init G.program [] with
+    { ExecCfg.init (k := G.tapes) G.q₀ [] with
       inputPos := 0
       tapes := Vector.ofFn fun i ↦ if i.val = 0 then register w else ∅
       outputRev := [true, false] }
-  let finish := (execStep G.program)^[10000] start
+  let finish := (execStep G.tr)^[10000] start
   let expected := numericPred (List.replicate w.length (numericSucc w)).flatten
   return finish.state.isNone && finish.inputPos.val == 0 &&
     finish.heads.toList.all (· == 0) &&
@@ -105,22 +109,20 @@ public section
 /-- Generated readers keep the source and query while replacing a dirty result. -/
 @[expose] def checkEnvironmentReader (w : List Bool) (q : ℕ) : Bool := Id.run do
   let G := duplicateProduct
-  let L := G.lengthReader (fun _ ↦ (0 : Fin 4)) 2
-  let P := G.atReader (fun _ ↦ (0 : Fin 4)) 1 2
   let words := #v[w, counterWord q, [true, false, true], [false, false]]
   let source := numericPred (List.replicate w.length (numericSucc w)).flatten
-  let start : ExecCfg _ (StateOf P) [] :=
-    { ExecCfg.init P [] with
+  let start : ExecCfg _ (StateOf (G.atReader (fun _ ↦ (0 : Fin 4)) 1 2)) [] :=
+    { ExecCfg.init (k := _) (.inl (.inl (.inl (.inl ())))) [] with
       inputPos := 0
       tapes := Vector.ofFn fun i ↦ if h : i.val < 4 then register words[i.val] else ∅
       outputRev := [true, false] }
-  let finish := (execStep P)^[50000] start
-  let lengthStart : ExecCfg _ (StateOf L) [] :=
-    { ExecCfg.init L [] with
+  let finish := (execStep (G.atReaderTr (fun _ ↦ (0 : Fin 4)) 1 2))^[50000] start
+  let lengthStart : ExecCfg _ (StateOf (G.lengthReader (fun _ ↦ (0 : Fin 4)) 2)) [] :=
+    { ExecCfg.init (k := _) (.inl (.inl (.inl (.inl ())))) [] with
       inputPos := 0
       tapes := Vector.ofFn fun i ↦ if h : i.val < 4 then register words[i.val] else ∅
       outputRev := [true, false] }
-  let lengthFinish := (execStep L)^[50000] lengthStart
+  let lengthFinish := (execStep (G.lengthReaderTr (fun _ ↦ (0 : Fin 4)) 2))^[50000] lengthStart
   let expected := words.set 2 (source[q]?).toList
   let expectedLength := words.set 2 (counterWord source.length)
   return finish.state.isNone && finish.inputPos.val == 0 &&
@@ -143,7 +145,7 @@ public section
     (G : Generator m Pre W) (input : List Bool) (σ : Fin m → List Bool) (fuel : ℕ) : Bool :=
   Id.run do
     let start : ExecCfg G.tapes G.State input :=
-      { ExecCfg.init G.program input with
+      { ExecCfg.init (k := G.tapes) G.q₀ input with
         inputPos := 0
         tapes := Vector.ofFn fun i ↦ register
           (((List.finRange m).find? (fun j ↦ G.env j == i)).map σ |>.getD [])
@@ -151,7 +153,7 @@ public section
     let mut finish := start
     for _ in [:fuel] do
       if finish.state.isNone then break
-      finish := execStep G.program finish
+      finish := execStep G.tr finish
     return finish.state.isNone && finish.inputPos.val == 0 &&
       finish.heads.toList.all (· == 0) &&
       finish.outputRev.reverse == [false, true] ++ W input σ &&
@@ -209,8 +211,8 @@ public section
   let w := unrank n
   let G := Generator.input
   let start : ExecCfg G.tapes G.State w :=
-    { ExecCfg.init G.program w with inputPos := 0, outputRev := [true, false] }
-  let finish := (execStep G.program)^[10000] start
+    { ExecCfg.init (k := G.tapes) G.q₀ w with inputPos := 0, outputRev := [true, false] }
+  let finish := (execStep G.tr)^[10000] start
   finish.state.isNone && finish.inputPos.val == 0 &&
     finish.heads.toList.all (· == 0) && finish.outputRev.reverse == [false, true] ++ w &&
     (List.finRange G.tapes).all (fun i ↦
@@ -219,16 +221,15 @@ public section
 /-- Check a stored-word query with dirty scratch registers and a protected sixth tape. -/
 @[expose] def checkStored (w : List Bool) (q : ℕ) : Bool := Id.run do
   let r : Fin 5 → Fin 6 := Fin.castLE (by decide)
-  let tm := readStored r
   let words : Vector (List Bool) 6 :=
     #v[w, counterWord q, [true, false, true], [false, true], [true, true], [false, false]]
-  let start : ExecCfg 6 (StateOf tm) [] :=
-    { ExecCfg.init tm [] with
+  let start : ExecCfg 6 (StateOf (readStored r)) [] :=
+    { ExecCfg.init (k := 6) (.inl (.inl (.inl ()))) [] with
       inputPos := 0
       tapes := words.map register
       outputRev := [true, false] }
   let B := max 3 (max w.length q.size)
-  let finish := (execStep tm)^[readStoredTime B q] start
+  let finish := (execStep (readStoredTr r))^[readStoredTime B q] start
   let expected := words.set 2 [] |>.set 3 [] |>.set 4 (w[q]?).toList
   return finish.state.isNone && finish.inputPos.val == 0 &&
     finish.heads.toList.all (· == 0) && finish.outputRev == start.outputRev &&
@@ -239,16 +240,15 @@ public section
 /-- Check stored length with dirty scratch tapes and a protected caller register. -/
 @[expose] def checkStoredLength (w : List Bool) : Bool := Id.run do
   let r : Fin 4 → Fin 5 := Fin.castLE (by decide)
-  let tm := storedLength r
   let words : Vector (List Bool) 5 :=
     #v[w, [false, true, false], [true, false], [true, true], [false, true]]
-  let start : ExecCfg 5 (StateOf tm) [] :=
-    { ExecCfg.init tm [] with
+  let start : ExecCfg 5 (StateOf (storedLength r)) [] :=
+    { ExecCfg.init (k := 5) (.inl (.inl (.inl ()))) [] with
       inputPos := 0
       tapes := words.map register
       outputRev := [true, false] }
   let B := max 3 w.length
-  let finish := (execStep tm)^[storedLengthTime B] start
+  let finish := (execStep (storedLengthTr r))^[storedLengthTime B] start
   let expected := words.set 1 [] |>.set 2 (counterWord w.length) |>.set 3 []
   return finish.state.isNone && finish.inputPos.val == 0 &&
     finish.heads.toList.all (· == 0) && finish.outputRev == start.outputRev &&
@@ -258,14 +258,13 @@ public section
 
 /-- Check input length and preservation of an unrelated work tape. -/
 @[expose] def checkLength (w : List Bool) : Bool := Id.run do
-  let tm := inputLength (0 : Fin 2)
-  let start : ExecCfg 2 (StateOf tm) w :=
-    { ExecCfg.init tm w with
+  let start : ExecCfg 2 (StateOf (inputLength (0 : Fin 2))) w :=
+    { ExecCfg.init (k := 2) (.inl ()) w with
       inputPos := 0
       tapes := #v[register [false, true, false], register [true, false]]
       outputRev := [false, true] }
   let B := max 3 w.length.size
-  let finish := (execStep tm)^[1 + countInputTime B w.length] start
+  let finish := (execStep (inputLengthTr (0 : Fin 2)))^[1 + countInputTime B w.length] start
   return finish.state.isNone && finish.inputPos.val == 0 &&
     finish.heads.toList.all (· == 0) && finish.outputRev == start.outputRev &&
     (List.range (B + 3)).all (fun j ↦
@@ -274,16 +273,15 @@ public section
 
 /-- Check physical-input lookup with the same index convention as stored lookup. -/
 @[expose] def checkInputAt (w : List Bool) (q : ℕ) : Bool := Id.run do
-  let tm := inputAt (0 : Fin 4) 1 2
   let words : Vector (List Bool) 4 :=
     #v[counterWord q, [false, true, false], [true, true], [false, true]]
-  let start : ExecCfg 4 (StateOf tm) w :=
-    { ExecCfg.init tm w with
+  let start : ExecCfg 4 (StateOf (inputAt (0 : Fin 4) 1 2)) w :=
+    { ExecCfg.init (k := 4) (.inl (.inl (.inl ()))) w with
       inputPos := 0
       tapes := words.map register
       outputRev := [false, true] }
   let B := max 3 q.size
-  let finish := (execStep tm)^[inputAtTime B q w.length] start
+  let finish := (execStep (inputAtTr (0 : Fin 4) 1 2))^[inputAtTime B q w.length] start
   let expected := words.set 1 [] |>.set 2 (w[q]?).toList
   return finish.state.isNone && finish.inputPos.val == 0 &&
     finish.heads.toList.all (· == 0) && finish.outputRev == start.outputRev &&
@@ -293,21 +291,20 @@ public section
 
 /-- Check the transducer's output within the theorem's polynomial time bound. -/
 @[expose] def checkSquare (w : List Bool) : Bool :=
-  stepUntilHalt squareMachine (32 * (w.length + 1) ^ 2 + 1)
-    (ExecCfg.init squareMachine w) [] == some (squareWord.eval ![w] Fin.elim0)
+  stepUntilHalt squareMachineTr (32 * (w.length + 1) ^ 2 + 1)
+    (ExecCfg.init (.inl (.inl (.inl (.inl ())))) w) [] == some (squareWord.eval ![w] Fin.elim0)
 
 /-- Check the generic output counter on quadratic output, including a nonzero
 initial counter and a preexisting output prefix. -/
 @[expose] def checkSquareLength (w : List Bool) (n : ℕ) : Bool := Id.run do
-  let tm := countOutput squareMachine
-  let start : ExecCfg 2 (StateOf tm) w :=
-    { ExecCfg.init tm w with
+  let start : ExecCfg 2 (StateOf (countOutput squareMachine)) w :=
+    { ExecCfg.init (k := 2) (.inl (.inl (.inl (.inl (.inl ()))))) w with
       tapes := #v[register (counterWord n), ∅]
       outputRev := [true, false] }
   let B := max w.length.size (n + w.length * w.length + 1).size
   let T := countInputTime w.length.size w.length +
     (w.length * (2 * w.length + 2 * w.length.size + 11) + 1)
-  let finish := (execStep tm)^[T * (2 * B + 5)] start
+  let finish := (execStep (countOutputTr squareMachineTr))^[T * (2 * B + 5)] start
   return finish.state.isNone && finish.inputPos.val == 0 &&
     finish.heads.toList.all (· == 0) && finish.outputRev == start.outputRev &&
     (List.range (B + 3)).all fun j ↦
@@ -318,15 +315,14 @@ initial counter and a preexisting output prefix. -/
 /-- Query a generated quadratic word with dirty generator scratch and a protected
 caller register. The result tape is blank as the reader's contract requires. -/
 @[expose] def checkSquareDigit (w : List Bool) (q : ℕ) : Bool := Id.run do
-  let tm := readOutput (squareInput (0 : Fin 2))
-  let start : ExecCfg 4 (StateOf tm) w :=
-    { ExecCfg.init tm w with
+  let start : ExecCfg 4 (StateOf (readOutput (squareInput (0 : Fin 2)))) w :=
+    { ExecCfg.init (k := 4) (.inl (.inl (.inl (.inl (.inl ()))), false)) w with
       tapes := #v[register (counterWord q), ∅,
         register [false, true, false], register [true, false]]
       outputRev := [false, true] }
   let B := max 3 (max w.length.size q.size)
   let T := countInputTime B w.length + w.length * (2 * w.length + 2 * B + 11) + 1
-  let finish := (execStep tm)^[T * (2 * B + 8)] start
+  let finish := (execStep (readOutputTr (squareInputTr (0 : Fin 2))))^[T * (2 * B + 8)] start
   let expected : Vector (List Bool) 4 :=
     #v[counterWord (q - w.length * w.length),
       ((squareWord.eval ![w] Fin.elim0)[q]?).toList, [], [true, false]]
@@ -338,17 +334,18 @@ caller register. The result tape is blank as the reader's contract requires. -/
 /-- Repeatedly reconstruct a generated square through digit queries from dirty ports,
 checking scratch cleanup, the returned length, and a protected caller register. -/
 @[expose] def checkSquareViaReader (w : List Bool) : Bool := Id.run do
-  let p := squareViaReaderFromHome (0 : Fin 3) 1
-  let tm := seq p p
   let B := 2 * w.length.size + 1
   let dirty := [false, true, false].take B
   let words : Vector (List Bool) 5 := #v[dirty, dirty, dirty, dirty, [false]]
-  let start : ExecCfg 5 (StateOf tm) w :=
-    { ExecCfg.init tm w with
+  let start : ExecCfg 5 (StateOf (seq (squareViaReaderFromHome (0 : Fin 3) 1)
+      (squareViaReaderFromHome (0 : Fin 3) 1))) w :=
+    { ExecCfg.init (k := 5) (.inl (.inl (.inl (.inl (.inl ()))))) w with
       inputPos := 0
       tapes := words.map register
       outputRev := [true, false] }
-  let finish := (execStep tm)^[2 * squareViaReaderTime B w.length] start
+  let finish := (execStep (seqTr (squareViaReaderFromHomeTr (0 : Fin 3) 1)
+    (squareViaReaderFromHomeTr (0 : Fin 3) 1) (.inl (.inl (.inl (.inl ()))))))^[2 *
+      squareViaReaderTime B w.length] start
   let expected := #v[[], [], [], counterWord (w.length * w.length), [false]]
   let out := squareWord.eval ![w] Fin.elim0
   return finish.state.isNone && finish.inputPos.val == 0 &&
@@ -361,17 +358,18 @@ starts away from zero and remains there during the allocated streaming program. 
 @[expose] def checkAllocatedReader (w : List Bool) : Bool := Id.run do
   let e : Fin 5 ≃ Fin 4 ⊕ Fin 1 :=
     (Equiv.swap 0 4).trans (finSumFinEquiv (m := 4) (n := 1)).symm
-  let tm := onTapes (squareViaReaderFromHome (0 : Fin 2) 1) e
   let B := 2 * w.length.size + 1
   let dirty := [true, false, true].take B
   let words : Vector (List Bool) 5 := #v[[false], dirty, dirty, dirty, dirty]
-  let start : ExecCfg 5 (StateOf tm) w :=
-    { ExecCfg.init tm w with
+  let start : ExecCfg 5 (StateOf (squareViaReaderFromHome (0 : Fin 2) 1)) w :=
+    { ExecCfg.init (k := 5) (.inl (.inl (.inl (.inl ())))) w with
       inputPos := 0
       tapes := words.map register
       heads := #v[1, 0, 0, 0, 0]
       outputRev := [false] }
-  let finish := (execStep tm)^[squareViaReaderTime B w.length] start
+  let finish :=
+    (execStep (onTapesTr (squareViaReaderFromHomeTr (0 : Fin 2) 1) e))^[squareViaReaderTime B
+      w.length] start
   let expected := #v[[false], [], [], counterWord (w.length * w.length), []]
   return finish.state.isNone && finish.inputPos.val == 0 && finish.heads == start.heads &&
     finish.outputRev.reverse == [false] ++ squareWord.eval ![w] Fin.elim0 &&
@@ -380,14 +378,13 @@ starts away from zero and remains there during the allocated streaming program. 
 
 /-- Check numerical emission while an unrelated tape has a nonzero head position. -/
 @[expose] def checkEmitNumber (n : ℕ) : Bool := Id.run do
-  let tm := emitNumber (0 : Fin 2)
-  let start : ExecCfg 2 (StateOf tm) [] :=
-    { ExecCfg.init tm [] with
+  let start : ExecCfg 2 (StateOf (emitNumber (0 : Fin 2))) [] :=
+    { ExecCfg.init (k := 2) (.inl (.inl ())) [] with
       tapes := #v[register (counterWord n), register [true, false, true]]
       heads := #v[0, 2]
       outputRev := [true, false] }
   let B := max 3 (n + 1).size
-  let finish := (execStep tm)^[3 * B + 5] start
+  let finish := (execStep (emitNumberTr (0 : Fin 2)))^[3 * B + 5] start
   return finish.state.isNone && finish.inputPos.val == 1 &&
     finish.heads[0] == (n + 1).size && finish.heads[1] == 2 &&
     finish.outputRev.reverse == [false, true] ++ unrank n &&
@@ -397,18 +394,18 @@ starts away from zero and remains there during the allocated streaming program. 
 
 /-- Repeat a generated length call with dirty scratch and an unrelated caller tape. -/
 @[expose] def checkGeneratedLength (w : List Bool) : Bool := Id.run do
-  let p := generatedLength (squareFromHome (0 : Fin 2))
-  let tm := seq p p
+  let pTr := generatedLengthTr (squareFromHomeTr (0 : Fin 2)) (.inl ())
   let words : Vector (List Bool) 3 :=
     #v[[true, false, true], [false, true], [true, false]]
-  let start : ExecCfg 3 (StateOf tm) w :=
-    { ExecCfg.init tm w with
+  let start : ExecCfg 3 (StateOf (seq (generatedLength (squareFromHome (0 : Fin 2)))
+      (generatedLength (squareFromHome (0 : Fin 2))))) w :=
+    { ExecCfg.init (k := 3) (.inl (.inl (.inl (.inl ())))) w with
       inputPos := 0
       tapes := words.map register
       outputRev := [true, false] }
   let B := max 3 (2 * w.length.size + 1)
   let T := (4 * B + 9) + squareFromHomeTime B w.length * (2 * B + 5)
-  let finish := (execStep tm)^[2 * T] start
+  let finish := (execStep (seqTr pTr pTr (.inl (.inl (.inl ())))))^[2 * T] start
   let expected := words.set 0 (counterWord (w.length * w.length)) |>.set 1 []
   return finish.state.isNone && finish.inputPos.val == 0 &&
     finish.heads.toList.all (· == 0) && finish.outputRev == start.outputRev &&
@@ -418,18 +415,18 @@ starts away from zero and remains there during the allocated streaming program. 
 /-- Repeat a generated digit call, preserving the saved query and a caller tape.
 The second call must clear the result left by the first. -/
 @[expose] def checkGeneratedAt (w : List Bool) (q : ℕ) : Bool := Id.run do
-  let p := generatedAt (squareFromHome (1 : Fin 3)) 0
-  let tm := seq p p
+  let pTr := generatedAtTr (squareFromHomeTr (1 : Fin 3)) (.inl ()) 0
   let words : Vector (List Bool) 5 :=
     #v[[true, false], [true, true, true], counterWord q, [false, true], [true, false]]
-  let start : ExecCfg 5 (StateOf tm) w :=
-    { ExecCfg.init tm w with
+  let start : ExecCfg 5 (StateOf (seq (generatedAt (squareFromHome (1 : Fin 3)) 0)
+      (generatedAt (squareFromHome (1 : Fin 3)) 0))) w :=
+    { ExecCfg.init (k := 5) (.inl (.inl (.inl (.inl ())))) w with
       inputPos := 0
       tapes := words.map register
       outputRev := [false, true] }
   let B := max 3 (max w.length.size q.size)
   let T := squareFromHomeTime B w.length * (2 * B + 8) + 13 * B + 30
-  let finish := (execStep tm)^[2 * T] start
+  let finish := (execStep (seqTr pTr pTr (.inl (.inl (.inl ())))))^[2 * T] start
   let expected := words.set 0 [] |>.set 1 ((squareWord.eval ![w] Fin.elim0)[q]?).toList
     |>.set 3 []
   return finish.state.isNone && finish.inputPos.val == 0 &&
@@ -439,21 +436,22 @@ The second call must clear the result left by the first. -/
 
 /-- Check the quartic-output composition against the Logs interpreter. -/
 @[expose] def checkSquareSquare (w : List Bool) : Bool :=
-  stepUntilHalt squareSquareMachine (squareSquareTime w.length + 2)
-    (ExecCfg.init squareSquareMachine w) [] ==
+  stepUntilHalt squareSquareMachineTr (squareSquareTime w.length + 2)
+    (ExecCfg.init (.inl ()) w) [] ==
       some ((Expr.comp (safe := false) squareWord ![squareWord]).eval ![w] Fin.elim0)
 
 #guard (List.range 65).all checkEmitNumber
 
 /-- Check a stored-word generator, including protected data and the existing output prefix. -/
-@[expose] def checkStoredGenerator {S : Type} (tm : MultiTapeTM 2 Bool S)
+@[expose] def checkStoredGenerator {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin 2 → Option Bool) → Action 2 Bool S)
     (w expected : List Bool) : Bool := Id.run do
   let start : ExecCfg 2 S [] :=
-    { ExecCfg.init tm [] with
+    { ExecCfg.init (k := 2) q₀ [] with
       inputPos := 0
       tapes := #v[register w, register [false, true, false]]
       outputRev := [true, false] }
-  let finish := (execStep tm)^[2 * max 3 w.length + 6] start
+  let finish := (execStep tr)^[2 * max 3 w.length + 6] start
   return finish.state.isNone && finish.inputPos.val == 0 &&
     finish.heads.toList.all (· == 0) && finish.outputRev.reverse == [false, true] ++ expected &&
     (List.finRange 2).all fun i ↦ (List.range (w.length + 5)).all fun j ↦
@@ -461,16 +459,17 @@ The second call must clear the result left by the first. -/
 
 /-- Replace a saved word by a captured successor prefix, starting with dirty capture scratch. -/
 @[expose] def checkCapturedSuccessor (w : List Bool) (K : ℕ) : Bool := Id.run do
-  let tm := generatedPrefix (numericSuccGenerator (emitStored (0 : Fin 2))) 0
   let mask := (List.range K).map (fun n ↦ n % 2 == 0)
   let words := #v[mask, [true, false, true], w, [false, true]]
-  let start : ExecCfg 4 (StateOf tm) [] :=
-    { ExecCfg.init tm [] with
+  let start : ExecCfg 4 (StateOf (generatedPrefix (numericSuccGenerator (emitStored (0 : Fin 2)))
+      0)) [] :=
+    { ExecCfg.init (k := 4) (.inl (.inl (.inl ()))) [] with
       inputPos := 0
       tapes := words.map register
       outputRev := [true, false] }
   let B := max 3 (max K w.length)
-  let finish := (execStep tm)^[17 * B + 39] start
+  let finish := (execStep (generatedPrefixTr (numericSuccGeneratorTr (emitStoredTr (0 : Fin 2)))
+    (true, some (.inl (.inl ()))) 0))^[17 * B + 39] start
   let expected := words.set 1 [] |>.set 2 ((numericSucc w).take K)
   return finish.state.isNone && finish.inputPos.val == 0 &&
     finish.heads.toList.all (· == 0) && finish.outputRev == start.outputRev &&
@@ -479,8 +478,9 @@ The second call must clear the result left by the first. -/
 
 /-- Execute the saved-prefix recursion, checking its result and complete scratch cleanup. -/
 @[expose] def checkRecursiveLength (w : List Bool) : Bool := Id.run do
-  let start := { ExecCfg.init squareRecLengthMachine w with outputRev := [true, false] }
-  let finish := (execStep squareRecLengthMachine)^[squareRecLengthTime w.length + 1] start
+  let start : ExecCfg 8 (StateOf squareRecLengthMachine) w :=
+    { ExecCfg.init (k := 8) (.inl ()) w with outputRev := [true, false] }
+  let finish := (execStep squareRecLengthMachineTr)^[squareRecLengthTime w.length + 1] start
   return finish.state.isNone && finish.inputPos.val == 0 &&
     finish.heads.toList.all (· == 0) && finish.outputRev.reverse ==
       [false, true] ++ (Expr.comp (safe := false) lengthByRec ![squareWord]).eval ![w] Fin.elim0 &&
@@ -490,17 +490,17 @@ The second call must clear the result left by the first. -/
 @[expose] def checkSegment (w : List Bool) (d q : ℕ) : Bool := Id.run do
   let source : Fin 5 → Fin 9 := ![5, 2, 6, 7, 4]
   let ports : Fin 5 → Fin 9 := ![0, 1, 2, 3, 4]
-  let tm := dropReader (readStored source) ports
   let words := #v[counterWord d, counterWord q, [], [], [true, true], w, [], [], [false, true]]
-  let start : ExecCfg 9 (StateOf tm) [] :=
-    { ExecCfg.init tm [] with
+  let start : ExecCfg 9 (StateOf (dropReader (readStored source) ports)) [] :=
+    { ExecCfg.init (k := 9) (.inl (.inl (.inl (.inl ())))) [] with
       inputPos := 0
       tapes := words.map register
       outputRev := [true, false] }
   let B := max 3 w.length
   let T := (5 * B + 12) + (5 * B + 12) + (w.length * (4 * B + 11) + 1) +
     (readStoredTime B B + (4 * B + 9))
-  let finish := (execStep tm)^[T] start
+  let finish :=
+    (execStep (dropReaderTr (readStoredTr source) (.inl (.inl (.inl ()))) ports))^[T] start
   let expected := words.set 4 ((w.drop d)[q]?).toList
   return finish.state.isNone && finish.inputPos.val == 0 &&
     finish.heads.toList.all (· == 0) && finish.outputRev == start.outputRev &&
@@ -511,18 +511,18 @@ The second call must clear the result left by the first. -/
 @[expose] def checkDrop (w : List Bool) (d : ℕ) : Bool := Id.run do
   let source : Fin 5 → Fin 10 := ![5, 2, 6, 7, 4]
   let ports : Fin 5 → Fin 10 := ![0, 1, 2, 3, 4]
-  let tm := dropGenerator (readStored source) ports 8
   let words := #v[counterWord d, [true], [], [false, true], [true, true], w, [], [],
     counterWord w.length, [false, true]]
-  let start : ExecCfg 10 (StateOf tm) [] :=
-    { ExecCfg.init tm [] with
+  let start : ExecCfg 10 (StateOf (dropGenerator (readStored source) ports 8)) [] :=
+    { ExecCfg.init (k := 10) (.inl (.inl (.inl (.inl (.inl ()))))) [] with
       inputPos := 0
       tapes := words.map register
       outputRev := [true, false] }
   let B := max 3 (max w.length d.size)
   let T := dropGeneratorTime (fun _ ↦ readStoredTime B B) (fun _ ↦ B)
     (fun _ ↦ max d w.length) 0
-  let finish := (execStep tm)^[T] start
+  let finish :=
+    (execStep (dropGeneratorTr (readStoredTr source) (.inl (.inl (.inl ()))) ports 8))^[T] start
   let expected := words.set 0 [] |>.set 1 [] |>.set 3 [] |>.set 4 []
   return finish.state.isNone && finish.inputPos.val == 0 &&
     finish.heads.toList.all (· == 0) && finish.outputRev.reverse == [false, true] ++ w.drop d &&
@@ -530,15 +530,16 @@ The second call must clear the result left by the first. -/
       finish.tapes[i][(j : ℤ) - 1]? == (register expected[i])[(j : ℤ) - 1]?
 
 /-- Check a constructor with a dirty extra counter and three preserved argument registers. -/
-@[expose] def checkConstructor {S : Type} (tm : MultiTapeTM 4 Bool S)
+@[expose] def checkConstructor {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin 4 → Option Bool) → Action 4 Bool S)
     (w expected : List Bool) : Bool := Id.run do
   let words := #v[[true, false], w, [false, true], [true]]
   let start : ExecCfg 4 S [] :=
-    { ExecCfg.init tm [] with
+    { ExecCfg.init (k := 4) q₀ [] with
       inputPos := 0
       tapes := words.map register
       outputRev := [true, false] }
-  let finish := (execStep tm)^[100 * (w.length + 3)] start
+  let finish := (execStep tr)^[100 * (w.length + 3)] start
   let finalWords := words.set 0 []
   return finish.state.isNone && finish.inputPos.val == 0 &&
     finish.heads.toList.all (· == 0) && finish.outputRev.reverse == [false, true] ++ expected &&
@@ -548,15 +549,15 @@ The second call must clear the result left by the first. -/
 /-- Emit a counted prefix through repeated queries, preserving the source and caller tapes. -/
 @[expose] def checkEmitPrefix (w : List Bool) (K : ℕ) : Bool := Id.run do
   let source : Fin 5 → Fin 7 := ![3, 1, 4, 5, 2]
-  let tm := emitPrefix (readStored source) 0 1 2
   let words := #v[counterWord K, [], [], w, [], [], [true, false]]
-  let start : ExecCfg 7 (StateOf tm) [] :=
-    { ExecCfg.init tm [] with
+  let start : ExecCfg 7 (StateOf (emitPrefix (readStored source) 0 1 2)) [] :=
+    { ExecCfg.init (k := 7) (.inl (.inl ())) [] with
       inputPos := 0
       tapes := words.map register
       outputRev := [true, false] }
   let B := max 3 w.length
-  let finish := (execStep tm)^[K * (readStoredTime B B + 8 * B + 21) + 1 + (4 * B + 9)] start
+  let finish := (execStep (emitPrefixTr (readStoredTr source) (.inl (.inl (.inl ()))) 0 1 2))^[K *
+    (readStoredTime B B + 8 * B + 21) + 1 + (4 * B + 9)] start
   let expected := words.set 0 []
   return finish.state.isNone && finish.inputPos.val == 0 &&
     finish.heads.toList.all (· == 0) && finish.outputRev.reverse == [false, true] ++ w.take K &&
@@ -567,21 +568,25 @@ The second call must clear the result left by the first. -/
 @[expose] def checkSubtraction (v w : List Bool) : Bool := Id.run do
   let a : Fin 5 → Fin 12 := ![7, 5, 9, 10, 0]
   let b : Fin 5 → Fin 12 := ![8, 5, 9, 10, 1]
-  let lengthV := seq (storedLength (![8, 9, 4, 10] : Fin 4 → Fin 12)) (dec 4)
-  let lengthW := seq (storedLength (![7, 9, 5, 10] : Fin 4 → Fin 12)) (dec 5)
-  let tm := numericSubGenerator lengthV lengthW (readStored a) (readStored b) (Fin.castAdd 5)
+  let lengthVTr := seqTr (storedLengthTr (![8, 9, 4, 10] : Fin 4 → Fin 12)) (decTr 4) (.inl 0)
+  let lengthWTr := seqTr (storedLengthTr (![7, 9, 5, 10] : Fin 4 → Fin 12)) (decTr 5) (.inl 0)
   let N := max v.length w.length + 1
   let B := max 3 N
   let words := #v[[], [], [false, true], [], [true, false, false], [true], [false, true],
     w ++ [true], v ++ [true], [], [], [true, false]]
-  let start : ExecCfg 12 (StateOf tm) [] :=
-    { ExecCfg.init tm [] with
+  let start : ExecCfg 12 (StateOf (numericSubGenerator
+      (seq (storedLength (![8, 9, 4, 10] : Fin 4 → Fin 12)) (dec 4))
+      (seq (storedLength (![7, 9, 5, 10] : Fin 4 → Fin 12)) (dec 5)) (readStored a) (readStored b)
+      (Fin.castAdd 5))) [] :=
+    { ExecCfg.init (k := 12) (.inl (.inl (.inl (.inl (.inl (.inl (.inl ()))))))) [] with
       inputPos := 0
       tapes := words.map register
       outputRev := [true, false] }
   let L := storedLengthTime B + 2 * B + 6
   let T := numericSubTime L L (readStoredTime B N) (readStoredTime B N) B N
-  let finish := (execStep tm)^[T] start
+  let finish := (execStep (numericSubGeneratorTr lengthVTr lengthWTr (.inl (.inl (.inl (.inl ()))))
+    (readStoredTr a) (.inl (.inl (.inl ()))) (readStoredTr b) (.inl (.inl (.inl ())))
+    (Fin.castAdd 5)))^[T] start
   let expected := words.set 2 [] |>.set 4 [] |>.set 5 [] |>.set 6 []
   return finish.state.isNone && finish.inputPos.val == 0 &&
     finish.heads.toList.all (· == 0) &&
@@ -595,19 +600,27 @@ The second call must clear the result left by the first. -/
 #guard (List.range 4).all fun n ↦ (List.range (2 ^ n)).all fun x ↦
   let w := (List.range n).map (Nat.testBit x)
   (List.range (n + 3)).all (checkDrop w) && (List.range (n + 1)).all (checkEmitPrefix w) &&
-    checkConstructor (lengthGenerator (emitStored 0)) w (unrank w.length) &&
-    checkConstructor (productGenerator (emitStored 1) (emitStored 0)) w
+    checkConstructor (.inl (.inl (.inl (.inl ()))))
+      (lengthGeneratorTr (emitStoredTr 0) (.inl (.inl ()))) w (unrank w.length) &&
+    checkConstructor (.inl (.inl (.inl (.inl ()))))
+      (productGeneratorTr (emitStoredTr 1) (.inl (.inl ())) (emitStoredTr 0) (.inl (.inl ()))) w
       (List.replicate w.length [false, true]).flatten &&
-    checkConstructor (condGenerator (emitStored 0)
-      (fun b ↦ if b then emitStored 1 else emitStored 2)) w
+    checkConstructor (.inl (.inl (.inl (.inl ()))))
+      (condGeneratorTr (emitStoredTr 0) (.inl (.inl ()))
+        (S := fun _ ↦ StateOf (emitStored (0 : Fin 4)))
+      (fun b ↦ (.inl (.inl ()), if b then emitStoredTr 1 else emitStoredTr 2))) w
       (if w.isEmpty then [false, true] else [true])
 
 #guard (List.range 6).all fun n ↦ (List.range (2 ^ n)).all fun x ↦
   let w := (List.range n).map (Nat.testBit x)
-  checkStoredGenerator (numericSuccGenerator (emitStored 0)) w (numericSucc w) &&
-    checkStoredGenerator (numericPredGenerator (emitStored 0)) w (numericPred w) &&
-    checkStoredGenerator (predGenerator (emitStored 0)) w w.tail &&
-    checkStoredGenerator (lastGenerator (emitStored 0)) w [w.headD false] &&
+  checkStoredGenerator (true, some (.inl (.inl ()))) (numericSuccGeneratorTr (emitStoredTr 0)) w
+      (numericSucc w) &&
+    checkStoredGenerator ((true, none), some (.inl (.inl ())))
+      (numericPredGeneratorTr (emitStoredTr 0)) w (numericPred w) &&
+    checkStoredGenerator (false, some (.inl (.inl ()))) (predGeneratorTr (emitStoredTr 0)) w
+      w.tail &&
+    checkStoredGenerator (none, some (.inl (.inl ()))) (lastGeneratorTr (emitStoredTr 0)) w
+      [w.headD false] &&
     (List.range 7).all (checkCapturedSuccessor w)
 
 #guard (List.range 4).all fun n ↦ (List.range (2 ^ n)).all fun x ↦
@@ -616,12 +629,11 @@ The second call must clear the result left by the first. -/
     (List.range (n - d + 1)).all (checkSegment w d)
 
 #guard (List.range 3).all fun K ↦
-  let tm := captureOutput (emitSymbol (k := 0) (some false))
-  let start : ExecCfg 2 (StateOf tm) [] :=
-    { ExecCfg.init tm [] with
+  let start : ExecCfg 2 Unit [] :=
+    { ExecCfg.init (k := 2) () [] with
       tapes := #v[register (List.replicate K true), ∅]
       outputRev := [true, false] }
-  let finish := execStep tm start
+  let finish := execStep (captureOutputTr (emitSymbolTr (k := 0) (some false))) start
   finish.state.isNone && finish.outputRev == start.outputRev &&
     finish.heads == #v[(min 1 K : ℤ), (min 1 K : ℤ)] &&
     finish.tapes[1][(0 : ℤ)]? == (if K = 0 then none else some false)
@@ -629,14 +641,13 @@ The second call must clear the result left by the first. -/
 #guard ([false, true] : List Bool).all fun a ↦ ([false, true] : List Bool).all fun b ↦
   ([none, some false, some true] : List (Option Bool)).all fun c ↦
   ([[], [true]] : List (List Bool)).all fun old ↦
-    let tm := subBitStep (Fin.castAdd 1 : Fin 4 → Fin 5)
     let words := #v[[a], [b], c.toList, old, [true, false]]
     let start : ExecCfg 5 Unit [] :=
-      { ExecCfg.init tm [] with
+      { ExecCfg.init (k := 5) () [] with
         inputPos := 0
         tapes := words.map register
         outputRev := [true, false] }
-    let finish := execStep tm start
+    let finish := execStep (subBitStepTr (Fin.castAdd 1 : Fin 4 → Fin 5)) start
     let d := (a.toNat : ℤ) - b.toNat + carryValue c
     let carry : Option Bool := if d / 2 < 0 then none else some (d / 2 == 1)
     let expected := words.set 2 carry.toList |>.set 3 [d % 2 == 1]
@@ -646,14 +657,15 @@ The second call must clear the result left by the first. -/
         finish.tapes[i][(j : ℤ) - 1]? == (register expected[i])[(j : ℤ) - 1]?
 
 #guard (List.range 6).all fun n ↦ ([false, true] : List Bool).all fun b ↦
-  let tm := concatRecGenerator (emitSymbol (some b)) (emitStored (2 : Fin 4)) 0 1
   let words := #v[counterWord n, [], [false, true, false], [true, false]]
-  let start : ExecCfg 4 (StateOf tm) [] :=
-    { ExecCfg.init tm [] with
+  let start : ExecCfg 4 (StateOf (concatRecGenerator (emitSymbol (some b)) (emitStored (2 : Fin 4))
+      0 1)) [] :=
+    { ExecCfg.init (k := 4) (.inl (.inl ())) [] with
       inputPos := 0
       tapes := words.map register
       outputRev := [true, false] }
-  let finish := (execStep tm)^[n * 24 + 45] start
+  let finish := (execStep (concatRecGeneratorTr (emitSymbolTr (some b)) ()
+    (emitStoredTr (2 : Fin 4)) (.inl (.inl ())) 0 1))^[n * 24 + 45] start
   let expected := words.set 0 []
   finish.state.isNone && finish.inputPos.val == 0 &&
     finish.heads.toList.all (· == 0) && finish.outputRev.reverse ==
@@ -664,18 +676,17 @@ The second call must clear the result left by the first. -/
 #guard (List.range 4).all fun n ↦ (List.range (2 ^ n)).all fun x ↦
   let w := (List.range n).map (Nat.testBit x)
   checkSquareViaReader w && checkAllocatedReader w &&
-    stepUntilHalt squareViaReaderMachine (squareViaReaderTime (2 * n.size + 1) n + 2)
-      (ExecCfg.init squareViaReaderMachine w) [] == some (squareWord.eval ![w] Fin.elim0)
+    stepUntilHalt squareViaReaderMachineTr (squareViaReaderTime (2 * n.size + 1) n + 2)
+      (ExecCfg.init (.inl ()) w) [] == some (squareWord.eval ![w] Fin.elim0)
 
 #guard ([[], [false], [false, true, false]] : List (List Bool)).all fun w ↦
-  let tm := squareInput (1 : Fin 2)
-  let start : ExecCfg 2 (StateOf tm) w :=
-    { ExecCfg.init tm w with
+  let start : ExecCfg 2 (StateOf (squareInput (1 : Fin 2))) w :=
+    { ExecCfg.init (k := 2) (.inl (.inl (.inl (.inl ())))) w with
       tapes := #v[register [false, false], register [true, false, true]]
       outputRev := [true, false] }
   let B := max 3 w.length.size
   let T := countInputTime B w.length + w.length * (2 * w.length + 2 * B + 11) + 1
-  let finish := (execStep tm)^[T] start
+  let finish := (execStep (squareInputTr (1 : Fin 2)))^[T] start
   finish.state.isNone && finish.inputPos.val == 0 &&
     finish.heads.toList.all (· == 0) &&
     finish.outputRev.reverse == [false, true] ++ (List.replicate w.length w).flatten &&
@@ -688,32 +699,30 @@ The second call must clear the result left by the first. -/
   checkLength w && checkStoredLength w && checkSquare w &&
     checkGeneratedLength w && checkSquareSquare w &&
     ([0, 1, 3] : List ℕ).all (checkSquareLength w) &&
-    (let tm := lengthMachine squareMachine
-     stepUntilHalt tm (256 * (w.length + 1) ^ 3 + 1) (ExecCfg.init tm w) [] ==
+    (stepUntilHalt (lengthMachineTr squareMachineTr) (256 * (w.length + 1) ^ 3 + 1)
+       (ExecCfg.init (.inl (.inl (.inl (.inl (.inl (.inl ())))))) w) [] ==
        some ((Expr.comp (safe := false) lengthByRec ![squareWord]).eval ![w] Fin.elim0)) &&
     (List.range 8).all (fun q ↦ checkStored w q && checkInputAt w q) &&
     (List.range (n * n + 2)).all (fun q ↦ checkSquareDigit w q && checkGeneratedAt w q)
 
 #guard (List.range 9).all fun q ↦
-  let P : MultiTapeTM 1 Bool (Fin 3) :=
-    { q₀ := 0
-      tr := fun state _ _ ↦
-        if state = 0 then
-          { inputTape := 0, workTapes := fun _ ↦ (some (some false), 1),
-            output := some false, state := some 1 }
-        else if state = 1 then
-          { inputTape := 0, workTapes := fun _ ↦ (some (some true), -1),
-            output := some true, state := some 2 }
-        else
-          { inputTape := 0, workTapes := fun _ ↦ (none, 0),
-            output := some false, state := none } }
-  let tm := readOutput P
-  let start : ExecCfg 3 (StateOf tm) [] :=
-    { ExecCfg.init tm [] with
+  let trP : Fin 3 → Option Bool → (Fin 1 → Option Bool) → Action 1 Bool (Fin 3) :=
+    fun state _ _ ↦
+      if state = 0 then
+        { inputTape := 0, workTapes := fun _ ↦ (some (some false), 1),
+          output := some false, state := some 1 }
+      else if state = 1 then
+        { inputTape := 0, workTapes := fun _ ↦ (some (some true), -1),
+          output := some true, state := some 2 }
+      else
+        { inputTape := 0, workTapes := fun _ ↦ (none, 0),
+          output := some false, state := none }
+  let start : ExecCfg 3 (ReadState (Fin 3)) [] :=
+    { ExecCfg.init (k := 3) (.inl (0, false)) [] with
       tapes := #v[register (counterWord q), ∅, register [false, true, false, true]]
       heads := #v[0, 0, 2]
       outputRev := [true, false] }
-  let finish := (execStep tm)^[3 * (2 * 4 + 8)] start
+  let finish := (execStep (readOutputTr trP))^[3 * (2 * 4 + 8)] start
   let expected := #v[register (counterWord (q - 3)), register (([false, true, false][q]?).toList),
     start.tapes[2] |>.insert 2 false |>.insert 3 true]
   finish.state.isNone && finish.inputPos.val == 1 && finish.heads == start.heads &&
@@ -723,48 +732,43 @@ The second call must clear the result left by the first. -/
 
 #guard ([[], [false], [false, true, false]] : List (List Bool)).all fun w ↦
   (List.range 5).all fun q ↦
-    let tm := repeatInput (0 : Fin 1)
-    let start : ExecCfg 1 (StateOf tm) w :=
-      { ExecCfg.init tm w with
+    let start : ExecCfg 1 (StateOf (repeatInput (0 : Fin 1))) w :=
+      { ExecCfg.init (k := 1) (.inl ()) w with
         inputPos := 0
         tapes := #v[register (counterWord q)]
         outputRev := [false, true] }
-    let finish := (execStep tm)^[q * (2 * w.length + 2 * q.size + 11) + 1] start
+    let finish := (execStep (repeatInputTr (0 : Fin 1)))^[q * (2 * w.length + 2 * q.size + 11) +
+      1] start
     finish.state.isNone && finish.outputRev.reverse ==
       [true, false] ++ (List.replicate q w).flatten
 
 #guard (List.range 8).all fun n ↦
-  let P : MultiTapeTM 0 Bool Unit :=
-    { q₀ := ()
-      tr := fun _ _ _ ↦
-        { inputTape := 0, workTapes := Fin.elim0, output := some false, state := none } }
-  let tm := countOutput P
-  let start : ExecCfg 1 (StateOf tm) [] :=
-    { ExecCfg.init tm [] with
+  let trP : Unit → Option Bool → (Fin 0 → Option Bool) → Action 0 Bool Unit :=
+    fun _ _ _ ↦ { inputTape := 0, workTapes := Fin.elim0, output := some false, state := none }
+  let start : ExecCfg 1 (CountOutputState Unit) [] :=
+    { ExecCfg.init (k := 1) (.inl ()) [] with
       tapes := #v[register (counterWord n)]
       outputRev := [false, true] }
-  let finish := (execStep tm)^[30] start
+  let finish := (execStep (countOutputTr trP))^[30] start
   finish.state.isNone && finish.inputPos.val == 1 && finish.heads[0] == 0 &&
     finish.outputRev == start.outputRev &&
     (List.range 7).all fun j ↦
       finish.tapes[0][(j : ℤ) - 1]? == (register (counterWord (n + 1)))[(j : ℤ) - 1]?
 
 #guard ([0, 1, 3, 7] : List ℕ).all fun n ↦
-  let P : MultiTapeTM 1 Bool Bool :=
-    { q₀ := false
-      tr := fun q _ _ ↦
-        if q then
-          { inputTape := 0, workTapes := fun _ ↦ (some (some true), -1),
-            output := some false, state := none }
-        else
-          { inputTape := 0, workTapes := fun _ ↦ (some (some false), 1),
-            output := some true, state := some true } }
-  let tm := countOutput P
-  let start : ExecCfg 2 (StateOf tm) [] :=
-    { ExecCfg.init tm [] with
+  let trP : Bool → Option Bool → (Fin 1 → Option Bool) → Action 1 Bool Bool :=
+    fun q _ _ ↦
+      if q then
+        { inputTape := 0, workTapes := fun _ ↦ (some (some true), -1),
+          output := some false, state := none }
+      else
+        { inputTape := 0, workTapes := fun _ ↦ (some (some false), 1),
+          output := some true, state := some true }
+  let start : ExecCfg 2 (CountOutputState Bool) [] :=
+    { ExecCfg.init (k := 2) (.inl false) [] with
       tapes := #v[register (counterWord n), register [false, false, true]]
       outputRev := [false, true] }
-  let finish := (execStep tm)^[26] start
+  let finish := (execStep (countOutputTr trP))^[26] start
   finish.state.isNone && finish.inputPos.val == 1 && finish.heads.toList.all (· == 0) &&
     finish.outputRev == start.outputRev &&
     (List.range 7).all fun j ↦

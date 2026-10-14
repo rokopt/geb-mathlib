@@ -1264,6 +1264,17 @@ Correcting these is a separate concern from any current branch per
   bump pins computes the level itself, or changes the patched lines,
   either of which fails the patch's application, at which point the
   patch is deleted, or rebased if the defect persists.
+- **Noncomputable Turing machines**: CSLib derives a deterministic
+  machine's transition function `Turing.MultiTapeTM.tr`, and from it
+  `step` and `runFrom`, by choice from its transition relation, so the
+  prototypes' machine combinators and the definitions reading a machine's
+  transition are `noncomputable`, the exception
+  `docs/rules/lean-coding.md` § Constructive-only admits, and a test
+  evaluates a run through `Turing.MultiTapeTM.stepOfTr`
+  (`Geb/Prototypes/Computability/MultiTape/OfTr.lean`). Trigger: a CSLib
+  revision a bump pins defines the step of a deterministic machine
+  computably, at which point the `noncomputable` markings, `stepOfTr` and
+  the exception are removed.
 - **Canonical as a dependency**: `lakefile.toml` requires Canonical
   (the Bootstrap chapter's sections Holes and search, and Search and
   synthesis) for experiments with search, in a library of their own that

@@ -50,7 +50,7 @@ theorem step_read_stay {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input
     (hi : cfg.inputSymbol = some (boolEmb b))
     (htr : scanTr q b cfg.workTapeSymbols = (q', stay)) :
     machine.step cfg = readCfg cfg q' := by
-  rw [step_of_state _ _ _ hq, hi, tr_scan q hread, htr]
+  rw [step_of_state _ _ _ hq, machine_tr, hi, tr_scan q hread, htr]
   refine Cfg.ext rfl rfl ?_ ?_ (List.append_nil _)
   · funext i
     rfl

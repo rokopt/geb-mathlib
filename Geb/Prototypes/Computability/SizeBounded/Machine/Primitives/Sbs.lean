@@ -29,10 +29,13 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 
 # Main definitions
 
+* {lit}`sbsTr` — the transition function of the primitive, composed of its
+  phases' by {name}`Geb.SizeBounded.Machine.seqTr`.
 * {lit}`sbs` — the size-bounded successor of one register into another.
 
 # Main statements
 
+* {lit}`sbs_eq_ofTr` — the primitive is the machine built from {lit}`sbsTr`.
 * {lit}`sbs_transforms` — the contract of the primitive, naming its
   transformer and its step bound.
 
@@ -49,10 +52,24 @@ open Turing MultiTapeTM
 
 public section
 
+/-- The transition of {lit}`sbs`: {name}`clearTr`, {name}`sbsWalkTr`, then
+{name}`returnTapeTr` on the three registers. -/
+@[expose] def sbsTr {k : ℕ} (b : Bool) (x y j : Fin k) :=
+  seqTr (clearTr j)
+    (seqTr (sbsWalkTr b x y j)
+      (seqTr (returnTapeTr x) (seqTr (returnTapeTr y) (returnTapeTr j) (.inl ())) (.inl (.inl ())))
+      (.inl (.inl ())))
+    (.inl ())
+
 /-- The size-bounded successor into register {lit}`j`: clear, walk, park all
 three. -/
-@[expose] def sbs {k : ℕ} (b : Bool) (x y j : Fin k) :=
+@[expose] noncomputable def sbs {k : ℕ} (b : Bool) (x y j : Fin k) :=
   seq (clear j) (seq (sbsWalk b x y j) (seq (returnTape x) (seq (returnTape y) (returnTape j))))
+
+/-- {name}`sbs` is the machine built from {name}`sbsTr`. -/
+theorem sbs_eq_ofTr {k : ℕ} (b : Bool) (x y j : Fin k) :
+    sbs b x y j = ofTr (.inl (.inl ())) (sbsTr b x y j) := by
+  simp only [sbs, clear_eq_ofTr, sbsWalk, returnTape_eq_ofTr, seq_ofTr, sbsTr]
 
 /-- {name}`sbs` transforms the valuation by setting {lit}`j` to the
 size-bounded successor of {lit}`x` bounded by {lit}`y`, in

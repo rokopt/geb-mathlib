@@ -63,7 +63,7 @@ namespace Geb.SizeBounded.Logspace.Machine
 
 open Geb.SizeBounded (finMax le_finMax)
 open Geb.SizeBounded.Machine (Prog composeFin composeFin_of_lt Bounded copy const
-  copy_transforms Transforms)
+  copy_transforms Transforms seqProg seqFinProg seqProg_tm seqFinProg_tm)
 
 public section
 
@@ -205,7 +205,7 @@ theorem srnSteps_contract {k a b : ℕ} (free : ℕ) (hk : free + (4 * b + 6) �
     (steps : Fin b → Prog k) (stepRep : Fin b → List Bool → RepSem (b + a + 1)) (T : ℕ → ℕ)
     (G : Fin b → List Bool → (Fin k → List Bool) → Fin k → List Bool)
     (hG : StepsCorrect free hk params M steps stepRep T G) :
-    TransformsIn (Prog.seqFin b steps).tm
+    TransformsIn (seqFinProg b steps).tm
       (fun input σ ↦ EnvWF M input σ (srnEnv (b := b) free (by omega) params))
       (fun input σ ↦ composeFin b (fun l ↦ G l input) σ) (fun n ↦ b * T n + 1) (bound M) ∧
     (∀ input σ (t : Fin k), t.val < free + 6 + 2 * b →
@@ -235,9 +235,10 @@ theorem srnSteps_contract {k a b : ℕ} (free : ℕ) (hk : free + (4 * b + 6) �
     (hG l).2.2.1 input σ t (by omega)
       (Fin.ne_of_val_ne (by rw [hscr0]; omega)) (Fin.ne_of_val_ne (by rw [hscr1]; omega))
   refine ⟨?_, ?_, ?_⟩
-  · exact TransformsIn.mono_pre (TransformsIn.seqFin (bound M) T b _ _
-      (fun _ input σ ↦ EnvWF M input σ (srnEnv free hk2 params)) G fun l ↦ (hG l).1)
-      fun input σ _ hσ ↦ preFin_of_invariant _ b G hpres input σ hσ
+  · exact TransformsIn.of_tm_eq (seqFinProg_tm _ _)
+      (TransformsIn.mono_pre (TransformsIn.seqFin (bound M) T b _ _
+        (fun _ input σ ↦ EnvWF M input σ (srnEnv free hk2 params)) G fun l ↦ (hG l).1)
+        fun input σ _ hσ ↦ preFin_of_invariant _ b G hpres input σ hσ)
   · intro input σ t ht
     exact composeFin_of_lt (free + 6 + 2 * b) b (fun l ↦ G l input)
       (fun l τ j hj ↦ hframe l input τ j hj) σ t ht
@@ -287,7 +288,7 @@ theorem srnMiddle_contract {k a b : ℕ} (free : ℕ) (hk : free + (4 * b + 6) �
     (T : ℕ → ℕ) (G : Bool → Fin b → List Bool → (Fin k → List Bool) → Fin k → List Bool)
     (hG : ∀ i, StepsCorrect free hk params M (steps i) (stepRep i) T (G i)) :
     TransformsIn (srnMiddle ⟨free + 4, by omega⟩ (srnVals b free (by omega))
-        (srnScr b free (by omega)) (Prog.seqFin b (steps false)) (Prog.seqFin b (steps true))).tm
+        (srnScr b free (by omega)) (seqFinProg b (steps false)) (seqFinProg b (steps true))).tm
       (fun input σ ↦ EnvWF M input σ (srnEnv (b := b) free (by omega) params))
       (middleF ⟨free + 4, by omega⟩ (srnVals b free (by omega)) (srnScr b free (by omega)) G)
       (fun n ↦ (1 + max (b * T n + 1) (b * T n + 1)) + (b * copyRegTime (bound M n) + 1))
@@ -339,10 +340,10 @@ theorem srnMiddle_contract {k a b : ℕ} (free : ℕ) (hk : free + (4 * b + 6) �
     have h2 := Transforms.toIn_of (fun n ↦ copy_transforms (srnScr b free hk4 l 1)
       (srnVals b free hk2 l 1) (hvs l 1 l 1).symm (bound M n)) (fun _ _ ↦ True)
       fun input σ hB _ ↦ hB.update (hB _)
-    refine TransformsIn.congr (TransformsIn.mono_time
+    refine TransformsIn.of_tm_eq (copyReg_tm _ _) (TransformsIn.congr (TransformsIn.mono_time
       ((h1.seq h2).mono_pre fun _ _ _ _ ↦ ⟨trivial, trivial⟩) fun n ↦ by
         unfold copyRegTime
-        omega) ?_
+        omega) ?_)
     intro input σ _
     funext t
     change Function.update (Function.update σ (srnVals b free hk2 l 0) (σ (srnScr b free hk4 l 0)))
@@ -355,7 +356,8 @@ theorem srnMiddle_contract {k a b : ℕ} (free : ℕ) (hk : free + (4 * b + 6) �
   have hmid := TransformsIn.seq (TransformsIn.caseReg (⟨free + 4, by omega⟩ : Fin k) hT0 hT1)
     hcopies
   refine ⟨?_, ?_, ?_⟩
-  · refine TransformsIn.mono_pre (TransformsIn.congr hmid fun input σ _ ↦ rfl) ?_
+  · refine TransformsIn.of_tm_eq (srnMiddle_tm _ _ _ _ _)
+      (TransformsIn.mono_pre (TransformsIn.congr hmid fun input σ _ ↦ rfl) ?_)
     intro input σ _ hσ
     refine ⟨?_, preFin_of_invariant (fun _ _ ↦ True) b _ (fun _ _ _ _ ↦ trivial) input _ trivial⟩
     by_cases h : (σ ⟨free + 4, by omega⟩).getLast? = some true
@@ -464,7 +466,7 @@ theorem srnBody1_contract {k a b : ℕ} (free : ℕ) (hk : free + (4 * b + 6) �
     (hG : ∀ i, StepsCorrect free hk params M (steps i) (stepRep i) T (G i)) :
     TransformsIn (srnBody1 (srnV free (by omega)) ⟨free + 2, by omega⟩ ⟨free + 3, by omega⟩
         ⟨free + 4, by omega⟩ (srnVals b free (by omega)) (srnScr b free (by omega))
-        (Prog.seqFin b (steps false)) (Prog.seqFin b (steps true))).tm
+        (seqFinProg b (steps false)) (seqFinProg b (steps true))).tm
       (fun input σ ↦ (∃ j, σ (srnV free (by omega) 1) = counterWord j ∧ j < input.length) ∧
         EnvWF M input σ (srnEnv (b := b) free (by omega) params))
       (body1F (srnV free (by omega)) ⟨free + 2, by omega⟩ ⟨free + 3, by omega⟩
@@ -558,12 +560,13 @@ theorem srnBody1_contract {k a b : ℕ} (free : ℕ) (hk : free + (4 * b + 6) �
     fun input σ hσ ↦ envWF_of_frame hσ fun s t ↦ hfr1 input σ _ (henvS s t) (henvF s t)
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
   · have hm : (srnBody1 (srnV free hkV) ⟨free + 2, hf2⟩ ⟨free + 3, hf3⟩ ⟨free + 4, hf4⟩
-        (srnVals b free hk2) (srnScr b free hk4) (Prog.seqFin b (steps false))
-        (Prog.seqFin b (steps true))).tm =
+        (srnVals b free hk2) (srnScr b free hk4) (seqFinProg b (steps false))
+        (seqFinProg b (steps true))).tm =
         Geb.SizeBounded.Machine.seq (readInput (srnV free hkV 1) ⟨free + 3, hf3⟩ ⟨free + 4, hf4⟩)
           (Geb.SizeBounded.Machine.seq (srnMiddle ⟨free + 4, hf4⟩ (srnVals b free hk2)
-            (srnScr b free hk4) (Prog.seqFin b (steps false)) (Prog.seqFin b (steps true))).tm
-            (Geb.SizeBounded.Machine.seq (inc (srnV free hkV 1)) (dec ⟨free + 2, hf2⟩))) := rfl
+            (srnScr b free hk4) (seqFinProg b (steps false)) (seqFinProg b (steps true))).tm
+            (Geb.SizeBounded.Machine.seq (inc (srnV free hkV 1)) (dec ⟨free + 2, hf2⟩))) :=
+      srnBody1_tm _ _ _ _ _ _ _ _
     rw [hm]
     refine TransformsIn.mono_time (TransformsIn.mono_pre (TransformsIn.congr h
       fun input σ _ ↦ (rfl : _ = body1F (srnV free hkV) ⟨free + 2, hf2⟩ ⟨free + 3, hf3⟩
@@ -641,7 +644,7 @@ theorem srnBody2_contract {k a b : ℕ} (free : ℕ) (hk : free + (4 * b + 6) �
     (hG : ∀ i, StepsCorrect free hk params M (steps i) (stepRep i) T (G i)) :
     TransformsIn (srnBody2 (srnV free (by omega)) ⟨free + 5, by omega⟩ ⟨free + 4, by omega⟩
         (srnVals b free (by omega)) (srnScr b free (by omega))
-        (Prog.seqFin b (steps false)) (Prog.seqFin b (steps true))).tm
+        (seqFinProg b (steps false)) (seqFinProg b (steps true))).tm
       (fun input σ ↦ (σ (srnV free (by omega) 0)).length < M ∧
         EnvWF M input σ (srnEnv (b := b) free (by omega) params))
       (body2F (srnV free (by omega)) ⟨free + 5, by omega⟩ ⟨free + 4, by omega⟩
@@ -769,12 +772,13 @@ theorem srnBody2_contract {k a b : ℕ} (free : ℕ) (hk : free + (4 * b + 6) �
     · rw [ite_eq_left hc, Function.update_of_ne hne, hmidfr input _ t ht]
     · rw [ite_eq_right hc, Function.update_of_ne hne, hmidfr input _ t ht]
   have hm : (srnBody2 (srnV free hkV) ⟨free + 5, hf5⟩ ⟨free + 4, hf4⟩ (srnVals b free hk2)
-      (srnScr b free hk4) (Prog.seqFin b (steps false)) (Prog.seqFin b (steps true))).tm =
+      (srnScr b free hk4) (seqFinProg b (steps false)) (seqFinProg b (steps true))).tm =
       Geb.SizeBounded.Machine.seq (pop (⟨free + 5, hf5⟩ : Fin k) ⟨free + 4, hf4⟩)
         (Geb.SizeBounded.Machine.seq (srnMiddle ⟨free + 4, hf4⟩ (srnVals b free hk2)
-          (srnScr b free hk4) (Prog.seqFin b (steps false)) (Prog.seqFin b (steps true))).tm
+          (srnScr b free hk4) (seqFinProg b (steps false)) (seqFinProg b (steps true))).tm
           (caseProbe (some ⟨free + 4, hf4⟩) (push false (srnV free hkV 0))
-            (push true (srnV free hkV 0)))) := rfl
+            (push true (srnV free hkV 0)))) :=
+    srnBody2_tm _ _ _ _ _ _ _
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · rw [hm]
     refine TransformsIn.mono_time (TransformsIn.mono_pre (TransformsIn.congr h

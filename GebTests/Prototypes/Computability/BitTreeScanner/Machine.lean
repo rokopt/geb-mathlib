@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.BitTreeScanner.Cost
 public import Geb.Prototypes.Computability.BitTreeScanner.Machine
+public import Geb.Prototypes.Computability.MultiTape.OfTr
 public import Geb.Prototypes.Computability.MultiTape.OutputString
 
 /-!
@@ -19,12 +20,21 @@ public import Geb.Prototypes.Computability.MultiTape.OutputString
 ## Main definitions
 
 * `sampleWords` — the words the mirror checks.
-* `sampleOutputs` — the scanner's output on each sample word.
+* `sampleRun` — a run of the scanner's transition function on a sample
+  word.
+* `sampleOutputs` — the output tape of that run on each sample word, over
+  the assigned steps.
 
 ## Main statements
 
-* `sampleOutputs_eq` — the scanner emits the decision function's value on
-  each sample word.
+* `runFrom_eq_sampleRun` — the scanner's run is the run of its transition
+  function.
+* `sampleOutputs_eq` — the run emits the decision function's value on each
+  sample word.
+* `halted_sampleRun` — the run has halted at the assigned steps and not one
+  step before.
+* `outputString_sampleWords` — the scanner emits the decision function's
+  value on each sample word.
 * `halted_sampleWords` — the scanner has halted at the assigned steps and
   not one step before.
 * `totalTime_sampleWords` — the assigned steps on each sample word.
@@ -41,6 +51,11 @@ run of Cslib's `Turing.MultiTapeTM.runFrom`
 implementation notes name for that module's `Classical.choice` dependency;
 `sampleWords` is packaging, the literal the other declarations are stated
 over.
+
+Cslib's step of a machine is chosen from its transition relation and does
+not reduce, so the kernel evaluates the run of `transition` by
+`Turing.MultiTapeTM.stepOfTr`, and `Turing.MultiTapeTM.runFrom_ofTr`
+identifies that run with the scanner's.
 
 ## Tags
 
@@ -67,15 +82,43 @@ def sampleWords : List (List Bool) :=
    [false, false, true], [true, false, true], [true, false, true, false, true, true],
    [false, false, false, false, false, false]]
 
-/-- The scanner's output on each sample word, over the assigned steps. -/
-def sampleOutputs : List (List (Fin 4)) :=
-  sampleWords.map fun w ↦
-    bitTreeScanner.outputString (bitTreeScanner.initCfg (w.map boolEmb)) (totalTime w)
+/-- The configuration after `n` steps of the scanner's transition function
+from the initial configuration on a word. -/
+def sampleRun (w : List Bool) (n : ℕ) : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb) :=
+  (stepOfTr transition)^[n] (Cfg.init stInit (w.map boolEmb))
 
-/-- The scanner emits the decision function's value on each sample word. -/
+/-- The scanner's run from the initial configuration is the run of its
+transition function. -/
+theorem runFrom_eq_sampleRun (w : List Bool) (n : ℕ) :
+    bitTreeScanner.runFrom (bitTreeScanner.initCfg (w.map boolEmb)) n = sampleRun w n := by
+  rw [bitTreeScanner, runFrom_ofTr]
+  rfl
+
+/-- The output tape of the run on each sample word, over the assigned
+steps. -/
+def sampleOutputs : List (List (Fin 4)) :=
+  sampleWords.map fun w ↦ (sampleRun w (totalTime w)).output
+
+/-- The run emits the decision function's value on each sample word. -/
 theorem sampleOutputs_eq :
     sampleOutputs = sampleWords.map fun w ↦ [boolEmb (validBool w)] := by
   decide +kernel
+
+/-- The run has halted at the assigned steps, and had not one step before. -/
+theorem halted_sampleRun :
+    sampleWords.map (fun w ↦
+      (decide ((sampleRun w (totalTime w)).state = none),
+        decide ((sampleRun w (totalTime w - 1)).state = none))) =
+      sampleWords.map fun _ ↦ (true, false) := by
+  decide +kernel
+
+/-- The scanner emits the decision function's value on each sample word. -/
+theorem outputString_sampleWords :
+    sampleWords.map (fun w ↦
+      bitTreeScanner.outputString (bitTreeScanner.initCfg (w.map boolEmb)) (totalTime w)) =
+      sampleWords.map fun w ↦ [boolEmb (validBool w)] := by
+  simp only [← initCfg_runFrom_output, runFrom_eq_sampleRun]
+  exact sampleOutputs_eq
 
 /-- The scanner has halted at the assigned steps, and had not one step
 before. -/
@@ -86,7 +129,8 @@ theorem halted_sampleWords :
         decide ((bitTreeScanner.runFrom (bitTreeScanner.initCfg (w.map boolEmb))
           (totalTime w - 1)).state = none))) =
       sampleWords.map fun _ ↦ (true, false) := by
-  decide +kernel
+  simp only [runFrom_eq_sampleRun]
+  exact halted_sampleRun
 
 /-- The assigned steps on each sample word. -/
 theorem totalTime_sampleWords :

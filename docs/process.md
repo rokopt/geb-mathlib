@@ -219,6 +219,18 @@ choice-free — a bridge through a `Classical`-dependent mathlib construct,
 say. Where a rule rests on a measurement, a lemma's axioms follow its
 proof, so it is re-taken on a toolchain bump.
 
+The exception to the ban on `noncomputable` follows the same boundary.
+CSLib defines a deterministic multi-tape machine as a transition relation
+with a proof that it is the graph of a function, and recovers the function
+and the step by choice. A combinator that builds a machine from others
+reads their transitions, so it cannot be computable over CSLib's machines;
+keeping it computable would require a machine type of this repository's
+own, restating CSLib's semantics beside it, which § Code is cost rules
+out. The prototypes built on those machines therefore take CSLib's
+definitions as they are, in modules whose subject is the correspondence
+with them, and evaluate a run where one must reduce through the
+transition function a concrete machine was built from.
+
 ## Avoid colloquialisms and metaphors
 
 Only standard technical terms are precise and universal enough

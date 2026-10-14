@@ -14,20 +14,34 @@ set_option doc.verso true in
 Sequencing composes two machines that share a tape layout: {lit}`seq P Q`
 runs {lit}`P`, and from a configuration where {lit}`P` would halt continues
 instead as {lit}`Q` from {lit}`Q`'s initial state. Its state type is the sum
-of the two components' state types. {lit}`liftL` and {lit}`liftR` embed a
-configuration of {lit}`P` or of {lit}`Q` into a configuration of the
-composite, agreeing with the composite's steps and output; consequently an
-{name}`Geb.SizeBounded.Machine.Arrives` of a component lifts to an
-{name}`Geb.SizeBounded.Machine.Arrives` of the composite.
+of the two components' state types.
+
+The composite is defined on transition functions first, as {lit}`seqTr`, and
+{lit}`seq` is the machine built from the components' transitions by
+{name}`Turing.MultiTapeTM.ofTr`. CSLib selects a machine's transition
+{name}`Turing.MultiTapeTM.tr` by choice, so {lit}`seq` is noncomputable, while
+{lit}`seqTr` composes computable transitions into a computable one;
+{lit}`seq_ofTr` relates the two on machines built from transition functions.
+
+{lit}`liftL` and {lit}`liftR` embed a configuration of {lit}`P` or of
+{lit}`Q` into a configuration of the composite, agreeing with the composite's
+steps and output; consequently an {name}`Geb.SizeBounded.Machine.Arrives` of a
+component lifts to an {name}`Geb.SizeBounded.Machine.Arrives` of the
+composite.
 
 # Main definitions
 
+* {lit}`seqTr` — the transition of sequencing, from the components'
+  transitions.
 * {lit}`seq` — sequential composition of two machines sharing a tape layout.
 * {lit}`liftL`, {lit}`liftR` — the embedding of a component's configuration
   into the composite's.
 
 # Main statements
 
+* {lit}`seq_tr` — the transition of {lit}`seq` is {lit}`seqTr`.
+* {lit}`seq_ofTr` — sequencing machines built from transition functions is the
+  machine built from the sequenced transition.
 * {lit}`seq_step_left`, {lit}`seq_step_right` — the composite's step from a
   lifted configuration is the lift of the component's step.
 * {lit}`seq_runFrom_left`, {lit}`seq_runFrom_right` — the same at every step,
@@ -57,18 +71,43 @@ open Turing MultiTapeTM
 
 public section
 
-/-- Sequencing: run {lit}`P`, then {lit}`Q`. In an {lit}`inl` state the
-transition is {lit}`P`'s with a halting successor replaced by {lit}`Q`'s
-initial state; in an {lit}`inr` state it is {lit}`Q`'s. -/
-@[expose] def seq {k : ℕ} {S₁ S₂ : Type} (P : MultiTapeTM k Bool S₁)
-    (Q : MultiTapeTM k Bool S₂) : MultiTapeTM k Bool (S₁ ⊕ S₂) where
-  q₀ := .inl P.q₀
-  tr q inp work :=
-    match q with
-    | .inl q => let o := P.tr q inp work
-      { o with state := some (o.state.elim (.inr Q.q₀) .inl) }
-    | .inr q => let o := Q.tr q inp work
-      { o with state := o.state.map .inr }
+/-- The transition of sequencing, from the transitions {lit}`trP` and {lit}`trQ`
+of the two components and {lit}`Q`'s initial state {lit}`q₀Q`. In an {lit}`inl`
+state it is {lit}`trP` with a halting successor replaced by {lit}`q₀Q`; in an
+{lit}`inr` state it is {lit}`trQ`. It is not inlined, so that a partial
+application of it to transitions computed from other data holds those
+transitions as evaluated arguments rather than recomputing them at each
+application. -/
+@[expose, noinline] def seqTr {k : ℕ} {S₁ S₂ : Type}
+    (trP : S₁ → Option Bool → (Fin k → Option Bool) → Action k Bool S₁)
+    (trQ : S₂ → Option Bool → (Fin k → Option Bool) → Action k Bool S₂) (q₀Q : S₂)
+    (q : S₁ ⊕ S₂) (inp : Option Bool) (work : Fin k → Option Bool) :
+    Action k Bool (S₁ ⊕ S₂) :=
+  match q with
+  | .inl q => let o := trP q inp work
+    { o with state := some (o.state.elim (.inr q₀Q) .inl) }
+  | .inr q => let o := trQ q inp work
+    { o with state := o.state.map .inr }
+
+/-- Sequencing: run {lit}`P`, then {lit}`Q`, by the transition {name}`seqTr` of
+their transitions. -/
+@[expose] noncomputable def seq {k : ℕ} {S₁ S₂ : Type} (P : MultiTapeTM k Bool S₁)
+    (Q : MultiTapeTM k Bool S₂) : MultiTapeTM k Bool (S₁ ⊕ S₂) :=
+  ofTr (.inl P.q₀) (seqTr P.tr Q.tr Q.q₀)
+
+/-- The transition of {name}`seq` is {name}`seqTr`. -/
+theorem seq_tr {k : ℕ} {S₁ S₂ : Type} (P : MultiTapeTM k Bool S₁) (Q : MultiTapeTM k Bool S₂)
+    (q : S₁ ⊕ S₂) (inp : Option Bool) (work : Fin k → Option Bool) :
+    (seq P Q).tr q inp work = seqTr P.tr Q.tr Q.q₀ q inp work :=
+  tr_ofTr _ _ _ _ _
+
+/-- Sequencing machines built from transition functions is the machine built from
+the sequenced transition. -/
+theorem seq_ofTr {k : ℕ} {S₁ S₂ : Type} (q₁ : S₁)
+    (tr₁ : S₁ → Option Bool → (Fin k → Option Bool) → Action k Bool S₁) (q₂ : S₂)
+    (tr₂ : S₂ → Option Bool → (Fin k → Option Bool) → Action k Bool S₂) :
+    seq (ofTr q₁ tr₁) (ofTr q₂ tr₂) = ofTr (.inl q₁) (seqTr tr₁ tr₂ q₂) := by
+  rw [seq, tr_ofTr', tr_ofTr', q₀_ofTr, q₀_ofTr]
 
 /-- A {lit}`P`-configuration lifted into {lit}`seq P Q`: a halted one becomes
 {lit}`Q`'s start. -/
@@ -87,8 +126,11 @@ theorem seq_step_left {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
     (P : MultiTapeTM k Bool S₁) (Q : MultiTapeTM k Bool S₂)
     (cfg : Cfg k Bool S₁ input) (q : S₁) (hq : cfg.state = some q) :
     (seq P Q).step (liftL Q cfg) = liftL Q (P.step cfg) := by
-  unfold step liftL
-  simp only [hq]
+  have hq' : (liftL Q cfg).state = some (.inl q) := by
+    change some (cfg.state.elim _ _) = _
+    rw [hq]
+    rfl
+  rw [MultiTapeTM.step_of_state hq', MultiTapeTM.step_of_state hq, seq_tr]
   rfl
 
 /-- A step of the composite from a lifted {lit}`Q`-configuration is the lift
@@ -102,8 +144,11 @@ theorem seq_step_right {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
     rw [step_of_halt hq, step_of_halt]
     simp [liftR, hq]
   | some q =>
-    unfold step liftR
-    simp only [hq]
+    have hq' : (liftR (S₁ := S₁) cfg).state = some (.inr q) := by
+      change cfg.state.map _ = _
+      rw [hq]
+      rfl
+    rw [MultiTapeTM.step_of_state hq', MultiTapeTM.step_of_state hq, seq_tr]
     rfl
 
 /-- A halted {lit}`P`-configuration lifts to {lit}`Q`'s start. -/
@@ -120,7 +165,7 @@ theorem seq_outputSymbol_left {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
     (cfg : Cfg k Bool S₁ input) (q : S₁) (hq : cfg.state = some q) :
     (seq P Q).outputSymbol (liftL Q cfg) = P.outputSymbol cfg := by
   unfold outputSymbol liftL
-  simp only [hq]
+  simp only [hq, seq_tr]
   rfl
 
 /-- The composite emits what {lit}`Q` emits from a lifted configuration. -/
@@ -131,7 +176,8 @@ theorem seq_outputSymbol_right {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
   unfold outputSymbol liftR
   cases hq : cfg.state
   · rfl
-  · rfl
+  · simp only [Option.map_some, seq_tr]
+    rfl
 
 /-- The composite starts in {lit}`P`'s initial state. -/
 theorem seq_q₀ {k : ℕ} {S₁ S₂ : Type} (P : MultiTapeTM k Bool S₁)

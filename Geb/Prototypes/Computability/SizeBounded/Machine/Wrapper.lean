@@ -46,15 +46,23 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 # Main definitions
 
 * {lit}`reader`, {lit}`writer` — the input-loading and output-emitting phases.
+* {lit}`readerTr`, {lit}`writerTr` — their transition functions.
 * {lit}`ReaderState`, {lit}`WriterState`, {lit}`State` — their state types and
   the machine's.
 * {lit}`tapes`, {lit}`program`, {lit}`machine` — the register count, the
   compiled program at the wrapper's allocation, and the whole machine.
+* {lit}`machineProg` — the machine as a program: its initial state and its
+  transition function, computable, by which a run of the machine is evaluated.
 * {lit}`bound`, {lit}`time` — the length bound and the step count on an input
   of a given length.
 
 # Main statements
 
+* {lit}`reader_eq_ofTr`, {lit}`writer_eq_ofTr` — the reader and the writer are
+  the machines built from their transition functions.
+* {lit}`machine_eq_tm` — the machine is the machine of {lit}`machineProg`.
+* {lit}`machine_q₀`, {lit}`machine_tr` — the machine's initial state and
+  transition agree with those of {lit}`machineProg`.
 * {lit}`reader_runsTo` — the reader's run, naming the halted configuration and
   the step count.
 * {lit}`writer_emits` — the writer's emission.
@@ -78,8 +86,18 @@ public section
 /-- The input reader: the input head to the right end, one cell back, the walk
 left writing the input at register {lit}`j` in the reversed layout, and the
 return of {lit}`j`'s head. -/
-@[expose] def reader {k : ℕ} (j : Fin k) :=
+@[expose] noncomputable def reader {k : ℕ} (j : Fin k) :=
   seq inRight (seq inBack (seq (inLeft j) (returnTape j)))
+
+/-- The transition of {name}`reader`: {name}`inRightTr`, {name}`inBackTr`,
+{name}`inLeftTr`, then {name}`returnTapeTr`. -/
+@[expose] def readerTr {k : ℕ} (j : Fin k) :=
+  seqTr inRightTr (seqTr inBackTr (seqTr (inLeftTr j) (returnTapeTr j) (.inl ())) (.inl ()))
+    (.inl ())
+
+/-- {name}`reader` is the machine built from {name}`readerTr`. -/
+theorem reader_eq_ofTr {k : ℕ} (j : Fin k) : reader j = ofTr (.inl ()) (readerTr j) := by
+  simp only [reader, inRight, inBack, inLeft, returnTape_eq_ofTr, seq_ofTr, readerTr]
 
 /-- The state type of {name}`reader`. -/
 abbrev ReaderState : Type := Unit ⊕ (Unit ⊕ (Unit ⊕ (Unit ⊕ Unit)))
@@ -158,7 +176,17 @@ theorem reader_runsTo {k : ℕ} {input : List Bool} (j : Fin k)
 
 /-- The output writer: register {lit}`i`'s head to its first blank, one cell
 back, and the walk left emitting the register's word. -/
-@[expose] def writer {k : ℕ} (i : Fin k) := seq (walkEnd i) (seq (moveLeft i) (emitLeft i))
+@[expose] noncomputable def writer {k : ℕ} (i : Fin k) :=
+  seq (walkEnd i) (seq (moveLeft i) (emitLeft i))
+
+/-- The transition of {name}`writer`: {name}`walkEndTr`, {name}`moveLeftTr`, then
+{name}`emitLeftTr`. -/
+@[expose] def writerTr {k : ℕ} (i : Fin k) :=
+  seqTr (walkEndTr i) (seqTr (moveLeftTr i) (emitLeftTr i) ()) (.inl ())
+
+/-- {name}`writer` is the machine built from {name}`writerTr`. -/
+theorem writer_eq_ofTr {k : ℕ} (i : Fin k) : writer i = ofTr (.inl ()) (writerTr i) := by
+  simp only [writer, walkEnd, moveLeft, emitLeft, seq_ofTr, writerTr]
 
 /-- The state type of {name}`writer`. -/
 abbrev WriterState : Type := Unit ⊕ (Unit ⊕ Unit)
@@ -243,9 +271,34 @@ instance (e : SOf 1) : FinEnum (State e) :=
   @FinEnum.finSum _ _ inferInstance (@FinEnum.finSum _ _ (program e).enum inferInstance)
 
 /-- The machine of an expression: the reader, the compiled program, the writer. -/
-@[expose] def machine (e : SOf 1) : MultiTapeTM (tapes e) Bool (State e) :=
+@[expose] noncomputable def machine (e : SOf 1) : MultiTapeTM (tapes e) Bool (State e) :=
   seq (reader ⟨0, by unfold tapes; omega⟩)
     (seq (program e).tm (writer ⟨1, by unfold tapes; omega⟩))
+
+/-- An expression's machine as a program: the reader's initial state and the
+transition {name}`readerTr`, then the compiled program's, then {name}`writerTr`.
+Its transition is computable, and is evaluated once when the program is, so a run
+evaluated through it does not recompile the expression at each step. -/
+@[expose] def machineProg (e : SOf 1) : Prog (tapes e) :=
+  ⟨State e, inferInstance, .inl (.inl ()),
+    seqTr (readerTr ⟨0, by unfold tapes; omega⟩)
+      (seqTr (program e).tr (writerTr ⟨1, by unfold tapes; omega⟩) (.inl ()))
+      (.inl (program e).q₀)⟩
+
+/-- An expression's machine is the machine of {name}`machineProg`. -/
+theorem machine_eq_tm (e : SOf 1) : machine e = (machineProg e).tm := by
+  simp only [machine, reader_eq_ofTr, writer_eq_ofTr, Prog.tm, seq_ofTr, machineProg]
+
+/-- The initial state of an expression's machine is that of {name}`machineProg`. -/
+theorem machine_q₀ (e : SOf 1) : (machine e).q₀ = (machineProg e).q₀ := rfl
+
+/-- The transition of an expression's machine agrees with that of
+{name}`machineProg`. -/
+theorem machine_tr (e : SOf 1) (q : State e) (inp : Option Bool)
+    (work : Fin (tapes e) → Option Bool) :
+    (machine e).tr q inp work = (machineProg e).tr q inp work := by
+  rw [machine_eq_tm]
+  exact tr_ofTr _ _ _ _ _
 
 /-- The length bound the machine runs under on an input of length {lit}`n`: the
 length or the expression's constant. -/

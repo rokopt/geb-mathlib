@@ -134,7 +134,7 @@ theorem eval_modeStep (bit : Bool) (pref bound : ℕ) (s : State) :
   rw [modeStep, eval_modeCases _ _ _ _ _ _ _ s.1 rfl]
   rcases s with ⟨m, n⟩
   cases m <;> cases bit
-  all_goals first | rfl | skip
+  all_goals try rfl
   suffices h : (if n = 0 then 0 else if n - 1 = 0 then 7 else 0) =
       modeCode (Geb.BitTree.finish n).1 by
     simpa only [stepEnv, step, eval_ifZero, eval_proj, Matrix.cons_val, eval_constant,

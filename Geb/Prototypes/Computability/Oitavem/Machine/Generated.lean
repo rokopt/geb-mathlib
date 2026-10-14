@@ -29,6 +29,8 @@ to their entry positions, and internal queries preserve the caller's output.
 * {lit}`generatedLength` initializes and runs an output counter.
 * {lit}`generatedAt` copies a query, clears the result, reads a digit, and clears
   the consumed query counter.
+* {lit}`generatedLengthTr` and {lit}`generatedAtTr` are their transition functions, from
+  the emitter's initial state and transition.
 
 ## Main statements
 
@@ -37,11 +39,16 @@ to their entry positions, and internal queries preserve the caller's output.
 * {lit}`generatedLength_transformsIn` and {lit}`generatedAt_transformsIn` include
   scratch initialization, allowing repeated calls through ordinary sequencing.
 * {lit}`TransformsIn.seqEmitsIn` composes an internal query with an emitter.
+* {lit}`generatedLength_ofTr` and {lit}`generatedAt_ofTr` identify the readers of a
+  machine built by {name}`Turing.MultiTapeTM.ofTr` with the machines built from their
+  transition functions.
 
 ## Implementation notes
 
 The contracts relate programs to CSLib configurations and inherit their
-{lit}`Classical.choice` dependency.
+{lit}`Classical.choice` dependency. The readers sequence machines and are
+noncomputable, since CSLib selects a machine's transition by choice; their
+transition functions are computable.
 
 ## Tags
 
@@ -171,8 +178,21 @@ theorem countOutput_transformsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
     · rfl
 
 /-- Initialize the counter and count the emitter's output, including on reused tapes. -/
-@[expose] def generatedLength {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :=
+@[expose] noncomputable def generatedLength {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :=
   seq (const [] (0 : Fin (k + 1))) (countOutput P)
+
+/-- The transition of {name}`generatedLength`, from the emitter's initial state and
+transition. -/
+@[expose] def generatedLengthTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S) :=
+  seqTr (constTr [] (0 : Fin (k + 1))) (countOutputTr trP) (.inl q₀P)
+
+/-- {name}`generatedLength` of a machine built from a transition function is the
+machine built from {name}`generatedLengthTr`. -/
+theorem generatedLength_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :
+    generatedLength (ofTr q₀ tr) = ofTr (.inl (.inl (.inl ()))) (generatedLengthTr tr q₀) := by
+  simp only [generatedLength, const_eq_ofTr, countOutput_ofTr, seq_ofTr, generatedLengthTr]
 
 /-- A generated length reader initializes its extra counter. The emitter's
 precondition and postcondition apply unchanged to its old tapes. -/
@@ -266,9 +286,25 @@ theorem oldTape_ne_resultTape {k : ℕ} (i : Fin k) : oldTape i ≠ resultTape :
 
 /-- Read an emitted word at a saved query on an old tape, initializing both extra
 tapes and clearing the countdown on return. -/
-@[expose] def generatedAt {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (Q : Fin k) :=
+@[expose] noncomputable def generatedAt {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
+    (Q : Fin k) :=
   seq (copy (oldTape Q) countTape)
     (seq (const [] resultTape) (seq (readOutput P) (const [] countTape)))
+
+/-- The transition of {name}`generatedAt`, from the emitter's initial state and
+transition. -/
+@[expose] def generatedAtTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S) (Q : Fin k) :=
+  seqTr (copyTr (oldTape Q) countTape)
+    (seqTr (constTr [] resultTape) (seqTr (readOutputTr trP) (constTr [] countTape)
+      (.inl (.inl ()))) (.inl (.inl (q₀P, false)))) (.inl (.inl (.inl ())))
+
+/-- {name}`generatedAt` of a machine built from a transition function is the machine
+built from {name}`generatedAtTr`. -/
+theorem generatedAt_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (Q : Fin k) :
+    generatedAt (ofTr q₀ tr) Q = ofTr (.inl (.inl (.inl ()))) (generatedAtTr tr q₀ Q) := by
+  simp only [generatedAt, copy_eq_ofTr, const_eq_ofTr, readOutput_ofTr, seq_ofTr, generatedAtTr]
 
 /-- Generated digit queries accept arbitrary contents on their two extra tapes.
 The query source and other old tapes follow the emitter's own transformer. -/

@@ -19,10 +19,14 @@ preserved exactly, including the effects of its halting transition.
 ## Main definitions
 
 * {lit}`outputFold` interprets the digit transitions on a word.
-* {lit}`mapOutput` applies the transitions while simulating a generator.
+* {lit}`mapOutputTr` applies the transitions while simulating a generator's
+  transition, and {lit}`mapOutput` is the machine built from it.
+* {lit}`mute`, with transition {lit}`muteTr`, discards a generator's output.
 
 ## Main statements
 
+* {lit}`mapOutput_tr`, {lit}`mapOutput_ofTr` and {lit}`mute_ofTr` relate the machines
+  to their transition functions.
 * {lit}`mapOutput_emits` gives the exact output with one additional transition.
 * {lit}`mapOutput_emitsIn` preserves the generator's subroutine contract.
 
@@ -30,7 +34,8 @@ preserved exactly, including the effects of its halting transition.
 
 The wrapper stores its additional state in finite control. A missing simulated state
 selects the final transition. The contracts inherit CSLib's
-{lit}`Classical.choice` dependency.
+{lit}`Classical.choice` dependency. {lit}`mapOutput` reads the transition CSLib
+selects by choice and is noncomputable; {lit}`mapOutputTr` is computable.
 
 ## Tags
 
@@ -95,19 +100,45 @@ theorem outputWord_cons {A : Type} (step : A → Bool → A × Option Bool)
       (step a b).2.toList ++ outputWord step finish (step a b).1 w := by
   simp only [outputWord, outputFold_cons, List.append_assoc]
 
-/-- Transform a generator's output, followed by one final optional digit. -/
-@[expose] def mapOutput {k : ℕ} {S A : Type} (P : MultiTapeTM k Bool S) (a : A)
+/-- The transition transforming the output of the transition {lit}`trP` by the
+digit transducer {lit}`step`, followed by the final optional digit {lit}`finish`. It
+is not inlined, so that a partial application of it holds {lit}`trP` as an evaluated
+argument rather than recomputing it at each application. -/
+@[expose, noinline] def mapOutputTr {k : ℕ} {S A : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S)
+    (step : A → Bool → A × Option Bool) (finish : A → Option Bool) (state : A × Option S)
+    (input : Option Bool) (work : Fin k → Option Bool) : Action k Bool (A × Option S) :=
+  match state.2 with
+  | none =>
+    { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := finish state.1, state := none }
+  | some q =>
+    let act := trP q input work
+    let r := outputNext step state.1 act.output
+    { inputTape := act.inputTape, workTapes := act.workTapes,
+      output := r.2, state := some (r.1, act.state) }
+
+/-- Transform a generator's output, followed by one final optional digit: the machine
+built from {name}`mapOutputTr` of its transition. -/
+@[expose] noncomputable def mapOutput {k : ℕ} {S A : Type} (P : MultiTapeTM k Bool S) (a : A)
     (step : A → Bool → A × Option Bool) (finish : A → Option Bool) :
-    MultiTapeTM k Bool (A × Option S) where
-  q₀ := (a, some P.q₀)
-  tr state input work := match state.2 with
-    | none =>
-      { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := finish state.1, state := none }
-    | some q =>
-      let act := P.tr q input work
-      let r := outputNext step state.1 act.output
-      { inputTape := act.inputTape, workTapes := act.workTapes,
-        output := r.2, state := some (r.1, act.state) }
+    MultiTapeTM k Bool (A × Option S) :=
+  ofTr (a, some P.q₀) (mapOutputTr P.tr step finish)
+
+/-- The transition of {name}`mapOutput` is {name}`mapOutputTr`. -/
+theorem mapOutput_tr {k : ℕ} {S A : Type} (P : MultiTapeTM k Bool S) (a : A)
+    (step : A → Bool → A × Option Bool) (finish : A → Option Bool) (state : A × Option S)
+    (input : Option Bool) (work : Fin k → Option Bool) :
+    (mapOutput P a step finish).tr state input work =
+      mapOutputTr P.tr step finish state input work :=
+  tr_ofTr _ _ _ _ _
+
+/-- Transforming the output of a machine built from a transition function is the
+machine built from {name}`mapOutputTr` of that function. -/
+theorem mapOutput_ofTr {k : ℕ} {S A : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (a : A)
+    (step : A → Bool → A × Option Bool) (finish : A → Option Bool) :
+    mapOutput (ofTr q₀ tr) a step finish = ofTr (a, some q₀) (mapOutputTr tr step finish) := by
+  rw [mapOutput, tr_ofTr', q₀_ofTr]
 
 /-- A simulated configuration with its transducer state and transformed output. -/
 @[expose] def mapOutputCfg {k : ℕ} {S A : Type} {input : List Bool}
@@ -122,8 +153,9 @@ theorem mapOutput_step {k : ℕ} {S A : Type} {input : List Bool}
     (mapOutput P a₀ step finish).step (mapOutputCfg cfg a out) =
       mapOutputCfg (P.step cfg) (outputNext step a (P.outputSymbol cfg)).1
         (out ++ (outputNext step a (P.outputSymbol cfg)).2.toList) := by
-  rw [step_of_state _ _ (a, some q) (by simp [mapOutputCfg, hq]), step_of_state P cfg q hq]
-  simp only [mapOutput, mapOutputCfg, outputSymbol, hq]
+  rw [step_of_state _ _ (a, some q) (by simp [mapOutputCfg, hq]), step_of_state P cfg q hq,
+    mapOutput_tr]
+  simp only [mapOutputTr, mapOutputCfg, outputSymbol, hq]
   rfl
 
 /-- Finite-state output transformation adds one step and preserves all work-head bounds. -/
@@ -163,7 +195,7 @@ theorem mapOutput_emits {k : ℕ} {S A : Type} {input : List Bool}
         output := cfg.output ++ ((outputFold step a w).2 ++
           (finish (outputFold step a w).1).toList) } := by
     rw [hend, step_of_state _ _ ((outputFold step a w).1, none)
-      (by simp [mapOutputCfg, h.halted])]
+      (by simp [mapOutputCfg, h.halted]), mapOutput_tr]
     apply Cfg.ext
     · rfl
     · exact moveInputPos_zero _
@@ -215,8 +247,20 @@ theorem mapOutput_emitsIn {k : ℕ} {S A : Type} {P : MultiTapeTM k Bool S}
   exact ⟨hFB, t + 1, Nat.add_le_add_right ht 1, h⟩
 
 /-- Run an emitting program while discarding every output digit. -/
-@[expose] def mute {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :=
+@[expose] noncomputable def mute {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :=
   mapOutput P () (fun _ _ ↦ ((), none)) (fun _ ↦ none)
+
+/-- The transition of {name}`mute`, from the program's transition. -/
+@[expose] def muteTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :=
+  mapOutputTr trP (fun (_ : Unit) _ ↦ ((), none)) (fun _ ↦ none)
+
+/-- Muting a machine built from a transition function is the machine built from
+{name}`muteTr` of that function. -/
+theorem mute_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :
+    mute (ofTr q₀ tr) = ofTr ((), some q₀) (muteTr tr) :=
+  mapOutput_ofTr q₀ tr _ _ _
 
 /-- Suppressing output preserves the complete valuation and space contract. -/
 theorem mute_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}

@@ -34,13 +34,24 @@ A compiled expression carries the number of registers it needs above a first
 free one, {lit}`regsValue` at the node, and its program is a function of the
 argument registers, the output register, the first free register and the proof
 that the need fits below the register count. A program carries a choice-free
-enumeration of its state type alongside its machine, so that the compiled
-programs stay choice-free.
+enumeration of its state type, its initial state and its transition function,
+and its machine is the machine built from that function by
+{name}`Turing.MultiTapeTM.ofTr`. The combinators assemble programs from the
+transition-level combinators {name}`Geb.SizeBounded.Machine.seqTr`,
+{name}`Geb.SizeBounded.Machine.seqFinTr` and
+{name}`Geb.SizeBounded.Machine.caseLoopTr`, so the compiled programs, their
+transitions and their machines are computable and choice-free.
 
 # Main definitions
 
-* {lit}`Prog` — a state type with a choice-free enumeration and a machine on
-  it.
+* {lit}`Prog` — a state type with a choice-free enumeration, an initial state
+  and a transition function on it.
+* {lit}`Prog.tm` — the machine of a program, built from its transition
+  function.
+* {lit}`seqProg`, {lit}`seqFinProg`, {lit}`caseLoopProg` — sequencing two
+  programs, sequencing a family, and the loop, on programs.
+* {lit}`constProg`, {lit}`copyProg`, {lit}`copyRevProg`, {lit}`sbsProg` — the
+  programs of the primitives.
 * {lit}`Compiled` — a register need together with a program of it.
 * {lit}`transportP` — transport of a compiled expression along an equality of
   arities.
@@ -76,14 +87,54 @@ open Geb.SizeBounded (Shape Direction rc q sig finMax le_finMax stepDir sbsSem e
 
 public section
 
-/-- A program: a state type with a choice-free enumeration and a machine on it. -/
+/-- A program: a state type with a choice-free enumeration, an initial state and
+a transition function on it. -/
 structure Prog (k : ℕ) : Type 1 where
   /-- The state type. -/
   State : Type
   /-- Its enumeration, built from the choice-free scoped instances. -/
   enum : FinEnum State
-  /-- The machine. -/
-  tm : MultiTapeTM k Bool State
+  /-- The initial state. -/
+  q₀ : State
+  /-- The transition function. -/
+  tr : State → Option Bool → (Fin k → Option Bool) → Action k Bool State
+
+/-- The machine of a program: the machine built from its transition function. -/
+@[expose] def Prog.tm {k : ℕ} (p : Prog k) : MultiTapeTM k Bool p.State := ofTr p.q₀ p.tr
+
+/-- Sequencing two programs: the sum of their states, {name}`seqTr` of their
+transitions. -/
+@[expose] def seqProg {k : ℕ} (p q : Prog k) : Prog k :=
+  ⟨p.State ⊕ q.State, @FinEnum.finSum _ _ p.enum q.enum, .inl p.q₀, seqTr p.tr q.tr q.q₀⟩
+
+/-- Sequencing a family of programs indexed by {lit}`Fin m`, by
+{name}`seqFinTr`. -/
+@[expose] def seqFinProg {k : ℕ} (m : ℕ) (ps : Fin m → Prog k) : Prog k :=
+  let t := seqFinTr m (fun i ↦ (ps i).State) fun i ↦ ((ps i).q₀, (ps i).tr)
+  ⟨seqFinState m fun i ↦ (ps i).State, seqFinEnum m _ fun i ↦ (ps i).enum, t.1, t.2⟩
+
+/-- The loop over register {lit}`R` with two body programs, by
+{name}`caseLoopTr`. -/
+@[expose] def caseLoopProg {k : ℕ} (R : Fin k) (pF pT : Prog k) : Prog k :=
+  ⟨Fin 4 ⊕ (pF.State ⊕ pT.State),
+    @FinEnum.finSum _ _ (FinEnum.finFin 4) (@FinEnum.finSum _ _ pF.enum pT.enum), .inl 0,
+    caseLoopTr R pF.tr pT.tr pF.q₀ pT.q₀⟩
+
+/-- The program of {name}`const`. -/
+@[expose] def constProg {k : ℕ} (w : List Bool) (j : Fin k) : Prog k :=
+  ⟨_, inferInstance, .inl (.inl ()), constTr w j⟩
+
+/-- The program of {name}`copy`. -/
+@[expose] def copyProg {k : ℕ} (i j : Fin k) : Prog k :=
+  ⟨_, inferInstance, .inl (.inl ()), copyTr i j⟩
+
+/-- The program of {name}`copyRev`. -/
+@[expose] def copyRevProg {k : ℕ} (i j : Fin k) : Prog k :=
+  ⟨_, inferInstance, .inl (.inl ()), copyRevTr i j⟩
+
+/-- The program of {name}`sbs`. -/
+@[expose] def sbsProg {k : ℕ} (b : Bool) (x y j : Fin k) : Prog k :=
+  ⟨_, inferInstance, .inl (.inl ()), sbsTr b x y j⟩
 
 /-- A compiled expression of arity {lit}`n`: its register need and, for an
 environment, an output register and a first free register above which its need
@@ -136,38 +187,27 @@ and the bounded successor of the processed suffix by the recursion argument
 into a scratch register copied back into the suffix. -/
 @[expose] def srnBody {k b : ℕ} (i : Bool) (V X Tmp : Fin k) (vals scr : Fin b → Fin k)
     (steps : Fin b → Prog k) : Prog k :=
-  ⟨_,
-    @FinEnum.finSum _ _ (seqFinEnum b _ _ fun l ↦ (steps l).enum)
-      (@FinEnum.finSum _ _ (seqFinEnum b _ _ fun _ ↦ inferInstance) inferInstance),
-    seq (seqFin b (fun l ↦ (steps l).State) (fun l ↦ (steps l).tm)).2
-      (seq (seqFin b (fun _ ↦ _) (fun l ↦ copy (scr l) (vals l))).2
-        (seq (sbs i V X Tmp) (copy Tmp V)))⟩
+  seqProg (seqFinProg b steps)
+    (seqProg (seqFinProg b fun l ↦ copyProg (scr l) (vals l))
+      (seqProg (sbsProg i V X Tmp) (copyProg Tmp V)))
 
 /-- The program of a recursion node: the reversed copy of the recursion argument,
 the empty processed suffix, the bases into the value registers, the loop, and
 the selected value into the output register. -/
 @[expose] def srnProg {k b : ℕ} (R V X : Fin k) (vals : Fin b → Fin k) (out : Fin k)
     (j : Fin b) (bases : Fin b → Prog k) (bodyF bodyT : Prog k) : Prog k :=
-  ⟨_,
-    @FinEnum.finSum _ _ inferInstance
-      (@FinEnum.finSum _ _ inferInstance
-        (@FinEnum.finSum _ _ (seqFinEnum b _ _ fun l ↦ (bases l).enum)
-          (@FinEnum.finSum _ _
-            (@FinEnum.finSum _ _ (FinEnum.finFin 4)
-              (@FinEnum.finSum _ _ bodyF.enum bodyT.enum))
-            inferInstance))),
-    seq (copyRev X R) (seq (const [] V) (seq (seqFin b (fun l ↦ (bases l).State)
-      (fun l ↦ (bases l).tm)).2 (seq (caseLoop R bodyF.tm bodyT.tm) (copy (vals j) out))))⟩
+  seqProg (copyRevProg X R) (seqProg (constProg [] V) (seqProg (seqFinProg b bases)
+    (seqProg (caseLoopProg R bodyF bodyT) (copyProg (vals j) out))))
 
 /-- The program of one node from its children's. -/
 @[expose] def compileValue {k : ℕ} : (a : Shape) → (c : Direction a → Σ i, Compiled k i) →
     (∀ b, (c b).1 = rc a b) → Compiled k (q a)
   | .const _ w, _, _ =>
-    ⟨0, fun _ out _ _ ↦ ⟨_, inferInstance, const w out⟩⟩
+    ⟨0, fun _ out _ _ ↦ constProg w out⟩
   | .proj _ i, _, _ =>
-    ⟨0, fun env out _ _ ↦ ⟨_, inferInstance, copy (env i) out⟩⟩
+    ⟨0, fun env out _ _ ↦ copyProg (env i) out⟩
   | .sbs b, _, _ =>
-    ⟨0, fun env out _ _ ↦ ⟨_, inferInstance, sbs b (env 0) (env 1) out⟩⟩
+    ⟨0, fun env out _ _ ↦ sbsProg b (env 0) (env 1) out⟩
   | .comp n m, c, h =>
     ⟨regsValue (.comp n m) fun d ↦ (c d).2.regs, fun env out free hfree ↦
       let r : Fin m → Fin k := fun i ↦ ⟨free + i, by
@@ -183,9 +223,7 @@ the selected value into the output register. -/
         rw [regs_transportP]
         rw [regsValue_comp] at hfree
         omega)
-      ⟨(seqFin m (fun i ↦ (args i).State) (fun i ↦ (args i).tm)).1 ⊕ head.State,
-        @FinEnum.finSum _ _ (seqFinEnum m _ _ fun i ↦ (args i).enum) head.enum,
-        seq (seqFin m (fun i ↦ (args i).State) (fun i ↦ (args i).tm)).2 head.tm⟩⟩
+      seqProg (seqFinProg m args) head⟩
   | .srn a b j, c, h =>
     ⟨regsValue (.srn a b j) fun d ↦ (c d).2.regs, fun env out free hfree ↦
       have hk : free + (2 * b + 3) ≤ k := by

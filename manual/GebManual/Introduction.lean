@@ -19,9 +19,10 @@ compiler are developed as formal mathematics; this repository
 develops that mathematics in Lean 4 against mathlib.
 
 Two disciplines shape the development. The first is constructive:
-no `noncomputable` definitions, with `Classical` reasoning
-minimised and tracked module by module. The second is
-upstream-directed: content is authored to be plausibly
+no `noncomputable` definitions save those built on CSLib's
+Turing machines, whose transitions CSLib selects by choice, with
+`Classical` reasoning minimised and tracked module by module. The
+second is upstream-directed: content is authored to be plausibly
 upstreamable, with `Geb/Mathlib/` targeting mathlib4,
 `Geb/Cslib/` targeting CSLib, `GebLang/` targeting mathlib4 or
 CSLib by each module's own import closure, and `Geb/Prototypes/`

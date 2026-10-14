@@ -61,7 +61,7 @@ theorem step_zeros_dead (hq : cfg.state = some stZeros)
       { cfg with
         state := some stDead
         inputPos := moveInputPos cfg.inputPos 1 } := by
-  rw [step_of_state _ _ _ hq, hi, tr_scan stZeros (by simp), scanTr_zeros]
+  rw [step_of_state _ _ _ hq, machine_tr, hi, tr_scan stZeros (by simp), scanTr_zeros]
   simp only [Bool.false_eq_true, ↓reduceIte, hw]
   apply Cfg.ext <;> simp [consumeAct, stay]
 
@@ -72,7 +72,7 @@ theorem step_zeros_next (hq : cfg.state = some stZeros)
       { cfg with
         inputPos := moveInputPos cfg.inputPos 1
         workTapePos := Function.update cfg.workTapePos 0 (cfg.workTapePos 0 + 1) } := by
-  rw [step_of_state _ _ _ hq, hi, tr_scan stZeros (by simp), scanTr_zeros]
+  rw [step_of_state _ _ _ hq, machine_tr, hi, tr_scan stZeros (by simp), scanTr_zeros]
   simp only [Bool.false_eq_true, ↓reduceIte, hw]
   apply Cfg.ext
   · exact hq.symm
@@ -93,7 +93,7 @@ theorem step_zeros_carry (hq : cfg.state = some stZeros)
       { cfg with
         state := some (stCarry 3)
         inputPos := moveInputPos cfg.inputPos 1 } := by
-  rw [step_of_state _ _ _ hq, hi, tr_scan stZeros (by simp), scanTr_zeros]
+  rw [step_of_state _ _ _ hq, machine_tr, hi, tr_scan stZeros (by simp), scanTr_zeros]
   simp only [↓reduceIte, ho]
   apply Cfg.ext <;> simp [consumeAct, stay]
 
@@ -104,7 +104,7 @@ theorem step_zeros_setup (hq : cfg.state = some stZeros)
       { cfg with
         state := some stSizeSetup
         inputPos := moveInputPos cfg.inputPos 1 } := by
-  rw [step_of_state _ _ _ hq, hi, tr_scan stZeros (by simp), scanTr_zeros]
+  rw [step_of_state _ _ _ hq, machine_tr, hi, tr_scan stZeros (by simp), scanTr_zeros]
   simp only [↓reduceIte, ho, Bool.false_eq_true]
   apply Cfg.ext <;> simp [consumeAct, stay]
 
@@ -116,7 +116,7 @@ theorem step_setup_pos (hq : cfg.state = some stSizeSetup)
         workTapePos := fun i ↦
           if i = 0 then cfg.workTapePos 0 - 1
           else if i = 3 then cfg.workTapePos 3 + 1 else cfg.workTapePos i } := by
-  rw [step_of_state _ _ _ hq, tr_phase stSizeSetup (by simp), phaseTr_sizeSetup]
+  rw [step_of_state _ _ _ hq, machine_tr, tr_phase stSizeSetup (by simp), phaseTr_sizeSetup]
   simp only [ho, Bool.false_eq_true, ↓reduceIte]
   apply Cfg.ext
   · exact hq.symm
@@ -145,7 +145,7 @@ theorem step_setup_zero (hq : cfg.state = some stSizeSetup)
         workTapePos := fun i ↦
           if i = 3 then cfg.workTapePos 3 - 1
           else if i = 5 then cfg.workTapePos 5 + 1 else cfg.workTapePos i } := by
-  rw [step_of_state _ _ _ hq, tr_phase stSizeSetup (by simp), phaseTr_sizeSetup]
+  rw [step_of_state _ _ _ hq, machine_tr, tr_phase stSizeSetup (by simp), phaseTr_sizeSetup]
   simp only [ho, ↓reduceIte]
   apply Cfg.ext
   · rfl
@@ -178,7 +178,7 @@ theorem step_sizeInit (hq : cfg.state = some stSizeInit) :
         workTapes := Function.update cfg.workTapes 4
           (Function.update (cfg.workTapes 4) (cfg.workTapePos 4) (some 1))
         workTapePos := Function.update cfg.workTapePos 5 (cfg.workTapePos 5 + 1) } := by
-  rw [step_of_state _ _ _ hq, tr_phase stSizeInit (by simp), phaseTr_sizeInit]
+  rw [step_of_state _ _ _ hq, machine_tr, tr_phase stSizeInit (by simp), phaseTr_sizeInit]
   apply Cfg.ext
   · rfl
   · exact moveInputPos_zero _

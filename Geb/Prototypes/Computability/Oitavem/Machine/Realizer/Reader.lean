@@ -21,17 +21,25 @@ arguments: the answer depends on their values on entry.
 * {lit}`copyClear` exports a result and clears its temporary register.
 * {lit}`Generator.lengthCall` computes a generated word's binary length.
 * {lit}`Generator.atCall` computes a digit at a saved binary index.
+* {lit}`Generator.lengthReader` and {lit}`Generator.atReader` allocate them after a
+  common caller prefix.
+* {lit}`copyClearTr`, {lit}`Generator.lengthCallTr`, {lit}`Generator.atCallTr`,
+  {lit}`Generator.lengthReaderTr` and {lit}`Generator.atReaderTr` are their transition
+  functions.
 
 ## Main statements
 
 * {lit}`Generator.lengthCall_readsLength` verifies the length adapter.
 * {lit}`Generator.atCall_readsAtAll` verifies every canonical digit query.
+* The equations with the suffix {lit}`_eq_ofTr` identify each adapter with the machine
+  built by {name}`Turing.MultiTapeTM.ofTr` from its transition function.
 
 ## Implementation notes
 
 These are adapters for the existing generator and reader contracts. They use
 fixed executable tape layouts and inherit the contracts' {lit}`Classical.choice`
-dependency from CSLib.
+dependency from CSLib. The adapters sequence machines whose transitions CSLib selects
+by choice and are noncomputable; their transition functions are computable.
 
 ## Tags
 
@@ -50,8 +58,18 @@ open Geb.SizeBounded.Logspace.Machine
 public section
 
 /-- Export a temporary register and clear it for the next call. -/
-@[expose] def copyClear {k : ℕ} (sourceReg targetReg : Fin k) :=
+@[expose] noncomputable def copyClear {k : ℕ} (sourceReg targetReg : Fin k) :=
   seq (copy sourceReg targetReg) (const [] sourceReg)
+
+/-- The transition of {name}`copyClear`. -/
+@[expose] def copyClearTr {k : ℕ} (sourceReg targetReg : Fin k) :=
+  seqTr (copyTr sourceReg targetReg) (constTr [] sourceReg) (.inl (.inl ()))
+
+/-- {name}`copyClear` is the machine built from {name}`copyClearTr`. -/
+theorem copyClear_eq_ofTr {k : ℕ} (sourceReg targetReg : Fin k) :
+    copyClear sourceReg targetReg = ofTr (.inl (.inl (.inl ())))
+      (copyClearTr sourceReg targetReg) := by
+  simp only [copyClear, copy_eq_ofTr, const_eq_ofTr, seq_ofTr, copyClearTr]
 
 /-- Exporting an answer preserves every other register. -/
 theorem copyClear_transformsIn {k : ℕ} (sourceReg targetReg : Fin k)
@@ -120,8 +138,21 @@ variable {m : ℕ} {Pre : List Bool → (Fin m → List Bool) → Prop}
   {W : List Bool → (Fin m → List Bool) → List Bool}
 
 /-- Count a called generator and export its binary length to a caller register. -/
-@[expose] def lengthCall {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l) (R : Fin l) :=
+@[expose] noncomputable def lengthCall {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l)
+    (R : Fin l) :=
   seq (generatedLength (G.call src)) (copyClear 0 (R.castAdd G.tapes).succ)
+
+/-- The transition of {name}`lengthCall`. -/
+@[expose] def lengthCallTr {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l) (R : Fin l) :=
+  let c := G.callTr src
+  seqTr (generatedLengthTr c.2 c.1) (copyClearTr 0 (R.castAdd G.tapes).succ)
+    (.inl (.inl (.inl ())))
+
+/-- {name}`lengthCall` is the machine built from {name}`lengthCallTr`. -/
+theorem lengthCall_eq_ofTr {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l) (R : Fin l) :
+    G.lengthCall src R = ofTr (.inl (.inl (.inl (.inl ())))) (G.lengthCallTr src R) := by
+  simp only [lengthCall, call_eq_ofTr, generatedLength_ofTr, copyClear_eq_ofTr, seq_ofTr,
+    lengthCallTr]
 
 /-- The length adapter has finite control. -/
 theorem lengthCall_finite {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l) (R : Fin l) :
@@ -153,9 +184,21 @@ theorem lengthCall_readsLength {l : ℕ} (G : Generator m Pre W)
     exact update_copyClear σ 0 _ (Fin.succ_ne_zero _).symm hp.2.zero _
 
 /-- Read a called generator at the caller's saved query and export its result. -/
-@[expose] def atCall {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l) (Q R : Fin l) :=
+@[expose] noncomputable def atCall {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l)
+    (Q R : Fin l) :=
   seq (generatedAt (G.call src) (Q.castAdd G.tapes))
     (copyClear resultTape (oldTape (R.castAdd G.tapes)))
+
+/-- The transition of {name}`atCall`. -/
+@[expose] def atCallTr {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l) (Q R : Fin l) :=
+  let c := G.callTr src
+  seqTr (generatedAtTr c.2 c.1 (Q.castAdd G.tapes))
+    (copyClearTr resultTape (oldTape (R.castAdd G.tapes))) (.inl (.inl (.inl ())))
+
+/-- {name}`atCall` is the machine built from {name}`atCallTr`. -/
+theorem atCall_eq_ofTr {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l) (Q R : Fin l) :
+    G.atCall src Q R = ofTr (.inl (.inl (.inl (.inl ())))) (G.atCallTr src Q R) := by
+  simp only [atCall, call_eq_ofTr, generatedAt_ofTr, copyClear_eq_ofTr, seq_ofTr, atCallTr]
 
 /-- The digit adapter has finite control. -/
 theorem atCall_finite {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l) (Q R : Fin l) :
@@ -231,12 +274,32 @@ theorem atCall_readsAtAll {l : ℕ} (G : Generator m Pre W)
   leftLayout_env m k 2 i
 
 /-- A generated length reader whose caller registers form a common initial segment. -/
-@[expose] def lengthReader {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l)
+@[expose] noncomputable def lengthReader {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l)
     (R : Fin l) := onTapes (G.lengthCall src R) (lengthLayout l G.tapes)
 
+/-- The transition of {name}`lengthReader`. -/
+@[expose] def lengthReaderTr {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l)
+    (R : Fin l) := onTapesTr (G.lengthCallTr src R) (lengthLayout l G.tapes)
+
+/-- {name}`lengthReader` is the machine built from {name}`lengthReaderTr`. -/
+theorem lengthReader_eq_ofTr {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l)
+    (R : Fin l) :
+    G.lengthReader src R = ofTr (.inl (.inl (.inl (.inl ())))) (G.lengthReaderTr src R) := by
+  simp only [lengthReader, lengthCall_eq_ofTr, onTapes_ofTr, lengthReaderTr]
+
 /-- A generated digit reader whose caller registers form a common initial segment. -/
-@[expose] def atReader {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l)
+@[expose] noncomputable def atReader {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l)
     (Q R : Fin l) := onTapes (G.atCall src Q R) (atLayout l G.tapes)
+
+/-- The transition of {name}`atReader`. -/
+@[expose] def atReaderTr {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l)
+    (Q R : Fin l) := onTapesTr (G.atCallTr src Q R) (atLayout l G.tapes)
+
+/-- {name}`atReader` is the machine built from {name}`atReaderTr`. -/
+theorem atReader_eq_ofTr {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l)
+    (Q R : Fin l) :
+    G.atReader src Q R = ofTr (.inl (.inl (.inl (.inl ())))) (G.atReaderTr src Q R) := by
+  simp only [atReader, atCall_eq_ofTr, onTapes_ofTr, atReaderTr]
 
 /-- Length-reader allocation retains finite control. -/
 theorem lengthReader_finite {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l)
@@ -292,10 +355,17 @@ This represents an index as a virtual word for the iterated-predecessor construc
     { finite := inferInstance
       env := Fin.castSucc
       env_injective := Fin.castSucc_injective _
-      program := seq (copy R.castSucc (Fin.last m))
-        (repeatGenerator (emitSymbol (some false)) (Fin.last m))
+      q₀ := .inl (.inl (.inl ()))
+      tr := seqTr (copyTr R.castSucc (Fin.last m))
+        (repeatGeneratorTr (emitSymbolTr (some false)) () (Fin.last m)) (.inl ())
       space := 0
       correct B _ := by
+        have e : seq (copy R.castSucc (Fin.last m))
+            (repeatGenerator (emitSymbol (some false)) (Fin.last m)) =
+            ofTr (.inl (.inl (.inl ()))) (seqTr (copyTr R.castSucc (Fin.last m))
+              (repeatGeneratorTr (emitSymbolTr (some false)) () (Fin.last m)) (.inl ())) := by
+          simp only [copy_eq_ofTr, emitSymbol, repeatGenerator_ofTr, seq_ofTr]
+        rw [← e]
         have hc := Transforms.toIn_of
           (fun n ↦ copy_transforms R.castSucc (Fin.last m) (Fin.castSucc_ne_last R) (B n))
           (fun _ _ ↦ True) (fun _ _ hb _ ↦ hb.update (hb R.castSucc))

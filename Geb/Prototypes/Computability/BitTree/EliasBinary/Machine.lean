@@ -22,7 +22,8 @@ layouts and continuation states.
 
 ## Main definitions
 
-* {lit}`machine` is the nine-work-tape transition table.
+* {lit}`transition` is the nine-work-tape transition table and {lit}`machine` the
+  machine it determines.
 * {lit}`siteLayout`, {lit}`siteSel`, {lit}`siteZero` and {lit}`siteNext` describe the six
   increment sites.
 * {lit}`stCarry` and {lit}`stReturn` name the two states of each site.
@@ -265,30 +266,32 @@ def initTr : Action 9 (Fin 4) Control :=
     else if i = 8 then (some (some 0), 0)
     else (none, 0))
 
-/-- The nine-work-tape recognizer. -/
-def machine : MultiTapeTM 9 (Fin 4) Control where
-  q₀ := stInit
-  tr q input work :=
-    if h : 18 ≤ q.val then
-      let k : Fin 6 := ⟨(q.val - 18) / 2, by omega⟩
-      if (q.val - 18) % 2 = 0 then
-        carry (siteLayout k) (siteSel k) (stCarry k) (stReturn k) work
-      else returnTr (siteLayout k) (stReturn k) (siteZero k) (siteNext k) work
-    else if q = stInit then initTr
-    else if q = stCount then
-      match input with
-      | none => rewindTr
-      | some _ => consume (stCarry 0)
-    else if q = stRewind then
-      match input with
-      | none => consume stTree
-      | some _ => rewindTr
-    else if q = stTree ∨ q = stZeros ∨ q = stSizeBit ∨ q = stLengthBit ∨
-        q = stPayloadBit ∨ q = stDone ∨ q = stDead then
-      match input with
-      | none => finish (q == stDone)
-      | some s => consumeAct (scanTr q (s == 1) work).1 (scanTr q (s == 1) work).2
-    else act (phaseTr q work).1 (phaseTr q work).2
+/-- The transition function of the machine. -/
+def transition (q : Control) (input : Option (Fin 4)) (work : Fin 9 → Option (Fin 4)) :
+    Action 9 (Fin 4) Control :=
+  if h : 18 ≤ q.val then
+    let k : Fin 6 := ⟨(q.val - 18) / 2, by omega⟩
+    if (q.val - 18) % 2 = 0 then
+      carry (siteLayout k) (siteSel k) (stCarry k) (stReturn k) work
+    else returnTr (siteLayout k) (stReturn k) (siteZero k) (siteNext k) work
+  else if q = stInit then initTr
+  else if q = stCount then
+    match input with
+    | none => rewindTr
+    | some _ => consume (stCarry 0)
+  else if q = stRewind then
+    match input with
+    | none => consume stTree
+    | some _ => rewindTr
+  else if q = stTree ∨ q = stZeros ∨ q = stSizeBit ∨ q = stLengthBit ∨
+      q = stPayloadBit ∨ q = stDone ∨ q = stDead then
+    match input with
+    | none => finish (q == stDone)
+    | some s => consumeAct (scanTr q (s == 1) work).1 (scanTr q (s == 1) work).2
+  else act (phaseTr q work).1 (phaseTr q work).2
+
+/-- The nine-work-tape recognizer: {name}`transition` started in {name}`stInit`. -/
+def machine : MultiTapeTM 9 (Fin 4) Control := ofTr stInit transition
 
 /-- Every work head lies in the interval from minus one to the chosen width. The length
 pair's carry may step one cell past its most significant digit, at cell minus one. -/
@@ -297,7 +300,7 @@ def HeadBound {input : List (Fin 4)} (width : ℕ) (cfg : Cfg 9 (Fin 4) Control 
 
 /-- A carry state resolves to the generic carry transition of its site. -/
 theorem tr_carry (k : Fin 6) (input : Option (Fin 4)) (work : Fin 9 → Option (Fin 4)) :
-    machine.tr (stCarry k) input work =
+    transition (stCarry k) input work =
       carry (siteLayout k) (siteSel k) (stCarry k) (stReturn k) work := by
   match k with
   | 0 => rfl
@@ -309,7 +312,7 @@ theorem tr_carry (k : Fin 6) (input : Option (Fin 4)) (work : Fin 9 → Option (
 
 /-- A return state resolves to the generic return transition of its site. -/
 theorem tr_return (k : Fin 6) (input : Option (Fin 4)) (work : Fin 9 → Option (Fin 4)) :
-    machine.tr (stReturn k) input work =
+    transition (stReturn k) input work =
       returnTr (siteLayout k) (stReturn k) (siteZero k) (siteNext k) work := by
   match k with
   | 0 => rfl
@@ -321,29 +324,29 @@ theorem tr_return (k : Fin 6) (input : Option (Fin 4)) (work : Fin 9 → Option 
 
 /-- The initialization state writes the tags and markers. -/
 theorem tr_init (input : Option (Fin 4)) (work : Fin 9 → Option (Fin 4)) :
-    machine.tr stInit input work = initTr := rfl
+    transition stInit input work = initTr := rfl
 
 /-- The counting state consumes a bit into the first pending increment. -/
 theorem tr_count_some (s : Fin 4) (work : Fin 9 → Option (Fin 4)) :
-    machine.tr stCount (some s) work = consume (stCarry 0) := rfl
+    transition stCount (some s) work = consume (stCarry 0) := rfl
 
 /-- At the right end, the counting state starts the rewind. -/
 theorem tr_count_none (work : Fin 9 → Option (Fin 4)) :
-    machine.tr stCount none work = rewindTr := rfl
+    transition stCount none work = rewindTr := rfl
 
 /-- The rewind moves left over every input symbol. -/
 theorem tr_rewind_some (s : Fin 4) (work : Fin 9 → Option (Fin 4)) :
-    machine.tr stRewind (some s) work = rewindTr := rfl
+    transition stRewind (some s) work = rewindTr := rfl
 
 /-- At the left end, the rewind steps onto the first bit and starts the scan. -/
 theorem tr_rewind_none (work : Fin 9 → Option (Fin 4)) :
-    machine.tr stRewind none work = consume stTree := rfl
+    transition stRewind none work = consume stTree := rfl
 
 /-- Reading states resolve to the scan transition table. -/
 theorem tr_scan (q : Control) (hq : q = stTree ∨ q = stZeros ∨ q = stSizeBit ∨
     q = stLengthBit ∨ q = stPayloadBit ∨ q = stDone ∨ q = stDead)
     (b : Bool) (work : Fin 9 → Option (Fin 4)) :
-    machine.tr q (some (boolEmb b)) work =
+    transition q (some (boolEmb b)) work =
       consumeAct (scanTr q b work).1 (scanTr q b work).2 := by
   rcases hq with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> cases b <;> rfl
 
@@ -351,14 +354,14 @@ theorem tr_scan (q : Control) (hq : q = stTree ∨ q = stZeros ∨ q = stSizeBit
 theorem tr_end (q : Control) (hq : q = stTree ∨ q = stZeros ∨ q = stSizeBit ∨
     q = stLengthBit ∨ q = stPayloadBit ∨ q = stDone ∨ q = stDead)
     (work : Fin 9 → Option (Fin 4)) :
-    machine.tr q none work = finish (q == stDone) := by
+    transition q none work = finish (q == stDone) := by
   rcases hq with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> rfl
 
 /-- Stationary states resolve to the phase transition table. -/
 theorem tr_phase (q : Control) (hq : q = stSizeSetup ∨ q = stSizeInit ∨ q = stLengthEnd ∨
     q = stTagLsb ∨ q = stEraseSize ∨ q = stReturnSize ∨ q = stReturnF ∨ q = stEraseLength)
     (input : Option (Fin 4)) (work : Fin 9 → Option (Fin 4)) :
-    machine.tr q input work = act (phaseTr q work).1 (phaseTr q work).2 := by
+    transition q input work = act (phaseTr q work).1 (phaseTr q work).2 := by
   rcases hq with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> rfl
 
 end Geb.BitTree.EliasBinary

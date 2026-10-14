@@ -54,7 +54,7 @@ variable (w : List Bool) (k : ℕ)
 state, given the resolved transition and the field equalities. -/
 theorem advance_cfgAt (h : k + 1 ≤ w.length) (s s' : Scan) (l l' : List Redundant.Digit)
     (q' : Fin stateCount) (a₀ a₁ a₂ : Act)
-    (htr : bitTreeScanner.tr (stateOf s.mode) (some (boolEmb w[k]))
+    (htr : transition (stateOf s.mode) (some (boolEmb w[k]))
       ![tapeCount l 1, tapeLeaf s (headLeaf s), tapeDigits w.length.bits (headRuler s)] =
       advance q' a₀ a₁ a₂)
     (hq : stateOf s'.mode = q')

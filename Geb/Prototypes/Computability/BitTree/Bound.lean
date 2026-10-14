@@ -47,9 +47,9 @@ open Geb.TreeScanner (boolEmb step_of_state)
 /-- The final output transition leaves the work head in place. -/
 theorem end_workTapePos (w : List Bool) (s : State) (i : Fin 1) :
     (unaryScanner.step (scanCfg w w.length (by omega) s)).workTapePos i = s.2 := by
-  rw [step_of_state _ _ (modeState s.1) rfl, scanCfg_inputSymbol_end]
+  rw [step_of_state _ _ (modeState s.1) rfl, unaryScanner_tr, scanCfg_inputSymbol_end]
   rcases s with ⟨m, n⟩
-  cases m <;> simp [unaryScanner, modeState, scanCfg]
+  cases m <;> simp [transition, modeState, scanCfg]
 
 /-- Every visited work-head position is between zero and the input length plus one. -/
 theorem workTapePos_bounds (w : List Bool) (t : ℕ) (ht : t ≤ w.length + 3) (i : Fin 1) :

@@ -26,6 +26,8 @@ closed forms without a rewrite chain, and the space bound is carried along.
 
 ## Main statements
 
+* {lit}`Geb.BitTreeScanner.bitTreeScanner_tr` — the machine's transition is
+  {name}`Geb.BitTreeScanner.transition`.
 * {lit}`Geb.BitTreeScanner.inputSymbol_of_inputPos`,
   {lit}`Geb.BitTreeScanner.inputSymbol_end`,
   {lit}`Geb.BitTreeScanner.inputSymbol_start` — the input symbol at any
@@ -48,10 +50,14 @@ is the machine's behaviour under {name}`Turing.MultiTapeTM.step` and
 {lit}`Geb.Prototypes.Computability.MultiTape.OutputString`,
 and its statements read the input through
 {name}`Turing.Cfg.inputSymbol`; each of those depends on
-{lit}`Classical.choice` through Cslib's {lit}`Cfg.inputSymbol` and
+{lit}`Classical.choice`, the step and the output through Cslib's
+{name}`Turing.MultiTapeTM.tr`, chosen from the machine's transition relation,
+and all of them through Cslib's {lit}`Cfg.inputSymbol` and
 {name}`Turing.inputSymbolInner`, so nothing here can be stated
 choice-free; the closed forms the steps land on and their head bounds, which
-can, are {lit}`Geb.Prototypes.Computability.BitTreeScanner.Steps.Cfg`'s.
+can, are {lit}`Geb.Prototypes.Computability.BitTreeScanner.Steps.Cfg`'s, and
+the transition function's resolutions are
+{lit}`Geb.Prototypes.Computability.BitTreeScanner.Steps.Transition`'s.
 
 ## Tags
 
@@ -99,11 +105,16 @@ section Step
 
 variable {input : List (Fin 4)}
 
+/-- The machine's transition is {name}`Geb.BitTreeScanner.transition`. -/
+theorem bitTreeScanner_tr (q : Fin stateCount) (inSym : Option (Fin 4))
+    (work : Fin 3 → Option (Fin 4)) : bitTreeScanner.tr q inSym work = transition q inSym work :=
+  tr_ofTr _ _ _ _ _
+
 /-- A step whose transition has the given successor state, input move and
 actions and emits nothing. -/
 theorem step_next (cfg : Cfg 3 (Fin 4) (Fin stateCount) input) (q q' : Fin stateCount)
     (m : SignType) (a₀ a₁ a₂ : Act) (hq : cfg.state = some q)
-    (htr : bitTreeScanner.tr q cfg.inputSymbol cfg.workTapeSymbols =
+    (htr : transition q cfg.inputSymbol cfg.workTapeSymbols =
       { inputTape := m, workTapes := ![a₀, a₁, a₂], output := none, state := some q' }) :
     bitTreeScanner.step cfg = next cfg q' m a₀ a₁ a₂ ∧
       bitTreeScanner.outputSymbol cfg = none := by
@@ -111,7 +122,7 @@ theorem step_next (cfg : Cfg 3 (Fin 4) (Fin stateCount) input) (q q' : Fin state
   obtain ⟨o₁, m₁⟩ := a₁
   obtain ⟨o₂, m₂⟩ := a₂
   refine ⟨?_, ?_⟩
-  · rw [step_of_state _ _ q hq, htr]
+  · rw [step_of_state _ _ q hq, bitTreeScanner_tr, htr]
     refine Cfg.ext rfl rfl ?_ ?_ (List.append_nil _)
     · funext i
       match i with
@@ -126,13 +137,13 @@ theorem step_next (cfg : Cfg 3 (Fin 4) (Fin stateCount) input) (q q' : Fin state
   · unfold outputSymbol
     rw [hq]
     change (bitTreeScanner.tr q cfg.inputSymbol cfg.workTapeSymbols).output = none
-    rw [htr]
+    rw [bitTreeScanner_tr, htr]
 
 /-- A step whose transition reads a bit: the input head advances, each tape
 takes its action, nothing is emitted. -/
 theorem step_advance (cfg : Cfg 3 (Fin 4) (Fin stateCount) input) (q q' : Fin stateCount)
     (a₀ a₁ a₂ : Act) (hq : cfg.state = some q)
-    (htr : bitTreeScanner.tr q cfg.inputSymbol cfg.workTapeSymbols = advance q' a₀ a₁ a₂) :
+    (htr : transition q cfg.inputSymbol cfg.workTapeSymbols = advance q' a₀ a₁ a₂) :
     bitTreeScanner.step cfg = next cfg q' 1 a₀ a₁ a₂ ∧
       bitTreeScanner.outputSymbol cfg = none :=
   step_next cfg q q' 1 a₀ a₁ a₂ hq htr
@@ -141,7 +152,7 @@ theorem step_advance (cfg : Cfg 3 (Fin 4) (Fin stateCount) input) (q q' : Fin st
 tape takes its action, nothing is emitted. -/
 theorem step_stay (cfg : Cfg 3 (Fin 4) (Fin stateCount) input) (q q' : Fin stateCount)
     (a₀ a₁ a₂ : Act) (hq : cfg.state = some q)
-    (htr : bitTreeScanner.tr q cfg.inputSymbol cfg.workTapeSymbols = stay q' a₀ a₁ a₂) :
+    (htr : transition q cfg.inputSymbol cfg.workTapeSymbols = stay q' a₀ a₁ a₂) :
     bitTreeScanner.step cfg = next cfg q' 0 a₀ a₁ a₂ ∧
       bitTreeScanner.outputSymbol cfg = none :=
   step_next cfg q q' 0 a₀ a₁ a₂ hq htr
@@ -150,7 +161,7 @@ theorem step_stay (cfg : Cfg 3 (Fin 4) (Fin stateCount) input) (q q' : Fin state
 retreats, each tape takes its action, nothing is emitted. -/
 theorem step_retreat (cfg : Cfg 3 (Fin 4) (Fin stateCount) input) (q q' : Fin stateCount)
     (a₀ a₁ a₂ : Act) (hq : cfg.state = some q)
-    (htr : bitTreeScanner.tr q cfg.inputSymbol cfg.workTapeSymbols = retreat q' a₀ a₁ a₂) :
+    (htr : transition q cfg.inputSymbol cfg.workTapeSymbols = retreat q' a₀ a₁ a₂) :
     bitTreeScanner.step cfg = next cfg q' (-1) a₀ a₁ a₂ ∧
       bitTreeScanner.outputSymbol cfg = none :=
   step_next cfg q q' (-1) a₀ a₁ a₂ hq htr
@@ -159,14 +170,14 @@ theorem step_retreat (cfg : Cfg 3 (Fin 4) (Fin stateCount) input) (q q' : Fin st
 the heads and emits the halting step's symbol. -/
 theorem step_halt (cfg : Cfg 3 (Fin 4) (Fin stateCount) input) (q : Fin stateCount)
     (hq : cfg.state = some q) (b : Fin 4)
-    (htr : bitTreeScanner.tr q cfg.inputSymbol cfg.workTapeSymbols = halt b) :
+    (htr : transition q cfg.inputSymbol cfg.workTapeSymbols = halt b) :
     (bitTreeScanner.step cfg).state = none ∧
       (bitTreeScanner.step cfg).workTapePos = cfg.workTapePos ∧
       bitTreeScanner.outputSymbol cfg = some b := by
   refine ⟨?_, ?_, ?_⟩
-  · rw [step_of_state _ _ q hq, htr]
+  · rw [step_of_state _ _ q hq, bitTreeScanner_tr, htr]
     rfl
-  · rw [step_of_state _ _ q hq, htr]
+  · rw [step_of_state _ _ q hq, bitTreeScanner_tr, htr]
     funext i
     match i with
     | 0 => exact add_zero _
@@ -175,7 +186,7 @@ theorem step_halt (cfg : Cfg 3 (Fin 4) (Fin stateCount) input) (q : Fin stateCou
   · unfold outputSymbol
     rw [hq]
     change (bitTreeScanner.tr q cfg.inputSymbol cfg.workTapeSymbols).output = some b
-    rw [htr]
+    rw [bitTreeScanner_tr, htr]
     rfl
 
 end Step

@@ -223,7 +223,8 @@ See `docs/process.md` § Avoid colloquialisms and metaphors.
 
 ### Constructive-only
 
-- **No `noncomputable` anywhere; minimise `Classical`.** See
+- **No `noncomputable`, save where an external library's definition
+  forces it; minimise `Classical`.** See
   `docs/rules/lean-coding.md` § Constructive-only Lean code.
 
 Lean placeholder syntax: see

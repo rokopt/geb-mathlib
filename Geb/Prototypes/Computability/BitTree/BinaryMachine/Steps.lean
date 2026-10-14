@@ -9,6 +9,7 @@ public import Geb.Prototypes.Computability.TreeScanner.Steps
 public import Mathlib.Tactic.FinCases
 public import Geb.Prototypes.Computability.BitTree.BinaryMachine.Difference
 public import Geb.Prototypes.Computability.BitTree.BinaryMachine.Machine
+public import Geb.Prototypes.Computability.MultiTape.OfTr
 
 set_option doc.verso true in
 /-!
@@ -21,6 +22,7 @@ configuration sequence.
 
 ## Main statements
 
+* {lit}`machine_tr`: the machine's transition is {lit}`transition`.
 * {lit}`runFrom_binaryHeads_eq`: the binary heads are aligned at every time.
 * {lit}`runFrom_inputPos_mono`: the input positions form a monotone sequence.
 * {lit}`runFrom_start`: the two initialization transitions.
@@ -38,15 +40,25 @@ namespace Geb.BitTree.BinaryMachine
 
 open Turing MultiTapeTM
 
+/-- The machine's transition is {name}`transition`. -/
+theorem machine_tr (q : Fin 10) (input : Option (Fin 4)) (work : Fin 3 → Option (Fin 4)) :
+    machine.tr q input work = transition q input work :=
+  tr_ofTr _ _ _ _ _
+
+/-- The machine's step is the step {name}`transition` determines. -/
+theorem machine_step {input : List (Fin 4)} (cfg : Cfg 3 (Fin 4) (Fin 10) input) :
+    machine.step cfg = stepOfTr transition cfg :=
+  step_ofTr _ _ _
+
 /-- A transition preserves alignment of the two binary heads. -/
 theorem step_binaryHeads_eq {input : List (Fin 4)}
     (cfg : Cfg 3 (Fin 4) (Fin 10) input)
     (h : cfg.workTapePos 0 = cfg.workTapePos 1) :
     (machine.step cfg).workTapePos 0 = (machine.step cfg).workTapePos 1 := by
-  unfold MultiTapeTM.step
-  cases cfg.state with
-  | none => exact h
+  cases hs : cfg.state with
+  | none => rwa [step_of_halt hs]
   | some q =>
+    rw [MultiTapeTM.step_of_state hs, machine_tr]
     dsimp only [Action.apply]
     rw [h, binaryHeads_move_eq]
 
@@ -66,10 +78,11 @@ theorem runFrom_binaryHeads_eq (input : List (Fin 4)) (t : ℕ) :
 theorem step_inputPos_le {input : List (Fin 4)}
     (cfg : Cfg 3 (Fin 4) (Fin 10) input) :
     cfg.inputPos.val ≤ (machine.step cfg).inputPos.val := by
-  unfold MultiTapeTM.step
-  cases cfg.state with
-  | none => exact Nat.le_refl _
-  | some q => exact le_moveInputPos _ _ (inputMove_ne_neg q _ _)
+  cases hs : cfg.state with
+  | none => rw [step_of_halt hs]
+  | some q =>
+    rw [MultiTapeTM.step_of_state hs, machine_tr]
+    exact le_moveInputPos _ _ (inputMove_ne_neg q _ _)
 
 /-- The input positions form a monotone sequence throughout execution. -/
 theorem runFrom_inputPos_mono (input : List (Fin 4)) :
@@ -83,8 +96,8 @@ theorem runFrom_inputPos_mono (input : List (Fin 4)) :
 theorem runFrom_start (input : List (Fin 4)) :
     machine.runFrom (machine.initCfg input) 2 = startCfg input := by
   rw [show 2 = 0 + 1 + 1 from rfl, runFrom_succ_eq_step', runFrom_succ_eq_step',
-    runFrom_zero]
-  dsimp [MultiTapeTM.step, initCfg, machine, stInit, stStart]
+    runFrom_zero, machine_step, machine_step]
+  dsimp [stepOfTr, MultiTapeNTM.initCfg, machine, transition, stInit, stStart]
   refine Cfg.ext ?_ ?_ ?_ ?_ rfl
   · rfl
   · simp [startCfg]
@@ -102,7 +115,7 @@ theorem step_carry_digits {input : List (Fin 4)}
       Function.update (digits cfg (if leaf then 1 else 0)) p
         (!(digits cfg (if leaf then 1 else 0) p)) := by
   funext j
-  rw [Geb.TreeScanner.step_of_state _ _ _ hq, tr_carry]
+  rw [Geb.TreeScanner.step_of_state _ _ _ hq, machine_tr, tr_carry]
   cases leaf
   all_goals
     simp only [Bool.false_eq_true, ↓reduceIte] at hp
@@ -124,7 +137,7 @@ theorem step_carry_other_digits {input : List (Fin 4)}
     digits (machine.step cfg) (if leaf then 0 else 1) =
       digits cfg (if leaf then 0 else 1) := by
   funext j
-  rw [Geb.TreeScanner.step_of_state _ _ _ hq, tr_carry]
+  rw [Geb.TreeScanner.step_of_state _ _ _ hq, machine_tr, tr_carry]
   cases leaf <;> rfl
 
 /-- A carry updates the mismatch head by the displacement of its local digit comparison. -/
@@ -133,7 +146,7 @@ theorem step_carry_mismatchPos {input : List (Fin 4)}
     (hq : cfg.state = some (if leaf then stCarryLeaf else stCarryFork)) :
     (machine.step cfg).workTapePos 2 = cfg.workTapePos 2 +
       (mismatchMove (cfg.workTapeSymbols 0) (cfg.workTapeSymbols 1)).cast := by
-  rw [Geb.TreeScanner.step_of_state _ _ _ hq, tr_carry]
+  rw [Geb.TreeScanner.step_of_state _ _ _ hq, machine_tr, tr_carry]
   cases leaf <;> rfl
 
 /-- Every carry advances each binary head by one cell. -/
@@ -141,7 +154,7 @@ theorem step_carry_binaryPos {input : List (Fin 4)}
     (cfg : Cfg 3 (Fin 4) (Fin 10) input) (leaf : Bool) (i : Fin 3) (hi : i ≠ 2)
     (hq : cfg.state = some (if leaf then stCarryLeaf else stCarryFork)) :
     (machine.step cfg).workTapePos i = cfg.workTapePos i + 1 := by
-  rw [Geb.TreeScanner.step_of_state _ _ _ hq, tr_carry]
+  rw [Geb.TreeScanner.step_of_state _ _ _ hq, machine_tr, tr_carry]
   simp [carry, hi]
 
 /-- Carry propagation does not move the input head. -/
@@ -149,7 +162,7 @@ theorem step_carry_inputPos {input : List (Fin 4)}
     (cfg : Cfg 3 (Fin 4) (Fin 10) input) (leaf : Bool)
     (hq : cfg.state = some (if leaf then stCarryLeaf else stCarryFork)) :
     (machine.step cfg).inputPos = cfg.inputPos := by
-  rw [Geb.TreeScanner.step_of_state _ _ _ hq, tr_carry]
+  rw [Geb.TreeScanner.step_of_state _ _ _ hq, machine_tr, tr_carry]
   exact moveInputPos_zero _
 
 /-- A carry continues through ones and ends at the first zero. -/
@@ -158,7 +171,7 @@ theorem step_carry_state {input : List (Fin 4)}
     (hq : cfg.state = some (if leaf then stCarryLeaf else stCarryFork)) :
     (machine.step cfg).state = some (if digit (cfg.workTapeSymbols (if leaf then 1 else 0))
       then (if leaf then stCarryLeaf else stCarryFork) else stReturn) := by
-  rw [Geb.TreeScanner.step_of_state _ _ _ hq, tr_carry]
+  rw [Geb.TreeScanner.step_of_state _ _ _ hq, machine_tr, tr_carry]
   rfl
 
 /-- Carry propagation emits no output symbols. -/
@@ -166,7 +179,7 @@ theorem outputSymbol_carry {input : List (Fin 4)}
     (cfg : Cfg 3 (Fin 4) (Fin 10) input) (leaf : Bool)
     (hq : cfg.state = some (if leaf then stCarryLeaf else stCarryFork)) :
     machine.outputSymbol cfg = none := by
-  simp only [outputSymbol, hq, tr_carry]
+  simp only [outputSymbol, hq, machine_tr, tr_carry]
   cases leaf <;> rfl
 
 /-- A carry preserves every origin tag on the first binary tape. -/
@@ -174,7 +187,7 @@ theorem step_carry_origin {input : List (Fin 4)}
     (cfg : Cfg 3 (Fin 4) (Fin 10) input) (leaf : Bool) (z : ℤ)
     (hq : cfg.state = some (if leaf then stCarryLeaf else stCarryFork)) :
     origin ((machine.step cfg).workTapes 0 z) = origin (cfg.workTapes 0 z) := by
-  rw [Geb.TreeScanner.step_of_state _ _ _ hq, tr_carry]
+  rw [Geb.TreeScanner.step_of_state _ _ _ hq, machine_tr, tr_carry]
   cases leaf with
   | true => rfl
   | false =>
@@ -191,7 +204,7 @@ theorem step_carry_marker {input : List (Fin 4)}
     (cfg : Cfg 3 (Fin 4) (Fin 10) input) (leaf : Bool)
     (hq : cfg.state = some (if leaf then stCarryLeaf else stCarryFork)) :
     (machine.step cfg).workTapes 2 = cfg.workTapes 2 := by
-  rw [Geb.TreeScanner.step_of_state _ _ _ hq, tr_carry]
+  rw [Geb.TreeScanner.step_of_state _ _ _ hq, machine_tr, tr_carry]
   cases leaf <;> rfl
 
 /-- One carry transition preserves the mismatch-count invariant. -/

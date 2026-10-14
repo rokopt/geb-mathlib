@@ -24,8 +24,16 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {lit}`Classical.choice` through Cslib's
 {name}`Turing.Cfg.inputSymbol`.
 
+Each machine is built by {name}`Turing.MultiTapeTM.ofTr` from a transition
+function named after it with the suffix {lit}`Tr`, which is computable; the
+machine's own transition, selected by choice in CSLib, agrees with it. The
+composite's transition function composes its components' by
+{name}`Geb.SizeBounded.Machine.seqTr`.
+
 # Main definitions
 
+* {lit}`walkEndTr`, {lit}`blankLeftTr`, {lit}`clearTr` — the transition
+  functions of the machines below.
 * {lit}`walkEnd` — move one head right to the blank after the word.
 * {lit}`blankLeft` — blank the word leftwards and park the head.
 * {lit}`clear` — empty one register from a parked head.
@@ -34,6 +42,10 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 
 # Main statements
 
+* {lit}`walkEnd_tr`, {lit}`blankLeft_tr` —
+  the machines' transitions are their transition functions.
+* {lit}`clear_eq_ofTr` — the composite is the machine built from its
+  transition function.
 * {lit}`walkEnd_runsTo`, {lit}`blankLeft_runsTo`, {lit}`clear_runsTo` — the
   run of each machine, naming the halted configuration and the step count.
 
@@ -50,31 +62,60 @@ open Turing MultiTapeTM
 
 public section
 
+/-- The transition of {lit}`walkEnd`. -/
+@[expose] def walkEndTr {k : ℕ} (i : Fin k) (_ : Unit) (_ : Option Bool)
+    (work : Fin k → Option Bool) : Action k Bool Unit :=
+  { inputTape := 0
+    workTapes := fun j ↦ (none, if j = i then (if (work i).isSome then 1 else 0) else 0)
+    output := none
+    state := if (work i).isSome then some () else none }
+
 /-- Move the head of tape {lit}`i` right while it reads a bit; halt on the
 first blank, without moving. -/
-@[expose] def walkEnd {k : ℕ} (i : Fin k) : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ _ work :=
-    { inputTape := 0
-      workTapes := fun j ↦ (none, if j = i then (if (work i).isSome then 1 else 0) else 0)
-      output := none
-      state := if (work i).isSome then some () else none }
+@[expose] def walkEnd {k : ℕ} (i : Fin k) : MultiTapeTM k Bool Unit :=
+  ofTr () (walkEndTr i)
+
+/-- The transition of {name}`walkEnd` is {name}`walkEndTr`. -/
+theorem walkEnd_tr {k : ℕ} (i : Fin k) (q : Unit) (inp : Option Bool)
+    (work : Fin k → Option Bool) :
+    (walkEnd i).tr q inp work = walkEndTr i q inp work :=
+  tr_ofTr _ _ _ _ _
+
+/-- The transition of {lit}`blankLeft`. -/
+@[expose] def blankLeftTr {k : ℕ} (i : Fin k) (_ : Unit) (_ : Option Bool)
+    (work : Fin k → Option Bool) : Action k Bool Unit :=
+  { inputTape := 0
+    workTapes := fun j ↦
+      if j = i then (if (work i).isSome then (some none, -1) else (none, 1)) else (none, 0)
+    output := none
+    state := if (work i).isSome then some () else none }
 
 /-- Move the head of tape {lit}`i` left while it reads a bit, blanking each
 bit read; on reading a blank, move right and halt. -/
-@[expose] def blankLeft {k : ℕ} (i : Fin k) : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ _ work :=
-    { inputTape := 0
-      workTapes := fun j ↦
-        if j = i then (if (work i).isSome then (some none, -1) else (none, 1)) else (none, 0)
-      output := none
-      state := if (work i).isSome then some () else none }
+@[expose] def blankLeft {k : ℕ} (i : Fin k) : MultiTapeTM k Bool Unit :=
+  ofTr () (blankLeftTr i)
+
+/-- The transition of {name}`blankLeft` is {name}`blankLeftTr`. -/
+theorem blankLeft_tr {k : ℕ} (i : Fin k) (q : Unit) (inp : Option Bool)
+    (work : Fin k → Option Bool) :
+    (blankLeft i).tr q inp work = blankLeftTr i q inp work :=
+  tr_ofTr _ _ _ _ _
+
+/-- The transition of {lit}`clear`: {name}`walkEndTr`, {name}`moveLeftTr`, then
+{name}`blankLeftTr`. -/
+@[expose] def clearTr {k : ℕ} (i : Fin k) : Unit ⊕ (Unit ⊕ Unit) → Option Bool →
+    (Fin k → Option Bool) → Action k Bool (Unit ⊕ (Unit ⊕ Unit)) :=
+  seqTr (walkEndTr i) (seqTr (moveLeftTr i) (blankLeftTr i) ()) (.inl ())
 
 /-- Empty register {lit}`i` from a parked head: walk to its end, then blank
 leftwards and park. -/
-@[expose] def clear {k : ℕ} (i : Fin k) : MultiTapeTM k Bool (Unit ⊕ (Unit ⊕ Unit)) :=
+@[expose] noncomputable def clear {k : ℕ} (i : Fin k) :
+    MultiTapeTM k Bool (Unit ⊕ (Unit ⊕ Unit)) :=
   seq (walkEnd i) (seq (moveLeft i) (blankLeft i))
+
+/-- {name}`clear` is the machine built from {name}`clearTr`. -/
+theorem clear_eq_ofTr {k : ℕ} (i : Fin k) : clear i = ofTr (.inl ()) (clearTr i) := by
+  simp only [clear, walkEnd, moveLeft, blankLeft, seq_ofTr, clearTr]
 
 /-- The configuration of {name}`walkEnd` after {lit}`s` steps from a parked
 start in its initial state. -/
@@ -103,7 +144,7 @@ theorem walkEnd_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
     have hsome : ((walkCfg i cfg s).workTapeSymbols i).isSome = true := by
       rw [hsym s, tapeOf_of_lt w _ (by omega) (by omega)]
       rfl
-    rw [step_of_state _ _ () rfl]
+    rw [step_of_state _ _ () rfl, walkEnd_tr]
     apply Cfg.ext
     · change (if ((walkCfg i cfg s).workTapeSymbols i).isSome = true then some () else none) =
         some ()
@@ -132,7 +173,7 @@ theorem walkEnd_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
     have hnone : ((walkCfg i cfg w.length).workTapeSymbols i).isSome = false := by
       rw [hsym _, tapeOf_of_le w _ (by omega)]
       rfl
-    rw [step_of_state _ _ () rfl]
+    rw [step_of_state _ _ () rfl, walkEnd_tr]
     apply Cfg.ext
     · change (if ((walkCfg i cfg w.length).workTapeSymbols i).isSome = true
         then some () else none) = none
@@ -153,7 +194,8 @@ theorem walkEnd_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
           add_zero]
       · rw [Function.update_of_ne hj, ite_eq_right hj, SignType.coe_zero, add_zero]
     · exact List.append_nil _
-  have hout : ∀ s : ℕ, (walkEnd i).outputSymbol (walkCfg i cfg s) = none := fun _ ↦ rfl
+  have hout : ∀ s : ℕ, (walkEnd i).outputSymbol (walkCfg i cfg s) = none :=
+    fun _ ↦ outputSymbol_ofTr_eq_none (fun _ _ _ ↦ rfl) _
   have hzero : walkCfg i cfg 0 = cfg := by
     apply Cfg.ext
     · exact hq.symm
@@ -207,7 +249,7 @@ theorem blankLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k 
       rw [show ((w.length : ℤ) - 1 - s) = (((w.drop (s + 1)).length : ℕ) : ℤ) by
           rw [List.length_drop]; omega,
         List.drop_eq_getElem_cons hs, tapeOf_update_none]
-    have hact : ∀ j : Fin k, ((blankLeft i).tr () (blankCfg i cfg w s).inputSymbol
+    have hact : ∀ j : Fin k, (blankLeftTr i () (blankCfg i cfg w s).inputSymbol
         (blankCfg i cfg w s).workTapeSymbols).workTapes j =
         if j = i then ((some none : Option (Option Bool)), (-1 : SignType)) else (none, 0) := by
       intro j
@@ -215,7 +257,7 @@ theorem blankLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k 
           then ((some none : Option (Option Bool)), (-1 : SignType)) else (none, 1))
         else (none, 0)) = _
       rw [hsome, ite_eq_left rfl]
-    rw [step_of_state _ _ () rfl]
+    rw [step_of_state _ _ () rfl, blankLeft_tr]
     apply Cfg.ext
     · change (if ((blankCfg i cfg w s).workTapeSymbols i).isSome = true then some () else none) =
         some ()
@@ -261,7 +303,7 @@ theorem blankLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k 
     have hnone : ((blankCfg i cfg w w.length).workTapeSymbols i).isSome = false := by
       rw [hsym _, tapeOf_neg _ _ (by omega)]
       rfl
-    have hact : ∀ j : Fin k, ((blankLeft i).tr () (blankCfg i cfg w w.length).inputSymbol
+    have hact : ∀ j : Fin k, (blankLeftTr i () (blankCfg i cfg w w.length).inputSymbol
         (blankCfg i cfg w w.length).workTapeSymbols).workTapes j =
         if j = i then ((none : Option (Option Bool)), (1 : SignType)) else (none, 0) := by
       intro j
@@ -269,7 +311,7 @@ theorem blankLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k 
           then ((some none : Option (Option Bool)), (-1 : SignType)) else (none, 1))
         else (none, 0)) = _
       rw [hnone, ite_eq_right (show ¬(false = true) by simp)]
-    rw [step_of_state _ _ () rfl]
+    rw [step_of_state _ _ () rfl, blankLeft_tr]
     apply Cfg.ext
     · change (if ((blankCfg i cfg w w.length).workTapeSymbols i).isSome = true
         then some () else none) = none
@@ -302,7 +344,8 @@ theorem blankLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k 
             ((0 : SignType) : ℤ) = Function.update cfg.workTapePos i 0 j
         rw [Function.update_of_ne hj, Function.update_of_ne hj, SignType.coe_zero, add_zero]
     · exact List.append_nil _
-  have hout : ∀ s : ℕ, (blankLeft i).outputSymbol (blankCfg i cfg w s) = none := fun _ ↦ rfl
+  have hout : ∀ s : ℕ, (blankLeft i).outputSymbol (blankCfg i cfg w s) = none :=
+    fun _ ↦ outputSymbol_ofTr_eq_none (fun _ _ _ ↦ rfl) _
   have hzero : blankCfg i cfg w 0 = cfg := by
     apply Cfg.ext
     · exact hq.symm

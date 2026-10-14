@@ -18,15 +18,21 @@ the output a machine emits along a segment of a run, {lit}`outputString`: the co
 the symbols emitted at each of the first {lit}`t` steps from a configuration, whatever that
 configuration's own output tape holds. A machine built by composition is reasoned about
 segment by segment, so the segment form is the one the prototypes' step lemmas state, and
-{lit}`runFrom_output` relates it to the output tape.
+{lit}`runFrom_output` relates it to the output tape. The symbol a single step emits,
+{lit}`outputSymbol`, is read off the transition CSLib derives from the machine's transition
+relation, which CSLib selects by choice, so it and every definition built on it are
+noncomputable.
 
 ## Main definitions
 
+* {lit}`Turing.MultiTapeTM.outputSymbol`: the symbol (optionally) emitted by one step.
 * {lit}`Turing.MultiTapeTM.outputString`: the output emitted along the first {lit}`t` steps
   from a configuration.
 
 ## Main statements
 
+* {lit}`Turing.MultiTapeTM.step_output`: one step appends the symbol it emits to the output
+  tape.
 * {lit}`Turing.MultiTapeTM.runFrom_output`: the output tape after {lit}`t` steps is the
   initial output tape followed by the output emitted along those steps.
 * {lit}`Turing.MultiTapeTM.outputString_succ` and
@@ -48,11 +54,33 @@ namespace Turing.MultiTapeTM
 
 variable {k : ℕ} {Symbol State : Type*} {input : List Symbol}
 
+/-- The symbol (optionally) emitted by one step of {lit}`tm` from configuration {lit}`cfg`:
+nothing from a halted configuration, and otherwise the output of the transition taken. -/
+noncomputable def outputSymbol (tm : MultiTapeTM k Symbol State)
+    (cfg : Cfg k Symbol State input) : Option Symbol :=
+  match cfg.state with
+  | none => none
+  | some q => (tm.tr q cfg.inputSymbol cfg.workTapeSymbols).output
+
+/-- A halted configuration emits nothing. -/
+@[simp]
+lemma outputSymbol_of_halt {tm : MultiTapeTM k Symbol State} {cfg : Cfg k Symbol State input}
+    (h_halt : cfg.state = none) : tm.outputSymbol cfg = none := by
+  simp [outputSymbol, h_halt]
+
+/-- One step appends the symbol (optionally) emitted by that step to the output tape. -/
+@[simp]
+lemma step_output (tm : MultiTapeTM k Symbol State) (cfg : Cfg k Symbol State input) :
+    (tm.step cfg).output = cfg.output ++ (tm.outputSymbol cfg).toList := by
+  cases h : cfg.state with
+  | none => simp [outputSymbol, h]
+  | some q => simp [step_of_state h, outputSymbol, h, Action.apply]
+
 /-- The string the machine {lit}`tm` emits starting in configuration {lit}`cfg₀` and
 executing for {lit}`t` steps: the concatenation of the symbols (optionally) emitted at each of
 the first {lit}`t` steps. -/
-def outputString (tm : MultiTapeTM k Symbol State) (cfg₀ : Cfg k Symbol State input)
-    (t : ℕ) : List Symbol :=
+noncomputable def outputString (tm : MultiTapeTM k Symbol State)
+    (cfg₀ : Cfg k Symbol State input) (t : ℕ) : List Symbol :=
   (List.range t).flatMap fun t' ↦ (tm.outputSymbol (tm.runFrom cfg₀ t')).toList
 
 /-- The output emitted in {lit}`t + 1` steps is the output emitted in {lit}`t` steps followed

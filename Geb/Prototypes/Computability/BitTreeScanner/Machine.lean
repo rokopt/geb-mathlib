@@ -41,7 +41,8 @@ leaf, which decrements the pending count.
   {lit}`Geb.BitTreeScanner.retreat`, {lit}`Geb.BitTreeScanner.halt` — the
   shapes of transition: read a bit and continue, work without reading, move
   back over the input, or read the end and emit.
-* {lit}`Geb.BitTreeScanner.bitTreeScanner` — the machine.
+* {lit}`Geb.BitTreeScanner.transition`, {lit}`Geb.BitTreeScanner.bitTreeScanner`
+  — the transition function and the machine.
 * {lit}`Geb.BitTreeScanner.digitsAt`, {lit}`Geb.BitTreeScanner.tapeDigits`,
   {lit}`Geb.BitTreeScanner.tapeCount`, {lit}`Geb.BitTreeScanner.tapeLeaf`,
   {lit}`Geb.BitTreeScanner.headLeaf`, {lit}`Geb.BitTreeScanner.headRuler`,
@@ -211,126 +212,129 @@ emitted, the machine halts. -/
 def halt (b : Fin 4) : Action 3 (Fin 4) (Fin stateCount) :=
   { inputTape := 0, workTapes := ![idle, idle, idle], output := some b, state := none }
 
-/-- The machine. Three work tapes, each with a base marker at cell {lit}`0`
-from the first step on: the first holds the pending count as a redundant
-counter, least significant digit at cell {lit}`1`, its head resting there;
-the second a leaf's length, least significant digit at cell {lit}`1`; the
-third the input's length in binary, least significant digit at cell
-{lit}`1`, its head resting at the base outside a gamma code. -/
-def bitTreeScanner : MultiTapeTM 3 (Fin 4) (Fin stateCount) where
-  q₀ := stInit
-  tr q inSym work :=
-    if q = stInit then
-      stay stSeek (some (some 3), 1) (some (some 3), 0) (some (some 3), 1)
-    else if q = stSeek then
-      match inSym with
-      | some _ =>
-        match work 2 with
-        | some 1 => stay stSeekCarry idle idle (some (some 0), 1)
-        | _ => advance stSeek idle idle (some (some 1), 0)
-      | none => retreat stBack idle idle (none, -1)
-    else if q = stSeekCarry then
+/-- The machine's transition function. Three work tapes, each with a base
+marker at cell {lit}`0` from the first step on: the first holds the pending
+count as a redundant counter, least significant digit at cell {lit}`1`, its
+head resting there; the second a leaf's length, least significant digit at
+cell {lit}`1`; the third the input's length in binary, least significant
+digit at cell {lit}`1`, its head resting at the base outside a gamma code. -/
+def transition (q : Fin stateCount) (inSym : Option (Fin 4)) (work : Fin 3 → Option (Fin 4)) :
+    Action 3 (Fin 4) (Fin stateCount) :=
+  if q = stInit then
+    stay stSeek (some (some 3), 1) (some (some 3), 0) (some (some 3), 1)
+  else if q = stSeek then
+    match inSym with
+    | some _ =>
       match work 2 with
       | some 1 => stay stSeekCarry idle idle (some (some 0), 1)
-      | _ => stay stSeekBack idle idle (some (some 1), -1)
-    else if q = stSeekBack then
-      match work 2 with
-      | some 3 => advance stSeek idle idle (none, 1)
-      | _ => stay stSeekBack idle idle (none, -1)
-    else if q = stBack then
-      match inSym with
-      | some _ => retreat stBack idle idle idle
-      | none => advance stMain idle idle idle
-    else if q = stMain then
-      match inSym with
-      | some 1 =>
-        match work 0 with
-        | some 2 => stay stIncCarry (some (some 1), 1) idle idle
-        | some 1 => advance stMain (some (some 2), 0) idle idle
-        | _ => advance stMain (some (some 1), 0) idle idle
-      | some _ => advance stZeros idle (none, 1) idle
-      | none => halt 0
-    else if q = stIncCarry then
+      | _ => advance stSeek idle idle (some (some 1), 0)
+    | none => retreat stBack idle idle (none, -1)
+  else if q = stSeekCarry then
+    match work 2 with
+    | some 1 => stay stSeekCarry idle idle (some (some 0), 1)
+    | _ => stay stSeekBack idle idle (some (some 1), -1)
+  else if q = stSeekBack then
+    match work 2 with
+    | some 3 => advance stSeek idle idle (none, 1)
+    | _ => stay stSeekBack idle idle (none, -1)
+  else if q = stBack then
+    match inSym with
+    | some _ => retreat stBack idle idle idle
+    | none => advance stMain idle idle idle
+  else if q = stMain then
+    match inSym with
+    | some 1 =>
       match work 0 with
       | some 2 => stay stIncCarry (some (some 1), 1) idle idle
-      | some 1 => stay stIncBack (some (some 2), -1) idle idle
-      | _ => stay stIncBack (some (some 1), -1) idle idle
-    else if q = stIncBack then
-      match work 0 with
-      | some 3 =>
-        match inSym with
-        | some _ => advance stMain (none, 1) idle idle
-        | none => halt 0
-      | _ => stay stIncBack (none, -1) idle idle
-    else if q = stZeros then
+      | some 1 => advance stMain (some (some 2), 0) idle idle
+      | _ => advance stMain (some (some 1), 0) idle idle
+    | some _ => advance stZeros idle (none, 1) idle
+    | none => halt 0
+  else if q = stIncCarry then
+    match work 0 with
+    | some 2 => stay stIncCarry (some (some 1), 1) idle idle
+    | some 1 => stay stIncBack (some (some 2), -1) idle idle
+    | _ => stay stIncBack (some (some 1), -1) idle idle
+  else if q = stIncBack then
+    match work 0 with
+    | some 3 =>
       match inSym with
-      | some 1 => advance stBits idle (some (some 1), -1) idle
-      | some _ =>
-        match work 2 with
-        | some _ => advance stZeros idle (some (some 2), 1) (none, 1)
-        | none => advance stDead idle idle idle
+      | some _ => advance stMain (none, 1) idle idle
       | none => halt 0
-    else if q = stBits then
-      match work 1 with
-      | some 3 => stay stBorrowInit idle (none, 1) idle
-      | _ =>
-        match inSym with
-        | some b => advance stBits idle (some (some b), -1) (none, -1)
-        | none => halt 0
-    else if q = stBorrowInit then
-      match work 1 with
-      | some 0 => stay stBorrowInit idle (some (some 1), 1) idle
-      | some 1 => stay stReturnInit idle (some (some 0), -1) idle
-      | _ => stay stClear idle (none, -1) idle
-    else if q = stReturnInit then
-      match work 1 with
-      | some 3 => stay stBorrow idle (none, 1) idle
-      | _ => stay stReturnInit idle (none, -1) idle
-    else if q = stBorrow then
-      match work 1 with
-      | some 0 => stay stBorrow idle (some (some 1), 1) idle
-      | some 1 => stay stReturn idle (some (some 0), -1) idle
-      | _ => stay stClear idle (none, -1) idle
-    else if q = stReturn then
-      match work 1 with
-      | some 3 =>
-        match inSym with
-        | some _ => advance stBorrow idle (none, 1) idle
-        | none => halt 0
-      | _ => stay stReturn idle (none, -1) idle
-    else if q = stClear then
-      match work 1 with
-      | some 3 =>
-        match work 0 with
-        | none => stay stDone idle idle idle
-        | some 2 => stay stMain (some (some 1), 0) idle idle
-        | some 1 => stay stDecTop (some (some 0), 1) idle idle
-        | _ => stay stDecBorrow (some (some 1), 1) idle idle
-      | _ => stay stClear idle (some none, -1) idle
-    else if q = stDecBorrow then
+    | _ => stay stIncBack (none, -1) idle idle
+  else if q = stZeros then
+    match inSym with
+    | some 1 => advance stBits idle (some (some 1), -1) idle
+    | some _ =>
+      match work 2 with
+      | some _ => advance stZeros idle (some (some 2), 1) (none, 1)
+      | none => advance stDead idle idle idle
+    | none => halt 0
+  else if q = stBits then
+    match work 1 with
+    | some 3 => stay stBorrowInit idle (none, 1) idle
+    | _ =>
+      match inSym with
+      | some b => advance stBits idle (some (some b), -1) (none, -1)
+      | none => halt 0
+  else if q = stBorrowInit then
+    match work 1 with
+    | some 0 => stay stBorrowInit idle (some (some 1), 1) idle
+    | some 1 => stay stReturnInit idle (some (some 0), -1) idle
+    | _ => stay stClear idle (none, -1) idle
+  else if q = stReturnInit then
+    match work 1 with
+    | some 3 => stay stBorrow idle (none, 1) idle
+    | _ => stay stReturnInit idle (none, -1) idle
+  else if q = stBorrow then
+    match work 1 with
+    | some 0 => stay stBorrow idle (some (some 1), 1) idle
+    | some 1 => stay stReturn idle (some (some 0), -1) idle
+    | _ => stay stClear idle (none, -1) idle
+  else if q = stReturn then
+    match work 1 with
+    | some 3 =>
+      match inSym with
+      | some _ => advance stBorrow idle (none, 1) idle
+      | none => halt 0
+    | _ => stay stReturn idle (none, -1) idle
+  else if q = stClear then
+    match work 1 with
+    | some 3 =>
       match work 0 with
-      | some 0 => stay stDecBorrow (some (some 1), 1) idle idle
+      | none => stay stDone idle idle idle
+      | some 2 => stay stMain (some (some 1), 0) idle idle
       | some 1 => stay stDecTop (some (some 0), 1) idle idle
-      | some 2 => stay stDecBack (some (some 1), -1) idle idle
-      | _ => stay stDecBack (none, -1) idle idle
-    else if q = stDecTop then
-      match work 0 with
-      | none => stay stDecErase (none, -1) idle idle
-      | some _ => stay stDecBack (none, -1) idle idle
-    else if q = stDecErase then
-      stay stDecBack (some none, -1) idle idle
-    else if q = stDecBack then
-      match work 0 with
-      | some 3 => stay stMain (none, 1) idle idle
-      | _ => stay stDecBack (none, -1) idle idle
-    else if q = stDone then
-      match inSym with
-      | some _ => advance stDead idle (none, 1) idle
-      | none => halt 1
-    else
-      match inSym with
-      | some _ => advance stDead idle idle idle
-      | none => halt 0
+      | _ => stay stDecBorrow (some (some 1), 1) idle idle
+    | _ => stay stClear idle (some none, -1) idle
+  else if q = stDecBorrow then
+    match work 0 with
+    | some 0 => stay stDecBorrow (some (some 1), 1) idle idle
+    | some 1 => stay stDecTop (some (some 0), 1) idle idle
+    | some 2 => stay stDecBack (some (some 1), -1) idle idle
+    | _ => stay stDecBack (none, -1) idle idle
+  else if q = stDecTop then
+    match work 0 with
+    | none => stay stDecErase (none, -1) idle idle
+    | some _ => stay stDecBack (none, -1) idle idle
+  else if q = stDecErase then
+    stay stDecBack (some none, -1) idle idle
+  else if q = stDecBack then
+    match work 0 with
+    | some 3 => stay stMain (none, 1) idle idle
+    | _ => stay stDecBack (none, -1) idle idle
+  else if q = stDone then
+    match inSym with
+    | some _ => advance stDead idle (none, 1) idle
+    | none => halt 1
+  else
+    match inSym with
+    | some _ => advance stDead idle idle idle
+    | none => halt 0
+
+/-- The machine: {name}`Geb.BitTreeScanner.transition` started in
+{name}`Geb.BitTreeScanner.stInit`. -/
+def bitTreeScanner : MultiTapeTM 3 (Fin 4) (Fin stateCount) := ofTr stInit transition
 
 section Tapes
 

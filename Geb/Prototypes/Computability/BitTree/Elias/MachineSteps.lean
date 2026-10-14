@@ -20,6 +20,7 @@ the longer field finishes. The pending-tree count is then decremented once.
 
 ## Main statements
 
+* {lit}`machine_tr` identifies the machine's transition with {lit}`transition`.
 * {lit}`step_clearing` describes one simultaneous erasure transition.
 * {lit}`runFrom_clearing` describes all intermediate configurations.
 * {lit}`runFrom_clear_done` gives the exact cleanup cost and empty output.
@@ -42,6 +43,11 @@ set_option doc.verso true
 namespace Geb.BitTree.Elias.Machine
 
 open Turing MultiTapeTM
+
+/-- The machine's transition is {name}`transition`. -/
+theorem machine_tr (q : Control) (input : Option (Fin 3)) (work : Fin 4 → Option (Fin 3)) :
+    machine.tr q input work = transition q input work :=
+  tr_ofTr _ _ _ _ _
 
 /-- Two consecutive phases with no output compose by adding their exact costs. -/
 theorem runFrom_output_add {input : List (Fin 3)}
@@ -69,7 +75,7 @@ theorem headBound_add {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
 /-- A nonempty cleanup phase takes the erasing branch of the transition table. -/
 theorem tr_clearing {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (bs cs : List Bool) (p r : ℕ) (h : 0 < p + r) :
-    machine.tr stClear (clearingCfg cfg bs cs p r).inputSymbol
+    transition stClear (clearingCfg cfg bs cs p r).inputSymbol
         (clearingCfg cfg bs cs p r).workTapeSymbols =
       { jump stClear with
         workTapes := fun i ↦
@@ -100,7 +106,7 @@ theorem tr_clearing {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
 theorem step_clearing {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (bs cs : List Bool) (p r : ℕ) (h : 0 < p + r) :
     machine.step (clearingCfg cfg bs cs p r) = clearingCfg cfg bs cs (p - 1) (r - 1) := by
-  rw [Geb.TreeScanner.step_of_state _ _ stClear rfl, tr_clearing cfg bs cs p r h]
+  rw [Geb.TreeScanner.step_of_state _ _ stClear rfl, machine_tr, tr_clearing cfg bs cs p r h]
   refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ (List.append_nil _)
   · funext i
     fin_cases i <;> cases p <;> cases r <;>
@@ -116,7 +122,7 @@ theorem outputSymbol_clearing {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Contro
     (bs cs : List Bool) (p r : ℕ) (h : 0 < p + r) :
     machine.outputSymbol (clearingCfg cfg bs cs p r) = none := by
   change (machine.tr stClear _ _).output = none
-  rw [tr_clearing cfg bs cs p r h]
+  rw [machine_tr, tr_clearing cfg bs cs p r h]
   rfl
 
 /-- At every erasure step the heads are their initial positions minus elapsed time. -/
@@ -145,14 +151,14 @@ theorem runFrom_clearing {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control inp
 theorem step_clearing_zero {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (bs cs : List Bool) :
     machine.step (clearingCfg cfg bs cs 0 0) = clearedCfg cfg := by
-  have ht : machine.tr stClear (clearingCfg cfg bs cs 0 0).inputSymbol
+  have ht : transition stClear (clearingCfg cfg bs cs 0 0).inputSymbol
       (clearingCfg cfg bs cs 0 0).workTapeSymbols =
       { jump stLeaf with
         workTapes := fun i ↦
           if i = 0 then (none, -1)
           else if i = 1 then (none, 0)
           else (none, 1) } := rfl
-  rw [Geb.TreeScanner.step_of_state _ _ stClear rfl, ht]
+  rw [Geb.TreeScanner.step_of_state _ _ stClear rfl, machine_tr, ht]
   refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ (List.append_nil _)
   · funext i
     fin_cases i <;> rfl
@@ -162,7 +168,10 @@ theorem step_clearing_zero {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control i
 /-- The final cleanup transition emits nothing. -/
 theorem outputSymbol_clearing_zero {input : List (Fin 3)}
     (cfg : Cfg 4 (Fin 3) Control input) (bs cs : List Bool) :
-    machine.outputSymbol (clearingCfg cfg bs cs 0 0) = none := rfl
+    machine.outputSymbol (clearingCfg cfg bs cs 0 0) = none := by
+  change (machine.tr stClear _ _).output = none
+  rw [machine_tr]
+  rfl
 
 /-- Both fields clear in the larger head position plus one transition. -/
 theorem runFrom_clear_done {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
@@ -181,7 +190,7 @@ theorem runFrom_clear_done {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control i
 /-- Testing the decremented pending count changes only finite control. -/
 theorem step_leaf {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input) :
     machine.step (clearedCfg cfg) = completedCfg cfg := by
-  rw [Geb.TreeScanner.step_of_state _ _ stLeaf rfl]
+  rw [Geb.TreeScanner.step_of_state _ _ stLeaf rfl, machine_tr]
   refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_ (List.append_nil _)
   funext i
   change (clearedCfg cfg).workTapePos i + 0 = _
@@ -189,7 +198,10 @@ theorem step_leaf {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input) :
 
 /-- Testing the pending count emits nothing. -/
 theorem outputSymbol_leaf {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input) :
-    machine.outputSymbol (clearedCfg cfg) = none := rfl
+    machine.outputSymbol (clearedCfg cfg) = none := by
+  change (machine.tr stLeaf _ _).output = none
+  rw [machine_tr]
+  rfl
 
 /-- Erasing and completing a leaf takes two transitions beyond the larger head position. -/
 theorem runFrom_clear_ready {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)

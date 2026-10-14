@@ -60,8 +60,8 @@ namespace Geb.SizeBounded.Logspace.Machine
 
 open Turing MultiTapeTM
 open Geb.SizeBounded (Shape Direction rc q sig finMax le_finMax stepDir S arity nsiValue)
-open Geb.SizeBounded.Machine (Prog seq copy const Transforms Bounded const_transforms
-  copy_transforms)
+open Geb.SizeBounded.Machine (Prog seq copy const Transforms Bounded seqProg_tm constProg_tm
+  const_transforms copy_transforms)
 
 public section
 
@@ -152,7 +152,9 @@ theorem correct_const {k n : ℕ} (w : List Bool) (c : Direction (.const n w) �
       (fun _ _ ↦ True) fun input σ hB _ ↦ hB.update (le_bound_of_le hM)
     have h2 := Transforms.toIn_of (fun n ↦ const_transforms [] (out 1) (bound M n))
       (fun _ _ ↦ True) fun input σ hB _ ↦ hB.update (Nat.zero_le _)
-    refine TransformsIn.mono_time ((h1.seq h2).mono_pre fun _ _ _ _ ↦ ⟨trivial, trivial⟩) ?_
+    refine TransformsIn.of_tm_eq
+      ((seqProg_tm _ _).trans (by rw [constProg_tm, constProg_tm]; rfl))
+      (TransformsIn.mono_time ((h1.seq h2).mono_pre fun _ _ _ _ ↦ ⟨trivial, trivial⟩) ?_)
     intro n
     change (4 * bound M n + 9) + (4 * bound M n + 9) ≤ 2 * (4 * bound M n + 9)
     omega
@@ -191,8 +193,8 @@ theorem correct_proj {k n : ℕ} (i : Fin n) (c : Direction (.proj n i) → Σ i
       (fun _ _ ↦ True) fun input σ hB _ ↦ hB.update (hB _)
     have h2 := Transforms.toIn_of (fun n ↦ copy_transforms (env i 1) (out 1) h11 (bound M n))
       (fun _ _ ↦ True) fun input σ hB _ ↦ hB.update (hB _)
-    refine TransformsIn.congr (TransformsIn.mono_time
-      ((h1.seq h2).mono_pre fun _ _ _ _ ↦ ⟨trivial, trivial⟩) ?_) ?_
+    refine TransformsIn.of_tm_eq (copyReg_tm _ _) (TransformsIn.congr (TransformsIn.mono_time
+      ((h1.seq h2).mono_pre fun _ _ _ _ ↦ ⟨trivial, trivial⟩) ?_) ?_)
     · intro n
       change (5 * bound M n + 12) + (5 * bound M n + 12) ≤ copyRegTime (bound M n)
       unfold copyRegTime

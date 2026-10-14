@@ -29,18 +29,24 @@ after the final saved word has been emitted.
 
 * {lit}`squareRecLengthFromHome` is the reusable eight-tape subroutine.
 * {lit}`squareRecLengthMachine` homes the input head before calling it.
+* {lit}`squareRecLengthSetupTr`, {lit}`squareRecLengthFromHomeTr` and
+  {lit}`squareRecLengthMachineTr` are the machines' transition functions.
 
 ## Main statements
 
 * {lit}`squareRecLengthFromHome_emitsIn` proves the output and scratch cleanup.
 * {lit}`squareRecLengthMachine_computes` proves simultaneous polynomial time and
   logarithmic space on the machine that runs the recursion.
+* {lit}`squareRecLengthSetup_eq_ofTr`, {lit}`squareRecLengthFromHome_eq_ofTr` and
+  {lit}`squareRecLengthMachine_eq_ofTr` identify each machine with the machine built by
+  {name}`Turing.MultiTapeTM.ofTr` from its transition function.
 
 ## Implementation notes
 
 The loop's invariant is {name}`Geb.Oitavem.prefixLoop_lengthByRec`. Its number of
 tapes is constant across iterations. The contracts inherit CSLib's
-{lit}`Classical.choice` dependency.
+{lit}`Classical.choice` dependency, and the machines, sequencing machines whose
+transitions CSLib selects by choice, are noncomputable.
 
 ## Tags
 
@@ -65,9 +71,20 @@ public section
 theorem squareRecLayout_injective : Function.Injective squareRecLayout := by decide
 
 /-- Initialize the recursion countdown and a mask whose length bounds every saved value. -/
-@[expose] def squareRecLengthSetup :=
+@[expose] noncomputable def squareRecLengthSetup :=
   seq (generatedLength (squareFromHome (6 : Fin 7)))
     (seq (copy (0 : Fin 8) 4) (inc 0))
+
+/-- The transition of {name}`squareRecLengthSetup`. -/
+@[expose] def squareRecLengthSetupTr :=
+  seqTr (generatedLengthTr (squareFromHomeTr (6 : Fin 7)) (.inl ()))
+    (seqTr (copyTr (0 : Fin 8) 4) (incTr 0) (.inl ())) (.inl (.inl (.inl ())))
+
+/-- {name}`squareRecLengthSetup` is the machine built from {name}`squareRecLengthSetupTr`. -/
+theorem squareRecLengthSetup_eq_ofTr :
+    squareRecLengthSetup = ofTr (.inl (.inl (.inl (.inl ())))) squareRecLengthSetupTr := by
+  simp only [squareRecLengthSetup, squareFromHome_eq_ofTr, generatedLength_ofTr, copy_eq_ofTr,
+    inc_eq_ofTr, seq_ofTr, squareRecLengthSetupTr]
 
 /-- Initialization starts from blank registers, obtains the generated length,
 and keeps its successor's binary digits as a logarithmic mask. -/
@@ -98,10 +115,27 @@ theorem squareRecLengthSetup_transformsIn :
   fin_cases i <;> simp [hp, incL_counterWord] <;> rfl
 
 /-- Run the saved-prefix loop and emit its final value, clearing the remaining live tapes. -/
-@[expose] def squareRecLengthFromHome :=
+@[expose] noncomputable def squareRecLengthFromHome :=
   seq squareRecLengthSetup
     (seq (lengthRecLoop (generatedAt (squareFromHome (3 : Fin 4)) 2) squareRecLayout)
       (seq (emitStored (5 : Fin 8)) (seq (const [] 0) (const [] 5))))
+
+/-- The transition of {name}`squareRecLengthFromHome`. -/
+@[expose] def squareRecLengthFromHomeTr :=
+  seqTr squareRecLengthSetupTr
+    (seqTr (lengthRecLoopTr (generatedAtTr (squareFromHomeTr (3 : Fin 4)) (.inl ()) 2)
+        (.inl (.inl (.inl ()))) squareRecLayout)
+      (seqTr (emitStoredTr (5 : Fin 8)) (seqTr (constTr [] 0) (constTr [] 5) (.inl (.inl ())))
+        (.inl (.inl (.inl ())))) (.inl (.inl (.inl ())))) (.inl (.inl ()))
+
+/-- {name}`squareRecLengthFromHome` is the machine built from
+{name}`squareRecLengthFromHomeTr`. -/
+theorem squareRecLengthFromHome_eq_ofTr :
+    squareRecLengthFromHome =
+      ofTr (.inl (.inl (.inl (.inl (.inl ()))))) squareRecLengthFromHomeTr := by
+  simp only [squareRecLengthFromHome, squareRecLengthSetup_eq_ofTr, squareFromHome_eq_ofTr,
+    generatedAt_ofTr, lengthRecLoop_ofTr, emitStored_eq_ofTr, const_eq_ofTr, seq_ofTr,
+    squareRecLengthFromHomeTr]
 
 /-- The termination bound inherited from initialization, generated queries, and prefix capture. -/
 @[expose] def squareRecLengthTime (n : ℕ) : ℕ :=
@@ -153,7 +187,18 @@ theorem squareRecLengthFromHome_emitsIn :
   rfl
 
 /-- Home the physical input before the eight-tape recursive length subroutine. -/
-@[expose] def squareRecLengthMachine := seq inBack squareRecLengthFromHome
+@[expose] noncomputable def squareRecLengthMachine := seq inBack squareRecLengthFromHome
+
+/-- The transition of {name}`squareRecLengthMachine`. -/
+@[expose] def squareRecLengthMachineTr :=
+  seqTr inBackTr squareRecLengthFromHomeTr (.inl (.inl (.inl (.inl (.inl ())))))
+
+/-- {name}`squareRecLengthMachine` is the machine built from
+{name}`squareRecLengthMachineTr`. -/
+theorem squareRecLengthMachine_eq_ofTr :
+    squareRecLengthMachine = ofTr (.inl ()) squareRecLengthMachineTr := by
+  simp only [squareRecLengthMachine, inBack, squareRecLengthFromHome_eq_ofTr, seq_ofTr,
+    squareRecLengthMachineTr]
 
 /-- The saved-prefix implementation has polynomial time and logarithmic work space,
 with the same machine witnessing both bounds. -/

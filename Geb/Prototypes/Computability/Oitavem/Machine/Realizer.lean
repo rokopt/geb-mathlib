@@ -29,18 +29,27 @@ physical input and the protected environment.
 * {lit}`Generator.length` computes the numerical length of a generated word.
 * {lit}`Generator.rename` imports selected values from a caller environment.
 * {lit}`Generator.product` combines independent generators in one workspace.
+* {lit}`Generator.callTr`, {lit}`storedGeneratorTr` and {lit}`Generator.inputProgramTr`
+  give the transition functions of the call, stored-word and input programs.
 
 ## Main statements
 
 * {lit}`Generator.computes` turns a closed generator into a machine with
   simultaneous polynomial time and logarithmic space bounds.
 * {lit}`Generator.call_emitsIn` verifies environment import and private cleanup.
+* {lit}`Generator.call_eq_ofTr`, {lit}`storedGenerator_eq_ofTr` and
+  {lit}`Generator.inputProgram_eq_ofTr` identify those programs with the machines built
+  from their transition functions.
 
 ## Implementation notes
 
 These contracts use CSLib configurations and inherit their
 {lit}`Classical.choice` dependency. The compiled programs use fixed tape layouts
-and executable copies; their allocation does not use choice.
+and executable copies; their allocation does not use choice. A generator carries its
+program as an initial state and a computable transition function, assembled from the
+transition functions of its components; the machine they determine,
+{lit}`Generator.program`, is built by {name}`Turing.MultiTapeTM.ofTr` and is
+noncomputable, since CSLib selects its transition by choice.
 
 ## Tags
 
@@ -94,8 +103,10 @@ theorem Initialized.onTapes {m k l a : ℕ} {env : Fin m → Fin k}
 @[ext] structure GeneratorData (m k : ℕ) (S : Type) : Type where
   /-- Protected environment registers. -/
   env : Fin m → Fin k
-  /-- The actual emitting program. -/
-  program : MultiTapeTM k Bool S
+  /-- The initial state of the emitting program. -/
+  q₀ : S
+  /-- The transition function of the emitting program. -/
+  tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S
   /-- A coefficient for the logarithmic head bound. -/
   space : ℕ
 
@@ -109,7 +120,7 @@ theorem Initialized.onTapes {m k l a : ℕ} {env : Fin m → Fin k}
   env_injective : Function.Injective env
   /-- The program restores the environment and its initialized scratch registers. -/
   correct : ∀ B : ℕ → ℕ, (∀ n, space * (n.size + 1) ≤ B n) →
-    ∃ T, EmitsIn program
+    ∃ T, EmitsIn (ofTr q₀ tr)
       (fun input σ ↦ Pre input (fun i ↦ σ (env i)) ∧ Initialized env σ)
       (fun _ σ ↦ σ) (fun input σ ↦ W input (fun i ↦ σ (env i))) T B
 
@@ -135,8 +146,17 @@ abbrev State (G : Generator m Pre W) : Type := G.2.1
 /-- The generator's protected register layout. -/
 abbrev env (G : Generator m Pre W) : Fin m → Fin G.tapes := G.2.2.env
 
-/-- The generator's executable machine. -/
-abbrev program (G : Generator m Pre W) : MultiTapeTM G.tapes Bool G.State := G.2.2.program
+/-- The initial state of the generator's program. -/
+abbrev q₀ (G : Generator m Pre W) : G.State := G.2.2.q₀
+
+/-- The transition function of the generator's program. -/
+abbrev tr (G : Generator m Pre W) :
+    G.State → Option Bool → (Fin G.tapes → Option Bool) → Action G.tapes Bool G.State :=
+  G.2.2.tr
+
+/-- The generator's machine: the machine built from its transition function. -/
+noncomputable abbrev program (G : Generator m Pre W) : MultiTapeTM G.tapes Bool G.State :=
+  ofTr G.q₀ G.tr
 
 /-- The generator's logarithmic workspace coefficient. -/
 abbrev space (G : Generator m Pre W) : ℕ := G.2.2.space
@@ -185,7 +205,7 @@ theorem composeFin_const {k m : ℕ} (dst : Fin m → Fin k) (w : Fin m → List
 theorem copyFamily_transformsIn {k m : ℕ} (src dst : Fin m → Fin k)
     (hne : ∀ j, src j ≠ dst j) (B : ℕ → ℕ) :
     TransformsIn (seqFin m (fun j ↦ StateOf (copy (src j) (dst j)))
-      (fun j ↦ copy (src j) (dst j))).2 (fun _ _ ↦ True)
+      (fun j ↦ copy (src j) (dst j))) (fun _ _ ↦ True)
       (fun _ σ ↦ composeFin m (fun j σ ↦ Function.update σ (dst j) (σ (src j))) σ)
       (fun n ↦ m * (5 * B n + 12) + 1) B := by
   have h (j : Fin m) := Transforms.toIn_of
@@ -198,7 +218,7 @@ theorem copyFamily_transformsIn {k m : ℕ} (src dst : Fin m → Fin k)
 /-- Clearing a fixed family restores reusable scratch registers. -/
 theorem clearFamily_transformsIn {k m : ℕ} (dst : Fin m → Fin k) (B : ℕ → ℕ) :
     TransformsIn (seqFin m (fun j ↦ StateOf (const [] (dst j)))
-      (fun j ↦ const [] (dst j))).2 (fun _ _ ↦ True)
+      (fun j ↦ const [] (dst j))) (fun _ _ ↦ True)
       (fun _ σ ↦ composeFin m (fun j σ ↦ Function.update σ (dst j) []) σ)
       (fun n ↦ m * (4 * B n + 9) + 1) B := by
   have h (j : Fin m) := Transforms.toIn_of
@@ -209,24 +229,30 @@ theorem clearFamily_transformsIn {k m : ℕ} (dst : Fin m → Fin k) (B : ℕ �
   exact preFin_of_invariant (fun _ _ ↦ True) m _ (fun _ _ _ _ ↦ trivial) input σ trivial
 
 /-- A finite sequence of finite programs has finite control. -/
-theorem seqFin_finite {k : ℕ} (m : ℕ) (S : Fin m → Type)
-    (P : (i : Fin m) → MultiTapeTM k Bool (S i)) (hS : ∀ i, Finite (S i)) :
-    Finite (seqFin m S P).1 := by
-  revert S P hS
+theorem seqFin_finite (m : ℕ) (S : Fin m → Type) (hS : ∀ i, Finite (S i)) :
+    Finite (seqFinState m S) := by
+  revert S hS
   refine Nat.rec ?_ ?_ m
-  · intro _ _ _
+  · intro _ _
     change Finite Unit
     infer_instance
-  intro m ih S P hS
+  intro m ih S hS
   let := Fintype.ofFinite (S (Fin.last m))
-  let := ih (fun i ↦ S i.castSucc) (fun i ↦ P i.castSucc) (fun i ↦ hS i.castSucc)
-  let := Fintype.ofFinite (seqFin m (fun i ↦ S i.castSucc) (fun i ↦ P i.castSucc)).1
-  change Finite ((seqFin m (fun i ↦ S i.castSucc) (fun i ↦ P i.castSucc)).1 ⊕
-    S (Fin.last m))
+  let := ih (fun i ↦ S i.castSucc) (fun i ↦ hS i.castSucc)
+  let := Fintype.ofFinite (seqFinState m (fun i ↦ S i.castSucc))
+  change Finite (seqFinState m (fun i ↦ S i.castSucc) ⊕ S (Fin.last m))
   infer_instance
 
 /-- Emit a protected register and return its head to the parked position. -/
-@[expose] def storedGenerator {k : ℕ} (R : Fin k) := seq (writer R) (moveRight R)
+@[expose] noncomputable def storedGenerator {k : ℕ} (R : Fin k) := seq (writer R) (moveRight R)
+
+/-- The transition of {name}`storedGenerator`. -/
+@[expose] def storedGeneratorTr {k : ℕ} (R : Fin k) := seqTr (writerTr R) (moveRightTr R) ()
+
+/-- {name}`storedGenerator` is the machine built from {name}`storedGeneratorTr`. -/
+theorem storedGenerator_eq_ofTr {k : ℕ} (R : Fin k) :
+    storedGenerator R = ofTr (.inl (.inl ())) (storedGeneratorTr R) := by
+  simp only [storedGenerator, writer_eq_ofTr, moveRight, seq_ofTr, storedGeneratorTr]
 
 /-- Stored-word emission preserves every register, including its source. -/
 theorem storedGenerator_emitsIn {k : ℕ} (R : Fin k) (B : ℕ → ℕ) :
@@ -271,9 +297,11 @@ variable {m : ℕ} {Pre : List Bool → (Fin m → List Bool) → Prop}
     { finite := G.finite
       env := fun i ↦ e.symm (.inl (G.env i))
       env_injective := fun _ _ h ↦ G.env_injective (Sum.inl.inj (e.symm.injective h))
-      program := onTapes G.program e
+      q₀ := G.q₀
+      tr := onTapesTr G.tr e
       space := G.space
       correct B hB := by
+        rw [← onTapes_ofTr]
         obtain ⟨T, hT⟩ := G.correct B hB
         refine ⟨T, ((hT.onTapes e).congr (fun _ σ _ ↦ onTapesVal_self e σ)).mono_pre ?_⟩
         intro input σ _ hp
@@ -289,7 +317,8 @@ variable {m : ℕ} {Pre : List Bool → (Fin m → List Bool) → Prop}
     { finite := G.finite
       env := G.env
       env_injective := G.env_injective
-      program := G.program
+      q₀ := G.q₀
+      tr := G.tr
       space := G.space
       correct B hB := by
         obtain ⟨T, hT⟩ := G.correct B hB
@@ -310,12 +339,30 @@ variable {m : ℕ} {Pre : List Bool → (Fin m → List Bool) → Prop}
 
 /-- Copy selected caller values into a private environment, run the generator,
 then clear the private environment. Selection may repeat caller registers. -/
-@[expose] def call {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l) :=
+@[expose] noncomputable def call {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l) :=
   let sourceReg (i : Fin m) := (src i).castAdd G.tapes
   let targetReg (i : Fin m) := (G.env i).natAdd l
   seq (seq (seqFin m (fun i ↦ StateOf (copy (sourceReg i) (targetReg i)))
-      (fun i ↦ copy (sourceReg i) (targetReg i))).2 (onTapes G.program (callLayout l G.tapes)))
-    (seqFin m (fun i ↦ StateOf (const [] (targetReg i))) (fun i ↦ const [] (targetReg i))).2
+      (fun i ↦ copy (sourceReg i) (targetReg i))) (onTapes G.program (callLayout l G.tapes)))
+    (seqFin m (fun i ↦ StateOf (const [] (targetReg i))) (fun i ↦ const [] (targetReg i)))
+
+/-- The initial state and the transition of {name}`call`, from the generator's and the
+copies' and clears' initial states and transitions. -/
+@[expose] def callTr {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l) :=
+  let sourceReg (i : Fin m) := (src i).castAdd G.tapes
+  let targetReg (i : Fin m) := (G.env i).natAdd l
+  let copies := seqFinTr m (fun _ ↦ (Unit ⊕ Unit ⊕ Unit) ⊕ Unit ⊕ (Unit ⊕ Unit) ⊕ Unit ⊕ Unit)
+    fun i ↦ (.inl (.inl ()), copyTr (sourceReg i) (targetReg i))
+  let clears := seqFinTr m
+    (fun _ ↦ (Unit ⊕ Unit ⊕ Unit) ⊕ Fin (([] : List Bool).length + 1) ⊕ Unit ⊕ Unit)
+    fun i ↦ (.inl (.inl ()), constTr [] (targetReg i))
+  ((.inl (.inl copies.1) : StateOf (G.call src)),
+    seqTr (seqTr copies.2 (onTapesTr G.tr (callLayout l G.tapes)) G.q₀) clears.2 clears.1)
+
+/-- {name}`call` is the machine built from {name}`callTr`. -/
+theorem call_eq_ofTr {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l) :
+    G.call src = ofTr (G.callTr src).1 (G.callTr src).2 := by
+  simp only [call, callTr, copy_eq_ofTr, const_eq_ofTr, seqFin_ofTr, onTapes_ofTr, seq_ofTr]
 
 /-- Importing an environment uses finitely many additional copies and states. -/
 theorem call_finite {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l) :
@@ -324,13 +371,10 @@ theorem call_finite {l : ℕ} (G : Generator m Pre W) (src : Fin m → Fin l) :
   let sourceReg (i : Fin m) := (src i).castAdd G.tapes
   let targetReg (i : Fin m) := (G.env i).natAdd l
   let h₁ := seqFin_finite m (fun i ↦ StateOf (copy (sourceReg i) (targetReg i)))
-    (fun i ↦ copy (sourceReg i) (targetReg i)) (fun _ ↦ inferInstance)
-  let h₂ := seqFin_finite m (fun i ↦ StateOf (const [] (targetReg i)))
-    (fun i ↦ const [] (targetReg i)) (fun _ ↦ inferInstance)
-  let := Fintype.ofFinite (seqFin m (fun i ↦ StateOf (copy (sourceReg i) (targetReg i)))
-    (fun i ↦ copy (sourceReg i) (targetReg i))).1
-  let := Fintype.ofFinite (seqFin m (fun i ↦ StateOf (const [] (targetReg i)))
-    (fun i ↦ const [] (targetReg i))).1
+    (fun _ ↦ inferInstance)
+  let h₂ := seqFin_finite m (fun i ↦ StateOf (const [] (targetReg i))) (fun _ ↦ inferInstance)
+  let := Fintype.ofFinite (seqFinState m (fun i ↦ StateOf (copy (sourceReg i) (targetReg i))))
+  let := Fintype.ofFinite (seqFinState m (fun i ↦ StateOf (const [] (targetReg i))))
   unfold call
   infer_instance
 
@@ -397,9 +441,12 @@ The machine copies those values into its fixed private layout on every call. -/
     { finite := G.call_finite src
       env := Fin.castAdd G.tapes
       env_injective := Fin.castAdd_injective _ _
-      program := G.call src
+      q₀ := (G.callTr src).1
+      tr := (G.callTr src).2
       space := G.space
-      correct B hB := G.call_emitsIn src hpre B hB
+      correct B hB := by
+        rw [← call_eq_ofTr]
+        exact G.call_emitsIn src hpre B hB
     }⟩
 
 /-- Two private workspaces share the same caller environment. -/
@@ -449,7 +496,8 @@ The machine copies those values into its fixed private layout on every call. -/
     { finite := inferInstance
       env := id
       env_injective := Function.injective_id
-      program := emitSymbol none
+      q₀ := ()
+      tr := emitSymbolTr none
       space := 0
       correct B _ := ⟨fun _ ↦ 1, (emitSymbol_emitsIn none B).mono_pre
         (fun _ _ _ _ ↦ trivial)⟩
@@ -462,20 +510,43 @@ The machine copies those values into its fixed private layout on every call. -/
     { finite := inferInstance
       env := id
       env_injective := Function.injective_id
-      program := storedGenerator i
+      q₀ := .inl (.inl ())
+      tr := storedGeneratorTr i
       space := 0
-      correct B _ := ⟨_, (storedGenerator_emitsIn i B).mono_pre (fun _ _ _ _ ↦ trivial)⟩
+      correct B _ := by
+        rw [← storedGenerator_eq_ofTr]
+        exact ⟨_, (storedGenerator_emitsIn i B).mono_pre (fun _ _ _ _ ↦ trivial)⟩
     }⟩
+
+/-- The program streaming the physical input through its restoring digit reader and
+clearing the query. -/
+@[expose] noncomputable def inputProgram :=
+  seq (emitReader (inputAt (0 : Fin 3) 1 2) 0 2) (const [] 0)
+
+/-- The transition of {name}`inputProgram`. -/
+@[expose] def inputProgramTr :=
+  seqTr (emitReaderTr (inputAtTr (0 : Fin 3) 1 2) (.inl (.inl (.inl ()))) 0 2) (constTr [] 0)
+    (.inl (.inl ()))
+
+/-- {name}`inputProgram` is the machine built from {name}`inputProgramTr`. -/
+theorem inputProgram_eq_ofTr :
+    inputProgram = ofTr (.inl (.inl (.inl (.inl (.inl ()))))) inputProgramTr := by
+  simp only [inputProgram, inputAt_eq_ofTr, emitReader_ofTr, const_eq_ofTr, seq_ofTr,
+    inputProgramTr]
 
 /-- Stream the physical input through its restoring digit reader. -/
 @[expose] def input : Generator 0 (fun _ _ ↦ True) (fun w _ ↦ w) :=
-  ⟨3, StateOf (seq (emitReader (inputAt (0 : Fin 3) 1 2) 0 2) (const [] 0)),
-    { finite := inferInstance
+  ⟨3, StateOf inputProgram,
+    { finite := by
+        unfold inputProgram
+        infer_instance
       env := Fin.elim0
       env_injective := fun i _ _ ↦ i.elim0
-      program := seq (emitReader (inputAt (0 : Fin 3) 1 2) 0 2) (const [] 0)
+      q₀ := .inl (.inl (.inl (.inl (.inl ()))))
+      tr := inputProgramTr
       space := 1
       correct B hB := by
+        rw [← inputProgram_eq_ofTr]
         have hB1 (n) : 1 ≤ B n := by have := hB n; omega
         have hsize (n) : n.size ≤ B n := by have := hB n; omega
         have hr := inputAt_readsAt (0 : Fin 3) 1 2 (by decide) (by decide) (by decide) B hB1
@@ -502,9 +573,11 @@ The machine copies those values into its fixed private layout on every call. -/
     { finite := inferInstance
       env := G.env
       env_injective := G.env_injective
-      program := Machine.mapOutput G.program a step finish
+      q₀ := (a, some G.q₀)
+      tr := mapOutputTr G.tr step finish
       space := G.space
       correct B hB := by
+        rw [← mapOutput_ofTr]
         obtain ⟨T, hT⟩ := G.correct B hB
         exact ⟨fun n ↦ T n + 1, mapOutput_emitsIn hT a step finish⟩
     }⟩
@@ -518,9 +591,11 @@ The machine copies those values into its fixed private layout on every call. -/
         infer_instance
       env := G.env
       env_injective := G.env_injective
-      program := seq (emitSymbol (some b)) G.program
+      q₀ := .inl ()
+      tr := seqTr (emitSymbolTr (some b)) G.tr G.q₀
       space := G.space
       correct B hB := by
+        rw [← seq_ofTr]
         obtain ⟨T, hT⟩ := G.correct B hB
         exact ⟨_, succGenerator_emitsIn hT b⟩
     }⟩
@@ -534,9 +609,11 @@ The machine copies those values into its fixed private layout on every call. -/
         infer_instance
       env := G.env
       env_injective := G.env_injective
-      program := seq G.program (emitSymbol (some b))
+      q₀ := .inl G.q₀
+      tr := seqTr G.tr (emitSymbolTr (some b)) ()
       space := G.space
       correct B hB := by
+        rw [← seq_ofTr]
         obtain ⟨T, hT⟩ := G.correct B hB
         exact ⟨_, (hT.seqEmitsIn (emitSymbol_emitsIn (some b) B)).mono_pre
           (fun _ _ _ hp ↦ ⟨hp, trivial⟩)⟩
@@ -580,9 +657,11 @@ The machine copies those values into its fixed private layout on every call. -/
         infer_instance
       env := fun i ↦ (G.env i).succ
       env_injective := (Fin.succ_injective _).comp G.env_injective
-      program := lengthGenerator G.program
+      q₀ := .inl (.inl (.inl (.inl ())))
+      tr := lengthGeneratorTr G.tr G.q₀
       space := max G.space C
       correct B hB := by
+        rw [← lengthGenerator_ofTr]
         obtain ⟨T, hT⟩ := G.correct B (fun n ↦
           (Nat.mul_le_mul_right _ (Nat.le_max_left G.space C)).trans (hB n))
         have h := lengthGenerator_emitsIn hT (fun input σ hp _ ↦
@@ -608,9 +687,16 @@ The machine copies those values into its fixed private layout on every call. -/
         infer_instance
       env := Fin.castAdd (G.tapes + H.tapes)
       env_injective := Fin.castAdd_injective _ _
-      program := seq (G.left H.tapes).program (H.right G.tapes).program
+      q₀ := .inl (G.left H.tapes).q₀
+      tr := seqTr (G.left H.tapes).tr (H.right G.tapes).tr (H.right G.tapes).q₀
       space := G.space + H.space
       correct B hB := by
+        have e : seq (k := m + (G.tapes + H.tapes)) (G.left H.tapes).program
+            (H.right G.tapes).program = ofTr (.inl (G.left H.tapes).q₀)
+              (seqTr (k := m + (G.tapes + H.tapes)) (G.left H.tapes).tr (H.right G.tapes).tr
+                (H.right G.tapes).q₀) :=
+          seq_ofTr _ _ _ _
+        rw [← e]
         obtain ⟨TG, hG⟩ := (G.left H.tapes).correct B (fun n ↦
           (Nat.mul_le_mul_right _ (Nat.le_add_right _ _)).trans (hB n))
         obtain ⟨TH, hH⟩ := (H.right G.tapes).correct B (fun n ↦
@@ -636,9 +722,17 @@ Only the repetition count is retained between regenerated copies. -/
         infer_instance
       env := fun i ↦ (i.castAdd (G.tapes + H.tapes)).succ
       env_injective := (Fin.succ_injective _).comp (Fin.castAdd_injective _ _)
-      program := productGenerator (G.left H.tapes).program (H.right G.tapes).program
+      q₀ := .inl (.inl (.inl (.inl ())))
+      tr := productGeneratorTr (G.left H.tapes).tr (G.left H.tapes).q₀ (H.right G.tapes).tr
+        (H.right G.tapes).q₀
       space := max (max G.space H.space) C
       correct B hB := by
+        have e : productGenerator (k := m + (G.tapes + H.tapes)) (G.left H.tapes).program
+            (H.right G.tapes).program = ofTr (.inl (.inl (.inl (.inl ()))))
+              (productGeneratorTr (k := m + (G.tapes + H.tapes)) (G.left H.tapes).tr
+                (G.left H.tapes).q₀ (H.right G.tapes).tr (H.right G.tapes).q₀) :=
+          productGenerator_ofTr _ _ _ _
+        rw [← e]
         have hG (n) : G.space * (n.size + 1) ≤ B n :=
           (Nat.mul_le_mul_right _ ((Nat.le_max_left G.space H.space).trans
             (Nat.le_max_left _ C))).trans (hB n)

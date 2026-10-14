@@ -276,7 +276,16 @@ its own `MathlibTest`.
 
 ### Constructive-only
 
-No `noncomputable`. Minimise `Classical`, accepting it only
+No `noncomputable`, save in a module admitted to
+`GebMeta.classicalAllowedModules` whose definitions are built from a
+noncomputable definition of an external Lean library. CSLib's
+deterministic Turing machine is the case: CSLib selects its transition
+function `Turing.MultiTapeTM.tr`, and so its step, by choice from a
+transition relation, so a machine combinator, or any definition reading
+a machine's transition, is noncomputable. Where a run must reduce, as in
+a test, a machine built by `Turing.MultiTapeTM.ofTr` is evaluated
+through the transition function it was built from
+(`Turing.MultiTapeTM.stepOfTr`). Minimise `Classical`, accepting it only
 when we can confirm that a mathlib concept that we are reusing
 is responsible.
 
@@ -438,7 +447,7 @@ rationale.
 
 ## Constructive-only Lean code
 
-- No `noncomputable` anywhere.
+- No `noncomputable`, save as § Constructive-only admits.
 - Minimise `Classical`; flag/justify each invocation in our own
   code.
 - The `GebMeta.detectNonstandardAxiom` `@[env_linter]` fails

@@ -38,13 +38,22 @@ open Turing MultiTapeTM
 
 /-- Initialization emits no symbols. -/
 theorem outputString_start (input : List (Fin 4)) :
-    machine.outputString (machine.initCfg input) 2 = [] := rfl
+    machine.outputString (machine.initCfg input) 2 = [] := by
+  rw [← initCfg_runFrom_output, runFrom_start]
+  rfl
 
 /-- The initialization steps visit only cells zero and one. -/
 theorem headBound_start (input : List (Fin 4)) (width : ℕ) (hw : 1 ≤ width) :
     ∀ t ≤ 2, HeadBound width (machine.runFrom (machine.initCfg input) t) := by
   intro t ht i
-  interval_cases t <;> fin_cases i
+  have h1 : machine.runFrom (machine.initCfg input) 1 =
+      stepOfTr transition (machine.initCfg input) := by
+    rw [← machine_step]
+    rfl
+  interval_cases t
+  on_goal 2 => rw [h1]
+  on_goal 3 => rw [runFrom_start]
+  all_goals fin_cases i
   all_goals first
     | (change 0 ≤ (0 : ℤ) ∧ 0 ≤ (width : ℤ); exact ⟨le_refl _, Int.natCast_nonneg _⟩)
     | (change 0 ≤ (1 : ℤ) ∧ 1 ≤ (width : ℤ); exact ⟨by decide, by exact_mod_cast hw⟩)
@@ -63,7 +72,8 @@ theorem runFrom_account (w : List Bool) :
   refine Nat.rec ?_ ?_
   · intro ht
     change Represents (w.length + 2).size
-      (machine.runFrom (machine.initCfg (w.map boolEmb)) 2) stTree 1 0 ∧ _
+      (machine.runFrom (machine.initCfg (w.map boolEmb)) 2) stTree 1 0 ∧
+        (machine.runFrom (machine.initCfg (w.map boolEmb)) 2).inputPos.val = 0 + 1 ∧ _
     rw [runFrom_start]
     exact ⟨represents_startCfg _ _ (width_pos w.length), rfl,
       outputString_start _, headBound_start _ _ (width_pos w.length)⟩

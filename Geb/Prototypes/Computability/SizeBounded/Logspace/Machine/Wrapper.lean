@@ -31,6 +31,12 @@ are the argument register, tapes {lit}`2` and {lit}`3` the output register,
 and the compiled program's need is met from tape {lit}`4` up. The input's
 word tape, empty throughout, serves as the suffix emitter's scratch tape.
 
+CSLib selects a machine's transition by choice, so {lit}`machine` is
+noncomputable; {lit}`machineProg` assembles the same machine from the
+computable transition functions of its phases and of the compiled program, and
+{lit}`machine_eq_tm` identifies the two, so that a run of the machine is
+evaluated through the program's transition.
+
 {lit}`machine_emits` composes the count's run, the program's contract
 {name}`Geb.SizeBounded.Logspace.Machine.LOf.correct`, the writer's emission,
 the move and the suffix emission, and identifies the emitted string with the
@@ -46,16 +52,23 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 
 # Main definitions
 
-* {lit}`moveRight` — one move right of a tape's head.
+* {lit}`moveRightTr`, {lit}`moveRight` — the transition, and the machine, of
+  one move right of a tape's head.
 * {lit}`tapes`, {lit}`argReg`, {lit}`outReg`, {lit}`argValuation`,
   {lit}`program` — the tape count, the two registers, the valuation the
   reader produces, and the compiled program at the wrapper's allocation.
 * {lit}`State`, {lit}`machine` — the machine's state type and the machine.
+* {lit}`machineProg` — the machine as a program: its initial state and its
+  transition function, computable, by which a run of the machine is evaluated.
 * {lit}`wordBound`, {lit}`time` — the word bound and the step count on an
   input of a given length.
 
 # Main statements
 
+* {lit}`moveRight_tr` — the move's transition is {lit}`moveRightTr`.
+* {lit}`machine_eq_tm` — the machine is the machine of {lit}`machineProg`.
+* {lit}`machine_q₀`, {lit}`machine_tr` — the machine's initial state and
+  transition agree with those of {lit}`machineProg`.
 * {lit}`moveRight_runsTo` — the move's run.
 * {lit}`machine_emits` — the machine emits the expression's value at the
   input.
@@ -77,12 +90,19 @@ open Geb.SizeBounded.Logspace (LOf Rep den_repSem)
 
 public section
 
+/-- The transition of {lit}`moveRight`. -/
+@[expose] def moveRightTr {k : ℕ} (i : Fin k) (_ : Unit) (_ : Option Bool)
+    (_ : Fin k → Option Bool) : Action k Bool Unit :=
+  { inputTape := 0, workTapes := fun j ↦ (none, if j = i then 1 else 0),
+    output := none, state := none }
+
 /-- One move right of the head of tape {lit}`i`. -/
-@[expose] def moveRight {k : ℕ} (i : Fin k) : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ _ _ :=
-    { inputTape := 0, workTapes := fun j ↦ (none, if j = i then 1 else 0),
-      output := none, state := none }
+@[expose] def moveRight {k : ℕ} (i : Fin k) : MultiTapeTM k Bool Unit := ofTr () (moveRightTr i)
+
+/-- The transition of {name}`moveRight` is {name}`moveRightTr`. -/
+theorem moveRight_tr {k : ℕ} (i : Fin k) (q : Unit) (inp : Option Bool)
+    (work : Fin k → Option Bool) : (moveRight i).tr q inp work = moveRightTr i q inp work :=
+  tr_ofTr _ _ _ _ _
 
 /-- {name}`moveRight` runs one step. -/
 theorem moveRight_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bool Unit input)
@@ -98,7 +118,7 @@ theorem moveRight_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k 
       { cfg with
         state := none
         workTapePos := Function.update cfg.workTapePos i (cfg.workTapePos i + 1) } := by
-    rw [step_of_state _ _ () hq]
+    rw [step_of_state _ _ () hq, moveRight_tr]
     apply Cfg.ext
     · rfl
     · change moveInputPos cfg.inputPos 0 = cfg.inputPos
@@ -115,10 +135,8 @@ theorem moveRight_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k 
   have hlive : cfg.state ≠ none := by
     rw [hq]
     exact Option.some_ne_none _
-  have hout : (moveRight i).outputSymbol cfg = none := by
-    unfold outputSymbol
-    rw [hq]
-    rfl
+  have hout : (moveRight i).outputSymbol cfg = none :=
+    outputSymbol_ofTr_eq_none (fun _ _ _ ↦ rfl) cfg
   have hB := (hpos i).1
   exact RunsTo.ofFamily (moveRight i) (fun _ ↦ cfg) 0 B _ (fun _ _ ↦ hlive)
     (fun _ h ↦ absurd h (by omega)) hhalt rfl (fun _ _ ↦ hout) (fun _ _ j ↦ hpos j)
@@ -153,10 +171,7 @@ output register, with the tapes from {lit}`4` free. -/
 
 /-- The state type of an expression's machine. -/
 abbrev State (e : LOf 1) : Type :=
-  StateOf (countInput (⟨1, lt_tapes e 1 (by omega)⟩ : Fin (tapes e))) ⊕
-    ((program e).State ⊕ (WriterState ⊕ (Unit ⊕
-      StateOf (emitSuffix (⟨3, lt_tapes e 3 (by omega)⟩ : Fin (tapes e))
-        ⟨0, lt_tapes e 0 (by omega)⟩))))
+  CountState ⊕ ((program e).State ⊕ (WriterState ⊕ (Unit ⊕ EmitSuffixState)))
 
 /-- The state type is enumerable, by the compiled program's enumeration and the
 scoped instances for sums and {lit}`Unit`. -/
@@ -166,12 +181,46 @@ instance (e : LOf 1) : FinEnum (State e) :=
 
 /-- The machine of an expression: the count, the compiled program, the writer,
 the move, the suffix emitter. -/
-@[expose] def machine (e : LOf 1) : MultiTapeTM (tapes e) Bool (State e) :=
+@[expose] noncomputable def machine (e : LOf 1) : MultiTapeTM (tapes e) Bool (State e) :=
   seq (countInput ⟨1, lt_tapes e 1 (by omega)⟩)
     (seq (program e).tm
       (seq (writer ⟨2, lt_tapes e 2 (by omega)⟩)
         (seq (moveRight ⟨2, lt_tapes e 2 (by omega)⟩)
           (emitSuffix ⟨3, lt_tapes e 3 (by omega)⟩ ⟨0, lt_tapes e 0 (by omega)⟩))))
+
+/-- An expression's machine as a program: the initial state of the count and the
+transition {name}`countInputTr`, then the compiled program's, then
+{name}`Geb.SizeBounded.Machine.writerTr`, {name}`moveRightTr` and
+{name}`emitSuffixTr`. Its transition is computable, and is evaluated once when the
+program is, so a run evaluated through it does not recompile the expression at
+each step. -/
+@[expose] def machineProg (e : LOf 1) : Prog (tapes e) :=
+  ⟨State e, inferInstance, .inl (.inl (.inl (.inl ()))),
+    seqTr (countInputTr ⟨1, lt_tapes e 1 (by omega)⟩)
+      (seqTr (program e).tr
+        (seqTr (writerTr ⟨2, lt_tapes e 2 (by omega)⟩)
+          (seqTr (moveRightTr ⟨2, lt_tapes e 2 (by omega)⟩)
+            (emitSuffixTr ⟨3, lt_tapes e 3 (by omega)⟩ ⟨0, lt_tapes e 0 (by omega)⟩)
+            (.inl (.inl (.inl ()))))
+          (.inl ()))
+        (.inl (.inl ())))
+      (.inl (program e).q₀)⟩
+
+/-- An expression's machine is the machine of {name}`machineProg`. -/
+theorem machine_eq_tm (e : LOf 1) : machine e = (machineProg e).tm := by
+  simp only [machine, countInput_eq_ofTr, Prog.tm, writer_eq_ofTr, moveRight, emitSuffix_eq_ofTr,
+    seq_ofTr, machineProg]
+
+/-- The initial state of an expression's machine is that of {name}`machineProg`. -/
+theorem machine_q₀ (e : LOf 1) : (machine e).q₀ = (machineProg e).q₀ := rfl
+
+/-- The transition of an expression's machine agrees with that of
+{name}`machineProg`. -/
+theorem machine_tr (e : LOf 1) (q : State e) (inp : Option Bool)
+    (work : Fin (tapes e) → Option Bool) :
+    (machine e).tr q inp work = (machineProg e).tr q inp work := by
+  rw [machine_eq_tm]
+  exact tr_ofTr _ _ _ _ _
 
 /-- The word bound the machine runs under: the expression's constant. -/
 @[expose] def wordBound (e : LOf 1) : ℕ := nsiConst e.1.1.1

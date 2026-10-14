@@ -111,9 +111,8 @@ theorem computableInTimeAndSpace_validBool :
     bitTreeScanner.ComputesFunInTimeAndSpace (listEmb boolEmb) (listEmb boolEmb)
       (fun w : List Bool ↦ [validBool w]) (fun w ↦ 14 * w.length + 4)
       (fun w ↦ 3 * (w.length.bits.length + 4)) := fun w ↦
-  ⟨totalTime w, totalTime_le w,
-    bitTreeScanner.spaceUsed (bitTreeScanner.initCfg (w.map boolEmb)) (totalTime w),
-    spaceUsed_le w _ _ (headsLE_runFrom w), halts_at w,
-    by rw [initCfg_runFrom_output]; exact outputString_eq w, rfl⟩
+  computesInTimeAndSpace_of_halted (halts_at w)
+    (by rw [initCfg_runFrom_output]; exact outputString_eq w) rfl (totalTime_le w)
+    (spaceUsed_le w _ _ (headsLE_runFrom w))
 
 end Geb.BitTreeScanner

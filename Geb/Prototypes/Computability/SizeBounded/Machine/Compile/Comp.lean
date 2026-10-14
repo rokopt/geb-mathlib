@@ -90,7 +90,7 @@ theorem correct_comp {k n m : ℕ} (c : Direction (.comp n m) → Σ i, Compiled
       (fun i ↦ ((transportP (h (.inr i)) (c (.inr i)).2).prog env (r i) (free + m)
         (harg i)).State)
       (fun i ↦ ((transportP (h (.inr i)) (c (.inr i)).2).prog env (r i) (free + m)
-        (harg i)).tm)).2 (composeFin m F) (m * finMax m (fun i ↦ Tf (.inr i) B) + 1) B :=
+        (harg i)).tm)) (composeFin m F) (m * finMax m (fun i ↦ Tf (.inr i) B) + 1) B :=
     Transforms.seqFin B (finMax m fun i ↦ Tf (.inr i) B) m _ _ F
       (fun i ↦ Transforms.mono_time (hFT i) (le_finMax m (fun i ↦ Tf (.inr i) B) i)) hFB
   -- the head's environment after the arguments have run
@@ -103,7 +103,9 @@ theorem correct_comp {k n m : ℕ} (c : Direction (.comp n m) → Σ i, Compiled
       transport (hs (.inr i)) (s (.inr i)).2 (σ ∘ env) :=
     composeFin_fresh free m (by omega) F
       (fun l τ ↦ transport (hs (.inr l)) (s (.inr l)).2 (τ ∘ env)) hg hFout hFframe
-  refine ⟨fun σ ↦ G (composeFin m F σ), Transforms.seq hseq hGT (composeFin_bounded B m F hFB),
+  refine ⟨fun σ ↦ G (composeFin m F σ), Transforms.of_tm_eq
+    ((seqProg_tm _ _).trans (by rw [seqFinProg_tm]; rfl))
+    (Transforms.seq hseq hGT (composeFin_bounded B m F hFB)),
     fun σ ↦ ?_, fun σ i hi hio ↦ ?_, fun σ hσ ↦ hGB _ (composeFin_bounded B m F hFB σ hσ)⟩
   · change G (composeFin m F σ) out = _
     rw [hGout]

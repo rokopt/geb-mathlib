@@ -205,8 +205,8 @@ theorem srnLoop1_contract {k a b : ℕ} (free : ℕ) (hk : free + (4 * b + 6) �
       rfl
     · exact (hvals input _ j i1 (by omega) henv l').2
   refine ⟨?_, ?_⟩
-  · refine TransformsIn.whileReg ⟨free + 2, hf2⟩ hT _
-      (fun input σ ↦ counterValue (σ ⟨free + 2, hf2⟩)) (fun n ↦ n) ?_ ?_ ?_
+  · refine TransformsIn.of_tm_eq (Prog.tm_whileReg _ _) (TransformsIn.whileReg ⟨free + 2, hf2⟩ hT _
+      (fun input σ ↦ counterValue (σ ⟨free + 2, hf2⟩)) (fun n ↦ n) ?_ ?_ ?_)
     · intro input σ ⟨_, _, ⟨l, hl, hC⟩, _, _⟩
       rw [hC, counterValue_counterWord]
       exact hl
@@ -391,8 +391,8 @@ theorem srnLoop2_contract {k a b : ℕ} (free : ℕ) (hk : free + (4 * b + 6) �
     · rw [Function.iterate_succ_apply']
       exact (hvals input _ x0 _ hRj henv l').2
   refine ⟨?_, ?_⟩
-  · refine TransformsIn.whileReg ⟨free + 5, hf5⟩ hT _
-      (fun input σ ↦ (σ ⟨free + 5, hf5⟩).length) (fun _ ↦ M) ?_ ?_ ?_
+  · refine TransformsIn.of_tm_eq (Prog.tm_whileReg _ _) (TransformsIn.whileReg ⟨free + 5, hf5⟩ hT _
+      (fun input σ ↦ (σ ⟨free + 5, hf5⟩).length) (fun _ ↦ M) ?_ ?_ ?_)
     · intro input σ ⟨_, _, hR, _, _, _⟩
       exact hR
     · intro input σ ⟨h0, h1, hR, hvals0, hwf, hp⟩ j hj

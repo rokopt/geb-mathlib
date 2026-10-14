@@ -29,13 +29,20 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {lit}`Classical.choice` through Cslib's
 {name}`Turing.Cfg.inputSymbol`.
 
+The machine is built by {name}`Turing.MultiTapeTM.ofTr` from a transition
+function named after it with the suffix {lit}`Tr`, which is computable; the
+machine's own transition, selected by choice in CSLib, agrees with it.
+
 # Main definitions
 
+* {lit}`sbsWalkTr` — the transition function of the machine below.
 * {lit}`sbsWalk` — the machine of the size-bounded successor.
 * {lit}`sbsCfg` — the closed form of its configurations.
 
 # Main statements
 
+* {lit}`sbsWalk_tr` — the machine's transition is its transition
+  function.
 * {lit}`sbsWalk_runsTo` — the run of the machine, naming the halted
   configuration and the step count.
 
@@ -52,24 +59,33 @@ open Turing MultiTapeTM
 
 public section
 
+/-- The transition of {lit}`sbsWalk`. -/
+@[expose] def sbsWalkTr {k : ℕ} (b : Bool) (x y j : Fin k) (_ : Unit) (_ : Option Bool)
+    (work : Fin k → Option Bool) : Action k Bool Unit :=
+  match work x with
+  | some c =>
+    { inputTape := 0
+      workTapes := fun l ↦ if l = j then (some (some c), 1) else if l = x then (none, 1)
+        else if l = y then (none, if (work y).isSome then 1 else 0) else (none, 0)
+      output := none, state := some () }
+  | none =>
+    { inputTape := 0
+      workTapes := fun l ↦
+        if l = j then (if (work y).isSome then (some (some b), 1) else (none, 0)) else (none, 0)
+      output := none, state := none }
+
 /-- Copy tape {lit}`x` onto tape {lit}`j` as {name}`copyWalk` does, moving
 {lit}`y`'s head right alongside while it reads a bit; when {lit}`x` reads a
 blank, write {lit}`b` on {lit}`j` and move its head right if {lit}`y` still
 reads a bit, and halt. -/
-@[expose] def sbsWalk {k : ℕ} (b : Bool) (x y j : Fin k) : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ _ work :=
-    match work x with
-    | some c =>
-      { inputTape := 0
-        workTapes := fun l ↦ if l = j then (some (some c), 1) else if l = x then (none, 1)
-          else if l = y then (none, if (work y).isSome then 1 else 0) else (none, 0)
-        output := none, state := some () }
-    | none =>
-      { inputTape := 0
-        workTapes := fun l ↦
-          if l = j then (if (work y).isSome then (some (some b), 1) else (none, 0)) else (none, 0)
-        output := none, state := none }
+@[expose] def sbsWalk {k : ℕ} (b : Bool) (x y j : Fin k) : MultiTapeTM k Bool Unit :=
+  ofTr () (sbsWalkTr b x y j)
+
+/-- The transition of {name}`sbsWalk` is {name}`sbsWalkTr`. -/
+theorem sbsWalk_tr {k : ℕ} (b : Bool) (x y j : Fin k) (q : Unit) (inp : Option Bool)
+    (work : Fin k → Option Bool) :
+    (sbsWalk b x y j).tr q inp work = sbsWalkTr b x y j q inp work :=
+  tr_ofTr _ _ _ _ _
 
 /-- The configuration of {name}`sbsWalk` after {lit}`s` steps from parked
 heads, tape {lit}`x` holding {lit}`u`, tape {lit}`y` holding {lit}`v` and tape
@@ -105,22 +121,22 @@ theorem sbsWalk_runsTo {k : ℕ} {input : List Bool} (b : Bool) (x y j : Fin k)
             (min u.length v.length : ℕ)) j ((sbsSem b u v).length : ℤ) }
       (u.length + 1) B := by
   have htrS : ∀ (inp : Option Bool) (work : Fin k → Option Bool) (c : Bool), work x = some c →
-      (sbsWalk b x y j).tr () inp work =
+      sbsWalkTr b x y j () inp work =
         { inputTape := 0
           workTapes := fun l ↦ if l = j then (some (some c), 1) else if l = x then (none, 1)
             else if l = y then (none, if (work y).isSome then 1 else 0) else (none, 0)
           output := none, state := some () } := by
     intro inp work c hc
-    simp only [sbsWalk, hc]
+    simp only [sbsWalkTr, hc]
   have htrN : ∀ (inp : Option Bool) (work : Fin k → Option Bool), work x = none →
-      (sbsWalk b x y j).tr () inp work =
+      sbsWalkTr b x y j () inp work =
         { inputTape := 0
           workTapes := fun l ↦
             if l = j then (if (work y).isSome then (some (some b), 1) else (none, 0))
             else (none, 0)
           output := none, state := none } := by
     intro inp work hc
-    simp only [sbsWalk, hc]
+    simp only [sbsWalkTr, hc]
   have hsymX : ∀ s : ℕ, (sbsCfg x y j cfg u v s).workTapeSymbols x = tapeOf u (s : ℤ) := by
     intro s
     change Function.update cfg.workTapes j (tapeOf (u.drop (u.length - s))) x
@@ -162,7 +178,7 @@ theorem sbsWalk_runsTo {k : ℕ} {input : List Bool} (b : Bool) (x y j : Fin k)
     have hb : (sbsCfg x y j cfg u v s).workTapeSymbols x = some (u.reverse[s]'hidx) := by
       rw [hsymX s, tapeOf_of_lt u _ (by omega) (by omega)]
       simp
-    rw [step_of_state _ _ () rfl, htrS _ _ _ hb, hmove s]
+    rw [step_of_state _ _ () rfl, sbsWalk_tr, htrS _ _ _ hb, hmove s]
     apply Cfg.ext
     · rfl
     · change moveInputPos cfg.inputPos 0 = cfg.inputPos
@@ -250,7 +266,7 @@ theorem sbsWalk_runsTo {k : ℕ} {input : List Bool} (b : Bool) (x y j : Fin k)
             (min u.length v.length : ℕ)) j ((sbsSem b u v).length : ℤ) } := by
     have hb : (sbsCfg x y j cfg u v u.length).workTapeSymbols x = none := by
       rw [hsymX _, tapeOf_of_le u _ (by omega)]
-    rw [step_of_state _ _ () rfl, htrN _ _ hb]
+    rw [step_of_state _ _ () rfl, sbsWalk_tr, htrN _ _ hb]
     unfold sbsSem
     by_cases h : u.length + 1 ≤ v.length
     · rw [hyS u.length (by omega), ite_eq_left rfl, ite_eq_left h]
@@ -314,8 +330,7 @@ theorem sbsWalk_runsTo {k : ℕ} {input : List Bool} (b : Bool) (x y j : Fin k)
       · exact List.append_nil _
   have hout : ∀ s : ℕ, (sbsWalk b x y j).outputSymbol (sbsCfg x y j cfg u v s) = none := by
     intro s
-    change ((sbsWalk b x y j).tr () (sbsCfg x y j cfg u v s).inputSymbol
-      (sbsCfg x y j cfg u v s).workTapeSymbols).output = none
+    rw [outputSymbol_of_state rfl, sbsWalk_tr]
     rcases hw : (sbsCfg x y j cfg u v s).workTapeSymbols x with _ | c
     · rw [htrN _ _ hw]
     · rw [htrS _ _ _ hw]

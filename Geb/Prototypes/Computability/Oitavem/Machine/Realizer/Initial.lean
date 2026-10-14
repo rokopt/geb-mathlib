@@ -27,13 +27,18 @@ calls.
 
 ## Main statements
 
+* {lit}`Generator.numericSubProgram_eq_ofTr`, {lit}`Generator.iterPredProgram_eq_ofTr`
+  and {lit}`Generator.condProgram_eq_ofTr` identify the programs with the machines built
+  from their transition functions, {lit}`Generator.numericSubProgramTr`,
+  {lit}`Generator.iterPredProgramTr` and {lit}`Generator.condProgramTr`.
 * {lit}`Initial.realize` realizes every initial function on polynomially bounded
   generated arguments over a shared protected environment.
 
 ## Implementation notes
 
 The programs use executable copies and explicit tape layouts. Their machine
-contracts inherit {lit}`Classical.choice` from CSLib.
+contracts inherit {lit}`Classical.choice` from CSLib, and the programs, sequencing
+machines whose transitions CSLib selects by choice, are noncomputable.
 
 ## Tags
 
@@ -56,7 +61,7 @@ variable {m : ℕ} {Pre : List Bool → (Fin m → List Bool) → Prop}
 
 /-- Assemble length and sentinel-digit readers for a streaming subtraction.
 All four readers reuse the same private tapes after the environment and seven ports. -/
-@[expose] def numericSubProgram (G : Generator m Pre V) (H : Generator m Pre W) :=
+@[expose] noncomputable def numericSubProgram (G : Generator m Pre V) (H : Generator m Pre W) :=
   let K := G.tapes + H.tapes + 2
   let src : Fin m → Fin (m + 7) := Fin.castAdd 7
   let L₁ := onTapes (G.lengthReader src (Fin.natAdd m 4))
@@ -68,6 +73,29 @@ All four readers reuse the same private tapes after the environment and seven po
   let P₂ := onTapes ((G.appendBit true).atReader src (Fin.natAdd m 5) (Fin.natAdd m 1))
     (padLayout (m + 7) (G.tapes + 2) K (by omega))
   numericSubGenerator L₁ L₂ P₁ P₂ (fun j ↦ (j.natAdd m).castAdd K)
+
+/-- The initial state and the transition of {name}`numericSubProgram`. -/
+@[expose] def numericSubProgramTr (G : Generator m Pre V) (H : Generator m Pre W) :=
+  let K := G.tapes + H.tapes + 2
+  let src : Fin m → Fin (m + 7) := Fin.castAdd 7
+  let L₁ := onTapesTr (G.lengthReaderTr src (Fin.natAdd m 4))
+    (padLayout (m + 7) (G.tapes + 1) K (by omega))
+  let L₂ := onTapesTr (H.lengthReaderTr src (Fin.natAdd m 5))
+    (padLayout (m + 7) (H.tapes + 1) K (by omega))
+  let P₁ := onTapesTr ((H.appendBit true).atReaderTr src (Fin.natAdd m 5) (Fin.natAdd m 0))
+    (padLayout (m + 7) (H.tapes + 2) K (by omega))
+  let P₂ := onTapesTr ((G.appendBit true).atReaderTr src (Fin.natAdd m 5) (Fin.natAdd m 1))
+    (padLayout (m + 7) (G.tapes + 2) K (by omega))
+  ((.inl (.inl (.inl (.inl (.inl (.inl (.inl ())))))) : StateOf (G.numericSubProgram H)),
+    numericSubGeneratorTr L₁ L₂ (.inl (.inl (.inl (.inl ())))) P₁ (.inl (.inl (.inl (.inl ()))))
+      P₂ (.inl (.inl (.inl (.inl ())))) (fun j ↦ (j.natAdd m).castAdd K))
+
+/-- {name}`numericSubProgram` is the machine built from {name}`numericSubProgramTr`. -/
+theorem numericSubProgram_eq_ofTr (G : Generator m Pre V) (H : Generator m Pre W) :
+    G.numericSubProgram H = ofTr (G.numericSubProgramTr H).1 (G.numericSubProgramTr H).2 := by
+  simp only [numericSubProgram, numericSubProgramTr, lengthReader_eq_ofTr, atReader_eq_ofTr,
+    onTapes_ofTr]
+  erw [onTapes_ofTr, onTapes_ofTr, numericSubGenerator_ofTr]
 
 /-- The assembled subtraction program has finite control. -/
 theorem numericSubProgram_finite (G : Generator m Pre V) (H : Generator m Pre W) :
@@ -91,9 +119,11 @@ length and digit readers, even when the words are too long to store. -/
     { finite := G.numericSubProgram_finite H
       env := fun i ↦ (i.castAdd 7).castAdd (G.tapes + H.tapes + 2)
       env_injective := (Fin.castAdd_injective _ _).comp (Fin.castAdd_injective _ _)
-      program := G.numericSubProgram H
+      q₀ := (G.numericSubProgramTr H).1
+      tr := (G.numericSubProgramTr H).2
       space := G.space + H.space + C + 1
       correct B hB := by
+        rw [← numericSubProgram_eq_ofTr]
         let K := G.tapes + H.tapes + 2
         let src : Fin m → Fin (m + 7) := Fin.castAdd 7
         let r (j : Fin 7) : Fin (m + 7 + K) := (j.natAdd m).castAdd K
@@ -171,7 +201,7 @@ length and digit readers, even when the words are too long to store. -/
     }⟩
 
 /-- Assemble the length and digit readers for iterated string predecessor. -/
-@[expose] def iterPredProgram (G : Generator m Pre V) (H : Generator m Pre W) :=
+@[expose] noncomputable def iterPredProgram (G : Generator m Pre V) (H : Generator m Pre W) :=
   let K := G.tapes + H.tapes + 2
   let src : Fin m → Fin (m + 6) := Fin.castAdd 6
   let L₁ := onTapes (G.lengthReader src (Fin.natAdd m 0))
@@ -182,6 +212,26 @@ length and digit readers, even when the words are too long to store. -/
     (padLayout (m + 6) (H.tapes + 2) K (by omega))
   iterPredGenerator L₁ L₂ P (fun j ↦ (j.castSucc.natAdd m).castAdd K)
     ((Fin.natAdd m 5).castAdd K)
+
+/-- The initial state and the transition of {name}`iterPredProgram`. -/
+@[expose] def iterPredProgramTr (G : Generator m Pre V) (H : Generator m Pre W) :=
+  let K := G.tapes + H.tapes + 2
+  let src : Fin m → Fin (m + 6) := Fin.castAdd 6
+  let L₁ := onTapesTr (G.lengthReaderTr src (Fin.natAdd m 0))
+    (padLayout (m + 6) (G.tapes + 1) K (by omega))
+  let L₂ := onTapesTr (H.lengthReaderTr src (Fin.natAdd m 5))
+    (padLayout (m + 6) (H.tapes + 1) K (by omega))
+  let P := onTapesTr (H.atReaderTr src (Fin.natAdd m 2) (Fin.natAdd m 4))
+    (padLayout (m + 6) (H.tapes + 2) K (by omega))
+  ((.inl (.inl (.inl (.inl (.inl ())))) : StateOf (G.iterPredProgram H)),
+    iterPredGeneratorTr L₁ L₂ (.inl (.inl (.inl (.inl ())))) P (.inl (.inl (.inl (.inl ()))))
+      (fun j ↦ (j.castSucc.natAdd m).castAdd K) ((Fin.natAdd m 5).castAdd K))
+
+/-- {name}`iterPredProgram` is the machine built from {name}`iterPredProgramTr`. -/
+theorem iterPredProgram_eq_ofTr (G : Generator m Pre V) (H : Generator m Pre W) :
+    G.iterPredProgram H = ofTr (G.iterPredProgramTr H).1 (G.iterPredProgramTr H).2 := by
+  simp only [iterPredProgram, iterPredProgramTr, lengthReader_eq_ofTr, atReader_eq_ofTr,
+    onTapes_ofTr, iterPredGenerator_ofTr]
 
 /-- The iterated-predecessor program has finite control. -/
 theorem iterPredProgram_finite (G : Generator m Pre V) (H : Generator m Pre W) :
@@ -204,9 +254,11 @@ argument, after counting the first argument. -/
     { finite := G.iterPredProgram_finite H
       env := fun i ↦ (i.castAdd 6).castAdd (G.tapes + H.tapes + 2)
       env_injective := (Fin.castAdd_injective _ _).comp (Fin.castAdd_injective _ _)
-      program := G.iterPredProgram H
+      q₀ := (G.iterPredProgramTr H).1
+      tr := (G.iterPredProgramTr H).2
       space := G.space + H.space + C + 1
       correct B hB := by
+        rw [← iterPredProgram_eq_ofTr]
         let K := G.tapes + H.tapes + 2
         let src : Fin m → Fin (m + 6) := Fin.castAdd 6
         let r (j : Fin 6) : Fin (m + 6 + K) := (j.natAdd m).castAdd K
@@ -282,12 +334,29 @@ argument, after counting the first argument. -/
     }⟩
 
 /-- Test one generated word and run the selected generated branch in shared scratch. -/
-@[expose] def condProgram (Q : Generator m Pre W)
+@[expose] noncomputable def condProgram (Q : Generator m Pre W)
     {U : Bool → List Bool → (Fin m → List Bool) → List Bool}
     (P : (b : Bool) → Generator m Pre (U b)) :=
   let K := Q.tapes + (P false).tapes + (P true).tapes
   let hP (b : Bool) : (P b).tapes ≤ K := by cases b <;> dsimp [K] <;> omega
   condGenerator (Q.pad K (by omega)).program (fun b ↦ ((P b).pad K (hP b)).program)
+
+/-- The initial state and the transition of {name}`condProgram`. -/
+@[expose] def condProgramTr (Q : Generator m Pre W)
+    {U : Bool → List Bool → (Fin m → List Bool) → List Bool}
+    (P : (b : Bool) → Generator m Pre (U b)) :=
+  let K := Q.tapes + (P false).tapes + (P true).tapes
+  let hP (b : Bool) : (P b).tapes ≤ K := by cases b <;> dsimp [K] <;> omega
+  let R := Q.pad K (by omega)
+  ((.inl (.inl (.inl (.inl ()))) : StateOf (Q.condProgram P)),
+    condGeneratorTr R.tr R.q₀ fun b ↦ (((P b).pad K (hP b)).q₀, ((P b).pad K (hP b)).tr))
+
+/-- {name}`condProgram` is the machine built from {name}`condProgramTr`. -/
+theorem condProgram_eq_ofTr (Q : Generator m Pre W)
+    {U : Bool → List Bool → (Fin m → List Bool) → List Bool}
+    (P : (b : Bool) → Generator m Pre (U b)) :
+    Q.condProgram P = ofTr (Q.condProgramTr P).1 (Q.condProgramTr P).2 :=
+  condGenerator_ofTr _ _ _ _
 
 /-- Conditional assembly preserves finite control. -/
 theorem condProgram_finite (Q : Generator m Pre W)
@@ -309,9 +378,11 @@ theorem condProgram_finite (Q : Generator m Pre W)
     { finite := Q.condProgram_finite P
       env := fun i ↦ (i.castAdd (Q.tapes + (P false).tapes + (P true).tapes)).succ
       env_injective := (Fin.succ_injective _).comp (Fin.castAdd_injective _ _)
-      program := Q.condProgram P
+      q₀ := (Q.condProgramTr P).1
+      tr := (Q.condProgramTr P).2
       space := Q.space + (P false).space + (P true).space + C
       correct B hB := by
+        rw [← condProgram_eq_ofTr]
         let K := Q.tapes + (P false).tapes + (P true).tapes
         have hkQ : Q.tapes ≤ K := by dsimp [K]; omega
         have hkP (b : Bool) : (P b).tapes ≤ K := by cases b <;> dsimp [K] <;> omega

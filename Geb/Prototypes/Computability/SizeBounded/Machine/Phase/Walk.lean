@@ -26,8 +26,14 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {lit}`Classical.choice` through Cslib's
 {name}`Turing.Cfg.inputSymbol`.
 
+Each machine is built by {name}`Turing.MultiTapeTM.ofTr` from a transition
+function named after it with the suffix {lit}`Tr`, which is computable; the
+machine's own transition, selected by choice in CSLib, agrees with it.
+
 # Main definitions
 
+* {lit}`copyWalkTr`, {lit}`revWalkTr` — the transition
+  functions of the machines below.
 * {lit}`copyWalk` — copy one register onto an empty one.
 * {lit}`revWalk` — copy the reverse of one register onto an empty one.
 * {lit}`copyCfg`, {lit}`revCfg` — the closed forms of the two sweeps'
@@ -35,6 +41,8 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 
 # Main statements
 
+* {lit}`copyWalk_tr`, {lit}`revWalk_tr` —
+  the machines' transitions are their transition functions.
 * {lit}`copyWalk_runsTo`, {lit}`revWalk_runsTo` — the run of each machine,
   naming the halted configuration and the step count.
 
@@ -51,35 +59,53 @@ open Turing MultiTapeTM
 
 public section
 
+/-- The transition of {lit}`copyWalk`. -/
+@[expose] def copyWalkTr {k : ℕ} (i j : Fin k) (_ : Unit) (_ : Option Bool)
+    (work : Fin k → Option Bool) : Action k Bool Unit :=
+  match work i with
+  | some b =>
+    { inputTape := 0
+      workTapes := fun l ↦ if l = j then (some (some b), 1) else if l = i then (none, 1)
+        else (none, 0)
+      output := none, state := some () }
+  | none =>
+    { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none }
+
 /-- Copy tape {lit}`i` onto tape {lit}`j` cell by cell, both heads moving
 right, until {lit}`i` reads a blank; halt without moving. -/
-@[expose] def copyWalk {k : ℕ} (i j : Fin k) : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ _ work :=
-    match work i with
-    | some b =>
-      { inputTape := 0
-        workTapes := fun l ↦ if l = j then (some (some b), 1) else if l = i then (none, 1)
-          else (none, 0)
-        output := none, state := some () }
-    | none =>
-      { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none }
+@[expose] def copyWalk {k : ℕ} (i j : Fin k) : MultiTapeTM k Bool Unit :=
+  ofTr () (copyWalkTr i j)
+
+/-- The transition of {name}`copyWalk` is {name}`copyWalkTr`. -/
+theorem copyWalk_tr {k : ℕ} (i j : Fin k) (q : Unit) (inp : Option Bool)
+    (work : Fin k → Option Bool) :
+    (copyWalk i j).tr q inp work = copyWalkTr i j q inp work :=
+  tr_ofTr _ _ _ _ _
+
+/-- The transition of {lit}`revWalk`. -/
+@[expose] def revWalkTr {k : ℕ} (i j : Fin k) (_ : Unit) (_ : Option Bool)
+    (work : Fin k → Option Bool) : Action k Bool Unit :=
+  match work i with
+  | some b =>
+    { inputTape := 0
+      workTapes := fun l ↦ if l = j then (some (some b), 1) else if l = i then (none, -1)
+        else (none, 0)
+      output := none, state := some () }
+  | none =>
+    { inputTape := 0, workTapes := fun l ↦ (none, if l = i then 1 else 0),
+      output := none, state := none }
 
 /-- Copy tape {lit}`i` onto tape {lit}`j` cell by cell, {lit}`i`'s head moving
 left and {lit}`j`'s right, until {lit}`i` reads a blank; then move {lit}`i`
 right and halt. -/
-@[expose] def revWalk {k : ℕ} (i j : Fin k) : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ _ work :=
-    match work i with
-    | some b =>
-      { inputTape := 0
-        workTapes := fun l ↦ if l = j then (some (some b), 1) else if l = i then (none, -1)
-          else (none, 0)
-        output := none, state := some () }
-    | none =>
-      { inputTape := 0, workTapes := fun l ↦ (none, if l = i then 1 else 0),
-        output := none, state := none }
+@[expose] def revWalk {k : ℕ} (i j : Fin k) : MultiTapeTM k Bool Unit :=
+  ofTr () (revWalkTr i j)
+
+/-- The transition of {name}`revWalk` is {name}`revWalkTr`. -/
+theorem revWalk_tr {k : ℕ} (i j : Fin k) (q : Unit) (inp : Option Bool)
+    (work : Fin k → Option Bool) :
+    (revWalk i j).tr q inp work = revWalkTr i j q inp work :=
+  tr_ofTr _ _ _ _ _
 
 /-- The configuration of {name}`copyWalk` after {lit}`s` steps from parked
 heads, tape {lit}`i` holding {lit}`w` and tape {lit}`j` empty. -/
@@ -106,18 +132,18 @@ theorem copyWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠
           Function.update (Function.update cfg.workTapePos i (w.length : ℤ)) j (w.length : ℤ) }
       (w.length + 1) B := by
   have htrS : ∀ (inp : Option Bool) (work : Fin k → Option Bool) (b : Bool), work i = some b →
-      (copyWalk i j).tr () inp work =
+      copyWalkTr i j () inp work =
         { inputTape := 0
           workTapes := fun l ↦ if l = j then (some (some b), 1) else if l = i then (none, 1)
             else (none, 0)
           output := none, state := some () } := by
     intro inp work b hb
-    simp only [copyWalk, hb]
+    simp only [copyWalkTr, hb]
   have htrN : ∀ (inp : Option Bool) (work : Fin k → Option Bool), work i = none →
-      (copyWalk i j).tr () inp work =
+      copyWalkTr i j () inp work =
         { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none } := by
     intro inp work hb
-    simp only [copyWalk, hb]
+    simp only [copyWalkTr, hb]
   have hsym : ∀ s : ℕ, (copyCfg i j cfg w s).workTapeSymbols i = tapeOf w (s : ℤ) := by
     intro s
     change Function.update cfg.workTapes j (tapeOf (w.drop (w.length - s))) i
@@ -135,7 +161,7 @@ theorem copyWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠
     have hb : (copyCfg i j cfg w s).workTapeSymbols i = some (w.reverse[s]'hidx) := by
       rw [hsym s, tapeOf_of_lt w _ (by omega) (by omega)]
       simp
-    rw [step_of_state _ _ () rfl, htrS _ _ _ hb]
+    rw [step_of_state _ _ () rfl, copyWalk_tr, htrS _ _ _ hb]
     apply Cfg.ext
     · rfl
     · change moveInputPos cfg.inputPos 0 = cfg.inputPos
@@ -199,7 +225,7 @@ theorem copyWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠
             (w.length : ℤ) } := by
     have hb : (copyCfg i j cfg w w.length).workTapeSymbols i = none := by
       rw [hsym _, tapeOf_of_le w _ (by omega)]
-    rw [step_of_state _ _ () rfl, htrN _ _ hb]
+    rw [step_of_state _ _ () rfl, copyWalk_tr, htrN _ _ hb]
     apply Cfg.ext
     · rfl
     · change moveInputPos cfg.inputPos 0 = cfg.inputPos
@@ -216,8 +242,7 @@ theorem copyWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠
     · exact List.append_nil _
   have hout : ∀ s : ℕ, (copyWalk i j).outputSymbol (copyCfg i j cfg w s) = none := by
     intro s
-    change ((copyWalk i j).tr () (copyCfg i j cfg w s).inputSymbol
-      (copyCfg i j cfg w s).workTapeSymbols).output = none
+    rw [outputSymbol_of_state rfl, copyWalk_tr]
     rcases hw : (copyCfg i j cfg w s).workTapeSymbols i with _ | b
     · rw [htrN _ _ hw]
     · rw [htrS _ _ _ hw]
@@ -273,19 +298,19 @@ theorem revWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠ 
         workTapePos := Function.update (Function.update cfg.workTapePos i 0) j (w.length : ℤ) }
       (w.length + 1) B := by
   have htrS : ∀ (inp : Option Bool) (work : Fin k → Option Bool) (b : Bool), work i = some b →
-      (revWalk i j).tr () inp work =
+      revWalkTr i j () inp work =
         { inputTape := 0
           workTapes := fun l ↦ if l = j then (some (some b), 1) else if l = i then (none, -1)
             else (none, 0)
           output := none, state := some () } := by
     intro inp work b hb
-    simp only [revWalk, hb]
+    simp only [revWalkTr, hb]
   have htrN : ∀ (inp : Option Bool) (work : Fin k → Option Bool), work i = none →
-      (revWalk i j).tr () inp work =
+      revWalkTr i j () inp work =
         { inputTape := 0, workTapes := fun l ↦ (none, if l = i then 1 else 0),
           output := none, state := none } := by
     intro inp work hb
-    simp only [revWalk, hb]
+    simp only [revWalkTr, hb]
   have hsym : ∀ s : ℕ, (revCfg i j cfg w s).workTapeSymbols i =
       tapeOf w ((w.length : ℤ) - 1 - s) := by
     intro s
@@ -307,7 +332,7 @@ theorem revWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠ 
       omega
     have hb : (revCfg i j cfg w s).workTapeSymbols i = some (w[s]'hs) := by
       rw [hsym s, tapeOf_of_lt w _ (by omega) (by omega), hrev]
-    rw [step_of_state _ _ () rfl, htrS _ _ _ hb]
+    rw [step_of_state _ _ () rfl, revWalk_tr, htrS _ _ _ hb]
     apply Cfg.ext
     · rfl
     · change moveInputPos cfg.inputPos 0 = cfg.inputPos
@@ -371,7 +396,7 @@ theorem revWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠ 
           Function.update (Function.update cfg.workTapePos i 0) j (w.length : ℤ) } := by
     have hb : (revCfg i j cfg w w.length).workTapeSymbols i = none := by
       rw [hsym _, tapeOf_neg w _ (by omega)]
-    rw [step_of_state _ _ () rfl, htrN _ _ hb]
+    rw [step_of_state _ _ () rfl, revWalk_tr, htrN _ _ hb]
     apply Cfg.ext
     · rfl
     · change moveInputPos cfg.inputPos 0 = cfg.inputPos
@@ -408,8 +433,7 @@ theorem revWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠ 
     · exact List.append_nil _
   have hout : ∀ s : ℕ, (revWalk i j).outputSymbol (revCfg i j cfg w s) = none := by
     intro s
-    change ((revWalk i j).tr () (revCfg i j cfg w s).inputSymbol
-      (revCfg i j cfg w s).workTapeSymbols).output = none
+    rw [outputSymbol_of_state rfl, revWalk_tr]
     rcases hw : (revCfg i j cfg w s).workTapeSymbols i with _ | b
     · rw [htrN _ _ hw]
     · rw [htrS _ _ _ hw]

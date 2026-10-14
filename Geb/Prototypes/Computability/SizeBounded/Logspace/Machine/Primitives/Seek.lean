@@ -30,10 +30,13 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 # Main definitions
 
 * {lit}`seekLeft` — the seek.
+* {lit}`seekLeftTr` — its transition function.
 * {lit}`SeekState` — its state type.
 
 # Main statements
 
+* {lit}`seekLeft_eq_ofTr` — the seek is the machine built from
+  {lit}`seekLeftTr`.
 * {lit}`seekLeft_runsTo` — from a parked configuration whose counter holds
   {lit}`l` and whose input head is at least {lit}`l` cells in, the seek runs
   to the configuration with the head {lit}`l` cells further left and the
@@ -58,8 +61,18 @@ abbrev SeekState : Type := Unit ⊕ (Unit ⊕ (Fin 3 ⊕ (Unit ⊕ Unit)))
 
 /-- Move the input head left as many cells as the counter in {lit}`S` holds,
 consuming the counter. -/
-@[expose] def seekLeft {k : ℕ} (S : Fin k) : MultiTapeTM k Bool SeekState :=
+@[expose] noncomputable def seekLeft {k : ℕ} (S : Fin k) : MultiTapeTM k Bool SeekState :=
   whileNonblank (some S) (seq inBack (dec S))
+
+/-- The transition of {name}`seekLeft`: {name}`whileNonblankTr` of
+{name}`Geb.SizeBounded.Machine.inBackTr` then {name}`decTr`. -/
+@[expose] def seekLeftTr {k : ℕ} (S : Fin k) :
+    SeekState → Option Bool → (Fin k → Option Bool) → Action k Bool SeekState :=
+  whileNonblankTr (some S) (seqTr inBackTr (decTr S) (.inl 0)) (.inl ())
+
+/-- {name}`seekLeft` is the machine built from {name}`seekLeftTr`. -/
+theorem seekLeft_eq_ofTr {k : ℕ} (S : Fin k) : seekLeft S = ofTr (.inl ()) (seekLeftTr S) := by
+  simp only [seekLeft, inBack, dec_eq_ofTr, seq_ofTr, whileNonblank_ofTr, seekLeftTr]
 
 /-- The run of the seek: from a parked configuration in its initial state
 holding {lit}`σ` with the counter {lit}`l` in {lit}`S` and the input head at

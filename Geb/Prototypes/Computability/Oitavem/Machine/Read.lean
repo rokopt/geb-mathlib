@@ -21,11 +21,18 @@ with parked work heads and the input head at its home position, preserving regis
 outside their specified outputs and scratch tapes. Repeated calls therefore need
 no assumption that scratch tapes are initially empty.
 
+Each reader is a sequencing of machines, noncomputable since CSLib selects a
+machine's transition by choice, and is equal to the machine built by
+{name}`Turing.MultiTapeTM.ofTr` from a computable transition function named after it
+with the suffix {lit}`Tr`, by the equation with the suffix {lit}`_eq_ofTr`.
+
 ## Main definitions
 
 * {lit}`inputLength` and {lit}`storedLength` count physical and stored words.
 * {lit}`inputAt` and {lit}`readStored` query the physical input and stored words.
 * {lit}`seekInputRight` consumes a binary counter to position the input head.
+* {lit}`seekInputRightTr`, {lit}`inputLengthTr`, {lit}`inputAtTr`, {lit}`readStoredTr` and
+  {lit}`storedLengthTr` are their transition functions.
 
 ## Main statements
 
@@ -33,6 +40,9 @@ no assumption that scratch tapes are initially empty.
   the length readers' contracts.
 * {lit}`inputAt_transformsIn` and {lit}`readStored_transformsIn` establish digit
   order, out-of-range behavior, workspace bounds, and register preservation.
+* {lit}`seekInputRight_eq_ofTr`, {lit}`inputLength_eq_ofTr`, {lit}`inputAt_eq_ofTr`,
+  {lit}`readStored_eq_ofTr` and {lit}`storedLength_eq_ofTr` identify each reader with the
+  machine built from its transition function.
 
 ## Implementation notes
 
@@ -69,7 +79,7 @@ theorem inputStepRight_runsTo {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Un
       using inStepRight_runsTo cfg hq hp B hpos
   · have hp' : cfg.inputPos.val = input.length + 1 := by have := cfg.inputPos.isLt; omega
     have hhalt : (inStepRight (k := k)).step cfg = { cfg with state := none } := by
-      rw [step_of_state _ _ () hq]
+      rw [step_of_state _ _ () hq, inStepRight_tr]
       apply Cfg.ext
       · rfl
       · change moveInputPos cfg.inputPos SignType.pos = cfg.inputPos
@@ -82,7 +92,7 @@ theorem inputStepRight_runsTo {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Un
       · exact List.append_nil _
     have h := RunsTo.ofFamily (inStepRight (k := k)) (fun _ ↦ cfg) 0 B
       { cfg with state := none } (by intro _ _; rw [hq]; exact Option.some_ne_none _)
-      (by intro _ h; omega) hhalt rfl (by intro _ _; simp [outputSymbol, hq, inStepRight])
+      (by intro _ h; omega) hhalt rfl (fun _ _ ↦ outputSymbol_ofTr_eq_none (fun _ _ _ ↦ rfl) _)
       (fun _ _ i ↦ hpos i) hpos
     refine h.congr_target ?_
     apply Cfg.ext
@@ -95,8 +105,18 @@ theorem inputStepRight_runsTo {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Un
     · rfl
 
 /-- Move right by a binary counter, consuming it and stopping at the input boundary. -/
-@[expose] def seekInputRight {k : ℕ} (S : Fin k) :=
+@[expose] noncomputable def seekInputRight {k : ℕ} (S : Fin k) :=
   whileNonblank (some S) (seq inStepRight (dec S))
+
+/-- The transition of {name}`seekInputRight`. -/
+@[expose] def seekInputRightTr {k : ℕ} (S : Fin k) :=
+  whileNonblankTr (some S) (seqTr inStepRightTr (decTr S) (.inl 0)) (.inl ())
+
+/-- {name}`seekInputRight` is the machine built from {name}`seekInputRightTr`. -/
+theorem seekInputRight_eq_ofTr {k : ℕ} (S : Fin k) :
+    seekInputRight S = ofTr (.inl ()) (seekInputRightTr S) := by
+  simp only [seekInputRight, inStepRight, dec_eq_ofTr, seq_ofTr, whileNonblank_ofTr,
+    seekInputRightTr]
 
 /-- Seeking by an arbitrary counter preserves all other registers and saturates
 the input position, so out-of-range reads need no separate comparison routine. -/
@@ -176,7 +196,16 @@ theorem seekInputRight_runsTo {k : ℕ} {input : List Bool} (S : Fin k)
     simpa only [seekInputRight, c, Nat.sub_self, show counterWord 0 = [] from rfl] using h⟩
 
 /-- Count the input from the home position, restoring that position on return. -/
-@[expose] def inputLength {k : ℕ} (C : Fin k) := seq inStepRight (countInput C)
+@[expose] noncomputable def inputLength {k : ℕ} (C : Fin k) := seq inStepRight (countInput C)
+
+/-- The transition of {name}`inputLength`. -/
+@[expose] def inputLengthTr {k : ℕ} (C : Fin k) :=
+  seqTr inStepRightTr (countInputTr C) (.inl (.inl (.inl ())))
+
+/-- {name}`inputLength` is the machine built from {name}`inputLengthTr`. -/
+theorem inputLength_eq_ofTr {k : ℕ} (C : Fin k) :
+    inputLength C = ofTr (.inl ()) (inputLengthTr C) := by
+  simp only [inputLength, inStepRight, countInput_eq_ofTr, seq_ofTr, inputLengthTr]
 
 /-- The length reader overwrites only its result register, including on empty input. -/
 theorem inputLength_transformsIn {k : ℕ} (C : Fin k) (B : ℕ → ℕ)
@@ -209,9 +238,21 @@ theorem inputLength_transformsIn {k : ℕ} (C : Fin k) (B : ℕ → ℕ)
 
 /-- Read the physical input in list order, preserving the index and clearing the
 scratch counter. The result is empty outside the input. -/
-@[expose] def inputAt {k : ℕ} (C S F : Fin k) :=
+@[expose] noncomputable def inputAt {k : ℕ} (C S F : Fin k) :=
   seq (copy C S) (seq inStepRight (seq (seekInputRight S)
     (seq (const [] F) (seq (readBit F) (seq inBack inHome)))))
+
+/-- The transition of {name}`inputAt`. -/
+@[expose] def inputAtTr {k : ℕ} (C S F : Fin k) :=
+  seqTr (copyTr C S) (seqTr inStepRightTr (seqTr (seekInputRightTr S)
+    (seqTr (constTr [] F) (seqTr (readBitTr F) (seqTr inBackTr inHomeTr ()) (.inl ()))
+      (.inl ())) (.inl (.inl (.inl ())))) (.inl (.inl ()))) (.inl ())
+
+/-- {name}`inputAt` is the machine built from {name}`inputAtTr`. -/
+theorem inputAt_eq_ofTr {k : ℕ} (C S F : Fin k) :
+    inputAt C S F = ofTr (.inl (.inl (.inl ()))) (inputAtTr C S F) := by
+  simp only [inputAt, copy_eq_ofTr, inStepRight, seekInputRight_eq_ofTr, const_eq_ofTr, readBit,
+    inBack, inHome, seq_ofTr, inputAtTr]
 
 /-- Time for a physical-input query with bounded binary index. -/
 @[expose] def inputAtTime (B Q n : ℕ) : ℕ :=
@@ -310,10 +351,24 @@ theorem inputAt_transformsIn {k : ℕ} (C S F : Fin k)
 
 /-- Read a stored word at a binary index. Registers are the source word, index,
 scratch word, scratch counter, and result. Both scratch registers are cleared. -/
-@[expose] def readStored {k : ℕ} (r : Fin 5 → Fin k) :=
+@[expose] noncomputable def readStored {k : ℕ} (r : Fin 5 → Fin k) :=
   seq (copy (r 0) (r 2)) (seq (copy (r 1) (r 3))
     (seq (whileNonblank (some (r 3)) (seq (pop (r 2) (r 4)) (dec (r 3))))
       (seq (pop (r 2) (r 4)) (const [] (r 2)))))
+
+/-- The transition of {name}`readStored`. -/
+@[expose] def readStoredTr {k : ℕ} (r : Fin 5 → Fin k) :=
+  seqTr (copyTr (r 0) (r 2)) (seqTr (copyTr (r 1) (r 3))
+    (seqTr (whileNonblankTr (some (r 3)) (seqTr (popTr (r 2) (r 4)) (decTr (r 3)) (.inl 0))
+        (.inl (.inl (.inl ()))))
+      (seqTr (popTr (r 2) (r 4)) (constTr [] (r 2)) (.inl (.inl ()))) (.inl (.inl (.inl ()))))
+    (.inl (.inl ()))) (.inl (.inl (.inl ())))
+
+/-- {name}`readStored` is the machine built from {name}`readStoredTr`. -/
+theorem readStored_eq_ofTr {k : ℕ} (r : Fin 5 → Fin k) :
+    readStored r = ofTr (.inl (.inl (.inl ()))) (readStoredTr r) := by
+  simp only [readStored, copy_eq_ofTr, pop_eq_ofTr, dec_eq_ofTr, const_eq_ofTr, seq_ofTr,
+    whileNonblank_ofTr, readStoredTr]
 
 /-- A stored-word reader's time bound for indices at most {lit}`q` and register
 lengths at most {lit}`B`. -/
@@ -443,10 +498,23 @@ theorem readStored_transformsIn {k : ℕ} (r : Fin 5 → Fin k)
 
 /-- Count a stored word without changing it. Registers are the source, scratch
 word, result counter, and scratch flag; both scratch registers are cleared. -/
-@[expose] def storedLength {k : ℕ} (r : Fin 4 → Fin k) :=
+@[expose] noncomputable def storedLength {k : ℕ} (r : Fin 4 → Fin k) :=
   seq (copy (r 0) (r 1)) (seq (const [] (r 2))
     (seq (whileNonblank (some (r 1)) (seq (pop (r 1) (r 3)) (inc (r 2))))
       (const [] (r 3))))
+
+/-- The transition of {name}`storedLength`. -/
+@[expose] def storedLengthTr {k : ℕ} (r : Fin 4 → Fin k) :=
+  seqTr (copyTr (r 0) (r 1)) (seqTr (constTr [] (r 2))
+    (seqTr (whileNonblankTr (some (r 1)) (seqTr (popTr (r 1) (r 3)) (incTr (r 2)) (.inl ()))
+        (.inl (.inl (.inl ()))))
+      (constTr [] (r 3)) (.inl (.inl ()))) (.inl (.inl ()))) (.inl (.inl (.inl ())))
+
+/-- {name}`storedLength` is the machine built from {name}`storedLengthTr`. -/
+theorem storedLength_eq_ofTr {k : ℕ} (r : Fin 4 → Fin k) :
+    storedLength r = ofTr (.inl (.inl (.inl ()))) (storedLengthTr r) := by
+  simp only [storedLength, copy_eq_ofTr, pop_eq_ofTr, inc_eq_ofTr, const_eq_ofTr, seq_ofTr,
+    whileNonblank_ofTr, storedLengthTr]
 
 /-- The stored-length reader's time bound at a register-length bound. -/
 @[expose] def storedLengthTime (B : ℕ) : ℕ :=

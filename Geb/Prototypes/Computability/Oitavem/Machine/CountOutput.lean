@@ -8,6 +8,10 @@ module
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Phase.Inc
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Phase.Dec
 public import Geb.Prototypes.Computability.Oitavem.Word
+public import Geb.Prototypes.Computability.MultiTape.Computes
+import Mathlib.Data.Fintype.Sum
+import Mathlib.Data.Fintype.Prod
+import Mathlib.Data.Fintype.Option
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -19,15 +23,26 @@ output. The machine {lit}`countOutput` adds one binary counter tape and replaces
 each emitted bit by an increment. It preserves the simulated work tapes and heads
 between simulated steps. The counter increment leaves those heads in place.
 
+The machines are defined on transition functions first, with the suffix
+{lit}`Tr`, and each machine is the machine built from its transition function by
+{name}`Turing.MultiTapeTM.ofTr`. CSLib selects a machine's transition by choice, so
+a machine reading another machine's transition, or sequencing machines, is
+noncomputable, while its transition function is computable.
+
 ## Main definitions
 
 * {lit}`countOutput` counts a machine's emissions on an additional tape.
 * {lit}`countOutputCfg` describes the configurations between simulated steps.
 * {lit}`emitNumber` emits a counter in Oitavem's shortlex encoding.
 * {lit}`lengthMachine` composes output counting and numerical emission.
+* {lit}`countOutputTr`, {lit}`emitDropLastTr`, {lit}`emitNumberTr` and
+  {lit}`lengthMachineTr` are their transition functions.
 
 ## Main statements
 
+* {lit}`countOutput_tr`, {lit}`countOutput_ofTr`, {lit}`emitDropLast_tr`,
+  {lit}`emitNumber_eq_ofTr` and {lit}`lengthMachine_ofTr` relate the machines to their
+  transition functions.
 * {lit}`inc_runsTo` increments a counter while other heads remain in place.
 * {lit}`countOutput_runsTo` turns a halting emitter into an exact length reader.
 * {lit}`emitNumber_emits` verifies the encoding, including zero and leading zeroes.
@@ -93,24 +108,47 @@ theorem inc_runsTo {k : ℕ} {input : List Bool} (i : Fin k)
 /-- Finite control for simulation or a counter increment followed by resumption. -/
 abbrev CountOutputState (S : Type) := S ⊕ (Option S × (Unit ⊕ Unit ⊕ Unit))
 
+/-- The transition simulating the transition {lit}`trP`, counting its emissions on
+tape zero and suppressing its output. Simulated tape {lit}`i` is physical tape
+{lit}`i.succ`. It is not inlined, so that a partial application of it holds the
+simulated transition as an evaluated argument rather than recomputing it at each
+application. -/
+@[expose, noinline] def countOutputTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S)
+    (q : CountOutputState S) (input : Option Bool) (work : Fin (k + 1) → Option Bool) :
+    Action (k + 1) Bool (CountOutputState S) :=
+  match q with
+  | .inl p =>
+    let a := trP p input (fun i ↦ work i.succ)
+    { inputTape := a.inputTape
+      workTapes := Fin.cons (none, 0) a.workTapes
+      output := none
+      state := if a.output.isSome then some (.inr (a.state, .inl ()))
+        else a.state.map Sum.inl }
+  | .inr (next, q) =>
+    let a := incTr (0 : Fin (k + 1)) q input work
+    { a with state := match a.state with
+        | some q' => some (.inr (next, q'))
+        | none => next.map Sum.inl }
+
 /-- Simulate a machine, counting its emissions on tape zero and suppressing its
-output. Simulated tape {lit}`i` is physical tape {lit}`i.succ`. -/
-@[expose] def countOutput {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :
-    MultiTapeTM (k + 1) Bool (CountOutputState S) where
-  q₀ := .inl P.q₀
-  tr q input work := match q with
-    | .inl p =>
-      let a := P.tr p input (fun i ↦ work i.succ)
-      { inputTape := a.inputTape
-        workTapes := Fin.cons (none, 0) a.workTapes
-        output := none
-        state := if a.output.isSome then some (.inr (a.state, (inc (0 : Fin (k + 1))).q₀))
-          else a.state.map Sum.inl }
-    | .inr (next, q) =>
-      let a := (inc (0 : Fin (k + 1))).tr q input work
-      { a with state := match a.state with
-          | some q' => some (.inr (next, q'))
-          | none => next.map Sum.inl }
+output: the machine built from {name}`countOutputTr` of its transition. -/
+@[expose] noncomputable def countOutput {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :
+    MultiTapeTM (k + 1) Bool (CountOutputState S) :=
+  ofTr (.inl P.q₀) (countOutputTr P.tr)
+
+/-- The transition of {name}`countOutput` is {name}`countOutputTr`. -/
+theorem countOutput_tr {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (q : CountOutputState S)
+    (input : Option Bool) (work : Fin (k + 1) → Option Bool) :
+    (countOutput P).tr q input work = countOutputTr P.tr q input work :=
+  tr_ofTr _ _ _ _ _
+
+/-- Counting the output of a machine built from a transition function is the machine
+built from {name}`countOutputTr` of that function. -/
+theorem countOutput_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :
+    countOutput (ofTr q₀ tr) = ofTr (.inl q₀) (countOutputTr tr) := by
+  rw [countOutput, tr_ofTr', q₀_ofTr]
 
 /-- A simulated configuration, with a counter and the caller's unchanged output. -/
 @[expose] def countOutputCfg {k : ℕ} {S : Type} {input : List Bool}
@@ -138,7 +176,7 @@ theorem countOutput_step_lift {k : ℕ} {S : Type} {input : List Bool}
       countOutputLift next ((inc 0).step cfg) := by
   obtain ⟨q, hq⟩ := Option.ne_none_iff_exists'.mp hlive
   rw [step_of_state _ _ (.inr (next, q)) (by simp only [countOutputLift, hq]),
-    step_of_state _ _ q hq]
+    step_of_state _ _ q hq, countOutput_tr, inc_eq_ofTr, tr_ofTr]
   rfl
 
 /-- A run of the increment subroutine lifts until its return to the simulation. -/
@@ -181,16 +219,11 @@ theorem countOutput_outputSymbol {k : ℕ} {S : Type} {input : List Bool}
   cases hq : cfg.state with
   | none => exact outputSymbol_of_halt hq
   | some q =>
+    rw [outputSymbol_of_state hq, countOutput_tr]
     cases q with
-    | inl q => simp only [outputSymbol, hq, countOutput]
+    | inl q => rfl
     | inr q =>
-      rcases q with ⟨next, q⟩
-      cases q with
-      | inl q => simp [outputSymbol, hq, countOutput, inc, seq, incWalk]
-      | inr q =>
-        cases q with
-        | inl q => simp [outputSymbol, hq, countOutput, inc, seq, returnTape, moveLeft]
-        | inr q => simp [outputSymbol, hq, countOutput, inc, seq, returnTape, retLeft]
+      rcases q with ⟨next, q | q | q⟩ <;> rfl
 
 /-- The counting machine's output stays empty on every execution segment. -/
 theorem countOutput_outputString {k : ℕ} {S : Type} {input : List Bool}
@@ -214,8 +247,8 @@ theorem countOutput_step_run {k : ℕ} {S : Type} {input : List Bool}
   have hw : (fun i ↦ (countOutputCfg cfg n out).workTapeSymbols i.succ) =
       cfg.workTapeSymbols := rfl
   rw [step_of_state _ _ (.inl q) (by simp only [countOutputCfg, hq, Option.map_some]),
-    step_of_state _ _ q hq]
-  simp only [countOutput]
+    step_of_state _ _ q hq, countOutput_tr]
+  simp only [countOutputTr]
   rw [hi, hw]
   simp only [outputSymbol, hq, countOutputCfg, countOutputLift]
   split_ifs
@@ -376,16 +409,26 @@ theorem counterDigits_eq_bits (n : ℕ) : ofNat n = n.bits := by
     · change ofNat (2 * m + 1) = true :: m.bits
       rw [ofNat_two_mul_add_one, ih]
 
+/-- The transition of {lit}`emitDropLast`: scan tape {lit}`i` rightwards, emitting
+the buffered bit and buffering the bit read, and halt at a blank. -/
+@[expose] def emitDropLastTr {k : ℕ} (i : Fin k) (q : Option Bool) (_ : Option Bool)
+    (work : Fin k → Option Bool) : Action k Bool (Option Bool) :=
+  match work i with
+  | none =>
+    { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none }
+  | some b =>
+    { inputTape := 0, workTapes := fun j ↦ (none, if j = i then 1 else 0),
+      output := q, state := some (some b) }
+
 /-- Scan a tape rightwards, delaying each bit until the next bit is seen. The
 final buffered bit is discarded, so the machine emits the word without its last bit. -/
-@[expose] def emitDropLast {k : ℕ} (i : Fin k) : MultiTapeTM k Bool (Option Bool) where
-  q₀ := none
-  tr q _ work := match work i with
-    | none =>
-      { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none }
-    | some b =>
-      { inputTape := 0, workTapes := fun j ↦ (none, if j = i then 1 else 0),
-        output := q, state := some (some b) }
+@[expose] def emitDropLast {k : ℕ} (i : Fin k) : MultiTapeTM k Bool (Option Bool) :=
+  ofTr none (emitDropLastTr i)
+
+/-- The transition of {name}`emitDropLast` is {name}`emitDropLastTr`. -/
+theorem emitDropLast_tr {k : ℕ} (i : Fin k) (q : Option Bool) (inp : Option Bool)
+    (work : Fin k → Option Bool) : (emitDropLast i).tr q inp work = emitDropLastTr i q inp work :=
+  tr_ofTr _ _ _ _ _
 
 /-- The configuration after scanning a prefix, with at most its final bit buffered. -/
 @[expose] def emitDropLastCfg {k : ℕ} {input : List Bool} (i : Fin k)
@@ -419,12 +462,12 @@ theorem emitDropLast_emits {k : ℕ} {input : List Bool} (i : Fin k)
         (emitDropLastCfg i cfg d s).workTapeSymbols =
       { inputTape := 0, workTapes := fun j ↦ (none, if j = i then 1 else 0),
         output := (d.take s).getLast?, state := some (some d[s]) } := by
-    simp only [emitDropLast, hsym s, List.getElem?_eq_getElem hs]
+    simp only [emitDropLast_tr, emitDropLastTr, hsym s, List.getElem?_eq_getElem hs]
   have hnone : (emitDropLast i).tr (d.take d.length).getLast?
       (emitDropLastCfg i cfg d d.length).inputSymbol
       (emitDropLastCfg i cfg d d.length).workTapeSymbols =
       { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none } := by
-    simp only [emitDropLast, hsym d.length, List.getElem?_length]
+    simp only [emitDropLast_tr, emitDropLastTr, hsym d.length, List.getElem?_length]
   have hstep : ∀ s < d.length,
       (emitDropLast i).step (emitDropLastCfg i cfg d s) =
         emitDropLastCfg i cfg d (s + 1) := by
@@ -493,7 +536,15 @@ theorem emitDropLast_emits {k : ℕ} {input : List Bool} (i : Fin k)
 
 /-- Emit a binary counter in Oitavem's shortlex encoding: increment, then omit
 the binary sentinel. The other tapes and heads remain in place. -/
-@[expose] def emitNumber {k : ℕ} (i : Fin k) := seq (inc i) (emitDropLast i)
+@[expose] noncomputable def emitNumber {k : ℕ} (i : Fin k) := seq (inc i) (emitDropLast i)
+
+/-- The transition of {name}`emitNumber`. -/
+@[expose] def emitNumberTr {k : ℕ} (i : Fin k) := seqTr (incTr i) (emitDropLastTr i) none
+
+/-- {name}`emitNumber` is the machine built from {name}`emitNumberTr`. -/
+theorem emitNumber_eq_ofTr {k : ℕ} (i : Fin k) :
+    emitNumber i = ofTr (.inl (.inl ())) (emitNumberTr i) := by
+  simp only [emitNumber, inc_eq_ofTr, emitDropLast, seq_ofTr, emitNumberTr]
 
 /-- Numerical emission returns exactly the enumeration word, using only the
 counter's logarithmic tape interval and a constant amount of control. -/
@@ -523,8 +574,20 @@ theorem emitNumber_emits {k : ℕ} {input : List Bool} (i : Fin k)
   simpa only [emitNumber, liftR, Option.map_none, hd, length_ofNat_eq_size] using h
 
 /-- Compute the encoded length of an emitter's output, without storing that output. -/
-@[expose] def lengthMachine {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :=
+@[expose] noncomputable def lengthMachine {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :=
   seq (countOutput P) (emitNumber 0)
+
+/-- The transition of {name}`lengthMachine`, from the emitter's transition. -/
+@[expose] def lengthMachineTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :=
+  seqTr (countOutputTr trP) (emitNumberTr 0) (.inl (.inl ()))
+
+/-- {name}`lengthMachine` of a machine built from a transition function is the machine
+built from {name}`lengthMachineTr` of that function. -/
+theorem lengthMachine_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :
+    lengthMachine (ofTr q₀ tr) = ofTr (.inl (.inl q₀)) (lengthMachineTr tr) := by
+  simp only [lengthMachine, countOutput_ofTr, emitNumber_eq_ofTr, seq_ofTr, lengthMachineTr]
 
 /-- Composition with numerical length adds one counter tape and emits exactly
 the shortlex word for the length. Original work heads need not be parked at return. -/
@@ -558,12 +621,11 @@ theorem lengthMachine_computable {k : ℕ} {S : Type} [Finite S]
       (fun n ↦ (k + 1) * (B n + 2)) := by
   let : Fintype S := Fintype.ofFinite S
   refine ⟨k + 1, CountOutputState S ⊕ ((Unit ⊕ Unit ⊕ Unit) ⊕ Option Bool),
-    inferInstance, lengthMachine P, fun w ↦ ?_⟩
+    Finite.of_fintype _, lengthMachine P, fun w ↦ ?_⟩
   obtain ⟨cfg', t, ht, h⟩ := hP w
   obtain ⟨cfg'', u, hu, e⟩ := lengthMachine_emits P h (hB w)
-  refine ⟨u, hu.trans (Nat.add_le_add_right (Nat.mul_le_mul_right _ ht) _),
-    (lengthMachine P).spaceUsed ((lengthMachine P).initCfg w) u,
-    e.spaceUsed_le, ?_, ?_, rfl⟩
+  refine computesInTimeAndSpace_of_halted ?_ ?_ rfl
+    (hu.trans (Nat.add_le_add_right (Nat.mul_le_mul_right _ ht) _)) e.spaceUsed_le
   · change ((lengthMachine P).runFrom ((lengthMachine P).initCfg w) u).state = none
     rw [e.runFrom_eq]
     exact e.halted

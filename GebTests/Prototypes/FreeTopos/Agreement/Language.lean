@@ -718,7 +718,6 @@ theorem occurs_eq (t : Term) (d : ℕ) :
       mirror_simp [«Language.occursStep», labelData, hs, mArgs_eq, label_encTerm, ofAt_eq, hx,
         Internal.Term.occursStep, beq_iff_eq, Nat.reduceEqDiff, List.any_map, List.mem_cons]
     all_goals first
-      | exact hx _ (by simp) _
       | simp only [hx x0 (by simp), hx x1 (by simp), hx x2 (by simp), or_eq]
       | simp [List.any_map, Function.comp_def]
   | roseRec c =>
@@ -727,7 +726,6 @@ theorem occurs_eq (t : Term) (d : ℕ) :
       mirror_simp [«Language.occursStep», labelData, hs, mArgs_eq, label_encTerm, ofAt_eq, hx,
         Internal.Term.occursStep, beq_iff_eq, Nat.reduceEqDiff, List.any_map, List.mem_cons]
     all_goals first
-      | exact hx _ (by simp) _
       | simp only [hx x0 (by simp), hx x1 (by simp), or_eq]
       | simp [List.any_map, Function.comp_def]
   | _ =>

@@ -21,18 +21,25 @@ shortlex word losing its last digit is handled without retracting output.
 * {lit}`numericSuccGenerator` and {lit}`numericPredGenerator` transform generated words
   by numerical successor and predecessor.
 * {lit}`predGenerator` and {lit}`lastGenerator` implement the string primitives.
+* {lit}`numericSuccGeneratorTr`, {lit}`numericPredGeneratorTr`, {lit}`predGeneratorTr`
+  and {lit}`lastGeneratorTr` are their transition functions.
 
 ## Main statements
 
 * {lit}`numericSuccGenerator_emitsIn` and {lit}`numericPredGenerator_emitsIn` verify
   numerical carry and borrow without materializing the word's enumeration index.
 * {lit}`predGenerator_emitsIn` and {lit}`lastGenerator_emitsIn` include empty input.
+* {lit}`numericSuccGenerator_ofTr`, {lit}`numericPredGenerator_ofTr`,
+  {lit}`predGenerator_ofTr` and {lit}`lastGenerator_ofTr` identify each construction on a
+  machine built by {name}`Turing.MultiTapeTM.ofTr` with the machine built from its
+  transition function.
 
 ## Implementation notes
 
 Each construction preserves the generator's exact valuation effect and work-head
 bound. Its state space is a finite product when the generator's is finite. The
-contracts inherit CSLib's {lit}`Classical.choice` dependency.
+contracts inherit CSLib's {lit}`Classical.choice` dependency, and the constructions,
+reading transitions CSLib selects by choice, are noncomputable.
 
 ## Tags
 
@@ -71,8 +78,20 @@ theorem outputWord_numericSucc_true (w : List Bool) :
     numericSucc_cons_false, numericSucc_cons_true, ih]
 
 /-- Numerical successor of a generated word, retaining only a carry bit. -/
-@[expose] def numericSuccGenerator {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :=
+@[expose] noncomputable def numericSuccGenerator {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :=
   mapOutput P true numericSuccStep numericSuccFinish
+
+/-- The transition of {name}`numericSuccGenerator`, from the generator's transition. -/
+@[expose] def numericSuccGeneratorTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :=
+  mapOutputTr trP numericSuccStep numericSuccFinish
+
+/-- {name}`numericSuccGenerator` of a machine built from a transition function is the machine
+built from {name}`numericSuccGeneratorTr` of that function. -/
+theorem numericSuccGenerator_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :
+    numericSuccGenerator (ofTr q₀ tr) = ofTr (true, some q₀) (numericSuccGeneratorTr tr) :=
+  mapOutput_ofTr q₀ tr _ _ _
 
 /-- Numerical successor needs no additional work tapes, even for polynomially long arguments. -/
 theorem numericSuccGenerator_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
@@ -119,8 +138,20 @@ theorem outputWord_numericPred_true (w : List Bool) (pending : Option Bool) :
     simp [outputWord_cons, numericPredStep, outputWord_numericPred_false, numericPred_cons_true]
 
 /-- Numerical predecessor of a generated word, with one borrow bit and one delayed digit. -/
-@[expose] def numericPredGenerator {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :=
+@[expose] noncomputable def numericPredGenerator {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :=
   mapOutput P (true, none) numericPredStep numericPredFinish
+
+/-- The transition of {name}`numericPredGenerator`, from the generator's transition. -/
+@[expose] def numericPredGeneratorTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :=
+  mapOutputTr trP numericPredStep numericPredFinish
+
+/-- {name}`numericPredGenerator` of a machine built from a transition function is the machine
+built from {name}`numericPredGeneratorTr` of that function. -/
+theorem numericPredGenerator_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :
+    numericPredGenerator (ofTr q₀ tr) = ofTr ((true, none), some q₀) (numericPredGeneratorTr tr) :=
+  mapOutput_ofTr q₀ tr _ _ _
 
 /-- Numerical predecessor preserves the generator's space bound and saturates at the empty word. -/
 theorem numericPredGenerator_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
@@ -148,8 +179,20 @@ theorem outputWord_pred (w : List Bool) (seen : Bool) :
   cases seen <;> simp [predStep, ih]
 
 /-- String predecessor of a generated word. -/
-@[expose] def predGenerator {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :=
+@[expose] noncomputable def predGenerator {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :=
   mapOutput P false predStep (fun _ ↦ none)
+
+/-- The transition of {name}`predGenerator`, from the generator's transition. -/
+@[expose] def predGeneratorTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :=
+  mapOutputTr trP predStep (fun _ ↦ none)
+
+/-- {name}`predGenerator` of a machine built from a transition function is the machine
+built from {name}`predGeneratorTr` of that function. -/
+theorem predGenerator_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :
+    predGenerator (ofTr q₀ tr) = ofTr (false, some q₀) (predGeneratorTr tr) :=
+  mapOutput_ofTr q₀ tr _ _ _
 
 /-- String predecessor preserves the generator's tapes and drops just its first output digit. -/
 theorem predGenerator_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
@@ -175,8 +218,20 @@ theorem outputWord_last (w : List Bool) (first : Option Bool) :
   cases first <;> simp [lastStep, ih]
 
 /-- Emit the first generated digit, or a false digit when the generated word is empty. -/
-@[expose] def lastGenerator {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :=
+@[expose] noncomputable def lastGenerator {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :=
   mapOutput P none lastStep (fun first ↦ some (first.getD false))
+
+/-- The transition of {name}`lastGenerator`, from the generator's transition. -/
+@[expose] def lastGeneratorTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :=
+  mapOutputTr trP lastStep (fun first ↦ some (first.getD false))
+
+/-- {name}`lastGenerator` of a machine built from a transition function is the machine
+built from {name}`lastGeneratorTr` of that function. -/
+theorem lastGenerator_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :
+    lastGenerator (ofTr q₀ tr) = ofTr (none, some q₀) (lastGeneratorTr tr) :=
+  mapOutput_ofTr q₀ tr _ _ _
 
 /-- Last-digit extraction always emits one digit and preserves all generator registers. -/
 theorem lastGenerator_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}

@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Wrapper
+import Geb.Prototypes.Computability.MultiTape.Computes
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -77,7 +78,14 @@ theorem computableInTimeAndSpace_sem (e : SOf 1) :
   refine ⟨max c₁ (tapes e * (nsiConst e.1.1 + 2)), d, tapes e, State e, inferInstance,
     machine e, fun w ↦ ?_⟩
   obtain ⟨cfg', t', ht', h⟩ := machine_emits e w
-  refine ⟨t', ?_, (machine e).spaceUsed ((machine e).initCfg w) t', ?_, ?_, ?_, rfl⟩
+  refine computesInTimeAndSpace_of_halted (t' := t')
+    (s' := (machine e).spaceUsed ((machine e).initCfg w) t') ?_ ?_ rfl ?_ ?_
+  · change ((machine e).runFrom ((machine e).initCfg w) t').state = none
+    rw [h.runFrom_eq]
+    exact h.halted
+  · change ((machine e).runFrom ((machine e).initCfg w) t').output = e.sem ![w]
+    rw [initCfg_runFrom_output]
+    exact h.output
   · have hlen : (e.sem ![w]).length ≤ bound e w.length :=
       nsi_sem e ![w] w.length fun i ↦ by rw [Fin.fin_one_eq_zero i]; exact Nat.le_refl _
     refine le_trans (le_trans ht' ?_)
@@ -93,12 +101,6 @@ theorem computableInTimeAndSpace_sem (e : SOf 1) :
     refine le_trans h.spaceUsed_le (le_trans (Nat.mul_le_mul_left _ hlin) ?_)
     rw [← Nat.mul_assoc]
     exact Nat.mul_le_mul_right _ (Nat.le_max_right _ _)
-  · change ((machine e).runFrom ((machine e).initCfg w) t').state = none
-    rw [h.runFrom_eq]
-    exact h.halted
-  · change ((machine e).runFrom ((machine e).initCfg w) t').output = e.sem ![w]
-    rw [initCfg_runFrom_output]
-    exact h.output
 
 end
 

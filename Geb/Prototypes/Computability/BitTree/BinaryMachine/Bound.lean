@@ -120,10 +120,9 @@ theorem computableInTimeAndSpace_validBool :
       (fun w : List Bool ↦ [validBool w])
       (fun w ↦ 6 * w.length + 5) (fun w ↦ 3 * ((w.length + 2).size + 1)) := by
   intro w
-  refine ⟨2 + runCost w + 1, ?_,
-    machine.spaceUsed (machine.initCfg (w.map boolEmb)) (2 + runCost w + 1),
-    spaceUsed_le_of_headBound _ _ _ (headBound_run w),
-    halts_at w, by rw [initCfg_runFrom_output]; exact outputString_eq w, rfl⟩
+  refine computesInTimeAndSpace_of_halted (t' := 2 + runCost w + 1) (halts_at w)
+    (by rw [initCfg_runFrom_output]; exact outputString_eq w) rfl ?_
+    (spaceUsed_le_of_headBound _ _ _ (headBound_run w))
   change 2 + runCost w + 1 ≤ 6 * w.length + 5
   have h := runCost_le w
   omega

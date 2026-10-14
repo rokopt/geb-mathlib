@@ -24,18 +24,28 @@ finite control records that it has been, and the rest of the run proceeds
 silently. When {lit}`P` emits at most {lit}`q` bits the result tape stays blank,
 which is how "no such bit" is distinguished from the bit {lit}`false`.
 
+The reader is defined on transition functions first, as {lit}`readOutputTr`, and
+{lit}`readOutput` is the machine built from the emitter's transition by
+{name}`Turing.MultiTapeTM.ofTr`. CSLib selects a machine's transition by choice, so
+{lit}`readOutput` is noncomputable, while {lit}`readOutputTr` turns a computable
+transition into a computable one.
+
 # Main definitions
 
 * {lit}`EmbedsSub`, {lit}`liftSub` — a machine embedding a subroutine's control,
   and the embedding of the subroutine's configurations.
 * {lit}`countTape`, {lit}`resultTape`, {lit}`oldTape`, {lit}`tapeCase` — the
   reader's tape layout.
-* {lit}`ReadState`, {lit}`readOutput` — the reader's finite control and machine.
+* {lit}`ReadState`, {lit}`readOutputTr`, {lit}`readOutput` — the reader's finite
+  control, its transition from the emitter's, and the machine built from it.
 * {lit}`wrapCfg` — a configuration of {lit}`P` together with the reader's extra
   tapes.
 
 # Main statements
 
+* {lit}`readOutput_tr`, {lit}`readOutput_ofTr` — the reader's transition is
+  {lit}`readOutputTr`, and the reader of a machine built from a transition function
+  is the machine built from {lit}`readOutputTr` of that function.
 * {lit}`RunsTo.liftSub` — a run of an embedded subroutine is a reach of the
   embedding machine.
 * {lit}`dec_runsTo` — the decrement of a counter register whose own head is
@@ -314,7 +324,7 @@ action, and the decrement entered at its initial state. -/
 @[expose] def decEnterAction {k : ℕ} {S : Type} (a : Action k Bool S) :
     Action (k + 2) Bool (ReadState S) :=
   { simAction a false with
-    state := some (.inr ((dec (countTape : Fin (k + 2))).q₀, a.state)) }
+    state := some (.inr (.inl 0, a.state)) }
 
 /-- The reader's action at a simulated step, given the emitter's action, the
 latch and the symbol under the countdown head. -/
@@ -331,29 +341,52 @@ latch and the symbol under the countdown head. -/
 
 /-- The reader's action at a step of the decrement, resuming the simulation at
 {lit}`resume` once the decrement halts. -/
-@[expose] def decTr {k : ℕ} {S : Type} (d : Action (k + 2) Bool (Fin 3 ⊕ (Unit ⊕ Unit)))
+@[expose] def resumeDecTr {k : ℕ} {S : Type} (d : Action (k + 2) Bool (Fin 3 ⊕ (Unit ⊕ Unit)))
     (resume : Option S) : Action (k + 2) Bool (ReadState S) :=
   { d with
     state := d.state.elim (resume.map (fun q ↦ .inl (q, false)))
       (fun s ↦ some (.inr (s, resume))) }
 
-/-- The digit reader of the emitter {lit}`P`: {lit}`P` simulated on the tapes
-{lit}`oldTape i`, its emissions suppressed, the countdown on tape
-{name}`countTape` decremented once per emission until it reads zero, and the
-bit emitted then written on tape {name}`resultTape`. -/
-@[expose] def readOutput {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :
-    MultiTapeTM (k + 2) Bool (ReadState S) where
-  q₀ := .inl (P.q₀, false)
-  tr q inp work :=
-    match q with
-    | .inl (q, latch) => simTr (P.tr q inp (fun i ↦ work (oldTape i))) latch (work countTape)
-    | .inr (s, resume) => decTr ((dec countTape).tr s inp work) resume
+/-- The transition of the digit reader of the emitter whose transition is {lit}`trP`:
+the emitter's transition simulated on the tapes {lit}`oldTape i`, its emissions
+suppressed, the countdown on tape {name}`countTape` decremented once per emission
+until it reads zero, and the bit emitted then written on tape {name}`resultTape`. It
+is not inlined, so that a partial application of it holds the emitter's transition
+as an evaluated argument rather than recomputing it at each application. -/
+@[expose, noinline] def readOutputTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q : ReadState S)
+    (inp : Option Bool) (work : Fin (k + 2) → Option Bool) : Action (k + 2) Bool (ReadState S) :=
+  match q with
+  | .inl (q, latch) => simTr (trP q inp (fun i ↦ work (oldTape i))) latch (work countTape)
+  | .inr (s, resume) =>
+    resumeDecTr (Geb.SizeBounded.Logspace.Machine.decTr countTape s inp work) resume
+
+/-- The digit reader of the emitter {lit}`P`: the machine built from
+{name}`readOutputTr` of its transition. -/
+@[expose] noncomputable def readOutput {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :
+    MultiTapeTM (k + 2) Bool (ReadState S) :=
+  ofTr (.inl (P.q₀, false)) (readOutputTr P.tr)
+
+/-- The transition of {name}`readOutput` is {name}`readOutputTr`. -/
+theorem readOutput_tr {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (q : ReadState S)
+    (inp : Option Bool) (work : Fin (k + 2) → Option Bool) :
+    (readOutput P).tr q inp work = readOutputTr P.tr q inp work :=
+  tr_ofTr _ _ _ _ _
+
+/-- The digit reader of a machine built from a transition function is the machine
+built from {name}`readOutputTr` of that function. -/
+theorem readOutput_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :
+    readOutput (ofTr q₀ tr) = ofTr (.inl (q₀, false)) (readOutputTr tr) := by
+  rw [readOutput, tr_ofTr', q₀_ofTr]
 
 /-- The reader embeds the decrement of the countdown tape at every resumption
 point. -/
 theorem embedsSub_dec {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (resume : Option S) :
     EmbedsSub (readOutput P) (dec countTape) (fun s ↦ .inr (s, resume))
-      (resume.map (fun q ↦ .inl (q, false))) := fun _ _ _ ↦ rfl
+      (resume.map (fun q ↦ .inl (q, false))) := fun _ _ _ ↦ by
+  rw [readOutput_tr, dec_eq_ofTr, tr_ofTr]
+  rfl
 
 /-- The action at an emitter step that emits nothing. -/
 theorem simTr_of_output_none {k : ℕ} {S : Type} (a : Action k Bool S) (latch : Bool)
@@ -455,7 +488,9 @@ theorem step_wrapCfg {k : ℕ} {S : Type} {input : List Bool} (P : MultiTapeTM k
   have htr : (readOutput P).tr (.inl (q, latch)) (wrapCfg cfgP latch l res out).inputSymbol
       (wrapCfg cfgP latch l res out).workTapeSymbols =
       simTr (P.tr q cfgP.inputSymbol cfgP.workTapeSymbols) latch
-        (tapeOf (counterWord l) 0) := rfl
+        (tapeOf (counterWord l) 0) := by
+    rw [readOutput_tr]
+    rfl
   rw [step_of_state _ _ _ (wrapCfg_state_of_live cfgP latch l res out q hq), htr, hA,
     step_of_state P cfgP q hq]
   apply Cfg.ext
@@ -630,6 +665,8 @@ theorem readOutput_outputSymbol_wrapCfg {k : ℕ} {S : Type} {input : List Bool}
   | none => rw [wrapCfg_state_of_halt cfgP latch l res out hq]
   | some q =>
     rw [wrapCfg_state_of_live cfgP latch l res out q hq]
+    dsimp only
+    rw [readOutput_tr]
     exact simTr_output _ _ _
 
 /-- The heads of a wrapped configuration stay within the bound as long as the
@@ -648,8 +685,8 @@ theorem wrapCfg_pos {k : ℕ} {S : Type} {input : List Bool} (cfgP : Cfg k Bool 
 emitter's configuration, the countdown holding what is left of the query, the
 result tape holding the queried digit once it has been emitted, and the
 caller's output. -/
-@[expose] def readCfg {k : ℕ} {S : Type} {input : List Bool} (P : MultiTapeTM k Bool S)
-    (cfg : Cfg k Bool S input) (query : ℕ) (out : List Bool) (s : ℕ) :
+@[expose] noncomputable def readCfg {k : ℕ} {S : Type} {input : List Bool}
+    (P : MultiTapeTM k Bool S) (cfg : Cfg k Bool S input) (query : ℕ) (out : List Bool) (s : ℕ) :
     Cfg (k + 2) Bool (ReadState S) input :=
   wrapCfg (P.runFrom cfg s) ((P.outputString cfg s)[query]?).isSome
     (query - (P.outputString cfg s).length) ((P.outputString cfg s)[query]?).toList out

@@ -18,6 +18,7 @@ The simulation relates machine configurations to prefixes of the pure scan.
 
 ## Main statements
 
+* {lit}`unaryScanner_tr` identifies the machine's transition with {lit}`transition`.
 * {lit}`runFrom_scan` identifies every scanning configuration and its empty output.
 * {lit}`halts_at` and {lit}`outputString_eq` give termination and the decision bit.
 
@@ -40,21 +41,26 @@ namespace Geb.BitTree
 open Turing MultiTapeTM
 open Geb.TreeScanner (boolEmb step_of_state)
 
+/-- The scanner's transition is {name}`transition`. -/
+theorem unaryScanner_tr (q : Fin 7) (input : Option (Fin 2)) (work : Fin 1 → Option (Fin 2)) :
+    unaryScanner.tr q input work = transition q input work :=
+  tr_ofTr _ _ _ _ _
+
 /-- The first initialization step positions the counter head at one. -/
 theorem init_step (w : List Bool) :
     unaryScanner.step (unaryScanner.initCfg (w.map boolEmb)) = plantCfg w := by
-  rw [step_of_state _ _ 0 rfl]
+  rw [step_of_state _ _ 0 rfl, unaryScanner_tr]
   rfl
 
 /-- The second initialization step installs the completion marker. -/
 theorem plant_step (w : List Bool) :
     unaryScanner.step (plantCfg w) = scanCfg w 0 (by omega) (.tree, 1) := by
-  rw [step_of_state _ _ 1 rfl]
+  rw [step_of_state _ _ 1 rfl, unaryScanner_tr]
   apply Cfg.ext
   · rfl
   · rfl
   · funext i z
-    simp [unaryScanner, plantCfg, scanCfg, Function.update_apply]
+    simp [transition, plantCfg, scanCfg, Function.update_apply]
   · rfl
   · rfl
 
@@ -79,7 +85,7 @@ theorem scanCfg_step (w : List Bool) (t : ℕ) (h : t < w.length) (s : State)
       fun _ ↦ if s.2 = 1 then some 0 else none := by
     funext i
     simp [Cfg.workTapeSymbols, scanCfg]
-  rw [step_of_state _ _ (modeState s.1) rfl, scanCfg_inputSymbol w t h,
+  rw [step_of_state _ _ (modeState s.1) rfl, unaryScanner_tr, scanCfg_inputSymbol w t h,
     hw, tr_scan]
   apply Cfg.ext
   · rfl
@@ -97,14 +103,14 @@ theorem outputSymbol_scanCfg (w : List Bool) (t : ℕ) (h : t < w.length) (s : S
     unaryScanner.outputSymbol (scanCfg w t (by omega) s) = none := by
   unfold outputSymbol
   change (unaryScanner.tr (modeState s.1) _ _).output = none
-  rw [scanCfg_inputSymbol w t h]
+  rw [unaryScanner_tr, scanCfg_inputSymbol w t h]
   rcases s with ⟨m, n⟩
-  cases m <;> simp [unaryScanner, modeState, consume] <;> split_ifs <;> rfl
+  cases m <;> simp [transition, modeState, consume] <;> split_ifs <;> rfl
 
 /-- At the right end marker the machine halts. -/
 theorem scanCfg_halts (w : List Bool) (s : State) :
     (unaryScanner.step (scanCfg w w.length (by omega) s)).state = none := by
-  rw [step_of_state _ _ (modeState s.1) rfl, scanCfg_inputSymbol_end]
+  rw [step_of_state _ _ (modeState s.1) rfl, unaryScanner_tr, scanCfg_inputSymbol_end]
   rcases s with ⟨m, n⟩
   cases m <;> rfl
 
@@ -114,7 +120,7 @@ theorem outputSymbol_scanCfg_end (w : List Bool) (s : State) :
       some (boolEmb (decide (s.1 = .done))) := by
   unfold outputSymbol
   change (unaryScanner.tr (modeState s.1) _ _).output = _
-  rw [scanCfg_inputSymbol_end]
+  rw [unaryScanner_tr, scanCfg_inputSymbol_end]
   rcases s with ⟨m, n⟩
   cases m <;> rfl
 
@@ -127,7 +133,20 @@ theorem init_run (w : List Bool) :
   · change unaryScanner.runFrom (unaryScanner.initCfg (w.map boolEmb)) (0 + 1 + 1) = _
     rw [runFrom_succ_eq_step', runFrom_succ_eq_step',
       runFrom_zero, init_step, plant_step]
-  · rfl
+  · have h0 : unaryScanner.outputSymbol (unaryScanner.initCfg (w.map boolEmb)) = none := by
+      unfold outputSymbol
+      change (unaryScanner.tr 0 _ _).output = none
+      rw [unaryScanner_tr]
+      rfl
+    have h1 : unaryScanner.outputSymbol (plantCfg w) = none := by
+      unfold outputSymbol
+      change (unaryScanner.tr 1 _ _).output = none
+      rw [unaryScanner_tr]
+      rfl
+    change unaryScanner.outputString _ (0 + 1 + 1) = []
+    rw [outputString_succ, outputString_succ,
+      runFrom_succ_eq_step', runFrom_zero, init_step, h0, h1]
+    rfl
 
 /-- At every prefix boundary the machine realizes the pure scanner without output. -/
 theorem runFrom_scan (w : List Bool) :

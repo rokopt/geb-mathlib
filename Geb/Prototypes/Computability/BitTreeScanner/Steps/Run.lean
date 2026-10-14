@@ -81,7 +81,7 @@ machine halts, emits the step's symbol, and keeps its heads within the
 bound. -/
 theorem halt_step (cfg : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb)) (q : Fin stateCount)
     (b : Fin 4) (hq : cfg.state = some q)
-    (htr : bitTreeScanner.tr q cfg.inputSymbol cfg.workTapeSymbols = halt b)
+    (htr : transition q cfg.inputSymbol cfg.workTapeSymbols = halt b)
     (hh : HeadsLE w cfg) :
     (bitTreeScanner.runFrom cfg 1).state = none ∧ bitTreeScanner.outputString cfg 1 = [b] ∧
       ∀ j ≤ 1, HeadsLE w (bitTreeScanner.runFrom cfg j) := by
@@ -122,7 +122,7 @@ theorem cfgOf_end :
     (cfgAt_inputPos_val _ _ _ _ _)
   have hone : ∀ (q : Fin stateCount) (b : Fin 4),
       (cfgAt w w.length le_rfl ⟨m, c, wd, d⟩ l).state = some q →
-      bitTreeScanner.tr q none (cfgAt w w.length le_rfl ⟨m, c, wd, d⟩ l).workTapeSymbols =
+      transition q none (cfgAt w w.length le_rfl ⟨m, c, wd, d⟩ l).workTapeSymbols =
         halt b →
       (bitTreeScanner.runFrom (cfgAt w w.length le_rfl ⟨m, c, wd, d⟩ l) 1).state = none ∧
         bitTreeScanner.outputString (cfgAt w w.length le_rfl ⟨m, c, wd, d⟩ l) 1 = [b] ∧
@@ -147,7 +147,7 @@ theorem cfgOf_end :
         else digitsAt ((wd - d.length : ℕ) : ℤ) d ((wd - d.length : ℕ) : ℤ)) = some 2
       rw [ite_eq_right (show ¬((wd - d.length : ℕ) : ℤ) = 0 by omega),
         ite_eq_left ⟨by omega, le_rfl⟩]
-    change bitTreeScanner.tr stBits none
+    change transition stBits none
       ![tapeCount l 1, tapeLeaf ⟨.bits, c, wd, d⟩ (headLeaf ⟨.bits, c, wd, d⟩),
         tapeDigits w.length.bits (headRuler ⟨.bits, c, wd, d⟩)] = halt 0
     rw [hsym]

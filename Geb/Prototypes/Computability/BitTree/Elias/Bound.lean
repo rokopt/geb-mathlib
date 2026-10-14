@@ -121,14 +121,12 @@ theorem computableInTimeAndSpace_validBool :
       (fun w : List Bool ↦ [Elias.validBool w])
       (fun w ↦ 5 * w.length ^ 2 + 16 * w.length + 2) (fun w ↦ 4 * (w.length + 2)) := by
   intro w
-  refine ⟨1 + runCost w + 1, ?_,
-    machine.spaceUsed (machine.initCfg (w.map boolEmb)) (1 + runCost w + 1),
-    spaceUsed_le_of_headBound _ _ _ (headBound_run w),
-    halts_at w, ?_, rfl⟩
+  refine computesInTimeAndSpace_of_halted (t' := 1 + runCost w + 1) (halts_at w) ?_ rfl ?_
+    (spaceUsed_le_of_headBound _ _ _ (headBound_run w))
+  · rw [initCfg_runFrom_output]
+    exact outputString_eq w
   · change 1 + runCost w + 1 ≤ 5 * w.length ^ 2 + 16 * w.length + 2
     have h := runCost_le w
     omega
-  · rw [initCfg_runFrom_output]
-    exact outputString_eq w
 
 end Geb.BitTree.Elias.Machine

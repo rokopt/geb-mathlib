@@ -19,12 +19,17 @@ the underlying computation to its own halt, preserving the generator's final tap
 
 ## Main definitions
 
-* {lit}`captureOutput` silently retains a prefix on an additional tape.
+* {lit}`captureOutputTr` silently retains a prefix of a transition's output on an
+  additional tape, and {lit}`captureOutput` is the machine built from it.
 * {lit}`captureOutputCfg` describes the wrapper's configurations.
 * {lit}`generatedPrefix` replaces a saved register after capturing the next value.
+* {lit}`capturePrefixTr` and {lit}`generatedPrefixTr` are the transition functions of
+  {lit}`capturePrefix` and {lit}`generatedPrefix`.
 
 ## Main statements
 
+* {lit}`captureOutput_tr`, {lit}`captureOutput_ofTr`, {lit}`capturePrefix_ofTr` and
+  {lit}`generatedPrefix_ofTr` relate the machines to their transition functions.
 * {lit}`captureOutput_runsTo` preserves termination and bounds the retained prefix
   by the mask length, including a digit emitted on the generator's halting transition.
 * {lit}`generatedPrefix_transformsIn` initializes and clears capture scratch,
@@ -35,7 +40,8 @@ the underlying computation to its own halt, preserving the generator's final tap
 Digits are written in emission order at increasing tape positions. The captured
 register therefore represents the reverse of the prefix. Both extra heads stop
 at the captured length. The run contracts inherit CSLib's
-{lit}`Classical.choice` dependency.
+{lit}`Classical.choice` dependency, and the machines, which read transitions CSLib
+selects by choice, are noncomputable; their transition functions are computable.
 
 ## Tags
 
@@ -53,18 +59,39 @@ open Geb.SizeBounded.Logspace.Machine
 
 public section
 
-/-- Retain emitted digits while the mask is nonblank, without emitting externally. -/
-@[expose] def captureOutput {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :
-    MultiTapeTM (k + 2) Bool S where
-  q₀ := P.q₀
-  tr q input work :=
-    let a := P.tr q input (fun i ↦ work (oldTape i))
-    let keep := a.output.isSome && (work countTape).isSome
-    { inputTape := a.inputTape
-      workTapes := tapeCase (none, if keep then 1 else 0)
-        (if keep then (some a.output, 1) else (none, 0)) a.workTapes
-      output := none
-      state := a.state }
+/-- The transition retaining the digits the transition {lit}`trP` emits while the
+mask is nonblank, without emitting externally. It is not inlined, so that a partial
+application of it holds {lit}`trP` as an evaluated argument rather than recomputing
+it at each application. -/
+@[expose, noinline] def captureOutputTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q : S)
+    (input : Option Bool) (work : Fin (k + 2) → Option Bool) : Action (k + 2) Bool S :=
+  let a := trP q input (fun i ↦ work (oldTape i))
+  let keep := a.output.isSome && (work countTape).isSome
+  { inputTape := a.inputTape
+    workTapes := tapeCase (none, if keep then 1 else 0)
+      (if keep then (some a.output, 1) else (none, 0)) a.workTapes
+    output := none
+    state := a.state }
+
+/-- Retain emitted digits while the mask is nonblank, without emitting externally: the
+machine built from {name}`captureOutputTr` of the generator's transition. -/
+@[expose] noncomputable def captureOutput {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :
+    MultiTapeTM (k + 2) Bool S :=
+  ofTr P.q₀ (captureOutputTr P.tr)
+
+/-- The transition of {name}`captureOutput` is {name}`captureOutputTr`. -/
+theorem captureOutput_tr {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (q : S)
+    (input : Option Bool) (work : Fin (k + 2) → Option Bool) :
+    (captureOutput P).tr q input work = captureOutputTr P.tr q input work :=
+  tr_ofTr _ _ _ _ _
+
+/-- Capturing the output of a machine built from a transition function is the machine
+built from {name}`captureOutputTr` of that function. -/
+theorem captureOutput_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :
+    captureOutput (ofTr q₀ tr) = ofTr q₀ (captureOutputTr tr) := by
+  rw [captureOutput, tr_ofTr', q₀_ofTr]
 
 /-- The simulated configuration with a mask and the reverse captured prefix. -/
 @[expose] def captureOutputCfg {k : ℕ} {S : Type} {input : List Bool}
@@ -102,8 +129,8 @@ theorem captureOutputCfg_congr {k : ℕ} {S : Type} {input : List Bool}
   rw [hw]
 
 /-- The wrapper's action at a simulated step. -/
-theorem captureOutput_tr {k : ℕ} {S : Type} {input : List Bool} (P : MultiTapeTM k Bool S)
-    (cfg : Cfg k Bool S input) (q : S) (mask w out : List Bool) :
+theorem captureOutput_tr_captureOutputCfg {k : ℕ} {S : Type} {input : List Bool}
+    (P : MultiTapeTM k Bool S) (cfg : Cfg k Bool S input) (q : S) (mask w out : List Bool) :
     (captureOutput P).tr q (captureOutputCfg cfg mask w out).inputSymbol
         (captureOutputCfg cfg mask w out).workTapeSymbols =
       { inputTape := (P.tr q cfg.inputSymbol cfg.workTapeSymbols).inputTape
@@ -115,7 +142,9 @@ theorem captureOutput_tr {k : ℕ} {S : Type} {input : List Bool} (P : MultiTape
               (some (P.tr q cfg.inputSymbol cfg.workTapeSymbols).output, 1) else (none, 0))
           (P.tr q cfg.inputSymbol cfg.workTapeSymbols).workTapes
         output := none
-        state := (P.tr q cfg.inputSymbol cfg.workTapeSymbols).state } := rfl
+        state := (P.tr q cfg.inputSymbol cfg.workTapeSymbols).state } := by
+  rw [captureOutput_tr]
+  rfl
 
 /-- A step at which nothing is retained: the generator steps on its own tapes, both extra
 tapes and both extra heads stay as they are, and nothing is emitted. -/
@@ -127,7 +156,7 @@ theorem step_captureOutputCfg_of_not_keep {k : ℕ} {S : Type} {input : List Boo
     (captureOutput P).step (captureOutputCfg cfg mask w out) =
       captureOutputCfg (P.step cfg) mask w out := by
   have hstate : (captureOutputCfg cfg mask w out).state = some q := hq
-  rw [step_of_state (captureOutput P) _ q hstate, captureOutput_tr, hkeep,
+  rw [step_of_state (captureOutput P) _ q hstate, captureOutput_tr_captureOutputCfg, hkeep,
     step_of_state P cfg q hq]
   apply Cfg.ext
   · rfl
@@ -160,7 +189,7 @@ theorem step_captureOutputCfg_of_keep {k : ℕ} {S : Type} {input : List Bool}
       (tapeOf mask ((w.take mask.length).length : ℤ)).isSome) = true := by
     rw [hb, htake]
     exact tapeOf_isSome_of_lt mask w.length hlt
-  rw [step_of_state (captureOutput P) _ q hstate, captureOutput_tr, hkeep,
+  rw [step_of_state (captureOutput P) _ q hstate, captureOutput_tr_captureOutputCfg, hkeep,
     step_of_state P cfg q hq]
   apply Cfg.ext
   · rfl
@@ -224,7 +253,10 @@ theorem captureOutput_outputSymbol {k : ℕ} {S : Type} {input : List Bool}
   rw [captureOutputCfg_state]
   cases cfg.state with
   | none => rfl
-  | some q => rfl
+  | some q =>
+    dsimp only
+    rw [captureOutput_tr]
+    rfl
 
 /-- The wrapper's heads stay within the bound as long as the generator's do and the mask fits. -/
 theorem captureOutputCfg_pos {k : ℕ} {S : Type} {input : List Bool} (cfg : Cfg k Bool S input)
@@ -274,8 +306,21 @@ theorem captureOutput_runsTo {k : ℕ} {S : Type} {input : List Bool}
   exact ⟨key, h.halted⟩
 
 /-- Capture a prefix and park both additional heads, preserving the mask. -/
-@[expose] def capturePrefix {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :=
+@[expose] noncomputable def capturePrefix {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :=
   seq (seq (captureOutput P) (returnTape countTape)) (returnTape resultTape)
+
+/-- The transition of {name}`capturePrefix`, from the generator's transition. -/
+@[expose] def capturePrefixTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :=
+  seqTr (seqTr (captureOutputTr trP) (returnTapeTr countTape) (.inl ()))
+    (returnTapeTr resultTape) (.inl ())
+
+/-- {name}`capturePrefix` of a machine built from a transition function is the machine
+built from {name}`capturePrefixTr` of that function. -/
+theorem capturePrefix_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) :
+    capturePrefix (ofTr q₀ tr) = ofTr (.inl (.inl q₀)) (capturePrefixTr tr) := by
+  simp only [capturePrefix, captureOutput_ofTr, returnTape_eq_ofTr, seq_ofTr, capturePrefixTr]
 
 /-- Prefix capture returns a bounded reversed word and restores all heads.
 The generator can still read its original registers throughout the computation. -/
@@ -383,9 +428,27 @@ theorem capturePrefix_transformsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool 
 
 /-- Replace a saved register by a bounded prefix of a generated word.
 The old register remains available to the generator until it finishes. -/
-@[expose] def generatedPrefix {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (R : Fin k) :=
+@[expose] noncomputable def generatedPrefix {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S)
+    (R : Fin k) :=
   seq (const [] resultTape) (seq (capturePrefix P)
     (seq (copyRev resultTape (oldTape R)) (const [] resultTape)))
+
+/-- The transition of {name}`generatedPrefix`, from the generator's initial state and
+transition. -/
+@[expose] def generatedPrefixTr {k : ℕ} {S : Type}
+    (trP : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (q₀P : S) (R : Fin k) :=
+  seqTr (constTr [] resultTape) (seqTr (capturePrefixTr trP)
+    (seqTr (copyRevTr resultTape (oldTape R)) (constTr [] resultTape) (.inl (.inl ())))
+    (.inl (.inl (.inl ())))) (.inl (.inl (.inl q₀P)))
+
+/-- {name}`generatedPrefix` of a machine built from a transition function is the
+machine built from {name}`generatedPrefixTr`. -/
+theorem generatedPrefix_ofTr {k : ℕ} {S : Type} (q₀ : S)
+    (tr : S → Option Bool → (Fin k → Option Bool) → Action k Bool S) (R : Fin k) :
+    generatedPrefix (ofTr q₀ tr) R =
+      ofTr (.inl (.inl (.inl ()))) (generatedPrefixTr tr q₀ R) := by
+  simp only [generatedPrefix, const_eq_ofTr, capturePrefix_ofTr, copyRev_eq_ofTr, seq_ofTr,
+    generatedPrefixTr]
 
 /-- A generated prefix replaces one old register after the generator returns.
 The mask is preserved and the capture scratch is initialized and cleared on every call. -/

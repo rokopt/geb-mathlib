@@ -27,8 +27,14 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {lit}`Classical.choice` through Cslib's
 {name}`Turing.Cfg.inputSymbol`.
 
+Each machine is built by {name}`Turing.MultiTapeTM.ofTr` from a transition
+function named after it with the suffix {lit}`Tr`, which is computable; the
+machine's own transition, selected by choice in CSLib, agrees with it.
+
 # Main definitions
 
+* {lit}`inRightTr`, {lit}`inBackTr`, {lit}`inLeftTr` — the transition
+  functions of the machines below.
 * {lit}`inRight` — move the input head past the input.
 * {lit}`inBack` — move the input head one cell left.
 * {lit}`inLeft` — walk the input head left, writing what it reads into a
@@ -38,6 +44,8 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 
 # Main statements
 
+* {lit}`inRight_tr`, {lit}`inBack_tr`, {lit}`inLeft_tr` —
+  the machines' transitions are their transition functions.
 * {lit}`inRight_runsTo`, {lit}`inBack_runsTo`, {lit}`inLeft_runsTo` — the run
   of each machine, naming the halted configuration and the step count.
 
@@ -54,33 +62,61 @@ open Turing MultiTapeTM
 
 public section
 
+/-- The transition of {lit}`inRight`. -/
+@[expose] def inRightTr {k : ℕ} (_ : Unit) (inp : Option Bool)
+    (_ : Fin k → Option Bool) : Action k Bool Unit :=
+  { inputTape := if inp.isSome then 1 else 0
+    workTapes := fun _ ↦ (none, 0)
+    output := none
+    state := if inp.isSome then some () else none }
+
 /-- Move the input head right until it reads the blank past the input. -/
-@[expose] def inRight {k : ℕ} : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ inp _ :=
-    { inputTape := if inp.isSome then 1 else 0
-      workTapes := fun _ ↦ (none, 0)
-      output := none
-      state := if inp.isSome then some () else none }
+@[expose] def inRight {k : ℕ} : MultiTapeTM k Bool Unit :=
+  ofTr () inRightTr
+
+/-- The transition of {name}`inRight` is {name}`inRightTr`. -/
+theorem inRight_tr {k : ℕ} (q : Unit) (inp : Option Bool)
+    (work : Fin k → Option Bool) :
+    (inRight (k := k)).tr q inp work = inRightTr q inp work :=
+  tr_ofTr _ _ _ _ _
+
+/-- The transition of {lit}`inBack`. -/
+@[expose] def inBackTr {k : ℕ} (_ : Unit) (_ : Option Bool)
+    (_ : Fin k → Option Bool) : Action k Bool Unit :=
+  { inputTape := -1, workTapes := fun _ ↦ (none, 0), output := none, state := none }
 
 /-- Move the input head one cell left. -/
-@[expose] def inBack {k : ℕ} : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ _ _ := { inputTape := -1, workTapes := fun _ ↦ (none, 0), output := none, state := none }
+@[expose] def inBack {k : ℕ} : MultiTapeTM k Bool Unit :=
+  ofTr () inBackTr
+
+/-- The transition of {name}`inBack` is {name}`inBackTr`. -/
+theorem inBack_tr {k : ℕ} (q : Unit) (inp : Option Bool)
+    (work : Fin k → Option Bool) :
+    (inBack (k := k)).tr q inp work = inBackTr q inp work :=
+  tr_ofTr _ _ _ _ _
+
+/-- The transition of {lit}`inLeft`. -/
+@[expose] def inLeftTr {k : ℕ} (j : Fin k) (_ : Unit) (inp : Option Bool)
+    (_ : Fin k → Option Bool) : Action k Bool Unit :=
+  match inp with
+  | some b =>
+    { inputTape := -1
+      workTapes := fun l ↦ if l = j then (some (some b), 1) else (none, 0)
+      output := none
+      state := some () }
+  | none => { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none }
 
 /-- Walk the input head left, writing each symbol read at register {lit}`j`'s
 head and advancing that head, until the input head reads the blank before the
 input. -/
-@[expose] def inLeft {k : ℕ} (j : Fin k) : MultiTapeTM k Bool Unit where
-  q₀ := ()
-  tr _ inp _ :=
-    match inp with
-    | some b =>
-      { inputTape := -1
-        workTapes := fun l ↦ if l = j then (some (some b), 1) else (none, 0)
-        output := none
-        state := some () }
-    | none => { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none }
+@[expose] def inLeft {k : ℕ} (j : Fin k) : MultiTapeTM k Bool Unit :=
+  ofTr () (inLeftTr j)
+
+/-- The transition of {name}`inLeft` is {name}`inLeftTr`. -/
+theorem inLeft_tr {k : ℕ} (j : Fin k) (q : Unit) (inp : Option Bool)
+    (work : Fin k → Option Bool) :
+    (inLeft j).tr q inp work = inLeftTr j q inp work :=
+  tr_ofTr _ _ _ _ _
 
 /-- The configuration of {name}`inRight` after {lit}`s` steps from the input
 head at the first symbol. -/
@@ -96,11 +132,11 @@ theorem inRight_runsTo {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Unit inpu
     RunsTo inRight cfg { cfg with state := none, inputPos := ⟨input.length + 1, by omega⟩ }
       (input.length + 1) B := by
   have htrSome : ∀ (b : Bool) (work : Fin k → Option Bool),
-      (inRight (k := k)).tr () (some b) work =
+      inRightTr (k := k) () (some b) work =
         { inputTape := SignType.pos, workTapes := fun _ ↦ (none, 0), output := none,
           state := some () } := fun _ _ ↦ rfl
   have htrNone : ∀ work : Fin k → Option Bool,
-      (inRight (k := k)).tr () none work =
+      inRightTr (k := k) () none work =
         { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none } :=
     fun _ ↦ rfl
   have hstep : ∀ s < input.length,
@@ -108,7 +144,7 @@ theorem inRight_runsTo {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Unit inpu
     intro s hs
     have hsym : (inRightCfg cfg s).inputSymbol = some input[s] :=
       inputSymbolInner s (by change min (1 + s) (input.length + 1) = 1 + s; omega) hs
-    rw [step_of_state _ _ () rfl, hsym, htrSome]
+    rw [step_of_state _ _ () rfl, inRight_tr, hsym, htrSome]
     apply Cfg.ext
     · rfl
     · rw [moveInputPos_pos_of_ne_right _
@@ -134,7 +170,7 @@ theorem inRight_runsTo {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Unit inpu
         omega
       unfold Cfg.inputSymbol
       rw [dite_eq_right h₀, dite_eq_left h₁]
-    rw [step_of_state _ _ () rfl, hsym, htrNone]
+    rw [step_of_state _ _ () rfl, inRight_tr, hsym, htrNone]
     apply Cfg.ext
     · rfl
     · rw [moveInputPos_zero]
@@ -155,7 +191,8 @@ theorem inRight_runsTo {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Unit inpu
     · rfl
   have key := RunsTo.ofFamily (inRight (k := k)) (inRightCfg cfg) input.length B
     { cfg with state := none, inputPos := ⟨input.length + 1, by omega⟩ }
-    (fun _ _ ↦ Option.some_ne_none ()) hstep hhalt rfl (fun _ _ ↦ rfl)
+    (fun _ _ ↦ Option.some_ne_none ()) hstep hhalt rfl
+    (fun _ _ ↦ outputSymbol_ofTr_eq_none (fun _ _ _ ↦ rfl) _)
     (fun _ _ i ↦ hpos i) (fun i ↦ hpos i)
   rwa [hzero] at key
 
@@ -167,7 +204,7 @@ theorem inBack_runsTo {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Unit input
     RunsTo inBack cfg { cfg with state := none, inputPos := ⟨input.length, by omega⟩ } 1 B := by
   have hhalt : (inBack (k := k)).step { cfg with state := some () } =
       { cfg with state := none, inputPos := ⟨input.length, by omega⟩ } := by
-    rw [step_of_state _ _ () rfl]
+    rw [step_of_state _ _ () rfl, inBack_tr]
     apply Cfg.ext
     · rfl
     · change moveInputPos cfg.inputPos SignType.neg = (⟨input.length, by omega⟩ : Fin _)
@@ -191,7 +228,8 @@ theorem inBack_runsTo {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Unit input
   have key := RunsTo.ofFamily (inBack (k := k)) (fun _ ↦ { cfg with state := some () }) 0 B
     { cfg with state := none, inputPos := ⟨input.length, by omega⟩ }
     (fun _ _ ↦ Option.some_ne_none ()) (fun _ h ↦ absurd h (by omega)) hhalt rfl
-    (fun _ _ ↦ rfl) (fun _ _ i ↦ hpos i) (fun i ↦ hpos i)
+    (fun _ _ ↦ outputSymbol_ofTr_eq_none (fun _ _ _ ↦ rfl) _) (fun _ _ i ↦ hpos i)
+    (fun i ↦ hpos i)
   rwa [hzero] at key
 
 /-- The configuration of {name}`inLeft` after {lit}`s` steps from the input
@@ -222,11 +260,11 @@ theorem inLeft_runsTo {k : ℕ} {input : List Bool} (j : Fin k) (cfg : Cfg k Boo
         workTapePos := Function.update cfg.workTapePos j (input.length : ℤ) }
       (input.length + 1) B := by
   have htrNone : ∀ work : Fin k → Option Bool,
-      (inLeft j).tr () none work =
+      inLeftTr j () none work =
         { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none } :=
     fun _ ↦ rfl
   have hout : ∀ (inp : Option Bool) (work : Fin k → Option Bool),
-      ((inLeft j).tr () inp work).output = none := by
+      (inLeftTr j () inp work).output = none := by
     intro inp _
     cases inp <;> rfl
   have hstep : ∀ s < input.length,
@@ -243,11 +281,11 @@ theorem inLeft_runsTo {k : ℕ} {input : List Bool} (j : Fin k) (cfg : Cfg k Boo
         (some (input[input.length - 1 - s]'(by omega))) =
         tapeOf (input.drop (input.length - (s + 1))) := by
       rw [drop_length_sub_succ input s hs, tapeOf_cons, hlen, List.getElem_reverse]
-    have hact : ∀ l : Fin k, ((inLeft j).tr () (some (input[input.length - 1 - s]'(by omega)))
+    have hact : ∀ l : Fin k, (inLeftTr j () (some (input[input.length - 1 - s]'(by omega)))
         (inLeftCfg j cfg s).workTapeSymbols).workTapes l =
         if l = j then (some (some (input[input.length - 1 - s]'(by omega))), (1 : SignType))
           else ((none : Option (Option Bool)), (0 : SignType)) := fun _ ↦ rfl
-    rw [step_of_state _ _ () rfl, hsym]
+    rw [step_of_state _ _ () rfl, inLeft_tr, hsym]
     apply Cfg.ext
     · rfl
     · change moveInputPos (inLeftCfg j cfg s).inputPos SignType.neg =
@@ -302,7 +340,7 @@ theorem inLeft_runsTo {k : ℕ} {input : List Bool} (j : Fin k) (cfg : Cfg k Boo
         change input.length - input.length = (0 : Fin (input.length + 2)).val
         rw [Fin.val_zero]
         omega))]
-    rw [step_of_state _ _ () rfl, hsym, htrNone]
+    rw [step_of_state _ _ () rfl, inLeft_tr, hsym, htrNone]
     apply Cfg.ext
     · rfl
     · rw [moveInputPos_zero]
@@ -333,7 +371,9 @@ theorem inLeft_runsTo {k : ℕ} {input : List Bool} (j : Fin k) (cfg : Cfg k Boo
       inputPos := ⟨0, by omega⟩
       workTapes := Function.update cfg.workTapes j (tapeOf input)
       workTapePos := Function.update cfg.workTapePos j (input.length : ℤ) }
-    (fun _ _ ↦ Option.some_ne_none ()) hstep hhalt rfl (fun _ _ ↦ hout _ _)
+    (fun _ _ ↦ Option.some_ne_none ()) hstep hhalt rfl
+    (fun _ _ ↦ (outputSymbol_of_state rfl).trans ((congrArg Action.output (inLeft_tr ..)).trans
+      (hout _ _)))
     (fun s hs l ↦ update_workTapePos_bounds j hpos (s : ℤ) (by omega) (by omega) l)
     (fun l ↦ update_workTapePos_bounds j hpos (input.length : ℤ) (by omega) (by omega) l)
   rwa [hzero] at key

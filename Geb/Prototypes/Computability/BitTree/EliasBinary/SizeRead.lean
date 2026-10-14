@@ -140,7 +140,7 @@ theorem step_sizeBit_plain (ho : origin (cfg.workTapeSymbols 3) = false) :
       (machine.step cfg).workTapePos 3 = cfg.workTapePos 3 - 1 ∧
       (machine.step cfg).workTapePos 5 = cfg.workTapePos 5 + (if b then 1 else 0) ∧
       ∀ i, i ≠ 3 → i ≠ 5 → (machine.step cfg).workTapePos i = cfg.workTapePos i := by
-  rw [step_of_state _ _ _ hq, hi, tr_scan stSizeBit (by simp), scanTr_size, ho]
+  rw [step_of_state _ _ _ hq, machine_tr, hi, tr_scan stSizeBit (by simp), scanTr_size, ho]
   simp only [Bool.false_eq_true, ↓reduceIte, consumeAct]
   refine ⟨trivial, trivial, trivial, fun i h3 ↦ ?_, rfl, ?_, fun i h3 h5 ↦ ?_⟩
   · simp only [h3, ↓reduceIte]
@@ -166,7 +166,7 @@ theorem step_sizeBit_tagged (ho : origin (cfg.workTapeSymbols 3) = true) :
       (machine.step cfg).workTapePos 8 = cfg.workTapePos 8 + 1 ∧
       ∀ i, i ≠ 5 → i ≠ 6 → i ≠ 7 → i ≠ 8 →
         (machine.step cfg).workTapePos i = cfg.workTapePos i := by
-  rw [step_of_state _ _ _ hq, hi, tr_scan stSizeBit (by simp), scanTr_size, ho]
+  rw [step_of_state _ _ _ hq, machine_tr, hi, tr_scan stSizeBit (by simp), scanTr_size, ho]
   simp only [↓reduceIte, consumeAct]
   refine ⟨trivial, trivial, trivial, rfl, fun i h3 h6 ↦ ?_, rfl, rfl, rfl, rfl,
     fun i h5 h6 h7 h8 ↦ ?_⟩

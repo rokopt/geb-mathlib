@@ -21,6 +21,11 @@ branch lifts to a run of the composite. The contract
 composite transforms by the transformer of the branch the register's last
 bit selects, its precondition being that branch's.
 
+The branch is defined on transition functions first, as {lit}`caseProbeTr`,
+and {lit}`caseProbe` is the machine built from the branches' transitions by
+{name}`Turing.MultiTapeTM.ofTr`; the latter is noncomputable, since CSLib
+selects a machine's transition by choice.
+
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
 statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {name}`Turing.MultiTapeTM.outputString`, each depending on
@@ -28,11 +33,16 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 
 # Main definitions
 
-* {lit}`caseProbe` — the branch.
+* {lit}`caseProbeTr` — the transition of the branch, from the branches'
+  transitions.
+* {lit}`caseProbe` — the branch: the machine built from {lit}`caseProbeTr`.
 * {lit}`liftP`, {lit}`liftQ` — the embeddings of a branch's configuration.
 
 # Main statements
 
+* {lit}`caseProbe_tr` — the transition of the branch is {lit}`caseProbeTr`.
+* {lit}`caseProbe_ofTr` — the branch between machines built from transition
+  functions is the machine built from {lit}`caseProbeTr` of those functions.
 * {lit}`RunsTo.liftP`, {lit}`RunsTo.liftQ` — a run of a branch lifts to a run
   of the composite.
 * {lit}`caseProbe_dispatch` — the dispatch step enters the selected branch.
@@ -54,21 +64,49 @@ open Geb.SizeBounded.Machine
 
 public section
 
-/-- The branch: in the dispatch state, enter {lit}`Q` when the probe reads a
-one and {lit}`P` otherwise; in a branch state, that branch's transition. -/
-@[expose] def caseProbe {k : ℕ} {SP SQ : Type} (p : Probe k) (P : MultiTapeTM k Bool SP)
-    (Q : MultiTapeTM k Bool SQ) : MultiTapeTM k Bool (Unit ⊕ (SP ⊕ SQ)) where
-  q₀ := .inl ()
-  tr q inp work :=
-    match q with
-    | .inl () =>
-      { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none,
-        state := some (if probeRead p inp work = some true then .inr (.inr Q.q₀)
-          else .inr (.inl P.q₀)) }
-    | .inr (.inl s) => let o := P.tr s inp work
-      { o with state := o.state.map fun s ↦ .inr (.inl s) }
-    | .inr (.inr s) => let o := Q.tr s inp work
-      { o with state := o.state.map fun s ↦ .inr (.inr s) }
+/-- The transition of the branch, from the branches' transitions {lit}`trP`,
+{lit}`trQ` and initial states {lit}`q₀P`, {lit}`q₀Q`: in the dispatch state,
+enter {lit}`Q` when the probe reads a one and {lit}`P` otherwise; in a branch
+state, that branch's transition. It is not inlined, so that a partial
+application of it holds the branches' transitions as evaluated arguments rather
+than recomputing them at each application. -/
+@[expose, noinline] def caseProbeTr {k : ℕ} {SP SQ : Type} (p : Probe k)
+    (trP : SP → Option Bool → (Fin k → Option Bool) → Action k Bool SP)
+    (trQ : SQ → Option Bool → (Fin k → Option Bool) → Action k Bool SQ) (q₀P : SP) (q₀Q : SQ)
+    (q : Unit ⊕ (SP ⊕ SQ)) (inp : Option Bool) (work : Fin k → Option Bool) :
+    Action k Bool (Unit ⊕ (SP ⊕ SQ)) :=
+  match q with
+  | .inl () =>
+    { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none,
+      state := some (if probeRead p inp work = some true then .inr (.inr q₀Q)
+        else .inr (.inl q₀P)) }
+  | .inr (.inl s) => let o := trP s inp work
+    { o with state := o.state.map fun s ↦ .inr (.inl s) }
+  | .inr (.inr s) => let o := trQ s inp work
+    { o with state := o.state.map fun s ↦ .inr (.inr s) }
+
+/-- The branch between {lit}`P` and {lit}`Q`: the machine built from
+{name}`caseProbeTr` of their transitions. -/
+@[expose] noncomputable def caseProbe {k : ℕ} {SP SQ : Type} (p : Probe k)
+    (P : MultiTapeTM k Bool SP) (Q : MultiTapeTM k Bool SQ) :
+    MultiTapeTM k Bool (Unit ⊕ (SP ⊕ SQ)) :=
+  ofTr (.inl ()) (caseProbeTr p P.tr Q.tr P.q₀ Q.q₀)
+
+/-- The transition of {name}`caseProbe` is {name}`caseProbeTr`. -/
+theorem caseProbe_tr {k : ℕ} {SP SQ : Type} (p : Probe k) (P : MultiTapeTM k Bool SP)
+    (Q : MultiTapeTM k Bool SQ) (q : Unit ⊕ (SP ⊕ SQ)) (inp : Option Bool)
+    (work : Fin k → Option Bool) :
+    (caseProbe p P Q).tr q inp work = caseProbeTr p P.tr Q.tr P.q₀ Q.q₀ q inp work :=
+  tr_ofTr _ _ _ _ _
+
+/-- The branch between machines built from transition functions is the machine
+built from {name}`caseProbeTr` of those functions. -/
+theorem caseProbe_ofTr {k : ℕ} {SP SQ : Type} (p : Probe k) (q₀P : SP)
+    (trP : SP → Option Bool → (Fin k → Option Bool) → Action k Bool SP) (q₀Q : SQ)
+    (trQ : SQ → Option Bool → (Fin k → Option Bool) → Action k Bool SQ) :
+    caseProbe p (ofTr q₀P trP) (ofTr q₀Q trQ) =
+      ofTr (.inl ()) (caseProbeTr p trP trQ q₀P q₀Q) := by
+  rw [caseProbe, tr_ofTr', tr_ofTr', q₀_ofTr, q₀_ofTr]
 
 /-- A configuration of the first branch lifted into the composite. -/
 @[expose] def liftP {k : ℕ} {SP SQ : Type} {input : List Bool} (cfg : Cfg k Bool SP input) :
@@ -90,8 +128,11 @@ theorem caseProbe_step_left {k : ℕ} {SP SQ : Type} {input : List Bool} (p : Pr
     rw [step_of_halt hq, step_of_halt]
     simp [liftP, hq]
   | some q =>
-    unfold step liftP
-    simp only [hq]
+    have hq' : (liftP (SQ := SQ) cfg).state = some (.inr (.inl q)) := by
+      change cfg.state.map _ = _
+      rw [hq]
+      rfl
+    rw [MultiTapeTM.step_of_state hq', MultiTapeTM.step_of_state hq, caseProbe_tr]
     rfl
 
 /-- A step of the composite from a lifted second-branch configuration is the
@@ -104,8 +145,11 @@ theorem caseProbe_step_right {k : ℕ} {SP SQ : Type} {input : List Bool} (p : P
     rw [step_of_halt hq, step_of_halt]
     simp [liftQ, hq]
   | some q =>
-    unfold step liftQ
-    simp only [hq]
+    have hq' : (liftQ (SP := SP) cfg).state = some (.inr (.inr q)) := by
+      change cfg.state.map _ = _
+      rw [hq]
+      rfl
+    rw [MultiTapeTM.step_of_state hq', MultiTapeTM.step_of_state hq, caseProbe_tr]
     rfl
 
 /-- The composite emits what the first branch emits from a lifted
@@ -116,7 +160,8 @@ theorem caseProbe_outputSymbol_left {k : ℕ} {SP SQ : Type} {input : List Bool}
   unfold outputSymbol liftP
   cases hq : cfg.state
   · rfl
-  · rfl
+  · simp only [Option.map_some, caseProbe_tr]
+    rfl
 
 /-- The composite emits what the second branch emits from a lifted
 configuration. -/
@@ -126,7 +171,8 @@ theorem caseProbe_outputSymbol_right {k : ℕ} {SP SQ : Type} {input : List Bool
   unfold outputSymbol liftQ
   cases hq : cfg.state
   · rfl
-  · rfl
+  · simp only [Option.map_some, caseProbe_tr]
+    rfl
 
 /-- The composite mirrors the first branch from a lifted configuration. -/
 theorem caseProbe_runFrom_left {k : ℕ} {SP SQ : Type} {input : List Bool} (p : Probe k)
@@ -228,7 +274,7 @@ theorem caseProbe_dispatch {k : ℕ} {SP SQ : Type} {input : List Bool} (p : Pro
   have hstep : (caseProbe p P Q).step cfg =
       { cfg with state := some (if probeOf p cfg = some true then .inr (.inr Q.q₀)
         else .inr (.inl P.q₀)) } := by
-    rw [step_of_state _ _ _ hq]
+    rw [step_of_state _ _ _ hq, caseProbe_tr]
     apply Cfg.ext
     · rfl
     · change moveInputPos cfg.inputPos 0 = cfg.inputPos
@@ -239,8 +285,7 @@ theorem caseProbe_dispatch {k : ℕ} {SP SQ : Type} {input : List Bool} (p : Pro
       rw [SignType.coe_zero, add_zero]
     · exact List.append_nil _
   have hout : (caseProbe p P Q).outputSymbol cfg = none := by
-    unfold outputSymbol
-    rw [hq]
+    rw [outputSymbol_of_state hq, caseProbe_tr]
     rfl
   refine Reaches.ofFamily (caseProbe p P Q) (fun s ↦ if s = 0 then cfg else
     { cfg with state := some (if probeOf p cfg = some true then .inr (.inr Q.q₀)

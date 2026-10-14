@@ -15,11 +15,21 @@ public meta import Geb.Prototypes.Computability.SizeBounded.BitTree -- shake: ke
 
 The compiled machine of the recognizer, stepped until it halts, emits the
 recognizer's value on each of the worked words of the recognizer's test module.
+The run is evaluated through the transition function and from the initial state
+of the machine's program `machineProg`: the machine's own transition is selected
+by choice in CSLib and does not evaluate, and `machine_tr` and
+`toCfg_execStep_iterate_eq_runFrom` identify the evaluated run with the
+machine's.
+
+## Main definitions
+
+* `run` — the output of a run from a word, stepped until it halts.
+* `expected` — the recognizer's value on a word.
 
 ## Main statements
 
-The machine halts within its step bound and its output on each word is the
-recognizer's value there: `[true]` on an encoding, `[]` otherwise.
+The run halts within the machine's step bound and its output on each word is
+the recognizer's value there: `[true]` on an encoding, `[]` otherwise.
 
 ## Tags
 
@@ -30,13 +40,11 @@ set_option linter.privateModule false
 
 open Geb.SizeBounded Geb.SizeBounded.Machine Turing MultiTapeTM
 
-/-- The recognizer's machine, named so that this module references a constant of
-the module under test. -/
-def bitTreeMachine := machine isBitTree
-
-/-- The machine's output on a word, run to its halt within its step bound. -/
+/-- The machine's output on a word, run to its halt within its step bound, by the
+transition function of the machine's program from its initial state. -/
 def run (w : List Bool) : Option (List Bool) :=
-  stepUntilHalt bitTreeMachine (time isBitTree w.length + 1) (ExecCfg.init bitTreeMachine w) []
+  stepUntilHalt (machineProg isBitTree).tr (time isBitTree w.length + 1)
+    (ExecCfg.init (machineProg isBitTree).q₀ w) []
 
 /-- The recognizer's value on a word. -/
 def expected (w : List Bool) : Option (List Bool) :=
@@ -45,10 +53,12 @@ def expected (w : List Bool) : Option (List Bool) :=
 -- Zero fuel cannot observe a halt; positive fuel returns the reversed
 -- accumulator immediately, including when most of the budget is unused.
 #guard [0, 1, 1000000].all fun fuel ↦
-  stepUntilHalt bitTreeMachine fuel { ExecCfg.init bitTreeMachine [] with state := none }
+  stepUntilHalt (machineProg isBitTree).tr fuel
+    { ExecCfg.init (machineProg isBitTree).q₀ [] with state := none }
     [true, false] == if fuel == 0 then none else some [false, true]
 
-#guard stepUntilHalt bitTreeMachine 1 (ExecCfg.init bitTreeMachine []) [] = none
+#guard stepUntilHalt (machineProg isBitTree).tr 1 (ExecCfg.init (machineProg isBitTree).q₀ []) []
+  = none
 
 #guard run [false, false] = expected [false, false]
 #guard run [false, true, true, false] = expected [false, true, true, false]

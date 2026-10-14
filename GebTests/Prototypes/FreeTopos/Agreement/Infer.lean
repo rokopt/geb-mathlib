@@ -343,7 +343,6 @@ theorem inferArr_eq {v : List Tree → Tree → Tree}
   rcases E.doms[k]? with _ | _ | jd <;> rcases E.cods[k]? with _ | _ | jc <;>
     mirror_simp [bound_eq hvw, Option.join, ann_eq, id_eq] <;>
     first
-    | rfl
     | (cases bound E w args 0 k jd <;> cases bound E w args 1 k jc <;> rfl)
     | (cases bound E w args 0 k jd <;> rfl)
 
