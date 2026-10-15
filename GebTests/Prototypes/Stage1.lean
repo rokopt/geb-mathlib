@@ -73,8 +73,9 @@ def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
 -- the stage-1 compiler checks the datatypes data declares, each distinct from the trees: it
 -- rejects, naming the definition, a case analysis of a tree, a constructor applied to a tree, a
 -- primitive of trees applied to a value of a datatype, the representation of a tree, a datum
--- that is not a member, and a decoding into a function of trees; it accepts the representation
--- given to the primitive, and the datatypes tree-data declares
+-- that is not a member, a decoding into a function of trees, and a binder named by a keyword the
+-- erasure rewrites; it accepts the representation given to the primitive, and the datatypes
+-- tree-data declares
 #eval show IO Unit from do
   let img ← IO.FS.readBinFile "bootstrap/compiler.img"
   let some t := readImage img | throw (IO.userError "the committed image does not read")
@@ -86,7 +87,8 @@ def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
     (nat ++ "(def h (lam ((n Nat)) (label n)))", "h"),
     ("(def r (lam ((t T)) (rep t)))", "r"),
     (nat ++ "(def d (datum Nat (2)))", "d"),
-    (nat ++ "(def e (lam ((t T)) (decode Nat t (lam ((x T)) 1) 0)))", "e")]
+    (nat ++ "(def e (lam ((t T)) (decode Nat t (lam ((x T)) 1) 0)))", "e"),
+    ("(def b (lam ((rep T)) rep))", "b"), ("(def c (lam ((x T) (datum T)) x))", "c")]
   for (p, n) in rejected do
     unless typeErrorOf p == some (nameTree n.toList) do
       throw (IO.userError s!"the typing does not reject {n}")

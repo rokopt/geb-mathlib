@@ -3545,8 +3545,15 @@ def «Typing.bindersOf» :=
                           (leaf 0);
                         if («Prelude.and»
                           (Const.eq («Typing/Txs.length» x6) (leaf 2))
-                          («Typing.isAtomTx»
-                            («Typing/Txs.atOr» «Typing.tx0» x6 (leaf 0)))).label ≠ 0 then
+                          (let x7 : T := «Typing/Txs.atOr» «Typing.tx0» x6 (leaf 0);
+                           if («Prelude.or»
+                             («Typing.namedTx» x7 «Typing.kwRep»)
+                             («Prelude.or»
+                               («Typing.namedTx» x7 «Typing.kwDecode»)
+                               («Typing.namedTx» x7 «Typing.kwDatum»))).label ≠ 0 then
+                             leaf 0
+                           else
+                             «Typing.isAtomTx» x7)).label ≠ 0 then
                           let x7 : T := «Typing.readTy»
                             x0
                             («Typing/Txs.atOr» «Typing.tx0» x6 (leaf 1));

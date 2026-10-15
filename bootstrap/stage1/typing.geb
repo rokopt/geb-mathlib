@@ -230,7 +230,9 @@
           ((OTy.nothing) OTy.nothing)))
       f
       (MTys.reverse args)))
-  ; the binders of an abstraction: one binder (x A), or a list of them, each a name with a type
+  ; the binders of an abstraction: one binder (x A), or a list of them, each a name with a type, the
+  ; name an atom naming none of the erasure's keywords, so that the erasure leaves the binder as the
+  ; typing reads it
   (import (Option Abbr) as OAbbr)
   (defn bindersOf ((E Env) (b Tx)) (Prod T (List Abbr))
     (let bs (List Tx)
@@ -244,7 +246,11 @@
             (cons
               (case x
                 ((tList ys)
-                 (if (and (eq (Txs.length ys) 2) (isAtomTx (Txs.atOr tx0 ys 0)))
+                 (if
+                   (and (eq (Txs.length ys) 2)
+                     (let n Tx (Txs.atOr tx0 ys 0)
+                       (if (or (namedTx n kwRep) (or (namedTx n kwDecode) (namedTx n kwDatum))) 0
+                         (isAtomTx n))))
                    (case (readTy E (Txs.atOr tx0 ys 1))
                      ((OTy.just ty) (OAbbr.just (abbr (atomName (Txs.atOr tx0 ys 0)) ty)))
                      ((OTy.nothing) OAbbr.nothing))
