@@ -1354,12 +1354,10 @@ def certificates (P : Prog) (S : Defs) (T : Defs3) :
 
 /-- The development of the soundness at an atom, after the base development's declarations, stored
 as the certificate {lit}`datatype-atom`, each declaration checked as it is stored. -/
-def atomCertificates (P : Prog) (S : Defs) (T : Defs3) (base : List Internal.Decl) :
+def atomCertificates (P : Prog) (S : Defs) (T : Defs3) (base : List Internal.Thm) :
     Except String (List (String × List Internal.Decl)) := do
   let some dev := baseDev3 P S T | throw "the base is not stated"
-  let E : Array Internal.Entry := (base.filterMap fun
-    | .language a _ => some (Internal.Entry.language a)
-    | _ => none).toArray
+  let E : Array Internal.Entry := (base.map Internal.Entry.language).toArray
   let names := dev.map (·.1)
   unless names.length = E.size do throw "the base's certificate is not the base's"
   let atom := atomDev3 P S T

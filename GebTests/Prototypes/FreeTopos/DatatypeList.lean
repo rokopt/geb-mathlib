@@ -1359,12 +1359,10 @@ def listDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
 
 /-- The development of the soundness at a list, after the base's and the atom's declarations,
 stored as the certificate {lit}`datatype-list`, each declaration checked as it is stored. -/
-def listCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Decl) :
+def listCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Thm) :
     Except String (List (String × List Internal.Decl)) := do
   let some dev := baseDev3 P S T | throw "the base is not stated"
-  let E : Array Internal.Entry := (before.filterMap fun
-    | .language a _ => some (Internal.Entry.language a)
-    | _ => none).toArray
+  let E : Array Internal.Entry := (before.map Internal.Entry.language).toArray
   let names := dev.map (·.1) ++ (atomDev3 P S T).map (·.1)
   unless names.length = E.size do throw "the certificates before are not the base's and the atom's"
   -- each step's proof reported as it is found
