@@ -2192,6 +2192,10 @@ and the trees:
   * the quoted tree `d`, checked at elaboration to be a member of `D`
 :::
 
+The erasure rewrites these forms wherever they occur, so the typing
+admits no binder named `rep`, `decode` or `datum`: the erasure leaves
+every binder the typing accepts as the typing reads it.
+
 Decoding is decided by the recognizer `D.member`, which the stage-0
 compiler writes where a program refers to it (`bootstrap/recognize.geb`),
 from a marker the expansion leaves after the constructors of each
