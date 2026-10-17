@@ -48,6 +48,8 @@ first.
 * {lit}`extend3` — the program extended by the relation, the environments' relations, the
   coherences, and each fold's definitions.
 * {lit}`datatypeφ` — the soundness of the datatype language's typing at a source form.
+* {lit}`expandedφ` — the soundness at an expanded form, which the stages after the expansion
+  read.
 * {lit}`foldVocab` — the vocabulary of a fold.
 * {lit}`atomCase` — the soundness at an atom.
 * {lit}`baseDev3`, {lit}`atomDev3` — the developments.
@@ -366,32 +368,56 @@ def extend3 (P : Prog) (S : Defs) : Option (Prog × Defs3) := do
 /-- The number of quantifiers of {lit}`datatypeφ`. -/
 def nQ : ℕ := 10
 
-/-- The type and the resolved term of a form under the quantifiers of {lit}`datatypeφ`: the
-typing's optional type of the form's expansion, and the reader's optional resolution of the
-expansion's erasure, its numeral abbreviations expanded, in the scope of the context's names. -/
-def datatypeTerms (P : Prog) (form : Term) : Term × Term :=
-  let x := pc P "Prelude.get" [pc P "Datatype.expandExpr" [v 7, form]]
+/-- The optional expansion of a form under the quantifiers of {lit}`datatypeφ`, by the expansion's
+declarations v7. -/
+def expansionOf (P : Prog) (form : Term) : Term := pc P "Datatype.expandExpr" [v 7, form]
+
+/-- The type and the resolved term of a form's optional expansion under the quantifiers of
+{lit}`datatypeφ`: the typing's optional type of the expansion, and the reader's optional resolution
+of the expansion's erasure, its numeral abbreviations expanded, in the scope of the context's
+names. -/
+def expansionTerms (P : Prog) (e : Term) : Term × Term :=
+  let x := pc P "Prelude.get" [e]
   (pc P "Typing.synIn" [v 6, v 5, x],
     pc P "Reader.resolve" [v 4, v 2,
       pc P "Reader.expandNums" [v 3, pc P "Datatype.eraseExpr" [x]], scopeOf P (v 3) (v 5)])
 
-/-- The hypotheses and the conclusion of the soundness at a form, a term under the quantifiers of
-{lit}`datatypeφ`: the relation's context R v0, the environment v1, the reader's names v2 and
-numeral abbreviations v3 and type abbreviations v4, the named context v5, the typing environment
-v6, the expansion's declarations v7, and the kernel's context v8 and globals' types v9. -/
-def datatypeParts (P : Prog) (S : Defs) (T : Defs3) (form : Term) : List Term × Term :=
+/-- The type and the resolved term of a form under the quantifiers of {lit}`datatypeφ`, those of
+its expansion ({name}`expansionTerms`). -/
+def datatypeTerms (P : Prog) (form : Term) : Term × Term := expansionTerms P (expansionOf P form)
+
+/-- The hypotheses and the conclusion of the soundness at an optional expansion, a term under the
+quantifiers of {lit}`datatypeφ`: the relation's context R v0, the environment v1, the reader's
+names v2 and numeral abbreviations v3 and type abbreviations v4, the named context v5, the typing
+environment v6, the expansion's declarations v7, and the kernel's context v8 and globals' types
+v9. -/
+def expansionParts (P : Prog) (S : Defs) (T : Defs3) (e : Term) : List Term × Term :=
   let isSomeT (t : Term) : Term := truth P.o (pc P "Prelude.isSome" [t])
   let get (t : Term) : Term := pc P "Prelude.get" [t]
-  let (ty, k) := datatypeTerms P form
+  let (ty, k) := expansionTerms P e
   ([T.globT (v 0) (v 6) (v 2), T.envT (v 0) (v 5) (v 1), T.numsT (v 6) (v 3),
       T.defsT (v 6) (v 2),
-      truth P.o (pc P "srcForm" [Term.lam treeTy (pc P "Reader.expandNums" [v 4, v 0]),
-        get (pc P "Datatype.expandExpr" [v 7, form])]),
-      isSomeT (pc P "Datatype.expandExpr" [v 7, form]), isSomeT ty, isSomeT k,
-      isSomeT (pc P "Check.typeIn" [v 9, v 8, get k]), T.kwsT (v 3)],
+      truth P.o (pc P "srcForm" [Term.lam treeTy (pc P "Reader.expandNums" [v 4, v 0]), get e]),
+      isSomeT e, isSomeT ty, isSomeT k, isSomeT (pc P "Check.typeIn" [v 9, v 8, get k]),
+      T.kwsT (v 3)],
     S.conv
       (Term.lam nat (S.evN (Term.fst (v 1)) (v 0) (v 2) (get (Term.subst k fun i ↦ v (i + 1)))))
       (T.relT (v 0) (get ty)))
+
+/-- The hypotheses and the conclusion of the soundness at a form, a term under the quantifiers of
+{lit}`datatypeφ`, those at its expansion ({name}`expansionParts`). -/
+def datatypeParts (P : Prog) (S : Defs) (T : Defs3) (form : Term) : List Term × Term :=
+  expansionParts P S T (expansionOf P form)
+
+/-- The soundness at an optional expansion, a term in which the variable of index {name}`nQ`
+stands for the variable of index 0 outside the quantifiers: the implication of the conclusion by
+the hypotheses ({name}`expansionParts`) under the quantifiers of {lit}`datatypeφ`. -/
+def expansionφ (P : Prog) (S : Defs) (T : Defs3) (e : Term) : Term :=
+  let (hs, goal) := expansionParts P S T e
+  let q (A : Tree) (b : Term) : Term := Internal.Logic.all P.o A (Term.lam A b)
+  q (list treeTy) (q (list treeTy) (q (list treeTy) (q T.envTy (q (list treeTy) (q (list treeTy)
+    (q (list treeTy) (q (list treeTy) (q (list treeTy) (q Defs3.ctxTy
+      (hs.foldr (Internal.Logic.imp P.o) goal))))))))))
 
 /-- The soundness of the datatype language's typing at a source form, the variable of index 0:
 for all globals' types and contexts of the kernel, declarations of the expansion, typing
@@ -405,11 +431,14 @@ keyword, then the resolved term's evaluation in the environment converges to a v
 the type. The kernel's typing is the check that follows the reader in the pipeline, which rejects
 the nodes the reader writes for a keyword at another arity than its own. -/
 def datatypeφ (P : Prog) (S : Defs) (T : Defs3) : Term :=
-  let (hs, goal) := datatypeParts P S T (v nQ)
-  let q (A : Tree) (b : Term) : Term := Internal.Logic.all P.o A (Term.lam A b)
-  q (list treeTy) (q (list treeTy) (q (list treeTy) (q T.envTy (q (list treeTy) (q (list treeTy)
-    (q (list treeTy) (q (list treeTy) (q (list treeTy) (q Defs3.ctxTy
-      (hs.foldr (Internal.Logic.imp P.o) goal))))))))))
+  expansionφ P S T (expansionOf P (v nQ))
+
+/-- The soundness at an expanded form, the variable of index 0: that at a source form
+({name}`datatypeφ`), its expansion present and the form itself. The stages after the expansion
+read the expanded form alone, so that a form whose expansion is the one given has the soundness
+there. -/
+def expandedφ (P : Prog) (S : Defs) (T : Defs3) : Term :=
+  expansionφ P S T (pc P "Prelude.some" [v nQ])
 
 /-- The map of a fold's definition over a list, the list of index 0 and the parameters after it,
 the innermost first, at the fold's value type {lit}`R`. -/
