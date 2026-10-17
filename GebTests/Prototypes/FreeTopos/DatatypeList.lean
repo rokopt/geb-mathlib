@@ -1248,7 +1248,9 @@ def letCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
       -- hypothesis is blocked on
       (fun k ↦ K.splitHyp (typed + 1) k 6) <|
       sameTy typed <|
-      W.presentAt "the body's type" (B.bodyAt tyT) typed (W.hyp 6) <|
+      (W.presentAt "the body's type" (B.bodyAt tyT) typed (W.hyp 6) · (tested := true)) <|
+      -- the annotation's and the resolutions' labels decided, since the reader tests their
+      -- presence at once
       W.presentAt "the annotation's kernel type" B.readTypeAt (typed + 1) (W.hyp 7) <|
       -- the body's resolution before the term's, as the reader tests them
       W.presentAt "the body's resolution" (B.bodyAt kT) (typed + 1) (W.hyp 7) <|
@@ -1260,9 +1262,9 @@ def letCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
           (K.hypFalse (W.hyp 8) Γ Φ ψ).orElse fun _ ↦ K.hypFalse (typed + 2) Γ Φ ψ) <|
       -- the body's kernel type before the term's, as the kernel tests them
       (W.presentAt "the body's kernel type" (B.bodyAt kernelT) (typed + 2) (W.hyp 8) ·
-        (unfolding := false)) <|
+        (unfolding := false) (tested := true)) <|
       (W.presentAt "the term's kernel type" (at_ 2 kernelT) (typed + 2) (W.hyp 8) ·
-        (unfolding := false)) <| K.norm k)
+        (unfolding := false) (tested := true)) <| K.norm k)
     let some d := W.intro "Reader.kwLet" (decisions eval) a.ctx a.hyps a.concl
       | dbgTrace "letCase: not proved" fun _ ↦ none
     pure (a, d))
