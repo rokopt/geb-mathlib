@@ -297,9 +297,13 @@ for every declaration that depends on it.
 check` writes them into a temporary directory and compares them with the
 committed ones. A search may continue a development from the certificates
 of the searches before it, which it reads from the directory it writes
-into. A change to a development's proofs, or to a program it is about, is
-followed by `regen`. `slow-checks.yml` runs `check` daily and on
-demand; the pre-push checklist and the other workflows check the committed
+into. Either command takes the names of searches to run, which
+`scripts/certificates.sh searches` lists; a search checked alone reads the
+committed certificates it continues from. A change to a development's
+proofs, or to a program it is about, is followed by `regen`.
+`slow-checks.yml` runs `check` daily and on demand, one job to a search,
+so that each runs within the hosted runners' limit on a job's time; the
+pre-push checklist and the other workflows check the committed
 certificates and do not search. A certificate whose check by Lean's
 evaluator takes hours is checked instead by a module of the library
 `GebSlow`, which neither `lake build` nor `lake test` builds and which
