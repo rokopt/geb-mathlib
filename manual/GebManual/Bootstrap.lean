@@ -2235,8 +2235,11 @@ relation extending the fundamental lemma's at the datatypes, and proved
 at atoms (`GebTests/Prototypes/FreeTopos/DatatypeBase.lean`, its
 certificates checked by `GebTests/Prototypes/FreeTopos/Certified/Datatype.lean`)
 and at the keywords' forms one keyword at a time, given the soundness at
-their elements (`GebTests/Prototypes/FreeTopos/DatatypeList.lean`).
-Remaining after it: `tree-data` removed.
+their elements (`GebTests/Prototypes/FreeTopos/DatatypeList.lean`), and
+at an abstraction over several binders from that at an abstraction over
+one, by induction on the list of its binders
+(`GebTests/Prototypes/FreeTopos/DatatypeLam.lean`). Remaining after it:
+`tree-data` removed.
 
 Abstraction is mathematical, not syntactic, and needs no mark of its
 own. An interface is a theory, a presentation of operations and axioms

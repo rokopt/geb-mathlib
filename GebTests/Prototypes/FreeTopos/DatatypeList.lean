@@ -238,12 +238,13 @@ and the list's and the atom's cases of the typing and the reader unfolded as wel
 cases on the elements' values reduce as the proofs decide them. With the values abstracted the
 equation applies whatever form the values have reached. The proofs at the keyword use them as
 rules in place of unfolding the steps among their hypotheses. At expanded forms, where
-{lit}`expanded` holds, the expansion's fold is left out. -/
+{lit}`expanded` holds, the expansion's fold is left out. The equations' names are suffixed by
+{lit}`tag`, which distinguishes the forms of a keyword of one arity. -/
 def kwEqs (P : Prog) (T : Defs3) (kw : String) (n : ℕ) (form : Term := kwForm P kw n)
-    (expanded : Bool := false) : List Step :=
+    (expanded : Bool := false) (tag : String := "") : List Step :=
   -- at expanded forms the statement applies no expansion, the fold of index 0
   ((foldSpecs P T.envTy).zipIdx.filter fun (_, k) ↦ !expanded || k ≠ 0).map fun (f, k) ↦
-    (kwEqName kw n k, fun ix E ↦ do
+    (kwEqName kw n k ++ tag, fun ix E ↦ do
     let Γ₀ := List.replicate n treeTy ++ f.ctx.tail
     let t := Term.subst (pc P f.name f.args) fun i ↦ if i = 0 then form else v (i - 1 + n)
     let rs := vRules3 P ix E.size
