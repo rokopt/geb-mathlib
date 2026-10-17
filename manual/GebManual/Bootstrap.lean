@@ -2068,7 +2068,9 @@ datatype language rewritten in the datatype language,
 datatypes for optional trees, S-expressions and declarations, case
 analysis and structural recursion in place of tests of labels and folds,
 and functions with result types, computing the same function of a
-program's forms. The seed cannot read the datatype language, so the
+program's forms but that it writes each abstraction over several
+binders as abstractions over one, which the reader resolves to the same
+term. The seed cannot read the datatype language, so the
 stage-0 compiler
 builds its image; run from that image, the stage-1 compiler compiles its
 own source to the same image, of about sixteen kilobytes, in 0.61
@@ -2168,11 +2170,13 @@ typing synthesizes each definition's type from its term, resolving names
 as the reader does, and names the first definition it rejects
 (`Datatype.typeErrorOf`); the erasure of the checked forms is the program
 the stage-0 expansion writes, which erases the same forms without
-checking them, so the two compilers agree on every program the typing
-accepts and the fixed points hold. The keyword `data` declares a datatype
-distinct from the trees and from every other datatype, and `tree-data`
-one standing for the trees, which the sources keep until they are
-retyped and which is then removed. Three forms cross between a datatype
+checking them, but for each abstraction over several binders, which the
+stage-1 expansion writes as abstractions over one binder each and the
+reader resolves to the same term; so the two compilers agree on every
+program the typing accepts and the fixed points hold. The keyword `data`
+declares a datatype distinct from the trees and from every other
+datatype, and `tree-data` one standing for the trees, which the sources
+keep until they are retyped and which is then removed. Three forms cross between a datatype
 and the trees:
 
 :::table +header
