@@ -74,10 +74,10 @@ theorem outputString_eq (w : List Bool) :
   rfl
 
 /-- A bounded interval for every work head bounds the total visited work space. -/
-theorem spaceUsed_le_of_headBound {input : List (Fin 4)}
+theorem space_le_of_headBound {input : List (Fin 4)}
     (cfg : Cfg 3 (Fin 4) (Fin 10) input) (width t : ℕ)
     (h : ∀ u ≤ t, HeadBound width (machine.runFrom cfg u)) :
-    machine.spaceUsed cfg t ≤ 3 * (width + 1) := by
+    machine.space cfg t ≤ 3 * (width + 1) := by
   have hsub (i : Fin 3) : machine.visitedByTapeHead cfg t i ⊆
       (Finset.range (width + 1)).image (fun n : ℕ ↦ (n : ℤ)) := by
     intro z hz
@@ -89,7 +89,7 @@ theorem spaceUsed_le_of_headBound {input : List (Fin 4)}
   have hi (i : Fin 3) : machine.spaceUsedByTape cfg t i ≤ width + 1 :=
     (Finset.card_le_card (hsub i)).trans (Finset.card_image_le.trans (by simp))
   calc
-    machine.spaceUsed cfg t ≤ ∑ _i : Fin 3, (width + 1) :=
+    machine.space cfg t ≤ ∑ _i : Fin 3, (width + 1) :=
       Finset.sum_le_sum (fun i _ ↦ hi i)
     _ = 3 * (width + 1) := by simp
 
@@ -122,7 +122,7 @@ theorem computableInTimeAndSpace_validBool :
   intro w
   refine computesInTimeAndSpace_of_halted (t' := 2 + runCost w + 1) (halts_at w)
     (by rw [initCfg_runFrom_output]; exact outputString_eq w) rfl ?_
-    (spaceUsed_le_of_headBound _ _ _ (headBound_run w))
+    (space_le_of_headBound _ _ _ (headBound_run w))
   change 2 + runCost w + 1 ≤ 6 * w.length + 5
   have h := runCost_le w
   omega

@@ -136,7 +136,8 @@ elab_rules : command
     for (key, e) in entries do
       let doc : TSyntax ``Lean.Parser.Command.docComment :=
         ⟨mkNode ``Lean.Parser.Command.docComment
-          #[mkAtom "/--", mkAtom s!"The entry `{key}` of `{path.fileName.getD ""}`. -/"]⟩
+          #[mkAtom "/--", mkNode ``Lean.Parser.Command.commentBody
+            #[mkAtom s!"The entry `{key}` of `{path.fileName.getD ""}`.", mkAtom "-/"]]⟩
       let name := mkIdent (Name.mkSimple key)
       let value ← citable e
       elabCommand (← `($doc:docComment public def $name:ident : Citable := $value))

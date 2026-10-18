@@ -103,7 +103,7 @@ theorem computableInTimeAndSpace_const (v : List Bool) :
   refine ⟨v.length + 1, Nat.le_refl _, 0, Nat.le_refl _, constantMachine_halts v _, ?_, ?_⟩
   · rw [initCfg_runFrom_output, constantMachine_output v _ _ (Nat.le_refl _),
       List.take_of_length_le (by omega)]
-  · exact spaceUsed_zero_tapes_eq_zero _ _ rfl
+  · exact space_zero_tapes_eq_zero _ _ rfl
 
 /-- Before its final transition, the copy machine is live at the next input position. -/
 theorem identityMachine_state_pos (input : List (Fin 2)) :
@@ -181,7 +181,7 @@ theorem computableInTimeAndSpace_id :
     identityMachine_halts _, ?_, ?_⟩
   · rw [initCfg_runFrom_output, identityMachine_output _ _ (Nat.le_refl _),
       List.take_of_length_le (by omega)]
-  · exact spaceUsed_zero_tapes_eq_zero _ _ rfl
+  · exact space_zero_tapes_eq_zero _ _ rfl
 
 /-- The unary constant expression has the constant machine's resource bounds. -/
 theorem computableInTimeAndSpace_constOf (v : List Bool) :

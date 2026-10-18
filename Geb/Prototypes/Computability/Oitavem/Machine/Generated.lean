@@ -360,10 +360,10 @@ theorem _root_.Geb.SizeBounded.Logspace.Machine.TransformsIn.seqEmitsIn
   exact ⟨hGB, t₁ + t₂, Nat.add_le_add ht₁ ht₂, RunsTo.seqStartEmits hq r₁ r₂⟩
 
 /-- A halted emission's head bound controls space at every time, including after halting. -/
-theorem _root_.Geb.SizeBounded.Machine.Emits.spaceUsed_le_all
+theorem _root_.Geb.SizeBounded.Machine.Emits.space_le_all
     {k : ℕ} {S : Type} {input : List Bool} {P : MultiTapeTM k Bool S}
     {cfg cfg' : Cfg k Bool S input} {w : List Bool} {t B : ℕ}
-    (h : Emits P cfg cfg' w t B) (s : ℕ) : P.spaceUsed cfg s ≤ k * (B + 2) := by
+    (h : Emits P cfg cfg' w t B) (s : ℕ) : P.space cfg s ≤ k * (B + 2) := by
   have hpos (u : ℕ) (i : Fin k) :
       -1 ≤ (P.runFrom cfg u).workTapePos i ∧ (P.runFrom cfg u).workTapePos i ≤ B := by
     by_cases hu : u ≤ t
@@ -373,7 +373,7 @@ theorem _root_.Geb.SizeBounded.Machine.Emits.spaceUsed_le_all
           runFrom_of_halt _ h.halted]
       rw [he]
       simpa only [h.runFrom_eq] using h.pos t le_rfl i
-  unfold spaceUsed
+  rw [space_eq_sum]
   calc
     _ ≤ ∑ _ : Fin k, (B + 2) := Finset.sum_le_sum fun i _ ↦
       spaceUsedByTape_le_of_pos P cfg s B i (fun u _ ↦ hpos u i)
@@ -415,7 +415,7 @@ theorem EmitsIn.computes_polytime_logspace {k : ℕ} {S : Type} [Finite S]
       exact he.output
   · intro input s
     obtain ⟨cfg', t, he⟩ := hem input
-    refine (he.spaceUsed_le_all s).trans ?_
+    refine (he.space_le_all s).trans ?_
     calc
       k * (B input.length + 2) ≤ k * ((c + 2) * (input.length.size + 1)) :=
         Nat.mul_le_mul_left k (by rw [Nat.add_mul]; have := hB input.length; omega)

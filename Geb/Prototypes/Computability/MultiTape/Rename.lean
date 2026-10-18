@@ -209,12 +209,13 @@ lemma outputString_mapSym (c : Cfg k S Q input) (t : ℕ) :
   rcases h : tm.outputSymbol (tm.runFrom c t) with _ | s <;> simp
 
 /-- Renaming preserves the count of visited work tape cells. -/
-lemma spaceUsed_mapSym (c : Cfg k S Q input) (t : ℕ) :
-    (tm.mapTM e d).spaceUsed (c.mapSym e d) t = tm.spaceUsed c t := by
+lemma space_mapSym (c : Cfg k S Q input) (t : ℕ) :
+    (tm.mapTM e d).space (c.mapSym e d) t = tm.space c t := by
   have hpos : ∀ (t' : ℕ) (i : Fin k),
       ((tm.mapTM e d).runFrom (c.mapSym e d) t').workTapePos i = (tm.runFrom c t').workTapePos i :=
     fun t' i => by rw [runFrom_mapSym]; rfl
-  unfold spaceUsed spaceUsedByTape visitedByTapeHead
+  rw [space_eq_sum, space_eq_sum]
+  unfold spaceUsedByTape visitedByTapeHead
   exact Finset.sum_congr rfl (fun i _ => by simp only [hpos])
 
 /-- Renaming the alphabet and the states of a machine preserves its computations. -/
@@ -226,7 +227,7 @@ lemma ComputesInTimeAndSpace.mapTM {i o : List S} {t s : ℕ}
   · rw [initCfg_mapSym, runFrom_mapSym]
     simp only [Cfg.Halted, Cfg.mapSym_state, hhalt, Option.map_none]
   · rw [initCfg_mapSym, runFrom_mapSym, Cfg.mapSym_output, hout]
-  · rw [initCfg_mapSym, spaceUsed_mapSym]
+  · rw [initCfg_mapSym, space_mapSym]
     exact hspace
 
 /-- The embedding of strings induced by an embedding of symbols. -/
@@ -265,7 +266,7 @@ theorem computableInTimeAndSpaceOfLength_of_finite [Finite Q] (e : S ≃ Bool) (
     (h : ∀ w, ∃ t' ≤ t w.length, ∃ s' ≤ s w.length,
       (tm.runFrom (tm.initCfg (w.map emb)) t').Halted ∧
       (tm.runFrom (tm.initCfg (w.map emb)) t').output = (f w).map emb ∧
-      tm.spaceUsed (tm.initCfg (w.map emb)) t' = s') :
+      tm.space (tm.initCfg (w.map emb)) t' = s') :
     ComputableInTimeAndSpaceOfLength f (.refl _) (.refl _) t s := by
   have hmap : ∀ w : List Bool, w.map e.symm = w.map emb :=
     fun w ↦ List.map_congr_left fun b _ ↦ he b

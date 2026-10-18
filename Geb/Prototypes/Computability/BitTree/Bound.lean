@@ -81,8 +81,8 @@ theorem workTapePos_bounds (w : List Bool) (t : ℕ) (ht : t ≤ w.length + 3) (
     exact ⟨Int.natCast_nonneg _, by exact_mod_cast hc⟩
 
 /-- The unary machine visits at most the input length plus two work cells. -/
-theorem spaceUsed_le (w : List Bool) :
-    unaryScanner.spaceUsed (unaryScanner.initCfg (w.map boolEmb)) (w.length + 3) ≤
+theorem space_le (w : List Bool) :
+    unaryScanner.space (unaryScanner.initCfg (w.map boolEmb)) (w.length + 3) ≤
       w.length + 2 := by
   have hsub (i : Fin 1) :
       unaryScanner.visitedByTapeHead (unaryScanner.initCfg (w.map boolEmb))
@@ -105,8 +105,8 @@ theorem computableInTimeAndSpace_validBool :
   refine computableInTimeAndSpaceOfLength_of_finite (tm := unaryScanner) finTwoEquiv boolEmb
     (fun b ↦ by cases b <;> rfl) fun w ↦ ?_
   refine ⟨w.length + 3, le_refl _,
-    unaryScanner.spaceUsed (unaryScanner.initCfg (w.map boolEmb)) (w.length + 3),
-    spaceUsed_le w, halts_at w, ?_, rfl⟩
+    unaryScanner.space (unaryScanner.initCfg (w.map boolEmb)) (w.length + 3),
+    space_le w, halts_at w, ?_, rfl⟩
   rw [initCfg_runFrom_output]
   exact outputString_eq w
 

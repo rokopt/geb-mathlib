@@ -1010,7 +1010,7 @@ first cites them.
 
 `Geb/Prototypes/Computability/TreeScanner/Bound.lean`'s
 `computableInTimeAndSpace_validBool` gives a space bound affine in the step
-count. A sharper bound, `spaceUsed ≤ n + 2`, follows from
+count. A sharper bound, `space ≤ n + 2`, follows from
 `RankedAlphabet.Binary.depth_le_length` and a computation of
 `Turing.MultiTapeTM.visitedByTapeHead` as a `Finset` image, since the count
 never exceeds the word length and the plant step's excursion to cell `1`
@@ -1081,7 +1081,7 @@ step from a known state over an arbitrary machine, configuration and state,
 is a second candidate for that pull request: Cslib states `step_of_halt`
 beside it and no companion for a configuration that has not halted.
 
-Neither patch reaches `Turing.MultiTapeTM.spaceUsed`'s `Finset.image` root,
+Neither patch reaches `Turing.MultiTapeTM.space`'s `Finset.image` root,
 through `Turing.MultiTapeTM.visitedByTapeHead`: mathlib's `Finset.image`
 depends on `Classical.choice`, a dependence neither this repository nor
 Cslib can remove without redefining the space measure. See § Triggers (do
@@ -1313,7 +1313,7 @@ Correcting these is a separate concern from any current branch per
   the step modules and the mirrors recover choice-free content of their
   own; leaving their entries in place past that point would misdescribe the
   allowlist's criterion, so the entries are removed, leaving only the two
-  `Bound.lean` modules admitted — `Turing.MultiTapeTM.spaceUsed`'s
+  `Bound.lean` modules admitted — `Turing.MultiTapeTM.space`'s
   `Finset.image` root is a separate, unremovable dependence that keeps them
   admitted regardless.
 - **`lake shake --keep-implied` versus mathlib CI's plain `lake shake`**: a

@@ -22,7 +22,7 @@ The input tape is read-only and excluded from CSLib's work-space measure.
 
 * {lit}`computableInTimeAndSpace_validBool` proves simultaneous quadratic time and linear space,
   as {name}`Turing.MultiTapeTM.ComputesFunInTimeAndSpace` of the machine itself.
-* {lit}`spaceUsed_le_of_headBound` converts the four head intervals to a work-space bound.
+* {lit}`space_le_of_headBound` converts the four head intervals to a work-space bound.
 
 ## Implementation notes
 
@@ -51,10 +51,10 @@ namespace Geb.BitTree.Elias.Machine
 open Turing MultiTapeTM
 
 /-- Four heads confined to the same interval visit at most four times its number of cells. -/
-theorem spaceUsed_le_of_headBound {input : List (Fin 3)}
+theorem space_le_of_headBound {input : List (Fin 3)}
     (cfg : Cfg 4 (Fin 3) Control input) (width t : ℕ)
     (h : ∀ u ≤ t, HeadBound width (machine.runFrom cfg u)) :
-    machine.spaceUsed cfg t ≤ 4 * (width + 1) := by
+    machine.space cfg t ≤ 4 * (width + 1) := by
   have hsub (i : Fin 4) : machine.visitedByTapeHead cfg t i ⊆
       (Finset.range (width + 1)).image (fun n : ℕ ↦ (n : ℤ)) := by
     intro z hz
@@ -66,7 +66,7 @@ theorem spaceUsed_le_of_headBound {input : List (Fin 3)}
   have hi (i : Fin 4) : machine.spaceUsedByTape cfg t i ≤ width + 1 :=
     (Finset.card_le_card (hsub i)).trans (Finset.card_image_le.trans (by simp))
   calc
-    machine.spaceUsed cfg t ≤ ∑ _i : Fin 4, (width + 1) :=
+    machine.space cfg t ≤ ∑ _i : Fin 4, (width + 1) :=
       Finset.sum_le_sum (fun i _ ↦ hi i)
     _ = 4 * (width + 1) := by simp
 
@@ -122,7 +122,7 @@ theorem computableInTimeAndSpace_validBool :
       (fun w ↦ 5 * w.length ^ 2 + 16 * w.length + 2) (fun w ↦ 4 * (w.length + 2)) := by
   intro w
   refine computesInTimeAndSpace_of_halted (t' := 1 + runCost w + 1) (halts_at w) ?_ rfl ?_
-    (spaceUsed_le_of_headBound _ _ _ (headBound_run w))
+    (space_le_of_headBound _ _ _ (headBound_run w))
   · rw [initCfg_runFrom_output]
     exact outputString_eq w
   · change 1 + runCost w + 1 ≤ 5 * w.length ^ 2 + 16 * w.length + 2

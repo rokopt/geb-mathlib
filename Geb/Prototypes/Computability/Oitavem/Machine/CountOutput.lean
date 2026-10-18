@@ -625,7 +625,7 @@ theorem lengthMachine_computable {k : ℕ} {S : Type} [Finite S]
   obtain ⟨cfg', t, ht, h⟩ := hP w
   obtain ⟨cfg'', u, hu, e⟩ := lengthMachine_emits P h (hB w)
   refine computesInTimeAndSpace_of_halted ?_ ?_ rfl
-    (hu.trans (Nat.add_le_add_right (Nat.mul_le_mul_right _ ht) _)) e.spaceUsed_le
+    (hu.trans (Nat.add_le_add_right (Nat.mul_le_mul_right _ ht) _)) e.space_le
   · change ((lengthMachine P).runFrom ((lengthMachine P).initCfg w) u).state = none
     rw [e.runFrom_eq]
     exact e.halted

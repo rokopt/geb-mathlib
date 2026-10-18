@@ -158,7 +158,7 @@ Completeness is outside this construction's scope.
   precondition holds on blank registers and whose head bound is
   logarithmic yields simultaneous polynomial time and logarithmic
   space on that emitter preceded by one input-head homing step.
-  `Emits.spaceUsed_le_all` supplies the space bound at every time,
+  `Emits.space_le_all` supplies the space bound at every time,
   including after halting. No polynomial assumption on the emitter's
   termination bound is required.
 - [Repeated-input emission][repeat] implements `squareMachine` on one
@@ -542,7 +542,7 @@ their mathematical specifications alone do not supply one.
 For a fixed expression, bound the length of every work register and
 every work-head excursion by `O(n.size + 1)`. The number of tapes and
 simultaneously live contexts is fixed by compilation. Convert the run
-bounds to CSLib's total `spaceUsed` bound, including initialization,
+bounds to CSLib's total `space` bound, including initialization,
 subcalls, and final emission. Establish the bound for all times, as
 required by `computes_polytime_logspace`.
 

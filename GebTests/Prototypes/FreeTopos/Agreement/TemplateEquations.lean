@@ -5,7 +5,6 @@ Authors: Terence Rokop
 -/
 module
 
-public import Lean.DocString.Syntax
 public import Lean.Meta.Tactic.Simp.RegisterCommand
 meta import Lean.Meta.Tactic.Simp.Attr
 public meta import Lean.Elab.Command -- shake: keep
