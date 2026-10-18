@@ -8,12 +8,13 @@
 ; and structural recursion in place of tests of labels and folds, and functions with result
 ; types. The expansion first writes the program's forms with their datatypes, the coercions it
 ; knows to hold marked by nodes no reader writes; the typing (bootstrap/stage1/typing.geb) checks
-; them; and their erasure is the program the stage-0 expansion writes. A program's forms are
-; decoded once, where the stage-0 compiler's front end gives them as trees, and the names of
-; keywords, numerals and recognizers the kernel's modules share stay trees. The stage-1 compiler
-; is the stage-0 compiler with this expansion in place of that one; built by the stage-0
-; compiler, it produces the image the stage-0 compiler produces of it. Requires the prelude, the
-; reader, the lists of bootstrap/seq.geb and the typing.
+; them; and their erasure is the program the stage-0 expansion writes, each abstraction over
+; several binders written as abstractions over one, which the reader resolves to the same terms.
+; A program's forms are decoded once, where the stage-0 compiler's front end gives them as trees,
+; and the names of keywords, numerals and recognizers the kernel's modules share stay trees. The
+; stage-1 compiler is the stage-0 compiler with this expansion in place of that one; built by the
+; stage-0 compiler, it produces the image the stage-0 compiler produces of it. Requires the
+; prelude, the reader, the lists of bootstrap/seq.geb and the typing.
 
 (module Datatype
   (export kwData kwTreeData kwCase kwCata kwRep kwDecode kwDatum kwDefn decimalChars memberName
@@ -123,7 +124,25 @@
   (defn sLet ((x Tx) (a Tx) (e Tx) (b Tx)) Tx (sx5 aLet x a e b))
   (defn sIf ((c Tx) (a Tx) (b Tx)) Tx (sx4 aIf c a b))
   (defn sLam1 ((x Tx) (a Tx) (b Tx)) Tx (sx3 aLam (sx1 (sx2 x a)) b))
-  (defn sLam2 ((x Tx) (a Tx) (y Tx) (b Tx) (e Tx)) Tx (sx3 aLam (sx2 (sx2 x a) (sx2 y b)) e))
+  (defn sLam2 ((x Tx) (a Tx) (y Tx) (b Tx) (e Tx)) Tx (sLam1 x a (sLam1 y b e)))
+  ; the binders of an abstraction, one binder (x A) or a list of them, as the typing and the reader
+  ; read them
+  (defn bindersTx ((b Tx)) (List Tx)
+    (case b ((tList xs) (if (and (eq (Txs.length xs) 2) (isAtomTx (nthTx xs 0))) (Txs.single b) xs))
+      (else (nil Tx))))
+  ; the abstraction over each binder of a list in turn around a body, the first outermost, each
+  ; over a list of one binder, which the typing and the reader read as they read the abstraction
+  ; over them all
+  (defn curry ((bs (List Tx)) (body Tx)) Tx
+    (foldr Tx Tx (lam ((x Tx) (acc Tx)) (sx3 aLam (sx1 x) acc)) body bs))
+  ; an abstraction over binders written by curry; none for an abstraction over none, which neither
+  ; the typing nor the reader reads; any other form unchanged
+  (defn curried ((e Tx)) OTx.Maybe
+    (let es (List Tx) (elems e)
+      (if (and (namedTx (nthTx es 0) kwLam) (eq (Txs.length es) 3))
+        (let bs (List Tx) (bindersTx (nthTx es 1))
+          (if (lt 0 (Txs.length bs)) (OTx.just (curry bs (nthTx es 2))) OTx.nothing))
+        (OTx.just e))))
   ; the function dropping a list's head, at the elements' type, and a list without its first n
   ; elements
   (defn sTail ((a Tx)) Tx
@@ -421,7 +440,7 @@
                     (if (and (namedTx h kwCase) (lt 2 k)) (expandCase env fs rs)
                       (if (and (namedTx h kwCata) (lt 4 k)) (expandCata env fs rs)
                         (let a (Prod T (List Tx)) (xrFrom rs 0 env)
-                          (if (fst a) (OTx.just (tList (snd a))) OTx.nothing))))))))))
+                          (if (fst a) (curried (tList (snd a))) OTx.nothing))))))))))
          (else (pair tx0 (lam ((env (List Decl))) (OTx.just tx0)))))) env))
 
   ; a datatype declaration: its declarations and kernel forms, the datatype's declaration, as a
@@ -458,9 +477,7 @@
                         (let body Tx (asTy (tAtom (children (rep d))) (sx3 aNode (numAtom j) listE))
                           (pair (and (isListTx c) (isAtomTx (nthTx es 0)))
                             (pair (ctorD (atomName (nthTx es 0)) j d (tList fields) isVar vt)
-                              (sx3 aDef (nthTx es 0)
-                                (if (lt 0 (Txs.length allPs)) (sx3 aLam (tList allPs) body)
-                                  body))))))))))))))))
+                              (sx3 aDef (nthTx es 0) (curry allPs body))))))))))))))))
   (deftype DS (Prod T (Prod (List Decl) (List Tx))))
   (defn dataDecl ((e Tx)) DS
     (let es (List Tx) (elems e)
@@ -538,10 +555,7 @@
                        (let body Tx (sLet aR (nthTx es 3) b aR)
                          (pair 1
                            (pair env
-                             (cons
-                               (sx3 aDef (nthTx es 1)
-                                 (if (eq (Txs.length (elems (nthTx es 2))) 0) body
-                                   (sx3 aLam (nthTx es 2) body)))
+                             (cons (sx3 aDef (nthTx es 1) (curry (bindersTx (nthTx es 2)) body))
                                out)))))
                       ((OTx.nothing) xpFail))
                     (if (and (namedTx h kwDef) (eq k 3))

@@ -4923,11 +4923,62 @@ def «Datatype.sLam1» :=
 
 def «Datatype.sLam2» :=
   fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
-    let x5 : T := «Datatype.sx3»
-      «Datatype.aLam»
-      («Datatype.sx2» («Datatype.sx2» x0 x1) («Datatype.sx2» x2 x3))
-      x4;
-    x5
+    let x5 : T := «Datatype.sLam1» x0 x1 («Datatype.sLam1» x2 x3 x4); x5
+
+def «Datatype.bindersTx» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (let x1 : T := x0;
+            if (Const.eq (Const.label x1) (leaf 2)).label ≠ 0 then
+              let x2 : List
+                T := Const.iter
+                (α := List T)
+                (fun (x2 : List T) =>
+                  Const.lcase
+                    (α := T)
+                    (β := List T)
+                    x2
+                    ([] : List T)
+                    (fun (_ : T) (x4 : List T) => x4))
+                (Const.children x1)
+                (leaf 0);
+              if («Prelude.and»
+                (Const.eq («Datatype/Txs.length» x2) (leaf 2))
+                («Datatype.isAtomTx» («Datatype.nthTx» x2 (leaf 0)))).label ≠ 0 then
+                «Datatype/Txs.single» x0
+              else
+                x2
+            else
+              ([] : List T));
+    x1
+
+def «Datatype.curry» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) =>
+        «Datatype.sx3» «Datatype.aLam» («Datatype.sx1» x2) x3)
+      x1
+      x0;
+    x2
+
+def «Datatype.curried» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : List T := «Datatype.elems» x0;
+                   if («Prelude.and»
+                     («Datatype.namedTx» («Datatype.nthTx» x1 (leaf 0)) «Reader.kwLam»)
+                     (Const.eq («Datatype/Txs.length» x1) (leaf 3))).label ≠ 0 then
+                     let x2 : List
+                       T := «Datatype.bindersTx» («Datatype.nthTx» x1 (leaf 1));
+                     if (Const.lt (leaf 0) («Datatype/Txs.length» x2)).label ≠ 0 then
+                       «Datatype/OTx.just»
+                         («Datatype.curry» x2 («Datatype.nthTx» x1 (leaf 2)))
+                     else
+                       «Datatype/OTx.nothing»
+                   else
+                     «Datatype/OTx.just» x0);
+    x1
 
 def «Datatype.sTail» :=
   fun (x0 : T) =>
@@ -6100,7 +6151,7 @@ def «Datatype.expandExpr» :=
                   else
                     let x10 : T × List T := «Datatype.xrFrom» x5 (leaf 0) x7;
                     if ((x10).1).label ≠ 0 then
-                      «Datatype/OTx.just» («Typing.tList» (x10).2)
+                      «Datatype.curried» («Typing.tList» (x10).2)
                     else
                       «Datatype/OTx.nothing»)
           else
@@ -6185,10 +6236,7 @@ def «Datatype.ctorDecl» :=
                    «Datatype.sx3»
                      «Datatype.aDef»
                      («Datatype.nthTx» x3 (leaf 0))
-                     (if (Const.lt (leaf 0) («Datatype/Txs.length» x12)).label ≠ 0 then
-                       «Datatype.sx3» «Datatype.aLam» («Typing.tList» x12) x13
-                     else
-                       x13))));
+                     («Datatype.curry» x12 x13))));
     x3
 
 def «Datatype.dataDecl» :=
@@ -6320,13 +6368,9 @@ def «Datatype.xpStep» :=
                 ((«Datatype.sx3»
                   «Datatype.aDef»
                   («Datatype.nthTx» x4 (leaf 1))
-                  (if (Const.eq
-                    («Datatype/Txs.length»
-                      («Datatype.elems» («Datatype.nthTx» x4 (leaf 2))))
-                    (leaf 0)).label ≠ 0 then
-                    x9
-                  else
-                    «Datatype.sx3» «Datatype.aLam» («Datatype.nthTx» x4 (leaf 2)) x9)) ::
+                  («Datatype.curry»
+                    («Datatype.bindersTx» («Datatype.nthTx» x4 (leaf 2)))
+                    x9)) ::
                   x3)))
           else
             «Datatype.xpFail»
