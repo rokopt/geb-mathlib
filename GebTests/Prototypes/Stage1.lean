@@ -73,9 +73,11 @@ def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
 -- the stage-1 compiler checks the datatypes data declares, each distinct from the trees: it
 -- rejects, naming the definition, a case analysis of a tree, a constructor applied to a tree, a
 -- primitive of trees applied to a value of a datatype, the representation of a tree, a datum
--- that is not a member, a decoding into a function of trees, and a binder named by a keyword the
--- erasure rewrites; it accepts the representation given to the primitive, and the datatypes
--- tree-data declares
+-- that is not a member, a decoding into a function of trees, a binder named by a keyword the
+-- erasure rewrites, a variable named by a keyword, and a list headed by a keyword in none of its
+-- forms; it accepts the
+-- representation given to the primitive, the datatypes tree-data declares, and an application to
+-- several arguments
 #eval show IO Unit from do
   let img ← IO.FS.readBinFile "bootstrap/compiler.img"
   let some t := readImage img | throw (IO.userError "the committed image does not read")
@@ -88,14 +90,17 @@ def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
     ("(def r (lam ((t T)) (rep t)))", "r"),
     (nat ++ "(def d (datum Nat (2)))", "d"),
     (nat ++ "(def e (lam ((t T)) (decode Nat t (lam ((x T)) 1) 0)))", "e"),
-    ("(def b (lam ((rep T)) rep))", "b"), ("(def c (lam ((x T) (datum T)) x))", "c")]
+    ("(def b (lam ((rep T)) rep))", "b"), ("(def c (lam ((x T) (datum T)) x))", "c"),
+    ("(def u (lam ((fold T)) fold))", "u"),
+    ("(def k (lam ((lam (Arrow T T)) (x T)) (lam x)))", "k")]
   for (p, n) in rejected do
     unless typeErrorOf p == some (nameTree n.toList) do
       throw (IO.userError s!"the typing does not reject {n}")
     unless runImage img (nameTree p.toList) == some (mk 0 []) do
       throw (IO.userError s!"the stage-1 compiler compiles {n}")
   let accepted := [nat ++ "(def h (lam ((n Nat)) (label (rep n))))",
-    "(tree-data Nat (zero) (succ Nat)) (def f (lam ((t T)) (case t ((zero) 0) ((succ n) 1))))"]
+    "(tree-data Nat (zero) (succ Nat)) (def f (lam ((t T)) (case t ((zero) 0) ((succ n) 1))))",
+    "(def p (lam ((f (Arrow T (Arrow T T))) (x T)) (f x x)))"]
   unless accepted.all fun p ↦ typeErrorOf p == some (mk 0 []) do
     throw (IO.userError "the typing rejects a well-typed program")
 

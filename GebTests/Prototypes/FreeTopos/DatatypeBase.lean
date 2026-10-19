@@ -411,13 +411,14 @@ def datatypeParts (P : Prog) (S : Defs) (T : Defs3) (form : Term) : List Term ×
 
 /-- The soundness at an optional expansion, a term in which the variable of index {name}`nQ`
 stands for the variable of index 0 outside the quantifiers: the implication of the conclusion by
-the hypotheses ({name}`expansionParts`) under the quantifiers of {lit}`datatypeφ`. -/
-def expansionφ (P : Prog) (S : Defs) (T : Defs3) (e : Term) : Term :=
+the hypotheses ({name}`expansionParts`) and the hypotheses {lit}`extra` after them where given,
+under the quantifiers of {lit}`datatypeφ`. -/
+def expansionφ (P : Prog) (S : Defs) (T : Defs3) (e : Term) (extra : List Term := []) : Term :=
   let (hs, goal) := expansionParts P S T e
   let q (A : Tree) (b : Term) : Term := Internal.Logic.all P.o A (Term.lam A b)
   q (list treeTy) (q (list treeTy) (q (list treeTy) (q T.envTy (q (list treeTy) (q (list treeTy)
     (q (list treeTy) (q (list treeTy) (q (list treeTy) (q Defs3.ctxTy
-      (hs.foldr (Internal.Logic.imp P.o) goal))))))))))
+      ((hs ++ extra).foldr (Internal.Logic.imp P.o) goal))))))))))
 
 /-- The soundness of the datatype language's typing at a source form, the variable of index 0:
 for all globals' types and contexts of the kernel, declarations of the expansion, typing
@@ -1091,9 +1092,9 @@ def atomThm (P : Prog) (S : Defs) (T : Defs3) : Internal.Thm :=
 
 /-- The soundness at an atom: the hypotheses introduced; the characters fixed by the expansion
 of numeral abbreviations; the coherences and the definitions' relation at the atom's name; then
-the typing's tests decided in its order, each with the reader's, the reader's scope before the
-typing's named context, which agree on the name by {lit}`lookupAgreeA` and
-{lit}`lookupAgreeB`. -/
+the typing's tests decided in its order, a keyword first, which has no type, each with the
+reader's, the reader's scope before the typing's named context, which agree on the name by
+{lit}`lookupAgreeA` and {lit}`lookupAgreeB`. -/
 def atomCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
   ("atomCase", fun ix E ↦ do
     let a := atomThm P S T
@@ -1171,6 +1172,8 @@ def atomCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
       inΓ Γ (datatypeTerms P (nodeT (Term.pair (numeral 1) (v nQ)))).2
     let childT := (primT Kernel.Prim.child).getD Term.star
     -- the tests: of the typing at an atom, and of the reader
+    let t0 (Γ : List Tree) : Term :=
+      pc P "Typing.keywordTx" [nodeT (Term.pair (numeral 1) (outer 0 Γ))]
     let t1 (Γ : List Tree) : Term := isSomeOf (pc P "Reader.numeral" [outer 0 Γ])
     let r0 (Γ : List Tree) : Term := isSomeOf (pc P "Reader.lookupAbbrev" [nm Γ, outer 7 Γ])
     let t2 (Γ : List Tree) : Term :=
@@ -1295,13 +1298,15 @@ def atomCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
             (link "definition" (dImpE L g₁ solveD refClose)))
           unscoped)
           varClose
-      decide t1
-        (decide t2 (decide r0 notNums
-            (link "abbreviation refuted" (dImpE L n₂ solveD hypFalseLast)))
-          (link "numeral abbreviation" fromAbbrev))
-        (decide r0 quoteClose
-          (link "numeral's abbreviation" (dImpE L n₂ solveD (dImpE L n₁
-            (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ) numeralAtom))))
+      decide t0
+        (decide t1
+          (decide t2 (decide r0 notNums
+              (link "abbreviation refuted" (dImpE L n₂ solveD hypFalseLast)))
+            (link "numeral abbreviation" fromAbbrev))
+          (decide r0 quoteClose
+            (link "numeral's abbreviation" (dImpE L n₂ solveD (dImpE L n₁
+              (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ) numeralAtom)))))
+        (link "keyword" (unfoldLocal (K.hypFalse (hyp 6))))
     -- the instances at the atom's name, each after the hypotheses: the numeral abbreviations'
     -- coherence, both parts; the names' coherence; and the definitions' relation
     let instAt (h k : ℕ) (next : ℕ → Deducer) : Deducer :=

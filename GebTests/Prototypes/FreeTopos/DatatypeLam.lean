@@ -7,6 +7,8 @@ module
 
 public import GebTests.Prototypes.FreeTopos.DatatypeApp -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos.DatatypeApp -- shake: keep
+public import GebTests.Prototypes.FreeTopos.DatatypeApply -- shake: keep
+public meta import GebTests.Prototypes.FreeTopos.DatatypeApply -- shake: keep
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -26,10 +28,9 @@ expansion's presence refutes that case.
 
 * {lit}`nest` — the soundness at the abstractions over each binder of a list in turn, by
   induction on the list.
-* {lit}`expSound` — the soundness at a source form gives that at its expansion.
 * {lit}`lamCase` — the soundness at an abstraction at source forms.
-* {lit}`lamCertificates` — the development, after the base's, the atom's, the list's and the
-  abstraction's over one binder.
+* {lit}`lamCertificates` — the development, after the base's, the atom's, the list's, the
+  abstraction's over one binder and the stage functions' at applications.
 
 ## References
 
@@ -133,10 +134,6 @@ def nestT (P : Prog) (bs body : Term) : Term :=
   foldrT treeTy treeTy (Term.lam treeTy (Term.lam treeTy
     (listNode [kwAtom P "Reader.kwLam", listNode [v 1], v 0]))) body bs
 
-/-- The soundness at expanded forms at a term, the variable of index 0 outside the quantifiers. -/
-def expandedAt (P : Prog) (S : Defs) (T : Defs3) (t : Term) : Term :=
-  Internal.instTerm [] [t] (expandedφ P S T)
-
 /-- The soundness at the abstractions over each binder of a list in turn around a body, given that
 at the body, in the context of the list and the body, by induction on the list: at the empty list
 the body itself, and at a binder before a list the abstraction over the binder of those over the
@@ -165,38 +162,6 @@ def nest (P : Prog) (S : Defs) (T : Defs3) : Step :=
         [list treeTy, treeTy, treeTy] [Internal.weakenElem φ] (Internal.listConsAt 1 treeTy φ)
       | dbgTrace "nest: cons" fun _ ↦ none
     pure (⟨0, [list treeTy, treeTy], [], φ⟩, nd (.listIndHyp 0 1) [d₀, d₁]))
-
-/-- The soundness at a source form gives that at its expansion: for all declarations of the
-expansion at which the form's expansion is present, the soundness at the expanded form. -/
-def expSoundThm (P : Prog) (S : Defs) (T : Defs3) : Internal.Thm :=
-  let e := pc P "Datatype.expandExpr" [v 0, v 1]
-  ⟨0, [treeTy], [Internal.instTerm [] [v 0] (datatypeφ P S T)],
-    Internal.Logic.all P.o (list treeTy) (Term.lam (list treeTy) (Internal.Logic.imp P.o
-      (truth P.o (pc P "Prelude.isSome" [e])) (expandedAt P S T (pc P "Prelude.get" [e]))))⟩
-
-/-- The soundness at a source form gives that at its expansion ({name}`expSoundThm`): the
-expanded form's statement introduced, the source form's instantiated at its variables, the
-declarations of the expansion at those given, its antecedents the expanded form's, the expansion's
-presence that given. -/
-def expSound (P : Prog) (S : Defs) (T : Defs3) : Step :=
-  ("expSound", fun ix E ↦ do
-    let W := kwKit P S T ix E 1 [true] "" true
-    let K := W.K
-    let a := expSoundThm P S T
-    -- the context: the form, the declarations, then the statement's variables, the outermost
-    -- first; the hypotheses: the source form's soundness, the declarations' truth, the
-    -- expansion's presence, the variables' truths and the statement's hypotheses
-    let at_ (j : ℕ) (Γ : List Tree) : Term := if j = 3 then atPos 1 Γ else atPos (1 + j) Γ
-    let inst : Deducer := fun Γ Φ ψ ↦
-      dAllE K.L K.G K.E 0 (at_ 1 Γ) (((List.range (nQ - 1)).foldr
-        (fun j k ↦ K.allEΓ (at_ (j + 2)) k) <|
-        (List.range W.nH).foldr (fun i k ↦ K.impE (linkK K s!"expSound: antecedent {i}"
-          (if i = 5 then K.byHyp 2 else K.byHyp (3 + nQ + i))) k)
-          (linkK K "expSound: the conclusion" fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ))) Γ Φ ψ
-    let some d := dAllI K.L (dImpI K.L ((List.range nQ).foldr (fun _ k ↦ dAllI K.L k)
-        ((List.range W.nH).foldr (fun _ k ↦ dImpI K.L k) inst))) a.ctx a.hyps a.concl
-      | dbgTrace "expSound: not proved" fun _ ↦ none
-    pure (a, d))
 
 /-- The names of the equations of the stage functions at an abstraction at source forms. -/
 def lamSrcEqs (ix : String → ℕ) (E : Array Internal.Entry) : List String :=
@@ -258,26 +223,17 @@ def lamCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
 /-- The development of the soundness at abstractions over lists of binders. -/
 def lamDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
   kwEqs P T "Reader.kwLam" 2 (lamBinderForm P) true ++
-    [lamBinder P S T, nest P S T, expSound P S T] ++
+    [lamBinder P S T, nest P S T] ++
     kwEqs P T "Reader.kwLam" 2 (tag := "/src") ++ [lamCase P S T]
 
 /-- The development of the soundness at abstractions over lists of binders, after the base's,
-the atom's, the list's and the abstraction's over one binder, stored as the certificate
-{lit}`datatype-lam`, each declaration checked as it is stored. -/
+the atom's, the list's, the abstraction's over one binder and the stage functions' at
+applications, stored as the certificate {lit}`datatype-lam`. -/
 def lamCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Thm) :
     Except String (List (String × List Internal.Decl)) := do
-  let some dev := baseDev3 P S T | throw "the base is not stated"
-  let E : Array Internal.Entry := (before.map Internal.Entry.language).toArray
-  let names := dev.map (·.1) ++ (atomDev3 P S T).map (·.1) ++ (listDev3 P S T).map (·.1) ++
-    (appDev3 P S T).map (·.1)
-  unless names.length = E.size do
-    throw "the certificates before are not the base's, the atom's, the list's and the app's"
-  -- each step's proof reported as it is found
-  let lam := (lamDev3 P S T).map fun (nm, f) ↦
-    (nm, fun ix E ↦ (f ix E).map fun r ↦ dbgTrace s!"{nm} proved" fun _ ↦ r)
-  let (_, _, ds) ← developAfter names E lam
-  checkAfter P.G E (lam.map (·.1)) ds
-  pure [("datatype-lam", ds)]
+  let some names := listNames P S T | throw "the base is not stated"
+  certifyAfter P (names ++ (appDev3 P S T).map (·.1) ++ (stagesDev3 P S T).map (·.1))
+    "datatype-lam" (lamDev3 P S T) before
 
 end GebTests.Prototypes.FreeTopos.Datatypes
 
