@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import GebTests.Prototypes.FreeTopos.DatatypeApp
+public import GebTests.Prototypes.FreeTopos.DatatypeLam
 public import GebTests.Prototypes.FreeTopos.Expansion
 public import GebTests.Prototypes.FreeTopos.Normalization
 
@@ -79,7 +79,10 @@ def searches : List (String × Search) :=
         Datatypes.listCertificates P S T dss.flatten)),
     ("datatype-app", (["datatype-base", "datatype-atom", "datatype-list"], fun dss ↦
       inProgram Datatypes.extended3 fun (P, S, T) ↦
-        Datatypes.appCertificates P S T dss.flatten))]
+        Datatypes.appCertificates P S T dss.flatten)),
+    ("datatype-lam", (["datatype-base", "datatype-atom", "datatype-list", "datatype-app"],
+      fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.lamCertificates P S T dss.flatten))]
 
 end GebTests.Prototypes.FreeTopos.Certificates
 
