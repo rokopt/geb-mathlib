@@ -6,7 +6,6 @@ Authors: Terence Rokop
 module
 
 public import Mathlib.Basic.ExistsUnique
-import Lean.DocString.Syntax
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in

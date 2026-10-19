@@ -328,9 +328,9 @@ theorem computableInTimeAndSpace_squareWord :
     apply ht.trans
     unfold countInputTime
     nlinarith [Nat.mul_le_mul_left w.length hs]
-  · change squareMachine.spaceUsed (squareMachine.initCfg w) t ≤
+  · change squareMachine.space (squareMachine.initCfg w) t ≤
       32 * (w.length.size + 1)
-    exact h.spaceUsed_le.trans (by omega)
+    exact h.space_le.trans (by omega)
 
 /-- Counting a quadratic output requires at most twice the input's binary size plus one. -/
 theorem size_square_add_one_le (n : ℕ) : (n * n + 1).size ≤ 2 * n.size + 1 := by
@@ -732,7 +732,7 @@ theorem computableInTimeAndSpace_squareWord_squareWord :
     infer_instance
   obtain ⟨cfg', t, ht, h⟩ := squareSquareMachine_emits w
   refine computesInTimeAndSpace_of_halted (t' := t) ?_ ?_ rfl
-    (ht.trans (squareSquareTime_le _)) (h.spaceUsed_le.trans ?_)
+    (ht.trans (squareSquareTime_le _)) (h.space_le.trans ?_)
   · change (squareSquareMachine.runFrom (squareSquareMachine.initCfg w) t).state = none
     rw [h.runFrom_eq]
     exact h.halted

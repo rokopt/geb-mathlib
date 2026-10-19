@@ -35,7 +35,7 @@ top.
 
 ## Main statements
 
-* {lit}`Geb.BitTreeScanner.spaceUsed_le` — the space used over the whole
+* {lit}`Geb.BitTreeScanner.space_le` — the space used over the whole
   computation is at most {lit}`3 * (bound w + 4)`.
 * {lit}`Geb.BitTreeScanner.computableInTimeAndSpace_validBool` — the machine
   computes {name}`Geb.BitTreeScanner.validBool`, singleton-listed, in the
@@ -55,7 +55,7 @@ remaining step.
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`. Its subject
 is the correspondence between the machine and Cslib's
 {name}`Turing.MultiTapeTM.ComputesFunInTimeAndSpace`, whose space conjunct rests
-on {name}`Turing.MultiTapeTM.spaceUsed`, a {name}`Finset.image` through
+on {name}`Turing.MultiTapeTM.space`, a {name}`Finset.image` through
 {name}`Turing.MultiTapeTM.visitedByTapeHead`; mathlib's {name}`Finset.image`
 depends on {lit}`Classical.choice`, a root neither this repository nor Cslib
 can remove without redefining the space measure.
@@ -92,10 +92,10 @@ theorem spaceUsedByTape_le (cfg : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb)
 
 /-- The space used over a run whose heads stay within the bound is at most
 {lit}`3 * (bound w + 4)`. -/
-theorem spaceUsed_le (cfg : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb)) (t : ℕ)
+theorem space_le (cfg : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb)) (t : ℕ)
     (h : ∀ j ≤ t, HeadsLE w (bitTreeScanner.runFrom cfg j)) :
-    bitTreeScanner.spaceUsed cfg t ≤ 3 * (bound w + 4) := by
-  rw [spaceUsed]
+    bitTreeScanner.space cfg t ≤ 3 * (bound w + 4) := by
+  rw [space_eq_sum]
   refine le_trans (Finset.sum_le_sum fun i _ ↦ spaceUsedByTape_le w cfg t h i) ?_
   rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin]
   exact le_of_eq rfl
@@ -113,6 +113,6 @@ theorem computableInTimeAndSpace_validBool :
       (fun w ↦ 3 * (w.length.bits.length + 4)) := fun w ↦
   computesInTimeAndSpace_of_halted (halts_at w)
     (by rw [initCfg_runFrom_output]; exact outputString_eq w) rfl (totalTime_le w)
-    (spaceUsed_le w _ _ (headsLE_runFrom w))
+    (space_le w _ _ (headsLE_runFrom w))
 
 end Geb.BitTreeScanner

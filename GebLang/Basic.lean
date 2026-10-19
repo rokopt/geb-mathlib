@@ -5,8 +5,6 @@ Authors: Terence Rokop
 -/
 module
 
-import Lean.DocString.Syntax
-
 /-!
 # Anchor for the library's documentation pipelines
 

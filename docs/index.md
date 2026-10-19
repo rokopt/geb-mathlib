@@ -2375,9 +2375,9 @@ checklist and in CI.
 - `Geb/Prototypes/Computability/MultiTape/RunFrom.lean` — the iteration
   equations of a multi-tape machine's run. Cslib defines
   `Turing.MultiTapeTM.runFrom tm cfg t` as the `t`-fold iterate of
-  `Turing.MultiTapeTM.step`; `runFrom_zero`, `runFrom_succ_eq_step` and
-  `runFrom_succ_eq_step'` state mathlib's `Nat.iterate` laws at `runFrom` beside
-  Cslib's own `runFrom_add`, `runFrom_comm_of_step` transports a run along a map
+  `Turing.MultiTapeTM.step`; `runFrom_zero`, `runFrom_succ_eq_step`,
+  `runFrom_succ_eq_step'` and `runFrom_add` state mathlib's `Nat.iterate` laws
+  at `runFrom`, `runFrom_comm_of_step` transports a run along a map
   of configurations commuting with two machines' steps, and `runFrom_of_halt`
   fixes a run at a halted configuration. Stated at `runFrom`, they rewrite a
   goal against hypotheses about `runFrom` without unfolding it. The module is
@@ -2398,9 +2398,11 @@ checklist and in CI.
 - `Geb/Prototypes/Computability/MultiTape/Computes.lean` — the resource bounds a
   halted run of a deterministic machine establishes. Cslib's
   `Turing.MultiTapeTM.ComputesInTimeAndSpace` bounds time and space over every
-  computation path of the machine's transition relation;
-  `runsInSpace_of_halted`, from `visitedByTapeHead_subset_of_halted`, bounds the
-  space of every path by the cells a halted run visited, and
+  computation path of the machine's transition relation; `space_eq_sum`
+  states the space of a run as the sum over the work tapes of the cells each
+  head visits; `runsInSpace_of_halted`, from
+  `visitedByTapeHead_subset_of_halted`, bounds the space of every path by the
+  cells a halted run visited, and
   `computesInTimeAndSpace_iff` states that a deterministic machine computes an
   output within time `t` and space `s` exactly when its run of `t` steps has
   halted with that output having visited at most `s` cells;
@@ -2430,7 +2432,7 @@ checklist and in CI.
 - `Geb/Prototypes/Computability/MultiTape/Rename.lean` — renaming a multi-tape
   machine's alphabet and states along equivalences: `Turing.MultiTapeTM.mapTM`
   on the machine and `Turing.Cfg.mapSym` on its configurations, with
-  `step_mapSym`, `runFrom_mapSym`, `outputString_mapSym` and `spaceUsed_mapSym`
+  `step_mapSym`, `runFrom_mapSym`, `outputString_mapSym` and `space_mapSym`
   the commutation lemmas, so that `ComputesInTimeAndSpace.mapTM` and
   `ComputesFunInTimeAndSpace.mapTM` preserve a machine's computations and both
   resource bounds. The renamed machine reads the original's transition, so
@@ -2513,9 +2515,9 @@ checklist and in CI.
   `Turing.MultiTapeTM.computableInTimeAndSpaceOfLength_of_finite`, since the
   machine's alphabet is `Fin 2` where Cslib's predicate reads `Bool`. The time
   bound is the sum of the seek, plant and sweep phase lengths from `Steps.lean`;
-  the space bound follows from it by `spaceUsed_linear` at one work tape. The
+  the space bound follows from it by `space_linear` at one work tape. The
   source module is listed in `GebMeta.classicalAllowedModules`: its space
-  conjunct rests on `Turing.MultiTapeTM.spaceUsed`, a `Finset.image` through
+  conjunct rests on `Turing.MultiTapeTM.space`, a `Finset.image` through
   `Turing.MultiTapeTM.visitedByTapeHead`, and mathlib's `Finset.image` depends
   on `Classical.choice`. Depends on
   `Geb.Prototypes.Computability.TreeScanner.Steps` and Cslib's
@@ -2795,10 +2797,10 @@ checklist and in CI.
   reading and writing `Bool` and this machine's alphabet is `Fin 4`; a
   binary re-encoding of the work alphabet is the step from one to the
   other. The time is
-  `totalTime_le`, and `spaceUsed_le` counts the cells each head visits as
+  `totalTime_le`, and `space_le` counts the cells each head visits as
   at most those from `0` to `headBound`. The module is listed in
   `GebMeta.classicalAllowedModules`: the space conjunct rests on
-  `Turing.MultiTapeTM.spaceUsed`, a `Finset.image` through
+  `Turing.MultiTapeTM.space`, a `Finset.image` through
   `Turing.MultiTapeTM.visitedByTapeHead`, and mathlib's `Finset.image`
   depends on `Classical.choice`. Depends on
   `Geb.Prototypes.Computability.BitTreeScanner.Steps` and mathlib's

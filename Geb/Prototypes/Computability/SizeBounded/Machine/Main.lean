@@ -79,7 +79,7 @@ theorem computableInTimeAndSpace_sem (e : SOf 1) :
     machine e, fun w ↦ ?_⟩
   obtain ⟨cfg', t', ht', h⟩ := machine_emits e w
   refine computesInTimeAndSpace_of_halted (t' := t')
-    (s' := (machine e).spaceUsed ((machine e).initCfg w) t') ?_ ?_ rfl ?_ ?_
+    (s' := (machine e).space ((machine e).initCfg w) t') ?_ ?_ rfl ?_ ?_
   · change ((machine e).runFrom ((machine e).initCfg w) t').state = none
     rw [h.runFrom_eq]
     exact h.halted
@@ -98,7 +98,7 @@ theorem computableInTimeAndSpace_sem (e : SOf 1) :
       rw [Nat.mul_succ]
       generalize (nsiConst e.1.1 + 2) * w.length = m at hw ⊢
       omega
-    refine le_trans h.spaceUsed_le (le_trans (Nat.mul_le_mul_left _ hlin) ?_)
+    refine le_trans h.space_le (le_trans (Nat.mul_le_mul_left _ hlin) ?_)
     rw [← Nat.mul_assoc]
     exact Nat.mul_le_mul_right _ (Nat.le_max_right _ _)
 

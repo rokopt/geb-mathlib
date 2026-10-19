@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Program
+import Geb.Prototypes.Computability.MultiTape.Computes
 
 set_option doc.verso true in
 /-!
@@ -26,7 +27,7 @@ emission. {lit}`RunsTo.ofFamily` is the case of a family emitting nothing.
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
 statements mention {name}`Turing.MultiTapeTM.runFrom`,
 {name}`Turing.MultiTapeTM.outputString` and
-{name}`Turing.MultiTapeTM.spaceUsed`, each depending on
+{name}`Turing.MultiTapeTM.space`, each depending on
 {lit}`Classical.choice` through Cslib's {name}`Turing.Cfg.inputSymbol`
 or mathlib's {name}`Finset.image`.
 
@@ -43,7 +44,7 @@ or mathlib's {name}`Finset.image`.
   emits nothing.
 * {lit}`Emits.ofFamily`, {lit}`RunsTo.ofFamily` — a closed-form family of
   configurations is an emission, and a run when it emits nothing.
-* {lit}`Emits.spaceUsedByTape_le`, {lit}`Emits.spaceUsed_le` — an emission's
+* {lit}`Emits.spaceUsedByTape_le`, {lit}`Emits.space_le` — an emission's
   visited cells, per tape and in total.
 
 # Tags
@@ -174,10 +175,10 @@ theorem Emits.spaceUsedByTape_le {k : ℕ} {State : Type} {input : List Bool}
   spaceUsedByTape_le_of_pos tm cfg t B i fun t' ht' ↦ h.pos t' ht' i
 
 /-- Over an emission the machine uses at most {lit}`k * (B + 2)` cells. -/
-theorem Emits.spaceUsed_le {k : ℕ} {State : Type} {input : List Bool}
+theorem Emits.space_le {k : ℕ} {State : Type} {input : List Bool}
     {tm : MultiTapeTM k Bool State} {cfg cfg' : Cfg k Bool State input} {out : List Bool}
-    {t B : ℕ} (h : Emits tm cfg cfg' out t B) : tm.spaceUsed cfg t ≤ k * (B + 2) := by
-  unfold spaceUsed
+    {t B : ℕ} (h : Emits tm cfg cfg' out t B) : tm.space cfg t ≤ k * (B + 2) := by
+  rw [space_eq_sum]
   refine le_trans (Finset.sum_le_sum fun i _ ↦ h.spaceUsedByTape_le i) ?_
   rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, Nat.nsmul_eq_mul]
 

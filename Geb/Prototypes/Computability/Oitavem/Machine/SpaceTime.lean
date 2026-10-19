@@ -100,7 +100,7 @@ theorem core_injective_before_halt {k : ℕ} {Symbol State : Type*}
 theorem exists_halt_le_of_space {k : ℕ} {Symbol State : Type*}
     [Finite Symbol] [Finite State] (tm : MultiTapeTM k Symbol State) :
     ∃ a b : ℕ, ∀ (input : List Symbol) (s : ℕ),
-      (∀ t, tm.spaceUsed (tm.initCfg input) t ≤ s) →
+      (∀ t, tm.space (tm.initCfg input) t ≤ s) →
       (∃ t, (tm.runFrom (tm.initCfg input) t).state = none) →
       ∃ T ≤ (input.length + 2) * a * 2 ^ (b * s),
         (tm.runFrom (tm.initCfg input) T).state = none ∧
@@ -131,7 +131,7 @@ theorem computes_of_space {k : ℕ} {State : Type*} [Finite State]
     (tm : MultiTapeTM k Bool State) (f : List Bool → List Bool) (s : ℕ → ℕ)
     (hcorrect : ∀ w, ∃ t, (tm.runFrom (tm.initCfg w) t).state = none ∧
       (tm.runFrom (tm.initCfg w) t).output = f w)
-    (hspace : ∀ w t, tm.spaceUsed (tm.initCfg w) t ≤ s w.length) :
+    (hspace : ∀ w t, tm.space (tm.initCfg w) t ≤ s w.length) :
     ∃ a b : ℕ, ComputesFunInTimeAndSpace tm (.refl _) (.refl _) f
       (fun w ↦ (w.length + 2) * a * 2 ^ (b * s w.length)) (fun w ↦ s w.length) := by
   obtain ⟨a, b, hab⟩ := exists_halt_le_of_space tm
@@ -151,7 +151,7 @@ theorem computes_polytime_logspace {k : ℕ} {State : Type*} [Finite State]
     (tm : MultiTapeTM k Bool State) (f : List Bool → List Bool) (c : ℕ)
     (hcorrect : ∀ w, ∃ t, (tm.runFrom (tm.initCfg w) t).state = none ∧
       (tm.runFrom (tm.initCfg w) t).output = f w)
-    (hspace : ∀ w t, tm.spaceUsed (tm.initCfg w) t ≤ c * (w.length.size + 1)) :
+    (hspace : ∀ w t, tm.space (tm.initCfg w) t ≤ c * (w.length.size + 1)) :
     ∃ C d : ℕ, ComputesFunInTimeAndSpace tm (.refl _) (.refl _) f
       (fun w ↦ C * (w.length + 1) ^ d) (fun w ↦ C * (w.length.size + 1)) := by
   obtain ⟨a, b, h⟩ := computes_of_space tm f (fun n ↦ c * (n.size + 1)) hcorrect hspace
@@ -201,7 +201,7 @@ theorem computes_expspace {k : ℕ} {State : Type*} [Finite State]
     (tm : MultiTapeTM k Bool State) (f : List Bool → List Bool) (c d : ℕ)
     (hcorrect : ∀ w, ∃ t, (tm.runFrom (tm.initCfg w) t).state = none ∧
       (tm.runFrom (tm.initCfg w) t).output = f w)
-    (hspace : ∀ w t, tm.spaceUsed (tm.initCfg w) t ≤ c * 2 ^ ((w.length + 1) ^ d)) :
+    (hspace : ∀ w t, tm.space (tm.initCfg w) t ≤ c * 2 ^ ((w.length + 1) ^ d)) :
     ∃ C D : ℕ, ComputesFunInTimeAndSpace tm (.refl _) (.refl _) f
       (fun w ↦ C * 2 ^ 2 ^ ((w.length + 1) ^ D)) (fun w ↦ C * 2 ^ ((w.length + 1) ^ D)) := by
   obtain ⟨a, b, h⟩ := computes_of_space tm f (fun n ↦ c * 2 ^ ((n + 1) ^ d)) hcorrect hspace

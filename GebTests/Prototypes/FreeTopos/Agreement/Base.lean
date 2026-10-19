@@ -52,7 +52,7 @@ open scoped FinEnum
 /-- The reflexivity of the equality test of natural numbers from its lawfulness, which the
 simplifications of the mirrors use: where the imports reach the order's derivation of it, which
 depends on {name}`Classical.choice`, instance search would otherwise select that. -/
-instance (priority := high) natReflBEq : ReflBEq ℕ := Nat.instLawfulBEq.toReflBEq
+instance (priority := high) natReflBEq : ReflBEq ℕ := instLawfulBEq.toReflBEq
 
 -- the kernel's primitives at leaves and nodes, shared with the mirror of the kernel's checker
 export GebTests.Prototypes.CheckMirror (label_leaf ofBool_label label_node children_node

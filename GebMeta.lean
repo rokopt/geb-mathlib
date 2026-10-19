@@ -9,6 +9,7 @@ public meta import Batteries.Tactic.Lint.Basic
 public meta import Lean.Util.CollectAxioms
 public meta import Lean.Elab.DocString
 public meta import Lean.DocString.Syntax
+public meta import Lean.Elab.DocString.Builtin.Parsing
 
 /-!
 # Axiom-hygiene linter and the `{cite}` docstring role
@@ -323,11 +324,25 @@ the same module; `Classical.choice` enters its closure only
 through the proofs of that decoder's bounds, which reach
 `Nat.testBit_two_pow_sub_succ` (`Init.Data.Nat.Bitwise.Lemmas`), so the
 name of a function given as a string literal would otherwise depend on
-`Classical.choice`. An entry is removed once the upstream proof is
-constructive. -/
+`Classical.choice`. Lean core's `instLinearOrderPackageUInt8`,
+`instLinearOrderPackageUInt32`, `instLinearOrderPackageUInt64`
+(`Init.Data.UInt.Package`) and
+`String.instLinearOrderPackage` (`Init.Data.String.Compare`) are built by
+`Std.LinearOrderPackage.ofLE` from the type's own comparison and prove
+their laws, as `Fin.instLinearOrderPackage` does, by the `Std` order
+lemmas of `Init.Data.Order.Lemmas` and `Init.Data.Ord.Basic`, so the order
+of bytes, of words and of strings would otherwise depend on
+`Classical.choice`. mathlib's `instLawfulBCmpCompare_mathlib`
+(`Mathlib.Order.Defs.LinearOrder`), the `Prop` instance relating a linear
+order's `compare` to its order, is proved by a lemma of
+`Init.Data.Ord.Basic` of the same kind. An entry is removed once the
+upstream proof is constructive. -/
 def upstreamChoiceRoots : NameSet :=
   NameSet.ofList [``Fin.instMin, ``Fin.instMax, ``Fin.val_min, ``Fin.val_max,
-    ``Fin.instLinearOrderPackage, ``String.toList]
+    ``Fin.instLinearOrderPackage, ``String.toList, ``instLinearOrderPackageUInt8,
+    ``instLinearOrderPackageUInt32, ``instLinearOrderPackageUInt64,
+    ``String.instLinearOrderPackage,
+    `instLawfulBCmpCompare_mathlib]
 
 /-- Exact module names whose axioms are permitted in the loading mode
 `native`: the modules that declare the loading of a program whose
@@ -646,7 +661,7 @@ def BibEntry.formatted (e : BibEntry) : Array (Inline ElabInline) := Id.run do
   if let some note := get "note" then out := out.push (.text s!"{note}.")
   return out
 
-open Lean.Doc Lean.Doc.Syntax
+open Lean.Doc
 
 /-- The `{cite}` docstring role: ``{cite}`Key` `` names an entry of
 `docs/references.bib` by its citation key, which must exist, and
@@ -656,16 +671,11 @@ formatted entry. `scripts/extract-pr.sh` converts it to mathlib's bare
 role name is resolved as a constant is, so that ``{cite}`Key` ``
 resolves in a module that opens nothing. -/
 @[doc_role]
-def _root_.cite (xs : TSyntaxArray `inline) : DocM (Inline ElabInline) := do
-  let key ← match xs with
-    | #[stx] =>
-      match stx with
-      | `(inline|code($s)) => pure s
-      | _ => throwErrorAt stx "expected a citation key in a code span"
-    | _ => throwError "expected precisely one citation key"
+def _root_.cite (xs : TSyntaxArray ``Parser.inline) : DocM (Inline ElabInline) := do
+  let key ← onlyCode xs
   let (path, bib) ← loadBibliography (← getFileName)
-  let some entry := bib[key.getString]?
-    | throwErrorAt key m!"unknown citation key `{key.getString}`: not in {path}"
-  return .footnote key.getString entry.formatted
+  let some entry := bib[key.getVersoCode]?
+    | throwErrorAt key m!"unknown citation key `{key.getVersoCode}`: not in {path}"
+  return .footnote key.getVersoCode entry.formatted
 
 end GebMeta

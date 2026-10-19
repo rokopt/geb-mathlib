@@ -21,6 +21,7 @@ that a proof rewriting along a run matches hypotheses stated about
 
 * {lit}`Turing.MultiTapeTM.runFrom_zero`, {lit}`Turing.MultiTapeTM.runFrom_succ_eq_step` and
   {lit}`Turing.MultiTapeTM.runFrom_succ_eq_step'`: the iterate laws.
+* {lit}`Turing.MultiTapeTM.runFrom_add`: a run splits at any intermediate step.
 * {lit}`Turing.MultiTapeTM.runFrom_comm_of_step`: a map of configurations commuting with the
   steps of two machines commutes with their runs.
 * {lit}`Turing.MultiTapeTM.runFrom_of_halt`: a run from a halted configuration stays there.
@@ -53,6 +54,12 @@ lemma runFrom_succ_eq_step {cfg : Cfg k Symbol State input} {t : ℕ} :
 lemma runFrom_succ_eq_step' {cfg : Cfg k Symbol State input} {t : ℕ} :
     tm.runFrom cfg (t + 1) = tm.step (tm.runFrom cfg t) :=
   Function.iterate_succ_apply' tm.step t cfg
+
+/-- A run splits at any intermediate step. -/
+lemma runFrom_add (cfg : Cfg k Symbol State input) (m n : ℕ) :
+    tm.runFrom cfg (m + n) = tm.runFrom (tm.runFrom cfg m) n := by
+  rw [runFrom, Nat.add_comm, Function.iterate_add_apply]
+  rfl
 
 /-- A map {lit}`f` of configurations that commutes with the steps of two machines commutes
 with their runs. -/

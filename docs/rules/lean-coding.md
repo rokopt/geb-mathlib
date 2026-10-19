@@ -628,12 +628,10 @@ their Markdown docstrings; they render too, and are not converted.
   (`TODO.md` § Triggers). Write for the literate rendering, which is
   the module's own presentation, and expect the API reference to carry
   the declarations alone until the pin moves.
-- Verso role markup in a docstring records a compile-time use of Lean
-  core's `Lean.DocString.Syntax`, and `lake shake` requires a module to
-  import what it uses: a module whose imports do not reach that module
-  transitively imports it directly, and one whose imports do (any
-  module importing mathlib) does not, `lake shake` reporting which case
-  holds. Every upstream-eligible location admits the import
+- Verso role markup in a docstring records no use of a constant of
+  Lean core's `Lean.DocString.Syntax`, so a literate module imports
+  nothing for it, and `lake shake` reports such an import as
+  removable. Every upstream-eligible location admits the import
   (`docs/rules/upstream-eligible.md` § Subtree import rules).
 - mathlib's linters reach every library, this one included, through the
   package's `moreLeanArgs` in `lakefile.toml` rather than through Lake's
@@ -703,8 +701,9 @@ their Markdown docstrings; they render too, and are not converted.
 - The `def`s `#doc` elaborates carry no docstrings and are
   exempted from `docBlame` in `scripts/nolints.json`; the manual
   library's `moreLeanArgs` disable `linter.hashCommand` (`#doc` is
-  the document syntax) and widen `verso.code.warnLineLength`
-  to 100.
+  the document syntax) and `linter.style.emptyLine` (an empty line
+  separates a document's blocks), and widen
+  `verso.code.warnLineLength` to 100.
 
 ## Lean 4 skill workflows
 
