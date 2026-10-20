@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import GebTests.Prototypes.FreeTopos.DatatypeApply
+public import GebTests.Prototypes.FreeTopos.DatatypeAssembly
 public import GebTests.Prototypes.FreeTopos.DatatypeLam
 public import GebTests.Prototypes.FreeTopos.Expansion
 public import GebTests.Prototypes.FreeTopos.Normalization
@@ -90,7 +91,19 @@ def searches : List (String × Search) :=
         Datatypes.lamCertificates P S T dss.flatten)),
     ("datatype-apply", (["datatype-base", "datatype-atom", "datatype-list", "datatype-stages"],
       fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
-        Datatypes.applyCertificates P S T dss.flatten))]
+        Datatypes.applyCertificates P S T dss.flatten)),
+    ("datatype-expansion", (["datatype-base", "datatype-atom", "datatype-list",
+        "datatype-stages", "datatype-apply"],
+      fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.expansionCertificates P S T dss.flatten)),
+    ("datatype-assembly", (["datatype-base", "datatype-atom", "datatype-list", "datatype-stages",
+        "datatype-apply", "datatype-expansion"],
+      fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.assemblyCertificates P S T dss.flatten)),
+    ("datatype-lists", (["datatype-base", "datatype-atom", "datatype-list", "datatype-stages",
+        "datatype-apply", "datatype-expansion", "datatype-assembly"],
+      fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.listsCertificates P S T dss.flatten))]
 
 end GebTests.Prototypes.FreeTopos.Certificates
 
