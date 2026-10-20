@@ -2246,8 +2246,22 @@ and at the keywords' forms one keyword at a time, given the soundness at
 their elements (`GebTests/Prototypes/FreeTopos/DatatypeList.lean`), and
 at an abstraction over several binders from that at an abstraction over
 one, by induction on the list of its binders
-(`GebTests/Prototypes/FreeTopos/DatatypeLam.lean`). Remaining after it:
-`tree-data` removed.
+(`GebTests/Prototypes/FreeTopos/DatatypeLam.lean`); at the application
+of a head to any number of arguments, by induction on the arguments,
+given that no keyword names the head as each stage reads it
+(`GebTests/Prototypes/FreeTopos/DatatypeApply.lean`); at every list,
+given the soundness at its elements: a list headed by a keyword at that
+keyword's forms, any other number of elements refuted by the typing, and
+a list headed by an atom no keyword names, by a list or by a node of
+another label at applications, the expansion of a list being a list
+(`GebTests/Prototypes/FreeTopos/DatatypeAssembly.lean`); and at every
+tree, by induction on rose trees
+(`GebTests/Prototypes/FreeTopos/DatatypeSound.lean`), given the
+soundness at the lists headed by `lam`, `datum`, `rep`, `decode`, `fold`,
+`para`, `iter`, `foldr`, `lcase`, `case` and `cata`. Remaining after it:
+the soundness at the forms of those keywords but `lam`, and at those of
+`lam` from the development of abstractions, discharging those
+hypotheses; `tree-data` removed.
 
 Abstraction is mathematical, not syntactic, and needs no mark of its
 own. An interface is a theory, a presentation of operations and axioms
