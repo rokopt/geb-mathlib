@@ -2168,11 +2168,19 @@ the coercions it knows to hold: a field's tree at the field's type, the
 node of a constructor at its datatype, and a scrutinee at its tree. The
 typing synthesizes each definition's type from its term, resolving names
 as the reader does, and names the first definition it rejects
-(`Datatype.typeErrorOf`); the erasure of the checked forms is the program
-the stage-0 expansion writes, which erases the same forms without
-checking them, but for each abstraction over several binders, which the
-stage-1 expansion writes as abstractions over one binder each and the
-reader resolves to the same term; so the two compilers agree on every
+(`Datatype.typeErrorOf`). A keyword names no term: an atom naming one of
+the typing's keywords has no type, though a binder may take its name, and a
+list headed by such an atom has a type only in one of that keyword's forms,
+since the reader writes it as the keyword's node or as an application, by
+its arity. A function applies only at an arrow type of exactly a domain and
+a codomain: at a node of the arrow's label with fewer children, the logical
+relation holds of every value. The erasure of the checked forms is the program the stage-0
+expansion writes, which erases the same forms without checking them, but
+for each abstraction over several binders, which the stage-1 expansion
+writes as abstractions over one binder each, and for each representation,
+which the stage-1 erasure writes as the list of its term alone, the term's
+application to no arguments, so that the erasure of a list is a list; the
+reader resolves each to the same term, so the two compilers agree on every
 program the typing accepts and the fixed points hold. The keyword `data`
 declares a datatype distinct from the trees and from every other
 datatype, and `tree-data` one standing for the trees, which the sources

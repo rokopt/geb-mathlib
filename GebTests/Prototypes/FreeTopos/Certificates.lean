@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import GebTests.Prototypes.FreeTopos.DatatypeApply
 public import GebTests.Prototypes.FreeTopos.DatatypeLam
 public import GebTests.Prototypes.FreeTopos.Expansion
 public import GebTests.Prototypes.FreeTopos.Normalization
@@ -80,9 +81,16 @@ def searches : List (String × Search) :=
     ("datatype-app", (["datatype-base", "datatype-atom", "datatype-list"], fun dss ↦
       inProgram Datatypes.extended3 fun (P, S, T) ↦
         Datatypes.appCertificates P S T dss.flatten)),
-    ("datatype-lam", (["datatype-base", "datatype-atom", "datatype-list", "datatype-app"],
+    ("datatype-stages", (["datatype-base", "datatype-atom", "datatype-list"], fun dss ↦
+      inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.stagesCertificates P S T dss.flatten)),
+    ("datatype-lam", (["datatype-base", "datatype-atom", "datatype-list", "datatype-app",
+        "datatype-stages"],
       fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
-        Datatypes.lamCertificates P S T dss.flatten))]
+        Datatypes.lamCertificates P S T dss.flatten)),
+    ("datatype-apply", (["datatype-base", "datatype-atom", "datatype-list", "datatype-stages"],
+      fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.applyCertificates P S T dss.flatten))]
 
 end GebTests.Prototypes.FreeTopos.Certificates
 

@@ -607,15 +607,16 @@
       (pair (fst s) (Txs.reverse (snd (snd s))))))
 
   ; the erasure of a checked program: the declaration of a datatype becomes its abbreviation for
-  ; the trees; the coercions and representations become the terms they apply to; decoding binds
-  ; the tree once, tests it by the datatype's recognizer and gives it to the function when it is a
-  ; member; and the datum of a member, the quotation of the tree
+  ; the trees; the coercions become the terms they apply to, and a representation the list of
+  ; its term alone, the term's application to no arguments, so that the erasure of a list is a
+  ; list; decoding binds the tree once, tests it by the datatype's recognizer and gives it to the
+  ; function when it is a member; and the datum of a member, the quotation of the tree
   (defn eraseExpr ((e Tx)) Tx
     (cata Tx Tx e ((tAs a b) b) ((tOf a b) b) ((tAtom cs) (tAtom cs))
       ((tList rs)
        (let k T (Txs.length rs)
          (let h Tx (nthTx rs 0)
-           (if (and (namedTx h kwRep) (eq k 2)) (nthTx rs 1)
+           (if (and (namedTx h kwRep) (eq k 2)) (sx1 (nthTx rs 1))
              (if (and (namedTx h kwDecode) (eq k 5))
                (sLet aE aT (nthTx rs 2)
                  (sIf (sx2 (memberAtom (nthTx rs 1)) aE) (sx2 (nthTx rs 3) aE) (nthTx rs 4)))

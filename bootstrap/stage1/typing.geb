@@ -22,6 +22,7 @@
     tyList
     tyData
     tySort
+    keywordTx
     OName.Maybe
     OName.just
     OName.nothing
@@ -120,6 +121,25 @@
   (def kwDatum (quote (0 datum)))
   (def kwSort (quote (0 "%sort")))
   (def kwPostulate (quote (0 "%postulate")))
+  ; whether a form is an atom naming a keyword whose forms the typing reads, which as the head of
+  ; any other list is not applied
+  (defn keywordTx ((x Tx)) T
+    (or (namedTx x kwLam)
+      (or (namedTx x kwLet)
+        (or (namedTx x kwPair)
+          (or (namedTx x kwFst)
+            (or (namedTx x kwSnd)
+              (or (namedTx x kwIf)
+                (or (namedTx x kwCons)
+                  (or (namedTx x kwNil)
+                    (or (namedTx x kwQuote)
+                      (or (namedTx x kwDatum)
+                        (or (namedTx x kwRep)
+                          (or (namedTx x kwDecode)
+                            (or (namedTx x kwFold)
+                              (or (namedTx x kwPara)
+                                (or (namedTx x kwIter)
+                                  (or (namedTx x kwFoldr) (namedTx x kwLcase))))))))))))))))))
 
   ; a form read as a type, given the environment
   (deftype RT1 (Prod Tx MTy))
@@ -216,7 +236,9 @@
   (defn srFrom ((rs (List SR)) (i T) (cx Cx)) (List MTy)
     (foldr SR (List MTy) (lam ((r SR) (a (List MTy))) (cons ((snd r) cx) a)) (nil MTy)
       (SRs.drop i rs)))
-  ; the type of an application of a function of a type to arguments of types
+  ; the type of an application of a function of a type to arguments of types: at each argument,
+  ; the codomain of the type so far, an arrow of exactly a domain and a codomain whose domain is
+  ; the argument's type
   (defn applyTy ((f MTy) (args (List MTy))) MTy
     (foldr MTy MTy
       (lam ((a MTy) (r MTy))
@@ -224,7 +246,9 @@
           ((OTy.just g)
            (case g
              ((tyArrow d c)
-              (case a ((OTy.just b) (if (sameTy d b) (OTy.just c) OTy.nothing))
+              (case a
+                ((OTy.just b)
+                 (if (and (eq (arity (rep g)) 2) (sameTy d b)) (OTy.just c) OTy.nothing))
                 ((OTy.nothing) OTy.nothing)))
              (else OTy.nothing)))
           ((OTy.nothing) OTy.nothing)))
@@ -260,18 +284,19 @@
           (nil OAbbr.Maybe)
           bs))))
 
-  ; an atom's type
+  ; an atom's type: none at a keyword, which names no term, though a binder may take its name
   (defn synAtom ((E Env) (cs Ts) (cx Cx)) MTy
     (let n Name (name cs)
-      (if (isSome (numeral cs)) (OTy.just tyT)
-        (if (hasName n (envNums E)) (OTy.just tyT)
-          (case (lookupName n cx) ((OTy.just ty) (OTy.just ty))
-            ((OTy.nothing)
-             (case (lookupName n (envDefs E)) ((OTy.just ty) (OTy.just ty))
-               ((OTy.nothing)
-                (let k T (indexOf (rep n) primNames)
-                  (if (isSome k) (OTy.just (Tys.atOr tyT primTys (get k)))
-                    (if (namedTx (tAtom cs) kwUnitValue) (OTy.just tyUnit) OTy.nothing)))))))))))
+      (if (keywordTx (tAtom cs)) OTy.nothing
+        (if (isSome (numeral cs)) (OTy.just tyT)
+          (if (hasName n (envNums E)) (OTy.just tyT)
+            (case (lookupName n cx) ((OTy.just ty) (OTy.just ty))
+              ((OTy.nothing)
+               (case (lookupName n (envDefs E)) ((OTy.just ty) (OTy.just ty))
+                 ((OTy.nothing)
+                  (let k T (indexOf (rep n) primNames)
+                    (if (isSome k) (OTy.just (Tys.atOr tyT primTys (get k)))
+                      (if (namedTx (tAtom cs) kwUnitValue) (OTy.just tyUnit) OTy.nothing))))))))))))
 
   ; the type of a pair of optional types, by a function of the two types
   (defn both2 ((a MTy) (b MTy) (f (Arrow Ty (Arrow Ty MTy)))) MTy
@@ -363,7 +388,8 @@
                                                 (if (namedTx h kwFoldr) (foldrTyOf A B)
                                                   (lcaseTyOf A B)))
                                               (srFrom rs 3 cx))))
-                                        (applyTy (s 0) (srFrom rs 1 cx)))))))))))))))))))))
+                                        (if (keywordTx h) OTy.nothing
+                                          (applyTy (s 0) (srFrom rs 1 cx))))))))))))))))))))))
 
   ; a term's type in a context: atoms and lists as above; the coercion of a term of a type's
   ; erasure, that type; the coercion of a term of a type, its erasure

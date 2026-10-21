@@ -2943,6 +2943,43 @@ def «Typing.kwPostulate» :=
     leaf 116,
     leaf 101]
 
+def «Typing.keywordTx» :=
+  fun (x0 : T) =>
+    let x1 : T := «Prelude.or»
+      («Typing.namedTx» x0 «Reader.kwLam»)
+      («Prelude.or»
+        («Typing.namedTx» x0 «Reader.kwLet»)
+        («Prelude.or»
+          («Typing.namedTx» x0 «Reader.kwPair»)
+          («Prelude.or»
+            («Typing.namedTx» x0 «Reader.kwFst»)
+            («Prelude.or»
+              («Typing.namedTx» x0 «Reader.kwSnd»)
+              («Prelude.or»
+                («Typing.namedTx» x0 «Reader.kwIf»)
+                («Prelude.or»
+                  («Typing.namedTx» x0 «Reader.kwCons»)
+                  («Prelude.or»
+                    («Typing.namedTx» x0 «Reader.kwNil»)
+                    («Prelude.or»
+                      («Typing.namedTx» x0 «Reader.kwQuote»)
+                      («Prelude.or»
+                        («Typing.namedTx» x0 «Typing.kwDatum»)
+                        («Prelude.or»
+                          («Typing.namedTx» x0 «Typing.kwRep»)
+                          («Prelude.or»
+                            («Typing.namedTx» x0 «Typing.kwDecode»)
+                            («Prelude.or»
+                              («Typing.namedTx» x0 «Reader.kwFold»)
+                              («Prelude.or»
+                                («Typing.namedTx» x0 «Reader.kwPara»)
+                                («Prelude.or»
+                                  («Typing.namedTx» x0 «Reader.kwIter»)
+                                  («Prelude.or»
+                                    («Typing.namedTx» x0 «Reader.kwFoldr»)
+                                    («Typing.namedTx» x0 «Reader.kwLcase»))))))))))))))));
+    x1
+
 def «Typing/RT1s.single» :=
   fun (x0 : T × T) =>
     let x1 : List (T × T) := (x0 :: ([] : List (T × T))); x1
@@ -3421,7 +3458,9 @@ def «Typing.applyTy» :=
             let x9 : T := x2;
             if (Const.eq (Const.label x9) (leaf 1)).label ≠ 0 then
               let x10 : T := Const.child x9 (leaf 0);
-              if («Typing.sameTy» x7 x10).label ≠ 0 then
+              if («Prelude.and»
+                (Const.eq (Const.arity x5) (leaf 2))
+                («Typing.sameTy» x7 x10)).label ≠ 0 then
                 «Typing/OTy.just» x8
               else
                 «Typing/OTy.nothing»
@@ -3579,31 +3618,37 @@ def «Typing.synAtom» :=
     (x1 : List T)
     (x2 : List T) =>
     let x3 : T := (let x3 : T := «Typing.name» x1;
-                   if («Prelude.isSome» («Reader.numeral» x1)).label ≠ 0 then
-                     «Typing/OTy.just» «Typing.tyT»
+                   if («Typing.keywordTx» («Typing.tAtom» x1)).label ≠ 0 then
+                     «Typing/OTy.nothing»
                    else
-                     if («Typing.hasName» x3 («Typing.envNums» x0)).label ≠ 0 then
+                     if («Prelude.isSome» («Reader.numeral» x1)).label ≠ 0 then
                        «Typing/OTy.just» «Typing.tyT»
                      else
-                       let x4 : T := «Typing.lookupName» x3 x2;
-                       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-                         let x5 : T := Const.child x4 (leaf 0); «Typing/OTy.just» x5
+                       if («Typing.hasName» x3 («Typing.envNums» x0)).label ≠ 0 then
+                         «Typing/OTy.just» «Typing.tyT»
                        else
-                         let x5 : T := «Typing.lookupName» x3 («Typing.envDefs» x0);
-                         if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
-                           let x6 : T := Const.child x5 (leaf 0); «Typing/OTy.just» x6
+                         let x4 : T := «Typing.lookupName» x3 x2;
+                         if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
+                           let x5 : T := Const.child x4 (leaf 0); «Typing/OTy.just» x5
                          else
-                           let x6 : T := «Reader.indexOf» x3 «Reader.primNames»;
-                           if («Prelude.isSome» x6).label ≠ 0 then
-                             «Typing/OTy.just»
-                               («Typing/Tys.atOr» «Typing.tyT» «Typing.primTys» («Prelude.get» x6))
+                           let x5 : T := «Typing.lookupName» x3 («Typing.envDefs» x0);
+                           if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
+                             let x6 : T := Const.child x5 (leaf 0); «Typing/OTy.just» x6
                            else
-                             if («Typing.namedTx»
-                               («Typing.tAtom» x1)
-                               «Reader.kwUnitValue»).label ≠ 0 then
-                               «Typing/OTy.just» «Typing.tyUnit»
+                             let x6 : T := «Reader.indexOf» x3 «Reader.primNames»;
+                             if («Prelude.isSome» x6).label ≠ 0 then
+                               «Typing/OTy.just»
+                                 («Typing/Tys.atOr»
+                                   «Typing.tyT»
+                                   «Typing.primTys»
+                                   («Prelude.get» x6))
                              else
-                               «Typing/OTy.nothing»);
+                               if («Typing.namedTx»
+                                 («Typing.tAtom» x1)
+                                 «Reader.kwUnitValue»).label ≠ 0 then
+                                 «Typing/OTy.just» «Typing.tyUnit»
+                               else
+                                 «Typing/OTy.nothing»);
     x3
 
 def «Typing.both2» :=
@@ -3847,9 +3892,12 @@ def «Typing.synList» :=
                                                          «Typing.lcaseTyOf» x8 x9))
                                                      («Typing.srFrom» x2 (leaf 3) x3))
                                              else
-                                               «Typing.applyTy»
-                                                 (x7 (leaf 0))
-                                                 («Typing.srFrom» x2 (leaf 1) x3));
+                                               if («Typing.keywordTx» x5).label ≠ 0 then
+                                                 «Typing/OTy.nothing»
+                                               else
+                                                 «Typing.applyTy»
+                                                   (x7 (leaf 0))
+                                                   («Typing.srFrom» x2 (leaf 1) x3));
     x4
 
 def «Typing.synIn» :=
@@ -6558,7 +6606,7 @@ def «Datatype.eraseExpr» :=
                 if («Prelude.and»
                   («Datatype.namedTx» x6 «Datatype.kwRep»)
                   (Const.eq x5 (leaf 2))).label ≠ 0 then
-                  «Datatype.nthTx» x4 (leaf 1)
+                  «Datatype.sx1» («Datatype.nthTx» x4 (leaf 1))
                 else
                   if («Prelude.and»
                     («Datatype.namedTx» x6 «Datatype.kwDecode»)
