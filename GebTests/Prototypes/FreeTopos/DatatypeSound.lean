@@ -5,8 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
-public import GebTests.Prototypes.FreeTopos.DatatypeAssembly
-public meta import GebTests.Prototypes.FreeTopos.DatatypeAssembly -- shake: keep
+public import GebTests.Prototypes.FreeTopos.DatatypeLists
+public meta import GebTests.Prototypes.FreeTopos.DatatypeLists -- shake: keep
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
