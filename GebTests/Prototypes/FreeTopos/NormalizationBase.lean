@@ -1127,7 +1127,8 @@ def fundamental (P : Prog) (S : Defs) : Term :=
             (S.rel (v 2) (pc P "Prelude.get" [ty])))))))))))))
 
 /-- A development's steps after an earlier one, given the names of the earlier one's theorems and
-the entries after it: each step proved with the entries before it, its theorem added to them. The
+the entries after it: each step proved with the entries before it, its theorem added to them, its
+declaration kept with its equal subterms one object ({name}`ShareCommon.shareCommon'`). The
 names of all the theorems, the entries after the steps and the steps' declarations; the name of
 the first step not proved, where one is not. -/
 def developAfter (names : List String) (E : Array Entry) (xs : List Step) :
@@ -1135,7 +1136,8 @@ def developAfter (names : List String) (E : Array Entry) (xs : List Step) :
   let names' := names ++ xs.map (·.1)
   let ix (name : String) : ℕ := (names'.findIdx? (· == name)).getD 0
   let (E', ds) ← xs.foldlM (fun (acc : Array Entry × List Decl) (x : Step) ↦ match x.2 ix acc.1 with
-    | some (a, d) => Except.ok (acc.1.push (Entry.language a), acc.2 ++ [Decl.language a d])
+    | some (a, d) => Except.ok (acc.1.push (Entry.language a),
+      acc.2 ++ [ShareCommon.shareCommon' (Decl.language a d)])
     | none => Except.error s!"the lemma {x.1} is not proved") (E, [])
   pure (names', E', ds)
 

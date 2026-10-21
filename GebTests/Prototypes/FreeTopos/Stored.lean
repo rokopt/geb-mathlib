@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.FreeTopos.Internal.Derivation -- shake: keep
+public import Std.Data.HashMap.Raw
 
 set_option doc.verso true in
 /-!
@@ -21,8 +22,9 @@ of the label's data and the node's children, a derivation's node its rule's posi
 trees of the rule's data and the node's children, a number a leaf, and a list the node of its
 elements. A derivation repeats its terms many times over, so the tree is stored as the table of
 its distinct nodes, each its label and its children's indices, in an order in which a node follows
-its children. The table is written as its numbers in decimal, separated by spaces, by
-{lit}`GebTests.Prototypes.FreeTopos.StoredWriter`, which finds the distinct nodes.
+its children. The distinct nodes are found by a hash table, each declaration's tree built and
+entered in turn; the table is written as its numbers in decimal, separated by spaces, by
+{lit}`GebTests.Prototypes.FreeTopos.StoredWriter`.
 
 The table is read back by a paramorphism computed at each distinct node once, from its children's
 values, so that the terms and derivations read share their subterms as the table does. Reading the
@@ -37,7 +39,15 @@ larger than its table by orders of magnitude.
   declaration, from its children's.
 * {lit}`paraOfNats` — the value of a paramorphism at the tree the table of its distinct nodes
   stores, computed at each distinct node once.
+* {lit}`Table`, {lit}`treeToNats`, {lit}`declsToNats` — the table of a tree's distinct nodes, of
+  declarations', as natural numbers.
 * {lit}`natsOfText`, {lit}`declsOfText` — the numbers and the declarations a text stores.
+
+## Implementation notes
+
+The hash table is Lean's {lit}`Std.HashMap.Raw`, whose insertion and lookup depend on the axioms
+{lit}`propext` and {lit}`Quot.sound` alone. Its empty table is built from its fields, as eight
+empty buckets, since the constructors that compute a capacity depend on {lit}`Classical.choice`.
 
 ## Tags
 
@@ -272,6 +282,43 @@ def paraOfNats {β : Type} (f : ℕ → List (Tree × β) → β) (ns : List ℕ
         | _ => none) count (rest, #[])).bind fun (left, nodes) ↦
       if left.isEmpty then nodes.back? else none
   | [] => none
+
+/-- The distinct nodes of a tree found so far, each its label and its children's indices, with the
+index of each. -/
+structure Table where
+  /-- The index of each node. -/
+  index : Std.HashMap.Raw (ℕ × List ℕ) ℕ
+  /-- The nodes, in the order found. -/
+  nodes : Array (ℕ × List ℕ)
+
+/-- The table of no nodes, its hash map of eight empty buckets. -/
+def Table.empty : Table := ⟨⟨⟨0, Array.replicate 8 .nil⟩⟩, #[]⟩
+
+/-- The index of a node among the distinct nodes, from its label and its children's indices,
+entered where it is new. -/
+def internNode (l : ℕ) (ids : List ℕ) : StateM Table ℕ := do
+  match (← get).index.get? (l, ids) with
+  | some i => pure i
+  | none => modifyGet fun t ↦ (t.nodes.size,
+    { index := t.index.insert (l, ids) t.nodes.size, nodes := t.nodes.push (l, ids) })
+
+/-- The index of a tree's root among the distinct nodes, each node entered after its children. -/
+def intern : Tree → StateM Table ℕ := RoseTree.elim fun l cs ↦ do internNode l (← cs.mapM id)
+
+/-- A table as a list of natural numbers: its number of distinct nodes, then each, in the order
+found, as its label, its number of children and their indices. -/
+def Table.toNats (tab : Table) : List ℕ :=
+  tab.nodes.size :: tab.nodes.toList.flatMap fun (l, ids) ↦ l :: ids.length :: ids
+
+/-- A tree as a list of natural numbers, the table of its distinct nodes, the root last. -/
+def treeToNats (t : Tree) : List ℕ := ((intern t).run Table.empty).2.toNats
+
+/-- Declarations of theorems as a list of natural numbers, the table of their tree
+({name}`declsTree`), each declaration's tree built and entered in turn, so that the tree of one
+declaration alone is built at once; nothing where one is of another kind. -/
+def declsToNats (ds : List Decl) : Option (List ℕ) :=
+  let (ids, tab) := (ds.mapM fun d ↦ (declTree d).mapM intern).run Table.empty
+  (ids.mapM id).map fun ids ↦ ((internNode 0 ids).run tab).2.toNats
 
 /-! Lists of natural numbers as text. -/
 

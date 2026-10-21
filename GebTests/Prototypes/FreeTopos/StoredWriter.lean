@@ -13,22 +13,23 @@ set_option doc.verso true in
 # Writing the certificates
 
 A development of the internal language as the text of a certificate: the table of the distinct
-nodes of its tree ({lit}`GebTests.Prototypes.FreeTopos.Stored`), found by a hash table, written as
-its numbers in decimal, which {name}`GebTests.Prototypes.FreeTopos.Stored.declsOfText` reads back.
+nodes of its tree ({name}`GebTests.Prototypes.FreeTopos.Stored.declsToNats`), written as its
+numbers in decimal, which {name}`GebTests.Prototypes.FreeTopos.Stored.declsOfText` reads back.
 
 ## Main definitions
 
-* {lit}`treeToNats` — a tree as the table of its distinct nodes.
+* {lit}`natsToText` — a list of natural numbers as text.
 * {lit}`declsToText` — declarations of theorems as text.
 * {lit}`generate` — the certificates of the developments
   ({name}`GebTests.Prototypes.FreeTopos.Certificates.searches`) written into a directory.
 
 ## Implementation notes
 
-The hash table, Lean's {lit}`Std.HashMap`, depends on {lit}`Classical.choice`, so the module is
-admitted to {lit}`GebMeta.classicalAllowedModules`, with the writing of the certificates, which
-uses it: the module writes certificates and proves nothing, and the reading of a certificate, in
-{lit}`Stored`, and the searches, in {lit}`Certificates`, are held to the strict axiom set.
+Reading the certificates a development continues from, by {name}`IO.FS.readFile`, depends on
+{lit}`Classical.choice` through the proofs of its validation of UTF-8, so the module is admitted to
+{lit}`GebMeta.classicalAllowedModules`: it writes certificates and proves nothing, while the
+reading of a certificate's text ({name}`GebTests.Prototypes.FreeTopos.Stored.declsOfText`) and
+the searches are held to the strict axiom set.
 
 ## Tags
 
@@ -45,29 +46,6 @@ open Geb Geb.FreeTopos
 open Internal (Decl)
 open PartialHorn (Tree)
 
-/-- The distinct nodes of a tree found so far, each its label and its children's indices, with the
-index of each. -/
-structure Table where
-  /-- The index of each node. -/
-  index : Std.HashMap (ℕ × List ℕ) ℕ := {}
-  /-- The nodes, in the order found. -/
-  nodes : Array (ℕ × List ℕ) := #[]
-
-/-- The index of a tree's root among the distinct nodes, each node entered after its children. -/
-def intern : Tree → StateM Table ℕ := RoseTree.elim fun l cs ↦ do
-  let key := (l, ← cs.mapM id)
-  match (← get).index[key]? with
-  | some i => pure i
-  | none => modifyGet fun t ↦
-    (t.nodes.size, { index := t.index.insert key t.nodes.size, nodes := t.nodes.push key })
-
-/-- A tree as a list of natural numbers: its number of distinct nodes, then each, in an order in
-which a node follows its children, as its label, its number of children and their indices; the
-root last. -/
-def treeToNats (t : Tree) : List ℕ :=
-  let tab := ((intern t).run {}).2
-  tab.nodes.size :: tab.nodes.toList.flatMap fun (l, ids) ↦ l :: ids.length :: ids
-
 /-- A list of natural numbers as text: the numerals in decimal, separated by spaces. -/
 def natsToText (ns : List ℕ) : String := " ".intercalate (ns.map toString)
 
@@ -75,7 +53,7 @@ def natsToText (ns : List ℕ) : String := " ".intercalate (ns.map toString)
 {name}`GebTests.Prototypes.FreeTopos.Stored.declsOfText` reads back; nothing where one is of another
 kind. -/
 def declsToText (ds : List Decl) : Option String :=
-  (Stored.declsTree ds).map (natsToText ∘ treeToNats)
+  (Stored.declsToNats ds).map natsToText
 
 /-- The certificates of the developments written into a directory, each search timed, the
 searches those named in {lit}`only` where it is not empty; a line for each certificate, its name,
