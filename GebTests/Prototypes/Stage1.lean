@@ -74,10 +74,12 @@ def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
 -- rejects, naming the definition, a case analysis of a tree, a constructor applied to a tree, a
 -- primitive of trees applied to a value of a datatype, the representation of a tree, a datum
 -- that is not a member, a decoding into a function of trees, a binder named by a keyword the
--- erasure rewrites, a variable named by a keyword, and a list headed by a keyword in none of its
--- forms; it accepts the
--- representation given to the primitive, the datatypes tree-data declares, and an application to
--- several arguments
+-- erasure rewrites, a variable named by a keyword, a list headed by a keyword in none of its
+-- forms, and binders named by a recognizer, by the variable the erasure binds to a decoded tree
+-- and by a primitive, which the erasure and the expansion write free under them; the compiler
+-- rejects a clause's variable named like the expansion's own; the typing accepts the
+-- representation given to the primitive, the datatypes tree-data declares, an application to
+-- several arguments, and that clause with its variable renamed
 #eval show IO Unit from do
   let img ← IO.FS.readBinFile "bootstrap/compiler.img"
   let some t := readImage img | throw (IO.userError "the committed image does not read")
@@ -92,13 +94,22 @@ def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
     (nat ++ "(def e (lam ((t T)) (decode Nat t (lam ((x T)) 1) 0)))", "e"),
     ("(def b (lam ((rep T)) rep))", "b"), ("(def c (lam ((x T) (datum T)) x))", "c"),
     ("(def u (lam ((fold T)) fold))", "u"),
-    ("(def k (lam ((lam (Arrow T T)) (x T)) (lam x)))", "k")]
+    ("(def k (lam ((lam (Arrow T T)) (x T)) (lam x)))", "k"),
+    (nat ++ "(def m (lam ((Nat.member (Arrow T T))) " ++
+      "(decode Nat 7 (lam ((n Nat)) n) zero)))", "m"),
+    (nat ++ "(def v (lam ((\"%e\" Nat)) (decode Nat 7 (lam ((n Nat)) n) \"%e\")))", "v"),
+    (nat ++ "(def q (lam ((child (Arrow T (Arrow T T))) (t Nat)) " ++
+      "(case t ((zero) zero) ((succ n) n))))", "q")]
   for (p, n) in rejected do
     unless typeErrorOf p == some (nameTree n.toList) do
       throw (IO.userError s!"the typing does not reject {n}")
     unless runImage img (nameTree p.toList) == some (mk 0 []) do
       throw (IO.userError s!"the stage-1 compiler compiles {n}")
-  let accepted := [nat ++ "(def h (lam ((n Nat)) (label (rep n))))",
+  let clause (x : String) : String :=
+    nat ++ "(data Q (mk T Nat)) (def s (lam ((p Q)) (case p ((mk " ++ x ++ " y) y))))"
+  unless runImage img (nameTree (clause "\"%s\"").toList) == some (mk 0 []) do
+    throw (IO.userError "the stage-1 compiler compiles a clause's variable named %s")
+  let accepted := [nat ++ "(def h (lam ((n Nat)) (label (rep n))))", clause "x",
     "(tree-data Nat (zero) (succ Nat)) (def f (lam ((t T)) (case t ((zero) 0) ((succ n) 1))))",
     "(def p (lam ((f (Arrow T (Arrow T T))) (x T)) (f x x)))"]
   unless accepted.all fun p ↦ typeErrorOf p == some (mk 0 []) do
