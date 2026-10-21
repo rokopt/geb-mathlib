@@ -8,6 +8,7 @@ module
 public import GebTests.Prototypes.FreeTopos.DatatypeApply
 public import GebTests.Prototypes.FreeTopos.DatatypeLists
 public import GebTests.Prototypes.FreeTopos.DatatypeData
+public import GebTests.Prototypes.FreeTopos.DatatypeFolds
 public import GebTests.Prototypes.FreeTopos.DatatypeSound
 public import GebTests.Prototypes.FreeTopos.DatatypeLam
 public import GebTests.Prototypes.FreeTopos.Expansion
@@ -106,6 +107,10 @@ def searches : List (String × Search) :=
         "datatype-apply", "datatype-expansion", "datatype-assembly"],
       fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
         Datatypes.dataCertificates P S T dss.flatten)),
+    ("datatype-folds", (["datatype-base", "datatype-atom", "datatype-list", "datatype-stages",
+        "datatype-apply", "datatype-expansion", "datatype-assembly"],
+      fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.foldsCertificates P S T dss.flatten)),
     ("datatype-lists", (["datatype-base", "datatype-atom", "datatype-list", "datatype-stages",
         "datatype-apply", "datatype-expansion", "datatype-assembly", "datatype-app",
         "datatype-lam", "datatype-data"],
