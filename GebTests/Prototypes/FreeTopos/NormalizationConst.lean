@@ -32,11 +32,17 @@ pair the tree with the value.
 
 ## Main definitions
 
+* {lit}`RelSpec`, {lit}`kernelRel` — a logical relation the lemmas are stated of, and the
+  kernel's.
 * {lit}`allConvLemma`, {lit}`relOfListLemma` — lists of convergences and of related values.
 * {lit}`foldConvLemma` — the convergence of a fold of trees at related steps.
 * {lit}`constDev` — the development.
 
 ## Implementation notes
+
+The lemmas that mention the relation are generated at a relation given by its context's type, its
+types and its equations at nodes ({lit}`RelSpec`), the kernel's by default, so that the relations
+of a language whose types extend the kernel's state them as well.
 
 A lemma proved by induction states its formula in a context of the induction's variable alone,
 the other variables quantified within the formula, since the step of a fold is a closed term. A
@@ -122,6 +128,80 @@ def tyA (P : Prog) (A B : Term) : Term := pc P "Check.tyArrow" [A, B]
 
 /-- The node of label zero over a list of trees. -/
 def node0 (cs : Term) : Term := nodeT (Term.pair (numeral 0) cs)
+
+/-- A logical relation at types, of which the lemmas on the evaluator's folds and constants are
+stated: the type of its contexts, the relation at a type in a context, the evaluator's definitions
+of a context, the types it relates at, the constants' types, whether the types the constants carry
+are quantified apart from the types they are related at, and the equations unfolding it at a node
+of a type. -/
+structure RelSpec where
+  /-- The type of the relation's contexts. -/
+  ctxTy : Tree
+  /-- The relation at a type in a context, a predicate on values. -/
+  rel : Term → Term → Term
+  /-- The evaluator's definitions of a context. -/
+  defs : Term → Term
+  /-- The type of trees. -/
+  tyTree : Term
+  /-- The type of functions from a type to a type. -/
+  tyArrow : Term → Term → Term
+  /-- The type of lists of a type. -/
+  tyList : Term → Term
+  /-- The type of the fold of trees and of the fold whose step sees the node, at a result type. -/
+  foldTy : Term → Term
+  /-- The type of iteration at a type. -/
+  iterTy : Term → Term
+  /-- The type of the right fold of lists at an element type and a result type. -/
+  foldrTy : Term → Term → Term
+  /-- The type of case analysis of lists at an element type and a result type. -/
+  lcaseTy : Term → Term → Term
+  /-- Whether the types the constants and the list values carry are variables of their own,
+  quantified outermost, rather than the types they are related at. -/
+  annotated : Bool
+  /-- The equations unfolding the relation at a node of a type. -/
+  more : List String
+  /-- The name of a lemma stated of the relation, from the kernel's name of it. -/
+  name : String → String
+
+/-- The relation of the kernel's types, the definitions its context, its constants' types the
+checker's, its equations at nodes among the vocabulary's. -/
+def kernelRel (P : Prog) (S : Defs) : RelSpec where
+  ctxTy := list treeTy
+  rel := S.rel
+  defs := id
+  tyTree := tyT
+  tyArrow := tyA P
+  tyList := tyL P
+  foldTy A := pc P "Check.foldTy" [A]
+  iterTy A := pc P "Check.iterTy" [A]
+  foldrTy A B := pc P "Check.foldrTy" [A, B]
+  lcaseTy A B := pc P "Check.lcaseTy" [A, B]
+  annotated := false
+  more := []
+  name := id
+
+namespace RelSpec
+
+variable (R : RelSpec)
+
+/-- The number of types a constant or a list value carries apart from its relation's types: those
+of {lit}`n` types where they are quantified apart, else none. -/
+def ann (n : ℕ) : ℕ := if R.annotated then n else 0
+
+end RelSpec
+
+/-- Universal quantifiers over types, the innermost first, around a body. -/
+def foralls (o : ℕ) (tys : List Tree) (b : Term) : Term :=
+  tys.foldl (fun acc A ↦ Internal.Logic.all o A (Term.lam A acc)) b
+
+/-- A universal hypothesis instantiated at terms in turn, the outermost quantifier first. -/
+def allEs (K : Kit) (h : ℕ) (ts : List (List Tree → Term)) (k : Deducer) : Deducer :=
+  match ts with
+  | [] => k
+  | t :: ts => fun Γ Φ ψ ↦ dAllE K.L K.G K.E h (t Γ) (ts.foldr (fun t k ↦ K.allEΓ t k) k) Γ Φ ψ
+
+/-- The universal introductions of a number of quantifiers around a deducer. -/
+def allIs (L : Conn) (n : ℕ) (k : Deducer) : Deducer := n.rec k fun _ k ↦ dAllI L k
 
 /-- Every element of a list satisfying a predicate satisfies every predicate it implies; by
 induction on the list. -/
@@ -237,28 +317,29 @@ def allConvLemma (P : Prog) (S : Defs) : Step :=
 
 /-- The list value of values each related at a type is related at the list type; by induction on
 the list, the rest's list value's test decided by its relation from the induction hypothesis. -/
-def relOfListLemma (P : Prog) (S : Defs) : Step :=
-  ("relOfList", fun ix E ↦ do
-    let K : Kit := ⟨P, S, E, ix, []⟩
+def relOfListLemma (P : Prog) (S : Defs) (R : RelSpec := kernelRel P S) : Step :=
+  (R.name "relOfList", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, R.more⟩
     let L := K.L
-    let all := Internal.Logic.all P.o
     let imp := Internal.Logic.imp P.o
-    -- under the definitions and the type: the type v0, the definitions v1, the list v2
-    let φ := all (list treeTy) (Term.lam (list treeTy) (all treeTy (Term.lam treeTy
-      (imp (S.allL (S.rel (v 1) (v 0)) (v 2))
-        (Term.app (S.rel (v 1) (tyL P (v 0))) (pc P "Eval.ofList" [v 0, v 2]))))))
-    let d₀ ← dAllI L (dAllI L (dImpI L ((K.auto 3)))) [] []
+    let a := R.ann 1
+    -- under the carried type, the context and the type: the type v0, the context v1, the carried
+    -- type v2 where it is quantified apart, the list after them
+    let carried : Term := if R.annotated then v 2 else v 0
+    let φ := foralls P.o ([treeTy, R.ctxTy] ++ List.replicate a treeTy)
+      (imp (S.allL (R.rel (v 1) (v 0)) (v (2 + a)))
+        (Term.app (R.rel (v 1) (R.tyList (v 0))) (pc P "Eval.ofList" [carried, v (2 + a)])))
+    let d₀ ← allIs L (2 + a) (dImpI L ((K.auto 3))) [] []
       (Term.subst φ (Internal.instVar (Term.arr 0 [treeTy] Term.star)))
-    let cons : Deducer := dAllI L (dAllI L (dImpI L fun Γ₁ Φ₁ ψ₁ ↦
-      let A (Γ : List Tree) : Term := v (Γ.length - Γ₁.length)
-      let Dv (Γ : List Tree) : Term := v (Γ.length - Γ₁.length + 1)
+    let cons : Deducer := allIs L (2 + a) (dImpI L fun Γ₁ Φ₁ ψ₁ ↦
+      let at₁ (k : ℕ) (Γ : List Tree) : Term := v (Γ.length - Γ₁.length + k)
       -- the head's relation and the rest's, then the rest's list value's by the induction
       -- hypothesis, its test and its elements' relations
       K.normLast (K.conjE fun Γ₂ Φ₂ ψ₂ ↦
-        dAllE L K.G K.E 0 (Dv Γ₂) (K.allEΓ A (K.impE (K.byHyp (Φ₂.length - 1))
+        allEs K 0 ((List.range (2 + a)).reverse.map at₁) (K.impE (K.byHyp (Φ₂.length - 1))
           (K.normLast (K.conjE fun Γ₃ Φ₃ ψ₃ ↦
-            K.splitHyp (Φ₃.length - 2) ((K.auto 4)) 8 Γ₃ Φ₃ ψ₃)))) Γ₂ Φ₂ ψ₂)
-        Γ₁ Φ₁ ψ₁))
+            K.splitHyp (Φ₃.length - 2) ((K.auto 4)) 8 Γ₃ Φ₃ ψ₃))) Γ₂ Φ₂ ψ₂)
+        Γ₁ Φ₁ ψ₁)
     let d₁ ← cons [list treeTy, treeTy] [Internal.weakenElem φ] (Internal.listConsAt 1 treeTy φ)
     pure (⟨0, [list treeTy], [], φ⟩, nd (.listIndHyp 0 1) [d₀, d₁]))
 
@@ -287,45 +368,56 @@ def fusLemma (P : Prog) (name val : String) (post : Term → Term := id) : Step 
           fun _ ↦ none
     pure (⟨0, Γ, [], Term.eq l r⟩, d))
 
-/-- The fold's formula at a tree, the variable of index 0: for all definitions, result types and
-steps related at the step's type, the fold's value at the tree, by the application at each level,
+/-- The fold's formula at a tree, the variable of index 0: for all contexts of the relation, result
+types and steps related at the step's type, and, where the relation quantifies them apart, the
+types the fold carries, the fold's value at the tree, by the application at each level,
 converges to a value related at the result type. -/
-def foldφ (P : Prog) (S : Defs) (val : String) : Term :=
-  let all := Internal.Logic.all P.o
+def foldφ (P : Prog) (S : Defs) (val : String) (R : RelSpec := kernelRel P S) : Term :=
   let imp := Internal.Logic.imp P.o
-  -- under the definitions, the type and the step: the step v0, the type v1, the definitions v2
-  all (list treeTy) (Term.lam (list treeTy) (all treeTy (Term.lam treeTy (all treeTy
-    (Term.lam treeTy (imp (Term.app (S.rel (v 2) (tyA P tyT (tyA P (tyL P (v 1)) (v 1)))) (v 0))
-      (S.conv (Term.lam nat (pc P val [Term.snd (S.levelN (v 3) (v 0)), v 2, v 1, v 4]))
-        (S.rel (v 2) (v 1)))))))))
+  let a := R.ann 1
+  -- under the carried type, the context, the type and the step: the step v0, the type v1, the
+  -- context v2, the carried type v3 where it is quantified apart, the tree after them
+  let carried (d : ℕ) : Term := v (d + if R.annotated then 3 else 1)
+  foralls P.o ([treeTy, treeTy, R.ctxTy] ++ List.replicate a treeTy)
+    (imp (Term.app (R.rel (v 2) (R.tyArrow R.tyTree (R.tyArrow (R.tyList (v 1)) (v 1)))) (v 0))
+      (S.conv (Term.lam nat (pc P val [Term.snd (S.levelN (R.defs (v 3)) (v 0)), carried 1, v 1,
+          v (4 + a)]))
+        (R.rel (v 2) (v 1))))
 
 /-- The fold computes at a step related to a step: by induction on trees, the children's values
 converging together by {lit}`allConv`, the step's application to the node's label and then to the
 list value of the children's values each converging. -/
 def foldConvLemma (P : Prog) (S : Defs) (name val : String) (arg : Term → Term → Term)
-    (more : List String) : Step :=
-  (name, fun ix E ↦ do
-    let K : Kit := ⟨P, S, E, ix, (name ++ "Fus") :: more⟩
-    let φ := foldφ P S val
+    (more : List String) (R : RelSpec := kernelRel P S) : Step :=
+  (R.name name, fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, (name ++ "Fus") :: more ++ R.more⟩
+    let φ := foldφ P S val R
     let L := K.L
     let pv : List Term → Term := pc P val
-    -- after the definitions, the type, the step and its relation are introduced: the context
-    -- Γ₁, the step, the type, the definitions, the children and the label innermost first
+    let a := R.ann 1
+    -- after the carried type, the context, the type, the step and its relation are introduced:
+    -- the context Γ₁, the step, the type, the context, the carried type where it is quantified
+    -- apart, the children and the label innermost first
     let body (Γ₁ : List Tree) (hAll hf : ℕ) : Deducer :=
       let at₁ (k d : ℕ) (Γ : List Tree) : Term := v (Γ.length - Γ₁.length + k + d)
       let f := at₁ 0
       let A := at₁ 1
       let Dv := at₁ 2
-      let cs := at₁ 3
-      let l := at₁ 4
+      let Ak := if R.annotated then at₁ 3 else A
+      let cs := at₁ (3 + a)
+      let l := at₁ (4 + a)
+      -- the quantifiers' instances, the outermost first
+      let inst (d : ℕ) : List (List Tree → Term) := (if R.annotated then [Ak d] else []) ++
+        [Dv d, A d, f d]
       -- the children's convergences at the step, and the function of the fuel and the child
       let Q (Γ : List Tree) : Term := Term.lam treeTy (S.conv (Term.lam nat (pv
-        [Term.snd (S.levelN (Dv 2 Γ) (v 0)), A 2 Γ, f 2 Γ, v 1])) (S.rel (Dv 1 Γ) (A 1 Γ)))
+        [Term.snd (S.levelN (R.defs (Dv 2 Γ)) (v 0)), Ak 2 Γ, f 2 Γ, v 1]))
+        (R.rel (Dv 1 Γ) (A 1 Γ)))
       let F (Γ : List Tree) : Term := Term.lam nat (Term.lam treeTy (pv
-        [Term.snd (S.levelN (Dv 2 Γ) (v 1)), A 2 Γ, f 2 Γ, v 0]))
+        [Term.snd (S.levelN (R.defs (Dv 2 Γ)) (v 1)), Ak 2 Γ, f 2 Γ, v 0]))
       let mono : Deducer := dAllI L (dImpI L (K.normLast fun Γ Φ ψ ↦
-        dAllE L K.G K.E (Φ.length - 1) (Dv 0 Γ) (K.allEΓ (A 0) (K.allEΓ (f 0)
-          (K.impE (K.byHyp hf) (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ)))) Γ Φ ψ))
+        allEs K (Φ.length - 1) (inst 0)
+          (K.impE (K.byHyp hf) (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ)) Γ Φ ψ))
       -- the final convergence: the thresholds' sum, the value w
       let fin (N n₁ n₂ w : List Tree → Term) (sC s₁ s₂ rw : ℕ) : Deducer :=
         K.shift sC false n₁ (fun Γ Φ ψ ↦ K.shift (Φ.length - 1) false n₂ (K.shift s₁ true N
@@ -341,15 +433,17 @@ def foldConvLemma (P : Prog) (S : Defs) (name val : String) (arg : Term → Term
         let N := fun Γ ↦ v (Γ.length - ΓC.length + 1)
         let r := fun Γ ↦ v (Γ.length - ΓC.length)
         let lbl (Γ : List Tree) : Term := pc P "Eval.valQuote" [arg (l 0 Γ) (cs 0 Γ)]
-        let lst (Γ : List Tree) : Term := pc P "Eval.ofList" [A 0 Γ, call D.children [] [r Γ]]
+        let lst (Γ : List Tree) : Term := pc P "Eval.ofList" [Ak 0 Γ, call D.children [] [r Γ]]
         fun Γ Φ ψ ↦ dRwHyp (evalRw K.G K.E (K.rulesEx Φ hf) .full) hf (fun Γ Φ ψ ↦
           K.allEΓ lbl (K.impE ((K.norm (dExI L K.G K.E (arg (l 0 Γ) (cs 0 Γ))
             K.byNorm))) (K.convE fun Γ₂ Φ₂ ψ₂ ↦
               let n₁ := fun Γ ↦ v (Γ.length - Γ₂.length + 1)
               let s₁ := Φ₂.length - 2
-              K.normLast (K.allEΓ lst (K.impE (K.cutThm "relOfList" (fun Γ ↦ [call D.children []
-                  [r Γ]]) (K.allEΓ (Dv 0) (K.allEΓ (A 0) (K.impE (K.byHyp rC)
-                    (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ)))))
+              K.normLast (K.allEΓ lst (K.impE (K.cutThm (R.name "relOfList")
+                  (fun Γ ↦ [call D.children [] [r Γ]])
+                  ((if R.annotated then K.allEΓ (Ak 0) else id) (K.allEΓ (Dv 0)
+                    (K.allEΓ (A 0) (K.impE (K.byHyp rC)
+                      (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ))))))
                 (K.convE fun Γ₃ Φ₃ ψ₃ ↦
                   let n₂ := fun Γ ↦ v (Γ.length - Γ₃.length + 1)
                   let w := fun Γ ↦ v (Γ.length - Γ₃.length)
@@ -358,16 +452,16 @@ def foldConvLemma (P : Prog) (S : Defs) (name val : String) (arg : Term → Term
       K.cutThm "allMono" (fun Γ ↦ [cs 0 Γ]) (K.allEΓ (fun _ ↦ Term.lam treeTy φ) (K.allEΓ Q
         (K.impE (K.byHyp hAll) (K.impE (mono) (fun Γ Φ ψ ↦
           let hQ := Φ.length - 1
-          K.cutThm "allConv" (fun Γ ↦ [cs 0 Γ]) (K.allEΓ F (K.allEΓ (fun Γ ↦ S.rel (Dv 0 Γ)
+          K.cutThm "allConv" (fun Γ ↦ [cs 0 Γ]) (K.allEΓ F (K.allEΓ (fun Γ ↦ R.rel (Dv 0 Γ)
             (A 0 Γ)) (K.impE ((K.byHyp hQ))
               (K.convE fun ΓC ΦC ψC ↦
               applied ΓC (ΦC.length - 2) (ΦC.length - 1) ΓC ΦC ψC)))) Γ Φ ψ)))))
     let node : Deducer := fun Γ₀ Φ₀ ψ₀ ↦
       -- the children the innermost variable of the node's context
-      K.cutThm (name ++ "All") (fun Γ ↦ [v (Γ.length - 2)]) (K.impE dHyp (fun Γ Φ ψ ↦
+      K.cutThm (R.name (name ++ "All")) (fun Γ ↦ [v (Γ.length - 2)]) (K.impE dHyp (fun Γ Φ ψ ↦
         let hAll := Φ.length - 1
-        dAllI L (dAllI L (dAllI L (dImpI L fun Γ₁ Φ₁ ψ₁ ↦
-          body Γ₁ hAll (Φ₁.length - 1) Γ₁ Φ₁ ψ₁))) Γ Φ ψ)) Γ₀ Φ₀ ψ₀
+        allIs L (3 + a) (dImpI L fun Γ₁ Φ₁ ψ₁ ↦
+          body Γ₁ hAll (Φ₁.length - 1) Γ₁ Φ₁ ψ₁) Γ Φ ψ)) Γ₀ Φ₀ ψ₀
     let d ← node [list treeTy, bitsTy] [Internal.roseHyp 0 1 φ]
       (Internal.roseNodeAt 2 treeTy bitsTy φ)
     pure (⟨0, [treeTy], [], φ⟩, nd (.roseIndHyp 2 0 1) [d]))
@@ -439,23 +533,25 @@ def kidsLemma (P : Prog) (name val fstName : String) : Step :=
           fun _ ↦ none
     pure (⟨0, Γ, [], Term.eq l (v 0)⟩, d))
 
-/-- The constants' development: the lemmas on lists of convergences, and each constant's
-relation at its type. -/
-def constDev (P : Prog) (S : Defs) : List Step :=
-  [allMonoLemma P S, allConvLemma P S, relOfListLemma P S] ++
+/-- The constants' development: the lemmas on lists of convergences, where {lit}`shared` holds,
+and the folds' convergences, at a relation, by default the kernel's. -/
+def constDev (P : Prog) (S : Defs) (R : RelSpec := kernelRel P S) (shared : Bool := true) :
+    List Step :=
+  (if shared then [allMonoLemma P S, allConvLemma P S] else []) ++ [relOfListLemma P S R] ++
   apConstLemmas P "apFold" (constNode Kernel.Label.fold) 1 2 ++
-  apConstLemmas P "apPara" (constNode Kernel.Label.para) 1 2 ++ spineLemmas P ++
-  [roseAllFor P S "foldConvAll" (foldφ P S "Eval.foldVal"),
+  apConstLemmas P "apPara" (constNode Kernel.Label.para) 1 2 ++
+  (if shared then spineLemmas P else []) ++
+  [roseAllFor P S (R.name "foldConvAll") (foldφ P S "Eval.foldVal" R),
     fusLemma P "foldConvFus" "Eval.foldVal",
     foldConvLemma P S "foldConv" "Eval.foldVal"
-      (fun l _ ↦ nodeT (Term.pair l (nilT treeTy))) [],
-    roseAllFor P S "paraConvAll" (foldφ P S "Eval.paraVal"),
+      (fun l _ ↦ nodeT (Term.pair l (nilT treeTy))) [] R,
+    roseAllFor P S (R.name "paraConvAll") (foldφ P S "Eval.paraVal" R),
     fusLemma P "paraConvFus" "Eval.paraVal" fun L ↦
       Term.listRec (nilT treeTy) (consT treeTy (Term.snd (v 1)) (v 0)) L] ++
   paraRebuild P "pv" "Eval.paraVal" ++
   [kidsLemma P "pvKids" "Eval.paraVal" "pvFst",
     foldConvLemma P S "paraConv" "Eval.paraVal" (fun l cs ↦ nodeT (Term.pair l cs))
-      ["pvFst", "pvKids"]]
+      ["pvFst", "pvKids"] R]
 
 end GebTests.Prototypes.FreeTopos.Normalization
 
