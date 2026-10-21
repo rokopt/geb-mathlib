@@ -510,21 +510,25 @@ def cutApply (name : String) (σ : List Tree → List Term) (prems : List Deduce
   dCut (Internal.instTerm [] (σ Γ) b.concl) (nd (.apply (K.ix name) [] (σ Γ)) ds) k Γ Φ ψ
 
 /-- The hypotheses introduced; the keyword not abbreviated, by the coherence of the
-abbreviations with the keywords; then k. -/
-def intro (kw : String) (k : Deducer) : Deducer :=
+abbreviations with the keywords, the keyword's being reserved by {lit}`reserved`; then k. -/
+def introWith (kw : String) (reserved : Deducer) (k : Deducer) : Deducer :=
   let K := W.K
   let P := K.P
-  let KL : Kit := { K with more := K.more ++ lookupEqNames }
   let lastFalse : Deducer := fun Γ Φ ψ ↦ K.hypFalse (Φ.length - 1) Γ Φ ψ
   let notAbbrev : Deducer := verifyK K "keyword abbreviated" <|
     linkK K s!"keyword {kw} abbreviated" <|
     dRwHyp (evalRw K.G K.E [.delta (W.T.q + 5 + 2 * nFolds)] .head) (W.hyp 9)
-      (K.allEΓ (fun _ ↦ pc P kw []) (K.impE (K.solve 3) (K.impE (KL.solve 3) lastFalse)))
+      (K.allEΓ (fun _ ↦ pc P kw []) (K.impE (K.solve 3) (K.impE reserved lastFalse)))
   let body : Deducer :=
     decideIn K (fun Γ ↦ pc P "Prelude.isSome" [pc P "Reader.lookupAbbrev"
         [pc P kw [], W.qv 7 Γ]]) k notAbbrev
   (List.range nQ).foldr (fun _ k ↦ dAllI K.L k)
     ((List.range W.nH).foldr (fun _ k ↦ dImpI K.L k) body)
+
+/-- The hypotheses introduced; the keyword not abbreviated, by {name}`introWith`, the keyword's
+being reserved by normalization with the lookups' equations; then k. -/
+def intro (kw : String) (k : Deducer) : Deducer :=
+  W.introWith kw (Kit.solve { W.K with more := W.K.more ++ lookupEqNames } 3) k
 
 end KwKit
 

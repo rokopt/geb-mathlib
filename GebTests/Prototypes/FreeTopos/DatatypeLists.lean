@@ -8,6 +8,7 @@ module
 public import GebTests.Prototypes.FreeTopos.DatatypeAssembly
 public meta import GebTests.Prototypes.FreeTopos.DatatypeAssembly -- shake: keep
 public import GebTests.Prototypes.FreeTopos.DatatypeData
+public import GebTests.Prototypes.FreeTopos.DatatypeFolds
 public meta import GebTests.Prototypes.FreeTopos.DatatypeData -- shake: keep
 meta import GebMeta -- shake: keep
 
@@ -21,8 +22,10 @@ list headed by a keyword whose forms the developments before prove sound
 ({lit}`keywordCases`) is sound ({lit}`kwList`): its further elements split until they are as
 many as the forms take, any other number refuted by the typing, each element's expansion decided
 present first; for more elements than the form takes, the inequalities of a length with the
-numerals four and five ({lit}`neqMore`). Every list is sound ({lit}`listCase`), given that at its
-elements and at the lists headed by the keywords later developments prove sound
+numerals four and five ({lit}`neqMore`). The lists headed by the keywords of the kernel's
+constants are sound by
+{name}`GebTests.Prototypes.FreeTopos.Datatypes.constSrc`. Every list is sound ({lit}`listCase`),
+given that at its elements and at the lists headed by the keywords later developments prove sound
 ({lit}`laterKeywords`): the empty list refuted; an atom's name decided against each keyword's,
 a list headed by an atom no keyword names sound by
 {name}`GebTests.Prototypes.FreeTopos.Datatypes.appAtom`; a list headed by a list by
@@ -83,15 +86,6 @@ def neqMore (P : Prog) : List Step :=
       (TranslationProofs.sides a).2
   [4, 5].map fun n ↦ step s!"neq{n}" (neq n) (byBit n (neq n))
 
-/-- The name of the soundness at the lists headed by the keyword {lit}`kw`. -/
-def kwListName (kw : String) : String := s!"kwList/{kw}"
-
-/-- The soundness at a list headed by the keyword {lit}`kw`, in the context of its further
-elements, given that at each further element. -/
-def kwListThm (P : Prog) (S : Defs) (T : Defs3) (kw : String) : Internal.Thm :=
-  ⟨0, [list treeTy], [S.allL (Term.lam treeTy (datatypeφ P S T)) (v 0)],
-    Internal.instTerm [] [listOf (kwAtom P kw) (v 0)] (datatypeφ P S T)⟩
-
 /-- The soundness at a list headed by the keyword {lit}`kw` ({name}`kwListThm`), the soundness at
 its forms of {lit}`n` further elements {lit}`thm`: the further elements split by cases until there
 are {lit}`n`, the soundness at that form, its elements' soundness the hypothesis split; any other
@@ -100,12 +94,7 @@ typing and its test of source forms decided ({name}`splitSolve`). -/
 def kwList (P : Prog) (S : Defs) (T : Defs3) (kw : String) (n : ℕ) (thm : String) : Step :=
   (kwListName kw, fun ix E ↦ do
     let K := appKit P S ix E
-    let L := K.L
     let a := kwListThm P S T kw
-    let nH := (datatypeParts P S T (v nQ)).1.length
-    let unfold := ((List.range nFolds).map T.argIdx ++
-      ["Typing.synList", "Reader.resolveList"].map P.idx).map Internal.NormRule.delta ++
-      ["neq4", "neq5"].map fun nm ↦ Internal.NormRule.thm (ix nm) []
     let last : Deducer := fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ
     let anyHyp : Deducer := fun Γ Φ ψ ↦
       (List.range Φ.length).reverse.findSome? fun h ↦ K.byHyp h Γ Φ ψ
@@ -113,21 +102,9 @@ def kwList (P : Prog) (S : Defs) (T : Defs3) (kw : String) (n : ℕ) (thm : Stri
     -- expansion decided present, the first first, else the list's absent; all present, the
     -- list's typing absent, else the tests of the expansion, the typing and the source form
     -- decided
-    let refute (msg : String) (ps : List ℕ) : Deducer := fun Γ₀ Φ₀ ψ₀ ↦
-      let hyp (i : ℕ) : ℕ := Φ₀.length + nQ + i
-      let env (Γ : List Tree) : Term := atPos (Γ₀.length - 1 + 3) Γ
-      -- a hypothesis refuted with the folds' steps unfolded
-      let hypFalseU (h : ℕ) : Deducer := fun Γ Φ ψ ↦
-        dRwHyp (evalRw K.G K.E (K.rulesEx Φ h ++ unfold) .full) h (dFalse K.L dHyp) Γ Φ ψ
-      let rest : Deducer := fun Γ Φ ψ ↦ (hypFalseU (hyp 6) Γ Φ ψ).orElse fun _ ↦
-        (splitSolve K (fun Φ ↦ K.rules Φ ++ unfold) (fun _ ↦ [hyp 5, hyp 6, hyp 4]) 12
-          ((List.range nFolds).map T.foldIdx) .full) Γ Φ ψ
-      ((List.range nQ).foldr (fun _ k ↦ dAllI L k)
-        ((List.range nH).foldr (fun _ k ↦ dImpI L k)
-          (linkK K s!"{kwListName kw}: {msg}" <| dFalse L <| (ps.reverse.foldr (fun p k ↦
-            decideOpt K (fun Γ ↦ pc P "Datatype.expandExpr" [env Γ, atPos p Γ])
-              (hypFalseU (hyp 5))
-              k (minimal := true)) rest)))) Γ₀ Φ₀ ψ₀
+    let refute (msg : String) (ps : List ℕ) : Deducer :=
+      refuteForm P S T K s!"{kwListName kw}: {msg}" ps
+        (["neq4", "neq5"].map fun nm ↦ Internal.NormRule.thm (ix nm) [])
     -- the hypothesis, the soundness at every element, split into the elements' soundness
     let splitAll : Deducer → Deducer := fun k Γ Φ ψ ↦
       dRwHyp (evalRw K.G K.E (K.rulesEx Φ 0) .full) 0 ((List.range n).foldr
@@ -151,8 +128,7 @@ def kwList (P : Prog) (S : Defs) (T : Defs3) (kw : String) (n : ℕ) (thm : Stri
 /-- The keywords whose forms later developments prove sound, which the soundness at lists takes
 as hypotheses. -/
 def laterKeywords : List String :=
-  ["Typing.kwDatum", "Typing.kwDecode", "Reader.kwFold", "Reader.kwPara",
-    "Reader.kwIter", "Reader.kwFoldr", "Reader.kwLcase", "Datatype.kwCase", "Datatype.kwCata"]
+  ["Typing.kwDatum", "Typing.kwDecode", "Datatype.kwCase", "Datatype.kwCata"]
 
 /-- The soundness at every list headed by the keyword {lit}`kw`, given that at its further
 elements. -/
@@ -169,8 +145,8 @@ def listCaseThm (P : Prog) (S : Defs) (T : Defs3) : Internal.Thm :=
     Internal.instTerm [] [nodeT (Term.pair (numeral 2) (v 0))] (datatypeφ P S T)⟩
 
 /-- The soundness at a list ({name}`listCaseThm`): the list empty, refuted by its typing; else its
-head decided: an atom named by a keyword of {name}`keywordCases`, the soundness at the lists that
-keyword heads ({name}`kwList`), or by a keyword of {name}`laterKeywords`, the hypothesis; an atom
+head decided: an atom named by a keyword of {name}`laterKeywords`, the hypothesis, or by any other
+keyword, the soundness at the lists that keyword heads ({name}`kwList`, {name}`constSrc`); an atom
 named by none, {name}`appAtom`; a list, {name}`appList`; a node of any other label, whose expansion
 is the leaf 0, which has no type, the soundness of applications at source forms at it, its own
 soundness refuted. -/
@@ -179,7 +155,6 @@ def listCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let K := appKit P S ix E
     let L := K.L
     let a := listCaseThm P S T
-    let nH := (datatypeParts P S T (v nQ)).1.length
     let childrenT ← primT Kernel.Prim.children
     let unfold := ((List.range nFolds).map T.argIdx ++
       ["Typing.synList", "Reader.resolveList"].map P.idx).map Internal.NormRule.delta
@@ -194,12 +169,7 @@ def listCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
       (List.range Φ.length).reverse.findSome? fun h ↦ K.byHyp h Γ Φ ψ
     -- a list refuted: the statement's hypotheses introduced, the tests of its expansion, its
     -- typing and its test of source forms decided until one of them is false
-    let refuteAt (msg : String) : Deducer := fun Γ₀ Φ₀ ψ₀ ↦
-      let hyp (i : ℕ) : ℕ := Φ₀.length + nQ + i
-      ((List.range nQ).foldr (fun _ k ↦ dAllI L k)
-        ((List.range nH).foldr (fun _ k ↦ dImpI L k)
-          (linkK K s!"listCase: {msg}" <| dFalse L <| splitSolve K (fun Φ ↦ K.rules Φ ++ unfold)
-            (fun _ ↦ [hyp 5, hyp 6, hyp 4]) 24 ((List.range nFolds).map T.foldIdx) .full))) Γ₀ Φ₀ ψ₀
+    let refuteAt (msg : String) : Deducer := refuteStatement P S T K s!"listCase: {msg}"
     -- the hypothesis of index h, the soundness at every element of a list split into its
     -- elements, each element's soundness after the hypotheses
     let splitAll (h n : ℕ) (k : Deducer) : Deducer := fun Γ Φ ψ ↦
@@ -246,12 +216,11 @@ def listCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
               K.cutThm "equalSound" (fun Γ ↦ [name Γ]) <| K.allEΓ (fun _ ↦ pc P kw []) <|
               K.impE (K.solve 3) fun Γ Φ ψ ↦
               K.image (Φ.length - 1) (fun t ↦ apps childrenT [t]) (fun Γ Φ ψ ↦
-                match laterKeywords.idxOf? kw, keywordCases.find? (·.1 == kw) with
-                | some j, _ =>
+                match laterKeywords.idxOf? kw with
+                | some j =>
                   dAllE L K.G K.E (1 + j) (rs Γ) (K.impE anyHyp last) Γ Φ ψ
-                | none, some _ =>
-                  W₀cut (kwListName kw) (fun Γ ↦ [rs Γ]) [anyHyp] last Γ Φ ψ
-                | none, none => none) Γ Φ ψ))
+                | none =>
+                  W₀cut (kwListName kw) (fun Γ ↦ [rs Γ]) [anyHyp] last Γ Φ ψ) Γ Φ ψ))
             (linkK K "listCase: an atom" <|
               W₀cut "appAtom" (fun Γ ↦ [rs Γ, hcs Γ])
                 ([anyHyp, anyHyp] ++ headKeywords.map fun _ ↦ K.solve 3) last)
@@ -276,13 +245,15 @@ def listsDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
 /-- The development of the soundness at every list ({name}`listsDev3`), after the base's, the
 atom's, the list's, the stage functions' at applications, the applications', the list
 expansion's, the soundness at applications', the abstractions' over one binder and over lists of
-binders, and the representations', stored as the certificate {lit}`datatype-lists`. -/
+binders, the representations', and the kernel's constants', stored as the certificate
+{lit}`datatype-lists`. -/
 def listsCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Thm) :
     Except String (List (String × List Internal.Decl)) := do
   let some names := listNames P S T | throw "the base is not stated"
   certifyAfter P (names ++ (stagesDev3 P S T).map (·.1) ++ (applyDev3 P S T).map (·.1) ++
     (expansionDev3 P S T).map (·.1) ++ (assemblyDev3 P S T).map (·.1) ++
-    (appDev3 P S T).map (·.1) ++ (lamDev3 P S T).map (·.1) ++ (dataDev3 P S T).map (·.1))
+    (appDev3 P S T).map (·.1) ++ (lamDev3 P S T).map (·.1) ++ (dataDev3 P S T).map (·.1) ++
+    (foldsDev3 P S T).map (·.1))
     "datatype-lists"
     (listsDev3 P S T) before
 
