@@ -2257,10 +2257,9 @@ another label at applications, the expansion of a list being a list
 (`GebTests/Prototypes/FreeTopos/DatatypeAssembly.lean`); and at every
 tree, by induction on rose trees
 (`GebTests/Prototypes/FreeTopos/DatatypeSound.lean`), given the
-soundness at the lists headed by `lam`, `datum`, `rep`, `decode`, `fold`,
+soundness at the lists headed by `datum`, `rep`, `decode`, `fold`,
 `para`, `iter`, `foldr`, `lcase`, `case` and `cata`. Remaining after it:
-the soundness at the forms of those keywords but `lam`, and at those of
-`lam` from the development of abstractions, discharging those
+the soundness at the forms of those keywords, discharging those
 hypotheses; `tree-data` removed.
 
 Abstraction is mathematical, not syntactic, and needs no mark of its
