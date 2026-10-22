@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import GebTests.Prototypes.FreeTopos.DatatypeApply
-public import GebTests.Prototypes.FreeTopos.DatatypeAssembly
+public import GebTests.Prototypes.FreeTopos.DatatypeLists
 public import GebTests.Prototypes.FreeTopos.DatatypeSound
 public import GebTests.Prototypes.FreeTopos.DatatypeLam
 public import GebTests.Prototypes.FreeTopos.Expansion

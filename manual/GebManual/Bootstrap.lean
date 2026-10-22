@@ -2254,7 +2254,8 @@ given the soundness at its elements: a list headed by a keyword at that
 keyword's forms, any other number of elements refuted by the typing, and
 a list headed by an atom no keyword names, by a list or by a node of
 another label at applications, the expansion of a list being a list
-(`GebTests/Prototypes/FreeTopos/DatatypeAssembly.lean`); and at every
+(`GebTests/Prototypes/FreeTopos/DatatypeAssembly.lean`,
+`GebTests/Prototypes/FreeTopos/DatatypeLists.lean`); and at every
 tree, by induction on rose trees
 (`GebTests/Prototypes/FreeTopos/DatatypeSound.lean`), given the
 soundness at the lists headed by `datum`, `rep`, `decode`, `fold`,
