@@ -2246,7 +2246,10 @@ and at the keywords' forms one keyword at a time, given the soundness at
 their elements (`GebTests/Prototypes/FreeTopos/DatatypeList.lean`), and
 at an abstraction over several binders from that at an abstraction over
 one, by induction on the list of its binders
-(`GebTests/Prototypes/FreeTopos/DatatypeLam.lean`); at the application
+(`GebTests/Prototypes/FreeTopos/DatatypeLam.lean`); at the
+representation of a member as a tree, from that at the application of
+its term to no arguments, a member's quotation being a tree's
+(`GebTests/Prototypes/FreeTopos/DatatypeData.lean`); at the application
 of a head to any number of arguments, by induction on the arguments,
 given that no keyword names the head as each stage reads it
 (`GebTests/Prototypes/FreeTopos/DatatypeApply.lean`); at every list,
@@ -2258,8 +2261,8 @@ another label at applications, the expansion of a list being a list
 `GebTests/Prototypes/FreeTopos/DatatypeLists.lean`); and at every
 tree, by induction on rose trees
 (`GebTests/Prototypes/FreeTopos/DatatypeSound.lean`), given the
-soundness at the lists headed by `datum`, `rep`, `decode`, `fold`,
-`para`, `iter`, `foldr`, `lcase`, `case` and `cata`. Remaining after it:
+soundness at the lists headed by `datum`, `decode`, `fold`, `para`,
+`iter`, `foldr`, `lcase`, `case` and `cata`. Remaining after it:
 the soundness at the forms of those keywords, discharging those
 hypotheses; `tree-data` removed.
 

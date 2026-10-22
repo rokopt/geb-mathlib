@@ -120,14 +120,15 @@ def soundDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
 
 /-- The development of the soundness at every tree ({name}`soundDev3`), after the base's, the
 atom's, the list's, the stage functions' at applications, the applications', the list
-expansion's, the soundness at applications', at abstractions and at lists', stored as the
-certificate {lit}`datatype-sound`. -/
+expansion's, the soundness at applications', at abstractions, at representations and at lists',
+stored as the certificate {lit}`datatype-sound`. -/
 def soundCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Thm) :
     Except String (List (String × List Internal.Decl)) := do
   let some names := listNames P S T | throw "the base is not stated"
   certifyAfter P (names ++ (stagesDev3 P S T).map (·.1) ++ (applyDev3 P S T).map (·.1) ++
     (expansionDev3 P S T).map (·.1) ++ (assemblyDev3 P S T).map (·.1) ++
-    (appDev3 P S T).map (·.1) ++ (lamDev3 P S T).map (·.1) ++ (listsDev3 P S T).map (·.1))
+    (appDev3 P S T).map (·.1) ++ (lamDev3 P S T).map (·.1) ++ (dataDev3 P S T).map (·.1) ++
+    (listsDev3 P S T).map (·.1))
     "datatype-sound" (soundDev3 P S T) before
 
 end GebTests.Prototypes.FreeTopos.Datatypes
