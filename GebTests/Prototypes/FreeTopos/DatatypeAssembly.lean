@@ -5,8 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
-public import GebTests.Prototypes.FreeTopos.DatatypeApply
-public meta import GebTests.Prototypes.FreeTopos.DatatypeApply -- shake: keep
+public import GebTests.Prototypes.FreeTopos.DatatypeLam
+public meta import GebTests.Prototypes.FreeTopos.DatatypeLam -- shake: keep
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -552,7 +552,8 @@ def keywordCases : List (String × ℕ × String) :=
   [("Reader.kwLet", 4, "letCase"), ("Reader.kwQuote", 1, "quoteCase"),
     ("Reader.kwNil", 1, "nilCase"), ("Reader.kwIf", 3, "ifCase"),
     ("Reader.kwCons", 2, "consCase"), ("Reader.kwFst", 1, "fstCase"),
-    ("Reader.kwSnd", 1, "sndCase"), ("Reader.kwPair", 2, "pairCase")]
+    ("Reader.kwSnd", 1, "sndCase"), ("Reader.kwPair", 2, "pairCase"),
+    ("Reader.kwLam", 2, "lamCase")]
 
 /-- The inequalities of a bitstring's successors with the numerals four and five
 ({name}`GebTests.Prototypes.FreeTopos.Normalization.eqnLemmas`), which the arities of the forms of
@@ -640,9 +641,8 @@ def kwList (P : Prog) (S : Defs) (T : Defs3) (kw : String) (n : ℕ) (thm : Stri
 /-- The keywords whose forms later developments prove sound, which the soundness at lists takes
 as hypotheses. -/
 def laterKeywords : List String :=
-  ["Reader.kwLam", "Typing.kwDatum", "Typing.kwRep", "Typing.kwDecode", "Reader.kwFold",
-    "Reader.kwPara", "Reader.kwIter", "Reader.kwFoldr", "Reader.kwLcase", "Datatype.kwCase",
-    "Datatype.kwCata"]
+  ["Typing.kwDatum", "Typing.kwRep", "Typing.kwDecode", "Reader.kwFold", "Reader.kwPara",
+    "Reader.kwIter", "Reader.kwFoldr", "Reader.kwLcase", "Datatype.kwCase", "Datatype.kwCata"]
 
 /-- The soundness at every list headed by the keyword {lit}`kw`, given that at its further
 elements. -/
@@ -818,13 +818,14 @@ def listsDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
 
 /-- The development of the soundness at every list ({name}`listsDev3`), after the base's, the
 atom's, the list's, the stage functions' at applications, the applications', the list
-expansion's and the soundness at applications', stored as the certificate
-{lit}`datatype-lists`. -/
+expansion's, the soundness at applications', and the abstractions' over one binder and over lists
+of binders, stored as the certificate {lit}`datatype-lists`. -/
 def listsCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Thm) :
     Except String (List (String × List Internal.Decl)) := do
   let some names := listNames P S T | throw "the base is not stated"
   certifyAfter P (names ++ (stagesDev3 P S T).map (·.1) ++ (applyDev3 P S T).map (·.1) ++
-    (expansionDev3 P S T).map (·.1) ++ (assemblyDev3 P S T).map (·.1)) "datatype-lists"
+    (expansionDev3 P S T).map (·.1) ++ (assemblyDev3 P S T).map (·.1) ++
+    (appDev3 P S T).map (·.1) ++ (lamDev3 P S T).map (·.1)) "datatype-lists"
     (listsDev3 P S T) before
 
 end GebTests.Prototypes.FreeTopos.Datatypes
