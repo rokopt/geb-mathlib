@@ -2252,7 +2252,13 @@ its term to no arguments, a member's quotation being a tree's
 (`GebTests/Prototypes/FreeTopos/DatatypeData.lean`); at the application
 of a head to any number of arguments, by induction on the arguments,
 given that no keyword names the head as each stage reads it
-(`GebTests/Prototypes/FreeTopos/DatatypeApply.lean`); at every list,
+(`GebTests/Prototypes/FreeTopos/DatatypeApply.lean`); at a list headed
+by the keyword of one of the kernel's constants but the primitives, as
+the application of the constant to the further elements, related at
+the typing's type of it by the normalization proof's lemmas at the
+relation extending the fundamental lemma's, the type the constant
+carries quantified apart from the type it is related at
+(`GebTests/Prototypes/FreeTopos/DatatypeFolds.lean`); at every list,
 given the soundness at its elements: a list headed by a keyword at that
 keyword's forms, any other number of elements refuted by the typing, and
 a list headed by an atom no keyword names, by a list or by a node of
@@ -2261,8 +2267,8 @@ another label at applications, the expansion of a list being a list
 `GebTests/Prototypes/FreeTopos/DatatypeLists.lean`); and at every
 tree, by induction on rose trees
 (`GebTests/Prototypes/FreeTopos/DatatypeSound.lean`), given the
-soundness at the lists headed by `datum`, `decode`, `fold`, `para`,
-`iter`, `foldr`, `lcase`, `case` and `cata`. Remaining after it:
+soundness at the lists headed by `datum`, `decode`, `case` and `cata`.
+Remaining after it:
 the soundness at the forms of those keywords, discharging those
 hypotheses; `tree-data` removed.
 

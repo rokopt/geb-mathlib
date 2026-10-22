@@ -128,7 +128,7 @@ def soundCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.
   certifyAfter P (names ++ (stagesDev3 P S T).map (·.1) ++ (applyDev3 P S T).map (·.1) ++
     (expansionDev3 P S T).map (·.1) ++ (assemblyDev3 P S T).map (·.1) ++
     (appDev3 P S T).map (·.1) ++ (lamDev3 P S T).map (·.1) ++ (dataDev3 P S T).map (·.1) ++
-    (listsDev3 P S T).map (·.1))
+    (foldsDev3 P S T).map (·.1) ++ (listsDev3 P S T).map (·.1))
     "datatype-sound" (soundDev3 P S T) before
 
 end GebTests.Prototypes.FreeTopos.Datatypes

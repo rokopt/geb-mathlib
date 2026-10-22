@@ -36,7 +36,9 @@ label and children, a list by its cases.
 
 ## Main definitions
 
-* {lit}`splitSolve` — a goal by normalization after case analyses.
+* {lit}`splitSolve`, {lit}`refuteStatement`, {lit}`refuteForm` — a goal by normalization after
+  case analyses, and the soundness at a form refuted so, or by its typing.
+* {lit}`kwListThm` — the soundness at a list headed by a keyword.
 * {lit}`expList`, {lit}`expHead` — the expansion of a list a list, and its head's present.
 * {lit}`appAtom`, {lit}`appList` — the soundness at a list headed by an atom no keyword names, and
   by a list.
@@ -277,6 +279,49 @@ def splitSolve (K : Kit) (rs : List Term → List Internal.NormRule) (hs : List 
       if ty = bitTy then K.bitCase X rec rec Γ Φ ψ
       else if ty = treeTy then K.treeNode X rec Γ Φ ψ
       else K.listCase (ty.children.headD ty) X rec rec Γ Φ ψ) depth
+
+/-- The soundness at a form refuted: the statement's quantifiers and hypotheses introduced, after
+the hypotheses before them, the tests of the form's expansion, its typing and its test of source
+forms decided until one of them is false ({name}`splitSolve`), with the stage functions' steps
+unfolded; the failure traced with a message. -/
+def refuteStatement (P : Prog) (S : Defs) (T : Defs3) (K : Kit) (msg : String) : Deducer :=
+  fun Γ₀ Φ₀ ψ₀ ↦
+    let L := K.L
+    let nH := (datatypeParts P S T (v nQ)).1.length
+    let unfold := ((List.range nFolds).map T.argIdx ++
+      ["Typing.synList", "Reader.resolveList"].map P.idx).map Internal.NormRule.delta
+    let hyp (i : ℕ) : ℕ := Φ₀.length + nQ + i
+    ((List.range nQ).foldr (fun _ k ↦ dAllI L k)
+      ((List.range nH).foldr (fun _ k ↦ dImpI L k)
+        (linkK K msg <| dFalse L <| splitSolve K (fun Φ ↦ K.rules Φ ++ unfold)
+          (fun _ ↦ [hyp 5, hyp 6, hyp 4]) 24 ((List.range nFolds).map T.foldIdx) .full))) Γ₀ Φ₀ ψ₀
+
+/-- The soundness at a form of a wrong number of elements refuted: the statement's quantifiers and
+hypotheses introduced, after the hypotheses before them; each element's expansion, at the
+positions {lit}`ps`, decided present, the first first, else the form's absent; all present, the
+form's typing absent, with the stage functions' steps unfolded and the further rules
+{lit}`extra`, else the tests of the expansion, the typing and the test of source forms decided
+({name}`splitSolve`); the failure traced with a message. -/
+def refuteForm (P : Prog) (S : Defs) (T : Defs3) (K : Kit) (msg : String) (ps : List ℕ)
+    (extra : List Internal.NormRule) : Deducer := fun Γ₀ Φ₀ ψ₀ ↦
+  let L := K.L
+  let nH := (datatypeParts P S T (v nQ)).1.length
+  let unfold := ((List.range nFolds).map T.argIdx ++
+    ["Typing.synList", "Reader.resolveList"].map P.idx).map Internal.NormRule.delta ++ extra
+  let hyp (i : ℕ) : ℕ := Φ₀.length + nQ + i
+  let env (Γ : List Tree) : Term := atPos (Γ₀.length - 1 + 3) Γ
+  -- a hypothesis refuted with the folds' steps unfolded
+  let hypFalseU (h : ℕ) : Deducer := fun Γ Φ ψ ↦
+    dRwHyp (evalRw K.G K.E (K.rulesEx Φ h ++ unfold) .full) h (dFalse K.L dHyp) Γ Φ ψ
+  let rest : Deducer := fun Γ Φ ψ ↦ (hypFalseU (hyp 6) Γ Φ ψ).orElse fun _ ↦
+    (splitSolve K (fun Φ ↦ K.rules Φ ++ unfold) (fun _ ↦ [hyp 5, hyp 6, hyp 4]) 12
+      ((List.range nFolds).map T.foldIdx) .full) Γ Φ ψ
+  ((List.range nQ).foldr (fun _ k ↦ dAllI L k)
+    ((List.range nH).foldr (fun _ k ↦ dImpI L k)
+      (linkK K msg <| dFalse L <| (ps.reverse.foldr (fun p k ↦
+        decideOpt K (fun Γ ↦ pc P "Datatype.expandExpr" [env Γ, atPos p Γ])
+          (hypFalseU (hyp 5))
+          k (minimal := true)) rest)))) Γ₀ Φ₀ ψ₀
 
 /-- The number of variables a node's child of an index binds beyond the node's context. -/
 def bindersAt (l : Internal.Label) (i : ℕ) : ℕ := match l with
@@ -587,6 +632,15 @@ def assemblyCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Intern
   let some names := listNames P S T | throw "the base is not stated"
   certifyAfter P (names ++ (stagesDev3 P S T).map (·.1) ++ (applyDev3 P S T).map (·.1) ++
     (expansionDev3 P S T).map (·.1)) "datatype-assembly" (assemblyDev3 P S T) before
+
+/-- The name of the soundness at the lists headed by the keyword {lit}`kw`. -/
+def kwListName (kw : String) : String := s!"kwList/{kw}"
+
+/-- The soundness at a list headed by the keyword {lit}`kw`, in the context of its further
+elements, given that at each further element. -/
+def kwListThm (P : Prog) (S : Defs) (T : Defs3) (kw : String) : Internal.Thm :=
+  ⟨0, [list treeTy], [S.allL (Term.lam treeTy (datatypeφ P S T)) (v 0)],
+    Internal.instTerm [] [listOf (kwAtom P kw) (v 0)] (datatypeφ P S T)⟩
 
 end GebTests.Prototypes.FreeTopos.Datatypes
 

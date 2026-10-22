@@ -113,12 +113,12 @@ def searches : List (String × Search) :=
         Datatypes.foldsCertificates P S T dss.flatten)),
     ("datatype-lists", (["datatype-base", "datatype-atom", "datatype-list", "datatype-stages",
         "datatype-apply", "datatype-expansion", "datatype-assembly", "datatype-app",
-        "datatype-lam", "datatype-data"],
+        "datatype-lam", "datatype-data", "datatype-folds"],
       fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
         Datatypes.listsCertificates P S T dss.flatten)),
     ("datatype-sound", (["datatype-base", "datatype-atom", "datatype-list", "datatype-stages",
         "datatype-apply", "datatype-expansion", "datatype-assembly", "datatype-app",
-        "datatype-lam", "datatype-data", "datatype-lists"],
+        "datatype-lam", "datatype-data", "datatype-folds", "datatype-lists"],
       fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
         Datatypes.soundCertificates P S T dss.flatten))]
 
