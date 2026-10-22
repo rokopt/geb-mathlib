@@ -2206,7 +2206,14 @@ and the trees:
 
 The erasure rewrites these forms wherever they occur, so the typing
 admits no binder named `rep`, `decode` or `datum`: the erasure leaves
-every binder the typing accepts as the typing reads it.
+every binder the typing accepts as the typing reads it. Nor does it admit
+a binder taking a name that the expansion and the erasure write free under
+the program's binders: a primitive, the unit value, the recognizer
+`D.member` of a datatype `D`, and the variable `%e` to which the erasure
+binds a decoded tree. The expansion admits no clause variable beginning
+with `%`, as its own variables do, among which it binds a clause's. Each
+name the expansion and the erasure write thus refers to what they write
+it for.
 
 Decoding is decided by the recognizer `D.member`, which the stage-0
 compiler writes where a program refers to it (`bootstrap/recognize.geb`),

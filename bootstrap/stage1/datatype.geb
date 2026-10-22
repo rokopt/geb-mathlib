@@ -212,7 +212,8 @@
         (else (pair tx0 aZero)))))
 
   ; the bindings of a clause's variables, from the innermost out: fb binds a field at a position
-  ; with its type, and vb binds the remaining children after the fixed fields
+  ; with its type, and vb binds the remaining children after the fixed fields; each variable an
+  ; atom not beginning with %, as the expansion's own variables, bound among them, do
   (deftype Binder (Arrow T (Arrow Tx (Arrow Tx (Arrow Tx Tx)))))
   (deftype XT (Prod T Tx))
   (defn bindWith ((fb Binder) (vb Binder) (ctor Decl) (vars (List Tx)) (body Tx)) MTx
@@ -223,7 +224,12 @@
            (let nv T (Txs.length vars)
              (if
                (and (eq nv (add nf isVar))
-                 (allTrue (foldr Tx Ts (lam ((v Tx) (r Ts)) (cons (isAtomTx v) r)) (nil T) vars)))
+                 (allTrue
+                   (foldr Tx Ts
+                     (lam ((v Tx) (r Ts))
+                       (cons (and (isAtomTx v) (if (eq (at (children (rep v)) 0) 37) 0 1)) r))
+                     (nil T)
+                     vars)))
                (OTx.just
                  (snd
                    (foldr Tx XT

@@ -3474,6 +3474,50 @@ def «Typing.applyTy» :=
       («Typing/MTys.reverse» x1);
     x2
 
+def «Typing.kwDecoded» := mk 0 [leaf 37, leaf 101]
+
+def «Typing.binderName» :=
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : T) =>
+    let x2 : T := (let x2 : T := «Typing.atomName» x1;
+                   if («Prelude.or»
+                     («Typing.namedTx» x1 «Typing.kwRep»)
+                     («Prelude.or»
+                       («Typing.namedTx» x1 «Typing.kwDecode»)
+                       («Prelude.or»
+                         («Typing.namedTx» x1 «Typing.kwDatum»)
+                         («Prelude.or»
+                           («Typing.namedTx» x1 «Reader.kwUnitValue»)
+                           («Prelude.or»
+                             («Typing.namedTx» x1 «Typing.kwDecoded»)
+                             («Prelude.or»
+                               («Prelude.isSome» («Reader.indexOf» x2 «Reader.primNames»))
+                               (Const.foldr
+                                 (α := T)
+                                 (β := T)
+                                 (fun (x3 : T) (x4 : T) =>
+                                   «Prelude.or»
+                                     («Typing.sameName»
+                                       x2
+                                       («Typing.name»
+                                         («Prelude.append»
+                                           (Const.children x3)
+                                           (Const.children
+                                             (mk 1 [leaf 46,
+                                               leaf 109,
+                                               leaf 101,
+                                               leaf 109,
+                                               leaf 98,
+                                               leaf 101,
+                                               leaf 114])))))
+                                     x4)
+                                 (leaf 0)
+                                 («Typing.envNoms» x0)))))))).label ≠ 0 then
+                     leaf 0
+                   else
+                     «Typing.isAtomTx» x1);
+    x2
+
 def «Typing/OAbbr.nothing» := Const.node (leaf 0) ([] : List T)
 
 def «Typing/OAbbr.just» :=
@@ -3584,15 +3628,9 @@ def «Typing.bindersOf» :=
                           (leaf 0);
                         if («Prelude.and»
                           (Const.eq («Typing/Txs.length» x6) (leaf 2))
-                          (let x7 : T := «Typing/Txs.atOr» «Typing.tx0» x6 (leaf 0);
-                           if («Prelude.or»
-                             («Typing.namedTx» x7 «Typing.kwRep»)
-                             («Prelude.or»
-                               («Typing.namedTx» x7 «Typing.kwDecode»)
-                               («Typing.namedTx» x7 «Typing.kwDatum»))).label ≠ 0 then
-                             leaf 0
-                           else
-                             «Typing.isAtomTx» x7)).label ≠ 0 then
+                          («Typing.binderName»
+                            x0
+                            («Typing/Txs.atOr» «Typing.tx0» x6 (leaf 0)))).label ≠ 0 then
                           let x7 : T := «Typing.readTy»
                             x0
                             («Typing/Txs.atOr» «Typing.tx0» x6 (leaf 1));
@@ -3730,7 +3768,7 @@ def «Typing.synList» :=
                            (x7 (leaf 3))
                            (fun (x8 : T) (x9 : T) =>
                              if («Prelude.and»
-                               («Typing.isAtomTx» (x6 (leaf 1)))
+                               («Typing.binderName» x0 (x6 (leaf 1)))
                                («Typing.sameTy» x8 x9)).label ≠ 0 then
                                «Typing.srAt»
                                  x2
@@ -5533,7 +5571,16 @@ def «Datatype.bindWith» :=
                          (Const.foldr
                            (α := T)
                            (β := List T)
-                           (fun (x15 : T) (x16 : List T) => ((«Datatype.isAtomTx» x15) :: x16))
+                           (fun (x15 : T) (x16 : List T) =>
+                             ((«Prelude.and»
+                               («Datatype.isAtomTx» x15)
+                               (if (Const.eq
+                                 («Prelude.at» (Const.children x15) (leaf 0))
+                                 (leaf 37)).label ≠ 0 then
+                                 leaf 0
+                               else
+                                 leaf 1)) ::
+                               x16))
                            ([] : List T)
                            x3))).label ≠ 0 then
                        «Datatype/OTx.just»

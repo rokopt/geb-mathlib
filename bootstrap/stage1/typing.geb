@@ -254,9 +254,33 @@
           ((OTy.nothing) OTy.nothing)))
       f
       (MTys.reverse args)))
+  ; whether a form may name a variable: an atom naming none of the erasure's keywords, so that the
+  ; erasure leaves a binder as the typing reads it, and none of the names the expansion and the
+  ; erasure write free in the scope of the program's binders, a primitive, the unit value, a
+  ; datatype's recognizer and the variable the erasure binds to a decoded tree, so that each
+  ; refers to what they write it for
+  (def kwDecoded (quote (0 "%e")))
+  (defn binderName ((E Env) (x Tx)) T
+    (let n Name (atomName x)
+      (if
+        (or (namedTx x kwRep)
+          (or (namedTx x kwDecode)
+            (or (namedTx x kwDatum)
+              (or (namedTx x kwUnitValue)
+                (or (namedTx x kwDecoded)
+                  (or (isSome (indexOf (rep n) primNames))
+                    (foldr Name T
+                      (lam ((d Name) (r T))
+                        (or
+                          (sameName n
+                            (name (append (children (rep d)) (children (quote (1 .member))))))
+                          r))
+                      0
+                      (envNoms E))))))))
+        0
+        (isAtomTx x))))
   ; the binders of an abstraction: one binder (x A), or a list of them, each a name with a type, the
-  ; name an atom naming none of the erasure's keywords, so that the erasure leaves the binder as the
-  ; typing reads it
+  ; name one that may name a variable
   (import (Option Abbr) as OAbbr)
   (defn bindersOf ((E Env) (b Tx)) (Prod T (List Abbr))
     (let bs (List Tx)
@@ -270,11 +294,7 @@
             (cons
               (case x
                 ((tList ys)
-                 (if
-                   (and (eq (Txs.length ys) 2)
-                     (let n Tx (Txs.atOr tx0 ys 0)
-                       (if (or (namedTx n kwRep) (or (namedTx n kwDecode) (namedTx n kwDatum))) 0
-                         (isAtomTx n))))
+                 (if (and (eq (Txs.length ys) 2) (binderName E (Txs.atOr tx0 ys 0)))
                    (case (readTy E (Txs.atOr tx0 ys 1))
                      ((OTy.just ty) (OAbbr.just (abbr (atomName (Txs.atOr tx0 ys 0)) ty)))
                      ((OTy.nothing) OAbbr.nothing))
@@ -326,7 +346,7 @@
                 (if (and (namedTx h kwLet) (eq k 5))
                   (both2 (readTy E (f 2)) (s 3)
                     (lam ((A Ty) (B Ty))
-                      (if (and (isAtomTx (f 1)) (sameTy A B))
+                      (if (and (binderName E (f 1)) (sameTy A B))
                         (srAt rs 4 (cons (abbr (atomName (f 1)) A) cx))
                         OTy.nothing)))
                   (if (and (namedTx h kwPair) (eq k 3))
