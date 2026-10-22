@@ -259,31 +259,28 @@
           ((OTy.nothing) OTy.nothing)))
       f
       (MTys.reverse args)))
-  ; whether a form may name a variable: an atom naming none of the erasure's keywords, so that the
-  ; erasure leaves a binder as the typing reads it, and none of the names the expansion and the
-  ; erasure write free in the scope of the program's binders, a primitive, the unit value, a
-  ; datatype's recognizer and the variable the erasure binds to a decoded tree, so that each
-  ; refers to what they write it for
+  ; the name of a datatype's recognizer: the datatype's name followed by .member
+  (defn recognizerName ((d Name)) Name
+    (name (append (children (rep d)) (children (quote (1 .member))))))
+  ; whether a name may name a variable: none of the erasure's keywords, so that the erasure leaves
+  ; a binder as the typing reads it, and none of the names the expansion and the erasure write free
+  ; in the scope of the program's binders, a primitive, the unit value, a datatype's recognizer and
+  ; the variable the erasure binds to a decoded tree, so that each refers to what they write it for
   (def kwDecoded (quote (0 "%e")))
-  (defn binderName ((E Env) (x Tx)) T
-    (let n Name (atomName x)
-      (if
-        (or (namedTx x kwRep)
-          (or (namedTx x kwDecode)
-            (or (namedTx x kwDatum)
-              (or (namedTx x kwUnitValue)
-                (or (namedTx x kwDecoded)
-                  (or (isSome (indexOf (rep n) primNames))
-                    (foldr Name T
-                      (lam ((d Name) (r T))
-                        (or
-                          (sameName n
-                            (name (append (children (rep d)) (children (quote (1 .member))))))
-                          r))
-                      0
-                      (envNoms E))))))))
-        0
-        (isAtomTx x))))
+  (defn nameOk ((E Env) (n Name)) T
+    (if
+      (or (equal (rep n) kwRep)
+        (or (equal (rep n) kwDecode)
+          (or (equal (rep n) kwDatum)
+            (or (equal (rep n) kwUnitValue)
+              (or (equal (rep n) kwDecoded)
+                (or (isSome (indexOf (rep n) primNames))
+                  (foldr Name T (lam ((d Name) (r T)) (or (sameName n (recognizerName d)) r)) 0
+                    (envNoms E))))))))
+      0
+      1))
+  ; whether a form may name a variable: an atom whose name may
+  (defn binderName ((E Env) (x Tx)) T (and (isAtomTx x) (nameOk E (atomName x))))
   ; the binders of an abstraction: one binder (x A), or a list of them, each a name with a type, the
   ; name one that may name a variable
   (import (Option Abbr) as OAbbr)

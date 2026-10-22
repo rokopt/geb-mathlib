@@ -139,7 +139,7 @@ def repCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
         else if i = 7 ∨ i = 8 then fun Γ Φ ψ ↦
           (byHypWith (W.hyp i) [.delta (T.argIdx 2), .delta (T.argIdx 3)] Γ Φ ψ).orElse fun _ ↦
             byHypU (W.hyp i) Γ Φ ψ
-        else K.byHyp (W.hyp i)
+        else W.byStmt i
       let concl : Deducer := K.unfoldConv <| K.exE <| K.exE <| K.conjE fun Γ Φ ψ ↦
         let (nPos, wPos) := (Γ.length - 2, Γ.length - 1)
         let (iS, iR) := (Φ.length - 2, Φ.length - 1)
@@ -209,14 +209,14 @@ def repCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
       let hcs (Γ : List Tree) : Term := atPos hcsPos Γ
       let expH (Γ : List Tree) : Term :=
         pc P "Datatype.expandExpr" [W.qv 3 Γ, nodeT (Term.pair (numeral 2) (hcs Γ))]
-      let unfoldJ (j : ℕ) := ((List.range nFolds).filter (j < 2 ∨ 0 < ·)).map fun k ↦
+      let unfoldJ (j : ℕ) := ((List.range nFolds).filter (j < 4 ∨ 0 < ·)).map fun k ↦
         Internal.NormRule.delta (T.argIdx k)
-      -- the keyword test of index j, as appList proves those after the three of srcFree
+      -- the keyword test of index j, as appList proves those after the first five of srcFree
       let fact (X : List Tree → Term) (j : ℕ) : Deducer := fun Γ Φ ψ ↦
         let nT := typingKeywords.length
         if j < nT then
-          dRwBy (evalRw K.G K.E (K.rules Φ ++ unfoldJ (j + 3)) .full)
-            (splitSolve K (fun Φ ↦ K.rules Φ ++ unfoldJ (j + 3)) (fun _ ↦ []) 12 [] .head) Γ Φ ψ
+          dRwBy (evalRw K.G K.E (K.rules Φ ++ unfoldJ (j + 5)) .full)
+            (splitSolve K (fun Φ ↦ K.rules Φ ++ unfoldJ (j + 5)) (fun _ ↦ []) 12 [] .head) Γ Φ ψ
         else do
           let eras := j < nT + erasureKeywords.length
           let kw := if eras then erasureKeywords.getD (j - nT) ""

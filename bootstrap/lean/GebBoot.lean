@@ -3486,48 +3486,56 @@ def «Typing.applyTy» :=
       («Typing/MTys.reverse» x1);
     x2
 
+def «Typing.recognizerName» :=
+  fun (x0 : T) =>
+    let x1 : T := «Typing.name»
+      («Prelude.append»
+        (Const.children x0)
+        (Const.children
+          (mk 1 [leaf 46,
+            leaf 109,
+            leaf 101,
+            leaf 109,
+            leaf 98,
+            leaf 101,
+            leaf 114])));
+    x1
+
 def «Typing.kwDecoded» := mk 0 [leaf 37, leaf 101]
+
+def «Typing.nameOk» :=
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : T) =>
+    let x2 : T := (if («Prelude.or»
+      (Const.equal x1 «Typing.kwRep»)
+      («Prelude.or»
+        (Const.equal x1 «Typing.kwDecode»)
+        («Prelude.or»
+          (Const.equal x1 «Typing.kwDatum»)
+          («Prelude.or»
+            (Const.equal x1 «Reader.kwUnitValue»)
+            («Prelude.or»
+              (Const.equal x1 «Typing.kwDecoded»)
+              («Prelude.or»
+                («Prelude.isSome» («Reader.indexOf» x1 «Reader.primNames»))
+                (Const.foldr
+                  (α := T)
+                  (β := T)
+                  (fun (x2 : T) (x3 : T) =>
+                    «Prelude.or» («Typing.sameName» x1 («Typing.recognizerName» x2)) x3)
+                  (leaf 0)
+                  («Typing.envNoms» x0)))))))).label ≠ 0 then
+      leaf 0
+    else
+      leaf 1);
+    x2
 
 def «Typing.binderName» :=
   fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
     (x1 : T) =>
-    let x2 : T := (let x2 : T := «Typing.atomName» x1;
-                   if («Prelude.or»
-                     («Typing.namedTx» x1 «Typing.kwRep»)
-                     («Prelude.or»
-                       («Typing.namedTx» x1 «Typing.kwDecode»)
-                       («Prelude.or»
-                         («Typing.namedTx» x1 «Typing.kwDatum»)
-                         («Prelude.or»
-                           («Typing.namedTx» x1 «Reader.kwUnitValue»)
-                           («Prelude.or»
-                             («Typing.namedTx» x1 «Typing.kwDecoded»)
-                             («Prelude.or»
-                               («Prelude.isSome» («Reader.indexOf» x2 «Reader.primNames»))
-                               (Const.foldr
-                                 (α := T)
-                                 (β := T)
-                                 (fun (x3 : T) (x4 : T) =>
-                                   «Prelude.or»
-                                     («Typing.sameName»
-                                       x2
-                                       («Typing.name»
-                                         («Prelude.append»
-                                           (Const.children x3)
-                                           (Const.children
-                                             (mk 1 [leaf 46,
-                                               leaf 109,
-                                               leaf 101,
-                                               leaf 109,
-                                               leaf 98,
-                                               leaf 101,
-                                               leaf 114])))))
-                                     x4)
-                                 (leaf 0)
-                                 («Typing.envNoms» x0)))))))).label ≠ 0 then
-                     leaf 0
-                   else
-                     «Typing.isAtomTx» x1);
+    let x2 : T := «Prelude.and»
+      («Typing.isAtomTx» x1)
+      («Typing.nameOk» x0 («Typing.atomName» x1));
     x2
 
 def «Typing/OAbbr.nothing» := Const.node (leaf 0) ([] : List T)

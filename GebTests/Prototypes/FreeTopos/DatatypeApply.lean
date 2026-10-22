@@ -234,7 +234,7 @@ def expSound (P : Prog) (S : Defs) (T : Defs3) : Step :=
       dAllE K.L K.G K.E 0 (at_ 1 Γ) (((List.range (nQ - 1)).foldr
         (fun j k ↦ K.allEΓ (at_ (j + 2)) k) <|
         (List.range W.nH).foldr (fun i k ↦ K.impE (linkK K s!"expSound: antecedent {i}"
-          (if i = 5 then K.byHyp 2 else K.byHyp (3 + nQ + i))) k)
+          (if i = 5 then K.byHyp 2 else byStatement K (3 + nQ + i))) k)
           (linkK K "expSound: the conclusion" fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ))) Γ Φ ψ
     let some d := dAllI K.L (dImpI K.L ((List.range nQ).foldr (fun _ k ↦ dAllI K.L k)
         ((List.range W.nH).foldr (fun _ k ↦ dImpI K.L k) inst))) a.ctx a.hyps a.concl
@@ -410,7 +410,7 @@ def spineK (P : Prog) (S : Defs) (T : Defs3) (W : KwKit) (tyHead : List Tree →
       dAllE L K.G K.E hIdx (W.qv 1 Γ) (((List.range (nQ - 1)).foldr
         (fun j k ↦ K.allEΓ (W.qv (j + 2)) k) <|
         (List.range W.nH).foldr (fun i k ↦ K.impE (linkK K s!"spine: the head's antecedent {i}"
-          (if i ∈ antecedentHyps then K.solve 3 else K.byHyp (W.hyp i))) k) k)) Γ Φ ψ
+          (if i ∈ antecedentHyps then K.solve 3 else W.byStmt i)) k) k)) Γ Φ ψ
     -- the head's term generalized, the innermost variable, after its decisions
     let induct (iHead iTail : ℕ) : Deducer := fun Γ₁ Φ₁ ψ₁ ↦
       let kV (Γ : List Tree) : Term := atPos (Γ₁.length - 1) Γ
@@ -507,7 +507,7 @@ def spineK (P : Prog) (S : Defs) (T : Defs3) (W : KwKit) (tyHead : List Tree →
   let use : Deducer := fun Γ Φ ψ ↦
     dAllE L K.G K.E (Φ.length - 1) (atPos 1 Γ) (K.allEΓ (fun _ ↦ s₀)
       (K.allEΓ (fun Γ ↦ atPos (n - 1) Γ) (K.impE (linkK K "spine: the head" goodHead)
-        (K.impE (K.byHyp iAll) ([4, 6, 7, 8].foldr (fun i k ↦ K.impE (K.byHyp (W.hyp i)) k)
+        (K.impE (K.byHyp iAll) ([4, 6, 7, 8].foldr (fun i k ↦ K.impE (W.byStmt i) k)
           (linkK K "spine: the goal" fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ)))))) Γ Φ ψ
   let some dψ := (dAllI L (dListIndHyp K.G base step)) Γc Φc ψ
     | dbgTrace s!"spine: the induction fails; body {showT body}" fun _ ↦ none
@@ -546,7 +546,7 @@ def appCore (P : Prog) (S : Defs) (T : Defs3) : Step :=
         (fun j k ↦ K.allEΓ (W.qv (j + 2)) k) <|
         (List.range W.nH).foldr (fun i k ↦ K.impE (linkK K s!"spine: the head's antecedent {i}"
           (if i = 6 then K.byHyp iTy else if i = 8 then K.byHyp iK
-            else if i ∈ antecedentHyps then K.solve 3 else K.byHyp (W.hyp i))) k)
+            else if i ∈ antecedentHyps then K.solve 3 else W.byStmt i)) k)
         fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ)) Γ₀ Φ₀ ψ₀
     -- the spine: the hypotheses at the list, its type and its resolved term, the head's type and
     -- resolved term generalized, by induction on the further elements
@@ -562,16 +562,16 @@ def appCore (P : Prog) (S : Defs) (T : Defs3) : Step :=
     pure (a, d))
 
 /-- Under the quantifiers of the soundness, of a list of a head, the variable of index {name}`nQ`
-plus one, and further elements: the head, its form by the expansion's fold, named neither by the
-keyword of case analyses nor by that of structural recursion, its expansion not named by the
-keyword of abstractions, and its expansion named by no keyword as each stage reads it
-({name}`headFreeAt`). -/
+plus one, and further elements: the head, its form by the expansion's fold, named by none of the
+keywords of case analyses, of structural recursion, of decoding and of datums, whose forms the
+expansion reads, its expansion not named by the keyword of abstractions, and its expansion named
+by no keyword as each stage reads it ({name}`headFreeAt`). -/
 def srcFree (P : Prog) (T : Defs3) : List Term :=
   let h := v (nQ + 1)
   let h₀ := Term.fst (Term.app (Term.snd (T.foldAt 0 [] h)) Term.star)
   let h' := pc P "Prelude.get" [expansionOf P h]
-  [unnamed P h₀ "Datatype.kwCase", unnamed P h₀ "Datatype.kwCata", unnamed P h' "Reader.kwLam"] ++
-    headFreeAt P T h'
+  [unnamed P h₀ "Datatype.kwCase", unnamed P h₀ "Datatype.kwCata", unnamed P h₀ "Datatype.kwDecode",
+    unnamed P h₀ "Datatype.kwDatum", unnamed P h' "Reader.kwLam"] ++ headFreeAt P T h'
 
 /-- The soundness at a list of a head and further elements at source forms, in the context of
 the further elements and the head, given that at the head and at each further element, the head
@@ -678,7 +678,7 @@ def srcSound (P : Prog) (S : Defs) (T : Defs3) (W : KwKit) (F : Term) (heads : L
       dAllE L K.G K.E (Φ.length - 1) (W.qv 1 Γ) (((List.range (nQ - 1)).foldr
         (fun j k ↦ K.allEΓ (W.qv (j + 2)) k) <| fun Γ Φ ψ ↦
         ((List.range W.nH).foldr (fun i k ↦ K.impE (linkK K s!"appSrc: hypothesis {i}"
-          (if i = 5 then K.solve 3 else K.byHyp (W.hyp i))) k) <|
+          (if i = 5 then K.solve 3 else W.byStmt i)) k) <|
         (List.range nKws).foldr (fun j k ↦
           K.impE (linkK K s!"appSrc: keyword {j}" (K.solve 3)) k) <|
         linkK K "appSrc: the goal" fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ) Γ Φ ψ)) Γ Φ ψ)
