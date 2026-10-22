@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       # The GitHub cache would restore modules built in the mode native,
       # which Lake would not rebuild, the mode being no input it tracks.
-      - uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865  # v1
+      - uses: leanprover/lean-action@24581d74d674803a25a81b10b059c5c0cdd344c6  # v1
         with:
           build: false
           test: false
@@ -47,7 +47,7 @@ jobs:
       names: ${{ steps.list.outputs.names }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865  # v1
+      - uses: leanprover/lean-action@24581d74d674803a25a81b10b059c5c0cdd344c6  # v1
         with:
           build: false
           test: false
@@ -72,7 +72,7 @@ jobs:
         search: ${{ fromJSON(needs.searches.outputs.names) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865  # v1
+      - uses: leanprover/lean-action@24581d74d674803a25a81b10b059c5c0cdd344c6  # v1
         with:
           build: false
           test: false
@@ -86,7 +86,7 @@ jobs:
     timeout-minutes: 720
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865  # v1
+      - uses: leanprover/lean-action@24581d74d674803a25a81b10b059c5c0cdd344c6  # v1
         with:
           build: false
           test: false
@@ -102,7 +102,7 @@ jobs:
     timeout-minutes: 720
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865  # v1
+      - uses: leanprover/lean-action@24581d74d674803a25a81b10b059c5c0cdd344c6  # v1
         with:
           build: false
           test: false
