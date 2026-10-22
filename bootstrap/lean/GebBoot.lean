@@ -2917,6 +2917,18 @@ def «Typing.isAtomTx» :=
                      leaf 0);
     x1
 
+def «Typing.namesData» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 5)).label ≠ 0 then
+                     let x3 : T := Const.child x2 (leaf 0);
+                     «Prelude.and»
+                       («Typing.isAtomTx» x1)
+                       («Typing.sameName» x3 («Typing.atomName» x1))
+                   else
+                     leaf 0);
+    x2
+
 def «Typing.namedTx» :=
   fun (x0 : T) (x1 : T) => let x2 : T := «Reader.named» x0 x1; x2
 
@@ -3851,7 +3863,7 @@ def «Typing.synList» :=
                                            let x9 : T := «Reader.readDatum» (x6 (leaf 2));
                                            «Typing.when»
                                              («Prelude.and»
-                                               («Typing.isData» x8)
+                                               («Typing.namesData» x8 (x6 (leaf 1)))
                                                («Prelude.and»
                                                  («Prelude.isSome» x9)
                                                  («Typing.memberOf»
@@ -3883,7 +3895,7 @@ def «Typing.synList» :=
                                                      (fun (x10 : T) (x11 : T) =>
                                                        «Typing.when»
                                                          («Prelude.and»
-                                                           («Typing.isData» x8)
+                                                           («Typing.namesData» x8 (x6 (leaf 1)))
                                                            («Prelude.and»
                                                              («Typing.sameTy» x9 «Typing.tyT»)
                                                              («Typing.sameTy»
@@ -6197,6 +6209,23 @@ def «Datatype.expandCata» :=
                      «Datatype/OTx.nothing»);
     x3
 
+def «Datatype.typeExpanded» :=
+  fun (x0 : List T) (x1 : T) (x2 : T) (x3 : List T) =>
+    let x4 : List
+      T := (if («Prelude.or»
+      («Prelude.and»
+        («Datatype.namedTx» x1 «Datatype.kwDecode»)
+        (Const.eq x2 (leaf 5)))
+      («Prelude.and»
+        («Datatype.namedTx» x1 «Datatype.kwDatum»)
+        (Const.eq x2 (leaf 3)))).label ≠ 0 then
+      ((«Datatype.nthTx» x3 (leaf 0)) ::
+        ((«Datatype.expandAliases» x0 («Datatype.nthTx» x3 (leaf 1))) ::
+          («Datatype/Txs.drop» (leaf 2) x3)))
+    else
+      x3);
+    x4
+
 def «Datatype.expandExpr» :=
   fun (x0 : List T) (x1 : T) =>
     let x2 : T := (Const.para
@@ -6246,7 +6275,8 @@ def «Datatype.expandExpr» :=
                   else
                     let x10 : T × List T := «Datatype.xrFrom» x5 (leaf 0) x7;
                     if ((x10).1).label ≠ 0 then
-                      «Datatype.curried» («Typing.tList» (x10).2)
+                      «Datatype.curried»
+                        («Typing.tList» («Datatype.typeExpanded» x7 x8 x9 (x10).2))
                     else
                       «Datatype/OTx.nothing»)
           else

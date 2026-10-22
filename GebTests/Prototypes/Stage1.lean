@@ -115,6 +115,20 @@ def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
   unless accepted.all fun p ↦ typeErrorOf p == some (mk 0 []) do
     throw (IO.userError "the typing rejects a well-typed program")
 
+-- the stage-1 compiler reads the type of a decoding and of a datum through a type abbreviation as
+-- the datatype it abbreviates: the datum is checked a member of the datatype, and the datatype's
+-- recognizer decides the decoding, though a definition takes the abbreviation's recognizer name
+#eval show IO Unit from do
+  let img ← IO.FS.readBinFile "bootstrap/compiler.img"
+  let p := "(data Nat (zero) (succ Nat)) (deftype N Nat) (def N.member (lam ((t T)) 1)) " ++
+    "(def two (datum N (1 (1 (0))))) " ++
+    "(def main (lam ((t T)) (decode N t (lam ((n Nat)) (rep n)) (rep two))))"
+  let run (input : Tree) : Option Tree := do
+    let out ← runImage img (nameTree p.toList)
+    runEntry (← readImage (← toBytes out)) "main".toList input
+  unless run (mk 7 []) == some (mk 1 [mk 1 [mk 0 []]]) && run (mk 0 []) == some (mk 0 []) do
+    throw (IO.userError "a decoding through an abbreviation is not decided by its recognizer")
+
 -- the stage-1 compiler checks a template at opaque sorts, which have no representation: it
 -- rejects a template applying a primitive of trees to a value of its sort, or representing it,
 -- though no import instantiates it and the stage-0 compiler compiles it; it compiles, as the
