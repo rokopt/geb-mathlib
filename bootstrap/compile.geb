@@ -2,13 +2,13 @@
 ; Released under Apache 2.0 license as described in the file LICENSE.
 ; Authors: Terence Rokop
 ;
-; The stage-0 compiler: a program's source file to the image of its bundle, or the empty file
-; when the program does not read or is ill-typed. The program's modules are elaborated, its forms
-; of the datatype language expanded and the recognizers it refers to written first; for a program
-; of kernel forms alone the image is byte for byte the one the seed builds. bundleOf is the
-; program's bundle before its types are checked, and compileWith takes the backend applied to a
-; checked program's bundle. Requires the prelude, the serializer, the reader, the checker, the
-; expansion, the modules and the recognizers.
+; The stage-0 compiler: a program's source file to the image of its bundle, or the empty file when
+; the program does not read, names one of the implementation's names, or is ill-typed. The program's
+; modules are elaborated, its forms of the datatype language expanded and the recognizers it refers
+; to written first; for a program of kernel forms alone the image is byte for byte the one the seed
+; builds. bundleOf is the program's bundle before its types are checked, and compileWith takes the
+; backend applied to a checked program's bundle. Requires the prelude, the serializer, the reader,
+; the checker, the expansion, the modules and the recognizers.
 
 (module Compile (export bundleOf compileWith compile) (import Prelude) (import Serialize)
   (import Reader)
@@ -16,10 +16,25 @@
   (import Datatype)
   (import Modules)
   (import Recognize)
+  ; whether a program's source names none of the implementation's names, those beginning with %,
+  ; which module elaboration, the expansion and the erasure bind and write around a program's
+  ; code: no atom outside the source's quotations and datums begins with %, so that each name the
+  ; program writes refers to what the program declares
+  (def userSource
+    (lam ((sx T))
+      (para T
+        (lam ((nd T) (rs Ts))
+          (if (isAtom nd) (if (eq (at (children nd) 0) 37) 0 1)
+            (let h T (at (children nd) 0)
+              (if (named h kwQuote) 1
+                (if (and (named h kwDatum) (eq (arity nd) 3)) (and (at rs 0) (at rs 1))
+                  (foldr T T (lam ((r T) (acc T)) (and r acc)) 1 rs))))))
+        sx)))
   (def bundleOf
     (lam ((file T))
       (let sx T (readSExps (children file))
-        (let mx T (if (isSome sx) (expandModules (children (get sx))) none)
+        (let mx T
+          (if (and (isSome sx) (userSource (get sx))) (expandModules (children (get sx))) none)
           (let kx T (if (isSome mx) (expandProgram (children (get mx))) none)
             (let rx T (if (isSome kx) (insertRecognizers (children (get kx))) none)
               (if (isSome rx) (readProgram (children (get rx))) none)))))))

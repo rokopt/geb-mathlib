@@ -8730,10 +8730,42 @@ def «Recognize.insertRecognizers» :=
     else
       «Prelude.none»
 
+def «Compile.userSource» :=
+  fun (x0 : T) =>
+    Const.para
+      (α := T)
+      (fun (x1 : T) (x2 : List T) =>
+        if («Reader.isAtom» x1).label ≠ 0 then
+          if (Const.eq
+            («Prelude.at» (Const.children x1) (leaf 0))
+            (leaf 37)).label ≠ 0 then
+            leaf 0
+          else
+            leaf 1
+        else
+          let x3 : T := «Prelude.at» (Const.children x1) (leaf 0);
+          if («Reader.named» x3 «Reader.kwQuote»).label ≠ 0 then
+            leaf 1
+          else
+            if («Prelude.and»
+              («Reader.named» x3 «Datatype.kwDatum»)
+              (Const.eq (Const.arity x1) (leaf 3))).label ≠ 0 then
+              «Prelude.and» («Prelude.at» x2 (leaf 0)) («Prelude.at» x2 (leaf 1))
+            else
+              Const.foldr
+                (α := T)
+                (β := T)
+                (fun (x4 : T) (x5 : T) => «Prelude.and» x4 x5)
+                (leaf 1)
+                x2)
+      x0
+
 def «Compile.bundleOf» :=
   fun (x0 : T) =>
     let x1 : T := «Reader.readSExps» (Const.children x0);
-    let x2 : T := (if («Prelude.isSome» x1).label ≠ 0 then
+    let x2 : T := (if («Prelude.and»
+      («Prelude.isSome» x1)
+      («Compile.userSource» («Prelude.get» x1))).label ≠ 0 then
       «Modules.expandModules» (Const.children («Prelude.get» x1))
     else
       «Prelude.none»);
