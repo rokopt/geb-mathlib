@@ -432,6 +432,13 @@
                ((OTx.nothing) OTx.nothing)))
             ((OTx.nothing) OTx.nothing))))))
 
+  ; a list's children, the type a decoding or a datum reads with its abbreviations expanded, so
+  ; that the typing reads a datatype by its own name, which names its recognizer and its marker
+  (defn typeExpanded ((env (List Decl)) (h Tx) (k T) (es (List Tx))) (List Tx)
+    (if (or (and (namedTx h kwDecode) (eq k 5)) (and (namedTx h kwDatum) (eq k 3)))
+      (cons (nthTx es 0) (cons (expandAliases env (nthTx es 1)) (Txs.drop 2 es)))
+      es))
+
   ; an expression expanded, given the declarations before it: each form's result is the form with
   ; its expansion as a function of the declarations
   (defn expandExpr ((env (List Decl)) (e Tx)) MTx
@@ -446,7 +453,8 @@
                     (if (and (namedTx h kwCase) (lt 2 k)) (expandCase env fs rs)
                       (if (and (namedTx h kwCata) (lt 4 k)) (expandCata env fs rs)
                         (let a (Prod T (List Tx)) (xrFrom rs 0 env)
-                          (if (fst a) (curried (tList (snd a))) OTx.nothing))))))))))
+                          (if (fst a) (curried (tList (typeExpanded env h k (snd a))))
+                            OTx.nothing))))))))))
          (else (pair tx0 (lam ((env (List Decl))) (OTx.just tx0)))))) env))
 
   ; a datatype declaration: its declarations and kernel forms, the datatype's declaration, as a

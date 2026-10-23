@@ -115,6 +115,11 @@
   ; an atom's name, and whether a form is an atom, or one naming a keyword
   (defn atomName ((x Tx)) Name (case x ((tAtom cs) (name cs)) (else (name (nil T)))))
   (defn isAtomTx ((x Tx)) T (case x ((tAtom cs) 1) (else 0)))
+  ; whether a type is a datatype a form names by the datatype's own name, as the expansion writes
+  ; the type a decoding or a datum reads, so that the form names the datatype's recognizer and
+  ; marker
+  (defn namesData ((t Ty) (x Tx)) T
+    (case t ((tyData n) (and (isAtomTx x) (sameName n (atomName x)))) (else 0)))
   (defn namedTx ((x Tx) (kw T)) T (named (rep x) kw))
   (def kwRep (quote (0 rep)))
   (def kwDecode (quote (0 decode)))
@@ -372,7 +377,7 @@
                                   (lam ((D Ty))
                                     (let d T (readDatum (rep (f 2)))
                                       (when
-                                        (and (isData D)
+                                        (and (namesData D (f 1))
                                           (and (isSome d) (memberOf (envMs E) (f 1) (get d))))
                                         D))))
                                 (if (and (namedTx h kwRep) (eq k 2))
@@ -385,7 +390,7 @@
                                             (both2 (s 3) (s 4)
                                               (lam ((g Ty) (c Ty))
                                                 (when
-                                                  (and (isData D)
+                                                  (and (namesData D (f 1))
                                                     (and (sameTy e tyT) (sameTy g (tyArrow D c))))
                                                   c)))))))
                                     (if
