@@ -2213,7 +2213,11 @@ the program's binders: a primitive, the unit value, the recognizer
 binds a decoded tree. The expansion admits no clause variable beginning
 with `%`, as its own variables do, among which it binds a clause's. Each
 name the expansion and the erasure write thus refers to what they write
-it for.
+it for. Conversely, the names beginning with `%` are the implementation's:
+module elaboration, the expansion and the erasure bind and write them
+around a program's code, so both compilers reject a program whose source
+has an atom beginning with `%` outside its quotations and datums, and each
+name a program writes refers to what the program declares.
 
 Decoding is decided by the recognizer `D.member`, which the stage-0
 compiler writes where a program refers to it (`bootstrap/recognize.geb`),

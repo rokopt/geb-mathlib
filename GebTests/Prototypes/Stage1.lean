@@ -129,6 +129,29 @@ def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
   unless run (mk 7 []) == some (mk 1 [mk 1 [mk 0 []]]) && run (mk 0 []) == some (mk 0 []) do
     throw (IO.userError "a decoding through an abbreviation is not decided by its recognizer")
 
+-- both compilers reject a program whose source names one of the implementation's names, those
+-- beginning with %, outside its quotations and datums: a definition named as the variable the
+-- erasure binds to a decoded tree, which would take its place in the decoding's default, and
+-- binders named as the variables the expansions of case and cata bind, which would take their
+-- places in the clauses; and both compile a program quoting such a name
+#eval show IO Unit from do
+  let img ← IO.FS.readBinFile "bootstrap/compiler.img"
+  let nat := "(data Nat (zero) (succ Nat)) "
+  let main := " (def main (lam ((t T)) t))"
+  for p in [nat ++ "(def \"%e\" zero) " ++
+        "(def m (lam ((t T)) (decode Nat t (lam ((n Nat)) n) \"%e\")))" ++ main,
+      nat ++ "(def g (lam ((\"%s\" T) (n Nat)) (case n ((zero) \"%s\") ((succ m) 1))))" ++ main,
+      nat ++ "(def g (lam ((\"%o\" T) (n Nat)) (cata Nat T n ((zero) \"%o\") ((succ r) r))))" ++
+        main] do
+    unless runImage img (nameTree p.toList) == some (mk 0 []) do
+      throw (IO.userError s!"the stage-1 compiler compiles {p}")
+    unless runMain compiler.toList (nameTree p.toList) == some (mk 0 []) do
+      throw (IO.userError s!"the stage-0 compiler compiles {p}")
+  let quoted := "(def q (quote (1 \"%s\")))" ++ main
+  unless runImage img (nameTree quoted.toList) != some (mk 0 []) &&
+      agreesOn img compiler.toList quoted.toList do
+    throw (IO.userError "a compiler rejects a program quoting an implementation's name")
+
 -- the stage-1 compiler checks a template at opaque sorts, which have no representation: it
 -- rejects a template applying a primitive of trees to a value of its sort, or representing it,
 -- though no import instantiates it and the stage-0 compiler compiles it; it compiles, as the
