@@ -2283,7 +2283,13 @@ another label at applications, the expansion of a list being a list
 tree, by induction on rose trees
 (`GebTests/Prototypes/FreeTopos/DatatypeSound.lean`), given the
 soundness at the lists headed by `datum`, `decode`, `case` and `cata`.
-Remaining after it:
+The statement assumes of the definitions and the named context what the
+compilers ensure of a whole program: the relation's markers are the
+typing environment's; the recognizer of each datatype, where the program
+refers to it, decides membership in it; no definition takes a
+primitive's name, the unit value's or that of the variable the erasure
+binds to a decoded tree; and each name the context gives a type is one
+the typing admits as a binder's. Remaining after it:
 the soundness at the forms of those keywords, discharging those
 hypotheses; `tree-data` removed.
 

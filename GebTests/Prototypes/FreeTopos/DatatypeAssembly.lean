@@ -160,7 +160,7 @@ def appAtom (P : Prog) (S : Defs) (T : Defs3) : Step :=
         dAllE L K.G K.E (Φ.length - 1) (W.qv 1 Γ) (((List.range (nQ - 1)).foldr
           (fun j k ↦ K.allEΓ (W.qv (j + 2)) k) <|
           (List.range W.nH).foldr (fun i k ↦ K.impE (linkK K s!"appAtom: hypothesis {i}"
-            (K.byHyp (W.hyp i))) k) <|
+            (W.byStmt i)) k) <|
           (List.range (srcFree P T).length).foldr (fun j k ↦
             K.impE (linkK K s!"appAtom: keyword {j}" fun Γ Φ ψ ↦
               dRwBy (evalRw K.G K.E (K.rules Φ ++ unfold) .full) (K.solve 3) Γ Φ ψ) k) <|
@@ -351,7 +351,7 @@ def expHelpers : List String :=
     "Datatype.bindWith", "Datatype.isData", "Datatype.atomName", "Datatype.isAtomTx",
     "Datatype.namedTx", "Datatype.bindersTx", "Datatype.xrForms", "Datatype.defaultOf",
     "Datatype.expandAliases", "Datatype.cataField", "Datatype.cataRest", "Datatype.caseField",
-    "Datatype.caseRest"]
+    "Datatype.caseRest", "Datatype.typeExpanded"]
 
 /-- The kit of the proof that the expansion of a list is a list, the expansion's helpers
 ({name}`expHelpers`) folded. -/
@@ -515,7 +515,7 @@ def appList (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let a := appListThm P S T
     -- the steps of the folds; past the facts of the head's form, all but the expansion's, which
     -- the head's generalized expansion replaces
-    let unfold (j : ℕ) := ((List.range nFolds).filter (j < 2 ∨ 0 < ·)).map fun k ↦
+    let unfold (j : ℕ) := ((List.range nFolds).filter (j < 4 ∨ 0 < ·)).map fun k ↦
       Internal.NormRule.delta (T.argIdx k)
     let hcs (Γ : List Tree) : Term := atPos 0 Γ
     let rs (Γ : List Tree) : Term := atPos 1 Γ
@@ -528,7 +528,7 @@ def appList (P : Prog) (S : Defs) (T : Defs3) : Step :=
     -- and case analyses; as the erasure and the reader read the expansion, the views lists
     -- ({name}`viewsUnnamed`)
     let fact (j : ℕ) : Deducer := fun Γ Φ ψ ↦
-      let nT := 3 + typingKeywords.length
+      let nT := 5 + typingKeywords.length
       if j < nT then
         dRwBy (evalRw K.G K.E (K.rules Φ ++ unfold j) .full)
           (splitSolve K (fun Φ ↦ K.rules Φ ++ unfold j) (fun _ ↦ []) 12 [] .head) Γ Φ ψ
@@ -555,7 +555,7 @@ def appList (P : Prog) (S : Defs) (T : Defs3) : Step :=
         dAllE L K.G K.E (Φ.length - 1) (W.qv 1 Γ) (((List.range (nQ - 1)).foldr
           (fun j k ↦ K.allEΓ (W.qv (j + 2)) k) <|
           (List.range W.nH).foldr (fun i k ↦ K.impE (linkK K s!"appList: hypothesis {i}"
-            (K.byHyp (W.hyp i))) k) <|
+            (W.byStmt i)) k) <|
           (List.range (srcFree P T).length).foldr (fun j k ↦
             K.impE (linkK K s!"appList: keyword {j}" (fact j)) k) <|
           linkK K "appList: the goal" last)) Γ Φ ψ

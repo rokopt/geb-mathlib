@@ -157,13 +157,25 @@ names: each name the environment has abbreviates a numeral's atom, and each name
 one the environment has. -/
 def numsT (E nums : Term) : Term := call (T.q + 3 + 2 * nFolds) [] [E, nums]
 
-/-- The coherence of the reader's names of definitions with the typing environment's definitions:
-each name with an index has a type. -/
-def defsT (E names : Term) : Term := call (T.q + 4 + 2 * nFolds) [] [E, names]
+/-- The reader's names of definitions: no name with an index is a primitive's, the unit value's or
+the variable's the erasure binds to a decoded tree, which the reader would resolve otherwise or the
+erasure binds around a definition's reference. -/
+def namesT (names : Term) : Term := call (T.q + 4 + 2 * nFolds) [] [names]
 
 /-- The coherence of the reader's numeral abbreviations with its keywords: no name abbreviated is
 reserved. -/
 def kwsT (nums : Term) : Term := call (T.q + 5 + 2 * nFolds) [] [nums]
+
+/-- The recognizers of the typing environment's datatypes among the definitions: at each datatype,
+the definition its recognizer's name has an index of, where it has one, evaluates to a function
+whose application to the quotation of a tree converges to the quotation of a tree true exactly
+when the tree is a member of the datatype, by the markers of the relation's context. -/
+def recsT (R E names : Term) : Term := call (T.q + 6 + 2 * nFolds) [] [R, E, names]
+
+/-- The names of a named context: each name it gives a type is one the typing admits as a
+binder's ({lit}`Typing.nameOk`), so that the names the expansion and the erasure write free refer
+to what they write them for. -/
+def cxT (E cx : Term) : Term := call (T.q + 7 + 2 * nFolds) [] [E, cx]
 
 /-- The fold of index k of {lit}`foldSpecs` at a tree, applied to the parameters its step uses,
 the outermost first. -/
@@ -301,7 +313,10 @@ def tyOf (p : Term) : Term :=
 
 /-- The program extended for the datatype language's soundness: the fundamental lemma's
 extension, and the relation at the datatype language's types, the relation of an environment to a
-named context, and the relation of the definitions to the typing environment's definitions. -/
+named context, the relation of the definitions to the typing environment's definitions, the
+stage-1 pipeline's folds, and the coherences of the statement's hypotheses: of the numeral
+abbreviations, of the definitions' names, of the keywords, of the recognizers and of the named
+context's names. -/
 def extend3 (P : Prog) (S : Defs) : Option (Prog × Defs3) := do
   let o := P.o
   let all := Internal.Logic.all o
@@ -312,6 +327,28 @@ def extend3 (P : Prog) (S : Defs) : Option (Prog × Defs3) := do
   let (envTy, _) ← Internal.expParts envDefsD.type
   let T : Defs3 := ⟨P.G.defs.length, envTy⟩
   let R := Defs3.ctxTy
+  let equalT ← primT Kernel.Prim.equal
+  -- the recognizers' agreement with membership, in the context of the names, the environment and
+  -- the relation's context; inside, the variables u w t g k i d names E R, the innermost first
+  let member : Term := pc P "Typing.memberOf" [Term.snd (v 9),
+    nodeT (Term.pair (numeral 1) (call D.children [] [v 6])), v 2]
+  let agrees : Term := ex treeTy (Term.lam treeTy (conj
+    (Term.eq (v 1) (pc P "Eval.valQuote" [v 0]))
+    (conj (imp (truth o (v 0)) (truth o member)) (imp (truth o member) (truth o (v 0))))))
+  -- the variables t g k i d names E R
+  let applied : Term := S.conv (Term.lam nat (apps (Term.snd (S.levelN (Term.fst (v 8)) (v 0)))
+    [v 2, pc P "Eval.valQuote" [v 1]])) (Term.lam treeTy agrees)
+  -- the variables k i d names E R
+  let recognizer : Term := conj
+    (Term.eq (pc P "Prelude.nth" [Term.fst (v 5), v 1]) (pc P "Prelude.some" [v 0]))
+    (S.conv (Term.lam nat (S.evN (Term.fst (v 6)) (v 0) (nilT treeTy) (v 1)))
+      (Term.lam treeTy (all treeTy (Term.lam treeTy applied))))
+  let recsBody : Term := all treeTy (Term.lam treeTy (imp
+    (truth o (pc P "Typing.hasName" [v 0, pc P "Typing.envNoms" [v 2]]))
+    (all treeTy (Term.lam treeTy (imp
+      (Term.eq (pc P "Reader.indexOf" [pc P "Typing.recognizerName" [v 1], v 2])
+        (pc P "Prelude.some" [v 0]))
+      (ex treeTy (Term.lam treeTy recognizer)))))))
   let defs : List Internal.Defn := [
     relDefn P S,
     -- the relation of an environment to a named context: at each position of the context, the
@@ -350,19 +387,32 @@ def extend3 (P : Prog) (S : Defs) : Option (Prog × Defs3) := do
             (truth o (pc P "Prelude.isSome" [pc P "Reader.numeral" [v 0]]))))))
         (imp (truth o (pc P "Prelude.isSome" [pc P "Reader.lookupAbbrev" [v 0, v 1]]))
           (truth o (pc P "Typing.hasName" [v 0, pc P "Typing.envNums" [v 2]])))))⟩,
-    -- the reader's names: each name with an index has a type among the environment's definitions
-    ⟨0, [list treeTy, envTy], omega,
+    -- the reader's names: no name with an index is a primitive's, the unit value's or the decoded
+    -- tree's variable's
+    ⟨0, [list treeTy], omega,
       all treeTy (Term.lam treeTy (imp
         (truth o (pc P "Prelude.isSome" [pc P "Reader.indexOf" [v 0, v 1]]))
-        (truth o (pc P "Prelude.isSome"
-          [pc P "Typing.lookupName" [v 0, pc P "Typing.envDefs" [v 2]]]))))⟩,
+        (imp (truth o (pc P "Prelude.or"
+            [pc P "Prelude.isSome" [pc P "Reader.indexOf" [v 0, pc P "Reader.primNames" []]],
+              pc P "Prelude.or" [apps equalT [v 0, pc P "Reader.kwUnitValue" []],
+                apps equalT [v 0, pc P "Typing.kwDecoded" []]]]))
+          (Internal.Logic.ff o))))⟩,
     -- the keywords: no name the numeral abbreviations abbreviate is reserved
     ⟨0, [list treeTy], omega,
       all treeTy (Term.lam treeTy (imp
         (truth o (pc P "Prelude.isSome" [pc P "Reader.lookupAbbrev" [v 0, v 1]]))
         (imp (truth o (pc P "Prelude.isSome" [pc P "Reader.indexOf" [v 0,
             pc P "Reader.reservedNames" []]]))
-          (Internal.Logic.ff o))))⟩]
+          (Internal.Logic.ff o))))⟩,
+    -- the recognizers: at each datatype d of the environment, the index i of its recognizer's
+    -- name, the definition k there, its value g, and at each tree t, the value w of g applied to
+    -- t's quotation, the quotation of a tree u true exactly when t is a member of d
+    ⟨0, [list treeTy, envTy, R], omega, recsBody⟩,
+    -- the named context's names: each with a type one the typing admits as a binder's
+    ⟨0, [list treeTy, envTy], omega,
+      all treeTy (Term.lam treeTy (imp
+        (truth o (pc P "Prelude.isSome" [pc P "Typing.lookupName" [v 0, v 1]]))
+        (truth o (pc P "Typing.nameOk" [v 2, v 0]))))⟩]
   pure (⟨⟨P.G.prims, P.G.defs ++ defs.map .language, P.G.base⟩, P.o, P.idx, foldedStage1⟩, T)
 
 /-- The number of quantifiers of {lit}`datatypeφ`. -/
@@ -395,11 +445,11 @@ def expansionParts (P : Prog) (S : Defs) (T : Defs3) (e : Term) : List Term × T
   let isSomeT (t : Term) : Term := truth P.o (pc P "Prelude.isSome" [t])
   let get (t : Term) : Term := pc P "Prelude.get" [t]
   let (ty, k) := expansionTerms P e
-  ([T.globT (v 0) (v 6) (v 2), T.envT (v 0) (v 5) (v 1), T.numsT (v 6) (v 3),
-      T.defsT (v 6) (v 2),
+  ([T.globT (v 0) (v 6) (v 2), T.envT (v 0) (v 5) (v 1), T.numsT (v 6) (v 3), T.namesT (v 2),
       truth P.o (pc P "srcForm" [Term.lam treeTy (pc P "Reader.expandNums" [v 4, v 0]), get e]),
       isSomeT e, isSomeT ty, isSomeT k, isSomeT (pc P "Check.typeIn" [v 9, v 8, get k]),
-      T.kwsT (v 3)],
+      T.kwsT (v 3), Term.eq (Term.snd (v 0)) (pc P "Typing.envMs" [v 6]),
+      T.recsT (v 0) (v 6) (v 2), T.cxT (v 6) (v 5)],
     S.conv
       (Term.lam nat (S.evN (Term.fst (v 1)) (v 0) (v 2) (get (Term.subst k fun i ↦ v (i + 1)))))
       (T.relT (v 0) (get ty)))
@@ -420,17 +470,20 @@ def expansionφ (P : Prog) (S : Defs) (T : Defs3) (e : Term) (extra : List Term 
     (q (list treeTy) (q (list treeTy) (q (list treeTy) (q Defs3.ctxTy
       ((hs ++ extra).foldr (Internal.Logic.imp P.o) goal))))))))))
 
-/-- The soundness of the datatype language's typing at a source form, the variable of index 0:
-for all globals' types and contexts of the kernel, declarations of the expansion, typing
-environments, named contexts, type and numeral abbreviations and definitions' names of the reader,
-environments and contexts of the relation, if the definitions are related to the typing
-environment's and the environment to the named context, the reader's numeral abbreviations and
-names cohere with the typing environment's, the form expands to a source form, its expansion
-has a type, the expansion's erasure, its numeral abbreviations expanded, resolves in the scope of
-the context's names, the resolved term has a type in the kernel, and no numeral abbreviation is a
-keyword, then the resolved term's evaluation in the environment converges to a value related at
-the type. The kernel's typing is the check that follows the reader in the pipeline, which rejects
-the nodes the reader writes for a keyword at another arity than its own. -/
+/-- The soundness of the datatype language's typing at a source form, the variable of index 0: for
+all globals' types and contexts of the kernel, declarations of the expansion, typing environments,
+named contexts, type and numeral abbreviations and definitions' names of the reader, environments
+and contexts of the relation, if the definitions are related to the typing environment's and the
+environment to the named context, the reader's numeral abbreviations cohere with the typing
+environment's, no definition takes a name the reader or the erasure gives another meaning, the form
+expands to a source form, its expansion has a type, the expansion's erasure, its numeral
+abbreviations expanded, resolves in the scope of the context's names, the resolved term has a type
+in the kernel, no numeral abbreviation is a keyword, the relation's markers are the typing
+environment's, the recognizers among the definitions decide membership in their datatypes, and the
+context's names are ones the typing admits as binders', then the resolved term's evaluation in the
+environment converges to a value related at the type. The kernel's typing is the check that follows
+the reader in the pipeline, which rejects the nodes the reader writes for a keyword at another arity
+than its own. -/
 def datatypeφ (P : Prog) (S : Defs) (T : Defs3) : Term :=
   expansionφ P S T (expansionOf P (v nQ))
 
@@ -1290,11 +1343,19 @@ def atomCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
         decide (fun Γ' ↦ isSomeOf (pc P "Reader.numeral" [v (Γ'.length - Γ₀.length - 1)]))
           (K.hypFalse h) quoteClose Γ Φ ψ) Γ₀ Φ₀ ψ₀
       let fromAbbrev : Deducer := dImpE L n₁ solveD numeralAtom
+      -- a definition's index with no type among the definitions: a primitive's name or the unit
+      -- value's refuted by the names' coherence, any other name refuting the typing's hypothesis
+      let refuteNames : Deducer := dImpE L d₁ solveD fun Γ Φ ψ ↦
+        dImpE L (Φ.length - 1) solveD hypFalseLast Γ Φ ψ
+      let namesRefuted : Deducer :=
+        decide t5 (decide t6 (link "names: no type" (unfoldLocal (K.hypFalse (hyp 6))))
+            (link "names: the unit value" refuteNames))
+          (link "names: a primitive" refuteNames)
       let notNums : Deducer :=
         decide r2 (decide t3 (decide t4 (decide r3 (decide t5
               (decide t6 (link "no type" (unfoldLocal (K.hypFalse (hyp 6)))) unitClose)
               primClose)
-            (link "names refuted" (dImpE L d₁ solveD hypFalseLast)))
+            (link "names refuted" namesRefuted))
             (link "definition" (dImpE L g₁ solveD refClose)))
           unscoped)
           varClose

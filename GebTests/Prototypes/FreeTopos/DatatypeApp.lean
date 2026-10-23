@@ -132,6 +132,7 @@ def lamOneCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
         ["Typing.kwRep", "Typing.kwDecode", "Typing.kwDatum"].foldr (fun kw k ↦
           decideKnown K (fun Γ ↦ pc P "Typing.namedTx" [B.raw B.binder Γ, pc P kw []]) k
             (linkK K s!"lam: the binder named by {kw}" (K.hypFalse typed))) k)) fun typed ↦
+      B.nameDecided typed <|
       (fun k ↦ decideOpt K B.readTypeAt (K.hypFalse (typed + 1))
         (W.generalize (fun Γ ↦ pc K.P "Prelude.get" [B.readTypeAt Γ]) k) (minimal := true)) <|
       (fun k ↦ K.splitHyp (typed + 1) k 6) <|

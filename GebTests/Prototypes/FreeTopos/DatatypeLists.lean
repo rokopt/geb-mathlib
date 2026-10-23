@@ -188,7 +188,7 @@ def listCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
           [refuteAt "the head's soundness at another label", anyHyp] fun Γ Φ ψ ↦
           dAllE L K.G K.E (Φ.length - 1) (W.qv 1 Γ) (((List.range (nQ - 1)).foldr
             (fun j k ↦ K.allEΓ (W.qv (j + 2)) k) <|
-            (List.range W.nH).foldr (fun i k ↦ K.impE (K.byHyp (W.hyp i)) k) <|
+            (List.range W.nH).foldr (fun i k ↦ K.impE (W.byStmt i) k) <|
             (List.range (srcFree P T).length).foldr (fun j k ↦
               K.impE (linkK K s!"listCase: keyword {j} at another label"
                 (dRwBy (evalRw K.G K.E (K.rules Φ ++ unfold) .full)

@@ -187,6 +187,16 @@ def antecedentOpts (P : Prog) (e : Term) : List Term :=
 /-- The indices of the soundness's hypotheses that are the antecedents' tests, in their order. -/
 def antecedentHyps : List ℕ := [4, 5, 6, 7, 8]
 
+/-- The index of the statement's hypothesis on the names of the named context
+({name}`Defs3.cxT`). -/
+def cxHyp : ℕ := 12
+
+/-- The goal by the hypothesis of index h: itself where the goal is a hypothesis, else by
+normalizing both, else, an equation, by normalizing its sides, which an equation among the
+hypotheses rewrites the goal by but not itself. -/
+def byStatement (K : Kit) (h : ℕ) : Deducer := fun Γ Φ ψ ↦
+  (dHyp Γ Φ ψ).orElse fun _ ↦ (K.byHyp h Γ Φ ψ).orElse fun _ ↦ K.byNorm Γ Φ ψ
+
 /-- The term of the variable at a position from the outermost. -/
 def atPos (p : ℕ) (Γ : List Tree) : Term := v (Γ.length - 1 - p)
 
@@ -378,6 +388,9 @@ def hyp (i : ℕ) : ℕ := (W.ihs.filter id).length + nQ + i
 /-- The index of the hypothesis of the soundness at the element of position c. -/
 def ihIdx (c : ℕ) : ℕ := ((W.ihs.take c).filter id).length
 
+/-- The statement's hypothesis of index i ({name}`byStatement`). -/
+def byStmt (i : ℕ) : Deducer := byStatement W.K (W.hyp i)
+
 /-- The statement's variable of position j, from 1 for the kernel's globals' types to 10 for the
 relation's context. -/
 def qv (j : ℕ) : List Tree → Term := atPos (W.n - 1 + j)
@@ -475,8 +488,9 @@ def decideAll (k : Deducer) : Deducer :=
 /-- The soundness at the element of position c, its hypothesis, at the statement's variables,
 those of the positions {lit}`over` gives at its terms; its antecedents those of the statement or
 decided, the relation of the environment to the named context by {lit}`envOk` where either is
-given; its conclusion, a convergence, the last hypothesis for k. -/
-def soundAt (c : ℕ) (over : ℕ → Option (List Tree → Term)) (envOk : Deducer) (k : Deducer) :
+given, and the names of the named context by {lit}`cxOk` where it is given; its conclusion, a
+convergence, the last hypothesis for k. -/
+def soundAt (c : ℕ) (over : ℕ → Option (List Tree → Term)) (envOk cxOk : Deducer) (k : Deducer) :
     Deducer :=
   let K := W.K
   let at_ (j : ℕ) : List Tree → Term := (over j).getD (W.qv j)
@@ -489,14 +503,15 @@ def soundAt (c : ℕ) (over : ℕ → Option (List Tree → Term)) (envOk : Dedu
             (linkK K s!"element {c + 1}'s antecedent {i}"
             (if i ∈ antecedentHyps then K.solve 3
               else if i = 1 ∧ ((over 5).isSome ∨ (over 9).isSome) then envOk
-              else K.byHyp (W.hyp i)))) k) k)) Γ Φ ψ
+              else if i = cxHyp ∧ (over 5).isSome then cxOk
+              else W.byStmt i))) k) k)) Γ Φ ψ
 
 /-- The soundness at the element of position c, its hypothesis, at the statement's variables:
 its convergence's threshold and value and their stability and relation given to k by their
 positions. -/
 def element (c : ℕ) (k : ℕ → ℕ → ℕ → ℕ → Deducer) : Deducer :=
   let K := W.K
-  W.soundAt c (fun _ ↦ none) (fun _ _ _ ↦ none) <|
+  W.soundAt c (fun _ ↦ none) (fun _ _ _ ↦ none) (fun _ _ _ ↦ none) <|
     K.unfoldConv <| K.exE <| K.exE <| K.conjE fun Γ Φ ψ ↦
       k (Γ.length - 2) (Γ.length - 1) (Φ.length - 2) (Φ.length - 1) Γ Φ ψ
 
@@ -1048,6 +1063,41 @@ def envTCons (P : Prog) (T : Defs3) : Step :=
       | dbgTrace "envTCons: not proved" fun _ ↦ none
     pure (a, d))
 
+/-- The names of a named context extended: a context whose names the typing admits as binders'
+({name}`Defs3.cxT`) and a name it admits, the context with the name's entry at a type: at a name
+the extension gives a type, the entry's name equal to the name or not; equal, the name the
+entry's, by the equality's soundness; unequal, the context gives it the type. -/
+def cxTCons (P : Prog) (S : Defs) (T : Defs3) : Step :=
+  ("cxTCons", fun ix E ↦ do
+    -- the typing's lookup's equations alone: the reader's index's would unfold the test of the
+    -- primitives' names in the binders' test, whose list is known, once per name at each name
+    let K : Kit := ⟨P, S, E, ix, ["lookupNameNil", "lookupNameCons"]⟩
+    let L := K.L
+    let equalT ← primT Kernel.Prim.equal
+    -- context: the entry's type, its name, the environment, the context
+    let a : Internal.Thm := ⟨0, [treeTy, treeTy, T.envTy, list treeTy],
+      [truth P.o (pc P "Typing.nameOk" [v 2, v 1]), T.cxT (v 2) (v 3)],
+      T.cxT (v 2) (consT treeTy (pc P "Typing.abbr" [v 1, v 0]) (v 3))⟩
+    let unfold (h : ℕ) (k : Deducer) : Deducer :=
+      dRwHyp (evalRw K.G K.E [.delta (T.q + 7 + 2 * nFolds)] .head) h k
+    -- context: the name n after the statement's; hypotheses: the statement's, truth and the
+    -- lookup's truth
+    let body : Deducer := dAllI L <| dImpI L fun Γ Φ ψ ↦
+      let n := atPos (Γ.length - 1)
+      let m := atPos 2
+      let found := Φ.length - 1
+      decideIn K (fun Γ ↦ apps equalT [m Γ, n Γ])
+        -- unequal: the context's lookup, the statement's names' coherence at the name
+        (linkK K "cxTCons: the rest" <| unfold 1 <| K.allEΓ n <|
+          K.impE (K.byHyp found) fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ)
+        -- equal: the name the entry's
+        (linkK K "cxTCons: the entry" <| K.cutThm "equalSound" (fun Γ ↦ [m Γ]) <|
+          K.allEΓ n <| K.impE (K.solve 3) fun Γ Φ ψ ↦ K.byHyp 0 Γ Φ ψ) Γ Φ ψ
+    let some d := dRwBy (evalRw K.G K.E [.delta (T.q + 7 + 2 * nFolds)] .head) body a.ctx a.hyps
+        a.concl
+      | dbgTrace "cxTCons: not proved" fun _ ↦ none
+    pure (a, d))
+
 /-- The tools of the soundness at a form binding a name at an annotation in a body, elements of
 the form of the positions {lit}`binder`, {lit}`ann` and {lit}`body`: the annotation as the typing
 and the reader read it, the body's contexts extended by the binder, the abstraction of the body
@@ -1109,6 +1159,25 @@ def overBody (j : ℕ) : Option (List Tree → Term) :=
 /-- A term under the statement's quantifiers at the body and its contexts extended. -/
 def bodyAt (t : Term) (Γ : List Tree) : Term := B.inΓWith B.overBody (atPos B.body) Γ t
 
+/-- The binder's name as the typing reads it. -/
+def binderNm (Γ : List Tree) : Term := pc B.K.P "Typing.atomName" [B.raw B.binder Γ]
+
+/-- The binder's name decided one the typing admits as a binder's, else the typing's hypothesis
+normalized of index {lit}`typed` refuted, whose test it is; then k. -/
+def nameDecided (typed : ℕ) (k : Deducer) : Deducer :=
+  let K := B.K
+  decideIn K (fun Γ ↦ pc K.P "Typing.nameOk" [B.qv 4 Γ, B.binderNm Γ])
+    (linkK K s!"{B.msg}: the binder's name refuted" fun Γ Φ ψ ↦
+      (K.hypFalse typed Γ Φ ψ).orElse fun _ ↦ B.hypFalseU typed Γ Φ ψ) k
+
+/-- The names of the named context extended by the binder's entry ({name}`cxTCons`), the binder's
+name decided one the typing admits ({lit}`nameDecided`). -/
+def cxOk : Deducer :=
+  let K := B.K
+  linkK K s!"{B.msg}: the context's names" <|
+    B.cutApply "cxTCons" (fun Γ ↦ [B.annTy Γ, B.binderNm Γ, B.qv 4 Γ, B.qv 5 Γ])
+      [K.solve 3, K.byHyp (B.hyp cxHyp)] fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ
+
 /-- A term in normal form by the rules, the generalized values' variables among them. -/
 def nfIn (Γ : List Tree) (Φ : List Term) (t : Term) : Term :=
   ((evalRw B.K.G B.K.E (B.K.rules Φ) .full Γ Φ t).map Prod.fst).getD t
@@ -1131,7 +1200,7 @@ def lamConv (thm : String) (k : Deducer) : Deducer :=
             B.entry Γ, B.qv 9 Γ, B.qv 5 Γ, B.qv 10 Γ])
           [K.byHyp (B.hyp 1), K.byHyp rel] fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ
         B.soundAt B.body (fun j ↦ if j = 9 then some fun Γ ↦ consT treeTy (w Γ) (B.qv 9 Γ)
-            else B.overBody j) envOk (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ)
+            else B.overBody j) envOk B.cxOk (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ)
           Γ₁ Φ₁ ψ₁) k) Γ₀ Φ₀ ψ₀
 
 /-- The binder's expansion a source form; the typing's, the resolution's and the kernel's typing's
@@ -1218,7 +1287,7 @@ def letCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
           lamT (nfIn Γ Φ (B.annK Γ)) (nfIn Γ Φ (get (B.bodyAt kT Γ))),
           nfIn Γ Φ (get (B.bodyAt tyT Γ)), nfIn Γ Φ (B.annTy Γ), W.qv 10 Γ]) <|
         K.impE (B.lamConv "lamCompat" fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ) <|
-        K.impE (W.soundAt 2 (fun _ ↦ none) (fun _ _ _ ↦ none)
+        K.impE (W.soundAt 2 (fun _ ↦ none) (fun _ _ _ ↦ none) (fun _ _ _ ↦ none)
           (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ)) <|
         fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ
     -- the term's type the annotation's, by the equality's soundness, else no type, refuting the
@@ -1248,6 +1317,7 @@ def letCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
       W.present "the term's type" (at_ 2 tyT) 6 <|
       -- the binder an atom: its expansion a node of the label of atoms, else no type
       B.binderAtom fun typed ↦
+      B.nameDecided typed <|
       -- the reader's binder, its numeral abbreviation expanded: whether the binder's name is
       -- abbreviated, and the abbreviation an atom, decided by the tests the resolution's
       -- hypothesis is blocked on
@@ -1446,7 +1516,7 @@ def listDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
   ([("Reader.kwLet", 4), ("Reader.kwQuote", 1), ("Reader.kwNil", 1), ("Reader.kwIf", 3),
       ("Reader.kwCons", 2), ("Reader.kwFst", 1), ("Reader.kwSnd", 1), ("Reader.kwPair", 2)].flatMap
     fun (kw, n) ↦ kwEqs P T kw n) ++
-  [relTArrow P S T, lamCompat P S T, appCompat P S T, envTCons P T,
+  [relTArrow P S T, lamCompat P S T, appCompat P S T, envTCons P T, cxTCons P S T,
     relTTree P T, relTList1 P S T, readCase P S T true, readCase P S T false, ifCase P S T,
     consCase P S T, relTProd P T] ++
     relTProdNodes P T ++

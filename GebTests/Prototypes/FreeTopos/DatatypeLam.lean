@@ -190,7 +190,7 @@ def lamCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
       dAllE K.L K.G K.E (Φ.length - 1) (W.qv 1 Γ) (((List.range (nQ - 1)).foldr
         (fun j k ↦ K.allEΓ (W.qv (j + 2)) k) <|
         (List.range W.nH).foldr (fun i k ↦ K.impE (linkK K s!"lam: antecedent {i}"
-          (K.byHyp (W.hyp i))) k)
+          (W.byStmt i)) k)
           (linkK K "lam: the conclusion" fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ))) Γ Φ ψ
     -- the binders none: the expansion absent
     let none_ : Deducer := linkK K "lam: no binders" fun Γ Φ ψ ↦
