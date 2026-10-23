@@ -313,11 +313,31 @@ def Table.toNats (tab : Table) : List ℕ :=
 /-- A tree as a list of natural numbers, the table of its distinct nodes, the root last. -/
 def treeToNats (t : Tree) : List ℕ := ((intern t).run Table.empty).2.toNats
 
+/-- The index of a derivation's tree ({name}`derivTree`) among the distinct nodes, entered as
+{name}`intern` enters it, without the tree being built. A derivation shares its subderivations,
+and its tree repeats each once for each path to it, so the fold is {name}`WType.elim`'s, whose
+step receives the children's results as a function and applies it in turn to the table: each
+child is entered while the table is threaded through it, where the fold of
+{name}`RoseTree.elim` would compute every child's result, a closure, before its parent's, and so
+build a closure for each node of the tree. -/
+def internDeriv : Deriv → StateM Table ℕ :=
+  WType.elim _ fun ⟨(r, n), g⟩ ↦ do
+    let (k, ds) := ruleData r
+    let dIds ← ds.mapM intern
+    let cIds ← (List.finRange n).mapM g
+    internNode k (dIds ++ cIds)
+
+/-- The index of a declaration's tree ({name}`declTree`) among the distinct nodes, its
+derivation's entered by {name}`internDeriv`; nothing for a declaration of another kind. -/
+def internDecl : Decl → Option (StateM Table ℕ)
+  | .language a d => some do internNode 0 [← intern (thmTree a), ← internDeriv d]
+  | _ => none
+
 /-- Declarations of theorems as a list of natural numbers, the table of their tree
-({name}`declsTree`), each declaration's tree built and entered in turn, so that the tree of one
-declaration alone is built at once; nothing where one is of another kind. -/
+({name}`declsTree`), each declaration entered in turn by {name}`internDecl`; nothing where one is
+of another kind. -/
 def declsToNats (ds : List Decl) : Option (List ℕ) :=
-  let (ids, tab) := (ds.mapM fun d ↦ (declTree d).mapM intern).run Table.empty
+  let (ids, tab) := (ds.mapM fun d ↦ (internDecl d).mapM id).run Table.empty
   (ids.mapM id).map fun ids ↦ ((internNode 0 ids).run tab).2.toNats
 
 /-! Lists of natural numbers as text. -/
