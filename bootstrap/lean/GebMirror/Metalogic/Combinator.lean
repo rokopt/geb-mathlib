@@ -229,18 +229,46 @@ def «Combinator/OODfd.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Combinator/OODfd.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Combinator/OODfd.nthOf» :=
@@ -273,9 +301,23 @@ def «Combinator/OODfd.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -346,19 +388,7 @@ def «Combinator.certsOf» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x2 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x2
-                  ([] : List T)
-                  (fun (_ : T) (x4 : List T) => x4))
-              (Const.children x1)
-              (leaf 0);
-            x2);
+            let x2 : List T := Const.children x1; let x3 : List T := x2; x3);
     x1
 
 def «Combinator.scope» :=
@@ -369,44 +399,70 @@ def «Combinator.scCtx» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let x4 : T := x2;
-            let x5 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x5 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x5
-                  ([] : List T)
-                  (fun (_ : T) (x7 : List T) => x7))
-              (Const.children x4)
-              (leaf 0);
-            x5);
+            let x2 : List T := Const.children x1;
+            let x3 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let x7 : T := x3;
+            let x8 : List T := Const.children x7; let x9 : List T := x8; x9);
     x1
 
 def «Combinator.scHyps» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let x3 : T := Const.child x1 (leaf 1);
-            let x4 : T := x3;
-            let x5 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x5 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x5
-                  ([] : List T)
-                  (fun (_ : T) (x7 : List T) => x7))
-              (Const.children x4)
-              (leaf 0);
-            x5);
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let x5 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let x7 : T := x5;
+            let x8 : List T := Const.children x7; let x9 : List T := x8; x9);
     x1
 
 def «Combinator.scSeq» :=
@@ -444,18 +500,46 @@ def «Combinator/OPTy.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Combinator/OPTy.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Combinator/OPTy.nthOf» :=
@@ -488,9 +572,23 @@ def «Combinator/OPTy.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -575,103 +673,693 @@ def «Combinator.ptysOf» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x2 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x2
-                  ([] : List T)
-                  (fun (_ : T) (x4 : List T) => x4))
-              (Const.children x1)
-              (leaf 0);
-            x2);
+            let x2 : List T := Const.children x1; let x3 : List T := x2; x3);
     x1
 
 def «Combinator.tyT» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let x2 : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2);
-                   let _ : T := Const.child x1 (leaf 3);
-                   let _ : T := Const.child x1 (leaf 4);
-                   let _ : T := Const.child x1 (leaf 5);
-                   let _ : T := Const.child x1 (leaf 6); x2);
+                   let x2 : List T := Const.children x1;
+                   let x3 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let x10 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x10
+                     (leaf 0)
+                     (fun (x11 : T) (_ : List T) => x11);
+                   let x12 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x10
+                     ([] : List T)
+                     (fun (_ : T) (x13 : List T) => x13);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x12
+                     (leaf 0)
+                     (fun (x13 : T) (_ : List T) => x13);
+                   let x14 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x12
+                     ([] : List T)
+                     (fun (_ : T) (x15 : List T) => x15);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x14
+                     (leaf 0)
+                     (fun (x15 : T) (_ : List T) => x15);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x14
+                     ([] : List T)
+                     (fun (_ : T) (x17 : List T) => x17);
+                   x3);
     x1
 
 def «Combinator.tySort» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let x3 : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2);
-                   let _ : T := Const.child x1 (leaf 3);
-                   let _ : T := Const.child x1 (leaf 4);
-                   let _ : T := Const.child x1 (leaf 5);
-                   let _ : T := Const.child x1 (leaf 6); x3);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let x5 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let x10 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x10
+                     (leaf 0)
+                     (fun (x11 : T) (_ : List T) => x11);
+                   let x12 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x10
+                     ([] : List T)
+                     (fun (_ : T) (x13 : List T) => x13);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x12
+                     (leaf 0)
+                     (fun (x13 : T) (_ : List T) => x13);
+                   let x14 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x12
+                     ([] : List T)
+                     (fun (_ : T) (x15 : List T) => x15);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x14
+                     (leaf 0)
+                     (fun (x15 : T) (_ : List T) => x15);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x14
+                     ([] : List T)
+                     (fun (_ : T) (x17 : List T) => x17);
+                   x5);
     x1
 
 def «Combinator.tyDfd» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let x4 : T := Const.child x1 (leaf 2);
-                   let _ : T := Const.child x1 (leaf 3);
-                   let _ : T := Const.child x1 (leaf 4);
-                   let _ : T := Const.child x1 (leaf 5);
-                   let _ : T := Const.child x1 (leaf 6); x4);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let x7 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let x10 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x10
+                     (leaf 0)
+                     (fun (x11 : T) (_ : List T) => x11);
+                   let x12 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x10
+                     ([] : List T)
+                     (fun (_ : T) (x13 : List T) => x13);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x12
+                     (leaf 0)
+                     (fun (x13 : T) (_ : List T) => x13);
+                   let x14 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x12
+                     ([] : List T)
+                     (fun (_ : T) (x15 : List T) => x15);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x14
+                     (leaf 0)
+                     (fun (x15 : T) (_ : List T) => x15);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x14
+                     ([] : List T)
+                     (fun (_ : T) (x17 : List T) => x17);
+                   x7);
     x1
 
 def «Combinator.tyLo» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2);
-                   let x5 : T := Const.child x1 (leaf 3);
-                   let _ : T := Const.child x1 (leaf 4);
-                   let _ : T := Const.child x1 (leaf 5);
-                   let _ : T := Const.child x1 (leaf 6); x5);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let x9 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let x10 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x10
+                     (leaf 0)
+                     (fun (x11 : T) (_ : List T) => x11);
+                   let x12 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x10
+                     ([] : List T)
+                     (fun (_ : T) (x13 : List T) => x13);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x12
+                     (leaf 0)
+                     (fun (x13 : T) (_ : List T) => x13);
+                   let x14 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x12
+                     ([] : List T)
+                     (fun (_ : T) (x15 : List T) => x15);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x14
+                     (leaf 0)
+                     (fun (x15 : T) (_ : List T) => x15);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x14
+                     ([] : List T)
+                     (fun (_ : T) (x17 : List T) => x17);
+                   x9);
     x1
 
 def «Combinator.tyLoC» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2);
-                   let _ : T := Const.child x1 (leaf 3);
-                   let x6 : T := Const.child x1 (leaf 4);
-                   let _ : T := Const.child x1 (leaf 5);
-                   let _ : T := Const.child x1 (leaf 6); x6);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let x10 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   let x11 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x10
+                     (leaf 0)
+                     (fun (x11 : T) (_ : List T) => x11);
+                   let x12 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x10
+                     ([] : List T)
+                     (fun (_ : T) (x13 : List T) => x13);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x12
+                     (leaf 0)
+                     (fun (x13 : T) (_ : List T) => x13);
+                   let x14 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x12
+                     ([] : List T)
+                     (fun (_ : T) (x15 : List T) => x15);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x14
+                     (leaf 0)
+                     (fun (x15 : T) (_ : List T) => x15);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x14
+                     ([] : List T)
+                     (fun (_ : T) (x17 : List T) => x17);
+                   x11);
     x1
 
 def «Combinator.tyHi» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2);
-                   let _ : T := Const.child x1 (leaf 3);
-                   let _ : T := Const.child x1 (leaf 4);
-                   let x7 : T := Const.child x1 (leaf 5);
-                   let _ : T := Const.child x1 (leaf 6); x7);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let x10 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x10
+                     (leaf 0)
+                     (fun (x11 : T) (_ : List T) => x11);
+                   let x12 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x10
+                     ([] : List T)
+                     (fun (_ : T) (x13 : List T) => x13);
+                   let x13 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x12
+                     (leaf 0)
+                     (fun (x13 : T) (_ : List T) => x13);
+                   let x14 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x12
+                     ([] : List T)
+                     (fun (_ : T) (x15 : List T) => x15);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x14
+                     (leaf 0)
+                     (fun (x15 : T) (_ : List T) => x15);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x14
+                     ([] : List T)
+                     (fun (_ : T) (x17 : List T) => x17);
+                   x13);
     x1
 
 def «Combinator.tyHiC» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2);
-                   let _ : T := Const.child x1 (leaf 3);
-                   let _ : T := Const.child x1 (leaf 4);
-                   let _ : T := Const.child x1 (leaf 5);
-                   let x8 : T := Const.child x1 (leaf 6); x8);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let x10 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x10
+                     (leaf 0)
+                     (fun (x11 : T) (_ : List T) => x11);
+                   let x12 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x10
+                     ([] : List T)
+                     (fun (_ : T) (x13 : List T) => x13);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x12
+                     (leaf 0)
+                     (fun (x13 : T) (_ : List T) => x13);
+                   let x14 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x12
+                     ([] : List T)
+                     (fun (_ : T) (x15 : List T) => x15);
+                   let x15 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x14
+                     (leaf 0)
+                     (fun (x15 : T) (_ : List T) => x15);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x14
+                     ([] : List T)
+                     (fun (_ : T) (x17 : List T) => x17);
+                   x15);
     x1
 
 def «Combinator.pty0» :=
@@ -760,18 +1448,46 @@ def «Combinator/ODev.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Combinator/ODev.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Combinator/ODev.nthOf» :=
@@ -804,9 +1520,23 @@ def «Combinator/ODev.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -814,8 +1544,34 @@ def «Combinator/ODev.allJust» :=
 def «Combinator.devSeq» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let x2 : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1); x2);
+                   let x2 : List T := Const.children x1;
+                   let x3 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x3);
     x1
 
 def «Combinator.devs» := fun (x0 : List T) => Const.node (leaf 0) x0
@@ -832,19 +1588,7 @@ def «Combinator.pairsOf» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x2 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x2
-                  ([] : List T)
-                  (fun (_ : T) (x4 : List T) => x4))
-              (Const.children x1)
-              (leaf 0);
-            x2);
+            let x2 : List T := Const.children x1; let x3 : List T := x2; x3);
     x1
 
 def «Combinator.nfEntry» :=
@@ -863,177 +1607,775 @@ def «Combinator.stDev» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2);
-            let _ : T := Const.child x1 (leaf 3);
-            let _ : T := Const.child x1 (leaf 4);
-            let _ : T := Const.child x1 (leaf 5);
-            let x8 : T := x2;
-            let x9 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x9 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x9
-                  ([] : List T)
-                  (fun (_ : T) (x11 : List T) => x11))
-              (Const.children x8)
-              (leaf 0);
-            x9);
+            let x2 : List T := Const.children x1;
+            let x3 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let x6 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let x8 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x8
+              (leaf 0)
+              (fun (x9 : T) (_ : List T) => x9);
+            let x10 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x8
+              ([] : List T)
+              (fun (_ : T) (x11 : List T) => x11);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x10
+              (leaf 0)
+              (fun (x11 : T) (_ : List T) => x11);
+            let x12 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x10
+              ([] : List T)
+              (fun (_ : T) (x13 : List T) => x13);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x12
+              (leaf 0)
+              (fun (x13 : T) (_ : List T) => x13);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x12
+              ([] : List T)
+              (fun (_ : T) (x15 : List T) => x15);
+            let x15 : T := x3;
+            let x16 : List T := Const.children x15; let x17 : List T := x16; x17);
     x1
 
 def «Combinator.stMemo» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let x3 : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2);
-            let _ : T := Const.child x1 (leaf 3);
-            let _ : T := Const.child x1 (leaf 4);
-            let _ : T := Const.child x1 (leaf 5);
-            let x8 : T := x3;
-            let x9 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x9 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x9
-                  ([] : List T)
-                  (fun (_ : T) (x11 : List T) => x11))
-              (Const.children x8)
-              (leaf 0);
-            x9);
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let x5 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let x6 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let x8 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x8
+              (leaf 0)
+              (fun (x9 : T) (_ : List T) => x9);
+            let x10 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x8
+              ([] : List T)
+              (fun (_ : T) (x11 : List T) => x11);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x10
+              (leaf 0)
+              (fun (x11 : T) (_ : List T) => x11);
+            let x12 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x10
+              ([] : List T)
+              (fun (_ : T) (x13 : List T) => x13);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x12
+              (leaf 0)
+              (fun (x13 : T) (_ : List T) => x13);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x12
+              ([] : List T)
+              (fun (_ : T) (x15 : List T) => x15);
+            let x15 : T := x5;
+            let x16 : List T := Const.children x15; let x17 : List T := x16; x17);
     x1
 
 def «Combinator.stNfs» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let x4 : T := Const.child x1 (leaf 2);
-            let _ : T := Const.child x1 (leaf 3);
-            let _ : T := Const.child x1 (leaf 4);
-            let _ : T := Const.child x1 (leaf 5);
-            let x8 : T := x4;
-            let x9 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x9 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x9
-                  ([] : List T)
-                  (fun (_ : T) (x11 : List T) => x11))
-              (Const.children x8)
-              (leaf 0);
-            x9);
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let x6 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let x7 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let x8 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x8
+              (leaf 0)
+              (fun (x9 : T) (_ : List T) => x9);
+            let x10 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x8
+              ([] : List T)
+              (fun (_ : T) (x11 : List T) => x11);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x10
+              (leaf 0)
+              (fun (x11 : T) (_ : List T) => x11);
+            let x12 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x10
+              ([] : List T)
+              (fun (_ : T) (x13 : List T) => x13);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x12
+              (leaf 0)
+              (fun (x13 : T) (_ : List T) => x13);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x12
+              ([] : List T)
+              (fun (_ : T) (x15 : List T) => x15);
+            let x15 : T := x7;
+            let x16 : List T := Const.children x15; let x17 : List T := x16; x17);
     x1
 
 def «Combinator.stDefs» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2);
-            let x5 : T := Const.child x1 (leaf 3);
-            let _ : T := Const.child x1 (leaf 4);
-            let _ : T := Const.child x1 (leaf 5);
-            let x8 : T := x5;
-            let x9 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x9 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x9
-                  ([] : List T)
-                  (fun (_ : T) (x11 : List T) => x11))
-              (Const.children x8)
-              (leaf 0);
-            x9);
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let x6 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let x8 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let x9 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x8
+              (leaf 0)
+              (fun (x9 : T) (_ : List T) => x9);
+            let x10 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x8
+              ([] : List T)
+              (fun (_ : T) (x11 : List T) => x11);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x10
+              (leaf 0)
+              (fun (x11 : T) (_ : List T) => x11);
+            let x12 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x10
+              ([] : List T)
+              (fun (_ : T) (x13 : List T) => x13);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x12
+              (leaf 0)
+              (fun (x13 : T) (_ : List T) => x13);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x12
+              ([] : List T)
+              (fun (_ : T) (x15 : List T) => x15);
+            let x15 : T := x9;
+            let x16 : List T := Const.children x15; let x17 : List T := x16; x17);
     x1
 
 def «Combinator.stSig» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2);
-            let _ : T := Const.child x1 (leaf 3);
-            let x6 : T := Const.child x1 (leaf 4);
-            let _ : T := Const.child x1 (leaf 5);
-            let x8 : T := x6;
-            let x9 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x9 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x9
-                  ([] : List T)
-                  (fun (_ : T) (x11 : List T) => x11))
-              (Const.children x8)
-              (leaf 0);
-            x9);
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let x6 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let x8 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x8
+              (leaf 0)
+              (fun (x9 : T) (_ : List T) => x9);
+            let x10 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x8
+              ([] : List T)
+              (fun (_ : T) (x11 : List T) => x11);
+            let x11 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x10
+              (leaf 0)
+              (fun (x11 : T) (_ : List T) => x11);
+            let x12 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x10
+              ([] : List T)
+              (fun (_ : T) (x13 : List T) => x13);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x12
+              (leaf 0)
+              (fun (x13 : T) (_ : List T) => x13);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x12
+              ([] : List T)
+              (fun (_ : T) (x15 : List T) => x15);
+            let x15 : T := x11;
+            let x16 : List T := Const.children x15; let x17 : List T := x16; x17);
     x1
 
 def «Combinator.stInfer» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2);
-                   let _ : T := Const.child x1 (leaf 3);
-                   let _ : T := Const.child x1 (leaf 4);
-                   let x7 : T := Const.child x1 (leaf 5); x7);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let x10 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x10
+                     (leaf 0)
+                     (fun (x11 : T) (_ : List T) => x11);
+                   let x12 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x10
+                     ([] : List T)
+                     (fun (_ : T) (x13 : List T) => x13);
+                   let x13 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x12
+                     (leaf 0)
+                     (fun (x13 : T) (_ : List T) => x13);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x12
+                     ([] : List T)
+                     (fun (_ : T) (x15 : List T) => x15);
+                   x13);
     x1
 
 def «Combinator.withDev» :=
   fun (x0 : T) (x1 : List T) =>
     let x2 : T := (let x2 : T := x0;
-                   let _ : T := Const.child x2 (leaf 0);
-                   let x4 : T := Const.child x2 (leaf 1);
-                   let x5 : T := Const.child x2 (leaf 2);
-                   let x6 : T := Const.child x2 (leaf 3);
-                   let x7 : T := Const.child x2 (leaf 4);
-                   let x8 : T := Const.child x2 (leaf 5);
-                   «Combinator.pst» («Combinator.devs» x1) x4 x5 x6 x7 x8);
+                   let x3 : List T := Const.children x2;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x3
+                     (leaf 0)
+                     (fun (x4 : T) (_ : List T) => x4);
+                   let x5 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x3
+                     ([] : List T)
+                     (fun (_ : T) (x6 : List T) => x6);
+                   let x6 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x5
+                     (leaf 0)
+                     (fun (x6 : T) (_ : List T) => x6);
+                   let x7 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x5
+                     ([] : List T)
+                     (fun (_ : T) (x8 : List T) => x8);
+                   let x8 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x7
+                     (leaf 0)
+                     (fun (x8 : T) (_ : List T) => x8);
+                   let x9 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x7
+                     ([] : List T)
+                     (fun (_ : T) (x10 : List T) => x10);
+                   let x10 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x9
+                     (leaf 0)
+                     (fun (x10 : T) (_ : List T) => x10);
+                   let x11 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x9
+                     ([] : List T)
+                     (fun (_ : T) (x12 : List T) => x12);
+                   let x12 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x11
+                     (leaf 0)
+                     (fun (x12 : T) (_ : List T) => x12);
+                   let x13 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x11
+                     ([] : List T)
+                     (fun (_ : T) (x14 : List T) => x14);
+                   let x14 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x13
+                     (leaf 0)
+                     (fun (x14 : T) (_ : List T) => x14);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x13
+                     ([] : List T)
+                     (fun (_ : T) (x16 : List T) => x16);
+                   «Combinator.pst» («Combinator.devs» x1) x6 x8 x10 x12 x14);
     x2
 
 def «Combinator.withMemo» :=
   fun (x0 : T) (x1 : List T) =>
     let x2 : T := (let x2 : T := x0;
-                   let x3 : T := Const.child x2 (leaf 0);
-                   let _ : T := Const.child x2 (leaf 1);
-                   let x5 : T := Const.child x2 (leaf 2);
-                   let x6 : T := Const.child x2 (leaf 3);
-                   let x7 : T := Const.child x2 (leaf 4);
-                   let x8 : T := Const.child x2 (leaf 5);
-                   «Combinator.pst» x3 («Combinator.memos» x1) x5 x6 x7 x8);
+                   let x3 : List T := Const.children x2;
+                   let x4 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x3
+                     (leaf 0)
+                     (fun (x4 : T) (_ : List T) => x4);
+                   let x5 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x3
+                     ([] : List T)
+                     (fun (_ : T) (x6 : List T) => x6);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x5
+                     (leaf 0)
+                     (fun (x6 : T) (_ : List T) => x6);
+                   let x7 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x5
+                     ([] : List T)
+                     (fun (_ : T) (x8 : List T) => x8);
+                   let x8 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x7
+                     (leaf 0)
+                     (fun (x8 : T) (_ : List T) => x8);
+                   let x9 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x7
+                     ([] : List T)
+                     (fun (_ : T) (x10 : List T) => x10);
+                   let x10 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x9
+                     (leaf 0)
+                     (fun (x10 : T) (_ : List T) => x10);
+                   let x11 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x9
+                     ([] : List T)
+                     (fun (_ : T) (x12 : List T) => x12);
+                   let x12 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x11
+                     (leaf 0)
+                     (fun (x12 : T) (_ : List T) => x12);
+                   let x13 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x11
+                     ([] : List T)
+                     (fun (_ : T) (x14 : List T) => x14);
+                   let x14 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x13
+                     (leaf 0)
+                     (fun (x14 : T) (_ : List T) => x14);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x13
+                     ([] : List T)
+                     (fun (_ : T) (x16 : List T) => x16);
+                   «Combinator.pst» x4 («Combinator.memos» x1) x8 x10 x12 x14);
     x2
 
 def «Combinator.withNfs» :=
   fun (x0 : T) (x1 : List T) =>
     let x2 : T := (let x2 : T := x0;
-                   let x3 : T := Const.child x2 (leaf 0);
-                   let x4 : T := Const.child x2 (leaf 1);
-                   let _ : T := Const.child x2 (leaf 2);
-                   let x6 : T := Const.child x2 (leaf 3);
-                   let x7 : T := Const.child x2 (leaf 4);
-                   let x8 : T := Const.child x2 (leaf 5);
-                   «Combinator.pst» x3 x4 («Combinator.nfList» x1) x6 x7 x8);
+                   let x3 : List T := Const.children x2;
+                   let x4 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x3
+                     (leaf 0)
+                     (fun (x4 : T) (_ : List T) => x4);
+                   let x5 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x3
+                     ([] : List T)
+                     (fun (_ : T) (x6 : List T) => x6);
+                   let x6 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x5
+                     (leaf 0)
+                     (fun (x6 : T) (_ : List T) => x6);
+                   let x7 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x5
+                     ([] : List T)
+                     (fun (_ : T) (x8 : List T) => x8);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x7
+                     (leaf 0)
+                     (fun (x8 : T) (_ : List T) => x8);
+                   let x9 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x7
+                     ([] : List T)
+                     (fun (_ : T) (x10 : List T) => x10);
+                   let x10 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x9
+                     (leaf 0)
+                     (fun (x10 : T) (_ : List T) => x10);
+                   let x11 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x9
+                     ([] : List T)
+                     (fun (_ : T) (x12 : List T) => x12);
+                   let x12 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x11
+                     (leaf 0)
+                     (fun (x12 : T) (_ : List T) => x12);
+                   let x13 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x11
+                     ([] : List T)
+                     (fun (_ : T) (x14 : List T) => x14);
+                   let x14 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x13
+                     (leaf 0)
+                     (fun (x14 : T) (_ : List T) => x14);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x13
+                     ([] : List T)
+                     (fun (_ : T) (x16 : List T) => x16);
+                   «Combinator.pst» x4 x6 («Combinator.nfList» x1) x10 x12 x14);
     x2
 
 def «Combinator.memoFind» :=
@@ -1043,10 +2385,35 @@ def «Combinator.memoFind» :=
       (β := T)
       (fun (x2 : T) (x3 : T) =>
         let x4 : T := x2;
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := Const.child x4 (leaf 1);
-        if (Const.equal x5 x1).label ≠ 0 then
-          «Combinator/OPTy.just» x6
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let x7 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x7
+          (leaf 0)
+          (fun (x8 : T) (_ : List T) => x8);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x7
+          ([] : List T)
+          (fun (_ : T) (x10 : List T) => x10);
+        if (Const.equal x6 x1).label ≠ 0 then
+          «Combinator/OPTy.just» x8
         else
           x3)
       «Combinator/OPTy.nothing»
@@ -1060,10 +2427,35 @@ def «Combinator.nfFind» :=
       (β := T)
       (fun (x2 : T) (x3 : T) =>
         let x4 : T := x2;
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := Const.child x4 (leaf 1);
-        if (Const.equal x5 x1).label ≠ 0 then
-          «Language/OTPair.just» x6
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let x7 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x7
+          (leaf 0)
+          (fun (x8 : T) (_ : List T) => x8);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x7
+          ([] : List T)
+          (fun (_ : T) (x10 : List T) => x10);
+        if (Const.equal x6 x1).label ≠ 0 then
+          «Language/OTPair.just» x8
         else
           x3)
       «Language/OTPair.nothing»
@@ -1077,15 +2469,67 @@ def «Combinator.eqnCert» :=
 def «Combinator.ecEqn» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let x2 : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1); x2);
+                   let x2 : List T := Const.children x1;
+                   let x3 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x3);
     x1
 
 def «Combinator.ecCert» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let x3 : T := Const.child x1 (leaf 1); x3);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let x5 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x5);
     x1
 
 def «Combinator.assoc» :=
@@ -1120,9 +2564,23 @@ def «Combinator/CT.orElse» :=
       let x4 : T := x0 x2 x3;
       let x5 : T := x4;
       if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
-        let _ : T := Const.child x5 (leaf 0); x4
+        let x6 : List T := Const.children x5;
+        let _ : T := Const.lcase
+          (α := T)
+          (β := T)
+          x6
+          (leaf 0)
+          (fun (x7 : T) (_ : List T) => x7);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x6
+          ([] : List T)
+          (fun (_ : T) (x9 : List T) => x9);
+        x4
       else
-        x1 x2 x3);
+        let _ : List T := Const.children x5; x1 x2 x3);
     x2
 
 def «Combinator/CY.res» :=
@@ -1153,9 +2611,23 @@ def «Combinator/CY.orElse» :=
       let x4 : T := x0 x2 x3;
       let x5 : T := x4;
       if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
-        let _ : T := Const.child x5 (leaf 0); x4
+        let x6 : List T := Const.children x5;
+        let _ : T := Const.lcase
+          (α := T)
+          (β := T)
+          x6
+          (leaf 0)
+          (fun (x7 : T) (_ : List T) => x7);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x6
+          ([] : List T)
+          (fun (_ : T) (x9 : List T) => x9);
+        x4
       else
-        x1 x2 x3);
+        let _ : List T := Const.children x5; x1 x2 x3);
     x2
 
 def «Combinator/CQ.res» :=
@@ -1186,9 +2658,23 @@ def «Combinator/CQ.orElse» :=
       let x4 : T := x0 x2 x3;
       let x5 : T := x4;
       if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
-        let _ : T := Const.child x5 (leaf 0); x4
+        let x6 : List T := Const.children x5;
+        let _ : T := Const.lcase
+          (α := T)
+          (β := T)
+          x6
+          (leaf 0)
+          (fun (x7 : T) (_ : List T) => x7);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x6
+          ([] : List T)
+          (fun (_ : T) (x9 : List T) => x9);
+        x4
       else
-        x1 x2 x3);
+        let _ : List T := Const.children x5; x1 x2 x3);
     x2
 
 def «Combinator/CS.res» :=
@@ -1219,9 +2705,23 @@ def «Combinator/CS.orElse» :=
       let x4 : T := x0 x2 x3;
       let x5 : T := x4;
       if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
-        let _ : T := Const.child x5 (leaf 0); x4
+        let x6 : List T := Const.children x5;
+        let _ : T := Const.lcase
+          (α := T)
+          (β := T)
+          x6
+          (leaf 0)
+          (fun (x7 : T) (_ : List T) => x7);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x6
+          ([] : List T)
+          (fun (_ : T) (x9 : List T) => x9);
+        x4
       else
-        x1 x2 x3);
+        let _ : List T := Const.children x5; x1 x2 x3);
     x2
 
 def «Combinator/CP.res» :=
@@ -1252,9 +2752,23 @@ def «Combinator/CP.orElse» :=
       let x4 : T := x0 x2 x3;
       let x5 : T := x4;
       if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
-        let _ : T := Const.child x5 (leaf 0); x4
+        let x6 : List T := Const.children x5;
+        let _ : T := Const.lcase
+          (α := T)
+          (β := T)
+          x6
+          (leaf 0)
+          (fun (x7 : T) (_ : List T) => x7);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x6
+          ([] : List T)
+          (fun (_ : T) (x9 : List T) => x9);
+        x4
       else
-        x1 x2 x3);
+        let _ : List T := Const.children x5; x1 x2 x3);
     x2
 
 def «Combinator/CE.res» :=
@@ -1285,9 +2799,23 @@ def «Combinator/CE.orElse» :=
       let x4 : T := x0 x2 x3;
       let x5 : T := x4;
       if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
-        let _ : T := Const.child x5 (leaf 0); x4
+        let x6 : List T := Const.children x5;
+        let _ : T := Const.lcase
+          (α := T)
+          (β := T)
+          x6
+          (leaf 0)
+          (fun (x7 : T) (_ : List T) => x7);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x6
+          ([] : List T)
+          (fun (_ : T) (x9 : List T) => x9);
+        x4
       else
-        x1 x2 x3);
+        let _ : List T := Const.children x5; x1 x2 x3);
     x2
 
 def «Combinator/CC.res» :=
@@ -1318,9 +2846,23 @@ def «Combinator/CC.orElse» :=
       let x4 : T := x0 x2 x3;
       let x5 : T := x4;
       if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
-        let _ : T := Const.child x5 (leaf 0); x4
+        let x6 : List T := Const.children x5;
+        let _ : T := Const.lcase
+          (α := T)
+          (β := T)
+          x6
+          (leaf 0)
+          (fun (x7 : T) (_ : List T) => x7);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x6
+          ([] : List T)
+          (fun (_ : T) (x9 : List T) => x9);
+        x4
       else
-        x1 x2 x3);
+        let _ : List T := Const.children x5; x1 x2 x3);
     x2
 
 def «Combinator/CYs.res» :=
@@ -1351,9 +2893,23 @@ def «Combinator/CYs.orElse» :=
       let x4 : T := x0 x2 x3;
       let x5 : T := x4;
       if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
-        let _ : T := Const.child x5 (leaf 0); x4
+        let x6 : List T := Const.children x5;
+        let _ : T := Const.lcase
+          (α := T)
+          (β := T)
+          x6
+          (leaf 0)
+          (fun (x7 : T) (_ : List T) => x7);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x6
+          ([] : List T)
+          (fun (_ : T) (x9 : List T) => x9);
+        x4
       else
-        x1 x2 x3);
+        let _ : List T := Const.children x5; x1 x2 x3);
     x2
 
 def «Combinator/CPs.res» :=
@@ -1384,9 +2940,23 @@ def «Combinator/CPs.orElse» :=
       let x4 : T := x0 x2 x3;
       let x5 : T := x4;
       if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
-        let _ : T := Const.child x5 (leaf 0); x4
+        let x6 : List T := Const.children x5;
+        let _ : T := Const.lcase
+          (α := T)
+          (β := T)
+          x6
+          (leaf 0)
+          (fun (x7 : T) (_ : List T) => x7);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x6
+          ([] : List T)
+          (fun (_ : T) (x9 : List T) => x9);
+        x4
       else
-        x1 x2 x3);
+        let _ : List T := Const.children x5; x1 x2 x3);
     x2
 
 def «Combinator/COY.res» :=
@@ -1417,9 +2987,23 @@ def «Combinator/COY.orElse» :=
       let x4 : T := x0 x2 x3;
       let x5 : T := x4;
       if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
-        let _ : T := Const.child x5 (leaf 0); x4
+        let x6 : List T := Const.children x5;
+        let _ : T := Const.lcase
+          (α := T)
+          (β := T)
+          x6
+          (leaf 0)
+          (fun (x7 : T) (_ : List T) => x7);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x6
+          ([] : List T)
+          (fun (_ : T) (x9 : List T) => x9);
+        x4
       else
-        x1 x2 x3);
+        let _ : List T := Const.children x5; x1 x2 x3);
     x2
 
 def «Combinator/COP.res» :=
@@ -1450,9 +3034,23 @@ def «Combinator/COP.orElse» :=
       let x4 : T := x0 x2 x3;
       let x5 : T := x4;
       if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
-        let _ : T := Const.child x5 (leaf 0); x4
+        let x6 : List T := Const.children x5;
+        let _ : T := Const.lcase
+          (α := T)
+          (β := T)
+          x6
+          (leaf 0)
+          (fun (x7 : T) (_ : List T) => x7);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x6
+          ([] : List T)
+          (fun (_ : T) (x9 : List T) => x9);
+        x4
       else
-        x1 x2 x3);
+        let _ : List T := Const.children x5; x1 x2 x3);
     x2
 
 def «Combinator/CA.res» :=
@@ -1483,9 +3081,23 @@ def «Combinator/CA.orElse» :=
       let x4 : T := x0 x2 x3;
       let x5 : T := x4;
       if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
-        let _ : T := Const.child x5 (leaf 0); x4
+        let x6 : List T := Const.children x5;
+        let _ : T := Const.lcase
+          (α := T)
+          (β := T)
+          x6
+          (leaf 0)
+          (fun (x7 : T) (_ : List T) => x7);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x6
+          ([] : List T)
+          (fun (_ : T) (x9 : List T) => x9);
+        x4
       else
-        x1 x2 x3);
+        let _ : List T := Const.children x5; x1 x2 x3);
     x2
 
 def «Combinator.bindTToT» :=
@@ -1495,12 +3107,51 @@ def «Combinator.bindTToT» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CT.bad»);
+        let _ : List T := Const.children x4; «Combinator/CT.bad»);
     x2
 
 def «Combinator.bindTToY» :=
@@ -1510,12 +3161,51 @@ def «Combinator.bindTToY» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CY.bad»);
+        let _ : List T := Const.children x4; «Combinator/CY.bad»);
     x2
 
 def «Combinator.bindTToP» :=
@@ -1525,12 +3215,51 @@ def «Combinator.bindTToP» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CP.bad»);
+        let _ : List T := Const.children x4; «Combinator/CP.bad»);
     x2
 
 def «Combinator.bindTToC» :=
@@ -1540,12 +3269,51 @@ def «Combinator.bindTToC» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CC.bad»);
+        let _ : List T := Const.children x4; «Combinator/CC.bad»);
     x2
 
 def «Combinator.bindYToT» :=
@@ -1555,12 +3323,51 @@ def «Combinator.bindYToT» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CT.bad»);
+        let _ : List T := Const.children x4; «Combinator/CT.bad»);
     x2
 
 def «Combinator.bindYToY» :=
@@ -1570,12 +3377,51 @@ def «Combinator.bindYToY» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CY.bad»);
+        let _ : List T := Const.children x4; «Combinator/CY.bad»);
     x2
 
 def «Combinator.bindYToP» :=
@@ -1585,12 +3431,51 @@ def «Combinator.bindYToP» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CP.bad»);
+        let _ : List T := Const.children x4; «Combinator/CP.bad»);
     x2
 
 def «Combinator.bindYToYs» :=
@@ -1600,12 +3485,51 @@ def «Combinator.bindYToYs» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CYs.bad»);
+        let _ : List T := Const.children x4; «Combinator/CYs.bad»);
     x2
 
 def «Combinator.bindYToA» :=
@@ -1615,12 +3539,51 @@ def «Combinator.bindYToA» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CA.bad»);
+        let _ : List T := Const.children x4; «Combinator/CA.bad»);
     x2
 
 def «Combinator.bindQToT» :=
@@ -1630,12 +3593,51 @@ def «Combinator.bindQToT» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CT.bad»);
+        let _ : List T := Const.children x4; «Combinator/CT.bad»);
     x2
 
 def «Combinator.bindQToP» :=
@@ -1645,12 +3647,51 @@ def «Combinator.bindQToP» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CP.bad»);
+        let _ : List T := Const.children x4; «Combinator/CP.bad»);
     x2
 
 def «Combinator.bindQToE» :=
@@ -1660,12 +3701,51 @@ def «Combinator.bindQToE» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CE.bad»);
+        let _ : List T := Const.children x4; «Combinator/CE.bad»);
     x2
 
 def «Combinator.bindSToY» :=
@@ -1675,12 +3755,51 @@ def «Combinator.bindSToY» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CY.bad»);
+        let _ : List T := Const.children x4; «Combinator/CY.bad»);
     x2
 
 def «Combinator.bindSToQ» :=
@@ -1690,12 +3809,51 @@ def «Combinator.bindSToQ» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CQ.bad»);
+        let _ : List T := Const.children x4; «Combinator/CQ.bad»);
     x2
 
 def «Combinator.bindSToP» :=
@@ -1705,12 +3863,51 @@ def «Combinator.bindSToP» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CP.bad»);
+        let _ : List T := Const.children x4; «Combinator/CP.bad»);
     x2
 
 def «Combinator.bindPToT» :=
@@ -1720,12 +3917,51 @@ def «Combinator.bindPToT» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CT.bad»);
+        let _ : List T := Const.children x4; «Combinator/CT.bad»);
     x2
 
 def «Combinator.bindPToY» :=
@@ -1735,12 +3971,51 @@ def «Combinator.bindPToY» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CY.bad»);
+        let _ : List T := Const.children x4; «Combinator/CY.bad»);
     x2
 
 def «Combinator.bindPToP» :=
@@ -1750,12 +4025,51 @@ def «Combinator.bindPToP» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CP.bad»);
+        let _ : List T := Const.children x4; «Combinator/CP.bad»);
     x2
 
 def «Combinator.bindPToPs» :=
@@ -1765,12 +4079,51 @@ def «Combinator.bindPToPs» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CPs.bad»);
+        let _ : List T := Const.children x4; «Combinator/CPs.bad»);
     x2
 
 def «Combinator.bindPToOP» :=
@@ -1780,12 +4133,51 @@ def «Combinator.bindPToOP» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/COP.bad»);
+        let _ : List T := Const.children x4; «Combinator/COP.bad»);
     x2
 
 def «Combinator.bindEToT» :=
@@ -1795,12 +4187,51 @@ def «Combinator.bindEToT» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CT.bad»);
+        let _ : List T := Const.children x4; «Combinator/CT.bad»);
     x2
 
 def «Combinator.bindEToP» :=
@@ -1810,12 +4241,51 @@ def «Combinator.bindEToP» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CP.bad»);
+        let _ : List T := Const.children x4; «Combinator/CP.bad»);
     x2
 
 def «Combinator.bindCToT» :=
@@ -1825,12 +4295,51 @@ def «Combinator.bindCToT» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CT.bad»);
+        let _ : List T := Const.children x4; «Combinator/CT.bad»);
     x2
 
 def «Combinator.bindCToP» :=
@@ -1840,12 +4349,51 @@ def «Combinator.bindCToP» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CP.bad»);
+        let _ : List T := Const.children x4; «Combinator/CP.bad»);
     x2
 
 def «Combinator.bindCToE» :=
@@ -1855,12 +4403,51 @@ def «Combinator.bindCToE» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CE.bad»);
+        let _ : List T := Const.children x4; «Combinator/CE.bad»);
     x2
 
 def «Combinator.bindCToC» :=
@@ -1870,12 +4457,51 @@ def «Combinator.bindCToC» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CC.bad»);
+        let _ : List T := Const.children x4; «Combinator/CC.bad»);
     x2
 
 def «Combinator.bindYsToY» :=
@@ -1885,12 +4511,51 @@ def «Combinator.bindYsToY» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CY.bad»);
+        let _ : List T := Const.children x4; «Combinator/CY.bad»);
     x2
 
 def «Combinator.bindYsToP» :=
@@ -1900,12 +4565,51 @@ def «Combinator.bindYsToP» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CP.bad»);
+        let _ : List T := Const.children x4; «Combinator/CP.bad»);
     x2
 
 def «Combinator.bindYsToE» :=
@@ -1915,12 +4619,51 @@ def «Combinator.bindYsToE» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CE.bad»);
+        let _ : List T := Const.children x4; «Combinator/CE.bad»);
     x2
 
 def «Combinator.bindYsToYs» :=
@@ -1930,12 +4673,51 @@ def «Combinator.bindYsToYs» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CYs.bad»);
+        let _ : List T := Const.children x4; «Combinator/CYs.bad»);
     x2
 
 def «Combinator.bindPsToP» :=
@@ -1945,12 +4727,51 @@ def «Combinator.bindPsToP» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CP.bad»);
+        let _ : List T := Const.children x4; «Combinator/CP.bad»);
     x2
 
 def «Combinator.bindPsToPs» :=
@@ -1960,12 +4781,51 @@ def «Combinator.bindPsToPs» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CPs.bad»);
+        let _ : List T := Const.children x4; «Combinator/CPs.bad»);
     x2
 
 def «Combinator.bindOYToY» :=
@@ -1975,12 +4835,51 @@ def «Combinator.bindOYToY» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CY.bad»);
+        let _ : List T := Const.children x4; «Combinator/CY.bad»);
     x2
 
 def «Combinator.bindOPToP» :=
@@ -1990,12 +4889,51 @@ def «Combinator.bindOPToP» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CP.bad»);
+        let _ : List T := Const.children x4; «Combinator/CP.bad»);
     x2
 
 def «Combinator.bindAToP» :=
@@ -2005,12 +4943,51 @@ def «Combinator.bindAToP» :=
         T := (fun (x2 : T) (x3 : T) =>
       let x4 : T := x0 x2 x3;
       if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := x5;
-        let x7 : T := Const.child x6 (leaf 0);
-        let x8 : T := Const.child x6 (leaf 1); x1 x7 x2 x8
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := x6;
+        let x9 : List T := Const.children x8;
+        let x10 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x9
+          (leaf 0)
+          (fun (x10 : T) (_ : List T) => x10);
+        let x11 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x9
+          ([] : List T)
+          (fun (_ : T) (x12 : List T) => x12);
+        let x12 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x11
+          (leaf 0)
+          (fun (x12 : T) (_ : List T) => x12);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x11
+          ([] : List T)
+          (fun (_ : T) (x14 : List T) => x14);
+        x1 x10 x2 x12
       else
-        «Combinator/CP.bad»);
+        let _ : List T := Const.children x4; «Combinator/CP.bad»);
     x2
 
 def «Combinator.pmGet» :=
@@ -2476,51 +5453,116 @@ def «Combinator.typeOpDfd» :=
         T := (let x3 : List T := «Combinator/YT.map» «Combinator.tyT» x2;
               let x4 : T := «Combinator/OODfd.nthOf» «Infer.dfdRules» x1;
               if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-                let x5 : T := Const.child x4 (leaf 0);
-                let x6 : T := x5;
-                if (Const.eq (Const.label x6) (leaf 1)).label ≠ 0 then
-                  let x7 : T := Const.child x6 (leaf 0);
-                  let x8 : T := x7;
-                  if (Const.eq (Const.label x8) (leaf 0)).label ≠ 0 then
-                    let x9 : T := Const.child x8 (leaf 0);
+                let x5 : List T := Const.children x4;
+                let x6 : T := Const.lcase
+                  (α := T)
+                  (β := T)
+                  x5
+                  (leaf 0)
+                  (fun (x6 : T) (_ : List T) => x6);
+                let _ : List
+                  T := Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x5
+                  ([] : List T)
+                  (fun (_ : T) (x8 : List T) => x8);
+                let x8 : T := x6;
+                if (Const.eq (Const.label x8) (leaf 1)).label ≠ 0 then
+                  let x9 : List T := Const.children x8;
+                  let x10 : T := Const.lcase
+                    (α := T)
+                    (β := T)
+                    x9
+                    (leaf 0)
+                    (fun (x10 : T) (_ : List T) => x10);
+                  let _ : List
+                    T := Const.lcase
+                    (α := T)
+                    (β := List T)
+                    x9
+                    ([] : List T)
+                    (fun (_ : T) (x12 : List T) => x12);
+                  let x12 : T := x10;
+                  if (Const.eq (Const.label x12) (leaf 0)).label ≠ 0 then
+                    let x13 : List T := Const.children x12;
+                    let x14 : T := Const.lcase
+                      (α := T)
+                      (β := T)
+                      x13
+                      (leaf 0)
+                      (fun (x14 : T) (_ : List T) => x14);
+                    let _ : List
+                      T := Const.lcase
+                      (α := T)
+                      (β := List T)
+                      x13
+                      ([] : List T)
+                      (fun (_ : T) (x16 : List T) => x16);
                     «Combinator.bindQToT»
-                      («Combinator.axiomAt» x9)
-                      (fun (x10 : T) =>
+                      («Combinator.axiomAt» x14)
+                      (fun (x16 : T) =>
                         «Combinator.bindCToT»
                           («Combinator.mapMEqC»
                             («Combinator.proveHyp» x0 x2)
-                            («PartialHorn.seqHyps» x10))
-                          (fun (x11 : T) =>
+                            («PartialHorn.seqHyps» x16))
+                          (fun (x17 : T) =>
                             «Combinator/CT.pure»
                               («Combinator.cAx»
-                                x9
+                                x14
                                 x3
                                 («Combinator/YT.map» «Combinator.tyDfd» x2)
-                                («Combinator.certsOf» x11))))
+                                («Combinator.certsOf» x17))))
                   else
-                    if (Const.eq (Const.label x8) (leaf 1)).label ≠ 0 then
-                      let x9 : T := Const.child x8 (leaf 0);
+                    if (Const.eq (Const.label x12) (leaf 1)).label ≠ 0 then
+                      let x13 : List T := Const.children x12;
+                      let x14 : T := Const.lcase
+                        (α := T)
+                        (β := T)
+                        x13
+                        (leaf 0)
+                        (fun (x14 : T) (_ : List T) => x14);
+                      let _ : List
+                        T := Const.lcase
+                        (α := T)
+                        (β := List T)
+                        x13
+                        ([] : List T)
+                        (fun (_ : T) (x16 : List T) => x16);
                       «Combinator/CT.pure»
                         («Combinator.cStrict»
                           (leaf 0)
                           («Combinator.cAx»
-                            x9
+                            x14
                             x3
                             («Combinator/YT.map» «Combinator.tyDfd» x2)
                             ([] : List T)))
                     else
-                      let x9 : T := Const.child x8 (leaf 0);
-                      let x10 : T := «Combinator.cAx»
-                        x9
+                      let x13 : List T := Const.children x12;
+                      let x14 : T := Const.lcase
+                        (α := T)
+                        (β := T)
+                        x13
+                        (leaf 0)
+                        (fun (x14 : T) (_ : List T) => x14);
+                      let _ : List
+                        T := Const.lcase
+                        (α := T)
+                        (β := List T)
+                        x13
+                        ([] : List T)
+                        (fun (_ : T) (x16 : List T) => x16);
+                      let x16 : T := «Combinator.cAx»
+                        x14
                         ([] : List T)
                         ([] : List T)
                         ([] : List T);
                       «Combinator/CT.pure»
-                        («Combinator.cTrans» («Combinator.cSymm» x10) x10)
+                        («Combinator.cTrans» («Combinator.cSymm» x16) x16)
                 else
-                  «Combinator/CT.fail»
+                  let _ : List T := Const.children x8; «Combinator/CT.fail»
               else
-                «Combinator/CT.fail»);
+                let _ : List T := Const.children x4; «Combinator/CT.fail»);
     x3
 
 def «Combinator.typeOpObj» :=
@@ -2890,17 +5932,44 @@ def «Combinator.srcSeq» :=
       T →
         T := (let x1 : T := x0;
               if (Const.eq (Const.label x1) (leaf 0)).label ≠ 0 then
-                let x2 : T := Const.child x1 (leaf 0); «Combinator.axiomAt» x2
+                let x2 : List T := Const.children x1;
+                let x3 : T := Const.lcase
+                  (α := T)
+                  (β := T)
+                  x2
+                  (leaf 0)
+                  (fun (x3 : T) (_ : List T) => x3);
+                let _ : List
+                  T := Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x2
+                  ([] : List T)
+                  (fun (_ : T) (x5 : List T) => x5);
+                «Combinator.axiomAt» x3
               else
-                let x2 : T := Const.child x1 (leaf 0);
+                let x2 : List T := Const.children x1;
+                let x3 : T := Const.lcase
+                  (α := T)
+                  (β := T)
+                  x2
+                  (leaf 0)
+                  (fun (x3 : T) (_ : List T) => x3);
+                let _ : List
+                  T := Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x2
+                  ([] : List T)
+                  (fun (_ : T) (x5 : List T) => x5);
                 «Combinator.bindSToQ»
                   «Combinator.pmGet»
-                  (fun (x3 : T) =>
-                    let x4 : T := «Combinator/ODev.nthOf» («Combinator.stDev» x3) x2;
-                    if («Combinator/ODev.isJust» x4).label ≠ 0 then
+                  (fun (x5 : T) =>
+                    let x6 : T := «Combinator/ODev.nthOf» («Combinator.stDev» x5) x3;
+                    if («Combinator/ODev.isJust» x6).label ≠ 0 then
                       «Combinator/CQ.pure»
                         («Combinator.devSeq»
-                          («Combinator/ODev.fromMaybe» «Combinator.dev0» x4))
+                          («Combinator/ODev.fromMaybe» «Combinator.dev0» x6))
                     else
                       «Combinator/CQ.fail»));
     x1
@@ -2909,9 +5978,37 @@ def «Combinator.srcCert» :=
   fun (x0 : T) (x1 : List T) (x2 : List T) (x3 : List T) =>
     let x4 : T := (let x4 : T := x0;
                    if (Const.eq (Const.label x4) (leaf 0)).label ≠ 0 then
-                     let x5 : T := Const.child x4 (leaf 0); «Combinator.cAx» x5 x1 x2 x3
+                     let x5 : List T := Const.children x4;
+                     let x6 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x5
+                       (leaf 0)
+                       (fun (x6 : T) (_ : List T) => x6);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x5
+                       ([] : List T)
+                       (fun (_ : T) (x8 : List T) => x8);
+                     «Combinator.cAx» x6 x1 x2 x3
                    else
-                     let x5 : T := Const.child x4 (leaf 0); «Combinator.cThm» x5 x1 x2 x3);
+                     let x5 : List T := Const.children x4;
+                     let x6 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x5
+                       (leaf 0)
+                       (fun (x6 : T) (_ : List T) => x6);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x5
+                       ([] : List T)
+                       (fun (_ : T) (x8 : List T) => x8);
+                     «Combinator.cThm» x6 x1 x2 x3);
     x4
 
 def «Combinator.labels» := fun (x0 : List T) => Const.node (leaf 0) x0
@@ -3006,40 +6103,141 @@ def «Combinator/RwL.l6» :=
 def «Combinator.rwSrc» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let x2 : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2); x2);
+                   let x2 : List T := Const.children x1;
+                   let x3 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   x3);
     x1
 
 def «Combinator.rwFlip» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let x3 : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2); x3);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let x5 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   x5);
     x1
 
 def «Combinator.rwAvoid» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let x4 : T := Const.child x1 (leaf 2);
-            let x5 : T := x4;
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
             let x6 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x6 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x6
-                  ([] : List T)
-                  (fun (_ : T) (x8 : List T) => x8))
-              (Const.children x5)
-              (leaf 0);
-            x6);
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let x7 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let x9 : T := x7;
+            let x10 : List T := Const.children x9; let x11 : List T := x10; x11);
     x1
 
 def «Combinator.opts» := fun (x0 : List T) => Const.node (leaf 0) x0
@@ -3057,18 +6255,46 @@ def «Combinator/OMatch.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Combinator/OMatch.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Combinator/OMatch.nthOf» :=
@@ -3101,9 +6327,23 @@ def «Combinator/OMatch.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -3112,30 +6352,69 @@ def «Combinator.msSigma» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let x4 : T := x2;
-            let x5 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x5 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x5
-                  ([] : List T)
-                  (fun (_ : T) (x7 : List T) => x7))
-              (Const.children x4)
-              (leaf 0);
-            x5);
+            let x2 : List T := Const.children x1;
+            let x3 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let x7 : T := x3;
+            let x8 : List T := Const.children x7; let x9 : List T := x8; x9);
     x1
 
 def «Combinator.msObjs» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let x3 : T := Const.child x1 (leaf 1); «Combinator.pairsOf» x3);
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let x5 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            «Combinator.pairsOf» x5);
     x1
 
 def «Combinator.msDefer» :=
@@ -3150,9 +6429,23 @@ def «Combinator.bindM» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Combinator/OMatch.nothing»);
+                     let _ : List T := Const.children x2; «Combinator/OMatch.nothing»);
     x2
 
 def «Combinator.matchKids» :=
@@ -3469,27 +6762,76 @@ def «Combinator.rewriteRoot» :=
         («Combinator.assocLeft» x1)
         (fun (x2 : T) =>
           let x3 : T := x2;
-          let x4 : T := Const.child x3 (leaf 0);
-          let x5 : T := Const.child x3 (leaf 1);
-          let x6 : T := Const.child x3 (leaf 2);
-          let x7 : T := Const.child x3 (leaf 3);
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let x6 : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          let x7 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x6
+            (leaf 0)
+            (fun (x7 : T) (_ : List T) => x7);
+          let x8 : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x6
+            ([] : List T)
+            (fun (_ : T) (x9 : List T) => x9);
+          let x9 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x8
+            (leaf 0)
+            (fun (x9 : T) (_ : List T) => x9);
+          let x10 : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x8
+            ([] : List T)
+            (fun (_ : T) (x11 : List T) => x11);
+          let x11 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x10
+            (leaf 0)
+            (fun (x11 : T) (_ : List T) => x11);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x10
+            ([] : List T)
+            (fun (_ : T) (x13 : List T) => x13);
           «Combinator.bindPToP»
-            («Combinator.firstRule» x0 («Theory.comp» x4 x5))
-            (fun (x8 : T) =>
+            («Combinator.firstRule» x0 («Theory.comp» x5 x7))
+            (fun (x13 : T) =>
               «Combinator.bindYToP»
-                («Combinator.typeTerm» («Theory.comp» («Theory.comp» x4 x5) x6))
-                (fun (x9 : T) =>
+                («Combinator.typeTerm» («Theory.comp» («Theory.comp» x5 x7) x9))
+                (fun (x14 : T) =>
                   «Combinator.bindYToP»
-                    («Combinator.typeTerm» x6)
-                    (fun (x10 : T) =>
+                    («Combinator.typeTerm» x9)
+                    (fun (x15 : T) =>
                       «Combinator/CP.pure»
                         («Language.pr»
-                          («Theory.comp» («Language.p1» x8) x6)
+                          («Theory.comp» («Language.p1» x13) x9)
                           («Combinator.cTrans»
-                            x7
+                            x11
                             («Combinator.cCong»
-                              («Combinator.tyDfd» x9)
-                              («Theory.l2» («Language.p2» x8) («Combinator.tyDfd» x10))))))))));
+                              («Combinator.tyDfd» x14)
+                              («Theory.l2» («Language.p2» x13) («Combinator.tyDfd» x15))))))))));
     x2
 
 def «Combinator.lookupNf» :=
@@ -3740,18 +7082,46 @@ def «Combinator/OProved.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Combinator/OProved.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Combinator/OProved.nthOf» :=
@@ -3784,9 +7154,23 @@ def «Combinator/OProved.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -3794,30 +7178,69 @@ def «Combinator/OProved.allJust» :=
 def «Combinator.provedIdx» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let x2 : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1); x2);
+                   let x2 : List T := Const.children x1;
+                   let x3 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x3);
     x1
 
 def «Combinator.provedDev» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let x3 : T := Const.child x1 (leaf 1);
-            let x4 : T := x3;
-            let x5 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x5 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x5
-                  ([] : List T)
-                  (fun (_ : T) (x7 : List T) => x7))
-              (Const.children x4)
-              (leaf 0);
-            x5);
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let x5 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let x7 : T := x5;
+            let x8 : List T := Const.children x7; let x9 : List T := x8; x9);
     x1
 
 def «Combinator.proveSeq» :=
@@ -3828,62 +7251,151 @@ def «Combinator.proveSeq» :=
                        («PartialHorn.eqns» («PartialHorn.seqHyps» x0)))
                      («Combinator.pmStart» x4 x2 x3);
                    if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
-                     let x6 : T := Const.child x5 (leaf 0);
-                     let x7 : T := x6;
-                     let x8 : T := Const.child x7 (leaf 0);
-                     let x9 : T := Const.child x7 (leaf 1);
-                     let x10 : List T := «Combinator.stDev» x9;
+                     let x6 : List T := Const.children x5;
+                     let x7 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x6
+                       (leaf 0)
+                       (fun (x7 : T) (_ : List T) => x7);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x6
+                       ([] : List T)
+                       (fun (_ : T) (x9 : List T) => x9);
+                     let x9 : T := x7;
+                     let x10 : List T := Const.children x9;
+                     let x11 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x10
+                       (leaf 0)
+                       (fun (x11 : T) (_ : List T) => x11);
+                     let x12 : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x10
+                       ([] : List T)
+                       (fun (_ : T) (x13 : List T) => x13);
+                     let x13 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x12
+                       (leaf 0)
+                       (fun (x13 : T) (_ : List T) => x13);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x12
+                       ([] : List T)
+                       (fun (_ : T) (x15 : List T) => x15);
+                     let x15 : List T := «Combinator.stDev» x13;
                      «Combinator/OProved.just»
                        («Combinator.proved»
-                         («Combinator/DevL.length» x10)
+                         («Combinator/DevL.length» x15)
                          («Combinator.devs»
                            («Combinator/DevL.append»
-                             x10
-                             («Combinator/DevL.single» («Combinator.devEntry» x0 x8)))))
+                             x15
+                             («Combinator/DevL.single» («Combinator.devEntry» x0 x11)))))
                    else
-                     «Combinator/OProved.nothing»);
+                     let _ : List T := Const.children x5; «Combinator/OProved.nothing»);
     x5
 
 def «Combinator.normalizeThm» :=
   fun (x0 : List T) (x1 : T) (x2 : List T) (x3 : T) (x4 : List T) =>
     let x5 : T := (let x5 : T := «Combinator/ODev.nthOf» x4 x1;
                    if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
-                     let x6 : T := Const.child x5 (leaf 0);
-                     let x7 : T := «Combinator.devSeq» x6;
-                     let x8 : T := «Combinator.scope»
-                       («PartialHorn.sorts» («PartialHorn.seqCtx» x7))
-                       («PartialHorn.eqns» («PartialHorn.seqHyps» x7));
-                     let x9 : T := «Combinator.pNormalize»
+                     let x6 : List T := Const.children x5;
+                     let x7 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x6
+                       (leaf 0)
+                       (fun (x7 : T) (_ : List T) => x7);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x6
+                       ([] : List T)
+                       (fun (_ : T) (x9 : List T) => x9);
+                     let x9 : T := «Combinator.devSeq» x7;
+                     let x10 : T := «Combinator.scope»
+                       («PartialHorn.sorts» («PartialHorn.seqCtx» x9))
+                       («PartialHorn.eqns» («PartialHorn.seqHyps» x9));
+                     let x11 : T := «Combinator.pNormalize»
                        x0
-                       («PartialHorn.eqLhs» («PartialHorn.seqConcl» x7))
-                       x8
+                       («PartialHorn.eqLhs» («PartialHorn.seqConcl» x9))
+                       x10
                        («Combinator.pmStart» x4 x2 x3);
-                     if (Const.eq (Const.label x9) (leaf 1)).label ≠ 0 then
-                       let x10 : T := Const.child x9 (leaf 0);
-                       let x11 : T := x10;
-                       let x12 : T := Const.child x11 (leaf 0);
-                       let x13 : T := Const.child x11 (leaf 1);
-                       let x14 : List T := «Combinator.stDev» x13;
+                     if (Const.eq (Const.label x11) (leaf 1)).label ≠ 0 then
+                       let x12 : List T := Const.children x11;
+                       let x13 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x12
+                         (leaf 0)
+                         (fun (x13 : T) (_ : List T) => x13);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x12
+                         ([] : List T)
+                         (fun (_ : T) (x15 : List T) => x15);
+                       let x15 : T := x13;
+                       let x16 : List T := Const.children x15;
+                       let x17 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x16
+                         (leaf 0)
+                         (fun (x17 : T) (_ : List T) => x17);
+                       let x18 : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x16
+                         ([] : List T)
+                         (fun (_ : T) (x19 : List T) => x19);
+                       let x19 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x18
+                         (leaf 0)
+                         (fun (x19 : T) (_ : List T) => x19);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x18
+                         ([] : List T)
+                         (fun (_ : T) (x21 : List T) => x21);
+                       let x21 : List T := «Combinator.stDev» x19;
                        «Combinator/OProved.just»
                          («Combinator.proved»
-                           («Combinator/DevL.length» x14)
+                           («Combinator/DevL.length» x21)
                            («Combinator.devs»
                              («Combinator/DevL.append»
-                               x14
+                               x21
                                («Combinator/DevL.single»
                                  («Combinator.devEntry»
                                    («Combinator.scSeq»
-                                     x8
+                                     x10
                                      («PartialHorn.eqn»
-                                       («Language.p1» x12)
-                                       («PartialHorn.eqRhs» («PartialHorn.seqConcl» x7))))
+                                       («Language.p1» x17)
+                                       («PartialHorn.eqRhs» («PartialHorn.seqConcl» x9))))
                                    («Combinator.cTrans»
-                                     («Combinator.cSymm» («Language.p2» x12))
-                                     («Combinator.scCite» x8 x1)))))))
+                                     («Combinator.cSymm» («Language.p2» x17))
+                                     («Combinator.scCite» x10 x1)))))))
                      else
-                       «Combinator/OProved.nothing»
+                       let _ : List T := Const.children x11; «Combinator/OProved.nothing»
                    else
-                     «Combinator/OProved.nothing»);
+                     let _ : List T := Const.children x5; «Combinator/OProved.nothing»);
     x5
 
 def «Combinator.instBy» :=
@@ -4458,18 +7970,46 @@ def «Combinator/OLibrary.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Combinator/OLibrary.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Combinator/OLibrary.nthOf» :=
@@ -4502,9 +8042,23 @@ def «Combinator/OLibrary.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -4513,9 +8067,23 @@ def «Combinator.bindPr» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Combinator/OLibrary.nothing»);
+                     let _ : List T := Const.children x2; «Combinator/OLibrary.nothing»);
     x2
 
 def «Combinator.libraryWith» :=
@@ -4585,19 +8153,7 @@ def «Combinator.libRules» :=
     let x1 : List
       T := (let x1 : List
               T := (let x1 : T := x0;
-                    let x2 : List
-                      T := Const.iter
-                      (α := List T)
-                      (fun (x2 : List T) =>
-                        Const.lcase
-                          (α := T)
-                          (β := List T)
-                          x2
-                          ([] : List T)
-                          (fun (_ : T) (x4 : List T) => x4))
-                      (Const.children x1)
-                      (leaf 0);
-                    x2);
+                    let x2 : List T := Const.children x1; let x3 : List T := x2; x3);
             «Combinator/RwRules.append»
               «Combinator.baseRules»
               («Combinator/RwL.l5»

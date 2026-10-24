@@ -42,6 +42,7 @@ label and children, a list by its cases.
 * {lit}`expList`, {lit}`expHead` — the expansion of a list a list, and its head's present.
 * {lit}`appAtom`, {lit}`appList` — the soundness at a list headed by an atom no keyword names, and
   by a list.
+* {lit}`indexOfMore`, {lit}`reservedK` — a keyword's index among the reserved names present.
 * {lit}`expansionCertificates`, {lit}`assemblyCertificates` — the developments, stored as the
   certificates {lit}`datatype-expansion` and {lit}`datatype-assembly`.
 
@@ -220,11 +221,13 @@ cases; the data the arguments of the definitions {lit}`folds` are blocked on bef
 the applications of those definitions, which reduce once their arguments are nodes, split only
 at variables. The data are read from the normal forms of the depth {lit}`mode`. A
 case is also proved where a hypothesis normalizes to falsity, those of {lit}`hs` tried before
-each case analysis. -/
-def splitSolve (K : Kit) (rs : List Term → List Internal.NormRule) (hs : List Term → List ℕ)
-    (depth : ℕ) (folds : List ℕ) (mode : Internal.Depth) : Deducer :=
+each case analysis. A goal that is no equation has its sides given by {lit}`sidesOf`, and is
+closed by {lit}`closeBy` where given, else by normalization. -/
+def splitSolveWith (sidesOf : Term → List Term) (closeBy : Option Deducer) (K : Kit)
+    (rs : List Term → List Internal.NormRule) (hs : List Term → List ℕ) (depth : ℕ)
+    (folds : List ℕ) (mode : Internal.Depth) : Deducer :=
   let close : Deducer := fun Γ Φ ψ ↦
-    (dRwBy (evalRw K.G K.E (rs Φ) .full) (K.solve 3) Γ Φ ψ).orElse fun _ ↦
+    (closeBy.getD (dRwBy (evalRw K.G K.E (rs Φ) .full) (K.solve 3)) Γ Φ ψ).orElse fun _ ↦
       (List.range Φ.length).reverse.findSome? fun i ↦
         dRwHyp (evalRw K.G K.E ((rs Φ).filter fun r ↦ match r with
             | .hyp j => j ≠ i
@@ -237,7 +240,7 @@ def splitSolve (K : Kit) (rs : List Term → List Internal.NormRule) (hs : List 
   Nat.rec (motive := fun _ ↦ Deducer) close (fun _ rec Γ Φ ψ ↦ (refuteHs Γ Φ ψ).orElse fun _ ↦
     let sides := match Internal.eqParts ψ with
       | some (a, b) => [a, b]
-      | none => [ψ]
+      | none => sidesOf ψ
     let whnf (t : Term) : Option Term := (evalRw K.G K.E (rs Φ) mode Γ Φ t).map Prod.fst
     let dataOf (w : Term) : List Term := blocking w ++ match w.label with
       | .var _ => [w]
@@ -279,6 +282,12 @@ def splitSolve (K : Kit) (rs : List Term → List Internal.NormRule) (hs : List 
       if ty = bitTy then K.bitCase X rec rec Γ Φ ψ
       else if ty = treeTy then K.treeNode X rec Γ Φ ψ
       else K.listCase (ty.children.headD ty) X rec rec Γ Φ ψ) depth
+
+/-- A goal proved by {name}`splitSolveWith`, a goal that is no equation its own side, closed by
+normalization. -/
+def splitSolve (K : Kit) (rs : List Term → List Internal.NormRule) (hs : List Term → List ℕ)
+    (depth : ℕ) (folds : List ℕ) (mode : Internal.Depth) : Deducer :=
+  splitSolveWith ([·]) none K rs hs depth folds mode
 
 /-- The soundness at a form refuted: the statement's quantifiers and hypotheses introduced, after
 the hypotheses before them, the tests of the form's expansion, its typing and its test of source
@@ -347,11 +356,10 @@ def foldOver (k : ℕ) : Term → Option Term := RoseTree.para fun l cs ↦
 
 /-- The helpers of the expansion of a list that the proof that it is a list keeps folded. -/
 def expHelpers : List String :=
-  ["Datatype.clauseChain", "Datatype.xrAt", "Datatype.xrFrom", "Datatype.clauseCtor",
-    "Datatype.bindWith", "Datatype.isData", "Datatype.atomName", "Datatype.isAtomTx",
-    "Datatype.namedTx", "Datatype.bindersTx", "Datatype.xrForms", "Datatype.defaultOf",
-    "Datatype.expandAliases", "Datatype.cataField", "Datatype.cataRest", "Datatype.caseField",
-    "Datatype.caseRest", "Datatype.typeExpanded"]
+  ["Datatype.clauseParts", "Datatype.xrAt", "Datatype.xrFrom", "Datatype.clauseCtor",
+    "Datatype.isData", "Datatype.atomName", "Datatype.isAtomTx", "Datatype.namedTx",
+    "Datatype.bindersTx", "Datatype.xrForms", "Datatype.defaultOf", "Datatype.expandAliases",
+    "Datatype.typeExpanded"]
 
 /-- The kit of the proof that the expansion of a list is a list, the expansion's helpers
 ({name}`expHelpers`) folded. -/
@@ -359,12 +367,40 @@ def expKit (P : Prog) (S : Defs) (ix : String → ℕ) (E : Array Internal.Entry
   let K := appKit P S ix E
   { K with P := { P with folded := P.folded ++ expHelpers } }
 
-/-- The expansion of a list, where it is present, a list: its label that of lists, in the
-context of the list's elements and the expansion's declarations. -/
+/-- The labels of a list's expansion: that of lists, and those of the checked nodes of case
+analysis and of structural recursion. -/
+def listLabels : List ℕ := [2, 13, 14]
+
+/-- The formula that a tree's label is one of a list's expansion ({name}`listLabels`), the
+disjunction of the equations. -/
+def listLikeT (P : Prog) (x : Term) : Term :=
+  let eqs := listLabels.map fun n ↦ Term.eq (call D.lab [] [x]) (numeral n)
+  (eqs.dropLast.foldr (Internal.Logic.disj P.o) (eqs.getLast?.getD x))
+
+/-- A goal proved at each label of a list's expansion ({name}`listLikeT`), the hypothesis of index
+h: k at the label and the index of its equation, appended. -/
+def byListLabel (L : Conn) (h : ℕ) (k : ℕ → ℕ → Deducer) : Deducer :=
+  let last (n : ℕ) : Deducer := fun Γ Φ ψ ↦ k n (Φ.length - 1) Γ Φ ψ
+  fun Γ Φ ψ ↦ dDisjE L h (last 2) (fun Γ Φ ψ ↦
+    dDisjE L (Φ.length - 1) (last 13) (last 14) Γ Φ ψ) Γ Φ ψ
+
+/-- A goal {name}`listLikeT` closed by one of its equations, each by k. -/
+def oneListLabel (L : Conn) (k : Deducer) : Deducer := fun Γ Φ ψ ↦
+  (dDisjI L false k Γ Φ ψ).orElse fun _ ↦ (dDisjI L true (dDisjI L false k) Γ Φ ψ).orElse fun _ ↦
+    dDisjI L true (dDisjI L true k) Γ Φ ψ
+
+/-- The label of a goal {name}`listLikeT`, the left side of its first equation. -/
+def listLabelSides (ψ : Term) : List Term :=
+  match defnParts ψ with
+  | some (_, _, [_, p]) => ((Internal.eqParts p).map fun (a, _) ↦ [a]).getD [ψ]
+  | _ => [ψ]
+
+/-- The expansion of a list, where it is present, a list or a checked node ({name}`listLikeT`),
+in the context of the list's elements and the expansion's declarations. -/
 def expListThm (P : Prog) : Internal.Thm :=
   let e := pc P "Datatype.expandExpr" [v 1, nodeT (Term.pair (numeral 2) (v 0))]
   ⟨0, [list treeTy, list treeTy], [truth P.o (pc P "Prelude.isSome" [e])],
-    Term.eq (call D.lab [] [pc P "Prelude.get" [e]]) (numeral 2)⟩
+    listLikeT P (pc P "Prelude.get" [e])⟩
 
 /-- The expansion of a list ({name}`expListThm`) in weak head normal form, the step of the
 expansion's fold at the list taken, with its reduction; the results of the fold at the list's
@@ -387,7 +423,7 @@ def expBodyThm (P : Prog) (S : Defs) (T : Defs3) (ix : String → ℕ) (E : Arra
   let (_, _, R, B) ← expBodyParts P S T ix E
   let ty ← Internal.typeIn P.G 0 (expListThm P).ctx R
   pure ⟨0, [ty, list treeTy], [truth P.o (pc P "Prelude.isSome" [B])],
-    Term.eq (call D.lab [] [pc P "Prelude.get" [B]]) (numeral 2)⟩
+    listLikeT P (pc P "Prelude.get" [B])⟩
 
 /-- The expansion of a list at results of its elements' expansions, where it is present, a list
 ({name}`expBodyThm`): the tests the expansion's reduction is blocked on decided, and the optional
@@ -398,8 +434,11 @@ def expBody (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let some a := expBodyThm P S T ix E | dbgTrace "expBody: not stated" fun _ ↦ none
     let unfold := (["Datatype.expandCase", "Datatype.expandCata"].map P.idx).map
       Internal.NormRule.delta
-    let some d := splitSolve K (fun Φ ↦ K.rules Φ ++ unfold) (fun _ ↦ [0]) 32 [] .head a.ctx a.hyps
-        a.concl
+    let rs (Φ : List Term) := K.rules Φ ++ unfold
+    let close : Deducer := oneListLabel K.L fun Γ Φ ψ ↦
+      dRwBy (evalRw K.G K.E (rs Φ) .full) (K.solve 3) Γ Φ ψ
+    let some d := splitSolveWith listLabelSides (some close) K rs (fun _ ↦ [0]) 32 [] .head
+        a.ctx a.hyps a.concl
       | dbgTrace "expBody: not proved" fun _ ↦ none
     pure (a, d))
 
@@ -442,13 +481,16 @@ def eraseListThm (P : Prog) : Internal.Thm :=
     Term.eq (call D.lab [] [pc P "Datatype.eraseExpr" [pc P "Prelude.get" [e]]]) (numeral 2)⟩
 
 /-- The erasure of the expansion of a list, where it is present, a list ({name}`eraseListThm`):
-the expansion a list ({name}`expList`), a node of that label; the erasure's step unfolded, the
-tests of its reduction decided ({name}`splitSolve`). -/
+the expansion a list or a checked node ({name}`expList`), a node of its label; the erasure's step
+and its cases at the checked nodes unfolded, the tests of its reduction decided
+({name}`splitSolve`). -/
 def eraseList (P : Prog) (S : Defs) (T : Defs3) : Step :=
   ("eraseList", fun ix E ↦ do
     let K := appKit P S ix E
     let a := eraseListThm P
-    let rs (Φ : List Term) := K.rules Φ ++ [.delta (T.argIdx 2)]
+    -- the erasure's step, and its cases at the checked nodes, unfolded
+    let rs (Φ : List Term) := K.rules Φ ++ ([T.argIdx 2] ++
+      ["Datatype.eraseCase", "Datatype.eraseCata"].map P.idx).map .delta
     let e := pc P "Datatype.expandExpr" [v 1, nodeT (Term.pair (numeral 2) (v 0))]
     let some (Internal.Entry.language b) := K.E[K.ix "expList"]? | none
     let σ := [v 0, v 1]
@@ -457,7 +499,8 @@ def eraseList (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let some d := (fun Γ Φ ψ ↦ do
         let p ← dHyp Γ Φ (Internal.instTerm [] σ (b.hyps.headD Term.star))
         dCut (Internal.instTerm [] σ b.concl) (nd (.apply (K.ix "expList") [] σ) [p])
-          (K.treeNode X (labelled K rs 1)) Γ Φ ψ) a.ctx a.hyps a.concl
+          (byListLabel K.L 1 fun _ i ↦ K.treeNode X (labelled K rs i)) Γ Φ ψ)
+        a.ctx a.hyps a.concl
       | dbgTrace "eraseList: not proved" fun _ ↦ none
     pure (a, d))
 
@@ -502,10 +545,11 @@ def appListThm (P : Prog) (S : Defs) (T : Defs3) : Internal.Thm :=
     Internal.instTerm [] [listOf hd (v 0)] (datatypeφ P S T)⟩
 
 /-- The soundness at a list of a list and further elements ({name}`appListThm`): the head's
-expansion present, else the list's absent; the head's expansion a list ({name}`expList`), its
-label decided; the application's soundness at source forms ({name}`appSrc`) at the head, no
-keyword naming the head or its expansion as each stage reads them, each by normalization with the
-stage functions' steps unfolded and the tests their reductions are blocked on decided. -/
+expansion present, else the list's absent; the head's expansion a list or a checked node
+({name}`expList`), its label decided; the application's soundness at source forms
+({name}`appSrc`) at the head, no keyword naming the head or its expansion as each stage reads
+them, each by normalization with the stage functions' steps unfolded and the tests their
+reductions are blocked on decided. -/
 def appList (P : Prog) (S : Defs) (T : Defs3) : Step :=
   ("appList", fun ix E ↦ do
     let K := appKit P S ix E
@@ -563,12 +607,13 @@ def appList (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let present : Deducer :=
       W.generalize (fun Γ ↦ pc P "Prelude.get" [expH Γ]) fun Γ₀ Φ₀ ψ₀ ↦
         let h' (Γ : List Tree) : Term := atPos (Γ₀.length - 1) Γ
-        (W.cutApply "expList" (fun Γ ↦ [hcs Γ, W.qv 3 Γ]) [K.solve 3] <| renormLast <|
-          fun Γ Φ ψ ↦
+        (W.cutApply "expList" (fun Γ ↦ [hcs Γ, W.qv 3 Γ]) [K.solve 3] <| fun Γ Φ ψ ↦
+          byListLabel L (Φ.length - 1) (fun _ _ ↦ renormLast <| fun Γ Φ ψ ↦
             -- the expansion's label, renormalized once the expansion is a node
             let iLab := Φ.length - 1
             K.treeNode (h' Γ) (fun Γ Φ ψ ↦
-              dRwHyp (evalRw K.G K.E (K.rulesEx Φ iLab) .full) iLab app Γ Φ ψ) Γ Φ ψ) Γ₀ Φ₀ ψ₀
+              dRwHyp (evalRw K.G K.E (K.rulesEx Φ iLab) .full) iLab app Γ Φ ψ) Γ Φ ψ) Γ Φ ψ)
+          Γ₀ Φ₀ ψ₀
     let decisions : Deducer :=
       decideOpt K expH (linkK K "appList: the head's expansion absent" <|
           W.cutApply "expHead" (fun Γ ↦ [rs Γ, hcs Γ, W.qv 3 Γ])
@@ -619,10 +664,66 @@ def expansionCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Inter
   certifyAfter P (names ++ (stagesDev3 P S T).map (·.1) ++ (applyDev3 P S T).map (·.1))
     "datatype-expansion" (expansionDev3 P S T) before
 
-/-- The development of the soundness at lists. -/
+/-- The reader's index of a name among names present past a further name, and among names headed
+by the name itself; in the context of the names, the further name and the name, the innermost
+first, the further name's equality with the name decided, the name's with itself by its
+reflexivity. -/
+def indexOfMore (P : Prog) (S : Defs) : List Step :=
+  let o := P.o
+  let isSomeT (t : Term) : Term := truth o (pc P "Prelude.isSome" [t])
+  let idx (x xs : Term) : Term := pc P "Reader.indexOf" [x, xs]
+  let at_ (j : ℕ) (Γ : List Tree) : Term := v (Γ.length - 1 - j)
+  [("indexOfSkip", fun ix E ↦ do
+      let K : Kit := ⟨P, S, E, ix, lookupEqNames⟩
+      let equalT ← primT Kernel.Prim.equal
+      let Γ := [list treeTy, treeTy, treeTy]
+      let φ := Internal.Logic.imp o (isSomeT (idx (v 2) (v 0)))
+        (isSomeT (idx (v 2) (consT treeTy (v 1) (v 0))))
+      -- the names' positions: the name 0, the further name 1, the names 2
+      let d ← dImpI K.L (decideIn K (fun Γ ↦ apps equalT [at_ 0 Γ, at_ 1 Γ])
+          (decideIn K (fun Γ ↦ pc P "Prelude.isSome" [idx (at_ 0 Γ) (at_ 2 Γ)]) (anyFalse K)
+            (K.solve 3))
+          (K.solve 3)) Γ [] φ
+      pure (⟨0, Γ, [], φ⟩, d)),
+    ("indexOfHere", fun ix E ↦ do
+      let K : Kit := ⟨P, S, E, ix, lookupEqNames⟩
+      let equalT ← primT Kernel.Prim.equal
+      let Γ := [list treeTy, treeTy]
+      let φ := isSomeT (idx (v 1) (consT treeTy (v 1) (v 0)))
+      let d ← K.cutThm "equalRefl" (fun Γ ↦ [at_ 0 Γ])
+          (decideIn K (fun Γ ↦ apps equalT [at_ 0 Γ, at_ 0 Γ]) (anyFalse K) (K.solve 3)) Γ [] φ
+      pure (⟨0, Γ, [], φ⟩, d))]
+
+/-- That a keyword is reserved, the reader's index of it among the reserved names present: along
+the reserved names' normal form, past each other name by {lit}`indexOfSkip`, at the keyword by
+{lit}`indexOfHere` ({name}`indexOfMore`); so that the index is not computed, which unfolds the
+index among the rest once for its presence and once for its value at each name before the
+keyword. -/
+def reservedK (K : Kit) (kw : String) : Deducer := fun Γ Φ ψ ↦ do
+  let x ← nfE K.G K.E (K.rules []) Γ (pc K.P kw [])
+  let names ← nfE K.G K.E (K.rules []) Γ (pc K.P "Reader.reservedNames" [])
+  let parts (t : Term) : Option (Term × Term) := do
+    let .arr 1 _ := t.label | none
+    let [q] := t.children | none
+    let [h, tl] := q.children | none
+    pure (h, tl)
+  -- the names before the keyword, each with the names after it, and the names after the keyword
+  let (before, after) := (List.range 256).foldl (fun (r : List (Term × Term) × Option Term) _ ↦
+    match r with
+    | (_, some _) => r
+    | (acc, none) => match parts ((acc.getLast?.map Prod.snd).getD names) with
+      | some (h, tl) => if h == x then (acc, some tl) else (acc ++ [(h, tl)], none)
+      | none => r) ([], none)
+  let rest ← after
+  let last : Deducer := fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ
+  before.foldr (fun (h, tl) k ↦ K.cutThm "indexOfSkip" (fun _ ↦ [tl, h, x]) (K.impE k last))
+    (K.cutThm "indexOfHere" (fun _ ↦ [rest, x]) last) Γ Φ ψ
+
+/-- The development of the soundness at lists, and the lemmas on a keyword's index among the
+reserved names present ({name}`indexOfMore`). -/
 def assemblyDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
   readerKeywords.map (numeralUnnamed P S) ++ [appAtom P S T] ++ viewsUnnamed P S T ++
-    [appList P S T]
+    [appList P S T] ++ indexOfMore P S
 
 /-- The development of the soundness at lists ({name}`assemblyDev3`), after the base's, the
 atom's, the list's, the stage functions' at applications, the applications' and the list

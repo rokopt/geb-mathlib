@@ -57,29 +57,69 @@ open Internal (Term Label)
 open scoped FinEnum
 
 /-- The mirror's bindings and images of optional values are the base's of optional trees. -/
-@[template] theorem bindPT_def : «Derivation.bindPT» = «Base.bindO» := rfl
+@[template] theorem bindPT_def : «Derivation.bindPT» = «Base.bindO» := by
+  funext a b
+  simp only [«Derivation.bindPT», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindPT_def] theorem bindHT_def : «Derivation.bindHT» = «Base.bindO» := rfl
+@[template, inherit_doc bindPT_def] theorem bindHT_def : «Derivation.bindHT» = «Base.bindO» := by
+  funext a b
+  simp only [«Derivation.bindHT», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindPT_def] theorem bindEH_def : «Derivation.bindEH» = «Base.bindO» := rfl
+@[template, inherit_doc bindPT_def] theorem bindEH_def : «Derivation.bindEH» = «Base.bindO» := by
+  funext a b
+  simp only [«Derivation.bindEH», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
 @[template, inherit_doc bindPT_def] theorem bindTS_def : «Derivation.bindTS» = «Base.bindO» := rfl
 
-@[template, inherit_doc bindPT_def] theorem bindST_def : «Derivation.bindST» = «Base.bindO» := rfl
+@[template, inherit_doc bindPT_def] theorem bindST_def : «Derivation.bindST» = «Base.bindO» := by
+  funext a b
+  simp only [«Derivation.bindST», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindPT_def] theorem bindPD_def : «Derivation.bindPD» = «Base.bindO» := rfl
+@[template, inherit_doc bindPT_def] theorem bindPD_def : «Derivation.bindPD» = «Base.bindO» := by
+  funext a b
+  simp only [«Derivation.bindPD», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindPT_def] theorem bindRD_def : «Derivation.bindRD» = «Base.bindO» := rfl
+@[template, inherit_doc bindPT_def] theorem bindRD_def : «Derivation.bindRD» = «Base.bindO» := by
+  funext a b
+  simp only [«Derivation.bindRD», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindPT_def] theorem bindHD_def : «Derivation.bindHD» = «Base.bindO» := rfl
+@[template, inherit_doc bindPT_def] theorem bindHD_def : «Derivation.bindHD» = «Base.bindO» := by
+  funext a b
+  simp only [«Derivation.bindHD», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
 @[template, inherit_doc bindPT_def] theorem bindTD_def : «Derivation.bindTD» = «Base.bindO» := rfl
 
-@[template, inherit_doc bindPT_def] theorem bindSD_def : «Derivation.bindSD» = «Base.bindO» := rfl
+@[template, inherit_doc bindPT_def] theorem bindSD_def : «Derivation.bindSD» = «Base.bindO» := by
+  funext a b
+  simp only [«Derivation.bindSD», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindPT_def] theorem mapPT_def : «Derivation.mapPT» = «Base.mapO» := rfl
+@[template, inherit_doc bindPT_def] theorem mapPT_def : «Derivation.mapPT» = «Base.mapO» := by
+  funext a b
+  simp only [«Derivation.mapPT», «Base.mapO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindPT_def] theorem mapLT_def : «Derivation.mapLT» = «Base.mapO» := rfl
+@[template, inherit_doc bindPT_def] theorem mapLT_def : «Derivation.mapLT» = «Base.mapO» := by
+  funext a b
+  simp only [«Derivation.mapLT», «Base.mapO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
 /-- The mirror's theorem among the entries at a position is the base's binding of the entry. -/
 @[template] theorem thmAt_def :

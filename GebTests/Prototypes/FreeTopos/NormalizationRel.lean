@@ -107,30 +107,33 @@ def shiftRights (js : List (List Tree → Term)) : (ℕ → Deducer) → ℕ →
   js.foldr (fun j rest k h ↦ K.shift h false j (fun Γ Φ ψ ↦ rest k (Φ.length - 1) Γ Φ ψ))
     fun k h ↦ k h
 
-/-- Convergences combined, each value computed from the previous ones: the thresholds
-{lit}`ns` of the stabilities {lit}`ss` shifted to their sum, the threshold i's on its left by the
-sum of those before it and on its right by each after it; the value {lit}`w` related by the
-hypothesis {lit}`rw`; the goal's threshold the sum, or its successor where the values are
-computed a level below. -/
-def sumAll (ns : List (List Tree → Term)) (ss : List ℕ) (w : List Tree → Term) (rw : ℕ)
-    (succ : Bool := false) : Deducer :=
-  -- the sums of the thresholds before each, the first's empty
-  let sumOf (xs : List (List Tree → Term)) : Option (List Tree → Term) :=
-    xs.foldl (fun acc n ↦ some (match acc with
-      | some a => fun Γ ↦ K.S.add (a Γ) (n Γ)
-      | none => n)) none
-  let sum := (sumOf ns).getD fun _ ↦ zeroN
-  let total (Γ : List Tree) : Term := if succ then succN (sum Γ) else sum Γ
-  let finish (hs : List ℕ) : Deducer :=
-    K.conv total w (hs.foldr (fun h k ↦ K.instN h (fun _ ↦ v 0) k) (K.byNorm))
-      ((K.byHyp rw))
-  -- the stabilities shifted in turn, the final indices collected
+/-- The sum of thresholds, left to right, where there are any. -/
+def sumOf (ns : List (List Tree → Term)) : Option (List Tree → Term) :=
+  ns.foldl (fun acc n ↦ some (match acc with
+    | some a => fun Γ ↦ K.S.add (a Γ) (n Γ)
+    | none => n)) none
+
+/-- The thresholds {lit}`ns` of the stabilities {lit}`ss` shifted to their sum, the threshold
+i's on its left by the sum of those before it and on its right by each after it, the shifted
+stabilities' indices given to k in turn. -/
+def sumShift (ns : List (List Tree → Term)) (ss : List ℕ) (k : List ℕ → Deducer) : Deducer :=
   let step (i h : ℕ) (k : ℕ → Deducer) : Deducer :=
     let rights := ns.drop (i + 1)
-    match sumOf (ns.take i) with
+    match K.sumOf (ns.take i) with
     | some pre => K.shift h true pre (fun Γ Φ ψ ↦ K.shiftRights rights k (Φ.length - 1) Γ Φ ψ)
     | none => K.shiftRights rights k h
-  (ss.zipIdx.foldr (fun (h, i) rest hs ↦ step i h fun h' ↦ rest (hs ++ [h'])) finish) []
+  (ss.zipIdx.foldr (fun (h, i) rest hs ↦ step i h fun h' ↦ rest (hs ++ [h'])) k) []
+
+/-- Convergences combined, each value computed from the previous ones: the thresholds
+{lit}`ns` of the stabilities {lit}`ss` shifted to their sum ({name}`Kit.sumShift`); the value
+{lit}`w` related by the hypothesis {lit}`rw`; the goal's threshold the sum, or its successor where
+the values are computed a level below. -/
+def sumAll (ns : List (List Tree → Term)) (ss : List ℕ) (w : List Tree → Term) (rw : ℕ)
+    (succ : Bool := false) : Deducer :=
+  let sum := (K.sumOf ns).getD fun _ ↦ zeroN
+  let total (Γ : List Tree) : Term := if succ then succN (sum Γ) else sum Γ
+  K.sumShift ns ss fun hs ↦
+    K.conv total w (hs.foldr (fun h k ↦ K.instN h (fun _ ↦ v 0) k) (K.byNorm)) ((K.byHyp rw))
 
 /-- Three convergences combined, as {lit}`sumAll`. -/
 def sum3 (N n₁ n₂ w : List Tree → Term) (sC s₁ s₂ rw : ℕ) : Deducer :=

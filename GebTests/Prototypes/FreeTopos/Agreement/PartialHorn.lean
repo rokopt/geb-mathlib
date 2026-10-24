@@ -95,7 +95,11 @@ theorem encOptLeaf_inj {a b : Option ℕ} : encOpt (a.map leaf) = encOpt (b.map 
   exact Option.map_injective (fun _ _ ↦ leaf_inj.mp) |>.eq_iff
 
 /-- The mirror's binding of an optional signature is the base's of optional trees. -/
-@[template] theorem bindOT_def : «PartialHorn.bindOT» = «Base.bindO» := rfl
+@[template] theorem bindOT_def : «PartialHorn.bindOT» = «Base.bindO» := by
+  funext a b
+  simp only [«PartialHorn.bindOT», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
 /-- The mirror's sort of a term in a context of sorts is the encoding of its sort. -/
 theorem sortOf_eq (S : PartialHorn.Sig) (Γ : List ℕ) (t : Tree) :
@@ -325,11 +329,23 @@ lists of trees. -/
 
 /-- The mirror's binding and image of optional equations, sequents and trees into optional
 equations are the base's of optional trees. -/
-@[template] theorem bindE_def : «PartialHorn.bindE» = «Base.bindO» := rfl
+@[template] theorem bindE_def : «PartialHorn.bindE» = «Base.bindO» := by
+  funext a b
+  simp only [«PartialHorn.bindE», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindE_def] theorem mapE_def : «PartialHorn.mapE» = «Base.mapO» := rfl
+@[template, inherit_doc bindE_def] theorem mapE_def : «PartialHorn.mapE» = «Base.mapO» := by
+  funext a b
+  simp only [«PartialHorn.mapE», «Base.mapO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindE_def] theorem bindSE_def : «PartialHorn.bindSE» = «Base.bindO» := rfl
+@[template, inherit_doc bindE_def] theorem bindSE_def : «PartialHorn.bindSE» = «Base.bindO» := by
+  funext a b
+  simp only [«PartialHorn.bindSE», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
 @[template, inherit_doc bindE_def] theorem bindTE_def : «PartialHorn.bindTE» = «Base.bindO» := rfl
 
@@ -338,13 +354,15 @@ equations are the base's of optional trees. -/
 /-- The mirror's optional left side of an optional equation is its image under the left side. -/
 @[template] theorem lhsOf_def : «PartialHorn.lhsOf» = «Base.mapO» «PartialHorn.eqLhs» := by
   funext t
-  simp only [«PartialHorn.lhsOf», «Base.mapO», «Prelude.isSome»]
+  simp only [«PartialHorn.lhsOf», «Base.mapO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
   rfl
 
 /-- The mirror's optional right side of an optional equation is its image under the right side. -/
 @[template] theorem rhsOf_def : «PartialHorn.rhsOf» = «Base.mapO» «PartialHorn.eqRhs» := by
   funext t
-  simp only [«PartialHorn.rhsOf», «Base.mapO», «Prelude.isSome»]
+  simp only [«PartialHorn.rhsOf», «Base.mapO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
   rfl
 
 /-- The mirror's instance of a sequent at the terms and premises of a certificate's node. -/

@@ -9,20 +9,31 @@
 ; have no representation; tree-data declares a datatype standing for the trees. The expansion's
 ; forms are S-expressions with nodes no reader writes: a datatype's declaration; a coercion
 ; giving a term of a type A's erasure the type A, where the expansion knows it to be a member of
-; A; a coercion giving a term of A the type of A's erasure; and a template's instance at opaque
-; sorts (%sort S) and constants (%postulate P A), checked after the declarations before it and
-; leaving them unchanged. Its markers give the datatypes' constructors; besides, the forms rep,
-; decode and datum, a member's quoted datum, are checked here. A definition's type is
+; A; a coercion giving a term of A the type of A's erasure; a case analysis and a structural
+; recursion, whose clauses are checked against the datatype's marker; and a template's instance at
+; opaque sorts (%sort S) and constants (%postulate P A), checked after the declarations before it
+; and leaving them unchanged. Its markers give the datatypes' constructors; besides, the forms
+; rep, decode and datum, a member's quoted datum, are checked here. A definition's type is
 ; synthesized from its term, names resolved as the reader resolves them: a numeral, a numeral
 ; abbreviation, a variable bound around the term, a definition before it, a primitive, the unit
 ; value. Requires the prelude, the reader and the lists of bootstrap/seq.geb.
 
 (module Typing
-  (export Name name Tx tx0 tAtom tList tMarker tData tAs tOf tGeneric Ty tyT tyUnit tyProd tyArrow
+  (export Name name Tx tx0 tAtom tList tMarker tData tAs tOf tCase tCata tGeneric Ty tyT tyUnit
+    tyProd
+    tyArrow
     tyList
     tyData
     tySort
     keywordTx
+    kwDecoded
+    kwScrutinee
+    kwNode
+    kwResults
+    kwUnitArg
+    kwFields
+    kwSplit
+    decimalChars
     OName.Maybe
     OName.just
     OName.nothing
@@ -36,13 +47,15 @@
   ; characters' codes, and a list, the node of label 2 over its elements; and at their labels the
   ; nodes no reader writes: a marker (9), the declaration of a datatype data declares (10), the
   ; coercion of a term of a type's erasure to the type (11) and of a term of a type to its
-  ; erasure (12), each over the type and the term, and a template's instance at opaque sorts (15)
+  ; erasure (12), each over the type and the term, a case analysis (13) and a structural
+  ; recursion (14), each over the datatype, its clauses' parts and their bodies, and a
+  ; template's instance at opaque sorts (15)
   (data Tx (tx0) (tAtom & T) (tList & Tx) (tx3) (tx4) (tx5) (tx6) (tx7) (tx8) (tMarker & T)
     (tData Tx)
     (tAs Tx Tx)
     (tOf Tx Tx)
-    (tx13)
-    (tx14)
+    (tCase & Tx)
+    (tCata & Tx)
     (tGeneric & Tx))
   (import (Seq Tx) as Txs)
   ; types, at the labels the kernel's reader gives them: the trees, the unit type, products,
@@ -115,11 +128,39 @@
   ; an atom's name, and whether a form is an atom, or one naming a keyword
   (defn atomName ((x Tx)) Name (case x ((tAtom cs) (name cs)) (else (name (nil T)))))
   (defn isAtomTx ((x Tx)) T (case x ((tAtom cs) 1) (else 0)))
-  ; whether a type is a datatype a form names by the datatype's own name, as the expansion writes
-  ; the type a decoding or a datum reads, so that the form names the datatype's recognizer and
-  ; marker
-  (defn namesData ((t Ty) (x Tx)) T
-    (case t ((tyData n) (and (isAtomTx x) (sameName n (atomName x)))) (else 0)))
+  ; the name of a datatype's recognizer: the datatype's name followed by .member
+  (defn recognizerName ((d Name)) Name
+    (name (append (children (rep d)) (children (quote (1 .member))))))
+  ; whether the reader reads a name the erasure writes free as written, in the scope of the
+  ; implementation's names the erasure binds around it: a name neither reserved, nor the
+  ; implementation's, beginning with %, nor a numeral, nor abbreviated
+  (defn readAsName ((E Env) (n Name)) T
+    (if
+      (or (isSome (indexOf (rep n) reservedNames))
+        (or (eq (at (children (rep n)) 0) 37)
+          (or (isSome (numeral (children (rep n)))) (hasName n (envNums E)))))
+      0
+      1))
+  ; whether a type is a datatype the environment declares and a form names by the datatype's own
+  ; name, as the expansion writes the type a decoding or a datum reads, so that the form names the
+  ; datatype's recognizer and marker; and whether the reader reads the recognizer's name, which
+  ; the erasure of a decoding writes, as written
+  (defn namesData ((E Env) (t Ty) (x Tx)) T
+    (case t
+      ((tyData n)
+       (and (hasName n (envNoms E))
+         (and (isAtomTx x) (and (sameName n (atomName x)) (readAsName E (recognizerName n))))))
+      (else 0)))
+  ; whether a form is a datum as the reader reads it: atoms, none naming a numeral abbreviation,
+  ; which the reader replaces by its numeral's atom in a datum as elsewhere, and lists headed by a
+  ; numeral, so that the erasure and the reader leave it as the typing reads it; 0 at any other
+  ; form, 2 at a numeral and 1 at any other datum
+  (defn datumAtom ((E Env) (cs Ts)) T
+    (if (hasName (name cs) (envNums E)) 0 (if (isSome (numeral cs)) 2 1)))
+  (defn datumKids ((rs Ts)) T (foldr T T (lam ((r T) (a T)) (and r a)) 1 rs))
+  (defn datumList ((rs Ts)) T (if (and (eq (at rs 0) 2) (datumKids rs)) 1 0))
+  (defn plainDatum ((E Env) (x Tx)) T
+    (cata Tx T x ((tAtom cs) (datumAtom E cs)) ((tList rs) (datumList rs)) (else 0)))
   (defn namedTx ((x Tx) (kw T)) T (named (rep x) kw))
   (def kwRep (quote (0 rep)))
   (def kwDecode (quote (0 decode)))
@@ -197,23 +238,15 @@
   (defn fieldOk ((ms (List Tx)) (ty T) (r Ts)) T
     (let i T (indexOf ty (markerNames ms)) (if (isSome i) (at r (get i)) 1)))
   (defn ctorOk ((ms (List Tx)) (c T) (l T) (rs (List Ts))) T
-    (let fts Ts (children (child c 1))
-      (let nf T (length fts)
-        (let n T (Tss.length rs)
-          (and (eq (child c 0) l)
-            (and (if (child c 2) (lt nf (add n 1)) (eq n nf))
-              (and
-                (snd
-                  (foldr T (Prod T T)
-                    (lam ((ty T) (acc (Prod T T)))
-                      (pair (sub (fst acc) 1)
-                        (and (fieldOk ms ty (Tss.atOr (nil T) rs (sub (fst acc) 1))) (snd acc))))
-                    (pair nf 1)
-                    fts))
-                (if (child c 2)
-                  (foldr Ts T (lam ((r Ts) (acc T)) (and (fieldOk ms (child c 3) r) acc)) 1
-                    (Tss.drop nf rs))
-                  1))))))))
+    (and (eq (child c 0) l)
+      ((foldr T (Arrow (List Ts) T)
+         (lam ((ty T) (k (Arrow (List Ts) T)) (qs (List Ts)))
+           (lcase Ts T qs 0 (lam ((q Ts) (rest (List Ts))) (and (fieldOk ms ty q) (k rest)))))
+         (lam ((qs (List Ts)))
+           (if (child c 2)
+             (foldr Ts T (lam ((q Ts) (acc T)) (and (fieldOk ms (child c 3) q) acc)) 1 qs)
+             (lcase Ts T qs 1 (lam ((q Ts) (rest (List Ts))) 0))))
+         (children (child c 1))) rs)))
   (defn memberships ((ms (List Tx)) (t T)) Ts
     (fold Ts
       (lam ((l T) (rs (List Ts)))
@@ -259,26 +292,45 @@
           ((OTy.nothing) OTy.nothing)))
       f
       (MTys.reverse args)))
-  ; the name of a datatype's recognizer: the datatype's name followed by .member
-  (defn recognizerName ((d Name)) Name
-    (name (append (children (rep d)) (children (quote (1 .member))))))
+  ; whether a name is the recognizer's of one of the datatypes named
+  (defn isRecognizer ((ds (List Name)) (n Name)) T
+    (foldr Name T (lam ((d Name) (r T)) (or (sameName n (recognizerName d)) r)) 0 ds))
   ; whether a name may name a variable: none of the erasure's keywords, so that the erasure leaves
   ; a binder as the typing reads it, and none of the names the expansion and the erasure write free
-  ; in the scope of the program's binders, a primitive, the unit value, a datatype's recognizer and
-  ; the variable the erasure binds to a decoded tree, so that each refers to what they write it for
-  (def kwDecoded (quote (0 "%e")))
+  ; in the scope of the program's binders, a primitive, the unit value and a datatype's
+  ; recognizer, so that each refers to what they write it for
   (defn nameOk ((E Env) (n Name)) T
     (if
       (or (equal (rep n) kwRep)
         (or (equal (rep n) kwDecode)
           (or (equal (rep n) kwDatum)
             (or (equal (rep n) kwUnitValue)
-              (or (equal (rep n) kwDecoded)
-                (or (isSome (indexOf (rep n) primNames))
-                  (foldr Name T (lam ((d Name) (r T)) (or (sameName n (recognizerName d)) r)) 0
-                    (envNoms E))))))))
+              (or (isSome (indexOf (rep n) primNames)) (isRecognizer (envNoms E) n))))))
       0
       1))
+  ; the names the erasure binds around the terms it is given, each the typing reads in their
+  ; scope: the decoded tree; a case analysis's scrutinee; a structural recursion's node, its
+  ; children's suspended results and the unit its step is applied to; and in a clause, the
+  ; children remaining after each field and, in a recursion, the suspended results remaining
+  ; split at the first
+  (def kwDecoded (quote (0 "%e")))
+  (def kwScrutinee (quote (0 "%s")))
+  (def kwNode (quote (0 "%o")))
+  (def kwResults (quote (0 "%k")))
+  (def kwUnitArg (quote (0 "%u")))
+  (def kwFields (quote (0 "%c")))
+  (def kwSplit (quote (0 "%q")))
+  (defn decimalChars ((n T)) Ts
+    (if (eq n 0) (single 48)
+      (let k T
+        (fst
+          (iter (Prod T T)
+            (lam ((s (Prod T T))) (if (eq (snd s) 0) s (pair (add (fst s) 1) (div (snd s) 10))))
+            (pair 0 n)
+            (add (log2 n) 1)))
+        (foldr T Ts (lam ((d T) (acc Ts)) (cons (add d 48) acc)) (nil T) (digitsMsb 10 n k)))))
+  ; the name of a name the erasure binds, as the typing binds it
+  (defn boundName ((kw T)) Name (name (children kw)))
   ; whether a form may name a variable: an atom whose name may
   (defn binderName ((E Env) (x Tx)) T (and (isAtomTx x) (nameOk E (atomName x))))
   ; the binders of an abstraction: one binder (x A), or a list of them, each a name with a type, the
@@ -374,8 +426,10 @@
                                   (lam ((D Ty))
                                     (let d T (readDatum (rep (f 2)))
                                       (when
-                                        (and (namesData D (f 1))
-                                          (and (isSome d) (memberOf (envMs E) (f 1) (get d))))
+                                        (and (namesData E D (f 1))
+                                          (and (isSome d)
+                                            (and (plainDatum E (f 2))
+                                              (memberOf (envMs E) (f 1) (get d)))))
                                         D))))
                                 (if (and (namedTx h kwRep) (eq k 2))
                                   (then1 (s 1) (lam ((a Ty)) (when (isData a) tyT)))
@@ -384,10 +438,12 @@
                                       (lam ((D Ty))
                                         (then1 (s 2)
                                           (lam ((e Ty))
-                                            (both2 (s 3) (s 4)
+                                            (both2
+                                              (srAt rs 3 (cons (abbr (boundName kwDecoded) tyT) cx))
+                                              (srAt rs 4 (cons (abbr (boundName kwDecoded) tyT) cx))
                                               (lam ((g Ty) (c Ty))
                                                 (when
-                                                  (and (namesData D (f 1))
+                                                  (and (namesData E D (f 1))
                                                     (and (sameTy e tyT) (sameTy g (tyArrow D c))))
                                                   c)))))))
                                     (if
@@ -413,8 +469,198 @@
                                         (if (keywordTx h) OTy.nothing
                                           (applyTy (s 0) (srFrom rs 1 cx))))))))))))))))))))))
 
+  ; the clauses of a case analysis and of a structural recursion, checked against the marker of
+  ; the scrutinee's datatype, so that a clause's variables have the types its constructor gives
+  ; its fields. The expansion writes each clause's parts as a list of its constructor's label,
+  ; whether the constructor takes the remaining children, the variables and, in a recursion,
+  ; whether each binds the result at a field of the datatype itself, numerals as atoms.
+  (defn elemsTx ((x Tx)) (List Tx) (case x ((tList xs) xs) (else (nil Tx))))
+  (defn numTx ((x Tx)) T (case x ((tAtom cs) (numeral cs)) (else none)))
+  ; the constructors of a datatype's marker, each the node over its label, its field types,
+  ; whether a last field takes the remaining children and that field's type, where the
+  ; environment has a marker of it
+  (defn markerCtors ((ms (List Tx)) (d Tx)) (Prod T Ts)
+    (let i T (indexOf (rep d) (markerNames ms))
+      (if (isSome i) (pair 1 (tail (children (rep (Txs.atOr tx0 ms (get i)))))) (pair 0 (nil T)))))
+  ; the type of a field, read from a marker's representation of it: the trees, an opaque sort, or
+  ; a datatype the field names by its own name and of which the environment has a marker, so that
+  ; the memberships read the field as the type does
+  (defn fieldTy ((E Env) (raw T)) MTy
+    (decode Tx raw
+      (lam ((x Tx))
+        (then1 (readTy E x)
+          (lam ((A Ty))
+            (case A ((tyT) (OTy.just A)) ((tySort n) (OTy.just A))
+              ((tyData n)
+               (when (and (namesData E A x) (isSome (indexOf (rep x) (markerNames (envMs E))))) A))
+              (else OTy.nothing)))))
+      OTy.nothing))
+  ; a clause's variable: one that may name a variable and does not begin with %, as the names the
+  ; erasure binds around the fields' bindings do
+  (defn clauseVar ((E Env) (x Tx)) T
+    (and (binderName E x) (if (eq (at (children (rep x)) 0) 37) 0 1)))
+  ; the type of each of a list of optional types, where they are one
+  (defn sameAll ((ts (List MTy))) MTy
+    (then1 (MTys.atOr OTy.nothing ts 0)
+      (lam ((A Ty))
+        (when
+          (foldr MTy T
+            (lam ((a MTy) (r T)) (and (case a ((OTy.just x) (sameTy x A)) ((OTy.nothing) 0)) r))
+            1
+            ts)
+          A))))
+  ; a clause's variable bound at a type, where it may name a variable, before the scope k extends
+  (defn bindVar ((E Env) (v Tx) (ty MTy) (k (Arrow Abbr MTy))) MTy
+    (then1 ty (lam ((A Ty)) (if (clauseVar E v) (k (abbr (atomName v) A)) OTy.nothing))))
+  ; a clause's remaining variable, bound at the type its raw field type gives it where the
+  ; constructor takes the remaining children, else absent, before the body is typed
+  (defn bindRest ((c T) (rvs (List Tx)) (bind (Arrow Tx (Arrow T MTy))) (body Syn) (cx Cx)) MTy
+    (if (child c 2)
+      (lcase Tx MTy rvs OTy.nothing
+        (lam ((r Tx) (more (List Tx)))
+          (lcase Tx MTy more (bind r (child c 3)) (lam ((x Tx) (xs (List Tx))) OTy.nothing))))
+      (lcase Tx MTy rvs (body cx) (lam ((r Tx) (more (List Tx))) OTy.nothing))))
+  ; a case analysis's clause's body typed in the scope the erasure binds around it: the children
+  ; remaining, and at each fixed field its variable, of the field's type, then the children
+  ; remaining after it; then the remaining children's variable, of the list of their type
+  (defn caseFields ((E Env) (c T) (meta Tx) (body Syn) (cx Cx)) MTy
+    (let ms (List Tx) (elemsTx meta)
+      (let ac Abbr (abbr (boundName kwFields) (tyList tyT))
+        ((foldr Tx (Arrow Ts (Arrow Cx MTy))
+           (lam ((v Tx) (k (Arrow Ts (Arrow Cx MTy))) (fts Ts) (cx Cx))
+             (lcase T MTy fts OTy.nothing
+               (lam ((ft T) (rest Ts))
+                 (bindVar E v (fieldTy E ft) (lam ((a Abbr)) (k rest (cons ac (cons a cx))))))))
+           (lam ((fts Ts) (cx Cx))
+             (lcase T MTy fts
+               (bindRest c (elemsTx (Txs.atOr tx0 ms 2))
+                 (lam ((r Tx) (raw T))
+                   (bindVar E r (then1 (fieldTy E raw) (lam ((A Ty)) (OTy.just (tyList A))))
+                     (lam ((a Abbr)) (body (cons a cx)))))
+                 body
+                 cx)
+               (lam ((ft T) (rest Ts)) OTy.nothing)))
+           (elemsTx (Txs.atOr tx0 ms 1))) (children (child c 1)) (cons ac cx)))))
+  ; a structural recursion's clause's body typed in the scope the erasure binds around it: the
+  ; suspended results and the children remaining, and at each fixed field the suspended results
+  ; remaining split at the field's, its variable, the recursion's result at a field of the
+  ; datatype d itself, the field's tree otherwise, then the children remaining after it; then the
+  ; remaining children's variable, of the list of their results or trees; each variable's flag
+  ; whether it binds results
+  (defn cataFields ((E Env) (d Tx) (R Ty) (c T) (meta Tx) (body Syn) (cx Cx)) MTy
+    (let ms (List Tx) (elemsTx meta)
+      (let th Ty (tyArrow tyUnit R)
+        (let aq Abbr (abbr (boundName kwSplit) (tyProd th (tyList th)))
+          (let ac Abbr (abbr (boundName kwFields) (tyList tyT))
+            (let entry (Arrow Tx (Arrow T (Arrow (Arrow Ty Ty) (Arrow (Arrow Abbr MTy) MTy))))
+              (lam ((e Tx) (raw T) (wrap (Arrow Ty Ty)) (k (Arrow Abbr MTy)))
+                (let es (List Tx) (elemsTx e)
+                  (let rec T (equal raw (rep d))
+                    (let f T (numTx (Txs.atOr tx0 es 1))
+                      (if (and (isSome f) (eq (get f) rec))
+                        (bindVar E (Txs.atOr tx0 es 0)
+                          (then1 (if rec (OTy.just R) (fieldTy E raw))
+                            (lam ((A Ty)) (OTy.just (wrap A))))
+                          k)
+                        OTy.nothing)))))
+              ((foldr Tx (Arrow Ts (Arrow Cx MTy))
+                 (lam ((e Tx) (k (Arrow Ts (Arrow Cx MTy))) (fts Ts) (cx Cx))
+                   (lcase T MTy fts OTy.nothing
+                     (lam ((ft T) (rest Ts))
+                       (entry e ft (lam ((A Ty)) A)
+                         (lam ((a Abbr)) (k rest (cons ac (cons a (cons aq cx)))))))))
+                 (lam ((fts Ts) (cx Cx))
+                   (lcase T MTy fts
+                     (bindRest c (elemsTx (Txs.atOr tx0 ms 2))
+                       (lam ((e Tx) (raw T))
+                         (entry e raw (lam ((A Ty)) (tyList A))
+                           (lam ((a Abbr)) (body (cons a cx)))))
+                       body
+                       cx)
+                     (lam ((ft T) (rest Ts)) OTy.nothing)))
+                 (elemsTx (Txs.atOr tx0 ms 1))) (children (child c 1)) (cons ac (cons aq cx)))))))))
+  ; a clause's type: its body's, in the scope its variables give it inside the scope inner, where
+  ; its label is that of exactly one of the constructors and its variables are those of that
+  ; constructor's fields, as fields binds them
+  (deftype Fields (Arrow T (Arrow Tx (Arrow Syn (Arrow Cx MTy)))))
+  (defn clauseTy ((specs Ts) (meta Tx) (fields Fields) (b SR) (inner Cx)) MTy
+    (let j T (numTx (Txs.atOr tx0 (elemsTx meta) 0))
+      (if (isSome j)
+        (let ss Ts
+          (foldr T Ts (lam ((s T) (a Ts)) (if (eq (child s 0) (get j)) (cons s a) a)) (nil T) specs)
+          (if (eq (length ss) 1) (fields (at ss 0) meta (snd b) inner) OTy.nothing))
+        OTy.nothing)))
+  ; the type of a list of clauses and their bodies, an else clause's body last, in the scope base
+  ; the erasure binds around them: each clause's type, the else clause's body's in base's scope,
+  ; each constructor's label one of the clauses' unless there is an else clause, and the types one
+  (defn clausesTy
+    ((specs Ts) (metas (List Tx)) (bodies (List SR)) (cx Cx) (base (List Abbr)) (fields Fields))
+    MTy
+    (let m T (Txs.length metas)
+      (let hasElse T (lt m (SRs.length bodies))
+        (let inner Cx (Abbrs.append base cx)
+          (let labels Ts
+            (foldr Tx Ts
+              (lam ((c Tx) (a Ts))
+                (let j T (numTx (Txs.atOr tx0 (elemsTx c) 0)) (cons (if (isSome j) (get j) 0) a)))
+              (nil T)
+              metas)
+            (let covered T
+              (or hasElse
+                (foldr T T
+                  (lam ((s T) (r T))
+                    (and (foldr T T (lam ((l T) (q T)) (or (eq l (child s 0)) q)) 0 labels) r))
+                  1
+                  specs))
+              (let none0 SR (pair tx0 (lam ((c Cx)) OTy.nothing))
+                (let tys (List MTy)
+                  ((foldr Tx (Arrow (List SR) (List MTy))
+                     (lam ((c Tx) (k (Arrow (List SR) (List MTy))) (bs (List SR)))
+                       (cons (clauseTy specs c fields (SRs.atOr none0 bs 0) inner)
+                         (k (SRs.tail bs))))
+                     (lam ((bs (List SR))) (if hasElse (MTys.single (srAt bs 0 inner)) (nil MTy)))
+                     metas) bodies)
+                  (if covered (sameAll tys) OTy.nothing)))))))))
+  ; a case analysis's type: its datatype's atom, the scrutinee of that datatype, its clauses'
+  ; parts and their bodies, the scrutinee bound in the clauses' scope
+  (defn synCase ((E Env) (fs (List Tx)) (rs (List SR)) (cx Cx)) MTy
+    (let D Tx (Txs.atOr tx0 fs 0)
+      (let mc (Prod T Ts) (markerCtors (envMs E) D)
+        (then1 (readTy E D)
+          (lam ((A Ty))
+            (then1 (srAt rs 1 cx)
+              (lam ((B Ty))
+                (if (and (fst mc) (and (namesData E A D) (sameTy A B)))
+                  (clausesTy (snd mc) (elemsTx (Txs.atOr tx0 fs 2)) (SRs.drop 3 rs) cx
+                    (Abbrs.single (abbr (boundName kwScrutinee) tyT))
+                    (lam ((c T) (meta Tx) (b Syn) (cx Cx)) (caseFields E c meta b cx)))
+                  OTy.nothing))))))))
+  ; a structural recursion's type: its datatype's atom, its result type, the scrutinee of that
+  ; datatype, the default result the erasure gives at a node with fewer children than its
+  ; constructor has fields, its clauses' parts and their bodies, each of the result type; the
+  ; recursion's node, its children's suspended results and the unit bound in the clauses' scope
+  (defn synCata ((E Env) (fs (List Tx)) (rs (List SR)) (cx Cx)) MTy
+    (let D Tx (Txs.atOr tx0 fs 0)
+      (let mc (Prod T Ts) (markerCtors (envMs E) D)
+        (then1 (readTy E D)
+          (lam ((A Ty))
+            (then1 (readTy E (Txs.atOr tx0 fs 1))
+              (lam ((R Ty))
+                (then1 (srAt rs 2 cx)
+                  (lam ((B Ty))
+                    (if (and (fst mc) (and (namesData E A D) (sameTy A B)))
+                      (then1
+                        (clausesTy (snd mc) (elemsTx (Txs.atOr tx0 fs 4)) (SRs.drop 5 rs) cx
+                          (cons (abbr (boundName kwUnitArg) tyUnit)
+                            (cons (abbr (boundName kwResults) (tyList (tyArrow tyUnit R)))
+                              (Abbrs.single (abbr (boundName kwNode) tyT))))
+                          (lam ((c T) (meta Tx) (b Syn) (cx Cx)) (cataFields E D R c meta b cx)))
+                        (lam ((U Ty)) (when (sameTy U R) R)))
+                      OTy.nothing))))))))))
+
   ; a term's type in a context: atoms and lists as above; the coercion of a term of a type's
-  ; erasure, that type; the coercion of a term of a type, its erasure
+  ; erasure, that type; the coercion of a term of a type, its erasure; a case analysis and a
+  ; structural recursion, their clauses checked against the datatype's marker
   (defn synIn ((E Env) (cx Cx) (t Tx)) MTy
     ((snd
        (cata Tx SR t ((tAtom cs) (pair (tAtom cs) (lam ((c Cx)) (synAtom E cs c))))
@@ -430,12 +676,17 @@
             (lam ((c Cx))
               (both2 (readTy E (fst a)) ((snd b) c)
                 (lam ((A Ty) (B Ty)) (when (sameTy A B) (eraseTy A)))))))
+         ((tCase rs)
+          (let fs (List Tx) (srForms rs) (pair (tCase fs) (lam ((c Cx)) (synCase E fs rs c)))))
+         ((tCata rs)
+          (let fs (List Tx) (srForms rs) (pair (tCata fs) (lam ((c Cx)) (synCata E fs rs c)))))
          (else (pair tx0 (lam ((c Cx)) OTy.nothing))))) cx))
 
   ; a program's forms checked in order: the declarations of the kernel, of a datatype data
   ; declares and markers, and, within a template's instance, of an opaque sort (%sort S) and of a
-  ; constant (%postulate P A) of a type; the state is the environment and, once a definition does
-  ; not have its type, its name
+  ; constant (%postulate P A) of a type; a numeral abbreviation named by a numeral, which the
+  ; reader would expand in the numerals the erasure writes, rejected; the state is the environment
+  ; and, once a definition does not have its type, its name
   (import (Option Name) as OName)
   (deftype CS (Prod Env OName.Maybe))
   (defn withAl ((E Env) (al (List Abbr))) Env
@@ -489,8 +740,10 @@
                                         ((OTy.just A) (ok (withAl E (cons (abbr n A) (envAl E)))))
                                         ((OTy.nothing) bad))
                                       (if (namedTx h kwDefnum)
-                                        (ok
-                                          (withNums E (Names.append (envNums E) (Names.single n))))
+                                        (if (isSome (numeral (children (rep n)))) bad
+                                          (ok
+                                            (withNums E
+                                              (Names.append (envNums E) (Names.single n)))))
                                         bad)))))))
                           bad))))))
                (else bad))))))))

@@ -1664,9 +1664,23 @@ def «Translation.bindP» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Language/OTPair.nothing»);
+                     let _ : List T := Const.children x2; «Language/OTPair.nothing»);
     x2
 
 def «Translation.bindTy» :=
@@ -1983,18 +1997,46 @@ def «Translation/OTrState.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Translation/OTrState.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Translation/OTrState.nthOf» :=
@@ -2027,9 +2069,23 @@ def «Translation/OTrState.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -2038,62 +2094,116 @@ def «Translation.stTypes» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let x4 : T := x2;
-            let x5 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x5 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x5
-                  ([] : List T)
-                  (fun (_ : T) (x7 : List T) => x7))
-              (Const.children x4)
-              (leaf 0);
-            x5);
+            let x2 : List T := Const.children x1;
+            let x3 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let x7 : T := x3;
+            let x8 : List T := Const.children x7; let x9 : List T := x8; x9);
     x1
 
 def «Translation.stDefns» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let x3 : T := Const.child x1 (leaf 1);
-            let x4 : T := x3;
-            let x5 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x5 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x5
-                  ([] : List T)
-                  (fun (_ : T) (x7 : List T) => x7))
-              (Const.children x4)
-              (leaf 0);
-            x5);
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let x5 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let x7 : T := x5;
+            let x8 : List T := Const.children x7; let x9 : List T := x8; x9);
     x1
 
 def «Translation.bindSS» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Translation/OTrState.nothing»);
+                     let _ : List T := Const.children x2; «Translation/OTrState.nothing»);
     x2
 
 def «Translation.bindPS» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Translation/OTrState.nothing»);
+                     let _ : List T := Const.children x2; «Translation/OTrState.nothing»);
     x2
 
 def «Translation.mapTS» :=
@@ -2165,45 +2275,160 @@ def «Translation.gthmCtx» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let x4 : T := x2;
-            let x5 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x5 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x5
-                  ([] : List T)
-                  (fun (_ : T) (x7 : List T) => x7))
-              (Const.children x4)
-              (leaf 0);
-            x5);
+            let x2 : List T := Const.children x1;
+            let x3 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let x7 : T := x3;
+            let x8 : List T := Const.children x7; let x9 : List T := x8; x9);
     x1
 
 def «Translation.gthmEqn» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let x3 : T := Const.child x1 (leaf 1); x3);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let x5 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x5);
     x1
 
 def «Translation.geqnLhs» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let x3 : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2); x3);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let x5 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   x5);
     x1
 
 def «Translation.geqnRhs» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let x4 : T := Const.child x1 (leaf 2); x4);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let x7 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   x7);
     x1
 
 def «Translation/OObjs.nothing» := Const.node (leaf 0) ([] : List T)
@@ -2215,18 +2440,46 @@ def «Translation/OObjs.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Translation/OObjs.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Translation/OObjs.nthOf» :=
@@ -2259,9 +2512,23 @@ def «Translation/OObjs.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -2279,27 +2546,69 @@ def «Translation.bindOH» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Derivation/OThm.nothing»);
+                     let _ : List T := Const.children x2; «Derivation/OThm.nothing»);
     x2
 
 def «Translation.bindPH» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Derivation/OThm.nothing»);
+                     let _ : List T := Const.children x2; «Derivation/OThm.nothing»);
     x2
 
 def «Translation.mapPH» :=
   fun (x0 : T → T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); «Derivation/OThm.just» (x0 x3)
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     «Derivation/OThm.just» (x0 x4)
                    else
-                     «Derivation/OThm.nothing»);
+                     let _ : List T := Const.children x2; «Derivation/OThm.nothing»);
     x2
 
 def «Translation.thm» :=

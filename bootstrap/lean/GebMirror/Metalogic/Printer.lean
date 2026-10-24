@@ -54,8 +54,6 @@ def «Datatype.aCons» := mk 1 [leaf 99, leaf 111, leaf 110, leaf 115]
 
 def «Datatype.aNil» := mk 1 [leaf 110, leaf 105, leaf 108]
 
-def «Datatype.aIter» := mk 1 [leaf 105, leaf 116, leaf 101, leaf 114]
-
 def «Datatype.aLcase» :=
   mk 1 [leaf 108, leaf 99, leaf 97, leaf 115, leaf 101]
 
@@ -81,9 +79,6 @@ def «Datatype.aUnitV» := mk 1 [leaf 117, leaf 110, leaf 105, leaf 116]
 
 def «Datatype.aLabel» :=
   mk 1 [leaf 108, leaf 97, leaf 98, leaf 101, leaf 108]
-
-def «Datatype.aChild» :=
-  mk 1 [leaf 99, leaf 104, leaf 105, leaf 108, leaf 100]
 
 def «Datatype.aChildren» :=
   mk 1 [leaf 99,
@@ -145,6 +140,10 @@ def «Datatype.aQuote» :=
   mk 1 [leaf 113, leaf 117, leaf 111, leaf 116, leaf 101]
 
 def «Datatype.aK» := mk 1 [leaf 37, leaf 107]
+
+def «Datatype.aC» := mk 1 [leaf 37, leaf 99]
+
+def «Datatype.aQ» := mk 1 [leaf 37, leaf 113]
 
 def «Datatype.kwData» := mk 0 [leaf 100, leaf 97, leaf 116, leaf 97]
 
@@ -281,14 +280,35 @@ def «Datatype.sTail» :=
           («Datatype.sList» x0)
           «Datatype.aTl»))
 
-def «Datatype.sDrop» :=
-  fun (x0 : T) (x1 : T) (x2 : T) =>
-    «Datatype.sx5»
-      «Datatype.aIter»
-      («Datatype.sList» x0)
-      («Datatype.sTail» x0)
-      x1
-      («Datatype.numAtom» x2)
+def «Datatype.sHeadOf» :=
+  fun (x0 : T) =>
+    «Datatype.sx6»
+      «Datatype.aLcase»
+      «Datatype.aT»
+      «Datatype.aT»
+      x0
+      «Datatype.aZero»
+      («Datatype.sLam2»
+        «Datatype.aH»
+        «Datatype.aT»
+        «Datatype.aTl»
+        («Datatype.sList» «Datatype.aT»)
+        «Datatype.aH»)
+
+def «Datatype.sTailOf» :=
+  fun (x0 : T) =>
+    «Datatype.sx6»
+      «Datatype.aLcase»
+      «Datatype.aT»
+      («Datatype.sList» «Datatype.aT»)
+      x0
+      («Datatype.sx2» «Datatype.aNil» «Datatype.aT»)
+      («Datatype.sLam2»
+        «Datatype.aH»
+        «Datatype.aT»
+        «Datatype.aTl»
+        («Datatype.sList» «Datatype.aT»)
+        «Datatype.aTl»)
 
 def «Datatype.dropLast» :=
   fun (x0 : List T) =>
@@ -428,36 +448,40 @@ def «Datatype.defaultOf» :=
       x0).2
 
 def «Datatype.bindWith» :=
-  fun (x0 : T → T → T → T → T)
-    (x1 : T → T → T → T → T)
-    (x2 : T)
-    (x3 : List T)
-    (x4 : T) =>
-    let x5 : List T := Const.children (Const.child x2 (leaf 3));
-    let x6 : T := «Prelude.length» x5;
-    let x7 : T := «Prelude.length» x3;
+  fun (x0 : T → T → T → T)
+    (x1 : T → T → T → T)
+    (x2 : T → T)
+    (x3 : T)
+    (x4 : List T)
+    (x5 : T) =>
+    let x6 : List T := Const.children (Const.child x3 (leaf 3));
+    let x7 : T := Const.child x3 (leaf 4);
     if («Prelude.and»
-      (Const.eq x7 (Const.add x6 (Const.child x2 (leaf 4))))
+      (Const.eq («Prelude.length» x4) (Const.add («Prelude.length» x6) x7))
       («Datatype.allTrue»
         (Const.foldr
           (α := T)
           (β := List T)
           (fun (x8 : T) (x9 : List T) => ((«Reader.isAtom» x8) :: x9))
           ([] : List T)
-          x3))).label ≠ 0 then
+          x4))).label ≠ 0 then
       «Prelude.some»
-        (Const.foldr
-          (α := T)
-          (β := T × T)
-          (fun (x8 : T) (x9 : T × T) =>
-            let x10 : T := Const.sub (Const.sub x7 (leaf 1)) (x9).1;
-            (Const.add (x9).1 (leaf 1),
-              if (Const.lt x10 x6).label ≠ 0 then
-                x0 x10 («Prelude.at» x5 x10) x8 (x9).2
-              else
-                x1 x6 (Const.child x2 (leaf 5)) x8 (x9).2))
-          (leaf 0, x4)
-          x3).2
+        (x2
+          (Const.foldr
+            (α := T)
+            (β := T)
+            (fun (x8 : T) (x9 : T) =>
+              x0 (Const.child x8 (leaf 1)) (Const.child x8 (leaf 0)) x9)
+            (if (x7).label ≠ 0 then
+              x1
+                (Const.child x3 (leaf 5))
+                («Prelude.at» x4 («Prelude.length» x6))
+                x5
+            else
+              x5)
+            («Datatype.zipTs»
+              (if (x7).label ≠ 0 then «Datatype.dropLast» x4 else x4)
+              x6)))
     else
       «Prelude.none»
 
@@ -616,26 +640,28 @@ def «Datatype.clauseChain» :=
       «Prelude.none»
 
 def «Datatype.caseField» :=
-  fun (x0 : T) (_ : T) (x2 : T) (x3 : T) =>
+  fun (_ : T) (x1 : T) (x2 : T) =>
     «Datatype.sLet»
-      x2
+      x1
       «Datatype.aT»
-      («Datatype.sx3»
-        «Datatype.aChild»
-        «Datatype.aS»
-        («Datatype.numAtom» x0))
-      x3
+      («Datatype.sHeadOf» «Datatype.aC»)
+      («Datatype.sLet»
+        «Datatype.aC»
+        («Datatype.sList» «Datatype.aT»)
+        («Datatype.sTailOf» «Datatype.aC»)
+        x2)
 
 def «Datatype.caseRest» :=
-  fun (x0 : T) (_ : T) (x2 : T) (x3 : T) =>
+  fun (_ : T) (x1 : T) (x2 : T) =>
+    «Datatype.sLet» x1 («Datatype.sList» «Datatype.aT») «Datatype.aC» x2
+
+def «Datatype.caseStart» :=
+  fun (x0 : T) =>
     «Datatype.sLet»
-      x2
+      «Datatype.aC»
       («Datatype.sList» «Datatype.aT»)
-      («Datatype.sDrop»
-        «Datatype.aT»
-        («Datatype.sx2» «Datatype.aChildren» «Datatype.aS»)
-        x0)
-      x3
+      («Datatype.sx2» «Datatype.aChildren» «Datatype.aS»)
+      x0
 
 def «Datatype.expandCase» :=
   fun (x0 : List T) (x1 : T) (x2 : List (T × (List T → T))) =>
@@ -646,7 +672,10 @@ def «Datatype.expandCase» :=
       («Prelude.drop» (leaf 2) (Const.children x1))
       («Reader.argsOf» x2 (leaf 2) x0)
       «Datatype.aS»
-      («Datatype.bindWith» «Datatype.caseField» «Datatype.caseRest»);
+      («Datatype.bindWith»
+        «Datatype.caseField»
+        «Datatype.caseRest»
+        «Datatype.caseStart»);
     if («Reader.both» x3 x4).label ≠ 0 then
       «Prelude.some»
         («Datatype.sLet»
@@ -666,31 +695,16 @@ def «Datatype.splitTy» :=
       («Datatype.thTy» x0)
       («Datatype.sList» («Datatype.thTy» x0))
 
-def «Datatype.qAtom» :=
-  fun (x0 : T) =>
-    Const.node
-      (leaf 1)
-      ((leaf 37) :: ((leaf 113) :: («Datatype.decimalChars» x0)))
-
-def «Datatype.resultsAt» :=
-  fun (x0 : T) =>
-    if (Const.eq x0 (leaf 0)).label ≠ 0 then
-      «Datatype.aK»
-    else
-      «Datatype.sx2»
-        «Datatype.aSnd»
-        («Datatype.qAtom» (Const.sub x0 (leaf 1)))
-
 def «Datatype.cataField» :=
-  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) (x6 : T) =>
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) =>
     «Datatype.sLet»
-      («Datatype.qAtom» x3)
+      «Datatype.aQ»
       («Datatype.splitTy» x1)
       («Datatype.sx6»
         «Datatype.aLcase»
         («Datatype.thTy» x1)
         («Datatype.splitTy» x1)
-        («Datatype.resultsAt» x3)
+        («Datatype.sx2» «Datatype.aSnd» «Datatype.aQ»)
         («Datatype.sx3»
           «Datatype.aPair»
           («Datatype.sLam1» «Datatype.aU» «Datatype.aUnit» x2)
@@ -701,29 +715,34 @@ def «Datatype.cataField» :=
           «Datatype.aTl»
           («Datatype.sList» («Datatype.thTy» x1))
           («Datatype.sx3» «Datatype.aPair» «Datatype.aH» «Datatype.aTl»)))
-      (if («Reader.named» x4 x0).label ≠ 0 then
+      (if («Reader.named» x3 x0).label ≠ 0 then
         «Datatype.sLet»
-          x5
+          x4
           x1
           («Datatype.sx2»
-            («Datatype.sx2» «Datatype.aFst» («Datatype.qAtom» x3))
+            («Datatype.sx2» «Datatype.aFst» «Datatype.aQ»)
             «Datatype.aUnitV»)
-          x6
+          («Datatype.sLet»
+            «Datatype.aC»
+            («Datatype.sList» «Datatype.aT»)
+            («Datatype.sTailOf» «Datatype.aC»)
+            x5)
       else
         «Datatype.sLet»
-          x5
+          x4
           «Datatype.aT»
-          («Datatype.sx3»
-            «Datatype.aChild»
-            «Datatype.aO»
-            («Datatype.numAtom» x3))
-          x6)
+          («Datatype.sHeadOf» «Datatype.aC»)
+          («Datatype.sLet»
+            «Datatype.aC»
+            («Datatype.sList» «Datatype.aT»)
+            («Datatype.sTailOf» «Datatype.aC»)
+            x5))
 
 def «Datatype.cataRest» :=
-  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) =>
-    if («Reader.named» x3 x0).label ≠ 0 then
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
+    if («Reader.named» x2 x0).label ≠ 0 then
       «Datatype.sLet»
-        x4
+        x3
         («Datatype.sList» x1)
         («Datatype.sx6»
           «Datatype.aFoldr»
@@ -739,17 +758,25 @@ def «Datatype.cataRest» :=
               («Datatype.sx2» «Datatype.aH» «Datatype.aUnitV»)
               «Datatype.aA»))
           («Datatype.sx2» «Datatype.aNil» x1)
-          («Datatype.resultsAt» x2))
-        x5
-    else
-      «Datatype.sLet»
+          («Datatype.sx2» «Datatype.aSnd» «Datatype.aQ»))
         x4
+    else
+      «Datatype.sLet» x3 («Datatype.sList» «Datatype.aT») «Datatype.aC» x4
+
+def «Datatype.cataStart» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    «Datatype.sLet»
+      «Datatype.aQ»
+      («Datatype.splitTy» x0)
+      («Datatype.sx3»
+        «Datatype.aPair»
+        («Datatype.sLam1» «Datatype.aU» «Datatype.aUnit» x1)
+        «Datatype.aK»)
+      («Datatype.sLet»
+        «Datatype.aC»
         («Datatype.sList» «Datatype.aT»)
-        («Datatype.sDrop»
-          «Datatype.aT»
-          («Datatype.sx2» «Datatype.aChildren» «Datatype.aO»)
-          x2)
-        x5
+        («Datatype.sx2» «Datatype.aChildren» «Datatype.aO»)
+        x2)
 
 def «Datatype.expandCata» :=
   fun (x0 : List T) (x1 : T) (x2 : List (T × (List T → T))) =>
@@ -769,7 +796,8 @@ def «Datatype.expandCata» :=
         «Datatype.aO»
         («Datatype.bindWith»
           («Datatype.cataField» x4 x5 x6)
-          («Datatype.cataRest» x4 x5))
+          («Datatype.cataRest» x4 x5)
+          («Datatype.cataStart» x5 x6))
     else
       «Prelude.none»);
     if («Reader.both» x7 x8).label ≠ 0 then

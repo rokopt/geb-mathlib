@@ -73,7 +73,6 @@
   (def aSnd (quote (1 snd)))
   (def aCons (quote (1 cons)))
   (def aNil (quote (1 nil)))
-  (def aIter (quote (1 iter)))
   (def aLcase (quote (1 lcase)))
   (def aFoldr (quote (1 foldr)))
   (def aFold (quote (1 fold)))
@@ -82,7 +81,6 @@
   (def aDeftype (quote (1 deftype)))
   (def aUnitV (quote (1 unit)))
   (def aLabel (quote (1 label)))
-  (def aChild (quote (1 child)))
   (def aChildren (quote (1 children)))
   (def aNode (quote (1 node)))
   (def aEq (quote (1 eq)))
@@ -108,6 +106,8 @@
   (def aE (quote (1 "%e")))
   (def aQuote (quote (1 quote)))
   (def aK (quote (1 "%k")))
+  (def aC (quote (1 "%c")))
+  (def aQ (quote (1 "%q")))
   (def kwData (quote (0 data)))
   (def kwTreeData (quote (0 tree-data)))
   (def kwCase (quote (0 case)))
@@ -148,8 +148,10 @@
   (def sTail
     (lam ((a T))
       (sLam1 aX (sList a) (sx6 aLcase a (sList a) aX (sx2 aNil a) (sLam2 aH a aTl (sList a) aTl)))))
-  ; a list without its first n elements
-  (def sDrop (lam ((a T) (xs T) (n T)) (sx5 aIter (sList a) (sTail a) xs (numAtom n))))
+  ; a list of trees' head, the tree 0 at the empty list, and its tail
+  (def sHeadOf (lam ((xs T)) (sx6 aLcase aT aT xs aZero (sLam2 aH aT aTl (sList aT) aH))))
+  (def sTailOf
+    (lam ((xs T)) (sx6 aLcase aT (sList aT) xs (sx2 aNil aT) (sLam2 aH aT aTl (sList aT) aTl))))
 
   ; lists by position
   (def dropLast (lam ((xs Ts)) (reverse (tail (reverse xs)))))
@@ -214,28 +216,23 @@
                           (if (named h kwList) (sx2 aNil (at (children raw) 1)) aZero)))))))))
           ty))))
 
-  ; the bindings of a clause's variables, from the innermost out: fb binds a field at a position
-  ; with its type, and vb binds the remaining children after the fixed fields
-  (deftype Binder (Arrow T (Arrow T (Arrow T (Arrow T T)))))
+  ; the bindings of a clause's variables, from the outermost in: fb binds each fixed field's
+  ; variable with the field's type, and rb the remaining children's with their type, around the
+  ; body, and start binds around them all
+  (deftype Binder (Arrow T (Arrow T (Arrow T T))))
   (def bindWith
-    (lam ((fb Binder) (vb Binder) (ctor T) (vars Ts) (body T))
+    (lam ((fb Binder) (rb Binder) (start (Arrow T T)) (ctor T) (vars Ts) (body T))
       (let fields Ts (children (child ctor 3))
-        (let nf T (length fields)
-          (let nv T (length vars)
-            (if
-              (and (eq nv (add nf (child ctor 4)))
-                (allTrue (foldr T Ts (lam ((v T) (r Ts)) (cons (isAtom v) r)) (nil T) vars)))
-              (some
-                (snd
-                  (foldr T (Prod T T)
-                    (lam ((v T) (acc (Prod T T)))
-                      (let k T (sub (sub nv 1) (fst acc))
-                        (pair (add (fst acc) 1)
-                          (if (lt k nf) (fb k (at fields k) v (snd acc))
-                            (vb nf (child ctor 5) v (snd acc))))))
-                    (pair 0 body)
-                    vars)))
-              none))))))
+        (let isVar T (child ctor 4)
+          (if
+            (and (eq (length vars) (add (length fields) isVar))
+              (allTrue (foldr T Ts (lam ((v T) (r Ts)) (cons (isAtom v) r)) (nil T) vars)))
+            (some
+              (start
+                (foldr T T (lam ((p T) (acc T)) (fb (child p 1) (child p 0) acc))
+                  (if isVar (rb (child ctor 5) (at vars (length fields)) body) body)
+                  (zipTs (if isVar (dropLast vars) vars) fields))))
+            none)))))
 
   ; the constructor a clause names, when it is declared
   (def clauseCtor
@@ -334,46 +331,51 @@
                                   none)))))))))))))
         none)))
 
-  ; case analysis: the scrutinee bound once, its label tested, its children bound to the clause's
-  ; variables
-  (def caseField (lam ((k T) (ty T) (v T) (b T)) (sLet v aT (sx3 aChild aS (numAtom k)) b)))
-  (def caseRest
-    (lam ((nf T) (ty T) (v T) (b T)) (sLet v (sList aT) (sDrop aT (sx2 aChildren aS) nf) b)))
+  ; case analysis: the scrutinee bound once, its label tested, and in a clause its children, each
+  ; fixed field's variable bound to the head of those remaining and the remaining children's to
+  ; the rest
+  (def caseField
+    (lam ((ty T) (v T) (b T)) (sLet v aT (sHeadOf aC) (sLet aC (sList aT) (sTailOf aC) b))))
+  (def caseRest (lam ((ty T) (v T) (b T)) (sLet v (sList aT) aC b)))
+  (def caseStart (lam ((b T)) (sLet aC (sList aT) (sx2 aChildren aS) b)))
   (def expandCase
     (lam ((env Ts) (raw T) (rs RRs))
       (let scr T (rrAt rs 1 env)
         (let chain T
           (clauseChain env none (drop 2 (children raw)) (argsOf rs 2 env) aS
-            (bindWith caseField caseRest))
+            (bindWith caseField caseRest caseStart))
           (if (both scr chain) (some (sLet aS aT (get scr) (get chain))) none)))))
 
   ; structural recursion: the kernel's fold of trees whose step sees the node itself, at the
-  ; suspended result; the clause's fields take the children's suspended results in order, one
-  ; binding each, so that each is used once; a recursive field is bound to its forced result, any
-  ; other to the node's child
+  ; suspended result; in a clause the suspended results and the children, the fields taking the
+  ; children's suspended results in order, one binding each, so that each is used once: at each
+  ; fixed field the suspended results remaining split at its own, a recursive field bound to its
+  ; forced result, any other to the head of the children remaining; the remaining children's
+  ; results forced, or the remaining children
   (def thTy (lam ((r T)) (sArrow aUnit r)))
   (def splitTy (lam ((r T)) (sProd (thTy r) (sList (thTy r)))))
-  (def qAtom (lam ((k T)) (node 1 (cons 37 (cons 113 (decimalChars k))))))
-  ; the suspended results remaining at field k
-  (def resultsAt (lam ((k T)) (if (eq k 0) aK (sx2 aSnd (qAtom (sub k 1))))))
   (def cataField
-    (lam ((d T) (r T) (dr T) (k T) (ty T) (v T) (b T))
-      (sLet (qAtom k) (splitTy r)
-        (sx6 aLcase (thTy r) (splitTy r) (resultsAt k)
+    (lam ((d T) (r T) (dr T) (ty T) (v T) (b T))
+      (sLet aQ (splitTy r)
+        (sx6 aLcase (thTy r) (splitTy r) (sx2 aSnd aQ)
           (sx3 aPair (sLam1 aU aUnit dr) (sx2 aNil (thTy r)))
           (sLam2 aH (thTy r) aTl (sList (thTy r)) (sx3 aPair aH aTl)))
-        (if (named ty d) (sLet v r (sx2 (sx2 aFst (qAtom k)) aUnitV) b)
-          (sLet v aT (sx3 aChild aO (numAtom k)) b)))))
+        (if (named ty d) (sLet v r (sx2 (sx2 aFst aQ) aUnitV) (sLet aC (sList aT) (sTailOf aC) b))
+          (sLet v aT (sHeadOf aC) (sLet aC (sList aT) (sTailOf aC) b))))))
   (def cataRest
-    (lam ((d T) (r T) (nf T) (ty T) (v T) (b T))
+    (lam ((d T) (r T) (ty T) (v T) (b T))
       (if (named ty d)
         (sLet v (sList r)
           (sx6 aFoldr (thTy r) (sList r)
             (sLam2 aH (thTy r) aA (sList r) (sx3 aCons (sx2 aH aUnitV) aA))
             (sx2 aNil r)
-            (resultsAt nf))
+            (sx2 aSnd aQ))
           b)
-        (sLet v (sList aT) (sDrop aT (sx2 aChildren aO) nf) b))))
+        (sLet v (sList aT) aC b))))
+  (def cataStart
+    (lam ((r T) (dr T) (b T))
+      (sLet aQ (splitTy r) (sx3 aPair (sLam1 aU aUnit dr) aK)
+        (sLet aC (sList aT) (sx2 aChildren aO) b))))
   (def expandCata
     (lam ((env Ts) (raw T) (rs RRs))
       (let es Ts (children raw)
@@ -384,7 +386,7 @@
                 (let chain T
                   (if (and (isAtom (at es 1)) (isData d env))
                     (clauseChain env (some d) (drop 4 es) (argsOf rs 4 env) aO
-                      (bindWith (cataField d r dr) (cataRest d r)))
+                      (bindWith (cataField d r dr) (cataRest d r) (cataStart r dr)))
                     none)
                   (if (both scr chain)
                     (some

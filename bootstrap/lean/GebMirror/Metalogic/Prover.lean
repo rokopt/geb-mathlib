@@ -22,15 +22,67 @@ def «Prover.mark» :=
 def «Prover.mDeriv» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let x2 : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1); x2);
+                   let x2 : List T := Const.children x1;
+                   let x3 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x3);
     x1
 
 def «Prover.mFlag» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let x3 : T := Const.child x1 (leaf 1); x3);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let x5 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x5);
     x1
 
 def «Prover/EachMarked.all» :=
@@ -204,18 +256,46 @@ def «Prover/OAssign.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Prover/OAssign.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Prover/OAssign.nthOf» :=
@@ -248,9 +328,23 @@ def «Prover/OAssign.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -259,28 +353,30 @@ def «Prover.assigned» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x2 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x2
-                  ([] : List T)
-                  (fun (_ : T) (x4 : List T) => x4))
-              (Const.children x1)
-              (leaf 0);
-            x2);
+            let x2 : List T := Const.children x1; let x3 : List T := x2; x3);
     x1
 
 def «Prover.bindAA» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Prover/OAssign.nothing»);
+                     let _ : List T := Const.children x2; «Prover/OAssign.nothing»);
     x2
 
 def «Prover/Mts.tail» :=
@@ -475,27 +571,69 @@ def «Prover.bindP» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Prelude.none»);
+                     let _ : List T := Const.children x2; «Prelude.none»);
     x2
 
 def «Prover.bindAP» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Language/OTPair.nothing»);
+                     let _ : List T := Const.children x2; «Language/OTPair.nothing»);
     x2
 
 def «Prover.bindHP» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Language/OTPair.nothing»);
+                     let _ : List T := Const.children x2; «Language/OTPair.nothing»);
     x2
 
 def «Prover.mapTP» :=
@@ -510,38 +648,14 @@ def «Prover.termsOf» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x2 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x2
-                  ([] : List T)
-                  (fun (_ : T) (x4 : List T) => x4))
-              (Const.children x1)
-              (leaf 0);
-            x2);
+            let x2 : List T := Const.children x1; let x3 : List T := x2; x3);
     x1
 
 def «Prover.objsOf» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x2 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x2
-                  ([] : List T)
-                  (fun (_ : T) (x4 : List T) => x4))
-              (Const.children x1)
-              (leaf 0);
-            x2);
+            let x2 : List T := Const.children x1; let x3 : List T := x2; x3);
     x1
 
 def «Prover.thmRewrite» :=
@@ -579,118 +693,269 @@ def «Prover.tryRule» :=
     (x6 : T) =>
     let x7 : T := (let x7 : T := (x5).1;
                    if (Const.eq (Const.label x7) (leaf 0)).label ≠ 0 then
-                     let x8 : T := Const.child x7 (leaf 0);
-                     let x9 : T := Const.child x7 (leaf 1);
-                     let x10 : List T := «Prover.termsOf» x9;
+                     let x8 : List T := Const.children x7;
+                     let x9 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x8
+                       (leaf 0)
+                       (fun (x9 : T) (_ : List T) => x9);
+                     let x10 : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x8
+                       ([] : List T)
+                       (fun (_ : T) (x11 : List T) => x11);
+                     let x11 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x10
+                       (leaf 0)
+                       (fun (x11 : T) (_ : List T) => x11);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x10
+                       ([] : List T)
+                       (fun (_ : T) (x13 : List T) => x13);
+                     let x13 : List T := «Prover.termsOf» x11;
                      «Prover.mapTP»
-                       (fun (x11 : T) =>
-                         «Language.pr» x11 («Prover.dNode» x8 x10 ([] : List T)))
-                       («Derivation.rootStep» x0 x1 x2 x3 x4 x8 x10 x6)
+                       (fun (x14 : T) =>
+                         «Language.pr» x14 («Prover.dNode» x9 x13 ([] : List T)))
+                       («Derivation.rootStep» x0 x1 x2 x3 x4 x9 x13 x6)
                    else
                      if (Const.eq (Const.label x7) (leaf 1)).label ≠ 0 then
-                       let x8 : T := Const.child x7 (leaf 0);
+                       let x8 : List T := Const.children x7;
+                       let x9 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x8
+                         (leaf 0)
+                         (fun (x9 : T) (_ : List T) => x9);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x8
+                         ([] : List T)
+                         (fun (_ : T) (x11 : List T) => x11);
                        if («Prelude.and»
                          (Const.eq (Const.label x6) (leaf 11))
-                         (Const.eq («Language.mD» x6 (leaf 0)) x8)).label ≠ 0 then
+                         (Const.eq («Language.mD» x6 (leaf 0)) x9)).label ≠ 0 then
                          «Prover.mapTP»
-                           (fun (x9 : T) =>
+                           (fun (x11 : T) =>
                              «Language.pr»
-                               x9
+                               x11
                                («Prover.dNode» (leaf 8) ([] : List T) ([] : List T)))
                            («Derivation.rootStep» x0 x1 x2 x3 x4 (leaf 8) ([] : List T) x6)
                        else
                          «Language/OTPair.nothing»
                      else
                        if (Const.eq (Const.label x7) (leaf 2)).label ≠ 0 then
-                         let x8 : T := Const.child x7 (leaf 0);
-                         let x9 : T := Const.child x7 (leaf 1);
+                         let x8 : List T := Const.children x7;
+                         let x9 : T := Const.lcase
+                           (α := T)
+                           (β := T)
+                           x8
+                           (leaf 0)
+                           (fun (x9 : T) (_ : List T) => x9);
+                         let x10 : List
+                           T := Const.lcase
+                           (α := T)
+                           (β := List T)
+                           x8
+                           ([] : List T)
+                           (fun (_ : T) (x11 : List T) => x11);
+                         let x11 : T := Const.lcase
+                           (α := T)
+                           (β := T)
+                           x10
+                           (leaf 0)
+                           (fun (x11 : T) (_ : List T) => x11);
+                         let _ : List
+                           T := Const.lcase
+                           (α := T)
+                           (β := List T)
+                           x10
+                           ([] : List T)
+                           (fun (_ : T) (x13 : List T) => x13);
                          if («Prelude.and»
                            (Const.eq (Const.label x6) (leaf 11))
                            («Prelude.and»
-                             (Const.lt («Language.mD» x6 (leaf 0)) x8)
+                             (Const.lt («Language.mD» x6 (leaf 0)) x9)
                              («Base.not»
                                («Base.anyT»
-                                 (fun (x10 : T) => Const.eq x10 («Language.mD» x6 (leaf 0)))
-                                 («Prover.termsOf» x9))))).label ≠ 0 then
+                                 (fun (x13 : T) => Const.eq x13 («Language.mD» x6 (leaf 0)))
+                                 («Prover.termsOf» x11))))).label ≠ 0 then
                            «Prover.mapTP»
-                             (fun (x10 : T) =>
+                             (fun (x13 : T) =>
                                «Language.pr»
-                                 x10
+                                 x13
                                  («Prover.dNode» (leaf 8) ([] : List T) ([] : List T)))
                              («Derivation.rootStep» x0 x1 x2 x3 x4 (leaf 8) ([] : List T) x6)
                          else
                            «Language/OTPair.nothing»
                        else
                          if (Const.eq (Const.label x7) (leaf 3)).label ≠ 0 then
+                           let _ : List T := Const.children x7;
                            if («Prelude.and»
                              (Const.eq (Const.label x6) (leaf 0))
                              (Const.equal
                                («Prelude.nth» x3 («Language.mD» x6 (leaf 0)))
                                («Prelude.some» «Theory.one»))).label ≠ 0 then
                              «Prover.mapTP»
-                               (fun (x8 : T) =>
+                               (fun (x9 : T) =>
                                  «Language.pr»
-                                   x8
+                                   x9
                                    («Prover.dNode» (leaf 7) ([] : List T) ([] : List T)))
                                («Derivation.rootStep» x0 x1 x2 x3 x4 (leaf 7) ([] : List T) x6)
                            else
                              «Language/OTPair.nothing»
                          else
                            if (Const.eq (Const.label x7) (leaf 4)).label ≠ 0 then
-                             let x8 : T := Const.child x7 (leaf 0);
-                             let x9 : T := Const.child x7 (leaf 1);
-                             let x10 : List T := «Prover.objsOf» x9;
+                             let x8 : List T := Const.children x7;
+                             let x9 : T := Const.lcase
+                               (α := T)
+                               (β := T)
+                               x8
+                               (leaf 0)
+                               (fun (x9 : T) (_ : List T) => x9);
+                             let x10 : List
+                               T := Const.lcase
+                               (α := T)
+                               (β := List T)
+                               x8
+                               ([] : List T)
+                               (fun (_ : T) (x11 : List T) => x11);
+                             let x11 : T := Const.lcase
+                               (α := T)
+                               (β := T)
+                               x10
+                               (leaf 0)
+                               (fun (x11 : T) (_ : List T) => x11);
+                             let _ : List
+                               T := Const.lcase
+                               (α := T)
+                               (β := List T)
+                               x10
+                               ([] : List T)
+                               (fun (_ : T) (x13 : List T) => x13);
+                             let x13 : List T := «Prover.objsOf» x11;
                              «Prover.bindHP»
-                               («Derivation.thmAt» x1 x8)
-                               (fun (x11 : T) =>
+                               («Derivation.thmAt» x1 x9)
+                               (fun (x14 : T) =>
                                  «Language.bindPP»
-                                   («Derivation.eqParts» («Derivation.thConcl» x11))
-                                   (fun (x12 : T) =>
-                                     if («Prover.sameShape» («Language.p1» x12) x6).label ≠ 0 then
+                                   («Derivation.eqParts» («Derivation.thConcl» x14))
+                                   (fun (x15 : T) =>
+                                     if («Prover.sameShape» («Language.p1» x15) x6).label ≠ 0 then
                                        «Prover.thmRewrite»
                                          x0
                                          x1
                                          x2
                                          x3
                                          x4
-                                         x8
-                                         x10
+                                         x9
+                                         x13
                                          («Prover.matchTerm»
-                                           (if («Base.isEmpty» x10).label ≠ 0 then
-                                             «Language.p1» x12
+                                           (if («Base.isEmpty» x13).label ≠ 0 then
+                                             «Language.p1» x15
                                            else
-                                             «Language.osubst» x10 («Language.p1» x12)))
-                                         («Prelude.length» («Derivation.thCtx» x11))
+                                             «Language.osubst» x13 («Language.p1» x15)))
+                                         («Prelude.length» («Derivation.thCtx» x14))
                                          x6
                                      else
                                        «Language/OTPair.nothing»))
                            else
                              if (Const.eq (Const.label x7) (leaf 5)).label ≠ 0 then
-                               let x8 : T := Const.child x7 (leaf 0);
-                               let x9 : T := Const.child x7 (leaf 1);
-                               let x10 : T := Const.child x7 (leaf 2);
-                               let x11 : T := Const.child x7 (leaf 3);
-                               if («Prover.sameShape» x10 x6).label ≠ 0 then
+                               let x8 : List T := Const.children x7;
+                               let x9 : T := Const.lcase
+                                 (α := T)
+                                 (β := T)
+                                 x8
+                                 (leaf 0)
+                                 (fun (x9 : T) (_ : List T) => x9);
+                               let x10 : List
+                                 T := Const.lcase
+                                 (α := T)
+                                 (β := List T)
+                                 x8
+                                 ([] : List T)
+                                 (fun (_ : T) (x11 : List T) => x11);
+                               let x11 : T := Const.lcase
+                                 (α := T)
+                                 (β := T)
+                                 x10
+                                 (leaf 0)
+                                 (fun (x11 : T) (_ : List T) => x11);
+                               let x12 : List
+                                 T := Const.lcase
+                                 (α := T)
+                                 (β := List T)
+                                 x10
+                                 ([] : List T)
+                                 (fun (_ : T) (x13 : List T) => x13);
+                               let x13 : T := Const.lcase
+                                 (α := T)
+                                 (β := T)
+                                 x12
+                                 (leaf 0)
+                                 (fun (x13 : T) (_ : List T) => x13);
+                               let x14 : List
+                                 T := Const.lcase
+                                 (α := T)
+                                 (β := List T)
+                                 x12
+                                 ([] : List T)
+                                 (fun (_ : T) (x15 : List T) => x15);
+                               let x15 : T := Const.lcase
+                                 (α := T)
+                                 (β := T)
+                                 x14
+                                 (leaf 0)
+                                 (fun (x15 : T) (_ : List T) => x15);
+                               let _ : List
+                                 T := Const.lcase
+                                 (α := T)
+                                 (β := List T)
+                                 x14
+                                 ([] : List T)
+                                 (fun (_ : T) (x17 : List T) => x17);
+                               if («Prover.sameShape» x13 x6).label ≠ 0 then
                                  «Prover.thmRewrite»
                                    x0
                                    x1
                                    x2
                                    x3
                                    x4
-                                   x8
-                                   («Prover.objsOf» x9)
+                                   x9
+                                   («Prover.objsOf» x11)
                                    (x5).2
-                                   x11
+                                   x15
                                    x6
                                else
                                  «Language/OTPair.nothing»
                              else
-                               let x8 : T := Const.child x7 (leaf 0);
-                               let x9 : List T := «Theory.l2» x8 (leaf 0);
+                               let x8 : List T := Const.children x7;
+                               let x9 : T := Const.lcase
+                                 (α := T)
+                                 (β := T)
+                                 x8
+                                 (leaf 0)
+                                 (fun (x9 : T) (_ : List T) => x9);
+                               let _ : List
+                                 T := Const.lcase
+                                 (α := T)
+                                 (β := List T)
+                                 x8
+                                 ([] : List T)
+                                 (fun (_ : T) (x11 : List T) => x11);
+                               let x11 : List T := «Theory.l2» x9 (leaf 0);
                                «Prover.mapTP»
-                                 (fun (x10 : T) =>
-                                   «Language.pr» x10 («Prover.dNode» (leaf 17) x9 ([] : List T)))
-                                 («Derivation.rootStep» x0 x1 x2 x3 x4 (leaf 17) x9 x6));
+                                 (fun (x12 : T) =>
+                                   «Language.pr» x12 («Prover.dNode» (leaf 17) x11 ([] : List T)))
+                                 («Derivation.rootStep» x0 x1 x2 x3 x4 (leaf 17) x11 x6));
     x7
 
 def «Prover.rootRewrite» :=
@@ -729,27 +994,52 @@ def «Prover.prepareRule» :=
           List T →
             T) := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 4)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0);
-                     let x4 : T := Const.child x2 (leaf 1);
-                     let x5 : List T := «Prover.objsOf» x4;
-                     let x6 : T := «Derivation.thmAt» x0 x3;
-                     let x7 : T := «Prover.bindHP»
-                       x6
-                       (fun (x7 : T) => «Derivation.eqParts» («Derivation.thConcl» x7));
-                     if («Language/OTPair.isJust» x7).label ≠ 0 then
-                       let x8 : T := (if («Base.isEmpty» x5).label ≠ 0 then
-                         «Language.p1» («Language/OTPair.fromMaybe» «Prover.pr0» x7)
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let x5 : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     let x6 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x5
+                       (leaf 0)
+                       (fun (x6 : T) (_ : List T) => x6);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x5
+                       ([] : List T)
+                       (fun (_ : T) (x8 : List T) => x8);
+                     let x8 : List T := «Prover.objsOf» x6;
+                     let x9 : T := «Derivation.thmAt» x0 x4;
+                     let x10 : T := «Prover.bindHP»
+                       x9
+                       (fun (x10 : T) => «Derivation.eqParts» («Derivation.thConcl» x10));
+                     if («Language/OTPair.isJust» x10).label ≠ 0 then
+                       let x11 : T := (if («Base.isEmpty» x8).label ≠ 0 then
+                         «Language.p1» («Language/OTPair.fromMaybe» «Prover.pr0» x10)
                        else
                          «Language.osubst»
-                           x5
-                           («Language.p1» («Language/OTPair.fromMaybe» «Prover.pr0» x7)));
+                           x8
+                           («Language.p1» («Language/OTPair.fromMaybe» «Prover.pr0» x10)));
                        («Prover.nrThmAt»
-                         x3
                          x4
-                         x8
+                         x6
+                         x11
                          («Prelude.length»
-                           («Derivation.thCtx» («Derivation/OThm.fromMaybe» «Prover.thm0» x6))),
-                         «Prover.matchTerm» x8)
+                           («Derivation.thCtx» («Derivation/OThm.fromMaybe» «Prover.thm0» x9))),
+                         «Prover.matchTerm» x11)
                      else
                        (x1, «Prover.noMatch»)
                    else
@@ -779,15 +1069,67 @@ def «Prover.nfr» :=
 def «Prover.nfTerm» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let x2 : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1); x2);
+                   let x2 : List T := Const.children x1;
+                   let x3 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x3);
     x1
 
 def «Prover.nfMarked» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let x3 : T := Const.child x1 (leaf 1); x3);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let x5 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x5);
     x1
 
 def «Prover/ONFR.nothing» := Const.node (leaf 0) ([] : List T)
@@ -799,18 +1141,46 @@ def «Prover/ONFR.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Prover/ONFR.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Prover/ONFR.nthOf» :=
@@ -843,9 +1213,23 @@ def «Prover/ONFR.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -939,18 +1323,46 @@ def «Prover/ONFRList.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Prover/ONFRList.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Prover/ONFRList.nthOf» :=
@@ -983,9 +1395,23 @@ def «Prover/ONFRList.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -994,46 +1420,76 @@ def «Prover.nfrsOf» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x2 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x2
-                  ([] : List T)
-                  (fun (_ : T) (x4 : List T) => x4))
-              (Const.children x1)
-              (leaf 0);
-            x2);
+            let x2 : List T := Const.children x1; let x3 : List T := x2; x3);
     x1
 
 def «Prover.bindNT» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Prelude.none»);
+                     let _ : List T := Const.children x2; «Prelude.none»);
     x2
 
 def «Prover.bindNN» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Prover/ONFR.nothing»);
+                     let _ : List T := Const.children x2; «Prover/ONFR.nothing»);
     x2
 
 def «Prover.mapNN» :=
   fun (x0 : T → T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); «Prover/ONFR.just» (x0 x3)
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     «Prover/ONFR.just» (x0 x4)
                    else
-                     «Prover/ONFR.nothing»);
+                     let _ : List T := Const.children x2; «Prover/ONFR.nothing»);
     x2
 
 def «Prover.bindTN» :=
@@ -1048,9 +1504,23 @@ def «Prover.bindSN» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Prover/ONFR.nothing»);
+                     let _ : List T := Const.children x2; «Prover/ONFR.nothing»);
     x2
 
 def «Prover.allSomeN» :=
@@ -1066,18 +1536,46 @@ def «Prover.bindLN» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Prover/ONFR.nothing»);
+                     let _ : List T := Const.children x2; «Prover/ONFR.nothing»);
     x2
 
 def «Prover.bindHT» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Prelude.none»);
+                     let _ : List T := Const.children x2; «Prelude.none»);
     x2
 
 def «Prover.rebuild» :=
@@ -1165,15 +1663,67 @@ def «Prover/ScopeTerms.atOr» :=
 def «Prover.scopeOf» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let x2 : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1); x2);
+                   let x2 : List T := Const.children x1;
+                   let x3 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x3);
     x1
 
 def «Prover.termOf» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let x3 : T := Const.child x1 (leaf 1); x3);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let x5 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x5);
     x1
 
 def «Prover.zipTs» :=

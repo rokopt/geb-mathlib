@@ -28,7 +28,8 @@ typing reads.
 A list headed by a constant's keyword, its types and further elements after it, is then sound as the
 application of the constant to the further elements ({lit}`constCore`): the keyword no numeral
 abbreviation, as the reader reserves it, its index among the reserved names present by lemmas on the
-index at a list with the list a variable ({lit}`indexOfMore`, {lit}`reservedK`); the stage
+index at a list with the list a variable
+({name}`GebTests.Prototypes.FreeTopos.Datatypes.reservedK`); the stage
 functions' equations at the form cut in; each type's readings, the typing's and the reader's,
 present, generalized, the constant related at the typing's type of it; and the soundness at the
 application of the constant to the further elements, by induction on them
@@ -42,7 +43,6 @@ refuted by the typing.
 * {lit}`relTSpec` — the relation at the datatype language's types, as the normalization proof's
   lemmas take a relation.
 * {lit}`ConstForm`, {lit}`constForms` — the keywords of the constants, with their types.
-* {lit}`indexOfMore`, {lit}`reservedK` — a keyword's index among the reserved names present.
 * {lit}`constCore`, {lit}`constSrc` — the soundness at a list headed by such a keyword at
   expanded and at source forms.
 * {lit}`foldsDev3` — the development.
@@ -195,61 +195,6 @@ def ltMore (P : Prog) : List Step :=
     byBits P.G p 4 0 a.ctx [] (TranslationProofs.sides a).1 (TranslationProofs.sides a).2
   [1, 2].map fun n ↦ step s!"ltSucc{n}" (lt n) (byBit (lt n))
 
-/-- The reader's index of a name among names present past a further name, and among names headed
-by the name itself; in the context of the names, the further name and the name, the innermost
-first, the further name's equality with the name decided, the name's with itself by its
-reflexivity. -/
-def indexOfMore (P : Prog) (S : Defs) : List Step :=
-  let o := P.o
-  let isSomeT (t : Term) : Term := truth o (pc P "Prelude.isSome" [t])
-  let idx (x xs : Term) : Term := pc P "Reader.indexOf" [x, xs]
-  let at_ (j : ℕ) (Γ : List Tree) : Term := v (Γ.length - 1 - j)
-  [("indexOfSkip", fun ix E ↦ do
-      let K : Kit := ⟨P, S, E, ix, lookupEqNames⟩
-      let equalT ← primT Kernel.Prim.equal
-      let Γ := [list treeTy, treeTy, treeTy]
-      let φ := Internal.Logic.imp o (isSomeT (idx (v 2) (v 0)))
-        (isSomeT (idx (v 2) (consT treeTy (v 1) (v 0))))
-      -- the names' positions: the name 0, the further name 1, the names 2
-      let d ← dImpI K.L (decideIn K (fun Γ ↦ apps equalT [at_ 0 Γ, at_ 1 Γ])
-          (decideIn K (fun Γ ↦ pc P "Prelude.isSome" [idx (at_ 0 Γ) (at_ 2 Γ)]) (anyFalse K)
-            (K.solve 3))
-          (K.solve 3)) Γ [] φ
-      pure (⟨0, Γ, [], φ⟩, d)),
-    ("indexOfHere", fun ix E ↦ do
-      let K : Kit := ⟨P, S, E, ix, lookupEqNames⟩
-      let equalT ← primT Kernel.Prim.equal
-      let Γ := [list treeTy, treeTy]
-      let φ := isSomeT (idx (v 1) (consT treeTy (v 1) (v 0)))
-      let d ← K.cutThm "equalRefl" (fun Γ ↦ [at_ 0 Γ])
-          (decideIn K (fun Γ ↦ apps equalT [at_ 0 Γ, at_ 0 Γ]) (anyFalse K) (K.solve 3)) Γ [] φ
-      pure (⟨0, Γ, [], φ⟩, d))]
-
-/-- That a keyword is reserved, the reader's index of it among the reserved names present: along
-the reserved names' normal form, past each other name by {lit}`indexOfSkip`, at the keyword by
-{lit}`indexOfHere` ({name}`indexOfMore`); so that the index is not computed, which unfolds the
-index among the rest once for its presence and once for its value at each name before the
-keyword. -/
-def reservedK (K : Kit) (kw : String) : Deducer := fun Γ Φ ψ ↦ do
-  let x ← nfE K.G K.E (K.rules []) Γ (pc K.P kw [])
-  let names ← nfE K.G K.E (K.rules []) Γ (pc K.P "Reader.reservedNames" [])
-  let parts (t : Term) : Option (Term × Term) := do
-    let .arr 1 _ := t.label | none
-    let [q] := t.children | none
-    let [h, tl] := q.children | none
-    pure (h, tl)
-  -- the names before the keyword, each with the names after it, and the names after the keyword
-  let (before, after) := (List.range 256).foldl (fun (r : List (Term × Term) × Option Term) _ ↦
-    match r with
-    | (_, some _) => r
-    | (acc, none) => match parts ((acc.getLast?.map Prod.snd).getD names) with
-      | some (h, tl) => if h == x then (acc, some tl) else (acc ++ [(h, tl)], none)
-      | none => r) ([], none)
-  let rest ← after
-  let last : Deducer := fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ
-  before.foldr (fun (h, tl) k ↦ K.cutThm "indexOfSkip" (fun _ ↦ [tl, h, x]) (K.impE k last))
-    (K.cutThm "indexOfHere" (fun _ ↦ [rest, x]) last) Γ Φ ψ
-
 /-- The stage functions' equations at a keyword's form ({name}`ConstForm.form`), the test of
 source forms, the type and the optional resolution, by {name}`appEq` in the soundness's context
 followed by the form's, the keyword no numeral abbreviation ({name}`ConstForm.notAbbrev`), with the
@@ -387,7 +332,6 @@ normalization proof's lemmas on the evaluator's folds and on the constants but t
 the relation {name}`relTSpec`. -/
 def foldsDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
   constDev P S (relTSpec P T) false ++ foldRelDev P S (relTSpec P T) ++ ltMore P ++
-    indexOfMore P S ++
     constForms.flatMap fun c ↦ constEqs P S T c ++ [constCore P S T c, constSrc P S T c]
 
 /-- The development of the constants' relations ({name}`foldsDev3`), after the base's, the atom's,

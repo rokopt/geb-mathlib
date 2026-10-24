@@ -56,29 +56,69 @@ open Internal (Term Deriv NormRule)
 open scoped FinEnum
 
 /-- The mirror's bindings and images of optional values are the base's of optional trees. -/
-@[template] theorem bindP_def : «Prover.bindP» = «Base.bindO» := rfl
+@[template] theorem bindP_def : «Prover.bindP» = «Base.bindO» := by
+  funext a b
+  simp only [«Prover.bindP», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindP_def] theorem bindAA_def : «Prover.bindAA» = «Base.bindO» := rfl
+@[template, inherit_doc bindP_def] theorem bindAA_def : «Prover.bindAA» = «Base.bindO» := by
+  funext a b
+  simp only [«Prover.bindAA», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindP_def] theorem bindAP_def : «Prover.bindAP» = «Base.bindO» := rfl
+@[template, inherit_doc bindP_def] theorem bindAP_def : «Prover.bindAP» = «Base.bindO» := by
+  funext a b
+  simp only [«Prover.bindAP», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindP_def] theorem bindHP_def : «Prover.bindHP» = «Base.bindO» := rfl
+@[template, inherit_doc bindP_def] theorem bindHP_def : «Prover.bindHP» = «Base.bindO» := by
+  funext a b
+  simp only [«Prover.bindHP», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindP_def] theorem bindNT_def : «Prover.bindNT» = «Base.bindO» := rfl
+@[template, inherit_doc bindP_def] theorem bindNT_def : «Prover.bindNT» = «Base.bindO» := by
+  funext a b
+  simp only [«Prover.bindNT», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindP_def] theorem bindNN_def : «Prover.bindNN» = «Base.bindO» := rfl
+@[template, inherit_doc bindP_def] theorem bindNN_def : «Prover.bindNN» = «Base.bindO» := by
+  funext a b
+  simp only [«Prover.bindNN», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
 @[template, inherit_doc bindP_def] theorem bindTN_def : «Prover.bindTN» = «Base.bindO» := rfl
 
-@[template, inherit_doc bindP_def] theorem bindSN_def : «Prover.bindSN» = «Base.bindO» := rfl
+@[template, inherit_doc bindP_def] theorem bindSN_def : «Prover.bindSN» = «Base.bindO» := by
+  funext a b
+  simp only [«Prover.bindSN», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindP_def] theorem bindLN_def : «Prover.bindLN» = «Base.bindO» := rfl
+@[template, inherit_doc bindP_def] theorem bindLN_def : «Prover.bindLN» = «Base.bindO» := by
+  funext a b
+  simp only [«Prover.bindLN», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindP_def] theorem bindHT_def : «Prover.bindHT» = «Base.bindO» := rfl
+@[template, inherit_doc bindP_def] theorem bindHT_def : «Prover.bindHT» = «Base.bindO» := by
+  funext a b
+  simp only [«Prover.bindHT», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
 @[template, inherit_doc bindP_def] theorem mapTP_def : «Prover.mapTP» = «Base.mapO» := rfl
 
-@[template, inherit_doc bindP_def] theorem mapNN_def : «Prover.mapNN» = «Base.mapO» := rfl
+@[template, inherit_doc bindP_def] theorem mapNN_def : «Prover.mapNN» = «Base.mapO» := by
+  funext a b
+  simp only [«Prover.mapNN», «Base.mapO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
 /-- The mirror's optional list of present normal forms is the base's optional trees. -/
 @[template] theorem allSomeN_def : «Prover.allSomeN» = «Base.allSomeT» := by

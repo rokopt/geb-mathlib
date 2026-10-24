@@ -60,6 +60,16 @@ def verifyK (K : Kit) (msg : String) (k : Deducer) : Deducer := fun Γ Φ ψ ↦
     if !checkSteps || Internal.Thm.checks K.G K.E ⟨0, Γ, Φ, ψ⟩ d then d else
       dbgTrace s!"{msg}: does not check" fun _ ↦ d
 
+/-- A term generalized: a new variable equal to its normal form, the equation after the
+hypotheses, which rewrites the term to the variable. -/
+def generalizeK (K : Kit) (t : List Tree → Term) (k : Deducer) : Deducer := fun Γ Φ ψ ↦ do
+  let (t', _) ← evalRw K.G K.E (K.rules Φ) .full Γ Φ (t Γ)
+  let φ := Internal.Logic.ex K.P.o treeTy (Term.lam treeTy (Term.eq (Term.rename t' (· + 1))
+    (v 0)))
+  let d ← verifyK K "generalization" (dExI K.L K.G K.E t' (fun Γ Φ ψ ↦
+    dEq (fun Γ Φ t u ↦ byMode .full K.G K.E 0 [] Γ (rwHyps [] Φ) t u) Γ Φ ψ)) Γ Φ φ
+  dCut φ d (K.exE k) Γ Φ ψ
+
 /-- The applications of the definition of index k, its parameters its node's children, to all the
 arguments its curried value takes, among a term's subterms, each once. -/
 def appsWith (G : Internal.Globals) (k : ℕ) (t : Term) : List Term :=
@@ -82,19 +92,24 @@ def appsWith (G : Internal.Globals) (k : ℕ) (t : Term) : List Term :=
     |>.eraseDups
 
 /-- The applications of the definitions of indices {lit}`ks` in the normal forms of the hypotheses
-of indices {lit}`hs`, each evaluated to its weak normal form by the rules, the hypotheses'
-equations and the definitions unfolded, its equation cut in after the hypotheses; repeated while
-the equations expose new applications, to a number of rounds. The weak normal form leaves an
-abstraction's body, as a step's function of the parameters its application receives, to the
-hypotheses' normal forms, where the parameters and the decisions about them meet. -/
-def unfoldApps (K : Kit) (ks hs : List ℕ) (k : Deducer) (rounds : ℕ := 6) : Deducer :=
+of indices {lit}`hs`, those typed in the context, each evaluated to its weak normal form by the
+rules, the hypotheses' equations and the definitions unfolded, its equation cut in after the
+hypotheses; repeated while the equations expose new applications, to a number of rounds. The
+weak normal form leaves an abstraction's body, as a step's function of the parameters its
+application receives, to the hypotheses' normal forms, where the parameters and the decisions
+about them meet. After each round the goal is normalized, where {lit}`normalizing` holds. Where
+{lit}`foldedValues` holds, each application is evaluated by the rules of the hypotheses before the
+first round, the values of the applications within it left folded. -/
+def unfoldApps (K : Kit) (ks hs : List ℕ) (k : Deducer) (rounds : ℕ := 6)
+    (normalizing : Bool := true) (foldedValues : Bool := false) : Deducer := fun Γ₀ Φ₀ ψ₀ ↦
   rounds.rec (motive := fun _ ↦ List Term → Deducer) (fun _ ↦ k) (fun _ rec done Γ Φ ψ ↦ do
     let nfs := hs.filterMap (Φ[·]?) |>.filterMap fun t ↦
       (evalRw K.G K.E (K.rules Φ) .full Γ Φ t).map Prod.fst
-    let apps := (ks.flatMap fun j ↦ nfs.flatMap (appsWith K.G j)).eraseDups.filter
-      (!done.contains ·)
+    -- the applications typed in the context, those under a binder of its variable left
+    let apps := (ks.flatMap fun j ↦ nfs.flatMap (appsWith K.G j)).eraseDups.filter fun a ↦
+      !done.contains a && (Internal.typeIn K.G 0 Γ a).isSome
     if apps.isEmpty then k Γ Φ ψ else
-    let rules := K.rules Φ ++ ks.map .delta
+    let rules := K.rules (if foldedValues then Φ.take Φ₀.length else Φ) ++ ks.map .delta
     let cuts := apps.filterMap fun a ↦
       (Internal.eval K.G K.E 0 rules 4096 .weak Γ Φ a).map fun (r, d, _) ↦
         let d' := nd .join [d, nd .refl]
@@ -102,7 +117,9 @@ def unfoldApps (K : Kit) (ks hs : List ℕ) (k : Deducer) (rounds : ℕ := 6) : 
           else
           dbgTrace s!"unfoldApps: a cut does not check: {showT a}" fun _ ↦ ()
         (Term.eq a r, d')
-    cuts.foldr (fun (e, d) k ↦ dCut e d k) (K.norm (rec (done ++ apps))) Γ Φ ψ) []
+    let next := rec (done ++ apps)
+    cuts.foldr (fun (e, d) k ↦ dCut e d k) (if normalizing then K.norm next else next) Γ Φ ψ) []
+    Γ₀ Φ₀ ψ₀
 
 /-- The induction hypothesis on rose trees at the element of position {lit}`p`, the hypothesis of
 index {lit}`h` an equation of the lists of formulas at the elements: the formula at the element cut
@@ -279,7 +296,8 @@ def kwEqs (P : Prog) (T : Defs3) (kw : String) (n : ℕ) (form : Term := kwForm 
 /-- The typing's form of a node of a label, the first component of its fold's value applied to
 the unit's element, the children of index 0 and the typing environment of index 1, named:
 the term's normal form by the vocabulary's rules, and its normal form with the fold's step and
-the definitions {lit}`unfold` unfolded as well. At an atom and at a list it is the node. -/
+the definitions {lit}`unfold` unfolded as well. At an atom, a list and a checked node it is the
+node. -/
 def rawAt (P : Prog) (T : Defs3) (name : String) (label : ℕ) (unfold : List ℕ) : Step :=
   (name, fun ix E ↦ do
     let Γ := [list treeTy, T.envTy]
@@ -324,7 +342,7 @@ def rawAtomR (P : Prog) (T : Defs3) : Step :=
 /-- The source forms' test at a node, its children of index 0, its label of index 1 and the
 fold's parameters after them: the fold's value at the node in normal form by the vocabulary's
 rules, its step exposed, and its normal form with the step unfolded as well, which tests the label
-against those of atoms and lists. -/
+against those of atoms, lists and checked nodes. -/
 def srcNode (P : Prog) (T : Defs3) : Step :=
   ("srcNode", fun ix E ↦ do
     let f ← (foldSpecs P T.envTy)[5]?
@@ -406,16 +424,8 @@ def inΓWith (over : ℕ → Option (List Tree → Term)) (form : List Tree → 
 def inΓ (form : List Tree → Term) (Γ : List Tree) (t : Term) : Term :=
   W.inΓWith (fun _ ↦ none) form Γ t
 
-/-- A term generalized: a new variable equal to its normal form, the equation after the
-hypotheses, which rewrites the term to the variable. -/
-def generalize (t : List Tree → Term) (k : Deducer) : Deducer := fun Γ Φ ψ ↦ do
-  let K := W.K
-  let (t', _) ← evalRw K.G K.E (K.rules Φ) .full Γ Φ (t Γ)
-  let φ := Internal.Logic.ex K.P.o treeTy (Term.lam treeTy (Term.eq (Term.rename t' (· + 1))
-    (v 0)))
-  let d ← verifyK K "generalization" (dExI K.L K.G K.E t' (fun Γ Φ ψ ↦
-    dEq (fun Γ Φ t u ↦ byMode .full K.G K.E 0 [] Γ (rwHyps [] Φ) t u) Γ Φ ψ)) Γ Φ φ
-  dCut φ d (K.exE k) Γ Φ ψ
+/-- A term generalized ({name}`generalizeK`). -/
+def generalize (t : List Tree → Term) (k : Deducer) : Deducer := generalizeK W.K t k
 
 /-- A hypothesis refuted with the stage functions' steps unfolded. -/
 def hypFalseU (h : ℕ) : Deducer := fun Γ Φ ψ ↦
@@ -426,13 +436,15 @@ def hypFalseU (h : ℕ) : Deducer := fun Γ Φ ψ ↦
       | .hyp j => j ≠ h
       | _ => true) .full) h (dFalse K.L dHyp) Γ Φ ψ
 
-/-- Each element's expansion a source form, its test decided, false refuting the statement's
-hypothesis with the stage functions' steps unfolded. -/
-def sources (k : Deducer) : Deducer :=
+/-- The test that an element's expansion is a source form, under the statement's quantifiers. -/
+def sourceTest : Term := (antecedentTests W.K.P (W.expansion (v nQ))).headD Term.star
+
+/-- Each element's expansion a source form, its test, by default {name}`sourceTest`, decided,
+false refuting the statement's hypothesis with the stage functions' steps unfolded. -/
+def sources (k : Deducer) (test : ℕ → Term := fun _ ↦ W.sourceTest) : Deducer :=
   let K := W.K
   (List.range W.n).foldr (fun c k Γ Φ ψ ↦
-    decideIn K (fun Γ ↦ W.inΓ (atPos c) Γ ((antecedentTests K.P (W.expansion (v nQ))).headD
-        Term.star))
+    decideIn K (fun Γ ↦ W.inΓ (atPos c) Γ (test c))
       (verifyK K s!"element {c + 1} not a source form"
         (linkK K s!"element {c + 1} not a source form" (W.hypFalseU (W.hyp 4)))) k Γ Φ ψ) k
 
@@ -464,19 +476,21 @@ def presentAt (msg : String) (opt : List Tree → Term) (h h' : ℕ) (k : Deduce
   if tested then decideIn K (fun Γ ↦ pc K.P "Prelude.isSome" [opt Γ]) absent present
   else decideOpt K opt absent present (minimal := W.expanded)
 
-/-- The steps the statement's hypotheses expose unfolded. -/
-def unfold (k : Deducer) : Deducer := unfoldApps W.K W.ks ((List.range W.nH).map W.hyp) k
+/-- The steps the statement's hypotheses expose unfolded, to a number of rounds. -/
+def unfold (k : Deducer) (rounds : ℕ := 6) : Deducer :=
+  unfoldApps W.K W.ks ((List.range W.nH).map W.hyp) k rounds
 
 /-- Optional values decided present, stage by stage, by {lit}`present`; after the first stage,
 the expansions, the elements' expansions decided source forms and the steps the statement's
 hypotheses expose unfolded, so that the steps that consume them receive decided values; the goal
 normalized after them. A value is given by its element's position, its term under the statement's
 quantifiers, its form's variable that of index {name}`nQ`, and the hypothesis. -/
-def decideWith (stages : List (List (ℕ × Term × ℕ))) (k : Deducer) : Deducer :=
+def decideWith (stages : List (List (ℕ × Term × ℕ))) (k : Deducer)
+    (test : ℕ → Term := fun _ ↦ W.sourceTest) : Deducer :=
   stages.zipIdx.foldr (fun (stage, j) k ↦
     stage.foldr (fun (c, o, i) k ↦
         W.present s!"element {c + 1}'s value for {i}" (fun Γ ↦ W.inΓ (atPos c) Γ o) i k (j = 0))
-      (if j = 0 then W.sources (W.unfold k) else k))
+      (if j = 0 then W.sources (W.unfold k) test else k))
     (W.K.norm k)
 
 /-- The elements' antecedents decided, antecedent by antecedent, by {lit}`decideWith`: each
@@ -488,10 +502,11 @@ def decideAll (k : Deducer) : Deducer :=
 /-- The soundness at the element of position c, its hypothesis, at the statement's variables,
 those of the positions {lit}`over` gives at its terms; its antecedents those of the statement or
 decided, the relation of the environment to the named context by {lit}`envOk` where either is
-given, and the names of the named context by {lit}`cxOk` where it is given; its conclusion, a
-convergence, the last hypothesis for k. -/
-def soundAt (c : ℕ) (over : ℕ → Option (List Tree → Term)) (envOk cxOk : Deducer) (k : Deducer) :
-    Deducer :=
+given, and the names of the named context by {lit}`cxOk` where it is given, an antecedent by the
+deducer {lit}`ante` gives where it gives one; its conclusion, a convergence, the last hypothesis for
+k. -/
+def soundAtWith (ante : ℕ → Option Deducer) (c : ℕ) (over : ℕ → Option (List Tree → Term))
+    (envOk cxOk : Deducer) (k : Deducer) : Deducer :=
   let K := W.K
   let at_ (j : ℕ) : List Tree → Term := (over j).getD (W.qv j)
   verifyK K s!"element {c + 1}'s soundness" <| linkK K s!"element {c + 1}'s soundness"
@@ -501,10 +516,16 @@ def soundAt (c : ℕ) (over : ℕ → Option (List Tree → Term)) (envOk cxOk :
       (List.range W.nH).foldr (fun i k ↦
           K.impE (verifyK K s!"element {c + 1}'s antecedent {i}"
             (linkK K s!"element {c + 1}'s antecedent {i}"
-            (if i ∈ antecedentHyps then K.solve 3
+            (if let some d := ante i then d
+              else if i ∈ antecedentHyps then K.solve 3
               else if i = 1 ∧ ((over 5).isSome ∨ (over 9).isSome) then envOk
               else if i = cxHyp ∧ (over 5).isSome then cxOk
               else W.byStmt i))) k) k)) Γ Φ ψ
+
+/-- The soundness at the element of position c ({name}`soundAtWith`), no antecedent given its own
+deducer. -/
+def soundAt : ℕ → (ℕ → Option (List Tree → Term)) → Deducer → Deducer → Deducer → Deducer :=
+  W.soundAtWith fun _ ↦ none
 
 /-- The soundness at the element of position c, its hypothesis, at the statement's variables:
 its convergence's threshold and value and their stability and relation given to k by their
@@ -524,21 +545,32 @@ def cutApply (name : String) (σ : List Tree → List Term) (prems : List Deduce
   let ds ← (b.hyps.zip prems).mapM fun (h, d) ↦ d Γ Φ (Internal.instTerm [] (σ Γ) h)
   dCut (Internal.instTerm [] (σ Γ) b.concl) (nd (.apply (K.ix name) [] (σ Γ)) ds) k Γ Φ ψ
 
-/-- The hypotheses introduced; the keyword not abbreviated, by the coherence of the
-abbreviations with the keywords, the keyword's being reserved by {lit}`reserved`; then k. -/
-def introWith (kw : String) (reserved : Deducer) (k : Deducer) : Deducer :=
+/-- A keyword not abbreviated, the test of its abbreviation's presence decided under the
+hypotheses: present, refuted by the coherence of the abbreviations with the keywords, the
+keyword's being reserved by {lit}`reserved`; absent, k. -/
+def plainKw (kw : String) (reserved : Deducer) (k : Deducer) : Deducer :=
   let K := W.K
   let P := K.P
   let lastFalse : Deducer := fun Γ Φ ψ ↦ K.hypFalse (Φ.length - 1) Γ Φ ψ
+  -- the keyword reserved, and so reserved or the implementation's: the test of its being
+  -- reserved decided, false refuted by the proof that it is reserved
+  let reservedT : Term := pc P "Prelude.isSome"
+    [pc P "Reader.indexOf" [pc P kw [], pc P "Reader.reservedNames" []]]
+  let reservedOr : Deducer := decideIn K (fun _ ↦ reservedT)
+    (fun Γ Φ ψ ↦ do
+      dCut (truth P.o reservedT) (← reserved Γ Φ (truth P.o reservedT)) lastFalse Γ Φ ψ)
+    (K.solve 3)
   let notAbbrev : Deducer := verifyK K "keyword abbreviated" <|
     linkK K s!"keyword {kw} abbreviated" <|
     dRwHyp (evalRw K.G K.E [.delta (W.T.q + 5 + 2 * nFolds)] .head) (W.hyp 9)
-      (K.allEΓ (fun _ ↦ pc P kw []) (K.impE (K.solve 3) (K.impE reserved lastFalse)))
-  let body : Deducer :=
-    decideIn K (fun Γ ↦ pc P "Prelude.isSome" [pc P "Reader.lookupAbbrev"
-        [pc P kw [], W.qv 7 Γ]]) k notAbbrev
-  (List.range nQ).foldr (fun _ k ↦ dAllI K.L k)
-    ((List.range W.nH).foldr (fun _ k ↦ dImpI K.L k) body)
+      (K.allEΓ (fun _ ↦ pc P kw []) (K.impE (K.solve 3) (K.impE reservedOr lastFalse)))
+  decideIn K (fun Γ ↦ pc P "Prelude.isSome" [pc P "Reader.lookupAbbrev"
+      [pc P kw [], W.qv 7 Γ]]) k notAbbrev
+
+/-- The hypotheses introduced; the keyword not abbreviated ({name}`plainKw`); then k. -/
+def introWith (kw : String) (reserved : Deducer) (k : Deducer) : Deducer :=
+  (List.range nQ).foldr (fun _ k ↦ dAllI W.K.L k)
+    ((List.range W.nH).foldr (fun _ k ↦ dImpI W.K.L k) (W.plainKw kw reserved k))
 
 /-- The hypotheses introduced; the keyword not abbreviated, by {name}`introWith`, the keyword's
 being reserved by normalization with the lookups' equations; then k. -/
@@ -1063,10 +1095,11 @@ def envTCons (P : Prog) (T : Defs3) : Step :=
       | dbgTrace "envTCons: not proved" fun _ ↦ none
     pure (a, d))
 
-/-- The names of a named context extended: a context whose names the typing admits as binders'
-({name}`Defs3.cxT`) and a name it admits, the context with the name's entry at a type: at a name
-the extension gives a type, the entry's name equal to the name or not; equal, the name the
-entry's, by the equality's soundness; unequal, the context gives it the type. -/
+/-- The names of a named context extended: a context whose names the typing admits as binders' or
+are the implementation's ({name}`Defs3.cxT`) and a name of either kind, the context with the name's
+entry at a type: at a name the extension gives a type, the entry's name equal to the name or not;
+equal, the name the entry's, by the equality's soundness; unequal, the context gives it the type.
+-/
 def cxTCons (P : Prog) (S : Defs) (T : Defs3) : Step :=
   ("cxTCons", fun ix E ↦ do
     -- the typing's lookup's equations alone: the reader's index's would unfold the test of the
@@ -1076,7 +1109,8 @@ def cxTCons (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let equalT ← primT Kernel.Prim.equal
     -- context: the entry's type, its name, the environment, the context
     let a : Internal.Thm := ⟨0, [treeTy, treeTy, T.envTy, list treeTy],
-      [truth P.o (pc P "Typing.nameOk" [v 2, v 1]), T.cxT (v 2) (v 3)],
+      [truth P.o (pc P "Prelude.or" [pc P "Typing.nameOk" [v 2, v 1], pc P "implName" [v 1]]),
+        T.cxT (v 2) (v 3)],
       T.cxT (v 2) (consT treeTy (pc P "Typing.abbr" [v 1, v 0]) (v 3))⟩
     let unfold (h : ℕ) (k : Deducer) : Deducer :=
       dRwHyp (evalRw K.G K.E [.delta (T.q + 7 + 2 * nFolds)] .head) h k
@@ -1205,12 +1239,12 @@ def lamConv (thm : String) (k : Deducer) : Deducer :=
 
 /-- The binder's expansion a source form; the typing's, the resolution's and the kernel's typing's
 hypotheses normalized, the first of index typed, given to k; then the binder's node decided: a
-label other than the atoms' refutes the typing's, or the source form's test, the steps at the node
-unfolded. The binder an atom: its characters fixed by the expansion of the numeral abbreviations,
-by its being a source form; whether its name is abbreviated decided, where the reader's name of the
-binder and the scope's agree; abbreviated, the abbreviation an atom, as the reader's binder must
-be, else the resolution refuted. The decisions of {lit}`pre`, given the index typed, precede
-those of the abbreviation. -/
+list's or a checked node's label refutes the typing's, any other label but the atoms' the source
+form's test, the steps at the node unfolded. The binder an atom: its characters fixed by the
+expansion of the numeral abbreviations, by its being a source form; whether its name is
+abbreviated decided, where the reader's name of the binder and the scope's agree; abbreviated, the
+abbreviation an atom, as the reader's binder must be, else the resolution refuted. The decisions
+of {lit}`pre`, given the index typed, precede those of the abbreviation. -/
 def binderAtom (k : ℕ → Deducer) (pre : ℕ → Deducer → Deducer := fun _ k ↦ k) : Deducer :=
     fun Γ₀ Φ₀ ψ₀ ↦ do
   let K := B.K
@@ -1246,13 +1280,14 @@ def binderAtom (k : ℕ → Deducer) (pre : ℕ → Deducer → Deducer := fun _
         if bs.map Oitavem.rank == some 1 then
           linkK K s!"{B.msg}: the binder's characters" (atom cs)
         else linkK K s!"{B.msg}: the binder's label {bs.map Oitavem.rank} refuted"
-          -- a label past the depth: the binder's expansion's being a source form refuted, which
-          -- tests its label against those of atoms and lists alone, not its rest
-          (fun Γ Φ ψ ↦ if bs.isNone then
-              dRwHyp (evalRw K.G K.E (K.rulesEx Φ src ++ [.thm (ix "srcNode") []]) .full) src
-                (dFalse K.L dHyp) Γ Φ ψ
-            else (K.hypFalse typed Γ Φ ψ).orElse fun _ ↦ B.hypFalseU typed Γ Φ ψ))
-        2 [] (v 1) Γ Φ ψ)))
+          -- a list's or a checked node's label: the typing's hypothesis refuted; any other, past
+          -- the depth too: the binder's expansion's being a source form refuted, which tests its
+          -- label against those of atoms, lists and checked nodes alone, not its rest
+          (fun Γ Φ ψ ↦ if [some 2, some 13, some 14].contains (bs.map Oitavem.rank) then
+              (K.hypFalse typed Γ Φ ψ).orElse fun _ ↦ B.hypFalseU typed Γ Φ ψ
+            else dRwHyp (evalRw K.G K.E (K.rulesEx Φ src ++ [.thm (ix "srcNode") []]) .full) src
+                (dFalse K.L dHyp) Γ Φ ψ))
+        3 [] (v 1) Γ Φ ψ)))
     Γ₀ Φ₀ ψ₀
 
 end BindKit

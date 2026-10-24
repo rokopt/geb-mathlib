@@ -69,21 +69,49 @@ open scoped FinEnum
     «Language.tpairs» xs = RoseTree.node 0 xs := rfl
 
 /-- The mirror's bindings of optional values are the base's of optional trees. -/
-@[template] theorem bindPP_def : «Language.bindPP» = «Base.bindO» := rfl
+@[template] theorem bindPP_def : «Language.bindPP» = «Base.bindO» := by
+  funext a b
+  simp only [«Language.bindPP», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
 @[template, inherit_doc bindPP_def] theorem bindTP_def : «Language.bindTP» = «Base.bindO» := rfl
 
-@[template, inherit_doc bindPP_def] theorem bindRP_def : «Language.bindRP» = «Base.bindO» := rfl
+@[template, inherit_doc bindPP_def] theorem bindRP_def : «Language.bindRP» = «Base.bindO» := by
+  funext a b
+  simp only [«Language.bindRP», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindPP_def] theorem bindDL_def : «Language.bindDL» = «Base.bindO» := rfl
+@[template, inherit_doc bindPP_def] theorem bindDL_def : «Language.bindDL» = «Base.bindO» := by
+  funext a b
+  simp only [«Language.bindDL», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindPP_def] theorem bindLP_def : «Language.bindLP» = «Base.bindO» := rfl
+@[template, inherit_doc bindPP_def] theorem bindLP_def : «Language.bindLP» = «Base.bindO» := by
+  funext a b
+  simp only [«Language.bindLP», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindPP_def] theorem bindQP_def : «Language.bindQP» = «Base.bindO» := rfl
+@[template, inherit_doc bindPP_def] theorem bindQP_def : «Language.bindQP» = «Base.bindO» := by
+  funext a b
+  simp only [«Language.bindQP», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindPP_def] theorem bindPD_def : «Language.bindPD» = «Base.bindO» := rfl
+@[template, inherit_doc bindPP_def] theorem bindPD_def : «Language.bindPD» = «Base.bindO» := by
+  funext a b
+  simp only [«Language.bindPD», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindPP_def] theorem bindPS_def : «Language.bindPS» = «Base.bindO» := rfl
+@[template, inherit_doc bindPP_def] theorem bindPS_def : «Language.bindPS» = «Base.bindO» := by
+  funext a b
+  simp only [«Language.bindPS», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
 /-- The mirror's optional lists of present arrows with their types and of present definitions are
 the base's of optional trees. -/

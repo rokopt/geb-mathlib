@@ -51,23 +51,47 @@ open Internal (Term)
 open scoped FinEnum
 
 /-- The mirror's bindings and images of optional values are the base's of optional trees. -/
-@[template] theorem bindP_def : «Translation.bindP» = «Base.bindO» := rfl
+@[template] theorem bindP_def : «Translation.bindP» = «Base.bindO» := by
+  funext a b
+  simp only [«Translation.bindP», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
 @[template, inherit_doc bindP_def] theorem bindTy_def : «Translation.bindTy» = «Base.bindO» := rfl
 
-@[template, inherit_doc bindP_def] theorem bindSS_def : «Translation.bindSS» = «Base.bindO» := rfl
+@[template, inherit_doc bindP_def] theorem bindSS_def : «Translation.bindSS» = «Base.bindO» := by
+  funext a b
+  simp only [«Translation.bindSS», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindP_def] theorem bindPS_def : «Translation.bindPS» = «Base.bindO» := rfl
+@[template, inherit_doc bindP_def] theorem bindPS_def : «Translation.bindPS» = «Base.bindO» := by
+  funext a b
+  simp only [«Translation.bindPS», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindP_def] theorem bindOH_def : «Translation.bindOH» = «Base.bindO» := rfl
+@[template, inherit_doc bindP_def] theorem bindOH_def : «Translation.bindOH» = «Base.bindO» := by
+  funext a b
+  simp only [«Translation.bindOH», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindP_def] theorem bindPH_def : «Translation.bindPH» = «Base.bindO» := rfl
+@[template, inherit_doc bindP_def] theorem bindPH_def : «Translation.bindPH» = «Base.bindO» := by
+  funext a b
+  simp only [«Translation.bindPH», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
 @[template, inherit_doc bindP_def] theorem mapTy_def : «Translation.mapTy» = «Base.mapO» := rfl
 
 @[template, inherit_doc bindP_def] theorem mapTS_def : «Translation.mapTS» = «Base.mapO» := rfl
 
-@[template, inherit_doc bindP_def] theorem mapPH_def : «Translation.mapPH» = «Base.mapO» := rfl
+@[template, inherit_doc bindP_def] theorem mapPH_def : «Translation.mapPH» = «Base.mapO» := by
+  funext a b
+  simp only [«Translation.mapPH», «Base.mapO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
 /-- The mirror's optional list of present objects is the base's optional trees. -/
 @[template] theorem allSomeObjs_def : «Translation.allSomeObjs» = «Base.allSomeT» := rfl
@@ -84,16 +108,24 @@ definitions, and its components are the pair's. -/
 
 /-- The mirror's context and sides of a theorem of Gödel's T are its tree's. -/
 @[template] theorem gthmCtx_def :
-    «Translation.gthmCtx» = fun th ↦ Const.children (Const.child th (leaf 0)) := rfl
+    «Translation.gthmCtx» = fun th ↦ Const.children (Const.child th (leaf 0)) := by
+  funext a
+  simp only [«Translation.gthmCtx», children_eq, lcase_children_head]
 
 @[template, inherit_doc gthmCtx_def] theorem gthmEqn_def :
-    «Translation.gthmEqn» = fun th ↦ Const.child th (leaf 1) := rfl
+    «Translation.gthmEqn» = fun th ↦ Const.child th (leaf 1) := by
+  funext a
+  simp only [«Translation.gthmEqn», children_eq, lcase_children_second]
 
 @[template, inherit_doc gthmCtx_def] theorem geqnLhs_def :
-    «Translation.geqnLhs» = fun q ↦ Const.child q (leaf 1) := rfl
+    «Translation.geqnLhs» = fun q ↦ Const.child q (leaf 1) := by
+  funext a
+  simp only [«Translation.geqnLhs», children_eq, lcase_children_second]
 
 @[template, inherit_doc gthmCtx_def] theorem geqnRhs_def :
-    «Translation.geqnRhs» = fun q ↦ Const.child q (leaf 2) := rfl
+    «Translation.geqnRhs» = fun q ↦ Const.child q (leaf 2) := by
+  funext a
+  simp only [«Translation.geqnRhs», children_eq, lcase_children_third]
 
 /-- The mirror's lists wrapped as datatypes, each the node of label zero over its elements. -/
 @[simp, template] theorem ktys_wrap (xs : List Tree) :
