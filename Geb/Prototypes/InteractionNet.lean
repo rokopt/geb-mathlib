@@ -17,6 +17,11 @@ public import Geb.Prototypes.InteractionNet.Execution
 public import Geb.Prototypes.InteractionNet.Expression
 public import Geb.Prototypes.InteractionNet.FiniteSum
 public import Geb.Prototypes.InteractionNet.Kernel
+public import Geb.Prototypes.InteractionNet.KernelContext
+public import Geb.Prototypes.InteractionNet.KernelRecursors
+public import Geb.Prototypes.InteractionNet.KernelRules
+public import Geb.Prototypes.InteractionNet.KernelValue
+public import Geb.Prototypes.InteractionNet.KernelValueShape
 public import Geb.Prototypes.InteractionNet.Normalization
 public import Geb.Prototypes.InteractionNet.Observation
 public import Geb.Prototypes.InteractionNet.Output
@@ -38,6 +43,8 @@ invariant, erasure and copying terminate on every constructor value, and a succe
 returns the read-back of a reached normal configuration.
 Tree read-back recovers every represented tree. Contextual expression evaluation composes
 the environment-copying, child-evaluation and constructor-dispatch phases of the reducer.
+Runtime values are related to the existing evaluator's values. Tree and list recursion
+operations preserve this relation whenever the step's applications do.
 
 The first bootstrap milestone remains in progress. The missing acceptance theorem is that
 every well-typed closed tree-to-tree program, on every input, reaches such a configuration

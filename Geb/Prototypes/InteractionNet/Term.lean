@@ -67,6 +67,13 @@ def var (x : ν) : Term arity ν := .pure x
 /-- An agent, with one term at each auxiliary port. -/
 def agent (a : α) (ts : Fin (arity a) → Term arity ν) : Term arity ν := .liftBind a ts
 
+/-- Equal symbols and fields at the transported port indices determine the same term. -/
+theorem agent_congr {a b : α} (h : a = b) (ts : Fin (arity a) → Term arity ν)
+    (us : Fin (arity b) → Term arity ν)
+    (hu : ∀ i, ts i = us (Fin.cast (congrArg arity h) i)) : agent a ts = agent b us := by
+  subst b
+  exact congrArg (agent a) (funext hu)
+
 /-- All occurrences of names, in the order of the auxiliary ports. -/
 def names : Term arity ν → List ν :=
   PFunctor.FreeM.rec (fun x ↦ [x]) (fun _ _ ns ↦ (List.ofFn ns).flatten)
