@@ -152,21 +152,29 @@ def CallsTo (P : List Tree) (f : Op) (x : Tree) (xs : List Tree) (y : Tree) : Pr
   ∀ v, Rep v x → ∀ vs, List.Forall₂ Rep vs xs →
     ∃ w, Calls dataArity (program P) f v vs w ∧ Rep w y
 
+/-- A represented expression environment has closed field values representing its raw entries. -/
+theorem evaluatesTo_environment (P : List Tree) {n : ℕ} (ρ : Fin n → Value dataArity)
+    (es : List (E n)) (env : List Tree) (h : List.Forall₂ (EvaluatesTo P ρ) es env) :
+    ∃ vs : Fin es.length → Value dataArity,
+      (∀ i, Evaluates dataArity (program P) (es.get i) ρ (vs i)) ∧
+      List.Forall₂ Rep (List.ofFn vs) env := by
+  let rs : Fin es.length → Tree := fun i ↦ env.get (Fin.cast h.length_eq i)
+  obtain ⟨vs, hv, hr⟩ := evaluatesTo_fields P ρ es.get rs
+    (fun i ↦ h.get i.isLt (by simpa only [← h.length_eq] using i.isLt))
+  refine ⟨vs, hv, ?_⟩
+  apply List.forall₂_of_length_eq_of_get
+  · simpa only [List.length_ofFn] using h.length_eq
+  · intro i hi hj
+    simpa only [List.get_eq_getElem, List.getElem_ofFn, rs, Fin.val_cast] using
+      hr ⟨i, by simpa only [List.length_ofFn] using hi⟩
+
 /-- Represented arguments and a represented call compose to evaluate a call expression. -/
 theorem evaluatesTo_call (P : List Tree) {n : ℕ} (ρ : Fin n → Value dataArity)
     (f : Op) (e : E n) (es : List (E n)) (x y : Tree) (xs : List Tree)
     (he : EvaluatesTo P ρ e x) (hes : List.Forall₂ (EvaluatesTo P ρ) es xs)
     (hc : CallsTo P f x xs y) : EvaluatesTo P ρ (call f e es) y := by
   obtain ⟨v, hv, hr⟩ := he
-  let rs : Fin es.length → Tree := fun i ↦ xs.get (Fin.cast hes.length_eq i)
-  obtain ⟨vs, hvs, hrs⟩ := evaluatesTo_fields P ρ es.get rs
-    (fun i ↦ hes.get i.isLt (by simpa only [← hes.length_eq] using i.isLt))
-  have hs : List.Forall₂ Rep (List.ofFn vs) xs := by
-    apply List.forall₂_of_length_eq_of_get
-    · simpa only [List.length_ofFn] using hes.length_eq
-    · intro i hi hj
-      simpa only [List.get_ofFn, rs, List.get_eq_getElem, Fin.val_cast, List.getElem_ofFn] using
-        hrs ⟨i, by simpa only [List.length_ofFn] using hi⟩
+  obtain ⟨vs, hvs, hs⟩ := evaluatesTo_environment P ρ es xs hes
   obtain ⟨w, hw, hwr⟩ := hc v hr (List.ofFn vs) hs
   exact ⟨w, evaluates_call dataArity (program P) f e es ρ v w vs hv hvs hw, hwr⟩
 

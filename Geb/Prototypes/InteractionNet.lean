@@ -17,11 +17,16 @@ public import Geb.Prototypes.InteractionNet.Execution
 public import Geb.Prototypes.InteractionNet.Expression
 public import Geb.Prototypes.InteractionNet.FiniteSum
 public import Geb.Prototypes.InteractionNet.Kernel
+public import Geb.Prototypes.InteractionNet.KernelAdequacy
+public import Geb.Prototypes.InteractionNet.KernelApplication
 public import Geb.Prototypes.InteractionNet.KernelContext
+public import Geb.Prototypes.InteractionNet.KernelControl
 public import Geb.Prototypes.InteractionNet.KernelEquality
+public import Geb.Prototypes.InteractionNet.KernelEvaluation
 public import Geb.Prototypes.InteractionNet.KernelPrimitives
 public import Geb.Prototypes.InteractionNet.KernelRecursors
 public import Geb.Prototypes.InteractionNet.KernelRules
+public import Geb.Prototypes.InteractionNet.KernelSaturation
 public import Geb.Prototypes.InteractionNet.KernelValue
 public import Geb.Prototypes.InteractionNet.KernelValueShape
 public import Geb.Prototypes.InteractionNet.Normalization
@@ -49,12 +54,21 @@ Runtime values are related to the existing evaluator's values. Tree and list rec
 operations preserve this relation whenever the step's applications do.
 Primitive dispatch preserves the relation, including recursive tree equality.
 
-The first bootstrap milestone remains in progress. The missing acceptance theorem is that
-every well-typed closed tree-to-tree program, on every input, reaches such a configuration
-and that its read-back equals the kernel denotation. In particular, the structural
-preservation and successful-run theorems do not establish normalization or adequacy.
-The remaining proof connects the compiled kernel's contextual evaluations to the existing
-logical relation for its first-order evaluator.
+The first bootstrap milestone is complete. Evaluation and application are simulated at
+every fuel level, connecting contextual net execution to the kernel evaluator's logical
+relation. Every accepted closed tree-to-tree term, with successfully loaded globals, reaches
+the canonical normal configuration for its denotation on every input. The executable runner
+therefore returns that denotation at some finite bound, and any successful bound returns
+the same result. Loaded globals satisfy the corresponding execution theorem.
+
+## Main statements
+
+* {lit}`Kernel.normalizes_of_infer` — every accepted closed term reaches its normal tree result.
+* {lit}`Kernel.run_of_infer` — the executable runner computes the kernel denotation.
+* {lit}`Kernel.result_eq_of_infer` — a successful run cannot return a different tree.
+* {lit}`Kernel.run_of_load` — execution adequacy for loaded globals.
+
+The later milestones concern confluence across schedules and refinement by a graph runtime.
 
 ## Tags
 

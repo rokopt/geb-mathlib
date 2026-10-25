@@ -155,6 +155,44 @@ theorem rep_nil_value (v : Value dataArity) (A : Tree)
           (by rw [← he]; rfl))
       | thunk => exact False.elim h
 
+/-- A represented unit has the nullary unit constructor. -/
+theorem rep_unit_value (v : Value dataArity) (h : Rep v Eval.Val.unit) :
+    v = Term.agent (.inl .unit) Fin.elim0 := by
+  cases v with
+  | pure x => exact x.elim
+  | liftBind a vs =>
+    cases a with
+    | inr n => exact False.elim h
+    | inl a =>
+      cases a with
+      | unit =>
+        apply congrArg (Term.agent (arity := constructorArity dataArity) (.inl .unit))
+        exact funext fun i ↦ i.elim0
+      | tree =>
+        obtain ⟨ts, _, he⟩ := h
+        have hh := congrArg RoseTree.label he
+        exact False.elim (by cases hh)
+      | nil =>
+        have hh := congrArg RoseTree.label h
+        exact False.elim (by cases hh)
+      | pair =>
+        obtain ⟨x, y, _, _, he⟩ := h
+        have hh := congrArg RoseTree.label he
+        exact False.elim (by cases hh)
+      | cons =>
+        obtain ⟨x, y, _, _, he⟩ := h
+        have hh := congrArg RoseTree.label he
+        exact False.elim (by cases hh)
+      | closure =>
+        obtain ⟨en, _, he⟩ := h
+        have hh := congrArg RoseTree.label he
+        exact False.elim (by cases hh)
+      | partialApp =>
+        obtain ⟨hh, args, _, he⟩ := h
+        exact False.elim (hh.spine_ne (List.ofFn args) Label.unit (by decide)
+          (by rw [← he]; rfl))
+      | thunk => exact False.elim h
+
 /-- Every successfully decoded evaluator list is a list constructor chain with one final
 element-type annotation. The decoder does not require the elements to be well typed. -/
 theorem ofList_of_listOf (v : Tree) (xs : List Tree) (h : Eval.listOf v = some xs) :

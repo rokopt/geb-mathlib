@@ -7,7 +7,6 @@ module
 
 public import Geb.Prototypes.InteractionNet.Expression
 public import Geb.Prototypes.InteractionNet.Observation
-import Mathlib.Util.CompileInductive
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
