@@ -17,6 +17,7 @@ public import Geb.Prototypes.FreeTopos.Internal.ObjectSubst
 public import Geb.Prototypes.FreeTopos.Internal.Params
 public import Geb.Prototypes.FreeTopos.Internal.Proofs
 public import Geb.Prototypes.FreeTopos.Internal.Prove
+public import Geb.Prototypes.FreeTopos.Internal.ProveChecked
 public import Geb.Prototypes.FreeTopos.Internal.Represent
 public import Geb.Prototypes.FreeTopos.Internal.Semantics
 public import Geb.Prototypes.FreeTopos.Internal.Soundness
@@ -35,8 +36,9 @@ functor and monad laws of their renaming and substitution, their typing and comp
 combinators, its definitions, compiled to definitions of the
 combinators, and the proof that compiling a term and unfolding the combinators' definitions
 agrees, in every model, with unfolding the language's definitions and compiling; its derivations
-of formulas under hypotheses, their checker and a prover, and the proofs that the checker is
-sound and, citing certificates of the combinators, complete; its connectives, defined from
+of formulas under hypotheses, their checker and a prover, the proofs that the checker is sound
+and, citing certificates of the combinators, complete, and that the prover's rewritings check,
+with the checker with a step of conversion admitted by them; its connectives, defined from
 equality, with their rules derived, their meaning in every model, and description; and the
 representation of Lean's functions by its terms in the topos of types and functional relations.
 -/

@@ -273,10 +273,14 @@ the sections below detail:
     the checker of holes, admitted beside it
     ({ref "the-next-phase"}[The next phase]). The first is written in
     Lean beside the Lean checker (`Geb.FreeTopos.Internal.convCheck`),
-    each step of conversion naming its rules and checked as the base
-    checker's derivation of its steps, so that it is sound relative to
-    the base checker; its transcription into Geb, with its agreement, and
-    the evaluation of primitives at literals follow. The checker of the shared
+    its rules decided by the measurement of the next phase: each step of
+    conversion names one of the prover's reductions with its rules and
+    computes the reduction's result alone, the derivation the reduction
+    computes being, by a theorem in Lean, one the base checker accepts
+    with that result, so that it is sound relative to the base checker,
+    and an application of a theorem finds its instance by matching; its
+    transcription into Geb, with its agreement, and the evaluation of
+    primitives at literals follow. The checker of the shared
     certificates, by unsharing, is required if measurement shows the
     checking or storage of certificates to need it, and follows the
     bootstrap otherwise.
@@ -1604,7 +1608,7 @@ section below opens with a table of the states of its parts.
     the checker and the translation written in Geb and the proofs of
     their agreement: complete; the prover, its tactics and the
     combinator prover written in Geb and the proofs of their agreement:
-    complete; stronger checkers: ready
+    complete; stronger checkers: in progress
 :::
 
 The fixed points hold on images and on Lean. The seed builds the
@@ -6561,9 +6565,10 @@ identity of the datatype language's expansion on programs of kernel forms
 What is ready, each item independent of the others except as stated:
 
 * Stronger checkers ({ref "metalogic-and-checker"}[The metalogic and its
-  checker]), described below; their first step is a measurement, the
-  nodes of the complete proofs' derivations counted by rule, which
-  decides the rules of the checker with a step of conversion.
+  checker]), in progress, described below: the measurement that decides
+  the rules of the checker with a step of conversion is made, and that
+  checker is written in Lean; its transcription into Geb and the
+  evaluation of primitives at literals follow.
 * The datatype language's completion
   ({ref "datatype-completion"}[The datatype language's completion]),
   in progress, the next step of the authoring sequence
@@ -6592,15 +6597,34 @@ step of conversion to a normal form under named rules, which the checker
 computes, admitted by the translation of that step into the derivation
 the provers construct. The evaluation of primitives at literals, which the
 language derives by folds over their bits, is a family of its rules, each
-step translated into that derivation. Which rules it carries is decided,
+step translated into that derivation. Which rules it carries was decided,
 as the choices of when the Mitchell–Bénabou language is written and
 whether Gödel's T keeps its own checker were, by measurement: the nodes
-of the complete proofs' derivations, counted by rule, locate the steps it
-would take at once. Its prototype in Lean, `Geb.FreeTopos.Internal.convCheck`,
-leaves the choice to each certificate: a step of conversion names its
-rules, and its meaning is the base checker's rewriting by the derivation
-of the prover's normalization under them, so that each step is admitted
-by its translation, and the checker's soundness is the base checker's.
+of the stored certificates' derivations, counted by rule
+(`GebBench/Prototypes/FreeTopos/Rules.lean`, printed by
+`lake exe geb-bench`), locate the steps it would take at once. At the
+first measurement 99 in 100 of the derivations' nodes lay in rewritings,
+the derivations that a rule proving a formula takes as premises, and 69
+in 100 were compositions, congruences and identities; the rules at the
+root were, in decreasing order, β, the unfolding of definitions, the
+folds' computations, the projections of pairs, earlier theorems, the case
+analyses of bits and the hypotheses. One step of conversion in place of
+each rewriting leaves about one node in ninety. The terms the rules name,
+counted as trees, had ten times the derivations' nodes, two thirds of
+them the instances of the theorems the derivations apply. The checker in
+Lean, `Geb.FreeTopos.Internal.convCheck`, therefore takes as its steps
+the prover's reductions under the rules a step names, the innermost
+normalization and the reduction to a depth through weak head normal
+forms, and the application of a theorem whose instance is found by
+matching its conclusion against the formula. A step of conversion
+computes the reduction's result alone: the derivation the reduction
+computes is one the base checker accepts with that result, a theorem in
+Lean (`Geb.FreeTopos.Internal.eval_checked`), so that each step is
+admitted by its translation, that derivation, without the derivation
+being checked, and the checker's soundness is the base checker's. The
+case analyses of bits, the steps of the labels' arithmetic, were 1 in 100
+of the nodes at that measurement, beside the unfoldings and β-steps
+around them that the count by rule does not attribute to them.
 The terms Canonical finds modulo the computation rules are its first
 certificates ({ref "search-synthesis"}[Search and synthesis]). The second
 is the checker of holes, admitted beside
