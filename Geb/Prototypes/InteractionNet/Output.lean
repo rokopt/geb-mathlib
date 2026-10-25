@@ -28,6 +28,7 @@ cannot capture each other's wires because the delivered values are closed.
 * {lit}`reaches_delivery` — the reducer delivers one computed value.
 * {lit}`deliveries_count` — the wire counts of pending closed deliveries.
 * {lit}`reaches_resolve` — distinct closed deliveries compose in the sequential reducer.
+* {lit}`resolve_eq_subst` — a closed delivery batch is one simultaneous substitution.
 
 ## Tags
 
@@ -49,6 +50,121 @@ def deliveries (bs : List (ℕ × Term arity ℕ)) (c : Config arity) : Config a
 /-- Substitute the computed results in their listed order. -/
 def resolve (bs : List (ℕ × Term arity ℕ)) (c : Config arity) : Config arity :=
   bs.foldl (fun d b ↦ d.subst fun x ↦ if x = b.1 then b.2 else Term.var x) c
+
+/-- The simultaneous substitution specified by a list of closed deliveries. -/
+def deliverySubst (bs : List (ℕ × Term arity ℕ)) (x : ℕ) : Term arity ℕ :=
+  (bs.lookup x).getD (Term.var x)
+
+/-- A substitution fixing the output names acts on the pending result terms. -/
+theorem subst_deliveries_of_fixed (bs : List (ℕ × Term arity ℕ)) (c : Config arity)
+    (σ : ℕ → Term arity ℕ) (h : ∀ b ∈ bs, σ b.1 = Term.var b.1) :
+    (deliveries bs c).subst σ =
+      deliveries (bs.map fun b ↦ (b.1, b.2.subst σ)) (c.subst σ) := by
+  have he : bs.map (fun b ↦ ((Term.var b.1).subst σ, b.2.subst σ)) =
+      bs.map (fun b ↦ (Term.var b.1, b.2.subst σ)) := by
+    apply List.map_congr_left
+    intro b hb
+    simp only [Term.subst_var, h b hb]
+  simp only [deliveries, Config.subst, List.map_append, List.map_map, Function.comp_def, he]
+
+/-- Resolving closed deliveries is one simultaneous substitution. -/
+theorem resolve_eq_subst (bs : List (ℕ × Term arity ℕ)) (c : Config arity)
+    (hc : ∀ b ∈ bs, b.2.names = []) : resolve bs c = c.subst (deliverySubst bs) := by
+  apply List.rec (motive := fun bs ↦ ∀ c : Config arity,
+    (∀ b ∈ bs, b.2.names = []) → resolve bs c = c.subst (deliverySubst bs))
+    (fun c _ ↦ (Config.subst_var_self c).symm) (fun b bs ih c h ↦ ?_) bs c hc
+  rcases b with ⟨y, t⟩
+  rw [resolve, List.foldl_cons]
+  change resolve bs (c.subst _) = _
+  rw [ih _ (fun d hd ↦ h d (List.mem_cons_of_mem _ hd)), Config.subst_subst]
+  apply congrArg (fun σ ↦ c.subst σ)
+  funext x
+  by_cases hx : x = y
+  · simp only [hx, ↓reduceIte,
+      Term.subst_of_names_eq_nil _ t (h (y, t) (List.mem_cons_self ..)),
+      deliverySubst, List.lookup_cons_self, Option.getD_some]
+  · have hxy : (x == y) = false := by simp [hx]
+    simp [hx, deliverySubst, List.lookup_cons, hxy]
+
+/-- A wire outside the delivery list is left as a variable. -/
+theorem deliverySubst_of_not_mem (bs : List (ℕ × Term arity ℕ)) (x : ℕ)
+    (h : x ∉ bs.map Prod.fst) : deliverySubst bs x = Term.var x := by
+  have hn : bs.lookup x = none := by
+    apply List.lookup_eq_none_iff.mpr
+    intro b hb
+    have hx : x ≠ b.1 := fun he ↦ h (he ▸ List.mem_map_of_mem hb)
+    simpa using hx
+  simp only [deliverySubst, hn, Option.getD_none]
+
+/-- A delivery on a unique wire supplies that wire's replacement. -/
+theorem deliverySubst_of_mem (bs : List (ℕ × Term arity ℕ))
+    (hn : (bs.map Prod.fst).Nodup) (b : ℕ × Term arity ℕ) (hb : b ∈ bs) :
+    deliverySubst bs b.1 = b.2 := by
+  apply List.rec (motive := fun bs ↦ (bs.map Prod.fst).Nodup →
+    ∀ b ∈ bs, deliverySubst bs b.1 = b.2)
+    (fun _ b hb ↦ False.elim (List.not_mem_nil hb)) (fun d ds ih h b hb ↦ ?_) bs hn b hb
+  rcases d with ⟨x, t⟩
+  have hd := List.nodup_cons.mp h
+  rcases List.mem_cons.mp hb with rfl | hb
+  · simp [deliverySubst]
+  · have hx : (b.1 == x) = false := by
+      apply beq_eq_false_iff_ne.mpr
+      intro he
+      have hm : b.1 ∈ ds.map Prod.fst := List.mem_map_of_mem hb
+      exact hd.1 (he ▸ hm)
+    simpa only [deliverySubst, List.lookup_cons, hx] using ih hd.2 b hb
+
+/-- Resolving two batches is the composition of their resolutions. -/
+theorem resolve_append (bs ds : List (ℕ × Term arity ℕ)) (c : Config arity) :
+    resolve (bs ++ ds) c = resolve ds (resolve bs c) := by
+  exact List.foldl_append
+
+/-- Resolution never changes the next-name supply. -/
+@[simp] theorem resolve_nextName (bs : List (ℕ × Term arity ℕ)) (c : Config arity) :
+    (resolve bs c).nextName = c.nextName := by
+  apply List.rec (motive := fun bs ↦ ∀ c : Config arity,
+    (resolve bs c).nextName = c.nextName) (fun _ ↦ rfl)
+    (fun b bs ih c ↦ ih (c.subst _)) bs c
+
+/-- Changing the supply commutes with delivery of closed results. -/
+theorem resolve_with_nextName (bs : List (ℕ × Term arity ℕ)) (c : Config arity) (n : ℕ)
+    (hc : ∀ b ∈ bs, b.2.names = []) :
+    resolve bs { c with nextName := n } = { resolve bs c with nextName := n } := by
+  rw [resolve_eq_subst bs _ hc, resolve_eq_subst bs _ hc]
+  rfl
+
+/-- Closed deliveries preserve the count of every other wire. -/
+theorem resolve_count_of_not_mem (bs : List (ℕ × Term arity ℕ)) (c : Config arity)
+    (hc : ∀ b ∈ bs, b.2.names = []) (x : ℕ) (hx : x ∉ bs.map Prod.fst) :
+    (resolve bs c).names.count x = c.names.count x := by
+  apply List.rec (motive := fun bs ↦ ∀ c : Config arity,
+    (∀ b ∈ bs, b.2.names = []) → x ∉ bs.map Prod.fst →
+    (resolve bs c).names.count x = c.names.count x)
+    (fun _ _ _ ↦ rfl) (fun b bs ih c h hn ↦ ?_) bs c hc hx
+  have hn' : x ≠ b.1 ∧ x ∉ bs.map Prod.fst := by simpa only [List.map_cons,
+    List.mem_cons, not_or] using hn
+  change (resolve bs (c.subst _)).names.count x = _
+  rw [ih _ (fun d hd ↦ h d (List.mem_cons_of_mem _ hd)) hn'.2]
+  exact c.count_names_subst_closed b.1 x b.2 (h b (List.mem_cons_self ..)) hn'.1
+
+/-- Resolving closed results cannot introduce any free name. -/
+theorem names_resolve_subset (bs : List (ℕ × Term arity ℕ)) (c : Config arity)
+    (hc : ∀ b ∈ bs, b.2.names = []) : (resolve bs c).names ⊆ c.names := by
+  apply List.rec (motive := fun bs ↦ ∀ c : Config arity,
+    (∀ b ∈ bs, b.2.names = []) → (resolve bs c).names ⊆ c.names)
+    (fun c _ ↦ List.Subset.refl c.names) (fun b bs ih c h ↦ ?_) bs c hc
+  change (resolve bs (c.subst _)).names ⊆ c.names
+  apply List.Subset.trans (ih _ (fun d hd ↦ h d (List.mem_cons_of_mem _ hd)))
+  rw [Config.names_subst_closed _ _ _ (h b (List.mem_cons_self ..))]
+  exact fun _ hx ↦ (List.mem_filter.mp hx).1
+
+/-- A context containing none of the delivered wires is unchanged by their resolution. -/
+theorem resolve_eq_self (bs : List (ℕ × Term arity ℕ)) (c : Config arity)
+    (hc : ∀ b ∈ bs, b.2.names = [])
+    (hd : ∀ x ∈ c.names, x ∉ bs.map Prod.fst) : resolve bs c = c := by
+  rw [resolve_eq_subst bs c hc]
+  exact (c.subst_congr _ _ (fun x hx ↦ deliverySubst_of_not_mem bs x (hd x hx))).trans
+    (Config.subst_var_self c)
 
 /-- The reducer delivers a closed value to a wire that has exactly one remaining end. -/
 theorem reaches_delivery (s : System arity) (c : Config arity) (x : ℕ) (t : Term arity ℕ)

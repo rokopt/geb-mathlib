@@ -48,6 +48,20 @@ theorem subst_subst (ρ : μ → Term arity ξ) (σ : ν → Term arity μ) (t :
 @[simp] theorem subst_var_self (t : Term arity ν) : t.subst var = t :=
   PFunctor.FreeM.bind_pure t
 
+/-- A substitution depends only on the names occurring in its argument. -/
+theorem subst_congr (ρ σ : ν → Term arity μ) (t : Term arity ν)
+    (h : ∀ x ∈ t.names, ρ x = σ x) : t.subst ρ = t.subst σ := by
+  apply PFunctor.FreeM.rec (motive := fun t ↦
+    (∀ x ∈ names t, ρ x = σ x) → subst ρ t = subst σ t)
+    (fun x h ↦ h x (List.mem_singleton_self _)) (fun a ts ih ht ↦ ?_) t h
+  change agent a (fun i ↦ subst ρ (ts i)) = agent a (fun i ↦ subst σ (ts i))
+  congr 1
+  funext i
+  apply ih i
+  intro x hx
+  apply ht x
+  exact List.mem_flatten.mpr ⟨names (ts i), List.mem_ofFn.mpr ⟨i, rfl⟩, hx⟩
+
 /-- A substitution has no effect on a term with no names. -/
 theorem subst_of_names_eq_nil (σ : ν → Term arity ν) (t : Term arity ν)
     (h : t.names = []) : t.subst σ = t := by
@@ -62,6 +76,40 @@ theorem subst_of_names_eq_nil (σ : ν → Term arity ν) (t : Term arity ν)
 end Term
 
 namespace Config
+
+/-- Substitutions compose pointwise on every interface and equation term. -/
+theorem subst_subst (ρ σ : ℕ → Term arity ℕ) (c : Config arity) :
+    (c.subst σ).subst ρ = c.subst (fun x ↦ (σ x).subst ρ) := by
+  cases c
+  simp only [subst, List.map_map, Function.comp_def, Term.subst_subst]
+
+/-- The identity substitution leaves a configuration unchanged. -/
+@[simp] theorem subst_var_self (c : Config arity) : c.subst Term.var = c := by
+  cases c
+  simp [subst, show Term.subst (arity := arity) (ν := ℕ) Term.var = id from
+    funext Term.subst_var_self]
+
+/-- Configuration substitution depends only on its occurring wire names. -/
+theorem subst_congr (ρ σ : ℕ → Term arity ℕ) (c : Config arity)
+    (h : ∀ x ∈ c.names, ρ x = σ x) : c.subst ρ = c.subst σ := by
+  have hi : ∀ t ∈ c.interface, t.subst ρ = t.subst σ := by
+    intro t ht
+    apply Term.subst_congr
+    intro x hx
+    exact h x (List.mem_append_left _ (List.mem_flatMap.mpr ⟨t, ht, hx⟩))
+  have he : ∀ e ∈ c.equations,
+      (e.1.subst ρ, e.2.subst ρ) = (e.1.subst σ, e.2.subst σ) := by
+    intro e he
+    apply Prod.ext <;> apply Term.subst_congr <;> intro x hx
+    · exact h x (List.mem_append_right _
+        (List.mem_flatMap.mpr ⟨e, he, List.mem_append_left _ hx⟩))
+    · exact h x (List.mem_append_right _
+        (List.mem_flatMap.mpr ⟨e, he, List.mem_append_right _ hx⟩))
+  cases c
+  simp only [subst]
+  congr 1
+  · exact List.map_congr_left hi
+  · exact List.map_congr_left he
 
 /-- Substitution replaces every occurrence in the configuration by its replacement's names. -/
 theorem names_subst (σ : ℕ → Term arity ℕ) (c : Config arity) :

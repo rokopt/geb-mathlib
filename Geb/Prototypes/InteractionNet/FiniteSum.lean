@@ -106,6 +106,29 @@ theorem count_ofFn_eq_finSum {ν : Type} [DecidableEq ν] [BEq ν] [LawfulBEq ν
   rw [← List.flatMap_singleton' (List.ofFn f), List.count_flatMap, List.map_ofFn]
   simp only [Function.comp_def, List.count_singleton, beq_iff_eq, finSum_ofFn]
 
+/-- An entry of an injectively indexed rectangle occurs exactly once in its enumeration. -/
+theorem count_matrix {m k : ℕ} (w : Fin m → Fin k → ℕ)
+    (hw : ∀ i i' j j', w i j = w i' j' ↔ i = i' ∧ j = j') (i : Fin m) (j : Fin k) :
+    (List.ofFn fun a ↦ List.ofFn (w a)).flatten.count (w i j) = 1 := by
+  simp only [List.count_flatten, List.map_ofFn, Function.comp_def,
+    count_ofFn_eq_finSum, finSum_ofFn, hw]
+  have hi : ∀ a, (finSum fun b ↦ if a = i ∧ b = j then 1 else 0) =
+      if a = i then 1 else 0 := by
+    intro a
+    by_cases h : a = i <;> simp [h]
+  simp only [hi, finSum_ite_eq]
+
+/-- An injectively indexed rectangle has no repeated entries. -/
+theorem nodup_matrix {m k : ℕ} (w : Fin m → Fin k → ℕ)
+    (hw : ∀ i i' j j', w i j = w i' j' ↔ i = i' ∧ j = j') :
+    (List.ofFn fun i ↦ List.ofFn (w i)).flatten.Nodup := by
+  apply List.nodup_iff_count_of_mem.mpr
+  intro x hx
+  obtain ⟨row, hr, hx⟩ := List.mem_flatten.mp hx
+  obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hr
+  obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx
+  exact count_matrix w hw i j
+
 end Geb.InteractionNet
 
 end

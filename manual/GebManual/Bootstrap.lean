@@ -1869,16 +1869,20 @@ internal wire names explicitly and searches past inert equations.
 {name}`Geb.InteractionNet.FirstOrder.system_rule_linear` proves that
 every generated rule uses its boundary once and each internal wire twice;
 {name}`Geb.InteractionNet.Kernel.run_wellFormed` proves the wire and
-allocation invariants throughout execution. Erasure of every constructor
-value terminates, and distinct closed results can be delivered to a
-continuation. A successful bounded run reaches a normal configuration
+allocation invariants throughout execution. Erasure and copying of every
+constructor value terminate in a continuation, by
+{name}`Geb.InteractionNet.FirstOrder.reaches_erase` and
+{name}`Geb.InteractionNet.FirstOrder.copy_realizes`.
+{name}`Geb.InteractionNet.FirstOrder.evaluates_agent` composes the contextual
+evaluations of an expression's children with its parent operation, following
+the reducer's environment-copying and result-delivery phases.
+A successful bounded run reaches a normal configuration
 with the reported tree as its read-back. The execution tests cover
 globals, copied closures, conditional selection, the kernel's recursors
 and primitive edge cases.
 
-Acceptance is still open: constructor-copying and expression-evaluation
-normalization in contexts must be connected to the logical relation for
-`Geb.Kernel.Eval`, then to the denotation assigned by
+Acceptance is still open: the compiled kernel's contextual evaluations
+must be connected to the logical relation for `Geb.Kernel.Eval`, then to the denotation assigned by
 {name}`Geb.Kernel.infer`. The successful-run and wire-invariant theorems
 do not establish that every well-typed program finishes or that its
 result is the denotation. Neither the diamond property nor a graph
