@@ -9,6 +9,7 @@ public import VersoManual
 public import GebManual.Bibliography
 import Geb.Prototypes.Bootstrap
 import Geb.Prototypes.Kernel
+import Geb.Prototypes.InteractionNet
 import Geb.Prototypes.GoedelT
 import Geb.Prototypes.Definition
 import Geb.Prototypes.FreeTopos
@@ -143,10 +144,11 @@ Computation:
   pattern variables, primitives that no binding shadows, emitted names
   that no definition captures, and diagnostics naming the definition that
   fails.
-* Ready. The first stage of the interaction-net arm of
+* In progress. The first stage of the interaction-net arm of
   {ref "choice-of-machine"}[the choice of machine]: a kernel program's
   interaction system, duplicating no λ-value, with a sequential reducer
-  in Lean and the proof that its read-back is the denotation.
+  in Lean. The reducer and translation are implemented; the general
+  normalization and read-back adequacy proof remains.
 * Deferred until before the second host.
   {ref "choice-of-machine"}[The choice of machine]: the benchmark
   programs, the environment machine, the compilation to
@@ -1564,7 +1566,7 @@ section below opens with a table of the states of its parts.
 *
   * {ref "choice-of-machine"}[The choice of machine]
   * Deferred until before the second host
-  * The first stage of the interaction-net arm: ready; the
+  * The first stage of the interaction-net arm: in progress; the
     elementary-affine decorations: in progress; the rest: deferred
 *
   * {ref "definitions-and-images"}[Definitions and images]
@@ -1856,6 +1858,31 @@ confluence proved on paper, is the algebraic alternative to indexed
 cells {citep DeFalco2010}[]. A later milestone proves a data structure
 in close correspondence with the calculus, as in
 {citet HassanMackieSato2015}[], to refine the reduction of nets.
+
+The first-stage implementation is in `Geb.Prototypes.InteractionNet`.
+{name}`Geb.InteractionNet.Kernel.compile` translates the kernel to
+first-order expressions, with source paths identifying recursion sites;
+{name}`Geb.InteractionNet.Kernel.system` supplies the program's local
+interaction rules. Closures and conditional thunks are constructor data,
+and fans copy or erase their captured fields. The reducer allocates its
+internal wire names explicitly and searches past inert equations.
+{name}`Geb.InteractionNet.FirstOrder.system_rule_linear` proves that
+every generated rule uses its boundary once and each internal wire twice;
+{name}`Geb.InteractionNet.Kernel.run_wellFormed` proves the wire and
+allocation invariants throughout execution. Erasure of every constructor
+value terminates, and distinct closed results can be delivered to a
+continuation. A successful bounded run reaches a normal configuration
+with the reported tree as its read-back. The execution tests cover
+globals, copied closures, conditional selection, the kernel's recursors
+and primitive edge cases.
+
+Acceptance is still open: constructor-copying and expression-evaluation
+normalization in contexts must be connected to the logical relation for
+`Geb.Kernel.Eval`, then to the denotation assigned by
+{name}`Geb.Kernel.infer`. The successful-run and wire-invariant theorems
+do not establish that every well-typed program finishes or that its
+result is the denotation. Neither the diamond property nor a graph
+implementation is part of this implementation.
 
 Elementary-affine typability was measured on the programs by
 `scripts/eal/eal.py`, over the definitions `lake exe geb-defs` writes
@@ -6577,9 +6604,10 @@ What is ready, each item independent of the others except as stated:
   proved with the prover written in Geb. The steps of the sequence after
   it are ready in its order, and the items early in writing, `let*` and
   `cond` among them, accompany the first substantial module.
-* The first stage of the interaction-net arm in Lean, its read-back
-  proved to be the denotation ({ref "choice-of-machine"}[The choice of
-  machine]); the elementary-affine decorations, in progress, wait on
+* The first stage of the interaction-net arm in Lean, in progress,
+  with its general read-back adequacy theorem still open
+  ({ref "choice-of-machine"}[The choice of machine]); the
+  elementary-affine decorations, in progress, wait on
   rewriting the folds that read their children's results twice
   ({ref "improvements"}[Improvements]).
 * Accelerations ({ref "speed-and-second-host"}[Speed and a second
