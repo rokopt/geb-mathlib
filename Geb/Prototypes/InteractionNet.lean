@@ -18,6 +18,8 @@ public import Geb.Prototypes.InteractionNet.Expression
 public import Geb.Prototypes.InteractionNet.FiniteSum
 public import Geb.Prototypes.InteractionNet.Kernel
 public import Geb.Prototypes.InteractionNet.KernelContext
+public import Geb.Prototypes.InteractionNet.KernelEquality
+public import Geb.Prototypes.InteractionNet.KernelPrimitives
 public import Geb.Prototypes.InteractionNet.KernelRecursors
 public import Geb.Prototypes.InteractionNet.KernelRules
 public import Geb.Prototypes.InteractionNet.KernelValue
@@ -45,6 +47,7 @@ Tree read-back recovers every represented tree. Contextual expression evaluation
 the environment-copying, child-evaluation and constructor-dispatch phases of the reducer.
 Runtime values are related to the existing evaluator's values. Tree and list recursion
 operations preserve this relation whenever the step's applications do.
+Primitive dispatch preserves the relation, including recursive tree equality.
 
 The first bootstrap milestone remains in progress. The missing acceptance theorem is that
 every well-typed closed tree-to-tree program, on every input, reaches such a configuration
