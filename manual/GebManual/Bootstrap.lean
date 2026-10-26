@@ -1931,11 +1931,22 @@ sequences terminate. These graph theorems do not yet transfer the
 compiler's normalization result: relating graph reduction to the
 sequential calculus remains in progress. Agreement of normal forms and
 progress of permitted schedules are separate proof obligations.
-The graph-runtime development supplies executable
-allocation and rewiring, proves preservation of its representation
-invariant, and simulates its operations in the calculus so that the
-existing tree read-back theorem transfers to it. The shared representation
-comes first, followed by confluence and concrete graph refinement.
+The graph runtime stores partners in arrays, allocates replacement ports,
+performs local splices and compacts the surviving endpoints.
+{name}`Geb.InteractionNet.ArrayNet.contract_read` proves that these
+operations preserve the matching invariant and read back to abstract
+graph contraction with explicit cell reindexing.
+{name}`Geb.InteractionNet.GraphRuntime.run_refines` proves that a
+successful bounded run reaches a graph normal form, and
+{name}`Geb.InteractionNet.GraphRuntime.run_eq_normal` identifies it with
+any normal form reached by another schedule.
+{name}`Geb.InteractionNet.GraphRuntime.halts_of_normalizes` guarantees a
+successful finite run whenever the input graph normalizes. The default
+scheduler searches all ordered cell pairs; endpoint compaction searches
+the live endpoint list. These are executable prototype operations,
+without a production-runtime complexity claim. The remaining compiler
+bridge must transfer the sequential calculus's normalization and tree
+read-back theorems to the represented graphs.
 
 Acceptance of these milestones consists of the diamond theorem on
 well-formed nets up to renaming, the corresponding termination and

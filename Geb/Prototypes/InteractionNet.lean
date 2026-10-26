@@ -7,6 +7,10 @@ module -- shake: keep-all
 
 public import Geb.Prototypes.InteractionNet.ActivePair
 public import Geb.Prototypes.InteractionNet.Allocation
+public import Geb.Prototypes.InteractionNet.ArrayContraction
+public import Geb.Prototypes.InteractionNet.ArrayNet
+public import Geb.Prototypes.InteractionNet.ArrayReadback
+public import Geb.Prototypes.InteractionNet.ArrayWiring
 public import Geb.Prototypes.InteractionNet.Calculus
 public import Geb.Prototypes.InteractionNet.Call
 public import Geb.Prototypes.InteractionNet.Contraction
@@ -24,8 +28,11 @@ public import Geb.Prototypes.InteractionNet.Evaluation
 public import Geb.Prototypes.InteractionNet.Execution
 public import Geb.Prototypes.InteractionNet.Expression
 public import Geb.Prototypes.InteractionNet.FiniteCells
+public import Geb.Prototypes.InteractionNet.FinitePorts
 public import Geb.Prototypes.InteractionNet.FiniteSum
 public import Geb.Prototypes.InteractionNet.GraphConfluence
+public import Geb.Prototypes.InteractionNet.GraphRuntime
+public import Geb.Prototypes.InteractionNet.GraphRuntimeAdequacy
 public import Geb.Prototypes.InteractionNet.Kernel
 public import Geb.Prototypes.InteractionNet.KernelAdequacy
 public import Geb.Prototypes.InteractionNet.KernelApplication
@@ -98,7 +105,9 @@ renamings, wire matchings and closed loops. Splicing and finite boundary gluing 
 matching invariant; disjoint graph contractions commute, including their closed-loop counts.
 Contraction respects cell renaming. Oriented rule tables have a strict graph diamond,
 confluence of finite schedules and termination whenever one schedule reaches a normal form.
-The compiler-to-graph bridge and concrete runtime remain in progress.
+The array runtime refines graph contraction and preserves its matching invariant.
+A successful bounded run reads back a graph normal form; graph normalization guarantees
+success at some finite bound. The compiler-to-graph bridge remains in progress.
 The general strict-diamond theorems separate normal-form agreement from termination of
 arbitrary schedules. Applying them to graph contraction and bridging the existing compiler
 remain the next steps.
