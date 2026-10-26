@@ -4185,15 +4185,23 @@ checklist and in CI.
   normalization innermost first or to weak normal forms, earlier theorems
   as rewriting rules found by matching, induction and case analysis;
   every derivation it computes is checked by
-  `Geb.FreeTopos.Internal.check`. `Conversion.lean` is the checker with a
-  step of conversion beside it, `Geb.FreeTopos.Internal.convCheck`: a step
-  of conversion names its rules and is the base checker's rewriting by
-  the derivation of the prover's normalization under them, every other
-  node the base checker's step, so that it is sound relative to the base
-  checker (`Geb.FreeTopos.Internal.convCheck_sound`). Tested in the modules of
+  `Geb.FreeTopos.Internal.check`. `ProveChecked.lean` proves that the
+  rewriting derivation each of its reductions computes is one the checker
+  accepts with the reduction's result
+  (`Geb.FreeTopos.Internal.normalize_checked`,
+  `Geb.FreeTopos.Internal.eval_checked`). `Conversion.lean` is the
+  checker with a step of conversion beside it,
+  `Geb.FreeTopos.Internal.convCheck`: a step of conversion names a
+  reduction and its rules and computes the reduction's result alone, the
+  base checker's rewriting by the reduction's derivation; an application
+  of a theorem finds its instance by matching the theorem's conclusion
+  against the formula; every other node is the base checker's step, so
+  that it is sound relative to the base checker
+  (`Geb.FreeTopos.Internal.convCheck_sound`). Tested in the modules of
   `GebTests/Prototypes/FreeTopos/` named `Internal*.lean`, among them the
   theorems of Gödel's T derived in the language
-  (`InternalDerivation.lean`), its logic, coproducts, rose trees,
+  (`InternalDerivation.lean`) and proved by the conversion checker
+  (`InternalConversion.lean`), its logic, coproducts, rose trees,
   quotients, declared constants, and citations between the two checkers.
   `bootstrap/free-topos/` is the checker written again in the datatype
   language: the partial Horn logic's checker of certificates and
