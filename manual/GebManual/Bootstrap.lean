@@ -149,6 +149,11 @@ Computation:
   interaction system, duplicating no λ-value, with a sequential reducer
   in Lean. Every accepted closed program from trees to trees reaches a
   normal configuration whose read-back is its denotation.
+* In progress. The finite-net representation, confluence across schedules,
+  and graph-runtime refinement of the interaction-net arm
+  ({ref "choice-of-machine"}[The choice of machine]): boundary-preserving
+  renaming first, then commuting reductions and an executable graph
+  representation proved to refine the calculus.
 * Deferred until before the second host.
   {ref "choice-of-machine"}[The choice of machine]: the benchmark
   programs, the environment machine, the compilation to
@@ -1570,7 +1575,9 @@ section below opens with a table of the states of its parts.
   * {ref "choice-of-machine"}[The choice of machine]
   * Deferred until before the second host
   * The first stage of the interaction-net arm: complete; the
-    elementary-affine decorations: in progress; the rest: deferred
+    finite-net representation, confluence and graph refinement: in
+    progress; the elementary-affine decorations: in progress; the rest:
+    deferred
 *
   * {ref "definitions-and-images"}[Definitions and images]
   * Complete
@@ -1751,6 +1758,9 @@ tag := "choice-of-machine"
   * The first stage in Lean, its read-back proved to be the denotation
   * Complete
 *
+  * Finite nets, confluence across schedules, and graph-runtime refinement
+  * In progress; the shared representation and renaming laws first
+*
   * The benchmark programs, the arms, the measurements
   * Deferred until before the second host
 *
@@ -1898,8 +1908,27 @@ the executable runner returns that denotation, and
 {name}`Geb.InteractionNet.Kernel.result_eq_of_infer` proves that every
 successful bound returns the same result.
 {name}`Geb.InteractionNet.Kernel.run_of_load` specializes execution adequacy
-to loaded globals. The diamond property and a graph implementation remain
-later milestones.
+to loaded globals.
+
+The next milestones are in progress in Lean. Their shared foundation is a
+finite representation of cells, ordered ports and wires, with an ordered
+external boundary and equivalence under internal renaming. Closed wires
+are retained. The confluence development permits reduction of any active
+pair, proves that independent contractions commute up to renaming, and
+relates the resulting reduction relation to the sequential calculus.
+Agreement of normal forms and progress of permitted schedules are separate
+proof obligations. The graph-runtime development supplies executable
+allocation and rewiring, proves preservation of its representation
+invariant, and simulates its operations in the calculus so that the
+existing tree read-back theorem transfers to it. The shared representation
+comes first, followed by confluence and concrete graph refinement.
+
+Acceptance of these milestones consists of the diamond theorem on
+well-formed nets up to renaming, the corresponding termination and
+read-back result for permitted schedules of compiled programs, and the
+graph reducer's refinement and read-back theorems. The machine comparison,
+the production runtime and the later stages of function sharing retain
+their separate states.
 
 Elementary-affine typability was measured on the programs by
 `scripts/eal/eal.py`, over the definitions `lake exe geb-defs` writes
@@ -6626,6 +6655,10 @@ What is ready, each item independent of the others except as stated:
   proved with the prover written in Geb. The steps of the sequence after
   it are ready in its order, and the items early in writing, `let*` and
   `cond` among them, accompany the first substantial module.
+* The finite-net representation, confluence and graph-runtime refinement
+  of the interaction-net arm, in progress
+  ({ref "choice-of-machine"}[The choice of machine]), using the completed
+  sequential adequacy theorem.
 * The elementary-affine decorations, in progress, wait on
   rewriting the folds that read their children's results twice
   ({ref "improvements"}[Improvements]).
