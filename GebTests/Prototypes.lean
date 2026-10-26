@@ -50,6 +50,7 @@ import GebTests.Prototypes.FreeTopos.Translation
 import GebTests.Prototypes.FreeTopos.TranslationProofs
 import GebTests.Prototypes.FreeTopos.TreeCases
 import GebTests.Prototypes.FreeTopos.Weakening
+import GebTests.Prototypes.InteractionNet
 import GebTests.Prototypes.Kernel
 import GebTests.Prototypes.Kernel.Document
 import GebTests.Prototypes.Kernel.Eval

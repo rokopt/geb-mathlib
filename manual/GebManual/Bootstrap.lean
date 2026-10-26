@@ -9,6 +9,7 @@ public import VersoManual
 public import GebManual.Bibliography
 import Geb.Prototypes.Bootstrap
 import Geb.Prototypes.Kernel
+import Geb.Prototypes.InteractionNet
 import Geb.Prototypes.GoedelT
 import Geb.Prototypes.Definition
 import Geb.Prototypes.FreeTopos
@@ -143,10 +144,11 @@ Computation:
   pattern variables, primitives that no binding shadows, emitted names
   that no definition captures, and diagnostics naming the definition that
   fails.
-* Ready. The first stage of the interaction-net arm of
+* Complete. The first stage of the interaction-net arm of
   {ref "choice-of-machine"}[the choice of machine]: a kernel program's
   interaction system, duplicating no λ-value, with a sequential reducer
-  in Lean and the proof that its read-back is the denotation.
+  in Lean. Every accepted closed program from trees to trees reaches a
+  normal configuration whose read-back is its denotation.
 * Deferred until before the second host.
   {ref "choice-of-machine"}[The choice of machine]: the benchmark
   programs, the environment machine, the compilation to
@@ -1564,7 +1566,7 @@ section below opens with a table of the states of its parts.
 *
   * {ref "choice-of-machine"}[The choice of machine]
   * Deferred until before the second host
-  * The first stage of the interaction-net arm: ready; the
+  * The first stage of the interaction-net arm: complete; the
     elementary-affine decorations: in progress; the rest: deferred
 *
   * {ref "definitions-and-images"}[Definitions and images]
@@ -1744,7 +1746,7 @@ tag := "choice-of-machine"
   * Complete
 *
   * The first stage in Lean, its read-back proved to be the denotation
-  * Ready
+  * Complete
 *
   * The benchmark programs, the arms, the measurements
   * Deferred until before the second host
@@ -1856,6 +1858,45 @@ confluence proved on paper, is the algebraic alternative to indexed
 cells {citep DeFalco2010}[]. A later milestone proves a data structure
 in close correspondence with the calculus, as in
 {citet HassanMackieSato2015}[], to refine the reduction of nets.
+
+The first-stage implementation is in `Geb.Prototypes.InteractionNet`.
+{name}`Geb.InteractionNet.Kernel.compile` translates the kernel to
+first-order expressions, with source paths identifying recursion sites;
+{name}`Geb.InteractionNet.Kernel.system` supplies the program's local
+interaction rules. Closures and conditional thunks are constructor data,
+and fans copy or erase their captured fields. The reducer allocates its
+internal wire names explicitly and searches past inert equations.
+{name}`Geb.InteractionNet.FirstOrder.system_rule_linear` proves that
+every generated rule uses its boundary once and each internal wire twice;
+{name}`Geb.InteractionNet.Kernel.run_wellFormed` proves the wire and
+allocation invariants throughout execution. Erasure and copying of every
+constructor value terminate in a continuation, by
+{name}`Geb.InteractionNet.FirstOrder.reaches_erase` and
+{name}`Geb.InteractionNet.FirstOrder.copy_realizes`.
+{name}`Geb.InteractionNet.FirstOrder.evaluates_agent` composes the contextual
+evaluations of an expression's children with its parent operation, following
+the reducer's environment-copying and result-delivery phases.
+A successful bounded run reaches a normal configuration
+with the reported tree as its read-back. The execution tests cover
+globals, copied closures, conditional selection, the kernel's recursors
+and primitive edge cases.
+
+The first milestone's acceptance is met.
+{name}`Geb.InteractionNet.Kernel.level_simulation` relates every successful
+evaluation and application in `Geb.Kernel.Eval` to contextual net execution,
+including closures, lazy conditionals, globals, all recursors and primitives.
+The evaluator's logical relation supplies the denotation assigned by
+{name}`Geb.Kernel.infer`.
+{name}`Geb.InteractionNet.Kernel.normalizes_of_infer` proves that every
+accepted closed term from trees to trees, with successfully loaded globals,
+reaches the canonical normal tree configuration on every input.
+{name}`Geb.InteractionNet.Kernel.run_of_infer` gives a finite bound at which
+the executable runner returns that denotation, and
+{name}`Geb.InteractionNet.Kernel.result_eq_of_infer` proves that every
+successful bound returns the same result.
+{name}`Geb.InteractionNet.Kernel.run_of_load` specializes execution adequacy
+to loaded globals. The diamond property and a graph implementation remain
+later milestones.
 
 Elementary-affine typability was measured on the programs by
 `scripts/eal/eal.py`, over the definitions `lake exe geb-defs` writes
@@ -6577,9 +6618,7 @@ What is ready, each item independent of the others except as stated:
   proved with the prover written in Geb. The steps of the sequence after
   it are ready in its order, and the items early in writing, `let*` and
   `cond` among them, accompany the first substantial module.
-* The first stage of the interaction-net arm in Lean, its read-back
-  proved to be the denotation ({ref "choice-of-machine"}[The choice of
-  machine]); the elementary-affine decorations, in progress, wait on
+* The elementary-affine decorations, in progress, wait on
   rewriting the folds that read their children's results twice
   ({ref "improvements"}[Improvements]).
 * Accelerations ({ref "speed-and-second-host"}[Speed and a second
