@@ -65,7 +65,7 @@ rev = "v4.36.0-rc1"
 [[require]]
 name = "Canonical"
 scope = "chasenorman"
-rev = "v4.34.0"
+rev = "v4.35.0"
 
 # Pinned in lockstep with `lean-toolchain`; bump `rev` when bumping
 # the toolchain version.
