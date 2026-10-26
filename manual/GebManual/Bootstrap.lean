@@ -281,8 +281,11 @@ the sections below detail:
     computes being, by a theorem in Lean, one the base checker accepts
     with that result, so that it is sound relative to the base checker,
     and an application of a theorem finds its instance by matching; its
-    transcription into Geb, with its agreement, and the evaluation of
-    primitives at literals follow. The checker of the shared
+    transcription into Geb, with its agreement, follows, and then the
+    tactics, in Lean and in Geb together, emit its steps in place of the
+    derivations their reductions compute, and the stored developments are
+    certified again in its certificates and measured; the evaluation of
+    primitives at literals follows independently. The checker of the shared
     certificates, by unsharing, is required if measurement shows the
     checking or storage of certificates to need it, and follows the
     bootstrap otherwise.
@@ -6608,8 +6611,13 @@ What is ready, each item independent of the others except as stated:
 * Stronger checkers ({ref "metalogic-and-checker"}[The metalogic and its
   checker]), in progress, described below: the measurement that decides
   the rules of the checker with a step of conversion is made, and that
-  checker is written in Lean; its transcription into Geb and the
-  evaluation of primitives at literals follow.
+  checker is written in Lean. Its transcription into Geb follows the
+  datatype language's completion, which precedes substantial authoring
+  in Geb; the tactics' emission of its steps and the stored
+  developments' certification in its certificates follow the
+  transcription, since the tactics written in Geb construct exactly the
+  certificates the Lean tactics construct. The evaluation of primitives
+  at literals is ready.
 * The datatype language's completion
   ({ref "datatype-completion"}[The datatype language's completion]),
   in progress, the next step of the authoring sequence
