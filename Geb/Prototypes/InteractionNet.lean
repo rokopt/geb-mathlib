@@ -32,12 +32,17 @@ public import Geb.Prototypes.InteractionNet.KernelValueShape
 public import Geb.Prototypes.InteractionNet.Normalization
 public import Geb.Prototypes.InteractionNet.Observation
 public import Geb.Prototypes.InteractionNet.Output
+public import Geb.Prototypes.InteractionNet.PortNet
 public import Geb.Prototypes.InteractionNet.Preservation
 public import Geb.Prototypes.InteractionNet.Program
 public import Geb.Prototypes.InteractionNet.ProgramCorrect
+public import Geb.Prototypes.InteractionNet.Schedule
 public import Geb.Prototypes.InteractionNet.Term
 public import Geb.Prototypes.InteractionNet.Substitution
 public import Geb.Prototypes.InteractionNet.Tasks
+public import Geb.Prototypes.InteractionNet.Wiring
+public import Geb.Prototypes.InteractionNet.WiringGlue
+public import Geb.Prototypes.InteractionNet.WiringSplice
 
 set_option doc.verso true in
 /-!
@@ -68,7 +73,13 @@ the same result. Loaded globals satisfy the corresponding execution theorem.
 * {lit}`Kernel.result_eq_of_infer` — a successful run cannot return a different tree.
 * {lit}`Kernel.run_of_load` — execution adequacy for loaded globals.
 
-The later milestones concern confluence across schedules and refinement by a graph runtime.
+The next milestones are in progress: confluence across schedules and refinement by a graph
+runtime. The finite-net foundation has explicit cells and ordered ports, boundary-preserving
+renamings, wire matchings and closed loops. Splicing and finite boundary gluing preserve the
+matching invariant; disjoint splices commute, including their closed-loop counts.
+The general strict-diamond theorems separate normal-form agreement from termination of
+arbitrary schedules. Applying them to graph contraction and bridging the existing compiler
+remain the next steps.
 
 ## Tags
 

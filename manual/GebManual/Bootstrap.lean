@@ -1913,7 +1913,16 @@ to loaded globals.
 The next milestones are in progress in Lean. Their shared foundation is a
 finite representation of cells, ordered ports and wires, with an ordered
 external boundary and equivalence under internal renaming. Closed wires
-are retained. The confluence development permits reduction of any active
+are retained. {name}`Geb.InteractionNet.FiniteNet` and
+{name}`Geb.InteractionNet.PortNet.Iso` supply the representation and
+boundary-preserving renamings. {name}`Geb.InteractionNet.Wiring.glued_perm`
+proves that reordering a finite family of disjoint wire splices preserves
+the surviving matching and the number of closed wires. The general
+schedule results {name}`Geb.InteractionNet.Schedule.normal_unique` and
+{name}`Geb.InteractionNet.Schedule.acc_of_reaches_normal` derive agreement
+and termination from a strict diamond. Establishing that diamond for
+graph contraction and connecting graph execution to the compiler remain
+in progress. The confluence development permits reduction of any active
 pair, proves that independent contractions commute up to renaming, and
 relates the resulting reduction relation to the sequential calculus.
 Agreement of normal forms and progress of permitted schedules are separate
