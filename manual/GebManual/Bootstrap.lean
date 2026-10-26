@@ -1917,16 +1917,21 @@ are retained. {name}`Geb.InteractionNet.FiniteNet` and
 {name}`Geb.InteractionNet.PortNet.Iso` supply the representation and
 boundary-preserving renamings. {name}`Geb.InteractionNet.Wiring.glued_perm`
 proves that reordering a finite family of disjoint wire splices preserves
-the surviving matching and the number of closed wires. The general
-schedule results {name}`Geb.InteractionNet.Schedule.normal_unique` and
-{name}`Geb.InteractionNet.Schedule.acc_of_reaches_normal` derive agreement
-and termination from a strict diamond. Establishing that diamond for
-graph contraction and connecting graph execution to the compiler remain
-in progress. The confluence development permits reduction of any active
-pair, proves that independent contractions commute up to renaming, and
-relates the resulting reduction relation to the sequential calculus.
-Agreement of normal forms and progress of permitted schedules are separate
-proof obligations. The graph-runtime development supplies executable
+the surviving matching and the number of closed wires.
+{name}`Geb.InteractionNet.PortNet.contractCommute` proves that disjoint
+active-pair contractions commute up to an explicit boundary-preserving
+cell renaming. Contraction also respects cell isomorphisms.
+{name}`Geb.InteractionNet.Graph.diamond` establishes the strict diamond
+for finite graphs modulo renaming, for rule tables permitting one
+orientation of each interacting pair.
+{name}`Geb.InteractionNet.Graph.confluent` joins arbitrary finite
+schedules, and {name}`Geb.InteractionNet.Graph.terminates_of_normalizes`
+proves that one normalizing schedule makes all permitted contraction
+sequences terminate. These graph theorems do not yet transfer the
+compiler's normalization result: relating graph reduction to the
+sequential calculus remains in progress. Agreement of normal forms and
+progress of permitted schedules are separate proof obligations.
+The graph-runtime development supplies executable
 allocation and rewiring, proves preservation of its representation
 invariant, and simulates its operations in the calculus so that the
 existing tree read-back theorem transfers to it. The shared representation

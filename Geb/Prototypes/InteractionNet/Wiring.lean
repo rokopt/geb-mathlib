@@ -78,6 +78,17 @@ def map (e : P ≃ Q) (w : Wiring P) : Wiring Q where
     (w.map e).partner (e p) = e (w.partner p) := by
   simp only [map, Equiv.symm_apply_apply]
 
+/-- A wire after renaming is the corresponding wire before renaming. -/
+theorem map_partner_eq_iff (e : P ≃ Q) (w : Wiring P) (p q : Q) :
+    (w.map e).partner p = q ↔ w.partner (e.symm p) = e.symm q := by
+  constructor
+  · intro h
+    change e (w.partner (e.symm p)) = q at h
+    simpa only [Equiv.symm_apply_apply] using congrArg e.symm h
+  · intro h
+    change e (w.partner (e.symm p)) = q
+    rw [h, Equiv.apply_symm_apply]
+
 /-- The identity endpoint renaming leaves a matching unchanged. -/
 @[simp] theorem map_refl (w : Wiring P) : w.map (Equiv.refl P) = w := by
   ext p

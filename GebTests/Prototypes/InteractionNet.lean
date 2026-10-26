@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.InteractionNet.Data -- shake: keep
 public import Geb.Prototypes.InteractionNet.Kernel
 public import GebTests.Prototypes.InteractionNet.Wiring -- shake: keep
+public import GebTests.Prototypes.InteractionNet.Graph -- shake: keep
 import Mathlib.Tactic.NormNum.OfScientific
 import Mathlib.Tactic.NormNum.DivMod
 import Mathlib.Tactic.NormNum.Abs

@@ -5,9 +5,17 @@ Authors: Terence Rokop
 -/
 module -- shake: keep-all
 
+public import Geb.Prototypes.InteractionNet.ActivePair
 public import Geb.Prototypes.InteractionNet.Allocation
 public import Geb.Prototypes.InteractionNet.Calculus
 public import Geb.Prototypes.InteractionNet.Call
+public import Geb.Prototypes.InteractionNet.Contraction
+public import Geb.Prototypes.InteractionNet.ContractionCommute
+public import Geb.Prototypes.InteractionNet.ContractionEmbedding
+public import Geb.Prototypes.InteractionNet.ContractionIso
+public import Geb.Prototypes.InteractionNet.ContractionPorts
+public import Geb.Prototypes.InteractionNet.ContractionRenaming
+public import Geb.Prototypes.InteractionNet.ContractionSequence
 public import Geb.Prototypes.InteractionNet.Copying
 public import Geb.Prototypes.InteractionNet.CopyingNormalization
 public import Geb.Prototypes.InteractionNet.Data
@@ -15,7 +23,9 @@ public import Geb.Prototypes.InteractionNet.Erasure
 public import Geb.Prototypes.InteractionNet.Evaluation
 public import Geb.Prototypes.InteractionNet.Execution
 public import Geb.Prototypes.InteractionNet.Expression
+public import Geb.Prototypes.InteractionNet.FiniteCells
 public import Geb.Prototypes.InteractionNet.FiniteSum
+public import Geb.Prototypes.InteractionNet.GraphConfluence
 public import Geb.Prototypes.InteractionNet.Kernel
 public import Geb.Prototypes.InteractionNet.KernelAdequacy
 public import Geb.Prototypes.InteractionNet.KernelApplication
@@ -31,18 +41,27 @@ public import Geb.Prototypes.InteractionNet.KernelValue
 public import Geb.Prototypes.InteractionNet.KernelValueShape
 public import Geb.Prototypes.InteractionNet.Normalization
 public import Geb.Prototypes.InteractionNet.Observation
+public import Geb.Prototypes.InteractionNet.OpenPair
 public import Geb.Prototypes.InteractionNet.Output
 public import Geb.Prototypes.InteractionNet.PortNet
+public import Geb.Prototypes.InteractionNet.PortNetPlug
+public import Geb.Prototypes.InteractionNet.PortSystem
 public import Geb.Prototypes.InteractionNet.Preservation
 public import Geb.Prototypes.InteractionNet.Program
 public import Geb.Prototypes.InteractionNet.ProgramCorrect
+public import Geb.Prototypes.InteractionNet.RedexDiamond
+public import Geb.Prototypes.InteractionNet.RemainingCells
 public import Geb.Prototypes.InteractionNet.Schedule
-public import Geb.Prototypes.InteractionNet.Term
 public import Geb.Prototypes.InteractionNet.Substitution
 public import Geb.Prototypes.InteractionNet.Tasks
+public import Geb.Prototypes.InteractionNet.Term
 public import Geb.Prototypes.InteractionNet.Wiring
+public import Geb.Prototypes.InteractionNet.WiringCompose
+public import Geb.Prototypes.InteractionNet.WiringEmbedding
 public import Geb.Prototypes.InteractionNet.WiringGlue
+public import Geb.Prototypes.InteractionNet.WiringIndex
 public import Geb.Prototypes.InteractionNet.WiringSplice
+public import Geb.Prototypes.InteractionNet.WiringSwap
 
 set_option doc.verso true in
 /-!
@@ -76,7 +95,10 @@ the same result. Loaded globals satisfy the corresponding execution theorem.
 The next milestones are in progress: confluence across schedules and refinement by a graph
 runtime. The finite-net foundation has explicit cells and ordered ports, boundary-preserving
 renamings, wire matchings and closed loops. Splicing and finite boundary gluing preserve the
-matching invariant; disjoint splices commute, including their closed-loop counts.
+matching invariant; disjoint graph contractions commute, including their closed-loop counts.
+Contraction respects cell renaming. Oriented rule tables have a strict graph diamond,
+confluence of finite schedules and termination whenever one schedule reaches a normal form.
+The compiler-to-graph bridge and concrete runtime remain in progress.
 The general strict-diamond theorems separate normal-form agreement from termination of
 arbitrary schedules. Applying them to graph contraction and bridging the existing compiler
 remain the next steps.

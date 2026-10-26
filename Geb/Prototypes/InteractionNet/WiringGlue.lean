@@ -127,6 +127,16 @@ theorem glue_paired (ports : I × Bool ↪ P) (order : List I) (s : Wiring P × 
         exact Or.inl (glueAt_paired ports s i)
       · exact Or.inr h
 
+/-- A wire between surviving endpoints is untouched by gluing. -/
+theorem glue_keeps (ports : I × Bool ↪ P) (order : List I) (s : Wiring P × ℕ)
+    {p q : P} (hp : ∀ i b, p ≠ ports (i, b)) (hq : ∀ i b, q ≠ ports (i, b))
+    (hw : s.1.partner p = q) : (glue ports order s).1.partner p = q := by
+  revert s
+  refine List.rec (fun _ h ↦ h) ?_ order
+  intro i order ih s hw
+  exact ih (glueAt ports s i)
+    (force_keeps s.1 (pair_ne ports i) (hp i false) (hp i true) (hq i false) (hq i true) hw)
+
 /-- Endpoints outside a complete family of cuts remain outside it after gluing. -/
 theorem glue_closed (ports : I × Bool ↪ P) (order : List I) (cover : ∀ i, i ∈ order)
     (s : Wiring P × ℕ) (p : P) (hp : ∀ i b, p ≠ ports (i, b)) :
