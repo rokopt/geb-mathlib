@@ -38,6 +38,7 @@ import GebTests.Prototypes.FreeTopos.InternalDerivation
 import GebTests.Prototypes.FreeTopos.InternalLogic
 import GebTests.Prototypes.FreeTopos.InternalQuotients
 import GebTests.Prototypes.FreeTopos.InternalRoseTrees
+import GebTests.Prototypes.FreeTopos.Literals
 import GebTests.Prototypes.FreeTopos.Normalization
 import GebTests.Prototypes.FreeTopos.NormalizationBase
 import GebTests.Prototypes.FreeTopos.NormalizationConst

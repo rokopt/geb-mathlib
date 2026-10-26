@@ -17,6 +17,7 @@ public import Geb.Prototypes.FreeTopos.Elementary
 public import Geb.Prototypes.FreeTopos.Graphs
 public import Geb.Prototypes.FreeTopos.Infer
 public import Geb.Prototypes.FreeTopos.Internal
+public import Geb.Prototypes.FreeTopos.Literals
 public import Geb.Prototypes.FreeTopos.Model
 public import Geb.Prototypes.FreeTopos.Prover
 public import Geb.Prototypes.FreeTopos.Recursion
@@ -50,7 +51,8 @@ with chosen data objects, and the topos of Lean's types and functional relations
 which Lean's functions are the graphs, so that the theory's theorems about arrows are Lean's
 about functions, and in which an arrow, its definitions unfolded, represents a Lean function
 between representations of its values; the translation of the kernel's programs into the
-internal language; and the tactics composed from the internal language's prover.
+internal language; the evaluation of the arithmetic of the translation's library at numerals; and
+the tactics composed from the internal language's prover.
 -/
 
 set_option doc.verso true

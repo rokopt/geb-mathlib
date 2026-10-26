@@ -289,8 +289,16 @@ the sections below detail:
     transcription into Geb, with its agreement, follows, and then the
     tactics, in Lean and in Geb together, emit its steps in place of the
     derivations their reductions compute, and the stored developments are
-    certified again in its certificates and measured; the evaluation of
-    primitives at literals follows independently. The checker of the shared
+    certified again in its certificates and measured. Its evaluation of
+    primitives at literals is written in Lean beside it
+    (`Geb/Prototypes/FreeTopos/Literals.lean`): a step rewrites the
+    library's addition, truncated difference, multiplication, equality
+    and less, and the definitions they apply, at numerals, to the
+    numeral of the value the arithmetic of the natural numbers computes,
+    admitted by the definitions' equations at the numerals' bits, theorems
+    of the development, through a proof in Lean that rewriting by them
+    reaches that numeral; division, remainder and the logarithm follow.
+    The checker of the shared
     certificates, by unsharing, is required if measurement shows the
     checking or storage of certificates to need it, and follows the
     bootstrap otherwise.
@@ -6929,7 +6937,9 @@ What is ready, each item independent of the others except as stated:
   developments' certification in its certificates follow the
   transcription, since the tactics written in Geb construct exactly the
   certificates the Lean tactics construct. The evaluation of primitives
-  at literals is ready.
+  at literals is written in Lean for addition, the truncated
+  difference, multiplication, equality and less; division, remainder
+  and the logarithm are ready.
 * The datatype language's completion
   ({ref "datatype-completion"}[The datatype language's completion]),
   in progress, the next step of the authoring sequence
@@ -6983,7 +6993,21 @@ admitted by its translation, that derivation, without the derivation
 being checked, and the checker's soundness is the base checker's. The
 case analyses of bits, the steps of the labels' arithmetic, were 1 in 100
 of the nodes at that measurement, beside the unfoldings and β-steps
-around them that the count by rule does not attribute to them.
+around them that the count by rule does not attribute to them. The
+evaluation at literals is written in Lean beside the checker
+(`Geb/Prototypes/FreeTopos/Literals.lean`): a step rewrites the
+library's arithmetic at numerals to the numeral of its value, computed
+by the arithmetic of the natural numbers, where the development's
+theorems include the definitions' equations at the numerals' bits, which
+the prover proves; its translation is the rewriting by those equations,
+which reaches that numeral by a proof in Lean by recursion on the bits
+(`Geb.FreeTopos.Literals.checked_of_eval`). Measured against the base
+checker (`GebBench/Prototypes/FreeTopos/Literals.lean`), at numerals of
+six decimal digits the base checker takes 0.34 seconds on the prover's
+derivation of a sum and 38 seconds on that of a product, a step of
+conversion performing the prover's reduction as long, since the
+reduction computes its derivation, and the step of evaluation from 0.3
+to 0.5 milliseconds at every size measured.
 The terms Canonical finds modulo the computation rules are its first
 certificates ({ref "search-synthesis"}[Search and synthesis]). The second
 is the checker of holes, admitted beside
