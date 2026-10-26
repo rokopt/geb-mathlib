@@ -3,11 +3,10 @@
 # scripts/extract-pr.sh
 #
 # Path 1 PR extraction. Given an upstream-eligible source path under
-# `Geb/Mathlib/`, `GebTests/Mathlib/`, `Geb/Cslib/`, `GebTests/Cslib/`,
-# `GebLang/`, or `GebTests/Lang/`, and a target upstream-fork worktree
-# path, copy the file to its upstream destination, rewriting the
-# repository-internal module prefixes in each import line's module
-# path, converting Verso role markup inside a docstring, and deleting
+# `Geb/Mathlib/`, `GebTests/Mathlib/`, `Geb/Cslib/` or `GebTests/Cslib/`,
+# and a target upstream-fork worktree path, copy the file to its
+# upstream destination, rewriting the repository-internal module
+# prefixes in each import line's module path, converting Verso role markup inside a docstring, and deleting
 # outside any docstring the two lines that have no meaning upstream.
 #
 # Usage:
@@ -16,36 +15,11 @@
 # Examples:
 #   scripts/extract-pr.sh Geb/Mathlib/Foo/Bar.lean ../mathlib4-fork
 #   # writes ../mathlib4-fork/Mathlib/Foo/Bar.lean with
-#   # `Geb.Mathlib.` and `GebLang.` rewritten to `Mathlib.`
+#   # `Geb.Mathlib.` rewritten to `Mathlib.`
 #
 #   scripts/extract-pr.sh Geb/Cslib/Foo/Bar.lean ../cslib-fork
 #   # writes ../cslib-fork/Cslib/Foo/Bar.lean with `Geb.Cslib.`
-#   # rewritten to `Cslib.`, `Geb.Mathlib.` to `Mathlib.`, and each
-#   # `GebLang.` import to the prefix of the imported module's own
-#   # track
-#
-# Tracks. A `GebLang/` or `GebTests/Lang/` module is Cslib-track when
-# its repository-internal import closure reaches any `Cslib.*` import,
-# and mathlib-track otherwise. The track fixes both the module's own
-# destination and the prefix an importer rewrites it to, so a
-# destination-uniform rewrite would be wrong: a Cslib-track source may
-# import a mathlib-track `GebLang` sibling, which ships under
-# `Mathlib.`. In a mathlib-destined source the discrimination is
-# vacuous, `scripts/check-transitive-imports.sh` keeping every
-# mathlib-track closure free of `Cslib.*`.
-#
-# A `GebTests/Lang/` module's sibling imports do not cross tracks: a
-# Cslib-track test importing a mathlib-track sibling would need the
-# Cslib test tree to import mathlib's, which no upstream ordering
-# makes compile. `scripts/check-transitive-imports.sh` enforces that;
-# this script assumes it.
-#
-# Two repository files can name one upstream destination:
-# GebLang/Foo.lean and Geb/Mathlib/Foo.lean both map to
-# Mathlib/Foo.lean, and their test parallels both to
-# MathlibTest/Foo.lean. The second extraction overwrites the first.
-# Nothing detects the collision; the destination path is printed on
-# every run, so read it.
+#   # rewritten to `Cslib.` and `Geb.Mathlib.` to `Mathlib.`
 #
 # Test-directory layouts (verified per upstream):
 #   mathlib4: source under Mathlib/, tests under MathlibTest/
@@ -78,7 +52,7 @@ fi
 
 # The module system's four import-line keyword forms: `import`,
 # `public import`, `meta import`, `public meta import`. Bound once and
-# used by both the track walk and the rewrite, so the two cannot come
+# used by both the strip pass and the rewrite, so the two cannot come
 # to disagree about what an import line is.
 import_kw_re='(public[[:space:]]+)?(meta[[:space:]]+)?import[[:space:]]+'
 # Groups: 1 the keyword run, 4 the module path, 5 the rest of the line
@@ -171,74 +145,8 @@ strip_line() {
   return 1
 }
 
-# module_file <Module.Name>: the repository path of a module, whose
-# name maps onto directories (`GebLang.Foo.Bar` is
-# `GebLang/Foo/Bar.lean`).
-module_file() {
-  echo "${1//./\/}.lean"
-}
-
-# track_of <file>: prints `cslib` when the repository-internal import
-# closure of <file>, followed through its `GebLang.` and
-# `GebTests.Lang.` imports, carries any `Cslib.*` import; prints
-# `mathlib` otherwise. A module with no file on disk contributes
-# nothing to the walk, so an import naming one resolves to
-# mathlib-track and is emitted under `Mathlib.`; `lake build` is what
-# catches the missing module, neither this script nor
-# scripts/lint-imports.sh checking existence. The worklist is carried
-# in space-separated strings rather than an associative array, which
-# bash 3.2 (the system bash on macOS) does not provide; repository
-# paths contain no spaces.
-track_of() {
-  local seen=" " frontier="$1" next f m
-  while [ -n "$frontier" ]; do
-    next=""
-    for f in $frontier; do
-      case "$seen" in
-        *" $f "*) continue ;;
-      esac
-      seen="$seen$f "
-      [ -f "$f" ] || continue
-      if grep -qE "^${import_kw_re}Cslib\." "$f"; then
-        echo cslib
-        return 0
-      fi
-      for m in $(grep -E "^${import_kw_re}(GebLang|GebTests)\." "$f" \
-                   | sed -E "s/^${import_kw_re}//; s/[[:space:]].*$//"); do
-        case "$m" in
-          GebLang.*|GebTests.Lang.*) next="$next $(module_file "$m")" ;;
-        esac
-      done
-    done
-    frontier="$next"
-  done
-  echo mathlib
-}
-
-# resolve_target <target-spec> <imported-module>: the destination
-# prefix a rewrite emits. A literal spec is emitted as written; `@src`
-# and `@test` resolve by the imported module's own track, into the
-# upstream source tree and the upstream test tree respectively.
-resolve_target() {
-  case "$1" in
-    @src)
-      case "$(track_of "$(module_file "$2")")" in
-        cslib) echo "Cslib." ;;
-        *)     echo "Mathlib." ;;
-      esac
-      ;;
-    @test)
-      case "$(track_of "$(module_file "$2")")" in
-        cslib) echo "CslibTests." ;;
-        *)     echo "MathlibTest." ;;
-      esac
-      ;;
-    *) echo "$1" ;;
-  esac
-}
-
 # Map the source path to its destination and collect the arm's rewrite
-# table: one `<source-prefix> <target-spec>` pair per line, first match
+# table: one `<source-prefix> <target-prefix>` pair per line, first match
 # winning. The prefixes within an arm are pairwise non-overlapping.
 case "$src" in
   Geb/Mathlib/*)
@@ -249,8 +157,7 @@ case "$src" in
     # open, per TODO.md § Upstream destination of core- and
     # Batteries-targeted content, and this mapping waits on its outcome.
     dst_rel="Mathlib/${src#Geb/Mathlib/}"
-    rewrites='Geb.Mathlib. Mathlib.
-GebLang. Mathlib.'
+    rewrites='Geb.Mathlib. Mathlib.'
     ;;
   GebTests/Mathlib/*)
     # Unconditional in the same way as the arm above, and with the same
@@ -258,42 +165,21 @@ GebLang. Mathlib.'
     # module; this mapping waits on the same TODO.md item's outcome.
     dst_rel="MathlibTest/${src#GebTests/Mathlib/}"
     rewrites='Geb.Mathlib. Mathlib.
-GebTests.Mathlib. MathlibTest.
-GebLang. Mathlib.'
+GebTests.Mathlib. MathlibTest.'
     ;;
   Geb/Cslib/*)
     dst_rel="Cslib/${src#Geb/Cslib/}"
     rewrites='Geb.Cslib. Cslib.
-Geb.Mathlib. Mathlib.
-GebLang. @src'
+Geb.Mathlib. Mathlib.'
     ;;
   GebTests/Cslib/*)
     dst_rel="CslibTests/${src#GebTests/Cslib/}"
     rewrites='Geb.Cslib. Cslib.
 GebTests.Cslib. CslibTests.
-Geb.Mathlib. Mathlib.
-GebLang. @src'
-    ;;
-  GebLang/*)
-    # `@src` in a mathlib-track source resolves to `Mathlib.` for every
-    # sibling, its closure being all mathlib-track; one code path
-    # serves both tracks.
-    case "$(track_of "$src")" in
-      cslib) dst_rel="Cslib/${src#GebLang/}" ;;
-      *)     dst_rel="Mathlib/${src#GebLang/}" ;;
-    esac
-    rewrites='GebLang. @src'
-    ;;
-  GebTests/Lang/*)
-    case "$(track_of "$src")" in
-      cslib) dst_rel="CslibTests/${src#GebTests/Lang/}" ;;
-      *)     dst_rel="MathlibTest/${src#GebTests/Lang/}" ;;
-    esac
-    rewrites='GebLang. @src
-GebTests.Lang. @test'
+Geb.Mathlib. Mathlib.'
     ;;
   *)
-    echo "extract-pr.sh: source path must be under Geb/Mathlib/, GebTests/Mathlib/, Geb/Cslib/, GebTests/Cslib/, GebLang/, or GebTests/Lang/" >&2
+    echo "extract-pr.sh: source path must be under Geb/Mathlib/, GebTests/Mathlib/, Geb/Cslib/ or GebTests/Cslib/" >&2
     exit 1
     ;;
 esac
@@ -412,11 +298,11 @@ mkdir -p "$(dirname "$dst")"
       kw="${BASH_REMATCH[1]}"
       mod="${BASH_REMATCH[4]}"
       rest="${BASH_REMATCH[5]}"
-      while read -r prefix spec; do
+      while read -r prefix target; do
         [ -n "$prefix" ] || continue
         case "$mod" in
           "$prefix"*)
-            mod="$(resolve_target "$spec" "$mod")${mod#"$prefix"}"
+            mod="$target${mod#"$prefix"}"
             break
             ;;
         esac

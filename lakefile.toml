@@ -1,5 +1,5 @@
 name = "geb-mathlib"
-defaultTargets = ["Geb", "GebLang"]
+defaultTargets = ["Geb"]
 testDriver = "GebTests"
 lintDriver = "batteries/runLinter"
 lintDriverArgs = ["Geb"]
@@ -55,7 +55,7 @@ scope = "leanprover"
 rev = "v4.36.0-rc1"
 
 # Canonical, a solver for type inhabitation (the Bootstrap chapter of the
-# manual, § Search and synthesis), for experiments only: no module of `Geb`, `GebLang` or
+# manual, § Search and synthesis), for experiments only: no module of `Geb` or
 # `GebTests` imports it, so a default build never fetches its solver
 # library, which Lake downloads from a GitHub release named after a Lean
 # version. It has no dependencies. `rev` follows Canonical's latest version
@@ -83,6 +83,12 @@ rev = "v4.36.0-rc1"
 name = "mathlib"
 git = "https://github.com/leanprover-community/mathlib4.git"
 rev = "v4.36.0-rc1"
+
+[[require]]
+name = "geb-lang"
+scope = "rokopt"
+git = "https://github.com/rokopt/geb-lang"
+rev = "f7aa7374162a9a4cd8c7e91ca3e6513ba0bd9664"
 
 [[lean_lib]]
 name = "Geb"
@@ -284,19 +290,6 @@ weak.linter.hashCommand = false
 [[lean_lib]]
 name = "GebMeta"
 
-# The Geb language, in Verso's literate style. `doc.verso` switches
-# this library's docstrings to checked Verso markup, which both
-# doc-gen4 and the literate pipeline render. A literate module of any
-# other library sets the option itself, in the two-line form
-# docs/rules/lean-coding.md § Literate modules gives; this library,
-# every module of which is literate, takes it from here.
-[[lean_lib]]
-name = "GebLang"
-globs = ["GebLang.*"]
-
-[lean_lib.leanOptions]
-doc.verso = true
-
 # `GebManual.Bibliography` declares one entry per entry of
 # docs/references.bib, which it reads at elaboration, registering no
 # dependency on the file. The manual library's `needs` mixes the
@@ -413,7 +406,7 @@ root = "Main"
 supportInterpreter = true
 
 # Experiments with Canonical (the manual's Bootstrap chapter, § Search and
-# synthesis): a library that no module of `Geb`, `GebLang` or `GebTests`
+# synthesis): a library that no module of `Geb` or `GebTests`
 # imports, and the programs that run it, which give the solver problems
 # and check the terms it returns with Geb's checkers.
 [[lean_lib]]

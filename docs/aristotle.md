@@ -51,8 +51,8 @@ restyle it per § Contribution-policy constraint before use.
 
 Aristotle output is LLM-generated code, governed by
 [CONTRIBUTING.md § Submission policy](../CONTRIBUTING.md) like any
-other AI tool. It may enter any subtree or `GebLang/`,
-`Geb/Mathlib/` and `Geb/Cslib/` included, provided the user
+other AI tool. It may enter any subtree, `Geb/Mathlib/` and
+`Geb/Cslib/` included, provided the user
 understands every line, can justify each design decision to
 reviewers without AI, and discloses its use. Disclosure of LLM use
 is mandatory.

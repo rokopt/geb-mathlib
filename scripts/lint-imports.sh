@@ -7,28 +7,20 @@
 # Each upstream-eligible subtree has an allowed-import list and one or
 # more self-prefixes that must not appear outside the module path of
 # an import line. Files in Geb/Cslib/ and GebTests/Cslib/ must import
-# `Cslib.Init` per Cslib's `checkInitImports` requirement, and files
-# in GebLang/ and GebTests/Lang/ must when they import any Cslib.*
-# module. Every upstream-eligible `.lean` file must use Lean 4's
+# `Cslib.Init` per Cslib's `checkInitImports` requirement. Every upstream-eligible `.lean` file must use Lean 4's
 # module system (start with the `module` keyword), since `lake shake`
 # minimised-imports enforcement only operates on module-form files.
 #
-#   Geb/Mathlib/       →  Mathlib.*, Batteries.*, Geb.Mathlib.*,
-#                         GebLang.*
+#   Geb/Mathlib/       →  Mathlib.*, Batteries.*, Geb.Mathlib.*
 #   GebTests/Mathlib/  →  Mathlib.*, Batteries.*, Geb.Mathlib.*,
-#                         GebTests.Mathlib.*, GebLang.*
+#                         GebTests.Mathlib.*
 #   Geb/Cslib/         →  Mathlib.*, Batteries.*, Cslib.*,
-#                         Geb.Cslib.*, Geb.Mathlib.*, GebLang.*
+#                         Geb.Cslib.*, Geb.Mathlib.*
 #                         (plus mandatory `import Cslib.Init`)
 #   GebTests/Cslib/    →  Mathlib.*, Batteries.*, Cslib.*,
 #                         Geb.Cslib.*, GebTests.Cslib.*,
-#                         Geb.Mathlib.*, GebLang.*
+#                         Geb.Mathlib.*
 #                         (plus mandatory `import Cslib.Init`)
-#   GebLang/           →  Mathlib.*, Batteries.*, Cslib.*, GebLang.*
-#                         (plus `import Cslib.Init` when the file
-#                          imports any Cslib.* module)
-#   GebTests/Lang/     →  Mathlib.*, Batteries.*, Cslib.*, GebLang.*,
-#                         GebTests.Lang.* (same conditional init rule)
 #
 # Every location additionally admits the exact module paths
 # Lean.DocString.Syntax and GebMeta, which a literate module imports
@@ -46,15 +38,6 @@
 # and its destination is open, per TODO.md § Upstream destination of
 # core- and Batteries-targeted content.
 #
-# GebLang holds the Geb language's core data structures, at the bottom
-# of the dependency order: its modules import no other library of this
-# repository, and every subtree above it may depend on it once its
-# allowed list admits the prefix. Each module is retargeted by its own
-# import closure, mathlib-track when the closure reaches no Cslib.*
-# and Cslib-track otherwise, so the Cslib.Init requirement is
-# conditional here rather than per subtree, and
-# scripts/check-transitive-imports.sh checks the closures that
-# scripts/extract-pr.sh reads to pick a destination.
 # Lean.DocString.Syntax and GebMeta are fixed exceptions to every
 # allowed-import list rather than `*`-suffixed prefixes: they are the
 # literate pipeline's own load-bearing imports, not extractable
@@ -101,10 +84,8 @@ total=0
 # path), the second separates the find-roots from the allowed-import
 # prefixes.
 # <required-init> is the module path of an init file every file
-# in this subtree must import ("Cslib.Init"), or that same path
-# prefixed with `?` to require it only of a file that imports the
-# module's own namespace, or "" for subtrees with no such
-# requirement.
+# in this subtree must import ("Cslib.Init"), or "" for subtrees with
+# no such requirement.
 check_subtree() {
   local leakage_prefixes=()
   while [[ "$1" != "--" ]]; do
@@ -144,7 +125,6 @@ check_subtree() {
   # come to disagree about what an import line is.
   local import_kw_re='(public[[:space:]]+)?(meta[[:space:]]+)?import[[:space:]]+'
   local f line canonical ok ln lp prefix_re
-  local init_mod init_ns init_needed
   for f in "${files[@]}"; do
     total=$((total + 1))
 
@@ -196,30 +176,14 @@ check_subtree() {
 
     # Rule 1b: required init import. When the subtree mandates a
     # specific init module (Cslib's Cslib.Init), every file imports it
-    # directly. A `?` prefix on the argument makes the requirement
-    # conditional on the file importing that module's own namespace,
-    # so a mathlib-track module of a mixed subtree is not forced to
-    # import Cslib. The trigger accepts all four import forms; the
-    # satisfying import must not be a `meta import`, which does not
-    # bring the module into the file's ordinary scope. Transitive
-    # satisfaction is not checked here; Cslib's own `checkInitImports`
-    # performs the post-extraction verification, and an extracted
-    # sibling carries the import through.
-    if [[ -n "$required_init" ]]; then
-      init_mod="${required_init#\?}"
-      init_ns="${init_mod%%.*}."
-      init_needed=1
-      if [[ "$required_init" == \?* ]]; then
-        init_needed=0
-        if grep -qE "^${import_kw_re}${init_ns//./\\.}" "$f"; then
-          init_needed=1
-        fi
-      fi
-      if [[ "$init_needed" -eq 1 ]] \
-         && ! grep -qE "^(public[[:space:]]+)?import ${init_mod//./\\.}([[:space:]]|$)" "$f"; then
-        echo "$f: missing required 'import $init_mod'" >&2
-        errors=$((errors + 1))
-      fi
+    # directly. The satisfying import must not be a `meta import`,
+    # which does not bring the module into the file's ordinary scope.
+    # Transitive satisfaction is not checked here; Cslib's own
+    # `checkInitImports` performs the post-extraction verification.
+    if [[ -n "$required_init" ]] \
+       && ! grep -qE "^(public[[:space:]]+)?import ${required_init//./\\.}([[:space:]]|$)" "$f"; then
+      echo "$f: missing required 'import $required_init'" >&2
+      errors=$((errors + 1))
     fi
 
     # Rule 2: no-prefix-leakage, for each leakage prefix. A test
@@ -250,24 +214,14 @@ check_subtree() {
 # from the allowed list). Test roots additionally allow their own
 # `GebTests.<subtree>.*` siblings, and forbid leakage of both the
 # source and the test self-prefix.
-check_subtree "Geb.Mathlib." "GebLang." -- "" Geb/Mathlib \
-  -- "Mathlib." "Batteries." "Geb.Mathlib." "GebLang." "Lean.DocString.Syntax" "GebMeta"
-check_subtree "Geb.Mathlib." "GebTests.Mathlib." "GebLang." -- "" GebTests/Mathlib \
-  -- "Mathlib." "Batteries." "Geb.Mathlib." "GebTests.Mathlib." "GebLang." "Lean.DocString.Syntax" "GebMeta"
-check_subtree "Geb.Cslib." "Geb.Mathlib." "GebLang." -- "Cslib.Init" Geb/Cslib \
-  -- "Mathlib." "Batteries." "Cslib." "Geb.Cslib." "Geb.Mathlib." "GebLang." "Lean.DocString.Syntax" "GebMeta"
-check_subtree "Geb.Cslib." "GebTests.Cslib." "Geb.Mathlib." "GebLang." -- "Cslib.Init" GebTests/Cslib \
-  -- "Mathlib." "Batteries." "Cslib." "Geb.Cslib." "GebTests.Cslib." "Geb.Mathlib." "GebLang." "Lean.DocString.Syntax" "GebMeta"
-
-# GebLang sits at the bottom of the dependency order: its modules
-# import no other library of this repository. Its test mirror adds its
-# own siblings. Both take the conditional Cslib.Init requirement,
-# their modules being mathlib-track or Cslib-track per module rather
-# than per subtree.
-check_subtree "GebLang." -- "?Cslib.Init" GebLang \
-  -- "Mathlib." "Batteries." "Cslib." "GebLang." "Lean.DocString.Syntax" "GebMeta"
-check_subtree "GebLang." "GebTests.Lang." -- "?Cslib.Init" GebTests/Lang \
-  -- "Mathlib." "Batteries." "Cslib." "GebLang." "GebTests.Lang." "Lean.DocString.Syntax" "GebMeta"
+check_subtree "Geb.Mathlib." -- "" Geb/Mathlib \
+  -- "Mathlib." "Batteries." "Geb.Mathlib." "Lean.DocString.Syntax" "GebMeta"
+check_subtree "Geb.Mathlib." "GebTests.Mathlib." -- "" GebTests/Mathlib \
+  -- "Mathlib." "Batteries." "Geb.Mathlib." "GebTests.Mathlib." "Lean.DocString.Syntax" "GebMeta"
+check_subtree "Geb.Cslib." "Geb.Mathlib." -- "Cslib.Init" Geb/Cslib \
+  -- "Mathlib." "Batteries." "Cslib." "Geb.Cslib." "Geb.Mathlib." "Lean.DocString.Syntax" "GebMeta"
+check_subtree "Geb.Cslib." "GebTests.Cslib." "Geb.Mathlib." -- "Cslib.Init" GebTests/Cslib \
+  -- "Mathlib." "Batteries." "Cslib." "Geb.Cslib." "GebTests.Cslib." "Geb.Mathlib." "Lean.DocString.Syntax" "GebMeta"
 
 if [ "$errors" -gt 0 ]; then
   echo "lint-imports.sh: $errors violation(s) found" >&2

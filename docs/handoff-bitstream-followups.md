@@ -152,8 +152,7 @@ Conventions and pitfalls that cost time last session:
    `no_oitavem_recognizer` and `no_oitavem_nativeCheck` are untouched. Update
    `docs/index.md` and any mention of `syntaxCode` in `docs/`. Import direction:
    the counterexample then imports `Geb.Prototypes.BitStream.Oitavem.Sig` (check
-   `scripts/lint-imports.sh` and `check-transitive-imports.sh`; both are under
-   `Prototypes`).
+   `scripts/lint-imports.sh`; both are under `Prototypes`).
 
 Each commit: `lake build`, the relevant `GebTests` module, `docs/index.md`; run
 `scripts/pre-push.sh` once at the end.

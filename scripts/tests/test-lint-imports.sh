@@ -3,8 +3,8 @@
 # scripts/tests/test-lint-imports.sh
 #
 # Smoke test for scripts/lint-imports.sh. Stages synthetic
-# Geb/{Mathlib,Cslib}, GebTests/{Mathlib,Cslib}, GebLang and
-# GebTests/Lang roots under a temp directory and runs the linter
+# Geb/{Mathlib,Cslib} and GebTests/{Mathlib,Cslib} roots under a temp
+# directory and runs the linter
 # against scenarios covering clean and violating inputs for each.
 #
 # Exit 0 if all scenarios pass; exit non-zero with the failure
@@ -23,8 +23,7 @@ checked=0
 setup_empty() {
   rm -rf "$test_dir"
   mkdir -p "$test_dir/Geb/Mathlib" "$test_dir/Geb/Cslib" \
-           "$test_dir/GebTests/Mathlib" "$test_dir/GebTests/Cslib" \
-           "$test_dir/GebLang" "$test_dir/GebTests/Lang"
+           "$test_dir/GebTests/Mathlib" "$test_dir/GebTests/Cslib"
 }
 
 assert_case() {
@@ -436,134 +435,43 @@ EOF
 assert_case "a self-prefix in a comment is not an import path" 1 \
   "'Geb.Mathlib.' outside an import path"
 
-# Case 37: a clean GebLang file with no Cslib import needs no init.
+# Case 37: a leakage prefix in an import line's trailing comment.
 setup_empty
-cat > "$test_dir/GebLang/Foo.lean" <<'EOF'
+cat > "$test_dir/GebTests/Mathlib/CommentTail.lean" <<'EOF'
 module
 
-import Mathlib.Algebra.Group.Basic
-import Batteries.Data.UnionFind
-import GebLang.Bar
-
-def foo : Nat := 0
-EOF
-assert_case "GebLang clean without Cslib" 0 "clean (1 file(s) checked)"
-
-# Case 38: a GebLang file importing Cslib.* must import Cslib.Init.
-setup_empty
-cat > "$test_dir/GebLang/NoInit.lean" <<'EOF'
-module
-
-import Cslib.Foundations.Thing
-EOF
-assert_case "GebLang conditional init triggered" 1 \
-  "missing required 'import Cslib.Init'"
-
-# Case 39: the trigger fires on a `meta import` of a Cslib module,
-# which is the form the unconditional rule's satisfying import
-# excludes.
-setup_empty
-cat > "$test_dir/GebLang/MetaOnly.lean" <<'EOF'
-module
-
-meta import Cslib.Foundations.Thing
-EOF
-assert_case "GebLang conditional init triggered by a meta import" 1 \
-  "missing required 'import Cslib.Init'"
-
-# Case 40: an ordinary import of Cslib.Init satisfies the triggered
-# requirement.
-setup_empty
-cat > "$test_dir/GebLang/MetaCslib.lean" <<'EOF'
-module
-
-import Cslib.Init
-meta import Cslib.Foundations.Thing
-EOF
-assert_case "GebLang conditional init satisfied" 0 "clean (1 file(s) checked)"
-
-# Case 41: a GebLang file importing Geb.
-setup_empty
-cat > "$test_dir/GebLang/Bad.lean" <<'EOF'
-module
-
-import Geb
-EOF
-assert_case "GebLang forbidding a Geb import" 1 \
-  "forbidden import 'import Geb'"
-
-# Case 42: GebLang self-prefix leakage.
-setup_empty
-cat > "$test_dir/GebLang/Leak.lean" <<'EOF'
-module
-
-import GebLang.Bar
-
-def GebLang.foo : Nat := 0
-EOF
-assert_case "GebLang self-prefix leakage" 1 \
-  "'GebLang.' outside an import path"
-
-# Case 43: GebTests/Lang sibling imports are allowed.
-setup_empty
-cat > "$test_dir/GebTests/Lang/Index.lean" <<'EOF'
-module
-
-public import GebLang.Foo
-public meta import GebLang.Foo
-import GebTests.Lang.Sub
-EOF
-assert_case "GebTests/Lang sibling import" 0 "clean (1 file(s) checked)"
-
-# Case 44: GebTests/Lang test self-prefix leakage.
-setup_empty
-cat > "$test_dir/GebTests/Lang/Leak.lean" <<'EOF'
-module
-
-import GebTests.Lang.Sub
-
-def GebTests.Lang.foo : Nat := 0
-EOF
-assert_case "GebTests/Lang test self-prefix leakage" 1 \
-  "'GebTests.Lang.' outside an import path"
-
-# Case 45: a leakage prefix in an import line's trailing comment.
-setup_empty
-cat > "$test_dir/GebTests/Lang/CommentTail.lean" <<'EOF'
-module
-
-import GebTests.Lang.Sub  -- see also GebTests.Lang.Other
+import GebTests.Mathlib.Sub  -- see also GebTests.Mathlib.Other
 EOF
 assert_case "leakage prefix in an import line's comment tail" 1 \
-  "'GebTests.Lang.' outside an import path"
+  "'GebTests.Mathlib.' outside an import path"
 
-# Case 46: the fixed-exception entries (Lean.DocString.Syntax,
-# GebMeta), in plain and `meta import` form, in GebLang/.
+# Case 38: the fixed-exception entries (Lean.DocString.Syntax,
+# GebMeta), in plain and `meta import` form, in Geb/Mathlib/.
 setup_empty
-cat > "$test_dir/GebLang/Meta.lean" <<'EOF'
+cat > "$test_dir/Geb/Mathlib/Meta.lean" <<'EOF'
 module
 
 import Lean.DocString.Syntax
 meta import Lean.DocString.Syntax
 meta import GebMeta
 EOF
-assert_case "GebLang fixed-exception imports" 0 "clean (1 file(s) checked)"
+assert_case "fixed-exception imports" 0 "clean (1 file(s) checked)"
 
-# Case 47: a fixed-exception entry is an exact module path, not a
+# Case 39: a fixed-exception entry is an exact module path, not a
 # `*`-suffixed prefix; a submodule of it is still forbidden.
 setup_empty
-cat > "$test_dir/GebLang/MetaSub.lean" <<'EOF'
+cat > "$test_dir/Geb/Mathlib/MetaSub.lean" <<'EOF'
 module
 
 import Lean.DocString.SyntaxHacks
 import GebMeta.Internal.Secrets
 EOF
-assert_case "GebLang fixed-exception entries do not admit a submodule" 1 \
+assert_case "fixed-exception entries do not admit a submodule" 1 \
   "forbidden import 'import Lean.DocString.SyntaxHacks'"
 
-# Case 48: the fixed-exception entries are admitted in every location,
+# Case 40: the fixed-exception entries are admitted in every location,
 # the literate style being the default in each; here Geb/Mathlib/ and
-# GebTests/Lang/.
+# GebTests/Mathlib/.
 setup_empty
 cat > "$test_dir/Geb/Mathlib/Lit.lean" <<'EOF'
 module
@@ -571,7 +479,7 @@ module
 import Lean.DocString.Syntax
 meta import GebMeta
 EOF
-cat > "$test_dir/GebTests/Lang/Lit.lean" <<'EOF'
+cat > "$test_dir/GebTests/Mathlib/Lit.lean" <<'EOF'
 module
 
 import Lean.DocString.Syntax
@@ -580,7 +488,7 @@ EOF
 assert_case "every location admits the fixed-exception imports" 0 \
   "clean (2 file(s) checked)"
 
-# Case 48b: the fixed exception does not open the `Lean.` prefix; a
+# Case 40b: the fixed exception does not open the `Lean.` prefix; a
 # neighbouring core module stays forbidden.
 setup_empty
 cat > "$test_dir/Geb/Mathlib/Core.lean" <<'EOF'
@@ -591,7 +499,7 @@ EOF
 assert_case "the fixed exception does not admit other Lean modules" 1 \
   "forbidden import 'import Lean.Elab.Command'"
 
-# Case 49: a `meta import Cslib.Init` does not satisfy the required-init
+# Case 41: a `meta import Cslib.Init` does not satisfy the required-init
 # check, even as the file's only mention of the init module.
 setup_empty
 cat > "$test_dir/Geb/Cslib/MetaInit.lean" <<'EOF'
@@ -602,41 +510,7 @@ EOF
 assert_case "meta import Cslib.Init does not satisfy required-init" 1 \
   "missing required 'import Cslib.Init'"
 
-# Case 50: GebLang.* is accepted in the source subtrees.
-setup_empty
-cat > "$test_dir/Geb/Mathlib/UsesLang.lean" <<'EOF'
-module
-
-import GebLang.Foo
-EOF
-cat > "$test_dir/Geb/Cslib/UsesLang.lean" <<'EOF'
-module
-
-import Cslib.Init
-import GebLang.Foo
-EOF
-assert_case "GebLang import accepted in source subtrees" 0 \
-  "clean (2 file(s) checked)"
-
-# Case 51: GebLang.* is accepted in the test mirrors.
-setup_empty
-cat > "$test_dir/GebTests/Mathlib/UsesLang.lean" <<'EOF'
-module
-
-import GebLang.Foo
-EOF
-cat > "$test_dir/GebTests/Cslib/UsesLang.lean" <<'EOF'
-module
-
-import Cslib.Init
-import Geb.Mathlib.Thing
-import Batteries.Data.UnionFind
-import GebLang.Foo
-EOF
-assert_case "GebLang import accepted in test mirrors" 0 \
-  "clean (2 file(s) checked)"
-
-# Case 52: the mathlib subtree still cannot import Cslib-destined
+# Case 42: the mathlib subtree still cannot import Cslib-destined
 # content.
 setup_empty
 cat > "$test_dir/Geb/Mathlib/Bad.lean" <<'EOF'
@@ -647,19 +521,7 @@ EOF
 assert_case "Geb/Mathlib forbidding Geb.Cslib import" 1 \
   "forbidden import 'import Geb.Cslib.Foo'"
 
-# Case 53: GebLang. leakage in a Geb/Mathlib/ body.
-setup_empty
-cat > "$test_dir/Geb/Mathlib/LangLeak.lean" <<'EOF'
-module
-
-import GebLang.Foo
-
-def GebLang.foo : Nat := 0
-EOF
-assert_case "GebLang leakage in Geb/Mathlib" 1 \
-  "'GebLang.' outside an import path"
-
-# Case 54: Geb.Mathlib. leakage in a Geb/Cslib/ body, which
+# Case 43: Geb.Mathlib. leakage in a Geb/Cslib/ body, which
 # extraction would leave dangling upstream.
 setup_empty
 cat > "$test_dir/Geb/Cslib/MathlibLeak.lean" <<'EOF'
@@ -673,7 +535,7 @@ EOF
 assert_case "Geb.Mathlib leakage in Geb/Cslib" 1 \
   "'Geb.Mathlib.' outside an import path"
 
-# Case 55: Geb.Mathlib. leakage in the GebTests/Cslib/ mirror.
+# Case 44: Geb.Mathlib. leakage in the GebTests/Cslib/ mirror.
 setup_empty
 cat > "$test_dir/GebTests/Cslib/MathlibLeak.lean" <<'EOF'
 module
@@ -685,19 +547,7 @@ EOF
 assert_case "Geb.Mathlib leakage in GebTests/Cslib" 1 \
   "'Geb.Mathlib.' outside an import path"
 
-# Case 56: GebLang. leakage in the GebTests/Mathlib/ mirror.
-setup_empty
-cat > "$test_dir/GebTests/Mathlib/LangLeak.lean" <<'EOF'
-module
-
-import GebLang.Foo
-
-def GebLang.foo : Nat := 0
-EOF
-assert_case "GebLang leakage in GebTests/Mathlib" 1 \
-  "'GebLang.' outside an import path"
-
-# Case 57: the test mirror still cannot import Cslib-destined content.
+# Case 45: the test mirror still cannot import Cslib-destined content.
 setup_empty
 cat > "$test_dir/GebTests/Mathlib/BadCslib.lean" <<'EOF'
 module
@@ -706,32 +556,6 @@ import Geb.Cslib.Foo
 EOF
 assert_case "GebTests/Mathlib forbidding Geb.Cslib import" 1 \
   "forbidden import 'import Geb.Cslib.Foo'"
-
-# Case 58: GebLang. leakage in a Geb/Cslib/ body.
-setup_empty
-cat > "$test_dir/Geb/Cslib/LangLeak.lean" <<'EOF'
-module
-
-import Cslib.Init
-import GebLang.Foo
-
-def GebLang.foo : Nat := 0
-EOF
-assert_case "GebLang leakage in Geb/Cslib" 1 \
-  "'GebLang.' outside an import path"
-
-# Case 59: GebLang. leakage in the GebTests/Cslib/ mirror.
-setup_empty
-cat > "$test_dir/GebTests/Cslib/LangLeak.lean" <<'EOF'
-module
-
-import Cslib.Init
-import GebLang.Foo
-
-def GebLang.foo : Nat := 0
-EOF
-assert_case "GebLang leakage in GebTests/Cslib" 1 \
-  "'GebLang.' outside an import path"
 
 echo "test-lint-imports.sh: $checked case(s) checked, $failed failure(s)"
 exit "$failed"

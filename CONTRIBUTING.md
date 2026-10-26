@@ -151,8 +151,8 @@ does not run config commands on a contributor's behalf.
 
 ### Submission policy
 
-- **LLM-contribution policy** binds any work in `Geb/Mathlib/`,
-  `Geb/Cslib/`, or `GebLang/`. mathlib and CSLib permit LLM-generated code,
+- **LLM-contribution policy** binds any work in `Geb/Mathlib/` or
+  `Geb/Cslib/`. mathlib and CSLib permit LLM-generated code,
   with no per-contributor or first-PR exception, provided the
   contributor understands every line and can justify each design
   decision to reviewers without AI assistance. Disclosure of
@@ -200,8 +200,8 @@ does not run config commands on a contributor's behalf.
   (`Copyright (c) <year> <names>. All rights reserved.` /
   `Authors: <names>`): the names identify authorship as mathlib
   requires and are exempt from this rule.
-- **Literate Lean.** Every new `.lean` module under `Geb/` or
-  `GebLang/` is written so that Verso renders it as a manual page,
+- **Literate Lean.** Every new `.lean` module under `Geb/` is
+  written so that Verso renders it as a manual page,
   its docstrings checked markup with references to the code
   resolved at elaboration, whether or not the manual links it. See
   `docs/rules/lean-coding.md` § Literate modules and
@@ -236,14 +236,11 @@ At all times, the repository is ready to ship dependency-ordered PRs
 on short notice with no source-code changes.
 `scripts/lint-imports.sh` enforces this by rejecting forbidden
 imports and self-prefixes outside an import path in every
-upstream-eligible location;
-`scripts/check-transitive-imports.sh` enforces the closure rules the
-direct-import lists cannot see. Extraction is dependency-ordered
-through `GebLang/`, each module retargeted by its own import closure.
+upstream-eligible location.
 
 ## Repo structure
 
-`Geb/Mathlib/*`, `Geb/Cslib/*` and `GebLang/*` upstream-eligible |
+`Geb/Mathlib/*` and `Geb/Cslib/*` upstream-eligible |
 `Geb/Prototypes/*` prototypes, their expression unsettled.
 Narrow-and-deep dirs with one indexing file per directory.
 `main` = append-only stable; `integration` = regenerated fan-in
@@ -262,8 +259,7 @@ view; topic branches per PR-candidate.
   (`upstreaming-dashboard-action` deferred until `Geb/Mathlib/`
   has substantive content for it to dashboard.)
 - Linters: `markdownlint-cli2`, `scripts/lint-imports.sh`,
-  `scripts/check-transitive-imports.sh`, `lake lint` (drives
-  `batteries/runLinter`).
+  `lake lint` (drives `batteries/runLinter`).
 
 ## References
 

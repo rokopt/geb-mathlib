@@ -30,7 +30,6 @@ jobs:
       # level; warnings and errors of this repository's Lean, compiled
       # by the step above at the default level, stay visible.
       - run: lake build Geb:docs --log-level=warning
-      - run: lake build GebLang:docs --log-level=warning
       - name: Upload generated documentation
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:

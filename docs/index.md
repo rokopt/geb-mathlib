@@ -18,49 +18,35 @@ The repository is laid out narrow-and-deep, with one indexing
   downstream-only content.
   - `Geb/Mathlib/` — content authored in mathlib's style and
     intended for eventual upstream extraction to mathlib4;
-    imports from `Mathlib.*`, `Batteries.*`, `Geb.Mathlib.*`, and
-    `GebLang.*` only. Where those import rules leave no alternative,
+    imports from `Mathlib.*`, `Batteries.*`, and `Geb.Mathlib.*`
+    only. Where those import rules leave no alternative,
     a module here may instead target Lean core or Batteries; that
     destination is open, per `TODO.md` § Upstream destination of
     core- and Batteries-targeted content.
   - `Geb/Cslib/` — content authored in Cslib's style and
     intended for eventual upstream extraction to Cslib;
     imports from `Mathlib.*`, `Batteries.*`, `Cslib.*`,
-    `Geb.Cslib.*`, `Geb.Mathlib.*`, and `GebLang.*` only.
+    `Geb.Cslib.*`, and `Geb.Mathlib.*` only.
   - `Geb/Prototypes/` — prototypes: constructions the language is
     to have, whose written form is not yet settled, and which are
     therefore not yet upstream-eligible; may import from
     `Mathlib.*`, `Batteries.*`,
     `Cslib.*`, `Geb.Mathlib.*`, `Geb.Cslib.*`, `GebLang.*`, or
     `Geb.Prototypes.*`.
-- `GebLang/` — the Geb language's core data structures, at the
-  bottom of the dependency order; imports from `Mathlib.*`,
-  `Batteries.*`, `Cslib.*`, `GebLang.*`, `Lean.DocString.Syntax`
-  and `GebMeta` only. The last two are fixed exceptions, the
-  literate pipeline's own load-bearing imports rather than
-  content of this repository's own libraries
-  (`docs/rules/upstream-eligible.md` § Subtree import rules). Each
-  module is upstream-eligible and ships to mathlib4 or to Cslib
-  according to its own import closure. Its modules, like every new
-  module of `Geb/`, are literate and rendered by the literate site,
-  the manual and doc-gen4 alike (`docs/rules/lean-coding.md`
-  § Literate modules).
 - `GebTests/` — test library mirroring `Geb/`'s structure, with
   `GebTests/Mathlib/`, `GebTests/Cslib/`, and `GebTests/Prototypes/`
-  subdirectories, plus `GebTests/Lang/`, which tests `GebLang/`.
+  subdirectories.
 - `GebExperiments/` — experiments with the type inhabitation solver
   Canonical, which give it problems and check the terms it returns with
-  Geb's checkers; no module of `Geb/`, `GebLang/` or `GebTests/`
-  imports it, so a default build never fetches the solver.
+  Geb's checkers; no module of `Geb/` or `GebTests/` imports it, so a
+  default build never fetches the solver.
 - `manual/` — the Verso manual, whose chapters include literate
   modules from the libraries above by name (build and serve
   commands: `README.md` § Documentation).
 
 The directory split denotes upstream eligibility; the
 import-direction rules above are enforced by
-`scripts/lint-imports.sh`, and the closure rules behind them by
-`scripts/check-transitive-imports.sh`, both in the pre-push
-checklist and in CI.
+`scripts/lint-imports.sh`, in the pre-push checklist and in CI.
 
 ## Design documents
 
@@ -4011,7 +3997,7 @@ checklist and in CI.
   `GebTests/Prototypes/LF/Topos.lean`, `GebTests/Prototypes/LF/Adequacy.lean`,
   `GebTests/Prototypes/LF/Proofs.lean` and
   `GebTests/Prototypes/LF/Development.lean`. The library `GebExperiments`,
-  which no module of `Geb`, `GebLang` or `GebTests` imports, translates goals
+  which no module of `Geb` or `GebTests` imports, translates goals
   of the signature and of the signatures of developments to Canonical's
   input and the terms it returns back, and checks them
   (`lake exe lf-canonical`); the [bootstrap

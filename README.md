@@ -16,9 +16,8 @@ A Lean 4 + mathlib formalisation of Geb, a categorical programming
 language whose first-class notions include "programming language"
 itself. The repository develops mathematical content in a style
 shaped to be plausibly upstreamable to mathlib4 (via the
-`Geb/Mathlib/` subtree) or Cslib (via `Geb/Cslib/`), with the Geb
-language's core data structures in `GebLang/`, which ships to either
-upstream per module, alongside prototypes (under
+`Geb/Mathlib/` subtree) or Cslib (via `Geb/Cslib/`), alongside
+prototypes (under
 `Geb/Prototypes/`) whose expression is not yet settled. The manual
 and the rendered libraries are published at
 [rokopt.github.io/geb-mathlib](https://rokopt.github.io/geb-mathlib/).
@@ -55,9 +54,9 @@ See `lakefile.toml` for the full dependency declaration.
   `doc-build.yml` and by `scripts/pre-push.sh`, not by
   `lake build`; deployed by `pages.yml`.
 - [The literate site](https://rokopt.github.io/geb-mathlib/literate/)
-  (Verso), every module of `Geb/` and `GebLang/` rendered as a page
-  under `literate/` of the published site: `scripts/literate.sh build` builds the
-  libraries, lints them, and renders the site;
+  (Verso), every module of `Geb/` rendered as a page under
+  `literate/` of the published site: `scripts/literate.sh build` builds
+  the library, lints it, and renders the site;
   `scripts/literate.sh serve` serves it at `literate/` under the
   manual, as GitHub Pages does, and prints the URL. It has no
   watch mode: after editing a docstring, re-run `build` and refresh
@@ -80,8 +79,7 @@ Path-scoped rules live in [docs/rules/](docs/rules/):
 
 - `lean-coding.md` — applies to all `.lean` files.
 - `upstream-eligible.md` — applies under `Geb/Mathlib/`,
-  `Geb/Cslib/`, `GebTests/Mathlib/`, `GebTests/Cslib/`, `GebLang/`,
-  and `GebTests/Lang/`.
+  `Geb/Cslib/`, `GebTests/Mathlib/`, and `GebTests/Cslib/`.
 - `markdown-writing.md` — applies to all `.md` files.
 - `ci-and-workflow.md` — applies to `.github/workflows/` and
   `scripts/`.
@@ -111,9 +109,5 @@ is a prototype: it works out a construction the language is to
 have, without its written form being settled as the one to keep.
 A prototype is not eligible for upstream submission while its
 expression is provisional; once the expression is settled it is
-recast into upstream-eligible form and moved to `Geb/Mathlib/`,
-`Geb/Cslib/`, or `GebLang/`.
-
-Content in `GebLang/` is upstream-eligible per module: a module whose
-import closure reaches no `Cslib.*` extracts to mathlib4, and one
-whose closure reaches it extracts to Cslib.
+recast into upstream-eligible form and moved to `Geb/Mathlib/` or
+`Geb/Cslib/`.

@@ -30,10 +30,6 @@ jobs:
         run: bash scripts/lint-imports.sh
       - name: scripts/tests/test-lint-imports.sh
         run: bash scripts/tests/test-lint-imports.sh
-      - name: scripts/check-transitive-imports.sh
-        run: bash scripts/check-transitive-imports.sh
-      - name: scripts/tests/test-check-transitive-imports.sh
-        run: bash scripts/tests/test-check-transitive-imports.sh
       - name: scripts/tests/test-extract-pr.sh
         run: bash scripts/tests/test-extract-pr.sh
       - name: scripts/tests/test-check-commit-msg.sh
@@ -69,15 +65,15 @@ jobs:
       - uses: leanprover/lean-action@24581d74d674803a25a81b10b059c5c0cdd344c6  # v1
         with:
           build: true
-          # `defaultTargets` (Geb and GebLang) and the test library.
+          # `defaultTargets` (Geb) and the test library.
           # lean-action saves the GitHub cache of `.lake` after its
           # build step and before `lake test`, so a test module built
           # by the build step is cached and is rebuilt by a later run
           # only when its inputs change.
-          build-args: Geb GebLang GebTests
+          build-args: Geb GebTests
           test: true
           lint: true
-          # Everything builds via the `Geb.*`/`GebTests.*`/`GebLang.*`
+          # Everything builds via the `Geb.*`/`GebTests.*`
           # globs rather than a root import list, and bulk imports are
           # arranged per subdirectory; there is no flat root
           # aggregator for mk_all to check.
@@ -93,14 +89,12 @@ jobs:
         run: bash scripts/bootstrap.sh check
       - name: lint GebTests (axiom + style linters on tests)
         run: lake exe batteries/runLinter GebTests
-      - name: lint GebLang (axiom + style linters on the language library)
-        run: lake exe batteries/runLinter GebLang
       - name: scripts/tests/test-axiom-linter.sh
         run: bash scripts/tests/test-axiom-linter.sh
       - name: scripts/tests/test-lint-driver.sh
         run: bash scripts/tests/test-lint-driver.sh
       - name: lake shake (minimised imports)
-        run: lake shake --add-public --keep-implied --keep-prefix Geb GebTests GebLang
+        run: lake shake --add-public --keep-implied --keep-prefix Geb GebTests
       - name: scripts/tests/test-lake-shake.sh
         run: bash scripts/tests/test-lake-shake.sh
 

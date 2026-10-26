@@ -1278,7 +1278,7 @@ Correcting these is a separate concern from any current branch per
 - **Canonical as a dependency**: `lakefile.toml` requires Canonical
   (the Bootstrap chapter's sections Holes and search, and Search and
   synthesis) for experiments with search, in a library of their own that
-  no module of `Geb`, `GebLang` or `GebTests` imports; committed
+  no module of `Geb` or `GebTests` imports; committed
   experiments call its solver as a program and check what they decode
   with Geb's checkers. Trigger: everything done with it, and everything
   planned with it, is written in Geb, or writable in Geb by the
@@ -1361,7 +1361,7 @@ Correcting these is a separate concern from any current branch per
      `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`, `docs/process.md`, and
      `docs/rules/*` remain Markdown regardless (GitHub rendering, tool and
      `@import` consumption, markdownlint, doctoc).
-     The `GebLang` literate site (`scripts/literate.sh`) already renders that
+     The literate site (`scripts/literate.sh`) already renders the `Geb`
      library's docstrings as exposition, so a Geb-language exposition chooses
      between extending it and a separate Verso document.
   3. Transient design docs on feature branches: no external gate; candidate for
@@ -1388,8 +1388,8 @@ Correcting these is a separate concern from any current branch per
   (`DocGen4/Output/DocString.lean`, `-- TODO: natively render Verso
   docstrings`), where a role's code span is auto-linked as a
   Markdown one is. The literate site renders both kinds. Trigger: a
-  doc-gen4 pin bump, at which point the measurements of the `GebLang`
-  documentation build are re-taken and this entry is removed once the
+  doc-gen4 pin bump, at which point the documentation build's
+  measurements are re-taken and this entry is removed once the
   module docstring reaches the page.
 - **Verso's manual renders a Markdown module docstring wrongly**:
   `VersoLiterate.modToPage`, the conversion `includeLiterate` runs on
@@ -1408,21 +1408,11 @@ Correcting these is a separate concern from any current branch per
   `linter.style.header` runs on a module only when its library root
   imports it directly (`isInLibraryRoot`, a parse of `<Root>.lean`'s
   imports). `Geb.lean` imports its three index modules alone, so the
-  linter checks those and no content module; `GebLang.lean` imports
-  its modules directly, so it checks them all. The extracted file is
+  linter checks those and no content module. The extracted file is
   checked by mathlib's own CI regardless. Trigger: a decision to have
   `Geb.lean` import every module directly, mathlib's own arrangement,
   which `lake shake`'s `keep-all` and `keep-downstream` markers on
   the umbrella already anticipate.
-- **Replace `GebLang/Basic.lean`**: the module holds one anchor
-  declaration so that both documentation pipelines have a module
-  docstring and a declaration docstring to render. Trigger: the first
-  `GebLang` content workstream, which replaces the module rather than
-  growing it.
-- **Remove `GebTests/Lang/Basic.lean`**: the module holds one `#guard`
-  against the anchor declaration, validating the test driver path and
-  the lint path for the `GebLang` library. Trigger: the arrival of
-  real `GebTests/Lang/` tests, which supersede it.
 - **Project-specific `geb-development` skill**: when recurring patterns
   accumulate that fit neither `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`,
   `docs/process.md`, `docs/rules/*.md`, nor existing `.claude/rules/*.md`.
@@ -1566,23 +1556,11 @@ Correcting these is a separate concern from any current branch per
   content. Trigger: the next occasion to revise those modules.
 - **A dotless namespace reference escapes the leakage rule**: the
   self-prefixes `scripts/lint-imports.sh` bars outside an import path all
-  carry a trailing dot, so `open GebLang` or `open Geb.Mathlib` passes the
-  linter and extracts verbatim into an upstream file, where the namespace
-  does not exist. No file exhibits it, `GebLang/Basic.lean` declaring no
-  namespace of its own. Trigger: the first upstream-eligible module that
-  opens a repository namespace, at which point the leakage rule gains a
-  dotless form or extraction rewrites it.
-- **Two modules sharing a basename collapse to one upstream import**:
-  `GebLang/Foo.lean` and `Geb/Mathlib/Foo.lean` both extract to
-  `Mathlib/Foo.lean`, so a file importing both emits one import line twice
-  and loses a dependency, with no diagnostic. `scripts/extract-pr.sh`
-  documents the destination overwrite; the import-line collapse is not
-  visible in what it prints. The shape is expressible only now that a
-  mathlib-track file may import `GebLang.*`. `Mathlib/Init.lean`,
-  `Mathlib/Tactic.lean` and `Cslib/Init.lean` exist upstream, so a
-  `GebLang/Init.lean` or `GebLang/Tactic.lean` would shadow one of them
-  silently. Trigger: a second repository module taking a basename another
-  already extracts to, at which point extraction gains a collision check.
+  carry a trailing dot, so `open Geb.Mathlib` passes the linter and
+  extracts verbatim into an upstream file, where the namespace does not
+  exist. No file exhibits it. Trigger: the first upstream-eligible
+  module that opens a repository namespace, at which point the leakage
+  rule gains a dotless form or extraction rewrites it.
 - **Normalise the vocabulary of `docs/rules/upstream-eligible.md` and
   its neighbours**: two migrations are half-done and neither belongs
   to a workstream whose concern is something else. The project
@@ -1597,29 +1575,17 @@ Correcting these is a separate concern from any current branch per
   `Geb/Cslib.lean`, `GebTests/Cslib.lean`, `GebMeta.lean`,
   `manual/GebManual/Introduction.lean` and `scripts/lint-imports.sh`,
   whose header keeps one such line. Separately,
-  `docs/rules/upstream-eligible.md` now calls `GebLang/` and
-  `GebTests/Lang/` upstream-eligible locations rather than subtrees,
-  while its heading, its table's first column and several sentences
-  still say subtree. Trigger: a branch whose concern is those files
-  themselves, which renames the two section headings and re-runs
-  `doctoc`.
-- **The three import-scanning scripts each carry their own copy of the
-  import-line pattern**: `scripts/extract-pr.sh`,
-  `scripts/lint-imports.sh` and `scripts/check-transitive-imports.sh`
-  each bind the four import forms separately, and two of them each
-  carry their own module-path mapping and closure walk. Each comment
-  says the pattern is bound once so its users cannot disagree, which
-  holds within a file and not across the three, and a disagreement
-  between them about what an import admits is what a floodgate hole
-  looks like. `scripts/lib/diff-against-main.sh` shows the sourcing
-  pattern that would let them share one definition. Trigger: the next
-  change that touches the import pattern in more than one of the three.
-- **`scripts/check-transitive-imports.sh` omits `-e` where its sibling
-  sets it**: it runs under `set -uo pipefail` and
-  `scripts/lint-imports.sh` under `set -euo pipefail`, with nothing
-  recording why. The omission appears not to be load-bearing: forcing
-  `-e` leaves both the self-test and a run over the whole tree passing,
-  and the `for m in $(imported_internal …)` substitution that looks like
-  the reason is exempt from `-e` propagation. Trigger: the next change
-  to either script's error handling, at which point the two are aligned
-  or the difference is explained.
+  `docs/rules/upstream-eligible.md` calls its directories
+  upstream-eligible locations in some sentences and subtrees in others,
+  its heading and its table's first column among the latter. Trigger:
+  a branch whose concern is those files themselves, which renames the
+  two section headings and re-runs `doctoc`.
+- **The two import-scanning scripts each carry their own copy of the
+  import-line pattern**: `scripts/extract-pr.sh` and
+  `scripts/lint-imports.sh` each bind the four import forms separately.
+  Each comment says the pattern is bound once so its users cannot
+  disagree, which holds within a file and not across the two, and a
+  disagreement between them about what an import admits is what a
+  floodgate hole looks like. `scripts/lib/diff-against-main.sh` shows
+  the sourcing pattern that would let them share one definition.
+  Trigger: the next change that touches the import pattern in both.

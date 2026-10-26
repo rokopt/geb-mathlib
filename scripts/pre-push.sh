@@ -44,10 +44,9 @@ step() {
 step "lake exe cache get"
 # Fetch the full mathlib olean cache, mirroring CI's
 # leanprover/lean-action. Without it, after a toolchain bump only the
-# oleans that the root libraries `Geb` and `GebLang` directly import
-# are present, and the `lake shake` smoke test below (which injects
-# an arbitrary mathlib import) fails with "out of date oleans; fetch
-# them from a cache".
+# oleans that the root library `Geb` directly imports are present, and
+# the `lake shake` smoke test below (which injects an arbitrary mathlib
+# import) fails with "out of date oleans; fetch them from a cache".
 #
 # Fetch only when the dependency set changes. `cache get` unpacks
 # every module whose local Lake trace records a `depHash` other than
@@ -99,7 +98,7 @@ step "scripts/bootstrap.sh check (bootstrap fixed points)"
 bash scripts/bootstrap.sh check
 
 # `lake shake` requires built oleans for every library it scans.
-# `lake build` alone honours `defaultTargets` (Geb and GebLang), so
+# `lake build` alone honours `defaultTargets` (Geb), so
 # build `GebTests` explicitly here.
 step "lake build GebTests (prerequisite for lake shake)"
 lake build GebTests
@@ -107,21 +106,18 @@ lake build GebTests
 step "lake exe batteries/runLinter GebTests (axiom + style linters on tests)"
 lake exe batteries/runLinter GebTests
 
-# literate.sh lints Geb and GebLang before rendering.
-step "scripts/literate.sh build (lint Geb and GebLang, render the literate site)"
+# literate.sh lints Geb before rendering.
+step "scripts/literate.sh build (lint Geb, render the literate site)"
 bash scripts/literate.sh build
 
 step "scripts/manual.sh build (build, lint and generate the manual)"
 bash scripts/manual.sh build
 
 step "lake shake (minimised imports)"
-lake shake --add-public --keep-implied --keep-prefix Geb GebTests GebLang
+lake shake --add-public --keep-implied --keep-prefix Geb GebTests
 
 step "scripts/lint-imports.sh"
 bash scripts/lint-imports.sh
-
-step "scripts/check-transitive-imports.sh"
-bash scripts/check-transitive-imports.sh
 
 step "scripts/check-commit-msg.sh (branch commits)"
 # The branch's commit subjects under whichever VCS the checkout uses
@@ -164,9 +160,9 @@ step "docs-coverage check (concept docs in same branch)"
 # Project rule: any new concept added to source code must be
 # documented in docs/index.md in the same branch.
 # Stub implementation: surface a reminder when .lean files in
-# Geb/Mathlib/, Geb/Cslib/, Geb/Prototypes/, or GebLang/ change
-# without docs/index.md being touched in the same branch's diff. A
-# full implementation would parse new top-level declarations and
+# Geb/Mathlib/, Geb/Cslib/ or Geb/Prototypes/ change without
+# docs/index.md being touched in the same branch's diff. A full
+# implementation would parse new top-level declarations and
 # check docs/index.md mentions them; deferred to a future upgrade.
 #
 # diff_against_main (diff against the merge-base with main) is shared
@@ -175,12 +171,12 @@ step "docs-coverage check (concept docs in same branch)"
 # shellcheck source=lib/diff-against-main.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib/diff-against-main.sh"
 
-if diff_against_main | grep -qE '^(Geb/Mathlib|Geb/Cslib|Geb/Prototypes|GebLang)/.*\.lean$'; then
+if diff_against_main | grep -qE '^(Geb/Mathlib|Geb/Cslib|Geb/Prototypes)/.*\.lean$'; then
   if ! diff_against_main | grep -q '^docs/index.md$'; then
     echo "" >&2
     echo "REMINDER (docs-coverage):" >&2
-    echo "  Lean files under Geb/Mathlib/, Geb/Cslib/," >&2
-    echo "  Geb/Prototypes/, or GebLang/ changed, but" >&2
+    echo "  Lean files under Geb/Mathlib/, Geb/Cslib/ or" >&2
+    echo "  Geb/Prototypes/ changed, but" >&2
     echo "  docs/index.md was not touched. Verify each new" >&2
     echo "  concept is reflected in docs/index.md." >&2
   fi

@@ -7,7 +7,6 @@ module -- shake: keep-all, shake: keep-downstream
 
 public import GebTests.Cslib
 public import GebTests.Prototypes
-public import GebTests.Lang
 public import GebTests.Mathlib
 
 import GebMeta
@@ -17,7 +16,5 @@ import GebMeta
 
 Test library root. Mirrors `Geb.lean` structure: `GebTests.Mathlib`
 tests `Geb.Mathlib`; `GebTests.Cslib` tests `Geb.Cslib`;
-`GebTests.Prototypes` tests `Geb.Prototypes`. `GebTests.Lang` tests
-`GebLang`, whose sources are a sibling library rather than a `Geb`
-subtree.
+`GebTests.Prototypes` tests `Geb.Prototypes`.
 -/

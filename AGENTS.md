@@ -19,7 +19,7 @@
 - [Skills and MCP servers](#skills-and-mcp-servers)
 - [Path-scoped rules](#path-scoped-rules)
   - [When editing .lean files](#when-editing-lean-files)
-  - [When editing files under Geb/Mathlib/, Geb/Cslib/ or GebLang/](#when-editing-files-under-gebmathlib-gebcslib-or-geblang)
+  - [When editing files under Geb/Mathlib/ or Geb/Cslib/](#when-editing-files-under-gebmathlib-or-gebcslib)
   - [When editing .md files](#when-editing-md-files)
   - [When editing files under scripts/ or .github/workflows/](#when-editing-files-under-scripts-or-githubworkflows)
 - [References](#references)
@@ -101,8 +101,8 @@ issue/PR comments. These are user-authored per
 ### AI authoring (upstream-eligible work)
 
 An AI agent may draft code for upstream-eligible locations. Before
-the user commits it to `Geb/Mathlib/`, `Geb/Cslib/` or `GebLang/`,
-the user understands every line, can justify each design decision to
+the user commits it to `Geb/Mathlib/` or `Geb/Cslib/`, the user
+understands every line, can justify each design decision to
 reviewers without AI assistance, and discloses which tools were
 used and how (per
 [CONTRIBUTING.md § Submission policy](CONTRIBUTING.md)). There is
@@ -272,7 +272,7 @@ page, whether or not the manual links it.
 See [docs/rules/lean-coding.md](docs/rules/lean-coding.md) for
 the full text, § Literate modules for that rule.
 
-### When editing files under Geb/Mathlib/, Geb/Cslib/ or GebLang/
+### When editing files under Geb/Mathlib/ or Geb/Cslib/
 
 Additional upstream-eligibility rules apply (import rules,
 authoring, subtree boundaries).
