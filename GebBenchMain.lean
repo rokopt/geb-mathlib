@@ -24,3 +24,5 @@ public def main : IO Unit := do
   GebBench.Prototypes.SuccinctTree.run
   IO.println "# GebBench.Prototypes.FreeTopos.TranslationProofs"
   GebBench.Prototypes.FreeTopos.TranslationProofs.run
+  IO.println "# GebBench.Prototypes.FreeTopos.Rules"
+  GebBench.Prototypes.FreeTopos.Rules.run

@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import GebBench.Prototypes.FreeTopos.Rules
 public import GebBench.Prototypes.FreeTopos.TranslationProofs
 public import GebBench.Prototypes.SuccinctTree
 
@@ -14,7 +15,8 @@ set_option doc.verso true in
 
 Measurements of the prototypes' programs, run by {lit}`lake exe geb-bench` rather than built with
 the tests: each prints a table of its timings, which change from run to run and machine to machine
-and so are no test's result. {lit}`slow-checks.yml` runs them daily and on demand.
+and so are no test's result, or of counts over inputs the repository changes, such as the stored
+certificates. {lit}`slow-checks.yml` runs them daily and on demand.
 
 ## Tags
 
