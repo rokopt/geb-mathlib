@@ -15,9 +15,9 @@ set_option doc.verso true in
 
 The runtime stores a finite indexed cell family and an array of wire partners. It checks
 candidate active pairs against the rule table, allocates the selected replacement and
-executes array contraction. Searching the finite list of ordered cell pairs gives a
-deterministic default schedule. Every successful step represents one graph contraction;
-failure to find a redex means the represented graph is normal.
+executes array contraction. Following each cell's principal wire gives a complete list of
+candidate partners and a deterministic default schedule. Every successful step represents
+one graph contraction; failure to find a redex means the represented graph is normal.
 
 ## Main definitions
 
@@ -54,14 +54,40 @@ abbrev State (arity : α → ℕ) (boundary : ℕ) :=
 /-- Read a runtime state as a finite graph presentation. -/
 def read (n : State arity boundary) : FiniteNet arity boundary := ⟨n.1, n.2.1, n.2.2.read⟩
 
+/-- Materialize cell symbols once, preventing lookup chains through earlier reindexings. -/
+def labelTable {cells : ℕ} (label : Fin cells → α) : Vector α cells :=
+  ⟨(List.ofFn label).toArray, by simp only [List.size_toArray, List.length_ofFn]⟩
+
+/-- Materializing the label table preserves its value at every cell. -/
+theorem labelTable_get {cells : ℕ} (label : Fin cells → α) (c : Fin cells) :
+    (labelTable label)[c] = label c := by
+  change (List.ofFn label).toArray[c.val]'(by
+    simpa only [List.size_toArray, List.length_ofFn] using c.isLt) = label c
+  simp only [List.getElem_toArray, List.getElem_ofFn]
+
+/-- Cache the current cell labels while retaining the partner array unchanged. -/
+def cache (n : State arity boundary) : State arity boundary :=
+  let labels := labelTable n.2.1
+  ⟨n.1, fun c ↦ labels[c],
+    cast (congrArg (fun label ↦ ArrayNet arity label (Fin boundary))
+      (funext (labelTable_get n.2.1)).symm) n.2.2⟩
+
+/-- Caching changes the executable representation without changing the runtime state's value. -/
+@[simp] theorem cache_eq (n : State arity boundary) : cache n = n := by
+  rcases n with ⟨cells, label, n⟩
+  apply congrArg (Sigma.mk cells)
+  exact Sigma.ext (funext (labelTable_get label)) (cast_heq _ n)
+
 /-- Store a finite graph presentation in array form. -/
 def encode (n : FiniteNet arity boundary) : State arity boundary :=
-  ⟨n.1, n.2.1, ArrayNet.encode n.net⟩
+  cache ⟨n.1, n.2.1, ArrayNet.encode n.net⟩
 
 /-- Storing and reading a finite graph preserves its complete presentation. -/
 @[simp] theorem read_encode (n : FiniteNet arity boundary) : read (encode n) = n := by
   rcases n with ⟨cells, label, n⟩
-  simp only [read, encode, ArrayNet.read_encode]
+  unfold encode
+  rw [cache_eq]
+  simp only [read, ArrayNet.read_encode]
 
 /-- The graph represented by a runtime state, independent of its particular cell allocation. -/
 def graph (n : State arity boundary) : Graph arity boundary := Graph.ofNet (read n)
@@ -69,16 +95,18 @@ def graph (n : State arity boundary) : Graph arity boundary := Graph.ofNet (read
 /-- Execute one selected active pair by allocating and rewiring its array representation. -/
 def contract {s : PortSystem arity} (n : State arity boundary) (r : s.Redex (read n).net) :
     State arity boundary :=
-  ⟨_, _, n.2.2.contract r.active (ArrayNet.encode r.rhs.2.2)⟩
+  cache ⟨_, _, n.2.2.contract r.active (ArrayNet.encode r.rhs.2.2)⟩
 
 /-- Executing a selected redex refines one abstract graph contraction. -/
 theorem contract_step {s : PortSystem arity} (n : State arity boundary)
     (r : s.Redex (read n).net) : FiniteNet.Step s (read n) (read (contract n r)) := by
+  simp only [contract, cache_eq]
   refine ⟨r, ⟨?_⟩⟩
   have hi := n.2.2.contractIso r.active (ArrayNet.encode r.rhs.2.2)
   have he := congrArg (fun body ↦ n.2.2.read.contract r.active body)
     (ArrayNet.read_encode r.rhs.2.2)
-  exact cast (congrArg (fun body ↦ body.Iso (read (contract n r)).net) he) hi
+  exact cast (congrArg (fun body ↦ body.Iso
+    (n.2.2.contract r.active (ArrayNet.encode r.rhs.2.2)).read) he) hi
 
 /-- Check a candidate principal pair and retrieve its finite rule body when one is available. -/
 def redexAt? (s : PortSystem arity) (n : State arity boundary) (a b : Fin n.1) :
@@ -102,23 +130,43 @@ theorem redexAt?_isSome {s : PortSystem arity} {n : State arity boundary}
     cases he.symm.trans hr
   · rfl
 
-/-- Enumerate candidate pairs in lexicographic cell-index order. -/
-def candidates (cells : ℕ) : List (Fin cells × Fin cells) :=
-  (List.finRange cells).flatMap (fun a ↦ (List.finRange cells).map (a, ·))
+/-- Follow a principal wire, accepting its endpoint only when it is another principal port. -/
+def principalPartner? {cells : ℕ} {label : Fin cells → α}
+    (n : PortNet arity label (Fin boundary)) (a : Fin cells) : Option (Fin cells) :=
+  match n.wiring.partner (PortNet.principal arity label a) with
+  | .inl _ => none
+  | .inr ⟨b, p⟩ => if p.val = 0 then some b else none
 
-/-- Every ordered cell pair occurs in the candidate list. -/
-theorem mem_candidates {cells : ℕ} (a b : Fin cells) : (a, b) ∈ candidates cells :=
-  List.mem_flatMap.mpr ⟨a, List.mem_finRange a,
-    List.mem_map.mpr ⟨b, List.mem_finRange b, rfl⟩⟩
+/-- Following the wire of an active pair discovers its other cell. -/
+theorem principalPartner?_of_active {cells : ℕ} {label : Fin cells → α}
+    {n : PortNet arity label (Fin boundary)} {a b : Fin cells} (h : n.Active a b) :
+    principalPartner? n a = some b := by
+  unfold principalPartner?
+  change n.wiring.partner (PortNet.principal arity label a) =
+    PortNet.principal arity label b at h
+  rw [h]
+  rfl
+
+/-- Enumerate actual principal neighbors in ascending order of the first cell. -/
+def candidates (n : State arity boundary) : List (Fin n.1 × Fin n.1) :=
+  let net := (read n).net
+  (List.finRange n.1).filterMap fun a ↦ (principalPartner? net a).map (a, ·)
+
+/-- Every active pair occurs in the principal-neighbor candidate list. -/
+theorem mem_candidates {n : State arity boundary} {a b : Fin n.1}
+    (h : (read n).net.Active a b) : (a, b) ∈ candidates n :=
+  List.mem_filterMap.mpr ⟨a, List.mem_finRange a, by
+    rw [principalPartner?_of_active h]
+    rfl⟩
 
 /-- Select the first candidate pair that has a principal wire and a permitted rule. -/
 def select (s : PortSystem arity) (n : State arity boundary) : Option (s.Redex (read n).net) :=
-  (candidates n.1).findSome? (fun p ↦ redexAt? s n p.1 p.2)
+  (candidates n).findSome? (fun p ↦ redexAt? s n p.1 p.2)
 
 /-- An existing redex makes the complete candidate search succeed. -/
 theorem select_isSome {s : PortSystem arity} {n : State arity boundary}
     (r : s.Redex (read n).net) : (select s n).isSome :=
-  List.findSome?_isSome_iff.mpr ⟨(r.left, r.right), mem_candidates _ _, redexAt?_isSome r⟩
+  List.findSome?_isSome_iff.mpr ⟨(r.left, r.right), mem_candidates r.active, redexAt?_isSome r⟩
 
 /-- Execute a caller-selected pair when it is an active pair with a permitted rule. -/
 def stepAt (s : PortSystem arity) (n : State arity boundary) (a b : Fin n.1) :

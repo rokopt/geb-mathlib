@@ -1942,11 +1942,43 @@ successful bounded run reaches a graph normal form, and
 any normal form reached by another schedule.
 {name}`Geb.InteractionNet.GraphRuntime.halts_of_normalizes` guarantees a
 successful finite run whenever the input graph normalizes. The default
-scheduler searches all ordered cell pairs; endpoint compaction searches
-the live endpoint list. These are executable prototype operations,
-without a production-runtime complexity claim. The remaining compiler
-bridge must transfer the sequential calculus's normalization and tree
-read-back theorems to the represented graphs.
+scheduler follows principal wires to find candidate pairs; endpoint
+compaction uses an inverse index table. Rule assembly uses finite partner
+arrays, cell labels are materialized after each contraction, and execution
+stops at the first normal state.
+These are executable prototype operations,
+without a production-runtime complexity claim.
+{name}`Geb.InteractionNet.Rule.toPortRule` compiles every linear textual
+rule, including nested terms, and
+{name}`Geb.InteractionNet.Config.toFiniteNet` assembles closed configurations.
+{name}`Geb.InteractionNet.System.run_closed` proves that textual execution
+preserves the two-ended wire condition needed for graph assembly.
+{name}`Geb.InteractionNet.Kernel.graphRun` executes compiled kernel programs
+through the partner-array runtime and reads their normal tree graphs.
+Tree read-back is invariant under cell renaming; consequently
+{name}`Geb.InteractionNet.Graph.readTree_eq_of_normal` proves agreement of
+the tree observations of all normalizing graph schedules.
+{name}`Geb.InteractionNet.Term.fragment_subst_wiring` proves that textual
+substitution of arbitrary nested terms agrees with attaching their graph
+fragments; the correspondence also preserves closed-wire counts.
+{name}`Geb.InteractionNet.Config.renameGraphIso`,
+{name}`Geb.InteractionNet.Config.toFiniteNet_perm` and
+{name}`Geb.InteractionNet.Config.swapGraphIso` establish invariance under
+injective wire renaming, equation permutation and equation reversal.
+{name}`Geb.InteractionNet.Config.graph_normal_of_equations_eq_nil` proves
+that equation-free textual results compile to graph normal forms.
+{name}`Geb.InteractionNet.Kernel.graphFinal_readTree` proves that the
+whole-net reader recovers every represented kernel tree from its compiled
+final configuration, including the complete-cell-coverage and closed-wire
+checks. {name}`Geb.InteractionNet.Kernel.graphFinal_normal` identifies these
+compiled results as graph normal forms.
+{name}`Geb.InteractionNet.System.graph_step_of_rule_mem` proves that any
+textual agent equation with a forward rule exposes a step in the compiled
+graph, regardless of equation order.
+The remaining compiler simulation must identify textual wire elimination
+with equality of represented graphs and textual interaction with graph
+contraction. It then transfers the sequential calculus's typed
+normalization and denotation theorems to these graph executions.
 
 Acceptance of these milestones consists of the diamond theorem on
 well-formed nets up to renaming, the corresponding termination and

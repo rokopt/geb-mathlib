@@ -45,7 +45,8 @@ theorem glue_index (e : I ≃ J) (ports : J × Bool ↪ P) (order : List I)
   rw [List.foldl_map]
   rfl
 
-private theorem perm_cons_erase [DecidableEq J] (a : J) (xs : List J) (h : a ∈ xs) :
+/-- Move a selected occurrence to the head, constructively removing it from the remainder. -/
+theorem perm_cons_erase [DecidableEq J] (a : J) (xs : List J) (h : a ∈ xs) :
     xs.Perm (a :: xs.erase a) := by
   revert h
   refine List.rec (fun h ↦ (List.not_mem_nil h).elim) ?_ xs

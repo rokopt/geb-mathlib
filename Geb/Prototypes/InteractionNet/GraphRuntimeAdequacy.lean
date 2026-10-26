@@ -49,31 +49,45 @@ variable {α : Type u} {arity : α → ℕ} {boundary : ℕ}
 
 /-- Execute a bounded number of steps, retaining a state once its redexes are exhausted. -/
 def execute (s : PortSystem arity) (fuel : ℕ) (n : State arity boundary) : State arity boundary :=
-  Nat.repeat (fun m ↦ (step s m).getD m) fuel n
+  Nat.rec (motive := fun _ ↦ State arity boundary → State arity boundary) id
+    (fun _ next m ↦ match step s m with
+      | none => m
+      | some result => next result) fuel n
 
 /-- Zero fuel leaves the runtime state unchanged. -/
 @[simp] theorem execute_zero (s : PortSystem arity) (n : State arity boundary) :
     execute s 0 n = n := rfl
 
+/-- A normal runtime state returns immediately at every fuel bound. -/
+theorem execute_of_step_none {s : PortSystem arity} {n : State arity boundary}
+    (h : step s n = none) (fuel : ℕ) : execute s fuel n = n := by
+  cases fuel with
+  | zero => rfl
+  | succ fuel => simp only [execute, h]
+
 /-- One initial step followed by the remaining fuel is the same bounded execution. -/
 theorem execute_succ (s : PortSystem arity) (fuel : ℕ) (n : State arity boundary) :
     execute s (fuel + 1) n = execute s fuel ((step s n).getD n) := by
-  refine Nat.rec (motive := fun fuel ↦
-    execute s (fuel + 1) n = execute s fuel ((step s n).getD n)) rfl ?_ fuel
-  intro fuel ih
-  exact congrArg (fun m ↦ (step s m).getD m) ih
+  cases h : step s n with
+  | none => simp only [Option.getD_none, execute_of_step_none h]
+  | some m =>
+    change (match step s n with | none => n | some m => execute s fuel m) = _
+    rw [h]
+    rfl
 
 /-- Every finite runtime execution reads back a finite schedule of graph contractions. -/
 theorem execute_refines (s : PortSystem arity) (fuel : ℕ) (n : State arity boundary) :
     Relation.ReflTransGen (Graph.Step s) (graph n) (graph (execute s fuel n)) := by
-  refine Nat.rec (motive := fun fuel ↦
-    Relation.ReflTransGen (Graph.Step s) (graph n) (graph (execute s fuel n))) .refl ?_ fuel
-  intro fuel ih
-  change Relation.ReflTransGen (Graph.Step s) (graph n)
-    (graph ((step s (execute s fuel n)).getD (execute s fuel n)))
-  cases h : step s (execute s fuel n) with
-  | none => simpa only [h, Option.getD_none] using ih
-  | some m => simpa only [h, Option.getD_some] using ih.tail (step_refines h)
+  refine Nat.rec (motive := fun fuel ↦ ∀ n : State arity boundary,
+    Relation.ReflTransGen (Graph.Step s) (graph n) (graph (execute s fuel n)))
+      (fun _ ↦ .refl) (fun fuel ih n ↦ ?_) fuel n
+  rw [execute_succ]
+  cases h : step s n with
+  | none => simpa only [h, Option.getD_none, execute_of_step_none h] using
+      (Relation.ReflTransGen.refl : Relation.ReflTransGen (Graph.Step s) (graph n) (graph n))
+  | some m =>
+    simpa only [h, Option.getD_some] using
+      (Relation.ReflTransGen.single (step_refines h)).trans (ih m)
 
 /-- Return the bounded execution result only when exhaustive redex search declares it normal. -/
 def run (s : PortSystem arity) (fuel : ℕ) (n : State arity boundary) :

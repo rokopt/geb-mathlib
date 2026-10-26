@@ -69,6 +69,14 @@ def finiteSigmaSucc {n : ℕ} (sizes : Fin (n + 1) → ℕ) :
           ((Equiv.sumCongr (Equiv.refl _) tail.equiv).trans finSumFinEquiv)
         decEq := inferInstance }) n sizes
 
+/-- Enumerate a dependent family by the supplied enumerations of its index and fibers. -/
+@[instance_reducible] def sigmaEnum {I : Type*} {C : I → Type*} [FinEnum I]
+    [∀ i, FinEnum (C i)] : FinEnum (Σ i, C i) :=
+  let e := (Equiv.sigmaCongrLeft (β := C) (FinEnum.equiv : I ≃ _).symm).symm.trans
+    (sigmaCongrRight' fun i ↦ (FinEnum.equiv : C (FinEnum.equiv.symm i) ≃ _))
+  let := finiteSigmaEnum (FinEnum.card I) (fun i ↦ FinEnum.card (C (FinEnum.equiv.symm i)))
+  FinEnum.ofEquiv _ e
+
 /-- An explicit enumeration of all ordered ports of finitely many indexed cells. -/
 @[instance_reducible] scoped instance cellPortEnum {α : Type*} {n : ℕ}
     (arity : α → ℕ) (label : Fin n → α) : FinEnum (CellPort arity label) :=
