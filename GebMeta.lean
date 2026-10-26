@@ -63,7 +63,7 @@ export, which cannot exclude a root, so `collectAxiomsStopping` walks the
 constants' bodies itself, caching each constant's result for the process.
 The linter is built on the `Linter` interface and `@[env_linter]`
 attribute of `Batteries/Tactic/Lint/Basic.lean`. The module lives
-outside the `Geb`, `GebTests` and `GebLang` namespaces so the linter
+outside the `Geb` and `GebTests` namespaces so the linter
 does not audit its own metaprogramming code.
 
 The bibliography parser reads the subset of BibTeX the repository's

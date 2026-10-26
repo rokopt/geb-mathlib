@@ -2,18 +2,17 @@
 #
 # scripts/literate.sh
 #
-# Build or serve the Verso literate site for the Geb and GebLang
-# libraries: every module of both rendered as a page, which is the
-# check that each is literate (docs/rules/lean-coding.md § Literate
-# modules). Runs from the repository root regardless of the invoking
+# Build or serve the Verso literate site for the Geb library: every
+# module of it rendered as a page, which is the check that each is
+# literate (docs/rules/lean-coding.md § Literate modules). Runs from the repository root regardless of the invoking
 # directory: the lint's nolints path (scripts/nolints.json) is
 # resolved against the working directory. literate.toml and the
 # site's output path are resolved against the package root by the
 # literateHtml facet, so they are unaffected either way.
 #
 # CI (doc-build.yml) and scripts/pre-push.sh run the build verb.
-# The libraries themselves are the defaultTargets, so an ordinary lake
-# build compiles them; only the rendering is confined to this script.
+# The library itself is the defaultTarget, so an ordinary lake build
+# compiles it; only the rendering is confined to this script.
 
 set -euo pipefail
 export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
@@ -28,7 +27,6 @@ case "${1:-}" in
     lake build
     # Keep the default-driver check's output for pre-push-full's tooling test.
     lake lint 2>&1 | tee "${GEB_LINT_LOG:-/dev/null}"
-    lake exe batteries/runLinter GebLang
     lake build :literateHtml
     ;;
   serve)
@@ -40,7 +38,7 @@ case "${1:-}" in
     cat >&2 <<'EOF'
 usage: scripts/literate.sh {build|serve}
 
-  build  Build the Geb and GebLang libraries, lint them, and render
+  build  Build the Geb library, lint it, and render
          the literate site. The first run compiles Verso's literate
          executables from source, which takes minutes; later runs
          are incremental.

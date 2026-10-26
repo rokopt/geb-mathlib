@@ -138,7 +138,7 @@ which is the prototyping mode's shape, not this one's.
 
 ## Literate Lean by default
 
-Every new module of `Geb/` and `GebLang/` is written so that Verso's
+Every new module of `Geb/` is written so that Verso's
 literate pipeline renders it as a manual page, and a chapter of the
 manual under `manual/` includes such a module by name
 (`docs/rules/lean-coding.md` § Literate modules). The rule separates
@@ -158,10 +158,7 @@ generated from it rather than transcribed.
 
 The checked markup is enabled per module rather than per library
 because a library-wide option would reach every module written
-before the rule, whose Markdown docstrings are not converted.
-`GebLang` is the exception, taking the option from `lakefile.toml`:
-its umbrella imports its modules directly, where mathlib's header
-linter rejects any command before the module docstring. Verso
+before the rule, whose Markdown docstrings are not converted. Verso
 renders a Markdown docstring as well, but the path by which the
 manual includes such a module loses a paragraph's line breaks and
 nests sibling headings, so the checked markup is what makes a module
@@ -277,7 +274,7 @@ far is not yet settled as the one to keep. The directory is named
 for that state rather than for its consequence: a prototype is
 not upstream-eligible because its form is still open, and it
 stops being a prototype when the form closes. Code is ported into
-`Geb/Mathlib/`, `Geb/Cslib/` or `GebLang/` when its expression is
+`Geb/Mathlib/` or `Geb/Cslib/` when its expression is
 settled and it reaches upstream quality, with dependents migrated
 by rebasing after the upstream PR is accepted. The split lets
 velocity and upstream-readiness each get the discipline that
@@ -289,7 +286,7 @@ human-written code follow the same rules in every subtree (see
 
 The upstream target is not a mathlib-or-Cslib binary. The subtree
 import rules restrict `Geb/Mathlib/` modules to `Mathlib.*`,
-`Batteries.*`, `Geb.Mathlib.*` and `GebLang.*` imports, so a
+`Batteries.*` and `Geb.Mathlib.*` imports, so a
 dependency of such a module cannot live in `Geb/Prototypes/`; a module
 restating Lean core or Batteries API therefore sits in `Geb/Mathlib/`
 while its upstream is neither mathlib4 nor Cslib. That destination is
@@ -301,20 +298,10 @@ Batteries-targeted content.
 At all times, the repository is ready to ship dependency-ordered PRs
 on short notice with no source-code changes.
 `scripts/lint-imports.sh` enforces the import-direction and
-no-prefix-leakage rules, and
-`scripts/check-transitive-imports.sh` enforces the closure rules the
-direct-import lists cannot see. The test is what makes
-"upstream-eligible" a binding property of `Geb/Mathlib/`,
-`Geb/Cslib/` and `GebLang/` rather than an aspiration: at any
-moment, every file in any of them can be extracted to a PR
-upstream.
-
-The three locations are not independent of one another. A `GebLang`
-module is retargeted by its own import closure, mathlib-track when
-the closure reaches no `Cslib.*` and Cslib-track otherwise, so
-extraction is dependency-ordered through `GebLang` rather than
-independent per subtree: a module's within-repository dependencies
-ship first, each to the upstream its own closure selects.
+no-prefix-leakage rules. The test is what makes "upstream-eligible" a
+binding property of `Geb/Mathlib/` and `Geb/Cslib/` rather than an
+aspiration: at any moment, every file in either can be extracted to a
+PR upstream.
 
 Cross-track dependency is uniform policy in one direction.
 Cslib-destined content may depend on mathlib-destined content,
@@ -325,8 +312,7 @@ the floodgate test's "on short notice" weighs; the ordering is
 nevertheless available, whereas the reverse is not. Mathlib-destined
 content depends on no Cslib-destined content: mathlib does not depend
 on Cslib, so no ordering makes such a PR extractable, and
-`Geb/Mathlib/`'s allowed lists bar it directly while
-`scripts/check-transitive-imports.sh` bars it through `GebLang`.
+`Geb/Mathlib/`'s allowed lists bar it.
 
 ## Alternative formalization targets
 

@@ -3,9 +3,8 @@
 # scripts/tests/test-extract-pr.sh
 #
 # Tests scripts/extract-pr.sh: destination-path mapping per subtree,
-# the import-line prefix rewrite (Geb.<Subtree>. -> <Subtree>.),
-# GebLang/ and GebTests/Lang/ track resolution, Verso role-markup
-# conversion, and the GebLang/ arm's non-upstream-line strip pass.
+# the import-line prefix rewrite (Geb.<Subtree>. -> <Subtree>.), Verso
+# role-markup conversion, and the non-upstream-line strip pass.
 # Offline and deterministic.
 
 set -uo pipefail
@@ -75,16 +74,11 @@ bash "$SCRIPT" Geb/Cslib/Z.lean fork3 >/dev/null
 has   "cslib import rewritten" "import Cslib.A" "fork3/Cslib/Z.lean"
 has   "embedded non-import ref untouched" "XGeb.Cslib.embedded" "fork3/Cslib/Z.lean"
 
-# A mathlib-track GebLang module: its closure reaches no Cslib.*, so
-# it ships under Mathlib/ and importers rewrite it to `Mathlib.`.
-mkdir -p GebLang/Foo fork4
-cat > GebLang/Foo/Base.lean <<'EOF'
+# Role conversion beside Lean that the conversion must not touch.
+mkdir -p fork4
+cat > Geb/Mathlib/Foo/Roles.lean <<'EOF'
 module
-import Mathlib.Tactic
-EOF
-cat > GebLang/Foo/Bar.lean <<'EOF'
-module
-public import GebLang.Foo.Base
+public import Geb.Mathlib.Foo.Base
 
 /-- Anchors {name}`Nat` in a docstring, beside Lean the conversion
 must not touch: {lit}`Type.{u}` and {lit}`{S}` carry a brace group of
@@ -92,10 +86,9 @@ the same shape as a role, `{p}` is a code span with no role at all,
 and {lit}`freeVars (var name) = {name}` ends a span with a group
 spelled exactly like one. -/
 EOF
-bash "$SCRIPT" GebLang/Foo/Bar.lean fork4 >/dev/null
-out=fork4/Mathlib/Foo/Bar.lean
-exists "mathlib-track GebLang -> Mathlib path" "$out"
-has   "mathlib-track sibling rewritten" "public import Mathlib.Foo.Base" "$out"
+bash "$SCRIPT" Geb/Mathlib/Foo/Roles.lean fork4 >/dev/null
+out=fork4/Mathlib/Foo/Roles.lean
+exists "role-conversion fixture -> Mathlib path" "$out"
 lacks "name role converted" '{name}`Nat`' "$out"
 lacks "lit role converted" '{lit}' "$out"
 has   "code span survives the conversion" '`Nat`' "$out"
@@ -111,79 +104,19 @@ has   "singleton set at a span's end survives" \
 # both looser tests would read surviving mathematics as unconverted
 # markup. `{lit}` survives nowhere, so the bare word serves there.
 
-# A Cslib-track GebLang module importing a mathlib-track sibling: the
-# sibling is rewritten by its own track, not by the destination.
-mkdir -p GebLang/Cs fork5
-cat > GebLang/Cs/Deep.lean <<'EOF'
-module
-import Cslib.Init
-import Cslib.Foundations.Thing
-EOF
-cat > GebLang/Cs/Top.lean <<'EOF'
-module
-import Cslib.Init
-public import GebLang.Cs.Deep
-meta import GebLang.Foo.Base
-EOF
-bash "$SCRIPT" GebLang/Cs/Top.lean fork5 >/dev/null
-out=fork5/Cslib/Cs/Top.lean
-exists "cslib-track GebLang -> Cslib path" "$out"
-has   "cslib-track sibling rewritten to Cslib" "public import Cslib.Cs.Deep" "$out"
-has   "mathlib-track sibling keeps its own track" "meta import Mathlib.Foo.Base" "$out"
-has   "foreign cslib import preserved" "import Cslib.Init" "$out"
-
-# A mathlib-track GebTests/Lang module: subject and sibling each
-# rewrite into the mathlib destination's source and test trees.
-mkdir -p GebTests/Lang fork6
-cat > GebTests/Lang/Sib.lean <<'EOF'
-module
-import GebLang.Foo.Base
-EOF
-cat > GebTests/Lang/Main.lean <<'EOF'
-module
-public import GebLang.Foo.Base
-import GebTests.Lang.Sib
-EOF
-bash "$SCRIPT" GebTests/Lang/Main.lean fork6 >/dev/null
-out=fork6/MathlibTest/Main.lean
-exists "mathlib-track GebTests/Lang -> MathlibTest path" "$out"
-has   "GebLang subject rewritten" "public import Mathlib.Foo.Base" "$out"
-has   "test sibling rewritten to MathlibTest" "import MathlibTest.Sib" "$out"
-
-# A Cslib-track GebTests/Lang module: the sibling ships to the Cslib
-# test tree.
-mkdir -p fork7
-cat > GebTests/Lang/CsSib.lean <<'EOF'
-module
-import Cslib.Init
-import GebLang.Cs.Deep
-EOF
-cat > GebTests/Lang/CsMain.lean <<'EOF'
-module
-import Cslib.Init
-import GebTests.Lang.CsSib
-EOF
-bash "$SCRIPT" GebTests/Lang/CsMain.lean fork7 >/dev/null
-out=fork7/CslibTests/CsMain.lean
-exists "cslib-track GebTests/Lang -> CslibTests path" "$out"
-has   "cslib test sibling rewritten to CslibTests" "import CslibTests.CsSib" "$out"
-
-# The widened Mathlib arms rewrite GebLang. and the test self-prefix.
-# The docstring here carries Lean that the role-conversion pattern
-# must not touch: a universe ascription and a subtype, each inside a
-# code span. This arm does not convert roles at all; the GebLang/
-# fixture below covers the same shapes in the arm that does.
+# The Mathlib arms rewrite the `meta import` form and the test
+# self-prefix. The docstring here carries Lean that the role-conversion
+# pattern must not touch: a universe ascription and a subtype, each
+# inside a code span.
 mkdir -p fork8
 cat > Geb/Mathlib/Foo/Wide.lean <<'EOF'
 module
-import GebLang.Foo.Base
 public meta import Geb.Mathlib.Other
 
 /-- Relates `F : C ⥤ Cat.{v, u}` to the fiber `{g : B → k // p g}`. -/
 EOF
 bash "$SCRIPT" Geb/Mathlib/Foo/Wide.lean fork8 >/dev/null
 out=fork8/Mathlib/Foo/Wide.lean
-has   "Geb/Mathlib rewrites GebLang." "import Mathlib.Foo.Base" "$out"
 has   "meta import form rewritten" "public meta import Mathlib.Other" "$out"
 has   "universe ascription survives" 'Cat.{v, u}' "$out"
 has   "subtype in a code span survives" '{g : B → k // p g}' "$out"
@@ -191,33 +124,24 @@ has   "subtype in a code span survives" '{g : B → k // p g}' "$out"
 mkdir -p fork9
 cat > GebTests/Mathlib/Wide.lean <<'EOF'
 module
-import GebLang.Foo.Base
 public meta import Geb.Mathlib.X
 import GebTests.Mathlib.Helper
 EOF
 bash "$SCRIPT" GebTests/Mathlib/Wide.lean fork9 >/dev/null
 out=fork9/MathlibTest/Wide.lean
-has   "GebTests/Mathlib rewrites GebLang." "import Mathlib.Foo.Base" "$out"
 has   "GebTests/Mathlib rewrites its test self-prefix" \
       "import MathlibTest.Helper" "$out"
 
-# The widened Cslib arms rewrite Geb.Mathlib., GebLang. by track, and
-# the test self-prefix.
+# The Cslib arms rewrite Geb.Mathlib. and the test self-prefix.
 mkdir -p fork10
 cat > Geb/Cslib/Wide.lean <<'EOF'
 module
 import Cslib.Init
 import Geb.Mathlib.Thing
-import GebLang.Foo.Base
-import GebLang.Cs.Deep
 EOF
 bash "$SCRIPT" Geb/Cslib/Wide.lean fork10 >/dev/null
 out=fork10/Cslib/Wide.lean
 has   "Geb/Cslib rewrites Geb.Mathlib." "import Mathlib.Thing" "$out"
-has   "Geb/Cslib rewrites a mathlib-track GebLang import" \
-      "import Mathlib.Foo.Base" "$out"
-has   "Geb/Cslib rewrites a cslib-track GebLang import" \
-      "import Cslib.Cs.Deep" "$out"
 
 mkdir -p GebTests/Cslib fork11
 cat > GebTests/Cslib/Wide.lean <<'EOF'
@@ -225,22 +149,16 @@ module
 import Cslib.Init
 import Geb.Mathlib.Thing
 import GebTests.Cslib.Helper
-import GebLang.Foo.Base
-import GebLang.Cs.Deep
 EOF
 bash "$SCRIPT" GebTests/Cslib/Wide.lean fork11 >/dev/null
 out=fork11/CslibTests/Wide.lean
 has   "GebTests/Cslib rewrites Geb.Mathlib." "import Mathlib.Thing" "$out"
 has   "GebTests/Cslib rewrites its test self-prefix" \
       "import CslibTests.Helper" "$out"
-has   "GebTests/Cslib rewrites a mathlib-track GebLang import" \
-      "import Mathlib.Foo.Base" "$out"
-has   "GebTests/Cslib rewrites a cslib-track GebLang import" \
-      "import Cslib.Cs.Deep" "$out"
 
-# The GebLang/ arm's strip pass. `Lean.DocString.Syntax` is imported
-# in all four keyword forms, and every form is deleted outright. The
-# fixture mirrors a GebLang/ module's own shape rather than a shape
+# The strip pass. `Lean.DocString.Syntax` is imported in all four
+# keyword forms, and every form is deleted outright. The fixture
+# mirrors a literate module's own shape rather than a shape
 # picked for convenience: a blank line separates `module` from the
 # import block, as it does in the real files, and content follows the
 # block. The blank after the stripped run follows a blank already
@@ -252,7 +170,7 @@ has   "GebTests/Cslib rewrites a cslib-track GebLang import" \
 # is `import`, are prose and survive; the strip pass and the ordinary
 # import-rewrite table both leave them untouched.
 mkdir -p fork12
-cat > GebLang/Foo/Strip.lean <<'EOF'
+cat > Geb/Mathlib/Foo/Strip.lean <<'EOF'
 module
 
 import Lean.DocString.Syntax
@@ -268,9 +186,9 @@ touch this sentence, since its module-shaped word matches neither. -/
 
 @[expose] public section
 EOF
-bash "$SCRIPT" GebLang/Foo/Strip.lean fork12 >/dev/null
+bash "$SCRIPT" Geb/Mathlib/Foo/Strip.lean fork12 >/dev/null
 out=fork12/Mathlib/Foo/Strip.lean
-exists "GebLang strip-pass fixture -> Mathlib path" "$out"
+exists "strip-pass fixture -> Mathlib path" "$out"
 lacks "all four Lean.DocString.Syntax import forms stripped" \
       "import Lean.DocString.Syntax" "$out"
 lacks "stripped meta import's trailing comment gone" \
@@ -284,8 +202,7 @@ has   "content after the stripped run survives" \
 no_double_blank \
       "no doubled blank line around the stripped run" "$out"
 
-# A literate Geb/Mathlib/ module: the strip pass and the role
-# conversion run on every arm, not on GebLang/ alone. The
+# A literate Geb/Mathlib/ module: the
 # two `set_option doc.verso true` lines, one with its `in` suffix and
 # one with a trailing comment, the
 # `Lean.DocString.Syntax` import and the `GebMeta` meta import are
@@ -348,7 +265,7 @@ fi
 # docstring, converted a `Name`-literal singleton set exactly this
 # shape.
 mkdir -p fork13
-cat > GebLang/Foo/Gate.lean <<'EOF'
+cat > Geb/Mathlib/Foo/Gate.lean <<'EOF'
 module
 
 import Lean.DocString.Syntax
@@ -363,7 +280,7 @@ Closing-line role: {option}`doc.verso` -/
 
 def a : List Name := [{name}`foo, `bar]
 EOF
-bash "$SCRIPT" GebLang/Foo/Gate.lean fork13 >/dev/null
+bash "$SCRIPT" Geb/Mathlib/Foo/Gate.lean fork13 >/dev/null
 out=fork13/Mathlib/Foo/Gate.lean
 exists "docstring-gate fixture -> Mathlib path" "$out"
 has   "single-line docstring role converts" \
@@ -386,7 +303,7 @@ lacks "real import Lean.DocString.Syntax outside a docstring is still stripped" 
 # docstring, must not touch it. A real import line is never inside a
 # docstring, so nothing a real extraction needs is lost by the scope.
 mkdir -p fork14
-cat > GebLang/Foo/Fence.lean <<'EOF'
+cat > Geb/Mathlib/Foo/Fence.lean <<'EOF'
 module
 
 /-- A docstring containing a fenced code block.
@@ -395,7 +312,7 @@ import Lean.DocString.Syntax
 ```
 -/
 EOF
-bash "$SCRIPT" GebLang/Foo/Fence.lean fork14 >/dev/null
+bash "$SCRIPT" Geb/Mathlib/Foo/Fence.lean fork14 >/dev/null
 out=fork14/Mathlib/Foo/Fence.lean
 exists "docstring-fenced-code fixture -> Mathlib path" "$out"
 has   "fenced import line survives inside the docstring" \
@@ -408,7 +325,7 @@ has   "fenced import line survives inside the docstring" \
 # only returns to the outer docstring's level at the nested comment's
 # close, so the fence past it is still inside.
 mkdir -p fork15
-cat > GebLang/Foo/NestedFence.lean <<'EOF'
+cat > Geb/Mathlib/Foo/NestedFence.lean <<'EOF'
 module
 
 /-- Docstring text.
@@ -418,7 +335,7 @@ import Lean.DocString.Syntax
 ```
 -/
 EOF
-bash "$SCRIPT" GebLang/Foo/NestedFence.lean fork15 >/dev/null
+bash "$SCRIPT" Geb/Mathlib/Foo/NestedFence.lean fork15 >/dev/null
 out=fork15/Mathlib/Foo/NestedFence.lean
 exists "nested-comment fenced fixture -> Mathlib path" "$out"
 has   "fenced import line past a nested comment survives" \
@@ -428,14 +345,14 @@ has   "fenced import line past a nested comment survives" \
 # docstring, converts: the depth counter keeps the docstring open past
 # the nested comment's `-/`.
 mkdir -p fork17
-cat > GebLang/Foo/NestedRole.lean <<'EOF'
+cat > Geb/Mathlib/Foo/NestedRole.lean <<'EOF'
 module
 
 /-- Text before.
 /- inner comment -/
 Role after nested comment: {name}`Nat`. -/
 EOF
-bash "$SCRIPT" GebLang/Foo/NestedRole.lean fork17 >/dev/null
+bash "$SCRIPT" Geb/Mathlib/Foo/NestedRole.lean fork17 >/dev/null
 out=fork17/Mathlib/Foo/NestedRole.lean
 exists "nested-comment role fixture -> Mathlib path" "$out"
 has   "role after a nested comment now converts" \

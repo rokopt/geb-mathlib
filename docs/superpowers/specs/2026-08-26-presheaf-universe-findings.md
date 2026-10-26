@@ -411,8 +411,8 @@ with
 
 ```text
 lake build && lake test && lake lint && lake lint -- GebTests
-lake shake --add-public --keep-implied --keep-prefix Geb GebTests GebLang
-bash scripts/lint-imports.sh && bash scripts/check-transitive-imports.sh
+lake shake --add-public --keep-implied --keep-prefix Geb GebTests
+bash scripts/lint-imports.sh
 markdownlint-cli2 '**/*.md' && bash scripts/check-md-links.sh
 ```
 

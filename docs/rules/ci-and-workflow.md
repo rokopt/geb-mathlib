@@ -72,7 +72,7 @@ own requires a prior `lake build`.
 - `lake exe cache get` populates the full mathlib olean cache
   (mirroring CI's `leanprover/lean-action`). The cache fetch is
   required because `lake build` alone fetches only the oleans the
-  root libraries `Geb` and `GebLang` import; the `lake shake` step
+  root library `Geb` imports; the `lake shake` step
   injects an arbitrary mathlib import and needs that module's
   olean present, which after a toolchain bump it otherwise would
   not be. The fetch runs only when `lean-toolchain` or
@@ -95,28 +95,21 @@ own requires a prior `lake build`.
   documents and the formatter).
 - `lake build GebTests` then `lake exe batteries/runLinter GebTests`, then
   `scripts/literate.sh build` (§ Literate site build), whose
-  `lake lint` lints `Geb` and whose direct `batteries/runLinter` invocation
-  lints `GebLang`, then
+  `lake lint` lints `Geb`, then
   `scripts/manual.sh build` (§ Verso manual build). The axiom
   env_linter (`GebMeta.detectNonstandardAxiom`) runs under every
-  `batteries/runLinter` invocation (`Geb`, `GebTests`, `GebLang` and
+  `batteries/runLinter` invocation (`Geb`, `GebTests` and
   `GebManual`), failing when a
   declaration depends on an axiom outside `{propext, Quot.sound}`,
   except that modules in `GebMeta.classicalAllowedModules`
   additionally permit `Classical.choice` (and only that).
 - `lake shake --add-public --keep-implied --keep-prefix Geb
-  GebTests GebLang`.
+  GebTests`.
 
 then the Markdown and project-rule checks:
 
 - `scripts/lint-imports.sh` (the subtree import rules; see
   `docs/rules/upstream-eligible.md`).
-- `scripts/check-transitive-imports.sh` (the closure rules the
-  direct-import lists cannot see). `scripts/lint-imports.sh` bounds
-  each module's direct imports; this bounds the closure: a
-  `Geb/Mathlib/` or `GebTests/Mathlib/` module whose `GebLang`
-  dependencies reach `Cslib.*` is Cslib-track and belongs under the
-  Cslib subtree.
 - `scripts/check-commit-msg.sh` over the branch's commit subjects.
   This step, the branch diff behind the two checks below it, and
   the branch name `scripts/lake-update-warning.sh` reads come from
@@ -130,15 +123,13 @@ then the Markdown and project-rule checks:
 - `scripts/lake-update-warning.sh` (warns on a `lake-manifest.json`
   change outside a `bump/*` or `chore/bootstrap` branch).
 - Docs-coverage reminder: Lean changes under an upstream-eligible
-  subtree, `Geb/Prototypes/`, or `GebLang/` without a `docs/index.md`
-  change.
+  subtree or `Geb/Prototypes/` without a `docs/index.md` change.
 
 `scripts/test-tooling.sh` runs the script and hook self-tests. Each
 exercises the tool named in its own filename against staged
 fixtures:
 
 - `scripts/tests/test-lint-imports.sh`,
-  `scripts/tests/test-check-transitive-imports.sh`,
   `scripts/tests/test-lake-shake.sh`,
   `scripts/tests/test-extract-pr.sh`,
   `scripts/tests/test-axiom-linter.sh`,
@@ -198,27 +189,25 @@ The manual is outside `defaultTargets` and the test driver, so
 
 ## Literate site build
 
-The literate site (the `Geb` and `GebLang` libraries rendered by
-Verso's literate pipeline) builds only through
-`scripts/literate.sh build`: `lake build`, `lake lint`,
-`lake exe batteries/runLinter GebLang`, `lake build :literateHtml`,
-in that order, so a clean
-checkout lints built oleans. `literate.toml` scopes the site to the
-two libraries; without that scoping the package facet renders and
-builds every library and executable of the package. Rendering the
-site builds the literate facet of every module of both libraries, so
+The literate site (the `Geb` library rendered by Verso's literate
+pipeline) builds only through `scripts/literate.sh build`:
+`lake build`, `lake lint`, `lake build :literateHtml`, in that order,
+so a clean checkout lints built oleans. `literate.toml` scopes the
+site to the library; without that scoping the package facet renders
+and builds every library and executable of the package. Rendering the
+site builds the literate facet of every module of the library, so
 it is the check that each module is renderable, which
 `docs/rules/lean-coding.md` § Literate modules requires of every new
 one. CI runs the script in `doc-build.yml`, for every pull request,
 and uploads the HTML as the `geb-literate` artifact, beside
-`lake build Geb:docs` and `lake build GebLang:docs` for the doc-gen4
-reference; `scripts/pre-push.sh` runs it locally, and `pages.yml`
-deploys it to GitHub Pages under `literate/` beside the manual
+`lake build Geb:docs` for the doc-gen4 reference;
+`scripts/pre-push.sh` runs it locally, and `pages.yml` deploys it
+to GitHub Pages under `literate/` beside the manual
 (§ Verso manual build); that workflow is derived from the one
 `lake exe verso setup-literate` generates, and its header says why
 it is not that file. The rendering is outside `defaultTargets`, as
-the manual is; the libraries themselves are the `defaultTargets`,
-so an ordinary `lake build` compiles them without Verso, which the
+the manual is; the library itself is the `defaultTargets`,
+so an ordinary `lake build` compiles it without Verso, which the
 first Verso build compiles from source.
 `scripts/tests/test-lint-driver.sh` § 3 guards the workflow step.
 

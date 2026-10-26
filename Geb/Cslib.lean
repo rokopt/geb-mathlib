@@ -12,5 +12,5 @@ public import Geb.Cslib.Foundations
 
 Modules under this namespace are intended for eventual upstream
 extraction to CSLib and import only from `Mathlib.*`, `Batteries.*`,
-`Cslib.*`, `Geb.Cslib.*`, `Geb.Mathlib.*` or `GebLang.*`.
+`Cslib.*`, `Geb.Cslib.*` or `Geb.Mathlib.*`.
 -/

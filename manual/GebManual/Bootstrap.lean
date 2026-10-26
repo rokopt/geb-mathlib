@@ -4403,8 +4403,8 @@ the bootstrap, is the lasting implementation. Canonical is a dependency
 of the package for experiments throughout the bootstrap (the decision on Canonical). It enters
 `lakefile.toml` at tag `v4.34.0`, which was measured to build and run
 under the repository's toolchain, and has no dependencies of its own. The
-experiments form a library of their own that no module of `Geb`,
-`GebLang` or `GebTests` imports, so a default build never fetches its
+experiments form a library of their own that no module of `Geb`
+or `GebTests` imports, so a default build never fetches its
 solver library, and committed experiments call the solver as a program,
 the tactic leaving `sorry`, which committed code excludes, and check what
 they decode with Geb's checkers, the first route above. `TODO.md`

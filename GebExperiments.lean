@@ -12,5 +12,5 @@ public import GebExperiments.LF.Main
 # Experiments with Canonical
 
 Experiments giving problems to the type inhabitation solver Canonical and checking the terms it
-returns with Geb's checkers. No module of `Geb`, `GebLang` or `GebTests` imports this library.
+returns with Geb's checkers. No module of `Geb` or `GebTests` imports this library.
 -/

@@ -38,9 +38,8 @@ Applies whenever a `.lean` file is open or being edited.
 ## Authoritative upstream guides (mathlib)
 
 These are the binding upstream references for `Geb/Mathlib/`
-content and for mathlib-track `GebLang/` modules. Reviewers check
-our `Geb/Mathlib/` content, and every mathlib-track `GebLang/`
-module, for violations against each:
+content. Reviewers check our `Geb/Mathlib/` content for violations
+against each:
 
 - Contributing index:
   `https://leanprover-community.github.io/contribute/index.html`
@@ -183,9 +182,8 @@ docstrings, occurrence counts, and post-hoc axiom-celebration.
 ## Authoritative upstream guides (CSLib)
 
 These are the binding upstream references for `Geb/Cslib/`
-content and for Cslib-track `GebLang/` modules. Reviewers check
-our `Geb/Cslib/` content, and every Cslib-track `GebLang/` module,
-against the contribution guide:
+content. Reviewers check our `Geb/Cslib/` content against the
+contribution guide:
 
 - Contribution guide:
   `https://github.com/leanprover/cslib/blob/main/CONTRIBUTING.md`
@@ -451,7 +449,7 @@ rationale.
 - Minimise `Classical`; flag/justify each invocation in our own
   code.
 - The `GebMeta.detectNonstandardAxiom` `@[env_linter]` fails
-  `lake lint` when any `Geb`, `GebTests` or `GebLang` declaration
+  `lake lint` when any `Geb` or `GebTests` declaration
   depends on an axiom outside its permitted set. The permitted set is
   `{propext, Quot.sound}` by default; declarations defined in the
   exact modules listed in `GebMeta.classicalAllowedModules`
@@ -565,7 +563,7 @@ so the restriction is enforced only by grep and by review.
 
 ## Literate modules
 
-Every new module of the `Geb` and `GebLang` libraries is literate:
+Every new module of the `Geb` library is literate:
 an ordinary Lean module whose docstrings Verso's literate pipeline
 renders as a manual page, the module docstring as the page's prose and
 each declaration docstring as prose beside its highlighted code. The
@@ -574,7 +572,7 @@ any module is, and feed doc-gen4's API reference. Whether a module is
 also linked into the manual (`manual/`) is a separate choice made
 chapter by chapter (§ Verso manual modules); readiness is not.
 Rendering the literate site (`scripts/literate.sh build`,
-`literate.toml`) renders every module of both libraries and so checks
+`literate.toml`) renders every module of the library and so checks
 the readiness of each. Existing modules written before this rule keep
 their Markdown docstrings; they render too, and are not converted.
 
@@ -595,9 +593,8 @@ their Markdown docstrings; they render too, and are not converted.
   `-- shake: keep`, since the role runs at elaboration and leaves no
   constant reference for `lake shake` to see. Any other literal
   bracket is escaped, `\[` and `\]`, the `[text]` form being
-  reserved for links. `lakefile.toml` sets the option for
-  the `GebLang` library; a module of any other library sets it itself,
-  twice: `set_option doc.verso true in` immediately before the module
+  reserved for links. A module sets the option itself, twice:
+  `set_option doc.verso true in` immediately before the module
   docstring, which parses that docstring as Verso, and `set_option
   doc.verso true` immediately after it, for the declarations. mathlib's
   header linter (`linter.style.header`) requires the module docstring

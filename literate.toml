@@ -1,10 +1,9 @@
-# Verso literate site configuration. The [[targets]] entries scope the
-# site to the GebLang and Geb libraries, every module of which is
-# literate (docs/rules/lean-coding.md § Literate modules), so
-# rendering the site is the check that each of them is: the
-# literateHtml package facet otherwise enumerates every library and
-# executable of the package, so an unscoped run would also render and
-# build GebTests, GebMeta, GebManual and the manual generator's Main.
+# Verso literate site configuration. The [[targets]] entry scopes the
+# site to the Geb library, every module of which is literate
+# (docs/rules/lean-coding.md § Literate modules), so rendering the
+# site is the check that each of them is: the literateHtml package
+# facet otherwise enumerates every library and executable of the
+# package, so an unscoped run would also render and build GebTests, GebMeta, GebManual and the manual generator's Main.
 # The planner reads every library's and executable's module list and
 # then filters, and only the surviving modules have their literate
 # facets built, so the scoping bounds what is compiled as well as
@@ -14,15 +13,12 @@
 # [[targets]] becomes a key of that target entry and is silently
 # ignored by the target decoder.
 docstrings_as_text = true
-landing_page = "GebLang"
+landing_page = "Geb"
 # Copied into the site by file name and loaded on every page.
 extra_js = ["literate/manual-link.js"]
 
 [metadata]
 title = "The Geb language"
-
-[[targets]]
-library = "GebLang"
 
 [[targets]]
 library = "Geb"
