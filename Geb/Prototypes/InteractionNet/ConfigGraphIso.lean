@@ -62,22 +62,30 @@ def occurrenceIndexedIso (c : Config arity) (closed : c.Closed) :
   let := sigmaEnum (C := fun i ↦ (c.graphFragments i).Cell)
   PortNet.indexedIso (c.occurrenceNet closed)
 
-/-- Corresponding name classes determine identical leaf matchings under an occurrence bijection. -/
-theorem graphLeafWiring_map (c d : Config arity) (hc : c.Closed) (hd : d.Closed)
-    (e : c.GraphLeaf ≃ d.GraphLeaf)
+/-- A name-preserving occurrence embedding retains each complete named wire. -/
+theorem graphLeafWiring_respects (c d : Config arity) (hc : c.Closed) (hd : d.Closed)
+    (e : c.GraphLeaf ↪ d.GraphLeaf)
     (names : ∀ p q, c.graphLeafName p = c.graphLeafName q →
       d.graphLeafName (e p) = d.graphLeafName (e q)) :
-    (c.graphLeafWiring hc).map e = d.graphLeafWiring hd := by
+    Wiring.Respects e (c.graphLeafWiring hc) (d.graphLeafWiring hd) := by
   let := c.graphLeafEnum
   let := d.graphLeafEnum
-  have h := Wiring.ofNames_respects c.graphLeafOrder
+  exact Wiring.ofNames_respects c.graphLeafOrder
     (TermFragment.forestOrder_unique _ c.graphRootOrder_unique c.graphFragments)
     (TermFragment.forestOrder_cover _ c.graphRootOrder_cover c.graphFragments)
     c.graphLeafName (c.graphLeaf_two hc) d.graphLeafOrder
     (TermFragment.forestOrder_unique _ d.graphRootOrder_unique d.graphFragments)
     (TermFragment.forestOrder_cover _ d.graphRootOrder_cover d.graphFragments)
-    d.graphLeafName (d.graphLeaf_two hd) e.toEmbedding names
-  exact h.map_eq (Wiring.respects_refl _) e (fun _ ↦ rfl)
+    d.graphLeafName (d.graphLeaf_two hd) e names
+
+/-- Corresponding name classes determine identical leaf matchings under an occurrence bijection. -/
+theorem graphLeafWiring_map (c d : Config arity) (hc : c.Closed) (hd : d.Closed)
+    (e : c.GraphLeaf ≃ d.GraphLeaf)
+    (names : ∀ p q, c.graphLeafName p = c.graphLeafName q →
+      d.graphLeafName (e p) = d.graphLeafName (e q)) :
+    (c.graphLeafWiring hc).map e = d.graphLeafWiring hd :=
+  (c.graphLeafWiring_respects d hc hd e.toEmbedding names).map_eq
+    (Wiring.respects_refl _) e (fun _ ↦ rfl)
 
 /-- Compatible root, cell and leaf occurrence bijections preserve the assembled graph. -/
 def occurrenceIso (c d : Config arity) (hc : c.Closed) (hd : d.Closed)

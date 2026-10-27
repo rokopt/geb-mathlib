@@ -18,11 +18,13 @@ public import Geb.Prototypes.InteractionNet.BoundaryRenaming
 public import Geb.Prototypes.InteractionNet.Calculus
 public import Geb.Prototypes.InteractionNet.Call
 public import Geb.Prototypes.InteractionNet.ClosedTermReadback
+public import Geb.Prototypes.InteractionNet.ConfigEliminationOccurrences
 public import Geb.Prototypes.InteractionNet.ConfigGraph
 public import Geb.Prototypes.InteractionNet.ConfigGraphIso
 public import Geb.Prototypes.InteractionNet.ConfigGraphNormal
 public import Geb.Prototypes.InteractionNet.ConfigGraphPermutation
 public import Geb.Prototypes.InteractionNet.ConfigGraphRenaming
+public import Geb.Prototypes.InteractionNet.ConfigHeadOccurrences
 public import Geb.Prototypes.InteractionNet.ConfigNamelessGraph
 public import Geb.Prototypes.InteractionNet.ConfigSubstitutionGraph
 public import Geb.Prototypes.InteractionNet.ConstructorReadback
@@ -50,6 +52,8 @@ public import Geb.Prototypes.InteractionNet.FiniteCells
 public import Geb.Prototypes.InteractionNet.FinitePorts
 public import Geb.Prototypes.InteractionNet.FiniteSum
 public import Geb.Prototypes.InteractionNet.FiniteWiring
+public import Geb.Prototypes.InteractionNet.ForestAttachment
+public import Geb.Prototypes.InteractionNet.ForestAttachmentContext
 public import Geb.Prototypes.InteractionNet.ForestIso
 public import Geb.Prototypes.InteractionNet.ForestSubstitution
 public import Geb.Prototypes.InteractionNet.GraphAssembly
@@ -117,6 +121,7 @@ public import Geb.Prototypes.InteractionNet.WiringCompose
 public import Geb.Prototypes.InteractionNet.WiringEmbedding
 public import Geb.Prototypes.InteractionNet.WiringGlue
 public import Geb.Prototypes.InteractionNet.WiringIndex
+public import Geb.Prototypes.InteractionNet.WiringRelocation
 public import Geb.Prototypes.InteractionNet.WiringSelection
 public import Geb.Prototypes.InteractionNet.WiringSplice
 public import Geb.Prototypes.InteractionNet.WiringSubdivision

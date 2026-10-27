@@ -1963,6 +1963,9 @@ substitution of arbitrary nested terms agrees with attaching their graph
 fragments; the correspondence also preserves closed-wire counts.
 {name}`Geb.InteractionNet.Config.substGraphAssemblyIso` extends this
 correspondence to the assembly of complete substituted configurations.
+{name}`Geb.InteractionNet.TermFragment.forestAttach_context_spec` proves
+that the surrounding forest wiring can be attached before substitution,
+with the same matching and closed-wire count.
 {name}`Geb.InteractionNet.PortNet.contract_couple` proves that contraction
 commutes with attaching a boundary matching, including closed-wire counts;
 {name}`Geb.InteractionNet.Graph.reaches_couple` lifts finite schedules into
@@ -1987,6 +1990,9 @@ argument's cells; the correspondence preserves their symbols.
 {name}`Geb.InteractionNet.Config.elimination_cells` proves the corresponding
 allocation fact for wire elimination: its substitution retains the
 remaining context's cells and inserts the replacement's cells once.
+{name}`Geb.InteractionNet.Config.eliminationLeaf_matching` identifies the
+resulting named-leaf matching with the source matching after removing the
+eliminated name's two endpoints.
 The remaining compiler simulation must identify textual wire elimination
 with equality of represented graphs and textual interaction with graph
 contraction. It then transfers the sequential calculus's typed
