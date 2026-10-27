@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.InteractionNet.WiringGlue
-public import Mathlib.Data.FinEnum
+public import Geb.Mathlib.Data.FinEnum
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -103,6 +103,31 @@ theorem glue_enum_equiv [FinEnum I] [FinEnum J] (e : I ≃ J) (ports : J × Bool
       glue ports (FinEnum.toList J) s := by
   rw [glue_index]
   exact glue_perm ports (enum_perm e) s
+
+/-- A finite sum of cuts can be performed as its left family followed by its right family. -/
+theorem glue_sum_enum [FinEnum I] [FinEnum J] (ports : (I ⊕ J) × Bool ↪ P)
+    (s : Wiring P × ℕ) :
+    glue ports (FinEnum.toList (I ⊕ J)) s =
+      glue ((Function.Embedding.inr.prodMap (.refl Bool)).trans ports) (FinEnum.toList J)
+        (glue ((Function.Embedding.inl.prodMap (.refl Bool)).trans ports)
+          (FinEnum.toList I) s) := by
+  let order := (FinEnum.toList I).map (Sum.inl : I → I ⊕ J) ++
+    (FinEnum.toList J).map Sum.inr
+  have hu : order.Nodup := by
+    apply List.nodup_append.mpr
+    refine ⟨FinEnum.nodup_toList.map Sum.inl_injective,
+      FinEnum.nodup_toList.map Sum.inr_injective, ?_⟩
+    intro p hp q hq he
+    obtain ⟨p, _, rfl⟩ := List.mem_map.mp hp
+    obtain ⟨q, _, rfl⟩ := List.mem_map.mp hq
+    cases he
+  have hc (p : I ⊕ J) : p ∈ order := by
+    rcases p with p | p
+    · exact List.mem_append_left _ (List.mem_map.mpr ⟨p, FinEnum.mem_toList p, rfl⟩)
+    · exact List.mem_append_right _ (List.mem_map.mpr ⟨p, FinEnum.mem_toList p, rfl⟩)
+  rw [glue_perm ports (enum_perm_of_cover order hu hc)]
+  simp only [glue, order, List.foldl_append, List.foldl_map]
+  rfl
 
 end Geb.InteractionNet.Wiring
 

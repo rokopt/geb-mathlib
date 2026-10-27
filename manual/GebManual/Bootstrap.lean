@@ -1998,9 +1998,16 @@ textual wire elimination preserves the complete represented graph,
 including its ordered interface, cell symbols and closed-wire count.
 The proof cancels the variable extensions in the substitution forest and
 identifies the resulting root and named-wire matchings.
-The remaining compiler simulation must identify textual interaction with
-graph contraction. It then transfers the sequential calculus's typed
-normalization and denotation theorems to these graph executions.
+{name}`Geb.InteractionNet.Config.agentPairGraphIso` now decomposes a head
+interaction into its active pair, argument forest and unchanged context.
+{name}`Geb.InteractionNet.Config.agentPairResultIso` identifies contraction
+with inserting the rule graph at the exposed argument roots.
+{name}`Geb.InteractionNet.Config.interaction_leafWiring` proves that textual
+instantiation retains the source named wires and adds exactly the internal
+rule wires. The remaining assembly comparison must identify the complete
+textual interaction result with this graph contraction. It then transfers
+the sequential calculus's typed normalization and denotation theorems to
+these graph executions.
 
 Acceptance of these milestones consists of the diamond theorem on
 well-formed nets up to renaming, the corresponding termination and

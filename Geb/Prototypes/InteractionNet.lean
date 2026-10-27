@@ -15,11 +15,16 @@ public import Geb.Prototypes.InteractionNet.AssemblyEmbedding
 public import Geb.Prototypes.InteractionNet.AssemblyIso
 public import Geb.Prototypes.InteractionNet.BoundaryClosure
 public import Geb.Prototypes.InteractionNet.BoundaryComposition
+public import Geb.Prototypes.InteractionNet.BoundaryJoin
 public import Geb.Prototypes.InteractionNet.BoundaryRenaming
 public import Geb.Prototypes.InteractionNet.BoundarySplice
 public import Geb.Prototypes.InteractionNet.Calculus
 public import Geb.Prototypes.InteractionNet.Call
 public import Geb.Prototypes.InteractionNet.ClosedTermReadback
+public import Geb.Prototypes.InteractionNet.ConfigAgentPairContext
+public import Geb.Prototypes.InteractionNet.ConfigAgentPairForest
+public import Geb.Prototypes.InteractionNet.ConfigAppendForest
+public import Geb.Prototypes.InteractionNet.ConfigAppendOccurrences
 public import Geb.Prototypes.InteractionNet.ConfigEliminationAllocation
 public import Geb.Prototypes.InteractionNet.ConfigEliminationContext
 public import Geb.Prototypes.InteractionNet.ConfigEliminationForest
@@ -33,6 +38,8 @@ public import Geb.Prototypes.InteractionNet.ConfigGraphPermutation
 public import Geb.Prototypes.InteractionNet.ConfigGraphRenaming
 public import Geb.Prototypes.InteractionNet.ConfigHeadForest
 public import Geb.Prototypes.InteractionNet.ConfigHeadOccurrences
+public import Geb.Prototypes.InteractionNet.ConfigInteractionContext
+public import Geb.Prototypes.InteractionNet.ConfigInteractionLeaves
 public import Geb.Prototypes.InteractionNet.ConfigNamelessGraph
 public import Geb.Prototypes.InteractionNet.ConfigSubstitutionGraph
 public import Geb.Prototypes.InteractionNet.ConfigVariableEquation
@@ -76,6 +83,7 @@ public import Geb.Prototypes.InteractionNet.GraphReadbackBoundary
 public import Geb.Prototypes.InteractionNet.GraphRuntime
 public import Geb.Prototypes.InteractionNet.GraphRuntimeAdequacy
 public import Geb.Prototypes.InteractionNet.HeadPairGraph
+public import Geb.Prototypes.InteractionNet.JoinClosure
 public import Geb.Prototypes.InteractionNet.Kernel
 public import Geb.Prototypes.InteractionNet.KernelAdequacy
 public import Geb.Prototypes.InteractionNet.KernelApplication
@@ -98,6 +106,13 @@ public import Geb.Prototypes.InteractionNet.Observation
 public import Geb.Prototypes.InteractionNet.OccurrencePermutation
 public import Geb.Prototypes.InteractionNet.OpenPair
 public import Geb.Prototypes.InteractionNet.Output
+public import Geb.Prototypes.InteractionNet.PairReconstruction
+public import Geb.Prototypes.InteractionNet.PairedBoundary
+public import Geb.Prototypes.InteractionNet.PartialClosure
+public import Geb.Prototypes.InteractionNet.PartialClosureCoupling
+public import Geb.Prototypes.InteractionNet.PartialClosureIdentity
+public import Geb.Prototypes.InteractionNet.PlugEmbedding
+public import Geb.Prototypes.InteractionNet.PlugIso
 public import Geb.Prototypes.InteractionNet.PortNet
 public import Geb.Prototypes.InteractionNet.PortNetOperations
 public import Geb.Prototypes.InteractionNet.PortNetPlug
@@ -112,6 +127,10 @@ public import Geb.Prototypes.InteractionNet.RemainingCells
 public import Geb.Prototypes.InteractionNet.RuleBoundaryOccurrences
 public import Geb.Prototypes.InteractionNet.RuleGraph
 public import Geb.Prototypes.InteractionNet.RuleInstantiationCells
+public import Geb.Prototypes.InteractionNet.RuleInstantiationLeaves
+public import Geb.Prototypes.InteractionNet.RuleInternalWiring
+public import Geb.Prototypes.InteractionNet.RuleLeafPartition
+public import Geb.Prototypes.InteractionNet.RuleOpenForest
 public import Geb.Prototypes.InteractionNet.Schedule
 public import Geb.Prototypes.InteractionNet.SingletonGraph
 public import Geb.Prototypes.InteractionNet.Substitution
@@ -195,6 +214,9 @@ including the checks for complete cell coverage and absence of closed wires.
 Textual wire elimination preserves the complete represented graph, including its ordered
 external interface and closed-wire count. Its proof cancels variable extensions in the
 substitution forest and identifies the surviving root and named-wire matchings.
+The head interaction now decomposes into its argument forest and unchanged context;
+contracting its reconstructed pair inserts the replacement at the exposed argument roots.
+Linear rule instantiation preserves all source named wires and adds the internal rule wires.
 The compiler-to-graph simulation remains in progress: textual interaction must refine graph
 contraction, then transfer the established typed normalization and denotation theorem.
 
