@@ -149,6 +149,11 @@ Computation:
   interaction system, duplicating no λ-value, with a sequential reducer
   in Lean. Every accepted closed program from trees to trees reaches a
   normal configuration whose read-back is its denotation.
+* In progress. The finite-net representation, confluence across schedules,
+  and graph-runtime refinement of the interaction-net arm
+  ({ref "choice-of-machine"}[The choice of machine]): boundary-preserving
+  renaming first, then commuting reductions and an executable graph
+  representation proved to refine the calculus.
 * Deferred until before the second host.
   {ref "choice-of-machine"}[The choice of machine]: the benchmark
   programs, the environment machine, the compilation to
@@ -1570,7 +1575,9 @@ section below opens with a table of the states of its parts.
   * {ref "choice-of-machine"}[The choice of machine]
   * Deferred until before the second host
   * The first stage of the interaction-net arm: complete; the
-    elementary-affine decorations: in progress; the rest: deferred
+    finite-net representation, confluence and graph refinement: in
+    progress; the elementary-affine decorations: in progress; the rest:
+    deferred
 *
   * {ref "definitions-and-images"}[Definitions and images]
   * Complete
@@ -1751,6 +1758,9 @@ tag := "choice-of-machine"
   * The first stage in Lean, its read-back proved to be the denotation
   * Complete
 *
+  * Finite nets, confluence across schedules, and graph-runtime refinement
+  * In progress; the shared representation and renaming laws first
+*
   * The benchmark programs, the arms, the measurements
   * Deferred until before the second host
 *
@@ -1898,8 +1908,96 @@ the executable runner returns that denotation, and
 {name}`Geb.InteractionNet.Kernel.result_eq_of_infer` proves that every
 successful bound returns the same result.
 {name}`Geb.InteractionNet.Kernel.run_of_load` specializes execution adequacy
-to loaded globals. The diamond property and a graph implementation remain
-later milestones.
+to loaded globals.
+
+The next milestones are in progress in Lean. Their shared foundation is a
+finite representation of cells, ordered ports and wires, with an ordered
+external boundary and equivalence under internal renaming. Closed wires
+are retained. {name}`Geb.InteractionNet.FiniteNet` and
+{name}`Geb.InteractionNet.PortNet.Iso` supply the representation and
+boundary-preserving renamings. {name}`Geb.InteractionNet.Wiring.glued_perm`
+proves that reordering a finite family of disjoint wire splices preserves
+the surviving matching and the number of closed wires.
+{name}`Geb.InteractionNet.PortNet.contractCommute` proves that disjoint
+active-pair contractions commute up to an explicit boundary-preserving
+cell renaming. Contraction also respects cell isomorphisms.
+{name}`Geb.InteractionNet.Graph.diamond` establishes the strict diamond
+for finite graphs modulo renaming, for rule tables permitting one
+orientation of each interacting pair.
+{name}`Geb.InteractionNet.Graph.confluent` joins arbitrary finite
+schedules, and {name}`Geb.InteractionNet.Graph.terminates_of_normalizes`
+proves that one normalizing schedule makes all permitted contraction
+sequences terminate. These graph theorems do not yet transfer the
+compiler's normalization result: relating graph reduction to the
+sequential calculus remains in progress. Agreement of normal forms and
+progress of permitted schedules are separate proof obligations.
+The graph runtime stores partners in arrays, allocates replacement ports,
+performs local splices and compacts the surviving endpoints.
+{name}`Geb.InteractionNet.ArrayNet.contract_read` proves that these
+operations preserve the matching invariant and read back to abstract
+graph contraction with explicit cell reindexing.
+{name}`Geb.InteractionNet.GraphRuntime.run_refines` proves that a
+successful bounded run reaches a graph normal form, and
+{name}`Geb.InteractionNet.GraphRuntime.run_eq_normal` identifies it with
+any normal form reached by another schedule.
+{name}`Geb.InteractionNet.GraphRuntime.halts_of_normalizes` guarantees a
+successful finite run whenever the input graph normalizes. The default
+scheduler follows principal wires to find candidate pairs; endpoint
+compaction uses an inverse index table. Rule assembly uses finite partner
+arrays, cell labels are materialized after each contraction, and execution
+stops at the first normal state.
+These are executable prototype operations,
+without a production-runtime complexity claim.
+{name}`Geb.InteractionNet.Rule.toPortRule` compiles every linear textual
+rule, including nested terms, and
+{name}`Geb.InteractionNet.Config.toFiniteNet` assembles closed configurations.
+{name}`Geb.InteractionNet.System.run_closed` proves that textual execution
+preserves the two-ended wire condition needed for graph assembly.
+{name}`Geb.InteractionNet.Kernel.graphRun` executes compiled kernel programs
+through the partner-array runtime and reads their normal tree graphs.
+Tree read-back is invariant under cell renaming; consequently
+{name}`Geb.InteractionNet.Graph.readTree_eq_of_normal` proves agreement of
+the tree observations of all normalizing graph schedules.
+{name}`Geb.InteractionNet.Term.fragment_subst_wiring` proves that textual
+substitution of arbitrary nested terms agrees with attaching their graph
+fragments; the correspondence also preserves closed-wire counts.
+{name}`Geb.InteractionNet.Config.substGraphAssemblyIso` extends this
+correspondence to the assembly of complete substituted configurations.
+{name}`Geb.InteractionNet.PortNet.contract_couple` proves that contraction
+commutes with attaching a boundary matching, including closed-wire counts;
+{name}`Geb.InteractionNet.Graph.reaches_couple` lifts finite schedules into
+the same boundary context.
+{name}`Geb.InteractionNet.Config.renameGraphIso`,
+{name}`Geb.InteractionNet.Config.toFiniteNet_perm` and
+{name}`Geb.InteractionNet.Config.swapGraphIso` establish invariance under
+injective wire renaming, equation permutation and equation reversal.
+{name}`Geb.InteractionNet.Config.graph_normal_of_equations_eq_nil` proves
+that equation-free textual results compile to graph normal forms.
+{name}`Geb.InteractionNet.Kernel.graphFinal_readTree` proves that the
+whole-net reader recovers every represented kernel tree from its compiled
+final configuration, including the complete-cell-coverage and closed-wire
+checks. {name}`Geb.InteractionNet.Kernel.graphFinal_normal` identifies these
+compiled results as graph normal forms.
+{name}`Geb.InteractionNet.System.graph_step_of_contract_mem` proves that a
+successful textual agent contraction exposes a step in the compiled graph,
+in either orientation and regardless of equation order.
+{name}`Geb.InteractionNet.Rule.instantiateCellEquiv` identifies an
+instantiated rule's cells with its original cells and one copy of each
+argument's cells; the correspondence preserves their symbols.
+{name}`Geb.InteractionNet.Config.elimination_cells` proves the corresponding
+allocation fact for wire elimination: its substitution retains the
+remaining context's cells and inserts the replacement's cells once.
+The remaining compiler simulation must identify textual wire elimination
+with equality of represented graphs and textual interaction with graph
+contraction. It then transfers the sequential calculus's typed
+normalization and denotation theorems to these graph executions.
+
+Acceptance of these milestones consists of the diamond theorem on
+well-formed nets up to renaming, the corresponding termination and
+read-back result for permitted schedules of compiled programs, and the
+graph reducer's refinement and read-back theorems. The machine comparison,
+the production runtime and the later stages of function sharing retain
+their separate states.
 
 Elementary-affine typability was measured on the programs by
 `scripts/eal/eal.py`, over the definitions `lake exe geb-defs` writes
@@ -6626,6 +6724,10 @@ What is ready, each item independent of the others except as stated:
   proved with the prover written in Geb. The steps of the sequence after
   it are ready in its order, and the items early in writing, `let*` and
   `cond` among them, accompany the first substantial module.
+* The finite-net representation, confluence and graph-runtime refinement
+  of the interaction-net arm, in progress
+  ({ref "choice-of-machine"}[The choice of machine]), using the completed
+  sequential adequacy theorem.
 * The elementary-affine decorations, in progress, wait on
   rewriting the folds that read their children's results twice
   ({ref "improvements"}[Improvements]).
