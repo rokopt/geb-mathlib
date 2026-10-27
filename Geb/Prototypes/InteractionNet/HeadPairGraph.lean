@@ -30,6 +30,8 @@ with the graph of the instantiated textual rule remains a separate obligation.
 * {lit}`Config.headRedex` — rule lookup selects the corresponding indexed graph redex.
 * {lit}`System.graph_step_of_head_rule` — a textual interaction exposes a graph step.
 * {lit}`System.graph_step_of_rule_mem` — equation order does not prevent this graph progress.
+* {lit}`System.graph_step_of_contract_mem` — either orientation selected by the textual
+  reducer exposes graph progress.
 
 ## Tags
 
@@ -128,6 +130,60 @@ theorem System.graph_step_of_rule_mem (s : System arity) (linear : s.Linear)
       Graph.ofNet (({ rest with equations := eqn :: rest.equations } : Config arity).toFiniteNet
         hc) := Quotient.sound ⟨e⟩
   exact ⟨m, hg ▸ hm⟩
+
+/-- A reverse rule exposes the same graph progress after exchanging the head equation's sides. -/
+theorem System.graph_step_of_head_reverse_rule (s : System arity) (linear : s.Linear)
+    (oriented : s.Oriented) (c : Config arity) (a b : α)
+    (xs : Fin (arity a) → Term arity ℕ) (ys : Fin (arity b) → Term arity ℕ)
+    (rhs : Rule arity b a) (rule : s.rule b a = some rhs) :
+    let d : Config arity :=
+      { c with equations := (Term.agent a xs, Term.agent b ys) :: c.equations }
+    ∀ closed : d.Closed, ∃ m,
+      Graph.Step (s.toPortSystem linear oriented) (Graph.ofNet (d.toFiniteNet closed)) m := by
+  intro d closed
+  let eqn := (Term.agent a xs, Term.agent b ys)
+  let d' : Config arity := { c with equations := (eqn.2, eqn.1) :: c.equations }
+  have hc := c.closed_swap eqn closed
+  obtain ⟨m, hm⟩ := s.graph_step_of_head_rule linear oriented c b a ys xs rhs rule hc
+  have hg : Graph.ofNet (d.toFiniteNet closed) =
+      Graph.ofNet (d'.toFiniteNet hc) := Quotient.sound ⟨c.swapGraphIso eqn closed⟩
+  exact ⟨m, hg ▸ hm⟩
+
+/-- Every successful textual agent contraction exposes a graph step, in either orientation. -/
+theorem System.graph_step_of_contract_mem (s : System arity) (linear : s.Linear)
+    (oriented : s.Oriented) (c : Config arity) (closed : c.Closed) (a b : α)
+    (xs : Fin (arity a) → Term arity ℕ) (ys : Fin (arity b) → Term arity ℕ)
+    (rest result : Config arity)
+    (contract : s.contract (Term.agent a xs, Term.agent b ys) rest = some result)
+    (mem : (Term.agent a xs, Term.agent b ys) ∈ c.equations) :
+    ∃ m, Graph.Step (s.toPortSystem linear oriented) (Graph.ofNet (c.toFiniteNet closed)) m := by
+  cases hf : s.rule a b with
+  | some rhs => exact s.graph_step_of_rule_mem linear oriented c closed a b xs ys rhs hf mem
+  | none =>
+    cases hr : s.rule b a with
+    | none =>
+      change (match s.rule a b with
+        | some r => some { rest with
+            equations := r.instantiate rest.nextName xs ys ++ rest.equations
+            nextName := rest.nextName + r.fresh }
+        | none => (s.rule b a).map fun r ↦ { rest with
+            equations := r.instantiate rest.nextName ys xs ++ rest.equations
+            nextName := rest.nextName + r.fresh }) = some result at contract
+      simp only [hf, hr, Option.map_none, reduceCtorEq] at contract
+    | some rhs =>
+      obtain ⟨before, after, he⟩ := List.mem_iff_append.mp mem
+      let tail : Config arity := { c with equations := before ++ after }
+      let eqn := (Term.agent a xs, Term.agent b ys)
+      have hp : (eqn :: tail.equations).Perm c.equations := by
+        rw [he]
+        exact List.perm_middle.symm
+      have hc := c.closed_perm (eqn :: tail.equations) hp closed
+      obtain ⟨m, hm⟩ := s.graph_step_of_head_reverse_rule linear oriented tail a b xs ys rhs hr hc
+      obtain ⟨e⟩ := c.toFiniteNet_perm (eqn :: tail.equations) hp closed
+      have hg : Graph.ofNet (c.toFiniteNet closed) =
+          Graph.ofNet (({ tail with equations := eqn :: tail.equations } : Config arity).toFiniteNet
+            hc) := Quotient.sound ⟨e⟩
+      exact ⟨m, hg ▸ hm⟩
 
 end Geb.InteractionNet
 

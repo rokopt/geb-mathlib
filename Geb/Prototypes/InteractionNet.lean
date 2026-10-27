@@ -24,9 +24,11 @@ public import Geb.Prototypes.InteractionNet.ConfigGraphNormal
 public import Geb.Prototypes.InteractionNet.ConfigGraphPermutation
 public import Geb.Prototypes.InteractionNet.ConfigGraphRenaming
 public import Geb.Prototypes.InteractionNet.ConfigNamelessGraph
+public import Geb.Prototypes.InteractionNet.ConfigSubstitutionGraph
 public import Geb.Prototypes.InteractionNet.ConstructorReadback
 public import Geb.Prototypes.InteractionNet.Contraction
 public import Geb.Prototypes.InteractionNet.ContractionCommute
+public import Geb.Prototypes.InteractionNet.ContractionCoupling
 public import Geb.Prototypes.InteractionNet.ContractionEmbedding
 public import Geb.Prototypes.InteractionNet.ContractionIso
 public import Geb.Prototypes.InteractionNet.ContractionPorts
@@ -39,6 +41,7 @@ public import Geb.Prototypes.InteractionNet.CouplingIdentity
 public import Geb.Prototypes.InteractionNet.CouplingWires
 public import Geb.Prototypes.InteractionNet.Data
 public import Geb.Prototypes.InteractionNet.EquationGraph
+public import Geb.Prototypes.InteractionNet.EquationGraphSubstitution
 public import Geb.Prototypes.InteractionNet.Erasure
 public import Geb.Prototypes.InteractionNet.Evaluation
 public import Geb.Prototypes.InteractionNet.Execution
@@ -48,9 +51,11 @@ public import Geb.Prototypes.InteractionNet.FinitePorts
 public import Geb.Prototypes.InteractionNet.FiniteSum
 public import Geb.Prototypes.InteractionNet.FiniteWiring
 public import Geb.Prototypes.InteractionNet.ForestIso
+public import Geb.Prototypes.InteractionNet.ForestSubstitution
 public import Geb.Prototypes.InteractionNet.GraphAssembly
 public import Geb.Prototypes.InteractionNet.GraphClosure
 public import Geb.Prototypes.InteractionNet.GraphConfluence
+public import Geb.Prototypes.InteractionNet.GraphContext
 public import Geb.Prototypes.InteractionNet.GraphObservation
 public import Geb.Prototypes.InteractionNet.GraphReadback
 public import Geb.Prototypes.InteractionNet.GraphReadbackBoundary
@@ -89,7 +94,9 @@ public import Geb.Prototypes.InteractionNet.ProgramCorrect
 public import Geb.Prototypes.InteractionNet.ProgramGraph
 public import Geb.Prototypes.InteractionNet.RedexDiamond
 public import Geb.Prototypes.InteractionNet.RemainingCells
+public import Geb.Prototypes.InteractionNet.RuleBoundaryOccurrences
 public import Geb.Prototypes.InteractionNet.RuleGraph
+public import Geb.Prototypes.InteractionNet.RuleInstantiationCells
 public import Geb.Prototypes.InteractionNet.Schedule
 public import Geb.Prototypes.InteractionNet.SingletonGraph
 public import Geb.Prototypes.InteractionNet.Substitution
@@ -158,6 +165,11 @@ is invariant under cell renaming and agrees across all normalizing graph schedul
 Every finite textual execution remains closed and eligible for graph assembly.
 Textual substitution of arbitrary nested terms agrees with attachment of their graph fragments,
 including both the wire matching and closed-loop count.
+The correspondence extends to assembled forests and complete substituted configurations.
+Boundary attachment preserves graph contractions and finite schedules.
+Linear rule instantiation retains the rule's cells and inserts each argument's cells once,
+preserving their symbols. A successful textual agent contraction exposes graph progress
+in either orientation and at any equation position.
 Injective wire renaming, equation permutation and equation reversal preserve the compiled graph.
 Equation-free configurations compile to graph normal forms for every rule table.
 The whole-net reader recovers every represented kernel tree from its compiled final configuration,

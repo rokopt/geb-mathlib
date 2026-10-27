@@ -5,8 +5,12 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.InteractionNet.FinitePorts
-public import Mathlib.Data.List.Perm.Basic
+public import Aesop
+public import Mathlib.Data.Finset.Attr
+public import Mathlib.Data.Nat.Notation
+public import Mathlib.Logic.Equiv.Sum
+public import Mathlib.Tactic.Finiteness.Attr
+public import Mathlib.Tactic.SetLike
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in

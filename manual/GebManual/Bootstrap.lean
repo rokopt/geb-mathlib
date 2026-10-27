@@ -1961,6 +1961,12 @@ the tree observations of all normalizing graph schedules.
 {name}`Geb.InteractionNet.Term.fragment_subst_wiring` proves that textual
 substitution of arbitrary nested terms agrees with attaching their graph
 fragments; the correspondence also preserves closed-wire counts.
+{name}`Geb.InteractionNet.Config.substGraphAssemblyIso` extends this
+correspondence to the assembly of complete substituted configurations.
+{name}`Geb.InteractionNet.PortNet.contract_couple` proves that contraction
+commutes with attaching a boundary matching, including closed-wire counts;
+{name}`Geb.InteractionNet.Graph.reaches_couple` lifts finite schedules into
+the same boundary context.
 {name}`Geb.InteractionNet.Config.renameGraphIso`,
 {name}`Geb.InteractionNet.Config.toFiniteNet_perm` and
 {name}`Geb.InteractionNet.Config.swapGraphIso` establish invariance under
@@ -1972,9 +1978,15 @@ whole-net reader recovers every represented kernel tree from its compiled
 final configuration, including the complete-cell-coverage and closed-wire
 checks. {name}`Geb.InteractionNet.Kernel.graphFinal_normal` identifies these
 compiled results as graph normal forms.
-{name}`Geb.InteractionNet.System.graph_step_of_rule_mem` proves that any
-textual agent equation with a forward rule exposes a step in the compiled
-graph, regardless of equation order.
+{name}`Geb.InteractionNet.System.graph_step_of_contract_mem` proves that a
+successful textual agent contraction exposes a step in the compiled graph,
+in either orientation and regardless of equation order.
+{name}`Geb.InteractionNet.Rule.instantiateCellEquiv` identifies an
+instantiated rule's cells with its original cells and one copy of each
+argument's cells; the correspondence preserves their symbols.
+{name}`Geb.InteractionNet.Config.elimination_cells` proves the corresponding
+allocation fact for wire elimination: its substitution retains the
+remaining context's cells and inserts the replacement's cells once.
 The remaining compiler simulation must identify textual wire elimination
 with equality of represented graphs and textual interaction with graph
 contraction. It then transfers the sequential calculus's typed

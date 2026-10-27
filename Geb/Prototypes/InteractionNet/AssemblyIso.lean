@@ -94,6 +94,15 @@ def coupleIso (n : PortNet arity label B) (m : PortNet arity label' B')
   intro p
   cases p <;> rfl
 
+/-- Boundary attachment preserves a cell isomorphism when the external matching is fixed. -/
+def Iso.couple {n : PortNet arity label B} {m : PortNet arity label' B}
+    (h : n.Iso m) (w : Wiring (Γ ⊕ B)) : (n.couple w).Iso (m.couple w) := by
+  apply coupleIso n m w w (Equiv.refl B) h.cells h.label_eq h.wiring_eq h.loops_eq
+  have he : Equiv.sumCongr (Equiv.refl Γ) (Equiv.refl B) = Equiv.refl _ := by
+    ext p
+    cases p <;> rfl
+  rw [he, Wiring.map_refl]
+
 end PortNet
 
 end Geb.InteractionNet
