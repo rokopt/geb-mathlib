@@ -88,6 +88,14 @@ theorem enum_perm [FinEnum I] [FinEnum J] (e : I ≃ J) :
     List.mem_map.mpr ⟨e.symm j, FinEnum.mem_toList _, e.apply_symm_apply j⟩
   simp only [hm, FinEnum.mem_toList, ↓reduceIte]
 
+/-- Every explicit exhaustive duplicate-free list is a permutation of the finite enumeration. -/
+theorem enum_perm_of_cover [FinEnum I] (order : List I) (unique : order.Nodup)
+    (cover : ∀ i, i ∈ order) : (FinEnum.toList I).Perm order := by
+  apply perm_of_count
+  intro i
+  rw [FinEnum.nodup_toList.count, unique.count]
+  simp only [FinEnum.mem_toList, cover, ↓reduceIte]
+
 /-- Complete gluing does not depend on the chosen finite index type. -/
 theorem glue_enum_equiv [FinEnum I] [FinEnum J] (e : I ≃ J) (ports : J × Bool ↪ P)
     (s : Wiring P × ℕ) :

@@ -13,20 +13,29 @@ public import Geb.Prototypes.InteractionNet.ArrayReadback
 public import Geb.Prototypes.InteractionNet.ArrayWiring
 public import Geb.Prototypes.InteractionNet.AssemblyEmbedding
 public import Geb.Prototypes.InteractionNet.AssemblyIso
+public import Geb.Prototypes.InteractionNet.BoundaryClosure
 public import Geb.Prototypes.InteractionNet.BoundaryComposition
 public import Geb.Prototypes.InteractionNet.BoundaryRenaming
+public import Geb.Prototypes.InteractionNet.BoundarySplice
 public import Geb.Prototypes.InteractionNet.Calculus
 public import Geb.Prototypes.InteractionNet.Call
 public import Geb.Prototypes.InteractionNet.ClosedTermReadback
+public import Geb.Prototypes.InteractionNet.ConfigEliminationAllocation
+public import Geb.Prototypes.InteractionNet.ConfigEliminationContext
+public import Geb.Prototypes.InteractionNet.ConfigEliminationForest
 public import Geb.Prototypes.InteractionNet.ConfigEliminationOccurrences
+public import Geb.Prototypes.InteractionNet.ConfigEliminationSimulation
 public import Geb.Prototypes.InteractionNet.ConfigGraph
+public import Geb.Prototypes.InteractionNet.ConfigGraphContext
 public import Geb.Prototypes.InteractionNet.ConfigGraphIso
 public import Geb.Prototypes.InteractionNet.ConfigGraphNormal
 public import Geb.Prototypes.InteractionNet.ConfigGraphPermutation
 public import Geb.Prototypes.InteractionNet.ConfigGraphRenaming
+public import Geb.Prototypes.InteractionNet.ConfigHeadForest
 public import Geb.Prototypes.InteractionNet.ConfigHeadOccurrences
 public import Geb.Prototypes.InteractionNet.ConfigNamelessGraph
 public import Geb.Prototypes.InteractionNet.ConfigSubstitutionGraph
+public import Geb.Prototypes.InteractionNet.ConfigVariableEquation
 public import Geb.Prototypes.InteractionNet.ConstructorReadback
 public import Geb.Prototypes.InteractionNet.Contraction
 public import Geb.Prototypes.InteractionNet.ContractionCommute
@@ -38,6 +47,7 @@ public import Geb.Prototypes.InteractionNet.ContractionRenaming
 public import Geb.Prototypes.InteractionNet.ContractionSequence
 public import Geb.Prototypes.InteractionNet.Copying
 public import Geb.Prototypes.InteractionNet.CopyingNormalization
+public import Geb.Prototypes.InteractionNet.CouplingCancellation
 public import Geb.Prototypes.InteractionNet.CouplingComposition
 public import Geb.Prototypes.InteractionNet.CouplingIdentity
 public import Geb.Prototypes.InteractionNet.CouplingWires
@@ -91,6 +101,7 @@ public import Geb.Prototypes.InteractionNet.Output
 public import Geb.Prototypes.InteractionNet.PortNet
 public import Geb.Prototypes.InteractionNet.PortNetOperations
 public import Geb.Prototypes.InteractionNet.PortNetPlug
+public import Geb.Prototypes.InteractionNet.PortNetSum
 public import Geb.Prototypes.InteractionNet.PortSystem
 public import Geb.Prototypes.InteractionNet.Preservation
 public import Geb.Prototypes.InteractionNet.Program
@@ -116,7 +127,9 @@ public import Geb.Prototypes.InteractionNet.TermGraphReadback
 public import Geb.Prototypes.InteractionNet.TermGraphRenaming
 public import Geb.Prototypes.InteractionNet.TermGraphSimulation
 public import Geb.Prototypes.InteractionNet.TermGraphSubstitution
+public import Geb.Prototypes.InteractionNet.TermGraphSum
 public import Geb.Prototypes.InteractionNet.Wiring
+public import Geb.Prototypes.InteractionNet.WiringCancellation
 public import Geb.Prototypes.InteractionNet.WiringCompose
 public import Geb.Prototypes.InteractionNet.WiringEmbedding
 public import Geb.Prototypes.InteractionNet.WiringGlue
@@ -179,9 +192,11 @@ Injective wire renaming, equation permutation and equation reversal preserve the
 Equation-free configurations compile to graph normal forms for every rule table.
 The whole-net reader recovers every represented kernel tree from its compiled final configuration,
 including the checks for complete cell coverage and absence of closed wires.
-The compiler-to-graph simulation remains in progress: it must show that textual wire
-elimination preserves the represented graph and textual interaction refines graph contraction,
-then transfer the established typed normalization and denotation theorem.
+Textual wire elimination preserves the complete represented graph, including its ordered
+external interface and closed-wire count. Its proof cancels variable extensions in the
+substitution forest and identifies the surviving root and named-wire matchings.
+The compiler-to-graph simulation remains in progress: textual interaction must refine graph
+contraction, then transfer the established typed normalization and denotation theorem.
 
 ## Tags
 

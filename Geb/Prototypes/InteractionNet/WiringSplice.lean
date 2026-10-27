@@ -186,6 +186,12 @@ theorem force_force (w : Wiring P) {a b c d : P} (hab : a ≠ b) (hcd : c ≠ d)
 /-- The closed wire created by removing an already connected pair of endpoints. -/
 def loopDelta (w : Wiring P) (a b : P) : ℕ := if w.partner a = b then 1 else 0
 
+/-- The creation of a closed wire does not depend on the order of its endpoints. -/
+theorem loopDelta_comm (w : Wiring P) (a b : P) : w.loopDelta a b = w.loopDelta b a := by
+  have h : w.partner a = b ↔ w.partner b = a :=
+    ⟨fun h ↦ (w.partner_eq_iff.mp h).symm, fun h ↦ w.partner_eq_iff.mpr h.symm⟩
+  simp only [loopDelta, h]
+
 /-- Disjoint splices create the same total number of closed wires in either order. -/
 theorem loopDelta_force (w : Wiring P) {a b c d : P} (hab : a ≠ b) (hcd : c ≠ d)
     (hac : a ≠ c) (had : a ≠ d) (hbc : b ≠ c) (hbd : b ≠ d) :

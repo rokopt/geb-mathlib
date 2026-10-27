@@ -70,6 +70,50 @@ theorem unique_graphLeaf_of_count_one (c : Config arity) (x : ℕ) (count : c.na
     rw [hp, List.mem_singleton] at h
     exact h
 
+/-- Replacement fragments for the elimination of a named wire. -/
+def eliminationFragments (c : Config arity) (x : ℕ) (t : Term arity ℕ)
+    (i : c.GraphRoot) (q : (c.graphFragments i).Leaf) : TermFragment arity ℕ :=
+  (if (c.graphFragments i).name q = x then t else Term.var ((c.graphFragments i).name q)).fragment
+
+/-- The occurrence-indexed inserted cells are exactly one copy of the replacement. -/
+def eliminationInsertedCellsEquiv (c : Config arity) (x : ℕ) (t : Term arity ℕ)
+    (p : c.GraphLeaf) (hp : c.graphLeafName p = x)
+    (unique : ∀ q, c.graphLeafName q = x → q = p) :
+    (Σ q : c.GraphLeaf, (c.eliminationFragments x t q.1 q.2).Cell) ≃ t.fragment.Cell where
+  toFun q := if h : c.graphLeafName q.1 = x then
+    Term.fragmentCellEquiv (ite_eq_left h) q.2
+    else Fin.elim0 (Term.fragmentCellEquiv (ite_eq_right h) q.2)
+  invFun v := ⟨p, (Term.fragmentCellEquiv (ite_eq_left hp)).symm v⟩
+  left_inv q := by
+    rcases q with ⟨q, v⟩
+    dsimp only
+    by_cases hq : c.graphLeafName q = x
+    · have he := unique q hq
+      subst q
+      rw [dite_eq_left hp]
+      exact congrArg (Sigma.mk p) ((Term.fragmentCellEquiv (ite_eq_left hp)).symm_apply_apply v)
+    · exact Fin.elim0 (Term.fragmentCellEquiv (ite_eq_right hq) v)
+  right_inv v := by
+    dsimp only
+    rw [dite_eq_left hp]
+    exact (Term.fragmentCellEquiv (ite_eq_left hp)).apply_symm_apply v
+
+/-- Separating the inserted cells preserves their agent symbols. -/
+theorem eliminationInsertedCellsEquiv_label (c : Config arity) (x : ℕ) (t : Term arity ℕ)
+    (p : c.GraphLeaf) (hp : c.graphLeafName p = x)
+    (unique : ∀ q, c.graphLeafName q = x → q = p)
+    (q : Σ q : c.GraphLeaf, (c.eliminationFragments x t q.1 q.2).Cell) :
+    t.fragment.label (c.eliminationInsertedCellsEquiv x t p hp unique q) =
+      (c.eliminationFragments x t q.1.1 q.1.2).label q.2 := by
+  rcases q with ⟨q, v⟩
+  change t.fragment.label (if h : c.graphLeafName q = x then
+    Term.fragmentCellEquiv (ite_eq_left h) v else
+      Fin.elim0 (Term.fragmentCellEquiv (ite_eq_right h) v)) = _
+  by_cases hq : c.graphLeafName q = x
+  · erw [dite_eq_left hq]
+    exact Term.fragment_label_cast (ite_eq_left hq) v
+  · exact Fin.elim0 (Term.fragmentCellEquiv (ite_eq_right hq) v)
+
 /-- Eliminating a once-occurring name inserts one copy of its replacement, preserving symbols. -/
 theorem elimination_inserted_cells (c : Config arity) (x : ℕ) (t : Term arity ℕ)
     (count : c.names.count x = 1) :
@@ -79,35 +123,8 @@ theorem elimination_inserted_cells (c : Config arity) (x : ℕ) (t : Term arity 
       (if c.graphLeafName q.1 = x then t else Term.var (c.graphLeafName q.1)).fragment.label
         q.2 := by
   obtain ⟨p, hp, unique⟩ := c.unique_graphLeaf_of_count_one x count
-  let select (q : Σ q : c.GraphLeaf,
-      (if c.graphLeafName q = x then t else Term.var (c.graphLeafName q)).fragment.Cell) :
-      t.fragment.Cell :=
-    if h : c.graphLeafName q.1 = x then Term.fragmentCellEquiv (ite_eq_left h) q.2
-    else Fin.elim0 (Term.fragmentCellEquiv (ite_eq_right h) q.2)
-  let insert (v : t.fragment.Cell) : Σ q : c.GraphLeaf,
-      (if c.graphLeafName q = x then t else Term.var (c.graphLeafName q)).fragment.Cell :=
-    ⟨p, (Term.fragmentCellEquiv (ite_eq_left hp)).symm v⟩
-  refine ⟨⟨select, insert, ?_, ?_⟩, ?_⟩
-  · rintro ⟨q, v⟩
-    by_cases hq : c.graphLeafName q = x
-    · have he := unique q hq
-      subst q
-      dsimp only [select]
-      rw [dite_eq_left hp]
-      apply congrArg (Sigma.mk p)
-      exact (Term.fragmentCellEquiv (ite_eq_left hp)).symm_apply_apply v
-    · exact Fin.elim0 (Term.fragmentCellEquiv (ite_eq_right hq) v)
-  · intro v
-    dsimp only [select, insert]
-    rw [dite_eq_left hp]
-    exact (Term.fragmentCellEquiv (ite_eq_left hp)).apply_symm_apply v
-  · rintro ⟨q, v⟩
-    change t.fragment.label (select ⟨q, v⟩) = _
-    by_cases hq : c.graphLeafName q = x
-    · dsimp only [select]
-      rw [dite_eq_left hq]
-      exact Term.fragment_label_cast (ite_eq_left hq) v
-    · exact Fin.elim0 (Term.fragmentCellEquiv (ite_eq_right hq) v)
+  exact ⟨c.eliminationInsertedCellsEquiv x t p hp unique,
+    c.eliminationInsertedCellsEquiv_label x t p hp unique⟩
 
 /-- Attach the appropriate replacement graph at each leaf of every original root term. -/
 def substitutionForest (σ : ℕ → Term arity ℕ) (c : Config arity) :

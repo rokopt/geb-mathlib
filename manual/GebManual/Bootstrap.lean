@@ -1993,9 +1993,13 @@ remaining context's cells and inserts the replacement's cells once.
 {name}`Geb.InteractionNet.Config.eliminationLeaf_matching` identifies the
 resulting named-leaf matching with the source matching after removing the
 eliminated name's two endpoints.
-The remaining compiler simulation must identify textual wire elimination
-with equality of represented graphs and textual interaction with graph
-contraction. It then transfers the sequential calculus's typed
+{name}`Geb.InteractionNet.Config.elimination_graph_iso` now proves that
+textual wire elimination preserves the complete represented graph,
+including its ordered interface, cell symbols and closed-wire count.
+The proof cancels the variable extensions in the substitution forest and
+identifies the resulting root and named-wire matchings.
+The remaining compiler simulation must identify textual interaction with
+graph contraction. It then transfers the sequential calculus's typed
 normalization and denotation theorems to these graph executions.
 
 Acceptance of these milestones consists of the diamond theorem on
