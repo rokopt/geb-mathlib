@@ -36,6 +36,17 @@ namespace Geb.InteractionNet
 
 open scoped FinEnum
 
+/-- Enumerate the two wire ends while retaining Boolean structural equality. -/
+@[instance_reducible] def boolEnum : FinEnum Bool where
+  card := 2
+  equiv :=
+    { toFun := fun b ↦ if b then 1 else 0
+      invFun := fun i ↦ i.val == 1
+      left_inv := by intro b; cases b <;> rfl
+      right_inv := fun i ↦ Fin.cases rfl
+        (fun i ↦ Fin.cases rfl (fun j ↦ Fin.elim0 j) i) i }
+  decEq := inferInstance
+
 /-- Separate the first block of a nonempty finite family from its remaining blocks. -/
 def finiteSigmaSucc {n : ℕ} (sizes : Fin (n + 1) → ℕ) :
     (Σ i, Fin (sizes i)) ≃ Fin (sizes 0) ⊕ (Σ i : Fin n, Fin (sizes i.succ)) where

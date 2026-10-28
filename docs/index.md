@@ -111,6 +111,16 @@ import-direction rules above are enforced by
 
 ## Implemented content
 
+- [Interaction nets](../Geb/Prototypes/InteractionNet.lean) — a typed
+  kernel compiler and sequential calculus, finite port graphs modulo
+  boundary-preserving cell renaming, confluence and termination across
+  graph schedules, and a verified partner-array runtime. Textual execution
+  refines graph reduction; every accepted closed tree-to-tree application
+  terminates under every graph schedule and its normal result reads back
+  the checked denotation. [Graph adequacy](../Geb/Prototypes/InteractionNet/KernelGraphAdequacy.lean)
+  transfers these results to the executable runtime and loaded globals;
+  [Bootstrapping Geb](../manual/GebManual/Bootstrap.lean) records the
+  machine-choice milestones.
 - `Geb/Prototypes/SuccinctTree.lean` — balanced-parenthesis block
   summaries, associative composition, prefix-sum recognition, and an
   equivalent accumulator scan. Its adjacent experiment directory

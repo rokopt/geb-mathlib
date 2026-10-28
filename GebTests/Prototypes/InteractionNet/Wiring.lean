@@ -5,8 +5,13 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.InteractionNet.WiringGlue
-public import Geb.Mathlib.Data.FinEnum
+public import Geb.Prototypes.InteractionNet.Wiring
+public import Mathlib.Data.Finset.Attr
+public import Mathlib.Logic.Embedding.Basic
+public import Mathlib.Tactic.Attr.Core
+public import Mathlib.Tactic.Finiteness.Attr
+public import Mathlib.Tactic.SetLike
+public import Mathlib.Tactic.ToAdditive
 public meta import Geb.Prototypes.InteractionNet.WiringGlue -- shake: keep
 meta import GebMeta -- shake: keep
 
@@ -28,8 +33,6 @@ set_option doc.verso true
 @[expose] public section
 
 namespace Geb.InteractionNet.Tests.Wiring
-
-open scoped FinEnum
 
 /-- A family of independent wires joining their false and true endpoints. -/
 def strands (I : Type*) : Wiring (Bool × I) where

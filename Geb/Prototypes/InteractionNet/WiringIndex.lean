@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.InteractionNet.WiringGlue
-public import Mathlib.Data.FinEnum
+public import Geb.Mathlib.Data.FinEnum
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -44,6 +44,22 @@ theorem glue_index (e : I ≃ J) (ports : J × Bool ↪ P) (order : List I)
   unfold glue
   rw [List.foldl_map]
   rfl
+
+/-- Reversing both endpoints of every cut preserves its matching and loop contribution. -/
+theorem glue_flip (ports ports' : I × Bool ↪ P)
+    (flip : ∀ i b, ports' (i, b) = ports (i, !b)) (order : List I) (s : Wiring P × ℕ) :
+    glue ports' order s = glue ports order s := by
+  revert s
+  refine List.rec (fun _ ↦ rfl) ?_ order
+  intro i order ih s
+  change glue ports' order (glueAt ports' s i) = glue ports order (glueAt ports s i)
+  rw [ih]
+  apply congrArg (glue ports order)
+  apply Prod.ext
+  · simp only [glueAt, flip, Bool.not_false, Bool.not_true]
+    exact force_comm s.1 (pair_ne ports i).symm
+  · simp only [glueAt, flip, Bool.not_false, Bool.not_true]
+    exact congrArg (s.2 + ·) (loopDelta_comm s.1 (ports (i, true)) (ports (i, false)))
 
 /-- Move a selected occurrence to the head, constructively removing it from the remainder. -/
 theorem perm_cons_erase [DecidableEq J] (a : J) (xs : List J) (h : a ∈ xs) :
@@ -88,6 +104,14 @@ theorem enum_perm [FinEnum I] [FinEnum J] (e : I ≃ J) :
     List.mem_map.mpr ⟨e.symm j, FinEnum.mem_toList _, e.apply_symm_apply j⟩
   simp only [hm, FinEnum.mem_toList, ↓reduceIte]
 
+/-- Every explicit exhaustive duplicate-free list is a permutation of the finite enumeration. -/
+theorem enum_perm_of_cover [FinEnum I] (order : List I) (unique : order.Nodup)
+    (cover : ∀ i, i ∈ order) : (FinEnum.toList I).Perm order := by
+  apply perm_of_count
+  intro i
+  rw [FinEnum.nodup_toList.count, unique.count]
+  simp only [FinEnum.mem_toList, cover, ↓reduceIte]
+
 /-- Complete gluing does not depend on the chosen finite index type. -/
 theorem glue_enum_equiv [FinEnum I] [FinEnum J] (e : I ≃ J) (ports : J × Bool ↪ P)
     (s : Wiring P × ℕ) :
@@ -95,6 +119,31 @@ theorem glue_enum_equiv [FinEnum I] [FinEnum J] (e : I ≃ J) (ports : J × Bool
       glue ports (FinEnum.toList J) s := by
   rw [glue_index]
   exact glue_perm ports (enum_perm e) s
+
+/-- A finite sum of cuts can be performed as its left family followed by its right family. -/
+theorem glue_sum_enum [FinEnum I] [FinEnum J] (ports : (I ⊕ J) × Bool ↪ P)
+    (s : Wiring P × ℕ) :
+    glue ports (FinEnum.toList (I ⊕ J)) s =
+      glue ((Function.Embedding.inr.prodMap (.refl Bool)).trans ports) (FinEnum.toList J)
+        (glue ((Function.Embedding.inl.prodMap (.refl Bool)).trans ports)
+          (FinEnum.toList I) s) := by
+  let order := (FinEnum.toList I).map (Sum.inl : I → I ⊕ J) ++
+    (FinEnum.toList J).map Sum.inr
+  have hu : order.Nodup := by
+    apply List.nodup_append.mpr
+    refine ⟨FinEnum.nodup_toList.map Sum.inl_injective,
+      FinEnum.nodup_toList.map Sum.inr_injective, ?_⟩
+    intro p hp q hq he
+    obtain ⟨p, _, rfl⟩ := List.mem_map.mp hp
+    obtain ⟨q, _, rfl⟩ := List.mem_map.mp hq
+    cases he
+  have hc (p : I ⊕ J) : p ∈ order := by
+    rcases p with p | p
+    · exact List.mem_append_left _ (List.mem_map.mpr ⟨p, FinEnum.mem_toList p, rfl⟩)
+    · exact List.mem_append_right _ (List.mem_map.mpr ⟨p, FinEnum.mem_toList p, rfl⟩)
+  rw [glue_perm ports (enum_perm_of_cover order hu hc)]
+  simp only [glue, order, List.foldl_append, List.foldl_map]
+  rfl
 
 end Geb.InteractionNet.Wiring
 

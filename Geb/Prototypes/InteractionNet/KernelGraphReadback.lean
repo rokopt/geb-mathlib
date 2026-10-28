@@ -18,7 +18,7 @@ set_option doc.verso true in
 The graph compiler preserves the canonical final tree configuration used by the kernel's
 textual normalization theorem. Its graph is normal and the whole-net reader recovers the
 represented tree, including the checks that every cell is visited once and no closed wire
-remains. These results identify the target of the remaining reduction-simulation proof.
+remains. These results identify the canonical target of graph normalization.
 
 ## Main definitions
 

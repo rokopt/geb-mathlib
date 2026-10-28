@@ -61,6 +61,45 @@ theorem fragment_label_cast {s t : Term arity μ} (h : s = t) (c : s.fragment.Ce
   cases h
   rfl
 
+/-- Equal terms have the same leaf occurrences, transported by equality elimination. -/
+def fragmentLeafEquiv {s t : Term arity μ} (h : s = t) : s.fragment.Leaf ≃ t.fragment.Leaf where
+  toFun := (congrArg (fun u ↦ u.fragment.Leaf) h).mp
+  invFun := (congrArg (fun u ↦ u.fragment.Leaf) h).mpr
+  left_inv p := by cases h; rfl
+  right_inv p := by cases h; rfl
+
+/-- Transporting a leaf across an equality of terms preserves its wire name. -/
+theorem fragment_name_cast {s t : Term arity μ} (h : s = t) (p : s.fragment.Leaf) :
+    t.fragment.name (fragmentLeafEquiv h p) = s.fragment.name p := by
+  cases h
+  rfl
+
+/-- Equal terms have a graph correspondence given by their equality transports. -/
+def fragmentEqualityCorrespondence {s t : Term arity μ} (h : s = t) :
+    TermFragment.Renaming id s.fragment t.fragment where
+  cells := fragmentCellEquiv h
+  leaves := fragmentLeafEquiv h
+  labels := fragment_label_cast h
+  names := fragment_name_cast h
+  wires := by
+    cases h
+    have he : endpointEquiv arity (Equiv.sumCongr (Equiv.refl Unit) (fragmentLeafEquiv
+        (rfl : s = s))) (fragmentCellEquiv (rfl : s = s))
+          (fragment_label_cast (rfl : s = s)) = Equiv.refl _ := by
+      ext p
+      rcases p with (u | p) | ⟨c, p⟩ <;> rfl
+    rw [he, Wiring.map_refl]
+  loops := congrArg (fun t ↦ t.fragment.net.loops) h
+
+/-- The unique occurrence in a variable's graph fragment. -/
+def fragmentVarLeaf (x : μ) : (var (arity := arity) x).fragment.Leaf := ()
+
+/-- A variable fragment has only its named leaf. -/
+theorem fragmentVarLeaf_unique (x : μ) (p : (var (arity := arity) x).fragment.Leaf) :
+    p = fragmentVarLeaf x := by
+  cases p
+  rfl
+
 /-- Substitution and attachment have the same occurrence names and corresponding graph endpoints. -/
 def substitutionCorrespondence (σ : ν → Term arity μ) (t : Term arity ν) :
     TermFragment.Renaming id (t.subst σ).fragment
