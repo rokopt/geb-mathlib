@@ -4193,7 +4193,18 @@ import-direction rules above are enforced by
   of a theorem finds its instance by matching the theorem's conclusion
   against the formula; every other node is the base checker's step, so
   that it is sound relative to the base checker
-  (`Geb.FreeTopos.Internal.convCheck_sound`). Tested in the modules of
+  (`Geb.FreeTopos.Internal.convCheck_sound`). Its step of evaluation
+  rewrites a term built of the translation library's arithmetic over
+  numerals to its value's numeral, computed by the arithmetic of the
+  natural numbers (`Geb/Prototypes/FreeTopos/Literals.lean`), where the
+  development's theorems include the definitions' equations at the
+  numerals' bits (`Geb.FreeTopos.Literals.lemmas`); rewriting by those
+  equations reaches that numeral, by recursion on the bits
+  (`Geb.FreeTopos.Literals.checked_of_eval`).
+  `GebTests/Prototypes/FreeTopos/Literals.lean` proves the equations by
+  the prover and tests the evaluation, and
+  `GebBench/Prototypes/FreeTopos/Literals.lean` times it against the base
+  checker and a step of normalization. Tested in the modules of
   `GebTests/Prototypes/FreeTopos/` named `Internal*.lean`, among them the
   theorems of Gödel's T derived in the language
   (`InternalDerivation.lean`) and proved by the conversion checker
