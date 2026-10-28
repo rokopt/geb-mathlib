@@ -19,6 +19,8 @@ public import Geb.Prototypes.InteractionNet.BoundaryJoin
 public import Geb.Prototypes.InteractionNet.BoundaryRenaming
 public import Geb.Prototypes.InteractionNet.BoundarySplice
 public import Geb.Prototypes.InteractionNet.Calculus
+public import Geb.Prototypes.InteractionNet.CalculusGraphSimulation
+public import Geb.Prototypes.InteractionNet.CalculusInterface
 public import Geb.Prototypes.InteractionNet.Call
 public import Geb.Prototypes.InteractionNet.ClosedTermReadback
 public import Geb.Prototypes.InteractionNet.ConfigAgentPairContext
@@ -31,6 +33,7 @@ public import Geb.Prototypes.InteractionNet.ConfigEliminationForest
 public import Geb.Prototypes.InteractionNet.ConfigEliminationOccurrences
 public import Geb.Prototypes.InteractionNet.ConfigEliminationSimulation
 public import Geb.Prototypes.InteractionNet.ConfigGraph
+public import Geb.Prototypes.InteractionNet.ConfigGraphBoundary
 public import Geb.Prototypes.InteractionNet.ConfigGraphContext
 public import Geb.Prototypes.InteractionNet.ConfigGraphIso
 public import Geb.Prototypes.InteractionNet.ConfigGraphNormal
@@ -38,8 +41,15 @@ public import Geb.Prototypes.InteractionNet.ConfigGraphPermutation
 public import Geb.Prototypes.InteractionNet.ConfigGraphRenaming
 public import Geb.Prototypes.InteractionNet.ConfigHeadForest
 public import Geb.Prototypes.InteractionNet.ConfigHeadOccurrences
+public import Geb.Prototypes.InteractionNet.ConfigInteractionAllocation
+public import Geb.Prototypes.InteractionNet.ConfigInteractionAssembly
+public import Geb.Prototypes.InteractionNet.ConfigInteractionBoundary
 public import Geb.Prototypes.InteractionNet.ConfigInteractionContext
+public import Geb.Prototypes.InteractionNet.ConfigInteractionEmbedding
+public import Geb.Prototypes.InteractionNet.ConfigInteractionForest
 public import Geb.Prototypes.InteractionNet.ConfigInteractionLeaves
+public import Geb.Prototypes.InteractionNet.ConfigInteractionSimulation
+public import Geb.Prototypes.InteractionNet.ConfigInteractionWiring
 public import Geb.Prototypes.InteractionNet.ConfigNamelessGraph
 public import Geb.Prototypes.InteractionNet.ConfigSubstitutionGraph
 public import Geb.Prototypes.InteractionNet.ConfigVariableEquation
@@ -64,6 +74,7 @@ public import Geb.Prototypes.InteractionNet.EquationGraphSubstitution
 public import Geb.Prototypes.InteractionNet.Erasure
 public import Geb.Prototypes.InteractionNet.Evaluation
 public import Geb.Prototypes.InteractionNet.Execution
+public import Geb.Prototypes.InteractionNet.ExecutionGraphSimulation
 public import Geb.Prototypes.InteractionNet.Expression
 public import Geb.Prototypes.InteractionNet.FiniteCells
 public import Geb.Prototypes.InteractionNet.FinitePorts
@@ -92,6 +103,7 @@ public import Geb.Prototypes.InteractionNet.KernelControl
 public import Geb.Prototypes.InteractionNet.KernelEquality
 public import Geb.Prototypes.InteractionNet.KernelEvaluation
 public import Geb.Prototypes.InteractionNet.KernelGraph
+public import Geb.Prototypes.InteractionNet.KernelGraphAdequacy
 public import Geb.Prototypes.InteractionNet.KernelGraphReadback
 public import Geb.Prototypes.InteractionNet.KernelPrimitives
 public import Geb.Prototypes.InteractionNet.KernelRecursors
@@ -126,8 +138,12 @@ public import Geb.Prototypes.InteractionNet.RedexDiamond
 public import Geb.Prototypes.InteractionNet.RemainingCells
 public import Geb.Prototypes.InteractionNet.RuleBoundaryOccurrences
 public import Geb.Prototypes.InteractionNet.RuleGraph
+public import Geb.Prototypes.InteractionNet.RuleInstantiationAllocation
+public import Geb.Prototypes.InteractionNet.RuleInstantiationCancellation
 public import Geb.Prototypes.InteractionNet.RuleInstantiationCells
+public import Geb.Prototypes.InteractionNet.RuleInstantiationForest
 public import Geb.Prototypes.InteractionNet.RuleInstantiationLeaves
+public import Geb.Prototypes.InteractionNet.RuleInstantiationSplices
 public import Geb.Prototypes.InteractionNet.RuleInternalWiring
 public import Geb.Prototypes.InteractionNet.RuleLeafPartition
 public import Geb.Prototypes.InteractionNet.RuleOpenForest

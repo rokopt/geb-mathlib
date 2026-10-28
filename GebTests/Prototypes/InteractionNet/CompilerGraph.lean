@@ -7,7 +7,7 @@ module
 
 public import Geb.Prototypes.InteractionNet.KernelGraph
 public import Geb.Prototypes.Kernel.Modules
-public import GebTests.Prototypes.Kernel
+public import Mathlib.Tactic.NormNum
 public meta import Geb.Prototypes.InteractionNet.KernelGraph -- shake: keep
 public meta import Geb.Prototypes.Kernel.Modules -- shake: keep
 public meta import GebTests.Prototypes.Kernel -- shake: keep
@@ -36,6 +36,8 @@ set_option doc.verso true
 @[expose] public section
 
 namespace Geb.InteractionNet.Tests.CompilerGraph
+
+open scoped FinEnum
 
 open Geb.Kernel
 

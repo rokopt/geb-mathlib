@@ -21,8 +21,8 @@ therefore joins their principal ports, independently of the auxiliary terms and 
 equations. A rule for those agents selects an actual redex in the compiled graph. Finite
 indexing preserves the redex and its selected replacement.
 
-This is the progress part of the interaction simulation. Identifying the resulting graph
-with the graph of the instantiated textual rule remains a separate obligation.
+This is the progress part of the interaction simulation: a successful textual interaction
+selects a graph contraction, independently of the identification of its result.
 
 ## Main statements
 

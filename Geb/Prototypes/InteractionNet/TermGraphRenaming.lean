@@ -52,6 +52,25 @@ structure Renaming (σ : ν → μ) (f : TermFragment arity ν) (g : TermFragmen
   /-- Closed wire components are preserved. -/
   loops : f.net.loops = g.net.loops
 
+/-- Consecutive fragment correspondences preserve cells, leaves, wires and closed components. -/
+def Renaming.trans {κ : Type} {σ : ν → μ} {τ : μ → κ}
+    {f : TermFragment arity ν} {g : TermFragment arity μ} {h : TermFragment arity κ}
+    (i : Renaming σ f g) (j : Renaming τ g h) : Renaming (τ ∘ σ) f h where
+  cells := i.cells.trans j.cells
+  leaves := i.leaves.trans j.leaves
+  labels c := (j.labels (i.cells c)).trans (i.labels c)
+  names p := (j.names (i.leaves p)).trans (congrArg τ (i.names p))
+  wires := by
+    have he : (endpointEquiv arity (Equiv.sumCongr (Equiv.refl Unit) i.leaves)
+        i.cells i.labels).trans (endpointEquiv arity
+          (Equiv.sumCongr (Equiv.refl Unit) j.leaves) j.cells j.labels) =
+        endpointEquiv arity (Equiv.sumCongr (Equiv.refl Unit) (i.leaves.trans j.leaves))
+          (i.cells.trans j.cells) (fun c ↦ (j.labels (i.cells c)).trans (i.labels c)) := by
+      ext p
+      rcases p with (u | p) | ⟨c, p⟩ <;> rfl
+    rw [← he, Wiring.map_trans, i.wires, j.wires]
+  loops := i.loops.trans j.loops
+
 /-- The direct renaming operation preserves the original occurrence positions. -/
 def renameCorrespondence (σ : ν → μ) (f : TermFragment arity ν) : Renaming σ f (f.rename σ) where
   cells := Equiv.refl _

@@ -45,6 +45,22 @@ theorem glue_index (e : I ≃ J) (ports : J × Bool ↪ P) (order : List I)
   rw [List.foldl_map]
   rfl
 
+/-- Reversing both endpoints of every cut preserves its matching and loop contribution. -/
+theorem glue_flip (ports ports' : I × Bool ↪ P)
+    (flip : ∀ i b, ports' (i, b) = ports (i, !b)) (order : List I) (s : Wiring P × ℕ) :
+    glue ports' order s = glue ports order s := by
+  revert s
+  refine List.rec (fun _ ↦ rfl) ?_ order
+  intro i order ih s
+  change glue ports' order (glueAt ports' s i) = glue ports order (glueAt ports s i)
+  rw [ih]
+  apply congrArg (glue ports order)
+  apply Prod.ext
+  · simp only [glueAt, flip, Bool.not_false, Bool.not_true]
+    exact force_comm s.1 (pair_ne ports i).symm
+  · simp only [glueAt, flip, Bool.not_false, Bool.not_true]
+    exact congrArg (s.2 + ·) (loopDelta_comm s.1 (ports (i, true)) (ports (i, false)))
+
 /-- Move a selected occurrence to the head, constructively removing it from the remainder. -/
 theorem perm_cons_erase [DecidableEq J] (a : J) (xs : List J) (h : a ∈ xs) :
     xs.Perm (a :: xs.erase a) := by

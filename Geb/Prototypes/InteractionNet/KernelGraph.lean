@@ -19,10 +19,6 @@ rule bodies and the initial configuration are assembled as finite port graphs, s
 partner arrays, and reduced by the verified graph runtime. Tree read-back accepts only
 rose-tree constructors after graph reduction has reached a normal form.
 
-This entry point executes the graph rules themselves. The remaining general compiler
-adequacy obligation is to relate textual wire elimination and interaction to this graph
-interpretation, transferring the established typed normalization theorem.
-
 ## Main definitions
 
 * {lit}`Kernel.graphSystem` — kernel rules compiled to finite graph replacements.

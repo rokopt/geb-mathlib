@@ -38,6 +38,7 @@ open scoped FinEnum
 
 variable {α C D Γ I B : Type} {arity : α → ℕ} {label : C → α} {label' : D → α}
 variable [FinEnum C] [FinEnum D] [FinEnum Γ] [FinEnum I] [FinEnum B]
+variable [DecidableEq C] [DecidableEq D] [DecidableEq Γ] [DecidableEq I] [DecidableEq B]
 
 private abbrev Ambient (arity : α → ℕ) (label : C → α) (label' : D → α) (Γ I B : Type) :=
   B ⊕ JoinEndpoint arity label label' Γ I B
@@ -107,6 +108,7 @@ private theorem joinFirst_spec (n : PortNet arity label (Γ ⊕ I))
   rw [hp] at h
   exact ⟨h.1, (Nat.add_zero _).symm.trans h.2⟩
 
+omit [DecidableEq B] in
 private theorem closeFirst_spec (n : PortNet arity label (Γ ⊕ I))
     (m : PortNet arity label' (I ⊕ B)) (w : Wiring B) :
     let g := Wiring.glue sharedPorts (FinEnum.toList I)

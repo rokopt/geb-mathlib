@@ -66,6 +66,35 @@ def sum (n : PortNet arity label B) (m : PortNet arity label' Δ) :
   wiring := (n.wiring.sum m.wiring).map (sumEndpointEquiv arity label label' B Δ)
   loops := n.loops + m.loops
 
+variable {C' D' B' Δ' : Type} {label₁ : C' → α} {label₂ : D' → α}
+
+/-- Component cell correspondences preserve symbols in the disjoint union. -/
+theorem sum_label (e : C ≃ C') (f : D ≃ D')
+    (he : ∀ c, label₁ (e c) = label c) (hf : ∀ d, label₂ (f d) = label' d)
+    (p : C ⊕ D) :
+    Sum.elim label₁ label₂ ((Equiv.sumCongr e f) p) = Sum.elim label label' p := by
+  cases p with
+  | inl c => exact he c
+  | inr d => exact hf d
+
+/-- Component boundary and cell correspondences preserve the disjoint union's matching. -/
+theorem sum_wiring (n : PortNet arity label B) (m : PortNet arity label' Δ)
+    (n' : PortNet arity label₁ B') (m' : PortNet arity label₂ Δ')
+    (b : B ≃ B') (d : Δ ≃ Δ') (e : C ≃ C') (f : D ≃ D')
+    (he : ∀ c, label₁ (e c) = label c) (hf : ∀ d, label₂ (f d) = label' d)
+    (hn : n.wiring.map (endpointEquiv arity b e he) = n'.wiring)
+    (hm : m.wiring.map (endpointEquiv arity d f hf) = m'.wiring) :
+    (n.sum m).wiring.map (endpointEquiv arity (Equiv.sumCongr b d) (Equiv.sumCongr e f)
+      (sum_label e f he hf)) = (n'.sum m').wiring := by
+  have hp : (sumEndpointEquiv arity label label' B Δ).trans
+      (endpointEquiv arity (Equiv.sumCongr b d) (Equiv.sumCongr e f) (sum_label e f he hf)) =
+        (Equiv.sumCongr (endpointEquiv arity b e he) (endpointEquiv arity d f hf)).trans
+          (sumEndpointEquiv arity label₁ label₂ B' Δ') := by
+    ext p
+    rcases p with (p | ⟨c, p⟩) | (p | ⟨c, p⟩) <;> rfl
+  dsimp only [sum]
+  rw [← Wiring.map_trans, hp, Wiring.map_trans, Wiring.map_sum, hn, hm]
+
 end PortNet
 
 end Geb.InteractionNet
