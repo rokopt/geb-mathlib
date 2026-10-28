@@ -1752,7 +1752,7 @@ tag := "choice-of-machine"
   * Step
   * State
 *
-  * The stages of the interaction-net arm
+  * The design of the interaction-net stages
   * Complete
 *
   * The first stage in Lean, its read-back proved to be the denotation
@@ -1860,16 +1860,16 @@ type of trees, and the theorem that for
 every closed program from trees to trees and every input the reducer
 reaches a normal form whose read-back is the denotation
 {name}`Geb.Kernel.infer` assigns, by a logical relation between
-configurations and denotations observed at trees. A second milestone is
-the one-step diamond property up to renaming of cells and wires, the
+configurations and denotations observed at trees. The finite-net
+milestone establishes the one-step diamond property up to renaming of cells and wires, the
 cells indexed by `Fin k` so that renamings are permutations and the
 quotient is decidable: it extends the theorem to every schedule, by
-mathlib's `Relation.church_rosser` or CSLib's
-`Relation.Diamond.to_confluent`, so that a parallel runtime is covered.
+{name}`Geb.InteractionNet.Graph.confluent`. A parallel runtime must
+refine these permitted graph schedules.
 De Falco's presentation of nets by partial permutations, with strong
 confluence proved on paper, is the algebraic alternative to indexed
-cells {citep DeFalco2010}[]. A later milestone proves a data structure
-in close correspondence with the calculus, as in
+cells {citep DeFalco2010}[]. The graph-runtime milestone proves a
+data structure in close correspondence with the calculus, as in
 {citet HassanMackieSato2015}[], to refine the reduction of nets.
 
 The first-stage implementation is in `Geb.Prototypes.InteractionNet`.
@@ -1993,12 +1993,12 @@ remaining context's cells and inserts the replacement's cells once.
 {name}`Geb.InteractionNet.Config.eliminationLeaf_matching` identifies the
 resulting named-leaf matching with the source matching after removing the
 eliminated name's two endpoints.
-{name}`Geb.InteractionNet.Config.elimination_graph_iso` now proves that
+{name}`Geb.InteractionNet.Config.elimination_graph_iso` proves that
 textual wire elimination preserves the complete represented graph,
 including its ordered interface, cell symbols and closed-wire count.
 The proof cancels the variable extensions in the substitution forest and
 identifies the resulting root and named-wire matchings.
-{name}`Geb.InteractionNet.Config.agentPairGraphIso` now decomposes a head
+{name}`Geb.InteractionNet.Config.agentPairGraphIso` decomposes a head
 interaction into its active pair, argument forest and unchanged context.
 {name}`Geb.InteractionNet.Config.agentPairResultIso` identifies contraction
 with inserting the rule graph at the exposed argument roots.
@@ -2035,6 +2035,182 @@ read-back result for permitted schedules of compiled programs, and the
 graph reducer's refinement and read-back theorems are proved. The machine
 comparison, the production runtime and the later stages of function
 sharing retain their separate states.
+
+### Continuing the interaction-net development
+%%%
+tag := "interaction-net-continuation"
+%%%
+
+The recommended next proof-development milestone is stage 2, functions
+represented directly in nets and copied only when closed. The
+first-stage acceptance above is complete; there is no remaining
+first-stage simulation, confluence or runtime-adequacy theorem to finish
+before starting it. Stage 2 can be developed in Lean using the existing
+kernel and graph infrastructure, before the machine comparison and
+without elementary-affine certificates. Its implementation and
+correctness proof remain to be written.
+
+The sequence has two parts. The proof development proceeds from the
+completed first stage to closed-function nets, then to certified
+elementary-affine sharing. Measurement of the first stage can proceed
+alongside those proofs; the recorded machine decision precedes the
+production runtime and compiler target. Superposed certificate search
+has a separate measurement condition, and extracted realizers belong
+after the bootstrap.
+
+#### Stage 2: closed-function nets
+%%%
+tag := "interaction-net-stage-two"
+%%%
+
+The settled semantic requirement is the closed-reduction discipline
+described above: λ-values occur in the net, and copying a function is
+permitted only once it is closed. The first-stage compiler remains the
+executable reference, with its defunctionalized closures and repeated
+work under copies. Stage 2 requires neither elementary-affine typing nor
+an optimal-sharing theorem. Its target covers the kernel's higher-order
+programs, including its primitives, recursors and loaded globals, with
+observable results at trees as in the first-stage adequacy theorem.
+
+Begin the Lean development in this order:
+
+1. Specify the function representation, its binding and closedness
+   invariant, and the permitted reduction rules. Settle the agent
+   signatures and ordered ports by writing and checking the rules.
+   The precise λ-agent encoding, representation of binding, and method
+   of ensuring that a function is closed are open implementation
+   choices. A well-wired graph alone does not establish that a λ-value
+   is closed: {name}`Geb.InteractionNet.Config.Closed` states that each
+   wire name occurs twice, not that a function has no free variables.
+2. Establish compatibility with the generic rule interfaces before
+   building the compiler. Textual rules must satisfy
+   {name}`Geb.InteractionNet.System.Linear` and
+   {name}`Geb.InteractionNet.System.Oriented` to use the existing
+   textual-to-graph simulation. The current orientation contract also
+   excludes rules between two identical symbols, since a rule's
+   reverse orientation must be absent. If the selected encoding needs
+   such interactions, extend that interface and its confluence proof,
+   or justify a compatible encoding, before relying on the existing
+   graph theorems. The encoding must implement the stated
+   closed-reduction semantics.
+3. Compile kernel terms to the new system and prove a contextual
+   simulation relating function application, data copying and erasure,
+   primitives, recursors and globals to the kernel denotation. Prove
+   that the closedness invariant is preserved and that the permitted
+   evaluation reaches the represented result. A successful bounded
+   example is not the normalization theorem.
+4. Transfer normalization and read-back to graph execution and the
+   executable runtime. The acceptance target is the stage-two analogue
+   of {name}`Geb.InteractionNet.Kernel.graph_normalizes_of_infer`,
+   {name}`Geb.InteractionNet.Kernel.graph_terminates_of_infer`,
+   {name}`Geb.InteractionNet.Kernel.graph_result_eq_of_infer` and
+   {name}`Geb.InteractionNet.Kernel.graphRun_of_infer`: every accepted
+   closed tree-to-tree application with successfully loaded globals
+   has a normalizing graph execution, every permitted schedule
+   terminates, every normal result reads back the checked denotation,
+   and the runtime returns it at some finite bound. Every successful
+   bound must agree, including applications of loaded globals.
+
+#### Reusable proofs and implementation constraints
+
+The first-stage development supplies the following interfaces and
+proof decomposition for subsequent stages:
+
+* The compiler simulation is generic over linear, oriented textual
+  systems. {name}`Geb.InteractionNet.Config.eliminate_graph_eq`
+  identifies wire elimination with no graph step;
+  {name}`Geb.InteractionNet.System.interaction_graph_step` identifies
+  agent interaction with a graph contraction to the complete compiled
+  target. {name}`Geb.InteractionNet.System.reaches_graph` composes
+  these cases. A textual step and a graph step therefore need not
+  contribute equally to a step count.
+* Compare complete nets, preserving the ordered external boundary,
+  cell symbols, wire matching and closed-wire count. The active-pair,
+  argument-forest and unchanged-context decomposition separates cell
+  allocation from the wiring proof. Comparing only the interacting
+  pair or its boundary leaves the surrounding graph unaccounted for.
+  Wire renaming, equation reordering, equation reversal and allocation
+  counter changes already have graph-invariance lemmas; reuse them
+  when transporting a local rule into the scheduler's selected context.
+* Establish one execution to a canonical graph-normal result and prove
+  its read-back. {name}`Geb.InteractionNet.Graph.terminates_of_normalizes`
+  then transfers termination to all schedules under the graph diamond
+  theorem, and confluence identifies their normal results. The
+  whole-net tree reader also checks complete cell coverage and absence
+  of closed wires. Confluence alone supplies neither a normalizing
+  execution nor agreement with the kernel denotation.
+* Once the rule-system hypotheses hold, use
+  {name}`Geb.InteractionNet.GraphRuntime.run_refines` and
+  {name}`Geb.InteractionNet.GraphRuntime.halts_of_normalizes` for the
+  executable array runtime. Its matching-invariant and contraction
+  proofs are independent of the first-stage closure encoding. A new
+  runtime representation or scheduler must establish its own
+  refinement and progress properties against these abstract graphs.
+
+The source entry points are
+`Geb/Prototypes/InteractionNet/KernelGraphAdequacy.lean` for the
+acceptance theorem,
+`Geb/Prototypes/InteractionNet/ExecutionGraphSimulation.lean` for
+lifting textual executions,
+`Geb/Prototypes/InteractionNet/PortSystem.lean` for the rule contract,
+and `Geb/Prototypes/InteractionNet/GraphRuntimeAdequacy.lean` for
+runtime refinement. The new rules and proof obligations belong in
+literate modules under `Geb/Prototypes/InteractionNet/`, with
+execution examples under `GebTests/Prototypes/InteractionNet/`.
+Check the axiom linter on both the library and its tests: compiling a
+test does not establish that its inferred instances are constructive.
+`GebTests/Prototypes/InteractionNet/CompilerGraph.lean` explicitly opens
+the `FinEnum` scope for that reason. Documentation validation includes
+both the literate site and the Bootstrap manual, so their accounts of
+acceptance stay consistent.
+
+#### Parallel work and later stages
+
+The first-stage benchmark harness is an independent development task.
+Use the kernel S-expression programs and measurements specified at the
+start of this section, comparing every result with the denotation.
+Begin with representative folds, copying and higher-order applications
+through {name}`Geb.InteractionNet.Kernel.graphRun`; retain the full
+cross-machine comparison as the acceptance condition for the choice of
+machine. Run heavy measurements one at a time. The comparison uses
+stage 1 and need not wait for stages 2 or 3. Its recorded schedule
+remains before the second host: kernel-term images and the Lean
+evaluator already support the first fixed point.
+
+The other separate task is per-use elementary-affine decoration
+inference, followed by the fold rewrites and certificate checker
+specified below. These prepare stage 3 alongside the stage-two net
+development. Stage 3 itself additionally needs its duplicator rules
+and correctness proof, including soundness of the native-data-copying
+exemption. Decorations determine duplicator depths; neither arbitrary
+depth labels nor an unverified exemption establish optimal sharing.
+Programs without a certificate use stage 2. Full self-hosting also
+requires the decoration search in Geb.
+
+The production runtime and the compiler written in Geb follow the
+recorded machine decision ({ref "speed-and-second-host"}[Speed and a
+second host]). The proved partner-array implementation supplies a
+reference and refinement target. Storage, reclamation, scheduling and
+parallel execution are engineering decisions to make from measurements;
+the present correctness results assert no production complexity or
+thread speedup. A compiler written in Geb that emits the selected
+interaction system is separate from the existing Lean prototype
+compiler. The selected runtime must be pinned to a revision and tested
+before use in the bootstrap.
+
+Stage 4 remains conditional on comparing shared certificate search
+with a lazy, pruning enumerator. It requires the checker access
+discipline and label-indexed family semantics stated above; checking a
+returned certificate protects soundness but does not prove search
+completeness. Stage 5, extracted realizers, remains after bootstrap;
+the question whether closed nets under application form a partial
+combinatory algebra is still open. Neither stage is a prerequisite for
+the recommended stage-two development.
+
+### Elementary-affine certificates
+%%%
+tag := "interaction-net-affine-certificates"
+%%%
 
 Elementary-affine typability was measured on the programs by
 `scripts/eal/eal.py`, over the definitions `lake exe geb-defs` writes
@@ -2097,12 +2273,6 @@ node cannot be defined in it, since its step receives the node whose
 children its recursion also consumes, so that step replaces that fold
 by a fold whose step receives the node under a box, or proves the
 native copying of data sound.
-
-Deferred: images are kernel terms and the Lean evaluator runs compiled
-closures, so the choice of machine matters for the second host and the
-backends, not for the first fixed point; the comparison runs before
-the second host ({ref "speed-and-second-host"}[Speed and a second
-host]).
 
 ## Definitions and images
 %%%
