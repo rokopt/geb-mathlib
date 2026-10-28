@@ -40,6 +40,7 @@ set_option doc.verso true
 namespace GebTests.Prototypes.FreeTopos.Literals
 
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation Geb.FreeTopos.Tactics
+open scoped FinEnum
 open Geb.FreeTopos.Literals (Sym Val bitsT num val lemmas ready)
 open GebTests.Prototypes.FreeTopos.Translation (baseRules value)
 open GebTests.Prototypes.FreeTopos.TranslationProofs (deltas develop rebuild lcaseRebuild listInd
