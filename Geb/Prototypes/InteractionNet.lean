@@ -203,9 +203,15 @@ the same result. Loaded globals satisfy the corresponding execution theorem.
 * {lit}`Kernel.run_of_infer` — the executable runner computes the kernel denotation.
 * {lit}`Kernel.result_eq_of_infer` — a successful run cannot return a different tree.
 * {lit}`Kernel.run_of_load` — execution adequacy for loaded globals.
+* {name}`Geb.InteractionNet.Kernel.graph_normalizes_of_infer` — accepted applications normalize.
+* {name}`Geb.InteractionNet.Kernel.graph_terminates_of_infer` — every graph schedule terminates.
+* {name}`Geb.InteractionNet.Kernel.graph_result_eq_of_infer` — normal graphs give the denotation.
+* {name}`Geb.InteractionNet.Kernel.graphRun_of_infer` — the array runtime computes that denotation.
+* {name}`Geb.InteractionNet.Kernel.graphRun_result_eq_of_infer` — successful bounds agree with it.
+* {name}`Geb.InteractionNet.Kernel.graphRun_of_load` — graph execution adequacy for loaded globals.
 
-The next milestones are in progress: confluence across schedules and refinement by a graph
-runtime. The finite-net foundation has explicit cells and ordered ports, boundary-preserving
+The finite-net, confluence and graph-runtime milestones are complete.
+The finite-net foundation has explicit cells and ordered ports, boundary-preserving
 renamings, wire matchings and closed loops. Splicing and finite boundary gluing preserve the
 matching invariant; disjoint graph contractions commute, including their closed-loop counts.
 Contraction respects cell renaming. Oriented rule tables have a strict graph diamond,
@@ -230,11 +236,21 @@ including the checks for complete cell coverage and absence of closed wires.
 Textual wire elimination preserves the complete represented graph, including its ordered
 external interface and closed-wire count. Its proof cancels variable extensions in the
 substitution forest and identifies the surviving root and named-wire matchings.
-The head interaction now decomposes into its argument forest and unchanged context;
+The head interaction decomposes into its argument forest and unchanged context;
 contracting its reconstructed pair inserts the replacement at the exposed argument roots.
 Linear rule instantiation preserves all source named wires and adds the internal rule wires.
-The compiler-to-graph simulation remains in progress: textual interaction must refine graph
-contraction, then transfer the established typed normalization and denotation theorem.
+Textual interaction refines graph contraction to the complete compiled textual result.
+Together with graph-preserving wire elimination, this simulates every finite textual execution,
+including both rule orientations, arbitrary equation selection and fresh-name counter changes.
+Every accepted closed tree-to-tree application, with successfully loaded globals, therefore has
+a graph schedule to its canonical result. Every graph schedule from that input terminates,
+and every reached normal graph reads back the checked denotation. The partner-array runtime
+returns that denotation at some finite bound, and every successful bound returns the same tree.
+
+The Bootstrap chapter records the remaining work and recommends closed-function nets as the
+next proof milestone. Machine comparison, a production runtime and later function-sharing
+stages have separate acceptance conditions; the array implementation is an executable
+prototype without a production-runtime complexity claim.
 
 ## Tags
 
