@@ -1,5 +1,6 @@
 [
   ["docBlame", "GebManual.Bootstrap.«the canonical document object name»"],
+  ["docBlame", "GebManual.CheckingCost.«the canonical document object name»"],
   ["docBlame", "GebManual.DecisionProblems.«the canonical document object name»"],
   ["docBlame", "GebManual.Introduction.«the canonical document object name»"],
   ["docBlame", "GebManual.PHOAS.«the canonical document object name»"],
