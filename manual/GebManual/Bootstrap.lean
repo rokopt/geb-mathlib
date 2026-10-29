@@ -7066,9 +7066,10 @@ that remain, and the constraints each of them carries.
   rule of the base checker (`base`), the innermost normalization under
   named rules with its fuel (`norm`), the reduction to a depth through
   weak head normal forms (`eval`), the application of a theorem whose
-  instance is found by matching (`applyMatch`), or the evaluation at
+  instance is found by matching (`applyMatch`), the evaluation at
   literals, with the index of its equations among the development's
-  theorems (`lit`).
+  theorems (`lit`), or the reduction by the environment machine with its
+  fuel and the definitions it unfolds (`machine`).
 * `Geb/Prototypes/FreeTopos/Internal/ProveChecked.lean`: the soundness
   of the prover's reductions
   ({name}`Geb.FreeTopos.Internal.normalize_checked`,
@@ -7083,6 +7084,21 @@ that remain, and the constraints each of them carries.
   ({name}`Geb.FreeTopos.Internal.normalizeR_eq`,
   {name}`Geb.FreeTopos.Internal.evalR_eq`), by which the steps `norm`
   and `eval` compute their results.
+* `Geb/Prototypes/FreeTopos/Internal/Machine.lean`: the environment
+  machine ({name}`Geb.FreeTopos.Internal.machineReduce`), which
+  evaluates a term in an environment of values, an abstraction to its
+  closure, lazily: an argument, a component, a datum and a fold's start
+  are delayed, a node whose value the runtime computes on its first
+  reading and keeps ({name}`Thunk`), beside its source. Its values are
+  trees of the same W-type as terms
+  ({name}`Geb.FreeTopos.Internal.Val`).
+* `Geb/Prototypes/FreeTopos/Internal/MachineSound.lean`: the machine
+  rewrites as the base checker does
+  ({name}`Geb.FreeTopos.Internal.machineReduce_reaches`): every value
+  reads back to a term the evaluated term rewrites to, by the base
+  checker's rules at the root and congruences in the node's context, so
+  that no type is inferred, and a delayed value's source rewrites to its
+  value. The step `machine` rests on it.
 * `Geb/Prototypes/FreeTopos/Literals.lean`: the evaluation at
   literals. A literal ({name}`Geb.FreeTopos.Literals.Val`) is a
   numeral, the bitstring of a number's index in Oitavem's enumeration
@@ -7255,20 +7271,22 @@ that remain, and the constraints each of them carries.
   cost. Testing them once, at the declaration ending the equations, and
   recording the result in the checker's state across one development
   removes that cost from all but one step.
-* The time of the steps of reduction. The steps `norm` and `eval`
+* The reach of the step of the machine. The steps `norm` and `eval`
   compute the reduction's result alone
   ({name}`Geb.FreeTopos.Internal.evalR`), and a step takes about as long
   as the base checker takes on the derivation the prover's reduction
-  computes. On the product of numerals of six decimal digits, in one run
-  of the bench, the base checker takes 28.7 seconds, the reduction
-  computing its derivation 35.6 and the step 23.6; at the other
-  definitions and sizes measured the step and the reduction computing
-  its derivation take the same time within the variation between runs.
-  The time is the reduction's own, its rewriting by substitution and its
-  trial of the rules at each node, and the reduction to about one node
-  in ninety is in the certificates' size alone. A reduction by another
-  method, an environment machine or normalization by evaluation over
-  shared terms, proved to reach the same results, reduces the time.
+  computes: the time is the reduction's own, its rewriting by
+  substitution and its trial of the rules at each node. The step
+  `machine` reduces by the environment machine; on the product of
+  numerals of six decimal digits, in one run of the bench, the base
+  checker takes 37.5 seconds, the step `eval` 32.2 and the step
+  `machine` 0.197 ({ref "measurements"}[The measurements]). The machine
+  reads a closure and a fold's step back unreduced, so that two sides
+  whose normal forms differ only under a binder are not joined, and no
+  tactic emits the step: whether the normal forms under binders, which
+  need the types a fold's step is in, belong to the machine or to a
+  conversion around it, and which of the prover's proofs a step of the
+  machine replaces, are open.
 
 ## What self-compilation establishes
 

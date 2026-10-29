@@ -130,11 +130,20 @@ for another proof included. A term, a type and a derivation are each a
 W-type whose nodes hold their children as a function from their
 positions ({name}`Geb.RoseTree`), so that a traversal tabulates each
 node's children as a list, two terms are compared by traversing both,
-and no subterm is shared. An environment machine, which binds a variable
-to its value in place of substituting it, and normalization by
-evaluation {citep BergerSchwichtenberg1991}[] avoid the repeated
-traversals of substitution; hash-consing {citep FilliatreConchon2006}[]
-shares equal subterms and compares two terms by their identities.
+and no subterm is shared. An environment machine {citep Landin1964}[],
+which binds a variable to its value in place of substituting it, and
+normalization by evaluation {citep BergerSchwichtenberg1991}[] avoid the
+repeated traversals of substitution; hash-consing
+{citep FilliatreConchon2006}[] shares equal subterms and compares two
+terms by their identities. The conversion checker's step `machine`
+reduces by an environment machine
+({name}`Geb.FreeTopos.Internal.machineReduce`) that evaluates lazily and
+computes each delayed value once {citep Launchbury1993}[], the library's
+definitions being written for a reduction that reduces a conditional's
+selected branch alone; its values are trees of the same W-type, and its
+reading back of a value is a term to which the evaluated term rewrites
+by the base checker's rules
+({name}`Geb.FreeTopos.Internal.machineReduce_reaches`).
 
 ## Evaluation by the interpreter
 
@@ -275,15 +284,18 @@ against their cost.
    demand or replaced by a proof of each step from the equations of the
    checker-evaluator at each form of term, of the size of the definition
    rather than of its reduction.
-4. Conversion computed by the checker by a reduction of another method:
-   an environment machine or normalization by evaluation over shared
-   terms, proved to compute the results of the prover's reduction, or
-   proved sound in every model directly. The conversion checker's steps
-   already compute the prover's reduction's result alone, without its
-   derivation ({ref "measurements"}[The measurements]), which removes the
-   first factor from the certificates' size; the time of a step is the
-   reduction's own, which the fourth factor states, and which the method
-   of the reduction alone reduces.
+4. Conversion computed by the checker by a reduction of another method,
+   proved sound against the base checker's rules rather than equal to
+   the prover's reduction. The conversion checker's steps `norm` and
+   `eval` compute the prover's reduction's result alone, without its
+   derivation, which removes the first factor from the certificates'
+   size and leaves the time of a step the reduction's own; the step
+   `machine` reduces by the environment machine, at numerals of six
+   decimal digits from 3 times faster than the step `eval` at their
+   equality to 160 times at their product
+   ({ref "measurements"}[The measurements]), which removes the
+   fourth factor at the terms it reduces. It reads a closure and a
+   fold's step back unreduced, and no tactic yet emits it.
 5. The datatypes of the proofs as datatypes of the metalogic: the
    translation of a datatype of the datatype language to the initial
    algebra of its declaration, rather than to rose trees over
@@ -338,47 +350,57 @@ of the reduction that computes a derivation
 ({name}`Geb.FreeTopos.Internal.normalizeR_eq`,
 {name}`Geb.FreeTopos.Internal.evalR_eq`), so that a step is sound as
 before, by the soundness of the base checker at the derivation it does
-not build. `GebBench/Prototypes/FreeTopos/Literals.lean` proves the
+not build; the step `machine` reduces by the environment machine, sound
+by the base checker's soundness at a derivation it does not build
+either. `GebBench/Prototypes/FreeTopos/Literals.lean` proves the
 equation of the library's arithmetic at numerals and its value's numeral
 by the base checker on the prover's derivation, by the prover's reduction
-of each side computing its derivation, by a step of conversion computing
-the result alone, and by a step of evaluation. At numerals of six decimal
-digits, in one run:
+of each side computing its derivation, by the step `eval`, by a step of
+evaluation, and by the step `machine` at each side. At numerals of six
+decimal digits, in one run:
 
 :::table +header
 *
   * Definition
   * Base checker
   * Reduction with its derivation
-  * Step of conversion
+  * Step `eval`
   * Step of evaluation
+  * Step `machine`
 *
   * Addition
-  * 188 milliseconds
-  * 196 milliseconds
-  * 190 milliseconds
+  * 224 milliseconds
+  * 212 milliseconds
+  * 205 milliseconds
   * 0.32 milliseconds
+  * 5.8 milliseconds
 *
   * Multiplication
-  * 28.7 seconds
-  * 35.6 seconds
-  * 23.6 seconds
-  * 0.33 milliseconds
+  * 37.5 seconds
+  * 39.6 seconds
+  * 32.2 seconds
+  * 0.38 milliseconds
+  * 197 milliseconds
 *
   * Truncated difference
-  * 195 milliseconds
-  * 253 milliseconds
-  * 245 milliseconds
-  * 0.29 milliseconds
+  * 201 milliseconds
+  * 262 milliseconds
+  * 268 milliseconds
+  * 0.31 milliseconds
+  * 7.4 milliseconds
 :::
 
-At the other definitions and sizes measured, the step of conversion and
-the reduction computing its derivation take the same time within the
+At the other definitions and sizes measured, the step `eval` and the
+reduction computing its derivation take the same time within the
 variation between runs. The derivation is therefore not where the
 reduction's time goes: computing the result alone removes the
 derivation's nodes from a certificate and leaves the time of the
 reduction, its rewriting by substitution and its trial of the rules at
-each node, to the method of the reduction (the fourth change). The step
-of evaluation, which computes by the arithmetic of the natural numbers,
-is faster than the other three on the product by factors from 70000 to
-110000, the first two factors together.
+each node, to the method of the reduction. The step `machine` reduces by
+another method, and at numerals of six decimal digits is faster than the
+step `eval` by factors from 3, at equality, to 160, at the product. The
+step of
+evaluation, which computes by the arithmetic of the natural numbers, is
+faster than the first three on the product by factors from 80000 to
+110000, the first two factors together, and than the step `machine` by
+a factor of 500 there, the second factor, which the machine leaves.

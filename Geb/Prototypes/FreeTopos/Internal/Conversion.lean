@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.FreeTopos.Internal.Proofs
 public import Geb.Prototypes.FreeTopos.Internal.ProveChecked
+public import Geb.Prototypes.FreeTopos.Internal.MachineSound
 public import Geb.Prototypes.FreeTopos.Internal.Reduce
 public import Geb.Prototypes.FreeTopos.Literals
 meta import GebMeta -- shake: keep
@@ -46,6 +47,13 @@ equations at the numerals' bits ({name}`Geb.FreeTopos.Literals.lemmas`). Its tra
 rewriting by those equations, which reaches that numeral by a proof in Lean
 ({name}`Geb.FreeTopos.Literals.checked_of_eval`), so that it too is the base checker's rewriting by
 a derivation the step does not construct.
+
+A step of the machine rewrites a term to its normal form under constructors by the environment
+machine ({name}`Geb.FreeTopos.Internal.machineReduce`), which is not the prover's reduction; the
+term rewrites to it by a derivation the base checker accepts
+({name}`Geb.FreeTopos.Internal.machineReduce_reaches`) where the term and the definitions' bodies
+have their variables as leaves, as a term that compiles has, so that it too is the base checker's
+rewriting by a derivation the step does not construct.
 
 ## Main definitions
 
@@ -98,6 +106,11 @@ inductive ConvRule where
   of the natural numbers, admitted by the definitions' equations at the numerals' bits among the
   theorems from the index {lit}`j` on. -/
   | lit (j : ℕ)
+  /-- The reduction of a term by the environment machine within the depth of recursion
+  {lit}`fuel`, unfolding every definition of an index below {lit}`m` but those of
+  {lit}`except`, a rose-tree fold's list of its children's values built by the primitives of
+  indices {lit}`kl` and {lit}`kc`. -/
+  | machine (fuel m : ℕ) (except : List ℕ) (kl kc : ℕ)
 
 /-- A certificate of the conversion checker. -/
 abbrev ConvDeriv : Type := RoseTree ConvRule
@@ -107,7 +120,7 @@ congruence's choice of contexts: itself for a rule of the language, and one othe
 identity for a step of conversion and for an application of a theorem. -/
 def ConvRule.toRule : ConvRule → Rule
   | .base r => r
-  | .norm _ _ | .eval _ _ _ | .lit _ => .trans
+  | .norm _ _ | .eval _ _ _ | .lit _ | .machine _ _ _ _ _ => .trans
   | .applyMatch j θ => .apply j θ []
 
 /-- The instance of the theorem of index {lit}`j` among the entries, at the objects {lit}`θ`,
@@ -131,6 +144,9 @@ def convStep (G : Globals) (E : Array Entry) (n : ℕ) (l : ConvRule)
     (fun Γ Φ t ↦ (evalR G E n rs fuel depth Γ Φ t).map (·.1), fun _ _ _ ↦ false)
   | .lit j => (fun Γ _ t ↦ if Literals.ready G E n Γ j then (Literals.eval t).map Literals.Val.term
       else none, fun _ _ _ ↦ false)
+  | .machine fuel m except kl kc =>
+    (fun _ _ t ↦ machineReduce G (fun j ↦ decide (j < m) && !except.contains j) kl kc fuel t,
+      fun _ _ _ ↦ false)
   | .applyMatch j θ => (fun _ _ _ ↦ none, fun Γ Φ φ ↦ match applyInst E j θ φ with
     | some σ => (checkStep G E n (.apply j θ σ)
         (cs.map fun (d, c) ↦ (RoseTree.node d.label.toRule [], c))).2 Γ Φ φ
@@ -160,7 +176,7 @@ theorem convCheck_isRefl {G : Globals} {E : Array Entry} {n : ℕ} {c : ConvDeri
     t' = t := by
   obtain ⟨l, cs, rfl⟩ : ∃ l cs, c = RoseTree.node l cs :=
     ⟨_, _, (RoseTree.node_label_children c).symm⟩
-  rcases l with r | ⟨rs, fuel⟩ | ⟨rs, fuel, depth⟩ | ⟨j, θ⟩ | j
+  rcases l with r | ⟨rs, fuel⟩ | ⟨rs, fuel, depth⟩ | ⟨j, θ⟩ | j | ⟨fuel, m, except, kl, kc⟩
   · cases r <;> simp only [RoseTree.label_node, ConvRule.toRule, Rule.isRefl, reduceCtorEq] at hc
     rw [convCheck_node] at h
     rcases cs with _ | ⟨c', cs⟩
@@ -196,7 +212,7 @@ theorem convCheck_sound (hδ : DefnsOk M G) {E : Array Entry}
         obtain ⟨rfl, rfl⟩ := Prod.mk.inj h
       · exact ih c hc
       · exact fun hr _ _ _ _ h ↦ convCheck_isRefl hr h
-    rcases l with r | ⟨rs, fuel⟩ | ⟨rs, fuel, depth⟩ | ⟨j, θ⟩ | j
+    rcases l with r | ⟨rs, fuel⟩ | ⟨rs, fuel, depth⟩ | ⟨j, θ⟩ | j | ⟨fuel, m, except, kl, kc⟩
     · exact hstep r
     · refine ⟨fun Γ Φ t t' h ↦ ?_, fun _ _ _ h ↦ nomatch h⟩
       simp only [convStep, normalizeR_eq, Option.map_map] at h
@@ -220,6 +236,15 @@ theorem convCheck_sound (hδ : DefnsOk M G) {E : Array Entry}
         obtain ⟨d, hd⟩ := Literals.checked_of_eval (Φ := Φ) (by assumption) hv
         exact (check_sound hM hG hρ hps hds hδ hE hcert d.1).1 _ _ _ _ hd.check
       · cases h
+    · refine ⟨fun Γ Φ t t' h X e he hΓ hH r hr ↦ ?_, fun _ _ _ h ↦ nomatch h⟩
+      simp only [convStep] at h
+      have hdefs : ∀ (j : ℕ) (d : Defn), G.defs[j]? = some (.language d) →
+          Term.VarLeaves d.body = true := fun j d hd ↦
+        let ⟨_, hF, _⟩ := hδ j d hd
+        Term.varLeaves_of_compile _ _ _ _ hF
+      obtain ⟨d, hd⟩ := machineReduce_reaches (E := E) (n := n) (Γ := Γ) (Φ := Φ) _ _ _ hdefs
+        (Term.varLeaves_of_compile t X e r hr) h
+      exact (check_sound hM hG hρ hps hds hδ hE hcert d.1).1 _ _ _ _ hd.check X e he hΓ hH r hr
 
 end Soundness
 

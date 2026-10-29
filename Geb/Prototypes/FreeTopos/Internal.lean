@@ -13,6 +13,8 @@ public import Geb.Prototypes.FreeTopos.Internal.Derivation
 public import Geb.Prototypes.FreeTopos.Internal.Development
 public import Geb.Prototypes.FreeTopos.Internal.Inversion
 public import Geb.Prototypes.FreeTopos.Internal.Logic
+public import Geb.Prototypes.FreeTopos.Internal.Machine
+public import Geb.Prototypes.FreeTopos.Internal.MachineSound
 public import Geb.Prototypes.FreeTopos.Internal.ObjectSubst
 public import Geb.Prototypes.FreeTopos.Internal.Params
 public import Geb.Prototypes.FreeTopos.Internal.Proofs
