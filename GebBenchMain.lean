@@ -26,5 +26,7 @@ public def main : IO Unit := do
   GebBench.Prototypes.FreeTopos.TranslationProofs.run
   IO.println "# GebBench.Prototypes.FreeTopos.Rules"
   GebBench.Prototypes.FreeTopos.Rules.run
+  IO.println "# GebBench.Prototypes.FreeTopos.Certified"
+  GebBench.Prototypes.FreeTopos.Certified.run
   IO.println "# GebBench.Prototypes.FreeTopos.Literals"
   GebBench.Prototypes.FreeTopos.Literals.run

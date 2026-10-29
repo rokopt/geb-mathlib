@@ -10,15 +10,17 @@ public import GebTests.Prototypes.FreeTopos.Literals
 
 set_option doc.verso true in
 /-!
-# The library's arithmetic at numerals, checked three ways
+# The library's arithmetic at numerals, checked four ways
 
 For each definition of the library's arithmetic at numerals of growing sizes, the equation of its
-application and its value's numeral proved three ways, in the development of
+application and its value's numeral proved four ways, in the development of
 {lit}`GebTests.Prototypes.FreeTopos.Literals`: by the derivation the prover's normalization
 computes, reducing each side to its normal form, weak head normal forms first, checked by the
-base checker; by a step of conversion that performs that reduction, its derivation computed and
-not checked; and by a step of evaluation, the arithmetic of the natural numbers. Each row gives
-the derivation's nodes and the least of three times each check takes, in microseconds.
+base checker; by that reduction of each side, its derivation computed and not checked; by a step
+of conversion that performs that reduction computing its result alone
+({name}`Geb.FreeTopos.Internal.evalR`); and by a step of evaluation, the arithmetic of the natural
+numbers. Each row gives the derivation's nodes and the least of three times each check takes, in
+microseconds.
 
 ## Main definitions
 
@@ -64,17 +66,22 @@ def report (name : String) (s : Sym) (a b : ℕ) : IO Unit := do
   let some d := Tactics.byMode .full G entries 0 rs [] [] t v.term
     | throw (IO.userError s!"{name}: no derivation")
   let (okB, tB) ← timeUs fun _ ↦ a'.checks G entries d
+  let (okD, tD) ← timeUs fun _ ↦
+    match Internal.eval G entries 0 rs 4096 .full [] [] t,
+        Internal.eval G entries 0 rs 4096 .full [] [] v.term with
+    | some (l, _), some (r, _) => l == r
+    | _, _ => false
   let (okN, tN) ← timeUs fun _ ↦ a'.convChecks G entries byReduction
   let (okL, tL) ← timeUs fun _ ↦ proves t v.term
-  if !(okB && okN && okL) then throw (IO.userError s!"{name} {a} {b}: a check fails")
-  IO.println (",".intercalate ([name] ++ [a, b, derivSize d, tB, tN, tL].map toString))
+  if !(okB && okD && okN && okL) then throw (IO.userError s!"{name} {a} {b}: a check fails")
+  IO.println (",".intercalate ([name] ++ [a, b, derivSize d, tB, tD, tN, tL].map toString))
 
 set_option compiler.extract_closed false in
 /-- The measurements. Closed terms are not extracted, so that each check runs when it is timed
 rather than when the program starts. -/
 def run : IO Unit := do
-  IO.println "operation,a,b,derivation_nodes,base_microseconds,reduction_microseconds,\
-    evaluation_microseconds"
+  IO.println "operation,a,b,derivation_nodes,base_microseconds,derivation_reduction_microseconds,\
+    reduction_microseconds,evaluation_microseconds"
   for (name, s, a, b) in cases do report name s a b
 
 end GebBench.Prototypes.FreeTopos.Literals

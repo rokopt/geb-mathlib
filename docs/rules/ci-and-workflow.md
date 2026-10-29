@@ -312,7 +312,11 @@ The executable is compiled, and each benchmark's measured computations
 are not extracted as closed terms, so that they run when they are timed
 rather than when the program starts. `slow-checks.yml` runs the
 benchmarks daily and on demand, beside the other slow checks, and the
-correctness facts a benchmark observes are checked by the tests.
+correctness facts a benchmark observes are checked by the tests. The
+executable reads the stored certificates when it starts, which recurses
+deeper than the default stack allows, so the workflow runs it with the
+stack limit raised to the hard limit, as `scripts/certificates.sh` runs
+the generator.
 `scripts/bench-bootstrap.sh` times the bootstrap's compilers, and
 compares two builds, on demand.
 

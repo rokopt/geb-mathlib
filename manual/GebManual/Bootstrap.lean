@@ -7009,11 +7009,11 @@ the prover proves; its translation is the rewriting by those equations,
 which reaches that numeral by a proof in Lean by recursion on the bits
 (`Geb.FreeTopos.Literals.checked_of_eval`). Measured against the base
 checker (`GebBench/Prototypes/FreeTopos/Literals.lean`), at numerals of
-six decimal digits the base checker takes 0.34 seconds on the prover's
-derivation of a sum and 38 seconds on that of a product, a step of
-conversion performing the prover's reduction as long, since the
-reduction computes its derivation, and the step of evaluation from 0.3
-to 0.5 milliseconds at every size measured.
+six decimal digits the base checker takes 0.19 seconds on the prover's
+derivation of a sum and 28.7 seconds on that of a product, a step of
+conversion performing the prover's reduction about as long, the
+reduction's own time, and the step of evaluation from 0.2 to 0.4
+milliseconds at every size measured.
 The terms Canonical finds modulo the computation rules are its first
 certificates ({ref "search-synthesis"}[Search and synthesis]). The second
 is the checker of holes, admitted beside
@@ -7075,6 +7075,14 @@ that remain, and the constraints each of them carries.
   {name}`Geb.FreeTopos.Internal.eval_checked`), that the derivation
   each computes is one the base checker accepts with the result it
   computes. The steps `norm` and `eval` rest on them.
+* `Geb/Prototypes/FreeTopos/Internal/Reduce.lean`: the prover's
+  reductions computing their results alone
+  ({name}`Geb.FreeTopos.Internal.normalizeR`,
+  {name}`Geb.FreeTopos.Internal.evalR`), each the projection of the
+  reduction that computes a derivation
+  ({name}`Geb.FreeTopos.Internal.normalizeR_eq`,
+  {name}`Geb.FreeTopos.Internal.evalR_eq`), by which the steps `norm`
+  and `eval` compute their results.
 * `Geb/Prototypes/FreeTopos/Literals.lean`: the evaluation at
   literals. A literal ({name}`Geb.FreeTopos.Literals.Val`) is a
   numeral, the bitstring of a number's index in Oitavem's enumeration
@@ -7248,15 +7256,19 @@ that remain, and the constraints each of them carries.
   recording the result in the checker's state across one development
   removes that cost from all but one step.
 * The time of the steps of reduction. The steps `norm` and `eval`
-  compute the reduction's derivation together with its result and keep
-  the result alone, so a step takes as long as the base checker takes
-  on that derivation: on the product of numerals of six decimal digits,
-  47 seconds against 38. The reduction to about one node in ninety is in
-  the certificates' size. A reduction that computes its result alone,
-  with a theorem that its result is the result of the reduction that
-  computes a derivation, makes a step's time that of the reduction
-  alone; how much of the time the derivation takes is a matter of
-  measurement.
+  compute the reduction's result alone
+  ({name}`Geb.FreeTopos.Internal.evalR`), and a step takes about as long
+  as the base checker takes on the derivation the prover's reduction
+  computes. On the product of numerals of six decimal digits, in one run
+  of the bench, the base checker takes 28.7 seconds, the reduction
+  computing its derivation 35.6 and the step 23.6; at the other
+  definitions and sizes measured the step and the reduction computing
+  its derivation take the same time within the variation between runs.
+  The time is the reduction's own, its rewriting by substitution and its
+  trial of the rules at each node, and the reduction to about one node
+  in ninety is in the certificates' size alone. A reduction by another
+  method, an environment machine or normalization by evaluation over
+  shared terms, proved to reach the same results, reduces the time.
 
 ## What self-compilation establishes
 
