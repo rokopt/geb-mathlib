@@ -128,8 +128,7 @@ sufficient.
    projection environments. Typing queries occur repeatedly during checking and
    reduction.
 
-   I checked the [generated
-   C](../.lake/build/ir/Geb/Prototypes/FreeTopos/Internal/Derivation.c#L3106):
+   I checked the generated C:
    it calls the full compiler and subsequently extracts the type. The compiler
    has not eliminated this work.
 
