@@ -139,12 +139,17 @@ shares equal subterms and compares two terms by their identities.
 ## Evaluation by the interpreter
 
 A stored certificate is checked by `evaluation_axiom`, which evaluates
-the check at elaboration by `Lean.Meta.evalExpr`. The package compiles
-none of its modules into the shared libraries that the evaluator would
-call into (Lake's option `precompileModules`), so the evaluator
-interprets the checker's intermediate representation. The same checks
-made by compiled code are 9 to 12 times faster ({ref "measurements"}[The
-measurements]).
+the check at elaboration by `Lean.Meta.evalExpr`. The evaluator
+interprets the intermediate representation of a definition whose
+compiled code no shared library loaded into Lean holds, and calls the
+compiled code of one that it holds. The library `Geb` is compiled into
+a shared library that Lake loads into every module importing it from
+another library (Lake's option `precompileLibrary`), so that the
+checker runs compiled; the definitions of the test library, among them
+the reading of the certificate's text, are interpreted. Checked so, the
+checks take from a fifth to a sixth of their interpreted time, and from
+the interpreted time to the compiled time is a factor of 9 to 12
+({ref "measurements"}[The measurements]).
 
 ## The loading in the mode `rfl`
 
@@ -253,11 +258,15 @@ conversion]).
 The changes below remove the factors, in the order of their effect
 against their cost.
 
-1. The checks evaluated by compiled code: the modules of the checker
-   precompiled, or the check run by a compiled executable whose result
-   the axiom states, which removes the fifth factor; what is trusted
-   gains the C compiler that compiles Lean's intermediate
-   representation, which the interpreter executes directly.
+1. The checks evaluated by compiled code, which removes the fifth
+   factor; what is trusted gains the C compiler that compiles Lean's
+   intermediate representation, which the interpreter executes
+   directly. The library `Geb` is compiled for the evaluator of its
+   importers. The shared library is built from those of the libraries
+   it imports, each whole: a build without the GitHub cache compiles
+   the C of every module of mathlib, which the mathlib cache holds, and
+   elaborates the modules of CSLib that `Geb` does not import, in seven
+   minutes on sixteen cores.
 2. The searches out of the daily checks: the committed certificates
    checked, and a search run when the sources it reads change, which
    content identity ({ref "content-identity"}[Content identity])
@@ -290,27 +299,37 @@ tag := "measurements"
 The stored certificates of weakening, of substitution and of the
 expansion's identity on programs of kernel forms are checked by the
 modules of `GebTests/Prototypes/FreeTopos/Certified/`, whose builds
-Lean's evaluator's checks dominate, and by compiled code in
+Lean's evaluator's checks dominate, with the library `Geb` interpreted
+and compiled, and by compiled code in
 `GebBench/Prototypes/FreeTopos/Certified.lean`, the least of three runs:
 
 :::table +header
 *
   * Certificate
-  * The module's build
+  * The module's build, interpreted
+  * The module's build, `Geb` compiled
   * Compiled
 *
   * Weakening
   * 57 seconds
+  * 9.0 seconds
   * 5.4 seconds
 *
   * Substitution
   * 97 seconds
+  * 20 seconds
   * 11.2 seconds
 *
   * Expansion
   * 95 seconds
+  * 16 seconds
   * 7.8 seconds
 :::
+
+The module of `GebSlow` checking the certificate `datatype-list` builds
+in 32.5 minutes with `Geb` compiled, on sixteen cores, where the slow
+checks' run on GitHub's hosted runners took four and a half hours with
+it interpreted.
 
 The conversion checker's steps `norm` and `eval` compute the prover's
 reductions' results alone ({name}`Geb.FreeTopos.Internal.normalizeR`,
