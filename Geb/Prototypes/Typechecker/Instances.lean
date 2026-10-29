@@ -17,6 +17,7 @@ public import Mathlib.CategoryTheory.Limits.Shapes.Terminal
 public import Mathlib.CategoryTheory.Monoidal.Cartesian.Basic
 public import Mathlib.CategoryTheory.Monoidal.Closed.Basic
 public import Mathlib.CategoryTheory.Subobject.Classifier.Defs
+public import Mathlib.Tactic.Linter.HaveILetI
 
 set_option doc.verso true in
 /-!

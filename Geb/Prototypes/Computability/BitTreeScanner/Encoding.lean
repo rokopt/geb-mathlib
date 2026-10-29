@@ -8,6 +8,7 @@ module
 public import Cslib.Foundations.Data.PFunctor.Free
 public import Mathlib.Control.Monad.Cont
 public import Mathlib.Data.Nat.Bits
+public import Aesop
 meta import GebMeta  -- shake: keep; supplies the cite docstring role
 
 set_option doc.verso true in

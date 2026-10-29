@@ -7,7 +7,6 @@ module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Register
 public import Geb.Prototypes.Computability.MultiTape.OutputString
-import Cslib.Computability.Machines.Turing.MultiTape.TapeLemmas
 
 set_option doc.verso true in
 /-!
@@ -30,7 +29,7 @@ a run's step count must be that step.
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
 statements mention {name}`Turing.MultiTapeTM.runFrom`,
 {name}`Turing.MultiTapeTM.outputString` and
-{name}`Turing.MultiTapeTM.spaceUsedByTape`, each depending on
+{name}`Turing.MultiTapeNTM.RunPath.spaceUsedByTape`, each depending on
 {lit}`Classical.choice` through Cslib's {name}`Turing.Cfg.inputSymbol`
 or mathlib's {name}`Finset.image`. {name}`Turing.MultiTapeTM.outputString` is this
 repository's segment form of the output tape.
@@ -70,6 +69,7 @@ set_option doc.verso true
 namespace Geb.SizeBounded.Machine
 
 open Turing MultiTapeTM
+open MultiTapeNTM (RunPath)
 
 public section
 
@@ -200,15 +200,12 @@ theorem spaceUsedByTape_le_of_pos {k : ℕ} {State : Type} {input : List Bool}
     (tm : MultiTapeTM k Bool State) (cfg : Cfg k Bool State input) (t B : ℕ) (i : Fin k)
     (h : ∀ t' ≤ t, -1 ≤ (tm.runFrom cfg t').workTapePos i ∧
       (tm.runFrom cfg t').workTapePos i ≤ B) :
-    tm.spaceUsedByTape cfg t i ≤ B + 2 := by
-  have hsub : tm.visitedByTapeHead cfg t i ⊆ Finset.Icc (-1 : ℤ) B := by
-    intro z hz
-    obtain ⟨t', ht', rfl⟩ := mem_visitedByTapeHead.mp hz
-    exact Finset.mem_Icc.mpr (h t' (by omega))
-  have hcard := Finset.card_le_card hsub
-  rw [Int.card_Icc] at hcard
-  unfold spaceUsedByTape
-  omega
+    (RunPath.ofDeterministic tm cfg t).spaceUsedByTape i ≤ B + 2 := by
+  refine le_trans (RunPath.spaceUsedByTape_le_card _ (S := Finset.Icc (-1 : ℤ) B) ?_) ?_
+  · rintro _ ⟨t', rfl⟩
+    exact Finset.mem_Icc.mpr (h t' (Nat.le_of_lt_succ t'.isLt))
+  · rw [Int.card_Icc]
+    omega
 
 /-- The halted configuration with the heads and input head of {lit}`cfg` and
 the tapes holding {lit}`σ`. -/

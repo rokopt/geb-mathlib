@@ -6,6 +6,8 @@ Authors: Terence Rokop
 module
 
 public import Cslib.Computability.Machines.Turing.MultiTape.Deterministic
+public import Mathlib.Tactic.TypeStar
+public import Mathlib.Tactic.Lemma
 
 set_option doc.verso true in
 /-!

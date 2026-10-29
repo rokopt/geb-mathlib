@@ -7,7 +7,6 @@ module
 
 public import Geb.Prototypes.Computability.BitTree.Elias.Execution
 public import Geb.Prototypes.Computability.BitTree.Elias.ScannerCorrect
-public import Cslib.Computability.Machines.Turing.MultiTape.TapeLemmas
 public import Geb.Prototypes.Computability.MultiTape.OutputString
 public import Geb.Prototypes.Computability.MultiTape.Rename
 
@@ -49,26 +48,17 @@ set_option doc.verso true
 namespace Geb.BitTree.Elias.Machine
 
 open Turing MultiTapeTM
+open MultiTapeNTM (RunPath)
 
 /-- Four heads confined to the same interval visit at most four times its number of cells. -/
 theorem space_le_of_headBound {input : List (Fin 3)}
     (cfg : Cfg 4 (Fin 3) Control input) (width t : ℕ)
     (h : ∀ u ≤ t, HeadBound width (machine.runFrom cfg u)) :
-    machine.space cfg t ≤ 4 * (width + 1) := by
-  have hsub (i : Fin 4) : machine.visitedByTapeHead cfg t i ⊆
-      (Finset.range (width + 1)).image (fun n : ℕ ↦ (n : ℤ)) := by
-    intro z hz
-    obtain ⟨u, hu, rfl⟩ := machine.mem_visitedByTapeHead.mp hz
-    obtain ⟨hlo, hhi⟩ := h u (by omega) i
-    apply Finset.mem_image.mpr
-    refine ⟨_, Finset.mem_range.mpr ?_, Int.toNat_of_nonneg hlo⟩
-    omega
-  have hi (i : Fin 4) : machine.spaceUsedByTape cfg t i ≤ width + 1 :=
-    (Finset.card_le_card (hsub i)).trans (Finset.card_image_le.trans (by simp))
-  calc
-    machine.space cfg t ≤ ∑ _i : Fin 4, (width + 1) :=
-      Finset.sum_le_sum (fun i _ ↦ hi i)
-    _ = 4 * (width + 1) := by simp
+    (RunPath.ofDeterministic machine cfg t).space ≤ 4 * (width + 1) := by
+  refine le_trans (RunPath.space_le_sum_card _ (S := fun _ ↦ Finset.Icc (0 : ℤ) width) ?_) ?_
+  · rintro _ ⟨u, rfl⟩ i
+    exact Finset.mem_Icc.mpr (h u (Nat.le_of_lt_succ u.isLt) i)
+  · simp [Int.card_Icc]
 
 /-- After all input bits, one final transition halts. -/
 theorem halts_at (w : List Bool) :

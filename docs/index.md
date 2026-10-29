@@ -2511,13 +2511,13 @@ import-direction rules above are enforced by
   `Turing.MultiTapeTM.computableInTimeAndSpaceOfLength_of_finite`, since the
   machine's alphabet is `Fin 2` where Cslib's predicate reads `Bool`. The time
   bound is the sum of the seek, plant and sweep phase lengths from `Steps.lean`;
-  the space bound follows from it by `space_linear` at one work tape. The
+  the space bound follows since each step visits at most one new work cell. The
   source module is listed in `GebMeta.classicalAllowedModules`: its space
-  conjunct rests on `Turing.MultiTapeTM.space`, a `Finset.image` through
-  `Turing.MultiTapeTM.visitedByTapeHead`, and mathlib's `Finset.image` depends
-  on `Classical.choice`. Depends on
+  conjunct rests on `Turing.MultiTapeNTM.RunPath.space`, a `Finset.image` through
+  `Turing.MultiTapeNTM.RunPath.visitedByTapeHead`, and mathlib's `Finset.image`
+  depends on `Classical.choice`. Depends on
   `Geb.Prototypes.Computability.TreeScanner.Steps` and Cslib's
-  `Computability.Machines.Turing.MultiTape.TapeLemmas`.
+  `Computability.Machines.Turing.MultiTape.Deterministic`.
 - `Geb/Prototypes/Computability/BitTree/Encoding.lean` — the W-type of
   `X ↦ List Bool + X × X`, with leaf and fork constructors and a direct
   bit encoding. Forks use `1`; leaves start with `0`, escape each payload
@@ -2796,8 +2796,8 @@ import-direction rules above are enforced by
   `totalTime_le`, and `space_le` counts the cells each head visits as
   at most those from `0` to `headBound`. The module is listed in
   `GebMeta.classicalAllowedModules`: the space conjunct rests on
-  `Turing.MultiTapeTM.space`, a `Finset.image` through
-  `Turing.MultiTapeTM.visitedByTapeHead`, and mathlib's `Finset.image`
+  `Turing.MultiTapeNTM.RunPath.space`, a `Finset.image` through
+  `Turing.MultiTapeNTM.RunPath.visitedByTapeHead`, and mathlib's `Finset.image`
   depends on `Classical.choice`. Depends on
   `Geb.Prototypes.Computability.BitTreeScanner.Steps` and mathlib's
   `Data.Int.Interval`.
@@ -3312,10 +3312,10 @@ import-direction rules above are enforced by
   `Program.lean`, `Emit.lean`, `Seq.lean` and `SeqFin.lean` are listed in
   `GebMeta.classicalAllowedModules`: their statements mention
   `Turing.MultiTapeTM.runFrom`, `Turing.MultiTapeTM.outputString` and
-  `Turing.MultiTapeTM.spaceUsedByTape`, each depending on `Classical.choice`
-  through Cslib's `Turing.Cfg.inputSymbol` or mathlib's `Finset.image`. Depends
-  on Cslib's `Computability.Machines.Turing.MultiTape.Deterministic` and
-  `Computability.Machines.Turing.MultiTape.TapeLemmas` and on
+  `Turing.MultiTapeNTM.RunPath.spaceUsedByTape`, each depending on
+  `Classical.choice` through Cslib's `Turing.Cfg.inputSymbol` or mathlib's
+  `Finset.image`. Depends on Cslib's
+  `Computability.Machines.Turing.MultiTape.Deterministic` and on
   `Geb.Mathlib.Data.FinEnum`.
 - `Geb/Prototypes/Computability/SizeBounded/Machine/Phase.lean` — the phase
   machines the primitives are sequenced from, each built by

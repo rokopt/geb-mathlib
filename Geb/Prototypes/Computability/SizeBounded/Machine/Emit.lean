@@ -27,7 +27,7 @@ emission. {lit}`RunsTo.ofFamily` is the case of a family emitting nothing.
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
 statements mention {name}`Turing.MultiTapeTM.runFrom`,
 {name}`Turing.MultiTapeTM.outputString` and
-{name}`Turing.MultiTapeTM.space`, each depending on
+{name}`Turing.MultiTapeNTM.RunPath.space`, each depending on
 {lit}`Classical.choice` through Cslib's {name}`Turing.Cfg.inputSymbol`
 or mathlib's {name}`Finset.image`.
 
@@ -57,6 +57,7 @@ set_option doc.verso true
 namespace Geb.SizeBounded.Machine
 
 open Turing MultiTapeTM
+open MultiTapeNTM (RunPath)
 
 public section
 
@@ -171,13 +172,14 @@ theorem RunsTo.ofFamily {k : ℕ} {State : Type} {input : List Bool} (tm : Multi
 theorem Emits.spaceUsedByTape_le {k : ℕ} {State : Type} {input : List Bool}
     {tm : MultiTapeTM k Bool State} {cfg cfg' : Cfg k Bool State input} {out : List Bool}
     {t B : ℕ} (h : Emits tm cfg cfg' out t B) (i : Fin k) :
-    tm.spaceUsedByTape cfg t i ≤ B + 2 :=
+    (RunPath.ofDeterministic tm cfg t).spaceUsedByTape i ≤ B + 2 :=
   spaceUsedByTape_le_of_pos tm cfg t B i fun t' ht' ↦ h.pos t' ht' i
 
 /-- Over an emission the machine uses at most {lit}`k * (B + 2)` cells. -/
 theorem Emits.space_le {k : ℕ} {State : Type} {input : List Bool}
     {tm : MultiTapeTM k Bool State} {cfg cfg' : Cfg k Bool State input} {out : List Bool}
-    {t B : ℕ} (h : Emits tm cfg cfg' out t B) : tm.space cfg t ≤ k * (B + 2) := by
+    {t B : ℕ} (h : Emits tm cfg cfg' out t B) :
+    (RunPath.ofDeterministic tm cfg t).space ≤ k * (B + 2) := by
   rw [space_eq_sum]
   refine le_trans (Finset.sum_le_sum fun i _ ↦ h.spaceUsedByTape_le i) ?_
   rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, Nat.nsmul_eq_mul]

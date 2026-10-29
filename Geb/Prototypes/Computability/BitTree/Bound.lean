@@ -6,7 +6,6 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.BitTree.Steps
-public import Cslib.Computability.Machines.Turing.MultiTape.TapeLemmas
 public import Geb.Prototypes.Computability.MultiTape.Rename
 
 set_option doc.verso true in
@@ -42,6 +41,7 @@ set_option doc.verso true
 namespace Geb.BitTree
 
 open Turing MultiTapeTM
+open MultiTapeNTM (RunPath)
 open Geb.TreeScanner (boolEmb step_of_state)
 
 /-- The final output transition leaves the work head in place. -/
@@ -82,21 +82,14 @@ theorem workTapePos_bounds (w : List Bool) (t : ℕ) (ht : t ≤ w.length + 3) (
 
 /-- The unary machine visits at most the input length plus two work cells. -/
 theorem space_le (w : List Bool) :
-    unaryScanner.space (unaryScanner.initCfg (w.map boolEmb)) (w.length + 3) ≤
+    (RunPath.ofDeterministic unaryScanner (unaryScanner.initCfg (w.map boolEmb))
+      (w.length + 3)).space ≤
       w.length + 2 := by
-  have hsub (i : Fin 1) :
-      unaryScanner.visitedByTapeHead (unaryScanner.initCfg (w.map boolEmb))
-          (w.length + 3) i ⊆ (Finset.range (w.length + 2)).image (fun n : ℕ ↦ (n : ℤ)) := by
-    intro z hz
-    obtain ⟨t, ht, rfl⟩ := unaryScanner.mem_visitedByTapeHead.mp hz
-    obtain ⟨hlo, hhi⟩ := workTapePos_bounds w t (by omega) i
-    apply Finset.mem_image.mpr
-    refine ⟨_, Finset.mem_range.mpr ?_, Int.toNat_of_nonneg hlo⟩
-    omega
-  change ∑ i : Fin 1, _ ≤ _
-  simp only [Finset.univ_unique, Finset.sum_singleton]
-  exact (Finset.card_le_card (hsub 0)).trans
-    (Finset.card_image_le.trans (by simp))
+  refine le_trans (RunPath.space_le_sum_card _
+    (S := fun _ ↦ Finset.Icc (0 : ℤ) (w.length + 1)) ?_) ?_
+  · rintro _ ⟨t, rfl⟩ i
+    exact Finset.mem_Icc.mpr (workTapePos_bounds w t (Nat.le_of_lt_succ t.isLt) i)
+  · simp [Int.card_Icc, add_assoc]
 
 /-- The unified recognizer runs in input length plus three steps and input length plus two cells. -/
 theorem computableInTimeAndSpace_validBool :
@@ -105,7 +98,8 @@ theorem computableInTimeAndSpace_validBool :
   refine computableInTimeAndSpaceOfLength_of_finite (tm := unaryScanner) finTwoEquiv boolEmb
     (fun b ↦ by cases b <;> rfl) fun w ↦ ?_
   refine ⟨w.length + 3, le_refl _,
-    unaryScanner.space (unaryScanner.initCfg (w.map boolEmb)) (w.length + 3),
+    (RunPath.ofDeterministic unaryScanner (unaryScanner.initCfg (w.map boolEmb))
+      (w.length + 3)).space,
     space_le w, halts_at w, ?_, rfl⟩
   rw [initCfg_runFrom_output]
   exact outputString_eq w

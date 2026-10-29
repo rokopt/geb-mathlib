@@ -53,6 +53,7 @@ set_option doc.verso true
 namespace Geb.SizeBounded.Machine
 
 open Turing MultiTapeTM
+open MultiTapeNTM (RunPath)
 open Geb.SizeBounded (SOf nsiConst IsPolyBounded isPolyBounded_add isPolyBounded_mul
   isPolyBounded_const isPolyBounded_id isPolyBounded_max isPolyBounded_shift nsi_sem)
 
@@ -79,7 +80,7 @@ theorem computableInTimeAndSpace_sem (e : SOf 1) :
     machine e, fun w ↦ ?_⟩
   obtain ⟨cfg', t', ht', h⟩ := machine_emits e w
   refine computesInTimeAndSpace_of_halted (t' := t')
-    (s' := (machine e).space ((machine e).initCfg w) t') ?_ ?_ rfl ?_ ?_
+    (s' := (RunPath.ofDeterministic (machine e) ((machine e).initCfg w) t').space) ?_ ?_ rfl ?_ ?_
   · change ((machine e).runFrom ((machine e).initCfg w) t').state = none
     rw [h.runFrom_eq]
     exact h.halted

@@ -52,10 +52,24 @@ set_option doc.verso true
 namespace Geb.Oitavem.Machine
 
 open Turing MultiTapeTM
+open MultiTapeNTM (RunPath)
 open Geb.SizeBounded (IsPolyBounded isPolyBounded_mul isPolyBounded_add
   isPolyBounded_id isPolyBounded_const)
 
 public section
+
+/-- A step depends only on the part of a configuration that the machine can read. -/
+private theorem core_step_eq_of_core_eq {k : ℕ} {Symbol State : Type*}
+    {tm : MultiTapeTM k Symbol State} {input : List Symbol}
+    {c₁ c₂ : Cfg k Symbol State input} (hc : c₁.core = c₂.core) :
+    (tm.step c₁).core = (tm.step c₂).core := by
+  rcases c₁ with ⟨q, p, w, h, o₁⟩
+  rcases c₂ with ⟨q', p', w', h', o₂⟩
+  simp only [Cfg.core, Cfg.storage, Prod.mk.injEq, Storage.mk.injEq] at hc
+  rcases hc with ⟨rfl, rfl, rfl, rfl⟩
+  cases q with
+  | none => rw [step_of_halt rfl, step_of_halt rfl]; rfl
+  | some q => rw [MultiTapeTM.step_of_state rfl, MultiTapeTM.step_of_state rfl]; rfl
 
 /-- Configurations agreeing outside their output tapes keep agreeing there. -/
 theorem core_runFrom_eq_of_core_eq {k : ℕ} {Symbol State : Type*}
@@ -100,7 +114,7 @@ theorem core_injective_before_halt {k : ℕ} {Symbol State : Type*}
 theorem exists_halt_le_of_space {k : ℕ} {Symbol State : Type*}
     [Finite Symbol] [Finite State] (tm : MultiTapeTM k Symbol State) :
     ∃ a b : ℕ, ∀ (input : List Symbol) (s : ℕ),
-      (∀ t, tm.space (tm.initCfg input) t ≤ s) →
+      (∀ t, (RunPath.ofDeterministic tm (tm.initCfg input) t).space ≤ s) →
       (∃ t, (tm.runFrom (tm.initCfg input) t).state = none) →
       ∃ T ≤ (input.length + 2) * a * 2 ^ (b * s),
         (tm.runFrom (tm.initCfg input) T).state = none ∧
@@ -113,15 +127,19 @@ theorem exists_halt_le_of_space {k : ℕ} {Symbol State : Type*}
     fun t ht ↦ Nat.find_min hhalt ht
   have hinj := core_injective_before_halt tm (tm.initCfg input) T hT hlive
   have hc : ((T + 1 : ℕ) : ℕ∞) ≤
-      (Set.range fun t ↦ (tm.runFrom (tm.initCfg input) t).core).encard := by
+      (Set.range fun p : tm.ComputationPath input ↦ p.last.core).encard := by
     have he := hinj.encard_range
     rw [ENat.card_eq_coe_fintype_card, Fintype.card_fin] at he
     rw [← he]
     apply Set.encard_le_encard
     rintro _ ⟨t, rfl⟩
-    exact ⟨t.val, rfl⟩
+    exact ⟨MultiTapeNTM.ComputationPath.ofDeterministic tm input t, rfl⟩
+  have hs' : tm.RunsInSpace input s := by
+    intro p
+    rw [p.eq_ofDeterministic]
+    exact hs p.time
   have hb : T + 1 ≤ (input.length + 2) * a * 2 ^ (b * s) := by
-    exact_mod_cast hc.trans (hab input s hs)
+    exact_mod_cast hc.trans (hab input s hs')
   exact ⟨T, by omega, hT, hlive⟩
 
 /-- A halting transducer computes its function in time exponential in its work space,
@@ -131,7 +149,7 @@ theorem computes_of_space {k : ℕ} {State : Type*} [Finite State]
     (tm : MultiTapeTM k Bool State) (f : List Bool → List Bool) (s : ℕ → ℕ)
     (hcorrect : ∀ w, ∃ t, (tm.runFrom (tm.initCfg w) t).state = none ∧
       (tm.runFrom (tm.initCfg w) t).output = f w)
-    (hspace : ∀ w t, tm.space (tm.initCfg w) t ≤ s w.length) :
+    (hspace : ∀ w t, (RunPath.ofDeterministic tm (tm.initCfg w) t).space ≤ s w.length) :
     ∃ a b : ℕ, ComputesFunInTimeAndSpace tm (.refl _) (.refl _) f
       (fun w ↦ (w.length + 2) * a * 2 ^ (b * s w.length)) (fun w ↦ s w.length) := by
   obtain ⟨a, b, hab⟩ := exists_halt_le_of_space tm
@@ -151,7 +169,8 @@ theorem computes_polytime_logspace {k : ℕ} {State : Type*} [Finite State]
     (tm : MultiTapeTM k Bool State) (f : List Bool → List Bool) (c : ℕ)
     (hcorrect : ∀ w, ∃ t, (tm.runFrom (tm.initCfg w) t).state = none ∧
       (tm.runFrom (tm.initCfg w) t).output = f w)
-    (hspace : ∀ w t, tm.space (tm.initCfg w) t ≤ c * (w.length.size + 1)) :
+    (hspace : ∀ w t, (RunPath.ofDeterministic tm (tm.initCfg w) t).space ≤
+      c * (w.length.size + 1)) :
     ∃ C d : ℕ, ComputesFunInTimeAndSpace tm (.refl _) (.refl _) f
       (fun w ↦ C * (w.length + 1) ^ d) (fun w ↦ C * (w.length.size + 1)) := by
   obtain ⟨a, b, h⟩ := computes_of_space tm f (fun n ↦ c * (n.size + 1)) hcorrect hspace
@@ -201,7 +220,8 @@ theorem computes_expspace {k : ℕ} {State : Type*} [Finite State]
     (tm : MultiTapeTM k Bool State) (f : List Bool → List Bool) (c d : ℕ)
     (hcorrect : ∀ w, ∃ t, (tm.runFrom (tm.initCfg w) t).state = none ∧
       (tm.runFrom (tm.initCfg w) t).output = f w)
-    (hspace : ∀ w t, tm.space (tm.initCfg w) t ≤ c * 2 ^ ((w.length + 1) ^ d)) :
+    (hspace : ∀ w t, (RunPath.ofDeterministic tm (tm.initCfg w) t).space ≤
+      c * 2 ^ ((w.length + 1) ^ d)) :
     ∃ C D : ℕ, ComputesFunInTimeAndSpace tm (.refl _) (.refl _) f
       (fun w ↦ C * 2 ^ 2 ^ ((w.length + 1) ^ D)) (fun w ↦ C * 2 ^ ((w.length + 1) ^ D)) := by
   obtain ⟨a, b, h⟩ := computes_of_space tm f (fun n ↦ c * 2 ^ ((n + 1) ^ d)) hcorrect hspace

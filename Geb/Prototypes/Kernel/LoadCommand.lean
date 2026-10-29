@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.Kernel.Loading
 public import Mathlib.Tactic.NormNum
+public import Lean.Exception
 public meta import Geb.Prototypes.Kernel.Image
 public meta import Lean.Elab.Command
 

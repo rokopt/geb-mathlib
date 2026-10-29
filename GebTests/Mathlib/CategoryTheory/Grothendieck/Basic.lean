@@ -189,6 +189,8 @@ morphisms. -/
 def listFunctor : Type ⥤ Type where
   obj X := List X
   map f := ↾(List.map (ConcreteCategory.hom f))
+  map_id X := by ext xs; simp
+  map_comp f g := by ext xs; simp
 
 /-- A natural transformation between constant functors, induced by
 `listFunctor` via `Functor.const`. -/

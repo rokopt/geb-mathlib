@@ -52,6 +52,8 @@ set_option doc.verso true
 
 namespace Turing.MultiTapeTM
 
+open MultiTapeNTM (RunPath)
+
 variable {k : ℕ} {S S' Q Q' : Type*}
 
 /-- A convenient normal form for the symbol under the input head: the input head position is
@@ -210,12 +212,16 @@ lemma outputString_mapSym (c : Cfg k S Q input) (t : ℕ) :
 
 /-- Renaming preserves the count of visited work tape cells. -/
 lemma space_mapSym (c : Cfg k S Q input) (t : ℕ) :
-    (tm.mapTM e d).space (c.mapSym e d) t = tm.space c t := by
+    (RunPath.ofDeterministic (tm.mapTM e d) (c.mapSym e d) t).space =
+      (RunPath.ofDeterministic tm c t).space := by
   have hpos : ∀ (t' : ℕ) (i : Fin k),
       ((tm.mapTM e d).runFrom (c.mapSym e d) t').workTapePos i = (tm.runFrom c t').workTapePos i :=
     fun t' i => by rw [runFrom_mapSym]; rfl
   rw [space_eq_sum, space_eq_sum]
-  unfold spaceUsedByTape visitedByTapeHead
+  unfold RunPath.spaceUsedByTape RunPath.visitedByTapeHead
+  change ∑ i, (Finset.univ.image fun n : Fin (t + 1) ↦
+    ((tm.mapTM e d).runFrom (c.mapSym e d) n).workTapePos i).card =
+    ∑ i, (Finset.univ.image fun n : Fin (t + 1) ↦ (tm.runFrom c n).workTapePos i).card
   exact Finset.sum_congr rfl (fun i _ => by simp only [hpos])
 
 /-- Renaming the alphabet and the states of a machine preserves its computations. -/
@@ -266,7 +272,7 @@ theorem computableInTimeAndSpaceOfLength_of_finite [Finite Q] (e : S ≃ Bool) (
     (h : ∀ w, ∃ t' ≤ t w.length, ∃ s' ≤ s w.length,
       (tm.runFrom (tm.initCfg (w.map emb)) t').Halted ∧
       (tm.runFrom (tm.initCfg (w.map emb)) t').output = (f w).map emb ∧
-      tm.space (tm.initCfg (w.map emb)) t' = s') :
+      (RunPath.ofDeterministic tm (tm.initCfg (w.map emb)) t').space = s') :
     ComputableInTimeAndSpaceOfLength f (.refl _) (.refl _) t s := by
   have hmap : ∀ w : List Bool, w.map e.symm = w.map emb :=
     fun w ↦ List.map_congr_left fun b _ ↦ he b
