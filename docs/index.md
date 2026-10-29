@@ -4208,7 +4208,16 @@ import-direction rules above are enforced by
   term rewrites to the result by the base checker's rules
   (`Geb.FreeTopos.Internal.machineReduce_reaches`, `MachineSound.lean`),
   and `GebTests/Prototypes/FreeTopos/Machine.lean` tests it at the
-  library's arithmetic.
+  library's arithmetic. `ConvDevelopment.lean` checks developments whose
+  theorems carry derivations of the base checker or certificates of the
+  conversion checker (`Geb.FreeTopos.Internal.checkConvDev`), sound by
+  the base development's invariant
+  (`Geb.FreeTopos.Internal.valid_of_checkConvDev`), and `ByMachine.lean`
+  translates a development's derivations, each join that the machine also
+  joins replaced by two steps of the machine
+  (`Geb.FreeTopos.Internal.devByMachine`); the translation is checked
+  rather than trusted, and `GebBench/Prototypes/FreeTopos/ByMachine.lean`
+  times the stored developments against their translations.
   `GebTests/Prototypes/FreeTopos/Literals.lean` proves the equations by
   the prover and tests the evaluation, and
   `GebBench/Prototypes/FreeTopos/Literals.lean` times it against the base

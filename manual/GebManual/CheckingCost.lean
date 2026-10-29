@@ -295,7 +295,10 @@ against their cost.
    equality to 160 times at their product
    ({ref "measurements"}[The measurements]), which removes the
    fourth factor at the terms it reduces. It reads a fold's step back
-   unreduced, and no tactic yet emits it.
+   unreduced. A translation of the stored developments' derivations
+   into steps of it shortens their certificates and leaves their checks
+   as costly; it replaces only the joins whose rewritings cite neither
+   a theorem nor a hypothesis, which the machine does not apply.
 5. The datatypes of the proofs as datatypes of the metalogic: the
    translation of a datatype of the datatype language to the initial
    algebra of its declaration, rather than to rose trees over
