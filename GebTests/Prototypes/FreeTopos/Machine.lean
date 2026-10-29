@@ -16,6 +16,7 @@ Equations of the library's arithmetic at numerals proved by a step of the enviro
 ({name}`Geb.FreeTopos.Internal.machineReduce`) at each side, every definition unfolded, in the
 development of {lit}`GebTests.Prototypes.FreeTopos.Literals`: the machine's normal forms of the
 two sides are one term exactly when the conversion checker accepts the join of the two steps.
+Abstractions are equal by the reduction of their bodies.
 
 ## Main definitions
 
@@ -36,7 +37,7 @@ namespace GebTests.Prototypes.FreeTopos.Machine
 open Geb Geb.FreeTopos
 open GebTests.Prototypes.FreeTopos.Literals (G entries bin lit)
 open Geb.FreeTopos.Literals (Sym bitsT)
-open Geb.FreeTopos.Translation (lib trueT bnilT eqO gtO)
+open Geb.FreeTopos.Translation (lib trueT bnilT eqO gtO bitsTy)
 open Internal (Term Thm ConvDeriv)
 
 /-- The certificate of an equation by a step of the machine at each side, every definition of the
@@ -63,6 +64,15 @@ def proves (t u : Term) : Bool :=
 
 -- a false equation is not proved
 #guard !proves (bin .add 2 2) (lit 5)
+
+-- abstractions equal by the reduction of their bodies
+#guard proves (Term.lam bitsTy (bin .add 2 3)) (Term.lam bitsTy (lit 5))
+#guard proves (Term.lam bitsTy (Term.fst (Term.pair (Term.var 0) (lit 1))))
+  (Term.lam bitsTy (Term.var 0))
+#guard proves (Term.lam bitsTy (Term.lam bitsTy (Term.app
+    (Term.lam bitsTy (Term.var 2)) (bin .mul 6 7))))
+  (Term.lam bitsTy (Term.lam bitsTy (Term.var 1)))
+#guard !proves (Term.lam bitsTy (Term.var 0)) (Term.lam bitsTy (lit 0))
 
 /-- Whether, at the numerals of numbers below a bound, a step of the machine at each side proves
 each definition of two arguments equal to the numeral of its value. -/

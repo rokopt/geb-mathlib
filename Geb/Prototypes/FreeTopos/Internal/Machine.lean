@@ -24,15 +24,25 @@ analysis of a coproduct at its injections, and the unfolding of the definitions 
 predicate selects.
 
 An argument, a component of a pair, the datum of a primitive arrow and the start of a fold are
-delayed: each is a node of two children, the value of a {name}`Thunk`, which the runtime
-computes when the child is first read and keeps, and the term with its environment, which the
-node reads back as. Logically a {name}`Thunk` is its function, so that a delayed node is the
+delayed: each is a node of two children, the value of a {name}`Thunk`, the weak head normal
+form of the term's value, which the runtime computes when the child is first read and keeps, and
+the term with its environment, which the node reads back as. A delayed value's weak head normal
+form is that child, so that a stuck value an environment shares is reduced once rather than at
+each of its uses. Logically a {name}`Thunk` is its function, so that a delayed node is the
 value beside its source, and the reduction is the strict evaluation whose every delayed value
 reads back to the term it delays. The recursion's value that a fold's rule substitutes into its
 step is delayed so, its source the fold of the construction's datum. Every value reads back to
 a term to which the evaluated term rewrites, by the base checker's rules at the root and by
 congruences at children in the term's context; the reduction is sound by that rewriting, and is
 not the prover's.
+
+The normal form of a value is taken under its constructors and under its abstractions: the body
+of a closure, its environment's terms substituted into it, is evaluated in the empty environment
+and normalized in the context its variable extends, by the congruence of the base checker at an
+abstraction, so that the values of the closure's environment are read back rather than shared
+with the body's evaluation. The step of a fold is read back unreduced: the context of a fold's
+step holds the type of the fold's start, which the base checker's congruence there computes and
+the machine does not.
 
 ## Main definitions
 
@@ -177,15 +187,16 @@ structure Machine where
   eval : Term → List Val → ℕ → Option Val
   /-- The weak head normal form of a value. -/
   whnf : Val → Option Val
-  /-- The normal form of a value's term, under every constructor and none of its binders. -/
+  /-- The normal form of a value's term, under every constructor and abstraction and under no
+  fold's step. -/
   nf : Val → Option Term
 
 variable (G : Globals) (unfold : ℕ → Bool) (kl kc : ℕ)
 
-/-- The delayed value of a term in an environment shifted by {lit}`k`, evaluated by
-{lit}`o`. -/
+/-- The delayed value of a term in an environment shifted by {lit}`k`, the weak head normal form
+of its evaluation by {lit}`o`. -/
 def Machine.delay (o : Machine) (t : Term) (vs : List Val) (k : ℕ) : Val :=
-  delayed (Thunk.mk fun _ ↦ o.eval t vs k) (vnode (.term t k) vs)
+  delayed (Thunk.mk fun _ ↦ (o.eval t vs k).bind o.whnf) (vnode (.term t k) vs)
 
 /-- One step of the evaluation of a term in an environment shifted by {lit}`k`, the subterms and
 the values reduced by {lit}`o`: a variable to its value, or past the environment to a free
@@ -217,15 +228,15 @@ def Machine.evalStep (o : Machine) (t : Term) (vs : List Val) (k : ℕ) : Option
     some (vnode l' (ts.map fun u ↦ o.delay u vs k))
 
 /-- One step of the weak head normal form of a value, the values reduced and the terms evaluated
-by {lit}`o`: a delayed value to its value's, a component of a pair, an application of a closure,
-the case analysis at an injection, and a fold at a construction, each reduced, the recursion's
-value of a fold delayed, its source the fold of the construction's datum; every other value is
-its own. -/
+by {lit}`o`: a delayed value to its value, which is a weak head normal form; a component of a
+pair, an application of a closure, the case analysis at an injection, and a fold at a
+construction, each reduced, the recursion's value of a fold delayed, its source the fold of the
+construction's datum; every other value is its own. -/
 def Machine.whnfStep (o : Machine) (v : Val) : Option Val :=
   match v.label, v.children with
   | .delay, [r, _] => match r.label with
     | .fail => none
-    | _ => o.whnf r
+    | _ => some r
   | .fst, [p] => do
     let p' ← o.whnf p
     match p'.label, p'.children with
@@ -309,8 +320,9 @@ def Machine.whnfStep (o : Machine) (v : Val) : Option Val :=
   | _, _ => some v
 
 /-- One step of the normal form of a value's term, the values reduced by {lit}`o`: the weak head
-normal form, then the normal forms of its children in the term's context, a closure's term, a
-fold's step and an unevaluated term read back unreduced. -/
+normal form, then the normal forms of its children in the term's context; a closure's body, its
+environment's terms substituted, evaluated in the empty environment and normalized in the
+context its variable extends; a fold's step and an unevaluated term read back unreduced. -/
 def Machine.nfStep (o : Machine) (v : Val) : Option Term := do
   let w ← o.whnf v
   match w.label, w.children with
@@ -326,6 +338,9 @@ def Machine.nfStep (o : Machine) (v : Val) : Option Term := do
   | .roseRec c s k, m :: env => do
     let m' ← o.nf m
     pure (Term.roseRec c (Term.subst s (Term.liftS (envSubst (env.map readBack) k))) m')
+  | .clo a b k, env => do
+    let t ← o.nf (← o.eval (Term.subst b (Term.liftS (envSubst (env.map readBack) k))) [] 0)
+    pure (Term.lam a t)
   | .free _, cs | .star, cs | .pair, cs | .arr _ _, cs | .app, cs | .fst, cs | .snd, cs
     | .defn _ _, cs | .eq, cs => do
     pure (readStep w.label (← cs.mapM o.nf))

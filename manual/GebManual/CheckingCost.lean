@@ -294,8 +294,8 @@ against their cost.
    decimal digits from 3 times faster than the step `eval` at their
    equality to 160 times at their product
    ({ref "measurements"}[The measurements]), which removes the
-   fourth factor at the terms it reduces. It reads a closure and a
-   fold's step back unreduced, and no tactic yet emits it.
+   fourth factor at the terms it reduces. It reads a fold's step back
+   unreduced, and no tactic yet emits it.
 5. The datatypes of the proofs as datatypes of the metalogic: the
    translation of a datatype of the datatype language to the initial
    algebra of its declaration, rather than to rose trees over

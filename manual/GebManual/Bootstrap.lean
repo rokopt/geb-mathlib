@@ -7091,14 +7091,18 @@ that remain, and the constraints each of them carries.
   are delayed, a node whose value the runtime computes on its first
   reading and keeps ({name}`Thunk`), beside its source. Its values are
   trees of the same W-type as terms
-  ({name}`Geb.FreeTopos.Internal.Val`).
+  ({name}`Geb.FreeTopos.Internal.Val`). Its normal form is taken under
+  abstractions, a closure's body, its environment's terms substituted,
+  evaluated in the context its variable extends, and not under a fold's
+  step.
 * `Geb/Prototypes/FreeTopos/Internal/MachineSound.lean`: the machine
   rewrites as the base checker does
   ({name}`Geb.FreeTopos.Internal.machineReduce_reaches`): every value
   reads back to a term the evaluated term rewrites to, by the base
-  checker's rules at the root and congruences in the node's context, so
-  that no type is inferred, and a delayed value's source rewrites to its
-  value. The step `machine` rests on it.
+  checker's rules at the root, congruences in the node's context and
+  the congruence at an abstraction's body, whose context the
+  abstraction's type extends, so that no type is inferred, and a
+  delayed value's source rewrites to its value. The step `machine` rests on it.
 * `Geb/Prototypes/FreeTopos/Literals.lean`: the evaluation at
   literals. A literal ({name}`Geb.FreeTopos.Literals.Val`) is a
   numeral, the bitstring of a number's index in Oitavem's enumeration
@@ -7281,12 +7285,14 @@ that remain, and the constraints each of them carries.
   numerals of six decimal digits, in one run of the bench, the base
   checker takes 37.5 seconds, the step `eval` 32.2 and the step
   `machine` 0.197 ({ref "measurements"}[The measurements]). The machine
-  reads a closure and a fold's step back unreduced, so that two sides
-  whose normal forms differ only under a binder are not joined, and no
-  tactic emits the step: whether the normal forms under binders, which
-  need the types a fold's step is in, belong to the machine or to a
-  conversion around it, and which of the prover's proofs a step of the
-  machine replaces, are open.
+  normalizes under abstractions and reads a fold's step back unreduced,
+  so that two sides whose normal forms differ only in a fold's step are
+  not joined: the context of a fold's step holds the type of the fold's
+  start, which the base checker's congruence there infers and the
+  machine does not. No tactic emits the step: whether the normal forms
+  in a fold's step belong to the machine or to a conversion around it,
+  and which of the prover's proofs a step of the machine replaces, are
+  open.
 
 ## What self-compilation establishes
 
