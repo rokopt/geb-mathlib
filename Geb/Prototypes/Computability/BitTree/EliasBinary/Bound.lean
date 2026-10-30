@@ -7,7 +7,6 @@ module
 
 public import Geb.Prototypes.Computability.BitTree.EliasBinary.Execution
 public import Geb.Prototypes.Computability.BitTree.Elias.ScannerCorrect
-public import Cslib.Computability.Machines.Turing.MultiTape.TapeLemmas
 public import Geb.Prototypes.Computability.MultiTape.OutputString
 public import Geb.Prototypes.Computability.MultiTape.Rename
 
@@ -51,6 +50,7 @@ set_option doc.verso true
 namespace Geb.BitTree.EliasBinary
 
 open Turing MultiTapeTM
+open MultiTapeNTM (RunPath)
 open Geb.BitTree.BinaryMachine (boolEmb)
 
 /-- The finite state of an account is the accepting state exactly at acceptance. -/
@@ -91,22 +91,11 @@ theorem outputString_eq (w : List Bool) :
 theorem space_le_of_headBound {input : List (Fin 4)}
     (cfg : Cfg 9 (Fin 4) Control input) (width t : ℕ)
     (h : ∀ u ≤ t, HeadBound width (machine.runFrom cfg u)) :
-    machine.space cfg t ≤ 9 * (width + 2) := by
-  have hsub (i : Fin 9) : machine.visitedByTapeHead cfg t i ⊆
-      (Finset.range (width + 2)).image (fun n : ℕ ↦ (n : ℤ) - 1) := by
-    intro z hz
-    obtain ⟨u, hu, rfl⟩ := machine.mem_visitedByTapeHead.mp hz
-    obtain ⟨hlo, hhi⟩ := h u (by omega) i
-    apply Finset.mem_image.mpr
-    refine ⟨((machine.runFrom cfg u).workTapePos i + 1).toNat, Finset.mem_range.mpr ?_, ?_⟩
-    · omega
-    · omega
-  have hi (i : Fin 9) : machine.spaceUsedByTape cfg t i ≤ width + 2 :=
-    (Finset.card_le_card (hsub i)).trans (Finset.card_image_le.trans (by simp))
-  calc
-    machine.space cfg t ≤ ∑ _i : Fin 9, (width + 2) :=
-      Finset.sum_le_sum (fun i _ ↦ hi i)
-    _ = 9 * (width + 2) := by simp
+    (RunPath.ofDeterministic machine cfg t).space ≤ 9 * (width + 2) := by
+  refine le_trans (RunPath.space_le_sum_card _ (S := fun _ ↦ Finset.Icc (-1 : ℤ) width) ?_) ?_
+  · rintro _ ⟨u, rfl⟩ i
+    exact Finset.mem_Icc.mpr (h u (Nat.le_of_lt_succ u.isLt) i)
+  · simp [Int.card_Icc, add_assoc]
 
 /-- Every head stays within the width throughout the run, including the halting step. -/
 theorem headBound_run (w : List Bool) :
@@ -145,7 +134,8 @@ theorem computableInTimeAndSpace_validBool :
   intro w
   refine computesInTimeAndSpace_of_halted (halts_at w)
     (by rw [initCfg_runFrom_output]; exact outputString_eq w) rfl (totalCost_le w) ?_
-  change machine.space (machine.initCfg (w.map boolEmb)) (totalCost w + 1) ≤
+  change (RunPath.ofDeterministic machine (machine.initCfg (w.map boolEmb))
+    (totalCost w + 1)).space ≤
     9 * ((2 * w.length + 2).size + 3)
   have h := space_le_of_headBound _ _ _ (headBound_run w)
   unfold widthOf at h

@@ -6,7 +6,6 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.TreeScanner.Steps
-public import Cslib.Computability.Machines.Turing.MultiTape.TapeLemmas
 public import Geb.Prototypes.Computability.MultiTape.Rename
 
 /-!
@@ -14,7 +13,7 @@ public import Geb.Prototypes.Computability.MultiTape.Rename
 
 `treeScanner` decides `RankedAlphabet.Binary.binRanked.validBool` in time and space affine in
 the input length: `halts_at` and `outputString_eq` supply the time bound and the correctness of
-the output, and `space_linear` supplies the space bound at one work tape.
+the output, and each step visits at most one new cell on the work tape.
 
 ## Main statements
 
@@ -28,8 +27,9 @@ The module is admitted to `GebMeta.classicalAllowedModules`. Its subject is the 
 between `treeScanner` and Cslib's `Turing.MultiTapeTM.ComputableInTimeAndSpace`, reached
 through `Turing.MultiTapeTM.computableInTimeAndSpaceOfLength_of_finite` since the machine's
 alphabet is `Fin 2` rather than `Bool`, and whose space
-conjunct rests on `Turing.MultiTapeTM.space`, a `Finset.image` through
-`Turing.MultiTapeTM.visitedByTapeHead`; mathlib's `Finset.image` depends on `Classical.choice`,
+conjunct rests on `Turing.MultiTapeNTM.RunPath.space`, a `Finset.image` through
+`Turing.MultiTapeNTM.RunPath.visitedByTapeHead`; mathlib's `Finset.image` depends on
+`Classical.choice`,
 a root neither this repository nor Cslib can remove without redefining the space measure.
 
 ## Tags
@@ -42,10 +42,11 @@ Turing machine, time complexity, space complexity, tree, preorder encoding
 namespace Geb.TreeScanner
 
 open Turing MultiTapeTM RankedAlphabet.Binary
+open MultiTapeNTM (RunPath)
 
 /-- The tree scanner computes `binRanked.validBool`, singleton-listed, in `2 * n + 3` steps and
 `2 * n + 4` cells of space: the seek, plant and sweep phases give the step count exactly, and
-`space_linear` at one work tape gives the space bound from it. -/
+each step visits at most one new work cell. -/
 theorem computableInTimeAndSpace_validBool :
     ComputableInTimeAndSpaceOfLength
       (fun w : List Bool ↦ [binRanked.validBool w]) (.refl _) (.refl _)
@@ -53,9 +54,15 @@ theorem computableInTimeAndSpace_validBool :
   refine computableInTimeAndSpaceOfLength_of_finite (tm := treeScanner) finTwoEquiv boolEmb
     (fun b ↦ by cases b <;> rfl) fun w ↦ ?_
   refine ⟨2 * w.length + 3, le_refl _,
-    treeScanner.space (treeScanner.initCfg (w.map boolEmb)) (2 * w.length + 3),
-    le_trans (space_linear _ _) (by simp), halts_at w, ?_, rfl⟩
-  rw [initCfg_runFrom_output]
-  exact outputString_eq w
+    (RunPath.ofDeterministic treeScanner (treeScanner.initCfg (w.map boolEmb))
+      (2 * w.length + 3)).space,
+    ?_, halts_at w, ?_, rfl⟩
+  · change ∑ i : Fin 1, _ ≤ _
+    simp only [Finset.univ_unique, Finset.sum_singleton]
+    refine Finset.card_image_le.trans ?_
+    change (Finset.univ : Finset (Fin (2 * w.length + 3 + 1))).card ≤ _
+    simp
+  · rw [initCfg_runFrom_output]
+    exact outputString_eq w
 
 end Geb.TreeScanner

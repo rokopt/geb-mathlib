@@ -12,6 +12,7 @@ public import Mathlib.Tactic.Attr.Core
 public import Mathlib.Tactic.Finiteness.Attr
 public import Mathlib.Tactic.SetLike
 public import Mathlib.Tactic.ToAdditive
+public import Mathlib.Tactic.TypeStar
 public meta import Geb.Prototypes.InteractionNet.WiringGlue -- shake: keep
 meta import GebMeta -- shake: keep
 

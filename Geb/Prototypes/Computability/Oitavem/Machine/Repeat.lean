@@ -73,6 +73,7 @@ set_option doc.verso true
 namespace Geb.Oitavem.Machine
 
 open Turing MultiTapeTM
+open MultiTapeNTM (RunPath)
 open Geb.SizeBounded.Machine
 open Geb.SizeBounded.Logspace
 open Geb.SizeBounded.Logspace.Machine
@@ -328,7 +329,7 @@ theorem computableInTimeAndSpace_squareWord :
     apply ht.trans
     unfold countInputTime
     nlinarith [Nat.mul_le_mul_left w.length hs]
-  · change squareMachine.space (squareMachine.initCfg w) t ≤
+  · change (RunPath.ofDeterministic squareMachine (squareMachine.initCfg w) t).space ≤
       32 * (w.length.size + 1)
     exact h.space_le.trans (by omega)
 

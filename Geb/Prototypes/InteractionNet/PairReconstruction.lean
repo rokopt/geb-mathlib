@@ -10,6 +10,7 @@ public import Geb.Prototypes.InteractionNet.ContractionEmbedding
 public import Geb.Prototypes.InteractionNet.ContractionCoupling
 public import Geb.Prototypes.InteractionNet.PlugIso
 public import Geb.Prototypes.InteractionNet.TermGraph
+public import Aesop
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in

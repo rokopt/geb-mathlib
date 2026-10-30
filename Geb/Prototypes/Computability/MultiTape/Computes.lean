@@ -6,6 +6,8 @@ Authors: Terence Rokop
 module
 
 public import Cslib.Computability.Machines.Turing.MultiTape.Deterministic
+public import Mathlib.Tactic.TypeStar
+public import Mathlib.Tactic.Lemma
 
 set_option doc.verso true in
 /-!
@@ -18,7 +20,7 @@ cells every path visits, whatever its length. A deterministic machine has one pa
 length, the iterate of {name}`Turing.MultiTapeTM.step`, and a path continued past the
 machine's halt repeats the halted configuration and visits no further cell. So a single run
 that has halted bounds both: its length the time, and the number of cells it visited,
-{name}`Turing.MultiTapeTM.space`, the space. CSLib states the bound on time,
+{name}`Turing.MultiTapeNTM.RunPath.space`, the space. CSLib states the bound on time,
 {name}`Turing.MultiTapeTM.runsInTime_of_halted`; this module states the bound on space and the
 resulting computation.
 
@@ -48,34 +50,40 @@ set_option doc.verso true
 
 namespace Turing.MultiTapeTM
 
+open MultiTapeNTM (RunPath)
+
 variable {k : ℕ} {Symbol State : Type*} {input : List Symbol} {tm : MultiTapeTM k Symbol State}
 
 /-- The space of the first {lit}`t` steps from {lit}`cfg` is the sum over the work tapes of the
 cells each head visits. -/
 lemma space_eq_sum (cfg : Cfg k Symbol State input) (t : ℕ) :
-    tm.space cfg t = ∑ i, tm.spaceUsedByTape cfg t i :=
+    (RunPath.ofDeterministic tm cfg t).space =
+      ∑ i, (RunPath.ofDeterministic tm cfg t).spaceUsedByTape i :=
   rfl
 
 /-- Once the run from {lit}`cfg` has halted after {lit}`t` steps, a run of any length from
 {lit}`cfg` visits only cells the first {lit}`t` steps visited. -/
 lemma visitedByTapeHead_subset_of_halted {cfg : Cfg k Symbol State input} {t : ℕ}
     (hhalt : (tm.runFrom cfg t).Halted) (T : ℕ) (i : Fin k) :
-    tm.visitedByTapeHead cfg T i ⊆ tm.visitedByTapeHead cfg t i := by
+    (RunPath.ofDeterministic tm cfg T).visitedByTapeHead i ⊆
+      (RunPath.ofDeterministic tm cfg t).visitedByTapeHead i := by
   intro z hz
   obtain ⟨n, -, rfl⟩ := Finset.mem_image.mp hz
   refine Finset.mem_image.mpr ?_
   by_cases hn : (n : ℕ) ≤ t
   · exact ⟨⟨n, Nat.lt_succ_of_le hn⟩, Finset.mem_univ _, rfl⟩
   · exact ⟨Fin.last t, Finset.mem_univ _,
-      by rw [runFrom_eq_of_halt tm cfg (Nat.le_of_not_le hn) hhalt]; rfl⟩
+      congrArg (fun c ↦ c.workTapePos i)
+        (runFrom_eq_of_halt tm cfg (Nat.le_of_not_le hn) hhalt).symm⟩
 
 /-- A run from the initial configuration that has halted after {lit}`t` steps having visited
 at most {lit}`s` work-tape cells bounds the space of every computation path by {lit}`s`. -/
 lemma runsInSpace_of_halted {t s : ℕ} (hhalt : (tm.runFrom (tm.initCfg input) t).Halted)
-    (hs : tm.space (tm.initCfg input) t ≤ s) : tm.RunsInSpace input s := by
+    (hs : (RunPath.ofDeterministic tm (tm.initCfg input) t).space ≤ s) :
+    tm.RunsInSpace input s := by
   intro p
   rw [p.eq_ofDeterministic]
-  refine le_trans (?_ : tm.space (tm.initCfg input) p.time ≤ _) hs
+  refine le_trans (?_ : (RunPath.ofDeterministic tm (tm.initCfg input) p.time).space ≤ _) hs
   exact Finset.sum_le_sum fun i _ ↦
     Finset.card_le_card (visitedByTapeHead_subset_of_halted hhalt p.time i)
 
@@ -85,7 +93,8 @@ time bound at least {lit}`t'` and every space bound at least {lit}`s'`. -/
 theorem computesInTimeAndSpace_of_halted {output : List Symbol} {t' t s' s : ℕ}
     (hhalt : (tm.runFrom (tm.initCfg input) t').Halted)
     (hout : (tm.runFrom (tm.initCfg input) t').output = output)
-    (hspace : tm.space (tm.initCfg input) t' = s') (ht : t' ≤ t) (hs : s' ≤ s) :
+    (hspace : (RunPath.ofDeterministic tm (tm.initCfg input) t').space = s')
+    (ht : t' ≤ t) (hs : s' ≤ s) :
     tm.ComputesInTimeAndSpace input output t s :=
   ⟨⟨t', hhalt, hout⟩, (runsInTime_of_halted hhalt).mono ht,
     runsInSpace_of_halted hhalt (hspace ▸ hs)⟩
@@ -97,7 +106,7 @@ theorem computesInTimeAndSpace_iff {output : List Symbol} {t s : ℕ} :
     tm.ComputesInTimeAndSpace input output t s ↔
       (tm.runFrom (tm.initCfg input) t).Halted ∧
         (tm.runFrom (tm.initCfg input) t).output = output ∧
-        tm.space (tm.initCfg input) t ≤ s := by
+        (RunPath.ofDeterministic tm (tm.initCfg input) t).space ≤ s := by
   refine ⟨fun ⟨⟨u, hu, hout⟩, htime, hspace⟩ ↦ ?_,
     fun ⟨hhalt, hout, hs⟩ ↦ computesInTimeAndSpace_of_halted hhalt hout rfl le_rfl hs⟩
   let p := MultiTapeNTM.ComputationPath.ofDeterministic tm input t

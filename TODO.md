@@ -1012,7 +1012,7 @@ first cites them.
 `computableInTimeAndSpace_validBool` gives a space bound affine in the step
 count. A sharper bound, `space ≤ n + 2`, follows from
 `RankedAlphabet.Binary.depth_le_length` and a computation of
-`Turing.MultiTapeTM.visitedByTapeHead` as a `Finset` image, since the count
+`Turing.MultiTapeNTM.RunPath.visitedByTapeHead` as a `Finset` image, since the count
 never exceeds the word length and the plant step's excursion to cell `1`
 adds nothing above that except at `n = 0`.
 
@@ -1081,8 +1081,8 @@ step from a known state over an arbitrary machine, configuration and state,
 is a second candidate for that pull request: Cslib states `step_of_halt`
 beside it and no companion for a configuration that has not halted.
 
-Neither patch reaches `Turing.MultiTapeTM.space`'s `Finset.image` root,
-through `Turing.MultiTapeTM.visitedByTapeHead`: mathlib's `Finset.image`
+Neither patch reaches `Turing.MultiTapeNTM.RunPath.space`'s `Finset.image` root,
+through `Turing.MultiTapeNTM.RunPath.visitedByTapeHead`: mathlib's `Finset.image`
 depends on `Classical.choice`, a dependence neither this repository nor
 Cslib can remove without redefining the space measure. See § Triggers (do
 when condition fires), below.
@@ -1253,17 +1253,6 @@ Correcting these is a separate concern from any current branch per
   requirement of the bootstrap; or the bootstrap's completion without
   one, at which point it becomes an early item of the work after the
   bootstrap in the chapter's road map.
-- **The import level of `verso-literate`**:
-  `scripts/patches/verso/literate-import-level.patch` makes
-  `verso-literate` import a `module` file at the level Lean uses for it,
-  which the import artifacts of Lake's module setup presuppose; without
-  it, rendering a module that imports a module-system module fails with
-  "missing data file for module" (the patch's header states the defect).
-  `scripts/manual.sh build` and `scripts/literate.sh build` apply it
-  (`scripts/lib/dependency-patches.sh`). Trigger: the Verso revision a
-  bump pins computes the level itself, or changes the patched lines,
-  either of which fails the patch's application, at which point the
-  patch is deleted, or rebased if the defect persists.
 - **Noncomputable Turing machines**: CSLib derives a deterministic
   machine's transition function `Turing.MultiTapeTM.tr`, and from it
   `step` and `runFrom`, by choice from its transition relation, so the
@@ -1313,7 +1302,7 @@ Correcting these is a separate concern from any current branch per
   the step modules and the mirrors recover choice-free content of their
   own; leaving their entries in place past that point would misdescribe the
   allowlist's criterion, so the entries are removed, leaving only the two
-  `Bound.lean` modules admitted — `Turing.MultiTapeTM.space`'s
+  `Bound.lean` modules admitted — `Turing.MultiTapeNTM.RunPath.space`'s
   `Finset.image` root is a separate, unremovable dependence that keeps them
   admitted regardless.
 - **`lake shake --keep-implied` versus mathlib CI's plain `lake shake`**: a

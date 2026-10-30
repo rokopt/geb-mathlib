@@ -6,7 +6,6 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.BitTree.BinaryMachine.Execution
-public import Cslib.Computability.Machines.Turing.MultiTape.TapeLemmas
 public import Geb.Prototypes.Computability.MultiTape.Rename
 
 set_option doc.verso true in
@@ -47,6 +46,7 @@ set_option doc.verso true
 namespace Geb.BitTree.BinaryMachine
 
 open Turing MultiTapeTM
+open MultiTapeNTM (RunPath)
 
 /-- After all input macros, one final transition halts the machine. -/
 theorem halts_at (w : List Bool) :
@@ -77,21 +77,11 @@ theorem outputString_eq (w : List Bool) :
 theorem space_le_of_headBound {input : List (Fin 4)}
     (cfg : Cfg 3 (Fin 4) (Fin 10) input) (width t : ℕ)
     (h : ∀ u ≤ t, HeadBound width (machine.runFrom cfg u)) :
-    machine.space cfg t ≤ 3 * (width + 1) := by
-  have hsub (i : Fin 3) : machine.visitedByTapeHead cfg t i ⊆
-      (Finset.range (width + 1)).image (fun n : ℕ ↦ (n : ℤ)) := by
-    intro z hz
-    obtain ⟨u, hu, rfl⟩ := machine.mem_visitedByTapeHead.mp hz
-    obtain ⟨hlo, hhi⟩ := h u (by omega) i
-    apply Finset.mem_image.mpr
-    refine ⟨_, Finset.mem_range.mpr ?_, Int.toNat_of_nonneg hlo⟩
-    omega
-  have hi (i : Fin 3) : machine.spaceUsedByTape cfg t i ≤ width + 1 :=
-    (Finset.card_le_card (hsub i)).trans (Finset.card_image_le.trans (by simp))
-  calc
-    machine.space cfg t ≤ ∑ _i : Fin 3, (width + 1) :=
-      Finset.sum_le_sum (fun i _ ↦ hi i)
-    _ = 3 * (width + 1) := by simp
+    (RunPath.ofDeterministic machine cfg t).space ≤ 3 * (width + 1) := by
+  refine le_trans (RunPath.space_le_sum_card _ (S := fun _ ↦ Finset.Icc (0 : ℤ) width) ?_) ?_
+  · rintro _ ⟨u, rfl⟩ i
+    exact Finset.mem_Icc.mpr (h u (Nat.le_of_lt_succ u.isLt) i)
+  · simp [Int.card_Icc]
 
 /-- All work-head positions remain within the chosen binary width, including the halt step. -/
 theorem headBound_run (w : List Bool) :

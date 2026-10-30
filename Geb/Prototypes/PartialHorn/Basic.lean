@@ -9,6 +9,7 @@ public import Geb.Mathlib.Data.FinEnum
 public import Geb.Mathlib.Data.W.Basic
 public import Geb.Prototypes.RoseTree.Basic
 public import Mathlib.Data.Part
+public import Mathlib.Tactic.TypeStar
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in

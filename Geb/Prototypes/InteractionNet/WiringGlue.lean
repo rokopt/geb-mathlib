@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.InteractionNet.WiringSplice
 public import Mathlib.Logic.Embedding.Basic
+public import Mathlib.Tactic.TypeStar
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in

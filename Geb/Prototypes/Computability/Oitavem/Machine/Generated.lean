@@ -60,6 +60,7 @@ set_option doc.verso true
 namespace Geb.Oitavem.Machine
 
 open Turing MultiTapeTM
+open MultiTapeNTM (RunPath)
 open Geb.SizeBounded.Machine
 open Geb.SizeBounded.Logspace
 open Geb.SizeBounded.Logspace.Machine
@@ -363,7 +364,8 @@ theorem _root_.Geb.SizeBounded.Logspace.Machine.TransformsIn.seqEmitsIn
 theorem _root_.Geb.SizeBounded.Machine.Emits.space_le_all
     {k : ℕ} {S : Type} {input : List Bool} {P : MultiTapeTM k Bool S}
     {cfg cfg' : Cfg k Bool S input} {w : List Bool} {t B : ℕ}
-    (h : Emits P cfg cfg' w t B) (s : ℕ) : P.space cfg s ≤ k * (B + 2) := by
+    (h : Emits P cfg cfg' w t B) (s : ℕ) :
+    (RunPath.ofDeterministic P cfg s).space ≤ k * (B + 2) := by
   have hpos (u : ℕ) (i : Fin k) :
       -1 ≤ (P.runFrom cfg u).workTapePos i ∧ (P.runFrom cfg u).workTapePos i ≤ B := by
     by_cases hu : u ≤ t

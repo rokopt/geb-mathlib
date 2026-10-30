@@ -6,7 +6,6 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.BitTreeScanner.Steps
-public import Cslib.Computability.Machines.Turing.MultiTape.TapeLemmas
 public import Geb.Prototypes.Computability.MultiTape.Rename
 public import Mathlib.Data.Int.Interval
 
@@ -55,8 +54,8 @@ remaining step.
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`. Its subject
 is the correspondence between the machine and Cslib's
 {name}`Turing.MultiTapeTM.ComputesFunInTimeAndSpace`, whose space conjunct rests
-on {name}`Turing.MultiTapeTM.space`, a {name}`Finset.image` through
-{name}`Turing.MultiTapeTM.visitedByTapeHead`; mathlib's {name}`Finset.image`
+on {name}`Turing.MultiTapeNTM.RunPath.space`, a {name}`Finset.image` through
+{name}`Turing.MultiTapeNTM.RunPath.visitedByTapeHead`; mathlib's {name}`Finset.image`
 depends on {lit}`Classical.choice`, a root neither this repository nor Cslib
 can remove without redefining the space measure.
 
@@ -73,6 +72,7 @@ set_option doc.verso true
 namespace Geb.BitTreeScanner
 
 open Turing MultiTapeTM Geb.BitTreeScanner
+open MultiTapeNTM (RunPath)
 
 variable (w : List Bool)
 
@@ -80,11 +80,12 @@ variable (w : List Bool)
 cells from {lit}`0` to the bound. -/
 theorem spaceUsedByTape_le (cfg : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb)) (t : ℕ)
     (h : ∀ j ≤ t, HeadsLE w (bitTreeScanner.runFrom cfg j)) (i : Fin 3) :
-    bitTreeScanner.spaceUsedByTape cfg t i ≤ bound w + 4 := by
-  rw [spaceUsedByTape]
+    (RunPath.ofDeterministic bitTreeScanner cfg t).spaceUsedByTape i ≤ bound w + 4 := by
+  rw [RunPath.spaceUsedByTape]
   refine le_trans (Finset.card_le_card (t := Finset.Icc 0 (headBound w)) ?_) ?_
   · intro z hz
-    obtain ⟨t', ht', rfl⟩ := mem_visitedByTapeHead.mp hz
+    obtain ⟨_, ⟨t', rfl⟩, rfl⟩ := (RunPath.mem_visitedByTapeHead _).mp hz
+    have ht' : (t' : ℕ) ≤ t := Nat.le_of_lt_succ t'.isLt
     rw [Finset.mem_Icc]
     exact h t' (by omega) i
   · rw [Int.card_Icc, headBound]
@@ -94,7 +95,7 @@ theorem spaceUsedByTape_le (cfg : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb)
 {lit}`3 * (bound w + 4)`. -/
 theorem space_le (cfg : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb)) (t : ℕ)
     (h : ∀ j ≤ t, HeadsLE w (bitTreeScanner.runFrom cfg j)) :
-    bitTreeScanner.space cfg t ≤ 3 * (bound w + 4) := by
+    (RunPath.ofDeterministic bitTreeScanner cfg t).space ≤ 3 * (bound w + 4) := by
   rw [space_eq_sum]
   refine le_trans (Finset.sum_le_sum fun i _ ↦ spaceUsedByTape_le w cfg t h i) ?_
   rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin]

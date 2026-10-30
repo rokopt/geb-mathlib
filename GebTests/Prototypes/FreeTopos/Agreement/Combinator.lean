@@ -10,6 +10,7 @@ public import GebTests.Prototypes.FreeTopos.Agreement.Infer
 public import GebTests.Prototypes.FreeTopos.Agreement.Theory
 public import GebTests.Prototypes.FreeTopos.Agreement.Prove
 public import Geb.Prototypes.FreeTopos.Prover
+public import Std.Do
 import Batteries.Control.Lemmas
 import Mathlib.Control.Monad.Basic
 
