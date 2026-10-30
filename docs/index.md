@@ -4218,6 +4218,8 @@ import-direction rules above are enforced by
   (`Geb.FreeTopos.Internal.devByMachine`); the translation is checked
   rather than trusted, and `GebBench/Prototypes/FreeTopos/ByMachine.lean`
   times the stored developments against their translations.
+  `GebBench/Prototypes/FreeTopos/Profile.lean` divides the base checker's
+  time on a stored development among its derivations' rules.
   `GebTests/Prototypes/FreeTopos/Literals.lean` proves the equations by
   the prover and tests the evaluation, and
   `GebBench/Prototypes/FreeTopos/Literals.lean` times it against the base

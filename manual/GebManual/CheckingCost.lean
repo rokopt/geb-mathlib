@@ -173,14 +173,33 @@ computed type with the mirror's, in the environment of every global
 before the definition. Its time grows faster than the program
 ({ref "improvements"}[Improvements]).
 
+## The contexts of congruences and type inference
+
+A congruence that rewrites an abstraction's body or a fold's step
+rewrites it in the context the binder extends
+({name}`Geb.FreeTopos.Internal.childCtxs`): each hypothesis is weakened
+past the bound variables, by a traversal of the formula, and the type of
+a fold's start or datum is inferred. The base checker infers a term's
+type by compiling the term to the combinators and keeping the type
+({name}`Geb.FreeTopos.Internal.typeIn`): the arrow of each node is
+built, from the product of the context's types, and discarded. The
+application of a theorem infers the type of each term it substitutes
+({name}`Geb.FreeTopos.Internal.instOk`), and propositional and
+functional extensionality, a cut and a conversion from a formula infer
+the type of a formula or a function. In the development of
+`datatype-list` the congruences' contexts and these inferences are most
+of the check ({ref "measurements"}[The measurements]).
+
 ## Their composition
 
 The factors are independent, and each multiplies the cost the others
 leave. The size of a derivation is the length of a trace, the first and
 third factors; the encoding of syntax lengthens the trace, the second;
 each step of the trace costs a traversal of the reduction, the fourth;
-and each operation of the check costs the interpreter's overhead, the
-fifth. The ratio of the base checker's time to the step of evaluation at
+each operation of the check costs the interpreter's overhead, the
+fifth; and each congruence under a binder costs a traversal of every
+hypothesis, and each inference of a type a compilation of the term
+typed, the seventh. The ratio of the base checker's time to the step of evaluation at
 literals, about ten to the fifth, is the first two together. No one
 factor accounts for the distance between a check of seconds and one that
 exceeds the hosted runners' limit.
@@ -276,15 +295,22 @@ against their cost.
    the C of every module of mathlib, which the mathlib cache holds, and
    elaborates the modules of CSLib that `Geb` does not import, in seven
    minutes on sixteen cores.
-2. The searches out of the daily checks: the committed certificates
+2. Type inference apart from compilation, a fold computing a term's
+   type alone, proved to be the type its compilation computes, and the
+   contexts of congruences computed for the derivations that use them.
+   Together they remove the seventh factor. How the congruences' time
+   divides between the weakening of the hypotheses and the inference of
+   types, and whether the searches' time is also in them, are not
+   measured.
+3. The searches out of the daily checks: the committed certificates
    checked, and a search run when the sources it reads change, which
    content identity ({ref "content-identity"}[Content identity])
    determines.
-3. The mode `native` as the loading's policy, with the mode `rfl` run on
+4. The mode `native` as the loading's policy, with the mode `rfl` run on
    demand or replaced by a proof of each step from the equations of the
    checker-evaluator at each form of term, of the size of the definition
    rather than of its reduction.
-4. Conversion computed by the checker by a reduction of another method,
+5. Conversion computed by the checker by a reduction of another method,
    proved sound against the base checker's rules rather than equal to
    the prover's reduction. The conversion checker's steps `norm` and
    `eval` compute the prover's reduction's result alone, without its
@@ -299,11 +325,11 @@ against their cost.
    into steps of it shortens their certificates and leaves their checks
    as costly; it replaces only the joins whose rewritings cite neither
    a theorem nor a hypothesis, which the machine does not apply.
-5. The datatypes of the proofs as datatypes of the metalogic: the
+6. The datatypes of the proofs as datatypes of the metalogic: the
    translation of a datatype of the datatype language to the initial
    algebra of its declaration, rather than to rose trees over
    bitstrings, which removes the second factor.
-6. Each untrusted component written once, the agreement proved for the
+7. Each untrusted component written once, the agreement proved for the
    checker and the translation, which are trusted.
 
 # The measurements
@@ -407,3 +433,47 @@ evaluation, which computes by the arithmetic of the natural numbers, is
 faster than the first three on the product by factors from 80000 to
 110000, the first two factors together, and than the step `machine` by
 a factor of 500 there, the second factor, which the machine leaves.
+
+`GebBench/Prototypes/FreeTopos/Profile.lean` divides the base checker's
+time on a stored development among its derivations' rules: each node's
+time less its children's is the rule's own, and probes repeat and time
+apart the contexts of a congruence's children, the
+test of a theorem's instance, which infers the types of the terms it
+substitutes, and the inference of the types of formulas. On the
+development of `datatype-list` after those of `datatype-base` and
+`datatype-atom`, in one run without the probes, the check took 24.8
+minutes, its theorem of index 360 alone 18.5, and the congruences'
+own time was 59 in 100 of it. On its theorem of index 348, of 333682
+nodes, in one run with the probes, which repeat what they time:
+
+:::table +header
+*
+  * Computation
+  * Seconds
+*
+  * The contexts of congruences
+  * 66.1
+*
+  * The congruences' own time less their contexts
+  * 29.7
+*
+  * The tests of theorems' instances
+  * 7.7
+*
+  * The inference of the types of formulas
+  * 1.4
+*
+  * β-steps
+  * 0.95
+*
+  * Rewriting by hypotheses
+  * 0.07
+*
+  * The theorem, with the probes
+  * 186
+:::
+
+Without the probes the theorem takes 80.7 seconds. On the development
+of substitution, in one run without the probes, of 13.1 seconds, the
+β-steps' own time is 5.3, the compositions' 1.7, the rewritings by
+theorems' 1.3 and the rewritings by hypotheses' 0.02.

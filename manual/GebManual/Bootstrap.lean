@@ -7314,9 +7314,10 @@ that remain, and the constraints each of them carries.
   cite neither a theorem nor a hypothesis, which the machine does not
   apply; either the checks' time is not in the joins it replaces, or
   the machine's normal form costs there about what the base checker's
-  rewriting does. Whether the machine rewrites by hypotheses and
-  theorems, as the prover's normalization does, and so replaces the
-  other joins, and whether the normal forms in a fold's step belong to
+  rewriting does; the base checker's time is divided among its rules in
+  {ref "measurements"}[The measurements]. Whether the machine rewrites
+  by hypotheses and theorems, as the prover's normalization does, and so
+  replaces the other joins, and whether the normal forms in a fold's step belong to
   the machine or to a conversion around it, are open; no stored
   certificate is translated.
 
