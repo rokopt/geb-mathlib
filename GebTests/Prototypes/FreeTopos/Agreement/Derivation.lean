@@ -323,7 +323,7 @@ theorem eqParts_eq (φ : Term) :
       encOpt (Internal.typeIn G n Γ t) := by
   have hc := compile_eq G n t (Internal.ctxObj Γ) (Internal.stdEnv Γ)
   simp only [«Derivation.typeIn», template, ctxObj_eq, stdEnv_eq, hc, mapO_eq, Option.map_map,
-    Internal.typeIn]
+    Internal.typeIn_eq_compile]
   rfl
 
 /-- The mirror's test that a term is a formula in a context. -/

@@ -31,6 +31,7 @@ public import Geb.Prototypes.FreeTopos.Internal.Square
 public import Geb.Prototypes.FreeTopos.Internal.Substitution
 public import Geb.Prototypes.FreeTopos.Internal.Syntax
 public import Geb.Prototypes.FreeTopos.Internal.SyntaxLaws
+public import Geb.Prototypes.FreeTopos.Internal.Typing
 
 set_option doc.verso true in
 /-!

@@ -431,10 +431,14 @@ theorem typeIn_defn {k : ℕ} {θ : List Tree} {cs : List Term} {d : Internal.De
     (hθ : θ.all (IsTy G n) = true)
     (hcs : cs.map (typeIn G n Γ) = (d.params.map (PartialHorn.subst θ)).map some) :
     typeIn G n Γ (Term.defn k θ cs) = some (PartialHorn.subst θ d.type) := by
+  have hcs' : cs.map (fun c ↦ (Internal.compile G n c (Internal.ctxObj Γ)
+      (Internal.stdEnv Γ)).map Prod.snd) = (d.params.map (PartialHorn.subst θ)).map some := by
+    rw [← hcs]
+    exact List.map_congr_left fun c _ ↦ (Internal.typeIn_eq_compile G n Γ c).symm
   obtain ⟨rs, hrs, hps⟩ := exists_mapM_snd (f := fun c ↦ Internal.compile G n c
-    (Internal.ctxObj Γ) (Internal.stdEnv Γ)) cs _ hcs
-  simp only [typeIn, Term.defn, Internal.compile_node, Internal.compileStep, hd,
-    Option.bind_eq_bind, Option.bind_some, List.mapM_map, Function.comp_def]
+    (Internal.ctxObj Γ) (Internal.stdEnv Γ)) cs _ hcs'
+  simp only [Internal.typeIn_eq_compile, Term.defn, Internal.compile_node, Internal.compileStep,
+    hd, Option.bind_eq_bind, Option.bind_some, List.mapM_map, Function.comp_def]
   rw [hrs]
   simp [ha, hθ, hps]
 
