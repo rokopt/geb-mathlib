@@ -79,10 +79,28 @@ the theorem of its computation at an image.
   the recognition of a quotient's projection.
 * {lit}`Decl.step`, {lit}`checkDev`, {lit}`checkThms` — the check of a development, each
   declaration proved with the constants and the entries before it.
+* {lit}`checkFast` — the checker with its rewriting under hypotheses weakened where they are read.
+
+## Main statements
+
+* {lit}`check_eq_checkFast` — the checker is {lit}`checkFast`, by which the compiler replaces it.
+
+## Implementation notes
+
+A congruence that rewrites a binder's body rewrites it under the hypotheses weakened past the bound
+variables ({lit}`childCtxs`), a traversal of each hypothesis. A rewriting adds no hypothesis, so
+that within one every hypothesis is weakened past the same variables: {lit}`checkFast` rewrites
+under the hypotheses as they were stated with the number of the variables, and weakens a
+hypothesis where the rewriting by an equation among the hypotheses reads it, a delayed renaming in
+the manner of explicit substitutions ({cite}`AbadiCardelliCurienLevy1991`). Its proving is the
+checker's. The two are proved equal, and the attribute {lit}`csimp` replaces the checker by it in
+compiled code, so that the proofs about the checker are unchanged and its evaluation is the fast
+one's.
 
 ## References
 
 * {cite}`RuizHernandezSolorzano2021`
+* {cite}`AbadiCardelliCurienLevy1991`
 
 ## Tags
 
@@ -696,6 +714,196 @@ def checkStep (G : Globals) (E : Array Entry) (n : ℕ) (l : Rule) (cs : List (D
 and whether it proves a formula in a context under hypotheses. -/
 def check (G : Globals) (E : Array Entry) (n : ℕ) : Deriv → Checks :=
   RoseTree.para (checkStep G E n)
+
+/-- A term weakened past a number of new innermost variables, the term itself past none. -/
+def weakenBy (k : ℕ) (ψ : Term) : Term := if k = 0 then ψ else Term.rename ψ (· + k)
+
+/-- The contexts of a node's children, in the node's context, each with the number of variables
+by which it extends the node's, as {lit}`childCtxs` computes them. -/
+def childBinders (G : Globals) (n : ℕ) (l : Label) (ts : List Term) (Γ : List Tree) :
+    Option (List (List Tree × ℕ)) := match l, ts with
+  | .lam a, [_] => some [(a :: Γ, 1)]
+  | .natRec, [z, _, _] => do
+    let c ← typeIn G n Γ z
+    pure [(Γ, 0), (c :: Γ, 1), (Γ, 0)]
+  | .listRec, [z, _, m] => do
+    let c ← typeIn G n Γ z
+    let a ← (typeIn G n Γ m).bind listPart
+    pure [(Γ, 0), (c :: a :: Γ, 2), (Γ, 0)]
+  | .roseRec c, [_, m] => do
+    let p ← (typeIn G n Γ m).bind roseParts
+    pure [(prod p.1 (list c) :: Γ, 1), (Γ, 0)]
+  | _, ts => some (ts.map fun _ ↦ (Γ, 0))
+
+/-- The contexts in which a congruence rewrites a node's children by the derivations
+{lit}`ds`, each with the number of variables by which it extends the node's, as
+{lit}`congCtxs` computes them. -/
+def congBinders (G : Globals) (n : ℕ) (l : Label) (ts : List Term) (Γ : List Tree)
+    (ds : List Deriv) : Option (List (List Tree × ℕ)) :=
+  if ds.zipIdx.all fun (d, i) ↦ sameCtx l i || d.label.isRefl then
+    some (ts.map fun _ ↦ (Γ, 0))
+  else childBinders G n l ts Γ
+
+/-- The rewriting of a derivation in a context under hypotheses weakened past a number of new
+innermost variables, from the hypotheses before the weakening. -/
+abbrev Rewrites : Type := List Tree → ℕ → List Term → Term → Option Term
+
+/-- The hypotheses a rule's rewriting at the root reads, weakened past a number of new innermost
+variables: none but for an equation among the hypotheses. -/
+def rootHyps (l : Rule) (k : ℕ) (Φ : List Term) : List Term := match l with
+  | .rwHyp _ _ => Φ.map (weakenBy k)
+  | _ => []
+
+/-- One step of the rewriting under weakened hypotheses, at a node of a rule, from its children's
+rewritings: the hypotheses are weakened where the rewriting at the root reads them, rather than
+at each congruence past a binder. -/
+def rewriteStep (G : Globals) (E : Array Entry) (n : ℕ) (l : Rule) (rs : List (Deriv × Rewrites)) :
+    Rewrites := fun Γ k Φ t ↦ match l, rs with
+  | .refl, [] => some t
+  | .trans, [(_, r₁), (_, r₂)] => (r₁ Γ k Φ t).bind (r₂ Γ k Φ)
+  | .cong, rs => do
+    let Bs ← congBinders G n t.label t.children Γ (rs.map Prod.fst)
+    if rs.length = t.children.length ∧ Bs.length = t.children.length then do
+      let ts ← ((rs.zip (Bs.zip t.children)).mapM fun (r, (Δ, m), u) ↦ r.2 Δ (k + m) Φ u)
+      pure (RoseTree.node t.label ts)
+    else none
+  | l, [] => rootStep G E n Γ (rootHyps l k Φ) l t
+  | _, _ => none
+
+/-- The results of a node's rewriting under weakened hypotheses and of its proving. -/
+abbrev FastChecks : Type := Rewrites × (List Tree → List Term → Term → Bool)
+
+/-- The checker's results of a node from its rewriting under weakened hypotheses and its
+proving: the rewriting under hypotheses weakened past no variable. -/
+def FastChecks.checks (c : FastChecks) : Checks := (fun Γ Φ t ↦ c.1 Γ 0 Φ t, c.2)
+
+/-- One step of the checker with its rewriting under weakened hypotheses, at a node of a rule,
+from its children's results: the rewriting by {lit}`rewriteStep`, and the proving by
+{lit}`checkStep` from the children's results. -/
+def fastStep (G : Globals) (E : Array Entry) (n : ℕ) (l : Rule) (cs : List (Deriv × FastChecks)) :
+    FastChecks :=
+  (rewriteStep G E n l (cs.map fun c ↦ (c.1, c.2.1)),
+    (checkStep G E n l (cs.map fun c ↦ (c.1, c.2.checks))).2)
+
+/-- The checker, its rewriting under hypotheses weakened where they are read: equal to
+{name}`check`, which the compiler replaces by it. -/
+def checkFast (G : Globals) (E : Array Entry) (n : ℕ) (d : Deriv) : Checks :=
+  (RoseTree.para (fastStep G E n) d).checks
+
+/-- A term weakened past no variable is itself. -/
+theorem weakenBy_zero (ψ : Term) : weakenBy 0 ψ = ψ := by simp [weakenBy]
+
+/-- Weakening past new variables after weakening past others is weakening past all of them. -/
+theorem rename_weakenBy (k : ℕ) {m : ℕ} (hm : m ≠ 0) (ψ : Term) :
+    Term.rename (weakenBy k ψ) (· + m) = weakenBy (k + m) ψ := by
+  by_cases hk : k = 0
+  · subst hk
+    simp [weakenBy, hm]
+  · simp only [weakenBy, hk, Nat.add_eq_zero_iff, hm, and_false, ↓reduceIte]
+    exact Term.rename_rename ψ _ _ _ fun i ↦ by omega
+
+/-- A weakened term weakened past one new variable. -/
+@[simp] theorem weaken1_weakenBy (k : ℕ) (ψ : Term) :
+    weaken1 (weakenBy k ψ) = weakenBy (k + 1) ψ :=
+  rename_weakenBy k one_ne_zero ψ
+
+/-- A weakened term weakened past two new variables. -/
+@[simp] theorem weaken2_weakenBy (k : ℕ) (ψ : Term) :
+    weaken2 (weakenBy k ψ) = weakenBy (k + 2) ψ :=
+  rename_weakenBy k two_ne_zero ψ
+
+/-- The contexts and weakened hypotheses of a node's children are their contexts with the
+hypotheses weakened past the variables by which each extends the node's. -/
+theorem childCtxs_weakenBy (G : Globals) (n : ℕ) (l : Label) (ts : List Term) (Γ : List Tree)
+    (k : ℕ) (Φ : List Term) :
+    childCtxs G n l ts Γ (Φ.map (weakenBy k)) =
+      (childBinders G n l ts Γ).map (List.map fun p ↦ (p.1, Φ.map (weakenBy (k + p.2)))) := by
+  cases l <;> rcases ts with _ | ⟨t₁, _ | ⟨t₂, _ | ⟨t₃, _ | ⟨t₄, ts⟩⟩⟩⟩ <;>
+    simp [childCtxs, childBinders, Function.comp_def, Option.map_bind]
+
+/-- The contexts and weakened hypotheses of a congruence's children are their contexts with the
+hypotheses weakened past the variables by which each extends the node's. -/
+theorem congCtxs_weakenBy (G : Globals) (n : ℕ) (l : Label) (ts : List Term) (Γ : List Tree)
+    (k : ℕ) (Φ : List Term) (ds : List Deriv) :
+    congCtxs G n l ts Γ (Φ.map (weakenBy k)) ds =
+      (congBinders G n l ts Γ ds).map (List.map fun p ↦ (p.1, Φ.map (weakenBy (k + p.2)))) := by
+  unfold congCtxs congBinders
+  split
+  · simp
+  · exact childCtxs_weakenBy G n l ts Γ k Φ
+
+/-- Monadic maps over the zips of mapped lists agree where the maps agree at related
+elements. -/
+theorem mapM_zip_map {α β γ δ ε ζ η : Type} (a : α → β) (b : α → γ) (φ : δ → ε)
+    (f : β × δ × ζ → Option η) (g : γ × ε × ζ → Option η) :
+    ∀ (ds : List α), (∀ d ∈ ds, ∀ B u, f (a d, B, u) = g (b d, φ B, u)) →
+      ∀ (Bs : List δ) (us : List ζ),
+        ((ds.map a).zip (Bs.zip us)).mapM f = ((ds.map b).zip ((Bs.map φ).zip us)).mapM g :=
+  List.rec (fun _ _ _ ↦ rfl) fun d ds ih h Bs us ↦ by
+    rcases Bs with _ | ⟨B, Bs⟩
+    · rfl
+    rcases us with _ | ⟨u, us⟩
+    · rfl
+    simp only [List.map_cons, List.zip_cons_cons, List.mapM_cons, h d List.mem_cons_self,
+      ih (fun d' hd' ↦ h d' (List.mem_cons_of_mem _ hd'))]
+
+/-- The rewriting at the root by a rule reads no hypothesis but those {lit}`rootHyps` keeps. -/
+theorem rootStep_rootHyps (G : Globals) (E : Array Entry) (n : ℕ) (Γ : List Tree) (l : Rule)
+    (k : ℕ) (Φ : List Term) (t : Term) :
+    rootStep G E n Γ (rootHyps l k Φ) l t = rootStep G E n Γ (Φ.map (weakenBy k)) l t := by
+  unfold rootStep
+  split <;> rfl
+
+/-- One step of the rewriting under weakened hypotheses is the checker's, under the hypotheses
+weakened, where the children's are. -/
+theorem rewriteStep_eq (G : Globals) (E : Array Entry) (n : ℕ) (l : Rule) (ds : List Deriv)
+    (R : Deriv → Rewrites) (C : Deriv → Checks)
+    (h : ∀ d ∈ ds, ∀ Γ k Φ t, R d Γ k Φ t = (C d).1 Γ (Φ.map (weakenBy k)) t)
+    (Γ : List Tree) (k : ℕ) (Φ : List Term) (t : Term) :
+    rewriteStep G E n l (ds.map fun d ↦ (d, R d)) Γ k Φ t =
+      (checkStep G E n l (ds.map fun d ↦ (d, C d))).1 Γ (Φ.map (weakenBy k)) t := by
+  cases l
+  case cong =>
+    simp only [rewriteStep, checkStep, List.map_map, Function.comp_def, congCtxs_weakenBy,
+      List.length_map]
+    rcases congBinders G n t.label t.children Γ (ds.map fun x ↦ x) with _ | Bs
+    · rfl
+    simp only [Option.map_some, Option.bind_eq_bind, Option.bind_some, List.length_map]
+    rw [mapM_zip_map (fun d ↦ (d, R d)) (fun d ↦ (d, C d))
+      (fun p ↦ (p.1, Φ.map (weakenBy (k + p.2)))) _ (fun x ↦ x.1.2.1 x.2.1.1 x.2.1.2 x.2.2) ds
+      (fun d hd B u ↦ h d hd _ _ _ _)]
+  all_goals rcases ds with _ | ⟨d₁, _ | ⟨d₂, _ | ⟨d₃, ds⟩⟩⟩ <;>
+    try first | rfl | exact rootStep_rootHyps G E n Γ _ k Φ t
+  change (R d₁ Γ k Φ t).bind (R d₂ Γ k Φ) = ((C d₁).1 Γ _ t).bind ((C d₂).1 Γ _)
+  rw [h d₁ List.mem_cons_self, show R d₂ Γ k Φ = (C d₂).1 Γ (Φ.map (weakenBy k)) from
+    funext (h d₂ (List.mem_cons_of_mem _ List.mem_cons_self) Γ k Φ)]
+
+/-- The checker with its rewriting under weakened hypotheses rewrites as the checker does under
+the hypotheses weakened, and its results are the checker's. -/
+theorem para_fastStep (G : Globals) (E : Array Entry) (n : ℕ) : ∀ d : Deriv,
+    (∀ Γ k Φ t, (RoseTree.para (fastStep G E n) d).1 Γ k Φ t =
+      (check G E n d).1 Γ (Φ.map (weakenBy k)) t) ∧
+      (RoseTree.para (fastStep G E n) d).checks = check G E n d :=
+  RoseTree.ind fun l ds ih ↦ by
+    have hcs : (ds.map fun d ↦ (d, RoseTree.para (fastStep G E n) d)).map
+        (fun c ↦ (c.1, c.2.checks)) = ds.map fun d ↦ (d, check G E n d) := by
+      rw [List.map_map]
+      exact List.map_congr_left fun d hd ↦ by rw [Function.comp_apply, (ih d hd).2]
+    have h₁ : ∀ Γ k Φ t, (RoseTree.para (fastStep G E n) (RoseTree.node l ds)).1 Γ k Φ t =
+        (check G E n (RoseTree.node l ds)).1 Γ (Φ.map (weakenBy k)) t := fun Γ k Φ t ↦ by
+      rw [check, RoseTree.para_node, RoseTree.para_node, fastStep, List.map_map]
+      exact rewriteStep_eq G E n l ds _ _ (fun d hd ↦ (ih d hd).1) Γ k Φ t
+    refine ⟨h₁, Prod.ext (funext fun Γ ↦ funext fun Φ ↦ funext fun t ↦ ?_) ?_⟩
+    · change (RoseTree.para (fastStep G E n) (RoseTree.node l ds)).1 Γ 0 Φ t = _
+      rw [h₁, List.map_congr_left fun ψ _ ↦ weakenBy_zero ψ, List.map_id']
+    · rw [FastChecks.checks, check, RoseTree.para_node, RoseTree.para_node, fastStep, hcs]
+      rfl
+
+/-- The checker is the checker with its rewriting under hypotheses weakened where they are
+read, by which the compiler replaces it. -/
+@[csimp] theorem check_eq_checkFast : @check = @checkFast := by
+  funext G E n d
+  exact ((para_fastStep G E n d).2).symm
 
 /-- Whether a derivation proves a theorem with the constants of {lit}`G` and the entries of
 {lit}`E`: its context is of types, its hypotheses and conclusion are formulas there, and the

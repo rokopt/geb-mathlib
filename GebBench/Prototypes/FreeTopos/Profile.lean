@@ -13,20 +13,18 @@ set_option doc.verso true in
 /-!
 # Where the base checker's time goes
 
-The base checker's time on a stored development, divided among the rules of its derivations'
-nodes. Each node's rewriting and proving is timed, and its time less its children's is its own:
-the rule's computation at the node, its substitutions, comparisons and inferences of types
-included. A theorem's own time is that of the tests of its context, hypotheses and conclusion.
-For each development: each rule's number of nodes and own milliseconds, by mode, and the
-theorems that take longest, with their derivations' sizes and their numbers of nodes rewriting
-by a hypothesis, by a theorem and joining. Timing a node costs two readings of the clock, which
-the times include. Probes repeat computations the checker performs within a node's, the
-contexts of a congruence's children, the test and comparison of a theorem's instance and the
-inference of a formula's types, and time them apart, the node's own time excluding them. The
-timers deepen the stack by a frame at each node, so the profile runs with the stack limit
-raised, as {lit}`slow-checks.yml` runs the benchmarks. The congruences that weaken the
-hypotheses past a binder are counted, with the hypotheses they weaken and those hypotheses'
-nodes.
+The base checker's time on a stored development, as the compiler evaluates it
+({name}`Geb.FreeTopos.Internal.checkFast`), divided among the rules of its derivations' nodes. Each
+node's rewriting and proving is timed, and its time less its children's is its own: the rule's
+computation at the node, its substitutions, comparisons and inferences of types included. A
+theorem's own time is that of the tests of its context, hypotheses and conclusion. For each
+development: each rule's number of nodes and own milliseconds, by mode, and the theorems that take
+longest, with their derivations' sizes and their numbers of nodes rewriting by a hypothesis, by a
+theorem and joining. Timing a node costs two readings of the clock, which the times include. Probes
+repeat computations the checker performs within a node's, the contexts of a congruence's children,
+the test and comparison of a theorem's instance and the inference of a formula's types, and time
+them apart, the node's own time excluding them. The timers deepen the stack by a frame at each node,
+so the profile runs with the stack limit raised, as {lit}`slow-checks.yml` runs the benchmarks.
 
 ## Main definitions
 
@@ -111,9 +109,9 @@ the checker performs within a node's, the checker's own computation repeated. -/
 
 /-- The probes' computations at a node's rewriting, timed before it. -/
 def probeRewrite (tally : Tally) (inner : IO.Ref ℕ) (G : Globals) (E : Array Entry) (n : ℕ)
-    (l : Rule) (ds : List Deriv) (Γ : List Tree) (Φ : List Term) (t : Term) {β : Type}
-    (r : Unit → β) : β := match l with
-  | .cong => probe tally inner (thmKey + 1) (fun _ ↦ congCtxs G n t.label t.children Γ Φ ds) r
+    (l : Rule) (ds : List Deriv) (Γ : List Tree) (t : Term) {β : Type} (r : Unit → β) : β :=
+  match l with
+  | .cong => probe tally inner (thmKey + 1) (fun _ ↦ congBinders G n t.label t.children Γ ds) r
   | .thm j θ σ flip => match (E[j]?).bind Entry.language? with
     | some a => match eqParts a.concl with
       | some lr => probe tally inner (thmKey + 1 + 1) (fun _ ↦ instOk G n Γ a θ σ) fun _ ↦
@@ -143,53 +141,24 @@ def probeProve (tally : Tally) (inner : IO.Ref ℕ) (G : Globals) (E : Array Ent
   | .convFrom ψ => types [ψ]
   | _ => r ()
 
-/-- The count of the congruences that weaken the hypotheses past a binder: their number, the
-number of hypotheses they weaken and those hypotheses' nodes. -/
-abbrev Weakened := IO.Ref (ℕ × ℕ × ℕ)
-
-/-- The implementation of {lit}`countWeakened`, which adds to the count. -/
-@[noinline] unsafe def countWeakenedImpl {β : Type} (w : Weakened) (b : Bool) (Φ : List Term)
-    (r : Unit → β) : β :=
-  match unsafeIO (do
-      if b then
-        w.modify fun (k, h, m) ↦
-          (k + 1, h + Φ.length, m + (Φ.map (RoseTree.elim fun _ ns ↦ 1 + ns.sum)).sum)
-      IO.lazyPure r) with
-  | .ok v => v
-  | .error _ => r ()
-
-/-- A result, after a congruence that weakens the hypotheses {lit}`Φ`, where {lit}`b` holds, is
-added to the count. -/
-@[implemented_by countWeakenedImpl] def countWeakened {β : Type} (_w : Weakened) (_b : Bool)
-    (_Φ : List Term) (r : Unit → β) : β :=
-  r ()
-
-/-- Whether a congruence at a node of a label, by the derivations {lit}`ds`, weakens the
-hypotheses: it rewrites an abstraction's body or a fold's step. -/
-def weakens (l : Label) (ds : List Deriv) : Bool :=
-  !(ds.zipIdx.all fun (d, i) ↦ sameCtx l i || d.label.isRefl) && match l with
-    | .lam _ | .natRec | .listRec | .roseRec _ => true
-    | _ => false
-
-/-- The checker's step at a node, its rewriting and its proving each timed at the rule's key,
-after the probes, the congruences that weaken the hypotheses counted. -/
-def profiledStep (w : Weakened) (tally : Tally) (inner : IO.Ref ℕ) (G : Globals)
-    (E : Array Entry) (n : ℕ) (l : Rule) (cs : List (Deriv × Checks)) : Checks :=
-  let c := checkStep G E n l cs
-  (fun Γ Φ t ↦ countWeakened w (l matches .cong && weakens t.label (cs.map Prod.fst)) Φ fun _ ↦
-    timed tally inner (2 * l.ctorIdx) fun _ ↦
-    probeRewrite tally inner G E n l (cs.map Prod.fst) Γ Φ t fun _ ↦ c.1 Γ Φ t,
+/-- The compiled checker's step at a node ({name}`fastStep`), its rewriting and its proving each
+timed at the rule's key, after the probes. -/
+def profiledStep (tally : Tally) (inner : IO.Ref ℕ) (G : Globals) (E : Array Entry) (n : ℕ)
+    (l : Rule) (cs : List (Deriv × FastChecks)) : FastChecks :=
+  let c := fastStep G E n l cs
+  (fun Γ k Φ t ↦ timed tally inner (2 * l.ctorIdx) fun _ ↦
+    probeRewrite tally inner G E n l (cs.map Prod.fst) Γ t fun _ ↦ c.1 Γ k Φ t,
    fun Γ Φ φ ↦ timed tally inner (2 * l.ctorIdx + 1) fun _ ↦
     probeProve tally inner G E n l Γ φ fun _ ↦ c.2 Γ Φ φ)
 
 /-- {name}`Thm.checks`, each node of the derivation timed, the tests of the theorem's context,
 hypotheses and conclusion at {name}`thmKey`. -/
-def profiledChecks (w : Weakened) (tally : Tally) (inner : IO.Ref ℕ) (G : Globals) (E : Array Entry)
-    (a : Thm) (d : Deriv) : Bool :=
+def profiledChecks (tally : Tally) (inner : IO.Ref ℕ) (G : Globals) (E : Array Entry) (a : Thm)
+    (d : Deriv) : Bool :=
   timed tally inner thmKey fun _ ↦
     a.ctx.all (IsTy G a.arity) && a.hyps.all (fun h ↦ typeIn G a.arity a.ctx h = some omega) &&
       decide (typeIn G a.arity a.ctx a.concl = some omega) &&
-      (RoseTree.para (profiledStep w tally inner G E a.arity) d).2 a.ctx a.hyps a.concl
+      (RoseTree.para (profiledStep tally inner G E a.arity) d).2 a.ctx a.hyps a.concl
 
 /-- The number of a derivation's nodes whose rule a test accepts. -/
 def countRule (p : Rule → Bool) (d : Deriv) : ℕ :=
@@ -203,7 +172,6 @@ def measure (name : String) (G : Globals) (ds : List Decl) (sel : ℕ → Bool) 
   let keys := thmKey + 1 + probeNames.size
   let tally ← IO.mkRef (Array.replicate keys (0, 0))
   let inner ← IO.mkRef 0
-  let w ← IO.mkRef (0, 0, 0)
   let mut st : Globals × Array Entry := (G, #[])
   let mut times : Array (ℕ × ℕ × Deriv) := #[]
   for (d, i) in ds.zipIdx do
@@ -213,7 +181,7 @@ def measure (name : String) (G : Globals) (ds : List Decl) (sel : ℕ → Bool) 
         st := (st.1, st.2.push (.language a))
         continue
       let t₀ ← IO.monoNanosNow
-      let ok ← IO.lazyPure fun _ ↦ profiledChecks w tally inner st.1 st.2 a der
+      let ok ← IO.lazyPure fun _ ↦ profiledChecks tally inner st.1 st.2 a der
       let t₁ ← IO.monoNanosNow
       if !ok then throw (IO.userError s!"{name}: theorem {i} does not check")
       times := times.push (i, t₁ - t₀, der)
@@ -221,8 +189,6 @@ def measure (name : String) (G : Globals) (ds : List Decl) (sel : ℕ → Bool) 
     | d => match d.step st.1 st.2 with
       | some st' => st := st'
       | none => throw (IO.userError s!"{name}: declaration {i} does not check")
-  let (k, h, m) ← w.get
-  IO.println s!"{name},weakening,congruences {k},hypotheses {h},nodes {m}"
   let rows := (← tally.get).zipIdx.filter (·.1.2 > 0) |>.qsort (·.1.1 > ·.1.1)
   for ((ns, k), key) in rows do
     let rule := if key = thmKey then "theorem" else if key > thmKey then

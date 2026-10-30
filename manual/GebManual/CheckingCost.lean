@@ -179,7 +179,11 @@ A congruence that rewrites an abstraction's body or a fold's step
 rewrites it in the context the binder extends
 ({name}`Geb.FreeTopos.Internal.childCtxs`): each hypothesis is weakened
 past the bound variables, by a traversal of the formula, and the type of
-a fold's start or datum is inferred. The application of a theorem
+a fold's start or datum is inferred. The checker as compiled
+({name}`Geb.FreeTopos.Internal.checkFast`) weakens a hypothesis where a
+rewriting by it reads it instead, so that a traversal of every
+hypothesis at each congruence under a binder becomes a traversal of one
+hypothesis at each rewriting by a hypothesis. The application of a theorem
 infers the type of each term it substitutes
 ({name}`Geb.FreeTopos.Internal.instOk`), and propositional and
 functional extensionality, a cut and a conversion from a formula infer
@@ -191,7 +195,8 @@ term's compilation to the combinators computes
 builds the arrow of each node, from the product of the context's types,
 and finds a fold's parameters by testing which variables its start or
 step mentions. In the development of `datatype-list` the weakening of
-the hypotheses is most of the check
+the hypotheses at each congruence is most of the time of
+{name}`Geb.FreeTopos.Internal.check` evaluated as it is defined
 ({ref "measurements"}[The measurements]).
 
 ## Their composition
@@ -298,12 +303,17 @@ against their cost.
    the C of every module of mathlib, which the mathlib cache holds, and
    elaborates the modules of CSLib that `Geb` does not import, in seven
    minutes on sixteen cores.
-2. The hypotheses weakened past a binder where a derivation reads one,
-   rather than at each congruence under the binder: each hypothesis
-   kept with the number of binders it was stated outside, a delayed
-   renaming in the manner of explicit substitutions
-   {citep AbadiCardelliCurienLevy1991}[], and weakened when it is read.
-   It removes the seventh factor. Whether the searches' time is also in
+2. The hypotheses weakened past a binder where a rewriting reads one,
+   rather than at each congruence under the binder. A rewriting adds no
+   hypothesis, so that within one every hypothesis is weakened past the
+   same binders: the compiled checker
+   ({name}`Geb.FreeTopos.Internal.checkFast`) rewrites under the
+   hypotheses as they were stated with the number of the binders, a
+   delayed renaming in the manner of explicit substitutions
+   {citep AbadiCardelliCurienLevy1991}[], and weakens a hypothesis where
+   it rewrites by it. It is proved equal to the checker
+   ({name}`Geb.FreeTopos.Internal.check_eq_checkFast`), which the
+   compiler replaces by it. It removes the seventh factor. Whether the searches' time is also in
    it is not measured.
 3. The searches out of the daily checks: the committed certificates
    checked, and a search run when the sources it reads change, which
@@ -492,3 +502,12 @@ hypotheses of 174537590 nodes in all. The compiled checks of weakening,
 of substitution and of the expansion's identity take 5.4, 10.8 and 3.2
 seconds, and the module of `GebSlow` checking the certificate
 `datatype-list` builds in 19.0 minutes.
+
+With the hypotheses weakened where a rewriting reads them
+({name}`Geb.FreeTopos.Internal.checkFast`), in one run with the probes,
+the theorem of index 348 takes 8.9 seconds: the congruences' own time
+is 0.11 seconds and their contexts' 0.02, and the largest parts left are the rewritings by
+theorems, 2.3 seconds, and the tests of their instances, 1.9. The
+compiled checks of weakening, of substitution and of the expansion's
+identity take 5.1, 10.3 and 3.1 seconds, and the module of `GebSlow`
+checking the certificate `datatype-list` builds in 176 seconds.
