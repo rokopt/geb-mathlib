@@ -36,7 +36,7 @@ loading has been evaluated by the compiled checker-evaluator; the axioms are lis
 in that mode alone ({lit}`GebMeta.loadingAxiomModules`). Both modes declare the same statements, so
 a module depending on the loading is the same in either. {lit}`geb_load`, and the command
 {lit}`geb_program` of the tests, read the mode from the environment variable {lit}`GEB_LOADING`,
-{lit}`native` when it is unset.
+{lit}`rfl` when it is unset.
 
 Each global's type is declared as a literal type tree, built by the kernel's constructors of types,
 as the type annotations of the declared trees are ({lit}`typeExpr`), so that the kernel compares
@@ -60,8 +60,8 @@ The commands' elaborators run in Lean's elaboration monads, whose definitions de
 {lit}`Classical.choice`; they declare kernel-checked definitions and proofs or, in the mode
 {lit}`native`, the axioms stating the steps. Lake does not track the environment variable, so a
 module built in one mode is not rebuilt when the mode changes; a build in the mode {lit}`rfl`
-deletes the outputs of the modules declaring a loading and of those depending on them
-({lit}`scripts/pre-push.sh`).
+after one in the mode {lit}`native` deletes the outputs of the modules declaring a loading and of
+those depending on them ({lit}`scripts/pre-push.sh`).
 
 ## Tags
 
@@ -352,12 +352,12 @@ meta def declareLoading (n m : Name) (ds : List (List Char × Tree)) (types : Li
       tryCatchRuntimeEx (thm step stepDoc stepTy prf) fun e ↦
         throwError "the step of the definition `{dname}`: {e.toMessageData}"
 
-/-- Whether the environment variable {lit}`GEB_LOADING` selects the mode {lit}`native`, as it does
-when unset; its other value is {lit}`rfl`. -/
+/-- Whether the environment variable {lit}`GEB_LOADING` selects the mode {lit}`native`; its other
+value is {lit}`rfl`, the mode when it is unset. -/
 meta def nativeLoading : IO Bool := do
   match ← IO.getEnv "GEB_LOADING" with
-  | none | some "native" => return true
-  | some "rfl" => return false
+  | some "native" => return true
+  | none | some "rfl" => return false
   | some s => throw <| IO.userError s!"GEB_LOADING is {s}, neither rfl nor native"
 
 /-- The value of a hexadecimal digit. -/

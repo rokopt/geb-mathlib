@@ -15,7 +15,7 @@
 # olean cache that pre-push.sh's `lake exe cache get` and `lake build`
 # steps leave behind.
 #
-# Usage: scripts/pre-push-full.sh [--loading=native|rfl], the argument
+# Usage: scripts/pre-push-full.sh [--loading=rfl|native], the argument
 # passed to scripts/pre-push.sh.
 #
 # Exits non-zero on any failure.

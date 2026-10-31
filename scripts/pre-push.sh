@@ -9,29 +9,30 @@
 # scripts/test-tooling.sh; scripts/pre-push-full.sh runs both, and
 # is the one to run for a change touching the build system itself.
 #
-# Usage: scripts/pre-push.sh [--loading=native|rfl]
+# Usage: scripts/pre-push.sh [--loading=rfl|native]
 #
 # --loading selects how the loading of the metalogic's program is
 # checked (Geb/Prototypes/Kernel/LoadCommand.lean), through the
 # environment variable GEB_LOADING that the build and the axiom linter
-# read. In the mode native, the default, the steps of the loading are
-# axioms, declared after the loading is evaluated by compiled code, and
-# the linter permits them. In the mode rfl the kernel checks a proof of
-# each of them and the linter permits none.
-# Lake does not track the variable, so the mode rfl deletes the outputs
-# of the modules declaring the loading of the metalogic's program and of
-# the checker of Goedel's T, and of those depending on them, which the
-# build then remakes with every fact checked.
+# read. In the mode rfl, the default, the kernel checks a proof of each
+# step of the loading and the linter permits no axiom of it. In the mode
+# native the steps are axioms, declared after the loading is evaluated
+# by compiled code, and the linter permits them.
+# Lake does not track the variable, so the mode rfl, after a run in the
+# mode native or with no record of the last run's mode
+# (.lake/loading.stamp), deletes the outputs of the modules declaring
+# the loading of the metalogic's program, and of those depending on
+# them, which the build then remakes with every fact checked.
 #
 # Exits non-zero on any failure.
 
 set -euo pipefail
 export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
 
-loading=native
+loading=rfl
 for arg in "$@"; do
   case "$arg" in
-    --loading=native | --loading=rfl) loading="${arg#--loading=}" ;;
+    --loading=rfl | --loading=native) loading="${arg#--loading=}" ;;
     *) echo "pre-push: unknown argument $arg" >&2; exit 2 ;;
   esac
 done
@@ -79,7 +80,8 @@ else
   cat lean-toolchain lake-manifest.json > "$cache_stamp"
 fi
 
-if [ "$loading" = rfl ]; then
+loading_stamp=".lake/loading.stamp"
+if [ "$loading" = rfl ] && [ "$(cat "$loading_stamp" 2>/dev/null)" != rfl ]; then
   step "delete the outputs of the programs' loading and its dependents (mode rfl)"
   for m in GebMirror/Metalogic/Load GebTests/Prototypes/FreeTopos/Agreement/Load \
            GebTests/Prototypes/FreeTopos/Agreement; do
@@ -87,6 +89,8 @@ if [ "$loading" = rfl ]; then
   done
   rm -rf .lake/build/lib/lean/GebMirror/Metalogic/Load .lake/build/ir/GebMirror/Metalogic/Load
 fi
+mkdir -p "$(dirname "$loading_stamp")"
+echo "$loading" > "$loading_stamp"
 
 step "lake build"
 lake build
