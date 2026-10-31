@@ -315,9 +315,11 @@ against their cost.
    it rewrites by it. It is proved equal to the checker
    ({name}`Geb.FreeTopos.Internal.check_eq_checkFast`), which the
    compiler replaces by it. It removes the seventh factor. The searches'
-   time is not in it ({ref "measurements"}[The measurements]). Neither
-   it nor the inference of a type alone is in the checker written in
-   Geb or in the conversion checker's steps `base`
+   time is not in it ({ref "measurements"}[The measurements]). The
+   conversion checker as compiled
+   ({name}`Geb.FreeTopos.Internal.convCheckFast`) takes it at its steps
+   `base`. Neither it nor the inference of a type alone is in the
+   checker written in Geb
    ({ref "base-checker-evaluation"}[The base checker's evaluation]).
 3. The searches out of the daily checks: the committed certificates
    checked, and a search run where its inputs differ from those of its

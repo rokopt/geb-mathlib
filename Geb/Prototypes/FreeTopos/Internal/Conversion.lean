@@ -62,12 +62,28 @@ rewriting by a derivation the step does not construct.
 * {lit}`applyInst` — the instance of a theorem whose conclusion matches a formula.
 * {lit}`convCheck`, {lit}`Thm.convChecks` — the conversion checker, and the test that a
   certificate proves a theorem.
+* {lit}`convCheckFast` — the conversion checker with its rewriting under hypotheses weakened where
+  they are read.
 
 ## Main statements
 
 * {lit}`convCheck_sound` — the conversion checker is sound.
 * {lit}`Thm.valid_of_convChecks` — a theorem a certificate proves with valid earlier entries is
   valid.
+* {lit}`convCheck_eq_convCheckFast` — the conversion checker is {lit}`convCheckFast`, by which the
+  compiler replaces it.
+
+## Implementation notes
+
+The conversion checker's step at a rule of the language is the base checker's
+({name}`Geb.FreeTopos.Internal.checkStep`), whose congruence under a binder weakens every
+hypothesis past the bound variables. {lit}`convCheckFast` takes there the step of the base checker
+as compiled ({name}`Geb.FreeTopos.Internal.checkFast`), which rewrites under the hypotheses as they
+were stated with the number of the variables and weakens a hypothesis where a rewriting reads it;
+a step of the prover's reductions weakens the hypotheses it is given, which the reduction may
+rewrite by, and the other steps read none. The two are proved equal, and the attribute
+{lit}`csimp` replaces the conversion checker by it in compiled code, so that the proof of
+soundness is about the conversion checker as it is defined.
 
 ## References
 
@@ -163,6 +179,65 @@ theorem convCheck_node {G : Globals} {E : Array Entry} {n : ℕ} (l : ConvRule)
     convCheck G E n (RoseTree.node l cs) =
       convStep G E n l (cs.map fun c ↦ (c, convCheck G E n c)) :=
   RoseTree.para_node _ l cs
+
+/-- The hypotheses a step other than a rule of the language reads, weakened past a number of new
+innermost variables: those of a reduction by the prover's rules, which may rewrite by a
+hypothesis, and none for the others. -/
+def ConvRule.hyps (l : ConvRule) (k : ℕ) (Φ : List Term) : List Term := match l with
+  | .norm _ _ | .eval _ _ _ => Φ.map (weakenBy k)
+  | _ => []
+
+/-- One step of the conversion checker with its rewriting under weakened hypotheses
+({name}`Geb.FreeTopos.Internal.fastStep`), at a node of a rule from its children's results: the
+base checker's at a rule of the language, each child standing for its rule, and
+{lit}`convStep`'s at any other, the hypotheses weakened where the step reads them. -/
+def convFastStep (G : Globals) (E : Array Entry) (n : ℕ) (l : ConvRule)
+    (cs : List (ConvDeriv × FastChecks)) : FastChecks := match l with
+  | .base r => fastStep G E n r (cs.map fun c ↦ (RoseTree.node c.1.label.toRule [], c.2))
+  | l =>
+    let c := convStep G E n l (cs.map fun c ↦ (c.1, c.2.checks))
+    (fun Γ k Φ t ↦ c.1 Γ (l.hyps k Φ) t, c.2)
+
+/-- The conversion checker, its rewriting under hypotheses weakened where they are read: equal to
+{lit}`convCheck`, which the compiler replaces by it. -/
+def convCheckFast (G : Globals) (E : Array Entry) (n : ℕ) (d : ConvDeriv) : Checks :=
+  (RoseTree.para (convFastStep G E n) d).checks
+
+/-- The conversion checker with its rewriting under weakened hypotheses rewrites uniformly, and
+its results are the conversion checker's. -/
+theorem para_convFastStep (G : Globals) (E : Array Entry) (n : ℕ) : ∀ d : ConvDeriv,
+    (RoseTree.para (convFastStep G E n) d).1.Uniform ∧
+      (RoseTree.para (convFastStep G E n) d).checks = convCheck G E n d :=
+  RoseTree.ind fun l ds ih ↦ by
+    rw [RoseTree.para_node, convCheck_node]
+    have hcs : (ds.map fun d ↦ (d, RoseTree.para (convFastStep G E n) d)).map
+        (fun c ↦ (c.1, c.2.checks)) = ds.map fun d ↦ (d, convCheck G E n d) := by
+      rw [List.map_map]
+      exact List.map_congr_left fun d hd ↦ by rw [Function.comp_apply, (ih d hd).2]
+    rcases l with r | ⟨rs, fuel⟩ | ⟨rs, fuel, depth⟩ | ⟨j, θ⟩ | j | ⟨fuel, m, except, kl, kc⟩
+    · obtain ⟨hu, hc⟩ := fastStep_eq G E n r
+        (ds.map fun d ↦ (RoseTree.node d.label.toRule [], RoseTree.para (convFastStep G E n) d))
+        fun c hc ↦ by
+          obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hc
+          exact (ih d hd).1
+      simp only [convFastStep, convStep, List.map_map, Function.comp_def]
+      refine ⟨hu, hc.trans (congrArg _ ?_)⟩
+      rw [List.map_map]
+      exact List.map_congr_left fun d hd ↦ by rw [Function.comp_apply, (ih d hd).2]
+    all_goals
+      refine ⟨fun Γ k Φ t ↦ ?_, ?_⟩
+      · simp only [convFastStep, ConvRule.hyps, map_weakenBy_zero]
+      · simp only [convFastStep]
+        rw [hcs]
+        simp only [FastChecks.checks, ConvRule.hyps, map_weakenBy_zero]
+        -- the remaining steps' rewritings read no hypothesis
+        all_goals rfl
+
+/-- The conversion checker is the conversion checker with its rewriting under hypotheses weakened
+where they are read, by which the compiler replaces it. -/
+@[csimp] theorem convCheck_eq_convCheckFast : @convCheck = @convCheckFast := by
+  funext G E n d
+  exact (para_convFastStep G E n d).2.symm
 
 /-- Whether a certificate proves a theorem: its context's types are types, its hypotheses and
 conclusion formulas, and the conversion checker proves the conclusion from the hypotheses. -/

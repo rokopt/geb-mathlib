@@ -7402,20 +7402,21 @@ both: the checks of the stored certificates by `evaluation_axiom`, in
 `GebTests/Prototypes/FreeTopos/Certified/` and in `GebSlow`, whose
 evaluator calls the library `Geb` compiled; the checks of developments
 by {name}`Geb.FreeTopos.Internal.checkDev`; the searches of
-`geb-certify`; and the benches of `geb-bench`. Three evaluations do not:
+`geb-certify`; and the benches of `geb-bench`. So does every compiled
+evaluation of the conversion checker
+({name}`Geb.FreeTopos.Internal.convCheck`), whose steps `base` apply the
+step of the base checker's fold
+({name}`Geb.FreeTopos.Internal.checkStep`) to their children's results:
+the attribute `csimp` replaces it by
+{name}`Geb.FreeTopos.Internal.convCheckFast`, whose steps `base` are
+those of {name}`Geb.FreeTopos.Internal.checkFast`, proved equal to it
+({name}`Geb.FreeTopos.Internal.convCheck_eq_convCheckFast`). Two
+evaluations do not:
 
 * The kernel's reduction of the checker, by `decide` or by `rfl`, which
   unfolds the definition rather than calling the compiled code; it has
   the inference of a type alone, which is the definition, and not the
   weakening where a rewriting reads it.
-* The steps `base` of the conversion checker
-  ({name}`Geb.FreeTopos.Internal.convCheck`), which apply the step of
-  the base checker's fold ({name}`Geb.FreeTopos.Internal.checkStep`) to
-  their children's results; a step `base` that rewrites under a binder
-  weakens every hypothesis there. Its rewriting by the rewriting of
-  {name}`Geb.FreeTopos.Internal.checkFast` is a change to the
-  conversion checker, with the proof that its steps' results are
-  unchanged.
 * The checker written in Geb, whose agreement with the Lean checker
   passes through {name}`Geb.FreeTopos.Internal.typeIn_eq_compile` and is
   an agreement with {name}`Geb.FreeTopos.Internal.check` as it is
