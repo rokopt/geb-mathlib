@@ -150,6 +150,7 @@ def classicalAllowedModules : NameSet :=
    `GebManual.BibTeX,
    `GebManual.Bibliography,
    `GebManual.Bootstrap,
+   `GebManual.CheckingCost,
    `GebManual.DecisionProblems,
    `GebManual.Introduction,
    `GebManual.PHOAS,

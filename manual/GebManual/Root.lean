@@ -13,6 +13,7 @@ public import GebManual.DecisionProblems
 public import GebManual.ValueRepresentation
 public import GebManual.QuotientPRA
 public import GebManual.Bootstrap
+public import GebManual.CheckingCost
 
 /-! # Manual root
 
@@ -36,3 +37,5 @@ open Verso.Genre Manual
 {include 0 GebManual.QuotientPRA}
 
 {include 0 GebManual.Bootstrap}
+
+{include 0 GebManual.CheckingCost}
