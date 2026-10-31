@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.FreeTopos.Internal.Derivation -- shake: keep
+public import Geb.Prototypes.FreeTopos.Internal.ConvDevelopment
 public import Std.Data.HashMap.Raw
 
 set_option doc.verso true in
@@ -31,6 +31,11 @@ values, so that the terms and derivations read share their subterms as the table
 tree instead visits a node once for each path to it from the root, and a derivation's tree is
 larger than its table by orders of magnitude.
 
+A certificate of the conversion checker ({name}`Geb.FreeTopos.Internal.ConvDeriv`) is stored as a
+derivation is, each rule of the base checker at its own position and a step of the environment
+machine at the position after them, so that the text of a derivation of the base checker reads as
+the certificate of its rules.
+
 ## Main definitions
 
 * {lit}`termTree`, {lit}`derivTree`, {lit}`declsTree` — terms, derivations and declarations as
@@ -42,6 +47,8 @@ larger than its table by orders of magnitude.
 * {lit}`Table`, {lit}`treeToNats`, {lit}`declsToNats` — the table of a tree's distinct nodes, of
   declarations', as natural numbers.
 * {lit}`natsOfText`, {lit}`declsOfText` — the numbers and the declarations a text stores.
+* {lit}`convRuleData`, {lit}`convDeclsToNats`, {lit}`convDeclsOfText` — the same for theorems
+  with certificates of the conversion checker, a rule of the base checker at its own position.
 
 ## Implementation notes
 
@@ -61,7 +68,7 @@ set_option doc.verso true
 namespace GebTests.Prototypes.FreeTopos.Stored
 
 open Geb Geb.FreeTopos
-open Internal (Term Label Thm Rule Deriv Decl)
+open Internal (Term Label Thm Rule Deriv Decl ConvRule ConvDeriv ConvDecl)
 open PartialHorn (Tree)
 
 /-! Developments as trees. -/
@@ -163,26 +170,27 @@ def ruleData : Rule → ℕ × List Tree
   | .zeroInd i => (35, [leafN i])
   | .quotInd kq θ => (36, [leafN kq, listT θ])
 
-/-- The readings of a node: as a term, its children as terms, as a derivation, as a theorem, as a
-declaration of a theorem, and its children as declarations of theorems, each where the node is
-one. -/
-structure Reading where
+/-- The readings of a node, its derivations' rules of the type {lit}`ρ`: as a term, its children
+as terms, as a derivation, as a theorem, as a theorem with its derivation, and its children as
+theorems with their derivations, each where the node is one. -/
+structure Reading (ρ : Type) where
   /-- The node as a term. -/
   term : Option Term
   /-- The node's children as terms. -/
   terms : Option (List Term)
   /-- The node as a derivation. -/
-  deriv : Option Deriv
+  deriv : Option (RoseTree ρ)
   /-- The node as a theorem. -/
   thm : Option Thm
-  /-- The node as a declaration of a theorem. -/
-  decl : Option Decl
-  /-- The node's children as declarations of theorems. -/
-  decls : Option (List Decl)
+  /-- The node as a theorem with its derivation. -/
+  decl : Option (Thm × RoseTree ρ)
+  /-- The node's children as theorems with their derivations. -/
+  decls : Option (List (Thm × RoseTree ρ))
 
 /-- The rule of a position, read off the data, each a node's tree and readings: the rule and the
 data after them. -/
-def ruleOf (k : ℕ) (ts : List (Tree × Reading)) : Option (Rule × List (Tree × Reading)) :=
+def ruleOf {ρ : Type} (k : ℕ) (ts : List (Tree × Reading ρ)) :
+    Option (Rule × List (Tree × Reading ρ)) :=
   match k, ts with
   | 0, rest => some (.refl, rest)
   | 1, rest => some (.trans, rest)
@@ -244,20 +252,22 @@ def declTree : Decl → Option Tree
 /-- Declarations of theorems as a tree; nothing where one is of another kind. -/
 def declsTree (ds : List Decl) : Option Tree := (ds.mapM declTree).map listT
 
-/-- The readings of a node, from its label and its children's trees and readings. -/
-def read (k : ℕ) (cs : List (Tree × Reading)) : Reading where
+/-- The readings of a node, from its label and its children's trees and readings, the rule of a
+position read by {lit}`rule`. -/
+def read {ρ : Type} (rule : ℕ → List (Tree × Reading ρ) → Option (ρ × List (Tree × Reading ρ)))
+    (k : ℕ) (cs : List (Tree × Reading ρ)) : Reading ρ where
   term := do
     let (l, rest) ← labelOf k (cs.map (·.1))
     pure (RoseTree.node l (← (after cs rest).mapM (·.term)))
   terms := cs.mapM (·.2.term)
   deriv := do
-    let (r, rest) ← ruleOf k cs
+    let (r, rest) ← rule k cs
     pure (RoseTree.node r (← (after cs rest).mapM (·.deriv)))
   thm := match cs with
     | [n, ctx, hyps, c] => do pure ⟨n.1.label, ctx.1.children, ← hyps.2.terms, ← c.2.term⟩
     | _ => none
   decl := match cs with
-    | [a, d] => do pure (.language (← a.2.thm) (← d.2.deriv))
+    | [a, d] => do pure (← a.2.thm, ← d.2.deriv)
     | _ => none
   decls := cs.mapM (·.2.decl)
 
@@ -313,32 +323,46 @@ def Table.toNats (tab : Table) : List ℕ :=
 /-- A tree as a list of natural numbers, the table of its distinct nodes, the root last. -/
 def treeToNats (t : Tree) : List ℕ := ((intern t).run Table.empty).2.toNats
 
-/-- The index of a derivation's tree ({name}`derivTree`) among the distinct nodes, entered as
-{name}`intern` enters it, without the tree being built. A derivation shares its subderivations,
+/-- The index of a derivation's tree among the distinct nodes, each node its rule's position over
+the trees of the rule's data, which {lit}`data` gives, and the node's children, as
+{name}`derivTree` builds it at the rules of the base checker, entered as {name}`intern` enters it,
+without the tree being built. A derivation shares its subderivations,
 and its tree repeats each once for each path to it, so the fold is {name}`WType.elim`'s, whose
 step receives the children's results as a function and applies it in turn to the table: each
 child is entered while the table is threaded through it, where the fold of
 {name}`RoseTree.elim` would compute every child's result, a closure, before its parent's, and so
 build a closure for each node of the tree. -/
-def internDeriv : Deriv → StateM Table ℕ :=
+def internDeriv {ρ : Type} (data : ρ → ℕ × List Tree) : RoseTree ρ → StateM Table ℕ :=
   WType.elim _ fun ⟨(r, n), g⟩ ↦ do
-    let (k, ds) := ruleData r
+    let (k, ds) := data r
     let dIds ← ds.mapM intern
     let cIds ← (List.finRange n).mapM g
     internNode k (dIds ++ cIds)
 
-/-- The index of a declaration's tree ({name}`declTree`) among the distinct nodes, its
-derivation's entered by {name}`internDeriv`; nothing for a declaration of another kind. -/
+/-- The index of a theorem's tree with its derivation's among the distinct nodes, as
+{name}`declTree` builds it at a declaration of a theorem, its derivation's entered by
+{name}`internDeriv`. -/
+def internThm {ρ : Type} (data : ρ → ℕ × List Tree) (a : Thm) (d : RoseTree ρ) :
+    StateM Table ℕ := do
+  internNode 0 [← intern (thmTree a), ← internDeriv data d]
+
+/-- The index of a declaration's tree ({name}`declTree`) among the distinct nodes, entered by
+{name}`internThm`; nothing for a declaration of another kind. -/
 def internDecl : Decl → Option (StateM Table ℕ)
-  | .language a d => some do internNode 0 [← intern (thmTree a), ← internDeriv d]
+  | .language a d => some (internThm ruleData a d)
   | _ => none
+
+/-- Declarations as a list of natural numbers, the table of the list of their trees, each
+declaration entered in turn by {lit}`enter`; nothing where one enters nothing. -/
+def entriesToNats {δ : Type} (enter : δ → Option (StateM Table ℕ)) (ds : List δ) :
+    Option (List ℕ) :=
+  let (ids, tab) := (ds.mapM fun d ↦ (enter d).mapM id).run Table.empty
+  (ids.mapM id).map fun ids ↦ ((internNode 0 ids).run tab).2.toNats
 
 /-- Declarations of theorems as a list of natural numbers, the table of their tree
 ({name}`declsTree`), each declaration entered in turn by {name}`internDecl`; nothing where one is
 of another kind. -/
-def declsToNats (ds : List Decl) : Option (List ℕ) :=
-  let (ids, tab) := (ds.mapM fun d ↦ (internDecl d).mapM id).run Table.empty
-  (ids.mapM id).map fun ids ↦ ((internNode 0 ids).run tab).2.toNats
+def declsToNats (ds : List Decl) : Option (List ℕ) := entriesToNats internDecl ds
 
 /-! Lists of natural numbers as text. -/
 
@@ -362,7 +386,46 @@ def natsOfText (s : String) : Option (List ℕ) := do
 
 /-- The declarations of theorems a text stores, the table of their tree, where it stores them. -/
 def declsOfText (s : String) : Option (List Decl) :=
-  (natsOfText s).bind (paraOfNats read) |>.bind (·.2.decls)
+  (natsOfText s).bind (paraOfNats (read ruleOf)) |>.bind (·.2.decls) |>.map
+    (·.map fun (a, d) ↦ .language a d)
+
+/-! Certificates of the conversion checker. -/
+
+/-- A rule of the conversion checker's position among the rules and its data, as trees: a rule of
+the language's as {name}`ruleData` gives it, and a step of the machine after them; a rule of
+another kind at a position {lit}`convRuleOf` reads as none, so that a text storing it does not
+read. -/
+def convRuleData : ConvRule → ℕ × List Tree
+  | .base r => ruleData r
+  | .machine fuel m except kl kc =>
+    (37, [leafN fuel, leafN m, listT (except.map leafN), leafN kl, leafN kc])
+  | _ => (38, [])
+
+/-- The rule of the conversion checker of a position, read off the data, each a node's tree and
+readings: the rule and the data after them. -/
+def convRuleOf {ρ : Type} (k : ℕ) (ts : List (Tree × Reading ρ)) :
+    Option (ConvRule × List (Tree × Reading ρ)) := match k, ts with
+  | 37, fuel :: m :: except :: kl :: kc :: rest =>
+    some (.machine fuel.1.label m.1.label (except.1.children.map (·.label)) kl.1.label
+      kc.1.label, rest)
+  | k, ts => (ruleOf k ts).map fun (r, rest) ↦ (.base r, rest)
+
+/-- The index of a declaration's tree among the distinct nodes: a theorem of the base checker's
+as {name}`internDecl` enters it, and a theorem with a certificate of the conversion checker with
+its rules' trees of {name}`convRuleData`; nothing for a declaration of another kind. -/
+def internConvDecl : ConvDecl → Option (StateM Table ℕ)
+  | .base d => internDecl d
+  | .conv a c => some (internThm convRuleData a c)
+
+/-- Declarations of theorems as a list of natural numbers, each declaration entered in turn by
+{name}`internConvDecl`; nothing where one is of another kind. -/
+def convDeclsToNats (ds : List ConvDecl) : Option (List ℕ) := entriesToNats internConvDecl ds
+
+/-- The theorems a text stores with their certificates of the conversion checker, where it stores
+them, a derivation of the base checker read as the certificate of its rules. -/
+def convDeclsOfText (s : String) : Option (List ConvDecl) :=
+  (natsOfText s).bind (paraOfNats (read convRuleOf)) |>.bind (·.2.decls) |>.map
+    (·.map fun (a, c) ↦ .conv a c)
 
 end GebTests.Prototypes.FreeTopos.Stored
 
