@@ -90,9 +90,18 @@ scope = "rokopt"
 git = "https://github.com/rokopt/geb-lang"
 rev = "ddc03a032567dc4859a9865661e573348818d750"
 
+# The library is compiled into a shared library that Lake loads into every
+# module importing it from another library, so that Lean's evaluator runs
+# the library's compiled code rather than interpreting it: the checks the
+# tests state by `#guard`, by `evaluation_axiom` and in the loading mode
+# native evaluate the library's checkers. Lake builds the shared library
+# from those of the libraries it imports, each whole, mathlib's among them,
+# whose C the mathlib cache holds and whose object files it does not, so a
+# build without the GitHub cache compiles them.
 [[lean_lib]]
 name = "Geb"
 globs = ["Geb.*"]
+precompileLibrary = true
 
 # The test library: its root and every module the root imports, but for
 # the modules below that read files at elaboration.
