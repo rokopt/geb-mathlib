@@ -4200,7 +4200,14 @@ import-direction rules above are enforced by
   development's theorems include the definitions' equations at the
   numerals' bits (`Geb.FreeTopos.Literals.lemmas`); rewriting by those
   equations reaches that numeral, by recursion on the bits
-  (`Geb.FreeTopos.Literals.checked_of_eval`).
+  (`Geb.FreeTopos.Literals.checked_of_eval`). Its step of the machine
+  reduces a term by the environment machine of `Machine.lean`
+  (`Geb.FreeTopos.Internal.machineReduce`), which evaluates in
+  environments of values, lazily, each delayed value computed once; the
+  term rewrites to the result by the base checker's rules
+  (`Geb.FreeTopos.Internal.machineReduce_reaches`, `MachineSound.lean`),
+  and `GebTests/Prototypes/FreeTopos/Machine.lean` tests it at the
+  library's arithmetic.
   `GebTests/Prototypes/FreeTopos/Literals.lean` proves the equations by
   the prover and tests the evaluation, and
   `GebBench/Prototypes/FreeTopos/Literals.lean` times it against the base
