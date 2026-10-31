@@ -2685,6 +2685,12 @@ another label at applications, the expansion of a list being a list
 tree, by induction on rose trees
 (`GebTests/Prototypes/FreeTopos/DatatypeSound.lean`), given the
 soundness at the lists headed by `datum`, `decode`, `case` and `cata`.
+The soundness at the lists headed by `datum` and by `decode` holds at
+source forms: a datum's quotation is related at the datatype the form
+names (`GebTests/Prototypes/FreeTopos/DatatypeDatum.lean`), and the
+conditional a decoding's erasure writes on the datatype's recognizer
+converges to a value related at the result type
+(`GebTests/Prototypes/FreeTopos/DatatypeDecode.lean`).
 The statement assumes of the definitions and the named context what the
 compilers ensure of a whole program: the relation's markers are the
 typing environment's; the recognizer of each datatype, where the program
