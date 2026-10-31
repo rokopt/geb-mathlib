@@ -5101,7 +5101,7 @@ the Lean definition it transcribes. The
 Lean the bootstrap compiler
 emits from the program, `GebMirror.Metalogic`, is the denotation of each
 of the program's definitions as {name}`Geb.Kernel.load` loads them,
-checked by the kernel in the loading mode `rfl`, and agrees
+checked by the kernel in the loading mode `proof`, and agrees
 definition by definition with the Lean definitions it transcribes: each
 fold of the program pairing a node's tree with its result is related to
 a paramorphism of the tree it encodes, and the partial Horn logic, the
@@ -5109,7 +5109,7 @@ theory, the inference, the language and the checker of derivations and
 developments each agree at every encoded input. At every development,
 its constants, entries and declarations encoded, the loaded check gives
 the encoding of the state the Lean checker gives, so the two accept the
-same developments with the same results. In the loading mode `rfl`, the
+same developments with the same results. In the loading mode `proof`, the
 default, the proof depends on no axiom beyond `propext` and
 `Quot.sound`; in the mode `native` it depends also on the axioms stating
 the loading (`docs/rules/ci-and-workflow.md` § Loading modes). The
@@ -5131,7 +5131,7 @@ and the translation of a term, each node's step related to the step of
 the paramorphism {name}`Geb.RoseTree.para` of the term. At every
 program, every translated program's definitions and every theorem of
 Gödel's T, the loaded translation gives the encoding of the Lean
-translation's result. In the loading mode `rfl` the proof depends on no
+translation's result. In the loading mode `proof` the proof depends on no
 axiom beyond `propext` and `Quot.sound`; in the mode `native` it depends
 also on the axioms stating the loading.
 
@@ -5149,7 +5149,7 @@ the Lean prover by the same method: at encoded arguments, rules related
 to the normalizer's and provers related to Lean's, each of its entry
 points gives the encoding of the Lean prover's derivation, so that the
 prover written in Geb constructs exactly the derivations the Lean prover
-constructs. In the loading mode `rfl` the proof depends on no axiom
+constructs. In the loading mode `proof` the proof depends on no axiom
 beyond `propext` and `Quot.sound`; in the mode `native` it depends also
 on the axioms stating the loading.
 
@@ -5166,7 +5166,7 @@ their definitions, the functions of terms the search uses among them,
 equal to the Lean definition it transcribes by the same method, at
 encoded arguments, rules related to the normalizer's, provers related to
 Lean's and provers from rules related to Lean's. In
-the loading mode `rfl` the proof depends on no axiom beyond `propext`
+the loading mode `proof` the proof depends on no axiom beyond `propext`
 and `Quot.sound`; in the mode `native` it depends also on the axioms
 stating the loading.
 
@@ -5184,7 +5184,7 @@ Lean prover's records them in hash tables.
 `GebTests/Prototypes/FreeTopos/Agreement/Combinator.lean` proves each of
 its definitions equal to the Lean definition it transcribes by the same
 method, at encoded arguments and related states, a list related to a
-table when their lookups agree. In the loading mode `rfl` the proof
+table when their lookups agree. In the loading mode `proof` the proof
 depends on no axiom beyond `propext` and `Quot.sound`; in the mode
 `native` it depends also on the axioms stating the loading.
 

@@ -26,7 +26,7 @@ the globals the modules it imports declare, and a module whose definitions and i
 change is not checked again. The command {lit}`geb_load` declares them from a program's image.
 
 The step states that the checker-evaluator {name}`Geb.Kernel.infer` gives the definition the
-global's type and its mirror as its denotation. In the mode {lit}`rfl` it is a theorem whose proof
+global's type and its mirror as its denotation. In the mode {lit}`proof` it is a theorem whose proof
 applies the checker-evaluator's equation at each node of the definition ({lit}`proveNode`), its
 type, its denotation and the proofs of its children's, which the kernel checks in time of the size
 of the definition and of the distance from the last global of the globals it refers to, rather
@@ -36,7 +36,7 @@ loading has been evaluated by the compiled checker-evaluator; the axioms are lis
 in that mode alone ({lit}`GebMeta.loadingAxiomModules`). Both modes declare the same statements, so
 a module depending on the loading is the same in either. {lit}`geb_load`, and the command
 {lit}`geb_program` of the tests, read the mode from the environment variable {lit}`GEB_LOADING`,
-{lit}`rfl` when it is unset.
+{lit}`proof` when it is unset.
 
 Each global's type is declared as a literal type tree, built by the kernel's constructors of types,
 as the type annotations of the declared trees are ({lit}`typeExpr`), so that the kernel compares
@@ -59,7 +59,7 @@ each at the height above its body's, as the elaborator declares a definition.
 The commands' elaborators run in Lean's elaboration monads, whose definitions depend on
 {lit}`Classical.choice`; they declare kernel-checked definitions and proofs or, in the mode
 {lit}`native`, the axioms stating the steps. Lake does not track the environment variable, so a
-module built in one mode is not rebuilt when the mode changes; a build in the mode {lit}`rfl`
+module built in one mode is not rebuilt when the mode changes; a build in the mode {lit}`proof`
 after one in the mode {lit}`native` deletes the outputs of the modules declaring a loading and of
 those depending on them ({lit}`scripts/pre-push.sh`).
 
@@ -353,12 +353,12 @@ meta def declareLoading (n m : Name) (ds : List (List Char × Tree)) (types : Li
         throwError "the step of the definition `{dname}`: {e.toMessageData}"
 
 /-- Whether the environment variable {lit}`GEB_LOADING` selects the mode {lit}`native`; its other
-value is {lit}`rfl`, the mode when it is unset. -/
+value is {lit}`proof`, the mode when it is unset. -/
 meta def nativeLoading : IO Bool := do
   match ← IO.getEnv "GEB_LOADING" with
   | some "native" => return true
-  | none | some "rfl" => return false
-  | some s => throw <| IO.userError s!"GEB_LOADING is {s}, neither rfl nor native"
+  | none | some "proof" => return false
+  | some s => throw <| IO.userError s!"GEB_LOADING is {s}, neither proof nor native"
 
 /-- The value of a hexadecimal digit. -/
 meta def hexDigit (c : Char) : Option UInt8 :=

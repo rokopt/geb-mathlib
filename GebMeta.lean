@@ -25,7 +25,7 @@ dependency is confined to proof terms. The axioms of the modules in
 `loadingAxiomModules`, the loading of the programs whose agreement with
 Lean is proved, stated without proof in the loading mode `native`, are
 permitted to every declaration in that mode and to none in the mode
-`rfl`, as the environment variable `GEB_LOADING` selects. The axioms of
+`proof`, as the environment variable `GEB_LOADING` selects. The axioms of
 the modules in `evaluationAxiomModules`, facts that Lean's evaluator
 established and the command `evaluation_axiom` declared, the checks of
 the developments certificates store, are permitted to every declaration
@@ -371,7 +371,7 @@ def evaluationAxiomModules : NameSet :=
     `GebSlow.Prototypes.FreeTopos.Certified.DatatypeList]
 
 /-- Whether the environment variable `GEB_LOADING` selects the loading
-mode `native`; the mode is `rfl` when the variable is unset. -/
+mode `native`; the mode is `proof` when the variable is unset. -/
 def nativeLoading : BaseIO Bool :=
   return (← IO.getEnv "GEB_LOADING") == some "native"
 
