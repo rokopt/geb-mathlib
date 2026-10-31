@@ -8,6 +8,8 @@ module
 public import GebTests.Prototypes.FreeTopos.DatatypeApply
 public import GebTests.Prototypes.FreeTopos.DatatypeLists
 public import GebTests.Prototypes.FreeTopos.DatatypeData
+public import GebTests.Prototypes.FreeTopos.DatatypeDatum
+public import GebTests.Prototypes.FreeTopos.DatatypeDecode
 public import GebTests.Prototypes.FreeTopos.DatatypeFolds
 public import GebTests.Prototypes.FreeTopos.DatatypeSound
 public import GebTests.Prototypes.FreeTopos.DatatypeLam
@@ -116,6 +118,20 @@ def searches : List (String × Search) :=
         "datatype-lam", "datatype-data", "datatype-folds"],
       fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
         Datatypes.listsCertificates P S T dss.flatten)),
+    ("datatype-datum", (["datatype-base", "datatype-atom", "datatype-list"], fun dss ↦
+      inProgram Datatypes.extended3 fun (P, S, T) ↦ Datatypes.datumCertificates P S T dss.flatten)),
+    ("datum-case", (["datatype-base", "datatype-atom", "datatype-list", "datatype-datum"],
+      fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.datumCaseCertificates P S T dss.flatten)),
+    ("datatype-decode", (["datatype-base", "datatype-atom", "datatype-list", "datatype-stages",
+        "datatype-apply", "datatype-expansion", "datatype-assembly"],
+      fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.decodeCertificates P S T dss.flatten)),
+    ("decode-case", (["datatype-base", "datatype-atom", "datatype-list", "datatype-stages",
+        "datatype-apply", "datatype-expansion", "datatype-assembly", "datatype-datum",
+        "datatype-decode"],
+      fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.decodeCaseCertificates P S T dss.flatten)),
     ("datatype-sound", (["datatype-base", "datatype-atom", "datatype-list", "datatype-stages",
         "datatype-apply", "datatype-expansion", "datatype-assembly", "datatype-app",
         "datatype-lam", "datatype-data", "datatype-folds", "datatype-lists"],
