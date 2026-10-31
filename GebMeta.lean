@@ -348,7 +348,7 @@ def upstreamChoiceRoots : NameSet :=
 /-- Exact module names whose axioms are permitted in the loading mode
 `native`: the modules that declare the loading of a program whose
 agreement with Lean is proved, which in that mode state each
-definition's equation of types and loading step as axioms
+definition's loading step as an axiom
 (`Geb.Kernel.LoadCommand.declareLoading`): those `scripts/bootstrap.sh`
 generates for the metalogic's program, a layer to a module. -/
 def loadingAxiomModules : NameSet :=

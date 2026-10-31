@@ -18,9 +18,9 @@ The command {lit}`geb_program` reads a Geb program's sources at elaboration, run
 compiler's front end on them, and declares, by {name}`Geb.Kernel.LoadCommand.declareLoading`, for
 each of the program's definitions not yet declared, its tree, its global and the globals before
 it, each global's value the definition of the same name that the bootstrap compiler's Lean backend
-emits from the program, and the step of loading it, closed by reflexivity, which the kernel checks
-by evaluating the checker-evaluator {name}`Geb.Kernel.infer` on the definition, or stated as an
-axiom, in the mode {name}`Geb.Kernel.LoadCommand.nativeLoading` reads. The definitions of a long
+emits from the program, and the step of loading it, proved by the checker-evaluator's equation
+at each node of the definition, which the kernel checks, or stated as an axiom, in the mode
+{name}`Geb.Kernel.LoadCommand.nativeLoading` reads. The definitions of a long
 program are declared ahead of the command, a layer to a module, by the command {lit}`geb_load`
 the generated modules of {lit}`GebMirror` run; {lit}`geb_program` then checks that the trees they
 declared are the program's. It declares the loading of the whole program,
@@ -51,17 +51,16 @@ open Geb Geb.Kernel Geb.Kernel.LoadCommand Lean Elab Command
 /-- {lit}`geb_program n from "f" ... mirror m` embeds the program the files make, each followed
 by a newline, as the host driver joins sources, read and expanded by the stage-0 compiler's front
 end: {lit}`n` is the list of its definitions' trees, {lit}`n.d` followed by each index; {lit}`n.g`
-followed by an index is the global its definition loads, at its type and the definition of that
-name in the namespace {lit}`m`, the Lean the bootstrap compiler emits from the program, cast along
-{lit}`n.den` followed by the index, the equation of their types;
+followed by an index is the global its definition loads, at its type {lit}`n.ty` followed by the
+index, and the definition of that name in the namespace {lit}`m`, the Lean the bootstrap compiler
+emits from the program, whose type is that type's denotation;
 {lit}`n.pre` followed by an index is the list of the globals before it; {lit}`n.step` followed by
 an index states that the definition loads its global after them, checked by the kernel;
 {lit}`n.load_eq` states that the program loads to its globals, composed from the steps;
 {lit}`n.globals` lists them one by one, so that the kernel reaches an entry in as many steps as
 its index rather than unfolding the appends that build the last list of them, and
 {lit}`n.load_globals` states that the program loads to that list;
-{lit}`n.last_heq` states that the last global's value is the last definition's mirror, from that
-equation;
+{lit}`n.last_heq` states that the last global's value is the last definition's mirror;
 and, for each name {lit}`x` after {lit}`exports`, {lit}`n.x_heq` states the same of the global of
 the definition of that name. A name {lit}`n` beginning with {lit}`_root_` is taken from the root
 namespace, and the declarations of {lit}`n` already made are checked rather than made again. -/
@@ -84,7 +83,7 @@ syntax (name := gebProgram)
   let some b := (if r.label == 1 then r.children.head? else none)
     | throwError "the program does not read"
   let some ds := unbundle b | throwError "the bundle does not unbundle"
-  if (load (ds.map Prod.snd)).isNone then throwError "the program does not load"
+  let some globs := load (ds.map Prod.snd) | throwError "the program does not load"
   let treeT := mkConst ``Kernel.Tree
   let globT := mkConst ``Kernel.Glob
   let listOf (t : Expr) : Expr := mkApp (mkConst ``List [0]) t
@@ -102,7 +101,7 @@ syntax (name := gebProgram)
     addDocStringCore name doc
   let count := ds.length
   liftCoreM do
-    declareLoading n m ds (← nativeLoading)
+    declareLoading n m ds (globs.map (·.1)) (← nativeLoading)
     defn n "The trees of the program's definitions." (listOf treeT)
       (listExpr treeT ((List.range count).map fun k ↦ mkConst (nm "d" k)))
     let final := mkConst (nm "pre" count)
@@ -138,8 +137,8 @@ syntax (name := gebProgram)
         (some' (listOf globT) (mkConst globals)))
       (mkAppN (mkConst ``load_eq_of_append_nil)
         #[mkConst n, final, mkConst globals, mkConst (n ++ `load_eq), append])
-    -- the global of the definition of index k is its mirror, cast along the equation of their
-    -- types, stated without elaborating the global's type, whose reduction evaluates the checker
+    -- the global of the definition of index k is its mirror, at the type whose denotation is the
+    -- mirror's type
     let heq (k : ℕ) (thmName : Name) (doc : String) : CoreM Unit := do
       let mName := m ++ .mkSimple (String.ofList ((ds.map Prod.fst).getD k []))
       let some info := (← getEnv).find? mName | throwError "the definition {mName} has no mirror"
@@ -147,10 +146,8 @@ syntax (name := gebProgram)
       let fstE := mkApp3 (mkConst ``Sigma.fst [0, 0]) treeT (mkConst ``Kernel.Ty.den) gk
       let sndE := mkApp3 (mkConst ``Sigma.snd [0, 0]) treeT (mkConst ``Kernel.Ty.den) gk
       let tyK := mkApp (mkConst ``Kernel.Ty.den) fstE
-      let den := mkApp (mkConst ``Kernel.Ty.den)
-        (mkApp2 (mkConst ``defType) (mkConst (nm "pre" k)) (mkConst (nm "d" k)))
       thm thmName doc (mkApp4 (mkConst ``HEq [1]) tyK sndE info.type (mkConst mName))
-        (mkApp4 (mkConst ``cast_heq [1]) info.type den (mkConst (nm "den" k)) (mkConst mName))
+        (mkApp2 (mkConst ``HEq.refl [1]) info.type (mkConst mName))
     heq (count - 1) (n ++ `last_heq) "The last global's value is the last definition's mirror."
     for x in exported do
       let some k := (ds.map Prod.fst).idxOf? x.getString!.toList

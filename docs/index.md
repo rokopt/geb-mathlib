@@ -3772,11 +3772,15 @@ import-direction rules above are enforced by
   (`Geb.Kernel.loadStep`), and `LoadCommand.lean` declares the loading one
   definition at a time beyond the definitions earlier modules declare
   (`Geb.Kernel.LoadCommand.declareLoading`, the command `geb_load`, which
-  reads a program's image): each global's value is its mirror cast along
-  the equation of the mirror's type with the denotation of the computed
-  type, and that equation and the step appending the global are theorems
-  the kernel checks in the loading mode `rfl` and axioms in the mode
-  `native` (`docs/rules/ci-and-workflow.md` § Loading modes).
+  reads a program's image): each global is the computed type, declared as
+  a type tree, with the definition's mirror, and the step appending it is a
+  theorem in the loading mode `rfl`, proved by the checker-evaluator's
+  equation at each node of the definition
+  (`Geb.Kernel.LoadCommand.proveNode`, with the equations of
+  `Geb/Prototypes/GoedelT/Equations.lean` and those of a variable, a
+  primitive and a reference in `Loading.lean`), which the kernel checks,
+  and an axiom in the mode `native` (`docs/rules/ci-and-workflow.md`
+  § Loading modes).
   `Reader.lean` reads programs, sequences of named definitions and of type
   and numeral abbreviations in S-expressions over lists of characters,
   read from the authoring profile (`Geb.Kernel.readSExps`), rejecting a
@@ -4255,8 +4259,8 @@ import-direction rules above are enforced by
   the method of the checker of Gödel's T: the Lean the bootstrap compiler
   emits from the program, `bootstrap/lean/GebMirror/Metalogic/`, a module
   per layer of the program, is the denotation of each of the program's
-  definitions as `Geb.Kernel.load` loads them, checked by the kernel's
-  evaluation in the loading mode `rfl` a layer to a generated module
+  definitions as `Geb.Kernel.load` loads them, checked by the kernel in
+  the loading mode `rfl` a layer to a generated module
   (`bootstrap/lean/GebMirror/Metalogic/Load/`) and composed in
   `Agreement/Load.lean`, and agrees definition by definition with the
   Lean definitions it transcribes (`Agreement/`): each fold of the program

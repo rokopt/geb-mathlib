@@ -245,13 +245,14 @@ metalogic's, declared by the modules `scripts/bootstrap.sh` generates
 under `bootstrap/lean/GebMirror/Metalogic/Load/`, is
 checked in one of two modes, which the environment variable
 `GEB_LOADING` selects (`Geb/Prototypes/Kernel/LoadCommand.lean`). In
-the mode `native`, the default, each definition's equation of types and
-loading step, the facts whose proofs evaluate the checker-evaluator, are
-axioms declared after the compiled checker-evaluator has loaded the
-program, and the axiom linter permits the axioms of those modules
-(`GebMeta.loadingAxiomModules`). In the mode `rfl` they are theorems the
-kernel checks by that evaluation, which takes hours, and the linter
-permits none of them. `scripts/pre-push.sh` and `scripts/pre-push-full.sh`
+the mode `native`, the default, each definition's loading step, the
+fact that the checker-evaluator gives the definition its mirror as its
+denotation, is an axiom declared after the compiled checker-evaluator
+has loaded the program, and the axiom linter permits the axioms of those
+modules (`GebMeta.loadingAxiomModules`). In the mode `rfl` each step is
+a theorem proved by the checker-evaluator's equation at each node of the
+definition, which the kernel checks in minutes, and the linter permits
+none of them. `scripts/pre-push.sh` and `scripts/pre-push-full.sh`
 take `--loading=native` or `--loading=rfl`; every other workflow builds in
 the mode `native`. Lake does not track the variable, so a module built in
 one mode is reused in the other: the mode `rfl` of `scripts/pre-push.sh`
@@ -260,10 +261,8 @@ depending on them, and `slow-checks.yml` builds without the GitHub cache.
 A stale module built in the mode `native` that is left in an `rfl` build
 depends on an axiom of the loading, which the linter then rejects.
 `slow-checks.yml` builds and lints `GebTests` in the mode `rfl` on demand,
-when dispatched with its input `rfl`; the loading's layers are checked one
-after another and together take longer than the hosted runners' limit on
-a job's time, so the check that completes is that of
-`scripts/pre-push.sh --loading=rfl` on a machine without that limit.
+when dispatched with its input `rfl`, as `scripts/pre-push.sh
+--loading=rfl` does locally.
 
 ## Certificates
 

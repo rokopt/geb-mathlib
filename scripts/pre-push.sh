@@ -14,10 +14,10 @@
 # --loading selects how the loading of the metalogic's program is
 # checked (Geb/Prototypes/Kernel/LoadCommand.lean), through the
 # environment variable GEB_LOADING that the build and the axiom linter
-# read. In the mode native, the default, the facts whose proofs
-# evaluate the checker-evaluator are axioms, declared after the loading
-# is evaluated by compiled code, and the linter permits them. In the
-# mode rfl the kernel checks each of them and the linter permits none.
+# read. In the mode native, the default, the steps of the loading are
+# axioms, declared after the loading is evaluated by compiled code, and
+# the linter permits them. In the mode rfl the kernel checks a proof of
+# each of them and the linter permits none.
 # Lake does not track the variable, so the mode rfl deletes the outputs
 # of the modules declaring the loading of the metalogic's program and of
 # the checker of Goedel's T, and of those depending on them, which the

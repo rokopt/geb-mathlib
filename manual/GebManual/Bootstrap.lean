@@ -5101,7 +5101,7 @@ the Lean definition it transcribes. The
 Lean the bootstrap compiler
 emits from the program, `GebMirror.Metalogic`, is the denotation of each
 of the program's definitions as {name}`Geb.Kernel.load` loads them,
-checked by the kernel's evaluation in the loading mode `rfl`, and agrees
+checked by the kernel in the loading mode `rfl`, and agrees
 definition by definition with the Lean definitions it transcribes: each
 fold of the program pairing a node's tree with its result is related to
 a paramorphism of the tree it encodes, and the partial Horn logic, the
@@ -6876,27 +6876,27 @@ the change that removes it.
   read it (`lakefile.toml`); a change to a source of the stage-0
   compiler, which most of the tests import, still rebuilds most of
   them.
-* Load time. The kernel checks the loading of the metalogic's program
-  by evaluating the checker-evaluator {name}`Geb.Kernel.infer`, by
-  reduction, on each definition in the globals before it, and comparing
-  the denotation it computes with the definition's mirror. The check
-  takes hours and grows faster than the program. The program is loaded a
-  layer to a module, generated with the mirror by `scripts/bootstrap.sh`,
-  so a change to a layer's sources checks again that layer, the layers
-  after it, and the equality of the program's exported definitions with
-  their mirrors, and no other layer. The kernel makes the check in the
-  loading mode `rfl`, on demand; in the default mode
-  `native` the facts it checks are axioms, declared after the compiled
-  checker-evaluator has loaded the program
-  (`docs/rules/ci-and-workflow.md` § Loading modes). Each global's type
-  is computed from its definition ({name}`Geb.Kernel.defType`) rather
-  than stored: the checker-evaluator builds a type from its constructors
-  and from type annotations its fold rebuilds, and the kernel cannot
-  equate the children of a rebuilt node with those of a constructed one,
-  so a stored type equals a computed one only by decision, while the
-  casts inside a denotation compare them by reduction. A shorter check in
-  the mode `rfl` is made before or shortly after the end of the
-  bootstrap, as its duration requires.
+* Axioms of the loading. In the default loading mode `native` each step
+  of the loading of the metalogic's program is an axiom, declared after
+  the compiled checker-evaluator has loaded the program
+  (`docs/rules/ci-and-workflow.md` § Loading modes). In the mode `rfl`
+  the kernel checks each step, by a proof that applies the equation of
+  the checker-evaluator {name}`Geb.Kernel.infer` at each node of the
+  definition, in the globals before it, and compares the denotation the
+  proof states with the definition's mirror
+  (`Geb/Prototypes/Kernel/LoadCommand.lean`), in time of the size of the
+  definitions and of the distance from the last global of the globals
+  each refers to: the six layers check in under two minutes on one
+  machine, and the test of their agreement in another two. Each global's
+  type is stored as a type tree built by the kernel's constructors of
+  types, as the definitions' type annotations are, so that the kernel
+  compares the types the proof's equations state by their constructors.
+  The program is loaded a layer to a module, generated with the mirror
+  by `scripts/bootstrap.sh`, so a change to a layer's sources checks
+  again that layer, the layers after it, and the equality of the
+  program's exported definitions with their mirrors, and no other layer.
+  The mode `rfl` as the default, in every build and workflow, removes
+  the axioms.
 * Emitted names. A program's definition named `T`, `leaf` or `mk` makes
   the emitted module ill-typed, since the module refers to the tree type,
   the leaf and the node by those names; qualifying them as the constants
