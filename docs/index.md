@@ -4164,7 +4164,12 @@ import-direction rules above are enforced by
   induction on the natural numbers, lists, rose trees and quotients, case
   analysis on coproducts, and the citation of certificates of the
   combinators, the basic axioms and rules of a local set theory
-  [RuizHernandezSolorzano2021] with induction. Its developments
+  [RuizHernandezSolorzano2021] with induction. The compiler replaces the
+  checker by `Geb.FreeTopos.Internal.checkFast`, proved equal to it
+  (`Geb.FreeTopos.Internal.check_eq_checkFast`), whose rewriting weakens
+  a hypothesis past the binders it has entered where it reads it rather
+  than at each congruence, a delayed renaming in the manner of explicit
+  substitutions [AbadiCardelliCurienLevy1991]. Its developments
   (`Geb.FreeTopos.Internal.checkDev`) mix theorems of the language with
   certificates of the combinators and declare definitions, primitive
   arrows, object definitions and quotients. `Soundness.lean` and
