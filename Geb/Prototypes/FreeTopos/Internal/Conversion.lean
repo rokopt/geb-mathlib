@@ -48,9 +48,9 @@ rewriting by those equations, which reaches that numeral by a proof in Lean
 ({name}`Geb.FreeTopos.Literals.checked_of_eval`), so that it too is the base checker's rewriting by
 a derivation the step does not construct.
 
-A step of the machine rewrites a term to its normal form under constructors by the environment
-machine ({name}`Geb.FreeTopos.Internal.machineReduce`), which is not the prover's reduction; the
-term rewrites to it by a derivation the base checker accepts
+A step of the machine rewrites a term to its normal form under constructors and abstractions by
+the environment machine ({name}`Geb.FreeTopos.Internal.machineReduce`), which is not the prover's
+reduction; the term rewrites to it by a derivation the base checker accepts
 ({name}`Geb.FreeTopos.Internal.machineReduce_reaches`) where the term and the definitions' bodies
 have their variables as leaves, as a term that compiles has, so that it too is the base checker's
 rewriting by a derivation the step does not construct.
