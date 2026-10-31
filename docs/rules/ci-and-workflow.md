@@ -259,8 +259,11 @@ deletes the outputs of the modules declaring the loading and of those
 depending on them, and `slow-checks.yml` builds without the GitHub cache.
 A stale module built in the mode `native` that is left in an `rfl` build
 depends on an axiom of the loading, which the linter then rejects.
-`slow-checks.yml` builds and lints `GebTests` in the mode `rfl` daily and
-on demand.
+`slow-checks.yml` builds and lints `GebTests` in the mode `rfl` on demand,
+when dispatched with its input `rfl`; the loading's layers are checked one
+after another and together take longer than the hosted runners' limit on
+a job's time, so the check that completes is that of
+`scripts/pre-push.sh --loading=rfl` on a machine without that limit.
 
 ## Certificates
 
@@ -291,9 +294,22 @@ into. Either command takes the names of searches to run, which
 committed certificates it continues from. A change to a development's
 proofs, or to a program it is about, is followed by `regen`.
 `slow-checks.yml` runs `check` daily and on demand, one job to a search,
-so that each runs within the hosted runners' limit on a job's time; the
-pre-push checklist and the other workflows check the committed
-certificates and do not search. A certificate whose check by Lean's
+so that each runs within the hosted runners' limit on a job's time, and
+runs a search only where its inputs differ from those of its last
+passing run. A search's certificates are a function of the compiled code
+of `geb-certify` and of the committed certificates it reads, so the job
+keys a passing run by the executable's SHA-256 and the hash of the
+committed certificates and of `scripts/certificates.sh`, records it in
+the GitHub cache, and runs `check` at a key with no record. The
+executable is built reproducibly and linked statically, so a change that
+alters no compiled code leaves it, and so the key, unchanged.
+Documentation compiles to no code, but an operation that panics reports
+its source position, which is compiled into its message. A record the
+GitHub cache evicts, after seven days without access or by the
+repository's limit on its size, runs the search again, and dispatching
+the workflow with its input `searches` runs every search. The pre-push
+checklist and the other workflows check the committed certificates and
+do not search. A certificate whose check by Lean's
 evaluator takes hours is checked instead by a module of the library
 `GebSlow`, which neither `lake build` nor `lake test` builds and which
 `slow-checks.yml` builds and lints daily and on demand; its search's own

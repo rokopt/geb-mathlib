@@ -1,17 +1,28 @@
 name: Slow checks
 
-# The checks too slow for every push, run daily and on demand: the loading
-# of the metalogic's program in the loading mode rfl, every fact of it
-# checked by the kernel, which the other workflows build in the mode
-# native (docs/rules/ci-and-workflow.md § Loading modes); and the
+# The checks too slow for every push. Daily and on demand: the
 # regeneration of the certificates of the internal language's
-# developments, compared with the committed ones, and the checks of the
-# certificates too slow to build with the tests (§ Certificates); and the
-# benchmarks (§ Benchmarks).
+# developments, compared with the committed ones, for each search whose
+# inputs differ from those of its last passing run, and the checks of the
+# certificates too slow to build with the tests
+# (docs/rules/ci-and-workflow.md § Certificates); and the benchmarks
+# (§ Benchmarks). On demand: the loading of the metalogic's program in
+# the loading mode rfl, every fact of it checked by the kernel, which the
+# daily checks and the other workflows build in the mode native
+# (§ Loading modes).
 on:
   schedule:
     - cron: '0 6 * * *'
   workflow_dispatch:
+    inputs:
+      rfl:
+        description: Build and lint GebTests in the loading mode rfl
+        type: boolean
+        default: false
+      searches:
+        description: Run every search, whether or not its inputs have passed
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -19,6 +30,7 @@ permissions:
 jobs:
   rfl:
     name: Build and lint GebTests in the loading mode rfl
+    if: ${{ inputs.rfl }}
     runs-on: ubuntu-latest
     timeout-minutes: 720
     env:
@@ -77,8 +89,38 @@ jobs:
           build: false
           test: false
           lint: false
+      - name: lake build geb-certify
+        run: lake build geb-certify
+      # A search's certificates are a function of the generator's compiled
+      # code and of the committed certificates it reads, so a search that
+      # passed with the same executable and certificates is not run again.
+      # The key names the executable by its bytes, which a change that
+      # alters no compiled code leaves unchanged.
+      - id: key
+        name: Compute the key of the search's inputs
+        run: |
+          exe=$(sha256sum .lake/build/bin/geb-certify | cut -d ' ' -f 1)
+          certs=${{ hashFiles('bootstrap/certificates/*.cert', 'scripts/certificates.sh') }}
+          echo "key=search-${{ matrix.search }}-$exe-$certs" >> "$GITHUB_OUTPUT"
+      - id: passed
+        name: Look up a passing run at the key
+        if: ${{ !inputs.searches }}
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: search-passed
+          key: ${{ steps.key.outputs.key }}
+          lookup-only: true
       - name: scripts/certificates.sh check ${{ matrix.search }}
-        run: bash scripts/certificates.sh check "${{ matrix.search }}"
+        if: steps.passed.outputs.cache-hit != 'true'
+        run: |
+          bash scripts/certificates.sh check "${{ matrix.search }}"
+          echo "${{ steps.key.outputs.key }}" > search-passed
+      - name: Record the passing run at the key
+        if: steps.passed.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: search-passed
+          key: ${{ steps.key.outputs.key }}
 
   certified:
     name: Build and lint the slow checks of the certificates

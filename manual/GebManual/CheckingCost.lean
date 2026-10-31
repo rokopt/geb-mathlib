@@ -270,9 +270,10 @@ alone. Three properties of the form it takes here bear on the cost.
 * The checker computes no conversion, so a certificate carries the
   computation that a checker with a conversion rule performs.
 * Certificates are stored artifacts that searches generate, and
-  `slow-checks.yml` repeats each search and compares its output with the
-  committed certificate byte for byte, so that a search's time is the
-  time of a check.
+  `slow-checks.yml` repeats a search and compares its output with the
+  committed certificate byte for byte where the search's inputs differ
+  from those of its last passing run, so that a search's time is the
+  time of a check after each change to them.
 * The prover, its tactics and the combinator prover are written in Lean
   and in Geb, with proofs that the two construct the same certificates
   (`GebTests/Prototypes/FreeTopos/Agreement/`). The soundness of a
@@ -319,11 +320,20 @@ against their cost.
    Geb or in the conversion checker's steps `base`
    ({ref "base-checker-evaluation"}[The base checker's evaluation]).
 3. The searches out of the daily checks: the committed certificates
-   checked, and a search run when the sources it reads change, which
-   content identity ({ref "content-identity"}[Content identity])
-   determines.
+   checked, and a search run where its inputs differ from those of its
+   last passing run. `slow-checks.yml` keys a passing run by the bytes
+   of the executable `geb-certify` and by the committed certificates,
+   and runs a search at a key with no record of one
+   (`docs/rules/ci-and-workflow.md` § Certificates). The executable
+   changes with the compiled code of every module it imports, so a
+   change to the prover or to a program it reasons about runs every
+   search; content identity ({ref "content-identity"}[Content identity])
+   would name the definitions each search reads.
 4. The mode `native` as the loading's policy, with the mode `rfl` run on
-   demand or replaced by a proof of each step from the equations of the
+   demand: `slow-checks.yml` builds in the mode `rfl` when dispatched
+   with its input `rfl`. Its layers take longer together than the hosted
+   runners' limit on a job's time, so the change that brings it within
+   reach is a proof of each step from the equations of the
    checker-evaluator at each form of term, of the size of the definition
    rather than of its reduction.
 5. Conversion computed by the checker by a reduction of another method,
