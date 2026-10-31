@@ -7375,7 +7375,9 @@ it decides ({ref "checking-cost"}[The cost of checking]):
   (`typeIn` in `bootstrap/free-topos/derivation.geb`).
 * It weakens a hypothesis past the binders a congruence enters where a
   rewriting by the hypothesis reads it, rather than every hypothesis at
-  each congruence under a binder (`childCtxs` in `derivation.geb`). The
+  each congruence under a binder (`childCtxs` in `derivation.geb`), and
+  that hypothesis alone
+  ({name}`Geb.FreeTopos.Internal.rootStepK_eq`). The
   checker that does so ({name}`Geb.FreeTopos.Internal.checkFast`) is
   proved equal to {name}`Geb.FreeTopos.Internal.check`
   ({name}`Geb.FreeTopos.Internal.check_eq_checkFast`), and the attribute
@@ -7433,6 +7435,22 @@ types by `typeIn` as well, as the Lean prover does, so the first changes
 their time and not the derivations they construct, and their agreements
 (`Agreement/Prove.lean`, `Agreement/Tactics.lean`) rest on the agreement
 of `typeIn`.
+
+The prover's reduction as compiled differs likewise from the prover
+written in Geb (`bootstrap/free-topos/prove.geb`), and is proved equal
+to the reduction as it is defined
+({name}`Geb.FreeTopos.Internal.eval_eq_evalFast`), which the attribute
+`csimp` replaces by it in the searches of `geb-certify` and in every
+other compiled evaluation: it weakens the hypotheses where a rule reads
+one, as {name}`Geb.FreeTopos.Internal.checkFast` does, tries at a node
+only the rules whose left side's root may have the node's label, and
+compares a term with an equation among the hypotheses by a fold of the
+equation's left side computed once, without building its weakening. The
+derivations it constructs are those of
+{name}`Geb.FreeTopos.Internal.eval`, so the certificates and the
+agreement of the provers written in Lean and in Geb are unchanged; the
+prover written in Geb, which no search runs during the bootstrap, keeps
+the reduction as it is defined.
 
 ## What self-compilation establishes
 

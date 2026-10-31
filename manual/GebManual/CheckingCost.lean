@@ -191,7 +191,11 @@ a fold's start or datum is inferred. The checker as compiled
 ({name}`Geb.FreeTopos.Internal.checkFast`) weakens a hypothesis where a
 rewriting by it reads it instead, so that a traversal of every
 hypothesis at each congruence under a binder becomes a traversal of one
-hypothesis at each rewriting by a hypothesis. The application of a theorem
+hypothesis at each rewriting by a hypothesis. The prover's reduction
+enters the same contexts at each abstraction and fold it reduces under
+({name}`Geb.FreeTopos.Internal.deepStep`), and as compiled
+({name}`Geb.FreeTopos.Internal.evalFast`) weakens a hypothesis where a
+rule reads it likewise. The application of a theorem
 infers the type of each term it substitutes
 ({name}`Geb.FreeTopos.Internal.instOk`), and propositional and
 functional extensionality, a cut and a conversion from a formula infer
@@ -329,7 +333,20 @@ against their cost.
    `base`. Neither it nor the inference of a type alone is in the
    checker written in Geb
    ({ref "base-checker-evaluation"}[The base checker's evaluation]).
-3. The searches out of the daily checks: the committed certificates
+3. The prover's reduction weakening the hypotheses where a rule reads
+   one, as the compiled checker does, trying at a node only the rules
+   whose left side's root may have the node's label, and comparing a
+   term with an equation among the hypotheses by a fold of the
+   equation's left side computed once rather than by building its
+   weakening. The reduction as compiled
+   ({name}`Geb.FreeTopos.Internal.evalFast`) is proved equal to
+   {name}`Geb.FreeTopos.Internal.eval`
+   ({name}`Geb.FreeTopos.Internal.eval_eq_evalFast`), which the compiler
+   replaces by it, so a search constructs the certificates it
+   constructed. It removes most of the searches' time, which was the
+   weakening of every hypothesis at each binder the reduction entered
+   ({ref "measurements"}[The measurements]).
+4. The searches out of the daily checks: the committed certificates
    checked, and a search run where its inputs differ from those of its
    last passing run. `slow-checks.yml` keys a passing run by the bytes
    of the executable `geb-certify` and by the committed certificates,
@@ -339,13 +356,13 @@ against their cost.
    change to the prover or to a program it reasons about runs every
    search; content identity ({ref "content-identity"}[Content identity])
    would name the definitions each search reads.
-4. A proof of each step of the loading from the equations of the
+5. A proof of each step of the loading from the equations of the
    checker-evaluator at each form of term, of the size of the definition
    rather than of its reduction, which brings the mode `proof` within
    minutes ({ref "measurements"}[The measurements]), and so the mode
    `proof` is the default of every build and workflow, which removes the
    axioms of the loading from them.
-5. Conversion computed by the checker by a reduction of another method,
+6. Conversion computed by the checker by a reduction of another method,
    proved sound against the base checker's rules rather than equal to
    the prover's reduction. The conversion checker's steps `norm` and
    `eval` compute the prover's reduction's result alone, without its
@@ -360,11 +377,11 @@ against their cost.
    into steps of it shortens their certificates and leaves their checks
    as costly; it replaces only the joins whose rewritings cite neither
    a theorem nor a hypothesis, which the machine does not apply.
-6. The datatypes of the proofs as datatypes of the metalogic: the
+7. The datatypes of the proofs as datatypes of the metalogic: the
    translation of a datatype of the datatype language to the initial
    algebra of its declaration, rather than to rose trees over
    bitstrings, which removes the second factor.
-7. Each untrusted component written once, the agreement proved for the
+8. Each untrusted component written once, the agreement proved for the
    checker and the translation, which are trusted.
 
 # The measurements
@@ -534,8 +551,8 @@ compiled checks of weakening, of substitution and of the expansion's
 identity take 5.1, 10.3 and 3.1 seconds, and the module of `GebSlow`
 checking the certificate `datatype-list` builds in 176 seconds.
 
-The jobs of `slow-checks.yml` with the changes above, on sixteen cores,
-in one run, the searches six at a time:
+The jobs of `slow-checks.yml` with the changes above but the third, on
+sixteen cores, in one run, the searches six at a time:
 
 :::table +header
 *
