@@ -184,8 +184,9 @@ Computation:
   found by an untrusted search and checked in the build by a checker
   specified in Lean and written in Geb; then a search written in Geb,
   which full self-hosting requires; and later, elementary affine logic
-  without the exemption. The search with z3, `scripts/eal/eal.py`, is
-  constructed, and the rest is ready.
+  without the exemption. The search with z3, `scripts/eal/eal.py`, with
+  a decoration per use of a definition, is constructed, and the rest is
+  ready.
 * Ready. The Geb reader and serializer in constant depth, and the stage
   tests run by the compiled executables, the section on improvements.
 
@@ -2246,28 +2247,38 @@ Elementary-affine typability was measured on the programs by
 from an image, with an inference in the style of
 {citet CoppolaMartini2006}[], linear constraints on the numbers of boxes
 solved by an SMT solver, and with first-order data exempted from the
-discipline, since duplicating data duplicates no λ-value. One at a
-time, 197 of the stage-0 compiler's 200 definitions are typable, 313 of
-the stage-1 compiler's 315, 359 of the prover of Gödel's T's 368 and
-370 of the metalogic checker's 374; without the exemption, 187, 296,
-342 and 363. Every definition that
-fails, among them the type checker `typeIn` and the resolver `resolve`,
-is a fold at pairs of a subtree and a function whose step reads the
-list of its children's results more than once, contracting a list of
-functions. A step that reads the list once contracts none, and on
-folds into functions of an argument is typable in some forms only: a
-step that applies the first child's function by case analysis, or that
-composes the children's functions into one by a right fold and returns
-that function, is typable, and a step returning a closure over the
-argument that loops over the children's functions is not, the right
-fold's list of functions needing a box that the closure's body cannot
-give it. The serializer's `treeBits`, which pairs its children's count
-with the composition of their results, takes the composing form, and
-`scripts/eal/examples.defs` holds the four shapes. Typing a whole program with
-one decoration per definition fails for three of the four programs, so
-a program's typing needs a decoration per use of a definition. The exemption is not proved sound
-for a net machine; the third stage needs it, and the first two need no
-typing.
+discipline, since duplicating data duplicates no λ-value. The programs
+measured are the stage-0 and stage-1 compilers and the metalogic's
+program, its checker, translation, prover, tactics, combinator prover
+and printer. Checked one at a time, each reference to a definition
+taking a decoration of its own, every definition that fails, among them
+the type checker `typeIn` and the resolver `resolve`, is a fold at pairs
+of a subtree and a function whose step reads the list of its children's
+results more than once, contracting a list of functions. A step that
+reads the list once contracts none, and on folds into functions of an
+argument is typable in some forms only: a step that applies the first
+child's function by case analysis, or that composes the children's
+functions into one by a right fold and returns that function, is
+typable, and a step returning a closure over the argument that loops
+over the children's functions is not, the right fold's list of functions
+needing a box that the closure's body cannot give it. The serializer's
+`treeBits`, which pairs its children's count with the composition of
+their results, takes the composing form, and `scripts/eal/examples.defs`
+holds the four shapes. Typing a whole program with one decoration per
+definition fails for each program, so a program's typing needs a
+decoration per use of a definition. With a decoration per use, each use
+constrained by the decorations the used definition admits, its
+constraints projected onto the numbers of `!` of its type by quantifier
+elimination, more definitions fail than one at a time, each contracting
+a list of functions that a definition it refers to reads more than once:
+a fold whose step is a definition of its own reading its children's
+results more than once, as the prover's `uses` and its step `usesStep`;
+a fold whose step passes its children's results to such a definition, as
+the stage-1 compiler's `synIn` passes them to `synList`; and, in the
+tactics, a list of rewriting rules, each pairing a pattern with a
+function, read more than once, as `withWeakHyps` reads its rules. The
+exemption is not proved sound for a net machine; the third stage needs
+it, and the first two need no typing.
 
 The bootstrap's programs, its compilers, checkers and prover, and its
 reader and printer once they are written in Geb, are required to be
@@ -2282,8 +2293,11 @@ between given numbers, which needs no solver. The steps, in order: a
 decoration per use of a definition, each use taking a fresh copy of the
 linear constraints that describe the definition's decorations, all of
 which the constraints on its simple principal type schema yield
-{citep CoppolaMartini2006}[]; the rewriting of the folds that read their
-children's results twice; a checker of decorations specified in Lean
+{citep CoppolaMartini2006}[], constructed in `scripts/eal/eal.py`, which
+copies them projected onto the numbers of `!` of the definition's type;
+the rewriting of the folds that read their children's results twice,
+and of the definitions above that read a list of functions twice; a
+checker of decorations specified in Lean
 and written in Geb, the checker written in Geb proved in Lean to agree
 with it by the method of the metalogic's checker, and the check in the
 build of every program's committed decoration, the checker's own among
@@ -2301,7 +2315,10 @@ oracle-free algorithm applies as proved. The fold whose step sees the
 node cannot be defined in it, since its step receives the node whose
 children its recursion also consumes, so that step replaces that fold
 by a fold whose step receives the node under a box, or proves the
-native copying of data sound.
+native copying of data sound. The search without the exemption,
+`scripts/eal/eal.py --pure`, finishes on the stage-0 and stage-1
+compilers and does not finish on the metalogic's program within fifteen
+hours, so that this step also requires a search that finishes on it.
 
 ## Definitions and images
 %%%
