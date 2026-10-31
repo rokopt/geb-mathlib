@@ -154,10 +154,14 @@ Computation:
   ({ref "choice-of-machine"}[The choice of machine]): boundary-preserving
   renaming, commuting reductions, and executable graph reduction proved
   to compute the denotation of every accepted closed tree-to-tree program.
+* Ready. The first-stage benchmark harness
+  ({ref "choice-of-machine"}[The choice of machine]): the benchmark
+  programs run through the graph runtime of the interaction-net arm's
+  first stage, each result compared with the denotation.
 * Deferred until before the second host.
-  {ref "choice-of-machine"}[The choice of machine]: the benchmark
-  programs, the environment machine, the compilation to
-  the triage calculus, native code with forks over a node's children,
+  {ref "choice-of-machine"}[The choice of machine]: the environment
+  machine, the compilation to the triage calculus, native code with
+  forks over a node's children, the measurements across these arms and
   the staged interaction system, and the decision.
 * Waiting on the choice of machine. The second host
   ({ref "speed-and-second-host"}[Speed and a second host]): the evaluator
@@ -1597,8 +1601,8 @@ section below opens with a table of the states of its parts.
   * Deferred until before the second host
   * The first stage of the interaction-net arm: complete; the
     finite-net representation, confluence and graph refinement: complete;
-    the elementary-affine decorations: in progress; the rest:
-    deferred
+    the elementary-affine decorations: in progress; the first-stage
+    benchmark harness: ready; the rest: deferred
 *
   * {ref "definitions-and-images"}[Definitions and images]
   * Complete
@@ -1783,7 +1787,10 @@ tag := "choice-of-machine"
   * Finite nets, confluence across schedules, and graph-runtime refinement
   * Complete
 *
-  * The benchmark programs, the arms, the measurements
+  * The benchmark programs, run by the first stage's graph runtime
+  * Ready
+*
+  * The other arms, the measurements across them
   * Deferred until before the second host
 *
   * Acceptance
