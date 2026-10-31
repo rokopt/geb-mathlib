@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.FreeTopos.Internal.Proofs
 public import Geb.Prototypes.FreeTopos.Internal.ProveChecked
+public import Geb.Prototypes.FreeTopos.Internal.Reduce
 public import Geb.Prototypes.FreeTopos.Literals
 meta import GebMeta -- shake: keep
 
@@ -20,11 +21,14 @@ whose instance the checker finds. A step of conversion is the rewriting of a ter
 prover's reductions under named rules ({name}`Geb.FreeTopos.Internal.NormRule`): the innermost
 normalization ({name}`Geb.FreeTopos.Internal.normalize`), or the reduction to a depth, weak head
 normal forms first ({name}`Geb.FreeTopos.Internal.eval`). The base checker does not compute that
-rewriting; it checks each step of it in a derivation. The conversion checker computes it, and its
-result alone: the derivation the reduction computes rewrites the term to that result, which the
-base checker accepts at every input ({name}`Geb.FreeTopos.Internal.normalize_checked`,
+rewriting; it checks each step of it in a derivation. The conversion checker computes its result
+alone, by the reductions that build no derivation ({name}`Geb.FreeTopos.Internal.normalizeR`,
+{name}`Geb.FreeTopos.Internal.evalR`), each the projection of the prover's
+({name}`Geb.FreeTopos.Internal.normalizeR_eq`, {name}`Geb.FreeTopos.Internal.evalR_eq`): the
+derivation the prover's reduction computes rewrites the term to that result, which the base
+checker accepts at every input ({name}`Geb.FreeTopos.Internal.normalize_checked`,
 {name}`Geb.FreeTopos.Internal.eval_checked`), so the step is the base checker's rewriting by that
-derivation and no check of it is repeated. The application of a theorem names the theorem and
+derivation, which is neither built nor checked. The application of a theorem names the theorem and
 its objects, and its instance is the matching of its conclusion against the formula proved, as
 the prover matches a theorem's left side ({name}`Geb.FreeTopos.Internal.matchTerm`); the step is
 then the base checker's application at that instance. At every other node the conversion
@@ -122,9 +126,9 @@ that matches the formula, which rewrites no term. -/
 def convStep (G : Globals) (E : Array Entry) (n : ℕ) (l : ConvRule)
     (cs : List (ConvDeriv × Checks)) : Checks := match l with
   | .base r => checkStep G E n r (cs.map fun (d, c) ↦ (RoseTree.node d.label.toRule [], c))
-  | .norm rs fuel => (fun Γ Φ t ↦ (normalize G E n rs fuel Γ Φ t).map (·.1), fun _ _ _ ↦ false)
+  | .norm rs fuel => (fun Γ Φ t ↦ (normalizeR G E n rs fuel Γ Φ t).map (·.1), fun _ _ _ ↦ false)
   | .eval rs fuel depth =>
-    (fun Γ Φ t ↦ (eval G E n rs fuel depth Γ Φ t).map (·.1), fun _ _ _ ↦ false)
+    (fun Γ Φ t ↦ (evalR G E n rs fuel depth Γ Φ t).map (·.1), fun _ _ _ ↦ false)
   | .lit j => (fun Γ _ t ↦ if Literals.ready G E n Γ j then (Literals.eval t).map Literals.Val.term
       else none, fun _ _ _ ↦ false)
   | .applyMatch j θ => (fun _ _ _ ↦ none, fun Γ Φ φ ↦ match applyInst E j θ φ with
@@ -195,10 +199,12 @@ theorem convCheck_sound (hδ : DefnsOk M G) {E : Array Entry}
     rcases l with r | ⟨rs, fuel⟩ | ⟨rs, fuel, depth⟩ | ⟨j, θ⟩ | j
     · exact hstep r
     · refine ⟨fun Γ Φ t t' h ↦ ?_, fun _ _ _ h ↦ nomatch h⟩
+      simp only [convStep, normalizeR_eq, Option.map_map] at h
       obtain ⟨⟨_, d, _⟩, hn, rfl⟩ := Option.map_eq_some_iff.mp h
       exact (check_sound hM hG hρ hps hds hδ hE hcert d).1 _ _ _ _
         (normalize_checked rs fuel _ _ _ _ hn).check
     · refine ⟨fun Γ Φ t t' h ↦ ?_, fun _ _ _ h ↦ nomatch h⟩
+      simp only [convStep, evalR_eq, Reduction.result, Option.map_map] at h
       obtain ⟨⟨_, d, _⟩, hn, rfl⟩ := Option.map_eq_some_iff.mp h
       exact (check_sound hM hG hρ hps hds hδ hE hcert d).1 _ _ _ _
         (eval_checked rs fuel depth _ _ _ _ hn).check

@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import GebBench.Prototypes.FreeTopos.Certified
 public import GebBench.Prototypes.FreeTopos.Literals
 public import GebBench.Prototypes.FreeTopos.Rules
 public import GebBench.Prototypes.FreeTopos.TranslationProofs

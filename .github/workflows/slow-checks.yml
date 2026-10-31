@@ -107,5 +107,11 @@ jobs:
           build: false
           test: false
           lint: false
+      # The benchmarks' executable reads the stored certificates when it
+      # starts, which recurses deeper than the default stack allows, so it
+      # runs with the stack limit raised to the hard limit, as
+      # scripts/certificates.sh runs the generator.
       - name: lake exe geb-bench
-        run: lake exe geb-bench
+        run: |
+          ulimit -s "$(ulimit -Hs)"
+          lake exe geb-bench
