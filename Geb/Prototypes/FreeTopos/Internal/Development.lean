@@ -100,8 +100,8 @@ theorem Thm.Valid.mono {G G' : Globals} (hG : G.WF) (hle : G.Le G') {a : Thm}
   obtain ⟨hctx, hhyps, hconcl, hv⟩ := ha
   have htype : ∀ {φ : Term}, typeIn G a.arity a.ctx φ = some omega →
       typeIn G' a.arity a.ctx φ = some omega := fun h ↦ by
-    obtain ⟨r, hr, hro⟩ := Option.map_eq_some_iff.mp h
-    exact Option.map_eq_some_iff.mpr ⟨r, compile_mono hle _ _ _ _ hr, hro⟩
+    obtain ⟨r, hr, hro⟩ := Option.map_eq_some_iff.mp (typeIn_eq_some.mp h)
+    exact typeIn_eq_some.mpr (Option.map_eq_some_iff.mpr ⟨r, compile_mono hle _ _ _ _ hr, hro⟩)
   refine ⟨all_isTy_mono hle hctx, fun h hh ↦ htype (hhyps h hh), htype hconcl,
     fun ρ hρ ↦ ⟨hps ρ hρ, hds ρ hρ, ?_⟩⟩
   obtain ⟨hpsG, hdsG, hfm⟩ := hv ρ hρ
@@ -115,7 +115,7 @@ theorem Thm.Valid.mono {G G' : Globals} (hG : G.WF) (hle : G.Le G') {a : Thm}
       ∀ (X : Tree) (e : List (Tree × Tree)), EnvHom M ρ G a.arity X e →
         e.map Prod.snd = a.ctx → ∀ r, compile G' a.arity φ X e = some r →
           compile G a.arity φ X e = some r := fun h X e he hΓ r hr ↦ by
-    obtain ⟨r₀, hr₀, -⟩ := Option.map_eq_some_iff.mp h
+    obtain ⟨r₀, hr₀, -⟩ := Option.map_eq_some_iff.mp (typeIn_eq_some.mp h)
     obtain ⟨r', hr', -⟩ := compile_of_stdEnv hM hG hρ hpsG hdsG hr₀ he hΓ
     rw [hr', Option.some_inj.mp ((compile_mono hle _ _ _ _ hr').symm.trans hr)]
   intro X e he hΓ hH r hr
@@ -918,7 +918,7 @@ theorem DevInv.step {G G' : Globals} {E E' : Array Entry} (h : DevInv M Gf G E) 
         refine ⟨by simp [isTy_mono hle' _ hA], fun ψ hψ ↦ ?_, htype,
           fun ρ hρ ↦ ⟨hps' _ ρ hρ, hds' _ ρ hρ, ?_⟩⟩
         · obtain rfl := List.mem_singleton.mp hψ
-          simp [typeIn, hRG']
+          simp [typeIn_eq_compile, hRG']
         intro X e he hΓ hH res hres
         rcases e with _ | ⟨⟨x₀, A₀⟩, _ | ⟨⟨x₁, A₁⟩, _ | ⟨p₂, e⟩⟩⟩
         · simp at hΓ
@@ -1273,7 +1273,7 @@ theorem valid_unfoldAll_of_checkDev {pre cds F : List PartialHorn.Defn} {G Gf : 
           ⟨List.replicate a.arity obj, [], ⟨f, g⟩⟩).Valid M := by
   have hinv := devInv_of_checkDev (isModel_point_ext hwf) hbase hok hc h hF
   obtain ⟨hctx, -, hcon, -⟩ : a.Valid _ Gf := hinv.entries j _ hp
-  obtain ⟨⟨C, C'⟩, hC, -⟩ := Option.map_eq_some_iff.mp hcon
+  obtain ⟨⟨C, C'⟩, hC, -⟩ := Option.map_eq_some_iff.mp (typeIn_eq_some.mp hcon)
   rw [eqParts_eq_some hlr] at hC
   obtain ⟨l', r', hlr', f, A, hf, g, hg, -⟩ := compile_eq_iff.mp hC
   simp only [List.cons.injEq, and_true] at hlr'
@@ -1316,7 +1316,7 @@ theorem valid_unfoldAll_holds_of_checkDev {pre cds F : List PartialHorn.Defn} {G
           ⟨List.replicate a.arity obj, [], ⟨C, comp tru (bang (ctxObj a.ctx))⟩⟩).Valid M := by
   have hinv := devInv_of_checkDev (isModel_point_ext hwf) hbase hok hc h hF
   obtain ⟨hctx, -, hcon, -⟩ : a.Valid _ Gf := hinv.entries j _ hp
-  obtain ⟨⟨C, C'⟩, hC, hC'⟩ := Option.map_eq_some_iff.mp hcon
+  obtain ⟨⟨C, C'⟩, hC, hC'⟩ := Option.map_eq_some_iff.mp (typeIn_eq_some.mp hcon)
   obtain rfl : C' = omega := hC'
   refine ⟨C, hC, fun M hM ↦ ?_⟩
   have hbF : Gf.base = sig.length + pre.length := (le_of_checkDev ds h).2.1.symm.trans hbase

@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.FreeTopos.Coproducts
 public import Geb.Prototypes.FreeTopos.Internal.Compile
+public import Geb.Prototypes.FreeTopos.Internal.Typing
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -356,9 +357,21 @@ def eqParts (φ : Term) : Option (Term × Term) := match φ.label, φ.children w
 def instTerm (θ : List Tree) (σ : List Term) (s : Term) : Term :=
   Term.subst (Term.osubst θ s) (Term.substList σ)
 
-/-- The type of a term in a context. -/
+/-- The type of a term in a context, inferred without its arrow. -/
 def typeIn (G : Globals) (n : ℕ) (Γ : List Tree) (t : Term) : Option Tree :=
-  (compile G n t (ctxObj Γ) (stdEnv Γ)).map Prod.snd
+  typeOf G n t Γ
+
+/-- The type of a term in a context is the type it compiles to from the product of the context's
+types. -/
+theorem typeIn_eq_compile (G : Globals) (n : ℕ) (Γ : List Tree) (t : Term) :
+    typeIn G n Γ t = (compile G n t (ctxObj Γ) (stdEnv Γ)).map Prod.snd := by
+  rw [typeIn, ← typeOf_eq_compile t (ctxObj Γ) (stdEnv Γ), map_snd_stdEnv]
+
+/-- A term has a type in a context exactly when it compiles to that type from the product of the
+context's types. -/
+theorem typeIn_eq_some {G : Globals} {n : ℕ} {Γ : List Tree} {t : Term} {C : Tree} :
+    typeIn G n Γ t = some C ↔ (compile G n t (ctxObj Γ) (stdEnv Γ)).map Prod.snd = some C := by
+  rw [typeIn_eq_compile]
 
 /-- Hypotheses in a context of an innermost variable that none of them mentions, in the context
 {lit}`Γ` without it, where they are formulas. -/

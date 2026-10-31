@@ -4151,7 +4151,11 @@ import-direction rules above are enforced by
   `Semantics.lean`, `Inversion.lean` and `Substitution.lean` prove the
   compiled arrows well sorted, of their types and natural, and
   substitution composition
-  (`Geb.FreeTopos.Internal.compile_subst`); `Square.lean` proves that
+  (`Geb.FreeTopos.Internal.compile_subst`); `Typing.lean` infers a term's
+  type without its arrow, a fold's start in the fold's context and its
+  step in that context extended by the variables it binds, the type its
+  compilation computes (`Geb.FreeTopos.Internal.typeOf_eq_compile`), by
+  which the checker infers types; `Square.lean` proves that
   compiling agrees with unfolding the language's definitions in every
   model (`Geb.FreeTopos.Internal.compile_unfold`). `Derivation.lean` is
   the checker of derivations, `Geb.FreeTopos.Internal.check`: rewriting
