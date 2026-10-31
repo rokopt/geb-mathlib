@@ -271,6 +271,11 @@ the sections below detail:
     with the Lean checker: its denotation, at every development, is the
     Lean checker's result, by the method of the checker of Gödel's T
     ({ref "logic"}[The logic]).
+  * Ready. The base checker's evaluation in the checker written in Geb
+    ({ref "base-checker-evaluation"}[The base checker's evaluation]):
+    the inference of a type alone and the weakening of a hypothesis
+    where a rewriting reads it, which the Lean checker's compiled code
+    has, each transcribed with its agreement.
   * In progress. Stronger checkers admitted beside it by relative
     soundness, each by a translation of its certificates into the
     metalogic's derivations ({ref "metalogic-and-checker"}[The
@@ -1636,7 +1641,8 @@ section below opens with a table of the states of its parts.
     the checker and the translation written in Geb and the proofs of
     their agreement: complete; the prover, its tactics and the
     combinator prover written in Geb and the proofs of their agreement:
-    complete; stronger checkers: in progress
+    complete; stronger checkers: in progress; the base checker's
+    evaluation in the checker written in Geb: ready
 :::
 
 The fixed points hold on images and on Lean. The seed builds the
@@ -6966,6 +6972,10 @@ What is ready, each item independent of the others except as stated:
   natural numbers, first among their uses.
 * The Geb reader and serializer in constant depth, and the stage tests
   run by the compiled executables ({ref "improvements"}[Improvements]).
+* The base checker's inference of a type alone and its weakening of a
+  hypothesis where a rewriting reads it, transcribed into the checker
+  written in Geb ({ref "base-checker-evaluation"}[The base checker's
+  evaluation]).
 
 The admission of stronger checkers rests on the checker written in Geb
 and its agreement, and two are required by the bootstrap. The provers
@@ -7180,12 +7190,21 @@ that remain, and the constraints each of them carries.
    `GebTests/Prototypes/FreeTopos/Agreement/Derivation.lean`, whose
    `checkDev_eq` states the base checker's agreement, and
    `GebTests/Prototypes/FreeTopos/Agreement/Prove.lean`. The
-   reductions (`normalize`, `eval`) and the matching of a term
-   (`matchTerm`) are written in `prove.geb` already, with their
-   agreement, so the transcription adds the dispatch over the rules and
-   the evaluation at literals. The Geb sources have no rank or unrank of
-   bitstrings. The evaluation computes a numeral's index by the fold
-   `val (b :: w) = 2 * val w + b + 1`, where `b` is one at the bit
+   reductions that compute a derivation (`normalize`, `eval`) and the
+   matching of a term (`matchTerm`) are written in `prove.geb` already,
+   with their agreement, so the transcription adds the reductions that
+   compute their results alone
+   ({name}`Geb.FreeTopos.Internal.normalizeR`,
+   {name}`Geb.FreeTopos.Internal.evalR`), the environment machine
+   ({name}`Geb.FreeTopos.Internal.machineReduce`), the dispatch over the
+   rules and the evaluation at literals. The machine delays a value as a
+   {name}`Thunk`, computed on its first reading and kept, which the
+   kernel has no form of; the value of a {name}`Thunk` is its function's,
+   so a transcription that computes the value at once, or delays it by an
+   abstraction and computes it at each reading, agrees with the machine,
+   and which of them keeps the machine's time is measured. The Geb
+   sources have no rank or unrank of bitstrings. The evaluation computes
+   a numeral's index by the fold `val (b :: w) = 2 * val w + b + 1`, where `b` is one at the bit
    {name}`Geb.FreeTopos.Translation.b1T` builds and zero at the other,
    and an index's numeral by the inverse, a recursion on the index that
    Geb, which has no general recursion, bounds by the numeral's length,
@@ -7320,6 +7339,81 @@ that remain, and the constraints each of them carries.
   replaces the other joins, and whether the normal forms in a fold's step belong to
   the machine or to a conversion around it, are open; no stored
   certificate is translated.
+
+### The base checker's evaluation
+%%%
+tag := "base-checker-evaluation"
+%%%
+
+The base checker as Lean's compiled code evaluates it differs from the
+checker written in Geb in two respects, each proved not to change what
+it decides ({ref "checking-cost"}[The cost of checking]):
+
+* It infers a term's type by a fold that computes the type alone
+  ({name}`Geb.FreeTopos.Internal.typeOf`), proved to be the type the
+  term's compilation to the combinators computes
+  ({name}`Geb.FreeTopos.Internal.typeIn_eq_compile`), where the checker
+  written in Geb takes the second component of the compilation
+  (`typeIn` in `bootstrap/free-topos/derivation.geb`).
+* It weakens a hypothesis past the binders a congruence enters where a
+  rewriting by the hypothesis reads it, rather than every hypothesis at
+  each congruence under a binder (`childCtxs` in `derivation.geb`). The
+  checker that does so ({name}`Geb.FreeTopos.Internal.checkFast`) is
+  proved equal to {name}`Geb.FreeTopos.Internal.check`
+  ({name}`Geb.FreeTopos.Internal.check_eq_checkFast`), and the attribute
+  `csimp` replaces the one by the other in compiled code.
+
+Every compiled evaluation of {name}`Geb.FreeTopos.Internal.check` has
+both: the checks of the stored certificates by `evaluation_axiom`, in
+`GebTests/Prototypes/FreeTopos/Certified/` and in `GebSlow`, whose
+evaluator calls the library `Geb` compiled; the checks of developments
+by {name}`Geb.FreeTopos.Internal.checkDev`; the searches of
+`geb-certify`; and the benches of `geb-bench`. Three evaluations do not:
+
+* The kernel's reduction of the checker, by `decide` or by `rfl`, which
+  unfolds the definition rather than calling the compiled code; it has
+  the inference of a type alone, which is the definition, and not the
+  weakening where a rewriting reads it.
+* The steps `base` of the conversion checker
+  ({name}`Geb.FreeTopos.Internal.convCheck`), which apply the step of
+  the base checker's fold ({name}`Geb.FreeTopos.Internal.checkStep`) to
+  their children's results; a step `base` that rewrites under a binder
+  weakens every hypothesis there. Its rewriting by the rewriting of
+  {name}`Geb.FreeTopos.Internal.checkFast` is a change to the
+  conversion checker, with the proof that its steps' results are
+  unchanged.
+* The checker written in Geb, whose agreement with the Lean checker
+  passes through {name}`Geb.FreeTopos.Internal.typeIn_eq_compile` and is
+  an agreement with {name}`Geb.FreeTopos.Internal.check` as it is
+  defined.
+
+During the bootstrap the checker written in Geb checks no stored
+certificate: its agreement is proved, and the Lean checker checks. Its
+time bears on a host or a backend without Lean, which runs it
+({ref "the-next-phase"}[The next phase]), and on any check that runs the
+loaded program. Its transcription of the two, in order:
+
+1. The fold of {name}`Geb.FreeTopos.Internal.typeOf` in
+   `bootstrap/free-topos/language.geb`, and `typeIn` in
+   `derivation.geb` by it. Its agreement with
+   {name}`Geb.FreeTopos.Internal.typeOf`, at every encoded input,
+   replaces the agreement through the compilation in
+   `GebTests/Prototypes/FreeTopos/Agreement/Derivation.lean`, whose
+   statement of `typeIn` is unchanged.
+2. The rewriting of {name}`Geb.FreeTopos.Internal.checkFast` in
+   `derivation.geb`: the weakening by a number of binders, the children's
+   contexts with the number of binders each adds, and the rewriting at
+   that number. Its agreement with that rewriting, composed with
+   {name}`Geb.FreeTopos.Internal.check_eq_checkFast`, gives the
+   agreement with {name}`Geb.FreeTopos.Internal.checkDev` as before.
+
+Each changes the program that `GebMirror.Metalogic` mirrors, so the
+mirror is emitted again (`scripts/bootstrap.sh`) and its loading checked
+in both loading modes. The prover and the tactics written in Geb infer
+types by `typeIn` as well, as the Lean prover does, so the first changes
+their time and not the derivations they construct, and their agreements
+(`Agreement/Prove.lean`, `Agreement/Tactics.lean`) rest on the agreement
+of `typeIn`.
 
 ## What self-compilation establishes
 

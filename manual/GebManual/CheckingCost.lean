@@ -313,8 +313,11 @@ against their cost.
    {citep AbadiCardelliCurienLevy1991}[], and weakens a hypothesis where
    it rewrites by it. It is proved equal to the checker
    ({name}`Geb.FreeTopos.Internal.check_eq_checkFast`), which the
-   compiler replaces by it. It removes the seventh factor. Whether the searches' time is also in
-   it is not measured.
+   compiler replaces by it. It removes the seventh factor. The searches'
+   time is not in it ({ref "measurements"}[The measurements]). Neither
+   it nor the inference of a type alone is in the checker written in
+   Geb or in the conversion checker's steps `base`
+   ({ref "base-checker-evaluation"}[The base checker's evaluation]).
 3. The searches out of the daily checks: the committed certificates
    checked, and a search run when the sources it reads change, which
    content identity ({ref "content-identity"}[Content identity])
@@ -511,3 +514,39 @@ theorems, 2.3 seconds, and the tests of their instances, 1.9. The
 compiled checks of weakening, of substitution and of the expansion's
 identity take 5.1, 10.3 and 3.1 seconds, and the module of `GebSlow`
 checking the certificate `datatype-list` builds in 176 seconds.
+
+The jobs of `slow-checks.yml` with the changes above, on sixteen cores,
+in one run, the searches six at a time:
+
+:::table +header
+*
+  * Check
+  * Time
+*
+  * The loading in the mode `rfl`
+  * More than ten hours: the layers `Checker`, `Translation`, `Prover`
+    and `Tactics`, each importing the one before, 3.05, 1.52, 1.99 and
+    3.31 hours, and the layer `Combinator` not complete at ten hours
+*
+  * The loading in the mode `native`
+  * 12 seconds for the six layers, and 106 for the test of their
+    agreement
+*
+  * The search of `datatype-app`
+  * 5.5 hours
+*
+  * The search of `datatype-list`
+  * 2.0 hours
+*
+  * The other searches
+  * From 17 seconds to 46 minutes each
+*
+  * `GebSlow`
+  * 176 seconds for the certificate `datatype-list` and 585 for the
+    module of the interaction-net compiler's graph reduction
+:::
+
+The searches longer than twenty minutes take from 0.6 to 1.2 times their
+time in the hosted runners' run of {ref "checking-cost"}[the table of
+checks], which includes the build, so their time is the prover's rather
+than the checker's.
