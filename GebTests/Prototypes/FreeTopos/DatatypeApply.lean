@@ -102,14 +102,15 @@ def revFoldAll (P : Prog) (S : Defs) : Step :=
 
 /-- A right fold over the reversal of a construction, by normal forms: the fold over the reversal
 of the tail from the value at the head, in the context of the tail, the head and the value, by
-{name}`revFoldAll` at the fold's function. The fold {lit}`whole` is given at a value and a list,
+{name}`revFoldAll` at the fold's function, its sides in the normal form of the rules
+({name}`Kit.rules`) under which it rewrites. The fold {lit}`whole` is given at a value and a list,
 its value at a head {lit}`step` in the context of the head and the value, the value innermost. -/
 def revFoldCons (P : Prog) (S : Defs) (name : String) (whole : Term → Term → Term)
     (step : Term) : Step :=
   (name, fun ix E ↦ do
     let K : Kit := ⟨P, S, E, ix, []⟩
     let Γ := [list treeTy, treeTy, treeTy]
-    let rs := vRules P ix
+    let rs := K.rules []
     let some l := nfE P.G E rs Γ (whole (v 2) (consT treeTy (v 1) (v 0)))
       | dbgTrace s!"{name}: left" fun _ ↦ none
     let some r := nfE P.G E rs Γ (whole (Term.subst step fun i ↦ v (if i = 0 then 2 else i)) (v 0))

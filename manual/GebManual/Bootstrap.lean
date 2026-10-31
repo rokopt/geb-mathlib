@@ -2402,12 +2402,15 @@ tag := "geb-grows-in-itself"
   reader resolves them: a datatype declaration, whose values are erased
   to trees, the node labelled by a constructor's position over its
   fields, a last field taking the remaining children; case analysis,
-  exhaustive unless it has an else clause; structural recursion at a
-  result type, the kernel's fold whose step sees the node, at a
-  suspended result, the clause's fields taking the children's suspended
-  results in order, so that no clause is evaluated at the subtrees of
-  fields that are not recursive and no subtree is rebuilt; and functions
-  with result types. A program of
+  exhaustive unless it has an else clause, a clause's fields bound in
+  order by walking the list of the children, each to the head of those
+  remaining, so that no field is reached by a numeral of its position;
+  structural recursion at a result type, the kernel's fold whose step
+  sees the node, at a suspended result, the clause's fields taking the
+  children's suspended results in order, walked alongside the children,
+  so that no clause is evaluated at the subtrees of fields that are not
+  recursive and no subtree is rebuilt; and functions with result
+  types. A program of
   kernel forms alone expands to itself, so the fixed point holds with
   the expansion in the compiler. Recognizers, type parameters and a
   static check of datatypes are the datatype language's completion
@@ -2538,9 +2541,16 @@ on the check.
 The typing is written in the datatype language
 (`bootstrap/stage1/typing.geb`) and runs in the stage-1 compiler alone. The
 stage-1 expansion first writes a program's forms with their datatypes,
-marking by nodes that no reader writes the declarations of datatypes and
-the coercions it knows to hold: a field's tree at the field's type, the
-node of a constructor at its datatype, and a scrutinee at its tree. The
+marking by nodes that no reader writes the declarations of datatypes, the
+coercions it knows to hold at a datatype's constructors, its node at the
+datatype and each argument at its tree, and each case analysis and
+structural recursion, over its datatype, its scrutinee, each clause's
+constructor's label and variables, and the clauses' bodies. The typing
+checks the clauses against the datatype's marker: each clause's label is
+that of exactly one of the marker's constructors, whose fields its
+variables bind, each at the type the marker gives the field, and every
+constructor's label is a clause's unless an else clause ends them; the
+erasure writes the chain of tests of the scrutinee's label. The
 typing synthesizes each definition's type from its term, resolving names
 as the reader does, and names the first definition it rejects
 (`Datatype.typeErrorOf`). A keyword names no term: an atom naming one of
@@ -2559,7 +2569,9 @@ reader resolves each to the same term, so the two compilers agree on every
 program the typing accepts and the fixed points hold. The keyword `data`
 declares a datatype distinct from the trees and from every other
 datatype, and `tree-data` one standing for the trees, which the sources
-keep until they are retyped and which is then removed. Three forms cross between a datatype
+keep until they are retyped and which is then removed; no case analysis or
+structural recursion reads a value of it, as no marker gives its
+constructors. Three forms cross between a datatype
 and the trees:
 
 :::table +header
@@ -2577,19 +2589,24 @@ and the trees:
 *
   * `(datum D d)`
   * the quoted tree `d`, checked at elaboration to be a member of `D`
+    and to name no numeral abbreviation, which the reader would replace
 :::
 
 The erasure rewrites these forms wherever they occur, so the typing
 admits no binder named `rep`, `decode` or `datum`: the erasure leaves
 every binder the typing accepts as the typing reads it. Nor does it admit
 a binder taking a name that the expansion and the erasure write free under
-the program's binders: a primitive, the unit value, the recognizer
-`D.member` of a datatype `D`, and the variable `%e` to which the erasure
-binds a decoded tree. The expansion admits no clause variable beginning
-with `%`, as its own variables do, among which it binds a clause's. Each
-name the expansion and the erasure write thus refers to what they write
-it for. Conversely, the names beginning with `%` are the implementation's:
-module elaboration, the expansion and the erasure bind and write them
+the program's binders: a primitive, the unit value, and the recognizer
+`D.member` of a datatype `D`. The names the erasure binds around the terms
+it is given, the variable `%e` of a decoded tree and those of a case
+analysis's and a structural recursion's scrutinee, node and suspended
+results, the typing reads them in, so that a decoding's function and
+default, and each clause's body, are typed in the scope the erasure gives
+them; and it admits no clause variable beginning with `%`, as the erasure's
+own do, among which it binds a clause's. Each name the expansion and the
+erasure write thus refers to what they write it for. Conversely, the names
+beginning with `%` are the implementation's: module elaboration, the
+expansion and the erasure bind and write them
 around a program's code, so both compilers reject a program whose source
 has an atom beginning with `%` outside its quotations and datums, and each
 name a program writes refers to what the program declares.
@@ -2603,7 +2620,17 @@ depends. The expansion writes the type a decoding or a datum reads with
 its abbreviations expanded, and the typing admits only a datatype's own
 name there, so that a type abbreviation means the datatype it abbreviates
 in these forms as in every other, and the recognizer the erasure names,
-and the marker the datum is checked by, are the datatype's own.
+and the marker the datum is checked by, are the datatype's own. It also
+requires that the reader read the recognizer's name as written in the
+scope of the variable `%e` the erasure binds around it: a name neither
+reserved, nor the implementation's, beginning with `%`, nor a numeral, nor
+abbreviated, so that a decoding's
+erasure applies the recognizer whatever numeral abbreviations the program
+declares. The erasure of a case analysis and of a structural recursion
+writes numerals, the labels it tests and the default of the head of an
+empty list of children, so the typing rejects a numeral abbreviation
+named by a numeral, `(defnum 0 1)`, which the reader would expand in
+them.
 
 A template, a module with parameters, is checked once at opaque
 arguments, as well as at each import that instantiates it: module
@@ -2662,9 +2689,10 @@ The statement assumes of the definitions and the named context what the
 compilers ensure of a whole program: the relation's markers are the
 typing environment's; the recognizer of each datatype, where the program
 refers to it, decides membership in it; no definition takes a
-primitive's name, the unit value's or that of the variable the erasure
-binds to a decoded tree; and each name the context gives a type is one
-the typing admits as a binder's. Remaining after it:
+primitive's name or the unit value's; and each name the context gives a
+type is one the typing admits as a binder's. The relation holds at an
+opaque sort as at the trees, its erasure, of which a field of a template's
+datatype holds any. Remaining after it:
 the soundness at the forms of those keywords, discharging those
 hypotheses; `tree-data` removed.
 

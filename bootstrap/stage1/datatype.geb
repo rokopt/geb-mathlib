@@ -7,9 +7,11 @@
 ; program the typing accepts, with datatypes for the forms, names and declarations, case analysis
 ; and structural recursion in place of tests of labels and folds, and functions with result
 ; types. The expansion first writes the program's forms with their datatypes, the coercions it
-; knows to hold marked by nodes no reader writes; the typing (bootstrap/stage1/typing.geb) checks
-; them; and their erasure is the program the stage-0 expansion writes, each abstraction over
-; several binders written as abstractions over one, which the reader resolves to the same terms.
+; knows to hold and each case analysis and structural recursion marked by nodes no reader writes;
+; the typing (bootstrap/stage1/typing.geb) checks them; and their erasure is the program the
+; stage-0 expansion writes, each abstraction over several binders written as abstractions over
+; one and each clause's field bound at the trees' type, which the reader resolves to the same
+; terms.
 ; A program's forms are decoded once, where the stage-0 compiler's front end gives them as trees,
 ; and the names of keywords, numerals and recognizers the kernel's modules share stay trees. The
 ; stage-1 compiler is the stage-0 compiler with this expansion in place of that one; built by the
@@ -55,7 +57,6 @@
   (def aSnd (datum Tx (1 snd)))
   (def aCons (datum Tx (1 cons)))
   (def aNil (datum Tx (1 nil)))
-  (def aIter (datum Tx (1 iter)))
   (def aLcase (datum Tx (1 lcase)))
   (def aFoldr (datum Tx (1 foldr)))
   (def aPara (datum Tx (1 para)))
@@ -64,7 +65,6 @@
   (def aUnitV (datum Tx (1 unit)))
   (def aQuote (datum Tx (1 quote)))
   (def aLabel (datum Tx (1 label)))
-  (def aChild (datum Tx (1 child)))
   (def aChildren (datum Tx (1 children)))
   (def aNode (datum Tx (1 node)))
   (def aEq (datum Tx (1 eq)))
@@ -74,18 +74,20 @@
   (def aArrow (datum Tx (1 Arrow)))
   (def aList (datum Tx (1 List)))
   (def aZero (datum Tx (1 48)))
-  (def aS (datum Tx (1 "%s")))
-  (def aO (datum Tx (1 "%o")))
+  (def aS (tAtom (children kwScrutinee)))
+  (def aO (tAtom (children kwNode)))
   (def aA (datum Tx (1 "%a")))
   (def aH (datum Tx (1 "%h")))
   (def aTl (datum Tx (1 "%t")))
   (def aX (datum Tx (1 "%x")))
-  (def aU (datum Tx (1 "%u")))
+  (def aU (tAtom (children kwUnitArg)))
   (def aR (datum Tx (1 "%r")))
   (def aD (datum Tx (1 "%d")))
   (def aRest (datum Tx (1 "%rest")))
-  (def aK (datum Tx (1 "%k")))
-  (def aE (datum Tx (1 "%e")))
+  (def aK (tAtom (children kwResults)))
+  (def aC (tAtom (children kwFields)))
+  (def aQ (tAtom (children kwSplit)))
+  (def aE (tAtom (children kwDecoded)))
   (def kwData (quote (0 data)))
   (def kwTreeData (quote (0 tree-data)))
   (def kwCase (quote (0 case)))
@@ -100,22 +102,12 @@
   (def kwPostulate (quote (0 "%postulate")))
   (def kwAmp (quote (0 &)))
 
-  ; a numeral's characters and atom
-  (defn decimalChars ((n T)) Ts
-    (if (eq n 0) (single 48)
-      (let k T
-        (fst
-          (iter (Prod T T)
-            (lam ((s (Prod T T))) (if (eq (snd s) 0) s (pair (add (fst s) 1) (div (snd s) 10))))
-            (pair 0 n)
-            (add (log2 n) 1)))
-        (foldr T Ts (lam ((d T) (acc Ts)) (cons (add d 48) acc)) (nil T) (digitsMsb 10 n k)))))
+  ; a numeral's atom
   (defn numAtom ((n T)) Tx (tAtom (decimalChars n)))
   ; the name of a datatype's recognizer: the datatype's atom followed by .member
   (defn memberName ((d T)) T (node 1 (append (children d) (children (quote (1 .member))))))
   (defn memberAtom ((d Tx)) Tx (tAtom (append (children (rep d)) (children (quote (1 .member))))))
   (defn fieldAtom ((k T)) Tx (tAtom (cons 37 (cons 102 (decimalChars k)))))
-  (defn qAtom ((k T)) Tx (tAtom (cons 37 (cons 113 (decimalChars k)))))
 
   ; types and expressions under construction
   (defn sList ((a Tx)) Tx (sx2 aList a))
@@ -143,11 +135,10 @@
         (let bs (List Tx) (bindersTx (nthTx es 1))
           (if (lt 0 (Txs.length bs)) (OTx.just (curry bs (nthTx es 2))) OTx.nothing))
         (OTx.just e))))
-  ; the function dropping a list's head, at the elements' type, and a list without its first n
-  ; elements
-  (defn sTail ((a Tx)) Tx
-    (sLam1 aX (sList a) (sx6 aLcase a (sList a) aX (sx2 aNil a) (sLam2 aH a aTl (sList a) aTl))))
-  (defn sDrop ((a Tx) (xs Tx) (n T)) Tx (sx5 aIter (sList a) (sTail a) xs (numAtom n)))
+  ; a list of trees' head, the tree 0 at the empty list, and its tail
+  (defn sHeadOf ((xs Tx)) Tx (sx6 aLcase aT aT xs aZero (sLam2 aH aT aTl (sList aT) aH)))
+  (defn sTailOf ((xs Tx)) Tx
+    (sx6 aLcase aT (sList aT) xs (sx2 aNil aT) (sLam2 aH aT aTl (sList aT) aTl)))
   ; the expansion's coercions, which no reader writes: a term of a type's erasure at the type,
   ; where the expansion knows it to be a member, and a term of a type at its erasure
   (defn asTy ((ty Tx) (e Tx)) Tx (tAs ty e))
@@ -211,151 +202,6 @@
                      (if (namedTx h kwList) (sx2 aNil (nthTx fs 1)) aZero))))))))
         (else (pair tx0 aZero)))))
 
-  ; the bindings of a clause's variables, from the innermost out: fb binds a field at a position
-  ; with its type, and vb binds the remaining children after the fixed fields; each variable an
-  ; atom not beginning with %, as the expansion's own variables, bound among them, do
-  (deftype Binder (Arrow T (Arrow Tx (Arrow Tx (Arrow Tx Tx)))))
-  (deftype XT (Prod T Tx))
-  (defn bindWith ((fb Binder) (vb Binder) (ctor Decl) (vars (List Tx)) (body Tx)) MTx
-    (case ctor
-      ((ctorD m j d fs isVar w)
-       (let fields (List Tx) (elems fs)
-         (let nf T (Txs.length fields)
-           (let nv T (Txs.length vars)
-             (if
-               (and (eq nv (add nf isVar))
-                 (allTrue
-                   (foldr Tx Ts
-                     (lam ((v Tx) (r Ts))
-                       (cons (and (isAtomTx v) (if (eq (at (children (rep v)) 0) 37) 0 1)) r))
-                     (nil T)
-                     vars)))
-               (OTx.just
-                 (snd
-                   (foldr Tx XT
-                     (lam ((v Tx) (acc XT))
-                       (let k T (sub (sub nv 1) (fst acc))
-                         (pair (add (fst acc) 1)
-                           (if (lt k nf) (fb k (nthTx fields k) v (snd acc))
-                             (vb nf w v (snd acc))))))
-                     (pair 0 body)
-                     vars)))
-               OTx.nothing)))))
-      (else OTx.nothing)))
-
-  ; the constructor a clause names, when it is declared
-  (defn clauseCtor ((env (List Decl)) (c Tx)) ODecl.Maybe
-    (case (nthTx (elems c) 0) ((tList ps) (findCtor (atomName (nthTx ps 0)) env))
-      (else ODecl.nothing)))
-
-  ; the chain of tests of a clause list: each clause, with its constructor and its expansion,
-  ; binds its variables and tests the scrutinee's label, the last without an else untested
-  (deftype CL (Prod Tx (Prod Decl Tx)))
-  (deftype Chain (Prod T (Prod T Tx)))
-  (deftype Bind (Arrow Decl (Arrow (List Tx) (Arrow Tx MTx))))
-  (defn testChain ((sv Tx) (clauses (List CL)) (base MTx) (bind Bind)) MTx
-    (let r Chain
-      (foldr CL Chain
-        (lam ((p CL) (acc Chain))
-          (let ctor Decl (fst (snd p))
-            (case
-              (bind ctor (Txs.tail (elems (nthTx (elems (fst p)) 0)))
-                (nthTx (elems (snd (snd p))) 1))
-              ((OTx.just b)
-               (if (fst acc)
-                 (pair 1
-                   (pair 1
-                     (if (fst (snd acc))
-                       (case ctor
-                         ((ctorD m j d fs v w)
-                          (sIf (sx3 aEq (sx2 aLabel sv) (numAtom j)) b (snd (snd acc))))
-                         (else b))
-                       b)))
-                 (pair 0 (pair 0 tx0))))
-              ((OTx.nothing) (pair 0 (pair 0 tx0))))))
-        (case base ((OTx.just b) (pair 1 (pair 1 b))) ((OTx.nothing) (pair 1 (pair 0 tx0))))
-        clauses)
-      (if (and (fst r) (fst (snd r))) (OTx.just (snd (snd r))) OTx.nothing)))
-
-  ; a clause list's chain, given the datatype, or nothing to take it from the first clause: every
-  ; clause names a constructor of that datatype, and without a last else clause every
-  ; constructor is named
-  (import (Seq ODecl.Maybe) as ODecls)
-  (defn clauseChain
-    ((env (List Decl)) (d0 OName.Maybe) (cls (List Tx)) (xo (Prod T (List Tx))) (sv Tx) (bind Bind))
-    MTx
-    (if (and (fst xo) (lt 0 (Txs.length cls)))
-      (let xs (List Tx) (snd xo)
-        (let n T (Txs.length cls)
-          (let lastC Tx (nthTx cls (sub n 1))
-            (let hasElse T
-              (and (isListTx lastC)
-                (and (eq (Txs.length (elems lastC)) 2) (namedTx (nthTx (elems lastC) 0) kwElse)))
-              (let ncls (List Tx) (if hasElse (dropLast cls) cls)
-                (let nxs (List Tx) (if hasElse (dropLast xs) xs)
-                  (let base MTx
-                    (if hasElse (OTx.just (nthTx (elems (nthTx xs (sub n 1))) 1)) OTx.nothing)
-                    (let ctors (List ODecl.Maybe)
-                      (foldr Tx (List ODecl.Maybe)
-                        (lam ((c Tx) (acc (List ODecl.Maybe))) (cons (clauseCtor env c) acc))
-                        (nil ODecl.Maybe)
-                        ncls)
-                      (let d Name
-                        (case d0 ((OName.just dd) dd)
-                          ((OName.nothing)
-                           (case (ODecls.atOr ODecl.nothing ctors 0) ((ODecl.just c0) (ctorData c0))
-                             ((ODecl.nothing) (name (nil T))))))
-                        (let valid T
-                          (allTrue
-                            (foldr Tx Ts
-                              (lam ((c Tx) (acc Ts))
-                                (cons
-                                  (and (eq (Txs.length (elems c)) 2)
-                                    (case (clauseCtor env c)
-                                      ((ODecl.just e) (sameName (ctorData e) d))
-                                      ((ODecl.nothing) 0)))
-                                  acc))
-                              (nil T)
-                              ncls))
-                          (let names (List Name)
-                            (foldr ODecl.Maybe (List Name)
-                              (lam ((c ODecl.Maybe) (acc (List Name)))
-                                (case c ((ODecl.just e) (cons (ctorName e) acc))
-                                  ((ODecl.nothing) acc)))
-                              (nil Name)
-                              ctors)
-                            (let covered T
-                              (or hasElse
-                                (allTrue
-                                  (foldr Decl Ts
-                                    (lam ((e Decl) (acc Ts))
-                                      (cons
-                                        (foldr Name T
-                                          (lam ((m Name) (r T)) (or (sameName m (ctorName e)) r))
-                                          0
-                                          names)
-                                        acc))
-                                    (nil T)
-                                    (ctorsOf d env))))
-                              (if (and valid covered)
-                                (let m T (Txs.length ncls)
-                                  (testChain sv
-                                    (snd
-                                      (foldr Tx (Prod T (List CL))
-                                        (lam ((c Tx) (acc (Prod T (List CL))))
-                                          (let i T (sub (sub m 1) (fst acc))
-                                            (pair (add (fst acc) 1)
-                                              (case (ODecls.atOr ODecl.nothing ctors i)
-                                                ((ODecl.just e)
-                                                 (cons (pair c (pair e (nthTx nxs i))) (snd acc)))
-                                                ((ODecl.nothing) (snd acc))))))
-                                        (pair 0 (nil CL))
-                                        ncls))
-                                    base
-                                    bind))
-                                OTx.nothing)))))))))))))
-      OTx.nothing))
-
   ; the subterms of a form with their expansions as functions of the declarations
   (deftype XR (Prod Tx (Arrow (List Decl) MTx)))
   (import (Seq XR) as XRs)
@@ -368,68 +214,118 @@
       (foldr XR (List MTx) (lam ((r XR) (a (List MTx))) (cons ((snd r) env) a)) (nil MTx)
         (XRs.drop i rs))))
 
-  ; case analysis: the scrutinee bound once, its label tested, its children bound to the clause's
-  ; variables
-  (defn caseField ((k T) (ty Tx) (v Tx) (b Tx)) Tx
-    (sLet v ty (asTy ty (sx3 aChild aS (numAtom k))) b))
-  (defn caseRest ((nf T) (ty Tx) (v Tx) (b Tx)) Tx
-    (sLet v (sList ty) (asTy (sList ty) (sDrop aT (sx2 aChildren aS) nf)) b))
-  (defn expandCase ((env (List Decl)) (fs (List Tx)) (rs (List XR))) MTx
-    (let cls (List Tx) (Txs.drop 2 fs)
-      (let chain MTx
-        (clauseChain env OName.nothing cls (xrFrom rs 2 env) aS (bindWith caseField caseRest))
-        (let d Tx
-          (case (clauseCtor env (nthTx cls 0))
-            ((ODecl.just c) (tAtom (children (rep (ctorData c)))))
-            ((ODecl.nothing) aT))
-          (case (xrAt rs 1 env)
-            ((OTx.just s)
-             (case chain ((OTx.just c) (OTx.just (sLet aS aT (ofTy d s) c)))
-               ((OTx.nothing) OTx.nothing)))
-            ((OTx.nothing) OTx.nothing))))))
+  ; the parts of a case analysis's or a structural recursion's clauses, as the typing checks them
+  ; against the datatype's marker: the datatype, the one given or the first clause's
+  ; constructor's; for each clause but an else clause, which names a constructor of the datatype,
+  ; the constructor's label, whether the constructor takes the remaining children, the clause's
+  ; variables and the parts extra gives of the constructor and the variables, numerals as atoms;
+  ; and the clauses' bodies, an else clause's last
+  (defn clauseCtor ((env (List Decl)) (c Tx)) ODecl.Maybe
+    (case (nthTx (elems c) 0) ((tList ps) (findCtor (atomName (nthTx ps 0)) env))
+      (else ODecl.nothing)))
+  (deftype CP (Prod Tx (Prod (List Tx) (List Tx))))
+  ; a clause's variables split at its constructor's fixed fields, each written by entry with its
+  ; field's type: those of the fixed fields, and those after them, at the type of the remaining
+  ; children
+  (deftype Entry (Arrow Tx (Arrow Tx Tx)))
+  (defn splitVars ((fts (List Tx)) (w Tx) (vars (List Tx)) (entry Entry)) (Prod (List Tx) (List Tx))
+    ((foldr Tx (Arrow (List Tx) (Prod (List Tx) (List Tx)))
+       (lam ((x Tx) (k (Arrow (List Tx) (Prod (List Tx) (List Tx)))) (ts (List Tx)))
+         (lcase Tx (Prod (List Tx) (List Tx)) ts
+           (let r (Prod (List Tx) (List Tx)) (k ts) (pair (fst r) (cons (entry x w) (snd r))))
+           (lam ((t Tx) (rest (List Tx)))
+             (let r (Prod (List Tx) (List Tx)) (k rest)
+               (pair (cons (entry x t) (fst r)) (snd r))))))
+       (lam ((ts (List Tx))) (pair (nil Tx) (nil Tx)))
+       vars) fts))
+  (defn clauseParts
+    ((env (List Decl)) (d0 OName.Maybe) (cls (List Tx)) (xo (Prod T (List Tx))) (entry Entry))
+    (Prod T CP)
+    (let n T (Txs.length cls)
+      (let lastC Tx (nthTx cls (sub n 1))
+        (let hasElse T
+          (and (isListTx lastC)
+            (and (eq (Txs.length (elems lastC)) 2) (namedTx (nthTx (elems lastC) 0) kwElse)))
+          (let d Name
+            (case d0 ((OName.just dd) dd)
+              ((OName.nothing)
+               (case (clauseCtor env (nthTx cls 0)) ((ODecl.just c0) (ctorData c0))
+                 ((ODecl.nothing) (name (nil T))))))
+            (let metas (Prod T (List Tx))
+              (OTx.allJust
+                (foldr Tx (List MTx)
+                  (lam ((c Tx) (acc (List MTx)))
+                    (cons
+                      (case (clauseCtor env c)
+                        ((ODecl.just e)
+                         (case e
+                           ((ctorD m j dd fs v w)
+                            (let p (Prod (List Tx) (List Tx))
+                              (splitVars (elems fs) w (Txs.tail (elems (nthTx (elems c) 0))) entry)
+                              (if (and (eq (Txs.length (elems c)) 2) (sameName dd d))
+                                (OTx.just
+                                  (tList
+                                    (cons (numAtom j)
+                                      (cons (tList (fst p)) (Txs.single (tList (snd p)))))))
+                                OTx.nothing)))
+                           (else OTx.nothing)))
+                        ((ODecl.nothing) OTx.nothing))
+                      acc))
+                  (nil MTx)
+                  (if hasElse (dropLast cls) cls)))
+              (if (and (fst xo) (and (lt 0 n) (fst metas)))
+                (pair 1
+                  (pair (tAtom (children (rep d)))
+                    (pair (snd metas)
+                      (foldr Tx (List Tx)
+                        (lam ((x Tx) (acc (List Tx))) (cons (nthTx (elems x) 1) acc))
+                        (nil Tx)
+                        (snd xo)))))
+                (pair 0 (pair tx0 (pair (nil Tx) (nil Tx)))))))))))
 
-  ; structural recursion: the kernel's fold of trees whose step sees the node itself, at the
-  ; suspended result; the clause's fields take the children's suspended results in order, one
-  ; binding each, so that each is used once; a recursive field is bound to its forced result, any
-  ; other to the node's child
+  ; case analysis: the datatype, the scrutinee, and the clauses' parts and bodies, which the
+  ; erasure writes as the scrutinee bound once, its label tested, its children bound to the
+  ; clause's variables
+  (defn expandCase ((env (List Decl)) (fs (List Tx)) (rs (List XR))) MTx
+    (case (xrAt rs 1 env)
+      ((OTx.just s)
+       (let q (Prod T CP)
+         (clauseParts env OName.nothing (Txs.drop 2 fs) (xrFrom rs 2 env) (lam ((x Tx) (t Tx)) x))
+         (let p CP (snd q)
+           (if (fst q)
+             (OTx.just (tCase (cons (fst p) (cons s (cons (tList (fst (snd p))) (snd (snd p)))))))
+             OTx.nothing))))
+      ((OTx.nothing) OTx.nothing)))
+
+  ; structural recursion, whose erasure takes the clause's fields' suspended results in order,
+  ; one binding each, so that each is used once: a suspended result's type and a list of them
+  ; split at its first
   (defn thTy ((r Tx)) Tx (sArrow aUnit r))
   (defn splitTy ((r Tx)) Tx (sProd (thTy r) (sList (thTy r))))
-  ; the suspended results remaining at field k
-  (defn resultsAt ((k T)) Tx (if (eq k 0) aK (sx2 aSnd (qAtom (sub k 1)))))
-  (defn cataField ((d Name) (r Tx) (dr Tx) (k T) (ty Tx) (v Tx) (b Tx)) Tx
-    (sLet (qAtom k) (splitTy r)
-      (sx6 aLcase (thTy r) (splitTy r) (resultsAt k)
-        (sx3 aPair (sLam1 aU aUnit dr) (sx2 aNil (thTy r)))
-        (sLam2 aH (thTy r) aTl (sList (thTy r)) (sx3 aPair aH aTl)))
-      (if (named (rep ty) (rep d)) (sLet v r (sx2 (sx2 aFst (qAtom k)) aUnitV) b)
-        (sLet v ty (asTy ty (sx3 aChild aO (numAtom k))) b))))
-  (defn cataRest ((d Name) (r Tx) (nf T) (ty Tx) (v Tx) (b Tx)) Tx
-    (if (named (rep ty) (rep d))
-      (sLet v (sList r)
-        (sx6 aFoldr (thTy r) (sList r)
-          (sLam2 aH (thTy r) aA (sList r) (sx3 aCons (sx2 aH aUnitV) aA))
-          (sx2 aNil r)
-          (resultsAt nf))
-        b)
-      (sLet v (sList ty) (asTy (sList ty) (sDrop aT (sx2 aChildren aO) nf)) b)))
+  ; the datatype, the result type, the scrutinee, the result at a node with fewer children
+  ; than its constructor has fields, and the clauses' parts, each variable flagged whether its
+  ; field's type is the datatype itself, and bodies
   (defn expandCata ((env (List Decl)) (fs (List Tx)) (rs (List XR))) MTx
     (let d Name (atomName (nthTx fs 1))
       (let r Tx (nthTx fs 2)
-        (let chain MTx
-          (if (and (isAtomTx (nthTx fs 1)) (isData d env))
-            (clauseChain env (OName.just d) (Txs.drop 4 fs) (xrFrom rs 4 env) aO
-              (bindWith (cataField d r (defaultOf (expandAliases env r))) (cataRest d r)))
-            OTx.nothing)
+        (let flagged Entry
+          (lam ((x Tx) (t Tx)) (tList (cons x (Txs.single (numAtom (named (rep t) (rep d)))))))
           (case (xrAt rs 3 env)
             ((OTx.just s)
-             (case chain
-               ((OTx.just c)
-                (OTx.just
-                  (sx2
-                    (sx4 aPara (thTy r) (sLam2 aO aT aK (sList (thTy r)) (sLam1 aU aUnit c))
-                      (ofTy (nthTx fs 1) s))
-                    aUnitV)))
-               ((OTx.nothing) OTx.nothing)))
+             (if (and (isAtomTx (nthTx fs 1)) (isData d env))
+               (let q (Prod T CP)
+                 (clauseParts env (OName.just d) (Txs.drop 4 fs) (xrFrom rs 4 env) flagged)
+                 (let p CP (snd q)
+                   (if (fst q)
+                     (OTx.just
+                       (tCata
+                         (cons (fst p)
+                           (cons r
+                             (cons s
+                               (cons (defaultOf (expandAliases env r))
+                                 (cons (tList (fst (snd p))) (snd (snd p)))))))))
+                     OTx.nothing)))
+               OTx.nothing))
             ((OTx.nothing) OTx.nothing))))))
 
   ; a list's children, the type a decoding or a datum reads with its abbreviations expanded, so
@@ -620,13 +516,93 @@
          es) (pair 1 (pair (nil Decl) (nil Tx))))
       (pair (fst s) (Txs.reverse (snd (snd s))))))
 
+  ; the erasure of the clauses of a case analysis and of a structural recursion: the chain of
+  ; tests of the label of the tree sv, each clause's body with its variables bound by bind, the
+  ; last clause's untested without an else clause, whose body is otherwise the last test's
+  ; alternative
+  (defn eraseChain ((sv Tx) (metas (List Tx)) (bodies (List Tx)) (bind (Arrow Tx (Arrow Tx Tx)))) Tx
+    ((foldr Tx (Arrow (List Tx) Tx)
+       (lam ((c Tx) (k (Arrow (List Tx) Tx)) (bs (List Tx)))
+         (let b Tx (bind c (nthTx bs 0))
+           (if (lt 1 (Txs.length bs))
+             (sIf (sx3 aEq (sx2 aLabel sv) (nthTx (elems c) 0)) b (k (Txs.tail bs)))
+             b)))
+       (lam ((bs (List Tx))) (nthTx bs 0))
+       metas) bodies))
+  ; a clause's variables bound around its body, from the outermost in: by fb each fixed field's
+  ; entry, then by rb the remaining children's
+  (defn numOf ((x Tx)) T (let v T (numeral (children (rep x))) (if (isSome v) (get v) 0)))
+  (deftype Binder (Arrow Tx (Arrow Tx Tx)))
+  (defn bindVars ((fb Binder) (rb Binder) (meta Tx) (body Tx)) Tx
+    (let ms (List Tx) (elems meta)
+      (foldr Tx Tx fb (foldr Tx Tx rb body (elems (nthTx ms 2))) (elems (nthTx ms 1)))))
+  ; case analysis: the scrutinee bound once, its label tested, and in a clause its children,
+  ; each fixed field's variable bound to the head of those remaining and the remaining children's
+  ; to the rest
+  (defn eraseCase ((rs (List Tx))) Tx
+    (sLet aS aT (nthTx rs 1)
+      (eraseChain aS (elems (nthTx rs 2)) (Txs.drop 3 rs)
+        (lam ((meta Tx) (b Tx))
+          (sLet aC (sList aT) (sx2 aChildren aS)
+            (bindVars
+              (lam ((v Tx) (acc Tx)) (sLet v aT (sHeadOf aC) (sLet aC (sList aT) (sTailOf aC) acc)))
+              (lam ((v Tx) (acc Tx)) (sLet v (sList aT) aC acc))
+              meta
+              b))))))
+  ; structural recursion: the clauses in the step of the kernel's fold of trees whose step sees the
+  ; node itself, at the suspended result, applied to the unit; in a clause the suspended results
+  ; and the children, at each fixed field the suspended results remaining split at its own, the
+  ; field's variable bound to its result, forced, at a field of the datatype itself, to the head
+  ; of the children remaining otherwise; the remaining children's results forced, or the
+  ; remaining children
+  (defn eraseCata ((rs (List Tx))) Tx
+    (let r Tx (nthTx rs 1)
+      (let dr Tx (nthTx rs 3)
+        (let th Tx (thTy r)
+          (sx2
+            (sx4 aPara th
+              (sLam2 aO aT aK (sList th)
+                (sLam1 aU aUnit
+                  (eraseChain aO (elems (nthTx rs 4)) (Txs.drop 5 rs)
+                    (lam ((meta Tx) (b Tx))
+                      (sLet aQ (splitTy r) (sx3 aPair (sLam1 aU aUnit dr) aK)
+                        (sLet aC (sList aT) (sx2 aChildren aO)
+                          (bindVars
+                            (lam ((e Tx) (acc Tx))
+                              (let v Tx (nthTx (elems e) 0)
+                                (sLet aQ (splitTy r)
+                                  (sx6 aLcase th (splitTy r) (sx2 aSnd aQ)
+                                    (sx3 aPair (sLam1 aU aUnit dr) (sx2 aNil th))
+                                    (sLam2 aH th aTl (sList th) (sx3 aPair aH aTl)))
+                                  (if (numOf (nthTx (elems e) 1))
+                                    (sLet v r (sx2 (sx2 aFst aQ) aUnitV)
+                                      (sLet aC (sList aT) (sTailOf aC) acc))
+                                    (sLet v aT (sHeadOf aC)
+                                      (sLet aC (sList aT) (sTailOf aC) acc))))))
+                            (lam ((e Tx) (acc Tx))
+                              (let v Tx (nthTx (elems e) 0)
+                                (if (numOf (nthTx (elems e) 1))
+                                  (sLet v (sList r)
+                                    (sx6 aFoldr th (sList r)
+                                      (sLam2 aH th aA (sList r) (sx3 aCons (sx2 aH aUnitV) aA))
+                                      (sx2 aNil r)
+                                      (sx2 aSnd aQ))
+                                    acc)
+                                  (sLet v (sList aT) aC acc))))
+                            meta
+                            b)))))))
+              (nthTx rs 2))
+            aUnitV)))))
+
   ; the erasure of a checked program: the declaration of a datatype becomes its abbreviation for
   ; the trees; the coercions become the terms they apply to, and a representation the list of
   ; its term alone, the term's application to no arguments, so that the erasure of a list is a
   ; list; decoding binds the tree once, tests it by the datatype's recognizer and gives it to the
-  ; function when it is a member; and the datum of a member, the quotation of the tree
+  ; function when it is a member; the datum of a member, the quotation of the tree; and case
+  ; analysis and structural recursion their chains of tests
   (defn eraseExpr ((e Tx)) Tx
-    (cata Tx Tx e ((tAs a b) b) ((tOf a b) b) ((tAtom cs) (tAtom cs))
+    (cata Tx Tx e ((tAs a b) b) ((tOf a b) b) ((tAtom cs) (tAtom cs)) ((tCase rs) (eraseCase rs))
+      ((tCata rs) (eraseCata rs))
       ((tList rs)
        (let k T (Txs.length rs)
          (let h Tx (nthTx rs 0)

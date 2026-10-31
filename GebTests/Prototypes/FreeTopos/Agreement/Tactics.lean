@@ -63,15 +63,35 @@ open Internal (Term Deriv NormRule)
 open scoped FinEnum
 
 /-- The mirror's bindings of optional values are the base's of optional trees. -/
-@[template] theorem bindTh_def : «Tactics.bindTh» = «Base.bindO» := rfl
+@[template] theorem bindTh_def : «Tactics.bindTh» = «Base.bindO» := by
+  funext a b
+  simp only [«Tactics.bindTh», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindTh_def] theorem bindAT_def : «Tactics.bindAT» = «Base.bindO» := rfl
+@[template, inherit_doc bindTh_def] theorem bindAT_def : «Tactics.bindAT» = «Base.bindO» := by
+  funext a b
+  simp only [«Tactics.bindAT», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindTh_def] theorem bindCT_def : «Tactics.bindCT» = «Base.bindO» := rfl
+@[template, inherit_doc bindTh_def] theorem bindCT_def : «Tactics.bindCT» = «Base.bindO» := by
+  funext a b
+  simp only [«Tactics.bindCT», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindTh_def] theorem bindPM_def : «Tactics.bindPM» = «Base.bindO» := rfl
+@[template, inherit_doc bindTh_def] theorem bindPM_def : «Tactics.bindPM» = «Base.bindO» := by
+  funext a b
+  simp only [«Tactics.bindPM», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc bindTh_def] theorem bindCM_def : «Tactics.bindCM» = «Base.bindO» := rfl
+@[template, inherit_doc bindTh_def] theorem bindCM_def : «Tactics.bindCM» = «Base.bindO» := by
+  funext a b
+  simp only [«Tactics.bindCM», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
 @[template, inherit_doc bindTh_def] theorem bindTM_def : «Tactics.bindTM» = «Base.bindO» := rfl
 

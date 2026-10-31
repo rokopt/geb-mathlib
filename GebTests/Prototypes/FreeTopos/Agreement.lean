@@ -488,8 +488,8 @@ names in scope, gives the encoding of the Lean reader's resolution of every S-ex
 whatever the printer writes for a term under binders to a depth resolves, in the scope of those
 binders, to the term. -/
 theorem reader_inverse_agree : ∃ G' : List Glob, load metalogic = some G' ∧
-    ∃ pr : Ty.den printTermTy, G'[1820]? = some ⟨printTermTy, pr⟩ ∧
-    ∃ rb : Ty.den readBackTy, G'[1810]? = some ⟨readBackTy, rb⟩ ∧
+    ∃ pr : Ty.den printTermTy, G'[1821]? = some ⟨printTermTy, pr⟩ ∧
+    ∃ rb : Ty.den readBackTy, G'[1811]? = some ⟨readBackTy, rb⟩ ∧
       (∀ (defs : List (List Char)) (t : Tree) (d : ℕ),
         pr (defs.map nameTree) t (leaf d) = encOpt ((printTerm? defs t d).map sexpTree)) ∧
       (∀ (defs : List (List Char)) (e : SExp) (scope : List (List Char)),

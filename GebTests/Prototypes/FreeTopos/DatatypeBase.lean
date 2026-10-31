@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import GebTests.Prototypes.FreeTopos.NormalizationRel -- shake: keep
+public import GebTests.Prototypes.FreeTopos.Stored
 public meta import GebTests.Prototypes.FreeTopos.NormalizationRel -- shake: keep
 public import GebTests.Prototypes.Stage1 -- shake: keep
 public meta import GebTests.Prototypes.Stage1 -- shake: keep
@@ -76,8 +77,10 @@ open scoped FinEnum
 open Internal (Term)
 open GebTests.Prototypes.FreeTopos.Normalization
 
-/-- The source forms the reader gives, at a function on trees: atoms, whose characters the function
-fixes, and lists of source forms. The statement takes the function to be the expansion of numeral
+/-- The source forms the reader gives and the expansion writes, at a function on trees: atoms,
+whose characters the function fixes, lists of source forms, and the expansion's checked nodes of
+case analysis and of structural recursion over source forms, labelled as the typing's forms
+{lit}`tCase` and {lit}`tCata`. The statement takes the function to be the expansion of numeral
 abbreviations, which fixes the reader's characters, leaves not labelled as atoms, at any
 abbreviations. One fold gives, at each tree and function, the tree rebuilt and whether it is a
 source form. The weakening proof's statement before it imports the prelude. -/
@@ -95,16 +98,19 @@ def sourceForms : String := "
           (let cs Ts (foldr SF Ts (lam ((p SF) (a Ts)) (cons (fst p) a)) (nil T) ps)
             (pair (node l cs)
               (if (eq l 1) (charsFixed g cs)
-                (if (eq l 2) (foldr SF T (lam ((p SF) (a T)) (and (snd p) a)) 1 ps) 0)))))))
+                (if (or (eq l 2) (or (eq l 13) (eq l 14)))
+                  (foldr SF T (lam ((p SF) (a T)) (and (snd p) a)) 1 ps) 0)))))))
     e) f))))"
 
 /-- The reader's name of a named context's variable: a name the numeral abbreviations abbreviate is
 the name of its numeral's atom, as the reader reads a binder once the abbreviations are expanded;
-any other is itself. -/
+any other is itself. And whether a name is one of the implementation's, beginning with %, as the
+names the erasure binds do. -/
 def scopeNames : String := "
 (import Reader)
 (def expName (lam ((nums Ts) (n T))
-  (let a T (lookupAbbrev n nums) (if (isSome a) (nameOf (get a)) n))))"
+  (let a T (lookupAbbrev n nums) (if (isSome a) (nameOf (get a)) n))))
+(def implName (lam ((n T)) (eq (at (children n) 0) 37)))"
 
 /-- The program: the prelude, the reader, the kernel's type checker, the lists of the datatype
 language, the stage-1 typing and expansion, the recognizers, the traversal of kernel terms, the
@@ -145,36 +151,37 @@ def envT (R cx env : Term) : Term := call (T.q + 1) [] [R, cx, env]
 /-- The relation of the definitions to the typing environment's definitions, by their names. -/
 def globT (R E names : Term) : Term := call (T.q + 2) [] [R, E, names]
 
-/-- The index of the argument the fold of index k of {lit}`foldSpecs` is applied to, a function
-of the parameters it uses. -/
-def argIdx (k : ℕ) : ℕ := T.q + 3 + 2 * k
+/-- The index of the argument the fold of index k of {lit}`allFoldSpecs` is applied to, a
+function of the parameters it uses: the statement's folds' among its definitions, the further
+folds' after them. -/
+def argIdx (k : ℕ) : ℕ := if k < nFolds then T.q + 3 + 2 * k else T.q + 8 + 2 * k
 
-/-- The index of the definition of the fold of index k of {lit}`foldSpecs`. -/
-def foldIdx (k : ℕ) : ℕ := T.q + 4 + 2 * k
+/-- The index of the definition of the fold of index k of {lit}`allFoldSpecs`. -/
+def foldIdx (k : ℕ) : ℕ := T.argIdx k + 1
 
 /-- The coherence of the reader's numeral abbreviations with the typing environment's numeral
 names: each name the environment has abbreviates a numeral's atom, and each name abbreviated is
 one the environment has. -/
 def numsT (E nums : Term) : Term := call (T.q + 3 + 2 * nFolds) [] [E, nums]
 
-/-- The reader's names of definitions: no name with an index is a primitive's, the unit value's or
-the variable's the erasure binds to a decoded tree, which the reader would resolve otherwise or the
-erasure binds around a definition's reference. -/
+/-- The reader's names of definitions: no name with an index is a primitive's or the unit value's,
+which the reader would resolve otherwise. -/
 def namesT (names : Term) : Term := call (T.q + 4 + 2 * nFolds) [] [names]
 
-/-- The coherence of the reader's numeral abbreviations with its keywords: no name abbreviated is
-reserved. -/
+/-- The coherence of the reader's numeral abbreviations with its keywords and the implementation's
+names: no name abbreviated is reserved, begins with % or is a numeral, so that the reader reads
+each keyword, each name the erasure binds and each numeral it writes as written. -/
 def kwsT (nums : Term) : Term := call (T.q + 5 + 2 * nFolds) [] [nums]
 
 /-- The recognizers of the typing environment's datatypes among the definitions: at each datatype,
-the definition its recognizer's name has an index of, where it has one, evaluates to a function
-whose application to the quotation of a tree converges to the quotation of a tree true exactly
-when the tree is a member of the datatype, by the markers of the relation's context. -/
+its recognizer's name has an index, at which the definition evaluates to a function whose
+application to the quotation of a tree converges to the quotation of a tree true exactly when the
+tree is a member of the datatype, by the markers of the relation's context. -/
 def recsT (R E names : Term) : Term := call (T.q + 6 + 2 * nFolds) [] [R, E, names]
 
 /-- The names of a named context: each name it gives a type is one the typing admits as a
-binder's ({lit}`Typing.nameOk`), so that the names the expansion and the erasure write free refer
-to what they write them for. -/
+binder's ({lit}`Typing.nameOk`) or the implementation's, as the names the erasure binds are, so
+that the names the expansion and the erasure write free refer to what they write them for. -/
 def cxT (E cx : Term) : Term := call (T.q + 7 + 2 * nFolds) [] [E, cx]
 
 /-- The fold of index k of {lit}`foldSpecs` at a tree, applied to the parameters its step uses,
@@ -186,7 +193,7 @@ end Defs3
 /-- The relation at a type of the datatype language, by the fold of the type's tree whose value at
 a node pairs the node rebuilt with the relation: at the trees, the unit type, products, function
 types and lists as the kernel's relation, at a datatype its members' quotations, by the typing's
-membership in the markers' datatypes, and at an opaque sort none. -/
+membership in the markers' datatypes, and at an opaque sort as at the trees, its erasure. -/
 def relDefn (P : Prog) (S : Defs) : Internal.Defn :=
   let o := P.o
   let ff := Internal.Logic.ff o
@@ -206,9 +213,10 @@ def relDefn (P : Prog) (S : Defs) : Internal.Defn :=
   let raw0 (d : ℕ) : Term := Term.fst (Term.fst (H d))
   let test (k : ℕ) (t u : Term) : Term :=
     condT omega (call D.eqB [] [Term.fst (v 2), numeral k]) t u
+  -- a tree's quotation, at the trees and at an opaque sort, whose erasure they are
+  let quoted : Term := ex treeTy (Term.lam treeTy (Term.eq (v 1) (pc P "Eval.valQuote" [v 0])))
   let body : Term :=
-    test Kernel.Label.tyTree
-      (ex treeTy (Term.lam treeTy (Term.eq (v 1) (pc P "Eval.valQuote" [v 0]))))
+    test Kernel.Label.tyTree quoted
     (test Kernel.Label.tyUnit (Term.eq (v 0) (pc P "Eval.valUnit" []))
     (test Kernel.Label.tyProd
       (ex treeTy (Term.lam treeTy (ex treeTy (Term.lam treeTy
@@ -227,7 +235,7 @@ def relDefn (P : Prog) (S : Defs) : Internal.Defn :=
       (ex treeTy (Term.lam treeTy (conj (Term.eq (v 1) (pc P "Eval.valQuote" [v 0]))
         (truth o (pc P "Typing.memberOf" [Term.snd (v 2),
           nodeT (Term.pair (numeral 1) (call D.children [] [raw0 1])), v 0])))))
-      ff)))))
+      (test 6 quoted ff))))))
   let rebuilt : Term := nodeT (Term.pair (Term.fst (v 0))
     (Term.listRec (nilT treeTy) (consT treeTy (Term.fst (v 1)) (v 0)) (Term.snd (v 0))))
   let step : Term := Term.pair rebuilt (Term.lam R (Term.lam treeTy body))
@@ -269,6 +277,16 @@ def foldSpecs (P : Prog) (envTy : Tree) : List FoldSpec :=
     ⟨"srcForm", [treeTy, list treeTy],
       [Term.lam treeTy (pc P "Reader.expandNums" [v 2, v 0]), v 0]⟩]
 
+/-- The folds of the typing that the proofs about its tests read, after the statement's: the
+typing's reading of a datum, at the tree of index 0. -/
+def auxFoldSpecs (envTy : Tree) : List FoldSpec :=
+  [⟨"Typing.plainDatum", [treeTy, envTy], [v 1, v 0]⟩]
+
+/-- The statement's folds ({lit}`foldSpecs`) and the further folds the proofs read
+({lit}`auxFoldSpecs`), each with its definitions in the extended program. -/
+def allFoldSpecs (P : Prog) (envTy : Tree) : List FoldSpec :=
+  foldSpecs P envTy ++ auxFoldSpecs envTy
+
 /-- A fold's definitions: the argument the fold is applied to, in the parameters the argument
 uses; and the fold at the tree, by its step, applied to the argument of index {lit}`argIdx`, in
 the tree and those parameters, the tree's first. With them, the fold's type and step, the
@@ -295,7 +313,8 @@ equations the vocabulary states one keyword at a time; and the lookups of names,
 decide by their results. -/
 def foldedStage1 : List String :=
   ["Reader.resolveAtom", "Reader.resolveList", "Typing.synAtom", "Typing.synList",
-    "Datatype.expandCase", "Datatype.expandCata", "Datatype.expandExpr", "Typing.synIn",
+    "Datatype.expandCase", "Datatype.expandCata", "Datatype.expandExpr", "Typing.synCase",
+    "Typing.synCata", "Typing.synIn", "Datatype.eraseCase", "Datatype.eraseCata",
     "Datatype.eraseExpr", "Reader.expandNums", "Reader.resolve", "Reader.lookupAbbrev",
     "Reader.indexOf", "Reader.numeral", "Typing.lookupName", "Typing.hasName", "srcForm",
     "charsFixed"]
@@ -345,7 +364,7 @@ def extend3 (P : Prog) (S : Defs) : Option (Prog × Defs3) := do
       (Term.lam treeTy (all treeTy (Term.lam treeTy applied))))
   let recsBody : Term := all treeTy (Term.lam treeTy (imp
     (truth o (pc P "Typing.hasName" [v 0, pc P "Typing.envNoms" [v 2]]))
-    (all treeTy (Term.lam treeTy (imp
+    (ex treeTy (Term.lam treeTy (conj
       (Term.eq (pc P "Reader.indexOf" [pc P "Typing.recognizerName" [v 1], v 2])
         (pc P "Prelude.some" [v 0]))
       (ex treeTy (Term.lam treeTy recognizer)))))))
@@ -387,32 +406,37 @@ def extend3 (P : Prog) (S : Defs) : Option (Prog × Defs3) := do
             (truth o (pc P "Prelude.isSome" [pc P "Reader.numeral" [v 0]]))))))
         (imp (truth o (pc P "Prelude.isSome" [pc P "Reader.lookupAbbrev" [v 0, v 1]]))
           (truth o (pc P "Typing.hasName" [v 0, pc P "Typing.envNums" [v 2]])))))⟩,
-    -- the reader's names: no name with an index is a primitive's, the unit value's or the decoded
-    -- tree's variable's
+    -- the reader's names: no name with an index is a primitive's or the unit value's
     ⟨0, [list treeTy], omega,
       all treeTy (Term.lam treeTy (imp
         (truth o (pc P "Prelude.isSome" [pc P "Reader.indexOf" [v 0, v 1]]))
         (imp (truth o (pc P "Prelude.or"
             [pc P "Prelude.isSome" [pc P "Reader.indexOf" [v 0, pc P "Reader.primNames" []]],
-              pc P "Prelude.or" [apps equalT [v 0, pc P "Reader.kwUnitValue" []],
-                apps equalT [v 0, pc P "Typing.kwDecoded" []]]]))
+              apps equalT [v 0, pc P "Reader.kwUnitValue" []]]))
           (Internal.Logic.ff o))))⟩,
-    -- the keywords: no name the numeral abbreviations abbreviate is reserved
+    -- the keywords: no name the numeral abbreviations abbreviate is reserved, the
+    -- implementation's or a numeral
     ⟨0, [list treeTy], omega,
       all treeTy (Term.lam treeTy (imp
         (truth o (pc P "Prelude.isSome" [pc P "Reader.lookupAbbrev" [v 0, v 1]]))
-        (imp (truth o (pc P "Prelude.isSome" [pc P "Reader.indexOf" [v 0,
-            pc P "Reader.reservedNames" []]]))
+        (imp (truth o (pc P "Prelude.or" [pc P "Prelude.isSome" [pc P "Reader.indexOf" [v 0,
+            pc P "Reader.reservedNames" []]], pc P "Prelude.or" [pc P "implName" [v 0],
+              pc P "Prelude.isSome" [pc P "Reader.numeral" [call D.children [] [v 0]]]]]))
           (Internal.Logic.ff o))))⟩,
-    -- the recognizers: at each datatype d of the environment, the index i of its recognizer's
+    -- the recognizers: at each datatype d of the environment, some index i of its recognizer's
     -- name, the definition k there, its value g, and at each tree t, the value w of g applied to
     -- t's quotation, the quotation of a tree u true exactly when t is a member of d
     ⟨0, [list treeTy, envTy, R], omega, recsBody⟩,
-    -- the named context's names: each with a type one the typing admits as a binder's
+    -- the named context's names: each with a type one the typing admits as a binder's or the
+    -- implementation's
     ⟨0, [list treeTy, envTy], omega,
       all treeTy (Term.lam treeTy (imp
         (truth o (pc P "Prelude.isSome" [pc P "Typing.lookupName" [v 0, v 1]]))
-        (truth o (pc P "Typing.nameOk" [v 2, v 0]))))⟩]
+        (truth o (pc P "Prelude.or"
+          [pc P "Typing.nameOk" [v 2, v 0], pc P "implName" [v 0]]))))⟩] ++
+    -- the further folds' definitions, after the statement's
+    (← ((auxFoldSpecs envTy).zipIdx.mapM fun (f, j) ↦
+      (foldDefn P f (T.argIdx (nFolds + j))).map fun r ↦ [r.1, r.2.1])).flatten
   pure (⟨⟨P.G.prims, P.G.defs ++ defs.map .language, P.G.base⟩, P.o, P.idx, foldedStage1⟩, T)
 
 /-- The number of quantifiers of {lit}`datatypeφ`. -/
@@ -510,7 +534,7 @@ def mapFold (T : Defs3) (k : ℕ) (R : Tree) (tys : List Tree) : Term :=
 the map of the fold's definition, by induction on the children; or the reason it fails. -/
 def fusion (P : Prog) (T : Defs3) (k : ℕ) (ix : String → ℕ) (E : Array Internal.Entry) :
     Except String (Internal.Thm × Internal.Deriv) := do
-  let some f := (foldSpecs P T.envTy)[k]? | throw "no fold"
+  let some f := (allFoldSpecs P T.envTy)[k]? | throw "no fold"
   let some (_, d, C, st, _, F) := foldDefn P f (T.argIdx k)
     | throw "no definition"
   let rs := vRules P ix
@@ -557,7 +581,7 @@ applied to the parameters, with the map of the fold's definition, by induction o
 the fold's definition at a node, unfolded at the root alone; and, where the fold's values pair
 the node rebuilt with another value, the rebuilding lemmas. -/
 def foldVocab (P : Prog) (T : Defs3) (k : ℕ) (rebuilds : Rebuild) : List Step :=
-  match (foldSpecs P T.envTy)[k]? with
+  match (allFoldSpecs P T.envTy)[k]? with
   | none => []
   | some f =>
   match foldDefn P f (T.argIdx k) with
@@ -628,7 +652,7 @@ inductive KidsShape where
 index 0, its parameters or the argument of its values after it, are the children. -/
 def kidsEq (P : Prog) (T : Defs3) (k : ℕ) (shape : KidsShape) : Step :=
   (s!"fold{k}Kids", fun ix E ↦ do
-    let f ← (foldSpecs P T.envTy)[k]?
+    let f ← (allFoldSpecs P T.envTy)[k]?
     let (_, d, _, _, _, _) ← foldDefn P f (T.argIdx k)
     let tys := d.params.tail
     let L := list treeTy
@@ -644,7 +668,11 @@ def kidsEq (P : Prog) (T : Defs3) (k : ℕ) (shape : KidsShape) : Step :=
         let applied := foldrT d.type (list B)
           (Term.lam d.type (Term.lam (list B) (consT B (Term.app (v 1) (v 3)) (v 0)))) (nilT B) M
         some ([L, FA], firstsOf B applied)
-    let rs := vRules3 P ix E.size
+    -- a further fold's own vocabulary, which the statement's rules do not hold
+    let own := if nFolds ≤ k then [s!"fold{k}Node", s!"fold{k}Fst"].filterMap fun nm ↦
+      if 0 < ix nm ∧ ix nm < E.size then some (Internal.NormRule.thm (ix nm) []) else none
+      else []
+    let rs := own ++ vRules3 P ix E.size
     let some l := nfE P.G E rs Γ firsts | dbgTrace s!"fold{k}Kids: left" fun _ ↦ none
     let some dv := Internal.byListIndHyp P.G E 0 0 1 rs 4096 Γ [] l (v 0)
       | dbgTrace s!"fold{k}Kids: {showT l}" fun _ ↦ none
@@ -691,7 +719,7 @@ the function, the fold's definition and its argument unfolded and the other stag
 folded. -/
 def foldDefEq (P : Prog) (T : Defs3) (k : ℕ) : Step :=
   (s!"fold{k}Def", fun _ E ↦ do
-    let f ← (foldSpecs P T.envTy)[k]?
+    let f ← (allFoldSpecs P T.envTy)[k]?
     let used ← (foldDefn P f (T.argIdx k)).map (·.2.2.2.2.1)
     let ps := used.reverse.map v
     let lhs := pc P f.name f.args
@@ -876,6 +904,52 @@ def listFoldEqs (P : Prog) (tag name : String) (Γ : List Tree) (elem : Tree)
       let r' := replaceSub rt tail r
       let d ← byMode .full P.G E 0 rsU Γ [] t r'
       pure (⟨0, Γ, [], Term.eq t r'⟩, d))]
+
+/-- The head of a list of trees by the kernel's case analysis, the leaf 0 at the empty list, and its
+tail, as the erasure binds a clause's fields walking the children, in the normal forms of the
+kernel's first child of the node over the list and of the library's tail, as the kernel's child at
+a numeral position reads them: by case analysis of the list, the tail's rebuilding of the rest by
+the case analysis the list itself, by induction on the list. -/
+def walkEqs (P : Prog) (S : Defs) : List Step :=
+  let Γ := [list treeTy]
+  let field (xs : Term) (b : Tree) (z k : Term) : Term :=
+    apps (lcaseT treeTy b) [xs, z, Term.lam treeTy (Term.lam (list treeTy) k)]
+  let tailT (xs : Term) : Term := field xs (list treeTy) (nilT treeTy) (v 0)
+  let eqStep (name : String) (l r : Term → Option Term) (more : List String) : Step :=
+    (name, fun ix E ↦ do
+      let K : Kit := ⟨P, S, E, ix, more⟩
+      let some lN := nfE K.G K.E (K.rules []) Γ (← l (v 0))
+        | dbgTrace s!"{name}: left" fun _ ↦ none
+      let some rN := nfE K.G K.E (K.rules []) Γ (← r (v 0))
+        | dbgTrace s!"{name}: right" fun _ ↦ none
+      let a : Internal.Thm := ⟨0, Γ, [], Term.eq lN rN⟩
+      let some d := K.listCase treeTy (v 0) K.byNorm K.byNorm a.ctx a.hyps a.concl
+        | dbgTrace s!"{name}: not proved" fun _ ↦ none
+      pure (a, d))
+  -- the rebuilding of a list by the case analysis of its tail, the first component of the pair
+  -- whose second is the tail, is the list
+  let rebuild : Step := ("walkRebuild", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, []⟩
+    let some tN := nfE K.G K.E (K.rules []) Γ (tailT (v 0))
+      | dbgTrace "walkRebuild: tail" fun _ ↦ none
+    let .snd := tN.label | dbgTrace "walkRebuild: not a pair's second" fun _ ↦ none
+    let [p] := tN.children | none
+    let φ := Term.eq (Term.fst p) (v 0)
+    let d₀ ← K.byNorm [] [] (Term.subst φ (Internal.instVar (Term.arr 0 [treeTy] Term.star)))
+    -- a construction: the rest's rebuilding by the induction hypothesis, the first hypothesis
+    let byIH : Deducer := dEq fun Γ Φ t u ↦
+      let rs := .hyp 0 :: K.rules Φ
+      byMode .full K.G K.E 0 rs Γ (rwHyps rs Φ) t u
+    let some d₁ := byIH [list treeTy, treeTy] [Internal.weakenElem φ]
+        (Internal.listConsAt 1 treeTy φ)
+      | dbgTrace "walkRebuild: not proved" fun _ ↦ none
+    pure (⟨0, Γ, [], φ⟩, nd (.listIndHyp 0 1) [d₀, d₁]))
+  [eqStep "walkHead" (fun xs ↦ some (field xs treeTy (leafT bnilT) (v 1)))
+      (fun xs ↦ do pure (apps (← primT Kernel.Prim.child)
+        [apps (← primT Kernel.Prim.node) [leafT bnilT, xs], leafT bnilT])) [],
+    rebuild,
+    eqStep "walkTail" (fun xs ↦ some (tailT xs)) (fun xs ↦ some (call D.tail [treeTy] [xs]))
+      ["walkRebuild"]]
 
 /-- The names of the lookups' equations at the empty list and at a construction. -/
 def lookupEqNames : List String :=
@@ -1421,7 +1495,7 @@ def baseDev3 (P : Prog) (S : Defs) (T : Defs3) : Option (List Step) := do
     ([(0, KidsShape.list), (1, .list), (2, .list), (4, .foldr), (5, .applied)].map
       fun (k, b) ↦ kidsEq P T k b) ++
     atomEqs P T ++ [handlerAtom3 P T, charsMap P T, charsFixedEq P S T] ++ equalReflLemmas P S ++
-    lookupEqs P)
+    walkEqs P S ++ lookupEqs P)
 
 /-- The development of the soundness at an atom: the agreement of the reader's scope with the
 named context, the primitives related at their types in the typing, and the soundness. -/
@@ -1429,14 +1503,35 @@ def atomDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
   [lookupAgreeA P S, lookupAgreeB P S T] ++ (List.range 14).map (relTPrim P S T) ++
     [atomCase P S T]
 
+/-- The checker with its failures reported, for diagnosis: each node whose rewriting or proof
+fails, printed with its rule's position among the rules ({name}`Stored.ruleData`), its goal, and,
+at a proof, the positions of the hypotheses that are not formulas, the deepest first. -/
+def checkTraced (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ) :
+    Internal.Deriv → Internal.Checks :=
+  RoseTree.para fun l cs ↦
+    let c := Internal.checkStep G E n l cs
+    let r := (Stored.ruleData l).1
+    (fun Γ Φ t ↦ (c.1 Γ Φ t).orElse fun _ ↦
+        dbgTrace s!"the rewriting of rule {r} fails at {showT t}" fun _ ↦ none,
+      fun Γ Φ ψ ↦ c.2 Γ Φ ψ ||
+        let bad := (Φ.zipIdx.filter fun (h, _) ↦
+          !decide (Internal.typeIn G n Γ h = some omega)).map (·.2)
+        dbgTrace s!"the proof of rule {r} fails, hypotheses {bad} not formulas, at {showT ψ}"
+          fun _ ↦ false)
+
 /-- A development's declarations, each checked after those before it, given the entries before
-them; the first that does not, named. -/
+them; the first that does not, named, its failures reported by {name}`checkTraced`. -/
 def checkAfter (G : Internal.Globals) (E : Array Internal.Entry) (names : List String)
     (ds : List Internal.Decl) : Except String Unit := do
   let _ ← names.zip ds |>.foldlM (fun (st : Internal.Globals × Array Internal.Entry)
       (nm, d) ↦ match d.step st.1 st.2 with
     | some st' => Except.ok st'
-    | none => Except.error s!"the lemma {nm} does not check") (G, E)
+    | none =>
+      let proves := match d with
+        | .language a der => (checkTraced st.1 st.2 a.arity der).2 a.ctx a.hyps a.concl
+        | _ => false
+      Except.error s!"the lemma {nm} does not check{if proves then
+        ", its statement not well formed" else ""}") (G, E)
 
 /-- The base development, stored as the certificate {lit}`datatype-base`, each declaration checked
 as it is stored. -/

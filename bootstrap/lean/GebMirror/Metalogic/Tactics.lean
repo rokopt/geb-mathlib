@@ -78,18 +78,46 @@ def «Tactics.bindTh» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Prelude.none»);
+                     let _ : List T := Const.children x2; «Prelude.none»);
     x2
 
 def «Tactics.bindAT» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Prelude.none»);
+                     let _ : List T := Const.children x2; «Prelude.none»);
     x2
 
 def «Tactics.pr0» := «Language.pr» (leaf 0) (leaf 0)
@@ -1308,7 +1336,21 @@ def «Tactics.hypIndex» :=
   fun (x0 : T × (T → T → List T → T)) =>
     let x1 : T := (let x1 : T := (x0).1;
                    if (Const.eq (Const.label x1) (leaf 6)).label ≠ 0 then
-                     let x2 : T := Const.child x1 (leaf 0); «Prelude.some» x2
+                     let x2 : List T := Const.children x1;
+                     let x3 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     «Prelude.some» x3
                    else
                      «Prelude.none»);
     x1
@@ -1867,18 +1909,46 @@ def «Tactics/OCond.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Tactics/OCond.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Tactics/OCond.nthOf» :=
@@ -1911,9 +1981,23 @@ def «Tactics/OCond.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -1922,9 +2006,23 @@ def «Tactics.bindCT» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Prelude.none»);
+                     let _ : List T := Const.children x2; «Prelude.none»);
     x2
 
 def «Tactics.condParts» :=
@@ -2589,18 +2687,46 @@ def «Tactics/OMask.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Tactics/OMask.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Tactics/OMask.nthOf» :=
@@ -2633,9 +2759,23 @@ def «Tactics/OMask.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -2649,18 +2789,46 @@ def «Tactics.bindPM» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Tactics/OMask.nothing»);
+                     let _ : List T := Const.children x2; «Tactics/OMask.nothing»);
     x2
 
 def «Tactics.bindCM» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Tactics/OMask.nothing»);
+                     let _ : List T := Const.children x2; «Tactics/OMask.nothing»);
     x2
 
 def «Tactics.bindTM» :=

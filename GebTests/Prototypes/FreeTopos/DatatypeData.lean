@@ -97,7 +97,8 @@ def repCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
   ("repCase", fun ix E ↦ do
     let kw := "Typing.kwRep"
     let W₀ := kwKit P S T ix E 1 [true] kw
-    let K := { W₀.K with more := W₀.K.more ++ ["applyTyCons", "appsCons"] }
+    let K := { W₀.K with
+      more := W₀.K.more ++ ["applyTyCons", "appsCons", "rawCase", "rawCata"] }
     let W := { W₀ with K := K }
     let L := K.L
     let a := kwThm P S T kw 1
@@ -202,9 +203,10 @@ def repCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
           decideIn K (fun Γ ↦ pc P "Prelude.isSome" [pc P "Reader.lookupAbbrev" [nm Γ, nums Γ]])
             typedA abbreviated)
     -- the term a list, of the elements of position hcsPos: its expansion present, generalized,
-    -- a list (expList); the source forms' test of the list of the expansion alone cut in while
-    -- the expansion is a variable; the expansion a node of that label; no keyword naming it as
-    -- each stage reads it, as at the head of an application of a list (appList)
+    -- a list or a checked node (expList); the source forms' test of the list of the expansion
+    -- alone cut in while the expansion is a variable; the expansion a node of its label, the
+    -- typing's form of the same label; no keyword naming it as each stage reads it, as at the
+    -- head of an application of a list (appList)
     let listT (hcsPos : ℕ) : Deducer :=
       let hcs (Γ : List Tree) : Term := atPos hcsPos Γ
       let expH (Γ : List Tree) : Term :=
@@ -237,8 +239,8 @@ def repCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
         let X (Γ : List Tree) : Term := atPos (Γ₀.length - 1) Γ
         let srcT (Γ : List Tree) : Term := truth P.o (pc P "srcForm"
           [fnOf Γ, nodeT (Term.pair (numeral 2) (consT treeTy (X Γ) (nilT treeTy)))])
-        (W.cutApply "expList" (fun Γ ↦ [hcs Γ, W.qv 3 Γ]) [K.solve 3] <| renormLast <|
-          fun Γ Φ ψ ↦ do
+        (W.cutApply "expList" (fun Γ ↦ [hcs Γ, W.qv 3 Γ]) [K.solve 3] <| fun Γ Φ ψ ↦
+          byListLabel L (Φ.length - 1) (fun n _ ↦ renormLast <| fun Γ Φ ψ ↦ do
           let d ← linkK K "rep: the list's source form"
             (byHypWith (W.hyp 4) [.delta (T.argIdx 5)]) Γ Φ (srcT Γ)
           dCut (srcT Γ) d (fun Γ Φ ψ ↦ do
@@ -246,11 +248,11 @@ def repCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
             -- each keyword test with the expansion a node of its label, within its own proof
             let factN (j : ℕ) : Deducer := fun Γ Φ ψ ↦ K.treeNode (X Γ) (fun Γ Φ ψ ↦
               dRwHyp (evalRw K.G K.E (K.rulesEx Φ iLab) .full) iLab (fact X j) Γ Φ ψ) Γ Φ ψ
-            -- the typing's form of the expansion a list, cut in first, which the typing of the
-            -- list of the expansion alone reads
+            -- the typing's form of the expansion of its label, cut in first, which the typing of
+            -- the list of the expansion alone reads
             let tForm (Γ : List Tree) : Term :=
               Term.fst (Term.app (Term.snd (T.foldAt 1 [W.qv 4 Γ] (X Γ))) Term.star)
-            let φ := Term.eq (call D.lab [] [tForm Γ]) (numeral 2)
+            let φ := Term.eq (call D.lab [] [tForm Γ]) (numeral n)
             let dT ← linkK K "rep: the typing's form a list" (fun Γ Φ ψ ↦
                 K.treeNode (X Γ) (fun Γ Φ ψ ↦ dRwHyp (evalRw K.G K.E (K.rulesEx Φ iLab) .full)
                   iLab (K.solve 3) Γ Φ ψ) Γ Φ ψ) Γ Φ φ
@@ -260,7 +262,8 @@ def repCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
               renormLast <| fun Γ Φ ψ ↦
               W.cutApply "numsList" (fun Γ ↦ [g Γ, nums Γ]) [K.solve 3]
                 (renormLast (typed X (K.byHyp iSrc) fun j Γ Φ ψ ↦
-                  (K.solve 3 Γ Φ ψ).orElse fun _ ↦ factN j Γ Φ ψ)) Γ Φ ψ) Γ Φ ψ) Γ Φ ψ) Γ₀ Φ₀ ψ₀
+                  (K.solve 3 Γ Φ ψ).orElse fun _ ↦ factN j Γ Φ ψ)) Γ Φ ψ) Γ Φ ψ) Γ Φ ψ) Γ Φ ψ)
+          Γ₀ Φ₀ ψ₀
     -- the keyword's characters fixed by the expansion of numeral abbreviations: the test's
     -- equation with its value, computed with the steps unfolded; then the term's label decided
     let decisions : Deducer := fun Γ Φ ψ ↦ do
@@ -285,9 +288,11 @@ def repCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
     pure (a, d))
 
 /-- The development of the soundness at representations: the stage functions' equations at a
-representation, the relation at a datatype at the tree type, and the soundness. -/
+representation, the typing's forms of the checked nodes ({name}`rawAt`), the relation at a
+datatype at the tree type, and the soundness. -/
 def dataDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
-  kwEqs P T "Typing.kwRep" 1 ++ [relTDataTree P S T, repCase P S T]
+  kwEqs P T "Typing.kwRep" 1 ++
+    [rawAt P T "rawCase" 13 [], rawAt P T "rawCata" 14 [], relTDataTree P S T, repCase P S T]
 
 /-- The development of the soundness at representations ({name}`dataDev3`), after the base's, the
 atom's, the list's, the stage functions' at applications, the applications', the list expansion's

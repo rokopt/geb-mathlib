@@ -61,27 +61,59 @@ open scoped FinEnum
     «Infer.anns» xs = RoseTree.node 0 xs := rfl
 
 /-- The mirror's images and bindings of optional values are the base's of optional trees. -/
-@[template] theorem mapOT_def : «Infer.mapOT» = «Base.mapO» := rfl
+@[template] theorem mapOT_def : «Infer.mapOT» = «Base.mapO» := by
+  funext a b
+  simp only [«Infer.mapOT», «Base.mapO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
 @[template, inherit_doc mapOT_def] theorem mapTD_def : «Infer.mapTD» = «Base.mapO» := rfl
 
-@[template, inherit_doc mapOT_def] theorem mapYA_def : «Infer.mapYA» = «Base.mapO» := rfl
+@[template, inherit_doc mapOT_def] theorem mapYA_def : «Infer.mapYA» = «Base.mapO» := by
+  funext a b
+  simp only [«Infer.mapYA», «Base.mapO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc mapOT_def] theorem mapAY_def : «Infer.mapAY» = «Base.mapO» := rfl
+@[template, inherit_doc mapOT_def] theorem mapAY_def : «Infer.mapAY» = «Base.mapO» := by
+  funext a b
+  simp only [«Infer.mapAY», «Base.mapO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
 @[template, inherit_doc mapOT_def] theorem mapTA_def : «Infer.mapTA» = «Base.mapO» := rfl
 
-@[template, inherit_doc mapOT_def] theorem bindST_def : «Infer.bindST» = «Base.bindO» := rfl
+@[template, inherit_doc mapOT_def] theorem bindST_def : «Infer.bindST» = «Base.bindO» := by
+  funext a b
+  simp only [«Infer.bindST», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc mapOT_def] theorem bindYT_def : «Infer.bindYT» = «Base.bindO» := rfl
+@[template, inherit_doc mapOT_def] theorem bindYT_def : «Infer.bindYT» = «Base.bindO» := by
+  funext a b
+  simp only [«Infer.bindYT», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc mapOT_def] theorem bindAT_def : «Infer.bindAT» = «Base.bindO» := rfl
+@[template, inherit_doc mapOT_def] theorem bindAT_def : «Infer.bindAT» = «Base.bindO» := by
+  funext a b
+  simp only [«Infer.bindAT», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
-@[template, inherit_doc mapOT_def] theorem bindOA_def : «Infer.bindOA» = «Base.bindO» := rfl
+@[template, inherit_doc mapOT_def] theorem bindOA_def : «Infer.bindOA» = «Base.bindO» := by
+  funext a b
+  simp only [«Infer.bindOA», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
 @[template, inherit_doc mapOT_def] theorem bindTA_def : «Infer.bindTA» = «Base.bindO» := rfl
 
-@[template, inherit_doc mapOT_def] theorem bindLY_def : «Infer.bindLY» = «Base.bindO» := rfl
+@[template, inherit_doc mapOT_def] theorem bindLY_def : «Infer.bindLY» = «Base.bindO» := by
+  funext a b
+  simp only [«Infer.bindLY», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
 /-- The mirror's optional lists of the values of lists of optional typed terms and typings are
 the base's of optional trees. -/
@@ -96,7 +128,11 @@ the base's of optional trees. -/
   simp only [«Infer.allSomeA», template, «Infer.anns»]
   exact allJust_allSomeT ms
 
-@[template, inherit_doc mapOT_def] theorem bindLA_def : «Infer.bindLA» = «Base.bindO» := rfl
+@[template, inherit_doc mapOT_def] theorem bindLA_def : «Infer.bindLA» = «Base.bindO» := by
+  funext a b
+  simp only [«Infer.bindLA», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
 
 /-- The right fold that counts indices down from an encoded list's end finds the first element
 passing a test, with its index. -/

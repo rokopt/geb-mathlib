@@ -2091,9 +2091,9 @@ def «Typing.tOf» :=
   fun (x0 : T) (x1 : T) =>
     Const.node (leaf 12) (x0 :: (x1 :: ([] : List T)))
 
-def «Typing.tx13» := Const.node (leaf 13) ([] : List T)
+def «Typing.tCase» := fun (x0 : List T) => Const.node (leaf 13) x0
 
-def «Typing.tx14» := Const.node (leaf 14) ([] : List T)
+def «Typing.tCata» := fun (x0 : List T) => Const.node (leaf 14) x0
 
 def «Typing.tGeneric» := fun (x0 : List T) => Const.node (leaf 15) x0
 
@@ -2195,10 +2195,62 @@ def «Typing.Tx.member» :=
                                           leaf 0
                                       else
                                         if (Const.eq x1 (leaf 13)).label ≠ 0 then
-                                          Const.eq (Const.arity x3) (leaf 0)
+                                          if (Const.lt
+                                            (leaf 0)
+                                            (Const.add (Const.arity x3) (leaf 1))).label ≠ 0 then
+                                            Const.foldr
+                                              (α := T)
+                                              (β := T)
+                                              (fun (x4 : T) (x5 : T) =>
+                                                if (Const.mod
+                                                  (Const.div x4 (leaf 1))
+                                                  (leaf 2)).label ≠ 0 then
+                                                  x5
+                                                else
+                                                  leaf 0)
+                                              (leaf 1)
+                                              (Const.iter
+                                                (α := List T)
+                                                (fun (x4 : List T) =>
+                                                  Const.lcase
+                                                    (α := T)
+                                                    (β := List T)
+                                                    x4
+                                                    ([] : List T)
+                                                    (fun (_ : T) (x6 : List T) => x6))
+                                                x2
+                                                (leaf 0))
+                                          else
+                                            leaf 0
                                         else
                                           if (Const.eq x1 (leaf 14)).label ≠ 0 then
-                                            Const.eq (Const.arity x3) (leaf 0)
+                                            if (Const.lt
+                                              (leaf 0)
+                                              (Const.add (Const.arity x3) (leaf 1))).label ≠ 0 then
+                                              Const.foldr
+                                                (α := T)
+                                                (β := T)
+                                                (fun (x4 : T) (x5 : T) =>
+                                                  if (Const.mod
+                                                    (Const.div x4 (leaf 1))
+                                                    (leaf 2)).label ≠ 0 then
+                                                    x5
+                                                  else
+                                                    leaf 0)
+                                                (leaf 1)
+                                                (Const.iter
+                                                  (α := List T)
+                                                  (fun (x4 : List T) =>
+                                                    Const.lcase
+                                                      (α := T)
+                                                      (β := List T)
+                                                      x4
+                                                      ([] : List T)
+                                                      (fun (_ : T) (x6 : List T) => x6))
+                                                  x2
+                                                  (leaf 0))
+                                            else
+                                              leaf 0
                                           else
                                             if (Const.eq x1 (leaf 15)).label ≠ 0 then
                                               if (Const.lt
@@ -2397,18 +2449,46 @@ def «Typing/OTy.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Typing/OTy.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Typing/OTy.nthOf» :=
@@ -2441,9 +2521,23 @@ def «Typing/OTy.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -2516,22 +2610,19 @@ def «Typing.eraseTy» :=
       (α := Unit → T)
       (fun (x1 : T) (x2 : List (Unit → T)) (_ : Unit) =>
         if (Const.eq (Const.label x1) (leaf 0)).label ≠ 0 then
-          «Typing.tyT»
+          let _ : (Unit → T) ×
+            List (Unit → T) := (fun (_ : Unit) => leaf 0, x2);
+          let _ : List T := Const.children x1; «Typing.tyT»
         else
           if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-            «Typing.tyUnit»
+            let _ : (Unit → T) ×
+              List (Unit → T) := (fun (_ : Unit) => leaf 0, x2);
+            let _ : List T := Const.children x1; «Typing.tyUnit»
           else
             if (Const.eq (Const.label x1) (leaf 2)).label ≠ 0 then
               let x4 : (Unit → T) ×
-                List
-                  (Unit →
-                    T) := Const.lcase
-                (α := Unit → T)
-                (β := (Unit → T) × List (Unit → T))
-                x2
-                (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
-                (fun (x4 : Unit → T) (x5 : List (Unit → T)) => (x4, x5));
-              let x5 : T := (x4).1 ();
+                List (Unit → T) := (fun (_ : Unit) => leaf 0, x2);
+              let x5 : List T := Const.children x1;
               let x6 : (Unit → T) ×
                 List
                   (Unit →
@@ -2541,19 +2632,37 @@ def «Typing.eraseTy» :=
                 (x4).2
                 (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
                 (fun (x6 : Unit → T) (x7 : List (Unit → T)) => (x6, x7));
-              let x7 : T := (x6).1 (); «Typing.tyProd» x5 x7
+              let x7 : T := (x6).1 ();
+              let x8 : List
+                T := Const.lcase
+                (α := T)
+                (β := List T)
+                x5
+                ([] : List T)
+                (fun (_ : T) (x9 : List T) => x9);
+              let x9 : (Unit → T) ×
+                List
+                  (Unit →
+                    T) := Const.lcase
+                (α := Unit → T)
+                (β := (Unit → T) × List (Unit → T))
+                (x6).2
+                (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
+                (fun (x9 : Unit → T) (x10 : List (Unit → T)) => (x9, x10));
+              let x10 : T := (x9).1 ();
+              let _ : List
+                T := Const.lcase
+                (α := T)
+                (β := List T)
+                x8
+                ([] : List T)
+                (fun (_ : T) (x12 : List T) => x12);
+              «Typing.tyProd» x7 x10
             else
               if (Const.eq (Const.label x1) (leaf 3)).label ≠ 0 then
                 let x4 : (Unit → T) ×
-                  List
-                    (Unit →
-                      T) := Const.lcase
-                  (α := Unit → T)
-                  (β := (Unit → T) × List (Unit → T))
-                  x2
-                  (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
-                  (fun (x4 : Unit → T) (x5 : List (Unit → T)) => (x4, x5));
-                let x5 : T := (x4).1 ();
+                  List (Unit → T) := (fun (_ : Unit) => leaf 0, x2);
+                let x5 : List T := Const.children x1;
                 let x6 : (Unit → T) ×
                   List
                     (Unit →
@@ -2563,42 +2672,110 @@ def «Typing.eraseTy» :=
                   (x4).2
                   (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
                   (fun (x6 : Unit → T) (x7 : List (Unit → T)) => (x6, x7));
-                let x7 : T := (x6).1 (); «Typing.tyArrow» x5 x7
+                let x7 : T := (x6).1 ();
+                let x8 : List
+                  T := Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x5
+                  ([] : List T)
+                  (fun (_ : T) (x9 : List T) => x9);
+                let x9 : (Unit → T) ×
+                  List
+                    (Unit →
+                      T) := Const.lcase
+                  (α := Unit → T)
+                  (β := (Unit → T) × List (Unit → T))
+                  (x6).2
+                  (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
+                  (fun (x9 : Unit → T) (x10 : List (Unit → T)) => (x9, x10));
+                let x10 : T := (x9).1 ();
+                let _ : List
+                  T := Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x8
+                  ([] : List T)
+                  (fun (_ : T) (x12 : List T) => x12);
+                «Typing.tyArrow» x7 x10
               else
                 if (Const.eq (Const.label x1) (leaf 4)).label ≠ 0 then
                   let x4 : (Unit → T) ×
+                    List (Unit → T) := (fun (_ : Unit) => leaf 0, x2);
+                  let x5 : List T := Const.children x1;
+                  let x6 : (Unit → T) ×
                     List
                       (Unit →
                         T) := Const.lcase
                     (α := Unit → T)
                     (β := (Unit → T) × List (Unit → T))
-                    x2
+                    (x4).2
                     (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
-                    (fun (x4 : Unit → T) (x5 : List (Unit → T)) => (x4, x5));
-                  let x5 : T := (x4).1 (); «Typing.tyList» x5
+                    (fun (x6 : Unit → T) (x7 : List (Unit → T)) => (x6, x7));
+                  let x7 : T := (x6).1 ();
+                  let _ : List
+                    T := Const.lcase
+                    (α := T)
+                    (β := List T)
+                    x5
+                    ([] : List T)
+                    (fun (_ : T) (x9 : List T) => x9);
+                  «Typing.tyList» x7
                 else
                   if (Const.eq (Const.label x1) (leaf 5)).label ≠ 0 then
+                    let x4 : (Unit → T) ×
+                      List (Unit → T) := (fun (_ : Unit) => leaf 0, x2);
+                    let x5 : List T := Const.children x1;
                     let _ : (Unit → T) ×
                       List
                         (Unit →
                           T) := Const.lcase
                       (α := Unit → T)
                       (β := (Unit → T) × List (Unit → T))
-                      x2
+                      (x4).2
                       (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
-                      (fun (x4 : Unit → T) (x5 : List (Unit → T)) => (x4, x5));
-                    let _ : T := Const.child x1 (leaf 0); «Typing.tyT»
+                      (fun (x6 : Unit → T) (x7 : List (Unit → T)) => (x6, x7));
+                    let _ : T := Const.lcase
+                      (α := T)
+                      (β := T)
+                      x5
+                      (leaf 0)
+                      (fun (x7 : T) (_ : List T) => x7);
+                    let _ : List
+                      T := Const.lcase
+                      (α := T)
+                      (β := List T)
+                      x5
+                      ([] : List T)
+                      (fun (_ : T) (x9 : List T) => x9);
+                    «Typing.tyT»
                   else
+                    let x4 : (Unit → T) ×
+                      List (Unit → T) := (fun (_ : Unit) => leaf 0, x2);
+                    let x5 : List T := Const.children x1;
                     let _ : (Unit → T) ×
                       List
                         (Unit →
                           T) := Const.lcase
                       (α := Unit → T)
                       (β := (Unit → T) × List (Unit → T))
-                      x2
+                      (x4).2
                       (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
-                      (fun (x4 : Unit → T) (x5 : List (Unit → T)) => (x4, x5));
-                    let _ : T := Const.child x1 (leaf 0); «Typing.tyT»)
+                      (fun (x6 : Unit → T) (x7 : List (Unit → T)) => (x6, x7));
+                    let _ : T := Const.lcase
+                      (α := T)
+                      (β := T)
+                      x5
+                      (leaf 0)
+                      (fun (x7 : T) (_ : List T) => x7);
+                    let _ : List
+                      T := Const.lcase
+                      (α := T)
+                      (β := List T)
+                      x5
+                      ([] : List T)
+                      (fun (_ : T) (x9 : List T) => x9);
+                    «Typing.tyT»)
       x0
       ();
     x1
@@ -2607,7 +2784,21 @@ def «Typing.isData» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 5)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
                      leaf 0);
     x1
@@ -2855,10 +3046,35 @@ def «Typing.lookupName» :=
       (β := T)
       (fun (x2 : T) (x3 : T) =>
         let x4 : T := x2;
-        let x5 : T := Const.child x4 (leaf 0);
-        let x6 : T := Const.child x4 (leaf 1);
-        if («Typing.sameName» x5 x0).label ≠ 0 then
-          «Typing/OTy.just» x6
+        let x5 : List T := Const.children x4;
+        let x6 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (_ : List T) => x6);
+        let x7 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x5
+          ([] : List T)
+          (fun (_ : T) (x8 : List T) => x8);
+        let x8 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x7
+          (leaf 0)
+          (fun (x8 : T) (_ : List T) => x8);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x7
+          ([] : List T)
+          (fun (_ : T) (x10 : List T) => x10);
+        if («Typing.sameName» x6 x0).label ≠ 0 then
+          «Typing/OTy.just» x8
         else
           x3)
       «Typing/OTy.nothing»
@@ -2879,19 +3095,8 @@ def «Typing.atomName» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let x2 : List
-                       T := Const.iter
-                       (α := List T)
-                       (fun (x2 : List T) =>
-                         Const.lcase
-                           (α := T)
-                           (β := List T)
-                           x2
-                           ([] : List T)
-                           (fun (_ : T) (x4 : List T) => x4))
-                       (Const.children x1)
-                       (leaf 0);
-                     «Typing.name» x2
+                     let x2 : List T := Const.children x1;
+                     let x3 : List T := x2; «Typing.name» x3
                    else
                      «Typing.name» ([] : List T));
     x1
@@ -2900,33 +3105,134 @@ def «Typing.isAtomTx» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : List
-                       T := Const.iter
-                       (α := List T)
-                       (fun (x2 : List T) =>
-                         Const.lcase
-                           (α := T)
-                           (β := List T)
-                           x2
-                           ([] : List T)
-                           (fun (_ : T) (x4 : List T) => x4))
-                       (Const.children x1)
-                       (leaf 0);
-                     leaf 1
+                     let x2 : List T := Const.children x1; let _ : List T := x2; leaf 1
                    else
                      leaf 0);
     x1
 
+def «Typing.recognizerName» :=
+  fun (x0 : T) =>
+    let x1 : T := «Typing.name»
+      («Prelude.append»
+        (Const.children x0)
+        (Const.children
+          (mk 1 [leaf 46,
+            leaf 109,
+            leaf 101,
+            leaf 109,
+            leaf 98,
+            leaf 101,
+            leaf 114])));
+    x1
+
+def «Typing.readAsName» :=
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : T) =>
+    let x2 : T := (if («Prelude.or»
+      («Prelude.isSome» («Reader.indexOf» x1 «Reader.reservedNames»))
+      («Prelude.or»
+        (Const.eq («Prelude.at» (Const.children x1) (leaf 0)) (leaf 37))
+        («Prelude.or»
+          («Prelude.isSome» («Reader.numeral» (Const.children x1)))
+          («Typing.hasName» x1 («Typing.envNums» x0))))).label ≠ 0 then
+      leaf 0
+    else
+      leaf 1);
+    x2
+
 def «Typing.namesData» :=
-  fun (x0 : T) (x1 : T) =>
-    let x2 : T := (let x2 : T := x0;
-                   if (Const.eq (Const.label x2) (leaf 5)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0);
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : T)
+    (x2 : T) =>
+    let x3 : T := (let x3 : T := x1;
+                   if (Const.eq (Const.label x3) (leaf 5)).label ≠ 0 then
+                     let x4 : List T := Const.children x3;
+                     let x5 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x4
+                       (leaf 0)
+                       (fun (x5 : T) (_ : List T) => x5);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x4
+                       ([] : List T)
+                       (fun (_ : T) (x7 : List T) => x7);
                      «Prelude.and»
-                       («Typing.isAtomTx» x1)
-                       («Typing.sameName» x3 («Typing.atomName» x1))
+                       («Typing.hasName» x5 («Typing.envNoms» x0))
+                       («Prelude.and»
+                         («Typing.isAtomTx» x2)
+                         («Prelude.and»
+                           («Typing.sameName» x5 («Typing.atomName» x2))
+                           («Typing.readAsName» x0 («Typing.recognizerName» x5))))
                    else
                      leaf 0);
+    x3
+
+def «Typing.datumAtom» :=
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : List T) =>
+    let x2 : T := (if («Typing.hasName»
+      («Typing.name» x1)
+      («Typing.envNums» x0)).label ≠ 0 then
+      leaf 0
+    else
+      if («Prelude.isSome» («Reader.numeral» x1)).label ≠ 0 then
+        leaf 2
+      else
+        leaf 1);
+    x2
+
+def «Typing.datumKids» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x1 : T) (x2 : T) => «Prelude.and» x1 x2)
+      (leaf 1)
+      x0;
+    x1
+
+def «Typing.datumList» :=
+  fun (x0 : List T) =>
+    let x1 : T := (if («Prelude.and»
+      (Const.eq («Prelude.at» x0 (leaf 0)) (leaf 2))
+      («Typing.datumKids» x0)).label ≠ 0 then
+      leaf 1
+    else
+      leaf 0);
+    x1
+
+def «Typing.plainDatum» :=
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : T) =>
+    let x2 : T := Const.para
+      (α := Unit → T)
+      (fun (x2 : T) (x3 : List (Unit → T)) (_ : Unit) =>
+        if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+          let _ : (Unit → T) ×
+            List (Unit → T) := (fun (_ : Unit) => leaf 0, x3);
+          let x6 : List T := Const.children x2;
+          let x7 : List T := x6; «Typing.datumAtom» x0 x7
+        else
+          if (Const.eq (Const.label x2) (leaf 2)).label ≠ 0 then
+            let x5 : (Unit → T) ×
+              List (Unit → T) := (fun (_ : Unit) => leaf 0, x3);
+            let _ : List T := Const.children x2;
+            let x7 : List
+              T := Const.foldr
+              (α := Unit → T)
+              (β := List T)
+              (fun (x7 : Unit → T) (x8 : List T) => ((x7 ()) :: x8))
+              ([] : List T)
+              (x5).2;
+            «Typing.datumList» x7
+          else
+            leaf 0)
+      x1
+      ();
     x2
 
 def «Typing.namedTx» :=
@@ -3081,95 +3387,170 @@ def «Typing.readTy» :=
       (α := Unit → T × T)
       (fun (x2 : T) (x3 : List (Unit → T × T)) (_ : Unit) =>
         if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-          let x5 : List
-            T := Const.iter
-            (α := List T)
-            (fun (x5 : List T) =>
-              Const.lcase
-                (α := T)
-                (β := List T)
-                x5
-                ([] : List T)
-                (fun (_ : T) (x7 : List T) => x7))
-            (Const.children x2)
-            (leaf 0);
-          («Typing.tAtom» x5,
-            let x6 : T := «Typing.name» x5;
-            if («Typing.namedTx» («Typing.tAtom» x5) «Reader.kwT»).label ≠ 0 then
+          let _ : (Unit → T × T) ×
+            List (Unit → T × T) := (fun (_ : Unit) => (leaf 0, leaf 0), x3);
+          let x6 : List T := Const.children x2;
+          let x7 : List T := x6;
+          («Typing.tAtom» x7,
+            let x8 : T := «Typing.name» x7;
+            if («Typing.namedTx» («Typing.tAtom» x7) «Reader.kwT»).label ≠ 0 then
               «Typing/OTy.just» «Typing.tyT»
             else
               if («Typing.namedTx»
-                («Typing.tAtom» x5)
+                («Typing.tAtom» x7)
                 «Reader.kwUnit»).label ≠ 0 then
                 «Typing/OTy.just» «Typing.tyUnit»
               else
-                let x7 : T := «Typing.lookupName» x6 («Typing.envAl» x0);
-                if (Const.eq (Const.label x7) (leaf 1)).label ≠ 0 then
-                  let x8 : T := Const.child x7 (leaf 0); «Typing/OTy.just» x8
+                let x9 : T := «Typing.lookupName» x8 («Typing.envAl» x0);
+                if (Const.eq (Const.label x9) (leaf 1)).label ≠ 0 then
+                  let x10 : List T := Const.children x9;
+                  let x11 : T := Const.lcase
+                    (α := T)
+                    (β := T)
+                    x10
+                    (leaf 0)
+                    (fun (x11 : T) (_ : List T) => x11);
+                  let _ : List
+                    T := Const.lcase
+                    (α := T)
+                    (β := List T)
+                    x10
+                    ([] : List T)
+                    (fun (_ : T) (x13 : List T) => x13);
+                  «Typing/OTy.just» x11
                 else
-                  if («Typing.hasName» x6 («Typing.envNoms» x0)).label ≠ 0 then
-                    «Typing/OTy.just» («Typing.tyData» x6)
+                  let _ : List T := Const.children x9;
+                  if («Typing.hasName» x8 («Typing.envNoms» x0)).label ≠ 0 then
+                    «Typing/OTy.just» («Typing.tyData» x8)
                   else
-                    if («Typing.hasName» x6 («Typing.envSorts» x0)).label ≠ 0 then
-                      «Typing/OTy.just» («Typing.tySort» x6)
+                    if («Typing.hasName» x8 («Typing.envSorts» x0)).label ≠ 0 then
+                      «Typing/OTy.just» («Typing.tySort» x8)
                     else
                       «Typing/OTy.nothing»)
         else
           if (Const.eq (Const.label x2) (leaf 2)).label ≠ 0 then
-            let x5 : List
+            let x5 : (Unit → T × T) ×
+              List (Unit → T × T) := (fun (_ : Unit) => (leaf 0, leaf 0), x3);
+            let _ : List T := Const.children x2;
+            let x7 : List
               (T ×
                 T) := Const.foldr
               (α := Unit → T × T)
               (β := List (T × T))
-              (fun (x5 : Unit → T × T) (x6 : List (T × T)) => ((x5 ()) :: x6))
+              (fun (x7 : Unit → T × T) (x8 : List (T × T)) => ((x7 ()) :: x8))
               ([] : List (T × T))
-              x3;
-            let x6 : List T := «Typing.rtForms» x5;
-            let x7 : T := «Typing/RT1s.length» x5;
-            let x8 : T := «Typing/Txs.atOr» «Typing.tx0» x6 (leaf 0);
-            let x9 : T →
-              T := (fun (x9 : T) =>
-              («Typing/RT1s.atOr» («Typing.tx0», «Typing/OTy.nothing») x5 x9).2);
-            («Typing.tList» x6,
+              (x5).2;
+            let x8 : List T := «Typing.rtForms» x7;
+            let x9 : T := «Typing/RT1s.length» x7;
+            let x10 : T := «Typing/Txs.atOr» «Typing.tx0» x8 (leaf 0);
+            let x11 : T →
+              T := (fun (x11 : T) =>
+              («Typing/RT1s.atOr» («Typing.tx0», «Typing/OTy.nothing») x7 x11).2);
+            («Typing.tList» x8,
               if («Prelude.and»
-                («Typing.namedTx» x8 «Reader.kwProd»)
-                (Const.eq x7 (leaf 3))).label ≠ 0 then
-                let x10 : T := x9 (leaf 1);
-                if (Const.eq (Const.label x10) (leaf 1)).label ≠ 0 then
-                  let x11 : T := Const.child x10 (leaf 0);
-                  let x12 : T := x9 (leaf 2);
-                  if (Const.eq (Const.label x12) (leaf 1)).label ≠ 0 then
-                    let x13 : T := Const.child x12 (leaf 0);
-                    «Typing/OTy.just» («Typing.tyProd» x11 x13)
+                («Typing.namedTx» x10 «Reader.kwProd»)
+                (Const.eq x9 (leaf 3))).label ≠ 0 then
+                let x12 : T := x11 (leaf 1);
+                if (Const.eq (Const.label x12) (leaf 1)).label ≠ 0 then
+                  let x13 : List T := Const.children x12;
+                  let x14 : T := Const.lcase
+                    (α := T)
+                    (β := T)
+                    x13
+                    (leaf 0)
+                    (fun (x14 : T) (_ : List T) => x14);
+                  let _ : List
+                    T := Const.lcase
+                    (α := T)
+                    (β := List T)
+                    x13
+                    ([] : List T)
+                    (fun (_ : T) (x16 : List T) => x16);
+                  let x16 : T := x11 (leaf 2);
+                  if (Const.eq (Const.label x16) (leaf 1)).label ≠ 0 then
+                    let x17 : List T := Const.children x16;
+                    let x18 : T := Const.lcase
+                      (α := T)
+                      (β := T)
+                      x17
+                      (leaf 0)
+                      (fun (x18 : T) (_ : List T) => x18);
+                    let _ : List
+                      T := Const.lcase
+                      (α := T)
+                      (β := List T)
+                      x17
+                      ([] : List T)
+                      (fun (_ : T) (x20 : List T) => x20);
+                    «Typing/OTy.just» («Typing.tyProd» x14 x18)
                   else
-                    «Typing/OTy.nothing»
+                    let _ : List T := Const.children x16; «Typing/OTy.nothing»
                 else
-                  «Typing/OTy.nothing»
+                  let _ : List T := Const.children x12; «Typing/OTy.nothing»
               else
                 if («Prelude.and»
-                  («Typing.namedTx» x8 «Reader.kwArrow»)
-                  (Const.eq x7 (leaf 3))).label ≠ 0 then
-                  let x10 : T := x9 (leaf 1);
-                  if (Const.eq (Const.label x10) (leaf 1)).label ≠ 0 then
-                    let x11 : T := Const.child x10 (leaf 0);
-                    let x12 : T := x9 (leaf 2);
-                    if (Const.eq (Const.label x12) (leaf 1)).label ≠ 0 then
-                      let x13 : T := Const.child x12 (leaf 0);
-                      «Typing/OTy.just» («Typing.tyArrow» x11 x13)
+                  («Typing.namedTx» x10 «Reader.kwArrow»)
+                  (Const.eq x9 (leaf 3))).label ≠ 0 then
+                  let x12 : T := x11 (leaf 1);
+                  if (Const.eq (Const.label x12) (leaf 1)).label ≠ 0 then
+                    let x13 : List T := Const.children x12;
+                    let x14 : T := Const.lcase
+                      (α := T)
+                      (β := T)
+                      x13
+                      (leaf 0)
+                      (fun (x14 : T) (_ : List T) => x14);
+                    let _ : List
+                      T := Const.lcase
+                      (α := T)
+                      (β := List T)
+                      x13
+                      ([] : List T)
+                      (fun (_ : T) (x16 : List T) => x16);
+                    let x16 : T := x11 (leaf 2);
+                    if (Const.eq (Const.label x16) (leaf 1)).label ≠ 0 then
+                      let x17 : List T := Const.children x16;
+                      let x18 : T := Const.lcase
+                        (α := T)
+                        (β := T)
+                        x17
+                        (leaf 0)
+                        (fun (x18 : T) (_ : List T) => x18);
+                      let _ : List
+                        T := Const.lcase
+                        (α := T)
+                        (β := List T)
+                        x17
+                        ([] : List T)
+                        (fun (_ : T) (x20 : List T) => x20);
+                      «Typing/OTy.just» («Typing.tyArrow» x14 x18)
                     else
-                      «Typing/OTy.nothing»
+                      let _ : List T := Const.children x16; «Typing/OTy.nothing»
                   else
-                    «Typing/OTy.nothing»
+                    let _ : List T := Const.children x12; «Typing/OTy.nothing»
                 else
                   if («Prelude.and»
-                    («Typing.namedTx» x8 «Reader.kwList»)
-                    (Const.eq x7 (leaf 2))).label ≠ 0 then
-                    let x10 : T := x9 (leaf 1);
-                    if (Const.eq (Const.label x10) (leaf 1)).label ≠ 0 then
-                      let x11 : T := Const.child x10 (leaf 0);
-                      «Typing/OTy.just» («Typing.tyList» x11)
+                    («Typing.namedTx» x10 «Reader.kwList»)
+                    (Const.eq x9 (leaf 2))).label ≠ 0 then
+                    let x12 : T := x11 (leaf 1);
+                    if (Const.eq (Const.label x12) (leaf 1)).label ≠ 0 then
+                      let x13 : List T := Const.children x12;
+                      let x14 : T := Const.lcase
+                        (α := T)
+                        (β := T)
+                        x13
+                        (leaf 0)
+                        (fun (x14 : T) (_ : List T) => x14);
+                      let _ : List
+                        T := Const.lcase
+                        (α := T)
+                        (β := List T)
+                        x13
+                        ([] : List T)
+                        (fun (_ : T) (x16 : List T) => x16);
+                      «Typing/OTy.just» («Typing.tyList» x14)
                     else
-                      «Typing/OTy.nothing»
+                      let _ : List T := Const.children x12; «Typing/OTy.nothing»
                   else
                     «Typing/OTy.nothing»)
           else
@@ -3271,40 +3652,37 @@ def «Typing.fieldOk» :=
 
 def «Typing.ctorOk» :=
   fun (x0 : List T) (x1 : T) (x2 : T) (x3 : List (List T)) =>
-    let x4 : T := (let x4 : List T := Const.children (Const.child x1 (leaf 1));
-                   let x5 : T := «Prelude.length» x4;
-                   let x6 : T := «Typing/Tss.length» x3;
-                   «Prelude.and»
-                     (Const.eq (Const.child x1 (leaf 0)) x2)
-                     («Prelude.and»
-                       (if (Const.child x1 (leaf 2)).label ≠ 0 then
-                         Const.lt x5 (Const.add x6 (leaf 1))
-                       else
-                         Const.eq x6 x5)
-                       («Prelude.and»
-                         (Const.foldr
-                           (α := T)
-                           (β := T × T)
-                           (fun (x7 : T) (x8 : T × T) =>
-                             (Const.sub (x8).1 (leaf 1),
-                               «Prelude.and»
-                                 («Typing.fieldOk»
-                                   x0
-                                   x7
-                                   («Typing/Tss.atOr» ([] : List T) x3 (Const.sub (x8).1 (leaf 1))))
-                                 (x8).2))
-                           (x5, leaf 1)
-                           x4).2
-                         (if (Const.child x1 (leaf 2)).label ≠ 0 then
-                           Const.foldr
-                             (α := List T)
-                             (β := T)
-                             (fun (x7 : List T) (x8 : T) =>
-                               «Prelude.and» («Typing.fieldOk» x0 (Const.child x1 (leaf 3)) x7) x8)
-                             (leaf 1)
-                             («Typing/Tss.drop» x5 x3)
-                         else
-                           leaf 1))));
+    let x4 : T := «Prelude.and»
+      (Const.eq (Const.child x1 (leaf 0)) x2)
+      (Const.foldr
+        (α := T)
+        (β := List (List T) → T)
+        (fun (x4 : T) (x5 : List (List T) → T) (x6 : List (List T)) =>
+          Const.lcase
+            (α := List T)
+            (β := T)
+            x6
+            (leaf 0)
+            (fun (x7 : List T) (x8 : List (List T)) =>
+              «Prelude.and» («Typing.fieldOk» x0 x4 x7) (x5 x8)))
+        (fun (x4 : List (List T)) =>
+          if (Const.child x1 (leaf 2)).label ≠ 0 then
+            Const.foldr
+              (α := List T)
+              (β := T)
+              (fun (x5 : List T) (x6 : T) =>
+                «Prelude.and» («Typing.fieldOk» x0 (Const.child x1 (leaf 3)) x5) x6)
+              (leaf 1)
+              x4
+          else
+            Const.lcase
+              (α := List T)
+              (β := T)
+              x4
+              (leaf 1)
+              (fun (_ : List T) (_ : List (List T)) => leaf 0))
+        (Const.children (Const.child x1 (leaf 1)))
+        x3);
     x4
 
 def «Typing.memberships» :=
@@ -3462,46 +3840,91 @@ def «Typing.applyTy» :=
       (fun (x2 : T) (x3 : T) =>
         let x4 : T := x3;
         if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-          let x5 : T := Const.child x4 (leaf 0);
-          let x6 : T := x5;
-          if (Const.eq (Const.label x6) (leaf 3)).label ≠ 0 then
-            let x7 : T := Const.child x6 (leaf 0);
-            let x8 : T := Const.child x6 (leaf 1);
-            let x9 : T := x2;
-            if (Const.eq (Const.label x9) (leaf 1)).label ≠ 0 then
-              let x10 : T := Const.child x9 (leaf 0);
+          let x5 : List T := Const.children x4;
+          let x6 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x5
+            (leaf 0)
+            (fun (x6 : T) (_ : List T) => x6);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x5
+            ([] : List T)
+            (fun (_ : T) (x8 : List T) => x8);
+          let x8 : T := x6;
+          if (Const.eq (Const.label x8) (leaf 3)).label ≠ 0 then
+            let x9 : List T := Const.children x8;
+            let x10 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x9
+              (leaf 0)
+              (fun (x10 : T) (_ : List T) => x10);
+            let x11 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x9
+              ([] : List T)
+              (fun (_ : T) (x12 : List T) => x12);
+            let x12 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x11
+              (leaf 0)
+              (fun (x12 : T) (_ : List T) => x12);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x11
+              ([] : List T)
+              (fun (_ : T) (x14 : List T) => x14);
+            let x14 : T := x2;
+            if (Const.eq (Const.label x14) (leaf 1)).label ≠ 0 then
+              let x15 : List T := Const.children x14;
+              let x16 : T := Const.lcase
+                (α := T)
+                (β := T)
+                x15
+                (leaf 0)
+                (fun (x16 : T) (_ : List T) => x16);
+              let _ : List
+                T := Const.lcase
+                (α := T)
+                (β := List T)
+                x15
+                ([] : List T)
+                (fun (_ : T) (x18 : List T) => x18);
               if («Prelude.and»
-                (Const.eq (Const.arity x5) (leaf 2))
-                («Typing.sameTy» x7 x10)).label ≠ 0 then
-                «Typing/OTy.just» x8
+                (Const.eq (Const.arity x6) (leaf 2))
+                («Typing.sameTy» x10 x16)).label ≠ 0 then
+                «Typing/OTy.just» x12
               else
                 «Typing/OTy.nothing»
             else
-              «Typing/OTy.nothing»
+              let _ : List T := Const.children x14; «Typing/OTy.nothing»
           else
             «Typing/OTy.nothing»
         else
-          «Typing/OTy.nothing»)
+          let _ : List T := Const.children x4; «Typing/OTy.nothing»)
       x0
       («Typing/MTys.reverse» x1);
     x2
 
-def «Typing.recognizerName» :=
-  fun (x0 : T) =>
-    let x1 : T := «Typing.name»
-      («Prelude.append»
-        (Const.children x0)
-        (Const.children
-          (mk 1 [leaf 46,
-            leaf 109,
-            leaf 101,
-            leaf 109,
-            leaf 98,
-            leaf 101,
-            leaf 114])));
-    x1
-
-def «Typing.kwDecoded» := mk 0 [leaf 37, leaf 101]
+def «Typing.isRecognizer» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) =>
+        «Prelude.or» («Typing.sameName» x1 («Typing.recognizerName» x2)) x3)
+      (leaf 0)
+      x0;
+    x2
 
 def «Typing.nameOk» :=
   fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
@@ -3515,20 +3938,52 @@ def «Typing.nameOk» :=
           («Prelude.or»
             (Const.equal x1 «Reader.kwUnitValue»)
             («Prelude.or»
-              (Const.equal x1 «Typing.kwDecoded»)
-              («Prelude.or»
-                («Prelude.isSome» («Reader.indexOf» x1 «Reader.primNames»))
-                (Const.foldr
-                  (α := T)
-                  (β := T)
-                  (fun (x2 : T) (x3 : T) =>
-                    «Prelude.or» («Typing.sameName» x1 («Typing.recognizerName» x2)) x3)
-                  (leaf 0)
-                  («Typing.envNoms» x0)))))))).label ≠ 0 then
+              («Prelude.isSome» («Reader.indexOf» x1 «Reader.primNames»))
+              («Typing.isRecognizer» («Typing.envNoms» x0) x1)))))).label ≠ 0 then
       leaf 0
     else
       leaf 1);
     x2
+
+def «Typing.kwDecoded» := mk 0 [leaf 37, leaf 101]
+
+def «Typing.kwScrutinee» := mk 0 [leaf 37, leaf 115]
+
+def «Typing.kwNode» := mk 0 [leaf 37, leaf 111]
+
+def «Typing.kwResults» := mk 0 [leaf 37, leaf 107]
+
+def «Typing.kwUnitArg» := mk 0 [leaf 37, leaf 117]
+
+def «Typing.kwFields» := mk 0 [leaf 37, leaf 99]
+
+def «Typing.kwSplit» := mk 0 [leaf 37, leaf 113]
+
+def «Typing.decimalChars» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (if (Const.eq x0 (leaf 0)).label ≠ 0 then
+      «Prelude.single» (leaf 48)
+    else
+      let x1 : T := (Const.iter
+        (α := T × T)
+        (fun (x1 : T × T) =>
+          if (Const.eq (x1).2 (leaf 0)).label ≠ 0 then
+            x1
+          else
+            (Const.add (x1).1 (leaf 1), Const.div (x1).2 (leaf 10)))
+        (leaf 0, x0)
+        (Const.add (Const.log2 x0) (leaf 1))).1;
+      Const.foldr
+        (α := T)
+        (β := List T)
+        (fun (x2 : T) (x3 : List T) => ((Const.add x2 (leaf 48)) :: x3))
+        ([] : List T)
+        («Prelude.digitsMsb» (leaf 10) x0 x1));
+    x1
+
+def «Typing.boundName» :=
+  fun (x0 : T) => let x1 : T := «Typing.name» (Const.children x0); x1
 
 def «Typing.binderName» :=
   fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
@@ -3547,18 +4002,46 @@ def «Typing/OAbbr.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Typing/OAbbr.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Typing/OAbbr.nthOf» :=
@@ -3591,9 +4074,23 @@ def «Typing/OAbbr.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -3606,25 +4103,15 @@ def «Typing.bindersOf» :=
         T := (let x2 : List
                 T := (let x2 : T := x1;
                       if (Const.eq (Const.label x2) (leaf 2)).label ≠ 0 then
-                        let x3 : List
-                          T := Const.iter
-                          (α := List T)
-                          (fun (x3 : List T) =>
-                            Const.lcase
-                              (α := T)
-                              (β := List T)
-                              x3
-                              ([] : List T)
-                              (fun (_ : T) (x5 : List T) => x5))
-                          (Const.children x2)
-                          (leaf 0);
+                        let x3 : List T := Const.children x2;
+                        let x4 : List T := x3;
                         if («Prelude.and»
-                          (Const.eq («Typing/Txs.length» x3) (leaf 2))
+                          (Const.eq («Typing/Txs.length» x4) (leaf 2))
                           («Typing.isAtomTx»
-                            («Typing/Txs.atOr» «Typing.tx0» x3 (leaf 0)))).label ≠ 0 then
+                            («Typing/Txs.atOr» «Typing.tx0» x4 (leaf 0)))).label ≠ 0 then
                           «Typing/Txs.single» x1
                         else
-                          x3
+                          x4
                       else
                         ([] : List T));
               «Typing/OAbbr.allJust»
@@ -3634,34 +4121,37 @@ def «Typing.bindersOf» :=
                   (fun (x3 : T) (x4 : List T) =>
                     ((let x5 : T := x3;
                       if (Const.eq (Const.label x5) (leaf 2)).label ≠ 0 then
-                        let x6 : List
-                          T := Const.iter
-                          (α := List T)
-                          (fun (x6 : List T) =>
-                            Const.lcase
-                              (α := T)
-                              (β := List T)
-                              x6
-                              ([] : List T)
-                              (fun (_ : T) (x8 : List T) => x8))
-                          (Const.children x5)
-                          (leaf 0);
+                        let x6 : List T := Const.children x5;
+                        let x7 : List T := x6;
                         if («Prelude.and»
-                          (Const.eq («Typing/Txs.length» x6) (leaf 2))
+                          (Const.eq («Typing/Txs.length» x7) (leaf 2))
                           («Typing.binderName»
                             x0
-                            («Typing/Txs.atOr» «Typing.tx0» x6 (leaf 0)))).label ≠ 0 then
-                          let x7 : T := «Typing.readTy»
+                            («Typing/Txs.atOr» «Typing.tx0» x7 (leaf 0)))).label ≠ 0 then
+                          let x8 : T := «Typing.readTy»
                             x0
-                            («Typing/Txs.atOr» «Typing.tx0» x6 (leaf 1));
-                          if (Const.eq (Const.label x7) (leaf 1)).label ≠ 0 then
-                            let x8 : T := Const.child x7 (leaf 0);
+                            («Typing/Txs.atOr» «Typing.tx0» x7 (leaf 1));
+                          if (Const.eq (Const.label x8) (leaf 1)).label ≠ 0 then
+                            let x9 : List T := Const.children x8;
+                            let x10 : T := Const.lcase
+                              (α := T)
+                              (β := T)
+                              x9
+                              (leaf 0)
+                              (fun (x10 : T) (_ : List T) => x10);
+                            let _ : List
+                              T := Const.lcase
+                              (α := T)
+                              (β := List T)
+                              x9
+                              ([] : List T)
+                              (fun (_ : T) (x12 : List T) => x12);
                             «Typing/OAbbr.just»
                               («Typing.abbr»
-                                («Typing.atomName» («Typing/Txs.atOr» «Typing.tx0» x6 (leaf 0)))
-                                x8)
+                                («Typing.atomName» («Typing/Txs.atOr» «Typing.tx0» x7 (leaf 0)))
+                                x10)
                           else
-                            «Typing/OAbbr.nothing»
+                            let _ : List T := Const.children x8; «Typing/OAbbr.nothing»
                         else
                           «Typing/OAbbr.nothing»
                       else
@@ -3687,19 +4177,49 @@ def «Typing.synAtom» :=
                        else
                          let x4 : T := «Typing.lookupName» x3 x2;
                          if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-                           let x5 : T := Const.child x4 (leaf 0); «Typing/OTy.just» x5
+                           let x5 : List T := Const.children x4;
+                           let x6 : T := Const.lcase
+                             (α := T)
+                             (β := T)
+                             x5
+                             (leaf 0)
+                             (fun (x6 : T) (_ : List T) => x6);
+                           let _ : List
+                             T := Const.lcase
+                             (α := T)
+                             (β := List T)
+                             x5
+                             ([] : List T)
+                             (fun (_ : T) (x8 : List T) => x8);
+                           «Typing/OTy.just» x6
                          else
-                           let x5 : T := «Typing.lookupName» x3 («Typing.envDefs» x0);
-                           if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
-                             let x6 : T := Const.child x5 (leaf 0); «Typing/OTy.just» x6
+                           let _ : List T := Const.children x4;
+                           let x6 : T := «Typing.lookupName» x3 («Typing.envDefs» x0);
+                           if (Const.eq (Const.label x6) (leaf 1)).label ≠ 0 then
+                             let x7 : List T := Const.children x6;
+                             let x8 : T := Const.lcase
+                               (α := T)
+                               (β := T)
+                               x7
+                               (leaf 0)
+                               (fun (x8 : T) (_ : List T) => x8);
+                             let _ : List
+                               T := Const.lcase
+                               (α := T)
+                               (β := List T)
+                               x7
+                               ([] : List T)
+                               (fun (_ : T) (x10 : List T) => x10);
+                             «Typing/OTy.just» x8
                            else
-                             let x6 : T := «Reader.indexOf» x3 «Reader.primNames»;
-                             if («Prelude.isSome» x6).label ≠ 0 then
+                             let _ : List T := Const.children x6;
+                             let x8 : T := «Reader.indexOf» x3 «Reader.primNames»;
+                             if («Prelude.isSome» x8).label ≠ 0 then
                                «Typing/OTy.just»
                                  («Typing/Tys.atOr»
                                    «Typing.tyT»
                                    «Typing.primTys»
-                                   («Prelude.get» x6))
+                                   («Prelude.get» x8))
                              else
                                if («Typing.namedTx»
                                  («Typing.tAtom» x1)
@@ -3713,23 +4233,64 @@ def «Typing.both2» :=
   fun (x0 : T) (x1 : T) (x2 : T → T → T) =>
     let x3 : T := (let x3 : T := x0;
                    if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-                     let x4 : T := Const.child x3 (leaf 0);
-                     let x5 : T := x1;
-                     if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
-                       let x6 : T := Const.child x5 (leaf 0); x2 x4 x6
+                     let x4 : List T := Const.children x3;
+                     let x5 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x4
+                       (leaf 0)
+                       (fun (x5 : T) (_ : List T) => x5);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x4
+                       ([] : List T)
+                       (fun (_ : T) (x7 : List T) => x7);
+                     let x7 : T := x1;
+                     if (Const.eq (Const.label x7) (leaf 1)).label ≠ 0 then
+                       let x8 : List T := Const.children x7;
+                       let x9 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x8
+                         (leaf 0)
+                         (fun (x9 : T) (_ : List T) => x9);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x8
+                         ([] : List T)
+                         (fun (_ : T) (x11 : List T) => x11);
+                       x2 x5 x9
                      else
-                       «Typing/OTy.nothing»
+                       let _ : List T := Const.children x7; «Typing/OTy.nothing»
                    else
-                     «Typing/OTy.nothing»);
+                     let _ : List T := Const.children x3; «Typing/OTy.nothing»);
     x3
 
 def «Typing.then1» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Typing/OTy.nothing»);
+                     let _ : List T := Const.children x2; «Typing/OTy.nothing»);
     x2
 
 def «Typing.when» :=
@@ -3772,9 +4333,34 @@ def «Typing.synList» :=
                                  (β := T)
                                  (fun (x10 : T) (x11 : T) =>
                                    let x12 : T := x10;
-                                   let _ : T := Const.child x12 (leaf 0);
-                                   let x14 : T := Const.child x12 (leaf 1);
-                                   «Typing.tyArrow» x14 x11)
+                                   let x13 : List T := Const.children x12;
+                                   let _ : T := Const.lcase
+                                     (α := T)
+                                     (β := T)
+                                     x13
+                                     (leaf 0)
+                                     (fun (x14 : T) (_ : List T) => x14);
+                                   let x15 : List
+                                     T := Const.lcase
+                                     (α := T)
+                                     (β := List T)
+                                     x13
+                                     ([] : List T)
+                                     (fun (_ : T) (x16 : List T) => x16);
+                                   let x16 : T := Const.lcase
+                                     (α := T)
+                                     (β := T)
+                                     x15
+                                     (leaf 0)
+                                     (fun (x16 : T) (_ : List T) => x16);
+                                   let _ : List
+                                     T := Const.lcase
+                                     (α := T)
+                                     (β := List T)
+                                     x15
+                                     ([] : List T)
+                                     (fun (_ : T) (x18 : List T) => x18);
+                                   «Typing.tyArrow» x16 x11)
                                  x9
                                  (x8).2))
                        else
@@ -3815,13 +4401,38 @@ def «Typing.synList» :=
                                (fun (x8 : T) =>
                                  let x9 : T := x8;
                                  if (Const.eq (Const.label x9) (leaf 2)).label ≠ 0 then
-                                   let x10 : T := Const.child x9 (leaf 0);
-                                   let x11 : T := Const.child x9 (leaf 1);
+                                   let x10 : List T := Const.children x9;
+                                   let x11 : T := Const.lcase
+                                     (α := T)
+                                     (β := T)
+                                     x10
+                                     (leaf 0)
+                                     (fun (x11 : T) (_ : List T) => x11);
+                                   let x12 : List
+                                     T := Const.lcase
+                                     (α := T)
+                                     (β := List T)
+                                     x10
+                                     ([] : List T)
+                                     (fun (_ : T) (x13 : List T) => x13);
+                                   let x13 : T := Const.lcase
+                                     (α := T)
+                                     (β := T)
+                                     x12
+                                     (leaf 0)
+                                     (fun (x13 : T) (_ : List T) => x13);
+                                   let _ : List
+                                     T := Const.lcase
+                                     (α := T)
+                                     (β := List T)
+                                     x12
+                                     ([] : List T)
+                                     (fun (_ : T) (x15 : List T) => x15);
                                    «Typing/OTy.just»
                                      (if («Typing.namedTx» x5 «Reader.kwFst»).label ≠ 0 then
-                                       x10
+                                       x11
                                      else
-                                       x11)
+                                       x13)
                                  else
                                    «Typing/OTy.nothing»)
                            else
@@ -3871,13 +4482,15 @@ def «Typing.synList» :=
                                            let x9 : T := «Reader.readDatum» (x6 (leaf 2));
                                            «Typing.when»
                                              («Prelude.and»
-                                               («Typing.namesData» x8 (x6 (leaf 1)))
+                                               («Typing.namesData» x0 x8 (x6 (leaf 1)))
                                                («Prelude.and»
                                                  («Prelude.isSome» x9)
-                                                 («Typing.memberOf»
-                                                   («Typing.envMs» x0)
-                                                   (x6 (leaf 1))
-                                                   («Prelude.get» x9))))
+                                                 («Prelude.and»
+                                                   («Typing.plainDatum» x0 (x6 (leaf 2)))
+                                                   («Typing.memberOf»
+                                                     («Typing.envMs» x0)
+                                                     (x6 (leaf 1))
+                                                     («Prelude.get» x9)))))
                                              x8)
                                      else
                                        if («Prelude.and»
@@ -3898,12 +4511,24 @@ def «Typing.synList» :=
                                                  (x7 (leaf 2))
                                                  (fun (x9 : T) =>
                                                    «Typing.both2»
-                                                     (x7 (leaf 3))
-                                                     (x7 (leaf 4))
+                                                     («Typing.srAt»
+                                                       x2
+                                                       (leaf 3)
+                                                       ((«Typing.abbr»
+                                                         («Typing.boundName» «Typing.kwDecoded»)
+                                                         «Typing.tyT») ::
+                                                         x3))
+                                                     («Typing.srAt»
+                                                       x2
+                                                       (leaf 4)
+                                                       ((«Typing.abbr»
+                                                         («Typing.boundName» «Typing.kwDecoded»)
+                                                         «Typing.tyT») ::
+                                                         x3))
                                                      (fun (x10 : T) (x11 : T) =>
                                                        «Typing.when»
                                                          («Prelude.and»
-                                                           («Typing.namesData» x8 (x6 (leaf 1)))
+                                                           («Typing.namesData» x0 x8 (x6 (leaf 1)))
                                                            («Prelude.and»
                                                              («Typing.sameTy» x9 «Typing.tyT»)
                                                              («Typing.sameTy»
@@ -3958,6 +4583,500 @@ def «Typing.synList» :=
                                                    («Typing.srFrom» x2 (leaf 1) x3));
     x4
 
+def «Typing.elemsTx» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (let x1 : T := x0;
+            if (Const.eq (Const.label x1) (leaf 2)).label ≠ 0 then
+              let x2 : List T := Const.children x1; let x3 : List T := x2; x3
+            else
+              ([] : List T));
+    x1
+
+def «Typing.numTx» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let x2 : List T := Const.children x1;
+                     let x3 : List T := x2; «Reader.numeral» x3
+                   else
+                     «Prelude.none»);
+    x1
+
+def «Typing.markerCtors» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T ×
+      List
+        T := (let x2 : T := «Reader.indexOf» x1 («Typing.markerNames» x0);
+              if («Prelude.isSome» x2).label ≠ 0 then
+                (leaf 1,
+                  «Prelude.tail»
+                    (Const.children
+                      («Typing/Txs.atOr» «Typing.tx0» x0 («Prelude.get» x2))))
+              else
+                (leaf 0, ([] : List T)));
+    x2
+
+def «Typing.fieldTy» :=
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if («Typing.Tx.member» x2).label ≠ 0 then
+                     let x3 : T := x2;
+                     «Typing.then1»
+                       («Typing.readTy» x0 x3)
+                       (fun (x4 : T) =>
+                         let x5 : T := x4;
+                         if (Const.eq (Const.label x5) (leaf 0)).label ≠ 0 then
+                           let _ : List T := Const.children x5; «Typing/OTy.just» x4
+                         else
+                           if (Const.eq (Const.label x5) (leaf 6)).label ≠ 0 then
+                             let x6 : List T := Const.children x5;
+                             let _ : T := Const.lcase
+                               (α := T)
+                               (β := T)
+                               x6
+                               (leaf 0)
+                               (fun (x7 : T) (_ : List T) => x7);
+                             let _ : List
+                               T := Const.lcase
+                               (α := T)
+                               (β := List T)
+                               x6
+                               ([] : List T)
+                               (fun (_ : T) (x9 : List T) => x9);
+                             «Typing/OTy.just» x4
+                           else
+                             if (Const.eq (Const.label x5) (leaf 5)).label ≠ 0 then
+                               let x6 : List T := Const.children x5;
+                               let _ : T := Const.lcase
+                                 (α := T)
+                                 (β := T)
+                                 x6
+                                 (leaf 0)
+                                 (fun (x7 : T) (_ : List T) => x7);
+                               let _ : List
+                                 T := Const.lcase
+                                 (α := T)
+                                 (β := List T)
+                                 x6
+                                 ([] : List T)
+                                 (fun (_ : T) (x9 : List T) => x9);
+                               «Typing.when»
+                                 («Prelude.and»
+                                   («Typing.namesData» x0 x4 x3)
+                                   («Prelude.isSome»
+                                     («Reader.indexOf»
+                                       x3
+                                       («Typing.markerNames» («Typing.envMs» x0)))))
+                                 x4
+                             else
+                               «Typing/OTy.nothing»)
+                   else
+                     «Typing/OTy.nothing»);
+    x2
+
+def «Typing.clauseVar» :=
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : T) =>
+    let x2 : T := «Prelude.and»
+      («Typing.binderName» x0 x1)
+      (if (Const.eq
+        («Prelude.at» (Const.children x1) (leaf 0))
+        (leaf 37)).label ≠ 0 then
+        leaf 0
+      else
+        leaf 1);
+    x2
+
+def «Typing.sameAll» :=
+  fun (x0 : List T) =>
+    let x1 : T := «Typing.then1»
+      («Typing/MTys.atOr» «Typing/OTy.nothing» x0 (leaf 0))
+      (fun (x1 : T) =>
+        «Typing.when»
+          (Const.foldr
+            (α := T)
+            (β := T)
+            (fun (x2 : T) (x3 : T) =>
+              «Prelude.and»
+                (let x4 : T := x2;
+                 if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
+                   let x5 : List T := Const.children x4;
+                   let x6 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x5
+                     (leaf 0)
+                     (fun (x6 : T) (_ : List T) => x6);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x5
+                     ([] : List T)
+                     (fun (_ : T) (x8 : List T) => x8);
+                   «Typing.sameTy» x6 x1
+                 else
+                   let _ : List T := Const.children x4; leaf 0)
+                x3)
+            (leaf 1)
+            x0)
+          x1);
+    x1
+
+def «Typing.bindVar» :=
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : T)
+    (x2 : T)
+    (x3 : T → T) =>
+    let x4 : T := «Typing.then1»
+      x2
+      (fun (x4 : T) =>
+        if («Typing.clauseVar» x0 x1).label ≠ 0 then
+          x3 («Typing.abbr» («Typing.atomName» x1) x4)
+        else
+          «Typing/OTy.nothing»);
+    x4
+
+def «Typing.bindRest» :=
+  fun (x0 : T)
+    (x1 : List T)
+    (x2 : T → T → T)
+    (x3 : List T → T)
+    (x4 : List T) =>
+    let x5 : T := (if (Const.child x0 (leaf 2)).label ≠ 0 then
+      Const.lcase
+        (α := T)
+        (β := T)
+        x1
+        «Typing/OTy.nothing»
+        (fun (x5 : T) (x6 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := T)
+            x6
+            (x2 x5 (Const.child x0 (leaf 3)))
+            (fun (_ : T) (_ : List T) => «Typing/OTy.nothing»))
+    else
+      Const.lcase
+        (α := T)
+        (β := T)
+        x1
+        (x3 x4)
+        (fun (_ : T) (_ : List T) => «Typing/OTy.nothing»));
+    x5
+
+def «Typing.caseFields» :=
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : T)
+    (x2 : T)
+    (x3 : List T → T)
+    (x4 : List T) =>
+    let x5 : T := (let x5 : List T := «Typing.elemsTx» x2;
+                   let x6 : T := «Typing.abbr»
+                     («Typing.boundName» «Typing.kwFields»)
+                     («Typing.tyList» «Typing.tyT»);
+                   Const.foldr
+                     (α := T)
+                     (β := List T → List T → T)
+                     (fun (x7 : T)
+                        (x8 : List T → List T → T)
+                        (x9 : List T)
+                        (x10 : List T) =>
+                       Const.lcase
+                         (α := T)
+                         (β := T)
+                         x9
+                         «Typing/OTy.nothing»
+                         (fun (x11 : T) (x12 : List T) =>
+                           «Typing.bindVar»
+                             x0
+                             x7
+                             («Typing.fieldTy» x0 x11)
+                             (fun (x13 : T) => x8 x12 (x6 :: (x13 :: x10)))))
+                     (fun (x7 : List T) (x8 : List T) =>
+                       Const.lcase
+                         (α := T)
+                         (β := T)
+                         x7
+                         («Typing.bindRest»
+                           x1
+                           («Typing.elemsTx» («Typing/Txs.atOr» «Typing.tx0» x5 (leaf 2)))
+                           (fun (x9 : T) (x10 : T) =>
+                             «Typing.bindVar»
+                               x0
+                               x9
+                               («Typing.then1»
+                                 («Typing.fieldTy» x0 x10)
+                                 (fun (x11 : T) => «Typing/OTy.just» («Typing.tyList» x11)))
+                               (fun (x11 : T) => x3 (x11 :: x8)))
+                           x3
+                           x8)
+                         (fun (_ : T) (_ : List T) => «Typing/OTy.nothing»))
+                     («Typing.elemsTx» («Typing/Txs.atOr» «Typing.tx0» x5 (leaf 1)))
+                     (Const.children (Const.child x1 (leaf 1)))
+                     (x6 :: x4));
+    x5
+
+def «Typing.cataFields» :=
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : T)
+    (x2 : T)
+    (x3 : T)
+    (x4 : T)
+    (x5 : List T → T)
+    (x6 : List T) =>
+    let x7 : T := (let x7 : List T := «Typing.elemsTx» x4;
+                   let x8 : T := «Typing.tyArrow» «Typing.tyUnit» x2;
+                   let x9 : T := «Typing.abbr»
+                     («Typing.boundName» «Typing.kwSplit»)
+                     («Typing.tyProd» x8 («Typing.tyList» x8));
+                   let x10 : T := «Typing.abbr»
+                     («Typing.boundName» «Typing.kwFields»)
+                     («Typing.tyList» «Typing.tyT»);
+                   let x11 : T →
+                     T →
+                       (T → T) →
+                         (T → T) →
+                           T := (fun (x11 : T) (x12 : T) (x13 : T → T) (x14 : T → T) =>
+                     let x15 : List T := «Typing.elemsTx» x11;
+                     let x16 : T := Const.equal x12 x1;
+                     let x17 : T := «Typing.numTx»
+                       («Typing/Txs.atOr» «Typing.tx0» x15 (leaf 1));
+                     if («Prelude.and»
+                       («Prelude.isSome» x17)
+                       (Const.eq («Prelude.get» x17) x16)).label ≠ 0 then
+                       «Typing.bindVar»
+                         x0
+                         («Typing/Txs.atOr» «Typing.tx0» x15 (leaf 0))
+                         («Typing.then1»
+                           (if (x16).label ≠ 0 then
+                             «Typing/OTy.just» x2
+                           else
+                             «Typing.fieldTy» x0 x12)
+                           (fun (x18 : T) => «Typing/OTy.just» (x13 x18)))
+                         x14
+                     else
+                       «Typing/OTy.nothing»);
+                   Const.foldr
+                     (α := T)
+                     (β := List T → List T → T)
+                     (fun (x12 : T)
+                        (x13 : List T → List T → T)
+                        (x14 : List T)
+                        (x15 : List T) =>
+                       Const.lcase
+                         (α := T)
+                         (β := T)
+                         x14
+                         «Typing/OTy.nothing»
+                         (fun (x16 : T) (x17 : List T) =>
+                           x11
+                             x12
+                             x16
+                             (fun (x18 : T) => x18)
+                             (fun (x18 : T) => x13 x17 (x10 :: (x18 :: (x9 :: x15))))))
+                     (fun (x12 : List T) (x13 : List T) =>
+                       Const.lcase
+                         (α := T)
+                         (β := T)
+                         x12
+                         («Typing.bindRest»
+                           x3
+                           («Typing.elemsTx» («Typing/Txs.atOr» «Typing.tx0» x7 (leaf 2)))
+                           (fun (x14 : T) (x15 : T) =>
+                             x11
+                               x14
+                               x15
+                               (fun (x16 : T) => «Typing.tyList» x16)
+                               (fun (x16 : T) => x5 (x16 :: x13)))
+                           x5
+                           x13)
+                         (fun (_ : T) (_ : List T) => «Typing/OTy.nothing»))
+                     («Typing.elemsTx» («Typing/Txs.atOr» «Typing.tx0» x7 (leaf 1)))
+                     (Const.children (Const.child x3 (leaf 1)))
+                     (x10 :: (x9 :: x6)));
+    x7
+
+def «Typing.clauseTy» :=
+  fun (x0 : List T)
+    (x1 : T)
+    (x2 : T → T → (List T → T) → List T → T)
+    (x3 : T × (List T → T))
+    (x4 : List T) =>
+    let x5 : T := (let x5 : T := «Typing.numTx»
+                     («Typing/Txs.atOr» «Typing.tx0» («Typing.elemsTx» x1) (leaf 0));
+                   if («Prelude.isSome» x5).label ≠ 0 then
+                     let x6 : List
+                       T := Const.foldr
+                       (α := T)
+                       (β := List T)
+                       (fun (x6 : T) (x7 : List T) =>
+                         if (Const.eq
+                           (Const.child x6 (leaf 0))
+                           («Prelude.get» x5)).label ≠ 0 then
+                           (x6 :: x7)
+                         else
+                           x7)
+                       ([] : List T)
+                       x0;
+                     if (Const.eq («Prelude.length» x6) (leaf 1)).label ≠ 0 then
+                       x2 («Prelude.at» x6 (leaf 0)) x1 (x3).2 x4
+                     else
+                       «Typing/OTy.nothing»
+                   else
+                     «Typing/OTy.nothing»);
+    x5
+
+def «Typing.clausesTy» :=
+  fun (x0 : List T)
+    (x1 : List T)
+    (x2 : List (T × (List T → T)))
+    (x3 : List T)
+    (x4 : List T)
+    (x5 : T → T → (List T → T) → List T → T) =>
+    let x6 : T := (let x6 : T := «Typing/Txs.length» x1;
+                   let x7 : T := Const.lt x6 («Typing/SRs.length» x2);
+                   let x8 : List T := «Typing/Abbrs.append» x4 x3;
+                   let x9 : List
+                     T := Const.foldr
+                     (α := T)
+                     (β := List T)
+                     (fun (x9 : T) (x10 : List T) =>
+                       let x11 : T := «Typing.numTx»
+                         («Typing/Txs.atOr» «Typing.tx0» («Typing.elemsTx» x9) (leaf 0));
+                       ((if («Prelude.isSome» x11).label ≠ 0 then
+                         «Prelude.get» x11
+                       else
+                         leaf 0) ::
+                         x10))
+                     ([] : List T)
+                     x1;
+                   let x10 : T := «Prelude.or»
+                     x7
+                     (Const.foldr
+                       (α := T)
+                       (β := T)
+                       (fun (x10 : T) (x11 : T) =>
+                         «Prelude.and»
+                           (Const.foldr
+                             (α := T)
+                             (β := T)
+                             (fun (x12 : T) (x13 : T) =>
+                               «Prelude.or» (Const.eq x12 (Const.child x10 (leaf 0))) x13)
+                             (leaf 0)
+                             x9)
+                           x11)
+                       (leaf 1)
+                       x0);
+                   let x11 : T ×
+                     (List T →
+                       T) := («Typing.tx0», fun (_ : List T) => «Typing/OTy.nothing»);
+                   let x12 : List
+                     T := Const.foldr
+                     (α := T)
+                     (β := List (T × (List T → T)) → List T)
+                     (fun (x12 : T)
+                        (x13 : List (T × (List T → T)) → List T)
+                        (x14 : List (T × (List T → T))) =>
+                       ((«Typing.clauseTy»
+                         x0
+                         x12
+                         x5
+                         («Typing/SRs.atOr» x11 x14 (leaf 0))
+                         x8) ::
+                         (x13 («Typing/SRs.tail» x14))))
+                     (fun (x12 : List (T × (List T → T))) =>
+                       if (x7).label ≠ 0 then
+                         «Typing/MTys.single» («Typing.srAt» x12 (leaf 0) x8)
+                       else
+                         ([] : List T))
+                     x1
+                     x2;
+                   if (x10).label ≠ 0 then
+                     «Typing.sameAll» x12
+                   else
+                     «Typing/OTy.nothing»);
+    x6
+
+def «Typing.synCase» :=
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : List T)
+    (x2 : List (T × (List T → T)))
+    (x3 : List T) =>
+    let x4 : T := (let x4 : T := «Typing/Txs.atOr» «Typing.tx0» x1 (leaf 0);
+                   let x5 : T × List T := «Typing.markerCtors» («Typing.envMs» x0) x4;
+                   «Typing.then1»
+                     («Typing.readTy» x0 x4)
+                     (fun (x6 : T) =>
+                       «Typing.then1»
+                         («Typing.srAt» x2 (leaf 1) x3)
+                         (fun (x7 : T) =>
+                           if («Prelude.and»
+                             (x5).1
+                             («Prelude.and»
+                               («Typing.namesData» x0 x6 x4)
+                               («Typing.sameTy» x6 x7))).label ≠ 0 then
+                             «Typing.clausesTy»
+                               (x5).2
+                               («Typing.elemsTx» («Typing/Txs.atOr» «Typing.tx0» x1 (leaf 2)))
+                               («Typing/SRs.drop» (leaf 3) x2)
+                               x3
+                               («Typing/Abbrs.single»
+                                 («Typing.abbr»
+                                   («Typing.boundName» «Typing.kwScrutinee»)
+                                   «Typing.tyT»))
+                               (fun (x8 : T) (x9 : T) (x10 : List T → T) (x11 : List T) =>
+                                 «Typing.caseFields» x0 x8 x9 x10 x11)
+                           else
+                             «Typing/OTy.nothing»)));
+    x4
+
+def «Typing.synCata» :=
+  fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
+    (x1 : List T)
+    (x2 : List (T × (List T → T)))
+    (x3 : List T) =>
+    let x4 : T := (let x4 : T := «Typing/Txs.atOr» «Typing.tx0» x1 (leaf 0);
+                   let x5 : T × List T := «Typing.markerCtors» («Typing.envMs» x0) x4;
+                   «Typing.then1»
+                     («Typing.readTy» x0 x4)
+                     (fun (x6 : T) =>
+                       «Typing.then1»
+                         («Typing.readTy» x0 («Typing/Txs.atOr» «Typing.tx0» x1 (leaf 1)))
+                         (fun (x7 : T) =>
+                           «Typing.then1»
+                             («Typing.srAt» x2 (leaf 2) x3)
+                             (fun (x8 : T) =>
+                               if («Prelude.and»
+                                 (x5).1
+                                 («Prelude.and»
+                                   («Typing.namesData» x0 x6 x4)
+                                   («Typing.sameTy» x6 x8))).label ≠ 0 then
+                                 «Typing.then1»
+                                   («Typing.clausesTy»
+                                     (x5).2
+                                     («Typing.elemsTx» («Typing/Txs.atOr» «Typing.tx0» x1 (leaf 4)))
+                                     («Typing/SRs.drop» (leaf 5) x2)
+                                     x3
+                                     ((«Typing.abbr»
+                                       («Typing.boundName» «Typing.kwUnitArg»)
+                                       «Typing.tyUnit») ::
+                                       ((«Typing.abbr»
+                                         («Typing.boundName» «Typing.kwResults»)
+                                         («Typing.tyList» («Typing.tyArrow» «Typing.tyUnit» x7))) ::
+                                         («Typing/Abbrs.single»
+                                           («Typing.abbr»
+                                             («Typing.boundName» «Typing.kwNode»)
+                                             «Typing.tyT»))))
+                                     (fun (x9 : T) (x10 : T) (x11 : List T → T) (x12 : List T) =>
+                                       «Typing.cataFields» x0 x4 x7 x9 x10 x11 x12))
+                                   (fun (x9 : T) => «Typing.when» («Typing.sameTy» x9 x7) x7)
+                               else
+                                 «Typing/OTy.nothing»))));
+    x4
+
 def «Typing.synIn» :=
   fun (x0 : List T × (List T × (List T × (List T × (List T × List T)))))
     (x1 : List T)
@@ -3966,33 +5085,41 @@ def «Typing.synIn» :=
       (α := Unit → T × (List T → T))
       (fun (x3 : T) (x4 : List (Unit → T × (List T → T))) (_ : Unit) =>
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x6 : List
-            T := Const.iter
-            (α := List T)
-            (fun (x6 : List T) =>
-              Const.lcase
-                (α := T)
-                (β := List T)
-                x6
-                ([] : List T)
-                (fun (_ : T) (x8 : List T) => x8))
-            (Const.children x3)
-            (leaf 0);
-          («Typing.tAtom» x6, fun (x7 : List T) => «Typing.synAtom» x0 x6 x7)
+          let _ : (Unit → T × (List T → T)) ×
+            List
+              (Unit →
+                T ×
+                  (List T →
+                    T)) := (fun (_ : Unit) =>
+            (leaf 0, fun (_ : List T) => leaf 0),
+            x4);
+          let x7 : List T := Const.children x3;
+          let x8 : List T := x7;
+          («Typing.tAtom» x8, fun (x9 : List T) => «Typing.synAtom» x0 x8 x9)
         else
           if (Const.eq (Const.label x3) (leaf 2)).label ≠ 0 then
-            let x6 : List
+            let x6 : (Unit → T × (List T → T)) ×
+              List
+                (Unit →
+                  T ×
+                    (List T →
+                      T)) := (fun (_ : Unit) =>
+              (leaf 0, fun (_ : List T) => leaf 0),
+              x4);
+            let _ : List T := Const.children x3;
+            let x8 : List
               (T ×
                 (List T →
                   T)) := Const.foldr
               (α := Unit → T × (List T → T))
               (β := List (T × (List T → T)))
-              (fun (x6 : Unit → T × (List T → T)) (x7 : List (T × (List T → T))) =>
-                ((x6 ()) :: x7))
+              (fun (x8 : Unit → T × (List T → T)) (x9 : List (T × (List T → T))) =>
+                ((x8 ()) :: x9))
               ([] : List (T × (List T → T)))
-              x4;
-            let x7 : List T := «Typing.srForms» x6;
-            («Typing.tList» x7, fun (x8 : List T) => «Typing.synList» x0 x7 x6 x8)
+              (x6).2;
+            let x9 : List T := «Typing.srForms» x8;
+            («Typing.tList» x9,
+              fun (x10 : List T) => «Typing.synList» x0 x9 x8 x10)
           else
             if (Const.eq (Const.label x3) (leaf 11)).label ≠ 0 then
               let x6 : (Unit → T × (List T → T)) ×
@@ -4000,16 +5127,10 @@ def «Typing.synIn» :=
                   (Unit →
                     T ×
                       (List T →
-                        T)) := Const.lcase
-                (α := Unit → T × (List T → T))
-                (β := (Unit → T × (List T → T)) × List (Unit → T × (List T → T)))
-                x4
-                (fun (_ : Unit) => (leaf 0, fun (_ : List T) => leaf 0),
-                  ([] : List (Unit → T × (List T → T))))
-                (fun (x6 : Unit → T × (List T → T))
-                   (x7 : List (Unit → T × (List T → T))) =>
-                  (x6, x7));
-              let x7 : T × (List T → T) := (x6).1 ();
+                        T)) := (fun (_ : Unit) =>
+                (leaf 0, fun (_ : List T) => leaf 0),
+                x4);
+              let x7 : List T := Const.children x3;
               let x8 : (Unit → T × (List T → T)) ×
                 List
                   (Unit →
@@ -4025,13 +5146,42 @@ def «Typing.synIn» :=
                    (x9 : List (Unit → T × (List T → T))) =>
                   (x8, x9));
               let x9 : T × (List T → T) := (x8).1 ();
-              («Typing.tAs» (x7).1 (x9).1,
-                fun (x10 : List T) =>
+              let x10 : List
+                T := Const.lcase
+                (α := T)
+                (β := List T)
+                x7
+                ([] : List T)
+                (fun (_ : T) (x11 : List T) => x11);
+              let x11 : (Unit → T × (List T → T)) ×
+                List
+                  (Unit →
+                    T ×
+                      (List T →
+                        T)) := Const.lcase
+                (α := Unit → T × (List T → T))
+                (β := (Unit → T × (List T → T)) × List (Unit → T × (List T → T)))
+                (x8).2
+                (fun (_ : Unit) => (leaf 0, fun (_ : List T) => leaf 0),
+                  ([] : List (Unit → T × (List T → T))))
+                (fun (x11 : Unit → T × (List T → T))
+                   (x12 : List (Unit → T × (List T → T))) =>
+                  (x11, x12));
+              let x12 : T × (List T → T) := (x11).1 ();
+              let _ : List
+                T := Const.lcase
+                (α := T)
+                (β := List T)
+                x10
+                ([] : List T)
+                (fun (_ : T) (x14 : List T) => x14);
+              («Typing.tAs» (x9).1 (x12).1,
+                fun (x14 : List T) =>
                   «Typing.both2»
-                    («Typing.readTy» x0 (x7).1)
-                    ((x9).2 x10)
-                    (fun (x11 : T) (x12 : T) =>
-                      «Typing.when» («Typing.sameTy» («Typing.eraseTy» x11) x12) x11))
+                    («Typing.readTy» x0 (x9).1)
+                    ((x12).2 x14)
+                    (fun (x15 : T) (x16 : T) =>
+                      «Typing.when» («Typing.sameTy» («Typing.eraseTy» x15) x16) x15))
             else
               if (Const.eq (Const.label x3) (leaf 12)).label ≠ 0 then
                 let x6 : (Unit → T × (List T → T)) ×
@@ -4039,16 +5189,10 @@ def «Typing.synIn» :=
                     (Unit →
                       T ×
                         (List T →
-                          T)) := Const.lcase
-                  (α := Unit → T × (List T → T))
-                  (β := (Unit → T × (List T → T)) × List (Unit → T × (List T → T)))
-                  x4
-                  (fun (_ : Unit) => (leaf 0, fun (_ : List T) => leaf 0),
-                    ([] : List (Unit → T × (List T → T))))
-                  (fun (x6 : Unit → T × (List T → T))
-                     (x7 : List (Unit → T × (List T → T))) =>
-                    (x6, x7));
-                let x7 : T × (List T → T) := (x6).1 ();
+                          T)) := (fun (_ : Unit) =>
+                  (leaf 0, fun (_ : List T) => leaf 0),
+                  x4);
+                let x7 : List T := Const.children x3;
                 let x8 : (Unit → T × (List T → T)) ×
                   List
                     (Unit →
@@ -4064,15 +5208,92 @@ def «Typing.synIn» :=
                      (x9 : List (Unit → T × (List T → T))) =>
                     (x8, x9));
                 let x9 : T × (List T → T) := (x8).1 ();
-                («Typing.tOf» (x7).1 (x9).1,
-                  fun (x10 : List T) =>
+                let x10 : List
+                  T := Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x7
+                  ([] : List T)
+                  (fun (_ : T) (x11 : List T) => x11);
+                let x11 : (Unit → T × (List T → T)) ×
+                  List
+                    (Unit →
+                      T ×
+                        (List T →
+                          T)) := Const.lcase
+                  (α := Unit → T × (List T → T))
+                  (β := (Unit → T × (List T → T)) × List (Unit → T × (List T → T)))
+                  (x8).2
+                  (fun (_ : Unit) => (leaf 0, fun (_ : List T) => leaf 0),
+                    ([] : List (Unit → T × (List T → T))))
+                  (fun (x11 : Unit → T × (List T → T))
+                     (x12 : List (Unit → T × (List T → T))) =>
+                    (x11, x12));
+                let x12 : T × (List T → T) := (x11).1 ();
+                let _ : List
+                  T := Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x10
+                  ([] : List T)
+                  (fun (_ : T) (x14 : List T) => x14);
+                («Typing.tOf» (x9).1 (x12).1,
+                  fun (x14 : List T) =>
                     «Typing.both2»
-                      («Typing.readTy» x0 (x7).1)
-                      ((x9).2 x10)
-                      (fun (x11 : T) (x12 : T) =>
-                        «Typing.when» («Typing.sameTy» x11 x12) («Typing.eraseTy» x11)))
+                      («Typing.readTy» x0 (x9).1)
+                      ((x12).2 x14)
+                      (fun (x15 : T) (x16 : T) =>
+                        «Typing.when» («Typing.sameTy» x15 x16) («Typing.eraseTy» x15)))
               else
-                («Typing.tx0», fun (_ : List T) => «Typing/OTy.nothing»))
+                if (Const.eq (Const.label x3) (leaf 13)).label ≠ 0 then
+                  let x6 : (Unit → T × (List T → T)) ×
+                    List
+                      (Unit →
+                        T ×
+                          (List T →
+                            T)) := (fun (_ : Unit) =>
+                    (leaf 0, fun (_ : List T) => leaf 0),
+                    x4);
+                  let _ : List T := Const.children x3;
+                  let x8 : List
+                    (T ×
+                      (List T →
+                        T)) := Const.foldr
+                    (α := Unit → T × (List T → T))
+                    (β := List (T × (List T → T)))
+                    (fun (x8 : Unit → T × (List T → T)) (x9 : List (T × (List T → T))) =>
+                      ((x8 ()) :: x9))
+                    ([] : List (T × (List T → T)))
+                    (x6).2;
+                  let x9 : List T := «Typing.srForms» x8;
+                  («Typing.tCase» x9,
+                    fun (x10 : List T) => «Typing.synCase» x0 x9 x8 x10)
+                else
+                  if (Const.eq (Const.label x3) (leaf 14)).label ≠ 0 then
+                    let x6 : (Unit → T × (List T → T)) ×
+                      List
+                        (Unit →
+                          T ×
+                            (List T →
+                              T)) := (fun (_ : Unit) =>
+                      (leaf 0, fun (_ : List T) => leaf 0),
+                      x4);
+                    let _ : List T := Const.children x3;
+                    let x8 : List
+                      (T ×
+                        (List T →
+                          T)) := Const.foldr
+                      (α := Unit → T × (List T → T))
+                      (β := List (T × (List T → T)))
+                      (fun (x8 : Unit → T × (List T → T)) (x9 : List (T × (List T → T))) =>
+                        ((x8 ()) :: x9))
+                      ([] : List (T × (List T → T)))
+                      (x6).2;
+                    let x9 : List T := «Typing.srForms» x8;
+                    («Typing.tCata» x9,
+                      fun (x10 : List T) => «Typing.synCata» x0 x9 x8 x10)
+                  else
+                    («Typing.tx0», fun (_ : List T) => «Typing/OTy.nothing»))
       x2
       ()).2
       x1;
@@ -4087,18 +5308,46 @@ def «Typing/OName.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Typing/OName.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Typing/OName.nthOf» :=
@@ -4131,9 +5380,23 @@ def «Typing/OName.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -4255,141 +5518,169 @@ def «Typing.checkStep» :=
       (List T × (List T × (List T × (List T × List T))))) ×
       T := (let x2 : T := (x0).2;
             if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-              let _ : T := Const.child x2 (leaf 0); x0
+              let x3 : List T := Const.children x2;
+              let _ : T := Const.lcase
+                (α := T)
+                (β := T)
+                x3
+                (leaf 0)
+                (fun (x4 : T) (_ : List T) => x4);
+              let _ : List
+                T := Const.lcase
+                (α := T)
+                (β := List T)
+                x3
+                ([] : List T)
+                (fun (_ : T) (x6 : List T) => x6);
+              x0
             else
-              let x3 : List T ×
+              let _ : List T := Const.children x2;
+              let x4 : List T ×
                 (List T × (List T × (List T × (List T × List T)))) := (x0).1;
-              let x4 : (List T ×
+              let x5 : (List T ×
                 (List T × (List T × (List T × (List T × List T))))) →
                 (List T × (List T × (List T × (List T × (List T × List T))))) ×
-                  T := (fun (x4 : List T ×
+                  T := (fun (x5 : List T ×
                             (List T × (List T × (List T × (List T × List T))))) =>
-                (x4, «Typing/OName.nothing»));
-              let x5 : (List T ×
+                (x5, «Typing/OName.nothing»));
+              let x6 : (List T ×
                 (List T × (List T × (List T × (List T × List T))))) ×
-                T := (x3,
+                T := (x4,
                 «Typing/OName.just»
-                  (let x5 : T := x1;
-                   if (Const.eq (Const.label x5) (leaf 2)).label ≠ 0 then
-                     let x6 : List
-                       T := Const.iter
-                       (α := List T)
-                       (fun (x6 : List T) =>
-                         Const.lcase
-                           (α := T)
-                           (β := List T)
-                           x6
-                           ([] : List T)
-                           (fun (_ : T) (x8 : List T) => x8))
-                       (Const.children x5)
-                       (leaf 0);
-                     if (Const.lt (leaf 1) («Typing/Txs.length» x6)).label ≠ 0 then
-                       «Typing.atomName» («Typing/Txs.atOr» «Typing.tx0» x6 (leaf 1))
+                  (let x6 : T := x1;
+                   if (Const.eq (Const.label x6) (leaf 2)).label ≠ 0 then
+                     let x7 : List T := Const.children x6;
+                     let x8 : List T := x7;
+                     if (Const.lt (leaf 1) («Typing/Txs.length» x8)).label ≠ 0 then
+                       «Typing.atomName» («Typing/Txs.atOr» «Typing.tx0» x8 (leaf 1))
                      else
                        «Typing.name» ([] : List T)
                    else
                      «Typing.name» ([] : List T)));
-              let x6 : T := x1;
-              if (Const.eq (Const.label x6) (leaf 10)).label ≠ 0 then
-                let x7 : T := Const.child x6 (leaf 0);
-                x4
+              let x7 : T := x1;
+              if (Const.eq (Const.label x7) (leaf 10)).label ≠ 0 then
+                let x8 : List T := Const.children x7;
+                let x9 : T := Const.lcase
+                  (α := T)
+                  (β := T)
+                  x8
+                  (leaf 0)
+                  (fun (x9 : T) (_ : List T) => x9);
+                let _ : List
+                  T := Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x8
+                  ([] : List T)
+                  (fun (_ : T) (x11 : List T) => x11);
+                x5
                   («Typing.withNoms»
-                    x3
+                    x4
                     («Typing/Names.append»
-                      («Typing.envNoms» x3)
-                      («Typing/Names.single» («Typing.atomName» x7))))
+                      («Typing.envNoms» x4)
+                      («Typing/Names.single» («Typing.atomName» x9))))
               else
-                if (Const.eq (Const.label x6) (leaf 9)).label ≠ 0 then
-                  let _ : List
-                    T := Const.iter
-                    (α := List T)
-                    (fun (x7 : List T) =>
-                      Const.lcase
-                        (α := T)
-                        (β := List T)
-                        x7
-                        ([] : List T)
-                        (fun (_ : T) (x9 : List T) => x9))
-                    (Const.children x6)
-                    (leaf 0);
-                  x4
+                if (Const.eq (Const.label x7) (leaf 9)).label ≠ 0 then
+                  let x8 : List T := Const.children x7;
+                  let _ : List T := x8;
+                  x5
                     («Typing.withMs»
-                      x3
-                      («Typing/Txs.append» («Typing.envMs» x3) («Typing/Txs.single» x1)))
-                else
-                  if (Const.eq (Const.label x6) (leaf 2)).label ≠ 0 then
-                    let x7 : List
-                      T := Const.iter
-                      (α := List T)
-                      (fun (x7 : List T) =>
-                        Const.lcase
-                          (α := T)
-                          (β := List T)
-                          x7
-                          ([] : List T)
-                          (fun (_ : T) (x9 : List T) => x9))
-                      (Const.children x6)
-                      (leaf 0);
-                    let x8 : T := «Typing/Txs.atOr» «Typing.tx0» x7 (leaf 0);
-                    let x9 : T := «Typing/Txs.atOr» «Typing.tx0» x7 (leaf 1);
-                    let x10 : T := «Typing/Txs.length» x7;
-                    if («Prelude.and»
-                      («Typing.namedTx» x8 «Typing.kwSort»)
-                      (Const.eq x10 (leaf 2))).label ≠ 0 then
                       x4
+                      («Typing/Txs.append» («Typing.envMs» x4) («Typing/Txs.single» x1)))
+                else
+                  if (Const.eq (Const.label x7) (leaf 2)).label ≠ 0 then
+                    let x8 : List T := Const.children x7;
+                    let x9 : List T := x8;
+                    let x10 : T := «Typing/Txs.atOr» «Typing.tx0» x9 (leaf 0);
+                    let x11 : T := «Typing/Txs.atOr» «Typing.tx0» x9 (leaf 1);
+                    let x12 : T := «Typing/Txs.length» x9;
+                    if («Prelude.and»
+                      («Typing.namedTx» x10 «Typing.kwSort»)
+                      (Const.eq x12 (leaf 2))).label ≠ 0 then
+                      x5
                         («Typing.withSorts»
-                          x3
+                          x4
                           («Typing/Names.append»
-                            («Typing.envSorts» x3)
-                            («Typing/Names.single» («Typing.atomName» x9))))
+                            («Typing.envSorts» x4)
+                            («Typing/Names.single» («Typing.atomName» x11))))
                     else
-                      if (Const.eq x10 (leaf 3)).label ≠ 0 then
-                        let x11 : T := «Typing.atomName» x9;
-                        let x12 : T := «Typing/Txs.atOr» «Typing.tx0» x7 (leaf 2);
-                        let x13 : T →
+                      if (Const.eq x12 (leaf 3)).label ≠ 0 then
+                        let x13 : T := «Typing.atomName» x11;
+                        let x14 : T := «Typing/Txs.atOr» «Typing.tx0» x9 (leaf 2);
+                        let x15 : T →
                           (List T × (List T × (List T × (List T × (List T × List T))))) ×
-                            T := (fun (x13 : T) =>
-                          let x14 : T := x13;
-                          if (Const.eq (Const.label x14) (leaf 1)).label ≠ 0 then
-                            let x15 : T := Const.child x14 (leaf 0);
-                            x4
+                            T := (fun (x15 : T) =>
+                          let x16 : T := x15;
+                          if (Const.eq (Const.label x16) (leaf 1)).label ≠ 0 then
+                            let x17 : List T := Const.children x16;
+                            let x18 : T := Const.lcase
+                              (α := T)
+                              (β := T)
+                              x17
+                              (leaf 0)
+                              (fun (x18 : T) (_ : List T) => x18);
+                            let _ : List
+                              T := Const.lcase
+                              (α := T)
+                              (β := List T)
+                              x17
+                              ([] : List T)
+                              (fun (_ : T) (x20 : List T) => x20);
+                            x5
                               («Typing.withDefs»
-                                x3
+                                x4
                                 («Typing/Abbrs.append»
-                                  («Typing.envDefs» x3)
-                                  («Typing/Abbrs.single» («Typing.abbr» x11 x15))))
+                                  («Typing.envDefs» x4)
+                                  («Typing/Abbrs.single» («Typing.abbr» x13 x18))))
                           else
-                            x5);
-                        if («Typing.namedTx» x8 «Reader.kwDef»).label ≠ 0 then
-                          x13 («Typing.synIn» x3 ([] : List T) x12)
+                            let _ : List T := Const.children x16; x6);
+                        if («Typing.namedTx» x10 «Reader.kwDef»).label ≠ 0 then
+                          x15 («Typing.synIn» x4 ([] : List T) x14)
                         else
-                          if («Typing.namedTx» x8 «Typing.kwPostulate»).label ≠ 0 then
-                            x13 («Typing.readTy» x3 x12)
+                          if («Typing.namedTx» x10 «Typing.kwPostulate»).label ≠ 0 then
+                            x15 («Typing.readTy» x4 x14)
                           else
-                            if («Typing.namedTx» x8 «Reader.kwDeftype»).label ≠ 0 then
-                              let x14 : T := «Typing.readTy» x3 x12;
-                              if (Const.eq (Const.label x14) (leaf 1)).label ≠ 0 then
-                                let x15 : T := Const.child x14 (leaf 0);
-                                x4
+                            if («Typing.namedTx» x10 «Reader.kwDeftype»).label ≠ 0 then
+                              let x16 : T := «Typing.readTy» x4 x14;
+                              if (Const.eq (Const.label x16) (leaf 1)).label ≠ 0 then
+                                let x17 : List T := Const.children x16;
+                                let x18 : T := Const.lcase
+                                  (α := T)
+                                  (β := T)
+                                  x17
+                                  (leaf 0)
+                                  (fun (x18 : T) (_ : List T) => x18);
+                                let _ : List
+                                  T := Const.lcase
+                                  (α := T)
+                                  (β := List T)
+                                  x17
+                                  ([] : List T)
+                                  (fun (_ : T) (x20 : List T) => x20);
+                                x5
                                   («Typing.withAl»
-                                    x3
-                                    ((«Typing.abbr» x11 x15) :: («Typing.envAl» x3)))
+                                    x4
+                                    ((«Typing.abbr» x13 x18) :: («Typing.envAl» x4)))
                               else
-                                x5
+                                let _ : List T := Const.children x16; x6
                             else
-                              if («Typing.namedTx» x8 «Reader.kwDefnum»).label ≠ 0 then
-                                x4
-                                  («Typing.withNums»
-                                    x3
-                                    («Typing/Names.append»
-                                      («Typing.envNums» x3)
-                                      («Typing/Names.single» x11)))
+                              if («Typing.namedTx» x10 «Reader.kwDefnum»).label ≠ 0 then
+                                if («Prelude.isSome»
+                                  («Reader.numeral» (Const.children x13))).label ≠ 0 then
+                                  x6
+                                else
+                                  x5
+                                    («Typing.withNums»
+                                      x4
+                                      («Typing/Names.append»
+                                        («Typing.envNums» x4)
+                                        («Typing/Names.single» x13)))
                               else
-                                x5
+                                x6
                       else
-                        x5
+                        x6
                   else
-                    x5);
+                    x6);
     x2
 
 def «Typing.checkRun» :=
@@ -4435,23 +5726,28 @@ def «Typing.checkForms» :=
         x2
           (let x4 : T := x1;
            if (Const.eq (Const.label x4) (leaf 15)).label ≠ 0 then
-             let x5 : List
-               T := Const.iter
-               (α := List T)
-               (fun (x5 : List T) =>
-                 Const.lcase
-                   (α := T)
-                   (β := List T)
-                   x5
-                   ([] : List T)
-                   (fun (_ : T) (x7 : List T) => x7))
-               (Const.children x4)
-               (leaf 0);
-             let x6 : T := (x3).2;
-             if (Const.eq (Const.label x6) (leaf 1)).label ≠ 0 then
-               let _ : T := Const.child x6 (leaf 0); x3
+             let x5 : List T := Const.children x4;
+             let x6 : List T := x5;
+             let x7 : T := (x3).2;
+             if (Const.eq (Const.label x7) (leaf 1)).label ≠ 0 then
+               let x8 : List T := Const.children x7;
+               let _ : T := Const.lcase
+                 (α := T)
+                 (β := T)
+                 x8
+                 (leaf 0)
+                 (fun (x9 : T) (_ : List T) => x9);
+               let _ : List
+                 T := Const.lcase
+                 (α := T)
+                 (β := List T)
+                 x8
+                 ([] : List T)
+                 (fun (_ : T) (x11 : List T) => x11);
+               x3
              else
-               ((x3).1, («Typing.checkRun» x3 x5).2)
+               let _ : List T := Const.children x7;
+               ((x3).1, («Typing.checkRun» x3 x6).2)
            else
              «Typing.checkStep» x3 x1))
       (fun (x1 : (List T ×
@@ -4533,18 +5829,46 @@ def «Datatype/OTx.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Datatype/OTx.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Datatype/OTx.nthOf» :=
@@ -4577,9 +5901,23 @@ def «Datatype/OTx.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -4654,19 +5992,8 @@ def «Datatype.atomName» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let x2 : List
-                       T := Const.iter
-                       (α := List T)
-                       (fun (x2 : List T) =>
-                         Const.lcase
-                           (α := T)
-                           (β := List T)
-                           x2
-                           ([] : List T)
-                           (fun (_ : T) (x4 : List T) => x4))
-                       (Const.children x1)
-                       (leaf 0);
-                     «Typing.name» x2
+                     let x2 : List T := Const.children x1;
+                     let x3 : List T := x2; «Typing.name» x3
                    else
                      «Typing.name» ([] : List T));
     x1
@@ -4675,19 +6002,7 @@ def «Datatype.isAtomTx» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : List
-                       T := Const.iter
-                       (α := List T)
-                       (fun (x2 : List T) =>
-                         Const.lcase
-                           (α := T)
-                           (β := List T)
-                           x2
-                           ([] : List T)
-                           (fun (_ : T) (x4 : List T) => x4))
-                       (Const.children x1)
-                       (leaf 0);
-                     leaf 1
+                     let x2 : List T := Const.children x1; let _ : List T := x2; leaf 1
                    else
                      leaf 0);
     x1
@@ -4696,19 +6011,7 @@ def «Datatype.isListTx» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 2)).label ≠ 0 then
-                     let _ : List
-                       T := Const.iter
-                       (α := List T)
-                       (fun (x2 : List T) =>
-                         Const.lcase
-                           (α := T)
-                           (β := List T)
-                           x2
-                           ([] : List T)
-                           (fun (_ : T) (x4 : List T) => x4))
-                       (Const.children x1)
-                       (leaf 0);
-                     leaf 1
+                     let x2 : List T := Const.children x1; let _ : List T := x2; leaf 1
                    else
                      leaf 0);
     x1
@@ -4721,19 +6024,7 @@ def «Datatype.elems» :=
     let x1 : List
       T := (let x1 : T := x0;
             if (Const.eq (Const.label x1) (leaf 2)).label ≠ 0 then
-              let x2 : List
-                T := Const.iter
-                (α := List T)
-                (fun (x2 : List T) =>
-                  Const.lcase
-                    (α := T)
-                    (β := List T)
-                    x2
-                    ([] : List T)
-                    (fun (_ : T) (x4 : List T) => x4))
-                (Const.children x1)
-                (leaf 0);
-              x2
+              let x2 : List T := Const.children x1; let x3 : List T := x2; x3
             else
               ([] : List T));
     x1
@@ -4790,8 +6081,6 @@ def «Datatype.aCons» := mk 1 [leaf 99, leaf 111, leaf 110, leaf 115]
 
 def «Datatype.aNil» := mk 1 [leaf 110, leaf 105, leaf 108]
 
-def «Datatype.aIter» := mk 1 [leaf 105, leaf 116, leaf 101, leaf 114]
-
 def «Datatype.aLcase» :=
   mk 1 [leaf 108, leaf 99, leaf 97, leaf 115, leaf 101]
 
@@ -4818,9 +6107,6 @@ def «Datatype.aQuote» :=
 
 def «Datatype.aLabel» :=
   mk 1 [leaf 108, leaf 97, leaf 98, leaf 101, leaf 108]
-
-def «Datatype.aChild» :=
-  mk 1 [leaf 99, leaf 104, leaf 105, leaf 108, leaf 100]
 
 def «Datatype.aChildren» :=
   mk 1 [leaf 99,
@@ -4849,9 +6135,10 @@ def «Datatype.aList» := mk 1 [leaf 76, leaf 105, leaf 115, leaf 116]
 
 def «Datatype.aZero» := mk 1 [leaf 48]
 
-def «Datatype.aS» := mk 1 [leaf 37, leaf 115]
+def «Datatype.aS» :=
+  «Typing.tAtom» (Const.children «Typing.kwScrutinee»)
 
-def «Datatype.aO» := mk 1 [leaf 37, leaf 111]
+def «Datatype.aO» := «Typing.tAtom» (Const.children «Typing.kwNode»)
 
 def «Datatype.aA» := mk 1 [leaf 37, leaf 97]
 
@@ -4861,7 +6148,8 @@ def «Datatype.aTl» := mk 1 [leaf 37, leaf 116]
 
 def «Datatype.aX» := mk 1 [leaf 37, leaf 120]
 
-def «Datatype.aU» := mk 1 [leaf 37, leaf 117]
+def «Datatype.aU» :=
+  «Typing.tAtom» (Const.children «Typing.kwUnitArg»)
 
 def «Datatype.aR» := mk 1 [leaf 37, leaf 114]
 
@@ -4870,9 +6158,15 @@ def «Datatype.aD» := mk 1 [leaf 37, leaf 100]
 def «Datatype.aRest» :=
   mk 1 [leaf 37, leaf 114, leaf 101, leaf 115, leaf 116]
 
-def «Datatype.aK» := mk 1 [leaf 37, leaf 107]
+def «Datatype.aK» :=
+  «Typing.tAtom» (Const.children «Typing.kwResults»)
 
-def «Datatype.aE» := mk 1 [leaf 37, leaf 101]
+def «Datatype.aC» := «Typing.tAtom» (Const.children «Typing.kwFields»)
+
+def «Datatype.aQ» := «Typing.tAtom» (Const.children «Typing.kwSplit»)
+
+def «Datatype.aE» :=
+  «Typing.tAtom» (Const.children «Typing.kwDecoded»)
 
 def «Datatype.kwData» := mk 0 [leaf 100, leaf 97, leaf 116, leaf 97]
 
@@ -4930,32 +6224,9 @@ def «Datatype.kwPostulate» :=
 
 def «Datatype.kwAmp» := mk 0 [leaf 38]
 
-def «Datatype.decimalChars» :=
-  fun (x0 : T) =>
-    let x1 : List
-      T := (if (Const.eq x0 (leaf 0)).label ≠ 0 then
-      «Prelude.single» (leaf 48)
-    else
-      let x1 : T := (Const.iter
-        (α := T × T)
-        (fun (x1 : T × T) =>
-          if (Const.eq (x1).2 (leaf 0)).label ≠ 0 then
-            x1
-          else
-            (Const.add (x1).1 (leaf 1), Const.div (x1).2 (leaf 10)))
-        (leaf 0, x0)
-        (Const.add (Const.log2 x0) (leaf 1))).1;
-      Const.foldr
-        (α := T)
-        (β := List T)
-        (fun (x2 : T) (x3 : List T) => ((Const.add x2 (leaf 48)) :: x3))
-        ([] : List T)
-        («Prelude.digitsMsb» (leaf 10) x0 x1));
-    x1
-
 def «Datatype.numAtom» :=
   fun (x0 : T) =>
-    let x1 : T := «Typing.tAtom» («Datatype.decimalChars» x0); x1
+    let x1 : T := «Typing.tAtom» («Typing.decimalChars» x0); x1
 
 def «Datatype.memberName» :=
   fun (x0 : T) =>
@@ -4991,13 +6262,7 @@ def «Datatype.memberAtom» :=
 def «Datatype.fieldAtom» :=
   fun (x0 : T) =>
     let x1 : T := «Typing.tAtom»
-      ((leaf 37) :: ((leaf 102) :: («Datatype.decimalChars» x0)));
-    x1
-
-def «Datatype.qAtom» :=
-  fun (x0 : T) =>
-    let x1 : T := «Typing.tAtom»
-      ((leaf 37) :: ((leaf 113) :: («Datatype.decimalChars» x0)));
+      ((leaf 37) :: ((leaf 102) :: («Typing.decimalChars» x0)));
     x1
 
 def «Datatype.sList» :=
@@ -5036,24 +6301,14 @@ def «Datatype.bindersTx» :=
     let x1 : List
       T := (let x1 : T := x0;
             if (Const.eq (Const.label x1) (leaf 2)).label ≠ 0 then
-              let x2 : List
-                T := Const.iter
-                (α := List T)
-                (fun (x2 : List T) =>
-                  Const.lcase
-                    (α := T)
-                    (β := List T)
-                    x2
-                    ([] : List T)
-                    (fun (_ : T) (x4 : List T) => x4))
-                (Const.children x1)
-                (leaf 0);
+              let x2 : List T := Const.children x1;
+              let x3 : List T := x2;
               if («Prelude.and»
-                (Const.eq («Datatype/Txs.length» x2) (leaf 2))
-                («Datatype.isAtomTx» («Datatype.nthTx» x2 (leaf 0)))).label ≠ 0 then
+                (Const.eq («Datatype/Txs.length» x3) (leaf 2))
+                («Datatype.isAtomTx» («Datatype.nthTx» x3 (leaf 0)))).label ≠ 0 then
                 «Datatype/Txs.single» x0
               else
-                x2
+                x3
             else
               ([] : List T));
     x1
@@ -5086,34 +6341,37 @@ def «Datatype.curried» :=
                      «Datatype/OTx.just» x0);
     x1
 
-def «Datatype.sTail» :=
+def «Datatype.sHeadOf» :=
   fun (x0 : T) =>
-    let x1 : T := «Datatype.sLam1»
-      «Datatype.aX»
-      («Datatype.sList» x0)
-      («Datatype.sx6»
-        «Datatype.aLcase»
-        x0
-        («Datatype.sList» x0)
-        «Datatype.aX»
-        («Datatype.sx2» «Datatype.aNil» x0)
-        («Datatype.sLam2»
-          «Datatype.aH»
-          x0
-          «Datatype.aTl»
-          («Datatype.sList» x0)
-          «Datatype.aTl»));
+    let x1 : T := «Datatype.sx6»
+      «Datatype.aLcase»
+      «Datatype.aT»
+      «Datatype.aT»
+      x0
+      «Datatype.aZero»
+      («Datatype.sLam2»
+        «Datatype.aH»
+        «Datatype.aT»
+        «Datatype.aTl»
+        («Datatype.sList» «Datatype.aT»)
+        «Datatype.aH»);
     x1
 
-def «Datatype.sDrop» :=
-  fun (x0 : T) (x1 : T) (x2 : T) =>
-    let x3 : T := «Datatype.sx5»
-      «Datatype.aIter»
-      («Datatype.sList» x0)
-      («Datatype.sTail» x0)
-      x1
-      («Datatype.numAtom» x2);
-    x3
+def «Datatype.sTailOf» :=
+  fun (x0 : T) =>
+    let x1 : T := «Datatype.sx6»
+      «Datatype.aLcase»
+      «Datatype.aT»
+      («Datatype.sList» «Datatype.aT»)
+      x0
+      («Datatype.sx2» «Datatype.aNil» «Datatype.aT»)
+      («Datatype.sLam2»
+        «Datatype.aH»
+        «Datatype.aT»
+        «Datatype.aTl»
+        («Datatype.sList» «Datatype.aT»)
+        «Datatype.aTl»);
+    x1
 
 def «Datatype.asTy» :=
   fun (x0 : T) (x1 : T) => let x2 : T := «Typing.tAs» x0 x1; x2
@@ -5223,18 +6481,46 @@ def «Datatype/ODecl.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Datatype/ODecl.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Datatype/ODecl.nthOf» :=
@@ -5267,9 +6553,23 @@ def «Datatype/ODecl.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -5282,13 +6582,86 @@ def «Datatype.findCtor» :=
       (fun (x2 : T) (x3 : T) =>
         let x4 : T := x2;
         if (Const.eq (Const.label x4) (leaf 0)).label ≠ 0 then
-          let x5 : T := Const.child x4 (leaf 0);
-          let _ : T := Const.child x4 (leaf 1);
-          let _ : T := Const.child x4 (leaf 2);
-          let _ : T := Const.child x4 (leaf 3);
-          let _ : T := Const.child x4 (leaf 4);
-          let _ : T := Const.child x4 (leaf 5);
-          if («Datatype.sameName» x5 x0).label ≠ 0 then
+          let x5 : List T := Const.children x4;
+          let x6 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x5
+            (leaf 0)
+            (fun (x6 : T) (_ : List T) => x6);
+          let x7 : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x5
+            ([] : List T)
+            (fun (_ : T) (x8 : List T) => x8);
+          let _ : T := Const.lcase
+            (α := T)
+            (β := T)
+            x7
+            (leaf 0)
+            (fun (x8 : T) (_ : List T) => x8);
+          let x9 : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x7
+            ([] : List T)
+            (fun (_ : T) (x10 : List T) => x10);
+          let _ : T := Const.lcase
+            (α := T)
+            (β := T)
+            x9
+            (leaf 0)
+            (fun (x10 : T) (_ : List T) => x10);
+          let x11 : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x9
+            ([] : List T)
+            (fun (_ : T) (x12 : List T) => x12);
+          let _ : T := Const.lcase
+            (α := T)
+            (β := T)
+            x11
+            (leaf 0)
+            (fun (x12 : T) (_ : List T) => x12);
+          let x13 : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x11
+            ([] : List T)
+            (fun (_ : T) (x14 : List T) => x14);
+          let _ : T := Const.lcase
+            (α := T)
+            (β := T)
+            x13
+            (leaf 0)
+            (fun (x14 : T) (_ : List T) => x14);
+          let x15 : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x13
+            ([] : List T)
+            (fun (_ : T) (x16 : List T) => x16);
+          let _ : T := Const.lcase
+            (α := T)
+            (β := T)
+            x15
+            (leaf 0)
+            (fun (x16 : T) (_ : List T) => x16);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x15
+            ([] : List T)
+            (fun (_ : T) (x18 : List T) => x18);
+          if («Datatype.sameName» x6 x0).label ≠ 0 then
             «Datatype/ODecl.just» x2
           else
             x3
@@ -5306,8 +6679,21 @@ def «Datatype.isData» :=
       (fun (x2 : T) (x3 : T) =>
         let x4 : T := x2;
         if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-          let x5 : T := Const.child x4 (leaf 0);
-          «Prelude.or» («Datatype.sameName» x5 x0) x3
+          let x5 : List T := Const.children x4;
+          let x6 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x5
+            (leaf 0)
+            (fun (x6 : T) (_ : List T) => x6);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x5
+            ([] : List T)
+            (fun (_ : T) (x8 : List T) => x8);
+          «Prelude.or» («Datatype.sameName» x6 x0) x3
         else
           x3)
       (leaf 0)
@@ -5322,10 +6708,35 @@ def «Datatype.findAlias» :=
       (fun (x2 : T) (x3 : T) =>
         let x4 : T := x2;
         if (Const.eq (Const.label x4) (leaf 2)).label ≠ 0 then
-          let x5 : T := Const.child x4 (leaf 0);
-          let x6 : T := Const.child x4 (leaf 1);
-          if («Datatype.sameName» x5 x0).label ≠ 0 then
-            «Datatype/OTx.just» x6
+          let x5 : List T := Const.children x4;
+          let x6 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x5
+            (leaf 0)
+            (fun (x6 : T) (_ : List T) => x6);
+          let x7 : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x5
+            ([] : List T)
+            (fun (_ : T) (x8 : List T) => x8);
+          let x8 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x7
+            (leaf 0)
+            (fun (x8 : T) (_ : List T) => x8);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x7
+            ([] : List T)
+            (fun (_ : T) (x10 : List T) => x10);
+          if («Datatype.sameName» x6 x0).label ≠ 0 then
+            «Datatype/OTx.just» x8
           else
             x3
         else
@@ -5343,13 +6754,86 @@ def «Datatype.ctorsOf» :=
       (fun (x2 : T) (x3 : List T) =>
         let x4 : T := x2;
         if (Const.eq (Const.label x4) (leaf 0)).label ≠ 0 then
-          let _ : T := Const.child x4 (leaf 0);
-          let _ : T := Const.child x4 (leaf 1);
-          let x7 : T := Const.child x4 (leaf 2);
-          let _ : T := Const.child x4 (leaf 3);
-          let _ : T := Const.child x4 (leaf 4);
-          let _ : T := Const.child x4 (leaf 5);
-          if («Datatype.sameName» x7 x0).label ≠ 0 then (x2 :: x3) else x3
+          let x5 : List T := Const.children x4;
+          let _ : T := Const.lcase
+            (α := T)
+            (β := T)
+            x5
+            (leaf 0)
+            (fun (x6 : T) (_ : List T) => x6);
+          let x7 : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x5
+            ([] : List T)
+            (fun (_ : T) (x8 : List T) => x8);
+          let _ : T := Const.lcase
+            (α := T)
+            (β := T)
+            x7
+            (leaf 0)
+            (fun (x8 : T) (_ : List T) => x8);
+          let x9 : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x7
+            ([] : List T)
+            (fun (_ : T) (x10 : List T) => x10);
+          let x10 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x9
+            (leaf 0)
+            (fun (x10 : T) (_ : List T) => x10);
+          let x11 : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x9
+            ([] : List T)
+            (fun (_ : T) (x12 : List T) => x12);
+          let _ : T := Const.lcase
+            (α := T)
+            (β := T)
+            x11
+            (leaf 0)
+            (fun (x12 : T) (_ : List T) => x12);
+          let x13 : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x11
+            ([] : List T)
+            (fun (_ : T) (x14 : List T) => x14);
+          let _ : T := Const.lcase
+            (α := T)
+            (β := T)
+            x13
+            (leaf 0)
+            (fun (x14 : T) (_ : List T) => x14);
+          let x15 : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x13
+            ([] : List T)
+            (fun (_ : T) (x16 : List T) => x16);
+          let _ : T := Const.lcase
+            (α := T)
+            (β := T)
+            x15
+            (leaf 0)
+            (fun (x16 : T) (_ : List T) => x16);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x15
+            ([] : List T)
+            (fun (_ : T) (x18 : List T) => x18);
+          if («Datatype.sameName» x10 x0).label ≠ 0 then (x2 :: x3) else x3
         else
           x3)
       ([] : List T)
@@ -5360,36 +6844,264 @@ def «Datatype.ctorName» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 0)).label ≠ 0 then
-                     let x2 : T := Const.child x1 (leaf 0);
-                     let _ : T := Const.child x1 (leaf 1);
-                     let _ : T := Const.child x1 (leaf 2);
-                     let _ : T := Const.child x1 (leaf 3);
-                     let _ : T := Const.child x1 (leaf 4);
-                     let _ : T := Const.child x1 (leaf 5); x2
+                     let x2 : List T := Const.children x1;
+                     let x3 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let x4 : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x4
+                       (leaf 0)
+                       (fun (x5 : T) (_ : List T) => x5);
+                     let x6 : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x4
+                       ([] : List T)
+                       (fun (_ : T) (x7 : List T) => x7);
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x6
+                       (leaf 0)
+                       (fun (x7 : T) (_ : List T) => x7);
+                     let x8 : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x6
+                       ([] : List T)
+                       (fun (_ : T) (x9 : List T) => x9);
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x8
+                       (leaf 0)
+                       (fun (x9 : T) (_ : List T) => x9);
+                     let x10 : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x8
+                       ([] : List T)
+                       (fun (_ : T) (x11 : List T) => x11);
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x10
+                       (leaf 0)
+                       (fun (x11 : T) (_ : List T) => x11);
+                     let x12 : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x10
+                       ([] : List T)
+                       (fun (_ : T) (x13 : List T) => x13);
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x12
+                       (leaf 0)
+                       (fun (x13 : T) (_ : List T) => x13);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x12
+                       ([] : List T)
+                       (fun (_ : T) (x15 : List T) => x15);
+                     x3
                    else
                      if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                       let x2 : T := Const.child x1 (leaf 0); x2
+                       let x2 : List T := Const.children x1;
+                       let x3 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x2
+                         (leaf 0)
+                         (fun (x3 : T) (_ : List T) => x3);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x2
+                         ([] : List T)
+                         (fun (_ : T) (x5 : List T) => x5);
+                       x3
                      else
-                       let x2 : T := Const.child x1 (leaf 0);
-                       let _ : T := Const.child x1 (leaf 1); x2);
+                       let x2 : List T := Const.children x1;
+                       let x3 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x2
+                         (leaf 0)
+                         (fun (x3 : T) (_ : List T) => x3);
+                       let x4 : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x2
+                         ([] : List T)
+                         (fun (_ : T) (x5 : List T) => x5);
+                       let _ : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x4
+                         (leaf 0)
+                         (fun (x5 : T) (_ : List T) => x5);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x4
+                         ([] : List T)
+                         (fun (_ : T) (x7 : List T) => x7);
+                       x3);
     x1
 
 def «Datatype.ctorData» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 0)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0);
-                     let _ : T := Const.child x1 (leaf 1);
-                     let x4 : T := Const.child x1 (leaf 2);
-                     let _ : T := Const.child x1 (leaf 3);
-                     let _ : T := Const.child x1 (leaf 4);
-                     let _ : T := Const.child x1 (leaf 5); x4
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let x4 : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x4
+                       (leaf 0)
+                       (fun (x5 : T) (_ : List T) => x5);
+                     let x6 : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x4
+                       ([] : List T)
+                       (fun (_ : T) (x7 : List T) => x7);
+                     let x7 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x6
+                       (leaf 0)
+                       (fun (x7 : T) (_ : List T) => x7);
+                     let x8 : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x6
+                       ([] : List T)
+                       (fun (_ : T) (x9 : List T) => x9);
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x8
+                       (leaf 0)
+                       (fun (x9 : T) (_ : List T) => x9);
+                     let x10 : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x8
+                       ([] : List T)
+                       (fun (_ : T) (x11 : List T) => x11);
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x10
+                       (leaf 0)
+                       (fun (x11 : T) (_ : List T) => x11);
+                     let x12 : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x10
+                       ([] : List T)
+                       (fun (_ : T) (x13 : List T) => x13);
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x12
+                       (leaf 0)
+                       (fun (x13 : T) (_ : List T) => x13);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x12
+                       ([] : List T)
+                       (fun (_ : T) (x15 : List T) => x15);
+                     x7
                    else
                      if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                       let x2 : T := Const.child x1 (leaf 0); x2
+                       let x2 : List T := Const.children x1;
+                       let x3 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x2
+                         (leaf 0)
+                         (fun (x3 : T) (_ : List T) => x3);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x2
+                         ([] : List T)
+                         (fun (_ : T) (x5 : List T) => x5);
+                       x3
                      else
-                       let x2 : T := Const.child x1 (leaf 0);
-                       let _ : T := Const.child x1 (leaf 1); x2);
+                       let x2 : List T := Const.children x1;
+                       let x3 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x2
+                         (leaf 0)
+                         (fun (x3 : T) (_ : List T) => x3);
+                       let x4 : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x2
+                         ([] : List T)
+                         (fun (_ : T) (x5 : List T) => x5);
+                       let _ : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x4
+                         (leaf 0)
+                         (fun (x5 : T) (_ : List T) => x5);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x4
+                         ([] : List T)
+                         (fun (_ : T) (x7 : List T) => x7);
+                       x3);
     x1
 
 def «Datatype.expandAliases» :=
@@ -5398,33 +7110,42 @@ def «Datatype.expandAliases» :=
       (α := Unit → T)
       (fun (x2 : T) (x3 : List (Unit → T)) (_ : Unit) =>
         if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-          let x5 : List
-            T := Const.iter
-            (α := List T)
-            (fun (x5 : List T) =>
-              Const.lcase
-                (α := T)
-                (β := List T)
-                x5
-                ([] : List T)
-                (fun (_ : T) (x7 : List T) => x7))
-            (Const.children x2)
-            (leaf 0);
-          let x6 : T := «Datatype.findAlias» («Typing.name» x5) x0;
-          if (Const.eq (Const.label x6) (leaf 1)).label ≠ 0 then
-            let x7 : T := Const.child x6 (leaf 0); x7
+          let _ : (Unit → T) ×
+            List (Unit → T) := (fun (_ : Unit) => leaf 0, x3);
+          let x6 : List T := Const.children x2;
+          let x7 : List T := x6;
+          let x8 : T := «Datatype.findAlias» («Typing.name» x7) x0;
+          if (Const.eq (Const.label x8) (leaf 1)).label ≠ 0 then
+            let x9 : List T := Const.children x8;
+            let x10 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x9
+              (leaf 0)
+              (fun (x10 : T) (_ : List T) => x10);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x9
+              ([] : List T)
+              (fun (_ : T) (x12 : List T) => x12);
+            x10
           else
-            «Typing.tAtom» x5
+            let _ : List T := Const.children x8; «Typing.tAtom» x7
         else
           if (Const.eq (Const.label x2) (leaf 2)).label ≠ 0 then
-            let x5 : List
+            let x5 : (Unit → T) ×
+              List (Unit → T) := (fun (_ : Unit) => leaf 0, x3);
+            let _ : List T := Const.children x2;
+            let x7 : List
               T := Const.foldr
               (α := Unit → T)
               (β := List T)
-              (fun (x5 : Unit → T) (x6 : List T) => ((x5 ()) :: x6))
+              (fun (x7 : Unit → T) (x8 : List T) => ((x7 ()) :: x8))
               ([] : List T)
-              x3;
-            «Typing.tList» x5
+              (x5).2;
+            «Typing.tList» x7
           else
             «Typing.tx0»)
       x1
@@ -5508,58 +7229,53 @@ def «Datatype.defaultOf» :=
       (α := Unit → T × T)
       (fun (x1 : T) (x2 : List (Unit → T × T)) (_ : Unit) =>
         if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-          let x4 : List
-            T := Const.iter
-            (α := List T)
-            (fun (x4 : List T) =>
-              Const.lcase
-                (α := T)
-                (β := List T)
-                x4
-                ([] : List T)
-                (fun (_ : T) (x6 : List T) => x6))
-            (Const.children x1)
-            (leaf 0);
-          («Typing.tAtom» x4,
+          let _ : (Unit → T × T) ×
+            List (Unit → T × T) := (fun (_ : Unit) => (leaf 0, leaf 0), x2);
+          let x5 : List T := Const.children x1;
+          let x6 : List T := x5;
+          («Typing.tAtom» x6,
             if («Datatype.namedTx»
-              («Typing.tAtom» x4)
+              («Typing.tAtom» x6)
               «Reader.kwUnit»).label ≠ 0 then
               «Datatype.aUnitV»
             else
-              «Datatype.asTy» («Typing.tAtom» x4) «Datatype.aZero»)
+              «Datatype.asTy» («Typing.tAtom» x6) «Datatype.aZero»)
         else
           if (Const.eq (Const.label x1) (leaf 2)).label ≠ 0 then
-            let x4 : List
+            let x4 : (Unit → T × T) ×
+              List (Unit → T × T) := (fun (_ : Unit) => (leaf 0, leaf 0), x2);
+            let _ : List T := Const.children x1;
+            let x6 : List
               (T ×
                 T) := Const.foldr
               (α := Unit → T × T)
               (β := List (T × T))
-              (fun (x4 : Unit → T × T) (x5 : List (T × T)) => ((x4 ()) :: x5))
+              (fun (x6 : Unit → T × T) (x7 : List (T × T)) => ((x6 ()) :: x7))
               ([] : List (T × T))
-              x2;
-            let x5 : List
+              (x4).2;
+            let x7 : List
               T := Const.foldr
               (α := T × T)
               (β := List T)
-              (fun (x5 : T × T) (x6 : List T) => ((x5).1 :: x6))
+              (fun (x7 : T × T) (x8 : List T) => ((x7).1 :: x8))
               ([] : List T)
-              x4;
-            let x6 : T →
-              T := (fun (x6 : T) =>
-              («Datatype/TTs.atOr» («Typing.tx0», «Datatype.aZero») x4 x6).2);
-            let x7 : T := «Datatype.nthTx» x5 (leaf 0);
-            («Typing.tList» x5,
-              if («Datatype.namedTx» x7 «Reader.kwProd»).label ≠ 0 then
-                «Datatype.sx3» «Datatype.aPair» (x6 (leaf 1)) (x6 (leaf 2))
+              x6;
+            let x8 : T →
+              T := (fun (x8 : T) =>
+              («Datatype/TTs.atOr» («Typing.tx0», «Datatype.aZero») x6 x8).2);
+            let x9 : T := «Datatype.nthTx» x7 (leaf 0);
+            («Typing.tList» x7,
+              if («Datatype.namedTx» x9 «Reader.kwProd»).label ≠ 0 then
+                «Datatype.sx3» «Datatype.aPair» (x8 (leaf 1)) (x8 (leaf 2))
               else
-                if («Datatype.namedTx» x7 «Reader.kwArrow»).label ≠ 0 then
+                if («Datatype.namedTx» x9 «Reader.kwArrow»).label ≠ 0 then
                   «Datatype.sLam1»
                     «Datatype.aD»
-                    («Datatype.nthTx» x5 (leaf 1))
-                    (x6 (leaf 2))
+                    («Datatype.nthTx» x7 (leaf 1))
+                    (x8 (leaf 2))
                 else
-                  if («Datatype.namedTx» x7 «Reader.kwList»).label ≠ 0 then
-                    «Datatype.sx2» «Datatype.aNil» («Datatype.nthTx» x5 (leaf 1))
+                  if («Datatype.namedTx» x9 «Reader.kwList»).label ≠ 0 then
+                    «Datatype.sx2» «Datatype.aNil» («Datatype.nthTx» x7 (leaf 1))
                   else
                     «Datatype.aZero»)
           else
@@ -5567,331 +7283,6 @@ def «Datatype.defaultOf» :=
       x0
       ()).2;
     x1
-
-def «Datatype.bindWith» :=
-  fun (x0 : T → T → T → T → T)
-    (x1 : T → T → T → T → T)
-    (x2 : T)
-    (x3 : List T)
-    (x4 : T) =>
-    let x5 : T := (let x5 : T := x2;
-                   if (Const.eq (Const.label x5) (leaf 0)).label ≠ 0 then
-                     let _ : T := Const.child x5 (leaf 0);
-                     let _ : T := Const.child x5 (leaf 1);
-                     let _ : T := Const.child x5 (leaf 2);
-                     let x9 : T := Const.child x5 (leaf 3);
-                     let x10 : T := Const.child x5 (leaf 4);
-                     let x11 : T := Const.child x5 (leaf 5);
-                     let x12 : List T := «Datatype.elems» x9;
-                     let x13 : T := «Datatype/Txs.length» x12;
-                     let x14 : T := «Datatype/Txs.length» x3;
-                     if («Prelude.and»
-                       (Const.eq x14 (Const.add x13 x10))
-                       («Datatype.allTrue»
-                         (Const.foldr
-                           (α := T)
-                           (β := List T)
-                           (fun (x15 : T) (x16 : List T) =>
-                             ((«Prelude.and»
-                               («Datatype.isAtomTx» x15)
-                               (if (Const.eq
-                                 («Prelude.at» (Const.children x15) (leaf 0))
-                                 (leaf 37)).label ≠ 0 then
-                                 leaf 0
-                               else
-                                 leaf 1)) ::
-                               x16))
-                           ([] : List T)
-                           x3))).label ≠ 0 then
-                       «Datatype/OTx.just»
-                         (Const.foldr
-                           (α := T)
-                           (β := T × T)
-                           (fun (x15 : T) (x16 : T × T) =>
-                             let x17 : T := Const.sub (Const.sub x14 (leaf 1)) (x16).1;
-                             (Const.add (x16).1 (leaf 1),
-                               if (Const.lt x17 x13).label ≠ 0 then
-                                 x0 x17 («Datatype.nthTx» x12 x17) x15 (x16).2
-                               else
-                                 x1 x13 x11 x15 (x16).2))
-                           (leaf 0, x4)
-                           x3).2
-                     else
-                       «Datatype/OTx.nothing»
-                   else
-                     «Datatype/OTx.nothing»);
-    x5
-
-def «Datatype.clauseCtor» :=
-  fun (x0 : List T) (x1 : T) =>
-    let x2 : T := (let x2 : T := «Datatype.nthTx» («Datatype.elems» x1) (leaf 0);
-                   if (Const.eq (Const.label x2) (leaf 2)).label ≠ 0 then
-                     let x3 : List
-                       T := Const.iter
-                       (α := List T)
-                       (fun (x3 : List T) =>
-                         Const.lcase
-                           (α := T)
-                           (β := List T)
-                           x3
-                           ([] : List T)
-                           (fun (_ : T) (x5 : List T) => x5))
-                       (Const.children x2)
-                       (leaf 0);
-                     «Datatype.findCtor»
-                       («Datatype.atomName» («Datatype.nthTx» x3 (leaf 0)))
-                       x0
-                   else
-                     «Datatype/ODecl.nothing»);
-    x2
-
-def «Datatype.testChain» :=
-  fun (x0 : T)
-    (x1 : List (T × (T × T)))
-    (x2 : T)
-    (x3 : T → List T → T → T) =>
-    let x4 : T := (let x4 : T ×
-                     (T ×
-                       T) := Const.foldr
-                     (α := T × (T × T))
-                     (β := T × (T × T))
-                     (fun (x4 : T × (T × T)) (x5 : T × (T × T)) =>
-                       let x6 : T := ((x4).2).1;
-                       let x7 : T := x3
-                         x6
-                         («Datatype/Txs.tail»
-                           («Datatype.elems»
-                             («Datatype.nthTx» («Datatype.elems» (x4).1) (leaf 0))))
-                         («Datatype.nthTx» («Datatype.elems» ((x4).2).2) (leaf 1));
-                       if (Const.eq (Const.label x7) (leaf 1)).label ≠ 0 then
-                         let x8 : T := Const.child x7 (leaf 0);
-                         if ((x5).1).label ≠ 0 then
-                           (leaf 1,
-                             (leaf 1,
-                               if (((x5).2).1).label ≠ 0 then
-                                 let x9 : T := x6;
-                                 if (Const.eq (Const.label x9) (leaf 0)).label ≠ 0 then
-                                   let _ : T := Const.child x9 (leaf 0);
-                                   let x11 : T := Const.child x9 (leaf 1);
-                                   let _ : T := Const.child x9 (leaf 2);
-                                   let _ : T := Const.child x9 (leaf 3);
-                                   let _ : T := Const.child x9 (leaf 4);
-                                   let _ : T := Const.child x9 (leaf 5);
-                                   «Datatype.sIf»
-                                     («Datatype.sx3»
-                                       «Datatype.aEq»
-                                       («Datatype.sx2» «Datatype.aLabel» x0)
-                                       («Datatype.numAtom» x11))
-                                     x8
-                                     ((x5).2).2
-                                 else
-                                   x8
-                               else
-                                 x8))
-                         else
-                           (leaf 0, (leaf 0, «Typing.tx0»))
-                       else
-                         (leaf 0, (leaf 0, «Typing.tx0»)))
-                     (let x4 : T := x2;
-                      if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-                        let x5 : T := Const.child x4 (leaf 0); (leaf 1, (leaf 1, x5))
-                      else
-                        (leaf 1, (leaf 0, «Typing.tx0»)))
-                     x1;
-                   if («Prelude.and» (x4).1 ((x4).2).1).label ≠ 0 then
-                     «Datatype/OTx.just» ((x4).2).2
-                   else
-                     «Datatype/OTx.nothing»);
-    x4
-
-def «Datatype/ODecls.single» :=
-  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
-
-def «Datatype/ODecls.length» :=
-  fun (x0 : List T) =>
-    let x1 : T := Const.foldr
-      (α := T)
-      (β := T)
-      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
-      (leaf 0)
-      x0;
-    x1
-
-def «Datatype/ODecls.append» :=
-  fun (x0 : List T) (x1 : List T) =>
-    let x2 : List
-      T := Const.foldr
-      (α := T)
-      (β := List T)
-      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «Datatype/ODecls.reverse» :=
-  fun (x0 : List T) =>
-    let x1 : List
-      T := Const.foldr
-      (α := T)
-      (β := List T → List T)
-      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
-      (fun (x1 : List T) => x1)
-      x0
-      ([] : List T);
-    x1
-
-def «Datatype/ODecls.tail» :=
-  fun (x0 : List T) =>
-    let x1 : List
-      T := Const.lcase
-      (α := T)
-      (β := List T)
-      x0
-      ([] : List T)
-      (fun (_ : T) (x2 : List T) => x2);
-    x1
-
-def «Datatype/ODecls.drop» :=
-  fun (x0 : T) (x1 : List T) =>
-    let x2 : List
-      T := Const.iter (α := List T) «Datatype/ODecls.tail» x1 x0;
-    x2
-
-def «Datatype/ODecls.atOr» :=
-  fun (x0 : T) (x1 : List T) (x2 : T) =>
-    let x3 : T := Const.lcase
-      (α := T)
-      (β := T)
-      («Datatype/ODecls.drop» x2 x1)
-      x0
-      (fun (x3 : T) (_ : List T) => x3);
-    x3
-
-def «Datatype.clauseChain» :=
-  fun (x0 : List T)
-    (x1 : T)
-    (x2 : List T)
-    (x3 : T × List T)
-    (x4 : T)
-    (x5 : T → List T → T → T) =>
-    let x6 : T := (if («Prelude.and»
-      (x3).1
-      (Const.lt (leaf 0) («Datatype/Txs.length» x2))).label ≠ 0 then
-      let x6 : List T := (x3).2;
-      let x7 : T := «Datatype/Txs.length» x2;
-      let x8 : T := «Datatype.nthTx» x2 (Const.sub x7 (leaf 1));
-      let x9 : T := «Prelude.and»
-        («Datatype.isListTx» x8)
-        («Prelude.and»
-          (Const.eq («Datatype/Txs.length» («Datatype.elems» x8)) (leaf 2))
-          («Datatype.namedTx»
-            («Datatype.nthTx» («Datatype.elems» x8) (leaf 0))
-            «Datatype.kwElse»));
-      let x10 : List
-        T := (if (x9).label ≠ 0 then «Datatype.dropLast» x2 else x2);
-      let x11 : List
-        T := (if (x9).label ≠ 0 then «Datatype.dropLast» x6 else x6);
-      let x12 : T := (if (x9).label ≠ 0 then
-        «Datatype/OTx.just»
-          («Datatype.nthTx»
-            («Datatype.elems» («Datatype.nthTx» x6 (Const.sub x7 (leaf 1))))
-            (leaf 1))
-      else
-        «Datatype/OTx.nothing»);
-      let x13 : List
-        T := Const.foldr
-        (α := T)
-        (β := List T)
-        (fun (x13 : T) (x14 : List T) =>
-          ((«Datatype.clauseCtor» x0 x13) :: x14))
-        ([] : List T)
-        x10;
-      let x14 : T := (let x14 : T := x1;
-                      if (Const.eq (Const.label x14) (leaf 1)).label ≠ 0 then
-                        let x15 : T := Const.child x14 (leaf 0); x15
-                      else
-                        let x15 : T := «Datatype/ODecls.atOr»
-                          «Datatype/ODecl.nothing»
-                          x13
-                          (leaf 0);
-                        if (Const.eq (Const.label x15) (leaf 1)).label ≠ 0 then
-                          let x16 : T := Const.child x15 (leaf 0); «Datatype.ctorData» x16
-                        else
-                          «Typing.name» ([] : List T));
-      let x15 : T := «Datatype.allTrue»
-        (Const.foldr
-          (α := T)
-          (β := List T)
-          (fun (x15 : T) (x16 : List T) =>
-            ((«Prelude.and»
-              (Const.eq («Datatype/Txs.length» («Datatype.elems» x15)) (leaf 2))
-              (let x17 : T := «Datatype.clauseCtor» x0 x15;
-               if (Const.eq (Const.label x17) (leaf 1)).label ≠ 0 then
-                 let x18 : T := Const.child x17 (leaf 0);
-                 «Datatype.sameName» («Datatype.ctorData» x18) x14
-               else
-                 leaf 0)) ::
-              x16))
-          ([] : List T)
-          x10);
-      let x16 : List
-        T := Const.foldr
-        (α := T)
-        (β := List T)
-        (fun (x16 : T) (x17 : List T) =>
-          let x18 : T := x16;
-          if (Const.eq (Const.label x18) (leaf 1)).label ≠ 0 then
-            let x19 : T := Const.child x18 (leaf 0);
-            ((«Datatype.ctorName» x19) :: x17)
-          else
-            x17)
-        ([] : List T)
-        x13;
-      let x17 : T := «Prelude.or»
-        x9
-        («Datatype.allTrue»
-          (Const.foldr
-            (α := T)
-            (β := List T)
-            (fun (x17 : T) (x18 : List T) =>
-              ((Const.foldr
-                (α := T)
-                (β := T)
-                (fun (x19 : T) (x20 : T) =>
-                  «Prelude.or» («Datatype.sameName» x19 («Datatype.ctorName» x17)) x20)
-                (leaf 0)
-                x16) ::
-                x18))
-            ([] : List T)
-            («Datatype.ctorsOf» x14 x0)));
-      if («Prelude.and» x15 x17).label ≠ 0 then
-        let x18 : T := «Datatype/Txs.length» x10;
-        «Datatype.testChain»
-          x4
-          (Const.foldr
-            (α := T)
-            (β := T × List (T × (T × T)))
-            (fun (x19 : T) (x20 : T × List (T × (T × T))) =>
-              let x21 : T := Const.sub (Const.sub x18 (leaf 1)) (x20).1;
-              (Const.add (x20).1 (leaf 1),
-                let x22 : T := «Datatype/ODecls.atOr»
-                  «Datatype/ODecl.nothing»
-                  x13
-                  x21;
-                if (Const.eq (Const.label x22) (leaf 1)).label ≠ 0 then
-                  let x23 : T := Const.child x22 (leaf 0);
-                  ((x19, (x23, «Datatype.nthTx» x11 x21)) :: (x20).2)
-                else
-                  (x20).2))
-            (leaf 0, ([] : List (T × (T × T))))
-            x10).2
-          x12
-          x5
-      else
-        «Datatype/OTx.nothing»
-    else
-      «Datatype/OTx.nothing»);
-    x6
 
 def «Datatype/XRs.single» :=
   fun (x0 : T × (List T → T)) =>
@@ -6010,68 +7401,283 @@ def «Datatype.xrFrom» :=
         («Datatype/XRs.drop» x1 x0));
     x3
 
-def «Datatype.caseField» :=
-  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) =>
-    let x4 : T := «Datatype.sLet»
+def «Datatype.clauseCtor» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := (let x2 : T := «Datatype.nthTx» («Datatype.elems» x1) (leaf 0);
+                   if (Const.eq (Const.label x2) (leaf 2)).label ≠ 0 then
+                     let x3 : List T := Const.children x2;
+                     let x4 : List T := x3;
+                     «Datatype.findCtor»
+                       («Datatype.atomName» («Datatype.nthTx» x4 (leaf 0)))
+                       x0
+                   else
+                     «Datatype/ODecl.nothing»);
+    x2
+
+def «Datatype.splitVars» :=
+  fun (x0 : List T) (x1 : T) (x2 : List T) (x3 : T → T → T) =>
+    let x4 : List T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := List T → List T × List T)
+      (fun (x4 : T) (x5 : List T → List T × List T) (x6 : List T) =>
+        Const.lcase
+          (α := T)
+          (β := List T × List T)
+          x6
+          (let x7 : List T × List T := x5 x6; ((x7).1, ((x3 x4 x1) :: (x7).2)))
+          (fun (x7 : T) (x8 : List T) =>
+            let x9 : List T × List T := x5 x8; (((x3 x4 x7) :: (x9).1), (x9).2)))
+      (fun (_ : List T) => (([] : List T), ([] : List T)))
       x2
-      x1
-      («Datatype.asTy»
-        x1
-        («Datatype.sx3»
-          «Datatype.aChild»
-          «Datatype.aS»
-          («Datatype.numAtom» x0)))
-      x3;
+      x0;
     x4
 
-def «Datatype.caseRest» :=
-  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) =>
-    let x4 : T := «Datatype.sLet»
-      x2
-      («Datatype.sList» x1)
-      («Datatype.asTy»
-        («Datatype.sList» x1)
-        («Datatype.sDrop»
-          «Datatype.aT»
-          («Datatype.sx2» «Datatype.aChildren» «Datatype.aS»)
-          x0))
-      x3;
-    x4
+def «Datatype.clauseParts» :=
+  fun (x0 : List T)
+    (x1 : T)
+    (x2 : List T)
+    (x3 : T × List T)
+    (x4 : T → T → T) =>
+    let x5 : T ×
+      (T ×
+        (List T ×
+          List
+            T)) := (let x5 : T := «Datatype/Txs.length» x2;
+                    let x6 : T := «Datatype.nthTx» x2 (Const.sub x5 (leaf 1));
+                    let x7 : T := «Prelude.and»
+                      («Datatype.isListTx» x6)
+                      («Prelude.and»
+                        (Const.eq («Datatype/Txs.length» («Datatype.elems» x6)) (leaf 2))
+                        («Datatype.namedTx»
+                          («Datatype.nthTx» («Datatype.elems» x6) (leaf 0))
+                          «Datatype.kwElse»));
+                    let x8 : T := (let x8 : T := x1;
+                                   if (Const.eq (Const.label x8) (leaf 1)).label ≠ 0 then
+                                     let x9 : List T := Const.children x8;
+                                     let x10 : T := Const.lcase
+                                       (α := T)
+                                       (β := T)
+                                       x9
+                                       (leaf 0)
+                                       (fun (x10 : T) (_ : List T) => x10);
+                                     let _ : List
+                                       T := Const.lcase
+                                       (α := T)
+                                       (β := List T)
+                                       x9
+                                       ([] : List T)
+                                       (fun (_ : T) (x12 : List T) => x12);
+                                     x10
+                                   else
+                                     let _ : List T := Const.children x8;
+                                     let x10 : T := «Datatype.clauseCtor»
+                                       x0
+                                       («Datatype.nthTx» x2 (leaf 0));
+                                     if (Const.eq (Const.label x10) (leaf 1)).label ≠ 0 then
+                                       let x11 : List T := Const.children x10;
+                                       let x12 : T := Const.lcase
+                                         (α := T)
+                                         (β := T)
+                                         x11
+                                         (leaf 0)
+                                         (fun (x12 : T) (_ : List T) => x12);
+                                       let _ : List
+                                         T := Const.lcase
+                                         (α := T)
+                                         (β := List T)
+                                         x11
+                                         ([] : List T)
+                                         (fun (_ : T) (x14 : List T) => x14);
+                                       «Datatype.ctorData» x12
+                                     else
+                                       let _ : List T := Const.children x10;
+                                       «Typing.name» ([] : List T));
+                    let x9 : T ×
+                      List
+                        T := «Datatype/OTx.allJust»
+                      (Const.foldr
+                        (α := T)
+                        (β := List T)
+                        (fun (x9 : T) (x10 : List T) =>
+                          ((let x11 : T := «Datatype.clauseCtor» x0 x9;
+                            if (Const.eq (Const.label x11) (leaf 1)).label ≠ 0 then
+                              let x12 : List T := Const.children x11;
+                              let x13 : T := Const.lcase
+                                (α := T)
+                                (β := T)
+                                x12
+                                (leaf 0)
+                                (fun (x13 : T) (_ : List T) => x13);
+                              let _ : List
+                                T := Const.lcase
+                                (α := T)
+                                (β := List T)
+                                x12
+                                ([] : List T)
+                                (fun (_ : T) (x15 : List T) => x15);
+                              let x15 : T := x13;
+                              if (Const.eq (Const.label x15) (leaf 0)).label ≠ 0 then
+                                let x16 : List T := Const.children x15;
+                                let _ : T := Const.lcase
+                                  (α := T)
+                                  (β := T)
+                                  x16
+                                  (leaf 0)
+                                  (fun (x17 : T) (_ : List T) => x17);
+                                let x18 : List
+                                  T := Const.lcase
+                                  (α := T)
+                                  (β := List T)
+                                  x16
+                                  ([] : List T)
+                                  (fun (_ : T) (x19 : List T) => x19);
+                                let x19 : T := Const.lcase
+                                  (α := T)
+                                  (β := T)
+                                  x18
+                                  (leaf 0)
+                                  (fun (x19 : T) (_ : List T) => x19);
+                                let x20 : List
+                                  T := Const.lcase
+                                  (α := T)
+                                  (β := List T)
+                                  x18
+                                  ([] : List T)
+                                  (fun (_ : T) (x21 : List T) => x21);
+                                let x21 : T := Const.lcase
+                                  (α := T)
+                                  (β := T)
+                                  x20
+                                  (leaf 0)
+                                  (fun (x21 : T) (_ : List T) => x21);
+                                let x22 : List
+                                  T := Const.lcase
+                                  (α := T)
+                                  (β := List T)
+                                  x20
+                                  ([] : List T)
+                                  (fun (_ : T) (x23 : List T) => x23);
+                                let x23 : T := Const.lcase
+                                  (α := T)
+                                  (β := T)
+                                  x22
+                                  (leaf 0)
+                                  (fun (x23 : T) (_ : List T) => x23);
+                                let x24 : List
+                                  T := Const.lcase
+                                  (α := T)
+                                  (β := List T)
+                                  x22
+                                  ([] : List T)
+                                  (fun (_ : T) (x25 : List T) => x25);
+                                let _ : T := Const.lcase
+                                  (α := T)
+                                  (β := T)
+                                  x24
+                                  (leaf 0)
+                                  (fun (x25 : T) (_ : List T) => x25);
+                                let x26 : List
+                                  T := Const.lcase
+                                  (α := T)
+                                  (β := List T)
+                                  x24
+                                  ([] : List T)
+                                  (fun (_ : T) (x27 : List T) => x27);
+                                let x27 : T := Const.lcase
+                                  (α := T)
+                                  (β := T)
+                                  x26
+                                  (leaf 0)
+                                  (fun (x27 : T) (_ : List T) => x27);
+                                let _ : List
+                                  T := Const.lcase
+                                  (α := T)
+                                  (β := List T)
+                                  x26
+                                  ([] : List T)
+                                  (fun (_ : T) (x29 : List T) => x29);
+                                let x29 : List T ×
+                                  List
+                                    T := «Datatype.splitVars»
+                                  («Datatype.elems» x23)
+                                  x27
+                                  («Datatype/Txs.tail»
+                                    («Datatype.elems»
+                                      («Datatype.nthTx» («Datatype.elems» x9) (leaf 0))))
+                                  x4;
+                                if («Prelude.and»
+                                  (Const.eq («Datatype/Txs.length» («Datatype.elems» x9)) (leaf 2))
+                                  («Datatype.sameName» x21 x8)).label ≠ 0 then
+                                  «Datatype/OTx.just»
+                                    («Typing.tList»
+                                      ((«Datatype.numAtom» x19) ::
+                                        ((«Typing.tList» (x29).1) ::
+                                          («Datatype/Txs.single» («Typing.tList» (x29).2)))))
+                                else
+                                  «Datatype/OTx.nothing»
+                              else
+                                «Datatype/OTx.nothing»
+                            else
+                              let _ : List T := Const.children x11; «Datatype/OTx.nothing») ::
+                            x10))
+                        ([] : List T)
+                        (if (x7).label ≠ 0 then «Datatype.dropLast» x2 else x2));
+                    if («Prelude.and»
+                      (x3).1
+                      («Prelude.and» (Const.lt (leaf 0) x5) (x9).1)).label ≠ 0 then
+                      (leaf 1,
+                        («Typing.tAtom» (Const.children x8),
+                          ((x9).2,
+                            Const.foldr
+                              (α := T)
+                              (β := List T)
+                              (fun (x10 : T) (x11 : List T) =>
+                                ((«Datatype.nthTx» («Datatype.elems» x10) (leaf 1)) :: x11))
+                              ([] : List T)
+                              (x3).2)))
+                    else
+                      (leaf 0, («Typing.tx0», (([] : List T), ([] : List T)))));
+    x5
 
 def «Datatype.expandCase» :=
   fun (x0 : List T) (x1 : List T) (x2 : List (T × (List T → T))) =>
-    let x3 : T := (let x3 : List T := «Datatype/Txs.drop» (leaf 2) x1;
-                   let x4 : T := «Datatype.clauseChain»
-                     x0
-                     «Typing/OName.nothing»
-                     x3
-                     («Datatype.xrFrom» x2 (leaf 2) x0)
-                     «Datatype.aS»
-                     («Datatype.bindWith» «Datatype.caseField» «Datatype.caseRest»);
-                   let x5 : T := (let x5 : T := «Datatype.clauseCtor»
-                                    x0
-                                    («Datatype.nthTx» x3 (leaf 0));
-                                  if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
-                                    let x6 : T := Const.child x5 (leaf 0);
-                                    «Typing.tAtom» (Const.children («Datatype.ctorData» x6))
-                                  else
-                                    «Datatype.aT»);
-                   let x6 : T := «Datatype.xrAt» x2 (leaf 1) x0;
-                   if (Const.eq (Const.label x6) (leaf 1)).label ≠ 0 then
-                     let x7 : T := Const.child x6 (leaf 0);
-                     let x8 : T := x4;
-                     if (Const.eq (Const.label x8) (leaf 1)).label ≠ 0 then
-                       let x9 : T := Const.child x8 (leaf 0);
+    let x3 : T := (let x3 : T := «Datatype.xrAt» x2 (leaf 1) x0;
+                   if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+                     let x4 : List T := Const.children x3;
+                     let x5 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x4
+                       (leaf 0)
+                       (fun (x5 : T) (_ : List T) => x5);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x4
+                       ([] : List T)
+                       (fun (_ : T) (x7 : List T) => x7);
+                     let x7 : T ×
+                       (T ×
+                         (List T ×
+                           List
+                             T)) := «Datatype.clauseParts»
+                       x0
+                       «Typing/OName.nothing»
+                       («Datatype/Txs.drop» (leaf 2) x1)
+                       («Datatype.xrFrom» x2 (leaf 2) x0)
+                       (fun (x7 : T) (_ : T) => x7);
+                     let x8 : T × (List T × List T) := (x7).2;
+                     if ((x7).1).label ≠ 0 then
                        «Datatype/OTx.just»
-                         («Datatype.sLet»
-                           «Datatype.aS»
-                           «Datatype.aT»
-                           («Datatype.ofTy» x5 x7)
-                           x9)
+                         («Typing.tCase»
+                           ((x8).1 :: (x5 :: ((«Typing.tList» ((x8).2).1) :: ((x8).2).2))))
                      else
                        «Datatype/OTx.nothing»
                    else
-                     «Datatype/OTx.nothing»);
+                     let _ : List T := Const.children x3; «Datatype/OTx.nothing»);
     x3
 
 def «Datatype.thTy» :=
@@ -6085,136 +7691,60 @@ def «Datatype.splitTy» :=
       («Datatype.sList» («Datatype.thTy» x0));
     x1
 
-def «Datatype.resultsAt» :=
-  fun (x0 : T) =>
-    let x1 : T := (if (Const.eq x0 (leaf 0)).label ≠ 0 then
-      «Datatype.aK»
-    else
-      «Datatype.sx2»
-        «Datatype.aSnd»
-        («Datatype.qAtom» (Const.sub x0 (leaf 1))));
-    x1
-
-def «Datatype.cataField» :=
-  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) (x6 : T) =>
-    let x7 : T := «Datatype.sLet»
-      («Datatype.qAtom» x3)
-      («Datatype.splitTy» x1)
-      («Datatype.sx6»
-        «Datatype.aLcase»
-        («Datatype.thTy» x1)
-        («Datatype.splitTy» x1)
-        («Datatype.resultsAt» x3)
-        («Datatype.sx3»
-          «Datatype.aPair»
-          («Datatype.sLam1» «Datatype.aU» «Datatype.aUnit» x2)
-          («Datatype.sx2» «Datatype.aNil» («Datatype.thTy» x1)))
-        («Datatype.sLam2»
-          «Datatype.aH»
-          («Datatype.thTy» x1)
-          «Datatype.aTl»
-          («Datatype.sList» («Datatype.thTy» x1))
-          («Datatype.sx3» «Datatype.aPair» «Datatype.aH» «Datatype.aTl»)))
-      (if («Reader.named» x4 x0).label ≠ 0 then
-        «Datatype.sLet»
-          x5
-          x1
-          («Datatype.sx2»
-            («Datatype.sx2» «Datatype.aFst» («Datatype.qAtom» x3))
-            «Datatype.aUnitV»)
-          x6
-      else
-        «Datatype.sLet»
-          x5
-          x4
-          («Datatype.asTy»
-            x4
-            («Datatype.sx3»
-              «Datatype.aChild»
-              «Datatype.aO»
-              («Datatype.numAtom» x3)))
-          x6);
-    x7
-
-def «Datatype.cataRest» :=
-  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) =>
-    let x6 : T := (if («Reader.named» x3 x0).label ≠ 0 then
-      «Datatype.sLet»
-        x4
-        («Datatype.sList» x1)
-        («Datatype.sx6»
-          «Datatype.aFoldr»
-          («Datatype.thTy» x1)
-          («Datatype.sList» x1)
-          («Datatype.sLam2»
-            «Datatype.aH»
-            («Datatype.thTy» x1)
-            «Datatype.aA»
-            («Datatype.sList» x1)
-            («Datatype.sx3»
-              «Datatype.aCons»
-              («Datatype.sx2» «Datatype.aH» «Datatype.aUnitV»)
-              «Datatype.aA»))
-          («Datatype.sx2» «Datatype.aNil» x1)
-          («Datatype.resultsAt» x2))
-        x5
-    else
-      «Datatype.sLet»
-        x4
-        («Datatype.sList» x3)
-        («Datatype.asTy»
-          («Datatype.sList» x3)
-          («Datatype.sDrop»
-            «Datatype.aT»
-            («Datatype.sx2» «Datatype.aChildren» «Datatype.aO»)
-            x2))
-        x5);
-    x6
-
 def «Datatype.expandCata» :=
   fun (x0 : List T) (x1 : List T) (x2 : List (T × (List T → T))) =>
     let x3 : T := (let x3 : T := «Datatype.atomName» («Datatype.nthTx» x1 (leaf 1));
                    let x4 : T := «Datatype.nthTx» x1 (leaf 2);
-                   let x5 : T := (if («Prelude.and»
-                     («Datatype.isAtomTx» («Datatype.nthTx» x1 (leaf 1)))
-                     («Datatype.isData» x3 x0)).label ≠ 0 then
-                     «Datatype.clauseChain»
-                       x0
-                       («Typing/OName.just» x3)
-                       («Datatype/Txs.drop» (leaf 4) x1)
-                       («Datatype.xrFrom» x2 (leaf 4) x0)
-                       «Datatype.aO»
-                       («Datatype.bindWith»
-                         («Datatype.cataField»
-                           x3
-                           x4
-                           («Datatype.defaultOf» («Datatype.expandAliases» x0 x4)))
-                         («Datatype.cataRest» x3 x4))
-                   else
-                     «Datatype/OTx.nothing»);
+                   let x5 : T →
+                     T →
+                       T := (fun (x5 : T) (x6 : T) =>
+                     «Typing.tList»
+                       (x5 ::
+                         («Datatype/Txs.single» («Datatype.numAtom» («Reader.named» x6 x3)))));
                    let x6 : T := «Datatype.xrAt» x2 (leaf 3) x0;
                    if (Const.eq (Const.label x6) (leaf 1)).label ≠ 0 then
-                     let x7 : T := Const.child x6 (leaf 0);
-                     let x8 : T := x5;
-                     if (Const.eq (Const.label x8) (leaf 1)).label ≠ 0 then
-                       let x9 : T := Const.child x8 (leaf 0);
-                       «Datatype/OTx.just»
-                         («Datatype.sx2»
-                           («Datatype.sx4»
-                             «Datatype.aPara»
-                             («Datatype.thTy» x4)
-                             («Datatype.sLam2»
-                               «Datatype.aO»
-                               «Datatype.aT»
-                               «Datatype.aK»
-                               («Datatype.sList» («Datatype.thTy» x4))
-                               («Datatype.sLam1» «Datatype.aU» «Datatype.aUnit» x9))
-                             («Datatype.ofTy» («Datatype.nthTx» x1 (leaf 1)) x7))
-                           «Datatype.aUnitV»)
+                     let x7 : List T := Const.children x6;
+                     let x8 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x7
+                       (leaf 0)
+                       (fun (x8 : T) (_ : List T) => x8);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x7
+                       ([] : List T)
+                       (fun (_ : T) (x10 : List T) => x10);
+                     if («Prelude.and»
+                       («Datatype.isAtomTx» («Datatype.nthTx» x1 (leaf 1)))
+                       («Datatype.isData» x3 x0)).label ≠ 0 then
+                       let x10 : T ×
+                         (T ×
+                           (List T ×
+                             List
+                               T)) := «Datatype.clauseParts»
+                         x0
+                         («Typing/OName.just» x3)
+                         («Datatype/Txs.drop» (leaf 4) x1)
+                         («Datatype.xrFrom» x2 (leaf 4) x0)
+                         x5;
+                       let x11 : T × (List T × List T) := (x10).2;
+                       if ((x10).1).label ≠ 0 then
+                         «Datatype/OTx.just»
+                           («Typing.tCata»
+                             ((x11).1 ::
+                               (x4 ::
+                                 (x8 ::
+                                   ((«Datatype.defaultOf» («Datatype.expandAliases» x0 x4)) ::
+                                     ((«Typing.tList» ((x11).2).1) :: ((x11).2).2))))))
+                       else
+                         «Datatype/OTx.nothing»
                      else
                        «Datatype/OTx.nothing»
                    else
-                     «Datatype/OTx.nothing»);
+                     let _ : List T := Const.children x6; «Datatype/OTx.nothing»);
     x3
 
 def «Datatype.typeExpanded» :=
@@ -6240,51 +7770,58 @@ def «Datatype.expandExpr» :=
       (α := Unit → T × (List T → T))
       (fun (x2 : T) (x3 : List (Unit → T × (List T → T))) (_ : Unit) =>
         if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-          let x5 : List
-            T := Const.iter
-            (α := List T)
-            (fun (x5 : List T) =>
-              Const.lcase
-                (α := T)
-                (β := List T)
-                x5
-                ([] : List T)
-                (fun (_ : T) (x7 : List T) => x7))
-            (Const.children x2)
-            (leaf 0);
-          («Typing.tAtom» x5,
-            fun (_ : List T) => «Datatype/OTx.just» («Typing.tAtom» x5))
+          let _ : (Unit → T × (List T → T)) ×
+            List
+              (Unit →
+                T ×
+                  (List T →
+                    T)) := (fun (_ : Unit) =>
+            (leaf 0, fun (_ : List T) => leaf 0),
+            x3);
+          let x6 : List T := Const.children x2;
+          let x7 : List T := x6;
+          («Typing.tAtom» x7,
+            fun (_ : List T) => «Datatype/OTx.just» («Typing.tAtom» x7))
         else
           if (Const.eq (Const.label x2) (leaf 2)).label ≠ 0 then
-            let x5 : List
+            let x5 : (Unit → T × (List T → T)) ×
+              List
+                (Unit →
+                  T ×
+                    (List T →
+                      T)) := (fun (_ : Unit) =>
+              (leaf 0, fun (_ : List T) => leaf 0),
+              x3);
+            let _ : List T := Const.children x2;
+            let x7 : List
               (T ×
                 (List T →
                   T)) := Const.foldr
               (α := Unit → T × (List T → T))
               (β := List (T × (List T → T)))
-              (fun (x5 : Unit → T × (List T → T)) (x6 : List (T × (List T → T))) =>
-                ((x5 ()) :: x6))
+              (fun (x7 : Unit → T × (List T → T)) (x8 : List (T × (List T → T))) =>
+                ((x7 ()) :: x8))
               ([] : List (T × (List T → T)))
-              x3;
-            let x6 : List T := «Datatype.xrForms» x5;
-            («Typing.tList» x6,
-              fun (x7 : List T) =>
-                let x8 : T := «Datatype.nthTx» x6 (leaf 0);
-                let x9 : T := «Datatype/XRs.length» x5;
+              (x5).2;
+            let x8 : List T := «Datatype.xrForms» x7;
+            («Typing.tList» x8,
+              fun (x9 : List T) =>
+                let x10 : T := «Datatype.nthTx» x8 (leaf 0);
+                let x11 : T := «Datatype/XRs.length» x7;
                 if («Prelude.and»
-                  («Datatype.namedTx» x8 «Datatype.kwCase»)
-                  (Const.lt (leaf 2) x9)).label ≠ 0 then
-                  «Datatype.expandCase» x7 x6 x5
+                  («Datatype.namedTx» x10 «Datatype.kwCase»)
+                  (Const.lt (leaf 2) x11)).label ≠ 0 then
+                  «Datatype.expandCase» x9 x8 x7
                 else
                   if («Prelude.and»
-                    («Datatype.namedTx» x8 «Datatype.kwCata»)
-                    (Const.lt (leaf 4) x9)).label ≠ 0 then
-                    «Datatype.expandCata» x7 x6 x5
+                    («Datatype.namedTx» x10 «Datatype.kwCata»)
+                    (Const.lt (leaf 4) x11)).label ≠ 0 then
+                    «Datatype.expandCata» x9 x8 x7
                   else
-                    let x10 : T × List T := «Datatype.xrFrom» x5 (leaf 0) x7;
-                    if ((x10).1).label ≠ 0 then
+                    let x12 : T × List T := «Datatype.xrFrom» x7 (leaf 0) x9;
+                    if ((x12).1).label ≠ 0 then
                       «Datatype.curried»
-                        («Typing.tList» («Datatype.typeExpanded» x7 x8 x9 (x10).2))
+                        («Typing.tList» («Datatype.typeExpanded» x9 x10 x11 (x12).2))
                     else
                       «Datatype/OTx.nothing»)
           else
@@ -6421,25 +7958,98 @@ def «Datatype.marker» :=
           (fun (x3 : T) (x4 : List T) =>
             let x5 : T := x3;
             if (Const.eq (Const.label x5) (leaf 0)).label ≠ 0 then
-              let _ : T := Const.child x5 (leaf 0);
-              let x7 : T := Const.child x5 (leaf 1);
-              let _ : T := Const.child x5 (leaf 2);
-              let x9 : T := Const.child x5 (leaf 3);
-              let x10 : T := Const.child x5 (leaf 4);
-              let x11 : T := Const.child x5 (leaf 5);
+              let x6 : List T := Const.children x5;
+              let _ : T := Const.lcase
+                (α := T)
+                (β := T)
+                x6
+                (leaf 0)
+                (fun (x7 : T) (_ : List T) => x7);
+              let x8 : List
+                T := Const.lcase
+                (α := T)
+                (β := List T)
+                x6
+                ([] : List T)
+                (fun (_ : T) (x9 : List T) => x9);
+              let x9 : T := Const.lcase
+                (α := T)
+                (β := T)
+                x8
+                (leaf 0)
+                (fun (x9 : T) (_ : List T) => x9);
+              let x10 : List
+                T := Const.lcase
+                (α := T)
+                (β := List T)
+                x8
+                ([] : List T)
+                (fun (_ : T) (x11 : List T) => x11);
+              let _ : T := Const.lcase
+                (α := T)
+                (β := T)
+                x10
+                (leaf 0)
+                (fun (x11 : T) (_ : List T) => x11);
+              let x12 : List
+                T := Const.lcase
+                (α := T)
+                (β := List T)
+                x10
+                ([] : List T)
+                (fun (_ : T) (x13 : List T) => x13);
+              let x13 : T := Const.lcase
+                (α := T)
+                (β := T)
+                x12
+                (leaf 0)
+                (fun (x13 : T) (_ : List T) => x13);
+              let x14 : List
+                T := Const.lcase
+                (α := T)
+                (β := List T)
+                x12
+                ([] : List T)
+                (fun (_ : T) (x15 : List T) => x15);
+              let x15 : T := Const.lcase
+                (α := T)
+                (β := T)
+                x14
+                (leaf 0)
+                (fun (x15 : T) (_ : List T) => x15);
+              let x16 : List
+                T := Const.lcase
+                (α := T)
+                (β := List T)
+                x14
+                ([] : List T)
+                (fun (_ : T) (x17 : List T) => x17);
+              let x17 : T := Const.lcase
+                (α := T)
+                (β := T)
+                x16
+                (leaf 0)
+                (fun (x17 : T) (_ : List T) => x17);
+              let _ : List
+                T := Const.lcase
+                (α := T)
+                (β := List T)
+                x16
+                ([] : List T)
+                (fun (_ : T) (x19 : List T) => x19);
               ((Const.node
                 (leaf 0)
-                (x7 ::
+                (x9 ::
                   ((Const.node
                     (leaf 0)
                     (Const.foldr
                       (α := T)
                       (β := List T)
-                      (fun (x12 : T) (x13 : List T) =>
-                        ((«Datatype.expandAliases» x0 x12) :: x13))
+                      (fun (x19 : T) (x20 : List T) =>
+                        ((«Datatype.expandAliases» x0 x19) :: x20))
                       ([] : List T)
-                      («Datatype.elems» x9))) ::
-                    (x10 :: («Prelude.single» («Datatype.expandAliases» x0 x11)))))) ::
+                      («Datatype.elems» x13))) ::
+                    (x15 :: («Prelude.single» («Datatype.expandAliases» x0 x17)))))) ::
                 x4)
             else
               x4)
@@ -6490,11 +8100,24 @@ def «Datatype.xpStep» :=
           (Const.eq x6 (leaf 5))).label ≠ 0 then
           let x7 : T := «Datatype.expandExpr» x2 («Datatype.nthTx» x4 (leaf 4));
           if (Const.eq (Const.label x7) (leaf 1)).label ≠ 0 then
-            let x8 : T := Const.child x7 (leaf 0);
-            let x9 : T := «Datatype.sLet»
+            let x8 : List T := Const.children x7;
+            let x9 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x8
+              (leaf 0)
+              (fun (x9 : T) (_ : List T) => x9);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x8
+              ([] : List T)
+              (fun (_ : T) (x11 : List T) => x11);
+            let x11 : T := «Datatype.sLet»
               «Datatype.aR»
               («Datatype.nthTx» x4 (leaf 3))
-              x8
+              x9
               «Datatype.aR»;
             (leaf 1,
               (x2,
@@ -6503,23 +8126,36 @@ def «Datatype.xpStep» :=
                   («Datatype.nthTx» x4 (leaf 1))
                   («Datatype.curry»
                     («Datatype.bindersTx» («Datatype.nthTx» x4 (leaf 2)))
-                    x9)) ::
+                    x11)) ::
                   x3)))
           else
-            «Datatype.xpFail»
+            let _ : List T := Const.children x7; «Datatype.xpFail»
         else
           if («Prelude.and»
             («Datatype.namedTx» x5 «Reader.kwDef»)
             (Const.eq x6 (leaf 3))).label ≠ 0 then
             let x7 : T := «Datatype.expandExpr» x2 («Datatype.nthTx» x4 (leaf 2));
             if (Const.eq (Const.label x7) (leaf 1)).label ≠ 0 then
-              let x8 : T := Const.child x7 (leaf 0);
+              let x8 : List T := Const.children x7;
+              let x9 : T := Const.lcase
+                (α := T)
+                (β := T)
+                x8
+                (leaf 0)
+                (fun (x9 : T) (_ : List T) => x9);
+              let _ : List
+                T := Const.lcase
+                (α := T)
+                (β := List T)
+                x8
+                ([] : List T)
+                (fun (_ : T) (x11 : List T) => x11);
               (leaf 1,
                 (x2,
-                  ((«Datatype.sx3» «Datatype.aDef» («Datatype.nthTx» x4 (leaf 1)) x8) ::
+                  ((«Datatype.sx3» «Datatype.aDef» («Datatype.nthTx» x4 (leaf 1)) x9) ::
                     x3)))
             else
-              «Datatype.xpFail»
+              let _ : List T := Const.children x7; «Datatype.xpFail»
           else
             if («Prelude.and»
               («Datatype.namedTx» x5 «Reader.kwDeftype»)
@@ -6614,6 +8250,205 @@ def «Datatype.expandTyped» :=
               ((x1).1, «Datatype/Txs.reverse» ((x1).2).2));
     x1
 
+def «Datatype.eraseChain» :=
+  fun (x0 : T) (x1 : List T) (x2 : List T) (x3 : T → T → T) =>
+    let x4 : T := Const.foldr
+      (α := T)
+      (β := List T → T)
+      (fun (x4 : T) (x5 : List T → T) (x6 : List T) =>
+        let x7 : T := x3 x4 («Datatype.nthTx» x6 (leaf 0));
+        if (Const.lt (leaf 1) («Datatype/Txs.length» x6)).label ≠ 0 then
+          «Datatype.sIf»
+            («Datatype.sx3»
+              «Datatype.aEq»
+              («Datatype.sx2» «Datatype.aLabel» x0)
+              («Datatype.nthTx» («Datatype.elems» x4) (leaf 0)))
+            x7
+            (x5 («Datatype/Txs.tail» x6))
+        else
+          x7)
+      (fun (x4 : List T) => «Datatype.nthTx» x4 (leaf 0))
+      x1
+      x2;
+    x4
+
+def «Datatype.numOf» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := «Reader.numeral» (Const.children x0);
+                   if («Prelude.isSome» x1).label ≠ 0 then «Prelude.get» x1 else leaf 0);
+    x1
+
+def «Datatype.bindVars» :=
+  fun (x0 : T → T → T) (x1 : T → T → T) (x2 : T) (x3 : T) =>
+    let x4 : T := (let x4 : List T := «Datatype.elems» x2;
+                   Const.foldr
+                     (α := T)
+                     (β := T)
+                     x0
+                     (Const.foldr
+                       (α := T)
+                       (β := T)
+                       x1
+                       x3
+                       («Datatype.elems» («Datatype.nthTx» x4 (leaf 2))))
+                     («Datatype.elems» («Datatype.nthTx» x4 (leaf 1))));
+    x4
+
+def «Datatype.eraseCase» :=
+  fun (x0 : List T) =>
+    let x1 : T := «Datatype.sLet»
+      «Datatype.aS»
+      «Datatype.aT»
+      («Datatype.nthTx» x0 (leaf 1))
+      («Datatype.eraseChain»
+        «Datatype.aS»
+        («Datatype.elems» («Datatype.nthTx» x0 (leaf 2)))
+        («Datatype/Txs.drop» (leaf 3) x0)
+        (fun (x1 : T) (x2 : T) =>
+          «Datatype.sLet»
+            «Datatype.aC»
+            («Datatype.sList» «Datatype.aT»)
+            («Datatype.sx2» «Datatype.aChildren» «Datatype.aS»)
+            («Datatype.bindVars»
+              (fun (x3 : T) (x4 : T) =>
+                «Datatype.sLet»
+                  x3
+                  «Datatype.aT»
+                  («Datatype.sHeadOf» «Datatype.aC»)
+                  («Datatype.sLet»
+                    «Datatype.aC»
+                    («Datatype.sList» «Datatype.aT»)
+                    («Datatype.sTailOf» «Datatype.aC»)
+                    x4))
+              (fun (x3 : T) (x4 : T) =>
+                «Datatype.sLet» x3 («Datatype.sList» «Datatype.aT») «Datatype.aC» x4)
+              x1
+              x2)));
+    x1
+
+def «Datatype.eraseCata» :=
+  fun (x0 : List T) =>
+    let x1 : T := (let x1 : T := «Datatype.nthTx» x0 (leaf 1);
+                   let x2 : T := «Datatype.nthTx» x0 (leaf 3);
+                   let x3 : T := «Datatype.thTy» x1;
+                   «Datatype.sx2»
+                     («Datatype.sx4»
+                       «Datatype.aPara»
+                       x3
+                       («Datatype.sLam2»
+                         «Datatype.aO»
+                         «Datatype.aT»
+                         «Datatype.aK»
+                         («Datatype.sList» x3)
+                         («Datatype.sLam1»
+                           «Datatype.aU»
+                           «Datatype.aUnit»
+                           («Datatype.eraseChain»
+                             «Datatype.aO»
+                             («Datatype.elems» («Datatype.nthTx» x0 (leaf 4)))
+                             («Datatype/Txs.drop» (leaf 5) x0)
+                             (fun (x4 : T) (x5 : T) =>
+                               «Datatype.sLet»
+                                 «Datatype.aQ»
+                                 («Datatype.splitTy» x1)
+                                 («Datatype.sx3»
+                                   «Datatype.aPair»
+                                   («Datatype.sLam1» «Datatype.aU» «Datatype.aUnit» x2)
+                                   «Datatype.aK»)
+                                 («Datatype.sLet»
+                                   «Datatype.aC»
+                                   («Datatype.sList» «Datatype.aT»)
+                                   («Datatype.sx2» «Datatype.aChildren» «Datatype.aO»)
+                                   («Datatype.bindVars»
+                                     (fun (x6 : T) (x7 : T) =>
+                                       let x8 : T := «Datatype.nthTx»
+                                         («Datatype.elems» x6)
+                                         (leaf 0);
+                                       «Datatype.sLet»
+                                         «Datatype.aQ»
+                                         («Datatype.splitTy» x1)
+                                         («Datatype.sx6»
+                                           «Datatype.aLcase»
+                                           x3
+                                           («Datatype.splitTy» x1)
+                                           («Datatype.sx2» «Datatype.aSnd» «Datatype.aQ»)
+                                           («Datatype.sx3»
+                                             «Datatype.aPair»
+                                             («Datatype.sLam1» «Datatype.aU» «Datatype.aUnit» x2)
+                                             («Datatype.sx2» «Datatype.aNil» x3))
+                                           («Datatype.sLam2»
+                                             «Datatype.aH»
+                                             x3
+                                             «Datatype.aTl»
+                                             («Datatype.sList» x3)
+                                             («Datatype.sx3»
+                                               «Datatype.aPair»
+                                               «Datatype.aH»
+                                               «Datatype.aTl»)))
+                                         (if («Datatype.numOf»
+                                           («Datatype.nthTx»
+                                             («Datatype.elems» x6)
+                                             (leaf 1))).label ≠ 0 then
+                                           «Datatype.sLet»
+                                             x8
+                                             x1
+                                             («Datatype.sx2»
+                                               («Datatype.sx2» «Datatype.aFst» «Datatype.aQ»)
+                                               «Datatype.aUnitV»)
+                                             («Datatype.sLet»
+                                               «Datatype.aC»
+                                               («Datatype.sList» «Datatype.aT»)
+                                               («Datatype.sTailOf» «Datatype.aC»)
+                                               x7)
+                                         else
+                                           «Datatype.sLet»
+                                             x8
+                                             «Datatype.aT»
+                                             («Datatype.sHeadOf» «Datatype.aC»)
+                                             («Datatype.sLet»
+                                               «Datatype.aC»
+                                               («Datatype.sList» «Datatype.aT»)
+                                               («Datatype.sTailOf» «Datatype.aC»)
+                                               x7)))
+                                     (fun (x6 : T) (x7 : T) =>
+                                       let x8 : T := «Datatype.nthTx»
+                                         («Datatype.elems» x6)
+                                         (leaf 0);
+                                       if («Datatype.numOf»
+                                         («Datatype.nthTx»
+                                           («Datatype.elems» x6)
+                                           (leaf 1))).label ≠ 0 then
+                                         «Datatype.sLet»
+                                           x8
+                                           («Datatype.sList» x1)
+                                           («Datatype.sx6»
+                                             «Datatype.aFoldr»
+                                             x3
+                                             («Datatype.sList» x1)
+                                             («Datatype.sLam2»
+                                               «Datatype.aH»
+                                               x3
+                                               «Datatype.aA»
+                                               («Datatype.sList» x1)
+                                               («Datatype.sx3»
+                                                 «Datatype.aCons»
+                                                 («Datatype.sx2» «Datatype.aH» «Datatype.aUnitV»)
+                                                 «Datatype.aA»))
+                                             («Datatype.sx2» «Datatype.aNil» x1)
+                                             («Datatype.sx2» «Datatype.aSnd» «Datatype.aQ»))
+                                           x7
+                                       else
+                                         «Datatype.sLet»
+                                           x8
+                                           («Datatype.sList» «Datatype.aT»)
+                                           «Datatype.aC»
+                                           x7)
+                                     x4
+                                     x5))))))
+                       («Datatype.nthTx» x0 (leaf 2)))
+                     «Datatype.aUnitV»);
+    x1
+
 def «Datatype.eraseExpr» :=
   fun (x0 : T) =>
     let x1 : T := Const.para
@@ -6621,15 +8456,8 @@ def «Datatype.eraseExpr» :=
       (fun (x1 : T) (x2 : List (Unit → T)) (_ : Unit) =>
         if (Const.eq (Const.label x1) (leaf 11)).label ≠ 0 then
           let x4 : (Unit → T) ×
-            List
-              (Unit →
-                T) := Const.lcase
-            (α := Unit → T)
-            (β := (Unit → T) × List (Unit → T))
-            x2
-            (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
-            (fun (x4 : Unit → T) (x5 : List (Unit → T)) => (x4, x5));
-          let _ : T := (x4).1 ();
+            List (Unit → T) := (fun (_ : Unit) => leaf 0, x2);
+          let x5 : List T := Const.children x1;
           let x6 : (Unit → T) ×
             List
               (Unit →
@@ -6639,19 +8467,37 @@ def «Datatype.eraseExpr» :=
             (x4).2
             (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
             (fun (x6 : Unit → T) (x7 : List (Unit → T)) => (x6, x7));
-          let x7 : T := (x6).1 (); x7
+          let _ : T := (x6).1 ();
+          let x8 : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x5
+            ([] : List T)
+            (fun (_ : T) (x9 : List T) => x9);
+          let x9 : (Unit → T) ×
+            List
+              (Unit →
+                T) := Const.lcase
+            (α := Unit → T)
+            (β := (Unit → T) × List (Unit → T))
+            (x6).2
+            (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
+            (fun (x9 : Unit → T) (x10 : List (Unit → T)) => (x9, x10));
+          let x10 : T := (x9).1 ();
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x8
+            ([] : List T)
+            (fun (_ : T) (x12 : List T) => x12);
+          x10
         else
           if (Const.eq (Const.label x1) (leaf 12)).label ≠ 0 then
             let x4 : (Unit → T) ×
-              List
-                (Unit →
-                  T) := Const.lcase
-              (α := Unit → T)
-              (β := (Unit → T) × List (Unit → T))
-              x2
-              (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
-              (fun (x4 : Unit → T) (x5 : List (Unit → T)) => (x4, x5));
-            let _ : T := (x4).1 ();
+              List (Unit → T) := (fun (_ : Unit) => leaf 0, x2);
+            let x5 : List T := Const.children x1;
             let x6 : (Unit → T) ×
               List
                 (Unit →
@@ -6661,60 +8507,105 @@ def «Datatype.eraseExpr» :=
               (x4).2
               (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
               (fun (x6 : Unit → T) (x7 : List (Unit → T)) => (x6, x7));
-            let x7 : T := (x6).1 (); x7
+            let _ : T := (x6).1 ();
+            let x8 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x5
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let x9 : (Unit → T) ×
+              List
+                (Unit →
+                  T) := Const.lcase
+              (α := Unit → T)
+              (β := (Unit → T) × List (Unit → T))
+              (x6).2
+              (fun (_ : Unit) => leaf 0, ([] : List (Unit → T)))
+              (fun (x9 : Unit → T) (x10 : List (Unit → T)) => (x9, x10));
+            let x10 : T := (x9).1 ();
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x8
+              ([] : List T)
+              (fun (_ : T) (x12 : List T) => x12);
+            x10
           else
             if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-              let x4 : List
-                T := Const.iter
-                (α := List T)
-                (fun (x4 : List T) =>
-                  Const.lcase
-                    (α := T)
-                    (β := List T)
-                    x4
-                    ([] : List T)
-                    (fun (_ : T) (x6 : List T) => x6))
-                (Const.children x1)
-                (leaf 0);
-              «Typing.tAtom» x4
+              let _ : (Unit → T) ×
+                List (Unit → T) := (fun (_ : Unit) => leaf 0, x2);
+              let x5 : List T := Const.children x1;
+              let x6 : List T := x5; «Typing.tAtom» x6
             else
-              if (Const.eq (Const.label x1) (leaf 2)).label ≠ 0 then
-                let x4 : List
+              if (Const.eq (Const.label x1) (leaf 13)).label ≠ 0 then
+                let x4 : (Unit → T) ×
+                  List (Unit → T) := (fun (_ : Unit) => leaf 0, x2);
+                let _ : List T := Const.children x1;
+                let x6 : List
                   T := Const.foldr
                   (α := Unit → T)
                   (β := List T)
-                  (fun (x4 : Unit → T) (x5 : List T) => ((x4 ()) :: x5))
+                  (fun (x6 : Unit → T) (x7 : List T) => ((x6 ()) :: x7))
                   ([] : List T)
-                  x2;
-                let x5 : T := «Datatype/Txs.length» x4;
-                let x6 : T := «Datatype.nthTx» x4 (leaf 0);
-                if («Prelude.and»
-                  («Datatype.namedTx» x6 «Datatype.kwRep»)
-                  (Const.eq x5 (leaf 2))).label ≠ 0 then
-                  «Datatype.sx1» («Datatype.nthTx» x4 (leaf 1))
-                else
-                  if («Prelude.and»
-                    («Datatype.namedTx» x6 «Datatype.kwDecode»)
-                    (Const.eq x5 (leaf 5))).label ≠ 0 then
-                    «Datatype.sLet»
-                      «Datatype.aE»
-                      «Datatype.aT»
-                      («Datatype.nthTx» x4 (leaf 2))
-                      («Datatype.sIf»
-                        («Datatype.sx2»
-                          («Datatype.memberAtom» («Datatype.nthTx» x4 (leaf 1)))
-                          «Datatype.aE»)
-                        («Datatype.sx2» («Datatype.nthTx» x4 (leaf 3)) «Datatype.aE»)
-                        («Datatype.nthTx» x4 (leaf 4)))
-                  else
-                    if («Prelude.and»
-                      («Datatype.namedTx» x6 «Datatype.kwDatum»)
-                      (Const.eq x5 (leaf 3))).label ≠ 0 then
-                      «Datatype.sx2» «Datatype.aQuote» («Datatype.nthTx» x4 (leaf 2))
-                    else
-                      «Typing.tList» x4
+                  (x4).2;
+                «Datatype.eraseCase» x6
               else
-                «Typing.tx0»)
+                if (Const.eq (Const.label x1) (leaf 14)).label ≠ 0 then
+                  let x4 : (Unit → T) ×
+                    List (Unit → T) := (fun (_ : Unit) => leaf 0, x2);
+                  let _ : List T := Const.children x1;
+                  let x6 : List
+                    T := Const.foldr
+                    (α := Unit → T)
+                    (β := List T)
+                    (fun (x6 : Unit → T) (x7 : List T) => ((x6 ()) :: x7))
+                    ([] : List T)
+                    (x4).2;
+                  «Datatype.eraseCata» x6
+                else
+                  if (Const.eq (Const.label x1) (leaf 2)).label ≠ 0 then
+                    let x4 : (Unit → T) ×
+                      List (Unit → T) := (fun (_ : Unit) => leaf 0, x2);
+                    let _ : List T := Const.children x1;
+                    let x6 : List
+                      T := Const.foldr
+                      (α := Unit → T)
+                      (β := List T)
+                      (fun (x6 : Unit → T) (x7 : List T) => ((x6 ()) :: x7))
+                      ([] : List T)
+                      (x4).2;
+                    let x7 : T := «Datatype/Txs.length» x6;
+                    let x8 : T := «Datatype.nthTx» x6 (leaf 0);
+                    if («Prelude.and»
+                      («Datatype.namedTx» x8 «Datatype.kwRep»)
+                      (Const.eq x7 (leaf 2))).label ≠ 0 then
+                      «Datatype.sx1» («Datatype.nthTx» x6 (leaf 1))
+                    else
+                      if («Prelude.and»
+                        («Datatype.namedTx» x8 «Datatype.kwDecode»)
+                        (Const.eq x7 (leaf 5))).label ≠ 0 then
+                        «Datatype.sLet»
+                          «Datatype.aE»
+                          «Datatype.aT»
+                          («Datatype.nthTx» x6 (leaf 2))
+                          («Datatype.sIf»
+                            («Datatype.sx2»
+                              («Datatype.memberAtom» («Datatype.nthTx» x6 (leaf 1)))
+                              «Datatype.aE»)
+                            («Datatype.sx2» («Datatype.nthTx» x6 (leaf 3)) «Datatype.aE»)
+                            («Datatype.nthTx» x6 (leaf 4)))
+                      else
+                        if («Prelude.and»
+                          («Datatype.namedTx» x8 «Datatype.kwDatum»)
+                          (Const.eq x7 (leaf 3))).label ≠ 0 then
+                          «Datatype.sx2» «Datatype.aQuote» («Datatype.nthTx» x6 (leaf 2))
+                        else
+                          «Typing.tList» x6
+                  else
+                    «Typing.tx0»)
       x0
       ();
     x1
@@ -6723,31 +8614,34 @@ def «Datatype.eraseForm» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 10)).label ≠ 0 then
-                     let x2 : T := Const.child x1 (leaf 0);
-                     «Datatype.sx3» «Datatype.aDeftype» x2 «Datatype.aT»
+                     let x2 : List T := Const.children x1;
+                     let x3 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     «Datatype.sx3» «Datatype.aDeftype» x3 «Datatype.aT»
                    else
                      if (Const.eq (Const.label x1) (leaf 2)).label ≠ 0 then
-                       let x2 : List
-                         T := Const.iter
-                         (α := List T)
-                         (fun (x2 : List T) =>
-                           Const.lcase
-                             (α := T)
-                             (β := List T)
-                             x2
-                             ([] : List T)
-                             (fun (_ : T) (x4 : List T) => x4))
-                         (Const.children x1)
-                         (leaf 0);
+                       let x2 : List T := Const.children x1;
+                       let x3 : List T := x2;
                        if («Prelude.and»
-                         (Const.eq («Datatype/Txs.length» x2) (leaf 3))
+                         (Const.eq («Datatype/Txs.length» x3) (leaf 3))
                          («Datatype.namedTx»
-                           («Datatype.nthTx» x2 (leaf 0))
+                           («Datatype.nthTx» x3 (leaf 0))
                            «Reader.kwDef»)).label ≠ 0 then
                          «Datatype.sx3»
-                           («Datatype.nthTx» x2 (leaf 0))
-                           («Datatype.nthTx» x2 (leaf 1))
-                           («Datatype.eraseExpr» («Datatype.nthTx» x2 (leaf 2)))
+                           («Datatype.nthTx» x3 (leaf 0))
+                           («Datatype.nthTx» x3 (leaf 1))
+                           («Datatype.eraseExpr» («Datatype.nthTx» x3 (leaf 2)))
                        else
                          x0
                      else
@@ -6760,31 +8654,34 @@ def «Datatype.expandChecked» :=
                    if ((x1).1).label ≠ 0 then
                      let x2 : T := «Typing.checkForms» (x1).2;
                      if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                       let _ : T := Const.child x2 (leaf 0); «Datatype/OTx.nothing»
+                       let x3 : List T := Const.children x2;
+                       let _ : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x3
+                         (leaf 0)
+                         (fun (x4 : T) (_ : List T) => x4);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x3
+                         ([] : List T)
+                         (fun (_ : T) (x6 : List T) => x6);
+                       «Datatype/OTx.nothing»
                      else
+                       let _ : List T := Const.children x2;
                        «Datatype/OTx.just»
                          («Typing.tList»
                            (Const.foldr
                              (α := T)
                              (β := List T)
-                             (fun (x3 : T) (x4 : List T) =>
-                               let x5 : T := x3;
-                               if (Const.eq (Const.label x5) (leaf 15)).label ≠ 0 then
-                                 let _ : List
-                                   T := Const.iter
-                                   (α := List T)
-                                   (fun (x6 : List T) =>
-                                     Const.lcase
-                                       (α := T)
-                                       (β := List T)
-                                       x6
-                                       ([] : List T)
-                                       (fun (_ : T) (x8 : List T) => x8))
-                                   (Const.children x5)
-                                   (leaf 0);
-                                 x4
+                             (fun (x4 : T) (x5 : List T) =>
+                               let x6 : T := x4;
+                               if (Const.eq (Const.label x6) (leaf 15)).label ≠ 0 then
+                                 let x7 : List T := Const.children x6; let _ : List T := x7; x5
                                else
-                                 ((«Datatype.eraseForm» x3) :: x4))
+                                 ((«Datatype.eraseForm» x4) :: x5))
                              ([] : List T)
                              (x1).2))
                    else
@@ -6798,10 +8695,23 @@ def «Datatype.expandProgram» :=
                      let x2 : T := x1;
                      let x3 : T := «Datatype.expandChecked» («Datatype.elems» x2);
                      if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-                       let x4 : T := Const.child x3 (leaf 0);
-                       «Prelude.some» (Const.node (leaf 0) (Const.children x4))
+                       let x4 : List T := Const.children x3;
+                       let x5 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x4
+                         (leaf 0)
+                         (fun (x5 : T) (_ : List T) => x5);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x4
+                         ([] : List T)
+                         (fun (_ : T) (x7 : List T) => x7);
+                       «Prelude.some» (Const.node (leaf 0) (Const.children x5))
                      else
-                       «Prelude.none»
+                       let _ : List T := Const.children x3; «Prelude.none»
                    else
                      «Prelude.none»);
     x1
@@ -6815,9 +8725,23 @@ def «Datatype.typeErrorOfForms» :=
                      if ((x3).1).label ≠ 0 then
                        let x4 : T := «Typing.checkForms» (x3).2;
                        if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-                         let x5 : T := Const.child x4 (leaf 0); x5
+                         let x5 : List T := Const.children x4;
+                         let x6 : T := Const.lcase
+                           (α := T)
+                           (β := T)
+                           x5
+                           (leaf 0)
+                           (fun (x6 : T) (_ : List T) => x6);
+                         let _ : List
+                           T := Const.lcase
+                           (α := T)
+                           (β := List T)
+                           x5
+                           ([] : List T)
+                           (fun (_ : T) (x8 : List T) => x8);
+                         x6
                        else
-                         Const.node (leaf 0) ([] : List T)
+                         let _ : List T := Const.children x4; Const.node (leaf 0) ([] : List T)
                      else
                        Const.node (leaf 0) ([] : List T)
                    else
@@ -7420,7 +9344,7 @@ def «Modules.paramVar» :=
   fun (x0 : T) =>
     Const.node
       (leaf 1)
-      ((leaf 37) :: ((leaf 109) :: («Datatype.decimalChars» x0)))
+      ((leaf 37) :: ((leaf 109) :: («Typing.decimalChars» x0)))
 
 def «Modules.paramVars» :=
   fun (x0 : List T) =>
@@ -7871,9 +9795,7 @@ def «Modules.aArrowM» :=
 
 def «Modules.freshArg» :=
   fun (x0 : T) (x1 : T) =>
-    Const.node
-      (leaf 1)
-      ((leaf 37) :: (x0 :: («Datatype.decimalChars» x1)))
+    Const.node (leaf 1) ((leaf 37) :: (x0 :: («Typing.decimalChars» x1)))
 
 def «Modules.genericArgs» :=
   fun (x0 : List T) =>
@@ -8291,7 +10213,7 @@ def «Recognize.s4» :=
     «Recognize.sx» (x0 :: (x1 :: (x2 :: («Prelude.single» x3))))
 
 def «Recognize.num» :=
-  fun (x0 : T) => Const.node (leaf 1) («Datatype.decimalChars» x0)
+  fun (x0 : T) => Const.node (leaf 1) («Typing.decimalChars» x0)
 
 def «Recognize.pow2» :=
   fun (x0 : T) =>
@@ -9509,25 +11431,13 @@ def «LeanBackend.layout» :=
                                        (T × List T) →
                                          T ×
                                            List
-                                             T)) := Const.lcase
-                           (α := Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
-                           (β := (Unit →
-                             (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
-                             List (Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
-                           x2
-                           (fun (_ : Unit) =>
-                             ((leaf 0, (leaf 0, leaf 0)),
-                               fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
-                                 (leaf 0, ([] : List T))),
-                             ([] : List (Unit →
-                               (T × (T × T)) × (T → T → T → (T × List T) → T × List T))))
-                           (fun (x4 : Unit →
-                                (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
-                              (x5 : List
-                                (Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T))) =>
-                             (x4, x5));
-                         let x5 : T := Const.child x1 (leaf 0);
-                         let _ : (Unit →
+                                             T)) := (fun (_ : Unit) =>
+                           ((leaf 0, (leaf 0, leaf 0)),
+                             fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
+                               (leaf 0, ([] : List T))),
+                           x2);
+                         let x5 : List T := Const.children x1;
+                         let x6 : (Unit →
                            (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
                            List
                              (Unit →
@@ -9555,29 +11465,88 @@ def «LeanBackend.layout» :=
                               (x7 : List
                                 (Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T))) =>
                              (x6, x7));
-                         let x7 : T := Const.child x1 (leaf 1);
-                         («LeanBackend.ms» x5 (leaf 0) x5,
-                           fun (_ : T) (_ : T) (_ : T) (x11 : T × List T) =>
-                             (Const.add (x11).1 x5,
+                         let x7 : T := Const.lcase
+                           (α := T)
+                           (β := T)
+                           x5
+                           (leaf 0)
+                           (fun (x7 : T) (_ : List T) => x7);
+                         let x8 : List
+                           T := Const.lcase
+                           (α := T)
+                           (β := List T)
+                           x5
+                           ([] : List T)
+                           (fun (_ : T) (x9 : List T) => x9);
+                         let _ : (Unit →
+                           (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
+                           List
+                             (Unit →
+                               (T × (T × T)) ×
+                                 (T →
+                                   T →
+                                     T →
+                                       (T × List T) →
+                                         T ×
+                                           List
+                                             T)) := Const.lcase
+                           (α := Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
+                           (β := (Unit →
+                             (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
+                             List (Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
+                           (x6).2
+                           (fun (_ : Unit) =>
+                             ((leaf 0, (leaf 0, leaf 0)),
+                               fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
+                                 (leaf 0, ([] : List T))),
+                             ([] : List (Unit →
+                               (T × (T × T)) × (T → T → T → (T × List T) → T × List T))))
+                           (fun (x9 : Unit →
+                                (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
+                              (x10 : List
+                                (Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T))) =>
+                             (x9, x10));
+                         let x10 : T := Const.lcase
+                           (α := T)
+                           (β := T)
+                           x8
+                           (leaf 0)
+                           (fun (x10 : T) (_ : List T) => x10);
+                         let _ : List
+                           T := Const.lcase
+                           (α := T)
+                           (β := List T)
+                           x8
+                           ([] : List T)
+                           (fun (_ : T) (x12 : List T) => x12);
+                         («LeanBackend.ms» x7 (leaf 0) x7,
+                           fun (_ : T) (_ : T) (_ : T) (x15 : T × List T) =>
+                             (Const.add (x15).1 x7,
                                «LeanBackend.revOnto»
-                                 (let x12 : T := x7;
-                                  let x13 : List
-                                    T := Const.iter
-                                    (α := List T)
-                                    (fun (x13 : List T) =>
-                                      Const.lcase
-                                        (α := T)
-                                        (β := List T)
-                                        x13
-                                        ([] : List T)
-                                        (fun (_ : T) (x15 : List T) => x15))
-                                    (Const.children x12)
-                                    (leaf 0);
-                                  x13)
-                                 (x11).2))
+                                 (let x16 : T := x10;
+                                  let x17 : List T := Const.children x16;
+                                  let x18 : List T := x17; x18)
+                                 (x15).2))
                        else
                          if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                           let x4 : List
+                           let x4 : (Unit →
+                             (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
+                             List
+                               (Unit →
+                                 (T × (T × T)) ×
+                                   (T →
+                                     T →
+                                       T →
+                                         (T × List T) →
+                                           T ×
+                                             List
+                                               T)) := (fun (_ : Unit) =>
+                             ((leaf 0, (leaf 0, leaf 0)),
+                               fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
+                                 (leaf 0, ([] : List T))),
+                             x2);
+                           let _ : List T := Const.children x1;
+                           let x6 : List
                              ((T × (T × T)) ×
                                (T →
                                  T →
@@ -9588,23 +11557,40 @@ def «LeanBackend.layout» :=
                                            T)) := Const.foldr
                              (α := Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
                              (β := List ((T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
-                             (fun (x4 : Unit →
+                             (fun (x6 : Unit →
                                   (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
-                                (x5 : List
+                                (x7 : List
                                   ((T × (T × T)) × (T → T → T → (T × List T) → T × List T))) =>
-                               ((x4 ()) :: x5))
+                               ((x6 ()) :: x7))
                              ([] : List ((T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
-                             x2;
+                             (x4).2;
                            Const.foldr
                              (α := (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
                              (β := (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
                              «LeanBackend.catWP»
                              («LeanBackend.ms» (leaf 0) (leaf 0) (leaf 0),
-                               fun (_ : T) (_ : T) (_ : T) (x8 : T × List T) => x8)
-                             x4
+                               fun (_ : T) (_ : T) (_ : T) (x10 : T × List T) => x10)
+                             x6
                          else
                            if (Const.eq (Const.label x1) (leaf 2)).label ≠ 0 then
                              let x4 : (Unit →
+                               (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
+                               List
+                                 (Unit →
+                                   (T × (T × T)) ×
+                                     (T →
+                                       T →
+                                         T →
+                                           (T × List T) →
+                                             T ×
+                                               List
+                                                 T)) := (fun (_ : Unit) =>
+                               ((leaf 0, (leaf 0, leaf 0)),
+                                 fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
+                                   (leaf 0, ([] : List T))),
+                               x2);
+                             let x5 : List T := Const.children x1;
+                             let x6 : (Unit →
                                (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
                                List
                                  (Unit →
@@ -9621,35 +11607,59 @@ def «LeanBackend.layout» :=
                                  (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
                                  List
                                    (Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
-                               x2
+                               (x4).2
                                (fun (_ : Unit) =>
                                  ((leaf 0, (leaf 0, leaf 0)),
                                    fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
                                      (leaf 0, ([] : List T))),
                                  ([] : List (Unit →
                                    (T × (T × T)) × (T → T → T → (T × List T) → T × List T))))
-                               (fun (x4 : Unit →
+                               (fun (x6 : Unit →
                                     (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
-                                  (x5 : List
+                                  (x7 : List
                                     (Unit →
                                       (T × (T × T)) × (T → T → T → (T × List T) → T × List T))) =>
-                                 (x4, x5));
-                             let x5 : (T × (T × T)) ×
-                               (T → T → T → (T × List T) → T × List T) := (x4).1 ();
-                             ((x5).1,
-                               fun (x6 : T) (x7 : T) (x8 : T) (x9 : T × List T) =>
-                                 (x5).2 (Const.add x6 (leaf 2)) x7 x8 x9)
+                                 (x6, x7));
+                             let x7 : (T × (T × T)) ×
+                               (T → T → T → (T × List T) → T × List T) := (x6).1 ();
+                             let _ : List
+                               T := Const.lcase
+                               (α := T)
+                               (β := List T)
+                               x5
+                               ([] : List T)
+                               (fun (_ : T) (x9 : List T) => x9);
+                             ((x7).1,
+                               fun (x9 : T) (x10 : T) (x11 : T) (x12 : T × List T) =>
+                                 (x7).2 (Const.add x9 (leaf 2)) x10 x11 x12)
                            else
                              if (Const.eq (Const.label x1) (leaf 3)).label ≠ 0 then
+                               let _ : (Unit →
+                                 (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
+                                 List
+                                   (Unit →
+                                     (T × (T × T)) ×
+                                       (T →
+                                         T →
+                                           T →
+                                             (T × List T) →
+                                               T ×
+                                                 List
+                                                   T)) := (fun (_ : Unit) =>
+                                 ((leaf 0, (leaf 0, leaf 0)),
+                                   fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
+                                     (leaf 0, ([] : List T))),
+                                 x2);
+                               let _ : List T := Const.children x1;
                                («LeanBackend.ms» (leaf 1) (leaf 1) (leaf 0),
-                                 fun (x4 : T) (x5 : T) (_ : T) (x7 : T × List T) =>
-                                   if (x5).label ≠ 0 then
-                                     (Const.add (x7).1 (leaf 1), ((leaf 32) :: (x7).2))
+                                 fun (x6 : T) (x7 : T) (_ : T) (x9 : T × List T) =>
+                                   if (x7).label ≠ 0 then
+                                     (Const.add (x9).1 (leaf 1), ((leaf 32) :: (x9).2))
                                    else
-                                     (x4,
+                                     (x6,
                                        «LeanBackend.revOnto»
-                                         («Prelude.replicate» x4 (leaf 32))
-                                         ((leaf 10) :: (x7).2)))
+                                         («Prelude.replicate» x6 (leaf 32))
+                                         ((leaf 10) :: (x9).2)))
                              else
                                if (Const.eq (Const.label x1) (leaf 4)).label ≠ 0 then
                                  let x4 : (Unit →
@@ -9663,54 +11673,13 @@ def «LeanBackend.layout» :=
                                                (T × List T) →
                                                  T ×
                                                    List
-                                                     T)) := Const.lcase
-                                   (α := Unit →
-                                     (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
-                                   (β := (Unit →
-                                     (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
-                                     List
-                                       (Unit →
-                                         (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
-                                   x2
-                                   (fun (_ : Unit) =>
-                                     ((leaf 0, (leaf 0, leaf 0)),
-                                       fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
-                                         (leaf 0, ([] : List T))),
-                                     ([] : List (Unit →
-                                       (T × (T × T)) × (T → T → T → (T × List T) → T × List T))))
-                                   (fun (x4 : Unit →
-                                        (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
-                                      (x5 : List
-                                        (Unit →
-                                          (T × (T × T)) ×
-                                            (T → T → T → (T × List T) → T × List T))) =>
-                                     (x4, x5));
-                                 let x5 : (T × (T × T)) ×
-                                   (T → T → T → (T × List T) → T × List T) := (x4).1 ();
-                                 («LeanBackend.ms»
-                                   («LeanBackend.wOf» x5)
-                                   (leaf 0)
-                                   («LeanBackend.wOf» x5),
-                                   fun (x6 : T) (x7 : T) (x8 : T) (x9 : T × List T) =>
-                                     (x5).2
-                                       x6
-                                       («Prelude.or»
-                                         x7
-                                         («Prelude.and»
-                                           (Const.lt
-                                             (Const.add
-                                               (x9).1
-                                               (Const.add («LeanBackend.wOf» x5) x8))
-                                             (leaf 101))
-                                           (Const.lt
-                                             (Const.add
-                                               (Const.sub (x9).1 x6)
-                                               (Const.add («LeanBackend.wOf» x5) x8))
-                                             (leaf 71))))
-                                       x8
-                                       x9)
-                               else
-                                 let x4 : (Unit →
+                                                     T)) := (fun (_ : Unit) =>
+                                   ((leaf 0, (leaf 0, leaf 0)),
+                                     fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
+                                       (leaf 0, ([] : List T))),
+                                   x2);
+                                 let x5 : List T := Const.children x1;
+                                 let x6 : (Unit →
                                    (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
                                    List
                                      (Unit →
@@ -9729,25 +11698,114 @@ def «LeanBackend.layout» :=
                                      List
                                        (Unit →
                                          (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
-                                   x2
+                                   (x4).2
                                    (fun (_ : Unit) =>
                                      ((leaf 0, (leaf 0, leaf 0)),
                                        fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
                                          (leaf 0, ([] : List T))),
                                      ([] : List (Unit →
                                        (T × (T × T)) × (T → T → T → (T × List T) → T × List T))))
-                                   (fun (x4 : Unit →
+                                   (fun (x6 : Unit →
                                         (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
-                                      (x5 : List
+                                      (x7 : List
                                         (Unit →
                                           (T × (T × T)) ×
                                             (T → T → T → (T × List T) → T × List T))) =>
-                                     (x4, x5));
-                                 let x5 : (T × (T × T)) ×
-                                   (T → T → T → (T × List T) → T × List T) := (x4).1 ();
-                                 ((x5).1,
-                                   fun (_ : T) (x7 : T) (x8 : T) (x9 : T × List T) =>
-                                     (x5).2 (x9).1 x7 x8 x9))
+                                     (x6, x7));
+                                 let x7 : (T × (T × T)) ×
+                                   (T → T → T → (T × List T) → T × List T) := (x6).1 ();
+                                 let _ : List
+                                   T := Const.lcase
+                                   (α := T)
+                                   (β := List T)
+                                   x5
+                                   ([] : List T)
+                                   (fun (_ : T) (x9 : List T) => x9);
+                                 («LeanBackend.ms»
+                                   («LeanBackend.wOf» x7)
+                                   (leaf 0)
+                                   («LeanBackend.wOf» x7),
+                                   fun (x9 : T) (x10 : T) (x11 : T) (x12 : T × List T) =>
+                                     (x7).2
+                                       x9
+                                       («Prelude.or»
+                                         x10
+                                         («Prelude.and»
+                                           (Const.lt
+                                             (Const.add
+                                               (x12).1
+                                               (Const.add («LeanBackend.wOf» x7) x11))
+                                             (leaf 101))
+                                           (Const.lt
+                                             (Const.add
+                                               (Const.sub (x12).1 x9)
+                                               (Const.add («LeanBackend.wOf» x7) x11))
+                                             (leaf 71))))
+                                       x11
+                                       x12)
+                               else
+                                 let x4 : (Unit →
+                                   (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
+                                   List
+                                     (Unit →
+                                       (T × (T × T)) ×
+                                         (T →
+                                           T →
+                                             T →
+                                               (T × List T) →
+                                                 T ×
+                                                   List
+                                                     T)) := (fun (_ : Unit) =>
+                                   ((leaf 0, (leaf 0, leaf 0)),
+                                     fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
+                                       (leaf 0, ([] : List T))),
+                                   x2);
+                                 let x5 : List T := Const.children x1;
+                                 let x6 : (Unit →
+                                   (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
+                                   List
+                                     (Unit →
+                                       (T × (T × T)) ×
+                                         (T →
+                                           T →
+                                             T →
+                                               (T × List T) →
+                                                 T ×
+                                                   List
+                                                     T)) := Const.lcase
+                                   (α := Unit →
+                                     (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
+                                   (β := (Unit →
+                                     (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
+                                     List
+                                       (Unit →
+                                         (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
+                                   (x4).2
+                                   (fun (_ : Unit) =>
+                                     ((leaf 0, (leaf 0, leaf 0)),
+                                       fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
+                                         (leaf 0, ([] : List T))),
+                                     ([] : List (Unit →
+                                       (T × (T × T)) × (T → T → T → (T × List T) → T × List T))))
+                                   (fun (x6 : Unit →
+                                        (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
+                                      (x7 : List
+                                        (Unit →
+                                          (T × (T × T)) ×
+                                            (T → T → T → (T × List T) → T × List T))) =>
+                                     (x6, x7));
+                                 let x7 : (T × (T × T)) ×
+                                   (T → T → T → (T × List T) → T × List T) := (x6).1 ();
+                                 let _ : List
+                                   T := Const.lcase
+                                   (α := T)
+                                   (β := List T)
+                                   x5
+                                   ([] : List T)
+                                   (fun (_ : T) (x9 : List T) => x9);
+                                 ((x7).1,
+                                   fun (_ : T) (x10 : T) (x11 : T) (x12 : T × List T) =>
+                                     (x7).2 (x12).1 x10 x11 x12))
                      x0
                      ();
                    Const.node
@@ -9842,92 +11900,176 @@ def «LeanBackend.ap» :=
 def «LeanBackend.binderDocs» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let x2 : List
-                     T := Const.iter
-                     (α := List T)
-                     (fun (x2 : List T) =>
-                       Const.lcase
-                         (α := T)
-                         (β := List T)
-                         x2
-                         ([] : List T)
-                         (fun (_ : T) (x4 : List T) => x4))
-                     (Const.children x1)
-                     (leaf 0);
+                   let x2 : List T := Const.children x1;
+                   let x3 : List T := x2;
                    «LeanBackend.joinWith»
                      «LeanBackend.line»
                      (Const.foldr
                        (α := T)
                        (β := List T)
-                       (fun (x3 : T) (x4 : List T) =>
-                         let x5 : T := x3;
-                         let x6 : T := Const.child x5 (leaf 0);
-                         let x7 : T := Const.child x5 (leaf 1);
+                       (fun (x4 : T) (x5 : List T) =>
+                         let x6 : T := x4;
+                         let x7 : List T := Const.children x6;
+                         let x8 : T := Const.lcase
+                           (α := T)
+                           (β := T)
+                           x7
+                           (leaf 0)
+                           (fun (x8 : T) (_ : List T) => x8);
+                         let x9 : List
+                           T := Const.lcase
+                           (α := T)
+                           (β := List T)
+                           x7
+                           ([] : List T)
+                           (fun (_ : T) (x10 : List T) => x10);
+                         let x10 : T := Const.lcase
+                           (α := T)
+                           (β := T)
+                           x9
+                           (leaf 0)
+                           (fun (x10 : T) (_ : List T) => x10);
+                         let _ : List
+                           T := Const.lcase
+                           (α := T)
+                           (β := List T)
+                           x9
+                           ([] : List T)
+                           (fun (_ : T) (x12 : List T) => x12);
                          ((«LeanBackend.cat5»
                            «LeanBackend.tLp»
-                           x6
+                           x8
                            «LeanBackend.tColon»
-                           x7
+                           x10
                            «LeanBackend.tRp») ::
-                           x4))
+                           x5))
                        ([] : List T)
-                       x2));
+                       x3));
     x1
 
 def «LeanBackend.shDoc» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 0)).label ≠ 0 then
-                     let x2 : T := Const.child x1 (leaf 0); x2
+                     let x2 : List T := Const.children x1;
+                     let x3 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     x3
                    else
                      if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                       let x2 : T := Const.child x1 (leaf 0); x2
+                       let x2 : List T := Const.children x1;
+                       let x3 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x2
+                         (leaf 0)
+                         (fun (x3 : T) (_ : List T) => x3);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x2
+                         ([] : List T)
+                         (fun (_ : T) (x5 : List T) => x5);
+                       x3
                      else
                        if (Const.eq (Const.label x1) (leaf 2)).label ≠ 0 then
-                         let x2 : T := Const.child x1 (leaf 0);
-                         let x3 : T := Const.child x1 (leaf 1);
+                         let x2 : List T := Const.children x1;
+                         let x3 : T := Const.lcase
+                           (α := T)
+                           (β := T)
+                           x2
+                           (leaf 0)
+                           (fun (x3 : T) (_ : List T) => x3);
+                         let x4 : List
+                           T := Const.lcase
+                           (α := T)
+                           (β := List T)
+                           x2
+                           ([] : List T)
+                           (fun (_ : T) (x5 : List T) => x5);
+                         let x5 : T := Const.lcase
+                           (α := T)
+                           (β := T)
+                           x4
+                           (leaf 0)
+                           (fun (x5 : T) (_ : List T) => x5);
+                         let _ : List
+                           T := Const.lcase
+                           (α := T)
+                           (β := List T)
+                           x4
+                           ([] : List T)
+                           (fun (_ : T) (x7 : List T) => x7);
                          «LeanBackend.grp»
                            («LeanBackend.cat2»
                              («LeanBackend.align»
                                («LeanBackend.grp»
                                  («LeanBackend.cat3»
                                    «LeanBackend.tFun»
-                                   («LeanBackend.nest» («LeanBackend.binderDocs» x2))
+                                   («LeanBackend.nest» («LeanBackend.binderDocs» x3))
                                    «LeanBackend.tDoubleArrow»)))
-                             («LeanBackend.indented» x3))
+                             («LeanBackend.indented» x5))
                        else
-                         let x2 : T := Const.child x1 (leaf 0);
-                         let x3 : List
-                           T := Const.iter
-                           (α := List T)
-                           (fun (x3 : List T) =>
-                             Const.lcase
-                               (α := T)
-                               (β := List T)
-                               x3
-                               ([] : List T)
-                               (fun (_ : T) (x5 : List T) => x5))
-                           (Const.children x1)
-                           (leaf 1);
+                         let x2 : List T := Const.children x1;
+                         let x3 : T := Const.lcase
+                           (α := T)
+                           (β := T)
+                           x2
+                           (leaf 0)
+                           (fun (x3 : T) (_ : List T) => x3);
+                         let x4 : List
+                           T := Const.lcase
+                           (α := T)
+                           (β := List T)
+                           x2
+                           ([] : List T)
+                           (fun (_ : T) (x5 : List T) => x5);
+                         let x5 : List T := x4;
                          «LeanBackend.grp»
                            («LeanBackend.cat2»
-                             x2
+                             x3
                              («LeanBackend.nest»
                                («LeanBackend.cat»
                                  (Const.foldr
                                    (α := T)
                                    (β := List T)
-                                   (fun (x4 : T) (x5 : List T) =>
-                                     («LeanBackend.line» :: (x4 :: x5)))
+                                   (fun (x6 : T) (x7 : List T) =>
+                                     («LeanBackend.line» :: (x6 :: x7)))
                                    ([] : List T)
-                                   x3)))));
+                                   x5)))));
     x1
 
 def «LeanBackend.argDoc» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 0)).label ≠ 0 then
-                     let x2 : T := Const.child x1 (leaf 0); x2
+                     let x2 : List T := Const.children x1;
+                     let x3 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     x3
                    else
                      «LeanBackend.cat3»
                        «LeanBackend.tLp»
@@ -9939,23 +12081,38 @@ def «LeanBackend.valDoc» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 0)).label ≠ 0 then
-                     let x2 : T := Const.child x1 (leaf 0); x2
+                     let x2 : List T := Const.children x1;
+                     let x3 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     x3
                    else
                      if (Const.eq (Const.label x1) (leaf 3)).label ≠ 0 then
-                       let _ : T := Const.child x1 (leaf 0);
-                       let _ : List
-                         T := Const.iter
-                         (α := List T)
-                         (fun (x3 : List T) =>
-                           Const.lcase
-                             (α := T)
-                             (β := List T)
-                             x3
-                             ([] : List T)
-                             (fun (_ : T) (x5 : List T) => x5))
-                         (Const.children x1)
-                         (leaf 1);
-                       «LeanBackend.shDoc» x0
+                       let x2 : List T := Const.children x1;
+                       let _ : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x2
+                         (leaf 0)
+                         (fun (x3 : T) (_ : List T) => x3);
+                       let x4 : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x2
+                         ([] : List T)
+                         (fun (_ : T) (x5 : List T) => x5);
+                       let _ : List T := x4; «LeanBackend.shDoc» x0
                      else
                        «LeanBackend.cat3»
                          «LeanBackend.tLp»
@@ -9967,8 +12124,21 @@ def «LeanBackend.opDoc» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let x2 : T := Const.child x1 (leaf 0);
-                     «LeanBackend.cat3» «LeanBackend.tLp» x2 «LeanBackend.tRp»
+                     let x2 : List T := Const.children x1;
+                     let x3 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     «LeanBackend.cat3» «LeanBackend.tLp» x3 «LeanBackend.tRp»
                    else
                      «LeanBackend.shDoc» x0);
     x1
@@ -10351,7 +12521,7 @@ def «LeanBackend.tyDoc» :=
 def «LeanBackend.varDoc» :=
   fun (x0 : T) =>
     let x1 : T := «LeanBackend.text»
-      ((leaf 120) :: («Datatype.decimalChars» x0));
+      ((leaf 120) :: («Typing.decimalChars» x0));
     x1
 
 def «LeanBackend.namedArg» :=
@@ -10373,7 +12543,7 @@ def «LeanBackend.quoteDoc» :=
           «LeanBackend.grp»
             («LeanBackend.cat»
               («LeanBackend.tMk» ::
-                ((«LeanBackend.text» («Datatype.decimalChars» x1)) ::
+                ((«LeanBackend.text» («Typing.decimalChars» x1)) ::
                   («LeanBackend.tSpLb» ::
                     ((«LeanBackend.nest»
                       («LeanBackend.joinWith»
@@ -10383,7 +12553,7 @@ def «LeanBackend.quoteDoc» :=
         else
           «LeanBackend.cat2»
             «LeanBackend.tLeaf»
-            («LeanBackend.text» («Datatype.decimalChars» x1)))
+            («LeanBackend.text» («Typing.decimalChars» x1)))
       x0;
     x1
 
@@ -10394,15 +12564,40 @@ def «LeanBackend.letDoc» :=
                      («LeanBackend.param» «LeanBackend.tUnder» «LeanBackend.tUnder»)
                      x0
                      (leaf 0);
-                   let x5 : T := Const.child x4 (leaf 0);
-                   let x6 : T := Const.child x4 (leaf 1);
+                   let x5 : List T := Const.children x4;
+                   let x6 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x5
+                     (leaf 0)
+                     (fun (x6 : T) (_ : List T) => x6);
+                   let x7 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x5
+                     ([] : List T)
+                     (fun (_ : T) (x8 : List T) => x8);
+                   let x8 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x7
+                     (leaf 0)
+                     (fun (x8 : T) (_ : List T) => x8);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x7
+                     ([] : List T)
+                     (fun (_ : T) (x10 : List T) => x10);
                    «LeanBackend.align»
                      («LeanBackend.grp»
                        («LeanBackend.cat»
                          («LeanBackend.tLet» ::
-                           (x5 ::
+                           (x6 ::
                              («LeanBackend.tColon» ::
-                               (x6 ::
+                               (x8 ::
                                  («LeanBackend.tColonEq» ::
                                    ((«LeanBackend.valDoc» x2) ::
                                      («LeanBackend.tSemi» ::
@@ -10425,9 +12620,27 @@ def «LeanBackend.emTerm» :=
       (α := Unit → List T × (T → T))
       (fun (x2 : T) (x3 : List (Unit → List T × (T → T))) (_ : Unit) =>
         if (Const.eq (Const.label x2) (leaf 0)).label ≠ 0 then
+          let _ : (Unit → List T × (T → T)) ×
+            List
+              (Unit →
+                List T ×
+                  (T →
+                    T)) := (fun (_ : Unit) =>
+            (([] : List T), fun (_ : T) => leaf 0),
+            x3);
+          let _ : List T := Const.children x2;
           «LeanBackend.closed» «LeanBackend.tT»
         else
           if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+            let _ : (Unit → List T × (T → T)) ×
+              List
+                (Unit →
+                  List T ×
+                    (T →
+                      T)) := (fun (_ : Unit) =>
+              (([] : List T), fun (_ : T) => leaf 0),
+              x3);
+            let _ : List T := Const.children x2;
             «LeanBackend.closed» «LeanBackend.tUnitTy»
           else
             if (Const.eq (Const.label x2) (leaf 2)).label ≠ 0 then
@@ -10436,16 +12649,10 @@ def «LeanBackend.emTerm» :=
                   (Unit →
                     List T ×
                       (T →
-                        T)) := Const.lcase
-                (α := Unit → List T × (T → T))
-                (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
-                x3
-                (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
-                  ([] : List (Unit → List T × (T → T))))
-                (fun (x5 : Unit → List T × (T → T))
-                   (x6 : List (Unit → List T × (T → T))) =>
-                  (x5, x6));
-              let x6 : List T × (T → T) := (x5).1 ();
+                        T)) := (fun (_ : Unit) =>
+                (([] : List T), fun (_ : T) => leaf 0),
+                x3);
+              let x6 : List T := Const.children x2;
               let x7 : (Unit → List T × (T → T)) ×
                 List
                   (Unit →
@@ -10461,13 +12668,42 @@ def «LeanBackend.emTerm» :=
                    (x8 : List (Unit → List T × (T → T))) =>
                   (x7, x8));
               let x8 : List T × (T → T) := (x7).1 ();
+              let x9 : List
+                T := Const.lcase
+                (α := T)
+                (β := List T)
+                x6
+                ([] : List T)
+                (fun (_ : T) (x10 : List T) => x10);
+              let x10 : (Unit → List T × (T → T)) ×
+                List
+                  (Unit →
+                    List T ×
+                      (T →
+                        T)) := Const.lcase
+                (α := Unit → List T × (T → T))
+                (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
+                (x7).2
+                (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                  ([] : List (Unit → List T × (T → T))))
+                (fun (x10 : Unit → List T × (T → T))
+                   (x11 : List (Unit → List T × (T → T))) =>
+                  (x10, x11));
+              let x11 : List T × (T → T) := (x10).1 ();
+              let _ : List
+                T := Const.lcase
+                (α := T)
+                (β := List T)
+                x9
+                ([] : List T)
+                (fun (_ : T) (x13 : List T) => x13);
               «LeanBackend.closedSh»
                 («LeanBackend.compound»
                   («LeanBackend.grp»
                     («LeanBackend.cat3»
-                      («LeanBackend.opDoc» ((x6).2 (leaf 0)))
+                      («LeanBackend.opDoc» ((x8).2 (leaf 0)))
                       «LeanBackend.tTimes»
-                      («LeanBackend.indented» («LeanBackend.opDoc» ((x8).2 (leaf 0)))))))
+                      («LeanBackend.indented» («LeanBackend.opDoc» ((x11).2 (leaf 0)))))))
             else
               if (Const.eq (Const.label x2) (leaf 3)).label ≠ 0 then
                 let x5 : (Unit → List T × (T → T)) ×
@@ -10475,16 +12711,10 @@ def «LeanBackend.emTerm» :=
                     (Unit →
                       List T ×
                         (T →
-                          T)) := Const.lcase
-                  (α := Unit → List T × (T → T))
-                  (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
-                  x3
-                  (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
-                    ([] : List (Unit → List T × (T → T))))
-                  (fun (x5 : Unit → List T × (T → T))
-                     (x6 : List (Unit → List T × (T → T))) =>
-                    (x5, x6));
-                let x6 : List T × (T → T) := (x5).1 ();
+                          T)) := (fun (_ : Unit) =>
+                  (([] : List T), fun (_ : T) => leaf 0),
+                  x3);
+                let x6 : List T := Const.children x2;
                 let x7 : (Unit → List T × (T → T)) ×
                   List
                     (Unit →
@@ -10500,13 +12730,42 @@ def «LeanBackend.emTerm» :=
                      (x8 : List (Unit → List T × (T → T))) =>
                     (x7, x8));
                 let x8 : List T × (T → T) := (x7).1 ();
+                let x9 : List
+                  T := Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x6
+                  ([] : List T)
+                  (fun (_ : T) (x10 : List T) => x10);
+                let x10 : (Unit → List T × (T → T)) ×
+                  List
+                    (Unit →
+                      List T ×
+                        (T →
+                          T)) := Const.lcase
+                  (α := Unit → List T × (T → T))
+                  (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
+                  (x7).2
+                  (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                    ([] : List (Unit → List T × (T → T))))
+                  (fun (x10 : Unit → List T × (T → T))
+                     (x11 : List (Unit → List T × (T → T))) =>
+                    (x10, x11));
+                let x11 : List T × (T → T) := (x10).1 ();
+                let _ : List
+                  T := Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x9
+                  ([] : List T)
+                  (fun (_ : T) (x13 : List T) => x13);
                 «LeanBackend.closedSh»
                   («LeanBackend.compound»
                     («LeanBackend.grp»
                       («LeanBackend.cat3»
-                        («LeanBackend.opDoc» ((x6).2 (leaf 0)))
+                        («LeanBackend.opDoc» ((x8).2 (leaf 0)))
                         «LeanBackend.tTo»
-                        («LeanBackend.indented» («LeanBackend.tyDoc» x8)))))
+                        («LeanBackend.indented» («LeanBackend.tyDoc» x11)))))
               else
                 if (Const.eq (Const.label x2) (leaf 4)).label ≠ 0 then
                   let x5 : (Unit → List T × (T → T)) ×
@@ -10514,22 +12773,47 @@ def «LeanBackend.emTerm» :=
                       (Unit →
                         List T ×
                           (T →
+                            T)) := (fun (_ : Unit) =>
+                    (([] : List T), fun (_ : T) => leaf 0),
+                    x3);
+                  let x6 : List T := Const.children x2;
+                  let x7 : (Unit → List T × (T → T)) ×
+                    List
+                      (Unit →
+                        List T ×
+                          (T →
                             T)) := Const.lcase
                     (α := Unit → List T × (T → T))
                     (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
-                    x3
+                    (x5).2
                     (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
                       ([] : List (Unit → List T × (T → T))))
-                    (fun (x5 : Unit → List T × (T → T))
-                       (x6 : List (Unit → List T × (T → T))) =>
-                      (x5, x6));
-                  let x6 : List T × (T → T) := (x5).1 ();
+                    (fun (x7 : Unit → List T × (T → T))
+                       (x8 : List (Unit → List T × (T → T))) =>
+                      (x7, x8));
+                  let x8 : List T × (T → T) := (x7).1 ();
+                  let _ : List
+                    T := Const.lcase
+                    (α := T)
+                    (β := List T)
+                    x6
+                    ([] : List T)
+                    (fun (_ : T) (x10 : List T) => x10);
                   «LeanBackend.closedSh»
                     («LeanBackend.ap»
                       «LeanBackend.tList»
-                      («LeanBackend/Docs.single» («LeanBackend.argDoc» ((x6).2 (leaf 0)))))
+                      («LeanBackend/Docs.single» («LeanBackend.argDoc» ((x8).2 (leaf 0)))))
                 else
                   if (Const.eq (Const.label x2) (leaf 8)).label ≠ 0 then
+                    let x5 : (Unit → List T × (T → T)) ×
+                      List
+                        (Unit →
+                          List T ×
+                            (T →
+                              T)) := (fun (_ : Unit) =>
+                      (([] : List T), fun (_ : T) => leaf 0),
+                      x3);
+                    let x6 : List T := Const.children x2;
                     let _ : (Unit → List T × (T → T)) ×
                       List
                         (Unit →
@@ -10538,20 +12822,32 @@ def «LeanBackend.emTerm» :=
                               T)) := Const.lcase
                       (α := Unit → List T × (T → T))
                       (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
-                      x3
+                      (x5).2
                       (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
                         ([] : List (Unit → List T × (T → T))))
-                      (fun (x5 : Unit → List T × (T → T))
-                         (x6 : List (Unit → List T × (T → T))) =>
-                        (x5, x6));
-                    let x6 : T := Const.child x2 (leaf 0);
+                      (fun (x7 : Unit → List T × (T → T))
+                         (x8 : List (Unit → List T × (T → T))) =>
+                        (x7, x8));
+                    let x8 : T := Const.lcase
+                      (α := T)
+                      (β := T)
+                      x6
+                      (leaf 0)
+                      (fun (x8 : T) (_ : List T) => x8);
+                    let _ : List
+                      T := Const.lcase
+                      (α := T)
+                      (β := List T)
+                      x6
+                      ([] : List T)
+                      (fun (_ : T) (x10 : List T) => x10);
                     («Prelude.append»
-                      («Prelude.replicate» (Const.label x6) (leaf 0))
+                      («Prelude.replicate» (Const.label x8) (leaf 0))
                       («Prelude.single» (leaf 1)),
-                      fun (x7 : T) =>
+                      fun (x10 : T) =>
                         «LeanBackend.atomic»
                           («LeanBackend.varDoc»
-                            (Const.sub (Const.sub x7 (leaf 1)) (Const.label x6))))
+                            (Const.sub (Const.sub x10 (leaf 1)) (Const.label x8))))
                   else
                     if (Const.eq (Const.label x2) (leaf 9)).label ≠ 0 then
                       let x5 : (Unit → List T × (T → T)) ×
@@ -10559,16 +12855,10 @@ def «LeanBackend.emTerm» :=
                           (Unit →
                             List T ×
                               (T →
-                                T)) := Const.lcase
-                        (α := Unit → List T × (T → T))
-                        (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
-                        x3
-                        (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
-                          ([] : List (Unit → List T × (T → T))))
-                        (fun (x5 : Unit → List T × (T → T))
-                           (x6 : List (Unit → List T × (T → T))) =>
-                          (x5, x6));
-                      let x6 : List T × (T → T) := (x5).1 ();
+                                T)) := (fun (_ : Unit) =>
+                        (([] : List T), fun (_ : T) => leaf 0),
+                        x3);
+                      let x6 : List T := Const.children x2;
                       let x7 : (Unit → List T × (T → T)) ×
                         List
                           (Unit →
@@ -10584,43 +12874,87 @@ def «LeanBackend.emTerm» :=
                            (x8 : List (Unit → List T × (T → T))) =>
                           (x7, x8));
                       let x8 : List T × (T → T) := (x7).1 ();
-                      («Prelude.tail» (x8).1,
-                        fun (x9 : T) =>
-                          let x10 : T := Const.lcase
+                      let x9 : List
+                        T := Const.lcase
+                        (α := T)
+                        (β := List T)
+                        x6
+                        ([] : List T)
+                        (fun (_ : T) (x10 : List T) => x10);
+                      let x10 : (Unit → List T × (T → T)) ×
+                        List
+                          (Unit →
+                            List T ×
+                              (T →
+                                T)) := Const.lcase
+                        (α := Unit → List T × (T → T))
+                        (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
+                        (x7).2
+                        (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                          ([] : List (Unit → List T × (T → T))))
+                        (fun (x10 : Unit → List T × (T → T))
+                           (x11 : List (Unit → List T × (T → T))) =>
+                          (x10, x11));
+                      let x11 : List T × (T → T) := (x10).1 ();
+                      let _ : List
+                        T := Const.lcase
+                        (α := T)
+                        (β := List T)
+                        x9
+                        ([] : List T)
+                        (fun (_ : T) (x13 : List T) => x13);
+                      («Prelude.tail» (x11).1,
+                        fun (x13 : T) =>
+                          let x14 : T := Const.lcase
                             (α := T)
                             (β := T)
-                            (x8).1
+                            (x11).1
                             (leaf 0)
-                            (fun (x10 : T) (_ : List T) => x10);
-                          let x11 : T := «LeanBackend.param»
-                            (if (x10).label ≠ 0 then
-                              «LeanBackend.varDoc» x9
+                            (fun (x14 : T) (_ : List T) => x14);
+                          let x15 : T := «LeanBackend.param»
+                            (if (x14).label ≠ 0 then
+                              «LeanBackend.varDoc» x13
                             else
                               «LeanBackend.tUnder»)
-                            («LeanBackend.tyDoc» x6);
-                          let x12 : T := (x8).2 (Const.add x9 (leaf 1));
-                          let x13 : T := x12;
-                          if (Const.eq (Const.label x13) (leaf 2)).label ≠ 0 then
-                            let x14 : T := Const.child x13 (leaf 0);
-                            let x15 : T := Const.child x13 (leaf 1);
-                            let x16 : T := x14;
-                            let x17 : List
-                              T := Const.iter
-                              (α := List T)
-                              (fun (x17 : List T) =>
-                                Const.lcase
-                                  (α := T)
-                                  (β := List T)
-                                  x17
-                                  ([] : List T)
-                                  (fun (_ : T) (x19 : List T) => x19))
-                              (Const.children x16)
-                              (leaf 0);
-                            «LeanBackend.fn» («LeanBackend.params» (x11 :: x17)) x15
+                            («LeanBackend.tyDoc» x8);
+                          let x16 : T := (x11).2 (Const.add x13 (leaf 1));
+                          let x17 : T := x16;
+                          if (Const.eq (Const.label x17) (leaf 2)).label ≠ 0 then
+                            let x18 : List T := Const.children x17;
+                            let x19 : T := Const.lcase
+                              (α := T)
+                              (β := T)
+                              x18
+                              (leaf 0)
+                              (fun (x19 : T) (_ : List T) => x19);
+                            let x20 : List
+                              T := Const.lcase
+                              (α := T)
+                              (β := List T)
+                              x18
+                              ([] : List T)
+                              (fun (_ : T) (x21 : List T) => x21);
+                            let x21 : T := Const.lcase
+                              (α := T)
+                              (β := T)
+                              x20
+                              (leaf 0)
+                              (fun (x21 : T) (_ : List T) => x21);
+                            let _ : List
+                              T := Const.lcase
+                              (α := T)
+                              (β := List T)
+                              x20
+                              ([] : List T)
+                              (fun (_ : T) (x23 : List T) => x23);
+                            let x23 : T := x19;
+                            let x24 : List T := Const.children x23;
+                            let x25 : List T := x24;
+                            «LeanBackend.fn» («LeanBackend.params» (x15 :: x25)) x21
                           else
                             «LeanBackend.fn»
-                              («LeanBackend.params» («LeanBackend/Ps.single» x11))
-                              («LeanBackend.shDoc» x12))
+                              («LeanBackend.params» («LeanBackend/Ps.single» x15))
+                              («LeanBackend.shDoc» x16))
                     else
                       if (Const.eq (Const.label x2) (leaf 10)).label ≠ 0 then
                         let x5 : (Unit → List T × (T → T)) ×
@@ -10628,16 +12962,10 @@ def «LeanBackend.emTerm» :=
                             (Unit →
                               List T ×
                                 (T →
-                                  T)) := Const.lcase
-                          (α := Unit → List T × (T → T))
-                          (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
-                          x3
-                          (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
-                            ([] : List (Unit → List T × (T → T))))
-                          (fun (x5 : Unit → List T × (T → T))
-                             (x6 : List (Unit → List T × (T → T))) =>
-                            (x5, x6));
-                        let x6 : List T × (T → T) := (x5).1 ();
+                                  T)) := (fun (_ : Unit) =>
+                          (([] : List T), fun (_ : T) => leaf 0),
+                          x3);
+                        let x6 : List T := Const.children x2;
                         let x7 : (Unit → List T × (T → T)) ×
                           List
                             (Unit →
@@ -10653,55 +12981,109 @@ def «LeanBackend.emTerm» :=
                              (x8 : List (Unit → List T × (T → T))) =>
                             (x7, x8));
                         let x8 : List T × (T → T) := (x7).1 ();
-                        («LeanBackend.orList» (x6).1 (x8).1,
-                          fun (x9 : T) =>
-                            let x10 : T := (x6).2 x9;
-                            let x11 : T := (x8).2 x9;
-                            let x12 : T := x10;
-                            if (Const.eq (Const.label x12) (leaf 3)).label ≠ 0 then
-                              let x13 : T := Const.child x12 (leaf 0);
-                              let x14 : List
-                                T := Const.iter
-                                (α := List T)
-                                (fun (x14 : List T) =>
-                                  Const.lcase
-                                    (α := T)
-                                    (β := List T)
-                                    x14
-                                    ([] : List T)
-                                    (fun (_ : T) (x16 : List T) => x16))
-                                (Const.children x12)
-                                (leaf 1);
+                        let x9 : List
+                          T := Const.lcase
+                          (α := T)
+                          (β := List T)
+                          x6
+                          ([] : List T)
+                          (fun (_ : T) (x10 : List T) => x10);
+                        let x10 : (Unit → List T × (T → T)) ×
+                          List
+                            (Unit →
+                              List T ×
+                                (T →
+                                  T)) := Const.lcase
+                          (α := Unit → List T × (T → T))
+                          (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
+                          (x7).2
+                          (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                            ([] : List (Unit → List T × (T → T))))
+                          (fun (x10 : Unit → List T × (T → T))
+                             (x11 : List (Unit → List T × (T → T))) =>
+                            (x10, x11));
+                        let x11 : List T × (T → T) := (x10).1 ();
+                        let _ : List
+                          T := Const.lcase
+                          (α := T)
+                          (β := List T)
+                          x9
+                          ([] : List T)
+                          (fun (_ : T) (x13 : List T) => x13);
+                        («LeanBackend.orList» (x8).1 (x11).1,
+                          fun (x13 : T) =>
+                            let x14 : T := (x8).2 x13;
+                            let x15 : T := (x11).2 x13;
+                            let x16 : T := x14;
+                            if (Const.eq (Const.label x16) (leaf 3)).label ≠ 0 then
+                              let x17 : List T := Const.children x16;
+                              let x18 : T := Const.lcase
+                                (α := T)
+                                (β := T)
+                                x17
+                                (leaf 0)
+                                (fun (x18 : T) (_ : List T) => x18);
+                              let x19 : List
+                                T := Const.lcase
+                                (α := T)
+                                (β := List T)
+                                x17
+                                ([] : List T)
+                                (fun (_ : T) (x20 : List T) => x20);
+                              let x20 : List T := x19;
                               «LeanBackend.ap»
-                                x13
+                                x18
                                 («LeanBackend/Docs.append»
-                                  x14
-                                  («LeanBackend/Docs.single» («LeanBackend.argDoc» x11)))
+                                  x20
+                                  («LeanBackend/Docs.single» («LeanBackend.argDoc» x15)))
                             else
-                              if (Const.eq (Const.label x12) (leaf 2)).label ≠ 0 then
-                                let x13 : T := Const.child x12 (leaf 0);
-                                let x14 : T := Const.child x12 (leaf 1);
+                              if (Const.eq (Const.label x16) (leaf 2)).label ≠ 0 then
+                                let x17 : List T := Const.children x16;
+                                let x18 : T := Const.lcase
+                                  (α := T)
+                                  (β := T)
+                                  x17
+                                  (leaf 0)
+                                  (fun (x18 : T) (_ : List T) => x18);
+                                let x19 : List
+                                  T := Const.lcase
+                                  (α := T)
+                                  (β := List T)
+                                  x17
+                                  ([] : List T)
+                                  (fun (_ : T) (x20 : List T) => x20);
+                                let x20 : T := Const.lcase
+                                  (α := T)
+                                  (β := T)
+                                  x19
+                                  (leaf 0)
+                                  (fun (x20 : T) (_ : List T) => x20);
+                                let _ : List
+                                  T := Const.lcase
+                                  (α := T)
+                                  (β := List T)
+                                  x19
+                                  ([] : List T)
+                                  (fun (_ : T) (x22 : List T) => x22);
                                 «LeanBackend.compound»
-                                  (let x15 : T := x13;
-                                   let x16 : List
-                                     T := Const.iter
-                                     (α := List T)
-                                     (fun (x16 : List T) =>
-                                       Const.lcase
-                                         (α := T)
-                                         (β := List T)
-                                         x16
-                                         ([] : List T)
-                                         (fun (_ : T) (x18 : List T) => x18))
-                                     (Const.children x15)
-                                     (leaf 0);
-                                   «LeanBackend.letDoc» x16 x14 x11)
+                                  (let x22 : T := x18;
+                                   let x23 : List T := Const.children x22;
+                                   let x24 : List T := x23; «LeanBackend.letDoc» x24 x20 x15)
                               else
                                 «LeanBackend.ap»
-                                  («LeanBackend.argDoc» x10)
-                                  («LeanBackend/Docs.single» («LeanBackend.argDoc» x11)))
+                                  («LeanBackend.argDoc» x14)
+                                  («LeanBackend/Docs.single» («LeanBackend.argDoc» x15)))
                       else
                         if (Const.eq (Const.label x2) (leaf 11)).label ≠ 0 then
+                          let _ : (Unit → List T × (T → T)) ×
+                            List
+                              (Unit →
+                                List T ×
+                                  (T →
+                                    T)) := (fun (_ : Unit) =>
+                            (([] : List T), fun (_ : T) => leaf 0),
+                            x3);
+                          let _ : List T := Const.children x2;
                           «LeanBackend.closed» «LeanBackend.tUnitV»
                         else
                           if (Const.eq (Const.label x2) (leaf 12)).label ≠ 0 then
@@ -10710,16 +13092,10 @@ def «LeanBackend.emTerm» :=
                                 (Unit →
                                   List T ×
                                     (T →
-                                      T)) := Const.lcase
-                              (α := Unit → List T × (T → T))
-                              (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
-                              x3
-                              (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
-                                ([] : List (Unit → List T × (T → T))))
-                              (fun (x5 : Unit → List T × (T → T))
-                                 (x6 : List (Unit → List T × (T → T))) =>
-                                (x5, x6));
-                            let x6 : List T × (T → T) := (x5).1 ();
+                                      T)) := (fun (_ : Unit) =>
+                              (([] : List T), fun (_ : T) => leaf 0),
+                              x3);
+                            let x6 : List T := Const.children x2;
                             let x7 : (Unit → List T × (T → T)) ×
                               List
                                 (Unit →
@@ -10735,15 +13111,44 @@ def «LeanBackend.emTerm» :=
                                  (x8 : List (Unit → List T × (T → T))) =>
                                 (x7, x8));
                             let x8 : List T × (T → T) := (x7).1 ();
-                            («LeanBackend.orList» (x6).1 (x8).1,
-                              fun (x9 : T) =>
+                            let x9 : List
+                              T := Const.lcase
+                              (α := T)
+                              (β := List T)
+                              x6
+                              ([] : List T)
+                              (fun (_ : T) (x10 : List T) => x10);
+                            let x10 : (Unit → List T × (T → T)) ×
+                              List
+                                (Unit →
+                                  List T ×
+                                    (T →
+                                      T)) := Const.lcase
+                              (α := Unit → List T × (T → T))
+                              (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
+                              (x7).2
+                              (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                                ([] : List (Unit → List T × (T → T))))
+                              (fun (x10 : Unit → List T × (T → T))
+                                 (x11 : List (Unit → List T × (T → T))) =>
+                                (x10, x11));
+                            let x11 : List T × (T → T) := (x10).1 ();
+                            let _ : List
+                              T := Const.lcase
+                              (α := T)
+                              (β := List T)
+                              x9
+                              ([] : List T)
+                              (fun (_ : T) (x13 : List T) => x13);
+                            («LeanBackend.orList» (x8).1 (x11).1,
+                              fun (x13 : T) =>
                                 «LeanBackend.atomic»
                                   («LeanBackend.grp»
                                     («LeanBackend.cat5»
                                       «LeanBackend.tLp»
-                                      («LeanBackend.shDoc» ((x6).2 x9))
+                                      («LeanBackend.shDoc» ((x8).2 x13))
                                       «LeanBackend.tComma»
-                                      («LeanBackend.indented» («LeanBackend.shDoc» ((x8).2 x9)))
+                                      («LeanBackend.indented» («LeanBackend.shDoc» ((x11).2 x13)))
                                       «LeanBackend.tRp»)))
                           else
                             if (Const.eq (Const.label x2) (leaf 13)).label ≠ 0 then
@@ -10752,22 +13157,38 @@ def «LeanBackend.emTerm» :=
                                   (Unit →
                                     List T ×
                                       (T →
+                                        T)) := (fun (_ : Unit) =>
+                                (([] : List T), fun (_ : T) => leaf 0),
+                                x3);
+                              let x6 : List T := Const.children x2;
+                              let x7 : (Unit → List T × (T → T)) ×
+                                List
+                                  (Unit →
+                                    List T ×
+                                      (T →
                                         T)) := Const.lcase
                                 (α := Unit → List T × (T → T))
                                 (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
-                                x3
+                                (x5).2
                                 (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
                                   ([] : List (Unit → List T × (T → T))))
-                                (fun (x5 : Unit → List T × (T → T))
-                                   (x6 : List (Unit → List T × (T → T))) =>
-                                  (x5, x6));
-                              let x6 : List T × (T → T) := (x5).1 ();
-                              ((x6).1,
-                                fun (x7 : T) =>
+                                (fun (x7 : Unit → List T × (T → T))
+                                   (x8 : List (Unit → List T × (T → T))) =>
+                                  (x7, x8));
+                              let x8 : List T × (T → T) := (x7).1 ();
+                              let _ : List
+                                T := Const.lcase
+                                (α := T)
+                                (β := List T)
+                                x6
+                                ([] : List T)
+                                (fun (_ : T) (x10 : List T) => x10);
+                              ((x8).1,
+                                fun (x10 : T) =>
                                   «LeanBackend.atomic»
                                     («LeanBackend.cat3»
                                       «LeanBackend.tLp»
-                                      («LeanBackend.shDoc» ((x6).2 x7))
+                                      («LeanBackend.shDoc» ((x8).2 x10))
                                       «LeanBackend.tDot1»))
                             else
                               if (Const.eq (Const.label x2) (leaf 14)).label ≠ 0 then
@@ -10776,25 +13197,50 @@ def «LeanBackend.emTerm» :=
                                     (Unit →
                                       List T ×
                                         (T →
+                                          T)) := (fun (_ : Unit) =>
+                                  (([] : List T), fun (_ : T) => leaf 0),
+                                  x3);
+                                let x6 : List T := Const.children x2;
+                                let x7 : (Unit → List T × (T → T)) ×
+                                  List
+                                    (Unit →
+                                      List T ×
+                                        (T →
                                           T)) := Const.lcase
                                   (α := Unit → List T × (T → T))
                                   (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
-                                  x3
+                                  (x5).2
                                   (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
                                     ([] : List (Unit → List T × (T → T))))
-                                  (fun (x5 : Unit → List T × (T → T))
-                                     (x6 : List (Unit → List T × (T → T))) =>
-                                    (x5, x6));
-                                let x6 : List T × (T → T) := (x5).1 ();
-                                ((x6).1,
-                                  fun (x7 : T) =>
+                                  (fun (x7 : Unit → List T × (T → T))
+                                     (x8 : List (Unit → List T × (T → T))) =>
+                                    (x7, x8));
+                                let x8 : List T × (T → T) := (x7).1 ();
+                                let _ : List
+                                  T := Const.lcase
+                                  (α := T)
+                                  (β := List T)
+                                  x6
+                                  ([] : List T)
+                                  (fun (_ : T) (x10 : List T) => x10);
+                                ((x8).1,
+                                  fun (x10 : T) =>
                                     «LeanBackend.atomic»
                                       («LeanBackend.cat3»
                                         «LeanBackend.tLp»
-                                        («LeanBackend.shDoc» ((x6).2 x7))
+                                        («LeanBackend.shDoc» ((x8).2 x10))
                                         «LeanBackend.tDot2»))
                               else
                                 if (Const.eq (Const.label x2) (leaf 15)).label ≠ 0 then
+                                  let x5 : (Unit → List T × (T → T)) ×
+                                    List
+                                      (Unit →
+                                        List T ×
+                                          (T →
+                                            T)) := (fun (_ : Unit) =>
+                                    (([] : List T), fun (_ : T) => leaf 0),
+                                    x3);
+                                  let x6 : List T := Const.children x2;
                                   let _ : (Unit → List T × (T → T)) ×
                                     List
                                       (Unit →
@@ -10804,16 +13250,28 @@ def «LeanBackend.emTerm» :=
                                     (α := Unit → List T × (T → T))
                                     (β := (Unit → List T × (T → T)) ×
                                       List (Unit → List T × (T → T)))
-                                    x3
+                                    (x5).2
                                     (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
                                       ([] : List (Unit → List T × (T → T))))
-                                    (fun (x5 : Unit → List T × (T → T))
-                                       (x6 : List (Unit → List T × (T → T))) =>
-                                      (x5, x6));
-                                  let x6 : T := Const.child x2 (leaf 0);
+                                    (fun (x7 : Unit → List T × (T → T))
+                                       (x8 : List (Unit → List T × (T → T))) =>
+                                      (x7, x8));
+                                  let x8 : T := Const.lcase
+                                    (α := T)
+                                    (β := T)
+                                    x6
+                                    (leaf 0)
+                                    (fun (x8 : T) (_ : List T) => x8);
+                                  let _ : List
+                                    T := Const.lcase
+                                    (α := T)
+                                    (β := List T)
+                                    x6
+                                    ([] : List T)
+                                    (fun (_ : T) (x10 : List T) => x10);
                                   (([] : List T),
                                     fun (_ : T) =>
-                                      «LeanBackend.compound» («LeanBackend.quoteDoc» x6))
+                                      «LeanBackend.compound» («LeanBackend.quoteDoc» x8))
                                 else
                                   if (Const.eq (Const.label x2) (leaf 16)).label ≠ 0 then
                                     let x5 : (Unit → List T × (T → T)) ×
@@ -10821,17 +13279,10 @@ def «LeanBackend.emTerm» :=
                                         (Unit →
                                           List T ×
                                             (T →
-                                              T)) := Const.lcase
-                                      (α := Unit → List T × (T → T))
-                                      (β := (Unit → List T × (T → T)) ×
-                                        List (Unit → List T × (T → T)))
-                                      x3
-                                      (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
-                                        ([] : List (Unit → List T × (T → T))))
-                                      (fun (x5 : Unit → List T × (T → T))
-                                         (x6 : List (Unit → List T × (T → T))) =>
-                                        (x5, x6));
-                                    let x6 : List T × (T → T) := (x5).1 ();
+                                              T)) := (fun (_ : Unit) =>
+                                      (([] : List T), fun (_ : T) => leaf 0),
+                                      x3);
+                                    let x6 : List T := Const.children x2;
                                     let x7 : (Unit → List T × (T → T)) ×
                                       List
                                         (Unit →
@@ -10848,7 +13299,14 @@ def «LeanBackend.emTerm» :=
                                          (x8 : List (Unit → List T × (T → T))) =>
                                         (x7, x8));
                                     let x8 : List T × (T → T) := (x7).1 ();
-                                    let x9 : (Unit → List T × (T → T)) ×
+                                    let x9 : List
+                                      T := Const.lcase
+                                      (α := T)
+                                      (β := List T)
+                                      x6
+                                      ([] : List T)
+                                      (fun (_ : T) (x10 : List T) => x10);
+                                    let x10 : (Unit → List T × (T → T)) ×
                                       List
                                         (Unit →
                                           List T ×
@@ -10860,31 +13318,70 @@ def «LeanBackend.emTerm» :=
                                       (x7).2
                                       (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
                                         ([] : List (Unit → List T × (T → T))))
-                                      (fun (x9 : Unit → List T × (T → T))
-                                         (x10 : List (Unit → List T × (T → T))) =>
-                                        (x9, x10));
-                                    let x10 : List T × (T → T) := (x9).1 ();
+                                      (fun (x10 : Unit → List T × (T → T))
+                                         (x11 : List (Unit → List T × (T → T))) =>
+                                        (x10, x11));
+                                    let x11 : List T × (T → T) := (x10).1 ();
+                                    let x12 : List
+                                      T := Const.lcase
+                                      (α := T)
+                                      (β := List T)
+                                      x9
+                                      ([] : List T)
+                                      (fun (_ : T) (x13 : List T) => x13);
+                                    let x13 : (Unit → List T × (T → T)) ×
+                                      List
+                                        (Unit →
+                                          List T ×
+                                            (T →
+                                              T)) := Const.lcase
+                                      (α := Unit → List T × (T → T))
+                                      (β := (Unit → List T × (T → T)) ×
+                                        List (Unit → List T × (T → T)))
+                                      (x10).2
+                                      (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                                        ([] : List (Unit → List T × (T → T))))
+                                      (fun (x13 : Unit → List T × (T → T))
+                                         (x14 : List (Unit → List T × (T → T))) =>
+                                        (x13, x14));
+                                    let x14 : List T × (T → T) := (x13).1 ();
+                                    let _ : List
+                                      T := Const.lcase
+                                      (α := T)
+                                      (β := List T)
+                                      x12
+                                      ([] : List T)
+                                      (fun (_ : T) (x16 : List T) => x16);
                                     («LeanBackend.orList»
-                                      (x6).1
-                                      («LeanBackend.orList» (x8).1 (x10).1),
-                                      fun (x11 : T) =>
+                                      (x8).1
+                                      («LeanBackend.orList» (x11).1 (x14).1),
+                                      fun (x16 : T) =>
                                         «LeanBackend.compound»
                                           («LeanBackend.grp»
                                             («LeanBackend.cat»
                                               («LeanBackend.tIf» ::
-                                                ((«LeanBackend.shDoc» ((x6).2 x11)) ::
+                                                ((«LeanBackend.shDoc» ((x8).2 x16)) ::
                                                   («LeanBackend.tThen» ::
                                                     ((«LeanBackend.indented»
-                                                      («LeanBackend.shDoc» ((x8).2 x11))) ::
+                                                      («LeanBackend.shDoc» ((x11).2 x16))) ::
                                                       («LeanBackend.line» ::
                                                         («LeanBackend.tElse» ::
                                                           («LeanBackend/Docs.single»
                                                             («LeanBackend.indented»
                                                               («LeanBackend.shDoc»
-                                                                ((x10).2 x11)))))))))))))
+                                                                ((x14).2 x16)))))))))))))
                                   else
                                     if (Const.eq (Const.label x2) (leaf 17)).label ≠ 0 then
                                       let x5 : (Unit → List T × (T → T)) ×
+                                        List
+                                          (Unit →
+                                            List T ×
+                                              (T →
+                                                T)) := (fun (_ : Unit) =>
+                                        (([] : List T), fun (_ : T) => leaf 0),
+                                        x3);
+                                      let x6 : List T := Const.children x2;
+                                      let x7 : (Unit → List T × (T → T)) ×
                                         List
                                           (Unit →
                                             List T ×
@@ -10893,22 +13390,38 @@ def «LeanBackend.emTerm» :=
                                         (α := Unit → List T × (T → T))
                                         (β := (Unit → List T × (T → T)) ×
                                           List (Unit → List T × (T → T)))
-                                        x3
+                                        (x5).2
                                         (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
                                           ([] : List (Unit → List T × (T → T))))
-                                        (fun (x5 : Unit → List T × (T → T))
-                                           (x6 : List (Unit → List T × (T → T))) =>
-                                          (x5, x6));
-                                      let x6 : List T × (T → T) := (x5).1 ();
+                                        (fun (x7 : Unit → List T × (T → T))
+                                           (x8 : List (Unit → List T × (T → T))) =>
+                                          (x7, x8));
+                                      let x8 : List T × (T → T) := (x7).1 ();
+                                      let _ : List
+                                        T := Const.lcase
+                                        (α := T)
+                                        (β := List T)
+                                        x6
+                                        ([] : List T)
+                                        (fun (_ : T) (x10 : List T) => x10);
                                       (([] : List T),
                                         fun (_ : T) =>
                                           «LeanBackend.ap»
                                             «LeanBackend.tFold»
                                             («LeanBackend/Docs.single»
-                                              («LeanBackend.namedArg» «LeanBackend.tAlpha» x6)))
+                                              («LeanBackend.namedArg» «LeanBackend.tAlpha» x8)))
                                     else
                                       if (Const.eq (Const.label x2) (leaf 18)).label ≠ 0 then
                                         let x5 : (Unit → List T × (T → T)) ×
+                                          List
+                                            (Unit →
+                                              List T ×
+                                                (T →
+                                                  T)) := (fun (_ : Unit) =>
+                                          (([] : List T), fun (_ : T) => leaf 0),
+                                          x3);
+                                        let x6 : List T := Const.children x2;
+                                        let x7 : (Unit → List T × (T → T)) ×
                                           List
                                             (Unit →
                                               List T ×
@@ -10917,22 +13430,38 @@ def «LeanBackend.emTerm» :=
                                           (α := Unit → List T × (T → T))
                                           (β := (Unit → List T × (T → T)) ×
                                             List (Unit → List T × (T → T)))
-                                          x3
+                                          (x5).2
                                           (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
                                             ([] : List (Unit → List T × (T → T))))
-                                          (fun (x5 : Unit → List T × (T → T))
-                                             (x6 : List (Unit → List T × (T → T))) =>
-                                            (x5, x6));
-                                        let x6 : List T × (T → T) := (x5).1 ();
+                                          (fun (x7 : Unit → List T × (T → T))
+                                             (x8 : List (Unit → List T × (T → T))) =>
+                                            (x7, x8));
+                                        let x8 : List T × (T → T) := (x7).1 ();
+                                        let _ : List
+                                          T := Const.lcase
+                                          (α := T)
+                                          (β := List T)
+                                          x6
+                                          ([] : List T)
+                                          (fun (_ : T) (x10 : List T) => x10);
                                         (([] : List T),
                                           fun (_ : T) =>
                                             «LeanBackend.ap»
                                               «LeanBackend.tIter»
                                               («LeanBackend/Docs.single»
-                                                («LeanBackend.namedArg» «LeanBackend.tAlpha» x6)))
+                                                («LeanBackend.namedArg» «LeanBackend.tAlpha» x8)))
                                       else
                                         if (Const.eq (Const.label x2) (leaf 19)).label ≠ 0 then
                                           let x5 : (Unit → List T × (T → T)) ×
+                                            List
+                                              (Unit →
+                                                List T ×
+                                                  (T →
+                                                    T)) := (fun (_ : Unit) =>
+                                            (([] : List T), fun (_ : T) => leaf 0),
+                                            x3);
+                                          let x6 : List T := Const.children x2;
+                                          let x7 : (Unit → List T × (T → T)) ×
                                             List
                                               (Unit →
                                                 List T ×
@@ -10941,18 +13470,25 @@ def «LeanBackend.emTerm» :=
                                             (α := Unit → List T × (T → T))
                                             (β := (Unit → List T × (T → T)) ×
                                               List (Unit → List T × (T → T)))
-                                            x3
+                                            (x5).2
                                             (fun (_ : Unit) =>
                                               (([] : List T), fun (_ : T) => leaf 0),
                                               ([] : List (Unit → List T × (T → T))))
-                                            (fun (x5 : Unit → List T × (T → T))
-                                               (x6 : List (Unit → List T × (T → T))) =>
-                                              (x5, x6));
-                                          let x6 : List T × (T → T) := (x5).1 ();
+                                            (fun (x7 : Unit → List T × (T → T))
+                                               (x8 : List (Unit → List T × (T → T))) =>
+                                              (x7, x8));
+                                          let x8 : List T × (T → T) := (x7).1 ();
+                                          let _ : List
+                                            T := Const.lcase
+                                            (α := T)
+                                            (β := List T)
+                                            x6
+                                            ([] : List T)
+                                            (fun (_ : T) (x10 : List T) => x10);
                                           «LeanBackend.closed»
                                             («LeanBackend.cat3»
                                               «LeanBackend.tNilLp»
-                                              («LeanBackend.argDoc» ((x6).2 (leaf 0)))
+                                              («LeanBackend.argDoc» ((x8).2 (leaf 0)))
                                               «LeanBackend.tRp»)
                                         else
                                           if (Const.eq (Const.label x2) (leaf 20)).label ≠ 0 then
@@ -10961,18 +13497,10 @@ def «LeanBackend.emTerm» :=
                                                 (Unit →
                                                   List T ×
                                                     (T →
-                                                      T)) := Const.lcase
-                                              (α := Unit → List T × (T → T))
-                                              (β := (Unit → List T × (T → T)) ×
-                                                List (Unit → List T × (T → T)))
-                                              x3
-                                              (fun (_ : Unit) =>
-                                                (([] : List T), fun (_ : T) => leaf 0),
-                                                ([] : List (Unit → List T × (T → T))))
-                                              (fun (x5 : Unit → List T × (T → T))
-                                                 (x6 : List (Unit → List T × (T → T))) =>
-                                                (x5, x6));
-                                            let x6 : List T × (T → T) := (x5).1 ();
+                                                      T)) := (fun (_ : Unit) =>
+                                              (([] : List T), fun (_ : T) => leaf 0),
+                                              x3);
+                                            let x6 : List T := Const.children x2;
                                             let x7 : (Unit → List T × (T → T)) ×
                                               List
                                                 (Unit →
@@ -10990,16 +13518,47 @@ def «LeanBackend.emTerm» :=
                                                  (x8 : List (Unit → List T × (T → T))) =>
                                                 (x7, x8));
                                             let x8 : List T × (T → T) := (x7).1 ();
-                                            («LeanBackend.orList» (x6).1 (x8).1,
-                                              fun (x9 : T) =>
+                                            let x9 : List
+                                              T := Const.lcase
+                                              (α := T)
+                                              (β := List T)
+                                              x6
+                                              ([] : List T)
+                                              (fun (_ : T) (x10 : List T) => x10);
+                                            let x10 : (Unit → List T × (T → T)) ×
+                                              List
+                                                (Unit →
+                                                  List T ×
+                                                    (T →
+                                                      T)) := Const.lcase
+                                              (α := Unit → List T × (T → T))
+                                              (β := (Unit → List T × (T → T)) ×
+                                                List (Unit → List T × (T → T)))
+                                              (x7).2
+                                              (fun (_ : Unit) =>
+                                                (([] : List T), fun (_ : T) => leaf 0),
+                                                ([] : List (Unit → List T × (T → T))))
+                                              (fun (x10 : Unit → List T × (T → T))
+                                                 (x11 : List (Unit → List T × (T → T))) =>
+                                                (x10, x11));
+                                            let x11 : List T × (T → T) := (x10).1 ();
+                                            let _ : List
+                                              T := Const.lcase
+                                              (α := T)
+                                              (β := List T)
+                                              x9
+                                              ([] : List T)
+                                              (fun (_ : T) (x13 : List T) => x13);
+                                            («LeanBackend.orList» (x8).1 (x11).1,
+                                              fun (x13 : T) =>
                                                 «LeanBackend.atomic»
                                                   («LeanBackend.grp»
                                                     («LeanBackend.cat5»
                                                       «LeanBackend.tLp»
-                                                      («LeanBackend.argDoc» ((x6).2 x9))
+                                                      («LeanBackend.argDoc» ((x8).2 x13))
                                                       «LeanBackend.tConsOp»
                                                       («LeanBackend.indented»
-                                                        («LeanBackend.argDoc» ((x8).2 x9)))
+                                                        («LeanBackend.argDoc» ((x11).2 x13)))
                                                       «LeanBackend.tRp»)))
                                           else
                                             if (Const.eq (Const.label x2) (leaf 21)).label ≠ 0 then
@@ -11008,18 +13567,10 @@ def «LeanBackend.emTerm» :=
                                                   (Unit →
                                                     List T ×
                                                       (T →
-                                                        T)) := Const.lcase
-                                                (α := Unit → List T × (T → T))
-                                                (β := (Unit → List T × (T → T)) ×
-                                                  List (Unit → List T × (T → T)))
-                                                x3
-                                                (fun (_ : Unit) =>
-                                                  (([] : List T), fun (_ : T) => leaf 0),
-                                                  ([] : List (Unit → List T × (T → T))))
-                                                (fun (x5 : Unit → List T × (T → T))
-                                                   (x6 : List (Unit → List T × (T → T))) =>
-                                                  (x5, x6));
-                                              let x6 : List T × (T → T) := (x5).1 ();
+                                                        T)) := (fun (_ : Unit) =>
+                                                (([] : List T), fun (_ : T) => leaf 0),
+                                                x3);
+                                              let x6 : List T := Const.children x2;
                                               let x7 : (Unit → List T × (T → T)) ×
                                                 List
                                                   (Unit →
@@ -11037,21 +13588,61 @@ def «LeanBackend.emTerm» :=
                                                    (x8 : List (Unit → List T × (T → T))) =>
                                                   (x7, x8));
                                               let x8 : List T × (T → T) := (x7).1 ();
+                                              let x9 : List
+                                                T := Const.lcase
+                                                (α := T)
+                                                (β := List T)
+                                                x6
+                                                ([] : List T)
+                                                (fun (_ : T) (x10 : List T) => x10);
+                                              let x10 : (Unit → List T × (T → T)) ×
+                                                List
+                                                  (Unit →
+                                                    List T ×
+                                                      (T →
+                                                        T)) := Const.lcase
+                                                (α := Unit → List T × (T → T))
+                                                (β := (Unit → List T × (T → T)) ×
+                                                  List (Unit → List T × (T → T)))
+                                                (x7).2
+                                                (fun (_ : Unit) =>
+                                                  (([] : List T), fun (_ : T) => leaf 0),
+                                                  ([] : List (Unit → List T × (T → T))))
+                                                (fun (x10 : Unit → List T × (T → T))
+                                                   (x11 : List (Unit → List T × (T → T))) =>
+                                                  (x10, x11));
+                                              let x11 : List T × (T → T) := (x10).1 ();
+                                              let _ : List
+                                                T := Const.lcase
+                                                (α := T)
+                                                (β := List T)
+                                                x9
+                                                ([] : List T)
+                                                (fun (_ : T) (x13 : List T) => x13);
                                               (([] : List T),
                                                 fun (_ : T) =>
                                                   «LeanBackend.ap»
                                                     «LeanBackend.tFoldr»
                                                     ((«LeanBackend.namedArg»
                                                       «LeanBackend.tAlpha»
-                                                      x6) ::
+                                                      x8) ::
                                                       («LeanBackend/Docs.single»
                                                         («LeanBackend.namedArg»
                                                           «LeanBackend.tBeta»
-                                                          x8))))
+                                                          x11))))
                                             else
                                               if (Const.eq
                                                 (Const.label x2)
                                                 (leaf 22)).label ≠ 0 then
+                                                let x5 : (Unit → List T × (T → T)) ×
+                                                  List
+                                                    (Unit →
+                                                      List T ×
+                                                        (T →
+                                                          T)) := (fun (_ : Unit) =>
+                                                  (([] : List T), fun (_ : T) => leaf 0),
+                                                  x3);
+                                                let x6 : List T := Const.children x2;
                                                 let _ : (Unit → List T × (T → T)) ×
                                                   List
                                                     (Unit →
@@ -11061,14 +13652,26 @@ def «LeanBackend.emTerm» :=
                                                   (α := Unit → List T × (T → T))
                                                   (β := (Unit → List T × (T → T)) ×
                                                     List (Unit → List T × (T → T)))
-                                                  x3
+                                                  (x5).2
                                                   (fun (_ : Unit) =>
                                                     (([] : List T), fun (_ : T) => leaf 0),
                                                     ([] : List (Unit → List T × (T → T))))
-                                                  (fun (x5 : Unit → List T × (T → T))
-                                                     (x6 : List (Unit → List T × (T → T))) =>
-                                                    (x5, x6));
-                                                let x6 : T := Const.child x2 (leaf 0);
+                                                  (fun (x7 : Unit → List T × (T → T))
+                                                     (x8 : List (Unit → List T × (T → T))) =>
+                                                    (x7, x8));
+                                                let x8 : T := Const.lcase
+                                                  (α := T)
+                                                  (β := T)
+                                                  x6
+                                                  (leaf 0)
+                                                  (fun (x8 : T) (_ : List T) => x8);
+                                                let _ : List
+                                                  T := Const.lcase
+                                                  (α := T)
+                                                  (β := List T)
+                                                  x6
+                                                  ([] : List T)
+                                                  (fun (_ : T) (x10 : List T) => x10);
                                                 «LeanBackend.closed»
                                                   («LeanBackend.cat2»
                                                     «LeanBackend.tConstDot»
@@ -11076,11 +13679,20 @@ def «LeanBackend.emTerm» :=
                                                       (Const.children
                                                         («Prelude.at»
                                                           «Reader.primNames»
-                                                          (Const.label x6)))))
+                                                          (Const.label x8)))))
                                               else
                                                 if (Const.eq
                                                   (Const.label x2)
                                                   (leaf 23)).label ≠ 0 then
+                                                  let x5 : (Unit → List T × (T → T)) ×
+                                                    List
+                                                      (Unit →
+                                                        List T ×
+                                                          (T →
+                                                            T)) := (fun (_ : Unit) =>
+                                                    (([] : List T), fun (_ : T) => leaf 0),
+                                                    x3);
+                                                  let x6 : List T := Const.children x2;
                                                   let _ : (Unit → List T × (T → T)) ×
                                                     List
                                                       (Unit →
@@ -11090,20 +13702,32 @@ def «LeanBackend.emTerm» :=
                                                     (α := Unit → List T × (T → T))
                                                     (β := (Unit → List T × (T → T)) ×
                                                       List (Unit → List T × (T → T)))
-                                                    x3
+                                                    (x5).2
                                                     (fun (_ : Unit) =>
                                                       (([] : List T), fun (_ : T) => leaf 0),
                                                       ([] : List (Unit → List T × (T → T))))
-                                                    (fun (x5 : Unit → List T × (T → T))
-                                                       (x6 : List (Unit → List T × (T → T))) =>
-                                                      (x5, x6));
-                                                  let x6 : T := Const.child x2 (leaf 0);
+                                                    (fun (x7 : Unit → List T × (T → T))
+                                                       (x8 : List (Unit → List T × (T → T))) =>
+                                                      (x7, x8));
+                                                  let x8 : T := Const.lcase
+                                                    (α := T)
+                                                    (β := T)
+                                                    x6
+                                                    (leaf 0)
+                                                    (fun (x8 : T) (_ : List T) => x8);
+                                                  let _ : List
+                                                    T := Const.lcase
+                                                    (α := T)
+                                                    (β := List T)
+                                                    x6
+                                                    ([] : List T)
+                                                    (fun (_ : T) (x10 : List T) => x10);
                                                   «LeanBackend.closed»
                                                     («LeanBackend.cat3»
                                                       «LeanBackend.tLg»
                                                       («LeanBackend.text»
                                                         (Const.children
-                                                          (Const.child x0 (Const.label x6))))
+                                                          (Const.child x0 (Const.label x8))))
                                                       «LeanBackend.tRg»)
                                                 else
                                                   if (Const.eq
@@ -11114,18 +13738,10 @@ def «LeanBackend.emTerm» :=
                                                         (Unit →
                                                           List T ×
                                                             (T →
-                                                              T)) := Const.lcase
-                                                      (α := Unit → List T × (T → T))
-                                                      (β := (Unit → List T × (T → T)) ×
-                                                        List (Unit → List T × (T → T)))
-                                                      x3
-                                                      (fun (_ : Unit) =>
-                                                        (([] : List T), fun (_ : T) => leaf 0),
-                                                        ([] : List (Unit → List T × (T → T))))
-                                                      (fun (x5 : Unit → List T × (T → T))
-                                                         (x6 : List (Unit → List T × (T → T))) =>
-                                                        (x5, x6));
-                                                    let x6 : List T × (T → T) := (x5).1 ();
+                                                              T)) := (fun (_ : Unit) =>
+                                                      (([] : List T), fun (_ : T) => leaf 0),
+                                                      x3);
+                                                    let x6 : List T := Const.children x2;
                                                     let x7 : (Unit → List T × (T → T)) ×
                                                       List
                                                         (Unit →
@@ -11143,17 +13759,48 @@ def «LeanBackend.emTerm» :=
                                                          (x8 : List (Unit → List T × (T → T))) =>
                                                         (x7, x8));
                                                     let x8 : List T × (T → T) := (x7).1 ();
+                                                    let x9 : List
+                                                      T := Const.lcase
+                                                      (α := T)
+                                                      (β := List T)
+                                                      x6
+                                                      ([] : List T)
+                                                      (fun (_ : T) (x10 : List T) => x10);
+                                                    let x10 : (Unit → List T × (T → T)) ×
+                                                      List
+                                                        (Unit →
+                                                          List T ×
+                                                            (T →
+                                                              T)) := Const.lcase
+                                                      (α := Unit → List T × (T → T))
+                                                      (β := (Unit → List T × (T → T)) ×
+                                                        List (Unit → List T × (T → T)))
+                                                      (x7).2
+                                                      (fun (_ : Unit) =>
+                                                        (([] : List T), fun (_ : T) => leaf 0),
+                                                        ([] : List (Unit → List T × (T → T))))
+                                                      (fun (x10 : Unit → List T × (T → T))
+                                                         (x11 : List (Unit → List T × (T → T))) =>
+                                                        (x10, x11));
+                                                    let x11 : List T × (T → T) := (x10).1 ();
+                                                    let _ : List
+                                                      T := Const.lcase
+                                                      (α := T)
+                                                      (β := List T)
+                                                      x9
+                                                      ([] : List T)
+                                                      (fun (_ : T) (x13 : List T) => x13);
                                                     (([] : List T),
                                                       fun (_ : T) =>
                                                         «LeanBackend.ap»
                                                           «LeanBackend.tLcase»
                                                           ((«LeanBackend.namedArg»
                                                             «LeanBackend.tAlpha»
-                                                            x6) ::
+                                                            x8) ::
                                                             («LeanBackend/Docs.single»
                                                               («LeanBackend.namedArg»
                                                                 «LeanBackend.tBeta»
-                                                                x8))))
+                                                                x11))))
                                                   else
                                                     if (Const.eq
                                                       (Const.label x2)
@@ -11163,18 +13810,34 @@ def «LeanBackend.emTerm» :=
                                                           (Unit →
                                                             List T ×
                                                               (T →
+                                                                T)) := (fun (_ : Unit) =>
+                                                        (([] : List T), fun (_ : T) => leaf 0),
+                                                        x3);
+                                                      let x6 : List T := Const.children x2;
+                                                      let x7 : (Unit → List T × (T → T)) ×
+                                                        List
+                                                          (Unit →
+                                                            List T ×
+                                                              (T →
                                                                 T)) := Const.lcase
                                                         (α := Unit → List T × (T → T))
                                                         (β := (Unit → List T × (T → T)) ×
                                                           List (Unit → List T × (T → T)))
-                                                        x3
+                                                        (x5).2
                                                         (fun (_ : Unit) =>
                                                           (([] : List T), fun (_ : T) => leaf 0),
                                                           ([] : List (Unit → List T × (T → T))))
-                                                        (fun (x5 : Unit → List T × (T → T))
-                                                           (x6 : List (Unit → List T × (T → T))) =>
-                                                          (x5, x6));
-                                                      let x6 : List T × (T → T) := (x5).1 ();
+                                                        (fun (x7 : Unit → List T × (T → T))
+                                                           (x8 : List (Unit → List T × (T → T))) =>
+                                                          (x7, x8));
+                                                      let x8 : List T × (T → T) := (x7).1 ();
+                                                      let _ : List
+                                                        T := Const.lcase
+                                                        (α := T)
+                                                        (β := List T)
+                                                        x6
+                                                        ([] : List T)
+                                                        (fun (_ : T) (x10 : List T) => x10);
                                                       (([] : List T),
                                                         fun (_ : T) =>
                                                           «LeanBackend.ap»
@@ -11182,7 +13845,7 @@ def «LeanBackend.emTerm» :=
                                                             («LeanBackend/Docs.single»
                                                               («LeanBackend.namedArg»
                                                                 «LeanBackend.tAlpha»
-                                                                x6)))
+                                                                x8)))
                                                     else
                                                       «LeanBackend.closed» «LeanBackend.tUnder»)
       x1

@@ -253,18 +253,46 @@ def «PartialHorn/OOpSig.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «PartialHorn/OOpSig.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «PartialHorn/OOpSig.nthOf» :=
@@ -297,9 +325,23 @@ def «PartialHorn/OOpSig.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -308,38 +350,91 @@ def «PartialHorn.opArgs» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let x4 : T := x2;
-            let x5 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x5 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x5
-                  ([] : List T)
-                  (fun (_ : T) (x7 : List T) => x7))
-              (Const.children x4)
-              (leaf 0);
-            x5);
+            let x2 : List T := Const.children x1;
+            let x3 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let x7 : T := x3;
+            let x8 : List T := Const.children x7; let x9 : List T := x8; x9);
     x1
 
 def «PartialHorn.opSort» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let x3 : T := Const.child x1 (leaf 1); x3);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let x5 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x5);
     x1
 
 def «PartialHorn.bindOT» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Prelude.none»);
+                     let _ : List T := Const.children x2; «Prelude.none»);
     x2
 
 def «PartialHorn.sortOf» :=
@@ -420,15 +515,67 @@ def «PartialHorn.eqn» :=
 def «PartialHorn.eqLhs» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let x2 : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1); x2);
+                   let x2 : List T := Const.children x1;
+                   let x3 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x3);
     x1
 
 def «PartialHorn.eqRhs» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let x3 : T := Const.child x1 (leaf 1); x3);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let x5 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x5);
     x1
 
 def «PartialHorn.eqSubst» :=
@@ -575,18 +722,46 @@ def «PartialHorn/OEqn.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «PartialHorn/OEqn.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «PartialHorn/OEqn.nthOf» :=
@@ -619,9 +794,23 @@ def «PartialHorn/OEqn.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -775,18 +964,46 @@ def «PartialHorn/OSequent.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «PartialHorn/OSequent.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «PartialHorn/OSequent.nthOf» :=
@@ -819,9 +1036,23 @@ def «PartialHorn/OSequent.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -830,54 +1061,142 @@ def «PartialHorn.seqCtx» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2);
-            let x5 : T := x2;
+            let x2 : List T := Const.children x1;
+            let x3 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
             let x6 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x6 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x6
-                  ([] : List T)
-                  (fun (_ : T) (x8 : List T) => x8))
-              (Const.children x5)
-              (leaf 0);
-            x6);
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let x9 : T := x3;
+            let x10 : List T := Const.children x9; let x11 : List T := x10; x11);
     x1
 
 def «PartialHorn.seqHyps» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let x3 : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2);
-            let x5 : T := x3;
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let x5 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
             let x6 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x6 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x6
-                  ([] : List T)
-                  (fun (_ : T) (x8 : List T) => x8))
-              (Const.children x5)
-              (leaf 0);
-            x6);
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let x9 : T := x5;
+            let x10 : List T := Const.children x9; let x11 : List T := x10; x11);
     x1
 
 def «PartialHorn.seqConcl» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let x4 : T := Const.child x1 (leaf 2); x4);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let x7 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   x7);
     x1
 
 def «PartialHorn.mkSeq» :=
@@ -911,44 +1230,70 @@ def «PartialHorn.thySig» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let x4 : T := x2;
-            let x5 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x5 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x5
-                  ([] : List T)
-                  (fun (_ : T) (x7 : List T) => x7))
-              (Const.children x4)
-              (leaf 0);
-            x5);
+            let x2 : List T := Const.children x1;
+            let x3 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let x7 : T := x3;
+            let x8 : List T := Const.children x7; let x9 : List T := x8; x9);
     x1
 
 def «PartialHorn.thyAxioms» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let x3 : T := Const.child x1 (leaf 1);
-            let x4 : T := x3;
-            let x5 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x5 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x5
-                  ([] : List T)
-                  (fun (_ : T) (x7 : List T) => x7))
-              (Const.children x4)
-              (leaf 0);
-            x5);
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let x5 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let x7 : T := x5;
+            let x8 : List T := Const.children x7; let x9 : List T := x8; x9);
     x1
 
 def «PartialHorn.pcTrees» :=
@@ -1009,47 +1354,115 @@ def «PartialHorn.lhsOf» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let x2 : T := Const.child x1 (leaf 0);
-                     «Prelude.some» («PartialHorn.eqLhs» x2)
+                     let x2 : List T := Const.children x1;
+                     let x3 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     «Prelude.some» («PartialHorn.eqLhs» x3)
                    else
-                     «Prelude.none»);
+                     let _ : List T := Const.children x1; «Prelude.none»);
     x1
 
 def «PartialHorn.rhsOf» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let x2 : T := Const.child x1 (leaf 0);
-                     «Prelude.some» («PartialHorn.eqRhs» x2)
+                     let x2 : List T := Const.children x1;
+                     let x3 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     «Prelude.some» («PartialHorn.eqRhs» x3)
                    else
-                     «Prelude.none»);
+                     let _ : List T := Const.children x1; «Prelude.none»);
     x1
 
 def «PartialHorn.bindE» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «PartialHorn/OEqn.nothing»);
+                     let _ : List T := Const.children x2; «PartialHorn/OEqn.nothing»);
     x2
 
 def «PartialHorn.mapE» :=
   fun (x0 : T → T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); «PartialHorn/OEqn.just» (x0 x3)
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     «PartialHorn/OEqn.just» (x0 x4)
                    else
-                     «PartialHorn/OEqn.nothing»);
+                     let _ : List T := Const.children x2; «PartialHorn/OEqn.nothing»);
     x2
 
 def «PartialHorn.bindSE» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «PartialHorn/OEqn.nothing»);
+                     let _ : List T := Const.children x2; «PartialHorn/OEqn.nothing»);
     x2
 
 def «PartialHorn.bindTE» :=
@@ -1303,18 +1716,46 @@ def «PartialHorn/OPDefn.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «PartialHorn/OPDefn.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «PartialHorn/OPDefn.nthOf» :=
@@ -1347,9 +1788,23 @@ def «PartialHorn/OPDefn.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -1364,18 +1819,46 @@ def «PartialHorn/OPDefnList.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «PartialHorn/OPDefnList.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «PartialHorn/OPDefnList.nthOf» :=
@@ -1408,9 +1891,23 @@ def «PartialHorn/OPDefnList.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -1419,39 +1916,140 @@ def «PartialHorn.pdCtx» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2);
-            let x5 : T := x2;
+            let x2 : List T := Const.children x1;
+            let x3 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
             let x6 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x6 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x6
-                  ([] : List T)
-                  (fun (_ : T) (x8 : List T) => x8))
-              (Const.children x5)
-              (leaf 0);
-            x6);
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let x9 : T := x3;
+            let x10 : List T := Const.children x9; let x11 : List T := x10; x11);
     x1
 
 def «PartialHorn.pdSort» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let x3 : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2); x3);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let x5 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   x5);
     x1
 
 def «PartialHorn.pdBody» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let x4 : T := Const.child x1 (leaf 2); x4);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let x7 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   x7);
     x1
 
 def «PartialHorn.opVars» :=
@@ -4121,18 +4719,46 @@ def «Infer/ODfd.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Infer/ODfd.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Infer/ODfd.nthOf» :=
@@ -4165,9 +4791,23 @@ def «Infer/ODfd.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -4181,18 +4821,46 @@ def «Infer/OODfd.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Infer/OODfd.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Infer/OODfd.nthOf» :=
@@ -4225,9 +4893,23 @@ def «Infer/OODfd.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -4236,9 +4918,23 @@ def «Infer.mapOT» :=
   fun (x0 : T → T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); «Prelude.some» (x0 x3)
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     «Prelude.some» (x0 x4)
                    else
-                     «Prelude.none»);
+                     let _ : List T := Const.children x2; «Prelude.none»);
     x2
 
 def «Infer.mapTD» :=
@@ -4253,9 +4949,23 @@ def «Infer.bindST» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Prelude.none»);
+                     let _ : List T := Const.children x2; «Prelude.none»);
     x2
 
 def «Infer.argSorts» :=
@@ -4392,18 +5102,46 @@ def «Infer/OAnn.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Infer/OAnn.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Infer/OAnn.nthOf» :=
@@ -4436,9 +5174,23 @@ def «Infer/OAnn.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -4508,25 +5260,139 @@ def «Infer/Anns.atOr» :=
 def «Infer.annSort» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let x2 : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2); x2);
+                   let x2 : List T := Const.children x1;
+                   let x3 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   x3);
     x1
 
 def «Infer.annLo» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let x3 : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2); x3);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let x5 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   x5);
     x1
 
 def «Infer.annHi» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let x4 : T := Const.child x1 (leaf 2); x4);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let x7 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   x7);
     x1
 
 def «Infer.typed» :=
@@ -4542,18 +5408,46 @@ def «Infer/OTyped.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Infer/OTyped.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Infer/OTyped.nthOf» :=
@@ -4586,9 +5480,23 @@ def «Infer/OTyped.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -4714,15 +5622,67 @@ def «Infer/EachTyped.take» :=
 def «Infer.tyTerm» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let x2 : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1); x2);
+                   let x2 : List T := Const.children x1;
+                   let x3 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x3);
     x1
 
 def «Infer.tyAnn» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let x3 : T := Const.child x1 (leaf 1); x3);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let x5 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x5);
     x1
 
 def «Infer.ann0» := «Infer.ann» (leaf 0) (leaf 0) (leaf 0)
@@ -4747,156 +5707,522 @@ def «Infer.envDefs» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2);
-            let _ : T := Const.child x1 (leaf 3);
-            let _ : T := Const.child x1 (leaf 4);
-            let _ : T := Const.child x1 (leaf 5);
-            let x8 : T := x2;
-            let x9 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x9 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x9
-                  ([] : List T)
-                  (fun (_ : T) (x11 : List T) => x11))
-              (Const.children x8)
-              (leaf 0);
-            x9);
+            let x2 : List T := Const.children x1;
+            let x3 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let x6 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let x8 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x8
+              (leaf 0)
+              (fun (x9 : T) (_ : List T) => x9);
+            let x10 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x8
+              ([] : List T)
+              (fun (_ : T) (x11 : List T) => x11);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x10
+              (leaf 0)
+              (fun (x11 : T) (_ : List T) => x11);
+            let x12 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x10
+              ([] : List T)
+              (fun (_ : T) (x13 : List T) => x13);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x12
+              (leaf 0)
+              (fun (x13 : T) (_ : List T) => x13);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x12
+              ([] : List T)
+              (fun (_ : T) (x15 : List T) => x15);
+            let x15 : T := x3;
+            let x16 : List T := Const.children x15; let x17 : List T := x16; x17);
     x1
 
 def «Infer.envAxs» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let x3 : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2);
-            let _ : T := Const.child x1 (leaf 3);
-            let _ : T := Const.child x1 (leaf 4);
-            let _ : T := Const.child x1 (leaf 5);
-            let x8 : T := x3;
-            let x9 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x9 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x9
-                  ([] : List T)
-                  (fun (_ : T) (x11 : List T) => x11))
-              (Const.children x8)
-              (leaf 0);
-            x9);
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let x5 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let x6 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let x8 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x8
+              (leaf 0)
+              (fun (x9 : T) (_ : List T) => x9);
+            let x10 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x8
+              ([] : List T)
+              (fun (_ : T) (x11 : List T) => x11);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x10
+              (leaf 0)
+              (fun (x11 : T) (_ : List T) => x11);
+            let x12 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x10
+              ([] : List T)
+              (fun (_ : T) (x13 : List T) => x13);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x12
+              (leaf 0)
+              (fun (x13 : T) (_ : List T) => x13);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x12
+              ([] : List T)
+              (fun (_ : T) (x15 : List T) => x15);
+            let x15 : T := x5;
+            let x16 : List T := Const.children x15; let x17 : List T := x16; x17);
     x1
 
 def «Infer.envSg» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let x4 : T := Const.child x1 (leaf 2);
-            let _ : T := Const.child x1 (leaf 3);
-            let _ : T := Const.child x1 (leaf 4);
-            let _ : T := Const.child x1 (leaf 5);
-            let x8 : T := x4;
-            let x9 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x9 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x9
-                  ([] : List T)
-                  (fun (_ : T) (x11 : List T) => x11))
-              (Const.children x8)
-              (leaf 0);
-            x9);
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let x6 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let x7 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let x8 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x8
+              (leaf 0)
+              (fun (x9 : T) (_ : List T) => x9);
+            let x10 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x8
+              ([] : List T)
+              (fun (_ : T) (x11 : List T) => x11);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x10
+              (leaf 0)
+              (fun (x11 : T) (_ : List T) => x11);
+            let x12 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x10
+              ([] : List T)
+              (fun (_ : T) (x13 : List T) => x13);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x12
+              (leaf 0)
+              (fun (x13 : T) (_ : List T) => x13);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x12
+              ([] : List T)
+              (fun (_ : T) (x15 : List T) => x15);
+            let x15 : T := x7;
+            let x16 : List T := Const.children x15; let x17 : List T := x16; x17);
     x1
 
 def «Infer.envDfds» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2);
-            let x5 : T := Const.child x1 (leaf 3);
-            let _ : T := Const.child x1 (leaf 4);
-            let _ : T := Const.child x1 (leaf 5);
-            let x8 : T := x5;
-            let x9 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x9 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x9
-                  ([] : List T)
-                  (fun (_ : T) (x11 : List T) => x11))
-              (Const.children x8)
-              (leaf 0);
-            x9);
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let x6 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let x8 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let x9 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x8
+              (leaf 0)
+              (fun (x9 : T) (_ : List T) => x9);
+            let x10 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x8
+              ([] : List T)
+              (fun (_ : T) (x11 : List T) => x11);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x10
+              (leaf 0)
+              (fun (x11 : T) (_ : List T) => x11);
+            let x12 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x10
+              ([] : List T)
+              (fun (_ : T) (x13 : List T) => x13);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x12
+              (leaf 0)
+              (fun (x13 : T) (_ : List T) => x13);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x12
+              ([] : List T)
+              (fun (_ : T) (x15 : List T) => x15);
+            let x15 : T := x9;
+            let x16 : List T := Const.children x15; let x17 : List T := x16; x17);
     x1
 
 def «Infer.envDoms» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2);
-            let _ : T := Const.child x1 (leaf 3);
-            let x6 : T := Const.child x1 (leaf 4);
-            let _ : T := Const.child x1 (leaf 5);
-            let x8 : T := x6;
-            let x9 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x9 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x9
-                  ([] : List T)
-                  (fun (_ : T) (x11 : List T) => x11))
-              (Const.children x8)
-              (leaf 0);
-            x9);
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let x6 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let x8 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x8
+              (leaf 0)
+              (fun (x9 : T) (_ : List T) => x9);
+            let x10 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x8
+              ([] : List T)
+              (fun (_ : T) (x11 : List T) => x11);
+            let x11 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x10
+              (leaf 0)
+              (fun (x11 : T) (_ : List T) => x11);
+            let x12 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x10
+              ([] : List T)
+              (fun (_ : T) (x13 : List T) => x13);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x12
+              (leaf 0)
+              (fun (x13 : T) (_ : List T) => x13);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x12
+              ([] : List T)
+              (fun (_ : T) (x15 : List T) => x15);
+            let x15 : T := x11;
+            let x16 : List T := Const.children x15; let x17 : List T := x16; x17);
     x1
 
 def «Infer.envCods» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2);
-            let _ : T := Const.child x1 (leaf 3);
-            let _ : T := Const.child x1 (leaf 4);
-            let x7 : T := Const.child x1 (leaf 5);
-            let x8 : T := x7;
-            let x9 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x9 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x9
-                  ([] : List T)
-                  (fun (_ : T) (x11 : List T) => x11))
-              (Const.children x8)
-              (leaf 0);
-            x9);
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let x6 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let x8 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x8
+              (leaf 0)
+              (fun (x9 : T) (_ : List T) => x9);
+            let x10 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x8
+              ([] : List T)
+              (fun (_ : T) (x11 : List T) => x11);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x10
+              (leaf 0)
+              (fun (x11 : T) (_ : List T) => x11);
+            let x12 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x10
+              ([] : List T)
+              (fun (_ : T) (x13 : List T) => x13);
+            let x13 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x12
+              (leaf 0)
+              (fun (x13 : T) (_ : List T) => x13);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x12
+              ([] : List T)
+              (fun (_ : T) (x15 : List T) => x15);
+            let x15 : T := x13;
+            let x16 : List T := Const.children x15; let x17 : List T := x16; x17);
     x1
 
 def «Infer.envOfDefs» :=
@@ -4934,45 +6260,115 @@ def «Infer.bindYT» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Prelude.none»);
+                     let _ : List T := Const.children x2; «Prelude.none»);
     x2
 
 def «Infer.bindAT» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Prelude.none»);
+                     let _ : List T := Const.children x2; «Prelude.none»);
     x2
 
 def «Infer.mapYA» :=
   fun (x0 : T → T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); «Infer/OAnn.just» (x0 x3)
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     «Infer/OAnn.just» (x0 x4)
                    else
-                     «Infer/OAnn.nothing»);
+                     let _ : List T := Const.children x2; «Infer/OAnn.nothing»);
     x2
 
 def «Infer.mapAY» :=
   fun (x0 : T → T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); «Infer/OTyped.just» (x0 x3)
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     «Infer/OTyped.just» (x0 x4)
                    else
-                     «Infer/OTyped.nothing»);
+                     let _ : List T := Const.children x2; «Infer/OTyped.nothing»);
     x2
 
 def «Infer.bindOA» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Infer/OAnn.nothing»);
+                     let _ : List T := Const.children x2; «Infer/OAnn.nothing»);
     x2
 
 def «Infer.bindTA» :=
@@ -5086,58 +6482,97 @@ def «Infer.dfdOk» :=
                        («Infer/OODfd.fromMaybe» «Infer/ODfd.nothing» x6);
                      let x8 : T := x7;
                      if (Const.eq (Const.label x8) (leaf 0)).label ≠ 0 then
-                       let x9 : T := Const.child x8 (leaf 0);
-                       let x10 : T := «PartialHorn/OSequent.nthOf» («Infer.envAxs» x0) x9;
-                       if («PartialHorn/OSequent.isJust» x10).label ≠ 0 then
-                         let x11 : T := «PartialHorn/OSequent.fromMaybe» «Infer.seq0» x10;
+                       let x9 : List T := Const.children x8;
+                       let x10 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x9
+                         (leaf 0)
+                         (fun (x10 : T) (_ : List T) => x10);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x9
+                         ([] : List T)
+                         (fun (_ : T) (x12 : List T) => x12);
+                       let x12 : T := «PartialHorn/OSequent.nthOf» («Infer.envAxs» x0) x10;
+                       if («PartialHorn/OSequent.isJust» x12).label ≠ 0 then
+                         let x13 : T := «PartialHorn/OSequent.fromMaybe» «Infer.seq0» x12;
                          «Prelude.and»
-                           («PartialHorn.seqScoped» x11)
+                           («PartialHorn.seqScoped» x13)
                            («Prelude.and»
-                             («Base.equalTs» («PartialHorn.seqCtx» x11) x4)
+                             («Base.equalTs» («PartialHorn.seqCtx» x13) x4)
                              («Prelude.and»
-                               (Const.equal («PartialHorn.eqLhs» («PartialHorn.seqConcl» x11)) x5)
+                               (Const.equal («PartialHorn.eqLhs» («PartialHorn.seqConcl» x13)) x5)
                                («Prelude.and»
-                                 (Const.equal («PartialHorn.eqRhs» («PartialHorn.seqConcl» x11)) x5)
+                                 (Const.equal («PartialHorn.eqRhs» («PartialHorn.seqConcl» x13)) x5)
                                  («Infer/EachEqn.all»
                                    («Infer.hypOk» x1 x2)
-                                   («PartialHorn.seqHyps» x11)))))
+                                   («PartialHorn.seqHyps» x13)))))
                        else
                          leaf 0
                      else
                        if (Const.eq (Const.label x8) (leaf 1)).label ≠ 0 then
-                         let x9 : T := Const.child x8 (leaf 0);
-                         let x10 : T := «PartialHorn/OSequent.nthOf» («Infer.envAxs» x0) x9;
-                         if («PartialHorn/OSequent.isJust» x10).label ≠ 0 then
-                           let x11 : T := «PartialHorn/OSequent.fromMaybe» «Infer.seq0» x10;
+                         let x9 : List T := Const.children x8;
+                         let x10 : T := Const.lcase
+                           (α := T)
+                           (β := T)
+                           x9
+                           (leaf 0)
+                           (fun (x10 : T) (_ : List T) => x10);
+                         let _ : List
+                           T := Const.lcase
+                           (α := T)
+                           (β := List T)
+                           x9
+                           ([] : List T)
+                           (fun (_ : T) (x12 : List T) => x12);
+                         let x12 : T := «PartialHorn/OSequent.nthOf» («Infer.envAxs» x0) x10;
+                         if («PartialHorn/OSequent.isJust» x12).label ≠ 0 then
+                           let x13 : T := «PartialHorn/OSequent.fromMaybe» «Infer.seq0» x12;
                            «Prelude.and»
-                             («Base.equalTs» («PartialHorn.seqCtx» x11) x4)
+                             («Base.equalTs» («PartialHorn.seqCtx» x13) x4)
                              («Prelude.and»
-                               («Infer/EachEqn.isEmpty» («PartialHorn.seqHyps» x11))
+                               («Infer/EachEqn.isEmpty» («PartialHorn.seqHyps» x13))
                                («Prelude.and»
                                  («Base.not»
                                    (Const.eq
                                      (Const.label
-                                       («PartialHorn.eqLhs» («PartialHorn.seqConcl» x11)))
+                                       («PartialHorn.eqLhs» («PartialHorn.seqConcl» x13)))
                                      (leaf 0)))
                                  («Base.equalTs»
                                    (Const.children
-                                     («PartialHorn.eqLhs» («PartialHorn.seqConcl» x11)))
+                                     («PartialHorn.eqLhs» («PartialHorn.seqConcl» x13)))
                                    («Prelude.single» x5))))
                          else
                            leaf 0
                        else
-                         let x9 : T := Const.child x8 (leaf 0);
-                         let x10 : T := «PartialHorn/OSequent.nthOf» («Infer.envAxs» x0) x9;
-                         if («PartialHorn/OSequent.isJust» x10).label ≠ 0 then
-                           let x11 : T := «PartialHorn/OSequent.fromMaybe» «Infer.seq0» x10;
+                         let x9 : List T := Const.children x8;
+                         let x10 : T := Const.lcase
+                           (α := T)
+                           (β := T)
+                           x9
+                           (leaf 0)
+                           (fun (x10 : T) (_ : List T) => x10);
+                         let _ : List
+                           T := Const.lcase
+                           (α := T)
+                           (β := List T)
+                           x9
+                           ([] : List T)
+                           (fun (_ : T) (x12 : List T) => x12);
+                         let x12 : T := «PartialHorn/OSequent.nthOf» («Infer.envAxs» x0) x10;
+                         if («PartialHorn/OSequent.isJust» x12).label ≠ 0 then
+                           let x13 : T := «PartialHorn/OSequent.fromMaybe» «Infer.seq0» x12;
                            «Prelude.and»
-                             («Base.isEmpty» («PartialHorn.seqCtx» x11))
+                             («Base.isEmpty» («PartialHorn.seqCtx» x13))
                              («Prelude.and»
-                               («Infer/EachEqn.isEmpty» («PartialHorn.seqHyps» x11))
+                               («Infer/EachEqn.isEmpty» («PartialHorn.seqHyps» x13))
                                («Prelude.and»
                                  («Infer/EachTyped.isEmpty» x2)
                                  (Const.equal
-                                   («PartialHorn.eqRhs» («PartialHorn.seqConcl» x11))
+                                   («PartialHorn.eqRhs» («PartialHorn.seqConcl» x13))
                                    x5)))
                          else
                            leaf 0
@@ -5343,18 +6778,46 @@ def «Infer/OTypedList.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Infer/OTypedList.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Infer/OTypedList.nthOf» :=
@@ -5387,9 +6850,23 @@ def «Infer/OTypedList.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -5405,18 +6882,46 @@ def «Infer/OAnnList.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Infer/OAnnList.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Infer/OAnnList.nthOf» :=
@@ -5449,9 +6954,23 @@ def «Infer/OAnnList.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -5478,18 +6997,46 @@ def «Infer.bindLY» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Infer/OTyped.nothing»);
+                     let _ : List T := Const.children x2; «Infer/OTyped.nothing»);
     x2
 
 def «Infer.bindLA» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Infer/OAnn.nothing»);
+                     let _ : List T := Const.children x2; «Infer/OAnn.nothing»);
     x2
 
 def «Infer.poTrees» :=
@@ -5558,19 +7105,7 @@ def «Infer.patInfer» :=
               (fun (x7 : T) =>
                 let x8 : List
                   T := (let x8 : T := x7;
-                        let x9 : List
-                          T := Const.iter
-                          (α := List T)
-                          (fun (x9 : List T) =>
-                            Const.lcase
-                              (α := T)
-                              (β := List T)
-                              x9
-                              ([] : List T)
-                              (fun (_ : T) (x11 : List T) => x11))
-                          (Const.children x8)
-                          (leaf 0);
-                        x9);
+                        let x9 : List T := Const.children x8; let x10 : List T := x9; x10);
                 «Infer.mapAY»
                   (fun (x9 : T) =>
                     «Infer.typed»
@@ -5622,19 +7157,7 @@ def «Infer.treeInfer» :=
                           (x11).2)))
                     («Infer/Anns.reverse»
                       (let x10 : T := x9;
-                       let x11 : List
-                         T := Const.iter
-                         (α := List T)
-                         (fun (x11 : List T) =>
-                           Const.lcase
-                             (α := T)
-                             (β := List T)
-                             x11
-                             ([] : List T)
-                             (fun (_ : T) (x13 : List T) => x13))
-                         (Const.children x10)
-                         (leaf 0);
-                       x11),
+                       let x11 : List T := Const.children x10; let x12 : List T := x11; x12),
                       ([] : List T))
                     x8).2)))
       x5).2;
@@ -5726,15 +7249,67 @@ def «Language.pr» :=
 def «Language.p1» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let x2 : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1); x2);
+                   let x2 : List T := Const.children x1;
+                   let x3 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x3);
     x1
 
 def «Language.p2» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let x3 : T := Const.child x1 (leaf 1); x3);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let x5 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x5);
     x1
 
 def «Language/OTPair.nothing» := Const.node (leaf 0) ([] : List T)
@@ -5746,18 +7321,46 @@ def «Language/OTPair.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Language/OTPair.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Language/OTPair.nthOf» :=
@@ -5790,9 +7393,23 @@ def «Language/OTPair.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -6540,9 +8157,23 @@ def «Language.foldPs» :=
       (fun (x4 : T) (x5 : List T) =>
         let x6 : T := «Language/OTPair.nthOf» x1 x4;
         if (Const.eq (Const.label x6) (leaf 1)).label ≠ 0 then
-          let x7 : T := Const.child x6 (leaf 0); (x7 :: x5)
+          let x7 : List T := Const.children x6;
+          let x8 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x7
+            (leaf 0)
+            (fun (x8 : T) (_ : List T) => x8);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x7
+            ([] : List T)
+            (fun (_ : T) (x10 : List T) => x10);
+          (x8 :: x5)
         else
-          x5)
+          let _ : List T := Const.children x6; x5)
       ([] : List T)
       («Language.foldParams» x0 («Language/TPairs.length» x1) x2 x3);
     x4
@@ -6616,52 +8247,239 @@ def «Language.ldefn» :=
 def «Language.ldArity» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let x2 : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2);
-                   let _ : T := Const.child x1 (leaf 3); x2);
+                   let x2 : List T := Const.children x1;
+                   let x3 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   x3);
     x1
 
 def «Language.ldParams» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let x3 : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2);
-            let _ : T := Const.child x1 (leaf 3);
-            let x6 : T := x3;
-            let x7 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x7 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x7
-                  ([] : List T)
-                  (fun (_ : T) (x9 : List T) => x9))
-              (Const.children x6)
-              (leaf 0);
-            x7);
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let x5 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let x6 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let x8 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x8
+              (leaf 0)
+              (fun (x9 : T) (_ : List T) => x9);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x8
+              ([] : List T)
+              (fun (_ : T) (x11 : List T) => x11);
+            let x11 : T := x5;
+            let x12 : List T := Const.children x11; let x13 : List T := x12; x13);
     x1
 
 def «Language.ldType» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let x4 : T := Const.child x1 (leaf 2);
-                   let _ : T := Const.child x1 (leaf 3); x4);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let x7 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   x7);
     x1
 
 def «Language.ldBody» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2);
-                   let x5 : T := Const.child x1 (leaf 3); x5);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let x9 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   x9);
     x1
 
 def «Language/OLDefn.nothing» := Const.node (leaf 0) ([] : List T)
@@ -6673,18 +8491,46 @@ def «Language/OLDefn.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Language/OLDefn.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Language/OLDefn.nthOf» :=
@@ -6717,9 +8563,23 @@ def «Language/OLDefn.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -6731,37 +8591,237 @@ def «Language.primitive» :=
 def «Language.prArity» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let x2 : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2);
-                   let _ : T := Const.child x1 (leaf 3); x2);
+                   let x2 : List T := Const.children x1;
+                   let x3 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   x3);
     x1
 
 def «Language.prArrow» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let x3 : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2);
-                   let _ : T := Const.child x1 (leaf 3); x3);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let x5 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   x5);
     x1
 
 def «Language.prDom» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let x4 : T := Const.child x1 (leaf 2);
-                   let _ : T := Const.child x1 (leaf 3); x4);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let x7 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   x7);
     x1
 
 def «Language.prCod» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2);
-                   let x5 : T := Const.child x1 (leaf 3); x5);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let x9 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   x9);
     x1
 
 def «Language/OPrimitive.nothing» := Const.node (leaf 0) ([] : List T)
@@ -6773,18 +8833,46 @@ def «Language/OPrimitive.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Language/OPrimitive.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Language/OPrimitive.nthOf» :=
@@ -6817,9 +8905,23 @@ def «Language/OPrimitive.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -6835,10 +8937,50 @@ def «Language.defLanguage» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 0)).label ≠ 0 then
-                     let x2 : T := Const.child x1 (leaf 0); «Language/OLDefn.just» x2
+                     let x2 : List T := Const.children x1;
+                     let x3 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     «Language/OLDefn.just» x3
                    else
-                     let _ : T := Const.child x1 (leaf 0);
-                     let _ : T := Const.child x1 (leaf 1); «Language/OLDefn.nothing»);
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let x4 : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x4
+                       (leaf 0)
+                       (fun (x5 : T) (_ : List T) => x5);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x4
+                       ([] : List T)
+                       (fun (_ : T) (x7 : List T) => x7);
+                     «Language/OLDefn.nothing»);
     x1
 
 def «Language/ODefinition.nothing» :=
@@ -6851,18 +8993,46 @@ def «Language/ODefinition.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Language/ODefinition.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Language/ODefinition.nthOf» :=
@@ -6895,9 +9065,23 @@ def «Language/ODefinition.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -7033,54 +9217,142 @@ def «Language.gPrims» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2);
-            let x5 : T := x2;
+            let x2 : List T := Const.children x1;
+            let x3 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
             let x6 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x6 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x6
-                  ([] : List T)
-                  (fun (_ : T) (x8 : List T) => x8))
-              (Const.children x5)
-              (leaf 0);
-            x6);
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let x9 : T := x3;
+            let x10 : List T := Const.children x9; let x11 : List T := x10; x11);
     x1
 
 def «Language.gDefs» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let x3 : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2);
-            let x5 : T := x3;
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let x5 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
             let x6 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x6 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x6
-                  ([] : List T)
-                  (fun (_ : T) (x8 : List T) => x8))
-              (Const.children x5)
-              (leaf 0);
-            x6);
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let x9 : T := x5;
+            let x10 : List T := Const.children x9; let x11 : List T := x10; x11);
     x1
 
 def «Language.gBase» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let x4 : T := Const.child x1 (leaf 2); x4);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let x7 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   x7);
     x1
 
 def «Language.def0» := «Language.defObj» (leaf 0) (leaf 0)
@@ -7099,10 +9371,50 @@ def «Language.isTyOp» :=
          if («Language/ODefinition.isJust» x3).label ≠ 0 then
            let x4 : T := «Language/ODefinition.fromMaybe» «Language.def0» x3;
            if (Const.eq (Const.label x4) (leaf 0)).label ≠ 0 then
-             let _ : T := Const.child x4 (leaf 0); leaf 0
+             let x5 : List T := Const.children x4;
+             let _ : T := Const.lcase
+               (α := T)
+               (β := T)
+               x5
+               (leaf 0)
+               (fun (x6 : T) (_ : List T) => x6);
+             let _ : List
+               T := Const.lcase
+               (α := T)
+               (β := List T)
+               x5
+               ([] : List T)
+               (fun (_ : T) (x8 : List T) => x8);
+             leaf 0
            else
-             let x5 : T := Const.child x4 (leaf 0);
-             let _ : T := Const.child x4 (leaf 1); Const.eq x5 x2
+             let x5 : List T := Const.children x4;
+             let x6 : T := Const.lcase
+               (α := T)
+               (β := T)
+               x5
+               (leaf 0)
+               (fun (x6 : T) (_ : List T) => x6);
+             let x7 : List
+               T := Const.lcase
+               (α := T)
+               (β := List T)
+               x5
+               ([] : List T)
+               (fun (_ : T) (x8 : List T) => x8);
+             let _ : T := Const.lcase
+               (α := T)
+               (β := T)
+               x7
+               (leaf 0)
+               (fun (x8 : T) (_ : List T) => x8);
+             let _ : List
+               T := Const.lcase
+               (α := T)
+               (β := List T)
+               x7
+               ([] : List T)
+               (fun (_ : T) (x10 : List T) => x10);
+             Const.eq x6 x2
          else
            leaf 0));
     x3
@@ -7183,9 +9495,23 @@ def «Language.bindPP» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Language/OTPair.nothing»);
+                     let _ : List T := Const.children x2; «Language/OTPair.nothing»);
     x2
 
 def «Language.bindTP» :=
@@ -7200,27 +9526,69 @@ def «Language.bindRP» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Language/OTPair.nothing»);
+                     let _ : List T := Const.children x2; «Language/OTPair.nothing»);
     x2
 
 def «Language.bindDL» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Language/OLDefn.nothing»);
+                     let _ : List T := Const.children x2; «Language/OLDefn.nothing»);
     x2
 
 def «Language.bindLP» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Language/OTPair.nothing»);
+                     let _ : List T := Const.children x2; «Language/OTPair.nothing»);
     x2
 
 def «Language.tpairs» := fun (x0 : List T) => Const.node (leaf 0) x0
@@ -7234,18 +9602,46 @@ def «Language/OTPairList.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Language/OTPairList.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Language/OTPairList.nthOf» :=
@@ -7278,9 +9674,23 @@ def «Language/OTPairList.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -7298,9 +9708,23 @@ def «Language.bindQP» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Language/OTPair.nothing»);
+                     let _ : List T := Const.children x2; «Language/OTPair.nothing»);
     x2
 
 def «Language/TPairF.l2» :=
@@ -7670,20 +10094,8 @@ def «Language.compileStep» :=
                                                  (fun (x14 : T) =>
                                                    let x15 : List
                                                      T := (let x15 : T := x14;
-                                                           let x16 : List
-                                                             T := Const.iter
-                                                             (α := List T)
-                                                             (fun (x16 : List T) =>
-                                                               Const.lcase
-                                                                 (α := T)
-                                                                 (β := List T)
-                                                                 x16
-                                                                 ([] : List T)
-                                                                 (fun (_ : T) (x18 : List T) =>
-                                                                   x18))
-                                                             (Const.children x15)
-                                                             (leaf 0);
-                                                           x16);
+                                                           let x16 : List T := Const.children x15;
+                                                           let x17 : List T := x16; x17);
                                                    if («Prelude.and»
                                                      (Const.eq
                                                        («Prelude.length» x12)
@@ -7735,18 +10147,46 @@ def «Language.bindPD» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «PartialHorn/OPDefn.nothing»);
+                     let _ : List T := Const.children x2; «PartialHorn/OPDefn.nothing»);
     x2
 
 def «Language.bindPS» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «PartialHorn/OSequent.nothing»);
+                     let _ : List T := Const.children x2; «PartialHorn/OSequent.nothing»);
     x2
 
 def «Language.allSomeD» :=
@@ -7789,15 +10229,54 @@ def «Language.defCompile» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 0)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); «Language.ldCompile» x0 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     «Language.ldCompile» x0 x4
                    else
-                     let x3 : T := Const.child x2 (leaf 0);
-                     let x4 : T := Const.child x2 (leaf 1);
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let x5 : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     let x6 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x5
+                       (leaf 0)
+                       (fun (x6 : T) (_ : List T) => x6);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x5
+                       ([] : List T)
+                       (fun (_ : T) (x8 : List T) => x8);
                      «PartialHorn/OPDefn.just»
                        («PartialHorn.pdefn»
-                         («PartialHorn.sorts» («Prelude.replicate» x3 (leaf 0)))
+                         («PartialHorn.sorts» («Prelude.replicate» x4 (leaf 0)))
                          (leaf 0)
-                         x4));
+                         x6));
     x2
 
 def «Language/CompileAt.map» :=
@@ -8512,9 +10991,23 @@ def «Derivation.mapPT» :=
   fun (x0 : T → T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); «Prelude.some» (x0 x3)
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     «Prelude.some» (x0 x4)
                    else
-                     «Prelude.none»);
+                     let _ : List T := Const.children x2; «Prelude.none»);
     x2
 
 def «Derivation.pr0» := «Language.pr» (leaf 0) (leaf 0)
@@ -8570,18 +11063,46 @@ def «Derivation/OTerms.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Derivation/OTerms.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Derivation/OTerms.nthOf» :=
@@ -8614,9 +11135,23 @@ def «Derivation/OTerms.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -8635,23 +11170,24 @@ def «Derivation.termsOr» :=
     let x1 : List
       T := (let x1 : T := x0;
             if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-              let x2 : T := Const.child x1 (leaf 0);
-              let x3 : T := x2;
-              let x4 : List
-                T := Const.iter
-                (α := List T)
-                (fun (x4 : List T) =>
-                  Const.lcase
-                    (α := T)
-                    (β := List T)
-                    x4
-                    ([] : List T)
-                    (fun (_ : T) (x6 : List T) => x6))
-                (Const.children x3)
-                (leaf 0);
-              x4
+              let x2 : List T := Const.children x1;
+              let x3 : T := Const.lcase
+                (α := T)
+                (β := T)
+                x2
+                (leaf 0)
+                (fun (x3 : T) (_ : List T) => x3);
+              let _ : List
+                T := Const.lcase
+                (α := T)
+                (β := List T)
+                x2
+                ([] : List T)
+                (fun (_ : T) (x5 : List T) => x5);
+              let x5 : T := x3;
+              let x6 : List T := Const.children x5; let x7 : List T := x6; x7
             else
-              ([] : List T));
+              let _ : List T := Const.children x1; ([] : List T));
     x1
 
 def «Derivation.lowerHyps» :=
@@ -8676,67 +11212,241 @@ def «Derivation.mkThm» :=
 def «Derivation.thArity» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let x2 : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2);
-                   let _ : T := Const.child x1 (leaf 3); x2);
+                   let x2 : List T := Const.children x1;
+                   let x3 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   x3);
     x1
 
 def «Derivation.thCtx» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let x3 : T := Const.child x1 (leaf 1);
-            let _ : T := Const.child x1 (leaf 2);
-            let _ : T := Const.child x1 (leaf 3);
-            let x6 : T := x3;
-            let x7 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x7 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x7
-                  ([] : List T)
-                  (fun (_ : T) (x9 : List T) => x9))
-              (Const.children x6)
-              (leaf 0);
-            x7);
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let x5 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let x6 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let x8 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x8
+              (leaf 0)
+              (fun (x9 : T) (_ : List T) => x9);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x8
+              ([] : List T)
+              (fun (_ : T) (x11 : List T) => x11);
+            let x11 : T := x5;
+            let x12 : List T := Const.children x11; let x13 : List T := x12; x13);
     x1
 
 def «Derivation.thHyps» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let x4 : T := Const.child x1 (leaf 2);
-            let _ : T := Const.child x1 (leaf 3);
-            let x6 : T := x4;
-            let x7 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x7 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x7
-                  ([] : List T)
-                  (fun (_ : T) (x9 : List T) => x9))
-              (Const.children x6)
-              (leaf 0);
-            x7);
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let x6 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let x7 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let x8 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x8
+              (leaf 0)
+              (fun (x9 : T) (_ : List T) => x9);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x8
+              ([] : List T)
+              (fun (_ : T) (x11 : List T) => x11);
+            let x11 : T := x7;
+            let x12 : List T := Const.children x11; let x13 : List T := x12; x13);
     x1
 
 def «Derivation.thConcl» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let _ : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1);
-                   let _ : T := Const.child x1 (leaf 2);
-                   let x5 : T := Const.child x1 (leaf 3); x5);
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let x9 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   x9);
     x1
 
 def «Derivation/OThm.nothing» := Const.node (leaf 0) ([] : List T)
@@ -8748,18 +11458,46 @@ def «Derivation/OThm.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Derivation/OThm.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Derivation/OThm.nthOf» :=
@@ -8792,9 +11530,23 @@ def «Derivation/OThm.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -8925,18 +11677,46 @@ def «Derivation/OEntry.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Derivation/OEntry.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Derivation/OEntry.nthOf» :=
@@ -8969,9 +11749,23 @@ def «Derivation/OEntry.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -9043,18 +11837,60 @@ def «Derivation.entryLanguage» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 0)).label ≠ 0 then
-                     let x2 : T := Const.child x1 (leaf 0); «Derivation/OThm.just» x2
+                     let x2 : List T := Const.children x1;
+                     let x3 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     «Derivation/OThm.just» x3
                    else
-                     let _ : T := Const.child x1 (leaf 0); «Derivation/OThm.nothing»);
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     «Derivation/OThm.nothing»);
     x1
 
 def «Derivation.bindEH» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Derivation/OThm.nothing»);
+                     let _ : List T := Const.children x2; «Derivation/OThm.nothing»);
     x2
 
 def «Derivation.thmAt» :=
@@ -9068,9 +11904,37 @@ def «Derivation.entrySeq» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 0)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); «Derivation.thmSeq» x0 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     «Derivation.thmSeq» x0 x4
                    else
-                     let x3 : T := Const.child x2 (leaf 0); x3);
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4);
     x2
 
 def «Derivation.pdl0» := «PartialHorn.pdefns» ([] : List T)
@@ -9079,19 +11943,7 @@ def «Derivation.pdefnsOf» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x2 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x2
-                  ([] : List T)
-                  (fun (_ : T) (x4 : List T) => x4))
-              (Const.children x1)
-              (leaf 0);
-            x2);
+            let x2 : List T := Const.children x1; let x3 : List T := x2; x3);
     x1
 
 def «Derivation.anyDefs» :=
@@ -9144,44 +11996,70 @@ def «Derivation.scopeCtx» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : T := Const.child x1 (leaf 0);
-            let _ : T := Const.child x1 (leaf 1);
-            let x4 : T := x2;
-            let x5 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x5 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x5
-                  ([] : List T)
-                  (fun (_ : T) (x7 : List T) => x7))
-              (Const.children x4)
-              (leaf 0);
-            x5);
+            let x2 : List T := Const.children x1;
+            let x3 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let x7 : T := x3;
+            let x8 : List T := Const.children x7; let x9 : List T := x8; x9);
     x1
 
 def «Derivation.scopeHyps» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let x3 : T := Const.child x1 (leaf 1);
-            let x4 : T := x3;
-            let x5 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x5 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x5
-                  ([] : List T)
-                  (fun (_ : T) (x7 : List T) => x7))
-              (Const.children x4)
-              (leaf 0);
-            x5);
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let x5 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let x7 : T := x5;
+            let x8 : List T := Const.children x7; let x9 : List T := x8; x9);
     x1
 
 def «Derivation.ctxPair» :=
@@ -9291,19 +12169,7 @@ def «Derivation.scopesOf» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let x2 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x2 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x2
-                  ([] : List T)
-                  (fun (_ : T) (x4 : List T) => x4))
-              (Const.children x1)
-              (leaf 0);
-            x2);
+            let x2 : List T := Const.children x1; let x3 : List T := x2; x3);
     x1
 
 def «Derivation/OScopes.nothing» := Const.node (leaf 0) ([] : List T)
@@ -9315,18 +12181,46 @@ def «Derivation/OScopes.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Derivation/OScopes.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Derivation/OScopes.nthOf» :=
@@ -9359,9 +12253,23 @@ def «Derivation/OScopes.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -9381,9 +12289,23 @@ def «Derivation.bindST» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Prelude.none»);
+                     let _ : List T := Const.children x2; «Prelude.none»);
     x2
 
 def «Derivation.childCtxs» :=
@@ -9559,27 +12481,69 @@ def «Derivation.mapLT» :=
   fun (x0 : T → T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); «Prelude.some» (x0 x3)
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     «Prelude.some» (x0 x4)
                    else
-                     «Prelude.none»);
+                     let _ : List T := Const.children x2; «Prelude.none»);
     x2
 
 def «Derivation.bindPT» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Prelude.none»);
+                     let _ : List T := Const.children x2; «Prelude.none»);
     x2
 
 def «Derivation.bindHT» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Prelude.none»);
+                     let _ : List T := Const.children x2; «Prelude.none»);
     x2
 
 def «Derivation.rootUnitEta» :=
@@ -11004,18 +13968,46 @@ def «Derivation/ODevState.isJust» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let _ : T := Const.child x1 (leaf 0); leaf 1
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
                    else
-                     leaf 0);
+                     let _ : List T := Const.children x1; leaf 0);
     x1
 
 def «Derivation/ODevState.fromMaybe» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
                    else
-                     x0);
+                     let _ : List T := Const.children x2; x0);
     x2
 
 def «Derivation/ODevState.nthOf» :=
@@ -11048,9 +14040,23 @@ def «Derivation/ODevState.allJust» :=
       (fun (x1 : T) (x2 : T × List T) =>
         let x3 : T := x1;
         if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : T := Const.child x3 (leaf 0); ((x2).1, (x4 :: (x2).2))
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
         else
-          (leaf 0, (x2).2))
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
       (leaf 1, ([] : List T))
       x0;
     x1
@@ -11112,27 +14118,69 @@ def «Derivation.bindPD» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Derivation/ODevState.nothing»);
+                     let _ : List T := Const.children x2; «Derivation/ODevState.nothing»);
     x2
 
 def «Derivation.bindRD» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Derivation/ODevState.nothing»);
+                     let _ : List T := Const.children x2; «Derivation/ODevState.nothing»);
     x2
 
 def «Derivation.bindHD» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Derivation/ODevState.nothing»);
+                     let _ : List T := Const.children x2; «Derivation/ODevState.nothing»);
     x2
 
 def «Derivation.bindTD» :=
@@ -11147,38 +14195,91 @@ def «Derivation.bindSD» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
                    if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : T := Const.child x2 (leaf 0); x1 x3
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
                    else
-                     «Derivation/ODevState.nothing»);
+                     let _ : List T := Const.children x2; «Derivation/ODevState.nothing»);
     x2
 
 def «Derivation.stConsts» :=
   fun (x0 : T) =>
     let x1 : T := (let x1 : T := x0;
-                   let x2 : T := Const.child x1 (leaf 0);
-                   let _ : T := Const.child x1 (leaf 1); x2);
+                   let x2 : List T := Const.children x1;
+                   let x3 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x3);
     x1
 
 def «Derivation.stEntries» :=
   fun (x0 : T) =>
     let x1 : List
       T := (let x1 : T := x0;
-            let _ : T := Const.child x1 (leaf 0);
-            let x3 : T := Const.child x1 (leaf 1);
-            let x4 : T := x3;
-            let x5 : List
-              T := Const.iter
-              (α := List T)
-              (fun (x5 : List T) =>
-                Const.lcase
-                  (α := T)
-                  (β := List T)
-                  x5
-                  ([] : List T)
-                  (fun (_ : T) (x7 : List T) => x7))
-              (Const.children x4)
-              (leaf 0);
-            x5);
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let x5 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let x7 : T := x5;
+            let x8 : List T := Const.children x7; let x9 : List T := x8; x9);
     x1
 
 def «Derivation.quotStep» :=
@@ -11351,81 +14452,292 @@ def «Derivation.declStep» :=
   fun (x0 : T) (x1 : List T) (x2 : T) =>
     let x3 : T := (let x3 : T := x2;
                    if (Const.eq (Const.label x3) (leaf 0)).label ≠ 0 then
-                     let x4 : T := Const.child x3 (leaf 0);
-                     let x5 : T := Const.child x3 (leaf 1);
-                     if («Derivation.thmChecks» x0 x1 x4 x5).label ≠ 0 then
+                     let x4 : List T := Const.children x3;
+                     let x5 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x4
+                       (leaf 0)
+                       (fun (x5 : T) (_ : List T) => x5);
+                     let x6 : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x4
+                       ([] : List T)
+                       (fun (_ : T) (x7 : List T) => x7);
+                     let x7 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x6
+                       (leaf 0)
+                       (fun (x7 : T) (_ : List T) => x7);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x6
+                       ([] : List T)
+                       (fun (_ : T) (x9 : List T) => x9);
+                     if («Derivation.thmChecks» x0 x1 x5 x7).label ≠ 0 then
                        «Derivation/ODevState.just»
                          («Derivation.stateOf»
                            x0
-                           («Derivation.push» x1 («Derivation.entLang» x4)))
+                           («Derivation.push» x1 («Derivation.entLang» x5)))
                      else
                        «Derivation/ODevState.nothing»
                    else
                      if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-                       let x4 : T := Const.child x3 (leaf 0);
-                       let x5 : T := Const.child x3 (leaf 1);
-                       if («Derivation.certifies» x0 x1 x5 x4).label ≠ 0 then
+                       let x4 : List T := Const.children x3;
+                       let x5 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x4
+                         (leaf 0)
+                         (fun (x5 : T) (_ : List T) => x5);
+                       let x6 : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x4
+                         ([] : List T)
+                         (fun (_ : T) (x7 : List T) => x7);
+                       let x7 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x6
+                         (leaf 0)
+                         (fun (x7 : T) (_ : List T) => x7);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x6
+                         ([] : List T)
+                         (fun (_ : T) (x9 : List T) => x9);
+                       if («Derivation.certifies» x0 x1 x7 x5).label ≠ 0 then
                          «Derivation/ODevState.just»
                            («Derivation.stateOf»
                              x0
-                             («Derivation.push» x1 («Derivation.entComb» x4)))
+                             («Derivation.push» x1 («Derivation.entComb» x5)))
                        else
                          «Derivation/ODevState.nothing»
                      else
                        if (Const.eq (Const.label x3) (leaf 2)).label ≠ 0 then
-                         let x4 : T := Const.child x3 (leaf 0);
-                         if («Derivation.ldChecks» x0 x4).label ≠ 0 then
+                         let x4 : List T := Const.children x3;
+                         let x5 : T := Const.lcase
+                           (α := T)
+                           (β := T)
+                           x4
+                           (leaf 0)
+                           (fun (x5 : T) (_ : List T) => x5);
+                         let _ : List
+                           T := Const.lcase
+                           (α := T)
+                           (β := List T)
+                           x4
+                           ([] : List T)
+                           (fun (_ : T) (x7 : List T) => x7);
+                         if («Derivation.ldChecks» x0 x5).label ≠ 0 then
                            «Derivation/ODevState.just»
                              («Derivation.stateOf»
                                («Derivation.withDefs»
                                  x0
                                  («Derivation.pushDef»
                                    («Language.gDefs» x0)
-                                   («Language.defLang» x4)))
+                                   («Language.defLang» x5)))
                                x1)
                          else
                            «Derivation/ODevState.nothing»
                        else
                          if (Const.eq (Const.label x3) (leaf 3)).label ≠ 0 then
-                           let x4 : T := Const.child x3 (leaf 0);
-                           let x5 : T := Const.child x3 (leaf 1);
-                           if («Derivation.primConfirms» x0 x1 x4 x5).label ≠ 0 then
+                           let x4 : List T := Const.children x3;
+                           let x5 : T := Const.lcase
+                             (α := T)
+                             (β := T)
+                             x4
+                             (leaf 0)
+                             (fun (x5 : T) (_ : List T) => x5);
+                           let x6 : List
+                             T := Const.lcase
+                             (α := T)
+                             (β := List T)
+                             x4
+                             ([] : List T)
+                             (fun (_ : T) (x7 : List T) => x7);
+                           let x7 : T := Const.lcase
+                             (α := T)
+                             (β := T)
+                             x6
+                             (leaf 0)
+                             (fun (x7 : T) (_ : List T) => x7);
+                           let _ : List
+                             T := Const.lcase
+                             (α := T)
+                             (β := List T)
+                             x6
+                             ([] : List T)
+                             (fun (_ : T) (x9 : List T) => x9);
+                           if («Derivation.primConfirms» x0 x1 x5 x7).label ≠ 0 then
                              «Derivation/ODevState.just»
                                («Derivation.stateOf»
                                  («Derivation.withPrims»
                                    x0
-                                   («Derivation.pushPrim» («Language.gPrims» x0) x4))
+                                   («Derivation.pushPrim» («Language.gPrims» x0) x5))
                                  x1)
                            else
                              «Derivation/ODevState.nothing»
                          else
                            if (Const.eq (Const.label x3) (leaf 4)).label ≠ 0 then
-                             let x4 : T := Const.child x3 (leaf 0);
-                             let x5 : T := Const.child x3 (leaf 1);
-                             let x6 : T := Const.child x3 (leaf 2);
-                             if («Derivation.objConfirms» x0 x1 x4 x5 x6).label ≠ 0 then
+                             let x4 : List T := Const.children x3;
+                             let x5 : T := Const.lcase
+                               (α := T)
+                               (β := T)
+                               x4
+                               (leaf 0)
+                               (fun (x5 : T) (_ : List T) => x5);
+                             let x6 : List
+                               T := Const.lcase
+                               (α := T)
+                               (β := List T)
+                               x4
+                               ([] : List T)
+                               (fun (_ : T) (x7 : List T) => x7);
+                             let x7 : T := Const.lcase
+                               (α := T)
+                               (β := T)
+                               x6
+                               (leaf 0)
+                               (fun (x7 : T) (_ : List T) => x7);
+                             let x8 : List
+                               T := Const.lcase
+                               (α := T)
+                               (β := List T)
+                               x6
+                               ([] : List T)
+                               (fun (_ : T) (x9 : List T) => x9);
+                             let x9 : T := Const.lcase
+                               (α := T)
+                               (β := T)
+                               x8
+                               (leaf 0)
+                               (fun (x9 : T) (_ : List T) => x9);
+                             let _ : List
+                               T := Const.lcase
+                               (α := T)
+                               (β := List T)
+                               x8
+                               ([] : List T)
+                               (fun (_ : T) (x11 : List T) => x11);
+                             if («Derivation.objConfirms» x0 x1 x5 x7 x9).label ≠ 0 then
                                «Derivation/ODevState.just»
                                  («Derivation.stateOf»
                                    («Derivation.withDefs»
                                      x0
                                      («Derivation.pushDef»
                                        («Language.gDefs» x0)
-                                       («Language.defObj» x4 x5)))
+                                       («Language.defObj» x5 x7)))
                                    x1)
                              else
                                «Derivation/ODevState.nothing»
                            else
                              if (Const.eq (Const.label x3) (leaf 5)).label ≠ 0 then
-                               let x4 : T := Const.child x3 (leaf 0);
-                               let x5 : T := Const.child x3 (leaf 1);
-                               let x6 : T := Const.child x3 (leaf 2);
-                               «Derivation.quotStep» x0 x1 x4 x5 x6
+                               let x4 : List T := Const.children x3;
+                               let x5 : T := Const.lcase
+                                 (α := T)
+                                 (β := T)
+                                 x4
+                                 (leaf 0)
+                                 (fun (x5 : T) (_ : List T) => x5);
+                               let x6 : List
+                                 T := Const.lcase
+                                 (α := T)
+                                 (β := List T)
+                                 x4
+                                 ([] : List T)
+                                 (fun (_ : T) (x7 : List T) => x7);
+                               let x7 : T := Const.lcase
+                                 (α := T)
+                                 (β := T)
+                                 x6
+                                 (leaf 0)
+                                 (fun (x7 : T) (_ : List T) => x7);
+                               let x8 : List
+                                 T := Const.lcase
+                                 (α := T)
+                                 (β := List T)
+                                 x6
+                                 ([] : List T)
+                                 (fun (_ : T) (x9 : List T) => x9);
+                               let x9 : T := Const.lcase
+                                 (α := T)
+                                 (β := T)
+                                 x8
+                                 (leaf 0)
+                                 (fun (x9 : T) (_ : List T) => x9);
+                               let _ : List
+                                 T := Const.lcase
+                                 (α := T)
+                                 (β := List T)
+                                 x8
+                                 ([] : List T)
+                                 (fun (_ : T) (x11 : List T) => x11);
+                               «Derivation.quotStep» x0 x1 x5 x7 x9
                              else
-                               let x4 : T := Const.child x3 (leaf 0);
-                               let x5 : T := Const.child x3 (leaf 1);
-                               let x6 : T := Const.child x3 (leaf 2);
-                               let x7 : T := Const.child x3 (leaf 3);
-                               «Derivation.descStep» x0 x1 x4 x5 x6 x7);
+                               let x4 : List T := Const.children x3;
+                               let x5 : T := Const.lcase
+                                 (α := T)
+                                 (β := T)
+                                 x4
+                                 (leaf 0)
+                                 (fun (x5 : T) (_ : List T) => x5);
+                               let x6 : List
+                                 T := Const.lcase
+                                 (α := T)
+                                 (β := List T)
+                                 x4
+                                 ([] : List T)
+                                 (fun (_ : T) (x7 : List T) => x7);
+                               let x7 : T := Const.lcase
+                                 (α := T)
+                                 (β := T)
+                                 x6
+                                 (leaf 0)
+                                 (fun (x7 : T) (_ : List T) => x7);
+                               let x8 : List
+                                 T := Const.lcase
+                                 (α := T)
+                                 (β := List T)
+                                 x6
+                                 ([] : List T)
+                                 (fun (_ : T) (x9 : List T) => x9);
+                               let x9 : T := Const.lcase
+                                 (α := T)
+                                 (β := T)
+                                 x8
+                                 (leaf 0)
+                                 (fun (x9 : T) (_ : List T) => x9);
+                               let x10 : List
+                                 T := Const.lcase
+                                 (α := T)
+                                 (β := List T)
+                                 x8
+                                 ([] : List T)
+                                 (fun (_ : T) (x11 : List T) => x11);
+                               let x11 : T := Const.lcase
+                                 (α := T)
+                                 (β := T)
+                                 x10
+                                 (leaf 0)
+                                 (fun (x11 : T) (_ : List T) => x11);
+                               let _ : List
+                                 T := Const.lcase
+                                 (α := T)
+                                 (β := List T)
+                                 x10
+                                 ([] : List T)
+                                 (fun (_ : T) (x13 : List T) => x13);
+                               «Derivation.descStep» x0 x1 x5 x7 x9 x11);
     x3
 
 def «Derivation/Decls.single» :=

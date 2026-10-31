@@ -104,6 +104,35 @@ attribute [simp] label_node arity_node child_node
 @[simp] theorem lcase_cons {α β : Type} (x : α) (r : List α) (n : β) (c : α → List α → β) :
     Const.lcase (x :: r) n c = c x r := rfl
 
+/-- The head of a tree's children by case analysis, the leaf of label zero for a leaf, is its
+first child. -/
+@[simp] theorem lcase_children_head (t : Tree) :
+    Const.lcase t.children (leaf 0) (fun x _ ↦ x) = Const.child t (leaf 0) := by
+  have h := child_node t.label 0 t.children
+  rw [RoseTree.node_label_children] at h
+  rw [h]
+  cases t.children <;> rfl
+
+/-- The head of the tail of a tree's children by case analysis, the leaf of label zero where there
+is none, is its second child. -/
+@[simp] theorem lcase_children_second (t : Tree) :
+    Const.lcase (Const.lcase t.children [] fun _ r ↦ r) (leaf 0) (fun x _ ↦ x) =
+      Const.child t (leaf 1) := by
+  have h := child_node t.label 1 t.children
+  rw [RoseTree.node_label_children] at h
+  rw [h]
+  rcases t.children with _ | ⟨_, _ | ⟨_, _⟩⟩ <;> rfl
+
+/-- The head of the tail of the tail of a tree's children by case analysis, the leaf of label zero
+where there is none, is its third child. -/
+@[simp] theorem lcase_children_third (t : Tree) :
+    Const.lcase (Const.lcase (Const.lcase t.children [] fun _ r ↦ r) [] fun _ r ↦ r)
+      (leaf 0) (fun x _ ↦ x) = Const.child t (leaf 2) := by
+  have h := child_node t.label 2 t.children
+  rw [RoseTree.node_label_children] at h
+  rw [h]
+  rcases t.children with _ | ⟨_, _ | ⟨_, _ | ⟨_, _⟩⟩⟩ <;> rfl
+
 /-- Iteration as many times as a leaf's label. -/
 @[simp] theorem iter_leaf {α : Type} (s : α → α) (z : α) (n : ℕ) :
     Const.iter s z (leaf n) = Nat.repeat s n z := rfl
@@ -582,7 +611,7 @@ theorem tmpl_allJust_allT (ms : List Tree) :
         (Templates.allJust ms).2 = «Base.mapT» «Prelude.get» ms) :=
   ms.rec ⟨rfl, fun _ ↦ rfl⟩ fun m r ih ↦ by
     simp only [Templates.allJust, «Base.allT», «Base.mapT», foldr_eq, List.foldr_cons,
-      «Prelude.and», «Prelude.isSome», «Prelude.get»] at ih ⊢
+      «Prelude.and», «Prelude.isSome», «Prelude.get», children_eq, lcase_children_head] at ih ⊢
     by_cases h : RoseTree.label (Const.eq (Const.label m) (leaf 1)) = 0
     · simp only [h, ne_eq, not_true_eq_false, ↓reduceIte]
       exact ⟨trivial, fun h' ↦ absurd rfl h'⟩
@@ -656,6 +685,7 @@ macro (name := mirrorSimp) "mirror_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* 
     loc:(Lean.Parser.Tactic.location)? : tactic => `(tactic|
   simp only [label_leaf, eq_leaf, lt_leaf, add_leaf, sub_leaf, mul_leaf, equal_eq, label_node,
     node_leaf, children_node, arity_node, label_eq, children_eq, arity_eq, child_node, foldr_eq,
+    lcase_children_head, lcase_children_second, lcase_children_third,
     lcase_nil, lcase_cons, iter_leaf, repeat_zero, isSome_eq, get_eq, getD_eq, mapO_eq, bindO_eq,
     and_eq, or_eq,
     not_eq, length_eq, append_eq, single_eq, reverse_eq, replicate_eq, at_eq, nth_eq, isEmpty_eq,

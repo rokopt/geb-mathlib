@@ -1219,11 +1219,15 @@ def G : Internal.Globals := K.P.G
 /-- The connectives. -/
 def L : Conn := ⟨K.P.o, logicBase⟩
 
-/-- The rules: the equations among the hypotheses, addition's, the further equations, the
-vocabulary's, every element of a list satisfying a predicate unfolded, and the tail's rebuilding of
-lists of formulas. -/
+/-- The rules: the equations among the hypotheses, addition's, those of a list's head and tail by
+case analysis where they are proved (the datatype language's {lit}`walkEqs`), the further equations,
+the vocabulary's, every element of a list satisfying a predicate unfolded, and the tail's rebuilding
+of lists of formulas. -/
 def rules (Φ : List Term) : List NormRule :=
-  eqHyps Φ ++ addLemmaRules K.ix ++ K.more.map (fun nm ↦ .thm (K.ix nm) []) ++ vRules K.P K.ix ++
+  eqHyps Φ ++ addLemmaRules K.ix ++
+    (["walkHead", "walkTail"].filter fun nm ↦ 0 < K.ix nm ∧ K.ix nm < K.E.size).map
+      (fun nm ↦ .thm (K.ix nm) []) ++
+    K.more.map (fun nm ↦ .thm (K.ix nm) []) ++ vRules K.P K.ix ++
     [.delta (K.S.q + 5), .thm (K.ix "rebTail") [omega]]
 
 /-- The rules but the hypothesis of index i. -/
@@ -1315,11 +1319,13 @@ def image (h : ℕ) (f : Term → Term) (k : Deducer) : Deducer := fun Γ Φ ψ 
   pure (nd (.cut (Term.eq A' B')) [nd (.convFrom (Term.eq (f L) (f R)))
     [nd .cong [dA, dB], nd .join [dAh, nd .refl]], ← k Γ (Φ ++ [Term.eq A' B']) ψ])
 
-/-- A formula equal to truth, the last hypothesis, cut in itself. -/
-def trueOf (_ : Kit) (k : Deducer) : Deducer := fun Γ Φ ψ ↦ do
-  let (A', _) ← Internal.eqParts (← Φ[Φ.length - 1]?)
-  pure (nd (.cut A') [nd .conv [nd (.rwHyp (Φ.length - 1) false),
-    nd .join [nd .refl, nd .refl]], ← k Γ (Φ ++ [A']) ψ])
+/-- A formula equal to truth, the last hypothesis, cut in itself: truth folded by its
+introduction, unfolded, an equation, by its sides' equality. -/
+def trueOf (k : Deducer) : Deducer := fun Γ Φ ψ ↦ do
+  let (A', B') ← Internal.eqParts (← Φ[Φ.length - 1]?)
+  let dB := if B' == Internal.Logic.tt K.P.o then Internal.Logic.trueI
+    else nd .join [nd .refl, nd .refl]
+  pure (nd (.cut A') [nd .conv [nd (.rwHyp (Φ.length - 1) false), dB], ← k Γ (Φ ++ [A']) ψ])
 
 /-- The instance of the named theorem at terms of the context, cut in after the hypotheses. -/
 def cutThm (name : String) (σ : List Tree → List Term) (k : Deducer) : Deducer :=

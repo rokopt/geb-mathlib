@@ -77,7 +77,9 @@ def isJust (m : Tree) : Tree :=
 
 /-- An optional value's value, or a default. -/
 def fromMaybe (d m : Tree) : Tree :=
-  if (Const.eq (Const.label m) (leaf 1)).label ≠ 0 then Const.child m (leaf 0) else d
+  if (Const.eq (Const.label m) (leaf 1)).label ≠ 0 then Const.lcase (Const.children m) (leaf 0)
+    fun x _ ↦ x
+  else d
 
 /-- The element of a list at a position, when the list is longer. -/
 def nthOf (xs : List Tree) (i : Tree) : Tree :=
@@ -87,7 +89,8 @@ def nthOf (xs : List Tree) (i : Tree) : Tree :=
 def allJust (ms : List Tree) : Tree × List Tree :=
   Const.foldr
     (fun m acc ↦
-      if (Const.eq (Const.label m) (leaf 1)).label ≠ 0 then (acc.1, Const.child m (leaf 0) :: acc.2)
+      if (Const.eq (Const.label m) (leaf 1)).label ≠ 0 then
+        (acc.1, Const.lcase (Const.children m) (leaf 0) (fun x _ ↦ x) :: acc.2)
       else (leaf 0, acc.2))
     (leaf 1, []) ms
 
