@@ -14,8 +14,9 @@ set_option doc.verso true in
 # The datatype language's soundness at every tree
 
 The soundness of the datatype language's stage-1 compiler at every tree, by induction on rose
-trees ({lit}`sound`): at a node, the soundness at each child the hypothesis of induction, read as
-the soundness at every element of the children ({lit}`datatypeRoseAll`); the node's label decided,
+trees ({lit}`sound`) of the soundness at a tree and at its children ({lit}`nodeφ`): at a node, that
+at each child the hypothesis of induction, read as that at every element of the children
+({lit}`datatypeRoseAll`) and split ({lit}`datatypeSplit`); the node's label decided,
 an atom's by {name}`GebTests.Prototypes.FreeTopos.Datatypes.atomCase`, a list's by
 {name}`GebTests.Prototypes.FreeTopos.Datatypes.listCase`, and any other refuted by the typing, the
 expansion of such a node being the leaf 0, which no type is given. The statement takes as
@@ -57,11 +58,43 @@ keyword of {name}`laterKeywords`. -/
 def soundThm (P : Prog) (S : Defs) (T : Defs3) : Internal.Thm :=
   ⟨0, [treeTy], laterKeywords.map (headedφ P S T), datatypeφ P S T⟩
 
-/-- The soundness at every tree ({name}`soundThm`), by induction on rose trees: at a node, the
-hypothesis of induction the soundness at every child ({lit}`datatypeRoseAll`); the node's label
-decided, an atom's by {name}`atomCase`, a list's by {name}`listCase`, any other refuted, the
-statement's hypotheses introduced, by the tests of the node's expansion, typing and source form
-decided ({name}`splitSolve`). -/
+/-- The soundness at a tree, the variable of index 0, and at each of its children. -/
+def nodeφ (P : Prog) (S : Defs) (T : Defs3) : Term :=
+  Internal.Logic.conj P.o (datatypeφ P S T)
+    (S.allL (Term.lam treeTy (datatypeφ P S T)) (call D.children [] [v 0]))
+
+/-- The soundness at every element of a list and at each element's children, the variable of index
+0, split into the soundness at every element and that at each element's children: by induction
+on the list, at a construction the head's split and the hypothesis of induction at the rest. -/
+def datatypeSplit (P : Prog) (S : Defs) (T : Defs3) : Step :=
+  ("datatypeSplit", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, []⟩
+    let L := K.L
+    let ψ := Internal.Logic.imp P.o (S.allL (Term.lam treeTy (nodeφ P S T)) (v 0))
+      (Internal.Logic.conj P.o (S.allL (Term.lam treeTy (datatypeφ P S T)) (v 0))
+        (childrenφ P S T))
+    let d₀ ← dImpI L (K.solve 3) [] [] (Term.subst ψ (Internal.instVar
+      (Term.arr 0 [treeTy] Term.star)))
+    let anyHyp : Deducer := fun Γ Φ ψ ↦ (dHyp Γ Φ ψ).orElse fun _ ↦
+      (List.range Φ.length).reverse.findSome? fun h ↦ K.byHyp h Γ Φ ψ
+    -- hypotheses: the induction hypothesis, the construction's, normalized and split into the
+    -- head's and the rest's, the head's split; then the induction hypothesis's split
+    let cons : Deducer := dImpI L fun Γ₁ Φ₁ ψ₁ ↦
+      let h := Φ₁.length - 1
+      dRwHyp (evalRw K.G K.E (K.rulesEx Φ₁ h) .full) h (K.conjE fun Γ₂ Φ₂ ψ₂ ↦
+        dConjE L (Φ₂.length - 2) (dImpE L 0 (K.byHyp (Φ₂.length - 1)) (K.conjE (K.norm
+          (dConjI L (dConjI L anyHyp anyHyp) (dConjI L anyHyp anyHyp))))) Γ₂ Φ₂ ψ₂) Γ₁ Φ₁ ψ₁
+    let some d₁ := cons [list treeTy, treeTy] [Internal.weakenElem ψ]
+        (Internal.listConsAt 1 treeTy ψ)
+      | dbgTrace "datatypeSplit: not proved" fun _ ↦ none
+    pure (⟨0, [list treeTy], [], ψ⟩, nd (.listIndHyp 0 1) [d₀, d₁]))
+
+/-- The soundness at every tree ({name}`soundThm`), by induction on rose trees of the soundness at
+a tree and at its children ({name}`nodeφ`): at a node, the hypothesis of induction that soundness
+at every child ({lit}`datatypeRoseAll`), split ({name}`datatypeSplit`), the soundness at the
+children the second part, and at the node its label decided: an atom's by {name}`atomCase`, a
+list's by {name}`listCase`, any other refuted, the statement's hypotheses introduced, by the tests
+of the node's expansion, typing and source form decided ({name}`splitSolve`). -/
 def sound (P : Prog) (S : Defs) (T : Defs3) : Step :=
   ("sound", fun ix E ↦ do
     let K := appKit P S ix E
@@ -92,31 +125,36 @@ def sound (P : Prog) (S : Defs) (T : Defs3) : Step :=
           (linkK K "sound: a node of another label" <| dFalse L <| splitSolve K
             (fun Φ ↦ K.rules Φ ++ unfold) (fun _ ↦ [hyp 5, hyp 6, hyp 4]) 24
             ((List.range nFolds).map T.foldIdx) .full))) Γ₀ Φ₀ ψ₀
+    let φ' := nodeφ P S T
     let step : Deducer := fun Γ Φ ψ ↦
       let nL := laterKeywords.length
       (cutApply "datatypeRoseAll" (fun Γ ↦ [kids Γ]) [] <|
-        K.impE dHyp <| fun Γ Φ ψ ↦
+        K.impE dHyp <| cutApply "datatypeSplit" (fun Γ ↦ [kids Γ]) [] <|
+        K.impE dHyp <| K.conjE <| fun Γ Φ ψ ↦
         let X := ((evalRw K.G K.E (K.rules Φ) .full Γ Φ (atPos 0 Γ)).map Prod.fst).getD
           (atPos 0 Γ)
-        dBits L K.G K.E (ix "listCases") (ix "bitCases") (fun bs ↦
+        let node : Deducer := dBits L K.G K.E (ix "listCases") (ix "bitCases") (fun bs ↦
           match bs.map Oitavem.rank with
           | some 1 => linkK K "sound: an atom" <|
               cutApply "atomCase" (fun Γ ↦ [kids Γ]) [] closeLast
           | some 2 => linkK K "sound: a list" <|
               cutApply "listCase" (fun Γ ↦ [kids Γ])
-                (List.replicate (nL + 1) dHyp) closeLast
-          | _ => refute) 2 [] X Γ Φ ψ) Γ Φ ψ
+                (List.replicate (nL + 2) dHyp) closeLast
+          | _ => refute) 2 [] X
+        dConjI L node (linkK K "sound: the children" (K.byHyp (Φ.length - 2))) Γ Φ ψ) Γ Φ ψ
     let some d := (do
         let d₁ ← step [list treeTy, bitsTy] (a.hyps.map Internal.weaken2 ++
-          [Internal.roseHyp 0 1 a.concl]) (Internal.roseNodeAt 2 treeTy bitsTy a.concl)
-        pure (nd (.roseIndHyp 2 0 1) [d₁]))
+          [Internal.roseHyp 0 1 φ']) (Internal.roseNodeAt 2 treeTy bitsTy φ')
+        dCut φ' (nd (.roseIndHyp 2 0 1) [d₁])
+          (K.conjE fun Γ Φ ψ ↦ K.byHyp (Φ.length - 2) Γ Φ ψ) a.ctx a.hyps a.concl)
       | dbgTrace "sound: not proved" fun _ ↦ none
     pure (a, d))
 
 /-- The development of the soundness at every tree: the hypothesis of induction on rose trees at
-the soundness as the soundness at every child, and the soundness. -/
+the soundness at a tree and at its children as that soundness at every child, its split, and the
+soundness. -/
 def soundDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
-  [roseAllFor P S "datatypeRoseAll" (datatypeφ P S T), sound P S T]
+  [roseAllFor P S "datatypeRoseAll" (nodeφ P S T), datatypeSplit P S T, sound P S T]
 
 /-- The development of the soundness at every tree ({name}`soundDev3`), after the base's, the
 atom's, the list's, the stage functions' at applications, the applications', the list

@@ -25,9 +25,9 @@ present first; for more elements than the form takes, the inequalities of a leng
 numerals four and five ({lit}`neqMore`). The lists headed by the keywords of the kernel's
 constants are sound by
 {name}`GebTests.Prototypes.FreeTopos.Datatypes.constSrc`. Every list is sound ({lit}`listCase`),
-given that at its elements and at the lists headed by the keywords later developments prove sound
-({lit}`laterKeywords`): the empty list refuted; an atom's name decided against each keyword's,
-a list headed by an atom no keyword names sound by
+given that at its elements and at their children and at the lists headed by the keywords later
+developments prove sound ({lit}`laterKeywords`): the empty list refuted; an atom's name decided
+against each keyword's, a list headed by an atom no keyword names sound by
 {name}`GebTests.Prototypes.FreeTopos.Datatypes.appAtom`; a list headed by a list by
 {name}`GebTests.Prototypes.FreeTopos.Datatypes.appList`; and a head of any other label, whose
 expansion is the leaf 0, by the soundness of applications.
@@ -130,26 +130,39 @@ as hypotheses. -/
 def laterKeywords : List String :=
   ["Typing.kwDatum", "Typing.kwDecode", "Datatype.kwCase", "Datatype.kwCata"]
 
+/-- The keywords whose forms hold terms among their elements' elements, the bodies of a case
+analysis's and a structural recursion's clauses, whose soundness the soundness at their lists
+takes there too. -/
+def clauseKeywords : List String := ["Datatype.kwCase", "Datatype.kwCata"]
+
+/-- The soundness at each child of each element of a list, the variable of index 0. -/
+def childrenφ (P : Prog) (S : Defs) (T : Defs3) : Term :=
+  S.allL (Term.lam treeTy (S.allL (Term.lam treeTy (datatypeφ P S T)) (call D.children [] [v 0])))
+    (v 0)
+
 /-- The soundness at every list headed by the keyword {lit}`kw`, given that at its further
-elements. -/
+elements, and at their children for a keyword of {name}`clauseKeywords`. -/
 def headedφ (P : Prog) (S : Defs) (T : Defs3) (kw : String) : Term :=
+  let concl := Internal.instTerm [] [listOf (kwAtom P kw) (v 0)] (datatypeφ P S T)
   Internal.Logic.all P.o (list treeTy) (Term.lam (list treeTy) (Internal.Logic.imp P.o
     (S.allL (Term.lam treeTy (datatypeφ P S T)) (v 0))
-    (Internal.instTerm [] [listOf (kwAtom P kw) (v 0)] (datatypeφ P S T))))
+    (if kw ∈ clauseKeywords then Internal.Logic.imp P.o (childrenφ P S T) concl else concl)))
 
-/-- The soundness at a list, in the context of its elements, given that at each element and that
-at every list headed by a keyword of {name}`laterKeywords`. -/
+/-- The soundness at a list, in the context of its elements, given that at each element and at
+each element's children, and that at every list headed by a keyword of {name}`laterKeywords`. -/
 def listCaseThm (P : Prog) (S : Defs) (T : Defs3) : Internal.Thm :=
   ⟨0, [list treeTy],
-    S.allL (Term.lam treeTy (datatypeφ P S T)) (v 0) :: laterKeywords.map (headedφ P S T),
+    S.allL (Term.lam treeTy (datatypeφ P S T)) (v 0) :: childrenφ P S T ::
+      laterKeywords.map (headedφ P S T),
     Internal.instTerm [] [nodeT (Term.pair (numeral 2) (v 0))] (datatypeφ P S T)⟩
 
 /-- The soundness at a list ({name}`listCaseThm`): the list empty, refuted by its typing; else its
-head decided: an atom named by a keyword of {name}`laterKeywords`, the hypothesis, or by any other
-keyword, the soundness at the lists that keyword heads ({name}`kwList`, {name}`constSrc`); an atom
-named by none, {name}`appAtom`; a list, {name}`appList`; a node of any other label, whose expansion
-is the leaf 0, which has no type, the soundness of applications at source forms at it, its own
-soundness refuted. -/
+head decided: an atom named by a keyword of {name}`laterKeywords`, the hypothesis, at the rest's
+soundness and, for a keyword of {name}`clauseKeywords`, at that of its elements' children, or by
+any other keyword, the soundness at the lists that keyword heads ({name}`kwList`,
+{name}`constSrc`); an atom named by none, {name}`appAtom`; a list, {name}`appList`; a node of any
+other label, whose expansion is the leaf 0, which has no type, the soundness of applications at
+source forms at it, its own soundness refuted. -/
 def listCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
   ("listCase", fun ix E ↦ do
     let K := appKit P S ix E
@@ -199,8 +212,8 @@ def listCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
     -- the list's elements, its head and its rest, its head's label and elements, by position
     let cons : Deducer := fun Γ₁ Φ₁ ψ₁ ↦
       let (hPos, tPos) := (Γ₁.length - 2, Γ₁.length - 1)
-      -- the head's and the rest's soundness, after the hypotheses
-      splitAll 0 1 (fun Γ Φ ψ ↦
+      -- the head's and the rest's soundness, and at their children, after the hypotheses
+      splitAll 0 1 (splitAll 1 1 fun Γ Φ ψ ↦
       K.treeNode (atPos hPos Γ₁) (fun Γ₂ Φ₂ ψ₂ ↦
         let (lPos, hcsPos) := (Γ₂.length - 2, Γ₂.length - 1)
         let hcs (Γ : List Tree) : Term := atPos hcsPos Γ
@@ -218,7 +231,8 @@ def listCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
               K.image (Φ.length - 1) (fun t ↦ apps childrenT [t]) (fun Γ Φ ψ ↦
                 match laterKeywords.idxOf? kw with
                 | some j =>
-                  dAllE L K.G K.E (1 + j) (rs Γ) (K.impE anyHyp last) Γ Φ ψ
+                  dAllE L K.G K.E (2 + j) (rs Γ) (K.impE anyHyp
+                    (if kw ∈ clauseKeywords then K.impE anyHyp last else last)) Γ Φ ψ
                 | none =>
                   W₀cut (kwListName kw) (fun Γ ↦ [rs Γ]) [anyHyp] last Γ Φ ψ) Γ Φ ψ))
             (linkK K "listCase: an atom" <|
