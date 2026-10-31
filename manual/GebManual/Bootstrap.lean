@@ -6851,7 +6851,7 @@ the change that removes it.
   so a change to a layer's sources checks again that layer, the layers
   after it, and the equality of the program's exported definitions with
   their mirrors, and no other layer. The kernel makes the check in the
-  loading mode `rfl`, daily in CI and on demand; in the default mode
+  loading mode `rfl`, on demand; in the default mode
   `native` the facts it checks are axioms, declared after the compiled
   checker-evaluator has loaded the program
   (`docs/rules/ci-and-workflow.md` § Loading modes). Each global's type
