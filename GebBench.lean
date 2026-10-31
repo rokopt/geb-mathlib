@@ -8,6 +8,7 @@ module
 public import GebBench.Prototypes.FreeTopos.ByMachine
 public import GebBench.Prototypes.FreeTopos.Certified
 public import GebBench.Prototypes.FreeTopos.Literals
+public import GebBench.Prototypes.FreeTopos.Profile
 public import GebBench.Prototypes.FreeTopos.Rules
 public import GebBench.Prototypes.FreeTopos.TranslationProofs
 public import GebBench.Prototypes.SuccinctTree
