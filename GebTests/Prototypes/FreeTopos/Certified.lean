@@ -7,6 +7,7 @@ module
 
 public import GebTests.Prototypes.FreeTopos.Certified.Basic
 public import GebTests.Prototypes.FreeTopos.Certified.Datatype
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeList
 public import GebTests.Prototypes.FreeTopos.Certified.Expansion
 public import GebTests.Prototypes.FreeTopos.Certified.Normalization
 public import GebTests.Prototypes.FreeTopos.Certified.Substitution

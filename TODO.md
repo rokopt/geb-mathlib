@@ -155,46 +155,34 @@ records the mathematics of both.
 
 ### The slow checks among the routine checks
 
-The checks of `slow-checks.yml` are to join those of every push, leaving
-one division: the checks of the build and CI machinery
-(`scripts/test-tooling.sh`), which `scripts/pre-push-full.sh` adds, and
-the checks of the Lean, Geb and manual builds, which `scripts/pre-push.sh`
-and `ci.yml` run. The measurements of `manual/GebManual/CheckingCost.lean`
-bound the cost: every search in turn takes 2601 seconds on sixteen cores,
-the longest, `decode-case`, 495, and `datatype-app` reaches 7.2 gigabytes
-of resident memory; the hosted runners have taken from 0.6 to 1.2 times
-the local time of a search. The steps, in order:
+The searches of the certificates run on every push, in `ci.yml` and in
+`scripts/pre-push.sh` (`docs/rules/ci-and-workflow.md` § Certificates),
+and the check of `datatype-list` is among the tests, so `slow-checks.yml`
+holds the benchmarks and the library `GebSlow`. The steps that remain:
 
-1. A full `scripts/pre-push.sh` timed with the searches added, run in
-   parallel, before anything moves.
-2. Modules of `GebTests/Prototypes/FreeTopos/Certified/` checking the
+1. Modules of `GebTests/Prototypes/FreeTopos/Certified/` checking the
    certificates no module reads, the datatype language's but those of
-   its base, atoms and keywords' forms
-   (`docs/rules/ci-and-workflow.md` § Certificates), each timed; their
-   searches' checks as they store each declaration are those
-   certificates' only check until then.
-3. The module of `GebSlow` checking `datatype-list`, 176 seconds, moved
-   among the tests, beside the slowest test modules
-   (`GebTests.Prototypes.FreeTopos.Agreement.Load`, 130 seconds).
-4. The searches in `ci.yml`, one job to a search keyed as
-   `slow-checks.yml` keys them, the build shared rather than repeated in
-   each job, and in `scripts/pre-push.sh` by `scripts/certificates.sh
-   check` in parallel, skipped by a stamp keyed by the same inputs, as
-   the stamp of `lake exe cache get` skips the fetch.
-5. The module of `GebSlow` running the interaction-net compiler's larger
+   its base, atoms and keywords' forms, each timed; their searches'
+   checks as they store each declaration are those certificates' only
+   check until then. Each such module imports a module
+   `GebTests/Prototypes/FreeTopos/Datatype*.lean` of the soundness of the
+   typing and names its last theorem, so they are added as that work
+   settles them (the Bootstrap chapter's section The datatype language's
+   completion).
+2. The module of `GebSlow` running the interaction-net compiler's larger
    graph executions (`GebSlow/Prototypes/InteractionNet/CompilerGraph.lean`),
    585 seconds, more than four times the slowest test module, which no
    change to the internal language's checker touched: moved among the
-   tests once
-   the graph runtime's indexing and compaction are faster, or kept apart.
-6. The benchmarks, which measure and do not check, kept daily and on
-   demand, so that `slow-checks.yml` is the benchmarks alone, and the
-   table of the checks in `manual/GebManual/CheckingCost.lean` refreshed
-   from the next run of the hosted runners.
+   tests once the graph runtime's indexing and compaction are faster, or
+   kept apart. Moved, it leaves `slow-checks.yml` the benchmarks alone.
+3. The table of the checks in `manual/GebManual/CheckingCost.lean`
+   refreshed from the next runs of `ci.yml` and `slow-checks.yml` on the
+   hosted runners.
 
 The datatype language's completion adds searches and certificates, so
-steps 2 and 4 are measured again at its developments; the workstream
-depends on no part of it.
+the searches' time on every push, which the chapter's section The
+measurements gives for `scripts/pre-push.sh`, is measured again at its
+developments.
 
 ### Definitions
 

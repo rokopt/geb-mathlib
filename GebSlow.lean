@@ -5,7 +5,6 @@ Authors: Terence Rokop
 -/
 module
 
-public import GebSlow.Prototypes.FreeTopos.Certified.DatatypeList
 public import GebSlow.Prototypes.InteractionNet.CompilerGraph
 
 set_option doc.verso true in
@@ -18,5 +17,5 @@ demand.
 
 ## Tags
 
-test, certificate
+test
 -/

@@ -1,99 +1,20 @@
 name: Slow checks
 
-# The checks too slow for every push. Daily and on demand: the
-# regeneration of the certificates of the internal language's
-# developments, compared with the committed ones, for each search whose
-# inputs differ from those of its last passing run, and the checks of the
-# certificates too slow to build with the tests
-# (docs/rules/ci-and-workflow.md § Certificates); and the benchmarks
-# (§ Benchmarks).
+# The checks too slow for every push, daily and on demand: the checks
+# too slow to build with the tests, the library GebSlow; and the
+# benchmarks, which measure and do not check
+# (docs/rules/ci-and-workflow.md § Benchmarks).
 on:
   schedule:
     - cron: '0 6 * * *'
   workflow_dispatch:
-    inputs:
-      searches:
-        description: Run every search, whether or not its inputs have passed
-        type: boolean
-        default: false
 
 permissions:
   contents: read
 
 jobs:
-  searches:
-    name: List the searches of the certificates
-    runs-on: ubuntu-latest
-    timeout-minutes: 720
-    outputs:
-      names: ${{ steps.list.outputs.names }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - uses: leanprover/lean-action@24581d74d674803a25a81b10b059c5c0cdd344c6  # v1
-        with:
-          build: false
-          test: false
-          lint: false
-      - id: list
-        name: scripts/certificates.sh searches
-        run: |
-          names=$(bash scripts/certificates.sh searches | jq -Rnc '[inputs]')
-          echo "names=$names" >> "$GITHUB_OUTPUT"
-
-  # One job to a search, so that each runs within the hosted runners'
-  # limit on a job's time; a search reads the committed certificates it
-  # continues from.
-  certificates:
-    name: Regenerate and compare the certificates of ${{ matrix.search }}
-    needs: searches
-    runs-on: ubuntu-latest
-    timeout-minutes: 720
-    strategy:
-      fail-fast: false
-      matrix:
-        search: ${{ fromJSON(needs.searches.outputs.names) }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - uses: leanprover/lean-action@24581d74d674803a25a81b10b059c5c0cdd344c6  # v1
-        with:
-          build: false
-          test: false
-          lint: false
-      - name: lake build geb-certify
-        run: lake build geb-certify
-      # A search's certificates are a function of the generator's compiled
-      # code and of the committed certificates it reads, so a search that
-      # passed with the same executable and certificates is not run again.
-      # The key names the executable by its bytes, which a change that
-      # alters no compiled code leaves unchanged.
-      - id: key
-        name: Compute the key of the search's inputs
-        run: |
-          exe=$(sha256sum .lake/build/bin/geb-certify | cut -d ' ' -f 1)
-          certs=${{ hashFiles('bootstrap/certificates/*.cert', 'scripts/certificates.sh') }}
-          echo "key=search-${{ matrix.search }}-$exe-$certs" >> "$GITHUB_OUTPUT"
-      - id: passed
-        name: Look up a passing run at the key
-        if: ${{ !inputs.searches }}
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
-        with:
-          path: search-passed
-          key: ${{ steps.key.outputs.key }}
-          lookup-only: true
-      - name: scripts/certificates.sh check ${{ matrix.search }}
-        if: steps.passed.outputs.cache-hit != 'true'
-        run: |
-          bash scripts/certificates.sh check "${{ matrix.search }}"
-          echo "${{ steps.key.outputs.key }}" > search-passed
-      - name: Record the passing run at the key
-        if: steps.passed.outputs.cache-hit != 'true'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
-        with:
-          path: search-passed
-          key: ${{ steps.key.outputs.key }}
-
-  certified:
-    name: Build and lint the slow checks of the certificates
+  slow:
+    name: Build and lint the slow checks
     runs-on: ubuntu-latest
     timeout-minutes: 720
     steps:

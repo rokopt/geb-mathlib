@@ -93,7 +93,11 @@ own requires a prior `lake build`.
   fixed point of `geb-fmt` and, where the release pinned in
   `scripts/parinfer/` is installed, of both of parinfer's modes (§ Source
   documents and the formatter).
-- `lake build GebTests` then `lake exe batteries/runLinter GebTests`, then
+- `lake build GebTests`, then `scripts/certificates.sh check` (the
+  searches, in parallel; § Certificates), skipped while its inputs are
+  those recorded at its last passing run
+  (`.lake/certificates-check.stamp`), then
+  `lake exe batteries/runLinter GebTests`, then
   `scripts/literate.sh build` (§ Literate site build), whose
   `lake lint` lints `Geb`, then
   `scripts/manual.sh build` (§ Verso manual build). The axiom
@@ -275,12 +279,12 @@ each theorem with its derivation, as the table of the distinct nodes of
 their tree (`GebTests/Prototypes/FreeTopos/Stored.lean`). The modules of
 `GebTests/Prototypes/FreeTopos/Certified/` read the certificates of
 weakening, substitution, the expansion's identity, the lemmas of trees,
-the fundamental lemma and the datatype language's base and atoms, and
-state that each development proves its theorem in the program it is
-about. The
-check is decided by Lean's evaluator and declared by the command
-`evaluation_axiom` as an axiom in either loading mode, the kernel's
-reduction of a check of that size being out of reach. The axiom linter
+the fundamental lemma and the datatype language's base, atoms and
+keywords' forms, and state that each development proves its theorem in
+the program it is about. The check is decided by Lean's evaluator and
+declared by the command `evaluation_axiom` as an axiom in either loading
+mode, the kernel's reduction of a check of that size being out of reach.
+The axiom linter
 permits an axiom so declared only where the modules of
 `GebMeta.evaluationAxiomModules` declare it, and `#print axioms` lists it
 for every declaration that depends on it.
@@ -291,33 +295,36 @@ check` writes them into a temporary directory and compares them with the
 committed ones. A search may continue a development from the certificates
 of the searches before it, which it reads from the directory it writes
 into. Either command takes the names of searches to run, which
-`scripts/certificates.sh searches` lists; a search checked alone reads the
-committed certificates it continues from. A change to a development's
-proofs, or to a program it is about, is followed by `regen`.
-`slow-checks.yml` runs `check` daily and on demand, one job to a search,
-so that each runs within the hosted runners' limit on a job's time, and
-runs a search only where its inputs differ from those of its last
-passing run. A search's certificates are a function of the compiled code
-of `geb-certify` and of the committed certificates it reads, so the job
-keys a passing run by the executable's SHA-256 and the hash of the
-committed certificates and of `scripts/certificates.sh`, records it in
-the GitHub cache, and runs `check` at a key with no record. The
-executable is built reproducibly and linked statically, so a change that
-alters no compiled code leaves it, and so the key, unchanged.
+`scripts/certificates.sh searches` lists; `check` runs each search
+named, or with none named every search, each in a process of its own,
+`LEAN_NUM_THREADS` at a time, reading the committed certificates it
+continues from, and with none named also checks that every committed
+certificate is one a search writes. Where the environment variable
+`GEB_CERTIFY` names a built `geb-certify`, the script runs it and builds
+none. A change to a development's proofs, or to a program it is about,
+is followed by `regen`.
+
+A search's certificates are a function of the compiled code of
+`geb-certify` and of the committed certificates it reads, so a search
+that passed with the same executable and certificates is not run again.
+`ci.yml` builds the executable in one job and runs `check` in one job to
+a search, so that each runs within the hosted runners' limit on a job's
+time; each job keys a passing run by the executable's SHA-256 and the
+hash of the committed certificates and of `scripts/certificates.sh`,
+records it in the GitHub cache, and runs `check` at a key with no
+record. A record the GitHub cache evicts, after seven days without
+access or by the repository's limit on its size, runs the search again,
+and dispatching the workflow with its input `searches` runs every
+search. `scripts/pre-push.sh` records the same inputs, the SHA-256 of
+each, at its last passing run of `check`, and runs it where they differ.
+The executable is built reproducibly and linked statically, so a change
+that alters no compiled code leaves it, and so the key, unchanged.
 Documentation compiles to no code, but an operation that panics reports
-its source position, which is compiled into its message. A record the
-GitHub cache evicts, after seven days without access or by the
-repository's limit on its size, runs the search again, and dispatching
-the workflow with its input `searches` runs every search. The pre-push
-checklist and the other workflows check the committed certificates and
-do not search. A certificate whose check by Lean's
-evaluator takes hours is checked instead by a module of the library
-`GebSlow`, which neither `lake build` nor `lake test` builds and which
-`slow-checks.yml` builds and lints daily and on demand; its search's own
-check, as it stores each declaration, still runs with `regen` and
-`check`. The datatype language's other certificates are read by no
-module: the search's check as it stores each declaration is their only
-check, which `check` repeats where their searches run.
+its source position, which is compiled into its message. The other
+workflows check the committed certificates and do not search. The
+datatype language's certificates other than those the modules above
+read are read by no module: the search's check as it stores each
+declaration is their only check, which `check` repeats.
 
 ## Benchmarks
 
@@ -330,7 +337,9 @@ elaboration is cached and replays the timings of the run that built it.
 The executable is compiled, and each benchmark's measured computations
 are not extracted as closed terms, so that they run when they are timed
 rather than when the program starts. `slow-checks.yml` runs the
-benchmarks daily and on demand, beside the other slow checks, and the
+benchmarks daily and on demand, beside the library `GebSlow`, the checks
+too slow to build with the tests, which neither `lake build` nor
+`lake test` builds, and the
 correctness facts a benchmark observes are checked by the tests. The
 executable reads the stored certificates when it starts, which recurses
 deeper than the default stack allows, so the workflow runs it with the

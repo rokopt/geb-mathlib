@@ -4376,8 +4376,8 @@ import-direction rules above are enforced by
   `bootstrap/certificates/`, the table of each development's distinct
   nodes (`Stored.lean`); the modules of `Certified/` read the
   certificates of weakening, substitution, the expansion's identity, the
-  lemmas of trees, the fundamental lemma and the datatype language's base
-  and atoms, and `GebSlow` that of its keywords' forms, and state that
+  lemmas of trees, the fundamental lemma and the datatype language's base,
+  atoms and keywords' forms, and state that
   each development proves its theorem in the program it is about, a fact
   Lean's evaluator decides (`docs/rules/ci-and-workflow.md`
   § Certificates). The datatype language's other certificates are checked
