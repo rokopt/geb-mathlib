@@ -42,7 +42,7 @@ at its end.
   * Time
   * What it computes
 *
-  * The loading in the mode `rfl`
+  * The loading in the mode `proof`
   * Under two minutes
   * The kernel's check of a proof of each step of the loading of the
     metalogic's program from the equations of {name}`Geb.Kernel.infer`
@@ -161,7 +161,7 @@ checks take from a fifth to a sixth of their interpreted time, and from
 the interpreted time to the compiled time is a factor of 9 to 12
 ({ref "measurements"}[The measurements]).
 
-## The loading in the mode `rfl`
+## The loading in the mode `proof`
 
 Each step of the loading is a theorem whose proof applies, at each node
 of the definition, the equation of the checker-evaluator
@@ -341,9 +341,9 @@ against their cost.
    would name the definitions each search reads.
 4. A proof of each step of the loading from the equations of the
    checker-evaluator at each form of term, of the size of the definition
-   rather than of its reduction, which brings the mode `rfl` within
+   rather than of its reduction, which brings the mode `proof` within
    minutes ({ref "measurements"}[The measurements]), and so the mode
-   `rfl` is the default of every build and workflow, which removes the
+   `proof` is the default of every build and workflow, which removes the
    axioms of the loading from them.
 5. Conversion computed by the checker by a reduction of another method,
    proved sound against the base checker's rules rather than equal to
@@ -542,7 +542,7 @@ in one run, the searches six at a time:
   * Check
   * Time
 *
-  * The loading in the mode `rfl`
+  * The loading in the mode `proof`
   * 100 seconds for the six layers, `Checker`, `Translation`, `Prover`,
     `Tactics`, `Combinator` and `Printer`, each importing the one before,
     40, 8.1, 9.0, 13, 20 and 9.9 seconds, and 105 for the test of their

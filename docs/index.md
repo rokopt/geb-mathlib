@@ -3774,7 +3774,7 @@ import-direction rules above are enforced by
   (`Geb.Kernel.LoadCommand.declareLoading`, the command `geb_load`, which
   reads a program's image): each global is the computed type, declared as
   a type tree, with the definition's mirror, and the step appending it is a
-  theorem in the loading mode `rfl`, proved by the checker-evaluator's
+  theorem in the loading mode `proof`, proved by the checker-evaluator's
   equation at each node of the definition
   (`Geb.Kernel.LoadCommand.proveNode`, with the equations of
   `Geb/Prototypes/GoedelT/Equations.lean` and those of a variable, a
@@ -4260,7 +4260,7 @@ import-direction rules above are enforced by
   emits from the program, `bootstrap/lean/GebMirror/Metalogic/`, a module
   per layer of the program, is the denotation of each of the program's
   definitions as `Geb.Kernel.load` loads them, checked by the kernel in
-  the loading mode `rfl` a layer to a generated module
+  the loading mode `proof` a layer to a generated module
   (`bootstrap/lean/GebMirror/Metalogic/Load/`) and composed in
   `Agreement/Load.lean`, and agrees definition by definition with the
   Lean definitions it transcribes (`Agreement/`): each fold of the program

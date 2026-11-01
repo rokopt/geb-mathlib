@@ -9,16 +9,16 @@
 # scripts/test-tooling.sh; scripts/pre-push-full.sh runs both, and
 # is the one to run for a change touching the build system itself.
 #
-# Usage: scripts/pre-push.sh [--loading=rfl|native]
+# Usage: scripts/pre-push.sh [--loading=proof|native]
 #
 # --loading selects how the loading of the metalogic's program is
 # checked (Geb/Prototypes/Kernel/LoadCommand.lean), through the
 # environment variable GEB_LOADING that the build and the axiom linter
-# read. In the mode rfl, the default, the kernel checks a proof of each
+# read. In the mode proof, the default, the kernel checks a proof of each
 # step of the loading and the linter permits no axiom of it. In the mode
 # native the steps are axioms, declared after the loading is evaluated
 # by compiled code, and the linter permits them.
-# Lake does not track the variable, so the mode rfl, after a run in the
+# Lake does not track the variable, so the mode proof, after a run in the
 # mode native or with no record of the last run's mode
 # (.lake/loading.stamp), deletes the outputs of the modules declaring
 # the loading of the metalogic's program, and of those depending on
@@ -29,10 +29,10 @@
 set -euo pipefail
 export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
 
-loading=rfl
+loading=proof
 for arg in "$@"; do
   case "$arg" in
-    --loading=rfl | --loading=native) loading="${arg#--loading=}" ;;
+    --loading=proof | --loading=native) loading="${arg#--loading=}" ;;
     *) echo "pre-push: unknown argument $arg" >&2; exit 2 ;;
   esac
 done
@@ -81,8 +81,8 @@ else
 fi
 
 loading_stamp=".lake/loading.stamp"
-if [ "$loading" = rfl ] && [ "$(cat "$loading_stamp" 2>/dev/null)" != rfl ]; then
-  step "delete the outputs of the programs' loading and its dependents (mode rfl)"
+if [ "$loading" = proof ] && [ "$(cat "$loading_stamp" 2>/dev/null)" != proof ]; then
+  step "delete the outputs of the programs' loading and its dependents (mode proof)"
   for m in GebMirror/Metalogic/Load GebTests/Prototypes/FreeTopos/Agreement/Load \
            GebTests/Prototypes/FreeTopos/Agreement; do
     rm -rf .lake/build/lib/lean/"$m".* .lake/build/ir/"$m".*

@@ -245,7 +245,7 @@ metalogic's, declared by the modules `scripts/bootstrap.sh` generates
 under `bootstrap/lean/GebMirror/Metalogic/Load/`, is
 checked in one of two modes, which the environment variable
 `GEB_LOADING` selects (`Geb/Prototypes/Kernel/LoadCommand.lean`). In
-the mode `rfl`, the default, each definition's loading step, the fact
+the mode `proof`, the default, each definition's loading step, the fact
 that the checker-evaluator gives the definition its mirror as its
 denotation, is a theorem proved by the checker-evaluator's equation at
 each node of the definition, which the kernel checks in minutes, and
@@ -253,12 +253,12 @@ the axiom linter permits no axiom of the loading. In the mode `native`
 each step is an axiom declared after the compiled checker-evaluator has
 loaded the program, and the linter permits the axioms of those modules
 (`GebMeta.loadingAxiomModules`). Every workflow builds in the mode
-`rfl`; `scripts/pre-push.sh` and `scripts/pre-push-full.sh` take
-`--loading=rfl` or `--loading=native`. Lake does not track the
+`proof`; `scripts/pre-push.sh` and `scripts/pre-push-full.sh` take
+`--loading=proof` or `--loading=native`. Lake does not track the
 variable, so a module built in one mode is reused in the other: the
-mode `rfl` of `scripts/pre-push.sh` deletes the outputs of the modules
+mode `proof` of `scripts/pre-push.sh` deletes the outputs of the modules
 declaring the loading and of those depending on them unless its last
-run, which it records in `.lake/loading.stamp`, was in the mode `rfl`.
+run, which it records in `.lake/loading.stamp`, was in the mode `proof`.
 A build in the mode `native` outside that script leaves no record, and
 a stale module it leaves in a later build depends on an axiom of the
 loading, which the linter then rejects.
