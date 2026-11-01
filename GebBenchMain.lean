@@ -29,7 +29,8 @@ def benchmarks : List (String × IO Unit) :=
     ("FreeTopos.Certified", GebBench.Prototypes.FreeTopos.Certified.run),
     ("FreeTopos.Literals", GebBench.Prototypes.FreeTopos.Literals.run),
     ("FreeTopos.ByMachine", GebBench.Prototypes.FreeTopos.ByMachine.run),
-    ("FreeTopos.Profile", GebBench.Prototypes.FreeTopos.Profile.run)]
+    ("FreeTopos.Profile", GebBench.Prototypes.FreeTopos.Profile.run),
+    ("InteractionNet.GraphRuntime", GebBench.Prototypes.InteractionNet.GraphRuntime.run)]
 
 /-- Run the benchmarks the arguments name, or every one where they name none, each table preceded
 by the line naming its module; fail, running none, when an argument names no benchmark. -/

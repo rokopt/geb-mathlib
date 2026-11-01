@@ -11,6 +11,7 @@ public import GebBench.Prototypes.FreeTopos.Literals
 public import GebBench.Prototypes.FreeTopos.Profile
 public import GebBench.Prototypes.FreeTopos.Rules
 public import GebBench.Prototypes.FreeTopos.TranslationProofs
+public import GebBench.Prototypes.InteractionNet.GraphRuntime
 public import GebBench.Prototypes.SuccinctTree
 
 set_option doc.verso true in
