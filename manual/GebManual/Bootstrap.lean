@@ -7376,7 +7376,14 @@ it decides ({ref "checking-cost"}[The cost of checking]):
   compiled as one over the children's types alone
   ({name}`Geb.FreeTopos.Internal.typeOf_eq_typeOfFast`), which does not
   rebuild the term at each node, and the substitution of no objects as
-  the identity ({name}`Geb.PartialHorn.subst_eq_substFast`).
+  the identity ({name}`Geb.PartialHorn.subst_eq_substFast`). Its
+  comparisons are compiled likewise: the parts of a type are read from
+  the label of its former
+  ({name}`Geb.FreeTopos.Internal.prodParts_eq_prodPartsFast` and its
+  analogues), a type is tested by a fold that does not rebuild its
+  subtrees ({name}`Geb.FreeTopos.Internal.isTy_eq_isTyFast`), and the
+  equality of trees is decided over the indices of the children
+  ({name}`Geb.PartialHorn.instDecidableEq_eq_decEqFast`).
 * It weakens a hypothesis past the binders a congruence enters where a
   rewriting by the hypothesis reads it, rather than every hypothesis at
   each congruence under a binder (`childCtxs` in `derivation.geb`), and
