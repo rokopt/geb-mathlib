@@ -33,6 +33,12 @@ The rules:
     time, each reference takes a decoration of its own, so that a definition typable alone
     is typable whenever each of its callees is typable at the decoration it is used at.
 
+With a decoration per use, each reference is so constrained: each use takes a fresh copy
+of the constraints describing the decorations the used definition admits, those its simple
+type's schema yields, under any number of boxes of its own. A definition is typable per
+use when its constraints and those copies are satisfiable, the uses of the definitions not
+typable left unconstrained.
+
 For a definition that is not typable the checker prints a minimal set of the constraints
 that conflict; `--explain NAME` tracks every constraint of that definition, each labelled
 with the rule that added it, and prints a minimal conflicting set.
@@ -40,9 +46,7 @@ with the rule that added it, and prints a minimal conflicting set.
 Status: a measurement tool. Elementary affine logic proper (`--pure`) is what the
 soundness of the oracle-free optimal-reduction algorithm is proved for (Baillot, Coppola
 and Dal Lago, arXiv:0704.2448); the exemption of first-order data is not proved sound for
-such a machine, and a typing of a whole program needs a decoration per use of a
-definition where one per definition fails. Requires the z3-solver package
-(scripts/eal/requirements.txt).
+such a machine. Requires the z3-solver package (scripts/eal/requirements.txt).
 """
 import argparse
 import sys
@@ -168,7 +172,9 @@ class Walker:
     def __init__(self, cx, globs, mode):
         self.cx = cx
         self.globs = globs      # list of (name, simple type, decorated type)
-        self.mode = mode        # "local": fresh decoration per reference
+        self.mode = mode        # "local": fresh decoration per reference; "use": the same,
+                                # each recorded in uses, for check_per_use to constrain
+        self.uses = []          # (definition, decoration at the use, promotion)
         self.places = {}        # place -> (decorated type, depth of binder)
         self.nbind = 0
         self.binders = {}
@@ -288,6 +294,9 @@ class Walker:
             name, ty, d = self.globs[ks[0][0]]
             if self.mode == "local":
                 d = cx.fresh(ty)
+            elif self.mode == "use":
+                d = cx.fresh(ty)
+                self.uses.append((ks[0][0], d, cx.var("k")))
             return ty, d, {}
         raise ValueError(f"label {lab}")
 
@@ -438,6 +447,112 @@ def check_global(defs, skip=()):
     core = [] if r == z3.sat else [globs[int(str(l)[4:])][0] for l in cx.solver.unsat_core()]
     return r, core
 
+# ---------------------------------------------------------------- a decoration per use
+# A definition's constraints are recorded once, as a template over its own variables, with
+# a fresh decoration at each of its references. A use is constrained by the decorations the
+# used definition admits: its constraints, with those of its own uses, projected onto the
+# numbers of `!` of its type by eliminating every other variable (z3's model-based
+# quantifier elimination, exact for linear integer arithmetic). Each use takes a fresh copy
+# of the projection, under a number of boxes of its own, a reference being closed.
+
+
+class Recorder:
+    """Stands for a solver, recording the constraints added to it."""
+
+    def __init__(self):
+        self.constraints = []
+
+    def add(self, c):
+        self.constraints.append(c)
+
+
+def constants(exprs):
+    """The uninterpreted constants of exprs."""
+    seen, out, todo = set(), [], list(exprs)
+    while todo:
+        e = todo.pop()
+        if e.get_id() in seen:
+            continue
+        seen.add(e.get_id())
+        if z3.is_const(e) and e.decl().kind() == z3.Z3_OP_UNINTERPRETED:
+            out.append(e)
+        else:
+            todo.extend(e.children())
+    return out
+
+
+def rename(d, sub):
+    if is_data(d[0]):
+        return d
+    return (d[0], z3.substitute(d[1], *sub), [rename(c, sub) for c in d[2]])
+
+
+def eqs(d1, d2):
+    if is_data(d1[0]):
+        return []
+    return [d1[1] == d2[1]] + [c for a, b in zip(d1[2], d2[2]) for c in eqs(a, b)]
+
+
+class Template:
+    def __init__(self, name, body, globs):
+        cx = Ctx()
+        cx.solver = Recorder()
+        w = Walker(cx, globs, "use")
+        self.ty, self.dec, _ = w.walk(body, [], z3.IntVal(0), name)
+        self.constraints = cx.solver.constraints
+        self.uses = w.uses
+
+
+def check_per_use(defs, exempt):
+    """Each definition in order, with a decoration per use of each definition it refers to;
+    the definitions in exempt, and each found not typable, leave their uses unconstrained.
+    Returns those found not typable, each with the definitions whose constraints conflict."""
+    exempt = set(exempt)
+    globs, projections, worse = [], [], []
+    qe = z3.Then("simplify", "propagate-values", "solve-eqs", "qe2", "simplify")
+    for i, (name, body) in enumerate(defs):
+        t = Template(name, body, globs)
+        globs.append((name, t.ty, None))
+        ys = []
+
+        def over(d):
+            if is_data(d[0]):
+                return d
+            ys.append(z3.Int(f"y{i}_{len(ys)}"))
+            return (d[0], ys[-1], [over(c) for c in d[2]])
+        dec = over(t.dec)
+        if i in exempt:
+            projections.append((z3.BoolVal(True), ys, dec))
+            continue
+        parts = [(i, c) for c in t.constraints + eqs(dec, t.dec)]
+        for n, (j, d, k) in enumerate(t.uses):
+            if j in exempt:
+                continue
+            f, yj, dj = projections[j]
+            sub = [(y, z3.Int(f"{y}_{n}")) for y in yj]
+            parts.append((j, z3.substitute(f, *sub) if sub else f))
+            parts += [(j, c) for c in eqs(shift(rename(dj, sub), k), d)]
+        phi = z3.And([c for _, c in parts])
+        inner = [v for v in constants([phi]) if not any(v.eq(y) for y in ys)]
+        g = z3.Goal()
+        g.add(z3.Exists(inner, phi) if inner else phi)
+        f = qe(g).as_expr()
+        assert not z3.is_quantifier(f) and all(
+            any(v.eq(y) for y in ys) for v in constants([f])), name
+        s = z3.Solver()
+        s.add(f)
+        if s.check() != z3.sat:
+            exempt.add(i)
+            f = z3.BoolVal(True)
+            lits = {}
+            s = z3.Solver()
+            for j, c in parts:
+                s.add(z3.Implies(lits.setdefault(j, z3.Bool(f"def_{j}")), c))
+            core = minimal(s, list(lits.values()))
+            worse.append((name, t.ty, [defs[int(str(l)[4:])][0] for l in sorted(
+                core, key=lambda l: int(str(l)[4:]))]))
+        projections.append((f, ys, dec))
+    return worse
 
 
 def minimal(solver, lits):
@@ -496,3 +611,10 @@ if __name__ == "__main__":
     print(f"the typable definitions together, one decoration per definition: {r}")
     if core:
         print("  conflicting:", ", ".join(core))
+    names = [n for n, _ in defs]
+    worse = check_per_use(defs, {names.index(n) for n, _, _ in bad})
+    print(f"a decoration per use: {len(defs) - len(bad) - len(worse)} of the"
+          f" {len(defs) - len(bad)} typable alone typable; {len(worse)} not")
+    for n, ty, core in worse:
+        print(f"  NOT TYPABLE PER USE: {n} : {show_ty(ty)}")
+        print("      conflicting:", ", ".join(core))

@@ -3931,7 +3931,8 @@ import-direction rules above are enforced by
   agreement with the stage-0 compiler. The executable `geb-defs`
   (`GebDefsMain.lean`) writes an image's definitions as S-expressions of
   labels, from which `scripts/eal/eal.py` decides each definition's
-  elementary-affine typability. The
+  elementary-affine typability, alone and with a decoration per use of a
+  definition. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   kernel's place in the plan. Depends on `Geb.Prototypes.RoseTree.Basic`,
   `Geb.Mathlib.Data.W.Basic`, `Geb.Mathlib.Data.FinEnum`,

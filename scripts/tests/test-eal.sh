@@ -3,8 +3,9 @@
 # scripts/tests/test-eal.sh
 #
 # Tests scripts/eal/eal.py on scripts/eal/examples.defs: the definitions the
-# examples mark as not typable, and no others, are reported, with the first-order
-# data exemption and without it. Skipped when the z3-solver package is absent.
+# examples mark as not typable, alone and with a decoration per use, and no others,
+# are reported, with the first-order data exemption and without it. Skipped when
+# the z3-solver package is absent.
 
 set -uo pipefail
 
@@ -33,6 +34,21 @@ untypable() { # mode expected-names...
 
 untypable "" foldTwice twoPasses readTwice loopInside
 untypable --pure foldTwice squareByIter twoPasses readTwice loopInside composeFirst
+
+perUse() { # mode expected-names...
+  local mode=$1; shift
+  local got
+  got=$(python3 "$EAL" $mode "$DEFS" | sed -n 's/^  NOT TYPABLE PER USE: \([^ ]*\) .*/\1/p' | sort | tr '\n' ' ')
+  local want
+  want=$(printf '%s\n' "$@" | sort | tr '\n' ' ')
+  if [ "$got" != "$want" ]; then
+    echo "FAIL [${mode:-exempt}, per use]: not typable: '$got', expected '$want'"
+    failed=1
+  fi
+}
+
+perUse "" foldPairUp
+perUse --pure foldPairUp onePass
 
 if ! python3 "$EAL" --explain twoPasses "$DEFS" | grep -q 'contraction'; then
   echo "FAIL [explain]: twoPasses's conflict names no contraction"
