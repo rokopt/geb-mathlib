@@ -296,6 +296,27 @@ moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 [lean_lib.moreServerOptions]
 weak.linter.hashCommand = false
 
+# The search's examples and their certificate, read at elaboration by the check of
+# elementary-affine certificates.
+[[input_file]]
+name = "ealExamples"
+path = "scripts/eal/examples.defs"
+text = true
+
+[[input_file]]
+name = "ealExamplesCert"
+path = "scripts/eal/examples.cert"
+text = true
+
+[[lean_lib]]
+name = "GebTestsAffine"
+globs = ["GebTests.Prototypes.Affine.Decoration"]
+needs = ["@/ealExamples", "@/ealExamplesCert"]
+moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
+
+[lean_lib.moreServerOptions]
+weak.linter.hashCommand = false
+
 [[lean_lib]]
 name = "GebMeta"
 

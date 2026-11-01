@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module -- shake: keep-all
 
+import GebTests.Prototypes.Affine.Decoration
 import GebTests.Prototypes.AxiomLinter
 import GebTests.Prototypes.AxiomLinterClassicalFixture
 import GebTests.Prototypes.BitStream.Oitavem

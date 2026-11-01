@@ -4,8 +4,10 @@
 #
 # Tests scripts/eal/eal.py on scripts/eal/examples.defs: the definitions the
 # examples mark as not typable, alone and with a decoration per use, and no others,
-# are reported, with the first-order data exemption and without it. Skipped when
-# the z3-solver package is absent.
+# are reported, with the first-order data exemption and without it, and a
+# certificate is written of the definitions typable per use, which
+# GebTests/Prototypes/Affine/Decoration.lean checks in its committed form. Skipped
+# when the z3-solver package is absent.
 
 set -uo pipefail
 
@@ -49,6 +51,13 @@ perUse() { # mode expected-names...
 
 perUse "" foldPairUp
 perUse --pure foldPairUp onePass
+
+cert=$(mktemp)
+trap 'rm -f "$cert"' EXIT
+if ! python3 "$EAL" --certificate "$cert" "$DEFS" | grep -q ' of 13 definitions, written'; then
+  echo "FAIL [certificate]: not of the 13 definitions typable per use"
+  failed=1
+fi
 
 if ! python3 "$EAL" --explain twoPasses "$DEFS" | grep -q 'contraction'; then
   echo "FAIL [explain]: twoPasses's conflict names no contraction"
