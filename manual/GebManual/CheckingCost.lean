@@ -66,7 +66,10 @@ at its end.
   * Lean's evaluator's check of the certificate `datatype-list`
 :::
 
-The first two do not complete within the limit.
+The search of `datatype-app` does not complete within the limit. The
+table's figures are those of a run of the hosted runners without the
+second change below or those after it; {ref "measurements"}[The
+measurements] give the times with them.
 
 # The factors
 
@@ -622,7 +625,43 @@ fold and the equality of trees decided over the indices of the children
 ({ref "contexts-typing"}[The contexts of congruences and type
 inference]), in one run of every search in turn, the searches of
 `datatype-list`, `datatype-app` and `decode-case`, the longest, take
-277, 391 and 495 seconds, against 469, 638 and 824 without them; the
-certificates are the committed ones byte for byte. Of the search of
-`datatype-app` they halve the inference of types, by the checker and in
-the reduction's contexts of folds.
+277, 391 and 495 seconds, against 469, 638 and 824 without them, and
+every search in turn 2601 seconds; the certificates are the committed
+ones byte for byte. Of the search of `datatype-app` they halve the
+inference of types, by the checker and in the reduction's contexts of
+folds. The search of `datatype-app` reaches 7.2 gigabytes of resident
+memory.
+
+# The searches' remaining time
+%%%
+tag := "searches-remaining"
+%%%
+
+With the changes above, in one run of the search of `datatype-app` with
+probes, which take its time from 391 to 495 seconds, the prover's
+reduction takes 210 seconds and the check of each declaration as it is
+stored (`checkAfter` in `GebTests/Prototypes/FreeTopos/DatatypeBase.lean`)
+175. Of the reduction, the inference of types in the contexts of folds
+takes 46 seconds and substitution 7; the remainder, about 155 seconds, is
+the matching of rules and the reduction's own traversal, which the probes
+do not divide. Of the check, the tests of theorems' instances
+({name}`Geb.FreeTopos.Internal.instOk`) take 68 seconds, nearly all of it
+the inference of the types of the terms they substitute, which are the
+hypotheses' formulas of the logic's deductions; the inference of the
+types of 1538 formulas, about 30 milliseconds each, 47 seconds;
+substitution 14 and renaming 11.
+
+The trees a check types share almost no structure, a tree's nodes being
+about as many as its distinct subtrees, so a table of types by subtree
+saves no traversal. Looking up a definition among the globals in an
+array rather than a list changes the search's time by less than 1 in
+100.
+
+Two measurements locate the next change: the division of the
+reduction's remainder among the matching of a rule's left side, the
+choice of the rules tried at a node and the traversal; and, in the
+check, how often the same formula's type is inferred at successive
+instances of theorems. The check as stored is the only check of the
+certificates that no module of `GebTests/Prototypes/FreeTopos/Certified/`
+or of `GebSlow` reads (`docs/rules/ci-and-workflow.md` § Certificates),
+so it stays in the search until such modules check them.
