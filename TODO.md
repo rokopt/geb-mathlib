@@ -8,6 +8,7 @@
   - [Rose-tree value representation](#rose-tree-value-representation)
   - [Quotient polynomial functors and the density formula](#quotient-polynomial-functors-and-the-density-formula)
   - [Bootstrap](#bootstrap)
+  - [The slow checks among the routine checks](#the-slow-checks-among-the-routine-checks)
   - [Definitions](#definitions)
   - [Named examples for axiom auditing](#named-examples-for-axiom-auditing)
   - [Citation corrections deferred to their own branch](#citation-corrections-deferred-to-their-own-branch)
@@ -138,7 +139,10 @@ workstream's follow-ups: its Road map marks every item of the bootstrap
 and of the work written in Geb after it with its state, its section
 Status gives the state of each phase, and its sections Improvements and
 The next phase record the known limitations with their fixes and where
-work resumes.
+work resumes. The chapter `manual/GebManual/CheckingCost.lean` records
+where the time of the checks and of the searches goes, and its section
+The searches' remaining time the measurements that locate the next
+change to a search's speed.
 
 Among the first work written in Geb after the bootstrap, after the setoid
 language, come the internal universes: the datatypes' codes in `2^T` and
@@ -148,6 +152,49 @@ parameters converted from sorts to parameters over a universe. No universe
 interprets every object of the free topos, truth being undefinable.
 The Bootstrap chapter's section The datatype language's completion
 records the mathematics of both.
+
+### The slow checks among the routine checks
+
+The checks of `slow-checks.yml` are to join those of every push, leaving
+one division: the checks of the build and CI machinery
+(`scripts/test-tooling.sh`), which `scripts/pre-push-full.sh` adds, and
+the checks of the Lean, Geb and manual builds, which `scripts/pre-push.sh`
+and `ci.yml` run. The measurements of `manual/GebManual/CheckingCost.lean`
+bound the cost: every search in turn takes 2601 seconds on sixteen cores,
+the longest, `decode-case`, 495, and `datatype-app` reaches 7.2 gigabytes
+of resident memory; the hosted runners have taken from 0.6 to 1.2 times
+the local time of a search. The steps, in order:
+
+1. A full `scripts/pre-push.sh` timed with the searches added, run in
+   parallel, before anything moves.
+2. Modules of `GebTests/Prototypes/FreeTopos/Certified/` checking the
+   certificates no module reads, the datatype language's but those of
+   its base, atoms and keywords' forms
+   (`docs/rules/ci-and-workflow.md` § Certificates), each timed; their
+   searches' checks as they store each declaration are those
+   certificates' only check until then.
+3. The module of `GebSlow` checking `datatype-list`, 176 seconds, moved
+   among the tests, beside the slowest test modules
+   (`GebTests.Prototypes.FreeTopos.Agreement.Load`, 130 seconds).
+4. The searches in `ci.yml`, one job to a search keyed as
+   `slow-checks.yml` keys them, the build shared rather than repeated in
+   each job, and in `scripts/pre-push.sh` by `scripts/certificates.sh
+   check` in parallel, skipped by a stamp keyed by the same inputs, as
+   the stamp of `lake exe cache get` skips the fetch.
+5. The module of `GebSlow` running the interaction-net compiler's larger
+   graph executions (`GebSlow/Prototypes/InteractionNet/CompilerGraph.lean`),
+   585 seconds, more than four times the slowest test module, which no
+   change to the internal language's checker touched: moved among the
+   tests once
+   the graph runtime's indexing and compaction are faster, or kept apart.
+6. The benchmarks, which measure and do not check, kept daily and on
+   demand, so that `slow-checks.yml` is the benchmarks alone, and the
+   table of the checks in `manual/GebManual/CheckingCost.lean` refreshed
+   from the next run of the hosted runners.
+
+The datatype language's completion adds searches and certificates, so
+steps 2 and 4 are measured again at its developments; the workstream
+depends on no part of it.
 
 ### Definitions
 

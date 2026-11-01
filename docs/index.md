@@ -4040,7 +4040,12 @@ import-direction rules above are enforced by
   (`Geb.PartialHorn.Valid`, `Geb.PartialHorn.IsModel`), and the checker
   `Geb.PartialHorn.check`, a fold over a certificate computing each
   conclusion from its premises' conclusions, sound in every model
-  (`Geb.PartialHorn.check_sound`). `Development.lean` checks lists of
+  (`Geb.PartialHorn.check_sound`). The compiler computes the substitution of
+  no terms as the term itself, without a traversal
+  (`Geb.PartialHorn.subst_eq_substFast`), and decides the
+  equality of W-trees by comparing the children of two nodes of one shape
+  by their indices (`Geb.PartialHorn.instDecidableEq_eq_decEqFast`).
+  `Development.lean` checks lists of
   sequents, each certificate citing the sequents before it
   (`Geb.PartialHorn.checkFrom_sound`). `Definitional.lean` extends a
   theory by definitions and unfolds them, with the eliminability and
@@ -4172,7 +4177,14 @@ import-direction rules above are enforced by
   type without its arrow, a fold's start in the fold's context and its
   step in that context extended by the variables it binds, the type its
   compilation computes (`Geb.FreeTopos.Internal.typeOf_eq_compile`), by
-  which the checker infers types; `Square.lean` proves that
+  which the checker infers types, compiled as a fold of the children's
+  types alone that does not rebuild the term at each node
+  (`Geb.FreeTopos.Internal.typeOf_eq_typeOfFast`); `Compile.lean`
+  compiles the reading of a type's parts from its former's label
+  (`Geb.FreeTopos.Internal.prodParts_eq_prodPartsFast` and its
+  analogues) and the test of a type by a fold that does not rebuild its
+  subtrees (`Geb.FreeTopos.Internal.isTy_eq_isTyFast`); `Square.lean`
+  proves that
   compiling agrees with unfolding the language's definitions in every
   model (`Geb.FreeTopos.Internal.compile_unfold`). `Derivation.lean` is
   the checker of derivations, `Geb.FreeTopos.Internal.check`: rewriting
@@ -4207,7 +4219,13 @@ import-direction rules above are enforced by
   normalization innermost first or to weak normal forms, earlier theorems
   as rewriting rules found by matching, induction and case analysis;
   every derivation it computes is checked by
-  `Geb.FreeTopos.Internal.check`. `ProveChecked.lean` proves that the
+  `Geb.FreeTopos.Internal.check`. The compiler replaces its reduction by
+  `Geb.FreeTopos.Internal.evalFast`, proved equal to it
+  (`Geb.FreeTopos.Internal.eval_eq_evalFast`), which weakens a hypothesis
+  where a rule reads it, tries at a node only the rules whose left side's
+  root may have the node's label, and compares a term with an equation
+  among the hypotheses by a fold of the equation's left side computed
+  once. `ProveChecked.lean` proves that the
   rewriting derivation each of its reductions computes is one the checker
   accepts with the reduction's result
   (`Geb.FreeTopos.Internal.normalize_checked`,
@@ -4357,9 +4375,13 @@ import-direction rules above are enforced by
   developments, whose certificates `StoredWriter.lean` writes,
   `bootstrap/certificates/`, the table of each development's distinct
   nodes (`Stored.lean`); the modules of `Certified/` read the
-  certificates and state that each development proves its theorem in the
-  program it is about, a fact Lean's evaluator decides
-  (`docs/rules/ci-and-workflow.md` § Certificates). The
+  certificates of weakening, substitution, the expansion's identity, the
+  lemmas of trees, the fundamental lemma and the datatype language's base
+  and atoms, and `GebSlow` that of its keywords' forms, and state that
+  each development proves its theorem in the program it is about, a fact
+  Lean's evaluator decides (`docs/rules/ci-and-workflow.md`
+  § Certificates). The datatype language's other certificates are checked
+  by their searches alone, each declaration as it is stored. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   metalogic, the choices that fixed its form, and the proofs about the
   compiler's components made in it. Depends on the modules of

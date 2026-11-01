@@ -268,13 +268,16 @@ loading, which the linter then rejects.
 The developments the internal language proves about the bootstrap's
 programs (the fundamental lemma of the evaluator, weakening, substitution,
 the expansion of kernel forms and the lemmas of trees) are found by
-searches for derivations, which take tens of minutes compiled, and are
+searches for derivations, which take from seconds to minutes compiled, and are
 committed as certificates, `bootstrap/certificates/*.cert`, as the
 bootstrap's image is. A certificate stores a development's declarations,
 each theorem with its derivation, as the table of the distinct nodes of
 their tree (`GebTests/Prototypes/FreeTopos/Stored.lean`). The modules of
-`GebTests/Prototypes/FreeTopos/Certified/` read each certificate and state
-that the development proves its theorem in the program it is about. The
+`GebTests/Prototypes/FreeTopos/Certified/` read the certificates of
+weakening, substitution, the expansion's identity, the lemmas of trees,
+the fundamental lemma and the datatype language's base and atoms, and
+state that each development proves its theorem in the program it is
+about. The
 check is decided by Lean's evaluator and declared by the command
 `evaluation_axiom` as an axiom in either loading mode, the kernel's
 reduction of a check of that size being out of reach. The axiom linter
@@ -312,7 +315,9 @@ evaluator takes hours is checked instead by a module of the library
 `GebSlow`, which neither `lake build` nor `lake test` builds and which
 `slow-checks.yml` builds and lints daily and on demand; its search's own
 check, as it stores each declaration, still runs with `regen` and
-`check`.
+`check`. The datatype language's other certificates are read by no
+module: the search's check as it stores each declaration is their only
+check, which `check` repeats where their searches run.
 
 ## Benchmarks
 
