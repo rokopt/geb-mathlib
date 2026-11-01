@@ -319,14 +319,14 @@ the sections below detail:
     each of their reductions. Its evaluation of
     primitives at literals is written in Lean beside it
     (`Geb/Prototypes/FreeTopos/Literals.lean`): a step rewrites the
-    library's addition, truncated difference, multiplication, equality
-    and less, and the definitions they apply, at numerals, to the
-    numeral of the value the arithmetic of the natural numbers computes,
-    admitted by the definitions' equations at the numerals' bits, theorems
-    of the development, through a proof in Lean that rewriting by them
-    reaches that numeral; division, remainder and the logarithm follow
-    ({ref "conversion-continuation"}[Completing the checker with a step
-    of conversion]). The checker of the shared
+    library's addition, truncated difference, multiplication, equality,
+    less, quotient and remainder, and logarithm, the definitions they
+    apply, and the components of a pair, at numerals, to the literal of
+    the value the arithmetic of the natural numbers computes, admitted by
+    the definitions' equations at the numerals' bits, theorems of the
+    development, through a proof in Lean that rewriting by them reaches
+    that literal ({ref "conversion-continuation"}[Completing the checker
+    with a step of conversion]). The checker of the shared
     certificates, by unsharing, is required if measurement shows the
     checking or storage of certificates to need it, and follows the
     bootstrap otherwise.
@@ -7079,8 +7079,8 @@ What is ready, each item independent of the others except as stated:
   transcription, since the tactics written in Geb construct exactly the
   certificates the Lean tactics construct. The evaluation of primitives
   at literals is written in Lean for addition, the truncated
-  difference, multiplication, equality and less; division, remainder
-  and the logarithm are ready. The steps that remain, in their order,
+  difference, multiplication, equality, less, division, remainder and
+  the logarithm. The steps that remain, in their order,
   are stated in {ref "conversion-continuation"}[Completing the checker
   with a step of conversion].
 * The datatype language's completion
@@ -7267,20 +7267,42 @@ that remain, and the constraints each of them carries.
   literals. A literal ({name}`Geb.FreeTopos.Literals.Val`) is a
   numeral, the bitstring of a number's index in Oitavem's enumeration
   ({name}`Geb.FreeTopos.Literals.val`,
-  {name}`Geb.FreeTopos.Literals.num`), or a comparison's result. The
-  definitions evaluated ({name}`Geb.FreeTopos.Literals.Sym`) are the
-  library's empty bitstring and bits, emptiness, the successor,
-  doubling, the predecessor, the conditionals at bitstrings and at
-  comparisons, addition, multiplication, equality, comparison, less,
-  the difference of a number at most the first and the truncated
-  difference; {name}`Geb.FreeTopos.Literals.Sym.host` computes each by
-  the arithmetic of the natural numbers, the difference of a number at
-  most the first having no value where the second is greater.
-  {name}`Geb.FreeTopos.Literals.eval` has a value only at a term built
-  entirely of those definitions over literals. The equations
-  ({name}`Geb.FreeTopos.Literals.lemmas`) are one theorem for each case
-  of the arguments' least significant bits, in a fixed order, each the
-  definition's own recursion at the bits.
+  {name}`Geb.FreeTopos.Literals.num`), a comparison's result, or a pair
+  of numerals. The definitions evaluated
+  ({name}`Geb.FreeTopos.Literals.Sym`) are the library's empty bitstring
+  and bits, emptiness, the successor, doubling, the predecessor, the
+  conditionals at bitstrings and at comparisons, addition,
+  multiplication, equality, comparison, less, the difference of a number
+  at most the first, the truncated difference, the quotient and the
+  remainder, and the logarithm; {name}`Geb.FreeTopos.Literals.Sym.host`
+  computes each by the arithmetic of the natural numbers, the difference
+  of a number at most the first having no value where the second is
+  greater, and the quotient and the remainder by zero being zero and the
+  dividend. {name}`Geb.FreeTopos.Literals.eval` has a value only at a
+  term built entirely of those definitions, pairs and their components
+  over literals, so that the kernel's division and remainder, the
+  components of the quotient and the remainder's pair, evaluate. The
+  equations ({name}`Geb.FreeTopos.Literals.lemmas`) are one theorem for
+  each case of the arguments' least significant bits, in a fixed order,
+  each the definition's own recursion at the bits. The step of the long
+  division ({name}`Geb.FreeTopos.Literals.divStep`) reads the rest's
+  quotient and remainder in the branches of its case analyses, so its
+  equations substitute the rest's call for the variable the definition
+  binds to it; the call occurs in the branches under the case analyses'
+  abstractions, which a rewriting by congruence does not enter, and the
+  proof rewrites it only after a case analysis has selected a branch.
+  The equations of the case analysis at pairs include one whose third
+  branch is a case analysis, so that no case analysis is typed; its
+  instance is stated as the substitution in the equation
+  ({name}`Geb.FreeTopos.Literals.reaches_selSel`), since a case analysis
+  built from its branches renames them under its abstractions where the
+  instance substitutes them, and the two agree only up to that
+  renaming. The fold inside the logarithm, into the pair of the length
+  and whether a bit is one, is a term of its equations
+  ({name}`Geb.FreeTopos.Literals.lenOneT`) rather than a definition
+  evaluated, since it occurs in a term only where the logarithm is
+  unfolded, which the reduction preceding a step of evaluation does
+  not do.
   {name}`Geb.FreeTopos.Literals.ready` tests that the development's
   theorems from the step's index on are those equations in that order,
   that the constants' definitions have the signatures the evaluation
@@ -7420,26 +7442,6 @@ that remain, and the constraints each of them carries.
 
 #### The questions that remain open
 
-* Division, remainder and the logarithm. Their definitions in the
-  library ({name}`Geb.FreeTopos.Translation.lib`) differ from those
-  evaluated in two respects. The quotient and the remainder are a pair,
-  of which the kernel's division and remainder are the projections, and
-  {name}`Geb.FreeTopos.Literals.Val` has no case for a pair. The step of
-  the long division binds the rest's pair by an application and reads
-  its components at several places in each branch, so its equation at a
-  bit has the rest's call several times over where it substitutes that
-  call for the bound variable, while each equation of the evaluated
-  definitions has its recursive call at most once. Stated instead as the
-  step's function applied to the rest's call, the equation keeps one
-  call and leaves a β-step after the rewriting; which form the proof of
-  the rewriting and the prover's proof of the equation admit is open. The logarithm is a fold
-  into the pair of the length and whether a bit is one, written inside
-  its definition rather than as a definition of its own, so its
-  equations at bits are equations of that fold, which
-  {name}`Geb.FreeTopos.Literals.Sym` names only as a call of a
-  definition; either the symbols include the fold as a term, or the
-  library defines the fold, which changes the translation and the proofs
-  about it.
 * The test of readiness at every step. {name}`Geb.FreeTopos.Literals.ready`
   compares every equation with the development's theorem at each step
   of evaluation. A step takes about 0.2 milliseconds at numerals of two

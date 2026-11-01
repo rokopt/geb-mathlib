@@ -75,9 +75,9 @@ def proves (t u : Term) : Bool :=
 #guard !proves (Term.lam bitsTy (Term.var 0)) (Term.lam bitsTy (lit 0))
 
 /-- Whether, at the numerals of numbers below a bound, a step of the machine at each side proves
-each definition of two arguments equal to the numeral of its value. -/
+each definition of two arguments equal to the literal of its value. -/
 def agrees (bound : ℕ) : Bool :=
-  [Sym.add, .mul, .eqB, .cmp, .ltB, .sub].all fun s ↦
+  [Sym.add, .mul, .eqB, .cmp, .ltB, .sub, .divMod].all fun s ↦
     (List.range bound).all fun a ↦ (List.range bound).all fun b ↦
       match Geb.FreeTopos.Literals.eval (bin s a b) with
       | some v => proves (bin s a b) v.term

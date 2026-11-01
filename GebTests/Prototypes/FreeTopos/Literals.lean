@@ -119,24 +119,36 @@ def bin (s : Sym) (a b : ℕ) : Term := s.call [lit a, lit b]
 #guard proves (Sym.eqB.call [bin .add 2 3, lit 5]) trueT
 #guard proves (Sym.pred.call [Sym.dbl.call [Sym.succ.call [lit 20]]]) (lit 41)
 
+-- the quotient and the remainder, the division and the remainder as their components, and the
+-- logarithm, in one step
+#guard proves (bin .divMod 17 5) (Term.pair (lit 3) (lit 2))
+#guard proves (bin .divMod 9 0) (Term.pair (lit 0) (lit 9))
+#guard proves (Term.fst (bin .divMod 1000 7)) (lit 142)
+#guard proves (Term.snd (bin .divMod 1000 7)) (lit 6)
+#guard proves (Sym.log2.call [lit 1000]) (lit 9) && proves (Sym.log2.call [lit 0]) (lit 0)
+#guard proves (Sym.log2.call [Term.fst (bin .divMod 4096 3)]) (lit 10)
+
 -- a false equation, the equations named at another index, and a term with a variable are
 -- not proved
 #guard !proves (bin .add 2 2) (lit 5)
 #guard !proves (bin .add 7 9) (lit 16) 0
 #guard !proves (Sym.succ.call [Term.var 0]) (lit 1)
+#guard !proves (Term.fst (bin .divMod 17 5)) (lit 2)
+#guard !proves (Term.fst (Term.pair (lit 1) (Term.var 0))) (lit 1)
 
 /-- The value of a literal's numeral, by the library's definitions unfolded and normalized. -/
 def valueOf (v : Val) : Option Term := value v.term
 
 /-- Whether, at the numerals of numbers below a bound, a step of evaluation proves each
-definition of two arguments, and its result is the value of the definitions unfolded and
-normalized. -/
+definition of two arguments, and the logarithm at the numerals below its square, and its result
+is the value of the definitions unfolded and normalized. -/
 def agrees (bound : ℕ) : Bool :=
-  [Sym.add, .mul, .eqB, .cmp, .ltB, .sub].all fun s ↦
-    (List.range bound).all fun a ↦ (List.range bound).all fun b ↦
-      match Literals.eval (bin s a b) with
-      | some v => proves (bin s a b) v.term && valueOf v == value (bin s a b)
-      | none => false
+  let terms := ([Sym.add, .mul, .eqB, .cmp, .ltB, .sub, .divMod].flatMap fun s ↦
+      (List.range bound).flatMap fun a ↦ (List.range bound).map fun b ↦ bin s a b) ++
+    (List.range (bound * bound)).map fun a ↦ Sym.log2.call [lit a]
+  terms.all fun t ↦ match Literals.eval t with
+    | some v => proves t v.term && valueOf v == value t
+    | none => false
 
 #guard agrees 9
 

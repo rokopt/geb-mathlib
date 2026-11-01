@@ -4246,11 +4246,13 @@ import-direction rules above are enforced by
   the base checker are those of `Geb.FreeTopos.Internal.checkFast`. Its
   step of evaluation
   rewrites a term built of the translation library's arithmetic over
-  numerals to its value's numeral, computed by the arithmetic of the
-  natural numbers (`Geb/Prototypes/FreeTopos/Literals.lean`), where the
-  development's theorems include the definitions' equations at the
-  numerals' bits (`Geb.FreeTopos.Literals.lemmas`); rewriting by those
-  equations reaches that numeral, by recursion on the bits
+  numerals, its quotient and remainder and its logarithm among it, to
+  its value's literal, a numeral, a comparison's result or a pair of
+  numerals, computed by the arithmetic of the natural numbers
+  (`Geb/Prototypes/FreeTopos/Literals.lean`), where the development's
+  theorems include the definitions' equations at the numerals' bits
+  (`Geb.FreeTopos.Literals.lemmas`); rewriting by those equations
+  reaches that literal, by recursion on the bits
   (`Geb.FreeTopos.Literals.checked_of_eval`). Its step of the machine
   reduces a term by the environment machine of `Machine.lean`
   (`Geb.FreeTopos.Internal.machineReduce`), which evaluates in
