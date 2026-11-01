@@ -19,8 +19,7 @@ The development of {lit}`GebTests.Prototypes.FreeTopos.DatatypeList`, stored in
 {lit}`bootstrap/certificates/datatype-list.cert` after the base's and the atom's
 ({lit}`GebTests.Prototypes.FreeTopos.Certified.Datatype`), proves in the program extended for the
 datatype language's soundness the soundness at the keywords' forms, one keyword at a time, given
-the soundness at their elements, the binding of a name last. Lean's evaluator takes hours to
-decide the check, which is therefore among the slow checks rather than the tests.
+the soundness at their elements, the binding of a name last.
 
 ## Main statements
 
@@ -39,10 +38,9 @@ set_option doc.verso true
 
 @[expose] public section
 
-namespace GebSlow.Prototypes.FreeTopos.Certified.DatatypeList
+namespace GebTests.Prototypes.FreeTopos.Certified.DatatypeList
 
 open Geb Geb.FreeTopos GebTests.Prototypes.FreeTopos.Datatypes
-open GebTests.Prototypes.FreeTopos.Certified
 
 /-- The developments, the soundness at the keywords' forms after the base's and the atom's. -/
 def decls : List Internal.Decl :=
@@ -63,6 +61,6 @@ theorem let_proved :
       (kwThm PST.1 PST.2.1 PST.2.2 "Reader.kwLet" 4 [false, false, true, true]) :=
   provedIn_eq_true proved
 
-end GebSlow.Prototypes.FreeTopos.Certified.DatatypeList
+end GebTests.Prototypes.FreeTopos.Certified.DatatypeList
 
 end

@@ -269,7 +269,6 @@ name = "GebBench"
 # slow-checks.yml, and built by neither `lake build` nor `lake test`.
 [[lean_lib]]
 name = "GebSlow"
-needs = ["@/certificates"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]

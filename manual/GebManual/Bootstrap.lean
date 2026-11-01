@@ -2753,7 +2753,9 @@ relation extending the fundamental lemma's at the datatypes, and proved
 at atoms (`GebTests/Prototypes/FreeTopos/DatatypeBase.lean`, its
 certificates checked by `GebTests/Prototypes/FreeTopos/Certified/Datatype.lean`)
 and at the keywords' forms one keyword at a time, given the soundness at
-their elements (`GebTests/Prototypes/FreeTopos/DatatypeList.lean`), and
+their elements (`GebTests/Prototypes/FreeTopos/DatatypeList.lean`, its
+certificate checked by
+`GebTests/Prototypes/FreeTopos/Certified/DatatypeList.lean`), and
 at an abstraction over several binders from that at an abstraction over
 one, by induction on the list of its binders
 (`GebTests/Prototypes/FreeTopos/DatatypeLam.lean`); at the
@@ -2793,7 +2795,15 @@ type is one the typing admits as a binder's. The relation holds at an
 opaque sort as at the trees, its erasure, of which a field of a template's
 datatype holds any. Remaining after it:
 the soundness at the forms of those keywords, discharging those
-hypotheses; `tree-data` removed.
+hypotheses; `tree-data` removed. The certificates of the soundness's
+developments but those of the base, atoms and keywords' forms are read
+by no module, the check of each declaration as its search stores it
+being their only check. Each development gains, as its module and the
+name of its last theorem settle, a module of
+`GebTests/Prototypes/FreeTopos/Certified/` that reads its certificate and
+states that it proves that theorem, as
+`GebTests/Prototypes/FreeTopos/Certified/Datatype.lean` states it of
+`atomThm`.
 
 Abstraction is mathematical, not syntactic, and needs no mark of its
 own. An interface is a theory, a presentation of operations and axioms
@@ -7502,7 +7512,7 @@ it decides ({ref "checking-cost"}[The cost of checking]):
 
 Every compiled evaluation of {name}`Geb.FreeTopos.Internal.check` has
 both: the checks of the stored certificates by `evaluation_axiom`, in
-`GebTests/Prototypes/FreeTopos/Certified/` and in `GebSlow`, whose
+`GebTests/Prototypes/FreeTopos/Certified/`, whose
 evaluator calls the library `Geb` compiled; the checks of developments
 by {name}`Geb.FreeTopos.Internal.checkDev`; the searches of
 `geb-certify`; and the benches of `geb-bench`. So does every compiled

@@ -299,10 +299,10 @@ alone. Three properties of the form it takes here bear on the cost.
 * The checker computes no conversion, so a certificate carries the
   computation that a checker with a conversion rule performs.
 * Certificates are stored artifacts that searches generate, and
-  `slow-checks.yml` repeats a search and compares its output with the
-  committed certificate byte for byte where the search's inputs differ
-  from those of its last passing run, so that a search's time is the
-  time of a check after each change to them.
+  `ci.yml` and `scripts/pre-push.sh` repeat a search and compare its
+  output with the committed certificate byte for byte where the search's
+  inputs differ from those of its last passing run, so that a search's
+  time is the time of a check after each change to them.
 * The prover, its tactics and the combinator prover are written in Lean
   and in Geb, with proofs that the two construct the same certificates
   (`GebTests/Prototypes/FreeTopos/Agreement/`). The soundness of a
@@ -363,11 +363,11 @@ against their cost.
    constructed. It removes most of the searches' time, which was the
    weakening of every hypothesis at each binder the reduction entered
    ({ref "measurements"}[The measurements]).
-4. The searches out of the daily checks: the committed certificates
-   checked, and a search run where its inputs differ from those of its
-   last passing run. `slow-checks.yml` keys a passing run by the bytes
-   of the executable `geb-certify` and by the committed certificates,
-   and runs a search at a key with no record of one
+4. A search run where its inputs differ from those of its last passing
+   run, on every push. `ci.yml` keys a passing run by the bytes of the
+   executable `geb-certify` and by the committed certificates, and runs a
+   search at a key with no record of one, and `scripts/pre-push.sh`
+   records the same inputs at its last passing run of the searches
    (`docs/rules/ci-and-workflow.md` § Certificates). The executable
    changes with the compiled code of every module it imports, so a
    change to the prover or to a program it reasons about runs every
@@ -436,7 +436,8 @@ and compiled, and by compiled code in
   * 7.8 seconds
 :::
 
-The module of `GebSlow` checking the certificate `datatype-list` builds
+The module checking the certificate `datatype-list`
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeList.lean`) builds
 in 32.5 minutes with `Geb` compiled, on sixteen cores, where the slow
 checks' run on GitHub's hosted runners took four and a half hours with
 it interpreted.
@@ -556,8 +557,8 @@ formulas 0.38 and the contexts of congruences 59.0. Its congruences
 that weaken the hypotheses past a binder are 5205, and weaken 363667
 hypotheses of 174537590 nodes in all. The compiled checks of weakening,
 of substitution and of the expansion's identity take 5.4, 10.8 and 3.2
-seconds, and the module of `GebSlow` checking the certificate
-`datatype-list` builds in 19.0 minutes.
+seconds, and the module checking the certificate `datatype-list` builds
+in 19.0 minutes.
 
 With the hypotheses weakened where a rewriting reads them
 ({name}`Geb.FreeTopos.Internal.checkFast`), in one run with the probes,
@@ -565,11 +566,11 @@ the theorem of index 348 takes 8.9 seconds: the congruences' own time
 is 0.11 seconds and their contexts' 0.02, and the largest parts left are the rewritings by
 theorems, 2.3 seconds, and the tests of their instances, 1.9. The
 compiled checks of weakening, of substitution and of the expansion's
-identity take 5.1, 10.3 and 3.1 seconds, and the module of `GebSlow`
-checking the certificate `datatype-list` builds in 176 seconds.
+identity take 5.1, 10.3 and 3.1 seconds, and the module checking the
+certificate `datatype-list` builds in 176 seconds.
 
-The jobs of `slow-checks.yml` with the changes above but the third, on
-sixteen cores, in one run, the searches six at a time:
+The checks with the changes above but the third, on sixteen cores, in
+one run, the searches six at a time:
 
 :::table +header
 *
@@ -595,9 +596,9 @@ sixteen cores, in one run, the searches six at a time:
   * The other searches
   * From 17 seconds to 46 minutes each
 *
-  * `GebSlow`
-  * 176 seconds for the certificate `datatype-list` and 585 for the
-    module of the interaction-net compiler's graph reduction
+  * The modules of the certificate `datatype-list` and of the
+    interaction-net compiler's graph reduction
+  * 176 and 585 seconds
 :::
 
 The searches longer than twenty minutes take from 0.6 to 1.2 times their
@@ -632,6 +633,14 @@ inference of types, by the checker and in the reduction's contexts of
 folds. The search of `datatype-app` reaches 7.2 gigabytes of resident
 memory.
 
+With them, `scripts/pre-push.sh` with its build up to date, on sixteen
+cores, in one run, the searches four at a time, each in a process of its
+own reading the committed certificates, takes 40.0 minutes: the searches
+20.0 and the check of the bootstrap's fixed points 17.3. The searches'
+times sum to 48 minutes, against 43 in turn; `decode-case`, the longest
+at 589 seconds, begins among the last, as it is listed, and ends the
+searches. No process exceeds 4.8 gigabytes of resident memory.
+
 # The searches' remaining time
 %%%
 tag := "searches-remaining"
@@ -663,5 +672,5 @@ choice of the rules tried at a node and the traversal; and, in the
 check, how often the same formula's type is inferred at successive
 instances of theorems. The check as stored is the only check of the
 certificates that no module of `GebTests/Prototypes/FreeTopos/Certified/`
-or of `GebSlow` reads (`docs/rules/ci-and-workflow.md` § Certificates),
+reads (`docs/rules/ci-and-workflow.md` § Certificates),
 so it stays in the search until such modules check them.

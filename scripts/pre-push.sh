@@ -107,6 +107,24 @@ bash scripts/bootstrap.sh check
 step "lake build GebTests (prerequisite for lake shake)"
 lake build GebTests
 
+# The searches' certificates are a function of the generator's compiled
+# code and of the committed certificates it reads, as ci.yml keys a
+# passing search (docs/rules/ci-and-workflow.md § Certificates), so the
+# searches run only when those inputs differ from the ones recorded at
+# their last passing check (.lake/certificates-check.stamp).
+step "scripts/certificates.sh check (the searches, in parallel)"
+lake build geb-certify
+certificates_stamp=".lake/certificates-check.stamp"
+certificates_inputs() {
+  sha256sum .lake/build/bin/geb-certify bootstrap/certificates/*.cert scripts/certificates.sh
+}
+if [ -f "$certificates_stamp" ] && certificates_inputs | cmp -s - "$certificates_stamp"; then
+  echo "the searches' inputs unchanged since their last passing check; skipping."
+else
+  GEB_CERTIFY=.lake/build/bin/geb-certify bash scripts/certificates.sh check
+  certificates_inputs > "$certificates_stamp"
+fi
+
 step "lake exe batteries/runLinter GebTests (axiom + style linters on tests)"
 lake exe batteries/runLinter GebTests
 

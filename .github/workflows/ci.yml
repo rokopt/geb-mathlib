@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      searches:
+        description: Run every search, whether or not its inputs have passed
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -97,6 +102,90 @@ jobs:
         run: lake shake --add-public --keep-implied --keep-prefix Geb GebTests
       - name: scripts/tests/test-lake-shake.sh
         run: bash scripts/tests/test-lake-shake.sh
+
+  # The generator of the certificates, built once for the jobs of the
+  # searches, and the searches' names.
+  certify:
+    name: Build the generator of the certificates
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    outputs:
+      names: ${{ steps.list.outputs.names }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: leanprover/lean-action@24581d74d674803a25a81b10b059c5c0cdd344c6  # v1
+        with:
+          build: false
+          test: false
+          lint: false
+      - name: lake build geb-certify
+        run: lake build geb-certify
+      - id: list
+        name: scripts/certificates.sh searches
+        run: |
+          names=$(bash scripts/certificates.sh searches | jq -Rnc '[inputs]')
+          echo "names=$names" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: geb-certify
+          path: .lake/build/bin/geb-certify
+          retention-days: 1
+
+  # The regeneration of the certificates of the internal language's
+  # developments, compared with the committed ones
+  # (docs/rules/ci-and-workflow.md § Certificates): one job to a search,
+  # so that each runs within the hosted runners' limit on a job's time; a
+  # search reads the committed certificates it continues from.
+  certificates:
+    name: Regenerate and compare the certificates of ${{ matrix.search }}
+    needs: certify
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        search: ${{ fromJSON(needs.certify.outputs.names) }}
+    env:
+      GEB_CERTIFY: bin/geb-certify
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: geb-certify
+          path: bin
+      # An artifact keeps no file mode.
+      - name: chmod +x bin/geb-certify
+        run: chmod +x bin/geb-certify
+      # A search's certificates are a function of the generator's compiled
+      # code and of the committed certificates it reads, so a search that
+      # passed with the same executable and certificates is not run again.
+      # The key names the executable by its bytes, which a change that
+      # alters no compiled code leaves unchanged.
+      - id: key
+        name: Compute the key of the search's inputs
+        run: |
+          exe=$(sha256sum bin/geb-certify | cut -d ' ' -f 1)
+          certs=${{ hashFiles('bootstrap/certificates/*.cert', 'scripts/certificates.sh') }}
+          echo "key=search-${{ matrix.search }}-$exe-$certs" >> "$GITHUB_OUTPUT"
+      - id: passed
+        name: Look up a passing run at the key
+        if: ${{ !inputs.searches }}
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: search-passed
+          key: ${{ steps.key.outputs.key }}
+          lookup-only: true
+      - name: scripts/certificates.sh check ${{ matrix.search }}
+        if: steps.passed.outputs.cache-hit != 'true'
+        run: |
+          bash scripts/certificates.sh check "${{ matrix.search }}"
+          echo "${{ steps.key.outputs.key }}" > search-passed
+      - name: Record the passing run at the key
+        if: steps.passed.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: search-passed
+          key: ${{ steps.key.outputs.key }}
 
   hooks_test:
     name: Hooks smoke test
