@@ -777,6 +777,11 @@ abbrev FastChecks : Type := Rewrites × (List Tree → List Term → Term → Bo
 proving: the rewriting under hypotheses weakened past no variable. -/
 def FastChecks.checks (c : FastChecks) : Checks := (fun Γ Φ t ↦ c.1 Γ 0 Φ t, c.2)
 
+/-- A rewriting under weakened hypotheses is uniform when it rewrites under hypotheses weakened
+past new variables as it rewrites, past none, under the hypotheses weakened past them. -/
+def Rewrites.Uniform (r : Rewrites) : Prop :=
+  ∀ Γ k Φ t, r Γ k Φ t = r Γ 0 (Φ.map (weakenBy k)) t
+
 /-- One step of the checker with its rewriting under weakened hypotheses, at a node of a rule,
 from its children's results: the rewriting by {lit}`rewriteStep`, and the proving by
 {lit}`checkStep` from the children's results. -/
@@ -854,50 +859,60 @@ theorem rootStep_rootHyps (G : Globals) (E : Array Entry) (n : ℕ) (Γ : List T
   unfold rootStep
   split <;> rfl
 
+/-- Hypotheses weakened, then weakened past no further variable, are the hypotheses weakened. -/
+theorem map_weakenBy_zero (Φ : List Term) : Φ.map (weakenBy 0) = Φ := by
+  rw [List.map_congr_left fun ψ _ ↦ weakenBy_zero ψ, List.map_id']
+
 /-- One step of the rewriting under weakened hypotheses is the checker's, under the hypotheses
-weakened, where the children's are. -/
-theorem rewriteStep_eq (G : Globals) (E : Array Entry) (n : ℕ) (l : Rule) (ds : List Deriv)
-    (R : Deriv → Rewrites) (C : Deriv → Checks)
-    (h : ∀ d ∈ ds, ∀ Γ k Φ t, R d Γ k Φ t = (C d).1 Γ (Φ.map (weakenBy k)) t)
+weakened, where the children's rewritings are uniform. -/
+theorem rewriteStep_eq (G : Globals) (E : Array Entry) (n : ℕ) (l : Rule)
+    (cs : List (Deriv × FastChecks)) (h : ∀ c ∈ cs, c.2.1.Uniform)
     (Γ : List Tree) (k : ℕ) (Φ : List Term) (t : Term) :
-    rewriteStep G E n l (ds.map fun d ↦ (d, R d)) Γ k Φ t =
-      (checkStep G E n l (ds.map fun d ↦ (d, C d))).1 Γ (Φ.map (weakenBy k)) t := by
+    rewriteStep G E n l (cs.map fun c ↦ (c.1, c.2.1)) Γ k Φ t =
+      (checkStep G E n l (cs.map fun c ↦ (c.1, c.2.checks))).1 Γ (Φ.map (weakenBy k)) t := by
   cases l
   case cong =>
     simp only [rewriteStep, checkStep, List.map_map, Function.comp_def, congCtxs_weakenBy,
-      List.length_map]
-    rcases congBinders G n t.label t.children Γ (ds.map fun x ↦ x) with _ | Bs
-    · rfl
-    simp only [Option.map_some, Option.bind_eq_bind, Option.bind_some, List.length_map]
-    rw [mapM_zip_map (fun d ↦ (d, R d)) (fun d ↦ (d, C d))
-      (fun p ↦ (p.1, Φ.map (weakenBy (k + p.2)))) _ (fun x ↦ x.1.2.1 x.2.1.1 x.2.1.2 x.2.2) ds
-      (fun d hd B u ↦ h d hd _ _ _ _)]
-  all_goals rcases ds with _ | ⟨d₁, _ | ⟨d₂, _ | ⟨d₃, ds⟩⟩⟩ <;>
+      List.length_map, Option.bind_eq_bind, Option.bind_map]
+    refine congrArg _ (funext fun Bs ↦ ?_)
+    rw [mapM_zip_map (fun c ↦ (c.1, c.2.1)) (fun c ↦ (c.1, c.2.checks))
+      (fun p ↦ (p.1, Φ.map (weakenBy (k + p.2)))) _ (fun x ↦ x.1.2.1 x.2.1.1 x.2.1.2 x.2.2) cs
+      (fun c hc B u ↦ h c hc _ _ _ _)]
+  all_goals rcases cs with _ | ⟨c₁, _ | ⟨c₂, _ | ⟨c₃, cs⟩⟩⟩ <;>
     try first | rfl | exact rootStep_rootHyps G E n Γ _ k Φ t
-  change (R d₁ Γ k Φ t).bind (R d₂ Γ k Φ) = ((C d₁).1 Γ _ t).bind ((C d₂).1 Γ _)
-  rw [h d₁ List.mem_cons_self, show R d₂ Γ k Φ = (C d₂).1 Γ (Φ.map (weakenBy k)) from
-    funext (h d₂ (List.mem_cons_of_mem _ List.mem_cons_self) Γ k Φ)]
+  change (c₁.2.1 Γ k Φ t).bind (c₂.2.1 Γ k Φ) =
+    (c₁.2.1 Γ 0 (Φ.map (weakenBy k)) t).bind (c₂.2.1 Γ 0 (Φ.map (weakenBy k)))
+  rw [h c₁ List.mem_cons_self, show c₂.2.1 Γ k Φ = c₂.2.1 Γ 0 (Φ.map (weakenBy k)) from
+    funext (h c₂ (List.mem_cons_of_mem _ List.mem_cons_self) Γ k Φ)]
 
-/-- The checker with its rewriting under weakened hypotheses rewrites as the checker does under
-the hypotheses weakened, and its results are the checker's. -/
+/-- One step of the checker with its rewriting under weakened hypotheses, where the children's
+rewritings are uniform, rewrites uniformly, and its results are the checker's step at the
+children's results. -/
+theorem fastStep_eq (G : Globals) (E : Array Entry) (n : ℕ) (l : Rule)
+    (cs : List (Deriv × FastChecks)) (h : ∀ c ∈ cs, c.2.1.Uniform) :
+    (fastStep G E n l cs).1.Uniform ∧
+      (fastStep G E n l cs).checks = checkStep G E n l (cs.map fun c ↦ (c.1, c.2.checks)) := by
+  have hr := rewriteStep_eq G E n l cs h
+  refine ⟨fun Γ k Φ t ↦ ?_, Prod.ext (funext fun Γ ↦ funext fun Φ ↦ funext fun t ↦ ?_) rfl⟩
+  · change rewriteStep G E n l _ Γ k Φ t = rewriteStep G E n l _ Γ 0 _ t
+    rw [hr, hr, map_weakenBy_zero]
+  · change rewriteStep G E n l _ Γ 0 Φ t = _
+    rw [hr, map_weakenBy_zero]
+
+/-- The checker with its rewriting under weakened hypotheses rewrites uniformly, and its results
+are the checker's. -/
 theorem para_fastStep (G : Globals) (E : Array Entry) (n : ℕ) : ∀ d : Deriv,
-    (∀ Γ k Φ t, (RoseTree.para (fastStep G E n) d).1 Γ k Φ t =
-      (check G E n d).1 Γ (Φ.map (weakenBy k)) t) ∧
+    (RoseTree.para (fastStep G E n) d).1.Uniform ∧
       (RoseTree.para (fastStep G E n) d).checks = check G E n d :=
   RoseTree.ind fun l ds ih ↦ by
-    have hcs : (ds.map fun d ↦ (d, RoseTree.para (fastStep G E n) d)).map
-        (fun c ↦ (c.1, c.2.checks)) = ds.map fun d ↦ (d, check G E n d) := by
-      rw [List.map_map]
-      exact List.map_congr_left fun d hd ↦ by rw [Function.comp_apply, (ih d hd).2]
-    have h₁ : ∀ Γ k Φ t, (RoseTree.para (fastStep G E n) (RoseTree.node l ds)).1 Γ k Φ t =
-        (check G E n (RoseTree.node l ds)).1 Γ (Φ.map (weakenBy k)) t := fun Γ k Φ t ↦ by
-      rw [check, RoseTree.para_node, RoseTree.para_node, fastStep, List.map_map]
-      exact rewriteStep_eq G E n l ds _ _ (fun d hd ↦ (ih d hd).1) Γ k Φ t
-    refine ⟨h₁, Prod.ext (funext fun Γ ↦ funext fun Φ ↦ funext fun t ↦ ?_) ?_⟩
-    · change (RoseTree.para (fastStep G E n) (RoseTree.node l ds)).1 Γ 0 Φ t = _
-      rw [h₁, List.map_congr_left fun ψ _ ↦ weakenBy_zero ψ, List.map_id']
-    · rw [FastChecks.checks, check, RoseTree.para_node, RoseTree.para_node, fastStep, hcs]
-      rfl
+    rw [RoseTree.para_node]
+    obtain ⟨hu, hc⟩ := fastStep_eq G E n l (ds.map fun d ↦ (d, RoseTree.para (fastStep G E n) d))
+      fun c hc ↦ by
+        obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hc
+        exact (ih d hd).1
+    refine ⟨hu, hc.trans ?_⟩
+    rw [check, RoseTree.para_node, List.map_map]
+    exact congrArg _ (List.map_congr_left fun d hd ↦ by rw [Function.comp_apply, (ih d hd).2]; rfl)
 
 /-- The checker is the checker with its rewriting under hypotheses weakened where they are
 read, by which the compiler replaces it. -/

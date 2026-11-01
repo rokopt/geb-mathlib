@@ -4202,7 +4202,11 @@ import-direction rules above are enforced by
   of a theorem finds its instance by matching the theorem's conclusion
   against the formula; every other node is the base checker's step, so
   that it is sound relative to the base checker
-  (`Geb.FreeTopos.Internal.convCheck_sound`). Its step of evaluation
+  (`Geb.FreeTopos.Internal.convCheck_sound`). The compiler replaces it by
+  `Geb.FreeTopos.Internal.convCheckFast`, proved equal to it
+  (`Geb.FreeTopos.Internal.convCheck_eq_convCheckFast`), whose steps of
+  the base checker are those of `Geb.FreeTopos.Internal.checkFast`. Its
+  step of evaluation
   rewrites a term built of the translation library's arithmetic over
   numerals to its value's numeral, computed by the arithmetic of the
   natural numbers (`Geb/Prototypes/FreeTopos/Literals.lean`), where the
