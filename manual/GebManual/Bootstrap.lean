@@ -9,6 +9,7 @@ public import VersoManual
 public import GebManual.Bibliography
 import Geb.Prototypes.Bootstrap
 import Geb.Prototypes.Kernel
+import Geb.Prototypes.Affine
 import Geb.Prototypes.InteractionNet
 import Geb.Prototypes.GoedelT
 import Geb.Prototypes.Definition
@@ -185,8 +186,9 @@ Computation:
   specified in Lean and written in Geb; then a search written in Geb,
   which full self-hosting requires; and later, elementary affine logic
   without the exemption. The search with z3, `scripts/eal/eal.py`, with
-  a decoration per use of a definition, is constructed, and the rest is
-  ready.
+  a decoration per use of a definition and the certificates it writes,
+  and the checker specified in Lean, {name}`Geb.Affine.check`, are
+  constructed, and the rest is ready.
 * Ready. The Geb reader and serializer in constant depth, and the stage
   tests run by the compiled executables, the section on improvements.
 
@@ -2283,10 +2285,10 @@ it, and the first two need no typing.
 The bootstrap's programs, its compilers, checkers and prover, and its
 reader and printer once they are written in Geb, are required to be
 typable in this discipline, first-order data copied natively and the
-fold whose step sees the node among the primitives that copy it, so
-that the third stage can run them with optimal sharing. A program's
-decoration is a certificate. A search finds it and is not trusted, and
-a checker checks it and is, which is the rule for every solver the
+fold whose step sees the node among the primitives that copy it, so that
+the third stage can run them with optimal sharing. A program's
+decoration is a certificate. A search finds it and is not trusted, and a
+checker checks it and is, which is the rule for every solver the
 bootstrap uses: `scripts/eal/eal.py` is the search, with z3 as its
 solver, and checking a decoration is checking linear inequalities
 between given numbers, which needs no solver. The steps, in order: a
@@ -2295,19 +2297,23 @@ linear constraints that describe the definition's decorations, all of
 which the constraints on its simple principal type schema yield
 {citep CoppolaMartini2006}[], constructed in `scripts/eal/eal.py`, which
 copies them projected onto the numbers of `!` of the definition's type;
-the rewriting of the folds that read their children's results twice,
-and of the definitions above that read a list of functions twice; a
-checker of decorations specified in Lean
-and written in Geb, the checker written in Geb proved in Lean to agree
-with it by the method of the metalogic's checker, and the check in the
-build of every program's committed decoration, the checker's own among
-them; and a search written in Geb, which full self-hosting requires so
-that no external solver regenerates a decoration. An inference in
-polynomial time given a simple type derivation
-{citep BaillotTerui2005}[], for a system without sharing or
-polymorphism, is the search's starting point, extended to the kernel's
-constants, and its verdicts are compared with those of the search that
-uses z3.
+a checker of decorations specified in Lean, constructed as
+{name}`Geb.Affine.check`, which reads the certificates the search
+writes: each a list of instances, a definition's term decorated with its
+depths in boxes and the numbers of `!` of its types, a reference naming
+the instance it uses and the boxes it is placed under, so that a
+definition used at several decorations has an instance of each; the
+rewriting of the folds that read their children's results twice, and of
+the definitions above that read a list of functions twice; the checker
+written in Geb, proved in Lean to agree with it by the method of the
+metalogic's checker, and the check in the build of every program's
+committed decoration, the checker's own among them; and a search written
+in Geb, which full self-hosting requires so that no external solver
+regenerates a decoration. An inference in polynomial time given a simple
+type derivation {citep BaillotTerui2005}[], for a system without sharing
+or polymorphism, is the search's starting point, extended to the
+kernel's constants, and its verdicts are compared with those of the
+search that uses z3.
 
 A stricter requirement is a later step: elementary affine logic
 without the exemption, to which the published soundness of the

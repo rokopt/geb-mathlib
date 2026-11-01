@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Elementary-affine typability of the definitions of a Geb kernel program.
 
-    python3 scripts/eal/eal.py [--pure] [--explain NAME] DEFS
+    python3 scripts/eal/eal.py [--pure] [--explain NAME] [--certificate OUT] DEFS
 
 DEFS is a program's definitions in the form `lake exe geb-defs IMAGE DEFS` writes: one per
 line, the name, a tab, and the kernel term as an S-expression of labels; lines beginning
@@ -43,10 +43,16 @@ For a definition that is not typable the checker prints a minimal set of the con
 that conflict; `--explain NAME` tracks every constraint of that definition, each labelled
 with the rule that added it, and prints a minimal conflicting set.
 
-Status: a measurement tool. Elementary affine logic proper (`--pure`) is what the
-soundness of the oracle-free optimal-reduction algorithm is proved for (Baillot, Coppola
-and Dal Lago, arXiv:0704.2448); the exemption of first-order data is not proved sound for
-such a machine. Requires the z3-solver package (scripts/eal/requirements.txt).
+`--certificate OUT` writes a certificate of the definitions typable per use, an instance of
+each at every decoration it is used at, in the form stated above `certificate` below;
+`Geb.Affine.check` (Geb/Prototypes/Affine/Decoration.lean) checks it, and the search is not
+trusted.
+
+Status: the search for certificates, and a measurement tool. Elementary affine logic
+proper (`--pure`) is what the soundness of the oracle-free optimal-reduction algorithm is
+proved for (Baillot, Coppola and Dal Lago, arXiv:0704.2448); the exemption of first-order
+data is not proved sound for such a machine. Requires the z3-solver package
+(scripts/eal/requirements.txt).
 """
 import argparse
 import sys
@@ -175,6 +181,8 @@ class Walker:
         self.mode = mode        # "local": fresh decoration per reference; "use": the same,
                                 # each recorded in uses, for check_per_use to constrain
         self.uses = []          # (definition, decoration at the use, promotion)
+        self.rec = {}           # id of a node walked -> its depth and the decorations it
+                                # introduces, from which a certificate is read
         self.places = {}        # place -> (decorated type, depth of binder)
         self.nbind = 0
         self.binders = {}
@@ -212,6 +220,7 @@ class Walker:
     def walk(self, t, ctx, depth, desc):
         cx = self.cx
         lab, ks = t
+        self.rec[id(t)] = {"depth": depth}
         if lab == 8:                                   # var
             n = ks[0][0]
             ty, bid = ctx[n]
@@ -241,6 +250,7 @@ class Walker:
             bid = self.nbind
             self.binders[bid] = f"lam {show_ty(A)} under {desc}"
             dA = cx.fresh(A)
+            self.rec[id(t)]["types"] = [dA]
             self.places[(bid, ())] = (dA, depth)
             tb, db, c = self.child(ks[1], [(A, bid)] + ctx, depth, desc)
             self.contraction(bid, c)
@@ -277,7 +287,9 @@ class Walker:
             return ta, da, add(cc, mx(ca, cb))
         if lab == 19:                                  # nil
             ty = tList(ks[0])
-            return ty, node(ty, [cx.fresh(ks[0])]), {}
+            dA = cx.fresh(ks[0])
+            self.rec[id(t)]["types"] = [dA]
+            return ty, node(ty, [dA]), {}
         if lab == 20:                                  # cons
             tx, dx, c1 = self.child(ks[0], ctx, depth, desc)
             tl, dl, c2 = self.child(ks[1], ctx, depth, desc)
@@ -297,6 +309,7 @@ class Walker:
             elif self.mode == "use":
                 d = cx.fresh(ty)
                 self.uses.append((ks[0][0], d, cx.var("k")))
+                self.rec[id(t)]["use"] = len(self.uses) - 1
             return ty, d, {}
         raise ValueError(f"label {lab}")
 
@@ -305,12 +318,14 @@ class Walker:
         lab, ks = t
         if lab == 18:                                  # iter
             A = ks[0]; dA = cx.fresh(A)
+            self.rec[id(t)]["types"] = [dA]
             step = node(tArrow(A, A), [dA, dA], 1)
             res = shift(dA, 1)
             ty = tArrow(tArrow(A, A), tArrow(A, tArrow(tT, A)))
             return ty, node(ty, [step, node(ty[1][1], [res, node(ty[1][1][1][1], [zero(tT), res])])]), {}
         if lab in (17, 25):                            # fold, and para (the step sees the node)
             A = ks[0]; dA = cx.fresh(A)
+            self.rec[id(t)]["types"] = [dA]
             sty = tArrow(tT, tArrow(tList(A), A))
             step = node(sty, [zero(tT), node(sty[1][1], [node(tList(A), [dA]), dA])], 1)
             ty = tArrow(sty, tArrow(tT, A))
@@ -318,6 +333,7 @@ class Walker:
         if lab == 21:                                  # foldr
             A, B = ks[0], ks[1]
             dA, dB = cx.fresh(A), cx.fresh(B)
+            self.rec[id(t)]["types"] = [dA, dB]
             if not is_data(A):
                 cx.add(dA[1] >= 1, f"foldr over a list of {show_ty(A)} needs boxed elements")
             dA1 = shift(dA, -1)
@@ -330,6 +346,7 @@ class Walker:
         if lab == 24:                                  # lcase, unsaturated
             A, B = ks[0], ks[1]
             dA, dB = cx.fresh(A), cx.fresh(B)
+            self.rec[id(t)]["types"] = [dA, dB]
             cty = tArrow(A, tArrow(tList(A), B))
             dc = node(cty, [dA, node(cty[1][1], [node(tList(A), [dA]), dB])])
             ty = tArrow(tList(A), tArrow(B, tArrow(cty, B)))
@@ -501,14 +518,27 @@ class Template:
         self.ty, self.dec, _ = w.walk(body, [], z3.IntVal(0), name)
         self.constraints = cx.solver.constraints
         self.uses = w.uses
+        self.rec = w.rec
+
+
+class PerUse:
+    """A definition checked with a decoration per use: its template, the variables of the
+    numbers of `!` of its type and its decoration over them, its constraints with the copies
+    of its uses' projections (each use's copy over the variables renamed for that use), and
+    its projection, or None when it is not typable or exempt."""
+
+    def __init__(self, template, ys, dec):
+        self.template, self.ys, self.dec = template, ys, dec
+        self.parts, self.renamings, self.projection = [], {}, None
 
 
 def check_per_use(defs, exempt):
     """Each definition in order, with a decoration per use of each definition it refers to;
     the definitions in exempt, and each found not typable, leave their uses unconstrained.
-    Returns those found not typable, each with the definitions whose constraints conflict."""
+    Returns those found not typable, each with the definitions whose constraints conflict,
+    and the PerUse of every definition."""
     exempt = set(exempt)
-    globs, projections, worse = [], [], []
+    globs, checked, worse = [], [], []
     qe = z3.Then("simplify", "propagate-values", "solve-eqs", "qe2", "simplify")
     for i, (name, body) in enumerate(defs):
         t = Template(name, body, globs)
@@ -520,19 +550,20 @@ def check_per_use(defs, exempt):
                 return d
             ys.append(z3.Int(f"y{i}_{len(ys)}"))
             return (d[0], ys[-1], [over(c) for c in d[2]])
-        dec = over(t.dec)
+        c = PerUse(t, ys, over(t.dec))
+        checked.append(c)
         if i in exempt:
-            projections.append((z3.BoolVal(True), ys, dec))
             continue
-        parts = [(i, c) for c in t.constraints + eqs(dec, t.dec)]
+        c.parts = [(i, e) for e in t.constraints + eqs(c.dec, t.dec)]
         for n, (j, d, k) in enumerate(t.uses):
             if j in exempt:
                 continue
-            f, yj, dj = projections[j]
-            sub = [(y, z3.Int(f"{y}_{n}")) for y in yj]
-            parts.append((j, z3.substitute(f, *sub) if sub else f))
-            parts += [(j, c) for c in eqs(shift(rename(dj, sub), k), d)]
-        phi = z3.And([c for _, c in parts])
+            u = checked[j]
+            sub = [(y, z3.Int(f"{y}_{n}")) for y in u.ys]
+            c.renamings[n] = sub
+            c.parts.append((j, z3.substitute(u.projection, *sub) if sub else u.projection))
+            c.parts += [(j, e) for e in eqs(shift(rename(u.dec, sub), k), d)]
+        phi = z3.And([e for _, e in c.parts])
         inner = [v for v in constants([phi]) if not any(v.eq(y) for y in ys)]
         g = z3.Goal()
         g.add(z3.Exists(inner, phi) if inner else phi)
@@ -541,18 +572,117 @@ def check_per_use(defs, exempt):
             any(v.eq(y) for y in ys) for v in constants([f])), name
         s = z3.Solver()
         s.add(f)
-        if s.check() != z3.sat:
-            exempt.add(i)
-            f = z3.BoolVal(True)
-            lits = {}
-            s = z3.Solver()
-            for j, c in parts:
-                s.add(z3.Implies(lits.setdefault(j, z3.Bool(f"def_{j}")), c))
-            core = minimal(s, list(lits.values()))
-            worse.append((name, t.ty, [defs[int(str(l)[4:])][0] for l in sorted(
-                core, key=lambda l: int(str(l)[4:]))]))
-        projections.append((f, ys, dec))
-    return worse
+        if s.check() == z3.sat:
+            c.projection = f
+            continue
+        exempt.add(i)
+        lits = {}
+        s = z3.Solver()
+        for j, e in c.parts:
+            s.add(z3.Implies(lits.setdefault(j, z3.Bool(f"def_{j}")), e))
+        core = minimal(s, list(lits.values()))
+        worse.append((name, t.ty, [defs[int(str(l)[4:])][0] for l in sorted(
+            core, key=lambda l: int(str(l)[4:]))]))
+    return worse, checked
+
+# ---------------------------------------------------------------- certificates
+# A certificate is a list of instances, each a definition with a decoration of its term, in
+# the S-expression form of labels: (0 (i D) ...), i the definition's position and D the
+# decoration. An instance refers only to instances before it. A decoration mirrors the term:
+# a node is labelled by its depth in boxes, and its children are, in order,
+#   a variable, or a projection of a variable's place, a unit value, a quoted tree or a
+#     primitive: none;
+#   a projection of another term: its argument's decoration;
+#   an abstraction: the decorated type of its variable, then its body's decoration;
+#   an application whose head is case analysis of lists applied to three arguments: the
+#     three arguments' decorations; another application: those of the function and the
+#     argument;
+#   a pair, a conditional or a list's head and tail: those of its children, in order;
+#   the empty list: the decorated type of its elements; iteration, the fold of trees and
+#     the fold whose step sees the node: the decorated type of the result; the right fold
+#     and unsaturated case analysis of lists: those of the elements and the result;
+#   a reference: the leaves of the position of the instance it uses and of the number of
+#     boxes it is placed under.
+# A decorated type mirrors the simple type, each node labelled by its number of `!`, which
+# is 0 at a type without arrows.
+
+
+def show_tree(lab, kids):
+    return "(" + " ".join([str(lab)] + kids) + ")"
+
+
+def certificate(defs, checked):
+    """A certificate with an instance of every definition typable per use whose uses are
+    all of definitions so typable, and the positions of those definitions."""
+    instances, memo = [], {}
+
+    def value(m, e):
+        return m.eval(e, model_completion=True).as_long()
+
+    def dtype(m, d):
+        if is_data(d[0]):
+            return show_tree(0, [dtype(m, c) for c in d[2]])
+        return show_tree(value(m, d[1]), [dtype(m, c) for c in d[2]])
+
+    def instance(i, Y):
+        key = (i, Y)
+        if key in memo:
+            return memo[key]
+        c = checked[i]
+        s = z3.Solver()
+        s.add([e for _, e in c.parts] + [y == v for y, v in zip(c.ys, Y)])
+        assert s.check() == z3.sat, defs[i][0]
+        m = s.model()
+        t = c.template
+        refs = {}
+        for n, (j, d, k) in enumerate(t.uses):
+            Yj = tuple(value(m, z3.substitute(y, *c.renamings[n])) for y in checked[j].ys)
+            refs[n] = (instance(j, Yj), value(m, k))
+
+        def dec(u):
+            lab, ks = u
+            r = t.rec[id(u)]
+            depth = value(m, r["depth"])
+            if lab in (13, 14):
+                inner = u
+                while inner[0] in (13, 14):
+                    inner = inner[1][0]
+                return show_tree(depth, [] if inner[0] == 8 else [dec(ks[0])])
+            if lab == 9:
+                return show_tree(depth, [dtype(m, r["types"][0]), dec(ks[1])])
+            if lab == 10:
+                spine, head = [], u
+                while head[0] == 10:
+                    spine.append(head[1][1])
+                    head = head[1][0]
+                if head[0] == 24 and len(spine) == 3:
+                    return show_tree(depth, [dec(a) for a in reversed(spine)])
+                return show_tree(depth, [dec(ks[0]), dec(ks[1])])
+            if lab in (12, 16, 20):
+                return show_tree(depth, [dec(k) for k in ks])
+            if lab in (17, 18, 19, 21, 24, 25):
+                return show_tree(depth, [dtype(m, d) for d in r["types"]])
+            if lab == 23:
+                j, k = refs[r["use"]]
+                return show_tree(depth, [show_tree(j, []), show_tree(k, [])])
+            return show_tree(depth, [])
+        instances.append(show_tree(i, [dec(defs[i][1])]))
+        memo[key] = len(instances) - 1
+        return memo[key]
+
+    covered = []
+    for i, c in enumerate(checked):
+        if c.projection is None or any(checked[j].projection is None
+                                       or j not in covered for j, _, _ in c.template.uses):
+            continue
+        covered.append(i)
+        if any(k[0] == i for k in memo):
+            continue
+        s = z3.Solver()
+        s.add(c.projection)
+        assert s.check() == z3.sat
+        instance(i, tuple(value(s.model(), y) for y in c.ys))
+    return "(0\n " + "\n ".join(instances) + ")\n", len(instances), covered
 
 
 def minimal(solver, lits):
@@ -592,9 +722,13 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Elementary-affine typability of kernel definitions.")
     ap.add_argument("--pure", action="store_true", help="first-order data obey the discipline")
     ap.add_argument("--explain", metavar="NAME", help="every constraint of NAME, minimal conflict")
+    ap.add_argument("--certificate", metavar="OUT",
+                    help="write a certificate of the definitions typable per use to OUT")
     ap.add_argument("defs")
     args = ap.parse_args()
     if args.pure:
+        if args.certificate:
+            sys.exit("eal: a certificate is of the discipline with the exemption")
         is_data = lambda ty: False
     defs = load(args.defs)
     if args.explain:
@@ -612,9 +746,15 @@ if __name__ == "__main__":
     if core:
         print("  conflicting:", ", ".join(core))
     names = [n for n, _ in defs]
-    worse = check_per_use(defs, {names.index(n) for n, _, _ in bad})
+    worse, checked = check_per_use(defs, {names.index(n) for n, _, _ in bad})
     print(f"a decoration per use: {len(defs) - len(bad) - len(worse)} of the"
           f" {len(defs) - len(bad)} typable alone typable; {len(worse)} not")
     for n, ty, core in worse:
         print(f"  NOT TYPABLE PER USE: {n} : {show_ty(ty)}")
         print("      conflicting:", ", ".join(core))
+    if args.certificate:
+        text, n, covered = certificate(defs, checked)
+        with open(args.certificate, "w") as out:
+            out.write(text)
+        print(f"certificate: {n} instances of"
+              f" {len(covered)} definitions, written to {args.certificate}")

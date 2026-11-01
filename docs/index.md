@@ -3937,6 +3937,18 @@ import-direction rules above are enforced by
   kernel's place in the plan. Depends on `Geb.Prototypes.RoseTree.Basic`,
   `Geb.Mathlib.Data.W.Basic`, `Geb.Mathlib.Data.FinEnum`,
   `Geb.Prototypes.RoseTree.Packed` and `Mathlib.Data.Fin.VecNotation`.
+- `Geb/Prototypes/Affine/` — elementary-affine decorations of kernel
+  programs. `Geb.Affine.check` checks a certificate, a list of instances
+  each decorating a definition's term with its depths in boxes and the
+  numbers of `!` of its types, against a program: the discipline of
+  `scripts/eal/eal.py`, first-order data exempted, a reference using an
+  instance before it under boxes of its own. The search writes
+  certificates with `--certificate`; `scripts/eal/examples.cert` is the
+  examples' certificate, which
+  `GebTests/Prototypes/Affine/Decoration.lean` checks. The
+  [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
+  decorations' place in the plan. Depends on
+  `Geb.Prototypes.Kernel.Basic`.
 - `Geb/Prototypes/GoedelT/` — Gödel's T over rose trees, a variant of
   Gödel's quantifier-free theory T of the primitive recursive functionals
   of finite type [Goedel1958] whose functionals are the kernel's terms;
