@@ -754,6 +754,18 @@ def rootHyps (l : Rule) (k : ℕ) (Φ : List Term) : List Term := match l with
   | .rwHyp _ _ => Φ.map (weakenBy k)
   | _ => []
 
+/-- The rewriting of a term at its root by a rule under hypotheses weakened past a number of new
+innermost variables, from the hypotheses before the weakening: an equation among the hypotheses
+weakened alone, and the other rules under none of the hypotheses, which they do not read. -/
+def rootStepK (G : Globals) (E : Array Entry) (n : ℕ) (Γ : List Tree) (k : ℕ) (Φ : List Term)
+    (l : Rule) (t : Term) : Option Term := match l with
+  | .rwHyp i flip => do
+    let lr ← (Φ[i]?).bind eqParts
+    if t = weakenBy k (if flip then lr.2 else lr.1) then
+      some (weakenBy k (if flip then lr.1 else lr.2))
+    else none
+  | l => rootStep G E n Γ [] l t
+
 /-- One step of the rewriting under weakened hypotheses, at a node of a rule, from its children's
 rewritings: the hypotheses are weakened where the rewriting at the root reads them, rather than
 at each congruence past a binder. -/
@@ -767,7 +779,7 @@ def rewriteStep (G : Globals) (E : Array Entry) (n : ℕ) (l : Rule) (rs : List 
       let ts ← ((rs.zip (Bs.zip t.children)).mapM fun (r, (Δ, m), u) ↦ r.2 Δ (k + m) Φ u)
       pure (RoseTree.node t.label ts)
     else none
-  | l, [] => rootStep G E n Γ (rootHyps l k Φ) l t
+  | l, [] => rootStepK G E n Γ k Φ l t
   | _, _ => none
 
 /-- The results of a node's rewriting under weakened hypotheses and of its proving. -/
@@ -859,6 +871,40 @@ theorem rootStep_rootHyps (G : Globals) (E : Array Entry) (n : ℕ) (Γ : List T
   unfold rootStep
   split <;> rfl
 
+/-- The sides of an equation weakened are the sides weakened. -/
+theorem eqParts_weakenBy (k : ℕ) (t : Term) :
+    eqParts (weakenBy k t) = (eqParts t).map fun p ↦ (weakenBy k p.1, weakenBy k p.2) := by
+  by_cases hk : k = 0
+  · subst hk
+    simp only [weakenBy_zero]
+    cases eqParts t <;> rfl
+  · simp only [weakenBy, hk, ↓reduceIte]
+    rw [← RoseTree.node_label_children t, Term.rename_node]
+    rcases t.children with _ | ⟨a, _ | ⟨b, _ | ⟨c, _ | ⟨d, cs⟩⟩⟩⟩ <;>
+      cases t.label <;> simp [Term.renameStep, eqParts, Term.var]
+
+/-- The rewriting at the root under weakened hypotheses is the rule's under the hypotheses
+weakened. -/
+theorem rootStepK_eq (G : Globals) (E : Array Entry) (n : ℕ) (Γ : List Tree) (l : Rule) (k : ℕ)
+    (Φ : List Term) (t : Term) :
+    rootStepK G E n Γ k Φ l t = rootStep G E n Γ (Φ.map (weakenBy k)) l t := by
+  have h (l : Rule) (hl : rootHyps l k Φ = []) :
+      rootStep G E n Γ [] l t = rootStep G E n Γ (Φ.map (weakenBy k)) l t :=
+    hl ▸ rootStep_rootHyps G E n Γ l k Φ t
+  cases l
+  case rwHyp i flip =>
+    simp only [rootStepK, rootStep, List.getElem?_map]
+    rcases Φ[i]? with _ | ψ
+    · rfl
+    · simp only [Option.map_some, Option.bind_some, eqParts_weakenBy]
+      rcases eqParts ψ with _ | ⟨a, b⟩
+      · rfl
+      · cases flip <;> rfl
+  all_goals
+    simp only [rootStepK]
+    refine h _ ?_
+    rfl
+
 /-- Hypotheses weakened, then weakened past no further variable, are the hypotheses weakened. -/
 theorem map_weakenBy_zero (Φ : List Term) : Φ.map (weakenBy 0) = Φ := by
   rw [List.map_congr_left fun ψ _ ↦ weakenBy_zero ψ, List.map_id']
@@ -879,7 +925,8 @@ theorem rewriteStep_eq (G : Globals) (E : Array Entry) (n : ℕ) (l : Rule)
       (fun p ↦ (p.1, Φ.map (weakenBy (k + p.2)))) _ (fun x ↦ x.1.2.1 x.2.1.1 x.2.1.2 x.2.2) cs
       (fun c hc B u ↦ h c hc _ _ _ _)]
   all_goals rcases cs with _ | ⟨c₁, _ | ⟨c₂, _ | ⟨c₃, cs⟩⟩⟩ <;>
-    try first | rfl | exact rootStep_rootHyps G E n Γ _ k Φ t
+    try first | rfl |
+      (simp only [rewriteStep, checkStep, List.map_nil]; exact rootStepK_eq G E n Γ _ k Φ t)
   change (c₁.2.1 Γ k Φ t).bind (c₂.2.1 Γ k Φ) =
     (c₁.2.1 Γ 0 (Φ.map (weakenBy k)) t).bind (c₂.2.1 Γ 0 (Φ.map (weakenBy k)))
   rw [h c₁ List.mem_cons_self, show c₂.2.1 Γ k Φ = c₂.2.1 Γ 0 (Φ.map (weakenBy k)) from
