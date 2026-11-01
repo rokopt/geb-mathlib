@@ -43,10 +43,11 @@ at its end.
   * What it computes
 *
   * The loading in the mode `rfl`
-  * More than six hours
-  * The kernel's reduction of {name}`Geb.Kernel.infer` on each
-    definition of the metalogic's program, and the comparison of the
-    denotation it computes with the definition's mirror
+  * Under two minutes
+  * The kernel's check of a proof of each step of the loading of the
+    metalogic's program from the equations of {name}`Geb.Kernel.infer`
+    at the definition's nodes, and the comparison of the denotation it
+    states with the definition's mirror
 *
   * The search of `datatype-app`
   * More than six hours
@@ -162,16 +163,23 @@ the interpreted time to the compiled time is a factor of 9 to 12
 
 ## The loading in the mode `rfl`
 
-Each step of the loading is a theorem proved by reflexivity: the
-checker-evaluator, applied to a definition's tree in the globals before
-it, gives those globals extended by the definition's computed type and
-its mirror, cast to the type's denotation
-(`Geb/Prototypes/Kernel/LoadCommand.lean`). The kernel decides it by
-reducing {name}`Geb.Kernel.infer`, a type checker whose result carries a
-denotation of the type it computes, through the casts that compare the
-computed type with the mirror's, in the environment of every global
-before the definition. Its time grows faster than the program
-({ref "improvements"}[Improvements]).
+Each step of the loading is a theorem whose proof applies, at each node
+of the definition, the equation of the checker-evaluator
+{name}`Geb.Kernel.infer` at the node's form, at the types and
+denotations its children's equations state
+(`Geb/Prototypes/Kernel/LoadCommand.lean`). The kernel checks each
+equation's instance, compares the types by their constructors, each
+global's type being stored as a type tree, reaches a referenced global
+in the list of the globals reversed, in as many steps as it is from the
+last, and compares the denotation the proof states with the
+definition's mirror. Its time is that of the size of the definitions
+and of the distance of the globals they refer to, rather than of the
+reduction of {name}`Geb.Kernel.infer`, which decides each equality of
+types inside a denotation by evaluating it. Each list of globals and
+each global is declared at the height above its body's, as the
+elaborator declares a definition, so that the kernel, which unfolds the
+higher of two definitions first, unfolds a list of globals to the append
+that builds it rather than evaluating the append.
 
 ## The contexts of congruences and type inference
 
@@ -331,13 +339,13 @@ against their cost.
    change to the prover or to a program it reasons about runs every
    search; content identity ({ref "content-identity"}[Content identity])
    would name the definitions each search reads.
-4. The mode `native` as the loading's policy, with the mode `rfl` run on
-   demand: `slow-checks.yml` builds in the mode `rfl` when dispatched
-   with its input `rfl`. Its layers take longer together than the hosted
-   runners' limit on a job's time, so the change that brings it within
-   reach is a proof of each step from the equations of the
+4. A proof of each step of the loading from the equations of the
    checker-evaluator at each form of term, of the size of the definition
-   rather than of its reduction.
+   rather than of its reduction, which brings the mode `rfl` within
+   minutes ({ref "measurements"}[The measurements]). The mode `native`
+   remains the loading's policy, with the mode `rfl` run on demand:
+   `slow-checks.yml` builds in the mode `rfl` when dispatched with its
+   input `rfl`.
 5. Conversion computed by the checker by a reduction of another method,
    proved sound against the base checker's rules rather than equal to
    the prover's reduction. The conversion checker's steps `norm` and
@@ -536,9 +544,10 @@ in one run, the searches six at a time:
   * Time
 *
   * The loading in the mode `rfl`
-  * More than ten hours: the layers `Checker`, `Translation`, `Prover`
-    and `Tactics`, each importing the one before, 3.05, 1.52, 1.99 and
-    3.31 hours, and the layer `Combinator` not complete at ten hours
+  * 100 seconds for the six layers, `Checker`, `Translation`, `Prover`,
+    `Tactics`, `Combinator` and `Printer`, each importing the one before,
+    40, 8.1, 9.0, 13, 20 and 9.9 seconds, and 105 for the test of their
+    agreement
 *
   * The loading in the mode `native`
   * 12 seconds for the six layers, and 106 for the test of their
