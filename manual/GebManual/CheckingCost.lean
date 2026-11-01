@@ -182,6 +182,9 @@ higher of two definitions first, unfolds a list of globals to the append
 that builds it rather than evaluating the append.
 
 ## The contexts of congruences and type inference
+%%%
+tag := "contexts-typing"
+%%%
 
 A congruence that rewrites an abstraction's body or a fold's step
 rewrites it in the context the binder extends
@@ -206,7 +209,18 @@ term's compilation to the combinators computes
 ({name}`Geb.FreeTopos.Internal.typeOf_eq_compile`); a compilation
 builds the arrow of each node, from the product of the context's types,
 and finds a fold's parameters by testing which variables its start or
-step mentions. In the development of `datatype-list` the weakening of
+step mentions. As compiled, the inference reads the parts of a product,
+a coproduct, an exponential, a list object or a rose-tree object from
+the label of its former
+({name}`Geb.FreeTopos.Internal.prodParts_eq_prodPartsFast` and its
+analogues) rather than by comparing the type with the former at its
+children, a comparison of the size of the type at each application and
+projection; it tests a type by a fold that does not rebuild its subtrees
+({name}`Geb.FreeTopos.Internal.isTy_eq_isTyFast`); and it decides the
+equality of two trees, types and terms alike, by comparing the children
+of two nodes of one shape by their indices
+({name}`Geb.PartialHorn.instDecidableEq_eq_decEqFast`) rather than over
+a list of the indices built at each node. In the development of `datatype-list` the weakening of
 the hypotheses at each congruence is most of the time of
 {name}`Geb.FreeTopos.Internal.check` evaluated as it is defined
 ({ref "measurements"}[The measurements]).
@@ -602,3 +616,13 @@ Of the search of `datatype-app` after it, about two fifths is the
 inference of types: by the checker, which checks each theorem a search
 finds, at the instances of theorems, and in the reduction's contexts of
 folds.
+
+With the parts of types read from their labels, the test of types as a
+fold and the equality of trees decided over the indices of the children
+({ref "contexts-typing"}[The contexts of congruences and type
+inference]), in one run of every search in turn, the searches of
+`datatype-list`, `datatype-app` and `decode-case`, the longest, take
+277, 391 and 495 seconds, against 469, 638 and 824 without them; the
+certificates are the committed ones byte for byte. Of the search of
+`datatype-app` they halve the inference of types, by the checker and in
+the reduction's contexts of folds.
