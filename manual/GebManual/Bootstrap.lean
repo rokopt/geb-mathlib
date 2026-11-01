@@ -5109,9 +5109,14 @@ theory, the inference, the language and the checker of derivations and
 developments each agree at every encoded input. At every development,
 its constants, entries and declarations encoded, the loaded check gives
 the encoding of the state the Lean checker gives, so the two accept the
-same developments with the same results. In the loading mode `rfl` the
-proof depends on no axiom beyond `propext` and `Quot.sound`; in the mode
-`native` it depends also on the axioms stating the loading.
+same developments with the same results. In the loading mode `rfl`, the
+default, the proof depends on no axiom beyond `propext` and
+`Quot.sound`; in the mode `native` it depends also on the axioms stating
+the loading (`docs/rules/ci-and-workflow.md` § Loading modes). The
+program is loaded a layer to a module, generated with the mirror by
+`scripts/bootstrap.sh`, so a change to a layer's sources checks again
+that layer, the layers after it, and the equality of the program's
+exported definitions with their mirrors, and no other layer.
 
 The translation of kernel programs into the Mitchell–Bénabou language is
 written in Geb in `bootstrap/free-topos/translation.geb`, translating as
@@ -6876,27 +6881,6 @@ the change that removes it.
   read it (`lakefile.toml`); a change to a source of the stage-0
   compiler, which most of the tests import, still rebuilds most of
   them.
-* Axioms of the loading. In the default loading mode `native` each step
-  of the loading of the metalogic's program is an axiom, declared after
-  the compiled checker-evaluator has loaded the program
-  (`docs/rules/ci-and-workflow.md` § Loading modes). In the mode `rfl`
-  the kernel checks each step, by a proof that applies the equation of
-  the checker-evaluator {name}`Geb.Kernel.infer` at each node of the
-  definition, in the globals before it, and compares the denotation the
-  proof states with the definition's mirror
-  (`Geb/Prototypes/Kernel/LoadCommand.lean`), in time of the size of the
-  definitions and of the distance from the last global of the globals
-  each refers to: the six layers check in under two minutes on one
-  machine, and the test of their agreement in another two. Each global's
-  type is stored as a type tree built by the kernel's constructors of
-  types, as the definitions' type annotations are, so that the kernel
-  compares the types the proof's equations state by their constructors.
-  The program is loaded a layer to a module, generated with the mirror
-  by `scripts/bootstrap.sh`, so a change to a layer's sources checks
-  again that layer, the layers after it, and the equality of the
-  program's exported definitions with their mirrors, and no other layer.
-  The mode `rfl` as the default, in every build and workflow, removes
-  the axioms.
 * Emitted names. A program's definition named `T`, `leaf` or `mk` makes
   the emitted module ill-typed, since the module refers to the tree type,
   the leaf and the node by those names; qualifying them as the constants

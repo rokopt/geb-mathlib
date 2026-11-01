@@ -342,10 +342,9 @@ against their cost.
 4. A proof of each step of the loading from the equations of the
    checker-evaluator at each form of term, of the size of the definition
    rather than of its reduction, which brings the mode `rfl` within
-   minutes ({ref "measurements"}[The measurements]). The mode `native`
-   remains the loading's policy, with the mode `rfl` run on demand:
-   `slow-checks.yml` builds in the mode `rfl` when dispatched with its
-   input `rfl`.
+   minutes ({ref "measurements"}[The measurements]), and so the mode
+   `rfl` is the default of every build and workflow, which removes the
+   axioms of the loading from them.
 5. Conversion computed by the checker by a reduction of another method,
    proved sound against the base checker's rules rather than equal to
    the prover's reduction. The conversion checker's steps `norm` and

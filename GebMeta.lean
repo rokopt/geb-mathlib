@@ -371,9 +371,9 @@ def evaluationAxiomModules : NameSet :=
     `GebSlow.Prototypes.FreeTopos.Certified.DatatypeList]
 
 /-- Whether the environment variable `GEB_LOADING` selects the loading
-mode `native`, as it does unless it is `rfl`. -/
+mode `native`; the mode is `rfl` when the variable is unset. -/
 def nativeLoading : BaseIO Bool :=
-  return (← IO.getEnv "GEB_LOADING") != some "rfl"
+  return (← IO.getEnv "GEB_LOADING") == some "native"
 
 /-- The constants the type and value of `c` use. -/
 def usedConstants (env : Environment) (c : Name) : Array Name :=
