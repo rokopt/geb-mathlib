@@ -60,6 +60,8 @@ every model of an extension of its signature in which its axioms hold.
 
 ## Main statements
 
+* {lit}`subst_eq_substFast` — the substitution of no terms leaves the term, which the compiler
+  returns without traversing it.
 * {lit}`eval_subst` — the value of a substitution instance is the value at the substituted
   terms' values.
 * {lit}`sort_eval` — a defined term's value has the term's sort.
@@ -440,6 +442,16 @@ theorem subst_nil : ∀ t : Tree, subst [] t = t :=
           (List.map_congr_left fun c hc ↦ ih c (by simp [hc])).trans (List.map_id cs)]
     · rw [subst_node_succ]
       exact congrArg _ ((List.map_congr_left ih).trans (List.map_id cs))
+
+/-- The substitution as compiled: that of no terms is the term itself, without its traversal. -/
+def substFast (ts : List Tree) (t : Tree) : Tree := if ts.isEmpty then t else subst ts t
+
+/-- The substitution is {lit}`substFast`, by which the compiler replaces it. -/
+@[csimp] theorem subst_eq_substFast : @subst = @substFast := by
+  funext ts t
+  rcases ts with _ | ⟨a, ts⟩
+  · exact subst_nil t
+  · rfl
 
 /-- A variable's node is in scope when its index is. -/
 theorem scoped_node_zero (n : ℕ) {i : Tree} (hi : i.children = []) :

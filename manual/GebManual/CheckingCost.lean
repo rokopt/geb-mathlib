@@ -587,3 +587,18 @@ The searches longer than twenty minutes take from 0.6 to 1.2 times their
 time in the hosted runners' run of {ref "checking-cost"}[the table of
 checks], which includes the build, so their time is the prover's rather
 than the checker's.
+
+With the third change, and the inference of types compiled as the fold of
+the children's types alone
+({name}`Geb.FreeTopos.Internal.typeOf_eq_typeOfFast`), in one run on
+sixteen cores, the searches three at a time, the search of
+`datatype-atom` takes 25.5 seconds, against 300 without them in the same
+run; that of `datatype-list` 402 seconds, against 64 minutes in another
+run; and that of `datatype-app` 10.6 minutes. The certificates they write
+are the committed ones byte for byte. Of the search of `datatype-atom`
+before the third change, 73 in 100 was the renaming of terms, most of it
+the weakening of the hypotheses at the binders the reduction entered.
+Of the search of `datatype-app` after it, about two fifths is the
+inference of types: by the checker, which checks each theorem a search
+finds, at the instances of theorems, and in the reduction's contexts of
+folds.

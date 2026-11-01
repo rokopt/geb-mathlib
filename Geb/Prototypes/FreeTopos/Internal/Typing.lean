@@ -27,9 +27,12 @@ lists and rose trees). The type computed so is the compilation's
 ## Main definitions
 
 * {lit}`typeOf` — the type of a term in a context.
+* {lit}`typeStepFast`, {lit}`typeOfFast` — the inference as compiled, from the children's types
+  alone.
 
 ## Main statements
 
+* {lit}`typeOf_eq_typeOfFast` — the inference is {lit}`typeOfFast`, which the compiler runs.
 * {lit}`typeOf_eq_compile` — the type of a term in the types of an environment is the type the
   term compiles to in it.
 
@@ -112,12 +115,87 @@ def typeStep (l : Label) (cs : List (Term × (List Tree → Option Tree))) (Γ :
 def typeOf : Term → List Tree → Option Tree :=
   RoseTree.para (typeStep G n)
 
+/-- One step of the inference of types from the children's inferences alone, which are all
+{lit}`typeStep` reads. -/
+def typeStepFast (l : Label) (cs : List (List Tree → Option Tree)) (Γ : List Tree) :
+    Option Tree :=
+  match l, cs with
+    | .var i, [] => Γ[i]?
+    | .star, [] => some one
+    | .pair, [t, u] => do
+      let a ← t Γ
+      let b ← u Γ
+      pure (prod a b)
+    | .fst, [t] => do
+      let (a, _) ← prodParts (← t Γ)
+      pure a
+    | .snd, [t] => do
+      let (_, b) ← prodParts (← t Γ)
+      pure b
+    | .lam a, [t] => if IsTy G n a then (t (a :: Γ)).map (exp a) else none
+    | .app, [t, u] => do
+      let (a, b) ← expParts (← t Γ)
+      if (← u Γ) = a then pure b else none
+    | .arr k θ, [t] => do
+      let p ← G.prims[k]?
+      let d ← t Γ
+      if θ.length = p.arity ∧ θ.all (IsTy G n) ∧ d = PartialHorn.subst θ p.dom then
+        pure (PartialHorn.subst θ p.cod)
+      else none
+    | .natRec, [z, s, m] => do
+      let c ← z Γ
+      let c' ← s (c :: Γ)
+      let t ← m Γ
+      if c' = c ∧ t = nat then pure c else none
+    | .listRec, [z, s, m] => do
+      let a ← listPart (← m Γ)
+      let c ← z Γ
+      let c' ← s (c :: a :: Γ)
+      if c' = c then pure c else none
+    | .roseRec c, [s, m] =>
+      if IsTy G n c then do
+        let (a, _) ← roseParts (← m Γ)
+        let c' ← s (prod a (list c) :: Γ)
+        if c' = c then pure c else none
+      else none
+    | .eq, [t, u] => do
+      let a ← t Γ
+      let b ← u Γ
+      if a = b then pure omega else none
+    | .defn k θ, cs => do
+      let d ← (G.defs[k]?).bind Definition.language?
+      let ts ← cs.mapM fun c ↦ c Γ
+      if θ.length = d.arity ∧ θ.all (IsTy G n) ∧ ts = d.params.map (PartialHorn.subst θ) then
+        pure (PartialHorn.subst θ d.type)
+      else none
+    | _, _ => none
+
+/-- The inference of types as compiled: the fold of {lit}`typeStepFast`, which reads the children's
+types alone and so does not rebuild the term at each node as {lit}`typeOf`'s paramorphism does. -/
+def typeOfFast : Term → List Tree → Option Tree :=
+  RoseTree.elim (typeStepFast G n)
+
 variable {G n}
 
 /-- The type of a node is its step at its children's types. -/
 theorem typeOf_node (l : Label) (cs : List Term) (Γ : List Tree) :
     typeOf G n (RoseTree.node l cs) Γ = typeStep G n l (cs.map fun c ↦ (c, typeOf G n c)) Γ :=
   congrFun (RoseTree.para_node _ l cs) Γ
+
+/-- The step of the inference from the children's inferences alone is {lit}`typeStep`. -/
+theorem typeStepFast_map (l : Label) (cs : List (Term × (List Tree → Option Tree)))
+    (Γ : List Tree) : typeStepFast G n l (cs.map Prod.snd) Γ = typeStep G n l cs Γ := by
+  cases l
+  case defn k θ => simp [typeStepFast, typeStep, List.mapM_map, Function.comp_def]
+  all_goals rcases cs with _ | ⟨a, _ | ⟨b, _ | ⟨c, _ | ⟨d, cs⟩⟩⟩⟩ <;> rfl
+
+/-- The inference of types is {lit}`typeOfFast`, by which the compiler replaces it. -/
+@[csimp] theorem typeOf_eq_typeOfFast : @typeOf = @typeOfFast := by
+  funext G n t
+  refine RoseTree.ind (P := fun t ↦ typeOf G n t = typeOfFast G n t)
+    (fun l cs ih ↦ funext fun Γ ↦ ?_) t
+  rw [typeOf_node, typeOfFast, RoseTree.elim_node, ← typeOfFast, ← typeStepFast_map, List.map_map]
+  exact congrArg (typeStepFast G n l · Γ) (List.map_congr_left fun c hc ↦ ih c hc)
 
 /-- The types of an environment extended by a variable are the variable's type before the
 environment's types. -/

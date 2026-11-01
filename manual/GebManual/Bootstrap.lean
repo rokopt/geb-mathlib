@@ -7372,7 +7372,11 @@ it decides ({ref "checking-cost"}[The cost of checking]):
   term's compilation to the combinators computes
   ({name}`Geb.FreeTopos.Internal.typeIn_eq_compile`), where the checker
   written in Geb takes the second component of the compilation
-  (`typeIn` in `bootstrap/free-topos/derivation.geb`).
+  (`typeIn` in `bootstrap/free-topos/derivation.geb`). The fold is
+  compiled as one over the children's types alone
+  ({name}`Geb.FreeTopos.Internal.typeOf_eq_typeOfFast`), which does not
+  rebuild the term at each node, and the substitution of no objects as
+  the identity ({name}`Geb.PartialHorn.subst_eq_substFast`).
 * It weakens a hypothesis past the binders a congruence enters where a
   rewriting by the hypothesis reads it, rather than every hypothesis at
   each congruence under a binder (`childCtxs` in `derivation.geb`), and
