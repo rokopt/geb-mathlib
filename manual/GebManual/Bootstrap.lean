@@ -188,7 +188,11 @@ Computation:
   without the exemption. The search with z3, `scripts/eal/eal.py`, with
   a decoration per use of a definition and the certificates it writes,
   and the checker specified in Lean, {name}`Geb.Affine.check`, are
-  constructed, and the rest is ready.
+  constructed. The rewriting of the definitions it rejects in the
+  metalogic's sources, and the checker written in Geb, are ready; the
+  rewriting of those in the compilers' sources waits on the datatype
+  language's completion; the check in the build follows both, and the
+  search written in Geb is ready.
 * Ready. The Geb reader and serializer in constant depth, and the stage
   tests run by the compiled executables, the section on improvements.
 
@@ -2291,29 +2295,80 @@ decoration is a certificate. A search finds it and is not trusted, and a
 checker checks it and is, which is the rule for every solver the
 bootstrap uses: `scripts/eal/eal.py` is the search, with z3 as its
 solver, and checking a decoration is checking linear inequalities
-between given numbers, which needs no solver. The steps, in order: a
-decoration per use of a definition, each use taking a fresh copy of the
-linear constraints that describe the definition's decorations, all of
-which the constraints on its simple principal type schema yield
-{citep CoppolaMartini2006}[], constructed in `scripts/eal/eal.py`, which
-copies them projected onto the numbers of `!` of the definition's type;
-a checker of decorations specified in Lean, constructed as
-{name}`Geb.Affine.check`, which reads the certificates the search
-writes: each a list of instances, a definition's term decorated with its
-depths in boxes and the numbers of `!` of its types, a reference naming
-the instance it uses and the boxes it is placed under, so that a
-definition used at several decorations has an instance of each; the
-rewriting of the folds that read their children's results twice, and of
-the definitions above that read a list of functions twice; the checker
-written in Geb, proved in Lean to agree with it by the method of the
-metalogic's checker, and the check in the build of every program's
-committed decoration, the checker's own among them; and a search written
-in Geb, which full self-hosting requires so that no external solver
-regenerates a decoration. An inference in polynomial time given a simple
-type derivation {citep BaillotTerui2005}[], for a system without sharing
-or polymorphism, is the search's starting point, extended to the
-kernel's constants, and its verdicts are compared with those of the
-search that uses z3.
+between given numbers, which needs no solver. The steps, in order:
+
+1. Complete. A decoration per use of a definition, each use taking a
+   fresh copy of the linear constraints that describe the definition's
+   decorations, all of which the constraints on its simple principal type
+   schema yield {citep CoppolaMartini2006}[], constructed in
+   `scripts/eal/eal.py`, which copies them projected onto the numbers of
+   `!` of the definition's type; and a checker of decorations specified
+   in Lean, constructed as {name}`Geb.Affine.check`, which reads the
+   certificates the search writes (`--certificate OUT`): each a list of
+   instances, a definition's term decorated with its depths in boxes and
+   the numbers of `!` of its types, a reference naming the instance it
+   uses and the boxes it is placed under, so that a definition used at
+   several decorations has an instance of each.
+2. The rewriting of the definitions the search rejects, alone or per
+   use, each reading a list of functions more than once in one of the
+   shapes above; `scripts/eal/eal.py --explain NAME` names a
+   definition's contraction, and a definition rejected per use is
+   reported with the definitions it conflicts with, among which the
+   rewriting may fall, as `usesStep` with `uses`. The sources holding
+   them are constrained by different work:
+   * Ready. The metalogic's own sources: `pcheck` in `partial-horn.geb`;
+     `trav`, `occurs` and `compile` in `language.geb`; `infers` in
+     `infer.geb`; `term` in `translation.geb`; `matchTerm`,
+     `normalize`, `uses` and `eval` in `prove.geb`; `withWeakHyps`,
+     `withImpElim`, `byInstsOnce`, `occRewrite`, `byAutoT`, `byAutoC` and
+     `abstractTerm` in `tactics.geb`; and `typers` and `normalizers` in
+     `combinator.geb`, all under `bootstrap/free-topos/`; and
+     `printTerm` and `termWf` in `bootstrap/printer.geb`. Each rewriting
+     changes the program that `GebMirror.Metalogic` mirrors, so the
+     mirror is emitted again (`scripts/bootstrap.sh`), its loading
+     checked, and the agreements under
+     `GebTests/Prototypes/FreeTopos/Agreement/` repaired; the prover's
+     derivations, and so the stored certificates, are unchanged.
+   * Ready, with the base checker's evaluation in the checker written
+     in Geb ({ref "base-checker-evaluation"}[The base checker's
+     evaluation]): `check` in `bootstrap/free-topos/derivation.geb`,
+     which that transcription rewrites, and the fold it adds to
+     `language.geb`, written typable.
+   * Waiting on the datatype language's completion
+     ({ref "datatype-completion"}[The datatype language's completion]),
+     whose soundness of the typing is proved of the stage-1 compiler and
+     which removes `tree-data` from the expansions: the compilers'
+     sources, `resolve` in `bootstrap/reader.geb`, `typeIn` in
+     `bootstrap/check.geb`, `rename` and `elabAt` in
+     `bootstrap/modules.geb`, `expandExpr` in `bootstrap/datatype.geb`
+     and in `bootstrap/stage1/datatype.geb`, and `synIn` in
+     `bootstrap/stage1/typing.geb`. The metalogic's program includes the
+     first three of these files, so that it is typable only after them.
+
+   After each rewriting `scripts/bootstrap.sh` checks the fixed points,
+   and the search is run again on the three programs.
+3. Ready. The checker written in Geb, proved in Lean to agree with
+   {name}`Geb.Affine.check` by the method of the metalogic's checker; it
+   depends on no rewriting, and its own program is written typable.
+4. The check in the build of every program's committed decoration, the
+   checker's own among them, after the second and third steps.
+5. A search written in Geb, which full self-hosting requires so that no
+   external solver regenerates a decoration. An inference in polynomial
+   time given a simple type derivation {citep BaillotTerui2005}[], for a
+   system without sharing or polymorphism, is the search's starting
+   point, extended to the kernel's constants, and its verdicts are
+   compared with those of the search that uses z3.
+
+The programs are measured from their images. The stage-0 compiler's is
+built by `geb-kernel build` from the stage-0 sources that
+`scripts/bootstrap.sh` lists; the stage-1 compiler's is the committed
+`bootstrap/compiler.img`; and the metalogic's program's is the stage-1
+compiler's image of the concatenation of the metalogic's layers'
+sources, in the order `scripts/bootstrap.sh` lists them, made by
+`geb-kernel run bootstrap/compiler.img main` with the concatenation and
+the image's path as arguments. `lake exe geb-defs IMAGE DEFS` writes an
+image's definitions, and `scripts/eal/eal.py DEFS` checks them alone and
+with a decoration per use, naming each definition it rejects.
 
 A stricter requirement is a later step: elementary affine logic
 without the exemption, to which the published soundness of the
@@ -7475,7 +7530,11 @@ in both loading modes. The prover and the tactics written in Geb infer
 types by `typeIn` as well, as the Lean prover does, so the first changes
 their time and not the derivations they construct, and their agreements
 (`Agreement/Prove.lean`, `Agreement/Tactics.lean`) rest on the agreement
-of `typeIn`.
+of `typeIn`. The checker's `check` is among the definitions the
+elementary-affine search rejects, so the second rewrites it in a form
+the search accepts, and the first writes its fold so
+({ref "interaction-net-affine-certificates"}[Elementary-affine
+certificates]).
 
 The prover's reduction as compiled differs likewise from the prover
 written in Geb (`bootstrap/free-topos/prove.geb`), and is proved equal
