@@ -189,8 +189,7 @@
   (defn eqParts ((phi T)) OTPair.Maybe
     (if (mIs 12 2 phi) (OTPair.just (pr (mArg phi 0) (mArg phi 1))) OTPair.nothing))
   (defn instTerm ((th Ts) (sg Ts) (s T)) T (subst (osubst th s) (substList sg)))
-  (defn typeIn ((G Globals) (n T) (g Ts) (t T)) T
-    (mapPT p2 ((compile G n t) (ctxObj g) (stdEnv g))))
+  (defn typeIn ((G Globals) (n T) (g Ts) (t T)) T ((typeOf G n t) g))
   (defn isFormula ((G Globals) (n T) (g Ts) (t T)) T (equal (typeIn G n g t) (some omega)))
 
   ; hypotheses that do not mention the innermost variable, in the context without it

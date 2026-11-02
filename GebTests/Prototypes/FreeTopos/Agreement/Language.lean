@@ -14,14 +14,23 @@ set_option doc.verso true in
 The functions of {lit}`bootstrap/free-topos/language.geb`, in the Lean the bootstrap compiler
 emits ({lit}`GebMirror.Metalogic`), agree with the internal language's Lean definitions at every
 encoded input: the constructors and accessors of terms, their renaming and substitution of
-variables and substitution of objects, the types, and the compilation of terms, definitions and
-equations to the combinators.
+variables and substitution of objects, the types, the type of a term, and the compilation of
+terms, definitions and equations to the combinators.
+
+The parts of a type are read from the label of the operation that builds it, and the test of a
+type is a fold computing at each node its label, whether it is a leaf and whether it is a type,
+as Lean's compiled code computes them ({name}`Geb.FreeTopos.Internal.prodParts_eq_prodPartsFast`,
+{name}`Geb.FreeTopos.Internal.isTy_eq_isTyFast`); the agreement passes through those equations.
+The type of a term is the paramorphism of a step that takes the list of the children's results
+apart once, composing the children's types at an application of a definition into one function
+of the context.
 
 ## Main definitions
 
 * {lit}`travL` — the traversal of a term's variables of which renaming and substitution are
   instances.
 * {lit}`CRel` — the relation of the mirror's compilation of a term to the compilation's.
+* {lit}`TRel` — the relation of the mirror's type of a term to the inference's.
 
 ## Main statements
 
@@ -30,6 +39,7 @@ equations to the combinators.
 * {lit}`encTerm_inj` — the encoding of terms is injective.
 * {lit}`isTy_eq` — the test of a type in object variables.
 * {lit}`compile_eq` — the compilation of a term, at every encoded environment.
+* {lit}`typeOf_eq` — the type of a term, at every context.
 * {lit}`ldCompile_eq`, {lit}`compileDefs_eq`, {lit}`compileEq_eq` — the compilation of
   definitions, of the constants' definitions and of equations.
 * {lit}`primOk_eq`, {lit}`objOk_eq` — the tests of primitive arrows and of objects by the
@@ -37,7 +47,7 @@ equations to the combinators.
 
 ## Tags
 
-internal language, renaming, substitution, compilation, agreement, mirror
+internal language, renaming, substitution, type inference, compilation, agreement, mirror
 -/
 
 set_option doc.verso true
@@ -441,56 +451,76 @@ theorem encPair_inj {p q : Tree × Tree} : encPair p = encPair q ↔ p = q := by
 theorem tyOps_eq :
     «Language.tyOps» = Internal.tyOps.map fun p ↦ encPair (leaf p.1, leaf p.2) := rfl
 
-/-- The mirror's parts of a tree of two children built by an operation. -/
-theorem binParts_eq (mk : Tree → Tree → Tree) (p : Tree) :
-    «Language.binParts» mk p =
-      encOpt ((match p.children with
-        | [a, b] => if p = mk a b then some (a, b) else none
+/-- The mirror's test that a tree is the operation of an index at a number of arguments, by its
+label and its number of children. -/
+@[simp] theorem opIs_eq (k m : ℕ) (p : Tree) :
+    «Language.opIs» (leaf k) (leaf m) p =
+      ofBool (p.label == k + 1 && p.children.length == m) := by
+  mirror_simp [«Language.opIs»]
+
+/-- The mirror's parts of a tree of two children built by the operation of an index, read from
+its label. -/
+theorem binParts_eq (k : ℕ) (p : Tree) :
+    «Language.binParts» (leaf k) p =
+      encOpt ((match Internal.opArgs k p with
+        | some [a, b] => some (a, b)
         | _ => none).map encPair) := by
   obtain ⟨l, cs, rfl⟩ : ∃ l cs, p = RoseTree.node l cs :=
     ⟨p.label, p.children, (RoseTree.node_label_children p).symm⟩
-  rcases cs with _ | ⟨a, _ | ⟨b, _ | ⟨c, cs⟩⟩⟩ <;>
-    mirror_simp [«Language.binParts», none_eq, some_eq, decide_eq_true_eq, beq_iff_eq,
-      Nat.add_right_cancel_iff, Nat.add_one_ne_zero]
-  all_goals split_ifs <;> first | rfl | omega
+  by_cases hl : l = k + 1 <;>
+    rcases cs with _ | ⟨a, _ | ⟨b, _ | ⟨c, cs⟩⟩⟩ <;>
+    mirror_simp [«Language.binParts», opIs_eq, Internal.opArgs, hl, none_eq, some_eq, pr_eq,
+      beq_iff_eq]
+  all_goals simp only [Nat.reduceEqDiff, ↓reduceIte, Bool.and_eq_true, beq_iff_eq, hl, and_false]
 
 /-- The mirror's factors of a product. -/
 theorem prodParts_eq (p : Tree) :
-    «Language.prodParts» p = encOpt ((Internal.prodParts p).map encPair) :=
-  binParts_eq _ p
+    «Language.prodParts» p = encOpt ((Internal.prodParts p).map encPair) := by
+  rw [Internal.prodParts_eq_prodPartsFast]
+  exact binParts_eq 6 p
 
 /-- The mirror's summands of a coproduct. -/
 theorem coprodParts_eq (p : Tree) :
-    «Language.coprodParts» p = encOpt ((Internal.coprodParts p).map encPair) :=
-  binParts_eq _ p
+    «Language.coprodParts» p = encOpt ((Internal.coprodParts p).map encPair) := by
+  rw [Internal.coprodParts_eq_coprodPartsFast]
+  exact binParts_eq 15 p
 
 /-- The mirror's domain and codomain of an exponential. -/
 theorem expParts_eq (p : Tree) :
-    «Language.expParts» p = encOpt ((Internal.expParts p).map encPair) :=
-  binParts_eq _ p
+    «Language.expParts» p = encOpt ((Internal.expParts p).map encPair) := by
+  rw [Internal.expParts_eq_expPartsFast]
+  exact binParts_eq 22 p
 
 /-- The mirror's element type of a list object. -/
 theorem listPart_eq (p : Tree) :
     «Language.listPart» p = encOpt (Internal.listPart p) := by
+  rw [Internal.listPart_eq_listPartFast]
   obtain ⟨l, cs, rfl⟩ : ∃ l cs, p = RoseTree.node l cs :=
     ⟨p.label, p.children, (RoseTree.node_label_children p).symm⟩
-  rcases cs with _ | ⟨a, _ | ⟨b, cs⟩⟩ <;>
-    mirror_simp [«Language.listPart», Internal.listPart, none_eq, some_eq,
-      decide_eq_true_eq, mirror_list, beq_iff_eq]
-  all_goals split_ifs <;> first | rfl | omega
+  by_cases hl : l = 34 <;>
+    rcases cs with _ | ⟨a, _ | ⟨b, cs⟩⟩ <;>
+    mirror_simp [«Language.listPart», opIs_eq, Internal.listPartFast, Internal.opArgs, hl,
+      none_eq, some_eq, beq_iff_eq]
+  all_goals simp only [Nat.reduceEqDiff, ↓reduceIte, Bool.and_eq_true, beq_iff_eq, hl, and_false]
 
 /-- The mirror's type of labels of a rose-tree object. -/
 theorem roseLabel_eq (p : Tree) :
     «Language.roseLabel» p = encOpt ((Internal.roseParts p).map Prod.fst) := by
+  rw [Internal.roseParts_eq_rosePartsFast]
   obtain ⟨l, cs, rfl⟩ : ∃ l cs, p = RoseTree.node l cs :=
     ⟨p.label, p.children, (RoseTree.node_label_children p).symm⟩
-  by_cases hr : RoseTree.node l cs = rose
-  · mirror_simp [«Language.roseLabel», Internal.roseParts, hr, some_eq, mirror_rose,
-      mirror_nat, decide_true]
-  · rcases cs with _ | ⟨a, _ | ⟨b, cs⟩⟩ <;>
-      mirror_simp [«Language.roseLabel», Internal.roseParts, hr, none_eq, some_eq,
-        decide_eq_true_eq, mirror_rose, mirror_lrose, beq_iff_eq]
-    all_goals split_ifs <;> first | rfl | omega
+  by_cases h38 : l = 38
+  · subst h38
+    rcases cs with _ | ⟨a, _ | ⟨b, cs⟩⟩ <;>
+      mirror_simp [«Language.roseLabel», opIs_eq, Internal.rosePartsFast, Internal.opArgs,
+        none_eq, some_eq, mirror_nat]
+    all_goals simp only [Nat.reduceEqDiff, ↓reduceIte, beq_iff_eq, reduceCtorEq, Option.map_none]
+  · by_cases h41 : l = 41 <;>
+      rcases cs with _ | ⟨a, _ | ⟨b, cs⟩⟩ <;>
+      mirror_simp [«Language.roseLabel», opIs_eq, Internal.rosePartsFast, Internal.opArgs, h38,
+        h41, none_eq, some_eq, beq_iff_eq]
+    all_goals simp only [Nat.reduceEqDiff, ↓reduceIte, Bool.and_eq_true, beq_iff_eq, h38, h41,
+      Option.map_some, Option.map_none, Nat.add_eq_zero_iff, one_ne_zero, and_false]
 
 /-- The mirror's fold of a rose-tree object by a step. -/
 theorem roseFold_eq (p s a : Tree) (fold : Tree → Tree)
@@ -621,24 +651,41 @@ theorem isTyOp_eq (G : Internal.Globals) (k m : ℕ) :
     · mirror_simp [encDefinition, some_eq, ← ofBool_false, Bool.or_false]
     · mirror_simp [encDefinition, some_eq, ← decide_not, Nat.not_lt]
 
+/-- What the test of types reads of a tree, as the mirror's fold computes it: its label, whether
+it is a leaf, and whether it is a type. -/
+def encTyR (w : ℕ × Bool × Bool) : Tree × Tree × Tree := (leaf w.1, ofBool w.2.1, ofBool w.2.2)
+
+/-- The mirror's count of a list's elements. -/
+theorem foldr_count {α : Type} (xs : List α) :
+    xs.foldr (fun _ j ↦ Const.add j (leaf 1)) (leaf 0) = leaf xs.length :=
+  xs.rec rfl fun _ _ ih ↦ by simp only [List.foldr_cons, ih, add_leaf, List.length_cons]
+
+/-- The mirror's test that each child of a node is a type. -/
+theorem foldr_allTy (ws : List (ℕ × Bool × Bool)) :
+    (ws.map encTyR).foldr (fun r b ↦ «Prelude.and» r.2.2 b) (leaf 1) =
+      ofBool (ws.all fun r ↦ r.2.2) :=
+  ws.rec rfl fun _ _ ih ↦ by
+    simp only [List.map_cons, List.foldr_cons, ih, encTyR, and_eq, List.all_cons]
+
 /-- The mirror's test of a type in object variables. -/
 theorem isTy_eq (G : Internal.Globals) (n : ℕ) (t : Tree) :
     «Language.isTy» (encGlobals G) (leaf n) t = ofBool (Internal.IsTy G n t) := by
-  simp only [«Language.isTy», Internal.IsTy]
-  apply fold_pair_snd (fun (v : Tree) (w : Bool) ↦ v = ofBool w)
-  · intro l rs
-    simp
-  intro l xs hx
-  have hv : (xs.map fun x ↦ (x.1, x.2.1)).map Prod.snd = xs.map fun x ↦ ofBool x.2.2 := by
+  rw [Internal.isTy_eq_isTyFast, Internal.IsTyFast]
+  simp only [«Language.isTy»]
+  refine congrArg (fun r : Tree × Tree × Tree ↦ r.2.2)
+    (fold_rel (fun v w ↦ v = encTyR w) _ (Internal.isTyStepFast G n) (fun l xs hx ↦ ?_) t)
+  have hv : xs.map Prod.fst = (xs.map Prod.snd).map encTyR := by
     simp only [List.map_map, Function.comp_def]
     exact List.map_congr_left hx
-  cases l with
-  | zero =>
-    rcases xs with _ | ⟨x, _ | ⟨y, r⟩⟩ <;>
-      mirror_simp [ptTrees_eq, beq_iff_eq, Nat.reduceEqDiff] <;> rfl
-  | succ k =>
-    mirror_simp [ptTrees_eq, ptValues_eq, hv, isTyOp_eq, allT_ofBool, Nat.add_sub_cancel,
-      beq_iff_eq, Nat.add_one_ne_zero]
+  rw [hv]
+  generalize xs.map Prod.snd = ws
+  rcases l with _ | k
+  · rcases ws with _ | ⟨w, _ | ⟨w', ws⟩⟩ <;>
+      mirror_simp [foldr_count, encTyR, Internal.isTyStepFast, Nat.reduceEqDiff] <;>
+      simp [ofBool_false]
+  · mirror_simp [foldr_count, foldr_allTy, encTyR, Internal.isTyStepFast, isTyOp_eq,
+      Nat.add_sub_cancel, Nat.add_one_ne_zero]
+    simp
 
 /-- The mirror's compilation of a term and the compilation's are related when they agree at
 every encoded environment. -/
@@ -957,6 +1004,176 @@ theorem allT_isTy (G : Internal.Globals) (n : ℕ) (ts : List Tree) :
     «Base.allT» («Language.isTy» (encGlobals G) (leaf n)) ts =
       ofBool (ts.all (Internal.IsTy G n)) :=
   allT_eq _ _ ts fun t _ ↦ isTy_eq G n t
+
+/-! The types of terms. -/
+
+/-- The mirror's inference of a term's type and the inference's are related when they agree at
+every context. -/
+def TRel (v : List Tree → Tree) (w : List Tree → Option Tree) : Prop := ∀ Γ, v Γ = encOpt (w Γ)
+
+/-- The simplification of a case of the mirror's inference of types: the lemmas of
+{lit}`mirror_simp`, the inference's options and types, and the given lemmas. -/
+local macro "type_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(tactic|
+  mirror_simp [labelData, Internal.typeStep, none_eq, some_eq, pr_eq, p1_eq, p2_eq, beq_iff_eq,
+    Nat.add_one_ne_zero, Nat.reduceEqDiff, Option.elim_map, Option.map_bind, Option.bind_eq_bind,
+    Option.pure_def, Bool.and_eq_true, decide_eq_true_eq, encOpt_inj, Option.some.injEq,
+    mirror_one, mirror_prod, mirror_exp, mirror_omega, mirror_nat, mirror_list, apply_ite encOpt,
+    reduceCtorEq, false_and, and_false, $ls,*])
+
+/-- The mirror's type of a node without children. -/
+theorem typeLeaf_eq (G : Internal.Globals) (n : ℕ) (l : Label) (hl : (labelData l).1 ≠ 11) :
+    TRel («Language.typeLeaf» (leaf (labelData l).1) (labelData l).2)
+      (Internal.typeStep G n l []) := by
+  intro Γ
+  cases l <;> simp only [labelData, ne_eq, not_true_eq_false] at hl <;>
+    type_simp [«Language.typeLeaf»]
+
+/-- The mirror's type of a node of one child, at related inferences of the child. -/
+theorem typeUnary_eq (G : Internal.Globals) (n : ℕ) (l : Label) (hl : (labelData l).1 ≠ 11)
+    (t : Term) (v : List Tree → Tree) (w : List Tree → Option Tree) (h : TRel v w) :
+    TRel («Language.typeUnary» (encGlobals G) (leaf n) (leaf (labelData l).1) (labelData l).2 v)
+      (Internal.typeStep G n l [(t, w)]) := by
+  intro Γ
+  unfold TRel at h
+  cases l <;> simp only [labelData, ne_eq, not_true_eq_false] at hl
+  case fst | snd =>
+    type_simp [«Language.typeUnary», h]
+    rcases w Γ with _ | p <;> type_simp [prodParts_eq]
+    rcases Internal.prodParts p with _ | ⟨a, b⟩ <;> type_simp []
+  case lam a =>
+    type_simp [«Language.typeUnary», isTy_eq, h]
+  case arr k θ =>
+    type_simp [«Language.typeUnary», h, gPrims_eq, allT_isTy, phSubst_eq, prArity_eq,
+      prDom_eq, prCod_eq]
+    rcases G.prims[k]? with _ | pm <;> type_simp [prArity_eq, prDom_eq, prCod_eq]
+    rcases w Γ with _ | d <;> type_simp []
+  all_goals type_simp [«Language.typeUnary»]
+
+/-- The mirror's type of a node of two children, at related inferences of the children. -/
+theorem typeBinary_eq (G : Internal.Globals) (n : ℕ) (l : Label) (hl : (labelData l).1 ≠ 11)
+    (t u : Term) (v v' : List Tree → Tree) (w w' : List Tree → Option Tree) (h : TRel v w)
+    (h' : TRel v' w') :
+    TRel («Language.typeBinary» (encGlobals G) (leaf n) (leaf (labelData l).1) (labelData l).2 v
+        v')
+      (Internal.typeStep G n l [(t, w), (u, w')]) := by
+  intro Γ
+  unfold TRel at h h'
+  cases l <;> simp only [labelData, ne_eq, not_true_eq_false] at hl
+  case pair =>
+    type_simp [«Language.typeBinary», h, h']
+    rcases w Γ with _ | a <;> rcases w' Γ with _ | b <;> type_simp []
+  case app =>
+    type_simp [«Language.typeBinary», h, h']
+    rcases w Γ with _ | f <;> type_simp [expParts_eq]
+    rcases Internal.expParts f with _ | ⟨a, b⟩ <;> type_simp []
+    rcases w' Γ with _ | a' <;> type_simp []
+  case roseRec c =>
+    type_simp [«Language.typeBinary», isTy_eq, h, h']
+    by_cases hc : Internal.IsTy G n c <;> type_simp [hc]
+    rcases w' Γ with _ | r <;> type_simp [roseLabel_eq]
+    rcases Internal.roseParts r with _ | ⟨a, F⟩ <;> type_simp []
+    rcases w (prod a (list c) :: Γ) with _ | c' <;> type_simp []
+  case eq =>
+    type_simp [«Language.typeBinary», h, h']
+    rcases w Γ with _ | a <;> rcases w' Γ with _ | b <;> type_simp []
+    all_goals simp [eq_comm]
+  all_goals type_simp [«Language.typeBinary»]
+
+/-- The mirror's type of a node of three children, at related inferences of the children. -/
+theorem typeTernary_eq (G : Internal.Globals) (n : ℕ) (l : Label) (hl : (labelData l).1 ≠ 11)
+    (z s m : Term) (vz vs vm : List Tree → Tree) (wz ws wm : List Tree → Option Tree)
+    (hz : TRel vz wz) (hs : TRel vs ws) (hm : TRel vm wm) :
+    TRel («Language.typeTernary» (leaf (labelData l).1) vz vs vm)
+      (Internal.typeStep G n l [(z, wz), (s, ws), (m, wm)]) := by
+  intro Γ
+  unfold TRel at hz hs hm
+  cases l <;> simp only [labelData, ne_eq, not_true_eq_false] at hl
+  case natRec =>
+    type_simp [«Language.typeTernary», hz, hs, hm]
+    rcases wz Γ with _ | c <;> type_simp []
+    rcases ws (c :: Γ) with _ | c' <;> rcases wm Γ with _ | t <;> type_simp []
+  case listRec =>
+    type_simp [«Language.typeTernary», hz, hs, hm]
+    rcases wm Γ with _ | r <;> type_simp [listPart_eq]
+    rcases Internal.listPart r with _ | a <;> type_simp []
+    rcases wz Γ with _ | c <;> type_simp []
+    rcases ws (c :: a :: Γ) with _ | c' <;> type_simp []
+  all_goals type_simp [«Language.typeTernary»]
+
+/-- The mirror's types of the children of a node in one context, composed into one function:
+whether each has one, and their types where each has. -/
+theorem typesIn_eq (Γ : List Tree) :
+    ∀ xs : List ((List Tree → Tree) × (List Tree → Option Tree)), (∀ x ∈ xs, TRel x.1 x.2) →
+      («Language.typesIn» (xs.map Prod.fst) Γ).1 =
+          ofBool (xs.mapM fun x : (List Tree → Tree) × (List Tree → Option Tree) ↦ x.2 Γ).isSome ∧
+        ∀ ts, (xs.mapM fun x : (List Tree → Tree) × (List Tree → Option Tree) ↦ x.2 Γ) = some ts →
+          («Language.typesIn» (xs.map Prod.fst) Γ).2 = ts :=
+  List.rec (fun _ ↦ ⟨rfl, fun ts h ↦ by cases h; rfl⟩) fun x xs ih hx ↦ by
+    obtain ⟨ih1, ih2⟩ := ih fun y hy ↦ hx y (List.mem_cons_of_mem x hy)
+    simp only [«Language.typesIn», foldr_eq, List.map_cons, List.foldr_cons] at ih1 ih2 ⊢
+    rw [hx x List.mem_cons_self Γ, ih1]
+    rcases hw : x.2 Γ with _ | a
+    · simp [List.mapM_cons, hw]
+    · rcases hr : xs.mapM (fun x ↦ x.2 Γ) with _ | ts'
+      · refine ⟨by simp [List.mapM_cons, hw, hr], fun ts h ↦ ?_⟩
+        simp [List.mapM_cons, hw, hr] at h
+      · refine ⟨by simp [List.mapM_cons, hw, hr], fun ts h ↦ ?_⟩
+        simp only [List.mapM_cons, hw, hr, Option.pure_def, Option.bind_eq_bind, Option.bind_some,
+          Option.some.injEq] at h
+        simp [← h, ih2 ts' hr]
+
+/-- The mirror's type of the application of a definition, at related inferences of the
+children. -/
+theorem typeDefn_eq (G : Internal.Globals) (n k : ℕ) (θ : List Tree)
+    (xs : List (Term × (List Tree → Tree) × (List Tree → Option Tree)))
+    (hx : ∀ x ∈ xs, TRel x.2.1 x.2.2) :
+    TRel («Language.typeDefn» (encGlobals G) (leaf n) (labelData (.defn k θ)).2
+        (xs.map fun x ↦ x.2.1))
+      (Internal.typeStep G n (.defn k θ) (xs.map fun x ↦ (x.1, x.2.2))) := by
+  intro Γ
+  obtain ⟨h1, h2⟩ := typesIn_eq Γ (xs.map Prod.snd) fun y hy ↦ by
+    obtain ⟨x, hx', rfl⟩ := List.mem_map.mp hy
+    exact hx x hx'
+  simp only [List.map_map, Function.comp_def, List.mapM_map] at h1 h2
+  type_simp [«Language.typeDefn», gDefs_eq, allT_isTy, funext (phSubst_eq θ), phSubst_eq,
+    mapT_eq, List.mapM_map, h1]
+  rcases G.defs[k]? with _ | (d | ⟨m, b⟩) <;>
+    type_simp [defLanguage_eq, Internal.Definition.language?, ldArity_eq, ldParams_eq, ldType_eq]
+  rcases hm : xs.mapM (fun x ↦ x.2.2 Γ) with _ | ts
+  · type_simp [hm, false_and]
+  · type_simp [hm, h2 ts hm, true_and]
+
+/-- The mirror's step of the inference of types at an encoded node is the inference's step at the
+node it encodes, at related inferences of the children. -/
+theorem typeStep_eq (G : Internal.Globals) (n : ℕ) (l : Label) (v : List Tree → Tree)
+    (xs : List (Term × (List Tree → Tree) × (List Tree → Option Tree)))
+    (hx : ∀ x ∈ xs, TRel x.2.1 x.2.2) :
+    TRel («Language.typeStep» (encGlobals G) (leaf n) (encTerm (RoseTree.node l (xs.map Prod.fst)))
+        (v :: xs.map fun x ↦ x.2.1))
+      (Internal.typeStep G n l (xs.map fun x ↦ (x.1, x.2.2))) := by
+  intro Γ
+  simp only [«Language.typeStep», label_eq, label_encTerm, mData_eq, RoseTree.label_node,
+    lcase_cons, eq_leaf, label_ne_zero, ofBool_bne, beq_iff_eq]
+  by_cases hd : (labelData l).1 = 11
+  · obtain ⟨k, θ, rfl⟩ : ∃ k θ, l = .defn k θ := by cases l <;> simp_all [labelData]
+    simpa [labelData] using typeDefn_eq G n k θ xs hx Γ
+  simp only [hd, ↓reduceIte]
+  rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, _ | ⟨x3, xs⟩⟩⟩⟩ <;>
+    simp only [List.map_cons, List.map_nil, lcase_cons, lcase_nil]
+  · exact typeLeaf_eq G n l hd Γ
+  · exact typeUnary_eq G n l hd x0.1 _ _ (hx x0 (by simp)) Γ
+  · exact typeBinary_eq G n l hd x0.1 x1.1 _ _ _ _ (hx x0 (by simp)) (hx x1 (by simp)) Γ
+  · exact typeTernary_eq G n l hd x0.1 x1.1 x2.1 _ _ _ _ _ _ (hx x0 (by simp)) (hx x1 (by simp))
+      (hx x2 (by simp)) Γ
+  · cases l <;> simp_all [labelData, Internal.typeStep, none_eq]
+
+/-- The mirror's type of an encoded term, at every context. -/
+theorem typeOf_eq (G : Internal.Globals) (n : ℕ) (t : Term) :
+    TRel («Language.typeOf» (encGlobals G) (leaf n) (encTerm t)) (Internal.typeOf G n t) := by
+  simp only [«Language.typeOf», Internal.typeOf]
+  exact para_enc (fun l ↦ (labelData l).1) (fun l ↦ RoseTree.node 0 (labelData l).2) TRel
+    («Language.typeStep» (encGlobals G) (leaf n)) (Internal.typeStep G n)
+    (fun l v xs hx ↦ typeStep_eq G n l v xs hx) t
 
 /-- The mirror's compilation of a definition of the language. -/
 theorem ldCompile_eq (G : Internal.Globals) (d : Internal.Defn) :

@@ -282,13 +282,16 @@ the sections below detail:
     with the Lean checker: its denotation, at every development, is the
     Lean checker's result, by the method of the checker of Gödel's T
     ({ref "logic"}[The logic]).
-  * Ready. The base checker's evaluation in the checker written in Geb
-    ({ref "base-checker-evaluation"}[The base checker's evaluation]):
-    the inference of a type alone, with the parts of a type read from
-    its former's label and its test by a fold, and the weakening of a
-    hypothesis where a rewriting reads it, which the Lean checker's
-    compiled code has, each transcribed with its agreement; then the
-    prover's reduction as compiled, in the prover written in Geb. No
+  * Complete. The base checker's inference of a type alone in the
+    checker written in Geb ({ref "base-checker-evaluation"}[The base
+    checker's evaluation]), with the parts of a type read from its
+    former's label and its test by a fold, as the Lean checker's
+    compiled code infers it, transcribed with its agreement.
+  * Ready. The rest of the base checker's evaluation in the checker
+    written in Geb: the weakening of a hypothesis where a rewriting
+    reads it, which the Lean checker's compiled code has, transcribed
+    with its agreement; then the prover's reduction as compiled, in the
+    prover written in Geb. No
     stored certificate is checked or searched by them during the
     bootstrap, so none of it bears on the searches' time. The rewriting
     of `check` in `derivation.geb` is made with the elementary-affine
@@ -1660,8 +1663,9 @@ section below opens with a table of the states of its parts.
     their agreement: complete; the prover, its tactics and the
     combinator prover written in Geb and the proofs of their agreement:
     complete; stronger checkers: in progress; the base checker's
-    evaluation in the checker written in Geb, and the prover's
-    reduction as compiled in the prover written in Geb: ready
+    inference of a type alone in the checker written in Geb: complete;
+    its weakening of a hypothesis where a rewriting reads it, and the
+    prover's reduction as compiled in the prover written in Geb: ready
 :::
 
 The fixed points hold on images and on Lean. The seed builds the
@@ -7103,10 +7107,10 @@ What is ready, each item independent of the others except as stated:
   natural numbers, first among their uses.
 * The Geb reader and serializer in constant depth, and the stage tests
   run by the compiled executables ({ref "improvements"}[Improvements]).
-* The base checker's inference of a type alone, with its comparisons of
-  types, and its weakening of a hypothesis where a rewriting reads it,
-  transcribed into the checker written in Geb, and then the prover's
-  compiled reduction into the prover written in Geb
+* The base checker's weakening of a hypothesis where a rewriting reads
+  it, transcribed into the checker written in Geb, beside its inference
+  of a type alone, which is transcribed, and then the prover's compiled
+  reduction into the prover written in Geb
   ({ref "base-checker-evaluation"}[The base checker's evaluation]). No
   check or search during the bootstrap runs them, so they bear on no
   check's time before a host without Lean runs the loaded checker; the
@@ -7573,13 +7577,20 @@ time bears on a host or a backend without Lean, which runs it
 ({ref "the-next-phase"}[The next phase]), and on any check that runs the
 loaded program. Its transcription of the two, in order:
 
-1. The fold of {name}`Geb.FreeTopos.Internal.typeOf` in
-   `bootstrap/free-topos/language.geb`, and `typeIn` in
+1. Complete. `typeOf` in `bootstrap/free-topos/language.geb`, the
+   paramorphism of {name}`Geb.FreeTopos.Internal.typeOf`, and `typeIn` in
    `derivation.geb` by it, reading the parts of a type from its
    former's label and testing a type by a fold that does not rebuild its
    subtrees, as the compiled inference does; the equality of trees is
-   the kernel's primitive `eq`. Its agreement with
-   {name}`Geb.FreeTopos.Internal.typeOf`, at every encoded input,
+   the kernel's primitive `equal`. Its step takes the list of the
+   children's results apart once, and composes the children's types at
+   an application of a definition into one function of the context, so
+   that it reads no list of functions twice, and the elementary-affine
+   search accepts it with a decoration per use
+   ({ref "interaction-net-affine-certificates"}[Elementary-affine
+   certificates]). Its agreement with
+   {name}`Geb.FreeTopos.Internal.typeOf`, at every encoded input
+   (`typeOf_eq` in `GebTests/Prototypes/FreeTopos/Agreement/Language.lean`),
    replaces the agreement through the compilation in
    `GebTests/Prototypes/FreeTopos/Agreement/Derivation.lean`, whose
    statement of `typeIn` is unchanged.
