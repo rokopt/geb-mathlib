@@ -13615,86 +13615,8 @@ def «Derivation.rootStepK» :=
       «Derivation.rootStep» x0 x1 x2 x3 ([] : List T) x6 x7 x8);
     x9
 
-def «Derivation.dpTrees» :=
-  fun (x0 : List
-      (T × ((List T → T → List T → T → T) × (List T → List T → T → T)))) =>
-    let x1 : List
-      T := Const.foldr
-      (α := T × ((List T → T → List T → T → T) × (List T → List T → T → T)))
-      (β := List T)
-      (fun (x1 : T ×
-           ((List T → T → List T → T → T) × (List T → List T → T → T)))
-         (x2 : List T) =>
-        ((x1).1 :: x2))
-      ([] : List T)
-      x0;
-    x1
-
-def «Derivation/DPs.tail» :=
-  fun (x0 : List
-      (T × ((List T → T → List T → T → T) × (List T → List T → T → T)))) =>
-    Const.lcase
-      (α := T × ((List T → T → List T → T → T) × (List T → List T → T → T)))
-      (β := List
-        (T × ((List T → T → List T → T → T) × (List T → List T → T → T))))
-      x0
-      ([] : List (T ×
-        ((List T → T → List T → T → T) × (List T → List T → T → T))))
-      (fun (_ : T ×
-           ((List T → T → List T → T → T) × (List T → List T → T → T)))
-         (x2 : List
-           (T × ((List T → T → List T → T → T) × (List T → List T → T → T)))) =>
-        x2)
-
-def «Derivation.dpAt» :=
-  fun (x0 : List
-      (T × ((List T → T → List T → T → T) × (List T → List T → T → T))))
-    (x1 : T) =>
-    let x2 : (List T → T → List T → T → T) ×
-      (List T →
-        List T →
-          T →
-            T) := Const.lcase
-      (α := T × ((List T → T → List T → T → T) × (List T → List T → T → T)))
-      (β := (List T → T → List T → T → T) × (List T → List T → T → T))
-      (Const.iter
-        (α := List
-          (T × ((List T → T → List T → T → T) × (List T → List T → T → T))))
-        «Derivation/DPs.tail»
-        x0
-        x1)
-      (fun (_ : List T) (_ : T) (_ : List T) (_ : T) => «Prelude.none»,
-        fun (_ : List T) (_ : List T) (_ : T) => leaf 0)
-      (fun (x2 : T ×
-           ((List T → T → List T → T → T) × (List T → List T → T → T)))
-         (_ : List
-           (T × ((List T → T → List T → T → T) × (List T → List T → T → T)))) =>
-        (x2).2);
-    x2
-
-def «Derivation.rwK» :=
-  fun (x0 : List
-      (T × ((List T → T → List T → T → T) × (List T → List T → T → T))))
-    (x1 : T) =>
-    let x2 : List T → T → List T → T → T := («Derivation.dpAt» x0 x1).1;
-    x2
-
-def «Derivation.rw» :=
-  fun (x0 : List
-      (T × ((List T → T → List T → T → T) × (List T → List T → T → T))))
-    (x1 : T) =>
-    let x2 : List T →
-      List T →
-        T →
-          T := (fun (x2 : List T) (x3 : List T) (x4 : T) =>
-      «Derivation.rwK» x0 x1 x2 (leaf 0) x3 x4);
-    x2
-
-def «Derivation.pf» :=
-  fun (x0 : List
-      (T × ((List T → T → List T → T → T) × (List T → List T → T → T))))
-    (x1 : T) =>
-    let x2 : List T → List T → T → T := («Derivation.dpAt» x0 x1).2; x2
+def «Derivation.ck0» :=
+  fun (_ : T) (_ : List T) (_ : T) (_ : List T) (_ : T) => leaf 0
 
 def «Derivation.rewriteStep» :=
   fun (x0 : T)
@@ -13702,65 +13624,102 @@ def «Derivation.rewriteStep» :=
     (x2 : T)
     (x3 : T)
     (x4 : List T)
-    (x5 : List T)
-    (x6 : List
-      (T × ((List T → T → List T → T → T) × (List T → List T → T → T))))
-    (x7 : List T)
-    (x8 : T)
-    (x9 : List T)
-    (x10 : T) =>
-    let x11 : T := (let x11 : T := «Prelude.length» x5;
-                    if («Prelude.and»
-                      (Const.eq x3 (leaf 0))
-                      (Const.eq x11 (leaf 0))).label ≠ 0 then
-                      «Prelude.some» x10
-                    else
-                      if («Prelude.and»
-                        (Const.eq x3 (leaf 1))
-                        (Const.eq x11 (leaf 2))).label ≠ 0 then
-                        «Base.bindO»
-                          («Derivation.rwK» x6 (leaf 0) x7 x8 x9 x10)
-                          («Derivation.rwK» x6 (leaf 1) x7 x8 x9)
-                      else
-                        if (Const.eq x3 (leaf 2)).label ≠ 0 then
-                          «Derivation.bindBT»
-                            («Derivation.congBinders» x0 x2 x10 x7 x5)
-                            (fun (x12 : T) =>
-                              let x13 : List T := «Derivation.bindersOf» x12;
-                              let x14 : List T := «Language.mArgs» x10;
-                              if («Prelude.and»
-                                (Const.eq x11 («Prelude.length» x14))
-                                (Const.eq
-                                  («Derivation/BinderL.length» x13)
-                                  («Prelude.length» x14))).label ≠ 0 then
-                                «Base.mapO»
-                                  (fun (x15 : T) =>
-                                    Const.node
-                                      (Const.label x10)
-                                      ((Const.child x10 (leaf 0)) :: (Const.children x15)))
-                                  («Base.allSomeT»
-                                    («Base.mapT»
-                                      (fun (x15 : T) =>
-                                        let x16 : T := «Derivation/BinderL.atOr»
-                                          «Derivation.binder0»
-                                          x13
-                                          x15;
-                                        «Derivation.rwK»
-                                          x6
-                                          x15
-                                          («Derivation.binderCtx» x16)
-                                          (Const.add x8 («Derivation.binderNum» x16))
-                                          x9
-                                          («Prelude.at» x14 x15))
-                                      («Base.range» x11)))
-                              else
-                                «Prelude.none»)
-                        else
-                          if (Const.eq x11 (leaf 0)).label ≠ 0 then
-                            «Derivation.rootStepK» x0 x1 x2 x7 x8 x9 x3 x4 x10
-                          else
-                            «Prelude.none»);
-    x11
+    (x5 : T)
+    (x6 : T → List T → T → List T → T → T)
+    (x7 : T → List T → T → List T → T → T)
+    (x8 : List T)
+    (x9 : T)
+    (x10 : List T)
+    (x11 : T) =>
+    let x12 : T := (if («Prelude.and»
+      (Const.eq x3 (leaf 0))
+      (Const.eq x5 (leaf 0))).label ≠ 0 then
+      «Prelude.some» x11
+    else
+      if («Prelude.and»
+        (Const.eq x3 (leaf 1))
+        (Const.eq x5 (leaf 2))).label ≠ 0 then
+        «Base.bindO»
+          (x6 (leaf 0) x8 x9 x10 x11)
+          (fun (x12 : T) => x7 (leaf 0) x8 x9 x10 x12)
+      else
+        if (Const.eq x5 (leaf 0)).label ≠ 0 then
+          «Derivation.rootStepK» x0 x1 x2 x8 x9 x10 x3 x4 x11
+        else
+          «Prelude.none»);
+    x12
+
+def «Derivation.congAll» :=
+  fun (x0 : List (T → List T → T → List T → T → T)) =>
+    let x1 : List T →
+      T →
+        List T →
+          List T →
+            T ×
+              List
+                T := Const.foldr
+      (α := T → List T → T → List T → T → T)
+      (β := List T → T → List T → List T → T × List T)
+      (fun (x1 : T → List T → T → List T → T → T)
+         (x2 : List T → T → List T → List T → T × List T)
+         (x3 : List T)
+         (x4 : T)
+         (x5 : List T)
+         (x6 : List T) =>
+        Const.lcase
+          (α := T)
+          (β := T × List T)
+          x3
+          (leaf 0, ([] : List T))
+          (fun (x7 : T) (x8 : List T) =>
+            Const.lcase
+              (α := T)
+              (β := T × List T)
+              x6
+              (leaf 0, ([] : List T))
+              (fun (x9 : T) (x10 : List T) =>
+                let x11 : T := x1
+                  (leaf 0)
+                  («Derivation.binderCtx» x7)
+                  (Const.add x4 («Derivation.binderNum» x7))
+                  x5
+                  x9;
+                let x12 : T × List T := x2 x8 x4 x5 x10;
+                («Prelude.and» («Prelude.isSome» x11) (x12).1,
+                  ((«Prelude.get» x11) :: (x12).2)))))
+      (fun (_ : List T) (_ : T) (_ : List T) (_ : List T) =>
+        (leaf 1, ([] : List T)))
+      x0;
+    x1
+
+def «Derivation.congStep» :=
+  fun (x0 : T)
+    (x1 : T)
+    (x2 : List T)
+    (x3 : List T → T → List T → List T → T × List T)
+    (x4 : List T)
+    (x5 : T)
+    (x6 : List T)
+    (x7 : T) =>
+    let x8 : T := «Derivation.bindBT»
+      («Derivation.congBinders» x0 x1 x7 x4 x2)
+      (fun (x8 : T) =>
+        let x9 : List T := «Derivation.bindersOf» x8;
+        let x10 : List T := «Language.mArgs» x7;
+        if («Prelude.and»
+          (Const.eq («Prelude.length» x2) («Prelude.length» x10))
+          (Const.eq
+            («Derivation/BinderL.length» x9)
+            («Prelude.length» x10))).label ≠ 0 then
+          let x11 : T × List T := x3 x9 x5 x6 x10;
+          if ((x11).1).label ≠ 0 then
+            «Prelude.some»
+              (Const.node (Const.label x7) ((Const.child x7 (leaf 0)) :: (x11).2))
+          else
+            «Prelude.none»
+        else
+          «Prelude.none»);
+    x8
 
 def «Derivation.rosePrimsOk» :=
   fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) =>
@@ -13792,89 +13751,90 @@ def «Derivation.proveStep» :=
     (x2 : T)
     (x3 : T)
     (x4 : List T)
-    (x5 : List T)
-    (x6 : List
-      (T × ((List T → T → List T → T → T) × (List T → List T → T → T))))
-    (x7 : List T)
-    (x8 : List T)
-    (x9 : T) =>
-    let x10 : T := (let x10 : T := «Prelude.length» x5;
-                    let x11 : T := «Derivation.eqParts» x9;
-                    let x12 : T := «Language.p1»
-                      («Language/OTPair.fromMaybe» «Derivation.pr0» x11);
-                    let x13 : T := «Language.p2»
-                      («Language/OTPair.fromMaybe» «Derivation.pr0» x11);
-                    let x14 : T := «Prelude.at» x4 (leaf 0);
-                    let x15 : T := «Prelude.at» x4 (leaf 1);
+    (x5 : T)
+    (x6 : T → List T → T → List T → T → T)
+    (x7 : T → List T → T → List T → T → T)
+    (x8 : T → List T → T → List T → T → T)
+    (x9 : List T)
+    (x10 : List T)
+    (x11 : T) =>
+    let x12 : T := (let x12 : T := x5;
+                    let x13 : T := «Derivation.eqParts» x11;
+                    let x14 : T := «Language.p1»
+                      («Language/OTPair.fromMaybe» «Derivation.pr0» x13);
+                    let x15 : T := «Language.p2»
+                      («Language/OTPair.fromMaybe» «Derivation.pr0» x13);
+                    let x16 : T := «Prelude.at» x4 (leaf 0);
+                    let x17 : T := «Prelude.at» x4 (leaf 1);
                     if («Prelude.and»
                       (Const.eq x3 (leaf 18))
-                      (Const.eq x10 (leaf 2))).label ≠ 0 then
-                      if («Language/OTPair.isJust» x11).label ≠ 0 then
-                        let x16 : T := «Derivation.rw» x6 (leaf 0) x7 x8 x12;
-                        let x17 : T := «Derivation.rw» x6 (leaf 1) x7 x8 x13;
+                      (Const.eq x12 (leaf 2))).label ≠ 0 then
+                      if («Language/OTPair.isJust» x13).label ≠ 0 then
+                        let x18 : T := x6 (leaf 0) x9 (leaf 0) x10 x14;
+                        let x19 : T := x7 (leaf 0) x9 (leaf 0) x10 x15;
                         «Prelude.and»
-                          («Prelude.isSome» x16)
+                          («Prelude.isSome» x18)
                           («Prelude.and»
-                            («Prelude.isSome» x17)
-                            (Const.equal («Prelude.get» x16) («Prelude.get» x17)))
+                            («Prelude.isSome» x19)
+                            (Const.equal («Prelude.get» x18) («Prelude.get» x19)))
                       else
                         leaf 0
                     else
                       if («Prelude.and»
                         (Const.eq x3 (leaf 19))
-                        (Const.eq x10 (leaf 3))).label ≠ 0 then
+                        (Const.eq x12 (leaf 3))).label ≠ 0 then
                         if («Prelude.and»
-                          («Language/OTPair.isJust» x11)
-                          («Base.not» («Base.isEmpty» x7))).label ≠ 0 then
-                          let x16 : T := «Prelude.at» x7 (leaf 0);
-                          let x17 : List T := «Prelude.tail» x7;
-                          let x18 : T := «Prelude.at» x4 (leaf 2);
-                          let x19 : T := «Derivation.typeIn» x0 x2 x7 x12;
-                          let x20 : T := «Derivation.lowerHyps» x0 x2 x17 x8;
+                          («Language/OTPair.isJust» x13)
+                          («Base.not» («Base.isEmpty» x9))).label ≠ 0 then
+                          let x18 : T := «Prelude.at» x9 (leaf 0);
+                          let x19 : List T := «Prelude.tail» x9;
+                          let x20 : T := «Prelude.at» x4 (leaf 2);
+                          let x21 : T := «Derivation.typeIn» x0 x2 x9 x14;
+                          let x22 : T := «Derivation.lowerHyps» x0 x2 x19 x10;
                           if («Prelude.and»
-                            («Prelude.isSome» x19)
-                            («Derivation/OTerms.isJust» x20)).label ≠ 0 then
-                            let x21 : T := «Prelude.get» x19;
-                            let x22 : T := «Language.mArr» x14 ([] : List T) «Language.mStar»;
+                            («Prelude.isSome» x21)
+                            («Derivation/OTerms.isJust» x22)).label ≠ 0 then
+                            let x23 : T := «Prelude.get» x21;
+                            let x24 : T := «Language.mArr» x16 ([] : List T) «Language.mStar»;
                             if («Prelude.and»
-                              (Const.equal x16 «Theory.nat»)
+                              (Const.equal x18 «Theory.nat»)
                               («Prelude.and»
-                                («Derivation.primIs» x0 x14 «Derivation.zeroPrim»)
+                                («Derivation.primIs» x0 x16 «Derivation.zeroPrim»)
                                 («Prelude.and»
-                                  («Derivation.primIs» x0 x15 «Derivation.succPrim»)
+                                  («Derivation.primIs» x0 x17 «Derivation.succPrim»)
                                   («Prelude.and»
                                     (Const.equal
-                                      («Derivation.typeIn» x0 x2 x7 x13)
-                                      («Prelude.some» x21))
+                                      («Derivation.typeIn» x0 x2 x9 x15)
+                                      («Prelude.some» x23))
                                     (Const.equal
-                                      («Derivation.typeIn» x0 x2 (x21 :: x17) x18)
-                                      («Prelude.some» x21)))))).label ≠ 0 then
-                              if («Derivation.pf»
-                                x6
+                                      («Derivation.typeIn» x0 x2 (x23 :: x19) x20)
+                                      («Prelude.some» x23)))))).label ≠ 0 then
+                              if (x6
+                                (leaf 1)
+                                x19
                                 (leaf 0)
-                                x17
-                                («Derivation.termsOr» x20)
+                                («Derivation.termsOr» x22)
                                 («Language.mEq»
-                                  («Language.subst» x12 («Derivation.instVar» x22))
-                                  («Language.subst» x13 («Derivation.instVar» x22)))).label ≠ 0 then
-                                if («Derivation.pf»
-                                  x6
+                                  («Language.subst» x14 («Derivation.instVar» x24))
+                                  («Language.subst» x15 («Derivation.instVar» x24)))).label ≠ 0 then
+                                if (x7
                                   (leaf 1)
-                                  x7
-                                  x8
+                                  x9
+                                  (leaf 0)
+                                  x10
                                   («Language.mEq»
-                                    («Derivation.natSuccAt» x15 x12)
+                                    («Derivation.natSuccAt» x17 x14)
                                     («Language.subst»
-                                      x18
-                                      («Derivation.atVar0» x12)))).label ≠ 0 then
-                                  «Derivation.pf»
-                                    x6
-                                    (leaf 2)
-                                    x7
-                                    x8
+                                      x20
+                                      («Derivation.atVar0» x14)))).label ≠ 0 then
+                                  x8
+                                    (leaf 1)
+                                    x9
+                                    (leaf 0)
+                                    x10
                                     («Language.mEq»
-                                      («Derivation.natSuccAt» x15 x13)
-                                      («Language.subst» x18 («Derivation.atVar0» x13)))
+                                      («Derivation.natSuccAt» x17 x15)
+                                      («Language.subst» x20 («Derivation.atVar0» x15)))
                                 else
                                   leaf 0
                               else
@@ -13888,72 +13848,72 @@ def «Derivation.proveStep» :=
                       else
                         if («Prelude.and»
                           (Const.eq x3 (leaf 20))
-                          (Const.eq x10 (leaf 3))).label ≠ 0 then
+                          (Const.eq x12 (leaf 3))).label ≠ 0 then
                           if («Prelude.and»
-                            («Language/OTPair.isJust» x11)
-                            («Base.not» («Base.isEmpty» x7))).label ≠ 0 then
-                            let x16 : T := «Prelude.at» x7 (leaf 0);
-                            let x17 : List T := «Prelude.tail» x7;
-                            let x18 : T := «Prelude.at» x4 (leaf 2);
-                            let x19 : T := «Derivation.typeIn» x0 x2 x7 x12;
-                            let x20 : T := «Language.listPart» x16;
-                            let x21 : T := «Derivation.lowerHyps» x0 x2 x17 x8;
+                            («Language/OTPair.isJust» x13)
+                            («Base.not» («Base.isEmpty» x9))).label ≠ 0 then
+                            let x18 : T := «Prelude.at» x9 (leaf 0);
+                            let x19 : List T := «Prelude.tail» x9;
+                            let x20 : T := «Prelude.at» x4 (leaf 2);
+                            let x21 : T := «Derivation.typeIn» x0 x2 x9 x14;
+                            let x22 : T := «Language.listPart» x18;
+                            let x23 : T := «Derivation.lowerHyps» x0 x2 x19 x10;
                             if («Prelude.and»
-                              («Prelude.isSome» x19)
+                              («Prelude.isSome» x21)
                               («Prelude.and»
-                                («Prelude.isSome» x20)
-                                («Derivation/OTerms.isJust» x21))).label ≠ 0 then
-                              let x22 : T := «Prelude.get» x19;
-                              let x23 : T := «Prelude.get» x20;
-                              let x24 : List T := (x16 :: (x23 :: x17));
-                              let x25 : List
-                                T := «Base.mapT» «Derivation.weaken2» («Derivation.termsOr» x21);
-                              let x26 : T := «Language.mArr»
-                                x14
-                                («Prelude.single» x23)
+                                («Prelude.isSome» x22)
+                                («Derivation/OTerms.isJust» x23))).label ≠ 0 then
+                              let x24 : T := «Prelude.get» x21;
+                              let x25 : T := «Prelude.get» x22;
+                              let x26 : List T := (x18 :: (x25 :: x19));
+                              let x27 : List
+                                T := «Base.mapT» «Derivation.weaken2» («Derivation.termsOr» x23);
+                              let x28 : T := «Language.mArr»
+                                x16
+                                («Prelude.single» x25)
                                 «Language.mStar»;
                               if («Prelude.and»
-                                («Derivation.primIs» x0 x14 «Derivation.nilPrim»)
+                                («Derivation.primIs» x0 x16 «Derivation.nilPrim»)
                                 («Prelude.and»
-                                  («Derivation.primIs» x0 x15 «Derivation.consPrim»)
+                                  («Derivation.primIs» x0 x17 «Derivation.consPrim»)
                                   («Prelude.and»
                                     (Const.equal
-                                      («Derivation.typeIn» x0 x2 x7 x13)
-                                      («Prelude.some» x22))
+                                      («Derivation.typeIn» x0 x2 x9 x15)
+                                      («Prelude.some» x24))
                                     (Const.equal
-                                      («Derivation.typeIn» x0 x2 (x22 :: (x23 :: x17)) x18)
-                                      («Prelude.some» x22))))).label ≠ 0 then
-                                if («Derivation.pf»
-                                  x6
+                                      («Derivation.typeIn» x0 x2 (x24 :: (x25 :: x19)) x20)
+                                      («Prelude.some» x24))))).label ≠ 0 then
+                                if (x6
+                                  (leaf 1)
+                                  x19
                                   (leaf 0)
-                                  x17
-                                  («Derivation.termsOr» x21)
+                                  («Derivation.termsOr» x23)
                                   («Language.mEq»
-                                    («Language.subst» x12 («Derivation.instVar» x26))
+                                    («Language.subst» x14 («Derivation.instVar» x28))
                                     («Language.subst»
-                                      x13
-                                      («Derivation.instVar» x26)))).label ≠ 0 then
-                                  if («Derivation.pf»
-                                    x6
+                                      x15
+                                      («Derivation.instVar» x28)))).label ≠ 0 then
+                                  if (x7
                                     (leaf 1)
-                                    x24
-                                    x25
+                                    x26
+                                    (leaf 0)
+                                    x27
                                     («Language.mEq»
-                                      («Derivation.listConsAt» x15 x23 x12)
+                                      («Derivation.listConsAt» x17 x25 x14)
                                       («Language.subst»
-                                        x18
+                                        x20
                                         («Derivation.atVar0»
-                                          («Derivation.weakenElem» x12))))).label ≠ 0 then
-                                    «Derivation.pf»
-                                      x6
-                                      (leaf 2)
-                                      x24
-                                      x25
+                                          («Derivation.weakenElem» x14))))).label ≠ 0 then
+                                    x8
+                                      (leaf 1)
+                                      x26
+                                      (leaf 0)
+                                      x27
                                       («Language.mEq»
-                                        («Derivation.listConsAt» x15 x23 x13)
+                                        («Derivation.listConsAt» x17 x25 x15)
                                         («Language.subst»
-                                          x18
-                                          («Derivation.atVar0» («Derivation.weakenElem» x13))))
+                                          x20
+                                          («Derivation.atVar0» («Derivation.weakenElem» x15))))
                                   else
                                     leaf 0
                                 else
@@ -13967,20 +13927,20 @@ def «Derivation.proveStep» :=
                         else
                           if («Prelude.and»
                             (Const.eq x3 (leaf 21))
-                            (Const.eq x10 (leaf 0))).label ≠ 0 then
-                            Const.equal («Prelude.nth» x8 x14) («Prelude.some» x9)
+                            (Const.eq x12 (leaf 0))).label ≠ 0 then
+                            Const.equal («Prelude.nth» x10 x16) («Prelude.some» x11)
                           else
                             if («Prelude.and»
                               (Const.eq x3 (leaf 22))
-                              (Const.eq x10 (leaf 2))).label ≠ 0 then
-                              if («Derivation.isFormula» x0 x2 x7 x14).label ≠ 0 then
-                                if («Derivation.pf» x6 (leaf 0) x7 x8 x14).label ≠ 0 then
-                                  «Derivation.pf»
-                                    x6
+                              (Const.eq x12 (leaf 2))).label ≠ 0 then
+                              if («Derivation.isFormula» x0 x2 x9 x16).label ≠ 0 then
+                                if (x6 (leaf 1) x9 (leaf 0) x10 x16).label ≠ 0 then
+                                  x7
                                     (leaf 1)
-                                    x7
-                                    («Prelude.append» x8 («Prelude.single» x14))
                                     x9
+                                    (leaf 0)
+                                    («Prelude.append» x10 («Prelude.single» x16))
+                                    x11
                                 else
                                   leaf 0
                               else
@@ -13988,44 +13948,44 @@ def «Derivation.proveStep» :=
                             else
                               if («Prelude.and»
                                 (Const.eq x3 (leaf 23))
-                                (Const.eq x10 (leaf 2))).label ≠ 0 then
-                                let x16 : T := «Derivation.rw» x6 (leaf 0) x7 x8 x9;
-                                if («Prelude.isSome» x16).label ≠ 0 then
-                                  «Derivation.pf» x6 (leaf 1) x7 x8 («Prelude.get» x16)
+                                (Const.eq x12 (leaf 2))).label ≠ 0 then
+                                let x18 : T := x6 (leaf 0) x9 (leaf 0) x10 x11;
+                                if («Prelude.isSome» x18).label ≠ 0 then
+                                  x7 (leaf 1) x9 (leaf 0) x10 («Prelude.get» x18)
                                 else
                                   leaf 0
                               else
                                 if («Prelude.and»
                                   (Const.eq x3 (leaf 24))
-                                  (Const.eq x10 (leaf 2))).label ≠ 0 then
+                                  (Const.eq x12 (leaf 2))).label ≠ 0 then
                                   if («Prelude.and»
-                                    («Derivation.isFormula» x0 x2 x7 x14)
+                                    («Derivation.isFormula» x0 x2 x9 x16)
                                     (Const.equal
-                                      («Derivation.rw» x6 (leaf 0) x7 x8 x14)
-                                      («Prelude.some» x9))).label ≠ 0 then
-                                    «Derivation.pf» x6 (leaf 1) x7 x8 x14
+                                      (x6 (leaf 0) x9 (leaf 0) x10 x16)
+                                      («Prelude.some» x11))).label ≠ 0 then
+                                    x7 (leaf 1) x9 (leaf 0) x10 x16
                                   else
                                     leaf 0
                                 else
                                   if («Prelude.and»
                                     (Const.eq x3 (leaf 25))
-                                    (Const.eq x10 (leaf 2))).label ≠ 0 then
-                                    if («Language/OTPair.isJust» x11).label ≠ 0 then
+                                    (Const.eq x12 (leaf 2))).label ≠ 0 then
+                                    if («Language/OTPair.isJust» x13).label ≠ 0 then
                                       if («Prelude.and»
-                                        («Derivation.isFormula» x0 x2 x7 x12)
-                                        («Derivation.isFormula» x0 x2 x7 x13)).label ≠ 0 then
-                                        if («Derivation.pf»
-                                          x6
+                                        («Derivation.isFormula» x0 x2 x9 x14)
+                                        («Derivation.isFormula» x0 x2 x9 x15)).label ≠ 0 then
+                                        if (x6
+                                          (leaf 1)
+                                          x9
                                           (leaf 0)
+                                          («Prelude.append» x10 («Prelude.single» x14))
+                                          x15).label ≠ 0 then
                                           x7
-                                          («Prelude.append» x8 («Prelude.single» x12))
-                                          x13).label ≠ 0 then
-                                          «Derivation.pf»
-                                            x6
                                             (leaf 1)
-                                            x7
-                                            («Prelude.append» x8 («Prelude.single» x13))
-                                            x12
+                                            x9
+                                            (leaf 0)
+                                            («Prelude.append» x10 («Prelude.single» x15))
+                                            x14
                                         else
                                           leaf 0
                                       else
@@ -14035,31 +13995,31 @@ def «Derivation.proveStep» :=
                                   else
                                     if («Prelude.and»
                                       (Const.eq x3 (leaf 26))
-                                      (Const.eq x10 (leaf 1))).label ≠ 0 then
-                                      if («Language/OTPair.isJust» x11).label ≠ 0 then
-                                        let x16 : T := (let x16 : T := «Derivation.typeIn»
+                                      (Const.eq x12 (leaf 1))).label ≠ 0 then
+                                      if («Language/OTPair.isJust» x13).label ≠ 0 then
+                                        let x18 : T := (let x18 : T := «Derivation.typeIn»
                                                           x0
                                                           x2
-                                                          x7
-                                                          x12;
-                                                        if («Prelude.isSome» x16).label ≠ 0 then
-                                                          «Language.expParts» («Prelude.get» x16)
+                                                          x9
+                                                          x14;
+                                                        if («Prelude.isSome» x18).label ≠ 0 then
+                                                          «Language.expParts» («Prelude.get» x18)
                                                         else
                                                           «Language/OTPair.nothing»);
-                                        if («Language/OTPair.isJust» x16).label ≠ 0 then
-                                          «Derivation.pf»
-                                            x6
-                                            (leaf 0)
+                                        if («Language/OTPair.isJust» x18).label ≠ 0 then
+                                          x6
+                                            (leaf 1)
                                             ((«Language.p1»
-                                              («Language/OTPair.fromMaybe» «Derivation.pr0» x16)) ::
-                                              x7)
-                                            («Base.mapT» «Derivation.weaken1» x8)
+                                              («Language/OTPair.fromMaybe» «Derivation.pr0» x18)) ::
+                                              x9)
+                                            (leaf 0)
+                                            («Base.mapT» «Derivation.weaken1» x10)
                                             («Language.mEq»
                                               («Language.app»
-                                                («Derivation.weaken1» x12)
+                                                («Derivation.weaken1» x14)
                                                 («Language.var» (leaf 0)))
                                               («Language.app»
-                                                («Derivation.weaken1» x13)
+                                                («Derivation.weaken1» x15)
                                                 («Language.var» (leaf 0))))
                                         else
                                           leaf 0
@@ -14067,84 +14027,48 @@ def «Derivation.proveStep» :=
                                         leaf 0
                                     else
                                       if (Const.eq x3 (leaf 27)).label ≠ 0 then
-                                        let x16 : List T := Const.children x15;
-                                        let x17 : List
-                                          T := Const.children («Prelude.at» x4 (leaf 2));
-                                        let x18 : T := «Derivation.thmAt» x1 x14;
-                                        if («Derivation/OThm.isJust» x18).label ≠ 0 then
-                                          let x19 : T := «Derivation/OThm.fromMaybe»
-                                            «Derivation.thm0»
-                                            x18;
-                                          if («Prelude.and»
-                                            («Derivation.instOk» x0 x2 x7 x19 x16 x17)
-                                            («Prelude.and»
-                                              (Const.equal
-                                                x9
-                                                («Derivation.instTerm»
-                                                  x16
-                                                  x17
-                                                  («Derivation.thConcl» x19)))
-                                              (Const.eq
-                                                x10
-                                                («Prelude.length»
-                                                  («Derivation.thHyps» x19))))).label ≠ 0 then
-                                            «Base.allT»
-                                              (fun (x20 : T) =>
-                                                «Derivation.pf»
-                                                  x6
-                                                  x20
-                                                  x7
-                                                  x8
-                                                  («Derivation.instTerm»
-                                                    x16
-                                                    x17
-                                                    («Prelude.at» («Derivation.thHyps» x19) x20)))
-                                              («Base.range» x10)
-                                          else
-                                            leaf 0
-                                        else
-                                          leaf 0
+                                        leaf 0
                                       else
                                         if («Prelude.and»
                                           (Const.eq x3 (leaf 28))
-                                          (Const.eq x10 (leaf 2))).label ≠ 0 then
-                                          if («Base.not» («Base.isEmpty» x7)).label ≠ 0 then
-                                            let x16 : T := «Prelude.at» x7 (leaf 0);
-                                            let x17 : List T := «Prelude.tail» x7;
-                                            let x18 : T := «Derivation.lowerHyps» x0 x2 x17 x8;
-                                            if («Derivation/OTerms.isJust» x18).label ≠ 0 then
+                                          (Const.eq x12 (leaf 2))).label ≠ 0 then
+                                          if («Base.not» («Base.isEmpty» x9)).label ≠ 0 then
+                                            let x18 : T := «Prelude.at» x9 (leaf 0);
+                                            let x19 : List T := «Prelude.tail» x9;
+                                            let x20 : T := «Derivation.lowerHyps» x0 x2 x19 x10;
+                                            if («Derivation/OTerms.isJust» x20).label ≠ 0 then
                                               if («Prelude.and»
-                                                (Const.equal x16 «Theory.nat»)
+                                                (Const.equal x18 «Theory.nat»)
                                                 («Prelude.and»
-                                                  («Derivation.primIs» x0 x14 «Derivation.zeroPrim»)
+                                                  («Derivation.primIs» x0 x16 «Derivation.zeroPrim»)
                                                   («Prelude.and»
                                                     («Derivation.primIs»
                                                       x0
-                                                      x15
+                                                      x17
                                                       «Derivation.succPrim»)
                                                     («Derivation.isFormula»
                                                       x0
                                                       x2
-                                                      x7
-                                                      x9)))).label ≠ 0 then
-                                                if («Derivation.pf»
-                                                  x6
+                                                      x9
+                                                      x11)))).label ≠ 0 then
+                                                if (x6
+                                                  (leaf 1)
+                                                  x19
                                                   (leaf 0)
-                                                  x17
-                                                  («Derivation.termsOr» x18)
+                                                  («Derivation.termsOr» x20)
                                                   («Language.subst»
-                                                    x9
+                                                    x11
                                                     («Derivation.instVar»
                                                       («Language.mArr»
-                                                        x14
+                                                        x16
                                                         ([] : List T)
                                                         «Language.mStar»)))).label ≠ 0 then
-                                                  «Derivation.pf»
-                                                    x6
+                                                  x7
                                                     (leaf 1)
-                                                    x7
-                                                    («Prelude.append» x8 («Prelude.single» x9))
-                                                    («Derivation.natSuccAt» x15 x9)
+                                                    x9
+                                                    (leaf 0)
+                                                    («Prelude.append» x10 («Prelude.single» x11))
+                                                    («Derivation.natSuccAt» x17 x11)
                                                 else
                                                   leaf 0
                                               else
@@ -14156,51 +14080,51 @@ def «Derivation.proveStep» :=
                                         else
                                           if («Prelude.and»
                                             (Const.eq x3 (leaf 29))
-                                            (Const.eq x10 (leaf 2))).label ≠ 0 then
-                                            if («Base.not» («Base.isEmpty» x7)).label ≠ 0 then
-                                              let x16 : T := «Prelude.at» x7 (leaf 0);
-                                              let x17 : List T := «Prelude.tail» x7;
-                                              let x18 : T := «Language.listPart» x16;
-                                              let x19 : T := «Derivation.lowerHyps» x0 x2 x17 x8;
+                                            (Const.eq x12 (leaf 2))).label ≠ 0 then
+                                            if («Base.not» («Base.isEmpty» x9)).label ≠ 0 then
+                                              let x18 : T := «Prelude.at» x9 (leaf 0);
+                                              let x19 : List T := «Prelude.tail» x9;
+                                              let x20 : T := «Language.listPart» x18;
+                                              let x21 : T := «Derivation.lowerHyps» x0 x2 x19 x10;
                                               if («Prelude.and»
-                                                («Prelude.isSome» x18)
-                                                («Derivation/OTerms.isJust» x19)).label ≠ 0 then
-                                                let x20 : T := «Prelude.get» x18;
+                                                («Prelude.isSome» x20)
+                                                («Derivation/OTerms.isJust» x21)).label ≠ 0 then
+                                                let x22 : T := «Prelude.get» x20;
                                                 if («Prelude.and»
-                                                  («Derivation.primIs» x0 x14 «Derivation.nilPrim»)
+                                                  («Derivation.primIs» x0 x16 «Derivation.nilPrim»)
                                                   («Prelude.and»
                                                     («Derivation.primIs»
                                                       x0
-                                                      x15
+                                                      x17
                                                       «Derivation.consPrim»)
                                                     («Derivation.isFormula»
                                                       x0
                                                       x2
-                                                      x7
-                                                      x9))).label ≠ 0 then
-                                                  if («Derivation.pf»
-                                                    x6
-                                                    (leaf 0)
-                                                    x17
-                                                    («Derivation.termsOr» x19)
-                                                    («Language.subst»
                                                       x9
+                                                      x11))).label ≠ 0 then
+                                                  if (x6
+                                                    (leaf 1)
+                                                    x19
+                                                    (leaf 0)
+                                                    («Derivation.termsOr» x21)
+                                                    («Language.subst»
+                                                      x11
                                                       («Derivation.instVar»
                                                         («Language.mArr»
-                                                          x14
-                                                          («Prelude.single» x20)
+                                                          x16
+                                                          («Prelude.single» x22)
                                                           «Language.mStar»)))).label ≠ 0 then
-                                                    «Derivation.pf»
-                                                      x6
+                                                    x7
                                                       (leaf 1)
-                                                      (x16 :: (x20 :: x17))
+                                                      (x18 :: (x22 :: x19))
+                                                      (leaf 0)
                                                       («Prelude.append»
                                                         («Base.mapT»
                                                           «Derivation.weaken2»
-                                                          («Derivation.termsOr» x19))
+                                                          («Derivation.termsOr» x21))
                                                         («Prelude.single»
-                                                          («Derivation.weakenElem» x9)))
-                                                      («Derivation.listConsAt» x15 x20 x9)
+                                                          («Derivation.weakenElem» x11)))
+                                                      («Derivation.listConsAt» x17 x22 x11)
                                                   else
                                                     leaf 0
                                                 else
@@ -14212,62 +14136,62 @@ def «Derivation.proveStep» :=
                                           else
                                             if («Prelude.and»
                                               (Const.eq x3 (leaf 34))
-                                              (Const.eq x10 (leaf 2))).label ≠ 0 then
-                                              if («Base.not» («Base.isEmpty» x7)).label ≠ 0 then
-                                                let x16 : T := «Prelude.at» x7 (leaf 0);
-                                                let x17 : List T := «Prelude.tail» x7;
-                                                let x18 : T := «Language.coprodParts» x16;
-                                                let x19 : T := «Derivation.lowerHyps» x0 x2 x17 x8;
+                                              (Const.eq x12 (leaf 2))).label ≠ 0 then
+                                              if («Base.not» («Base.isEmpty» x9)).label ≠ 0 then
+                                                let x18 : T := «Prelude.at» x9 (leaf 0);
+                                                let x19 : List T := «Prelude.tail» x9;
+                                                let x20 : T := «Language.coprodParts» x18;
+                                                let x21 : T := «Derivation.lowerHyps» x0 x2 x19 x10;
                                                 if («Prelude.and»
-                                                  («Language/OTPair.isJust» x18)
-                                                  («Derivation/OTerms.isJust» x19)).label ≠ 0 then
-                                                  let x20 : T := «Language.p1»
+                                                  («Language/OTPair.isJust» x20)
+                                                  («Derivation/OTerms.isJust» x21)).label ≠ 0 then
+                                                  let x22 : T := «Language.p1»
                                                     («Language/OTPair.fromMaybe»
                                                       «Derivation.pr0»
-                                                      x18);
-                                                  let x21 : T := «Language.p2»
+                                                      x20);
+                                                  let x23 : T := «Language.p2»
                                                     («Language/OTPair.fromMaybe»
                                                       «Derivation.pr0»
-                                                      x18);
+                                                      x20);
                                                   if («Prelude.and»
                                                     («Derivation.primIs»
                                                       x0
-                                                      x14
+                                                      x16
                                                       «Derivation.inlPrim»)
                                                     («Prelude.and»
                                                       («Derivation.primIs»
                                                         x0
-                                                        x15
+                                                        x17
                                                         «Derivation.inrPrim»)
                                                       («Derivation.isFormula»
                                                         x0
                                                         x2
-                                                        x7
-                                                        x9))).label ≠ 0 then
-                                                    if («Derivation.pf»
-                                                      x6
-                                                      (leaf 0)
-                                                      (x20 :: x17)
-                                                      x8
-                                                      («Language.subst»
                                                         x9
+                                                        x11))).label ≠ 0 then
+                                                    if (x6
+                                                      (leaf 1)
+                                                      (x22 :: x19)
+                                                      (leaf 0)
+                                                      x10
+                                                      («Language.subst»
+                                                        x11
                                                         («Derivation.atVar0»
                                                           («Language.mArr»
-                                                            x14
-                                                            («Theory.l2» x20 x21)
+                                                            x16
+                                                            («Theory.l2» x22 x23)
                                                             («Language.var»
                                                               (leaf 0)))))).label ≠ 0 then
-                                                      «Derivation.pf»
-                                                        x6
+                                                      x7
                                                         (leaf 1)
-                                                        (x21 :: x17)
-                                                        x8
+                                                        (x23 :: x19)
+                                                        (leaf 0)
+                                                        x10
                                                         («Language.subst»
-                                                          x9
+                                                          x11
                                                           («Derivation.atVar0»
                                                             («Language.mArr»
-                                                              x15
-                                                              («Theory.l2» x20 x21)
+                                                              x17
+                                                              («Theory.l2» x22 x23)
                                                               («Language.var» (leaf 0)))))
                                                     else
                                                       leaf 0
@@ -14280,68 +14204,68 @@ def «Derivation.proveStep» :=
                                             else
                                               if («Prelude.and»
                                                 (Const.eq x3 (leaf 35))
-                                                (Const.eq x10 (leaf 0))).label ≠ 0 then
+                                                (Const.eq x12 (leaf 0))).label ≠ 0 then
                                                 «Prelude.and»
                                                   (Const.equal
-                                                    («Prelude.nth» x7 x14)
+                                                    («Prelude.nth» x9 x16)
                                                     («Prelude.some» «Theory.cZero»))
-                                                  («Derivation.isFormula» x0 x2 x7 x9)
+                                                  («Derivation.isFormula» x0 x2 x9 x11)
                                               else
                                                 if («Prelude.and»
                                                   (Const.eq x3 (leaf 36))
-                                                  (Const.eq x10 (leaf 1))).label ≠ 0 then
-                                                  let x16 : List T := Const.children x15;
-                                                  let x17 : T := «Language/OPrimitive.nthOf»
+                                                  (Const.eq x12 (leaf 1))).label ≠ 0 then
+                                                  let x18 : List T := Const.children x17;
+                                                  let x19 : T := «Language/OPrimitive.nthOf»
                                                     («Language.gPrims» x0)
-                                                    x14;
+                                                    x16;
                                                   if («Prelude.and»
-                                                    («Base.not» («Base.isEmpty» x7))
+                                                    («Base.not» («Base.isEmpty» x9))
                                                     («Language/OPrimitive.isJust»
-                                                      x17)).label ≠ 0 then
-                                                    let x18 : T := «Prelude.at» x7 (leaf 0);
-                                                    let x19 : List T := «Prelude.tail» x7;
-                                                    let x20 : T := «Language/OPrimitive.fromMaybe»
+                                                      x19)).label ≠ 0 then
+                                                    let x20 : T := «Prelude.at» x9 (leaf 0);
+                                                    let x21 : List T := «Prelude.tail» x9;
+                                                    let x22 : T := «Language/OPrimitive.fromMaybe»
                                                       «Derivation.prim0»
-                                                      x17;
+                                                      x19;
                                                     if («Prelude.and»
-                                                      («Derivation.isCoeqProj» x20)
+                                                      («Derivation.isCoeqProj» x22)
                                                       («Derivation/OTerms.isJust»
                                                         («Derivation.lowerHyps»
                                                           x0
                                                           x2
-                                                          x19
-                                                          x8))).label ≠ 0 then
+                                                          x21
+                                                          x10))).label ≠ 0 then
                                                       if («Prelude.and»
                                                         (Const.eq
-                                                          («Prelude.length» x16)
-                                                          («Language.prArity» x20))
+                                                          («Prelude.length» x18)
+                                                          («Language.prArity» x22))
                                                         («Prelude.and»
-                                                          («Base.allT» («Language.isTy» x0 x2) x16)
+                                                          («Base.allT» («Language.isTy» x0 x2) x18)
                                                           («Prelude.and»
                                                             (Const.equal
-                                                              x18
+                                                              x20
                                                               («PartialHorn.phSubst»
-                                                                x16
-                                                                («Language.prCod» x20)))
+                                                                x18
+                                                                («Language.prCod» x22)))
                                                             («Derivation.isFormula»
                                                               x0
                                                               x2
-                                                              x7
-                                                              x9)))).label ≠ 0 then
-                                                        «Derivation.pf»
-                                                          x6
-                                                          (leaf 0)
+                                                              x9
+                                                              x11)))).label ≠ 0 then
+                                                        x6
+                                                          (leaf 1)
                                                           ((«PartialHorn.phSubst»
-                                                            x16
-                                                            («Language.prDom» x20)) ::
-                                                            x19)
-                                                          x8
+                                                            x18
+                                                            («Language.prDom» x22)) ::
+                                                            x21)
+                                                          (leaf 0)
+                                                          x10
                                                           («Language.subst»
-                                                            x9
+                                                            x11
                                                             («Derivation.atVar0»
                                                               («Language.mArr»
-                                                                x14
                                                                 x16
+                                                                x18
                                                                 («Language.var» (leaf 0)))))
                                                       else
                                                         leaf 0
@@ -14352,23 +14276,23 @@ def «Derivation.proveStep» :=
                                                 else
                                                   if («Prelude.and»
                                                     (Const.eq x3 (leaf 30))
-                                                    (Const.eq x10 (leaf 0))).label ≠ 0 then
-                                                    if («Language/OTPair.isJust» x11).label ≠ 0 then
-                                                      let x16 : T := «Language.compileEq»
+                                                    (Const.eq x12 (leaf 0))).label ≠ 0 then
+                                                    if («Language/OTPair.isJust» x13).label ≠ 0 then
+                                                      let x18 : T := «Language.compileEq»
                                                         x0
                                                         x2
-                                                        x7
-                                                        x12
-                                                        x13;
+                                                        x9
+                                                        x14
+                                                        x15;
                                                       if («PartialHorn/OSequent.isJust»
-                                                        x16).label ≠ 0 then
+                                                        x18).label ≠ 0 then
                                                         «Derivation.certifies»
                                                           x0
                                                           x1
-                                                          x14
+                                                          x16
                                                           («PartialHorn/OSequent.fromMaybe»
                                                             «Derivation.seq0»
-                                                            x16)
+                                                            x18)
                                                       else
                                                         leaf 0
                                                     else
@@ -14376,117 +14300,117 @@ def «Derivation.proveStep» :=
                                                   else
                                                     if («Prelude.and»
                                                       (Const.eq x3 (leaf 31))
-                                                      (Const.eq x10 (leaf 0))).label ≠ 0 then
+                                                      (Const.eq x12 (leaf 0))).label ≠ 0 then
                                                       if («Prelude.and»
                                                         («Base.allT»
-                                                          («Derivation.isFormula» x0 x2 x7)
-                                                          x8)
+                                                          («Derivation.isFormula» x0 x2 x9)
+                                                          x10)
                                                         («Derivation.isFormula»
                                                           x0
                                                           x2
-                                                          x7
-                                                          x9)).label ≠ 0 then
+                                                          x9
+                                                          x11)).label ≠ 0 then
                                                         «Derivation.certifies»
                                                           x0
                                                           x1
-                                                          x14
+                                                          x16
                                                           («Derivation.thmSeq»
                                                             x0
                                                             («Derivation.mkThm»
                                                               x2
-                                                              («Language.objs» x7)
-                                                              («Derivation.terms» x8)
-                                                              x9))
+                                                              («Language.objs» x9)
+                                                              («Derivation.terms» x10)
+                                                              x11))
                                                       else
                                                         leaf 0
                                                     else
                                                       if («Prelude.and»
                                                         (Const.eq x3 (leaf 32))
-                                                        (Const.eq x10 (leaf 2))).label ≠ 0 then
+                                                        (Const.eq x12 (leaf 2))).label ≠ 0 then
                                                         if («Prelude.and»
-                                                          («Language/OTPair.isJust» x11)
+                                                          («Language/OTPair.isJust» x13)
                                                           (Const.eq
-                                                            («Prelude.length» x7)
+                                                            («Prelude.length» x9)
                                                             (leaf 1))).label ≠ 0 then
-                                                          let x16 : T := «Prelude.at» x7 (leaf 0);
-                                                          let x17 : T := «Derivation.typeIn»
+                                                          let x18 : T := «Prelude.at» x9 (leaf 0);
+                                                          let x19 : T := «Derivation.typeIn»
                                                             x0
                                                             x2
-                                                            x7
-                                                            x12;
-                                                          let x18 : T := «Language.roseLabel» x16;
+                                                            x9
+                                                            x14;
+                                                          let x20 : T := «Language.roseLabel» x18;
                                                           if («Prelude.and»
-                                                            («Prelude.isSome» x17)
-                                                            («Prelude.isSome» x18)).label ≠ 0 then
-                                                            let x19 : T := «Prelude.get» x17;
-                                                            let x20 : T := «Prelude.get» x18;
-                                                            let x21 : T := «Prelude.at» x4 (leaf 3);
-                                                            let x22 : T := x15;
-                                                            let x23 : T := «Prelude.at» x4 (leaf 2);
-                                                            let x24 : List
+                                                            («Prelude.isSome» x19)
+                                                            («Prelude.isSome» x20)).label ≠ 0 then
+                                                            let x21 : T := «Prelude.get» x19;
+                                                            let x22 : T := «Prelude.get» x20;
+                                                            let x23 : T := «Prelude.at» x4 (leaf 3);
+                                                            let x24 : T := x17;
+                                                            let x25 : T := «Prelude.at» x4 (leaf 2);
+                                                            let x26 : List
                                                               T := «Theory.l2»
-                                                              («Theory.list» x16)
-                                                              x20;
+                                                              («Theory.list» x18)
+                                                              x22;
                                                             if («Prelude.and»
                                                               («Derivation.rosePrimsOk»
                                                                 x0
-                                                                x14
-                                                                x22
-                                                                x23
                                                                 x16
-                                                                x20)
+                                                                x24
+                                                                x25
+                                                                x18
+                                                                x22)
                                                               («Prelude.and»
                                                                 (Const.equal
-                                                                  («Derivation.typeIn» x0 x2 x7 x13)
-                                                                  («Prelude.some» x19))
+                                                                  («Derivation.typeIn» x0 x2 x9 x15)
+                                                                  («Prelude.some» x21))
                                                                 (Const.equal
                                                                   («Derivation.typeIn»
                                                                     x0
                                                                     x2
                                                                     («Theory.l2»
-                                                                      («Theory.list» x19)
-                                                                      x20)
-                                                                    x21)
+                                                                      («Theory.list» x21)
+                                                                      x22)
+                                                                    x23)
                                                                   («Prelude.some»
-                                                                    x19)))).label ≠ 0 then
-                                                              if («Derivation.pf»
-                                                                x6
+                                                                    x21)))).label ≠ 0 then
+                                                              if (x6
+                                                                (leaf 1)
+                                                                x26
                                                                 (leaf 0)
-                                                                x24
                                                                 ([] : List T)
                                                                 («Language.mEq»
                                                                   («Derivation.roseNodeAt»
-                                                                    x14
                                                                     x16
-                                                                    x20
-                                                                    x12)
+                                                                    x18
+                                                                    x22
+                                                                    x14)
                                                                   («Language.subst»
-                                                                    x21
+                                                                    x23
                                                                     («Derivation.atVar0»
                                                                       («Derivation.roseMapAt»
-                                                                        x22
-                                                                        x23
-                                                                        x19
-                                                                        x12))))).label ≠ 0 then
-                                                                «Derivation.pf»
-                                                                  x6
+                                                                        x24
+                                                                        x25
+                                                                        x21
+                                                                        x14))))).label ≠ 0 then
+                                                                x7
                                                                   (leaf 1)
-                                                                  x24
+                                                                  x26
+                                                                  (leaf 0)
                                                                   ([] : List T)
                                                                   («Language.mEq»
                                                                     («Derivation.roseNodeAt»
-                                                                      x14
                                                                       x16
-                                                                      x20
-                                                                      x13)
+                                                                      x18
+                                                                      x22
+                                                                      x15)
                                                                     («Language.subst»
-                                                                      x21
+                                                                      x23
                                                                       («Derivation.atVar0»
                                                                         («Derivation.roseMapAt»
-                                                                          x22
-                                                                          x23
-                                                                          x19
-                                                                          x13))))
+                                                                          x24
+                                                                          x25
+                                                                          x21
+                                                                          x15))))
                                                               else
                                                                 leaf 0
                                                             else
@@ -14498,57 +14422,57 @@ def «Derivation.proveStep» :=
                                                       else
                                                         if («Prelude.and»
                                                           (Const.eq x3 (leaf 33))
-                                                          (Const.eq x10 (leaf 1))).label ≠ 0 then
+                                                          (Const.eq x12 (leaf 1))).label ≠ 0 then
                                                           if («Base.not»
-                                                            («Base.isEmpty» x7)).label ≠ 0 then
-                                                            let x16 : T := «Prelude.at» x7 (leaf 0);
-                                                            let x17 : List T := «Prelude.tail» x7;
-                                                            let x18 : T := «Language.roseLabel» x16;
-                                                            let x19 : T := «Derivation.lowerHyps»
+                                                            («Base.isEmpty» x9)).label ≠ 0 then
+                                                            let x18 : T := «Prelude.at» x9 (leaf 0);
+                                                            let x19 : List T := «Prelude.tail» x9;
+                                                            let x20 : T := «Language.roseLabel» x18;
+                                                            let x21 : T := «Derivation.lowerHyps»
                                                               x0
                                                               x2
-                                                              x17
-                                                              x8;
+                                                              x19
+                                                              x10;
                                                             if («Prelude.and»
-                                                              («Prelude.isSome» x18)
+                                                              («Prelude.isSome» x20)
                                                               («Derivation/OTerms.isJust»
-                                                                x19)).label ≠ 0 then
-                                                              let x20 : T := «Prelude.get» x18;
-                                                              let x21 : T := «Prelude.at»
+                                                                x21)).label ≠ 0 then
+                                                              let x22 : T := «Prelude.get» x20;
+                                                              let x23 : T := «Prelude.at»
                                                                 x4
                                                                 (leaf 2);
                                                               if («Prelude.and»
                                                                 («Derivation.rosePrimsOk»
                                                                   x0
-                                                                  x14
-                                                                  x15
-                                                                  x21
                                                                   x16
-                                                                  x20)
+                                                                  x17
+                                                                  x23
+                                                                  x18
+                                                                  x22)
                                                                 («Derivation.isFormula»
                                                                   x0
                                                                   x2
-                                                                  x7
-                                                                  x9)).label ≠ 0 then
-                                                                «Derivation.pf»
-                                                                  x6
+                                                                  x9
+                                                                  x11)).label ≠ 0 then
+                                                                x6
+                                                                  (leaf 1)
+                                                                  ((«Theory.list» x18) ::
+                                                                    (x22 :: x19))
                                                                   (leaf 0)
-                                                                  ((«Theory.list» x16) ::
-                                                                    (x20 :: x17))
                                                                   («Prelude.append»
                                                                     («Base.mapT»
                                                                       «Derivation.weaken2»
-                                                                      («Derivation.termsOr» x19))
+                                                                      («Derivation.termsOr» x21))
                                                                     («Prelude.single»
                                                                       («Derivation.roseHyp»
-                                                                        x15
-                                                                        x21
-                                                                        x9)))
+                                                                        x17
+                                                                        x23
+                                                                        x11)))
                                                                   («Derivation.roseNodeAt»
-                                                                    x14
                                                                     x16
-                                                                    x20
-                                                                    x9)
+                                                                    x18
+                                                                    x22
+                                                                    x11)
                                                               else
                                                                 leaf 0
                                                             else
@@ -14557,32 +14481,191 @@ def «Derivation.proveStep» :=
                                                             leaf 0
                                                         else
                                                           leaf 0);
-    x10
+    x12
+
+def «Derivation.proveAll» :=
+  fun (x0 : List (T → List T → T → List T → T → T)) =>
+    let x1 : List T →
+      List T →
+        List T →
+          T := Const.foldr
+      (α := T → List T → T → List T → T → T)
+      (β := List T → List T → List T → T)
+      (fun (x1 : T → List T → T → List T → T → T)
+         (x2 : List T → List T → List T → T)
+         (x3 : List T)
+         (x4 : List T)
+         (x5 : List T) =>
+        Const.lcase
+          (α := T)
+          (β := T)
+          x5
+          (leaf 0)
+          (fun (x6 : T) (x7 : List T) =>
+            «Prelude.and» (x1 (leaf 1) x3 (leaf 0) x4 x6) (x2 x3 x4 x7)))
+      (fun (_ : List T) (_ : List T) (x3 : List T) => «Base.isEmpty» x3)
+      x0;
+    x1
+
+def «Derivation.proveApply» :=
+  fun (x0 : T)
+    (x1 : List T)
+    (x2 : T)
+    (x3 : List T)
+    (x4 : T)
+    (x5 : List T → List T → List T → T)
+    (x6 : List T)
+    (x7 : List T)
+    (x8 : T) =>
+    let x9 : T := (let x9 : List T := Const.children («Prelude.at» x3 (leaf 1));
+                   let x10 : List T := Const.children («Prelude.at» x3 (leaf 2));
+                   let x11 : T := «Derivation.thmAt» x1 («Prelude.at» x3 (leaf 0));
+                   if («Derivation/OThm.isJust» x11).label ≠ 0 then
+                     let x12 : T := «Derivation/OThm.fromMaybe» «Derivation.thm0» x11;
+                     if («Prelude.and»
+                       («Derivation.instOk» x0 x2 x6 x12 x9 x10)
+                       («Prelude.and»
+                         (Const.equal
+                           x8
+                           («Derivation.instTerm» x9 x10 («Derivation.thConcl» x12)))
+                         (Const.eq
+                           x4
+                           («Prelude.length» («Derivation.thHyps» x12))))).label ≠ 0 then
+                       x5
+                         x6
+                         x7
+                         («Base.mapT»
+                           (fun (x13 : T) => «Derivation.instTerm» x9 x10 x13)
+                           («Derivation.thHyps» x12))
+                     else
+                       leaf 0
+                   else
+                     leaf 0);
+    x9
+
+def «Derivation.stepAt» :=
+  fun (x0 : T)
+    (x1 : List T)
+    (x2 : T)
+    (x3 : T)
+    (x4 : List T)
+    (x5 : T)
+    (x6 : T → List T → T → List T → T → T)
+    (x7 : T → List T → T → List T → T → T)
+    (x8 : T → List T → T → List T → T → T) =>
+    let x9 : T →
+      List T →
+        T →
+          List T →
+            T →
+              T := (fun (x9 : T) (x10 : List T) (x11 : T) (x12 : List T) (x13 : T) =>
+      if (x9).label ≠ 0 then
+        «Derivation.proveStep» x0 x1 x2 x3 x4 x5 x6 x7 x8 x10 x12 x13
+      else
+        «Derivation.rewriteStep» x0 x1 x2 x3 x4 x5 x6 x7 x10 x11 x12 x13);
+    x9
+
+def «Derivation.checkStep» :=
+  fun (x0 : T)
+    (x1 : List T)
+    (x2 : T)
+    (x3 : T)
+    (x4 : List (T → List T → T → List T → T → T)) =>
+    let x5 : T →
+      List T →
+        T →
+          List T →
+            T →
+              T := (let x5 : T := Const.label x3;
+                    let x6 : List T := Const.children (Const.child x3 (leaf 0));
+                    let x7 : List T := «Prelude.tail» (Const.children x3);
+                    let x8 : T := «Prelude.length» x7;
+                    Const.lcase
+                      (α := T → List T → T → List T → T → T)
+                      (β := T → List T → T → List T → T → T)
+                      x4
+                      «Derivation.ck0»
+                      (fun (_ : T → List T → T → List T → T → T)
+                         (x10 : List (T → List T → T → List T → T → T)) =>
+                        if (Const.eq x5 (leaf 2)).label ≠ 0 then
+                          let x11 : List T →
+                            T → List T → List T → T × List T := «Derivation.congAll» x10;
+                          fun (x12 : T) (x13 : List T) (x14 : T) (x15 : List T) (x16 : T) =>
+                            if (x12).label ≠ 0 then
+                              leaf 0
+                            else
+                              «Derivation.congStep» x0 x2 x7 x11 x13 x14 x15 x16
+                        else
+                          if (Const.eq x5 (leaf 27)).label ≠ 0 then
+                            let x11 : List T → List T → List T → T := «Derivation.proveAll» x10;
+                            fun (x12 : T) (x13 : List T) (_ : T) (x15 : List T) (x16 : T) =>
+                              if (x12).label ≠ 0 then
+                                «Derivation.proveApply» x0 x1 x2 x6 x8 x11 x13 x15 x16
+                              else
+                                «Prelude.none»
+                          else
+                            Const.lcase
+                              (α := T → List T → T → List T → T → T)
+                              (β := T → List T → T → List T → T → T)
+                              x10
+                              («Derivation.stepAt»
+                                x0
+                                x1
+                                x2
+                                x5
+                                x6
+                                x8
+                                «Derivation.ck0»
+                                «Derivation.ck0»
+                                «Derivation.ck0»)
+                              (fun (x11 : T → List T → T → List T → T → T)
+                                 (x12 : List (T → List T → T → List T → T → T)) =>
+                                Const.lcase
+                                  (α := T → List T → T → List T → T → T)
+                                  (β := T → List T → T → List T → T → T)
+                                  x12
+                                  («Derivation.stepAt»
+                                    x0
+                                    x1
+                                    x2
+                                    x5
+                                    x6
+                                    x8
+                                    x11
+                                    «Derivation.ck0»
+                                    «Derivation.ck0»)
+                                  (fun (x13 : T → List T → T → List T → T → T)
+                                     (x14 : List (T → List T → T → List T → T → T)) =>
+                                    Const.lcase
+                                      (α := T → List T → T → List T → T → T)
+                                      (β := T → List T → T → List T → T → T)
+                                      x14
+                                      («Derivation.stepAt»
+                                        x0
+                                        x1
+                                        x2
+                                        x5
+                                        x6
+                                        x8
+                                        x11
+                                        x13
+                                        «Derivation.ck0»)
+                                      (fun (x15 : T → List T → T → List T → T → T)
+                                         (_ : List (T → List T → T → List T → T → T)) =>
+                                        «Derivation.stepAt» x0 x1 x2 x5 x6 x8 x11 x13 x15)))));
+    x5
 
 def «Derivation.check» :=
   fun (x0 : T) (x1 : List T) (x2 : T) (x3 : T) =>
-    let x4 : (List T → T → List T → T → T) ×
-      (List T →
-        List T →
-          T →
-            T) := (Const.fold
-      (α := T × ((List T → T → List T → T → T) × (List T → List T → T → T)))
-      (fun (x4 : T)
-         (x5 : List
-           (T × ((List T → T → List T → T → T) × (List T → List T → T → T)))) =>
-        let x6 : List T := «Derivation.dpTrees» x5;
-        let x7 : List T := Const.children («Prelude.at» x6 (leaf 0));
-        let x8 : List
-          (T ×
-            ((List T → T → List T → T → T) ×
-              (List T → List T → T → T))) := «Derivation/DPs.tail» x5;
-        let x9 : List T := «Prelude.tail» x6;
-        (Const.node x4 x6,
-          (fun (x10 : List T) (x11 : T) (x12 : List T) (x13 : T) =>
-            «Derivation.rewriteStep» x0 x1 x2 x4 x7 x9 x8 x10 x11 x12 x13,
-            fun (x10 : List T) (x11 : List T) (x12 : T) =>
-              «Derivation.proveStep» x0 x1 x2 x4 x7 x9 x8 x10 x11 x12)))
-      x3).2;
+    let x4 : T →
+      List T →
+        T →
+          List T →
+            T →
+              T := Const.para
+      (α := T → List T → T → List T → T → T)
+      («Derivation.checkStep» x0 x1 x2)
+      x3;
     x4
 
 def «Derivation.thmChecks» :=
@@ -14600,8 +14683,14 @@ def «Derivation.thmChecks» :=
                          x4
                          x5
                          («Derivation.thConcl» x2)))).label ≠ 0 then
-                     («Derivation.check» x0 x1 x4 x3).2
+                     «Derivation.check»
+                       x0
+                       x1
+                       x4
+                       x3
+                       (leaf 1)
                        x5
+                       (leaf 0)
                        («Derivation.thHyps» x2)
                        («Derivation.thConcl» x2)
                    else

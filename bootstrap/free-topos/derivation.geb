@@ -80,10 +80,6 @@
     weakenBy
     rootStep
     rootStepK
-    Chk3
-    DV
-    rw
-    pf
     check
     Decl
     declLang
@@ -544,49 +540,49 @@
   (defn rootStepK ((G Globals) (E (List Entry)) (n T) (g Ts) (k T) (hs Ts) (rl T) (rd Ts) (t T)) T
     (if (eq rl 17) (rootHypK k hs rd t) (rootStep G E n g (nil T) rl rd t)))
 
-  ; the fold of a derivation with the derivation at each node, its values its rewriting, a function
-  ; of a context, a number of variables, hypotheses and a term, the hypotheses weakened past that
-  ; number of new innermost variables, and its proving, a function of a context, hypotheses and a
-  ; term
-  (deftype Chk3 (Arrow Ts (Arrow Ts (Arrow T T))))
-  (deftype Rw4 (Arrow Ts (Arrow T (Arrow Ts (Arrow T T)))))
-  (deftype DV (Prod Rw4 Chk3))
-  (deftype DP (Prod T DV))
-  (deftype DPs (List DP))
-  (defn dpTrees ((rs DPs)) Ts (foldr DP Ts (lam ((r DP) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
-  (import (Lists DP) as DPs)
-  (defn dpAt ((rs DPs) (i T)) DV
-    (lcase DP DV (iter DPs DPs.tail rs i)
-      (pair (lam ((g Ts) (k T) (hs Ts) (t T)) none) (lam ((g Ts) (hs Ts) (t T)) 0))
-      (lam ((r DP) (rest DPs)) (snd r))))
-  (defn rwK ((rs DPs) (i T)) Rw4 (fst (dpAt rs i)))
-  (defn rw ((rs DPs) (i T)) Chk3 (lam ((g Ts) (hs Ts) (t T)) ((rwK rs i) g 0 hs t)))
-  (defn pf ((rs DPs) (i T)) Chk3 (snd (dpAt rs i)))
+  ; the checker's result at a node: a function of a mode, 0 the rewriting and 1 the proving, a
+  ; context, a number of variables, hypotheses and a term; the rewriting under the hypotheses
+  ; weakened past that number of new innermost variables, the proving under the hypotheses, at the
+  ; number zero
+  (deftype CK (Arrow T (Arrow Ts (Arrow T (Arrow Ts (Arrow T T))))))
+  (deftype CKs (List CK))
+  (def ck0 (lam ((md T) (g Ts) (k T) (hs Ts) (t T)) 0))
 
-  ; one step of the rewriting, at a node of a rule, from its children's results, under the
-  ; hypotheses weakened past k new innermost variables: they are weakened where the rewriting at
-  ; the root reads them, rather than at each congruence past a binder
+  ; one step of the rewriting other than a congruence, at a node of a rule of m premises c0 and c1,
+  ; under the hypotheses weakened past k new innermost variables: they are weakened where the
+  ; rewriting at the root reads them, rather than at each congruence past a binder
   (defn rewriteStep
-    ((G Globals) (E (List Entry)) (n T) (rl T) (rd Ts) (ds Ts) (as DPs) (g Ts) (k T) (hs Ts) (t T))
+    ((G Globals) (E (List Entry)) (n T) (rl T) (rd Ts) (m T) (c0 CK) (c1 CK) (g Ts) (k T) (hs Ts)
+     (t T))
     T
-    (let m T (length ds)
-      (if (and (eq rl 0) (eq m 0)) (some t)
-        (if (and (eq rl 1) (eq m 2)) (bindO ((rwK as 0) g k hs t) ((rwK as 1) g k hs))
-          (if (eq rl 2)
-            (bindBT (congBinders G n t g ds)
-              (lam ((bxN Binders))
-                (let bx (List Binder) (bindersOf bxN)
-                  (let ta Ts (mArgs t)
-                    (if (and (eq m (length ta)) (eq (BinderL.length bx) (length ta)))
-                      (mapO (lam ((tsN T)) (node (label t) (cons (child t 0) (children tsN))))
-                        (allSomeT
-                          (mapT
-                            (lam ((i T))
-                              (let b Binder (BinderL.atOr binder0 bx i)
-                                ((rwK as i) (binderCtx b) (add k (binderNum b)) hs (at ta i))))
-                            (range m))))
-                      none)))))
-            (if (eq m 0) (rootStepK G E n g k hs rl rd t) none))))))
+    (if (and (eq rl 0) (eq m 0)) (some t)
+      (if (and (eq rl 1) (eq m 2)) (bindO (c0 0 g k hs t) (lam ((u T)) (c1 0 g k hs u)))
+        (if (eq m 0) (rootStepK G E n g k hs rl rd t) none))))
+  ; the premises' rewritings at their contexts and terms, composed into one function: whether each
+  ; rewrites, and their results
+  (deftype CR (Arrow (List Binder) (Arrow T (Arrow Ts (Arrow Ts (Prod T Ts))))))
+  (defn congAll ((cs CKs)) CR
+    (foldr CK CR
+      (lam ((c CK) (rest CR) (bx (List Binder)) (k T) (hs Ts) (us Ts))
+        (lcase Binder (Prod T Ts) bx (pair 0 (nil T))
+          (lam ((b Binder) (bx1 (List Binder)))
+            (lcase T (Prod T Ts) us (pair 0 (nil T))
+              (lam ((u T) (us1 Ts))
+                (let r T (c 0 (binderCtx b) (add k (binderNum b)) hs u)
+                  (let s (Prod T Ts) (rest bx1 k hs us1)
+                    (pair (and (isSome r) (fst s)) (cons (get r) (snd s))))))))))
+      (lam ((bx (List Binder)) (k T) (hs Ts) (us Ts)) (pair 1 (nil T)))
+      cs))
+  ; the rewriting by a congruence, of the premises' composed rewritings f
+  (defn congStep ((G Globals) (n T) (ds Ts) (f CR) (g Ts) (k T) (hs Ts) (t T)) T
+    (bindBT (congBinders G n t g ds)
+      (lam ((bxN Binders))
+        (let bx (List Binder) (bindersOf bxN)
+          (let ta Ts (mArgs t)
+            (if (and (eq (length ds) (length ta)) (eq (BinderL.length bx) (length ta)))
+              (let s (Prod T Ts) (f bx k hs ta)
+                (if (fst s) (some (node (label t) (cons (child t 0) (snd s)))) none))
+              none))))))
 
   ; the premises of induction on the innermost variable of a type of the data objects
   (defn rosePrimsOk ((G Globals) (kn T) (kl T) (kc T) (r T) (a T)) T
@@ -599,9 +595,10 @@
   (def prim0 (primitive 0 0 0 0))
   (def seq0 (mkSeq (nil T) (nil Eqn) (eqn 0 0)))
   (defn proveStep
-    ((G Globals) (E (List Entry)) (n T) (rl T) (rd Ts) (ds Ts) (as DPs) (g Ts) (hs Ts) (phi T))
+    ((G Globals) (E (List Entry)) (n T) (rl T) (rd Ts) (m T) (c0 CK) (c1 CK) (c2 CK) (g Ts) (hs Ts)
+     (phi T))
     T
-    (let k T (length ds)
+    (let k T m
       (let ep OTPair.Maybe (eqParts phi)
         (let tt T (p1 (OTPair.fromMaybe pr0 ep))
           (let uu T (p2 (OTPair.fromMaybe pr0 ep))
@@ -609,8 +606,8 @@
               (let d1 T (at rd 1)
                 (if (and (eq rl 18) (eq k 2))
                   (if (OTPair.isJust ep)
-                    (let v T ((rw as 0) g hs tt)
-                      (let w T ((rw as 1) g hs uu)
+                    (let v T (c0 0 g 0 hs tt)
+                      (let w T (c1 0 g 0 hs uu)
                         (and (isSome v) (and (isSome w) (equal (get v) (get w))))))
                     0)
                   (if (and (eq rl 19) (eq k 3))
@@ -630,13 +627,13 @@
                                               (and (equal (typeIn G n g uu) (some C))
                                                 (equal (typeIn G n (cons C g1) s) (some C))))))
                                         (if
-                                          ((pf as 0) g1 (termsOr mH)
-                                           (mEq (subst tt (instVar z)) (subst uu (instVar z))))
+                                          (c0 1 g1 0 (termsOr mH)
+                                            (mEq (subst tt (instVar z)) (subst uu (instVar z))))
                                           (if
-                                            ((pf as 1) g hs
-                                             (mEq (natSuccAt d1 tt) (subst s (atVar0 tt))))
-                                            ((pf as 2) g hs
-                                             (mEq (natSuccAt d1 uu) (subst s (atVar0 uu))))
+                                            (c1 1 g 0 hs
+                                              (mEq (natSuccAt d1 tt) (subst s (atVar0 tt))))
+                                            (c2 1 g 0 hs
+                                              (mEq (natSuccAt d1 uu) (subst s (atVar0 uu))))
                                             0)
                                           0)
                                         0)))
@@ -663,16 +660,16 @@
                                                         (equal (typeIn G n (cons C (cons a g1)) s)
                                                           (some C)))))
                                                   (if
-                                                    ((pf as 0) g1 (termsOr mH)
-                                                     (mEq (subst tt (instVar z))
-                                                       (subst uu (instVar z))))
+                                                    (c0 1 g1 0 (termsOr mH)
+                                                      (mEq (subst tt (instVar z))
+                                                        (subst uu (instVar z))))
                                                     (if
-                                                      ((pf as 1) g2 h2
-                                                       (mEq (listConsAt d1 a tt)
-                                                         (subst s (atVar0 (weakenElem tt)))))
-                                                      ((pf as 2) g2 h2
-                                                       (mEq (listConsAt d1 a uu)
-                                                         (subst s (atVar0 (weakenElem uu)))))
+                                                      (c1 1 g2 0 h2
+                                                        (mEq (listConsAt d1 a tt)
+                                                          (subst s (atVar0 (weakenElem tt)))))
+                                                      (c2 1 g2 0 h2
+                                                        (mEq (listConsAt d1 a uu)
+                                                          (subst s (atVar0 (weakenElem uu)))))
                                                       0)
                                                     0)
                                                   0))))))
@@ -681,20 +678,19 @@
                       (if (and (eq rl 21) (eq k 0)) (equal (nth hs d0) (some phi))
                         (if (and (eq rl 22) (eq k 2))
                           (if (isFormula G n g d0)
-                            (if ((pf as 0) g hs d0) ((pf as 1) g (append hs (single d0)) phi) 0)
+                            (if (c0 1 g 0 hs d0) (c1 1 g 0 (append hs (single d0)) phi) 0)
                             0)
                           (if (and (eq rl 23) (eq k 2))
-                            (let m T ((rw as 0) g hs phi)
-                              (if (isSome m) ((pf as 1) g hs (get m)) 0))
+                            (let m T (c0 0 g 0 hs phi) (if (isSome m) (c1 1 g 0 hs (get m)) 0))
                             (if (and (eq rl 24) (eq k 2))
-                              (if (and (isFormula G n g d0) (equal ((rw as 0) g hs d0) (some phi)))
-                                ((pf as 1) g hs d0)
+                              (if (and (isFormula G n g d0) (equal (c0 0 g 0 hs d0) (some phi)))
+                                (c1 1 g 0 hs d0)
                                 0)
                               (if (and (eq rl 25) (eq k 2))
                                 (if (OTPair.isJust ep)
                                   (if (and (isFormula G n g tt) (isFormula G n g uu))
-                                    (if ((pf as 0) g (append hs (single tt)) uu)
-                                      ((pf as 1) g (append hs (single uu)) tt)
+                                    (if (c0 1 g 0 (append hs (single tt)) uu)
+                                      (c1 1 g 0 (append hs (single uu)) tt)
                                       0)
                                     0)
                                   0)
@@ -704,29 +700,13 @@
                                       (let ty T (typeIn G n g tt)
                                         (if (isSome ty) (expParts (get ty)) OTPair.nothing))
                                       (if (OTPair.isJust mab)
-                                        ((pf as 0) (cons (p1 (OTPair.fromMaybe pr0 mab)) g)
-                                         (mapT weaken1 hs)
-                                         (mEq (app (weaken1 tt) (var 0))
-                                           (app (weaken1 uu) (var 0))))
+                                        (c0 1 (cons (p1 (OTPair.fromMaybe pr0 mab)) g) 0
+                                          (mapT weaken1 hs)
+                                          (mEq (app (weaken1 tt) (var 0))
+                                            (app (weaken1 uu) (var 0))))
                                         0))
                                     0)
-                                  (if (eq rl 27)
-                                    (let th Ts (children d1)
-                                      (let sg Ts (children (at rd 2))
-                                        (let ma OThm.Maybe (thmAt E d0)
-                                          (if (OThm.isJust ma)
-                                            (let a Thm (OThm.fromMaybe thm0 ma)
-                                              (if
-                                                (and (instOk G n g a th sg)
-                                                  (and (equal phi (instTerm th sg (thConcl a)))
-                                                    (eq k (length (thHyps a)))))
-                                                (allT
-                                                  (lam ((i T))
-                                                    ((pf as i) g hs
-                                                     (instTerm th sg (at (thHyps a) i))))
-                                                  (range k))
-                                                0))
-                                            0))))
+                                  (if (eq rl 27) 0
                                     (if (and (eq rl 28) (eq k 2))
                                       (if (not (isEmpty g))
                                         (let c T (at g 0)
@@ -739,10 +719,10 @@
                                                       (and (primIs G d1 succPrim)
                                                         (isFormula G n g phi))))
                                                   (if
-                                                    ((pf as 0) g1 (termsOr mH)
-                                                     (subst phi (instVar (mArr d0 (nil T) mStar))))
-                                                    ((pf as 1) g (append hs (single phi))
-                                                     (natSuccAt d1 phi))
+                                                    (c0 1 g1 0 (termsOr mH)
+                                                      (subst phi (instVar (mArr d0 (nil T) mStar))))
+                                                    (c1 1 g 0 (append hs (single phi))
+                                                      (natSuccAt d1 phi))
                                                     0)
                                                   0)
                                                 0))))
@@ -760,13 +740,13 @@
                                                           (and (primIs G d1 consPrim)
                                                             (isFormula G n g phi)))
                                                         (if
-                                                          ((pf as 0) g1 (termsOr mH)
-                                                           (subst phi
-                                                             (instVar (mArr d0 (single a) mStar))))
-                                                          ((pf as 1) (cons c (cons a g1))
-                                                           (append (mapT weaken2 (termsOr mH))
-                                                             (single (weakenElem phi)))
-                                                           (listConsAt d1 a phi))
+                                                          (c0 1 g1 0 (termsOr mH)
+                                                            (subst phi
+                                                              (instVar (mArr d0 (single a) mStar))))
+                                                          (c1 1 (cons c (cons a g1)) 0
+                                                            (append (mapT weaken2 (termsOr mH))
+                                                              (single (weakenElem phi)))
+                                                            (listConsAt d1 a phi))
                                                           0)
                                                         0))
                                                     0)))))
@@ -785,14 +765,14 @@
                                                               (and (primIs G d1 inrPrim)
                                                                 (isFormula G n g phi)))
                                                             (if
-                                                              ((pf as 0) (cons a g1) hs
-                                                               (subst phi
-                                                                 (atVar0
-                                                                   (mArr d0 (l2 a b) (var 0)))))
-                                                              ((pf as 1) (cons b g1) hs
-                                                               (subst phi
-                                                                 (atVar0
-                                                                   (mArr d1 (l2 a b) (var 0)))))
+                                                              (c0 1 (cons a g1) 0 hs
+                                                                (subst phi
+                                                                  (atVar0
+                                                                    (mArr d0 (l2 a b) (var 0)))))
+                                                              (c1 1 (cons b g1) 0 hs
+                                                                (subst phi
+                                                                  (atVar0
+                                                                    (mArr d1 (l2 a b) (var 0)))))
                                                               0)
                                                             0)))
                                                       0)))))
@@ -818,11 +798,11 @@
                                                                   (and
                                                                     (equal c (phSubst th (prCod p)))
                                                                     (isFormula G n g phi))))
-                                                              ((pf as 0)
-                                                               (cons (phSubst th (prDom p)) g1)
-                                                               hs
-                                                               (subst phi
-                                                                 (atVar0 (mArr d0 th (var 0)))))
+                                                              (c0 1 (cons (phSubst th (prDom p)) g1)
+                                                                0
+                                                                hs
+                                                                (subst phi
+                                                                  (atVar0 (mArr d0 th (var 0)))))
                                                               0)
                                                             0))))
                                                     0)))
@@ -869,26 +849,26 @@
                                                                                     s)
                                                                                   (some C))))
                                                                             (if
-                                                                              ((pf as 0) g2 (nil T)
-                                                                               (mEq
-                                                                                 (roseNodeAt d0 r a
-                                                                                   tt)
-                                                                                 (subst s
-                                                                                   (atVar0
-                                                                                     (roseMapAt kl
-                                                                                       kc
-                                                                                       C
-                                                                                       tt)))))
-                                                                              ((pf as 1) g2 (nil T)
-                                                                               (mEq
-                                                                                 (roseNodeAt d0 r a
-                                                                                   uu)
-                                                                                 (subst s
-                                                                                   (atVar0
-                                                                                     (roseMapAt kl
-                                                                                       kc
-                                                                                       C
-                                                                                       uu)))))
+                                                                              (c0 1 g2 0 (nil T)
+                                                                                (mEq
+                                                                                  (roseNodeAt d0 r a
+                                                                                    tt)
+                                                                                  (subst s
+                                                                                    (atVar0
+                                                                                      (roseMapAt kl
+                                                                                        kc
+                                                                                        C
+                                                                                        tt)))))
+                                                                              (c1 1 g2 0 (nil T)
+                                                                                (mEq
+                                                                                  (roseNodeAt d0 r a
+                                                                                    uu)
+                                                                                  (subst s
+                                                                                    (atVar0
+                                                                                      (roseMapAt kl
+                                                                                        kc
+                                                                                        C
+                                                                                        uu)))))
                                                                               0)
                                                                             0)))))))
                                                               0))))
@@ -910,33 +890,73 @@
                                                                           (rosePrimsOk G d0 d1 kc r
                                                                             a)
                                                                           (isFormula G n g phi))
-                                                                        ((pf as 0)
-                                                                         (cons (list r) (cons a g1))
-                                                                         (append
-                                                                           (mapT weaken2
-                                                                             (termsOr mH))
-                                                                           (single
-                                                                             (roseHyp d1 kc phi)))
-                                                                         (roseNodeAt d0 r a phi))
+                                                                        (c0 1
+                                                                          (cons (list r)
+                                                                            (cons a g1))
+                                                                          0
+                                                                          (append
+                                                                            (mapT weaken2
+                                                                              (termsOr mH))
+                                                                            (single
+                                                                              (roseHyp d1 kc phi)))
+                                                                          (roseNodeAt d0 r a phi))
                                                                         0)))
                                                                   0)))))
                                                         0)
                                                       0))))))))))))))))))))))))))
 
-  ; the checker: the rewriting a derivation performs and whether it proves a formula, in a context
-  ; under hypotheses
-  (defn check ((G Globals) (E (List Entry)) (n T) (d T)) DV
-    (snd
-      (fold DP
-        (lam ((l T) (rs DPs))
-          (let ts Ts (dpTrees rs)
-            (let rd Ts (children (at ts 0))
-              (let as DPs (DPs.tail rs)
-                (let ds Ts (tail ts)
-                  (pair (node l ts)
-                    (pair (lam ((g Ts) (k T) (hs Ts) (t T)) (rewriteStep G E n l rd ds as g k hs t))
-                      (lam ((g Ts) (hs Ts) (phi T)) (proveStep G E n l rd ds as g hs phi)))))))))
-        d)))
+  ; the proving by the application of a theorem, of the premises' composed provings pa
+  (deftype PAll (Arrow Ts (Arrow Ts (Arrow Ts T))))
+  (defn proveAll ((cs CKs)) PAll
+    (foldr CK PAll
+      (lam ((c CK) (rest PAll) (g Ts) (hs Ts) (fs Ts))
+        (lcase T T fs 0 (lam ((f T) (fs1 Ts)) (and (c 1 g 0 hs f) (rest g hs fs1)))))
+      (lam ((g Ts) (hs Ts) (fs Ts)) (isEmpty fs))
+      cs))
+  (defn proveApply
+    ((G Globals) (E (List Entry)) (n T) (rd Ts) (k T) (pa PAll) (g Ts) (hs Ts) (phi T))
+    T
+    (let th Ts (children (at rd 1))
+      (let sg Ts (children (at rd 2))
+        (let ma OThm.Maybe (thmAt E (at rd 0))
+          (if (OThm.isJust ma)
+            (let a Thm (OThm.fromMaybe thm0 ma)
+              (if
+                (and (instOk G n g a th sg)
+                  (and (equal phi (instTerm th sg (thConcl a))) (eq k (length (thHyps a)))))
+                (pa g hs (mapT (lam ((h T)) (instTerm th sg h)) (thHyps a)))
+                0))
+            0)))))
+
+  ; the checker: the paramorphism of a derivation whose result at a node is the rewriting and the
+  ; proving it performs, selected by a mode; its step takes the list of the premises' results apart
+  ; once, composing them into one function at a congruence and at the application of a theorem
+  (defn stepAt ((G Globals) (E (List Entry)) (n T) (rl T) (rd Ts) (m T) (c0 CK) (c1 CK) (c2 CK)) CK
+    (lam ((md T) (g Ts) (k T) (hs Ts) (t T))
+      (if md (proveStep G E n rl rd m c0 c1 c2 g hs t) (rewriteStep G E n rl rd m c0 c1 g k hs t))))
+  (defn checkStep ((G Globals) (E (List Entry)) (n T) (nd T) (rs CKs)) CK
+    (let rl T (label nd)
+      (let rd Ts (children (child nd 0))
+        (let ds Ts (tail (children nd))
+          (let m T (length ds)
+            (lcase CK CK rs ck0
+              (lam ((r0 CK) (cs CKs))
+                (if (eq rl 2)
+                  (let f CR (congAll cs)
+                    (lam ((md T) (g Ts) (k T) (hs Ts) (t T))
+                      (if md 0 (congStep G n ds f g k hs t))))
+                  (if (eq rl 27)
+                    (let pa PAll (proveAll cs)
+                      (lam ((md T) (g Ts) (k T) (hs Ts) (t T))
+                        (if md (proveApply G E n rd m pa g hs t) none)))
+                    (lcase CK CK cs (stepAt G E n rl rd m ck0 ck0 ck0)
+                      (lam ((c0 CK) (cs1 CKs))
+                        (lcase CK CK cs1 (stepAt G E n rl rd m c0 ck0 ck0)
+                          (lam ((c1 CK) (cs2 CKs))
+                            (lcase CK CK cs2 (stepAt G E n rl rd m c0 c1 ck0)
+                              (lam ((c2 CK) (cs3 CKs))
+                                (stepAt G E n rl rd m c0 c1 c2))))))))))))))))
+  (defn check ((G Globals) (E (List Entry)) (n T) (d T)) CK (para CK (checkStep G E n) d))
 
   ; whether a derivation proves a theorem
   (defn thmChecks ((G Globals) (E (List Entry)) (a Thm) (d T)) T
@@ -945,7 +965,7 @@
         (if
           (and (allT (isTy G n) g)
             (and (allT (isFormula G n g) (thHyps a)) (isFormula G n g (thConcl a))))
-          ((snd (check G E n d)) g (thHyps a) (thConcl a))
+          ((check G E n d) 1 g 0 (thHyps a) (thConcl a))
           0))))
 
   ; the confirmation of primitive arrows, object definitions and definitions of the language

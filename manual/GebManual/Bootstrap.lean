@@ -290,10 +290,12 @@ the sections below detail:
     checker's compiled code has them, and the prover's reduction as
     compiled, in the prover written in Geb, each transcribed with its
     agreement. No stored certificate is checked or searched by them
-    during the bootstrap, so none of it bears on the searches' time. The
-    rewriting of `check` in `derivation.geb` and of the reduction in
-    `prove.geb` in the forms the elementary-affine search accepts is made
-    with the elementary-affine rewriting of the metalogic's sources.
+    during the bootstrap, so none of it bears on the searches' time.
+    `check` in `derivation.geb` is written in a form the
+    elementary-affine search accepts; the reduction in `prove.geb` is
+    rewritten so with the rest of the metalogic's sources
+    ({ref "interaction-net-affine-certificates"}[Elementary-affine
+    certificates]).
   * In progress. Stronger checkers admitted beside it by relative
     soundness, each by a translation of its certificates into the
     metalogic's derivations ({ref "metalogic-and-checker"}[The
@@ -2343,10 +2345,20 @@ between given numbers, which needs no solver. The steps, in order:
      checked, and the agreements under
      `GebTests/Prototypes/FreeTopos/Agreement/` repaired; the prover's
      derivations, and so the stored certificates, are unchanged.
-   * Ready: `check` in `bootstrap/free-topos/derivation.geb`, which has
-     the base checker's evaluation
-     ({ref "base-checker-evaluation"}[The base checker's evaluation]);
-     the fold that evaluation adds to `language.geb` is typable.
+   * Complete: `check` in `bootstrap/free-topos/derivation.geb`, which
+     has the base checker's evaluation
+     ({ref "base-checker-evaluation"}[The base checker's evaluation]).
+     It is the paramorphism whose result at a node is one function, the
+     rewriting or the proving selected by a mode, so that a premise's
+     result serves both from additive branches; its step takes the list
+     of the premises' results apart once, into the first three, which
+     every rule but a congruence and the application of a theorem reads,
+     and composes them into one function at those two. The search
+     accepts it with a decoration per use; the agreement
+     (`check_fast_eq` in
+     `GebTests/Prototypes/FreeTopos/Agreement/Derivation.lean`) is
+     proved again of that form. The fold the evaluation adds to
+     `language.geb` is typable.
    * Waiting on the datatype language's completion
      ({ref "datatype-completion"}[The datatype language's completion]),
      whose soundness of the typing is proved of the stage-1 compiler and
@@ -7597,13 +7609,11 @@ in both loading modes. The prover and the tactics written in Geb infer
 types by `typeIn` as well, as the Lean prover does, so the first changes
 their time and not the derivations they construct, and their agreements
 (`Agreement/Prove.lean`, `Agreement/Tactics.lean`) rest on the agreement
-of `typeIn`. The checker's `check` is among the definitions the
-elementary-affine search rejects, and the second keeps its form, a fold
-whose step reads the list of its children's results more than once; the
-first writes its fold in a form the search accepts
+of `typeIn`. The first writes its fold, and the rewriting of `check`
+that follows the second writes `check`, in forms the elementary-affine
+search accepts
 ({ref "interaction-net-affine-certificates"}[Elementary-affine
-certificates]). The rewriting of `check` in such a form is made with the
-elementary-affine rewriting of the metalogic's sources.
+certificates]).
 
 The prover's reduction as compiled differs likewise from the prover
 written in Geb (`bootstrap/free-topos/prove.geb`), and is proved equal
