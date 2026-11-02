@@ -170,31 +170,25 @@ holds the benchmarks and the library `GebSlow`. The steps that remain:
    settles them (the Bootstrap chapter's section The datatype language's
    completion).
 2. The module of `GebSlow` running the interaction-net compiler's larger
-   graph executions (`GebSlow/Prototypes/InteractionNet/CompilerGraph.lean`),
-   585 seconds, more than four times the slowest test module, which no
-   change to the internal language's checker touched: moved among the
-   tests once the graph runtime's indexing and compaction are faster, or
-   kept apart. Moved, it leaves `slow-checks.yml` the benchmarks alone.
+   graph executions (`GebSlow/Prototypes/InteractionNet/CompilerGraph.lean`)
+   moved among the tests, which leaves `slow-checks.yml` the benchmarks
+   alone. With the endpoints' positions and elements read from tables
+   built once for each enumeration
+   (`Geb.InteractionNet.finiteSigmaEnumFast`), on sixteen cores, in one
+   run, it builds in 65 seconds, against 558 with the enumeration by
+   recursion on the cells, whose lookup at a cell reaches its block's
+   size through as many reindexings as the cell's index; the slowest
+   test module builds in 130.
    `GebBench/Prototypes/InteractionNet/GraphRuntime.lean` times the
-   phases of the runtime's steps. In two runs, the runs at five nodes
-   take 1902 and 2844 steps, on states of at most 602 and 922 endpoints,
-   and from 213 to 244 and from 547 to 809 seconds of steps, a step at
-   686 endpoints taking about 460 milliseconds. Of a step, the compaction
-   of the surviving endpoints is two thirds, the scan of the principal
-   neighbors that selects the redex three tenths, and the rule's lookup,
-   the replacement's storage, its splices and the labels together under
-   a twentieth. The array position of one endpoint takes from 0.3 to 0.5
-   milliseconds at 212 endpoints and from 1.5 to 2.4 at 686, and a step
-   computes positions in proportion to the endpoints, so a step's time
-   grows at least as their square. The positions are those of
-   `FinEnum.equiv`, which mathlib's instances for sums, sigma types and
-   `Fin` compute by searching and indexing lists built from their
-   components' enumerations. An enumeration of the endpoints by
-   arithmetic, the boundary's then each cell's ports from an offset
-   tabulated once, in place of `FinEnum`'s in the runtime's compiled
-   code, makes a lookup constant and a step linear in the endpoints; a
-   list of pending redexes and compaction deferred are then measured
-   again before either is written.
+   phases of the runtime's steps: in one run, the runs at five nodes
+   take 17.9 and 46.5 seconds, against 276 and 713. The compaction of
+   the surviving endpoints is about three quarters of a step, the labels of
+   the cells a sixth, and a step takes 12 milliseconds at 502 endpoints
+   and 36 at 686, so that a step's time still grows faster than the
+   endpoints; the enumeration of the cells surviving a contraction
+   (`Geb.InteractionNet.PortNet.subtypeEnum`), which the compaction and
+   the labels read and which finds an index by searching a list, is the
+   next to measure.
 3. The table of the checks in `manual/GebManual/CheckingCost.lean`
    refreshed from the next runs of `ci.yml` and `slow-checks.yml` on the
    hosted runners.

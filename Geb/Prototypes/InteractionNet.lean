@@ -94,6 +94,7 @@ public import Geb.Prototypes.InteractionNet.GraphReadbackBoundary
 public import Geb.Prototypes.InteractionNet.GraphRuntime
 public import Geb.Prototypes.InteractionNet.GraphRuntimeAdequacy
 public import Geb.Prototypes.InteractionNet.HeadPairGraph
+public import Geb.Prototypes.InteractionNet.InverseTable
 public import Geb.Prototypes.InteractionNet.JoinClosure
 public import Geb.Prototypes.InteractionNet.Kernel
 public import Geb.Prototypes.InteractionNet.KernelAdequacy

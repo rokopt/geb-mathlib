@@ -1987,7 +1987,11 @@ any normal form reached by another schedule.
 {name}`Geb.InteractionNet.GraphRuntime.halts_of_normalizes` guarantees a
 successful finite run whenever the input graph normalizes. The default
 scheduler follows principal wires to find candidate pairs; endpoint
-compaction uses an inverse index table. Rule assembly uses finite partner
+compaction uses an inverse index table, and an endpoint's array position
+and the endpoint at a position are read from tables of the cells' port
+offsets and of their inverse, built once for each enumeration of a net's
+ports ({name}`Geb.InteractionNet.finiteSigmaEnum_eq_finiteSigmaEnumFast`).
+Rule assembly uses finite partner
 arrays, cell labels are materialized after each contraction, and execution
 stops at the first normal state.
 These are executable prototype operations,
