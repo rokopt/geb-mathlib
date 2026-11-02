@@ -116,7 +116,8 @@ import-direction rules above are enforced by
   boundary-preserving cell renaming, confluence and termination across
   graph schedules, and a verified partner-array runtime, whose endpoints'
   positions are read from offsets and an inverse table tabulated once for
-  each enumeration of a net's ports. Textual execution
+  each enumeration of a net's ports, and whose cells surviving a
+  contraction are numbered by their ranks. Textual execution
   refines graph reduction; every accepted closed tree-to-tree application
   terminates under every graph schedule and its normal result reads back
   the checked denotation. [Graph adequacy](../Geb/Prototypes/InteractionNet/KernelGraphAdequacy.lean)

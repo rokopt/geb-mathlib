@@ -170,27 +170,7 @@ holds the benchmarks alone. The steps that remain:
    typing and names its last theorem, so they are added as that work
    settles them (the Bootstrap chapter's section The datatype language's
    completion).
-2. The steps of the interaction-net graph runtime shortened, whose
-   graph executions at five nodes in
-   `GebTests/Prototypes/InteractionNet/CompilerGraph.lean` are among the
-   slowest tests. With
-   the endpoints' positions and elements read from tables built once for
-   each enumeration (`Geb.InteractionNet.finiteSigmaEnumFast`), on
-   sixteen cores, in one run, those executions build in 65 seconds,
-   against 558 with the enumeration by recursion on the cells, whose
-   lookup at a cell reaches its block's size through as many reindexings
-   as the cell's index; the slowest test module builds in 130.
-   `GebBench/Prototypes/InteractionNet/GraphRuntime.lean` times the
-   phases of the runtime's steps: in one run, the runs at five nodes
-   take 17.9 and 46.5 seconds, against 276 and 713. The compaction of
-   the surviving endpoints is about three quarters of a step, the labels of
-   the cells a sixth, and a step takes 12 milliseconds at 502 endpoints
-   and 36 at 686, so that a step's time still grows faster than the
-   endpoints; the enumeration of the cells surviving a contraction
-   (`Geb.InteractionNet.PortNet.subtypeEnum`), which the compaction and
-   the labels read and which finds an index by searching a list, is the
-   next to measure.
-3. The table of the checks in `manual/GebManual/CheckingCost.lean`
+2. The table of the checks in `manual/GebManual/CheckingCost.lean`
    refreshed from the next runs of `ci.yml` and `slow-checks.yml` on the
    hosted runners.
 

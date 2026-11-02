@@ -1991,6 +1991,8 @@ compaction uses an inverse index table, and an endpoint's array position
 and the endpoint at a position are read from tables of the cells' port
 offsets and of their inverse, built once for each enumeration of a net's
 ports ({name}`Geb.InteractionNet.finiteSigmaEnum_eq_finiteSigmaEnumFast`).
+The cells surviving a contraction are numbered by their ranks, computed
+from the two removed cells ({name}`Geb.InteractionNet.PortNet.remainingEnum`).
 Rule assembly uses finite partner
 arrays, cell labels are materialized after each contraction, and execution
 stops at the first normal state.
