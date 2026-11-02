@@ -137,6 +137,7 @@ public import Geb.Prototypes.InteractionNet.ProgramCorrect
 public import Geb.Prototypes.InteractionNet.ProgramGraph
 public import Geb.Prototypes.InteractionNet.RedexDiamond
 public import Geb.Prototypes.InteractionNet.RemainingCells
+public import Geb.Prototypes.InteractionNet.RemainingRank
 public import Geb.Prototypes.InteractionNet.RuleBoundaryOccurrences
 public import Geb.Prototypes.InteractionNet.RuleGraph
 public import Geb.Prototypes.InteractionNet.RuleInstantiationAllocation
