@@ -157,8 +157,9 @@ records the mathematics of both.
 
 The searches of the certificates run on every push, in `ci.yml` and in
 `scripts/pre-push.sh` (`docs/rules/ci-and-workflow.md` § Certificates),
-and the check of `datatype-list` is among the tests, so `slow-checks.yml`
-holds the benchmarks and the library `GebSlow`. The steps that remain:
+and the checks of `datatype-list` and of the interaction-net compiler's
+graph executions at five nodes are among the tests, so `slow-checks.yml`
+holds the benchmarks alone. The steps that remain:
 
 1. Modules of `GebTests/Prototypes/FreeTopos/Certified/` checking the
    certificates no module reads, the datatype language's but those of
@@ -169,16 +170,16 @@ holds the benchmarks and the library `GebSlow`. The steps that remain:
    typing and names its last theorem, so they are added as that work
    settles them (the Bootstrap chapter's section The datatype language's
    completion).
-2. The module of `GebSlow` running the interaction-net compiler's larger
-   graph executions (`GebSlow/Prototypes/InteractionNet/CompilerGraph.lean`)
-   moved among the tests, which leaves `slow-checks.yml` the benchmarks
-   alone. With the endpoints' positions and elements read from tables
-   built once for each enumeration
-   (`Geb.InteractionNet.finiteSigmaEnumFast`), on sixteen cores, in one
-   run, it builds in 65 seconds, against 558 with the enumeration by
-   recursion on the cells, whose lookup at a cell reaches its block's
-   size through as many reindexings as the cell's index; the slowest
-   test module builds in 130.
+2. The steps of the interaction-net graph runtime shortened, whose
+   graph executions at five nodes in
+   `GebTests/Prototypes/InteractionNet/CompilerGraph.lean` are among the
+   slowest tests. With
+   the endpoints' positions and elements read from tables built once for
+   each enumeration (`Geb.InteractionNet.finiteSigmaEnumFast`), on
+   sixteen cores, in one run, those executions build in 65 seconds,
+   against 558 with the enumeration by recursion on the cells, whose
+   lookup at a cell reaches its block's size through as many reindexings
+   as the cell's index; the slowest test module builds in 130.
    `GebBench/Prototypes/InteractionNet/GraphRuntime.lean` times the
    phases of the runtime's steps: in one run, the runs at five nodes
    take 17.9 and 46.5 seconds, against 276 and 713. The compaction of

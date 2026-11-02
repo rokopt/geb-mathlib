@@ -15,11 +15,11 @@ set_option doc.verso true in
 
 The runs of the kernel programs {lit}`size` and {lit}`mirror` through the graph compiler and
 partner-array runtime ({name}`Geb.InteractionNet.Kernel.graphRun`) at the trees of three and five
-nodes that {lit}`GebTests.Prototypes.InteractionNet.CompilerGraph` and
-{lit}`GebSlow.Prototypes.InteractionNet.CompilerGraph` check, each step of the default schedule
-({name}`Geb.InteractionNet.GraphRuntime.step`) taken in its phases and each phase timed: the scan
-of the principal neighbors ({name}`Geb.InteractionNet.GraphRuntime.candidates`); the selection of
-the first redex with a rule, which repeats the scan and looks up the rule
+nodes that {lit}`GebTests.Prototypes.InteractionNet.CompilerGraph` checks, each step of the
+default schedule ({name}`Geb.InteractionNet.GraphRuntime.step`) taken in its phases and each
+phase timed: the scan of the principal neighbors
+({name}`Geb.InteractionNet.GraphRuntime.candidates`); the selection of the first redex with a
+rule, which repeats the scan and looks up the rule
 ({name}`Geb.InteractionNet.GraphRuntime.select`); the storage of the rule's replacement in array
 form ({name}`Geb.InteractionNet.ArrayNet.encode`); its allocation after the net's endpoints and
 the splices of the pair's auxiliary wires ({name}`Geb.InteractionNet.ArrayNet.gluePair`); the

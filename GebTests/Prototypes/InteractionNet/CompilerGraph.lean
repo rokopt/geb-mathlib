@@ -19,8 +19,9 @@ set_option doc.verso true in
 
 Textual kernel programs run through the finite graph compiler, partner-array reducer and
 whole-tree read-back. The cases exercise empty and nested data, constructor allocation,
-calls, copying, erasure and bounded exhaustion. Separate wire-only configurations check
-that graph assembly retains closed wire components.
+calls, copying, erasure, bounded exhaustion, and recursion nested through trees of three and
+five nodes. Separate wire-only configurations check that graph assembly retains closed wire
+components.
 
 ## Main definitions
 
@@ -66,6 +67,11 @@ def runText (steps : ℕ) (text : List Char) (input : Tree) : Option Tree := do
   (RoseTree.node 1 [leaf 2, leaf 3]) = some (leaf 3)
 #guard runText 3000 Geb.Kernel.Tests.mirror.toList
   (RoseTree.node 1 [leaf 2, leaf 3]) = some (RoseTree.node 1 [leaf 3, leaf 2])
+#guard runText 10000 Geb.Kernel.Tests.size.toList
+  (RoseTree.node 1 [leaf 2, RoseTree.node 3 [leaf 4, leaf 5]]) = some (leaf 5)
+#guard runText 20000 Geb.Kernel.Tests.mirror.toList
+  (RoseTree.node 1 [leaf 2, RoseTree.node 3 [leaf 4, leaf 5]]) =
+    some (RoseTree.node 1 [RoseTree.node 3 [leaf 5, leaf 4], leaf 2])
 
 /-- An equation whose two occurrences form one closed wire. -/
 def wireLoop : Config (fun _ : Fin 0 ↦ 0) := ⟨[], [(Term.var 0, Term.var 0)], 1⟩
