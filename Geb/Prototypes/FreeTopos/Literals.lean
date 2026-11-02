@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.FreeTopos.Internal.Inversion
 public import Geb.Prototypes.FreeTopos.Internal.ProveChecked
 public import Geb.Prototypes.FreeTopos.Translation
+public import Geb.Prototypes.FreeTopos.TranslationLibrary
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -19,9 +20,11 @@ on bitstrings, evaluated at numerals by the arithmetic of the natural numbers th
 as Gödel's T evaluates its primitives at literals in one step: the empty bitstring and a bit
 before a bitstring, whether a bitstring is empty, the successor, doubling, the predecessor, the
 conditional at bitstrings and at comparisons, addition, multiplication, equality, comparison,
-less, and the difference of a number at most the first and the truncated difference. A literal
-is a numeral, the bitstring of a number's index in the enumeration of {cite}`Oitavem2010`, or a
-comparison's result.
+less, the difference of a number at most the first and the truncated difference, the quotient
+and the remainder, and the base-two logarithm, with the components of a pair. A literal is a
+numeral, the bitstring of a number's index in the enumeration of {cite}`Oitavem2010`, a
+comparison's result, or a pair of numerals, so that the kernel's division and remainder, the
+components of the library's quotient and remainder, evaluate.
 
 The evaluation is a step of the checker with a step of conversion, sound in every model through
 its translation into the language's derivations, which rewrite by the definitions' equations at
@@ -37,6 +40,8 @@ step sound without the rewriting being performed.
 * {lit}`Val`, {lit}`Val.term` — a literal, and its term.
 * {lit}`Sym`, {lit}`Sym.host` — the definitions evaluated, and their values at literals by the
   arithmetic of the natural numbers.
+* {lit}`divStep`, {lit}`lenOneT` — the step of the long division and the fold inside the
+  logarithm, as the equations state them.
 * {lit}`lemmas` — the definitions' equations at the numerals' bits.
 * {lit}`eval` — the value of a term built of the definitions over literals.
 * {lit}`ready` — the conditions under which the evaluation is a rewriting: the equations among
@@ -72,15 +77,21 @@ open scoped FinEnum
 
 /-! Literals and their numbers. -/
 
-/-- A literal: a bitstring, least significant bit first, or a comparison's result. -/
+/-- A literal: a bitstring, least significant bit first, a comparison's result, or a pair of
+bitstrings. -/
 inductive Val where
   /-- A bitstring. -/
   | bits (w : List Bool)
   /-- A comparison's result. -/
   | ord (o : Ordering)
+  /-- A pair of bitstrings. -/
+  | pair (a b : List Bool)
+
+/-- A bit before a bitstring: the bit one for {lit}`true`, and zero for {lit}`false`. -/
+def bitT (b : Bool) (t : Term) : Term := if b then b1T t else b0T t
 
 /-- The numeral of a bitstring: the empty bitstring's definition, and a bit's before the rest. -/
-def bitsT (w : List Bool) : Term := w.foldr (fun b t ↦ if b then b1T t else b0T t) bnilT
+def bitsT (w : List Bool) : Term := w.foldr bitT bnilT
 
 /-- The term of a comparison's result. -/
 def ordT : Ordering → Term
@@ -92,6 +103,7 @@ def ordT : Ordering → Term
 def Val.term : Val → Term
   | .bits w => bitsT w
   | .ord o => ordT o
+  | .pair a b => Term.pair (bitsT a) (bitsT b)
 
 /-- The number a bitstring denotes, its index in the enumeration. -/
 abbrev val (w : List Bool) : ℕ := Oitavem.rank w
@@ -139,11 +151,15 @@ inductive Sym where
   | subE
   /-- The truncated difference. -/
   | sub
+  /-- The quotient and the remainder. -/
+  | divMod
+  /-- The base-two logarithm. -/
+  | log2
 
 /-- The definitions evaluated. -/
 def Sym.all : List Sym :=
   [.bnil, .b0, .b1, .isNil, .succ, .dbl, .pred, .condB, .condO, .add, .mul, .eqB, .cmp, .ltB,
-    .subE, .sub]
+    .subE, .sub, .divMod, .log2]
 
 /-- The index of a definition in the library. -/
 def Sym.index : Sym → ℕ
@@ -162,6 +178,8 @@ def Sym.index : Sym → ℕ
   | .ltB => D.ltB
   | .subE => D.subE
   | .sub => D.sub
+  | .divMod => D.divMod
+  | .log2 => D.log2
 
 /-- The objects a definition is applied at. -/
 def Sym.objs : Sym → List Tree
@@ -173,14 +191,18 @@ def Sym.objs : Sym → List Tree
 /-- The types of a definition's arguments, the first first. -/
 def Sym.args : Sym → List Tree
   | .bnil => []
-  | .b0 | .b1 | .isNil | .succ | .dbl | .pred => [bitsTy]
+  | .b0 | .b1 | .isNil | .succ | .dbl | .pred | .log2 => [bitsTy]
   | .condB => [bitsTy, bitsTy, bitsTy]
   | .condO => [bitsTy, ordTy, ordTy]
-  | .add | .mul | .eqB | .cmp | .ltB | .subE | .sub => [bitsTy, bitsTy]
+  | .add | .mul | .eqB | .cmp | .ltB | .subE | .sub | .divMod => [bitsTy, bitsTy]
+
+/-- The type of pairs of bitstrings. -/
+abbrev pairTy : Tree := prod bitsTy bitsTy
 
 /-- The type of a definition's value. -/
 def Sym.res : Sym → Tree
   | .condO | .cmp => ordTy
+  | .divMod => pairTy
   | _ => bitsTy
 
 /-- The application of a definition at its objects to arguments, the first first. -/
@@ -197,7 +219,8 @@ def ofBits₂ (f : List Bool → List Bool → Option Val) : List Val → Option
   | _ => none
 
 /-- The value of a definition at literals, by the arithmetic of the numbers they denote; nothing
-at literals of other types, and for the difference of a number greater than the first. -/
+at literals of other types, and for the difference of a number greater than the first. The
+quotient and the remainder by zero are zero and the dividend, as for the natural numbers. -/
 def Sym.host : Sym → List Val → Option Val
   | .bnil => fun
     | [] => some (.bits [])
@@ -222,6 +245,8 @@ def Sym.host : Sym → List Val → Option Val
   | .subE => ofBits₂ fun a b ↦
     if val b ≤ val a then some (.bits (num (val a - val b))) else none
   | .sub => ofBits₂ fun a b ↦ some (.bits (num (val a - val b)))
+  | .divMod => ofBits₂ fun a b ↦ some (.pair (num (val a / val b)) (num (val a % val b)))
+  | .log2 => ofBits₁ fun w ↦ num (val w).log2
 
 /-! The definitions' equations at the numerals' bits. -/
 
@@ -231,14 +256,58 @@ def eqn (Γ : List Tree) (l r : Term) : Thm := ⟨0, Γ, [], Term.eq l r⟩
 /-- The case analysis of a comparison at the type {lit}`c`, abbreviated. -/
 abbrev sel (c : Tree) (o l e g : Term) : Term := ifOrd c o l e g
 
+/-- The case analysis at pairs of the comparison of index three, in the variables of its three
+branches. -/
+def selIn : Term := sel pairTy (Term.var 3) (Term.var 2) (Term.var 1) (Term.var 0)
+
+/-- The case analysis at pairs of a comparison, in the variables of its first two branches, whose
+third branch is {lit}`selIn`. -/
+def selSel (o : Term) : Term := sel pairTy o (Term.var 5) (Term.var 4) selIn
+
+/-- The branches and the comparisons of the step of the long division, from the quotient
+{lit}`q` of the dividend's rest, the remainder {lit}`r` of the rest with the dividend's bit before
+it, and the divisor {lit}`d`, by the indices of the variables of {lit}`selSel` and the comparison
+last: twice the quotient where {lit}`r` is less than the divisor, and otherwise twice it and one
+or two, with the remainder reduced by the divisor or zero. -/
+def divCases (q r d : Term) : List Term :=
+  [Term.pair (b1T q) bnilT, Term.pair (b1T q) bnilT, Term.pair (b0T q) (Sym.subE.call [r, d]),
+    Sym.cmp.call [r, Sym.dbl.call [d]], Term.pair (b0T q) bnilT,
+    Term.pair (Sym.dbl.call [q]) r, Sym.cmp.call [r, d]]
+
+/-- The step of the long division in the library's quotient and remainder: the case analysis of
+the comparison of the remainder with the divisor, and then with twice the divisor, at the
+branches of {lit}`divCases`. -/
+def divStep (q r d : Term) : Term :=
+  Term.subst (selSel (Term.var 6)) (Term.substList (divCases q r d))
+
+/-- The right side of the equation of the quotient and the remainder at the dividend's bit
+{lit}`e` and the divisor's bit {lit}`d`, in the variables of the rests, the dividend's of index
+one: the step of the long division at the quotient and the remainder of the dividend's rest, the
+dividend's bit before that remainder. -/
+def divRhs (e d : Bool) : Term :=
+  let qr := Sym.divMod.call [Term.var 1, bitT d (Term.var 0)]
+  divStep (Term.fst qr) (bitT e (Term.snd qr)) (bitT d (Term.var 0))
+
+/-- The fold of a bitstring inside the library's base-two logarithm, into the pair of its length
+and whether a bit is one. -/
+def lenOneT (w : Term) : Term :=
+  Term.listRec (Term.pair bnilT bnilT)
+    (Term.app (Term.lam pairTy (Term.pair (Sym.succ.call [Term.fst (Term.var 0)])
+      (ifBit bitsTy (Term.var 2) (Term.snd (Term.var 0)) trueT))) (Term.var 0)) w
+
 /-- The definitions' equations at the numerals' bits, each a theorem in variables of
 bitstrings, the least significant bits of the arguments decided: whether a bitstring is empty;
 the successor, doubling and the predecessor; the conditional at bitstrings and at comparisons;
 addition and multiplication, by recursion on the second argument; equality and comparison, the
-case analysis of a comparison at its three results, and less, by the comparison; and the
-difference of a number at most the first, and the truncated difference by less and that
-difference. Each is the definition's own recursion at the bits, so that its sides have one normal
-form with the rebuildings of the folds. -/
+case analysis of a comparison at its three results, and less, by the comparison; the difference
+of a number at most the first, and the truncated difference by less and that difference; the
+quotient and the remainder, by recursion on the dividend, and the case analysis of a comparison
+at pairs; and the fold inside the logarithm, and the logarithm by it. Each is the definition's own
+recursion at the bits, so that its sides have one normal form with the rebuildings of the folds.
+The step of the long division reads the rest's quotient and remainder in the branches of its case
+analysis, so its equations substitute the rest's call for the variable the definition binds to
+it, and the equations of the case analysis at pairs include one whose third branch is itself a
+case analysis, so that a branch selected has its type without a case analysis being typed. -/
 def lemmas : List Thm :=
   let N := bnilT
   let T := trueT
@@ -248,6 +317,7 @@ def lemmas : List Thm :=
   let isNil (a : Term) := Sym.isNil.call [a]
   let un (s : Sym) (a : Term) := s.call [a]
   let bin (s : Sym) (a b : Term) := s.call [a, b]
+  let P6 := [pairTy, pairTy, pairTy, ordTy, pairTy, pairTy]
   [eqn [] (isNil N) T,
     eqn [bitsTy] (isNil (b0T y)) N,
     eqn [bitsTy] (isNil (b1T y)) N,
@@ -309,7 +379,30 @@ def lemmas : List Thm :=
     eqn bb (bin .subE (b0T x) (b1T y)) (b0T (un .pred (bin .subE x y))),
     eqn bb (bin .subE (b1T x) (b0T y)) (b0T (bin .subE x y)),
     eqn bb (bin .subE (b1T x) (b1T y)) (un .dbl (bin .subE x y)),
-    eqn bb (bin .sub x y) (Sym.condB.call [bin .ltB x y, N, bin .subE x y])]
+    eqn bb (bin .sub x y) (Sym.condB.call [bin .ltB x y, N, bin .subE x y]),
+    -- the quotient and the remainder, by zero, of zero, and at the dividend's and the divisor's
+    -- least significant bits
+    eqn [bitsTy] (bin .divMod y N) (Term.pair N y),
+    eqn [bitsTy] (bin .divMod N (b0T y)) (Term.pair N N),
+    eqn [bitsTy] (bin .divMod N (b1T y)) (Term.pair N N),
+    eqn bb (bin .divMod (b0T x) (b0T y)) (divRhs false false),
+    eqn bb (bin .divMod (b0T x) (b1T y)) (divRhs false true),
+    eqn bb (bin .divMod (b1T x) (b0T y)) (divRhs true false),
+    eqn bb (bin .divMod (b1T x) (b1T y)) (divRhs true true),
+    -- the case analysis of a comparison at pairs, and with a case analysis as its third branch
+    eqn [pairTy, pairTy, pairTy] (sel pairTy ltO (Term.var 2) x y) (Term.var 2),
+    eqn [pairTy, pairTy, pairTy] (sel pairTy eqO (Term.var 2) x y) x,
+    eqn [pairTy, pairTy, pairTy] (sel pairTy gtO (Term.var 2) x y) y,
+    eqn P6 (selSel ltO) (Term.var 5),
+    eqn P6 (selSel eqO) (Term.var 4),
+    eqn P6 (selSel gtO) selIn,
+    -- the fold inside the logarithm, and the logarithm
+    eqn [] (lenOneT N) (Term.pair N N),
+    eqn [bitsTy] (lenOneT (b0T y)) (Term.pair (un .succ (Term.fst (lenOneT y)))
+      (Term.snd (lenOneT y))),
+    eqn [bitsTy] (lenOneT (b1T y)) (Term.pair (un .succ (Term.fst (lenOneT y))) T),
+    eqn [bitsTy] (un .log2 y) (Sym.condB.call [Term.snd (lenOneT y), Term.fst (lenOneT y),
+      un .pred (Term.fst (lenOneT y))])]
 
 /-! The evaluation. -/
 
@@ -322,15 +415,25 @@ def Sym.ofLabel : Internal.Label → Option Sym
 def ordOf (t : Term) : Option Ordering :=
   [Ordering.lt, .eq, .gt].find? fun o ↦ decide (ordT o = t)
 
+/-- The pair of two bitstrings, or a component of a pair of bitstrings, at a node of a label from
+its children's values. -/
+def pairStep : Internal.Label → List Val → Option Val
+  | .pair, [.bits a, .bits b] => some (.pair a b)
+  | .fst, [.pair a _] => some (.bits a)
+  | .snd, [.pair _ b] => some (.bits b)
+  | _, _ => none
+
 /-- One step of the evaluation, at a node of a label, from its children with their values: a
-comparison's result, or a definition evaluated at its arguments' values, the children being
-the arguments last first. -/
+comparison's result, a definition evaluated at its arguments' values, the children being the
+arguments last first, or a pair or its component. -/
 def evalStep (l : Internal.Label) (cs : List (Term × Option Val)) : Option Val :=
   match ordOf (RoseTree.node l (cs.map Prod.fst)) with
   | some o => some (.ord o)
   | none => do
-    let s ← Sym.ofLabel l
-    s.host (← (cs.map Prod.snd).reverse.mapM id)
+    let vs ← (cs.map Prod.snd).mapM id
+    match Sym.ofLabel l with
+    | some s => s.host vs.reverse
+    | none => pairStep l vs
 
 /-- The value of a term built of the definitions evaluated over literals. -/
 def eval : Term → Option Val := RoseTree.para evalStep
@@ -465,6 +568,30 @@ theorem typeIn_bitsT (w : List Bool) : typeIn G n Γ (bitsT w) = some bitsTy :=
     · exact typeIn_call (s := .b0) (hS .b0 (by simp [Sym.all])) (congrArg (· :: []) ih)
     · exact typeIn_call (s := .b1) (hS .b1 (by simp [Sym.all])) (congrArg (· :: []) ih)
 
+omit hS in
+/-- A pair of bitstrings is of the pairs' type. -/
+theorem typeIn_pair {t u : Term} (ht : typeIn G n Γ t = some bitsTy)
+    (hu : typeIn G n Γ u = some bitsTy) : typeIn G n Γ (Term.pair t u) = some pairTy := by
+  simp only [typeIn, Term.pair, Internal.typeOf_node, List.map, Internal.typeStep] at ht hu ⊢
+  rw [ht, hu]
+  rfl
+
+omit hS in
+/-- The first component of a pair of bitstrings is a bitstring. -/
+theorem typeIn_fst {t : Term} (ht : typeIn G n Γ t = some pairTy) :
+    typeIn G n Γ (Term.fst t) = some bitsTy := by
+  simp only [typeIn, Term.fst, Internal.typeOf_node, List.map, Internal.typeStep] at ht ⊢
+  rw [ht]
+  rfl
+
+omit hS in
+/-- The second component of a pair of bitstrings is a bitstring. -/
+theorem typeIn_snd {t : Term} (ht : typeIn G n Γ t = some pairTy) :
+    typeIn G n Γ (Term.snd t) = some bitsTy := by
+  simp only [typeIn, Term.snd, Internal.typeOf_node, List.map, Internal.typeStep] at ht ⊢
+  rw [ht]
+  rfl
+
 end Reaching
 
 /-! The equations as rewritings. -/
@@ -537,6 +664,22 @@ theorem reaches_call₁ (s : Sym) {a b : Term} (h : Reaches G E n Γ Φ a b) :
 theorem reaches_sel (c : Tree) {o o' : Term} (l e g : Term) (h : Reaches G E n Γ Φ o o') :
     Reaches G E n Γ Φ (sel c o l e g) (sel c o' l e g) :=
   reaches_node (fun _ ↦ rfl) (.cons (reaches_refl _) (.cons h .nil))
+
+/-- The first component of a term that rewrites to a pair of numerals. -/
+theorem reaches_fst {t : Term} {a b : List Bool} (h : Reaches G E n Γ Φ t (Val.pair a b).term) :
+    Reaches G E n Γ Φ (Term.fst t) (bitsT a) :=
+  (reaches_node (l := .fst) (fun _ ↦ rfl) (.cons h .nil)).trans (reaches_root (l := .fstPair) rfl)
+
+/-- The second component of a term that rewrites to a pair of numerals. -/
+theorem reaches_snd {t : Term} {a b : List Bool} (h : Reaches G E n Γ Φ t (Val.pair a b).term) :
+    Reaches G E n Γ Φ (Term.snd t) (bitsT b) :=
+  (reaches_node (l := .snd) (fun _ ↦ rfl) (.cons h .nil)).trans (reaches_root (l := .sndPair) rfl)
+
+/-- The pair of terms that rewrite to numerals. -/
+theorem reaches_pair {t u : Term} {a b : List Bool} (ht : Reaches G E n Γ Φ t (bitsT a))
+    (hu : Reaches G E n Γ Φ u (bitsT b)) :
+    Reaches G E n Γ Φ (Term.pair t u) (Val.pair a b).term :=
+  reaches_node (l := .pair) (fun _ ↦ rfl) (.cons ht (.cons hu .nil))
 
 end Equations
 
@@ -612,6 +755,68 @@ theorem reaches_selB (o : Ordering) {l e g : Term} (hl : typeIn G n Γ l = some 
   · exact reaches_lemma hE (i := 45) rfl (.cons hg (.cons he (.cons hl .nil))) rfl rfl
   · exact reaches_lemma hE (i := 46) rfl (.cons hg (.cons he (.cons hl .nil))) rfl rfl
   · exact reaches_lemma hE (i := 47) rfl (.cons hg (.cons he (.cons hl .nil))) rfl rfl
+
+omit hE in
+/-- Substitutions that agree below an index substitute alike in a term in which no variable of
+that index or above occurs. -/
+theorem subst_eq_of_occurs {t : Term} {k : ℕ} (ht : ∀ i, Term.occurs t (i + k) = false)
+    {σ τ : ℕ → Term} (h : ∀ i < k, σ i = τ i) : Term.subst t σ = Term.subst t τ :=
+  Term.subst_congr t σ τ fun i hi ↦ h i (by
+    rcases Nat.lt_or_ge i k with h' | h'
+    · exact h'
+    · obtain ⟨j, rfl⟩ := Nat.exists_eq_add_of_le' h'
+      rw [ht j] at hi
+      cases hi)
+
+/-- The case analysis at pairs of a comparison that rewrites to a result, in a substitution whose
+branches are pairs: the branch of that result. -/
+theorem reaches_selIn (o : Ordering) (ρ : ℕ → Term) (h : Reaches G E n Γ Φ (ρ 3) (ordT o))
+    (h₀ : typeIn G n Γ (ρ 0) = some pairTy) (h₁ : typeIn G n Γ (ρ 1) = some pairTy)
+    (h₂ : typeIn G n Γ (ρ 2) = some pairTy) :
+    Reaches G E n Γ Φ (Term.subst selIn ρ) (pick o (ρ 2) (ρ 1) (ρ 0)) := by
+  have hσ : List.Forall₂ (fun u A ↦ typeIn G n Γ u = some A) [ρ 0, ρ 1, ρ 2]
+      [pairTy, pairTy, pairTy] := .cons h₀ (.cons h₁ (.cons h₂ .nil))
+  have hρ : ∀ i < 3, Term.substList [ρ 0, ρ 1, ρ 2] i = ρ i := fun i hi ↦ by
+    match i, hi with
+    | 0, _ => rfl
+    | 1, _ => rfl
+    | 2, _ => rfl
+  refine (reaches_node (l := .app) (fun _ ↦ rfl) (.cons (reaches_refl _) (.cons h .nil))).trans ?_
+  cases o
+  · exact reaches_lemma hE (i := 64) rfl hσ (subst_eq_of_occurs (fun _ ↦ rfl) hρ) rfl
+  · exact reaches_lemma hE (i := 65) rfl hσ (subst_eq_of_occurs (fun _ ↦ rfl) hρ) rfl
+  · exact reaches_lemma hE (i := 66) rfl hσ (subst_eq_of_occurs (fun _ ↦ rfl) hρ) rfl
+
+/-- The case analysis at pairs of a comparison that rewrites to a result, whose third branch is a
+case analysis at pairs, in a substitution whose branches are pairs and whose inner comparison is
+a comparison's result: the branch of that result. The equation it applies is stated in variables,
+so that its instance is a substitution, as the step of the long division is; a case analysis
+built by {name}`Geb.FreeTopos.Translation.ifOrd` from given branches renames the inner branches
+under its abstractions, where a substitution substitutes them, and the two agree only up to the
+renaming of their variables. -/
+theorem reaches_selSel (o : Ordering) (ρ : ℕ → Term) (h : Reaches G E n Γ Φ (ρ 6) (ordT o))
+    (h₀ : typeIn G n Γ (ρ 0) = some pairTy) (h₁ : typeIn G n Γ (ρ 1) = some pairTy)
+    (h₂ : typeIn G n Γ (ρ 2) = some pairTy) (h₃ : typeIn G n Γ (ρ 3) = some ordTy)
+    (h₄ : typeIn G n Γ (ρ 4) = some pairTy) (h₅ : typeIn G n Γ (ρ 5) = some pairTy) :
+    Reaches G E n Γ Φ (Term.subst (selSel (Term.var 6)) ρ)
+      (pick o (ρ 5) (ρ 4) (Term.subst selIn ρ)) := by
+  have hσ : List.Forall₂ (fun u A ↦ typeIn G n Γ u = some A) [ρ 0, ρ 1, ρ 2, ρ 3, ρ 4, ρ 5]
+      [pairTy, pairTy, pairTy, ordTy, pairTy, pairTy] :=
+    .cons h₀ (.cons h₁ (.cons h₂ (.cons h₃ (.cons h₄ (.cons h₅ .nil)))))
+  have hρ : ∀ i < 6, Term.substList [ρ 0, ρ 1, ρ 2, ρ 3, ρ 4, ρ 5] i = ρ i := fun i hi ↦ by
+    match i, hi with
+    | 0, _ => rfl
+    | 1, _ => rfl
+    | 2, _ => rfl
+    | 3, _ => rfl
+    | 4, _ => rfl
+    | 5, _ => rfl
+  refine (reaches_node (l := .app) (fun _ ↦ rfl) (.cons (reaches_refl _) (.cons h .nil))).trans ?_
+  cases o
+  · exact reaches_lemma hE (i := 67) rfl hσ (subst_eq_of_occurs (fun _ ↦ rfl) hρ) rfl
+  · exact reaches_lemma hE (i := 68) rfl hσ (subst_eq_of_occurs (fun _ ↦ rfl) hρ) rfl
+  · exact reaches_lemma hE (i := 69) rfl hσ (subst_eq_of_occurs (fun _ ↦ rfl) hρ)
+      (subst_eq_of_occurs (fun _ ↦ rfl) hρ)
 
 include hS
 
@@ -886,6 +1091,179 @@ theorem reaches_sub (a b : List Bool) :
     exact hc.trans (reaches_subE hE hS b a (by omega))
 
 omit hE hS hO in
+/-- The quotient and the remainder are those of the division they satisfy. -/
+theorem div_mod_of {N D Q R : ℕ} (h : R + D * Q = N) (hR : R < D) : N / D = Q ∧ N % D = R :=
+  (Nat.div_mod_unique (by omega)).mpr ⟨h, hR⟩
+
+omit hE hS hO in
+/-- The pair of the numerals of a quotient and a remainder is that of the division they
+satisfy. -/
+theorem pair_divMod {N D : ℕ} {q r : List Bool} (h : val r + D * val q = N) (hR : val r < D) :
+    (Val.pair q r).term = (Val.pair (num (N / D)) (num (N % D))).term := by
+  obtain ⟨h₁, h₂⟩ := div_mod_of h hR
+  rw [num_eq h₁.symm, num_eq h₂.symm]
+
+omit hE hO in
+/-- A bit before a bitstring is a bitstring. -/
+theorem typeIn_bitT (b : Bool) {t : Term} (ht : typeIn G n Γ t = some bitsTy) :
+    typeIn G n Γ (bitT b t) = some bitsTy := by
+  cases b
+  · exact typeIn_call' hS .b0 (.cons ht .nil)
+  · exact typeIn_call' hS .b1 (.cons ht .nil)
+
+omit hE hS hO in
+/-- A bit before a term that rewrites to a numeral. -/
+theorem reaches_bitT (b : Bool) {t : Term} {w : List Bool} (h : Reaches G E n Γ Φ t (bitsT w)) :
+    Reaches G E n Γ Φ (bitT b t) (bitsT (b :: w)) := by
+  cases b
+  · exact reaches_call₁ .b0 h
+  · exact reaches_call₁ .b1 h
+
+/-- The step of the long division, as the instance of the equations at the dividend's bit
+{lit}`e` and the divisor's bit {lit}`d`, where the rest's quotient and remainder rewrite to
+numerals and the remainder with the bit before it is at most twice the divisor: the quotient and
+the remainder of that remainder and twice the divisor's multiple by the rest's quotient. -/
+theorem reaches_divStep (e d : Bool) (x y q r : List Bool)
+    (hq : Reaches G E n Γ Φ (Term.fst (Sym.divMod.call [bitsT x, bitsT (d :: y)])) (bitsT q))
+    (hr : Reaches G E n Γ Φ (Term.snd (Sym.divMod.call [bitsT x, bitsT (d :: y)])) (bitsT r))
+    (hb : val (e :: r) ≤ 2 * val (d :: y)) :
+    Reaches G E n Γ Φ (Term.subst (divRhs e d) (Term.substList [bitsT y, bitsT x]))
+      (Val.pair (num ((2 * (val (d :: y) * val q) + val (e :: r)) / val (d :: y)))
+        (num ((2 * (val (d :: y) * val q) + val (e :: r)) % val (d :: y)))).term := by
+  have ty := typeIn_bitsT (Γ := Γ) hS
+  have hd : 0 < val (d :: y) := by bits_arith
+  have tP := typeIn_call' (Γ := Γ) hS .divMod (.cons (ty x) (.cons (ty (d :: y)) .nil))
+  have tQ := typeIn_fst tP
+  have tR := typeIn_bitT hS e (typeIn_snd tP)
+  have hR := reaches_bitT e hr
+  have tB : typeIn G n Γ bnilT = some bitsTy := ty []
+  have tD := ty (d :: y)
+  have tl := typeIn_pair (typeIn_call' hS .dbl (.cons tQ .nil)) tR
+  have t0 := typeIn_pair (typeIn_call' hS .b0 (.cons tQ .nil)) tB
+  have tO := typeIn_call' hS .cmp (.cons tR (.cons (typeIn_call' hS .dbl (.cons tD .nil)) .nil))
+  have tS := typeIn_pair (typeIn_call' hS .b0 (.cons tQ .nil))
+    (typeIn_call' hS .subE (.cons tR (.cons tD .nil)))
+  have t1 := typeIn_pair (typeIn_call' hS .b1 (.cons tQ .nil)) tB
+  have hm (k : ℕ) : val (d :: y) * (2 * val q + k) =
+      2 * (val (d :: y) * val q) + val (d :: y) * k := by
+    rw [Nat.mul_add, Nat.mul_left_comm]
+  have hc := (reaches_call (Φ := Φ) .cmp (.cons hR (.cons (reaches_refl _) .nil))).trans
+    (reaches_cmp hE hS hO (d :: y) (e :: r))
+  have hc' := (reaches_call (Φ := Φ) .cmp (.cons hR (.cons (reaches_dbl hE hS (d :: y))
+    .nil))).trans (reaches_cmp hE hS hO _ (e :: r))
+  rw [val_num] at hc'
+  -- the instance is the substitution in the case analysis of the substituted branches
+  let ρ : ℕ → Term := fun i ↦ Term.subst
+    (Term.substList (divCases (Term.fst (Sym.divMod.call [Term.var 1, bitT d (Term.var 0)]))
+      (bitT e (Term.snd (Sym.divMod.call [Term.var 1, bitT d (Term.var 0)])))
+      (bitT d (Term.var 0))) i) (Term.substList [bitsT y, bitsT x])
+  have hρ : Term.subst (divRhs e d) (Term.substList [bitsT y, bitsT x]) =
+      Term.subst (selSel (Term.var 6)) ρ :=
+    Term.subst_subst _ _ _ ρ fun _ ↦ rfl
+  rw [hρ]
+  rcases h : compare (val (e :: r)) (val (d :: y)) with _ | _ | _ <;> rw [h] at hc
+  · have hlt := Nat.compare_eq_lt.mp h
+    cases e <;> cases d <;>
+    exact ((reaches_selSel hE .lt ρ hc t1 t1 tS tO t0 tl).trans
+      (reaches_pair ((reaches_call₁ .dbl hq).trans (reaches_dbl hE hS q)) hR)).of_eq
+      (pair_divMod (by rw [val_num, Nat.mul_left_comm]; omega) hlt)
+  · have heq := Nat.compare_eq_eq.mp h
+    cases e <;> cases d <;>
+    exact ((reaches_selSel hE .eq ρ hc t1 t1 tS tO t0 tl).trans
+      (reaches_pair (a := false :: q) (b := []) (reaches_call₁ .b0 hq) (reaches_refl _))).of_eq
+      (pair_divMod (by rw [val_nil, val_cons false q, Bool.toNat_false, Nat.add_zero, hm]; omega)
+        (by rw [val_nil]; omega))
+  · have hgt := Nat.compare_eq_gt.mp h
+    rcases h' : compare (val (e :: r)) (2 * val (d :: y)) with _ | _ | _ <;> rw [h'] at hc'
+    · have hlt := Nat.compare_eq_lt.mp h'
+      have hs := (reaches_call (Φ := Φ) .subE (.cons hR (.cons (reaches_refl _) .nil))).trans
+        (reaches_subE hE hS _ _ (Nat.le_of_lt hgt))
+      cases e <;> cases d <;>
+      exact (((reaches_selSel hE .gt ρ hc t1 t1 tS tO t0 tl).trans
+        (reaches_selIn hE .lt ρ hc' t1 t1 tS)).trans
+        (reaches_pair (a := false :: q) (reaches_call₁ .b0 hq) hs)).of_eq
+        (pair_divMod (by rw [val_num, val_cons false q, Bool.toNat_false, Nat.add_zero, hm]; omega)
+          (by rw [val_num]; omega))
+    · have heq := Nat.compare_eq_eq.mp h'
+      cases e <;> cases d <;>
+      exact (((reaches_selSel hE .gt ρ hc t1 t1 tS tO t0 tl).trans
+        (reaches_selIn hE .eq ρ hc' t1 t1 tS)).trans
+        (reaches_pair (a := true :: q) (b := []) (reaches_call₁ .b1 hq) (reaches_refl _))).of_eq
+        (pair_divMod (by rw [val_nil, val_cons true q, Bool.toNat_true, Nat.add_assoc, hm]; omega)
+          (by rw [val_nil]; omega))
+    · exact (Nat.lt_irrefl _ (Nat.lt_of_lt_of_le (Nat.compare_eq_gt.mp h') hb)).elim
+
+/-- The quotient and the remainder by a divisor not zero, by recursion on the dividend. -/
+theorem reaches_divMod (d : Bool) (y : List Bool) (a : List Bool) :
+    Reaches G E n Γ Φ (Sym.divMod.call [bitsT a, bitsT (d :: y)])
+      (Val.pair (num (val a / val (d :: y))) (num (val a % val (d :: y)))).term := by
+  have hd : 0 < val (d :: y) := by bits_arith
+  refine a.rec ?_ fun e x ih ↦ ?_
+  · have h0 : (Val.pair [] []).term = (Val.pair (num (val [] / val (d :: y)))
+        (num (val [] % val (d :: y)))).term :=
+      pair_divMod (by rw [val_nil, Nat.mul_zero]) hd
+    cases d
+    · exact (reaches_lemma₁ hE hS (i := 58) rfl y rfl rfl).of_eq h0
+    · exact (reaches_lemma₁ hE hS (i := 59) rfl y rfl rfl).of_eq h0
+  · have hb : val (e :: num (val x % val (d :: y))) ≤ 2 * val (d :: y) := by
+      have := Nat.mod_lt (val x) hd
+      rw [val_cons, val_num]
+      cases e <;> bits_arith
+    have hx := Nat.div_add_mod (val x) (val (d :: y))
+    have hs := reaches_divStep hE hS hO e d x y _ _ (reaches_fst ih) (reaches_snd ih) hb
+    have hN : 2 * (val (d :: y) * val (num (val x / val (d :: y)))) +
+        val (e :: num (val x % val (d :: y))) = val (e :: x) := by
+      simp only [val_num, val_cons e]
+      omega
+    rw [hN] at hs
+    cases e <;> cases d
+    · exact (reaches_lemma₂ hE hS (i := 60) rfl x y rfl rfl).trans hs
+    · exact (reaches_lemma₂ hE hS (i := 61) rfl x y rfl rfl).trans hs
+    · exact (reaches_lemma₂ hE hS (i := 62) rfl x y rfl rfl).trans hs
+    · exact (reaches_lemma₂ hE hS (i := 63) rfl x y rfl rfl).trans hs
+
+omit hO in
+/-- The fold inside the logarithm, by recursion on the bitstring: the pair of its length and
+whether a bit is one. -/
+theorem reaches_lenOne (w : List Bool) :
+    Reaches G E n Γ Φ (lenOneT (bitsT w)) (Val.pair (num w.length) (truth (w.any id))).term :=
+  w.rec ((reaches_lemma hE (i := 70) rfl .nil rfl rfl).of_eq
+      (by rw [List.length_nil, show num 0 = [] from num_eq rfl]; rfl))
+    fun b y ih ↦ by
+      have hs := (reaches_call₁ (Φ := Φ) .succ (reaches_fst ih)).trans (reaches_succ hE hS _)
+      rw [val_num] at hs
+      cases b
+      · exact (reaches_lemma₁ hE hS (i := 71) rfl y rfl rfl).trans
+          (reaches_pair hs (reaches_snd ih))
+      · exact (reaches_lemma₁ hE hS (i := 72) rfl y rfl rfl).trans
+          (reaches_pair (b := [false]) hs (reaches_refl _))
+
+omit hE hS hO in
+/-- The base-two logarithm of a number is the length of its bitstring where a bit is one, and the
+length's predecessor otherwise. -/
+theorem log2_val (w : List Bool) :
+    (val w).log2 = if w.any id then w.length else w.length - 1 := by
+  have h := log2_rankB (w.map fun b ↦ bif b then (.inr () : Bit) else .inl ())
+  rw [rankB, List.map_map, List.any_map, List.length_map] at h
+  have hr : (Sum.isRight ∘ fun b : Bool ↦ bif b then (.inr () : Bit) else .inl ()) = id :=
+    funext fun b ↦ by cases b <;> rfl
+  rw [hr, List.map_id] at h
+  rw [h]
+
+omit hO in
+/-- The logarithm, by the fold inside it. -/
+theorem reaches_log2 (w : List Bool) :
+    Reaches G E n Γ Φ (Sym.log2.call [bitsT w]) (bitsT (num (val w).log2)) := by
+  have h := reaches_lenOne hE hS (Γ := Γ) (Φ := Φ) w
+  have hp := (reaches_call₁ (Φ := Φ) .pred (reaches_fst h)).trans (reaches_pred hE hS _)
+  rw [val_num] at hp
+  refine (((reaches_lemma₁ hE hS (i := 73) rfl w rfl rfl).trans (reaches_call .condB
+    (.cons (reaches_snd h) (.cons (reaches_fst h) (.cons hp .nil))))).trans
+    (reaches_condB hE hS _ (typeIn_bitsT hS _) (typeIn_bitsT hS _))).of_eq ?_
+  rw [log2_val]
+  cases w.any id <;> rfl
+
+omit hE hS hO in
 /-- A function of a bitstring has a value only at a bitstring. -/
 theorem ofBits₁_eq_some {f : List Bool → List Bool} {vs : List Val} {v : Val}
     (h : ofBits₁ f vs = some v) : ∃ w, vs = [.bits w] ∧ v = .bits (f w) := by
@@ -933,11 +1311,31 @@ theorem reaches_host (s : Sym) {vs : List Val} {v : Val} (h : s.host vs = some v
   case cmp => cases hf; exact reaches_cmp hE hS hO b a
   case ltB => cases hf; exact reaches_ltB hE hS hO a b
   case sub => cases hf; exact reaches_sub hE hS hO a b
+  case divMod =>
+    cases hf
+    rcases b with _ | ⟨d, y⟩
+    · exact (reaches_lemma₁ hE hS (i := 57) rfl a rfl rfl).of_eq
+        (by rw [val_nil, Nat.div_zero, Nat.mod_zero, num_eq (w := a) rfl,
+          show num 0 = [] from num_eq rfl]; rfl)
+    · exact reaches_divMod hE hS hO d y a
+  case log2 => exact reaches_log2 hE hS w
   case subE =>
     split at hf
     · cases hf
       exact reaches_subE hE hS b a (by assumption)
     · cases hf
+
+omit hE hS hO in
+/-- A pair of bitstrings or its component has its children in its context, and rewrites at
+literals to its value's literal. -/
+theorem reaches_pairStep {l : Internal.Label} {vs : List Val} {v : Val}
+    (h : pairStep l vs = some v) : (∀ i, Internal.sameCtx l i = true) ∧
+      Reaches G E n Γ Φ (RoseTree.node l (vs.map Val.term)) v.term := by
+  unfold pairStep at h
+  split at h <;> cases h
+  · exact ⟨fun _ ↦ rfl, reaches_refl _⟩
+  · exact ⟨fun _ ↦ rfl, reaches_root (l := .fstPair) rfl⟩
+  · exact ⟨fun _ ↦ rfl, reaches_root (l := .sndPair) rfl⟩
 
 omit hE hS hO in
 /-- The comparison's result a term is, where it is one, has that term. -/
@@ -978,30 +1376,33 @@ theorem eval_reaches : ∀ (t : Term) (v : Val), eval t = some v → Reaches G E
     simp only [eval, RoseTree.para_node, evalStep] at h
     change (match ordOf (RoseTree.node l ((cs.map fun c ↦ (c, eval c)).map Prod.fst)) with
       | some o => some (Val.ord o)
-      | none => (Sym.ofLabel l).bind fun s ↦
-        (((cs.map fun c ↦ (c, eval c)).map Prod.snd).reverse.mapM id).bind s.host) = some v at h
+      | none => (((cs.map fun c ↦ (c, eval c)).map Prod.snd).mapM id).bind fun vs ↦
+        match Sym.ofLabel l with
+        | some s => s.host vs.reverse
+        | none => pairStep l vs) = some v at h
     rw [hcs] at h
     split at h
     · rename_i o ho
       cases h
       exact (reaches_refl _).of_eq (ordOf_eq_some ho).symm
-    · obtain ⟨s, hs, h₁⟩ := Option.bind_eq_some_iff.mp h
-      obtain ⟨vs, hvs, h₂⟩ := Option.bind_eq_some_iff.mp h₁
-      obtain rfl := ofLabel_eq_some hs
+    · obtain ⟨vs, hvs, h₁⟩ := Option.bind_eq_some_iff.mp h
       have hm := (PartialHorn.mapM_eq_some_iff _ vs).mp hvs
       rw [List.map_id, List.map_map] at hm
-      have hm' : cs.map eval = vs.reverse.map some := by
-        rw [List.map_reverse, ← hm, List.reverse_reverse]
+      have hm' : cs.map eval = vs.map some := by
+        rw [← hm]
         rfl
-      have hr := reaches_node (G := G) (E := E) (n := n) (Γ := Γ) (Φ := Φ)
-        (l := .defn s.index s.objs) (fun _ ↦ rfl)
-        (forall₂_of_map_eval cs ih vs.reverse hm')
-      refine hr.trans ?_
-      have hc : RoseTree.node (Internal.Label.defn s.index s.objs) (vs.reverse.map Val.term) =
-          s.call (vs.map Val.term) := by
-        rw [Sym.call, call, Term.defn, List.map_reverse]
-      rw [hc]
-      exact reaches_host hE hS hO s h₂
+      have hcs := forall₂_of_map_eval cs ih vs hm'
+      split at h₁
+      · rename_i s hs
+        obtain rfl := ofLabel_eq_some hs
+        refine (reaches_node (fun _ ↦ rfl) hcs).trans ?_
+        have hc : RoseTree.node (Internal.Label.defn s.index s.objs) (vs.map Val.term) =
+            s.call (vs.reverse.map Val.term) := by
+          rw [Sym.call, call, Term.defn, List.map_reverse, List.reverse_reverse]
+        rw [hc]
+        exact reaches_host hE hS hO s h₁
+      · obtain ⟨hl, hr⟩ := reaches_pairStep (G := G) (E := E) (n := n) (Γ := Γ) (Φ := Φ) h₁
+        exact (reaches_node hl hcs).trans hr
 
 end Arithmetic
 
