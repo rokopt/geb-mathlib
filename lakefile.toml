@@ -88,7 +88,7 @@ rev = "v4.36.0-rc2"
 name = "geb-lang"
 scope = "rokopt"
 git = "https://github.com/rokopt/geb-lang"
-rev = "fd164600d01c340ba91d20663fa7a39c221005fa"
+rev = "7fbab128fd9435c61ecd9eb836ad97ea02ab9752"
 
 # The library is compiled into a shared library that Lake loads into every
 # module importing it from another library, so that Lean's evaluator runs
