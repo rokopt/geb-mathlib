@@ -19,14 +19,30 @@ rewriting at a term's root by the normalizer's rules, normalization innermost fi
 reduction to a depth, and the proofs of an equation, so that the prover written in Geb
 constructs exactly the derivations the Lean prover constructs.
 
+The mirror's reduction to a depth is that of {name}`Geb.FreeTopos.Internal.evalFast`: it reduces
+under the hypotheses as stated with the number of variables past which they are weakened, by a
+rewriting at the root that tries only the rules of the key of a term's root label and compares a
+term with an equation among the hypotheses by its left side's renaming, folded once. Its agreement
+with {name}`Geb.FreeTopos.Internal.evalK` at a rewriting at the root under the hypotheses
+weakened, composed with {name}`Geb.FreeTopos.Internal.evalK_eq`, is the agreement with the
+reduction as it is defined.
+
 ## Main definitions
 
 * {lit}`encDB`, {lit}`encTDB`, {lit}`encOT`, {lit}`encDepth` — a rewriting's derivation with
   its mark, a term with it, an optional term of an assignment, and a depth of reduction.
 * {lit}`MRel`, {lit}`RRel`, {lit}`NRel`, {lit}`ERel`, {lit}`PRel` — the relations of the
   mirror's matchings, rules, normalizations, reductions to a depth and provers to the prover's.
+* {lit}`WRel`, {lit}`EKRel` — the relations of the mirror's rewritings at the root and reductions
+  under weakened hypotheses to the prover's.
+* {lit}`encPH` — an equation among the hypotheses as the mirror prepares it.
 
 ## Main statements
+
+* {lit}`rootRewriteK_eq` — the rewriting at the root by the index of the rules and the prepared
+  hypotheses is the rewriting by the rules under the hypotheses weakened.
+* {lit}`evalK_eq`, {lit}`eval_eq` — the reductions to a depth, under weakened hypotheses and as
+  defined, agree.
 
 * {lit}`byNorm_eq`, {lit}`byNormW_eq` — the proofs by normalization, innermost first and through
   weak head normal forms, agree.
@@ -1096,6 +1112,474 @@ theorem headChild_eq (l : Internal.Label) (ts : List Term) :
   cases l <;> mirror_simp [«Prover.keepsWeak», «Prover.keepsFold»,
     Internal.keepsWeak, labelData] <;> rfl
 
+/-! The rewriting at the root under weakened hypotheses. -/
+
+/-- The mirror's key of an encoded term's root label. -/
+@[simp] theorem rootKey_eq (t : Term) : «Prover.rootKey» (encTerm t) = leaf t.label.rootKey := by
+  obtain ⟨l, cs, rfl⟩ := exists_node t
+  cases l <;> mirror_simp [«Prover.rootKey», label_encTerm, mD_eq, labelData,
+    Internal.Label.rootKey]
+
+/-- The mirror's key of the labels at which an encoded pattern may match. -/
+@[simp] theorem patternKey_eq (p : Term) :
+    «Prover.patternKey» (encTerm p) = encOpt (p.label.patternKey?.map leaf) := by
+  obtain ⟨l, cs, rfl⟩ := exists_node p
+  cases l <;> mirror_simp [«Prover.patternKey», label_encTerm, labelData, none_eq, some_eq,
+    Internal.Label.patternKey?, rootKey_eq]
+
+/-- The mirror's key of the labels at which a rule of the checker may rewrite. -/
+@[simp] theorem ruleKey_eq (l : Internal.Rule) :
+    «Prover.ruleKey» (leaf (ruleData l).1) = encOpt (l.rootKey?.map leaf) := by
+  cases l <;> mirror_simp [«Prover.ruleKey», ruleData, Internal.Rule.rootKey?, none_eq, some_eq]
+
+/-- The mirror's key of the labels at which a rule related to a rule of the normalizer may
+rewrite. -/
+theorem nrKey_eq (r' : Tree × (Tree → Tree → List Tree → Tree)) (r : NormRule) (h : RRel r' r) :
+    «Prover.nrKey» (E.toList.map encEntry) r' = encOpt ((r.rootKey? E).map leaf) := by
+  cases r
+  case thmAt j θ root m k =>
+    obtain ⟨p, hp, h1, -⟩ := h
+    simp only [«Prover.nrKey», template, h1]
+    mirror_simp [List.getD_cons_zero, List.getD_cons_succ, Internal.NormRule.rootKey?,
+      patternKey_eq, hp]
+  case thm j θ =>
+    simp only [RRel] at h
+    simp only [«Prover.nrKey», template, h, encRule]
+    mirror_simp [List.getD_cons_zero, List.getD_cons_succ, Array.getElem?_toList,
+      entryLanguage_eq, Internal.NormRule.rootKey?]
+    rcases E[j]? with _ | (a | s)
+    · rfl
+    · mirror_simp [entryLanguage_eq, Internal.Entry.language?, thConcl_eq, eqParts_eq]
+      rcases Internal.eqParts a.concl with _ | ⟨l, r⟩ <;>
+        mirror_simp [p1_eq, patternKey_eq, none_eq]
+    · mirror_simp [entryLanguage_eq, Internal.Entry.language?, none_eq]
+  case rule l =>
+    simp only [RRel] at h
+    simp only [«Prover.nrKey», template, h, encRule]
+    mirror_simp [List.getD_cons_zero, Internal.NormRule.rootKey?, ruleKey_eq]
+  all_goals
+    simp only [RRel] at h
+    simp only [«Prover.nrKey», template, h, encRule]
+    mirror_simp [List.getD_cons_zero, Internal.NormRule.rootKey?, none_eq, some_eq]
+
+/-- The mirror's test that a rule of a key, where it has one, may rewrite at a label of a key. -/
+@[simp] theorem keyFits_eq (k : ℕ) (o : Option ℕ) :
+    «Prover.keyFits» (leaf k) (encOpt (o.map leaf)) = ofBool (Internal.keyFits k o) := by
+  cases o
+  · mirror_simp [«Prover.keyFits», Internal.keyFits, ofBool_true]
+  · mirror_simp [«Prover.keyFits», Internal.keyFits]
+
+/-- The mirror's test of a key reads only the key's label. -/
+theorem keyFits_label (x m : Tree) : «Prover.keyFits» x m = «Prover.keyFits» (leaf x.label) m :=
+  rfl
+
+/-- The mirror's rules of a list that may rewrite at a label of a key, in order. -/
+theorem bucketOf_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (x : Tree) :
+    «Prover.bucketOf» (E.toList.map encEntry) rs' x =
+      rs'.filter fun r' ↦
+        decide ((«Prover.keyFits» x («Prover.nrKey» (E.toList.map encEntry) r')).label ≠ 0) := by
+  simp only [«Prover.bucketOf», foldr_eq]
+  exact rs'.rec rfl fun r' rs' ih ↦ by
+    rw [List.foldr_cons, ih, List.filter_cons]
+    split <;> simp_all
+
+/-- Each key of a rule of a list is, up to its label, among the mirror's keys of the list. -/
+theorem ruleKeys_mem (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) :
+    ∀ r' ∈ rs', («Prover.nrKey» (E.toList.map encEntry) r').label = 1 →
+      ∃ x ∈ «Prover.ruleKeys» (E.toList.map encEntry) rs',
+        x.label = («Prelude.get» («Prover.nrKey» (E.toList.map encEntry) r')).label := by
+  simp only [«Prover.ruleKeys», foldr_eq]
+  refine rs'.rec (fun _ h ↦ absurd h List.not_mem_nil) fun r rs' ih r' hr h1 ↦ ?_
+  simp only [List.foldr_cons]
+  generalize hK : List.foldr _ [] rs' = K at ih ⊢
+  have hany : ∀ g, «Base.anyT» (fun x ↦ Const.eq x g) K =
+      ofBool (K.any fun x ↦ x.label == g.label) :=
+    fun g ↦ anyT_eq _ _ K fun _ _ ↦ rfl
+  have hsub : ∀ x ∈ K, x ∈ (if («Prelude.and» («Prelude.isSome» («Prover.nrKey»
+      (E.toList.map encEntry) r)) («Base.not» («Base.anyT» (fun x ↦ Const.eq x
+      («Prelude.get» («Prover.nrKey» (E.toList.map encEntry) r))) K))).label ≠ 0 then
+      «Prelude.get» («Prover.nrKey» (E.toList.map encEntry) r) :: K else K) := fun x hx ↦ by
+    split
+    · exact List.mem_cons_of_mem _ hx
+    · exact hx
+  rcases List.mem_cons.mp hr with rfl | hr
+  · by_cases hn : (K.any fun x ↦ x.label == («Prelude.get»
+        («Prover.nrKey» (E.toList.map encEntry) r')).label) = true
+    · obtain ⟨x, hx, hl⟩ := List.any_eq_true.mp hn
+      exact ⟨x, hsub x hx, beq_iff_eq.mp hl⟩
+    · refine ⟨_, ?_, rfl⟩
+      have hs : «Prelude.isSome» («Prover.nrKey» (E.toList.map encEntry) r') = ofBool true := by
+        simp [«Prelude.isSome», Const.eq, h1]
+      rw [hany, hs, Bool.eq_false_iff.mpr hn, not_eq, and_eq]
+      simp
+  · obtain ⟨x, hx, hl⟩ := ih r' hr h1
+    exact ⟨x, hsub x hx, hl⟩
+
+/-- The mirror's index of rules gives at a key the rules that may rewrite at a label of it. -/
+theorem ruleBucket_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (x : Tree) :
+    «Prover.ruleBucket» («Prover.indexRules» (E.toList.map encEntry) rs') x =
+      «Prover.bucketOf» (E.toList.map encEntry) rs' x := by
+  have hb : ∀ y, y.label = x.label → «Prover.bucketOf» (E.toList.map encEntry) rs' y =
+      «Prover.bucketOf» (E.toList.map encEntry) rs' x := fun y hy ↦ by
+    rw [bucketOf_eq, bucketOf_eq]
+    congr 1
+    funext r'
+    rw [keyFits_label y, keyFits_label x, hy]
+  have hK := ruleKeys_mem E rs'
+  simp only [«Prover.ruleBucket», «Prover.indexRules», foldr_eq]
+  generalize «Prover.ruleKeys» (E.toList.map encEntry) rs' = K at hK
+  by_cases hx : ∃ y ∈ K, y.label = x.label
+  · revert hx
+    refine K.rec (fun ⟨_, h, _⟩ ↦ absurd h List.not_mem_nil) fun y K ih hx ↦ ?_
+    simp only [List.foldr_cons, Const.eq, label_ne_zero, ofBool_bne] at ih ⊢
+    split
+    · rename_i h
+      exact hb y (beq_iff_eq.mp h)
+    · rename_i h
+      obtain ⟨z, hz, hl⟩ := hx
+      rcases List.mem_cons.mp hz with rfl | hz
+      · exact absurd (beq_iff_eq.mpr hl) h
+      · exact ih ⟨z, hz, hl⟩
+  · have hf : ∀ K' : List Tree, (∀ y ∈ K', y.label ≠ x.label) →
+        List.foldr (fun b acc ↦ if (Const.eq b.1 x).label ≠ 0 then b.2 else acc)
+          (List.foldr (fun r acc ↦ if («Prelude.isSome» («Prover.nrKey»
+            (E.toList.map encEntry) r)).label ≠ 0 then acc else r :: acc) [] rs')
+          (List.foldr (fun k acc ↦ (k, «Prover.bucketOf» (E.toList.map encEntry) rs' k) :: acc)
+            [] K') =
+        List.foldr (fun r acc ↦ if («Prelude.isSome» («Prover.nrKey»
+          (E.toList.map encEntry) r)).label ≠ 0 then acc else r :: acc) [] rs' :=
+      fun K' ↦ K'.rec (fun _ ↦ rfl) fun y K' ih h ↦ by
+        simp only [List.foldr_cons, Const.eq, label_ne_zero, ofBool_bne,
+          beq_iff_eq, h y List.mem_cons_self, ↓reduceIte] at ih ⊢
+        exact ih fun z hz ↦ h z (List.mem_cons_of_mem _ hz)
+    rw [hf K fun y hy hl ↦ hx ⟨y, hy, hl⟩, bucketOf_eq]
+    have hd : ∀ rs'' : List (Tree × (Tree → Tree → List Tree → Tree)),
+        List.foldr (fun r acc ↦ if («Prelude.isSome» («Prover.nrKey»
+          (E.toList.map encEntry) r)).label ≠ 0 then acc else r :: acc) [] rs'' =
+        rs''.filter fun r ↦ decide ¬(«Prelude.isSome» («Prover.nrKey»
+          (E.toList.map encEntry) r)).label ≠ 0 :=
+      fun rs'' ↦ rs''.rec rfl fun r rs'' ih ↦ by
+        rw [List.foldr_cons, ih, List.filter_cons]
+        split <;> simp_all
+    rw [hd]
+    refine List.filter_congr fun r hr ↦ ?_
+    by_cases h1 : («Prover.nrKey» (E.toList.map encEntry) r).label = 1
+    · obtain ⟨y, hy, hl⟩ := hK r hr h1
+      have hne : («Prelude.get» («Prover.nrKey» (E.toList.map encEntry) r)).label ≠ x.label :=
+        fun h ↦ hx ⟨y, hy, hl.trans h⟩
+      simp [«Prover.keyFits», «Prelude.isSome», Const.eq, h1, hne]
+    · simp [«Prover.keyFits», «Prelude.isSome», Const.eq, h1]
+
+/-- The mirror's lifting of a renaming of leaves past a binder is the lifting of the renaming. -/
+theorem liftR_eq (f : Tree → Tree) (f' : ℕ → ℕ) (hf : ∀ i, f (leaf i) = leaf (f' i)) (i : ℕ) :
+    «Language.liftR» f (leaf i) = leaf (Internal.Term.liftR f' i) := by
+  cases i <;> mirror_simp [«Language.liftR», Internal.Term.liftR, hf, beq_iff_eq,
+    Nat.add_one_ne_zero, Nat.add_sub_cancel]
+
+/-- The mirror's renaming of a node's child of an index below the node's number of children,
+lifted past the variables the child binds, is the child's renaming of
+{name}`Geb.FreeTopos.Internal.childRenamings`. -/
+theorem childRen_eq (l : Internal.Label) (m j : ℕ) (hj : j < m) (f : Tree → Tree)
+    (f' : ℕ → ℕ) (hf : ∀ i, f (leaf i) = leaf (f' i)) (a : ℕ) :
+    «Prover.childRen» (leaf (labelData l).1) (leaf m) f (leaf j) (leaf a) =
+      leaf ((Internal.childRenamings l m f').getD j f' a) := by
+  have h1 := liftR_eq f f' hf
+  have h2 : ∀ i, «Language.liftR» (fun x ↦ «Language.liftR» f x) (leaf i) =
+      leaf (Internal.Term.liftR (Internal.Term.liftR f') i) := liftR_eq _ _ h1
+  have hr : ∀ g : ℕ → ℕ, (List.replicate m g).getD j f' = g := fun g ↦ by
+    simp [List.getD_eq_getElem?_getD, hj]
+  cases l
+  case lam =>
+    rcases m with _ | _ | m
+    · omega
+    · obtain rfl : j = 0 := by omega
+      mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, h1]
+    · mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, hr, hf, beq_iff_eq,
+      Nat.reduceEqDiff]
+  case natRec =>
+    rcases m with _ | _ | _ | _ | m
+    any_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, hr, hf,
+      beq_iff_eq, Nat.reduceEqDiff]
+    rcases j with _ | _ | _ | j
+    any_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, h1, hf,
+      beq_iff_eq, Nat.reduceEqDiff]
+    omega
+  case listRec =>
+    rcases m with _ | _ | _ | _ | m
+    any_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, hr, hf,
+      beq_iff_eq, Nat.reduceEqDiff]
+    rcases j with _ | _ | _ | j
+    any_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, h2, hf,
+      beq_iff_eq, Nat.reduceEqDiff]
+    omega
+  case roseRec =>
+    rcases m with _ | _ | _ | m
+    any_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, hr, hf,
+      beq_iff_eq, Nat.reduceEqDiff]
+    rcases j with _ | _ | j
+    any_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, h1, hf,
+      beq_iff_eq, Nat.reduceEqDiff]
+    omega
+  all_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, hr, hf,
+    beq_iff_eq, Nat.reduceEqDiff]
+
+/-- Tests of a list, the first of the first term and so on, hold of a term and a list exactly when
+the first holds of the term and the rest of the list. -/
+theorem pairsHold_cons (p : Term → Bool) (ps : List (Term → Bool)) (u : Term) (us : List Term) :
+    Internal.pairsHold (p :: ps) (u :: us) = (p u && Internal.pairsHold ps us) := by
+  simp only [Internal.pairsHold, List.length_cons, List.zip_cons_cons, List.all_cons]
+  cases p u <;> simp
+
+/-- The mirror's fold testing a node's children against a pattern's, from a position, is the
+test of the children's renamings, where the children's tests are related to the pattern's and the
+renamings at the positions are those of {lit}`F`. -/
+theorem holdAll_fold (l m : Tree) (f : Tree → Tree) (F : ℕ → ℕ → ℕ) :
+    ∀ (xs : List (((Tree → Tree) → Tree → Tree) × ((ℕ → ℕ) → Term → Bool))),
+    (∀ x ∈ xs, ∀ g g', (∀ i, g (leaf i) = leaf (g' i)) → ∀ u,
+      x.1 g (encTerm u) = ofBool (x.2 g' u)) →
+    ∀ (i : ℕ), (∀ j, i ≤ j → j < i + xs.length → ∀ a,
+        «Prover.childRen» l m f (leaf j) (leaf a) = leaf (F j a)) →
+      ∀ us : List Term,
+        List.foldr (fun r (c : Tree → List Tree → Tree) i' vs ↦ Const.lcase vs (leaf 0)
+            fun v ws ↦ «Prelude.and» (r («Prover.childRen» l m f i') v)
+              (c (Const.add i' (leaf 1)) ws))
+          (fun _ vs ↦ «Base.isEmpty» vs) (xs.map Prod.fst) (leaf i) (us.map encTerm) =
+        ofBool (Internal.pairsHold ((xs.zipIdx i).map fun p ↦ p.1.2 (F p.2)) us) := by
+  refine fun xs ↦ xs.rec (fun _ i _ us ↦ ?_) fun x xs ih hx i hF us ↦ ?_
+  · cases us <;> rfl
+  · rcases us with _ | ⟨u, us⟩
+    · rfl
+    · simp only [List.map_cons, List.foldr_cons, lcase_cons, List.zipIdx_cons, pairsHold_cons,
+        add_leaf]
+      rw [hx x List.mem_cons_self _ (F i) (hF i le_rfl (by simp) ) u,
+        ih (fun y hy ↦ hx y (List.mem_cons_of_mem _ hy)) (i + 1)
+          (fun j h1 h2 ↦ hF j (by omega) (by simp at h2 ⊢; omega)) us, and_eq]
+
+/-- The renamings of a node's children are as many as the children. -/
+theorem length_childRenamings (l : Internal.Label) (m : ℕ) (f : ℕ → ℕ) :
+    (Internal.childRenamings l m f).length = m := by
+  unfold Internal.childRenamings
+  split <;> simp
+
+/-- The test at a node other than a variable, at a term's node: the labels are equal and the
+children's tests, each at its renaming, hold of the term's children. -/
+theorem isRenameStep_node (l : Internal.Label) (hl : ∀ i, l ≠ .var i)
+    (ws : List ((ℕ → ℕ) → Term → Bool)) (f : ℕ → ℕ) (lu : Internal.Label) (cs : List Term) :
+    Internal.isRenameStep l ws f (RoseTree.node lu cs) =
+      (decide (lu = l) &&
+        Internal.pairsHold ((ws.zip (Internal.childRenamings l ws.length f)).map fun p ↦ p.1 p.2)
+          cs) := by
+  have hb : (lu == l) = decide (lu = l) := by
+    by_cases h : lu = l
+    · subst h
+      simp
+    · simp [h]
+  cases l
+  case var i => exact absurd rfl (hl i)
+  all_goals simp only [Internal.isRenameStep, RoseTree.label_node, RoseTree.children_node, hb]
+
+/-- The tests of the children at their renamings, by the positions of the tests. -/
+theorem zip_renamings (ws : List ((ℕ → ℕ) → Term → Bool)) (rs : List (ℕ → ℕ)) (d : ℕ → ℕ)
+    (h : rs.length = ws.length) :
+    (ws.zipIdx 0).map (fun p ↦ p.1 (rs.getD p.2 d)) = (ws.zip rs).map fun p ↦ p.1 p.2 := by
+  refine List.ext_getElem (by simp [h]) fun i h₁ h₂ ↦ ?_
+  have hi : i < rs.length := by simp at h₁; omega
+  simp [List.getElem_zipIdx, List.getD_eq_getElem?_getD, hi]
+
+/-- The mirror's test at an encoded node other than a variable, at related tests of its
+children. -/
+theorem isRenameStep_eq_node (l : Internal.Label) (hl0 : (labelData l).1 ≠ 0)
+    (hl : ∀ i, l ≠ .var i) (v : (Tree → Tree) → Tree → Tree)
+    (xs : List (Term × ((Tree → Tree) → Tree → Tree) × ((ℕ → ℕ) → Term → Bool)))
+    (hx : ∀ x ∈ xs, ∀ f f', (∀ i, f (leaf i) = leaf (f' i)) → ∀ u,
+      x.2.1 f (encTerm u) = ofBool (x.2.2 f' u))
+    (f : Tree → Tree) (f' : ℕ → ℕ) (hf : ∀ i, f (leaf i) = leaf (f' i)) (lu : Internal.Label)
+    (cs : List Term) :
+    «Prover.isRenameStep» (encTerm (RoseTree.node l (xs.map Prod.fst)))
+        (v :: xs.map fun x ↦ x.2.1) f (encTerm (RoseTree.node lu cs)) =
+      ofBool (Internal.isRenameStep l (xs.map fun x ↦ x.2.2) f' (RoseTree.node lu cs)) := by
+  have hh := holdAll_fold (leaf (labelData l).1) (leaf xs.length) f
+    (fun j ↦ (Internal.childRenamings l xs.length f').getD j f')
+    (xs.map fun x ↦ (x.2.1, x.2.2))
+    (fun y hy ↦ by
+      obtain ⟨x, hx', rfl⟩ := List.mem_map.mp hy
+      exact hx x hx')
+    0 (fun j _ hj a ↦ childRen_eq l xs.length j (by simpa using hj) f f' hf a) cs
+  simp only [List.map_map, Function.comp_def] at hh
+  rw [isRenameStep_node l hl, List.length_map, ← zip_renamings _ _ f'
+    (by simp [length_childRenamings])]
+  simp only [«Prover.isRenameStep», «Prover.holdAll», label_eq, label_encTerm,
+    RoseTree.label_node, eq_leaf, equal_eq, child_encTerm, mArgs_eq, RoseTree.children_node,
+    length_eq, List.length_map, label_ne_zero, ofBool_bne, beq_iff_eq, hl0, ↓reduceIte, foldr_eq]
+  rw [show «Prover/RTs.tail» (v :: xs.map fun x ↦ x.2.1) = xs.map fun x ↦ x.2.1 from rfl, hh,
+    and_eq, and_eq, ← Bool.and_assoc, labelData_beq lu l]
+  simp only [List.zipIdx_map, List.map_map, Function.comp_def]
+  rfl
+
+/-- The mirror's test whether an encoded term is an encoded pattern renamed, at a renaming of
+leaves. -/
+theorem isRename_eq (p : Term) : ∀ (f : Tree → Tree) (f' : ℕ → ℕ),
+    (∀ i, f (leaf i) = leaf (f' i)) → ∀ u : Term,
+      «Prover.isRename» (encTerm p) f (encTerm u) = ofBool (Internal.isRename p f' u) := by
+  simp only [«Prover.isRename», Internal.isRename, elim_eq_para]
+  refine para_enc (fun l ↦ (labelData l).1) (fun l ↦ RoseTree.node 0 (labelData l).2)
+    (fun (v : (Tree → Tree) → Tree → Tree) (w : (ℕ → ℕ) → Term → Bool) ↦
+      ∀ f f', (∀ i, f (leaf i) = leaf (f' i)) → ∀ u, v f (encTerm u) = ofBool (w f' u))
+    «Prover.isRenameStep» _ (fun l v xs hx f f' hf u ↦ ?_) p
+  change «Prover.isRenameStep» (encTerm (RoseTree.node l (xs.map Prod.fst))) _ f (encTerm u) = _
+  obtain ⟨lu, cs, rfl⟩ := exists_node u
+  simp only [List.map_map, Function.comp_def]
+  cases l
+  case var i =>
+    cases lu
+    case var j =>
+      have hb : (Internal.Label.var j == Internal.Label.var (f' i)) = (j == f' i) := by
+        by_cases h : j = f' i
+        · subst h
+          simp
+        · simp [h]
+      mirror_simp [«Prover.isRenameStep», labelData, label_encTerm, mD_eq, mArgs_eq, hf,
+        Internal.isRenameStep, hb]
+    all_goals
+      mirror_simp [«Prover.isRenameStep», labelData, label_encTerm, Internal.isRenameStep]
+      rfl
+  all_goals
+    refine isRenameStep_eq_node _ ?_ ?_ v xs hx f f' hf lu cs
+    · simp only [labelData]
+      decide
+    · intro _ h
+      cases h
+
+/-- An equation among the hypotheses as the mirror prepares it: present with its sides and the
+test of its left side's renamings, or absent. -/
+def encPH : Option (Term × Term) → Tree × Tree × Tree × ((Tree → Tree) → Tree → Tree)
+  | some (l, r) => (leaf 1, encTerm l, encTerm r, «Prover.isRename» (encTerm l))
+  | none => «Prover.ph0»
+
+/-- The mirror's preparation of encoded hypotheses. -/
+theorem prepareHyps_eq (Φ : List Term) :
+    «Prover.prepareHyps» (Φ.map encTerm) = Φ.map fun ψ ↦ encPH (Internal.eqParts ψ) := by
+  simp only [«Prover.prepareHyps», foldr_eq]
+  exact Φ.rec rfl fun ψ Φ ih ↦ by
+    simp only [List.map_cons, List.foldr_cons, ih, eqParts_eq]
+    rcases Internal.eqParts ψ with _ | ⟨l, r⟩ <;> mirror_simp [encPH, p1_eq, p2_eq]
+
+/-- The mirror's prepared hypothesis at a position, absent out of range. -/
+theorem phAt_eq (xs : List (Tree × Tree × Tree × ((Tree → Tree) → Tree → Tree))) (i : ℕ) :
+    «Prover.phAt» xs (leaf i) = xs.getD i «Prover.ph0» := by
+  have hr : ∀ i : ℕ, Nat.repeat «Prover/PHs.tail» i xs = xs.drop i :=
+    Nat.rec rfl fun i ih ↦ by
+      rw [Nat.repeat, ih]
+      cases h : xs.drop i
+      · rw [List.drop_eq_nil_iff] at h
+        rw [List.drop_eq_nil_of_le (by omega)]
+        rfl
+      · rw [← List.tail_drop, h]
+        rfl
+  simp only [«Prover.phAt», iter_leaf, hr, List.getD_eq_getElem?_getD]
+  cases h : xs.drop i with
+  | nil =>
+    rw [List.drop_eq_nil_iff] at h
+    rw [List.getElem?_eq_none h]
+    rfl
+  | cons x rest =>
+    rw [← List.head?_drop, h]
+    rfl
+
+/-- The mirror's rewriting of an encoded term at its root by a rule related to a rule of the
+normalizer, under the hypotheses weakened past a number of new innermost variables, the equations
+among them prepared. -/
+theorem tryRuleK_eq (r' : Tree × (Tree → Tree → List Tree → Tree)) (r : NormRule)
+    (h : RRel r' r) (k : ℕ) (t : Term) :
+    «Prover.tryRuleK» (encGlobals G) (E.toList.map encEntry) (leaf n) Γ (leaf k)
+        (Φ.map encTerm) («Prover.prepareHyps» (Φ.map encTerm)) r' (encTerm t) =
+      encOpt ((Internal.tryRuleK G E n Γ k Φ (Internal.prepareHyps Φ) t r).map encTD) := by
+  cases r
+  case rule l =>
+    simp only [RRel] at h
+    simp only [«Prover.tryRuleK», template, h, encRule]
+    mirror_simp [List.getD_cons_zero, List.getD_cons_succ]
+    rw [rootStepK_eq G E n Γ Φ k l t, mapO_eq, Option.map_map]
+    simp only [Internal.tryRuleK, Option.map_map]
+    rfl
+  case hyp i =>
+    simp only [RRel] at h
+    simp only [«Prover.tryRuleK», template, h, encRule, prepareHyps_eq]
+    mirror_simp [List.getD_cons_zero, phAt_eq, List.getD_eq_getElem?_getD, List.getElem?_map,
+      Internal.tryRuleK, Internal.prepareHyps]
+    rcases Φ[i]? with _ | ψ
+    · mirror_simp [«Prover.ph0», none_eq, bne_self_eq_false]
+    rcases he : Internal.eqParts ψ with _ | ⟨l, r⟩
+    · mirror_simp [encPH, he, «Prover.ph0», none_eq, bne_self_eq_false]
+    by_cases hk : k = 0
+    · subst hk
+      by_cases htl : t = l
+      · subst htl
+        mirror_simp [encPH, he, weakenBy_eq, some_eq, beq_self_eq_true]
+        rfl
+      · mirror_simp [encPH, he, htl, encTerm_eq_iff, none_eq, beq_iff_eq, Nat.reduceBNe,
+          decide_false, Bool.and_false]
+    · have hr := isRename_eq l (fun x ↦ Const.add x (leaf k)) (· + k) (fun _ ↦ rfl) t
+      by_cases ht : Internal.isRename l (· + k) t = true
+      · simp only [Internal.isRename] at ht hr
+        mirror_simp [encPH, he, hk, hr, ht, weakenBy_eq, some_eq, beq_iff_eq, Nat.reduceBNe,
+          ofBool_true]
+        rfl
+      · simp only [Internal.isRename, Bool.not_eq_true] at ht hr
+        mirror_simp [encPH, he, hk, hr, ht, none_eq, beq_iff_eq, Nat.reduceBNe, ofBool_false]
+  case thmAt j θ root m k' =>
+    obtain ⟨p, hp, h1, hm⟩ := h
+    simp only [«Prover.tryRuleK», template, h1]
+    mirror_simp [List.getD_cons_zero]
+    exact tryRule_eq G E n Γ [] _ (.thmAt j θ root m k') ⟨p, hp, h1, hm⟩ t
+  all_goals
+    have h' := h
+    simp only [RRel] at h'
+    simp only [«Prover.tryRuleK», template, h', encRule]
+    mirror_simp [List.getD_cons_zero]
+    exact tryRule_eq G E n Γ [] _ _ h t
+
+/-- Lists related elementwise are related after filters agreeing at related elements. -/
+theorem forall₂_filter {α β : Type} {R : α → β → Prop} {p : α → Bool} {q : β → Bool}
+    (hpq : ∀ a b, R a b → p a = q b) {l₁ : List α} {l₂ : List β} (h : List.Forall₂ R l₁ l₂) :
+    List.Forall₂ R (l₁.filter p) (l₂.filter q) := by
+  refine List.Forall₂.rec (motive := fun l₁ l₂ _ ↦ List.Forall₂ R (l₁.filter p) (l₂.filter q))
+    .nil (fun {a b _ _} hab _ ih ↦ ?_) h
+  rw [List.filter_cons, List.filter_cons, hpq a b hab]
+  split
+  · exact .cons hab ih
+  · exact ih
+
+/-- The mirror's rewriting at the root under weakened hypotheses by the index of rules related
+to the normalizer's is the rewriting by the rules under the hypotheses weakened. -/
+theorem rootRewriteK_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree)))
+    (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs) (k : ℕ) (t : Term) :
+    «Prover.rootRewriteK» (encGlobals G) (E.toList.map encEntry) (leaf n)
+        («Prover.indexRules» (E.toList.map encEntry) rs') («Prover.prepareHyps» (Φ.map encTerm))
+        Γ (leaf k) (Φ.map encTerm) (encTerm t) =
+      encOpt ((Internal.rootRewrite G E n rs Γ (Φ.map (Internal.weakenBy k)) t).map encTD) := by
+  have hf := forall₂_filter (p := fun r' ↦ decide ((«Prover.keyFits» (leaf t.label.rootKey)
+      («Prover.nrKey» (E.toList.map encEntry) r')).label ≠ 0))
+    (q := fun r ↦ Internal.keyFits t.label.rootKey (r.rootKey? E))
+    (fun r' r h ↦ by rw [nrKey_eq E r' r h, keyFits_eq]; cases Internal.keyFits _ _ <;> rfl) hrs
+  have hL : Internal.rootRewrite G E n rs Γ (Φ.map (Internal.weakenBy k)) t =
+      (rs.filter fun r ↦ Internal.keyFits t.label.rootKey (r.rootKey? E)).findSome?
+        (Internal.tryRuleK G E n Γ k Φ (Internal.prepareHyps Φ) t) := by
+    rw [funext (Internal.tryRuleK_eq G E n Γ k Φ t), Internal.findSome?_filter _ _ _
+      fun r _ h ↦ Internal.tryRule_eq_none G E n Γ _ t r h]
+    rfl
+  simp only [«Prover.rootRewriteK», template, foldr_eq, ruleBucket_eq, rootKey_eq, bucketOf_eq,
+    hL]
+  generalize rs'.filter _ = xs' at hf
+  generalize rs.filter _ = xs at hf
+  revert xs
+  exact xs'.rec (fun xs h ↦ by cases h; rfl) fun r' xs' ih xs h ↦ by
+    cases h with
+    | cons hr h' =>
+      simp only [List.foldr_cons, List.findSome?_cons, tryRuleK_eq G E n Γ Φ _ _ hr k t,
+        isSome_eq, ih _ h']
+      rcases Internal.tryRuleK G E n Γ k Φ (Internal.prepareHyps Φ) t _ with _ | x <;> rfl
+
 /-- A depth of reduction as the mirror's number: the weak head normal form zero, the weak normal
 form one, the open normal form two and the normal form three. -/
 def encDepth : Internal.Depth → ℕ
@@ -1110,25 +1594,39 @@ def ERel (v : Tree → List Tree → List Tree → Tree → Tree) (w : Internal.
   ∀ dp Γ Φ t, v (leaf (encDepth dp)) Γ (Φ.map encTerm) (encTerm t) =
     encOpt ((w dp Γ Φ t).map encTDB)
 
-/-- The mirror's rewriting at the root followed by a reduction, at related rules and
-reductions. -/
-theorem atRoot_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
-    (hrs : List.Forall₂ RRel rs' rs) (rec' : Tree → List Tree → List Tree → Tree → Tree)
-    (rec : Internal.Reduction) (hrec : ERel rec' rec) (dp : Internal.Depth) (t₁ : Term)
-    (d₁ : Deriv × Bool) :
-    «Prover.atRoot» (encGlobals G) (E.toList.map encEntry) (leaf n) rs' rec' Γ
-        (Φ.map encTerm) (leaf (encDepth dp)) (encTerm t₁) (encDB d₁) =
-      encOpt ((Internal.atRoot G E n rs rec Γ Φ dp t₁ d₁).map encTDB) := by
-  simp only [«Prover.atRoot», template, Internal.atRoot, rootRewrite_eq G E n Γ Φ rs' rs hrs,
-    isSome_eq]
-  rcases Internal.rootRewrite G E n rs Γ Φ t₁ with _ | ⟨t₂, dr⟩
+/-- The mirror's rewriting at the root under weakened hypotheses and a rewriting at the root
+under weakened hypotheses are related at the hypotheses {lit}`Φ` when they agree at every context,
+number of variables and encoded term. -/
+def WRel (Φ : List Term) (v : List Tree → Tree → List Tree → Tree → Tree)
+    (w : Internal.RootRewriteK) : Prop :=
+  ∀ Γ k t, v Γ (leaf k) (Φ.map encTerm) (encTerm t) = encOpt ((w Γ k Φ t).map encTD)
+
+/-- The mirror's reduction under weakened hypotheses and a reduction under weakened hypotheses
+are related at the hypotheses {lit}`Φ` when they agree at every depth, context, number of variables
+and encoded term. -/
+def EKRel (Φ : List Term) (v : Tree → List Tree → Tree → List Tree → Tree → Tree)
+    (w : Internal.ReductionK) : Prop :=
+  ∀ dp Γ k t, v (leaf (encDepth dp)) Γ (leaf k) (Φ.map encTerm) (encTerm t) =
+    encOpt ((w dp Γ k Φ t).map encTDB)
+
+/-- The mirror's rewriting at the root followed by a reduction, under weakened hypotheses, at
+related rewritings and reductions. -/
+theorem atRootK_eq (rw' : List Tree → Tree → List Tree → Tree → Tree) (rw : Internal.RootRewriteK)
+    (hrw : WRel Φ rw' rw) (rec' : Tree → List Tree → Tree → List Tree → Tree → Tree)
+    (rec : Internal.ReductionK) (hrec : EKRel Φ rec' rec) (k : ℕ) (dp : Internal.Depth)
+    (t₁ : Term) (d₁ : Deriv × Bool) :
+    «Prover.atRootK» rw' rec' Γ (leaf k) (Φ.map encTerm) (leaf (encDepth dp)) (encTerm t₁)
+        (encDB d₁) =
+      encOpt ((Internal.atRootK rw rec Γ k Φ dp t₁ d₁).map encTDB) := by
+  simp only [«Prover.atRootK», template, Internal.atRootK, hrw Γ k t₁, isSome_eq]
+  rcases rw Γ k Φ t₁ with _ | ⟨t₂, dr⟩
   · rfl
   · have h2 : «Language.pr» (encDeriv dr) (leaf 1) = encDB (dr, true) := rfl
     simp only [Option.map_some, Option.isSome_some, ofBool_true, label_leaf, ne_eq,
       one_ne_zero, not_false_eq_true, ↓reduceIte, tmpl_fromMaybe_eq, Option.getD_some,
       p1_encTD,
-      p2_encTD, hrec dp Γ Φ t₂, mapO_eq, Option.map_map, h2]
-    rcases rec dp Γ Φ t₂ with _ | ⟨t₃, d₃⟩
+      p2_encTD, hrec dp Γ k t₂, mapO_eq, Option.map_map, h2]
+    rcases rec dp Γ k Φ t₂ with _ | ⟨t₃, d₃⟩
     · rfl
     · simp only [Option.map_some, Function.comp_apply, p1_encTDB, p2_encTDB, dTrans_eq]
       rfl
@@ -1141,22 +1639,21 @@ theorem labelData_eq_app (l : Internal.Label) : (labelData l).1 = 6 ↔ l = .app
 theorem labelData_eq_lam (l : Internal.Label) : (labelData l).1 = 5 ↔ ∃ a, l = .lam a := by
   cases l <;> simp [labelData]
 
-/-- The mirror's step of the weak head normal form, at related rules and reductions of the
-subterms. -/
-theorem headStep_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
-    (hrs : List.Forall₂ RRel rs' rs) (rec' : Tree → List Tree → List Tree → Tree → Tree)
-    (rec : Internal.Reduction) (hrec : ERel rec' rec) (t : Term) :
-    «Prover.headStep» (encGlobals G) (E.toList.map encEntry) (leaf n) rs' rec' Γ
-        (Φ.map encTerm) (encTerm t) =
-      encOpt ((Internal.headStep G E n rs rec Γ Φ t).map encTDB) := by
-  have h0 : ∀ Γ Φ t, rec' (leaf 0) Γ (Φ.map encTerm) (encTerm t) =
-      encOpt ((rec .head Γ Φ t).map encTDB) := hrec .head
-  have h1 : ∀ Γ Φ t, rec' (leaf 1) Γ (Φ.map encTerm) (encTerm t) =
-      encOpt ((rec .weak Γ Φ t).map encTDB) := hrec .weak
-  have hA : ∀ t₁ d₁, «Prover.atRoot» (encGlobals G) (E.toList.map encEntry) (leaf n)
-      rs' rec' Γ (Φ.map encTerm) (leaf 0) (encTerm t₁) (encDB d₁) =
-      encOpt ((Internal.atRoot G E n rs rec Γ Φ .head t₁ d₁).map encTDB) :=
-    atRoot_eq G E n Γ Φ rs' rs hrs rec' rec hrec .head
+/-- The mirror's step of the weak head normal form under weakened hypotheses, at related
+rewritings at the root and reductions of the subterms. -/
+theorem headStepK_eq (rw' : List Tree → Tree → List Tree → Tree → Tree)
+    (rw : Internal.RootRewriteK) (hrw : WRel Φ rw' rw)
+    (rec' : Tree → List Tree → Tree → List Tree → Tree → Tree) (rec : Internal.ReductionK)
+    (hrec : EKRel Φ rec' rec) (k : ℕ) (t : Term) :
+    «Prover.headStepK» rw' rec' Γ (leaf k) (Φ.map encTerm) (encTerm t) =
+      encOpt ((Internal.headStepK rw rec Γ k Φ t).map encTDB) := by
+  have h0 : ∀ Γ t, rec' (leaf 0) Γ (leaf k) (Φ.map encTerm) (encTerm t) =
+      encOpt ((rec .head Γ k Φ t).map encTDB) := fun Γ t ↦ hrec .head Γ k t
+  have h1 : ∀ Γ t, rec' (leaf 1) Γ (leaf k) (Φ.map encTerm) (encTerm t) =
+      encOpt ((rec .weak Γ k Φ t).map encTDB) := fun Γ t ↦ hrec .weak Γ k t
+  have hA : ∀ t₁ d₁, «Prover.atRootK» rw' rec' Γ (leaf k) (Φ.map encTerm) (leaf 0) (encTerm t₁)
+      (encDB d₁) = encOpt ((Internal.atRootK rw rec Γ k Φ .head t₁ d₁).map encTDB) :=
+    atRootK_eq Γ Φ rw' rw hrw rec' rec hrec k .head
   obtain ⟨l, ts, rfl⟩ : ∃ l ts, t = RoseTree.node l ts :=
     ⟨t.label, t.children, (RoseTree.node_label_children t).symm⟩
   by_cases happ : (labelData l).1 = 6 ∧ ts.length = 2
@@ -1164,15 +1661,14 @@ theorem headStep_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))
     obtain rfl := (labelData_eq_app l).mp hl
     match ts, h2 with
     | [f, u], _ =>
-      simp only [«Prover.headStep», template, Internal.headStep]
+      simp only [«Prover.headStepK», template, Internal.headStepK]
       mirror_simp [mIs_eq, labelData, mArg_eq, h0]
-      rcases rec .head Γ Φ f with _ | ⟨f', df⟩
+      rcases rec .head Γ k Φ f with _ | ⟨f', df⟩
       · rfl
-      have hL : ∀ (u' : Term) (du : Deriv × Bool), «Prover.atRoot» (encGlobals G)
-          (E.toList.map encEntry) (leaf n) rs' rec' Γ (Φ.map encTerm) (leaf 0)
-          («Language.app» (encTerm f') (encTerm u'))
+      have hL : ∀ (u' : Term) (du : Deriv × Bool), «Prover.atRootK» rw' rec' Γ (leaf k)
+          (Φ.map encTerm) (leaf 0) («Language.app» (encTerm f') (encTerm u'))
           («Prover.dCong» («Theory.l2» (encDB df) (encDB du))) =
-          encOpt ((Internal.atRoot G E n rs rec Γ Φ .head (Term.app f' u')
+          encOpt ((Internal.atRootK rw rec Γ k Φ .head (Term.app f' u')
             (Internal.dCong [df, du])).map encTDB) := fun u' du ↦ by
         rw [mApp_eq, ← hA]
         exact congrArg _ (dCong_eq [df, du])
@@ -1191,26 +1687,26 @@ theorem headStep_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))
             simp only [hu, decide_true, ↓reduceIte, hp, some_eq, bindO_eq, Option.elim_some,
               p1_encTDB, p2_encTDB, hL]
           · simp only [hu, decide_false, Bool.false_eq_true, ↓reduceIte, h1, bindO_eq]
-            rcases rec .weak Γ Φ u with _ | ⟨u', du⟩
+            rcases rec .weak Γ k Φ u with _ | ⟨u', du⟩
             · rfl
             · simp only [Option.map_some, Option.elim_some, p1_encTDB, p2_encTDB, hL,
                 Option.bind_some]
       · mirror_simp [mIs_eq, Bool.and_eq_true, beq_iff_eq, hlam, Option.bind_eq_bind]
         split
         · exact absurd ⟨(labelData_eq_lam _).mpr ⟨_, rfl⟩, rfl⟩ hlam
-        · rcases rec .head Γ Φ u with _ | ⟨u', du⟩
+        · rcases rec .head Γ k Φ u with _ | ⟨u', du⟩
           · rfl
           · simp only [Option.map_some, Option.elim_some, p1_encTDB, p2_encTDB, hL,
               Option.bind_some]
-  · generalize hM : «Prover.headStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
-      rs' rec' Γ (Φ.map encTerm) (encTerm (RoseTree.node l ts)) = M
-    simp only [Internal.headStep, RoseTree.label_node, RoseTree.children_node]
+  · generalize hM : «Prover.headStepK» rw' rec' Γ (leaf k) (Φ.map encTerm)
+      (encTerm (RoseTree.node l ts)) = M
+    simp only [Internal.headStepK, RoseTree.label_node, RoseTree.children_node]
     split
     · exact absurd ⟨rfl, rfl⟩ happ
     subst hM
-    simp only [«Prover.headStep», template]
-    mirror_simp [mIs_eq, Bool.and_eq_true, beq_iff_eq, happ, rootRewrite_eq G E n Γ Φ rs' rs hrs]
-    rcases Internal.rootRewrite G E n rs Γ Φ (RoseTree.node l ts) with _ | ⟨t₁, dr⟩
+    simp only [«Prover.headStepK», template]
+    mirror_simp [mIs_eq, Bool.and_eq_true, beq_iff_eq, happ, hrw Γ k]
+    rcases rw Γ k Φ (RoseTree.node l ts) with _ | ⟨t₁, dr⟩
     · mirror_simp [headChild_eq]
       rcases Internal.headChild l ts with _ | i
       · rfl
@@ -1218,7 +1714,7 @@ theorem headStep_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))
       rcases ts[i]? with _ | c
       · rfl
       mirror_simp [h0]
-      rcases rec .head Γ Φ c with _ | ⟨c', dd, _ | _⟩
+      rcases rec .head Γ k Φ c with _ | ⟨c', dd, _ | _⟩
       · rfl
       · rfl
       have hn : RoseTree.node (labelData l).1
@@ -1239,7 +1735,7 @@ theorem headStep_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))
       rfl
     · have h2 : «Language.pr» (encDeriv dr) (leaf 1) = encDB (dr, true) := rfl
       mirror_simp [p1_encTD, p2_encTD, h0, h2]
-      rcases rec .head Γ Φ t₁ with _ | ⟨t₂, d₂⟩
+      rcases rec .head Γ k Φ t₁ with _ | ⟨t₂, d₂⟩
       · rfl
       · simp only [Option.map_some, p1_encTDB, p2_encTDB, dTrans_eq]
         rfl
@@ -1283,15 +1779,23 @@ theorem bindO_list {α : Type} (o : Option (List α)) (e : α → Tree) (K : Tre
   · rfl
   · exact h _
 
-/-- The mirror's reduction past a weak head normal form, to a depth past it, at related rules and
-reductions of the subterms. -/
-theorem deepStep_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
-    (hrs : List.Forall₂ RRel rs' rs) (rec' : Tree → List Tree → List Tree → Tree → Tree)
-    (rec : Internal.Reduction) (hrec : ERel rec' rec) (dp : Internal.Depth) (hdp : dp ≠ .head)
-    (w : Term) (dw : Deriv × Bool) :
-    «Prover.deepStep» (encGlobals G) (E.toList.map encEntry) (leaf n) rs' rec'
-        (leaf (encDepth dp)) Γ (Φ.map encTerm) (encTerm w) (encDB dw) =
-      encOpt ((Internal.deepStep G E n rs rec dp Γ Φ w dw).map encTDB) := by
+/-- The smaller of two numbers, as the mirror chooses it. -/
+theorem ite_lt_leaf (a b : ℕ) :
+    (if decide (a < b) = true then leaf a else leaf b) = leaf (min a b) := by
+  by_cases h : a < b
+  · simp [h, Nat.min_eq_left h.le]
+  · simp [h, Nat.min_eq_right (Nat.le_of_not_lt h)]
+
+/-- The mirror's reduction past a weak head normal form under weakened hypotheses, to a depth
+past it, at related rewritings at the root and reductions of the subterms. -/
+theorem deepStepK_eq (rw' : List Tree → Tree → List Tree → Tree → Tree)
+    (rw : Internal.RootRewriteK) (hrw : WRel Φ rw' rw)
+    (rec' : Tree → List Tree → Tree → List Tree → Tree → Tree) (rec : Internal.ReductionK)
+    (hrec : EKRel Φ rec' rec) (dp : Internal.Depth) (hdp : dp ≠ .head) (k : ℕ) (w : Term)
+    (dw : Deriv × Bool) :
+    «Prover.deepStepK» (encGlobals G) (leaf n) rw' rec' (leaf (encDepth dp)) Γ (leaf k)
+        (Φ.map encTerm) (encTerm w) (encDB dw) =
+      encOpt ((Internal.deepStepK G n rw rec dp Γ k Φ w dw).map encTDB) := by
   have hC : ∀ cs : List (Term × Deriv × Bool), «Prover.dCong»
       (cs.map fun x ↦ encDB x.2) = encDB (Internal.dCong (cs.map Prod.snd)) := fun cs ↦ by
     rw [← dCong_eq, List.map_map]
@@ -1301,16 +1805,16 @@ theorem deepStep_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))
   cases dp with
   | head => exact absurd rfl hdp
   | weak =>
-    simp only [«Prover.deepStep», template, Internal.deepStep, encDepth]
+    simp only [«Prover.deepStepK», template, Internal.deepStepK, encDepth]
     mirror_simp [label_encTerm, mArgs_eq, Option.bind_eq_bind]
     rw [allSomeT_range_zipIdx ts _ (fun x ↦ (if Internal.keepsWeak l x.2 = true then
-      some (x.1, Internal.dRefl) else rec .weak Γ Φ x.1).map encTDB) fun i hi ↦ by
+      some (x.1, Internal.dRefl) else rec .weak Γ k Φ x.1).map encTDB) fun i hi ↦ by
         rw [keepsWeak_eq, getD_map_of_lt _ _ i hi]
         cases Internal.keepsWeak l i
-        · exact hrec .weak Γ Φ ts[i]
+        · exact hrec .weak Γ k ts[i]
         · rfl, Infer.mapM_map_option]
     refine bindO_list _ encTDB _ _ fun cs ↦ ?_
-    have hA := atRoot_eq G E n Γ Φ rs' rs hrs rec' rec hrec .weak
+    have hA := atRootK_eq Γ Φ rw' rw hrw rec' rec hrec k .weak
     mirror_simp [RoseTree.children_node, marked_eq, rebuild_eq, p2_encTDB, hC, dTrans_eq]
     cases cs.any fun x ↦ x.2.2
     · simp only [Bool.false_eq_true, ↓reduceIte]
@@ -1318,20 +1822,25 @@ theorem deepStep_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))
     · simp only [↓reduceIte]
       exact hA _ _
   | «open» =>
-    simp only [«Prover.deepStep», template, Internal.deepStep, encDepth]
-    mirror_simp [label_encTerm, mArgs_eq, childCtxs_eq, Option.bind_eq_bind]
-    rcases Internal.childCtxs G n l ts Γ Φ with _ | Γs
+    simp only [«Prover.deepStepK», template, Internal.deepStepK, encDepth]
+    mirror_simp [label_encTerm, mArgs_eq, childBinders_eq, Option.bind_eq_bind]
+    rcases Internal.childBinders G n l ts Γ with _ | Bs
     · rfl
-    mirror_simp [zipTs_eq, List.zip_map]
-    rw [allSomeT_range_zipIdx (Γs.zip ts) _ (fun x ↦ (if Internal.keepsFold l x.2 = true then
-      some (x.1.2, Internal.dRefl) else rec .open x.1.1.1 x.1.1.2 x.1.2).map encTDB) fun i hi ↦ by
-        rw [keepsFold_eq, getD_map_of_lt _ _ i hi]
+    mirror_simp [ite_lt_leaf, ← List.length_zip, range_eq, List.map_map, Function.comp_def]
+    rw [allSomeT_range_zipIdx (Bs.zip ts) _ (fun x ↦ (if Internal.keepsFold l x.2 = true then
+      some (x.1.2, Internal.dRefl) else rec .open x.1.1.1 (k + x.1.1.2) Φ x.1.2).map encTDB)
+      fun i hi ↦ by
+        have h1 : i < Bs.length := by simp at hi; omega
+        have h2 : i < ts.length := by simp at hi; omega
+        rw [keepsFold_eq]
+        simp only [getD_map_of_lt _ _ i h1, getD_map_of_lt _ _ i h2, List.getElem_zip,
+          encBinder, binderCtx_pair, binderNum_pair, add_leaf]
         cases Internal.keepsFold l i
-        · mirror_simp [p1_eq, p2_eq, encCtx, Prod.map]
+        · mirror_simp []
           exact hrec .open _ _ _
         · rfl, Infer.mapM_map_option]
     refine bindO_list _ encTDB _ _ fun cs ↦ ?_
-    have hA := atRoot_eq G E n Γ Φ rs' rs hrs rec' rec hrec .open
+    have hA := atRootK_eq Γ Φ rw' rw hrw rec' rec hrec k .open
     mirror_simp [RoseTree.children_node, marked_eq, rebuild_eq, p2_encTDB, hC, dTrans_eq]
     cases cs.any fun x ↦ x.2.2
     · simp only [Bool.false_eq_true, ↓reduceIte]
@@ -1339,58 +1848,79 @@ theorem deepStep_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))
     · simp only [↓reduceIte]
       exact hA _ _
   | full =>
-    have h3 : ∀ Γ Φ t, rec' (leaf 3) Γ (Φ.map encTerm) (encTerm t) =
-        encOpt ((rec .full Γ Φ t).map encTDB) := hrec .full
     have h2 : ∀ dr : Deriv, «Language.pr» (encDeriv dr) (leaf 1) = encDB (dr, true) :=
       fun _ ↦ rfl
-    simp only [«Prover.deepStep», template, Internal.deepStep, encDepth]
-    mirror_simp [label_encTerm, mArgs_eq, childCtxs_eq, Option.bind_eq_bind]
-    rcases Internal.childCtxs G n l ts Γ Φ with _ | Γs
+    have h3 : ∀ t, rec' (leaf 3) Γ (leaf k) (Φ.map encTerm) (encTerm t) =
+        encOpt ((rec .full Γ k Φ t).map encTDB) := hrec .full Γ k
+    simp only [«Prover.deepStepK», template, Internal.deepStepK, encDepth]
+    mirror_simp [label_encTerm, mArgs_eq, childBinders_eq, Option.bind_eq_bind]
+    rcases Internal.childBinders G n l ts Γ with _ | Bs
     · rfl
-    mirror_simp [zipTs_eq, List.zip_map]
-    rw [allSomeT_range (Γs.zip ts) _ (fun x ↦ (rec .full x.1.1 x.1.2 x.2).map encTDB) fun i hi ↦ by
-        rw [getD_map_of_lt _ _ i hi]
-        mirror_simp [p1_eq, p2_eq, encCtx, Prod.map]
+    mirror_simp [ite_lt_leaf, ← List.length_zip, range_eq, List.map_map, Function.comp_def]
+    rw [allSomeT_range (Bs.zip ts) _ (fun x ↦ (rec .full x.1.1 (k + x.1.2) Φ x.2).map encTDB)
+      fun i hi ↦ by
+        have h1 : i < Bs.length := by simp at hi; omega
+        have h2 : i < ts.length := by simp at hi; omega
+        simp only [getD_map_of_lt _ _ i h1, getD_map_of_lt _ _ i h2, List.getElem_zip,
+          encBinder, binderCtx_pair, binderNum_pair, add_leaf]
         exact hrec .full _ _ _, Infer.mapM_map_option]
     refine bindO_list _ encTDB _ _ fun cs ↦ ?_
-    mirror_simp [RoseTree.children_node, rebuild_eq, p2_encTDB, hC,
-      rootRewrite_eq G E n Γ Φ rs' rs hrs]
-    rcases Internal.rootRewrite G E n rs Γ Φ (RoseTree.node l (cs.map Prod.fst)) with _ | ⟨t₂, dr⟩
+    mirror_simp [RoseTree.children_node, rebuild_eq, p2_encTDB, hC, hrw Γ k]
+    rcases rw Γ k Φ (RoseTree.node l (cs.map Prod.fst)) with _ | ⟨t₂, dr⟩
     · simp only [Option.map_none, Option.isSome_none, Bool.false_eq_true, ↓reduceIte, dTrans_eq]
       rfl
     · mirror_simp [p1_encTD, p2_encTD, h2, h3]
-      rcases rec .full Γ Φ t₂ with _ | ⟨t₃, d₃⟩
+      rcases rec .full Γ k Φ t₂ with _ | ⟨t₃, d₃⟩
       · rfl
       · simp only [Option.map_some, p1_encTDB, p2_encTDB, dTrans_eq]
         rfl
 
-/-- The mirror's step of the reduction to a depth, at related rules and reductions of the
-subterms. -/
-theorem evalStep_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
-    (hrs : List.Forall₂ RRel rs' rs) (rec' : Tree → List Tree → List Tree → Tree → Tree)
-    (rec : Internal.Reduction) (hrec : ERel rec' rec) :
-    ERel («Prover.evalStep» (encGlobals G) (E.toList.map encEntry) (leaf n) rs' rec')
-      (Internal.evalStep G E n rs rec) := by
-  intro dp Γ Φ t
-  simp only [«Prover.evalStep», template, Internal.evalStep,
-    headStep_eq G E n Γ Φ rs' rs hrs rec' rec hrec, bindO_eq, Option.bind_eq_bind]
-  rcases Internal.headStep G E n rs rec Γ Φ t with _ | ⟨w, dw⟩
+/-- The mirror's step of the reduction to a depth under weakened hypotheses, at related
+rewritings at the root and reductions of the subterms. -/
+theorem evalStepK_eq (rw' : List Tree → Tree → List Tree → Tree → Tree)
+    (rw : Internal.RootRewriteK) (hrw : WRel Φ rw' rw)
+    (rec' : Tree → List Tree → Tree → List Tree → Tree → Tree) (rec : Internal.ReductionK)
+    (hrec : EKRel Φ rec' rec) :
+    EKRel Φ («Prover.evalStepK» (encGlobals G) (leaf n) rw' rec')
+      (Internal.evalStepK G n rw rec) := by
+  intro dp Γ k t
+  simp only [«Prover.evalStepK», template, Internal.evalStepK,
+    headStepK_eq Γ Φ rw' rw hrw rec' rec hrec k, bindO_eq, Option.bind_eq_bind]
+  rcases Internal.headStepK rw rec Γ k Φ t with _ | ⟨w, dw⟩
   · rfl
   cases dp with
   | head => rfl
-  | weak => exact deepStep_eq G E n Γ Φ rs' rs hrs rec' rec hrec .weak nofun w dw
-  | «open» => exact deepStep_eq G E n Γ Φ rs' rs hrs rec' rec hrec .open nofun w dw
-  | full => exact deepStep_eq G E n Γ Φ rs' rs hrs rec' rec hrec .full nofun w dw
+  | weak => exact deepStepK_eq G n Γ Φ rw' rw hrw rec' rec hrec .weak nofun k w dw
+  | «open» => exact deepStepK_eq G n Γ Φ rw' rw hrw rec' rec hrec .open nofun k w dw
+  | full => exact deepStepK_eq G n Γ Φ rw' rw hrw rec' rec hrec .full nofun k w dw
 
-/-- The mirror's reduction to a depth within a depth of fuel, at related rules. -/
+/-- The mirror's reduction to a depth under weakened hypotheses within a depth of fuel, at a
+related rewriting at the root. -/
+theorem evalK_eq (rw' : List Tree → Tree → List Tree → Tree → Tree) (rw : Internal.RootRewriteK)
+    (hrw : WRel Φ rw' rw) (fuel : ℕ) :
+    EKRel Φ («Prover.evalK» (encGlobals G) (leaf n) rw' (leaf fuel))
+      (Internal.evalK G n rw fuel) := by
+  simp only [«Prover.evalK», template, iter_leaf, Internal.evalK]
+  exact Nat.rec (fun _ _ _ _ ↦ rfl)
+    (fun _ ih ↦ by rw [Nat.repeat]; exact evalStepK_eq G n Φ rw' rw hrw _ _ ih) fuel
+
+/-- The mirror's reduction to a depth within a depth of fuel, at related rules: the reduction
+under weakened hypotheses by the index of the rules and the prepared hypotheses, which
+{name}`Geb.FreeTopos.Internal.evalK_eq` relates to the reduction. -/
 theorem eval_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) :
     ERel («Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
         (leaf fuel))
       (Internal.eval G E n rs fuel) := by
-  simp only [«Prover.eval», template, iter_leaf, Internal.eval]
-  exact Nat.rec (fun _ _ _ _ ↦ rfl)
-    (fun k ih ↦ by rw [Nat.repeat]; exact evalStep_eq G E n rs' rs hrs _ _ ih) fuel
+  intro dp Γ Φ t
+  have hw : WRel Φ («Prover.rootRewriteK» (encGlobals G) (E.toList.map encEntry) (leaf n)
+      («Prover.indexRules» (E.toList.map encEntry) rs') («Prover.prepareHyps» (Φ.map encTerm)))
+      (fun Γ k _ t ↦ Internal.rootRewrite G E n rs Γ (Φ.map (Internal.weakenBy k)) t) :=
+    fun Γ k t ↦ rootRewriteK_eq G E n Γ Φ rs' rs hrs k t
+  have h := evalK_eq G n Φ _ _ hw fuel dp Γ 0 t
+  rw [Internal.evalK_eq G E n rs Φ _ (fun _ _ _ ↦ rfl) fuel dp Γ 0 t,
+    Internal.map_weakenBy_zero] at h
+  simpa only [«Prover.eval»] using h
 
 /-- The mirror's normal form reached through weak head normal forms, at related rules. -/
 theorem normalizeW_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree)))

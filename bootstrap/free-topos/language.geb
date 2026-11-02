@@ -25,6 +25,7 @@
     mArg
     mD
     trav
+    liftR
     rename
     subst
     substList

@@ -60,7 +60,6 @@
     UFs.tail
     ufAt
     uses
-    headStep
     EV
     eval
     byNormW
@@ -489,47 +488,180 @@
   (defn uses ((t T) (d T)) T ((para UF usesStep t) d))
 
   ; the reduction of a term to a depth, 0 the weak head normal form, 1 the weak normal form, 2 the
-  ; normal form but for folds' starts and steps and 3 the normal form, within a depth of fuel
+  ; normal form but for folds' starts and steps and 3 the normal form, within a depth of fuel, as
+  ; Geb.FreeTopos.Internal.evalFast reduces: under the hypotheses as stated with the number of
+  ; variables past which they are weakened, each weakened where a rule reads it; with the rules
+  ; indexed once by the key of the labels at which each may rewrite; and with each equation among
+  ; the hypotheses compared with a term by its left side's renaming, folded once
   (deftype EV (Arrow T NF))
-  (defn atRoot
-    ((G Globals) (E (List Entry)) (n T) (rs NRs) (rec EV) (g Ts) (hs Ts) (dp T) (t1 T) (d1 Marked))
-    ONFR.Maybe
-    (let rr OTPair.Maybe (rootRewrite G E n rs g hs t1)
+
+  ; the keys of the labels at which a term's root and a rule may rewrite: one for each kind of node,
+  ; and one for each index of a primitive arrow and of a definition
+  (defn rootKey ((t T)) T
+    (let l T (label t)
+      (if (eq l 7) (add 11 (mul 2 (mD t 0)))
+        (if (eq l 11) (add 12 (mul 2 (mD t 0)))
+          (if (eq l 8) 7 (if (eq l 9) 8 (if (eq l 10) 9 (if (eq l 12) 10 l))))))))
+  (defn patternKey ((p T)) T (if (eq (label p) 0) none (some (rootKey p))))
+  (defn ruleKey ((rl T)) T
+    (if (or (eq rl 3) (or (eq rl 14) (eq rl 15))) (some 6)
+      (if (eq rl 4) (some 3)
+        (if (eq rl 5) (some 4)
+          (if (eq rl 6) (some 2)
+            (if (or (eq rl 9) (eq rl 10)) (some 7)
+              (if (or (eq rl 11) (eq rl 12)) (some 8) (if (eq rl 13) (some 9) none))))))))
+  (defn nrKey ((E (List Entry)) (r NR)) T
+    (case (fst r) ((nrRule rl rdN) (ruleKey rl)) ((nrDelta k) (some (add 12 (mul 2 k))))
+      ((nrUnit) (some 0))
+      ((nrThm j thN)
+       (case (thmAt E j)
+         ((OThm.just a)
+          (case (eqParts (thConcl a)) ((OTPair.just lr) (patternKey (p1 lr)))
+            ((OTPair.nothing) none)))
+         ((OThm.nothing) none)))
+      ((nrThmAt j thN p k) (patternKey p))
+      (else none)))
+  ; whether a rule of a key, where it has one, may rewrite at a label of the key k
+  (defn keyFits ((k T) (m T)) T (if (isSome m) (eq (get m) k) 1))
+
+  ; the rules indexed by key: each key of a rule with the rules that may rewrite at a label of it, in
+  ; order, and the rules without a key, which alone may rewrite at a label of another key
+  (deftype KR (Prod T NRs))
+  (deftype Idx (Prod (List KR) NRs))
+  (defn bucketOf ((E (List Entry)) (rs NRs) (k T)) NRs
+    (foldr NR NRs (lam ((r NR) (acc NRs)) (if (keyFits k (nrKey E r)) (cons r acc) acc)) (nil NR)
+      rs))
+  (defn ruleKeys ((E (List Entry)) (rs NRs)) Ts
+    (foldr NR Ts
+      (lam ((r NR) (acc Ts))
+        (let m T (nrKey E r)
+          (if (and (isSome m) (not (anyT (lam ((x T)) (eq x (get m))) acc))) (cons (get m) acc)
+            acc)))
+      (nil T)
+      rs))
+  (defn indexRules ((E (List Entry)) (rs NRs)) Idx
+    (pair
+      (foldr T (List KR) (lam ((k T) (acc (List KR))) (cons (pair k (bucketOf E rs k)) acc))
+        (nil KR)
+        (ruleKeys E rs))
+      (foldr NR NRs (lam ((r NR) (acc NRs)) (if (isSome (nrKey E r)) acc (cons r acc))) (nil NR)
+        rs)))
+  (defn ruleBucket ((idx Idx) (k T)) NRs
+    (foldr KR NRs (lam ((b KR) (acc NRs)) (if (eq (fst b) k) (snd b) acc)) (snd idx) (fst idx)))
+
+  ; whether a term is a pattern renamed, decided without the renaming being built: the fold of the
+  ; pattern, each node compared with the term's in turn, each child's renaming lifted past the
+  ; variables the child binds
+  (deftype RT (Arrow (Arrow T T) (Arrow T T)))
+  (deftype RTs (List RT))
+  (import (Lists RT) as RTs)
+  (defn childRen ((l T) (m T) (f (Arrow T T)) (i T)) (Arrow T T)
+    (if (and (eq l 5) (eq m 1)) (lam ((j T)) (liftR f j))
+      (if (and (eq l 8) (eq m 3)) (if (eq i 1) (lam ((j T)) (liftR f j)) f)
+        (if (and (eq l 9) (eq m 3))
+          (if (eq i 1) (lam ((j T)) (liftR (lam ((x T)) (liftR f x)) j)) f)
+          (if (and (eq l 10) (eq m 2)) (if (eq i 0) (lam ((j T)) (liftR f j)) f) f)))))
+  (defn holdAll ((l T) (m T) (f (Arrow T T)) (rs RTs) (us Ts)) T
+    ((foldr RT (Arrow T (Arrow Ts T))
+       (lam ((r RT) (c (Arrow T (Arrow Ts T))) (i T) (vs Ts))
+         (lcase T T vs 0 (lam ((v T) (ws Ts)) (and ((r (childRen l m f i)) v) (c (add i 1) ws)))))
+       (lam ((i T) (vs Ts)) (isEmpty vs))
+       rs) 0 us))
+  (defn isRenameStep ((nd T) (rs RTs)) RT
+    (lam ((f (Arrow T T)) (t T))
+      (if (eq (label nd) 0)
+        (and (eq (label t) 0) (and (eq (mD t 0) (f (mD nd 0))) (isEmpty (mArgs t))))
+        (and (eq (label t) (label nd))
+          (and (equal (child t 0) (child nd 0))
+            (holdAll (label nd) (length (mArgs nd)) f (RTs.tail rs) (mArgs t)))))))
+  (defn isRename ((p T)) RT (para RT isRenameStep p))
+
+  ; the equations among the hypotheses prepared for rewriting: whether each is one, its sides, and
+  ; the test of its left side's renamings, folded once
+  (deftype PH (Prod T (Prod T (Prod T RT))))
+  (deftype PHs (List PH))
+  (import (Lists PH) as PHs)
+  (def ph0 (pair 0 (pair 0 (pair 0 (lam ((f (Arrow T T)) (t T)) 0)))))
+  (defn prepareHyps ((hs Ts)) PHs
+    (foldr T PHs
+      (lam ((psi T) (acc PHs))
+        (cons
+          (case (eqParts psi)
+            ((OTPair.just lr) (pair 1 (pair (p1 lr) (pair (p2 lr) (isRename (p1 lr))))))
+            ((OTPair.nothing) ph0))
+          acc))
+      (nil PH)
+      hs))
+  (defn phAt ((ph PHs) (i T)) PH
+    (lcase PH PH (iter PHs PHs.tail ph i) ph0 (lam ((h PH) (rest PHs)) h)))
+
+  ; the rewriting of a term at its root by a rule under the hypotheses weakened past k new
+  ; innermost variables, from the hypotheses before the weakening, the equations among them
+  ; prepared in ph: an equation weakened only where the term is its left side weakened, a rule of
+  ; the checker as the checker rewrites, and the other rules under none of the hypotheses
+  (defn tryRuleK ((G Globals) (E (List Entry)) (n T) (g Ts) (k T) (hs Ts) (ph PHs) (r NR) (t T))
+    OTPair.Maybe
+    (case (fst r)
+      ((nrRule rl rdN)
+       (let rd Ts (termsOf rdN)
+         (mapTP (lam ((t2 T)) (pr t2 (dNode rl rd (nil T)))) (rootStepK G E n g k hs rl rd t))))
+      ((nrHyp i)
+       (let h PH (phAt ph i)
+         (if
+           (and (fst h)
+             (if (eq k 0) (equal t (fst (snd h))) ((snd (snd (snd h))) (lam ((j T)) (add j k)) t)))
+           (OTPair.just (pr (weakenBy k (fst (snd (snd h)))) (dNode 17 (l2 i 0) (nil T))))
+           OTPair.nothing)))
+      (else (tryRule G E n g (nil T) r t))))
+  ; the first rule of the term's key's bucket that rewrites it at its root
+  (deftype RWK (Arrow Ts (Arrow T (Arrow Ts (Arrow T OTPair.Maybe)))))
+  (defn rootRewriteK ((G Globals) (E (List Entry)) (n T) (idx Idx) (ph PHs)) RWK
+    (lam ((g Ts) (k T) (hs Ts) (t T))
+      ((foldr NR RootRw
+         (lam ((r NR) (rest RootRw))
+           (lam ((u T))
+             (let v OTPair.Maybe (tryRuleK G E n g k hs ph r u) (if (OTPair.isJust v) v (rest u)))))
+         (lam ((u T)) OTPair.nothing)
+         (ruleBucket idx (rootKey t))) t)))
+
+  ; the reduction to a depth under weakened hypotheses, by a rewriting at the root rw
+  (deftype EVK (Arrow T (Arrow Ts (Arrow T (Arrow Ts (Arrow T ONFR.Maybe))))))
+  (defn atRootK ((rw RWK) (rec EVK) (g Ts) (k T) (hs Ts) (dp T) (t1 T) (d1 Marked)) ONFR.Maybe
+    (let rr OTPair.Maybe (rw g k hs t1)
       (if (OTPair.isJust rr)
         (let r TPair (OTPair.fromMaybe pr0 rr)
           (mapNN
             (lam ((r3 NFR)) (nfr (nfTerm r3) (dTrans d1 (dTrans (mark (p2 r) 1) (nfMarked r3)))))
-            (rec dp g hs (p1 r))))
+            (rec dp g k hs (p1 r))))
         (ONFR.just (nfr t1 d1)))))
-  (defn headStep ((G Globals) (E (List Entry)) (n T) (rs NRs) (rec EV) (g Ts) (hs Ts) (t T))
-    ONFR.Maybe
+  (defn headStepK ((rw RWK) (rec EVK) (g Ts) (k T) (hs Ts) (t T)) ONFR.Maybe
     (if (mIs 6 2 t)
-      (bindNN (rec 0 g hs (mArg t 0))
+      (bindNN (rec 0 g k hs (mArg t 0))
         (lam ((rf NFR))
           (let f1 T (nfTerm rf)
             (let u T (mArg t 1)
               (bindNN
                 (if (mIs 5 1 f1)
-                  (if (lt (uses (mArg f1 0) 0) 2) (ONFR.just (nfr u dRefl)) (rec 1 g hs u))
-                  (rec 0 g hs u))
+                  (if (lt (uses (mArg f1 0) 0) 2) (ONFR.just (nfr u dRefl)) (rec 1 g k hs u))
+                  (rec 0 g k hs u))
                 (lam ((ru NFR))
-                  (atRoot G E n rs rec g hs 0 (app f1 (nfTerm ru))
+                  (atRootK rw rec g k hs 0 (app f1 (nfTerm ru))
                     (dCong (MarkedF.l2 (nfMarked rf) (nfMarked ru))))))))))
-      (let rr OTPair.Maybe (rootRewrite G E n rs g hs t)
+      (let rr OTPair.Maybe (rw g k hs t)
         (if (OTPair.isJust rr)
           (let r TPair (OTPair.fromMaybe pr0 rr)
             (mapNN (lam ((r2 NFR)) (nfr (nfTerm r2) (dTrans (mark (p2 r) 1) (nfMarked r2))))
-              (rec 0 g hs (p1 r))))
+              (rec 0 g k hs (p1 r))))
           (let hc T (headChild t)
             (if (isSome hc)
               (let i T (get hc)
                 (let cs Ts (mArgs t)
                   (bindTN (nth cs i)
                     (lam ((c T))
-                      (bindNN (rec 0 g hs c)
+                      (bindNN (rec 0 g k hs c)
                         (lam ((rc NFR))
                           (if (mFlag (nfMarked rc))
-                            (atRoot G E n rs rec g hs 0
+                            (atRootK rw rec g k hs 0
                               (node (label t) (cons (child t 0) (setAt cs i (nfTerm rc))))
                               (dCong
                                 (MarkedAt.map (lam ((j T)) (if (eq j i) (nfMarked rc) dRefl))
@@ -537,8 +669,8 @@
                             (ONFR.just (nfr t dRefl)))))))))
               (ONFR.just (nfr t dRefl))))))))
   (import (Map T ONFR.Maybe) as NormAt)
-  (defn deepStep
-    ((G Globals) (E (List Entry)) (n T) (rs NRs) (rec EV) (dp T) (g Ts) (hs Ts) (w T) (dw Marked))
+  (defn deepStepK
+    ((G Globals) (n T) (rw RWK) (rec EVK) (dp T) (g Ts) (k T) (hs Ts) (w T) (dw Marked))
     ONFR.Maybe
     (let l T (label w)
       (let ws Ts (mArgs w)
@@ -547,53 +679,57 @@
             (allSomeN
               (NormAt.map
                 (lam ((i T))
-                  (if (keepsWeak l i) (ONFR.just (nfr (at ws i) dRefl)) (rec 1 g hs (at ws i))))
+                  (if (keepsWeak l i) (ONFR.just (nfr (at ws i) dRefl)) (rec 1 g k hs (at ws i))))
                 (range (length ws))))
             (lam ((csn NFRList))
               (let cs (List NFR) (nfrsOf csn)
                 (let t1 T (rebuild w cs)
                   (let d1 Marked (dTrans dw (dCong (NFRMarked.map nfMarked cs)))
-                    (if (marked cs) (atRoot G E n rs rec g hs 1 t1 d1) (ONFR.just (nfr t1 d1))))))))
-          (bindSN (childCtxs G n w g hs)
-            (lam ((cxn Scopes))
-              (let cx (List Scope) (scopesOf cxn)
-                (bindLN
-                  (let z (List ScopeTerm) (zipTs cx ws)
-                    (allSomeN
-                      (NormAt.map
-                        (lam ((i T))
-                          (let cu ScopeTerm (ScopeTerms.atOr (scopeTerm scope0 0) z i)
-                            (let c Scope (scopeOf cu)
-                              (if (and (eq dp 2) (keepsFold l i))
-                                (ONFR.just (nfr (termOf cu) dRefl))
-                                (rec dp (scopeCtx c) (scopeHyps c) (termOf cu))))))
-                        (range (ScopeTerms.length z)))))
-                  (lam ((csn NFRList))
-                    (let cs (List NFR) (nfrsOf csn)
-                      (let t1 T (rebuild w cs)
-                        (if (eq dp 2)
-                          (let d1 Marked (dTrans dw (dCong (NFRMarked.map nfMarked cs)))
-                            (if (marked cs) (atRoot G E n rs rec g hs 2 t1 d1)
-                              (ONFR.just (nfr t1 d1))))
-                          (let d1 Marked (dCong (NFRMarked.map nfMarked cs))
-                            (let rr OTPair.Maybe (rootRewrite G E n rs g hs t1)
-                              (if (OTPair.isJust rr)
-                                (let r TPair (OTPair.fromMaybe pr0 rr)
-                                  (mapNN
-                                    (lam ((r3 NFR))
-                                      (nfr (nfTerm r3)
-                                        (dTrans dw
-                                          (dTrans d1 (dTrans (mark (p2 r) 1) (nfMarked r3))))))
-                                    (rec 3 g hs (p1 r))))
-                                (ONFR.just (nfr t1 (dTrans dw d1))))))))))))))))))
-  (defn evalStep ((G Globals) (E (List Entry)) (n T) (rs NRs) (rec EV)) EV
-    (lam ((dp T) (g Ts) (hs Ts) (t T))
-      (bindNN (headStep G E n rs rec g hs t)
+                    (if (marked cs) (atRootK rw rec g k hs 1 t1 d1) (ONFR.just (nfr t1 d1))))))))
+          (case (childBinders G n w g)
+            ((OBinders.just bxN)
+             (let bx (List Binder) (bindersOf bxN)
+               (bindLN
+                 (let m T (if (lt (BinderL.length bx) (length ws)) (BinderL.length bx) (length ws))
+                   (allSomeN
+                     (NormAt.map
+                       (lam ((i T))
+                         (let b Binder (BinderL.atOr binder0 bx i)
+                           (let u T (at ws i)
+                             (if (and (eq dp 2) (keepsFold l i)) (ONFR.just (nfr u dRefl))
+                               (rec dp (binderCtx b) (add k (binderNum b)) hs u)))))
+                       (range m))))
+                 (lam ((csn NFRList))
+                   (let cs (List NFR) (nfrsOf csn)
+                     (let t1 T (rebuild w cs)
+                       (if (eq dp 2)
+                         (let d1 Marked (dTrans dw (dCong (NFRMarked.map nfMarked cs)))
+                           (if (marked cs) (atRootK rw rec g k hs 2 t1 d1) (ONFR.just (nfr t1 d1))))
+                         (let d1 Marked (dCong (NFRMarked.map nfMarked cs))
+                           (let rr OTPair.Maybe (rw g k hs t1)
+                             (if (OTPair.isJust rr)
+                               (let r TPair (OTPair.fromMaybe pr0 rr)
+                                 (mapNN
+                                   (lam ((r3 NFR))
+                                     (nfr (nfTerm r3)
+                                       (dTrans dw
+                                         (dTrans d1 (dTrans (mark (p2 r) 1) (nfMarked r3))))))
+                                   (rec 3 g k hs (p1 r))))
+                               (ONFR.just (nfr t1 (dTrans dw d1)))))))))))))
+            ((OBinders.nothing) ONFR.nothing))))))
+  (defn evalStepK ((G Globals) (n T) (rw RWK) (rec EVK)) EVK
+    (lam ((dp T) (g Ts) (k T) (hs Ts) (t T))
+      (bindNN (headStepK rw rec g k hs t)
         (lam ((w NFR))
-          (if (eq dp 0) (ONFR.just w) (deepStep G E n rs rec dp g hs (nfTerm w) (nfMarked w)))))))
-  (defn eval ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T)) EV
-    (iter EV (evalStep G E n rs) (lam ((dp T) (g Ts) (hs Ts) (t T)) (ONFR.just (nfr t dRefl)))
+          (if (eq dp 0) (ONFR.just w) (deepStepK G n rw rec dp g k hs (nfTerm w) (nfMarked w)))))))
+  (defn evalK ((G Globals) (n T) (rw RWK) (fuel T)) EVK
+    (iter EVK (evalStepK G n rw) (lam ((dp T) (g Ts) (k T) (hs Ts) (t T)) (ONFR.just (nfr t dRefl)))
       fuel))
+  ; the reduction: the rules indexed and the hypotheses prepared once
+  (defn eval ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T)) EV
+    (let idx Idx (indexRules E rs)
+      (lam ((dp T) (g Ts) (hs Ts) (t T))
+        ((evalK G n (rootRewriteK G E n idx (prepareHyps hs)) fuel) dp g 0 hs t))))
   (defn whnf ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T)) NF (eval G E n rs fuel 0))
   (defn normalizeW ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T)) NF (eval G E n rs fuel 3))
   (defn byNormW ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T) (u T)) T

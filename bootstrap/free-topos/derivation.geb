@@ -65,7 +65,21 @@
     OScopes.nothing
     OScopes.just
     childCtxs
+    Binder
+    binderCtx
+    binderNum
+    binder0
+    BinderL.atOr
+    BinderL.length
+    Binders
+    bindersOf
+    OBinders.Maybe
+    OBinders.nothing
+    OBinders.just
+    childBinders
+    weakenBy
     rootStep
+    rootStepK
     Chk3
     DV
     rw

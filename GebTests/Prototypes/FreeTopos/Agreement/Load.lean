@@ -407,9 +407,9 @@ theorem byListIndHyp_type : metalogic.g1233.1 = indHypTy := by
 
 /-- The type the kernel computes for the proof by normalization through weak head normal forms is
 its type, read from the definition's annotations. -/
-theorem byNormW_type : metalogic.g1250.1 = normTy := by
-  have h := infer_of_loadStep metalogic.step1250
-  generalize metalogic.g1250.1 = T at h ⊢
+theorem byNormW_type : metalogic.g1271.1 = normTy := by
+  have h := infer_of_loadStep metalogic.step1271
+  generalize metalogic.g1271.1 = T at h ⊢
   obtain ⟨_, h0⟩ := h
   obtain ⟨_, _, rfl, h1⟩ := infer_lam_inv h0
   obtain ⟨_, _, rfl, h2⟩ := infer_lam_inv h1
@@ -428,9 +428,9 @@ theorem byNormW_type : metalogic.g1250.1 = normTy := by
 
 /-- The type the kernel computes for the proof by extensionality is its type, read from the
 definition's annotations. -/
-theorem byFunExt_type : metalogic.g1252.1 = funExtTy := by
-  have h := infer_of_loadStep metalogic.step1252
-  generalize metalogic.g1252.1 = T at h ⊢
+theorem byFunExt_type : metalogic.g1273.1 = funExtTy := by
+  have h := infer_of_loadStep metalogic.step1273
+  generalize metalogic.g1273.1 = T at h ⊢
   obtain ⟨_, h0⟩ := h
   obtain ⟨_, _, rfl, h1⟩ := infer_lam_inv h0
   obtain ⟨_, _, rfl, h2⟩ := infer_lam_inv h1
@@ -443,9 +443,9 @@ theorem byFunExt_type : metalogic.g1252.1 = funExtTy := by
 
 /-- The type the kernel computes for the proof by case analysis is its type, read from the
 definition's annotations. -/
-theorem bySplit_type : metalogic.g1253.1 = proverFnTy := by
-  have h := infer_of_loadStep metalogic.step1253
-  generalize metalogic.g1253.1 = T at h ⊢
+theorem bySplit_type : metalogic.g1274.1 = proverFnTy := by
+  have h := infer_of_loadStep metalogic.step1274
+  generalize metalogic.g1274.1 = T at h ⊢
   obtain ⟨_, h0⟩ := h
   obtain ⟨_, _, rfl, h1⟩ := infer_lam_inv h0
   obtain ⟨_, _, rfl, h2⟩ := infer_lam_inv h1
@@ -459,9 +459,9 @@ theorem bySplit_type : metalogic.g1253.1 = proverFnTy := by
 
 /-- The type the kernel computes for the proof by induction on a list with the premises' provers is
 its type, read from the definition's annotations. -/
-theorem byListIndWith_type : metalogic.g1254.1 = listIndWithTy := by
-  have h := infer_of_loadStep metalogic.step1254
-  generalize metalogic.g1254.1 = T at h ⊢
+theorem byListIndWith_type : metalogic.g1275.1 = listIndWithTy := by
+  have h := infer_of_loadStep metalogic.step1275
+  generalize metalogic.g1275.1 = T at h ⊢
   obtain ⟨_, h0⟩ := h
   obtain ⟨_, _, rfl, h1⟩ := infer_lam_inv h0
   obtain ⟨_, _, rfl, h2⟩ := infer_lam_inv h1
@@ -477,9 +477,9 @@ theorem byListIndWith_type : metalogic.g1254.1 = listIndWithTy := by
 
 /-- The type the kernel computes for the proof by the uniqueness of the fold of a rose tree is its
 type, read from the definition's annotations. -/
-theorem byRoseInd_type : metalogic.g1255.1 = roseIndTy := by
-  have h := infer_of_loadStep metalogic.step1255
-  generalize metalogic.g1255.1 = T at h ⊢
+theorem byRoseInd_type : metalogic.g1276.1 = roseIndTy := by
+  have h := infer_of_loadStep metalogic.step1276
+  generalize metalogic.g1276.1 = T at h ⊢
   obtain ⟨_, h0⟩ := h
   obtain ⟨_, _, rfl, h1⟩ := infer_lam_inv h0
   obtain ⟨_, _, rfl, h2⟩ := infer_lam_inv h1
@@ -501,9 +501,9 @@ theorem byRoseInd_type : metalogic.g1255.1 = roseIndTy := by
 
 /-- The type the kernel computes for the proof by induction on a rose tree with the induction
 hypothesis is its type, read from the definition's annotations. -/
-theorem byRoseIndHyp_type : metalogic.g1256.1 = proverFnTy := by
-  have h := infer_of_loadStep metalogic.step1256
-  generalize metalogic.g1256.1 = T at h ⊢
+theorem byRoseIndHyp_type : metalogic.g1277.1 = proverFnTy := by
+  have h := infer_of_loadStep metalogic.step1277
+  generalize metalogic.g1277.1 = T at h ⊢
   obtain ⟨_, h0⟩ := h
   obtain ⟨_, _, rfl, h1⟩ := infer_lam_inv h0
   obtain ⟨_, _, rfl, h2⟩ := infer_lam_inv h1
@@ -515,19 +515,19 @@ theorem byRoseIndHyp_type : metalogic.g1256.1 = proverFnTy := by
     (Sigma.mk.inj_iff.mp (Option.some.inj (h6.symm.trans (infer_var0 _ _ _)))).1]
   rfl
 
--- the prover's entry points are the program's globals of indices 1178 to 1251
+-- the prover's entry points are the program's globals of indices 1178 to 1272
 kernel_rfl metalogic_g1178 : metalogic.globals[1178]? = some metalogic.g1178
 kernel_rfl metalogic_g1227 : metalogic.globals[1227]? = some metalogic.g1227
 kernel_rfl metalogic_g1229 : metalogic.globals[1229]? = some metalogic.g1229
 kernel_rfl metalogic_g1230 : metalogic.globals[1230]? = some metalogic.g1230
 kernel_rfl metalogic_g1232 : metalogic.globals[1232]? = some metalogic.g1232
 kernel_rfl metalogic_g1233 : metalogic.globals[1233]? = some metalogic.g1233
-kernel_rfl metalogic_g1250 : metalogic.globals[1250]? = some metalogic.g1250
-kernel_rfl metalogic_g1252 : metalogic.globals[1252]? = some metalogic.g1252
-kernel_rfl metalogic_g1253 : metalogic.globals[1253]? = some metalogic.g1253
-kernel_rfl metalogic_g1254 : metalogic.globals[1254]? = some metalogic.g1254
-kernel_rfl metalogic_g1255 : metalogic.globals[1255]? = some metalogic.g1255
-kernel_rfl metalogic_g1256 : metalogic.globals[1256]? = some metalogic.g1256
+kernel_rfl metalogic_g1271 : metalogic.globals[1271]? = some metalogic.g1271
+kernel_rfl metalogic_g1273 : metalogic.globals[1273]? = some metalogic.g1273
+kernel_rfl metalogic_g1274 : metalogic.globals[1274]? = some metalogic.g1274
+kernel_rfl metalogic_g1275 : metalogic.globals[1275]? = some metalogic.g1275
+kernel_rfl metalogic_g1276 : metalogic.globals[1276]? = some metalogic.g1276
+kernel_rfl metalogic_g1277 : metalogic.globals[1277]? = some metalogic.g1277
 
 /-- The program's global of index 1178 is the mirror's preparation of rules, at its type. -/
 theorem metalogic_prepareRules :
@@ -569,44 +569,44 @@ theorem metalogic_byListIndHyp :
   metalogic_g1233.trans (congrArg some (Sigma.ext
     byListIndHyp_type (metalogic.«Prover.byListIndHyp_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1250 is the mirror's proof by normalization through weak head
+/-- The program's global of index 1271 is the mirror's proof by normalization through weak head
 normal forms, at its type. -/
 theorem metalogic_byNormW :
-    metalogic.globals[1250]? = some (⟨normTy, «Prover.byNormW»⟩ : Glob) :=
-  metalogic_g1250.trans (congrArg some (Sigma.ext
+    metalogic.globals[1271]? = some (⟨normTy, «Prover.byNormW»⟩ : Glob) :=
+  metalogic_g1271.trans (congrArg some (Sigma.ext
     byNormW_type (metalogic.«Prover.byNormW_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1252 is the mirror's proof by extensionality, at its type. -/
+/-- The program's global of index 1273 is the mirror's proof by extensionality, at its type. -/
 theorem metalogic_byFunExt :
-    metalogic.globals[1252]? = some (⟨funExtTy, «Prover.byFunExt»⟩ : Glob) :=
-  metalogic_g1252.trans (congrArg some (Sigma.ext
+    metalogic.globals[1273]? = some (⟨funExtTy, «Prover.byFunExt»⟩ : Glob) :=
+  metalogic_g1273.trans (congrArg some (Sigma.ext
     byFunExt_type (metalogic.«Prover.byFunExt_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1253 is the mirror's proof by case analysis, at its type. -/
+/-- The program's global of index 1274 is the mirror's proof by case analysis, at its type. -/
 theorem metalogic_bySplit :
-    metalogic.globals[1253]? = some (⟨proverFnTy, «Prover.bySplit»⟩ : Glob) :=
-  metalogic_g1253.trans (congrArg some (Sigma.ext
+    metalogic.globals[1274]? = some (⟨proverFnTy, «Prover.bySplit»⟩ : Glob) :=
+  metalogic_g1274.trans (congrArg some (Sigma.ext
     bySplit_type (metalogic.«Prover.bySplit_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1254 is the mirror's proof by induction on a list with the
+/-- The program's global of index 1275 is the mirror's proof by induction on a list with the
 premises' provers, at its type. -/
 theorem metalogic_byListIndWith :
-    metalogic.globals[1254]? = some (⟨listIndWithTy, «Prover.byListIndWith»⟩ : Glob) :=
-  metalogic_g1254.trans (congrArg some (Sigma.ext
+    metalogic.globals[1275]? = some (⟨listIndWithTy, «Prover.byListIndWith»⟩ : Glob) :=
+  metalogic_g1275.trans (congrArg some (Sigma.ext
     byListIndWith_type (metalogic.«Prover.byListIndWith_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1255 is the mirror's proof by the uniqueness of the fold of a
+/-- The program's global of index 1276 is the mirror's proof by the uniqueness of the fold of a
 rose tree, at its type. -/
 theorem metalogic_byRoseInd :
-    metalogic.globals[1255]? = some (⟨roseIndTy, «Prover.byRoseInd»⟩ : Glob) :=
-  metalogic_g1255.trans (congrArg some (Sigma.ext
+    metalogic.globals[1276]? = some (⟨roseIndTy, «Prover.byRoseInd»⟩ : Glob) :=
+  metalogic_g1276.trans (congrArg some (Sigma.ext
     byRoseInd_type (metalogic.«Prover.byRoseInd_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1256 is the mirror's proof by induction on a rose tree with the
+/-- The program's global of index 1277 is the mirror's proof by induction on a rose tree with the
 induction hypothesis, at its type. -/
 theorem metalogic_byRoseIndHyp :
-    metalogic.globals[1256]? = some (⟨proverFnTy, «Prover.byRoseIndHyp»⟩ : Glob) :=
-  metalogic_g1256.trans (congrArg some (Sigma.ext
+    metalogic.globals[1277]? = some (⟨proverFnTy, «Prover.byRoseIndHyp»⟩ : Glob) :=
+  metalogic_g1277.trans (congrArg some (Sigma.ext
     byRoseIndHyp_type (metalogic.«Prover.byRoseIndHyp_heq».trans HEq.rfl)))
 
 /-! The tactics. -/
@@ -716,315 +716,315 @@ def maskRwTy : Tree := [tT, tT, tT, tT, tList tT, tList tT, tT, tT, tT, tT, tT, 
 indices, the rules and the number of rounds to a prover from a prover from rules. -/
 def maskSubsTy : Tree := [tT, tList tT, tT, tT, rulesTy, tT].foldr tArrow (tArrow krTy proverTy)
 
--- the tactics' entry points are the program's globals of indices 1273 to 1369
-kernel_rfl metalogic_g1273 : metalogic.globals[1273]? = some metalogic.g1273
-kernel_rfl metalogic_g1274 : metalogic.globals[1274]? = some metalogic.g1274
-kernel_rfl metalogic_g1275 : metalogic.globals[1275]? = some metalogic.g1275
-kernel_rfl metalogic_g1279 : metalogic.globals[1279]? = some metalogic.g1279
-kernel_rfl metalogic_g1280 : metalogic.globals[1280]? = some metalogic.g1280
-kernel_rfl metalogic_g1281 : metalogic.globals[1281]? = some metalogic.g1281
-kernel_rfl metalogic_g1282 : metalogic.globals[1282]? = some metalogic.g1282
-kernel_rfl metalogic_g1284 : metalogic.globals[1284]? = some metalogic.g1284
-kernel_rfl metalogic_g1285 : metalogic.globals[1285]? = some metalogic.g1285
-kernel_rfl metalogic_g1286 : metalogic.globals[1286]? = some metalogic.g1286
-kernel_rfl metalogic_g1287 : metalogic.globals[1287]? = some metalogic.g1287
-kernel_rfl metalogic_g1288 : metalogic.globals[1288]? = some metalogic.g1288
-kernel_rfl metalogic_g1289 : metalogic.globals[1289]? = some metalogic.g1289
-kernel_rfl metalogic_g1290 : metalogic.globals[1290]? = some metalogic.g1290
-kernel_rfl metalogic_g1291 : metalogic.globals[1291]? = some metalogic.g1291
-kernel_rfl metalogic_g1292 : metalogic.globals[1292]? = some metalogic.g1292
-kernel_rfl metalogic_g1293 : metalogic.globals[1293]? = some metalogic.g1293
-kernel_rfl metalogic_g1297 : metalogic.globals[1297]? = some metalogic.g1297
-kernel_rfl metalogic_g1299 : metalogic.globals[1299]? = some metalogic.g1299
+-- the tactics' entry points are the program's globals of indices 1294 to 1390
+kernel_rfl metalogic_g1294 : metalogic.globals[1294]? = some metalogic.g1294
+kernel_rfl metalogic_g1295 : metalogic.globals[1295]? = some metalogic.g1295
+kernel_rfl metalogic_g1296 : metalogic.globals[1296]? = some metalogic.g1296
+kernel_rfl metalogic_g1300 : metalogic.globals[1300]? = some metalogic.g1300
 kernel_rfl metalogic_g1301 : metalogic.globals[1301]? = some metalogic.g1301
+kernel_rfl metalogic_g1302 : metalogic.globals[1302]? = some metalogic.g1302
 kernel_rfl metalogic_g1303 : metalogic.globals[1303]? = some metalogic.g1303
-kernel_rfl metalogic_g1304 : metalogic.globals[1304]? = some metalogic.g1304
+kernel_rfl metalogic_g1305 : metalogic.globals[1305]? = some metalogic.g1305
+kernel_rfl metalogic_g1306 : metalogic.globals[1306]? = some metalogic.g1306
 kernel_rfl metalogic_g1307 : metalogic.globals[1307]? = some metalogic.g1307
-kernel_rfl metalogic_g1326 : metalogic.globals[1326]? = some metalogic.g1326
+kernel_rfl metalogic_g1308 : metalogic.globals[1308]? = some metalogic.g1308
+kernel_rfl metalogic_g1309 : metalogic.globals[1309]? = some metalogic.g1309
+kernel_rfl metalogic_g1310 : metalogic.globals[1310]? = some metalogic.g1310
+kernel_rfl metalogic_g1311 : metalogic.globals[1311]? = some metalogic.g1311
+kernel_rfl metalogic_g1312 : metalogic.globals[1312]? = some metalogic.g1312
+kernel_rfl metalogic_g1313 : metalogic.globals[1313]? = some metalogic.g1313
+kernel_rfl metalogic_g1314 : metalogic.globals[1314]? = some metalogic.g1314
+kernel_rfl metalogic_g1318 : metalogic.globals[1318]? = some metalogic.g1318
+kernel_rfl metalogic_g1320 : metalogic.globals[1320]? = some metalogic.g1320
+kernel_rfl metalogic_g1322 : metalogic.globals[1322]? = some metalogic.g1322
+kernel_rfl metalogic_g1324 : metalogic.globals[1324]? = some metalogic.g1324
+kernel_rfl metalogic_g1325 : metalogic.globals[1325]? = some metalogic.g1325
 kernel_rfl metalogic_g1328 : metalogic.globals[1328]? = some metalogic.g1328
+kernel_rfl metalogic_g1347 : metalogic.globals[1347]? = some metalogic.g1347
 kernel_rfl metalogic_g1349 : metalogic.globals[1349]? = some metalogic.g1349
-kernel_rfl metalogic_g1351 : metalogic.globals[1351]? = some metalogic.g1351
-kernel_rfl metalogic_g1352 : metalogic.globals[1352]? = some metalogic.g1352
-kernel_rfl metalogic_g1356 : metalogic.globals[1356]? = some metalogic.g1356
+kernel_rfl metalogic_g1370 : metalogic.globals[1370]? = some metalogic.g1370
+kernel_rfl metalogic_g1372 : metalogic.globals[1372]? = some metalogic.g1372
 kernel_rfl metalogic_g1373 : metalogic.globals[1373]? = some metalogic.g1373
-kernel_rfl metalogic_g1374 : metalogic.globals[1374]? = some metalogic.g1374
+kernel_rfl metalogic_g1377 : metalogic.globals[1377]? = some metalogic.g1377
+kernel_rfl metalogic_g1394 : metalogic.globals[1394]? = some metalogic.g1394
+kernel_rfl metalogic_g1395 : metalogic.globals[1395]? = some metalogic.g1395
 
-/-- The program's global of index 1273 is the mirror's proof by reduction to one normal form at a
+/-- The program's global of index 1294 is the mirror's proof by reduction to one normal form at a
 depth, at its type. -/
 theorem metalogic_byMode :
-    metalogic.globals[1273]? = some (⟨modeTy, «Tactics.byMode»⟩ : Glob) :=
-  metalogic_g1273.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1273).elim fun _ h ↦
+    metalogic.globals[1294]? = some (⟨modeTy, «Tactics.byMode»⟩ : Glob) :=
+  metalogic_g1294.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1294).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, tList tT, tT, rulesTy] h)
     (metalogic.«Tactics.byMode_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1274 is the mirror's proof by reduction to one weak normal form,
+/-- The program's global of index 1295 is the mirror's proof by reduction to one weak normal form,
 at its type. -/
 theorem metalogic_byWeak :
-    metalogic.globals[1274]? = some (⟨rulesProverTy, «Tactics.byWeak»⟩ : Glob) :=
-  metalogic_g1274.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1274).elim fun _ h ↦
+    metalogic.globals[1295]? = some (⟨rulesProverTy, «Tactics.byWeak»⟩ : Glob) :=
+  metalogic_g1295.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1295).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, rulesTy] h)
     (metalogic.«Tactics.byWeak_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1275 is the mirror's proof by that of the sides' normal forms at a
+/-- The program's global of index 1296 is the mirror's proof by that of the sides' normal forms at a
 depth, at its type. -/
 theorem metalogic_byNF :
-    metalogic.globals[1275]? = some (⟨nfTy, «Tactics.byNF»⟩ : Glob) :=
-  metalogic_g1275.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1275).elim fun _ h ↦
+    metalogic.globals[1296]? = some (⟨nfTy, «Tactics.byNF»⟩ : Glob) :=
+  metalogic_g1296.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1296).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, rulesTy, tT, proverTy] h)
     (metalogic.«Tactics.byNF_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1279 is the mirror's proof by normalization with the hypotheses as
+/-- The program's global of index 1300 is the mirror's proof by normalization with the hypotheses as
 rules, at its type. -/
 theorem metalogic_normH :
-    metalogic.globals[1279]? = some (⟨normHTy, «Tactics.normH»⟩ : Glob) :=
-  metalogic_g1279.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1279).elim fun _ h ↦
+    metalogic.globals[1300]? = some (⟨normHTy, «Tactics.normH»⟩ : Glob) :=
+  metalogic_g1300.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1300).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, rulesTy] h)
     (metalogic.«Tactics.normH_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1280 is the mirror's proof by extensionality a number of times, at
+/-- The program's global of index 1301 is the mirror's proof by extensionality a number of times, at
 its type. -/
 theorem metalogic_funExts :
-    metalogic.globals[1280]? = some (⟨funExtTy, «Tactics.funExts»⟩ : Glob) :=
-  metalogic_g1280.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1280).elim fun _ h ↦
+    metalogic.globals[1301]? = some (⟨funExtTy, «Tactics.funExts»⟩ : Glob) :=
+  metalogic_g1301.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1301).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, proverTy] h)
     (metalogic.«Tactics.funExts_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1281 is the mirror's proof by induction on a list with a step,
+/-- The program's global of index 1302 is the mirror's proof by induction on a list with a step,
 both cases by weak reduction, at its type. -/
 theorem metalogic_byListIndWeak :
-    metalogic.globals[1281]? = some (⟨listIndWeakTy, «Tactics.byListIndWeak»⟩ : Glob) :=
-  metalogic_g1281.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1281).elim fun _ h ↦
+    metalogic.globals[1302]? = some (⟨listIndWeakTy, «Tactics.byListIndWeak»⟩ : Glob) :=
+  metalogic_g1302.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1302).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, tT, rulesTy] h)
     (metalogic.«Tactics.byListIndWeak_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1282 is the mirror's proof by the uniqueness of the fold of a rose
+/-- The program's global of index 1303 is the mirror's proof by the uniqueness of the fold of a rose
 tree, the step's premise by a prover, at its type. -/
 theorem metalogic_byRoseIndWith :
-    metalogic.globals[1282]? = some (⟨proverFnTy, «Tactics.byRoseIndWith»⟩ : Glob) :=
-  metalogic_g1282.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1282).elim fun _ h ↦
+    metalogic.globals[1303]? = some (⟨proverFnTy, «Tactics.byRoseIndWith»⟩ : Glob) :=
+  metalogic_g1303.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1303).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, tT, proverTy] h)
     (metalogic.«Tactics.byRoseIndWith_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1284 is the mirror's proof by case analysis of a list variable, at
+/-- The program's global of index 1305 is the mirror's proof by case analysis of a list variable, at
 its type. -/
 theorem metalogic_byListSplit :
-    metalogic.globals[1284]? = some (⟨splitTy, «Tactics.byListSplit»⟩ : Glob) :=
-  metalogic_g1284.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1284).elim fun _ h ↦
+    metalogic.globals[1305]? = some (⟨splitTy, «Tactics.byListSplit»⟩ : Glob) :=
+  metalogic_g1305.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1305).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, tT, proverTy, proverTy] h)
     (metalogic.«Tactics.byListSplit_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1285 is the mirror's proof by case analysis of a coproduct
+/-- The program's global of index 1306 is the mirror's proof by case analysis of a coproduct
 variable, at its type. -/
 theorem metalogic_bySplit2 :
-    metalogic.globals[1285]? = some (⟨splitTy, «Tactics.bySplit2»⟩ : Glob) :=
-  metalogic_g1285.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1285).elim fun _ h ↦
+    metalogic.globals[1306]? = some (⟨splitTy, «Tactics.bySplit2»⟩ : Glob) :=
+  metalogic_g1306.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1306).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, tT, proverTy, proverTy] h)
     (metalogic.«Tactics.bySplit2_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1286 is the mirror's proof by case analysis of the innermost list
+/-- The program's global of index 1307 is the mirror's proof by case analysis of the innermost list
 variable, at its type. -/
 theorem metalogic_byListCases :
-    metalogic.globals[1286]? = some (⟨funExtTy, «Tactics.byListCases»⟩ : Glob) :=
-  metalogic_g1286.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1286).elim fun _ h ↦
+    metalogic.globals[1307]? = some (⟨funExtTy, «Tactics.byListCases»⟩ : Glob) :=
+  metalogic_g1307.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1307).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, proverTy] h)
     (metalogic.«Tactics.byListCases_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1287 is the mirror's proof by induction on a bitstring, at its
+/-- The program's global of index 1308 is the mirror's proof by induction on a bitstring, at its
 type. -/
 theorem metalogic_bitsInd :
-    metalogic.globals[1287]? = some (⟨twoProverTy, «Tactics.bitsInd»⟩ : Glob) :=
-  metalogic_g1287.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1287).elim fun _ h ↦
+    metalogic.globals[1308]? = some (⟨twoProverTy, «Tactics.bitsInd»⟩ : Glob) :=
+  metalogic_g1308.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1308).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, proverTy, proverTy] h)
     (metalogic.«Tactics.bitsInd_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1288 is the mirror's proof by case analysis of a bitstring, at its
+/-- The program's global of index 1309 is the mirror's proof by case analysis of a bitstring, at its
 type. -/
 theorem metalogic_bitsCases :
-    metalogic.globals[1288]? = some (⟨funExtTy, «Tactics.bitsCases»⟩ : Glob) :=
-  metalogic_g1288.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1288).elim fun _ h ↦
+    metalogic.globals[1309]? = some (⟨funExtTy, «Tactics.bitsCases»⟩ : Glob) :=
+  metalogic_g1309.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1309).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, proverTy] h)
     (metalogic.«Tactics.bitsCases_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1289 is the mirror's proof by case analysis of bitstrings to a
+/-- The program's global of index 1310 is the mirror's proof by case analysis of bitstrings to a
 depth, at its type. -/
 theorem metalogic_byBits :
-    metalogic.globals[1289]? = some (⟨byBitsTy, «Tactics.byBits»⟩ : Glob) :=
-  metalogic_g1289.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1289).elim fun _ h ↦
+    metalogic.globals[1310]? = some (⟨byBitsTy, «Tactics.byBits»⟩ : Glob) :=
+  metalogic_g1310.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1310).elim fun _ h ↦
       infer_lams (tArrow tT proverTy) _ [tT, proverTy, tT] h)
     (metalogic.«Tactics.byBits_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1290 is the mirror's proof by case analysis of a list to length
+/-- The program's global of index 1311 is the mirror's proof by case analysis of a list to length
 three, at its type. -/
 theorem metalogic_byLength3 :
-    metalogic.globals[1290]? = some (⟨twoProverTy, «Tactics.byLength3»⟩ : Glob) :=
-  metalogic_g1290.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1290).elim fun _ h ↦
+    metalogic.globals[1311]? = some (⟨twoProverTy, «Tactics.byLength3»⟩ : Glob) :=
+  metalogic_g1311.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1311).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, proverTy, proverTy] h)
     (metalogic.«Tactics.byLength3_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1291 is the mirror's proof with hypotheses cut in in normal form
+/-- The program's global of index 1312 is the mirror's proof with hypotheses cut in in normal form
 and used as rules, at its type. -/
 theorem metalogic_withWeakHyps :
-    metalogic.globals[1291]? = some (⟨weakHypsTy, «Tactics.withWeakHyps»⟩ : Glob) :=
-  metalogic_g1291.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1291).elim fun _ h ↦
+    metalogic.globals[1312]? = some (⟨weakHypsTy, «Tactics.withWeakHyps»⟩ : Glob) :=
+  metalogic_g1312.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1312).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, rulesTy, tList tT, krTy, tT] h)
     (metalogic.«Tactics.withWeakHyps_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1292 is the mirror's proof by induction on a list with the
+/-- The program's global of index 1313 is the mirror's proof by induction on a list with the
 induction hypothesis as a rule, at its type. -/
 theorem metalogic_byListIndHypWeak :
-    metalogic.globals[1292]? = some (⟨rulesProverTy, «Tactics.byListIndHypWeak»⟩ : Glob) :=
-  metalogic_g1292.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1292).elim fun _ h ↦
+    metalogic.globals[1313]? = some (⟨rulesProverTy, «Tactics.byListIndHypWeak»⟩ : Glob) :=
+  metalogic_g1313.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1313).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, rulesTy] h)
     (metalogic.«Tactics.byListIndHypWeak_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1293 is the mirror's proof by induction on a bitstring with the
+/-- The program's global of index 1314 is the mirror's proof by induction on a bitstring with the
 induction hypothesis as a rule, at its type. -/
 theorem metalogic_byBitsIndHyp :
-    metalogic.globals[1293]? = some (⟨bitsIndHypTy, «Tactics.byBitsIndHyp»⟩ : Glob) :=
-  metalogic_g1293.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1293).elim fun _ h ↦
+    metalogic.globals[1314]? = some (⟨bitsIndHypTy, «Tactics.byBitsIndHyp»⟩ : Glob) :=
+  metalogic_g1314.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1314).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, rulesTy, tT] h)
     (metalogic.«Tactics.byBitsIndHyp_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1297 is the mirror's proof with the instances of a hypothesis
+/-- The program's global of index 1318 is the mirror's proof with the instances of a hypothesis
 equating functions cut in, at its type. -/
 theorem metalogic_withInsts :
-    metalogic.globals[1297]? = some (⟨instsTy, «Tactics.withInsts»⟩ : Glob) :=
-  metalogic_g1297.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1297).elim fun _ h ↦
+    metalogic.globals[1318]? = some (⟨instsTy, «Tactics.withInsts»⟩ : Glob) :=
+  metalogic_g1318.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1318).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, rulesTy, tT, tssTy, krTy, tT] h)
     (metalogic.«Tactics.withInsts_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1299 is the mirror's proof with the hypotheses at the children of
+/-- The program's global of index 1320 is the mirror's proof with the hypotheses at the children of
 an induction on rose trees, at its type. -/
 theorem metalogic_withChildHyps :
-    metalogic.globals[1299]? = some (⟨childHypsTy, «Tactics.withChildHyps»⟩ : Glob) :=
-  metalogic_g1299.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1299).elim fun _ h ↦
+    metalogic.globals[1320]? = some (⟨childHypsTy, «Tactics.withChildHyps»⟩ : Glob) :=
+  metalogic_g1320.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1320).elim fun _ h ↦
       infer_lams proverTy _
         [tT, tList tT, tT, rulesTy, tT, tList tT, tArrow tT tssTy, tArrow (tList tT) proverTy] h)
     (metalogic.«Tactics.withChildHyps_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1301 is the mirror's proof by case analysis of a list variable
+/-- The program's global of index 1322 is the mirror's proof by case analysis of a list variable
 with a hypothesis reverted, at its type. -/
 theorem metalogic_revertCase :
-    metalogic.globals[1301]? = some (⟨revertTy, «Tactics.revertCase»⟩ : Glob) :=
-  metalogic_g1301.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1301).elim fun _ h ↦
+    metalogic.globals[1322]? = some (⟨revertTy, «Tactics.revertCase»⟩ : Glob) :=
+  metalogic_g1322.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1322).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, tT, tT, tT, tT, proverTy, proverTy] h)
     (metalogic.«Tactics.revertCase_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1303 is the mirror's proof of an implication by its introduction,
+/-- The program's global of index 1324 is the mirror's proof of an implication by its introduction,
 at its type. -/
 theorem metalogic_byImpI :
-    metalogic.globals[1303]? = some (⟨impITy, «Tactics.byImpI»⟩ : Glob) :=
-  metalogic_g1303.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1303).elim fun _ h ↦
+    metalogic.globals[1324]? = some (⟨impITy, «Tactics.byImpI»⟩ : Glob) :=
+  metalogic_g1324.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1324).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, tT, proverTy] h)
     (metalogic.«Tactics.byImpI_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1304 is the mirror's proof with implications eliminated, at its
+/-- The program's global of index 1325 is the mirror's proof with implications eliminated, at its
 type. -/
 theorem metalogic_withImpElim :
-    metalogic.globals[1304]? = some (⟨impElimTy, «Tactics.withImpElim»⟩ : Glob) :=
-  metalogic_g1304.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1304).elim fun _ h ↦
+    metalogic.globals[1325]? = some (⟨impElimTy, «Tactics.withImpElim»⟩ : Glob) :=
+  metalogic_g1325.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1325).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, tT, tList tT, krTy] h)
     (metalogic.«Tactics.withImpElim_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1307 is the mirror's proof by rewriting a predecessor's successor,
+/-- The program's global of index 1328 is the mirror's proof by rewriting a predecessor's successor,
 at its type. -/
 theorem metalogic_bySuccPred :
-    metalogic.globals[1307]? = some (⟨succPredTy, «Tactics.bySuccPred»⟩ : Glob) :=
-  metalogic_g1307.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1307).elim fun _ h ↦
+    metalogic.globals[1328]? = some (⟨succPredTy, «Tactics.bySuccPred»⟩ : Glob) :=
+  metalogic_g1328.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1328).elim fun _ h ↦
       infer_lams proverTy _ [tList tT, tT, proverTy] h)
     (metalogic.«Tactics.bySuccPred_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1326 is the mirror's proof by rounds of the instance search, at
+/-- The program's global of index 1347 is the mirror's proof by rounds of the instance search, at
 its type. -/
 theorem metalogic_byInsts :
-    metalogic.globals[1326]? = some (⟨instsSearchTy, «Tactics.byInsts»⟩ : Glob) :=
-  metalogic_g1326.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1326).elim fun _ h ↦
+    metalogic.globals[1347]? = some (⟨instsSearchTy, «Tactics.byInsts»⟩ : Glob) :=
+  metalogic_g1347.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1347).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, tList tT, tT, rulesTy, tT] h)
     (metalogic.«Tactics.byInsts_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1328 is the mirror's proof by the instance search or by case
+/-- The program's global of index 1349 is the mirror's proof by the instance search or by case
 analysis, to a depth, at its type. -/
 theorem metalogic_byAuto :
-    metalogic.globals[1328]? = some (⟨autoTy, «Tactics.byAuto»⟩ : Glob) :=
-  metalogic_g1328.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1328).elim fun _ h ↦
+    metalogic.globals[1349]? = some (⟨autoTy, «Tactics.byAuto»⟩ : Glob) :=
+  metalogic_g1349.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1349).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, rulesTy, tT, tT] h)
     (metalogic.«Tactics.byAuto_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1349 is the mirror's proof by case analysis of a tree variable, at
+/-- The program's global of index 1370 is the mirror's proof by case analysis of a tree variable, at
 its type. -/
 theorem metalogic_byTreeSplit :
-    metalogic.globals[1349]? = some (⟨funExtTy, «Tactics.byTreeSplit»⟩ : Glob) :=
-  metalogic_g1349.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1349).elim fun _ h ↦
+    metalogic.globals[1370]? = some (⟨funExtTy, «Tactics.byTreeSplit»⟩ : Glob) :=
+  metalogic_g1370.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1370).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, proverTy] h)
     (metalogic.«Tactics.byTreeSplit_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1351 is the mirror's proof by reduction, the instance search or
+/-- The program's global of index 1372 is the mirror's proof by reduction, the instance search or
 case analysis of lists, coproducts and trees, at its type. -/
 theorem metalogic_byAutoT :
-    metalogic.globals[1351]? = some (⟨autoTTy, «Tactics.byAutoT»⟩ : Glob) :=
-  metalogic_g1351.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1351).elim fun _ h ↦
+    metalogic.globals[1372]? = some (⟨autoTTy, «Tactics.byAutoT»⟩ : Glob) :=
+  metalogic_g1372.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1372).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, tT, rulesTy, tT, tT] h)
     (metalogic.«Tactics.byAutoT_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1352 is the mirror's proof by reduction or by case analysis,
+/-- The program's global of index 1373 is the mirror's proof by reduction or by case analysis,
 folded conditionals' tests among the variables, at its type. -/
 theorem metalogic_byAutoC :
-    metalogic.globals[1352]? = some (⟨autoCTy, «Tactics.byAutoC»⟩ : Glob) :=
-  metalogic_g1352.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1352).elim fun _ h ↦
+    metalogic.globals[1373]? = some (⟨autoCTy, «Tactics.byAutoC»⟩ : Glob) :=
+  metalogic_g1373.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1373).elim fun _ h ↦
       infer_lams proverTy _ [tT, tList tT, tT, tT, rulesTy, tT] h)
     (metalogic.«Tactics.byAutoC_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1356 is the mirror's derivation of a rewriting under a
+/-- The program's global of index 1377 is the mirror's derivation of a rewriting under a
 conditional's mask, at its type. -/
 theorem metalogic_maskRw :
-    metalogic.globals[1356]? = some (⟨maskRwTy, «Tactics.maskRw»⟩ : Glob) :=
-  metalogic_g1356.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1356).elim fun _ h ↦
+    metalogic.globals[1377]? = some (⟨maskRwTy, «Tactics.maskRw»⟩ : Glob) :=
+  metalogic_g1377.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1377).elim fun _ h ↦
       infer_lams tT _ [tT, tT, tT, tT, tList tT, tList tT, tT, tT, tT, tT, tT, tT] h)
     (metalogic.«Tactics.maskRw_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1373 is the mirror's proof by rewriting under masks by the
+/-- The program's global of index 1394 is the mirror's proof by rewriting under masks by the
 hypotheses, at its type. -/
 theorem metalogic_byMaskSubs :
-    metalogic.globals[1373]? = some (⟨maskSubsTy, «Tactics.byMaskSubs»⟩ : Glob) :=
-  metalogic_g1373.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1373).elim fun _ h ↦
+    metalogic.globals[1394]? = some (⟨maskSubsTy, «Tactics.byMaskSubs»⟩ : Glob) :=
+  metalogic_g1394.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1394).elim fun _ h ↦
       infer_lams (tArrow krTy proverTy) _ [tT, tList tT, tT, tT, rulesTy, tT] h)
     (metalogic.«Tactics.byMaskSubs_heq».trans HEq.rfl)))
 
-/-- The program's global of index 1374 is the mirror's proof by generalizing a term, at its type. -/
+/-- The program's global of index 1395 is the mirror's proof by generalizing a term, at its type. -/
 theorem metalogic_byGeneralize :
-    metalogic.globals[1374]? = some (⟨funExtTy, «Tactics.byGeneralize»⟩ : Glob) :=
-  metalogic_g1374.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1374).elim fun _ h ↦
+    metalogic.globals[1395]? = some (⟨funExtTy, «Tactics.byGeneralize»⟩ : Glob) :=
+  metalogic_g1395.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1395).elim fun _ h ↦
       infer_lams proverTy _ [tT, tT, proverTy] h)
     (metalogic.«Tactics.byGeneralize_heq».trans HEq.rfl)))
 
@@ -1068,137 +1068,137 @@ def listIndPMTy : Tree := [tList tT, tT, tT, tT, tT].foldr tArrow pmTy
 /-- The type of the rules of a library's indices. -/
 def libRulesTy : Tree := [tT].foldr tArrow (tList tT)
 
-kernel_rfl metalogic_g1624 : metalogic.globals[1624]? = some metalogic.g1624
-kernel_rfl metalogic_g1678 : metalogic.globals[1678]? = some metalogic.g1678
-kernel_rfl metalogic_g1684 : metalogic.globals[1684]? = some metalogic.g1684
-kernel_rfl metalogic_g1685 : metalogic.globals[1685]? = some metalogic.g1685
-kernel_rfl metalogic_g1688 : metalogic.globals[1688]? = some metalogic.g1688
-kernel_rfl metalogic_g1689 : metalogic.globals[1689]? = some metalogic.g1689
+kernel_rfl metalogic_g1645 : metalogic.globals[1645]? = some metalogic.g1645
 kernel_rfl metalogic_g1699 : metalogic.globals[1699]? = some metalogic.g1699
-kernel_rfl metalogic_g1700 : metalogic.globals[1700]? = some metalogic.g1700
-kernel_rfl metalogic_g1701 : metalogic.globals[1701]? = some metalogic.g1701
+kernel_rfl metalogic_g1705 : metalogic.globals[1705]? = some metalogic.g1705
 kernel_rfl metalogic_g1706 : metalogic.globals[1706]? = some metalogic.g1706
-kernel_rfl metalogic_g1707 : metalogic.globals[1707]? = some metalogic.g1707
-kernel_rfl metalogic_g1708 : metalogic.globals[1708]? = some metalogic.g1708
-kernel_rfl metalogic_g1733 : metalogic.globals[1733]? = some metalogic.g1733
-kernel_rfl metalogic_g1734 : metalogic.globals[1734]? = some metalogic.g1734
+kernel_rfl metalogic_g1709 : metalogic.globals[1709]? = some metalogic.g1709
+kernel_rfl metalogic_g1710 : metalogic.globals[1710]? = some metalogic.g1710
+kernel_rfl metalogic_g1720 : metalogic.globals[1720]? = some metalogic.g1720
+kernel_rfl metalogic_g1721 : metalogic.globals[1721]? = some metalogic.g1721
+kernel_rfl metalogic_g1722 : metalogic.globals[1722]? = some metalogic.g1722
+kernel_rfl metalogic_g1727 : metalogic.globals[1727]? = some metalogic.g1727
+kernel_rfl metalogic_g1728 : metalogic.globals[1728]? = some metalogic.g1728
+kernel_rfl metalogic_g1729 : metalogic.globals[1729]? = some metalogic.g1729
+kernel_rfl metalogic_g1754 : metalogic.globals[1754]? = some metalogic.g1754
+kernel_rfl metalogic_g1755 : metalogic.globals[1755]? = some metalogic.g1755
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1624 is the mirror's the typing of a term, at its type. -/
+/-- The program's global of index 1645 is the mirror's the typing of a term, at its type. -/
 theorem metalogic_typeTerm :
-    metalogic.globals[1624]? = some (⟨termPMTy, «Combinator.typeTerm»⟩ : Glob) :=
-  metalogic_g1624.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1624).elim fun _ h ↦
+    metalogic.globals[1645]? = some (⟨termPMTy, «Combinator.typeTerm»⟩ : Glob) :=
+  metalogic_g1645.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1645).elim fun _ h ↦
       infer_lams pmTy _ [tT] h)
     (metalogic.«Combinator.typeTerm_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1678 is the mirror's normal form of a term under rules, at its
+/-- The program's global of index 1699 is the mirror's normal form of a term under rules, at its
 type. -/
 theorem metalogic_pNormalize :
-    metalogic.globals[1678]? = some (⟨rulesPMTy, «Combinator.pNormalize»⟩ : Glob) :=
-  metalogic_g1678.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1678).elim fun _ h ↦
+    metalogic.globals[1699]? = some (⟨rulesPMTy, «Combinator.pNormalize»⟩ : Glob) :=
+  metalogic_g1699.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1699).elim fun _ h ↦
       infer_lams pmTy _ [tList tT, tT] h)
     (metalogic.«Combinator.pNormalize_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1684 is the mirror's instance of a source's sequent at terms, at
+/-- The program's global of index 1705 is the mirror's instance of a source's sequent at terms, at
 its type. -/
 theorem metalogic_pInst :
-    metalogic.globals[1684]? = some (⟨instPMTy, «Combinator.pInst»⟩ : Glob) :=
-  metalogic_g1684.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1684).elim fun _ h ↦
+    metalogic.globals[1705]? = some (⟨instPMTy, «Combinator.pInst»⟩ : Glob) :=
+  metalogic_g1705.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1705).elim fun _ h ↦
       infer_lams pmTy _ [tT, tList tT] h)
     (metalogic.«Combinator.pInst_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1685 is the mirror's expansion of an arrow into a product, at its
+/-- The program's global of index 1706 is the mirror's expansion of an arrow into a product, at its
 type. -/
 theorem metalogic_etaExpand :
-    metalogic.globals[1685]? = some (⟨termPMTy, «Combinator.etaExpand»⟩ : Glob) :=
-  metalogic_g1685.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1685).elim fun _ h ↦
+    metalogic.globals[1706]? = some (⟨termPMTy, «Combinator.etaExpand»⟩ : Glob) :=
+  metalogic_g1706.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1706).elim fun _ h ↦
       infer_lams pmTy _ [tT] h)
     (metalogic.«Combinator.etaExpand_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1688 is the mirror's rule unfolding a definition, at its type. -/
+/-- The program's global of index 1709 is the mirror's rule unfolding a definition, at its type. -/
 theorem metalogic_deltaRule :
-    metalogic.globals[1688]? = some (⟨treeFnTy, «Combinator.deltaRule»⟩ : Glob) :=
-  metalogic_g1688.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1688).elim fun _ h ↦
+    metalogic.globals[1709]? = some (⟨treeFnTy, «Combinator.deltaRule»⟩ : Glob) :=
+  metalogic_g1709.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1709).elim fun _ h ↦
       infer_lams tT _ [tT] h)
     (metalogic.«Combinator.deltaRule_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1689 is the mirror's proof of an equation by normalization, at its
+/-- The program's global of index 1710 is the mirror's proof of an equation by normalization, at its
 type. -/
 theorem metalogic_pByNorm :
-    metalogic.globals[1689]? = some (⟨rulesPMTy, «Combinator.pByNorm»⟩ : Glob) :=
-  metalogic_g1689.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1689).elim fun _ h ↦
+    metalogic.globals[1710]? = some (⟨rulesPMTy, «Combinator.pByNorm»⟩ : Glob) :=
+  metalogic_g1710.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1710).elim fun _ h ↦
       infer_lams pmTy _ [tList tT, tT] h)
     (metalogic.«Combinator.pByNorm_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1699 is the mirror's proof of a sequent added to a development, at
+/-- The program's global of index 1720 is the mirror's proof of a sequent added to a development, at
 its type. -/
 theorem metalogic_proveSeq :
-    metalogic.globals[1699]? = some (⟨proveSeqTy, «Combinator.proveSeq»⟩ : Glob) :=
-  metalogic_g1699.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1699).elim fun _ h ↦
+    metalogic.globals[1720]? = some (⟨proveSeqTy, «Combinator.proveSeq»⟩ : Glob) :=
+  metalogic_g1720.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1720).elim fun _ h ↦
       infer_lams tT _ [tT, pmTy, tList tT, tT, tList tT] h)
     (metalogic.«Combinator.proveSeq_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1700 is the mirror's normalization of a theorem's left side, added
+/-- The program's global of index 1721 is the mirror's normalization of a theorem's left side, added
 to a development, at its type. -/
 theorem metalogic_normalizeThm :
-    metalogic.globals[1700]? = some (⟨normalizeThmTy, «Combinator.normalizeThm»⟩ : Glob) :=
-  metalogic_g1700.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1700).elim fun _ h ↦
+    metalogic.globals[1721]? = some (⟨normalizeThmTy, «Combinator.normalizeThm»⟩ : Glob) :=
+  metalogic_g1721.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1721).elim fun _ h ↦
       infer_lams tT _ [tList tT, tT, tList tT, tT, tList tT] h)
     (metalogic.«Combinator.normalizeThm_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1701 is the mirror's instance of a source's sequent, its
+/-- The program's global of index 1722 is the mirror's instance of a source's sequent, its
 hypotheses proved by normalization, at its type. -/
 theorem metalogic_instBy :
-    metalogic.globals[1701]? = some (⟨instByTy, «Combinator.instBy»⟩ : Glob) :=
-  metalogic_g1701.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1701).elim fun _ h ↦
+    metalogic.globals[1722]? = some (⟨instByTy, «Combinator.instBy»⟩ : Glob) :=
+  metalogic_g1722.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1722).elim fun _ h ↦
       infer_lams pmTy _ [tList tT, tT, tList tT] h)
     (metalogic.«Combinator.instBy_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1706 is the mirror's proof by induction on the natural numbers
+/-- The program's global of index 1727 is the mirror's proof by induction on the natural numbers
 object, at its type. -/
 theorem metalogic_byNatInduction :
-    metalogic.globals[1706]? = some (⟨natIndPMTy, «Combinator.byNatInduction»⟩ : Glob) :=
-  metalogic_g1706.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1706).elim fun _ h ↦
+    metalogic.globals[1727]? = some (⟨natIndPMTy, «Combinator.byNatInduction»⟩ : Glob) :=
+  metalogic_g1727.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1727).elim fun _ h ↦
       infer_lams pmTy _ [tList tT, tT, tT, tT] h)
     (metalogic.«Combinator.byNatInduction_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1707 is the mirror's proof by induction on a list object, at its
+/-- The program's global of index 1728 is the mirror's proof by induction on a list object, at its
 type. -/
 theorem metalogic_byListInduction :
-    metalogic.globals[1707]? = some (⟨listIndPMTy, «Combinator.byListInduction»⟩ : Glob) :=
-  metalogic_g1707.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1707).elim fun _ h ↦
+    metalogic.globals[1728]? = some (⟨listIndPMTy, «Combinator.byListInduction»⟩ : Glob) :=
+  metalogic_g1728.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1728).elim fun _ h ↦
       infer_lams pmTy _ [tList tT, tT, tT, tT, tT] h)
     (metalogic.«Combinator.byListInduction_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1708 is the mirror's proof by induction on a list object with a
+/-- The program's global of index 1729 is the mirror's proof by induction on a list object with a
 parameter, at its type. -/
 theorem metalogic_byListParamInduction :
-    metalogic.globals[1708]? =
+    metalogic.globals[1729]? =
       some (⟨listIndPMTy, «Combinator.byListParamInduction»⟩ : Glob) :=
-  metalogic_g1708.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1708).elim fun _ h ↦
+  metalogic_g1729.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1729).elim fun _ h ↦
       infer_lams pmTy _ [tList tT, tT, tT, tT, tT] h)
     (metalogic.«Combinator.byListParamInduction_heq».trans HEq.rfl)))
 
@@ -1210,21 +1210,21 @@ theorem glob_eq_mk {g : Glob} {T : Tree} {x : Ty.den T} (hT : g.1 = T) (hx : HEq
   Sigma.ext hT hx
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1733 is the mirror's library of derived equations and its
+/-- The program's global of index 1754 is the mirror's library of derived equations and its
 development, at its type. -/
 theorem metalogic_libraryWith :
-    metalogic.globals[1733]? = some (⟨treeFnTy, «Combinator.libraryWith»⟩ : Glob) :=
-  metalogic_g1733.trans (congrArg some (glob_eq_mk
-    ((infer_of_loadStep metalogic.step1733).elim fun _ h ↦ infer_lams tT _ [tT] h)
+    metalogic.globals[1754]? = some (⟨treeFnTy, «Combinator.libraryWith»⟩ : Glob) :=
+  metalogic_g1754.trans (congrArg some (glob_eq_mk
+    ((infer_of_loadStep metalogic.step1754).elim fun _ h ↦ infer_lams tT _ [tT] h)
     metalogic.«Combinator.libraryWith_heq»))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1734 is the mirror's rules of the axioms and of the library's
+/-- The program's global of index 1755 is the mirror's rules of the axioms and of the library's
 derived equations, at its type. -/
 theorem metalogic_libRules :
-    metalogic.globals[1734]? = some (⟨libRulesTy, «Combinator.libRules»⟩ : Glob) :=
-  metalogic_g1734.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1734).elim fun _ h ↦
+    metalogic.globals[1755]? = some (⟨libRulesTy, «Combinator.libRules»⟩ : Glob) :=
+  metalogic_g1755.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1755).elim fun _ h ↦
       infer_lams (tList tT) _ [tT] h)
     (metalogic.«Combinator.libRules_heq».trans HEq.rfl)))
 
@@ -1239,27 +1239,27 @@ definitions, an S-expression and the names in scope to an optional term. -/
 def readBackTy : Tree := [tList tT, tT, tList tT].foldr tArrow tT
 
 -- the reader's resolution of what the printer prints and the partial printer are the program's
--- globals of indices 1853 and 1863
-kernel_rfl metalogic_g1853 : metalogic.globals[1853]? = some metalogic.g1853
-kernel_rfl metalogic_g1863 : metalogic.globals[1863]? = some metalogic.g1863
+-- globals of indices 1874 and 1884
+kernel_rfl metalogic_g1874 : metalogic.globals[1874]? = some metalogic.g1874
+kernel_rfl metalogic_g1884 : metalogic.globals[1884]? = some metalogic.g1884
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1853 is the mirror's resolution of what the printer writes, at its
+/-- The program's global of index 1874 is the mirror's resolution of what the printer writes, at its
 type. -/
 theorem metalogic_readBack :
-    metalogic.globals[1853]? = some (⟨readBackTy, «Printer.readBack»⟩ : Glob) :=
-  metalogic_g1853.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1853).elim fun _ h ↦
+    metalogic.globals[1874]? = some (⟨readBackTy, «Printer.readBack»⟩ : Glob) :=
+  metalogic_g1874.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1874).elim fun _ h ↦
       infer_lams tT _ [tList tT, tT, tList tT] h)
     (metalogic.«Printer.readBack_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1863 is the mirror's partial printer of kernel terms, at its
+/-- The program's global of index 1884 is the mirror's partial printer of kernel terms, at its
 type. -/
 theorem metalogic_printTermOpt :
-    metalogic.globals[1863]? = some (⟨printTermTy, «Printer.printTermOpt»⟩ : Glob) :=
-  metalogic_g1863.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1863).elim fun _ h ↦
+    metalogic.globals[1884]? = some (⟨printTermTy, «Printer.printTermOpt»⟩ : Glob) :=
+  metalogic_g1884.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1884).elim fun _ h ↦
       infer_lams tT _ [tList tT, tT, tT] h)
     (metalogic.«Printer.printTermOpt_heq».trans HEq.rfl)))
 
@@ -1369,113 +1369,113 @@ theorem metalogic_declStep :
 
 /-! The tactics' functions of terms. -/
 
--- the tactics' functions of terms are the program's globals of indices 1311 to 1349
-kernel_rfl metalogic_g1311 : metalogic.globals[1311]? = some metalogic.g1311
-kernel_rfl metalogic_g1316 : metalogic.globals[1316]? = some metalogic.g1316
-kernel_rfl metalogic_g1317 : metalogic.globals[1317]? = some metalogic.g1317
-kernel_rfl metalogic_g1320 : metalogic.globals[1320]? = some metalogic.g1320
+-- the tactics' functions of terms are the program's globals of indices 1332 to 1370
+kernel_rfl metalogic_g1332 : metalogic.globals[1332]? = some metalogic.g1332
 kernel_rfl metalogic_g1337 : metalogic.globals[1337]? = some metalogic.g1337
-kernel_rfl metalogic_g1339 : metalogic.globals[1339]? = some metalogic.g1339
+kernel_rfl metalogic_g1338 : metalogic.globals[1338]? = some metalogic.g1338
 kernel_rfl metalogic_g1341 : metalogic.globals[1341]? = some metalogic.g1341
-kernel_rfl metalogic_g1345 : metalogic.globals[1345]? = some metalogic.g1345
-kernel_rfl metalogic_g1348 : metalogic.globals[1348]? = some metalogic.g1348
-kernel_rfl metalogic_g1354 : metalogic.globals[1354]? = some metalogic.g1354
+kernel_rfl metalogic_g1358 : metalogic.globals[1358]? = some metalogic.g1358
+kernel_rfl metalogic_g1360 : metalogic.globals[1360]? = some metalogic.g1360
+kernel_rfl metalogic_g1362 : metalogic.globals[1362]? = some metalogic.g1362
+kernel_rfl metalogic_g1366 : metalogic.globals[1366]? = some metalogic.g1366
+kernel_rfl metalogic_g1369 : metalogic.globals[1369]? = some metalogic.g1369
+kernel_rfl metalogic_g1375 : metalogic.globals[1375]? = some metalogic.g1375
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1311 is the mirror's subterms of a term outside binders and
+/-- The program's global of index 1332 is the mirror's subterms of a term outside binders and
 folds' starts and steps, at its type. -/
 theorem metalogic_openSubterms :
-    metalogic.globals[1311]? =
+    metalogic.globals[1332]? =
       some (⟨[tT].foldr tArrow (tList tT), «Tactics.openSubterms»⟩ : Glob) :=
-  metalogic_g1311.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1311).elim fun _ h ↦ infer_lams (tList tT) _ [tT] h)
+  metalogic_g1332.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1332).elim fun _ h ↦ infer_lams (tList tT) _ [tT] h)
     (metalogic.«Tactics.openSubterms_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1316 is the mirror's variable a weak normal form is stuck on, at
+/-- The program's global of index 1337 is the mirror's variable a weak normal form is stuck on, at
 its type. -/
 theorem metalogic_stuckVar :
-    metalogic.globals[1316]? =
+    metalogic.globals[1337]? =
       some (⟨[tArrow tT tT, tT].foldr tArrow tT, «Tactics.stuckVar»⟩ : Glob) :=
-  metalogic_g1316.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1316).elim fun _ h ↦ infer_lams tT _ [tArrow tT tT, tT] h)
+  metalogic_g1337.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1337).elim fun _ h ↦ infer_lams tT _ [tArrow tT tT, tT] h)
     (metalogic.«Tactics.stuckVar_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1317 is the mirror's test that a term mentions a variable, at
+/-- The program's global of index 1338 is the mirror's test that a term mentions a variable, at
 its type. -/
 theorem metalogic_mentions :
-    metalogic.globals[1317]? = some (⟨[tT, tT].foldr tArrow tT, «Tactics.mentions»⟩ : Glob) :=
-  metalogic_g1317.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1317).elim fun _ h ↦ infer_lams tT _ [tT, tT] h)
+    metalogic.globals[1338]? = some (⟨[tT, tT].foldr tArrow tT, «Tactics.mentions»⟩ : Glob) :=
+  metalogic_g1338.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1338).elim fun _ h ↦ infer_lams tT _ [tT, tT] h)
     (metalogic.«Tactics.mentions_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1320 is the mirror's arguments at which the body of an
+/-- The program's global of index 1341 is the mirror's arguments at which the body of an
 abstraction matches the subterms of a term, at its type. -/
 theorem metalogic_matchesOf :
-    metalogic.globals[1320]? =
+    metalogic.globals[1341]? =
       some (⟨[tT, tT, tT].foldr tArrow (tList (tList tT)), «Tactics.matchesOf»⟩ : Glob) :=
-  metalogic_g1320.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1320).elim fun _ h ↦
+  metalogic_g1341.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1341).elim fun _ h ↦
       infer_lams (tList (tList tT)) _ [tT, tT, tT] h)
     (metalogic.«Tactics.matchesOf_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1337 is the mirror's type, test and branches of a conditional of
+/-- The program's global of index 1358 is the mirror's type, test and branches of a conditional of
 the library, at its type. -/
 theorem metalogic_condParts :
-    metalogic.globals[1337]? = some (⟨[tT].foldr tArrow tT, «Tactics.condParts»⟩ : Glob) :=
-  metalogic_g1337.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1337).elim fun _ h ↦ infer_lams tT _ [tT] h)
+    metalogic.globals[1358]? = some (⟨[tT].foldr tArrow tT, «Tactics.condParts»⟩ : Glob) :=
+  metalogic_g1358.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1358).elim fun _ h ↦ infer_lams tT _ [tT] h)
     (metalogic.«Tactics.condParts_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1339 is the mirror's variable a weak normal form is stuck on,
+/-- The program's global of index 1360 is the mirror's variable a weak normal form is stuck on,
 including the test of a folded conditional, at its type. -/
 theorem metalogic_stuckVarC :
-    metalogic.globals[1339]? =
+    metalogic.globals[1360]? =
       some (⟨[tArrow tT tT, tT].foldr tArrow tT, «Tactics.stuckVarC»⟩ : Glob) :=
-  metalogic_g1339.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1339).elim fun _ h ↦ infer_lams tT _ [tArrow tT tT, tT] h)
+  metalogic_g1360.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1360).elim fun _ h ↦ infer_lams tT _ [tArrow tT tT, tT] h)
     (metalogic.«Tactics.stuckVarC_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1341 is the mirror's applications of a definition to two
+/-- The program's global of index 1362 is the mirror's applications of a definition to two
 arguments among a term's subterms, at its type. -/
 theorem metalogic_appsOf :
-    metalogic.globals[1341]? =
+    metalogic.globals[1362]? =
       some (⟨[tT, tT].foldr tArrow (tList tT), «Tactics.appsOf»⟩ : Glob) :=
-  metalogic_g1341.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1341).elim fun _ h ↦ infer_lams (tList tT) _ [tT, tT] h)
+  metalogic_g1362.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1362).elim fun _ h ↦ infer_lams (tList tT) _ [tT, tT] h)
     (metalogic.«Tactics.appsOf_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1345 is the mirror's unfolding of a tree term, at its type. -/
+/-- The program's global of index 1366 is the mirror's unfolding of a tree term, at its type. -/
 theorem metalogic_unnodeU :
-    metalogic.globals[1345]? = some (⟨[tT].foldr tArrow tT, «Tactics.unnodeU»⟩ : Glob) :=
-  metalogic_g1345.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1345).elim fun _ h ↦ infer_lams tT _ [tT] h)
+    metalogic.globals[1366]? = some (⟨[tT].foldr tArrow tT, «Tactics.unnodeU»⟩ : Glob) :=
+  metalogic_g1366.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1366).elim fun _ h ↦ infer_lams tT _ [tT] h)
     (metalogic.«Tactics.unnodeU_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1348 is the mirror's rewriting of a term in which a tree rebuilt
+/-- The program's global of index 1369 is the mirror's rewriting of a term in which a tree rebuilt
 from the unfolding of a variable stands for the variable, back to the term, at its type. -/
 theorem metalogic_occRewrite :
-    metalogic.globals[1348]? =
+    metalogic.globals[1369]? =
       some (⟨[tT, tT, tT, tT].foldr tArrow tT, «Tactics.occRewrite»⟩ : Glob) :=
-  metalogic_g1348.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1348).elim fun _ h ↦ infer_lams tT _ [tT, tT, tT, tT] h)
+  metalogic_g1369.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1369).elim fun _ h ↦ infer_lams tT _ [tT, tT, tT, tT] h)
     (metalogic.«Tactics.occRewrite_heq».trans HEq.rfl)))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1354 is the mirror's abstraction of a term's occurrences of a
+/-- The program's global of index 1375 is the mirror's abstraction of a term's occurrences of a
 term, at its type. -/
 theorem metalogic_abstractTerm :
-    metalogic.globals[1354]? =
+    metalogic.globals[1375]? =
       some (⟨[tT, tT, tT].foldr tArrow tT, «Tactics.abstractTerm»⟩ : Glob) :=
-  metalogic_g1354.trans (congrArg some (Sigma.ext
-    ((infer_of_loadStep metalogic.step1354).elim fun _ h ↦ infer_lams tT _ [tT, tT, tT] h)
+  metalogic_g1375.trans (congrArg some (Sigma.ext
+    ((infer_of_loadStep metalogic.step1375).elim fun _ h ↦ infer_lams tT _ [tT, tT, tT] h)
     (metalogic.«Tactics.abstractTerm_heq».trans HEq.rfl)))
 
 end GebTests.Prototypes.FreeTopos.Agreement.Load
