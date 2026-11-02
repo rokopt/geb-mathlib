@@ -16,14 +16,17 @@ The theorems of {lit}`GebTests.Prototypes.FreeTopos.InternalDerivation` proved b
 the checker with a step of conversion ({name}`Geb.FreeTopos.Internal.convCheck`): an equation by
 two steps of conversion, the innermost normalization or the reduction to the normal form, in
 place of the two rewriting derivations the prover computes, each step one node; and a formula by
-an earlier theorem at the instance that matches it. A step whose rules do not reach a common
-normal form, and a theorem whose conclusion does not match, are rejected.
+an earlier theorem at the instance that matches it; and equations by steps of the environment
+machine rewriting by a theorem and by hypotheses, under an abstraction and where a rewriting
+makes a redex. A step whose rules do not reach a common normal form, and a theorem whose
+conclusion does not match, are rejected.
 
 ## Main definitions
 
 * {lit}`entries` — the theorems, as the entries of the development.
 * {lit}`byConv` — the certificate of an equation by two steps of conversion.
 * {lit}`proves` — whether a certificate proves a theorem.
+* {lit}`byMachine` — the certificate of an equation by a step of the machine at each side.
 
 ## Tags
 
@@ -82,6 +85,34 @@ def instanceThm : Thm :=
 -- the instance matches the second theorem's conclusion, and not the first's
 #guard instanceThm.convChecks G entries [] (RoseTree.node (.applyMatch 1 [A]) [])
 #guard !instanceThm.convChecks G entries [] (RoseTree.node (.applyMatch 0 [A]) [])
+
+/-- The certificate of an equation by a step of the machine at each side, unfolding no
+definition, its normal form rewritten at its roots by the prover's rules {lit}`rs`. -/
+def byMachine (rs : List NormRule) : ConvDeriv := byConv (.machine 64 0 [] 0 1 rs)
+
+-- the machine rewrites by the second theorem, from the inside out, and without it reaches no
+-- common normal form
+#guard instanceThm.convChecks G entries [] (byMachine [.thm 1 [A]])
+#guard !instanceThm.convChecks G entries [] (byMachine [])
+
+/-- A function equal by hypothesis to the identity, applied: its application is its argument. -/
+def appThm : Thm :=
+  ⟨1, [exp L L, L], [Term.eq (Term.var 0) (Term.lam L (Term.var 0))],
+    Term.eq (Term.app (Term.var 0) (Term.var 1)) (Term.var 1)⟩
+
+-- the machine rewrites the function by the hypothesis and reduces the application it makes a
+-- redex
+#guard appThm.convChecks G entries [] (byMachine [.hyp 0])
+#guard !appThm.convChecks G entries [] (byMachine [])
+
+/-- Two variables equal by hypothesis, under an abstraction: the abstractions are equal. -/
+def lamThm : Thm :=
+  ⟨1, [L, L], [Term.eq (Term.var 0) (Term.var 1)],
+    Term.eq (Term.lam L (Term.var 1)) (Term.lam L (Term.var 2))⟩
+
+-- the machine rewrites under the abstraction by the hypothesis weakened past its variable
+#guard lamThm.convChecks G entries [] (byMachine [.hyp 0])
+#guard !lamThm.convChecks G entries [] (byMachine [])
 
 end GebTests.Prototypes.FreeTopos.InternalConversion
 

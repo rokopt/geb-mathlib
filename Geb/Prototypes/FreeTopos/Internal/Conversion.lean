@@ -55,9 +55,12 @@ a derivation the step does not construct.
 
 A step of the machine rewrites a term to its normal form under constructors and abstractions by
 the environment machine ({name}`Geb.FreeTopos.Internal.machineReduce`), which is not the prover's
-reduction; the term rewrites to it by a derivation the base checker accepts
+reduction, rewriting at the roots of the normal form by the prover's rules the step names, the
+theorems and hypotheses among them ({name}`Geb.FreeTopos.Internal.rootRewriteK`); the term
+rewrites to it by a derivation the base checker accepts
 ({name}`Geb.FreeTopos.Internal.machineReduce_reaches`) where the term and the definitions' bodies
-have their variables as leaves, as a term that compiles has, so that it too is the base checker's
+have their variables as leaves, as a term that compiles has, each rewriting at a root by its rule
+({name}`Geb.FreeTopos.Internal.rootRewrite_checked`), so that it too is the base checker's
 rewriting by a derivation the step does not construct.
 
 ## Main definitions
@@ -131,8 +134,9 @@ inductive ConvRule where
   /-- The reduction of a term by the environment machine within the depth of recursion
   {lit}`fuel`, unfolding every definition of an index below {lit}`m` but those of
   {lit}`except`, a rose-tree fold's list of its children's values built by the primitives of
-  indices {lit}`kl` and {lit}`kc`. -/
-  | machine (fuel m : ℕ) (except : List ℕ) (kl kc : ℕ)
+  indices {lit}`kl` and {lit}`kc`, its normal form rewritten at its roots by the prover's rules
+  {lit}`rs`. -/
+  | machine (fuel m : ℕ) (except : List ℕ) (kl kc : ℕ) (rs : List NormRule)
 
 /-- A certificate of the conversion checker. -/
 abbrev ConvDeriv : Type := RoseTree ConvRule
@@ -142,7 +146,7 @@ congruence's choice of contexts: itself for a rule of the language, and one othe
 identity for a step of conversion and for an application of a theorem. -/
 def ConvRule.toRule : ConvRule → Rule
   | .base r => r
-  | .norm _ _ | .eval _ _ _ | .lit _ | .machine _ _ _ _ _ => .trans
+  | .norm _ _ | .eval _ _ _ | .lit _ | .machine _ _ _ _ _ _ => .trans
   | .applyMatch j θ => .apply j θ []
 
 /-- The instance of the theorem of index {lit}`j` among the entries, at the objects {lit}`θ`,
@@ -152,6 +156,28 @@ def applyInst (E : Array Entry) (j : ℕ) (θ : List Tree) (φ : Term) : Option 
   let σ ← matchTerm (if θ.isEmpty then a.concl else Term.osubst θ a.concl) 0 φ
     (List.replicate a.ctx.length none)
   σ.mapM id
+
+/-- The rewriting at a root of the machine's normal form by the prover's rules {lit}`rs` under the
+hypotheses {lit}`Φ`, weakened past the binders the normal form has passed where a rule reads
+them: none where there is no rule, so that the machine reads no hypothesis. -/
+def machineRw (G : Globals) (E : Array Entry) (n : ℕ) (rs : List NormRule) (Φ : List Term) :
+    List Tree → ℕ → Term → Option Term :=
+  if rs.isEmpty then fun _ _ _ ↦ none else
+    let idx := indexRules E (prepareRules E rs)
+    let hs := prepareHyps Φ
+    fun Γ k t ↦ (rootRewriteK G E n idx hs Γ k Φ t).map Prod.fst
+
+/-- The rewriting at a root of the machine's normal form is sound. -/
+theorem machineRw_reaches (G : Globals) (E : Array Entry) (n : ℕ) (rs : List NormRule)
+    (Φ : List Term) {Γ : List Tree} {k : ℕ}
+    {t u : Term} (h : machineRw G E n rs Φ Γ k t = some u) :
+    Literals.Reaches G E n Γ (Φ.map (weakenBy k)) t u := by
+  unfold machineRw at h
+  split at h
+  · cases h
+  · obtain ⟨⟨u', d⟩, hd, rfl⟩ := Option.map_eq_some_iff.mp h
+    rw [rootRewriteK_eq] at hd
+    exact ⟨(d, true), rootRewrite_checked hd⟩
 
 /-- One step of the conversion checker, at a node of a rule from its children's results: the base
 checker's step at a rule of the language, each child standing for a derivation of its rule; at a
@@ -166,9 +192,9 @@ def convStep (G : Globals) (E : Array Entry) (R : List ℕ) (n : ℕ) (l : ConvR
     (fun Γ Φ t ↦ (evalR G E n rs fuel depth Γ Φ t).map (·.1), fun _ _ _ ↦ false)
   | .lit j => (fun _ _ t ↦ if R.contains j then (Literals.eval t).map Literals.Val.term else none,
       fun _ _ _ ↦ false)
-  | .machine fuel m except kl kc =>
-    (fun _ _ t ↦ machineReduce G (fun j ↦ decide (j < m) && !except.contains j) kl kc fuel t,
-      fun _ _ _ ↦ false)
+  | .machine fuel m except kl kc rs =>
+    (fun Γ Φ t ↦ machineReduce G (fun j ↦ decide (j < m) && !except.contains j) kl kc
+      (machineRw G E n rs Φ) fuel Γ t, fun _ _ _ ↦ false)
   | .applyMatch j θ => (fun _ _ _ ↦ none, fun Γ Φ φ ↦ match applyInst E j θ φ with
     | some σ => (checkStep G E n (.apply j θ σ)
         (cs.map fun (d, c) ↦ (RoseTree.node d.label.toRule [], c))).2 Γ Φ φ
@@ -192,6 +218,7 @@ innermost variables: those of a reduction by the prover's rules, which may rewri
 hypothesis, and none for the others. -/
 def ConvRule.hyps (l : ConvRule) (k : ℕ) (Φ : List Term) : List Term := match l with
   | .norm _ _ | .eval _ _ _ => Φ.map (weakenBy k)
+  | .machine _ _ _ _ _ rs => if rs.isEmpty then [] else Φ.map (weakenBy k)
   | _ => []
 
 /-- One step of the conversion checker with its rewriting under weakened hypotheses
@@ -221,7 +248,7 @@ theorem para_convFastStep (G : Globals) (E : Array Entry) (R : List ℕ) (n : �
         (fun c ↦ (c.1, c.2.checks)) = ds.map fun d ↦ (d, convCheck G E R n d) := by
       rw [List.map_map]
       exact List.map_congr_left fun d hd ↦ by rw [Function.comp_apply, (ih d hd).2]
-    rcases l with r | ⟨rs, fuel⟩ | ⟨rs, fuel, depth⟩ | ⟨j, θ⟩ | j | ⟨fuel, m, except, kl, kc⟩
+    rcases l with r | ⟨rs, fuel⟩ | ⟨rs, fuel, depth⟩ | ⟨j, θ⟩ | j | ⟨fuel, m, except, kl, kc, rs⟩
     · obtain ⟨hu, hc⟩ := fastStep_eq G E n r
         (ds.map fun d ↦ (RoseTree.node d.label.toRule [], RoseTree.para (convFastStep G E R n) d))
         fun c hc ↦ by
@@ -237,8 +264,13 @@ theorem para_convFastStep (G : Globals) (E : Array Entry) (R : List ℕ) (n : �
       · simp only [convFastStep]
         rw [hcs]
         simp only [FastChecks.checks, ConvRule.hyps, map_weakenBy_zero]
-        -- the remaining steps' rewritings read no hypothesis
-        all_goals rfl
+        -- the remaining steps' rewritings read no hypothesis, nor the machine's without rules
+        all_goals first
+          | rfl
+          | refine Prod.ext (funext fun Γ ↦ funext fun Φ ↦ funext fun t ↦ ?_) rfl
+            split
+            · simp only [convStep, machineRw, *, ite_true]
+            · rfl
 
 /-- The conversion checker is the conversion checker with its rewriting under hypotheses weakened
 where they are read, by which the compiler replaces it. -/
@@ -259,7 +291,7 @@ theorem convCheck_isRefl {G : Globals} {E : Array Entry} {R : List ℕ} {n : ℕ
     t' = t := by
   obtain ⟨l, cs, rfl⟩ : ∃ l cs, c = RoseTree.node l cs :=
     ⟨_, _, (RoseTree.node_label_children c).symm⟩
-  rcases l with r | ⟨rs, fuel⟩ | ⟨rs, fuel, depth⟩ | ⟨j, θ⟩ | j | ⟨fuel, m, except, kl, kc⟩
+  rcases l with r | ⟨rs, fuel⟩ | ⟨rs, fuel, depth⟩ | ⟨j, θ⟩ | j | ⟨fuel, m, except, kl, kc, rs⟩
   · cases r <;> simp only [RoseTree.label_node, ConvRule.toRule, Rule.isRefl, reduceCtorEq] at hc
     rw [convCheck_node] at h
     rcases cs with _ | ⟨c', cs⟩
@@ -296,7 +328,7 @@ theorem convCheck_sound (hδ : DefnsOk M G) {E : Array Entry}
         obtain ⟨rfl, rfl⟩ := Prod.mk.inj h
       · exact ih c hc
       · exact fun hr _ _ _ _ h ↦ convCheck_isRefl hr h
-    rcases l with r | ⟨rs, fuel⟩ | ⟨rs, fuel, depth⟩ | ⟨j, θ⟩ | j | ⟨fuel, m, except, kl, kc⟩
+    rcases l with r | ⟨rs, fuel⟩ | ⟨rs, fuel, depth⟩ | ⟨j, θ⟩ | j | ⟨fuel, m, except, kl, kc, rs⟩
     · exact hstep r
     · refine ⟨fun Γ Φ t t' h ↦ ?_, fun _ _ _ h ↦ nomatch h⟩
       simp only [convStep, normalizeR_eq, Option.map_map] at h
@@ -327,7 +359,8 @@ theorem convCheck_sound (hδ : DefnsOk M G) {E : Array Entry}
           Term.VarLeaves d.body = true := fun j d hd ↦
         let ⟨_, hF, _⟩ := hδ j d hd
         Term.varLeaves_of_compile _ _ _ _ hF
-      obtain ⟨d, hd⟩ := machineReduce_reaches (E := E) (n := n) (Γ := Γ) (Φ := Φ) _ _ _ hdefs
+      obtain ⟨d, hd⟩ := machineReduce_reaches (E := E) (n := n) (Γ := Γ) (Φ := Φ) _ _ _
+        (fun _ _ _ _ h ↦ machineRw_reaches G E n _ Φ h) hdefs
         (Term.varLeaves_of_compile t X e r hr) h
       exact (check_sound hM hG hρ hps hds hδ hE hcert d.1).1 _ _ _ _ hd.check X e he hΓ hH r hr
 

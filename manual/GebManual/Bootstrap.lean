@@ -7241,10 +7241,16 @@ that remain, and the constraints each of them carries.
   are delayed, a node whose value the runtime computes on its first
   reading and keeps ({name}`Thunk`), beside its source. Its values are
   trees of the same W-type as terms
-  ({name}`Geb.FreeTopos.Internal.Val`). Its normal form is taken under
-  abstractions, a closure's body, its environment's terms substituted,
-  evaluated in the context its variable extends, and not under a fold's
-  step.
+  ({name}`Geb.FreeTopos.Internal.Val`). Its normal form is taken in a
+  context under abstractions, a closure's body, its environment's terms
+  substituted, evaluated in the context its variable extends, and not
+  under a fold's step. Each node of the normal form, its children's
+  taken, is rewritten at its root by the rewriting the machine is given,
+  which reads the context and the number of binders passed; the step
+  `machine` gives the prover's rules it names
+  ({name}`Geb.FreeTopos.Internal.machineRw`), theorems and hypotheses
+  among them. A rewritten term is evaluated again, and so is a node that
+  eliminates a child within which a rewriting changed a term.
 * `Geb/Prototypes/FreeTopos/Internal/MachineSound.lean`: the machine
   rewrites as the base checker does
   ({name}`Geb.FreeTopos.Internal.machineReduce_reaches`): every value
@@ -7252,7 +7258,11 @@ that remain, and the constraints each of them carries.
   checker's rules at the root, congruences in the node's context and
   the congruence at an abstraction's body, whose context the
   abstraction's type extends, so that no type is inferred, and a
-  delayed value's source rewrites to its value. The step `machine` rests on it.
+  delayed value's source rewrites to its value; a rewriting at a root of
+  the normal form is the base checker's by its rule
+  ({name}`Geb.FreeTopos.Internal.rootRewrite_checked`), under the
+  hypotheses weakened past the binders passed. The step `machine` rests
+  on it.
 * `Geb/Prototypes/FreeTopos/Internal/ConvDevelopment.lean`: the
   developments whose theorems carry derivations of the base checker or
   certificates of the conversion checker, and whose records of the
@@ -7481,11 +7491,20 @@ that remain, and the constraints each of them carries.
   apply; either the checks' time is not in the joins it replaces, or
   the machine's normal form costs there about what the base checker's
   rewriting does; the base checker's time is divided among its rules in
-  {ref "measurements"}[The measurements]. Whether the machine rewrites
-  by hypotheses and theorems, as the prover's normalization does, and so
-  replaces the other joins, and whether the normal forms in a fold's step belong to
-  the machine or to a conversion around it, are open; no stored
-  certificate is translated.
+  {ref "measurements"}[The measurements]. The machine rewrites by the
+  theorems and hypotheses a step names, at the roots of its normal form,
+  innermost first. A translation that joins the other joins by steps
+  rewriting by the theorems and hypotheses their rewritings cite does
+  not end on the certificate of weakening: the machine's normal form of
+  the sides of a join that a theorem's rewriting proves takes, at one
+  theorem, 9 milliseconds within a depth of recursion of 22 and 364
+  seconds within one of 24, since the machine unfolds the definitions
+  whose computation the rewriting by the theorem leaves undone, and
+  leaving the theorems' definitions folded leaves the branches of their
+  case analyses unselected. Which definitions a step unfolds where its
+  rewritings cite theorems, and whether the normal forms in a fold's
+  step belong to the machine or to a conversion around it, are open; no
+  stored certificate is translated.
 
 ### The base checker's evaluation
 %%%
