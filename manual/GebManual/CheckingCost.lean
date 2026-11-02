@@ -61,7 +61,7 @@ at its end.
   * From 8 to 71 minutes each
   * The same, for their developments
 *
-  * `GebSlow`
+  * The check of the certificate `datatype-list`
   * Four and a half hours
   * Lean's evaluator's check of the certificate `datatype-list`
 :::
