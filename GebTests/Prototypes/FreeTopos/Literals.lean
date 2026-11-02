@@ -7,8 +7,8 @@ module
 
 public import GebTests.Prototypes.FreeTopos.TranslationProofs -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos.TranslationProofs -- shake: keep
-public import Geb.Prototypes.FreeTopos.Internal.Conversion -- shake: keep
-public meta import Geb.Prototypes.FreeTopos.Internal.Conversion -- shake: keep
+public import Geb.Prototypes.FreeTopos.Internal.ConvDevelopment -- shake: keep
+public meta import Geb.Prototypes.FreeTopos.Internal.ConvDevelopment -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -20,12 +20,15 @@ rebuildings of bitstrings by the folds that pair a list with a value, and the ce
 checker with a step of conversion that evaluate the arithmetic at numerals in one step, each
 equation of a term and its value's numeral proved by that step at the term. The evaluation agrees
 with the library's definitions unfolded and normalized; it is rejected where the equations are not
-the theorems it names, and a false equation is not proved.
+the theorems it names, or names an index the development has not recorded as ready, and a false
+equation is not proved.
 
 ## Main definitions
 
 * {lit}`development` — the rebuildings and the equations, each with its derivation.
 * {lit}`entries`, {lit}`first` — the development's theorems, and the index of the first equation.
+* {lit}`recorded` — the development followed by the record that the evaluation is ready at an
+  index.
 * {lit}`proves` — whether a step of evaluation proves an equation of closed terms.
 
 ## Tags
@@ -90,8 +93,15 @@ def entries : Array Entry :=
   (Internal.checkDev G #[] ds).isSome
 
 -- the equations are its theorems from the first index on, and the evaluation is ready there
-#guard ready G entries 0 [] first
-#guard !ready G entries 0 [] 0
+#guard ready G entries first
+#guard !ready G entries 0
+
+/-- The development followed by the record that the evaluation is ready at an index. -/
+def recorded (j : ℕ) : List Internal.ConvDecl := (development.getD []).map .base ++ [.ready j]
+
+-- the record at the first equation is accepted and kept, and the record at another index is not
+#guard (Internal.checkConvDev G #[] (recorded first)).any fun st ↦ st.2.2 = [first]
+#guard (Internal.checkConvDev G #[] (recorded 0)).isNone
 
 /-- The certificate of an equation by a step of evaluation at its left side, from the theorems at
 an index. -/
@@ -99,9 +109,9 @@ def byLit (j : ℕ) : ConvDeriv :=
   RoseTree.node (.base .join) [RoseTree.node (.lit j) [], RoseTree.node (.base .refl) []]
 
 /-- Whether a step of evaluation proves an equation of closed terms, from the theorems at an
-index. -/
+index, where the evaluation is recorded as ready at the first equation. -/
 def proves (t u : Term) (j : ℕ := first) : Bool :=
-  (⟨0, [], [], Term.eq t u⟩ : Thm).convChecks G entries (byLit j)
+  (⟨0, [], [], Term.eq t u⟩ : Thm).convChecks G entries [first] (byLit j)
 
 /-- The numeral of a number. -/
 def lit (k : ℕ) : Term := bitsT (num k)

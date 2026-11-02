@@ -45,7 +45,8 @@ step sound without the rewriting being performed.
 * {lit}`lemmas` — the definitions' equations at the numerals' bits.
 * {lit}`eval` — the value of a term built of the definitions over literals.
 * {lit}`ready` — the conditions under which the evaluation is a rewriting: the equations among
-  the theorems from an index on, and the definitions' and the literals' types.
+  the theorems from an index on, and the definitions' and the literals' types, which hold with
+  more constants and entries ({lit}`ready_mono`) and in every context.
 
 ## Main statements
 
@@ -454,12 +455,75 @@ def lemmasIn (E : Array Entry) (j : ℕ) : Bool :=
     | some b => decide (b.arity = a.arity ∧ b.ctx = a.ctx ∧ b.hyps = a.hyps ∧ b.concl = a.concl)
     | none => false
 
-/-- The conditions under which the evaluation is a rewriting in a context: the equations among
-the theorems from the index {lit}`j` on, the definitions evaluated those of the constants, and
-the comparisons' results of their type. -/
-def ready (G : Globals) (E : Array Entry) (n : ℕ) (Γ : List Tree) (j : ℕ) : Bool :=
-  lemmasIn E j && Sym.all.all (sigOk G n) &&
-    [Ordering.lt, .eq, .gt].all fun o ↦ decide (typeIn G n Γ (ordT o) = some ordTy)
+/-- The conditions under which the evaluation is a rewriting: the equations among the theorems
+from the index {lit}`j` on, the definitions evaluated those of the constants, and the comparisons'
+results of their type, the latter two with no object variables and in the empty context, which
+the evaluation's terms and types do not read. -/
+def ready (G : Globals) (E : Array Entry) (j : ℕ) : Bool :=
+  lemmasIn E j && Sym.all.all (sigOk G 0) &&
+    [Ordering.lt, .eq, .gt].all fun o ↦ decide (typeIn G 0 [] (ordT o) = some ordTy)
+
+/-! Readiness at more constants, entries, object variables and variables. -/
+
+/-- A type with no object variables is a type with any number of them. -/
+theorem isTy_of_isTy_zero {G : Globals} {n : ℕ} {A : Tree} (h : IsTy G 0 A = true) :
+    IsTy G n A = true := by
+  simpa only [PartialHorn.subst_nil] using Internal.isTy_subst (θ := []) rfl rfl A h
+
+/-- A definition evaluated is the constants' with no object variables where it is with more
+constants and any number of object variables. -/
+theorem sigOk_mono {G G' : Globals} (hle : G.Le G') (n : ℕ) {s : Sym} (h : sigOk G 0 s = true) :
+    sigOk G' n s = true := by
+  unfold sigOk at h ⊢
+  split at h
+  · rename_i d hd
+    obtain ⟨D, hD, hDl⟩ := Option.bind_eq_some_iff.mp hd
+    rw [Internal.getElem?_of_prefix hle.2.2 hD, Option.bind_some, hDl]
+    simp only [Bool.and_eq_true] at h ⊢
+    exact ⟨⟨⟨h.1.1.1, List.all_eq_true.mpr fun A hA ↦ isTy_of_isTy_zero
+      (Internal.isTy_mono hle A (List.all_eq_true.mp h.1.1.2 A hA))⟩, h.1.2⟩, h.2⟩
+  · cases h
+
+/-- A term in which no variable occurs, of a type with no object variables in the empty context,
+is of that type with any number of object variables in every context. -/
+theorem typeIn_of_closed {G : Globals} (hG : G.WF) {t : Term} (ht : ∀ i, Term.occurs t i = false)
+    {A : Tree} (h : typeIn G 0 [] t = some A) (n : ℕ) (Γ : List Tree) :
+    typeIn G n Γ t = some A := by
+  rw [Internal.typeIn_eq_compile] at h ⊢
+  obtain ⟨r, hr, rfl⟩ := Option.map_eq_some_iff.mp h
+  have hn := Internal.compile_osubst hG (θ := []) (m := n) rfl rfl t _ _ r hr
+  simp only [Term.osubst_nil, PartialHorn.subst_nil, Internal.substPair] at hn
+  obtain ⟨f, hf⟩ := Internal.compile_retype_on t _ _ _ hn (Internal.ctxObj Γ) (Internal.stdEnv Γ)
+    fun i hi ↦ (Bool.false_ne_true ((ht i).symm.trans hi)).elim
+  rw [hf]
+  rfl
+
+/-- No variable occurs in a comparison's result. -/
+theorem occurs_ordT (o : Ordering) (i : ℕ) : Term.occurs (ordT o) i = false := by
+  cases o <;> simp [ordT, ltO, eqO, gtO, bit0T, bit1T, Term.arr, Term.occurs_node, Term.occursStep,
+    Internal.occurs_star]
+
+/-- Readiness holds with more constants and entries. -/
+theorem ready_mono {G G' : Globals} {E E' : Array Entry} (hle : G.Le G')
+    (hE : E.toList <+: E'.toList) {j : ℕ} (h : ready G E j = true) : ready G' E' j = true := by
+  simp only [ready, lemmasIn, Bool.and_eq_true, List.all_eq_true] at h ⊢
+  obtain ⟨⟨hl, hs⟩, ho⟩ := h
+  refine ⟨⟨fun p hp ↦ ?_, fun s hs' ↦ sigOk_mono hle 0 (hs s hs')⟩, fun o ho' ↦ ?_⟩
+  · have hm := hl p hp
+    split at hm
+    · rename_i b hb
+      obtain ⟨e, he, hel⟩ := Option.bind_eq_some_iff.mp hb
+      have he' : E'[j + p.2]? = some e := by
+        rw [← Array.getElem?_toList] at he ⊢
+        exact Internal.getElem?_of_prefix hE he
+      simp only [he', Option.bind_some, hel]
+      exact hm
+    · cases hm
+  · have h₀ := of_decide_eq_true (ho o ho')
+    rw [Internal.typeIn_eq_compile] at h₀ ⊢
+    obtain ⟨r, hr, hr'⟩ := Option.map_eq_some_iff.mp h₀
+    rw [Internal.compile_mono hle _ _ _ r hr]
+    exact decide_eq_true (by rw [Option.map_some, hr'])
 
 /-! Rewriting by derivations. -/
 
@@ -1409,13 +1473,14 @@ end Arithmetic
 /-- A term that evaluates rewrites to its value's literal by a derivation of the language, where
 the evaluation is ready. -/
 theorem checked_of_eval {G : Globals} {E : Array Entry} {n : ℕ} {Γ : List Tree} {Φ : List Term}
-    {j : ℕ} {t : Term} {v : Val} (hr : ready G E n Γ j = true) (h : eval t = some v) :
+    {j : ℕ} {t : Term} {v : Val} (hG : G.WF) (hr : ready G E j = true) (h : eval t = some v) :
     ∃ d, Checked G E n Γ Φ t (v.term, d) := by
   simp only [ready, Bool.and_eq_true, List.all_eq_true] at hr
   obtain ⟨⟨hE, hS⟩, hO⟩ := hr
-  exact eval_reaches (inEnv_of_lemmasIn hE) hS (fun o ↦ by
-    cases o <;> exact of_decide_eq_true (hO _ (by simp only [List.mem_cons, reduceCtorEq,
-      List.not_mem_nil, or_false, or_true]))) t v h
+  exact eval_reaches (inEnv_of_lemmasIn hE) (fun s hs ↦ sigOk_mono (.refl G) n (hS s hs))
+    (fun o ↦ typeIn_of_closed hG (occurs_ordT o) (by
+      cases o <;> exact of_decide_eq_true (hO _ (by simp only [List.mem_cons, reduceCtorEq,
+        List.not_mem_nil, or_false, or_true]))) n Γ) t v h
 
 end Geb.FreeTopos.Literals
 

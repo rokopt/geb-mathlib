@@ -86,9 +86,9 @@ derivations' nodes lay in rewritings and 69 in 100 were compositions,
 congruences and identities; the terms the rules name, counted as trees,
 had ten times the derivations' nodes; and one step of conversion in
 place of each rewriting leaves about one node in ninety. At numerals of
-six decimal digits the base checker takes 28.7 seconds on the prover's
-derivation of a product, and the step of evaluation at literals from 0.2
-to 0.4 milliseconds.
+six decimal digits the base checker takes 27.1 seconds on the prover's
+derivation of a product, and the step of evaluation at literals from
+0.03 to 0.05 milliseconds.
 
 A type theory with a conversion rule decides such equations by
 computing. The equality of two terms up to reduction is a judgment its
@@ -237,7 +237,7 @@ each step of the trace costs a traversal of the reduction, the fourth;
 each operation of the check costs the interpreter's overhead, the
 fifth; and each congruence under a binder costs a traversal of every
 hypothesis, the seventh. The ratio of the base checker's time to the step of evaluation at
-literals, about ten to the fifth, is the first two together. No one
+literals, about five times ten to the fifth, is the first two together. No one
 factor accounts for the distance between a check of seconds and one that
 exceeds the hosted runners' limit.
 
@@ -386,8 +386,8 @@ against their cost.
    derivation, which removes the first factor from the certificates'
    size and leaves the time of a step the reduction's own; the step
    `machine` reduces by the environment machine, at numerals of six
-   decimal digits from 3 times faster than the step `eval` at their
-   equality to 160 times at their product
+   decimal digits from 3.5 times faster than the step `eval` at their
+   equality to 105 times at their product
    ({ref "measurements"}[The measurements]), which removes the
    fourth factor at the terms it reduces. It reads a fold's step back
    unreduced. A translation of the stored developments' derivations
@@ -468,25 +468,25 @@ decimal digits, in one run:
   * Step `machine`
 *
   * Addition
-  * 224 milliseconds
-  * 212 milliseconds
-  * 205 milliseconds
-  * 0.32 milliseconds
-  * 5.8 milliseconds
+  * 136 milliseconds
+  * 171 milliseconds
+  * 172 milliseconds
+  * 0.035 milliseconds
+  * 4.5 milliseconds
 *
   * Multiplication
-  * 37.5 seconds
-  * 39.6 seconds
-  * 32.2 seconds
-  * 0.38 milliseconds
-  * 197 milliseconds
+  * 27.1 seconds
+  * 22.3 seconds
+  * 18.8 seconds
+  * 0.053 milliseconds
+  * 179 milliseconds
 *
   * Truncated difference
-  * 201 milliseconds
-  * 262 milliseconds
-  * 268 milliseconds
-  * 0.31 milliseconds
-  * 7.4 milliseconds
+  * 235 milliseconds
+  * 265 milliseconds
+  * 234 milliseconds
+  * 0.035 milliseconds
+  * 6.1 milliseconds
 :::
 
 At the other definitions and sizes measured, the step `eval` and the
@@ -497,12 +497,12 @@ derivation's nodes from a certificate and leaves the time of the
 reduction, its rewriting by substitution and its trial of the rules at
 each node, to the method of the reduction. The step `machine` reduces by
 another method, and at numerals of six decimal digits is faster than the
-step `eval` by factors from 3, at equality, to 160, at the product. The
+step `eval` by factors from 3.5, at equality, to 105, at the product. The
 step of
 evaluation, which computes by the arithmetic of the natural numbers, is
-faster than the first three on the product by factors from 80000 to
-110000, the first two factors together, and than the step `machine` by
-a factor of 500 there, the second factor, which the machine leaves.
+faster than the first three on the product by factors from 350000 to
+510000, the first two factors together, and than the step `machine` by
+a factor of 3400 there, the second factor, which the machine leaves.
 
 `GebBench/Prototypes/FreeTopos/Profile.lean` divides the base checker's
 time on a stored development among its derivations' rules: each node's

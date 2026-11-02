@@ -72,7 +72,7 @@ def report (name : String) (s : Sym) (a b : ℕ) : IO Unit := do
         Internal.eval G entries 0 rs 4096 .full [] [] v.term with
     | some (l, _), some (r, _) => l == r
     | _, _ => false
-  let (okN, tN) ← timeUs fun _ ↦ a'.convChecks G entries byReduction
+  let (okN, tN) ← timeUs fun _ ↦ a'.convChecks G entries [] byReduction
   let (okL, tL) ← timeUs fun _ ↦ proves t v.term
   let (okM, tM) ← timeUs fun _ ↦ GebTests.Prototypes.FreeTopos.Machine.proves t v.term
   if !(okB && okD && okN && okL && okM) then

@@ -49,7 +49,7 @@ def byMachine : ConvDeriv :=
 
 /-- Whether a step of the machine at each side proves an equation of closed terms. -/
 def proves (t u : Term) : Bool :=
-  (⟨0, [], [], Term.eq t u⟩ : Thm).convChecks G entries byMachine
+  (⟨0, [], [], Term.eq t u⟩ : Thm).convChecks G entries [] byMachine
 
 -- arithmetic, comparison and their compositions
 #guard proves (bin .add 7 9) (lit 16)

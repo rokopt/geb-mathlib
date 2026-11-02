@@ -85,7 +85,7 @@ def proves (Γ : List PartialHorn.Tree) (M F : Expr) : Bool := provesIn 0 Γ M F
 in the internal context {lit}`Γ`. -/
 def provesMod (Γ : List PartialHorn.Tree) (M F : Expr) : Bool :=
   match decPfMod pfIdx #[] M (Γ.map fun _ ↦ none) 0, dec pfIdx F Γ.length with
-    | some D, some φ => Thm.convChecks pfGlobals #[] ⟨0, Γ, [], φ⟩ D
+    | some D, some φ => Thm.convChecks pfGlobals #[] [] ⟨0, Γ, [], φ⟩ D
     | _, _ => false
 
 /-- Whether a proof, in an LF context of term variables of the natural numbers, decodes to a
@@ -474,7 +474,7 @@ def provesDefIn (n : ℕ) (Γ : List PartialHorn.Tree) (M F : Expr) : Bool × Bo
   match decPf defIdx M (Γ.map fun _ ↦ none) 0, decPfMod defIdx #[] M (Γ.map fun _ ↦ none) 0,
       dec defIdx F Γ.length with
     | some D, some D', some φ => (Thm.checks defGlobals #[] ⟨n, Γ, [], φ⟩ D,
-        Thm.convChecks defGlobals #[] ⟨n, Γ, [], φ⟩ D')
+        Thm.convChecks defGlobals #[] [] ⟨n, Γ, [], φ⟩ D')
     | _, _, _ => (false, false)
 
 -- The definition is admitted, and it and its unfolding are declared, the unfolding well formed.
