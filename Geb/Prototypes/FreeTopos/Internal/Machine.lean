@@ -162,8 +162,13 @@ def readStep : VLabel → List Term → Term
   | .delay, _ => Term.star
   | .fail, _ => Term.star
 
-/-- The term a value reads back to. -/
-def readBack : Val → Term := RoseTree.elim readStep
+/-- The term a value reads back to: the fold of {lit}`readStep`, save that a delayed value reads
+back to its source's term alone, the term of its value not computed, so that reading back does
+not run the computations a value delays. -/
+def readBack : Val → Term :=
+  WType.elim Term fun ⟨(l, n), g⟩ ↦ match l with
+    | .delay => if h : n = 2 then g ⟨1, h ▸ Nat.one_lt_two⟩ else readStep .delay (List.ofFn g)
+    | l => readStep l (List.ofFn g)
 
 /-- The node of a value of a label over values. -/
 abbrev vnode (l : VLabel) (cs : List Val) : Val := RoseTree.node l cs
