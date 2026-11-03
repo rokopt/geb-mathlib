@@ -16,9 +16,19 @@ concurrency:
 
 jobs:
   doc-build:
-    runs-on: ubuntu-latest
+    # On the ubuntu-26.04 image, Lake's spawn of `git` for doc-gen4's
+    # `srcUri.github` facet fails with ENOMEM (error code 12) while
+    # doc-gen4 documents Lean core (`coreDocs`); on ubuntu-24.04 the
+    # build succeeds. The first step reports the runner's memory, swap
+    # and overcommit configuration, for comparison with a later image.
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
+      - name: Report memory configuration
+        run: |
+          free -h
+          swapon --show
+          cat /proc/sys/vm/overcommit_memory
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - uses: leanprover/lean-action@24581d74d674803a25a81b10b059c5c0cdd344c6  # v1
         with:
