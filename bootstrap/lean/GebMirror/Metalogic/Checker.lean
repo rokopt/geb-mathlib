@@ -12599,6 +12599,322 @@ def «Derivation/OScopes.allJust» :=
 def «Derivation.scope0» :=
   «Derivation.ctxPair» ([] : List T) ([] : List T)
 
+def «Derivation.binder» :=
+  fun (x0 : T) (x1 : T) =>
+    Const.node (leaf 0) (x0 :: (x1 :: ([] : List T)))
+
+def «Derivation.binderCtx» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (let x1 : T := x0;
+            let x2 : List T := Const.children x1;
+            let x3 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let x7 : T := x3;
+            let x8 : List T := Const.children x7; let x9 : List T := x8; x9);
+    x1
+
+def «Derivation.binderNum» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let x5 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   x5);
+    x1
+
+def «Derivation.ctxNum» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := «Derivation.binder» («Language.objs» x0) x1; x2
+
+def «Derivation/BinderL.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Derivation/BinderL.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Derivation/BinderL.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Derivation/BinderL.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Derivation/BinderL.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Derivation/BinderL.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «Derivation/BinderL.tail» x1 x0;
+    x2
+
+def «Derivation/BinderL.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Derivation/BinderL.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Derivation/BinderF.l2» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : List T := (x0 :: (x1 :: ([] : List T))); x2
+
+def «Derivation/BinderF.l3» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    let x3 : List T := (x0 :: («Derivation/BinderF.l2» x1 x2)); x3
+
+def «Derivation/BinderF.l4» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) =>
+    let x4 : List T := (x0 :: («Derivation/BinderF.l3» x1 x2 x3)); x4
+
+def «Derivation/BinderF.l5» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
+    let x5 : List T := (x0 :: («Derivation/BinderF.l4» x1 x2 x3 x4)); x5
+
+def «Derivation/BinderF.l6» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) =>
+    let x6 : List T := (x0 :: («Derivation/BinderF.l5» x1 x2 x3 x4 x5));
+    x6
+
+def «Derivation/BinderAt.map» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => ((x0 x2) :: x3))
+      ([] : List T)
+      x1;
+    x2
+
+def «Derivation.binders» :=
+  fun (x0 : List T) => Const.node (leaf 0) x0
+
+def «Derivation.bindersOf» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (let x1 : T := x0;
+            let x2 : List T := Const.children x1; let x3 : List T := x2; x3);
+    x1
+
+def «Derivation/OBinders.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Derivation/OBinders.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Derivation/OBinders.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
+                   else
+                     let _ : List T := Const.children x1; leaf 0);
+    x1
+
+def «Derivation/OBinders.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
+                   else
+                     let _ : List T := Const.children x2; x0);
+    x2
+
+def «Derivation/OBinders.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Derivation/OBinders.nothing»
+      (fun (x2 : T) (_ : List T) => «Derivation/OBinders.just» x2);
+    x2
+
+def «Derivation/OBinders.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
+        else
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Derivation.binder0» := «Derivation.ctxNum» ([] : List T) (leaf 0)
+
+def «Derivation.bindTB» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (if («Prelude.isSome» x0).label ≠ 0 then
+      x1 («Prelude.get» x0)
+    else
+      «Derivation/OBinders.nothing»);
+    x2
+
+def «Derivation.bindBT» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
+                   else
+                     let _ : List T := Const.children x2; «Prelude.none»);
+    x2
+
 def «Derivation.bindTS» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (if («Prelude.isSome» x0).label ≠ 0 then
@@ -12722,27 +13038,92 @@ def «Derivation.sameCtx» :=
           leaf 1);
     x2
 
-def «Derivation.congCtxs» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : T)
-    (x3 : List T)
-    (x4 : List T)
-    (x5 : List T) =>
-    let x6 : T := (if («Base.allT»
-      (fun (x6 : T) =>
+def «Derivation.childBinders» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : List T) =>
+    let x4 : T := (let x4 : T := Const.label x2;
+                   let x5 : List T := «Language.mArgs» x2;
+                   let x6 : T := «Prelude.length» x5;
+                   if («Prelude.and»
+                     (Const.eq x4 (leaf 5))
+                     (Const.eq x6 (leaf 1))).label ≠ 0 then
+                     «Derivation/OBinders.just»
+                       («Derivation.binders»
+                         («Derivation/BinderL.single»
+                           («Derivation.ctxNum» ((«Language.mD» x2 (leaf 0)) :: x3) (leaf 1))))
+                   else
+                     if («Prelude.and»
+                       (Const.eq x4 (leaf 8))
+                       (Const.eq x6 (leaf 3))).label ≠ 0 then
+                       «Derivation.bindTB»
+                         («Derivation.typeIn» x0 x1 x3 («Prelude.at» x5 (leaf 0)))
+                         (fun (x7 : T) =>
+                           «Derivation/OBinders.just»
+                             («Derivation.binders»
+                               («Derivation/BinderF.l3»
+                                 («Derivation.ctxNum» x3 (leaf 0))
+                                 («Derivation.ctxNum» (x7 :: x3) (leaf 1))
+                                 («Derivation.ctxNum» x3 (leaf 0)))))
+                     else
+                       if («Prelude.and»
+                         (Const.eq x4 (leaf 9))
+                         (Const.eq x6 (leaf 3))).label ≠ 0 then
+                         «Derivation.bindTB»
+                           («Derivation.typeIn» x0 x1 x3 («Prelude.at» x5 (leaf 0)))
+                           (fun (x7 : T) =>
+                             «Derivation.bindTB»
+                               («Base.bindO»
+                                 («Derivation.typeIn» x0 x1 x3 («Prelude.at» x5 (leaf 2)))
+                                 «Language.listPart»)
+                               (fun (x8 : T) =>
+                                 «Derivation/OBinders.just»
+                                   («Derivation.binders»
+                                     («Derivation/BinderF.l3»
+                                       («Derivation.ctxNum» x3 (leaf 0))
+                                       («Derivation.ctxNum» (x7 :: (x8 :: x3)) (leaf 2))
+                                       («Derivation.ctxNum» x3 (leaf 0))))))
+                       else
+                         if («Prelude.and»
+                           (Const.eq x4 (leaf 10))
+                           (Const.eq x6 (leaf 2))).label ≠ 0 then
+                           «Derivation.bindTB»
+                             («Base.bindO»
+                               («Derivation.typeIn» x0 x1 x3 («Prelude.at» x5 (leaf 1)))
+                               «Language.roseLabel»)
+                             (fun (x7 : T) =>
+                               «Derivation/OBinders.just»
+                                 («Derivation.binders»
+                                   («Derivation/BinderF.l2»
+                                     («Derivation.ctxNum»
+                                       ((«Theory.prod»
+                                         x7
+                                         («Theory.list» («Language.mD» x2 (leaf 0)))) ::
+                                         x3)
+                                       (leaf 1))
+                                     («Derivation.ctxNum» x3 (leaf 0)))))
+                         else
+                           «Derivation/OBinders.just»
+                             («Derivation.binders»
+                               («Derivation/BinderAt.map»
+                                 (fun (_ : T) => «Derivation.ctxNum» x3 (leaf 0))
+                                 x5)));
+    x4
+
+def «Derivation.congBinders» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : List T) (x4 : List T) =>
+    let x5 : T := (if («Base.allT»
+      (fun (x5 : T) =>
         «Prelude.or»
-          («Derivation.sameCtx» (Const.label x2) x6)
-          (Const.eq (Const.label («Prelude.at» x5 x6)) (leaf 0)))
-      («Base.range» («Prelude.length» x5))).label ≠ 0 then
-      «Derivation/OScopes.just»
-        («Derivation.scopes»
-          («Derivation/ScopeAt.map»
-            (fun (_ : T) => «Derivation.ctxPair» x3 x4)
+          («Derivation.sameCtx» (Const.label x2) x5)
+          (Const.eq (Const.label («Prelude.at» x4 x5)) (leaf 0)))
+      («Base.range» («Prelude.length» x4))).label ≠ 0 then
+      «Derivation/OBinders.just»
+        («Derivation.binders»
+          («Derivation/BinderAt.map»
+            (fun (_ : T) => «Derivation.ctxNum» x3 (leaf 0))
             («Language.mArgs» x2)))
     else
-      «Derivation.childCtxs» x0 x1 x2 x3 x4);
-    x6
+      «Derivation.childBinders» x0 x1 x2 x3);
+    x5
 
 def «Derivation.rootBeta» :=
   fun (x0 : T) =>
@@ -13186,14 +13567,63 @@ def «Derivation.rootStep» :=
                                 «Prelude.none»);
     x8
 
+def «Derivation.weakenBy» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (if (Const.eq x0 (leaf 0)).label ≠ 0 then
+      x1
+    else
+      «Language.rename» x1 (fun (x2 : T) => Const.add x2 x0));
+    x2
+
+def «Derivation.rootHypK» :=
+  fun (x0 : T) (x1 : List T) (x2 : List T) (x3 : T) =>
+    let x4 : T := (let x4 : T := «Prelude.at» x2 (leaf 1);
+                   «Derivation.bindPT»
+                     («Language.bindTP»
+                       («Prelude.nth» x1 («Prelude.at» x2 (leaf 0)))
+                       «Derivation.eqParts»)
+                     (fun (x5 : T) =>
+                       if (Const.equal
+                         x3
+                         («Derivation.weakenBy»
+                           x0
+                           (if (x4).label ≠ 0 then
+                             «Language.p2» x5
+                           else
+                             «Language.p1» x5))).label ≠ 0 then
+                         «Prelude.some»
+                           («Derivation.weakenBy»
+                             x0
+                             (if (x4).label ≠ 0 then «Language.p1» x5 else «Language.p2» x5))
+                       else
+                         «Prelude.none»));
+    x4
+
+def «Derivation.rootStepK» :=
+  fun (x0 : T)
+    (x1 : List T)
+    (x2 : T)
+    (x3 : List T)
+    (x4 : T)
+    (x5 : List T)
+    (x6 : T)
+    (x7 : List T)
+    (x8 : T) =>
+    let x9 : T := (if (Const.eq x6 (leaf 17)).label ≠ 0 then
+      «Derivation.rootHypK» x4 x5 x7 x8
+    else
+      «Derivation.rootStep» x0 x1 x2 x3 ([] : List T) x6 x7 x8);
+    x9
+
 def «Derivation.dpTrees» :=
   fun (x0 : List
-      (T × ((List T → List T → T → T) × (List T → List T → T → T)))) =>
+      (T × ((List T → T → List T → T → T) × (List T → List T → T → T)))) =>
     let x1 : List
       T := Const.foldr
-      (α := T × ((List T → List T → T → T) × (List T → List T → T → T)))
+      (α := T × ((List T → T → List T → T → T) × (List T → List T → T → T)))
       (β := List T)
-      (fun (x1 : T × ((List T → List T → T → T) × (List T → List T → T → T)))
+      (fun (x1 : T ×
+           ((List T → T → List T → T → T) × (List T → List T → T → T)))
          (x2 : List T) =>
         ((x1).1 :: x2))
       ([] : List T)
@@ -13202,53 +13632,67 @@ def «Derivation.dpTrees» :=
 
 def «Derivation/DPs.tail» :=
   fun (x0 : List
-      (T × ((List T → List T → T → T) × (List T → List T → T → T)))) =>
+      (T × ((List T → T → List T → T → T) × (List T → List T → T → T)))) =>
     Const.lcase
-      (α := T × ((List T → List T → T → T) × (List T → List T → T → T)))
+      (α := T × ((List T → T → List T → T → T) × (List T → List T → T → T)))
       (β := List
-        (T × ((List T → List T → T → T) × (List T → List T → T → T))))
+        (T × ((List T → T → List T → T → T) × (List T → List T → T → T))))
       x0
       ([] : List (T ×
-        ((List T → List T → T → T) × (List T → List T → T → T))))
-      (fun (_ : T × ((List T → List T → T → T) × (List T → List T → T → T)))
+        ((List T → T → List T → T → T) × (List T → List T → T → T))))
+      (fun (_ : T ×
+           ((List T → T → List T → T → T) × (List T → List T → T → T)))
          (x2 : List
-           (T × ((List T → List T → T → T) × (List T → List T → T → T)))) =>
+           (T × ((List T → T → List T → T → T) × (List T → List T → T → T)))) =>
         x2)
 
 def «Derivation.dpAt» :=
   fun (x0 : List
-      (T × ((List T → List T → T → T) × (List T → List T → T → T))))
+      (T × ((List T → T → List T → T → T) × (List T → List T → T → T))))
     (x1 : T) =>
-    let x2 : (List T → List T → T → T) ×
+    let x2 : (List T → T → List T → T → T) ×
       (List T →
         List T →
           T →
             T) := Const.lcase
-      (α := T × ((List T → List T → T → T) × (List T → List T → T → T)))
-      (β := (List T → List T → T → T) × (List T → List T → T → T))
+      (α := T × ((List T → T → List T → T → T) × (List T → List T → T → T)))
+      (β := (List T → T → List T → T → T) × (List T → List T → T → T))
       (Const.iter
         (α := List
-          (T × ((List T → List T → T → T) × (List T → List T → T → T))))
+          (T × ((List T → T → List T → T → T) × (List T → List T → T → T))))
         «Derivation/DPs.tail»
         x0
         x1)
-      (fun (_ : List T) (_ : List T) (_ : T) => «Prelude.none»,
+      (fun (_ : List T) (_ : T) (_ : List T) (_ : T) => «Prelude.none»,
         fun (_ : List T) (_ : List T) (_ : T) => leaf 0)
-      (fun (x2 : T × ((List T → List T → T → T) × (List T → List T → T → T)))
+      (fun (x2 : T ×
+           ((List T → T → List T → T → T) × (List T → List T → T → T)))
          (_ : List
-           (T × ((List T → List T → T → T) × (List T → List T → T → T)))) =>
+           (T × ((List T → T → List T → T → T) × (List T → List T → T → T)))) =>
         (x2).2);
+    x2
+
+def «Derivation.rwK» :=
+  fun (x0 : List
+      (T × ((List T → T → List T → T → T) × (List T → List T → T → T))))
+    (x1 : T) =>
+    let x2 : List T → T → List T → T → T := («Derivation.dpAt» x0 x1).1;
     x2
 
 def «Derivation.rw» :=
   fun (x0 : List
-      (T × ((List T → List T → T → T) × (List T → List T → T → T))))
+      (T × ((List T → T → List T → T → T) × (List T → List T → T → T))))
     (x1 : T) =>
-    let x2 : List T → List T → T → T := («Derivation.dpAt» x0 x1).1; x2
+    let x2 : List T →
+      List T →
+        T →
+          T := (fun (x2 : List T) (x3 : List T) (x4 : T) =>
+      «Derivation.rwK» x0 x1 x2 (leaf 0) x3 x4);
+    x2
 
 def «Derivation.pf» :=
   fun (x0 : List
-      (T × ((List T → List T → T → T) × (List T → List T → T → T))))
+      (T × ((List T → T → List T → T → T) × (List T → List T → T → T))))
     (x1 : T) =>
     let x2 : List T → List T → T → T := («Derivation.dpAt» x0 x1).2; x2
 
@@ -13260,61 +13704,63 @@ def «Derivation.rewriteStep» :=
     (x4 : List T)
     (x5 : List T)
     (x6 : List
-      (T × ((List T → List T → T → T) × (List T → List T → T → T))))
+      (T × ((List T → T → List T → T → T) × (List T → List T → T → T))))
     (x7 : List T)
-    (x8 : List T)
-    (x9 : T) =>
-    let x10 : T := (let x10 : T := «Prelude.length» x5;
+    (x8 : T)
+    (x9 : List T)
+    (x10 : T) =>
+    let x11 : T := (let x11 : T := «Prelude.length» x5;
                     if («Prelude.and»
                       (Const.eq x3 (leaf 0))
-                      (Const.eq x10 (leaf 0))).label ≠ 0 then
-                      «Prelude.some» x9
+                      (Const.eq x11 (leaf 0))).label ≠ 0 then
+                      «Prelude.some» x10
                     else
                       if («Prelude.and»
                         (Const.eq x3 (leaf 1))
-                        (Const.eq x10 (leaf 2))).label ≠ 0 then
+                        (Const.eq x11 (leaf 2))).label ≠ 0 then
                         «Base.bindO»
-                          («Derivation.rw» x6 (leaf 0) x7 x8 x9)
-                          («Derivation.rw» x6 (leaf 1) x7 x8)
+                          («Derivation.rwK» x6 (leaf 0) x7 x8 x9 x10)
+                          («Derivation.rwK» x6 (leaf 1) x7 x8 x9)
                       else
                         if (Const.eq x3 (leaf 2)).label ≠ 0 then
-                          «Derivation.bindST»
-                            («Derivation.congCtxs» x0 x2 x9 x7 x8 x5)
-                            (fun (x11 : T) =>
-                              let x12 : List T := «Derivation.scopesOf» x11;
-                              let x13 : List T := «Language.mArgs» x9;
+                          «Derivation.bindBT»
+                            («Derivation.congBinders» x0 x2 x10 x7 x5)
+                            (fun (x12 : T) =>
+                              let x13 : List T := «Derivation.bindersOf» x12;
+                              let x14 : List T := «Language.mArgs» x10;
                               if («Prelude.and»
-                                (Const.eq x10 («Prelude.length» x13))
+                                (Const.eq x11 («Prelude.length» x14))
                                 (Const.eq
-                                  («Derivation/ScopeL.length» x12)
-                                  («Prelude.length» x13))).label ≠ 0 then
+                                  («Derivation/BinderL.length» x13)
+                                  («Prelude.length» x14))).label ≠ 0 then
                                 «Base.mapO»
-                                  (fun (x14 : T) =>
+                                  (fun (x15 : T) =>
                                     Const.node
-                                      (Const.label x9)
-                                      ((Const.child x9 (leaf 0)) :: (Const.children x14)))
+                                      (Const.label x10)
+                                      ((Const.child x10 (leaf 0)) :: (Const.children x15)))
                                   («Base.allSomeT»
                                     («Base.mapT»
-                                      (fun (x14 : T) =>
-                                        let x15 : T := «Derivation/ScopeL.atOr»
-                                          «Derivation.scope0»
-                                          x12
-                                          x14;
-                                        «Derivation.rw»
+                                      (fun (x15 : T) =>
+                                        let x16 : T := «Derivation/BinderL.atOr»
+                                          «Derivation.binder0»
+                                          x13
+                                          x15;
+                                        «Derivation.rwK»
                                           x6
-                                          x14
-                                          («Derivation.scopeCtx» x15)
-                                          («Derivation.scopeHyps» x15)
-                                          («Prelude.at» x13 x14))
-                                      («Base.range» x10)))
+                                          x15
+                                          («Derivation.binderCtx» x16)
+                                          (Const.add x8 («Derivation.binderNum» x16))
+                                          x9
+                                          («Prelude.at» x14 x15))
+                                      («Base.range» x11)))
                               else
                                 «Prelude.none»)
                         else
-                          if (Const.eq x10 (leaf 0)).label ≠ 0 then
-                            «Derivation.rootStep» x0 x1 x2 x7 x8 x3 x4 x9
+                          if (Const.eq x11 (leaf 0)).label ≠ 0 then
+                            «Derivation.rootStepK» x0 x1 x2 x7 x8 x9 x3 x4 x10
                           else
                             «Prelude.none»);
-    x10
+    x11
 
 def «Derivation.rosePrimsOk» :=
   fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) =>
@@ -13348,7 +13794,7 @@ def «Derivation.proveStep» :=
     (x4 : List T)
     (x5 : List T)
     (x6 : List
-      (T × ((List T → List T → T → T) × (List T → List T → T → T))))
+      (T × ((List T → T → List T → T → T) × (List T → List T → T → T))))
     (x7 : List T)
     (x8 : List T)
     (x9 : T) =>
@@ -14115,25 +14561,25 @@ def «Derivation.proveStep» :=
 
 def «Derivation.check» :=
   fun (x0 : T) (x1 : List T) (x2 : T) (x3 : T) =>
-    let x4 : (List T → List T → T → T) ×
+    let x4 : (List T → T → List T → T → T) ×
       (List T →
         List T →
           T →
             T) := (Const.fold
-      (α := T × ((List T → List T → T → T) × (List T → List T → T → T)))
+      (α := T × ((List T → T → List T → T → T) × (List T → List T → T → T)))
       (fun (x4 : T)
          (x5 : List
-           (T × ((List T → List T → T → T) × (List T → List T → T → T)))) =>
+           (T × ((List T → T → List T → T → T) × (List T → List T → T → T)))) =>
         let x6 : List T := «Derivation.dpTrees» x5;
         let x7 : List T := Const.children («Prelude.at» x6 (leaf 0));
         let x8 : List
           (T ×
-            ((List T → List T → T → T) ×
+            ((List T → T → List T → T → T) ×
               (List T → List T → T → T))) := «Derivation/DPs.tail» x5;
         let x9 : List T := «Prelude.tail» x6;
         (Const.node x4 x6,
-          (fun (x10 : List T) (x11 : List T) (x12 : T) =>
-            «Derivation.rewriteStep» x0 x1 x2 x4 x7 x9 x8 x10 x11 x12,
+          (fun (x10 : List T) (x11 : T) (x12 : List T) (x13 : T) =>
+            «Derivation.rewriteStep» x0 x1 x2 x4 x7 x9 x8 x10 x11 x12 x13,
             fun (x10 : List T) (x11 : List T) (x12 : T) =>
               «Derivation.proveStep» x0 x1 x2 x4 x7 x9 x8 x10 x11 x12)))
       x3).2;

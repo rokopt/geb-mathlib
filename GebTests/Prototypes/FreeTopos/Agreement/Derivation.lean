@@ -17,21 +17,28 @@ derivations and developments at every encoded input: the rewriting of a term at 
 rule of the language's equations, the steps of the rewriting and of the proving at a node of each
 rule, the checker of derivations, and the step of a development at each kind of declaration.
 
-The mirror's rewriting step selects its rule by a chain of tests of the rule's position; its
-proving step likewise. Each rule is proved in a lemma of its own, the chain's tests evaluated
-before its branches are simplified, so that the other rules' branches are not.
+The mirror's rewriting is that of {name}`Geb.FreeTopos.Internal.checkFast`: it rewrites under
+the hypotheses as stated with the number of variables past which they are weakened, and weakens a
+hypothesis where the rewriting by an equation among the hypotheses reads it. Its agreement with
+that rewriting, composed with {name}`Geb.FreeTopos.Internal.para_fastStep`, is the agreement with
+the checker. The mirror's rewriting step selects its rule by a chain of tests of the rule's
+position; its proving step likewise. Each rule is proved in a lemma of its own, the chain's tests
+evaluated before its branches are simplified, so that the other rules' branches are not.
 
 ## Main definitions
 
 * {lit}`encCtx` — a context with hypotheses as a tree.
 * {lit}`DRel` — the relation of the mirror's rewriting and proving of a derivation to the
   checker's.
+* {lit}`FRel` — the relation of the mirror's rewriting and proving of a derivation to those of the
+  checker with its rewriting under weakened hypotheses.
 
 ## Main statements
 
 * {lit}`rootStep_eq` — the rewriting of a term at its root by a rule.
 * {lit}`rewriteStep_eq`, {lit}`proveStep_eq` — the rewriting and the proving at a node of a rule.
-* {lit}`check_eq` — the checker of a derivation.
+* {lit}`check_fast_eq`, {lit}`check_eq` — the checker of a derivation, related to the checker
+  with its rewriting under weakened hypotheses and so to the checker.
 * {lit}`thmChecks_eq` — the test that a derivation proves a theorem.
 * {lit}`declStep_eq` — the state after a declaration.
 * {lit}`checkDev_eq` — the state after a development.
@@ -101,6 +108,14 @@ open scoped FinEnum
     children_eq, lcase_children_head]
   rfl
 
+@[template, inherit_doc bindPT_def] theorem bindTB_def : «Derivation.bindTB» = «Base.bindO» := rfl
+
+@[template, inherit_doc bindPT_def] theorem bindBT_def : «Derivation.bindBT» = «Base.bindO» := by
+  funext a b
+  simp only [«Derivation.bindBT», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
+
 @[template, inherit_doc bindPT_def] theorem bindTD_def : «Derivation.bindTD» = «Base.bindO» := rfl
 
 @[template, inherit_doc bindPT_def] theorem bindSD_def : «Derivation.bindSD» = «Base.bindO» := by
@@ -140,6 +155,9 @@ entry. -/
 /-- The mirror's scope of a context and hypotheses is their pair. -/
 @[template] theorem scope_def : «Derivation.scope» = «Language.pr» := rfl
 
+/-- The mirror's context of a child with its number of new variables is their pair. -/
+@[template] theorem binder_def : «Derivation.binder» = «Language.pr» := rfl
+
 /-- The mirror's state of a development is the pair of its constants and the node of its entries. -/
 @[template] theorem devState_def : «Derivation.devState» = «Language.pr» := rfl
 
@@ -161,6 +179,10 @@ entry. -/
     «Derivation.scopesOf» (RoseTree.node 0 xs) = xs := by
   simp [«Derivation.scopesOf»]
 
+@[simp, template, inherit_doc pdefnsOf_node] theorem bindersOf_node (xs : List Tree) :
+    «Derivation.bindersOf» (RoseTree.node 0 xs) = xs := by
+  simp [«Derivation.bindersOf»]
+
 /-- The mirror's present hypotheses. -/
 @[simp, template] theorem termsOr_some (xs : List Tree) :
     «Derivation.termsOr» (encOpt (some (RoseTree.node 0 xs))) = xs := by
@@ -175,12 +197,24 @@ entry. -/
     «Derivation.scopeHyps» (encPair (RoseTree.node 0 a, RoseTree.node 0 b)) = b := by
   simp [«Derivation.scopeHyps», encPair]
 
+/-- The mirror's context of a child and its number of new variables. -/
+@[simp, template] theorem binderCtx_pair (a : List Tree) (m : Tree) :
+    «Derivation.binderCtx» (encPair (RoseTree.node 0 a, m)) = a := by
+  simp [«Derivation.binderCtx», encPair]
+
+@[simp, template, inherit_doc binderCtx_pair] theorem binderNum_pair (a : List Tree) (m : Tree) :
+    «Derivation.binderNum» (encPair (RoseTree.node 0 a, m)) = m := by
+  simp [«Derivation.binderNum», encPair]
+
 /-- The mirror's lists wrapped as datatypes, each the node of label zero over its elements. -/
 @[simp, template] theorem terms_wrap (xs : List Tree) :
     «Derivation.terms» xs = RoseTree.node 0 xs := rfl
 
 @[simp, template, inherit_doc terms_wrap] theorem scopes_wrap (xs : List Tree) :
     «Derivation.scopes» xs = RoseTree.node 0 xs := rfl
+
+@[simp, template, inherit_doc terms_wrap] theorem binders_wrap (xs : List Tree) :
+    «Derivation.binders» xs = RoseTree.node 0 xs := rfl
 
 @[simp, template, inherit_doc terms_wrap] theorem entries_wrap (xs : List Tree) :
     «Derivation.entries» xs = RoseTree.node 0 xs := rfl
@@ -309,6 +343,15 @@ theorem atVar0_eq (u : Term) (i : ℕ) :
 @[simp] theorem weaken2_eq (t : Term) :
     «Derivation.weaken2» (encTerm t) = encTerm (Internal.weaken2 t) :=
   rename_eq _ _ _ fun _ ↦ rfl
+
+/-- The mirror's weakening of a term past a number of new innermost variables. -/
+@[simp] theorem weakenBy_eq (k : ℕ) (t : Term) :
+    «Derivation.weakenBy» (leaf k) (encTerm t) = encTerm (Internal.weakenBy k t) := by
+  by_cases hk : k = 0
+  · subst hk
+    mirror_simp [«Derivation.weakenBy», Internal.weakenBy]
+  · mirror_simp [«Derivation.weakenBy», Internal.weakenBy, hk, beq_iff_eq]
+    exact rename_eq t _ (· + k) fun _ ↦ rfl
 
 /-- The mirror's weakening of a rose-tree fold's step past two variables below its own. -/
 @[simp] theorem weakenStep2_eq (s : Term) :
@@ -580,19 +623,40 @@ theorem allT_range_zipIdx (ds : List Internal.Deriv) (F : Tree → Tree)
     ⟨d.label, d.children, (RoseTree.node_label_children d).symm⟩
   simp [encDeriv]
 
-/-- The mirror's contexts in which a congruence rewrites a node's children. -/
-theorem congCtxs_eq (G : Internal.Globals) (n : ℕ) (l : Label) (ts : List Term)
-    (Γ : List Tree) (Φ : List Term) (ds : List Internal.Deriv) :
-    «Derivation.congCtxs» (encGlobals G) (leaf n) (encTerm (RoseTree.node l ts)) Γ
-        (Φ.map encTerm) (ds.map encDeriv) =
-      encOpt ((Internal.congCtxs G n l ts Γ Φ ds).map fun cs ↦
-        RoseTree.node 0 (cs.map encCtx)) := by
-  simp only [«Derivation.congCtxs», template, length_eq, List.length_map, range_eq]
+/-- A child's context with the number of variables by which it extends its node's, as the pair
+of the node of its types and the number's leaf. -/
+def encBinder (p : List Tree × ℕ) : Tree := encPair (RoseTree.node 0 p.1, leaf p.2)
+
+/-- The mirror's child's context with its number of new variables. -/
+@[simp] theorem ctxNum_eq (Γ : List Tree) (m : ℕ) :
+    «Derivation.ctxNum» Γ (leaf m) = encBinder (Γ, m) := rfl
+
+/-- The mirror's contexts of a node's children, each with its number of new variables. -/
+theorem childBinders_eq (G : Internal.Globals) (n : ℕ) (l : Label) (ts : List Term)
+    (Γ : List Tree) :
+    «Derivation.childBinders» (encGlobals G) (leaf n) (encTerm (RoseTree.node l ts)) Γ =
+      encOpt ((Internal.childBinders G n l ts Γ).map fun cs ↦
+        RoseTree.node 0 (cs.map encBinder)) := by
+  cases l <;> rcases ts with _ | ⟨z, _ | ⟨s, _ | ⟨m, _ | ⟨w, ts⟩⟩⟩⟩ <;>
+    der_simp [«Derivation.childBinders», Internal.childBinders, labelData,
+      «Derivation.ctxNum», encBinder, typeIn_eq, funext listPart_eq, funext roseLabel_eq,
+      elim_encOpt, «Theory.l2», «Theory.l3», mirror_prod, mirror_list, Option.bind_assoc,
+      Option.bind_map]
+
+/-- The mirror's contexts in which a congruence rewrites a node's children, each with its number
+of new variables. -/
+theorem congBinders_eq (G : Internal.Globals) (n : ℕ) (l : Label) (ts : List Term)
+    (Γ : List Tree) (ds : List Internal.Deriv) :
+    «Derivation.congBinders» (encGlobals G) (leaf n) (encTerm (RoseTree.node l ts)) Γ
+        (ds.map encDeriv) =
+      encOpt ((Internal.congBinders G n l ts Γ ds).map fun cs ↦
+        RoseTree.node 0 (cs.map encBinder)) := by
+  simp only [«Derivation.congBinders», template, length_eq, List.length_map, range_eq]
   rw [allT_range_zipIdx ds _ (fun i t ↦ Internal.sameCtx l i || t.label == 0) fun i ↦ by
     der_simp [sameCtx_eq, at_eq]]
-  simp only [label_encDeriv, ruleData_eq_zero, childCtxs_eq, Internal.congCtxs]
-  der_simp [ctxPair_eq]
-  split_ifs <;> der_simp [ctxPair_eq]
+  simp only [label_encDeriv, ruleData_eq_zero, childBinders_eq, Internal.congBinders]
+  der_simp [ctxNum_eq]
+  split_ifs <;> der_simp [ctxNum_eq]
 
 /-- A rose tree is the node of its label over its children. -/
 theorem exists_node {L : Type} (t : RoseTree L) : ∃ l cs, t = RoseTree.node l cs :=
@@ -851,16 +915,65 @@ theorem rootStep_eq (l : Internal.Rule) (t : Term) :
       rootThm_eq G E n Γ Φ, rootHyp_eq G E n Γ Φ]
   all_goals rfl
 
-/-- The mirror's rewriting and proving of a derivation, each a function of a context,
-hypotheses and a term. -/
+/-- The mirror's rewriting of an encoded term by an equation among the hypotheses weakened past a
+number of new innermost variables. -/
+theorem rootHypK_eq (k i : ℕ) (flip : Bool) (t : Term) :
+    «Derivation.rootHypK» (leaf k) (Φ.map encTerm) [leaf i, ofBool flip] (encTerm t) =
+      encOpt ((Internal.rootStepK G E n Γ k Φ (.rwHyp i flip) t).map encTerm) := by
+  simp only [«Derivation.rootHypK», template, Internal.rootStepK, at_eq, List.getD_cons_zero,
+    List.getD_cons_succ, nth_eq, List.getElem?_map]
+  rcases Φ[i]? with _ | φ
+  · der_simp []
+  · rcases h : Internal.eqParts φ with _ | ⟨a, b⟩ <;> cases flip <;>
+      der_simp [eqParts_eq, h, encTerm_eq_iff, weakenBy_eq] <;> split_ifs <;> rfl
+
+/-- The mirror's rewriting of an encoded term at its root by a rule other than an equation among
+the hypotheses, under hypotheses weakened past a number of new innermost variables, which it does
+not read. -/
+theorem rootStepK_of_ne (k : ℕ) (l : Internal.Rule) (t : Term) (h17 : (ruleData l).1 ≠ 17)
+    (hK : Internal.rootStepK G E n Γ k Φ l t = Internal.rootStep G E n Γ [] l t) :
+    «Derivation.rootStepK» (encGlobals G) (E.toList.map encEntry) (leaf n) Γ (leaf k)
+        (Φ.map encTerm) (leaf (ruleData l).1) (ruleData l).2 (encTerm t) =
+      encOpt ((Internal.rootStepK G E n Γ k Φ l t).map encTerm) := by
+  simp only [«Derivation.rootStepK», eq_leaf, label_ne_zero, ofBool_bne, beq_iff_eq, h17,
+    ↓reduceIte, hK]
+  exact rootStep_eq G E n Γ [] l t
+
+/-- The mirror's rewriting of an encoded term at its root by a rule, under the hypotheses
+weakened past a number of new innermost variables. -/
+theorem rootStepK_eq (k : ℕ) (l : Internal.Rule) (t : Term) :
+    «Derivation.rootStepK» (encGlobals G) (E.toList.map encEntry) (leaf n) Γ (leaf k)
+        (Φ.map encTerm) (leaf (ruleData l).1) (ruleData l).2 (encTerm t) =
+      encOpt ((Internal.rootStepK G E n Γ k Φ l t).map encTerm) := by
+  cases l
+  case rwHyp i flip =>
+    simpa only [«Derivation.rootStepK», ruleData, eq_leaf, Nat.reduceBEq, label_ne_zero,
+      ofBool_bne, ↓reduceIte] using rootHypK_eq G E n Γ Φ k i flip t
+  all_goals exact rootStepK_of_ne G E n Γ Φ k _ t (by simp only [ruleData]; omega) rfl
+
+/-- The mirror's rewriting and proving of a derivation: the rewriting a function of a context,
+a number of variables, hypotheses and a term, the hypotheses weakened past that number of new
+innermost variables, and the proving a function of a context, hypotheses and a term. -/
 abbrev DV : Type :=
-  (List Tree → List Tree → Tree → Tree) × (List Tree → List Tree → Tree → Tree)
+  (List Tree → Tree → List Tree → Tree → Tree) × (List Tree → List Tree → Tree → Tree)
 
 /-- The mirror's derivation checker's results and the checker's are related when they agree at
-every context and every encoded list of hypotheses and term. -/
+every context and every encoded list of hypotheses and term, the hypotheses weakened past no
+variable. -/
 def DRel (v : DV) (w : Internal.Checks) : Prop :=
-  (∀ Γ Φ t, v.1 Γ (Φ.map encTerm) (encTerm t) = encOpt ((w.1 Γ Φ t).map encTerm)) ∧
+  (∀ Γ Φ t, v.1 Γ (leaf 0) (Φ.map encTerm) (encTerm t) = encOpt ((w.1 Γ Φ t).map encTerm)) ∧
     ∀ Γ Φ φ, v.2 Γ (Φ.map encTerm) (encTerm φ) = ofBool (w.2 Γ Φ φ)
+
+/-- The mirror's derivation checker's results and the results of the checker with its rewriting
+under weakened hypotheses are related when they agree at every context, number of variables and
+encoded list of hypotheses and term. -/
+def FRel (v : DV) (w : Internal.FastChecks) : Prop :=
+  (∀ Γ k Φ t, v.1 Γ (leaf k) (Φ.map encTerm) (encTerm t) = encOpt ((w.1 Γ k Φ t).map encTerm)) ∧
+    ∀ Γ Φ φ, v.2 Γ (Φ.map encTerm) (encTerm φ) = ofBool (w.2 Γ Φ φ)
+
+/-- Results related to the fast checker's are related to its results as the checker's. -/
+theorem FRel.checks {v : DV} {w : Internal.FastChecks} (h : FRel v w) : DRel v w.checks :=
+  ⟨fun Γ Φ t ↦ h.1 Γ 0 Φ t, h.2⟩
 
 /-- The derivations of a list of derivations with their results. -/
 @[simp] theorem dpTrees_eq (rs : List (Tree × DV)) :
@@ -882,7 +995,7 @@ theorem repeat_dpTail (rs : List (Tree × DV)) :
 /-- The results of a derivation at a position, none and false out of range. -/
 @[simp] theorem dpAt_eq (rs : List (Tree × DV)) (i : ℕ) :
     «Derivation.dpAt» rs (leaf i) = (rs[i]?.map Prod.snd).getD
-      (fun _ _ _ ↦ «Prelude.none», fun _ _ _ ↦ leaf 0) := by
+      (fun _ _ _ _ ↦ «Prelude.none», fun _ _ _ ↦ leaf 0) := by
   simp only [«Derivation.dpAt», template, iter_leaf, repeat_dpTail]
   cases h : rs.drop i with
   | nil =>
@@ -896,9 +1009,14 @@ theorem repeat_dpTail (rs : List (Tree × DV)) :
     rw [this]
     rfl
 
-/-- The rewriting of a derivation at a position. -/
+/-- The rewriting of a derivation at a position, under weakened hypotheses. -/
+@[simp] theorem rwK_eq (rs : List (Tree × DV)) (i : ℕ) :
+    «Derivation.rwK» rs (leaf i) = («Derivation.dpAt» rs (leaf i)).1 := rfl
+
+/-- The rewriting of a derivation at a position, under hypotheses weakened past no variable. -/
 @[simp] theorem rw_eq (rs : List (Tree × DV)) (i : ℕ) :
-    «Derivation.rw» rs (leaf i) = («Derivation.dpAt» rs (leaf i)).1 := rfl
+    «Derivation.rw» rs (leaf i) = fun g hs t ↦ («Derivation.dpAt» rs (leaf i)).1 g (leaf 0) hs t :=
+  rfl
 
 /-- The proving of a derivation at a position. -/
 @[simp] theorem pf_eq (rs : List (Tree × DV)) (i : ℕ) :
@@ -921,12 +1039,12 @@ theorem map_range_eq {β γ : Type} (F : ℕ → γ) (ys : List β) (g : β → 
     simp only [List.getElem_map, List.getElem_range]
     exact h i (by simpa using h₂)
 
-/-- The checker's rewriting at a rule other than the identity, transitivity and congruence is
-its rewriting at the root where the node has no premises. -/
-theorem checkStep_root (l : Internal.Rule) (hr : l ≠ .refl) (ht : l ≠ .trans) (hc : l ≠ .cong)
-    (cs : List (Internal.Deriv × Internal.Checks)) (t : Term) :
-    (Internal.checkStep G E n l cs).1 Γ Φ t =
-      if cs = [] then Internal.rootStep G E n Γ Φ l t else none := by
+/-- The rewriting under weakened hypotheses at a rule other than the identity, transitivity and
+congruence is its rewriting at the root where the node has no premises. -/
+theorem rewriteStep_root (l : Internal.Rule) (hr : l ≠ .refl) (ht : l ≠ .trans) (hc : l ≠ .cong)
+    (cs : List (Internal.Deriv × Internal.Rewrites)) (k : ℕ) (t : Term) :
+    Internal.rewriteStep G E n l cs Γ k Φ t =
+      if cs = [] then Internal.rootStepK G E n Γ k Φ l t else none := by
   cases l <;> first | exact absurd rfl hr | exact absurd rfl ht | exact absurd rfl hc |
     rcases cs with _ | ⟨c, cs⟩ <;> rfl
 
@@ -937,62 +1055,63 @@ theorem three_le_ruleData (l : Internal.Rule) (hr : l ≠ .refl) (ht : l ≠ .tr
   cases l <;> first | exact absurd rfl hr | exact absurd rfl ht | exact absurd rfl hc |
     simp [ruleData]
 
-/-- The mirror's rewriting step at an encoded node of a rule, from its children's results
-related to the checker's. -/
-theorem rewriteStep_eq (l : Internal.Rule) (xs : List (Internal.Deriv × DV × Internal.Checks))
-    (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) (t : Term) :
+/-- The mirror's rewriting step at an encoded node of a rule, under hypotheses weakened past a
+number of new innermost variables, from its children's results related to the fast checker's. -/
+theorem rewriteStep_eq (l : Internal.Rule)
+    (xs : List (Internal.Deriv × DV × Internal.FastChecks)) (hx : ∀ x ∈ xs, FRel x.2.1 x.2.2)
+    (k : ℕ) (t : Term) :
     «Derivation.rewriteStep» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (leaf (ruleData l).1) (ruleData l).2 (xs.map fun x ↦ encDeriv x.1)
-        (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ (Φ.map encTerm) (encTerm t) =
-      encOpt (((Internal.checkStep G E n l (xs.map fun x ↦ (x.1, x.2.2))).1 Γ Φ t).map
+        (xs.map fun x ↦ (encDeriv x.1, x.2.1)) Γ (leaf k) (Φ.map encTerm) (encTerm t) =
+      encOpt ((Internal.rewriteStep G E n l (xs.map fun x ↦ (x.1, x.2.2.1)) Γ k Φ t).map
         encTerm) := by
-  have h1 : ∀ x ∈ xs, ∀ Γ Φ t, x.2.1.1 Γ (Φ.map encTerm) (encTerm t) =
-      encOpt ((x.2.2.1 Γ Φ t).map encTerm) := fun x h ↦ (hx x h).1
-  simp only [«Derivation.rewriteStep», template, rootStep_eq G E n Γ Φ l t]
+  have h1 : ∀ x ∈ xs, ∀ Γ k Φ t, x.2.1.1 Γ (leaf k) (Φ.map encTerm) (encTerm t) =
+      encOpt ((x.2.2.1 Γ k Φ t).map encTerm) := fun x h ↦ (hx x h).1
+  simp only [«Derivation.rewriteStep», template, rootStepK_eq G E n Γ Φ k l t]
   -- the rules have no decidable equality, but the tests against a constructor are decidable
   have : Decidable (l = .refl) := by cases l <;> first | exact isTrue rfl | exact isFalse nofun
   have : Decidable (l = .trans) := by cases l <;> first | exact isTrue rfl | exact isFalse nofun
   have : Decidable (l = .cong) := by cases l <;> first | exact isTrue rfl | exact isFalse nofun
   by_cases hr : l = .refl
   · subst hr
-    rcases xs with _ | ⟨x0, xs⟩ <;> der_simp [ruleData, Internal.checkStep]
+    rcases xs with _ | ⟨x0, xs⟩ <;> der_simp [ruleData, Internal.rewriteStep]
   by_cases ht : l = .trans
   · subst ht
     rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, xs⟩⟩⟩ <;>
-      der_simp [ruleData, Internal.checkStep, h1, Option.map_bind, elim_encOpt, rw_eq, dpAt_eq,
-        List.mem_cons, List.mem_singleton, true_or, or_true]
+      der_simp [ruleData, Internal.rewriteStep, h1, Option.map_bind, elim_encOpt, rwK_eq,
+        dpAt_eq, List.mem_cons, List.mem_singleton, true_or, or_true]
   by_cases hc : l = .cong
   · subst hc
     obtain ⟨lab, us, rfl⟩ := exists_node t
     have hd : (xs.map fun x ↦ encDeriv x.1) = (xs.map Prod.fst).map encDeriv := by simp
-    rw [hd, congCtxs_eq]
-    der_simp [ruleData, Internal.checkStep, List.map_map, Function.comp_def]
-    rcases hΓ : Internal.congCtxs G n lab us Γ Φ (xs.map Prod.fst) with _ | Γs
+    rw [hd, congBinders_eq]
+    der_simp [ruleData, Internal.rewriteStep, List.map_map, Function.comp_def]
+    rcases hB : Internal.congBinders G n lab us Γ (xs.map Prod.fst) with _ | Bs
     · der_simp []
     · simp only [Option.elim_some, Option.bind_some]
-      by_cases hl : xs.length = us.length ∧ Γs.length = us.length
-      · have hlen : (xs.zip (Γs.zip us)).length = xs.length := by simp [hl.1, hl.2]
+      by_cases hl : xs.length = us.length ∧ Bs.length = us.length
+      · have hlen : (xs.zip (Bs.zip us)).length = xs.length := by simp [hl.1, hl.2]
         simp only [ite_eq_left_of_eq_true _ _ (eq_true hl)]
-        rw [← hlen, map_range_eq _ (xs.zip (Γs.zip us))
-          (fun q ↦ encOpt ((q.1.2.2.1 q.2.1.1 q.2.1.2 q.2.2).map encTerm)) fun i hi ↦ ?_]
+        rw [← hlen, map_range_eq _ (xs.zip (Bs.zip us))
+          (fun q ↦ encOpt ((q.1.2.2.1 q.2.1.1 (k + q.2.1.2) Φ q.2.2).map encTerm)) fun i hi ↦ ?_]
         · rw [allSomeT_eq, mapM_map_option, List.zip_map_left, List.mapM_map]
           simp only [Function.comp_def, Prod.map_fst, Prod.map_snd, id]
-          cases (xs.zip (Γs.zip us)).mapM fun q ↦ q.1.2.2.1 q.2.1.1 q.2.1.2 q.2.2 <;>
+          cases (xs.zip (Bs.zip us)).mapM fun q ↦ q.1.2.2.1 q.2.1.1 (k + q.2.1.2) Φ q.2.2 <;>
             der_simp [encTerm_node, mapO_eq, child_node]
         · have hxi : i < xs.length := by simpa [hlen] using hi
-          have hΓi : i < Γs.length := by omega
+          have hBi : i < Bs.length := by omega
           have hui : i < us.length := by omega
           simp only [List.getElem_zip, List.getD_eq_getElem?_getD, List.getElem?_map,
-            List.getElem?_eq_getElem hΓi, List.getElem?_eq_getElem hui,
-            List.getElem?_eq_getElem hxi, Option.map_some, Option.getD_some, rw_eq, dpAt_eq,
-            encCtx, scopeCtx_pair, scopeHyps_pair]
-          exact h1 _ (List.getElem_mem hxi) _ _ _
+            List.getElem?_eq_getElem hBi, List.getElem?_eq_getElem hui,
+            List.getElem?_eq_getElem hxi, Option.map_some, Option.getD_some, rwK_eq, dpAt_eq,
+            encBinder, binderCtx_pair, binderNum_pair, add_leaf]
+          exact h1 _ (List.getElem_mem hxi) _ _ _ _
       · der_simp [hl]
   have h3 := three_le_ruleData l hr ht hc
   have h0 : (ruleData l).1 ≠ 0 := by omega
   have h1' : (ruleData l).1 ≠ 1 := by omega
   have h2 : (ruleData l).1 ≠ 2 := by omega
-  rw [checkStep_root G E n Γ Φ l hr ht hc]
+  rw [rewriteStep_root G E n Γ Φ l hr ht hc]
   rcases xs with _ | ⟨x0, xs⟩ <;> der_simp [h0, h1', h2, List.cons_ne_nil]
 
 /-- A test whose negative branch is the leaf of label zero is the conjunction. -/
@@ -1039,7 +1158,7 @@ local macro "prove_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* "]" : tactic => 
 theorem rw_rel (xs : List (Internal.Deriv × DV × Internal.Checks))
     (hx : ∀ x ∈ xs, DRel x.2.1 x.2.2) :
     ∀ x ∈ xs, ∀ {α : Type} (Γ : List Tree) (Ψ : List α) (f : α → Term) (t : Term),
-      x.2.1.1 Γ (Ψ.map fun a ↦ encTerm (f a)) (encTerm t) =
+      x.2.1.1 Γ (leaf 0) (Ψ.map fun a ↦ encTerm (f a)) (encTerm t) =
         encOpt ((x.2.2.1 Γ (Ψ.map f) t).map encTerm) := fun x h _ Γ Ψ f t ↦ by
   simpa [List.map_map, Function.comp_def] using (hx x h).1 Γ (Ψ.map f) t
 
@@ -1531,24 +1650,38 @@ theorem proveStep_eq (l : Internal.Rule) (xs : List (Internal.Deriv × DV × Int
     simp only [leaf_zero_eq_ofBool]
     rfl
 
+/-- The mirror's checker at an encoded derivation is related to the checker with its rewriting
+under weakened hypotheses at the derivation: their rewritings agree at every context, number of
+variables and encoded list of hypotheses and term, and their provings at every context and
+encoded list of hypotheses and formula. -/
+theorem check_fast_eq (d : Internal.Deriv) :
+    FRel («Derivation.check» (encGlobals G) (E.toList.map encEntry) (leaf n) (encDeriv d))
+      (RoseTree.para (Internal.fastStep G E n) d) :=
+  fold_pair_enc (fun r ↦ (ruleData r).1) (fun r ↦ RoseTree.node 0 (ruleData r).2) FRel
+    (fun l rs ↦ by simp only [dpTrees_eq]) (Internal.fastStep G E n)
+    (fun l v xs hx ↦ ⟨fun Γ k Φ t ↦ by
+        simp only [dpTrees_eq, dpTail_eq, List.map_cons, List.tail_cons, at_eq,
+          List.getD_cons_zero, children_eq, RoseTree.children_node, List.map_map,
+          Function.comp_def, Internal.fastStep]
+        exact rewriteStep_eq G E n Γ Φ l xs hx k t,
+      fun Γ Φ φ ↦ by
+        simp only [dpTrees_eq, dpTail_eq, List.map_cons, List.tail_cons, at_eq,
+          List.getD_cons_zero, children_eq, RoseTree.children_node, List.map_map,
+          Function.comp_def, Internal.fastStep]
+        have h := proveStep_eq G E n Φ l (xs.map fun x ↦ (x.1, x.2.1, x.2.2.checks))
+          (fun x hx' ↦ by
+            obtain ⟨y, hy, rfl⟩ := List.mem_map.mp hx'
+            exact (hx y hy).checks) Γ φ
+        simp only [List.map_map, Function.comp_def] at h
+        exact h⟩) d
+
 /-- The mirror's checker at an encoded derivation is related to the checker at the derivation:
 their rewritings and their provings agree at every context and every encoded list of hypotheses
 and term. -/
 theorem check_eq (d : Internal.Deriv) :
     DRel («Derivation.check» (encGlobals G) (E.toList.map encEntry) (leaf n) (encDeriv d))
       (Internal.check G E n d) :=
-  fold_pair_enc (fun r ↦ (ruleData r).1) (fun r ↦ RoseTree.node 0 (ruleData r).2) DRel
-    (fun l rs ↦ by simp only [dpTrees_eq]) (Internal.checkStep G E n)
-    (fun l v xs hx ↦ ⟨fun Γ Φ t ↦ by
-        simp only [dpTrees_eq, dpTail_eq, List.map_cons, List.tail_cons, at_eq,
-          List.getD_cons_zero, children_eq, RoseTree.children_node, List.map_map,
-          Function.comp_def]
-        exact rewriteStep_eq G E n Γ Φ l xs hx t,
-      fun Γ Φ φ ↦ by
-        simp only [dpTrees_eq, dpTail_eq, List.map_cons, List.tail_cons, at_eq,
-          List.getD_cons_zero, children_eq, RoseTree.children_node, List.map_map,
-          Function.comp_def]
-        exact proveStep_eq G E n Φ l xs hx Γ φ⟩) d
+  (Internal.para_fastStep G E n d).2 ▸ (check_fast_eq G E n d).checks
 
 /-- The mirror's test that a derivation proves a theorem. -/
 theorem thmChecks_eq (a : Internal.Thm) (d : Internal.Deriv) :

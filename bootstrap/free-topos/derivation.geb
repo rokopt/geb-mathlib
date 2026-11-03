@@ -6,7 +6,9 @@
 ; language, deciding as Geb.FreeTopos.Internal decides: the rewriting a derivation performs and
 ; the judgments it proves, the sequents theorems compile to, the certificates of the combinators,
 ; and the check of a development's declarations, each with the constants and the entries before
-; it. A derivation is the node of its rule's position among Geb.FreeTopos.Internal.Rule's
+; it. The rewriting is Geb.FreeTopos.Internal.checkFast's, under the hypotheses as stated with the
+; number of variables past which they are weakened, each weakened where the rewriting at the root
+; reads it. A derivation is the node of its rule's position among Geb.FreeTopos.Internal.Rule's
 ; constructors over the node of the rule's data followed by its children, a term among the data
 ; as the language encodes it, objects and terms the node of their list and a truth value a
 ; label. A theorem is the node of label 0 over its arity, the node of its context, the node of its
@@ -286,6 +288,22 @@
   (defn scopesOf ((c Scopes)) (List Scope) (case c ((scopes xs) xs)))
   (import (Option Scopes) as OScopes)
   (def scope0 (ctxPair (nil T) (nil T)))
+  ; a child's context with the number of variables by which it extends its node's
+  (data Binder (binder Objs T))
+  (defn binderCtx ((b Binder)) Ts (case b ((binder g m) (case g ((objs xs) xs)))))
+  (defn binderNum ((b Binder)) T (case b ((binder g m) m)))
+  (defn ctxNum ((g Ts) (m T)) Binder (binder (objs g) m))
+  (import (Seq Binder) as BinderL)
+  (import (Few Binder) as BinderF)
+  (import (Map T Binder) as BinderAt)
+  (data Binders (binders & Binder))
+  (defn bindersOf ((c Binders)) (List Binder) (case c ((binders xs) xs)))
+  (import (Option Binders) as OBinders)
+  (def binder0 (ctxNum (nil T) 0))
+  (defn bindTB ((m T) (f (Arrow T OBinders.Maybe))) OBinders.Maybe
+    (if (isSome m) (f (get m)) OBinders.nothing))
+  (defn bindBT ((m OBinders.Maybe) (f (Arrow Binders T))) T
+    (case m ((OBinders.just c) (f c)) ((OBinders.nothing) none)))
   (defn bindTS ((m T) (f (Arrow T OScopes.Maybe))) OScopes.Maybe
     (if (isSome m) (f (get m)) OScopes.nothing))
   (defn bindST ((m OScopes.Maybe) (f (Arrow Scopes T))) T
@@ -323,10 +341,41 @@
                   (OScopes.just (scopes (ScopeAt.map (lam ((u T)) (ctxPair g hs)) ts)))))))))))
   (defn sameCtx ((l T) (i T)) T
     (if (eq l 5) 0 (if (or (eq l 8) (eq l 9)) (not (eq i 1)) (if (eq l 10) (eq i 1) 1))))
-  (defn congCtxs ((G Globals) (n T) (t T) (g Ts) (hs Ts) (ds Ts)) OScopes.Maybe
+  ; the contexts of a node's children, each with the number of variables by which it extends the
+  ; node's, as childCtxs computes them
+  (defn childBinders ((G Globals) (n T) (t T) (g Ts)) OBinders.Maybe
+    (let l T (label t)
+      (let ts Ts (mArgs t)
+        (let k T (length ts)
+          (if (and (eq l 5) (eq k 1))
+            (OBinders.just (binders (BinderL.single (ctxNum (cons (mD t 0) g) 1))))
+            (if (and (eq l 8) (eq k 3))
+              (bindTB (typeIn G n g (at ts 0))
+                (lam ((c T))
+                  (OBinders.just
+                    (binders (BinderF.l3 (ctxNum g 0) (ctxNum (cons c g) 1) (ctxNum g 0))))))
+              (if (and (eq l 9) (eq k 3))
+                (bindTB (typeIn G n g (at ts 0))
+                  (lam ((c T))
+                    (bindTB (bindO (typeIn G n g (at ts 2)) listPart)
+                      (lam ((a T))
+                        (OBinders.just
+                          (binders
+                            (BinderF.l3 (ctxNum g 0) (ctxNum (cons c (cons a g)) 2)
+                              (ctxNum g 0))))))))
+                (if (and (eq l 10) (eq k 2))
+                  (bindTB (bindO (typeIn G n g (at ts 1)) roseLabel)
+                    (lam ((a T))
+                      (OBinders.just
+                        (binders
+                          (BinderF.l2 (ctxNum (cons (prod a (list (mD t 0))) g) 1) (ctxNum g 0))))))
+                  (OBinders.just (binders (BinderAt.map (lam ((u T)) (ctxNum g 0)) ts)))))))))))
+  ; the contexts in which a congruence rewrites a node's children by the derivations ds, each with
+  ; the number of variables by which it extends the node's
+  (defn congBinders ((G Globals) (n T) (t T) (g Ts) (ds Ts)) OBinders.Maybe
     (if (allT (lam ((i T)) (or (sameCtx (label t) i) (eq (label (at ds i)) 0))) (range (length ds)))
-      (OScopes.just (scopes (ScopeAt.map (lam ((u T)) (ctxPair g hs)) (mArgs t))))
-      (childCtxs G n t g hs)))
+      (OBinders.just (binders (BinderAt.map (lam ((u T)) (ctxNum g 0)) (mArgs t))))
+      (childBinders G n t g)))
 
   ; the rewritings of a term at its root by the rules of the language's equations, each by one
   ; rule: beta, the components of a pair, the eta of pairs and of the terminal type, the unfolding
@@ -466,43 +515,64 @@
                             (if (eq rl 16) (rootThm G E n g rd t)
                               (if (eq rl 17) (rootHyp hs rd t) none)))))))))))))))
 
-  ; the fold of a derivation with the derivation at each node, its values its rewriting and its
-  ; proving, each a function of a context, hypotheses and a term
+  ; a term weakened past k new innermost variables, the term itself past none
+  (defn weakenBy ((k T) (psi T)) T (if (eq k 0) psi (rename psi (lam ((i T)) (add i k)))))
+  ; the rewriting of a term at its root by a rule under the hypotheses weakened past k new
+  ; innermost variables, from the hypotheses before the weakening: an equation among them
+  ; weakened alone, and the other rules under none of the hypotheses, which they do not read
+  (defn rootHypK ((k T) (hs Ts) (rd Ts) (t T)) T
+    (let fl T (at rd 1)
+      (bindPT (bindTP (nth hs (at rd 0)) eqParts)
+        (lam ((lr TPair))
+          (if (equal t (weakenBy k (if fl (p2 lr) (p1 lr))))
+            (some (weakenBy k (if fl (p1 lr) (p2 lr))))
+            none)))))
+  (defn rootStepK ((G Globals) (E (List Entry)) (n T) (g Ts) (k T) (hs Ts) (rl T) (rd Ts) (t T)) T
+    (if (eq rl 17) (rootHypK k hs rd t) (rootStep G E n g (nil T) rl rd t)))
+
+  ; the fold of a derivation with the derivation at each node, its values its rewriting, a function
+  ; of a context, a number of variables, hypotheses and a term, the hypotheses weakened past that
+  ; number of new innermost variables, and its proving, a function of a context, hypotheses and a
+  ; term
   (deftype Chk3 (Arrow Ts (Arrow Ts (Arrow T T))))
-  (deftype DV (Prod Chk3 Chk3))
+  (deftype Rw4 (Arrow Ts (Arrow T (Arrow Ts (Arrow T T)))))
+  (deftype DV (Prod Rw4 Chk3))
   (deftype DP (Prod T DV))
   (deftype DPs (List DP))
   (defn dpTrees ((rs DPs)) Ts (foldr DP Ts (lam ((r DP) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
   (import (Lists DP) as DPs)
   (defn dpAt ((rs DPs) (i T)) DV
     (lcase DP DV (iter DPs DPs.tail rs i)
-      (pair (lam ((g Ts) (hs Ts) (t T)) none) (lam ((g Ts) (hs Ts) (t T)) 0))
+      (pair (lam ((g Ts) (k T) (hs Ts) (t T)) none) (lam ((g Ts) (hs Ts) (t T)) 0))
       (lam ((r DP) (rest DPs)) (snd r))))
-  (defn rw ((rs DPs) (i T)) Chk3 (fst (dpAt rs i)))
+  (defn rwK ((rs DPs) (i T)) Rw4 (fst (dpAt rs i)))
+  (defn rw ((rs DPs) (i T)) Chk3 (lam ((g Ts) (hs Ts) (t T)) ((rwK rs i) g 0 hs t)))
   (defn pf ((rs DPs) (i T)) Chk3 (snd (dpAt rs i)))
 
-  ; one step of the rewriting, at a node of a rule, from its children's results
+  ; one step of the rewriting, at a node of a rule, from its children's results, under the
+  ; hypotheses weakened past k new innermost variables: they are weakened where the rewriting at
+  ; the root reads them, rather than at each congruence past a binder
   (defn rewriteStep
-    ((G Globals) (E (List Entry)) (n T) (rl T) (rd Ts) (ds Ts) (as DPs) (g Ts) (hs Ts) (t T))
+    ((G Globals) (E (List Entry)) (n T) (rl T) (rd Ts) (ds Ts) (as DPs) (g Ts) (k T) (hs Ts) (t T))
     T
-    (let k T (length ds)
-      (if (and (eq rl 0) (eq k 0)) (some t)
-        (if (and (eq rl 1) (eq k 2)) (bindO ((rw as 0) g hs t) ((rw as 1) g hs))
+    (let m T (length ds)
+      (if (and (eq rl 0) (eq m 0)) (some t)
+        (if (and (eq rl 1) (eq m 2)) (bindO ((rwK as 0) g k hs t) ((rwK as 1) g k hs))
           (if (eq rl 2)
-            (bindST (congCtxs G n t g hs ds)
-              (lam ((cxN Scopes))
-                (let cx (List Scope) (scopesOf cxN)
+            (bindBT (congBinders G n t g ds)
+              (lam ((bxN Binders))
+                (let bx (List Binder) (bindersOf bxN)
                   (let ta Ts (mArgs t)
-                    (if (and (eq k (length ta)) (eq (ScopeL.length cx) (length ta)))
+                    (if (and (eq m (length ta)) (eq (BinderL.length bx) (length ta)))
                       (mapO (lam ((tsN T)) (node (label t) (cons (child t 0) (children tsN))))
                         (allSomeT
                           (mapT
                             (lam ((i T))
-                              (let c Scope (ScopeL.atOr scope0 cx i)
-                                ((rw as i) (scopeCtx c) (scopeHyps c) (at ta i))))
-                            (range k))))
+                              (let b Binder (BinderL.atOr binder0 bx i)
+                                ((rwK as i) (binderCtx b) (add k (binderNum b)) hs (at ta i))))
+                            (range m))))
                       none)))))
-            (if (eq k 0) (rootStep G E n g hs rl rd t) none))))))
+            (if (eq m 0) (rootStepK G E n g k hs rl rd t) none))))))
 
   ; the premises of induction on the innermost variable of a type of the data objects
   (defn rosePrimsOk ((G Globals) (kn T) (kl T) (kc T) (r T) (a T)) T
@@ -850,7 +920,7 @@
               (let as DPs (DPs.tail rs)
                 (let ds Ts (tail ts)
                   (pair (node l ts)
-                    (pair (lam ((g Ts) (hs Ts) (t T)) (rewriteStep G E n l rd ds as g hs t))
+                    (pair (lam ((g Ts) (k T) (hs Ts) (t T)) (rewriteStep G E n l rd ds as g k hs t))
                       (lam ((g Ts) (hs Ts) (phi T)) (proveStep G E n l rd ds as g hs phi)))))))))
         d)))
 
