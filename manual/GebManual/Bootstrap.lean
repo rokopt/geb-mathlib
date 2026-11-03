@@ -287,14 +287,13 @@ the sections below detail:
     evaluation]): the inference of a type alone, with the parts of a
     type read from its former's label and its test by a fold, and the
     weakening of a hypothesis where a rewriting reads it, as the Lean
-    checker's compiled code has them, each transcribed with its
-    agreement.
-  * Ready. The prover's reduction as compiled, in the prover written in
-    Geb. No stored certificate is checked or searched by it or by the
-    checker written in Geb during the bootstrap, so none of it bears on
-    the searches' time. The rewriting of `check` in `derivation.geb` in
-    the form the elementary-affine search accepts is made with the
-    elementary-affine rewriting of the metalogic's sources.
+    checker's compiled code has them, and the prover's reduction as
+    compiled, in the prover written in Geb, each transcribed with its
+    agreement. No stored certificate is checked or searched by them
+    during the bootstrap, so none of it bears on the searches' time. The
+    rewriting of `check` in `derivation.geb` and of the reduction in
+    `prove.geb` in the forms the elementary-affine search accepts is made
+    with the elementary-affine rewriting of the metalogic's sources.
   * In progress. Stronger checkers admitted beside it by relative
     soundness, each by a translation of its certificates into the
     metalogic's derivations ({ref "metalogic-and-checker"}[The
@@ -1661,8 +1660,8 @@ section below opens with a table of the states of its parts.
     their agreement: complete; the prover, its tactics and the
     combinator prover written in Geb and the proofs of their agreement:
     complete; stronger checkers: in progress; the base checker's
-    evaluation in the checker written in Geb: complete; the prover's
-    reduction as compiled in the prover written in Geb: ready
+    evaluation in the checker written in Geb and the prover's reduction
+    as compiled in the prover written in Geb: complete
 :::
 
 The fixed points hold on images and on Lean. The seed builds the
@@ -2334,7 +2333,7 @@ between given numbers, which needs no solver. The steps, in order:
    * Ready. The metalogic's own sources: `pcheck` in `partial-horn.geb`;
      `trav`, `occurs` and `compile` in `language.geb`; `infers` in
      `infer.geb`; `term` in `translation.geb`; `matchTerm`,
-     `normalize`, `uses` and `eval` in `prove.geb`; `withWeakHyps`,
+     `normalize`, `uses`, `isRename` and `evalK` in `prove.geb`; `withWeakHyps`,
      `withImpElim`, `byInstsOnce`, `occRewrite`, `byAutoT`, `byAutoC` and
      `abstractTerm` in `tactics.geb`; and `typers` and `normalizers` in
      `combinator.geb`, all under `bootstrap/free-topos/`; and
@@ -7103,15 +7102,6 @@ What is ready, each item independent of the others except as stated:
   natural numbers, first among their uses.
 * The Geb reader and serializer in constant depth, and the stage tests
   run by the compiled executables ({ref "improvements"}[Improvements]).
-* The prover's compiled reduction transcribed into the prover written in
-  Geb, beside the base checker's evaluation, which is transcribed into
-  the checker written in Geb
-  ({ref "base-checker-evaluation"}[The base checker's evaluation]). No
-  check or search during the bootstrap runs them, so they bear on no
-  check's time before a host without Lean runs the loaded checker; the
-  rewriting of `check` in the form the elementary-affine search accepts
-  is made with the elementary-affine rewriting of the metalogic's
-  sources.
 
 The admission of stronger checkers rests on the checker written in Geb
 and its agreement, and two are required by the bootstrap. The provers
@@ -7627,17 +7617,21 @@ compares a term with an equation among the hypotheses by a fold of the
 equation's left side computed once, without building its weakening. The
 derivations it constructs are those of
 {name}`Geb.FreeTopos.Internal.eval`, so the certificates and the
-agreement of the provers written in Lean and in Geb are unchanged; the
-prover written in Geb, which no search runs during the bootstrap, keeps
-the reduction as it is defined. Its transcription of the compiled
-reduction in `prove.geb` is ready and follows the checker's two above:
-the reduction of {name}`Geb.FreeTopos.Internal.evalFast`, with its
-agreement at every encoded input composed with
-{name}`Geb.FreeTopos.Internal.eval_eq_evalFast`, so that
-`Agreement/Prove.lean` still states the agreement with the Lean prover
-as it is defined. Like the checker's, it
-changes the mirrored program, and its time bears only on a run of the
-loaded prover.
+agreement of the provers written in Lean and in Geb are unchanged.
+Complete: its transcription in `prove.geb`, the reduction under
+weakened hypotheses (`evalK`, as {name}`Geb.FreeTopos.Internal.evalK`)
+by a rewriting at the root that tries the rules of an index by the keys
+of their roots' labels (`indexRules`, `ruleBucket`) and compares a term
+with an equation among the hypotheses by the fold of its left side
+(`isRename`, `prepareHyps`). Its agreement at every encoded input
+(`eval_eq` in `GebTests/Prototypes/FreeTopos/Agreement/Prove.lean`)
+relates its rewriting at the root to the rewriting by the rules under
+the hypotheses weakened, by {name}`Geb.FreeTopos.Internal.tryRuleK_eq`
+and {name}`Geb.FreeTopos.Internal.tryRule_eq_none`, and composes the
+reduction's agreement with {name}`Geb.FreeTopos.Internal.evalK_eq`, so
+that `Agreement/Prove.lean` states the agreement with the Lean prover as
+it is defined. Like the checker's, it changes the mirrored program, and
+its time bears only on a run of the loaded prover.
 
 The searches do not reduce by the environment machine
 ({name}`Geb.FreeTopos.Internal.machineReduce`): a search constructs the
