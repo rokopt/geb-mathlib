@@ -347,8 +347,8 @@ against their cost.
    time is not in it ({ref "measurements"}[The measurements]). The
    conversion checker as compiled
    ({name}`Geb.FreeTopos.Internal.convCheckFast`) takes it at its steps
-   `base`. Neither it nor the inference of a type alone is in the
-   checker written in Geb
+   `base`. It is not in the checker written in Geb, which has the
+   inference of a type alone
    ({ref "base-checker-evaluation"}[The base checker's evaluation]).
 3. The prover's reduction weakening the hypotheses where a rule reads
    one, as the compiled checker does, trying at a node only the rules

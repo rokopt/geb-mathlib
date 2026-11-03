@@ -361,10 +361,8 @@ theorem eqParts_eq (φ : Term) :
 @[simp] theorem typeIn_eq (G : Internal.Globals) (n : ℕ) (Γ : List Tree) (t : Term) :
     «Derivation.typeIn» (encGlobals G) (leaf n) Γ (encTerm t) =
       encOpt (Internal.typeIn G n Γ t) := by
-  have hc := compile_eq G n t (Internal.ctxObj Γ) (Internal.stdEnv Γ)
-  simp only [«Derivation.typeIn», template, ctxObj_eq, stdEnv_eq, hc, mapO_eq, Option.map_map,
-    Internal.typeIn_eq_compile]
-  rfl
+  simp only [«Derivation.typeIn», Internal.typeIn]
+  exact typeOf_eq G n t Γ
 
 /-- The mirror's test that a term is a formula in a context. -/
 @[simp] theorem isFormula_eq (G : Internal.Globals) (n : ℕ) (Γ : List Tree) (t : Term) :

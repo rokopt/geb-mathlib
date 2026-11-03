@@ -4,8 +4,8 @@
 ;
 ; The terms of the internal language and their compilation to the combinators, written in the
 ; datatype language, deciding as Geb.FreeTopos.Internal decides: renaming and substitution of
-; variables, substitution of objects, the types, the compilation of a term in an environment, and
-; the compilation of definitions and equations. A term is the node of its label's position among
+; variables, substitution of objects, the types, the type of a term in a context, the compilation
+; of a term in an environment, and the compilation of definitions and equations. A term is the node of its label's position among
 ; Geb.FreeTopos.Internal.Label's constructors over the node of the label's data followed by the
 ; term's children: a variable's index, an abstraction's type, a primitive arrow's or a
 ; definition's index and the node of its objects, a rose-tree fold's type. A pair of trees is the
@@ -65,6 +65,7 @@
     isTy
     CV
     compile
+    typeOf
     ldCompile
     compileDefs
     compileEq
@@ -212,21 +213,18 @@
               (cons (pr 25 0)
                 (cons (pr 29 0) (cons (pr 33 1) (cons (pr 37 0) (TPairs.single (pr 40 1))))))))))))
 
-  ; the parts of products, coproducts, exponentials, list objects and rose-tree objects
-  (defn binParts ((mk (Arrow T (Arrow T T))) (p T)) OTPair.Maybe
-    (if (eq (arity p) 2)
-      (let a T (child p 0)
-        (let b T (child p 1) (if (equal p (mk a b)) (OTPair.just (pr a b)) OTPair.nothing)))
-      OTPair.nothing))
-  (defn prodParts ((p T)) OTPair.Maybe (binParts prod p))
-  (defn coprodParts ((p T)) OTPair.Maybe (binParts coprod p))
-  (defn expParts ((p T)) OTPair.Maybe (binParts exp p))
-  (defn listPart ((p T)) T
-    (if (eq (arity p) 1) (let a T (child p 0) (if (equal p (list a)) (some a) none)) none))
+  ; the parts of products, coproducts, exponentials, list objects and rose-tree objects, read from
+  ; the label of the operation of index k that builds them, of m arguments
+  (defn opIs ((k T) (m T) (p T)) T (and (eq (label p) (add k 1)) (eq (arity p) m)))
+  (defn binParts ((k T) (p T)) OTPair.Maybe
+    (if (opIs k 2 p) (OTPair.just (pr (child p 0) (child p 1))) OTPair.nothing))
+  (defn prodParts ((p T)) OTPair.Maybe (binParts 6 p))
+  (defn coprodParts ((p T)) OTPair.Maybe (binParts 15 p))
+  (defn expParts ((p T)) OTPair.Maybe (binParts 22 p))
+  (defn listPart ((p T)) T (if (opIs 33 1 p) (some (child p 0)) none))
   ; the type of labels of a rose-tree object, and its fold by a step
   (defn roseLabel ((p T)) T
-    (if (equal p rose) (some nat)
-      (if (eq (arity p) 1) (let a T (child p 0) (if (equal p (lrose a)) (some a) none)) none)))
+    (if (opIs 37 0 p) (some nat) (if (opIs 40 1 p) (some (child p 0)) none)))
   (defn roseFold ((p T) (s T)) T (if (equal p rose) (roseRec s) (lroseRec (child p 0) s)))
 
   ; the product of a context's types, the environment of its projections, and the tuple of arrows
@@ -362,17 +360,23 @@
           (if (ODefinition.isJust d)
             (case (ODefinition.fromMaybe def0 d) ((defLang l) 0) ((defObj m2 b) (eq m2 m)))
             0)))))
+  ; the fold's result at a node is its label, whether it is a leaf, and whether it is a type
+  (deftype TyR (Prod T (Prod T T)))
   (defn isTy ((G Globals) (n T) (t T)) T
     (snd
-      (fold PT
-        (lam ((l T) (rs PTs))
-          (let cs Ts (ptTrees rs)
-            (pair (node l cs)
-              (if (eq l 0)
-                (if (eq (length cs) 1) (let i T (at cs 0) (and (eq (arity i) 0) (lt (label i) n)))
-                  0)
-                (and (isTyOp G (sub l 1) (length cs)) (allT (lam ((b T)) b) (ptValues rs)))))))
-        t)))
+      (snd
+        (fold TyR
+          (lam ((l T) (rs (List TyR)))
+            (let k T (foldr TyR T (lam ((r TyR) (j T)) (add j 1)) 0 rs)
+              (pair l
+                (pair (eq k 0)
+                  (if (eq l 0)
+                    (lcase TyR T rs 0
+                      (lam ((r TyR) (rest (List TyR)))
+                        (and (eq k 1) (and (fst (snd r)) (lt (fst r) n)))))
+                    (and (isTyOp G (sub l 1) k)
+                      (foldr TyR T (lam ((r TyR) (b T)) (and (snd (snd r)) b)) 1 rs)))))))
+          t))))
 
   ; the fold of a term with the term at each node, its values the compilations in an environment
   (deftype CV (Arrow T (Arrow (List TPair) OTPair.Maybe)))
@@ -587,6 +591,120 @@
         (lam ((l T) (rs CPs))
           (pair (node l (cpTrees rs)) (lam ((X T) (e (List TPair))) (compileStep G n l rs X e))))
         t)))
+
+  ; the type of a term in n object variables, in a context of types, nothing where it has none,
+  ; computed without its arrow: a function of the context at each node, from the children's
+  (deftype TV (Arrow Ts T))
+  (deftype TVs (List TV))
+  ; at a node without children: a variable and the element of the terminal type
+  (defn typeLeaf ((l T) (d Ts)) TV
+    (lam ((g Ts)) (if (eq l 0) (nth g (at d 0)) (if (eq l 1) (some one) none))))
+  ; at a node of one child t: the projections, an abstraction and a primitive arrow's application
+  (defn typeUnary ((G Globals) (n T) (l T) (d Ts) (t TV)) TV
+    (if (or (eq l 3) (eq l 4))
+      (lam ((g Ts))
+        (bindO (t g)
+          (lam ((p T))
+            (case (prodParts p) ((OTPair.just ab) (some (if (eq l 3) (p1 ab) (p2 ab))))
+              ((OTPair.nothing) none)))))
+      (if (eq l 5)
+        (let a T (at d 0)
+          (lam ((g Ts)) (if (isTy G n a) (mapO (lam ((b T)) (exp a b)) (t (cons a g))) none)))
+        (if (eq l 7)
+          (let th Ts (children (at d 1))
+            (lam ((g Ts))
+              (case (OPrimitive.nthOf (gPrims G) (at d 0))
+                ((OPrimitive.just pm)
+                 (bindO (t g)
+                   (lam ((a T))
+                     (if
+                       (and (eq (length th) (prArity pm))
+                         (and (allT (isTy G n) th) (equal a (phSubst th (prDom pm)))))
+                       (some (phSubst th (prCod pm)))
+                       none))))
+                ((OPrimitive.nothing) none))))
+          (lam ((g Ts)) none)))))
+  ; at a node of two children t and u: a pair, an application, a rose-tree fold and an equation
+  (defn typeBinary ((G Globals) (n T) (l T) (d Ts) (t TV) (u TV)) TV
+    (if (eq l 2) (lam ((g Ts)) (bindO (t g) (lam ((a T)) (mapO (lam ((b T)) (prod a b)) (u g)))))
+      (if (eq l 6)
+        (lam ((g Ts))
+          (bindO (t g)
+            (lam ((f T))
+              (case (expParts f)
+                ((OTPair.just ab) (if (equal (u g) (some (p1 ab))) (some (p2 ab)) none))
+                ((OTPair.nothing) none)))))
+        (if (eq l 10)
+          (let c T (at d 0)
+            (lam ((g Ts))
+              (if (isTy G n c)
+                (bindO (u g)
+                  (lam ((r T))
+                    (bindO (roseLabel r)
+                      (lam ((a T))
+                        (if (equal (t (cons (prod a (list c)) g)) (some c)) (some c) none)))))
+                none)))
+          (if (eq l 12)
+            (lam ((g Ts)) (bindO (t g) (lam ((a T)) (if (equal (u g) (some a)) (some omega) none))))
+            (lam ((g Ts)) none))))))
+  ; at a node of three children z, s and m: the folds of the natural numbers and of lists
+  (defn typeTernary ((l T) (z TV) (s TV) (m TV)) TV
+    (if (eq l 8)
+      (lam ((g Ts))
+        (bindO (z g)
+          (lam ((c T))
+            (if (and (equal (s (cons c g)) (some c)) (equal (m g) (some nat))) (some c) none))))
+      (if (eq l 9)
+        (lam ((g Ts))
+          (bindO (m g)
+            (lam ((r T))
+              (bindO (listPart r)
+                (lam ((a T))
+                  (bindO (z g)
+                    (lam ((c T)) (if (equal (s (cons c (cons a g))) (some c)) (some c) none))))))))
+        (lam ((g Ts)) none))))
+  ; the children's types in one context, whether each has one and their types, composed into one
+  ; function of the context
+  (defn typesIn ((as TVs)) (Arrow Ts (Prod T Ts))
+    (foldr TV (Arrow Ts (Prod T Ts))
+      (lam ((r TV) (k (Arrow Ts (Prod T Ts))) (g Ts))
+        (let m T (r g)
+          (let s (Prod T Ts) (k g) (pair (and (isSome m) (fst s)) (cons (get m) (snd s))))))
+      (lam ((g Ts)) (pair 1 (nil T)))
+      as))
+  ; at the application of a definition to its children
+  (defn typeDefn ((G Globals) (n T) (d Ts) (as TVs)) TV
+    (let th Ts (children (at d 1))
+      (let f (Arrow Ts (Prod T Ts)) (typesIn as)
+        (lam ((g Ts))
+          (let s (Prod T Ts) (f g)
+            (case (bindDL (ODefinition.nthOf (gDefs G) (at d 0)) defLanguage)
+              ((OLDefn.just df)
+               (if
+                 (and (fst s)
+                   (and (eq (length th) (ldArity df))
+                     (and (allT (isTy G n) th)
+                       (equalTs (snd s) (mapT (phSubst th) (ldParams df))))))
+                 (some (phSubst th (ldType df)))
+                 none))
+              ((OLDefn.nothing) none)))))))
+  ; one step, at a node and its children's results, the first the result at the label's data: the
+  ; list of the results is taken apart once
+  (defn typeStep ((G Globals) (n T) (nd T) (rs TVs)) TV
+    (let l T (label nd)
+      (let d Ts (mData nd)
+        (lcase TV TV rs (lam ((g Ts)) none)
+          (lam ((r0 TV) (as TVs))
+            (if (eq l 11) (typeDefn G n d as)
+              (lcase TV TV as (typeLeaf l d)
+                (lam ((t TV) (as1 TVs))
+                  (lcase TV TV as1 (typeUnary G n l d t)
+                    (lam ((u TV) (as2 TVs))
+                      (lcase TV TV as2 (typeBinary G n l d t u)
+                        (lam ((v TV) (as3 TVs))
+                          (lcase TV TV as3 (typeTernary l t u v)
+                            (lam ((w TV) (as4 TVs)) (lam ((g Ts)) none)))))))))))))))
+  (defn typeOf ((G Globals) (n T) (t T)) TV (para TV (typeStep G n) t))
 
   ; the bindings of optional arrows with their types into optional definitions and sequents, and
   ; the optional list of present definitions, as the base binds and collects optional trees
