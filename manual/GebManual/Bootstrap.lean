@@ -7276,7 +7276,10 @@ that remain, and the constraints each of them carries.
 * `Geb/Prototypes/FreeTopos/Internal/ByMachine.lean`: the translation of
   a development's derivations, each join the machine also joins replaced
   by two steps of the machine, at the formulas the base checker proves
-  at a derivation's nodes; it is checked rather than trusted.
+  at a derivation's nodes; a step at a side whose rewriting cites
+  theorems and hypotheses unfolds the definitions the rewriting unfolds
+  and rewrites by those it cites. The translation is checked rather than
+  trusted.
 * `Geb/Prototypes/FreeTopos/Literals.lean`: the evaluation at
   literals. A literal ({name}`Geb.FreeTopos.Literals.Val`) is a
   numeral, the bitstring of a number's index in Oitavem's enumeration
@@ -7485,27 +7488,32 @@ that remain, and the constraints each of them carries.
   ({name}`Geb.FreeTopos.Internal.devByMachine`) replaces each join that
   the machine also joins by two steps of the machine. On the
   certificates of weakening, of substitution and of the expansion's
-  identity, in one run of the bench, it replaces joins in 46 of 68, 53
-  of 83 and 32 of 49 theorems and shortens the certificates' text by 27,
-  20 and 0.3 percent, while the checks take 5.6, 12.3 and 12.0 seconds
-  against 5.6, 11.6 and 8.9. It replaces only the joins whose rewritings
-  cite neither a theorem nor a hypothesis, which the machine does not
-  apply; either the checks' time is not in the joins it replaces, or
-  the machine's normal form costs there about what the base checker's
-  rewriting does; the base checker's time is divided among its rules in
-  {ref "measurements"}[The measurements]. The machine rewrites by the
-  theorems and hypotheses a step names, at the roots of its normal form,
-  innermost first. A translation that joins the other joins by steps
-  rewriting by the theorems and hypotheses their rewritings cite does
-  not end on the certificate of weakening: the machine's normal form of
-  the sides of a join that a theorem's rewriting proves takes, at one
-  theorem, 9 milliseconds within a depth of recursion of 22 and 364
-  seconds within one of 24, since the machine unfolds the definitions
-  whose computation the rewriting by the theorem leaves undone, and
-  leaving the theorems' definitions folded leaves the branches of their
-  case analyses unselected. Which definitions a step unfolds where its
-  rewritings cite theorems, and whether the normal forms in a fold's
-  step belong to the machine or to a conversion around it, are open; no
+  identity, in one run of the bench, it replaces joins in 50 of 68, 61
+  of 83 and 42 of 49 theorems, the certificates' text shorter by 27 and
+  19 percent and longer by 3 percent, while the checks take 3.8, 7.8 and
+  3.8 seconds against 4.6, 9.5 and 3.2; either the checks' time is not
+  in the joins it replaces, or the machine's normal form costs there
+  about what the base checker's rewriting does; the base checker's time
+  is divided among its rules in
+  {ref "measurements"}[The measurements]. A join whose rewritings cite
+  neither a theorem nor a hypothesis is replaced by steps that unfold
+  every definition but those the rewritings' results apply. A join whose
+  rewritings cite them, each from its left side to its right, is
+  replaced by a step at each side that unfolds the definitions that
+  side's rewriting unfolds and rewrites by the theorems and hypotheses
+  it cites, at the roots of its normal form, innermost first, within a
+  depth of recursion of 32. Such a step applies a rule and unfolds a
+  definition wherever the normal form reaches it, and the depth bounds
+  its search rather than its cost: at one theorem of weakening, the
+  normal form of a join's side takes 7 milliseconds within a depth of 88
+  and does not end in two minutes within one of 96, at the reading back
+  of a closure's environment to the terms of values that share what
+  those terms do not. On the three certificates a depth of 24 replaces
+  joins in fewer theorems, and one of 64 replaces more joins of the same
+  theorems while the check of the expansion's identity takes four times
+  as long. Whether the normal forms in a fold's step belong to the
+  machine or to a conversion around it, and whether a closure's
+  environment can be normalized without its reading back, are open; no
   stored certificate is translated.
 
 ### The base checker's evaluation

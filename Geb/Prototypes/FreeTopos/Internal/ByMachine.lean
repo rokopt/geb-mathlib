@@ -16,11 +16,16 @@ The translation of a derivation of the base checker to a certificate of the conv
 ({name}`Geb.FreeTopos.Internal.convCheck`) in which each join of two rewritings that the
 environment machine also joins ({name}`Geb.FreeTopos.Internal.machineReduce`) is the join of
 two steps of the machine. The translation follows the formulas the base checker proves at a
-derivation's nodes ({name}`Geb.FreeTopos.Internal.checkStep`). A join is translated where
-its rewritings cite no theorem and no hypothesis, since the machine applies neither, by steps of
-the machine that unfold every definition but those the rewritings' results apply: a normal form
-that unfolds more is in general larger than the rewritings' result by the sharing the machine's
-values hold and its terms do not. At each rule that proves a formula
+derivation's nodes ({name}`Geb.FreeTopos.Internal.checkStep`). A join whose rewritings cite no
+theorem and no hypothesis is translated by steps of the machine that unfold every definition but
+those the rewritings' results apply: a normal form that unfolds more is in general larger than the
+rewritings' result by the sharing the machine's values hold and its terms do not. A join whose
+rewritings cite them is translated by a step at each side that unfolds the definitions that side's
+rewriting unfolds and rewrites by the theorems and hypotheses it cites, from their left sides to
+their right, where the rewriting cites them so. Such a step applies a rule and unfolds a definition
+wherever the normal form reaches it, where the rewriting does so at particular positions, so that
+its normal form may be infeasibly larger, as a term, than the rewriting's result; it is taken within
+a depth of recursion of its own, which the caller gives. At each rule that proves a formula
 from premises, the premises' contexts, hypotheses and formulas are those the base checker
 computes, so that a join among the premises is translated at the equation it proves; every other
 node, and every rewriting, is the base checker's rule as it stands. A theorem is translated where
@@ -34,6 +39,8 @@ theorem whose translation is not accepted keeps its derivation.
 
 * {lit}`liftDeriv` — a derivation as a certificate of the conversion checker.
 * {lit}`joinByMachine` — the join of an equation's sides by two steps of the machine.
+* {lit}`unfoldsIn`, {lit}`citedIn` — the definitions a rewriting unfolds, the rules it cites.
+* {lit}`joinByMachineAs` — the join by a step at each side taking it as its rewriting takes it.
 * {lit}`byMachine` — the translation of a derivation's proof of a formula.
 * {lit}`Thm.byMachine`, {lit}`devByMachine` — the translation of a theorem and of a development.
 
@@ -91,16 +98,75 @@ def joinByMachine (Γ : List Tree) (Φ : List Term) (d₁ d₂ : Deriv) (t u : T
   let w₂ ← r u
   if w₁ = w₂ then some (RoseTree.node (.base .join) [step, step]) else none
 
+/-- The indices of the definitions a rewriting unfolds, of a term in a context under hypotheses. -/
+abbrev Unfolds : Type := List Tree → List Term → Term → List ℕ
+
+/-- One step of the collection of the definitions a rewriting unfolds, at a node of a rule from
+its children with their collections: at the unfolding of a definition its index, at one
+rewriting after another the definitions the first unfolds and those the second unfolds of the
+first's result, at the rewriting of each child of a node those each child's rewriting unfolds,
+and at every other node none. -/
+def unfoldsStep (l : Rule) (cs : List (Deriv × Unfolds)) : Unfolds := fun Γ Φ t ↦
+  match l, cs with
+  | .delta, [] => match t.label with
+    | .defn k _ => [k]
+    | _ => []
+  | .trans, [(d₁, u₁), (_, u₂)] => u₁ Γ Φ t ++ (((check G E n d₁).1 Γ Φ t).map (u₂ Γ Φ)).getD []
+  | .cong, cs => match congCtxs G n t.label t.children Γ Φ (cs.map Prod.fst) with
+    | some Γs => ((cs.zip (Γs.zip t.children)).map fun ((_, u), (Δ, Ψ), v) ↦ u Δ Ψ v).flatten
+    | none => []
+  | _, _ => []
+
+/-- The indices of the definitions a derivation's rewriting unfolds. -/
+def unfoldsIn : Deriv → Unfolds := RoseTree.para (unfoldsStep G E n)
+
+/-- The theorems, at their objects, and the hypotheses a derivation rewrites by, as rules of the
+prover, each from its left side to its right; nothing where it rewrites by one from its right
+side to its left. -/
+def citedIn : Deriv → Option (List NormRule) :=
+  RoseTree.elim fun r cs ↦ do
+    let ps ← cs.mapM id
+    match r with
+    | .thm j θ _ false => pure (.thm j θ :: ps.flatten)
+    | .rwHyp i false => pure (.hyp i :: ps.flatten)
+    | .thm _ _ _ true | .rwHyp _ true => none
+    | _ => pure ps.flatten
+
+/-- The step of the machine within the depth of recursion {lit}`fuel` taking a term as the
+rewriting {lit}`d` takes it, in a context under hypotheses: it unfolds the definitions the
+rewriting unfolds and no other, and rewrites by the theorems and hypotheses the rewriting
+cites. -/
+def machineStepAs (Γ : List Tree) (Φ : List Term) (d : Deriv) (t : Term) : Option ConvDeriv := do
+  let rs ← citedIn d
+  let ks := unfoldsIn G E n d Γ Φ t
+  pure (RoseTree.node (.machine fuel G.defs.length
+    ((List.range G.defs.length).filter fun j ↦ !ks.contains j)
+    (G.prims.findIdx fun p ↦ decide (p = nilPrim))
+    (G.prims.findIdx fun p ↦ decide (p = consPrim)) rs) [])
+
+/-- The join of an equation's sides, which the rewritings {lit}`d₁` and {lit}`d₂` join, by a step
+of the machine at each side taking it as its rewriting takes it, where the two reduce the sides to
+one term. -/
+def joinByMachineAs (Γ : List Tree) (Φ : List Term) (d₁ d₂ : Deriv) (t u : Term) :
+    Option ConvDeriv := do
+  let s₁ ← machineStepAs G E n fuel Γ Φ d₁ t
+  let s₂ ← machineStepAs G E n fuel Γ Φ d₂ u
+  let w₁ ← (convCheck G E [] n s₁).1 Γ Φ t
+  let w₂ ← (convCheck G E [] n s₂).1 Γ Φ u
+  if w₁ = w₂ then some (RoseTree.node (.base .join) [s₁, s₂]) else none
+
+variable (fuelRw : ℕ)
+
 /-- The translation of a derivation's proof of a formula in a context under hypotheses, where it
 replaces a join; nothing where it replaces none. -/
 abbrev Translation : Type := List Tree → List Term → Term → Option ConvDeriv
 
 /-- One step of the translation, at a node of a rule from its children with their translations:
-at a join whose rewritings cite no theorem and no hypothesis, which the machine does not apply,
-the join by the machine of the equation's sides; at a rule that proves a formula from
-premises, the node over the premises' translations at the formulas the base checker proves them
-at, each premise the base checker's where its translation replaces nothing; at every other node
-nothing. -/
+at a join whose rewritings cite a theorem or a hypothesis, the join by a step at each side within
+the depth of recursion {lit}`fuelRw`; at any other join, the join by the machine of the equation's
+sides; at a rule that proves a formula from premises, the node over the premises' translations at
+the formulas the base checker proves them at, each premise the base checker's where its translation
+replaces nothing; at every other node nothing. -/
 def byMachineStep (l : Rule) (cs : List (Deriv × Translation)) : Translation := fun Γ Φ φ ↦
   let at' (ps : List (Option ConvDeriv)) : Option ConvDeriv :=
     if ps.any Option.isSome then
@@ -108,8 +174,9 @@ def byMachineStep (l : Rule) (cs : List (Deriv × Translation)) : Translation :=
     else none
   match l, cs with
   | .join, [(d₁, _), (d₂, _)] =>
-    if citesAny d₁ || citesAny d₂ then none
-    else (eqParts φ).bind fun (t, u) ↦ joinByMachine G E n fuel Γ Φ d₁ d₂ t u
+    (eqParts φ).bind fun (t, u) ↦ if citesAny d₁ || citesAny d₂ then
+      joinByMachineAs G E n fuelRw Γ Φ d₁ d₂ t u
+    else joinByMachine G E n fuel Γ Φ d₁ d₂ t u
   | .natInd kz ks s, [(_, p₀), (_, p₁), (_, p₂)] => match eqParts φ, Γ with
     | some (t, u), _ :: Γ' => (lowerHyps G n Γ' Φ).bind fun Φ' ↦
       at' [p₀ Γ' Φ' (Term.eq (Term.subst t (instVar (Term.arr kz [] Term.star)))
@@ -182,13 +249,13 @@ def byMachineStep (l : Rule) (cs : List (Deriv × Translation)) : Translation :=
   | _, _ => none
 
 /-- The translation of a derivation's proof of a formula, where it replaces a join. -/
-def byMachine : Deriv → Translation := RoseTree.para (byMachineStep G E n fuel)
+def byMachine : Deriv → Translation := RoseTree.para (byMachineStep G E n fuel fuelRw)
 
 /-- The declaration of a theorem with its derivation translated: the theorem with its
 translation where the translation replaces a join and the conversion checker accepts it with the
 constants of {lit}`G` and the entries of {lit}`E`, and else with its derivation. -/
 def Thm.byMachine (a : Thm) (d : Deriv) : ConvDecl :=
-  match Internal.byMachine G E a.arity fuel d a.ctx a.hyps a.concl with
+  match Internal.byMachine G E a.arity fuel fuelRw d a.ctx a.hyps a.concl with
   | some c => if a.convChecks G E [] c then .conv a c else .base (.language a d)
   | none => .base (.language a d)
 
@@ -197,7 +264,7 @@ the declarations before it leave, each other declaration as it stands. -/
 def devByMachine (ds : List Decl) : List ConvDecl :=
   (ds.foldl (fun (st : Option (Globals × Array Entry) × List ConvDecl) d ↦
       (st.1.bind fun (G, E) ↦ d.step G E, (match st.1, d with
-        | some (G, E), .language a der => Thm.byMachine G E fuel a der
+        | some (G, E), .language a der => Thm.byMachine G E fuel fuelRw a der
         | _, d => .base d) :: st.2))
     (some (G, E), [])).2.reverse
 

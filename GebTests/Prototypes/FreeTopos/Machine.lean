@@ -7,6 +7,10 @@ module
 
 public import GebTests.Prototypes.FreeTopos.Literals -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos.Literals -- shake: keep
+public import Geb.Prototypes.FreeTopos.Internal.ByMachine -- shake: keep
+public meta import Geb.Prototypes.FreeTopos.Internal.ByMachine -- shake: keep
+public import GebTests.Prototypes.FreeTopos.Stored -- shake: keep
+public meta import GebTests.Prototypes.FreeTopos.Stored -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -17,13 +21,18 @@ Equations of the library's arithmetic at numerals proved by a step of the enviro
 development of {lit}`GebTests.Prototypes.FreeTopos.Literals`: the machine's normal forms of the
 two sides are one term exactly when the conversion checker accepts the join of the two steps.
 Abstractions are equal by the reduction of their bodies. Reading back a delayed value does not
-compute it.
+compute it. A join rewriting by a hypothesis is translated by steps of the machine rewriting by it,
+and the store reads back the rules of a step.
 
 ## Main definitions
 
 * {lit}`byMachine` — the certificate of an equation by a step of the machine at each side.
 * {lit}`proves` — whether it proves an equation of closed terms.
 * {lit}`infeasible` — a delayed value whose computation takes more steps than are feasible.
+* {lit}`hypThm`, {lit}`translatedBy` — a theorem of a hypothesis, and whether a derivation of it
+  is translated.
+* {lit}`ruleDecl`, {lit}`roundTrips` — a declaration whose step rewrites by rules, and whether a
+  declaration's text reads back to the declaration.
 
 ## Tags
 
@@ -40,7 +49,7 @@ open Geb Geb.FreeTopos
 open GebTests.Prototypes.FreeTopos.Literals (G entries bin lit)
 open Geb.FreeTopos.Literals (Sym bitsT)
 open Geb.FreeTopos.Translation (lib trueT bnilT eqO gtO bitsTy)
-open Internal (Term Thm ConvDeriv)
+open Internal (Term Thm ConvDeriv ConvDecl Rule Deriv)
 
 /-- The certificate of an equation by a step of the machine at each side, every definition of the
 library unfolded, the rose-tree folds' lists built by the translation's primitives. -/
@@ -96,6 +105,46 @@ def infeasible : Internal.Val :=
 #guard Internal.readBack infeasible = Term.star
 #guard Internal.readBack (Internal.vnode .pair [infeasible, infeasible]) =
   Term.pair Term.star Term.star
+
+/-- The theorem that two variables are equal, under the hypothesis that the first two are. -/
+def hypThm (u v : ℕ) : Thm :=
+  ⟨0, [bitsTy, bitsTy], [Term.eq (Term.var 0) (Term.var 1)], Term.eq (Term.var u) (Term.var v)⟩
+
+/-- A join rewriting one side by the hypothesis, in a direction, and the other by no rule. -/
+def hypDeriv (flip : Bool) : Deriv :=
+  RoseTree.node .join [RoseTree.node (.rwHyp 0 flip) [], RoseTree.node .refl []]
+
+/-- Whether a theorem's derivation is replaced by a certificate of steps of the machine. -/
+def translatedBy (a : Thm) (d : Deriv) : Bool :=
+  match Internal.Thm.byMachine G entries 4096 32 a d with
+  | .conv _ _ => true
+  | _ => false
+
+-- a join rewriting by a hypothesis from its left side is translated, and from its right side not
+#guard translatedBy (hypThm 0 1) (hypDeriv false)
+#guard (hypThm 1 0).checks G entries (hypDeriv true)
+#guard !translatedBy (hypThm 1 0) (hypDeriv true)
+
+-- the rules a derivation cites, and the definitions it unfolds
+#guard (Internal.citedIn (hypDeriv false)).map List.length = some 1
+#guard (Internal.citedIn (hypDeriv true)).isNone
+#guard (Internal.citedIn (RoseTree.node .refl [])).map List.length = some 0
+#guard (Internal.unfoldsIn G entries 0 (RoseTree.node .delta []) [] [] (bin .add 1 2)).length = 1
+#guard (Internal.unfoldsIn G entries 0 (RoseTree.node .refl []) [] [] (bin .add 1 2)).isEmpty
+
+/-- A declaration whose certificate is a step of the machine at a list of rules. -/
+def ruleDecl (rs : List Internal.NormRule) : ConvDecl :=
+  .conv ⟨0, [], [], Term.star⟩ (RoseTree.node (.machine 8 2 [1] 3 4 rs) [])
+
+/-- Whether a declaration's text reads back to the declaration, by their numbers. -/
+def roundTrips (d : ConvDecl) : Bool :=
+  (Stored.convDeclsToNats [d]).any fun ns ↦
+    ((Stored.convDeclsOfText (" ".intercalate (ns.map toString))).bind
+      Stored.convDeclsToNats) == some ns
+
+-- a step's rules are stored and read back
+#guard roundTrips (ruleDecl [.thm 5 [], .hyp 6])
+#guard Stored.convDeclsToNats [ruleDecl [.hyp 6]] != Stored.convDeclsToNats [ruleDecl [.hyp 7]]
 
 end GebTests.Prototypes.FreeTopos.Machine
 

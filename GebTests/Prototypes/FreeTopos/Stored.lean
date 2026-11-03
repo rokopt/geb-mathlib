@@ -68,7 +68,7 @@ set_option doc.verso true
 namespace GebTests.Prototypes.FreeTopos.Stored
 
 open Geb Geb.FreeTopos
-open Internal (Term Label Thm Rule Deriv Decl ConvRule ConvDeriv ConvDecl)
+open Internal (Term Label Thm Rule Deriv Decl ConvRule ConvDeriv ConvDecl NormRule)
 open PartialHorn (Tree)
 
 /-! Developments as trees. -/
@@ -391,23 +391,37 @@ def declsOfText (s : String) : Option (List Decl) :=
 
 /-! Certificates of the conversion checker. -/
 
+/-- A rule of the prover a step of the machine rewrites by, as a tree: a theorem at objects and a
+hypothesis; nothing for a rule of another kind. -/
+def normRuleTree : NormRule → Option Tree
+  | .thm j θ => some (RoseTree.node 0 [leafN j, listT θ])
+  | .hyp i => some (RoseTree.node 1 [leafN i])
+  | _ => none
+
+/-- The rule of the prover a tree is, where it is one by {name}`normRuleTree`. -/
+def normRuleOfTree (t : Tree) : Option NormRule := match t.label, t.children with
+  | 0, [j, θ] => some (.thm j.label θ.children)
+  | 1, [i] => some (.hyp i.label)
+  | _, _ => none
+
 /-- A rule of the conversion checker's position among the rules and its data, as trees: a rule of
-the language's as {name}`ruleData` gives it, and a step of the machine rewriting by no rule
-after them; a rule of another kind at a position {lit}`convRuleOf` reads as none, so that a text
-storing it does not read. -/
+the language's as {name}`ruleData` gives it, and a step of the machine rewriting by theorems and
+hypotheses after them; a rule of another kind at a position {lit}`convRuleOf` reads as none, so
+that a text storing it does not read. -/
 def convRuleData : ConvRule → ℕ × List Tree
   | .base r => ruleData r
-  | .machine fuel m except kl kc [] =>
-    (37, [leafN fuel, leafN m, listT (except.map leafN), leafN kl, leafN kc])
+  | .machine fuel m except kl kc rs => match rs.mapM normRuleTree with
+    | some ts => (37, [leafN fuel, leafN m, listT (except.map leafN), leafN kl, leafN kc, listT ts])
+    | none => (38, [])
   | _ => (38, [])
 
 /-- The rule of the conversion checker of a position, read off the data, each a node's tree and
 readings: the rule and the data after them. -/
 def convRuleOf {ρ : Type} (k : ℕ) (ts : List (Tree × Reading ρ)) :
     Option (ConvRule × List (Tree × Reading ρ)) := match k, ts with
-  | 37, fuel :: m :: except :: kl :: kc :: rest =>
-    some (.machine fuel.1.label m.1.label (except.1.children.map (·.label)) kl.1.label
-      kc.1.label [], rest)
+  | 37, fuel :: m :: except :: kl :: kc :: rs :: rest => do
+    pure (.machine fuel.1.label m.1.label (except.1.children.map (·.label)) kl.1.label
+      kc.1.label (← rs.1.children.mapM normRuleOfTree), rest)
   | k, ts => (ruleOf k ts).map fun (r, rest) ↦ (.base r, rest)
 
 /-- The index of a declaration's tree among the distinct nodes: a theorem of the base checker's
