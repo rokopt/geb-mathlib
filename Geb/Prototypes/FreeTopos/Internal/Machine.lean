@@ -44,6 +44,14 @@ with the body's evaluation. The step of a fold is read back unreduced: the conte
 step holds the type of the fold's start, which the base checker's congruence there computes and
 the machine does not.
 
+The normal form is taken in a context, and each of its nodes, its children's normal forms taken,
+is rewritten at its root by a rewriting the machine is given, which reads the context and the
+number of binders passed, so that it can rewrite by theorems, whose instances it types in the
+context, and by hypotheses, weakened past those binders, as the prover's normalization does
+innermost first. A rewritten term is evaluated again and its normal form taken, and so is a node
+that eliminates a child within which a rewriting changed a term, since the rewriting may make the
+node a redex; a rewriting is taken only where the result's variables are leaves.
+
 ## Main definitions
 
 * {lit}`VLabel`, {lit}`Val` — the values.
@@ -51,7 +59,8 @@ the machine does not.
   value reads back to.
 * {lit}`delayed` — the delayed value of a computation.
 * {lit}`Machine`, {lit}`machine` — the evaluation of terms in environments, the weak head normal
-  form of values and the normal form of a value's term, within a depth of recursion.
+  form of values and the normal form of a value's term in a context, rewritten at its roots,
+  within a depth of recursion.
 * {lit}`machineReduce` — the reduction of a term.
 
 ## References
@@ -181,15 +190,16 @@ def Label.plain? : Label → Option VLabel
 
 /-- The machine's operations at a depth of recursion: the evaluation of a term in an
 environment shifted by a number, the weak head normal form of a value, and the normal form of a
-value's term. -/
+value's term in a context. -/
 structure Machine where
   /-- The evaluation of a term in an environment shifted by a number. -/
   eval : Term → List Val → ℕ → Option Val
   /-- The weak head normal form of a value. -/
   whnf : Val → Option Val
-  /-- The normal form of a value's term, under every constructor and abstraction and under no
-  fold's step. -/
-  nf : Val → Option Term
+  /-- The normal form of a value's term in a context, past a number of the binders the context
+  extends, under every constructor and abstraction and under no fold's step, with whether a
+  rewriting at a root changed it. -/
+  nf : List Tree → ℕ → Val → Option (Term × Bool)
 
 variable (G : Globals) (unfold : ℕ → Bool) (kl kc : ℕ)
 
@@ -319,45 +329,75 @@ def Machine.whnfStep (o : Machine) (v : Val) : Option Val :=
     | _, _ => some (vnode (.roseRec c s k) (m' :: env))
   | _, _ => some v
 
-/-- One step of the normal form of a value's term, the values reduced by {lit}`o`: the weak head
-normal form, then the normal forms of its children in the term's context; a closure's body, its
-environment's terms substituted, evaluated in the empty environment and normalized in the
-context its variable extends; a fold's step and an unevaluated term read back unreduced. -/
-def Machine.nfStep (o : Machine) (v : Val) : Option Term := do
-  let w ← o.whnf v
+/-- Whether a node of a label eliminates one of its children, so that a rewriting within them
+may make it a redex: an application, a component and a fold. -/
+def VLabel.eliminates : VLabel → Bool
+  | .app | .fst | .snd | .natRec _ _ | .listRec _ _ | .roseRec _ _ _ => true
+  | _ => false
+
+/-- The normal form of a term in a context past {lit}`k` binders, the normal form by {lit}`o` of
+its value in the empty environment, marked as changed by a rewriting. -/
+def Machine.renorm (o : Machine) (Γ : List Tree) (k : ℕ) (t : Term) : Option (Term × Bool) := do
+  let (u, _) ← o.nf Γ k (← o.eval t [] 0)
+  pure (u, true)
+
+/-- The normal form of a weak head normal form's term in a context past {lit}`k` binders, the
+values reduced by {lit}`o`, with whether a rewriting changed it: the normal forms of its children
+in the term's context; a closure's body, its environment's terms substituted, evaluated in the
+empty environment and normalized in the context its variable extends; a fold's step and an
+unevaluated term read back unreduced. -/
+def Machine.nfNode (o : Machine) (Γ : List Tree) (k : ℕ) (w : Val) : Option (Term × Bool) :=
   match w.label, w.children with
-  | .natRec s k, z :: m :: env => do
-    let z' ← o.nf z
-    let m' ← o.nf m
-    pure (Term.natRec z' (Term.subst s (Term.liftS (envSubst (env.map readBack) k))) m')
-  | .listRec s k, z :: m :: env => do
-    let z' ← o.nf z
-    let m' ← o.nf m
+  | .natRec s k', z :: m :: env => do
+    let (z', bz) ← o.nf Γ k z
+    let (m', bm) ← o.nf Γ k m
+    pure (Term.natRec z' (Term.subst s (Term.liftS (envSubst (env.map readBack) k'))) m',
+      bz || bm)
+  | .listRec s k', z :: m :: env => do
+    let (z', bz) ← o.nf Γ k z
+    let (m', bm) ← o.nf Γ k m
     pure (Term.listRec z'
-      (Term.subst s (Term.liftS (Term.liftS (envSubst (env.map readBack) k)))) m')
-  | .roseRec c s k, m :: env => do
-    let m' ← o.nf m
-    pure (Term.roseRec c (Term.subst s (Term.liftS (envSubst (env.map readBack) k))) m')
-  | .clo a b k, env => do
-    let t ← o.nf (← o.eval (Term.subst b (Term.liftS (envSubst (env.map readBack) k))) [] 0)
-    pure (Term.lam a t)
+      (Term.subst s (Term.liftS (Term.liftS (envSubst (env.map readBack) k')))) m', bz || bm)
+  | .roseRec c s k', m :: env => do
+    let (m', bm) ← o.nf Γ k m
+    pure (Term.roseRec c (Term.subst s (Term.liftS (envSubst (env.map readBack) k'))) m', bm)
+  | .clo a b k', env => do
+    let (t, bt) ← o.nf (a :: Γ) (k + 1)
+      (← o.eval (Term.subst b (Term.liftS (envSubst (env.map readBack) k'))) [] 0)
+    pure (Term.lam a t, bt)
   | .free _, cs | .star, cs | .pair, cs | .arr _ _, cs | .app, cs | .fst, cs | .snd, cs
     | .defn _ _, cs | .eq, cs => do
-    pure (readStep w.label (← cs.mapM o.nf))
+    let rs ← cs.mapM (o.nf Γ k)
+    pure (readStep w.label (rs.map Prod.fst), rs.any Prod.snd)
   | .fail, _ => none
-  | _, _ => some (readBack w)
+  | _, _ => some (readBack w, false)
+
+variable (rw : List Tree → ℕ → Term → Option Term)
+
+/-- One step of the normal form of a value's term in a context past {lit}`k` binders, the values
+reduced by {lit}`o` and the terms rewritten at their roots by {lit}`rw`: the weak head normal
+form, then the normal form of its node ({lit}`Machine.nfNode`); a node that eliminates a child
+within which a rewriting changed a term is reduced again, and any other is rewritten at its root
+where {lit}`rw` rewrites it to a term whose variables are leaves, the result reduced again. -/
+def Machine.nfStep (o : Machine) (Γ : List Tree) (k : ℕ) (v : Val) : Option (Term × Bool) := do
+  let w ← o.whnf v
+  let (t, b) ← o.nfNode Γ k w
+  if b && w.label.eliminates then o.renorm Γ k t
+  else match rw Γ k t with
+    | some u => if u.VarLeaves then o.renorm Γ k u else pure (t, b)
+    | none => pure (t, b)
 
 /-- The machine within a depth of recursion of {lit}`fuel`, each operation's recursive calls
 made at the depth below. -/
 def machine (fuel : ℕ) : Machine :=
-  fuel.rec ⟨fun _ _ _ ↦ none, fun _ ↦ none, fun _ ↦ none⟩ fun _ o ↦
-    ⟨Machine.evalStep G unfold o, Machine.whnfStep G kl kc o, Machine.nfStep o⟩
+  fuel.rec ⟨fun _ _ _ ↦ none, fun _ ↦ none, fun _ _ _ ↦ none⟩ fun _ o ↦
+    ⟨Machine.evalStep G unfold o, Machine.whnfStep G kl kc o, Machine.nfStep rw o⟩
 
-/-- The reduction of a term by the machine within a depth of recursion of {lit}`fuel`: the
-normal form of its value in the empty environment. -/
-def machineReduce (fuel : ℕ) (t : Term) : Option Term := do
-  let m := machine G unfold kl kc fuel
-  m.nf (← m.eval t [] 0)
+/-- The reduction of a term in a context by the machine within a depth of recursion of
+{lit}`fuel`: the normal form of its value in the empty environment. -/
+def machineReduce (fuel : ℕ) (Γ : List Tree) (t : Term) : Option Term := do
+  let m := machine G unfold kl kc rw fuel
+  (← m.nf Γ 0 (← m.eval t [] 0)).1
 
 end Geb.FreeTopos.Internal
 

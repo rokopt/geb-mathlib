@@ -21,9 +21,11 @@ term's and the definitions' bodies' variables are leaves: every value the machin
 back to a term to which the evaluated term, with the environment's terms substituted, rewrites,
 and a delayed value's source rewrites to its value wherever it reaches one. The rewriting is
 built of the base checker's rules at the root and of congruences at children in the node's
-context, the steps of folds and the bodies of abstractions left as they stand, so that no type
-is inferred; the soundness of the machine's reduction is that of the base checker at that
-derivation, which is not built.
+context, the steps of folds left as they stand and the bodies of abstractions rewritten in the
+context their abstraction's type extends, so that no type is inferred; where the machine's
+rewriting at the roots of its normal form is sound under the hypotheses weakened past the
+binders it has passed, its rewritings are among them. The soundness of the machine's reduction
+is that of the base checker at that derivation, which is not built.
 
 ## Main definitions
 
@@ -412,13 +414,15 @@ theorem varLeaves_envSubst_good {vs : List Val} (h : ∀ w ∈ vs, Good G E n Γ
 
 /-! The machine's soundness. -/
 
-variable {unfold : ℕ → Bool} {kl kc : ℕ}
+variable {unfold : ℕ → Bool} {kl kc : ℕ} {Ψ : List Term}
+  {rw : List Tree → ℕ → Term → Option Term}
 
-variable (G E n Γ Φ) in
+variable (G E n Γ Φ Ψ) in
 /-- The machine's operations rewrite as the base checker does: an evaluation's value reads back
 to a term to which the evaluated term, the environment's terms substituted, rewrites; a weak
 head normal form's to one to which the value's term rewrites; and the normal form of a value's
-term is one to which it rewrites; each at good values and terms whose variables are leaves,
+term, past a number of binders by which the hypotheses are {lit}`Ψ` weakened, is one to which it
+rewrites, whose variables are leaves; each at good values and terms whose variables are leaves,
 and each value computed good. -/
 structure Machine.Sound (o : Machine) : Prop where
   /-- An evaluation's value reads back to a term the evaluated term rewrites to. -/
@@ -429,9 +433,9 @@ structure Machine.Sound (o : Machine) : Prop where
   /-- A weak head normal form reads back to a term the value's term rewrites to. -/
   whnf : ∀ v w : Val, Good G E n Γ Φ v → o.whnf v = some w →
     Good G E n Γ Φ w ∧ Reaches G E n Γ Φ (readBack v) (readBack w)
-  /-- A normal form is a term the value's term rewrites to. -/
-  nf : ∀ (v : Val) (t : Term), Good G E n Γ Φ v → o.nf v = some t →
-    Reaches G E n Γ Φ (readBack v) t
+  /-- A normal form is a term the value's term rewrites to, whose variables are leaves. -/
+  nf : ∀ (k : ℕ) (v : Val) (t : Term) (b : Bool), Φ = Ψ.map (weakenBy k) → Good G E n Γ Φ v →
+    o.nf Γ k v = some (t, b) → Reaches G E n Γ Φ (readBack v) t ∧ VarLeaves t = true
 
 /-- The value of a computation that does not reach one is good. -/
 theorem good_failV : Good G E n Γ Φ failV :=
@@ -439,7 +443,7 @@ theorem good_failV : Good G E n Γ Φ failV :=
 
 /-- The delayed value of a term whose variables are leaves, in an environment of good values,
 by a sound machine, is good. -/
-theorem Machine.Sound.good_delay {o : Machine} (ho : o.Sound G E n Γ Φ) {t : Term} {vs : List Val}
+theorem Machine.Sound.good_delay {o : Machine} (ho : o.Sound G E n Γ Φ Ψ) {t : Term} {vs : List Val}
     (k : ℕ) (ht : VarLeaves t = true) (hvs : ∀ w ∈ vs, Good G E n Γ Φ w) :
     Good G E n Γ Φ (o.delay t vs k) := by
   rw [Machine.delay_eq]
@@ -470,7 +474,7 @@ theorem Machine.Sound.good_delay {o : Machine} (ho : o.Sound G E n Γ Φ) {t : T
 
 /-- The delayed weak head normal form of a good value, by a sound machine, its source the value,
 is good. -/
-theorem Machine.Sound.good_delayed {o : Machine} (ho : o.Sound G E n Γ Φ) {src : Val}
+theorem Machine.Sound.good_delayed {o : Machine} (ho : o.Sound G E n Γ Φ Ψ) {src : Val}
     (hsrc : Good G E n Γ Φ src) :
     Good G E n Γ Φ (delayed (Thunk.mk fun _ ↦ o.whnf src) src) := by
   rw [delayed_eq]
@@ -542,7 +546,7 @@ theorem subst_node₁ {l : Label} (hl : l.plain?.isSome) (t : Term) (σ : ℕ �
   simp [(Label.plain?_spec hl').2.2.2]
 
 /-- The delayed values of terms whose variables are leaves are good. -/
-theorem Machine.Sound.good_delays {o : Machine} (ho : o.Sound G E n Γ Φ) {ts : List Term}
+theorem Machine.Sound.good_delays {o : Machine} (ho : o.Sound G E n Γ Φ Ψ) {ts : List Term}
     {vs : List Val} (k : ℕ) (hts : ∀ t ∈ ts, VarLeaves t = true)
     (hvs : ∀ w ∈ vs, Good G E n Γ Φ w) :
     ∀ w ∈ ts.map fun u ↦ o.delay u vs k, Good G E n Γ Φ w := fun w hw ↦ by
@@ -557,7 +561,7 @@ theorem Machine.readBack_delays (o : Machine) (ts : List Term) (vs : List Val) (
 
 variable (unfold) in
 /-- One step of the evaluation is sound at a sound machine. -/
-theorem Machine.Sound.evalStep {o : Machine} (ho : o.Sound G E n Γ Φ)
+theorem Machine.Sound.evalStep {o : Machine} (ho : o.Sound G E n Γ Φ Ψ)
     (hdefs : ∀ (j : ℕ) (d : Defn), G.defs[j]? = some (.language d) → VarLeaves d.body = true)
     (t : Term) (vs : List Val) (k : ℕ) (v : Val) (ht : VarLeaves t = true)
     (hvs : ∀ w ∈ vs, Good G E n Γ Φ w) (h : Machine.evalStep G unfold o t vs k = some v) :
@@ -929,7 +933,7 @@ theorem Good.replace_second {l : VLabel} {z c c' : Val} {cs : List Val} (hl : l 
 
 variable (kl kc) in
 /-- One step of the weak head normal form is sound at a sound machine. -/
-theorem Machine.Sound.whnfStep {o : Machine} (ho : o.Sound G E n Γ Φ) (v w : Val)
+theorem Machine.Sound.whnfStep {o : Machine} (ho : o.Sound G E n Γ Φ Ψ) (v w : Val)
     (hv : Good G E n Γ Φ v) (h : Machine.whnfStep G kl kc o v = some w) :
     Good G E n Γ Φ w ∧ Reaches G E n Γ Φ (readBack v) (readBack w) := by
   obtain ⟨l, cs, rfl⟩ := exists_node v
@@ -1314,91 +1318,177 @@ theorem Machine.Sound.whnfStep {o : Machine} (ho : o.Sound G E n Γ Φ) (v w : V
 
 /-! The normal form, and the machine at every depth. -/
 
-/-- One step of the normal form is sound at a sound machine. -/
-theorem Machine.Sound.nfStep {o : Machine} (ho : ∀ Γ Φ, o.Sound G E n Γ Φ) (v : Val)
-    (t : Term) (hv : Good G E n Γ Φ v) (h : Machine.nfStep o v = some t) :
-    Reaches G E n Γ Φ (readBack v) t := by
-  unfold Machine.nfStep at h
-  obtain ⟨w, hw, h⟩ := Option.bind_eq_some_iff.mp h
-  obtain ⟨gw, rw⟩ := (ho Γ Φ).whnf v w hv hw
-  refine rw.trans ?_
+/-- The hypotheses weakened past a number of binders, weakened past one more. -/
+theorem map_weaken1_weakenBy (Ψ : List Term) (k : ℕ) :
+    (Ψ.map (weakenBy k)).map weaken1 = Ψ.map (weakenBy (k + 1)) := by
+  simp only [List.map_map, Function.comp_def, weaken1_weakenBy]
+
+/-- The normal form of a term's value in the empty environment is sound at a sound machine. -/
+theorem Machine.Sound.renorm {o : Machine} (ho : o.Sound G E n Γ Φ Ψ) {k : ℕ} {u t : Term}
+    {b : Bool} (hΦ : Φ = Ψ.map (weakenBy k)) (hu : VarLeaves u = true)
+    (h : o.renorm Γ k u = some (t, b)) : Reaches G E n Γ Φ u t ∧ VarLeaves t = true := by
+  simp only [Machine.renorm, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+    Option.some.injEq] at h
+  obtain ⟨v, hv, ⟨t', b'⟩, ht, h⟩ := h
+  obtain ⟨rfl, -⟩ := Prod.mk.inj h
+  obtain ⟨gv, rv⟩ := ho.eval u [] 0 v hu (by simp) hv
+  rw [List.map_nil, envSubst_nil, Term.subst_id _ hu _ fun _ ↦ rfl] at rv
+  obtain ⟨rt, lt⟩ := ho.nf k v t' b' hΦ gv ht
+  exact ⟨rv.trans rt, lt⟩
+
+/-- The normal form of a good weak head normal form's node is sound at a machine sound in every
+context. -/
+theorem Machine.Sound.nfNode {o : Machine} (ho : ∀ Γ Φ, o.Sound G E n Γ Φ Ψ) {k : ℕ} (w : Val)
+    (t : Term) (b : Bool) (hΦ : Φ = Ψ.map (weakenBy k)) (gw : Good G E n Γ Φ w)
+    (h : o.nfNode Γ k w = some (t, b)) :
+    Reaches G E n Γ Φ (readBack w) t ∧ VarLeaves t = true := by
   obtain ⟨l, cs, rfl⟩ := exists_node w
+  have hl := varLeaves_readBack _ gw
   obtain ⟨gcs, -, -⟩ := good_node.mp gw
-  have nf : ∀ {c t}, c ∈ cs → o.nf c = some t → Reaches G E n Γ Φ (readBack c) t :=
-    fun hc ht ↦ (ho Γ Φ).nf _ _ (gcs _ hc) ht
-  have plain : ∀ {l' : Label}, (∀ i, sameCtx l' i = true) → ∀ {ts : List Term},
-      cs.mapM o.nf = some ts → Reaches G E n Γ Φ (RoseTree.node l' (cs.map readBack))
-        (RoseTree.node l' ts) := fun hl ts hts ↦ by
-    refine reaches_node hl (List.forall₂_map_left_iff.mpr ?_)
-    exact ((List.forall₂_and_left _ _).mpr ⟨gcs, forall₂_of_mapM cs hts⟩).imp
-      fun _ _ h ↦ (ho Γ Φ).nf _ _ h.1 h.2
+  have nf : ∀ {c t b}, c ∈ cs → o.nf Γ k c = some (t, b) →
+      Reaches G E n Γ Φ (readBack c) t ∧ VarLeaves t = true :=
+    fun hc ht ↦ (ho Γ Φ).nf k _ _ _ hΦ (gcs _ hc) ht
+  have plain : ∀ {l' : Label}, (∀ i, sameCtx l' i = true) → (∀ i, l' ≠ .var i) →
+      ∀ {rs : List (Term × Bool)}, cs.mapM (o.nf Γ k) = some rs →
+      Reaches G E n Γ Φ (RoseTree.node l' (cs.map readBack)) (RoseTree.node l' (rs.map Prod.fst))
+        ∧ VarLeaves (RoseTree.node l' (rs.map Prod.fst)) = true := fun hl hv rs hrs ↦ by
+    have h₂ := ((List.forall₂_and_left _ _).mpr ⟨gcs, forall₂_of_mapM cs hrs⟩).imp
+      fun c r h ↦ (ho Γ Φ).nf k c r.1 r.2 hΦ h.1 h.2
+    refine ⟨reaches_node hl (List.forall₂_map_left_iff.mpr
+      (List.forall₂_map_right_iff.mpr (h₂.imp fun _ _ h ↦ h.1))), ?_⟩
+    have hvs : ∀ r ∈ rs, VarLeaves r.1 = true := ((List.forall₂_and_left
+      (p := fun r : Term × Bool ↦ VarLeaves r.1 = true) (R := fun _ (_ : Val) ↦ True) _ _).mp
+      (List.Forall₂.flip (R := fun r (_ : Val) ↦ VarLeaves r.1 = true ∧ True)
+        (h₂.imp fun _ _ h ↦ ⟨h.2, trivial⟩))).1
+    refine Term.varLeaves_of_children hv fun c hc ↦ ?_
+    obtain ⟨r, hr, rfl⟩ := List.mem_map.mp hc
+    exact hvs r hr
+  unfold Machine.nfNode at h
   simp only [RoseTree.label_node, RoseTree.children_node] at h
-  rw [readBack_node]
+  rw [readBack_node] at hl ⊢
   split at h
-  · rename_i s k z m env
+  · rename_i s k' z m env
     simp only [Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
       Option.some.injEq] at h
-    obtain ⟨z', hz, m', hm, rfl⟩ := h
-    exact reaches_natRec (nf (by simp) hz) (nf (by simp) hm)
-  · rename_i s k z m env
+    obtain ⟨⟨z', bz⟩, hz, ⟨m', bm⟩, hm, h⟩ := h
+    obtain ⟨rfl, -⟩ := Prod.mk.inj h
+    obtain ⟨rz, lz⟩ := nf (by simp) hz
+    obtain ⟨rm, lm⟩ := nf (by simp) hm
+    have hs := ((Term.varLeaves_node _ _).mp hl).2
+    refine ⟨reaches_natRec rz rm, Term.varLeaves_of_children (by simp) fun t ht ↦ ?_⟩
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at ht
+    rcases ht with rfl | rfl | rfl
+    exacts [lz, hs _ (by simp), lm]
+  · rename_i s k' z m env
     simp only [Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
       Option.some.injEq] at h
-    obtain ⟨z', hz, m', hm, rfl⟩ := h
-    exact reaches_listRec (nf (by simp) hz) (nf (by simp) hm)
-  · rename_i c s k m env
+    obtain ⟨⟨z', bz⟩, hz, ⟨m', bm⟩, hm, h⟩ := h
+    obtain ⟨rfl, -⟩ := Prod.mk.inj h
+    obtain ⟨rz, lz⟩ := nf (by simp) hz
+    obtain ⟨rm, lm⟩ := nf (by simp) hm
+    have hs := ((Term.varLeaves_node _ _).mp hl).2
+    refine ⟨reaches_listRec rz rm, Term.varLeaves_of_children (by simp) fun t ht ↦ ?_⟩
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at ht
+    rcases ht with rfl | rfl | rfl
+    exacts [lz, hs _ (by simp), lm]
+  · rename_i c s k' m env
     simp only [Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
       Option.some.injEq] at h
-    obtain ⟨m', hm, rfl⟩ := h
-    exact reaches_roseRec (nf (by simp) hm)
-  · rename_i a b k
+    obtain ⟨⟨m', bm⟩, hm, h⟩ := h
+    obtain ⟨rfl, -⟩ := Prod.mk.inj h
+    obtain ⟨rm, lm⟩ := nf (by simp) hm
+    have hs := ((Term.varLeaves_node _ _).mp hl).2
+    refine ⟨reaches_roseRec rm, Term.varLeaves_of_children (by simp) fun t ht ↦ ?_⟩
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at ht
+    rcases ht with rfl | rfl
+    exacts [hs _ (by simp), lm]
+  · rename_i a bb k'
     simp only [Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
       Option.some.injEq] at h
-    obtain ⟨u, hu, b', hb', rfl⟩ := h
-    have hl := varLeaves_readBack _ gw
-    rw [readBack_node] at hl
+    obtain ⟨u, hu, ⟨b', bb'⟩, hb', h⟩ := h
+    obtain ⟨rfl, -⟩ := Prod.mk.inj h
     have hb := ((Term.varLeaves_node _ _).mp hl).2 _ (List.mem_singleton_self _)
-    obtain ⟨gu, ru⟩ := (ho (a :: Γ) (Φ.map weaken1)).eval _ [] 0 u hb (by simp) hu
+    have ho' := ho (a :: Γ) (Φ.map weaken1)
+    obtain ⟨gu, ru⟩ := ho'.eval _ [] 0 u hb (by simp) hu
     rw [List.map_nil, envSubst_nil, Term.subst_id _ hb _ fun _ ↦ rfl] at ru
-    exact reaches_lam (ru.trans ((ho (a :: Γ) (Φ.map weaken1)).nf u b' gu hb'))
+    obtain ⟨rb, lb⟩ := ho'.nf (k + 1) u b' bb' (hΦ ▸ map_weaken1_weakenBy Ψ k) gu hb'
+    exact ⟨reaches_lam (ru.trans rb), Term.varLeaves_of_children (by simp) (by simpa using lb)⟩
   all_goals try (simp only [Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
       Option.some.injEq] at h)
-  all_goals try (obtain ⟨ts, hts, rfl⟩ := h)
-  · exact reaches_refl _
-  · exact reaches_refl _
+  all_goals try (obtain ⟨rs, hrs, h⟩ := h; obtain ⟨rfl, -⟩ := Prod.mk.inj h)
+  · exact ⟨reaches_refl _, Term.varLeaves_var _⟩
+  · exact ⟨reaches_refl _, Term.varLeaves_of_children (by simp) (by simp)⟩
   all_goals first
-    | exact plain (fun _ ↦ rfl) hts
+    | exact plain (fun _ ↦ rfl) (by simp) hrs
+    | (obtain ⟨rfl, -⟩ := Prod.mk.inj h
+       rw [readBack_node]
+       exact ⟨reaches_refl _, hl⟩)
     | cases h
-    | (rw [readBack_node]; exact reaches_refl _)
 
-/-- The machine at the operations of a machine sound in every context is sound. -/
-theorem Machine.Sound.step {o : Machine} (ho : ∀ Γ Φ, o.Sound G E n Γ Φ)
+/-- One step of the normal form is sound at a machine sound in every context, where the
+rewriting at the root is sound. -/
+theorem Machine.Sound.nfStep {o : Machine} (ho : ∀ Γ Φ, o.Sound G E n Γ Φ Ψ)
+    (hrw : ∀ Γ k t u, rw Γ k t = some u → Reaches G E n Γ (Ψ.map (weakenBy k)) t u) (k : ℕ)
+    (v : Val) (t : Term) (b : Bool) (hΦ : Φ = Ψ.map (weakenBy k)) (hv : Good G E n Γ Φ v)
+    (h : Machine.nfStep rw o Γ k v = some (t, b)) :
+    Reaches G E n Γ Φ (readBack v) t ∧ VarLeaves t = true := by
+  simp only [Machine.nfStep, Option.bind_eq_bind, Option.bind_eq_some_iff] at h
+  obtain ⟨w, hw, ⟨t₀, b₀⟩, ht₀, h⟩ := h
+  obtain ⟨gw, rw₀⟩ := (ho Γ Φ).whnf v w hv hw
+  obtain ⟨r₀, l₀⟩ := Machine.Sound.nfNode ho w t₀ b₀ hΦ gw ht₀
+  have r := rw₀.trans r₀
+  dsimp only at h
+  split at h
+  · obtain ⟨r₁, l₁⟩ := (ho Γ Φ).renorm hΦ l₀ h
+    exact ⟨r.trans r₁, l₁⟩
+  · split at h
+    · rename_i u hu
+      split at h
+      · obtain ⟨r₁, l₁⟩ := (ho Γ Φ).renorm hΦ (by assumption) h
+        exact ⟨r.trans ((hΦ ▸ hrw Γ k t₀ u hu).trans r₁), l₁⟩
+      · obtain ⟨rfl, -⟩ := Prod.mk.inj (Option.some.inj h)
+        exact ⟨r, l₀⟩
+    · obtain ⟨rfl, -⟩ := Prod.mk.inj (Option.some.inj h)
+      exact ⟨r, l₀⟩
+
+/-- The machine at the operations of a machine sound in every context is sound, where the
+rewriting at the root is sound. -/
+theorem Machine.Sound.step {o : Machine} (ho : ∀ Γ Φ, o.Sound G E n Γ Φ Ψ)
+    (hrw : ∀ Γ k t u, rw Γ k t = some u → Reaches G E n Γ (Ψ.map (weakenBy k)) t u)
     (hdefs : ∀ (j : ℕ) (d : Defn), G.defs[j]? = some (.language d) → VarLeaves d.body = true) :
-    Machine.Sound G E n Γ Φ
-      ⟨Machine.evalStep G unfold o, Machine.whnfStep G kl kc o, Machine.nfStep o⟩ :=
-  ⟨(ho Γ Φ).evalStep unfold hdefs, (ho Γ Φ).whnfStep kl kc, Machine.Sound.nfStep ho⟩
+    Machine.Sound G E n Γ Φ Ψ
+      ⟨Machine.evalStep G unfold o, Machine.whnfStep G kl kc o, Machine.nfStep rw o⟩ :=
+  ⟨(ho Γ Φ).evalStep unfold hdefs, (ho Γ Φ).whnfStep kl kc,
+    fun k v t b hΦ hv h ↦ Machine.Sound.nfStep ho hrw k v t b hΦ hv h⟩
 
 variable (unfold kl kc) in
-/-- The machine is sound at every depth. -/
+/-- The machine is sound at every depth, where the rewriting at the root is sound. -/
 theorem machine_sound
+    (hrw : ∀ Γ k t u, rw Γ k t = some u → Reaches G E n Γ (Ψ.map (weakenBy k)) t u)
     (hdefs : ∀ (j : ℕ) (d : Defn), G.defs[j]? = some (.language d) → VarLeaves d.body = true)
-    (fuel : ℕ) : (machine G unfold kl kc fuel).Sound G E n Γ Φ :=
-  fuel.rec (motive := fun fuel ↦ ∀ Γ Φ, (machine G unfold kl kc fuel).Sound G E n Γ Φ)
-    (fun _ _ ↦
-      ⟨fun _ _ _ _ _ _ h ↦ (nomatch h), fun _ _ _ h ↦ (nomatch h), fun _ _ _ h ↦ (nomatch h)⟩)
-    (fun _ ho _ _ ↦ Machine.Sound.step ho hdefs) Γ Φ
+    (fuel : ℕ) : (machine G unfold kl kc rw fuel).Sound G E n Γ Φ Ψ :=
+  fuel.rec (motive := fun fuel ↦ ∀ Γ Φ, (machine G unfold kl kc rw fuel).Sound G E n Γ Φ Ψ)
+    (fun _ _ ↦ ⟨fun _ _ _ _ _ _ h ↦ (nomatch h), fun _ _ _ h ↦ (nomatch h),
+      fun _ _ _ _ _ _ h ↦ (nomatch h)⟩)
+    (fun _ ho _ _ ↦ Machine.Sound.step ho hrw hdefs) Γ Φ
 
 variable (unfold kl kc) in
 /-- A term whose variables are leaves rewrites to its reduction by the machine, by a derivation
-the base checker accepts, where the definitions' bodies' variables are leaves. -/
+the base checker accepts, where the definitions' bodies' variables are leaves and the rewriting
+at the root is sound under the hypotheses. -/
 theorem machineReduce_reaches
+    (hrw : ∀ Γ k t u, rw Γ k t = some u → Reaches G E n Γ (Φ.map (weakenBy k)) t u)
     (hdefs : ∀ (j : ℕ) (d : Defn), G.defs[j]? = some (.language d) → VarLeaves d.body = true)
     {fuel : ℕ} {t t' : Term} (ht : VarLeaves t = true)
-    (h : machineReduce G unfold kl kc fuel t = some t') : Reaches G E n Γ Φ t t' := by
-  have hm := machine_sound (E := E) (n := n) (Γ := Γ) (Φ := Φ) unfold kl kc hdefs fuel
-  obtain ⟨v, hv, h⟩ := Option.bind_eq_some_iff.mp h
+    (h : machineReduce G unfold kl kc rw fuel Γ t = some t') : Reaches G E n Γ Φ t t' := by
+  have hm := machine_sound (E := E) (n := n) (Γ := Γ) (Φ := Φ) (Ψ := Φ) unfold kl kc hrw hdefs
+    fuel
+  simp only [machineReduce, Option.bind_eq_bind, Option.bind_eq_some_iff] at h
+  obtain ⟨v, hv, ⟨t₁, b⟩, h₁, h⟩ := h
+  obtain rfl := Option.some.inj h
   obtain ⟨gv, rv⟩ := hm.eval t [] 0 v ht (by simp) hv
   rw [List.map_nil, envSubst_nil, Term.subst_id t ht _ fun _ ↦ rfl] at rv
-  exact rv.trans (hm.nf v t' gv h)
+  exact rv.trans (hm.nf 0 v t₁ b (map_weakenBy_zero Φ).symm gv h₁).1
 
 end Geb.FreeTopos.Internal
 

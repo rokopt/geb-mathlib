@@ -392,12 +392,12 @@ def declsOfText (s : String) : Option (List Decl) :=
 /-! Certificates of the conversion checker. -/
 
 /-- A rule of the conversion checker's position among the rules and its data, as trees: a rule of
-the language's as {name}`ruleData` gives it, and a step of the machine after them; a rule of
-another kind at a position {lit}`convRuleOf` reads as none, so that a text storing it does not
-read. -/
+the language's as {name}`ruleData` gives it, and a step of the machine rewriting by no rule
+after them; a rule of another kind at a position {lit}`convRuleOf` reads as none, so that a text
+storing it does not read. -/
 def convRuleData : ConvRule → ℕ × List Tree
   | .base r => ruleData r
-  | .machine fuel m except kl kc =>
+  | .machine fuel m except kl kc [] =>
     (37, [leafN fuel, leafN m, listT (except.map leafN), leafN kl, leafN kc])
   | _ => (38, [])
 
@@ -407,7 +407,7 @@ def convRuleOf {ρ : Type} (k : ℕ) (ts : List (Tree × Reading ρ)) :
     Option (ConvRule × List (Tree × Reading ρ)) := match k, ts with
   | 37, fuel :: m :: except :: kl :: kc :: rest =>
     some (.machine fuel.1.label m.1.label (except.1.children.map (·.label)) kl.1.label
-      kc.1.label, rest)
+      kc.1.label [], rest)
   | k, ts => (ruleOf k ts).map fun (r, rest) ↦ (.base r, rest)
 
 /-- The index of a declaration's tree among the distinct nodes: a theorem of the base checker's

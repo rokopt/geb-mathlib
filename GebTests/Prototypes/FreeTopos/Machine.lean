@@ -44,8 +44,8 @@ open Internal (Term Thm ConvDeriv)
 library unfolded, the rose-tree folds' lists built by the translation's primitives. -/
 def byMachine : ConvDeriv :=
   RoseTree.node (.base .join)
-    [RoseTree.node (.machine 4096 lib.length [] 0 1) [],
-      RoseTree.node (.machine 4096 lib.length [] 0 1) []]
+    [RoseTree.node (.machine 4096 lib.length [] 0 1 []) [],
+      RoseTree.node (.machine 4096 lib.length [] 0 1 []) []]
 
 /-- Whether a step of the machine at each side proves an equation of closed terms. -/
 def proves (t u : Term) : Bool :=

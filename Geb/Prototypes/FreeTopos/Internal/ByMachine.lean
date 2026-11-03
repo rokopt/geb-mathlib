@@ -71,11 +71,12 @@ variable (G : Globals) (E : Array Entry) (n : ℕ) (fuel : ℕ)
 
 /-- The step of the machine within the depth of recursion {lit}`fuel` unfolding every definition
 of {lit}`G` but those of {lit}`except`, a rose-tree fold's list of its children's values built by
-the first primitives of {lit}`G` that are the empty list and the construction of lists. -/
+the first primitives of {lit}`G` that are the empty list and the construction of lists, and its
+normal form rewritten by no rule. -/
 def machineStep (except : List ℕ) : ConvDeriv :=
   RoseTree.node (.machine fuel G.defs.length except
     (G.prims.findIdx fun p ↦ decide (p = nilPrim))
-    (G.prims.findIdx fun p ↦ decide (p = consPrim))) []
+    (G.prims.findIdx fun p ↦ decide (p = consPrim)) []) []
 
 /-- The join of an equation's sides, which the rewritings {lit}`d₁` and {lit}`d₂` join, by two
 steps of the machine unfolding every definition but those the rewritings' results apply, where
