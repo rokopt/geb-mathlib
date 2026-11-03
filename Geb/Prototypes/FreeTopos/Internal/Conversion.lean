@@ -157,27 +157,31 @@ def applyInst (E : Array Entry) (j : ℕ) (θ : List Tree) (φ : Term) : Option 
     (List.replicate a.ctx.length none)
   σ.mapM id
 
-/-- The rewriting at a root of the machine's normal form by the prover's rules {lit}`rs` under the
-hypotheses {lit}`Φ`, weakened past the binders the normal form has passed where a rule reads
-them: none where there is no rule, so that the machine reads no hypothesis. -/
-def machineRw (G : Globals) (E : Array Entry) (n : ℕ) (rs : List NormRule) (Φ : List Term) :
-    List Tree → ℕ → Term → Option Term :=
-  if rs.isEmpty then fun _ _ _ ↦ none else
-    let idx := indexRules E (prepareRules E rs)
-    let hs := prepareHyps Φ
-    fun Γ k t ↦ (rootRewriteK G E n idx hs Γ k Φ t).map Prod.fst
+/-- The rewriting at a root of the machine's normal form by an index of the prover's rules under
+the hypotheses {lit}`Φ`, prepared in {lit}`hs`, weakened past the binders the normal form has
+passed where a rule reads them. -/
+def machineRw (G : Globals) (E : Array Entry) (n : ℕ)
+    (idx : List (ℕ × List NormRule) × List NormRule) (hs : PreparedHyps) (Φ : List Term)
+    (Γ : List Tree) (k : ℕ) (t : Term) : Option Term :=
+  (rootRewriteK G E n idx hs Γ k Φ t).map Prod.fst
 
 /-- The rewriting at a root of the machine's normal form is sound. -/
 theorem machineRw_reaches (G : Globals) (E : Array Entry) (n : ℕ) (rs : List NormRule)
-    (Φ : List Term) {Γ : List Tree} {k : ℕ}
-    {t u : Term} (h : machineRw G E n rs Φ Γ k t = some u) :
+    (Φ : List Term) {Γ : List Tree} {k : ℕ} {t u : Term}
+    (h : machineRw G E n (indexRules E (prepareRules E rs)) (prepareHyps Φ) Φ Γ k t = some u) :
     Literals.Reaches G E n Γ (Φ.map (weakenBy k)) t u := by
-  unfold machineRw at h
-  split at h
-  · cases h
-  · obtain ⟨⟨u', d⟩, hd, rfl⟩ := Option.map_eq_some_iff.mp h
-    rw [rootRewriteK_eq] at hd
-    exact ⟨(d, true), rootRewrite_checked hd⟩
+  obtain ⟨⟨u', d⟩, hd, rfl⟩ := Option.map_eq_some_iff.mp h
+  rw [rootRewriteK_eq] at hd
+  exact ⟨(d, true), rootRewrite_checked hd⟩
+
+/-- The reduction of a term in a context under hypotheses by the machine, which rewrites its normal
+form by the prover's rules {lit}`rs`, prepared once for the reduction; where there is no rule, the
+reduction reads no hypothesis. -/
+def machineReduceBy (G : Globals) (E : Array Entry) (n : ℕ) (unfold : ℕ → Bool) (kl kc : ℕ)
+    (rs : List NormRule) (fuel : ℕ) (Γ : List Tree) (Φ : List Term) (t : Term) : Option Term :=
+  if rs.isEmpty then machineReduce G unfold kl kc (fun _ _ _ ↦ none) fuel Γ t
+  else machineReduce G unfold kl kc
+    (machineRw G E n (indexRules E (prepareRules E rs)) (prepareHyps Φ) Φ) fuel Γ t
 
 /-- One step of the conversion checker, at a node of a rule from its children's results: the base
 checker's step at a rule of the language, each child standing for a derivation of its rule; at a
@@ -193,8 +197,8 @@ def convStep (G : Globals) (E : Array Entry) (R : List ℕ) (n : ℕ) (l : ConvR
   | .lit j => (fun _ _ t ↦ if R.contains j then (Literals.eval t).map Literals.Val.term else none,
       fun _ _ _ ↦ false)
   | .machine fuel m except kl kc rs =>
-    (fun Γ Φ t ↦ machineReduce G (fun j ↦ decide (j < m) && !except.contains j) kl kc
-      (machineRw G E n rs Φ) fuel Γ t, fun _ _ _ ↦ false)
+    (fun Γ Φ t ↦ machineReduceBy G E n (fun j ↦ decide (j < m) && !except.contains j) kl kc rs
+      fuel Γ Φ t, fun _ _ _ ↦ false)
   | .applyMatch j θ => (fun _ _ _ ↦ none, fun Γ Φ φ ↦ match applyInst E j θ φ with
     | some σ => (checkStep G E n (.apply j θ σ)
         (cs.map fun (d, c) ↦ (RoseTree.node d.label.toRule [], c))).2 Γ Φ φ
@@ -269,7 +273,7 @@ theorem para_convFastStep (G : Globals) (E : Array Entry) (R : List ℕ) (n : �
           | rfl
           | refine Prod.ext (funext fun Γ ↦ funext fun Φ ↦ funext fun t ↦ ?_) rfl
             split
-            · simp only [convStep, machineRw, *, ite_true]
+            · simp only [convStep, machineReduceBy, *, ite_true]
             · rfl
 
 /-- The conversion checker is the conversion checker with its rewriting under hypotheses weakened
@@ -359,9 +363,13 @@ theorem convCheck_sound (hδ : DefnsOk M G) {E : Array Entry}
           Term.VarLeaves d.body = true := fun j d hd ↦
         let ⟨_, hF, _⟩ := hδ j d hd
         Term.varLeaves_of_compile _ _ _ _ hF
-      obtain ⟨d, hd⟩ := machineReduce_reaches (E := E) (n := n) (Γ := Γ) (Φ := Φ) _ _ _
-        (fun _ _ _ _ h ↦ machineRw_reaches G E n _ Φ h) hdefs
-        (Term.varLeaves_of_compile t X e r hr) h
+      have hleaves := Term.varLeaves_of_compile t X e r hr
+      obtain ⟨d, hd⟩ : Literals.Reaches G E n Γ Φ t t' := by
+        simp only [machineReduceBy] at h
+        split at h
+        · exact machineReduce_reaches _ _ _ (fun _ _ _ _ h ↦ by cases h) hdefs hleaves h
+        · exact machineReduce_reaches _ _ _ (fun _ _ _ _ h ↦ machineRw_reaches G E n _ Φ h) hdefs
+            hleaves h
       exact (check_sound hM hG hρ hps hds hδ hE hcert d.1).1 _ _ _ _ hd.check X e he hΓ hH r hr
 
 end Soundness
