@@ -2298,7 +2298,14 @@ results more than once, as the prover's `uses` and its step `usesStep`;
 a fold whose step passes its children's results to such a definition, as
 the stage-1 compiler's `synIn` passes them to `synList`; and, in the
 tactics, a list of rewriting rules, each pairing a pattern with a
-function, read more than once, as `withWeakHyps` reads its rules. The
+function, read more than once, as `withWeakHyps` reads its rules. An
+iteration fails per use where its step applies the previous iterate both
+directly and in the step of a fold, as the prover's reduction `evalK`
+applies it to each of a node's children in `deepStepK`: a use under the
+fold needs one `!` more than the iterate's type has. An iterate applied
+to lists of arguments, once to the concatenation of the arguments of
+every element of the list, is applied under no fold, and an iteration in
+that form is typable. The
 exemption is not proved sound for a net machine; the third stage needs
 it, and the first two need no typing.
 
@@ -2335,7 +2342,7 @@ between given numbers, which needs no solver. The steps, in order:
    * Ready. The metalogic's own sources: `pcheck` in `partial-horn.geb`;
      `trav`, `occurs` and `compile` in `language.geb`; `infers` in
      `infer.geb`; `term` in `translation.geb`; `matchTerm`,
-     `normalize`, `uses`, `isRename` and `evalK` in `prove.geb`; `withWeakHyps`,
+     `normalize`, `uses` and `evalK` in `prove.geb`; `withWeakHyps`,
      `withImpElim`, `byInstsOnce`, `occRewrite`, `byAutoT`, `byAutoC` and
      `abstractTerm` in `tactics.geb`; and `typers` and `normalizers` in
      `combinator.geb`, all under `bootstrap/free-topos/`; and
@@ -2359,6 +2366,11 @@ between given numbers, which needs no solver. The steps, in order:
      `GebTests/Prototypes/FreeTopos/Agreement/Derivation.lean`) is
      proved again of that form. The fold the evaluation adds to
      `language.geb` is typable.
+   * Complete: `isRename` in `bootstrap/free-topos/prove.geb`, whose
+     step composes its children's tests into one by a right fold
+     (`holdAll`) and returns the closure that applies it, rather than a
+     closure that folds over the children's tests. The search accepts
+     it with a decoration per use.
    * Waiting on the datatype language's completion
      ({ref "datatype-completion"}[The datatype language's completion]),
      whose soundness of the typing is proved of the stage-1 compiler and

@@ -1330,9 +1330,9 @@ theorem pairsHold_cons (p : Term → Bool) (ps : List (Term → Bool)) (u : Term
   simp only [Internal.pairsHold, List.length_cons, List.zip_cons_cons, List.all_cons]
   cases p u <;> simp
 
-/-- The mirror's fold testing a node's children against a pattern's, from a position, is the
-test of the children's renamings, where the children's tests are related to the pattern's and the
-renamings at the positions are those of {lit}`F`. -/
+/-- The mirror's composition of the tests of a node's children, at a renaming and from a position,
+is the test of the children's renamings, where the children's tests are related to the pattern's
+and the renamings at the positions are those of {lit}`F`. -/
 theorem holdAll_fold (l m : Tree) (f : Tree → Tree) (F : ℕ → ℕ → ℕ) :
     ∀ (xs : List (((Tree → Tree) → Tree → Tree) × ((ℕ → ℕ) → Term → Bool))),
     (∀ x ∈ xs, ∀ g g', (∀ i, g (leaf i) = leaf (g' i)) → ∀ u,
@@ -1340,11 +1340,9 @@ theorem holdAll_fold (l m : Tree) (f : Tree → Tree) (F : ℕ → ℕ → ℕ) 
     ∀ (i : ℕ), (∀ j, i ≤ j → j < i + xs.length → ∀ a,
         «Prover.childRen» l m f (leaf j) (leaf a) = leaf (F j a)) →
       ∀ us : List Term,
-        List.foldr (fun r (c : Tree → List Tree → Tree) i' vs ↦ Const.lcase vs (leaf 0)
-            fun v ws ↦ «Prelude.and» (r («Prover.childRen» l m f i') v)
-              (c (Const.add i' (leaf 1)) ws))
-          (fun _ vs ↦ «Base.isEmpty» vs) (xs.map Prod.fst) (leaf i) (us.map encTerm) =
+        «Prover.holdAll» l m (xs.map Prod.fst) f (leaf i) (us.map encTerm) =
         ofBool (Internal.pairsHold ((xs.zipIdx i).map fun p ↦ p.1.2 (F p.2)) us) := by
+  simp only [«Prover.holdAll», foldr_eq]
   refine fun xs ↦ xs.rec (fun _ i _ us ↦ ?_) fun x xs ih hx i hF us ↦ ?_
   · cases us <;> rfl
   · rcases us with _ | ⟨u, us⟩
@@ -1408,9 +1406,9 @@ theorem isRenameStep_eq_node (l : Internal.Label) (hl0 : (labelData l).1 ≠ 0)
   simp only [List.map_map, Function.comp_def] at hh
   rw [isRenameStep_node l hl, List.length_map, ← zip_renamings _ _ f'
     (by simp [length_childRenamings])]
-  simp only [«Prover.isRenameStep», «Prover.holdAll», label_eq, label_encTerm,
+  simp only [«Prover.isRenameStep», label_eq, label_encTerm,
     RoseTree.label_node, eq_leaf, equal_eq, child_encTerm, mArgs_eq, RoseTree.children_node,
-    length_eq, List.length_map, label_ne_zero, ofBool_bne, beq_iff_eq, hl0, ↓reduceIte, foldr_eq]
+    length_eq, List.length_map, label_ne_zero, ofBool_bne, beq_iff_eq, hl0, ↓reduceIte]
   rw [show «Prover/RTs.tail» (v :: xs.map fun x ↦ x.2.1) = xs.map fun x ↦ x.2.1 from rfl, hh,
     and_eq, and_eq, ← Bool.and_assoc, labelData_beq lu l]
   simp only [List.zipIdx_map, List.map_map, Function.comp_def]
