@@ -85,7 +85,7 @@ def joinByMachine (Γ : List Tree) (Φ : List Term) (d₁ d₂ : Deriv) (t u : T
   let v₁ ← (check G E n d₁).1 Γ Φ t
   let v₂ ← (check G E n d₂).1 Γ Φ u
   let step := machineStep G fuel (defnsIn v₁ ++ defnsIn v₂).eraseDups
-  let r := (convCheck G E n step).1 Γ Φ
+  let r := (convCheck G E [] n step).1 Γ Φ
   let w₁ ← r t
   let w₂ ← r u
   if w₁ = w₂ then some (RoseTree.node (.base .join) [step, step]) else none
@@ -188,7 +188,7 @@ translation where the translation replaces a join and the conversion checker acc
 constants of {lit}`G` and the entries of {lit}`E`, and else with its derivation. -/
 def Thm.byMachine (a : Thm) (d : Deriv) : ConvDecl :=
   match Internal.byMachine G E a.arity fuel d a.ctx a.hyps a.concl with
-  | some c => if a.convChecks G E c then .conv a c else .base (.language a d)
+  | some c => if a.convChecks G E [] c then .conv a c else .base (.language a d)
   | none => .base (.language a d)
 
 /-- The translation of a development, each theorem translated with the constants and the entries

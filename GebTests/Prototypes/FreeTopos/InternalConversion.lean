@@ -59,7 +59,7 @@ def steps (k : ℕ) : List ConvRule := [.norm (rules k) 64, .eval (rules k) 64 .
 def nodes {α : Type} : RoseTree α → ℕ := RoseTree.elim fun _ rs ↦ 1 + rs.sum
 
 /-- Whether the theorem of an index the certificate proves, with no earlier entries. -/
-def proves (i : ℕ) (d : ConvDeriv) : Bool := (theorems[i]?.map (·.1)).any (·.convChecks G #[] d)
+def proves (i : ℕ) (d : ConvDeriv) : Bool := (theorems[i]?.map (·.1)).any (·.convChecks G #[] [] d)
 
 -- the theorems an equation's normalization proves, by either step
 #guard steps 0 |>.all fun s ↦ proves 0 (byConv s)
@@ -80,8 +80,8 @@ def instanceThm : Thm :=
   ⟨1, [L], [], Term.eq (appendT (appendT (Term.var 0) nilT) nilT) (appendT (Term.var 0) nilT)⟩
 
 -- the instance matches the second theorem's conclusion, and not the first's
-#guard instanceThm.convChecks G entries (RoseTree.node (.applyMatch 1 [A]) [])
-#guard !instanceThm.convChecks G entries (RoseTree.node (.applyMatch 0 [A]) [])
+#guard instanceThm.convChecks G entries [] (RoseTree.node (.applyMatch 1 [A]) [])
+#guard !instanceThm.convChecks G entries [] (RoseTree.node (.applyMatch 0 [A]) [])
 
 end GebTests.Prototypes.FreeTopos.InternalConversion
 

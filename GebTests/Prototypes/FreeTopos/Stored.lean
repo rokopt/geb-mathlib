@@ -416,6 +416,7 @@ its rules' trees of {name}`convRuleData`; nothing for a declaration of another k
 def internConvDecl : ConvDecl → Option (StateM Table ℕ)
   | .base d => internDecl d
   | .conv a c => some (internThm convRuleData a c)
+  | .ready _ => none
 
 /-- Declarations of theorems as a list of natural numbers, each declaration entered in turn by
 {name}`internConvDecl`; nothing where one is of another kind. -/

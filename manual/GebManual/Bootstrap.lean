@@ -7159,10 +7159,10 @@ the prover proves; its translation is the rewriting by those equations,
 which reaches that numeral by a proof in Lean by recursion on the bits
 (`Geb.FreeTopos.Literals.checked_of_eval`). Measured against the base
 checker (`GebBench/Prototypes/FreeTopos/Literals.lean`), at numerals of
-six decimal digits the base checker takes 0.19 seconds on the prover's
-derivation of a sum and 28.7 seconds on that of a product, a step of
+six decimal digits the base checker takes 0.14 seconds on the prover's
+derivation of a sum and 27.1 seconds on that of a product, a step of
 conversion performing the prover's reduction about as long, the
-reduction's own time, and the step of evaluation from 0.2 to 0.4
+reduction's own time, and the step of evaluation from 0.01 to 0.05
 milliseconds at every size measured.
 The terms Canonical finds modulo the computation rules are its first
 certificates ({ref "search-synthesis"}[Search and synthesis]). The second
@@ -7255,9 +7255,11 @@ that remain, and the constraints each of them carries.
   delayed value's source rewrites to its value. The step `machine` rests on it.
 * `Geb/Prototypes/FreeTopos/Internal/ConvDevelopment.lean`: the
   developments whose theorems carry derivations of the base checker or
-  certificates of the conversion checker
-  ({name}`Geb.FreeTopos.Internal.checkConvDev`), sound by the base
-  development's invariant, which any check whose steps keep it keeps
+  certificates of the conversion checker, and whose records of the
+  indices at which the evaluation at literals is ready the checker is
+  given ({name}`Geb.FreeTopos.Internal.checkConvDev`), sound by the base
+  development's invariant with the readiness of the indices recorded,
+  which any check whose steps keep it keeps
   ({name}`Geb.FreeTopos.Internal.valid_of_checkConvDev`).
 * `Geb/Prototypes/FreeTopos/Internal/ByMachine.lean`: the translation of
   a development's derivations, each join the machine also joins replaced
@@ -7304,9 +7306,16 @@ that remain, and the constraints each of them carries.
   unfolded, which the reduction preceding a step of evaluation does
   not do.
   {name}`Geb.FreeTopos.Literals.ready` tests that the development's
-  theorems from the step's index on are those equations in that order,
-  that the constants' definitions have the signatures the evaluation
-  assumes, and that the comparisons' results have their type. The
+  theorems from an index on are those equations in that order, that the
+  constants' definitions have the signatures the evaluation assumes, and
+  that the comparisons' results have their type, the latter two with no
+  object variables and in the empty context, which the evaluation's
+  terms and types do not read; it holds with more constants and entries
+  ({name}`Geb.FreeTopos.Literals.ready_mono`). A development tests it
+  once, at a declaration recording the index
+  ({name}`Geb.FreeTopos.Internal.ConvDecl.ready`), and the checker is
+  given the indices recorded, so that a step of evaluation reads the
+  record in place of the test. The
   soundness, {name}`Geb.FreeTopos.Literals.eval_reaches`, is by
   recursion on the bits, through a theorem for each definition that
   rewriting by the equations reaches the numeral of its value
@@ -7319,8 +7328,9 @@ that remain, and the constraints each of them carries.
   predecessor, by induction on bitstrings, then the equations, by
   normalization with the rebuildings as rules, so that a step of
   evaluation names the index of the first equation after the
-  rebuildings. Its tests check the development, the steps the checker
-  accepts and those it rejects, and the agreement of the evaluation with
+  rebuildings. Its tests check the development, its record of
+  readiness at that index and its rejection at another, the steps the
+  checker accepts and those it rejects, and the agreement of the evaluation with
   the definitions unfolded and normalized at every pair of numbers below
   a bound. `GebTests/Prototypes/FreeTopos/InternalConversion.lean` tests
   the other steps.
@@ -7342,7 +7352,8 @@ that remain, and the constraints each of them carries.
 2. The transcription into Geb, beside `bootstrap/free-topos/derivation.geb`
    and `bootstrap/free-topos/prove.geb`: the rules of the certificates,
    the instance of a theorem by matching, the step, the checker, and the
-   evaluation at literals with its equations and its test of readiness;
+   evaluation at literals with its equations, its test of readiness and
+   the development's record of it;
    then the proof in Lean that each agrees with its Lean counterpart at
    every input, in the manner of
    `GebTests/Prototypes/FreeTopos/Agreement/Derivation.lean`, whose
@@ -7416,24 +7427,26 @@ that remain, and the constraints each of them carries.
      computes the labels of the arguments, the label of a leaf being its
      numeral, before the step, which stands under the congruence of the
      leaf.
-   * The development proves the rebuildings and the equations before
-     its first step of evaluation (step 5).
+   * The development proves the rebuildings and the equations, and
+     records their readiness by a declaration after them, before its
+     first step of evaluation (step 5).
 5. The stored certificates. `GebTests/Prototypes/FreeTopos/Stored.lean`
    encodes terms, the base checker's rules and declarations as trees of
    natural numbers, and encodes neither the prover's rules
    ({name}`Geb.FreeTopos.Internal.NormRule`), nor the depths
    ({name}`Geb.FreeTopos.Internal.Depth`), nor the rules of the
-   conversion certificates; their kinds are added to `ruleData` and
-   `ruleOf`. The prover's rule `thmAt` holds the matching of a theorem's
+   conversion certificates, nor the declaration recording readiness;
+   their kinds are added to `ruleData` and `ruleOf`, and the declaration
+   to those `internConvDecl` encodes. The prover's rule `thmAt` holds the matching of a theorem's
    left side prepared beforehand, a function, which no store holds: a
    stored certificate names the rule `thm` with its index and objects,
    and the reader prepares the matching as the prover does. Each stored
    development is checked from no entries
    (`GebTests/Prototypes/FreeTopos/Certified/Basic.lean`), so a
    development that evaluates at literals proves the rebuildings and the
-   equations before its first step of evaluation, and its steps name the
-   index of the first equation. The certificates are then generated
-   again (`generate` in
+   equations, and records their readiness, before its first step of
+   evaluation, and its steps name the index of the first equation. The
+   certificates are then generated again (`generate` in
    `GebTests/Prototypes/FreeTopos/StoredWriter.lean`), checked by the
    modules of `GebTests/Prototypes/FreeTopos/Certified/`, whose
    statements are axioms the evaluator decides (the modules of
@@ -7442,14 +7455,6 @@ that remain, and the constraints each of them carries.
 
 #### The questions that remain open
 
-* The test of readiness at every step. {name}`Geb.FreeTopos.Literals.ready`
-  compares every equation with the development's theorem at each step
-  of evaluation. A step takes about 0.2 milliseconds at numerals of two
-  decimal digits, where the arithmetic costs little, so the tests of
-  readiness, which do not depend on the numerals, are much of a step's
-  cost. Testing them once, at the declaration ending the equations, and
-  recording the result in the checker's state across one development
-  removes that cost from all but one step.
 * The reach of the step of the machine. The steps `norm` and `eval`
   compute the reduction's result alone
   ({name}`Geb.FreeTopos.Internal.evalR`), and a step takes about as long
@@ -7458,8 +7463,8 @@ that remain, and the constraints each of them carries.
   substitution and its trial of the rules at each node. The step
   `machine` reduces by the environment machine; on the product of
   numerals of six decimal digits, in one run of the bench, the base
-  checker takes 37.5 seconds, the step `eval` 32.2 and the step
-  `machine` 0.197 ({ref "measurements"}[The measurements]). The machine
+  checker takes 27.1 seconds, the step `eval` 18.8 and the step
+  `machine` 0.179 ({ref "measurements"}[The measurements]). The machine
   normalizes under abstractions and reads a fold's step back unreduced,
   so that two sides whose normal forms differ only in a fold's step are
   not joined: the context of a fold's step holds the type of the fold's

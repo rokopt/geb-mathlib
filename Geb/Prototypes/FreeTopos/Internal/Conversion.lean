@@ -43,7 +43,12 @@ of conversion carries the bound on the depth of its reduction.
 A step of evaluation rewrites a term built of the library's arithmetic over numerals to the
 numeral of its value, computed by the arithmetic of the natural numbers
 ({name}`Geb.FreeTopos.Literals.eval`), where the theorems from an index on are the definitions'
-equations at the numerals' bits ({name}`Geb.FreeTopos.Literals.lemmas`). Its translation is the
+equations at the numerals' bits ({name}`Geb.FreeTopos.Literals.lemmas`). The checker does not test
+that condition ({name}`Geb.FreeTopos.Literals.ready`) at the step: it is given the indices at which
+the condition was tested, which a development tests once and records
+({lit}`Geb.FreeTopos.Internal.ConvDecl`), since the condition reads neither the step's term nor
+its context, and holds with more constants and entries
+({name}`Geb.FreeTopos.Literals.ready_mono`). Its translation is the
 rewriting by those equations, which reaches that numeral by a proof in Lean
 ({name}`Geb.FreeTopos.Literals.checked_of_eval`), so that it too is the base checker's rewriting by
 a derivation the step does not construct.
@@ -120,7 +125,8 @@ inductive ConvRule where
   | applyMatch (j : ℕ) (θ : List Tree)
   /-- The evaluation of a term built of the library's arithmetic over numerals, by the arithmetic
   of the natural numbers, admitted by the definitions' equations at the numerals' bits among the
-  theorems from the index {lit}`j` on. -/
+  theorems from the index {lit}`j` on, an index the checker is given as one at which they were
+  found. -/
   | lit (j : ℕ)
   /-- The reduction of a term by the environment machine within the depth of recursion
   {lit}`fuel`, unfolding every definition of an index below {lit}`m` but those of
@@ -152,14 +158,14 @@ checker's step at a rule of the language, each child standing for a derivation o
 step of conversion, the result of the reduction of the term under the named rules, which proves
 no formula; and at an application of a theorem, the base checker's application at the instance
 that matches the formula, which rewrites no term. -/
-def convStep (G : Globals) (E : Array Entry) (n : ℕ) (l : ConvRule)
+def convStep (G : Globals) (E : Array Entry) (R : List ℕ) (n : ℕ) (l : ConvRule)
     (cs : List (ConvDeriv × Checks)) : Checks := match l with
   | .base r => checkStep G E n r (cs.map fun (d, c) ↦ (RoseTree.node d.label.toRule [], c))
   | .norm rs fuel => (fun Γ Φ t ↦ (normalizeR G E n rs fuel Γ Φ t).map (·.1), fun _ _ _ ↦ false)
   | .eval rs fuel depth =>
     (fun Γ Φ t ↦ (evalR G E n rs fuel depth Γ Φ t).map (·.1), fun _ _ _ ↦ false)
-  | .lit j => (fun Γ _ t ↦ if Literals.ready G E n Γ j then (Literals.eval t).map Literals.Val.term
-      else none, fun _ _ _ ↦ false)
+  | .lit j => (fun _ _ t ↦ if R.contains j then (Literals.eval t).map Literals.Val.term else none,
+      fun _ _ _ ↦ false)
   | .machine fuel m except kl kc =>
     (fun _ _ t ↦ machineReduce G (fun j ↦ decide (j < m) && !except.contains j) kl kc fuel t,
       fun _ _ _ ↦ false)
@@ -168,16 +174,17 @@ def convStep (G : Globals) (E : Array Entry) (n : ℕ) (l : ConvRule)
         (cs.map fun (d, c) ↦ (RoseTree.node d.label.toRule [], c))).2 Γ Φ φ
     | none => false)
 
-/-- The conversion checker: the rewriting a certificate performs on a term in a context under
-hypotheses, and whether it proves a formula in a context under hypotheses. -/
-def convCheck (G : Globals) (E : Array Entry) (n : ℕ) : ConvDeriv → Checks :=
-  RoseTree.para (convStep G E n)
+/-- The conversion checker, given the indices {lit}`R` at which the evaluation at literals is
+ready: the rewriting a certificate performs on a term in a context under hypotheses, and whether
+it proves a formula in a context under hypotheses. -/
+def convCheck (G : Globals) (E : Array Entry) (R : List ℕ) (n : ℕ) : ConvDeriv → Checks :=
+  RoseTree.para (convStep G E R n)
 
 /-- The computation rule of the conversion checker. -/
-theorem convCheck_node {G : Globals} {E : Array Entry} {n : ℕ} (l : ConvRule)
+theorem convCheck_node {G : Globals} {E : Array Entry} {R : List ℕ} {n : ℕ} (l : ConvRule)
     (cs : List ConvDeriv) :
-    convCheck G E n (RoseTree.node l cs) =
-      convStep G E n l (cs.map fun c ↦ (c, convCheck G E n c)) :=
+    convCheck G E R n (RoseTree.node l cs) =
+      convStep G E R n l (cs.map fun c ↦ (c, convCheck G E R n c)) :=
   RoseTree.para_node _ l cs
 
 /-- The hypotheses a step other than a rule of the language reads, weakened past a number of new
@@ -191,32 +198,32 @@ def ConvRule.hyps (l : ConvRule) (k : ℕ) (Φ : List Term) : List Term := match
 ({name}`Geb.FreeTopos.Internal.fastStep`), at a node of a rule from its children's results: the
 base checker's at a rule of the language, each child standing for its rule, and
 {lit}`convStep`'s at any other, the hypotheses weakened where the step reads them. -/
-def convFastStep (G : Globals) (E : Array Entry) (n : ℕ) (l : ConvRule)
+def convFastStep (G : Globals) (E : Array Entry) (R : List ℕ) (n : ℕ) (l : ConvRule)
     (cs : List (ConvDeriv × FastChecks)) : FastChecks := match l with
   | .base r => fastStep G E n r (cs.map fun c ↦ (RoseTree.node c.1.label.toRule [], c.2))
   | l =>
-    let c := convStep G E n l (cs.map fun c ↦ (c.1, c.2.checks))
+    let c := convStep G E R n l (cs.map fun c ↦ (c.1, c.2.checks))
     (fun Γ k Φ t ↦ c.1 Γ (l.hyps k Φ) t, c.2)
 
 /-- The conversion checker, its rewriting under hypotheses weakened where they are read: equal to
 {lit}`convCheck`, which the compiler replaces by it. -/
-def convCheckFast (G : Globals) (E : Array Entry) (n : ℕ) (d : ConvDeriv) : Checks :=
-  (RoseTree.para (convFastStep G E n) d).checks
+def convCheckFast (G : Globals) (E : Array Entry) (R : List ℕ) (n : ℕ) (d : ConvDeriv) : Checks :=
+  (RoseTree.para (convFastStep G E R n) d).checks
 
 /-- The conversion checker with its rewriting under weakened hypotheses rewrites uniformly, and
 its results are the conversion checker's. -/
-theorem para_convFastStep (G : Globals) (E : Array Entry) (n : ℕ) : ∀ d : ConvDeriv,
-    (RoseTree.para (convFastStep G E n) d).1.Uniform ∧
-      (RoseTree.para (convFastStep G E n) d).checks = convCheck G E n d :=
+theorem para_convFastStep (G : Globals) (E : Array Entry) (R : List ℕ) (n : ℕ) : ∀ d : ConvDeriv,
+    (RoseTree.para (convFastStep G E R n) d).1.Uniform ∧
+      (RoseTree.para (convFastStep G E R n) d).checks = convCheck G E R n d :=
   RoseTree.ind fun l ds ih ↦ by
     rw [RoseTree.para_node, convCheck_node]
-    have hcs : (ds.map fun d ↦ (d, RoseTree.para (convFastStep G E n) d)).map
-        (fun c ↦ (c.1, c.2.checks)) = ds.map fun d ↦ (d, convCheck G E n d) := by
+    have hcs : (ds.map fun d ↦ (d, RoseTree.para (convFastStep G E R n) d)).map
+        (fun c ↦ (c.1, c.2.checks)) = ds.map fun d ↦ (d, convCheck G E R n d) := by
       rw [List.map_map]
       exact List.map_congr_left fun d hd ↦ by rw [Function.comp_apply, (ih d hd).2]
     rcases l with r | ⟨rs, fuel⟩ | ⟨rs, fuel, depth⟩ | ⟨j, θ⟩ | j | ⟨fuel, m, except, kl, kc⟩
     · obtain ⟨hu, hc⟩ := fastStep_eq G E n r
-        (ds.map fun d ↦ (RoseTree.node d.label.toRule [], RoseTree.para (convFastStep G E n) d))
+        (ds.map fun d ↦ (RoseTree.node d.label.toRule [], RoseTree.para (convFastStep G E R n) d))
         fun c hc ↦ by
           obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hc
           exact (ih d hd).1
@@ -236,18 +243,19 @@ theorem para_convFastStep (G : Globals) (E : Array Entry) (n : ℕ) : ∀ d : Co
 /-- The conversion checker is the conversion checker with its rewriting under hypotheses weakened
 where they are read, by which the compiler replaces it. -/
 @[csimp] theorem convCheck_eq_convCheckFast : @convCheck = @convCheckFast := by
-  funext G E n d
-  exact (para_convFastStep G E n d).2.symm
+  funext G E R n d
+  exact (para_convFastStep G E R n d).2.symm
 
 /-- Whether a certificate proves a theorem: its context's types are types, its hypotheses and
-conclusion formulas, and the conversion checker proves the conclusion from the hypotheses. -/
-def Thm.convChecks (G : Globals) (E : Array Entry) (a : Thm) (d : ConvDeriv) : Bool :=
-  a.wellFormed G && (convCheck G E a.arity d).2 a.ctx a.hyps a.concl
+conclusion formulas, and the conversion checker, given the indices {lit}`R` at which the
+evaluation at literals is ready, proves the conclusion from the hypotheses. -/
+def Thm.convChecks (G : Globals) (E : Array Entry) (R : List ℕ) (a : Thm) (d : ConvDeriv) : Bool :=
+  a.wellFormed G && (convCheck G E R a.arity d).2 a.ctx a.hyps a.concl
 
 /-- A certificate whose rule is the identity rule's rewrites a term only to itself. -/
-theorem convCheck_isRefl {G : Globals} {E : Array Entry} {n : ℕ} {c : ConvDeriv}
+theorem convCheck_isRefl {G : Globals} {E : Array Entry} {R : List ℕ} {n : ℕ} {c : ConvDeriv}
     (hc : c.label.toRule.isRefl = true)
-    {Γ : List Tree} {Φ : List Term} {t t' : Term} (h : (convCheck G E n c).1 Γ Φ t = some t') :
+    {Γ : List Tree} {Φ : List Term} {t t' : Term} (h : (convCheck G E R n c).1 Γ Φ t = some t') :
     t' = t := by
   obtain ⟨l, cs, rfl⟩ : ∃ l cs, c = RoseTree.node l cs :=
     ⟨_, _, (RoseTree.node_label_children c).symm⟩
@@ -269,16 +277,17 @@ include hM hG hρ hps hds
 /-- The conversion checker is sound: every rewriting a certificate performs is sound, and every
 formula it proves holds, with sound unfoldings and valid earlier entries, when the model's
 definitions are the compilations of the definitions of {name}`G` wherever a certificate is
-checked. -/
+checked, and the evaluation at literals is ready at the indices recorded. -/
 theorem convCheck_sound (hδ : DefnsOk M G) {E : Array Entry}
-    (hE : ∀ (j : ℕ) (e : Entry), E[j]? = some e → e.Valid M G)
+    (hE : ∀ (j : ℕ) (e : Entry), E[j]? = some e → e.Valid M G) {R : List ℕ}
+    (hR : ∀ j ∈ R, Literals.ready G E j = true)
     (hcert : ∀ cds, compileDefs G = some cds → G.base = sig.length → cds <+: defs) :
-    ∀ d : ConvDeriv, ChecksSound M ρ G n (convCheck G E n d) :=
+    ∀ d : ConvDeriv, ChecksSound M ρ G n (convCheck G E R n d) :=
   RoseTree.ind fun l cs ih ↦ by
     rw [convCheck_node]
     -- the base checker's step is sound at children standing for their certificates' rules
     have hstep (r : Rule) : ChecksSound M ρ G n (checkStep G E n r
-        ((cs.map fun c ↦ (c, convCheck G E n c)).map fun (d, c) ↦
+        ((cs.map fun c ↦ (c, convCheck G E R n c)).map fun (d, c) ↦
           (RoseTree.node d.label.toRule [], c))) := by
       refine checkStep_sound hM hG hρ hps hds hδ hE hcert r _ (fun x hx ↦ ?_) fun x hx ↦ ?_
       all_goals
@@ -308,7 +317,8 @@ theorem convCheck_sound (hδ : DefnsOk M G) {E : Array Entry}
       simp only [convStep] at h
       split at h
       · obtain ⟨v, hv, rfl⟩ := Option.map_eq_some_iff.mp h
-        obtain ⟨d, hd⟩ := Literals.checked_of_eval (Φ := Φ) (by assumption) hv
+        obtain ⟨d, hd⟩ := Literals.checked_of_eval (Φ := Φ) hG
+          (hR j (List.contains_iff_mem.mp (by assumption))) hv
         exact (check_sound hM hG hρ hps hds hδ hE hcert d.1).1 _ _ _ _ hd.check
       · cases h
     · refine ⟨fun Γ Φ t t' h X e he hΓ hH r hr ↦ ?_, fun _ _ _ h ↦ nomatch h⟩
@@ -334,16 +344,17 @@ variable {defs : List PartialHorn.Defn} {M : PartialHorn.Model.{v} (ext defs).si
 include hM hG hps hds hδ hcert
 
 /-- A theorem a certificate of the conversion checker proves with valid earlier entries is
-valid. -/
+valid, where the evaluation at literals is ready at the indices recorded. -/
 theorem Thm.valid_of_convChecks {E : Array Entry}
-    (hE : ∀ (j : ℕ) (e : Entry), E[j]? = some e → e.Valid M G) {a : Thm} {d : ConvDeriv}
-    (h : a.convChecks G E d = true) : a.Valid M G := by
+    (hE : ∀ (j : ℕ) (e : Entry), E[j]? = some e → e.Valid M G) {R : List ℕ}
+    (hR : ∀ j ∈ R, Literals.ready G E j = true) {a : Thm} {d : ConvDeriv}
+    (h : a.convChecks G E R d = true) : a.Valid M G := by
   simp only [Thm.convChecks, Bool.and_eq_true] at h
   obtain ⟨hwf, hd⟩ := h
   obtain ⟨hctx, hhyps, hconcl⟩ := Thm.wellFormed_iff.mp hwf
   exact ⟨hctx, hhyps, hconcl,
     fun ρ hρ ↦ ⟨hps _ ρ hρ, hds _ ρ hρ,
-      (convCheck_sound hM hG hρ (hps _ ρ hρ) (hds _ ρ hρ) hδ hE hcert d).2 _ _ _ hd⟩⟩
+      (convCheck_sound hM hG hρ (hps _ ρ hρ) (hds _ ρ hρ) hδ hE hR hcert d).2 _ _ _ hd⟩⟩
 
 end Theorems
 

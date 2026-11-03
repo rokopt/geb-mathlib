@@ -110,7 +110,7 @@ def reflFst : Expr := Expr.const sig.length [fst nat nat (pair nat nat (v 1) (v 
   | none => false
 #guard match decPfMod (devIdx pfIdx reflGlobals reflEntries) reflEntries reflFst [none, none] 0,
     dec (devIdx pfIdx reflGlobals reflEntries) (eq nat (v 1) (v 1)) 2 with
-  | some D, some φ => Thm.convChecks reflGlobals reflEntries ⟨0, [FreeTopos.nat, FreeTopos.nat],
+  | some D, some φ => Thm.convChecks reflGlobals reflEntries [] ⟨0, [FreeTopos.nat, FreeTopos.nat],
       [], φ⟩ D
   | _, _ => false
 
