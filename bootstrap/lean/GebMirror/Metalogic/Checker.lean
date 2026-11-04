@@ -8007,67 +8007,52 @@ def «Language/OFs.tail» :=
       ([] : List (T → T))
       (fun (_ : T → T) (x2 : List (T → T)) => x2)
 
-def «Language.ofAt» :=
-  fun (x0 : List (T → T)) (x1 : T) =>
-    let x2 : T →
-      T := Const.lcase
-      (α := T → T)
-      (β := T → T)
-      (Const.iter (α := List (T → T)) «Language/OFs.tail» x0 x1)
-      (fun (_ : T) => leaf 0)
-      (fun (x2 : T → T) (_ : List (T → T)) => x2);
-    x2
-
-def «Language.ofAny» :=
-  fun (x0 : List (T → T)) (x1 : T) =>
-    let x2 : T := Const.foldr
-      (α := T → T)
-      (β := T)
-      (fun (x2 : T → T) (x3 : T) => «Prelude.or» (x2 x1) x3)
-      (leaf 0)
-      («Language/OFs.tail» x0);
-    x2
+def «Language.childBound» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    let x3 : T := (if («Prelude.and»
+      (Const.eq x0 (leaf 5))
+      (Const.eq x1 (leaf 1))).label ≠ 0 then
+      leaf 1
+    else
+      if («Prelude.and»
+        (Const.eq x0 (leaf 8))
+        (Const.eq x1 (leaf 3))).label ≠ 0 then
+        if (Const.eq x2 (leaf 1)).label ≠ 0 then leaf 1 else leaf 0
+      else
+        if («Prelude.and»
+          (Const.eq x0 (leaf 9))
+          (Const.eq x1 (leaf 3))).label ≠ 0 then
+          if (Const.eq x2 (leaf 1)).label ≠ 0 then leaf 2 else leaf 0
+        else
+          if («Prelude.and»
+            (Const.eq x0 (leaf 10))
+            (Const.eq x1 (leaf 2))).label ≠ 0 then
+            if (Const.eq x2 (leaf 0)).label ≠ 0 then leaf 1 else leaf 0
+          else
+            leaf 0);
+    x3
 
 def «Language.occursStep» :=
   fun (x0 : T) (x1 : List (T → T)) =>
     let x2 : T →
-      T := (fun (x2 : T) =>
-      let x3 : T := Const.label x0;
-      let x4 : T := «Prelude.length» («Language.mArgs» x0);
-      if (Const.eq x3 (leaf 0)).label ≠ 0 then
-        Const.eq («Language.mD» x0 (leaf 0)) x2
-      else
-        if («Prelude.and»
-          (Const.eq x3 (leaf 5))
-          (Const.eq x4 (leaf 1))).label ≠ 0 then
-          «Language.ofAt» x1 (leaf 1) (Const.add x2 (leaf 1))
-        else
-          if («Prelude.and»
-            (Const.eq x3 (leaf 8))
-            (Const.eq x4 (leaf 3))).label ≠ 0 then
-            «Prelude.or»
-              («Prelude.or»
-                («Language.ofAt» x1 (leaf 1) x2)
-                («Language.ofAt» x1 (leaf 2) (Const.add x2 (leaf 1))))
-              («Language.ofAt» x1 (leaf 3) x2)
-          else
-            if («Prelude.and»
-              (Const.eq x3 (leaf 9))
-              (Const.eq x4 (leaf 3))).label ≠ 0 then
-              «Prelude.or»
-                («Prelude.or»
-                  («Language.ofAt» x1 (leaf 1) x2)
-                  («Language.ofAt» x1 (leaf 2) (Const.add x2 (leaf 2))))
-                («Language.ofAt» x1 (leaf 3) x2)
-            else
-              if («Prelude.and»
-                (Const.eq x3 (leaf 10))
-                (Const.eq x4 (leaf 2))).label ≠ 0 then
+      T := (let x2 : T := Const.label x0;
+            let x3 : T := «Prelude.length» («Language.mArgs» x0);
+            let x4 : T →
+              T →
+                T := Const.foldr
+              (α := T → T)
+              (β := T → T → T)
+              (fun (x4 : T → T) (x5 : T → T → T) (x6 : T) (x7 : T) =>
                 «Prelude.or»
-                  («Language.ofAt» x1 (leaf 1) (Const.add x2 (leaf 1)))
-                  («Language.ofAt» x1 (leaf 2) x2)
+                  (x4 (Const.add x6 («Language.childBound» x2 x3 x7)))
+                  (x5 x6 (Const.add x7 (leaf 1))))
+              (fun (_ : T) (_ : T) => leaf 0)
+              («Language/OFs.tail» x1);
+            fun (x5 : T) =>
+              if (Const.eq x2 (leaf 0)).label ≠ 0 then
+                Const.eq («Language.mD» x0 (leaf 0)) x5
               else
-                «Language.ofAny» x1 x2);
+                x4 x5 (leaf 0));
     x2
 
 def «Language.occurs» :=

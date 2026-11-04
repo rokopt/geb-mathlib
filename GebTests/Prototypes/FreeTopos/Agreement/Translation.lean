@@ -405,18 +405,17 @@ list of the globals' types and every context. -/
 def TRel (v : List Tree → List Tree → Tree) (w : Translation.Tr) : Prop :=
   ∀ gt Γ, v gt Γ = encOpt ((w gt Γ).map encTr)
 
-/-- A list of translations without its head. -/
-@[simp] theorem trTail_eq (rs : List (List Tree → List Tree → Tree)) :
-    «Translation/TrFs.tail» rs = rs.tail := by
+/-- A list of optional translations without its head. -/
+theorem trTail_eq (rs : List Tree) : «Translation/TrYs.tail» rs = rs.tail := by
   cases rs <;> rfl
 
-/-- The translation of a child at a position, nothing out of range. -/
-@[simp] theorem trAt_eq (rs : List (List Tree → List Tree → Tree)) (i : ℕ) :
-    «Translation.trAt» rs (leaf i) = rs[i]?.getD fun _ _ ↦ «Prelude.none» := by
-  have hr : ∀ i : ℕ, Nat.repeat «Translation/TrFs.tail» i rs = rs.drop i :=
+/-- The optional translation of a child at a position, nothing out of range. -/
+@[simp] theorem trAt_eq (ys : List Tree) (i : ℕ) :
+    «Translation.trAt» ys (leaf i) = ys[i]?.getD «Prelude.none» := by
+  have hr : ∀ i : ℕ, Nat.repeat «Translation/TrYs.tail» i ys = ys.drop i :=
     Nat.rec rfl fun i ih ↦ by rw [Nat.repeat, ih, trTail_eq, List.tail_drop]
   simp only [«Translation.trAt», iter_leaf, hr]
-  cases h : rs.drop i with
+  cases h : ys.drop i with
   | nil =>
     rw [List.drop_eq_nil_iff] at h
     rw [List.getElem?_eq_none h]
@@ -428,7 +427,8 @@ def TRel (v : List Tree → List Tree → Tree) (w : Translation.Tr) : Prop :=
 /-- The simplification of a case of the mirror's step of the translation of terms: the lemmas of
 {lit}`mirror_simp`, the step's lists, pairs and term builders, and the given lemmas. -/
 local macro "tr_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(tactic|
-  mirror_simp [«Translation.termStep», Translation.termStep, trAt_eq, none_eq, some_eq,
+  mirror_simp [«Translation.termStep», «Translation.trKids», foldr_eq, List.map_cons,
+    List.foldr_cons, Translation.termStep, trAt_eq, none_eq, some_eq,
     pr_eq, p1_eq, p2_eq, encTr, beq_iff_eq, Nat.add_one_ne_zero, Nat.reduceEqDiff,
     Option.map_bind, Option.bind_eq_bind, Option.pure_def, Option.map_map, Option.bind_map,
     Option.elim_map, Option.map_some, Option.map_none, Option.bind_some, Option.bind_none,

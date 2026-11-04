@@ -742,31 +742,108 @@ theorem repeat_cpTail (rs : List (Tree × (Tree → List Tree → Tree))) :
 @[simp] theorem ofTail_eq (rs : List (Tree → Tree)) : «Language/OFs.tail» rs = rs.tail := by
   cases rs <;> rfl
 
-/-- The test of a child at a position, none out of range. -/
-@[simp] theorem ofAt_eq (rs : List (Tree → Tree)) (i : ℕ) :
-    «Language.ofAt» rs (leaf i) = rs[i]?.getD fun _ ↦ leaf 0 := by
-  have hr : ∀ i : ℕ, Nat.repeat «Language/OFs.tail» i rs = rs.drop i :=
-    Nat.rec rfl fun i ih ↦ by rw [Nat.repeat, ih, ofTail_eq, List.tail_drop]
-  simp only [«Language.ofAt», template, iter_leaf, hr]
-  cases h : rs.drop i with
-  | nil =>
-    rw [List.drop_eq_nil_iff] at h
-    rw [List.getElem?_eq_none h]
-    rfl
-  | cons r rest =>
-    rw [← List.head?_drop, h]
-    rfl
+/-- The variables a child of a node binds, at its position among the node's children. -/
+def boundAt (l : Internal.Label) (k i : ℕ) : ℕ := match l, k with
+  | .lam _, 1 => 1
+  | .natRec, 3 => if i = 1 then 1 else 0
+  | .listRec, 3 => if i = 1 then 2 else 0
+  | .roseRec _, 2 => if i = 0 then 1 else 0
+  | _, _ => 0
 
-/-- The mirror's test of a variable's occurrence in any of the children. -/
-theorem ofAny_eq (v : Tree → Tree) (d : ℕ) :
+/-- The mirror's variables a child of a node binds. -/
+@[simp] theorem childBound_eq (l : Internal.Label) (k i : ℕ) :
+    «Language.childBound» (leaf (labelData l).1) (leaf k) (leaf i) = leaf (boundAt l k i) := by
+  cases l
+  case lam =>
+    rcases k with _ | _ | k <;> mirror_simp [«Language.childBound», labelData, boundAt,
+      beq_iff_eq, Nat.reduceEqDiff]
+  case natRec | listRec =>
+    rcases k with _ | _ | _ | _ | k <;> mirror_simp [«Language.childBound», labelData, boundAt,
+      beq_iff_eq, Nat.reduceEqDiff]
+    all_goals split <;> rfl
+  case roseRec =>
+    rcases k with _ | _ | _ | k <;> mirror_simp [«Language.childBound», labelData, boundAt,
+      beq_iff_eq, Nat.reduceEqDiff]
+    all_goals split <;> rfl
+  all_goals mirror_simp [«Language.childBound», labelData, boundAt, beq_iff_eq, Nat.reduceEqDiff]
+
+/-- The mirror's composition of the tests of a node's children, at an index and from a position,
+is whether a child's test holds at the index raised by the variables the child binds. -/
+theorem occFold_eq (l : Internal.Label) (k d : ℕ) :
     ∀ xs : List (Term × (Tree → Tree) × (ℕ → Bool)),
-      (∀ x ∈ xs, ∀ d, x.2.1 (leaf d) = ofBool (x.2.2 d)) →
-      «Language.ofAny» (v :: xs.map fun x ↦ x.2.1) (leaf d) = ofBool (xs.any fun x ↦ x.2.2 d) :=
-  List.rec (fun _ ↦ rfl) fun x xs ih hx ↦ by
-    have ih' := ih fun y hy ↦ hx y (List.mem_cons_of_mem x hy)
-    simp only [«Language.ofAny», template, foldr_eq, ofTail_eq, List.tail_cons, List.map_cons,
-      List.foldr_cons, List.any_cons] at ih' ⊢
-    rw [ih', hx x List.mem_cons_self d, or_eq]
+      (∀ x ∈ xs, ∀ d, x.2.1 (leaf d) = ofBool (x.2.2 d)) → ∀ i : ℕ,
+      List.foldr (fun (r : Tree → Tree) (c : Tree → Tree → Tree) (d i : Tree) ↦
+          «Prelude.or» (r (Const.add d («Language.childBound» (leaf (labelData l).1) (leaf k) i)))
+            (c d (Const.add i (leaf 1))))
+        (fun _ _ ↦ leaf 0) (xs.map fun x ↦ x.2.1) (leaf d) (leaf i) =
+      ofBool ((xs.zipIdx i).any fun p ↦ p.1.2.2 (d + boundAt l k p.2)) :=
+  List.rec (fun _ _ ↦ rfl) fun x xs ih hx i ↦ by
+    simp only [List.map_cons, List.foldr_cons, childBound_eq, add_leaf, List.zipIdx_cons,
+      List.any_cons]
+    rw [ih (fun y hy ↦ hx y (List.mem_cons_of_mem x hy)) (i + 1), hx x List.mem_cons_self, or_eq]
+
+/-- Whether a function holds of a list's elements, with their positions unread. -/
+theorem any_zipIdx {α : Type} (f : α → Bool) :
+    ∀ (xs : List α) (i : ℕ), (xs.zipIdx i).any (fun p ↦ f p.1) = xs.any f :=
+  List.rec (fun _ ↦ rfl) fun x xs ih i ↦ by
+    simp only [List.zipIdx_cons, List.any_cons, ih]
+
+/-- The step of the test of a variable's occurrence at a node other than a variable, by the
+variables each child binds. -/
+theorem occursStep_bound (l : Internal.Label) (hl : ∀ i, l ≠ .var i)
+    (xs : List (Term × (Tree → Tree) × (ℕ → Bool))) (d : ℕ) :
+    Internal.Term.occursStep l (xs.map fun x ↦ (x.1, x.2.2)) d =
+      (xs.zipIdx 0).any fun p ↦ p.1.2.2 (d + boundAt l xs.length p.2) := by
+  have hz : ∀ b : ℕ → ℕ, (∀ i, b i = 0) → (xs.zipIdx 0).any (fun p ↦ p.1.2.2 (d + b p.2)) =
+      xs.any fun x ↦ x.2.2 d := fun b hb ↦ by
+    simp only [hb, Nat.add_zero]
+    exact any_zipIdx (fun x ↦ x.2.2 d) xs 0
+  have ha : (xs.map fun x ↦ (x.1, x.2.2)).any (fun c ↦ c.2 d) = xs.any fun x ↦ x.2.2 d := by
+    simp only [List.any_map, Function.comp_def]
+  cases l
+  case var i => exact absurd rfl (hl i)
+  case lam =>
+    match xs, hz, ha with
+    | [], _, _ => rfl
+    | [x0], _, _ =>
+      simp only [List.map_cons, List.map_nil, Internal.Term.occursStep, List.length_cons,
+        List.length_nil, boundAt, List.zipIdx_cons, List.zipIdx_nil, List.any_cons, List.any_nil,
+        Bool.or_false]
+    | x0 :: x1 :: xs, hz, ha =>
+      exact ha.trans (hz _ fun _ ↦ rfl).symm
+  case natRec =>
+    match xs, hz, ha with
+    | [x0, x1, x2], _, _ =>
+      simp only [List.map_cons, List.map_nil, Internal.Term.occursStep, List.length_cons,
+        List.length_nil, boundAt, List.zipIdx_cons, List.zipIdx_nil, List.any_cons, List.any_nil,
+        Bool.or_false, Bool.or_assoc]
+      rfl
+    | [], _, _ => rfl
+    | [x0], hz, ha => exact ha.trans (hz _ fun _ ↦ rfl).symm
+    | [x0, x1], hz, ha => exact ha.trans (hz _ fun _ ↦ rfl).symm
+    | x0 :: x1 :: x2 :: x3 :: xs, hz, ha => exact ha.trans (hz _ fun _ ↦ rfl).symm
+  case listRec =>
+    match xs, hz, ha with
+    | [x0, x1, x2], _, _ =>
+      simp only [List.map_cons, List.map_nil, Internal.Term.occursStep, List.length_cons,
+        List.length_nil, boundAt, List.zipIdx_cons, List.zipIdx_nil, List.any_cons, List.any_nil,
+        Bool.or_false, Bool.or_assoc]
+      rfl
+    | [], _, _ => rfl
+    | [x0], hz, ha => exact ha.trans (hz _ fun _ ↦ rfl).symm
+    | [x0, x1], hz, ha => exact ha.trans (hz _ fun _ ↦ rfl).symm
+    | x0 :: x1 :: x2 :: x3 :: xs, hz, ha => exact ha.trans (hz _ fun _ ↦ rfl).symm
+  case roseRec =>
+    match xs, hz, ha with
+    | [x0, x1], _, _ =>
+      simp only [List.map_cons, List.map_nil, Internal.Term.occursStep, List.length_cons,
+        List.length_nil, boundAt, List.zipIdx_cons, List.zipIdx_nil, List.any_cons, List.any_nil,
+        Bool.or_false]
+      rfl
+    | [], _, _ => rfl
+    | [x0], hz, ha => exact ha.trans (hz _ fun _ ↦ rfl).symm
+    | x0 :: x1 :: x2 :: xs, hz, ha => exact ha.trans (hz _ fun _ ↦ rfl).symm
+  all_goals exact ha.trans (hz _ fun _ ↦ rfl).symm
 
 /-- The mirror's test of a variable's occurrence in an encoded term. -/
 theorem occurs_eq (t : Term) (d : ℕ) :
@@ -775,37 +852,15 @@ theorem occurs_eq (t : Term) (d : ℕ) :
   refine para_enc _ _ (fun (v : Tree → Tree) (w : ℕ → Bool) ↦ ∀ d, v (leaf d) = ofBool (w d))
     «Language.occursStep» _ (fun l v xs hx d ↦ ?_) t d
   change «Language.occursStep» (encTerm (RoseTree.node l (xs.map Prod.fst))) _ (leaf d) = _
-  have hs := ofAny_eq v d xs hx
-  cases l with
-  | var i =>
+  cases l
+  case var i =>
     mirror_simp [«Language.occursStep», labelData, mArgs_eq, label_encTerm, mD_eq,
       Internal.Term.occursStep]
-  | lam a =>
-    rcases xs with _ | ⟨x0, _ | ⟨x1, xs⟩⟩ <;> simp only [List.map_cons, List.map_nil] at hs <;>
-      mirror_simp [«Language.occursStep», labelData, hs, mArgs_eq, label_encTerm, ofAt_eq, hx,
-        Internal.Term.occursStep, beq_iff_eq, Nat.reduceEqDiff, List.any_map, List.mem_cons]
-    all_goals first
-      | exact hx _ (by simp) _
-      | simp [List.any_map, Function.comp_def]
-  | natRec | listRec =>
-    rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, _ | ⟨x3, xs⟩⟩⟩⟩ <;>
-      simp only [List.map_cons, List.map_nil] at hs <;>
-      mirror_simp [«Language.occursStep», labelData, hs, mArgs_eq, label_encTerm, ofAt_eq, hx,
-        Internal.Term.occursStep, beq_iff_eq, Nat.reduceEqDiff, List.any_map, List.mem_cons]
-    all_goals first
-      | simp only [hx x0 (by simp), hx x1 (by simp), hx x2 (by simp), or_eq]
-      | simp [List.any_map, Function.comp_def]
-  | roseRec c =>
-    rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, xs⟩⟩⟩ <;>
-      simp only [List.map_cons, List.map_nil] at hs <;>
-      mirror_simp [«Language.occursStep», labelData, hs, mArgs_eq, label_encTerm, ofAt_eq, hx,
-        Internal.Term.occursStep, beq_iff_eq, Nat.reduceEqDiff, List.any_map, List.mem_cons]
-    all_goals first
-      | simp only [hx x0 (by simp), hx x1 (by simp), or_eq]
-      | simp [List.any_map, Function.comp_def]
-  | _ =>
-    mirror_simp [«Language.occursStep», labelData, hs, mArgs_eq, label_encTerm,
-      Internal.Term.occursStep, List.any_map]
+  all_goals
+    rw [occursStep_bound _ (fun _ h ↦ by cases h) xs d]
+    simp only [«Language.occursStep», foldr_eq, ofTail_eq, List.tail_cons, mArgs_eq,
+      RoseTree.children_node, length_eq, List.length_map, List.map_map, Function.comp_def]
+    exact occFold_eq _ _ d xs hx 0
 
 /-- The mirror's parameters of a fold of encoded terms. -/
 @[simp] theorem foldParams_eq (k N : ℕ) (z s : Term) :

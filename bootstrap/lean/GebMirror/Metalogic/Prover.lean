@@ -388,19 +388,6 @@ def «Prover/Mts.tail» :=
       ([] : List (T → T → List T → T))
       (fun (_ : T → T → List T → T) (x2 : List (T → T → List T → T)) => x2)
 
-def «Prover.mtAt» :=
-  fun (x0 : List (T → T → List T → T)) (x1 : T) =>
-    let x2 : T →
-      T →
-        List T →
-          T := Const.lcase
-      (α := T → T → List T → T)
-      (β := T → T → List T → T)
-      (Const.iter (α := List (T → T → List T → T)) «Prover/Mts.tail» x0 x1)
-      (fun (_ : T) (_ : T) (_ : List T) => «Prover/OAssign.nothing»)
-      (fun (x2 : T → T → List T → T) (_ : List (T → T → List T → T)) => x2);
-    x2
-
 def «Prover.matchVar» :=
   fun (x0 : T) (x1 : T) (x2 : T) (x3 : List T) =>
     let x4 : T := (if (Const.lt x0 x1).label ≠ 0 then
@@ -439,32 +426,47 @@ def «Prover.matchVar» :=
     x4
 
 def «Prover.matchAll» :=
-  fun (x0 : List (T → T → List T → T))
-    (x1 : T)
-    (x2 : List T)
-    (x3 : List T) =>
-    let x4 : T := Const.foldr
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : List (T → T → List T → T)) =>
+    let x4 : T →
+      T →
+        List T →
+          T →
+            T := Const.foldr
       (α := T → T → List T → T)
-      (β := List T → T → T)
+      (β := T → T → List T → T → T)
       (fun (x4 : T → T → List T → T)
-         (x5 : List T → T → T)
-         (x6 : List T)
-         (x7 : T) =>
+         (x5 : T → T → List T → T → T)
+         (x6 : T)
+         (x7 : T)
+         (x8 : List T)
+         (x9 : T) =>
         Const.lcase
           (α := T)
           (β := T)
-          x6
-          x7
-          (fun (x8 : T) (x9 : List T) =>
+          x8
+          x9
+          (fun (x10 : T) (x11 : List T) =>
             x5
-              x9
-              («Prover.bindAA»
-                x7
-                (fun (x10 : T) => x4 x1 x8 («Prover.assigned» x10)))))
-      (fun (_ : List T) (x5 : T) => x5)
-      («Prover/Mts.tail» x0)
-      x2
-      («Prover/OAssign.just» («Prover.assign» x3));
+              x6
+              (Const.add x7 (leaf 1))
+              x11
+              (if («Prelude.and»
+                («Prelude.and» (Const.eq x1 (leaf 10)) (Const.eq x2 (leaf 2)))
+                (Const.eq x7 (leaf 0))).label ≠ 0 then
+                if (Const.equal («Language.mArg» x0 (leaf 0)) x10).label ≠ 0 then
+                  x9
+                else
+                  «Prover/OAssign.nothing»
+              else
+                «Prover.bindAA»
+                  x9
+                  (fun (x12 : T) =>
+                    x4
+                      (Const.add x6 («Language.childBound» x1 x2 x7))
+                      x10
+                      («Prover.assigned» x12)))))
+      (fun (_ : T) (_ : T) (_ : List T) (x7 : T) => x7)
+      («Prover/Mts.tail» x3);
     x4
 
 def «Prover.matchStep» :=
@@ -472,64 +474,31 @@ def «Prover.matchStep» :=
     let x2 : T →
       T →
         List T →
-          T := (fun (x2 : T) (x3 : T) (x4 : List T) =>
-      let x5 : T := Const.label x0;
-      if (Const.eq x5 (leaf 0)).label ≠ 0 then
-        «Prover.matchVar» («Language.mD» x0 (leaf 0)) x2 x3 x4
-      else
-        let x6 : List T := «Language.mArgs» x3;
-        let x7 : T := «Prelude.length» x6;
-        if («Prelude.and»
-          («Prelude.and»
-            (Const.eq x5 (Const.label x3))
-            (Const.equal (Const.child x0 (leaf 0)) (Const.child x3 (leaf 0))))
-          (Const.eq («Prelude.length» («Language.mArgs» x0)) x7)).label ≠ 0 then
-          if («Prelude.and»
-            (Const.eq x5 (leaf 5))
-            (Const.eq x7 (leaf 1))).label ≠ 0 then
-            «Prover.mtAt»
-              x1
-              (leaf 1)
-              (Const.add x2 (leaf 1))
-              («Prelude.at» x6 (leaf 0))
-              x4
-          else
-            if («Prelude.and»
-              («Prelude.or» (Const.eq x5 (leaf 8)) (Const.eq x5 (leaf 9)))
-              (Const.eq x7 (leaf 3))).label ≠ 0 then
-              «Prover.bindAA»
-                («Prover.bindAA»
-                  («Prover.mtAt» x1 (leaf 1) x2 («Prelude.at» x6 (leaf 0)) x4)
-                  (fun (x8 : T) =>
-                    «Prover.mtAt»
-                      x1
-                      (leaf 2)
-                      (Const.add
-                        x2
-                        (if (Const.eq x5 (leaf 8)).label ≠ 0 then leaf 1 else leaf 2))
-                      («Prelude.at» x6 (leaf 1))
-                      («Prover.assigned» x8)))
-                (fun (x8 : T) =>
-                  «Prover.mtAt»
-                    x1
-                    (leaf 3)
-                    x2
-                    («Prelude.at» x6 (leaf 2))
-                    («Prover.assigned» x8))
-            else
-              if («Prelude.and»
-                (Const.eq x5 (leaf 10))
-                (Const.eq x7 (leaf 2))).label ≠ 0 then
-                if (Const.equal
-                  («Language.mArg» x0 (leaf 0))
-                  («Prelude.at» x6 (leaf 0))).label ≠ 0 then
-                  «Prover.mtAt» x1 (leaf 2) x2 («Prelude.at» x6 (leaf 1)) x4
-                else
-                  «Prover/OAssign.nothing»
-              else
-                «Prover.matchAll» x1 x2 x6 x4
-        else
-          «Prover/OAssign.nothing»);
+          T := (let x2 : T := Const.label x0;
+                let x3 : T →
+                  T →
+                    List T →
+                      T →
+                        T := «Prover.matchAll»
+                  x0
+                  x2
+                  («Prelude.length» («Language.mArgs» x0))
+                  x1;
+                fun (x4 : T) (x5 : T) (x6 : List T) =>
+                  if (Const.eq x2 (leaf 0)).label ≠ 0 then
+                    «Prover.matchVar» («Language.mD» x0 (leaf 0)) x4 x5 x6
+                  else
+                    let x7 : List T := «Language.mArgs» x5;
+                    if («Prelude.and»
+                      («Prelude.and»
+                        (Const.eq x2 (Const.label x5))
+                        (Const.equal (Const.child x0 (leaf 0)) (Const.child x5 (leaf 0))))
+                      (Const.eq
+                        («Prelude.length» («Language.mArgs» x0))
+                        («Prelude.length» x7))).label ≠ 0 then
+                      x3 x4 (leaf 0) x7 («Prover/OAssign.just» («Prover.assign» x6))
+                    else
+                      «Prover/OAssign.nothing»);
     x2
 
 def «Prover.matchTerm» :=
@@ -2237,68 +2206,36 @@ def «Prover/UFs.tail» :=
       ([] : List (T → T))
       (fun (_ : T → T) (x2 : List (T → T)) => x2)
 
-def «Prover.ufAt» :=
-  fun (x0 : List (T → T)) (x1 : T) =>
-    let x2 : T →
-      T := Const.lcase
-      (α := T → T)
-      (β := T → T)
-      (Const.iter (α := List (T → T)) «Prover/UFs.tail» x0 x1)
-      (fun (_ : T) => leaf 0)
-      (fun (x2 : T → T) (_ : List (T → T)) => x2);
-    x2
-
-def «Prover.ufSum» :=
-  fun (x0 : List (T → T)) (x1 : T) =>
-    let x2 : T := Const.foldr
-      (α := T → T)
-      (β := T)
-      (fun (x2 : T → T) (x3 : T) => Const.add (x2 x1) x3)
-      (leaf 0)
-      («Prover/UFs.tail» x0);
-    x2
-
 def «Prover.usesStep» :=
   fun (x0 : T) (x1 : List (T → T)) =>
     let x2 : T →
-      T := (fun (x2 : T) =>
-      let x3 : T := Const.label x0;
-      let x4 : T := «Prelude.length» («Language.mArgs» x0);
-      if (Const.eq x3 (leaf 0)).label ≠ 0 then
-        if (Const.eq («Language.mD» x0 (leaf 0)) x2).label ≠ 0 then
-          leaf 1
-        else
-          leaf 0
-      else
-        if (Const.eq x3 (leaf 5)).label ≠ 0 then
-          Const.mul (leaf 2) («Prover.ufSum» x1 (Const.add x2 (leaf 1)))
-        else
-          if («Prelude.and»
-            («Prelude.or» (Const.eq x3 (leaf 8)) (Const.eq x3 (leaf 9)))
-            (Const.eq x4 (leaf 3))).label ≠ 0 then
-            Const.add
-              (Const.add
-                («Prover.ufAt» x1 (leaf 1) x2)
-                (Const.mul
-                  (leaf 2)
-                  («Prover.ufAt»
-                    x1
-                    (leaf 2)
-                    (Const.add
-                      x2
-                      (if (Const.eq x3 (leaf 8)).label ≠ 0 then leaf 1 else leaf 2)))))
-              («Prover.ufAt» x1 (leaf 3) x2)
-          else
-            if («Prelude.and»
-              (Const.eq x3 (leaf 10))
-              (Const.eq x4 (leaf 2))).label ≠ 0 then
-              Const.add
-                (Const.mul
-                  (leaf 2)
-                  («Prover.ufAt» x1 (leaf 1) (Const.add x2 (leaf 1))))
-                («Prover.ufAt» x1 (leaf 2) x2)
-            else
-              «Prover.ufSum» x1 x2);
+      T := (let x2 : T := Const.label x0;
+            let x3 : T := «Prelude.length» («Language.mArgs» x0);
+            let x4 : T →
+              T →
+                T := Const.foldr
+              (α := T → T)
+              (β := T → T → T)
+              (fun (x4 : T → T) (x5 : T → T → T) (x6 : T) (x7 : T) =>
+                let x8 : T := (if (Const.eq x2 (leaf 5)).label ≠ 0 then
+                  leaf 1
+                else
+                  «Language.childBound» x2 x3 x7);
+                Const.add
+                  (Const.mul
+                    (if (Const.eq x8 (leaf 0)).label ≠ 0 then leaf 1 else leaf 2)
+                    (x4 (Const.add x6 x8)))
+                  (x5 x6 (Const.add x7 (leaf 1))))
+              (fun (_ : T) (_ : T) => leaf 0)
+              («Prover/UFs.tail» x1);
+            fun (x5 : T) =>
+              if (Const.eq x2 (leaf 0)).label ≠ 0 then
+                if (Const.eq («Language.mD» x0 (leaf 0)) x5).label ≠ 0 then
+                  leaf 1
+                else
+                  leaf 0
+              else
+                x4 x5 (leaf 0));
     x2
 
 def «Prover.uses» :=

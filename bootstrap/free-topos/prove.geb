@@ -58,7 +58,6 @@
     UF
     UFs
     UFs.tail
-    ufAt
     uses
     EV
     eval
@@ -109,9 +108,6 @@
   (deftype Mt (Arrow T (Arrow T (Arrow Ts OAssign.Maybe))))
   (deftype Mts (List Mt))
   (import (Lists Mt) as Mts)
-  (defn mtAt ((rs Mts) (i T)) Mt
-    (lcase Mt Mt (iter Mts Mts.tail rs i) (lam ((d T) (t T) (s Ts)) OAssign.nothing)
-      (lam ((r Mt) (rest Mts)) r)))
   (defn matchVar ((i T) (d T) (t T) (s Ts)) OAssign.Maybe
     (if (lt i d) (if (equal t (var i)) (OAssign.just (assign s)) OAssign.nothing)
       (let t1 T (if (eq d 0) t (rename t (lam ((j T)) (sub j d))))
@@ -123,35 +119,28 @@
                 (OAssign.just (assign (setAt s (sub i d) (some t1)))))
               (if (equal t1 (var (sub i d))) (OAssign.just (assign s)) OAssign.nothing)))
           OAssign.nothing))))
-  (deftype MA (Arrow Ts (Arrow OAssign.Maybe OAssign.Maybe)))
-  (defn matchAll ((rs Mts) (d T) (us Ts) (s Ts)) OAssign.Maybe
-    ((foldr Mt MA
-       (lam ((q Mt) (k MA))
-         (lam ((ts Ts) (acc OAssign.Maybe))
-           (lcase T OAssign.Maybe ts acc
-             (lam ((u T) (rest Ts))
-               (k rest (bindAA acc (lam ((sn Assign)) (q d u (assigned sn)))))))))
-       (lam ((ts Ts) (acc OAssign.Maybe)) acc)
-       (Mts.tail rs)) us (OAssign.just (assign s))))
+  (deftype MA (Arrow T (Arrow T (Arrow Ts (Arrow OAssign.Maybe OAssign.Maybe)))))
+  (defn matchAll ((nd T) (l T) (k T) (rs Mts)) MA
+    (foldr Mt MA
+      (lam ((q Mt) (c MA) (d T) (i T) (ts Ts) (acc OAssign.Maybe))
+        (lcase T OAssign.Maybe ts acc
+          (lam ((u T) (rest Ts))
+            (c d (add i 1) rest
+              (if (and (and (eq l 10) (eq k 2)) (eq i 0))
+                (if (equal (mArg nd 0) u) acc OAssign.nothing)
+                (bindAA acc (lam ((sn Assign)) (q (add d (childBound l k i)) u (assigned sn)))))))))
+      (lam ((d T) (i T) (ts Ts) (acc OAssign.Maybe)) acc)
+      (Mts.tail rs)))
   (defn matchStep ((nd T) (rs Mts)) Mt
-    (lam ((d T) (t T) (s Ts))
-      (let l T (label nd)
-        (if (eq l 0) (matchVar (mD nd 0) d t s)
-          (let us Ts (mArgs t)
-            (let k T (length us)
+    (let l T (label nd)
+      (let h MA (matchAll nd l (length (mArgs nd)) rs)
+        (lam ((d T) (t T) (s Ts))
+          (if (eq l 0) (matchVar (mD nd 0) d t s)
+            (let us Ts (mArgs t)
               (if
                 (and (and (eq l (label t)) (equal (child nd 0) (child t 0)))
-                  (eq (length (mArgs nd)) k))
-                (if (and (eq l 5) (eq k 1)) ((mtAt rs 1) (add d 1) (at us 0) s)
-                  (if (and (or (eq l 8) (eq l 9)) (eq k 3))
-                    (bindAA
-                      (bindAA ((mtAt rs 1) d (at us 0) s)
-                        (lam ((sn Assign))
-                          ((mtAt rs 2) (add d (if (eq l 8) 1 2)) (at us 1) (assigned sn))))
-                      (lam ((sn Assign)) ((mtAt rs 3) d (at us 2) (assigned sn))))
-                    (if (and (eq l 10) (eq k 2))
-                      (if (equal (mArg nd 0) (at us 0)) ((mtAt rs 2) d (at us 1) s) OAssign.nothing)
-                      (matchAll rs d us s))))
+                  (eq (length (mArgs nd)) (length us)))
+                (h d 0 us (OAssign.just (assign s)))
                 OAssign.nothing)))))))
   (defn matchTerm ((p T)) Mt (para Mt matchStep p))
 
@@ -470,21 +459,18 @@
   (deftype UF (Arrow T T))
   (deftype UFs (List UF))
   (import (Lists UF) as UFs)
-  (defn ufAt ((rs UFs) (i T)) UF
-    (lcase UF UF (iter UFs UFs.tail rs i) (lam ((d T)) 0) (lam ((r UF) (rest UFs)) r)))
-  (defn ufSum ((rs UFs) (d T)) T
-    (foldr UF T (lam ((r UF) (acc T)) (add (r d) acc)) 0 (UFs.tail rs)))
+  (deftype UH (Arrow T (Arrow T T)))
   (defn usesStep ((nd T) (rs UFs)) UF
-    (lam ((d T))
-      (let l T (label nd)
-        (let k T (length (mArgs nd))
-          (if (eq l 0) (if (eq (mD nd 0) d) 1 0)
-            (if (eq l 5) (mul 2 (ufSum rs (add d 1)))
-              (if (and (or (eq l 8) (eq l 9)) (eq k 3))
-                (add (add ((ufAt rs 1) d) (mul 2 ((ufAt rs 2) (add d (if (eq l 8) 1 2)))))
-                  ((ufAt rs 3) d))
-                (if (and (eq l 10) (eq k 2)) (add (mul 2 ((ufAt rs 1) (add d 1))) ((ufAt rs 2) d))
-                  (ufSum rs d)))))))))
+    (let l T (label nd)
+      (let k T (length (mArgs nd))
+        (let h UH
+          (foldr UF UH
+            (lam ((r UF) (c UH) (d T) (i T))
+              (let b T (if (eq l 5) 1 (childBound l k i))
+                (add (mul (if (eq b 0) 1 2) (r (add d b))) (c d (add i 1)))))
+            (lam ((d T) (i T)) 0)
+            (UFs.tail rs))
+          (lam ((d T)) (if (eq l 0) (if (eq (mD nd 0) d) 1 0) (h d 0)))))))
   (defn uses ((t T) (d T)) T ((para UF usesStep t) d))
 
   ; the reduction of a term to a depth, 0 the weak head normal form, 1 the weak normal form, 2 the

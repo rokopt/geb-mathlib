@@ -1643,21 +1643,64 @@ def «Translation/TrFs.tail» :=
       (fun (_ : List T → List T → T) (x2 : List (List T → List T → T)) =>
         x2)
 
-def «Translation.trAt» :=
-  fun (x0 : List (List T → List T → T)) (x1 : T) =>
-    let x2 : List T →
+def «Translation/TrYs.tail» :=
+  fun (x0 : List T) =>
+    Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2)
+
+def «Translation.trKids» :=
+  fun (x0 : T) (x1 : T) (x2 : List (List T → List T → T)) =>
+    let x3 : T →
       List T →
-        T := Const.lcase
-      (α := List T → List T → T)
-      (β := List T → List T → T)
-      (Const.iter
-        (α := List (List T → List T → T))
-        «Translation/TrFs.tail»
-        x0
-        x1)
-      (fun (_ : List T) (_ : List T) => «Language/OTPair.nothing»)
-      (fun (x2 : List T → List T → T) (_ : List (List T → List T → T)) =>
-        x2);
+        List T →
+          List
+            T := (fun (x3 : T) =>
+      Const.foldr
+        (α := List T → List T → T)
+        (β := T → List T → List T → List T)
+        (fun (x4 : List T → List T → T)
+           (x5 : T → List T → List T → List T)
+           (x6 : T)
+           (x7 : List T)
+           (x8 : List T) =>
+          ((if (Const.eq x0 (leaf 9)).label ≠ 0 then
+            if (Const.eq x6 (leaf 1)).label ≠ 0 then
+              x4 x7 (x1 :: x8)
+            else
+              «Language/OTPair.nothing»
+          else
+            if («Prelude.or»
+              (Const.eq x0 (leaf 10))
+              («Prelude.or»
+                (Const.eq x0 (leaf 12))
+                («Prelude.or»
+                  (Const.eq x0 (leaf 13))
+                  («Prelude.or»
+                    (Const.eq x0 (leaf 14))
+                    («Prelude.or»
+                      (Const.eq x0 (leaf 16))
+                      (Const.eq x0 (leaf 20))))))).label ≠ 0 then
+              x4 x7 x8
+            else
+              «Language/OTPair.nothing») ::
+            (x5 (Const.add x6 (leaf 1)) x7 x8)))
+        (fun (_ : T) (_ : List T) (_ : List T) => ([] : List T))
+        x2
+        x3);
+    x3
+
+def «Translation.trAt» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter (α := List T) «Translation/TrYs.tail» x0 x1)
+      «Language/OTPair.nothing»
+      (fun (x2 : T) (_ : List T) => x2);
     x2
 
 def «Translation.bindP» :=
@@ -1703,269 +1746,294 @@ def «Translation.termStep» :=
   fun (x0 : T) (x1 : List (List T → List T → T)) =>
     let x2 : List T →
       List T →
-        T := (fun (x2 : List T) (x3 : List T) =>
-      let x4 : T := Const.label x0;
-      let x5 : T := Const.arity x0;
-      let x6 : T := Const.child x0 (leaf 0);
-      let x7 : T := Const.child x0 (leaf 1);
-      if (Const.eq x4 (leaf 8)).label ≠ 0 then
-        if (Const.eq x5 (leaf 1)).label ≠ 0 then
-          «Translation.bindTy»
-            («Prelude.nth» x3 (Const.label x6))
-            (fun (x8 : T) =>
-              «Language/OTPair.just»
-                («Language.pr» x8 («Language.var» (Const.label x6))))
-        else
-          «Language/OTPair.nothing»
-      else
-        if (Const.eq x4 (leaf 9)).label ≠ 0 then
-          if (Const.eq x5 (leaf 2)).label ≠ 0 then
-            if («Check.isTy» x6).label ≠ 0 then
-              «Translation.bindP»
-                («Translation.trAt» x1 (leaf 1) x2 (x6 :: x3))
-                (fun (x8 : T) =>
-                  «Translation.mapTy»
-                    (fun (x9 : T) =>
-                      «Language.pr»
-                        («Check.tyArrow» x6 («Language.p1» x8))
-                        («Language.mLam» x9 («Language.p2» x8)))
-                    («Translation.trTy» x6))
-            else
-              «Language/OTPair.nothing»
-          else
-            «Language/OTPair.nothing»
-        else
-          if (Const.eq x4 (leaf 10)).label ≠ 0 then
-            if (Const.eq x5 (leaf 2)).label ≠ 0 then
-              «Translation.bindP»
-                («Translation.trAt» x1 (leaf 0) x2 x3)
-                (fun (x8 : T) =>
-                  «Translation.bindP»
-                    («Translation.trAt» x1 (leaf 1) x2 x3)
-                    (fun (x9 : T) =>
-                      «Translation.bindP»
-                        («Translation.kArrowParts» («Language.p1» x8))
-                        (fun (x10 : T) =>
-                          if (Const.equal («Language.p1» x9) («Language.p1» x10)).label ≠ 0 then
-                            «Language/OTPair.just»
-                              («Language.pr»
-                                («Language.p2» x10)
-                                («Language.app» («Language.p2» x8) («Language.p2» x9)))
-                          else
-                            «Language/OTPair.nothing»)))
-            else
-              «Language/OTPair.nothing»
-          else
-            if (Const.eq x4 (leaf 11)).label ≠ 0 then
-              if (Const.eq x5 (leaf 0)).label ≠ 0 then
-                «Language/OTPair.just» («Language.pr» (leaf 1) «Language.mStar»)
-              else
-                «Language/OTPair.nothing»
-            else
-              if (Const.eq x4 (leaf 12)).label ≠ 0 then
-                if (Const.eq x5 (leaf 2)).label ≠ 0 then
-                  «Translation.bindP»
-                    («Translation.trAt» x1 (leaf 0) x2 x3)
-                    (fun (x8 : T) =>
-                      «Translation.bindP»
-                        («Translation.trAt» x1 (leaf 1) x2 x3)
-                        (fun (x9 : T) =>
-                          «Language/OTPair.just»
-                            («Language.pr»
-                              («Reader.node2» (leaf 2) («Language.p1» x8) («Language.p1» x9))
-                              («Language.mPair» («Language.p2» x8) («Language.p2» x9)))))
-                else
-                  «Language/OTPair.nothing»
-              else
-                if (Const.eq x4 (leaf 13)).label ≠ 0 then
-                  if (Const.eq x5 (leaf 1)).label ≠ 0 then
-                    «Translation.bindP»
-                      («Translation.trAt» x1 (leaf 0) x2 x3)
-                      (fun (x8 : T) =>
-                        «Translation.bindP»
-                          («Translation.kProdParts» («Language.p1» x8))
-                          (fun (x9 : T) =>
-                            «Language/OTPair.just»
-                              («Language.pr»
-                                («Language.p1» x9)
-                                («Language.mFst» («Language.p2» x8)))))
+        T := (let x2 : List T →
+                List T →
+                  List
+                    T := «Translation.trKids»
+                (Const.label x0)
+                (Const.child x0 (leaf 0))
+                x1
+                (leaf 0);
+              fun (x3 : List T) (x4 : List T) =>
+                let x5 : T := Const.label x0;
+                let x6 : T := Const.arity x0;
+                let x7 : T := Const.child x0 (leaf 0);
+                let x8 : T := Const.child x0 (leaf 1);
+                let x9 : List T := x2 x3 x4;
+                if (Const.eq x5 (leaf 8)).label ≠ 0 then
+                  if (Const.eq x6 (leaf 1)).label ≠ 0 then
+                    «Translation.bindTy»
+                      («Prelude.nth» x4 (Const.label x7))
+                      (fun (x10 : T) =>
+                        «Language/OTPair.just»
+                          («Language.pr» x10 («Language.var» (Const.label x7))))
                   else
                     «Language/OTPair.nothing»
                 else
-                  if (Const.eq x4 (leaf 14)).label ≠ 0 then
-                    if (Const.eq x5 (leaf 1)).label ≠ 0 then
-                      «Translation.bindP»
-                        («Translation.trAt» x1 (leaf 0) x2 x3)
-                        (fun (x8 : T) =>
-                          «Translation.bindP»
-                            («Translation.kProdParts» («Language.p1» x8))
-                            (fun (x9 : T) =>
-                              «Language/OTPair.just»
-                                («Language.pr»
-                                  («Language.p2» x9)
-                                  («Language.mSnd» («Language.p2» x8)))))
-                    else
-                      «Language/OTPair.nothing»
-                  else
-                    if (Const.eq x4 (leaf 15)).label ≠ 0 then
-                      if (Const.eq x5 (leaf 1)).label ≠ 0 then
-                        «Language/OTPair.just»
-                          («Language.pr» (leaf 0) («Translation.quoteT» x6))
+                  if (Const.eq x5 (leaf 9)).label ≠ 0 then
+                    if (Const.eq x6 (leaf 2)).label ≠ 0 then
+                      if («Check.isTy» x7).label ≠ 0 then
+                        «Translation.bindP»
+                          («Translation.trAt» x9 (leaf 1))
+                          (fun (x10 : T) =>
+                            «Translation.mapTy»
+                              (fun (x11 : T) =>
+                                «Language.pr»
+                                  («Check.tyArrow» x7 («Language.p1» x10))
+                                  («Language.mLam» x11 («Language.p2» x10)))
+                              («Translation.trTy» x7))
                       else
                         «Language/OTPair.nothing»
                     else
-                      if (Const.eq x4 (leaf 16)).label ≠ 0 then
-                        if (Const.eq x5 (leaf 3)).label ≠ 0 then
-                          «Translation.bindP»
-                            («Translation.trAt» x1 (leaf 0) x2 x3)
-                            (fun (x8 : T) =>
-                              «Translation.bindP»
-                                («Translation.trAt» x1 (leaf 1) x2 x3)
-                                (fun (x9 : T) =>
-                                  «Translation.bindP»
-                                    («Translation.trAt» x1 (leaf 2) x2 x3)
-                                    (fun (x10 : T) =>
-                                      if («Prelude.and»
-                                        (Const.equal («Language.p1» x8) (leaf 0))
-                                        (Const.equal
-                                          («Language.p1» x10)
-                                          («Language.p1» x9))).label ≠ 0 then
-                                        «Translation.mapTy»
-                                          (fun (x11 : T) =>
-                                            «Language.pr»
-                                              («Language.p1» x9)
-                                              («Translation.condT»
-                                                x11
-                                                («Translation.labT» («Language.p2» x8))
-                                                («Language.p2» x9)
-                                                («Language.p2» x10)))
-                                          («Translation.trTy» («Language.p1» x9))
-                                      else
-                                        «Language/OTPair.nothing»)))
+                      «Language/OTPair.nothing»
+                  else
+                    if (Const.eq x5 (leaf 10)).label ≠ 0 then
+                      if (Const.eq x6 (leaf 2)).label ≠ 0 then
+                        «Translation.bindP»
+                          («Translation.trAt» x9 (leaf 0))
+                          (fun (x10 : T) =>
+                            «Translation.bindP»
+                              («Translation.trAt» x9 (leaf 1))
+                              (fun (x11 : T) =>
+                                «Translation.bindP»
+                                  («Translation.kArrowParts» («Language.p1» x10))
+                                  (fun (x12 : T) =>
+                                    if (Const.equal
+                                      («Language.p1» x11)
+                                      («Language.p1» x12)).label ≠ 0 then
+                                      «Language/OTPair.just»
+                                        («Language.pr»
+                                          («Language.p2» x12)
+                                          («Language.app» («Language.p2» x10) («Language.p2» x11)))
+                                    else
+                                      «Language/OTPair.nothing»)))
+                      else
+                        «Language/OTPair.nothing»
+                    else
+                      if (Const.eq x5 (leaf 11)).label ≠ 0 then
+                        if (Const.eq x6 (leaf 0)).label ≠ 0 then
+                          «Language/OTPair.just» («Language.pr» (leaf 1) «Language.mStar»)
                         else
                           «Language/OTPair.nothing»
                       else
-                        if (Const.eq x4 (leaf 17)).label ≠ 0 then
-                          if (Const.eq x5 (leaf 1)).label ≠ 0 then
-                            «Translation.mapTy»
-                              (fun (x8 : T) =>
-                                «Language.pr» («Check.foldTy» x6) («Translation.foldT» x8))
-                              («Translation.trTy» x6)
+                        if (Const.eq x5 (leaf 12)).label ≠ 0 then
+                          if (Const.eq x6 (leaf 2)).label ≠ 0 then
+                            «Translation.bindP»
+                              («Translation.trAt» x9 (leaf 0))
+                              (fun (x10 : T) =>
+                                «Translation.bindP»
+                                  («Translation.trAt» x9 (leaf 1))
+                                  (fun (x11 : T) =>
+                                    «Language/OTPair.just»
+                                      («Language.pr»
+                                        («Reader.node2»
+                                          (leaf 2)
+                                          («Language.p1» x10)
+                                          («Language.p1» x11))
+                                        («Language.mPair»
+                                          («Language.p2» x10)
+                                          («Language.p2» x11)))))
                           else
                             «Language/OTPair.nothing»
                         else
-                          if (Const.eq x4 (leaf 18)).label ≠ 0 then
-                            if (Const.eq x5 (leaf 1)).label ≠ 0 then
-                              «Translation.mapTy»
-                                (fun (x8 : T) =>
-                                  «Language.pr» («Check.iterTy» x6) («Translation.iterT» x8))
-                                («Translation.trTy» x6)
+                          if (Const.eq x5 (leaf 13)).label ≠ 0 then
+                            if (Const.eq x6 (leaf 1)).label ≠ 0 then
+                              «Translation.bindP»
+                                («Translation.trAt» x9 (leaf 0))
+                                (fun (x10 : T) =>
+                                  «Translation.bindP»
+                                    («Translation.kProdParts» («Language.p1» x10))
+                                    (fun (x11 : T) =>
+                                      «Language/OTPair.just»
+                                        («Language.pr»
+                                          («Language.p1» x11)
+                                          («Language.mFst» («Language.p2» x10)))))
                             else
                               «Language/OTPair.nothing»
                           else
-                            if (Const.eq x4 (leaf 19)).label ≠ 0 then
-                              if (Const.eq x5 (leaf 1)).label ≠ 0 then
-                                «Translation.mapTy»
-                                  (fun (x8 : T) =>
-                                    «Language.pr» («Check.tyList» x6) («Translation.nilT» x8))
-                                  («Translation.trTy» x6)
+                            if (Const.eq x5 (leaf 14)).label ≠ 0 then
+                              if (Const.eq x6 (leaf 1)).label ≠ 0 then
+                                «Translation.bindP»
+                                  («Translation.trAt» x9 (leaf 0))
+                                  (fun (x10 : T) =>
+                                    «Translation.bindP»
+                                      («Translation.kProdParts» («Language.p1» x10))
+                                      (fun (x11 : T) =>
+                                        «Language/OTPair.just»
+                                          («Language.pr»
+                                            («Language.p2» x11)
+                                            («Language.mSnd» («Language.p2» x10)))))
                               else
                                 «Language/OTPair.nothing»
                             else
-                              if (Const.eq x4 (leaf 20)).label ≠ 0 then
-                                if (Const.eq x5 (leaf 2)).label ≠ 0 then
-                                  «Translation.bindP»
-                                    («Translation.trAt» x1 (leaf 0) x2 x3)
-                                    (fun (x8 : T) =>
-                                      «Translation.bindP»
-                                        («Translation.trAt» x1 (leaf 1) x2 x3)
-                                        (fun (x9 : T) =>
-                                          «Translation.bindTy»
-                                            («Translation.kListPart» («Language.p1» x9))
-                                            (fun (x10 : T) =>
-                                              if (Const.equal («Language.p1» x8) x10).label ≠ 0 then
-                                                «Translation.mapTy»
-                                                  (fun (x11 : T) =>
-                                                    «Language.pr»
-                                                      («Language.p1» x9)
-                                                      («Translation.consT»
-                                                        x11
-                                                        («Language.p2» x8)
-                                                        («Language.p2» x9)))
-                                                  («Translation.trTy» x10)
-                                              else
-                                                «Language/OTPair.nothing»)))
+                              if (Const.eq x5 (leaf 15)).label ≠ 0 then
+                                if (Const.eq x6 (leaf 1)).label ≠ 0 then
+                                  «Language/OTPair.just»
+                                    («Language.pr» (leaf 0) («Translation.quoteT» x7))
                                 else
                                   «Language/OTPair.nothing»
                               else
-                                if (Const.eq x4 (leaf 21)).label ≠ 0 then
-                                  if (Const.eq x5 (leaf 2)).label ≠ 0 then
-                                    «Translation.bindTy»
-                                      («Translation.trTy» x6)
-                                      (fun (x8 : T) =>
-                                        «Translation.mapTy»
-                                          (fun (x9 : T) =>
-                                            «Language.pr»
-                                              («Check.foldrTy» x6 x7)
-                                              («Translation.foldrT» x8 x9))
-                                          («Translation.trTy» x7))
+                                if (Const.eq x5 (leaf 16)).label ≠ 0 then
+                                  if (Const.eq x6 (leaf 3)).label ≠ 0 then
+                                    «Translation.bindP»
+                                      («Translation.trAt» x9 (leaf 0))
+                                      (fun (x10 : T) =>
+                                        «Translation.bindP»
+                                          («Translation.trAt» x9 (leaf 1))
+                                          (fun (x11 : T) =>
+                                            «Translation.bindP»
+                                              («Translation.trAt» x9 (leaf 2))
+                                              (fun (x12 : T) =>
+                                                if («Prelude.and»
+                                                  (Const.equal («Language.p1» x10) (leaf 0))
+                                                  (Const.equal
+                                                    («Language.p1» x12)
+                                                    («Language.p1» x11))).label ≠ 0 then
+                                                  «Translation.mapTy»
+                                                    (fun (x13 : T) =>
+                                                      «Language.pr»
+                                                        («Language.p1» x11)
+                                                        («Translation.condT»
+                                                          x13
+                                                          («Translation.labT» («Language.p2» x10))
+                                                          («Language.p2» x11)
+                                                          («Language.p2» x12)))
+                                                    («Translation.trTy» («Language.p1» x11))
+                                                else
+                                                  «Language/OTPair.nothing»)))
                                   else
                                     «Language/OTPair.nothing»
                                 else
-                                  if (Const.eq x4 (leaf 22)).label ≠ 0 then
-                                    if (Const.eq x5 (leaf 1)).label ≠ 0 then
-                                      «Translation.bindTy»
-                                        («Prelude.nth» «Check.primTypes» (Const.label x6))
-                                        (fun (x8 : T) =>
-                                          «Translation.mapTy»
-                                            (fun (x9 : T) => «Language.pr» x8 x9)
-                                            («Translation.primT» (Const.label x6)))
+                                  if (Const.eq x5 (leaf 17)).label ≠ 0 then
+                                    if (Const.eq x6 (leaf 1)).label ≠ 0 then
+                                      «Translation.mapTy»
+                                        (fun (x10 : T) =>
+                                          «Language.pr»
+                                            («Check.foldTy» x7)
+                                            («Translation.foldT» x10))
+                                        («Translation.trTy» x7)
                                     else
                                       «Language/OTPair.nothing»
                                   else
-                                    if (Const.eq x4 (leaf 23)).label ≠ 0 then
-                                      if (Const.eq x5 (leaf 1)).label ≠ 0 then
-                                        «Translation.bindTy»
-                                          («Prelude.nth» x2 (Const.label x6))
-                                          (fun (x8 : T) =>
-                                            «Language/OTPair.just»
-                                              («Language.pr»
-                                                x8
-                                                («Translation.call»
-                                                  (Const.add
-                                                    («Translation/LDefnL.length» «Translation.lib»)
-                                                    (Const.label x6))
-                                                  ([] : List T)
-                                                  ([] : List T))))
+                                    if (Const.eq x5 (leaf 18)).label ≠ 0 then
+                                      if (Const.eq x6 (leaf 1)).label ≠ 0 then
+                                        «Translation.mapTy»
+                                          (fun (x10 : T) =>
+                                            «Language.pr»
+                                              («Check.iterTy» x7)
+                                              («Translation.iterT» x10))
+                                          («Translation.trTy» x7)
                                       else
                                         «Language/OTPair.nothing»
                                     else
-                                      if (Const.eq x4 (leaf 24)).label ≠ 0 then
-                                        if (Const.eq x5 (leaf 2)).label ≠ 0 then
-                                          «Translation.bindTy»
-                                            («Translation.trTy» x6)
-                                            (fun (x8 : T) =>
-                                              «Translation.mapTy»
-                                                (fun (x9 : T) =>
-                                                  «Language.pr»
-                                                    («Check.lcaseTy» x6 x7)
-                                                    («Translation.lcaseT» x8 x9))
-                                                («Translation.trTy» x7))
+                                      if (Const.eq x5 (leaf 19)).label ≠ 0 then
+                                        if (Const.eq x6 (leaf 1)).label ≠ 0 then
+                                          «Translation.mapTy»
+                                            (fun (x10 : T) =>
+                                              «Language.pr»
+                                                («Check.tyList» x7)
+                                                («Translation.nilT» x10))
+                                            («Translation.trTy» x7)
                                         else
                                           «Language/OTPair.nothing»
                                       else
-                                        if (Const.eq x4 (leaf 25)).label ≠ 0 then
-                                          if (Const.eq x5 (leaf 1)).label ≠ 0 then
-                                            «Translation.mapTy»
-                                              (fun (x8 : T) =>
-                                                «Language.pr»
-                                                  («Check.foldTy» x6)
-                                                  («Translation.paraT» x8))
-                                              («Translation.trTy» x6)
+                                        if (Const.eq x5 (leaf 20)).label ≠ 0 then
+                                          if (Const.eq x6 (leaf 2)).label ≠ 0 then
+                                            «Translation.bindP»
+                                              («Translation.trAt» x9 (leaf 0))
+                                              (fun (x10 : T) =>
+                                                «Translation.bindP»
+                                                  («Translation.trAt» x9 (leaf 1))
+                                                  (fun (x11 : T) =>
+                                                    «Translation.bindTy»
+                                                      («Translation.kListPart» («Language.p1» x11))
+                                                      (fun (x12 : T) =>
+                                                        if (Const.equal
+                                                          («Language.p1» x10)
+                                                          x12).label ≠ 0 then
+                                                          «Translation.mapTy»
+                                                            (fun (x13 : T) =>
+                                                              «Language.pr»
+                                                                («Language.p1» x11)
+                                                                («Translation.consT»
+                                                                  x13
+                                                                  («Language.p2» x10)
+                                                                  («Language.p2» x11)))
+                                                            («Translation.trTy» x12)
+                                                        else
+                                                          «Language/OTPair.nothing»)))
                                           else
                                             «Language/OTPair.nothing»
                                         else
-                                          «Language/OTPair.nothing»);
+                                          if (Const.eq x5 (leaf 21)).label ≠ 0 then
+                                            if (Const.eq x6 (leaf 2)).label ≠ 0 then
+                                              «Translation.bindTy»
+                                                («Translation.trTy» x7)
+                                                (fun (x10 : T) =>
+                                                  «Translation.mapTy»
+                                                    (fun (x11 : T) =>
+                                                      «Language.pr»
+                                                        («Check.foldrTy» x7 x8)
+                                                        («Translation.foldrT» x10 x11))
+                                                    («Translation.trTy» x8))
+                                            else
+                                              «Language/OTPair.nothing»
+                                          else
+                                            if (Const.eq x5 (leaf 22)).label ≠ 0 then
+                                              if (Const.eq x6 (leaf 1)).label ≠ 0 then
+                                                «Translation.bindTy»
+                                                  («Prelude.nth» «Check.primTypes» (Const.label x7))
+                                                  (fun (x10 : T) =>
+                                                    «Translation.mapTy»
+                                                      (fun (x11 : T) => «Language.pr» x10 x11)
+                                                      («Translation.primT» (Const.label x7)))
+                                              else
+                                                «Language/OTPair.nothing»
+                                            else
+                                              if (Const.eq x5 (leaf 23)).label ≠ 0 then
+                                                if (Const.eq x6 (leaf 1)).label ≠ 0 then
+                                                  «Translation.bindTy»
+                                                    («Prelude.nth» x3 (Const.label x7))
+                                                    (fun (x10 : T) =>
+                                                      «Language/OTPair.just»
+                                                        («Language.pr»
+                                                          x10
+                                                          («Translation.call»
+                                                            (Const.add
+                                                              («Translation/LDefnL.length»
+                                                                «Translation.lib»)
+                                                              (Const.label x7))
+                                                            ([] : List T)
+                                                            ([] : List T))))
+                                                else
+                                                  «Language/OTPair.nothing»
+                                              else
+                                                if (Const.eq x5 (leaf 24)).label ≠ 0 then
+                                                  if (Const.eq x6 (leaf 2)).label ≠ 0 then
+                                                    «Translation.bindTy»
+                                                      («Translation.trTy» x7)
+                                                      (fun (x10 : T) =>
+                                                        «Translation.mapTy»
+                                                          (fun (x11 : T) =>
+                                                            «Language.pr»
+                                                              («Check.lcaseTy» x7 x8)
+                                                              («Translation.lcaseT» x10 x11))
+                                                          («Translation.trTy» x8))
+                                                  else
+                                                    «Language/OTPair.nothing»
+                                                else
+                                                  if (Const.eq x5 (leaf 25)).label ≠ 0 then
+                                                    if (Const.eq x6 (leaf 1)).label ≠ 0 then
+                                                      «Translation.mapTy»
+                                                        (fun (x10 : T) =>
+                                                          «Language.pr»
+                                                            («Check.foldTy» x7)
+                                                            («Translation.paraT» x10))
+                                                        («Translation.trTy» x7)
+                                                    else
+                                                      «Language/OTPair.nothing»
+                                                  else
+                                                    «Language/OTPair.nothing»);
     x2
 
 def «Translation.term» :=

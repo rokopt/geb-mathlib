@@ -629,35 +629,32 @@
         (lcase T T (mArgs (ldBody (OLDefn.fromMaybe ldefn0 r))) mStar (lam ((x T) (rest Ts)) x))
         mStar)))
   (defn unnodeU ((t T)) T (mRoseRec unnodeTy unnodeStep t))
-  (defn lenUF ((rs UFs)) T (foldr UF T (lam ((r UF) (k T)) (add k 1)) 0 rs))
+  ; the variables a child of a node binds, at its position, whatever the node's arity
+  (defn anyBound ((l T) (i T)) T
+    (if (eq l 5) 1
+      (if (eq l 8) (if (eq i 1) 1 0)
+        (if (eq l 9) (if (eq i 1) 2 0) (if (eq l 10) (if (eq i 0) 1 0) 0)))))
+  ; the results of a node's children at an index raised by the variables each binds
+  (deftype UL (Arrow T (Arrow T Ts)))
+  (defn kidsAt ((l T) (rs UFs)) UL
+    (foldr UF UL (lam ((r UF) (c UL) (d T) (i T)) (cons (r (add d (anyBound l i))) (c d (add i 1))))
+      (lam ((d T) (i T)) (nil T))
+      (UFs.tail rs)))
   (defn occStep ((lk T) (i T) (nd T) (rs UFs)) UF
-    (lam ((d T))
-      (let refl T (dNode 0 (nil T) (nil T))
-        (let j T (add i d)
-          (let l T (label nd)
-            (if (eq l 0)
-              (if (eq (mD nd 0) j)
-                (dNode 1 (nil T)
-                  (l2 (dNode 2 (nil T) (single (dNode 6 (nil T) (nil T))))
-                    (dNode 16 (l4 lk (node 0 (nil T)) (node 0 (single (var j))) 0) (nil T))))
-                refl)
-              (if (eq l 5)
-                (dNode 2 (nil T)
-                  (foldr UF Ts (lam ((r UF) (acc Ts)) (cons (r (add d 1)) acc)) (nil T)
-                    (UFs.tail rs)))
-                (if (or (eq l 8) (eq l 9))
-                  (dNode 2 (nil T)
-                    (mapT
-                      (lam ((k T)) ((ufAt rs (add k 1)) (if (eq k 1) (add d (if (eq l 8) 1 2)) d)))
-                      (range (lenUF (UFs.tail rs)))))
-                  (if (eq l 10)
-                    (dNode 2 (nil T)
-                      (mapT (lam ((k T)) ((ufAt rs (add k 1)) (if (eq k 0) (add d 1) d)))
-                        (range (lenUF (UFs.tail rs)))))
-                    (if (allT (lam ((c T)) (eq (uses c j) 0)) (mArgs nd)) refl
-                      (dNode 2 (nil T)
-                        (foldr UF Ts (lam ((r UF) (acc Ts)) (cons (r d) acc)) (nil T)
-                          (UFs.tail rs)))))))))))))
+    (let l T (label nd)
+      (let h UL (kidsAt l rs)
+        (lam ((d T))
+          (let refl T (dNode 0 (nil T) (nil T))
+            (let j T (add i d)
+              (if (eq l 0)
+                (if (eq (mD nd 0) j)
+                  (dNode 1 (nil T)
+                    (l2 (dNode 2 (nil T) (single (dNode 6 (nil T) (nil T))))
+                      (dNode 16 (l4 lk (node 0 (nil T)) (node 0 (single (var j))) 0) (nil T))))
+                  refl)
+                (if (or (eq l 5) (or (eq l 8) (or (eq l 9) (eq l 10)))) (dNode 2 (nil T) (h d 0))
+                  (if (allT (lam ((c T)) (eq (uses c j) 0)) (mArgs nd)) refl
+                    (dNode 2 (nil T) (h d 0)))))))))))
   (defn occRewrite ((lk T) (i T) (t T) (d T)) T ((para UF (occStep lk i) t) d))
   (defn byTreeSplit ((lk T) (i T) (p Pv)) Pv
     (lam ((g Ts) (hs Ts) (t T) (u T))
@@ -765,26 +762,11 @@
       (byWeak G E n rs)
       d))
   (defn absStep ((xw T) (nd T) (rs UFs)) UF
-    (lam ((d T))
-      (if (equal nd (rename xw (lam ((j T)) (add j d)))) (var d)
-        (let l T (label nd)
-          (let rebuild0 (Arrow Ts T) (lam ((ks Ts)) (node l (cons (child nd 0) ks)))
-            (if (eq l 5)
-              (rebuild0
-                (foldr UF Ts (lam ((r UF) (acc Ts)) (cons (r (add d 1)) acc)) (nil T)
-                  (UFs.tail rs)))
-              (if (or (eq l 8) (eq l 9))
-                (rebuild0
-                  (mapT
-                    (lam ((k T)) ((ufAt rs (add k 1)) (if (eq k 1) (add d (if (eq l 8) 1 2)) d)))
-                    (range (lenUF (UFs.tail rs)))))
-                (if (eq l 10)
-                  (rebuild0
-                    (mapT (lam ((k T)) ((ufAt rs (add k 1)) (if (eq k 0) (add d 1) d)))
-                      (range (lenUF (UFs.tail rs)))))
-                  (rebuild0
-                    (foldr UF Ts (lam ((r UF) (acc Ts)) (cons (r d) acc)) (nil T)
-                      (UFs.tail rs)))))))))))
+    (let l T (label nd)
+      (let h UL (kidsAt l rs)
+        (lam ((d T))
+          (if (equal nd (rename xw (lam ((j T)) (add j d)))) (var d)
+            (node l (cons (child nd 0) (h d 0))))))))
   (defn abstractTerm ((b T) (x T) (y T)) T (mLam b ((para UF (absStep (weaken1 x)) (weaken1 y)) 0)))
   (defn maskRwD ((a T) (b T) (ab T) (dM T) (c T) (d T) (x T) (x1 T) (z T) (y T)) T
     (let F T (abstractTerm b x y)

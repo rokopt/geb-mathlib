@@ -24,6 +24,7 @@
     mIs
     mArg
     mD
+    childBound
     trav
     liftR
     rename
@@ -259,21 +260,22 @@
   (deftype OF (Arrow T T))
   (deftype OFs (List OF))
   (import (Lists OF) as OFs)
-  (defn ofAt ((rs OFs) (i T)) OF
-    (lcase OF OF (iter OFs OFs.tail rs i) (lam ((d T)) 0) (lam ((r OF) (rest OFs)) r)))
-  (defn ofAny ((rs OFs) (d T)) T (foldr OF T (lam ((r OF) (acc T)) (or (r d) acc)) 0 (OFs.tail rs)))
+  ; the variables a child of a node binds, at its position among the node's children
+  (defn childBound ((l T) (k T) (i T)) T
+    (if (and (eq l 5) (eq k 1)) 1
+      (if (and (eq l 8) (eq k 3)) (if (eq i 1) 1 0)
+        (if (and (eq l 9) (eq k 3)) (if (eq i 1) 2 0)
+          (if (and (eq l 10) (eq k 2)) (if (eq i 0) 1 0) 0)))))
+  (deftype OH (Arrow T (Arrow T T)))
   (defn occursStep ((nd T) (rs OFs)) OF
-    (lam ((d T))
-      (let l T (label nd)
-        (let k T (length (mArgs nd))
-          (if (eq l 0) (eq (mD nd 0) d)
-            (if (and (eq l 5) (eq k 1)) ((ofAt rs 1) (add d 1))
-              (if (and (eq l 8) (eq k 3))
-                (or (or ((ofAt rs 1) d) ((ofAt rs 2) (add d 1))) ((ofAt rs 3) d))
-                (if (and (eq l 9) (eq k 3))
-                  (or (or ((ofAt rs 1) d) ((ofAt rs 2) (add d 2))) ((ofAt rs 3) d))
-                  (if (and (eq l 10) (eq k 2)) (or ((ofAt rs 1) (add d 1)) ((ofAt rs 2) d))
-                    (ofAny rs d))))))))))
+    (let l T (label nd)
+      (let k T (length (mArgs nd))
+        (let h OH
+          (foldr OF OH
+            (lam ((r OF) (c OH) (d T) (i T)) (or (r (add d (childBound l k i))) (c d (add i 1))))
+            (lam ((d T) (i T)) 0)
+            (OFs.tail rs))
+          (lam ((d T)) (if (eq l 0) (eq (mD nd 0) d) (h d 0)))))))
   (defn occurs ((t T) (d T)) T ((para OF occursStep t) d))
 
   ; the parameters of a fold whose start is z and whose step s binds k variables, in an

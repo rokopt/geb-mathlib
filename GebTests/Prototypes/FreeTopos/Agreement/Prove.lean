@@ -354,59 +354,37 @@ theorem matchVar_eq (i d : ℕ) (t : Term) (σ : List (Option Term)) :
     «Prover/Mts.tail» rs = rs.tail := by
   cases rs <;> rfl
 
-/-- The matching of a child at a position, one matching nothing out of range. -/
-@[simp] theorem mtAt_eq (rs : List (Tree → Tree → List Tree → Tree)) (i : ℕ) :
-    «Prover.mtAt» rs (leaf i) = rs[i]?.getD fun _ _ _ ↦ «Prelude.none» := by
-  have hr : ∀ i : ℕ, Nat.repeat «Prover/Mts.tail» i rs = rs.drop i :=
-    Nat.rec rfl fun i ih ↦ by rw [Nat.repeat, ih, mtTail_eq, List.tail_drop]
-  simp only [«Prover.mtAt», template, iter_leaf, hr]
-  cases h : rs.drop i with
-  | nil =>
-    rw [List.drop_eq_nil_iff] at h
-    rw [List.getElem?_eq_none h]
-    rfl
-  | cons r rest =>
-    rw [← List.head?_drop, h]
-    rfl
-
-/-- The mirror's matching of terms by a list of matchings, one after another, from an
-encoded assignment, at related matchings: the fold of the matchings into functions of the terms. -/
-theorem foldr_match_eq (d : ℕ) :
-    ∀ (xs : List (Term × (Tree → Tree → List Tree → Tree) ×
-        (ℕ → Term → List (Option Term) → Option (List (Option Term))))),
-      (∀ x ∈ xs, MRel x.2.1 x.2.2) → ∀ (us : List Term) (acc : Option (List (Option Term))),
-      List.foldr (fun q k ts a ↦ Const.lcase ts a fun u rest ↦
-          k rest («Base.bindO» a fun sn ↦ q (leaf d) u (Const.children sn)))
-        (fun _ a ↦ a) (xs.map fun x ↦ x.2.1) (us.map encTerm) (encOpt (acc.map encSigma)) =
-      encOpt ((((xs.map fun x ↦ (x.1, x.2.2)).zip us).foldl
-        (fun acc (q, u) ↦ acc.bind (q.2 d u)) acc).map encSigma) :=
-  List.rec (fun _ us acc ↦ by cases us <;> rfl) fun x xs ih hx us acc ↦ by
-    rcases us with _ | ⟨u, us⟩
-    · rfl
-    · simp only [List.map_cons, List.foldr_cons, lcase_cons, List.zip_cons_cons, List.foldl_cons,
-        bindO_eq]
-      have ih' := ih fun y hy ↦ hx y (List.mem_cons_of_mem x hy)
-      rcases acc with _ | σ
-      · exact ih' us none
-      · have hm : x.2.1 (leaf d) (encTerm u) (Const.children (encSigma σ)) =
-            encOpt (((some σ).bind (x.2.2 d u)).map encSigma) := by
-          rw [Option.bind_some, children_eq, encSigma, RoseTree.children_node]
-          exact hx x List.mem_cons_self d u σ
-        simp only [Option.map_some, Option.elim_some, hm]
-        exact ih' us _
-
-/-- The mirror's matching of the children of a pattern against a term's, one after another,
-at related matchings of the pattern's children. -/
-theorem matchAll_eq (d : ℕ) (v : Tree → Tree → List Tree → Tree)
+/-- The mirror's matching of the children of a pattern against a term's, one after another from a
+position, at related matchings, where none of them compares a child and each binds no variable: the
+fold of the matchings into functions of the terms. -/
+theorem matchAll_plain (nd L K : Tree) (hb : ∀ j, «Language.childBound» L K (leaf j) = leaf 0)
+    (hc : ∀ t, («Prelude.and» («Prelude.and» (Const.eq L (leaf 10)) (Const.eq K (leaf 2))) t).label
+      = 0) (d : ℕ) (v : Tree → Tree → List Tree → Tree)
     (xs : List (Term × (Tree → Tree → List Tree → Tree) ×
       (ℕ → Term → List (Option Term) → Option (List (Option Term)))))
-    (hx : ∀ x ∈ xs, MRel x.2.1 x.2.2) (us : List Term) (σ : List (Option Term)) :
-    «Prover.matchAll» (v :: xs.map fun x ↦ x.2.1) (leaf d) (us.map encTerm)
-        (σ.map encOT) =
+    (hx : ∀ x ∈ xs, MRel x.2.1 x.2.2) (i : ℕ) (us : List Term)
+    (acc : Option (List (Option Term))) :
+    «Prover.matchAll» nd L K (v :: xs.map fun x ↦ x.2.1) (leaf d) (leaf i) (us.map encTerm)
+        (encOpt (acc.map encSigma)) =
       encOpt ((((xs.map fun x ↦ (x.1, x.2.2)).zip us).foldl
-        (fun acc (q, u) ↦ acc.bind (q.2 d u)) (some σ)).map encSigma) := by
+        (fun acc (q, u) ↦ acc.bind (q.2 d u)) acc).map encSigma) := by
   simp only [«Prover.matchAll», template, foldr_eq, mtTail_eq, List.tail_cons]
-  exact foldr_match_eq d xs hx us (some σ)
+  revert hx i us acc
+  refine xs.rec (fun _ i us acc ↦ by cases us <;> rfl) fun x xs ih hx i us acc ↦ ?_
+  rcases us with _ | ⟨u, us⟩
+  · rfl
+  simp only [List.map_cons, List.foldr_cons, lcase_cons, List.zip_cons_cons, List.foldl_cons,
+    hc, ne_eq, not_true_eq_false, ↓reduceIte, hb, add_leaf, Nat.add_zero, bindO_eq]
+  have ih' := ih fun y hy ↦ hx y (List.mem_cons_of_mem x hy)
+  simp only [hc, ne_eq, not_true_eq_false, ↓reduceIte] at ih'
+  rcases acc with _ | σ
+  · exact ih' (i + 1) us none
+  have hm : x.2.1 (leaf d) (encTerm u) (Const.children (encSigma σ)) =
+      encOpt (((some σ).bind (x.2.2 d u)).map encSigma) := by
+    rw [Option.bind_some, children_eq, encSigma, RoseTree.children_node]
+    exact hx x List.mem_cons_self d u σ
+  simp only [Option.map_some, Option.elim_some, hm]
+  exact ih' (i + 1) us _
 
 /-- Two labels' positions and data are equal exactly when the labels are. -/
 theorem labelData_beq (l l' : Internal.Label) :
@@ -428,6 +406,14 @@ theorem labelData_beq (l l' : Internal.Label) :
   rw [← RoseTree.node_label_children t, encTerm_node]
   rfl
 
+/-- The application of {lit}`matchAll_plain` to a node whose matchings compare no child and whose
+children bind no variable. -/
+local macro "match_plain" : tactic => `(tactic|
+  (refine (matchAll_plain _ _ _ (fun j ↦ (childBound_eq _ _ _).trans rfl) (fun t ↦ ?_) _ _ _ ‹_› 0
+      _ _).trans rfl
+   mirror_simp [labelData, beq_iff_eq, Nat.reduceEqDiff]
+   try rfl))
+
 /-- The mirror's step of the matching of a pattern at an encoded node other than a variable. -/
 theorem matchNode_eq (l : Internal.Label) (hl : ∀ i, l ≠ .var i)
     (v : Tree → Tree → List Tree → Tree)
@@ -440,7 +426,7 @@ theorem matchNode_eq (l : Internal.Label) (hl : ∀ i, l ≠ .var i)
   have h0 : (labelData l).1 ≠ 0 := by
     cases l <;> simp_all [labelData]
   simp only [«Prover.matchStep», template, encTerm_node, label_node, eq_leaf,
-    child_encTerm, mArgs_eq, length_eq, and_eq, List.length_map, child_node, List.getD_cons_zero,
+    child_encTerm, mArgs_eq, length_eq, List.length_map, child_node, List.getD_cons_zero,
     Internal.matchNode]
   have h0' : ((labelData l).1 == 0) = false := by simpa using h0
   mirror_simp [h0', «Language.mArgs», label_encTerm, labelData_beq]
@@ -459,44 +445,87 @@ theorem matchNode_eq (l : Internal.Label) (hl : ∀ i, l ≠ .var i)
   simp only [RoseTree.children_node] at hlen
   simp only [RoseTree.label_node, RoseTree.children_node, hlen, decide_true, beq_self_eq_true,
     Bool.and_self, and_self, ↓reduceIte]
-  rw [matchAll_eq d v xs hx us σ]
+  have hS : «Prelude.some» (RoseTree.node 0 (σ.map encOT)) = encOpt ((some σ).map encSigma) := rfl
+  rw [hS]
   cases l with
   | var i => exact absurd rfl (hl i)
   | lam a =>
     rcases xs with _ | ⟨x0, _ | ⟨x1, xs⟩⟩ <;> rcases us with _ | ⟨u0, _ | ⟨u1, us⟩⟩ <;>
       simp only [List.length_cons, List.length_nil] at hlen <;> try omega
-    all_goals simp [labelData, hm]
-  | natRec | listRec =>
+    · rfl
+    · have hb : «Language.childBound» (leaf 5) (leaf 1) (leaf 0) = leaf 1 := rfl
+      mirror_simp [«Prover.matchAll», template, mtTail_eq, List.tail_cons, List.map_nil,
+        List.map_cons, List.foldr_cons, List.foldr_nil, lcase_cons, lcase_nil, labelData, hb,
+        Option.bind_some, hm x0 (by simp), encSigma, RoseTree.children_node, beq_iff_eq,
+        Nat.reduceEqDiff, List.length_cons, List.length_nil, zero_add]
+    · match_plain
+  | natRec =>
     rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, _ | ⟨x3, xs⟩⟩⟩⟩ <;>
       rcases us with _ | ⟨u0, _ | ⟨u1, _ | ⟨u2, _ | ⟨u3, us⟩⟩⟩⟩ <;>
       simp only [List.length_cons, List.length_nil] at hlen <;> try omega
-    -- more than three children are matched in turn on both sides
-    all_goals try (simp [labelData, hm]; done)
-    all_goals simp only [List.length_cons, List.length_nil, zero_add, Nat.reduceAdd,
-      Nat.reduceBEq, Bool.and_false, Bool.false_eq_true, ↓reduceIte, BEq.rfl, Bool.and_true,
-      Bool.or_eq_true, List.map_cons, List.map_nil, List.getD_eq_getElem?_getD,
-      Nat.zero_lt_succ, getElem?_pos, List.getElem_cons_zero, Option.getD_some, mtAt_eq,
-      Nat.reduceLT, List.getElem_cons_succ, Nat.lt_add_one, List.zip_cons_cons,
-      List.zip_nil_right, List.foldl_cons, Option.bind_some, List.foldl_nil, Option.map_bind,
-      Function.comp_apply, labelData]
-    all_goals
-      simp only [true_or, or_true, ↓reduceIte, add_leaf, hm x0 (by simp), bindO_eq]
+    · rfl
+    · match_plain
+    · match_plain
+    · have hb : ∀ j, «Language.childBound» (leaf 8) (leaf 3) (leaf j) =
+          leaf (if j = 1 then 1 else 0) := fun j ↦ childBound_eq .natRec 3 j
+      mirror_simp [«Prover.matchAll», template, mtTail_eq, List.tail_cons, List.map_nil,
+        List.map_cons, List.foldr_cons, List.foldr_nil, lcase_cons, lcase_nil, labelData, hb,
+        encSigma, RoseTree.children_node, beq_iff_eq, Nat.reduceEqDiff, List.length_cons,
+        List.length_nil, zero_add, and_label]
+      simp only [Nat.add_zero, hm x0 (by simp), bindO_eq]
       rcases x0.2.2 d u0 σ with _ | σ₁
       · rfl
-      · simp only [Option.map_some, Option.elim_some, encSigma, RoseTree.children_node,
-          hm x1 (by simp), bindO_eq, Option.bind_some]
-        rcases x1.2.2 _ u1 σ₁ with _ | σ₂
-        · rfl
-        · simp only [Option.map_some, Option.elim_some, encSigma, RoseTree.children_node,
-            hm x2 (by simp), Option.bind_some]
+      simp only [Option.map_some, Option.elim_some, encSigma, RoseTree.children_node,
+        hm x1 (by simp), bindO_eq, Option.bind_some]
+      rcases x1.2.2 _ u1 σ₁ with _ | σ₂
+      · rfl
+      simp only [Option.map_some, Option.elim_some, encSigma, RoseTree.children_node,
+        hm x2 (by simp), Option.bind_some]
+    · match_plain
+  | listRec =>
+    rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, _ | ⟨x3, xs⟩⟩⟩⟩ <;>
+      rcases us with _ | ⟨u0, _ | ⟨u1, _ | ⟨u2, _ | ⟨u3, us⟩⟩⟩⟩ <;>
+      simp only [List.length_cons, List.length_nil] at hlen <;> try omega
+    · rfl
+    · match_plain
+    · match_plain
+    · have hb : ∀ j, «Language.childBound» (leaf 9) (leaf 3) (leaf j) =
+          leaf (if j = 1 then 2 else 0) := fun j ↦ childBound_eq .listRec 3 j
+      mirror_simp [«Prover.matchAll», template, mtTail_eq, List.tail_cons, List.map_nil,
+        List.map_cons, List.foldr_cons, List.foldr_nil, lcase_cons, lcase_nil, labelData, hb,
+        encSigma, RoseTree.children_node, beq_iff_eq, Nat.reduceEqDiff, List.length_cons,
+        List.length_nil, zero_add, and_label]
+      simp only [Nat.add_zero, hm x0 (by simp), bindO_eq]
+      rcases x0.2.2 d u0 σ with _ | σ₁
+      · rfl
+      simp only [Option.map_some, Option.elim_some, encSigma, RoseTree.children_node,
+        hm x1 (by simp), bindO_eq, Option.bind_some]
+      rcases x1.2.2 _ u1 σ₁ with _ | σ₂
+      · rfl
+      simp only [Option.map_some, Option.elim_some, encSigma, RoseTree.children_node,
+        hm x2 (by simp), Option.bind_some]
+    · match_plain
   | roseRec c =>
     rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, xs⟩⟩⟩ <;>
       rcases us with _ | ⟨u0, _ | ⟨u1, _ | ⟨u2, us⟩⟩⟩ <;>
       simp only [List.length_cons, List.length_nil] at hlen <;> try omega
-    all_goals simp [labelData, hm, «Language.mArg», «Language.mArgs»]
-    all_goals
-      by_cases h1 : x0.1 = u0 <;> simp [h1, «Prelude.none», encOpt]
-  | _ => simp [labelData]
+    · rfl
+    · match_plain
+    · have hb : ∀ j, «Language.childBound» (leaf 10) (leaf 2) (leaf j) =
+          leaf (if j = 0 then 1 else 0) := fun j ↦ childBound_eq (.roseRec c) 2 j
+      mirror_simp [«Prover.matchAll», template, mtTail_eq, List.tail_cons, List.map_nil,
+        List.map_cons, List.foldr_cons, List.foldr_nil, lcase_cons, lcase_nil, labelData, hb,
+        encSigma, RoseTree.children_node, beq_iff_eq, Nat.reduceEqDiff, List.length_cons,
+        List.length_nil, zero_add, and_label, «Language.mArg», «Language.mArgs»]
+      by_cases h : x0.1 = u0
+      · simp only [h, decide_true, ↓reduceIte, bindO_eq, Option.elim_some,
+          RoseTree.children_node, Nat.add_zero]
+        exact hm x1 (by simp) d u1 σ
+      · have hne : encTerm x0.1 ≠ encTerm u0 := fun he ↦ h (by simpa only [encTerm_eq_iff] using he)
+        simp only [hne, h, decide_false, Bool.false_eq_true, ↓reduceIte]
+        rfl
+    · match_plain
+  | _ => match_plain
 
 /-- The mirror's step of the matching of a pattern at an encoded node is the matching's step at
 the node, at related matchings of the children. -/
@@ -1043,61 +1072,128 @@ theorem byListIndHyp_eq (kn kc : ℕ) (rs' : List (Tree × (Tree → Tree → Li
 @[simp] theorem ufTail_eq (rs : List (Tree → Tree)) : «Prover/UFs.tail» rs = rs.tail := by
   cases rs <;> rfl
 
-/-- The use count of a child at a position, none out of range. -/
-@[simp] theorem ufAt_eq (rs : List (Tree → Tree)) (i : ℕ) :
-    «Prover.ufAt» rs (leaf i) = rs[i]?.getD fun _ ↦ leaf 0 := by
-  have hr : ∀ i : ℕ, Nat.repeat «Prover/UFs.tail» i rs = rs.drop i :=
-    Nat.rec rfl fun i ih ↦ by rw [Nat.repeat, ih, ufTail_eq, List.tail_drop]
-  simp only [«Prover.ufAt», template, iter_leaf, hr]
-  cases h : rs.drop i with
-  | nil =>
-    rw [List.drop_eq_nil_iff] at h
-    rw [List.getElem?_eq_none h]
-    rfl
-  | cons r rest =>
-    rw [← List.head?_drop, h]
-    rfl
+/-- The mirror's composition of the use counts of a node's children, at a variable and from a
+position, each under the variables the child binds and counted twice where it binds one. -/
+theorem usesFold_eq (b : Tree → Tree) (B : ℕ → ℕ) (hb : ∀ i, b (leaf i) = leaf (B i)) (d : ℕ) :
+    ∀ xs : List (Term × (Tree → Tree) × (ℕ → ℕ)),
+      (∀ x ∈ xs, ∀ d, x.2.1 (leaf d) = leaf (x.2.2 d)) → ∀ i : ℕ,
+      List.foldr (fun (r : Tree → Tree) (c : Tree → Tree → Tree) (d i : Tree) ↦
+          Const.add (Const.mul (if (Const.eq (b i) (leaf 0)).label ≠ 0 then leaf 1 else leaf 2)
+            (r (Const.add d (b i)))) (c d (Const.add i (leaf 1))))
+        (fun _ _ ↦ leaf 0) (xs.map fun x ↦ x.2.1) (leaf d) (leaf i) =
+      leaf (((xs.zipIdx i).map fun p ↦
+        (if B p.2 = 0 then 1 else 2) * p.1.2.2 (d + B p.2)).sum) :=
+  List.rec (fun _ _ ↦ rfl) fun x xs ih hx i ↦ by
+    simp only [List.map_cons, List.foldr_cons, hb, add_leaf, List.zipIdx_cons, List.sum_cons]
+    rw [ih (fun y hy ↦ hx y (List.mem_cons_of_mem x hy)) (i + 1), hx x List.mem_cons_self]
+    by_cases h : B i = 0
+    · simp only [h, eq_leaf, beq_self_eq_true, ofBool_true, label_leaf, ne_eq, one_ne_zero,
+        not_false_eq_true, ↓reduceIte, mul_leaf, add_leaf]
+    · have hne : (B i == 0) = false := by simpa only [beq_eq_false_iff_ne, ne_eq] using h
+      simp only [h, eq_leaf, hne, ofBool_false, label_leaf, ne_eq, not_true_eq_false, ↓reduceIte,
+        mul_leaf, add_leaf]
 
-/-- The mirror's sum of the children's use counts at a variable. -/
-theorem ufSum_eq (v : Tree → Tree) (d : ℕ) :
-    ∀ xs : List (Term × (Tree → Tree) × (ℕ → ℕ)), (∀ x ∈ xs, ∀ d, x.2.1 (leaf d) = leaf (x.2.2 d)) →
-      «Prover.ufSum» (v :: xs.map fun x ↦ x.2.1) (leaf d) =
-        leaf ((xs.map fun x ↦ x.2.2 d).sum) :=
-  List.rec (fun _ ↦ rfl) fun x xs ih hx ↦ by
-    have ih' := ih fun y hy ↦ hx y (List.mem_cons_of_mem x hy)
-    simp only [«Prover.ufSum», template, foldr_eq, ufTail_eq, List.tail_cons, List.map_cons,
-      List.foldr_cons, List.sum_cons] at ih' ⊢
-    rw [ih', hx x List.mem_cons_self d]
-    rfl
-
-/-- The mirror's uses of a variable in an encoded term. -/
+/-- The mirror's use count of a variable in an encoded term. -/
 theorem uses_eq (t : Term) (d : ℕ) :
     «Prover.uses» (encTerm t) (leaf d) = leaf (Internal.uses t d) := by
   simp only [«Prover.uses», template, Internal.uses, elim_eq_para]
   refine para_enc _ _ (fun (v : Tree → Tree) (w : ℕ → ℕ) ↦ ∀ d, v (leaf d) = leaf (w d))
     «Prover.usesStep» _ (fun l v xs hx d ↦ ?_) t d
   change «Prover.usesStep» (encTerm (RoseTree.node l (xs.map Prod.fst))) _ (leaf d) = _
-  have hs := ufSum_eq v d xs hx
-  have hs1 := ufSum_eq v (d + 1) xs hx
   simp only [List.map_map, Function.comp_def]
-  cases l with
-  | var i =>
+  by_cases hne0 : (labelData l).1 = 0
+  · obtain ⟨i, rfl⟩ : ∃ i, l = .var i := by
+      cases l <;> first
+        | exact ⟨_, rfl⟩
+        | exact absurd hne0 (by simp only [labelData]; decide)
     mirror_simp [«Prover.usesStep», labelData, mArgs_eq, label_encTerm, mD_eq]
     by_cases h : i = d <;> simp [h]
-  | natRec | listRec =>
-    rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, _ | ⟨x3, xs⟩⟩⟩⟩ <;>
-      simp only [List.map_cons, List.map_nil] at hs <;>
-      mirror_simp [«Prover.usesStep», labelData, hs, mArgs_eq, label_encTerm,
-        beq_iff_eq, Nat.reduceEqDiff, ufAt_eq, hx]
-    all_goals rw [hx x0 (by simp), hx x1 (by simp), hx x2 (by simp), mul_leaf, add_leaf, add_leaf]
-  | roseRec c =>
-    rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, xs⟩⟩⟩ <;>
-      simp only [List.map_cons, List.map_nil] at hs <;>
-      mirror_simp [«Prover.usesStep», labelData, hs, mArgs_eq, label_encTerm,
-        beq_iff_eq, Nat.reduceEqDiff, ufAt_eq, hx]
-    all_goals rw [hx x0 (by simp), hx x1 (by simp), mul_leaf, add_leaf]
-  | _ =>
-    mirror_simp [«Prover.usesStep», labelData, hs, hs1, mArgs_eq, label_encTerm, mD_eq]
+  have hne : (labelData l).1 ≠ 0 := hne0
+  have h0 : ((labelData l).1 == 0) = false := by simpa only [beq_eq_false_iff_ne, ne_eq] using hne
+  have hS : ∀ B : ℕ → ℕ,
+      (∀ i, (if (Const.eq (leaf (labelData l).1) (leaf 5)).label ≠ 0 then leaf 1 else
+        «Language.childBound» (leaf (labelData l).1) (leaf xs.length) (leaf i)) = leaf (B i)) →
+      «Prover.usesStep» (encTerm (RoseTree.node l (xs.map Prod.fst)))
+        (v :: xs.map fun x ↦ x.2.1) (leaf d) = leaf ((xs.zipIdx.map fun p ↦
+          (if B p.2 = 0 then 1 else 2) * p.1.2.2 (d + B p.2)).sum) := fun B hB ↦ by
+    rw [← usesFold_eq (fun i ↦ if (Const.eq (leaf (labelData l).1) (leaf 5)).label ≠ 0 then leaf 1
+      else «Language.childBound» (leaf (labelData l).1) (leaf xs.length) i) B hB d xs hx 0]
+    simp only [«Prover.usesStep», foldr_eq, ufTail_eq, List.tail_cons, mArgs_eq,
+      RoseTree.children_node, length_eq, List.length_map, List.map_map, Function.comp_def,
+      label_eq, label_encTerm, RoseTree.label_node, eq_leaf, h0, ofBool_false, label_leaf, ne_eq,
+      not_true_eq_false, ↓reduceIte]
+    rfl
+  have hc : ∀ (b w i : ℕ) (ys : List (Term × (Tree → Tree) × (ℕ → ℕ))),
+      ((ys.zipIdx i).map fun p ↦ w * p.1.2.2 (d + b)).sum =
+        w * (ys.map fun x ↦ x.2.2 (d + b)).sum := fun b w i ys ↦ by
+    revert i
+    refine ys.rec (fun _ ↦ rfl) fun y ys ih i ↦ ?_
+    simp only [List.zipIdx_cons, List.map_cons, List.sum_cons, ih, Nat.mul_add]
+  have hg : (labelData l).1 ≠ 5 → (∀ i, boundAt l xs.length i = 0) →
+      «Prover.usesStep» (encTerm (RoseTree.node l (xs.map Prod.fst)))
+        (v :: xs.map fun x ↦ x.2.1) (leaf d) =
+        leaf (((xs.map fun x ↦ x.2.2).map fun x ↦ x d).sum) := fun h5 hz ↦ by
+    have h50 : ((labelData l).1 == 5) = false := by simpa only [beq_eq_false_iff_ne, ne_eq] using h5
+    rw [hS (fun _ ↦ 0) fun i ↦ by
+      simp only [eq_leaf, h50, ofBool_false, label_leaf, ne_eq, not_true_eq_false, ↓reduceIte,
+        childBound_eq, hz]]
+    have := hc 0 1 0 xs
+    simp only [Nat.add_zero, Nat.one_mul] at this
+    simp only [↓reduceIte, Nat.add_zero, Nat.one_mul, this, List.map_map, Function.comp_def]
+  have hb : ∀ i, (if (Const.eq (leaf (labelData l).1) (leaf 5)).label ≠ 0 then leaf 1 else
+      «Language.childBound» (leaf (labelData l).1) (leaf xs.length) (leaf i)) =
+      leaf (match l with
+        | .lam _ => 1
+        | _ => boundAt l xs.length i) := fun i ↦ by
+    cases l <;> first | rfl | exact (ite_eq_right fun h ↦ h rfl).trans (childBound_eq _ _ _)
+  cases l
+  case var i => exact absurd rfl hne
+  case lam a =>
+    rw [hS _ hb]
+    simp only [Nat.one_ne_zero, ↓reduceIte, hc, List.map_map, Function.comp_def]
+  case natRec =>
+    match xs, hx, hS, hg, hb with
+    | [x0, x1, x2], _, hS, _, hb =>
+      rw [hS _ hb]
+      refine congrArg leaf ?_
+      simp only [List.length_cons, List.length_nil, List.zipIdx_cons, List.zipIdx_nil,
+        List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, boundAt]
+      simp only [zero_add, Nat.reduceAdd, Nat.reduceEqDiff, ↓reduceIte, Nat.add_zero,
+        Nat.one_ne_zero, Nat.one_mul]
+      omega
+    | [], _, _, hg, _ => exact hg (by simp only [labelData]; decide) fun _ ↦ rfl
+    | [x0], _, _, hg, _ => exact hg (by simp only [labelData]; decide) fun _ ↦ rfl
+    | [x0, x1], _, _, hg, _ => exact hg (by simp only [labelData]; decide) fun _ ↦ rfl
+    | x0 :: x1 :: x2 :: x3 :: xs, _, _, hg, _ =>
+      exact hg (by simp only [labelData]; decide) fun _ ↦ rfl
+  case listRec =>
+    match xs, hx, hS, hg, hb with
+    | [x0, x1, x2], _, hS, _, hb =>
+      rw [hS _ hb]
+      refine congrArg leaf ?_
+      simp only [List.length_cons, List.length_nil, List.zipIdx_cons, List.zipIdx_nil,
+        List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, boundAt]
+      simp only [zero_add, Nat.reduceAdd, Nat.reduceEqDiff, ↓reduceIte, Nat.add_zero,
+        Nat.one_mul]
+      omega
+    | [], _, _, hg, _ => exact hg (by simp only [labelData]; decide) fun _ ↦ rfl
+    | [x0], _, _, hg, _ => exact hg (by simp only [labelData]; decide) fun _ ↦ rfl
+    | [x0, x1], _, _, hg, _ => exact hg (by simp only [labelData]; decide) fun _ ↦ rfl
+    | x0 :: x1 :: x2 :: x3 :: xs, _, _, hg, _ =>
+      exact hg (by simp only [labelData]; decide) fun _ ↦ rfl
+  case roseRec c =>
+    match xs, hx, hS, hg, hb with
+    | [x0, x1], _, hS, _, hb =>
+      rw [hS _ hb]
+      refine congrArg leaf ?_
+      simp only [List.length_cons, List.length_nil, List.zipIdx_cons, List.zipIdx_nil,
+        List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, boundAt]
+      simp only [zero_add, ↓reduceIte, Nat.add_zero,
+        Nat.one_ne_zero, Nat.one_mul]
+    | [], _, _, hg, _ => exact hg (by simp only [labelData]; decide) fun _ ↦ rfl
+    | [x0], _, _, hg, _ => exact hg (by simp only [labelData]; decide) fun _ ↦ rfl
+    | x0 :: x1 :: x2 :: xs, _, _, hg, _ => exact hg (by simp only [labelData]; decide) fun _ ↦ rfl
+  all_goals exact hg (by simp only [labelData]; decide) fun _ ↦ rfl
 
 /-- The mirror's child of an encoded node whose reduction can enable a rule at its root. -/
 theorem headChild_eq (l : Internal.Label) (ts : List Term) :
