@@ -7244,9 +7244,13 @@ that remain, and the constraints each of them carries.
   reading and keeps ({name}`Thunk`), beside its source. Its values are
   trees of the same W-type as terms
   ({name}`Geb.FreeTopos.Internal.Val`). Its normal form is taken in a
-  context under abstractions, a closure's body, its environment's terms
-  substituted, evaluated in the context its variable extends, and not
-  under a fold's step. Each node of the normal form, its children's
+  context under abstractions and the steps of folds, by evaluation and
+  reading back {citep BergerSchwichtenberg1991}[]: a closure's body or a
+  fold's step is evaluated in its environment extended by fresh
+  variables, de Bruijn levels, so that its environment's values are
+  shared rather than read back, and the context of a fold's step holds
+  the type of the normal form of the fold's start, list or tree. Each
+  node of the normal form, its children's
   taken, is rewritten at its root by the rewriting the machine is given,
   which reads the context and the number of binders passed; the step
   `machine` gives the prover's rules it names
@@ -7259,7 +7263,8 @@ that remain, and the constraints each of them carries.
   reads back to a term the evaluated term rewrites to, by the base
   checker's rules at the root, congruences in the node's context and
   the congruence at an abstraction's body, whose context the
-  abstraction's type extends, so that no type is inferred, and a
+  abstraction's type extends and at a fold's step, whose context the
+  fold's types extend, and a
   delayed value's source rewrites to its value; a rewriting at a root of
   the normal form is the base checker's by its rule
   ({name}`Geb.FreeTopos.Internal.rootRewrite_checked`), under the
@@ -7480,41 +7485,27 @@ that remain, and the constraints each of them carries.
   numerals of six decimal digits, in one run of the bench, the base
   checker takes 27.1 seconds, the step `eval` 18.8 and the step
   `machine` 0.179 ({ref "measurements"}[The measurements]). The machine
-  normalizes under abstractions and reads a fold's step back unreduced,
-  so that two sides whose normal forms differ only in a fold's step are
-  not joined: the context of a fold's step holds the type of the fold's
-  start, which the base checker's congruence there infers and the
-  machine does not. The translation of a development's derivations
+  normalizes under abstractions and the steps of folds, so that two
+  sides whose normal forms differ only in a fold's step are joined. The
+  translation of a development's derivations
   ({name}`Geb.FreeTopos.Internal.devByMachine`) replaces each join that
   the machine also joins by two steps of the machine. On the
   certificates of weakening, of substitution and of the expansion's
-  identity, in one run of the bench, it replaces joins in 50 of 68, 61
-  of 83 and 42 of 49 theorems, the certificates' text shorter by 27 and
-  19 percent and longer by 3 percent, while the checks take 3.8, 7.8 and
-  3.8 seconds against 4.6, 9.5 and 3.2; either the checks' time is not
-  in the joins it replaces, or the machine's normal form costs there
-  about what the base checker's rewriting does; the base checker's time
-  is divided among its rules in
+  identity, in one run of the bench, it replaces joins in 51 of 68, 62
+  of 83 and 43 of 49 theorems, the certificates' text shorter by 31, 22
+  and 31 percent, while the checks take 4.0, 10.1 and 5.4 seconds
+  against 6.0, 15.3 and 5.0, and the translation takes 15, 26 and 4
+  minutes. The base checker's time is divided among its rules in
   {ref "measurements"}[The measurements]. A join whose rewritings cite
   neither a theorem nor a hypothesis is replaced by steps that unfold
   every definition but those the rewritings' results apply. A join whose
   rewritings cite them, each from its left side to its right, is
   replaced by a step at each side that unfolds the definitions that
   side's rewriting unfolds and rewrites by the theorems and hypotheses
-  it cites, at the roots of its normal form, innermost first, within a
-  depth of recursion of 32. Such a step applies a rule and unfolds a
-  definition wherever the normal form reaches it, and the depth bounds
-  its search rather than its cost: at one theorem of weakening, the
-  normal form of a join's side takes 7 milliseconds within a depth of 88
-  and does not end in two minutes within one of 96, at the reading back
-  of a closure's environment to the terms of values that share what
-  those terms do not. On the three certificates a depth of 24 replaces
-  joins in fewer theorems, and one of 64 replaces more joins of the same
-  theorems while the check of the expansion's identity takes four times
-  as long. Whether the normal forms in a fold's step belong to the
-  machine or to a conversion around it, and whether a closure's
-  environment can be normalized without its reading back, are open; no
-  stored certificate is translated.
+  it cites, at the roots of its normal form, innermost first. Such a
+  step applies a rule and unfolds a definition wherever the normal form
+  reaches it. Why the check of the expansion's identity is not shortened
+  as the other two are is open; no stored certificate is translated.
 
 ### The base checker's evaluation
 %%%

@@ -389,11 +389,12 @@ against their cost.
    decimal digits from 3.5 times faster than the step `eval` at their
    equality to 105 times at their product
    ({ref "measurements"}[The measurements]), which removes the
-   fourth factor at the terms it reduces. It reads a fold's step back
-   unreduced. A translation of the stored developments' derivations
-   into steps of it shortens their certificates and leaves their checks
-   as costly; it replaces only the joins whose rewritings cite neither
-   a theorem nor a hypothesis, which the machine does not apply.
+   fourth factor at the terms it reduces. A translation of the stored
+   developments' derivations into steps of it shortens their
+   certificates and the checks of weakening and of substitution, and not
+   that of the expansion's identity
+   ({ref "conversion-continuation"}[Completing the checker with a step of
+   conversion]).
 7. The datatypes of the proofs as datatypes of the metalogic: the
    translation of a datatype of the datatype language to the initial
    algebra of its declaration, rather than to rose trees over

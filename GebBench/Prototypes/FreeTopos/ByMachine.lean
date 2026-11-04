@@ -17,15 +17,13 @@ set_option doc.verso true in
 
 The developments of weakening, of substitution and of the expansion's identity, read from their
 certificates, translated by {name}`Geb.FreeTopos.Internal.devByMachine`, each join whose sides
-the environment machine joins replaced by two steps of the machine, a join that rewrites by a
-theorem or a hypothesis within the depth of recursion {lit}`rewritingDepth`. For each: its number of
+the environment machine joins replaced by two steps of the machine. For each: its number of
 theorems and of those translated, the bytes of the text of its certificate and of the
 translation's, the milliseconds of the translation, and the least of three times the check of
 the development and of the translation read back from its text take, in milliseconds.
 
 ## Main definitions
 
-* {lit}`rewritingDepth` — the depth within which a join that rewrites is translated.
 * {lit}`measure` — the measurement of one development.
 * {lit}`run` — the measurements.
 
@@ -44,12 +42,6 @@ open Geb Geb.FreeTopos
 open GebTests.Prototypes.FreeTopos
 open GebBench.Prototypes.FreeTopos.TranslationProofs (timeUs)
 
-/-- The depth of recursion within which a join that rewrites by a theorem or a hypothesis is
-translated: the least of the depths {lit}`16`, {lit}`24` and {lit}`32` at which the stored
-developments lose no theorem to the translation, a greater depth closing further joins of the same
-theorems. -/
-def rewritingDepth : ℕ := 32
-
 set_option compiler.extract_closed false in
 /-- The measurement of the development a certificate stores, with the constants of {lit}`G`,
 printed, and an error where a check fails. -/
@@ -57,7 +49,7 @@ def measure (name : String) (G : Internal.Globals) : IO Unit := do
   let text ← IO.FS.readFile s!"bootstrap/certificates/{name}.cert"
   let some ds := Stored.declsOfText text | throw (IO.userError s!"{name} does not read")
   let t₀ ← IO.monoMsNow
-  let cds ← IO.lazyPure fun _ ↦ Internal.devByMachine G #[] 4096 rewritingDepth ds
+  let cds ← IO.lazyPure fun _ ↦ Internal.devByMachine G #[] 4096 ds
   let translated := (cds.filter fun | .conv _ _ => true | _ => false).length
   let t₁ ← IO.monoMsNow
   let some text' := (Stored.convDeclsToNats cds).map fun ns ↦ " ".intercalate (ns.map toString)

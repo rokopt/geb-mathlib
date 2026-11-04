@@ -4257,7 +4257,8 @@ import-direction rules above are enforced by
   reduces a term by the environment machine of `Machine.lean`
   (`Geb.FreeTopos.Internal.machineReduce`), which evaluates in
   environments of values, lazily, each delayed value computed once, and
-  normalizes under abstractions and not under a fold's step; the
+  normalizes under abstractions and the steps of folds by evaluating
+  them with fresh variables, de Bruijn levels; the
   term rewrites to the result by the base checker's rules
   (`Geb.FreeTopos.Internal.machineReduce_reaches`, `MachineSound.lean`),
   and `GebTests/Prototypes/FreeTopos/Machine.lean` tests it at the
