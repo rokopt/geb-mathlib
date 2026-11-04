@@ -400,12 +400,6 @@ theorem labelData_beq (l l' : Internal.Label) :
     rw [decide_eq_false h, Bool.eq_false_iff]
     simpa only [ne_eq, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq] using this
 
-/-- The data node of an encoded term's label. -/
-@[simp] theorem child_encTerm (t : Term) :
-    Const.child (encTerm t) (leaf 0) = RoseTree.node 0 (labelData t.label).2 := by
-  rw [← RoseTree.node_label_children t, encTerm_node]
-  rfl
-
 /-- The application of {lit}`matchAll_plain` to a node whose matchings compare no child and whose
 children bind no variable. -/
 local macro "match_plain" : tactic => `(tactic|

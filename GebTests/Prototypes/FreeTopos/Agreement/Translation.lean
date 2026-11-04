@@ -169,9 +169,8 @@ theorem trTy_eq (t : Tree) : «Translation.trTy» t = encOpt (Translation.ty t) 
 /-- The mirror's primitive arrows of a translated program. -/
 theorem trPrims_eq : «Translation.trPrims» = Translation.prims.map encPrim := by rfl
 
-set_option maxRecDepth 100000 in
 /-- The mirror's library of definitions. -/
-theorem lib_eq : «Translation.lib» = Translation.lib.map encLDefn := by rfl
+theorem lib_eq : «Translation.lib» = Translation.lib.map encLDefn := by decide +kernel
 
 /-- The mirror's empty list. -/
 @[simp] theorem nilT_eq (a : Tree) : «Translation.nilT» a = encTerm (Translation.nilT a) :=

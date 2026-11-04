@@ -239,49 +239,27 @@ every encoded context and hypotheses, it is the encoding of the Lean checker's. 
 def ChkRel (v : List Tree → List Tree → Tree) (w : PartialHorn.Chk) : Prop :=
   ∀ Γ H, v (Γ.map leaf) (H.map encEqn) = encOpt ((w Γ H).map encEqn)
 
-/-- The certificates of a list of certificates with their results. -/
-@[simp] theorem pcTrees_eq (rs : List (Tree × (List Tree → List Tree → Tree))) :
-    «PartialHorn.pcTrees» rs = rs.map Prod.fst :=
-  rs.rec rfl fun _ _ ih ↦ by
-    simp only [«PartialHorn.pcTrees», foldr_eq, List.foldr_cons] at ih ⊢
-    rw [ih]
-    rfl
-
-/-- The results of a list of certificates with their results, at a context and hypotheses. -/
-@[simp] theorem pcResults_eq (rs : List (Tree × (List Tree → List Tree → Tree)))
-    (ctx hs : List Tree) :
-    «PartialHorn.pcResults» rs ctx hs = rs.map fun r ↦ r.2 ctx hs :=
-  rs.rec rfl fun _ _ ih ↦ by
-    simp only [«PartialHorn.pcResults», foldr_eq, List.foldr_cons] at ih ⊢
-    rw [ih]
-    rfl
-
-/-- A list of certificates with their results without its head. -/
-@[simp] theorem pcTail_eq (rs : List (Tree × (List Tree → List Tree → Tree))) :
+/-- A list of premises' results without its head. -/
+@[simp] theorem pcTail_eq (rs : List (List Tree → List Tree → Tree)) :
     «PartialHorn/PCs.tail» rs = rs.tail := by
   cases rs <;> rfl
 
-/-- Dropping the head of a list of certificates as many times as a label. -/
-theorem repeat_pcTail (rs : List (Tree × (List Tree → List Tree → Tree))) :
-    ∀ i : ℕ, Nat.repeat «PartialHorn/PCs.tail» i rs = rs.drop i :=
-  Nat.rec rfl fun i ih ↦ by rw [Nat.repeat, ih, pcTail_eq, List.tail_drop]
+/-- The results of a list of premises, at a context and hypotheses. -/
+@[simp] theorem pcAll_eq (rs : List (List Tree → List Tree → Tree)) (ctx hs : List Tree) :
+    «PartialHorn.pcAll» rs ctx hs = rs.map fun r ↦ r ctx hs :=
+  rs.rec rfl fun _ _ ih ↦ by
+    simp only [«PartialHorn.pcAll», foldr_eq, List.foldr_cons, List.map_cons] at ih ⊢
+    rw [ih]
 
-/-- The result of a premise at a position, the absent result out of range. -/
-@[simp] theorem pcPrem_eq (rs : List (Tree × (List Tree → List Tree → Tree))) (i : ℕ) :
-    «PartialHorn.pcPrem» rs (leaf i) =
-      (rs[i]?.map Prod.snd).getD fun _ _ ↦ encOpt none := by
-  simp only [«PartialHorn.pcPrem», iter_leaf, repeat_pcTail]
-  cases h : rs.drop i with
-  | nil =>
-    rw [List.drop_eq_nil_iff] at h
-    rw [List.getElem?_eq_none h]
-    rfl
-  | cons r rest =>
-    have : rs[i]? = some r := by
-      rw [← List.head?_drop, h]
-      rfl
-    rw [this]
-    rfl
+/-- The absent result of a premise. -/
+theorem pc0_def : «PartialHorn.pc0» = fun _ _ ↦ encOpt none := rfl
+
+/-- A function of the first two premises' results, the absent result out of range. -/
+@[simp] theorem pcTwo_eq (rs : List (List Tree → List Tree → Tree))
+    (k : (List Tree → List Tree → Tree) → (List Tree → List Tree → Tree) →
+      List Tree → List Tree → Tree) :
+    «PartialHorn.pcTwo» rs k = k (rs.getD 0 «PartialHorn.pc0») (rs.getD 1 «PartialHorn.pc0») := by
+  rcases rs with _ | ⟨a, _ | ⟨b, r⟩⟩ <;> rfl
 
 /-- The mirror's index a leaf names. -/
 @[simp] theorem leafIndex_eq (t : Tree) :
@@ -369,15 +347,15 @@ equations are the base's of optional trees. -/
 theorem inst_eq (S : PartialHorn.Sig) (a : PartialHorn.Seq)
     (xs : List (Tree × (List Tree → List Tree → Tree) × PartialHorn.Chk))
     (hx : ∀ x ∈ xs, ChkRel x.2.1 x.2.2) (Γ : List ℕ) (H : List PartialHorn.Eqn) :
-    «PartialHorn.inst» (S.map encOpSig) (encSeq a) (xs.map fun x ↦ (x.1, x.2.1))
-        (Γ.map leaf) (H.map encEqn) =
+    «PartialHorn.inst» (S.map encOpSig) (encSeq a) (xs.map Prod.fst)
+        (xs.map fun x ↦ x.2.1 (Γ.map leaf) (H.map encEqn)) (Γ.map leaf) (H.map encEqn) =
       encOpt ((PartialHorn.inst S a (xs.map fun x ↦ (x.1, x.2.2)) Γ H).map encEqn) := by
   set cs := xs.map fun x ↦ (x.1, x.2.2) with hcs
-  have hres : (xs.map fun x ↦ (x.1, x.2.1)).map (fun r ↦ r.2 (Γ.map leaf) (H.map encEqn)) =
+  have hres : xs.map (fun x ↦ x.2.1 (Γ.map leaf) (H.map encEqn)) =
       cs.map fun c ↦ encOpt ((c.2 Γ H).map encEqn) := by
     simp only [hcs, List.map_map, Function.comp_def]
     exact List.map_congr_left fun x h ↦ hx x h Γ H
-  have hts : List.take a.ctx.length (List.map Prod.fst (xs.map fun x ↦ (x.1, x.2.1))) =
+  have hts : List.take a.ctx.length (List.map Prod.fst xs) =
       List.map Prod.fst (List.take a.ctx.length cs) := by
     simp [hcs, List.map_take, List.map_map, Function.comp_def]
   have c2 : decide (List.map («PartialHorn.sortOf» (S.map encOpSig) (Γ.map leaf))
@@ -412,7 +390,7 @@ theorem inst_eq (S : PartialHorn.Sig) (a : PartialHorn.Seq)
     simp only [List.map_map, Function.comp_def, ← List.map_drop, eqSubst_eq, some_eq,
       Option.map_some]
   simp only [«PartialHorn.inst», template, lhsOf_def, sameOEqns_def, seqCtx_eq, length_eq,
-    List.length_map, pcTrees_eq, take_eq, pcResults_eq, hres, seqScoped_eq, mapT_eq, drop_eq,
+    List.length_map, take_eq, hres, seqScoped_eq, mapT_eq, drop_eq,
     add_leaf,
     seqHyps_eq, seqConcl_eq, eqSubst_eq, equalTs_eq, and_eq, ofBool_label, PartialHorn.inst]
   rw [hts, c2, c3, c4]
@@ -424,89 +402,63 @@ theorem inst_eq (S : PartialHorn.Sig) (a : PartialHorn.Seq)
     «PartialHorn.pShape» (leaf l) (leaf k) (leaf a) (leaf b) = ofBool (l == a && k == b) :=
   by simp [«PartialHorn.pShape»]
 
+/-- The simplification of a case of the mirror's checker: a node's shape, the rule's premises and
+the options of its result. -/
+local macro "chk_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(tactic|
+  simp only [Nat.reduceAdd, zero_add, Nat.reduceBEq, Nat.reduceBeqDiff, BEq.rfl, length_beq_zero,
+    Bool.and_true, Bool.and_false, Bool.false_and, Bool.and_self, ne_eq, ofBool_label,
+    Bool.false_eq_true, ↓reduceIte, eq_leaf, lt_leaf, lt_self_iff_false, decide_false, decide_true,
+    and_eq, none_eq, PartialHorn.checkStep, List.map_nil, List.map_cons, List.length_nil,
+    List.length_cons, Option.map_none, Option.map_some, Option.map_map, Option.map_bind,
+    Option.map_ite, Option.elim_map, Option.getD_some, List.getD_eq_getElem?_getD, zero_lt_one,
+    getElem?_pos, List.getElem_cons_zero, List.getElem_cons_succ, Nat.lt_add_one,
+    Nat.lt_add_left_iff_pos, Nat.zero_lt_succ, leafIndex_eq, bindO_eq, Function.comp_apply, eqn_eq,
+    some_eq, ite_not, equal_eq, decide_eq_true_eq, label_eq, not_eq, Bool.not_eq_eq_eq_not,
+    Bool.not_true, beq_eq_false_iff_ne, children_eq, List.length_map, $ls,*])
+
 /-- The mirror's rule of the checker at a node is the Lean checker's, at related premises. -/
 theorem pcheckStep_eq (T : PartialHorn.Theory) (E : Array PartialHorn.Seq) (l : ℕ)
     (xs : List (Tree × (List Tree → List Tree → Tree) × PartialHorn.Chk))
     (hx : ∀ x ∈ xs, ChkRel x.2.1 x.2.2) :
-    ChkRel («PartialHorn.pcheckStep» (encTheory T) (E.toList.map encSeq) (leaf l)
-        («PartialHorn.pcTrees» (xs.map fun x ↦ (x.1, x.2.1))) (xs.map fun x ↦ (x.1, x.2.1)))
+    ChkRel («PartialHorn.pcheckStep» (encTheory T) (E.toList.map encSeq)
+        (RoseTree.node l (xs.map Prod.fst)) (xs.map fun x ↦ x.2.1))
       (PartialHorn.checkStep T E l (xs.map fun x ↦ (x.1, x.2.2))) := by
   intro Γ H
   simp only [«PartialHorn.pcheckStep», template, bindE_def, mapE_def, bindSE_def, bindTE_def,
-    mapTE_def, lhsOf_def, rhsOf_def, pcTrees_eq, List.map_map, Function.comp_def, length_eq,
-    List.length_map, at_eq, pShape_eq]
-  have hx0 := fun x (h : x ∈ xs) ↦ hx x h Γ H
+    mapTE_def, lhsOf_def, rhsOf_def, length_eq, label_eq, children_eq, RoseTree.label_node,
+    RoseTree.children_node, List.length_map, at_eq, pShape_eq, pcTwo_eq, pc0_def]
   rcases l with _ | _ | _ | _ | _ | _ | _ | _ | _ | l
   · -- a hypothesis
-    rcases xs with _ | ⟨x, _ | ⟨y, r⟩⟩ <;> simp only [BEq.rfl, List.length_nil, Nat.reduceBEq,
-        Bool.and_false, ne_eq, ofBool_label, Bool.false_eq_true, ↓reduceIte, Bool.and_self, eq_leaf,
-        lt_leaf, lt_self_iff_false, decide_false, and_eq, none_eq, PartialHorn.checkStep,
-        List.map_nil, Option.map_none, List.length_cons, zero_add, List.map_cons,
-        List.getD_eq_getElem?_getD, zero_lt_one, getElem?_pos, List.getElem_cons_zero,
-        Option.getD_some, leafIndex_eq, bindO_eq, Option.elim_map, Option.map_bind,
-        Function.comp_apply, Nat.reduceBeqDiff, length_beq_zero, Bool.false_and,
-        Nat.lt_add_left_iff_pos, Nat.zero_lt_succ, decide_true, Bool.and_true]
+    rcases xs with _ | ⟨x, _ | ⟨y, r⟩⟩ <;> chk_simp []
     cases PartialHorn.leafIndex x.1 <;> simp [Function.comp_def, List.getElem?_map]
   · -- reflexivity
-    rcases xs with _ | ⟨x, _ | ⟨y, r⟩⟩ <;> simp only [zero_add, Nat.reduceBEq, List.length_nil,
-        Bool.and_self, ne_eq, ofBool_label, Bool.false_eq_true, ↓reduceIte, BEq.rfl, Bool.and_false,
-        eq_leaf, lt_leaf, lt_self_iff_false, decide_false, and_eq, none_eq, PartialHorn.checkStep,
-        List.map_nil, Option.map_none, List.length_cons, Bool.and_true, List.map_cons,
-        List.getD_eq_getElem?_getD, zero_lt_one, getElem?_pos, List.getElem_cons_zero,
-        Option.getD_some, leafIndex_eq, eqn_eq, some_eq, ite_not, bindO_eq, Option.elim_map,
-        Option.map_bind, Function.comp_apply, Option.map_ite, Nat.reduceBeqDiff, length_beq_zero,
-        Bool.false_and, Nat.lt_add_left_iff_pos, Nat.zero_lt_succ, decide_true]
+    rcases xs with _ | ⟨x, _ | ⟨y, r⟩⟩ <;> chk_simp []
     cases PartialHorn.leafIndex x.1 with
     | none => rfl
-    | some i => by_cases h : i < Γ.length <;> simp [h, ofBool]
+    | some i => by_cases h : i < Γ.length <;> simp [h, ofBool, Function.comp_def]
   · -- symmetry
-    rcases xs with _ | ⟨x, _ | ⟨y, r⟩⟩ <;> simp only [List.not_mem_nil, IsEmpty.forall_iff,
-        implies_true, zero_add, Nat.reduceAdd, Nat.reduceBEq, List.length_nil, Bool.and_self, ne_eq,
-        ofBool_label, Bool.false_eq_true, ↓reduceIte, BEq.rfl, Bool.and_false, eq_leaf, lt_leaf,
-        lt_self_iff_false, decide_false, and_eq, none_eq, PartialHorn.checkStep, List.map_nil,
-        Option.map_none, List.mem_cons, or_false, forall_eq, List.length_cons, Bool.and_true,
-        eqn_eq, List.map_cons, pcPrem_eq, zero_lt_one, getElem?_pos, List.getElem_cons_zero,
-        Option.map_some, Option.getD_some, Option.map_map, forall_eq_or_imp, Prod.forall,
-        Nat.reduceBeqDiff, length_beq_zero, Bool.false_and, Nat.lt_add_left_iff_pos,
-        Nat.zero_lt_succ, decide_true] at hx0 ⊢
-    rw [hx0]
+    rcases xs with _ | ⟨x, _ | ⟨y, r⟩⟩ <;> chk_simp []
+    rw [hx x (by simp) Γ H]
     simp [Option.map_map, Function.comp_def]
   · -- transitivity
-    rcases xs with _ | ⟨x, _ | ⟨y, _ | ⟨z, r⟩⟩⟩ <;>
-      simp only [List.not_mem_nil, IsEmpty.forall_iff, implies_true, zero_add, Nat.reduceAdd,
-          Nat.reduceBEq, List.length_nil, Bool.and_self, ne_eq, ofBool_label, Bool.false_eq_true,
-          ↓reduceIte, BEq.rfl, Bool.and_false, eq_leaf, lt_leaf, lt_self_iff_false, decide_false,
-          and_eq, none_eq, PartialHorn.checkStep, List.map_nil, Option.map_none, List.mem_cons,
-          or_false, forall_eq, List.length_cons, Bool.and_true, zero_lt_one, decide_true,
-          List.map_cons, forall_eq_or_imp, pcPrem_eq, Nat.zero_lt_succ, getElem?_pos,
-          List.getElem_cons_zero, Option.map_some, Option.getD_some, Nat.lt_add_one,
-          List.getElem_cons_succ, equal_eq, decide_eq_true_eq, eqn_eq, some_eq, Option.map_bind,
-          Function.comp_apply, Option.map_ite, Prod.forall, Nat.reduceBeqDiff,
-          Nat.lt_add_left_iff_pos] at hx0 ⊢
-    rw [hx0.1, hx0.2]
+    rcases xs with _ | ⟨x, _ | ⟨y, _ | ⟨z, r⟩⟩⟩ <;> chk_simp []
+    rw [hx x (by simp) Γ H, hx y (by simp) Γ H]
     cases x.2.2 Γ H <;> cases y.2.2 Γ H <;> simp
     split <;> rfl
   · -- congruence
     rcases xs with _ | ⟨x, r⟩
     · rfl
-    have hr : (r.map fun x ↦ (x.1, x.2.1)).map (fun r ↦ r.2 (Γ.map leaf) (H.map encEqn)) =
-        r.map fun x ↦ encOpt ((x.2.2 Γ H).map encEqn) := by
-      simp only [List.map_map, Function.comp_def]
-      exact List.map_congr_left fun y h ↦ hx y (List.mem_cons_of_mem x h) Γ H
-    simp only [List.map_cons, pcTail_eq, List.tail_cons, pcResults_eq, hr]
-    simp only [zero_add, Nat.reduceAdd, Nat.reduceBEq, List.length_cons, Nat.reduceBeqDiff,
-        length_beq_zero, Bool.false_and, ne_eq, ofBool_label, Bool.false_eq_true, ↓reduceIte,
-        eq_leaf, BEq.rfl, lt_leaf, Nat.zero_lt_succ, decide_true, and_eq, Bool.and_self, pcPrem_eq,
-        List.length_map, getElem?_pos, List.getElem_cons_zero, Option.map_some, Option.getD_some,
-        hx x List.mem_cons_self Γ H, label_eq, not_eq, mapT_eq, List.map_map, children_eq,
-        equalTs_eq, Bool.and_eq_true, Bool.not_eq_eq_eq_not, Bool.not_true, beq_eq_false_iff_ne,
-        decide_eq_true_eq, node_leaf, eqn_eq, none_eq, bindO_eq, Option.elim_map,
-        PartialHorn.checkStep, List.mapM_map, Option.map_bind, Function.comp_apply]
+    have hr : ∀ g, r.map (fun x ↦ «Base.mapO» g (x.2.1 (Γ.map leaf) (H.map encEqn))) =
+        r.map fun x ↦ «Base.mapO» g (encOpt ((x.2.2 Γ H).map encEqn)) := fun g ↦
+      List.map_congr_left fun y h ↦ by rw [hx y (List.mem_cons_of_mem x h) Γ H]
+    simp only [List.map_cons, pcAll_eq, lcase_cons]
+    chk_simp [hx x List.mem_cons_self Γ H, mapT_eq, List.map_map, equalTs_eq, Bool.and_eq_true,
+      node_leaf, List.mapM_map]
     cases x.2.2 Γ H with
     | none => rfl
     | some q =>
-      simp only [Function.comp_def, mapO_eq, Option.map_map, eqLhs_eq, eqRhs_eq, Option.elim_some,
-          Option.bind_some]
+      simp only [Function.comp_def, hr, mapO_eq, Option.map_map, eqLhs_eq, eqRhs_eq,
+        Option.elim_some, Option.bind_some]
       have hc : (r.map fun x ↦ encOpt ((x.2.2 Γ H).map PartialHorn.Eqn.lhs)) =
             q.lhs.children.map (fun t ↦ «Prelude.some» t) ↔
           r.map (fun x ↦ (x.2.2 Γ H).map PartialHorn.Eqn.lhs) = q.lhs.children.map some := by
@@ -516,74 +468,44 @@ theorem pcheckStep_eq (T : PartialHorn.Theory) (E : Array PartialHorn.Seq) (l : 
       simp only [hc, hs, mapO_eq, Option.map_map, Function.comp_def, RoseTree.children_node]
       split_ifs <;> simp [Function.comp_def]
   · -- strictness
-    rcases xs with _ | ⟨x, _ | ⟨y, _ | ⟨z, r⟩⟩⟩ <;>
-      simp only [List.not_mem_nil, IsEmpty.forall_iff, implies_true, zero_add, Nat.reduceAdd,
-          Nat.reduceBEq, List.length_nil, Bool.and_self, ne_eq, ofBool_label, Bool.false_eq_true,
-          ↓reduceIte, eq_leaf, lt_leaf, lt_self_iff_false, decide_false, and_eq, BEq.rfl,
-          Bool.and_false, none_eq, PartialHorn.checkStep, List.map_nil, Option.map_none,
-          List.mem_cons, or_false, forall_eq, List.length_cons, Bool.and_true, zero_lt_one,
-          decide_true, List.map_cons, forall_eq_or_imp, Nat.zero_lt_succ,
-          List.getD_eq_getElem?_getD, getElem?_pos, List.getElem_cons_zero, Option.getD_some,
-          leafIndex_eq, pcPrem_eq, Nat.lt_add_one, List.getElem_cons_succ, Option.map_some,
-          label_eq, not_eq, Bool.not_eq_eq_eq_not, Bool.not_true, beq_eq_false_iff_ne, eqn_eq,
-          children_eq, ite_not, bindO_eq, Option.elim_map, Option.map_bind, Function.comp_apply,
-          Prod.forall, Nat.reduceBeqDiff, Nat.lt_add_left_iff_pos] at hx0 ⊢
-    rw [hx0.2]
+    rcases xs with _ | ⟨x, _ | ⟨y, _ | ⟨z, r⟩⟩⟩ <;> chk_simp []
+    rw [hx y (by simp) Γ H]
     cases PartialHorn.leafIndex x.1 <;> cases y.2.2 Γ H <;> simp [Function.comp_def]
     split <;> simp [Function.comp_def]
   · -- an axiom
     rcases xs with _ | ⟨x, r⟩
     · rfl
-    simp only [List.map_cons, pcTail_eq, List.tail_cons]
-    simp only [zero_add, Nat.reduceAdd, Nat.reduceBEq, List.length_cons, Nat.reduceBeqDiff,
-        length_beq_zero, Bool.false_and, ne_eq, ofBool_label, Bool.false_eq_true, ↓reduceIte,
-        eq_leaf, lt_leaf, Nat.zero_lt_succ, decide_true, and_eq, Bool.and_true, BEq.rfl,
-        Bool.and_self, List.getD_eq_getElem?_getD, List.length_map, getElem?_pos,
-        List.getElem_cons_zero, Option.getD_some, leafIndex_eq, thyAxioms_eq, thySig_eq, bindO_eq,
-        Option.elim_map, PartialHorn.checkStep, Option.map_bind, Function.comp_apply]
+    simp only [List.map_cons, pcTail_eq, tail_eq, List.tail_cons, pcAll_eq]
+    chk_simp [thyAxioms_eq, thySig_eq]
     cases PartialHorn.leafIndex x.1 with
     | none => rfl
     | some j =>
       simp only [Function.comp_def, nth_eq, List.getElem?_map, bindO_eq, Option.elim_map,
-          Option.elim_some, Option.bind_some]
+          Option.elim_some, Option.bind_some, List.map_map]
       cases T.axioms[j]? with
       | none => rfl
       | some a => exact inst_eq T.sig a r (fun y h ↦ hx y (List.mem_cons_of_mem x h)) Γ H
   · -- a cut
-    rcases xs with _ | ⟨x, _ | ⟨y, _ | ⟨z, r⟩⟩⟩ <;>
-      simp only [List.not_mem_nil, IsEmpty.forall_iff, implies_true, zero_add, Nat.reduceAdd,
-          Nat.reduceBEq, List.length_nil, Bool.and_self, ne_eq, ofBool_label, Bool.false_eq_true,
-          ↓reduceIte, eq_leaf, lt_leaf, lt_self_iff_false, decide_false, and_eq, BEq.rfl,
-          Bool.and_false, none_eq, PartialHorn.checkStep, List.map_nil, Option.map_none,
-          List.mem_cons, or_false, forall_eq, List.length_cons, Bool.and_true, zero_lt_one,
-          decide_true, List.map_cons, forall_eq_or_imp, Nat.zero_lt_succ, pcPrem_eq, getElem?_pos,
-          List.getElem_cons_zero, Option.map_some, Option.getD_some, Nat.lt_add_one,
-          List.getElem_cons_succ, Option.map_bind, Function.comp_apply, Prod.forall,
-          Nat.reduceBeqDiff, Nat.lt_add_left_iff_pos] at hx0 ⊢
-    rw [hx0.1]
+    rcases xs with _ | ⟨x, _ | ⟨y, _ | ⟨z, r⟩⟩⟩ <;> chk_simp []
+    rw [hx x (by simp) Γ H]
     cases h : x.2.2 Γ H with
     | none => rfl
     | some q => exact hx y (by simp) Γ (q :: H)
   · -- a theorem
     rcases xs with _ | ⟨x, r⟩
     · rfl
-    simp only [List.map_cons, pcTail_eq, List.tail_cons]
-    simp only [zero_add, Nat.reduceAdd, Nat.reduceBEq, List.length_cons, Nat.reduceBeqDiff,
-        length_beq_zero, Bool.false_and, ne_eq, ofBool_label, Bool.false_eq_true, ↓reduceIte,
-        eq_leaf, lt_leaf, Nat.zero_lt_succ, decide_true, and_eq, Bool.and_true, BEq.rfl,
-        Bool.and_self, List.getD_eq_getElem?_getD, List.length_map, getElem?_pos,
-        List.getElem_cons_zero, Option.getD_some, leafIndex_eq, thySig_eq, bindO_eq,
-        Option.elim_map, PartialHorn.checkStep, Option.map_bind, Function.comp_apply]
+    simp only [List.map_cons, pcTail_eq, tail_eq, List.tail_cons, pcAll_eq]
+    chk_simp [thySig_eq]
     cases PartialHorn.leafIndex x.1 with
     | none => rfl
     | some j =>
       simp only [Function.comp_def, nth_eq, List.getElem?_map, Array.getElem?_toList, bindO_eq,
-          Option.elim_map, Option.elim_some, Option.bind_some]
+          Option.elim_map, Option.elim_some, Option.bind_some, List.map_map]
       cases E[j]? with
       | none => rfl
       | some a => exact inst_eq T.sig a r (fun y h ↦ hx y (List.mem_cons_of_mem x h)) Γ H
   · -- no rule
-    rcases xs with _ | ⟨x, _ | ⟨y, r⟩⟩ <;> simp [PartialHorn.checkStep, none_eq]
+    rcases xs with _ | ⟨x, _ | ⟨y, r⟩⟩ <;> simp [PartialHorn.checkStep]
 
 /-- The mirror's checker is the Lean checker: at every certificate, its result at an encoded
 context and hypotheses is the encoding of the Lean checker's. -/
@@ -591,11 +513,7 @@ theorem pcheck_eq (T : PartialHorn.Theory) (E : Array PartialHorn.Seq) (c : Tree
     ChkRel («PartialHorn.pcheck» (encTheory T) (E.toList.map encSeq) c)
       (PartialHorn.check T E c) := by
   simp only [«PartialHorn.pcheck», PartialHorn.check]
-  apply fold_pair_snd ChkRel
-  · intro l rs
-    simp
-  intro l xs hx
-  exact pcheckStep_eq T E l xs hx
+  exact para_rel ChkRel _ _ (fun l xs hx ↦ pcheckStep_eq T E l xs hx) c
 
 /-- The mirror's arguments' sorts of a definition. -/
 @[simp] theorem pdCtx_eq (d : PartialHorn.Defn) :

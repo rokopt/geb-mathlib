@@ -1224,69 +1224,50 @@ def «Printer.printDatum» :=
           «Printer.numAtom» x1)
       x0
 
-def «Printer.prTrees» :=
-  fun (x0 : List (T × (T → T))) =>
-    Const.foldr
-      (α := T × (T → T))
-      (β := List T)
-      (fun (x1 : T × (T → T)) (x2 : List T) => ((x1).1 :: x2))
-      ([] : List T)
-      x0
-
-def «Printer.prAt» :=
-  fun (x0 : List (T × (T → T))) (x1 : T) =>
-    Const.foldr
-      (α := T × (T → T))
-      (β := List T)
-      (fun (x2 : T × (T → T)) (x3 : List T) => (((x2).2 x1) :: x3))
-      ([] : List T)
-      x0
-
 def «Printer.kwList1» :=
   fun (x0 : T) (x1 : List T) =>
     «Printer.listOf» ((«Printer.atomOf» x0) :: x1)
 
 def «Printer.printStep» :=
-  fun (x0 : List T) (x1 : T) (x2 : List (T × (T → T))) (x3 : T) =>
-    let x4 : List T := «Printer.prTrees» x2;
-    let x5 : List T := «Printer.prAt» x2 x3;
-    let x6 : T := Const.label («Prelude.at» x4 (leaf 0));
-    if (Const.eq x1 (leaf 8)).label ≠ 0 then
+  fun (x0 : List T) (x1 : T) (x2 : List T) (x3 : T) =>
+    let x4 : T := Const.label x1;
+    let x5 : List T := Const.children x1;
+    let x6 : T := Const.label («Prelude.at» x5 (leaf 0));
+    if (Const.eq x4 (leaf 8)).label ≠ 0 then
       «Printer.binderAtom» (Const.sub (Const.sub x3 (leaf 1)) x6)
     else
-      if (Const.eq x1 (leaf 9)).label ≠ 0 then
+      if (Const.eq x4 (leaf 9)).label ≠ 0 then
         «Printer.kwList1»
           «Reader.kwLam»
           ((«Printer.listOf»
             ((«Printer.binderAtom» x3) ::
               («Prelude.single»
-                («Printer.printType» («Prelude.at» x4 (leaf 0)))))) ::
-            («Prelude.single»
-              («Prelude.at» («Printer.prAt» x2 (Const.add x3 (leaf 1))) (leaf 1))))
+                («Printer.printType» («Prelude.at» x5 (leaf 0)))))) ::
+            («Prelude.single» («Prelude.at» x2 (leaf 1))))
       else
-        if (Const.eq x1 (leaf 10)).label ≠ 0 then
-          «Printer.listOf» x5
+        if (Const.eq x4 (leaf 10)).label ≠ 0 then
+          «Printer.listOf» x2
         else
-          if (Const.eq x1 (leaf 11)).label ≠ 0 then
+          if (Const.eq x4 (leaf 11)).label ≠ 0 then
             «Printer.atomOf» «Reader.kwUnitValue»
           else
-            if (Const.eq x1 (leaf 12)).label ≠ 0 then
-              «Printer.kwList1» «Reader.kwPair» x5
+            if (Const.eq x4 (leaf 12)).label ≠ 0 then
+              «Printer.kwList1» «Reader.kwPair» x2
             else
-              if (Const.eq x1 (leaf 13)).label ≠ 0 then
-                «Printer.kwList1» «Reader.kwFst» x5
+              if (Const.eq x4 (leaf 13)).label ≠ 0 then
+                «Printer.kwList1» «Reader.kwFst» x2
               else
-                if (Const.eq x1 (leaf 14)).label ≠ 0 then
-                  «Printer.kwList1» «Reader.kwSnd» x5
+                if (Const.eq x4 (leaf 14)).label ≠ 0 then
+                  «Printer.kwList1» «Reader.kwSnd» x2
                 else
-                  if (Const.eq x1 (leaf 16)).label ≠ 0 then
-                    «Printer.kwList1» «Reader.kwIf» x5
+                  if (Const.eq x4 (leaf 16)).label ≠ 0 then
+                    «Printer.kwList1» «Reader.kwIf» x2
                   else
-                    if (Const.eq x1 (leaf 20)).label ≠ 0 then
-                      «Printer.kwList1» «Reader.kwCons» x5
+                    if (Const.eq x4 (leaf 20)).label ≠ 0 then
+                      «Printer.kwList1» «Reader.kwCons» x2
                     else
-                      if (Const.eq x1 (leaf 15)).label ≠ 0 then
-                        let x7 : T := «Prelude.at» x4 (leaf 0);
+                      if (Const.eq x4 (leaf 15)).label ≠ 0 then
+                        let x7 : T := «Prelude.at» x5 (leaf 0);
                         if («Reader.nonEmpty» (Const.children x7)).label ≠ 0 then
                           «Printer.kwList1»
                             «Reader.kwQuote»
@@ -1294,37 +1275,54 @@ def «Printer.printStep» :=
                         else
                           «Printer.numAtom» (Const.label x7)
                       else
-                        if (Const.eq x1 (leaf 19)).label ≠ 0 then
-                          «Printer.kwList1» «Reader.kwNil» («Printer.printTypes» x4)
+                        if (Const.eq x4 (leaf 19)).label ≠ 0 then
+                          «Printer.kwList1» «Reader.kwNil» («Printer.printTypes» x5)
                         else
-                          if (Const.eq x1 (leaf 17)).label ≠ 0 then
-                            «Printer.kwList1» «Reader.kwFold» («Printer.printTypes» x4)
+                          if (Const.eq x4 (leaf 17)).label ≠ 0 then
+                            «Printer.kwList1» «Reader.kwFold» («Printer.printTypes» x5)
                           else
-                            if (Const.eq x1 (leaf 25)).label ≠ 0 then
-                              «Printer.kwList1» «Reader.kwPara» («Printer.printTypes» x4)
+                            if (Const.eq x4 (leaf 25)).label ≠ 0 then
+                              «Printer.kwList1» «Reader.kwPara» («Printer.printTypes» x5)
                             else
-                              if (Const.eq x1 (leaf 18)).label ≠ 0 then
-                                «Printer.kwList1» «Reader.kwIter» («Printer.printTypes» x4)
+                              if (Const.eq x4 (leaf 18)).label ≠ 0 then
+                                «Printer.kwList1» «Reader.kwIter» («Printer.printTypes» x5)
                               else
-                                if (Const.eq x1 (leaf 21)).label ≠ 0 then
-                                  «Printer.kwList1» «Reader.kwFoldr» («Printer.printTypes» x4)
+                                if (Const.eq x4 (leaf 21)).label ≠ 0 then
+                                  «Printer.kwList1» «Reader.kwFoldr» («Printer.printTypes» x5)
                                 else
-                                  if (Const.eq x1 (leaf 24)).label ≠ 0 then
-                                    «Printer.kwList1» «Reader.kwLcase» («Printer.printTypes» x4)
+                                  if (Const.eq x4 (leaf 24)).label ≠ 0 then
+                                    «Printer.kwList1» «Reader.kwLcase» («Printer.printTypes» x5)
                                   else
-                                    if (Const.eq x1 (leaf 22)).label ≠ 0 then
+                                    if (Const.eq x4 (leaf 22)).label ≠ 0 then
                                       «Printer.nameAt» «Reader.primNames» x6
                                     else
                                       «Printer.nameAt» x0 x6
 
 def «Printer.printTerm» :=
   fun (x0 : List T) (x1 : T) (x2 : T) =>
-    let x3 : T := (Const.fold
-      (α := T × (T → T))
-      (fun (x3 : T) (x4 : List (T × (T → T))) =>
-        (Const.node x3 («Printer.prTrees» x4),
-          fun (x5 : T) => «Printer.printStep» x0 x3 x4 x5))
-      x1).2
+    let x3 : T := Const.para
+      (α := T → T)
+      (fun (x3 : T) (x4 : List (T → T)) =>
+        let x5 : T := Const.label x3;
+        let x6 : T →
+          T →
+            List
+              T := Const.foldr
+          (α := T → T)
+          (β := T → T → List T)
+          (fun (x6 : T → T) (x7 : T → T → List T) (x8 : T) (x9 : T) =>
+            ((x6
+              (if («Prelude.and»
+                (Const.eq x5 (leaf 9))
+                (Const.eq x9 (leaf 1))).label ≠ 0 then
+                Const.add x8 (leaf 1)
+              else
+                x8)) ::
+              (x7 x8 (Const.add x9 (leaf 1)))))
+          (fun (_ : T) (_ : T) => ([] : List T))
+          x4;
+        fun (x7 : T) => «Printer.printStep» x0 x3 (x6 x7 (leaf 0)) x7)
+      x1
       x2;
     x3
 
@@ -1344,12 +1342,11 @@ def «Printer.leafBelow» :=
       leaf 0
 
 def «Printer.allAt» :=
-  fun (x0 : List (T × (T → T))) (x1 : T) =>
+  fun (x0 : List T) =>
     Const.foldr
-      (α := T × (T → T))
+      (α := T)
       (β := T)
-      (fun (x2 : T × (T → T)) (x3 : T) =>
-        if ((x2).2 x1).label ≠ 0 then x3 else leaf 0)
+      (fun (x1 : T) (x2 : T) => if (x1).label ≠ 0 then x2 else leaf 0)
       (leaf 1)
       x0
 
@@ -1367,81 +1364,112 @@ def «Printer.tysOf» :=
       leaf 0
 
 def «Printer.wfStep» :=
-  fun (x0 : T) (x1 : T) (x2 : List (T × (T → T))) (x3 : T) =>
-    let x4 : List T := «Printer.prTrees» x2;
-    if (Const.eq x1 (leaf 8)).label ≠ 0 then
-      «Printer.leafBelow» x4 x3
+  fun (x0 : T) (x1 : T) (x2 : List T) (x3 : T) =>
+    let x4 : T := Const.label x1;
+    let x5 : List T := Const.children x1;
+    if (Const.eq x4 (leaf 8)).label ≠ 0 then
+      «Printer.leafBelow» x5 x3
     else
-      if (Const.eq x1 (leaf 9)).label ≠ 0 then
-        if (Const.eq («Prelude.length» x4) (leaf 2)).label ≠ 0 then
-          if («Check.isTy» («Prelude.at» x4 (leaf 0))).label ≠ 0 then
-            «Prelude.at» («Printer.prAt» x2 (Const.add x3 (leaf 1))) (leaf 1)
+      if (Const.eq x4 (leaf 9)).label ≠ 0 then
+        if (Const.eq («Prelude.length» x5) (leaf 2)).label ≠ 0 then
+          if («Check.isTy» («Prelude.at» x5 (leaf 0))).label ≠ 0 then
+            «Prelude.at» x2 (leaf 1)
           else
             leaf 0
         else
           leaf 0
       else
-        if (Const.eq x1 (leaf 10)).label ≠ 0 then
-          if (Const.eq («Prelude.length» x4) (leaf 2)).label ≠ 0 then
-            «Printer.allAt» x2 x3
+        if (Const.eq x4 (leaf 10)).label ≠ 0 then
+          if (Const.eq («Prelude.length» x5) (leaf 2)).label ≠ 0 then
+            «Printer.allAt» x2
           else
             leaf 0
         else
-          if (Const.eq x1 (leaf 11)).label ≠ 0 then
-            if («Reader.nonEmpty» x4).label ≠ 0 then leaf 0 else leaf 1
+          if (Const.eq x4 (leaf 11)).label ≠ 0 then
+            if («Reader.nonEmpty» x5).label ≠ 0 then leaf 0 else leaf 1
           else
-            if (Const.eq x1 (leaf 12)).label ≠ 0 then
-              «Printer.allAt» x2 x3
+            if (Const.eq x4 (leaf 12)).label ≠ 0 then
+              «Printer.allAt» x2
             else
-              if (Const.eq x1 (leaf 13)).label ≠ 0 then
-                «Printer.allAt» x2 x3
+              if (Const.eq x4 (leaf 13)).label ≠ 0 then
+                «Printer.allAt» x2
               else
-                if (Const.eq x1 (leaf 14)).label ≠ 0 then
-                  «Printer.allAt» x2 x3
+                if (Const.eq x4 (leaf 14)).label ≠ 0 then
+                  «Printer.allAt» x2
                 else
-                  if (Const.eq x1 (leaf 16)).label ≠ 0 then
-                    «Printer.allAt» x2 x3
+                  if (Const.eq x4 (leaf 16)).label ≠ 0 then
+                    «Printer.allAt» x2
                   else
-                    if (Const.eq x1 (leaf 20)).label ≠ 0 then
-                      «Printer.allAt» x2 x3
+                    if (Const.eq x4 (leaf 20)).label ≠ 0 then
+                      «Printer.allAt» x2
                     else
-                      if (Const.eq x1 (leaf 15)).label ≠ 0 then
-                        Const.eq («Prelude.length» x4) (leaf 1)
+                      if (Const.eq x4 (leaf 15)).label ≠ 0 then
+                        Const.eq («Prelude.length» x5) (leaf 1)
                       else
-                        if (Const.eq x1 (leaf 19)).label ≠ 0 then
-                          «Printer.tysOf» (leaf 1) x4
+                        if (Const.eq x4 (leaf 19)).label ≠ 0 then
+                          «Printer.tysOf» (leaf 1) x5
                         else
-                          if (Const.eq x1 (leaf 17)).label ≠ 0 then
-                            «Printer.tysOf» (leaf 1) x4
+                          if (Const.eq x4 (leaf 17)).label ≠ 0 then
+                            «Printer.tysOf» (leaf 1) x5
                           else
-                            if (Const.eq x1 (leaf 25)).label ≠ 0 then
-                              «Printer.tysOf» (leaf 1) x4
+                            if (Const.eq x4 (leaf 25)).label ≠ 0 then
+                              «Printer.tysOf» (leaf 1) x5
                             else
-                              if (Const.eq x1 (leaf 18)).label ≠ 0 then
-                                «Printer.tysOf» (leaf 1) x4
+                              if (Const.eq x4 (leaf 18)).label ≠ 0 then
+                                «Printer.tysOf» (leaf 1) x5
                               else
-                                if (Const.eq x1 (leaf 21)).label ≠ 0 then
-                                  «Printer.tysOf» (leaf 2) x4
+                                if (Const.eq x4 (leaf 21)).label ≠ 0 then
+                                  «Printer.tysOf» (leaf 2) x5
                                 else
-                                  if (Const.eq x1 (leaf 24)).label ≠ 0 then
-                                    «Printer.tysOf» (leaf 2) x4
+                                  if (Const.eq x4 (leaf 24)).label ≠ 0 then
+                                    «Printer.tysOf» (leaf 2) x5
                                   else
-                                    if (Const.eq x1 (leaf 22)).label ≠ 0 then
-                                      «Printer.leafBelow» x4 («Prelude.length» «Reader.primNames»)
+                                    if (Const.eq x4 (leaf 22)).label ≠ 0 then
+                                      «Printer.leafBelow» x5 («Prelude.length» «Reader.primNames»)
                                     else
-                                      if (Const.eq x1 (leaf 23)).label ≠ 0 then
-                                        «Printer.leafBelow» x4 x0
+                                      if (Const.eq x4 (leaf 23)).label ≠ 0 then
+                                        «Printer.leafBelow» x5 x0
                                       else
                                         leaf 0
 
 def «Printer.termWf» :=
   fun (x0 : T) (x1 : T) (x2 : T) =>
-    (Const.fold
-      (α := T × (T → T))
-      (fun (x3 : T) (x4 : List (T × (T → T))) =>
-        (Const.node x3 («Printer.prTrees» x4),
-          fun (x5 : T) => «Printer.wfStep» x0 x3 x4 x5))
-      x1).2
+    Const.para
+      (α := T → T)
+      (fun (x3 : T) (x4 : List (T → T)) =>
+        let x5 : T := Const.label x3;
+        let x6 : T →
+          T →
+            List
+              T := Const.foldr
+          (α := T → T)
+          (β := T → T → List T)
+          (fun (x6 : T → T) (x7 : T → T → List T) (x8 : T) (x9 : T) =>
+            ((if (Const.eq x5 (leaf 9)).label ≠ 0 then
+              if (Const.eq x9 (leaf 1)).label ≠ 0 then
+                x6 (Const.add x8 (leaf 1))
+              else
+                leaf 0
+            else
+              if («Prelude.or»
+                (Const.eq x5 (leaf 10))
+                («Prelude.or»
+                  (Const.eq x5 (leaf 12))
+                  («Prelude.or»
+                    (Const.eq x5 (leaf 13))
+                    («Prelude.or»
+                      (Const.eq x5 (leaf 14))
+                      («Prelude.or»
+                        (Const.eq x5 (leaf 16))
+                        (Const.eq x5 (leaf 20))))))).label ≠ 0 then
+                x6 x8
+              else
+                leaf 0) ::
+              (x7 x8 (Const.add x9 (leaf 1)))))
+          (fun (_ : T) (_ : T) => ([] : List T))
+          x4;
+        fun (x7 : T) => «Printer.wfStep» x0 x3 (x6 x7 (leaf 0)) x7)
+      x1
       x2
 
 def «Printer.isBinderName» :=

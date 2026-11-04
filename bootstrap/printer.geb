@@ -51,23 +51,20 @@
   ; a term printed under binders to a depth: each node's result is its subtree with its printing
   ; as a function of the depth
   (deftype PF (Arrow T T))
-  (deftype PR (Prod T PF))
-  (deftype PRs (List PR))
-  (def prTrees (lam ((rs PRs)) (foldr PR Ts (lam ((r PR) (acc Ts)) (cons (fst r) acc)) (nil T) rs)))
-  (def prAt
-    (lam ((rs PRs) (d T)) (foldr PR Ts (lam ((r PR) (acc Ts)) (cons ((snd r) d) acc)) (nil T) rs)))
+  (deftype PRs (List PF))
+  (deftype PrH (Arrow T (Arrow T Ts)))
   (def kwList1 (lam ((kw T) (xs Ts)) (listOf (cons (atomOf kw) xs))))
   ; one node printed, from its children with their printings, given the names of the definitions
   (def printStep
-    (lam ((defs Ts) (l T) (rs PRs) (d T))
-      (let cs Ts (prTrees rs)
-        (let ps Ts (prAt rs d)
+    (lam ((defs Ts) (nd T) (ps Ts) (d T))
+      (let l T (label nd)
+        (let cs Ts (children nd)
           (let i T (label (at cs 0))
             (if (eq l Label.var) (binderAtom (sub (sub d 1) i))
               (if (eq l Label.lam)
                 (kwList1 kwLam
                   (cons (listOf (cons (binderAtom d) (single (printType (at cs 0)))))
-                    (single (at (prAt rs (add d 1)) 1))))
+                    (single (at ps 1))))
                 (if (eq l Label.app) (listOf ps)
                   (if (eq l Label.unit) (atomOf kwUnitValue)
                     (if (eq l Label.pair) (kwList1 kwPair ps)
@@ -94,11 +91,17 @@
   (def printTerm
     (lam ((defs Ts) (t T) (d T))
       ((lam ((r T)) r)
-       ((snd
-          (fold PR
-            (lam ((l T) (rs PRs))
-              (pair (node l (prTrees rs)) (lam ((e T)) (printStep defs l rs e))))
-            t)) d))))
+       ((para PF
+          (lam ((nd T) (rs PRs))
+            (let l T (label nd)
+              (let h PrH
+                (foldr PF PrH
+                  (lam ((r PF) (c PrH) (e T) (i T))
+                    (cons (r (if (and (eq l Label.lam) (eq i 1)) (add e 1) e)) (c e (add i 1))))
+                  (lam ((e T) (i T)) (nil T))
+                  rs)
+                (lam ((e T)) (printStep defs nd (h e 0) e)))))
+          t) d))))
   ; the reader's resolution of an S-expression, with no type abbreviations, given the names of the
   ; definitions and the names in scope: what reads back what the printer writes
   (def readBack (lam ((defs Ts) (e T) (scope Ts)) ((lam ((r T)) r) (resolve (nil T) defs e scope))))
@@ -108,7 +111,7 @@
     (lam ((cs Ts) (n T))
       (if (eq (length cs) 1) (if (nonEmpty (children (at cs 0))) 0 (lt (label (at cs 0)) n)) 0)))
   ; whether every child is well formed at a depth
-  (def allAt (lam ((rs PRs) (d T)) (foldr PR T (lam ((r PR) (ok T)) (if ((snd r) d) ok 0)) 1 rs)))
+  (def allAt (lam ((ys Ts)) (foldr T T (lam ((y T) (ok T)) (if y ok 0)) 1 ys)))
   ; whether there are a number of children, each a type
   (def tysOf
     (lam ((k T) (cs Ts))
@@ -116,35 +119,51 @@
   ; one node's well-formedness under binders to a depth, from its children with their
   ; well-formedness as a function of the depth, given the number of definitions
   (def wfStep
-    (lam ((nDefs T) (l T) (rs PRs) (d T))
-      (let cs Ts (prTrees rs)
-        (if (eq l Label.var) (leafBelow cs d)
-          (if (eq l Label.lam)
-            (if (eq (length cs) 2) (if (isTy (at cs 0)) (at (prAt rs (add d 1)) 1) 0) 0)
-            (if (eq l Label.app) (if (eq (length cs) 2) (allAt rs d) 0)
-              (if (eq l Label.unit) (if (nonEmpty cs) 0 1)
-                (if (eq l Label.pair) (allAt rs d)
-                  (if (eq l Label.fst) (allAt rs d)
-                    (if (eq l Label.snd) (allAt rs d)
-                      (if (eq l Label.cond) (allAt rs d)
-                        (if (eq l Label.cons) (allAt rs d)
-                          (if (eq l Label.quote) (eq (length cs) 1)
-                            (if (eq l Label.nil) (tysOf 1 cs)
-                              (if (eq l Label.fold) (tysOf 1 cs)
-                                (if (eq l Label.para) (tysOf 1 cs)
-                                  (if (eq l Label.iter) (tysOf 1 cs)
-                                    (if (eq l Label.foldr) (tysOf 2 cs)
-                                      (if (eq l Label.lcase) (tysOf 2 cs)
-                                        (if (eq l Label.prim) (leafBelow cs (length primNames))
-                                          (if (eq l Label.ref) (leafBelow cs nDefs)
-                                            0)))))))))))))))))))))
+    (lam ((nDefs T) (nd T) (ys Ts) (d T))
+      (let l T (label nd)
+        (let cs Ts (children nd)
+          (if (eq l Label.var) (leafBelow cs d)
+            (if (eq l Label.lam) (if (eq (length cs) 2) (if (isTy (at cs 0)) (at ys 1) 0) 0)
+              (if (eq l Label.app) (if (eq (length cs) 2) (allAt ys) 0)
+                (if (eq l Label.unit) (if (nonEmpty cs) 0 1)
+                  (if (eq l Label.pair) (allAt ys)
+                    (if (eq l Label.fst) (allAt ys)
+                      (if (eq l Label.snd) (allAt ys)
+                        (if (eq l Label.cond) (allAt ys)
+                          (if (eq l Label.cons) (allAt ys)
+                            (if (eq l Label.quote) (eq (length cs) 1)
+                              (if (eq l Label.nil) (tysOf 1 cs)
+                                (if (eq l Label.fold) (tysOf 1 cs)
+                                  (if (eq l Label.para) (tysOf 1 cs)
+                                    (if (eq l Label.iter) (tysOf 1 cs)
+                                      (if (eq l Label.foldr) (tysOf 2 cs)
+                                        (if (eq l Label.lcase) (tysOf 2 cs)
+                                          (if (eq l Label.prim) (leafBelow cs (length primNames))
+                                            (if (eq l Label.ref) (leafBelow cs nDefs)
+                                              0))))))))))))))))))))))
   ; whether a term is well formed under binders to a depth, given the number of definitions
   (def termWf
     (lam ((nDefs T) (t T) (d T))
-      ((snd
-         (fold PR
-           (lam ((l T) (rs PRs)) (pair (node l (prTrees rs)) (lam ((e T)) (wfStep nDefs l rs e))))
-           t)) d)))
+      ((para PF
+         (lam ((nd T) (rs PRs))
+           (let l T (label nd)
+             (let h PrH
+               (foldr PF PrH
+                 (lam ((r PF) (c PrH) (e T) (i T))
+                   (cons
+                     (if (eq l Label.lam) (if (eq i 1) (r (add e 1)) 0)
+                       (if
+                         (or (eq l Label.app)
+                           (or (eq l Label.pair)
+                             (or (eq l Label.fst)
+                               (or (eq l Label.snd) (or (eq l Label.cond) (eq l Label.cons))))))
+                         (r e)
+                         0))
+                     (c e (add i 1))))
+                 (lam ((e T) (i T)) (nil T))
+                 rs)
+               (lam ((e T)) (wfStep nDefs nd (h e 0) e)))))
+         t) d)))
   ; whether a name is a binder's: an underscore followed by a numeral as the printer writes it
   (def isBinderName
     (lam ((n T))

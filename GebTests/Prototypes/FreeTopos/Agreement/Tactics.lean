@@ -1419,12 +1419,6 @@ def anyB (l : Internal.Label) (i : ℕ) : ℕ := match l with
   cases l <;> mirror_simp [«Tactics.anyBound», labelData, anyB, beq_iff_eq]
   all_goals split <;> rfl
 
-/-- A function of a list's elements, with their positions unread. -/
-theorem map_zipIdx_fst {α β : Type} (f : α → β) :
-    ∀ (xs : List α) (i : ℕ), (xs.zipIdx i).map (fun p ↦ f p.1) = xs.map f :=
-  List.rec (fun _ ↦ rfl) fun x xs ih i ↦ by
-    simp only [List.zipIdx_cons, List.map_cons, ih]
-
 /-- The mirror's results of a node's children at an index raised by the variables each binds. -/
 theorem kidsAt_eq {β : Type} (e : β → Tree) (l : Internal.Label) (v : Tree → Tree) (d : ℕ) :
     ∀ xs : List (Term × (Tree → Tree) × (ℕ → β)), (∀ x ∈ xs, ∀ d, x.2.1 (leaf d) = e (x.2.2 d)) →
