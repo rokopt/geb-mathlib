@@ -1300,7 +1300,7 @@ theorem instsRound_rel (m : Internal.Depth) (G : Internal.Globals) (E : Array In
     (fun a' a ha ↦ hn _ _ (List.rel_append hex ha)) Γ Φ t u
   simp only [«Tactics.instsRound», template, appendNR_eq, byMode_eq m G E n _ _ hr Γ Φ t u]
   rcases Tactics.byMode m G E n (ex ++ rs) Γ Φ t u with _ | d
-  · exact hI
+  · exact (ite_eq_right fun h ↦ h rfl).trans hI
   · rfl
 
 /-- The mirror's proof by three rounds of the instance search, at related rules. -/

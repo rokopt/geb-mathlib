@@ -36,11 +36,19 @@ reduction as it is defined.
 * {lit}`WRel`, {lit}`EKRel` — the relations of the mirror's rewritings at the root and reductions
   under weakened hypotheses to the prover's.
 * {lit}`encPH` — an equation among the hypotheses as the mirror prepares it.
+* {lit}`advBy`, {lit}`evalJ` — a state of the mirror's reduction advanced by a function of its
+  jobs, and the reduction of a job by the rounds of the state it starts in.
+* {lit}`encJob`, {lit}`JRel`, {lit}`Reach` — an encoded job, the relation of a function of jobs to
+  a reduction, and a state's reaching a result within a number of rounds.
 
 ## Main statements
 
 * {lit}`rootRewriteK_eq` — the rewriting at the root by the index of the rules and the prepared
   hypotheses is the rewriting by the rules under the hypotheses weakened.
+* {lit}`stRound_eq`, {lit}`evalB_eq` — a round advances each state by a function of its jobs, and
+  the reduction of a list of jobs is the image of the reduction of a job.
+* {lit}`stStart_eq`, {lit}`evalJ_rel` — the rounds of the state a job starts in are the step of
+  the reduction, and the reduction of a job is the reduction under weakened hypotheses.
 * {lit}`evalK_eq`, {lit}`eval_eq` — the reductions to a depth, under weakened hypotheses and as
   defined, agree.
 
@@ -1607,28 +1615,6 @@ def EKRel (Φ : List Term) (v : Tree → List Tree → Tree → List Tree → Tr
   ∀ dp Γ k t, v (leaf (encDepth dp)) Γ (leaf k) (Φ.map encTerm) (encTerm t) =
     encOpt ((w dp Γ k Φ t).map encTDB)
 
-/-- The mirror's rewriting at the root followed by a reduction, under weakened hypotheses, at
-related rewritings and reductions. -/
-theorem atRootK_eq (rw' : List Tree → Tree → List Tree → Tree → Tree) (rw : Internal.RootRewriteK)
-    (hrw : WRel Φ rw' rw) (rec' : Tree → List Tree → Tree → List Tree → Tree → Tree)
-    (rec : Internal.ReductionK) (hrec : EKRel Φ rec' rec) (k : ℕ) (dp : Internal.Depth)
-    (t₁ : Term) (d₁ : Deriv × Bool) :
-    «Prover.atRootK» rw' rec' Γ (leaf k) (Φ.map encTerm) (leaf (encDepth dp)) (encTerm t₁)
-        (encDB d₁) =
-      encOpt ((Internal.atRootK rw rec Γ k Φ dp t₁ d₁).map encTDB) := by
-  simp only [«Prover.atRootK», template, Internal.atRootK, hrw Γ k t₁, isSome_eq]
-  rcases rw Γ k Φ t₁ with _ | ⟨t₂, dr⟩
-  · rfl
-  · have h2 : «Language.pr» (encDeriv dr) (leaf 1) = encDB (dr, true) := rfl
-    simp only [Option.map_some, Option.isSome_some, ofBool_true, label_leaf, ne_eq,
-      one_ne_zero, not_false_eq_true, ↓reduceIte, tmpl_fromMaybe_eq, Option.getD_some,
-      p1_encTD,
-      p2_encTD, hrec dp Γ k t₂, mapO_eq, Option.map_map, h2]
-    rcases rec dp Γ k Φ t₂ with _ | ⟨t₃, d₃⟩
-    · rfl
-    · simp only [Option.map_some, Function.comp_apply, p1_encTDB, p2_encTDB, dTrans_eq]
-      rfl
-
 /-- A label's position is the application's exactly at the application. -/
 theorem labelData_eq_app (l : Internal.Label) : (labelData l).1 = 6 ↔ l = .app := by
   cases l <;> simp [labelData]
@@ -1636,107 +1622,6 @@ theorem labelData_eq_app (l : Internal.Label) : (labelData l).1 = 6 ↔ l = .app
 /-- A label's position is the abstraction's exactly at an abstraction. -/
 theorem labelData_eq_lam (l : Internal.Label) : (labelData l).1 = 5 ↔ ∃ a, l = .lam a := by
   cases l <;> simp [labelData]
-
-/-- The mirror's step of the weak head normal form under weakened hypotheses, at related
-rewritings at the root and reductions of the subterms. -/
-theorem headStepK_eq (rw' : List Tree → Tree → List Tree → Tree → Tree)
-    (rw : Internal.RootRewriteK) (hrw : WRel Φ rw' rw)
-    (rec' : Tree → List Tree → Tree → List Tree → Tree → Tree) (rec : Internal.ReductionK)
-    (hrec : EKRel Φ rec' rec) (k : ℕ) (t : Term) :
-    «Prover.headStepK» rw' rec' Γ (leaf k) (Φ.map encTerm) (encTerm t) =
-      encOpt ((Internal.headStepK rw rec Γ k Φ t).map encTDB) := by
-  have h0 : ∀ Γ t, rec' (leaf 0) Γ (leaf k) (Φ.map encTerm) (encTerm t) =
-      encOpt ((rec .head Γ k Φ t).map encTDB) := fun Γ t ↦ hrec .head Γ k t
-  have h1 : ∀ Γ t, rec' (leaf 1) Γ (leaf k) (Φ.map encTerm) (encTerm t) =
-      encOpt ((rec .weak Γ k Φ t).map encTDB) := fun Γ t ↦ hrec .weak Γ k t
-  have hA : ∀ t₁ d₁, «Prover.atRootK» rw' rec' Γ (leaf k) (Φ.map encTerm) (leaf 0) (encTerm t₁)
-      (encDB d₁) = encOpt ((Internal.atRootK rw rec Γ k Φ .head t₁ d₁).map encTDB) :=
-    atRootK_eq Γ Φ rw' rw hrw rec' rec hrec k .head
-  obtain ⟨l, ts, rfl⟩ : ∃ l ts, t = RoseTree.node l ts :=
-    ⟨t.label, t.children, (RoseTree.node_label_children t).symm⟩
-  by_cases happ : (labelData l).1 = 6 ∧ ts.length = 2
-  · obtain ⟨hl, h2⟩ := happ
-    obtain rfl := (labelData_eq_app l).mp hl
-    match ts, h2 with
-    | [f, u], _ =>
-      simp only [«Prover.headStepK», template, Internal.headStepK]
-      mirror_simp [mIs_eq, labelData, mArg_eq, h0]
-      rcases rec .head Γ k Φ f with _ | ⟨f', df⟩
-      · rfl
-      have hL : ∀ (u' : Term) (du : Deriv × Bool), «Prover.atRootK» rw' rec' Γ (leaf k)
-          (Φ.map encTerm) (leaf 0) («Language.app» (encTerm f') (encTerm u'))
-          («Prover.dCong» («Theory.l2» (encDB df) (encDB du))) =
-          encOpt ((Internal.atRootK rw rec Γ k Φ .head (Term.app f' u')
-            (Internal.dCong [df, du])).map encTDB) := fun u' du ↦ by
-        rw [mApp_eq, ← hA]
-        exact congrArg _ (dCong_eq [df, du])
-      simp only [Option.map_some, Option.elim_some, p1_encTDB, p2_encTDB]
-      obtain ⟨l', ts', rfl⟩ : ∃ l ts, f' = RoseTree.node l ts :=
-        ⟨f'.label, f'.children, (RoseTree.node_label_children f').symm⟩
-      by_cases hlam : (labelData l').1 = 5 ∧ ts'.length = 1
-      · obtain ⟨hl', h1'⟩ := hlam
-        obtain ⟨a, rfl⟩ := (labelData_eq_lam l').mp hl'
-        match ts', h1' with
-        | [b], _ =>
-          mirror_simp [mIs_eq, labelData, mArg_eq, uses_eq, Option.bind_eq_bind]
-          by_cases hu : Internal.uses b 0 < 2
-          · have hp : «Language.pr» (encTerm u) «Prover.dRefl» =
-                encTDB (u, Internal.dRefl) := rfl
-            simp only [hu, decide_true, ↓reduceIte, hp, some_eq, bindO_eq, Option.elim_some,
-              p1_encTDB, p2_encTDB, hL]
-          · simp only [hu, decide_false, Bool.false_eq_true, ↓reduceIte, h1, bindO_eq]
-            rcases rec .weak Γ k Φ u with _ | ⟨u', du⟩
-            · rfl
-            · simp only [Option.map_some, Option.elim_some, p1_encTDB, p2_encTDB, hL,
-                Option.bind_some]
-      · mirror_simp [mIs_eq, Bool.and_eq_true, beq_iff_eq, hlam, Option.bind_eq_bind]
-        split
-        · exact absurd ⟨(labelData_eq_lam _).mpr ⟨_, rfl⟩, rfl⟩ hlam
-        · rcases rec .head Γ k Φ u with _ | ⟨u', du⟩
-          · rfl
-          · simp only [Option.map_some, Option.elim_some, p1_encTDB, p2_encTDB, hL,
-              Option.bind_some]
-  · generalize hM : «Prover.headStepK» rw' rec' Γ (leaf k) (Φ.map encTerm)
-      (encTerm (RoseTree.node l ts)) = M
-    simp only [Internal.headStepK, RoseTree.label_node, RoseTree.children_node]
-    split
-    · exact absurd ⟨rfl, rfl⟩ happ
-    subst hM
-    simp only [«Prover.headStepK», template]
-    mirror_simp [mIs_eq, Bool.and_eq_true, beq_iff_eq, happ, hrw Γ k]
-    rcases rw Γ k Φ (RoseTree.node l ts) with _ | ⟨t₁, dr⟩
-    · mirror_simp [headChild_eq]
-      rcases Internal.headChild l ts with _ | i
-      · rfl
-      mirror_simp [mArgs_eq, Option.bind_eq_bind]
-      rcases ts[i]? with _ | c
-      · rfl
-      mirror_simp [h0]
-      rcases rec .head Γ k Φ c with _ | ⟨c', dd, _ | _⟩
-      · rfl
-      · rfl
-      have hn : RoseTree.node (labelData l).1
-          (Const.child (encTerm (RoseTree.node l ts)) (leaf 0) ::
-            (ts.map encTerm).set i (encTerm c')) = encTerm (RoseTree.node l (ts.set i c')) := by
-        simp [encTerm_node, child_node, List.map_set]
-      have hd : «Prover.dCong» ((List.range ts.length).map fun j ↦
-          if j = i then encDB (dd, true) else «Prover.dRefl») =
-          encDB (Internal.dCong ((List.range ts.length).map fun j ↦
-            if j = i then (dd, true) else Internal.dRefl)) := by
-        rw [← dCong_eq, List.map_map]
-        exact congrArg _ (List.map_congr_left fun j _ ↦ by
-          simp only [Function.comp_apply]
-          split <;> rfl)
-      mirror_simp [p1_encTDB, p2_encTDB, p2_encDB, ofBool_true, setAt_eq, label_encTerm, hn,
-        Nat.reduceBNe]
-      rw [← hA, ← hd]
-      rfl
-    · have h2 : «Language.pr» (encDeriv dr) (leaf 1) = encDB (dr, true) := rfl
-      mirror_simp [p1_encTD, p2_encTD, h0, h2]
-      rcases rec .head Γ k Φ t₁ with _ | ⟨t₂, d₂⟩
-      · rfl
-      · simp only [Option.map_some, p1_encTDB, p2_encTDB, dTrans_eq]
-        rfl
 
 /-- The mirror's trees of the images of a list's positions, each present, where the image of a
 position is that of the element there. -/
@@ -1784,113 +1669,623 @@ theorem ite_lt_leaf (a b : ℕ) :
   · simp [h, Nat.min_eq_left h.le]
   · simp [h, Nat.min_eq_right (Nat.le_of_not_lt h)]
 
-/-- The mirror's reduction past a weak head normal form under weakened hypotheses, to a depth
-past it, at related rewritings at the root and reductions of the subterms. -/
-theorem deepStepK_eq (rw' : List Tree → Tree → List Tree → Tree → Tree)
-    (rw : Internal.RootRewriteK) (hrw : WRel Φ rw' rw)
-    (rec' : Tree → List Tree → Tree → List Tree → Tree → Tree) (rec : Internal.ReductionK)
-    (hrec : EKRel Φ rec' rec) (dp : Internal.Depth) (hdp : dp ≠ .head) (k : ℕ) (w : Term)
-    (dw : Deriv × Bool) :
-    «Prover.deepStepK» (encGlobals G) (leaf n) rw' rec' (leaf (encDepth dp)) Γ (leaf k)
-        (Φ.map encTerm) (encTerm w) (encDB dw) =
-      encOpt ((Internal.deepStepK G n rw rec dp Γ k Φ w dw).map encTDB) := by
-  have hC : ∀ cs : List (Term × Deriv × Bool), «Prover.dCong»
-      (cs.map fun x ↦ encDB x.2) = encDB (Internal.dCong (cs.map Prod.snd)) := fun cs ↦ by
-    rw [← dCong_eq, List.map_map]
-    rfl
+/-! The reduction applied to lists of jobs. -/
+
+/-- The mirror's first results, as many as the jobs, and the results after them. -/
+theorem splitRs_eq (F : Tree → Tree) :
+    ∀ (qs rest : List Tree), «Prover.splitRs» qs (qs.map F ++ rest) = (qs.map F, rest) := by
+  simp only [«Prover.splitRs», foldr_eq]
+  exact List.rec (fun _ ↦ rfl) fun q qs ih rest ↦ by
+    simp only [List.foldr_cons, List.map_cons, List.cons_append, lcase_cons, ih]
+
+/-- The jobs every state of a list waits for. -/
+def needs (ss : List Tree) : List Tree :=
+  ss.foldr (fun s acc ↦ «Prover.stNeed» s ++ acc) []
+
+/-- A state advanced by the results a function of its jobs gives. -/
+def advBy (G' n' : Tree) (rw' : List Tree → Tree → List Tree → Tree → Tree) (F : Tree → Tree)
+    (s : Tree) : Tree :=
+  «Prover.stAdv» G' n' rw' s ((«Prover.stNeed» s).map F)
+
+/-- A round of the mirror, at a level below that is the image of a function of its jobs, advances
+each state by that function's results. -/
+theorem stRound_eq (G' n' : Tree) (rw' : List Tree → Tree → List Tree → Tree → Tree)
+    (F : Tree → Tree) (rec : List Tree → List Tree) (hrec : ∀ js, rec js = js.map F)
+    (ss : List Tree) :
+    «Prover.stRound» G' n' rw' rec ss = ss.map (advBy G' n' rw' F) := by
+  have h : ∀ (xs : List Tree) (rest : List Tree),
+      List.foldr (fun (s : Tree) (k : List Tree → List Tree) (x : List Tree) ↦
+          «Prover.stAdv» G' n' rw' s («Prover.splitRs» («Prover.stNeed» s) x).1 ::
+            k («Prover.splitRs» («Prover.stNeed» s) x).2)
+        (fun _ ↦ []) xs ((needs xs).map F ++ rest) = xs.map (advBy G' n' rw' F) :=
+    List.rec (fun _ ↦ rfl) fun s xs ih rest ↦ by
+      simp only [needs, List.foldr_cons, List.map_append, List.append_assoc, List.map_cons,
+        splitRs_eq, advBy]
+      exact congrArg _ (ih rest)
+  have h2 := h ss []
+  rw [List.append_nil] at h2
+  simp only [«Prover.stRound», foldr_eq, hrec, append_eq, template]
+  exact h2
+
+/-- The mirror's reduction of a job within a depth of fuel, as the rounds of the state a job
+starts in, each level's jobs reduced by the level below. -/
+def evalJ (G' n' : Tree) (rw' : List Tree → Tree → List Tree → Tree → Tree) (fuel : ℕ) :
+    Tree → Tree :=
+  Nat.rec (fun j ↦ «Prover/ONFR.just» («Prover.nfr» («Prover.jobTerm» j) «Prover.dRefl»))
+    (fun _ F j ↦ «Prover.stResult»
+      ((advBy G' n' rw' F)^[5] («Prover.stStart» G' n' rw' j))) fuel
+
+/-- A function iterated five times. -/
+theorem iterate_five {α : Type} (f : α → α) (s : α) : f^[5] s = f (f (f (f (f s)))) := rfl
+
+/-- A level of the mirror, at a level below that is the image of a function of its jobs, is the
+image of the rounds of the state each job starts in. -/
+theorem evalStepB_eq (G' n' : Tree) (rw' : List Tree → Tree → List Tree → Tree → Tree)
+    (F : Tree → Tree) (rec : List Tree → List Tree) (hrec : ∀ js, rec js = js.map F)
+    (js : List Tree) :
+    «Prover.evalStepB» G' n' rw' rec js =
+      js.map fun j ↦ «Prover.stResult»
+        ((advBy G' n' rw' F)^[5] («Prover.stStart» G' n' rw' j)) := by
+  rcases js with _ | ⟨j, js⟩
+  · rfl
+  · simp only [«Prover.evalStepB», lcase_cons, template, stRound_eq _ _ _ F rec hrec, mapT_eq,
+      List.map_map, Function.comp_def, iterate_five]
+
+/-- The mirror's reduction of a list of jobs is the image of the reduction of a job. -/
+theorem evalB_eq (G' n' : Tree) (rw' : List Tree → Tree → List Tree → Tree → Tree) (fuel : ℕ) :
+    ∀ js, «Prover.evalB» G' n' rw' (leaf fuel) js = js.map (evalJ G' n' rw' fuel) := by
+  simp only [«Prover.evalB», iter_leaf]
+  exact Nat.rec (fun js ↦ by
+      simp only [Nat.repeat, template, mapT_eq, List.map_map, Function.comp_def]
+      rfl)
+    (fun m ih js ↦ by
+      simp only [Nat.repeat]
+      exact evalStepB_eq _ _ _ _ _ ih js) fuel
+
+/-- A state's reaching a result within a number of rounds. -/
+def Reach (G' n' : Tree) (rw' : List Tree → Tree → List Tree → Tree → Tree) (F : Tree → Tree)
+    (m : ℕ) (s R : Tree) : Prop :=
+  (advBy G' n' rw' F)^[m] s = «Prover.stDone» R
+
+section Reach
+
+variable {G' n' : Tree} {rw' : List Tree → Tree → List Tree → Tree → Tree} {F : Tree → Tree}
+
+/-- A finished state stays so. -/
+theorem advBy_done (R : Tree) :
+    advBy G' n' rw' F («Prover.stDone» R) = «Prover.stDone» R := rfl
+
+/-- A finished state has reached its result. -/
+theorem reach_done (m : ℕ) (R : Tree) : Reach G' n' rw' F m («Prover.stDone» R) R :=
+  Function.iterate_fixed (advBy_done R) m
+
+/-- A state reaches a result within a round more than what it advances to. -/
+theorem reach_step {m : ℕ} {s s' R : Tree} (h : advBy G' n' rw' F s = s')
+    (hs : Reach G' n' rw' F m s' R) : Reach G' n' rw' F (m + 1) s R := by
+  subst h
+  exact hs
+
+/-- A state that reaches a result reaches it within more rounds. -/
+theorem reach_mono {m : ℕ} {s R : Tree} (h : Reach G' n' rw' F m s R) :
+    Reach G' n' rw' F (m + 1) s R := by
+  simp only [Reach, Function.iterate_succ_apply'] at h ⊢
+  rw [h, advBy_done]
+
+end Reach
+
+/-- An encoded job: a depth's number, a context, a number of variables, the encoded hypotheses and
+an encoded term. -/
+def encJob (d : ℕ) (Γ : List Tree) (k : ℕ) (Φ : List Term) (t : Term) : Tree :=
+  «Prover.job» (leaf d) («Language.objs» Γ) (leaf k) («Derivation.terms» (Φ.map encTerm))
+    (encTerm t)
+
+/-- The parts of an encoded job. -/
+@[simp] theorem jobDp_enc (d : ℕ) (Γ : List Tree) (k : ℕ) (Φ : List Term) (t : Term) :
+    «Prover.jobDp» (encJob d Γ k Φ t) = leaf d := rfl
+
+@[simp, inherit_doc jobDp_enc] theorem jobTerm_enc (d : ℕ) (Γ : List Tree) (k : ℕ) (Φ : List Term)
+    (t : Term) : «Prover.jobTerm» (encJob d Γ k Φ t) = encTerm t := rfl
+
+@[simp, inherit_doc jobDp_enc] theorem jobCtx_enc (d : ℕ) (Γ : List Tree) (k : ℕ) (Φ : List Term)
+    (t : Term) : «Prover.jobCtx» (encJob d Γ k Φ t) = Γ := by
+  mirror_simp [«Prover.jobCtx», encJob, «Prover.job», «Language.objs»]
+
+@[simp, inherit_doc jobDp_enc] theorem jobNum_enc (d : ℕ) (Γ : List Tree) (k : ℕ) (Φ : List Term)
+    (t : Term) : «Prover.jobNum» (encJob d Γ k Φ t) = leaf k := rfl
+
+@[simp, inherit_doc jobDp_enc] theorem jobHyps_enc (d : ℕ) (Γ : List Tree) (k : ℕ)
+    (Φ : List Term) (t : Term) : «Prover.jobHyps» (encJob d Γ k Φ t) = Φ.map encTerm := by
+  mirror_simp [«Prover.jobHyps», encJob, «Prover.job», «Derivation.terms», template]
+
+/-- The job of a depth and a term in the context of an encoded job. -/
+@[simp] theorem jobAt_enc (d d' : ℕ) (Γ : List Tree) (k : ℕ) (Φ : List Term) (t u : Term) :
+    «Prover.jobAt» (encJob d Γ k Φ t) (leaf d') (encTerm u) = encJob d' Γ k Φ u := rfl
+
+/-- The rewriting at the root in the context of an encoded job. -/
+@[simp] theorem jobRw_enc (rw' : List Tree → Tree → List Tree → Tree → Tree) (d : ℕ)
+    (Γ : List Tree) (k : ℕ) (Φ : List Term) (t u : Term) :
+    «Prover.jobRw» rw' (encJob d Γ k Φ t) (encTerm u) =
+      rw' Γ (leaf k) (Φ.map encTerm) (encTerm u) := by
+  simp only [«Prover.jobRw», jobCtx_enc, jobNum_enc, jobHyps_enc]
+
+/-- A function of the mirror's jobs and a reduction under weakened hypotheses are related at the
+hypotheses {lit}`Φ` when the function agrees with the reduction at every encoded job, and leaves
+the term of a job of the depth that reduces nothing. -/
+def JRel (Φ : List Term) (F : Tree → Tree) (rec : Internal.ReductionK) : Prop :=
+  (∀ dp Γ k t, F (encJob (encDepth dp) Γ k Φ t) = encOpt ((rec dp Γ k Φ t).map encTDB)) ∧
+    ∀ Γ k t, F (encJob 4 Γ k Φ t) = encOpt (some (encTDB (t, Internal.dRefl)))
+
+section Step
+
+variable {G n Γ Φ} {k : ℕ}
+  {rw' : List Tree → Tree → List Tree → Tree → Tree} {rw : Internal.RootRewriteK}
+  {F : Tree → Tree} {rec : Internal.ReductionK}
+
+/-- The optional result of a reduction, encoded. -/
+abbrev encR (o : Option (Term × Deriv × Bool)) : Tree := encOpt (o.map encTDB)
+
+/-- The parts of a present optional tree. -/
+@[simp] theorem label_some (x : Tree) : RoseTree.label (encOpt (some x)) = 1 := rfl
+
+@[simp, inherit_doc label_some] theorem child_some (x : Tree) :
+    Const.child (encOpt (some x)) (leaf 0) = x := rfl
+
+@[simp, inherit_doc label_some] theorem label_none : RoseTree.label (encOpt none) = 0 := rfl
+
+/-- The result of a list of one job. -/
+theorem firstR_single (x : Tree) : «Prover.firstR» [x] = x := rfl
+
+/-- The reduction of a rewritten term in a state, composed with its derivations and continued. -/
+theorem stTail_eq (hF : JRel Φ F rec) (da : Internal.Depth) (Γ : List Tree) (k : ℕ) (t₂ : Term)
+    (p₁ p₂ mk : Deriv × Bool) (c m : ℕ) (K : Term × Deriv × Bool → Option (Term × Deriv × Bool))
+    (hK : ∀ w dw, Reach (encGlobals G) (leaf n) rw' F m
+      («Prover.stAfter» (encGlobals G) (leaf n) (leaf c) (encJob (encDepth da) Γ k Φ t₂)
+        (encTDB (w, dw))) (encR (K (w, dw)))) :
+    Reach (encGlobals G) (leaf n) rw' F (m + 1)
+      («Prover.stTail» (encJob (encDepth da) Γ k Φ t₂) (encDB p₁) (encDB p₂) (encDB mk) (leaf c))
+      (encR ((rec da Γ k Φ t₂).bind fun r ↦
+        K (r.1, Internal.dTrans p₁ (Internal.dTrans p₂ (Internal.dTrans mk r.2))))) := by
+  refine reach_step rfl ?_
+  mirror_simp [advBy, «Prover.stAdv», «Prover.stNeed», «Prover.stTail», «Prover/JobL.single»,
+    hF.1 da Γ k t₂, firstR_single]
+  rcases rec da Γ k Φ t₂ with _ | ⟨t₃, d₃⟩
+  · exact reach_done _ _
+  · simp only [Option.map_some, Option.bind_some, label_some, child_some, beq_self_eq_true,
+      ↓reduceIte, p1_encTDB, p2_encTDB, dTrans_eq]
+    exact hK t₃ _
+
+/-- The rewriting at the root of a term in a state, the rewritten term reduced and the result
+continued. -/
+theorem stRoot_eq (hrw : WRel Φ rw' rw) (hF : JRel Φ F rec) (da : Internal.Depth) (d : ℕ)
+    (Γ : List Tree) (k : ℕ) (u t₁ : Term) (d₁ : Deriv × Bool) (c m : ℕ)
+    (K : Term × Deriv × Bool → Option (Term × Deriv × Bool))
+    (hK : ∀ d' u' w dw, Reach (encGlobals G) (leaf n) rw' F m
+      («Prover.stAfter» (encGlobals G) (leaf n) (leaf c) (encJob d' Γ k Φ u')
+        (encTDB (w, dw))) (encR (K (w, dw)))) :
+    Reach (encGlobals G) (leaf n) rw' F (m + 1)
+      («Prover.stRoot» (encGlobals G) (leaf n) rw' (leaf (encDepth da)) (leaf c)
+        (encJob d Γ k Φ u) (encTerm t₁) (encDB d₁))
+      (encR ((Internal.atRootK rw rec Γ k Φ da t₁ d₁).bind K)) := by
+  simp only [«Prover.stRoot», template, jobRw_enc, hrw Γ k t₁, Internal.atRootK, isSome_eq]
+  rcases rw Γ k Φ t₁ with _ | ⟨t₂, dr⟩
+  · exact reach_mono (hK d u t₁ d₁)
+  · have h := stTail_eq (G := G) (n := n) (rw' := rw') hF da Γ k t₂ Internal.dRefl d₁ (dr, true)
+      c m K (fun w dw ↦ hK _ _ w dw)
+    simp only [Option.map_some, Option.isSome_some, ofBool_true, label_leaf, ne_eq,
+      one_ne_zero, not_false_eq_true, ↓reduceIte, tmpl_fromMaybe_eq, Option.getD_some,
+      p1_encTD, p2_encTD, jobAt_enc]
+    have he : (do
+        let x ← rec da Γ k Φ t₂
+        pure (x.1, Internal.dTrans d₁ (Internal.dTrans (dr, true) x.2))).bind K =
+        (rec da Γ k Φ t₂).bind fun r ↦
+          K (r.1, Internal.dTrans Internal.dRefl (Internal.dTrans d₁
+            (Internal.dTrans (dr, true) r.2))) := by
+      cases rec da Γ k Φ t₂ <;> rfl
+    rw [he]
+    exact h
+
+/-- The result, past a head normal form, of the state of the depth that continues no further. -/
+theorem stAfter_zero (Γ : List Tree) (k d : ℕ) (u w : Term) (dw : Deriv × Bool) :
+    Reach (encGlobals G) (leaf n) rw' F 0
+      («Prover.stAfter» (encGlobals G) (leaf n) (leaf 0) (encJob d Γ k Φ u) (encTDB (w, dw)))
+      (encR (some (w, dw))) := rfl
+
+/-- The mirror's derivation of a node's rewriting from its children's reductions. -/
+theorem dCong_map (cs : List (Term × Deriv × Bool)) :
+    «Prover.dCong» (cs.map fun x ↦ encDB x.2) = encDB (Internal.dCong (cs.map Prod.snd)) := by
+  rw [← dCong_eq, List.map_map]
+  rfl
+
+/-- An option bound to its presence. -/
+theorem bind_some_id {α : Type} (o : Option α) : o.bind some = o := by
+  cases o <;> rfl
+
+/-- The state of a node's children at a depth other than the full normal form: their results
+collected, the node rebuilt and rewritten at its root where a child rewrote. -/
+theorem stKids_open (hrw : WRel Φ rw' rw) (hF : JRel Φ F rec) (dp : Internal.Depth)
+    (hdp : encDepth dp ≠ 3) (Γ : List Tree) (k : ℕ) (w : Term)
+    (dw : Deriv × Bool) (L : List Tree) (o : Option (List (Term × Deriv × Bool)))
+    (hL : «Base.allSomeT» (L.map F) = encOpt ((o.map (List.map encTDB)).map (RoseTree.node 0))) :
+    Reach (encGlobals G) (leaf n) rw' F 2
+      («Prover.stKids» (encJob (encDepth dp) Γ k Φ w) (encTerm w) (encDB dw)
+        («Prover.jobs» L))
+      (encR (o.bind fun cs ↦
+        if cs.any (·.2.2) then
+          Internal.atRootK rw rec Γ k Φ dp (RoseTree.node w.label (cs.map Prod.fst))
+            (Internal.dTrans dw (Internal.dCong (cs.map Prod.snd)))
+        else pure (RoseTree.node w.label (cs.map Prod.fst),
+          Internal.dTrans dw (Internal.dCong (cs.map Prod.snd))))) := by
+  have hj : «Prover.jobsOf» («Prover.jobs» L) = L := by
+    mirror_simp [«Prover.jobsOf», «Prover.jobs»]
   obtain ⟨l, ts, rfl⟩ : ∃ l ts, w = RoseTree.node l ts :=
     ⟨w.label, w.children, (RoseTree.node_label_children w).symm⟩
-  cases dp with
-  | head => exact absurd rfl hdp
-  | weak =>
-    simp only [«Prover.deepStepK», template, Internal.deepStepK, encDepth]
-    mirror_simp [label_encTerm, mArgs_eq, Option.bind_eq_bind]
-    rw [allSomeT_range_zipIdx ts _ (fun x ↦ (if Internal.keepsWeak l x.2 = true then
-      some (x.1, Internal.dRefl) else rec .weak Γ k Φ x.1).map encTDB) fun i hi ↦ by
-        rw [keepsWeak_eq, getD_map_of_lt _ _ i hi]
-        cases Internal.keepsWeak l i
-        · exact hrec .weak Γ k ts[i]
-        · rfl, Infer.mapM_map_option]
-    refine bindO_list _ encTDB _ _ fun cs ↦ ?_
-    have hA := atRootK_eq Γ Φ rw' rw hrw rec' rec hrec k .weak
-    mirror_simp [RoseTree.children_node, marked_eq, rebuild_eq, p2_encTDB, hC, dTrans_eq]
-    cases cs.any fun x ↦ x.2.2
-    · simp only [Bool.false_eq_true, ↓reduceIte]
-      rfl
-    · simp only [↓reduceIte]
-      exact hA _ _
-  | «open» =>
-    simp only [«Prover.deepStepK», template, Internal.deepStepK, encDepth]
-    mirror_simp [label_encTerm, mArgs_eq, childBinders_eq, Option.bind_eq_bind]
-    rcases Internal.childBinders G n l ts Γ with _ | Bs
-    · rfl
-    mirror_simp [ite_lt_leaf, ← List.length_zip, range_eq, List.map_map, Function.comp_def]
-    rw [allSomeT_range_zipIdx (Bs.zip ts) _ (fun x ↦ (if Internal.keepsFold l x.2 = true then
-      some (x.1.2, Internal.dRefl) else rec .open x.1.1.1 (k + x.1.1.2) Φ x.1.2).map encTDB)
-      fun i hi ↦ by
-        have h1 : i < Bs.length := by simp at hi; omega
-        have h2 : i < ts.length := by simp at hi; omega
-        rw [keepsFold_eq]
-        simp only [getD_map_of_lt _ _ i h1, getD_map_of_lt _ _ i h2, List.getElem_zip,
-          encBinder, binderCtx_pair, binderNum_pair, add_leaf]
-        cases Internal.keepsFold l i
-        · mirror_simp []
-          exact hrec .open _ _ _
-        · rfl, Infer.mapM_map_option]
-    refine bindO_list _ encTDB _ _ fun cs ↦ ?_
-    have hA := atRootK_eq Γ Φ rw' rw hrw rec' rec hrec k .open
-    mirror_simp [RoseTree.children_node, marked_eq, rebuild_eq, p2_encTDB, hC, dTrans_eq]
-    cases cs.any fun x ↦ x.2.2
-    · simp only [Bool.false_eq_true, ↓reduceIte]
-      rfl
-    · simp only [↓reduceIte]
-      exact hA _ _
-  | full =>
-    have h2 : ∀ dr : Deriv, «Language.pr» (encDeriv dr) (leaf 1) = encDB (dr, true) :=
-      fun _ ↦ rfl
-    have h3 : ∀ t, rec' (leaf 3) Γ (leaf k) (Φ.map encTerm) (encTerm t) =
-        encOpt ((rec .full Γ k Φ t).map encTDB) := hrec .full Γ k
-    simp only [«Prover.deepStepK», template, Internal.deepStepK, encDepth]
-    mirror_simp [label_encTerm, mArgs_eq, childBinders_eq, Option.bind_eq_bind]
-    rcases Internal.childBinders G n l ts Γ with _ | Bs
-    · rfl
-    mirror_simp [ite_lt_leaf, ← List.length_zip, range_eq, List.map_map, Function.comp_def]
-    rw [allSomeT_range (Bs.zip ts) _ (fun x ↦ (rec .full x.1.1 (k + x.1.2) Φ x.2).map encTDB)
-      fun i hi ↦ by
-        have h1 : i < Bs.length := by simp at hi; omega
-        have h2 : i < ts.length := by simp at hi; omega
-        simp only [getD_map_of_lt _ _ i h1, getD_map_of_lt _ _ i h2, List.getElem_zip,
-          encBinder, binderCtx_pair, binderNum_pair, add_leaf]
-        exact hrec .full _ _ _, Infer.mapM_map_option]
-    refine bindO_list _ encTDB _ _ fun cs ↦ ?_
-    mirror_simp [RoseTree.children_node, rebuild_eq, p2_encTDB, hC, hrw Γ k]
-    rcases rw Γ k Φ (RoseTree.node l (cs.map Prod.fst)) with _ | ⟨t₂, dr⟩
-    · simp only [Option.map_none, Option.isSome_none, Bool.false_eq_true, ↓reduceIte, dTrans_eq]
-      rfl
-    · mirror_simp [p1_encTD, p2_encTD, h2, h3]
-      rcases rec .full Γ k Φ t₂ with _ | ⟨t₃, d₃⟩
-      · rfl
-      · simp only [Option.map_some, p1_encTDB, p2_encTDB, dTrans_eq]
-        rfl
+  refine reach_step rfl ?_
+  mirror_simp [advBy, «Prover.stAdv», «Prover.stKids», «Prover.stNeed», template, hj, hL,
+    jobDp_enc, hdp, beq_iff_eq]
+  rcases o with _ | cs
+  · exact reach_done _ _
+  simp only [Option.map_some, Option.bind_some, label_some, child_some,
+    ↓reduceIte, RoseTree.children_node, marked_eq, rebuild_eq, List.map_map, Function.comp_def,
+    p2_encTDB, dCong_map, dTrans_eq]
+  cases cs.any fun x ↦ x.2.2
+  · exact reach_done _ _
+  · have h := stRoot_eq (G := G) (n := n) hrw hF dp (encDepth dp) Γ k (RoseTree.node l ts)
+      (RoseTree.node l (cs.map Prod.fst))
+      (Internal.dTrans dw (Internal.dCong (cs.map Prod.snd))) 0 0 some
+      (fun d' u' w dw ↦ stAfter_zero Γ k d' u' w dw)
+    rw [bind_some_id] at h
+    exact h
 
-/-- The mirror's step of the reduction to a depth under weakened hypotheses, at related
-rewritings at the root and reductions of the subterms. -/
-theorem evalStepK_eq (rw' : List Tree → Tree → List Tree → Tree → Tree)
-    (rw : Internal.RootRewriteK) (hrw : WRel Φ rw' rw)
-    (rec' : Tree → List Tree → Tree → List Tree → Tree → Tree) (rec : Internal.ReductionK)
-    (hrec : EKRel Φ rec' rec) :
-    EKRel Φ («Prover.evalStepK» (encGlobals G) (leaf n) rw' rec')
-      (Internal.evalStepK G n rw rec) := by
-  intro dp Γ k t
-  simp only [«Prover.evalStepK», template, Internal.evalStepK,
-    headStepK_eq Γ Φ rw' rw hrw rec' rec hrec k, bindO_eq, Option.bind_eq_bind]
-  rcases Internal.headStepK rw rec Γ k Φ t with _ | ⟨w, dw⟩
-  · rfl
+/-- The state of a node's children at the full normal form: their results collected, the node
+rebuilt and rewritten at its root. -/
+theorem stKids_full (hrw : WRel Φ rw' rw) (hF : JRel Φ F rec) (Γ : List Tree) (k : ℕ) (w : Term)
+    (dw : Deriv × Bool) (L : List Tree) (o : Option (List (Term × Deriv × Bool)))
+    (hL : «Base.allSomeT» (L.map F) = encOpt ((o.map (List.map encTDB)).map (RoseTree.node 0))) :
+    Reach (encGlobals G) (leaf n) rw' F 2
+      («Prover.stKids» (encJob 3 Γ k Φ w) (encTerm w) (encDB dw) («Prover.jobs» L))
+      (encR (o.bind fun cs ↦
+        match rw Γ k Φ (RoseTree.node w.label (cs.map Prod.fst)) with
+        | some (t₂, dr) => do
+          let (t₃, d₃) ← rec .full Γ k Φ t₂
+          pure (t₃, Internal.dTrans dw (Internal.dTrans (Internal.dCong (cs.map Prod.snd))
+            (Internal.dTrans (dr, true) d₃)))
+        | none => pure (RoseTree.node w.label (cs.map Prod.fst),
+            Internal.dTrans dw (Internal.dCong (cs.map Prod.snd))))) := by
+  have hj : «Prover.jobsOf» («Prover.jobs» L) = L := by
+    mirror_simp [«Prover.jobsOf», «Prover.jobs»]
+  obtain ⟨l, ts, rfl⟩ : ∃ l ts, w = RoseTree.node l ts :=
+    ⟨w.label, w.children, (RoseTree.node_label_children w).symm⟩
+  refine reach_step rfl ?_
+  mirror_simp [advBy, «Prover.stAdv», «Prover.stKids», «Prover.stNeed», template, hj, hL,
+    jobDp_enc]
+  rcases o with _ | cs
+  · exact reach_done _ _
+  simp only [Option.map_some, Option.bind_some, label_some, child_some,
+    RoseTree.children_node, rebuild_eq, List.map_map, Function.comp_def,
+    p2_encTDB, dCong_map, jobRw_enc, hrw Γ k]
+  rcases rw Γ k Φ (RoseTree.node l (cs.map Prod.fst)) with _ | ⟨t₂, dr⟩
+  · simp only [Option.map_none, dTrans_eq, isSome_eq, Option.isSome_none, ofBool_false]
+    exact reach_done _ _
+  · have h := stTail_eq (G := G) (n := n) (rw' := rw') hF .full Γ k t₂ dw
+      (Internal.dCong (cs.map Prod.snd)) (dr, true) 0 0 some
+      (fun w dw ↦ stAfter_zero Γ k _ _ w dw)
+    mirror_simp [p1_encTD, p2_encTD, tmpl_fromMaybe_eq, jobAt_enc]
+    exact h
+
+/-- The reduction past a head normal form at the weak depth, from the state of its children. -/
+theorem stAfter_weak (hrw : WRel Φ rw' rw) (hF : JRel Φ F rec) (d : ℕ) (Γ : List Tree) (k : ℕ)
+    (u w : Term) (dw : Deriv × Bool) :
+    Reach (encGlobals G) (leaf n) rw' F 2
+      («Prover.stAfter» (encGlobals G) (leaf n) (leaf 1) (encJob d Γ k Φ u) (encTDB (w, dw)))
+      (encR (Internal.deepStepK G n rw rec .weak Γ k Φ w dw)) := by
+  obtain ⟨l, ts, rfl⟩ : ∃ l ts, w = RoseTree.node l ts :=
+    ⟨w.label, w.children, (RoseTree.node_label_children w).symm⟩
+  simp only [Internal.deepStepK]
+  mirror_simp [«Prover.stAfter», «Prover.stDeep», template, p1_encTDB, p2_encTDB, label_encTerm,
+    mArgs_eq, jobAt_enc]
+  refine stKids_open (w := RoseTree.node l ts) hrw hF .weak (by decide) Γ k dw _ _ ?_
+  rw [List.map_map, allSomeT_range_zipIdx ts _ (fun x ↦ (if Internal.keepsWeak l x.2 = true then
+    some (x.1, Internal.dRefl) else rec .weak Γ k Φ x.1).map encTDB) fun i hi ↦ by
+      simp only [Function.comp_apply, keepsWeak_eq, getD_map_of_lt _ _ i hi]
+      cases Internal.keepsWeak l i
+      · exact hF.1 .weak Γ k ts[i]
+      · exact hF.2 Γ k ts[i], Infer.mapM_map_option]
+  rfl
+
+/-- The reduction past a head normal form at the open depth, from the state of its children. -/
+theorem stAfter_open (hrw : WRel Φ rw' rw) (hF : JRel Φ F rec) (d : ℕ) (Γ : List Tree) (k : ℕ)
+    (u w : Term) (dw : Deriv × Bool) :
+    Reach (encGlobals G) (leaf n) rw' F 2
+      («Prover.stAfter» (encGlobals G) (leaf n) (leaf 2) (encJob d Γ k Φ u) (encTDB (w, dw)))
+      (encR (Internal.deepStepK G n rw rec .open Γ k Φ w dw)) := by
+  obtain ⟨l, ts, rfl⟩ : ∃ l ts, w = RoseTree.node l ts :=
+    ⟨w.label, w.children, (RoseTree.node_label_children w).symm⟩
+  simp only [Internal.deepStepK]
+  mirror_simp [«Prover.stAfter», «Prover.stDeep», template, p1_encTDB, p2_encTDB, label_encTerm,
+    mArgs_eq, jobAt_enc, jobCtx_enc, childBinders_eq, Option.bind_eq_bind]
+  rcases Internal.childBinders G n l ts Γ with _ | Bs
+  · exact reach_done _ _
+  mirror_simp [Option.map_some, label_some, child_some, ite_lt_leaf, ← List.length_zip, range_eq,
+    List.map_map, Function.comp_def, Option.bind_some]
+  refine stKids_open (w := RoseTree.node l ts) hrw hF .open (by decide) Γ k dw _ _ ?_
+  rw [List.map_map, allSomeT_range_zipIdx (Bs.zip ts) _
+    (fun x ↦ (if Internal.keepsFold l x.2 = true then
+      some (x.1.2, Internal.dRefl) else rec .open x.1.1.1 (k + x.1.1.2) Φ x.1.2).map encTDB)
+    fun i hi ↦ by
+      have h1 : i < Bs.length := by simp at hi; omega
+      have h2 : i < ts.length := by simp at hi; omega
+      simp only [Function.comp_apply, keepsFold_eq, getD_map_of_lt _ _ i h1,
+        getD_map_of_lt _ _ i h2, List.getElem_zip, encBinder, binderCtx_pair, binderNum_pair,
+        jobNum_enc, jobHyps_enc, add_leaf]
+      cases Internal.keepsFold l i
+      · exact hF.1 .open _ _ _
+      · exact hF.2 Γ k ts[i], Infer.mapM_map_option]
+  rfl
+
+/-- The reduction past a head normal form at the full depth, from the state of its children. -/
+theorem stAfter_full (hrw : WRel Φ rw' rw) (hF : JRel Φ F rec) (d : ℕ) (Γ : List Tree) (k : ℕ)
+    (u w : Term) (dw : Deriv × Bool) :
+    Reach (encGlobals G) (leaf n) rw' F 2
+      («Prover.stAfter» (encGlobals G) (leaf n) (leaf 3) (encJob d Γ k Φ u) (encTDB (w, dw)))
+      (encR (Internal.deepStepK G n rw rec .full Γ k Φ w dw)) := by
+  obtain ⟨l, ts, rfl⟩ : ∃ l ts, w = RoseTree.node l ts :=
+    ⟨w.label, w.children, (RoseTree.node_label_children w).symm⟩
+  simp only [Internal.deepStepK]
+  mirror_simp [«Prover.stAfter», «Prover.stDeep», template, p1_encTDB, p2_encTDB, label_encTerm,
+    mArgs_eq, jobAt_enc, jobCtx_enc, childBinders_eq, Option.bind_eq_bind]
+  rcases Internal.childBinders G n l ts Γ with _ | Bs
+  · exact reach_done _ _
+  mirror_simp [Option.map_some, label_some, child_some, ite_lt_leaf, ← List.length_zip, range_eq,
+    List.map_map, Function.comp_def, Option.bind_some]
+  refine stKids_full (w := RoseTree.node l ts) hrw hF Γ k dw _ _ ?_
+  rw [List.map_map, allSomeT_range (Bs.zip ts) _
+    (fun x ↦ (rec .full x.1.1 (k + x.1.2) Φ x.2).map encTDB)
+    fun i hi ↦ by
+      have h1 : i < Bs.length := by simp at hi; omega
+      have h2 : i < ts.length := by simp at hi; omega
+      simp only [Function.comp_apply, getD_map_of_lt _ _ i h1, getD_map_of_lt _ _ i h2,
+        List.getElem_zip, encBinder, binderCtx_pair, binderNum_pair, jobNum_enc, jobHyps_enc,
+        add_leaf]
+      exact hF.1 .full _ _ _, Infer.mapM_map_option]
+
+/-- The reduction past a head normal form to any depth, from the state it continues in. -/
+theorem stAfter_eq (hrw : WRel Φ rw' rw) (hF : JRel Φ F rec) (dp : Internal.Depth) (d : ℕ)
+    (Γ : List Tree) (k : ℕ) (u w : Term) (dw : Deriv × Bool) :
+    Reach (encGlobals G) (leaf n) rw' F 2
+      («Prover.stAfter» (encGlobals G) (leaf n) (leaf (encDepth dp)) (encJob d Γ k Φ u)
+        (encTDB (w, dw)))
+      (encR (Internal.deepStepK G n rw rec dp Γ k Φ w dw)) := by
   cases dp with
-  | head => rfl
-  | weak => exact deepStepK_eq G n Γ Φ rw' rw hrw rec' rec hrec .weak nofun k w dw
-  | «open» => exact deepStepK_eq G n Γ Φ rw' rw hrw rec' rec hrec .open nofun k w dw
-  | full => exact deepStepK_eq G n Γ Φ rw' rw hrw rec' rec hrec .full nofun k w dw
+  | head => exact reach_mono (reach_mono (stAfter_zero Γ k d u w dw))
+  | weak => exact stAfter_weak hrw hF d Γ k u w dw
+  | «open» => exact stAfter_open hrw hF d Γ k u w dw
+  | full => exact stAfter_full hrw hF d Γ k u w dw
+
+
+/-- A state that reaches a result reaches it within any number of rounds more. -/
+theorem reach_add {G' n' : Tree} {rw' : List Tree → Tree → List Tree → Tree → Tree}
+    {F : Tree → Tree} {m : ℕ} {s R : Tree} (h : Reach G' n' rw' F m s R) (l : ℕ) :
+    Reach G' n' rw' F (m + l) s R :=
+  Nat.rec h (fun _ ih ↦ reach_mono ih) l
+
+/-- The state of the argument of an application, the function reduced. -/
+theorem stArg_eq (hrw : WRel Φ rw' rw) (hF : JRel Φ F rec) (c : ℕ)
+    (K : Term × Deriv × Bool → Option (Term × Deriv × Bool))
+    (hK : ∀ d' u' w dw, Reach (encGlobals G) (leaf n) rw' F 2
+      («Prover.stAfter» (encGlobals G) (leaf n) (leaf c) (encJob d' Γ k Φ u')
+        (encTDB (w, dw))) (encR (K (w, dw))))
+    (t f' : Term) (df : Deriv × Bool) (q : Tree) (o : Option (Term × Deriv × Bool))
+    (hq : F q = encR o) :
+    Reach (encGlobals G) (leaf n) rw' F 4
+      («Prover.stArg» (encJob c Γ k Φ t) (encTDB (f', df)) q)
+      (encR (o.bind fun r ↦ (Internal.atRootK rw rec Γ k Φ .head (Term.app f' r.1)
+        (Internal.dCong [df, r.2])).bind K)) := by
+  refine reach_step rfl ?_
+  mirror_simp [advBy, «Prover.stAdv», «Prover.stArg», «Prover.stNeed», «Prover/JobL.single», hq,
+    firstR_single, jobDp_enc]
+  rcases o with _ | ⟨u', du⟩
+  · exact reach_done _ _
+  have hd : «Prover.dCong» («Theory.l2» (encDB df) (encDB du)) =
+      encDB (Internal.dCong [df, du]) := dCong_eq [df, du]
+  simp only [encR, Option.map_some, label_some, child_some, beq_self_eq_true, ↓reduceIte, p1_encTDB,
+    p2_encTDB, hd, mApp_eq, Option.bind_some]
+  exact stRoot_eq hrw hF .head c Γ k t _ _ c 2 K hK
+
+/-- The state of the function of an application. -/
+theorem stFun_eq (hrw : WRel Φ rw' rw) (hF : JRel Φ F rec) (c : ℕ)
+    (K : Term × Deriv × Bool → Option (Term × Deriv × Bool))
+    (hK : ∀ d' u' w dw, Reach (encGlobals G) (leaf n) rw' F 2
+      («Prover.stAfter» (encGlobals G) (leaf n) (leaf c) (encJob d' Γ k Φ u')
+        (encTDB (w, dw))) (encR (K (w, dw))))
+    (f u : Term) :
+    Reach (encGlobals G) (leaf n) rw' F 5
+      («Prover.stFun» (encJob c Γ k Φ (Term.app f u)))
+      (encR ((Internal.headStepK rw rec Γ k Φ (Term.app f u)).bind K)) := by
+  have h0 : F (encJob 0 Γ k Φ f) = encR (rec .head Γ k Φ f) := hF.1 .head Γ k f
+  have hc0 : (List.map encTerm (RoseTree.children (Term.app f u))).getD 0 (leaf 0) = encTerm f :=
+    rfl
+  have hc1 : (List.map encTerm (RoseTree.children (Term.app f u))).getD 1 (leaf 0) = encTerm u :=
+    rfl
+  have hh : Internal.headStepK rw rec Γ k Φ (Term.app f u) = (rec .head Γ k Φ f).bind fun r ↦
+      (match r.1.label, r.1.children with
+        | .lam _, [b] => if Internal.uses b 0 < 2 then some (u, Internal.dRefl)
+            else rec .weak Γ k Φ u
+        | _, _ => rec .head Γ k Φ u).bind fun r' ↦
+        Internal.atRootK rw rec Γ k Φ .head (Term.app r.1 r'.1) (Internal.dCong [r.2, r'.2]) := by
+    simp only [Internal.headStepK, Term.app, RoseTree.label_node, RoseTree.children_node,
+      Option.bind_eq_bind]
+    refine congrArg _ (funext fun r ↦ ?_)
+    generalize RoseTree.label r.1 = l, RoseTree.children r.1 = cs
+    split
+    · next b =>
+      by_cases hu : Internal.uses b 0 < 2 <;> simp only [hu, ↓reduceIte]
+    · next h =>
+      split
+      · exact (h _ _ rfl rfl).elim
+      · rfl
+  rw [hh]
+  refine reach_step rfl ?_
+  mirror_simp [advBy, «Prover.stAdv», «Prover.stFun», «Prover.stNeed», «Prover/JobL.single»,
+    firstR_single, jobTerm_enc, mArg_eq, jobAt_enc, h0, hc0, hc1]
+  rcases rec .head Γ k Φ f with _ | ⟨f', df⟩
+  · exact reach_done _ _
+  simp only [encR, Option.map_some, label_some, child_some, beq_self_eq_true, ↓reduceIte,
+    p1_encTDB, Option.bind_some, Option.bind_assoc]
+  refine stArg_eq hrw hF c K hK _ f' df _ _ ?_
+  obtain ⟨l', ts', rfl⟩ : ∃ l ts, f' = RoseTree.node l ts :=
+    ⟨f'.label, f'.children, (RoseTree.node_label_children f').symm⟩
+  by_cases hlam : (labelData l').1 = 5 ∧ ts'.length = 1
+  · obtain ⟨hl', h1'⟩ := hlam
+    obtain ⟨a, rfl⟩ := (labelData_eq_lam l').mp hl'
+    match ts', h1' with
+    | [b], _ =>
+      mirror_simp [mIs_eq, labelData, mArg_eq, uses_eq]
+      by_cases hu : Internal.uses b 0 < 2
+      · simp only [hu, decide_true, ↓reduceIte, jobAt_enc]
+        exact hF.2 Γ k u
+      · simp only [hu, decide_false, Bool.false_eq_true, ↓reduceIte, jobAt_enc]
+        exact hF.1 .weak Γ k u
+  · mirror_simp [mIs_eq, Bool.and_eq_true, beq_iff_eq, hlam]
+    split
+    · exact absurd ⟨(labelData_eq_lam _).mpr ⟨_, rfl⟩, rfl⟩ hlam
+    · exact hF.1 .head Γ k u
+
+/-- The state of the child a node eliminates. -/
+theorem stChild_eq (hrw : WRel Φ rw' rw) (hF : JRel Φ F rec) (c : ℕ)
+    (K : Term × Deriv × Bool → Option (Term × Deriv × Bool))
+    (hK : ∀ d' u' w dw, Reach (encGlobals G) (leaf n) rw' F 2
+      («Prover.stAfter» (encGlobals G) (leaf n) (leaf c) (encJob d' Γ k Φ u')
+        (encTDB (w, dw))) (encR (K (w, dw))))
+    (l : Internal.Label) (ts : List Term) (i : ℕ) (x : Term) :
+    Reach (encGlobals G) (leaf n) rw' F 4
+      («Prover.stChild» (encJob c Γ k Φ (RoseTree.node l ts)) (leaf i) (encTerm x))
+      (encR ((rec .head Γ k Φ x).bind fun r ↦
+        (if r.2.2 then
+          Internal.atRootK rw rec Γ k Φ .head (RoseTree.node l (ts.set i r.1))
+            (Internal.dCong ((List.range ts.length).map fun j ↦
+              if j = i then r.2 else Internal.dRefl))
+        else some (RoseTree.node l ts, Internal.dRefl)).bind K)) := by
+  have h0 : F (encJob 0 Γ k Φ x) = encR (rec .head Γ k Φ x) := hF.1 .head Γ k x
+  refine reach_step rfl ?_
+  mirror_simp [advBy, «Prover.stAdv», «Prover.stChild», «Prover.stNeed», «Prover/JobL.single»,
+    firstR_single, jobAt_enc, jobDp_enc, jobTerm_enc, h0, mArgs_eq, RoseTree.children_node]
+  rcases rec .head Γ k Φ x with _ | ⟨c', dd, _ | _⟩
+  · simp only [encR, Option.map_none, label_none, Option.bind_none, Nat.reduceBEq,
+      Bool.false_eq_true, ↓reduceIte]
+    exact reach_done _ _
+  · simp only [encR, Option.map_some, label_some, child_some, beq_self_eq_true, ↓reduceIte,
+      p2_encTDB, p2_encDB, Option.bind_some, ofBool_false, label_leaf, Bool.false_eq_true]
+    exact reach_mono (hK c (RoseTree.node l ts) (RoseTree.node l ts) Internal.dRefl)
+  · have hn : RoseTree.node (labelData l).1
+        (Const.child (encTerm (RoseTree.node l ts)) (leaf 0) ::
+          (ts.map encTerm).set i (encTerm c')) = encTerm (RoseTree.node l (ts.set i c')) := by
+      simp [encTerm_node, child_node, List.map_set]
+    have hd : ∀ g : ℕ → Tree,
+        (∀ j, g j = encDB (if j = i then (dd, true) else Internal.dRefl)) →
+        «Prover.dCong» ((List.range ts.length).map g) =
+        encDB (Internal.dCong ((List.range ts.length).map fun j ↦
+          if j = i then (dd, true) else Internal.dRefl)) := fun g hg ↦ by
+      rw [← dCong_eq, List.map_map]
+      exact congrArg _ (List.map_congr_left fun j _ ↦ hg j)
+    simp only [encR, Option.map_some, label_some, child_some, beq_self_eq_true, ↓reduceIte,
+      p1_encTDB, p2_encTDB, p2_encDB, ofBool_true, label_leaf, Option.bind_some, setAt_eq,
+      label_encTerm, RoseTree.label_node, hn, Nat.reduceBNe]
+    rw [hd _ fun j ↦ by
+      by_cases h : j = i
+      · subst h
+        simp only [beq_self_eq_true, ↓reduceIte]
+      · simp only [h, ↓reduceIte, beq_iff_eq]
+        rfl]
+    exact stRoot_eq hrw hF .head c Γ k (RoseTree.node l ts) (RoseTree.node l (ts.set i c')) _ c 2 K
+      hK
+
+/-- The state a job of a depth starts in, its head normal form reached and continued. -/
+theorem stStart_eq (hrw : WRel Φ rw' rw) (hF : JRel Φ F rec) (dp : Internal.Depth) (t : Term) :
+    Reach (encGlobals G) (leaf n) rw' F 5
+      («Prover.stStart» (encGlobals G) (leaf n) rw' (encJob (encDepth dp) Γ k Φ t))
+      (encR ((Internal.headStepK rw rec Γ k Φ t).bind fun r ↦
+        Internal.deepStepK G n rw rec dp Γ k Φ r.1 r.2)) := by
+  have hK : ∀ d' u' w dw, Reach (encGlobals G) (leaf n) rw' F 2
+      («Prover.stAfter» (encGlobals G) (leaf n) (leaf (encDepth dp)) (encJob d' Γ k Φ u')
+        (encTDB (w, dw))) (encR (Internal.deepStepK G n rw rec dp Γ k Φ w dw)) :=
+    fun d' u' w dw ↦ stAfter_eq hrw hF dp d' Γ k u' w dw
+  have h4 : encDepth dp ≠ 4 := by cases dp <;> decide
+  obtain ⟨l, ts, rfl⟩ : ∃ l ts, t = RoseTree.node l ts :=
+    ⟨t.label, t.children, (RoseTree.node_label_children t).symm⟩
+  by_cases happ : (labelData l).1 = 6 ∧ ts.length = 2
+  · obtain ⟨hl, h2⟩ := happ
+    obtain rfl := (labelData_eq_app l).mp hl
+    match ts, h2 with
+    | [f, u], _ =>
+      mirror_simp [«Prover.stStart», template, jobDp_enc, jobTerm_enc, h4, beq_iff_eq, mIs_eq,
+        labelData]
+      exact stFun_eq hrw hF (encDepth dp) (fun r ↦ Internal.deepStepK G n rw rec dp Γ k Φ r.1 r.2)
+        hK f u
+  · mirror_simp [«Prover.stStart», template, jobDp_enc, jobTerm_enc, h4, beq_iff_eq, mIs_eq,
+      Bool.and_eq_true, happ, jobRw_enc, hrw Γ k]
+    have hH : Internal.headStepK rw rec Γ k Φ (RoseTree.node l ts) =
+        match rw Γ k Φ (RoseTree.node l ts) with
+        | some (t₁, dr) => (rec .head Γ k Φ t₁).bind fun r ↦
+            some (r.1, Internal.dTrans (dr, true) r.2)
+        | none => match Internal.headChild l ts with
+          | none => some (RoseTree.node l ts, Internal.dRefl)
+          | some i => ts[i]?.bind fun c ↦ (rec .head Γ k Φ c).bind fun r ↦
+              if r.2.2 then
+                Internal.atRootK rw rec Γ k Φ .head (RoseTree.node l (ts.set i r.1))
+                  (Internal.dCong ((List.range ts.length).map fun j ↦
+                    if j = i then r.2 else Internal.dRefl))
+              else some (RoseTree.node l ts, Internal.dRefl) := by
+      simp only [Internal.headStepK, RoseTree.label_node, RoseTree.children_node]
+      split
+      · exact absurd ⟨rfl, rfl⟩ happ
+      · rfl
+    rw [hH]
+    rcases rw Γ k Φ (RoseTree.node l ts) with _ | ⟨t₁, dr⟩
+    · mirror_simp [headChild_eq]
+      rcases Internal.headChild l ts with _ | i
+      · exact reach_add (hK (encDepth dp) (RoseTree.node l ts) (RoseTree.node l ts)
+          Internal.dRefl) 3
+      mirror_simp [mArgs_eq, RoseTree.children_node, Option.bind_some]
+      rcases ts[i]? with _ | x
+      · exact reach_done _ _
+      simp only [Option.map_some, Option.isSome_some, ↓reduceIte, Option.getD_some,
+        Option.bind_some, Option.bind_assoc]
+      exact reach_mono (stChild_eq hrw hF (encDepth dp) _ hK l ts i x)
+    · have h := stTail_eq (G := G) (n := n) (rw' := rw') hF .head Γ k t₁ Internal.dRefl
+        Internal.dRefl (dr, true) (encDepth dp) 2
+        (fun r ↦ Internal.deepStepK G n rw rec dp Γ k Φ r.1 r.2) (fun w dw ↦ hK _ _ w dw)
+      simp only [Option.map_some, Option.isSome_some, ↓reduceIte, Option.getD_some, p1_encTD,
+        p2_encTD, jobAt_enc, Option.bind_assoc, Option.bind_some]
+      exact reach_add h 2
+
+/-- The rounds of the state a job starts in are the step of the reduction, at a function of the
+jobs related to the reduction of the subterms. -/
+theorem stResult_eq (hrw : WRel Φ rw' rw) (hF : JRel Φ F rec) (dp : Internal.Depth) (t : Term) :
+    «Prover.stResult» ((advBy (encGlobals G) (leaf n) rw' F)^[5]
+        («Prover.stStart» (encGlobals G) (leaf n) rw' (encJob (encDepth dp) Γ k Φ t))) =
+      encR (Internal.evalStepK G n rw rec dp Γ k Φ t) := by
+  have h := stStart_eq (G := G) (n := n) (Γ := Γ) (k := k) hrw hF dp t
+  simp only [Reach] at h
+  rw [h]
+  rfl
+
+/-- The mirror's reduction of a job is related to the reduction under weakened hypotheses. -/
+theorem evalJ_rel (hrw : WRel Φ rw' rw) (fuel : ℕ) :
+    JRel Φ (evalJ (encGlobals G) (leaf n) rw' fuel) (Internal.evalK G n rw fuel) :=
+  Nat.rec ⟨fun _ _ _ _ ↦ rfl, fun _ _ _ ↦ rfl⟩ (fun m ih ↦
+    ⟨fun dp Γ k t ↦ stResult_eq hrw ih dp t, fun Γ k t ↦ by
+      have hs : «Prover.stStart» (encGlobals G) (leaf n) rw' (encJob 4 Γ k Φ t) =
+          «Prover.stDone» (encOpt (some (encTDB (t, Internal.dRefl)))) := rfl
+      have hd := reach_done (G' := encGlobals G) (n' := leaf n) (rw' := rw')
+        (F := evalJ (encGlobals G) (leaf n) rw' m) 5 (encOpt (some (encTDB (t, Internal.dRefl))))
+      simp only [Reach] at hd
+      change «Prover.stResult» ((advBy (encGlobals G) (leaf n) rw'
+        (evalJ (encGlobals G) (leaf n) rw' m))^[5]
+        («Prover.stStart» (encGlobals G) (leaf n) rw' (encJob 4 Γ k Φ t))) = _
+      rw [hs, hd]
+      rfl⟩) fuel
+
+end Step
 
 /-- The mirror's reduction to a depth under weakened hypotheses within a depth of fuel, at a
 related rewriting at the root. -/
@@ -1898,9 +2293,9 @@ theorem evalK_eq (rw' : List Tree → Tree → List Tree → Tree → Tree) (rw 
     (hrw : WRel Φ rw' rw) (fuel : ℕ) :
     EKRel Φ («Prover.evalK» (encGlobals G) (leaf n) rw' (leaf fuel))
       (Internal.evalK G n rw fuel) := by
-  simp only [«Prover.evalK», template, iter_leaf, Internal.evalK]
-  exact Nat.rec (fun _ _ _ _ ↦ rfl)
-    (fun _ ih ↦ by rw [Nat.repeat]; exact evalStepK_eq G n Φ rw' rw hrw _ _ ih) fuel
+  intro dp Γ k t
+  simp only [«Prover.evalK», template, evalB_eq]
+  exact (evalJ_rel hrw fuel).1 dp Γ k t
 
 /-- The mirror's reduction to a depth within a depth of fuel, at related rules: the reduction
 under weakened hypotheses by the index of the rules and the prepared hypotheses, which
