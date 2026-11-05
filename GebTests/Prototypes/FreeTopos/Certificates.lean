@@ -7,8 +7,12 @@ module
 
 public import GebTests.Prototypes.FreeTopos.DatatypeApply
 public import GebTests.Prototypes.FreeTopos.DatatypeCase
-public import GebTests.Prototypes.FreeTopos.DatatypeCaseSound
 public import GebTests.Prototypes.FreeTopos.DatatypeClauses
+public import GebTests.Prototypes.FreeTopos.DatatypeCata
+public import GebTests.Prototypes.FreeTopos.DatatypeCataChain
+public import GebTests.Prototypes.FreeTopos.DatatypeCataClauses
+public import GebTests.Prototypes.FreeTopos.DatatypeCataSound
+public import GebTests.Prototypes.FreeTopos.DatatypeCataSrc
 public import GebTests.Prototypes.FreeTopos.DatatypeLists
 public import GebTests.Prototypes.FreeTopos.DatatypeData
 public import GebTests.Prototypes.FreeTopos.DatatypeDatum
@@ -148,6 +152,44 @@ def searches : List (String × Search) :=
         "datatype-clauses"], fun dss ↦
       inProgram Datatypes.extended3 fun (P, S, T) ↦
         Datatypes.caseSoundCertificates P S T dss.flatten)),
+    ("datatype-cata", (["datatype-base", "datatype-atom", "datatype-list",
+        "datatype-stages", "datatype-apply", "datatype-expansion", "datatype-assembly",
+        "datatype-datum", "datatype-decode", "datatype-folds", "datatype-case",
+        "datatype-clauses", "datatype-case-sound"], fun dss ↦
+      inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.cataCertificates P S T dss.flatten)),
+    ("datatype-cata-clauses", (["datatype-base", "datatype-atom", "datatype-list",
+        "datatype-stages", "datatype-apply", "datatype-expansion", "datatype-assembly",
+        "datatype-datum", "datatype-decode", "datatype-folds", "datatype-case",
+        "datatype-clauses", "datatype-case-sound", "datatype-cata"], fun dss ↦
+      inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.cataClausesCertificates P S T dss.flatten)),
+    ("datatype-cata-chain", (["datatype-base", "datatype-atom", "datatype-list",
+        "datatype-stages", "datatype-apply", "datatype-expansion", "datatype-assembly",
+        "datatype-datum", "datatype-decode", "datatype-folds", "datatype-case",
+        "datatype-clauses", "datatype-case-sound", "datatype-cata", "datatype-cata-clauses"],
+      fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.cataChainCertificates P S T dss.flatten)),
+    ("datatype-cata-sound", (["datatype-base", "datatype-atom", "datatype-list",
+        "datatype-stages", "datatype-apply", "datatype-expansion", "datatype-assembly",
+        "datatype-datum", "datatype-decode", "datatype-folds", "datatype-case",
+        "datatype-clauses", "datatype-case-sound", "datatype-cata", "datatype-cata-clauses",
+        "datatype-cata-chain"], fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.cataSoundCertificates P S T dss.flatten)),
+    ("datatype-cata-core", (["datatype-base", "datatype-atom", "datatype-list",
+        "datatype-stages", "datatype-apply", "datatype-expansion", "datatype-assembly",
+        "datatype-datum", "datatype-decode", "datatype-folds", "datatype-case",
+        "datatype-clauses", "datatype-case-sound", "datatype-cata", "datatype-cata-clauses",
+        "datatype-cata-chain", "datatype-cata-sound"], fun dss ↦
+      inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.cataCoreCertificates P S T dss.flatten)),
+    ("datatype-cata-src", (["datatype-base", "datatype-atom", "datatype-list",
+        "datatype-stages", "datatype-apply", "datatype-expansion", "datatype-assembly",
+        "datatype-datum", "datatype-decode", "datatype-folds", "datatype-case",
+        "datatype-clauses", "datatype-case-sound", "datatype-cata", "datatype-cata-clauses",
+        "datatype-cata-chain", "datatype-cata-sound", "datatype-cata-core"], fun dss ↦
+      inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.cataSrcCertificates P S T dss.flatten)),
     ("datatype-sound", (["datatype-base", "datatype-atom", "datatype-list", "datatype-stages",
         "datatype-apply", "datatype-expansion", "datatype-assembly", "datatype-app",
         "datatype-lam", "datatype-data", "datatype-folds", "datatype-lists"],
