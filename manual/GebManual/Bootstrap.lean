@@ -7221,7 +7221,9 @@ that remain, and the constraints each of them carries.
   instance is found by matching (`applyMatch`), the evaluation at
   literals, with the index of its equations among the development's
   theorems (`lit`), or the reduction by the environment machine with its
-  fuel and the definitions it unfolds (`machine`).
+  fuel, the definitions it unfolds, the primitives that build a rose-tree
+  fold's lists and the prover's rules it rewrites by at the roots of its
+  normal form, theorems and hypotheses among them (`machine`).
 * `Geb/Prototypes/FreeTopos/Internal/ProveChecked.lean`: the soundness
   of the prover's reductions
   ({name}`Geb.FreeTopos.Internal.normalize_checked`,
@@ -7391,7 +7393,15 @@ that remain, and the constraints each of them carries.
    kernel has no form of; the value of a {name}`Thunk` is its function's,
    so a transcription that computes the value at once, or delays it by an
    abstraction and computes it at each reading, agrees with the machine,
-   and which of them keeps the machine's time is measured. The Geb
+   and which of them keeps the machine's time is measured. A free
+   variable of the machine is a de Bruijn level, an integer, negative at
+   the variables of the reduced term's context, and the Geb sources have
+   no integers, so that the transcription encodes them unless the machine
+   takes natural numbers first, a question stated below. The
+   normal form of a fold's step computes the type of the normal form of
+   the fold's start, list or tree
+   ({name}`Geb.FreeTopos.Internal.typeIn`), which the transcription of
+   the machine therefore requires. The Geb
    sources have no rank or unrank of bitstrings. The evaluation computes
    a numeral's index by the fold `val (b :: w) = 2 * val w + b + 1`, where `b` is one at the bit
    {name}`Geb.FreeTopos.Translation.b1T` builds and zero at the other,
@@ -7401,20 +7411,17 @@ that remain, and the constraints each of them carries.
    kernel's primitives on labels, which are natural numbers read as
    bitstrings by the same enumeration ({ref "values-and-labels"}[Values
    and labels]).
-3. Certificates in declarations, in Lean and in Geb: a form of
-   {name}`Geb.FreeTopos.Internal.Decl` whose theorem carries a
-   {name}`Geb.FreeTopos.Internal.ConvDeriv` in place of a
-   {name}`Geb.FreeTopos.Internal.Deriv`, which
-   {name}`Geb.FreeTopos.Internal.checkDev` checks by
-   {name}`Geb.FreeTopos.Internal.convCheck`, and the validity of the
-   developments ({name}`Geb.FreeTopos.Internal.valid_of_checkDev`)
-   extended to it by
-   {name}`Geb.FreeTopos.Internal.Thm.valid_of_convChecks`. A
-   certificate whose every rule is `base` is a derivation, so the
-   alternative is one form of theorem whose certificate is a conversion
-   certificate; the choice is between leaving the base checker's
-   declarations, which the agreement proofs cover, as they are, and one
-   form of theorem.
+3. Certificates in declarations in Geb. In Lean a declaration of a
+   development is a {name}`Geb.FreeTopos.Internal.ConvDecl`: a
+   declaration of the base checker, which the agreement proofs cover as
+   it stands, a theorem carrying a
+   {name}`Geb.FreeTopos.Internal.ConvDeriv`, or the record of the
+   evaluation's readiness, checked by
+   {name}`Geb.FreeTopos.Internal.checkConvDev` and valid by
+   {name}`Geb.FreeTopos.Internal.valid_of_checkConvDev`. What remains is
+   the transcription of those declarations and of their check into Geb,
+   with the proof that it agrees with
+   {name}`Geb.FreeTopos.Internal.checkConvDev`.
 4. The emission of the steps by the tactics, in Lean and in Geb
    together, so that
    `GebTests/Prototypes/FreeTopos/Agreement/Tactics.lean`, the proof that
@@ -7452,12 +7459,15 @@ that remain, and the constraints each of them carries.
      first step of evaluation (step 5).
 5. The stored certificates. `GebTests/Prototypes/FreeTopos/Stored.lean`
    encodes terms, the base checker's rules and declarations as trees of
-   natural numbers, and encodes neither the prover's rules
-   ({name}`Geb.FreeTopos.Internal.NormRule`), nor the depths
-   ({name}`Geb.FreeTopos.Internal.Depth`), nor the rules of the
-   conversion certificates, nor the declaration recording readiness;
-   their kinds are added to `ruleData` and `ruleOf`, and the declaration
-   to those `internConvDecl` encodes. The prover's rule `thmAt` holds the matching of a theorem's
+   natural numbers, and the step `machine` whose rules are theorems and
+   hypotheses, in `convRuleData` and `convRuleOf`. What remains is the
+   encoding of the prover's other rules
+   ({name}`Geb.FreeTopos.Internal.NormRule`), of the depths
+   ({name}`Geb.FreeTopos.Internal.Depth`), of the rules `norm`, `eval`,
+   `applyMatch` and `lit`, and of the declaration recording readiness;
+   their kinds are added to `convRuleData` and `convRuleOf`, and the
+   declaration to those `internConvDecl` encodes. The prover's rule
+   `thmAt` holds the matching of a theorem's
    left side prepared beforehand, a function, which no store holds: a
    stored certificate names the rule `thm` with its index and objects,
    and the reader prepares the matching as the prover does. Each stored
@@ -7504,8 +7514,27 @@ that remain, and the constraints each of them carries.
   side's rewriting unfolds and rewrites by the theorems and hypotheses
   it cites, at the roots of its normal form, innermost first. Such a
   step applies a rule and unfolds a definition wherever the normal form
-  reaches it. Why the check of the expansion's identity is not shortened
-  as the other two are is open; no stored certificate is translated.
+  reaches it. No stored certificate is translated.
+* The time of the translation. It grows with the machine's fuel: on the
+  certificate of weakening, at fuels of 32, 96 and 4096, the translation
+  takes 3.9, 19 and 149 times the base checker's time in the same run,
+  while its text is shorter by 5 percent at the last than at the first.
+  Its time is not divided among the theorems, and whether a cycle of
+  rules, whose rewriting only the fuel ends, accounts for it is not
+  known.
+* The check of the expansion's identity. Why it is not shortened as the
+  checks of weakening and of substitution are is not known; the times of
+  the checks are not divided among the theorems.
+* The theorems the translation leaves with their derivations. They are
+  not divided among those with no join, those with a join the machine
+  does not join, those with a rewriting that cites a rule from its right
+  side to its left, which the translation does not replace, and those
+  whose translation the conversion checker does not accept.
+* The machine's levels. Whether a free variable of the machine stays an
+  integer level, which the transcription into Geb encodes, or becomes a
+  natural number counted from the context's length, which changes how
+  the machine's rewriting counts the binders passed and how its soundness
+  states a value's scope, is decided before that transcription (step 2).
 
 ### The base checker's evaluation
 %%%
