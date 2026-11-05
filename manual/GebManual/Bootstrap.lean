@@ -2300,12 +2300,12 @@ the stage-1 compiler's `synIn` passes them to `synList`; and, in the
 tactics, a list of rewriting rules, each pairing a pattern with a
 function, read more than once, as `withWeakHyps` reads its rules. An
 iteration fails per use where its step applies the previous iterate both
-directly and in the step of a fold, as the prover's reduction `evalK`
-applies it to each of a node's children in `deepStepK`: a use under the
-fold needs one `!` more than the iterate's type has. An iterate applied
-to lists of arguments, once to the concatenation of the arguments of
-every element of the list, is applied under no fold, and an iteration in
-that form is typable. The
+directly and in the step of a fold, as a reduction applies it to each of
+a node's children: a use under the fold needs one `!` more than the
+iterate's type has. An iterate applied to lists of arguments, once to the
+concatenation of the arguments of every element of the list, is applied
+under no fold, and an iteration in that form is typable, which is the
+form of the prover's reduction `evalK`. The
 exemption is not proved sound for a net machine; the third stage needs
 it, and the first two need no typing.
 
@@ -2342,7 +2342,7 @@ between given numbers, which needs no solver. The steps, in order:
    * Ready. The metalogic's own sources: `pcheck` in `partial-horn.geb`;
      `trav`, `occurs` and `compile` in `language.geb`; `infers` in
      `infer.geb`; `term` in `translation.geb`; `matchTerm`,
-     `normalize`, `uses` and `evalK` in `prove.geb`; `withWeakHyps`,
+     `normalize` and `uses` in `prove.geb`; `withWeakHyps`,
      `withImpElim`, `byInstsOnce`, `occRewrite`, `byAutoT`, `byAutoC` and
      `abstractTerm` in `tactics.geb`; and `typers` and `normalizers` in
      `combinator.geb`, all under `bootstrap/free-topos/`; and
@@ -2371,6 +2371,22 @@ between given numbers, which needs no solver. The steps, in order:
      (`holdAll`) and returns the closure that applies it, rather than a
      closure that folds over the children's tests. The search accepts
      it with a decoration per use.
+   * Complete: the reduction `evalK` in `bootstrap/free-topos/prove.geb`,
+     which applies each level of its recursion to lists of jobs
+     (`evalB`, `evalStepB`). A job's state (`St`) is first-order data:
+     the jobs it waits for, and what it does with their results. A level
+     runs five rounds (`stRound`), the most that head reduction and the
+     reduction of a node's children need, each applying the level below
+     once to the concatenation of the jobs every state waits for and
+     advancing each state by its results, so that the recursion is
+     applied under no fold; a job of the depth that reduces nothing
+     stands for a subterm left unreduced. The search accepts it with a
+     decoration per use. The agreement
+     (`GebTests/Prototypes/FreeTopos/Agreement/Prove.lean`) is in two
+     parts: a level is the image of a function of its jobs (`evalB_eq`),
+     and that function's rounds are the step of
+     {name}`Geb.FreeTopos.Internal.evalK` (`stStart_eq`), so that the
+     depth of recursion it is given means what it means in Lean.
    * Waiting on the datatype language's completion
      ({ref "datatype-completion"}[The datatype language's completion]),
      whose soundness of the typing is proved of the stage-1 compiler and

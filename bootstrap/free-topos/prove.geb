@@ -627,107 +627,184 @@
          (lam ((u T)) OTPair.nothing)
          (ruleBucket idx (rootKey t))) t)))
 
-  ; the reduction to a depth under weakened hypotheses, by a rewriting at the root rw
+  ; the reduction to a depth under weakened hypotheses, by a rewriting at the root rw, of a list of
+  ; jobs at once, a level of the recursion applying the level below it to lists of jobs and never
+  ; within a fold. A job is a depth, a context, a number of variables, hypotheses and a term; the
+  ; depth 4 leaves its term unreduced
   (deftype EVK (Arrow T (Arrow Ts (Arrow T (Arrow Ts (Arrow T ONFR.Maybe))))))
-  (defn atRootK ((rw RWK) (rec EVK) (g Ts) (k T) (hs Ts) (dp T) (t1 T) (d1 Marked)) ONFR.Maybe
-    (let rr OTPair.Maybe (rw g k hs t1)
+  (data Job (job T Objs T Terms T))
+  (data Jobs (jobs & Job))
+  (defn jobsOf ((qs Jobs)) (List Job) (case qs ((jobs xs) xs)))
+  (import (Seq Job) as JobL)
+  (import (Map T Job) as JobAt)
+  (defn jobDp ((j Job)) T (case j ((job dp g k hs t) dp)))
+  (defn jobCtx ((j Job)) Ts (case j ((job dp g k hs t) (case g ((objs xs) xs)))))
+  (defn jobNum ((j Job)) T (case j ((job dp g k hs t) k)))
+  (defn jobHyps ((j Job)) Ts (case j ((job dp g k hs t) (termsOf hs))))
+  (defn jobTerm ((j Job)) T (case j ((job dp g k hs t) t)))
+  ; the job of a depth and a term in the context of a job
+  (defn jobAt ((j Job) (dp T) (u T)) Job (case j ((job d g k hs t) (job dp g k hs u))))
+  (defn jobRw ((rw RWK) (j Job) (t T)) OTPair.Maybe (rw (jobCtx j) (jobNum j) (jobHyps j) t))
+  ; the state of a job, the jobs it waits for computed by the level below: finished; the reduction
+  ; of a rewritten term, whose result is composed with derivations and continued at a depth; the
+  ; function of an application; its argument; the child a node eliminates; and the children
+  (data St (stDone ONFR.Maybe) (stTail Job Marked Marked Marked T) (stFun Job) (stArg Job NFR Job)
+    (stChild Job T T)
+    (stKids Job T Marked Jobs))
+  (import (Map Job St) as StAt)
+  (import (Map St ONFR.Maybe) as StOut)
+  (defn stResult ((s St)) ONFR.Maybe (case s ((stDone m) m) (else ONFR.nothing)))
+  (defn stNeed ((s St)) (List Job)
+    (case s ((stDone m) (nil Job)) ((stTail q p1 p2 mk c) (JobL.single q))
+      ((stFun j) (JobL.single (jobAt j 0 (mArg (jobTerm j) 0))))
+      ((stArg j rf q) (JobL.single q))
+      ((stChild j i c) (JobL.single (jobAt j 0 c)))
+      ((stKids j w dw qs) (jobsOf qs))))
+  ; the reduction past a weak head normal form, from its children's jobs
+  (defn stDeep ((G Globals) (n T) (dp T) (j Job) (wr NFR)) St
+    (let w T (nfTerm wr)
+      (let l T (label w)
+        (let ws Ts (mArgs w)
+          (if (eq dp 1)
+            (stKids (jobAt j 1 w) w (nfMarked wr)
+              (jobs
+                (JobAt.map (lam ((i T)) (jobAt j (if (keepsWeak l i) 4 1) (at ws i)))
+                  (range (length ws)))))
+            (case (childBinders G n w (jobCtx j))
+              ((OBinders.just bxN)
+               (let bx (List Binder) (bindersOf bxN)
+                 (let m T (if (lt (BinderL.length bx) (length ws)) (BinderL.length bx) (length ws))
+                   (stKids (jobAt j dp w) w (nfMarked wr)
+                     (jobs
+                       (JobAt.map
+                         (lam ((i T))
+                           (let b Binder (BinderL.atOr binder0 bx i)
+                             (let u T (at ws i)
+                               (if (and (eq dp 2) (keepsFold l i)) (jobAt j 4 u)
+                                 (job dp (objs (binderCtx b)) (add (jobNum j) (binderNum b))
+                                   (terms (jobHyps j))
+                                   u)))))
+                         (range m)))))))
+              ((OBinders.nothing) (stDone ONFR.nothing))))))))
+  (defn stAfter ((G Globals) (n T) (c T) (j Job) (w NFR)) St
+    (if (eq c 0) (stDone (ONFR.just w)) (stDeep G n c j w)))
+  ; the rewriting at the root of a term, the rewritten term reduced to a depth and the result
+  ; continued at the depth c
+  (defn stRoot ((G Globals) (n T) (rw RWK) (dp T) (c T) (j Job) (t1 T) (d1 Marked)) St
+    (let rr OTPair.Maybe (jobRw rw j t1)
       (if (OTPair.isJust rr)
         (let r TPair (OTPair.fromMaybe pr0 rr)
-          (mapNN
-            (lam ((r3 NFR)) (nfr (nfTerm r3) (dTrans d1 (dTrans (mark (p2 r) 1) (nfMarked r3)))))
-            (rec dp g k hs (p1 r))))
-        (ONFR.just (nfr t1 d1)))))
-  (defn headStepK ((rw RWK) (rec EVK) (g Ts) (k T) (hs Ts) (t T)) ONFR.Maybe
-    (if (mIs 6 2 t)
-      (bindNN (rec 0 g k hs (mArg t 0))
-        (lam ((rf NFR))
+          (stTail (jobAt j dp (p1 r)) dRefl d1 (mark (p2 r) 1) c))
+        (stAfter G n c j (nfr t1 d1)))))
+  (defn stStart ((G Globals) (n T) (rw RWK) (j Job)) St
+    (let dp T (jobDp j)
+      (let t T (jobTerm j)
+        (if (eq dp 4) (stDone (ONFR.just (nfr t dRefl)))
+          (if (mIs 6 2 t) (stFun j)
+            (let rr OTPair.Maybe (jobRw rw j t)
+              (if (OTPair.isJust rr)
+                (let r TPair (OTPair.fromMaybe pr0 rr)
+                  (stTail (jobAt j 0 (p1 r)) dRefl dRefl (mark (p2 r) 1) dp))
+                (let hc T (headChild t)
+                  (if (isSome hc)
+                    (let ct T (nth (mArgs t) (get hc))
+                      (if (isSome ct) (stChild j (get hc) (get ct)) (stDone ONFR.nothing)))
+                    (stAfter G n dp j (nfr t dRefl)))))))))))
+  (defn firstR ((rs (List ONFR.Maybe))) ONFR.Maybe
+    (lcase ONFR.Maybe ONFR.Maybe rs ONFR.nothing (lam ((r ONFR.Maybe) (rest (List ONFR.Maybe))) r)))
+  ; a state advanced by the results of the jobs it waits for
+  (defn stAdv ((G Globals) (n T) (rw RWK) (s St) (rs (List ONFR.Maybe))) St
+    (case s ((stDone m) (stDone m))
+      ((stTail q p1 p2 mk c)
+       (case (firstR rs)
+         ((ONFR.just r3)
+          (stAfter G n c q (nfr (nfTerm r3) (dTrans p1 (dTrans p2 (dTrans mk (nfMarked r3)))))))
+         ((ONFR.nothing) (stDone ONFR.nothing))))
+      ((stFun j)
+       (case (firstR rs)
+         ((ONFR.just rf)
           (let f1 T (nfTerm rf)
-            (let u T (mArg t 1)
-              (bindNN
-                (if (mIs 5 1 f1)
-                  (if (lt (uses (mArg f1 0) 0) 2) (ONFR.just (nfr u dRefl)) (rec 1 g k hs u))
-                  (rec 0 g k hs u))
-                (lam ((ru NFR))
-                  (atRootK rw rec g k hs 0 (app f1 (nfTerm ru))
-                    (dCong (MarkedF.l2 (nfMarked rf) (nfMarked ru))))))))))
-      (let rr OTPair.Maybe (rw g k hs t)
-        (if (OTPair.isJust rr)
-          (let r TPair (OTPair.fromMaybe pr0 rr)
-            (mapNN (lam ((r2 NFR)) (nfr (nfTerm r2) (dTrans (mark (p2 r) 1) (nfMarked r2))))
-              (rec 0 g k hs (p1 r))))
-          (let hc T (headChild t)
-            (if (isSome hc)
-              (let i T (get hc)
-                (let cs Ts (mArgs t)
-                  (bindTN (nth cs i)
-                    (lam ((c T))
-                      (bindNN (rec 0 g k hs c)
-                        (lam ((rc NFR))
-                          (if (mFlag (nfMarked rc))
-                            (atRootK rw rec g k hs 0
-                              (node (label t) (cons (child t 0) (setAt cs i (nfTerm rc))))
-                              (dCong
-                                (MarkedAt.map (lam ((j T)) (if (eq j i) (nfMarked rc) dRefl))
-                                  (range (length cs)))))
-                            (ONFR.just (nfr t dRefl)))))))))
-              (ONFR.just (nfr t dRefl))))))))
-  (import (Map T ONFR.Maybe) as NormAt)
-  (defn deepStepK
-    ((G Globals) (n T) (rw RWK) (rec EVK) (dp T) (g Ts) (k T) (hs Ts) (w T) (dw Marked))
-    ONFR.Maybe
-    (let l T (label w)
-      (let ws Ts (mArgs w)
-        (if (eq dp 1)
-          (bindLN
-            (allSomeN
-              (NormAt.map
-                (lam ((i T))
-                  (if (keepsWeak l i) (ONFR.just (nfr (at ws i) dRefl)) (rec 1 g k hs (at ws i))))
-                (range (length ws))))
-            (lam ((csn NFRList))
-              (let cs (List NFR) (nfrsOf csn)
-                (let t1 T (rebuild w cs)
-                  (let d1 Marked (dTrans dw (dCong (NFRMarked.map nfMarked cs)))
-                    (if (marked cs) (atRootK rw rec g k hs 1 t1 d1) (ONFR.just (nfr t1 d1))))))))
-          (case (childBinders G n w g)
-            ((OBinders.just bxN)
-             (let bx (List Binder) (bindersOf bxN)
-               (bindLN
-                 (let m T (if (lt (BinderL.length bx) (length ws)) (BinderL.length bx) (length ws))
-                   (allSomeN
-                     (NormAt.map
-                       (lam ((i T))
-                         (let b Binder (BinderL.atOr binder0 bx i)
-                           (let u T (at ws i)
-                             (if (and (eq dp 2) (keepsFold l i)) (ONFR.just (nfr u dRefl))
-                               (rec dp (binderCtx b) (add k (binderNum b)) hs u)))))
-                       (range m))))
-                 (lam ((csn NFRList))
-                   (let cs (List NFR) (nfrsOf csn)
-                     (let t1 T (rebuild w cs)
-                       (if (eq dp 2)
-                         (let d1 Marked (dTrans dw (dCong (NFRMarked.map nfMarked cs)))
-                           (if (marked cs) (atRootK rw rec g k hs 2 t1 d1) (ONFR.just (nfr t1 d1))))
-                         (let d1 Marked (dCong (NFRMarked.map nfMarked cs))
-                           (let rr OTPair.Maybe (rw g k hs t1)
-                             (if (OTPair.isJust rr)
-                               (let r TPair (OTPair.fromMaybe pr0 rr)
-                                 (mapNN
-                                   (lam ((r3 NFR))
-                                     (nfr (nfTerm r3)
-                                       (dTrans dw
-                                         (dTrans d1 (dTrans (mark (p2 r) 1) (nfMarked r3))))))
-                                   (rec 3 g k hs (p1 r))))
-                               (ONFR.just (nfr t1 (dTrans dw d1)))))))))))))
-            ((OBinders.nothing) ONFR.nothing))))))
-  (defn evalStepK ((G Globals) (n T) (rw RWK) (rec EVK)) EVK
-    (lam ((dp T) (g Ts) (k T) (hs Ts) (t T))
-      (bindNN (headStepK rw rec g k hs t)
-        (lam ((w NFR))
-          (if (eq dp 0) (ONFR.just w) (deepStepK G n rw rec dp g k hs (nfTerm w) (nfMarked w)))))))
-  (defn evalK ((G Globals) (n T) (rw RWK) (fuel T)) EVK
-    (iter EVK (evalStepK G n rw) (lam ((dp T) (g Ts) (k T) (hs Ts) (t T)) (ONFR.just (nfr t dRefl)))
+            (let u T (mArg (jobTerm j) 1)
+              (stArg j rf
+                (if (mIs 5 1 f1) (jobAt j (if (lt (uses (mArg f1 0) 0) 2) 4 1) u) (jobAt j 0 u))))))
+         ((ONFR.nothing) (stDone ONFR.nothing))))
+      ((stArg j rf q)
+       (case (firstR rs)
+         ((ONFR.just ru)
+          (stRoot G n rw 0 (jobDp j) j (app (nfTerm rf) (nfTerm ru))
+            (dCong (MarkedF.l2 (nfMarked rf) (nfMarked ru)))))
+         ((ONFR.nothing) (stDone ONFR.nothing))))
+      ((stChild j i c)
+       (case (firstR rs)
+         ((ONFR.just rc)
+          (let t T (jobTerm j)
+            (if (mFlag (nfMarked rc))
+              (let cs Ts (mArgs t)
+                (stRoot G n rw 0 (jobDp j) j
+                  (node (label t) (cons (child t 0) (setAt cs i (nfTerm rc))))
+                  (dCong
+                    (MarkedAt.map (lam ((m T)) (if (eq m i) (nfMarked rc) dRefl))
+                      (range (length cs))))))
+              (stAfter G n (jobDp j) j (nfr t dRefl)))))
+         ((ONFR.nothing) (stDone ONFR.nothing))))
+      ((stKids j w dw qs)
+       (case (allSomeN rs)
+         ((ONFRList.just csn)
+          (let cs (List NFR) (nfrsOf csn)
+            (let t1 T (rebuild w cs)
+              (if (eq (jobDp j) 3)
+                (let d1 Marked (dCong (NFRMarked.map nfMarked cs))
+                  (let rr OTPair.Maybe (jobRw rw j t1)
+                    (if (OTPair.isJust rr)
+                      (let r TPair (OTPair.fromMaybe pr0 rr)
+                        (stTail (jobAt j 3 (p1 r)) dw d1 (mark (p2 r) 1) 0))
+                      (stDone (ONFR.just (nfr t1 (dTrans dw d1)))))))
+                (let d1 Marked (dTrans dw (dCong (NFRMarked.map nfMarked cs)))
+                  (if (marked cs) (stRoot G n rw (jobDp j) 0 j t1 d1)
+                    (stDone (ONFR.just (nfr t1 d1)))))))))
+         ((ONFRList.nothing) (stDone ONFR.nothing))))))
+  ; the first results, as many as the jobs, and the results after them
+  (deftype Rs (List ONFR.Maybe))
+  (defn splitRs ((qs (List Job)) (rs Rs)) (Prod Rs Rs)
+    ((foldr Job (Arrow Rs (Prod Rs Rs))
+       (lam ((q Job) (k (Arrow Rs (Prod Rs Rs))) (xs Rs))
+         (lcase ONFR.Maybe (Prod Rs Rs) xs (pair (nil ONFR.Maybe) (nil ONFR.Maybe))
+           (lam ((x ONFR.Maybe) (ys Rs))
+             (let p (Prod Rs Rs) (k ys) (pair (cons x (fst p)) (snd p))))))
+       (lam ((xs Rs)) (pair (nil ONFR.Maybe) xs))
+       qs) rs))
+  ; a round: the level below applied once, to the jobs every state waits for, and each state
+  ; advanced by its results
+  (deftype EVB (Arrow (List Job) Rs))
+  (defn stRound ((G Globals) (n T) (rw RWK) (rec EVB) (ss (List St))) (List St)
+    ((foldr St (Arrow Rs (List St))
+       (lam ((s St) (k (Arrow Rs (List St))) (xs Rs))
+         (let p (Prod Rs Rs) (splitRs (stNeed s) xs) (cons (stAdv G n rw s (fst p)) (k (snd p)))))
+       (lam ((xs Rs)) (nil St))
+       ss)
+     (rec
+       (foldr St (List Job) (lam ((s St) (acc (List Job))) (JobL.append (stNeed s) acc)) (nil Job)
+         ss))))
+  ; a level of the recursion: five rounds finish every job's state
+  (defn evalStepB ((G Globals) (n T) (rw RWK) (rec EVB)) EVB
+    (lam ((js (List Job)))
+      (lcase Job Rs js (nil ONFR.Maybe)
+        (lam ((j0 Job) (rest (List Job)))
+          (StOut.map stResult
+            (stRound G n rw rec
+              (stRound G n rw rec
+                (stRound G n rw rec
+                  (stRound G n rw rec
+                    (stRound G n rw rec (StAt.map (lam ((j Job)) (stStart G n rw j)) js)))))))))))
+  (defn evalB ((G Globals) (n T) (rw RWK) (fuel T)) EVB
+    (iter EVB (evalStepB G n rw)
+      (lam ((js (List Job)))
+        (StOut.map stResult
+          (StAt.map (lam ((j Job)) (stDone (ONFR.just (nfr (jobTerm j) dRefl)))) js)))
       fuel))
+  (defn evalK ((G Globals) (n T) (rw RWK) (fuel T)) EVK
+    (lam ((dp T) (g Ts) (k T) (hs Ts) (t T))
+      (firstR (evalB G n rw fuel (JobL.single (job dp (objs g) k (terms hs) t))))))
   ; the reduction: the rules indexed and the hypotheses prepared once
   (defn eval ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T)) EV
     (let idx Idx (indexRules E rs)
