@@ -2339,16 +2339,13 @@ between given numbers, which needs no solver. The steps, in order:
    reported with the definitions it conflicts with, among which the
    rewriting may fall, as `usesStep` with `uses`. The sources holding
    them are constrained by different work:
-   * Ready. The metalogic's own sources: `pcheck` in `partial-horn.geb`;
-     `trav` and `compile` in `language.geb`; `infers` in
-     `infer.geb`; `normalize` in `prove.geb`; `withWeakHyps`,
-     `withImpElim`, `byInstsOnce`, `byAutoT` and `byAutoC` in
-     `tactics.geb`; and `typers` and `normalizers` in
-     `combinator.geb`, all under `bootstrap/free-topos/`; and
-     `printTerm` and `termWf` in `bootstrap/printer.geb`. Each rewriting
-     changes the program that `GebMirror.Metalogic` mirrors, so the
-     mirror is emitted again (`scripts/bootstrap.sh`), its loading
-     checked, and the agreements under
+   * Ready. The metalogic's own sources: `infers` in `infer.geb`;
+     `normalize` in `prove.geb`; `withWeakHyps`, `withImpElim`,
+     `byInstsOnce`, `byAutoT` and `byAutoC` in `tactics.geb`; and `typers`
+     and `normalizers` in `combinator.geb`, all under
+     `bootstrap/free-topos/`. Each rewriting changes the program that
+     `GebMirror.Metalogic` mirrors, so the mirror is emitted again
+     (`scripts/bootstrap.sh`), its loading checked, and the agreements under
      `GebTests/Prototypes/FreeTopos/Agreement/` repaired; the prover's
      derivations, and so the stored certificates, are unchanged.
    * Complete: `check` in `bootstrap/free-topos/derivation.geb`, which
@@ -2374,6 +2371,15 @@ between given numbers, which needs no solver. The steps, in order:
      functions; a child's position and the node's data give what the
      composition passes the child (`childBound`, `anyBound`). The search
      accepts them with a decoration per use.
+   * Complete: `pcheck` in `partial-horn.geb` and `trav` and `compile` in
+     `language.geb`, under `bootstrap/free-topos/`, and `printTerm` and
+     `termWf` in `bootstrap/printer.geb`. Each is a paramorphism whose step
+     branches on the node's label and number of children outside its
+     closures; a branch reads the first children's functions by taking the
+     list apart once (`cvThree`, `pcTwo`), or composes all of them into one
+     by a right fold (`cvAll`, `pcAll`, `travStep`), a child's position
+     giving the argument the composition passes it. The search accepts them
+     with a decoration per use.
    * Complete: the reduction `evalK` in `bootstrap/free-topos/prove.geb`,
      which applies each level of its recursion to lists of jobs
      (`evalB`, `evalStepB`). A job's state (`St`) is first-order data:

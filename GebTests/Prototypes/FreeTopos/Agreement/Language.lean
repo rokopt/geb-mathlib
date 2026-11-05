@@ -147,6 +147,12 @@ theorem encTerm_node (l : Label) (cs : List Term) :
   rw [← RoseTree.node_label_children t, encTerm_node]
   rfl
 
+/-- The data node of an encoded term's label. -/
+@[simp] theorem child_encTerm (t : Term) :
+    Const.child (encTerm t) (leaf 0) = RoseTree.node 0 (labelData t.label).2 := by
+  rw [← RoseTree.node_label_children t, encTerm_node]
+  rfl
+
 /-- The mirror's data of an encoded term's label. -/
 @[simp] theorem mData_eq (t : Term) :
     «Language.mData» (encTerm t) = (labelData t.label).2 := by
@@ -282,47 +288,100 @@ theorem substStep_eq : Internal.Term.substStep = travL (fun σ i ↦ σ i) Inter
   funext l cs f
   cases l <;> rcases cs with _ | ⟨c0, _ | ⟨c1, _ | ⟨c2, _ | ⟨c3, cs⟩⟩⟩⟩ <;> rfl
 
-/-- The terms of a list of terms with their traversals. -/
-@[simp] theorem rpTrees_eq (rs : List (Tree × ((Tree → Tree) → Tree))) :
-    «Language.rpTrees» rs = rs.map Prod.fst :=
-  rs.rec rfl fun _ _ ih ↦ by
-    simp only [«Language.rpTrees», foldr_eq, List.foldr_cons] at ih ⊢
-    rw [ih]
-    rfl
+/-- The variables a child of a node binds, at its position among the node's children. -/
+def boundAt (l : Internal.Label) (k i : ℕ) : ℕ := match l, k with
+  | .lam _, 1 => 1
+  | .natRec, 3 => if i = 1 then 1 else 0
+  | .listRec, 3 => if i = 1 then 2 else 0
+  | .roseRec _, 2 => if i = 0 then 1 else 0
+  | _, _ => 0
 
-/-- A list of terms with their traversals without its head. -/
-@[simp] theorem rpTail_eq (rs : List (Tree × ((Tree → Tree) → Tree))) :
-    «Language/RPs.tail» rs = rs.tail := by
+/-- The mirror's variables a child of a node binds. -/
+@[simp] theorem childBound_eq (l : Internal.Label) (k i : ℕ) :
+    «Language.childBound» (leaf (labelData l).1) (leaf k) (leaf i) = leaf (boundAt l k i) := by
+  cases l
+  case lam =>
+    rcases k with _ | _ | k <;> mirror_simp [«Language.childBound», labelData, boundAt,
+      beq_iff_eq, Nat.reduceEqDiff]
+  case natRec | listRec =>
+    rcases k with _ | _ | _ | _ | k <;> mirror_simp [«Language.childBound», labelData, boundAt,
+      beq_iff_eq, Nat.reduceEqDiff]
+    all_goals split <;> rfl
+  case roseRec =>
+    rcases k with _ | _ | _ | k <;> mirror_simp [«Language.childBound», labelData, boundAt,
+      beq_iff_eq, Nat.reduceEqDiff]
+    all_goals split <;> rfl
+  all_goals mirror_simp [«Language.childBound», labelData, boundAt, beq_iff_eq, Nat.reduceEqDiff]
+
+/-- A map under the binders of a child: unchanged, lifted once, or lifted twice. -/
+def liftBy {M : Type} (L : M → M) (f : M) (b : ℕ) : M :=
+  if b = 0 then f else if b = 1 then L f else L (L f)
+
+/-- A function of a list's elements, with their positions unread. -/
+theorem map_zipIdx_fst {α β : Type} (f : α → β) :
+    ∀ (xs : List α) (i : ℕ), (xs.zipIdx i).map (fun p ↦ f p.1) = xs.map f :=
+  List.rec (fun _ ↦ rfl) fun x xs ih i ↦ by
+    simp only [List.zipIdx_cons, List.map_cons, ih]
+
+/-- The traversal step at a node other than a variable: each child's traversal at the map lifted
+by the variables the child binds. -/
+theorem travL_bound {M : Type} (V : M → ℕ → Term) (L : M → M) (l : Label) (hl : ∀ i, l ≠ .var i)
+    (xs : List (Term × ((Tree → Tree) → Tree) × (M → Term))) (f : M) :
+    travL V L l (xs.map fun x ↦ (x.1, x.2.2)) f =
+      RoseTree.node l
+        ((xs.zipIdx 0).map fun p ↦ p.1.2.2 (liftBy L f (boundAt l xs.length p.2))) := by
+  have hc : (∀ i, boundAt l xs.length i = 0) →
+      (xs.map fun x ↦ (x.1, x.2.2)).map (fun c ↦ c.2 f) =
+        (xs.zipIdx 0).map fun p ↦ p.1.2.2 (liftBy L f (boundAt l xs.length p.2)) := fun hb ↦ by
+    simp only [hb, liftBy, ite_true, List.map_map, Function.comp_def]
+    exact (map_zipIdx_fst (fun x ↦ x.2.2 f) xs 0).symm
+  cases l
+  case var i => exact absurd rfl (hl i)
+  case lam | natRec | listRec | roseRec =>
+    rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, _ | ⟨x3, r⟩⟩⟩⟩ <;>
+      first
+        | exact congrArg (RoseTree.node _) (hc fun _ ↦ rfl)
+        | simp [travL, boundAt, liftBy]
+  all_goals
+    rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, _ | ⟨x3, r⟩⟩⟩⟩ <;>
+      exact congrArg (RoseTree.node _) (hc fun _ ↦ rfl)
+
+/-- The mirror's list of children's traversals without its head. -/
+@[simp] theorem rvTail_eq (rs : List ((Tree → Tree) → Tree)) :
+    «Language/RVs.tail» rs = rs.tail := by
   cases rs <;> rfl
 
-/-- The traversals of a list of terms by a map. -/
-@[simp] theorem rpAll_eq (rs : List (Tree × ((Tree → Tree) → Tree))) (f : Tree → Tree) :
-    «Language.rpAll» rs f = rs.map fun r ↦ r.2 f :=
-  rs.rec rfl fun _ _ ih ↦ by
-    simp only [«Language.rpAll», foldr_eq, List.foldr_cons] at ih ⊢
-    rw [ih]
-    rfl
-
-/-- Dropping the head of a list of terms with their traversals as many times as a label. -/
-theorem repeat_rpTail (rs : List (Tree × ((Tree → Tree) → Tree))) :
-    ∀ i : ℕ, Nat.repeat «Language/RPs.tail» i rs = rs.drop i :=
-  Nat.rec rfl fun i ih ↦ by rw [Nat.repeat, ih, rpTail_eq, List.tail_drop]
-
-/-- The traversal of a term at a position by a map, the leaf of label zero out of range. -/
-@[simp] theorem rpAt_eq (rs : List (Tree × ((Tree → Tree) → Tree))) (i : ℕ) (f : Tree → Tree) :
-    «Language.rpAt» rs (leaf i) f = (rs[i]?.map fun r ↦ r.2 f).getD (leaf 0) := by
-  simp only [«Language.rpAt», iter_leaf, repeat_rpTail]
-  cases h : rs.drop i with
-  | nil =>
-    rw [List.drop_eq_nil_iff] at h
-    rw [List.getElem?_eq_none h]
-    rfl
-  | cons r rest =>
-    have : rs[i]? = some r := by
-      rw [← List.head?_drop, h]
-      rfl
-    rw [this]
-    rfl
+/-- The mirror's composition of the traversals of a node's children, from a position, is each
+child's traversal at the map lifted by the variables the child binds. -/
+theorem travFold_eq {M : Type} (Rel : (Tree → Tree) → M → Prop) (L : M → M)
+    (lift : (Tree → Tree) → Tree → Tree) (hL : ∀ f f', Rel f f' → Rel (lift f) (L f'))
+    (l : Label) (k : ℕ) :
+    ∀ xs : List (Term × ((Tree → Tree) → Tree) × (M → Term)),
+      (∀ x ∈ xs, ∀ f f', Rel f f' → x.2.1 f = encTerm (x.2.2 f')) →
+      ∀ (f : Tree → Tree) (f' : M), Rel f f' → ∀ i : ℕ,
+      List.foldr (fun (r : (Tree → Tree) → Tree) (c : (Tree → Tree) → Tree → List Tree)
+            (f : Tree → Tree) (i : Tree) ↦
+          r (if (Const.eq («Language.childBound» (leaf (labelData l).1) (leaf k) i)
+                  (leaf 0)).label ≠ 0 then f
+              else if (Const.eq («Language.childBound» (leaf (labelData l).1) (leaf k) i)
+                  (leaf 1)).label ≠ 0 then lift f
+              else lift (lift f)) ::
+            c f (Const.add i (leaf 1)))
+        (fun _ _ ↦ []) (xs.map fun x ↦ x.2.1) f (leaf i) =
+      (xs.zipIdx i).map fun p ↦ encTerm (p.1.2.2 (liftBy L f' (boundAt l k p.2))) :=
+  List.rec (fun _ _ _ _ _ ↦ rfl) fun x xs ih hx f f' hf i ↦ by
+    have hb : ∀ b, Rel (liftBy lift f b) (liftBy L f' b) := fun b ↦ by
+      rcases b with _ | _ | b
+      · exact hf
+      · exact hL _ _ hf
+      · exact hL _ _ (hL _ _ hf)
+    have hc : ∀ b : ℕ, (if (Const.eq (leaf b) (leaf 0)).label ≠ 0 then f
+        else if (Const.eq (leaf b) (leaf 1)).label ≠ 0 then lift f else lift (lift f)) =
+        liftBy lift f b := fun b ↦ by
+      rcases b with _ | _ | b <;> rfl
+    simp only [List.map_cons, List.foldr_cons, childBound_eq, add_leaf, List.zipIdx_cons, hc]
+    rw [ih (fun y hy ↦ hx y (List.mem_cons_of_mem x hy)) f f' hf (i + 1),
+      hx x List.mem_cons_self _ _ (hb _)]
 
 /-- The mirror's traversal step at an encoded node is the traversal step at the node it encodes,
 at maps and children's traversals related by the traversal's relation. -/
@@ -333,30 +392,21 @@ theorem travStep_eq {M : Type} (Rel : (Tree → Tree) → M → Prop) (V : M →
     (xs : List (Term × ((Tree → Tree) → Tree) × (M → Term)))
     (hx : ∀ x ∈ xs, ∀ f f', Rel f f' → x.2.1 f = encTerm (x.2.2 f')) (f : Tree → Tree) (f' : M)
     (hf : Rel f f') :
-    «Language.travStep» lift wrap (leaf (labelData l).1)
-        ((RoseTree.node 0 (labelData l).2, v) :: xs.map fun x ↦ (encTerm x.1, x.2.1)) f =
+    «Language.travStep» lift wrap (encTerm (RoseTree.node l (xs.map Prod.fst)))
+        (v :: xs.map fun x ↦ x.2.1) f =
       encTerm (travL V L l (xs.map fun x ↦ (x.1, x.2.2)) f') := by
-  have h0 : ∀ x ∈ xs, x.2.1 f = encTerm (x.2.2 f') := fun x h ↦ hx x h f f' hf
-  have h1 : ∀ x ∈ xs, x.2.1 (lift f) = encTerm (x.2.2 (L f')) :=
-    fun x h ↦ hx x h (lift f) (L f') (hL f f' hf)
-  have h2 : ∀ x ∈ xs, x.2.1 (lift (lift f)) = encTerm (x.2.2 (L (L f'))) :=
-    fun x h ↦ hx x h _ _ (hL _ _ (hL f f' hf))
-  have hxs : xs.map (fun x ↦ x.2.1 f) = xs.map (fun x ↦ encTerm (x.2.2 f')) :=
-    List.map_congr_left h0
-  cases l
-  case var i =>
-    mirror_simp [«Language.travStep», labelData, travL, rpTrees_eq, rpTail_eq]
+  by_cases hv : (labelData l).1 = 0
+  · obtain ⟨i, rfl⟩ : ∃ i, l = .var i := by
+      cases l <;> first | exact ⟨_, rfl⟩ | exact absurd hv (by simp [labelData])
+    mirror_simp [«Language.travStep», labelData, travL]
     exact hV f f' hf i
-  all_goals
-    rcases xs with _ | ⟨x0, _ | ⟨x1, _ | ⟨x2, _ | ⟨x3, r⟩⟩⟩⟩ <;>
-      mirror_simp [«Language.travStep», labelData, travL, rpTrees_eq, rpTail_eq,
-        rpAt_eq, rpAll_eq, encTerm_node, h0, h1, h2, List.mem_cons, true_or, or_true, beq_iff_eq,
-        Nat.add_right_cancel_iff, Nat.add_one_ne_zero, «Theory.l2»,
-        «Theory.l3»]
-  all_goals
-    rw [List.map_congr_left fun x hx ↦ h0 x (by simp [hx])]
-    try split
-    all_goals first | omega | rfl
+  · rw [travL_bound V L l (fun i h ↦ hv (by rw [h]; rfl)) xs f']
+    conv_rhs => rw [encTerm_node]
+    simp only [«Language.travStep», foldr_eq, rvTail_eq, List.tail_cons, label_eq, label_encTerm,
+      child_encTerm, mArgs_eq, length_eq, RoseTree.label_node, RoseTree.children_node,
+      List.length_map, List.map_map, Function.comp_def, node_leaf]
+    rw [travFold_eq Rel L lift hL l xs.length xs hx f f' hf 0]
+    simp [hv]
 
 /-- The mirror's traversal of an encoded term is the traversal of the term, at maps related by
 the traversal's relation. -/
@@ -366,9 +416,8 @@ theorem trav_eq {M : Type} (Rel : (Tree → Tree) → M → Prop) (V : M → ℕ
     (hL : ∀ f f', Rel f f' → Rel (lift f) (L f')) (t : Term) (f : Tree → Tree) (f' : M)
     (hf : Rel f f') :
     «Language.trav» lift wrap (encTerm t) f = encTerm (RoseTree.para (travL V L) t f') :=
-  fold_pair_enc (fun l ↦ (labelData l).1) (fun l ↦ RoseTree.node 0 (labelData l).2)
-    (fun v w ↦ ∀ f f', Rel f f' → v f = encTerm (w f'))
-    (fun l rs ↦ by simp only [rpTrees_eq]) (travL V L)
+  para_enc (fun l ↦ (labelData l).1) (fun l ↦ RoseTree.node 0 (labelData l).2)
+    (fun v w ↦ ∀ f f', Rel f f' → v f = encTerm (w f')) («Language.travStep» lift wrap) (travL V L)
     (fun l v xs hx f f' hf ↦ travStep_eq Rel V L lift wrap hV hL l v xs hx f f' hf) t f f' hf
 
 /-- The mirror's variable of an index is the encoded variable. -/
@@ -693,79 +742,34 @@ def CRel (v : Tree → List Tree → Tree)
     (w : Tree → List (Tree × Tree) → Option (Tree × Tree)) : Prop :=
   ∀ X e, v X (e.map encPair) = encOpt ((w X e).map encPair)
 
-/-- The terms of a list of terms with their compilations. -/
-@[simp] theorem cpTrees_eq (rs : List (Tree × (Tree → List Tree → Tree))) :
-    «Language.cpTrees» rs = rs.map Prod.fst :=
-  rs.rec rfl fun _ _ ih ↦ by
-    simp only [«Language.cpTrees», foldr_eq, List.foldr_cons] at ih ⊢
-    rw [ih]
-    rfl
-
-/-- A list of terms with their compilations without its head. -/
-@[simp] theorem cpTail_eq (rs : List (Tree × (Tree → List Tree → Tree))) :
-    «Language/CPs.tail» rs = rs.tail := by
+/-- The children's compilations without their head. -/
+@[simp] theorem cvTail_eq (rs : List (Tree → List Tree → Tree)) :
+    «Language/CVs.tail» rs = rs.tail := by
   cases rs <;> rfl
 
-/-- Dropping the head of a list of terms with their compilations as many times as a label. -/
-theorem repeat_cpTail (rs : List (Tree × (Tree → List Tree → Tree))) :
-    ∀ i : ℕ, Nat.repeat «Language/CPs.tail» i rs = rs.drop i :=
-  Nat.rec rfl fun i ih ↦ by rw [Nat.repeat, ih, cpTail_eq, List.tail_drop]
-
-/-- The compilation of a term at a position, nothing out of range. -/
-@[simp] theorem cpAt_eq (rs : List (Tree × (Tree → List Tree → Tree))) (i : ℕ) :
-    «Language.cpAt» rs (leaf i) =
-      (rs[i]?.map Prod.snd).getD fun _ _ ↦ «Prelude.none» := by
-  simp only [«Language.cpAt», iter_leaf, repeat_cpTail]
-  cases h : rs.drop i with
-  | nil =>
-    rw [List.drop_eq_nil_iff] at h
-    rw [List.getElem?_eq_none h]
-    rfl
-  | cons r rest =>
-    have : rs[i]? = some r := by
-      rw [← List.head?_drop, h]
-      rfl
-    rw [this]
-    rfl
-
-/-- The compilations of a list of terms in an environment. -/
-@[simp] theorem cpAll_eq (rs : List (Tree × (Tree → List Tree → Tree))) (X : Tree)
-    (e : List Tree) : «Language.cpAll» rs X e = rs.map fun r ↦ r.2 X e :=
+/-- The children's compilations at an object and environment. -/
+@[simp] theorem cvAll_eq (rs : List (Tree → List Tree → Tree)) (X : Tree) (e : List Tree) :
+    «Language.cvAll» rs X e = rs.map fun r ↦ r X e :=
   rs.rec rfl fun _ _ ih ↦ by
-    simp only [«Language.cpAll», foldr_eq, List.foldr_cons] at ih ⊢
+    simp only [«Language.cvAll», foldr_eq, List.foldr_cons, List.map_cons] at ih ⊢
     rw [ih]
-    rfl
+
+/-- The absent compilation of a child. -/
+theorem cv0_def : «Language.cv0» = fun _ _ ↦ encOpt none := rfl
+
+/-- A function of the first three children's compilations, the absent one out of range. -/
+theorem cvThree_eq (rs : List (Tree → List Tree → Tree))
+    (k : (Tree → List Tree → Tree) → (Tree → List Tree → Tree) → (Tree → List Tree → Tree) →
+      Tree → List Tree → Tree) :
+    «Language.cvThree» rs k =
+      k (rs.getD 0 «Language.cv0») (rs.getD 1 «Language.cv0») (rs.getD 2 «Language.cv0») := by
+  rcases rs with _ | ⟨a, _ | ⟨b, _ | ⟨c, r⟩⟩⟩ <;> rfl
 
 /-! The parameters of folds. -/
 
 /-- A list of the children's tests of a variable's occurrence without its head. -/
 @[simp] theorem ofTail_eq (rs : List (Tree → Tree)) : «Language/OFs.tail» rs = rs.tail := by
   cases rs <;> rfl
-
-/-- The variables a child of a node binds, at its position among the node's children. -/
-def boundAt (l : Internal.Label) (k i : ℕ) : ℕ := match l, k with
-  | .lam _, 1 => 1
-  | .natRec, 3 => if i = 1 then 1 else 0
-  | .listRec, 3 => if i = 1 then 2 else 0
-  | .roseRec _, 2 => if i = 0 then 1 else 0
-  | _, _ => 0
-
-/-- The mirror's variables a child of a node binds. -/
-@[simp] theorem childBound_eq (l : Internal.Label) (k i : ℕ) :
-    «Language.childBound» (leaf (labelData l).1) (leaf k) (leaf i) = leaf (boundAt l k i) := by
-  cases l
-  case lam =>
-    rcases k with _ | _ | k <;> mirror_simp [«Language.childBound», labelData, boundAt,
-      beq_iff_eq, Nat.reduceEqDiff]
-  case natRec | listRec =>
-    rcases k with _ | _ | _ | _ | k <;> mirror_simp [«Language.childBound», labelData, boundAt,
-      beq_iff_eq, Nat.reduceEqDiff]
-    all_goals split <;> rfl
-  case roseRec =>
-    rcases k with _ | _ | _ | k <;> mirror_simp [«Language.childBound», labelData, boundAt,
-      beq_iff_eq, Nat.reduceEqDiff]
-    all_goals split <;> rfl
-  all_goals mirror_simp [«Language.childBound», labelData, boundAt, beq_iff_eq, Nat.reduceEqDiff]
 
 /-- The mirror's composition of the tests of a node's children, at an index and from a position,
 is whether a child's test holds at the index raised by the variables the child binds. -/
@@ -948,27 +952,28 @@ theorem roseFoldP_eq (Γ : List Tree) {t a : Tree} {F : Tree → Tree}
 /-- The simplification of a case of the mirror's compilation step: the lemmas of
 {lit}`mirror_simp`, the step's lists, pairs and combinators, and the given lemmas. -/
 local macro "compile_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(tactic|
-  mirror_simp [«Language.compileStep», labelData, Internal.compileStep, cpTrees_eq,
-    cpTail_eq, cpAt_eq, cpAll_eq, none_eq, some_eq, pr_eq, p1_eq, p2_eq, beq_iff_eq,
+  mirror_simp [«Language.compileStep», labelData, Internal.compileStep, cv0_def,
+    label_encTerm, mArgs_eq, child_encTerm, RoseTree.label_node, RoseTree.children_node,
+    List.getD_cons_zero, List.getD_cons_succ, List.getD_nil, none_eq, some_eq, pr_eq, p1_eq, p2_eq,
+    beq_iff_eq,
     Nat.add_one_ne_zero, Nat.reduceEqDiff, Option.elim_map, Option.map_bind, Option.bind_eq_bind,
     Option.pure_def, Bool.and_eq_true, decide_eq_true_eq, List.mem_cons,
     true_or, or_true, mirror_idt, mirror_comp, mirror_one, mirror_bang, mirror_prod, mirror_cFst,
     mirror_cSnd, mirror_cPair, mirror_exp, mirror_ev, mirror_curry, mirror_omega, mirror_chi,
     mirror_nat, mirror_natRec, mirror_list, mirror_listRec, mirror_diag, $ls,*])
 
-/-- The mirror's compilation step at an encoded node is the compilation step at the node it
-encodes, at related compilations of the children. -/
-theorem compileStep_eq (G : Internal.Globals) (n : ℕ) (l : Label) (v : Tree → List Tree → Tree)
+/-- The mirror's compilation step at an encoded node other than a definition's application is the
+compilation step at the node it encodes, at related compilations of the children. -/
+theorem compileStep_eq (G : Internal.Globals) (n : ℕ) (l : Label) (hl : (labelData l).1 ≠ 11)
     (xs : List (Term × (Tree → List Tree → Tree) ×
       (Tree → List (Tree × Tree) → Option (Tree × Tree))))
     (hx : ∀ x ∈ xs, CRel x.2.1 x.2.2) (X : Tree) (e : List (Tree × Tree)) :
-    «Language.compileStep» (encGlobals G) (leaf n) (leaf (labelData l).1)
-        ((RoseTree.node 0 (labelData l).2, v) :: xs.map fun x ↦ (encTerm x.1, x.2.1)) X
-        (e.map encPair) =
+    «Language.compileStep» (encGlobals G) (leaf n) (encTerm (RoseTree.node l (xs.map Prod.fst)))
+        ((xs.map fun x ↦ x.2.1).getD 0 «Language.cv0»)
+        ((xs.map fun x ↦ x.2.1).getD 1 «Language.cv0»)
+        ((xs.map fun x ↦ x.2.1).getD 2 «Language.cv0») X (e.map encPair) =
       encOpt ((Internal.compileStep G n l (xs.map fun x ↦ (x.1, x.2.2)) X e).map encPair) := by
   have h0 : ∀ x ∈ xs, ∀ X e, x.2.1 X (e.map encPair) = encOpt ((x.2.2 X e).map encPair) := hx
-  have h2 : ∀ x ∈ xs, ∀ X p, x.2.1 X [encPair p] = encOpt ((x.2.2 X [p]).map encPair) :=
-    fun x h X p ↦ hx x h X [p]
   cases l
   case var i => rcases xs with _ | ⟨x0, r⟩ <;> compile_simp []
   case star => rcases xs with _ | ⟨x0, r⟩ <;> compile_simp []
@@ -1032,27 +1037,51 @@ theorem compileStep_eq (G : Internal.Globals) (n : ℕ) (l : Label) (v : Tree �
     rcases G.prims[k]? with _ | pm <;> compile_simp [prArity_eq, prArrow_eq, prDom_eq, prCod_eq]
     rcases x0.2.2 X e with _ | ⟨g, d⟩ <;> compile_simp []
     split_ifs with h <;> simp only [h, and_self, ↓reduceIte, Option.map_some, Option.map_none]
-  case defn k θ =>
-    have hall : «Base.allT» («Language.isTy» (encGlobals G) (leaf n)) θ =
-        ofBool (θ.all (Internal.IsTy G n)) := allT_eq _ _ θ fun t _ ↦ isTy_eq G n t
-    have hxs : xs.map (fun x ↦ x.2.1 X (e.map encPair)) =
-        xs.map fun x ↦ encOpt ((x.2.2 X e).map encPair) :=
-      List.map_congr_left fun x hx ↦ h0 x hx X e
-    compile_simp [gDefs_eq, gBase_eq, hall, hxs, allSomeT_eq, mapM_map_option, List.mapM_map,
-      funext (phSubst_eq θ), phSubst_eq, phOp_eq, tuple_eq, mapT_eq]
-    rcases G.defs[k]? with _ | (d | ⟨m, b⟩) <;>
-      compile_simp [defLanguage_eq, Internal.Definition.language?, ldArity_eq, ldParams_eq,
-        ldType_eq]
-    cases hm : List.mapM (fun x ↦ x.2.2 X e) xs <;> compile_simp [hm]
-    split_ifs <;> simp
+  case defn k θ => exact absurd rfl hl
+
+/-- The mirror's compilation of an application of a definition at an encoded node is the
+compilation step at the node it encodes, at related compilations of the children. -/
+theorem compileDefn_eq (G : Internal.Globals) (n k : ℕ) (θ : List Tree)
+    (xs : List (Term × (Tree → List Tree → Tree) ×
+      (Tree → List (Tree × Tree) → Option (Tree × Tree))))
+    (hx : ∀ x ∈ xs, CRel x.2.1 x.2.2) (X : Tree) (e : List (Tree × Tree)) :
+    «Language.compileDefn» (encGlobals G) (leaf n)
+        (encTerm (RoseTree.node (.defn k θ) (xs.map Prod.fst)))
+        (xs.map fun x ↦ x.2.1 X (e.map encPair)) X =
+      encOpt ((Internal.compileStep G n (.defn k θ) (xs.map fun x ↦ (x.1, x.2.2)) X e).map
+        encPair) := by
+  have h0 : ∀ x ∈ xs, ∀ X e, x.2.1 X (e.map encPair) = encOpt ((x.2.2 X e).map encPair) := hx
+  have hall : «Base.allT» («Language.isTy» (encGlobals G) (leaf n)) θ =
+      ofBool (θ.all (Internal.IsTy G n)) := allT_eq _ _ θ fun t _ ↦ isTy_eq G n t
+  have hxs : xs.map (fun x ↦ x.2.1 X (e.map encPair)) =
+      xs.map fun x ↦ encOpt ((x.2.2 X e).map encPair) :=
+    List.map_congr_left fun x hx ↦ h0 x hx X e
+  compile_simp [«Language.compileDefn», gDefs_eq, gBase_eq, hall, hxs, allSomeT_eq, mapM_map_option,
+    List.mapM_map, funext (phSubst_eq θ), phSubst_eq, phOp_eq, tuple_eq, mapT_eq]
+  rcases G.defs[k]? with _ | (d | ⟨m, b⟩) <;>
+    compile_simp [defLanguage_eq, Internal.Definition.language?, ldArity_eq, ldParams_eq,
+      ldType_eq]
+  cases hm : List.mapM (fun x ↦ x.2.2 X e) xs <;> compile_simp [hm]
+  split_ifs <;> simp
 
 /-- The mirror's compilation of an encoded term. -/
 theorem compile_eq (G : Internal.Globals) (n : ℕ) (t : Term) :
     CRel («Language.compile» (encGlobals G) (leaf n) (encTerm t))
-      (Internal.compile G n t) :=
-  fold_pair_enc (fun l ↦ (labelData l).1) (fun l ↦ RoseTree.node 0 (labelData l).2) CRel
-    (fun l rs ↦ by simp only [cpTrees_eq]) (Internal.compileStep G n)
-    (fun l v xs hx X e ↦ compileStep_eq G n l v xs hx X e) t
+      (Internal.compile G n t) := by
+  simp only [«Language.compile», Internal.compile]
+  refine para_enc (fun l ↦ (labelData l).1) (fun l ↦ RoseTree.node 0 (labelData l).2) CRel _
+    (Internal.compileStep G n) (fun l v xs hx X e ↦ ?_) t
+  change (if (Const.eq (Const.label (encTerm (RoseTree.node l (xs.map Prod.fst)))) (leaf 11)).label
+      ≠ 0 then _ else _ : Tree → List Tree → Tree) X (e.map encPair) = _
+  simp only [label_eq, label_encTerm, RoseTree.label_node, eq_leaf, ofBool_label, ne_eq,
+    beq_iff_eq, cvAll_eq, cvThree_eq, cvTail_eq, List.tail_cons]
+  by_cases hl : (labelData l).1 = 11
+  · obtain ⟨k, θ, rfl⟩ : ∃ k θ, l = .defn k θ := by
+      cases l <;> first | exact ⟨_, _, rfl⟩ | exact absurd hl (by simp [labelData])
+    simp only [hl, ↓reduceIte, List.map_map, Function.comp_def]
+    exact compileDefn_eq G n k θ xs hx X e
+  · simp only [hl, ↓reduceIte]
+    exact compileStep_eq G n l hl xs hx X e
 
 /-- The mirror's test that a list of objects are types. -/
 theorem allT_isTy (G : Internal.Globals) (n : ℕ) (ts : List Tree) :

@@ -252,32 +252,39 @@ theorem printDatum_eq (t : Tree) : «Printer.printDatum» t = sexpTree (printDat
 
 /-! ## Terms -/
 
-/-- The subtrees a node's results carry. -/
-@[simp] theorem prTrees_eq (rs : List (Tree × (Tree → Tree))) :
-    «Printer.prTrees» rs = rs.map Prod.fst := by
-  unfold «Printer.prTrees»
-  rw [foldr_eq]
-  exact rs.rec rfl fun _ _ ih ↦ by rw [List.foldr_cons, ih]; rfl
+/-- The printings of a node's children at a binder depth, each child at the depth under the
+binders the node gives it. -/
+def prKids (l : Tree) (rs : List (Tree → Tree)) (e i : Tree) : List Tree :=
+  List.foldr (fun (r : Tree → Tree) (c : Tree → Tree → List Tree) (e i : Tree) ↦
+      r (if («Prelude.and» (Const.eq l (leaf 9)) (Const.eq i (leaf 1))).label ≠ 0 then
+          Const.add e (leaf 1)
+        else e) :: c e (Const.add i (leaf 1)))
+    (fun _ _ ↦ []) rs e i
 
-/-- The children's printings at a depth. -/
-@[simp] theorem prAt_eq (rs : List (Tree × (Tree → Tree))) (e : Tree) :
-    «Printer.prAt» rs e = rs.map fun r ↦ r.2 e := by
-  unfold «Printer.prAt»
-  rw [foldr_eq]
-  exact rs.rec rfl fun _ _ ih ↦ by rw [List.foldr_cons, ih]; rfl
+/-- The mirror's printing of a term at a node, from its children's printings. -/
+theorem printTerm_mnode (defs : List Tree) (l : ℕ) (cs : List Tree) (e : Tree) :
+    «Printer.printTerm» defs (RoseTree.node l cs) e =
+      «Printer.printStep» defs (RoseTree.node l cs)
+        (prKids (leaf l) (cs.map fun c ↦ «Printer.printTerm» defs c) e (leaf 0)) e := by
+  unfold «Printer.printTerm»
+  rw [Const.para_node]
+  simp only [foldr_eq, prKids]
+  rfl
 
-/-- The step of the mirror's printer of terms, which pairs each node with its printing. -/
-def printFold (defs : List Tree) (l : Tree) (rs : List (Tree × (Tree → Tree))) :
-    Tree × (Tree → Tree) :=
-  (Const.node l («Printer.prTrees» rs), fun e ↦ «Printer.printStep» defs l rs e)
+/-- The printings of a node's children at a label other than an abstraction's, each at the
+node's depth. -/
+theorem prKids_other (l : ℕ) (hl : l ≠ 9) (rs : List (Tree → Tree)) (e : Tree) :
+    ∀ i : ℕ, prKids (leaf l) rs e (leaf i) = rs.map fun r ↦ r e := by
+  have h : (l == 9) = false := by simpa using hl
+  refine rs.rec (fun _ ↦ rfl) fun r rs ih i ↦ ?_
+  have := ih (i + 1)
+  simp only [prKids, List.foldr_cons, List.map_cons, eq_leaf, h, and_eq, Bool.false_and,
+    ofBool_label, ne_eq, Bool.false_eq_true, ↓reduceIte, add_leaf] at this ⊢
+  rw [this]
 
-/-- The mirror's printer of terms pairs each node with its printing. -/
-theorem pairStep_printFold (defs : List Tree) : PairStep (printFold defs) := fun l rs ↦ by
-  simp [printFold]
-
-/-- The mirror's printing of a term, through its fold. -/
-theorem printTerm_fold (defs : List Tree) (t e : Tree) :
-    «Printer.printTerm» defs t e = (Const.fold (printFold defs) t).2 e := rfl
+/-- The printings of an abstraction's children: the body's under one more binder. -/
+theorem prKids_lam (a b : Tree → Tree) (e : Tree) :
+    prKids (leaf 9) [a, b] e (leaf 0) = [a e, b (Const.add e (leaf 1))] := rfl
 
 /-- The mirror's list of S-expressions. -/
 theorem listOf_def (xs : List Tree) : «Printer.listOf» xs = RoseTree.node 2 xs := rfl
@@ -313,99 +320,117 @@ theorem printStep_app_eq (defs : List (List Char)) (f x : Tree) (d : ℕ) :
     printStep defs Label.app [(f, printTerm defs f), (x, printTerm defs x)] d =
       listS [printTerm defs f d, printTerm defs x d] := rfl
 
+/-- The unfolding of the mirror's printing at a node, its label and children read. -/
+local macro "pr_node" : tactic => `(tactic|
+  (simp only [«Printer.printStep», label_eq, children_eq, RoseTree.label_node,
+      RoseTree.children_node]
+   rfl))
+
 /-- The mirror's printing of a variable. -/
-theorem printStep_var (defs : List Tree) (rs : List (Tree × (Tree → Tree))) (e : Tree) :
-    «Printer.printStep» defs (leaf Label.var) rs e = «Printer.binderAtom» (Const.sub
-      (Const.sub e (leaf 1)) (Const.label («Prelude.at» («Printer.prTrees» rs) (leaf 0)))) := rfl
+theorem printStep_var (defs : List Tree) (cs ps : List Tree) (e : Tree) :
+    «Printer.printStep» defs (RoseTree.node Label.var cs) ps e = «Printer.binderAtom» (Const.sub
+      (Const.sub e (leaf 1)) (Const.label («Prelude.at» cs (leaf 0)))) := by
+  pr_node
 
 /-- The mirror's printing of an abstraction. -/
-theorem printStep_lam (defs : List Tree) (rs : List (Tree × (Tree → Tree))) (e : Tree) :
-    «Printer.printStep» defs (leaf Label.lam) rs e = «Printer.kwList1» «Reader.kwLam»
+theorem printStep_lam (defs : List Tree) (cs ps : List Tree) (e : Tree) :
+    «Printer.printStep» defs (RoseTree.node Label.lam cs) ps e = «Printer.kwList1» «Reader.kwLam»
       («Printer.listOf» («Printer.binderAtom» e :: «Prelude.single» («Printer.printType»
-        («Prelude.at» («Printer.prTrees» rs) (leaf 0)))) ::
-        «Prelude.single» («Prelude.at» («Printer.prAt» rs (Const.add e (leaf 1))) (leaf 1))) :=
-  rfl
+        («Prelude.at» cs (leaf 0)))) ::
+        «Prelude.single» («Prelude.at» ps (leaf 1))) := by
+  pr_node
 
 /-- The mirror's printing of an application. -/
-theorem printStep_app (defs : List Tree) (rs : List (Tree × (Tree → Tree))) (e : Tree) :
-    «Printer.printStep» defs (leaf Label.app) rs e = «Printer.listOf» («Printer.prAt» rs e) := rfl
+theorem printStep_app (defs : List Tree) (cs ps : List Tree) (e : Tree) :
+    «Printer.printStep» defs (RoseTree.node Label.app cs) ps e = «Printer.listOf» ps := rfl
 
 /-- The mirror's printing of the unit. -/
-theorem printStep_unit (defs : List Tree) (rs : List (Tree × (Tree → Tree))) (e : Tree) :
-    «Printer.printStep» defs (leaf Label.unit) rs e = «Printer.atomOf» «Reader.kwUnitValue» := rfl
+theorem printStep_unit (defs : List Tree) (cs ps : List Tree) (e : Tree) :
+    «Printer.printStep» defs (RoseTree.node Label.unit cs) ps e =
+      «Printer.atomOf» «Reader.kwUnitValue» := rfl
 
 /-- The mirror's printing of a quotation. -/
-theorem printStep_quote (defs : List Tree) (rs : List (Tree × (Tree → Tree))) (e : Tree) :
-    «Printer.printStep» defs (leaf Label.quote) rs e =
-      let c := «Prelude.at» («Printer.prTrees» rs) (leaf 0)
+theorem printStep_quote (defs : List Tree) (cs ps : List Tree) (e : Tree) :
+    «Printer.printStep» defs (RoseTree.node Label.quote cs) ps e =
+      let c := «Prelude.at» cs (leaf 0)
       if («Reader.nonEmpty» (Const.children c)).label ≠ 0 then
         «Printer.kwList1» «Reader.kwQuote» («Prelude.single» («Printer.printDatum» c))
-      else «Printer.numAtom» (Const.label c) := rfl
+      else «Printer.numAtom» (Const.label c) := by
+  pr_node
 
 /-- The mirror's printing of a primitive. -/
-theorem printStep_prim (defs : List Tree) (rs : List (Tree × (Tree → Tree))) (e : Tree) :
-    «Printer.printStep» defs (leaf Label.prim) rs e = «Printer.nameAt» «Reader.primNames»
-      (Const.label («Prelude.at» («Printer.prTrees» rs) (leaf 0))) := rfl
+theorem printStep_prim (defs : List Tree) (cs ps : List Tree) (e : Tree) :
+    «Printer.printStep» defs (RoseTree.node Label.prim cs) ps e =
+      «Printer.nameAt» «Reader.primNames»
+      (Const.label («Prelude.at» cs (leaf 0))) := by
+  pr_node
 
 /-- The mirror's printing of a reference. -/
-theorem printStep_ref (defs : List Tree) (rs : List (Tree × (Tree → Tree))) (e : Tree) :
-    «Printer.printStep» defs (leaf Label.ref) rs e = «Printer.nameAt» defs
-      (Const.label («Prelude.at» («Printer.prTrees» rs) (leaf 0))) := rfl
+theorem printStep_ref (defs : List Tree) (cs ps : List Tree) (e : Tree) :
+    «Printer.printStep» defs (RoseTree.node Label.ref cs) ps e = «Printer.nameAt» defs
+      (Const.label («Prelude.at» cs (leaf 0))) := by
+  pr_node
 
 /-- The mirror's printing of the form {lit}`pair`. -/
-theorem printStep_pair (defs : List Tree) (rs : List (Tree × (Tree → Tree))) (e : Tree) :
-    «Printer.printStep» defs (leaf Label.pair) rs e =
-      «Printer.kwList1» «Reader.kwPair» («Printer.prAt» rs e) := rfl
+theorem printStep_pair (defs : List Tree) (cs ps : List Tree) (e : Tree) :
+    «Printer.printStep» defs (RoseTree.node Label.pair cs) ps e =
+      «Printer.kwList1» «Reader.kwPair» ps := rfl
 
 /-- The mirror's printing of the form {lit}`fst`. -/
-theorem printStep_fst (defs : List Tree) (rs : List (Tree × (Tree → Tree))) (e : Tree) :
-    «Printer.printStep» defs (leaf Label.fst) rs e =
-      «Printer.kwList1» «Reader.kwFst» («Printer.prAt» rs e) := rfl
+theorem printStep_fst (defs : List Tree) (cs ps : List Tree) (e : Tree) :
+    «Printer.printStep» defs (RoseTree.node Label.fst cs) ps e =
+      «Printer.kwList1» «Reader.kwFst» ps := rfl
 
 /-- The mirror's printing of the form {lit}`snd`. -/
-theorem printStep_snd (defs : List Tree) (rs : List (Tree × (Tree → Tree))) (e : Tree) :
-    «Printer.printStep» defs (leaf Label.snd) rs e =
-      «Printer.kwList1» «Reader.kwSnd» («Printer.prAt» rs e) := rfl
+theorem printStep_snd (defs : List Tree) (cs ps : List Tree) (e : Tree) :
+    «Printer.printStep» defs (RoseTree.node Label.snd cs) ps e =
+      «Printer.kwList1» «Reader.kwSnd» ps := rfl
 
 /-- The mirror's printing of the form {lit}`cond`. -/
-theorem printStep_cond (defs : List Tree) (rs : List (Tree × (Tree → Tree))) (e : Tree) :
-    «Printer.printStep» defs (leaf Label.cond) rs e =
-      «Printer.kwList1» «Reader.kwIf» («Printer.prAt» rs e) := rfl
+theorem printStep_cond (defs : List Tree) (cs ps : List Tree) (e : Tree) :
+    «Printer.printStep» defs (RoseTree.node Label.cond cs) ps e =
+      «Printer.kwList1» «Reader.kwIf» ps := rfl
 
 /-- The mirror's printing of the form {lit}`cons`. -/
-theorem printStep_cons (defs : List Tree) (rs : List (Tree × (Tree → Tree))) (e : Tree) :
-    «Printer.printStep» defs (leaf Label.cons) rs e =
-      «Printer.kwList1» «Reader.kwCons» («Printer.prAt» rs e) := rfl
+theorem printStep_cons (defs : List Tree) (cs ps : List Tree) (e : Tree) :
+    «Printer.printStep» defs (RoseTree.node Label.cons cs) ps e =
+      «Printer.kwList1» «Reader.kwCons» ps := rfl
 
 /-- The mirror's printing of the form {lit}`nil`. -/
-theorem printStep_nil (defs : List Tree) (rs : List (Tree × (Tree → Tree))) (e : Tree) :
-    «Printer.printStep» defs (leaf Label.nil) rs e =
-      «Printer.kwList1» «Reader.kwNil» («Printer.printTypes» («Printer.prTrees» rs)) := rfl
+theorem printStep_nil (defs : List Tree) (cs ps : List Tree) (e : Tree) :
+    «Printer.printStep» defs (RoseTree.node Label.nil cs) ps e =
+      «Printer.kwList1» «Reader.kwNil» («Printer.printTypes» cs) := by
+  pr_node
 
 /-- The mirror's printing of the form {lit}`fold`. -/
-theorem printStep_fold (defs : List Tree) (rs : List (Tree × (Tree → Tree))) (e : Tree) :
-    «Printer.printStep» defs (leaf Label.fold) rs e =
-      «Printer.kwList1» «Reader.kwFold» («Printer.printTypes» («Printer.prTrees» rs)) := rfl
+theorem printStep_fold (defs : List Tree) (cs ps : List Tree) (e : Tree) :
+    «Printer.printStep» defs (RoseTree.node Label.fold cs) ps e =
+      «Printer.kwList1» «Reader.kwFold» («Printer.printTypes» cs) := by
+  pr_node
 
 /-- The mirror's printing of the form {lit}`para`. -/
-theorem printStep_para (defs : List Tree) (rs : List (Tree × (Tree → Tree))) (e : Tree) :
-    «Printer.printStep» defs (leaf Label.para) rs e =
-      «Printer.kwList1» «Reader.kwPara» («Printer.printTypes» («Printer.prTrees» rs)) := rfl
+theorem printStep_para (defs : List Tree) (cs ps : List Tree) (e : Tree) :
+    «Printer.printStep» defs (RoseTree.node Label.para cs) ps e =
+      «Printer.kwList1» «Reader.kwPara» («Printer.printTypes» cs) := by
+  pr_node
 
 /-- The mirror's printing of the form {lit}`iter`. -/
-theorem printStep_iter (defs : List Tree) (rs : List (Tree × (Tree → Tree))) (e : Tree) :
-    «Printer.printStep» defs (leaf Label.iter) rs e =
-      «Printer.kwList1» «Reader.kwIter» («Printer.printTypes» («Printer.prTrees» rs)) := rfl
+theorem printStep_iter (defs : List Tree) (cs ps : List Tree) (e : Tree) :
+    «Printer.printStep» defs (RoseTree.node Label.iter cs) ps e =
+      «Printer.kwList1» «Reader.kwIter» («Printer.printTypes» cs) := by
+  pr_node
 
 /-- The mirror's printing of the form {lit}`foldr`. -/
-theorem printStep_foldr (defs : List Tree) (rs : List (Tree × (Tree → Tree))) (e : Tree) :
-    «Printer.printStep» defs (leaf Label.foldr) rs e =
-      «Printer.kwList1» «Reader.kwFoldr» («Printer.printTypes» («Printer.prTrees» rs)) := rfl
+theorem printStep_foldr (defs : List Tree) (cs ps : List Tree) (e : Tree) :
+    «Printer.printStep» defs (RoseTree.node Label.foldr cs) ps e =
+      «Printer.kwList1» «Reader.kwFoldr» («Printer.printTypes» cs) := by
+  pr_node
 
 /-- The mirror's printing of the form {lit}`lcase`. -/
-theorem printStep_lcase (defs : List Tree) (rs : List (Tree × (Tree → Tree))) (e : Tree) :
-    «Printer.printStep» defs (leaf Label.lcase) rs e =
-      «Printer.kwList1» «Reader.kwLcase» («Printer.printTypes» («Printer.prTrees» rs)) := rfl
+theorem printStep_lcase (defs : List Tree) (cs ps : List Tree) (e : Tree) :
+    «Printer.printStep» defs (RoseTree.node Label.lcase cs) ps e =
+      «Printer.kwList1» «Reader.kwLcase» («Printer.printTypes» cs) := by
+  pr_node
 
 /-- Types printed structurally, in a list. -/
 theorem printTypes_eq (cs : List Tree) : «Printer.printTypes» cs = cs.map «Printer.printType» := by
@@ -431,43 +456,43 @@ theorem printTerm_eq (defs : List (List Char)) : ∀ (t : Tree) (d : ℕ),
     TermWf defs.length t d = true →
       «Printer.printTerm» (defs.map nameTree) t (leaf d) = sexpTree (printTerm defs t d) :=
   RoseTree.ind fun l cs ih d h ↦ by
-    rw [printTerm_fold, fold_node, map_fold_pair (pairStep_printFold _), printTerm_node]
+    rw [printTerm_mnode, printTerm_node]
     have ih' : ∀ c ∈ cs, ∀ d, TermWf defs.length c d = true →
-        (Const.fold (printFold (defs.map nameTree)) c).2 (leaf d) =
-          sexpTree (printTerm defs c d) := ih
+        «Printer.printTerm» (defs.map nameTree) c (leaf d) = sexpTree (printTerm defs c d) := ih
     rcases termWf_cases h with ⟨rfl, c, rfl, hc, hlt⟩ | ⟨rfl, A, b, rfl, hA, hb⟩ |
       ⟨rfl, f, x, rfl, hf, hx⟩ | ⟨rfl, rfl⟩ | ⟨hl, hcs⟩ | ⟨rfl, c, rfl⟩ | ⟨hl, A, rfl, hA⟩ |
       ⟨hl, A, B, rfl, hA, hB⟩ | ⟨rfl, c, rfl, hc, hlt⟩ | ⟨rfl, c, rfl, hc, hlt⟩
-    · simp only [printFold, printStep_var, prTrees_eq, List.map_cons, List.map_nil, at_eq,
+    · simp only [printStep_var, List.map_cons, List.map_nil, at_eq,
         List.getD_cons_zero, label_eq, sub_leaf, binderAtom_eq]
       rfl
     · have hb' := ih' b (List.mem_cons_of_mem _ List.mem_cons_self) (d + 1) hb
-      simp only [printFold, printStep_lam, prTrees_eq, prAt_eq, List.map_cons, List.map_nil,
-        at_eq, List.getD_cons_zero, List.getD_cons_succ, add_leaf, hb', printType_eq,
+      simp only [List.map_cons, List.map_nil, prKids_lam, printStep_lam, at_eq,
+        List.getD_cons_zero, List.getD_cons_succ, add_leaf, hb', printType_eq,
         binderAtom_eq, single_eq, kwList1_def, listOf_def, kwAtom_lam]
       simp only [printStep_lam_eq, sexpTree_listS, List.map_cons, List.map_nil]
     · have hf' := ih' f List.mem_cons_self d hf
       have hx' := ih' x (List.mem_cons_of_mem _ List.mem_cons_self) d hx
-      simp only [printFold, printStep_app, prAt_eq, List.map_cons, List.map_nil, hf', hx',
-        listOf_def]
+      rw [prKids_other _ (by decide)]
+      simp only [printStep_app, List.map_cons, List.map_nil, hf', hx', listOf_def]
       simp only [printStep_app_eq, sexpTree_listS, List.map_cons, List.map_nil]
     · exact atomOf_eq ['u', 'n', 'i', 't']
-    · have hps : ((cs.map fun c ↦ (c, (Const.fold (printFold (defs.map nameTree)) c).2)).map
-            fun r ↦ r.2 (leaf d)) =
+    · have hps : ((cs.map fun c ↦ «Printer.printTerm» (defs.map nameTree) c).map
+            fun r ↦ r (leaf d)) =
           ((cs.map fun c ↦ (c, printTerm defs c)).map fun r ↦ r.2 d).map sexpTree := by
         simp only [List.map_map, Function.comp_def]
         exact List.map_congr_left fun c hc ↦ ih' c hc d (hcs c hc)
       rcases hl with rfl | rfl | rfl | rfl | rfl
       all_goals
-        simp only [printFold, printStep_pair, printStep_fst, printStep_snd, printStep_cond,
-          printStep_cons, prAt_eq, hps, kwList1_def, (printStep_kw_eq defs _ d).1,
+        rw [prKids_other _ (by decide)]
+        simp only [printStep_pair, printStep_fst, printStep_snd, printStep_cond,
+          printStep_cons, hps, kwList1_def, (printStep_kw_eq defs _ d).1,
           (printStep_kw_eq defs _ d).2.1, (printStep_kw_eq defs _ d).2.2.1,
           (printStep_kw_eq defs _ d).2.2.2.1, (printStep_kw_eq defs _ d).2.2.2.2, sexpTree_listS,
           atomOf_kw]
         rfl
     · obtain ⟨cl, ccs, rfl⟩ : ∃ cl ccs, c = RoseTree.node cl ccs :=
         ⟨_, _, (RoseTree.node_label_children c).symm⟩
-      simp only [printFold, printStep_quote, prTrees_eq, List.map_cons, List.map_nil, at_eq,
+      simp only [printStep_quote, List.map_cons, List.map_nil, at_eq,
         List.getD_cons_zero, children_eq, RoseTree.children_node, nonEmpty_eq, label_eq,
         RoseTree.label_node]
       cases ccs with
@@ -483,25 +508,25 @@ theorem printTerm_eq (defs : List (List Char)) : ∀ (t : Tree) (d : ℕ),
         rfl
     · rcases hl with rfl | rfl | rfl | rfl
       all_goals
-        simp only [printFold, printStep_nil, printStep_fold, printStep_para, printStep_iter,
-          prTrees_eq, List.map_cons, List.map_nil, kwList1_def, printTypes_eq, printType_eq,
+        simp only [printStep_nil, printStep_fold, printStep_para, printStep_iter, List.map_cons,
+          List.map_nil, kwList1_def, printTypes_eq, printType_eq,
           atomOf_kw]
         rfl
     · rcases hl with rfl | rfl
       all_goals
-        simp only [printFold, printStep_foldr, printStep_lcase, prTrees_eq, List.map_cons,
+        simp only [printStep_foldr, printStep_lcase, List.map_cons,
           List.map_nil, kwList1_def, printTypes_eq, printType_eq, atomOf_kw]
         rfl
     · obtain ⟨k, rfl⟩ : ∃ k, c = leaf k := ⟨c.label, (leaf_label hc).symm⟩
       rw [label_leaf] at hlt
-      simp only [printFold, printStep_prim, prTrees_eq, List.map_cons, List.map_nil,
+      simp only [printStep_prim, List.map_cons, List.map_nil,
         «Printer.nameAt»]
       rw [show «Prelude.at» [leaf k] (leaf 0) = leaf k from rfl, label_eq, label_leaf,
         at_primNames hlt, atomOf_eq]
       rfl
     · obtain ⟨k, rfl⟩ : ∃ k, c = leaf k := ⟨c.label, (leaf_label hc).symm⟩
       rw [label_leaf] at hlt
-      simp only [printFold, printStep_ref, prTrees_eq, List.map_cons, List.map_nil,
+      simp only [printStep_ref, List.map_cons, List.map_nil,
         «Printer.nameAt»]
       rw [show «Prelude.at» [leaf k] (leaf 0) = leaf k from rfl, label_eq, label_leaf, at_eq,
         getD_map_nameTree hlt, atomOf_eq]
@@ -536,7 +561,7 @@ theorem leafBelow_eq (cs : List Tree) (n : ℕ) :
 /-- The mirror's test of every child's well-formedness at a depth. -/
 theorem allAt_eq (cs : List Tree) (F : Tree → Tree → Tree) (G : Tree → ℕ → Bool) (d : ℕ)
     (h : ∀ c ∈ cs, F c (leaf d) = ofBool (G c d)) :
-    «Printer.allAt» (cs.map fun c ↦ (c, F c)) (leaf d) =
+    «Printer.allAt» (cs.map fun c ↦ F c (leaf d)) =
       ofBool ((cs.map fun c ↦ (c, G c)).all (·.2 d)) := by
   unfold «Printer.allAt»
   rw [foldr_eq]
@@ -559,18 +584,62 @@ theorem tysOf_eq (k : ℕ) (cs : List Tree) :
       rw [List.foldr_cons, ih, isTy_eq, List.all_cons]
       cases Ty.IsTy c <;> rfl) cs
 
+/-- The well-formedness of a node's children at a binder depth: of an abstraction's body under
+one more binder, of the terms of an application or a form at the depth, and of no other child. -/
+def wfKids (l : Tree) (rs : List (Tree → Tree)) (e i : Tree) : List Tree :=
+  List.foldr (fun (r : Tree → Tree) (c : Tree → Tree → List Tree) (e i : Tree) ↦
+      (if (Const.eq l (leaf 9)).label ≠ 0 then
+          if (Const.eq i (leaf 1)).label ≠ 0 then r (Const.add e (leaf 1)) else leaf 0
+        else if («Prelude.or» (Const.eq l (leaf 10)) («Prelude.or» (Const.eq l (leaf 12))
+            («Prelude.or» (Const.eq l (leaf 13)) («Prelude.or» (Const.eq l (leaf 14))
+              («Prelude.or» (Const.eq l (leaf 16)) (Const.eq l (leaf 20))))))).label ≠ 0 then r e
+        else leaf 0) :: c e (Const.add i (leaf 1)))
+    (fun _ _ ↦ []) rs e i
+
+/-- The mirror's well-formedness of a term at a node, from its children's. -/
+theorem termWf_mnode (n : Tree) (l : ℕ) (cs : List Tree) (e : Tree) :
+    «Printer.termWf» n (RoseTree.node l cs) e =
+      «Printer.wfStep» n (RoseTree.node l cs)
+        (wfKids (leaf l) (cs.map fun c ↦ «Printer.termWf» n c) e (leaf 0)) e := by
+  unfold «Printer.termWf»
+  rw [Const.para_node]
+  simp only [foldr_eq, wfKids]
+  rfl
+
+/-- The well-formedness of the terms of an application or a form, each at the node's depth. -/
+theorem wfKids_read (l : ℕ) (hl : l = 10 ∨ l = 12 ∨ l = 13 ∨ l = 14 ∨ l = 16 ∨ l = 20)
+    (rs : List (Tree → Tree)) (e : Tree) :
+    ∀ i : ℕ, wfKids (leaf l) rs e (leaf i) = rs.map fun r ↦ r e := by
+  refine rs.rec (fun _ ↦ rfl) fun r rs ih i ↦ ?_
+  have := ih (i + 1)
+  simp only [wfKids, List.foldr_cons, List.map_cons, add_leaf] at this ⊢
+  rw [this]
+  rcases hl with rfl | rfl | rfl | rfl | rfl | rfl <;> rfl
+
+/-- The simplification of a case of the mirror's well-formedness: the node's label and children,
+the tests of its arity and labels, and the given lemmas. -/
+local macro "wf_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(tactic|
+  simp only [«Printer.wfStep», wfStep, label_eq, children_eq, RoseTree.label_node,
+    RoseTree.children_node, length_eq, eq_leaf, nonEmpty_eq, tysOf_eq, Nat.reduceBEq, ofBool_true,
+    ofBool_false, label_leaf, ne_eq, one_ne_zero, not_false_eq_true, not_true_eq_false,
+    ofBool_label_eq_zero, Bool.not_eq_false, ↓reduceIte, Label.var, Label.lam, Label.app,
+    Label.unit, Label.pair, Label.fst, Label.snd, Label.cond, Label.cons, Label.quote, Label.nil,
+    Label.fold, Label.para, Label.iter, Label.foldr, Label.lcase, Label.prim, Label.ref,
+    Nat.reduceEqDiff, or_false, or_true, $ls,*])
+
 /-- One node's well-formedness, as the mirror decides it, from its children's. -/
 theorem wfStep_eq (n l d : ℕ) (cs : List Tree) (F : Tree → Tree → Tree)
     (h : ∀ c ∈ cs, ∀ d, F c (leaf d) = ofBool (TermWf n c d)) :
-    «Printer.wfStep» (leaf n) (leaf l) (cs.map fun c ↦ (c, F c)) (leaf d) =
+    «Printer.wfStep» (leaf n) (RoseTree.node l cs)
+        (wfKids (leaf l) (cs.map F) (leaf d) (leaf 0)) (leaf d) =
       ofBool (wfStep n l (cs.map fun c ↦ (c, TermWf n c)) d) := by
-  have hT : «Printer.prTrees» (cs.map fun c ↦ (c, F c)) = cs := by
-    rw [prTrees_eq, List.map_map]
-    exact List.map_id' cs
   have hS : (cs.map fun c ↦ (c, TermWf n c)).map Prod.fst = cs := by
     rw [List.map_map]
     exact List.map_id' cs
-  have hA := allAt_eq cs F (TermWf n) d fun c hc ↦ h c hc d
+  have hA : (cs.map F).map (fun r ↦ r (leaf d)) = cs.map fun c ↦ F c (leaf d) := by
+    rw [List.map_map]
+    rfl
+  have hB := allAt_eq cs F (TermWf n) d fun c hc ↦ h c hc d
   match l with
   | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 => rfl
   | m + 26 => rfl
@@ -583,35 +652,26 @@ theorem wfStep_eq (n l d : ℕ) (cs : List Tree) (F : Tree → Tree → Tree)
       cases Ty.IsTy A <;> rfl
     | [], _ => rfl
     | [_], _ => rfl
-    | _ :: _ :: _ :: _, _ => rfl
-  | 8 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 =>
-    simp only [«Printer.wfStep», wfStep, hT, hS, hA, length_eq, eq_leaf, nonEmpty_eq, tysOf_eq,
-      Nat.reduceBEq, ofBool_true, ofBool_false, label_leaf, ne_eq, one_ne_zero,
-      not_false_eq_true, not_true_eq_false, ofBool_label_eq_zero, Bool.not_eq_false, ↓reduceIte,
-      Label.var, Label.lam, Label.app, Label.unit, Label.pair, Label.fst, Label.snd, Label.cond,
-      Label.cons, Label.quote, Label.nil, Label.fold, Label.para, Label.iter, Label.foldr,
-      Label.lcase, Label.prim, Label.ref, Nat.reduceEqDiff, or_false, or_true]
+    | _ :: _ :: _ :: r, _ =>
+      have hk : (r.length + 1 + 1 + 1 == 2) = false := rfl
+      wf_simp [List.length_cons, hk]
+      all_goals rfl
+  | 10 | 12 | 13 | 14 | 16 | 20 =>
+    rw [wfKids_read _ (by decide), hA]
+    wf_simp [hS, hB]
+    all_goals (cases cs.length == 2 <;> rfl)
+  | 8 | 11 | 15 | 17 | 18 | 19 | 21 | 22 | 23 | 24 | 25 =>
+    wf_simp [hS]
     all_goals first
       | exact leafBelow_eq _ _
-      | (cases cs.length == 2 <;> rfl)
       | (cases cs.isEmpty <;> rfl)
-
-/-- The step of the mirror's well-formedness of terms, which pairs each node with its
-well-formedness. -/
-def wfFold (n : Tree) (l : Tree) (rs : List (Tree × (Tree → Tree))) : Tree × (Tree → Tree) :=
-  (Const.node l («Printer.prTrees» rs), fun e ↦ «Printer.wfStep» n l rs e)
-
-/-- The mirror's well-formedness of terms pairs each node with its well-formedness. -/
-theorem pairStep_wfFold (n : Tree) : PairStep (wfFold n) := fun l rs ↦ by
-  simp [wfFold]
 
 /-- A term's well-formedness under binders to a depth, given the number of definitions, as the
 mirror decides it. -/
 theorem termWf_eq (n : ℕ) : ∀ (t : Tree) (d : ℕ),
     «Printer.termWf» (leaf n) t (leaf d) = ofBool (TermWf n t d) :=
   RoseTree.ind fun l cs ih d ↦ by
-    change (Const.fold (wfFold (leaf n)) (RoseTree.node l cs)).2 (leaf d) = _
-    rw [fold_node, map_fold_pair (pairStep_wfFold _), termWf_node]
+    rw [termWf_mnode, termWf_node]
     exact wfStep_eq n l d cs _ ih
 
 end GebTests.Prototypes.FreeTopos.Agreement.Printer
