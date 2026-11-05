@@ -2868,8 +2868,8 @@ Decoding is decided by the recognizer `D.member`, which the stage-0
 compiler writes where a program refers to it (`bootstrap/recognize.geb`),
 from a marker the expansion leaves after the constructors of each
 datatype `data` declares: one fold of the tree whose result at a node
-holds the bit of its membership in `D` and in each datatype on which `D`
-depends. The expansion writes the type a decoding or a datum reads with
+is the node over the bits of its membership in `D` and in each datatype
+on which `D` depends. The expansion writes the type a decoding or a datum reads with
 its abbreviations expanded, and the typing admits only a datatype's own
 name there, so that a type abbreviation means the datatype it abbreviates
 in these forms as in every other, and the recognizer the erasure names,

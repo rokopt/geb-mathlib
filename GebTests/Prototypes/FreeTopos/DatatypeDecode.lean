@@ -960,9 +960,10 @@ def decodeCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let (_, kT) := datatypeTerms P (v nQ)
     let inner (c : ℕ) (t : Term) (Γ : List Tree) : Term := W.inΓWith overK (atPos c) Γ t
     -- the resolutions, as the reader tests them: the recognizer's index among the definitions'
-    -- names, which the recognizers' hypothesis gives, the function's and the default's in the
-    -- decoded tree's scope, then the tree's; then the kernel's types, the function's and the
-    -- default's in its context extended; any absent refuting the statement's hypothesis; k at
+    -- names, at which the recognizers' hypothesis gives the recognizer, the function's and the
+    -- default's in the decoded tree's scope, then the tree's; then the kernel's types, the
+    -- function's and the default's in its context extended; any absent refuting the statement's
+    -- hypothesis; k at
     -- the position of the index, of the hypothesis of the recognizer at it and of the elements'
     -- generalized resolutions
     -- the reader's lookups in the scopes it extends, by their equations at a construction
@@ -1131,16 +1132,7 @@ def decodeCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
         dRwHyp (fun Γ Φ t ↦ evalRw K.G K.E (foldedEx Φ h) .full Γ Φ t) h (fun Γ Φ ψ ↦
           dRwBy (evalRw K.G K.E (foldedEx Φ (Φ.length - 1)) .full) dHyp Γ Φ ψ) Γ Φ ψ
     let anteK (i : ℕ) : Option Deducer := if i = 8 then some typedK else none
-    let resolutions (n : ℕ) (k : ℕ → ℕ → ℕ → ℕ → ℕ → Deducer) : Deducer :=
-      dRwHyp (evalRw K.G K.E [.delta (T.q + 6 + 2 * nFolds)] .head) (W.hyp 11) <|
-      K.allEΓ (fun Γ ↦ nameOfForm P (f1 Γ)) <|
-      K.impE (linkK K "decode: the recognizer's datatype" K.anyHyp) <| K.exE <| K.conjE
-        fun Γ Φ ψ ↦
-      let e := Φ.length - 2
-      let rh := Φ.length - 1
-      let pj := Γ.length - 1
-      linkK K "decode: the recognizer's index normalized" (
-      dRwHyp (evalRw K.G K.E (K.rulesEx Φ e) .full) e (
+    let unfolded (n : ℕ) (k : ℕ → ℕ → ℕ → Deducer) : Deducer :=
       -- no keyword the reader reads names the function's erasure, the head of its application
       -- to the decoded tree ({name}`srcHeadFree`), in the decoded tree's context
       W.cutApply "srcHeadFree" (fun Γ ↦ [atPos 2 Γ, consT treeTy entry (W.qv 5 Γ), W.qv 4 Γ,
@@ -1149,17 +1141,39 @@ def decodeCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
       splitConj readerKeywords.length <|
       -- the elements' resolutions and the annotation's type generalized, then the resolution's
       -- equation with its normal form, the stage functions' steps unfolded, in which the
-      -- reader's steps meet them as variables; each decided present, in the order the
-      -- resolution's binds test them, the function's first
+      -- reader's steps meet them as variables
       genU (inner 2 kT) fun pF ↦ genU (inner 3 kT) fun pC ↦
       genU (fun Γ ↦ W.inΓ (atPos 1) Γ kT) fun pE ↦
       normHyps n <|
       unfoldRes <|
+      k pF pC pE
+    -- each element's resolution decided present, in the order the resolution's binds test them,
+    -- the function's first
+    let elements (n : ℕ) (k : ℕ → ℕ → ℕ → Deducer) : Deducer :=
+      unfolded n fun pF pC pE ↦
       presentVar "the function's resolution" pF fun gF ↦
       presentVar "the default's resolution" pC fun gC ↦
       presentVar "the tree's resolution" pE fun gE ↦
-      kernelTypes <|
-      k pj rh gF gC gE)) Γ Φ ψ
+      k gF gC gE
+    -- the recognizer's index decided by its label's bits: absent, the resolution, the name in no
+    -- scope and none of the reserved names, is absent, refuting the statement's hypothesis;
+    -- present, the recognizers' hypothesis gives the recognizer at it
+    let resolutions (n : ℕ) (k : ℕ → ℕ → ℕ → ℕ → ℕ → Deducer) : Deducer :=
+      decideOpt K (fun Γ ↦ pc P "Reader.indexOf" [rn Γ, W.qv 8 Γ])
+        (linkK K "decode: the recognizer's index absent" <|
+          unfolded n fun _ _ _ ↦ K.hypFalse (W.hyp 7))
+        (dRwHyp (evalRw K.G K.E [.delta (T.q + 6 + 2 * nFolds)] .head) (W.hyp 11) <|
+        K.allEΓ (fun Γ ↦ nameOfForm P (f1 Γ)) <|
+        K.impE (linkK K "decode: the recognizer's datatype" K.anyHyp) <|
+        K.impE (linkK K "decode: the recognizer's index present" (K.solve 3)) <| K.exE <| K.conjE
+          fun Γ Φ ψ ↦
+        let e := Φ.length - 2
+        let rh := Φ.length - 1
+        let pj := Γ.length - 1
+        linkK K "decode: the recognizer's index normalized" (
+        dRwHyp (evalRw K.G K.E (K.rulesEx Φ e) .full) e (
+        elements n fun gF gC gE ↦ kernelTypes <| k pj rh gF gC gE)) Γ Φ ψ)
+        (minimal := true)
     let byLast : Deducer := fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ
     let tyTT : Term := pc P "Typing.tyT" []
     -- the soundness at the element of position c, the function or the default, at any value x
