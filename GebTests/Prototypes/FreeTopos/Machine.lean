@@ -16,12 +16,14 @@ Equations of the library's arithmetic at numerals proved by a step of the enviro
 ({name}`Geb.FreeTopos.Internal.machineReduce`) at each side, every definition unfolded, in the
 development of {lit}`GebTests.Prototypes.FreeTopos.Literals`: the machine's normal forms of the
 two sides are one term exactly when the conversion checker accepts the join of the two steps.
-Abstractions are equal by the reduction of their bodies.
+Abstractions are equal by the reduction of their bodies. Reading back a delayed value does not
+compute it.
 
 ## Main definitions
 
 * {lit}`byMachine` — the certificate of an equation by a step of the machine at each side.
 * {lit}`proves` — whether it proves an equation of closed terms.
+* {lit}`infeasible` — a delayed value whose computation takes more steps than are feasible.
 
 ## Tags
 
@@ -84,6 +86,16 @@ def agrees (bound : ℕ) : Bool :=
       | none => false
 
 #guard agrees 9
+
+/-- A delayed value whose computation takes more steps than are feasible, its source the unit. -/
+def infeasible : Internal.Val :=
+  Internal.delayed (Thunk.mk fun _ ↦ (2 ^ 64).fold (fun _ _ r ↦ r) none)
+    (Internal.vnode .star [])
+
+-- reading back a delayed value, at the root and below a node, does not compute it
+#guard Internal.readBack infeasible = Term.star
+#guard Internal.readBack (Internal.vnode .pair [infeasible, infeasible]) =
+  Term.pair Term.star Term.star
 
 end GebTests.Prototypes.FreeTopos.Machine
 

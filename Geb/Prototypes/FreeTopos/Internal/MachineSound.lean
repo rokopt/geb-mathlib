@@ -57,8 +57,21 @@ open Term (VarLeaves)
 
 /-- A node reads back by its step at its children's terms. -/
 theorem readBack_node (l : VLabel) (cs : List Val) :
-    readBack (RoseTree.node l cs) = readStep l (cs.map readBack) :=
-  RoseTree.elim_node _ l cs
+    readBack (RoseTree.node l cs) = readStep l (cs.map readBack) := by
+  have hof : List.ofFn (fun i : Fin cs.length ↦ readBack (cs.toArray[i.1]'(by simp))) =
+      cs.map readBack := by simp [List.ofFn_getElem_eq_map]
+  conv_lhs => simp only [readBack, RoseTree.node, WType.elim]
+  cases l
+  case delay =>
+    dsimp only
+    by_cases h : cs.length = 2
+    · simp only [h, ↓reduceDIte]
+      obtain ⟨a, c, rfl⟩ : ∃ a c, cs = [a, c] := match cs, h with
+        | [a, c], _ => ⟨a, c, rfl⟩
+      rfl
+    · simp only [h, ↓reduceDIte]
+      exact congrArg _ hof
+  all_goals (dsimp only; exact congrArg _ hof)
 
 /-- A delayed value is the node of its value and its source. -/
 theorem delayed_eq (th : Thunk (Option Val)) (src : Val) :
