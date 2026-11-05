@@ -4294,7 +4294,10 @@ import-direction rules above are enforced by
   (`Geb.FreeTopos.Internal.check_sound`), and `Development.lean` every
   entry of a development that checks valid, with its definitions
   unfolded in every model of the theory itself
-  (`Geb.FreeTopos.Internal.valid_unfoldAll_of_checkDev`). `Logic.lean`
+  (`Geb.FreeTopos.Internal.valid_unfoldAll_of_checkDev`), and
+  `Composition.lean` the theorems of a development that checks after the
+  statements of others, in a model where those are valid
+  (`Geb.FreeTopos.Internal.valid_of_checkAfter`). `Logic.lean`
   defines the connectives from equality with their introduction and
   elimination rules, `Connectives.lean` proves their Kripke–Joyal
   conditions (Section VI.6 of [MacLaneMoerdijk1992]) and description by
@@ -4460,8 +4463,11 @@ import-direction rules above are enforced by
   of `bootstrap/stage1/typing.geb` and the expansion and erasure of
   `bootstrap/stage1/datatype.geb` composed with the reader and the
   evaluator, by a relation extending that one at the datatypes, and
-  proves it at atoms, and `DatatypeList.lean` at the keywords' forms, one
-  keyword at a time, given it at their elements;
+  proves it at atoms, `DatatypeList.lean` at the keywords' forms, one
+  keyword at a time, given it at their elements, `DatatypeCaseSound.lean`
+  at the case analyses, `DatatypeCataSrc.lean` at the structural
+  recursions, and `DatatypeClosed.lean` at every tree, given what the
+  compilers ensure of a whole program;
   `TreeCases.lean` exercises the case analysis of a tree variable in any
   context and rewriting under a test, and `Expansion.lean` proves with
   them that the expansion of the datatype language,
@@ -4471,12 +4477,12 @@ import-direction rules above are enforced by
   `bootstrap/certificates/`, the table of each development's distinct
   nodes (`Stored.lean`); the modules of `Certified/` read the
   certificates of weakening, substitution, the expansion's identity, the
-  lemmas of trees, the fundamental lemma and the datatype language's base,
-  atoms and keywords' forms, and state that
+  lemmas of trees, the fundamental lemma and the datatype language's
+  soundness, and state that
   each development proves its theorem in the program it is about, a fact
   Lean's evaluator decides (`docs/rules/ci-and-workflow.md`
-  § Certificates). The datatype language's other certificates are checked
-  by their searches alone, each declaration as it is stored. The
+  § Certificates), a development that continues from others being checked
+  after their statements and composed by validity. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   metalogic, the choices that fixed its form, and the proofs about the
   compiler's components made in it. Depends on the modules of

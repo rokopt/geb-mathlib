@@ -2939,13 +2939,28 @@ another label at applications, the expansion of a list being a list
 `GebTests/Prototypes/FreeTopos/DatatypeLists.lean`); and at every
 tree, by induction on rose trees
 (`GebTests/Prototypes/FreeTopos/DatatypeSound.lean`), given the
-soundness at the lists headed by `datum`, `decode`, `case` and `cata`.
-The soundness at the lists headed by `datum` and by `decode` holds at
-source forms: a datum's quotation is related at the datatype the form
-names (`GebTests/Prototypes/FreeTopos/DatatypeDatum.lean`), and the
+soundness at the lists headed by `datum`, `decode`, `case` and `cata`,
+which it then discharges
+(`GebTests/Prototypes/FreeTopos/DatatypeClosed.lean`).
+A datum's quotation is related at the datatype the form names
+(`GebTests/Prototypes/FreeTopos/DatatypeDatum.lean`), and the
 conditional a decoding's erasure writes on the datatype's recognizer
 converges to a value related at the result type
-(`GebTests/Prototypes/FreeTopos/DatatypeDecode.lean`).
+(`GebTests/Prototypes/FreeTopos/DatatypeDecode.lean`). A case analysis's
+erasure binds the scrutinee, tests its label against the clauses'
+constructors, and walks its children along a clause's fields
+(`GebTests/Prototypes/FreeTopos/DatatypeCase.lean`,
+`GebTests/Prototypes/FreeTopos/DatatypeClauses.lean`,
+`GebTests/Prototypes/FreeTopos/DatatypeCaseSound.lean`); a structural
+recursion's folds into suspended results, related at the members of the
+datatype alone, the step only suspending, so that the fold converges at
+every tree
+(`GebTests/Prototypes/FreeTopos/DatatypeCata.lean`,
+`GebTests/Prototypes/FreeTopos/DatatypeCataClauses.lean`,
+`GebTests/Prototypes/FreeTopos/DatatypeCataChain.lean`,
+`GebTests/Prototypes/FreeTopos/DatatypeCataSound.lean`,
+`GebTests/Prototypes/FreeTopos/DatatypeCataCore.lean`,
+`GebTests/Prototypes/FreeTopos/DatatypeCataSrc.lean`).
 The statement assumes of the definitions and the named context what the
 compilers ensure of a whole program: the relation's markers are the
 typing environment's; the recognizer of each datatype, where the program
@@ -2953,17 +2968,18 @@ refers to it, decides membership in it; no definition takes a
 primitive's name or the unit value's; and each name the context gives a
 type is one the typing admits as a binder's. The relation holds at an
 opaque sort as at the trees, its erasure, of which a field of a template's
-datatype holds any. Remaining after it:
-the soundness at the forms of those keywords, discharging those
-hypotheses; `tree-data` removed. The certificates of the soundness's
-developments but those of the base, atoms and keywords' forms are read
-by no module, the check of each declaration as its search stores it
-being their only check. Each development gains, as its module and the
-name of its last theorem settle, a module of
-`GebTests/Prototypes/FreeTopos/Certified/` that reads its certificate and
-states that it proves that theorem, as
-`GebTests/Prototypes/FreeTopos/Certified/Datatype.lean` states it of
-`atomThm`.
+datatype holds any. Remaining after it: those assumptions discharged
+for a whole program, the definitions the expansion generates related at
+their types and the generated recognizers' decisions proved, which a
+source form's soundness does not reach, and the transfer of the result to
+Lean; `tree-data` removed. The developments of the soundness continue
+from one another in no one order, each citing the statements of those
+it continues from, so the modules of
+`GebTests/Prototypes/FreeTopos/Certified/` check each after those
+statements and compose them by validity
+({name}`Geb.FreeTopos.Internal.valid_of_checkAfter`):
+`GebTests/Prototypes/FreeTopos/Certified/DatatypeClosed.lean` states that
+the soundness at every tree is valid in every model of the program.
 
 The rewriting of the definitions the elementary-affine search rejects in
 the compilers' sources waits on this completion, whose soundness of the

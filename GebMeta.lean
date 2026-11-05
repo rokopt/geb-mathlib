@@ -373,7 +373,12 @@ def evaluationAxiomModules : NameSet :=
     `GebTests.Prototypes.FreeTopos.Certified.Expansion,
     `GebTests.Prototypes.FreeTopos.Certified.Normalization,
     `GebTests.Prototypes.FreeTopos.Certified.Datatype,
-    `GebTests.Prototypes.FreeTopos.Certified.DatatypeList]
+    `GebTests.Prototypes.FreeTopos.Certified.DatatypeList,
+    `GebTests.Prototypes.FreeTopos.Certified.DatatypeForms,
+    `GebTests.Prototypes.FreeTopos.Certified.DatatypeDatum,
+    `GebTests.Prototypes.FreeTopos.Certified.DatatypeCase,
+    `GebTests.Prototypes.FreeTopos.Certified.DatatypeCata,
+    `GebTests.Prototypes.FreeTopos.Certified.DatatypeClosed]
 
 /-- Whether the environment variable `GEB_LOADING` selects the loading
 mode `native`; the mode is `proof` when the variable is unset. -/
