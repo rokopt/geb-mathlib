@@ -3948,7 +3948,9 @@ import-direction rules above are enforced by
   instance before it under boxes of its own. The search writes
   certificates with `--certificate`; `scripts/eal/examples.cert` is the
   examples' certificate, which
-  `GebTests/Prototypes/Affine/Decoration.lean` checks. The
+  `GebTests/Prototypes/Affine/Decoration.lean` checks; the check written
+  in Geb, `bootstrap/affine.geb`, agrees with it
+  (`GebTests/Prototypes/FreeTopos/Agreement/Affine.lean`). The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   decorations' place in the plan. Depends on
   `Geb.Prototypes.Kernel.Basic`.
@@ -4320,13 +4322,16 @@ import-direction rules above are enforced by
   Lean prover's at every encoded input, at rules related to the
   normalizer's and provers related to Lean's. The reader's resolution,
   `bootstrap/reader.geb`, and the printer of kernel terms,
-  `bootstrap/printer.geb`, are in the same program, the printer in its
-  last layer: `Agreement/Printer.lean` proves the printer and its test of
+  `bootstrap/printer.geb`, are in the same program, the printer in a
+  layer of its own: `Agreement/Printer.lean` proves the printer and its test of
   well-formed terms equal to `Geb.Kernel.printTerm` and `Geb.Kernel.TermWf`,
   `Agreement/Reader.lean` the resolution equal to `Geb.Kernel.resolve` at
   every S-expression and the partial printer to `Geb.Kernel.printTerm?` at
   every term, and the two carry `Geb.Kernel.resolve_of_printTerm?` across,
   so that the reader written in Geb inverts the printer written in Geb.
+  The check of elementary-affine certificates, `bootstrap/affine.geb`, is
+  the program's last layer: `Agreement/Affine.lean` proves it equal to
+  `Geb.Affine.check` at every program and certificate.
   Depends on the modules of `Geb/Prototypes/FreeTopos/` above and
   `Geb.Prototypes.PartialHorn.Completeness`.
 - `Geb/Prototypes/FreeTopos/Translation.lean` — the translation of the

@@ -31,9 +31,10 @@ the provers built from provers; the tactics' entry points, the proofs by reducti
 analysis, induction, hypotheses and search; and the combinator prover's entry points, the typing,
 normalization, the proofs by normalization and by induction, the proof of a sequent added to a
 development and the library; the partial printer of kernel terms and the reader's resolution
-of what it prints; and the checker's functions the checker of a development is built from, the
-partial Horn checker of the combinators' certificates, the theory, the inference of typings and
-the step of a development, with the tactics' functions of terms. Each
+of what it prints; the check of elementary-affine certificates; and the checker's functions the
+checker of a development is built from, the partial Horn checker of the combinators' certificates,
+the theory, the inference of typings and the step of a development, with the tactics' functions of
+terms. Each
 type is read from the definition, whose abstractions carry their types and whose body the front end
 applies the identity at the result type to, by inverting the checker-evaluator: for the tactics,
 the combinator prover, the printer and the checker's functions, by one lemma over the list of the
@@ -53,6 +54,7 @@ type, has the type the checker-evaluator infers, which the kernel evaluates.
   computation of the combinator prover and of its entry points.
 * {lit}`printTermTy`, {lit}`readBackTy` — the types of the printer of kernel terms and of the
   reader's resolution of what it prints.
+* {lit}`affineCheckTy` — the type of the check of an elementary-affine certificate.
 * {lit}`pcheckTy`, {lit}`infersTy` — the types of the checker of a certificate and of the
   inferences at a fuel.
 
@@ -70,9 +72,9 @@ type, has the type the checker-evaluator infers, which the kernel evaluates.
   {lit}`metalogic_thm`, {lit}`metalogic_byNorm` with the prover's other entry points, and
   {lit}`metalogic_byMode` with the tactics' other entry points, and {lit}`metalogic_proveSeq`
   with the combinator prover's other entry points, and {lit}`metalogic_printTermOpt` and
-  {lit}`metalogic_readBack`, and {lit}`metalogic_pcheck` with the checker's other functions and
-  {lit}`metalogic_openSubterms` with the tactics' other functions of terms — those globals are the
-  mirror's definitions, at those types.
+  {lit}`metalogic_readBack`, and {lit}`metalogic_affineCheck`, and {lit}`metalogic_pcheck` with
+  the checker's other functions and {lit}`metalogic_openSubterms` with the tactics' other functions
+  of terms — those globals are the mirror's definitions, at those types.
 
 ## Tags
 
@@ -109,7 +111,7 @@ geb_program _root_.GebMirror.metalogic from "bootstrap/prelude.geb" "bootstrap/s
   "bootstrap/free-topos/derivation.geb" "bootstrap/reader.geb" "bootstrap/check.geb"
   "bootstrap/free-topos/translation.geb" "bootstrap/free-topos/prove.geb"
   "bootstrap/free-topos/tactics.geb" "bootstrap/free-topos/combinator.geb" "bootstrap/datatype.geb"
-  "bootstrap/printer.geb"
+  "bootstrap/printer.geb" "bootstrap/affine.geb"
   mirror GebMirror.Metalogic
   exports «Derivation.checkDev» «Translation.program» «Translation.trGlobals» «Translation.thm»
     «Prover.prepareRules» «Prover.byNorm» «Prover.byNatInd» «Prover.byListInd» «Prover.byNatIndHyp»
@@ -130,7 +132,7 @@ geb_program _root_.GebMirror.metalogic from "bootstrap/prelude.geb" "bootstrap/s
     «PartialHorn.thyExtendAll» «Theory.toposTheory» «Infer.envOfDefs» «Infer.infers»
     «Derivation.declStep» «Tactics.openSubterms» «Tactics.stuckVar» «Tactics.mentions»
     «Tactics.matchesOf» «Tactics.condParts» «Tactics.stuckVarC» «Tactics.appsOf»
-    «Tactics.unnodeU» «Tactics.occRewrite» «Tactics.abstractTerm»
+    «Tactics.unnodeU» «Tactics.occRewrite» «Tactics.abstractTerm» «Affine.check»
 
 open GebMirror (metalogic)
 
@@ -1269,6 +1271,24 @@ theorem metalogic_printTermOpt :
     ((infer_of_loadStep metalogic.step1946).elim fun _ h ↦
       infer_lams tT _ [tList tT, tT, tT] h)
     metalogic.«Printer.printTermOpt_heq»))
+
+/-! The check of elementary-affine certificates. -/
+
+/-- The type of the check of a certificate: from the terms of a program's definitions and a
+certificate to the optional list of the instances' definitions and decorated types. -/
+def affineCheckTy : Tree := [tList tT, tT].foldr tArrow tT
+
+-- the check of a certificate is the program's global of index 2014
+kernel_rfl metalogic_g2014 : metalogic.globals[2014]? = some metalogic.g2014
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 2014 is the mirror's check of a certificate, at its type. -/
+theorem metalogic_affineCheck :
+    metalogic.globals[2014]? = some (⟨affineCheckTy, «Affine.check»⟩ : Glob) :=
+  metalogic_g2014.trans (congrArg some (glob_ext
+    ((infer_of_loadStep metalogic.step2014).elim fun _ h ↦
+      infer_lams tT _ [tList tT, tT] h)
+    metalogic.«Affine.check_heq»))
 
 /-! The checker's functions: the partial Horn checker, the theory, the inference of typings and
 the step of a development. -/

@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import GebTests.Prototypes.FreeTopos.Agreement.Affine
 public import GebTests.Prototypes.FreeTopos.Agreement.Combinator
 public import GebTests.Prototypes.FreeTopos.Agreement.Derivation
 public import GebTests.Prototypes.FreeTopos.Agreement.Load
@@ -44,7 +45,10 @@ the same equations with the same certificates. The reader's resolution written i
 reader's ({name}`Geb.Kernel.resolve`) at every S-expression, the partial printer with the Lean
 printer ({name}`Geb.Kernel.printTerm?`) at every term, printing nothing where it prints nothing, and
 so the reader written in Geb inverts the printer written in Geb without hypotheses, the Lean
-retraction ({name}`Geb.Kernel.resolve_of_printTerm?`) carried across the two agreements.
+retraction ({name}`Geb.Kernel.resolve_of_printTerm?`) carried across the two agreements. The check
+of elementary-affine certificates written in Geb, {lit}`bootstrap/affine.geb`, is part of the same
+program, and gives the encoding of what {name}`Geb.Affine.check` gives at every program and
+certificate.
 
 Constants are encoded by
 {name}`GebTests.Prototypes.FreeTopos.Agreement.Encode.encGlobals`, entries by
@@ -79,6 +83,8 @@ combinator prover's other agreements).
   prover in Lean.
 * {lit}`reader_inverse_agree` — the loaded printer and resolution written in Geb agree with
   Lean's, and the resolution inverts the printer.
+* {lit}`affineCheck_agree` — the loaded check of elementary-affine certificates written in Geb
+  accepts as the check in Lean does, with the same instances.
 
 ## Tags
 
@@ -498,6 +504,17 @@ theorem reader_inverse_agree : ∃ G' : List Glob, load metalogic = some G' ∧
   ⟨_, metalogic.load_globals, «Printer.printTermOpt», metalogic_printTermOpt, «Printer.readBack»,
     metalogic_readBack, Reader.printTermOpt_eq, Reader.readBack_eq,
     Reader.readBack_printTermOpt_eq⟩
+
+/-- The check of elementary-affine certificates written in Geb agrees with the check in Lean: the
+program loads to globals among which is a function of the check's type that, at a program's terms
+and a certificate, gives the encoding of what {name}`Geb.Affine.check` gives. -/
+theorem affineCheck_agree : ∃ G' : List Glob, load metalogic = some G' ∧
+    ∃ f : Ty.den affineCheckTy, G'[2014]? = some ⟨affineCheckTy, f⟩ ∧
+      ∀ (prog : List Tree) (cert : Tree),
+        f prog cert =
+          encOpt ((Geb.Affine.check prog cert).map fun E ↦
+            RoseTree.node 0 (E.map Affine.encInst)) :=
+  ⟨_, metalogic.load_globals, «Affine.check», metalogic_affineCheck, Affine.check_eq⟩
 
 end GebTests.Prototypes.FreeTopos.Agreement
 
