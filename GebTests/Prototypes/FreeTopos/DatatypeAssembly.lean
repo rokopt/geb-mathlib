@@ -659,7 +659,7 @@ def expansionDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
 atom's, the list's, the stage functions' at applications and the applications', stored as the
 certificate {lit}`datatype-expansion`. -/
 def expansionCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Thm) :
-    Except String (List (String × List Internal.Decl)) := do
+    Except String (List Stored.Cert) := do
   let some names := listNames P S T | throw "the base is not stated"
   certifyAfter P (names ++ (stagesDev3 P S T).map (·.1) ++ (applyDev3 P S T).map (·.1))
     "datatype-expansion" (expansionDev3 P S T) before
@@ -729,7 +729,7 @@ def assemblyDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
 atom's, the list's, the stage functions' at applications, the applications' and the list
 expansion's, stored as the certificate {lit}`datatype-assembly`. -/
 def assemblyCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Thm) :
-    Except String (List (String × List Internal.Decl)) := do
+    Except String (List Stored.Cert) := do
   let some names := listNames P S T | throw "the base is not stated"
   certifyAfter P (names ++ (stagesDev3 P S T).map (·.1) ++ (applyDev3 P S T).map (·.1) ++
     (expansionDev3 P S T).map (·.1)) "datatype-assembly" (assemblyDev3 P S T) before

@@ -45,22 +45,20 @@ set_option doc.verso true
 namespace GebTests.Prototypes.FreeTopos.Certificates
 
 open Geb Geb.FreeTopos
-open Internal (Decl)
 
-/-- A search of a translated program's developments: each development's declarations with the name
-of its certificate, where the program translates and every lemma is proved. -/
+/-- A search of a translated program's developments: each development as a certificate, where the
+program translates and every lemma is proved. -/
 def inProgram {α : Type} (program : Option α)
-    (search : α → Except String (List (String × List Decl))) :
-    Except String (List (String × List Decl)) :=
+    (search : α → Except String (List Stored.Cert)) :
+    Except String (List Stored.Cert) :=
   match program with
   | some P => search P
   | none => .error "the program does not translate"
 
 /-- A search of developments: the names of the certificates it continues from, and, given their
-theorems in that order, each development's declarations with the name of its certificate, or the
-reason a lemma is not proved. -/
+theorems in that order, each development as a certificate, or the reason a lemma is not proved. -/
 abbrev Search :=
-  List String × (List (List Internal.Thm) → Except String (List (String × List Decl)))
+  List String × (List (List Internal.Thm) → Except String (List Stored.Cert))
 
 set_option compiler.extract_closed false in
 /-- The searches of the developments with certificates, each with its name, after those whose
@@ -68,15 +66,15 @@ certificates it continues from. Closed terms are not extracted, so that each sea
 is timed rather than when the program starts. -/
 def searches : List (String × Search) :=
   [("weakening", ([], fun _ ↦ inProgram Weakening.program fun P ↦
-      (Weakening.certificate P).map fun ds ↦ [("weakening", ds)])),
+      (Weakening.certificate P).bind fun ds ↦ (Stored.certOf "weakening" ds).map ([·]))),
     ("substitution", ([], fun _ ↦ inProgram Substitution.program fun P ↦
-      (Substitution.certificate P).map fun ds ↦ [("substitution", ds)])),
+      (Substitution.certificate P).bind fun ds ↦ (Stored.certOf "substitution" ds).map ([·]))),
     ("tree-cases", ([], fun _ ↦ inProgram TreeCases.program fun P ↦
-      (TreeCases.certificate P).map fun ds ↦ [("tree-cases", ds)])),
+      (TreeCases.certificate P).bind fun ds ↦ (Stored.certOf "tree-cases" ds).map ([·]))),
     ("expansion", ([], fun _ ↦ inProgram Expansion.program fun P ↦
-      (Expansion.certificate P).map fun ds ↦ [("expansion", ds)])),
+      (Expansion.certificate P).bind fun ds ↦ (Stored.certOf "expansion" ds).map ([·]))),
     ("normalization", ([], fun _ ↦ inProgram Normalization.extended fun (P, S) ↦
-      Normalization.certificates P S)),
+      (Normalization.certificates P S).bind fun cs ↦ cs.mapM fun (n, ds) ↦ Stored.certOf n ds)),
     ("datatype-base", ([], fun _ ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
       Datatypes.certificates P S T)),
     ("datatype-atom", (["datatype-base"], fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦

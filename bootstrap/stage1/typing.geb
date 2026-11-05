@@ -33,6 +33,7 @@
     kwUnitArg
     kwFields
     kwSplit
+    boundNames
     decimalChars
     OName.Maybe
     OName.just
@@ -320,6 +321,10 @@
   (def kwUnitArg (quote (0 "%u")))
   (def kwFields (quote (0 "%c")))
   (def kwSplit (quote (0 "%q")))
+  (def boundNames
+    (cons kwDecoded
+      (cons kwScrutinee
+        (cons kwNode (cons kwResults (cons kwUnitArg (cons kwFields (cons kwSplit (nil T)))))))))
   (defn decimalChars ((n T)) Ts
     (if (eq n 0) (single 48)
       (let k T
@@ -358,10 +363,12 @@
           (nil OAbbr.Maybe)
           bs))))
 
-  ; an atom's type: none at a keyword, which names no term, though a binder may take its name
+  ; an atom's type: none at a keyword, which names no term, though a binder may take its name, and
+  ; none at one of the names the erasure binds around the terms it is given, which a term may not
+  ; name
   (defn synAtom ((E Env) (cs Ts) (cx Cx)) MTy
     (let n Name (name cs)
-      (if (keywordTx (tAtom cs)) OTy.nothing
+      (if (or (keywordTx (tAtom cs)) (isSome (indexOf (rep n) boundNames))) OTy.nothing
         (if (isSome (numeral cs)) (OTy.just tyT)
           (if (hasName n (envNums E)) (OTy.just tyT)
             (case (lookupName n cx) ((OTy.just ty) (OTy.just ty))

@@ -19,7 +19,6 @@ numbers in decimal, which {name}`GebTests.Prototypes.FreeTopos.Stored.declsOfTex
 ## Main definitions
 
 * {lit}`natsToText` — a list of natural numbers as text.
-* {lit}`declsToText` — declarations of theorems as text.
 * {lit}`generate` — the certificates of the developments
   ({name}`GebTests.Prototypes.FreeTopos.Certificates.searches`) written into a directory.
 
@@ -43,17 +42,10 @@ set_option doc.verso true
 namespace GebTests.Prototypes.FreeTopos.StoredWriter
 
 open Geb Geb.FreeTopos
-open Internal (Decl)
 open PartialHorn (Tree)
 
 /-- A list of natural numbers as text: the numerals in decimal, separated by spaces. -/
 def natsToText (ns : List ℕ) : String := " ".intercalate (ns.map toString)
-
-/-- Declarations of theorems as text, the table of their tree, which
-{name}`GebTests.Prototypes.FreeTopos.Stored.declsOfText` reads back; nothing where one is of another
-kind. -/
-def declsToText (ds : List Decl) : Option String :=
-  (Stored.declsToNats ds).map natsToText
 
 /-- The certificates of the developments written into a directory, each search timed, the
 searches those named in {lit}`only` where it is not empty; a line for each certificate, its name,
@@ -80,14 +72,10 @@ def generate (dir : System.FilePath) (only : List String := []) : IO UInt32 := d
       IO.eprintln s!"{name}: {e}"
       code := 1
     | .ok certs =>
-      for (file, ds) in certs do
-        match declsToText ds with
-        | none =>
-          IO.eprintln s!"{file}: a declaration is not of a theorem"
-          code := 1
-        | some text =>
-          IO.FS.writeFile (dir / s!"{file}.cert") (text ++ "\n")
-          IO.println s!"{file},{ds.length},{text.utf8ByteSize},{t₁ - t₀}"
+      for c in certs do
+        let text := natsToText c.table
+        IO.FS.writeFile (dir / s!"{c.name}.cert") (text ++ "\n")
+        IO.println s!"{c.name},{c.count},{text.utf8ByteSize},{t₁ - t₀}"
   pure code
 
 end GebTests.Prototypes.FreeTopos.StoredWriter

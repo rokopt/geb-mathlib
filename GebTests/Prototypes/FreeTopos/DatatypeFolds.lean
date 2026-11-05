@@ -181,10 +181,10 @@ form decides present. -/
 def readingsFolded (P : Prog) : Prog :=
   { P with folded := P.folded ++ ["Typing.readTy", "Reader.readType"] }
 
-/-- The comparisons of the numerals one and two with a bitstring's second and third successors,
-true, which the typing and the reader test a keyword's arity by: by case analysis of the
-bitstring's bits, the comparison recursing on its second number. -/
-def ltMore (P : Prog) : List Step :=
+/-- The comparisons of the numerals {lit}`ns` with a bitstring's successors one further, true,
+which the typing, the reader and the expansion test a keyword's arity by: by case analysis of the
+bitstring's bits to the depth {lit}`depth`, the comparison recursing on its second number. -/
+def ltSuccs (P : Prog) (ns : List ℕ) (depth : ℕ) : List Step :=
   let rs := foldedRules P
   let sc (t : Term) : Term := call D.succ [] [t]
   let lt (n : ℕ) : Internal.Thm :=
@@ -192,8 +192,11 @@ def ltMore (P : Prog) : List Step :=
   let byBit (a : Internal.Thm) (ix : String → ℕ) (E : Array Internal.Entry) :
       Option Internal.Deriv :=
     let p : Internal.Prover := fun Γ Φ t u ↦ byWeak P.G E 0 (rulesNth P ix) Γ Φ t u
-    byBits P.G p 4 0 a.ctx [] (TranslationProofs.sides a).1 (TranslationProofs.sides a).2
-  [1, 2].map fun n ↦ step s!"ltSucc{n}" (lt n) (byBit (lt n))
+    byBits P.G p depth 0 a.ctx [] (TranslationProofs.sides a).1 (TranslationProofs.sides a).2
+  ns.map fun n ↦ step s!"ltSucc{n}" (lt n) (byBit (lt n))
+
+/-- The comparisons of the numerals one and two ({name}`ltSuccs`). -/
+def ltMore (P : Prog) : List Step := ltSuccs P [1, 2] 4
 
 /-- The stage functions' equations at a keyword's form ({name}`ConstForm.form`), the test of
 source forms, the type and the optional resolution, by {name}`appEq` in the soundness's context
@@ -338,7 +341,7 @@ def foldsDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
 the list's, the stage functions' at applications, the applications', the list expansion's and the
 soundness at applications', stored as the certificate {lit}`datatype-folds`. -/
 def foldsCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Thm) :
-    Except String (List (String × List Internal.Decl)) := do
+    Except String (List Stored.Cert) := do
   let some names := listNames P S T | throw "the base is not stated"
   certifyAfter P (names ++ (stagesDev3 P S T).map (·.1) ++ (applyDev3 P S T).map (·.1) ++
     (expansionDev3 P S T).map (·.1) ++ (assemblyDev3 P S T).map (·.1)) "datatype-folds"

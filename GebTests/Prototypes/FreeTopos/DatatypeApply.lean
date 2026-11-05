@@ -750,22 +750,20 @@ def listNames (P : Prog) (S : Defs) (T : Defs3) : Option (List String) := do
 /-- A development after declarations of the given names, stored as the certificate of a name,
 each declaration checked as it is stored and its statement reported as it is proved. -/
 def certifyAfter (P : Prog) (names : List String) (cert : String) (steps : List Step)
-    (before : List Internal.Thm) : Except String (List (String × List Internal.Decl)) := do
+    (before : List Internal.Thm) : Except String (List Stored.Cert) := do
   let E : Array Internal.Entry := (before.map Internal.Entry.language).toArray
   unless names.length = E.size do
     throw s!"the certificates before {cert} are not those it continues from"
   let steps := steps.map fun (nm, f) ↦
     (nm, fun ix E ↦ (f ix E).map fun r ↦
       dbgTrace s!"{nm} proved" fun _ ↦ r)
-  let (_, _, ds) ← developAfter names E steps
-  checkAfter P.G E (steps.map (·.1)) ds
-  pure [(cert, ds)]
+  certifyFound P.G names E cert steps
 
 /-- The development of the stage functions at applications ({name}`stagesDev3`), after the
 base's, the atom's and the list's declarations, stored as the certificate
 {lit}`datatype-stages`. -/
 def stagesCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Thm) :
-    Except String (List (String × List Internal.Decl)) := do
+    Except String (List Stored.Cert) := do
   let some names := listNames P S T | throw "the base is not stated"
   certifyAfter P names "datatype-stages" (stagesDev3 P S T) before
 
@@ -773,7 +771,7 @@ def stagesCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal
 the base's, the atom's, the list's and the stage functions', stored as the certificate
 {lit}`datatype-apply`. -/
 def applyCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Thm) :
-    Except String (List (String × List Internal.Decl)) := do
+    Except String (List Stored.Cert) := do
   let some names := listNames P S T | throw "the base is not stated"
   certifyAfter P (names ++ (stagesDev3 P S T).map (·.1)) "datatype-apply" (applyDev3 P S T) before
 

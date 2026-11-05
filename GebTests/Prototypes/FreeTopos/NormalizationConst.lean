@@ -238,8 +238,10 @@ def allMonoLemma (P : Prog) (S : Defs) : Step :=
 
 /-- The hypothesis of induction on trees at a list of children, a formula in a context of a tree
 holding at each, as every element of the list satisfying the formula; by induction on the list,
-the head's formula and the rest's hypothesis read off the hypothesis's equation of lists. -/
-def roseAllFor (P : Prog) (S : Defs) (name : String) (φ : Term) : Step :=
+the head's formula and the rest's hypothesis read off the hypothesis's equation of lists; the head's
+formula in the goal from its hypothesis by {lit}`head`. -/
+def roseAllFor (P : Prog) (S : Defs) (name : String) (φ : Term)
+    (head : Kit → ℕ → Deducer := fun K h ↦ K.byHyp h) : Step :=
   (name, fun ix E ↦ do
     let K : Kit := ⟨P, S, E, ix, []⟩
     let L := K.L
@@ -251,7 +253,7 @@ def roseAllFor (P : Prog) (S : Defs) (name : String) (φ : Term) : Step :=
     let cons : Deducer := dImpI L fun Γ₁ Φ₁ ψ₁ ↦
       let h := Φ₁.length - 1
       let tl : Deducer := fun Γ Φ ψ ↦
-        dImpE L 0 K.byNorm (K.norm (dConjI L (K.byHyp 3) (K.byHyp 5))) Γ Φ ψ
+        dImpE L 0 K.byNorm (K.norm (dConjI L (head K 3) (K.byHyp 5))) Γ Φ ψ
       K.image h (fun t ↦ call D.headD [omega] [Term.eq Term.star Term.star, t])
         (K.trueOf (K.image h (fun t ↦ call D.tail [omega] [t]) tl)) Γ₁ Φ₁ ψ₁
     let d₁ ← cons [list treeTy, treeTy] [Internal.weakenElem ψ] (Internal.listConsAt 1 treeTy ψ)

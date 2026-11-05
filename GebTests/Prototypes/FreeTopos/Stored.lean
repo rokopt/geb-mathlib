@@ -364,6 +364,23 @@ def entriesToNats {δ : Type} (enter : δ → Option (StateM Table ℕ)) (ds : L
 of another kind. -/
 def declsToNats (ds : List Decl) : Option (List ℕ) := entriesToNats internDecl ds
 
+/-- A development to be stored: its certificate's name, its number of declarations and the table
+of their tree. -/
+structure Cert where
+  /-- The certificate's name. -/
+  name : String
+  /-- The number of declarations. -/
+  count : ℕ
+  /-- The table of the declarations' tree ({name}`declsToNats`). -/
+  table : List ℕ
+
+/-- A development's declarations under the certificate's name, as a table; the reason where one is
+of another kind. -/
+def certOf (name : String) (ds : List Decl) : Except String Cert :=
+  match declsToNats ds with
+  | some table => .ok ⟨name, ds.length, table⟩
+  | none => .error s!"{name}: a declaration is not of a theorem"
+
 /-! Lists of natural numbers as text. -/
 
 /-- The step of reading numerals in decimal separated by spaces or newlines: the numbers read and
@@ -384,10 +401,13 @@ def natsOfText (s : String) : Option (List ℕ) := do
     | some n => (n :: ns).reverse
     | none => ns.reverse)
 
+/-- The declarations of theorems a table of their tree stores, where it stores them. -/
+def declsOfNats (ns : List ℕ) : Option (List Decl) :=
+  paraOfNats (read ruleOf) ns |>.bind (·.2.decls) |>.map (·.map fun (a, d) ↦ .language a d)
+
 /-- The declarations of theorems a text stores, the table of their tree, where it stores them. -/
 def declsOfText (s : String) : Option (List Decl) :=
-  (natsOfText s).bind (paraOfNats (read ruleOf)) |>.bind (·.2.decls) |>.map
-    (·.map fun (a, d) ↦ .language a d)
+  (natsOfText s).bind declsOfNats
 
 /-! Certificates of the conversion checker. -/
 

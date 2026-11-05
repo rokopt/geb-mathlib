@@ -81,12 +81,13 @@ def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
 -- one of whose atoms names a numeral abbreviation, which the reader replaces, a decoding of a
 -- datatype whose recognizer's name a numeral abbreviation abbreviates, which the reader would read
 -- in place of the recognizer the erasure writes, a case analysis missing a constructor, one of a
--- datatype tree-data declares, which has no marker to check its clauses against, and a numeral
+-- datatype tree-data declares, which has no marker to check its clauses against, a numeral
 -- abbreviation named by a numeral, which the reader would expand in the labels a case analysis's
--- erasure tests; the compiler rejects a clause's variable named like the erasure's own; the
--- typing accepts the representation given to the primitive, an application to several arguments,
--- that clause with its variable renamed, a decoding whose default is the decoded tree, and a datum
--- whose atom names no abbreviation, read as its characters' codes
+-- erasure tests, and a term naming one of the names the erasure binds, as a decoding's default
+-- naming the variable bound to the decoded tree; the compiler rejects a clause's
+-- variable named like the erasure's own; the typing accepts the representation given to the
+-- primitive, an application to several arguments, that clause with its variable renamed, and a
+-- datum whose atom names no abbreviation, read as its characters' codes
 #eval show IO Unit from do
   let img ← IO.FS.readBinFile "bootstrap/compiler.img"
   let some t := readImage img | throw (IO.userError "the committed image does not read")
@@ -114,7 +115,8 @@ def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
     ("(tree-data Nat (zero) (succ Nat)) (def f (lam ((t T)) (case t ((zero) 0) ((succ n) 1))))",
       "f"),
     ("(data D (a T) (b T)) (defnum 0 1) " ++
-      "(def m (lam ((t T)) (case (datum D (1 (9))) ((a x) 2) ((b y) 3))))", "0")]
+      "(def m (lam ((t T)) (case (datum D (1 (9))) ((a x) 2) ((b y) 3))))", "0"),
+    (nat ++ "(def m (lam ((t T)) (decode Nat t (lam ((n Nat)) (rep n)) \"%e\")))", "m")]
   for (p, n) in rejected do
     unless typeErrorOf p == some (nameTree n.toList) do
       throw (IO.userError s!"the typing does not reject {n}")
@@ -126,7 +128,6 @@ def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
     throw (IO.userError "the stage-1 compiler compiles a clause's variable named %s")
   let accepted := [nat ++ "(def h (lam ((n Nat)) (label (rep n))))", clause "x",
     "(def p (lam ((f (Arrow T (Arrow T T))) (x T)) (f x x)))",
-    nat ++ "(def m (lam ((t T)) (decode Nat t (lam ((n Nat)) (rep n)) \"%e\")))",
     "(data L (l0) (l1 & T)) (def d (datum L (1 ab)))"]
   unless accepted.all fun p ↦ typeErrorOf p == some (mk 0 []) do
     throw (IO.userError "the typing rejects a well-typed program")

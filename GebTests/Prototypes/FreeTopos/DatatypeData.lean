@@ -298,7 +298,7 @@ def dataDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
 atom's, the list's, the stage functions' at applications, the applications', the list expansion's
 and the soundness at applications', stored as the certificate {lit}`datatype-data`. -/
 def dataCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Thm) :
-    Except String (List (String × List Internal.Decl)) := do
+    Except String (List Stored.Cert) := do
   let some names := listNames P S T | throw "the base is not stated"
   certifyAfter P (names ++ (stagesDev3 P S T).map (·.1) ++ (applyDev3 P S T).map (·.1) ++
     (expansionDev3 P S T).map (·.1) ++ (assemblyDev3 P S T).map (·.1)) "datatype-data"
