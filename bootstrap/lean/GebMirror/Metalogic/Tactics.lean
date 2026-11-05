@@ -192,11 +192,7 @@ def «Tactics.apps» :=
     x2
 
 def «Tactics.byMode» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : List T)
-    (x3 : T)
-    (x4 : List (T × (T → T → List T → T))) =>
+  fun (x0 : T) (x1 : T) (x2 : List T) (x3 : T) (x4 : List T) =>
     let x5 : List T →
       List T →
         T →
@@ -211,10 +207,7 @@ def «Tactics.byMode» :=
     x5
 
 def «Tactics.byWeak» :=
-  fun (x0 : T)
-    (x1 : List T)
-    (x2 : T)
-    (x3 : List (T × (T → T → List T → T))) =>
+  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : List T) =>
     let x4 : List T →
       List T → T → T → T := «Tactics.byMode» (leaf 1) x0 x1 x2 x3;
     x4
@@ -223,7 +216,7 @@ def «Tactics.byNF» :=
   fun (x0 : T)
     (x1 : List T)
     (x2 : T)
-    (x3 : List (T × (T → T → List T → T)))
+    (x3 : List T)
     (x4 : T)
     (x5 : List T → List T → T → T → T) =>
     let x6 : List T →
@@ -254,47 +247,32 @@ def «Tactics.byNF» :=
     x6
 
 def «Tactics.appendNR» :=
-  fun (x0 : List (T × (T → T → List T → T)))
-    (x1 : List (T × (T → T → List T → T))) =>
+  fun (x0 : List T) (x1 : List T) =>
     let x2 : List
-      (T ×
-        (T →
-          T →
-            List T →
-              T)) := Const.foldr
-      (α := T × (T → T → List T → T))
-      (β := List (T × (T → T → List T → T)))
-      (fun (x2 : T × (T → T → List T → T))
-         (x3 : List (T × (T → T → List T → T))) =>
-        (x2 :: x3))
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
       x1
       x0;
     x2
 
 def «Tactics.hypRule» :=
-  fun (x0 : T) =>
-    let x1 : T ×
-      (T → T → List T → T) := («Prover.nrHyp» x0, «Prover.noMatch»);
-    x1
+  fun (x0 : T) => let x1 : T := «Prover.nrHyp» x0; x1
 
 def «Tactics.hypRules» :=
   fun (x0 : T) =>
     let x1 : List
-      (T ×
-        (T →
-          T →
-            List T →
-              T)) := Const.foldr
+      T := Const.foldr
       (α := T)
-      (β := List (T × (T → T → List T → T)))
-      (fun (x1 : T) (x2 : List (T × (T → T → List T → T))) =>
-        ((«Tactics.hypRule» x1) :: x2))
-      ([] : List (T × (T → T → List T → T)))
+      (β := List T)
+      (fun (x1 : T) (x2 : List T) => ((«Tactics.hypRule» x1) :: x2))
+      ([] : List T)
       («Base.range» x0);
     x1
 
 def «Tactics.normH» :=
-  fun (x0 : T) (x1 : List T) (x2 : List (T × (T → T → List T → T))) =>
+  fun (x0 : T) (x1 : List T) (x2 : List T) =>
     let x3 : List T →
       List T →
         T →
@@ -327,11 +305,7 @@ def «Tactics.funExts» :=
     x3
 
 def «Tactics.byListIndWeak» :=
-  fun (x0 : T)
-    (x1 : List T)
-    (x2 : T)
-    (x3 : T)
-    (x4 : List (T × (T → T → List T → T))) =>
+  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : T) (x4 : List T) =>
     let x5 : List T →
       List T →
         T →
@@ -650,75 +624,385 @@ def «Tactics.byLength3» :=
           («Tactics.byListSplit» x0 (leaf 0) (leaf 0) x2 x3)));
     x4
 
+def «Tactics.rules» := fun (x0 : List T) => Const.node (leaf 0) x0
+
+def «Tactics.frames» := fun (x0 : List T) => Const.node (leaf 0) x0
+
+def «Tactics.wh» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    Const.node (leaf 0) (x0 :: (x1 :: (x2 :: ([] : List T))))
+
+def «Tactics/OWH.nothing» := Const.node (leaf 0) ([] : List T)
+
+def «Tactics/OWH.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Tactics/OWH.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
+                   else
+                     let _ : List T := Const.children x1; leaf 0);
+    x1
+
+def «Tactics/OWH.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
+                   else
+                     let _ : List T := Const.children x2; x0);
+    x2
+
+def «Tactics/OWH.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Tactics/OWH.nothing»
+      (fun (x2 : T) (_ : List T) => «Tactics/OWH.just» x2);
+    x2
+
+def «Tactics/OWH.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
+        else
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Tactics.bindPW» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
+                   else
+                     let _ : List T := Const.children x2; «Tactics/OWH.nothing»);
+    x2
+
+def «Tactics.bindNW» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (let x2 : T := x0;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x1 x4
+                   else
+                     let _ : List T := Const.children x2; «Tactics/OWH.nothing»);
+    x2
+
+def «Tactics.weakHyps» :=
+  fun (x0 : T)
+    (x1 : List T)
+    (x2 : T)
+    (x3 : List T)
+    (x4 : List T)
+    (x5 : T)
+    (x6 : List T)
+    (x7 : List T) =>
+    let x8 : T := Const.foldr
+      (α := T)
+      (β := List T → List T → T)
+      (fun (x8 : T)
+         (x9 : List T → List T → T)
+         (x10 : List T)
+         (x11 : List T) =>
+        «Tactics.bindPW»
+          («Language.bindTP» («Prelude.nth» x10 x8) «Derivation.eqParts»)
+          (fun (x12 : T) =>
+            «Tactics.bindNW»
+              («Prover.eval» x0 x1 x2 x3 (leaf 4096) x5 x6 x10 («Language.p1» x12))
+              (fun (x13 : T) =>
+                «Tactics.bindNW»
+                  («Prover.eval» x0 x1 x2 x3 (leaf 4096) x5 x6 x10 («Language.p2» x12))
+                  (fun (x14 : T) =>
+                    let x15 : T := «Language.mEq»
+                      («Prover.nfTerm» x13)
+                      («Prover.nfTerm» x14);
+                    let x16 : T := x9
+                      («Prelude.append» x10 («Prelude.single» x15))
+                      («Tactics.appendNR»
+                        x11
+                        ((«Tactics.hypRule» («Prelude.length» x10)) :: ([] : List T)));
+                    if (Const.eq (Const.label x16) (leaf 1)).label ≠ 0 then
+                      let x17 : List T := Const.children x16;
+                      let x18 : T := Const.lcase
+                        (α := T)
+                        (β := T)
+                        x17
+                        (leaf 0)
+                        (fun (x18 : T) (_ : List T) => x18);
+                      let _ : List
+                        T := Const.lcase
+                        (α := T)
+                        (β := List T)
+                        x17
+                        ([] : List T)
+                        (fun (_ : T) (x20 : List T) => x20);
+                      let x20 : T := x18;
+                      let x21 : List T := Const.children x20;
+                      let x22 : T := Const.lcase
+                        (α := T)
+                        (β := T)
+                        x21
+                        (leaf 0)
+                        (fun (x22 : T) (_ : List T) => x22);
+                      let x23 : List
+                        T := Const.lcase
+                        (α := T)
+                        (β := List T)
+                        x21
+                        ([] : List T)
+                        (fun (_ : T) (x24 : List T) => x24);
+                      let x24 : T := Const.lcase
+                        (α := T)
+                        (β := T)
+                        x23
+                        (leaf 0)
+                        (fun (x24 : T) (_ : List T) => x24);
+                      let x25 : List
+                        T := Const.lcase
+                        (α := T)
+                        (β := List T)
+                        x23
+                        ([] : List T)
+                        (fun (_ : T) (x26 : List T) => x26);
+                      let x26 : T := Const.lcase
+                        (α := T)
+                        (β := T)
+                        x25
+                        (leaf 0)
+                        (fun (x26 : T) (_ : List T) => x26);
+                      let _ : List
+                        T := Const.lcase
+                        (α := T)
+                        (β := List T)
+                        x25
+                        ([] : List T)
+                        (fun (_ : T) (x28 : List T) => x28);
+                      «Tactics/OWH.just»
+                        («Tactics.wh»
+                          x22
+                          x24
+                          («Tactics.frames»
+                            ((«Language.pr»
+                              x15
+                              («Prover.dNode»
+                                (leaf 24)
+                                («Prelude.single»
+                                  («Language.mEq» («Language.p1» x12) («Language.p2» x12)))
+                                («Theory.l2»
+                                  («Prover.dNode»
+                                    (leaf 2)
+                                    ([] : List T)
+                                    («Theory.l2»
+                                      («Prover.mDeriv» («Prover.nfMarked» x13))
+                                      («Prover.mDeriv» («Prover.nfMarked» x14))))
+                                  («Prover.dNode»
+                                    (leaf 21)
+                                    («Prelude.single» x8)
+                                    ([] : List T))))) ::
+                              (let x28 : T := x26;
+                               let x29 : List T := Const.children x28;
+                               let x30 : List T := x29; x30))))
+                    else
+                      let _ : List T := Const.children x16; «Tactics/OWH.nothing»))))
+      (fun (x8 : List T) (x9 : List T) =>
+        «Tactics/OWH.just»
+          («Tactics.wh»
+            («Derivation.terms» x8)
+            («Tactics.rules» x9)
+            («Tactics.frames» ([] : List T))))
+      x4
+      x7
+      ([] : List T);
+    x8
+
 def «Tactics.withWeakHyps» :=
   fun (x0 : T)
     (x1 : List T)
     (x2 : T)
-    (x3 : List (T × (T → T → List T → T)))
+    (x3 : List T)
     (x4 : List T)
-    (x5 : List (T × (T → T → List T → T)) → List T → List T → T → T → T)
+    (x5 : List T → List T → List T → T → T → T)
     (x6 : T) =>
     let x7 : List T →
       List T →
         T →
           T →
             T := (fun (x7 : List T) (x8 : List T) (x9 : T) (x10 : T) =>
-      Const.foldr
-        (α := T)
-        (β := List T → List (T × (T → T → List T → T)) → T)
-        (fun (x11 : T)
-           (x12 : List T → List (T × (T → T → List T → T)) → T)
-           (x13 : List T)
-           (x14 : List (T × (T → T → List T → T))) =>
-          «Derivation.bindPT»
-            («Language.bindTP» («Prelude.nth» x13 x11) «Derivation.eqParts»)
-            (fun (x15 : T) =>
-              «Prover.bindNT»
-                («Prover.eval» x0 x1 x2 x3 (leaf 4096) x6 x7 x13 («Language.p1» x15))
-                (fun (x16 : T) =>
-                  «Prover.bindNT»
-                    («Prover.eval» x0 x1 x2 x3 (leaf 4096) x6 x7 x13 («Language.p2» x15))
-                    (fun (x17 : T) =>
-                      let x18 : T := «Language.mEq»
-                        («Prover.nfTerm» x16)
-                        («Prover.nfTerm» x17);
-                      «Base.mapO»
-                        (fun (x19 : T) =>
-                          «Prover.dNode»
-                            (leaf 22)
-                            («Prelude.single» x18)
-                            («Theory.l2»
-                              («Prover.dNode»
-                                (leaf 24)
-                                («Prelude.single»
-                                  («Language.mEq» («Language.p1» x15) («Language.p2» x15)))
-                                («Theory.l2»
-                                  («Prover.dNode»
-                                    (leaf 2)
-                                    ([] : List T)
-                                    («Theory.l2»
-                                      («Prover.mDeriv» («Prover.nfMarked» x16))
-                                      («Prover.mDeriv» («Prover.nfMarked» x17))))
-                                  («Prover.dNode» (leaf 21) («Prelude.single» x11) ([] : List T))))
-                              x19))
-                        (x12
-                          («Prelude.append» x13 («Prelude.single» x18))
-                          («Tactics.appendNR»
-                            x14
-                            ((«Tactics.hypRule» («Prelude.length» x13)) ::
-                              ([] : List (T × (T → T → List T → T))))))))))
-        (fun (x11 : List T) (x12 : List (T × (T → T → List T → T))) =>
-          x5 x12 x7 x11 x9 x10)
-        x4
-        x8
-        ([] : List (T × (T → T → List T → T))));
+      let x11 : T := «Tactics.weakHyps» x0 x1 x2 x3 x4 x6 x7 x8;
+      if (Const.eq (Const.label x11) (leaf 1)).label ≠ 0 then
+        let x12 : List T := Const.children x11;
+        let x13 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x12
+          (leaf 0)
+          (fun (x13 : T) (_ : List T) => x13);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x12
+          ([] : List T)
+          (fun (_ : T) (x15 : List T) => x15);
+        let x15 : T := x13;
+        let x16 : List T := Const.children x15;
+        let x17 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x16
+          (leaf 0)
+          (fun (x17 : T) (_ : List T) => x17);
+        let x18 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x16
+          ([] : List T)
+          (fun (_ : T) (x19 : List T) => x19);
+        let x19 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x18
+          (leaf 0)
+          (fun (x19 : T) (_ : List T) => x19);
+        let x20 : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x18
+          ([] : List T)
+          (fun (_ : T) (x21 : List T) => x21);
+        let x21 : T := Const.lcase
+          (α := T)
+          (β := T)
+          x20
+          (leaf 0)
+          (fun (x21 : T) (_ : List T) => x21);
+        let _ : List
+          T := Const.lcase
+          (α := T)
+          (β := List T)
+          x20
+          ([] : List T)
+          (fun (_ : T) (x23 : List T) => x23);
+        «Base.mapO»
+          (fun (x23 : T) =>
+            Const.foldr
+              (α := T)
+              (β := T)
+              (fun (x24 : T) (x25 : T) =>
+                «Prover.dNode»
+                  (leaf 22)
+                  («Prelude.single» («Language.p1» x24))
+                  («Theory.l2» («Language.p2» x24) x25))
+              x23
+              (let x24 : T := x21;
+               let x25 : List T := Const.children x24; let x26 : List T := x25; x26))
+          (x5
+            (let x23 : T := x19;
+             let x24 : List T := Const.children x23; let x25 : List T := x24; x25)
+            x7
+            («Prover.termsOf» x17)
+            x9
+            x10)
+      else
+        let _ : List T := Const.children x11; «Prelude.none»);
     x7
 
 def «Tactics.byListIndHypWeak» :=
-  fun (x0 : T)
-    (x1 : List T)
-    (x2 : T)
-    (x3 : List (T × (T → T → List T → T))) =>
+  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : List T) =>
     let x4 : List T →
       List T →
         T →
@@ -736,7 +1020,7 @@ def «Tactics.byListIndHypWeak» :=
           x2
           x3
           («Prelude.single» (Const.sub («Prelude.length» x5) (leaf 1)))
-          (fun (x8 : List (T × (T → T → List T → T))) =>
+          (fun (x8 : List T) =>
             «Tactics.byWeak» x0 x1 x2 («Tactics.appendNR» x8 x3))
           (leaf 1)
           x4
@@ -746,10 +1030,7 @@ def «Tactics.byListIndHypWeak» :=
     x4
 
 def «Tactics.byBitsIndHyp» :=
-  fun (x0 : T)
-    (x1 : List T)
-    (x2 : List (T × (T → T → List T → T)))
-    (x3 : T) =>
+  fun (x0 : T) (x1 : List T) (x2 : List T) (x3 : T) =>
     let x4 : List T →
       List T →
         T →
@@ -771,7 +1052,7 @@ def «Tactics.byBitsIndHyp» :=
             (leaf 0)
             x2
             («Prelude.single» (Const.sub («Prelude.length» x5) (leaf 1)))
-            (fun (x8 : List (T × (T → T → List T → T))) =>
+            (fun (x8 : List T) =>
               «Tactics.byMode» x3 x0 x1 (leaf 0) («Tactics.appendNR» x8 x2))
             x3
             x4
@@ -834,10 +1115,10 @@ def «Tactics.withInsts» :=
   fun (x0 : T)
     (x1 : List T)
     (x2 : T)
-    (x3 : List (T × (T → T → List T → T)))
+    (x3 : List T)
     (x4 : T)
     (x5 : List (List T))
-    (x6 : List (T × (T → T → List T → T)) → List T → List T → T → T → T)
+    (x6 : List T → List T → List T → T → T → T)
     (x7 : T) =>
     let x8 : List T →
       List T →
@@ -890,7 +1171,7 @@ def «Tactics.withChildHyps» :=
   fun (x0 : T)
     (x1 : List T)
     (x2 : T)
-    (x3 : List (T × (T → T → List T → T)))
+    (x3 : List T)
     (x4 : T)
     (x5 : List T)
     (x6 : T → List (List T))
@@ -923,7 +1204,7 @@ def «Tactics.withChildHyps» :=
                           x0
                           x1
                           x2
-                          ((«Tactics.hypRule» x4) :: ([] : List (T × (T → T → List T → T))))
+                          ((«Tactics.hypRule» x4) :: ([] : List T))
                           (leaf 4096)
                           (leaf 1)
                           x8
@@ -1179,9 +1460,8 @@ def «Tactics.revertCase» :=
     x8
 
 def «Tactics.betaRule» :=
-  ((«Prover.nrRule» (leaf 3) («Derivation.terms» ([] : List T)),
-    «Prover.noMatch») ::
-    ([] : List (T × (T → T → List T → T))))
+  ((«Prover.nrRule» (leaf 3) («Derivation.terms» ([] : List T))) ::
+    ([] : List T))
 
 def «Tactics.byImpI» :=
   fun (x0 : T)
@@ -1270,8 +1550,7 @@ def «Tactics.withImpElim» :=
     (x1 : T)
     (x2 : T)
     (x3 : List T)
-    (x4 : List (T × (T → T → List T → T)) →
-      List T → List T → T → T → T) =>
+    (x4 : List T → List T → List T → T → T → T) =>
     let x5 : List T →
       List T →
         T →
@@ -1279,11 +1558,11 @@ def «Tactics.withImpElim» :=
             T := (fun (x5 : List T) (x6 : List T) (x7 : T) (x8 : T) =>
       Const.foldr
         (α := T)
-        (β := List T → List (T × (T → T → List T → T)) → T)
+        (β := List T → List T → T)
         (fun (x9 : T)
-           (x10 : List T → List (T × (T → T → List T → T)) → T)
+           (x10 : List T → List T → T)
            (x11 : List T)
-           (x12 : List (T × (T → T → List T → T))) =>
+           (x12 : List T) =>
           «Derivation.bindPT»
             («Language.bindTP» («Prelude.nth» x11 x9) «Derivation.eqParts»)
             (fun (x13 : T) =>
@@ -1319,22 +1598,20 @@ def «Tactics.withImpElim» :=
                       («Prelude.append» x11 («Prelude.single» x15))
                       («Tactics.appendNR»
                         x12
-                        ((«Tactics.hypRule» («Prelude.length» x11)) ::
-                          ([] : List (T × (T → T → List T → T))))))
+                        ((«Tactics.hypRule» («Prelude.length» x11)) :: ([] : List T))))
                 else
                   «Prelude.none»
               else
                 «Prelude.none»))
-        (fun (x9 : List T) (x10 : List (T × (T → T → List T → T))) =>
-          x4 x10 x5 x9 x7 x8)
+        (fun (x9 : List T) (x10 : List T) => x4 x10 x5 x9 x7 x8)
         x3
         x6
-        ([] : List (T × (T → T → List T → T))));
+        ([] : List T));
     x5
 
 def «Tactics.hypIndex» :=
-  fun (x0 : T × (T → T → List T → T)) =>
-    let x1 : T := (let x1 : T := (x0).1;
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
                    if (Const.eq (Const.label x1) (leaf 6)).label ≠ 0 then
                      let x2 : List T := Const.children x1;
                      let x3 : T := Const.lcase
@@ -1614,7 +1891,7 @@ def «Tactics.instArgs» :=
     (x1 : T)
     (x2 : List T)
     (x3 : T)
-    (x4 : List (T × (T → T → List T → T)))
+    (x4 : List T)
     (x5 : List T)
     (x6 : List T)
     (x7 : T)
@@ -1659,10 +1936,9 @@ def «Tactics.byInstsOnce» :=
     (x1 : T)
     (x2 : List T)
     (x3 : T)
-    (x4 : List (T × (T → T → List T → T)))
+    (x4 : List T)
     (x5 : T)
-    (x6 : List (T × (T → T → List T → T)) →
-      List T → List T → T → T → T) =>
+    (x6 : List T → List T → List T → T → T → T) =>
     let x7 : List T →
       List T →
         T →
@@ -1709,10 +1985,10 @@ def «Tactics.byInstsOnce» :=
                   (fun (_ : T × List (List T)) (_ : List (T × List (List T))) =>
                     Const.foldr
                       (α := T × List (List T))
-                      (β := List (T × (T → T → List T → T)) → List T → List T → T → T → T)
+                      (β := List T → List T → List T → T → T → T)
                       (fun (x18 : T × List (List T))
-                         (x19 : List (T × (T → T → List T → T)) → List T → List T → T → T → T)
-                         (x20 : List (T × (T → T → List T → T))) =>
+                         (x19 : List T → List T → List T → T → T → T)
+                         (x20 : List T) =>
                         «Tactics.withInsts»
                           x1
                           x2
@@ -1720,12 +1996,11 @@ def «Tactics.byInstsOnce» :=
                           x4
                           (x18).1
                           (x18).2
-                          (fun (x21 : List (T × (T → T → List T → T))) =>
-                            x19 («Tactics.appendNR» x20 x21))
+                          (fun (x21 : List T) => x19 («Tactics.appendNR» x20 x21))
                           x0)
                       x6
                       x15
-                      ([] : List (T × (T → T → List T → T)))
+                      ([] : List T)
                       x7
                       x8
                       x9
@@ -1733,17 +2008,13 @@ def «Tactics.byInstsOnce» :=
     x7
 
 def «Tactics.instsLast» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : List T)
-    (x3 : T)
-    (x4 : List (T × (T → T → List T → T))) =>
-    let x5 : List (T × (T → T → List T → T)) →
+  fun (x0 : T) (x1 : T) (x2 : List T) (x3 : T) (x4 : List T) =>
+    let x5 : List T →
       List T →
         List T →
           T →
             T →
-              T := (fun (x5 : List (T × (T → T → List T → T))) =>
+              T := (fun (x5 : List T) =>
       «Tactics.byMode» x0 x1 x2 x3 («Tactics.appendNR» x5 x4));
     x5
 
@@ -1752,20 +2023,15 @@ def «Tactics.instsRound» :=
     (x1 : T)
     (x2 : List T)
     (x3 : T)
-    (x4 : List (T × (T → T → List T → T)))
+    (x4 : List T)
     (x5 : T)
-    (x6 : List (T × (T → T → List T → T)) →
-      List T → List T → T → T → T) =>
-    let x7 : List (T × (T → T → List T → T)) →
+    (x6 : List T → List T → List T → T → T → T) =>
+    let x7 : List T →
       List T →
         List T →
           T →
             T →
-              T := (fun (x7 : List (T × (T → T → List T → T)))
-                      (x8 : List T)
-                      (x9 : List T)
-                      (x10 : T)
-                      (x11 : T) =>
+              T := (fun (x7 : List T) (x8 : List T) (x9 : List T) (x10 : T) (x11 : T) =>
       let x12 : T := «Tactics.byMode»
         x0
         x1
@@ -1786,8 +2052,7 @@ def «Tactics.instsRound» :=
           x3
           («Tactics.appendNR» x7 x4)
           x5
-          (fun (x13 : List (T × (T → T → List T → T))) =>
-            x6 («Tactics.appendNR» x7 x13))
+          (fun (x13 : List T) => x6 («Tactics.appendNR» x7 x13))
           x8
           x9
           x10
@@ -1795,12 +2060,7 @@ def «Tactics.instsRound» :=
     x7
 
 def «Tactics.byInsts» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : List T)
-    (x3 : T)
-    (x4 : List (T × (T → T → List T → T)))
-    (x5 : T) =>
+  fun (x0 : T) (x1 : T) (x2 : List T) (x3 : T) (x4 : List T) (x5 : T) =>
     let x6 : List T →
       List T →
         T →
@@ -1827,7 +2087,7 @@ def «Tactics.byInsts» :=
           x4
           x5
           («Tactics.instsLast» x0 x1 x2 x3 x4)))
-      ([] : List (T × (T → T → List T → T)));
+      ([] : List T);
     x6
 
 def «Tactics.orO» :=
@@ -1835,12 +2095,7 @@ def «Tactics.orO» :=
     let x2 : T := (if («Prelude.isSome» x0).label ≠ 0 then x0 else x1); x2
 
 def «Tactics.byAuto» :=
-  fun (x0 : T)
-    (x1 : List T)
-    (x2 : T)
-    (x3 : List (T × (T → T → List T → T)))
-    (x4 : T)
-    (x5 : T) =>
+  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : List T) (x4 : T) (x5 : T) =>
     let x6 : List T →
       List T →
         T →
@@ -2324,32 +2579,33 @@ def «Tactics.splitStuck» :=
     (x2 : T)
     (x3 : T)
     (x4 : List T → List T → T → T → T)
-    (x5 : List T)
+    (x5 : List T → List T → T → T → T)
     (x6 : List T)
-    (x7 : T)
-    (x8 : T) =>
-    let x9 : T := «Base.bindO»
-      («Prelude.nth» x5 x3)
-      (fun (x9 : T) =>
-        if («Prelude.isSome» («Language.listPart» x9)).label ≠ 0 then
-          «Tactics.byListSplit» x0 x1 x3 x4 x4 x5 x6 x7 x8
+    (x7 : List T)
+    (x8 : T)
+    (x9 : T) =>
+    let x10 : T := «Base.bindO»
+      («Prelude.nth» x6 x3)
+      (fun (x10 : T) =>
+        if («Prelude.isSome» («Language.listPart» x10)).label ≠ 0 then
+          «Tactics.byListSplit» x0 x1 x3 x4 x5 x6 x7 x8 x9
         else
           if («Language/OTPair.isJust»
-            («Language.coprodParts» x9)).label ≠ 0 then
-            «Tactics.bySplit2» (leaf 3) (leaf 4) x3 x4 x4 x5 x6 x7 x8
+            («Language.coprodParts» x10)).label ≠ 0 then
+            «Tactics.bySplit2» (leaf 3) (leaf 4) x3 x4 x5 x6 x7 x8 x9
           else
-            if (Const.equal x9 «Translation.treeTy»).label ≠ 0 then
-              «Tactics.byTreeSplit» x2 x3 x4 x5 x6 x7 x8
+            if (Const.equal x10 «Translation.treeTy»).label ≠ 0 then
+              «Tactics.byTreeSplit» x2 x3 x4 x6 x7 x8 x9
             else
               «Prelude.none»);
-    x9
+    x10
 
 def «Tactics.byAutoT» :=
   fun (x0 : T)
     (x1 : List T)
     (x2 : T)
     (x3 : T)
-    (x4 : List (T × (T → T → List T → T)))
+    (x4 : List T)
     (x5 : T)
     (x6 : T) =>
     let x7 : List T →
@@ -2431,7 +2687,7 @@ def «Tactics.byAutoT» :=
                              («Tactics.stuckVar» x22 («Prover.nfTerm» x19))
                              («Tactics.stuckVar» x22 («Prover.nfTerm» x20))))
                          (fun (x23 : T) =>
-                           «Tactics.splitStuck» x0 x2 x3 x23 x14 x15 x16 x17 x18)))))
+                           «Tactics.splitStuck» x0 x2 x3 x23 x14 x14 x15 x16 x17 x18)))))
         (fun (x14 : List T) (x15 : List T) (x16 : T) (x17 : T) =>
           «Tactics.orO» (x12 x14 x15 x16 x17) (x13 x14 x15 x16 x17))
         x5
@@ -2442,12 +2698,7 @@ def «Tactics.byAutoT» :=
     x7
 
 def «Tactics.byAutoC» :=
-  fun (x0 : T)
-    (x1 : List T)
-    (x2 : T)
-    (x3 : T)
-    (x4 : List (T × (T → T → List T → T)))
-    (x5 : T) =>
+  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : T) (x4 : List T) (x5 : T) =>
     let x6 : List T →
       List T →
         T →
@@ -2473,7 +2724,7 @@ def «Tactics.byAutoC» :=
                       («Tactics.stuckVarC» x13 («Prover.nfTerm» x11))
                       («Tactics.stuckVarC» x13 («Prover.nfTerm» x12)))
                     (fun (x14 : T) =>
-                      «Tactics.splitStuck» x0 x2 x3 x14 x6 x7 x8 x9 x10)))))
+                      «Tactics.splitStuck» x0 x2 x3 x14 x6 x6 x7 x8 x9 x10)))))
       («Tactics.byWeak» x0 x1 x2 x4)
       x5;
     x6
@@ -2911,28 +3162,19 @@ def «Tactics.maskSub» :=
     x4
 
 def «Tactics.byMaskSubs» :=
-  fun (x0 : T)
-    (x1 : List T)
-    (x2 : T)
-    (x3 : T)
-    (x4 : List (T × (T → T → List T → T)))
-    (x5 : T) =>
-    let x6 : (List (T × (T → T → List T → T)) →
-      List T → List T → T → T → T) →
+  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : T) (x4 : List T) (x5 : T) =>
+    let x6 : (List T → List T → List T → T → T → T) →
       List T →
         List T →
           T →
             T →
               T := Const.iter
-      (α := List (T × (T → T → List T → T)) →
-        (List (T × (T → T → List T → T)) → List T → List T → T → T → T) →
-          List T → List T → T → T → T)
-      (fun (x6 : List (T × (T → T → List T → T)) →
-           (List (T × (T → T → List T → T)) → List T → List T → T → T → T) →
-             List T → List T → T → T → T)
-         (x7 : List (T × (T → T → List T → T)))
-         (x8 : List (T × (T → T → List T → T)) →
-           List T → List T → T → T → T) =>
+      (α := List T →
+        (List T → List T → List T → T → T → T) → List T → List T → T → T → T)
+      (fun (x6 : List T →
+           (List T → List T → List T → T → T → T) → List T → List T → T → T → T)
+         (x7 : List T)
+         (x8 : List T → List T → List T → T → T → T) =>
         «Tactics.byNF»
           x0
           x1
@@ -2969,12 +3211,10 @@ def «Tactics.byMaskSubs» :=
                   x12)
             else
               x8 x7 x9 x10 x11 x12))
-      (fun (x6 : List (T × (T → T → List T → T)))
-         (x7 : List (T × (T → T → List T → T)) →
-           List T → List T → T → T → T) =>
+      (fun (x6 : List T) (x7 : List T → List T → List T → T → T → T) =>
         x7 x6)
       x5
-      ([] : List (T × (T → T → List T → T)));
+      ([] : List T);
     x6
 
 def «Tactics.byGeneralize» :=
