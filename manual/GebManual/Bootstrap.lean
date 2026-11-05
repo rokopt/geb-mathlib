@@ -189,10 +189,13 @@ Computation:
   a decoration per use of a definition and the certificates it writes,
   the checker specified in Lean, {name}`Geb.Affine.check`, and the checker
   written in Geb, `bootstrap/affine.geb`, proved in Lean to agree with it,
-  are constructed, and the definitions it rejected in the metalogic's
-  sources are rewritten. The rewriting of the definitions it rejects in the
-  compilers' sources waits on the datatype language's completion; the check
-  in the build follows it, and the search written in Geb is ready.
+  are constructed, and the definitions it rejected in the sources proper to
+  the metalogic are rewritten. Waiting on the datatype language's
+  completion: the rewriting of the definitions it rejects in the compilers'
+  sources, among them `resolve`, `typeIn` and `expandExpr`, which the
+  metalogic's program includes, so that no program is typable as a whole
+  before it. Waiting on that rewriting: the check in the build. Ready: the
+  search written in Geb.
 * Ready. The Geb reader and serializer in constant depth, and the stage
   tests run by the compiled executables, the section on improvements.
 
@@ -1807,6 +1810,11 @@ tag := "choice-of-machine"
   * The benchmark programs, run by the first stage's graph runtime
   * Ready
 *
+  * The elementary-affine decorations
+    ({ref "interaction-net-affine-certificates"}[Elementary-affine
+    certificates])
+  * In progress
+*
   * The other arms, the measurements across them
   * Deferred until before the second host
 *
@@ -2229,9 +2237,9 @@ stage 1 and need not wait for stages 2 or 3. Its recorded schedule
 remains before the second host: kernel-term images and the Lean
 evaluator already support the first fixed point.
 
-The other separate task is per-use elementary-affine decoration
-inference, followed by the fold rewrites and certificate checker
-specified below. These prepare stage 3 alongside the stage-two net
+The other separate task is the elementary-affine decorations: the
+per-use inference, the rewriting of folds and the certificate checker,
+specified below with their states. These prepare stage 3 alongside the stage-two net
 development. Stage 3 itself additionally needs its duplicator rules
 and correctness proof, including soundness of the native-data-copying
 exemption. Decorations determine duplicator depths; neither arbitrary
@@ -2271,8 +2279,8 @@ from an image, with an inference in the style of
 solved by an SMT solver, and with first-order data exempted from the
 discipline, since duplicating data duplicates no λ-value. The programs
 measured are the stage-0 and stage-1 compilers and the metalogic's
-program, its checker, translation, prover, tactics, combinator prover
-and printer. Checked one at a time, each reference to a definition
+program, its checker, translation, prover, tactics, combinator prover,
+printer and checker of decorations. Checked one at a time, each reference to a definition
 taking a decoration of its own, every definition that fails, among them
 the type checker `typeIn` and the resolver `resolve`, is a fold at pairs
 of a subtree and a function whose step reads the list of its children's
@@ -2319,7 +2327,9 @@ decoration is a certificate. A search finds it and is not trusted, and a
 checker checks it and is, which is the rule for every solver the
 bootstrap uses: `scripts/eal/eal.py` is the search, with z3 as its
 solver, and checking a decoration is checking linear inequalities
-between given numbers, which needs no solver. The steps, in order:
+between given numbers, which needs no solver. The steps, the first four
+in order of dependence, the fifth depending on no step that is not
+complete:
 
 1. Complete. A decoration per use of a definition, each use taking a
    fresh copy of the linear constraints that describe the definition's
@@ -2333,8 +2343,8 @@ between given numbers, which needs no solver. The steps, in order:
    the numbers of `!` of its types, a reference naming the instance it
    uses and the boxes it is placed under, so that a definition used at
    several decorations has an instance of each.
-2. The rewriting of the definitions the search rejects, alone or per
-   use, each reading a list of functions more than once in one of the
+2. In progress. The rewriting of the definitions the search rejects,
+   alone or per use, each reading a list of functions more than once in one of the
    shapes above; `scripts/eal/eal.py --explain NAME` names a
    definition's contraction, and a definition rejected per use is
    reported with the definitions it conflicts with, among which the
@@ -2426,8 +2436,9 @@ between given numbers, which needs no solver. The steps, in order:
      `bootstrap/check.geb`, `rename` and `elabAt` in
      `bootstrap/modules.geb`, `expandExpr` in `bootstrap/datatype.geb`
      and in `bootstrap/stage1/datatype.geb`, and `synIn` in
-     `bootstrap/stage1/typing.geb`. The metalogic's program includes the
-     first three of these files, so that it is typable only after them.
+     `bootstrap/stage1/typing.geb`. The metalogic's program includes
+     `reader.geb`, `check.geb` and `bootstrap/datatype.geb`, so that it is
+     typable only after `resolve`, `typeIn` and `expandExpr` are rewritten.
 
    After each rewriting `scripts/bootstrap.sh` checks the fixed points,
    and the search is run again on the three programs.
@@ -2436,9 +2447,9 @@ between given numbers, which needs no solver. The steps, in order:
    {name}`Geb.Affine.check` by the method of the metalogic's checker
    (`GebTests/Prototypes/FreeTopos/Agreement/Affine.lean`); its own
    program is written typable.
-4. The check in the build of every program's committed decoration, the
-   checker's own among them, after the second step.
-5. A search written in Geb, which full self-hosting requires so that no
+4. Waiting on the second step. The check in the build of every program's
+   committed decoration, the checker's own among them.
+5. Ready. A search written in Geb, which full self-hosting requires so that no
    external solver regenerates a decoration. An inference in polynomial
    time given a simple type derivation {citep BaillotTerui2005}[], for a
    system without sharing or polymorphism, is the search's starting
@@ -2882,6 +2893,12 @@ name of its last theorem settle, a module of
 states that it proves that theorem, as
 `GebTests/Prototypes/FreeTopos/Certified/Datatype.lean` states it of
 `atomThm`.
+
+The rewriting of the definitions the elementary-affine search rejects in
+the compilers' sources waits on this completion, whose soundness of the
+typing is proved of the stage-1 compiler
+({ref "interaction-net-affine-certificates"}[Elementary-affine
+certificates], the second step).
 
 Abstraction is mathematical, not syntactic, and needs no mark of its
 own. An interface is a theory, a presentation of operations and axioms
@@ -7044,8 +7061,12 @@ the change that removes it.
   structural recursion does, contracts no list of functions; where the
   step loops over the children's functions, the loop composes them
   into one function and the step returns it, a loop inside a closure
-  over the argument not being typable. The requirement that the
-  bootstrap's programs be decorated waits on that rewriting.
+  over the argument not being typable. The sources proper to the metalogic
+  are written in those forms; the compilers' sources wait on the datatype
+  language's completion, and the requirement that the bootstrap's programs
+  be decorated waits on their rewriting
+  ({ref "interaction-net-affine-certificates"}[Elementary-affine
+  certificates]).
 * Depth of the Geb reader and serializer. The reader's tokenizer and
   the serializer's packing of bits are right folds whose continuations
   nest one call per character and per bit, so running either in Lean's
