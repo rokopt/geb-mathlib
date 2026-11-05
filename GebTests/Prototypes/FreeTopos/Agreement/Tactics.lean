@@ -81,6 +81,18 @@ open scoped FinEnum
     children_eq, lcase_children_head]
   rfl
 
+@[template, inherit_doc bindTh_def] theorem bindPW_def : «Tactics.bindPW» = «Base.bindO» := by
+  funext a b
+  simp only [«Tactics.bindPW», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
+
+@[template, inherit_doc bindTh_def] theorem bindNW_def : «Tactics.bindNW» = «Base.bindO» := by
+  funext a b
+  simp only [«Tactics.bindNW», «Base.bindO», «Prelude.isSome», «Prelude.get»,
+    children_eq, lcase_children_head]
+  rfl
+
 @[template, inherit_doc bindTh_def] theorem bindPM_def : «Tactics.bindPM» = «Base.bindO» := by
   funext a b
   simp only [«Tactics.bindPM», «Base.bindO», «Prelude.isSome», «Prelude.get»,
@@ -153,7 +165,7 @@ trees. -/
 
 /-- The mirror's proof by reducing both sides to one normal form at a depth, at related rules. -/
 theorem byMode_eq (m : Internal.Depth) (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) :
     PRel («Tactics.byMode» (leaf (encDepth m)) (encGlobals G) (E.toList.map encEntry)
         (leaf n) rs')
@@ -162,7 +174,7 @@ theorem byMode_eq (m : Internal.Depth) (G : Internal.Globals) (E : Array Interna
 
 /-- The mirror's proof by reducing both sides to one weak normal form. -/
 theorem byWeak_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) :
     PRel («Tactics.byWeak» (encGlobals G) (E.toList.map encEntry) (leaf n) rs')
       (Tactics.byWeak G E n rs) :=
@@ -184,7 +196,7 @@ local macro "tac_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(
 /-- The mirror's proof of an equation by that of its sides' normal forms at a depth, at related
 rules and a related prover. -/
 theorem byNF_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (m : Internal.Depth)
     (p' : List Tree → List Tree → Tree → Tree → Tree) (p : Internal.Prover) (hp : PRel p' p) :
     PRel («Tactics.byNF» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
@@ -215,7 +227,7 @@ theorem hypRules_rel (k : ℕ) :
     exact List.Forall₂.cons rfl ih
 
 /-- The mirror's appending of lists of rules. -/
-@[simp] theorem appendNR_eq (xs ys : List (Tree × (Tree → Tree → List Tree → Tree))) :
+@[simp] theorem appendNR_eq (xs ys : List Tree) :
     «Tactics.appendNR» xs ys = xs ++ ys := by
   simp only [«Tactics.appendNR», template, foldr_eq]
   exact xs.rec rfl fun x xs ih ↦ by rw [List.foldr_cons, ih]; rfl
@@ -223,7 +235,7 @@ theorem hypRules_rel (k : ℕ) :
 /-- The mirror's proof by normalization, weak head normal forms first, with the hypotheses as
 rewriting rules, at related rules. -/
 theorem normH_eq (G : Internal.Globals) (E : Array Internal.Entry)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) :
     PRel («Tactics.normH» (encGlobals G) (E.toList.map encEntry) rs')
       (Tactics.normH G E rs) := fun Γ Φ t u ↦ by
@@ -244,7 +256,7 @@ theorem funExts_eq (k : ℕ) (G : Internal.Globals)
 /-- The mirror's proof by induction on a list in the form of the uniqueness of its fold, each
 premise by weak reduction, at related rules. -/
 theorem byListIndWeak_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ) (s : Term)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) :
     PRel («Tactics.byListIndWeak» (encGlobals G) (E.toList.map encEntry) (leaf n)
         (encTerm s) rs')
@@ -390,65 +402,138 @@ theorem byLength3_eq (G : Internal.Globals) (i : ℕ)
 
 /-- The mirror's provers from rules and provers from rules are related when they are related
 provers at related rules. -/
-def KRel (k' : List (Tree × (Tree → Tree → List Tree → Tree)) →
+def KRel (k' : List Tree →
       List Tree → List Tree → Tree → Tree → Tree)
     (k : List NormRule → Internal.Prover) : Prop :=
   ∀ rs' rs, List.Forall₂ RRel rs' rs → PRel (k' rs') (k rs)
 
 /-- The mirror's derivations from hypotheses and added rules and derivations from them are
 related when they agree at every list of encoded hypotheses and related added rules. -/
-def ARel (a' : List Tree → List (Tree × (Tree → Tree → List Tree → Tree)) → Tree)
+def ARel (a' : List Tree → List Tree → Tree)
     (a : List Term → List NormRule → Option Deriv) : Prop :=
   ∀ Φ₁ ex' ex, List.Forall₂ RRel ex' ex → a' (Φ₁.map encTerm) ex' = encOpt ((a Φ₁ ex).map encDeriv)
 
 /-- The mirror's rule of the hypothesis of an index. -/
 theorem hypRule_rel (i : ℕ) : RRel («Tactics.hypRule» (leaf i)) (.hyp i) := rfl
 
+/-- A derivation with the cuts of a list of hypotheses and their derivations around it. -/
+def wrapFrames (fs : List Tree) (rest : Tree) : Tree :=
+  fs.foldr (fun f acc ↦ «Prover.dNode» (leaf 22) («Prelude.single» («Language.p1» f))
+    («Theory.l2» («Language.p2» f) acc)) rest
+
+/-- The hypotheses and rules the mirror cuts in from given hypotheses and rules and the derivations
+from them are related: both fail, or the mirror's cuts around the prover's derivation at what it
+collects, whose rules are related, are the derivation. -/
+def WHRel (k : List NormRule → Internal.Prover) (Γ : List Tree) (t u : Term)
+    (a' : List Tree → List Tree → Tree)
+    (a : List Term → List NormRule → Option Deriv) : Prop :=
+  ∀ Φ₁ ex' ex, List.Forall₂ RRel ex' ex →
+    (a' (Φ₁.map encTerm) ex' = encOpt none ∧ a Φ₁ ex = none) ∨
+      ∃ (Φ₂ : List Term) (ex₂' : List Tree) (ex₂ : List NormRule) (fs : List Tree),
+        a' (Φ₁.map encTerm) ex' = encOpt (some («Tactics.wh» («Derivation.terms» (Φ₂.map encTerm))
+          («Tactics.rules» ex₂') («Tactics.frames» fs))) ∧
+        List.Forall₂ RRel ex₂' ex₂ ∧
+        (a Φ₁ ex).map encDeriv = ((k ex₂ Γ Φ₂ t u).map encDeriv).map (wrapFrames fs)
+
+/-- The mirror's hypotheses cut in in normal form, with the rules that rewrite by them, and the
+proof that gives them to a prover, at related rules. -/
+theorem weakHyps_rel (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
+    (rs' : List Tree) (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs) (is : List ℕ)
+    (k : List NormRule → Internal.Prover) (m : Internal.Depth) (Γ : List Tree) (Φ : List Term)
+    (t u : Term) :
+    («Tactics.weakHyps» (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (is.map leaf)
+        (leaf (encDepth m)) Γ (Φ.map encTerm) = encOpt none ∧
+      Tactics.withWeakHyps G E n rs is k m Γ Φ t u = none) ∨
+    ∃ (Φ₂ : List Term) (ex₂' : List Tree) (ex₂ : List NormRule) (fs : List Tree),
+      «Tactics.weakHyps» (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (is.map leaf)
+          (leaf (encDepth m)) Γ (Φ.map encTerm) =
+        encOpt (some («Tactics.wh» («Derivation.terms» (Φ₂.map encTerm))
+          («Tactics.rules» ex₂') («Tactics.frames» fs))) ∧
+      List.Forall₂ RRel ex₂' ex₂ ∧
+      (Tactics.withWeakHyps G E n rs is k m Γ Φ t u).map encDeriv =
+        ((k ex₂ Γ Φ₂ t u).map encDeriv).map (wrapFrames fs) := by
+  have hE : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
+      (leaf 4096) (leaf (encDepth m)) Γ (Φ.map encTerm) (encTerm t) =
+      encOpt ((Internal.eval G E n rs 4096 m Γ Φ t).map encTDB) :=
+    eval_eq G E n rs' rs hrs 4096 m
+  simp only [«Tactics.weakHyps», Tactics.withWeakHyps, foldr_eq]
+  refine (?_ : WHRel k Γ t u _ _) Φ [] [] .nil
+  refine List.rel_foldr (R := fun (i' : Tree) (i : ℕ) ↦ i' = leaf i)
+    (fun i' i hi a' a ha ↦ ?_) (fun Φ₁ ex' ex hex ↦ .inr ⟨Φ₁, ex', ex, [], rfl, hex, ?_⟩)
+    (List.forall₂_map_left_iff.mpr (List.forall₂_same.mpr fun _ _ ↦ rfl))
+  · subst hi
+    intro Φ₁ ex' ex hex
+    have hr := ha
+    simp only [template]
+    tac_simp [eqParts_eq]
+    rcases Φ₁[i]? with _ | φ
+    · exact .inl ⟨rfl, rfl⟩
+    tac_simp [eqParts_eq]
+    rcases Internal.eqParts φ with _ | ⟨a₀, b₀⟩
+    · exact .inl ⟨rfl, rfl⟩
+    tac_simp [p1_eq, p2_eq, hE]
+    rcases Internal.eval G E n rs 4096 m Γ Φ₁ a₀ with _ | ⟨a₁, da, _⟩
+    · exact .inl ⟨rfl, rfl⟩
+    tac_simp [hE]
+    rcases Internal.eval G E n rs 4096 m Γ Φ₁ b₀ with _ | ⟨b₁, db, _⟩
+    · exact .inl ⟨rfl, rfl⟩
+    have hr := ha (Φ₁ ++ [Term.eq a₁ b₁]) _ _
+      (List.rel_append hex (.cons (hypRule_rel Φ₁.length) .nil))
+    simp only [List.map_append, List.map_cons, List.map_nil] at hr
+    tac_simp [appendNR_eq, append_eq]
+    rcases hr with ⟨h1, h2⟩ | ⟨Φ₂, e₂', e₂, fs, h1, h3, h4⟩
+    · left
+      rw [h1, h2]
+      exact ⟨rfl, rfl⟩
+    · right
+      rw [h1]
+      refine ⟨Φ₂, e₂', e₂, «Language.pr» (encTerm (a₁.eq b₁)) (RoseTree.node 24
+        [RoseTree.node 0 [encTerm (a₀.eq b₀)],
+          RoseTree.node 2 [RoseTree.node 0 [], encDeriv da, encDeriv db],
+          RoseTree.node 21 [RoseTree.node 0 [leaf i]]]) :: fs, ?_, h3, ?_⟩
+      · mirror_simp [«Tactics.wh», «Tactics.frames», «Tactics.rules», label_some, child_some]
+      · have h5 : ∀ o : Option Deriv, (o.bind fun a ↦ some (RoseTree.node 22
+            [RoseTree.node 0 [encTerm (a₁.eq b₁)], RoseTree.node 24
+              [RoseTree.node 0 [encTerm (a₀.eq b₀)],
+                RoseTree.node 2 [RoseTree.node 0 [], encDeriv da, encDeriv db],
+                RoseTree.node 21 [RoseTree.node 0 [leaf i]]], encDeriv a])) =
+            (o.map encDeriv).map fun r ↦ RoseTree.node 22
+              [RoseTree.node 0 [encTerm (a₁.eq b₁)], RoseTree.node 24
+                [RoseTree.node 0 [encTerm (a₀.eq b₀)],
+                  RoseTree.node 2 [RoseTree.node 0 [], encDeriv da, encDeriv db],
+                  RoseTree.node 21 [RoseTree.node 0 [leaf i]]], r] := fun o ↦ by
+          cases o <;> rfl
+        rw [h5, h4]
+        simp only [Option.map_map, Function.comp_def]
+        rfl
+  · simp only [wrapFrames, List.foldr_nil, Option.map_map, Function.comp_def]
+
 /-- The mirror's proof with hypotheses cut in in normal form and used as rewriting rules before
 those given to a related prover from rules, at related rules. -/
 theorem withWeakHyps_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (is : List ℕ)
-    (k' : List (Tree × (Tree → Tree → List Tree → Tree)) →
+    (k' : List Tree →
       List Tree → List Tree → Tree → Tree → Tree)
     (k : List NormRule → Internal.Prover) (hk : KRel k' k) (m : Internal.Depth) :
     PRel («Tactics.withWeakHyps» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
         (is.map leaf) k' (leaf (encDepth m)))
       (Tactics.withWeakHyps G E n rs is k m) := by
-  have hE : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
-      (leaf 4096) (leaf (encDepth m)) Γ (Φ.map encTerm) (encTerm t) =
-      encOpt ((Internal.eval G E n rs 4096 m Γ Φ t).map encTDB) :=
-    eval_eq G E n rs' rs hrs 4096 m
   intro Γ Φ t u
-  simp only [«Tactics.withWeakHyps», template, Tactics.withWeakHyps, foldr_eq]
-  refine (?_ : ARel _ _) Φ [] [] .nil
-  refine List.rel_foldr (R := fun (i' : Tree) (i : ℕ) ↦ i' = leaf i)
-    (fun i' i hi a' a ha ↦ ?_) (fun Φ₁ ex' ex hex ↦ hk ex' ex hex Γ Φ₁ t u)
-    (List.forall₂_map_left_iff.mpr (List.forall₂_same.mpr fun _ _ ↦ rfl))
-  subst hi
-  intro Φ₁ ex' ex hex
-  tac_simp [eqParts_eq]
-  rcases Φ₁[i]? with _ | φ
-  · rfl
-  tac_simp [eqParts_eq]
-  rcases Internal.eqParts φ with _ | ⟨a₀, b₀⟩
-  · rfl
-  tac_simp [p1_eq, p2_eq, hE]
-  rcases Internal.eval G E n rs 4096 m Γ Φ₁ a₀ with _ | ⟨a₁, da, _⟩
-  · rfl
-  tac_simp [hE]
-  rcases Internal.eval G E n rs 4096 m Γ Φ₁ b₀ with _ | ⟨b₁, db, _⟩
-  · rfl
-  have hr := ha (Φ₁ ++ [Term.eq a₁ b₁]) _ _
-    (List.rel_append hex (.cons (hypRule_rel Φ₁.length) .nil))
-  simp only [List.map_append, List.map_cons, List.map_nil] at hr
-  tac_simp [appendNR_eq, append_eq, hr]
-  simp only [Option.map_eq_bind, Function.comp_def]
+  simp only [«Tactics.withWeakHyps»]
+  rcases weakHyps_rel G E n rs' rs hrs is k m Γ Φ t u with ⟨h1, h2⟩ | ⟨Φ₂, e₂', e₂, fs, h1, h3, h4⟩
+  · rw [h1, h2]
+    rfl
+  · have hk' := hk e₂' e₂ h3 Γ Φ₂ t u
+    rw [h1, h4]
+    mirror_simp [«Tactics.wh», «Tactics.frames», «Tactics.rules», «Prover.termsOf», hk',
+      label_some, child_some, mapO_eq, foldr_eq, template]
+    rfl
 
 /-- The mirror's proof by induction on a list with the induction hypothesis in weak normal form
 as a rewriting rule, at related rules. -/
 theorem byListIndHypWeak_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) :
     PRel («Tactics.byListIndHypWeak» (encGlobals G) (E.toList.map encEntry) (leaf n)
         rs')
@@ -464,7 +549,7 @@ theorem byListIndHypWeak_eq (G : Internal.Globals) (E : Array Internal.Entry) (n
 /-- The mirror's proof by induction on a bitstring with the induction hypothesis in normal form
 as a rewriting rule, the construction's case by case analysis of its bit, at related rules. -/
 theorem byBitsIndHyp_eq (G : Internal.Globals) (E : Array Internal.Entry)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (m : Internal.Depth) :
     PRel («Tactics.byBitsIndHyp» (encGlobals G) (E.toList.map encEntry) rs'
         (leaf (encDepth m)))
@@ -513,9 +598,9 @@ arguments. -/
 /-- The mirror's proof with the instances of a hypothesis equating functions, cut in and in normal
 form as rewriting rules before those given to a related prover from rules, at related rules. -/
 theorem withInsts_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (h : ℕ) (αs : List (List Term))
-    (k' : List (Tree × (Tree → Tree → List Tree → Tree)) →
+    (k' : List Tree →
       List Tree → List Tree → Tree → Tree → Tree)
     (k : List NormRule → Internal.Prover) (hk : KRel k' k) (m : Internal.Depth) :
     PRel («Tactics.withInsts» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
@@ -564,7 +649,7 @@ def IRel (a' : List Tree → List Tree → Tree) (a : List Term → List ℕ →
 /-- The mirror's proof with the hypotheses at the children of an induction on rose trees and
 their instances, at related rules, arguments and prover from indices of instances. -/
 theorem withChildHyps_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (h : ℕ) (kids : List ℕ)
     (args' : Tree → List (List Tree)) (args : ℕ → List (List Term))
     (hargs : ∀ p, args' (leaf p) = (args p).map (·.map encTerm))
@@ -730,7 +815,7 @@ theorem byImpI_eq (G : Internal.Globals) (E : Array Internal.Entry) (o lb : ℕ)
 /-- The mirror's proof with the conclusions of implications among the hypotheses, cut in by
 modus ponens and used as rewriting rules before those given to a related prover from rules. -/
 theorem withImpElim_eq (o lb h : ℕ) (is : List ℕ)
-    (k' : List (Tree × (Tree → Tree → List Tree → Tree)) →
+    (k' : List Tree →
       List Tree → List Tree → Tree → Tree → Tree)
     (k : List NormRule → Internal.Prover) (hk : KRel k' k) :
     PRel («Tactics.withImpElim» (leaf o) (leaf lb) (leaf h) (is.map leaf) k')
@@ -774,7 +859,7 @@ theorem withImpElim_eq (o lb h : ℕ) (is : List ℕ)
     · rfl
 
 /-- The mirror's index of a hypothesis rule's hypothesis, at a related rule. -/
-theorem hypIndex_eq (r' : Tree × (Tree → Tree → List Tree → Tree)) (r : NormRule)
+theorem hypIndex_eq (r' : Tree) (r : NormRule)
     (hr : RRel r' r) :
     «Tactics.hypIndex» r' = encOpt ((Tactics.hypIndex r).map leaf) := by
   cases r with
@@ -783,7 +868,7 @@ theorem hypIndex_eq (r' : Tree × (Tree → Tree → List Tree → Tree)) (r : N
     simp only [«Tactics.hypIndex», template, h1]
     rfl
   | _ =>
-    change r'.1 = _ at hr
+    change r' = _ at hr
     simp only [«Tactics.hypIndex», template, hr]
     rfl
 
@@ -1154,7 +1239,7 @@ theorem matchesOf_eq (body : Term) (k : ℕ) (t : Term) :
 /-- The mirror's arguments at which the body of a hypothesis's abstraction of one variable, in
 normal form to a depth, matches the subterms of encoded terms, at related rules. -/
 theorem instArgs_eq (m : Internal.Depth) (G : Internal.Globals) (E : Array Internal.Entry)
-    (n : ℕ) (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (n : ℕ) (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (Γ : List Tree) (Φ : List Term) (t' u' : Term) (h : ℕ) :
     «Tactics.instArgs» (leaf (encDepth m)) (encGlobals G) (E.toList.map encEntry)
         (leaf n) rs' Γ (Φ.map encTerm) (encTerm t') (encTerm u') (leaf h) =
@@ -1202,14 +1287,14 @@ theorem foldr_found (A' : Tree → List (List Tree)) (A : ℕ → List (List Ter
 /-- The mirror's continuation fold of proofs with instances found at hypotheses, each cut in
 before the rules added so far, at related rules and a related prover from rules to finish. -/
 theorem foldr_withInsts_rel (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (m : Internal.Depth)
-    (next' : List (Tree × (Tree → Tree → List Tree → Tree)) →
+    (next' : List Tree →
       List Tree → List Tree → Tree → Tree → Tree)
     (next : List NormRule → Internal.Prover) (hn : KRel next' next)
     (found : List (ℕ × List (List Term))) :
     KRel (Const.foldr (fun (ha : Tree × List (List Tree))
-        (k : List (Tree × (Tree → Tree → List Tree → Tree)) →
+        (k : List Tree →
           List Tree → List Tree → Tree → Tree → Tree) extra ↦
         «Tactics.withInsts» (encGlobals G) (E.toList.map encEntry) (leaf n) rs' ha.1
           ha.2 (fun ex ↦ k («Tactics.appendNR» extra ex)) (leaf (encDepth m)))
@@ -1225,9 +1310,9 @@ theorem foldr_withInsts_rel (G : Internal.Globals) (E : Array Internal.Entry) (n
 below a number at the arguments at which their abstractions' bodies match the sides' normal forms
 to a depth, cut in before the rules given to a related prover from rules, at related rules. -/
 theorem byInstsOnce_eq (m : Internal.Depth) (G : Internal.Globals) (E : Array Internal.Entry)
-    (n : ℕ) (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (n : ℕ) (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (hs : ℕ)
-    (next' : List (Tree × (Tree → Tree → List Tree → Tree)) →
+    (next' : List Tree →
       List Tree → List Tree → Tree → Tree → Tree)
     (next : List NormRule → Internal.Prover) (hn : KRel next' next) :
     PRel («Tactics.byInstsOnce» (leaf (encDepth m)) (encGlobals G)
@@ -1274,7 +1359,7 @@ theorem byInstsOnce_eq (m : Internal.Depth) (G : Internal.Globals) (E : Array In
 
 /-- The mirror's proofs, after rules added, by reduction at related rules. -/
 theorem instsLast_rel (m : Internal.Depth) (G : Internal.Globals) (E : Array Internal.Entry)
-    (n : ℕ) (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (n : ℕ) (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) :
     KRel («Tactics.instsLast» (leaf (encDepth m)) (encGlobals G)
         (E.toList.map encEntry) (leaf n) rs')
@@ -1285,9 +1370,9 @@ theorem instsLast_rel (m : Internal.Depth) (G : Internal.Globals) (E : Array Int
 /-- The mirror's round of the instance search, after rules added, at related rules and a
 related prover from rules for the next round. -/
 theorem instsRound_rel (m : Internal.Depth) (G : Internal.Globals) (E : Array Internal.Entry)
-    (n : ℕ) (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (n : ℕ) (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (hs : ℕ)
-    (next' : List (Tree × (Tree → Tree → List Tree → Tree)) →
+    (next' : List Tree →
       List Tree → List Tree → Tree → Tree → Tree)
     (next : List NormRule → Internal.Prover) (hn : KRel next' next) :
     KRel («Tactics.instsRound» (leaf (encDepth m)) (encGlobals G)
@@ -1305,7 +1390,7 @@ theorem instsRound_rel (m : Internal.Depth) (G : Internal.Globals) (E : Array In
 
 /-- The mirror's proof by three rounds of the instance search, at related rules. -/
 theorem byInsts_eq (m : Internal.Depth) (G : Internal.Globals) (E : Array Internal.Entry)
-    (n : ℕ) (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (n : ℕ) (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (hs : ℕ) :
     PRel («Tactics.byInsts» (leaf (encDepth m)) (encGlobals G)
         (E.toList.map encEntry) (leaf n) rs' (leaf hs))
@@ -1335,7 +1420,7 @@ theorem repeat_rel (step' : (List Tree → List Tree → Tree → Tree → Tree)
 /-- The mirror's proof by the instance search, or else by case analysis of a variable the sides'
 normal forms are stuck on, each case the same way, to a depth, at related rules. -/
 theorem byAuto_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (d : ℕ) (m : Internal.Depth) :
     PRel («Tactics.byAuto» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
         (leaf d) (leaf (encDepth m)))
@@ -1586,7 +1671,7 @@ by a related prover. -/
 theorem splitStuck_eq (G : Internal.Globals) (n lk i : ℕ)
     (rec' : List Tree → List Tree → Tree → Tree → Tree) (rec : Internal.Prover)
     (hrec : PRel rec' rec) :
-    PRel («Tactics.splitStuck» (encGlobals G) (leaf n) (leaf lk) (leaf i) rec')
+    PRel («Tactics.splitStuck» (encGlobals G) (leaf n) (leaf lk) (leaf i) rec' rec')
       (Tactics.splitStuck G n lk i rec) := by
   intro Γ Φ t u
   simp only [«Tactics.splitStuck», template, Tactics.splitStuck]
@@ -1612,7 +1697,7 @@ theorem splitStuck_eq (G : Internal.Globals) (n lk i : ℕ)
 there are any, or else by case analysis of a variable the normal forms are stuck on, a list, a
 coproduct or a tree, each case the same way, to a depth, at related rules. -/
 theorem byAutoT_eq (G : Internal.Globals) (E : Array Internal.Entry) (n lk : ℕ)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (d : ℕ) (m : Internal.Depth) :
     PRel («Tactics.byAutoT» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf lk)
         rs' (leaf d) (leaf (encDepth m)))
@@ -1693,7 +1778,7 @@ theorem byAutoT_eq (G : Internal.Globals) (E : Array Internal.Entry) (n lk : ℕ
 variable the normal forms are stuck on, a folded conditional's test among them, each case the
 same way, to a depth, at related rules. -/
 theorem byAutoC_eq (G : Internal.Globals) (E : Array Internal.Entry) (n lk : ℕ)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (d : ℕ) :
     PRel («Tactics.byAutoC» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf lk)
         rs' (leaf d))
@@ -1846,8 +1931,8 @@ theorem maskSub_eq (ab cs : ℕ) (Φ : List Term) (w : Term) :
 /-- The mirror's provers from added rules and provers from rules, and provers from added rules
 and provers from rules, are related when they are related provers at related added rules and
 related provers from rules. -/
-def MSRel (ms' : List (Tree × (Tree → Tree → List Tree → Tree)) →
-      (List (Tree × (Tree → Tree → List Tree → Tree)) →
+def MSRel (ms' : List Tree →
+      (List Tree →
         List Tree → List Tree → Tree → Tree → Tree) →
       List Tree → List Tree → Tree → Tree → Tree)
     (ms : List NormRule → (List NormRule → Internal.Prover) → Internal.Prover) : Prop :=
@@ -1856,18 +1941,18 @@ def MSRel (ms' : List (Tree × (Tree → Tree → List Tree → Tree)) →
 /-- The mirror's iterate of a step of provers from added rules and provers from rules, and the
 recursion of such a step, are related when the starts are and the steps preserve the relation. -/
 theorem repeat_msRel
-    (step' : (List (Tree × (Tree → Tree → List Tree → Tree)) →
-        (List (Tree × (Tree → Tree → List Tree → Tree)) →
+    (step' : (List Tree →
+        (List Tree →
           List Tree → List Tree → Tree → Tree → Tree) →
         List Tree → List Tree → Tree → Tree → Tree) →
-      List (Tree × (Tree → Tree → List Tree → Tree)) →
-        (List (Tree × (Tree → Tree → List Tree → Tree)) →
+      List Tree →
+        (List Tree →
           List Tree → List Tree → Tree → Tree → Tree) →
         List Tree → List Tree → Tree → Tree → Tree)
     (step : (List NormRule → (List NormRule → Internal.Prover) → Internal.Prover) →
       List NormRule → (List NormRule → Internal.Prover) → Internal.Prover)
-    (base' : List (Tree × (Tree → Tree → List Tree → Tree)) →
-        (List (Tree × (Tree → Tree → List Tree → Tree)) →
+    (base' : List Tree →
+        (List Tree →
           List Tree → List Tree → Tree → Tree → Tree) →
         List Tree → List Tree → Tree → Tree → Tree)
     (base : List NormRule → (List NormRule → Internal.Prover) → Internal.Prover)
@@ -1878,9 +1963,9 @@ theorem repeat_msRel
 /-- The mirror's proof by rewriting under masks by the hypotheses up to a number of times, and
 then by a related prover from rules with the rules added, at related rules. -/
 theorem byMaskSubs_eq (G : Internal.Globals) (E : Array Internal.Entry) (ab cs : ℕ)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (n : ℕ)
-    (p' : List (Tree × (Tree → Tree → List Tree → Tree)) →
+    (p' : List Tree →
       List Tree → List Tree → Tree → Tree → Tree)
     (p : List NormRule → Internal.Prover) (hp : KRel p' p) :
     PRel («Tactics.byMaskSubs» (encGlobals G) (E.toList.map encEntry) (leaf ab)

@@ -39,9 +39,7 @@
     nrThm
     nrThmAt
     nrHyp
-    NR
     NRs
-    noMatch
     RW
     NF
     rebuild
@@ -146,14 +144,11 @@
 
   ; the rules of the normalizer: a rule of the checker's position and data, the unfolding of one
   ; definition, of the definitions below an index but a list, the terminal type's element, a
-  ; theorem at objects, a theorem at objects with its left side, and a hypothesis; each paired
-  ; with its left side's matching, or with none
+  ; theorem at objects, a theorem at objects with its left side, and a hypothesis
   (data NormRule (nrRule T Terms) (nrDelta T) (nrBelow T Terms) (nrUnit) (nrThm T Objs)
     (nrThmAt T Objs T T)
     (nrHyp T))
-  (deftype NR (Prod NormRule Mt))
-  (deftype NRs (List NR))
-  (def noMatch (lam ((d T) (t T) (s Ts)) OAssign.nothing))
+  (deftype NRs (List NormRule))
 
   ; the bindings and images of optional values into optional pairs, as the base binds and maps
   ; optional trees
@@ -181,8 +176,8 @@
             (let rd Ts (l4 j (node 0 th) sg 0)
               (mapTP (lam ((t2 T)) (pr t2 (dNode 16 rd (nil T))))
                 (rootStep G E n g hs 16 rd t))))))))
-  (defn tryRule ((G Globals) (E (List Entry)) (n T) (g Ts) (hs Ts) (r NR) (t T)) OTPair.Maybe
-    (case (fst r)
+  (defn tryRule ((G Globals) (E (List Entry)) (n T) (g Ts) (hs Ts) (r NormRule) (t T)) OTPair.Maybe
+    (case r
       ((nrRule rl rdN)
        (let rd Ts (termsOf rdN)
          (mapTP (lam ((t2 T)) (pr t2 (dNode rl rd (nil T)))) (rootStep G E n g hs rl rd t))))
@@ -213,13 +208,13 @@
                      t)
                    OTPair.nothing)))))))
       ((nrThmAt j thN p k)
-       (if (sameShape p t) (thmRewrite G E n g hs j (objsOf thN) (snd r) k t) OTPair.nothing))
+       (if (sameShape p t) (thmRewrite G E n g hs j (objsOf thN) (matchTerm p) k t) OTPair.nothing))
       ((nrHyp i)
        (let rd Ts (l2 i 0)
          (mapTP (lam ((t2 T)) (pr t2 (dNode 17 rd (nil T)))) (rootStep G E n g hs 17 rd t))))))
   (defn rootRewrite ((G Globals) (E (List Entry)) (n T) (rs NRs) (g Ts) (hs Ts) (t T)) OTPair.Maybe
-    ((foldr NR RootRw
-       (lam ((r NR) (rest RootRw))
+    ((foldr NormRule RootRw
+       (lam ((r NormRule) (rest RootRw))
          (lam ((u T))
            (let v OTPair.Maybe (tryRule G E n g hs r u) (if (OTPair.isJust v) v (rest u)))))
        (lam ((u T)) OTPair.nothing)
@@ -228,7 +223,7 @@
   ; the rules with each theorem's matching prepared, its left side instantiated at its objects
   (def pr0 (pr 0 0))
   (def thm0 (mkThm 0 (objs (nil T)) (terms (nil T)) 0))
-  (defn prepareRule ((E (List Entry)) (r NormRule)) NR
+  (defn prepareRule ((E (List Entry)) (r NormRule)) NormRule
     (case r
       ((nrThm j thN)
        (let th Ts (objsOf thN)
@@ -238,11 +233,12 @@
                (let p T
                  (if (isEmpty th) (p1 (OTPair.fromMaybe pr0 lr))
                    (osubst th (p1 (OTPair.fromMaybe pr0 lr))))
-                 (pair (nrThmAt j thN p (length (thCtx (OThm.fromMaybe thm0 a)))) (matchTerm p)))
-               (pair r noMatch))))))
-      (else (pair r noMatch))))
+                 (nrThmAt j thN p (length (thCtx (OThm.fromMaybe thm0 a)))))
+               r)))))
+      (else r)))
   (defn prepareRules ((E (List Entry)) (rs (List NormRule))) NRs
-    (foldr NormRule NRs (lam ((r NormRule) (acc NRs)) (cons (prepareRule E r) acc)) (nil NR) rs))
+    (foldr NormRule NRs (lam ((r NormRule) (acc NRs)) (cons (prepareRule E r) acc)) (nil NormRule)
+      rs))
 
   ; the normal form of a term in a context under hypotheses, innermost first, within a depth of
   ; fuel: the optional pair of the normal form and its rewriting derivation, marked
@@ -448,7 +444,7 @@
   ; induction with the induction hypothesis: the step's, normalized, cut in to rewrite by, the rules
   ; followed by the rewriting by the hypothesis of an index
   (defn withHyp ((rs NRs) (i T)) NRs
-    (foldr NR NRs (lam ((x NR) (acc NRs)) (cons x acc)) (cons (pair (nrHyp i) noMatch) (nil NR))
+    (foldr NormRule NRs (lam ((x NormRule) (acc NRs)) (cons x acc)) (cons (nrHyp i) (nil NormRule))
       rs))
   (defn byNatIndHyp
     ((G Globals) (E (List Entry)) (n T) (kz T) (ks T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T) (u T))
@@ -563,8 +559,8 @@
           (if (eq rl 6) (some 2)
             (if (or (eq rl 9) (eq rl 10)) (some 7)
               (if (or (eq rl 11) (eq rl 12)) (some 8) (if (eq rl 13) (some 9) none))))))))
-  (defn nrKey ((E (List Entry)) (r NR)) T
-    (case (fst r) ((nrRule rl rdN) (ruleKey rl)) ((nrDelta k) (some (add 12 (mul 2 k))))
+  (defn nrKey ((E (List Entry)) (r NormRule)) T
+    (case r ((nrRule rl rdN) (ruleKey rl)) ((nrDelta k) (some (add 12 (mul 2 k))))
       ((nrUnit) (some 0))
       ((nrThm j thN)
        (case (thmAt E j)
@@ -582,11 +578,12 @@
   (deftype KR (Prod T NRs))
   (deftype Idx (Prod (List KR) NRs))
   (defn bucketOf ((E (List Entry)) (rs NRs) (k T)) NRs
-    (foldr NR NRs (lam ((r NR) (acc NRs)) (if (keyFits k (nrKey E r)) (cons r acc) acc)) (nil NR)
+    (foldr NormRule NRs (lam ((r NormRule) (acc NRs)) (if (keyFits k (nrKey E r)) (cons r acc) acc))
+      (nil NormRule)
       rs))
   (defn ruleKeys ((E (List Entry)) (rs NRs)) Ts
-    (foldr NR Ts
-      (lam ((r NR) (acc Ts))
+    (foldr NormRule Ts
+      (lam ((r NormRule) (acc Ts))
         (let m T (nrKey E r)
           (if (and (isSome m) (not (anyT (lam ((x T)) (eq x (get m))) acc))) (cons (get m) acc)
             acc)))
@@ -597,7 +594,8 @@
       (foldr T (List KR) (lam ((k T) (acc (List KR))) (cons (pair k (bucketOf E rs k)) acc))
         (nil KR)
         (ruleKeys E rs))
-      (foldr NR NRs (lam ((r NR) (acc NRs)) (if (isSome (nrKey E r)) acc (cons r acc))) (nil NR)
+      (foldr NormRule NRs (lam ((r NormRule) (acc NRs)) (if (isSome (nrKey E r)) acc (cons r acc)))
+        (nil NormRule)
         rs)))
   (defn ruleBucket ((idx Idx) (k T)) NRs
     (foldr KR NRs (lam ((b KR) (acc NRs)) (if (eq (fst b) k) (snd b) acc)) (snd idx) (fst idx)))
@@ -655,9 +653,10 @@
   ; innermost variables, from the hypotheses before the weakening, the equations among them
   ; prepared in ph: an equation weakened only where the term is its left side weakened, a rule of
   ; the checker as the checker rewrites, and the other rules under none of the hypotheses
-  (defn tryRuleK ((G Globals) (E (List Entry)) (n T) (g Ts) (k T) (hs Ts) (ph PHs) (r NR) (t T))
+  (defn tryRuleK
+    ((G Globals) (E (List Entry)) (n T) (g Ts) (k T) (hs Ts) (ph PHs) (r NormRule) (t T))
     OTPair.Maybe
-    (case (fst r)
+    (case r
       ((nrRule rl rdN)
        (let rd Ts (termsOf rdN)
          (mapTP (lam ((t2 T)) (pr t2 (dNode rl rd (nil T)))) (rootStepK G E n g k hs rl rd t))))
@@ -673,8 +672,8 @@
   (deftype RWK (Arrow Ts (Arrow T (Arrow Ts (Arrow T OTPair.Maybe)))))
   (defn rootRewriteK ((G Globals) (E (List Entry)) (n T) (idx Idx) (ph PHs)) RWK
     (lam ((g Ts) (k T) (hs Ts) (t T))
-      ((foldr NR RootRw
-         (lam ((r NR) (rest RootRw))
+      ((foldr NormRule RootRw
+         (lam ((r NormRule) (rest RootRw))
            (lam ((u T))
              (let v OTPair.Maybe (tryRuleK G E n g k hs ph r u) (if (OTPair.isJust v) v (rest u)))))
          (lam ((u T)) OTPair.nothing)

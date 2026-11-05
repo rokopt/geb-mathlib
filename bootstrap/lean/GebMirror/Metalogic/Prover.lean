@@ -533,9 +533,6 @@ def «Prover.nrThmAt» :=
 def «Prover.nrHyp» :=
   fun (x0 : T) => Const.node (leaf 6) (x0 :: ([] : List T))
 
-def «Prover.noMatch» :=
-  fun (_ : T) (_ : T) (_ : List T) => «Prover/OAssign.nothing»
-
 def «Prover.bindP» :=
   fun (x0 : T) (x1 : T → T) =>
     let x2 : T := (let x2 : T := x0;
@@ -658,9 +655,9 @@ def «Prover.tryRule» :=
     (x2 : T)
     (x3 : List T)
     (x4 : List T)
-    (x5 : T × (T → T → List T → T))
+    (x5 : T)
     (x6 : T) =>
-    let x7 : T := (let x7 : T := (x5).1;
+    let x7 : T := (let x7 : T := x5;
                    if (Const.eq (Const.label x7) (leaf 0)).label ≠ 0 then
                      let x8 : List T := Const.children x7;
                      let x9 : T := Const.lcase
@@ -900,7 +897,7 @@ def «Prover.tryRule» :=
                                    x4
                                    x9
                                    («Prover.objsOf» x11)
-                                   (x5).2
+                                   («Prover.matchTerm» x13)
                                    x15
                                    x6
                                else
@@ -931,14 +928,14 @@ def «Prover.rootRewrite» :=
   fun (x0 : T)
     (x1 : List T)
     (x2 : T)
-    (x3 : List (T × (T → T → List T → T)))
+    (x3 : List T)
     (x4 : List T)
     (x5 : List T)
     (x6 : T) =>
     let x7 : T := Const.foldr
-      (α := T × (T → T → List T → T))
+      (α := T)
       (β := T → T)
-      (fun (x7 : T × (T → T → List T → T)) (x8 : T → T) (x9 : T) =>
+      (fun (x7 : T) (x8 : T → T) (x9 : T) =>
         let x10 : T := «Prover.tryRule» x0 x1 x2 x4 x5 x7 x9;
         if («Language/OTPair.isJust» x10).label ≠ 0 then x10 else x8 x9)
       (fun (_ : T) => «Language/OTPair.nothing»)
@@ -957,11 +954,7 @@ def «Prover.thm0» :=
 
 def «Prover.prepareRule» :=
   fun (x0 : List T) (x1 : T) =>
-    let x2 : T ×
-      (T →
-        T →
-          List T →
-            T) := (let x2 : T := x1;
+    let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 4)).label ≠ 0 then
                      let x3 : List T := Const.children x2;
                      let x4 : T := Const.lcase
@@ -1002,32 +995,26 @@ def «Prover.prepareRule» :=
                          «Language.osubst»
                            x8
                            («Language.p1» («Language/OTPair.fromMaybe» «Prover.pr0» x10)));
-                       («Prover.nrThmAt»
+                       «Prover.nrThmAt»
                          x4
                          x6
                          x11
                          («Prelude.length»
-                           («Derivation.thCtx» («Derivation/OThm.fromMaybe» «Prover.thm0» x9))),
-                         «Prover.matchTerm» x11)
+                           («Derivation.thCtx» («Derivation/OThm.fromMaybe» «Prover.thm0» x9)))
                      else
-                       (x1, «Prover.noMatch»)
+                       x1
                    else
-                     (x1, «Prover.noMatch»));
+                     x1);
     x2
 
 def «Prover.prepareRules» :=
   fun (x0 : List T) (x1 : List T) =>
     let x2 : List
-      (T ×
-        (T →
-          T →
-            List T →
-              T)) := Const.foldr
+      T := Const.foldr
       (α := T)
-      (β := List (T × (T → T → List T → T)))
-      (fun (x2 : T) (x3 : List (T × (T → T → List T → T))) =>
-        ((«Prover.prepareRule» x0 x2) :: x3))
-      ([] : List (T × (T → T → List T → T)))
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => ((«Prover.prepareRule» x0 x2) :: x3))
+      ([] : List T)
       x1;
     x2
 
@@ -2474,7 +2461,7 @@ def «Prover.nsAdv» :=
   fun (x0 : T)
     (x1 : List T)
     (x2 : T)
-    (x3 : List (T × (T → T → List T → T)))
+    (x3 : List T)
     (x4 : T)
     (x5 : List T) =>
     let x6 : T := (let x6 : T := x4;
@@ -2642,7 +2629,7 @@ def «Prover.nsRound» :=
   fun (x0 : T)
     (x1 : List T)
     (x2 : T)
-    (x3 : List (T × (T → T → List T → T)))
+    (x3 : List T)
     (x4 : List T → List T)
     (x5 : List T) =>
     let x6 : List
@@ -2668,7 +2655,7 @@ def «Prover.normStepB» :=
   fun (x0 : T)
     (x1 : List T)
     (x2 : T)
-    (x3 : List (T × (T → T → List T → T)))
+    (x3 : List T)
     (x4 : List T → List T) =>
     let x5 : List T →
       List
@@ -2699,11 +2686,7 @@ def «Prover.normStepB» :=
     x5
 
 def «Prover.normB» :=
-  fun (x0 : T)
-    (x1 : List T)
-    (x2 : T)
-    (x3 : List (T × (T → T → List T → T)))
-    (x4 : T) =>
+  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : List T) (x4 : T) =>
     let x5 : List T →
       List
         T := Const.iter
@@ -2722,11 +2705,7 @@ def «Prover.normB» :=
     x5
 
 def «Prover.normalize» :=
-  fun (x0 : T)
-    (x1 : List T)
-    (x2 : T)
-    (x3 : List (T × (T → T → List T → T)))
-    (x4 : T) =>
+  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : List T) (x4 : T) =>
     let x5 : List T →
       List T →
         T →
@@ -2777,7 +2756,7 @@ def «Prover.byNorm» :=
   fun (x0 : T)
     (x1 : List T)
     (x2 : T)
-    (x3 : List (T × (T → T → List T → T)))
+    (x3 : List T)
     (x4 : T)
     (x5 : List T)
     (x6 : List T)
@@ -2805,7 +2784,7 @@ def «Prover.byNatInd» :=
     (x3 : T)
     (x4 : T)
     (x5 : T)
-    (x6 : List (T × (T → T → List T → T)))
+    (x6 : List T)
     (x7 : T)
     (x8 : List T)
     (x9 : List T)
@@ -2870,7 +2849,7 @@ def «Prover.byListInd» :=
     (x3 : T)
     (x4 : T)
     (x5 : T)
-    (x6 : List (T × (T → T → List T → T)))
+    (x6 : List T)
     (x7 : T)
     (x8 : List T)
     (x9 : List T)
@@ -2938,20 +2917,13 @@ def «Prover.byListInd» :=
     x12
 
 def «Prover.withHyp» :=
-  fun (x0 : List (T × (T → T → List T → T))) (x1 : T) =>
+  fun (x0 : List T) (x1 : T) =>
     let x2 : List
-      (T ×
-        (T →
-          T →
-            List T →
-              T)) := Const.foldr
-      (α := T × (T → T → List T → T))
-      (β := List (T × (T → T → List T → T)))
-      (fun (x2 : T × (T → T → List T → T))
-         (x3 : List (T × (T → T → List T → T))) =>
-        (x2 :: x3))
-      ((«Prover.nrHyp» x1, «Prover.noMatch») ::
-        ([] : List (T × (T → T → List T → T))))
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      ((«Prover.nrHyp» x1) :: ([] : List T))
       x0;
     x2
 
@@ -2961,7 +2933,7 @@ def «Prover.byNatIndHyp» :=
     (x2 : T)
     (x3 : T)
     (x4 : T)
-    (x5 : List (T × (T → T → List T → T)))
+    (x5 : List T)
     (x6 : T)
     (x7 : List T)
     (x8 : List T)
@@ -3034,7 +3006,7 @@ def «Prover.byListIndHyp» :=
     (x2 : T)
     (x3 : T)
     (x4 : T)
-    (x5 : List (T × (T → T → List T → T)))
+    (x5 : List T)
     (x6 : T)
     (x7 : List T)
     (x8 : List T)
@@ -3256,8 +3228,8 @@ def «Prover.ruleKey» :=
     x1
 
 def «Prover.nrKey» :=
-  fun (x0 : List T) (x1 : T × (T → T → List T → T)) =>
-    let x2 : T := (let x2 : T := (x1).1;
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
                    if (Const.eq (Const.label x2) (leaf 0)).label ≠ 0 then
                      let x3 : List T := Const.children x2;
                      let x4 : T := Const.lcase
@@ -3442,32 +3414,27 @@ def «Prover.keyFits» :=
     x2
 
 def «Prover.bucketOf» :=
-  fun (x0 : List T) (x1 : List (T × (T → T → List T → T))) (x2 : T) =>
+  fun (x0 : List T) (x1 : List T) (x2 : T) =>
     let x3 : List
-      (T ×
-        (T →
-          T →
-            List T →
-              T)) := Const.foldr
-      (α := T × (T → T → List T → T))
-      (β := List (T × (T → T → List T → T)))
-      (fun (x3 : T × (T → T → List T → T))
-         (x4 : List (T × (T → T → List T → T))) =>
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x3 : T) (x4 : List T) =>
         if («Prover.keyFits» x2 («Prover.nrKey» x0 x3)).label ≠ 0 then
           (x3 :: x4)
         else
           x4)
-      ([] : List (T × (T → T → List T → T)))
+      ([] : List T)
       x1;
     x3
 
 def «Prover.ruleKeys» :=
-  fun (x0 : List T) (x1 : List (T × (T → T → List T → T))) =>
+  fun (x0 : List T) (x1 : List T) =>
     let x2 : List
       T := Const.foldr
-      (α := T × (T → T → List T → T))
+      (α := T)
       (β := List T)
-      (fun (x2 : T × (T → T → List T → T)) (x3 : List T) =>
+      (fun (x2 : T) (x3 : List T) =>
         let x4 : T := «Prover.nrKey» x0 x2;
         if («Prelude.and»
           («Prelude.isSome» x4)
@@ -3483,47 +3450,35 @@ def «Prover.ruleKeys» :=
     x2
 
 def «Prover.indexRules» :=
-  fun (x0 : List T) (x1 : List (T × (T → T → List T → T))) =>
-    let x2 : List (T × List (T × (T → T → List T → T))) ×
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List (T × List T) ×
       List
-        (T ×
-          (T →
-            T →
-              List T →
-                T)) := (Const.foldr
+        T := (Const.foldr
       (α := T)
-      (β := List (T × List (T × (T → T → List T → T))))
-      (fun (x2 : T) (x3 : List (T × List (T × (T → T → List T → T)))) =>
+      (β := List (T × List T))
+      (fun (x2 : T) (x3 : List (T × List T)) =>
         ((x2, «Prover.bucketOf» x0 x1 x2) :: x3))
-      ([] : List (T × List (T × (T → T → List T → T))))
+      ([] : List (T × List T))
       («Prover.ruleKeys» x0 x1),
       Const.foldr
-        (α := T × (T → T → List T → T))
-        (β := List (T × (T → T → List T → T)))
-        (fun (x2 : T × (T → T → List T → T))
-           (x3 : List (T × (T → T → List T → T))) =>
+        (α := T)
+        (β := List T)
+        (fun (x2 : T) (x3 : List T) =>
           if («Prelude.isSome» («Prover.nrKey» x0 x2)).label ≠ 0 then
             x3
           else
             (x2 :: x3))
-        ([] : List (T × (T → T → List T → T)))
+        ([] : List T)
         x1);
     x2
 
 def «Prover.ruleBucket» :=
-  fun (x0 : List (T × List (T × (T → T → List T → T))) ×
-      List (T × (T → T → List T → T)))
-    (x1 : T) =>
+  fun (x0 : List (T × List T) × List T) (x1 : T) =>
     let x2 : List
-      (T ×
-        (T →
-          T →
-            List T →
-              T)) := Const.foldr
-      (α := T × List (T × (T → T → List T → T)))
-      (β := List (T × (T → T → List T → T)))
-      (fun (x2 : T × List (T × (T → T → List T → T)))
-         (x3 : List (T × (T → T → List T → T))) =>
+      T := Const.foldr
+      (α := T × List T)
+      (β := List T)
+      (fun (x2 : T × List T) (x3 : List T) =>
         if (Const.eq (x2).1 x1).label ≠ 0 then (x2).2 else x3)
       (x0).2
       (x0).1;
@@ -3715,9 +3670,9 @@ def «Prover.tryRuleK» :=
     (x4 : T)
     (x5 : List T)
     (x6 : List (T × (T × (T × ((T → T) → T → T)))))
-    (x7 : T × (T → T → List T → T))
+    (x7 : T)
     (x8 : T) =>
-    let x9 : T := (let x9 : T := (x7).1;
+    let x9 : T := (let x9 : T := x7;
                    if (Const.eq (Const.label x9) (leaf 0)).label ≠ 0 then
                      let x10 : List T := Const.children x9;
                      let x11 : T := Const.lcase
@@ -3790,8 +3745,7 @@ def «Prover.rootRewriteK» :=
   fun (x0 : T)
     (x1 : List T)
     (x2 : T)
-    (x3 : List (T × List (T × (T → T → List T → T))) ×
-      List (T × (T → T → List T → T)))
+    (x3 : List (T × List T) × List T)
     (x4 : List (T × (T × (T × ((T → T) → T → T))))) =>
     let x5 : List T →
       T →
@@ -3799,9 +3753,9 @@ def «Prover.rootRewriteK» :=
           T →
             T := (fun (x5 : List T) (x6 : T) (x7 : List T) (x8 : T) =>
       Const.foldr
-        (α := T × (T → T → List T → T))
+        (α := T)
         (β := T → T)
-        (fun (x9 : T × (T → T → List T → T)) (x10 : T → T) (x11 : T) =>
+        (fun (x9 : T) (x10 : T → T) (x11 : T) =>
           let x12 : T := «Prover.tryRuleK» x0 x1 x2 x5 x6 x7 x4 x9 x11;
           if («Language/OTPair.isJust» x12).label ≠ 0 then x12 else x10 x11)
         (fun (_ : T) => «Language/OTPair.nothing»)
@@ -4822,17 +4776,12 @@ def «Prover.evalK» :=
     x4
 
 def «Prover.eval» :=
-  fun (x0 : T)
-    (x1 : List T)
-    (x2 : T)
-    (x3 : List (T × (T → T → List T → T)))
-    (x4 : T) =>
+  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : List T) (x4 : T) =>
     let x5 : T →
       List T →
         List T →
           T →
-            T := (let x5 : List (T × List (T × (T → T → List T → T))) ×
-                    List (T × (T → T → List T → T)) := «Prover.indexRules» x1 x3;
+            T := (let x5 : List (T × List T) × List T := «Prover.indexRules» x1 x3;
                   fun (x6 : T) (x7 : List T) (x8 : List T) (x9 : T) =>
                     «Prover.evalK»
                       x0
@@ -4847,21 +4796,13 @@ def «Prover.eval» :=
     x5
 
 def «Prover.whnf» :=
-  fun (x0 : T)
-    (x1 : List T)
-    (x2 : T)
-    (x3 : List (T × (T → T → List T → T)))
-    (x4 : T) =>
+  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : List T) (x4 : T) =>
     let x5 : List T →
       List T → T → T := «Prover.eval» x0 x1 x2 x3 x4 (leaf 0);
     x5
 
 def «Prover.normalizeW» :=
-  fun (x0 : T)
-    (x1 : List T)
-    (x2 : T)
-    (x3 : List (T × (T → T → List T → T)))
-    (x4 : T) =>
+  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : List T) (x4 : T) =>
     let x5 : List T →
       List T → T → T := «Prover.eval» x0 x1 x2 x3 x4 (leaf 3);
     x5
@@ -4870,7 +4811,7 @@ def «Prover.byNormW» :=
   fun (x0 : T)
     (x1 : List T)
     (x2 : T)
-    (x3 : List (T × (T → T → List T → T)))
+    (x3 : List T)
     (x4 : T)
     (x5 : List T)
     (x6 : List T)
@@ -5053,7 +4994,7 @@ def «Prover.byRoseInd» :=
     (x4 : T)
     (x5 : T)
     (x6 : T)
-    (x7 : List (T × (T → T → List T → T)))
+    (x7 : List T)
     (x8 : T)
     (x9 : List T)
     (x10 : T)

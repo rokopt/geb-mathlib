@@ -242,13 +242,13 @@ def MRel (m' : Tree → Tree → List Tree → Tree)
     (m : ℕ → Term → List (Option Term) → Option (List (Option Term))) : Prop :=
   ∀ d t σ, m' (leaf d) (encTerm t) (σ.map encOT) = encOpt ((m d t σ).map encSigma)
 
-/-- The mirror's rule, with its matching, and a rule of the normalizer are related: a prepared
-theorem's node holds a pattern of its root's label and a related matching, and any other rule is
-its encoding. -/
-def RRel (r' : Tree × (Tree → Tree → List Tree → Tree)) : NormRule → Prop
+/-- The mirror's rule and a rule of the normalizer are related: a prepared theorem's node holds a
+pattern of its root's label whose matching is related, and any other rule is its encoding. -/
+def RRel (r' : Tree) : NormRule → Prop
   | .thmAt j θ root m k => ∃ p : Term, p.label = root ∧
-      r'.1 = RoseTree.node 5 [leaf j, RoseTree.node 0 θ, encTerm p, leaf k] ∧ MRel r'.2 m
-  | r => r'.1 = encRule r
+      r' = RoseTree.node 5 [leaf j, RoseTree.node 0 θ, encTerm p, leaf k] ∧
+      MRel («Prover.matchTerm» (encTerm p)) m
+  | r => r' = encRule r
 
 /-! Derivations. -/
 
@@ -601,7 +601,7 @@ theorem thmRewrite_eq (j : ℕ) (θ : List Tree) (m' : Tree → Tree → List Tr
 
 /-- The mirror's rewriting of an encoded term at its root by a rule related to a rule of the
 normalizer. -/
-theorem tryRule_eq (r' : Tree × (Tree → Tree → List Tree → Tree)) (r : NormRule)
+theorem tryRule_eq (r' : Tree) (r : NormRule)
     (h : RRel r' r) (t : Term) :
     «Prover.tryRule» (encGlobals G) (E.toList.map encEntry) (leaf n) Γ
         (Φ.map encTerm) r' (encTerm t) =
@@ -709,7 +709,7 @@ theorem tryRule_eq (r' : Tree × (Tree → Tree → List Tree → Tree)) (r : No
 
 /-- The mirror's first rule of a list that rewrites an encoded term at its root, at a list of
 rules related to the normalizer's. -/
-theorem rootRewrite_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree)))
+theorem rootRewrite_eq (rs' : List Tree)
     (rs : List NormRule) (h : List.Forall₂ RRel rs' rs) (t : Term) :
     «Prover.rootRewrite» (encGlobals G) (E.toList.map encEntry) (leaf n) rs' Γ
         (Φ.map encTerm) (encTerm t) =
@@ -856,13 +856,13 @@ def nsNeeds (ss : List Tree) : List Tree :=
 
 /-- A state of normalization advanced by the results a function of its jobs gives. -/
 def nsAdvBy (G' : Tree) (E' : List Tree) (n' : Tree)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (F : Tree → Tree) (s : Tree) : Tree :=
+    (rs' : List Tree) (F : Tree → Tree) (s : Tree) : Tree :=
   «Prover.nsAdv» G' E' n' rs' s ((«Prover.nsNeed» s).map F)
 
 /-- A round of the mirror's normalization, at a level below that is the image of a function of its
 jobs, advances each state by that function's results. -/
 theorem nsRound_eq (G' : Tree) (E' : List Tree) (n' : Tree)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (F : Tree → Tree)
+    (rs' : List Tree) (F : Tree → Tree)
     (rec : List Tree → List Tree) (hrec : ∀ js, rec js = js.map F) (ss : List Tree) :
     «Prover.nsRound» G' E' n' rs' rec ss = ss.map (nsAdvBy G' E' n' rs' F) := by
   have h : ∀ (xs : List Tree) (rest : List Tree),
@@ -882,7 +882,7 @@ theorem nsRound_eq (G' : Tree) (E' : List Tree) (n' : Tree)
 /-- The mirror's normalization of a job within a depth of fuel, as the rounds of the state a job
 starts in, each level's jobs normalized by the level below. -/
 def normJ (G' : Tree) (E' : List Tree) (n' : Tree)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (fuel : ℕ) : Tree → Tree :=
+    (rs' : List Tree) (fuel : ℕ) : Tree → Tree :=
   Nat.rec (fun j ↦ «Prover/ONFR.just» («Prover.nfr» («Prover.jobTerm» j) «Prover.dRefl»))
     (fun _ F j ↦ «Prover.nsResult»
       (nsAdvBy G' E' n' rs' F (nsAdvBy G' E' n' rs' F («Prover.nsStart» G' n' j)))) fuel
@@ -890,7 +890,7 @@ def normJ (G' : Tree) (E' : List Tree) (n' : Tree)
 /-- A level of the mirror's normalization, at a level below that is the image of a function of its
 jobs, is the image of the rounds of the state each job starts in. -/
 theorem normStepB_eq (G' : Tree) (E' : List Tree) (n' : Tree)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (F : Tree → Tree)
+    (rs' : List Tree) (F : Tree → Tree)
     (rec : List Tree → List Tree) (hrec : ∀ js, rec js = js.map F) (js : List Tree) :
     «Prover.normStepB» G' E' n' rs' rec js =
       js.map fun j ↦ «Prover.nsResult»
@@ -902,7 +902,7 @@ theorem normStepB_eq (G' : Tree) (E' : List Tree) (n' : Tree)
 
 /-- The mirror's normalization of a list of jobs is the image of the normalization of a job. -/
 theorem normB_eq (G' : Tree) (E' : List Tree) (n' : Tree)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (fuel : ℕ) :
+    (rs' : List Tree) (fuel : ℕ) :
     ∀ js, «Prover.normB» G' E' n' rs' (leaf fuel) js = js.map (normJ G' E' n' rs' fuel) := by
   simp only [«Prover.normB», iter_leaf]
   exact Nat.rec (fun js ↦ by
@@ -914,7 +914,7 @@ theorem normB_eq (G' : Tree) (E' : List Tree) (n' : Tree)
 
 /-- The mirror's level of normalization of a job, at related rules and a function of jobs related
 to the normalization of the subterms. -/
-theorem normStep_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+theorem normStep_eq (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (F : Tree → Tree)
     (rec : List Tree → List Term → Term → Option (Term × Deriv × Bool))
     (hF : ∀ Γ Φ t, F (encJob 0 Γ 0 Φ t) = encOpt ((rec Γ Φ t).map encTDB))
@@ -1008,7 +1008,7 @@ theorem normStep_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))
       rfl
 
 /-- The mirror's normalization innermost first within a depth of fuel, at related rules. -/
-theorem normalize_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+theorem normalize_eq (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) :
     NRel («Prover.normalize» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
         (leaf fuel))
@@ -1044,7 +1044,7 @@ theorem joinBy_eq (v : List Tree → List Tree → Tree → Tree)
       none_eq, some_eq]
 
 /-- The mirror's proof of an equation by normalizing both sides to one term. -/
-theorem byNorm_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+theorem byNorm_eq (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) (Γ : List Tree) (Φ : List Term) (t u : Term) :
     «Prover.byNorm» (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (leaf fuel) Γ
         (Φ.map encTerm) (encTerm t) (encTerm u) =
@@ -1100,7 +1100,7 @@ local macro "ind_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(
 
 /-- The mirror's proof of an equation by induction on a natural number variable with a step,
 each premise by normalization. -/
-theorem byNatInd_eq (kz ks : ℕ) (s : Term) (rs' : List (Tree × (Tree → Tree → List Tree → Tree)))
+theorem byNatInd_eq (kz ks : ℕ) (s : Term) (rs' : List Tree)
     (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) (Γ : List Tree)
     (Φ : List Term) (t u : Term) :
     «Prover.byNatInd» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf kz)
@@ -1116,12 +1116,12 @@ theorem byNatInd_eq (kz ks : ℕ) (s : Term) (rs' : List (Tree × (Tree → Tree
   simp only [Option.map_eq_bind, Function.comp_def]
 
 /-- The mirror's rules followed by the rewriting by the hypothesis of an index. -/
-theorem withHyp_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+theorem withHyp_eq (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (i : ℕ) :
     List.Forall₂ RRel («Prover.withHyp» rs' (leaf i)) (rs ++ [.hyp i]) := by
-  have h : ∀ rs' : List (Tree × (Tree → Tree → List Tree → Tree)),
+  have h : ∀ rs' : List Tree,
       «Prover.withHyp» rs' (leaf i) =
-        rs' ++ [(RoseTree.node 6 [leaf i], «Prover.noMatch»)] :=
+        rs' ++ [RoseTree.node 6 [leaf i]] :=
     List.rec rfl fun r rs' ih ↦ by
       simp only [«Prover.withHyp», template, foldr_eq, List.foldr_cons] at ih ⊢
       rw [ih]
@@ -1131,7 +1131,7 @@ theorem withHyp_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree)))
 
 /-- The mirror's proof of an equation by induction on a list variable with a step, each premise
 by normalization. -/
-theorem byListInd_eq (kn kc : ℕ) (s : Term) (rs' : List (Tree × (Tree → Tree → List Tree → Tree)))
+theorem byListInd_eq (kn kc : ℕ) (s : Term) (rs' : List Tree)
     (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) (Γ : List Tree)
     (Φ : List Term) (t u : Term) :
     «Prover.byListInd» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf kn)
@@ -1151,7 +1151,7 @@ theorem byListInd_eq (kn kc : ℕ) (s : Term) (rs' : List (Tree × (Tree → Tre
 
 /-- The mirror's proof of an equation by induction on a natural number variable with the
 induction hypothesis. -/
-theorem byNatIndHyp_eq (kz ks : ℕ) (rs' : List (Tree × (Tree → Tree → List Tree → Tree)))
+theorem byNatIndHyp_eq (kz ks : ℕ) (rs' : List Tree)
     (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) (Γ : List Tree)
     (Φ : List Term) (t u : Term) :
     «Prover.byNatIndHyp» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf kz)
@@ -1181,7 +1181,7 @@ theorem byNatIndHyp_eq (kz ks : ℕ) (rs' : List (Tree × (Tree → Tree → Lis
 
 /-- The mirror's proof of an equation by induction on a list variable with the induction
 hypothesis. -/
-theorem byListIndHyp_eq (kn kc : ℕ) (rs' : List (Tree × (Tree → Tree → List Tree → Tree)))
+theorem byListIndHyp_eq (kn kc : ℕ) (rs' : List Tree)
     (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) (Γ : List Tree)
     (Φ : List Term) (t u : Term) :
     «Prover.byListIndHyp» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf kn)
@@ -1385,7 +1385,7 @@ theorem headChild_eq (l : Internal.Label) (ts : List Term) :
 
 /-- The mirror's key of the labels at which a rule related to a rule of the normalizer may
 rewrite. -/
-theorem nrKey_eq (r' : Tree × (Tree → Tree → List Tree → Tree)) (r : NormRule) (h : RRel r' r) :
+theorem nrKey_eq (r' : Tree) (r : NormRule) (h : RRel r' r) :
     «Prover.nrKey» (E.toList.map encEntry) r' = encOpt ((r.rootKey? E).map leaf) := by
   cases r
   case thmAt j θ root m k =>
@@ -1425,7 +1425,7 @@ theorem keyFits_label (x m : Tree) : «Prover.keyFits» x m = «Prover.keyFits»
   rfl
 
 /-- The mirror's rules of a list that may rewrite at a label of a key, in order. -/
-theorem bucketOf_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (x : Tree) :
+theorem bucketOf_eq (rs' : List Tree) (x : Tree) :
     «Prover.bucketOf» (E.toList.map encEntry) rs' x =
       rs'.filter fun r' ↦
         decide ((«Prover.keyFits» x («Prover.nrKey» (E.toList.map encEntry) r')).label ≠ 0) := by
@@ -1435,7 +1435,7 @@ theorem bucketOf_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))
     split <;> simp_all
 
 /-- Each key of a rule of a list is, up to its label, among the mirror's keys of the list. -/
-theorem ruleKeys_mem (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) :
+theorem ruleKeys_mem (rs' : List Tree) :
     ∀ r' ∈ rs', («Prover.nrKey» (E.toList.map encEntry) r').label = 1 →
       ∃ x ∈ «Prover.ruleKeys» (E.toList.map encEntry) rs',
         x.label = («Prelude.get» («Prover.nrKey» (E.toList.map encEntry) r')).label := by
@@ -1467,7 +1467,7 @@ theorem ruleKeys_mem (rs' : List (Tree × (Tree → Tree → List Tree → Tree)
     exact ⟨x, hsub x hx, hl⟩
 
 /-- The mirror's index of rules gives at a key the rules that may rewrite at a label of it. -/
-theorem ruleBucket_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (x : Tree) :
+theorem ruleBucket_eq (rs' : List Tree) (x : Tree) :
     «Prover.ruleBucket» («Prover.indexRules» (E.toList.map encEntry) rs') x =
       «Prover.bucketOf» (E.toList.map encEntry) rs' x := by
   have hb : ∀ y, y.label = x.label → «Prover.bucketOf» (E.toList.map encEntry) rs' y =
@@ -1504,7 +1504,7 @@ theorem ruleBucket_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree
           beq_iff_eq, h y List.mem_cons_self, ↓reduceIte] at ih ⊢
         exact ih fun z hz ↦ h z (List.mem_cons_of_mem _ hz)
     rw [hf K fun y hy hl ↦ hx ⟨y, hy, hl⟩, bucketOf_eq]
-    have hd : ∀ rs'' : List (Tree × (Tree → Tree → List Tree → Tree)),
+    have hd : ∀ rs'' : List Tree,
         List.foldr (fun r acc ↦ if («Prelude.isSome» («Prover.nrKey»
           (E.toList.map encEntry) r)).label ≠ 0 then acc else r :: acc) [] rs'' =
         rs''.filter fun r ↦ decide ¬(«Prelude.isSome» («Prover.nrKey»
@@ -1738,7 +1738,7 @@ theorem phAt_eq (xs : List (Tree × Tree × Tree × ((Tree → Tree) → Tree �
 /-- The mirror's rewriting of an encoded term at its root by a rule related to a rule of the
 normalizer, under the hypotheses weakened past a number of new innermost variables, the equations
 among them prepared. -/
-theorem tryRuleK_eq (r' : Tree × (Tree → Tree → List Tree → Tree)) (r : NormRule)
+theorem tryRuleK_eq (r' : Tree) (r : NormRule)
     (h : RRel r' r) (k : ℕ) (t : Term) :
     «Prover.tryRuleK» (encGlobals G) (E.toList.map encEntry) (leaf n) Γ (leaf k)
         (Φ.map encTerm) («Prover.prepareHyps» (Φ.map encTerm)) r' (encTerm t) =
@@ -1777,14 +1777,15 @@ theorem tryRuleK_eq (r' : Tree × (Tree → Tree → List Tree → Tree)) (r : N
       · simp only [Internal.isRename, Bool.not_eq_true] at ht hr
         mirror_simp [encPH, he, hk, hr, ht, none_eq, beq_iff_eq, Nat.reduceBNe, ofBool_false]
   case thmAt j θ root m k' =>
-    obtain ⟨p, hp, h1, hm⟩ := h
-    simp only [«Prover.tryRuleK», template, h1]
+    obtain ⟨p, hp, rfl, hm⟩ := h
+    simp only [«Prover.tryRuleK», template]
     mirror_simp [List.getD_cons_zero]
-    exact tryRule_eq G E n Γ [] _ (.thmAt j θ root m k') ⟨p, hp, h1, hm⟩ t
+    exact tryRule_eq G E n Γ [] _ (.thmAt j θ root m k') ⟨p, hp, rfl, hm⟩ t
   all_goals
     have h' := h
     simp only [RRel] at h'
-    simp only [«Prover.tryRuleK», template, h', encRule]
+    subst h'
+    simp only [«Prover.tryRuleK», template, encRule]
     mirror_simp [List.getD_cons_zero]
     exact tryRule_eq G E n Γ [] _ _ h t
 
@@ -1801,7 +1802,7 @@ theorem forall₂_filter {α β : Type} {R : α → β → Prop} {p : α → Boo
 
 /-- The mirror's rewriting at the root under weakened hypotheses by the index of rules related
 to the normalizer's is the rewriting by the rules under the hypotheses weakened. -/
-theorem rootRewriteK_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree)))
+theorem rootRewriteK_eq (rs' : List Tree)
     (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs) (k : ℕ) (t : Term) :
     «Prover.rootRewriteK» (encGlobals G) (E.toList.map encEntry) (leaf n)
         («Prover.indexRules» (E.toList.map encEntry) rs') («Prover.prepareHyps» (Φ.map encTerm))
@@ -2497,7 +2498,7 @@ theorem evalK_eq (rw' : List Tree → Tree → List Tree → Tree → Tree) (rw 
 /-- The mirror's reduction to a depth within a depth of fuel, at related rules: the reduction
 under weakened hypotheses by the index of the rules and the prepared hypotheses, which
 {name}`Geb.FreeTopos.Internal.evalK_eq` relates to the reduction. -/
-theorem eval_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+theorem eval_eq (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) :
     ERel («Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
         (leaf fuel))
@@ -2513,7 +2514,7 @@ theorem eval_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (r
   simpa only [«Prover.eval»] using h
 
 /-- The mirror's normal form reached through weak head normal forms, at related rules. -/
-theorem normalizeW_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree)))
+theorem normalizeW_eq (rs' : List Tree)
     (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) :
     NRel («Prover.normalizeW» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
         (leaf fuel))
@@ -2522,7 +2523,7 @@ theorem normalizeW_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree
 
 /-- The mirror's proof of an equation by normalizing both sides, weak head normal forms first,
 to one term. -/
-theorem byNormW_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+theorem byNormW_eq (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) (Γ : List Tree) (Φ : List Term) (t u : Term) :
     «Prover.byNormW» (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (leaf fuel)
         Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
@@ -2609,7 +2610,7 @@ theorem byListIndWith_eq (kn kc : ℕ) (p₀' p₁' : List Tree → List Tree �
 /-- The mirror's proof of an equation in a context of a rose tree alone by the uniqueness of the
 fold, each premise by normalization. -/
 theorem byRoseInd_eq (kn kl kc : ℕ) (s : Term)
-    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
+    (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) (Γ : List Tree) (t u : Term) :
     «Prover.byRoseInd» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf kn)
         (leaf kl) (leaf kc) (encTerm s) rs' (leaf fuel) Γ (encTerm t) (encTerm u) =

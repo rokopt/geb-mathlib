@@ -63,10 +63,11 @@
                   (dNode 23 (nil T)
                     (l2 (dNode 2 (nil T) (l2 (mDeriv (nfMarked a)) (mDeriv (nfMarked b)))) q)))
                 (p g hs (nfTerm a) (nfTerm b)))))))))
-  (defn appendNR ((xs NRs) (ys NRs)) NRs (foldr NR NRs (lam ((x NR) (acc NRs)) (cons x acc)) ys xs))
-  (defn hypRule ((i T)) NR (pair (nrHyp i) noMatch))
+  (defn appendNR ((xs NRs) (ys NRs)) NRs
+    (foldr NormRule NRs (lam ((x NormRule) (acc NRs)) (cons x acc)) ys xs))
+  (defn hypRule ((i T)) NormRule (nrHyp i))
   (defn hypRules ((k T)) NRs
-    (foldr T NRs (lam ((i T) (acc NRs)) (cons (hypRule i) acc)) (nil NR) (range k)))
+    (foldr T NRs (lam ((i T) (acc NRs)) (cons (hypRule i) acc)) (nil NormRule) (range k)))
   (defn normH ((G Globals) (E (List Entry)) (rs NRs)) Pv
     (lam ((g Ts) (hs Ts) (t T) (u T))
       (byNormW G E 0 (appendNR (hypRules (length hs)) rs) 1024 g hs t u)))
@@ -166,31 +167,61 @@
   ; trees, the case analysis of a list variable a hypothesis mentions, and implications
   (deftype KR (Arrow NRs Pv))
   (deftype AR (Arrow Ts (Arrow NRs T)))
+  ; the hypotheses cut in, and the rules that rewrite by them, with what each cut contributes to the
+  ; derivation: its hypothesis and the derivation of it
+  (data Rules (rules & NormRule))
+  (data Frames (frames & TPair))
+  (data WH (wh Terms Rules Frames))
+  (import (Option WH) as OWH)
+  (deftype AW (Arrow Ts (Arrow NRs OWH.Maybe)))
+  (defn bindPW ((m OTPair.Maybe) (f (Arrow TPair OWH.Maybe))) OWH.Maybe
+    (case m ((OTPair.just p) (f p)) ((OTPair.nothing) OWH.nothing)))
+  (defn bindNW ((m ONFR.Maybe) (f (Arrow NFR OWH.Maybe))) OWH.Maybe
+    (case m ((ONFR.just p) (f p)) ((ONFR.nothing) OWH.nothing)))
+  (defn weakHyps ((G Globals) (E (List Entry)) (n T) (rs NRs) (is Ts) (m T) (g Ts) (hs Ts))
+    OWH.Maybe
+    ((foldr T AW
+       (lam ((i T) (acc AW) (h1 Ts) (extra NRs))
+         (bindPW (bindTP (nth h1 i) eqParts)
+           (lam ((ab TPair))
+             (bindNW (eval G E n rs 4096 m g h1 (p1 ab))
+               (lam ((ra NFR))
+                 (bindNW (eval G E n rs 4096 m g h1 (p2 ab))
+                   (lam ((rb NFR))
+                     (let psi T (mEq (nfTerm ra) (nfTerm rb))
+                       (case
+                         (acc (append h1 (single psi))
+                           (appendNR extra (cons (hypRule (length h1)) (nil NormRule))))
+                         ((OWH.just w)
+                          (case w
+                            ((wh h2 x2 fs)
+                             (OWH.just
+                               (wh h2 x2
+                                 (frames
+                                   (cons
+                                     (pr psi
+                                       (dNode 24 (single (mEq (p1 ab) (p2 ab)))
+                                         (l2
+                                           (dNode 2 (nil T)
+                                             (l2 (mDeriv (nfMarked ra)) (mDeriv (nfMarked rb))))
+                                           (dNode 21 (single i) (nil T)))))
+                                     (case fs ((frames xs) xs)))))))))
+                         ((OWH.nothing) OWH.nothing))))))))))
+       (lam ((h1 Ts) (extra NRs)) (OWH.just (wh (terms h1) (rules extra) (frames (nil TPair)))))
+       is) hs (nil NormRule)))
   (defn withWeakHyps ((G Globals) (E (List Entry)) (n T) (rs NRs) (is Ts) (k KR) (m T)) Pv
     (lam ((g Ts) (hs Ts) (t T) (u T))
-      ((foldr T AR
-         (lam ((i T) (acc AR) (h1 Ts) (extra NRs))
-           (bindPT (bindTP (nth h1 i) eqParts)
-             (lam ((ab TPair))
-               (bindNT (eval G E n rs 4096 m g h1 (p1 ab))
-                 (lam ((ra NFR))
-                   (bindNT (eval G E n rs 4096 m g h1 (p2 ab))
-                     (lam ((rb NFR))
-                       (let psi T (mEq (nfTerm ra) (nfTerm rb))
-                         (mapO
-                           (lam ((rest T))
-                             (dNode 22 (single psi)
-                               (l2
-                                 (dNode 24 (single (mEq (p1 ab) (p2 ab)))
-                                   (l2
-                                     (dNode 2 (nil T)
-                                       (l2 (mDeriv (nfMarked ra)) (mDeriv (nfMarked rb))))
-                                     (dNode 21 (single i) (nil T))))
-                                 rest)))
-                           (acc (append h1 (single psi))
-                             (appendNR extra (cons (hypRule (length h1)) (nil NR)))))))))))))
-         (lam ((h1 Ts) (extra NRs)) (k extra g h1 t u))
-         is) hs (nil NR))))
+      (case (weakHyps G E n rs is m g hs)
+        ((OWH.just w)
+         (case w
+           ((wh h2 x2 fs)
+            (mapO
+              (lam ((rest T))
+                (foldr TPair T (lam ((f TPair) (acc T)) (dNode 22 (single (p1 f)) (l2 (p2 f) acc)))
+                  rest
+                  (case fs ((frames xs) xs))))
+              (k (case x2 ((rules ys) ys)) g (termsOf h2) t u)))))
+        ((OWH.nothing) none))))
   (defn byListIndHypWeak ((G Globals) (E (List Entry)) (n T) (rs NRs)) Pv
     (byListIndWith G n 0 1 (byWeak G E n rs)
       (lam ((g Ts) (hs Ts) (t T) (u T))
@@ -258,7 +289,7 @@
                      (lam ((ra NFR))
                        (bindNT (eval G E n rs 4096 1 g h1 B)
                          (lam ((rb NFR))
-                           (bindNT (eval G E n (cons (hypRule h) (nil NR)) 4096 1 g h1 A)
+                           (bindNT (eval G E n (cons (hypRule h) (nil NormRule)) 4096 1 g h1 A)
                              (lam ((rh NFR))
                                (bindPT (eqParts (nfTerm ra))
                                  (lam ((FH TPair))
@@ -388,7 +419,7 @@
                                                               (append hc (single psic))
                                                               (p1 tuc)
                                                               (p2 tuc)))))))))))))))))))))))))))))))
-  (def betaRule (cons (pair (nrRule 3 (terms (nil T))) noMatch) (nil NR)))
+  (def betaRule (cons (nrRule 3 (terms (nil T))) (nil NormRule)))
   (defn byImpI ((G Globals) (E (List Entry)) (o T) (lb T) (p Pv)) Pv
     (lam ((g Ts) (hs Ts) (t T) (u T))
       (bindNT (eval G E 0 betaRule 4096 0 g hs t)
@@ -434,12 +465,12 @@
                                      (dNode 21 (single h) (nil T))))
                                  rest)))
                            (acc (append h1 (single q))
-                             (appendNR extra (cons (hypRule (length h1)) (nil NR)))))))
+                             (appendNR extra (cons (hypRule (length h1)) (nil NormRule)))))))
                      none)
                    none)))))
          (lam ((h1 Ts) (extra NRs)) (k extra g h1 t u))
-         is) hs (nil NR))))
-  (defn hypIndex ((r NR)) T (case (fst r) ((nrHyp i) (some i)) (else none)))
+         is) hs (nil NormRule))))
+  (defn hypIndex ((r NormRule)) T (case r ((nrHyp i) (some i)) (else none)))
   (defn succPredRw ((j T) (l T) (s T)) OTPair.Maybe
     (if (mIs 6 2 s)
       (let sg Ts (l2 (var 1) (var 0))
@@ -556,7 +587,7 @@
                                  (lam ((ex NRs)) (k (appendNR extra ex)))
                                  m))
                              next
-                             found) (nil NR) g hs t u)))))))))))))
+                             found) (nil NormRule) g hs t u)))))))))))))
   (defn instsLast ((m T) (G Globals) (E (List Entry)) (n T) (rs NRs)) KR
     (lam ((extra NRs)) (byMode m G E n (appendNR extra rs))))
   (defn instsRound ((m T) (G Globals) (E (List Entry)) (n T) (rs NRs) (nh T) (next KR)) KR
@@ -570,7 +601,7 @@
   (defn byInsts ((m T) (G Globals) (E (List Entry)) (n T) (rs NRs) (nh T)) Pv
     (instsRound m G E n rs nh
       (instsRound m G E n rs nh (instsRound m G E n rs nh (instsLast m G E n rs)))
-      (nil NR)))
+      (nil NormRule)))
   (defn orO ((a T) (b T)) T (if (isSome a) a b))
   (defn byAuto ((G Globals) (E (List Entry)) (n T) (rs NRs) (d T) (m T)) Pv
     (lam ((g0 Ts) (h0 Ts) (t0 T) (u0 T))
@@ -707,12 +738,12 @@
                                                       dx)))))))))))))))
                         (p (cons (list treeTy) (cons bitsTy g)) (mapT weaken2 hs) A B)))))))
             none)))))
-  (defn splitStuck ((G Globals) (n T) (lk T) (i T) (rec Pv) (g Ts) (hs Ts) (t T) (u T)) T
+  (defn splitStuck ((G Globals) (n T) (lk T) (i T) (p Pv) (q Pv) (g Ts) (hs Ts) (t T) (u T)) T
     (bindO (nth g i)
       (lam ((c T))
-        (if (isSome (listPart c)) (byListSplit G n i rec rec g hs t u)
-          (if (OTPair.isJust (coprodParts c)) (bySplit2 3 4 i rec rec g hs t u)
-            (if (equal c treeTy) (byTreeSplit lk i rec g hs t u) none))))))
+        (if (isSome (listPart c)) (byListSplit G n i p q g hs t u)
+          (if (OTPair.isJust (coprodParts c)) (bySplit2 3 4 i p q g hs t u)
+            (if (equal c treeTy) (byTreeSplit lk i p g hs t u) none))))))
   (defn byAutoT ((G Globals) (E (List Entry)) (n T) (lk T) (rs NRs) (d T) (m T)) Pv
     (lam ((g0 Ts) (h0 Ts) (t0 T) (u0 T))
       (let nh T (length h0)
@@ -745,7 +776,7 @@
                                      (orO (stuckVar skip (nfTerm rt)) (stuckVar skip (nfTerm ru)))
                                      (orO (stuckVar none0 (nfTerm rt))
                                        (stuckVar none0 (nfTerm ru))))
-                                   (lam ((i T)) (splitStuck G n lk i rec g hs t u))))))))))))
+                                   (lam ((i T)) (splitStuck G n lk i rec rec g hs t u))))))))))))
                (lam ((g Ts) (hs Ts) (t T) (u T)) (orO (direct g hs t u) (viaInsts g hs t u)))
                d) g0 h0 t0 u0))))))
   (defn byAutoC ((G Globals) (E (List Entry)) (n T) (lk T) (rs NRs) (d T)) Pv
@@ -758,7 +789,7 @@
                 (lam ((ru NFR))
                   (let none0 RW (lam ((i T)) 0)
                     (bindO (orO (stuckVarC none0 (nfTerm rt)) (stuckVarC none0 (nfTerm ru)))
-                      (lam ((i T)) (splitStuck G n lk i rec g hs t u))))))))))
+                      (lam ((i T)) (splitStuck G n lk i rec rec g hs t u))))))))))
       (byWeak G E n rs)
       d))
   (defn absStep ((xw T) (nd T) (rs UFs)) UF
@@ -879,7 +910,7 @@
                          u))))
                  (p extra g hs t u))))))
        (lam ((extra NRs) (p KR)) (p extra))
-       n) (nil NR)))
+       n) (nil NormRule)))
   (defn byGeneralize ((a T) (c T) (p Pv)) Pv
     (lam ((g Ts) (hs Ts) (t T) (u T))
       (let F T (abstractTerm a c t)

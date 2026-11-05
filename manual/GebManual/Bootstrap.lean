@@ -2339,10 +2339,8 @@ between given numbers, which needs no solver. The steps, in order:
    reported with the definitions it conflicts with, among which the
    rewriting may fall, as `usesStep` with `uses`. The sources holding
    them are constrained by different work:
-   * Ready. The metalogic's own sources: `infers` in `infer.geb`;
-     `withWeakHyps`, `withImpElim`, `byInstsOnce`, `byAutoT` and `byAutoC`
-     in `tactics.geb`; and `typers` and `normalizers` in `combinator.geb`,
-     all under
+   * Ready. The metalogic's own sources: `infers` in `infer.geb` and
+     `typers` and `normalizers` in `combinator.geb`, all under
      `bootstrap/free-topos/`. Each rewriting changes the program that
      `GebMirror.Metalogic` mirrors, so the mirror is emitted again
      (`scripts/bootstrap.sh`), its loading checked, and the agreements under
@@ -2396,6 +2394,15 @@ between given numbers, which needs no solver. The steps, in order:
      and that function's rounds are the step of
      {name}`Geb.FreeTopos.Internal.evalK` (`stStart_eq`), so that the
      depth of recursion it is given means what it means in Lean.
+   * Complete: `withWeakHyps`, `withImpElim`, `byInstsOnce`, `byAutoT` and
+     `byAutoC` in `bootstrap/free-topos/tactics.geb`. A rule of the
+     normalizer is first-order data, the matching of a prepared theorem's
+     pattern computed where the rule is tried, which guards it by the
+     pattern's root. `withWeakHyps` collects what each cut contributes in
+     first-order data (`weakHyps`) and applies its continuation once,
+     outside the fold whose base is boxed; `splitStuck` takes two provers,
+     so that the contraction of a recursion is at the iteration's binder.
+     The search accepts them with a decoration per use.
    * Complete: the normalization `normalize` in
      `bootstrap/free-topos/prove.geb`, in the same form (`normB`,
      `normStepB`, `NSt`): a level runs two rounds (`nsRound`), of a node's
