@@ -6,6 +6,9 @@ Authors: Terence Rokop
 module
 
 public import GebTests.Prototypes.FreeTopos.DatatypeApply
+public import GebTests.Prototypes.FreeTopos.DatatypeCase
+public import GebTests.Prototypes.FreeTopos.DatatypeCaseSound
+public import GebTests.Prototypes.FreeTopos.DatatypeClauses
 public import GebTests.Prototypes.FreeTopos.DatatypeLists
 public import GebTests.Prototypes.FreeTopos.DatatypeData
 public import GebTests.Prototypes.FreeTopos.DatatypeDatum
@@ -130,6 +133,21 @@ def searches : List (String × Search) :=
         "datatype-decode"],
       fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
         Datatypes.decodeCaseCertificates P S T dss.flatten)),
+    ("datatype-case", (["datatype-base", "datatype-atom", "datatype-list", "datatype-stages",
+        "datatype-apply", "datatype-expansion", "datatype-assembly", "datatype-datum",
+        "datatype-decode", "datatype-folds"], fun dss ↦
+      inProgram Datatypes.extended3 fun (P, S, T) ↦ Datatypes.caseCertificates P S T dss.flatten)),
+    ("datatype-clauses", (["datatype-base", "datatype-atom", "datatype-list", "datatype-stages",
+        "datatype-apply", "datatype-expansion", "datatype-assembly", "datatype-datum",
+        "datatype-decode", "datatype-folds", "datatype-case"], fun dss ↦
+      inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.clausesCertificates P S T dss.flatten)),
+    ("datatype-case-sound", (["datatype-base", "datatype-atom", "datatype-list",
+        "datatype-stages", "datatype-apply", "datatype-expansion", "datatype-assembly",
+        "datatype-datum", "datatype-decode", "datatype-folds", "datatype-case",
+        "datatype-clauses"], fun dss ↦
+      inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.caseSoundCertificates P S T dss.flatten)),
     ("datatype-sound", (["datatype-base", "datatype-atom", "datatype-list", "datatype-stages",
         "datatype-apply", "datatype-expansion", "datatype-assembly", "datatype-app",
         "datatype-lam", "datatype-data", "datatype-folds", "datatype-lists"],
