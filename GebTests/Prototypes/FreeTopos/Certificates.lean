@@ -13,6 +13,7 @@ public import GebTests.Prototypes.FreeTopos.DatatypeCataChain
 public import GebTests.Prototypes.FreeTopos.DatatypeCataClauses
 public import GebTests.Prototypes.FreeTopos.DatatypeCataSound
 public import GebTests.Prototypes.FreeTopos.DatatypeCataSrc
+public import GebTests.Prototypes.FreeTopos.DatatypeClosed
 public import GebTests.Prototypes.FreeTopos.DatatypeLists
 public import GebTests.Prototypes.FreeTopos.DatatypeData
 public import GebTests.Prototypes.FreeTopos.DatatypeDatum
@@ -194,7 +195,16 @@ def searches : List (String × Search) :=
         "datatype-apply", "datatype-expansion", "datatype-assembly", "datatype-app",
         "datatype-lam", "datatype-data", "datatype-folds", "datatype-lists"],
       fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
-        Datatypes.soundCertificates P S T dss.flatten))]
+        Datatypes.soundCertificates P S T dss.flatten)),
+    ("datatype-closed", (["datatype-base", "datatype-atom", "datatype-list", "datatype-stages",
+        "datatype-apply", "datatype-expansion", "datatype-assembly", "datatype-datum",
+        "datatype-decode", "datatype-folds", "datatype-case", "datatype-clauses",
+        "datatype-case-sound", "datatype-cata", "datatype-cata-clauses", "datatype-cata-chain",
+        "datatype-cata-sound", "datatype-cata-core", "datatype-cata-src", "datum-case",
+        "decode-case", "datatype-app", "datatype-lam", "datatype-data", "datatype-lists",
+        "datatype-sound"], fun dss ↦
+      inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.closedCertificates P S T dss.flatten))]
 
 end GebTests.Prototypes.FreeTopos.Certificates
 
