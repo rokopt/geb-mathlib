@@ -2688,57 +2688,57 @@ def «Prover.childRen» :=
     x4
 
 def «Prover.holdAll» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : T → T)
-    (x3 : List ((T → T) → T → T))
-    (x4 : List T) =>
-    let x5 : T := Const.foldr
+  fun (x0 : T) (x1 : T) (x2 : List ((T → T) → T → T)) =>
+    let x3 : (T → T) →
+      T →
+        List T →
+          T := Const.foldr
       (α := (T → T) → T → T)
-      (β := T → List T → T)
-      (fun (x5 : (T → T) → T → T)
-         (x6 : T → List T → T)
-         (x7 : T)
-         (x8 : List T) =>
+      (β := (T → T) → T → List T → T)
+      (fun (x3 : (T → T) → T → T)
+         (x4 : (T → T) → T → List T → T)
+         (x5 : T → T)
+         (x6 : T)
+         (x7 : List T) =>
         Const.lcase
           (α := T)
           (β := T)
-          x8
+          x7
           (leaf 0)
-          (fun (x9 : T) (x10 : List T) =>
+          (fun (x8 : T) (x9 : List T) =>
             «Prelude.and»
-              (x5 («Prover.childRen» x0 x1 x2 x7) x9)
-              (x6 (Const.add x7 (leaf 1)) x10)))
-      (fun (_ : T) (x6 : List T) => «Base.isEmpty» x6)
-      x3
-      (leaf 0)
-      x4;
-    x5
+              (x3 («Prover.childRen» x0 x1 x5 x6) x8)
+              (x4 x5 (Const.add x6 (leaf 1)) x9)))
+      (fun (_ : T → T) (_ : T) (x5 : List T) => «Base.isEmpty» x5)
+      x2;
+    x3
 
 def «Prover.isRenameStep» :=
   fun (x0 : T) (x1 : List ((T → T) → T → T)) =>
     let x2 : (T → T) →
       T →
-        T := (fun (x2 : T → T) (x3 : T) =>
-      if (Const.eq (Const.label x0) (leaf 0)).label ≠ 0 then
-        «Prelude.and»
-          (Const.eq (Const.label x3) (leaf 0))
-          («Prelude.and»
-            (Const.eq
-              («Language.mD» x3 (leaf 0))
-              (x2 («Language.mD» x0 (leaf 0))))
-            («Base.isEmpty» («Language.mArgs» x3)))
-      else
-        «Prelude.and»
-          (Const.eq (Const.label x3) (Const.label x0))
-          («Prelude.and»
-            (Const.equal (Const.child x3 (leaf 0)) (Const.child x0 (leaf 0)))
-            («Prover.holdAll»
-              (Const.label x0)
-              («Prelude.length» («Language.mArgs» x0))
-              x2
-              («Prover/RTs.tail» x1)
-              («Language.mArgs» x3))));
+        T := (let x2 : (T → T) →
+                T →
+                  List T →
+                    T := «Prover.holdAll»
+                (Const.label x0)
+                («Prelude.length» («Language.mArgs» x0))
+                («Prover/RTs.tail» x1);
+              fun (x3 : T → T) (x4 : T) =>
+                if (Const.eq (Const.label x0) (leaf 0)).label ≠ 0 then
+                  «Prelude.and»
+                    (Const.eq (Const.label x4) (leaf 0))
+                    («Prelude.and»
+                      (Const.eq
+                        («Language.mD» x4 (leaf 0))
+                        (x3 («Language.mD» x0 (leaf 0))))
+                      («Base.isEmpty» («Language.mArgs» x4)))
+                else
+                  «Prelude.and»
+                    (Const.eq (Const.label x4) (Const.label x0))
+                    («Prelude.and»
+                      (Const.equal (Const.child x4 (leaf 0)) (Const.child x0 (leaf 0)))
+                      (x2 x3 (leaf 0) («Language.mArgs» x4))));
     x2
 
 def «Prover.isRename» :=

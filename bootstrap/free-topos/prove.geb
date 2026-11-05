@@ -561,19 +561,22 @@
         (if (and (eq l 9) (eq m 3))
           (if (eq i 1) (lam ((j T)) (liftR (lam ((x T)) (liftR f x)) j)) f)
           (if (and (eq l 10) (eq m 2)) (if (eq i 0) (lam ((j T)) (liftR f j)) f) f)))))
-  (defn holdAll ((l T) (m T) (f (Arrow T T)) (rs RTs) (us Ts)) T
-    ((foldr RT (Arrow T (Arrow Ts T))
-       (lam ((r RT) (c (Arrow T (Arrow Ts T))) (i T) (vs Ts))
-         (lcase T T vs 0 (lam ((v T) (ws Ts)) (and ((r (childRen l m f i)) v) (c (add i 1) ws)))))
-       (lam ((i T) (vs Ts)) (isEmpty vs))
-       rs) 0 us))
+  ; the children's tests composed into one, of the renaming, the position of the first child and the
+  ; term's children from it
+  (deftype HT (Arrow (Arrow T T) (Arrow T (Arrow Ts T))))
+  (defn holdAll ((l T) (m T) (rs RTs)) HT
+    (foldr RT HT
+      (lam ((r RT) (h HT) (f (Arrow T T)) (i T) (vs Ts))
+        (lcase T T vs 0 (lam ((v T) (ws Ts)) (and ((r (childRen l m f i)) v) (h f (add i 1) ws)))))
+      (lam ((f (Arrow T T)) (i T) (vs Ts)) (isEmpty vs))
+      rs))
   (defn isRenameStep ((nd T) (rs RTs)) RT
-    (lam ((f (Arrow T T)) (t T))
-      (if (eq (label nd) 0)
-        (and (eq (label t) 0) (and (eq (mD t 0) (f (mD nd 0))) (isEmpty (mArgs t))))
-        (and (eq (label t) (label nd))
-          (and (equal (child t 0) (child nd 0))
-            (holdAll (label nd) (length (mArgs nd)) f (RTs.tail rs) (mArgs t)))))))
+    (let h HT (holdAll (label nd) (length (mArgs nd)) (RTs.tail rs))
+      (lam ((f (Arrow T T)) (t T))
+        (if (eq (label nd) 0)
+          (and (eq (label t) 0) (and (eq (mD t 0) (f (mD nd 0))) (isEmpty (mArgs t))))
+          (and (eq (label t) (label nd))
+            (and (equal (child t 0) (child nd 0)) (h f 0 (mArgs t))))))))
   (defn isRename ((p T)) RT (para RT isRenameStep p))
 
   ; the equations among the hypotheses prepared for rewriting: whether each is one, its sides, and
