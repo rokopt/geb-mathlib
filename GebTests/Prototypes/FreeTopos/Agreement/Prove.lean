@@ -802,60 +802,209 @@ def NRel (v : List Tree → List Tree → Tree → Tree)
     rw [ih]
     rcases c with ⟨t, d, _ | _⟩ <;> rfl) cs
 
-/-- The mirror's step of the normalization innermost first, at related rules and normalizations
-of the subterms. -/
+/-! Normalization applied to lists of jobs. -/
+
+/-- The mirror's first results, as many as the jobs, and the results after them. -/
+theorem splitRs_eq (F : Tree → Tree) :
+    ∀ (qs rest : List Tree), «Prover.splitRs» qs (qs.map F ++ rest) = (qs.map F, rest) := by
+  simp only [«Prover.splitRs», foldr_eq]
+  exact List.rec (fun _ ↦ rfl) fun q qs ih rest ↦ by
+    simp only [List.foldr_cons, List.map_cons, List.cons_append, lcase_cons, ih]
+
+/-- An encoded job: a depth's number, a context, a number of variables, the encoded hypotheses and
+an encoded term. -/
+def encJob (d : ℕ) (Γ : List Tree) (k : ℕ) (Φ : List Term) (t : Term) : Tree :=
+  «Prover.job» (leaf d) («Language.objs» Γ) (leaf k) («Derivation.terms» (Φ.map encTerm))
+    (encTerm t)
+
+/-- The parts of an encoded job. -/
+@[simp] theorem jobDp_enc (d : ℕ) (Γ : List Tree) (k : ℕ) (Φ : List Term) (t : Term) :
+    «Prover.jobDp» (encJob d Γ k Φ t) = leaf d := rfl
+
+@[simp, inherit_doc jobDp_enc] theorem jobTerm_enc (d : ℕ) (Γ : List Tree) (k : ℕ) (Φ : List Term)
+    (t : Term) : «Prover.jobTerm» (encJob d Γ k Φ t) = encTerm t := rfl
+
+@[simp, inherit_doc jobDp_enc] theorem jobCtx_enc (d : ℕ) (Γ : List Tree) (k : ℕ) (Φ : List Term)
+    (t : Term) : «Prover.jobCtx» (encJob d Γ k Φ t) = Γ := by
+  mirror_simp [«Prover.jobCtx», encJob, «Prover.job», «Language.objs»]
+
+@[simp, inherit_doc jobDp_enc] theorem jobNum_enc (d : ℕ) (Γ : List Tree) (k : ℕ) (Φ : List Term)
+    (t : Term) : «Prover.jobNum» (encJob d Γ k Φ t) = leaf k := rfl
+
+@[simp, inherit_doc jobDp_enc] theorem jobHyps_enc (d : ℕ) (Γ : List Tree) (k : ℕ)
+    (Φ : List Term) (t : Term) : «Prover.jobHyps» (encJob d Γ k Φ t) = Φ.map encTerm := by
+  mirror_simp [«Prover.jobHyps», encJob, «Prover.job», «Derivation.terms», template]
+
+/-- The job of a depth and a term in the context of an encoded job. -/
+@[simp] theorem jobAt_enc (d d' : ℕ) (Γ : List Tree) (k : ℕ) (Φ : List Term) (t u : Term) :
+    «Prover.jobAt» (encJob d Γ k Φ t) (leaf d') (encTerm u) = encJob d' Γ k Φ u := rfl
+
+/-- The result of a list of one job. -/
+theorem firstR_single (x : Tree) : «Prover.firstR» [x] = x := rfl
+
+/-- The parts of a present optional tree. -/
+@[simp] theorem label_some (x : Tree) : RoseTree.label (encOpt (some x)) = 1 := rfl
+
+@[simp, inherit_doc label_some] theorem child_some (x : Tree) :
+    Const.child (encOpt (some x)) (leaf 0) = x := rfl
+
+@[simp, inherit_doc label_some] theorem label_none : RoseTree.label (encOpt none) = 0 := rfl
+
+/-- The jobs every state of normalization of a list waits for. -/
+def nsNeeds (ss : List Tree) : List Tree :=
+  ss.foldr (fun s acc ↦ «Prover.nsNeed» s ++ acc) []
+
+/-- A state of normalization advanced by the results a function of its jobs gives. -/
+def nsAdvBy (G' : Tree) (E' : List Tree) (n' : Tree)
+    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (F : Tree → Tree) (s : Tree) : Tree :=
+  «Prover.nsAdv» G' E' n' rs' s ((«Prover.nsNeed» s).map F)
+
+/-- A round of the mirror's normalization, at a level below that is the image of a function of its
+jobs, advances each state by that function's results. -/
+theorem nsRound_eq (G' : Tree) (E' : List Tree) (n' : Tree)
+    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (F : Tree → Tree)
+    (rec : List Tree → List Tree) (hrec : ∀ js, rec js = js.map F) (ss : List Tree) :
+    «Prover.nsRound» G' E' n' rs' rec ss = ss.map (nsAdvBy G' E' n' rs' F) := by
+  have h : ∀ (xs : List Tree) (rest : List Tree),
+      List.foldr (fun (s : Tree) (k : List Tree → List Tree) (x : List Tree) ↦
+          «Prover.nsAdv» G' E' n' rs' s («Prover.splitRs» («Prover.nsNeed» s) x).1 ::
+            k («Prover.splitRs» («Prover.nsNeed» s) x).2)
+        (fun _ ↦ []) xs ((nsNeeds xs).map F ++ rest) = xs.map (nsAdvBy G' E' n' rs' F) :=
+    List.rec (fun _ ↦ rfl) fun s xs ih rest ↦ by
+      simp only [nsNeeds, List.foldr_cons, List.map_append, List.append_assoc, List.map_cons,
+        splitRs_eq, nsAdvBy]
+      exact congrArg _ (ih rest)
+  have h2 := h ss []
+  rw [List.append_nil] at h2
+  simp only [«Prover.nsRound», foldr_eq, hrec, append_eq, template]
+  exact h2
+
+/-- The mirror's normalization of a job within a depth of fuel, as the rounds of the state a job
+starts in, each level's jobs normalized by the level below. -/
+def normJ (G' : Tree) (E' : List Tree) (n' : Tree)
+    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (fuel : ℕ) : Tree → Tree :=
+  Nat.rec (fun j ↦ «Prover/ONFR.just» («Prover.nfr» («Prover.jobTerm» j) «Prover.dRefl»))
+    (fun _ F j ↦ «Prover.nsResult»
+      (nsAdvBy G' E' n' rs' F (nsAdvBy G' E' n' rs' F («Prover.nsStart» G' n' j)))) fuel
+
+/-- A level of the mirror's normalization, at a level below that is the image of a function of its
+jobs, is the image of the rounds of the state each job starts in. -/
+theorem normStepB_eq (G' : Tree) (E' : List Tree) (n' : Tree)
+    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (F : Tree → Tree)
+    (rec : List Tree → List Tree) (hrec : ∀ js, rec js = js.map F) (js : List Tree) :
+    «Prover.normStepB» G' E' n' rs' rec js =
+      js.map fun j ↦ «Prover.nsResult»
+        (nsAdvBy G' E' n' rs' F (nsAdvBy G' E' n' rs' F («Prover.nsStart» G' n' j))) := by
+  rcases js with _ | ⟨j, js⟩
+  · rfl
+  · simp only [«Prover.normStepB», lcase_cons, template, nsRound_eq _ _ _ _ F rec hrec, mapT_eq,
+      List.map_map, Function.comp_def]
+
+/-- The mirror's normalization of a list of jobs is the image of the normalization of a job. -/
+theorem normB_eq (G' : Tree) (E' : List Tree) (n' : Tree)
+    (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (fuel : ℕ) :
+    ∀ js, «Prover.normB» G' E' n' rs' (leaf fuel) js = js.map (normJ G' E' n' rs' fuel) := by
+  simp only [«Prover.normB», iter_leaf]
+  exact Nat.rec (fun js ↦ by
+      simp only [Nat.repeat, template, mapT_eq, List.map_map, Function.comp_def]
+      rfl)
+    (fun m ih js ↦ by
+      simp only [Nat.repeat]
+      exact normStepB_eq _ _ _ _ _ _ ih js) fuel
+
+/-- The mirror's level of normalization of a job, at related rules and a function of jobs related
+to the normalization of the subterms. -/
 theorem normStep_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree))) (rs : List NormRule)
-    (hrs : List.Forall₂ RRel rs' rs) (rec' : List Tree → List Tree → Tree → Tree)
-    (rec : List Tree → List Term → Term → Option (Term × Deriv × Bool)) (hrec : NRel rec' rec) :
-    NRel («Prover.normStep» (encGlobals G) (E.toList.map encEntry) (leaf n) rs' rec')
-      (Internal.normStep G E n rs rec) := by
-  intro Γ Φ t
+    (hrs : List.Forall₂ RRel rs' rs) (F : Tree → Tree)
+    (rec : List Tree → List Term → Term → Option (Term × Deriv × Bool))
+    (hF : ∀ Γ Φ t, F (encJob 0 Γ 0 Φ t) = encOpt ((rec Γ Φ t).map encTDB))
+    (Γ : List Tree) (Φ : List Term) (t : Term) :
+    «Prover.nsResult» (nsAdvBy (encGlobals G) (E.toList.map encEntry) (leaf n) rs' F
+        (nsAdvBy (encGlobals G) (E.toList.map encEntry) (leaf n) rs' F
+          («Prover.nsStart» (encGlobals G) (leaf n) (encJob 0 Γ 0 Φ t)))) =
+      encOpt ((Internal.normStep G E n rs rec Γ Φ t).map encTDB) := by
   obtain ⟨l, ts, rfl⟩ : ∃ l ts, t = RoseTree.node l ts :=
     ⟨t.label, t.children, (RoseTree.node_label_children t).symm⟩
-  simp only [«Prover.normStep», template, childCtxs_eq, Internal.normStep, RoseTree.label_node,
-    RoseTree.children_node, bindO_eq, Option.bind_eq_bind]
-  have hr : ∀ Γ Φ t, rec' Γ (Φ.map encTerm) (encTerm t) = encOpt ((rec Γ Φ t).map encTDB) := hrec
+  simp only [«Prover.nsStart», jobTerm_enc, jobCtx_enc, jobHyps_enc, childCtxs_eq,
+    Internal.normStep, RoseTree.label_node, RoseTree.children_node, Option.bind_eq_bind]
   rcases Internal.childCtxs G n l ts Γ Φ with _ | Γs
   · rfl
-  simp only [Option.map_some, Option.elim_some, Option.bind_some, children_eq,
-    RoseTree.children_node, mArgs_eq, zipTs_eq, mapT_eq, List.map_map, Function.comp_def,
-    List.zip_map, encCtx, p1_eq, p2_eq, Prod.map, hr, template, Derivation.scopesOf_node,
-    Derivation.scopeCtx_pair, Derivation.scopeHyps_pair]
-  rw [allSomeT_eq (fun x ↦ (rec x.1.1 x.1.2 x.2).map encTDB) (Γs.zip ts),
-    Infer.mapM_map_option (fun x : (List PartialHorn.Tree × List Term) × Term ↦
-      rec x.1.1 x.1.2 x.2) encTDB]
-  generalize List.mapM (fun x : (List PartialHorn.Tree × List Term) × Term ↦
-    rec x.1.1 x.1.2 x.2) (Γs.zip ts) = oc
-  rcases oc with _ | cs
-  · rfl
-  have hc := dNode_eq .cong (cs.map fun c ↦ c.2.1)
-  simp only [ruleData, List.map_map, Function.comp_def] at hc
-  have hd : (if (ofBool (cs.any fun c ↦ c.2.2)).label ≠ 0 then
+  have hlc : ∀ X : Tree,
+      Const.lcase (Const.children (encOpt (some X))) (leaf 0) (fun x _ ↦ x) = X := fun _ ↦ rfl
+  simp only [Option.map_some, label_eq, label_some, eq_leaf, BEq.rfl, ofBool_true, label_leaf,
+    ne_eq, one_ne_zero, not_false_eq_true, ↓reduceIte, hlc, Derivation.scopesOf_node, mArgs_eq,
+    RoseTree.children_node, zipTs_eq, template, mapT_eq, List.map_map, Function.comp_def,
+    List.zip_map, Prod.map, encCtx, p1_eq, p2_eq, Derivation.scopeCtx_pair,
+    Derivation.scopeHyps_pair, Option.bind_some]
+  change «Prover.nsResult» (nsAdvBy _ _ _ _ F (nsAdvBy _ _ _ _ F
+    («Prover.nsKids» (encJob 0 Γ 0 Φ (RoseTree.node l ts))
+      («Prover.jobs» ((Γs.zip ts).map fun x ↦ encJob 0 x.1.1 0 x.1.2 x.2))))) = _
+  have hL : «Base.allSomeT» (((Γs.zip ts).map fun x ↦ encJob 0 x.1.1 0 x.1.2 x.2).map F) =
+      encOpt (((List.mapM (fun x : (List Tree × List Term) × Term ↦ rec x.1.1 x.1.2 x.2)
+        (Γs.zip ts)).map (List.map encTDB)).map (RoseTree.node 0)) := by
+    simp only [List.map_map, Function.comp_def, hF]
+    rw [allSomeT_eq (fun x ↦ (rec x.1.1 x.1.2 x.2).map encTDB) (Γs.zip ts),
+      Infer.mapM_map_option (fun x : (List PartialHorn.Tree × List Term) × Term ↦
+        rec x.1.1 x.1.2 x.2) encTDB]
+  have hj : ∀ L, «Prover.jobsOf» («Prover.jobs» L) = L := fun L ↦ by
+    mirror_simp [«Prover.jobsOf», «Prover.jobs»]
+  generalize (Γs.zip ts).map (fun x ↦ encJob 0 x.1.1 0 x.1.2 x.2) = L at hL ⊢
+  generalize List.mapM (fun x : (List Tree × List Term) × Term ↦ rec x.1.1 x.1.2 x.2)
+    (Γs.zip ts) = o at hL ⊢
+  rcases o with _ | cs
+  · have h1 : nsAdvBy (encGlobals G) (E.toList.map encEntry) (leaf n) rs' F
+        («Prover.nsKids» (encJob 0 Γ 0 Φ (RoseTree.node l ts)) («Prover.jobs» L)) =
+        «Prover.nsDone» «Prover/ONFR.nothing» := by
+      mirror_simp [nsAdvBy, «Prover.nsAdv», «Prover.nsKids», «Prover.nsNeed», template, hj, hL]
+    rw [h1]
+    rfl
+  have hrw := rootRewrite_eq G E n Γ Φ rs' rs hrs (RoseTree.node l (cs.map Prod.fst))
+  have hd : (if (RoseTree.label («Prover.marked» (cs.map encTDB)) != 0) = true then
       «Language.pr» («Prover.dNode» (leaf 2) []
-        (cs.map fun c ↦ encDeriv c.2.1)) (leaf 1) else «Prover.dRefl») =
+        (cs.map fun x ↦ «Language.p1» («Language.p2» (encTDB x)))) (leaf 1)
+      else «Prover.dRefl») =
       encDB (if cs.any (·.2.2) then (RoseTree.node .cong (cs.map (·.2.1)), true)
         else Internal.dRefl) := by
+    have hc := dNode_eq .cong (cs.map fun c ↦ c.2.1)
+    simp only [ruleData, List.map_map, Function.comp_def] at hc
+    simp only [marked_eq, p2_encTDB, p1_encDB]
     cases cs.any fun c ↦ c.2.2
     · rfl
-    · simp only [ofBool_true, label_leaf, ne_eq, one_ne_zero, not_false_eq_true, ↓reduceIte, hc]
+    · simp only [ofBool_true, label_leaf, bne_iff_ne, ne_eq, one_ne_zero, not_false_eq_true,
+        ↓reduceIte, hc]
       rfl
-  simp only [Option.map_some, bindO_eq, Option.elim_some, RoseTree.children_node, rebuild_eq,
-    marked_eq, rootRewrite_eq G E n Γ Φ rs' rs hrs, isSome_eq, Option.bind_some, List.map_map,
-    Function.comp_def, p2_encTDB, p1_encDB, hd]
-  generalize (if (cs.any fun x ↦ x.2.2) = true then
-    (RoseTree.node Internal.Rule.cong (List.map (fun x ↦ x.2.1) cs), true) else Internal.dRefl) = d₁
-  rcases Internal.rootRewrite G E n rs Γ Φ (RoseTree.node l (List.map Prod.fst cs)) with
+  simp only [Option.bind_some]
+  rcases hrr : Internal.rootRewrite G E n rs Γ Φ (RoseTree.node l (cs.map Prod.fst)) with
     _ | ⟨t₂, dr⟩
-  · rfl
-  · simp only [Option.map_some, Option.isSome_some, ofBool_true, label_leaf, ne_eq,
-      one_ne_zero, not_false_eq_true, ↓reduceIte, tmpl_fromMaybe_eq, Option.map_bind,
-      Option.pure_def,
-      Option.getD_some, p1_encTD, p2_encTD, hr, mapO_eq, Option.map_map]
+  all_goals
+    rw [hrr] at hrw
+    simp only [Option.map_none, Option.map_some] at hrw
+  · have h1 : nsAdvBy (encGlobals G) (E.toList.map encEntry) (leaf n) rs' F
+        («Prover.nsKids» (encJob 0 Γ 0 Φ (RoseTree.node l ts)) («Prover.jobs» L)) =
+        «Prover.nsDone» (encOpt (some (encTDB (RoseTree.node l (cs.map Prod.fst),
+          if cs.any (·.2.2) then (RoseTree.node .cong (cs.map (·.2.1)), true)
+          else Internal.dRefl)))) := by
+      mirror_simp [nsAdvBy, «Prover.nsAdv», «Prover.nsKids», «Prover.nsNeed», template, hj, hL,
+        jobCtx_enc, jobHyps_enc, jobTerm_enc, rebuild_eq, hrw, isSome_eq, hd]
+      rfl
+    rw [h1]
+    rfl
+  · have h1 : nsAdvBy (encGlobals G) (E.toList.map encEntry) (leaf n) rs' F
+        («Prover.nsKids» (encJob 0 Γ 0 Φ (RoseTree.node l ts)) («Prover.jobs» L)) =
+        «Prover.nsTail» (encDB (if cs.any (·.2.2) then
+            (RoseTree.node .cong (cs.map (·.2.1)), true) else Internal.dRefl))
+          (encDB (dr, true)) (encJob 0 Γ 0 Φ t₂) := by
+      mirror_simp [nsAdvBy, «Prover.nsAdv», «Prover.nsKids», «Prover.nsNeed», template, hj, hL,
+        jobCtx_enc, jobHyps_enc, jobTerm_enc, rebuild_eq, hrw, isSome_eq, hd, tmpl_fromMaybe_eq,
+        p1_encTD, p2_encTD, jobAt_enc]
+      rfl
+    rw [h1]
+    mirror_simp [nsAdvBy, «Prover.nsAdv», «Prover.nsNeed», «Prover.nsTail», «Prover/JobL.single»,
+      hF, firstR_single]
     rcases rec Γ Φ t₂ with _ | ⟨t₃, d₃⟩
     · rfl
-    · have h2 : «Language.pr» (encDeriv dr) (leaf 1) = encDB (dr, true) := rfl
-      simp only [Option.map_some, Option.bind_some, Function.comp_apply, p1_encTDB, p2_encTDB,
-        h2, dTrans_eq]
+    · simp only [Option.map_some, Option.bind_some, label_some, child_some, beq_self_eq_true,
+        ↓reduceIte, p1_encTDB, p2_encTDB, dTrans_eq]
       rfl
 
 /-- The mirror's normalization innermost first within a depth of fuel, at related rules. -/
@@ -864,9 +1013,13 @@ theorem normalize_eq (rs' : List (Tree × (Tree → Tree → List Tree → Tree)
     NRel («Prover.normalize» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
         (leaf fuel))
       (Internal.normalize G E n rs fuel) := by
-  simp only [«Prover.normalize», template, iter_leaf, Internal.normalize]
-  exact Nat.rec (fun _ _ _ ↦ rfl)
-    (fun k ih ↦ by rw [Nat.repeat]; exact normStep_eq G E n rs' rs hrs _ _ ih) fuel
+  intro Γ Φ t
+  have h : ∀ (fuel : ℕ) (Γ : List Tree) (Φ : List Term) (t : Term),
+      normJ (encGlobals G) (E.toList.map encEntry) (leaf n) rs' fuel (encJob 0 Γ 0 Φ t) =
+        encOpt ((Internal.normalize G E n rs fuel Γ Φ t).map encTDB) :=
+    Nat.rec (fun _ _ _ ↦ rfl) fun k ih Γ Φ t ↦ normStep_eq G E n rs' rs hrs _ _ ih Γ Φ t
+  simp only [«Prover.normalize», template, normB_eq]
+  exact h fuel Γ Φ t
 
 /-- The mirror's proof of an equation by reducing both sides, by related reductions, to one
 term. -/
@@ -1761,13 +1914,6 @@ theorem ite_lt_leaf (a b : ℕ) :
 
 /-! The reduction applied to lists of jobs. -/
 
-/-- The mirror's first results, as many as the jobs, and the results after them. -/
-theorem splitRs_eq (F : Tree → Tree) :
-    ∀ (qs rest : List Tree), «Prover.splitRs» qs (qs.map F ++ rest) = (qs.map F, rest) := by
-  simp only [«Prover.splitRs», foldr_eq]
-  exact List.rec (fun _ ↦ rfl) fun q qs ih rest ↦ by
-    simp only [List.foldr_cons, List.map_cons, List.cons_append, lcase_cons, ih]
-
 /-- The jobs every state of a list waits for. -/
 def needs (ss : List Tree) : List Tree :=
   ss.foldr (fun s acc ↦ «Prover.stNeed» s ++ acc) []
@@ -1863,34 +2009,6 @@ theorem reach_mono {m : ℕ} {s R : Tree} (h : Reach G' n' rw' F m s R) :
 
 end Reach
 
-/-- An encoded job: a depth's number, a context, a number of variables, the encoded hypotheses and
-an encoded term. -/
-def encJob (d : ℕ) (Γ : List Tree) (k : ℕ) (Φ : List Term) (t : Term) : Tree :=
-  «Prover.job» (leaf d) («Language.objs» Γ) (leaf k) («Derivation.terms» (Φ.map encTerm))
-    (encTerm t)
-
-/-- The parts of an encoded job. -/
-@[simp] theorem jobDp_enc (d : ℕ) (Γ : List Tree) (k : ℕ) (Φ : List Term) (t : Term) :
-    «Prover.jobDp» (encJob d Γ k Φ t) = leaf d := rfl
-
-@[simp, inherit_doc jobDp_enc] theorem jobTerm_enc (d : ℕ) (Γ : List Tree) (k : ℕ) (Φ : List Term)
-    (t : Term) : «Prover.jobTerm» (encJob d Γ k Φ t) = encTerm t := rfl
-
-@[simp, inherit_doc jobDp_enc] theorem jobCtx_enc (d : ℕ) (Γ : List Tree) (k : ℕ) (Φ : List Term)
-    (t : Term) : «Prover.jobCtx» (encJob d Γ k Φ t) = Γ := by
-  mirror_simp [«Prover.jobCtx», encJob, «Prover.job», «Language.objs»]
-
-@[simp, inherit_doc jobDp_enc] theorem jobNum_enc (d : ℕ) (Γ : List Tree) (k : ℕ) (Φ : List Term)
-    (t : Term) : «Prover.jobNum» (encJob d Γ k Φ t) = leaf k := rfl
-
-@[simp, inherit_doc jobDp_enc] theorem jobHyps_enc (d : ℕ) (Γ : List Tree) (k : ℕ)
-    (Φ : List Term) (t : Term) : «Prover.jobHyps» (encJob d Γ k Φ t) = Φ.map encTerm := by
-  mirror_simp [«Prover.jobHyps», encJob, «Prover.job», «Derivation.terms», template]
-
-/-- The job of a depth and a term in the context of an encoded job. -/
-@[simp] theorem jobAt_enc (d d' : ℕ) (Γ : List Tree) (k : ℕ) (Φ : List Term) (t u : Term) :
-    «Prover.jobAt» (encJob d Γ k Φ t) (leaf d') (encTerm u) = encJob d' Γ k Φ u := rfl
-
 /-- The rewriting at the root in the context of an encoded job. -/
 @[simp] theorem jobRw_enc (rw' : List Tree → Tree → List Tree → Tree → Tree) (d : ℕ)
     (Γ : List Tree) (k : ℕ) (Φ : List Term) (t u : Term) :
@@ -1913,17 +2031,6 @@ variable {G n Γ Φ} {k : ℕ}
 
 /-- The optional result of a reduction, encoded. -/
 abbrev encR (o : Option (Term × Deriv × Bool)) : Tree := encOpt (o.map encTDB)
-
-/-- The parts of a present optional tree. -/
-@[simp] theorem label_some (x : Tree) : RoseTree.label (encOpt (some x)) = 1 := rfl
-
-@[simp, inherit_doc label_some] theorem child_some (x : Tree) :
-    Const.child (encOpt (some x)) (leaf 0) = x := rfl
-
-@[simp, inherit_doc label_some] theorem label_none : RoseTree.label (encOpt none) = 0 := rfl
-
-/-- The result of a list of one job. -/
-theorem firstR_single (x : Tree) : «Prover.firstR» [x] = x := rfl
 
 /-- The reduction of a rewritten term in a state, composed with its derivations and continued. -/
 theorem stTail_eq (hF : JRel Φ F rec) (da : Internal.Depth) (Γ : List Tree) (k : ℕ) (t₂ : Term)
