@@ -2340,9 +2340,9 @@ between given numbers, which needs no solver. The steps, in order:
    rewriting may fall, as `usesStep` with `uses`. The sources holding
    them are constrained by different work:
    * Ready. The metalogic's own sources: `infers` in `infer.geb`;
-     `normalize` in `prove.geb`; `withWeakHyps`, `withImpElim`,
-     `byInstsOnce`, `byAutoT` and `byAutoC` in `tactics.geb`; and `typers`
-     and `normalizers` in `combinator.geb`, all under
+     `withWeakHyps`, `withImpElim`, `byInstsOnce`, `byAutoT` and `byAutoC`
+     in `tactics.geb`; and `typers` and `normalizers` in `combinator.geb`,
+     all under
      `bootstrap/free-topos/`. Each rewriting changes the program that
      `GebMirror.Metalogic` mirrors, so the mirror is emitted again
      (`scripts/bootstrap.sh`), its loading checked, and the agreements under
@@ -2396,6 +2396,12 @@ between given numbers, which needs no solver. The steps, in order:
      and that function's rounds are the step of
      {name}`Geb.FreeTopos.Internal.evalK` (`stStart_eq`), so that the
      depth of recursion it is given means what it means in Lean.
+   * Complete: the normalization `normalize` in
+     `bootstrap/free-topos/prove.geb`, in the same form (`normB`,
+     `normStepB`, `NSt`): a level runs two rounds (`nsRound`), of a node's
+     children and of the term its root rewrites to. The search accepts it
+     with a decoration per use, and the agreement proceeds as the
+     reduction's does (`normB_eq`, `normStep_eq`).
    * Waiting on the datatype language's completion
      ({ref "datatype-completion"}[The datatype language's completion]),
      whose soundness of the typing is proved of the stage-1 compiler and

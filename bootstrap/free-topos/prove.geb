@@ -290,38 +290,105 @@
              (lam ((y T) (rest Ts)) (cons (scopeTerm x y) (k rest))))))
        (lam ((zs Ts)) (nil ScopeTerm))
        xs) ys))
-  (import (Map ScopeTerm ONFR.Maybe) as NormEach)
-  (defn normStep ((G Globals) (E (List Entry)) (n T) (rs NRs) (rec NF)) NF
-    (lam ((g Ts) (hs Ts) (t T))
-      (bindSN (childCtxs G n t g hs)
-        (lam ((cxn Scopes))
-          (let cx (List Scope) (scopesOf cxn)
-            (bindLN
-              (allSomeN
-                (NormEach.map
-                  (lam ((cu ScopeTerm))
-                    (let c Scope (scopeOf cu) (rec (scopeCtx c) (scopeHyps c) (termOf cu))))
-                  (zipTs cx (mArgs t))))
-              (lam ((csn NFRList))
-                (let cs (List NFR) (nfrsOf csn)
-                  (let t1 T (rebuild t cs)
-                    (let d1 Marked
-                      (if (marked cs)
-                        (mark
-                          (dNode 2 (nil T) (NFRTerm.map (lam ((c NFR)) (mDeriv (nfMarked c))) cs))
-                          1)
-                        dRefl)
-                      (let rr OTPair.Maybe (rootRewrite G E n rs g hs t1)
-                        (if (OTPair.isJust rr)
-                          (let r TPair (OTPair.fromMaybe pr0 rr)
-                            (mapNN
-                              (lam ((r3 NFR))
-                                (nfr (nfTerm r3)
-                                  (dTrans d1 (dTrans (mark (p2 r) 1) (nfMarked r3)))))
-                              (rec g hs (p1 r))))
-                          (ONFR.just (nfr t1 d1))))))))))))))
+  ; the normalization of a list of jobs at once, a level of the recursion applying the level below
+  ; it to lists of jobs and never within a fold. A job is a depth, a context, a number of variables,
+  ; hypotheses and a term; normalization reads its context, hypotheses and term
+  (data Job (job T Objs T Terms T))
+  (data Jobs (jobs & Job))
+  (defn jobsOf ((qs Jobs)) (List Job) (case qs ((jobs xs) xs)))
+  (import (Seq Job) as JobL)
+  (import (Map T Job) as JobAt)
+  (defn jobDp ((j Job)) T (case j ((job dp g k hs t) dp)))
+  (defn jobCtx ((j Job)) Ts (case j ((job dp g k hs t) (case g ((objs xs) xs)))))
+  (defn jobNum ((j Job)) T (case j ((job dp g k hs t) k)))
+  (defn jobHyps ((j Job)) Ts (case j ((job dp g k hs t) (termsOf hs))))
+  (defn jobTerm ((j Job)) T (case j ((job dp g k hs t) t)))
+  ; the job of a depth and a term in the context of a job
+  (defn jobAt ((j Job) (dp T) (u T)) Job (case j ((job d g k hs t) (job dp g k hs u))))
+  ; the first result of a list of results
+  (defn firstR ((rs (List ONFR.Maybe))) ONFR.Maybe
+    (lcase ONFR.Maybe ONFR.Maybe rs ONFR.nothing (lam ((r ONFR.Maybe) (rest (List ONFR.Maybe))) r)))
+  ; the first results, as many as the jobs, and the results after them
+  (deftype Rs (List ONFR.Maybe))
+  (defn splitRs ((qs (List Job)) (rs Rs)) (Prod Rs Rs)
+    ((foldr Job (Arrow Rs (Prod Rs Rs))
+       (lam ((q Job) (k (Arrow Rs (Prod Rs Rs))) (xs Rs))
+         (lcase ONFR.Maybe (Prod Rs Rs) xs (pair (nil ONFR.Maybe) (nil ONFR.Maybe))
+           (lam ((x ONFR.Maybe) (ys Rs))
+             (let p (Prod Rs Rs) (k ys) (pair (cons x (fst p)) (snd p))))))
+       (lam ((xs Rs)) (pair (nil ONFR.Maybe) xs))
+       qs) rs))
+  (deftype EVB (Arrow (List Job) Rs))
+  (import (Map ScopeTerm Job) as NormJob)
+  ; the state of a job of normalization, the jobs it waits for computed by the level below: finished;
+  ; its children; and the normalization of the term its root rewrites to, whose result is composed
+  ; with derivations
+  (data NSt (nsDone ONFR.Maybe) (nsKids Job Jobs) (nsTail Marked Marked Job))
+  (import (Map Job NSt) as NsAt)
+  (import (Map NSt ONFR.Maybe) as NsOut)
+  (defn nsResult ((s NSt)) ONFR.Maybe (case s ((nsDone m) m) (else ONFR.nothing)))
+  (defn nsNeed ((s NSt)) (List Job)
+    (case s ((nsDone m) (nil Job)) ((nsKids j qs) (jobsOf qs)) ((nsTail d1 d2 q) (JobL.single q))))
+  (defn nsStart ((G Globals) (n T) (j Job)) NSt
+    (let t T (jobTerm j)
+      (case (childCtxs G n t (jobCtx j) (jobHyps j))
+        ((OScopes.just cxn)
+         (nsKids j
+           (jobs
+             (NormJob.map
+               (lam ((cu ScopeTerm))
+                 (let c Scope (scopeOf cu)
+                   (job 0 (objs (scopeCtx c)) 0 (terms (scopeHyps c)) (termOf cu))))
+               (zipTs (scopesOf cxn) (mArgs t))))))
+        ((OScopes.nothing) (nsDone ONFR.nothing)))))
+  (defn nsAdv ((G Globals) (E (List Entry)) (n T) (rs NRs) (s NSt) (xs Rs)) NSt
+    (case s ((nsDone m) (nsDone m))
+      ((nsKids j qs)
+       (case (allSomeN xs)
+         ((ONFRList.just csn)
+          (let cs (List NFR) (nfrsOf csn)
+            (let t1 T (rebuild (jobTerm j) cs)
+              (let d1 Marked
+                (if (marked cs)
+                  (mark (dNode 2 (nil T) (NFRTerm.map (lam ((c NFR)) (mDeriv (nfMarked c))) cs)) 1)
+                  dRefl)
+                (let rr OTPair.Maybe (rootRewrite G E n rs (jobCtx j) (jobHyps j) t1)
+                  (if (OTPair.isJust rr)
+                    (let r TPair (OTPair.fromMaybe pr0 rr)
+                      (nsTail d1 (mark (p2 r) 1) (jobAt j 0 (p1 r))))
+                    (nsDone (ONFR.just (nfr t1 d1)))))))))
+         ((ONFRList.nothing) (nsDone ONFR.nothing))))
+      ((nsTail d1 d2 q)
+       (case (firstR xs)
+         ((ONFR.just r3)
+          (nsDone (ONFR.just (nfr (nfTerm r3) (dTrans d1 (dTrans d2 (nfMarked r3)))))))
+         ((ONFR.nothing) (nsDone ONFR.nothing))))))
+  (defn nsRound ((G Globals) (E (List Entry)) (n T) (rs NRs) (rec EVB) (ss (List NSt))) (List NSt)
+    ((foldr NSt (Arrow Rs (List NSt))
+       (lam ((s NSt) (k (Arrow Rs (List NSt))) (xs Rs))
+         (let p (Prod Rs Rs) (splitRs (nsNeed s) xs) (cons (nsAdv G E n rs s (fst p)) (k (snd p)))))
+       (lam ((xs Rs)) (nil NSt))
+       ss)
+     (rec
+       (foldr NSt (List Job) (lam ((s NSt) (acc (List Job))) (JobL.append (nsNeed s) acc)) (nil Job)
+         ss))))
+  ; a level of the recursion: the children and then the term the root rewrites to
+  (defn normStepB ((G Globals) (E (List Entry)) (n T) (rs NRs) (rec EVB)) EVB
+    (lam ((js (List Job)))
+      (lcase Job Rs js (nil ONFR.Maybe)
+        (lam ((j0 Job) (rest (List Job)))
+          (NsOut.map nsResult
+            (nsRound G E n rs rec
+              (nsRound G E n rs rec (NsAt.map (lam ((j Job)) (nsStart G n j)) js))))))))
+  (defn normB ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T)) EVB
+    (iter EVB (normStepB G E n rs)
+      (lam ((js (List Job)))
+        (NsOut.map nsResult
+          (NsAt.map (lam ((j Job)) (nsDone (ONFR.just (nfr (jobTerm j) dRefl)))) js)))
+      fuel))
   (defn normalize ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T)) NF
-    (iter NF (normStep G E n rs) (lam ((g Ts) (hs Ts) (t T)) (ONFR.just (nfr t dRefl))) fuel))
+    (lam ((g Ts) (hs Ts) (t T))
+      (firstR (normB G E n rs fuel (JobL.single (job 0 (objs g) 0 (terms hs) t))))))
 
   ; the proof of an equation by normalizing both sides to one term
   (defn joinBy ((nf NF) (g Ts) (hs Ts) (t T) (u T)) T
@@ -615,21 +682,8 @@
 
   ; the reduction to a depth under weakened hypotheses, by a rewriting at the root rw, of a list of
   ; jobs at once, a level of the recursion applying the level below it to lists of jobs and never
-  ; within a fold. A job is a depth, a context, a number of variables, hypotheses and a term; the
-  ; depth 4 leaves its term unreduced
+  ; within a fold; the depth 4 leaves a job's term unreduced
   (deftype EVK (Arrow T (Arrow Ts (Arrow T (Arrow Ts (Arrow T ONFR.Maybe))))))
-  (data Job (job T Objs T Terms T))
-  (data Jobs (jobs & Job))
-  (defn jobsOf ((qs Jobs)) (List Job) (case qs ((jobs xs) xs)))
-  (import (Seq Job) as JobL)
-  (import (Map T Job) as JobAt)
-  (defn jobDp ((j Job)) T (case j ((job dp g k hs t) dp)))
-  (defn jobCtx ((j Job)) Ts (case j ((job dp g k hs t) (case g ((objs xs) xs)))))
-  (defn jobNum ((j Job)) T (case j ((job dp g k hs t) k)))
-  (defn jobHyps ((j Job)) Ts (case j ((job dp g k hs t) (termsOf hs))))
-  (defn jobTerm ((j Job)) T (case j ((job dp g k hs t) t)))
-  ; the job of a depth and a term in the context of a job
-  (defn jobAt ((j Job) (dp T) (u T)) Job (case j ((job d g k hs t) (job dp g k hs u))))
   (defn jobRw ((rw RWK) (j Job) (t T)) OTPair.Maybe (rw (jobCtx j) (jobNum j) (jobHyps j) t))
   ; the state of a job, the jobs it waits for computed by the level below: finished; the reduction
   ; of a rewritten term, whose result is composed with derivations and continued at a depth; the
@@ -696,8 +750,6 @@
                     (let ct T (nth (mArgs t) (get hc))
                       (if (isSome ct) (stChild j (get hc) (get ct)) (stDone ONFR.nothing)))
                     (stAfter G n dp j (nfr t dRefl)))))))))))
-  (defn firstR ((rs (List ONFR.Maybe))) ONFR.Maybe
-    (lcase ONFR.Maybe ONFR.Maybe rs ONFR.nothing (lam ((r ONFR.Maybe) (rest (List ONFR.Maybe))) r)))
   ; a state advanced by the results of the jobs it waits for
   (defn stAdv ((G Globals) (n T) (rw RWK) (s St) (rs (List ONFR.Maybe))) St
     (case s ((stDone m) (stDone m))
@@ -749,19 +801,8 @@
                   (if (marked cs) (stRoot G n rw (jobDp j) 0 j t1 d1)
                     (stDone (ONFR.just (nfr t1 d1)))))))))
          ((ONFRList.nothing) (stDone ONFR.nothing))))))
-  ; the first results, as many as the jobs, and the results after them
-  (deftype Rs (List ONFR.Maybe))
-  (defn splitRs ((qs (List Job)) (rs Rs)) (Prod Rs Rs)
-    ((foldr Job (Arrow Rs (Prod Rs Rs))
-       (lam ((q Job) (k (Arrow Rs (Prod Rs Rs))) (xs Rs))
-         (lcase ONFR.Maybe (Prod Rs Rs) xs (pair (nil ONFR.Maybe) (nil ONFR.Maybe))
-           (lam ((x ONFR.Maybe) (ys Rs))
-             (let p (Prod Rs Rs) (k ys) (pair (cons x (fst p)) (snd p))))))
-       (lam ((xs Rs)) (pair (nil ONFR.Maybe) xs))
-       qs) rs))
   ; a round: the level below applied once, to the jobs every state waits for, and each state
   ; advanced by its results
-  (deftype EVB (Arrow (List Job) Rs))
   (defn stRound ((G Globals) (n T) (rw RWK) (rec EVB) (ss (List St))) (List St)
     ((foldr St (Arrow Rs (List St))
        (lam ((s St) (k (Arrow Rs (List St))) (xs Rs))

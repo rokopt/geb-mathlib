@@ -186,45 +186,45 @@ theorem prover_agree : ∃ G' : List Glob, load metalogic = some G' ∧
         (∀ r ∈ rs, ∀ j θ root m k, r ≠ .thmAt j θ root m k) →
           List.Forall₂ RRel (f (E.toList.map encEntry) (rs.map encRule))
             (Internal.prepareRules E rs)) ∧
-    (∃ f : Ty.den normTy, G'[1226]? = some ⟨normTy, f⟩ ∧
+    (∃ f : Ty.den normTy, G'[1256]? = some ⟨normTy, f⟩ ∧
       ∀ G E n rs' rs, List.Forall₂ RRel rs' rs → ∀ fuel,
         PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (leaf fuel))
           (Internal.byNorm G E n rs fuel)) ∧
-    (∃ f : Ty.den normTy, G'[1301]? = some ⟨normTy, f⟩ ∧
+    (∃ f : Ty.den normTy, G'[1312]? = some ⟨normTy, f⟩ ∧
       ∀ G E n rs' rs, List.Forall₂ RRel rs' rs → ∀ fuel,
         PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (leaf fuel))
           (Internal.byNormW G E n rs fuel)) ∧
-    (∃ f : Ty.den indTy, G'[1228]? = some ⟨indTy, f⟩ ∧
+    (∃ f : Ty.den indTy, G'[1258]? = some ⟨indTy, f⟩ ∧
       ∀ G E n kz ks s rs' rs, List.Forall₂ RRel rs' rs → ∀ fuel,
         PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf kz) (leaf ks) (encTerm s) rs'
           (leaf fuel)) (Internal.byNatInd G E n kz ks s rs fuel)) ∧
-    (∃ f : Ty.den indTy, G'[1229]? = some ⟨indTy, f⟩ ∧
+    (∃ f : Ty.den indTy, G'[1259]? = some ⟨indTy, f⟩ ∧
       ∀ G E n kn kc s rs' rs, List.Forall₂ RRel rs' rs → ∀ fuel,
         PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf kn) (leaf kc) (encTerm s) rs'
           (leaf fuel)) (Internal.byListInd G E n kn kc s rs fuel)) ∧
-    (∃ f : Ty.den indHypTy, G'[1231]? = some ⟨indHypTy, f⟩ ∧
+    (∃ f : Ty.den indHypTy, G'[1261]? = some ⟨indHypTy, f⟩ ∧
       ∀ G E n kz ks rs' rs, List.Forall₂ RRel rs' rs → ∀ fuel,
         PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf kz) (leaf ks) rs' (leaf fuel))
           (Internal.byNatIndHyp G E n kz ks rs fuel)) ∧
-    (∃ f : Ty.den indHypTy, G'[1232]? = some ⟨indHypTy, f⟩ ∧
+    (∃ f : Ty.den indHypTy, G'[1262]? = some ⟨indHypTy, f⟩ ∧
       ∀ G E n kn kc rs' rs, List.Forall₂ RRel rs' rs → ∀ fuel,
         PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf kn) (leaf kc) rs' (leaf fuel))
           (Internal.byListIndHyp G E n kn kc rs fuel)) ∧
-    (∃ f : Ty.den roseIndTy, G'[1306]? = some ⟨roseIndTy, f⟩ ∧
+    (∃ f : Ty.den roseIndTy, G'[1317]? = some ⟨roseIndTy, f⟩ ∧
       ∀ G E n kn kl kc s rs' rs, List.Forall₂ RRel rs' rs → ∀ fuel Γ t u,
         f (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf kn) (leaf kl) (leaf kc) (encTerm s)
             rs' (leaf fuel) Γ (encTerm t) (encTerm u) =
           encOpt ((Internal.byRoseInd G E n kn kl kc s rs fuel Γ t u).map encDeriv)) ∧
-    (∃ f : Ty.den funExtTy, G'[1303]? = some ⟨funExtTy, f⟩ ∧
+    (∃ f : Ty.den funExtTy, G'[1314]? = some ⟨funExtTy, f⟩ ∧
       ∀ G n p' p, PRel p' p → PRel (f (encGlobals G) (leaf n) p') (Internal.byFunExt G n p)) ∧
-    (∃ f : Ty.den proverFnTy, G'[1304]? = some ⟨proverFnTy, f⟩ ∧
+    (∃ f : Ty.den proverFnTy, G'[1315]? = some ⟨proverFnTy, f⟩ ∧
       ∀ kl kr i p' p, PRel p' p →
         PRel (f (leaf kl) (leaf kr) (leaf i) p') (Internal.bySplit kl kr i p)) ∧
-    (∃ f : Ty.den listIndWithTy, G'[1305]? = some ⟨listIndWithTy, f⟩ ∧
+    (∃ f : Ty.den listIndWithTy, G'[1316]? = some ⟨listIndWithTy, f⟩ ∧
       ∀ G n kn kc p₀' p₀ p₁' p₁, PRel p₀' p₀ → PRel p₁' p₁ →
         PRel (f (encGlobals G) (leaf n) (leaf kn) (leaf kc) p₀' p₁')
           (Internal.byListIndWith G n kn kc p₀ p₁)) ∧
-    (∃ f : Ty.den proverFnTy, G'[1307]? = some ⟨proverFnTy, f⟩ ∧
+    (∃ f : Ty.den proverFnTy, G'[1318]? = some ⟨proverFnTy, f⟩ ∧
       ∀ kn kl kc p' p, PRel p' p →
         PRel (f (leaf kn) (leaf kl) (leaf kc) p') (Internal.byRoseIndHyp kn kl kc p)) :=
   ⟨_, metalogic.load_globals,
@@ -249,65 +249,65 @@ which are the tactics' entry points, each a function of its type that, at encode
 related rules, related provers and related provers from rules, is a prover related to the Lean
 tactic, and the derivation of a rewriting under a mask is the encoding of Lean's. -/
 theorem tactics_agree : ∃ G' : List Glob, load metalogic = some G' ∧
-    (∃ f : Ty.den modeTy, G'[1324]? = some ⟨modeTy, f⟩ ∧
+    (∃ f : Ty.den modeTy, G'[1335]? = some ⟨modeTy, f⟩ ∧
       ∀ m G E n rs' rs, List.Forall₂ RRel rs' rs →
         PRel (f (leaf (encDepth m)) (encGlobals G) (E.toList.map encEntry) (leaf n) rs')
           (Tactics.byMode m G E n rs)) ∧
-    (∃ f : Ty.den rulesProverTy, G'[1325]? = some ⟨rulesProverTy, f⟩ ∧
+    (∃ f : Ty.den rulesProverTy, G'[1336]? = some ⟨rulesProverTy, f⟩ ∧
       ∀ G E n rs' rs, List.Forall₂ RRel rs' rs →
         PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) rs') (Tactics.byWeak G E n rs)) ∧
-    (∃ f : Ty.den nfTy, G'[1326]? = some ⟨nfTy, f⟩ ∧
+    (∃ f : Ty.den nfTy, G'[1337]? = some ⟨nfTy, f⟩ ∧
       ∀ G E n rs' rs, List.Forall₂ RRel rs' rs → ∀ m p' p, PRel p' p →
         PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (leaf (encDepth m)) p')
           (Tactics.byNF G E n rs m p)) ∧
-    (∃ f : Ty.den normHTy, G'[1330]? = some ⟨normHTy, f⟩ ∧
+    (∃ f : Ty.den normHTy, G'[1341]? = some ⟨normHTy, f⟩ ∧
       ∀ G E rs' rs, List.Forall₂ RRel rs' rs →
         PRel (f (encGlobals G) (E.toList.map encEntry) rs') (Tactics.normH G E rs)) ∧
-    (∃ f : Ty.den funExtTy, G'[1331]? = some ⟨funExtTy, f⟩ ∧
+    (∃ f : Ty.den funExtTy, G'[1342]? = some ⟨funExtTy, f⟩ ∧
       ∀ k G p' p, PRel p' p → PRel (f (leaf k) (encGlobals G) p') (Tactics.funExts k G p)) ∧
-    (∃ f : Ty.den listIndWeakTy, G'[1332]? = some ⟨listIndWeakTy, f⟩ ∧
+    (∃ f : Ty.den listIndWeakTy, G'[1343]? = some ⟨listIndWeakTy, f⟩ ∧
       ∀ G E n s rs' rs, List.Forall₂ RRel rs' rs →
         PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) (encTerm s) rs')
           (Tactics.byListIndWeak G E n s rs)) ∧
-    (∃ f : Ty.den proverFnTy, G'[1333]? = some ⟨proverFnTy, f⟩ ∧
+    (∃ f : Ty.den proverFnTy, G'[1344]? = some ⟨proverFnTy, f⟩ ∧
       ∀ G n s p' p, PRel p' p →
         PRel (f (encGlobals G) (leaf n) (encTerm s) p') (Tactics.byRoseIndWith G n s p)) ∧
-    (∃ f : Ty.den splitTy, G'[1335]? = some ⟨splitTy, f⟩ ∧
+    (∃ f : Ty.den splitTy, G'[1346]? = some ⟨splitTy, f⟩ ∧
       ∀ G n i p₀' p₁' p₀ p₁, PRel p₀' p₀ → PRel p₁' p₁ →
         PRel (f (encGlobals G) (leaf n) (leaf i) p₀' p₁') (Tactics.byListSplit G n i p₀ p₁)) ∧
-    (∃ f : Ty.den splitTy, G'[1336]? = some ⟨splitTy, f⟩ ∧
+    (∃ f : Ty.den splitTy, G'[1347]? = some ⟨splitTy, f⟩ ∧
       ∀ kl kr i p₀' p₁' p₀ p₁, PRel p₀' p₀ → PRel p₁' p₁ →
         PRel (f (leaf kl) (leaf kr) (leaf i) p₀' p₁') (Tactics.bySplit2 kl kr i p₀ p₁)) ∧
-    (∃ f : Ty.den funExtTy, G'[1337]? = some ⟨funExtTy, f⟩ ∧
+    (∃ f : Ty.den funExtTy, G'[1348]? = some ⟨funExtTy, f⟩ ∧
       ∀ G n p' p, PRel p' p → PRel (f (encGlobals G) (leaf n) p') (Tactics.byListCases G n p)) ∧
-    (∃ f : Ty.den twoProverTy, G'[1338]? = some ⟨twoProverTy, f⟩ ∧
+    (∃ f : Ty.den twoProverTy, G'[1349]? = some ⟨twoProverTy, f⟩ ∧
       ∀ G n p₀' p₁' p₀ p₁, PRel p₀' p₀ → PRel p₁' p₁ →
         PRel (f (encGlobals G) (leaf n) p₀' p₁') (Tactics.bitsInd G n p₀ p₁)) ∧
-    (∃ f : Ty.den funExtTy, G'[1339]? = some ⟨funExtTy, f⟩ ∧
+    (∃ f : Ty.den funExtTy, G'[1350]? = some ⟨funExtTy, f⟩ ∧
       ∀ G n p' p, PRel p' p → PRel (f (encGlobals G) (leaf n) p') (Tactics.bitsCases G n p)) ∧
-    (∃ f : Ty.den byBitsTy, G'[1340]? = some ⟨byBitsTy, f⟩ ∧
+    (∃ f : Ty.den byBitsTy, G'[1351]? = some ⟨byBitsTy, f⟩ ∧
       ∀ G p' p, PRel p' p → ∀ d i,
         PRel (f (encGlobals G) p' (leaf d) (leaf i)) (Tactics.byBits G p d i)) ∧
-    (∃ f : Ty.den twoProverTy, G'[1341]? = some ⟨twoProverTy, f⟩ ∧
+    (∃ f : Ty.den twoProverTy, G'[1352]? = some ⟨twoProverTy, f⟩ ∧
       ∀ G i p' q' p q, PRel p' p → PRel q' q →
         PRel (f (encGlobals G) (leaf i) p' q') (Tactics.byLength3 G i p q)) ∧
-    (∃ f : Ty.den weakHypsTy, G'[1342]? = some ⟨weakHypsTy, f⟩ ∧
+    (∃ f : Ty.den weakHypsTy, G'[1353]? = some ⟨weakHypsTy, f⟩ ∧
       ∀ G E n rs' rs, List.Forall₂ RRel rs' rs → ∀ (is : List ℕ) k' k, KRel k' k → ∀ m,
         PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (is.map leaf) k'
           (leaf (encDepth m))) (Tactics.withWeakHyps G E n rs is k m)) ∧
-    (∃ f : Ty.den rulesProverTy, G'[1343]? = some ⟨rulesProverTy, f⟩ ∧
+    (∃ f : Ty.den rulesProverTy, G'[1354]? = some ⟨rulesProverTy, f⟩ ∧
       ∀ G E n rs' rs, List.Forall₂ RRel rs' rs →
         PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) rs')
           (Tactics.byListIndHypWeak G E n rs)) ∧
-    (∃ f : Ty.den bitsIndHypTy, G'[1344]? = some ⟨bitsIndHypTy, f⟩ ∧
+    (∃ f : Ty.den bitsIndHypTy, G'[1355]? = some ⟨bitsIndHypTy, f⟩ ∧
       ∀ G E rs' rs, List.Forall₂ RRel rs' rs → ∀ m,
         PRel (f (encGlobals G) (E.toList.map encEntry) rs' (leaf (encDepth m)))
           (Tactics.byBitsIndHyp G E rs m)) ∧
-    (∃ f : Ty.den instsTy, G'[1348]? = some ⟨instsTy, f⟩ ∧
+    (∃ f : Ty.den instsTy, G'[1359]? = some ⟨instsTy, f⟩ ∧
       ∀ G E n rs' rs, List.Forall₂ RRel rs' rs → ∀ h (αs : List (List Internal.Term)) k' k,
         KRel k' k → ∀ m, PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (leaf h)
           (αs.map (·.map encTerm)) k' (leaf (encDepth m))) (Tactics.withInsts G E n rs h αs k m)) ∧
-    (∃ f : Ty.den childHypsTy, G'[1350]? = some ⟨childHypsTy, f⟩ ∧
+    (∃ f : Ty.den childHypsTy, G'[1361]? = some ⟨childHypsTy, f⟩ ∧
       ∀ G E n rs' rs, List.Forall₂ RRel rs' rs → ∀ h (kids : List ℕ)
         (args' : Tree → List (List Tree)) (args : ℕ → List (List Internal.Term)),
         (∀ p, args' (leaf p) = (args p).map (·.map encTerm)) →
@@ -315,48 +315,48 @@ theorem tactics_agree : ∃ G' : List Glob, load metalogic = some G' ∧
           (k : List ℕ → Internal.Prover), (∀ is : List ℕ, PRel (k' (is.map leaf)) (k is)) →
         PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (leaf h) (kids.map leaf) args'
           k') (Tactics.withChildHyps G E n rs h kids args k)) ∧
-    (∃ f : Ty.den revertTy, G'[1352]? = some ⟨revertTy, f⟩ ∧
+    (∃ f : Ty.den revertTy, G'[1363]? = some ⟨revertTy, f⟩ ∧
       ∀ G n o lb i h pNil' pCons' pNil pCons, PRel pNil' pNil → PRel pCons' pCons →
         PRel (f (encGlobals G) (leaf n) (leaf o) (leaf lb) (leaf i) (leaf h) pNil' pCons')
           (Tactics.revertCase G n o lb i h pNil pCons)) ∧
-    (∃ f : Ty.den impITy, G'[1354]? = some ⟨impITy, f⟩ ∧
+    (∃ f : Ty.den impITy, G'[1365]? = some ⟨impITy, f⟩ ∧
       ∀ G E o lb p' p, PRel p' p →
         PRel (f (encGlobals G) (E.toList.map encEntry) (leaf o) (leaf lb) p')
           (Tactics.byImpI G E o lb p)) ∧
-    (∃ f : Ty.den impElimTy, G'[1355]? = some ⟨impElimTy, f⟩ ∧
+    (∃ f : Ty.den impElimTy, G'[1366]? = some ⟨impElimTy, f⟩ ∧
       ∀ o lb h (is : List ℕ) k' k, KRel k' k →
         PRel (f (leaf o) (leaf lb) (leaf h) (is.map leaf) k') (Tactics.withImpElim o lb h is k)) ∧
-    (∃ f : Ty.den succPredTy, G'[1358]? = some ⟨succPredTy, f⟩ ∧
+    (∃ f : Ty.den succPredTy, G'[1369]? = some ⟨succPredTy, f⟩ ∧
       ∀ E j p' p, PRel p' p →
         PRel (f (E.toList.map encEntry) (leaf j) p') (Tactics.bySuccPred E j p)) ∧
-    (∃ f : Ty.den instsSearchTy, G'[1377]? = some ⟨instsSearchTy, f⟩ ∧
+    (∃ f : Ty.den instsSearchTy, G'[1388]? = some ⟨instsSearchTy, f⟩ ∧
       ∀ m G E n rs' rs, List.Forall₂ RRel rs' rs → ∀ hs,
         PRel (f (leaf (encDepth m)) (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (leaf hs))
           (Tactics.byInsts m G E n rs hs)) ∧
-    (∃ f : Ty.den autoTy, G'[1379]? = some ⟨autoTy, f⟩ ∧
+    (∃ f : Ty.den autoTy, G'[1390]? = some ⟨autoTy, f⟩ ∧
       ∀ G E n rs' rs, List.Forall₂ RRel rs' rs → ∀ d m,
         PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (leaf d) (leaf (encDepth m)))
           (Tactics.byAuto G E n rs d m)) ∧
-    (∃ f : Ty.den funExtTy, G'[1401]? = some ⟨funExtTy, f⟩ ∧
+    (∃ f : Ty.den funExtTy, G'[1412]? = some ⟨funExtTy, f⟩ ∧
       ∀ lk i p' p, PRel p' p → PRel (f (leaf lk) (leaf i) p') (Tactics.byTreeSplit lk i p)) ∧
-    (∃ f : Ty.den autoTTy, G'[1403]? = some ⟨autoTTy, f⟩ ∧
+    (∃ f : Ty.den autoTTy, G'[1414]? = some ⟨autoTTy, f⟩ ∧
       ∀ G E n lk rs' rs, List.Forall₂ RRel rs' rs → ∀ d m,
         PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf lk) rs' (leaf d)
           (leaf (encDepth m))) (Tactics.byAutoT G E n lk rs d m)) ∧
-    (∃ f : Ty.den autoCTy, G'[1404]? = some ⟨autoCTy, f⟩ ∧
+    (∃ f : Ty.den autoCTy, G'[1415]? = some ⟨autoCTy, f⟩ ∧
       ∀ G E n lk rs' rs, List.Forall₂ RRel rs' rs → ∀ d,
         PRel (f (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf lk) rs' (leaf d))
           (Tactics.byAutoC G E n lk rs d)) ∧
-    (∃ f : Ty.den maskRwTy, G'[1408]? = some ⟨maskRwTy, f⟩ ∧
+    (∃ f : Ty.den maskRwTy, G'[1419]? = some ⟨maskRwTy, f⟩ ∧
       ∀ a b ab j θ (σ : List Internal.Term) c d x x' z y,
         f a b (leaf ab) (leaf j) θ (σ.map encTerm) (encTerm c) (encTerm d) (encTerm x)
             (encTerm x') (encTerm z) (encTerm y) =
           encDeriv (Tactics.maskRw a b ab j θ σ c d x x' z y)) ∧
-    (∃ f : Ty.den maskSubsTy, G'[1425]? = some ⟨maskSubsTy, f⟩ ∧
+    (∃ f : Ty.den maskSubsTy, G'[1436]? = some ⟨maskSubsTy, f⟩ ∧
       ∀ G E ab cs rs' rs, List.Forall₂ RRel rs' rs → ∀ n p' p, KRel p' p →
         PRel (f (encGlobals G) (E.toList.map encEntry) (leaf ab) (leaf cs) rs' (leaf n) p')
           (Tactics.byMaskSubs G E ab cs rs n p)) ∧
-    (∃ f : Ty.den funExtTy, G'[1426]? = some ⟨funExtTy, f⟩ ∧
+    (∃ f : Ty.den funExtTy, G'[1437]? = some ⟨funExtTy, f⟩ ∧
       ∀ a c p' p, PRel p' p → PRel (f a (encTerm c) p') (Tactics.byGeneralize a c p)) :=
   ⟨_, metalogic.load_globals, ⟨_, metalogic_byMode, byMode_eq⟩, ⟨_, metalogic_byWeak, byWeak_eq⟩,
     ⟨_, metalogic_byNF, byNF_eq⟩, ⟨_, metalogic_normH, normH_eq⟩,
@@ -386,35 +386,35 @@ arguments and related predicates on variables, gives the encoding of what the Le
 gives. -/
 theorem tacticTerms_agree : ∃ G' : List Glob, load metalogic = some G' ∧
     (∃ f : Ty.den ([tT].foldr tArrow (tList tT)),
-      G'[1362]? = some ⟨[tT].foldr tArrow (tList tT), f⟩ ∧
+      G'[1373]? = some ⟨[tT].foldr tArrow (tList tT), f⟩ ∧
       ∀ t, f (encTerm t) = (Tactics.openSubterms t).map encTerm) ∧
     (∃ f : Ty.den ([tArrow tT tT, tT].foldr tArrow tT),
-      G'[1367]? = some ⟨[tArrow tT tT, tT].foldr tArrow tT, f⟩ ∧
+      G'[1378]? = some ⟨[tArrow tT tT, tT].foldr tArrow tT, f⟩ ∧
       ∀ skip' skip, SkipRel skip' skip → ∀ t,
         f skip' (encTerm t) = encOpt ((Tactics.stuckVar skip t).map leaf)) ∧
-    (∃ f : Ty.den ([tT, tT].foldr tArrow tT), G'[1368]? = some ⟨[tT, tT].foldr tArrow tT, f⟩ ∧
+    (∃ f : Ty.den ([tT, tT].foldr tArrow tT), G'[1379]? = some ⟨[tT, tT].foldr tArrow tT, f⟩ ∧
       ∀ t i, f (encTerm t) (leaf i) = ofBool (Tactics.mentions t i)) ∧
     (∃ f : Ty.den ([tT, tT, tT].foldr tArrow (tList (tList tT))),
-      G'[1371]? = some ⟨[tT, tT, tT].foldr tArrow (tList (tList tT)), f⟩ ∧
+      G'[1382]? = some ⟨[tT, tT, tT].foldr tArrow (tList (tList tT)), f⟩ ∧
       ∀ body k t,
         f (encTerm body) (leaf k) (encTerm t) = (Tactics.matchesOf body k t).map (·.map encTerm)) ∧
-    (∃ f : Ty.den ([tT].foldr tArrow tT), G'[1388]? = some ⟨[tT].foldr tArrow tT, f⟩ ∧
+    (∃ f : Ty.den ([tT].foldr tArrow tT), G'[1399]? = some ⟨[tT].foldr tArrow tT, f⟩ ∧
       ∀ w, f (encTerm w) = encOpt ((Tactics.condParts w).map encCond)) ∧
     (∃ f : Ty.den ([tArrow tT tT, tT].foldr tArrow tT),
-      G'[1390]? = some ⟨[tArrow tT tT, tT].foldr tArrow tT, f⟩ ∧
+      G'[1401]? = some ⟨[tArrow tT tT, tT].foldr tArrow tT, f⟩ ∧
       ∀ skip' skip, SkipRel skip' skip → ∀ t,
         f skip' (encTerm t) = encOpt ((Tactics.stuckVarC skip t).map leaf)) ∧
     (∃ f : Ty.den ([tT, tT].foldr tArrow (tList tT)),
-      G'[1392]? = some ⟨[tT, tT].foldr tArrow (tList tT), f⟩ ∧
+      G'[1403]? = some ⟨[tT, tT].foldr tArrow (tList tT), f⟩ ∧
       ∀ k t, f (leaf k) (encTerm t) = (Tactics.appsOf k t).map encTerm) ∧
-    (∃ f : Ty.den ([tT].foldr tArrow tT), G'[1396]? = some ⟨[tT].foldr tArrow tT, f⟩ ∧
+    (∃ f : Ty.den ([tT].foldr tArrow tT), G'[1407]? = some ⟨[tT].foldr tArrow tT, f⟩ ∧
       ∀ t, f (encTerm t) = encTerm (Tactics.unnodeU t)) ∧
     (∃ f : Ty.den ([tT, tT, tT, tT].foldr tArrow tT),
-      G'[1400]? = some ⟨[tT, tT, tT, tT].foldr tArrow tT, f⟩ ∧
+      G'[1411]? = some ⟨[tT, tT, tT, tT].foldr tArrow tT, f⟩ ∧
       ∀ lk i t d,
         f (leaf lk) (leaf i) (encTerm t) (leaf d) = encDeriv (Tactics.occRewrite lk i t d)) ∧
     (∃ f : Ty.den ([tT, tT, tT].foldr tArrow tT),
-      G'[1406]? = some ⟨[tT, tT, tT].foldr tArrow tT, f⟩ ∧
+      G'[1417]? = some ⟨[tT, tT, tT].foldr tArrow tT, f⟩ ∧
       ∀ b x y, f b (encTerm x) (encTerm y) = encTerm (Tactics.abstractTerm b x y)) :=
   ⟨_, metalogic.load_globals, ⟨_, metalogic_openSubterms, openSubterms_eq⟩,
     ⟨_, metalogic_stuckVar, fun _ _ h t ↦ stuckVar_eq _ _ h t⟩,
@@ -430,41 +430,41 @@ loads to globals among which are the prover's entry points, each a function of i
 encoded arguments and related states, gives the encoding of the Lean prover's result, and the
 library written in Geb and its rules are the encodings of the Lean library and its rules. -/
 theorem combinator_agree : ∃ G' : List Glob, load metalogic = some G' ∧
-    (∃ f : Ty.den termPMTy, G'[1676]? = some ⟨termPMTy, f⟩ ∧
+    (∃ f : Ty.den termPMTy, G'[1687]? = some ⟨termPMTy, f⟩ ∧
       ∀ t, Combinator.PMRel Combinator.encTy (f t) (Prover.typeTerm t)) ∧
-    (∃ f : Ty.den rulesPMTy, G'[1730]? = some ⟨rulesPMTy, f⟩ ∧
-      ∀ rules t, Combinator.PMRel encPair (f (rules.map encRw) t) (Prover.normalize rules t)) ∧
-    (∃ f : Ty.den instPMTy, G'[1736]? = some ⟨instPMTy, f⟩ ∧
-      ∀ s σ, Combinator.PMRel Combinator.encEqC (f (encSrc s) σ) (Prover.inst s σ)) ∧
-    (∃ f : Ty.den termPMTy, G'[1737]? = some ⟨termPMTy, f⟩ ∧
-      ∀ t, Combinator.PMRel encPair (f t) (Prover.etaExpand t)) ∧
-    (∃ f : Ty.den treeFnTy, G'[1740]? = some ⟨treeFnTy, f⟩ ∧
-      ∀ i, f (leaf i) = encRw (Prover.deltaRule i)) ∧
     (∃ f : Ty.den rulesPMTy, G'[1741]? = some ⟨rulesPMTy, f⟩ ∧
+      ∀ rules t, Combinator.PMRel encPair (f (rules.map encRw) t) (Prover.normalize rules t)) ∧
+    (∃ f : Ty.den instPMTy, G'[1747]? = some ⟨instPMTy, f⟩ ∧
+      ∀ s σ, Combinator.PMRel Combinator.encEqC (f (encSrc s) σ) (Prover.inst s σ)) ∧
+    (∃ f : Ty.den termPMTy, G'[1748]? = some ⟨termPMTy, f⟩ ∧
+      ∀ t, Combinator.PMRel encPair (f t) (Prover.etaExpand t)) ∧
+    (∃ f : Ty.den treeFnTy, G'[1751]? = some ⟨treeFnTy, f⟩ ∧
+      ∀ i, f (leaf i) = encRw (Prover.deltaRule i)) ∧
+    (∃ f : Ty.den rulesPMTy, G'[1752]? = some ⟨rulesPMTy, f⟩ ∧
       ∀ rules q, Combinator.PMRel id (f (rules.map encRw) (encEqn q)) (Prover.byNorm rules q)) ∧
-    (∃ f : Ty.den proveSeqTy, G'[1751]? = some ⟨proveSeqTy, f⟩ ∧
+    (∃ f : Ty.den proveSeqTy, G'[1762]? = some ⟨proveSeqTy, f⟩ ∧
       ∀ a m' m, Combinator.PMRel id m' m → ∀ defs infer dev,
         f (encSeq a) m' (defs.map encDefn) (ofBool infer) (dev.map encDevEntry) =
           encOpt ((Prover.proveSeq a m defs infer dev).map Combinator.encIdxDev)) ∧
-    (∃ f : Ty.den normalizeThmTy, G'[1752]? = some ⟨normalizeThmTy, f⟩ ∧
+    (∃ f : Ty.den normalizeThmTy, G'[1763]? = some ⟨normalizeThmTy, f⟩ ∧
       ∀ rules j defs infer dev,
         f (rules.map encRw) (leaf j) (defs.map encDefn) (ofBool infer) (dev.map encDevEntry) =
           encOpt ((Prover.normalizeThm rules j defs infer dev).map Combinator.encIdxDev)) ∧
-    (∃ f : Ty.den instByTy, G'[1753]? = some ⟨instByTy, f⟩ ∧
+    (∃ f : Ty.den instByTy, G'[1764]? = some ⟨instByTy, f⟩ ∧
       ∀ rules s σ, Combinator.PMRel Combinator.encEqC (f (rules.map encRw) (encSrc s) σ)
         (Prover.instBy rules s σ)) ∧
-    (∃ f : Ty.den natIndPMTy, G'[1758]? = some ⟨natIndPMTy, f⟩ ∧
+    (∃ f : Ty.den natIndPMTy, G'[1769]? = some ⟨natIndPMTy, f⟩ ∧
       ∀ rules z s q, Combinator.PMRel id (f (rules.map encRw) z s (encEqn q))
         (Prover.byNatInduction rules z s q)) ∧
-    (∃ f : Ty.den listIndPMTy, G'[1759]? = some ⟨listIndPMTy, f⟩ ∧
+    (∃ f : Ty.den listIndPMTy, G'[1770]? = some ⟨listIndPMTy, f⟩ ∧
       ∀ rules a z s q, Combinator.PMRel id (f (rules.map encRw) a z s (encEqn q))
         (Prover.byListInduction rules a z s q)) ∧
-    (∃ f : Ty.den listIndPMTy, G'[1760]? = some ⟨listIndPMTy, f⟩ ∧
+    (∃ f : Ty.den listIndPMTy, G'[1771]? = some ⟨listIndPMTy, f⟩ ∧
       ∀ rules a z s q, Combinator.PMRel id (f (rules.map encRw) a z s (encEqn q))
         (Prover.byListParamInduction rules a z s q)) ∧
-    (∃ f : Ty.den treeFnTy, G'[1785]? = some ⟨treeFnTy, f⟩ ∧
+    (∃ f : Ty.den treeFnTy, G'[1796]? = some ⟨treeFnTy, f⟩ ∧
       ∀ infer, f (ofBool infer) = encLib (Prover.libraryWith infer)) ∧
-    (∃ f : Ty.den libRulesTy, G'[1786]? = some ⟨libRulesTy, f⟩ ∧
+    (∃ f : Ty.den libRulesTy, G'[1797]? = some ⟨libRulesTy, f⟩ ∧
       ∀ i, f (encIdx i) = (Prover.rules i).map encRw) :=
   ⟨_, metalogic.load_globals, ⟨_, metalogic_typeTerm, Combinator.typeTerm_rel⟩,
     ⟨_, metalogic_pNormalize, Combinator.normalize_rel⟩,
@@ -488,8 +488,8 @@ names in scope, gives the encoding of the Lean reader's resolution of every S-ex
 whatever the printer writes for a term under binders to a depth resolves, in the scope of those
 binders, to the term. -/
 theorem reader_inverse_agree : ∃ G' : List Glob, load metalogic = some G' ∧
-    ∃ pr : Ty.den printTermTy, G'[1913]? = some ⟨printTermTy, pr⟩ ∧
-    ∃ rb : Ty.den readBackTy, G'[1903]? = some ⟨readBackTy, rb⟩ ∧
+    ∃ pr : Ty.den printTermTy, G'[1924]? = some ⟨printTermTy, pr⟩ ∧
+    ∃ rb : Ty.den readBackTy, G'[1914]? = some ⟨readBackTy, rb⟩ ∧
       (∀ (defs : List (List Char)) (t : Tree) (d : ℕ),
         pr (defs.map nameTree) t (leaf d) = encOpt ((printTerm? defs t d).map sexpTree)) ∧
       (∀ (defs : List (List Char)) (e : SExp) (scope : List (List Char)),

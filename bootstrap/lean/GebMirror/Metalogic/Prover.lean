@@ -1714,7 +1714,84 @@ def «Prover.zipTs» :=
       x1;
     x2
 
-def «Prover/NormEach.map» :=
+def «Prover.job» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
+    Const.node
+      (leaf 0)
+      (x0 :: (x1 :: (x2 :: (x3 :: (x4 :: ([] : List T))))))
+
+def «Prover.jobs» := fun (x0 : List T) => Const.node (leaf 0) x0
+
+def «Prover.jobsOf» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (let x1 : T := x0;
+            let x2 : List T := Const.children x1; let x3 : List T := x2; x3);
+    x1
+
+def «Prover/JobL.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Prover/JobL.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Prover/JobL.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Prover/JobL.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Prover/JobL.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Prover/JobL.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List T := Const.iter (α := List T) «Prover/JobL.tail» x1 x0;
+    x2
+
+def «Prover/JobL.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Prover/JobL.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Prover/JobAt.map» :=
   fun (x0 : T → T) (x1 : List T) =>
     let x2 : List
       T := Const.foldr
@@ -1725,59 +1802,923 @@ def «Prover/NormEach.map» :=
       x1;
     x2
 
-def «Prover.normStep» :=
+def «Prover.jobDp» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   let x2 : List T := Const.children x1;
+                   let x3 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let x10 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x10
+                     (leaf 0)
+                     (fun (x11 : T) (_ : List T) => x11);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x10
+                     ([] : List T)
+                     (fun (_ : T) (x13 : List T) => x13);
+                   x3);
+    x1
+
+def «Prover.jobCtx» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (let x1 : T := x0;
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let x5 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let x6 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let x8 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x8
+              (leaf 0)
+              (fun (x9 : T) (_ : List T) => x9);
+            let x10 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x8
+              ([] : List T)
+              (fun (_ : T) (x11 : List T) => x11);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x10
+              (leaf 0)
+              (fun (x11 : T) (_ : List T) => x11);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x10
+              ([] : List T)
+              (fun (_ : T) (x13 : List T) => x13);
+            let x13 : T := x5;
+            let x14 : List T := Const.children x13; let x15 : List T := x14; x15);
+    x1
+
+def «Prover.jobNum» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let x7 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let x10 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x10
+                     (leaf 0)
+                     (fun (x11 : T) (_ : List T) => x11);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x10
+                     ([] : List T)
+                     (fun (_ : T) (x13 : List T) => x13);
+                   x7);
+    x1
+
+def «Prover.jobHyps» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (let x1 : T := x0;
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let x6 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let x8 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let x9 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x8
+              (leaf 0)
+              (fun (x9 : T) (_ : List T) => x9);
+            let x10 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x8
+              ([] : List T)
+              (fun (_ : T) (x11 : List T) => x11);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x10
+              (leaf 0)
+              (fun (x11 : T) (_ : List T) => x11);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x10
+              ([] : List T)
+              (fun (_ : T) (x13 : List T) => x13);
+            «Prover.termsOf» x9);
+    x1
+
+def «Prover.jobTerm» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let x10 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   let x11 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x10
+                     (leaf 0)
+                     (fun (x11 : T) (_ : List T) => x11);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x10
+                     ([] : List T)
+                     (fun (_ : T) (x13 : List T) => x13);
+                   x11);
+    x1
+
+def «Prover.jobAt» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    let x3 : T := (let x3 : T := x0;
+                   let x4 : List T := Const.children x3;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let x7 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let x9 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let x10 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   let x11 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x10
+                     (leaf 0)
+                     (fun (x11 : T) (_ : List T) => x11);
+                   let x12 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x10
+                     ([] : List T)
+                     (fun (_ : T) (x13 : List T) => x13);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x12
+                     (leaf 0)
+                     (fun (x13 : T) (_ : List T) => x13);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x12
+                     ([] : List T)
+                     (fun (_ : T) (x15 : List T) => x15);
+                   «Prover.job» x1 x7 x9 x11 x2);
+    x3
+
+def «Prover.firstR» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.lcase
+      (α := T)
+      (β := T)
+      x0
+      «Prover/ONFR.nothing»
+      (fun (x1 : T) (_ : List T) => x1);
+    x1
+
+def «Prover.splitRs» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := List T → List T × List T)
+      (fun (_ : T) (x3 : List T → List T × List T) (x4 : List T) =>
+        Const.lcase
+          (α := T)
+          (β := List T × List T)
+          x4
+          (([] : List T), ([] : List T))
+          (fun (x5 : T) (x6 : List T) =>
+            let x7 : List T × List T := x3 x6; ((x5 :: (x7).1), (x7).2)))
+      (fun (x2 : List T) => (([] : List T), x2))
+      x0
+      x1;
+    x2
+
+def «Prover/NormJob.map» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => ((x0 x2) :: x3))
+      ([] : List T)
+      x1;
+    x2
+
+def «Prover.nsDone» :=
+  fun (x0 : T) => Const.node (leaf 0) (x0 :: ([] : List T))
+
+def «Prover.nsKids» :=
+  fun (x0 : T) (x1 : T) =>
+    Const.node (leaf 1) (x0 :: (x1 :: ([] : List T)))
+
+def «Prover.nsTail» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    Const.node (leaf 2) (x0 :: (x1 :: (x2 :: ([] : List T))))
+
+def «Prover/NsAt.map» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => ((x0 x2) :: x3))
+      ([] : List T)
+      x1;
+    x2
+
+def «Prover/NsOut.map» :=
+  fun (x0 : T → T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => ((x0 x2) :: x3))
+      ([] : List T)
+      x1;
+    x2
+
+def «Prover.nsResult» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 0)).label ≠ 0 then
+                     let x2 : List T := Const.children x1;
+                     let x3 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     x3
+                   else
+                     «Prover/ONFR.nothing»);
+    x1
+
+def «Prover.nsNeed» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (let x1 : T := x0;
+            if (Const.eq (Const.label x1) (leaf 0)).label ≠ 0 then
+              let x2 : List T := Const.children x1;
+              let _ : T := Const.lcase
+                (α := T)
+                (β := T)
+                x2
+                (leaf 0)
+                (fun (x3 : T) (_ : List T) => x3);
+              let _ : List
+                T := Const.lcase
+                (α := T)
+                (β := List T)
+                x2
+                ([] : List T)
+                (fun (_ : T) (x5 : List T) => x5);
+              ([] : List T)
+            else
+              if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                let x2 : List T := Const.children x1;
+                let _ : T := Const.lcase
+                  (α := T)
+                  (β := T)
+                  x2
+                  (leaf 0)
+                  (fun (x3 : T) (_ : List T) => x3);
+                let x4 : List
+                  T := Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x2
+                  ([] : List T)
+                  (fun (_ : T) (x5 : List T) => x5);
+                let x5 : T := Const.lcase
+                  (α := T)
+                  (β := T)
+                  x4
+                  (leaf 0)
+                  (fun (x5 : T) (_ : List T) => x5);
+                let _ : List
+                  T := Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x4
+                  ([] : List T)
+                  (fun (_ : T) (x7 : List T) => x7);
+                «Prover.jobsOf» x5
+              else
+                let x2 : List T := Const.children x1;
+                let _ : T := Const.lcase
+                  (α := T)
+                  (β := T)
+                  x2
+                  (leaf 0)
+                  (fun (x3 : T) (_ : List T) => x3);
+                let x4 : List
+                  T := Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x2
+                  ([] : List T)
+                  (fun (_ : T) (x5 : List T) => x5);
+                let _ : T := Const.lcase
+                  (α := T)
+                  (β := T)
+                  x4
+                  (leaf 0)
+                  (fun (x5 : T) (_ : List T) => x5);
+                let x6 : List
+                  T := Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x4
+                  ([] : List T)
+                  (fun (_ : T) (x7 : List T) => x7);
+                let x7 : T := Const.lcase
+                  (α := T)
+                  (β := T)
+                  x6
+                  (leaf 0)
+                  (fun (x7 : T) (_ : List T) => x7);
+                let _ : List
+                  T := Const.lcase
+                  (α := T)
+                  (β := List T)
+                  x6
+                  ([] : List T)
+                  (fun (_ : T) (x9 : List T) => x9);
+                «Prover/JobL.single» x7);
+    x1
+
+def «Prover.nsStart» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    let x3 : T := (let x3 : T := «Prover.jobTerm» x2;
+                   let x4 : T := «Derivation.childCtxs»
+                     x0
+                     x1
+                     x3
+                     («Prover.jobCtx» x2)
+                     («Prover.jobHyps» x2);
+                   if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
+                     let x5 : List T := Const.children x4;
+                     let x6 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x5
+                       (leaf 0)
+                       (fun (x6 : T) (_ : List T) => x6);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x5
+                       ([] : List T)
+                       (fun (_ : T) (x8 : List T) => x8);
+                     «Prover.nsKids»
+                       x2
+                       («Prover.jobs»
+                         («Prover/NormJob.map»
+                           (fun (x8 : T) =>
+                             let x9 : T := «Prover.scopeOf» x8;
+                             «Prover.job»
+                               (leaf 0)
+                               («Language.objs» («Derivation.scopeCtx» x9))
+                               (leaf 0)
+                               («Derivation.terms» («Derivation.scopeHyps» x9))
+                               («Prover.termOf» x8))
+                           («Prover.zipTs» («Derivation.scopesOf» x6) («Language.mArgs» x3))))
+                   else
+                     let _ : List T := Const.children x4;
+                     «Prover.nsDone» «Prover/ONFR.nothing»);
+    x3
+
+def «Prover.nsAdv» :=
   fun (x0 : T)
     (x1 : List T)
     (x2 : T)
     (x3 : List (T × (T → T → List T → T)))
-    (x4 : List T → List T → T → T) =>
+    (x4 : T)
+    (x5 : List T) =>
+    let x6 : T := (let x6 : T := x4;
+                   if (Const.eq (Const.label x6) (leaf 0)).label ≠ 0 then
+                     let x7 : List T := Const.children x6;
+                     let x8 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x7
+                       (leaf 0)
+                       (fun (x8 : T) (_ : List T) => x8);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x7
+                       ([] : List T)
+                       (fun (_ : T) (x10 : List T) => x10);
+                     «Prover.nsDone» x8
+                   else
+                     if (Const.eq (Const.label x6) (leaf 1)).label ≠ 0 then
+                       let x7 : List T := Const.children x6;
+                       let x8 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x7
+                         (leaf 0)
+                         (fun (x8 : T) (_ : List T) => x8);
+                       let x9 : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x7
+                         ([] : List T)
+                         (fun (_ : T) (x10 : List T) => x10);
+                       let _ : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x9
+                         (leaf 0)
+                         (fun (x10 : T) (_ : List T) => x10);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x9
+                         ([] : List T)
+                         (fun (_ : T) (x12 : List T) => x12);
+                       let x12 : T := «Prover.allSomeN» x5;
+                       if (Const.eq (Const.label x12) (leaf 1)).label ≠ 0 then
+                         let x13 : List T := Const.children x12;
+                         let x14 : T := Const.lcase
+                           (α := T)
+                           (β := T)
+                           x13
+                           (leaf 0)
+                           (fun (x14 : T) (_ : List T) => x14);
+                         let _ : List
+                           T := Const.lcase
+                           (α := T)
+                           (β := List T)
+                           x13
+                           ([] : List T)
+                           (fun (_ : T) (x16 : List T) => x16);
+                         let x16 : List T := «Prover.nfrsOf» x14;
+                         let x17 : T := «Prover.rebuild» («Prover.jobTerm» x8) x16;
+                         let x18 : T := (if («Prover.marked» x16).label ≠ 0 then
+                           «Prover.mark»
+                             («Prover.dNode»
+                               (leaf 2)
+                               ([] : List T)
+                               («Prover/NFRTerm.map»
+                                 (fun (x18 : T) => «Prover.mDeriv» («Prover.nfMarked» x18))
+                                 x16))
+                             (leaf 1)
+                         else
+                           «Prover.dRefl»);
+                         let x19 : T := «Prover.rootRewrite»
+                           x0
+                           x1
+                           x2
+                           x3
+                           («Prover.jobCtx» x8)
+                           («Prover.jobHyps» x8)
+                           x17;
+                         if («Language/OTPair.isJust» x19).label ≠ 0 then
+                           let x20 : T := «Language/OTPair.fromMaybe» «Prover.pr0» x19;
+                           «Prover.nsTail»
+                             x18
+                             («Prover.mark» («Language.p2» x20) (leaf 1))
+                             («Prover.jobAt» x8 (leaf 0) («Language.p1» x20))
+                         else
+                           «Prover.nsDone» («Prover/ONFR.just» («Prover.nfr» x17 x18))
+                       else
+                         let _ : List T := Const.children x12;
+                         «Prover.nsDone» «Prover/ONFR.nothing»
+                     else
+                       let x7 : List T := Const.children x6;
+                       let x8 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x7
+                         (leaf 0)
+                         (fun (x8 : T) (_ : List T) => x8);
+                       let x9 : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x7
+                         ([] : List T)
+                         (fun (_ : T) (x10 : List T) => x10);
+                       let x10 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x9
+                         (leaf 0)
+                         (fun (x10 : T) (_ : List T) => x10);
+                       let x11 : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x9
+                         ([] : List T)
+                         (fun (_ : T) (x12 : List T) => x12);
+                       let _ : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x11
+                         (leaf 0)
+                         (fun (x12 : T) (_ : List T) => x12);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x11
+                         ([] : List T)
+                         (fun (_ : T) (x14 : List T) => x14);
+                       let x14 : T := «Prover.firstR» x5;
+                       if (Const.eq (Const.label x14) (leaf 1)).label ≠ 0 then
+                         let x15 : List T := Const.children x14;
+                         let x16 : T := Const.lcase
+                           (α := T)
+                           (β := T)
+                           x15
+                           (leaf 0)
+                           (fun (x16 : T) (_ : List T) => x16);
+                         let _ : List
+                           T := Const.lcase
+                           (α := T)
+                           (β := List T)
+                           x15
+                           ([] : List T)
+                           (fun (_ : T) (x18 : List T) => x18);
+                         «Prover.nsDone»
+                           («Prover/ONFR.just»
+                             («Prover.nfr»
+                               («Prover.nfTerm» x16)
+                               («Prover.dTrans» x8 («Prover.dTrans» x10 («Prover.nfMarked» x16)))))
+                       else
+                         let _ : List T := Const.children x14;
+                         «Prover.nsDone» «Prover/ONFR.nothing»);
+    x6
+
+def «Prover.nsRound» :=
+  fun (x0 : T)
+    (x1 : List T)
+    (x2 : T)
+    (x3 : List (T × (T → T → List T → T)))
+    (x4 : List T → List T)
+    (x5 : List T) =>
+    let x6 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x6 : T) (x7 : List T → List T) (x8 : List T) =>
+        let x9 : List T × List T := «Prover.splitRs» («Prover.nsNeed» x6) x8;
+        ((«Prover.nsAdv» x0 x1 x2 x3 x6 (x9).1) :: (x7 (x9).2)))
+      (fun (_ : List T) => ([] : List T))
+      x5
+      (x4
+        (Const.foldr
+          (α := T)
+          (β := List T)
+          (fun (x6 : T) (x7 : List T) =>
+            «Prover/JobL.append» («Prover.nsNeed» x6) x7)
+          ([] : List T)
+          x5));
+    x6
+
+def «Prover.normStepB» :=
+  fun (x0 : T)
+    (x1 : List T)
+    (x2 : T)
+    (x3 : List (T × (T → T → List T → T)))
+    (x4 : List T → List T) =>
     let x5 : List T →
-      List T →
-        T →
-          T := (fun (x5 : List T) (x6 : List T) (x7 : T) =>
-      «Prover.bindSN»
-        («Derivation.childCtxs» x0 x2 x7 x5 x6)
-        (fun (x8 : T) =>
-          let x9 : List T := «Derivation.scopesOf» x8;
-          «Prover.bindLN»
-            («Prover.allSomeN»
-              («Prover/NormEach.map»
-                (fun (x10 : T) =>
-                  let x11 : T := «Prover.scopeOf» x10;
-                  x4
-                    («Derivation.scopeCtx» x11)
-                    («Derivation.scopeHyps» x11)
-                    («Prover.termOf» x10))
-                («Prover.zipTs» x9 («Language.mArgs» x7))))
-            (fun (x10 : T) =>
-              let x11 : List T := «Prover.nfrsOf» x10;
-              let x12 : T := «Prover.rebuild» x7 x11;
-              let x13 : T := (if («Prover.marked» x11).label ≠ 0 then
-                «Prover.mark»
-                  («Prover.dNode»
-                    (leaf 2)
-                    ([] : List T)
-                    («Prover/NFRTerm.map»
-                      (fun (x13 : T) => «Prover.mDeriv» («Prover.nfMarked» x13))
-                      x11))
-                  (leaf 1)
-              else
-                «Prover.dRefl»);
-              let x14 : T := «Prover.rootRewrite» x0 x1 x2 x3 x5 x6 x12;
-              if («Language/OTPair.isJust» x14).label ≠ 0 then
-                let x15 : T := «Language/OTPair.fromMaybe» «Prover.pr0» x14;
-                «Prover.mapNN»
-                  (fun (x16 : T) =>
-                    «Prover.nfr»
-                      («Prover.nfTerm» x16)
-                      («Prover.dTrans»
-                        x13
-                        («Prover.dTrans»
-                          («Prover.mark» («Language.p2» x15) (leaf 1))
-                          («Prover.nfMarked» x16))))
-                  (x4 x5 x6 («Language.p1» x15))
-              else
-                «Prover/ONFR.just» («Prover.nfr» x12 x13))));
+      List
+        T := (fun (x5 : List T) =>
+      Const.lcase
+        (α := T)
+        (β := List T)
+        x5
+        ([] : List T)
+        (fun (_ : T) (_ : List T) =>
+          «Prover/NsOut.map»
+            «Prover.nsResult»
+            («Prover.nsRound»
+              x0
+              x1
+              x2
+              x3
+              x4
+              («Prover.nsRound»
+                x0
+                x1
+                x2
+                x3
+                x4
+                («Prover/NsAt.map»
+                  (fun (x8 : T) => «Prover.nsStart» x0 x2 x8)
+                  x5)))));
+    x5
+
+def «Prover.normB» :=
+  fun (x0 : T)
+    (x1 : List T)
+    (x2 : T)
+    (x3 : List (T × (T → T → List T → T)))
+    (x4 : T) =>
+    let x5 : List T →
+      List
+        T := Const.iter
+      (α := List T → List T)
+      («Prover.normStepB» x0 x1 x2 x3)
+      (fun (x5 : List T) =>
+        «Prover/NsOut.map»
+          «Prover.nsResult»
+          («Prover/NsAt.map»
+            (fun (x6 : T) =>
+              «Prover.nsDone»
+                («Prover/ONFR.just»
+                  («Prover.nfr» («Prover.jobTerm» x6) «Prover.dRefl»)))
+            x5))
+      x4;
     x5
 
 def «Prover.normalize» :=
@@ -1789,12 +2730,21 @@ def «Prover.normalize» :=
     let x5 : List T →
       List T →
         T →
-          T := Const.iter
-      (α := List T → List T → T → T)
-      («Prover.normStep» x0 x1 x2 x3)
-      (fun (_ : List T) (_ : List T) (x7 : T) =>
-        «Prover/ONFR.just» («Prover.nfr» x7 «Prover.dRefl»))
-      x4;
+          T := (fun (x5 : List T) (x6 : List T) (x7 : T) =>
+      «Prover.firstR»
+        («Prover.normB»
+          x0
+          x1
+          x2
+          x3
+          x4
+          («Prover/JobL.single»
+            («Prover.job»
+              (leaf 0)
+              («Language.objs» x5)
+              (leaf 0)
+              («Derivation.terms» x6)
+              x7))));
     x5
 
 def «Prover.joinBy» :=
@@ -2859,529 +3809,6 @@ def «Prover.rootRewriteK» :=
         x8);
     x5
 
-def «Prover.job» :=
-  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
-    Const.node
-      (leaf 0)
-      (x0 :: (x1 :: (x2 :: (x3 :: (x4 :: ([] : List T))))))
-
-def «Prover.jobs» := fun (x0 : List T) => Const.node (leaf 0) x0
-
-def «Prover.jobsOf» :=
-  fun (x0 : T) =>
-    let x1 : List
-      T := (let x1 : T := x0;
-            let x2 : List T := Const.children x1; let x3 : List T := x2; x3);
-    x1
-
-def «Prover/JobL.single» :=
-  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
-
-def «Prover/JobL.length» :=
-  fun (x0 : List T) =>
-    let x1 : T := Const.foldr
-      (α := T)
-      (β := T)
-      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
-      (leaf 0)
-      x0;
-    x1
-
-def «Prover/JobL.append» :=
-  fun (x0 : List T) (x1 : List T) =>
-    let x2 : List
-      T := Const.foldr
-      (α := T)
-      (β := List T)
-      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «Prover/JobL.reverse» :=
-  fun (x0 : List T) =>
-    let x1 : List
-      T := Const.foldr
-      (α := T)
-      (β := List T → List T)
-      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
-      (fun (x1 : List T) => x1)
-      x0
-      ([] : List T);
-    x1
-
-def «Prover/JobL.tail» :=
-  fun (x0 : List T) =>
-    let x1 : List
-      T := Const.lcase
-      (α := T)
-      (β := List T)
-      x0
-      ([] : List T)
-      (fun (_ : T) (x2 : List T) => x2);
-    x1
-
-def «Prover/JobL.drop» :=
-  fun (x0 : T) (x1 : List T) =>
-    let x2 : List T := Const.iter (α := List T) «Prover/JobL.tail» x1 x0;
-    x2
-
-def «Prover/JobL.atOr» :=
-  fun (x0 : T) (x1 : List T) (x2 : T) =>
-    let x3 : T := Const.lcase
-      (α := T)
-      (β := T)
-      («Prover/JobL.drop» x2 x1)
-      x0
-      (fun (x3 : T) (_ : List T) => x3);
-    x3
-
-def «Prover/JobAt.map» :=
-  fun (x0 : T → T) (x1 : List T) =>
-    let x2 : List
-      T := Const.foldr
-      (α := T)
-      (β := List T)
-      (fun (x2 : T) (x3 : List T) => ((x0 x2) :: x3))
-      ([] : List T)
-      x1;
-    x2
-
-def «Prover.jobDp» :=
-  fun (x0 : T) =>
-    let x1 : T := (let x1 : T := x0;
-                   let x2 : List T := Const.children x1;
-                   let x3 : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x2
-                     (leaf 0)
-                     (fun (x3 : T) (_ : List T) => x3);
-                   let x4 : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x2
-                     ([] : List T)
-                     (fun (_ : T) (x5 : List T) => x5);
-                   let _ : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x4
-                     (leaf 0)
-                     (fun (x5 : T) (_ : List T) => x5);
-                   let x6 : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x4
-                     ([] : List T)
-                     (fun (_ : T) (x7 : List T) => x7);
-                   let _ : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x6
-                     (leaf 0)
-                     (fun (x7 : T) (_ : List T) => x7);
-                   let x8 : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x6
-                     ([] : List T)
-                     (fun (_ : T) (x9 : List T) => x9);
-                   let _ : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x8
-                     (leaf 0)
-                     (fun (x9 : T) (_ : List T) => x9);
-                   let x10 : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x8
-                     ([] : List T)
-                     (fun (_ : T) (x11 : List T) => x11);
-                   let _ : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x10
-                     (leaf 0)
-                     (fun (x11 : T) (_ : List T) => x11);
-                   let _ : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x10
-                     ([] : List T)
-                     (fun (_ : T) (x13 : List T) => x13);
-                   x3);
-    x1
-
-def «Prover.jobCtx» :=
-  fun (x0 : T) =>
-    let x1 : List
-      T := (let x1 : T := x0;
-            let x2 : List T := Const.children x1;
-            let _ : T := Const.lcase
-              (α := T)
-              (β := T)
-              x2
-              (leaf 0)
-              (fun (x3 : T) (_ : List T) => x3);
-            let x4 : List
-              T := Const.lcase
-              (α := T)
-              (β := List T)
-              x2
-              ([] : List T)
-              (fun (_ : T) (x5 : List T) => x5);
-            let x5 : T := Const.lcase
-              (α := T)
-              (β := T)
-              x4
-              (leaf 0)
-              (fun (x5 : T) (_ : List T) => x5);
-            let x6 : List
-              T := Const.lcase
-              (α := T)
-              (β := List T)
-              x4
-              ([] : List T)
-              (fun (_ : T) (x7 : List T) => x7);
-            let _ : T := Const.lcase
-              (α := T)
-              (β := T)
-              x6
-              (leaf 0)
-              (fun (x7 : T) (_ : List T) => x7);
-            let x8 : List
-              T := Const.lcase
-              (α := T)
-              (β := List T)
-              x6
-              ([] : List T)
-              (fun (_ : T) (x9 : List T) => x9);
-            let _ : T := Const.lcase
-              (α := T)
-              (β := T)
-              x8
-              (leaf 0)
-              (fun (x9 : T) (_ : List T) => x9);
-            let x10 : List
-              T := Const.lcase
-              (α := T)
-              (β := List T)
-              x8
-              ([] : List T)
-              (fun (_ : T) (x11 : List T) => x11);
-            let _ : T := Const.lcase
-              (α := T)
-              (β := T)
-              x10
-              (leaf 0)
-              (fun (x11 : T) (_ : List T) => x11);
-            let _ : List
-              T := Const.lcase
-              (α := T)
-              (β := List T)
-              x10
-              ([] : List T)
-              (fun (_ : T) (x13 : List T) => x13);
-            let x13 : T := x5;
-            let x14 : List T := Const.children x13; let x15 : List T := x14; x15);
-    x1
-
-def «Prover.jobNum» :=
-  fun (x0 : T) =>
-    let x1 : T := (let x1 : T := x0;
-                   let x2 : List T := Const.children x1;
-                   let _ : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x2
-                     (leaf 0)
-                     (fun (x3 : T) (_ : List T) => x3);
-                   let x4 : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x2
-                     ([] : List T)
-                     (fun (_ : T) (x5 : List T) => x5);
-                   let _ : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x4
-                     (leaf 0)
-                     (fun (x5 : T) (_ : List T) => x5);
-                   let x6 : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x4
-                     ([] : List T)
-                     (fun (_ : T) (x7 : List T) => x7);
-                   let x7 : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x6
-                     (leaf 0)
-                     (fun (x7 : T) (_ : List T) => x7);
-                   let x8 : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x6
-                     ([] : List T)
-                     (fun (_ : T) (x9 : List T) => x9);
-                   let _ : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x8
-                     (leaf 0)
-                     (fun (x9 : T) (_ : List T) => x9);
-                   let x10 : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x8
-                     ([] : List T)
-                     (fun (_ : T) (x11 : List T) => x11);
-                   let _ : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x10
-                     (leaf 0)
-                     (fun (x11 : T) (_ : List T) => x11);
-                   let _ : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x10
-                     ([] : List T)
-                     (fun (_ : T) (x13 : List T) => x13);
-                   x7);
-    x1
-
-def «Prover.jobHyps» :=
-  fun (x0 : T) =>
-    let x1 : List
-      T := (let x1 : T := x0;
-            let x2 : List T := Const.children x1;
-            let _ : T := Const.lcase
-              (α := T)
-              (β := T)
-              x2
-              (leaf 0)
-              (fun (x3 : T) (_ : List T) => x3);
-            let x4 : List
-              T := Const.lcase
-              (α := T)
-              (β := List T)
-              x2
-              ([] : List T)
-              (fun (_ : T) (x5 : List T) => x5);
-            let _ : T := Const.lcase
-              (α := T)
-              (β := T)
-              x4
-              (leaf 0)
-              (fun (x5 : T) (_ : List T) => x5);
-            let x6 : List
-              T := Const.lcase
-              (α := T)
-              (β := List T)
-              x4
-              ([] : List T)
-              (fun (_ : T) (x7 : List T) => x7);
-            let _ : T := Const.lcase
-              (α := T)
-              (β := T)
-              x6
-              (leaf 0)
-              (fun (x7 : T) (_ : List T) => x7);
-            let x8 : List
-              T := Const.lcase
-              (α := T)
-              (β := List T)
-              x6
-              ([] : List T)
-              (fun (_ : T) (x9 : List T) => x9);
-            let x9 : T := Const.lcase
-              (α := T)
-              (β := T)
-              x8
-              (leaf 0)
-              (fun (x9 : T) (_ : List T) => x9);
-            let x10 : List
-              T := Const.lcase
-              (α := T)
-              (β := List T)
-              x8
-              ([] : List T)
-              (fun (_ : T) (x11 : List T) => x11);
-            let _ : T := Const.lcase
-              (α := T)
-              (β := T)
-              x10
-              (leaf 0)
-              (fun (x11 : T) (_ : List T) => x11);
-            let _ : List
-              T := Const.lcase
-              (α := T)
-              (β := List T)
-              x10
-              ([] : List T)
-              (fun (_ : T) (x13 : List T) => x13);
-            «Prover.termsOf» x9);
-    x1
-
-def «Prover.jobTerm» :=
-  fun (x0 : T) =>
-    let x1 : T := (let x1 : T := x0;
-                   let x2 : List T := Const.children x1;
-                   let _ : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x2
-                     (leaf 0)
-                     (fun (x3 : T) (_ : List T) => x3);
-                   let x4 : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x2
-                     ([] : List T)
-                     (fun (_ : T) (x5 : List T) => x5);
-                   let _ : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x4
-                     (leaf 0)
-                     (fun (x5 : T) (_ : List T) => x5);
-                   let x6 : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x4
-                     ([] : List T)
-                     (fun (_ : T) (x7 : List T) => x7);
-                   let _ : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x6
-                     (leaf 0)
-                     (fun (x7 : T) (_ : List T) => x7);
-                   let x8 : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x6
-                     ([] : List T)
-                     (fun (_ : T) (x9 : List T) => x9);
-                   let _ : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x8
-                     (leaf 0)
-                     (fun (x9 : T) (_ : List T) => x9);
-                   let x10 : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x8
-                     ([] : List T)
-                     (fun (_ : T) (x11 : List T) => x11);
-                   let x11 : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x10
-                     (leaf 0)
-                     (fun (x11 : T) (_ : List T) => x11);
-                   let _ : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x10
-                     ([] : List T)
-                     (fun (_ : T) (x13 : List T) => x13);
-                   x11);
-    x1
-
-def «Prover.jobAt» :=
-  fun (x0 : T) (x1 : T) (x2 : T) =>
-    let x3 : T := (let x3 : T := x0;
-                   let x4 : List T := Const.children x3;
-                   let _ : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x4
-                     (leaf 0)
-                     (fun (x5 : T) (_ : List T) => x5);
-                   let x6 : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x4
-                     ([] : List T)
-                     (fun (_ : T) (x7 : List T) => x7);
-                   let x7 : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x6
-                     (leaf 0)
-                     (fun (x7 : T) (_ : List T) => x7);
-                   let x8 : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x6
-                     ([] : List T)
-                     (fun (_ : T) (x9 : List T) => x9);
-                   let x9 : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x8
-                     (leaf 0)
-                     (fun (x9 : T) (_ : List T) => x9);
-                   let x10 : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x8
-                     ([] : List T)
-                     (fun (_ : T) (x11 : List T) => x11);
-                   let x11 : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x10
-                     (leaf 0)
-                     (fun (x11 : T) (_ : List T) => x11);
-                   let x12 : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x10
-                     ([] : List T)
-                     (fun (_ : T) (x13 : List T) => x13);
-                   let _ : T := Const.lcase
-                     (α := T)
-                     (β := T)
-                     x12
-                     (leaf 0)
-                     (fun (x13 : T) (_ : List T) => x13);
-                   let _ : List
-                     T := Const.lcase
-                     (α := T)
-                     (β := List T)
-                     x12
-                     ([] : List T)
-                     (fun (_ : T) (x15 : List T) => x15);
-                   «Prover.job» x1 x7 x9 x11 x2);
-    x3
-
 def «Prover.jobRw» :=
   fun (x0 : List T → T → List T → T → T) (x1 : T) (x2 : T) =>
     let x3 : T := x0
@@ -3845,16 +4272,6 @@ def «Prover.stStart» :=
                            «Prover.stAfter» x0 x1 x4 x3 («Prover.nfr» x5 «Prover.dRefl»));
     x4
 
-def «Prover.firstR» :=
-  fun (x0 : List T) =>
-    let x1 : T := Const.lcase
-      (α := T)
-      (β := T)
-      x0
-      «Prover/ONFR.nothing»
-      (fun (x1 : T) (_ : List T) => x1);
-    x1
-
 def «Prover.stAdv» :=
   fun (x0 : T)
     (x1 : T)
@@ -4290,26 +4707,6 @@ def «Prover.stAdv» :=
                                let _ : List T := Const.children x15;
                                «Prover.stDone» «Prover/ONFR.nothing»);
     x5
-
-def «Prover.splitRs» :=
-  fun (x0 : List T) (x1 : List T) =>
-    let x2 : List T ×
-      List
-        T := Const.foldr
-      (α := T)
-      (β := List T → List T × List T)
-      (fun (_ : T) (x3 : List T → List T × List T) (x4 : List T) =>
-        Const.lcase
-          (α := T)
-          (β := List T × List T)
-          x4
-          (([] : List T), ([] : List T))
-          (fun (x5 : T) (x6 : List T) =>
-            let x7 : List T × List T := x3 x6; ((x5 :: (x7).1), (x7).2)))
-      (fun (x2 : List T) => (([] : List T), x2))
-      x0
-      x1;
-    x2
 
 def «Prover.stRound» :=
   fun (x0 : T)
