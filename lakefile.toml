@@ -198,6 +198,11 @@ path = "bootstrap/printer.geb"
 text = true
 
 [[input_file]]
+name = "affineSource"
+path = "bootstrap/affine.geb"
+text = true
+
+[[input_file]]
 name = "evalSource"
 path = "bootstrap/eval.geb"
 text = true
@@ -254,7 +259,7 @@ weak.linter.hashCommand = false
 [[lean_lib]]
 name = "GebTestsFreeTopos"
 globs = ["GebTests.Prototypes.FreeTopos.Agreement.Load"]
-needs = ["@/freeToposSources", "@/printerSource", "@/seqSource"]
+needs = ["@/freeToposSources", "@/printerSource", "@/affineSource", "@/seqSource"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]

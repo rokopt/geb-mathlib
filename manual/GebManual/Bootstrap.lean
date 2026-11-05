@@ -187,12 +187,12 @@ Computation:
   which full self-hosting requires; and later, elementary affine logic
   without the exemption. The search with z3, `scripts/eal/eal.py`, with
   a decoration per use of a definition and the certificates it writes,
-  and the checker specified in Lean, {name}`Geb.Affine.check`, are
-  constructed, and the definitions it rejected in the metalogic's sources
-  are rewritten. The checker written in Geb is ready; the rewriting of the
-  definitions it rejects in the compilers' sources waits on the datatype
-  language's completion; the check in the build follows both, and the
-  search written in Geb is ready.
+  the checker specified in Lean, {name}`Geb.Affine.check`, and the checker
+  written in Geb, `bootstrap/affine.geb`, proved in Lean to agree with it,
+  are constructed, and the definitions it rejected in the metalogic's
+  sources are rewritten. The rewriting of the definitions it rejects in the
+  compilers' sources waits on the datatype language's completion; the check
+  in the build follows it, and the search written in Geb is ready.
 * Ready. The Geb reader and serializer in constant depth, and the stage
   tests run by the compiled executables, the section on improvements.
 
@@ -2431,11 +2431,13 @@ between given numbers, which needs no solver. The steps, in order:
 
    After each rewriting `scripts/bootstrap.sh` checks the fixed points,
    and the search is run again on the three programs.
-3. Ready. The checker written in Geb, proved in Lean to agree with
-   {name}`Geb.Affine.check` by the method of the metalogic's checker; it
-   depends on no rewriting, and its own program is written typable.
+3. Complete. The checker written in Geb, `bootstrap/affine.geb`, the last
+   layer of the metalogic's program, proved in Lean to agree with
+   {name}`Geb.Affine.check` by the method of the metalogic's checker
+   (`GebTests/Prototypes/FreeTopos/Agreement/Affine.lean`); its own
+   program is written typable.
 4. The check in the build of every program's committed decoration, the
-   checker's own among them, after the second and third steps.
+   checker's own among them, after the second step.
 5. A search written in Geb, which full self-hosting requires so that no
    external solver regenerates a decoration. An inference in polynomial
    time given a simple type derivation {citep BaillotTerui2005}[], for a

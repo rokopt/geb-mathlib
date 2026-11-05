@@ -1,0 +1,392 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The check of elementary-affine certificates, written in the kernel's syntax: the checker that
+; Geb/Prototypes/Affine/Decoration.lean specifies, against which
+; GebTests/Prototypes/FreeTopos/Agreement/Affine.lean proves it.
+; Requires the prelude, the base and the checker's isTy and primTypes.
+;
+; Representations. A decorated type is a node of the simple type's label over the leaf of its
+; number of ! and its children. A place is the node of label 0 over the leaf of its variable and
+; the node of label 0 over its path. A context's entry is the node of label 0 over a decorated type
+; and the leaf of its binder's depth, and an instance's the node of label 0 over the leaf of its
+; definition and its decorated type. A check's result is the optional node of label 0 over a
+; decorated type and the node of label 0 over its occurrences of places.
+;
+; The check of a term is one function of a mode, a list of instances, a context and a tree. At mode
+; 0 the tree is the term's decoration. At mode 1 the term is case analysis of lists applied to some
+; of its arguments, the tree is the node of label 0 over those arguments' decorations, and the
+; result is the node of label 0 over their checks, so that a saturated application reads its
+; arguments' checks through its function's, once.
+
+(module Affine (export sem instanceOf check) (import Prelude) (import Base) (import Check)
+  (deftype Sem (Arrow T (Arrow Ts (Arrow Ts (Arrow T T)))))
+  (deftype CF (Arrow T (Arrow T T)))
+  (import (Lists CF) as CFs)
+  (deftype DF (Arrow T T))
+
+  ; simple and decorated types
+  (defn isData ((t T)) T
+    (fold T (lam ((l T) (rs Ts)) (and (not (eq l Label.tyArrow)) (allT (lam ((x T)) x) rs))) t))
+  (defn dBang ((d T)) T (label (child d 0)))
+  (defn dKids ((d T)) Ts (tail (children d)))
+  (defn dMk ((l T) (b T) (cs Ts)) T (node l (cons b cs)))
+  (defn dTy ((d T)) T (fold T (lam ((l T) (rs Ts)) (node l (tail rs))) d))
+  (defn dData ((d T)) T (isData (dTy d)))
+  (defn dZero ((a T)) T (fold T (lam ((l T) (rs Ts)) (node l (cons 0 rs))) a))
+  (defn dArrow ((a T) (b T)) T (dMk Label.tyArrow 0 (cons a (single b))))
+  (defn dList ((a T)) T (dMk Label.tyList 0 (single a)))
+  (defn withBang ((d T) (b T)) T (if (dData d) d (dMk (label d) b (dKids d))))
+  (defn dShift ((d T) (e T)) T (withBang d (add (dBang d) e)))
+  (defn dUnbox ((d T)) T (withBang d (sub (dBang d) 1)))
+
+  ; a simple type decorated by a tree of the same shape whose labels are the numbers of !
+  (defn decorate ((a T) (b T)) T
+    ((fold DF
+       (lam ((l T) (rs (List DF)))
+         (let h (Arrow Ts T)
+           (foldr DF (Arrow Ts T)
+             (lam ((r DF) (c (Arrow Ts T)) (bs Ts))
+               (lcase T T bs none
+                 (lam ((x T) (rest Ts))
+                   (bindO (r x)
+                     (lam ((d T))
+                       (mapO (lam ((ds T)) (node 0 (cons d (children ds)))) (c rest)))))))
+             (lam ((bs Ts)) (if (isEmpty bs) (some (node 0 (nil T))) none))
+             rs)
+           (lam ((y T))
+             (mapO
+               (lam ((csn T))
+                 (let cs Ts (children csn)
+                   (dMk l (if (and (not (eq l Label.tyArrow)) (allT dData cs)) 0 (label y)) cs)))
+               (h (children y))))))
+       a) b))
+
+  ; paths, each the node of label 0 over its positions
+  (defn isPrefix ((p T) (q T)) T (equal p (node 0 (take (length (children p)) (children q)))))
+  (defn snocPath ((p T) (i T)) T (node 0 (append (children p) (single i))))
+  (defn countPath ((p T) (paths Ts)) T
+    (foldr T T (lam ((q T) (n T)) (if (equal q p) (add n 1) n)) 0 paths))
+  (defn belowPath ((p T) (paths Ts)) T
+    (anyT (lam ((q T)) (and (lt (length (children p)) (length (children q))) (isPrefix p q)))
+      paths))
+
+  ; whether a variable of a decorated type admits occurrences of its places at these paths
+  (defn ctStep ((paths Ts) (nd T) (rs (List CF))) CF
+    (let h (Arrow T (Arrow T (Arrow T T)))
+      (foldr CF (Arrow T (Arrow T (Arrow T T)))
+        (lam ((r CF) (c (Arrow T (Arrow T (Arrow T T)))) (p T) (e T) (i T))
+          (let q T (snocPath p i)
+            (and (if (anyT (lam ((x T)) (isPrefix q x)) paths) (r q e) 1) (c p e (add i 1)))))
+        (lam ((p T) (e T) (i T)) 1)
+        (CFs.tail rs))
+      (lam ((p T) (acc T))
+        (let e T (add (dBang nd) acc)
+          (let direct T (countPath p paths)
+            (if (dData nd) 1
+              (if (or (lt 1 direct) (and (lt 0 direct) (belowPath p paths))) (lt 0 e)
+                (or (lt 0 direct) (h p e 0)))))))))
+  (defn contracts ((paths Ts) (d T)) T ((para CF (ctStep paths) d) (node 0 (nil T)) 0))
+
+  ; the decorated type of a place: each projection pushes the pair's ! into its component
+  (defn dPlace ((d0 T) (path Ts)) T
+    ((foldr T (Arrow T T)
+       (lam ((i T) (k (Arrow T T)) (d T))
+         (bindO (nth (dKids d) i) (lam ((c T)) (k (if (dData d) c (dShift c (dBang d)))))))
+       some
+       path) d0))
+
+  ; the places a term reaches, a variable or a chain of projections of one
+  (defn plMk ((n T) (p T)) T (node 0 (cons n (single p))))
+  (defn plVar ((pl T)) T (child pl 0))
+  (defn plPath ((pl T)) T (child pl 1))
+  (defn termPlace ((t T)) T
+    (para T
+      (lam ((nd T) (rs Ts))
+        (let l T (label nd)
+          (let one T (eq (length rs) 1)
+            (if (eq l Label.var)
+              (if one (some (plMk (label (at (children nd) 0)) (node 0 (nil T)))) none)
+              (if (eq l Label.fst)
+                (if one (mapO (lam ((pl T)) (plMk (plVar pl) (snocPath (plPath pl) 0))) (at rs 0))
+                  none)
+                (if (eq l Label.snd)
+                  (if one (mapO (lam ((pl T)) (plMk (plVar pl) (snocPath (plPath pl) 1))) (at rs 0))
+                    none)
+                  none))))))
+      t))
+
+  ; the occurrences of two additive branches: each place as often as in either
+  (defn eraseT ((a T) (l Ts)) Ts
+    ((foldr T (Arrow T Ts)
+       (lam ((x T) (k (Arrow T Ts)) (done T))
+         (if (and (not done) (equal x a)) (k 1) (cons x (k done))))
+       (lam ((done T)) (nil T))
+       l) 0))
+  (defn diffT ((v Ts) (u Ts)) Ts
+    ((foldr T (Arrow Ts Ts) (lam ((a T) (k (Arrow Ts Ts)) (l Ts)) (k (eraseT a l))) (lam ((l Ts)) l)
+       u) v))
+  (defn usageMax ((u Ts) (v Ts)) Ts (append u (diffT v u)))
+
+  ; results
+  (defn res ((d T) (u Ts)) T (some (node 0 (cons d (single (node 0 u))))))
+  (defn rD ((r T)) T (child r 0))
+  (defn rU ((r T)) Ts (children (child r 1)))
+  (defn ctxAt ((G Ts) (n T)) T (nth G n))
+  (defn occurrence ((G Ts) (depth T) (pl T)) T
+    (bindO (ctxAt G (plVar pl))
+      (lam ((e T))
+        (let bound T (child e 1)
+          (bindO (dPlace (child e 0) (children (plPath pl)))
+            (lam ((d T))
+              (if (lt depth bound) none
+                (if (dData d) (res d (single pl))
+                  (if (lt (dBang d) (sub depth bound)) none
+                    (res (withBang d (sub (dBang d) (sub depth bound))) (single pl)))))))))))
+  (defn enter ((G Ts) (depth T) (c T) (r T)) T
+    (if
+      (allT
+        (lam ((pl T))
+          (let m T (ctxAt G (plVar pl)) (if (isSome m) (not (lt c (child (get m) 1))) 0)))
+        (rU r))
+      (let d T (rD r)
+        (if (dData d) (some r)
+          (if (lt (add (dBang d) c) depth) none
+            (res (withBang d (sub (add (dBang d) c) depth)) (rU r)))))
+      none))
+  (defn subOf ((G Ts) (depth T) (m T) (d T)) T (bindO m (lam ((r T)) (enter G depth (label d) r))))
+
+  ; the constants
+  (defn iterD ((a T)) T
+    (dArrow (dMk Label.tyArrow 1 (cons a (single a)))
+      (dArrow (dShift a 1) (dArrow (dZero Label.tyTree) (dShift a 1)))))
+  (defn foldD ((a T)) T
+    (dArrow (dMk Label.tyArrow 1 (cons (dZero Label.tyTree) (single (dArrow (dList a) a))))
+      (dArrow (dZero Label.tyTree) (dShift a 1))))
+  (defn foldrD ((a T) (b T)) T
+    (dArrow (dMk Label.tyArrow 1 (cons (dUnbox a) (single (dArrow b b))))
+      (dArrow (dShift b 1) (dArrow (dList a) (dShift b 1)))))
+  (defn lcaseD ((a T) (b T)) T
+    (dArrow (dList a) (dArrow b (dArrow (dArrow a (dArrow (dList a) b)) b))))
+
+  ; case analysis of lists applied to all its arguments
+  (defn noBang ((d T)) T (or (dData d) (eq (dBang d) 0)))
+  (defn lcaseSat ((a T) (b T) (rl T) (rn T) (rc T)) T
+    (let dl T (rD rl)
+      (let dn T (rD rn)
+        (let dc T (rD rc)
+          (let ck Ts (dKids dc)
+            (if
+              (and (equal (dTy dl) (tyList a))
+                (and (equal (dTy dn) b)
+                  (and (equal (dTy dc) (tyArrow a (tyArrow (tyList a) b)))
+                    (and (noBang dl) (eq (length ck) 2)))))
+              (let cr T (at ck 1)
+                (let cs Ts (dKids cr)
+                  (if
+                    (and (eq (length cs) 2)
+                      (and (eq (dBang dc) 0)
+                        (and (eq (dBang cr) 0)
+                          (and (equal (some (at ck 0)) (nth (dKids dl) 0))
+                            (and (equal (at cs 0) dl) (equal (at cs 1) dn))))))
+                    (res dn (append (rU rl) (usageMax (rU rn) (rU rc))))
+                    none)))
+              none))))))
+  ; a projection of a term that is not a place, and an abstraction
+  (defn project ((i T) (r T)) T
+    (let d T (rD r)
+      (if (and (eq (label d) Label.tyProd) (noBang d))
+        (mapO (lam ((c T)) (node 0 (cons c (single (child r 1))))) (nth (dKids d) i))
+        none)))
+  (defn abstraction ((a T) (rb T)) T
+    (let u Ts (rU rb)
+      (if
+        (contracts
+          (foldr T Ts (lam ((pl T) (acc Ts)) (if (eq (plVar pl) 0) (cons (plPath pl) acc) acc))
+            (nil T)
+            u)
+          a)
+        (res (dArrow a (rD rb))
+          (foldr T Ts
+            (lam ((pl T) (acc Ts))
+              (if (eq (plVar pl) 0) acc (cons (plMk (sub (plVar pl) 1) (plPath pl)) acc)))
+            (nil T)
+            u))
+        none)))
+  ; whether a node is case analysis of lists applied to two arguments, and to three
+  (defn isSpine2 ((f T)) T
+    (and (and (eq (label f) Label.app) (eq (length (children f)) 2))
+      (let f1 T (at (children f) 0)
+        (and (and (eq (label f1) Label.app) (eq (length (children f1)) 2))
+          (let f2 T (at (children f1) 0)
+            (and (eq (label f2) Label.lcase) (eq (length (children f2)) 2)))))))
+  (defn spineTy ((f T) (i T)) T (at (children (at (children (at (children f) 0)) 0)) i))
+  (defn one ((p T) (d T)) T (if p d none))
+  ; the check of a child at its decoration, entered from the node's depth
+  (defn subAt ((r Sem) (E Ts) (G Ts) (depth T) (d T)) T (subOf G depth (r 0 E G d) d))
+  ; the rules of the check, each from a node's children and the children of its decoration
+  (defn semVar ((G Ts) (depth T) (cs Ts) (ds Ts)) T
+    (one (and (eq (length cs) 1) (isEmpty ds))
+      (occurrence G depth (plMk (label (at cs 0)) (node 0 (nil T))))))
+  (defn semProj ((i T) (r0 Sem) (E Ts) (G Ts) (depth T) (cs Ts) (ds Ts)) T
+    (one (eq (length cs) 1)
+      (let pl T (termPlace (at cs 0))
+        (if (isSome pl)
+          (one (isEmpty ds)
+            (occurrence G depth (plMk (plVar (get pl)) (snocPath (plPath (get pl)) i))))
+          (one (eq (length ds) 1)
+            (bindO (subAt r0 E G depth (at ds 0)) (lam ((r T)) (project i r))))))))
+  (defn semLam ((r1 Sem) (E Ts) (G Ts) (depth T) (cs Ts) (ds Ts)) T
+    (one (and (eq (length cs) 2) (and (eq (length ds) 2) (isTy (at cs 0))))
+      (bindO (decorate (at cs 0) (at ds 0))
+        (lam ((a T))
+          (let G1 Ts (cons (node 0 (cons a (single depth))) G)
+            (bindO (subAt r1 E G1 depth (at ds 1)) (lam ((rb T)) (abstraction a rb))))))))
+  (defn semSpine ((r0 Sem) (r1 Sem) (E Ts) (G Ts) (ds Ts)) T
+    (let n T (length ds)
+      (let fr T (r0 1 E G (node 0 (take (sub n 1) ds)))
+        (node 0 (append (children fr) (single (r1 0 E G (at ds (sub n 1)))))))))
+  (defn semSat ((f T) (r0 Sem) (r1 Sem) (E Ts) (G Ts) (depth T) (ds Ts)) T
+    (one (eq (length ds) 3)
+      (let rs Ts (children (r0 1 E G (node 0 (cons (at ds 0) (single (at ds 1))))))
+        (bindO (subOf G depth (at rs 0) (at ds 0))
+          (lam ((rl T))
+            (bindO (subOf G depth (at rs 1) (at ds 1))
+              (lam ((rn T))
+                (bindO (subAt r1 E G depth (at ds 2))
+                  (lam ((rc T)) (lcaseSat (spineTy f 0) (spineTy f 1) rl rn rc))))))))))
+  (defn semApp ((r0 Sem) (r1 Sem) (E Ts) (G Ts) (depth T) (ds Ts)) T
+    (one (eq (length ds) 2)
+      (bindO (subAt r0 E G depth (at ds 0))
+        (lam ((rf T))
+          (bindO (subAt r1 E G depth (at ds 1))
+            (lam ((rx T))
+              (let df T (rD rf)
+                (let ks Ts (dKids df)
+                  (one
+                    (and (eq (length ks) 2)
+                      (and (eq (label df) Label.tyArrow)
+                        (and (eq (dBang df) 0) (equal (at ks 0) (rD rx)))))
+                    (res (at ks 1) (append (rU rf) (rU rx))))))))))))
+  (defn semPair ((r0 Sem) (r1 Sem) (E Ts) (G Ts) (depth T) (ds Ts)) T
+    (one (eq (length ds) 2)
+      (bindO (subAt r0 E G depth (at ds 0))
+        (lam ((ra T))
+          (bindO (subAt r1 E G depth (at ds 1))
+            (lam ((rb T))
+              (res (dMk Label.tyProd 0 (cons (rD ra) (single (rD rb))))
+                (append (rU ra) (rU rb)))))))))
+  (defn semCond ((r0 Sem) (r1 Sem) (r2 Sem) (E Ts) (G Ts) (depth T) (ds Ts)) T
+    (one (eq (length ds) 3)
+      (bindO (subAt r0 E G depth (at ds 0))
+        (lam ((rc T))
+          (bindO (subAt r1 E G depth (at ds 1))
+            (lam ((ra T))
+              (bindO (subAt r2 E G depth (at ds 2))
+                (lam ((rb T))
+                  (one (and (equal (dTy (rD rc)) Label.tyTree) (equal (rD ra) (rD rb)))
+                    (res (rD ra) (append (rU rc) (usageMax (rU ra) (rU rb)))))))))))))
+  (defn semCons ((r0 Sem) (r1 Sem) (E Ts) (G Ts) (depth T) (ds Ts)) T
+    (one (eq (length ds) 2)
+      (bindO (subAt r0 E G depth (at ds 0))
+        (lam ((rx T))
+          (bindO (subAt r1 E G depth (at ds 1))
+            (lam ((rl T))
+              (let dl T (rD rl)
+                (one
+                  (and (equal (dTy dl) (tyList (dTy (rD rx))))
+                    (or (dData dl)
+                      (and (eq (dBang dl) 0)
+                        (equal (node 0 (dKids dl)) (node 0 (single (rD rx)))))))
+                  (res (dList (rD rx)) (append (rU rx) (rU rl)))))))))))
+  (defn semOne ((l T) (cs Ts) (ds Ts)) T
+    (one (and (eq (length cs) 1) (and (eq (length ds) 1) (isTy (at cs 0))))
+      (bindO (decorate (at cs 0) (at ds 0))
+        (lam ((a T))
+          (res (if (eq l Label.nil) (dList a) (if (eq l Label.iter) (iterD a) (foldD a)))
+            (nil T))))))
+  (defn semTwo ((l T) (cs Ts) (ds Ts)) T
+    (one (and (eq (length cs) 2) (and (eq (length ds) 2) (and (isTy (at cs 0)) (isTy (at cs 1)))))
+      (bindO (decorate (at cs 0) (at ds 0))
+        (lam ((a T))
+          (bindO (decorate (at cs 1) (at ds 1))
+            (lam ((b T))
+              (if (eq l Label.lcase) (res (lcaseD a b) (nil T))
+                (one (or (dData a) (lt 0 (dBang a))) (res (foldrD a b) (nil T))))))))))
+  (defn semPrim ((cs Ts) (ds Ts)) T
+    (one (and (eq (length cs) 1) (isEmpty ds))
+      (mapO (lam ((g T)) (node 0 (cons (dZero g) (single (node 0 (nil T))))))
+        (nth primTypes (label (at cs 0))))))
+  (defn semRef ((E Ts) (cs Ts) (ds Ts)) T
+    (one (and (eq (length cs) 1) (eq (length ds) 2))
+      (let di T (at ds 0)
+        (let dk T (at ds 1)
+          (bindO (nth E (label di))
+            (lam ((e T))
+              (one
+                (and (eq (child e 0) (label (at cs 0)))
+                  (and (isEmpty (children di)) (isEmpty (children dk))))
+                (res (dShift (child e 1) (label dk)) (nil T)))))))))
+  ; a node of the check that reads no check of a child
+  (defn semLeaf ((l T) (E Ts) (cs Ts) (ds Ts)) T
+    (if (eq l Label.unit) (one (and (isEmpty cs) (isEmpty ds)) (res (dZero Label.tyUnit) (nil T)))
+      (if (eq l Label.quote)
+        (one (and (eq (length cs) 1) (isEmpty ds)) (res (dZero Label.tyTree) (nil T)))
+        (if (eq l Label.prim) (semPrim cs ds)
+          (if (eq l Label.ref) (semRef E cs ds)
+            (if (or (eq l Label.foldr) (eq l Label.lcase)) (semTwo l cs ds)
+              (if
+                (or (eq l Label.nil)
+                  (or (eq l Label.iter) (or (eq l Label.fold) (eq l Label.para))))
+                (semOne l cs ds)
+                none)))))))
+  ; one node of the check, from the checks of its first three children
+  (defn semStep ((nd T) (r0 Sem) (r1 Sem) (r2 Sem) (m T) (E Ts) (G Ts) (D T)) T
+    (let l T (label nd)
+      (let cs Ts (children nd)
+        (let depth T (label D)
+          (let ds Ts (children D)
+            (if (lt l Label.lam) (if (eq l Label.var) (semVar G depth cs ds) none)
+              (if (eq l Label.lam) (semLam r1 E G depth cs ds)
+                (if (eq l Label.app)
+                  (one (eq (length cs) 2)
+                    (if (eq m 1) (semSpine r0 r1 E G ds)
+                      (if (isSpine2 (at cs 0)) (semSat (at cs 0) r0 r1 E G depth ds)
+                        (semApp r0 r1 E G depth ds))))
+                  (if (eq l Label.pair) (one (eq (length cs) 2) (semPair r0 r1 E G depth ds))
+                    (if (eq l Label.fst) (semProj 0 r0 E G depth cs ds)
+                      (if (eq l Label.snd) (semProj 1 r0 E G depth cs ds)
+                        (if (eq l Label.cond)
+                          (one (eq (length cs) 3) (semCond r0 r1 r2 E G depth ds))
+                          (if (eq l Label.cons)
+                            (one (eq (length cs) 2) (semCons r0 r1 E G depth ds))
+                            (if (and (eq m 1) (or (eq l Label.foldr) (eq l Label.lcase)))
+                              (node 0 (nil T))
+                              (semLeaf l E cs ds)))))))))))))))
+  (def sem0 (lam ((m T) (E Ts) (G Ts) (D T)) none))
+  (defn semThree ((nd T) (rs (List Sem))) Sem
+    (lcase Sem Sem rs (semStep nd sem0 sem0 sem0)
+      (lam ((a Sem) (r1 (List Sem)))
+        (lcase Sem Sem r1 (semStep nd a sem0 sem0)
+          (lam ((b Sem) (r2 (List Sem)))
+            (lcase Sem Sem r2 (semStep nd a b sem0)
+              (lam ((c Sem) (r3 (List Sem))) (semStep nd a b c))))))))
+  (defn sem ((t T)) Sem (para Sem semThree t))
+  ; the check of an instance after the instances before it, and of a certificate
+  (defn instanceOf ((prog Ts) (E Ts) (inst T)) T
+    (bindO (nth prog (label inst))
+      (lam ((body T))
+        (let is Ts (children inst)
+          (if (and (eq (length is) 1) (eq (label (at is 0)) 0))
+            (mapO
+              (lam ((r T))
+                (node 0 (append E (single (node 0 (cons (label inst) (single (child r 0))))))))
+              (sem body 0 E (nil T) (at is 0)))
+            none)))))
+  (defn check ((prog Ts) (cert T)) T
+    ((foldr T (Arrow Ts T)
+       (lam ((inst T) (k (Arrow Ts T)) (E Ts))
+         (bindO (instanceOf prog E inst) (lam ((e T)) (k (children e)))))
+       (lam ((E Ts)) (some (node 0 E)))
+       (children cert)) (nil T))))
