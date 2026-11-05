@@ -4267,7 +4267,8 @@ import-direction rules above are enforced by
   the base development's invariant
   (`Geb.FreeTopos.Internal.valid_of_checkConvDev`), and `ByMachine.lean`
   translates a development's derivations, each join that the machine also
-  joins replaced by two steps of the machine
+  joins replaced by two steps of the machine, a step at a side whose
+  rewriting cites theorems and hypotheses rewriting by those it cites
   (`Geb.FreeTopos.Internal.devByMachine`); the translation is checked
   rather than trusted, and `GebBench/Prototypes/FreeTopos/ByMachine.lean`
   times the stored developments against their translations.
