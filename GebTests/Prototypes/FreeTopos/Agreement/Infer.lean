@@ -617,17 +617,34 @@ theorem treeInfer_eq {v : List Tree → Tree → Tree}
       mirror_simp [] at hz
       mirror_simp [hz, inferOp_eq hvw, Option.bind_eq_bind]
 
-/-- The mirror's inferences at a fuel, of pattern instances' typings and of terms'. -/
+/-- The mirror's inferences and the inferences at a fuel are related when their inferences of
+pattern instances' typings and of terms' are. -/
+def InfRel (E : ExtEnv) (Γ : List ℕ) (H : List PartialHorn.Eqn)
+    (r' : (List Tree → Tree → Tree) × (Tree → Tree)) (fuel : ℕ) : Prop :=
+  PatRel r'.1 (infers E Γ H fuel).1 ∧ TreeRel r'.2 (infers E Γ H fuel).2
+
+/-- The mirror's step of the inferences is the step of the fuel. -/
+theorem inferStep_rel {E : ExtEnv} {Γ : List ℕ} {H : List PartialHorn.Eqn}
+    {r' : (List Tree → Tree → Tree) × (Tree → Tree)} {n : ℕ} (h : InfRel E Γ H r' n) :
+    InfRel E Γ H («Infer.inferStep» (encExtEnv E) (Γ.map leaf) (H.map encEqn) r') (n + 1) :=
+  ⟨fun env p ↦ patInfer_eq h.1 E env p, fun t ↦ treeInfer_eq h.1 h.2 E Γ H t⟩
+
+/-- The mirror's two steps of the inferences. -/
+theorem inferStep2_rel {E : ExtEnv} {Γ : List ℕ} {H : List PartialHorn.Eqn}
+    {r' : (List Tree → Tree → Tree) × (Tree → Tree)} {n : ℕ} (h : InfRel E Γ H r' n) :
+    InfRel E Γ H («Infer.inferStep2» (encExtEnv E) (Γ.map leaf) (H.map encEqn) r') (n + 2) :=
+  inferStep_rel (inferStep_rel h)
+
+/-- The mirror's four steps of the inferences. -/
+theorem inferStep4_rel {E : ExtEnv} {Γ : List ℕ} {H : List PartialHorn.Eqn}
+    {r' : (List Tree → Tree → Tree) × (Tree → Tree)} {n : ℕ} (h : InfRel E Γ H r' n) :
+    InfRel E Γ H («Infer.inferStep4» (encExtEnv E) (Γ.map leaf) (H.map encEqn) r') (n + 4) :=
+  inferStep2_rel (inferStep2_rel h)
+
+/-- The mirror's inferences are those at a fuel of eight. -/
 theorem infers_eq (E : ExtEnv) (Γ : List ℕ) (H : List PartialHorn.Eqn) :
-    ∀ fuel : ℕ,
-      PatRel («Infer.infers» (encExtEnv E) (Γ.map leaf) (H.map encEqn) (leaf fuel)).1
-        (infers E Γ H fuel).1 ∧
-      TreeRel («Infer.infers» (encExtEnv E) (Γ.map leaf) (H.map encEqn) (leaf fuel)).2
-        (infers E Γ H fuel).2 :=
-  Nat.rec ⟨fun _ _ ↦ rfl, fun _ ↦ rfl⟩ fun n ih ↦ by
-    simp only [«Infer.infers», template, iter_leaf] at ih ⊢
-    rw [Nat.repeat]
-    exact ⟨fun env p ↦ patInfer_eq ih.1 E env p, fun t ↦ treeInfer_eq ih.1 ih.2 E Γ H t⟩
+    InfRel E Γ H («Infer.infers» (encExtEnv E) (Γ.map leaf) (H.map encEqn)) 8 :=
+  inferStep4_rel (inferStep4_rel ⟨fun _ _ ↦ rfl, fun _ ↦ rfl⟩)
 
 end GebTests.Prototypes.FreeTopos.Agreement.Infer
 

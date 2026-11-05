@@ -747,7 +747,7 @@
             (equal (sortOf S (replicate m Sorts.obj) (prArrow p)) (some Sorts.arr)))))))
   (defn primOk ((G Globals) (E ExtEnv) (p Primitive)) T
     (and (primWf G (envSg E) p)
-      (let inf TreeInf (snd (infers E (replicate (prArity p) Sorts.obj) (nil Eqn) inferFuel))
+      (let inf TreeInf (snd (infers E (replicate (prArity p) Sorts.obj) (nil Eqn)))
         (let a OAnn.Maybe (inf (prArrow p))
           (let d OAnn.Maybe (inf (prDom p))
             (let c OAnn.Maybe (inf (prCod p))
@@ -764,4 +764,4 @@
   ; whether an object in object parameters is an object defined by the checker's inference
   (defn objOk ((E ExtEnv) (m T) (b T)) T
     (and (equal (sortOf (envSg E) (replicate m Sorts.obj) b) (some Sorts.obj))
-      (OAnn.isJust ((snd (infers E (replicate m Sorts.obj) (nil Eqn) inferFuel)) b)))))
+      (OAnn.isJust ((snd (infers E (replicate m Sorts.obj) (nil Eqn))) b)))))

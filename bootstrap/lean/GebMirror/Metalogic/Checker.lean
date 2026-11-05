@@ -7197,21 +7197,60 @@ def «Infer.treeInfer» :=
       x5).2;
     x6
 
-def «Infer.infers» :=
-  fun (x0 : T) (x1 : List T) (x2 : List T) (x3 : T) =>
+def «Infer.inferStep» :=
+  fun (x0 : T)
+    (x1 : List T)
+    (x2 : List T)
+    (x3 : (List T → T → T) × (T → T)) =>
     let x4 : (List T → T → T) ×
       (T →
-        T) := Const.iter
-      (α := (List T → T → T) × (T → T))
-      (fun (x4 : (List T → T → T) × (T → T)) =>
-        (fun (x5 : List T) (x6 : T) => «Infer.patInfer» x0 (x4).1 x5 x6,
-          fun (x5 : T) => «Infer.treeInfer» x0 x1 x2 (x4).1 (x4).2 x5))
-      (fun (_ : List T) (_ : T) => «Infer/OTyped.nothing»,
-        fun (_ : T) => «Infer/OAnn.nothing»)
-      x3;
+        T) := (fun (x4 : List T) (x5 : T) =>
+      «Infer.patInfer» x0 (x3).1 x4 x5,
+      fun (x4 : T) => «Infer.treeInfer» x0 x1 x2 (x3).1 (x3).2 x4);
     x4
 
-def «Infer.inferFuel» := leaf 8
+def «Infer.inferStep2» :=
+  fun (x0 : T)
+    (x1 : List T)
+    (x2 : List T)
+    (x3 : (List T → T → T) × (T → T)) =>
+    let x4 : (List T → T → T) ×
+      (T → T) := «Infer.inferStep»
+      x0
+      x1
+      x2
+      («Infer.inferStep» x0 x1 x2 x3);
+    x4
+
+def «Infer.inferStep4» :=
+  fun (x0 : T)
+    (x1 : List T)
+    (x2 : List T)
+    (x3 : (List T → T → T) × (T → T)) =>
+    let x4 : (List T → T → T) ×
+      (T →
+        T) := «Infer.inferStep2»
+      x0
+      x1
+      x2
+      («Infer.inferStep2» x0 x1 x2 x3);
+    x4
+
+def «Infer.infers» :=
+  fun (x0 : T) (x1 : List T) (x2 : List T) =>
+    let x3 : (List T → T → T) ×
+      (T →
+        T) := «Infer.inferStep4»
+      x0
+      x1
+      x2
+      («Infer.inferStep4»
+        x0
+        x1
+        x2
+        (fun (_ : List T) (_ : T) => «Infer/OTyped.nothing»,
+          fun (_ : T) => «Infer/OAnn.nothing»));
+    x3
 
 def «Language/Eqns.single» :=
   fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
@@ -10652,8 +10691,7 @@ def «Language.primOk» :=
          T := («Infer.infers»
          x1
          («Prelude.replicate» («Language.prArity» x2) (leaf 0))
-         ([] : List T)
-         «Infer.inferFuel»).2;
+         ([] : List T)).2;
        let x4 : T := x3 («Language.prArrow» x2);
        let x5 : T := x3 («Language.prDom» x2);
        let x6 : T := x3 («Language.prCod» x2);
@@ -10688,11 +10726,7 @@ def «Language.objOk» :=
           x2)
         («Prelude.some» (leaf 0)))
       («Infer/OAnn.isJust»
-        ((«Infer.infers»
-          x0
-          («Prelude.replicate» x1 (leaf 0))
-          ([] : List T)
-          «Infer.inferFuel»).2
+        ((«Infer.infers» x0 («Prelude.replicate» x1 (leaf 0)) ([] : List T)).2
           x2));
     x3
 

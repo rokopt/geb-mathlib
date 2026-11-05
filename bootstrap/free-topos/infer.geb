@@ -30,7 +30,6 @@
     TreeInf
     bound
     infers
-    inferFuel
     OAnn.Maybe
     OAnn.nothing
     OAnn.just
@@ -411,13 +410,17 @@
                           cs)))))))))
         t)))
 
-  ; the inferences at a fuel, each typing the instances of axioms' sides it meets at the fuel
-  ; below
-  (defn infers ((E ExtEnv) (ctx Ts) (hs (List Eqn)) (fuel T)) Infs
-    (iter Infs
-      (lam ((r Infs))
-        (pair (lam ((env (List Typed)) (p T)) (patInfer E (fst r) env p))
-          (lam ((t T)) (treeInfer E ctx hs (fst r) (snd r) t))))
-      (pair (lam ((env (List Typed)) (p T)) OTyped.nothing) (lam ((t T)) OAnn.nothing))
-      fuel))
-  (def inferFuel 8))
+  ; the inferences, each typing the instances of axioms' sides it meets by the inferences one
+  ; level below, to eight levels: a fixed composition of the step, whose uses each have their own
+  ; decoration
+  (defn inferStep ((E ExtEnv) (ctx Ts) (hs (List Eqn)) (r Infs)) Infs
+    (pair (lam ((env (List Typed)) (p T)) (patInfer E (fst r) env p))
+      (lam ((t T)) (treeInfer E ctx hs (fst r) (snd r) t))))
+  (defn inferStep2 ((E ExtEnv) (ctx Ts) (hs (List Eqn)) (r Infs)) Infs
+    (inferStep E ctx hs (inferStep E ctx hs r)))
+  (defn inferStep4 ((E ExtEnv) (ctx Ts) (hs (List Eqn)) (r Infs)) Infs
+    (inferStep2 E ctx hs (inferStep2 E ctx hs r)))
+  (defn infers ((E ExtEnv) (ctx Ts) (hs (List Eqn))) Infs
+    (inferStep4 E ctx hs
+      (inferStep4 E ctx hs
+        (pair (lam ((env (List Typed)) (p T)) OTyped.nothing) (lam ((t T)) OAnn.nothing))))))
