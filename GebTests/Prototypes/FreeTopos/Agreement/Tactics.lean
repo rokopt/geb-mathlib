@@ -1405,51 +1405,55 @@ theorem unnodeStep_eq : «Tactics.unnodeStep» = encTerm Tactics.unnodeStep := b
   simp only [«Tactics.unnodeU», template, unnodeStep_eq, mRoseRec_eq]
   rfl
 
-/-- The mirror's length of a list of functions. -/
-@[simp] theorem lenUF_eq (rs : List (Tree → Tree)) :
-    «Tactics.lenUF» rs = leaf rs.length := by
-  simp only [«Tactics.lenUF», template, foldr_eq]
-  exact rs.rec rfl fun _ _ ih ↦ by rw [List.foldr_cons, ih, add_leaf, List.length_cons]
+/-- The variables a child of a node binds, at its position, whatever the node's arity. -/
+def anyB (l : Internal.Label) (i : ℕ) : ℕ := match l with
+  | .lam _ => 1
+  | .natRec => if i = 1 then 1 else 0
+  | .listRec => if i = 1 then 2 else 0
+  | .roseRec _ => if i = 0 then 1 else 0
+  | _ => 0
 
-/-- The mirror's list over a node's children's positions of a child's result at a position and
-another tree elsewhere. -/
-theorem range_ufAt {β : Type} (e : β → Tree) (xs : List (Term × (Tree → Tree) × (ℕ → β)))
-    (hx : ∀ x ∈ xs, ∀ d, x.2.1 (leaf d) = e (x.2.2 d)) (K d : ℕ) (g' : ℕ → Tree)
-    (g : Term → β) (hg : ∀ k (h : k < xs.length), g' k = e (g xs[k].1)) :
-    (List.range xs.length).map (fun k ↦ if k = K then
-        ((xs.map (·.2.1))[k]?.getD fun _ ↦ leaf 0) (leaf d) else g' k) =
-      (xs.zipIdx.map fun p ↦ if p.2 = K then p.1.2.2 d else g p.1.1).map e := by
-  refine List.ext_getElem (by simp) fun k h₁ h₂ ↦ ?_
-  have hk : k < xs.length := by simpa using h₁
-  simp only [List.getElem_map, List.getElem_range, List.getElem_zipIdx, zero_add,
-    List.getElem?_map, List.getElem?_eq_getElem hk, Option.map_some, Option.getD_some]
-  split
-  · exact hx _ (List.getElem_mem hk) d
-  · exact hg k hk
+/-- The mirror's variables a child of a node binds, whatever the node's arity. -/
+@[simp] theorem anyBound_eq (l : Internal.Label) (i : ℕ) :
+    «Tactics.anyBound» (leaf (labelData l).1) (leaf i) = leaf (anyB l i) := by
+  cases l <;> mirror_simp [«Tactics.anyBound», labelData, anyB, beq_iff_eq]
+  all_goals split <;> rfl
 
-/-- The mirror's list over a node's children's positions of each child's result, the child of
-one position's under more binders. -/
-theorem range_ufAt_step {β : Type} (e : β → Tree) (xs : List (Term × (Tree → Tree) × (ℕ → β)))
-    (hx : ∀ x ∈ xs, ∀ d, x.2.1 (leaf d) = e (x.2.2 d)) (K d c : ℕ) :
-    (List.range xs.length).map (fun k ↦ ((xs.map (·.2.1))[k]?.getD fun _ ↦ leaf 0)
-        (if k = K then leaf (d + c) else leaf d)) =
-      (xs.zipIdx.map fun p ↦ p.1.2.2 (if p.2 = K then d + c else d)).map e := by
-  refine List.ext_getElem (by simp) fun k h₁ h₂ ↦ ?_
-  have hk : k < xs.length := by simpa using h₁
-  simp only [List.getElem_map, List.getElem_range, List.getElem_zipIdx, zero_add,
-    List.getElem?_map, List.getElem?_eq_getElem hk, Option.map_some, Option.getD_some]
-  split <;> exact hx _ (List.getElem_mem hk) _
+/-- A function of a list's elements, with their positions unread. -/
+theorem map_zipIdx_fst {α β : Type} (f : α → β) :
+    ∀ (xs : List α) (i : ℕ), (xs.zipIdx i).map (fun p ↦ f p.1) = xs.map f :=
+  List.rec (fun _ ↦ rfl) fun x xs ih i ↦ by
+    simp only [List.zipIdx_cons, List.map_cons, ih]
 
-/-- The mirror's list of the children's results at one argument. -/
-theorem foldr_ufApply {β : Type} (e : β → Tree) (d : ℕ) :
-    ∀ xs : List (Term × (Tree → Tree) × (ℕ → β)),
-      (∀ x ∈ xs, ∀ d, x.2.1 (leaf d) = e (x.2.2 d)) →
-      List.foldr (fun (r : Tree → Tree) acc ↦ r (leaf d) :: acc) [] (xs.map (·.2.1)) =
-        (xs.map (·.2.2 d)).map e :=
-  List.rec (fun _ ↦ rfl) fun x xs ih hx ↦ by
-    rw [List.map_cons, List.foldr_cons, ih fun y hy ↦ hx y (List.mem_cons_of_mem x hy),
-      hx x List.mem_cons_self d]
-    rfl
+/-- The mirror's results of a node's children at an index raised by the variables each binds. -/
+theorem kidsAt_eq {β : Type} (e : β → Tree) (l : Internal.Label) (v : Tree → Tree) (d : ℕ) :
+    ∀ xs : List (Term × (Tree → Tree) × (ℕ → β)), (∀ x ∈ xs, ∀ d, x.2.1 (leaf d) = e (x.2.2 d)) →
+      ∀ i : ℕ, «Tactics.kidsAt» (leaf (labelData l).1) (v :: xs.map fun x ↦ x.2.1) (leaf d)
+        (leaf i) = ((xs.zipIdx i).map fun p ↦ p.1.2.2 (d + anyB l p.2)).map e := by
+  simp only [«Tactics.kidsAt», foldr_eq, ufTail_eq, List.tail_cons]
+  exact List.rec (fun _ _ ↦ rfl) fun x xs ih hx i ↦ by
+    simp only [List.map_cons, List.foldr_cons, anyBound_eq, add_leaf, List.zipIdx_cons]
+    rw [ih (fun y hy ↦ hx y (List.mem_cons_of_mem x hy)) (i + 1), hx x List.mem_cons_self]
+
+/-- The mirror's results of a node's children, where the index each child reads is that of
+{lit}`G` at its position. -/
+theorem kidsAt_G {β : Type} (e : β → Tree) (l : Internal.Label) (v : Tree → Tree) (d : ℕ)
+    (xs : List (Term × (Tree → Tree) × (ℕ → β))) (hx : ∀ x ∈ xs, ∀ d, x.2.1 (leaf d) = e (x.2.2 d))
+    (G : ℕ → ℕ) (hG : ∀ k, d + anyB l k = G k) :
+    «Tactics.kidsAt» (leaf (labelData l).1) (v :: xs.map fun x ↦ x.2.1) (leaf d) (leaf 0) =
+      ((xs.map fun x ↦ (x.1, x.2.2)).zipIdx.map fun x ↦ x.1.2 (G x.2)).map e := by
+  rw [kidsAt_eq e l v d xs hx 0]
+  simp only [hG, List.zipIdx_map, List.map_map, Function.comp_def, Prod.map, id_eq]
+
+/-- The mirror's results of a node's children, each binding the same number of variables. -/
+theorem kidsAt_const {β : Type} (e : β → Tree) (l : Internal.Label) (v : Tree → Tree) (d : ℕ)
+    (xs : List (Term × (Tree → Tree) × (ℕ → β))) (hx : ∀ x ∈ xs, ∀ d, x.2.1 (leaf d) = e (x.2.2 d))
+    (b : ℕ) (hb : ∀ k, anyB l k = b) :
+    «Tactics.kidsAt» (leaf (labelData l).1) (v :: xs.map fun x ↦ x.2.1) (leaf d) (leaf 0) =
+      ((xs.map fun x ↦ (x.1, x.2.2)).map fun x ↦ x.2 (d + b)).map e := by
+  rw [kidsAt_eq e l v d xs hx 0]
+  simp only [hb, List.map_map, Function.comp_def]
+  exact map_zipIdx_fst (fun x : Term × (Tree → Tree) × (ℕ → β) ↦ e (x.2.2 (d + b))) xs 0
 
 /-- The mirror's rewriting of an encoded term in which a tree rebuilt from the unfolding of a
 variable stands for the variable, back to the term. -/
@@ -1461,7 +1465,8 @@ theorem occRewrite_eq (lk i : ℕ) (t : Term) (d : ℕ) :
     («Tactics.occStep» (leaf lk) (leaf i)) _ (fun l v xs hx d ↦ ?_) t d
   change «Tactics.occStep» (leaf lk) (leaf i)
     (encTerm (RoseTree.node l (xs.map Prod.fst))) _ (leaf d) = _
-  have hr := range_ufAt encDeriv xs hx
+  have hG := kidsAt_G encDeriv l v d xs hx
+  have hC := kidsAt_const encDeriv l v d xs hx
   cases l with
   | var k =>
     mirror_simp [«Tactics.occStep», labelData, mD_eq, label_encTerm]
@@ -1470,27 +1475,30 @@ theorem occRewrite_eq (lk i : ℕ) (t : Term) (d : ℕ) :
       rfl
     · tac_simp [h, beq_false_of_ne h, Bool.false_eq_true, ↓reduceIte, ite_false]
   | lam a =>
-    mirror_simp [«Tactics.occStep», labelData, label_encTerm, ufTail_eq]
-    tac_simp [foldr_ufApply encDeriv (d + 1) xs hx]
-  | natRec | listRec =>
-    mirror_simp [«Tactics.occStep», labelData, label_encTerm, ufTail_eq, lenUF_eq,
-      ufAt_eq, List.getElem?_cons_succ, beq_iff_eq, ← List.getElem?_map]
-    all_goals
-      first
-        | erw [range_ufAt_step encDeriv xs hx 1 d 1]
-        | erw [range_ufAt_step encDeriv xs hx 1 d 2]
-      tac_simp [List.zipIdx_map, List.map_map, Prod.map, id_eq]
+    mirror_simp [«Tactics.occStep», label_encTerm, hC 1 fun _ ↦ rfl]
+    mirror_simp [labelData]
+    tac_simp [List.map_map]
+  | natRec =>
+    mirror_simp [«Tactics.occStep», label_encTerm,
+      hG (fun k ↦ if k = 1 then d + 1 else d) fun k ↦ by simp only [anyB]; split <;> rfl]
+    mirror_simp [labelData]
+    tac_simp [List.map_map]
+  | listRec =>
+    mirror_simp [«Tactics.occStep», label_encTerm,
+      hG (fun k ↦ if k = 1 then d + 2 else d) fun k ↦ by simp only [anyB]; split <;> rfl]
+    mirror_simp [labelData]
+    tac_simp [List.map_map]
   | roseRec c =>
-    mirror_simp [«Tactics.occStep», labelData, label_encTerm, ufTail_eq, lenUF_eq,
-      ufAt_eq, List.getElem?_cons_succ, beq_iff_eq, ← List.getElem?_map]
-    erw [range_ufAt_step encDeriv xs hx 0 d 1]
-    tac_simp [List.zipIdx_map, List.map_map, Prod.map, id_eq]
+    mirror_simp [«Tactics.occStep», label_encTerm,
+      hG (fun k ↦ if k = 0 then d + 1 else d) fun k ↦ by simp only [anyB]; split <;> rfl]
+    mirror_simp [labelData]
+    tac_simp [List.map_map]
   | _ =>
-    mirror_simp [«Tactics.occStep», labelData, label_encTerm, ufTail_eq, mArgs_eq,
-      uses_eq, allT_label]
+    mirror_simp [«Tactics.occStep», label_encTerm, hC 0 fun _ ↦ rfl]
+    mirror_simp [labelData, mArgs_eq, uses_eq, allT_label, Nat.add_zero]
     all_goals
-      simp only [Bool.beq_eq_decide_eq, foldr_ufApply encDeriv d xs hx]
-      split <;> tac_simp []
+      simp only [Bool.beq_eq_decide_eq]
+      split <;> tac_simp [List.map_map]
 
 /-- The mirror's abstraction, over a new variable of a type, of an encoded term's occurrences of
 an encoded term. -/
@@ -1516,7 +1524,8 @@ an encoded term. -/
       («Tactics.absStep» (encTerm (Internal.weaken1 x))) _ (fun l v xs hx d ↦ ?_) w d
     change «Tactics.absStep» (encTerm (Internal.weaken1 x))
       (encTerm (RoseTree.node l (xs.map Prod.fst))) _ (leaf d) = _
-    have hr := range_ufAt encTerm xs hx
+    have hG := kidsAt_G encTerm l v d xs hx
+    have hC := kidsAt_const encTerm l v d xs hx
     have hn : «Language.rename» (encTerm (Internal.weaken1 x))
         (fun j ↦ Const.add j (leaf d)) = encTerm (Term.rename (Internal.weaken1 x) (· + d)) :=
       rename_eq _ _ _ fun _ ↦ rfl
@@ -1528,26 +1537,19 @@ an encoded term. -/
     simp only [h, decide_false, ofBool_false, label_leaf, ne_eq, not_true_eq_false, ↓reduceIte]
     cases l with
     | lam a =>
-      mirror_simp [labelData, label_encTerm, ufTail_eq, encTerm_node,
-        foldr_ufApply encTerm (d + 1) xs hx]
-    | natRec | listRec =>
-      mirror_simp [labelData, label_encTerm, ufTail_eq, lenUF_eq, ufAt_eq,
-        List.getElem?_cons_succ, beq_iff_eq, ← List.getElem?_map, encTerm_node,
-        «Language.mArgs», tail_eq, List.tail_cons, at_eq]
-      all_goals
-        first
-          | erw [range_ufAt_step encTerm xs hx 1 d 1]
-          | erw [range_ufAt_step encTerm xs hx 1 d 2]
-        simp only [List.zipIdx_map, List.map_map, Function.comp_def, Prod.map, id_eq]
+      mirror_simp [label_encTerm, encTerm_node, hC 1 fun _ ↦ rfl]
+    | natRec =>
+      mirror_simp [label_encTerm, encTerm_node,
+        hG (fun k ↦ if k = 1 then d + 1 else d) fun k ↦ by simp only [anyB]; split <;> rfl]
+    | listRec =>
+      mirror_simp [label_encTerm, encTerm_node,
+        hG (fun k ↦ if k = 1 then d + 2 else d) fun k ↦ by simp only [anyB]; split <;> rfl]
     | roseRec c =>
-      mirror_simp [labelData, label_encTerm, ufTail_eq, lenUF_eq, ufAt_eq,
-        List.getElem?_cons_succ, beq_iff_eq, ← List.getElem?_map, encTerm_node,
-        «Language.mArgs», tail_eq, List.tail_cons, at_eq]
-      erw [range_ufAt_step encTerm xs hx 0 d 1]
-      simp only [List.zipIdx_map, List.map_map, Function.comp_def, Prod.map, id_eq]
+      mirror_simp [label_encTerm, encTerm_node,
+        hG (fun k ↦ if k = 0 then d + 1 else d) fun k ↦ by simp only [anyB]; split <;> rfl]
     | _ =>
-      mirror_simp [labelData, label_encTerm, ufTail_eq, encTerm_node,
-        foldr_ufApply encTerm d xs hx]
+      mirror_simp [label_encTerm, encTerm_node, hC 0 fun _ ↦ rfl]
+      mirror_simp [labelData, List.map_map, Function.comp_def, Nat.add_zero]
   rw [hgo (Internal.weaken1 y) 0, mLam_eq]
   rfl
 

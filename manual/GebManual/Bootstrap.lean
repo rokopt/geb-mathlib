@@ -2340,11 +2340,10 @@ between given numbers, which needs no solver. The steps, in order:
    rewriting may fall, as `usesStep` with `uses`. The sources holding
    them are constrained by different work:
    * Ready. The metalogic's own sources: `pcheck` in `partial-horn.geb`;
-     `trav`, `occurs` and `compile` in `language.geb`; `infers` in
-     `infer.geb`; `term` in `translation.geb`; `matchTerm`,
-     `normalize` and `uses` in `prove.geb`; `withWeakHyps`,
-     `withImpElim`, `byInstsOnce`, `occRewrite`, `byAutoT`, `byAutoC` and
-     `abstractTerm` in `tactics.geb`; and `typers` and `normalizers` in
+     `trav` and `compile` in `language.geb`; `infers` in
+     `infer.geb`; `normalize` in `prove.geb`; `withWeakHyps`,
+     `withImpElim`, `byInstsOnce`, `byAutoT` and `byAutoC` in
+     `tactics.geb`; and `typers` and `normalizers` in
      `combinator.geb`, all under `bootstrap/free-topos/`; and
      `printTerm` and `termWf` in `bootstrap/printer.geb`. Each rewriting
      changes the program that `GebMirror.Metalogic` mirrors, so the
@@ -2366,11 +2365,15 @@ between given numbers, which needs no solver. The steps, in order:
      `GebTests/Prototypes/FreeTopos/Agreement/Derivation.lean`) is
      proved again of that form. The fold the evaluation adds to
      `language.geb` is typable.
-   * Complete: `isRename` in `bootstrap/free-topos/prove.geb`, whose
-     step composes its children's tests into one by a right fold
-     (`holdAll`) and returns the closure that applies it, rather than a
-     closure that folds over the children's tests. The search accepts
-     it with a decoration per use.
+   * Complete: `occurs` in `language.geb`, `term` in `translation.geb`,
+     `isRename`, `matchTerm` and `uses` in `prove.geb`, and `occRewrite`
+     and `abstractTerm` in `tactics.geb`, all under
+     `bootstrap/free-topos/`. Each step composes its children's functions
+     into one by a right fold and returns the closure that applies it,
+     rather than a closure that reads the list of the children's
+     functions; a child's position and the node's data give what the
+     composition passes the child (`childBound`, `anyBound`). The search
+     accepts them with a decoration per use.
    * Complete: the reduction `evalK` in `bootstrap/free-topos/prove.geb`,
      which applies each level of its recursion to lists of jobs
      (`evalB`, `evalStepB`). A job's state (`St`) is first-order data:

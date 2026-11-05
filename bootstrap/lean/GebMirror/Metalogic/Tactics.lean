@@ -2123,105 +2123,83 @@ def «Tactics.unnodeU» :=
       x0;
     x1
 
-def «Tactics.lenUF» :=
-  fun (x0 : List (T → T)) =>
-    let x1 : T := Const.foldr
+def «Tactics.anyBound» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (if (Const.eq x0 (leaf 5)).label ≠ 0 then
+      leaf 1
+    else
+      if (Const.eq x0 (leaf 8)).label ≠ 0 then
+        if (Const.eq x1 (leaf 1)).label ≠ 0 then leaf 1 else leaf 0
+      else
+        if (Const.eq x0 (leaf 9)).label ≠ 0 then
+          if (Const.eq x1 (leaf 1)).label ≠ 0 then leaf 2 else leaf 0
+        else
+          if (Const.eq x0 (leaf 10)).label ≠ 0 then
+            if (Const.eq x1 (leaf 0)).label ≠ 0 then leaf 1 else leaf 0
+          else
+            leaf 0);
+    x2
+
+def «Tactics.kidsAt» :=
+  fun (x0 : T) (x1 : List (T → T)) =>
+    let x2 : T →
+      T →
+        List
+          T := Const.foldr
       (α := T → T)
-      (β := T)
-      (fun (_ : T → T) (x2 : T) => Const.add x2 (leaf 1))
-      (leaf 0)
-      x0;
-    x1
+      (β := T → T → List T)
+      (fun (x2 : T → T) (x3 : T → T → List T) (x4 : T) (x5 : T) =>
+        ((x2 (Const.add x4 («Tactics.anyBound» x0 x5))) ::
+          (x3 x4 (Const.add x5 (leaf 1)))))
+      (fun (_ : T) (_ : T) => ([] : List T))
+      («Prover/UFs.tail» x1);
+    x2
 
 def «Tactics.occStep» :=
   fun (x0 : T) (x1 : T) (x2 : T) (x3 : List (T → T)) =>
     let x4 : T →
-      T := (fun (x4 : T) =>
-      let x5 : T := «Prover.dNode» (leaf 0) ([] : List T) ([] : List T);
-      let x6 : T := Const.add x1 x4;
-      let x7 : T := Const.label x2;
-      if (Const.eq x7 (leaf 0)).label ≠ 0 then
-        if (Const.eq («Language.mD» x2 (leaf 0)) x6).label ≠ 0 then
-          «Prover.dNode»
-            (leaf 1)
-            ([] : List T)
-            («Theory.l2»
-              («Prover.dNode»
-                (leaf 2)
-                ([] : List T)
-                («Prelude.single»
-                  («Prover.dNode» (leaf 6) ([] : List T) ([] : List T))))
-              («Prover.dNode»
-                (leaf 16)
-                («Theory.l4»
-                  x0
-                  (Const.node (leaf 0) ([] : List T))
-                  (Const.node (leaf 0) («Prelude.single» («Language.var» x6)))
-                  (leaf 0))
-                ([] : List T)))
-        else
-          x5
-      else
-        if (Const.eq x7 (leaf 5)).label ≠ 0 then
-          «Prover.dNode»
-            (leaf 2)
-            ([] : List T)
-            (Const.foldr
-              (α := T → T)
-              (β := List T)
-              (fun (x8 : T → T) (x9 : List T) =>
-                ((x8 (Const.add x4 (leaf 1))) :: x9))
-              ([] : List T)
-              («Prover/UFs.tail» x3))
-        else
-          if («Prelude.or»
-            (Const.eq x7 (leaf 8))
-            (Const.eq x7 (leaf 9))).label ≠ 0 then
-            «Prover.dNode»
-              (leaf 2)
-              ([] : List T)
-              («Base.mapT»
-                (fun (x8 : T) =>
-                  «Prover.ufAt»
-                    x3
-                    (Const.add x8 (leaf 1))
-                    (if (Const.eq x8 (leaf 1)).label ≠ 0 then
-                      Const.add
-                        x4
-                        (if (Const.eq x7 (leaf 8)).label ≠ 0 then leaf 1 else leaf 2)
-                    else
-                      x4))
-                («Base.range» («Tactics.lenUF» («Prover/UFs.tail» x3))))
-          else
-            if (Const.eq x7 (leaf 10)).label ≠ 0 then
-              «Prover.dNode»
-                (leaf 2)
-                ([] : List T)
-                («Base.mapT»
-                  (fun (x8 : T) =>
-                    «Prover.ufAt»
-                      x3
-                      (Const.add x8 (leaf 1))
-                      (if (Const.eq x8 (leaf 0)).label ≠ 0 then
-                        Const.add x4 (leaf 1)
-                      else
-                        x4))
-                  («Base.range» («Tactics.lenUF» («Prover/UFs.tail» x3))))
-            else
-              if («Base.allT»
-                (fun (x8 : T) => Const.eq («Prover.uses» x8 x6) (leaf 0))
-                («Language.mArgs» x2)).label ≠ 0 then
-                x5
-              else
-                «Prover.dNode»
-                  (leaf 2)
-                  ([] : List T)
-                  (Const.foldr
-                    (α := T → T)
-                    (β := List T)
-                    (fun (x8 : T → T) (x9 : List T) => ((x8 x4) :: x9))
+      T := (let x4 : T := Const.label x2;
+            let x5 : T → T → List T := «Tactics.kidsAt» x4 x3;
+            fun (x6 : T) =>
+              let x7 : T := «Prover.dNode» (leaf 0) ([] : List T) ([] : List T);
+              let x8 : T := Const.add x1 x6;
+              if (Const.eq x4 (leaf 0)).label ≠ 0 then
+                if (Const.eq («Language.mD» x2 (leaf 0)) x8).label ≠ 0 then
+                  «Prover.dNode»
+                    (leaf 1)
                     ([] : List T)
-                    («Prover/UFs.tail» x3)));
+                    («Theory.l2»
+                      («Prover.dNode»
+                        (leaf 2)
+                        ([] : List T)
+                        («Prelude.single»
+                          («Prover.dNode» (leaf 6) ([] : List T) ([] : List T))))
+                      («Prover.dNode»
+                        (leaf 16)
+                        («Theory.l4»
+                          x0
+                          (Const.node (leaf 0) ([] : List T))
+                          (Const.node (leaf 0) («Prelude.single» («Language.var» x8)))
+                          (leaf 0))
+                        ([] : List T)))
+                else
+                  x7
+              else
+                if («Prelude.or»
+                  (Const.eq x4 (leaf 5))
+                  («Prelude.or»
+                    (Const.eq x4 (leaf 8))
+                    («Prelude.or»
+                      (Const.eq x4 (leaf 9))
+                      (Const.eq x4 (leaf 10))))).label ≠ 0 then
+                  «Prover.dNode» (leaf 2) ([] : List T) (x5 x6 (leaf 0))
+                else
+                  if («Base.allT»
+                    (fun (x9 : T) => Const.eq («Prover.uses» x9 x8) (leaf 0))
+                    («Language.mArgs» x2)).label ≠ 0 then
+                    x7
+                  else
+                    «Prover.dNode» (leaf 2) ([] : List T) (x5 x6 (leaf 0)));
     x4
 
 def «Tactics.occRewrite» :=
@@ -2503,65 +2481,17 @@ def «Tactics.byAutoC» :=
 def «Tactics.absStep» :=
   fun (x0 : T) (x1 : T) (x2 : List (T → T)) =>
     let x3 : T →
-      T := (fun (x3 : T) =>
-      if (Const.equal
-        x1
-        («Language.rename»
-          x0
-          (fun (x4 : T) => Const.add x4 x3))).label ≠ 0 then
-        «Language.var» x3
-      else
-        let x4 : T := Const.label x1;
-        let x5 : List T →
-          T := (fun (x5 : List T) =>
-          Const.node x4 ((Const.child x1 (leaf 0)) :: x5));
-        if (Const.eq x4 (leaf 5)).label ≠ 0 then
-          x5
-            (Const.foldr
-              (α := T → T)
-              (β := List T)
-              (fun (x6 : T → T) (x7 : List T) =>
-                ((x6 (Const.add x3 (leaf 1))) :: x7))
-              ([] : List T)
-              («Prover/UFs.tail» x2))
-        else
-          if («Prelude.or»
-            (Const.eq x4 (leaf 8))
-            (Const.eq x4 (leaf 9))).label ≠ 0 then
-            x5
-              («Base.mapT»
-                (fun (x6 : T) =>
-                  «Prover.ufAt»
-                    x2
-                    (Const.add x6 (leaf 1))
-                    (if (Const.eq x6 (leaf 1)).label ≠ 0 then
-                      Const.add
-                        x3
-                        (if (Const.eq x4 (leaf 8)).label ≠ 0 then leaf 1 else leaf 2)
-                    else
-                      x3))
-                («Base.range» («Tactics.lenUF» («Prover/UFs.tail» x2))))
-          else
-            if (Const.eq x4 (leaf 10)).label ≠ 0 then
-              x5
-                («Base.mapT»
-                  (fun (x6 : T) =>
-                    «Prover.ufAt»
-                      x2
-                      (Const.add x6 (leaf 1))
-                      (if (Const.eq x6 (leaf 0)).label ≠ 0 then
-                        Const.add x3 (leaf 1)
-                      else
-                        x3))
-                  («Base.range» («Tactics.lenUF» («Prover/UFs.tail» x2))))
-            else
-              x5
-                (Const.foldr
-                  (α := T → T)
-                  (β := List T)
-                  (fun (x6 : T → T) (x7 : List T) => ((x6 x3) :: x7))
-                  ([] : List T)
-                  («Prover/UFs.tail» x2)));
+      T := (let x3 : T := Const.label x1;
+            let x4 : T → T → List T := «Tactics.kidsAt» x3 x2;
+            fun (x5 : T) =>
+              if (Const.equal
+                x1
+                («Language.rename»
+                  x0
+                  (fun (x6 : T) => Const.add x6 x5))).label ≠ 0 then
+                «Language.var» x5
+              else
+                Const.node x3 ((Const.child x1 (leaf 0)) :: (x4 x5 (leaf 0))));
     x3
 
 def «Tactics.abstractTerm» :=
