@@ -20,15 +20,18 @@ Equations of the library's arithmetic at numerals proved by a step of the enviro
 ({name}`Geb.FreeTopos.Internal.machineReduce`) at each side, every definition unfolded, in the
 development of {lit}`GebTests.Prototypes.FreeTopos.Literals`: the machine's normal forms of the
 two sides are one term exactly when the conversion checker accepts the join of the two steps.
-Abstractions are equal by the reduction of their bodies. Reading back a delayed value does not
-compute it. A join rewriting by a hypothesis is translated by steps of the machine rewriting by it,
-and the store reads back the rules of a step.
+Abstractions and folds are equal by the reduction of their bodies and steps. Reading back a delayed
+value does not compute it, and normalizing a closure or a fold does not read back its environment.
+A join rewriting by a hypothesis is translated by steps of the machine rewriting by it, and the
+store reads back the rules of a step.
 
 ## Main definitions
 
 * {lit}`byMachine` — the certificate of an equation by a step of the machine at each side.
 * {lit}`proves` — whether it proves an equation of closed terms.
 * {lit}`infeasible` — a delayed value whose computation takes more steps than are feasible.
+* {lit}`doubling`, {lit}`normalForm` — a value whose term has an exponential size, and the normal
+  form of a value.
 * {lit}`hypThm`, {lit}`translatedBy` — a theorem of a hypothesis, and whether a derivation of it
   is translated.
 * {lit}`ruleDecl`, {lit}`roundTrips` — a declaration whose step rewrites by rules, and whether a
@@ -102,9 +105,35 @@ def infeasible : Internal.Val :=
     (Internal.vnode .star [])
 
 -- reading back a delayed value, at the root and below a node, does not compute it
-#guard Internal.readBack infeasible = Term.star
-#guard Internal.readBack (Internal.vnode .pair [infeasible, infeasible]) =
+#guard Internal.readBack 0 infeasible = Term.star
+#guard Internal.readBack 0 (Internal.vnode .pair [infeasible, infeasible]) =
   Term.pair Term.star Term.star
+
+/-- A value sharing its subvalues whose term has a size exponential in a number. -/
+def doubling (m : ℕ) : Internal.Val :=
+  m.rec (Internal.vnode .star []) fun _ v ↦ Internal.vnode .pair [v, v]
+
+/-- The normal form of a value in the empty context. -/
+def normalForm (v : Internal.Val) : Option Term :=
+  ((Internal.machine G 0 (fun _ ↦ true) 0 1 (fun _ _ _ ↦ none) 64).nf [] 0 v).map Prod.fst
+
+-- the normal form of a closure and of a fold reads no value of the environment their bodies omit
+#guard normalForm (Internal.vnode (.clo bitsTy (Term.var 0) 0) [doubling 64]) =
+  some (Term.lam bitsTy (Term.var 0))
+#guard normalForm (Internal.vnode (.natRec (Term.var 0) 0)
+    [Internal.vnode .star [], Internal.vnode (.free (-1)) [], doubling 64]) =
+  some (Term.natRec Term.star (Term.var 0) (Term.var 0))
+
+-- a value read back under further binders denotes the same variable
+#guard Internal.readBack 3 (Internal.vnode (.free 0) []) = Term.var 2
+#guard Internal.readBack 3 (Internal.vnode (.free (-1)) []) = Term.var 3
+
+-- the steps of folds are reduced, and a step's variable is its fold's
+#guard proves (Term.lam nat (Term.natRec Term.star
+    (Term.fst (Term.pair (Term.var 0) Term.star)) (Term.var 0)))
+  (Term.lam nat (Term.natRec Term.star (Term.var 0) (Term.var 0)))
+#guard !proves (Term.lam nat (Term.natRec (Term.var 0) (Term.var 0) (Term.var 0)))
+  (Term.lam nat (Term.natRec (Term.var 0) (Term.var 1) (Term.var 0)))
 
 /-- The theorem that two variables are equal, under the hypothesis that the first two are. -/
 def hypThm (u v : ℕ) : Thm :=
@@ -116,7 +145,7 @@ def hypDeriv (flip : Bool) : Deriv :=
 
 /-- Whether a theorem's derivation is replaced by a certificate of steps of the machine. -/
 def translatedBy (a : Thm) (d : Deriv) : Bool :=
-  match Internal.Thm.byMachine G entries 4096 32 a d with
+  match Internal.Thm.byMachine G entries 4096 a d with
   | .conv _ _ => true
   | _ => false
 

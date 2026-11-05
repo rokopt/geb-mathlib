@@ -24,9 +24,8 @@ rewritings cite them is translated by a step at each side that unfolds the defin
 rewriting unfolds and rewrites by the theorems and hypotheses it cites, from their left sides to
 their right, where the rewriting cites them so. Such a step applies a rule and unfolds a definition
 wherever the normal form reaches it, where the rewriting does so at particular positions, so that
-its normal form may be infeasibly larger, as a term, than the rewriting's result; it is taken within
-a depth of recursion of its own, which the caller gives. At each rule that proves a formula
-from premises, the premises' contexts, hypotheses and formulas are those the base checker
+its normal form may be larger, as a term, than the rewriting's result. At each rule that proves a
+formula from premises, the premises' contexts, hypotheses and formulas are those the base checker
 computes, so that a join among the premises is translated at the equation it proves; every other
 node, and every rewriting, is the base checker's rule as it stands. A theorem is translated where
 the translation replaces a join and the conversion checker accepts the result, and a development
@@ -155,15 +154,13 @@ def joinByMachineAs (Γ : List Tree) (Φ : List Term) (d₁ d₂ : Deriv) (t u :
   let w₂ ← (convCheck G E [] n s₂).1 Γ Φ u
   if w₁ = w₂ then some (RoseTree.node (.base .join) [s₁, s₂]) else none
 
-variable (fuelRw : ℕ)
-
 /-- The translation of a derivation's proof of a formula in a context under hypotheses, where it
 replaces a join; nothing where it replaces none. -/
 abbrev Translation : Type := List Tree → List Term → Term → Option ConvDeriv
 
 /-- One step of the translation, at a node of a rule from its children with their translations:
-at a join whose rewritings cite a theorem or a hypothesis, the join by a step at each side within
-the depth of recursion {lit}`fuelRw`; at any other join, the join by the machine of the equation's
+at a join whose rewritings cite a theorem or a hypothesis, the join by a step at each side; at any
+other join, the join by the machine of the equation's
 sides; at a rule that proves a formula from premises, the node over the premises' translations at
 the formulas the base checker proves them at, each premise the base checker's where its translation
 replaces nothing; at every other node nothing. -/
@@ -175,7 +172,7 @@ def byMachineStep (l : Rule) (cs : List (Deriv × Translation)) : Translation :=
   match l, cs with
   | .join, [(d₁, _), (d₂, _)] =>
     (eqParts φ).bind fun (t, u) ↦ if citesAny d₁ || citesAny d₂ then
-      joinByMachineAs G E n fuelRw Γ Φ d₁ d₂ t u
+      joinByMachineAs G E n fuel Γ Φ d₁ d₂ t u
     else joinByMachine G E n fuel Γ Φ d₁ d₂ t u
   | .natInd kz ks s, [(_, p₀), (_, p₁), (_, p₂)] => match eqParts φ, Γ with
     | some (t, u), _ :: Γ' => (lowerHyps G n Γ' Φ).bind fun Φ' ↦
@@ -249,13 +246,13 @@ def byMachineStep (l : Rule) (cs : List (Deriv × Translation)) : Translation :=
   | _, _ => none
 
 /-- The translation of a derivation's proof of a formula, where it replaces a join. -/
-def byMachine : Deriv → Translation := RoseTree.para (byMachineStep G E n fuel fuelRw)
+def byMachine : Deriv → Translation := RoseTree.para (byMachineStep G E n fuel)
 
 /-- The declaration of a theorem with its derivation translated: the theorem with its
 translation where the translation replaces a join and the conversion checker accepts it with the
 constants of {lit}`G` and the entries of {lit}`E`, and else with its derivation. -/
 def Thm.byMachine (a : Thm) (d : Deriv) : ConvDecl :=
-  match Internal.byMachine G E a.arity fuel fuelRw d a.ctx a.hyps a.concl with
+  match Internal.byMachine G E a.arity fuel d a.ctx a.hyps a.concl with
   | some c => if a.convChecks G E [] c then .conv a c else .base (.language a d)
   | none => .base (.language a d)
 
@@ -264,7 +261,7 @@ the declarations before it leave, each other declaration as it stands. -/
 def devByMachine (ds : List Decl) : List ConvDecl :=
   (ds.foldl (fun (st : Option (Globals × Array Entry) × List ConvDecl) d ↦
       (st.1.bind fun (G, E) ↦ d.step G E, (match st.1, d with
-        | some (G, E), .language a der => Thm.byMachine G E fuel fuelRw a der
+        | some (G, E), .language a der => Thm.byMachine G E fuel a der
         | _, d => .base d) :: st.2))
     (some (G, E), [])).2.reverse
 

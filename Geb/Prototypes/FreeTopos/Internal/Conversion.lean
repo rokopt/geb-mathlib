@@ -53,13 +53,14 @@ rewriting by those equations, which reaches that numeral by a proof in Lean
 ({name}`Geb.FreeTopos.Literals.checked_of_eval`), so that it too is the base checker's rewriting by
 a derivation the step does not construct.
 
-A step of the machine rewrites a term to its normal form under constructors and abstractions by
-the environment machine ({name}`Geb.FreeTopos.Internal.machineReduce`), which is not the prover's
-reduction, rewriting at the roots of the normal form by the prover's rules the step names, the
-theorems and hypotheses among them ({name}`Geb.FreeTopos.Internal.rootRewriteK`); the term
-rewrites to it by a derivation the base checker accepts
+A step of the machine rewrites a term to its normal form under constructors, abstractions and the
+steps of folds by the environment machine ({name}`Geb.FreeTopos.Internal.machineReduce`), which is
+not the prover's reduction, rewriting at the roots of the normal form by the prover's rules the
+step names, the theorems and hypotheses among them ({name}`Geb.FreeTopos.Internal.rootRewriteK`);
+the term rewrites to it by a derivation the base checker accepts
 ({name}`Geb.FreeTopos.Internal.machineReduce_reaches`) where the term and the definitions' bodies
-have their variables as leaves, as a term that compiles has, each rewriting at a root by its rule
+have their variables as leaves and the bodies are terms in their parameters, as a term that compiles
+is, each rewriting at a root by its rule
 ({name}`Geb.FreeTopos.Internal.rootRewrite_checked`), so that it too is the base checker's
 rewriting by a derivation the step does not construct.
 
@@ -179,8 +180,8 @@ form by the prover's rules {lit}`rs`, prepared once for the reduction; where the
 reduction reads no hypothesis. -/
 def machineReduceBy (G : Globals) (E : Array Entry) (n : ℕ) (unfold : ℕ → Bool) (kl kc : ℕ)
     (rs : List NormRule) (fuel : ℕ) (Γ : List Tree) (Φ : List Term) (t : Term) : Option Term :=
-  if rs.isEmpty then machineReduce G unfold kl kc (fun _ _ _ ↦ none) fuel Γ t
-  else machineReduce G unfold kl kc
+  if rs.isEmpty then machineReduce G n unfold kl kc (fun _ _ _ ↦ none) fuel Γ t
+  else machineReduce G n unfold kl kc
     (machineRw G E n (indexRules E (prepareRules E rs)) (prepareHyps Φ) Φ) fuel Γ t
 
 /-- One step of the conversion checker, at a node of a rule from its children's results: the base
@@ -360,9 +361,12 @@ theorem convCheck_sound (hδ : DefnsOk M G) {E : Array Entry}
     · refine ⟨fun Γ Φ t t' h X e he hΓ hH r hr ↦ ?_, fun _ _ _ h ↦ nomatch h⟩
       simp only [convStep] at h
       have hdefs : ∀ (j : ℕ) (d : Defn), G.defs[j]? = some (.language d) →
-          Term.VarLeaves d.body = true := fun j d hd ↦
-        let ⟨_, hF, _⟩ := hδ j d hd
-        Term.varLeaves_of_compile _ _ _ _ hF
+          Term.VarLeaves d.body = true ∧ ∀ i, Term.occurs d.body i = true → i < d.params.length :=
+        fun j d hd ↦
+          let ⟨_, hF, _⟩ := hδ j d hd
+          ⟨Term.varLeaves_of_compile _ _ _ _ hF, fun i hi ↦
+            (congrArg List.length (map_snd_stdEnv d.params)).symm.trans (List.length_map _) ▸
+              compile_occurs_lt d.body _ _ _ hF i hi⟩
       have hleaves := Term.varLeaves_of_compile t X e r hr
       obtain ⟨d, hd⟩ : Literals.Reaches G E n Γ Φ t t' := by
         simp only [machineReduceBy] at h
