@@ -538,26 +538,27 @@
                                (p2 cp))))))) sc st))
                 CY.bad)))
           CY.bad))))
-  ; the typers at a fuel: of an axiom's side instantiated at typed arguments, and of a term of the
-  ; scope, each typing the instances of axioms' sides it meets at the fuel below
+  ; the typers: of an axiom's side instantiated at typed arguments, and of a term of the scope, each
+  ; typing the instances of axioms' sides it meets by the typers one level below, to eight levels: a
+  ; fixed composition of the step, whose uses each have their own decoration
   (deftype Typers (Prod PatTy (Arrow T CY.M)))
-  (defn typers ((n T)) Typers
-    (iter Typers
-      (lam ((rec Typers))
-        (pair
-          (lam ((env (List PTy)) (p T))
-            (para CY.M
-              (typeStep (fst rec)
-                (lam ((i T))
-                  (let my OPTy.Maybe (OPTy.nthOf env i)
-                    (if (OPTy.isJust my) (CY.pure (OPTy.fromMaybe pty0 my)) CY.fail)))
-                (phSubst (YT.map tyT env)))
-              p))
-          (lam ((t T)) (para CY.M (typeStep (fst rec) (typeVar (snd rec)) (lam ((u T)) u)) t))))
-      (pair (lam ((env (List PTy)) (p T)) CY.fail) (lam ((t T)) CY.fail))
-      n))
-  (defn typeTerm ((t T)) CY.M ((snd (typers 8)) t))
-  (defn typePattern ((env (List PTy)) (p T)) CY.M ((fst (typers 8)) env p))
+  (defn typerStep ((rec Typers)) Typers
+    (pair
+      (lam ((env (List PTy)) (p T))
+        (para CY.M
+          (typeStep (fst rec)
+            (lam ((i T))
+              (let my OPTy.Maybe (OPTy.nthOf env i)
+                (if (OPTy.isJust my) (CY.pure (OPTy.fromMaybe pty0 my)) CY.fail)))
+            (phSubst (YT.map tyT env)))
+          p))
+      (lam ((t T)) (para CY.M (typeStep (fst rec) (typeVar (snd rec)) (lam ((u T)) u)) t))))
+  (defn typerStep2 ((rec Typers)) Typers (typerStep (typerStep rec)))
+  (defn typerStep4 ((rec Typers)) Typers (typerStep2 (typerStep2 rec)))
+  (def typers
+    (typerStep4 (typerStep4 (pair (lam ((env (List PTy)) (p T)) CY.fail) (lam ((t T)) CY.fail)))))
+  (defn typeTerm ((t T)) CY.M ((snd typers) t))
+  (defn typePattern ((env (List PTy)) (p T)) CY.M ((fst typers) env p))
   ; the state in which a computation starts from a development, with definitions in force
   (import (Map PDefn OpSig) as DefSig)
   (defn pmStart ((dev (List DevEntry)) (defs (List PDefn)) (infer T)) PSt
@@ -774,11 +775,17 @@
                                         (memoizeNf nd (p1 r3)
                                           (cTrans c1 (cTrans (p2 r2) (p2 r3)))))))
                                   (memoizeNf nd t1 c1)))))))))))))))))
-  (defn normalizers ((rules (List RwRule)) (n T)) NB
-    (iter NB (lam ((rec NB)) (lam ((t T)) (para CP.M (normStepP rules rec) t)))
-      (lam ((t T)) CP.fail)
-      n))
-  (defn pNormalize ((rules (List RwRule)) (t T)) CP.M (normalizers rules 64 t))
+  ; the normalizers, each normalizing the term its root rewrites to by the normalizer one level
+  ; below, to 64 levels: a fixed composition of the step, whose uses each have their own decoration
+  (defn normP ((rules (List RwRule)) (rec NB)) NB (lam ((t T)) (para CP.M (normStepP rules rec) t)))
+  (defn normP2 ((rules (List RwRule)) (rec NB)) NB (normP rules (normP rules rec)))
+  (defn normP4 ((rules (List RwRule)) (rec NB)) NB (normP2 rules (normP2 rules rec)))
+  (defn normP8 ((rules (List RwRule)) (rec NB)) NB (normP4 rules (normP4 rules rec)))
+  (defn normP16 ((rules (List RwRule)) (rec NB)) NB (normP8 rules (normP8 rules rec)))
+  (defn normP32 ((rules (List RwRule)) (rec NB)) NB (normP16 rules (normP16 rules rec)))
+  (defn normalizers ((rules (List RwRule))) NB
+    (normP32 rules (normP32 rules (lam ((t T)) CP.fail))))
+  (defn pNormalize ((rules (List RwRule)) (t T)) CP.M (normalizers rules t))
 
   ; tactics: the axioms' indices by block, the instance of a source's sequent, the expansion of an
   ; arrow into a product, the unfolding of a definition, the proof by normalization, and the proof

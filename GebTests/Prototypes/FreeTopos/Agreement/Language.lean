@@ -1344,11 +1344,10 @@ theorem sortOf_objs (S : PartialHorn.Sig) (m : ℕ) (t : Tree) :
 
 /-- The mirror's inference in object parameters under no hypotheses. -/
 theorem infers_objs (E : ExtEnv) (m : ℕ) (t : Tree) :
-    («Infer.infers» (encExtEnv E) (List.replicate m (leaf 0)) []
-        «Infer.inferFuel»).2 t =
+    («Infer.infers» (encExtEnv E) (List.replicate m (leaf 0)) []).2 t =
       encOpt (((infers E (List.replicate m Sorts.obj) [] inferFuel).2 t).map encAnn) := by
-  simpa only [List.map_replicate, List.map_nil, «Infer.inferFuel», inferFuel] using
-    (infers_eq E (List.replicate m Sorts.obj) [] inferFuel).2 t
+  simpa only [List.map_replicate, List.map_nil, inferFuel] using
+    (infers_eq E (List.replicate m Sorts.obj) []).2 t
 
 /-- The mirror's test of a primitive arrow's form. -/
 theorem primWf_eq (G : Internal.Globals) (S : PartialHorn.Sig) (p : Internal.Prim) :

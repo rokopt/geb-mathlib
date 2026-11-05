@@ -188,9 +188,9 @@ Computation:
   without the exemption. The search with z3, `scripts/eal/eal.py`, with
   a decoration per use of a definition and the certificates it writes,
   and the checker specified in Lean, {name}`Geb.Affine.check`, are
-  constructed. The rewriting of the definitions it rejects in the
-  metalogic's sources, and the checker written in Geb, are ready; the
-  rewriting of those in the compilers' sources waits on the datatype
+  constructed, and the definitions it rejected in the metalogic's sources
+  are rewritten. The checker written in Geb is ready; the rewriting of the
+  definitions it rejects in the compilers' sources waits on the datatype
   language's completion; the check in the build follows both, and the
   search written in Geb is ready.
 * Ready. The Geb reader and serializer in constant depth, and the stage
@@ -2294,18 +2294,19 @@ constraints projected onto the numbers of `!` of its type by quantifier
 elimination, more definitions fail than one at a time, each contracting
 a list of functions that a definition it refers to reads more than once:
 a fold whose step is a definition of its own reading its children's
-results more than once, as the prover's `uses` and its step `usesStep`;
-a fold whose step passes its children's results to such a definition, as
-the stage-1 compiler's `synIn` passes them to `synList`; and, in the
-tactics, a list of rewriting rules, each pairing a pattern with a
-function, read more than once, as `withWeakHyps` reads its rules. An
+results more than once; a fold whose step passes its children's results
+to such a definition, as the stage-1 compiler's `synIn` passes them to
+`synList`; and a list of pairs of data and functions threaded under a
+fold, which the normalizer's rules avoid by being first-order data. An
 iteration fails per use where its step applies the previous iterate both
 directly and in the step of a fold, as a reduction applies it to each of
 a node's children: a use under the fold needs one `!` more than the
 iterate's type has. An iterate applied to lists of arguments, once to the
 concatenation of the arguments of every element of the list, is applied
 under no fold, and an iteration in that form is typable, which is the
-form of the prover's reduction `evalK`. The
+form of the prover's reduction `evalK`. An iteration of a constant number
+of levels is also a fixed composition of its step, each use of the step
+decorated separately, which is the form of `typers`. The
 exemption is not proved sound for a net machine; the third stage needs
 it, and the first two need no typing.
 
@@ -2337,15 +2338,13 @@ between given numbers, which needs no solver. The steps, in order:
    shapes above; `scripts/eal/eal.py --explain NAME` names a
    definition's contraction, and a definition rejected per use is
    reported with the definitions it conflicts with, among which the
-   rewriting may fall, as `usesStep` with `uses`. The sources holding
-   them are constrained by different work:
-   * Ready. The metalogic's own sources: `infers` in `infer.geb` and
-     `typers` and `normalizers` in `combinator.geb`, all under
-     `bootstrap/free-topos/`. Each rewriting changes the program that
-     `GebMirror.Metalogic` mirrors, so the mirror is emitted again
-     (`scripts/bootstrap.sh`), its loading checked, and the agreements under
-     `GebTests/Prototypes/FreeTopos/Agreement/` repaired; the prover's
-     derivations, and so the stored certificates, are unchanged.
+   rewriting may fall. A rewriting of the
+   metalogic's own sources changes the program that `GebMirror.Metalogic`
+   mirrors, so the mirror is emitted again (`scripts/bootstrap.sh`), its
+   loading checked, and the agreements under
+   `GebTests/Prototypes/FreeTopos/Agreement/` repaired; the prover's
+   derivations, and so the stored certificates, are unchanged. The sources
+   holding them are constrained by different work:
    * Complete: `check` in `bootstrap/free-topos/derivation.geb`, which
      has the base checker's evaluation
      ({ref "base-checker-evaluation"}[The base checker's evaluation]).
@@ -2403,6 +2402,16 @@ between given numbers, which needs no solver. The steps, in order:
      outside the fold whose base is boxed; `splitStuck` takes two provers,
      so that the contraction of a recursion is at the iteration's binder.
      The search accepts them with a decoration per use.
+   * Complete: `infers` in `bootstrap/free-topos/infer.geb` and `typers`
+     and `normalizers` in `bootstrap/free-topos/combinator.geb`. Their
+     depth of recursion is a constant at every use, eight levels and 64
+     levels, and each is a fixed composition of its step (`inferStep`,
+     `typerStep`, `normP`, doubled), each use of the step with a decoration
+     of its own, so that a level's use of the level below under a fold
+     raises the number of `!` from one level to the next. Each level adds
+     a box, so that the depth of boxes of these definitions grows with
+     their constants. The agreements relate a step at one fuel to the step
+     of the next (`inferStep_rel`, `typerStep_rel`, `normP_rel`).
    * Complete: the normalization `normalize` in
      `bootstrap/free-topos/prove.geb`, in the same form (`normB`,
      `normStepB`, `NSt`): a level runs two rounds (`nsRound`), of a node's

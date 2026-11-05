@@ -1182,12 +1182,12 @@ def TypersRel (p' : (List Tree → Tree → Tree → Tree → Tree) × (Tree →
     (p : (List Ty → Tree → PM Ty) × (Tree → PM Ty)) : Prop :=
   PatRel p'.1 p.1 ∧ ∀ t, PMRel encTy (p'.2 t) (p.2 t)
 
-/-- The mirror's typers at every fuel. -/
-theorem typers_rel (n : ℕ) : TypersRel («Combinator.typers» (leaf n)) (typers n) := by
-  unfold «Combinator.typers» typers
+/-- The mirror's step of the typers is the step of the fuel. -/
+theorem typerStep_rel {rec' : (List Tree → Tree → Tree → Tree → Tree) × (Tree → Tree → Tree → Tree)}
+    {n : ℕ} (ih : TypersRel rec' (typers n)) :
+    TypersRel («Combinator.typerStep» rec') (typers (n + 1)) := by
+  unfold «Combinator.typerStep»
   simp only [template]
-  simp only [Const.iter, label_leaf]
-  refine Nat.rec ⟨fun _ _ ↦ pmFail_rel encTy, fun _ ↦ pmFail_rel encTy⟩ (fun _ ih ↦ ?_) n
   refine ⟨fun tys p ↦ ?_, fun t ↦ ?_⟩
   · refine para_rel (PMRel encTy) _ _ (fun l xs hx ↦ ?_) p
     refine typeStep_rel _ _ ih.1 _ _ (fun k ↦ ?_) _ _ (fun t ↦ ?_) l xs hx
@@ -1201,13 +1201,23 @@ theorem typers_rel (n : ℕ) : TypersRel («Combinator.typers» (leaf n)) (typer
   · exact para_rel (PMRel encTy) _ _ (fun l xs hx ↦
       typeStep_rel _ _ ih.1 _ _ (typeVar_rel _ _ ih.2) _ _ (fun _ ↦ rfl) l xs hx) t
 
+/-- The mirror's typers are those at a fuel of eight. -/
+theorem typers_rel : TypersRel «Combinator.typers» (typers 8) :=
+  have h2 : ∀ {rec'} {n}, TypersRel rec' (typers n) →
+      TypersRel («Combinator.typerStep2» rec') (typers (n + 2)) :=
+    fun h ↦ typerStep_rel (typerStep_rel h)
+  have h4 : ∀ {rec'} {n}, TypersRel rec' (typers n) →
+      TypersRel («Combinator.typerStep4» rec') (typers (n + 4)) :=
+    fun h ↦ h2 (h2 h)
+  h4 (h4 ⟨fun _ _ ↦ pmFail_rel encTy, fun _ ↦ pmFail_rel encTy⟩)
+
 /-- The mirror's typing of a term of the scope. -/
 theorem typeTerm_rel (t : Tree) : PMRel encTy («Combinator.typeTerm» t) (typeTerm t) :=
-  (typers_rel typingFuel).2 t
+  typers_rel.2 t
 
 /-- The mirror's typing of an axiom's side instantiated at typed arguments. -/
 theorem typePattern_rel : PatRel (fun env p ↦ «Combinator.typePattern» env p) typePattern :=
-  (typers_rel typingFuel).1
+  typers_rel.1
 
 /-- The mirror's typings of terms, in turn. -/
 theorem typeTerms_rel (σ : List Tree) :
@@ -1645,23 +1655,37 @@ theorem normStep_rel (rules : List RwRule) (rec' : Tree → Tree → Tree → Tr
   · comb_simp [get_eq]
     exact pmPure_rel encPair r
 
-/-- The mirror's normalizers at every fuel. -/
-theorem normalizers_rel (rules : List RwRule) (n : ℕ) :
-    NRel («Combinator.normalizers» (rules.map encRw) (leaf n)) (normalizers rules n) := by
-  unfold «Combinator.normalizers» normalizers
-  simp only [template]
-  simp only [Const.iter, label_leaf]
-  refine Nat.rec (fun _ ↦ pmFail_rel encPair) (fun _ ih t ↦ ?_) n
-  simp only [Nat.repeat]
+/-- The mirror's step of the normalizers is the step of the fuel. -/
+theorem normP_rel (rules : List RwRule) {rec' : Tree → Tree → Tree → Tree}
+    {n : ℕ} (ih : NRel rec' (normalizers rules n)) :
+    NRel («Combinator.normP» (rules.map encRw) rec') (normalizers rules (n + 1)) := fun t ↦ by
   refine para_rel (PMRel encPair) _ _ (fun l xs hx ↦ ?_) t
   exact normStep_rel rules _ _ ih l xs hx
 
+/-- The mirror's normalizers are those at a fuel of 64. -/
+theorem normalizers_rel (rules : List RwRule) :
+    NRel («Combinator.normalizers» (rules.map encRw)) (normalizers rules 64) :=
+  have h2 : ∀ {rec'} {n}, NRel rec' (normalizers rules n) →
+      NRel («Combinator.normP2» (rules.map encRw) rec') (normalizers rules (n + 2)) :=
+    fun h ↦ normP_rel rules (normP_rel rules h)
+  have h4 : ∀ {rec'} {n}, NRel rec' (normalizers rules n) →
+      NRel («Combinator.normP4» (rules.map encRw) rec') (normalizers rules (n + 4)) :=
+    fun h ↦ h2 (h2 h)
+  have h8 : ∀ {rec'} {n}, NRel rec' (normalizers rules n) →
+      NRel («Combinator.normP8» (rules.map encRw) rec') (normalizers rules (n + 8)) :=
+    fun h ↦ h4 (h4 h)
+  have h16 : ∀ {rec'} {n}, NRel rec' (normalizers rules n) →
+      NRel («Combinator.normP16» (rules.map encRw) rec') (normalizers rules (n + 16)) :=
+    fun h ↦ h8 (h8 h)
+  have h32 : ∀ {rec'} {n}, NRel rec' (normalizers rules n) →
+      NRel («Combinator.normP32» (rules.map encRw) rec') (normalizers rules (n + 32)) :=
+    fun h ↦ h16 (h16 h)
+  h32 (h32 fun _ ↦ pmFail_rel encPair)
+
 /-- The mirror's normal form of a term under rules. -/
 theorem normalize_rel (rules : List RwRule) (t : Tree) :
-    PMRel encPair («Combinator.pNormalize» (rules.map encRw) t) (normalize rules t) := by
-  unfold «Combinator.pNormalize» normalize normFuel
-  simp only [template]
-  exact normalizers_rel rules 64 t
+    PMRel encPair («Combinator.pNormalize» (rules.map encRw) t) (normalize rules t) :=
+  normalizers_rel rules t
 
 /-! The tactics. -/
 

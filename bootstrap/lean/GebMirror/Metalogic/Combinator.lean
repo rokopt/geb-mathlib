@@ -5843,49 +5843,63 @@ def «Combinator.typeVar» :=
         «Combinator/CY.bad»);
     x2
 
-def «Combinator.typers» :=
-  fun (x0 : T) =>
+def «Combinator.typerStep» :=
+  fun (x0 : (List T → T → T → T → T) × (T → T → T → T)) =>
     let x1 : (List T → T → T → T → T) ×
       (T →
         T →
           T →
-            T) := Const.iter
-      (α := (List T → T → T → T → T) × (T → T → T → T))
-      (fun (x1 : (List T → T → T → T → T) × (T → T → T → T)) =>
-        (fun (x2 : List T) (x3 : T) =>
-          Const.para
-            (α := T → T → T)
-            («Combinator.typeStep»
-              (x1).1
-              (fun (x4 : T) =>
-                let x5 : T := «Combinator/OPTy.nthOf» x2 x4;
-                if («Combinator/OPTy.isJust» x5).label ≠ 0 then
-                  «Combinator/CY.pure»
-                    («Combinator/OPTy.fromMaybe» «Combinator.pty0» x5)
-                else
-                  «Combinator/CY.fail»)
-              («PartialHorn.phSubst» («Combinator/YT.map» «Combinator.tyT» x2)))
-            x3,
-          fun (x2 : T) =>
-            Const.para
-              (α := T → T → T)
-              («Combinator.typeStep»
-                (x1).1
-                («Combinator.typeVar» (x1).2)
-                (fun (x3 : T) => x3))
-              x2))
-      (fun (_ : List T) (_ : T) => «Combinator/CY.fail»,
-        fun (_ : T) => «Combinator/CY.fail»)
-      x0;
+            T) := (fun (x1 : List T) (x2 : T) =>
+      Const.para
+        (α := T → T → T)
+        («Combinator.typeStep»
+          (x0).1
+          (fun (x3 : T) =>
+            let x4 : T := «Combinator/OPTy.nthOf» x1 x3;
+            if («Combinator/OPTy.isJust» x4).label ≠ 0 then
+              «Combinator/CY.pure»
+                («Combinator/OPTy.fromMaybe» «Combinator.pty0» x4)
+            else
+              «Combinator/CY.fail»)
+          («PartialHorn.phSubst» («Combinator/YT.map» «Combinator.tyT» x1)))
+        x2,
+      fun (x1 : T) =>
+        Const.para
+          (α := T → T → T)
+          («Combinator.typeStep»
+            (x0).1
+            («Combinator.typeVar» (x0).2)
+            (fun (x2 : T) => x2))
+          x1);
     x1
 
+def «Combinator.typerStep2» :=
+  fun (x0 : (List T → T → T → T → T) × (T → T → T → T)) =>
+    let x1 : (List T → T → T → T → T) ×
+      (T → T → T → T) := «Combinator.typerStep»
+      («Combinator.typerStep» x0);
+    x1
+
+def «Combinator.typerStep4» :=
+  fun (x0 : (List T → T → T → T → T) × (T → T → T → T)) =>
+    let x1 : (List T → T → T → T → T) ×
+      (T →
+        T → T → T) := «Combinator.typerStep2»
+      («Combinator.typerStep2» x0);
+    x1
+
+def «Combinator.typers» :=
+  «Combinator.typerStep4»
+    («Combinator.typerStep4»
+      (fun (_ : List T) (_ : T) => «Combinator/CY.fail»,
+        fun (_ : T) => «Combinator/CY.fail»))
+
 def «Combinator.typeTerm» :=
-  fun (x0 : T) =>
-    let x1 : T → T → T := («Combinator.typers» (leaf 8)).2 x0; x1
+  fun (x0 : T) => let x1 : T → T → T := («Combinator.typers»).2 x0; x1
 
 def «Combinator.typePattern» :=
   fun (x0 : List T) (x1 : T) =>
-    let x2 : T → T → T := («Combinator.typers» (leaf 8)).1 x0 x1; x2
+    let x2 : T → T → T := («Combinator.typers»).1 x0 x1; x2
 
 def «Combinator/DefSig.map» :=
   fun (x0 : T → T) (x1 : List T) =>
@@ -6924,22 +6938,58 @@ def «Combinator.normStepP» :=
                             «Combinator.memoizeNf» x2 x8 x9))));
     x4
 
-def «Combinator.normalizers» :=
-  fun (x0 : List T) (x1 : T) =>
+def «Combinator.normP» :=
+  fun (x0 : List T) (x1 : T → T → T → T) =>
     let x2 : T →
       T →
         T →
-          T := Const.iter
-      (α := T → T → T → T)
-      (fun (x2 : T → T → T → T) (x3 : T) =>
-        Const.para (α := T → T → T) («Combinator.normStepP» x0 x2) x3)
-      (fun (_ : T) => «Combinator/CP.fail»)
-      x1;
+          T := (fun (x2 : T) =>
+      Const.para (α := T → T → T) («Combinator.normStepP» x0 x1) x2);
     x2
+
+def «Combinator.normP2» :=
+  fun (x0 : List T) (x1 : T → T → T → T) =>
+    let x2 : T →
+      T → T → T := «Combinator.normP» x0 («Combinator.normP» x0 x1);
+    x2
+
+def «Combinator.normP4» :=
+  fun (x0 : List T) (x1 : T → T → T → T) =>
+    let x2 : T →
+      T → T → T := «Combinator.normP2» x0 («Combinator.normP2» x0 x1);
+    x2
+
+def «Combinator.normP8» :=
+  fun (x0 : List T) (x1 : T → T → T → T) =>
+    let x2 : T →
+      T → T → T := «Combinator.normP4» x0 («Combinator.normP4» x0 x1);
+    x2
+
+def «Combinator.normP16» :=
+  fun (x0 : List T) (x1 : T → T → T → T) =>
+    let x2 : T →
+      T → T → T := «Combinator.normP8» x0 («Combinator.normP8» x0 x1);
+    x2
+
+def «Combinator.normP32» :=
+  fun (x0 : List T) (x1 : T → T → T → T) =>
+    let x2 : T →
+      T → T → T := «Combinator.normP16» x0 («Combinator.normP16» x0 x1);
+    x2
+
+def «Combinator.normalizers» :=
+  fun (x0 : List T) =>
+    let x1 : T →
+      T →
+        T →
+          T := «Combinator.normP32»
+      x0
+      («Combinator.normP32» x0 (fun (_ : T) => «Combinator/CP.fail»));
+    x1
 
 def «Combinator.pNormalize» :=
   fun (x0 : List T) (x1 : T) =>
-    let x2 : T → T → T := «Combinator.normalizers» x0 (leaf 64) x1; x2
+    let x2 : T → T → T := «Combinator.normalizers» x0 x1; x2
 
 def «Combinator.beforeTerminal» :=
   «Combinator/Seqs.length» «Theory.categoryAxioms»
