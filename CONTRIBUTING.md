@@ -85,8 +85,8 @@ does not run config commands on a contributor's behalf.
    not blocking.
 9. Install the `z3-solver` Python package to run
    `scripts/eal/eal.py`, the elementary-affine typability checker:
-   `pip install -r scripts/eal/requirements.txt`. Its test in
-   `scripts/test-tooling.sh` is skipped when the package is
+   `pip install -r scripts/eal/requirements.txt`. Its tests in
+   `scripts/test-tooling.sh` are skipped when the package is
    missing.
 10. Install the pinned parinfer release, whose fixed points
     `scripts/bootstrap.sh check` tests on the Geb sources:

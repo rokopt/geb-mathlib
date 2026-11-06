@@ -187,15 +187,16 @@ Computation:
   which full self-hosting requires; and later, elementary affine logic
   without the exemption. The search with z3, `scripts/eal/eal.py`, with
   a decoration per use of a definition and the certificates it writes,
-  the checker specified in Lean, {name}`Geb.Affine.check`, and the checker
+  the checker specified in Lean, {name}`Geb.Affine.check`, the checker
   written in Geb, `bootstrap/affine.geb`, proved in Lean to agree with it,
-  are constructed, and the definitions it rejected in the sources proper to
-  the metalogic are rewritten. Waiting on the datatype language's
-  completion: the rewriting of the definitions it rejects in the compilers'
-  sources, among them `resolve`, `typeIn` and `expandExpr`, which the
-  metalogic's program includes, so that no program is typable as a whole
-  before it. Waiting on that rewriting: the check in the build. Ready: the
-  search written in Geb.
+  and the search written in Geb, `bootstrap/affine-search.geb`, whose
+  verdicts agree with those of the search with z3, are constructed, and the
+  definitions the searches rejected in the sources proper to the metalogic
+  are rewritten. Waiting on the datatype language's completion: the rewriting
+  of the definitions they reject in the compilers' sources, among them
+  `resolve`, `typeIn` and `expandExpr`, which the metalogic's program
+  includes, so that no program is typable as a whole before it. Waiting on
+  that rewriting: the check in the build.
 * Ready. The Geb reader and serializer in constant depth, and the stage
   tests run by the compiled executables, the section on improvements.
 
@@ -2244,8 +2245,8 @@ development. Stage 3 itself additionally needs its duplicator rules
 and correctness proof, including soundness of the native-data-copying
 exemption. Decorations determine duplicator depths; neither arbitrary
 depth labels nor an unverified exemption establish optimal sharing.
-Programs without a certificate use stage 2. Full self-hosting also
-requires the decoration search in Geb.
+Programs without a certificate use stage 2. The decoration search that
+full self-hosting requires is written in Geb.
 
 The production runtime and the compiler written in Geb follow the
 recorded machine decision ({ref "speed-and-second-host"}[Speed and a
@@ -2325,9 +2326,10 @@ fold whose step sees the node among the primitives that copy it, so that
 the third stage can run them with optimal sharing. A program's
 decoration is a certificate. A search finds it and is not trusted, and a
 checker checks it and is, which is the rule for every solver the
-bootstrap uses: `scripts/eal/eal.py` is the search, with z3 as its
-solver, and checking a decoration is checking linear inequalities
-between given numbers, which needs no solver. The steps, the first four
+bootstrap uses: `scripts/eal/eal.py` is a search, with z3 as its
+solver, `bootstrap/affine-search.geb` is a search with none, and checking
+a decoration is checking linear inequalities between given numbers, which
+needs no solver. The steps, the first four
 in order of dependence, the fifth depending on no step that is not
 complete:
 
@@ -2449,12 +2451,41 @@ complete:
    program is written typable.
 4. Waiting on the second step. The check in the build of every program's
    committed decoration, the checker's own among them.
-5. Ready. A search written in Geb, which full self-hosting requires so that no
+5. Complete. A search written in Geb, `bootstrap/affine-search.geb`, run
+   by `scripts/eal/search.sh`, which full self-hosting requires so that no
    external solver regenerates a decoration. An inference in polynomial
    time given a simple type derivation {citep BaillotTerui2005}[], for a
-   system without sharing or polymorphism, is the search's starting
-   point, extended to the kernel's constants, and its verdicts are
-   compared with those of the search that uses z3.
+   system without sharing or polymorphism, is the search's starting point.
+   That inference solves its linear constraints over the rationals and
+   scales a solution to the integers, its constraints being homogeneous
+   but for those of contraction, each a lower bound; the kernel's
+   constants exclude the scaling, the step of an iteration having exactly
+   one `!`. The search replaces it. The absolute level of a node of a type
+   is the depth in boxes of the term the type is seen at with the numbers
+   of `!` from the type's root to the node. A type moved across boxes
+   changes that depth and the number of `!` at its root oppositely, which
+   leaves every absolute level unchanged, and over depths and absolute
+   levels every constraint of the discipline, the kernel's constants
+   included, has the form `x ≥ y + c`. Such a system is satisfiable over the
+   integers if and only if its graph has no cycle of positive weight, and
+   its longest paths are its least solution. The constraints describing a
+   definition's decorations, projected onto the levels of its type, are
+   the longest paths between those levels, of the same form, where the
+   search with z3 eliminates quantifiers. That the constraints have this
+   form is not proved in Lean: the search writes its certificate after its
+   verdicts and checks it by `bootstrap/affine.geb`, which decides whether
+   a certificate is sound, and its verdicts are compared with those of the
+   search with z3, on the examples by `scripts/tests/test-eal.sh` and,
+   measured on the stage-0 and stage-1 compilers, with no definition's
+   verdict differing. On the metalogic's program the search with z3 does
+   not finish within ten hours, and `scripts/eal/compare.py DEFS OUT`
+   compares parts, in which no verdict differs: its check of each
+   definition alone rejects the definitions the search rejects; its check
+   per use, on the definitions the certificate does not cover and those
+   they use, every other definition exempted, accepts them; and of the
+   remaining definitions the comparison is the certificate, which
+   `bootstrap/affine.geb` accepts. The search rejects no definition of its
+   own, which is written typable.
 
 The programs are measured from their images. The stage-0 compiler's is
 built by `geb-kernel build` from the stage-0 sources that
@@ -2464,8 +2495,9 @@ compiler's image of the concatenation of the metalogic's layers'
 sources, in the order `scripts/bootstrap.sh` lists them, made by
 `geb-kernel run bootstrap/compiler.img main` with the concatenation and
 the image's path as arguments. `lake exe geb-defs IMAGE DEFS` writes an
-image's definitions, and `scripts/eal/eal.py DEFS` checks them alone and
-with a decoration per use, naming each definition it rejects.
+image's definitions, and `scripts/eal/eal.py DEFS` and
+`scripts/eal/search.sh DEFS OUT` check them alone and with a decoration per
+use, naming each definition they reject.
 
 A stricter requirement is a later step: elementary affine logic
 without the exemption, to which the published soundness of the
