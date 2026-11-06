@@ -172,18 +172,31 @@ async function pareditTests(test, profile) {
       assert.equal(editor.document.getText(editor.selection), text.slice(start, end));
     });
   }
-  await test('wrap', () => edit('paredit.wrapWithParen', '(def main ⟦(lam ((x T)) x))\n',
-    '(def main ((lam ((x T)) x)))\n'));
-  await test('slurp', () => edit('paredit.slurpForward', '(def main (lam ((x T)) ((⟦add 1) 2)))\n',
-    '(def main (lam ((x T)) ((add 1 2))))\n'));
-  await test('barf', () => edit('paredit.barfForward', '(def main (lam ((x T)) ((⟦add 1 2))))\n',
-    '(def main (lam ((x T)) ((add 1) 2)))\n'));
-  await test('incomplete buffer', async () => {
-    const text = '(def main (lam ((x T)) ?body';
-    const editor = await open(text);
-    select(editor, text.indexOf('?body'));
-    await vscode.commands.executeCommand('paredit.selectForwardSexp');
-    assert.equal(editor.document.getText(editor.selection), '?body');
-    assert.equal(editor.document.getText(), text);
-  });
+  const prefix = '; unmatched ( ] "\n(def editorText (quote (0 "(;)" "🌳" "first\nsecond")))\n';
+  for (const [name, eol] of [['LF', '\n'], ['CRLF', '\r\n']]) {
+    const source = text => (prefix + text).replaceAll('\n', eol);
+    await test(`wrap (${name})`, () => edit('paredit.wrapWithParen',
+      source('(def main ⟦(lam ((x T)) ; comment with "(\n x))\n'),
+      source('(def main ((lam ((x T)) ; comment with "(\n x)))\n')));
+    await test(`slurp (${name})`, () => edit('paredit.slurpForward',
+      source('(def main (lam ((x T)) ((⟦add 1) 2)))\n'),
+      source('(def main (lam ((x T)) ((add 1 2))))\n')));
+    await test(`barf (${name})`, () => edit('paredit.barfForward',
+      source('(def main (lam ((x T)) ((⟦add 1 2))))\n'),
+      source('(def main (lam ((x T)) ((add 1) 2)))\n')));
+    await test(`slurp across a comment (${name})`, () => edit('paredit.slurpForward',
+      source('(def main (lam ((x T)) ((⟦add 1) ; comment with "(\n 2)))\n'),
+      source('(def main (lam ((x T)) ((add 1 ; comment with "(\n 2))))\n')));
+    await test(`barf across a comment (${name})`, () => edit('paredit.barfForward',
+      source('(def main (lam ((x T)) ((⟦add 1 ; comment with "(\n 2))))\n'),
+      source('(def main (lam ((x T)) ((add 1) ; comment with "(\n 2)))\n')));
+    await test(`incomplete buffer (${name})`, async () => {
+      const text = source('(def main (lam ((x T)) ?body');
+      const editor = await open(text);
+      select(editor, text.indexOf('?body'));
+      await vscode.commands.executeCommand('paredit.selectForwardSexp');
+      assert.equal(editor.document.getText(editor.selection), '?body');
+      assert.equal(editor.document.getText(), text);
+    });
+  }
 }

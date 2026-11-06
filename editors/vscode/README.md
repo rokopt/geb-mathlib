@@ -89,6 +89,12 @@ in a quoted atom as a comment and
 misplaces cursor offsets in CRLF input. The extension therefore does not
 install or recommend Paredit, and structural editing remains pending.
 
+A [source patch and reproduction instructions](patches/README.md) are
+available for review. A supplied VSIX can be tested in a fresh extension
+directory by setting `GEB_PAREDIT_VSIX` to its absolute path when running
+`test:paredit`. The choice of a supported distribution remains separate
+from these tests.
+
 The failing examples and the other structural commands can be tested
 with the pinned release in an isolated VS Code instance:
 
