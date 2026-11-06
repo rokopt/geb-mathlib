@@ -2968,11 +2968,17 @@ refers to it, decides membership in it; no definition takes a
 primitive's name or the unit value's; and each name the context gives a
 type is one the typing admits as a binder's. The relation holds at an
 opaque sort as at the trees, its erasure, of which a field of a template's
-datatype holds any. Remaining after it: those assumptions discharged
-for a whole program, the definitions the expansion generates related at
-their types and the generated recognizers' decisions proved, which a
-source form's soundness does not reach, and the transfer of the result to
-Lean; `tree-data` removed. The developments of the soundness continue
+datatype holds any. The definitions the expansion generates, which a
+source form's soundness does not reach, are proved apart: a recognizer's
+S-expressions denote a function deciding membership
+(`GebTests/Prototypes/FreeTopos/DatatypeRecognizer.lean`), and a
+constructor's definition denotes a value related at its type
+(`GebTests/Prototypes/FreeTopos/DatatypeConstructor.lean`). The typing of
+each field's coercion gives its relation, so that the proof reads neither
+the positions of the fields nor the kernel's typing. Remaining after it:
+the assumptions of those theorems and of the soundness discharged for a
+whole program, and the transfer of the result to Lean; `tree-data`
+removed. The developments of the soundness continue
 from one another in no one order, each citing the statements of those
 it continues from, so the modules of
 `GebTests/Prototypes/FreeTopos/Certified/` check each after those

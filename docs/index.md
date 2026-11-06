@@ -4467,7 +4467,10 @@ import-direction rules above are enforced by
   keyword at a time, given it at their elements, `DatatypeCaseSound.lean`
   at the case analyses, `DatatypeCataSrc.lean` at the structural
   recursions, and `DatatypeClosed.lean` at every tree, given what the
-  compilers ensure of a whole program;
+  compilers ensure of a whole program; `DatatypeRecognizer.lean` proves
+  that a generated recognizer decides membership and
+  `DatatypeConstructor.lean` that a generated constructor is related at
+  its type;
   `TreeCases.lean` exercises the case analysis of a tree variable in any
   context and rewriting under a test, and `Expansion.lean` proves with
   them that the expansion of the datatype language,
