@@ -1,0 +1,782 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The search for elementary-affine decorations, written in the kernel's syntax: for each definition
+; of a program, whether it is typable alone and with a decoration per use of the definitions it
+; refers to, in the discipline Geb/Prototypes/Affine/Decoration.lean specifies, and a certificate of
+; the definitions so typable, which bootstrap/affine.geb checks, the search not being trusted.
+; Requires the prelude, the base, the reader and the checker, for primTypes, and the check of
+; certificates.
+;
+; A solution of the constraints of a decoration is computed by longest paths. Write the absolute
+; level of a type's node for the number of boxes around the node's term with the numbers of ! from
+; the root of the type to the node, each rule of the discipline moving a type across boxes changing
+; the depth and the number of ! at its root oppositely, and so leaving every absolute level
+; unchanged. Over absolute levels and depths every constraint of the discipline has the form
+; x >= y + c, so that the constraints are satisfiable, over the integers as over the rationals, if
+; and only if their graph has no cycle of positive weight, and the longest paths are the least
+; solution above a given one. The constraints describing a definition's decorations, projected onto
+; the levels of its type, are the longest paths between those levels, which have that form again.
+; The constraints of [BaillotTerui2005] are homogeneous but for those of contraction, so that a
+; rational solution scales to an integer one; the kernel's constants have fixed numbers of !, which
+; excludes that scaling, and the form above replaces it.
+;
+; Representations. The level of a type's node, of a term's depth and of a use's frame, which is the
+; depth the used definition's own depth zero is placed at, are positive numbers, 1 being the depth
+; of the definition's root. A decorated type is a node of the simple type's label over the leaf of
+; its absolute level and its children, the level being 0 at a type without arrows. An edge, the
+; constraint x >= y + p - q, is the node of label x over the leaves y, p and q. An occurrence of a
+; place is the node of label the binder over the leaf of its depth and the node of label 0 over its
+; path. A term's skeleton is the term's decoration over levels, read back from a solution: a node
+; of label 100 over a depth and the skeletons of its children; of label 101, a reference, over a
+; depth, the definition, the frame and the levels of its type; and of label 102, a decorated type,
+; over the level it is relative to and the type.
+
+(module AffineSearch (export search) (import Prelude) (import Base) (import Check) (import Affine)
+  ; the state of a walk: the next number, the edges and the uses, each use the node of label its
+  ; definition over the frame and the levels of its type
+  (deftype St (Prod T (Prod Ts Ts)))
+  (deftype Res (Prod T (Prod Ts (Prod T St))))
+  (deftype Walk (Arrow T (Arrow T (Arrow Ts (Arrow T (Arrow St Res))))))
+  (deftype Bucket (Prod T Ts))
+
+  ; edges
+  (defn edgeOf ((x T) (y T) (p T) (q T)) T (node x (cons y (cons p (single q)))))
+  (defn addE ((e T) (s St)) St (pair (fst s) (pair (cons e (fst (snd s))) (snd (snd s)))))
+  (defn geq ((x T) (y T) (s St)) St (addE (edgeOf x y 0 0) s))
+  (defn same ((x T) (y T) (s St)) St (geq x y (geq y x s)))
+  (defn above ((x T) (y T) (s St)) St (addE (edgeOf x y 1 0) (addE (edgeOf y x 0 1) s)))
+  (defn alloc ((s St)) St (pair (add (fst s) 1) (snd s)))
+  (defn addUse ((u T) (s St)) St (pair (fst s) (pair (fst (snd s)) (cons u (snd (snd s))))))
+
+  ; a fresh decoration of a simple type, each node's level at least its parent's, the root's at
+  ; least the given level
+  (deftype KF (Arrow T (Arrow St (Prod Ts St))))
+  (deftype Fr (Arrow T (Arrow St (Prod T St))))
+  (deftype FR (Prod T Fr))
+  (defn freshStep ((l T) (rs (List FR))) FR
+    (let q (Prod T KF)
+      (foldr FR (Prod T KF)
+        (lam ((r FR) (acc (Prod T KF)))
+          (pair (and (fst r) (fst acc))
+            (lam ((p T) (s St))
+              (let a (Prod T St) ((snd r) p s)
+                (let b (Prod Ts St) ((snd acc) p (snd a)) (pair (cons (fst a) (fst b)) (snd b)))))))
+        (pair 1 (lam ((p T) (s St)) (pair (nil T) s)))
+        rs)
+      (let plainD T (and (not (eq l Label.tyArrow)) (fst q))
+        (pair plainD
+          (lam ((p T) (s St))
+            (let own T (if plainD 0 (fst s))
+              (let b (Prod Ts St) ((snd q) own (if plainD s (geq own p (alloc s))))
+                (pair (dMk l own (fst b)) (snd b)))))))))
+  (defn fresh ((a T) (p T) (s St)) (Prod T St) ((snd (fold FR freshStep a)) p s))
+
+  ; decorated types
+  (defn dAt ((a T) (lv T)) T
+    (fold T
+      (lam ((l T) (rs Ts))
+        (dMk l (if (and (not (eq l Label.tyArrow)) (allT (lam ((c T)) (eq (dBang c) 0)) rs)) 0 lv)
+          rs))
+      a))
+  (defn dArr ((lv T) (a T) (b T)) T (dMk Label.tyArrow lv (cons a (single b))))
+  (defn dLst ((lv T) (a T)) T (dMk Label.tyList (if (eq (dBang a) 0) 0 lv) (single a)))
+  (defn dPr ((lv T) (a T) (b T)) T
+    (dMk Label.tyProd (if (and (eq (dBang a) 0) (eq (dBang b) 0)) 0 lv) (cons a (single b))))
+  (defn kid ((d T) (i T)) T (child d (add i 1)))
+  (defn concatTs ((xs (List Ts))) Ts (foldr Ts Ts append (nil T) xs))
+  ; the levels of a type's nodes with arrows, in preorder
+  (defn levelsOf ((d T)) Ts
+    (para Ts
+      (lam ((nd T) (rs (List Ts)))
+        (if (lt 0 (arity nd))
+          (let lv T (label (child nd 0)) (if (eq lv 0) (nil T) (cons lv (concatTs rs))))
+          (nil T)))
+      d))
+  ; the constraints that two decorations of a simple type are equal
+  (defn eqDs ((a T) (b T) (s St)) St
+    (let xs Ts (levelsOf a)
+      (let ys T (node 0 (levelsOf b))
+        (snd
+          (foldr T (Prod T St)
+            (lam ((x T) (acc (Prod T St)))
+              (pair (sub (fst acc) 1) (same x (child ys (sub (fst acc) 1)) (snd acc))))
+            (pair (length xs) s)
+            xs)))))
+  (defn placeAt ((d T) (path Ts)) T
+    ((foldr T (Arrow T T) (lam ((i T) (k (Arrow T T)) (x T)) (k (kid x i))) (lam ((x T)) x) path)
+     d))
+
+  ; results
+  (defn rsOf ((d T) (u Ts) (k T) (s St)) Res (pair d (pair u (pair k s))))
+  (defn rD ((r Res)) T (fst r))
+  (defn rU ((r Res)) Ts (fst (snd r)))
+  (defn rK ((r Res)) T (fst (snd (snd r))))
+  (defn rS ((r Res)) St (snd (snd (snd r))))
+  (defn skT ((depth T) (ks Ts)) T (node 100 (cons depth ks)))
+  (defn skD ((parent T) (d T)) T (node 102 (cons parent (single d))))
+  ; a type with no ! and no usage, at a depth
+  (defn plain ((d T) (depth T) (s St)) Res (rsOf d (nil T) (skT depth (nil T)) s))
+  ; a child at a fresh depth, using no variable bound deeper, leaving boxes only as its type's !
+  ; allow
+  (defn wChild ((r Walk) (G T) (ctx Ts) (depth T) (s St)) Res
+    (let dc T (fst s)
+      (let c Res (r 0 G ctx dc (geq dc 1 (alloc s)))
+        (let s1 St (foldr T St (lam ((pl T) (acc St)) (geq dc (child pl 0) acc)) (rS c) (rU c))
+          (rsOf (rD c) (rU c) (rK c)
+            (if (eq (dBang (rD c)) 0) s1 (geq (dBang (rD c)) depth s1)))))))
+  (defn wOcc ((ctx Ts) (depth T) (pl T) (s St)) Res
+    (let e T (at ctx (plVar pl))
+      (let d T (placeAt (child e 0) (children (plPath pl)))
+        (rsOf d (single (node (label e) (cons (child e 1) (single (plPath pl)))))
+          (skT depth (nil T))
+          (if (eq (dBang d) 0) s (geq (dBang d) depth s))))))
+  ; the places of a binder used more than once, or beside a place below them, each with a ! unless
+  ; it is data, the places below such a place being read through it
+  (defn contractE ((a T) (bdepth T) (paths Ts) (s St)) St
+    (foldr T St
+      (lam ((p T) (acc St))
+        (let d T (placeAt a (children p))
+          (if
+            (and (not (eq (dBang d) 0))
+              (and
+                (not
+                  (anyT
+                    (lam ((q T))
+                      (and (lt (length (children q)) (length (children p))) (isPrefix q p)))
+                    paths))
+                (or (lt 1 (countPath p paths)) (belowPath p paths))))
+            (addE (edgeOf (dBang d) bdepth 1 0) acc)
+            acc)))
+      s
+      paths))
+  (defn wLam ((r1 Walk) (G T) (ctx Ts) (depth T) (cs Ts) (s St)) Res
+    (let bid T (fst s)
+      (let f (Prod T St) (fresh (at cs 0) depth (alloc s))
+        (let a T (fst f)
+          (let c Res (wChild r1 G (cons (node bid (cons a (single depth))) ctx) depth (snd f))
+            (let u Ts (rU c)
+              (rsOf (dArr depth a (rD c))
+                (foldr T Ts (lam ((pl T) (acc Ts)) (if (eq (label pl) bid) acc (cons pl acc)))
+                  (nil T)
+                  u)
+                (skT depth (cons (skD depth a) (single (rK c))))
+                (contractE a depth
+                  (foldr T Ts
+                    (lam ((pl T) (acc Ts)) (if (eq (label pl) bid) (cons (child pl 1) acc) acc))
+                    (nil T)
+                    u)
+                  (rS c)))))))))
+  (defn wApp ((r0 Walk) (r1 Walk) (G T) (ctx Ts) (depth T) (s St)) Res
+    (let f Res (wChild r0 G ctx depth s)
+      (let x Res (wChild r1 G ctx depth (rS f))
+        (let df T (rD f)
+          (rsOf (kid df 1) (append (rU f) (rU x)) (skT depth (cons (rK f) (single (rK x))))
+            (eqDs (kid df 0) (rD x) (same (dBang df) depth (rS x))))))))
+  ; an application whose head is case analysis of lists, to some of its arguments, in the mode that
+  ; collects them: the node of label 0 over their types, the list of the nodes of label 0 over
+  ; their usages, and the node of label 0 over their skeletons
+  (defn wSpine ((r0 Walk) (r1 Walk) (G T) (ctx Ts) (depth T) (s St)) Res
+    (let f Res (r0 1 G ctx depth s)
+      (let x Res (wChild r1 G ctx depth (rS f))
+        (rsOf (node 0 (append (children (rD f)) (single (rD x))))
+          (append (rU f) (single (node 0 (rU x))))
+          (node 0 (append (children (rK f)) (single (rK x))))
+          (rS x)))))
+  (defn wSat ((r0 Walk) (r1 Walk) (G T) (ctx Ts) (depth T) (s St)) Res
+    (let f Res (r0 1 G ctx depth s)
+      (let c Res (wChild r1 G ctx depth (rS f))
+        (let dl T (child (rD f) 0)
+          (let dn T (child (rD f) 1)
+            (let dc T (rD c)
+              (let dr T (kid dc 1)
+                (let s1 St (same (dBang dr) depth (same (dBang dc) depth (rS c)))
+                  (let s2 St (if (eq (dBang dl) 0) s1 (same (dBang dl) depth s1))
+                    (rsOf dn
+                      (append (children (at (rU f) 0)) (usageMax (children (at (rU f) 1)) (rU c)))
+                      (skT depth (cons (child (rK f) 0) (cons (child (rK f) 1) (single (rK c)))))
+                      (eqDs (kid dr 1) dn
+                        (eqDs (kid dr 0) dl (eqDs (kid dc 0) (kid dl 0) s2)))))))))))))
+  (defn wProj ((i T) (r0 Walk) (G T) (ctx Ts) (depth T) (s St)) Res
+    (let c Res (wChild r0 G ctx depth s)
+      (let d T (rD c)
+        (rsOf (kid d i) (rU c) (skT depth (single (rK c)))
+          (if (eq (dBang d) 0) (rS c) (same (dBang d) depth (rS c)))))))
+  (defn wPair ((r0 Walk) (r1 Walk) (G T) (ctx Ts) (depth T) (s St)) Res
+    (let a Res (wChild r0 G ctx depth s)
+      (let b Res (wChild r1 G ctx depth (rS a))
+        (rsOf (dPr depth (rD a) (rD b)) (append (rU a) (rU b))
+          (skT depth (cons (rK a) (single (rK b))))
+          (rS b)))))
+  (defn wCond ((r0 Walk) (r1 Walk) (r2 Walk) (G T) (ctx Ts) (depth T) (s St)) Res
+    (let c Res (wChild r0 G ctx depth s)
+      (let a Res (wChild r1 G ctx depth (rS c))
+        (let b Res (wChild r2 G ctx depth (rS a))
+          (rsOf (rD a) (append (rU c) (usageMax (rU a) (rU b)))
+            (skT depth (cons (rK c) (cons (rK a) (single (rK b)))))
+            (eqDs (rD a) (rD b) (rS b)))))))
+  (defn wCons ((r0 Walk) (r1 Walk) (G T) (ctx Ts) (depth T) (s St)) Res
+    (let x Res (wChild r0 G ctx depth s)
+      (let l Res (wChild r1 G ctx depth (rS x))
+        (let dl T (rD l)
+          (rsOf (if (eq (dBang dl) 0) dl (dLst depth (rD x))) (append (rU x) (rU l))
+            (skT depth (cons (rK x) (single (rK l))))
+            (if (eq (dBang dl) 0) (rS l)
+              (eqDs (kid dl 0) (rD x) (same (dBang dl) depth (rS l)))))))))
+
+  ; the constants, each with the level of a step one box inside the node's depth
+  (def dT0 (dZero Label.tyTree))
+  (defn wNil ((a T) (depth T) (s St)) Res
+    (let f (Prod T St) (fresh a depth s)
+      (rsOf (dLst depth (fst f)) (nil T) (skT depth (single (skD depth (fst f)))) (snd f))))
+  (defn wIter ((a T) (depth T) (s St)) Res
+    (let step T (fst s)
+      (let f (Prod T St) (fresh a step (above step depth (alloc s)))
+        (let d T (fst f)
+          (rsOf (dArr depth (dArr step d d) (dArr depth d (dArr depth dT0 d))) (nil T)
+            (skT depth (single (skD step d)))
+            (snd f))))))
+  (defn wFold ((a T) (depth T) (s St)) Res
+    (let step T (fst s)
+      (let f (Prod T St) (fresh a step (above step depth (alloc s)))
+        (let d T (fst f)
+          (rsOf (dArr depth (dArr step dT0 (dArr step (dLst step d) d)) (dArr depth dT0 d)) (nil T)
+            (skT depth (single (skD step d)))
+            (snd f))))))
+  (defn wFoldr ((a T) (b T) (depth T) (s St)) Res
+    (let step T (fst s)
+      (let fb (Prod T St) (fresh b step (above step depth (alloc s)))
+        (let db T (fst fb)
+          (let fa (Prod T St) (fresh a depth (snd fb))
+            (let da T (fst fa)
+              (rsOf
+                (dArr depth (dArr step da (dArr step db db))
+                  (dArr depth db (dArr depth (dLst depth da) db)))
+                (nil T)
+                (skT depth (cons (skD depth da) (single (skD step db))))
+                (if (eq (dBang da) 0) (snd fa) (addE (edgeOf (dBang da) depth 1 0) (snd fa))))))))))
+  (defn wLcase ((a T) (b T) (depth T) (s St)) Res
+    (let fa (Prod T St) (fresh a depth s)
+      (let fb (Prod T St) (fresh b depth (snd fa))
+        (let da T (fst fa)
+          (let db T (fst fb)
+            (let la T (dLst depth da)
+              (rsOf
+                (dArr depth la (dArr depth db (dArr depth (dArr depth da (dArr depth la db)) db)))
+                (nil T)
+                (skT depth (cons (skD depth da) (single (skD depth db))))
+                (snd fb))))))))
+  (defn wRef ((j T) (G T) (depth T) (s St)) Res
+    (let f (Prod T St) (fresh (child (child G j) 0) depth s)
+      (let frame T (fst (snd f))
+        (let ls Ts (levelsOf (fst f))
+          (rsOf (fst f) (nil T) (node 101 (cons depth (cons j (cons frame ls))))
+            (addUse (node j (cons frame ls)) (geq frame depth (alloc (snd f)))))))))
+
+  ; a node of the walk that reads no walk of a child
+  (defn wLeaf ((l T) (G T) (depth T) (cs Ts) (s St)) Res
+    (if (eq l Label.unit) (plain (dZero Label.tyUnit) depth s)
+      (if (eq l Label.quote) (plain dT0 depth s)
+        (if (eq l Label.prim) (plain (dAt (at primTypes (label (at cs 0))) depth) depth s)
+          (if (eq l Label.ref) (wRef (at cs 0) G depth s)
+            (if (eq l Label.nil) (wNil (at cs 0) depth s)
+              (if (eq l Label.iter) (wIter (at cs 0) depth s)
+                (if (or (eq l Label.fold) (eq l Label.para)) (wFold (at cs 0) depth s)
+                  (if (eq l Label.foldr) (wFoldr (at cs 0) (at cs 1) depth s)
+                    (wLcase (at cs 0) (at cs 1) depth s))))))))))
+  ; one node of the walk, from the walks of its first three children: the mode is 0 at a term and 1
+  ; at an application whose head is case analysis of lists, collecting its arguments
+  (defn wStep ((nd T) (r0 Walk) (r1 Walk) (r2 Walk) (m T) (G T) (ctx Ts) (depth T) (s St)) Res
+    (let l T (label nd)
+      (let cs Ts (children nd)
+        (if (eq l Label.var) (wOcc ctx depth (get (termPlace nd)) s)
+          (if (eq l Label.lam) (wLam r1 G ctx depth cs s)
+            (if (eq l Label.app)
+              (if (eq m 1) (wSpine r0 r1 G ctx depth s)
+                (if (isSpine2 (at cs 0)) (wSat r0 r1 G ctx depth s) (wApp r0 r1 G ctx depth s)))
+              (if (eq l Label.pair) (wPair r0 r1 G ctx depth s)
+                (if (or (eq l Label.fst) (eq l Label.snd))
+                  (if (isSome (termPlace nd)) (wOcc ctx depth (get (termPlace nd)) s)
+                    (wProj (if (eq l Label.fst) 0 1) r0 G ctx depth s))
+                  (if (eq l Label.cond) (wCond r0 r1 r2 G ctx depth s)
+                    (if (eq l Label.cons) (wCons r0 r1 G ctx depth s)
+                      (if (eq m 1) (rsOf (node 0 (nil T)) (nil T) (node 0 (nil T)) s)
+                        (wLeaf l G depth cs s))))))))))))
+  (def walk0 (lam ((m T) (G T) (ctx Ts) (depth T) (s St)) (plain dT0 depth s)))
+  (defn wThree ((nd T) (rs (List Walk))) Walk
+    (lcase Walk Walk rs (wStep nd walk0 walk0 walk0)
+      (lam ((a Walk) (r1 (List Walk)))
+        (lcase Walk Walk r1 (wStep nd a walk0 walk0)
+          (lam ((b Walk) (r2 (List Walk)))
+            (lcase Walk Walk r2 (wStep nd a b walk0)
+              (lam ((c Walk) (r3 (List Walk))) (wStep nd a b c))))))))
+  ; a definition's walk, its root at the depth 1
+  (defn walkOf ((G T) (t T)) Res
+    ((para Walk wThree t) 0 G (nil T) 1 (pair 2 (pair (nil T) (nil T)))))
+
+  ; edges by the value they bound, stably, one pass per bit of the numbers below n
+  (defn radixPass ((w T) (es Ts)) Ts
+    (let p (Prod Ts Ts)
+      (foldr T (Prod Ts Ts)
+        (lam ((e T) (acc (Prod Ts Ts)))
+          (if (mod (div (label e) w) 2) (pair (fst acc) (cons e (snd acc)))
+            (pair (cons e (fst acc)) (snd acc))))
+        (pair (nil T) (nil T))
+        es)
+      (append (fst p) (snd p))))
+  (defn sortEdges ((n T) (es Ts)) Ts
+    (snd
+      (iter (Prod T Ts)
+        (lam ((st (Prod T Ts))) (pair (mul 2 (fst st)) (radixPass (fst st) (snd st))))
+        (pair 1 es)
+        (add (log2 n) 1))))
+  ; the edges bounding each number below n, in order of the numbers
+  (deftype Gap (Prod T (List Bucket)))
+  (defn fillGap ((lo T) (hi T) (done (List Bucket))) (List Bucket)
+    (snd
+      (iter Gap (lam ((g Gap)) (pair (sub (fst g) 1) (cons (pair (sub (fst g) 1) (nil T)) (snd g))))
+        (pair hi done)
+        (sub hi lo))))
+  (deftype Group (Prod T (Prod Ts (List Bucket))))
+  (defn closeGroup ((n T) (g Group)) (List Bucket)
+    (if (eq (fst g) n) (snd (snd g)) (cons (pair (fst g) (fst (snd g))) (snd (snd g)))))
+  (defn bucketsOf ((n T) (es Ts)) (List Bucket)
+    (let g Group
+      (foldr T Group
+        (lam ((e T) (acc Group))
+          (let x T (label e)
+            (if (eq x (fst acc)) (pair x (pair (cons e (fst (snd acc))) (snd (snd acc))))
+              (pair x (pair (single e) (fillGap (add x 1) (fst acc) (closeGroup n acc)))))))
+        (pair n (pair (nil T) (nil Bucket)))
+        (sortEdges n es))
+      (fillGap 0 (fst g) (closeGroup n g))))
+  ; the buckets of two sets of edges together, each list having a bucket for every number
+  (deftype Buckets (List Bucket))
+  (defn mergeBuckets ((a Buckets) (b Buckets)) Buckets
+    ((foldr Bucket (Arrow Buckets Buckets)
+       (lam ((x Bucket) (k (Arrow Buckets Buckets)) (ys Buckets))
+         (lcase Bucket Buckets ys (nil Bucket)
+           (lam ((y Bucket) (rest Buckets))
+             (cons (pair (fst x) (append (snd x) (snd y))) (k rest)))))
+       (lam ((ys Buckets)) (nil Bucket))
+       a) b))
+
+  ; longest paths: a value of 0 is a number no path reaches
+  (defn relaxed ((old T) (b Bucket)) T
+    (foldr T T
+      (lam ((e T) (m T))
+        (let dy T (child old (child e 0))
+          (if (eq dy 0) m (let c T (sub (add dy (child e 1)) (child e 2)) (if (lt m c) c m)))))
+      (child old (fst b))
+      (snd b)))
+  (defn sweep ((bs (List Bucket)) (old T)) (Prod T Ts)
+    (foldr Bucket (Prod T Ts)
+      (lam ((b Bucket) (acc (Prod T Ts)))
+        (let best T (relaxed old b)
+          (pair (or (fst acc) (lt (child old (fst b)) best)) (cons best (snd acc)))))
+      (pair 0 (nil T))
+      bs))
+  ; the fixed point from an initial vector, at most n + 1 sweeps, a value above the bound being a
+  ; path that repeats a number: the node of label 1 over the vector, or another node when a cycle
+  ; of positive weight is reached
+  (defn fixed ((bs (List Bucket)) (init T) (n T) (bound T)) T
+    (iter T
+      (lam ((st T))
+        (if (eq (label st) 0)
+          (let r (Prod T Ts) (sweep bs (child st 0))
+            (let nd T (node 0 (snd r))
+              (if (fst r)
+                (if (anyT (lam ((v T)) (lt bound v)) (snd r)) (node 2 (nil T)) (node 0 (single nd)))
+                (node 1 (single nd)))))
+          st))
+      (node 0 (single init))
+      (add n 1)))
+  (defn solved ((st T)) T (eq (label st) 1))
+  (defn weightP ((es Ts)) T (foldr T T (lam ((e T) (m T)) (add m (child e 1))) 0 es))
+  (defn weightQ ((es Ts)) T (foldr T T (lam ((e T) (m T)) (add m (child e 2))) 0 es))
+  ; the least solution, when one exists, as the node of label 1 over its values
+  (defn leastSolution ((bs (List Bucket)) (n T) (bound T)) T
+    (fixed bs (node 0 (replicate n 1)) n bound))
+
+  ; the longest paths from a number to every number, offset so that none truncates
+  (defn fromSource ((bs (List Bucket)) (n T) (off T) (bound T) (src T)) T
+    (child
+      (fixed bs
+        (node 0
+          (snd
+            (iter (Prod T Ts)
+              (lam ((p (Prod T Ts)))
+                (let i T (sub (fst p) 1) (pair i (cons (if (eq i src) off 0) (snd p)))))
+              (pair n (nil T))
+              n)))
+        n
+        bound)
+      0))
+  ; the constraints between the positions of a definition's interface, its depth and the levels of
+  ; its type: the longest paths between them, as edges over the positions
+  (defn pairsFrom ((a T) (la T) (dist T) (off T) (lvls T) (k T) (acc Ts)) Ts
+    (snd
+      (iter (Prod T Ts)
+        (lam ((p (Prod T Ts)))
+          (let b T (sub (fst p) 1)
+            (let lb T (child lvls b)
+              (let v T (child dist lb)
+                (pair b
+                  (if (eq b a) (snd p)
+                    (if (eq lb la) (cons (edgeOf b a 0 0) (snd p))
+                      (if (eq v 0) (snd p)
+                        (cons (if (lt v off) (edgeOf b a 0 (sub off v)) (edgeOf b a (sub v off) 0))
+                          (snd p))))))))))
+        (pair k acc)
+        k)))
+  (deftype Memo (Prod Ts Ts))
+  (defn projection ((bs (List Bucket)) (n T) (off T) (bound T) (iface Ts)) Ts
+    (let lvls T (node 0 iface)
+      (let k T (length iface)
+        (snd
+          (snd
+            (iter (Prod T Memo)
+              (lam ((p (Prod T Memo)))
+                (let a T (sub (fst p) 1)
+                  (let la T (child lvls a)
+                    (let hit T
+                      (foldr T T (lam ((m T) (r T)) (if (eq (label m) la) (some (child m 0)) r))
+                        none
+                        (fst (snd p)))
+                      (let dist T (if (isSome hit) (get hit) (fromSource bs n off bound la))
+                        (pair a
+                          (pair (cons (node la (single dist)) (fst (snd p)))
+                            (pairsFrom a la dist off lvls k (snd (snd p))))))))))
+              (pair k (pair (nil T) (nil T)))
+              k))))))
+
+  ; the edges a use of a definition adds, the definition's projection over the use's interface
+  (defn copyUse ((proj Ts) (pos T) (acc Ts)) Ts
+    (foldr T Ts
+      (lam ((e T) (r Ts))
+        (cons (edgeOf (child pos (label e)) (child pos (child e 0)) (child e 1) (child e 2)) r))
+      acc
+      proj))
+
+  ; An entry of the table of definitions: the node of label its verdict, 0 not typable alone, 1 not
+  ; typable per use, 2 typable per use whose uses are not all covered and 3 covered, over its
+  ; simple type, its name, the bound on its numbers, its edges, its projection, its interface, its
+  ; skeleton and its uses.
+  (defn enName ((e T)) T (child e 1))
+  (defn enN ((e T)) T (child e 2))
+  (defn enEdges ((e T)) Ts (children (child e 3)))
+  (defn enProj ((e T)) Ts (children (child e 4)))
+  (defn enIface ((e T)) Ts (children (child e 5)))
+  (defn enSk ((e T)) T (child e 6))
+  (defn enUses ((e T)) Ts (children (child e 7)))
+  (defn entryOf ((v T) (ty T) (name T) (n T) (es Ts) (proj Ts) (iface Ts) (sk T) (uses Ts)) T
+    (node v
+      (cons ty
+        (cons name
+          (cons n
+            (cons (node 0 es)
+              (cons (node 0 proj) (cons (node 0 iface) (cons sk (single (node 0 uses)))))))))))
+  ; the bound on a set of edges' longest paths from a value of 1, and on those from a number
+  (defn boundOf ((es Ts)) T (add 1 (weightP es)))
+  (defn offsetOf ((es Ts)) T (add 1 (weightQ es)))
+  (defn verdictOf ((G T) (dn T)) T
+    (let r Res (walkOf G (child dn 1))
+      (let d T (rD r)
+        (let n T (fst (rS r))
+          (let base Ts (fst (snd (rS r)))
+            (let uses Ts (snd (snd (rS r)))
+              (let iface Ts (cons 1 (levelsOf d))
+                (let name T (child dn 0)
+                  (let ty T (dTy d)
+                    (if (not (solved (leastSolution (bucketsOf n base) n (boundOf base))))
+                      (entryOf 0 ty name n base (nil T) iface (rK r) uses)
+                      (let es Ts
+                        (foldr T Ts
+                          (lam ((u T) (acc Ts))
+                            (let eu T (child G (label u))
+                              (if (lt (label eu) 2) acc
+                                (copyUse (enProj eu) (node 0 (children u)) acc))))
+                          base
+                          uses)
+                        (let bs (List Bucket) (bucketsOf n es)
+                          (if (not (solved (leastSolution bs n (boundOf es))))
+                            (entryOf 1 ty name n es (nil T) iface (rK r) uses)
+                            (let covered T
+                              (allT (lam ((u T)) (eq (label (child G (label u))) 3)) uses)
+                              (entryOf (if covered 3 2) ty name n es
+                                (projection bs n (offsetOf es) (add (offsetOf es) (weightP es))
+                                  iface)
+                                iface
+                                (rK r)
+                                uses)))))))))))))))
+  (deftype Tbl (Prod T Ts))
+  ; the table of a program's definitions, in order, each reading the entries before it
+  (defn tableOf ((defs T)) Ts
+    (reverse
+      (snd
+        (iter Tbl
+          (lam ((p Tbl))
+            (pair (add (fst p) 1)
+              (cons (verdictOf (node 0 (reverse (snd p))) (child defs (fst p))) (snd p))))
+          (pair 0 (nil T))
+          (arity defs)))))
+
+  ; the instances of the covered definitions, from the last definition to the first: the
+  ; decorations a definition is requested at by the instances of later ones, or else its least, a
+  ; decoration being the numbers of ! at the positions of its interface after the first
+  (defn relTo ((dist T) (base T) (lv T)) T (sub (child dist lv) (child dist base)))
+  (defn decoAt ((dist T) (iface Ts)) T (node 0 (mapT (relTo dist 1) (tail iface))))
+  (defn pinEdges ((iface Ts) (y T)) Ts
+    (snd
+      (foldr T (Prod T Ts)
+        (lam ((lv T) (acc (Prod T Ts)))
+          (let i T (sub (fst acc) 1)
+            (let v T (child y i)
+              (pair i (cons (edgeOf lv 1 v 0) (cons (edgeOf 1 lv 0 v) (snd acc)))))))
+        (pair (length iface) (nil T))
+        iface)))
+  (defn requestsOf ((dist T) (uses Ts) (acc Ts)) Ts
+    (foldr T Ts
+      (lam ((u T) (r Ts))
+        (let cs Ts (children u)
+          (cons (node (label u) (single (node 0 (mapT (relTo dist (at cs 0)) (tail cs))))) r)))
+      acc
+      uses))
+  (defn pinned ((e T) (bs (List Bucket)) (y T)) T
+    (let pins Ts (pinEdges (tail (enIface e)) y)
+      (leastSolution (mergeBuckets bs (bucketsOf (enN e) pins)) (enN e)
+        (add (boundOf (enEdges e)) (weightP pins)))))
+  (defn distinctTs ((xs Ts)) Ts
+    (foldr T Ts (lam ((x T) (r Ts)) (if (anyT (equal x) r) r (cons x r))) (nil T) xs))
+  ; the state of the search for instances: the position in the table, the requests not yet served,
+  ; each the node of label a definition over a decoration, and for each definition served the node
+  ; of label its position over its instances, each the node of label 0 over a decoration and its
+  ; solution
+  (deftype Req (Prod T (Prod Ts Ts)))
+  (defn instancesOf ((table Ts)) Ts
+    (snd
+      (snd
+        (foldr T Req
+          (lam ((e T) (acc Req))
+            (let i T (sub (fst acc) 1)
+              (if (eq (label e) 3)
+                (let reqs Ts
+                  (distinctTs
+                    (foldr T Ts
+                      (lam ((r T) (out Ts)) (if (eq (label r) i) (cons (child r 0) out) out))
+                      (nil T)
+                      (fst (snd acc))))
+                  (let rest Ts
+                    (foldr T Ts (lam ((r T) (out Ts)) (if (eq (label r) i) out (cons r out)))
+                      (nil T)
+                      (fst (snd acc)))
+                    (let bs (List Bucket) (bucketsOf (enN e) (enEdges e))
+                      (let sols Ts
+                        (if (isEmpty reqs)
+                          (let st T (leastSolution bs (enN e) (boundOf (enEdges e)))
+                            (single
+                              (node 0
+                                (cons (decoAt (child st 0) (enIface e)) (single (child st 0))))))
+                          (mapT (lam ((y T)) (node 0 (cons y (single (child (pinned e bs y) 0)))))
+                            reqs))
+                        (pair i
+                          (pair
+                            (foldr T Ts
+                              (lam ((s T) (out Ts)) (requestsOf (child s 1) (enUses e) out))
+                              rest
+                              sols)
+                            (cons (node i sols) (snd (snd acc)))))))))
+                (pair i (pair (fst (snd acc)) (cons (node i (nil T)) (snd (snd acc))))))))
+          (pair (length table) (pair (nil T) (nil T)))
+          table))))
+
+  ; the decoration of a term from its skeleton, a solution and the positions of the instances:
+  ; each definition's node of the nodes of label an instance's position over its decoration
+  (defn relDeco ((dist T) (a T) (b T)) T (if (eq b 0) 0 (relTo dist a b)))
+  (defn decoTy ((dist T) (parent T) (d T)) T
+    (let r T
+      (para T
+        (lam ((nd T) (rs Ts))
+          (if (eq (arity nd) 0) 0
+            (let own T (label (child nd 0))
+              (let ks Ts (tail rs)
+                (node 0
+                  (snd
+                    (foldr T (Prod T Ts)
+                      (lam ((x T) (acc (Prod T Ts)))
+                        (pair (sub (fst acc) 1)
+                          (cons (node (relDeco dist own (dBang (child nd (fst acc)))) (children x))
+                            (snd acc))))
+                      (pair (length ks) (nil T))
+                      ks)))))))
+        d)
+      (node (relDeco dist parent (dBang d)) (children r))))
+  (defn lookupInst ((pos T) (j T) (y T)) T
+    (foldr T T (lam ((p T) (r T)) (if (equal (child p 0) y) (label p) r)) 0
+      (children (child pos j))))
+  (defn decoStep ((dist T) (pos T) (nd T) (rs Ts)) T
+    (let l T (label nd)
+      (if (eq (arity nd) 0) 0
+        (if (eq l 100) (node (relTo dist 1 (child nd 0)) (tail rs))
+          (if (eq l 102) (decoTy dist (child nd 0) (child nd 1))
+            (if (eq l 101)
+              (let cs Ts (children nd)
+                (let depth T (at cs 0)
+                  (let frame T (at cs 2)
+                    (node (relTo dist 1 depth)
+                      (cons
+                        (lookupInst pos (label (at cs 1))
+                          (node 0 (mapT (relTo dist frame) (drop 3 cs))))
+                        (single (relTo dist depth frame)))))))
+              0))))))
+  (defn decoOf ((dist T) (pos T) (sk T)) T (para T (decoStep dist pos) sk))
+  ; the positions of the instances, in the order of the definitions
+  (defn positionsOf ((insts Ts)) T
+    (let total T (foldr T T (lam ((x T) (n T)) (add n (arity x))) 0 insts)
+      (node 0
+        (snd
+          (foldr T (Prod T Ts)
+            (lam ((x T) (acc (Prod T Ts)))
+              (let q (Prod T Ts)
+                (foldr T (Prod T Ts)
+                  (lam ((s T) (r (Prod T Ts)))
+                    (pair (sub (fst r) 1)
+                      (cons (node (sub (fst r) 1) (single (child s 0))) (snd r))))
+                  (pair (fst acc) (nil T))
+                  (children x))
+                (pair (fst q) (cons (node 0 (snd q)) (snd acc)))))
+            (pair total (nil T))
+            insts)))))
+  (defn certificateOf ((table Ts) (insts Ts)) T
+    (let tn T (node 0 table)
+      (let pos T (positionsOf insts)
+        (node 0
+          (foldr T Ts
+            (lam ((x T) (r Ts))
+              (foldr T Ts
+                (lam ((s T) (acc Ts))
+                  (cons
+                    (node (label x) (single (decoOf (child s 1) pos (enSk (child tn (label x))))))
+                    acc))
+                r
+                (children x)))
+            (nil T)
+            insts)))))
+
+  ; text
+  ; a number in decimal: enough digits for any number, less those that lead with zero
+  (defn decimal ((n T)) Ts
+    (let ds Ts (mapT (lam ((d T)) (add d 48)) (digitsMsb 10 n (add 1 (log2 (add n 1)))))
+      (let lead T (foldr T T (lam ((d T) (r T)) (if (eq d 48) (add r 1) 0)) 0 ds)
+        (drop (if (eq lead (length ds)) (sub lead 1) lead) ds))))
+  (defn tree2Text ((t T)) Ts
+    ((fold Endo
+       (lam ((l T) (rs (List Endo)))
+         (let body Endo
+           (foldr Endo Endo (lam ((r Endo) (k Endo) (acc Ts)) (cons 32 (r (k acc))))
+             (lam ((acc Ts)) acc)
+             rs)
+           (lam ((acc Ts)) (cons 40 (append (decimal l) (body (cons 41 acc)))))))
+       t) (nil T)))
+  (defn line ((xs Ts)) Ts (append xs (single 10)))
+  (defn text ((q T)) Ts (children q))
+  (defn notTypable ((prefix Ts) (v T) (table Ts)) Ts
+    (foldr T Ts
+      (lam ((e T) (r Ts))
+        (if (eq (label e) v) (append (line (append prefix (children (enName e)))) r) r))
+      (nil T)
+      table))
+  (defn countOf ((f (Arrow T T)) (xs Ts)) T
+    (foldr T T (lam ((x T) (n T)) (if (f x) (add n 1) n)) 0 xs))
+  (defn report ((table Ts) (cert T) (ok T)) Ts
+    (let n T (length table)
+      (let bad T (countOf (lam ((e T)) (eq (label e) 0)) table)
+        (let worse T (countOf (lam ((e T)) (eq (label e) 1)) table)
+          (let covered T (countOf (lam ((e T)) (eq (label e) 3)) table)
+            (append
+              (line
+                (append (decimal n)
+                  (append (text (quote (0 " definitions; ")))
+                    (append (decimal (sub n bad))
+                      (append (text (quote (0 " typable alone; ")))
+                        (append (decimal bad) (text (quote (0 " not")))))))))
+              (append (notTypable (text (quote (0 "  NOT TYPABLE: "))) 0 table)
+                (append
+                  (line
+                    (append (text (quote (0 "a decoration per use: ")))
+                      (append (decimal (sub (sub n bad) worse))
+                        (append (text (quote (0 " of the ")))
+                          (append (decimal (sub n bad))
+                            (append (text (quote (0 " typable alone typable; ")))
+                              (append (decimal worse) (text (quote (0 " not"))))))))))
+                  (append (notTypable (text (quote (0 "  NOT TYPABLE PER USE: "))) 1 table)
+                    (append
+                      (line
+                        (append (text (quote (0 "certificate: ")))
+                          (append (decimal (arity cert))
+                            (append (text (quote (0 " instances of ")))
+                              (append (decimal covered)
+                                (text
+                                  (if ok (quote (0 " definitions, checked"))
+                                    (quote (0 " definitions, not checked")))))))))
+                      (line (tree2Text cert))))))))))))
+
+  ; a program's definitions in the form lake exe geb-defs writes, read by iteration over the bytes:
+  ; the mode, 0 at the start of a line, 1 in a name, 2 in a line skipped and 3 in a term, the name,
+  ; the number being read plus 1 or 0, the open nodes, and the definitions, the last first
+  (deftype Open (Prod T Ts))
+  (deftype Rd (Prod T (Prod Ts (Prod T (Prod (List Open) Ts)))))
+  (defn rdOf ((m T) (name Ts) (cur T) (st (List Open)) (ds Ts)) Rd
+    (pair m (pair name (pair cur (pair st ds)))))
+  (defn labelTop ((cur T) (st (List Open))) (List Open)
+    (if (eq cur 0) st
+      (lcase Open (List Open) st (nil Open)
+        (lam ((o Open) (rest (List Open))) (cons (pair (sub cur 1) (snd o)) rest)))))
+  (defn closeTop ((r Rd) (st (List Open))) Rd
+    (lcase Open Rd st (rdOf 2 (nil T) 0 (nil Open) (snd (snd (snd (snd r)))))
+      (lam ((o Open) (rest (List Open)))
+        (let t T (node (fst o) (reverse (snd o)))
+          (lcase Open Rd rest
+            (rdOf 2 (nil T) 0 (nil Open)
+              (cons (node 0 (cons (node 0 (reverse (fst (snd r)))) (single t)))
+                (snd (snd (snd (snd r))))))
+            (lam ((p Open) (ps (List Open)))
+              (rdOf 3 (fst (snd r)) 0 (cons (pair (fst p) (cons t (snd p))) ps)
+                (snd (snd (snd (snd r)))))))))))
+  (defn rdStep ((c T) (r Rd)) Rd
+    (let m T (fst r)
+      (let name Ts (fst (snd r))
+        (let cur T (fst (snd (snd r)))
+          (let st (List Open) (fst (snd (snd (snd r))))
+            (let ds Ts (snd (snd (snd (snd r))))
+              (if (eq m 0)
+                (if (eq c 10) r
+                  (if (eq c 35) (rdOf 2 name cur st ds) (rdOf 1 (single c) cur st ds)))
+                (if (eq m 1) (if (eq c 9) (rdOf 3 name 0 st ds) (rdOf 1 (cons c name) cur st ds))
+                  (if (eq m 2) (if (eq c 10) (rdOf 0 (nil T) 0 st ds) r)
+                    (if (eq c 40) (rdOf 3 name 0 (cons (pair 0 (nil T)) st) ds)
+                      (if (and (lt 47 c) (lt c 58))
+                        (rdOf 3 name (add (add (mul 10 (if (eq cur 0) 0 (sub cur 1))) (sub c 48)) 1)
+                          st
+                          ds)
+                        (if (eq c 41) (closeTop r (labelTop cur st))
+                          (rdOf 3 name 0 (labelTop cur st) ds)))))))))))))
+  (defn readDefs ((file T)) T
+    (let r Rd
+      (snd
+        (iter (Prod T Rd)
+          (lam ((p (Prod T Rd)))
+            (pair (add (fst p) 1) (rdStep (label (child file (fst p))) (snd p))))
+          (pair 0 (rdOf 0 (nil T) 0 (nil Open) (nil T)))
+          (arity file)))
+      (node 0 (reverse (snd (snd (snd (snd r))))))))
+
+  (defn search ((file T)) T
+    (let defs T (readDefs file)
+      (let table Ts (tableOf defs)
+        (let cert T (certificateOf table (instancesOf table))
+          (node 0
+            (report table cert
+              (isSome (check (mapT (lam ((d T)) (child d 1)) (children defs)) cert)))))))))
+(def main (lam ((file T)) (AffineSearch.search file)))

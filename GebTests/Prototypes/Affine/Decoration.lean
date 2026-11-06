@@ -20,7 +20,9 @@ writes for the definitions of {lit}`scripts/eal/examples.defs`: the certificate 
 an instance of exactly the definitions the search finds typable with a decoration per use,
 {lit}`unzipR` among them at two decorations; it does not check with its instances in the
 reverse order, where an instance refers to one after it; and the instance of {lit}`twice`
-alone checks, and does not with no {lit}`!` on its argument, which it contracts.
+alone checks, and does not with no {lit}`!` on its argument, which it contracts. The
+certificate that the search written in Geb, {lit}`scripts/eal/search.sh`, writes for the same
+definitions also checks, with an instance of each of the same definitions.
 
 The files are read at elaboration by {lit}`include_str` and converted to lists of characters
 inside each {lit}`#guard`: core's {lit}`String.toList` depends on {lit}`Classical.choice`,
@@ -28,7 +30,7 @@ and a {lit}`#guard` is not a declaration.
 
 ## Main definitions
 
-* {lit}`examples` and {lit}`examplesCert` are the files.
+* {lit}`examples`, {lit}`examplesCert` and {lit}`examplesGebCert` are the files.
 * {lit}`program` reads a program's definitions in the form of {lit}`examples`, and
   {lit}`certificate` a certificate.
 * {lit}`twice` is the instance of {lit}`twice` as a certificate of its own, and
@@ -53,6 +55,9 @@ def examples : String := include_str "../../../scripts/eal/examples.defs"
 
 /-- The certificate the search writes for them. -/
 def examplesCert : String := include_str "../../../scripts/eal/examples.cert"
+
+/-- The certificate the search written in Geb writes for them. -/
+def examplesGebCert : String := include_str "../../../scripts/eal/examples-geb.cert"
 
 /-- A program's definitions, one per line as a name, a tab and the term as an S-expression
 of labels, lines that are empty or begin with {lit}`#` skipped. -/
@@ -79,6 +84,13 @@ def twiceLinear : String := "(0 (7 (0 (0 (0) (0)) (0 (0) (1 (1) (1 (1) (0)))))))
   let E ← check prog cert
   some (E.map Prod.fst)) ==
     some [0, 1, 2, 3, 5, 5, 6, 7, 8, 10, 11, 14, 15, 16]
+
+#guard (do
+  let prog ← program examples.toList
+  let cert ← certificate examplesGebCert.toList
+  let E ← check prog cert
+  some (E.map Prod.fst)) ==
+    some [0, 1, 2, 3, 5, 6, 7, 8, 10, 11, 14, 15, 16]
 
 #guard (do
   let prog ← program examples.toList

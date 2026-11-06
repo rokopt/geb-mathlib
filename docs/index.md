@@ -3933,7 +3933,8 @@ import-direction rules above are enforced by
   image. `GebTests/Prototypes/Stage1.lean` checks the stage-1 compiler's
   agreement with the stage-0 compiler. The executable `geb-defs`
   (`GebDefsMain.lean`) writes an image's definitions as S-expressions of
-  labels, from which `scripts/eal/eal.py` decides each definition's
+  labels, from which `scripts/eal/eal.py`, and without a solver the search
+  written in Geb, `bootstrap/affine-search.geb`, decide each definition's
   elementary-affine typability, alone and with a decoration per use of a
   definition. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
@@ -3945,9 +3946,11 @@ import-direction rules above are enforced by
   each decorating a definition's term with its depths in boxes and the
   numbers of `!` of its types, against a program: the discipline of
   `scripts/eal/eal.py`, first-order data exempted, a reference using an
-  instance before it under boxes of its own. The search writes
-  certificates with `--certificate`; `scripts/eal/examples.cert` is the
-  examples' certificate, which
+  instance before it under boxes of its own. The search with z3 writes
+  certificates with `--certificate`, and the search written in Geb
+  (`scripts/eal/search.sh`) writes them after its verdicts;
+  `scripts/eal/examples.cert` and `scripts/eal/examples-geb.cert` are the
+  examples' certificates, which
   `GebTests/Prototypes/Affine/Decoration.lean` checks; the check written
   in Geb, `bootstrap/affine.geb`, agrees with it
   (`GebTests/Prototypes/FreeTopos/Agreement/Affine.lean`). The

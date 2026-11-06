@@ -20,7 +20,14 @@
 ; result is the node of label 0 over their checks, so that a saturated application reads its
 ; arguments' checks through its function's, once.
 
-(module Affine (export sem instanceOf check) (import Prelude) (import Base) (import Check)
+(module Affine
+  (export sem instanceOf check dMk dBang dTy dZero isPrefix countPath belowPath plVar plPath
+    termPlace
+    usageMax
+    isSpine2)
+  (import Prelude)
+  (import Base)
+  (import Check)
   (deftype Sem (Arrow T (Arrow Ts (Arrow Ts (Arrow T T)))))
   (deftype CF (Arrow T (Arrow T T)))
   (import (Lists CF) as CFs)

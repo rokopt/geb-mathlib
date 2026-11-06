@@ -48,7 +48,9 @@ each at every decoration it is used at, in the form stated above `certificate` b
 `Geb.Affine.check` (Geb/Prototypes/Affine/Decoration.lean) checks it, and the search is not
 trusted.
 
-Status: the search for certificates, and a measurement tool. Elementary affine logic
+Status: a search for certificates beside the one written in Geb (bootstrap/affine-search.geb,
+scripts/eal/search.sh), which reaches the same verdicts by longest paths without a solver,
+and a measurement tool. Elementary affine logic
 proper (`--pure`) is what the soundness of the oracle-free optimal-reduction algorithm is
 proved for (Baillot, Coppola and Dal Lago, arXiv:0704.2448); the exemption of first-order
 data is not proved sound for such a machine. Requires the z3-solver package

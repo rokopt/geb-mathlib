@@ -303,10 +303,15 @@ name = "ealExamplesCert"
 path = "scripts/eal/examples.cert"
 text = true
 
+[[input_file]]
+name = "ealExamplesGebCert"
+path = "scripts/eal/examples-geb.cert"
+text = true
+
 [[lean_lib]]
 name = "GebTestsAffine"
 globs = ["GebTests.Prototypes.Affine.Decoration"]
-needs = ["@/ealExamples", "@/ealExamplesCert"]
+needs = ["@/ealExamples", "@/ealExamplesCert", "@/ealExamplesGebCert"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]
