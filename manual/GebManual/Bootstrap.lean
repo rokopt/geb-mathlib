@@ -376,11 +376,12 @@ Extension:
   of the strict encodings of RFC 9804 with their retraction. Modules with
   parameters, imports and export lists are complete but for named
   telescopes and certificates as parameters, which follow their first
-  consumers. The executable `geb-compile` names what rejects a program.
-  Ready, in the order of
+  consumers. The executable `geb-compile` names what rejects a program,
+  and manifests with editions record each program's sources and entry
+  points. Ready, in the order of
   {ref "authoring-sequence"}[the sequence], and independent of the datatype
   language's completion: the
-  `geb` editor language; manifests with editions; a durable document with
+  `geb` editor language; a durable document with
   versioned profiles, the markup of comments, and the syntax of statements
   and proof scripts; and `let*` and `cond`, expanded in the elaboration of
   modules, and the checker of holes in programs in its suspending form with
@@ -2493,13 +2494,12 @@ complete:
    own, which is written typable.
 
 The programs are measured from their images. The stage-0 compiler's is
-built by `geb-kernel build` from the stage-0 sources that
-`scripts/bootstrap.sh` lists; the stage-1 compiler's is the committed
-`bootstrap/compiler.img`; and the metalogic's program's is the stage-1
-compiler's image of the concatenation of the metalogic's layers'
-sources, in the order `scripts/bootstrap.sh` lists them, made by
-`geb-kernel run bootstrap/compiler.img main` with the concatenation and
-the image's path as arguments. `lake exe geb-defs IMAGE DEFS` writes an
+built by `geb-kernel build` from `bootstrap/stage0.manifest`; the stage-1
+compiler's is the committed `bootstrap/compiler.img`; and the metalogic's
+program's is the stage-1 compiler's image of the text of
+`bootstrap/metalogic.manifest`, which `geb-kernel join` writes, made by
+`geb-kernel run bootstrap/compiler.img main` with that text and the
+image's path as arguments. `lake exe geb-defs IMAGE DEFS` writes an
 image's definitions, and `scripts/eal/eal.py DEFS` and
 `scripts/eal/search.sh DEFS OUT` check them alone and with a decoration per
 use, naming each definition they reject.
@@ -3310,7 +3310,9 @@ tag := "authoring-compatibility"
   * Ready
 *
   * Manifests with editions
-  * Ready
+  * Complete, but for the program whose typing's soundness is proved: its
+    list and the dependencies stated in the comments of its stage-1 sources
+    are converted when the datatype language's completion is merged
 *
   * A durable document with versioned profiles
   * Ready
@@ -3330,7 +3332,7 @@ tag := "authoring-compatibility"
   * Ready
 *
   * Documentation as literate pages
-  * Waiting on manifests, the durable document and the markup of comments
+  * Waiting on the durable document and the markup of comments
 *
   * The record of elaborated definitions
   * Deferred until the first program outside the compilers; manifests
@@ -3556,9 +3558,8 @@ term and the second its denotation. Four things lie outside both.
    tactic script is a program for one prover
    ({ref "proof-scripts"}[Proof scripts and certificates]).
 4. Organization: which definitions form a program, their order, files,
-   sections and modules, recorded now in the source lists of
-   `scripts/bootstrap.sh` and in the `include_str` definitions of the
-   tests.
+   sections and modules, recorded in the program's manifest
+   ({ref "files-editions"}[Files, editions and the host boundary]).
 
 The components that bear on authoring, and their contracts or
 limitations:
@@ -3628,8 +3629,8 @@ measured at revision `b3aa139a`.
     in `bootstrap/stage1/lean.geb` and `bootstrap/goedel-t/prove.geb`;
   * have comments whose only character special in Verso or Markdown
     markup is a single `_`;
-  * form programs, joined as `scripts/bootstrap.sh` joins them, without a
-    duplicated name.
+  * form programs, joined as the host driver joins a manifest's sources,
+    without a duplicated name.
 * The reader resolves a duplicated definition name to the first
   definition, and a duplicated `deftype` or `defnum` to the latest, and
   it substitutes numeral abbreviations into binder names, `expandNums`
@@ -3989,12 +3990,29 @@ tag := "files-editions"
 Files stay outside Geb's semantics: they organize writing and delivery,
 and semantic dependencies are references to definitions.
 
-* A manifest per program, an S-expression naming the program, its
-  edition, its sources in order and its entry points, is read by the host
-  driver, the tests, the formatter and a language server. It replaces the
-  lists in `scripts/bootstrap.sh` and the tests, and the dependencies
-  stated in comments. No scan of directories or working directory decides
-  the order of binding implicitly.
+* A manifest per program, one form of the authoring profile naming the
+  program, its edition, its sources in order and its entry points,
+
+  ```
+  (program NAME (edition N) (sources PATH…) (entries NAME…))
+  ```
+
+  is read by the host driver, the tests and the formatter, and by a
+  language server when one exists (`Geb/Prototypes/Kernel/Manifest.lean`).
+  The programs' manifests are `bootstrap/*.manifest`. A program compiled a
+  part at a time writes `(layers (NAME PATH…)…)` in place of its sources,
+  as the metalogic does. The grammar is as narrow as present programs
+  require: the fields stand in this order and nothing else is read. A
+  source is resolved against the manifest's directory and may not leave
+  it, so no scan of directories or working directory decides the order of
+  binding implicitly.
+* `geb-kernel build --manifest` and `geb-compile image|lean --manifest`
+  compile a manifest's program and reject one that does not define its
+  entry points; `geb-kernel join` writes its text and `geb-kernel layers`
+  lists its layers, for the scripts that run a compiler's image on them;
+  `geb-fmt --manifest` formats a manifest and its sources. The tests read a
+  program's text by the term `include_manifest` and embed a program by
+  `geb_program`, whose exported definitions are the manifest's entries.
 * The first linker keeps the present well-founded order, resolves each
   import to an explicit definition, rejects unresolved and ambiguous
   references, and checks the bundle; references by digest replace frozen
@@ -4026,7 +4044,12 @@ rules of resolution included, and the elaborator. An elaborator is a
 committed image and the kernel is fixed, so an old edition's image runs
 unchanged. Before the bootstrap completes, sources are converted to the
 current edition rather than kept under old ones; editions preserve
-meaning across revisions for code relied on beyond the bootstrap. Mixing
+meaning across revisions for code relied on beyond the bootstrap. The
+present edition is `0`, the pre-release edition, whose rules change with
+the compiler and whose sources are converted with them, so that it
+preserves nothing across revisions; the first edition is `1`, fixed at the
+release. The host reads one edition and rejects a manifest of any other.
+Mixing
 editions in one program needs an interface between the environments of
 elaborators, such as declarations of constructors; that is its cost.
 

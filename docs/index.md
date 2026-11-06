@@ -3800,8 +3800,12 @@ import-direction rules above are enforced by
   (`Geb.Kernel.runEntry`); `Command.lean` is the host driver of the
   executable `geb-kernel`, which builds images from source and runs them
   on files, and its `Geb.Kernel.Command.runFile` applies a function of
-  trees to a file. `Subst.lean` weakens terms and substitutes for their
-  innermost variable, through one traversal replacing variables
+  trees to a file. `Manifest.lean` reads a program's manifest, its edition,
+  its sources in order and its entry points (`Geb.Kernel.Manifest.parse`),
+  which the host driver, the executables `geb-compile` and `geb-fmt` and,
+  by the term of `ManifestCommand.lean`, the tests read
+  (`scripts/tests/test-manifest.sh`). `Subst.lean` weakens terms and
+  substitutes for their innermost variable, through one traversal replacing variables
   (`Geb.Kernel.trav`), and proves both agree with the denotation
   (`Geb.Kernel.infer_wk`, `Geb.Kernel.infer_subst`). `Eval.lean` is a
   big-step evaluator of kernel terms with fuel, whose values are trees,

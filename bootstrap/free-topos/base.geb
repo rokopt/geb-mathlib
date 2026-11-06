@@ -6,7 +6,7 @@
 ; language. An optional tree is represented as the reader represents it: nothing is the leaf of
 ; label 0, and a tree is the node of label 1 over it, as the optional values of
 ; bootstrap/seq.geb are; a truth value is a label, 0 false and any other true. The templates
-; give functions on lists at any element type. Requires the prelude.
+; give functions on lists at any element type.
 
 (module Base (export getD mapO bindO not isEmpty equalTs take range mapT allT anyT allSomeT)
   (import Prelude)

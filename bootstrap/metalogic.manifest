@@ -1,0 +1,103 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The metalogic: its checker, its translation, its prover, its tactics, its combinators, the printer
+; and the check of elementary-affine certificates, a layer of emitted Lean to a part. Each entry is
+; a definition whose mirror's agreement with the loaded program is proved.
+
+(program metalogic (edition 0)
+  (layers
+    (Checker prelude.geb seq.geb free-topos/base.geb free-topos/partial-horn.geb
+      free-topos/theory.geb
+      free-topos/infer.geb
+      free-topos/language.geb
+      free-topos/derivation.geb
+      reader.geb
+      check.geb)
+    (Translation free-topos/translation.geb)
+    (Prover free-topos/prove.geb)
+    (Tactics free-topos/tactics.geb)
+    (Combinator free-topos/combinator.geb)
+    (Printer datatype.geb printer.geb)
+    (Affine affine.geb))
+  (entries Derivation.checkDev Translation.program Translation.trGlobals Translation.thm
+    Prover.prepareRules
+    Prover.byNorm
+    Prover.byNatInd
+    Prover.byListInd
+    Prover.byNatIndHyp
+    Prover.byListIndHyp
+    Prover.byNormW
+    Prover.byFunExt
+    Prover.bySplit
+    Prover.byListIndWith
+    Prover.byRoseInd
+    Prover.byRoseIndHyp
+    Tactics.byMode
+    Tactics.byWeak
+    Tactics.byNF
+    Tactics.normH
+    Tactics.funExts
+    Tactics.byListIndWeak
+    Tactics.byRoseIndWith
+    Tactics.byListSplit
+    Tactics.bySplit2
+    Tactics.byListCases
+    Tactics.bitsInd
+    Tactics.bitsCases
+    Tactics.byBits
+    Tactics.byLength3
+    Tactics.withWeakHyps
+    Tactics.byListIndHypWeak
+    Tactics.byBitsIndHyp
+    Tactics.withInsts
+    Tactics.withChildHyps
+    Tactics.revertCase
+    Tactics.byImpI
+    Tactics.withImpElim
+    Tactics.bySuccPred
+    Tactics.byInsts
+    Tactics.byAuto
+    Tactics.byTreeSplit
+    Tactics.byAutoT
+    Tactics.byAutoC
+    Tactics.maskRw
+    Tactics.byMaskSubs
+    Tactics.byGeneralize
+    Combinator.typeTerm
+    Combinator.pNormalize
+    Combinator.pInst
+    Combinator.etaExpand
+    Combinator.deltaRule
+    Combinator.pByNorm
+    Combinator.proveSeq
+    Combinator.normalizeThm
+    Combinator.instBy
+    Combinator.byNatInduction
+    Combinator.byListInduction
+    Combinator.byListParamInduction
+    Combinator.libraryWith
+    Combinator.libRules
+    Printer.printTermOpt
+    Printer.readBack
+    PartialHorn.sortOf
+    PartialHorn.scoped
+    PartialHorn.phSubst
+    PartialHorn.pcheck
+    PartialHorn.thyExtendAll
+    Theory.toposTheory
+    Infer.envOfDefs
+    Infer.infers
+    Derivation.declStep
+    Tactics.openSubterms
+    Tactics.stuckVar
+    Tactics.mentions
+    Tactics.matchesOf
+    Tactics.condParts
+    Tactics.stuckVarC
+    Tactics.appsOf
+    Tactics.unnodeU
+    Tactics.occRewrite
+    Tactics.abstractTerm
+    Affine.check))

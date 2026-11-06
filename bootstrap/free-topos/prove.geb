@@ -10,9 +10,7 @@
 ; from proofs of others. A derivation is encoded as the checker of derivations encodes it, a
 ; derivation with a mark whether it rewrites as the pair of the two, and a rule of the normalizer
 ; as the node of its constructor's position over its fields, paired with its left side's
-; matching where it has one, as their datatypes declare them. Requires the prelude, the lists of
-; bootstrap/seq.geb, the base, partial Horn logic, the theory, the inference, the language and the
-; checker of derivations.
+; matching where it has one, as their datatypes declare them.
 
 (module Prover
   (export dNode Marked mark mDeriv mFlag NFR nfr nfTerm nfMarked ONFR.Maybe ONFR.nothing ONFR.just

@@ -6,7 +6,7 @@
 ; types of the definitions before it and a context, innermost first, or nothing when the term
 ; is ill-typed, deciding as the seed's checker decides. Types are trees: the leaf 0 is the
 ; type of trees, the leaf 1 the unit type, and nodes of label 2, 3 and 4 are products,
-; function types and lists. Requires the prelude and the reader.
+; function types and lists.
 
 (module Check
   (export tyArrow tyList isTy isProd isArrow isListTy foldTy iterTy foldrTy lcaseTy primTypes typeIn

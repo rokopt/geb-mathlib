@@ -9,7 +9,7 @@
 ; written _. The text is laid out in groups, each printed on one line when it and the text
 ; following it fit within 100 columns and within 70 columns beyond the indentation, and over
 ; indented lines when they do not. mainLean is the compiler with this backend in place of the
-; image. Requires the stage-1 compiler's other sources.
+; image.
 
 (module LeanBackend (export Doc nest line text ms layout atomic compound ap closed emitLean)
   (import Prelude)

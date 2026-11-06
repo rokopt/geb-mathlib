@@ -4,7 +4,7 @@
 ;
 ; The traversal of a kernel term replacing its variables, with weakening and substitution, as
 ; Geb.Kernel.Subst defines them in Lean: a variable is the node of its label over the leaf of its
-; de Bruijn index. Requires the prelude and the reader.
+; de Bruijn index.
 
 (module Subst (export mk1 var trAll termNode trav wkVar wk wkAt substVar subst) (import Prelude)
   (import Reader)

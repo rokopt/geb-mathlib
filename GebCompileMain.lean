@@ -12,8 +12,10 @@ import GebBoot
 # Compiled bootstrap compiler entry point
 
 Run the Lean the bootstrap compiler emits from its own source with
-`lake exe geb-compile image|lean INPUT OUTPUT`: `image` compiles a program's source file to its
-image, and `lean` to a Lean module. The file driver is `Geb.Kernel.Command.runFile`.
+`lake exe geb-compile image|lean [--manifest] INPUT OUTPUT`: `image` compiles a program's source
+file to its image, and `lean` to a Lean module; with `--manifest` the input is the program's
+manifest, whose entry points it checks the program defines. The file driver is
+`Geb.Kernel.Command.runBytes`.
 
 The compiler's entry points return the empty tree for a program they reject. The driver then
 reports on standard error what rejects it, exits with status 1 and leaves the output file
@@ -117,19 +119,42 @@ def rejectionMessage (file : Tree) : String :=
   | .error msg => msg
   | .ok () => "the backend writes nothing for the program"
 
-/-- An entry point's output, or the message of what rejects the program of a named source. -/
-def compiled (entry : Tree → Tree) (input : String) (file : Tree) : Except String Tree :=
-  let out := entry file
-  if out == mk 0 [] then .error s!"{input}: {rejectionMessage file}" else .ok out
+/-- The definitions of a program the compiler reads. -/
+def definedNames (file : Tree) : List String :=
+  let b := GebBoot.«Compile.bundleOf» file
+  if (GebBoot.«Prelude.isSome» b).label = 0 then []
+  else (((GebBoot.«Prelude.get» b).children.getD 1 (mk 0 [])).children).filterMap nameString?
 
-/-- Compile a source file through an entry point, reporting a failure on standard error. -/
-def compileFile (name : String) (entry : Tree → Tree) (input output : String) : IO UInt32 := do
+/-- An entry point's output, or the message of what rejects the program of a named source, the
+check of its definitions' names included. -/
+def compiled (entry : Tree → Tree) (input : String) (checkNames : List String → Except String Unit)
+    (file : Tree) : Except String Tree := do
+  let out := entry file
+  if out == mk 0 [] then throw s!"{input}: {rejectionMessage file}"
+  (checkNames (definedNames file)).mapError (s!"{input}: {·}")
+  return out
+
+/-- Compile an input through an entry point, reporting a failure on standard error. -/
+def compileInput (name : String) (entry : Tree → Tree) (input output : String)
+    (load : IO (ByteArray × (List String → Except String Unit))) : IO UInt32 := do
   try
-    Command.runFile name (compiled entry input) input output
+    let (bytes, checkNames) ← load
+    Command.runBytes name (compiled entry input checkNames) bytes output
     return 0
   catch e =>
     IO.eprintln e
     return 1
+
+/-- Compile a source file through an entry point. -/
+def compileFile (name : String) (entry : Tree → Tree) (input output : String) : IO UInt32 :=
+  compileInput name entry input output do
+    return (← IO.FS.readBinFile input, fun _ ↦ .ok ())
+
+/-- Compile the program of a manifest through an entry point. -/
+def compileManifest (name : String) (entry : Tree → Tree) (path output : String) : IO UInt32 :=
+  compileInput name entry path output do
+    let m ← Manifest.read path
+    return (← Command.joinSources (Manifest.sourcePaths path m), m.checkEntries)
 
 end GebCompileMain
 
@@ -137,6 +162,10 @@ end GebCompileMain
 public def main : List String → IO UInt32
   | ["image", input, output] => GebCompileMain.compileFile "main" GebBoot.«main» input output
   | ["lean", input, output] => GebCompileMain.compileFile "mainLean" GebBoot.«mainLean» input output
+  | ["image", "--manifest", m, output] =>
+    GebCompileMain.compileManifest "main" GebBoot.«main» m output
+  | ["lean", "--manifest", m, output] =>
+    GebCompileMain.compileManifest "mainLean" GebBoot.«mainLean» m output
   | _ => do
-    IO.eprintln "usage: geb-compile image|lean INPUT OUTPUT"
+    IO.eprintln "usage: geb-compile image|lean [--manifest] INPUT OUTPUT"
     return 2

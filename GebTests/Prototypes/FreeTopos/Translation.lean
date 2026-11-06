@@ -48,9 +48,7 @@ open scoped FinEnum
 open Internal (Term NormRule)
 
 /-- The text of the prelude, the reader and the kernel's type checker. -/
-def kernelText : String :=
-  Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
-    Kernel.Stage0Tests.check
+def kernelText : String := include_manifest "bootstrap/checker.manifest"
 
 /-- A program's translation, from its text read by the seed: the kernel types of its globals and
 the definitions of the internal language. -/

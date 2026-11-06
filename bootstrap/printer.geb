@@ -7,7 +7,6 @@
 ; printer prints. The printer is partial: it prints a term only when the term is well formed and
 ; the names of the definitions may be read back as theirs, and a bundle only when each of its
 ; definitions is.
-; Requires the prelude, the reader, the checker's isTy and decimalChars of the datatype language.
 ;
 ; Representations. As in the reader: an S-expression is a node of label 1 over an atom's
 ; characters or a node of label 2 over a list's elements, and a name is a node of label 0 over

@@ -128,8 +128,9 @@ moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 weak.linter.hashCommand = false
 
 # The test modules that compare Geb programs with Lean ones read the
-# programs' sources at elaboration, by `include_str`, `IO.FS.readFile` or
-# `geb_program`, none of which registers a dependency on the file read.
+# programs' sources at elaboration, by `include_str`, `include_manifest`,
+# `IO.FS.readFile` or `geb_program`, none of which registers a dependency on
+# the file read.
 # Each library below holds the modules reading one group of sources, and
 # its `needs` mixes the trace of those sources into the trace of its
 # modules, so a change to a source rebuilds the modules that read it and
@@ -207,6 +208,14 @@ name = "evalSource"
 path = "bootstrap/eval.geb"
 text = true
 
+# The manifests of the programs, which tests read at elaboration and through which they read
+# sources. Every module reading one imports the stage-0 tests, whose library needs them.
+[[input_dir]]
+name = "manifests"
+path = "bootstrap"
+text = true
+filter = {extension = ["manifest"]}
+
 # The stage-1 compiler's sources in the datatype language.
 [[input_dir]]
 name = "stage1Sources"
@@ -239,7 +248,7 @@ name = "GebTestsStage0"
 globs = ["GebTests.Prototypes.Stage0"]
 needs = ["@/preludeSource", "@/serializeSource", "@/readerSource", "@/checkSource",
   "@/datatypeSource", "@/modulesSource", "@/recognizeSource", "@/compileSource",
-  "@/substSource"]
+  "@/substSource", "@/manifests"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]

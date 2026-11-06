@@ -86,9 +86,9 @@ def sampleFormatted : String := "; a header
 -- the formatted text reads to the S-expressions of the original
 #guard ((format 100 sample.toList).bind readSExps) = readSExps sample.toList
 
--- the sources of the stage-0 compiler: formatting is idempotent and keeps their S-expressions
-#guard [prelude, serialize, reader, check, datatype, compile].all fun src ↦
-  let t := src.toList
+-- the stage-0 compiler's text: formatting is idempotent and keeps its S-expressions
+#guard
+  let t := compiler.toList
   (format 100 t).bind (format 100) = format 100 t &&
     (format 100 t).bind readSExps = readSExps t
 

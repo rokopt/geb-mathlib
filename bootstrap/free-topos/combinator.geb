@@ -13,8 +13,7 @@
 ; normalized so far with their normal forms, each table the latest first, the definitions in
 ; force, the extended signature, and whether the typing is certified by the checker's oracle
 ; rules; a typing a term, its sort, its definedness certificate, its lower bound with its
-; certificate and its upper bound with its certificate. Requires the prelude, the base, partial
-; Horn logic, the theory, the inference, the language and the prover.
+; certificate and its upper bound with its certificate.
 
 ; the computations at a type of values V, from a scope of type Sc and a state of type St to the
 ; optional pair of a value and the state after it: a value, failure, and the first of two

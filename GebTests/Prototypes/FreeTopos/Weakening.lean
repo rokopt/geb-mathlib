@@ -91,8 +91,7 @@ def statement : String := "
 /-- The program: the prelude, the reader, the type checker, the traversal of kernel terms, whose
 weakening the statement cites, and the statement. -/
 def programText : String :=
-  Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
-    Kernel.Stage0Tests.check ++ "\n" ++ Kernel.Stage0Tests.subst ++ "\n" ++ statement
+  include_manifest "bootstrap/weakening.manifest" ++ statement
 
 /-- A program's definitions with their names, read and expanded by the stage-0 compiler's
 front end. -/

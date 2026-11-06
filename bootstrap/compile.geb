@@ -7,8 +7,7 @@
 ; modules are elaborated, its forms of the datatype language expanded and the recognizers it refers
 ; to written first; for a program of kernel forms alone the image is byte for byte the one the seed
 ; builds. bundleOf is the program's bundle before its types are checked, and compileWith takes the
-; backend applied to a checked program's bundle. Requires the prelude, the serializer, the reader,
-; the checker, the expansion, the modules and the recognizers.
+; backend applied to a checked program's bundle.
 
 (module Compile (export bundleOf compileWith compile) (import Prelude) (import Serialize)
   (import Reader)

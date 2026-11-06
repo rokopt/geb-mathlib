@@ -12,7 +12,7 @@
 ; its context's sorts, the node of its hypotheses and its conclusion, a theory the node of label
 ; 0 over the node of its signature and the node of its axioms, and a definition the node of
 ; label 0 over the node of its arguments' sorts, its sort and its body, as their datatypes
-; declare them. Requires the prelude, the lists of bootstrap/seq.geb and the base.
+; declare them.
 
 (module PartialHorn
   (export PRule.hyp PRule.refl PRule.symm PRule.trans PRule.cong PRule.strict PRule.ax PRule.thm

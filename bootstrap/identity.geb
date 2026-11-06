@@ -9,9 +9,7 @@
 ; annotations keyed by identifiers and vertices; and the identifiers of modules. The kernel has
 ; no operations on the bits of a word, so a word of 32 bits is a natural number below 2^32, and
 ; the exclusive or, the rotations and the addition modulo 2^32 are computed by arithmetic. Bytes
-; are leaves, and a list of bytes is a node's children where a tree is needed. Requires the
-; prelude, indexOf and lookupAbbrev of the reader, concat of the modules and decimalChars of the
-; datatype language.
+; are leaves, and a list of bytes is a node's children where a tree is needed.
 
 (module Identity
   (export pick put g round words push blake3 member cidsOf migrate link nameNotes moduleCids)

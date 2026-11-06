@@ -36,14 +36,15 @@ characters inside each {lit}`#guard`: core's {lit}`String.toList` depends on
 
 ## Main definitions
 
-* {lit}`prelude`, {lit}`serialize`, {lit}`reader`, {lit}`check`, {lit}`datatype` and
-  {lit}`compile` are the sources.
+* {lit}`prelude`, {lit}`reader`, {lit}`check`, {lit}`subst` and {lit}`recognize` are sources,
+  those the program whose typing's soundness is proved reads; the other programs' are their
+  manifests'.
 * {lit}`runDatatype` compiles a program with the stage-0 compiler and runs its last
   definition; {lit}`naturals` and {lit}`roses` are programs in the datatype language.
 * {lit}`checker` returns the types of a bundle's definitions, and {lit}`seedTypes` is the
   seed's answer; {lit}`malformed` are terms the checker rejects.
 * {lit}`serializer` applies {lit}`image` to its input, and {lit}`compiler` is the stage-0
-  compiler, its sources joined as {lit}`geb-kernel build` joins them.
+  compiler, its manifest's sources joined as {lit}`geb-kernel build` joins them.
 * {lit}`seedCompile` is the seed's compilation of a program's source, the empty file when
   the program does not read or is ill-typed.
 * {lit}`samples` are the trees the serializer is compared on.
@@ -62,20 +63,11 @@ namespace Geb.Kernel.Stage0Tests
 /-- The prelude's source. -/
 def prelude : String := include_str "../../bootstrap/prelude.geb"
 
-/-- The serializer's source. -/
-def serialize : String := include_str "../../bootstrap/serialize.geb"
-
 /-- The reader's source. -/
 def reader : String := include_str "../../bootstrap/reader.geb"
 
 /-- The type checker's source. -/
 def check : String := include_str "../../bootstrap/check.geb"
-
-/-- The expansion of the datatype language's source. -/
-def datatype : String := include_str "../../bootstrap/datatype.geb"
-
-/-- The elaboration of modules' source. -/
-def modules : String := include_str "../../bootstrap/modules.geb"
 
 /-- The traversal of kernel terms, with weakening and substitution, written in Geb: the source of
 the operations the proofs about the type checker's preservation of types state. -/
@@ -84,18 +76,14 @@ def subst : String := include_str "../../bootstrap/subst.geb"
 /-- The recognizers' source. -/
 def recognize : String := include_str "../../bootstrap/recognize.geb"
 
-/-- The compiler's entry point. -/
-def compile : String := include_str "../../bootstrap/compile.geb"
-
 /-- The prelude and the serializer, applying the serializer to the input tree. -/
 def serializer : String :=
-  prelude ++ serialize ++ "(import Serialize) (def main (lam ((t T)) (image t)))"
+  include_manifest "bootstrap/serializer.manifest" ++
+    "(import Serialize) (def main (lam ((t T)) (image t)))"
 
 /-- The stage-0 compiler, its sources joined, each followed by a newline, as the host driver
 joins them. -/
-def compiler : String :=
-  prelude ++ "\n" ++ serialize ++ "\n" ++ reader ++ "\n" ++ check ++ "\n" ++ datatype ++ "\n" ++
-    modules ++ "\n" ++ recognize ++ "\n" ++ compile ++ "\n"
+def compiler : String := include_manifest "bootstrap/stage0.manifest"
 
 /-- The stage-0 compiler with an entry point giving a program's bundle: its text read, its modules
 elaborated and its forms of the datatype language expanded, without the image written. -/
@@ -150,7 +138,7 @@ def decoding : String := "
 
 /-- The type checker, returning the types of the definitions of the bundle it is given. -/
 def checker : String :=
-  prelude ++ reader ++ check ++
+  include_manifest "bootstrap/checker.manifest" ++
     "(import Check) (def main (lam ((b T)) (checkProgram (children (child b 0)))))"
 
 /-- The seed's types of a bundle's definitions, as the Geb checker returns them: the

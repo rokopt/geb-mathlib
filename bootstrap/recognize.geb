@@ -12,8 +12,7 @@
 ; a node's result holds, at the position of each datatype on which D depends, including D, the
 ; bit of its membership in that datatype, from its label, its arity and its children's bits.
 ; The fields of a decoded datatype are trees and datatypes. The recognizers refer to the
-; primitives label, child, node, arity, eq, lt, add, div and mod by name. Requires the prelude,
-; the reader and decimalChars of the datatype language.
+; primitives label, child, node, arity, eq, lt, add, div and mod by name.
 
 (module Recognize (export insertRecognizers) (import Prelude) (import Reader)
   ; S-expressions under construction

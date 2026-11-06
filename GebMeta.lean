@@ -300,6 +300,7 @@ def classicalAllowedModules : NameSet :=
    `GebTests.Prototypes.FreeTopos.Agreement.TemplateEquations,
    `GebTests.Prototypes.FreeTopos.StoredWriter,
    `Geb.Prototypes.Kernel.LoadCommand,
+   `Geb.Prototypes.Kernel.ManifestCommand,
    `Geb.Prototypes.FreeTopos.Topos,
    `Geb.Prototypes.FreeTopos.Elementary,
    `Geb.Prototypes.FreeTopos.UniqueChoiceClassical,

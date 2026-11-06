@@ -83,12 +83,10 @@ def unprintable : List (List (List Char × Tree)) :=
 #guard (printTerm? ["_00".toList] (mk Label.ref [leaf 0]) 0).bind
     (resolve [] ["_00".toList] · (scopeOf 0)) = some (mk Label.ref [leaf 0])
 
-/-- The source of the printer written in Geb. -/
-def printerGeb : String := include_str "../../../bootstrap/printer.geb"
-
 /-- The stage-0 compiler's sources and the printer, printing a bundle's definitions. -/
 def printer : String :=
-  compiler ++ printerGeb ++ "\n(import Prelude) (import Printer)\n" ++
+  include_manifest "bootstrap/printer.manifest" ++
+    "(import Prelude) (import Printer)\n" ++
     "(def printMain (lam ((b T)) (printProgram b)))"
 
 /-- What the printer written in Geb gives for a bundle, computed in Lean: the node of label 1 over
