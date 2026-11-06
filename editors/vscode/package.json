@@ -1,0 +1,53 @@
+{
+  "name": "geb-language",
+  "displayName": "Geb",
+  "description": "The Geb authoring profile: S-expressions, quoted atoms and comments",
+  "version": "0.1.0",
+  "publisher": "geb-mathlib",
+  "private": true,
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rokopt/geb-mathlib.git",
+    "directory": "editors/vscode"
+  },
+  "engines": { "vscode": "^1.80.0" },
+  "categories": ["Programming Languages"],
+  "contributes": {
+    "languages": [{
+      "id": "geb",
+      "aliases": ["Geb", "geb"],
+      "extensions": [".geb"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "geb",
+      "scopeName": "source.geb",
+      "path": "./syntaxes/geb.tmLanguage.json"
+    }],
+    "configurationDefaults": {
+      "[geb]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 2,
+        "editor.formatOnSave": false,
+        "editor.wordSeparators": "()\";"
+      }
+    }
+  },
+  "scripts": {
+    "test": "node --test test/grammar.test.cjs",
+    "test:editor": "node test/run.cjs",
+    "test:paredit": "node test/run.cjs --paredit",
+    "package": "vsce package --no-dependencies --baseContentUrl https://github.com/rokopt/geb-mathlib/blob/main/editors/vscode --out geb-language.vsix"
+  },
+  "devDependencies": {
+    "@vscode/test-electron": "3.1.0",
+    "@vscode/vsce": "4.1.0",
+    "vscode-oniguruma": "2.0.1",
+    "vscode-textmate": "9.3.2"
+  },
+  "editorTest": {
+    "vscode": "1.145.2",
+    "paredit": "MikeDelmonaco.paredit@0.2.1"
+  }
+}

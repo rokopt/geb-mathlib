@@ -22,6 +22,10 @@ package.json
 # The pinned parinfer release of scripts/bootstrap.sh's check is tracked.
 !scripts/parinfer/package.json
 !scripts/parinfer/package-lock.json
+# The editor extension and its pinned test dependencies are tracked.
+!editors/vscode/package.json
+!editors/vscode/package-lock.json
+editors/vscode/*.vsix
 skills-lock.json
 .agents/
 

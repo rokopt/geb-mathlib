@@ -1,0 +1,11 @@
+{
+  "version": "2.0.0",
+  "tasks": [{
+    "label": "Geb: format saved file",
+    "type": "process",
+    "command": "lake",
+    "args": ["exe", "geb-fmt", "${file}"],
+    "options": { "cwd": "${workspaceFolder}" },
+    "problemMatcher": []
+  }]
+}
