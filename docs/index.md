@@ -3927,10 +3927,12 @@ import-direction rules above are enforced by
   they make, built by the stage-0 compiler, is committed as
   `bootstrap/compiler.img`, and the Lean it emits from its own source as
   `bootstrap/lean/GebBoot.lean`, the library `GebBoot` under the executable
-  `geb-compile` (`GebCompileMain.lean`). `scripts/bootstrap.sh` regenerates
-  both and checks the fixed points: each compiler reproduces its own image,
-  and the compiler built from the emitted Lean reproduces the Lean and the
-  image. `GebTests/Prototypes/Stage1.lean` checks the stage-1 compiler's
+  `geb-compile` (`GebCompileMain.lean`), which for a program the compiler
+  rejects reports what rejects it, exits with status 1 and leaves its output
+  in place (`scripts/tests/test-geb-compile.sh`). `scripts/bootstrap.sh`
+  regenerates both and checks the fixed points: each compiler reproduces its
+  own image, and the compiler built from the emitted Lean reproduces the Lean
+  and the image. `GebTests/Prototypes/Stage1.lean` checks the stage-1 compiler's
   agreement with the stage-0 compiler. The executable `geb-defs`
   (`GebDefsMain.lean`) writes an image's definitions as S-expressions of
   labels, from which `scripts/eal/eal.py`, and without a solver the search

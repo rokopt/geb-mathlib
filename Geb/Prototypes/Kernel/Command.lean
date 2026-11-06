@@ -45,11 +45,11 @@ namespace Geb.Kernel.Command
 /-- The characters of a sequence of bytes, one per byte. -/
 def chars (b : ByteArray) : List Char := b.data.toList.map fun x ↦ Char.ofNat x.toNat
 
-/-- Apply a function of trees to an input file's tree and write the output tree's bytes; the
-name of the function identifies it in errors. -/
-def runFile (name : String) (f : Tree → Option Tree) (input output : String) : IO Unit := do
-  let some out := f (ofBytes (← IO.FS.readBinFile input))
-    | throw <| IO.userError s!"{name} is not a well-typed definition from trees to trees"
+/-- Apply a function of trees to an input file's tree and write the output tree's bytes, raising
+the message of the function's failure and leaving the output untouched; the name of the function
+identifies it in errors. -/
+def runFile (name : String) (f : Tree → Except String Tree) (input output : String) : IO Unit := do
+  let out ← IO.ofExcept (f (ofBytes (← IO.FS.readBinFile input)))
   let some bytes := toBytes out
     | throw <| IO.userError s!"{name}: the output has a label beyond a byte"
   IO.FS.writeBinFile output bytes
@@ -71,7 +71,11 @@ def run (args : List String) : IO UInt32 := do
   | ["run", img, name, input, output] =>
     let some t := readImage (← IO.FS.readBinFile img)
       | throw <| IO.userError s!"{img}: not an image"
-    runFile s!"{img}: {name}" (runEntry t (chars name.toUTF8)) input output
+    let entry := s!"{img}: {name}"
+    runFile entry (fun x ↦ match runEntry t (chars name.toUTF8) x with
+      | some y => .ok y
+      | none => .error s!"{entry} is not a well-typed definition from trees to trees")
+      input output
     return 0
   | _ =>
     throw <| IO.userError

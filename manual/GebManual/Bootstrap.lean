@@ -376,9 +376,10 @@ Extension:
   of the strict encodings of RFC 9804 with their retraction. Modules with
   parameters, imports and export lists are complete but for named
   telescopes and certificates as parameters, which follow their first
-  consumers. Ready, in the order of
+  consumers. The executable `geb-compile` names what rejects a program.
+  Ready, in the order of
   {ref "authoring-sequence"}[the sequence], and independent of the datatype
-  language's completion: diagnostics naming the failing definition and the
+  language's completion: the
   `geb` editor language; manifests with editions; a durable document with
   versioned profiles, the markup of comments, and the syntax of statements
   and proof scripts; and `let*` and `cond`, expanded in the elaboration of
@@ -1653,9 +1654,10 @@ section below opens with a table of the states of its parts.
     formatter, the formatter's adoption, the authoring profile read by the
     seed and the Geb reader, and the canonical, basic transport and
     advanced encodings: complete; modules: complete but for the parts that
-    follow their consumers; the steps of the sequence independent of the
-    datatype language's completion: ready; the steps after it: waiting on
-    it; the parts that follow their consumers: waiting on them
+    follow their consumers; diagnostics naming the failing definition:
+    complete; the other steps of the sequence independent of the datatype
+    language's completion: ready; the steps after it: waiting on it; the
+    parts that follow their consumers: waiting on them
 *
   * {ref "goedel-t"}[Gödel's T]
   * Complete
@@ -3302,7 +3304,7 @@ tag := "authoring-compatibility"
     consumers
 *
   * Diagnostics naming the failing definition
-  * Ready
+  * Complete
 *
   * The `geb` editor language with Mike's Paredit
   * Ready
@@ -4299,9 +4301,8 @@ and its recovery from errors never supplies trusted input to the
 compiler. Nothing is needed now.
 
 Diagnostics come before a language server: efm-langserver runs the
-checker {name}`Geb.Kernel.diagnose`, which names the first failing
-definition, applied after the stage-0 expansion for the datatype
-language. A language service then needs the services the survey lists,
+executable `geb-compile`, which names what rejects a program, the first
+failing definition among it. A language service then needs the services the survey lists,
 of which the existing checker serves behind it; the server tracks
 versions of buffers, cancels stale checks, and translates offsets of
 bytes into the position encoding the editor negotiates, which reliable
@@ -5258,8 +5259,7 @@ them may discard the document, binding or dependency information already
 kept. The limits that more Geb code meets are among the improvements
 ({ref "improvements"}[Improvements]): the Geb reader's stack in
 proportion to a program's length, about 480 bytes of memory per byte of
-input, the tests that a change of a Geb source rebuilds, and a Geb
-compiler that names no failing definition.
+input, and the tests that a change of a Geb source rebuilds.
 
 Acceptance: a documented module survives conversion among the syntaxes
 of RFC 9804 and the authoring profile, retaining names, comments,
@@ -7152,14 +7152,17 @@ the change that removes it.
   enforced. Hygienic elaboration, a step of the authoring sequence,
   removes both ({ref "files-editions"}[Files, editions and the host
   boundary]).
-* Diagnostics of the Geb compiler. The stage-0 and stage-1 compilers
-  report a program that does not read, expand or type-check by an empty
-  image and name no definition, where {name}`Geb.Kernel.diagnose` in the
-  seed names the first failing one. Until the Geb compiler reports a
-  message, a failing program is diagnosed by expanding it with the
-  stage-0 expansion, printing the kernel forms, and applying
-  {name}`Geb.Kernel.diagnose` to them. Diagnostics that name a source
-  occurrence are a step of the authoring sequence
+* Diagnostics of the Geb compiler. The compilers' entry points, as
+  functions, give a program they reject the empty tree, so that `geb-kernel
+  run` of a compiler's image writes an empty file. The executable
+  `geb-compile` (`GebCompileMain.lean`) reports instead what rejects the
+  program, the first failing definition where a stage determines one, exits
+  with status 1 and leaves the output in place. That report is host code
+  composing the stages of the compiled compiler, with the seed's message for
+  modules; an entry point of the compiler returning the report as a value
+  would serve a second host without restating it. It names a definition and
+  not an occurrence in it, nor why the typing rejects it. Diagnostics that
+  name a source occurrence are a step of the authoring sequence
   ({ref "editing"}[Editing]).
 * Chains of tests and bindings. The kernel's conditional and `let` are
   binary, so chains of tests and of bindings nest, and under a layout
