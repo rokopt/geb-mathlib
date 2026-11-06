@@ -108,8 +108,9 @@ order of dependence.
   survives edits, and the datatype language is complete enough to write
   the rest of Geb in, with diagnostics that name what fails. In
   progress: closed bundles, the datatype language as it stands, content
-  identity and modules are complete; the datatype language's completion,
-  the next step of the authoring sequence, is in progress.
+  identity and modules are complete; the datatype language's completion
+  is in progress, and the steps of the authoring sequence independent of
+  it are ready beside it.
 
 ## The bootstrap
 
@@ -140,11 +141,8 @@ Computation:
   datatype names as types distinct from the type of trees, checked at
   every use, a datatype reaching the trees only through its
   representation and its decoding by its generated recognizer, both
-  written explicitly; type parameters checked opaquely; the soundness of
-  the typing, proved with the prover in Geb; patterns with `&`, unused
-  pattern variables, primitives that no binding shadows, emitted names
-  that no definition captures, and diagnostics naming the definition that
-  fails.
+  written explicitly; type parameters checked opaquely; and the soundness
+  of the typing, proved with the prover in Geb.
 * Complete. The first stage of the interaction-net arm of
   {ref "choice-of-machine"}[the choice of machine]: a kernel program's
   interaction system, duplicating no λ-value, with a sequential reducer
@@ -375,22 +373,26 @@ Extension:
   authoring profile read by the seed and by the Geb reader, rejecting
   duplicate and reserved names, with quoted atoms in the sources, are
   complete, as are the canonical, basic transport and advanced encodings
-  of the strict encodings of RFC 9804 with their retraction. Ready, in the
-  order of {ref "authoring-sequence"}[the sequence]: modules with
-  parameters, imports and export lists, complete but for named telescopes
-  and certificates as parameters, which follow their first consumers; the
-  datatype language's
-  completion, manifests
-  with editions and the record of
-  elaborated definitions, a durable document with versioned profiles,
-  hygienic elaboration with explicit assembly and diagnostics, the markup
-  of comments with documentation as literate pages, and the `geb` editor
-  language; then, early in writing, `let*` and `cond`, the
-  syntax of holes, the checker of holes in programs in its suspending
-  form and the display of their obligations, located diagnostics and the
-  typed enumerator. The rest, the store, a language server and holes in
-  proofs among it, waits on its consumers; the Geb-native refinement
-  search follows the bootstrap.
+  of the strict encodings of RFC 9804 with their retraction. Modules with
+  parameters, imports and export lists are complete but for named
+  telescopes and certificates as parameters, which follow their first
+  consumers. Ready, in the order of
+  {ref "authoring-sequence"}[the sequence], and independent of the datatype
+  language's completion: diagnostics naming the failing definition and the
+  `geb` editor language; manifests with editions; a durable document with
+  versioned profiles, the markup of comments, and the syntax of statements
+  and proof scripts; and `let*` and `cond`, expanded in the elaboration of
+  modules, and the checker of holes in programs in its suspending form with
+  the display of their obligations. Waiting on those: documentation as
+  literate pages, and the record of elaborated definitions, which is taken
+  up at the first program outside the compilers. Waiting on the datatype
+  language's completion: hygienic elaboration with explicit assembly,
+  patterns with `&`, unused pattern variables, primitives that no binding
+  shadows and emitted names that no definition captures; holes in the
+  datatype language; and diagnostics with locations of its typing. The typed
+  enumerator accompanies the first substantial module. The rest, the store,
+  a language server and holes in proofs among it, waits on its consumers;
+  the Geb-native refinement search follows the bootstrap.
 
 ## After the bootstrap
 
@@ -1651,8 +1653,9 @@ section below opens with a table of the states of its parts.
     formatter, the formatter's adoption, the authoring profile read by the
     seed and the Geb reader, and the canonical, basic transport and
     advanced encodings: complete; modules: complete but for the parts that
-    follow their consumers; the rest of the sequence: ready, but the parts
-    that follow their consumers, which wait on them
+    follow their consumers; the steps of the sequence independent of the
+    datatype language's completion: ready; the steps after it: waiting on
+    it; the parts that follow their consumers: waiting on them
 *
   * {ref "goedel-t"}[Gödel's T]
   * Complete
@@ -3298,30 +3301,50 @@ tag := "authoring-compatibility"
     named telescopes and certificates as parameters, with their first
     consumers
 *
-  * The datatype language's completion
-    ({ref "datatype-completion"}[The datatype language's completion])
-  * In progress
-*
-  * Manifests with editions, and the record of elaborated definitions
-  * Ready
-*
-  * A durable document with versioned profiles
-  * Ready
-*
-  * Hygienic elaboration, explicit assembly and diagnostics
-  * Ready
-*
-  * The markup and conventions of comments, and documentation
+  * Diagnostics naming the failing definition
   * Ready
 *
   * The `geb` editor language with Mike's Paredit
   * Ready
 *
-  * Early in writing: `let*` and `cond`, the syntax of holes, the
-    suspending checker of holes in programs and the display of their
-    obligations, located diagnostics, literate pages and the typed
-    enumerator
+  * Manifests with editions
   * Ready
+*
+  * A durable document with versioned profiles
+  * Ready
+*
+  * The markup and conventions of comments
+  * Ready
+*
+  * The syntax of statements and proof scripts
+    ({ref "proof-scripts"}[Proof scripts and certificates])
+  * Ready
+*
+  * `let*` and `cond`, expanded in the elaboration of modules
+  * Ready
+*
+  * The syntax of holes, the suspending checker of holes in programs and
+    the display of their obligations
+  * Ready
+*
+  * Documentation as literate pages
+  * Waiting on manifests, the durable document and the markup of comments
+*
+  * The record of elaborated definitions
+  * Deferred until the first program outside the compilers; manifests
+    precede it
+*
+  * The datatype language's completion
+    ({ref "datatype-completion"}[The datatype language's completion])
+  * In progress
+*
+  * Hygienic elaboration, explicit assembly and patterns
+  * Waiting on the datatype language's completion
+*
+  * Early in writing: holes in the datatype language, located diagnostics
+    and the typed enumerator
+  * Holes in the datatype language and located diagnostics of its typing:
+    waiting on the datatype language's completion; the rest: ready
 *
   * When their consumers exist: digests and the store, the attachment of
     annotations and hover text, a language server, tree-sitter, holes in
@@ -3388,7 +3411,10 @@ written. The work to do first:
 7. Write comments in Verso markup, with explicit links for references to
    code, since links cannot be added mechanically to prose written
    without them ({ref "documentation"}[Documentation]).
-8. State which steps of the pipeline are proved and which are tested
+8. Write statements and proof scripts in Geb source, since a script is the
+   durable form of a proof and no program computes it from a certificate
+   ({ref "proof-scripts"}[Proof scripts and certificates]).
+9. State which steps of the pipeline are proved and which are tested
    ({ref "compatibility-contract"}[The compatibility contract]).
 
 Content storage, a network of identifiers, a language server,
@@ -5019,7 +5045,14 @@ certificate while it is repaired. The complete proofs about the
 compiler's components have from 600000 to 1240000 nodes, so the cache
 holds the form of shared certificates. The metalogic has no surface
 syntax for statements in Geb text yet, and it will need its own
-retraction at the level of documents.
+retraction at the level of documents. A development's statements are
+now Lean values and its scripts Lean code, the deducers under
+`GebTests/Prototypes/FreeTopos/`, which the provers' agreement relates to
+the prover written in Geb; so a proof is not yet Geb source, which the
+bootstrap's end point requires. The syntax of statements and proof scripts
+is a step of the sequence ({ref "authoring-sequence"}[The sequence and its
+acceptance]). It adds no rule to the metalogic: a script is a program for
+one prover, and its certificate is checked as any other is.
 
 ### Further requirements
 %%%
@@ -5091,9 +5124,26 @@ contract stated.
 tag := "authoring-sequence"
 %%%
 
-Before most Geb code is written, in this order; the steps that change
-`bootstrap/reader.geb` and the committed images follow other work on the
-reader:
+Before most Geb code is written, in this order. The order follows the
+criterion of {ref "authoring-compatibility"}[Authoring across bootstrap
+revisions]: source in the authoring profile keeps names and comments in its
+text, so what precedes writing is what a program cannot compute from a text
+written without it, a recorded version, explicit references in prose and
+the form of proof scripts, beside the tools that writing uses at once.
+
+The steps before the datatype language's completion change no source of the
+program whose typing's soundness is proved, `programText` of
+`GebTests/Prototypes/FreeTopos/DatatypeBase.lean`: the prelude, the reader,
+the kernel's checker, the lists, the stage-1 typing and expansion, the
+recognizers, the traversal of kernel terms and the evaluator. They therefore
+proceed beside the completion, and steps with no dependence stated between
+them proceed side by side. The steps after the completion change those
+sources, a change of which changes what the soundness states. A step that
+changes a source of a compiler regenerates the committed images, so such
+steps are merged one at a time.
+
+Substantial authoring follows the completion. A program written before it
+declares its datatypes by `data`, `tree-data` being removed.
 
 :::table +header
 *
@@ -5124,6 +5174,58 @@ reader:
     tests; a clash, an unresolved name and an import leaving a parameter
     unsupplied are rejected
 *
+  * Diagnostics naming the failing definition
+  * A compile that fails names the stage that rejects the program and,
+    where the stage determines one, the first failing definition; it exits
+    with a nonzero status and leaves an existing output in place
+*
+  * The `geb` language with Mike's Paredit
+  * The pinned extensions pass the profile's fixture
+*
+  * Manifests with editions
+  * The build and tests read manifests, but for the list of the program
+    whose typing's soundness is proved, which is converted when the
+    completion is merged
+*
+  * A durable document with versioned profiles
+  * Declaration and binder names, prose, examples, links and unknown
+    optional fields survive reading, printing and conversion
+*
+  * Markup and conventions of comments
+  * Comments are read as the recorded subset of Verso's markup, and a
+    reference to a definition or to a Lean constant that resolves to
+    nothing fails the check
+*
+  * The syntax of statements and proof scripts
+  * A statement and its script are written in a Geb source and survive
+    reading, printing and conversion; the prover written in Geb runs the
+    script to a certificate, which the checker written in Geb accepts and
+    which is kept with its statement, theory and profile, dependencies and
+    format; a development is replayed from such sources with no Lean code
+    of its own
+*
+  * `let*` and `cond`
+  * The elaboration of modules, in Lean and in Geb, expands each to its
+    nested `let` or `if`, so that the program whose soundness is proved
+    reads neither; a program using them compiles to the bundle of the nested
+    forms, and a declaration taking either name is rejected
+*
+  * The syntax of holes, the suspending checker of holes in programs and
+    the display of their obligations
+  * In a program of kernel forms, each hole displays its context and target,
+    and a well-typed filling is accepted without capture; a program with an
+    open hole is not reported as complete
+*
+  * Documentation as literate pages
+  * One Geb module renders prose, a checked example and a link through
+    Verso; editing only its documentation leaves the core identity
+    unchanged
+*
+  * The record of elaborated definitions
+  * The regenerated record equals the committed one; taken up at the first
+    program outside the compilers, `bootstrap/compiler.img` detecting a
+    change of expansion for the compiler until then
+*
   * The datatype language's completion
   * Every source of the datatype language retyped with datatype names as
     exact types, checked at every use, with representation and decoding
@@ -5131,33 +5233,21 @@ reader:
     compiles and passes its tests; the soundness of the typing is proved
     with the prover in Geb
 *
-  * Manifests with editions; the record of elaborated definitions
-  * The build and tests read manifests; the regenerated record equals the
-    committed one
-*
-  * A durable document with versioned profiles
-  * Declaration and binder names, prose, examples, links and unknown
-    optional fields survive reading, printing and conversion
-*
-  * Hygienic elaboration, explicit assembly, diagnostics
-  * Shadowing a primitive cannot alter generated operations; imports
-    resolve deterministically; failures name a source occurrence and
-    preserve existing outputs
-*
-  * Markup and conventions of comments; documentation
-  * One Geb module renders prose, a checked example and a link through
-    Verso; editing only its documentation leaves the core identity
-    unchanged
-*
-  * The `geb` language with Mike's Paredit
-  * The pinned extensions pass the profile's fixture
+  * Hygienic elaboration, explicit assembly and patterns
+  * Shadowing a primitive cannot alter generated operations; emitted names
+    capture no definition; imports resolve deterministically; failures name
+    a source occurrence and preserve existing outputs; a pattern writes the
+    `&` its declaration writes, and a variable that a clause does not use is
+    not bound
 :::
 
+When the completion is merged, the sources are converted to the forms the
+steps above add, in one mechanical change.
+
 Early in writing, alongside the first substantial module where it helps:
-`let*` and `cond`; the syntax of holes, the suspending
-checker of holes in programs and the display of their obligations;
-diagnostics with locations through efm-langserver; literate pages
-generated from documents; and the typed enumerator. When their consumers
+holes in the datatype language, whose types the stage-1 typing reports, the
+kernel's erasing the datatypes; diagnostics with locations through
+efm-langserver; and the typed enumerator. When their consumers
 exist: digests and the store, `attach` and hover text, a language
 server, tree-sitter, holes in proofs, the cache of certificates and the
 export to canonical S-expressions. The Geb-native refinement search
@@ -5174,7 +5264,9 @@ compiler that names no failing definition.
 Acceptance: a documented module survives conversion among the syntaxes
 of RFC 9804 and the authoring profile, retaining names, comments,
 examples, links and dependency resolution, and compiles to the same
-checked core. A documentation-only edit leaves core identity unchanged.
+checked core. A statement and its proof script survive the same conversion,
+and the certificate is replayed from them. A documentation-only edit leaves
+core identity unchanged.
 Its documentation renders through Verso. The `geb` editor language with
 Mike's Paredit preserves the parsed document. A typed hole displays its
 context and target, accepts a well-typed filling without capture, and
@@ -7075,8 +7167,11 @@ the change that removes it.
   are what parinfer's Indent Mode restructures
   ({ref "source-documents"}[Source documents and the formatter]). Forms
   `let*`, of several bindings, and `cond`, of several guarded branches,
-  expanded by the reader as the lists of binders of `lam` are, remove
-  both; they are widenings, and precede long chains.
+  expanded in the elaboration of modules
+  ({ref "modules"}[Modules]), before the expansion of the datatype
+  language, remove both. The reader, the typing and the expansion, of which
+  the soundness of the typing is proved, then read neither, so that the
+  theorem has no case for them. They are widenings, and precede long chains.
 * The equivalence of the word-level codec with
   {name}`Geb.RoseTree.wire`, tested and not proved, which is the first
   of the decision gates of the value-representation chapter.
@@ -7210,16 +7305,16 @@ What is ready, each item independent of the others except as stated:
   with a step of conversion].
 * The datatype language's completion
   ({ref "datatype-completion"}[The datatype language's completion]),
-  in progress, the next step of the authoring sequence
+  in progress, a step of the authoring sequence
   ({ref "authoring-sequence"}[The sequence and its acceptance]), which
   precedes substantial authoring in Geb; the soundness of its typing is
   proved with the prover written in Geb. Its searches take from seconds
   to about eight minutes each, compiled, so its developments wait on no
   change to the prover's speed; a search that takes much longer is
   measured as {ref "searches-remaining"}[The searches' remaining time]
-  states. The steps of the sequence after
-  it are ready in its order, and the items early in writing, `let*` and
-  `cond` among them, accompany the first substantial module.
+  states. The steps of the sequence before it in the sequence's order,
+  which change no source of the program whose soundness is proved, are
+  ready beside it; those after it wait on it.
 * The elementary-affine decorations, in progress, wait on
   rewriting the folds that read their children's results twice
   ({ref "improvements"}[Improvements]).
