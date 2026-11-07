@@ -1,0 +1,15 @@
+{
+  "name": "Geb",
+  "scopeName": "source.geb",
+  "patterns": [
+    { "name": "comment.line.semicolon.geb", "begin": ";", "end": "$" },
+    {
+      "name": "string.quoted.double.geb", "begin": "\"", "end": "\"",
+      "patterns": [{ "name": "constant.character.escape.geb", "match": "\\\\(?:.|$)" }]
+    },
+    { "name": "punctuation.section.parens.geb", "match": "[()]" },
+    { "name": "variable.other.hole.geb", "match": "\\?[A-Za-z_./:*+=-][A-Za-z0-9_./:*+=-]*" },
+    { "name": "constant.numeric.geb", "match": "(?<![A-Za-z0-9_./:*+=?-])[0-9]+(?![A-Za-z0-9_./:*+=-])" },
+    { "name": "keyword.operator.rest.geb", "match": "&" }
+  ]
+}

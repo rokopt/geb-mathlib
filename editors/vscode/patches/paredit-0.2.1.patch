@@ -1,0 +1,508 @@
+Paredit 0.2.1: preserve string context when detecting line comments, preserve
+original line endings in document text and cursor offsets, and traverse
+comments and complete strings when finding slurp/barf destinations.
+
+Base: https://github.com/quasarbright/vscode-paredit/commit/dcc13c5cf5438ca3236e1c7b46f3bbd089337817
+License: MIT; see paredit-LICENSE.txt.
+
+diff --git a/src/cursor-doc/model.ts b/src/cursor-doc/model.ts
+--- a/src/cursor-doc/model.ts
++++ b/src/cursor-doc/model.ts
+@@ -15,7 +15,7 @@
+   private scanner: Scanner;
+   private documentVersion: number;
+ 
+-  constructor(text: string, scanner?: Scanner) {
++  constructor(private text: string, scanner?: Scanner) {
+     this.scanner = scanner || new Scanner();
+     this.documentVersion = 0;
+     this.lines = this.tokenizeDocument(text);
+@@ -25,12 +25,14 @@
+    * Tokenize the entire document into lines with tokens
+    */
+   private tokenizeDocument(text: string): TextLine[] {
+-    const lineStrings = text.split(/\r?\n/);
++    // Keep terminators so every model and cursor offset indexes the original text.
++    const lineStrings = text.split(/(\r?\n)/);
+     const lines: TextLine[] = [];
+     let state: ScannerState = { inString: false };
+ 
+-    for (let lineNumber = 0; lineNumber < lineStrings.length; lineNumber++) {
+-      const lineText = lineStrings[lineNumber];
++    for (let i = 0; i < lineStrings.length; i += 2) {
++      const lineNumber = i / 2;
++      const lineText = lineStrings[i];
+       const startState = { ...state };
+       const tokens = this.scanner.processLine(lineText, startState, lineNumber);
+       
+@@ -42,6 +44,7 @@
+       lines.push({
+         tokens,
+         text: lineText,
++        lineEnding: lineStrings[i + 1] || '',
+         startState,
+         endState
+       });
+@@ -65,7 +68,7 @@
+     let offset = 0;
+     for (let i = 0; i < line; i++) {
+       offset += this.lines[i].text.length;
+-      offset += 1; // newline character
++      offset += this.lines[i].lineEnding?.length ?? 1;
+     }
+ 
+     return offset;
+@@ -78,24 +81,7 @@
+    * @returns the text in the range
+    */
+   getText(start: number, end: number): string {
+-    const startPos = this.offsetToPosition(start);
+-    const endPos = this.offsetToPosition(end);
+-
+-    if (startPos.line === endPos.line) {
+-      // Same line
+-      return this.lines[startPos.line].text.substring(startPos.character, endPos.character);
+-    }
+-
+-    // Multiple lines
+-    let text = this.lines[startPos.line].text.substring(startPos.character) + '\n';
+-    
+-    for (let i = startPos.line + 1; i < endPos.line; i++) {
+-      text += this.lines[i].text + '\n';
+-    }
+-    
+-    text += this.lines[endPos.line].text.substring(0, endPos.character);
+-    
+-    return text;
++    return this.text.substring(start, end);
+   }
+ 
+   /**
+@@ -106,15 +92,16 @@
+     
+     for (let line = 0; line < this.lines.length; line++) {
+       const lineLength = this.lines[line].text.length;
++      const lineEndingLength = this.lines[line].lineEnding?.length ?? 1;
+       
+-      if (currentOffset + lineLength >= offset) {
++      if (offset < currentOffset + lineLength + lineEndingLength || line === this.lines.length - 1) {
+         return {
+           line,
+-          character: offset - currentOffset
++          character: Math.max(0, Math.min(offset - currentOffset, lineLength))
+         };
+       }
+       
+-      currentOffset += lineLength + 1; // +1 for newline
++      currentOffset += lineLength + lineEndingLength;
+     }
+ 
+     // Past end of document
+@@ -167,6 +154,7 @@
+    * Update the model with new text (invalidates cache)
+    */
+   update(text: string): void {
++    this.text = text;
+     this.lines = this.tokenizeDocument(text);
+     this.documentVersion++;
+   }
+@@ -175,14 +163,7 @@
+    * Get the total length of the document in characters
+    */
+   getLength(): number {
+-    let length = 0;
+-    for (let i = 0; i < this.lines.length; i++) {
+-      length += this.lines[i].text.length;
+-      if (i < this.lines.length - 1) {
+-        length += 1; // newline
+-      }
+-    }
+-    return length;
++    return this.text.length;
+   }
+ }
+ 
+diff --git a/src/cursor-doc/token-cursor.ts b/src/cursor-doc/token-cursor.ts
+--- a/src/cursor-doc/token-cursor.ts
++++ b/src/cursor-doc/token-cursor.ts
+@@ -7,6 +7,8 @@
+ export interface TextLine {
+   tokens: Token[];
+   text: string;
++  /** The original line terminator; omitted for legacy LF-only callers. */
++  lineEnding?: string;
+   startState: ScannerState;
+   endState: ScannerState;
+ }
+@@ -147,7 +149,7 @@
+     // Add lengths of all previous lines
+     for (let i = 0; i < this.line; i++) {
+       offset += this.lines[i].text.length;
+-      offset += 1; // newline character
++      offset += this.lines[i].lineEnding?.length ?? 1;
+     }
+ 
+     // Add offset within current line
+diff --git a/src/cursor-doc/vscode-scanner.ts b/src/cursor-doc/vscode-scanner.ts
+--- a/src/cursor-doc/vscode-scanner.ts
++++ b/src/cursor-doc/vscode-scanner.ts
+@@ -44,61 +44,17 @@
+     }
+ 
+     // Get comment ranges for this line
+-    const commentRanges = this.getCommentRangesForLine(lineNumber);
++    const commentRanges = this.getCommentRangesForLine(lineNumber, tokens);
+     if (commentRanges.length === 0) {
+       return tokens;
+     }
+ 
+-    // Filter out tokens that are inside comments and replace with comment tokens
+-    const result: Token[] = [];
+-    let commentStartOffset = -1;
+-
+-    for (const token of tokens) {
+-      const tokenStart = token.offset;
+-      const tokenEnd = token.offset + token.raw.length;
+-
+-      // Check if this token overlaps with any comment range
+-      const inComment = commentRanges.some(
+-        range => tokenStart < range.end && tokenEnd > range.start
+-      );
+-
+-      if (inComment) {
+-        // If this is the first token in a comment, mark where the comment starts
+-        if (commentStartOffset === -1) {
+-          commentStartOffset = tokenStart;
+-        }
+-      } else {
+-        // If we were in a comment, create a comment token for it
+-        if (commentStartOffset !== -1) {
+-          const commentRange = commentRanges.find(r => commentStartOffset >= r.start && commentStartOffset < r.end);
+-          if (commentRange) {
+-            result.push({
+-              type: 'comment',
+-              raw: line.substring(commentRange.start, commentRange.end),
+-              offset: commentRange.start,
+-              state: startState
+-            });
+-          }
+-          commentStartOffset = -1;
+-        }
+-        // Add the non-comment token
+-        result.push(token);
+-      }
+-    }
+-
+-    // If we ended while in a comment, add the comment token
+-    if (commentStartOffset !== -1) {
+-      const commentRange = commentRanges.find(r => commentStartOffset >= r.start && commentStartOffset < r.end);
+-      if (commentRange) {
+-        result.push({
+-          type: 'comment',
+-          raw: line.substring(commentRange.start, commentRange.end),
+-          offset: commentRange.start,
+-          state: startState
+-        });
+-      }
+-    }
+-
++    // A line comment consumes the rest of the line. Re-scan its prefix so an
++    // adjacent atom is retained and quotes in the comment cannot change state.
++    const { start, end } = commentRanges[0];
++    const result = super.processLine(line.substring(0, start), startState, lineNumber);
++    const state = result.length > 0 ? result[result.length - 1].state : startState;
++    result.push({ type: 'comment', raw: line.substring(start, end), offset: start, state });
+     return result;
+   }
+ 
+@@ -106,7 +62,7 @@
+    * Get comment ranges for a line using VS Code's language configuration
+    * This delegates to the language extension without hardcoding syntax
+    */
+-  private getCommentRangesForLine(lineNumber: number): Array<{ start: number; end: number }> {
++  private getCommentRangesForLine(lineNumber: number, tokens: Token[]): Array<{ start: number; end: number }> {
+     // Check if cache is valid
+     if (!this.commentCache || this.commentCache.version !== this.document.version) {
+       this.commentCache = {
+@@ -121,7 +77,7 @@
+     }
+ 
+     // Compute comment ranges for this line
+-    const ranges = this.detectCommentRanges(lineNumber);
++    const ranges = this.detectCommentRanges(lineNumber, tokens);
+     this.commentCache.ranges.set(lineNumber, ranges);
+     return ranges;
+   }
+@@ -130,7 +86,7 @@
+    * Detect comment ranges using VS Code's language configuration
+    * This is language-agnostic - it queries VS Code for the language's comment syntax
+    */
+-  private detectCommentRanges(lineNumber: number): Array<{ start: number; end: number }> {
++  private detectCommentRanges(lineNumber: number, tokens: Token[]): Array<{ start: number; end: number }> {
+     const ranges: Array<{ start: number; end: number }> = [];
+     
+     try {
+@@ -146,10 +102,18 @@
+       const commentConfig = this.getLanguageCommentConfig(languageId);
+       
+       if (commentConfig && commentConfig.lineComment) {
+-        // Find line comment start
+-        const commentStart = text.indexOf(commentConfig.lineComment);
+-        if (commentStart !== -1) {
+-          ranges.push({ start: commentStart, end: text.length });
++        // The lexer already handles escaped quotes and strings spanning lines.
++        // Only a marker outside its string tokens can start a comment.
++        let commentStart = text.indexOf(commentConfig.lineComment);
++        while (commentStart !== -1) {
++          const inString = tokens.some(token =>
++            token.type.startsWith('str-') && token.offset <= commentStart &&
++            commentStart < token.offset + token.raw.length);
++          if (!inString) {
++            ranges.push({ start: commentStart, end: text.length });
++            break;
++          }
++          commentStart = text.indexOf(commentConfig.lineComment, commentStart + 1);
+         }
+       }
+ 
+diff --git a/src/paredit.ts b/src/paredit.ts
+--- a/src/paredit.ts
++++ b/src/paredit.ts
+@@ -605,7 +605,7 @@
+   
+   // Get the end position of the next sexp
+   let endOfNext: number;
+-  if (nextToken.type === 'open') {
++  if (nextToken.type === 'open' || nextToken.type === 'str-start') {
+     // It's a list, move to its closing delimiter
+     if (!cursor.forwardList()) {
+       return;
+@@ -661,7 +661,7 @@
+   }
+   
+   // Skip whitespace backward
+-  while (cursor.isWhitespace()) {
++  while (cursor.isSkippable()) {
+     if (!cursor.previous()) {
+       return; // Only whitespace before, nothing to slurp
+     }
+@@ -736,7 +736,7 @@
+   }
+   
+   // Skip whitespace backward to get to the last sexp
+-  while (cursor.isWhitespace()) {
++  while (cursor.isSkippable()) {
+     if (!cursor.previous()) {
+       return; // Only whitespace
+     }
+@@ -745,7 +745,7 @@
+   // Now we're at the end of the last sexp
+   // If it's a closing paren, we need to find its matching opening paren
+   const lastToken = cursor.getToken();
+-  if (lastToken?.type === 'close') {
++  if (lastToken?.type === 'close' || lastToken?.type === 'str-end') {
+     // It's a list - move to its opening paren
+     if (!cursor.backwardList()) {
+       return;
+@@ -759,7 +759,7 @@
+   }
+   
+   // Skip whitespace backward
+-  while (cursor.isWhitespace()) {
++  while (cursor.isSkippable()) {
+     if (!cursor.previous()) {
+       return; // Only one element
+     }
+@@ -813,7 +813,7 @@
+   }
+   
+   // Skip whitespace forward to get to the first sexp
+-  while (cursor.isWhitespace()) {
++  while (cursor.isSkippable()) {
+     if (!cursor.next()) {
+       return; // Only whitespace
+     }
+@@ -822,7 +822,7 @@
+   // Now we're at the start of the first sexp
+   // If it's an opening paren, we need to find its matching closing paren
+   const firstToken = cursor.getToken();
+-  if (firstToken?.type === 'open') {
++  if (firstToken?.type === 'open' || firstToken?.type === 'str-start') {
+     // It's a list - move to its closing paren
+     if (!cursor.forwardList()) {
+       return;
+@@ -836,7 +836,7 @@
+   }
+   
+   // Skip whitespace forward
+-  while (cursor.isWhitespace()) {
++  while (cursor.isSkippable()) {
+     if (!cursor.next()) {
+       return; // Only one element
+     }
+diff --git a/tests/comments-and-line-endings.test.ts b/tests/comments-and-line-endings.test.ts
+--- /dev/null
++++ b/tests/comments-and-line-endings.test.ts
+@@ -0,0 +1,162 @@
++import { beforeEach, describe, expect, jest, test } from '@jest/globals';
++import * as vscode from 'vscode';
++import { EditableDocument, LineInputModel, ModelEditSelection } from '../src/cursor-doc/model';
++import { VSCodeScanner } from '../src/cursor-doc/vscode-scanner';
++import { getCommentConfig } from '../src/cursor-doc/language-config';
++import { barfSexpForward, barfSexpBackward, slurpSexpForward, slurpSexpBackward } from '../src/paredit';
++
++jest.mock('../src/cursor-doc/language-config', () => ({
++  getCommentConfig: jest.fn(() => ({ lineComment: ';' }))
++}));
++
++function scanned(text: string): LineInputModel {
++  const lines = text.split(/\r?\n/);
++  const document = {
++    version: 1,
++    languageId: 'test',
++    lineAt: (line: number) => ({ text: lines[line] })
++  } as unknown as vscode.TextDocument;
++  return new LineInputModel(text, new VSCodeScanner(document));
++}
++
++describe('comments outside strings', () => {
++  beforeEach(() => {
++    jest.mocked(getCommentConfig).mockReturnValue({ lineComment: ';' });
++  });
++
++  test.each(['"(;)"', '"escaped \\";\\" quote"', '"first\n(; second"'])
++  ('keeps %s in the string', atom => {
++    const model = scanned(`(f ${atom})`);
++    const tokens = model.getLines().flatMap(line => line.tokens);
++    expect(tokens.filter(token => token.type === 'comment')).toHaveLength(0);
++    expect(tokens[tokens.length - 1].type).toBe('close');
++  });
++
++  test('finds a real comment after a quoted comment marker', () => {
++    const model = scanned('(f "(;)") ; real "(\n(next)');
++    const lines = model.getLines();
++    expect(lines[0].tokens.filter(token => token.type === 'comment')
++      .map(token => token.raw)).toEqual(['; real "(']);
++    expect(lines[1].startState.inString).toBe(false);
++    expect(lines[1].tokens[0].type).toBe('open');
++  });
++
++  test('keeps the end state of a multiline string before a comment', () => {
++    const model = scanned('(f "first\nsecond") ; real "(\n(next)');
++    const lines = model.getLines();
++    expect(lines[1].startState.inString).toBe(true);
++    expect(lines[1].endState.inString).toBe(false);
++    expect(lines[2].tokens[0].type).toBe('open');
++  });
++
++  test('keeps an atom immediately before the comment marker', () => {
++    const model = scanned('(f name; ) "\n)');
++    expect(model.getLines()[0].tokens.map(token => token.raw))
++      .toEqual(['(', 'f', ' ', 'name', '; ) "']);
++    expect(model.getLines()[1].tokens[0].type).toBe('close');
++  });
++
++  test('uses the configured multi-character line comment', () => {
++    jest.mocked(getCommentConfig).mockReturnValue({ lineComment: '//' });
++    const model = scanned('(f "http://host")// real "(\n(next)');
++    const lines = model.getLines();
++    expect(lines[0].tokens.filter(token => token.type === 'comment')
++      .map(token => token.raw)).toEqual(['// real "(']);
++    expect(lines[1].startState.inString).toBe(false);
++  });
++});
++
++describe('document offsets and line endings', () => {
++  test.each(['\n', '\r\n'])('preserves %j offsets and text', eol => {
++    const text = ['(f "🌳")', '', '(next λ)', ''].join(eol);
++    const model = new LineInputModel(text);
++    const next = text.indexOf('(next');
++    expect(model.getLength()).toBe(text.length);
++    expect(model.getOffsetForLine(2)).toBe(next);
++    const cursor = model.getTokenCursor(next);
++    expect(cursor.lineNumber).toBe(2);
++    expect(cursor.getToken()?.raw).toBe('(');
++    expect(cursor.offsetStart).toBe(next);
++    expect(model.getText(0, next)).toBe(`(f "🌳")${eol}${eol}`);
++    expect(model.getText(next, text.length)).toBe(`(next λ)${eol}`);
++    expect(model.getText(0, model.getLength())).toBe(text);
++  });
++
++  test('preserves mixed line endings', () => {
++    const text = 'a\r\nb\n\r\n(tail)';
++    const model = new LineInputModel(text);
++    expect(model.getOffsetForLine(3)).toBe(7);
++    expect(model.getTokenCursor(7).offsetStart).toBe(7);
++    expect(model.getText(1, 7)).toBe('\r\nb\n\r\n');
++    expect(model.getLength()).toBe(13);
++  });
++
++  test('maps both characters of CRLF to the preceding line end', () => {
++    const model = new LineInputModel('a\r\nb');
++    for (const offset of [1, 2]) {
++      const cursor = model.getTokenCursor(offset);
++      expect(cursor.lineNumber).toBe(0);
++      expect(cursor.getToken()?.raw).toBe('a');
++    }
++    expect(model.getTokenCursor(3).getToken()?.raw).toBe('b');
++    expect(model.getText(1, 2)).toBe('\r');
++    expect(model.getText(2, 3)).toBe('\n');
++  });
++
++  test('refreshes offsets and text after changing line endings', () => {
++    const model = new LineInputModel('a\nb');
++    model.update('a\r\nb');
++    expect(model.getOffsetForLine(1)).toBe(3);
++    expect(model.getTokenCursor(3).offsetStart).toBe(3);
++    expect(model.getText(0, model.getLength())).toBe('a\r\nb');
++  });
++});
++
++describe('structural edits with comments and strings', () => {
++  beforeEach(() => {
++    jest.mocked(getCommentConfig).mockReturnValue({ lineComment: ';' });
++  });
++
++  async function edited(action: (doc: EditableDocument) => Promise<void>, text: string, at: number) {
++    let model = scanned(text);
++    const doc = {
++      selections: [new ModelEditSelection(at, at)],
++      getTokenCursor: (offset: number) => model.getTokenCursor(offset),
++      getText: (start: number, end: number) => model.getText(start, end),
++      changeRange: async (start: number, end: number, replacement: string) => {
++        text = text.substring(0, start) + replacement + text.substring(end);
++        model = scanned(text);
++        return true;
++      }
++    } as unknown as EditableDocument;
++    await action(doc);
++    return text;
++  }
++
++  for (const eol of ['\n', '\r\n']) {
++    const comment = `; unmatched "(${eol} `;
++    test(`forward barf skips comments (${JSON.stringify(eol)})`, async () => {
++      expect(await edited(barfSexpForward, `(a ${comment}b)`, 0)).toBe(`(a) ${comment}b`);
++    });
++    test(`backward barf skips comments (${JSON.stringify(eol)})`, async () => {
++      expect(await edited(barfSexpBackward, `(a ${comment}b)`, 0)).toBe(`a ${comment}(b)`);
++    });
++    test(`forward slurp includes a whole string (${JSON.stringify(eol)})`, async () => {
++      expect(await edited(slurpSexpForward, `(a) ${comment}"(; b)"`, 0))
++        .toBe(`(a ${comment}"(; b)")`);
++    });
++    test(`backward slurp skips comments (${JSON.stringify(eol)})`, async () => {
++      const text = `"(; a)" ${comment}(b)`;
++      expect(await edited(slurpSexpBackward, text, text.indexOf('(b)')))
++        .toBe(`("(; a)" ${comment}b)`);
++    });
++    test(`forward barf moves a whole string (${JSON.stringify(eol)})`, async () => {
++      expect(await edited(barfSexpForward, `(a "first${eol}(; b)")`, 0))
++        .toBe(`(a) "first${eol}(; b)"`);
++    });
++    test(`backward barf moves a whole string (${JSON.stringify(eol)})`, async () => {
++      expect(await edited(barfSexpBackward, `("first${eol}(; a)" b)`, 0))
++        .toBe(`"first${eol}(; a)" (b)`);
++    });
++  }
++});

@@ -1,0 +1,14 @@
+; A module with comments containing unmatched delimiters: ( ] } "
+(module Example
+  (export identity "λ")
+  ; Nested bindings and a qualified reference.
+  (def identity
+    (lam ((x T))
+      (let y T x
+        (let z T y z))))
+  (def "λ" (lam (("δ" T)) "δ"))
+  ; Quoted atoms contain parentheses, semicolons, escapes and Unicode.
+  (def text (quote (0 "(;)" "escaped \"quote\"" "back\\slash" "é" "🌳")))
+  (def multiline (quote (0 "first
+second"))))
+(def main Example.identity)

@@ -43,6 +43,8 @@ The repository is laid out narrow-and-deep, with one indexing
 - `manual/` — the Verso manual, whose chapters include literate
   modules from the libraries above by name (build and serve
   commands: `README.md` § Documentation).
+- [editors/vscode/](../editors/vscode/README.md) — the Geb authoring
+  profile's language configuration, TextMate grammar and editor fixtures.
 
 The directory split denotes upstream eligibility; the
 import-direction rules above are enforced by

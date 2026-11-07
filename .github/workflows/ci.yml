@@ -92,6 +92,13 @@ jobs:
       # sources are fixed points of geb-fmt and of parinfer.
       - name: bootstrap fixed points
         run: bash scripts/bootstrap.sh check
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38  # v6
+        with:
+          node-version: '24'
+      - name: install editor test dependencies
+        run: npm ci --prefix editors/vscode
+      - name: Geb language and formatter tests
+        run: xvfb-run -a bash scripts/tests/test-editor.sh
       - name: lint GebTests (axiom + style linters on tests)
         run: lake exe batteries/runLinter GebTests
       - name: scripts/tests/test-axiom-linter.sh
