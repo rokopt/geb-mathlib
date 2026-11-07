@@ -15,8 +15,7 @@
 ; hypotheses and its conclusion, an entry and a declaration the node of their constructor's
 ; position over their fields, an optional certificate the optional tree, and the state of a
 ; development the pair of its constants and the node of its entries, as their datatypes declare
-; them. Requires the prelude, the lists of bootstrap/seq.geb, the base, partial Horn logic, the
-; theory, the inference and the language.
+; them.
 
 (module Derivation
   (export nilPrim consPrim lnodePrim inlPrim inrPrim casePrim instVar instVar2 atVar0 natSuccAt

@@ -13,7 +13,8 @@ import Geb.Prototypes.Kernel.Document
 
 `lake exe geb-fmt FILE...` formats each file in place with
 `Geb.Kernel.Document.format` within 100 columns; `lake exe geb-fmt --check FILE...` changes
-nothing and names each file that formatting would change. A file is read as bytes, one
+nothing and names each file that formatting would change. In place of files, `--manifest MANIFEST`
+names a manifest and the sources of its program. A file is read as bytes, one
 character per byte, as the host driver reads sources, so its atoms and comments keep their
 bytes; each atom is written in its spelling, `Geb.Kernel.Document.spell`.
 
@@ -32,11 +33,16 @@ def bytes (cs : List Char) : ByteArray := ⟨(cs.map fun c ↦ c.toNat.toUInt8).
 /-- Format files in place, or with `--check` name those formatting would change; exit 1 when a
 file does not read, or with `--check` when one would change. -/
 public def main (args : List String) : IO UInt32 := do
-  let (check, files) := match args with
+  let (check, rest) := match args with
     | "--check" :: fs => (true, fs)
     | fs => (false, fs)
+  let files ← match rest with
+    | ["--manifest", path] =>
+      let m ← Geb.Kernel.Manifest.read path
+      pure (path :: (Geb.Kernel.Manifest.sourcePaths path m).map toString)
+    | fs => pure fs
   if files.isEmpty then
-    IO.eprintln "usage: geb-fmt [--check] FILE..."
+    IO.eprintln "usage: geb-fmt [--check] FILE... | geb-fmt [--check] --manifest MANIFEST"
     return 2
   let mut status : UInt32 := 0
   for f in files do

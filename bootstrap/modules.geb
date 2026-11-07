@@ -8,7 +8,7 @@
 ; it is declared, for the stage-1 compiler to check (genericOf), and every name renamed to what it
 ; denotes. A name is a node of label 0 over its characters; the names visible in a block are
 ; nodes over a name and the name it denotes in the flat program, looked up as abbreviations
-; are. Requires the prelude, the reader and decimalChars of the datatype language.
+; are.
 
 (module Modules
   (export concat rename qualify declareAll exportsOf headed zipWith2 bindParam elabDecl importAs

@@ -59,9 +59,8 @@ open Geb.Kernel.Stage0Tests Geb.Kernel.Document.Tests
 #guard ((readSExps "(def x (quote (0 \"a b\")))".toList).map fun es ↦ es.map canonOf) =
   some ["(3:def1:x(5:quote(1:03:a b)))".toList]
 
--- a document with comments and each source of the stage-0 compiler read back from its canonical
--- encoding
-#guard [sample, sampleFormatted, prelude, serialize, reader, check, datatype, compile].all
+-- a document with comments and the stage-0 compiler's text read back from its canonical encoding
+#guard [sample, sampleFormatted, compiler].all
   fun src ↦ (readDoc src.toList).all fun d ↦
     (readStrictDoc (printCanonDoc d)).map Doc.tokens == some d.tokens
 
@@ -78,9 +77,9 @@ open Geb.Kernel.Stage0Tests Geb.Kernel.Document.Tests
     es.map (advancedOf fun _ ↦ (false, 0))) =
   some ["(def x (quote (\"0\" \"\\xE9\\x0A\")))\n".toList]
 
--- a document with comments and each source of the stage-0 compiler written in the advanced
--- encoding as ASCII, and read back from it
-#guard [sample, sampleFormatted, prelude, serialize, reader, check, datatype, compile].all
+-- a document with comments and the stage-0 compiler's text written in the advanced encoding as
+-- ASCII, and read back from it
+#guard [sample, sampleFormatted, compiler].all
   fun src ↦ (readDoc src.toList).all fun d ↦
     (printAdvancedDoc 100 d).all (·.toNat < 128) &&
       (readStrictDoc (printAdvancedDoc 100 d)).map Doc.tokens == some d.tokens

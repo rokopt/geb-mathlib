@@ -11,8 +11,9 @@
 # a namespace of its own; the metalogic's, a module per layer, beside the
 # loading of its program through each layer, checked by the kernel.
 #
-# The stage-1 compiler's source S is the files of STAGE1 joined as the
-# host driver joins sources, each followed by a newline.
+# The programs' sources are those of their manifests, bootstrap/*.manifest.
+# The stage-1 compiler's source S is the text of its manifest's program, as
+# the host driver joins it, each source followed by a newline.
 #
 #   regen  The seed builds the stage-0 compiler from its sources in the
 #          kernel's syntax; the stage-0 compiler compiles S to the image;
@@ -24,7 +25,9 @@
 #          to the committed Lean and the committed image. Checks that every
 #          source under bootstrap/ is a fixed point of geb-fmt and, where
 #          the parinfer release pinned in scripts/parinfer/ is installed
-#          (npm ci --prefix scripts/parinfer), of both of its modes.
+#          (npm ci --prefix scripts/parinfer), of both of its modes, and so
+#          is every manifest, whose program the compiled compiler compiles
+#          and whose entry points it checks the program defines.
 #
 # Exit 0 when every comparison holds; exit 1 naming the first that does
 # not.
@@ -33,25 +36,10 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 b=bootstrap
-stage0=("$b/prelude.geb" "$b/serialize.geb" "$b/reader.geb" "$b/check.geb" "$b/datatype.geb"
-        "$b/modules.geb" "$b/recognize.geb" "$b/compile.geb")
-stage1=("$b/prelude.geb" "$b/serialize.geb" "$b/reader.geb" "$b/check.geb" "$b/seq.geb"
-        "$b/stage1/typing.geb"
-        "$b/stage1/datatype.geb"
-        "$b/modules.geb" "$b/recognize.geb" "$b/compile.geb" "$b/stage1/lean.geb")
 img=$b/compiler.img
 lean=$b/lean/GebBoot.lean
-# each mirror emitted as one module: its name, then its sources
-mirrors=("Kernel $b/prelude.geb $b/reader.geb $b/check.geb $b/eval.geb")
-# the metalogic's layers, each its name, then its sources: its mirror and the loading of its
-# program are emitted a module per layer, each importing the layer before it, so that a change to
-# a layer's sources changes only the modules of that layer and the layers after it
-f=$b/free-topos
-checker="$b/prelude.geb $b/seq.geb $f/base.geb $f/partial-horn.geb $f/theory.geb $f/infer.geb"
-checker+=" $f/language.geb $f/derivation.geb $b/reader.geb $b/check.geb"
-layers=("Checker $checker" "Translation $f/translation.geb" "Prover $f/prove.geb"
-        "Tactics $f/tactics.geb" "Combinator $f/combinator.geb"
-        "Printer $b/datatype.geb $b/printer.geb" "Affine $b/affine.geb")
+# each mirror emitted as one module: its name, then its manifest
+mirrors=("Kernel $b/kernel.manifest")
 kernel=.lake/build/bin/geb-kernel
 
 tmp=$(mktemp -d)
@@ -63,27 +51,27 @@ join() { local f; for f in "$@"; do cat "$f"; echo; done; }
 
 # The stage-0 compiler, S and the two artifacts, written into the directory $1.
 generate() {
-  "$kernel" build "${stage0[@]}" "$1/stage0.img"
-  join "${stage1[@]}" > "$1/S.geb"
+  "$kernel" build --manifest "$b/stage0.manifest" "$1/stage0.img"
+  "$kernel" join "$b/stage1.manifest" "$1/S.geb"
   "$kernel" run "$1/stage0.img" main "$1/S.geb" "$1/compiler.img"
   [ -s "$1/compiler.img" ] || fail "the stage-0 compiler rejects S"
   "$kernel" run "$1/compiler.img" mainLean "$1/S.geb" "$1/GebBoot.lean"
   [ -s "$1/GebBoot.lean" ] || fail "the image's mainLean rejects S"
 }
 
-# The Lean the committed image emits from a mirror's sources, in the namespace GebMirror.<name>,
-# written to $2.
+# The Lean the committed image emits from a mirror's manifest $3, in the namespace
+# GebMirror.<name>, written to $2.
 mirror() {
-  local name=$1; shift
-  local out=$1; shift
-  join "$@" > "$tmp/$name.geb"
+  local name=$1 out=$2
+  "$kernel" join "$3" "$tmp/$name.geb"
   "$kernel" run "$img" mainLean "$tmp/$name.geb" "$tmp/$name.raw"
   [ -s "$tmp/$name.raw" ] || fail "the image's mainLean rejects the mirror $name"
   sed "s/^namespace GebBoot$/namespace GebMirror.$name/; s/^end GebBoot$/end GebMirror.$name/" \
     "$tmp/$name.raw" > "$out"
 }
 
-# The metalogic's modules, written under the directory $1: for each layer,
+# The metalogic's modules, written under the directory $1, its layers those of its manifest, each
+# compiled with the layers before it: for each layer,
 # GebMirror/Metalogic/<name>.lean, the Lean the committed image emits from its definitions, and
 # GebMirror/Metalogic/Load/<name>.lean, the loading of the program's definitions through the
 # layer from the image of its sources; GebMirror/Metalogic.lean and GebMirror/Metalogic/Load.lean
@@ -138,6 +126,8 @@ layered() {
 }
 
 lake build geb-kernel
+"$kernel" layers "$b/metalogic.manifest" > "$tmp/layers"
+mapfile -t layers < "$tmp/layers"
 case "${1:-}" in
   regen)
     generate "$tmp"
@@ -145,7 +135,7 @@ case "${1:-}" in
     cp "$tmp/GebBoot.lean" "$lean"
     for m in "${mirrors[@]}"; do
       read -r -a a <<< "$m"
-      mirror "${a[0]}" "$b/lean/GebMirror/${a[0]}.lean" "${a[@]:1}"
+      mirror "${a[0]}" "$b/lean/GebMirror/${a[0]}.lean" "${a[1]}"
     done
     rm -rf "$b/lean/GebMirror/Metalogic"
     layered "$b/lean"
@@ -154,19 +144,19 @@ case "${1:-}" in
     generate "$tmp"
     same "$tmp/compiler.img" "$img" "the committed image is not the stage-0 compiler's image of S"
     same "$tmp/GebBoot.lean" "$lean" "the committed Lean is not the image's Lean of S"
-    join "${stage0[@]}" > "$tmp/S0.geb"
+    "$kernel" join "$b/stage0.manifest" "$tmp/S0.geb"
     "$kernel" run "$tmp/stage0.img" main "$tmp/S0.geb" "$tmp/stage0-self.img"
     same "$tmp/stage0-self.img" "$tmp/stage0.img" "the stage-0 compiler does not reproduce its image"
     "$kernel" run "$img" main "$tmp/S.geb" "$tmp/self.img"
     same "$tmp/self.img" "$img" "the committed image does not reproduce itself"
     lake build geb-compile
-    .lake/build/bin/geb-compile lean "$tmp/S.geb" "$tmp/C1.lean"
+    .lake/build/bin/geb-compile lean --manifest "$b/stage1.manifest" "$tmp/C1.lean"
     same "$tmp/C1.lean" "$lean" "the compiled compiler does not reproduce the committed Lean"
-    .lake/build/bin/geb-compile image "$tmp/S.geb" "$tmp/C1.img"
+    .lake/build/bin/geb-compile image --manifest "$b/stage1.manifest" "$tmp/C1.img"
     same "$tmp/C1.img" "$img" "the compiled compiler does not reproduce the committed image"
     for m in "${mirrors[@]}"; do
       read -r -a a <<< "$m"
-      mirror "${a[0]}" "$tmp/mirror.lean" "${a[@]:1}"
+      mirror "${a[0]}" "$tmp/mirror.lean" "${a[1]}"
       same "$tmp/mirror.lean" "$b/lean/GebMirror/${a[0]}.lean" \
         "the committed mirror ${a[0]} is not the image's Lean of its sources"
     done
@@ -175,8 +165,12 @@ case "${1:-}" in
       "the committed index of the metalogic's layers is not the generated one"
     diff -rq "$tmp/lean/GebMirror/Metalogic" "$b/lean/GebMirror/Metalogic" > /dev/null \
       || fail "the committed layers of the metalogic are not the image's Lean of their sources"
+    for m in "$b"/*.manifest; do
+      .lake/build/bin/geb-compile image --manifest "$m" "$tmp/manifest.img" \
+        || fail "the compiled compiler rejects the manifest $m"
+    done
     lake build geb-fmt
-    mapfile -t sources < <(find "$b" -name '*.geb' | sort)
+    mapfile -t sources < <(find "$b" -name '*.geb' -o -name '*.manifest' | sort)
     .lake/build/bin/geb-fmt --check "${sources[@]}" \
       || fail "a source is not formatted: run lake exe geb-fmt on it"
     if [ -d scripts/parinfer/node_modules/parinfer ]; then

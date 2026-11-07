@@ -71,29 +71,17 @@ import os, random, shutil, statistics, subprocess, sys, time
 rounds, copies, tmp = int(sys.argv[1]), int(sys.argv[2]), sys.argv[3]
 builds = sys.argv[4:]
 
-STAGE0 = ["prelude", "serialize", "reader", "check", "datatype", "modules", "recognize", "compile"]
-STAGE1 = ["prelude", "serialize", "reader", "check", "seq", "stage1/typing", "stage1/datatype",
-          "modules", "recognize", "compile", "stage1/lean"]
-
-
-def join(paths, out):
-    with open(out, "wb") as f:
-        for p in paths:
-            with open(p, "rb") as g:
-                f.write(g.read())
-            f.write(b"\n")
-
 
 def prepare(i, d):
     """The build's inputs, its workloads as (binary, arguments), and its copies' directories."""
     b, t = os.path.join(d, "bootstrap"), os.path.join(tmp, str(i))
     os.makedirs(t)
-    src = lambda xs: [os.path.join(b, x + ".geb") for x in xs]
+    manifest = lambda x: os.path.join(b, x + ".manifest")
     at = lambda x: os.path.join(t, x)
     kernel = os.path.join(d, "bin", "geb-kernel")
-    join(src(STAGE1), at("S.geb"))
-    subprocess.run([kernel, "build", *src(STAGE0), at("stage0.img")], check=True,
-                   stdout=subprocess.DEVNULL)
+    subprocess.run([kernel, "join", manifest("stage1"), at("S.geb")], check=True)
+    subprocess.run([kernel, "build", "--manifest", manifest("stage0"), at("stage0.img")],
+                   check=True, stdout=subprocess.DEVNULL)
     work = {
         "compile/native": ("geb-compile", ["image", at("S.geb"), at("out.img")]),
         "compile/seed": ("geb-kernel", ["run", os.path.join(b, "compiler.img"), "main",

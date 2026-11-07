@@ -99,9 +99,9 @@ the number of its theorems: the prelude, the labels, the kernel's type checker a
 structural recursion. -/
 def files : List (String × ℕ) :=
   let pr := Kernel.Stage0Tests.prelude
-  let prc := pr ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++ Kernel.Stage0Tests.check
+  let prc := include_manifest "bootstrap/checker.manifest"
   [(pr ++ "\n" ++ preludeStatements, 4), (pr ++ "\n" ++ natStatements, 3),
-    (prc ++ "\n" ++ checkStatements, 1), (prc ++ "\n" ++ datatypeStatements, 2)]
+    (prc ++ checkStatements, 1), (prc ++ datatypeStatements, 2)]
 
 /-- The binders' types of a term's abstractions, innermost first, and the body under them, at most
 {lit}`n` of them. -/

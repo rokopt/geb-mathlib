@@ -6,8 +6,6 @@
 ; of a program, whether it is typable alone and with a decoration per use of the definitions it
 ; refers to, in the discipline Geb/Prototypes/Affine/Decoration.lean specifies, and a certificate of
 ; the definitions so typable, which bootstrap/affine.geb checks, the search not being trusted.
-; Requires the prelude, the base, the reader and the checker, for primTypes, and the check of
-; certificates.
 ;
 ; A solution of the constraints of a decoration is computed by longest paths. Write the absolute
 ; level of a type's node for the number of boxes around the node's term with the numbers of ! from

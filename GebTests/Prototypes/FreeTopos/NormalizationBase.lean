@@ -270,9 +270,7 @@ def dFalse (L : Conn) (k : Deducer) : Deducer := fun Γ Φ φ ↦ do
 /-- The program: the prelude, the reader, the type checker, the traversal of kernel terms, the
 evaluator, and the weakening proof's statement. -/
 def programText : String :=
-  Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
-    Kernel.Stage0Tests.check ++ "\n" ++ Kernel.Stage0Tests.subst ++ "\n" ++
-    Kernel.EvalTests.evalGeb ++ "\n" ++ Weakening.statement
+  include_manifest "bootstrap/normalization.manifest" ++ Weakening.statement
 
 /-- The index of the primitive zero, after the translation's primitives. -/
 def kZero : ℕ := prims.length

@@ -9,7 +9,7 @@
 ; constant to their values. The evaluator runs with fuel: at each level it evaluates a term by
 ; structural recursion on the term, and applies a value to a value, and evaluates a reference's
 ; definition, by the level below. An optional result is the prelude's optional tree, and an
-; optional list the optional node of label 0 over the list. Requires the prelude.
+; optional list the optional node of label 0 over the list.
 
 (module Eval
   (export Label.clo valQuote valClo ofList unquote listOf spine sat evStep apStep level eval apply)

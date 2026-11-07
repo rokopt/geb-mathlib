@@ -34,8 +34,7 @@
 ;
 ; Names beginning with % are reserved for the expansion. The expansion refers to the
 ; primitives label, child, children, node and eq by name, so a program does not rebind
-; them around case and cata; nor does it declare D.member for a datatype D it decodes. Requires
-; the prelude, the reader and the checker.
+; them around case and cata; nor does it declare D.member for a datatype D it decodes.
 
 (module Datatype
   (export aDef kwData kwTreeData kwCase kwCata kwRep kwDecode kwDatum kwDefn decimalChars memberName

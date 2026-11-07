@@ -152,8 +152,7 @@ def statement : String := "
 /-- The program: the prelude, the reader, the type checker, the expansion of the datatype language
 and the statement. -/
 def programText : String :=
-  Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
-    Kernel.Stage0Tests.check ++ "\n" ++ Kernel.Stage0Tests.datatype ++ "\n" ++ statement
+  include_manifest "bootstrap/expansion.manifest" ++ statement
 
 /-! The folds at a construction. -/
 

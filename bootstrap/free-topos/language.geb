@@ -13,8 +13,7 @@
 ; and codomain, a definition of the language the node of label 0 over its arity, the node of its
 ; parameters' types, its type and its body, and the constants the node of label 0 over the node of
 ; the primitive arrows, the node of the definitions and the index of the first definition's
-; operation, as their datatypes declare them. Requires the prelude, the lists of
-; bootstrap/seq.geb, the base, partial Horn logic, the theory and the inference.
+; operation, as their datatypes declare them.
 
 (module Language
   (export TPair pr p1 p2 mNode var mStar mPair mFst mSnd mLam app mArr mNatRec mListRec mRoseRec

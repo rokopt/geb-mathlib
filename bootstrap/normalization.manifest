@@ -1,0 +1,9 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The type checker, the traversal of kernel terms and the evaluator, to which the normalization proof
+; adds its statement.
+
+(program normalization (edition 0) (sources prelude.geb reader.geb check.geb subst.geb eval.geb)
+  (entries))

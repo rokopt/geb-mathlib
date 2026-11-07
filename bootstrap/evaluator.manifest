@@ -1,0 +1,7 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The evaluator of kernel terms written in Geb, which a test compares with Lean's.
+
+(program evaluator (edition 0) (sources prelude.geb eval.geb) (entries Eval.eval))

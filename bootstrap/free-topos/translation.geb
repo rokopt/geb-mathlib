@@ -10,9 +10,7 @@
 ; encodes it, a kernel type or term is the tree the kernel reads, a pair of trees is the node of
 ; label 0 over them, and a theorem of Gödel's T is the node of label 0 over the node of its
 ; context and its equation, the node of label 0 over its type and its sides, as their datatypes
-; declare them. Requires the prelude, the lists of bootstrap/seq.geb, the reader, the kernel's
-; checker, the base, partial Horn logic, the theory, the inference, the language and the checker
-; of derivations.
+; declare them.
 
 (module Translation
   (export bitsTy treeTy nodeT call D.unnode D.cond D.tail D.headD condT lib KTys ktys TrState

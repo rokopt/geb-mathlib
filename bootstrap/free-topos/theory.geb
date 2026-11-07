@@ -6,8 +6,7 @@
 ; objects, written in the datatype language as Geb.FreeTopos states it: the sorts, the
 ; signature, the operations, the derived arrows and the axioms, block by block. The operations
 ; Geb.FreeTopos names fst, snd, pair, nil, cons, node and zero are named cFst, cSnd, cPair,
-; cNil, cCons, cNode and cZero here, the other names being the kernel's. Requires the prelude,
-; the base and partial Horn logic.
+; cNil, cCons, cNode and cZero here, the other names being the kernel's.
 
 (module Theory
   (export Sorts.obj Sorts.arr l2 l3 l4 l5 l6 sig x dom cod idt comp one bang prod cFst cSnd cPair

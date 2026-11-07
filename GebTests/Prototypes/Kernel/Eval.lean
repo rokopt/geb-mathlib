@@ -106,7 +106,8 @@ def encOpt : Option Tree → Tree
   | none => leaf 0
 
 -- the evaluator written in Geb agrees with Lean's on each example at each level of fuel
-#guard ((loadedEval bundler.toList (prelude ++ "\n" ++ evalGeb ++ "\n").toList).bind gebEval).any
+#guard ((loadedEval bundler.toList
+    (include_manifest "bootstrap/evaluator.manifest").toList).bind gebEval).any
     fun f ↦ examples.all fun (G, t, _) ↦
   (List.range 21).all fun n ↦ f G (leaf n) [] t == encOpt (eval G n [] t)
 

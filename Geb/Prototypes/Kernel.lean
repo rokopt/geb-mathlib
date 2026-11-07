@@ -15,6 +15,8 @@ public import Geb.Prototypes.Kernel.Document
 public import Geb.Prototypes.Kernel.Eval
 public import Geb.Prototypes.Kernel.Image
 public import Geb.Prototypes.Kernel.LoadCommand
+public import Geb.Prototypes.Kernel.Manifest
+public import Geb.Prototypes.Kernel.ManifestCommand
 public import Geb.Prototypes.Kernel.ModuleIdentity
 public import Geb.Prototypes.Kernel.Modules
 public import Geb.Prototypes.Kernel.Printer

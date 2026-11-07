@@ -9,8 +9,7 @@
 ; pattern instance's typing and of a term's. A typing is the node of label 0 over a sort and two
 ; canonical forms, a typed term the node of label 0 over a term and its typing, and a
 ; definedness rule the node of its kind's position over an axiom's index, as their datatypes
-; declare them. Requires the prelude, the lists of bootstrap/seq.geb, the base, partial Horn logic
-; and the theory.
+; declare them.
 
 (module Infer
   (export DfdRule direct strict rhsRule ODfd.Maybe ODfd.nothing ODfd.just dfdRules domRules codRules

@@ -8,8 +8,8 @@
 # program. OUT receives the verdicts, in the form scripts/eal/eal.py prints them, and
 # the certificate of the definitions typable per use, its last line.
 #
-# The search's program is the sources below, joined as scripts/bootstrap.sh joins a
-# program's sources and compiled by the committed stage-1 compiler.
+# The search's program is that of bootstrap/affine-search.manifest, compiled by the
+# committed stage-1 compiler.
 
 set -euo pipefail
 cd "$(dirname "$0")/../.."
@@ -20,14 +20,12 @@ if [ $# -ne 2 ]; then
 fi
 
 b=bootstrap
-sources=("$b/prelude.geb" "$b/free-topos/base.geb" "$b/reader.geb" "$b/check.geb"
-         "$b/affine.geb" "$b/affine-search.geb")
 kernel=.lake/build/bin/geb-kernel
 lake build -q geb-kernel geb-defs
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-for f in "${sources[@]}"; do cat "$f"; echo; done > "$tmp/search.geb"
+"$kernel" join "$b/affine-search.manifest" "$tmp/search.geb"
 "$kernel" run "$b/compiler.img" main "$tmp/search.geb" "$tmp/search.img"
 [ -s "$tmp/search.img" ] || { echo "search: the stage-1 compiler rejects the search" >&2; exit 1; }
 

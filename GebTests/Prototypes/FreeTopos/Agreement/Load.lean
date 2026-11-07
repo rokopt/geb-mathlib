@@ -104,35 +104,8 @@ set_option maxHeartbeats 20000000 in
 -- the generated modules of GebMirror.Metalogic.Load declare the program's definitions and the
 -- steps of its loading; the kernel evaluates the checker-evaluator on each exported definition
 set_option Elab.async false in
-geb_program _root_.GebMirror.metalogic from "bootstrap/prelude.geb" "bootstrap/seq.geb"
-  "bootstrap/free-topos/base.geb"
-  "bootstrap/free-topos/partial-horn.geb" "bootstrap/free-topos/theory.geb"
-  "bootstrap/free-topos/infer.geb" "bootstrap/free-topos/language.geb"
-  "bootstrap/free-topos/derivation.geb" "bootstrap/reader.geb" "bootstrap/check.geb"
-  "bootstrap/free-topos/translation.geb" "bootstrap/free-topos/prove.geb"
-  "bootstrap/free-topos/tactics.geb" "bootstrap/free-topos/combinator.geb" "bootstrap/datatype.geb"
-  "bootstrap/printer.geb" "bootstrap/affine.geb"
+geb_program _root_.GebMirror.metalogic from "bootstrap/metalogic.manifest"
   mirror GebMirror.Metalogic
-  exports «Derivation.checkDev» «Translation.program» «Translation.trGlobals» «Translation.thm»
-    «Prover.prepareRules» «Prover.byNorm» «Prover.byNatInd» «Prover.byListInd» «Prover.byNatIndHyp»
-    «Prover.byListIndHyp» «Prover.byNormW» «Prover.byFunExt» «Prover.bySplit» «Prover.byListIndWith»
-    «Prover.byRoseInd» «Prover.byRoseIndHyp» «Tactics.byMode» «Tactics.byWeak» «Tactics.byNF»
-    «Tactics.normH» «Tactics.funExts» «Tactics.byListIndWeak» «Tactics.byRoseIndWith»
-    «Tactics.byListSplit» «Tactics.bySplit2» «Tactics.byListCases» «Tactics.bitsInd»
-    «Tactics.bitsCases» «Tactics.byBits» «Tactics.byLength3» «Tactics.withWeakHyps»
-    «Tactics.byListIndHypWeak» «Tactics.byBitsIndHyp» «Tactics.withInsts» «Tactics.withChildHyps»
-    «Tactics.revertCase» «Tactics.byImpI» «Tactics.withImpElim» «Tactics.bySuccPred»
-    «Tactics.byInsts» «Tactics.byAuto» «Tactics.byTreeSplit» «Tactics.byAutoT» «Tactics.byAutoC»
-    «Tactics.maskRw» «Tactics.byMaskSubs» «Tactics.byGeneralize» «Combinator.typeTerm»
-    «Combinator.pNormalize» «Combinator.pInst» «Combinator.etaExpand» «Combinator.deltaRule»
-    «Combinator.pByNorm» «Combinator.proveSeq» «Combinator.normalizeThm» «Combinator.instBy»
-    «Combinator.byNatInduction» «Combinator.byListInduction» «Combinator.byListParamInduction»
-    «Combinator.libraryWith» «Combinator.libRules» «Printer.printTermOpt» «Printer.readBack»
-    «PartialHorn.sortOf» «PartialHorn.scoped» «PartialHorn.phSubst» «PartialHorn.pcheck»
-    «PartialHorn.thyExtendAll» «Theory.toposTheory» «Infer.envOfDefs» «Infer.infers»
-    «Derivation.declStep» «Tactics.openSubterms» «Tactics.stuckVar» «Tactics.mentions»
-    «Tactics.matchesOf» «Tactics.condParts» «Tactics.stuckVarC» «Tactics.appsOf»
-    «Tactics.unnodeU» «Tactics.occRewrite» «Tactics.abstractTerm» «Affine.check»
 
 open GebMirror (metalogic)
 

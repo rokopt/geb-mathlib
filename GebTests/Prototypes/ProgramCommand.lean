@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.Kernel.LoadCommand
 public import Mathlib.Tactic.NormNum
+public meta import Geb.Prototypes.Kernel.Command
 public meta import GebTests.Prototypes.Stage0 -- shake: keep
 public meta import Lean.Elab.Command
 
@@ -14,20 +15,20 @@ set_option doc.verso true in
 /-!
 # Commands embedding a Geb program in Lean
 
-The command {lit}`geb_program` reads a Geb program's sources at elaboration, runs the stage-0
-compiler's front end on them, and declares, by {name}`Geb.Kernel.LoadCommand.declareLoading`, for
-each of the program's definitions not yet declared, its tree, its global and the globals before
-it, each global's value the definition of the same name that the bootstrap compiler's Lean backend
-emits from the program, and the step of loading it, proved by the checker-evaluator's equation
-at each node of the definition, which the kernel checks, or stated as an axiom, in the mode
-{name}`Geb.Kernel.LoadCommand.nativeLoading` reads. The definitions of a long
-program are declared ahead of the command, a layer to a module, by the command {lit}`geb_load`
-the generated modules of {lit}`GebMirror` run; {lit}`geb_program` then checks that the trees they
-declared are the program's. It declares the loading of the whole program,
-composed from the steps, and the equality of the exported globals with their mirrors. The command
+The command {lit}`geb_program` reads a Geb program's manifest and sources at elaboration, runs the
+stage-0 compiler's front end on them, and declares, by
+{name}`Geb.Kernel.LoadCommand.declareLoading`, for each of the program's definitions not yet
+declared, its tree, its global and the globals before it, each global's value the definition of the
+same name that the bootstrap compiler's Lean backend emits from the program, and the step of loading
+it, proved by the checker-evaluator's equation at each node of the definition, which the kernel
+checks, or stated as an axiom, in the mode {name}`Geb.Kernel.LoadCommand.nativeLoading` reads. The
+definitions of a long program are declared ahead of the command, a layer to a module, by the command
+{lit}`geb_load` the generated modules of {lit}`GebMirror` run; {lit}`geb_program` then checks that
+the trees they declared are the program's. It declares the loading of the whole program, composed
+from the steps, and the equality of the exported globals with their mirrors. The command
 {lit}`kernel_rfl` declares a theorem proved by reflexivity, checked by the kernel alone, and the
-command {lit}`evaluation_axiom` an axiom that a Boolean is true, declared after Lean's evaluator
-has evaluated it.
+command {lit}`evaluation_axiom` an axiom that a Boolean is true, declared after Lean's evaluator has
+evaluated it.
 
 ## Implementation notes
 
@@ -48,8 +49,8 @@ namespace GebTests.Prototypes.ProgramCommand
 
 open Geb Geb.Kernel Geb.Kernel.LoadCommand Lean Elab Command
 
-/-- {lit}`geb_program n from "f" ... mirror m` embeds the program the files make, each followed
-by a newline, as the host driver joins sources, read and expanded by the stage-0 compiler's front
+/-- {lit}`geb_program n from "M" mirror m` embeds the program whose manifest is the file {lit}`M`,
+its sources joined as the host driver joins them, read and expanded by the stage-0 compiler's front
 end: {lit}`n` is the list of its definitions' trees, {lit}`n.d` followed by each index; {lit}`n.g`
 followed by an index is the global its definition loads, at its type {lit}`n.ty` followed by the
 index, and the definition of that name in the namespace {lit}`m`, the Lean the bootstrap compiler
@@ -61,22 +62,21 @@ an index states that the definition loads its global after them, checked by the 
 its index rather than unfolding the appends that build the last list of them, and
 {lit}`n.load_globals` states that the program loads to that list;
 {lit}`n.last_heq` states that the last global's value is the last definition's mirror;
-and, for each name {lit}`x` after {lit}`exports`, {lit}`n.x_heq` states the same of the global of
-the definition of that name. A name {lit}`n` beginning with {lit}`_root_` is taken from the root
-namespace, and the declarations of {lit}`n` already made are checked rather than made again. -/
-syntax (name := gebProgram)
-  "geb_program " ident " from " str* " mirror " ident (" exports " ident+)? : command
+and, for each name {lit}`x` among the manifest's entries, {lit}`n.x_heq` states the same of the
+global of the definition of that name. A name {lit}`n` beginning with {lit}`_root_` is taken from
+the root namespace, and the declarations of {lit}`n` already made are checked rather than made
+again. -/
+syntax (name := gebProgram) "geb_program " ident " from " str " mirror " ident : command
 
 /-- The elaborator of {lit}`geb_program`. -/
 @[command_elab gebProgram] meta def elabGebProgram : CommandElab := fun stx ↦ do
   let n ← programName stx[1].getId
-  let paths := stx[3].getArgs.filterMap (·.isStrLit?)
+  let some path := stx[3].isStrLit? | throwUnsupportedSyntax
   let m := stx[5].getId
-  let exported := if stx[6].isNone then #[] else stx[6][1].getArgs.map (·.getId)
+  let manifest ← Manifest.read path
+  let exported := manifest.entries.map Name.mkSimple
   -- the sources are read as bytes, a character to a byte, as the hosts read them
-  let mut text : List Char := []
-  for p in paths do
-    text := text ++ (← IO.FS.readBinFile p).data.toList.map (fun x ↦ Char.ofNat x.toNat) ++ ['\n']
+  let text := Command.chars (← Command.joinSources (Manifest.sourcePaths path manifest))
   let r ← match runMain Geb.Kernel.Stage0Tests.bundler.toList (nameTree text) with
     | some r => pure r
     | none => throwError "the front end does not run"

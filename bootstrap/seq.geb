@@ -7,7 +7,7 @@
 ; type the trees represent. Each module's parameter is the element type, which its functions do
 ; not inspect; a program imports an instance at each element type it uses, under a name of its
 ; own, (import (Seq A) as As). The optional values of the trees are the prelude's: nothing the
-; leaf 0 and just the node of label 1 over the value. Requires the prelude.
+; leaf 0 and just the node of label 1 over the value.
 
 (module Seq (parameter A) (export single length append reverse tail drop atOr)
   (defn single ((x A)) (List A) (cons x (nil A)))

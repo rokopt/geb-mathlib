@@ -62,9 +62,7 @@ open scoped FinEnum
 
 /-- The program: the prelude, the reader, the type checker and the expansion of the datatype
 language. -/
-def programText : String :=
-  Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
-    Kernel.Stage0Tests.check ++ "\n" ++ Kernel.Stage0Tests.datatype
+def programText : String := include_manifest "bootstrap/expansion.manifest"
 
 /-! The lemmas. -/
 

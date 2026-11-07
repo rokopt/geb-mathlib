@@ -7,7 +7,6 @@
 ; the tree's serialization packed eight bits to a byte, least significant first. Each node in
 ; preorder is its arity in unary ones and a zero, the Elias delta code of its label's length,
 ; its label's bits below the sentinel, least significant first, and then its children.
-; Requires the prelude.
 
 (module Serialize (export image) (import Prelude)
   ; the Elias delta code of n: the size of the size in unary zeros and a one, then the size and
