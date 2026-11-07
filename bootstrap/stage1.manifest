@@ -4,7 +4,7 @@
 ;
 ; The stage-1 compiler, in the datatype language, which the stage-0 compiler compiles.
 
-(program stage1 (edition 0)
+(program stage1 (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
   (sources prelude.geb serialize.geb reader.geb check.geb seq.geb stage1/typing.geb
     stage1/datatype.geb
     modules.geb

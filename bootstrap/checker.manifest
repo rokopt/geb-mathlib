@@ -4,4 +4,6 @@
 ;
 ; The kernel's type checker written in Geb, to which tests add their programs and statements.
 
-(program checker (edition 0) (sources prelude.geb reader.geb check.geb) (entries))
+(program checker (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
+  (sources prelude.geb reader.geb check.geb)
+  (entries))

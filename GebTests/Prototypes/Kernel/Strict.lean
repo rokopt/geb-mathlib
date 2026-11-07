@@ -17,8 +17,8 @@ set_option doc.verso true in
 The authoring profile reads the spellings of atoms of the advanced encoding: verbatim, quoted
 with a length, hexadecimal and base-64, each with or without a length, and rejects a length
 that the bytes do not match or that is not in shortest form. A document with comments, and each
-source of the stage-0 compiler, is read back from its canonical encoding, from the basic
-transport encoding's base-64 form, and from its advanced encoding, which is ASCII.
+source of the stage-0 compiler, is read back with its header from its canonical encoding, from
+the basic transport encoding's base-64 form, and from its advanced encoding, which is ASCII.
 
 The texts are string constants, converted to lists of characters inside each {lit}`#guard`,
 as in the kernel's examples.
@@ -55,6 +55,9 @@ open Geb.Kernel.Stage0Tests Geb.Kernel.Document.Tests
 #guard readDoc "(|YWJjZ|)".toList = none
 #guard readDoc "(5:abc)".toList = none
 
+/-- A header of strict forms. -/
+def hdr : SExp := listOf [atomOf ['h'], atomOf ['0']]
+
 -- the canonical encoding of an S-expression
 #guard ((readSExps "(def x (quote (0 \"a b\")))".toList).map fun es ↦ es.map canonOf) =
   some ["(3:def1:x(5:quote(1:03:a b)))".toList]
@@ -62,14 +65,17 @@ open Geb.Kernel.Stage0Tests Geb.Kernel.Document.Tests
 -- a document with comments and the stage-0 compiler's text read back from its canonical encoding
 #guard [sample, sampleFormatted, compiler].all
   fun src ↦ (readDoc src.toList).all fun d ↦
-    (readStrictDoc (printCanonDoc d)).map Doc.tokens == some d.tokens
+    (readStrictDoc (printCanonDoc hdr d)).map (·.2.tokens) == some d.tokens
 
 -- the basic transport encoding: the canonical encoding, or its base-64 form between braces
-#guard (readBasic "(4:*doc()1:x)".toList).map Doc.tokens = some [.atom false ['x']]
-#guard (readBasic " {KDQ6KmRvYygpMTp4KQ==} ".toList).map Doc.tokens =
-  (readBasic "(4:*doc()1:x)".toList).map Doc.tokens
-#guard (readBasic "{KDQ6KmRvYygpKDE6YTI6YmMpKQ==}".toList).map Doc.tokens =
-  (readStrictDoc "(4:*doc()(1:a2:bc))".toList).map Doc.tokens
+#guard (readBasic "(4:*doc()()1:x)".toList).map (·.2.tokens) = some [.atom false ['x']]
+#guard (readBasic " {KDQ6KmRvYygpKCkxOngp} ".toList).map (·.2.tokens) =
+  (readBasic "(4:*doc()()1:x)".toList).map (·.2.tokens)
+#guard (readBasic "{KDQ6KmRvYygpKCkoMTphMjpiYykp}".toList).map (·.2.tokens) =
+  (readStrictDoc "(4:*doc()()(1:a2:bc))".toList).map (·.2.tokens)
+-- the header is read back with the document
+#guard (readBasic "(4:*doc(1:h)()1:x)".toList).map (·.1) =
+  some (listOf [atomOf ['h']])
 
 -- the advanced encoding of an S-expression: a token bare, a numeral quoted, and a byte beyond
 -- ASCII and a line feed escaped
@@ -81,11 +87,11 @@ open Geb.Kernel.Stage0Tests Geb.Kernel.Document.Tests
 -- ASCII, and read back from it
 #guard [sample, sampleFormatted, compiler].all
   fun src ↦ (readDoc src.toList).all fun d ↦
-    (printAdvancedDoc 100 d).all (·.toNat < 128) &&
-      (readStrictDoc (printAdvancedDoc 100 d)).map Doc.tokens == some d.tokens
+    (printAdvancedDoc 100 hdr d).all (·.toNat < 128) &&
+      (readStrictDoc (printAdvancedDoc 100 hdr d)).map (·.2.tokens) == some d.tokens
 
 -- a list headed by the reserved atom *ann of the annotation forms is excluded from strict form
-#guard ((readDoc "(*ann a b c d)".toList).map Doc.strictWf) = some false
+#guard ((readDoc "(*ann a b c d)".toList).map (Doc.strictWf hdr)) = some false
 
 end Geb.Kernel.Document.StrictTests
 

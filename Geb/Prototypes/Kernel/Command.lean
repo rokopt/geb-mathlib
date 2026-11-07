@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Prototypes.Kernel.Durable
 public import Geb.Prototypes.Kernel.Image
 public import Geb.Prototypes.Kernel.Manifest
 
@@ -16,17 +17,22 @@ The command line of the bootstrap's host: {lit}`build SOURCE … IMAGE` reads a 
 source files in order as one program, checks and evaluates its definitions, and writes its
 bundle's image, and {lit}`build --manifest MANIFEST IMAGE` does so for the program of a manifest
 ({name}`Geb.Kernel.Manifest`), checking that it defines the manifest's entry points;
-{lit}`join MANIFEST OUTPUT` writes the text of a manifest's program, and {lit}`layers MANIFEST`
-prints a line for each of its layers, the layer's name followed by the paths of its sources;
+{lit}`join MANIFEST OUTPUT` writes the text of a manifest's program,
+{lit}`join MANIFEST OUTPUT LAYER` the text of its layers up to the one named, that one included,
+and {lit}`layers MANIFEST` prints a line for each of its layers, the layer's name followed by the
+paths of its sources;
 {lit}`run IMAGE NAME INPUT OUTPUT` reads an image, applies its definition of that name to
 the input file's tree, and writes the output tree's bytes. Kernel programs are pure: the
-driver alone reads and writes files.
+driver alone reads and writes files. A program's text is its sources' texts as the compilers read
+them, each source's notes erased ({name}`Geb.Kernel.Document.erasedText`), so that a source
+without notes is read as it is written.
 
 ## Main definitions
 
 * {lit}`Geb.Kernel.Command.run` — the command-line interface.
-* {lit}`Geb.Kernel.Command.joinSources` — a program's text: its source files, each followed by a
-  newline.
+* {lit}`Geb.Kernel.Command.sourceText` — a source file's text as the compilers read it.
+* {lit}`Geb.Kernel.Command.joinSources` — a program's text: its source files' texts, each followed
+  by a newline.
 * {lit}`Geb.Kernel.Command.runFile` — a function of trees applied to a file, which the
   executable of the compiled bootstrap compiler shares.
 
@@ -50,9 +56,20 @@ namespace Geb.Kernel.Command
 /-- The characters of a sequence of bytes, one per byte. -/
 def chars (b : ByteArray) : List Char := b.data.toList.map fun x ↦ Char.ofNat x.toNat
 
-/-- The bytes of a program's source files in order, each followed by a newline. -/
+/-- The bytes of a source file as the compilers read them: its bytes when it holds no note, and
+otherwise its document without its notes, raising what rejects its notes, the file's path
+identifying it. -/
+def sourceText (src : System.FilePath) : IO ByteArray := do
+  let bytes ← IO.FS.readBinFile src
+  match Document.erasedText (chars bytes) with
+  | .ok none => return bytes
+  | .ok (some text) => return ⟨(text.map fun c ↦ c.toNat.toUInt8).toArray⟩
+  | .error msg => throw <| IO.userError s!"{src}: {msg}"
+
+/-- The bytes of a program's source files in order, as the compilers read them, each followed by
+a newline. -/
 def joinSources (srcs : List System.FilePath) : IO ByteArray :=
-  srcs.foldlM (fun acc src ↦ return (acc ++ (← IO.FS.readBinFile src)).push 10) ByteArray.empty
+  srcs.foldlM (fun acc src ↦ return (acc ++ (← sourceText src)).push 10) ByteArray.empty
 
 /-- Apply a function of trees to an input's tree and write the output tree's bytes, raising the
 message of the function's failure and leaving the output untouched; the name of the function
@@ -98,6 +115,11 @@ def run (args : List String) : IO UInt32 := do
     let m ← Manifest.read path
     IO.FS.writeBinFile output (← joinSources (Manifest.sourcePaths path m))
     return 0
+  | ["join", path, output, layer] =>
+    let m ← Manifest.read path
+    let srcs ← IO.ofExcept ((Manifest.layerPaths path m layer).mapError (s!"{path}: {·}"))
+    IO.FS.writeBinFile output (← joinSources srcs)
+    return 0
   | ["layers", path] =>
     let m ← Manifest.read path
     for l in m.layers do
@@ -115,7 +137,7 @@ def run (args : List String) : IO UInt32 := do
   | _ =>
     throw <| IO.userError <|
       "usage: geb-kernel build SOURCE... IMAGE | geb-kernel build --manifest MANIFEST IMAGE | " ++
-        "geb-kernel join MANIFEST OUTPUT | geb-kernel layers MANIFEST | " ++
+        "geb-kernel join MANIFEST OUTPUT [LAYER] | geb-kernel layers MANIFEST | " ++
         "geb-kernel run IMAGE NAME INPUT OUTPUT"
 
 end Geb.Kernel.Command

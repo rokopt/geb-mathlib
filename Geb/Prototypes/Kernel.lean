@@ -12,6 +12,7 @@ public import Geb.Prototypes.Kernel.Command
 public import Geb.Prototypes.Kernel.Hole
 public import Geb.Prototypes.Kernel.Identity
 public import Geb.Prototypes.Kernel.Document
+public import Geb.Prototypes.Kernel.Durable
 public import Geb.Prototypes.Kernel.Eval
 public import Geb.Prototypes.Kernel.Image
 public import Geb.Prototypes.Kernel.LoadCommand

@@ -3803,7 +3803,8 @@ import-direction rules above are enforced by
   executable `geb-kernel`, which builds images from source and runs them
   on files, and its `Geb.Kernel.Command.runFile` applies a function of
   trees to a file. `Manifest.lean` reads a program's manifest, its edition,
-  its sources in order and its entry points (`Geb.Kernel.Manifest.parse`),
+  the profile of its sources, its sources in order and its entry points
+  (`Geb.Kernel.Manifest.parse`),
   which the host driver, the executables `geb-compile` and `geb-fmt` and,
   by the term of `ManifestCommand.lean`, the tests read
   (`scripts/tests/test-manifest.sh`). `Subst.lean` weakens terms and
@@ -3840,7 +3841,19 @@ import-direction rules above are enforced by
   basic transport encoding (`Geb.Kernel.Document.readBasic`), and writes it in
   the advanced encoding as ASCII (`Geb.Kernel.Document.printAdvancedDoc`),
   from which it reads back
-  (`Geb.Kernel.Document.readStrictDoc_printAdvancedDoc`).
+  (`Geb.Kernel.Document.readStrictDoc_printAdvancedDoc`), each with a
+  header. `Durable.lean` reads a document's profile, the versions of its
+  syntax, of the schema of its notes and of its prose, rejecting one this
+  host does not read or that requires a field it does not read, as the
+  `crit` parameters of [RFC9052] and [RFC7515] do, and keeping its
+  optional fields (`Geb.Kernel.Document.Profile.parse`); it reads the
+  notes of a document, of examples, links and unknown fields, each with the
+  path of the declaration it documents (`Geb.Kernel.Document.notesOf`),
+  erases them before compiling (`Geb.Kernel.Document.erasedText`), and
+  proves that a document with its profile reads back from its canonical
+  and advanced encodings
+  (`Geb.Kernel.Document.readStrictDurable_printCanonDurable`,
+  `Geb.Kernel.Document.readStrictDurable_printAdvancedDurable`).
   `Blake3.lean` computes the hash BLAKE3 [OConnorAumassonNevesWilcoxOHearn2020]
   (`Geb.Blake3.hash`). `Identity.lean` identifies a definition by the
   CIDv1 [RatajBerjon2026] of its payload, the canonical encoding of its

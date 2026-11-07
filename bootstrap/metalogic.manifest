@@ -6,7 +6,7 @@
 ; and the check of elementary-affine certificates, a layer of emitted Lean to a part. Each entry is
 ; a definition whose mirror's agreement with the loaded program is proved.
 
-(program metalogic (edition 0)
+(program metalogic (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
   (layers
     (Checker prelude.geb seq.geb free-topos/base.geb free-topos/partial-horn.geb
       free-topos/theory.geb
