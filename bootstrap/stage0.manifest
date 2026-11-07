@@ -4,7 +4,7 @@
 ;
 ; The stage-0 compiler, in the kernel's syntax and modules, which the seed builds.
 
-(program stage0 (edition 0)
+(program stage0 (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
   (sources prelude.geb serialize.geb reader.geb check.geb datatype.geb modules.geb recognize.geb
     compile.geb)
   (entries main))

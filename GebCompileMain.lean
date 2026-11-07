@@ -145,10 +145,10 @@ def compileInput (name : String) (entry : Tree → Tree) (input output : String)
     IO.eprintln e
     return 1
 
-/-- Compile a source file through an entry point. -/
+/-- Compile a source file through an entry point, its notes erased. -/
 def compileFile (name : String) (entry : Tree → Tree) (input output : String) : IO UInt32 :=
   compileInput name entry input output do
-    return (← IO.FS.readBinFile input, fun _ ↦ .ok ())
+    return (← Command.sourceText input, fun _ ↦ .ok ())
 
 /-- Compile the program of a manifest through an entry point. -/
 def compileManifest (name : String) (entry : Tree → Tree) (path output : String) : IO UInt32 :=

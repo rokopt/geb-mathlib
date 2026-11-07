@@ -4,4 +4,6 @@
 ;
 ; The evaluator of kernel terms written in Geb, which a test compares with Lean's.
 
-(program evaluator (edition 0) (sources prelude.geb eval.geb) (entries Eval.eval))
+(program evaluator (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
+  (sources prelude.geb eval.geb)
+  (entries Eval.eval))

@@ -4,4 +4,6 @@
 ;
 ; The type checker and the traversal of kernel terms, to which the weakening proof adds its statement.
 
-(program weakening (edition 0) (sources prelude.geb reader.geb check.geb subst.geb) (entries))
+(program weakening (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
+  (sources prelude.geb reader.geb check.geb subst.geb)
+  (entries))

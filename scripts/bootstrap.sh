@@ -13,7 +13,7 @@
 #
 # The programs' sources are those of their manifests, bootstrap/*.manifest.
 # The stage-1 compiler's source S is the text of its manifest's program, as
-# the host driver joins it, each source followed by a newline.
+# the host driver joins it, each source's notes erased and each followed by a newline.
 #
 #   regen  The seed builds the stage-0 compiler from its sources in the
 #          kernel's syntax; the stage-0 compiler compiles S to the image;
@@ -47,7 +47,6 @@ trap 'rm -rf "$tmp"' EXIT
 
 fail() { echo "bootstrap: $1" >&2; exit 1; }
 same() { cmp -s "$1" "$2" || fail "$3"; }
-join() { local f; for f in "$@"; do cat "$f"; echo; done; }
 
 # The stage-0 compiler, S and the two artifacts, written into the directory $1.
 generate() {
@@ -77,13 +76,12 @@ mirror() {
 # layer from the image of its sources; GebMirror/Metalogic.lean and GebMirror/Metalogic/Load.lean
 # import them.
 layered() {
-  local out=$1 sources=() prev="" count=0 name layer imports=()
+  local out=$1 prev="" count=0 name layer imports=()
   mkdir -p "$out/GebMirror/Metalogic/Load"
   for layer in "${layers[@]}"; do
     read -r -a a <<< "$layer"
     name=${a[0]}
-    sources+=("${a[@]:1}")
-    join "${sources[@]}" > "$tmp/layer.geb"
+    "$kernel" join "$b/metalogic.manifest" "$tmp/layer.geb" "$name"
     "$kernel" run "$img" mainLean "$tmp/layer.geb" "$tmp/layer.raw"
     [ -s "$tmp/layer.raw" ] || fail "the image's mainLean rejects the layer $name"
     "$kernel" run "$img" main "$tmp/layer.geb" "$tmp/layer.img"

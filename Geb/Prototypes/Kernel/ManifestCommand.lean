@@ -8,7 +8,8 @@ module
 public import Mathlib.Data.Finset.Attr
 public import Mathlib.Tactic.Finiteness.Attr
 public import Mathlib.Tactic.SetLike
-public meta import Geb.Prototypes.Kernel.Manifest
+public import Mathlib.Tactic.NormNum
+public meta import Geb.Prototypes.Kernel.Command
 public meta import Lean.Elab.Term
 
 set_option doc.verso true in
@@ -16,7 +17,8 @@ set_option doc.verso true in
 # A program's text at elaboration
 
 The term {lit}`include_manifest "M"` is the text of the program whose manifest is the file
-{lit}`M`, its sources joined, each followed by a newline, as the host driver joins them. The path
+{lit}`M`, its sources joined, their notes erased and each followed by a newline, as the host
+driver joins them ({name}`Geb.Kernel.Command.joinSources`), a character to a byte. The path
 is relative to the package's directory, in which Lake runs Lean. The file is read as
 {lit}`include_str` reads one, so that no dependency on it, or on the sources it names, is
 registered: a library reading it lists them in its {lit}`needs`.
@@ -51,7 +53,7 @@ syntax (name := includeManifest) "include_manifest " str : term
 @[term_elab includeManifest] meta def elabIncludeManifest : TermElab := fun stx _ ↦ do
   let some path := stx[1].isStrLit? | throwUnsupportedSyntax
   let m ← Manifest.read path
-  let texts ← (Manifest.sourcePaths path m).mapM fun p ↦ (IO.FS.readFile p : IO String)
-  return mkStrLit (String.join (texts.map (· ++ "\n")))
+  let bytes ← Command.joinSources (Manifest.sourcePaths path m)
+  return mkStrLit (String.ofList (Command.chars bytes))
 
 end Geb.Kernel.ManifestCommand

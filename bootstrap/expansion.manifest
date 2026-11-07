@@ -5,4 +5,6 @@
 ; The type checker and the stage-0 expansion of the datatype language, about which proofs state
 ; their theorems.
 
-(program expansion (edition 0) (sources prelude.geb reader.geb check.geb datatype.geb) (entries))
+(program expansion (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
+  (sources prelude.geb reader.geb check.geb datatype.geb)
+  (entries))

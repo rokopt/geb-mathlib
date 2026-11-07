@@ -377,12 +377,13 @@ Extension:
   parameters, imports and export lists are complete but for named
   telescopes and certificates as parameters, which follow their first
   consumers. The executable `geb-compile` names what rejects a program,
-  and manifests with editions record each program's sources and entry
-  points. Ready, in the order of
+  manifests with editions record each program's sources and entry
+  points, and a durable document records the versioned profile of its
+  syntax, the schema of its notes and its prose, its notes holding examples
+  and links. Ready, in the order of
   {ref "authoring-sequence"}[the sequence], and independent of the datatype
   language's completion: the
-  `geb` editor language; a durable document with
-  versioned profiles, the markup of comments, and the syntax of statements
+  `geb` editor language; the markup of comments, and the syntax of statements
   and proof scripts; and `let*` and `cond`, expanded in the elaboration of
   modules, and the checker of holes in programs in its suspending form with
   the display of their obligations. Waiting on those: documentation as
@@ -3316,7 +3317,9 @@ tag := "authoring-compatibility"
     are converted when the datatype language's completion is merged
 *
   * A durable document with versioned profiles
-  * Ready
+  * Complete, but for the sources a test reads by `include_str` rather
+    than through its manifest, those of the program whose typing's
+    soundness is proved among them, which hold no notes
 *
   * The markup and conventions of comments
   * Ready
@@ -3333,7 +3336,7 @@ tag := "authoring-compatibility"
   * Ready
 *
   * Documentation as literate pages
-  * Waiting on the durable document and the markup of comments
+  * Waiting on the markup of comments
 *
   * The record of elaborated definitions
   * Deferred until the first program outside the compilers; manifests
@@ -3822,8 +3825,10 @@ the profile. The canonical encoding, written by
 {name}`Geb.Kernel.Document.canonOf`, reads back to every well-formed
 S-expression ({name}`Geb.Kernel.Document.readDoc_canonOf`); a document
 is written in a strict encoding as one S-expression, its decorations as
-annotation forms headed by `*ann` inside a list headed by `*doc`, and
-read back from its canonical encoding
+annotation forms headed by `*ann` inside a list headed by `*doc` whose
+second element is a header, the profile of a durable document
+({ref "files-editions"}[Files, editions and the host boundary]), and
+read back with it from its canonical encoding
 ({name}`Geb.Kernel.Document.readStrictDoc_printCanonDoc`) when no list
 of it is headed by the atom `*ann`; the basic transport encoding is read
 from the canonical one or from its base-64 form between braces
@@ -3935,6 +3940,14 @@ conversion from the single document. The document keeps at least:
   encodings among it, in the checked input, since calling such
   information a decoration must not let its erasure change meaning.
 
+The durable document is the text with its profile
+({ref "files-editions"}[Files, editions and the host boundary]): its
+links, examples and unknown fields are notes, S-expressions of the text
+before the declarations they document, each associated with the path of
+its declaration ({name}`Geb.Kernel.Document.notesOf`), and the core read
+by the compilers is the text with its notes erased
+({name}`Geb.Kernel.Document.erasedText`).
+
 Annotations are decorations of the trees read (the decision on
 annotations), one mechanism for comments, names, prose, links and every
 later kind. The attachment is a redecoration, from the trivia the reader
@@ -3992,10 +4005,11 @@ Files stay outside Geb's semantics: they organize writing and delivery,
 and semantic dependencies are references to definitions.
 
 * A manifest per program, one form of the authoring profile naming the
-  program, its edition, its sources in order and its entry points,
+  program, its edition, the profile of its sources, its sources in order
+  and its entry points,
 
   ```
-  (program NAME (edition N) (sources PATH…) (entries NAME…))
+  (program NAME (edition N) (document …) (sources PATH…) (entries NAME…))
   ```
 
   is read by the host driver, the tests and the formatter, and by a
@@ -4007,10 +4021,34 @@ and semantic dependencies are references to definitions.
   source is resolved against the manifest's directory and may not leave
   it, so no scan of directories or working directory decides the order of
   binding implicitly.
+* A document's profile,
+  `(document (syntax authoring 0) (schema 0) (prose verso 0) FIELD…)`,
+  is the field of a program's manifest after its edition, and the header
+  of the `*doc` form of a document in a strict encoding
+  (`Geb/Prototypes/Kernel/Durable.lean`). Its syntax, the schema of its
+  annotations and the format of its prose are named and versioned
+  separately. A host rejects a version it does not read and a field it
+  does not read that `(crit NAME…)` requires, as the `crit` parameters of
+  COSE ({citet RFC9052}[], § 3.1) and of JWS ({citet RFC7515}[], § 4.1.11)
+  do, and keeps every further field as it is read. The schema's
+  annotations are notes, `(note FIELD…)` before a declaration of a block,
+  of fields `(example TERM VALUE)`, `(link geb NAME)`, `(link lean NAME)`
+  and any other list headed by an atom, kept as it is read. The hosts
+  erase the notes, and the comments before and inside each, before a
+  compiler reads a source, so that a source without notes is compiled as
+  it is written, and reject a malformed note or one that documents no
+  declaration, naming the source. The profile, the notes, and the names
+  and prose of the document survive reading, printing and conversion among
+  the syntaxes
+  ({name}`Geb.Kernel.Document.readStrictDurable_printCanonDurable`,
+  {name}`Geb.Kernel.Document.readStrictDurable_printAdvancedDurable`).
+  Resolving links and evaluating examples belong to the markup's check of
+  comments and to documentation as literate pages.
 * `geb-kernel build --manifest` and `geb-compile image|lean --manifest`
   compile a manifest's program and reject one that does not define its
-  entry points; `geb-kernel join` writes its text and `geb-kernel layers`
-  lists its layers, for the scripts that run a compiler's image on them;
+  entry points; `geb-kernel join` writes its text, or that of its layers
+  up to one of them, and `geb-kernel layers` lists its layers, for the
+  scripts that run a compiler's image on them;
   `geb-fmt --manifest` formats a manifest and its sources. The tests read a
   program's text by the term `include_manifest` and embed a program by
   `geb_program`, whose exported definitions are the manifest's entries.

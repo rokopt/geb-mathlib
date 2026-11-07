@@ -4,6 +4,6 @@
 ;
 ; The search for elementary-affine decorations, which scripts/eal/search.sh runs.
 
-(program affine-search (edition 0)
+(program affine-search (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
   (sources prelude.geb free-topos/base.geb reader.geb check.geb affine.geb affine-search.geb)
   (entries main))

@@ -4,4 +4,6 @@
 ;
 ; The prelude and the serializer, to which a test adds its entry point.
 
-(program serializer (edition 0) (sources prelude.geb serialize.geb) (entries))
+(program serializer (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
+  (sources prelude.geb serialize.geb)
+  (entries))

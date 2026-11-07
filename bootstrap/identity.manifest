@@ -4,7 +4,7 @@
 ;
 ; The stage-0 compiler and content identity, to which tests add entry points.
 
-(program identity (edition 0)
+(program identity (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
   (sources prelude.geb serialize.geb reader.geb check.geb datatype.geb modules.geb recognize.geb
     compile.geb
     identity.geb)
