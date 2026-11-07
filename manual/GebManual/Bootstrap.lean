@@ -380,14 +380,16 @@ Extension:
   manifests with editions record each program's sources and entry
   points, and a durable document records the versioned profile of its
   syntax, the schema of its notes and its prose, its notes holding examples
-  and links. Ready, in the order of
+  and links. Comments are read as the recorded subset of Verso's markup,
+  and every reference in them and in the notes' links resolves, as
+  `geb-doc` checks. The `geb` editor language is in progress, its
+  acceptance with Mike's Paredit pending. Ready, in the order of
   {ref "authoring-sequence"}[the sequence], and independent of the datatype
-  language's completion: the
-  `geb` editor language; the markup of comments, and the syntax of statements
-  and proof scripts; and `let*` and `cond`, expanded in the elaboration of
+  language's completion: the syntax of statements
+  and proof scripts; `let*` and `cond`, expanded in the elaboration of
   modules, and the checker of holes in programs in its suspending form with
-  the display of their obligations. Waiting on those: documentation as
-  literate pages, and the record of elaborated definitions, which is taken
+  the display of their obligations; and documentation as literate pages.
+  Waiting on those: the record of elaborated definitions, which is taken
   up at the first program outside the compilers. Waiting on the datatype
   language's completion: hygienic elaboration with explicit assembly,
   patterns with `&`, unused pattern variables, primitives that no binding
@@ -1656,8 +1658,8 @@ section below opens with a table of the states of its parts.
     formatter, the formatter's adoption, the authoring profile read by the
     seed and the Geb reader, and the canonical, basic transport and
     advanced encodings: complete; modules: complete but for the parts that
-    follow their consumers; diagnostics naming the failing definition:
-    complete; the other steps of the sequence independent of the datatype
+    follow their consumers; diagnostics naming the failing definition and
+    the markup of comments: complete; the other steps of the sequence independent of the datatype
     language's completion: ready; the steps after it: waiting on it; the
     parts that follow their consumers: waiting on them
 *
@@ -3322,7 +3324,7 @@ tag := "authoring-compatibility"
     soundness is proved among them, which hold no notes
 *
   * The markup and conventions of comments
-  * Ready
+  * Complete
 *
   * The syntax of statements and proof scripts
     ({ref "proof-scripts"}[Proof scripts and certificates])
@@ -3336,7 +3338,7 @@ tag := "authoring-compatibility"
   * Ready
 *
   * Documentation as literate pages
-  * Waiting on the markup of comments
+  * Ready
 *
   * The record of elaborated definitions
   * Deferred until the first program outside the compilers; manifests
@@ -4042,8 +4044,9 @@ and semantic dependencies are references to definitions.
   the syntaxes
   ({name}`Geb.Kernel.Document.readStrictDurable_printCanonDurable`,
   {name}`Geb.Kernel.Document.readStrictDurable_printAdvancedDurable`).
-  Resolving links and evaluating examples belong to the markup's check of
-  comments and to documentation as literate pages.
+  The check of comments resolves the links
+  ({ref "documentation"}[Documentation]); evaluating examples belongs to
+  documentation as literate pages.
 * `geb-kernel build --manifest` and `geb-compile image|lean --manifest`
   compile a manifest's program and reject one that does not define its
   entry points; `geb-kernel join` writes its text, or that of its layers
@@ -4259,18 +4262,17 @@ tag := "documentation"
 
 The markup of comments is Verso's (the decision on documentation). Its
 storage is fixed before substantial prose is written, and rendering
-follows once storage round-trips. The comments of the sources read as
-Verso inline text but for one `_`, whereas a reference such as
+follows once storage round-trips. A reference such as
 ``{name}`infer_subst` `` cannot be inferred mechanically from prose that
 reads "the substitution theorem". A migration keeps unmarked prose byte
 for byte but cannot tell which words were meant as references, so
 references that should follow renaming are marked from the start. The
 roles are the four the repository's Lean modules use, `{name}` resolving
 Lean constants as it does there, and one more, `{geb}`, for Geb
-definitions, resolved through the compiler's maps of names and sources
-against the manifest, so that a comment citing both a Geb definition and
-the Lean theorem about it is unambiguous; both are checked when
-documentation is built. Verso's design suits this use: its markup fails
+definitions, resolved against the declarations of the manifest's
+program, so that a comment citing both a Geb definition and the Lean
+theorem about it is unambiguous; both are checked with the sources.
+Verso's design suits this use: its markup fails
 on mismatched or unmatched delimiters rather than guessing, parses with
 little lookahead, and extends by roles and directives rather than
 textual sub-formats (Verso's user guide, § Design Principles). Verso's
@@ -4281,6 +4283,26 @@ subset without a complete parser; `scripts/extract-pr.sh` converts the
 four roles to Markdown where Markdown is wanted. The convention the
 sources follow is kept: a block of comments immediately before a form
 documents it, and a block followed by an empty line is prose.
+
+The subset is version `0` of the format `verso` that a document's profile
+names ({name}`Geb.Kernel.Markup.parseProse`). A block of comment lines,
+the lines between two empty lines of the source, is one text, of
+paragraphs and code blocks, whose lines hold text, escapes, code, and code
+under the four roles; any other construct of Verso's, and a character
+that would begin one, is rejected rather than read as text. Verso's parser
+in Lean's core reads every text the subset admits to the same blocks
+({name}`Geb.Kernel.Markup.versoBlocks`), which the tests check at their
+examples and the check of the sources at every comment. A reference by
+`{geb}` resolves as a name resolves in Lean's namespaces: inside the
+modules `M₁ … Mₖ`, `x` refers to the first of `M₁.….Mₖ.x`, …, `M₁.x` and
+`x` that the sources of the program declare, and a note's links resolve
+alike from the declaration they document; `{name}` resolves to a
+constant of the `Geb` library, and `{cite}` to an entry of
+`docs/references.bib`. The executable `geb-doc --check`, which
+`scripts/bootstrap.sh check` runs over every manifest, rejects prose
+outside the subset and a reference that resolves to nothing, naming the
+file and the declaration the comment stands before
+({name}`Geb.Kernel.Markup.check`).
 
 Documentation renders as a literate page per Geb file, generated from its
 document: top-level comments become prose and forms become code blocks

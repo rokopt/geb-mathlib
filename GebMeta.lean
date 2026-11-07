@@ -301,6 +301,8 @@ def classicalAllowedModules : NameSet :=
    `GebTests.Prototypes.FreeTopos.StoredWriter,
    `Geb.Prototypes.Kernel.LoadCommand,
    `Geb.Prototypes.Kernel.ManifestCommand,
+   `Geb.Prototypes.Kernel.MarkupVerso,
+   `GebTests.Prototypes.Kernel.MarkupVerso,
    `Geb.Prototypes.FreeTopos.Topos,
    `Geb.Prototypes.FreeTopos.Elementary,
    `Geb.Prototypes.FreeTopos.UniqueChoiceClassical,

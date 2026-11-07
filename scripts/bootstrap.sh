@@ -27,7 +27,10 @@
 #          the parinfer release pinned in scripts/parinfer/ is installed
 #          (npm ci --prefix scripts/parinfer), of both of its modes, and so
 #          is every manifest, whose program the compiled compiler compiles
-#          and whose entry points it checks the program defines.
+#          and whose entry points it checks the program defines. Checks
+#          with geb-doc that the comments of every manifest and of its
+#          program's sources are in the markup of comments and that each
+#          reference in them resolves.
 #
 # Exit 0 when every comparison holds; exit 1 naming the first that does
 # not.
@@ -171,6 +174,9 @@ case "${1:-}" in
     mapfile -t sources < <(find "$b" -name '*.geb' -o -name '*.manifest' | sort)
     .lake/build/bin/geb-fmt --check "${sources[@]}" \
       || fail "a source is not formatted: run lake exe geb-fmt on it"
+    lake build Geb geb-doc
+    lake env .lake/build/bin/geb-doc --check "$b"/*.manifest \
+      || fail "a comment's prose is outside the markup of comments, or a reference resolves to nothing"
     if [ -d scripts/parinfer/node_modules/parinfer ]; then
       node scripts/parinfer/check.mjs "${sources[@]}" \
         || fail "a source is not a fixed point of parinfer"

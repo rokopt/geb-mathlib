@@ -92,7 +92,8 @@ own requires a prior `lake build`.
   § Speed and a second host); every source under `bootstrap/` is a
   fixed point of `geb-fmt` and, where the release pinned in
   `scripts/parinfer/` is installed, of both of parinfer's modes (§ Source
-  documents and the formatter).
+  documents and the formatter); and `geb-doc --check` accepts the comments
+  of every manifest and of its program's sources (§ Documentation).
 - `lake build GebTests`, then `scripts/certificates.sh check` (the
   searches, in parallel; § Certificates), skipped while its inputs are
   those recorded at its last passing run
@@ -143,7 +144,8 @@ fixtures:
   `scripts/tests/test-eal.sh` (its tests of `scripts/eal/eal.py`
   skipped when the `z3-solver` Python package is absent),
   `scripts/tests/test-geb-compile.sh`,
-  `scripts/tests/test-manifest.sh`.
+  `scripts/tests/test-manifest.sh`,
+  `scripts/tests/test-geb-doc.sh`.
 - `scripts/tests/test-mathlib-bump-detect.sh`,
   `scripts/tests/test-jj-bump-detect.sh`,
   `scripts/tests/test-regenerate-integration.sh`,

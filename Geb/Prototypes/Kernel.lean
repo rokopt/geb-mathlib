@@ -17,6 +17,8 @@ public import Geb.Prototypes.Kernel.Eval
 public import Geb.Prototypes.Kernel.Image
 public import Geb.Prototypes.Kernel.LoadCommand
 public import Geb.Prototypes.Kernel.Manifest
+public import Geb.Prototypes.Kernel.Markup
+public import Geb.Prototypes.Kernel.MarkupVerso
 public import Geb.Prototypes.Kernel.ManifestCommand
 public import Geb.Prototypes.Kernel.ModuleIdentity
 public import Geb.Prototypes.Kernel.Modules

@@ -8,6 +8,7 @@
 ; unchanged. Datatypes are erased: a value of a datatype is a tree, the node labelled by its
 ; constructor's position over its fields.
 ;
+; ```
 ;   (data D (c A ...) ... (c B ... & E))   declares the datatype D and its constructors; a last
 ;                                        field & E takes the remaining children as a list
 ;   (tree-data D (c A ...) ...)          declares D as data does, D standing for the trees
@@ -21,6 +22,7 @@
 ;                                        of type D, or a last & D field, is bound to its
 ;                                        results, any other field to its value
 ;   (defn f ((x A) ...) R body)          a function with its result type
+; ```
 ;
 ; The instance of a template at opaque arguments that module elaboration writes, (%generic ...),
 ; is checked by the stage-1 expansion alone and dropped here.
