@@ -3720,6 +3720,11 @@ import-direction rules above are enforced by
   functor [UustaluVene2011]: the counit `Geb.RoseTree.extract`, the
   redecoration `Geb.RoseTree.redecorate` with the laws of its extension,
   and the erasure `Geb.RoseTree.erase`, which redecoration leaves fixed.
+  `Unify.lean` reads rose trees over the labels `α ⊕ ℕ` as first-order
+  terms with metavariables (`Geb.RoseTree.Meta`) and unifies a list of
+  equations between them by Robinson's algorithm [Robinson1965], a step
+  function iterated within a budget whose exhaustion is reported apart
+  from a failure to unify (`Geb.RoseTree.unify`).
   `Bits.lean` represents a bitstring label by its enumeration index
   `Geb.Oitavem.rank`, a natural number that is an unboxed scalar in Lean's
   runtime up to sixty-two bits, and states length, bit access,
@@ -3824,7 +3829,16 @@ import-direction rules above are enforced by
   type and the sketch's context (`Geb.Kernel.fillHole`), and proves
   acceptance of well-typed inputs and the type and denotation of every
   accepted result (`Geb.Kernel.fillHole_of_infer`,
-  `Geb.Kernel.infer_fillHole`). `Document.lean` reads a text in the
+  `Geb.Kernel.infer_fillHole`). `Holes.lean` checks a program with holes,
+  `?name`, each standing for a term in the context of its first
+  occurrence: it lifts each occurrence to the application of a variable to
+  that context's names, so that the kernel's resolution reads every
+  definition, types the program by the equations of its terms' typing,
+  solved by unification [Wand1987], and reports each hole's context and
+  expected type (`Geb.Kernel.Holes.check`, `Geb.Kernel.Holes.Report`). A
+  program is accepted only when its completion, each hole replaced by the
+  closure of a term of its type, loads under `Geb.Kernel.load`
+  (`Geb.Kernel.Holes.load_completion`). `Document.lean` reads a text in the
   authoring profile of the syntaxes of [RFC9804], its bare and quoted
   atoms, holes and comments, as a source document, S-expressions decorated
   with the comment lines and empty lines around them
