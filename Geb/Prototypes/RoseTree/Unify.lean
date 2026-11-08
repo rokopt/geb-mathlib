@@ -34,7 +34,8 @@ spent is reported as exhausted, distinct from a failure to unify.
 * {lit}`substM`, {lit}`occurs`, {lit}`ground` — substitution, the occurs check, and the
   instantiation of every remaining metavariable by one tree.
 * {lit}`Unifier`, {lit}`unifyStep` — the state of the algorithm and its step.
-* {lit}`Unified`, {lit}`unify` — the outcome of the algorithm within a budget.
+* {lit}`Unified`, {lit}`unify`, {lit}`unifyFrom` — the outcome of the algorithm within a budget,
+  from no substitution or continuing from one.
 
 ## Main statements
 
@@ -158,12 +159,18 @@ inductive Unified (α : Type) where
   /-- The budget was spent before unification finished. -/
   | exhausted
 
-/-- Unify a list of equations within a budget of steps. -/
-def unify [DecidableEq α] (fuel : ℕ) (eqs : List (Meta α × Meta α)) : Unified α :=
-  match Nat.repeat unifyStep fuel (.running [] eqs) with
+/-- Unify a list of equations within a budget of steps, continuing from a substitution found
+before, which the result extends. -/
+def unifyFrom [DecidableEq α] (fuel : ℕ) (θ : MSubst α) (eqs : List (Meta α × Meta α)) :
+    Unified α :=
+  match Nat.repeat unifyStep fuel (.running θ eqs) with
   | .solved θ => .solved θ
   | .clash s t => .clash s t
   | .running _ _ => .exhausted
+
+/-- Unify a list of equations within a budget of steps. -/
+def unify [DecidableEq α] (fuel : ℕ) (eqs : List (Meta α × Meta α)) : Unified α :=
+  unifyFrom fuel [] eqs
 
 end Geb.RoseTree
 

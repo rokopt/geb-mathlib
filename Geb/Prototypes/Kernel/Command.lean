@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Kernel.Durable
+public import Geb.Prototypes.Kernel.Holes
 public import Geb.Prototypes.Kernel.Image
 public import Geb.Prototypes.Kernel.Manifest
 
@@ -22,7 +23,10 @@ bundle's image, and {lit}`build --manifest MANIFEST IMAGE` does so for the progr
 and {lit}`layers MANIFEST` prints a line for each of its layers, the layer's name followed by the
 paths of its sources;
 {lit}`run IMAGE NAME INPUT OUTPUT` reads an image, applies its definition of that name to
-the input file's tree, and writes the output tree's bytes. Kernel programs are pure: the
+the input file's tree, and writes the output tree's bytes; and {lit}`holes SOURCE …` and
+{lit}`holes --manifest MANIFEST` check a program with holes ({name}`Geb.Kernel.Holes.check`) and
+print each hole's context and expected type, or that the program is complete, exiting with
+status 0 when it is complete and 2 when a hole is open. Kernel programs are pure: the
 driver alone reads and writes files. A program's text is its sources' texts as the compilers read
 them, each source's notes erased ({name}`Geb.Kernel.Document.erasedText`), so that a source
 without notes is read as it is written.
@@ -97,8 +101,21 @@ def buildImage (what : String) (text : List Char) (checkNames : List String → 
     throw <| IO.userError s!"{what}: {msg}"
   IO.FS.writeBinFile img (writeImage (bundle ds))
 
-/-- Build an image from a program's source or manifest, write or list a manifest's sources, or run
-an image's named definition on a file. -/
+/-- The budget of unification steps with which {lit}`holes` checks a program. -/
+def holesBudget : ℕ := 1000000
+
+/-- Check a program's text with holes and print its obligations, or that it is complete: status 0
+when it is complete and 2 when a hole is open, raising what rejects the program; what names the
+program identifies it in errors. -/
+def printHoles (what : String) (text : List Char) : IO UInt32 := do
+  match Holes.check holesBudget text with
+  | .error msg => throw <| IO.userError s!"{what}: {msg}"
+  | .ok r =>
+    IO.print (String.ofList r.render)
+    return if r.complete then 0 else 2
+
+/-- Build an image from a program's source or manifest, write or list a manifest's sources, run
+an image's named definition on a file, or check a program with holes. -/
 def run (args : List String) : IO UInt32 := do
   match args with
   | ["build", "--manifest", path, img] =>
@@ -134,10 +151,16 @@ def run (args : List String) : IO UInt32 := do
       | none => .error s!"{entry} is not a well-typed definition from trees to trees")
       input output
     return 0
+  | ["holes", "--manifest", path] =>
+    let m ← Manifest.read path
+    printHoles path (chars (← joinSources (Manifest.sourcePaths path m)))
+  | "holes" :: srcs@(_ :: _) =>
+    printHoles s!"{srcs}" (chars (← joinSources (srcs.map System.FilePath.mk)))
   | _ =>
     throw <| IO.userError <|
       "usage: geb-kernel build SOURCE... IMAGE | geb-kernel build --manifest MANIFEST IMAGE | " ++
         "geb-kernel join MANIFEST OUTPUT [LAYER] | geb-kernel layers MANIFEST | " ++
-        "geb-kernel run IMAGE NAME INPUT OUTPUT"
+        "geb-kernel run IMAGE NAME INPUT OUTPUT | geb-kernel holes SOURCE... | " ++
+        "geb-kernel holes --manifest MANIFEST"
 
 end Geb.Kernel.Command

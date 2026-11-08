@@ -384,13 +384,13 @@ Extension:
   and every reference in them and in the notes' links resolves, as
   `geb-doc` checks. The forms `let*` and `cond`, expanded in module
   elaboration, are complete, as is the `geb` editor language with Mike's
-  Paredit, built from a pinned commit and patch. Ready, in the order of
+  Paredit, built from a pinned commit and patch, and the checker of holes
+  in programs with the display of their obligations. Ready, in the order of
   {ref "authoring-sequence"}[the sequence], and independent of the datatype
-  language's completion: the syntax of statements
-  and proof scripts; the checker of holes in programs in its suspending
-  form with the display of their obligations; and documentation as
-  literate pages. Waiting on those: the record of elaborated definitions, which is taken
-  up at the first program outside the compilers. Waiting on the datatype
+  language's completion: the syntax of statements and proof scripts; and
+  documentation as literate pages. Waiting on those: the record of
+  elaborated definitions, which is taken up at the first program outside
+  the compilers. Waiting on the datatype
   language's completion: hygienic elaboration with explicit assembly,
   patterns with `&`, unused pattern variables, primitives that no binding
   shadows and emitted names that no definition captures; holes in the
@@ -1689,8 +1689,8 @@ section below opens with a table of the states of its parts.
     seed and the Geb reader, and the canonical, basic transport and
     advanced encodings: complete; modules: complete but for the parts that
     follow their consumers; diagnostics naming the failing definition, the
-    markup of comments and the `geb` editor language: complete; the other
-    steps of the sequence independent of the datatype language's
+    markup of comments, the `geb` editor language and the checker of holes
+    in programs: complete; the other steps of the sequence independent of the datatype language's
     completion: ready; the steps after it: waiting on it; the
     parts that follow their consumers: waiting on them
 *
@@ -3365,7 +3365,7 @@ tag := "authoring-compatibility"
 *
   * The syntax of holes, the suspending checker of holes in programs and
     the display of their obligations
-  * Ready
+  * Complete
 *
   * Documentation as literate pages
   * Ready
@@ -4537,22 +4537,46 @@ checker. Admitting a checker of open sketches is not admitting their
 unresolved conclusions, and an unresolved hole never becomes an axiom.
 It rests on the metalogic's prover in Geb, which is complete.
 
-The checker of holes in programs is written now, in Lean, in the
-suspending form. A checker written as Canonical-min's is, suspending at
-unassigned metavariables, reports each hole's goal as the constraints
-suspended on it, so the report of holes and the search that fills them
-share one implementation ({ref "search-synthesis"}[Search and
-synthesis]). Canonical-min keeps suspended work as closures of Lean in a
-continuation monad, through `partial` functions; the repository's rules
-admit no function calling itself, so the checker keeps it as explicit
-finite work items, each carrying its context, its substitution and the
-check that remains, resumes those an assignment affects, and runs within
-a natural-number budget, driven by recursors. That is the form a checker
-written in Geb needs, so it is transcribed into Geb later and proved in
-Lean to agree, by the method of the metalogic's checker. It extends
-{name}`Geb.Kernel.fillHole` from one hole to many, and leaves
-{name}`Geb.Kernel.infer`, the trusted checker, unchanged: a program with
-holes checks exactly when its lambda-lifting does.
+The checker of holes in programs is written in Lean, in the suspending
+form (`Geb/Prototypes/Kernel/Holes.lean`). A checker written as
+Canonical-min's is, suspending at unassigned metavariables, reports each
+hole's goal as the constraints suspended on it, so the report of holes and
+the search that fills them share one implementation
+({ref "search-synthesis"}[Search and synthesis]). Canonical-min keeps
+suspended work as closures of Lean in a continuation monad, through
+`partial` functions; the repository's rules admit no function calling
+itself, so the checker keeps it as explicit finite work items. The
+kernel's types are simple, so the type at a hole's position does not
+depend on the term that fills it, and every check a hole suspends is an
+equation between types: the work items are the equations of the program's
+typing, the comparisons of {name}`Geb.Kernel.infer` with a metavariable
+for each type the kernel's terms do not annotate, and unification, a step
+function iterated within a natural-number budget, resumes each as the
+metavariables it mentions are assigned ({name}`Geb.RoseTree.unifyFrom`),
+definition by definition, so that an ill-typed program is rejected at the
+definition that fails. A hole's goal is its metavariable under the
+unifier.
+
+The checker lifts each hole out of the program: an occurrence becomes the
+application of a variable bound around the definitions to the names of the
+hole's context, the outermost first, so that the kernel's resolution reads
+every definition and an occurrence elsewhere than the declaring one
+substitutes by name. Filling a hole is substitution for its variable,
+extending {name}`Geb.Kernel.fillHole` from one hole to many
+({name}`Geb.Kernel.Holes.infer_fillAt`), and the filling's closure over the
+hole's context captures no variable of the term it fills
+({name}`Geb.Kernel.Holes.infer_fillAt_closed`). The checker leaves
+{name}`Geb.Kernel.infer`, the trusted checker, unchanged: a program is
+accepted only when its completion, each hole replaced by the closure of a
+term of its expected type, loads ({name}`Geb.Kernel.Holes.load_completion`),
+so a program with holes is accepted only when its lambda-lifting checks at
+some types of its holes. That every such program is accepted, the
+completeness of the unification, is tested and not proved. The command
+`geb-kernel holes` displays each hole's context and expected type, and
+reports a program without holes as complete. Fillings with holes of their
+own, the steps the refinement search takes, and the transcription into
+Geb, proved in Lean to agree by the method of the metalogic's checker,
+follow.
 
 ### Search and synthesis
 %%%

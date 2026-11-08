@@ -3838,7 +3838,12 @@ import-direction rules above are enforced by
   expected type (`Geb.Kernel.Holes.check`, `Geb.Kernel.Holes.Report`). A
   program is accepted only when its completion, each hole replaced by the
   closure of a term of its type, loads under `Geb.Kernel.load`
-  (`Geb.Kernel.Holes.load_completion`). `Document.lean` reads a text in the
+  (`Geb.Kernel.Holes.load_completion`). Filling a hole substitutes the
+  closure of a term written in its context for the hole's variable
+  (`Geb.Kernel.Holes.fill`), which denotes the program at the filling's
+  value and captures no variable (`Geb.Kernel.Holes.infer_fillAt`,
+  `Geb.Kernel.Holes.infer_fillAt_closed`), and `geb-kernel holes` displays
+  a program's obligations. `Document.lean` reads a text in the
   authoring profile of the syntaxes of [RFC9804], its bare and quoted
   atoms, holes and comments, as a source document, S-expressions decorated
   with the comment lines and empty lines around them

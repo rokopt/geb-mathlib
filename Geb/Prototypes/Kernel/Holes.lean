@@ -41,9 +41,14 @@ completion loads: each hole replaced by the closure over its context of a term o
 type, each remaining metavariable read as {lit}`T`, and the program checked by
 {name}`Geb.Kernel.load`, the trusted checker, which this module leaves unchanged. Every accepted
 program therefore has a completion that the kernel accepts, so the holes it reports are
-obligations that can be met, and a program with holes is accepted exactly when one completion of
-its lambda-lifting checks. A program without holes is its own completion, and is reported as
-complete; a program with an open hole is not.
+obligations that can be met: a program with holes is accepted only when its lambda-lifting checks
+at some types of its holes. That every such program is accepted is the completeness of the
+unification, which is tested and not proved. A program without holes is its own completion, and
+is reported as complete; a program with an open hole is not.
+
+A hole is filled by substituting, for its variable, the closure over its context of a term
+written there, so that the term's names are resolved in the hole's context and no binder around
+an occurrence captures them; the program filled is checked again.
 
 ## Main definitions
 
@@ -53,19 +58,28 @@ complete; a program with an open hole is not.
   terms do not annotate.
 * {lit}`dflt`, {lit}`closure`, {lit}`completeTerm` — a term of each type, the closure of a term
   over a context, and the replacement of a program's holes by closures.
-* {lit}`Hole`, {lit}`Report`, {lit}`check` — the obligations of a program and their check.
+* {lit}`Lifted`, {lit}`liftProgram` — a program with its holes lifted.
+* {lit}`unifyDefs` — the unification of each definition's equations in turn.
+* {lit}`Hole`, {lit}`Report`, {lit}`obligationsOf`, {lit}`check` — the obligations of a
+  program and their check.
+* {lit}`fillAt`, {lit}`fill` — the substitution of a term for a hole's variable, and the filling
+  of a lifted program's hole by a term written in its context.
 * {lit}`Report.render` — the display of the obligations, a hole as {lit}`?name` and a type
   that no equation determines with its metavariables, each {lit}`(meta i)`.
 
 ## Main statements
 
 * {lit}`load_completion` — the completion of every accepted program loads.
+* {lit}`infer_fillAt`, {lit}`infer_fillAt_closed` — a filled term denotes the term at the
+  filling's value, and a closed filling captures no variable.
 
 ## Implementation notes
 
 The work the holes suspend is the list of equations, a finite list of items each of which
 unification resumes as the metavariables it mentions are assigned, within a budget whose
-exhaustion is reported apart from ill-typing. The kernel's types are simple, so the type at a
+exhaustion is reported apart from ill-typing. The equations are unified a definition at a time,
+continuing from the substitution of those before it, so that a program's rejection names the
+first definition whose equations do not unify. The kernel's types are simple, so the type at a
 hole's position never depends on the term that fills it, and no check suspended on a hole is more
 than an equation between types.
 
@@ -91,7 +105,7 @@ set_option doc.verso true
 namespace Geb.Kernel.Holes
 
 open scoped FinEnum
-open RoseTree (Meta mvar embed MSubst substM ground unify)
+open RoseTree (Meta mvar embed MSubst substM ground)
 
 /-! ## Holes and their contexts -/
 
@@ -159,9 +173,11 @@ def occStep (tys : TypeNames) (a : Option (List Char))
 def occurrences (tys : TypeNames) (body : SExp) : Option (List Decl) :=
   RoseTree.para (occStep tys) body []
 
-/-- The declarations of a program's holes: each name at its first occurrence. -/
-def declare (occs : List Decl) : List Decl :=
-  occs.foldl (fun ds o ↦ if ds.any (·.name == o.name) then ds else ds ++ [o]) []
+/-- The declarations of a program's holes, given the holes of each definition: each name at its
+first occurrence, with the position of the definition declaring it. -/
+def declare (occs : List (List Decl)) : List (Decl × ℕ) :=
+  (occs.zipIdx.flatMap fun (os, j) ↦ os.map (·, j)).foldl
+    (fun ds o ↦ if ds.any (·.1.name == o.1.name) then ds else ds ++ [o]) []
 
 /-- The lifted name of a hole. -/
 def holeAtom (s : List Char) : List Char := '?' :: s
@@ -195,6 +211,8 @@ structure Pending where
   tys : TypeNames
   /-- The names of the definitions before it. -/
   defs : List (List Char)
+  /-- The numeral abbreviations in force. -/
+  nums : NumNames
 
 /-- One form of a program read after those before it, as {name}`Geb.Kernel.readFormStep` reads
 it, a definition kept unresolved; a name beginning with {lit}`?` is rejected. -/
@@ -208,7 +226,7 @@ def pendStep (acc : Option (TypeNames × NumNames × List Pending)) (e : SExp) :
     guard (!isLifted name && isFresh taken name)
     match kw.label with
     | some ['d', 'e', 'f'] =>
-      some (tys, nums, ps ++ [⟨name, expandNums nums body, tys, ps.map (·.name)⟩])
+      some (tys, nums, ps ++ [⟨name, expandNums nums body, tys, ps.map (·.name), nums⟩])
     | some ['d', 'e', 'f', 't', 'y', 'p', 'e'] =>
       some ((name, ← readType tys body) :: tys, nums, ps)
     | some ['d', 'e', 'f', 'n', 'u', 'm'] =>
@@ -354,22 +372,61 @@ def eachDef {β : Type} (ps : List Pending) (f : Pending → Option β) (what : 
     | none => Except.error s!"{String.ofList p.name} {what}"
 
 /-- The typing of a program's lifted definitions in order, each in the types of those before it
-and of the holes: the definitions' types and the equations, or the first definition that is
-ill-typed. -/
+and of the holes: the definitions' types and the equations each requires, or the first definition
+that is ill-typed. -/
 def genProgram (holeTys : List (Meta ℕ)) (ps : List Pending) (ts : List Tree) (k : ℕ) :
-    Except String (List (Meta ℕ) × Eqns) :=
-  let step (acc : List (Meta ℕ) × Eqns × ℕ) (pt : Pending × Tree) :
-      Except String (List (Meta ℕ) × Eqns × ℕ) :=
+    Except String (List (Meta ℕ) × List Eqns) :=
+  let step (acc : List (Meta ℕ) × List Eqns × ℕ) (pt : Pending × Tree) :
+      Except String (List (Meta ℕ) × List Eqns × ℕ) :=
     match gen pt.2 acc.1 holeTys acc.2.2 with
-    | some (A, e, k') => Except.ok (acc.1 ++ [A], acc.2.1 ++ e, k')
+    | some (A, e, k') => Except.ok (acc.1 ++ [A], acc.2.1 ++ [e], k')
     | none => Except.error s!"{String.ofList pt.1.name} is ill-typed"
   ((ps.zip ts).foldlM step ([], [], k)).map fun r ↦ (r.1, r.2.1)
 
-/-- The obligations of a program with holes, before the check of its completion: its holes with
-their contexts and expected types, its definitions' types, and its completion; or the first
-failure, of reading, of elaborating modules, of the forms, of resolving or typing a definition,
-or of unifying within the budget. -/
-def obligations (budget : ℕ) (text : List Char) : Except String Report := do
+/-- A type with metavariables written as the reader writes types, a metavariable as
+{lit}`(meta i)`, its position {lit}`i` in a list of the metavariables displayed. -/
+def showType (ms : List ℕ) : Meta ℕ → SExp :=
+  RoseTree.elim fun l rs ↦
+    match l with
+    | .inl a => printTypeStep a rs
+    | .inr x => listS [atomS ['m', 'e', 't', 'a'], numeralS ((ms.idxOf? x).getD x)]
+
+/-- An S-expression's text, laid out by the formatter within a line width of a hundred. -/
+def textOf (e : SExp) : List Char :=
+  let d : Document.Doc := ⟨[Document.plain e], []⟩
+  Document.printAt (Document.defaultLayout .profile 100 d) d
+
+/-- A type's text on one line. -/
+def typeText (A : Meta ℕ) : String := String.ofList (textOf (showType [] A)).dropLast
+
+/-- Unify the equations of each definition in turn, continuing from the substitution of those
+before it, within a budget for each: a unifier of them all, or the first definition whose
+equations fail, with two types it equates that differ. -/
+def unifyDefs (budget : ℕ) (ps : List Pending) (es : List Eqns) : Except String (MSubst ℕ) :=
+  (ps.zip es).foldlM (fun θ (p, e) ↦
+    match RoseTree.unifyFrom budget θ e with
+    | .solved θ' => Except.ok θ'
+    | .clash s t => Except.error s!"{String.ofList p.name} is ill-typed: it equates {typeText s} \
+        and {typeText t}"
+    | .exhausted => Except.error s!"{String.ofList p.name}: the budget of unification is spent")
+    []
+
+/-- A program with its holes lifted: its definitions before resolution, its holes, the position
+of the definition declaring each, and its lifted definitions, in whose terms the variable of the
+hole at position {lit}`i` is the {lit}`i`-th free variable. -/
+structure Lifted where
+  /-- The definitions before resolution. -/
+  ps : List Pending
+  /-- The holes, in the order of their declaring occurrences. -/
+  decls : List Decl
+  /-- The position of the definition declaring each hole. -/
+  owners : List ℕ
+  /-- The lifted definitions. -/
+  terms : List Tree
+
+/-- A program read with its holes lifted, or the first failure, of reading, of elaborating
+modules, of the forms, or of resolving a definition. -/
+def liftProgram (text : List Char) : Except String Lifted := do
   let some es := readSExps text
     | .error "the text is not well formed or its parentheses do not balance"
   let fs := dropGeneric (← elabModules es)
@@ -379,18 +436,26 @@ def obligations (budget : ℕ) (text : List Char) : Except String Report := do
   let occs ← eachDef ps (fun p ↦ occurrences p.tys p.body)
     "names an atom or a binder beginning with ?, a hole not by an atom, or a binder's type that \
       does not read"
-  let decls := declare occs.flatten
+  let ds := declare occs
+  let decls := ds.map Prod.fst
   let ts ← eachDef ps (fun p ↦ resolve p.tys p.defs (lift decls p.body)
     (decls.map (holeAtom ·.name))) "does not resolve"
-  let n := decls.length
-  let (GT, es) ← genProgram (decls.zipIdx.map fun (d, i) ↦ varTy d (mvar i)) ps ts n
-  match unify budget es with
-  | .exhausted => .error "the budget of unification is spent"
-  | .clash _ _ => .error "the program is ill-typed: two types it equates differ"
-  | .solved θ =>
-    let holes : List Hole := decls.zipIdx.map fun (d, i) ↦ ⟨d.name, d.context, substM θ (mvar i)⟩
-    let cs := holes.map fun h ↦ closure h.context (dflt (ground tT h.target))
-    .ok ⟨holes, (ps.map (·.name)).zip (GT.map (substM θ)), ts.map (completeTerm cs)⟩
+  .ok ⟨ps, decls, ds.map Prod.snd, ts⟩
+
+/-- The obligations of a lifted program, before the check of its completion: its holes with their
+contexts and expected types, its definitions' types, and its completion; or the first definition
+that is ill-typed, or the failure to unify within the budget. -/
+def obligationsOf (budget : ℕ) (L : Lifted) : Except String Report := do
+  let n := L.decls.length
+  let (GT, es) ← genProgram (L.decls.zipIdx.map fun (d, i) ↦ varTy d (mvar i)) L.ps L.terms n
+  let θ ← unifyDefs budget L.ps es
+  let holes : List Hole := L.decls.zipIdx.map fun (d, i) ↦ ⟨d.name, d.context, substM θ (mvar i)⟩
+  let cs := holes.map fun h ↦ closure h.context (dflt (ground tT h.target))
+  .ok ⟨holes, (L.ps.map (·.name)).zip (GT.map (substM θ)), L.terms.map (completeTerm cs)⟩
+
+/-- The obligations of a program with holes, before the check of its completion. -/
+def obligations (budget : ℕ) (text : List Char) : Except String Report :=
+  liftProgram text >>= obligationsOf budget
 
 /-- Accept a report whose completion the kernel's checker loads. -/
 def validate (r : Report) : Except String Report :=
@@ -415,6 +480,54 @@ theorem load_completion {budget : ℕ} {text : List Char} {r : Report}
     · cases h; assumption
     · cases h
 
+/-! ## Filling a hole -/
+
+/-- A term with {lit}`u` substituted for its free variable at position {lit}`p`, the variables
+after it renumbered: the substitution of {name}`Geb.Kernel.subst`, traversed from {lit}`p`
+binders, so that the {lit}`p` variables before the position are kept. -/
+def fillAt (p : ℕ) (u t : Tree) : Tree := trav (substVar u) t p
+
+/-- Filling the variable at a position of a context is substitution: the filled term denotes the
+term at the filling's value, the variables before the position kept. -/
+theorem infer_fillAt {G : List Glob} {H₀ H₁ : Ctx} {A u t : Tree} {fu : H₁.den → Ty.den A}
+    {m : Meaning (H₀ ++ A :: H₁)} (hu : infer G H₁ u = some ⟨A, fu⟩)
+    (ht : infer G (H₀ ++ A :: H₁) t = some m) :
+    infer G (H₀ ++ H₁) (fillAt H₀.length u t) =
+      some ⟨m.1, m.2 ∘ Ctx.ext (Γ := A :: H₁) (fun e ↦ (fu e, e)) H₀⟩ :=
+  infer_trav (Γ := A :: H₁) (Δ := H₁) (fun e ↦ (fu e, e)) (substVar u) (infer_substVar hu) t H₀ m
+    ht
+
+/-- A closed term weakened by the variables after a hole's position fills the hole at its value:
+the closure of a filling, which refers to no variable of the term it fills, captures none. -/
+theorem infer_fillAt_closed {G : List Glob} {H₀ H₁ : Ctx} {A c t : Tree} {v : Ty.den A}
+    {m : Meaning (H₀ ++ A :: H₁)} (hc : infer G [] c = some ⟨A, fun _ ↦ v⟩)
+    (ht : infer G (H₀ ++ A :: H₁) t = some m) :
+    infer G (H₀ ++ H₁) (fillAt H₀.length (wk H₁.length c) t) =
+      some ⟨m.1, m.2 ∘ Ctx.ext (Γ := A :: H₁) (fun e ↦ (v, e)) H₀⟩ := by
+  have hw : infer G (H₁ ++ []) (wk H₁.length c) = some ⟨A, fun _ ↦ v⟩ := infer_wk H₁ hc
+  rw [List.append_nil] at hw
+  exact infer_fillAt hw ht
+
+/-- Fill a lifted program's hole by a term written in the hole's context: the term, its numeral
+abbreviations expanded, is resolved in the hole's context at the definition declaring the hole,
+its closure over the context, weakened by the holes after it, is substituted for the hole's
+variable in every definition by {lit}`fillAt`, and the hole is removed. A term that does not
+resolve there, which includes a term with a hole of its own, is rejected. The program filled is
+checked again by {lit}`obligationsOf`, which accepts the filling exactly when its type is the
+hole's. -/
+def fill (L : Lifted) (name : List Char) (e : SExp) : Except String Lifted := do
+  let some p := L.decls.findIdx? (·.name == name)
+    | .error s!"no hole is named {String.ofList name}"
+  let some (d, q) := (do
+      let d ← L.decls[p]?
+      let q ← L.ps[← L.owners[p]?]?
+      pure (d, q) : Option (Decl × Pending))
+    | .error "the hole's declaration is missing"
+  let some m := resolve q.tys q.defs (expandNums q.nums e) (d.context.map Prod.fst)
+    | .error s!"the filling of {String.ofList name} does not resolve in its context"
+  let u := wk (L.decls.length - p - 1) (closure d.context m)
+  .ok ⟨L.ps, L.decls.eraseIdx p, L.owners.eraseIdx p, L.terms.map (fillAt p u)⟩
+
 /-! ## Display -/
 
 /-- The metavariables of a type, in the order of their first occurrences. -/
@@ -423,19 +536,6 @@ def metasOf (t : Meta ℕ) : List ℕ :=
     match l with
     | .inl _ => rs.flatten
     | .inr x => [x]) t).foldl (fun xs x ↦ if xs.contains x then xs else xs ++ [x]) []
-
-/-- A type with metavariables written as the reader writes types, a metavariable as
-{lit}`(meta i)`, its position {lit}`i` in a list of the metavariables displayed. -/
-def showType (ms : List ℕ) : Meta ℕ → SExp :=
-  RoseTree.elim fun l rs ↦
-    match l with
-    | .inl a => printTypeStep a rs
-    | .inr x => listS [atomS ['m', 'e', 't', 'a'], numeralS ((ms.idxOf? x).getD x)]
-
-/-- An S-expression's text, laid out by the formatter within a line width of a hundred. -/
-def textOf (e : SExp) : List Char :=
-  let d : Document.Doc := ⟨[Document.plain e], []⟩
-  Document.printAt (Document.defaultLayout .profile 100 d) d
 
 /-- A hole's obligation displayed, given the metavariables displayed: the hole and its expected
 type, then each binder of its context with its type, the outermost first. -/
