@@ -144,6 +144,7 @@ fixtures:
   `scripts/tests/test-eal.sh` (its tests of `scripts/eal/eal.py`
   skipped when the `z3-solver` Python package is absent),
   `scripts/tests/test-geb-compile.sh`,
+  `scripts/tests/test-holes.sh`,
   `scripts/tests/test-manifest.sh`,
   `scripts/tests/test-geb-doc.sh`.
 - `scripts/tests/test-mathlib-bump-detect.sh`,

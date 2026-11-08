@@ -74,4 +74,19 @@ def bitsOf (n k : ℕ) : List Bool := (List.range k).map fun i ↦ n.testBit i
 #guard (List.range 11).all fun k ↦ (List.range (2 ^ k)).all fun n ↦
   Packed.recognize (Buf.ofList (bitsOf n k)) == Geb.BitTree.Elias.validBool (bitsOf n k)
 
+-- Unification: a most general unifier, the occurs check, a clash of labels, and a budget too
+-- small, distinct from a failure.
+#guard
+  let ar (a b : Meta ℕ) : Meta ℕ := node (.inl 3) [a, b]
+  let t : Meta ℕ := node (.inl 0) []
+  match unify 100 [(ar (mvar 0) (mvar 1), ar t (mvar 0))] with
+  | .solved θ => substM θ (ar (mvar 0) (mvar 1)) = ar t t && substM θ (ar t (mvar 0)) = ar t t
+  | _ => false
+#guard
+  let ar (a b : Meta ℕ) : Meta ℕ := node (.inl 3) [a, b]
+  let t : Meta ℕ := node (.inl 0) []
+  [unify 100 [(mvar 0, ar (mvar 0) t)], unify 100 [(ar t t, t)],
+    unify 1 [(ar (mvar 0) (mvar 1), ar t (mvar 0))]].map (fun
+      | .solved _ => 0 | .clash _ _ => 1 | .exhausted => 2) = [1, 1, 2]
+
 end
