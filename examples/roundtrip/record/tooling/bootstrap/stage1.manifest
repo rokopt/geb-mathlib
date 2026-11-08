@@ -1,0 +1,14 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The stage-1 compiler, in the datatype language, which the stage-0 compiler compiles.
+
+(program stage1 (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
+  (sources prelude.geb serialize.geb reader.geb check.geb seq.geb stage1/typing.geb
+    stage1/datatype.geb
+    modules.geb
+    recognize.geb
+    compile.geb
+    stage1/lean.geb)
+  (entries main mainLean))

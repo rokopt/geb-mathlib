@@ -1,0 +1,181 @@
+; Proof sources for equations between the named definitions of a checked program. The syntax
+; profile is (proofs 0 (theorem NAME (equal LEFT RIGHT) (by (normalize FUEL))) ...).
+; Names resolve against the program's bundle. Normalization unfolds its translated definitions;
+; every result is checked by {geb}`Derivation.checkDev` before it is returned.
+
+(module Authoring (export prove replay) (import Prelude) (import Base) (import Theory)
+  (import Language)
+  (import PartialHorn)
+  (import Derivation)
+  (import Translation)
+  (import Prover)
+  (import Reader as Source)
+  (import (Seq LDefn) as LD)
+  (import (Seq OpSig) as OS)
+  (import (Few Primitive) as PF)
+  (import (Map LDefn Definition) as DL)
+  (import (Seq Decl) as Decls)
+  (import (Seq NormRule) as Rules)
+
+  ; Exact form and atom tests: malformed input is rejected before any field is read.
+  (defn word ((e T) (s T)) T (and (Source.isAtom e) (equal (Source.nameOf e) s)))
+  (defn form ((e T) (s T) (n T)) T
+    (and (Source.isList e) (and (eq (length (children e)) n) (word (child e 0) s))))
+  (defn index ((names Ts) (e T)) T
+    (if (Source.isAtom e) (Source.indexOf (Source.nameOf e) names) none))
+  (defn number ((e T)) T (if (Source.isAtom e) (Source.numeral (children e)) none))
+
+  ; The translation's globals, with its library before the program's definitions.
+  (defn globalsOf ((ds (List LDefn))) Globals
+    (globals (prims (PF.l6 nilPrim consPrim lnodePrim inlPrim inrPrim casePrim))
+      (defs (DL.map defLang (LD.append lib ds)))
+      (OS.length sig)))
+  (defn rulesOf ((n T)) NRs
+    (cons (nrRule 3 (terms (nil T)))
+      (cons (nrRule 4 (terms (nil T)))
+        (cons (nrRule 5 (terms (nil T))) (Rules.single (nrBelow n (terms (nil T))))))))
+
+  ; A source theorem carries its name, its two resolved definition indices, and its budget.
+  (data Request (request T T T T))
+  (import (Option Request) as OR)
+  (defn readRequest ((names Ts) (e T)) OR.Maybe
+    (let eqn T (child e 2)
+      (let script T (child e 3)
+        (let step T (child script 1)
+          (if
+            (and (form e (quote (0 theorem)) 4)
+              (and (Source.isAtom (child e 1))
+                (and (not (isEmpty (children (child e 1))))
+                  (and (form eqn (quote (0 equal)) 3)
+                    (and (form script (quote (0 by)) 2) (form step (quote (0 normalize)) 2))))))
+            (let li T (index names (child eqn 1))
+              (let ri T (index names (child eqn 2))
+                (let fuel T (number (child step 1))
+                  (if (and (isSome li) (and (isSome ri) (isSome fuel)))
+                    (OR.just (request (Source.nameOf (child e 1)) (get li) (get ri) (get fuel)))
+                    OR.nothing))))
+            OR.nothing)))))
+  (defn statement ((offset T) (q Request)) Thm
+    (case q
+      ((request n l r f)
+       (mkThm 0 (objs (nil T)) (terms (nil T))
+         (mEq (mDefn (add offset l) (nil T) (nil T)) (mDefn (add offset r) (nil T) (nil T)))))))
+  (defn certificate ((G Globals) (offset T) (rs NRs) (q Request)) T
+    (case q
+      ((request n l r f)
+       (byNormW G (nil Entry) 0 rs f (nil T) (nil T) (mDefn (add offset l) (nil T) (nil T))
+         (mDefn (add offset r) (nil T) (nil T))))))
+
+  ; Requests are read before proving, with distinct names and an explicit syntax version.
+  (import (Seq Request) as Requests)
+  (data RequestList (requests & Request))
+  (import (Option RequestList) as ORequests)
+  (defn requestName ((q Request)) T (case q ((request n l r f) n)))
+  (defn readSource ((names Ts) (source T)) ORequests.Maybe
+    (let parsed T (Source.readSExps (children source))
+      (let root T (child (get parsed) 0)
+        (if
+          (and (isSome parsed)
+            (and (eq (length (children (get parsed))) 1)
+              (and (Source.isList root)
+                (and (word (child root 0) (quote (0 proofs)))
+                  (and (equal (number (child root 1)) (some 0)) (lt 2 (length (children root))))))))
+          (foldr T ORequests.Maybe
+            (lam ((e T) (acc ORequests.Maybe))
+              (case acc ((ORequests.nothing) ORequests.nothing)
+                ((ORequests.just qs)
+                 (case qs
+                   ((requests xs)
+                    (case (readRequest names e) ((OR.nothing) ORequests.nothing)
+                      ((OR.just q)
+                       (if
+                         (foldr Request T
+                           (lam ((r Request) (b T)) (or (equal (requestName q) (requestName r)) b))
+                           0
+                           xs)
+                         ORequests.nothing
+                         (ORequests.just (requests (cons q xs)))))))))))
+            (ORequests.just (requests (nil Request)))
+            (drop 2 (children root)))
+          ORequests.nothing))))
+
+  ; A saved development contains the checked declarations and their source names.
+  (data Results (results T & Decl))
+  (import (Option Results) as OResults)
+  (defn advance ((G Globals) (offset T) (rs NRs) (q Request) (st OResults.Maybe)) OResults.Maybe
+    (case st ((OResults.nothing) OResults.nothing)
+      ((OResults.just a)
+       (case a
+         ((results ns ds)
+          (let d T (certificate G offset rs q)
+            (if (isSome d)
+              (OResults.just
+                (results (node 0 (cons (requestName q) (children ns)))
+                  (cons (declLang (statement offset q) (get d)) ds)))
+              OResults.nothing)))))))
+  (defn proveWith ((names Ts) (ds (List LDefn)) (source T)) T
+    (case (readSource names source) ((ORequests.nothing) none)
+      ((ORequests.just qs)
+       (case qs
+         ((requests xs)
+          (let G Globals (globalsOf ds)
+            (let offset T (LD.length lib)
+              (case
+                (foldr Request OResults.Maybe
+                  (advance G offset (rulesOf (add offset (LD.length ds))))
+                  (OResults.just (results (node 0 (nil T)) (nil Decl)))
+                  xs)
+                ((OResults.nothing) none)
+                ((OResults.just a)
+                 (case a
+                   ((results ns decls)
+                    (case (checkDev G (nil Entry) decls) ((ODevState.nothing) none)
+                      ((ODevState.just st) (some (rep a)))))))))))))))
+  (defn prove ((bundle T) (source T)) T
+    (case (program (children (child bundle 0))) ((OTrState.nothing) none)
+      ((OTrState.just st)
+       (case st
+         ((trState gt ds)
+          (case ds ((ldefns xs) (proveWith (children (child bundle 1)) xs source))))))))
+
+  ; Replay requires the statements and names of the source and checks the saved derivations.
+  ; It does not search, and it does not require the current prover to produce the same derivation.
+  (defn matches ((offset T) (xs (List Request)) (ds (List Decl)) (ns Ts)) T
+    (and (eq (Requests.length xs) (Decls.length ds))
+      (and (eq (Requests.length xs) (length ns))
+        ((foldr Request (Arrow (List Decl) (Arrow Ts T))
+           (lam ((q Request) (k (Arrow (List Decl) (Arrow Ts T))) (rest (List Decl)) (names Ts))
+             (lcase Decl T rest 0
+               (lam ((d Decl) (tail (List Decl)))
+                 (case d
+                   ((declLang a dv)
+                    (and (equal (rep a) (rep (statement offset q)))
+                      (and (equal (requestName q) (at names 0)) (k tail (drop 1 names)))))
+                   ((declComb s c) 0)
+                   ((declDef df) 0)
+                   ((declConst p c) 0)
+                   ((declObj m b c) 0)
+                   ((declQuot m A R) 0)
+                   ((declDesc kq C h jr) 0)))))
+           (lam ((rest (List Decl)) (names Ts)) 1)
+           xs) ds ns))))
+  (defn replayWith ((names Ts) (ds (List LDefn)) (source T) (saved T)) T
+    (case (readSource names source) ((ORequests.nothing) 0)
+      ((ORequests.just qs)
+       (case qs
+         ((requests xs)
+          (decode Results saved
+            (lam ((a Results))
+              (case a
+                ((results ns decls)
+                 (if (matches (LD.length lib) xs decls (children ns))
+                   (case (checkDev (globalsOf ds) (nil Entry) decls) ((ODevState.nothing) 0)
+                     ((ODevState.just st) 1))
+                   0))))
+            0))))))
+  (defn replay ((bundle T) (source T) (saved T)) T
+    (case (program (children (child bundle 0))) ((OTrState.nothing) 0)
+      ((OTrState.just st)
+       (case st
+         ((trState gt ds)
+          (case ds ((ldefns xs) (replayWith (children (child bundle 1)) xs source saved)))))))))

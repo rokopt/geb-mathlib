@@ -146,3 +146,78 @@ here; its durable document, elaborated definitions and exact compiler
 give that migration explicit inputs. Suspended holes, full proof syntax,
 editor acceptance and completion of datatype soundness remain separate
 work.
+
+# Preserving a development
+
+The preservation workflow applies the same compilation, example checking,
+document conversion and certificate replay to any program manifest and
+proof document accepted by the current authoring commands. For the
+development under `examples/roundtrip/`, whose manifest orders a library
+and its application in separate layers:
+
+```
+python3 scripts/preserve.py record examples/roundtrip/roundtrip.manifest \
+  examples/roundtrip/Roundtrip.proofs.geb /tmp/roundtrip-record
+python3 scripts/preserve.py verify /tmp/roundtrip-record
+python3 scripts/preserve.py check /tmp/roundtrip-record
+python3 scripts/preserve.py compare /tmp/roundtrip-record \
+  examples/roundtrip/roundtrip.manifest examples/roundtrip/Roundtrip.proofs.geb
+```
+
+`record`, `check` and `compare` build the host executables first. Pass
+`--no-build` before the subcommand to use the executables already built
+in this checkout.
+
+`record` first copies the manifest, every source in its order, and the
+proof document, retaining their original bytes and relative source paths.
+It compiles those copies, checks the examples, produces and replays a
+certificate, and writes canonical copies of the complete documents.
+The record also holds the checked image, the elaborated definitions,
+the exact compiler image and emitted compiler, the emitted proof runner,
+the Geb source closures of the compiler and proof runner, the Lean
+toolchain and dependency lockfile, and the SHA-256 identities of the
+native host executables. Native executables and installed dependencies
+are not copied; rebuilding a historical native host is outside this
+workflow. The retained images, emitted code and source inputs are
+available to a future migration.
+
+The directory is published only after its checks succeed, by
+[renaming](https://docs.python.org/3/library/os.html#os.rename) a
+staged directory on the same filesystem. An existing record is never
+replaced. A new record uses a new directory, so earlier inputs and results
+remain available. To retain a proof that already checks, pass
+`--certificate PATH` to `record`: it replays that certificate instead of
+running proof search. In particular, insufficient search fuel does not
+prevent recording or checking a development whose saved proof replays.
+
+`record.json` identifies format `geb-development/v1`, the archived
+manifest and proof document, the ordered source paths, and the SHA-256
+digest of every other file. `verify` checks this inventory without Lake
+or the original project. It rejects missing, modified and unlisted files,
+symbolic links, paths outside the record and unsupported record formats.
+These digests check integrity relative to the index; they neither
+authenticate it nor establish a theorem.
+
+`check` reads the archived sources with the current host, compares their
+canonical documents, checked image and elaborated definitions with the
+record, and replays its saved certificate, checking examples again.
+It performs no proof search and does not regenerate the record. A moved
+record therefore remains checkable after the original project is removed,
+provided the current host still reads its profile and reproduces its core.
+
+`compare` performs the same compilation and replay on the supplied
+current sources. It reports document changes separately: edits to
+comments, notes and script budgets may preserve the checked core and
+permit replay. A different compiled program, even one equivalent by a
+theorem, is rejected; comparing meanings through such a theorem requires
+an explicit migration. A statement changed to another true statement is
+also rejected by replay. Failure leaves the record unchanged.
+
+The committed record under `examples/roundtrip/record/` is checked and
+compared with its sources by `scripts/tests/test-preservation.sh`, which
+also exercises relocation, documentation changes, reuse of a saved proof,
+corrupt records and failed creation. Continuous integration runs this test.
+The Pair development's earlier record remains in its original format.
+No conversion between semantic editions or proof-language versions is
+implemented here; those conversions have the retained source documents,
+profiles, compiler inputs and checked results as their inputs.

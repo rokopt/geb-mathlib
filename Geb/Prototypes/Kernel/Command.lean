@@ -22,6 +22,7 @@ bundle's image, and {lit}`build --manifest MANIFEST IMAGE` does so for the progr
 {lit}`join MANIFEST OUTPUT LAYER` the text of its layers up to the one named, that one included,
 and {lit}`layers MANIFEST` prints a line for each of its layers, the layer's name followed by the
 paths of its sources;
+{lit}`sources MANIFEST` prints the sources' relative paths, one per line in manifest order;
 {lit}`run IMAGE NAME INPUT OUTPUT` reads an image, applies its definition of that name to
 the input file's tree, and writes the output tree's bytes; and {lit}`holes SOURCE …` and
 {lit}`holes --manifest MANIFEST` check a program with holes ({name}`Geb.Kernel.Holes.check`) and
@@ -142,6 +143,10 @@ def run (args : List String) : IO UInt32 := do
     for l in m.layers do
       IO.println (" ".intercalate (l.name :: l.sources.map (toString <| Manifest.resolve path ·)))
     return 0
+  | ["sources", path] =>
+    let m ← Manifest.read path
+    for source in m.sources do IO.println source
+    return 0
   | ["run", img, name, input, output] =>
     let some t := readImage (← IO.FS.readBinFile img)
       | throw <| IO.userError s!"{img}: not an image"
@@ -160,6 +165,7 @@ def run (args : List String) : IO UInt32 := do
     throw <| IO.userError <|
       "usage: geb-kernel build SOURCE... IMAGE | geb-kernel build --manifest MANIFEST IMAGE | " ++
         "geb-kernel join MANIFEST OUTPUT [LAYER] | geb-kernel layers MANIFEST | " ++
+        "geb-kernel sources MANIFEST | " ++
         "geb-kernel run IMAGE NAME INPUT OUTPUT | geb-kernel holes SOURCE... | " ++
         "geb-kernel holes --manifest MANIFEST"
 

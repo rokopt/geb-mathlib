@@ -1,0 +1,766 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The terms of the internal language and their compilation to the combinators, written in the
+; datatype language, deciding as Geb.FreeTopos.Internal decides: renaming and substitution of
+; variables, substitution of objects, the types, the type of a term in a context, the compilation
+; of a term in an environment, and the compilation of definitions and equations. A term is the node of its label's position among
+; Geb.FreeTopos.Internal.Label's constructors over the node of the label's data followed by the
+; term's children: a variable's index, an abstraction's type, a primitive arrow's or a
+; definition's index and the node of its objects, a rose-tree fold's type. A pair of trees is the
+; node of label 0 over them, a primitive arrow the node of label 0 over its arity, arrow, domain
+; and codomain, a definition of the language the node of label 0 over its arity, the node of its
+; parameters' types, its type and its body, and the constants the node of label 0 over the node of
+; the primitive arrows, the node of the definitions and the index of the first definition's
+; operation, as their datatypes declare them.
+
+(module Language
+  (export TPair pr p1 p2 mNode var mStar mPair mFst mSnd mLam app mArr mNatRec mListRec mRoseRec
+    mDefn
+    mEq
+    mArgs
+    mIs
+    mArg
+    mD
+    childBound
+    trav
+    liftR
+    rename
+    subst
+    substList
+    osubst
+    coprodParts
+    expParts
+    listPart
+    roseLabel
+    ctxObj
+    stdEnv
+    tuple
+    Objs
+    objs
+    LDefn
+    ldefn
+    ldArity
+    ldType
+    ldBody
+    Primitive
+    primitive
+    prArity
+    prArrow
+    prDom
+    prCod
+    Definition
+    defLang
+    defObj
+    defLanguage
+    PrimList
+    prims
+    DefList
+    defs
+    Globals
+    globals
+    gPrims
+    gDefs
+    gBase
+    isTy
+    CV
+    compile
+    typeOf
+    ldCompile
+    compileDefs
+    compileEq
+    primWf
+    primOk
+    objOk
+    bindDL
+    bindPP
+    bindTP
+    OTPair.Maybe
+    OTPair.nothing
+    OTPair.just
+    OTPair.isJust
+    OTPair.fromMaybe
+    OTPair.nthOf
+    OTPair.allJust
+    OLDefn.Maybe
+    OLDefn.nothing
+    OLDefn.just
+    OLDefn.isJust
+    OLDefn.fromMaybe
+    OLDefn.nthOf
+    OLDefn.allJust
+    OPrimitive.Maybe
+    OPrimitive.nothing
+    OPrimitive.just
+    OPrimitive.isJust
+    OPrimitive.fromMaybe
+    OPrimitive.nthOf
+    OPrimitive.allJust
+    ODefinition.Maybe
+    ODefinition.nothing
+    ODefinition.just
+    ODefinition.isJust
+    ODefinition.fromMaybe
+    ODefinition.nthOf
+    ODefinition.allJust)
+  (import Prelude)
+  (import Base)
+  (import PartialHorn)
+  (import Theory)
+  (import Infer)
+  (import (Seq Eqn) as Eqns)
+  ; pairs of trees
+  (data TPair (pr T T))
+  (defn p1 ((p TPair)) T (case p ((pr a b) a)))
+  (defn p2 ((p TPair)) T (case p ((pr a b) b)))
+  (import (Option TPair) as OTPair)
+  (import (Seq TPair) as TPairs)
+  (import (Each TPair) as EachTPair)
+  (import (Map TPair TPair) as TPairMap)
+  (import (Map TPair T) as TPairOut)
+  (import (Map T TPair) as TPairIn)
+
+  ; terms, by their labels' constructors
+  (defn mNode ((l T) (d Ts) (cs Ts)) T (node l (cons (node 0 d) cs)))
+  (defn var ((i T)) T (mNode 0 (single i) (nil T)))
+  (def mStar (mNode 1 (nil T) (nil T)))
+  (defn mPair ((t T) (u T)) T (mNode 2 (nil T) (l2 t u)))
+  (defn mFst ((t T)) T (mNode 3 (nil T) (single t)))
+  (defn mSnd ((t T)) T (mNode 4 (nil T) (single t)))
+  (defn mLam ((a T) (t T)) T (mNode 5 (single a) (single t)))
+  (defn app ((t T) (u T)) T (mNode 6 (nil T) (l2 t u)))
+  (defn mArr ((k T) (th Ts) (t T)) T (mNode 7 (l2 k (node 0 th)) (single t)))
+  (defn mNatRec ((z T) (s T) (n T)) T (mNode 8 (nil T) (l3 z s n)))
+  (defn mListRec ((z T) (s T) (l T)) T (mNode 9 (nil T) (l3 z s l)))
+  (defn mRoseRec ((c T) (s T) (t T)) T (mNode 10 (single c) (l2 s t)))
+  (defn mDefn ((k T) (th Ts) (ts Ts)) T (mNode 11 (l2 k (node 0 th)) ts))
+  (defn mEq ((t T) (u T)) T (mNode 12 (nil T) (l2 t u)))
+
+  ; a term's label's data, its children, and whether it has a label's position and a number of
+  ; children
+  (defn mData ((t T)) Ts (children (child t 0)))
+  (defn mArgs ((t T)) Ts (tail (children t)))
+  (defn mIs ((l T) (k T) (t T)) T (and (eq (label t) l) (eq (length (mArgs t)) k)))
+  (defn mArg ((t T) (i T)) T (at (mArgs t) i))
+  (defn mD ((t T) (i T)) T (at (mData t) i))
+
+  ; the fold of a term with the term at each node, its values functions of a map of indices
+  (deftype Ren (Arrow T T))
+  (deftype RV (Arrow Ren T))
+  ; the variables a child of a node binds, at its position among the node's children
+  (defn childBound ((l T) (k T) (i T)) T
+    (if (and (eq l 5) (eq k 1)) 1
+      (if (and (eq l 8) (eq k 3)) (if (eq i 1) 1 0)
+        (if (and (eq l 9) (eq k 3)) (if (eq i 1) 2 0)
+          (if (and (eq l 10) (eq k 2)) (if (eq i 0) 1 0) 0)))))
+  (deftype RVs (List RV))
+  (import (Lists RV) as RVs)
+  (deftype RH (Arrow Ren (Arrow T Ts)))
+  ; one step of a traversal of a term's variables, by a map lifted under each binder: each child's
+  ; result is composed into one function of the map and the child's position, the map lifted past
+  ; the variables the child binds
+  (defn travStep ((lift (Arrow Ren Ren)) (wrap (Arrow T T)) (nd T) (rs RVs)) RV
+    (let l T (label nd)
+      (let k T (length (mArgs nd))
+        (let h RH
+          (foldr RV RH
+            (lam ((r RV) (c RH) (f Ren) (i T))
+              (cons
+                (r
+                  (let b T (childBound l k i)
+                    (if (eq b 0) f (if (eq b 1) (lift f) (lift (lift f))))))
+                (c f (add i 1))))
+            (lam ((f Ren) (i T)) (nil T))
+            (RVs.tail rs))
+          (lam ((f Ren))
+            (let d T (child nd 0)
+              (if (eq l 0) (wrap (f (at (children d) 0))) (node l (cons d (h f 0))))))))))
+  (defn trav ((lift (Arrow Ren Ren)) (wrap (Arrow T T)) (t T)) RV (para RV (travStep lift wrap) t))
+
+  ; renaming and substitution of variables
+  (defn liftR ((f Ren) (i T)) T (if (eq i 0) 0 (add (f (sub i 1)) 1)))
+  (defn rename ((t T) (f Ren)) T ((trav liftR var t) f))
+  (defn liftS ((s Ren) (i T)) T
+    (if (eq i 0) (var 0) (rename (s (sub i 1)) (lam ((j T)) (add j 1)))))
+  (defn subst ((t T) (s Ren)) T ((trav liftS (lam ((u T)) u) t) s))
+  (defn substList ((ts Ts) (i T)) T (getD (nth ts i) (var i)))
+
+  ; the substitution of objects for the object variables of a term's types and arrows
+  (defn dataOsubst ((th Ts) (l T) (d Ts)) Ts
+    (if (or (eq l 5) (eq l 10)) (mapT (phSubst th) d)
+      (if (or (eq l 7) (eq l 11)) (l2 (at d 0) (node 0 (mapT (phSubst th) (children (at d 1)))))
+        d)))
+  (defn osubst ((th Ts) (t T)) T
+    (snd
+      (fold PT
+        (lam ((l T) (rs PTs))
+          (let cs Ts (ptTrees rs)
+            (pair (node l cs)
+              (node l
+                (cons (node 0 (dataOsubst th l (children (at cs 0)))) (tail (ptValues rs)))))))
+        t)))
+
+  ; the operations that build types, with their arities
+  (def tyOps
+    (cons (pr 4 0)
+      (cons (pr 6 2)
+        (cons (pr 13 0)
+          (cons (pr 15 2)
+            (cons (pr 22 2)
+              (cons (pr 25 0)
+                (cons (pr 29 0) (cons (pr 33 1) (cons (pr 37 0) (TPairs.single (pr 40 1))))))))))))
+
+  ; the parts of products, coproducts, exponentials, list objects and rose-tree objects, read from
+  ; the label of the operation of index k that builds them, of m arguments
+  (defn opIs ((k T) (m T) (p T)) T (and (eq (label p) (add k 1)) (eq (arity p) m)))
+  (defn binParts ((k T) (p T)) OTPair.Maybe
+    (if (opIs k 2 p) (OTPair.just (pr (child p 0) (child p 1))) OTPair.nothing))
+  (defn prodParts ((p T)) OTPair.Maybe (binParts 6 p))
+  (defn coprodParts ((p T)) OTPair.Maybe (binParts 15 p))
+  (defn expParts ((p T)) OTPair.Maybe (binParts 22 p))
+  (defn listPart ((p T)) T (if (opIs 33 1 p) (some (child p 0)) none))
+  ; the type of labels of a rose-tree object, and its fold by a step
+  (defn roseLabel ((p T)) T
+    (if (opIs 37 0 p) (some nat) (if (opIs 40 1 p) (some (child p 0)) none)))
+  (defn roseFold ((p T) (s T)) T (if (equal p rose) (roseRec s) (lroseRec (child p 0) s)))
+
+  ; the product of a context's types, the environment of its projections, and the tuple of arrows
+  (defn ctxObj ((g Ts)) T
+    (fst
+      (foldr T (Prod T T) (lam ((a T) (s (Prod T T))) (pair (if (snd s) (prod (fst s) a) a) 1))
+        (pair one 0)
+        g)))
+  (defn extendEnv ((X T) (a T) (e (List TPair))) (List TPair)
+    (cons (pr (cSnd X a) a)
+      (TPairMap.map (lam ((p TPair)) (pr (comp (p1 p) (cFst X a)) (p2 p))) e)))
+  (defn stdEnv ((g Ts)) (List TPair)
+    (fst
+      (foldr T (Prod (List TPair) Ts)
+        (lam ((a T) (s (Prod (List TPair) Ts)))
+          (pair
+            (if (isEmpty (snd s)) (TPairs.single (pr (idt a) a))
+              (extendEnv (ctxObj (snd s)) a (fst s)))
+            (cons a (snd s))))
+        (pair (nil TPair) (nil T))
+        g)))
+  (defn tuple ((X T) (fs Ts)) T
+    (fst
+      (foldr T (Prod T T) (lam ((f T) (s (Prod T T))) (pair (if (snd s) (cPair (fst s) f) f) 1))
+        (pair (bang X) 0)
+        fs)))
+
+  ; whether the variable of an index occurs free in a term, its index raised under each binder:
+  ; once under an abstraction's body and a natural-number or rose-tree fold's step, twice under a
+  ; list fold's step
+  (deftype OF (Arrow T T))
+  (deftype OFs (List OF))
+  (import (Lists OF) as OFs)
+  (deftype OH (Arrow T (Arrow T T)))
+  (defn occursStep ((nd T) (rs OFs)) OF
+    (let l T (label nd)
+      (let k T (length (mArgs nd))
+        (let h OH
+          (foldr OF OH
+            (lam ((r OF) (c OH) (d T) (i T)) (or (r (add d (childBound l k i))) (c d (add i 1))))
+            (lam ((d T) (i T)) 0)
+            (OFs.tail rs))
+          (lam ((d T)) (if (eq l 0) (eq (mD nd 0) d) (h d 0)))))))
+  (defn occurs ((t T) (d T)) T ((para OF occursStep t) d))
+
+  ; the parameters of a fold whose start is z and whose step s binds k variables, in an
+  ; environment of N variables: the variables the start or the step mentions, in increasing order
+  (defn foldParams ((k T) (N T) (z T) (s T)) Ts
+    (foldr T Ts (lam ((i T) (r Ts)) (if (or (occurs z i) (occurs s (add i k))) (cons i r) r))
+      (nil T)
+      (range N)))
+  ; the number of variables of an environment whose variables of the indices ws are its entries,
+  ; and the position of an index among them
+  (defn selBound ((ws Ts)) T (foldr T T (lam ((i T) (b T)) (if (lt b (add i 1)) (add i 1) b)) 0 ws))
+  (defn idxOf ((i T) (ws Ts)) T
+    (foldr T T (lam ((w T) (r T)) (if (eq w i) (some 0) (mapO (lam ((j T)) (add j 1)) r))) none ws))
+  ; the environment over P whose variables of the indices ws are the entries of E at their
+  ; positions in ws, and each other variable below them the identity of P
+  (defn selEnv ((ws Ts) (P T) (E (List TPair))) (List TPair)
+    (TPairIn.map
+      (lam ((i T))
+        (let j T (idxOf i ws)
+          (if (isSome j) (OTPair.fromMaybe (pr (idt P) P) (OTPair.nthOf E (get j)))
+            (pr (idt P) P))))
+      (range (selBound ws))))
+  ; the environment of a fold's start, for the bound types bs none, and of its step, for bs the
+  ; types of the variables it binds, over the product of the bound types and the types g of the
+  ; parameters vs
+  (defn foldEnv ((bs Ts) (vs Ts) (g Ts)) (Prod T (List TPair))
+    (let bg Ts (append bs g)
+      (pair (ctxObj bg)
+        (selEnv (append (range (length bs)) (mapT (lam ((v T)) (add v (length bs))) vs)) (ctxObj bg)
+          (stdEnv bg)))))
+  ; the entries of an environment at a fold's parameters, and the environment of the fold's start
+  ; or step
+  (defn foldPs ((k T) (e (List TPair)) (z T) (s T)) (List TPair)
+    (foldr T (List TPair)
+      (lam ((i T) (r (List TPair)))
+        (case (OTPair.nthOf e i) ((OTPair.just p) (cons p r)) ((OTPair.nothing) r)))
+      (nil TPair)
+      (foldParams k (TPairs.length e) z s)))
+  (defn foldEnvIn ((bs Ts) (k T) (e (List TPair)) (z T) (s T)) (Prod T (List TPair))
+    (foldEnv bs (foldParams k (TPairs.length e) z s) (TPairOut.map p2 (foldPs k e z s))))
+  ; the folds of the natural numbers and list objects at a datum, at the tuple t of the values of
+  ; parameters of the types g: for none the fold itself, and else the fold with the parameter
+  (defn natFold ((g Ts) (c T) (z T) (s T) (t T) (m T)) T
+    (if (isEmpty g) (comp (natRec z s) m) (comp (natRecP (ctxObj g) c z s) (cPair t m))))
+  (defn listFold ((g Ts) (a T) (c T) (z T) (s T) (t T) (m T)) T
+    (if (isEmpty g) (comp (listRec a z s) m) (comp (listRecP (ctxObj g) a c z s) (cPair t m))))
+  (defn roseFoldP ((r T) (g Ts) (a T) (c T) (s T) (t T) (m T)) T
+    (if (isEmpty g) (comp (roseFold r s) m)
+      (comp (roseRecP (roseFold r) (ctxObj g) a r c s) (cPair t m))))
+
+  ; definitions of the language, primitive arrows, definitions of either kind, and the constants
+  (data Objs (objs & T))
+  (data LDefn (ldefn T Objs T T))
+  (defn ldArity ((d LDefn)) T (case d ((ldefn m ps a b) m)))
+  (defn ldParams ((d LDefn)) Ts (case d ((ldefn m ps a b) (case ps ((objs xs) xs)))))
+  (defn ldType ((d LDefn)) T (case d ((ldefn m ps a b) a)))
+  (defn ldBody ((d LDefn)) T (case d ((ldefn m ps a b) b)))
+  (import (Option LDefn) as OLDefn)
+  (data Primitive (primitive T T T T))
+  (defn prArity ((p Primitive)) T (case p ((primitive m f a b) m)))
+  (defn prArrow ((p Primitive)) T (case p ((primitive m f a b) f)))
+  (defn prDom ((p Primitive)) T (case p ((primitive m f a b) a)))
+  (defn prCod ((p Primitive)) T (case p ((primitive m f a b) b)))
+  (import (Option Primitive) as OPrimitive)
+  (data Definition (defLang LDefn) (defObj T T))
+  (defn defLanguage ((d Definition)) OLDefn.Maybe
+    (case d ((defLang l) (OLDefn.just l)) ((defObj m b) OLDefn.nothing)))
+  (import (Option Definition) as ODefinition)
+  (import (Seq Definition) as Defs)
+  (import (Each Definition) as EachDef)
+  (data PrimList (prims & Primitive))
+  (data DefList (defs & Definition))
+  (data Globals (globals PrimList DefList T))
+  (defn gPrims ((G Globals)) (List Primitive) (case G ((globals p d b) (case p ((prims xs) xs)))))
+  (defn gDefs ((G Globals)) (List Definition) (case G ((globals p d b) (case d ((defs xs) xs)))))
+  (defn gBase ((G Globals)) T (case G ((globals p d b) b)))
+
+  (def def0 (defObj 0 0))
+
+  ; whether an operation builds types from a number of types, and whether an object is a type
+  (defn isTyOp ((G Globals) (k T) (m T)) T
+    (or (EachTPair.any (lam ((p TPair)) (equal (rep p) (rep (pr k m)))) tyOps)
+      (and (not (lt k (gBase G)))
+        (let d ODefinition.Maybe (ODefinition.nthOf (gDefs G) (sub k (gBase G)))
+          (if (ODefinition.isJust d)
+            (case (ODefinition.fromMaybe def0 d) ((defLang l) 0) ((defObj m2 b) (eq m2 m)))
+            0)))))
+  ; the fold's result at a node is its label, whether it is a leaf, and whether it is a type
+  (deftype TyR (Prod T (Prod T T)))
+  (defn isTy ((G Globals) (n T) (t T)) T
+    (snd
+      (snd
+        (fold TyR
+          (lam ((l T) (rs (List TyR)))
+            (let k T (foldr TyR T (lam ((r TyR) (j T)) (add j 1)) 0 rs)
+              (pair l
+                (pair (eq k 0)
+                  (if (eq l 0)
+                    (lcase TyR T rs 0
+                      (lam ((r TyR) (rest (List TyR)))
+                        (and (eq k 1) (and (fst (snd r)) (lt (fst r) n)))))
+                    (and (isTyOp G (sub l 1) k)
+                      (foldr TyR T (lam ((r TyR) (b T)) (and (snd (snd r)) b)) 1 rs)))))))
+          t))))
+
+  ; the fold of a term with the term at each node, its values the compilations in an environment
+  (deftype CV (Arrow T (Arrow (List TPair) OTPair.Maybe)))
+  (deftype CVs (List CV))
+  (import (Lists CV) as CVs)
+  (def cv0 (lam ((X T) (e (List TPair))) OTPair.nothing))
+  ; a function of the first three of a list of children's values, the absent ones giving nothing
+  (defn cvThree ((rs CVs) (k (Arrow CV (Arrow CV (Arrow CV CV))))) CV
+    (lcase CV CV rs (k cv0 cv0 cv0)
+      (lam ((a CV) (r1 CVs))
+        (lcase CV CV r1 (k a cv0 cv0)
+          (lam ((b CV) (r2 CVs)) (lcase CV CV r2 (k a b cv0) (lam ((c CV) (r3 CVs)) (k a b c))))))))
+
+  ; the bindings of optional values, as the base binds optional trees
+  (defn bindPP ((m OTPair.Maybe) (f (Arrow TPair OTPair.Maybe))) OTPair.Maybe
+    (case m ((OTPair.just p) (f p)) ((OTPair.nothing) OTPair.nothing)))
+  (defn bindTP ((m T) (f (Arrow T OTPair.Maybe))) OTPair.Maybe
+    (if (isSome m) (f (get m)) OTPair.nothing))
+  (defn bindRP ((m OPrimitive.Maybe) (f (Arrow Primitive OTPair.Maybe))) OTPair.Maybe
+    (case m ((OPrimitive.just p) (f p)) ((OPrimitive.nothing) OTPair.nothing)))
+  (defn bindDL ((m ODefinition.Maybe) (f (Arrow Definition OLDefn.Maybe))) OLDefn.Maybe
+    (case m ((ODefinition.just d) (f d)) ((ODefinition.nothing) OLDefn.nothing)))
+  (defn bindLP ((m OLDefn.Maybe) (f (Arrow LDefn OTPair.Maybe))) OTPair.Maybe
+    (case m ((OLDefn.just d) (f d)) ((OLDefn.nothing) OTPair.nothing)))
+  (data TPairList (tpairs & TPair))
+  (import (Option TPairList) as OTPairList)
+  (defn allSomeP ((ms (List OTPair.Maybe))) OTPairList.Maybe
+    (let r (Prod T (List TPair)) (OTPair.allJust ms)
+      (if (fst r) (OTPairList.just (tpairs (snd r))) OTPairList.nothing)))
+  (defn bindQP ((m OTPairList.Maybe) (f (Arrow TPairList OTPair.Maybe))) OTPair.Maybe
+    (case m ((OTPairList.just xs) (f xs)) ((OTPairList.nothing) OTPair.nothing)))
+  (import (Few TPair) as TPairF)
+
+  ; one step of the compilation, at a node, from the compilations of its children: the arrow and
+  ; the type of the node's term in n object variables, in an environment over X
+  (defn compileStep ((G Globals) (n T) (nd T) (r0 CV) (r1 CV) (r2 CV) (X T) (e (List TPair)))
+    OTPair.Maybe
+    (let l T (label nd)
+      (let d Ts (children (child nd 0))
+        (let as Ts (mArgs nd)
+          (let k T (length as)
+            (if (and (eq l 0) (eq k 0)) (OTPair.nthOf e (at d 0))
+              (if (and (eq l 1) (eq k 0)) (OTPair.just (pr (bang X) one))
+                (if (and (eq l 2) (eq k 2))
+                  (bindPP (r0 X e)
+                    (lam ((p TPair))
+                      (bindPP (r1 X e)
+                        (lam ((q TPair))
+                          (OTPair.just (pr (cPair (p1 p) (p1 q)) (prod (p2 p) (p2 q))))))))
+                  (if (and (or (eq l 3) (eq l 4)) (eq k 1))
+                    (bindPP (r0 X e)
+                      (lam ((p TPair))
+                        (bindPP (prodParts (p2 p))
+                          (lam ((ab TPair))
+                            (if (eq l 3)
+                              (OTPair.just (pr (comp (cFst (p1 ab) (p2 ab)) (p1 p)) (p1 ab)))
+                              (OTPair.just (pr (comp (cSnd (p1 ab) (p2 ab)) (p1 p)) (p2 ab))))))))
+                    (if (and (eq l 5) (eq k 1))
+                      (let a T (at d 0)
+                        (if (isTy G n a)
+                          (bindPP (r0 (prod X a) (extendEnv X a e))
+                            (lam ((p TPair)) (OTPair.just (pr (curry X a (p1 p)) (exp a (p2 p))))))
+                          OTPair.nothing))
+                      (if (and (eq l 6) (eq k 2))
+                        (bindPP (r0 X e)
+                          (lam ((p TPair))
+                            (bindPP (expParts (p2 p))
+                              (lam ((ab TPair))
+                                (bindPP (r1 X e)
+                                  (lam ((q TPair))
+                                    (if (equal (p2 q) (p1 ab))
+                                      (OTPair.just
+                                        (pr (comp (ev (p1 ab) (p2 ab)) (cPair (p1 p) (p1 q)))
+                                          (p2 ab)))
+                                      OTPair.nothing)))))))
+                        (if (and (eq l 7) (eq k 1))
+                          (let th Ts (children (at d 1))
+                            (bindRP (OPrimitive.nthOf (gPrims G) (at d 0))
+                              (lam ((pm Primitive))
+                                (bindPP (r0 X e)
+                                  (lam ((q TPair))
+                                    (if
+                                      (and (eq (length th) (prArity pm))
+                                        (and (allT (isTy G n) th)
+                                          (equal (p2 q) (phSubst th (prDom pm)))))
+                                      (OTPair.just
+                                        (pr (comp (phSubst th (prArrow pm)) (p1 q))
+                                          (phSubst th (prCod pm))))
+                                      OTPair.nothing))))))
+                          (if (and (eq l 8) (eq k 3))
+                            (let z0 T (at as 0)
+                              (let s0 T (at as 1)
+                                (let ps (List TPair) (foldPs 1 e z0 s0)
+                                  (let ez (Prod T (List TPair)) (foldEnvIn (nil T) 1 e z0 s0)
+                                    (bindPP (r0 (fst ez) (snd ez))
+                                      (lam ((z TPair))
+                                        (let c T (p2 z)
+                                          (let es (Prod T (List TPair))
+                                            (foldEnvIn (single c) 1 e z0 s0)
+                                            (bindPP (r1 (fst es) (snd es))
+                                              (lam ((s TPair))
+                                                (bindPP (r2 X e)
+                                                  (lam ((m TPair))
+                                                    (if (and (equal (p2 s) c) (equal (p2 m) nat))
+                                                      (OTPair.just
+                                                        (pr
+                                                          (natFold (TPairOut.map p2 ps) c (p1 z)
+                                                            (p1 s)
+                                                            (tuple X (TPairOut.map p1 ps))
+                                                            (p1 m))
+                                                          c))
+                                                      OTPair.nothing)))))))))))))
+                            (if (and (eq l 9) (eq k 3))
+                              (bindPP (r2 X e)
+                                (lam ((m TPair))
+                                  (bindTP (listPart (p2 m))
+                                    (lam ((a T))
+                                      (let z0 T (at as 0)
+                                        (let s0 T (at as 1)
+                                          (let ps (List TPair) (foldPs 2 e z0 s0)
+                                            (let ez (Prod T (List TPair))
+                                              (foldEnvIn (nil T) 2 e z0 s0)
+                                              (bindPP (r0 (fst ez) (snd ez))
+                                                (lam ((z TPair))
+                                                  (let c T (p2 z)
+                                                    (let es (Prod T (List TPair))
+                                                      (foldEnvIn (l2 c a) 2 e z0 s0)
+                                                      (bindPP (r1 (fst es) (snd es))
+                                                        (lam ((s TPair))
+                                                          (if (equal (p2 s) c)
+                                                            (OTPair.just
+                                                              (pr
+                                                                (listFold (TPairOut.map p2 ps) a c
+                                                                  (p1 z)
+                                                                  (p1 s)
+                                                                  (tuple X (TPairOut.map p1 ps))
+                                                                  (p1 m))
+                                                                c))
+                                                            OTPair.nothing)))))))))))))))
+                              (if (and (eq l 10) (eq k 2))
+                                (let c T (at d 0)
+                                  (if (isTy G n c)
+                                    (bindPP (r1 X e)
+                                      (lam ((m TPair))
+                                        (bindTP (roseLabel (p2 m))
+                                          (lam ((a T))
+                                            (let s0 T (at as 0)
+                                              (let ps (List TPair) (foldPs 1 e mStar s0)
+                                                (let es (Prod T (List TPair))
+                                                  (foldEnvIn (single (prod a (list c))) 1 e mStar
+                                                    s0)
+                                                  (bindPP (r0 (fst es) (snd es))
+                                                    (lam ((s TPair))
+                                                      (if (equal (p2 s) c)
+                                                        (OTPair.just
+                                                          (pr
+                                                            (roseFoldP (p2 m) (TPairOut.map p2 ps) a
+                                                              c
+                                                              (p1 s)
+                                                              (tuple X (TPairOut.map p1 ps))
+                                                              (p1 m))
+                                                            c))
+                                                        OTPair.nothing))))))))))
+                                    OTPair.nothing))
+                                (if (and (eq l 12) (eq k 2))
+                                  (bindPP (r0 X e)
+                                    (lam ((p TPair))
+                                      (bindPP (r1 X e)
+                                        (lam ((q TPair))
+                                          (if (equal (p2 p) (p2 q))
+                                            (OTPair.just
+                                              (pr (comp (chi (diag (p2 p))) (cPair (p1 p) (p1 q)))
+                                                omega))
+                                            OTPair.nothing)))))
+                                  OTPair.nothing))))))))))))))))
+
+  ; the application of a definition, from its arguments' values
+  (defn compileDefn ((G Globals) (n T) (nd T) (ys (List OTPair.Maybe)) (X T)) OTPair.Maybe
+    (let d Ts (children (child nd 0))
+      (let th Ts (children (at d 1))
+        (bindLP (bindDL (ODefinition.nthOf (gDefs G) (at d 0)) defLanguage)
+          (lam ((df LDefn))
+            (bindQP (allSomeP ys)
+              (lam ((rsN TPairList))
+                (let rl (List TPair) (case rsN ((tpairs xs) xs))
+                  (if
+                    (and (eq (length th) (ldArity df))
+                      (and (allT (isTy G n) th)
+                        (equalTs (TPairOut.map p2 rl) (mapT (phSubst th) (ldParams df)))))
+                    (OTPair.just
+                      (pr (comp (phOp (add (gBase G) (at d 0)) th) (tuple X (TPairOut.map p1 rl)))
+                        (phSubst th (ldType df))))
+                    OTPair.nothing)))))))))
+  ; the arguments' values of a definition's application, composed into one function
+  (deftype CH (Arrow T (Arrow (List TPair) (List OTPair.Maybe))))
+  (defn cvAll ((rs CVs)) CH
+    (foldr CV CH (lam ((r CV) (c CH) (X T) (e (List TPair))) (cons (r X e) (c X e)))
+      (lam ((X T) (e (List TPair))) (nil OTPair.Maybe))
+      rs))
+
+  ; the arrow and the type of a term in n object variables, in an environment over X
+  (defn compile ((G Globals) (n T) (t T)) CV
+    (para CV
+      (lam ((nd T) (rs CVs))
+        (if (eq (label nd) 11)
+          (let h CH (cvAll (CVs.tail rs))
+            (lam ((X T) (e (List TPair))) (compileDefn G n nd (h X e) X)))
+          (cvThree (CVs.tail rs) (lam ((a CV) (b CV) (c CV)) (compileStep G n nd a b c)))))
+      t))
+
+  ; the type of a term in n object variables, in a context of types, nothing where it has none,
+  ; computed without its arrow: a function of the context at each node, from the children's
+  (deftype TV (Arrow Ts T))
+  (deftype TVs (List TV))
+  ; at a node without children: a variable and the element of the terminal type
+  (defn typeLeaf ((l T) (d Ts)) TV
+    (lam ((g Ts)) (if (eq l 0) (nth g (at d 0)) (if (eq l 1) (some one) none))))
+  ; at a node of one child t: the projections, an abstraction and a primitive arrow's application
+  (defn typeUnary ((G Globals) (n T) (l T) (d Ts) (t TV)) TV
+    (if (or (eq l 3) (eq l 4))
+      (lam ((g Ts))
+        (bindO (t g)
+          (lam ((p T))
+            (case (prodParts p) ((OTPair.just ab) (some (if (eq l 3) (p1 ab) (p2 ab))))
+              ((OTPair.nothing) none)))))
+      (if (eq l 5)
+        (let a T (at d 0)
+          (lam ((g Ts)) (if (isTy G n a) (mapO (lam ((b T)) (exp a b)) (t (cons a g))) none)))
+        (if (eq l 7)
+          (let th Ts (children (at d 1))
+            (lam ((g Ts))
+              (case (OPrimitive.nthOf (gPrims G) (at d 0))
+                ((OPrimitive.just pm)
+                 (bindO (t g)
+                   (lam ((a T))
+                     (if
+                       (and (eq (length th) (prArity pm))
+                         (and (allT (isTy G n) th) (equal a (phSubst th (prDom pm)))))
+                       (some (phSubst th (prCod pm)))
+                       none))))
+                ((OPrimitive.nothing) none))))
+          (lam ((g Ts)) none)))))
+  ; at a node of two children t and u: a pair, an application, a rose-tree fold and an equation
+  (defn typeBinary ((G Globals) (n T) (l T) (d Ts) (t TV) (u TV)) TV
+    (if (eq l 2) (lam ((g Ts)) (bindO (t g) (lam ((a T)) (mapO (lam ((b T)) (prod a b)) (u g)))))
+      (if (eq l 6)
+        (lam ((g Ts))
+          (bindO (t g)
+            (lam ((f T))
+              (case (expParts f)
+                ((OTPair.just ab) (if (equal (u g) (some (p1 ab))) (some (p2 ab)) none))
+                ((OTPair.nothing) none)))))
+        (if (eq l 10)
+          (let c T (at d 0)
+            (lam ((g Ts))
+              (if (isTy G n c)
+                (bindO (u g)
+                  (lam ((r T))
+                    (bindO (roseLabel r)
+                      (lam ((a T))
+                        (if (equal (t (cons (prod a (list c)) g)) (some c)) (some c) none)))))
+                none)))
+          (if (eq l 12)
+            (lam ((g Ts)) (bindO (t g) (lam ((a T)) (if (equal (u g) (some a)) (some omega) none))))
+            (lam ((g Ts)) none))))))
+  ; at a node of three children z, s and m: the folds of the natural numbers and of lists
+  (defn typeTernary ((l T) (z TV) (s TV) (m TV)) TV
+    (if (eq l 8)
+      (lam ((g Ts))
+        (bindO (z g)
+          (lam ((c T))
+            (if (and (equal (s (cons c g)) (some c)) (equal (m g) (some nat))) (some c) none))))
+      (if (eq l 9)
+        (lam ((g Ts))
+          (bindO (m g)
+            (lam ((r T))
+              (bindO (listPart r)
+                (lam ((a T))
+                  (bindO (z g)
+                    (lam ((c T)) (if (equal (s (cons c (cons a g))) (some c)) (some c) none))))))))
+        (lam ((g Ts)) none))))
+  ; the children's types in one context, whether each has one and their types, composed into one
+  ; function of the context
+  (defn typesIn ((as TVs)) (Arrow Ts (Prod T Ts))
+    (foldr TV (Arrow Ts (Prod T Ts))
+      (lam ((r TV) (k (Arrow Ts (Prod T Ts))) (g Ts))
+        (let m T (r g)
+          (let s (Prod T Ts) (k g) (pair (and (isSome m) (fst s)) (cons (get m) (snd s))))))
+      (lam ((g Ts)) (pair 1 (nil T)))
+      as))
+  ; at the application of a definition to its children
+  (defn typeDefn ((G Globals) (n T) (d Ts) (as TVs)) TV
+    (let th Ts (children (at d 1))
+      (let f (Arrow Ts (Prod T Ts)) (typesIn as)
+        (lam ((g Ts))
+          (let s (Prod T Ts) (f g)
+            (case (bindDL (ODefinition.nthOf (gDefs G) (at d 0)) defLanguage)
+              ((OLDefn.just df)
+               (if
+                 (and (fst s)
+                   (and (eq (length th) (ldArity df))
+                     (and (allT (isTy G n) th)
+                       (equalTs (snd s) (mapT (phSubst th) (ldParams df))))))
+                 (some (phSubst th (ldType df)))
+                 none))
+              ((OLDefn.nothing) none)))))))
+  ; one step, at a node and its children's results, the first the result at the label's data: the
+  ; list of the results is taken apart once
+  (defn typeStep ((G Globals) (n T) (nd T) (rs TVs)) TV
+    (let l T (label nd)
+      (let d Ts (mData nd)
+        (lcase TV TV rs (lam ((g Ts)) none)
+          (lam ((r0 TV) (as TVs))
+            (if (eq l 11) (typeDefn G n d as)
+              (lcase TV TV as (typeLeaf l d)
+                (lam ((t TV) (as1 TVs))
+                  (lcase TV TV as1 (typeUnary G n l d t)
+                    (lam ((u TV) (as2 TVs))
+                      (lcase TV TV as2 (typeBinary G n l d t u)
+                        (lam ((v TV) (as3 TVs))
+                          (lcase TV TV as3 (typeTernary l t u v)
+                            (lam ((w TV) (as4 TVs)) (lam ((g Ts)) none)))))))))))))))
+  (defn typeOf ((G Globals) (n T) (t T)) TV (para TV (typeStep G n) t))
+
+  ; the bindings of optional arrows with their types into optional definitions and sequents, and
+  ; the optional list of present definitions, as the base binds and collects optional trees
+  (defn bindPD ((m OTPair.Maybe) (f (Arrow TPair OPDefn.Maybe))) OPDefn.Maybe
+    (case m ((OTPair.just p) (f p)) ((OTPair.nothing) OPDefn.nothing)))
+  (defn bindPS ((m OTPair.Maybe) (f (Arrow TPair OSequent.Maybe))) OSequent.Maybe
+    (case m ((OTPair.just p) (f p)) ((OTPair.nothing) OSequent.nothing)))
+  (defn allSomeD ((ms (List OPDefn.Maybe))) OPDefnList.Maybe
+    (let r (Prod T (List PDefn)) (OPDefn.allJust ms)
+      (if (fst r) (OPDefnList.just (pdefns (snd r))) OPDefnList.nothing)))
+
+  ; the definition of the combinators a definition compiles to, over the definitions before it
+  (defn ldCompile ((G Globals) (d LDefn)) OPDefn.Maybe
+    (bindPD ((compile G (ldArity d) (ldBody d)) (ctxObj (ldParams d)) (stdEnv (ldParams d)))
+      (lam ((p TPair))
+        (if (and (allT (isTy G (ldArity d)) (ldParams d)) (equal (p2 p) (ldType d)))
+          (OPDefn.just (pdefn (sorts (replicate (ldArity d) Sorts.obj)) Sorts.arr (p1 p)))
+          OPDefn.nothing))))
+  (defn defCompile ((G Globals) (d Definition)) OPDefn.Maybe
+    (case d ((defLang l) (ldCompile G l))
+      ((defObj m b) (OPDefn.just (pdefn (sorts (replicate m Sorts.obj)) Sorts.obj b)))))
+  (import (Map T OPDefn.Maybe) as CompileAt)
+  (defn compileDefs ((G Globals)) OPDefnList.Maybe
+    (let ds (List Definition) (gDefs G)
+      (allSomeD
+        (CompileAt.map
+          (lam ((i T))
+            (defCompile (globals (prims (gPrims G)) (defs (EachDef.take i ds)) (gBase G))
+              (Defs.atOr def0 ds i)))
+          (range (Defs.length ds))))))
+
+  ; the sequent of the combinators an equation of two terms in a context compiles to
+  (defn compileEq ((G Globals) (n T) (g Ts) (t T) (u T)) OSequent.Maybe
+    (bindPS ((compile G n t) (ctxObj g) (stdEnv g))
+      (lam ((p TPair))
+        (bindPS ((compile G n u) (ctxObj g) (stdEnv g))
+          (lam ((q TPair))
+            (if (and (allT (isTy G n) g) (equal (p2 p) (p2 q)))
+              (OSequent.just (mkSeq (replicate n Sorts.obj) (nil Eqn) (eqn (p1 p) (p1 q))))
+              OSequent.nothing))))))
+
+  (def ann1 (ann 0 0 0))
+
+  ; whether a primitive arrow is an arrow of a signature in its object parameters between types,
+  ; and whether the checker's inference confirms its domain and codomain
+  (defn primWf ((G Globals) (S (List OpSig)) (p Primitive)) T
+    (let m T (prArity p)
+      (and (scoped m (prArrow p))
+        (and (isTy G m (prDom p))
+          (and (isTy G m (prCod p))
+            (equal (sortOf S (replicate m Sorts.obj) (prArrow p)) (some Sorts.arr)))))))
+  (defn primOk ((G Globals) (E ExtEnv) (p Primitive)) T
+    (and (primWf G (envSg E) p)
+      (let inf TreeInf (snd (infers E (replicate (prArity p) Sorts.obj) (nil Eqn)))
+        (let a OAnn.Maybe (inf (prArrow p))
+          (let d OAnn.Maybe (inf (prDom p))
+            (let c OAnn.Maybe (inf (prCod p))
+              (if (and (OAnn.isJust a) (and (OAnn.isJust d) (OAnn.isJust c)))
+                (let a2 Ann (OAnn.fromMaybe ann1 a)
+                  (let d2 Ann (OAnn.fromMaybe ann1 d)
+                    (let c2 Ann (OAnn.fromMaybe ann1 c)
+                      (and (eq (annSort a2) Sorts.arr)
+                        (and (eq (annSort d2) Sorts.obj)
+                          (and (eq (annSort c2) Sorts.obj)
+                            (and (equal (annLo a2) (annLo d2)) (equal (annHi a2) (annLo c2)))))))))
+                0)))))))
+
+  ; whether an object in object parameters is an object defined by the checker's inference
+  (defn objOk ((E ExtEnv) (m T) (b T)) T
+    (and (equal (sortOf (envSg E) (replicate m Sorts.obj) b) (some Sorts.obj))
+      (OAnn.isJust ((snd (infers E (replicate m Sorts.obj) (nil Eqn))) b)))))
