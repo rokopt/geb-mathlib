@@ -192,6 +192,16 @@
   ; whether an atom occurs in a form
   (def occurs
     (lam ((a T) (f T)) (para T (lam ((n T) (rs Ts)) (if (equal n a) 1 (foldr T T or 0 rs))) f)))
+  ; the forms that replace a form f of a program's forms fs, whose markers are ms, when they can
+  ; be written: a marker by the recognizer of its datatype where the forms refer to it and by
+  ; none otherwise, any other form by itself
+  (def recognizersAt
+    (lam ((ms Ts) (fs Ts) (f T))
+      (if (eq (label f) 9)
+        (if (foldr T T (lam ((g T) (u T)) (or (occurs (Datatype.memberName (child f 0)) g) u)) 0 fs)
+          (let d T (recognizer ms f) (if (isSome d) (some (node 0 (single (get d)))) none))
+          (some (node 0 (nil T))))
+        (some (node 0 (single f))))))
   ; a program's forms with its markers replaced by the recognizers it refers to, when each of
   ; those can be written
   (def insertRecognizers
@@ -199,22 +209,7 @@
       (let ms Ts (markers fs)
         (let r T
           (allSome
-            (foldr T Ts
-              (lam ((f T) (acc Ts))
-                (cons
-                  (if (eq (label f) 9)
-                    (if
-                      (foldr T T
-                        (lam ((g T) (u T)) (or (occurs (Datatype.memberName (child f 0)) g) u))
-                        0
-                        fs)
-                      (let d T (recognizer ms f)
-                        (if (isSome d) (some (node 0 (single (get d)))) none))
-                      (some (node 0 (nil T))))
-                    (some (node 0 (single f))))
-                  acc))
-              (nil T)
-              fs))
+            (foldr T Ts (lam ((f T) (acc Ts)) (cons (recognizersAt ms fs f) acc)) (nil T) fs))
           (if (isSome r)
             (some
               (node 0

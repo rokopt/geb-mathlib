@@ -760,15 +760,16 @@
     ((foldr Tx (Arrow CS CS) (lam ((f Tx) (k (Arrow CS CS)) (s CS)) (k (checkStep s f)))
        (lam ((s CS)) s)
        fs) s))
-  (defn checkForms ((fs (List Tx))) OName.Maybe
-    (snd
-      ((foldr Tx (Arrow CS CS)
-         (lam ((f Tx) (k (Arrow CS CS)) (s CS))
-           (k
-             (case f
-               ((tGeneric gs)
-                (case (snd s) ((OName.just n) s)
-                  ((OName.nothing) (pair (fst s) (snd (checkRun s gs))))))
-               (else (checkStep s f)))))
-         (lam ((s CS)) s)
-         fs) (pair env0 OName.nothing)))))
+  ; a program's forms checked in order from a state, a template's instance as above
+  (defn checkAll ((s CS) (fs (List Tx))) CS
+    ((foldr Tx (Arrow CS CS)
+       (lam ((f Tx) (k (Arrow CS CS)) (s CS))
+         (k
+           (case f
+             ((tGeneric gs)
+              (case (snd s) ((OName.just n) s)
+                ((OName.nothing) (pair (fst s) (snd (checkRun s gs))))))
+             (else (checkStep s f)))))
+       (lam ((s CS)) s)
+       fs) s))
+  (defn checkForms ((fs (List Tx))) OName.Maybe (snd (checkAll (pair env0 OName.nothing) fs))))
