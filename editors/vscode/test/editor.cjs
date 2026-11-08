@@ -3,7 +3,6 @@ const vscode = require('vscode');
 const { execFileSync } = require('node:child_process');
 const { readFileSync, writeFileSync, mkdtempSync, rmSync } = require('node:fs');
 const path = require('node:path');
-const { editorTest } = require('../package.json');
 
 const root = path.resolve(__dirname, '../../..');
 const bin = name => path.join(root, '.lake/build/bin', name);
@@ -129,7 +128,7 @@ exports.run = async () => {
         assert.equal(editor.document.getText(), text);
       });
     }
-    if (process.env.GEB_TEST_PAREDIT === '1') await pareditTests(test, profile);
+    if (process.env.GEB_TEST_PAREDIT_VERSION) await pareditTests(test, profile);
     if (failures.length) throw new AggregateError(failures, 'Editor acceptance failed');
   } finally {
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
@@ -140,7 +139,7 @@ exports.run = async () => {
 async function pareditTests(test, profile) {
   const paredit = vscode.extensions.getExtension('MikeDelmonaco.paredit');
   assert.ok(paredit);
-  assert.equal(paredit.packageJSON.version, editorTest.paredit.split('@')[1]);
+  assert.equal(paredit.packageJSON.version, process.env.GEB_TEST_PAREDIT_VERSION);
   await paredit.activate();
   for (const atom of ['"plain"', '"(;)"', '"escaped \\\"quote\\\""', '"λ"', '"first\nsecond"']) {
     await test(`navigate quoted atom ${JSON.stringify(atom)}`, async () => {

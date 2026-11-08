@@ -383,8 +383,8 @@ Extension:
   and links. Comments are read as the recorded subset of Verso's markup,
   and every reference in them and in the notes' links resolves, as
   `geb-doc` checks. The forms `let*` and `cond`, expanded in module
-  elaboration, are complete. The `geb` editor language is in progress,
-  its acceptance with Mike's Paredit pending. Ready, in the order of
+  elaboration, are complete, as is the `geb` editor language with Mike's
+  Paredit, built from a pinned commit and patch. Ready, in the order of
   {ref "authoring-sequence"}[the sequence], and independent of the datatype
   language's completion: the syntax of statements
   and proof scripts; the checker of holes in programs in its suspending
@@ -1658,9 +1658,10 @@ section below opens with a table of the states of its parts.
     formatter, the formatter's adoption, the authoring profile read by the
     seed and the Geb reader, and the canonical, basic transport and
     advanced encodings: complete; modules: complete but for the parts that
-    follow their consumers; diagnostics naming the failing definition and
-    the markup of comments: complete; the other steps of the sequence independent of the datatype
-    language's completion: ready; the steps after it: waiting on it; the
+    follow their consumers; diagnostics naming the failing definition, the
+    markup of comments and the `geb` editor language: complete; the other
+    steps of the sequence independent of the datatype language's
+    completion: ready; the steps after it: waiting on it; the
     parts that follow their consumers: waiting on them
 *
   * {ref "goedel-t"}[Gödel's T]
@@ -3310,8 +3311,7 @@ tag := "authoring-compatibility"
   * Complete
 *
   * The `geb` editor language with Mike's Paredit
-  * In progress: the language extension and formatter task exist;
-    Paredit acceptance is pending
+  * Complete
 *
   * Manifests with editions
   * Complete, but for the program whose typing's soundness is proved: its
@@ -4398,11 +4398,14 @@ Geb syntax. Formatting on save, through `pucelle.run-on-save` calling
 
 The declarative extension is in `editors/vscode/`, with a task for
 formatting a saved file in `.vscode/tasks.json`. Its grammar, bracket
-matching and formatter task are tested in VS Code. The structural
-fixture is separate: the pinned Mike's Paredit 0.2.1 fails navigation
-across a quoted semicolon and navigation in CRLF input, so structural
-editing is not yet a supported default. The extension's README describes
-the tests and installation.
+matching and formatter task are tested in VS Code. Mike's Paredit 0.2.1
+fails navigation across a quoted semicolon and navigation in CRLF input,
+so the structural editor is built from its upstream commit with a patch
+(`editors/vscode/patches/`), under a version, `0.2.1+geb.1`, of the
+release's precedence, so that VS Code's updates do not replace it by the
+release. The build passes the structural fixture in continuous
+integration, and the release's failures remain reproducible beside it.
+The extension's README describes the tests and installation.
 
 A tree-sitter grammar for Geb is derived from the same profile when the
 editors that use tree-sitter need it, from tree-sitter-scheme as a base,

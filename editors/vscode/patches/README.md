@@ -10,7 +10,6 @@ under the [MIT license](paredit-LICENSE.txt).
 
 - [Changes](#changes)
 - [Build and test](#build-and-test)
-- [Local installation](#local-installation)
 
 <!-- END doctoc -->
 
@@ -35,51 +34,26 @@ resulting programs with `geb-kernel`.
 
 ## Build and test
 
-Start at the Geb repository root, with the prerequisites in the
-[editor README](../README.md#validation) installed. The commands below
-make a separate checkout of the pinned upstream source, apply the patch,
-run its unit tests and build a local VSIX. The checkout remains available
-for inspection at `paredit_work_dir`.
+[`build.sh`](build.sh), which `npm run build:paredit --prefix
+editors/vscode` runs, fetches the commit that `package.json` pins under
+`editorTest.paredit` into a temporary checkout, applies the patch
+without fuzz, runs upstream's unit tests, sets the version that
+`package.json` names, and packages
+`editors/vscode/paredit-<version>.vsix`. It records the build's inputs,
+the repository, the commit, the version and the patch's digest, beside
+the VSIX, and builds again only when they change. `npm run test:paredit
+--prefix editors/vscode` builds and then tests the VSIX; the
+[editor README](../README.md) describes the tests and the installation.
+
+To inspect the patched source, apply the patch to a checkout of the
+pinned commit:
 
 ```sh
-geb_root_dir="$PWD"
-paredit_work_dir="$(mktemp -d)"
-git clone https://github.com/quasarbright/vscode-paredit.git "$paredit_work_dir"
-git -C "$paredit_work_dir" checkout --detach dcc13c5cf5438ca3236e1c7b46f3bbd089337817
-patch --batch --fuzz=0 -d "$paredit_work_dir" -p1 \
-  < editors/vscode/patches/paredit-0.2.1.patch
-npm ci --ignore-scripts --prefix "$paredit_work_dir"
-npm test --prefix "$paredit_work_dir" -- --runInBand
-(
-  cd "$paredit_work_dir"
-  "$geb_root_dir/editors/vscode/node_modules/.bin/vsce" package \
-    --no-dependencies --allow-star-activation \
-    --out "$geb_root_dir/editors/vscode/paredit-0.2.1-geb.vsix"
-)
-GEB_PAREDIT_VSIX="$PWD/editors/vscode/paredit-0.2.1-geb.vsix" \
-  npm run test:paredit --prefix editors/vscode
+git clone https://github.com/quasarbright/vscode-paredit.git vscode-paredit
+git -C vscode-paredit checkout --detach dcc13c5cf5438ca3236e1c7b46f3bbd089337817
+patch --batch --fuzz=0 -d vscode-paredit -p1 < editors/vscode/patches/paredit-0.2.1.patch
 ```
 
-On Linux without a graphical session, put `xvfb-run -a` before `npm run`
-in the last command. The runner installs the supplied VSIX in a fresh
-test profile and disables automatic updates. Without `GEB_PAREDIT_VSIX`,
-`test:paredit` tests the unmodified Marketplace release and reproduces
-its failures.
-
-The VSIX retains upstream's extension identifier and version. Its
-filename distinguishes the local build. The Geb extension's normal
-package and CI checks do not install this build; selecting a supported
-distribution and submitting changes upstream remain separate decisions.
-
-## Local installation
-
-To try the build in a personal editor after reviewing the patch:
-
-```sh
-code --install-extension editors/vscode/paredit-0.2.1-geb.vsix --force
-```
-
-It replaces an installed Mike's Paredit 0.2.1 under the same identifier.
-Disable automatic updates for that extension while trying this build,
-so the installed version remains the one being evaluated. The Geb
-language extension must also be installed as described in its README.
+The version, `0.2.1+geb.1`, adds build metadata to the release's, so it
+has the precedence of 0.2.1 and the release is not offered as its
+update. A change to the patch increments its final number.

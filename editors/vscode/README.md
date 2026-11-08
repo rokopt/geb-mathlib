@@ -32,6 +32,23 @@ file and select the `Geb` language if a previous file association
 overrides its extension. In a remote workspace, install the extension
 in the VS Code instance displaying the file.
 
+The structural editor is Mike's Paredit, built from the upstream commit
+and [patch](patches/README.md) that `package.json` pins under
+`editorTest.paredit`. The build requires `git`, `patch` and network
+access:
+
+```sh
+npm run build:paredit --prefix editors/vscode
+code --install-extension 'editors/vscode/paredit-0.2.1+geb.1.vsix' --force
+```
+
+The build keeps upstream's identifier, `MikeDelmonaco.paredit`, so its
+commands and keybindings are upstream's, and it replaces an installed
+Marketplace release. Its version, `0.2.1+geb.1`, has the precedence of
+the release it patches, so VS Code offers no update to that release. A
+later upstream release would be offered; disabling Auto Update for the
+extension in the Extensions view keeps the build installed.
+
 ## Editing and formatting
 
 The language configuration supplies `;` for Toggle Line Comment,
@@ -57,9 +74,10 @@ The formatter and the document type are described in the
 lake build geb-fmt geb-kernel
 npm test --prefix editors/vscode
 npm run test:editor --prefix editors/vscode
+npm run test:paredit --prefix editors/vscode
 ```
 
-On Linux without a graphical session, run the last command under
+On Linux without a graphical session, run the last two commands under
 `xvfb-run -a`. The integration runner downloads the VS Code version
 pinned in `package.json`, and uses separate extension and user-data
 directories under `editors/vscode/node_modules/.cache/editor`. It does
@@ -83,31 +101,28 @@ runs the integration tests under Xvfb.
 
 ## Structural editing acceptance
 
-Mike's Paredit 0.2.1 does not pass the authoring profile's
-[acceptance fixture](test/editor.cjs). Navigation treats a semicolon
-in a quoted atom as a comment and
-misplaces cursor offsets in CRLF input. The extension therefore does not
-install or recommend Paredit, and structural editing remains pending.
+The pinned build of Mike's Paredit passes the authoring profile's
+[acceptance fixture](test/editor.cjs). `test:paredit` rebuilds it when
+its pinned inputs have changed, installs it in a fresh extension
+directory of the test instance, and tests navigation, selection,
+wrapping, slurping, barfing and undo, exiting unsuccessfully if any
+fixture fails. `scripts/tests/test-editor.sh` runs it, in continuous
+integration among other places.
 
-A [source patch and reproduction instructions](patches/README.md) are
-available for review. A supplied VSIX can be tested in a fresh extension
-directory by setting `GEB_PAREDIT_VSIX` to its absolute path when running
-`test:paredit`. The choice of a supported distribution remains separate
-from these tests.
-
-The failing examples and the other structural commands can be tested
-with the pinned release in an isolated VS Code instance:
-
-```sh
-npm run test:paredit --prefix editors/vscode
-```
-
-This command installs the Paredit version pinned in `package.json` into
-the test instance. It tests navigation, selection, wrapping, slurping,
-barfing and undo, and exits unsuccessfully while any fixture fails.
 Structural edits are compared with the intended document through the
 formatter; the kernel checks the resulting programs and their expected
 forms. Undo must restore the original buffer exactly.
+
+The Marketplace release 0.2.1 fails the fixture: navigation treats a
+semicolon in a quoted atom as a comment and misplaces cursor offsets in
+CRLF input. The following command installs the release that
+`editorTest.paredit.release` names and reproduces its failures, so that
+a later release, once named there, is tested against the fixture before
+it replaces the patch:
+
+```sh
+npm run test:paredit-release --prefix editors/vscode
+```
 
 ## References
 

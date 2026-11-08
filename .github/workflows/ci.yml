@@ -97,7 +97,7 @@ jobs:
           node-version: '24'
       - name: install editor test dependencies
         run: npm ci --prefix editors/vscode
-      - name: Geb language and formatter tests
+      - name: Geb language, formatter and Paredit tests
         run: xvfb-run -a bash scripts/tests/test-editor.sh
       - name: lint GebTests (axiom + style linters on tests)
         run: lake exe batteries/runLinter GebTests

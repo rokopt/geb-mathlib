@@ -37,7 +37,9 @@
   "scripts": {
     "test": "node --test test/grammar.test.cjs",
     "test:editor": "node test/run.cjs",
-    "test:paredit": "node test/run.cjs --paredit",
+    "build:paredit": "bash patches/build.sh",
+    "test:paredit": "npm run build:paredit && node test/run.cjs --paredit",
+    "test:paredit-release": "node test/run.cjs --paredit-release",
     "package": "vsce package --no-dependencies --baseContentUrl https://github.com/rokopt/geb-mathlib/blob/main/editors/vscode --out geb-language.vsix"
   },
   "devDependencies": {
@@ -48,6 +50,12 @@
   },
   "editorTest": {
     "vscode": "1.145.2",
-    "paredit": "MikeDelmonaco.paredit@0.2.1"
+    "paredit": {
+      "release": "MikeDelmonaco.paredit@0.2.1",
+      "repository": "https://github.com/quasarbright/vscode-paredit.git",
+      "commit": "dcc13c5cf5438ca3236e1c7b46f3bbd089337817",
+      "patch": "patches/paredit-0.2.1.patch",
+      "version": "0.2.1+geb.1"
+    }
   }
 }

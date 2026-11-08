@@ -14,10 +14,18 @@ async function main() {
   const executable = await downloadAndUnzipVSCode({ version: editorTest.vscode, cachePath: cache });
   const [cli, ...args] = resolveCliArgsFromVSCodeExecutablePath(executable, { reuseMachineInstall: true });
   const state = mkdtempSync(path.join(cache, 'run-'));
-  const pareditVSIX = process.env.GEB_PAREDIT_VSIX;
-  // A supplied build gets a fresh extension directory, so it cannot reuse the
-  // installed Marketplace release or replace it for subsequent comparison runs.
-  const extensions = pareditVSIX ? path.join(state, 'extensions') : path.join(cache, 'extensions');
+  // --paredit installs the build of the pinned patch, which patches/build.sh writes,
+  // and --paredit-release the Marketplace release it patches, to reproduce its failures.
+  const release = process.argv.includes('--paredit-release');
+  const paredit = release || process.argv.includes('--paredit');
+  const pin = editorTest.paredit;
+  const [pareditSource, pareditVersion] = release
+    ? [pin.release, pin.release.split('@')[1]]
+    : [path.join(extension, `paredit-${pin.version}.vsix`), pin.version];
+  // The build gets a fresh extension directory, so it cannot reuse the installed
+  // Marketplace release or replace it for subsequent comparison runs.
+  const extensions = paredit && !release ? path.join(state, 'extensions')
+    : path.join(cache, 'extensions');
   try {
     mkdirSync(path.join(state, 'User'));
     writeFileSync(path.join(state, 'User/settings.json'), JSON.stringify({
@@ -25,10 +33,9 @@ async function main() {
       'extensions.autoCheckUpdates': false,
       'update.mode': 'none',
     }));
-    const paredit = process.argv.includes('--paredit');
     if (paredit) {
       execFileSync(cli, [...args, '--extensions-dir', extensions, '--user-data-dir', state,
-        '--install-extension', pareditVSIX ? path.resolve(pareditVSIX) : editorTest.paredit, '--force'], {
+        '--install-extension', pareditSource, '--force'], {
         stdio: 'inherit', env: { ...process.env, DONT_PROMPT_WSL_INSTALL: '1' },
       });
     }
@@ -36,7 +43,7 @@ async function main() {
       vscodeExecutablePath: executable,
       extensionDevelopmentPath: extension,
       extensionTestsPath: path.join(__dirname, 'editor.cjs'),
-      extensionTestsEnv: { GEB_TEST_PAREDIT: paredit ? '1' : '0' },
+      extensionTestsEnv: { GEB_TEST_PAREDIT_VERSION: paredit ? pareditVersion : '' },
       launchArgs: [root, '--extensions-dir', extensions, '--user-data-dir', state,
         '--disable-gpu', '--skip-welcome', '--skip-release-notes', '--disable-workspace-trust',
         ...(!paredit ? ['--disable-extension', 'MikeDelmonaco.paredit'] : [])],
