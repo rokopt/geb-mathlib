@@ -431,6 +431,10 @@ name = "geb-fmt"
 root = "GebFmtMain"
 
 [[lean_exe]]
+name = "geb-doc"
+root = "GebDocMain"
+
+[[lean_exe]]
 name = "geb-certify"
 root = "GebCertifyMain"
 

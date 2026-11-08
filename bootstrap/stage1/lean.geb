@@ -6,7 +6,7 @@
 ; definitions, in order and under its name, as its denotation written with the functions of
 ; Geb.Kernel.Const, referred to by qualified names, which no definition's name can capture. A
 ; variable is named by its binding depth, and a binder whose variable its body does not use is
-; written _. The text is laid out in groups, each printed on one line when it and the text
+; written {lit}`_`. The text is laid out in groups, each printed on one line when it and the text
 ; following it fit within 100 columns and within 70 columns beyond the indentation, and over
 ; indented lines when they do not. mainLean is the compiler with this backend in place of the
 ; image.

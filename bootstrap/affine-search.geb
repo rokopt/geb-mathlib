@@ -16,7 +16,7 @@
 ; and only if their graph has no cycle of positive weight, and the longest paths are the least
 ; solution above a given one. The constraints describing a definition's decorations, projected onto
 ; the levels of its type, are the longest paths between those levels, which have that form again.
-; The constraints of [BaillotTerui2005] are homogeneous but for those of contraction, so that a
+; The constraints of {cite}`BaillotTerui2005` are homogeneous but for those of contraction, so that a
 ; rational solution scales to an integer one; the kernel's constants have fixed numbers of !, which
 ; excludes that scaling, and the form above replaces it.
 ;

@@ -115,7 +115,7 @@
     (lam ((c T))
       (if (eq c 32) 1
         (if (eq c 10) 1 (if (eq c 9) 1 (if (eq c 13) 1 (if (eq c 11) 1 (eq c 12))))))))
-  ; a letter, or one of the eight pseudo-alphabetic characters of RFC 9804, - . / _ : * + =
+  ; a letter, or one of the eight pseudo-alphabetic characters of RFC 9804, - . / \_ : \* + =
   (def isTokenStart
     (lam ((c T))
       (if (inRange c 65 90) 1

@@ -3854,6 +3854,17 @@ import-direction rules above are enforced by
   and advanced encodings
   (`Geb.Kernel.Document.readStrictDurable_printCanonDurable`,
   `Geb.Kernel.Document.readStrictDurable_printAdvancedDurable`).
+  `Markup.lean` reads the prose of each block of a document's comments as
+  the recorded subset of Verso's markup, of paragraphs and code blocks
+  holding text, code and the roles `name`, `geb`, `cite` and `lit`
+  (`Geb.Kernel.Markup.parseProse`), and checks that each reference in the
+  comments and in the notes' links resolves, a Geb definition from the
+  comment's modules as a name resolves in Lean's namespaces
+  (`Geb.Kernel.Markup.check`); `MarkupVerso.lean` reads a text with
+  Verso's parser in Lean's core in the subset's terms
+  (`Geb.Kernel.Markup.versoBlocks`), against which the tests and the
+  executable `geb-doc`, run over every manifest by
+  `scripts/bootstrap.sh check`, compare the subset's reading.
   `Blake3.lean` computes the hash BLAKE3 [OConnorAumassonNevesWilcoxOHearn2020]
   (`Geb.Blake3.hash`). `Identity.lean` identifies a definition by the
   CIDv1 [RatajBerjon2026] of its payload, the canonical encoding of its

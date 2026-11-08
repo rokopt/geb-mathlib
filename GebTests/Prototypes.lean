@@ -57,6 +57,8 @@ import GebTests.Prototypes.InteractionNet
 import GebTests.Prototypes.Kernel
 import GebTests.Prototypes.Kernel.Document
 import GebTests.Prototypes.Kernel.Durable
+import GebTests.Prototypes.Kernel.Markup
+import GebTests.Prototypes.Kernel.MarkupVerso
 import GebTests.Prototypes.Kernel.Eval
 import GebTests.Prototypes.Kernel.Identity
 import GebTests.Prototypes.Kernel.Modules
