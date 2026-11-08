@@ -385,12 +385,13 @@ Extension:
   `geb-doc` checks. The forms `let*` and `cond`, expanded in module
   elaboration, are complete, as is the `geb` editor language with Mike's
   Paredit, built from a pinned commit and patch, and the checker of holes
-  in programs with the display of their obligations. Ready, in the order of
-  {ref "authoring-sequence"}[the sequence], and independent of the datatype
-  language's completion: the syntax of statements and proof scripts; and
-  documentation as literate pages. Waiting on those: the record of
-  elaborated definitions, which is taken up at the first program outside
-  the compilers. Waiting on the datatype
+  in programs with the display of their obligations. The syntax of
+  statements and proof scripts is complete over the kernel's types, with
+  contexts, hypotheses, citations of earlier theorems and the tactics of
+  reduction, search, extensionality and the induction and case analysis of
+  lists, as is the record of elaborated definitions for the first program
+  outside the compilers; documentation as literate pages has a first
+  inclusion. Waiting on the datatype
   language's completion: hygienic elaboration with explicit assembly,
   patterns with `&`, unused pattern variables, primitives that no binding
   shadows and emitted names that no definition captures; holes in the
@@ -3385,10 +3386,12 @@ tag := "authoring-compatibility"
 *
   * The syntax of statements and proof scripts
     ({ref "proof-scripts"}[Proof scripts and certificates])
-  * A first fragment is complete: named closed-definition equalities,
-    normalization scripts, saved certificates and replay from Geb source
-    ({ref "first-authoring"}[Writing a first Geb development]); contexts,
-    hypotheses and the other tactics remain
+  * Complete over the kernel's types: contexts, hypotheses, citations of
+    earlier theorems, the tactics of reduction, search, extensionality and
+    the induction and case analysis of lists, saved certificates and replay
+    from Geb source ({ref "first-authoring"}[Writing a first Geb
+    development]); statements over datatypes wait on the datatype
+    language's completion, and induction on trees on the lemmas of trees
 *
   * `let*` and `cond`, expanded in the elaboration of modules
   * Complete
@@ -5246,17 +5249,25 @@ keyed by the statement and the elaborated definitions it cites, and a
 script that fails after a change of the prover falls back to its cached
 certificate while it is repaired. The complete proofs about the
 compiler's components have from 600000 to 1240000 nodes, so the cache
-holds the form of shared certificates. The first surface fragment is the
-versioned `proofs` document of `bootstrap/authoring.geb`: equations between
-named closed definitions, with normalization scripts. The
-{ref "first-authoring"}[first authoring development] reads, converts,
-proves and replays those sources without Lean code of its own. Their
-canonical and advanced encodings use the existing durable-document
+holds the form of shared certificates. The surface syntax is the
+versioned `proofs` document of `bootstrap/authoring.geb`: statements over
+the kernel's types, with a context of named variables and named
+hypotheses, whose terms are the kernel's terms over the program's
+definitions, translated as the program is; and scripts composing the
+tactics written in Geb, whose names for the variables and hypotheses they
+introduce are written in the script, and whose rules cite hypotheses and
+earlier theorems by name ({ref "first-authoring"}[Writing a first Geb
+development]). A theorem is followed in its certificate by its sides in weak
+normal form, derived from it, by which a rule citing it rewrites, as the Lean
+developments state their lemmas. The first authoring development reads,
+converts, proves and replays those sources without Lean code of its own.
+Their canonical and advanced encodings use the existing durable-document
 retraction. The compiler developments' statements remain Lean values and
 their scripts Lean code, the deducers under
 `GebTests/Prototypes/FreeTopos/`, which the provers' agreement relates to
 the prover written in Geb; moving those proofs into Geb source requires
-contexts, hypotheses and further script forms. The syntax of statements and proof scripts
+statements over the metalogic's own types and object variables, and the
+tactics of trees, bits and masks those deducers use. The syntax of statements and proof scripts
 is a step of the sequence ({ref "authoring-sequence"}[The sequence and its
 acceptance]). It adds no rule to the metalogic: a script is a program for
 one prover, and its certificate is checked as any other is.

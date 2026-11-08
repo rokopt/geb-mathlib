@@ -106,16 +106,28 @@ def checkExamples (manifest : System.FilePath) (m : Manifest) (text : ByteArray)
             throw <| IO.userError s!"{path}: example of {declaration} \
               differs from its expected value"
 
+/-- The certificate format of a proof source's version: version 0 saves one declaration for each
+theorem, and version 1 saves each theorem followed by its companion. -/
+def formatOf (version : Tree) : Tree :=
+  nameTree (if decide (version = leaf 0) then "geb-proof/v1" else "geb-proof/v2").toList
+
+/-- The version of a proof source, read against the program's statements. -/
+def versionOf (program input : Tree) : Except String Tree :=
+  let result := GebMirror.Metalogic.«Authoring.version» program input
+  if result.label == 0 then .error "invalid proof source"
+  else .ok (GebMirror.Metalogic.«Prelude.get» result)
+
 /-- The certificate format and theory are separate from the kernel image's wire version. -/
-def envelope (profile : Profile) (program certificate : Tree) : Tree :=
-  mk 0 [nameTree "geb-proof/v1".toList, nameTree "free-topos/base/v1".toList,
+def envelope (format : Tree) (profile : Profile) (program certificate : Tree) : Tree :=
+  mk 0 [format, nameTree "free-topos/base/v1".toList,
     nameTree (canonOf profile.toSExp), program, certificate]
 
-/-- Read a certificate only for the program and theory against which it was produced. -/
-def certificateOf (profile : Profile) (program : Tree) (saved : Tree) : Except String Tree :=
+/-- Read a certificate only for the format, program and theory against which it was produced. -/
+def certificateOf (expected : Tree) (profile : Profile) (program : Tree) (saved : Tree) :
+    Except String Tree :=
   match saved.children with
   | [format, theory, header, source, cert] =>
-    if saved.label == 0 && decide (format = nameTree "geb-proof/v1".toList) &&
+    if saved.label == 0 && decide (format = expected) &&
         decide (theory = nameTree "free-topos/base/v1".toList) &&
         decide (header = nameTree (canonOf profile.toSExp)) && decide (source = program) then
       .ok cert
@@ -128,6 +140,7 @@ def execute (mode manifest proofs certificate : String) : IO UInt32 := do
   checkExamples manifest m text
   let d ← readDocument proofs m.profile
   let input := ofBytes (sourceBytes d.doc)
+  let format := formatOf (← IO.ofExcept ((versionOf b input).mapError (s!"{proofs}: {·}")))
   match mode with
   | "prove" =>
     let result := GebMirror.Metalogic.«Authoring.prove» b input
@@ -137,11 +150,11 @@ def execute (mode manifest proofs certificate : String) : IO UInt32 := do
     let cert := GebMirror.Metalogic.«Prelude.get» result
     unless (GebMirror.Metalogic.«Authoring.replay» b input cert).label == 1 do
       throw <| IO.userError s!"{proofs}: generated certificate does not replay"
-    IO.FS.writeBinFile certificate (writeImage (envelope m.profile b cert))
+    IO.FS.writeBinFile certificate (writeImage (envelope format m.profile b cert))
   | "replay" =>
     let some saved := readImage (← IO.FS.readBinFile certificate)
       | throw <| IO.userError s!"{certificate}: malformed certificate image"
-    let cert ← IO.ofExcept (certificateOf m.profile b saved)
+    let cert ← IO.ofExcept (certificateOf format m.profile b saved)
     unless (GebMirror.Metalogic.«Authoring.replay» b input cert).label == 1 do
       throw <| IO.userError s!"{proofs}: certificate does not prove these statements"
   | _ => throw <| IO.userError "expected prove or replay"

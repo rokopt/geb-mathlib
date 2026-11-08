@@ -1,4 +1,4 @@
-; The pair example, in the pre-release edition.
+; The pair and list examples, in the pre-release edition.
 (program pair (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
-  (sources Pair.geb)
-  (entries Pair.first Pair.left))
+  (sources Pair.geb Lists.geb)
+  (entries Pair.first Pair.left Lists.append))

@@ -24,8 +24,9 @@ tag := "first-authoring"
 
 The development under `examples/authoring/` is a small program written
 and proved in Geb. Its manifest chooses edition `0` and the source,
-annotation and prose profiles. The statement and proof script live in
-`Pair.proofs.geb`; the computational definitions live in `Pair.geb`.
+annotation and prose profiles. The statements and proof scripts live in
+`Pair.proofs.geb`; the computational definitions live in `Pair.geb` and
+`Lists.geb`.
 The commands below compile the program, check the examples in its notes,
 produce a certificate and replay it. This chapter includes the files
 directly, checks their prose and references, and replays their certificate
@@ -35,10 +36,11 @@ while it builds.
 
 {gebProgram "examples/authoring/pair.manifest" "Pair.proofs.geb" "record/pair.cert"}
 
-The equality is between the two closed functions, including their
-abstractions. It therefore states equality at every pair of arguments;
-the example in the note separately checks one evaluation. There is no
-Lean source belonging to this development.
+The first theorem equates two closed functions, including their
+abstractions; the second states the same equality at every pair of
+arguments, and the example in the note separately checks one evaluation.
+The others use a hypothesis, induction on a list, and an earlier theorem.
+There is no Lean source belonging to this development.
 
 # Running it
 
@@ -68,30 +70,80 @@ certificate. Changing the statement, its name, the program, or its
 profile prevents that reuse. Comments and notes may change while the
 compiled program stays the same; examples are checked again on replay.
 
-# The proof-source fragment
+# The proof-source profile
 
-Version `0` has one nonempty sequence of uniquely named theorems:
+A proof document is `(proofs V THEOREM…)`, its version `V` being `0` or `1`,
+with one or more theorems of distinct names, each
+`(theorem NAME STATEMENT (by SCRIPT))`. Version `1` reads:
 
-```geb
-(proofs 0
-  (theorem first-pair
-    (equal Pair.first Pair.left)
-    (by (normalize 64))))
+```
+STATEMENT ::= (forall ((x A) …) PROPOSITION) | PROPOSITION
+PROPOSITION ::= (implies (h EQUATION) … EQUATION) | EQUATION
+EQUATION ::= (equal TERM TERM)
+SCRIPT ::= (normalize FUEL RULE…) | (reduce DEPTH RULE…)
+         | (auto DEPTH SPLITS RULE…) | (extensionality x SCRIPT)
+         | (induction x (y ys ih) SCRIPT SCRIPT)
+         | (cases x (y ys) SCRIPT SCRIPT)
+         | (reduce-hypotheses DEPTH (h …) SCRIPT)
+DEPTH ::= head | weak | open | full
 ```
 
-The sides of `equal` are fully qualified names of closed definitions in
-the compiled program. They resolve to the definitions' translations into
-the metalogic. `normalize` takes a natural-number budget and uses
-definition unfolding, beta reduction and the projections of pairs.
-An unknown name, duplicate theorem name, malformed form, unsupported
-version, false equation or unsuccessful search is rejected. Failure of a
-bounded search does not establish that the statement is false.
+A type `A` is a type of the kernel: `T`, `Unit`, `(Prod A B)`,
+`(Arrow A B)` or `(List A)`. A term is a term of the kernel, read by the Geb
+reader in the scope of the bound variables, innermost last, with the
+program's definitions under their qualified names; its translation into the
+metalogic is that of the program's definitions. The two sides of an
+equation have one type. The bound variables and the hypotheses are named
+by atoms that are neither numerals nor reserved, distinct from one another,
+from the program's definitions and from the theorems.
 
-This first fragment does not expose contexts, hypotheses, arbitrary
-terms, theorem dependencies, datatype induction or the other existing
-tactics. It gives those extensions an existing document and replay path.
-The current statement reader and script executor are in
-`bootstrap/authoring.geb`; they add no rule to the metalogic.
+A script proves the equation of its goal in the goal's context and under
+its hypotheses. `normalize` normalizes both sides within a budget,
+unfolding definitions and computing applications of abstractions, the
+components of pairs, the folds of lists and trees at their constructions,
+the case analysis of a coproduct at its injections and the element of the
+terminal type. `reduce` reduces both sides to a depth, the weak
+head normal form, the weak normal form, the normal form but for the starts
+and steps of folds, or the normal form, and `auto` reduces to a depth and
+splits a list or coproduct variable on which the reduction is stuck, up to a number of
+times, using the instances of the hypotheses. A rule names a hypothesis or
+an earlier theorem, which each of these then rewrites by. `extensionality`
+proves an equation of functions by that of their applications to a new
+variable `x`. `induction` proves an equation by induction on its innermost
+variable, of a list type: at the empty list, and at the list of a head `y`
+and a tail `ys`, under the induction hypothesis `ih`. `cases` proves it by
+the case analysis of any list variable, the variable kept in the context
+and its cases named. `reduce-hypotheses` reduces the named hypotheses to a
+depth, so that a rule rewrites by their reduced forms. The tactics
+introduce no names but those a script writes, so a script names every
+variable and hypothesis it refers to. These are the tactics of
+`bootstrap/free-topos/tactics.geb` and `bootstrap/free-topos/prove.geb`,
+`Geb.FreeTopos.Tactics` in Lean.
+
+The reductions rewrite a term once its head is reduced, so a theorem's
+left side as written rarely occurs in a reduced goal. In version `1` each
+theorem is therefore followed in the certificate by its companion: the
+theorem with its sides in weak normal form, derived from it at its own
+variables and hypotheses, and a rule naming the theorem rewrites by its
+companion.
+
+Version `0` admits only theorems `(theorem NAME (equal LEFT RIGHT)
+(by (normalize FUEL)))` whose sides are the names of definitions. It reads
+their statements as version `1` does, and its normalization unfolds
+definitions and computes applications of abstractions and the components
+of pairs alone, so a document of either version keeps its meaning. It
+cites no theorem, so its certificate saves no companion and has the format
+`geb-proof/v1`, whose certificates therefore still replay; version `1`
+writes `geb-proof/v2`. An unknown or unbound name, a name declared twice,
+a malformed form, an unsupported version, a false equation or an
+unsuccessful search is rejected. Failure of a bounded search does not establish that the
+statement is false.
+
+Statements are not yet written over the datatypes of the datatype language,
+and no tactic yet performs induction on trees, which needs the lemmas on
+the unfolding of trees the Lean developments prove first. The statement
+reader and the script interpreter are in `bootstrap/authoring.geb`; they
+add no rule to the metalogic.
 
 # Keeping the source
 
@@ -119,14 +171,14 @@ conversion does not promise to keep a particular whitespace layout.
 
 The record in `examples/authoring/record/` contains the checked program
 image, its elaborated definitions, the certificate, the compiler image, canonical copies of
-both source documents, and the SHA-256 digests of the inputs. The digests
+the program's and the proofs' source documents, and the SHA-256 digests of the inputs. The digests
 pin the compiler image and emitted compiler, the authoring runner and its
 source dependencies, the manifest and sources, the Lean toolchain and
 dependency lockfile. `record/compiler.img` retains the exact bytes of
 `bootstrap/compiler.img` used at the milestone. The certificate envelope separately identifies
-its format (`geb-proof/v1`), theory (`free-topos/base/v1`), document profile
-and exact compiled program; its declarations retain the statements and
-their source names.
+its format (`geb-proof/v2` for version `1`), theory (`free-topos/base/v1`),
+document profile and exact compiled program; its declarations retain the
+statements, their companions and their source names.
 
 ```
 scripts/authoring.sh check
@@ -143,9 +195,9 @@ rejection through the command-line interface.
 Edition `0` is still a pre-release edition. Keep the whole record with
 work written against it. No migration to a future edition is implemented
 here; its durable document, elaborated definitions and exact compiler
-give that migration explicit inputs. Suspended holes, full proof syntax,
-editor acceptance and completion of datatype soundness remain separate
-work.
+give that migration explicit inputs. Suspended holes in proofs, statements
+over datatypes, induction on trees, editor acceptance and completion of
+datatype soundness remain separate work.
 
 # Preserving a development
 

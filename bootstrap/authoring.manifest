@@ -8,5 +8,6 @@
     check.geb
     free-topos/translation.geb
     free-topos/prove.geb
+    free-topos/tactics.geb
     authoring.geb)
-  (entries Authoring.prove Authoring.replay))
+  (entries Authoring.prove Authoring.replay Authoring.version))

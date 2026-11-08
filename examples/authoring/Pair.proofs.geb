@@ -1,4 +1,19 @@
-; Equality of the functions, proved by normalization of their translations into the metalogic.
-; The budget bounds the normalization; failure to find a proof is not a refutation.
+; Theorems about the pair example and the appending of lists, proved by normalization, by
+; rewriting with a hypothesis and with an earlier theorem, and by induction. Each budget bounds a
+; search; failure to find a proof is not a refutation.
 
-(proofs 0 (theorem first-pair (equal Pair.first Pair.left) (by (normalize 64))))
+(proofs 1
+  ; The two closed functions are equal, including their abstractions.
+  (theorem first-pair (equal Pair.first Pair.left) (by (normalize 64)))
+  ; The same equality at every pair of arguments.
+  (theorem first-at (forall ((x T) (y T)) (equal (Pair.first x y) x)) (by (normalize 64)))
+  ; Under the hypothesis that the arguments are equal, the first is the second.
+  (theorem left-equal (forall ((x T) (y T)) (implies (same (equal x y)) (equal (Pair.left x y) y)))
+    (by (normalize 64 same)))
+  ; The empty list is a right unit, by induction with the induction hypothesis as a rewriting.
+  (theorem append-nil (forall ((xs (List T))) (equal (Lists.append xs (nil T)) xs))
+    (by (induction xs (y ys ih) (reduce weak) (reduce-hypotheses weak (ih) (reduce weak ih)))))
+  ; Appending the empty list twice, by rewriting with the theorem before it.
+  (theorem append-nil-twice
+    (forall ((xs (List T))) (equal (Lists.append (Lists.append xs (nil T)) (nil T)) xs))
+    (by (reduce weak append-nil))))

@@ -3,7 +3,10 @@
 ; translation's trees.
 
 (module Tactics
-  (export byMode hypRules byListCases AI openSubterms stuckVar mentions matchesOf byAuto condParts
+  (export byMode hypRules byListCases byListSplit withWeakHyps AI openSubterms stuckVar mentions
+    matchesOf
+    byAuto
+    condParts
     stuckVarC
     appsOf
     unnodeU

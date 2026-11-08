@@ -28,12 +28,12 @@ def definitions(text):
 
 full = Path(sys.argv[1]).read_text()
 base = []
-for layer in ('Checker', 'Translation', 'Prover'):
+for layer in ('Checker', 'Translation', 'Prover', 'Tactics'):
     base.extend(definitions(Path(f'bootstrap/lean/GebMirror/Metalogic/{layer}.lean').read_text()))
 parts = definitions(full)
 if [p.strip() for p in parts[:len(base)]] != [p.strip() for p in base]:
     raise SystemExit('authoring: the compiler changed the preceding metalogic definitions')
-header = re.sub(r'^public import .*$', 'public import GebMirror.Metalogic.Prover',
+header = re.sub(r'^public import .*$', 'public import GebMirror.Metalogic.Tactics',
                 full.split('\ndef «', 1)[0], flags=re.M)
 header = header.replace('namespace GebBoot', 'namespace GebMirror.Metalogic')
 Path(sys.argv[2]).write_text(header + '\n' + ''.join(parts[len(base):]) +
@@ -53,6 +53,7 @@ lake build geb-author
 .lake/build/bin/geb-defs "$tmp/pair.img" "$tmp/pair.defs"
 cp bootstrap/compiler.img "$tmp/compiler.img"
 "$runner" convert canonical "$example/pair.manifest" "$example/Pair.geb" "$tmp/pair.source.csexp"
+"$runner" convert canonical "$example/pair.manifest" "$example/Lists.geb" "$tmp/lists.source.csexp"
 "$runner" convert canonical "$example/pair.manifest" \
   "$example/Pair.proofs.geb" "$tmp/pair.proofs.csexp"
 # Retain the compiler image itself; the input digests also pin its emitted Lean and the
@@ -62,13 +63,14 @@ cp bootstrap/compiler.img "$tmp/compiler.img"
     bootstrap/lean/GebBoot.lean GebHost/Compiler.lean GebHost/Authoring.lean \
     GebAuthorMain.lean scripts/authoring.sh \
     bootstrap/authoring.manifest "$mirror" "$example/pair.manifest" \
-    "$example/Pair.geb" "$example/Pair.proofs.geb"
+    "$example/Pair.geb" "$example/Lists.geb" "$example/Pair.proofs.geb"
   .lake/build/bin/geb-kernel layers bootstrap/authoring.manifest |
     awk '{ for (i = 2; i <= NF; i++) print $i }'
 } | LC_ALL=C sort -u > "$tmp/inputs"
 while IFS= read -r input; do sha256sum "$input"; done < "$tmp/inputs" > "$tmp/inputs.sha256"
 
-artifacts=(compiler.img pair.cert pair.img pair.defs pair.source.csexp pair.proofs.csexp inputs.sha256)
+artifacts=(compiler.img pair.cert pair.img pair.defs pair.source.csexp lists.source.csexp
+  pair.proofs.csexp inputs.sha256)
 if [ "$mode" = regen ]; then
   mkdir -p "$example/record"
   for artifact in "${artifacts[@]}"; do

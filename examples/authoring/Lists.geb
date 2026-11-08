@@ -1,0 +1,7 @@
+; Appending lists of trees. The theorems in {lit}`Pair.proofs.geb` prove that the empty list is a
+; right unit of {geb}`Lists.append`, by induction on the first list.
+
+(module Lists (export append)
+  ; The elements of the first list followed by those of the second.
+  (defn append ((xs (List T)) (ys (List T))) (List T)
+    (foldr T (List T) (lam ((x T) (r (List T))) (cons x r)) ys xs)))
