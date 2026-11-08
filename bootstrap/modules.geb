@@ -10,7 +10,7 @@
 ; nodes over a name and the name it denotes in the flat program, looked up as abbreviations
 ; are.
 ;
-; Sequential typed bindings (let* ((x A e) ...) body) expand to nested let forms, each value
+; Sequential typed bindings (let\* ((x A e) ...) body) expand to nested let forms, each value
 ; seeing the preceding bindings. Guarded clauses (cond (test value) ... (else default)) expand
 ; to nested if forms, with exactly one final else. Both expand only in term positions; quoted
 ; data and type expressions are preserved, and neither keyword may name a declaration.
@@ -117,7 +117,7 @@
               (if (isSome r) (get r) emptyTerm))
             emptyTerm)))))
 
-  ; roles 5, 6 and 7 are a let* binding, its sequential list, and a cond clause
+  ; roles 5, 6 and 7 are a let\* binding, its sequential list, and a cond clause
   (def renChainRole
     (lam ((u T) (rs RenKs) (role T) (bound Ts))
       (if (eq role 5)
