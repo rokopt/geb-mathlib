@@ -25,7 +25,7 @@ package.json
 # The editor extension and its pinned test dependencies are tracked.
 !editors/vscode/package.json
 !editors/vscode/package-lock.json
-editors/vscode/*.vsix
+editors/vscode/*.vsix*
 skills-lock.json
 .agents/
 
