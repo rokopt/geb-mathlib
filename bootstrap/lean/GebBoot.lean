@@ -8790,11 +8790,20 @@ def «Modules.kwInterface» :=
 
 def «Modules.kwAs» := mk 0 [leaf 97, leaf 115]
 
+def «Modules.kwLetStar» :=
+  mk 0 [leaf 108, leaf 101, leaf 116, leaf 42]
+
+def «Modules.kwCond» := mk 0 [leaf 99, leaf 111, leaf 110, leaf 100]
+
+def «Modules.kwElse» := mk 0 [leaf 101, leaf 108, leaf 115, leaf 101]
+
 def «Modules.moduleKeywords» :=
   («Modules.kwModule» ::
     («Modules.kwParameter» ::
       («Modules.kwImport» ::
-        («Modules.kwExport» :: («Prelude.single» «Modules.kwInterface»)))))
+        («Modules.kwExport» ::
+          («Modules.kwInterface» ::
+            («Modules.kwLetStar» :: («Prelude.single» «Modules.kwCond»)))))))
 
 def «Modules.concat» :=
   fun (x0 : List (List T)) =>
@@ -8911,6 +8920,126 @@ def «Modules.rkAll» :=
       ([] : List T)
       x0
 
+def «Modules.emptyTerm» := «Modules.mkList» ([] : List T)
+
+def «Modules.aLetM» := mk 1 [leaf 108, leaf 101, leaf 116]
+
+def «Modules.aIfM» := mk 1 [leaf 105, leaf 102]
+
+def «Modules.letChain» :=
+  fun (x0 : List T) (x1 : T) =>
+    Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x2 : T) (x3 : T) =>
+        if («Prelude.and»
+          («Reader.isList» x2)
+          («Prelude.and»
+            (Const.eq (Const.arity x2) (leaf 3))
+            («Reader.isAtom» (Const.child x2 (leaf 0))))).label ≠ 0 then
+          «Modules.mkList»
+            («Modules.aLetM» ::
+              («Prelude.append» (Const.children x2) («Prelude.single» x3)))
+        else
+          «Modules.emptyTerm»)
+      x1
+      x0
+
+def «Modules.condMore» :=
+  fun (x0 : T) (x1 : T) =>
+    if («Prelude.and»
+      («Prelude.isSome» x1)
+      («Prelude.and»
+        («Reader.isList» x0)
+        (Const.eq (Const.arity x0) (leaf 2)))).label ≠ 0 then
+      if («Reader.named»
+        (Const.child x0 (leaf 0))
+        «Modules.kwElse»).label ≠ 0 then
+        «Prelude.none»
+      else
+        «Prelude.some»
+          («Modules.mkList»
+            («Modules.aIfM» ::
+              («Prelude.append»
+                (Const.children x0)
+                («Prelude.single» («Prelude.get» x1)))))
+    else
+      «Prelude.none»
+
+def «Modules.condChain» :=
+  fun (x0 : List T) =>
+    Const.lcase
+      (α := T)
+      (β := T)
+      («Prelude.reverse» x0)
+      «Modules.emptyTerm»
+      (fun (x1 : T) (x2 : List T) =>
+        if («Prelude.and»
+          («Reader.isList» x1)
+          («Prelude.and»
+            (Const.eq (Const.arity x1) (leaf 2))
+            («Reader.named»
+              (Const.child x1 (leaf 0))
+              «Modules.kwElse»))).label ≠ 0 then
+          let x3 : T := Const.foldr
+            (α := T)
+            (β := T)
+            «Modules.condMore»
+            («Prelude.some» (Const.child x1 (leaf 1)))
+            («Prelude.reverse» x2);
+          if («Prelude.isSome» x3).label ≠ 0 then
+            «Prelude.get» x3
+          else
+            «Modules.emptyTerm»
+        else
+          «Modules.emptyTerm»)
+
+def «Modules.renChainRole» :=
+  fun (x0 : T) (x1 : List (T → List T → T)) (x2 : T) (x3 : List T) =>
+    if (Const.eq x2 (leaf 5)).label ≠ 0 then
+      if («Prelude.and»
+        («Reader.isList» x0)
+        (Const.eq (Const.arity x0) (leaf 3))).label ≠ 0 then
+        «Modules.mkList»
+          ((Const.child x0 (leaf 0)) ::
+            ((«Modules.rkAt» x1 (leaf 1) (leaf 1) ([] : List T)) ::
+              («Prelude.single» («Modules.rkAt» x1 (leaf 2) (leaf 0) x3))))
+      else
+        «Modules.emptyTerm»
+    else
+      if (Const.eq x2 (leaf 6)).label ≠ 0 then
+        «Modules.mkList»
+          (Const.foldr
+            (α := T → List T → T)
+            (β := List T → List T)
+            (fun (x4 : T → List T → T) (x5 : List T → List T) (x6 : List T) =>
+              let x7 : T := x4 (leaf 4) ([] : List T);
+              ((x4 (leaf 5) x6) ::
+                (x5
+                  (if («Prelude.and»
+                    («Reader.nonEmpty» (Const.children x7))
+                    («Reader.isAtom» (Const.child x7 (leaf 0)))).label ≠ 0 then
+                    ((«Reader.nameOf» (Const.child x7 (leaf 0))) :: x6)
+                  else
+                    x6))))
+            (fun (_ : List T) => ([] : List T))
+            x1
+            x3)
+      else
+        if («Prelude.and»
+          («Reader.isList» x0)
+          (Const.eq (Const.arity x0) (leaf 2))).label ≠ 0 then
+          «Modules.mkList»
+            ((if («Reader.named»
+              (Const.child x0 (leaf 0))
+              «Modules.kwElse»).label ≠ 0 then
+              Const.child x0 (leaf 0)
+            else
+              «Modules.rkAt» x1 (leaf 0) (leaf 0) x3) ::
+              («Prelude.single» («Modules.rkAt» x1 (leaf 1) (leaf 0) x3)))
+        else
+          «Modules.emptyTerm»
+
 def «Modules.renTermList» :=
   fun (_ : List T)
     (x1 : T)
@@ -8922,122 +9051,140 @@ def «Modules.renTermList» :=
     if (Const.eq x5 (leaf 0)).label ≠ 0 then
       x1
     else
-      if («Prelude.or»
-        («Reader.named» x6 «Reader.kwQuote»)
-        («Reader.named» x6 «Reader.kwHole»)).label ≠ 0 then
-        x1
-      else
-        if («Reader.named» x6 «Datatype.kwDatum»).label ≠ 0 then
-          if (Const.eq x5 (leaf 3)).label ≠ 0 then
-            «Modules.mkList»
-              (x6 ::
-                ((«Modules.rkAt» x2 (leaf 1) (leaf 1) ([] : List T)) ::
-                  («Prelude.single» («Prelude.at» x4 (leaf 2)))))
-          else
-            x1
+      if («Reader.named» x6 «Modules.kwLetStar»).label ≠ 0 then
+        if («Prelude.and»
+          (Const.eq x5 (leaf 3))
+          («Reader.isList» («Prelude.at» x4 (leaf 1)))).label ≠ 0 then
+          «Modules.letChain»
+            (Const.children («Modules.rkAt» x2 (leaf 1) (leaf 6) x3))
+            («Modules.rkAt»
+              x2
+              (leaf 2)
+              (leaf 0)
+              («Prelude.append» («Modules.boundBy» («Prelude.at» x4 (leaf 1))) x3))
         else
-          if («Reader.named» x6 «Datatype.kwDecode»).label ≠ 0 then
-            if (Const.lt (leaf 1) x5).label ≠ 0 then
-              «Modules.mkList»
-                (x6 ::
-                  ((«Modules.rkAt» x2 (leaf 1) (leaf 1) ([] : List T)) ::
-                    («Modules.rkAll» («Modules.rkDrop» (leaf 2) x2) (leaf 0) x3)))
-            else
-              x1
+          «Modules.emptyTerm»
+      else
+        if («Reader.named» x6 «Modules.kwCond»).label ≠ 0 then
+          «Modules.condChain»
+            («Modules.rkAll» («Modules.rkDrop» (leaf 1) x2) (leaf 7) x3)
+        else
+          if («Prelude.or»
+            («Reader.named» x6 «Reader.kwQuote»)
+            («Reader.named» x6 «Reader.kwHole»)).label ≠ 0 then
+            x1
           else
-            if («Reader.named» x6 «Reader.kwLam»).label ≠ 0 then
+            if («Reader.named» x6 «Datatype.kwDatum»).label ≠ 0 then
               if (Const.eq x5 (leaf 3)).label ≠ 0 then
                 «Modules.mkList»
                   (x6 ::
-                    ((«Modules.rkAt» x2 (leaf 1) (leaf 3) ([] : List T)) ::
-                      («Prelude.single»
-                        («Modules.rkAt»
-                          x2
-                          (leaf 2)
-                          (leaf 0)
-                          («Prelude.append»
-                            («Modules.boundBy» («Prelude.at» x4 (leaf 1)))
-                            x3)))))
+                    ((«Modules.rkAt» x2 (leaf 1) (leaf 1) ([] : List T)) ::
+                      («Prelude.single» («Prelude.at» x4 (leaf 2)))))
               else
                 x1
             else
-              if («Reader.named» x6 «Reader.kwLet»).label ≠ 0 then
-                if (Const.eq x5 (leaf 5)).label ≠ 0 then
-                  let x7 : T := «Prelude.at» x4 (leaf 1);
+              if («Reader.named» x6 «Datatype.kwDecode»).label ≠ 0 then
+                if (Const.lt (leaf 1) x5).label ≠ 0 then
                   «Modules.mkList»
                     (x6 ::
-                      (x7 ::
-                        ((«Modules.rkAt» x2 (leaf 2) (leaf 1) ([] : List T)) ::
-                          ((«Modules.rkAt» x2 (leaf 3) (leaf 0) x3) ::
-                            («Prelude.single»
-                              («Modules.rkAt»
-                                x2
-                                (leaf 4)
-                                (leaf 0)
-                                (if («Reader.isAtom» x7).label ≠ 0 then
-                                  ((«Reader.nameOf» x7) :: x3)
-                                else
-                                  x3)))))))
+                      ((«Modules.rkAt» x2 (leaf 1) (leaf 1) ([] : List T)) ::
+                        («Modules.rkAll» («Modules.rkDrop» (leaf 2) x2) (leaf 0) x3)))
                 else
                   x1
               else
-                if («Reader.named» x6 «Reader.kwNil»).label ≠ 0 then
-                  «Modules.mkList»
-                    (x6 ::
-                      («Modules.rkAll»
-                        («Modules.rkDrop» (leaf 1) x2)
-                        (leaf 1)
-                        ([] : List T)))
+                if («Reader.named» x6 «Reader.kwLam»).label ≠ 0 then
+                  if (Const.eq x5 (leaf 3)).label ≠ 0 then
+                    «Modules.mkList»
+                      (x6 ::
+                        ((«Modules.rkAt» x2 (leaf 1) (leaf 3) ([] : List T)) ::
+                          («Prelude.single»
+                            («Modules.rkAt»
+                              x2
+                              (leaf 2)
+                              (leaf 0)
+                              («Prelude.append»
+                                («Modules.boundBy» («Prelude.at» x4 (leaf 1)))
+                                x3)))))
+                  else
+                    x1
                 else
-                  if («Prelude.or»
-                    («Reader.named» x6 «Reader.kwFold»)
-                    («Prelude.or»
-                      («Reader.named» x6 «Reader.kwPara»)
-                      («Reader.named» x6 «Reader.kwIter»))).label ≠ 0 then
-                    if (Const.lt (leaf 1) x5).label ≠ 0 then
+                  if («Reader.named» x6 «Reader.kwLet»).label ≠ 0 then
+                    if (Const.eq x5 (leaf 5)).label ≠ 0 then
+                      let x7 : T := «Prelude.at» x4 (leaf 1);
                       «Modules.mkList»
                         (x6 ::
-                          ((«Modules.rkAt» x2 (leaf 1) (leaf 1) ([] : List T)) ::
-                            («Modules.rkAll» («Modules.rkDrop» (leaf 2) x2) (leaf 0) x3)))
+                          (x7 ::
+                            ((«Modules.rkAt» x2 (leaf 2) (leaf 1) ([] : List T)) ::
+                              ((«Modules.rkAt» x2 (leaf 3) (leaf 0) x3) ::
+                                («Prelude.single»
+                                  («Modules.rkAt»
+                                    x2
+                                    (leaf 4)
+                                    (leaf 0)
+                                    (if («Reader.isAtom» x7).label ≠ 0 then
+                                      ((«Reader.nameOf» x7) :: x3)
+                                    else
+                                      x3)))))))
                     else
                       x1
                   else
-                    if («Prelude.or»
-                      («Reader.named» x6 «Reader.kwFoldr»)
-                      («Reader.named» x6 «Reader.kwLcase»)).label ≠ 0 then
-                      if (Const.lt (leaf 2) x5).label ≠ 0 then
-                        «Modules.mkList»
-                          (x6 ::
-                            ((«Modules.rkAt» x2 (leaf 1) (leaf 1) ([] : List T)) ::
-                              ((«Modules.rkAt» x2 (leaf 2) (leaf 1) ([] : List T)) ::
-                                («Modules.rkAll» («Modules.rkDrop» (leaf 3) x2) (leaf 0) x3))))
-                      else
-                        x1
+                    if («Reader.named» x6 «Reader.kwNil»).label ≠ 0 then
+                      «Modules.mkList»
+                        (x6 ::
+                          («Modules.rkAll»
+                            («Modules.rkDrop» (leaf 1) x2)
+                            (leaf 1)
+                            ([] : List T)))
                     else
-                      if («Reader.named» x6 «Datatype.kwCase»).label ≠ 0 then
+                      if («Prelude.or»
+                        («Reader.named» x6 «Reader.kwFold»)
+                        («Prelude.or»
+                          («Reader.named» x6 «Reader.kwPara»)
+                          («Reader.named» x6 «Reader.kwIter»))).label ≠ 0 then
                         if (Const.lt (leaf 1) x5).label ≠ 0 then
                           «Modules.mkList»
                             (x6 ::
-                              ((«Modules.rkAt» x2 (leaf 1) (leaf 0) x3) ::
-                                («Modules.rkAll» («Modules.rkDrop» (leaf 2) x2) (leaf 2) x3)))
+                              ((«Modules.rkAt» x2 (leaf 1) (leaf 1) ([] : List T)) ::
+                                («Modules.rkAll» («Modules.rkDrop» (leaf 2) x2) (leaf 0) x3)))
                         else
                           x1
                       else
-                        if («Reader.named» x6 «Datatype.kwCata»).label ≠ 0 then
-                          if (Const.lt (leaf 3) x5).label ≠ 0 then
+                        if («Prelude.or»
+                          («Reader.named» x6 «Reader.kwFoldr»)
+                          («Reader.named» x6 «Reader.kwLcase»)).label ≠ 0 then
+                          if (Const.lt (leaf 2) x5).label ≠ 0 then
                             «Modules.mkList»
                               (x6 ::
                                 ((«Modules.rkAt» x2 (leaf 1) (leaf 1) ([] : List T)) ::
                                   ((«Modules.rkAt» x2 (leaf 2) (leaf 1) ([] : List T)) ::
-                                    ((«Modules.rkAt» x2 (leaf 3) (leaf 0) x3) ::
-                                      («Modules.rkAll»
-                                        («Modules.rkDrop» (leaf 4) x2)
-                                        (leaf 2)
-                                        x3)))))
+                                    («Modules.rkAll» («Modules.rkDrop» (leaf 3) x2) (leaf 0) x3))))
                           else
                             x1
                         else
-                          «Modules.mkList» («Modules.rkAll» x2 (leaf 0) x3)
+                          if («Reader.named» x6 «Datatype.kwCase»).label ≠ 0 then
+                            if (Const.lt (leaf 1) x5).label ≠ 0 then
+                              «Modules.mkList»
+                                (x6 ::
+                                  ((«Modules.rkAt» x2 (leaf 1) (leaf 0) x3) ::
+                                    («Modules.rkAll» («Modules.rkDrop» (leaf 2) x2) (leaf 2) x3)))
+                            else
+                              x1
+                          else
+                            if («Reader.named» x6 «Datatype.kwCata»).label ≠ 0 then
+                              if (Const.lt (leaf 3) x5).label ≠ 0 then
+                                «Modules.mkList»
+                                  (x6 ::
+                                    ((«Modules.rkAt» x2 (leaf 1) (leaf 1) ([] : List T)) ::
+                                      ((«Modules.rkAt» x2 (leaf 2) (leaf 1) ([] : List T)) ::
+                                        ((«Modules.rkAt» x2 (leaf 3) (leaf 0) x3) ::
+                                          («Modules.rkAll»
+                                            («Modules.rkDrop» (leaf 4) x2)
+                                            (leaf 2)
+                                            x3)))))
+                              else
+                                x1
+                            else
+                              «Modules.mkList» («Modules.rkAll» x2 (leaf 0) x3)
 
 def «Modules.renStep» :=
   fun (x0 : List T)
@@ -9047,58 +9194,61 @@ def «Modules.renStep» :=
     (x4 : List T) =>
     let x5 : List T := Const.children x1;
     let x6 : T := Const.arity x1;
-    if (Const.eq x3 (leaf 4)).label ≠ 0 then
-      x1
+    if (Const.lt (leaf 4) x3).label ≠ 0 then
+      «Modules.renChainRole» x1 x2 x3 x4
     else
-      if («Reader.isAtom» x1).label ≠ 0 then
-        if (Const.eq x3 (leaf 1)).label ≠ 0 then
-          «Modules.atomOf» («Modules.flatName» x0 («Reader.nameOf» x1))
-        else
-          if (Const.eq x3 (leaf 0)).label ≠ 0 then
-            if («Prelude.isSome»
-              («Reader.indexOf» («Reader.nameOf» x1) x4)).label ≠ 0 then
-              x1
-            else
-              «Modules.atomOf» («Modules.flatName» x0 («Reader.nameOf» x1))
-          else
-            x1
+      if (Const.eq x3 (leaf 4)).label ≠ 0 then
+        x1
       else
-        if (Const.eq x3 (leaf 1)).label ≠ 0 then
-          «Modules.mkList» («Modules.rkAll» x2 (leaf 1) ([] : List T))
-        else
-          if (Const.eq x3 (leaf 3)).label ≠ 0 then
-            if (Const.eq x6 (leaf 0)).label ≠ 0 then
-              x1
-            else
-              if («Reader.isAtom» («Prelude.at» x5 (leaf 0))).label ≠ 0 then
-                «Modules.mkList»
-                  ((«Prelude.at» x5 (leaf 0)) ::
-                    («Modules.rkAll»
-                      («Modules.rkDrop» (leaf 1) x2)
-                      (leaf 1)
-                      ([] : List T)))
-              else
-                «Modules.mkList» («Modules.rkAll» x2 (leaf 3) ([] : List T))
+        if («Reader.isAtom» x1).label ≠ 0 then
+          if (Const.eq x3 (leaf 1)).label ≠ 0 then
+            «Modules.atomOf» («Modules.flatName» x0 («Reader.nameOf» x1))
           else
-            if (Const.eq x3 (leaf 2)).label ≠ 0 then
-              if (Const.eq x6 (leaf 2)).label ≠ 0 then
-                let x7 : T := «Prelude.at» x5 (leaf 0);
-                if («Reader.isAtom» x7).label ≠ 0 then
-                  «Modules.mkList»
-                    (x7 :: («Prelude.single» («Modules.rkAt» x2 (leaf 1) (leaf 0) x4)))
-                else
-                  «Modules.mkList»
-                    ((«Modules.renPattern» x0 x7) ::
-                      («Prelude.single»
-                        («Modules.rkAt»
-                          x2
-                          (leaf 1)
-                          (leaf 0)
-                          («Prelude.append» («Modules.patternVars» x7) x4))))
-              else
+            if (Const.eq x3 (leaf 0)).label ≠ 0 then
+              if («Prelude.isSome»
+                («Reader.indexOf» («Reader.nameOf» x1) x4)).label ≠ 0 then
                 x1
+              else
+                «Modules.atomOf» («Modules.flatName» x0 («Reader.nameOf» x1))
             else
-              «Modules.renTermList» x0 x1 x2 x4
+              x1
+        else
+          if (Const.eq x3 (leaf 1)).label ≠ 0 then
+            «Modules.mkList» («Modules.rkAll» x2 (leaf 1) ([] : List T))
+          else
+            if (Const.eq x3 (leaf 3)).label ≠ 0 then
+              if (Const.eq x6 (leaf 0)).label ≠ 0 then
+                x1
+              else
+                if («Reader.isAtom» («Prelude.at» x5 (leaf 0))).label ≠ 0 then
+                  «Modules.mkList»
+                    ((«Prelude.at» x5 (leaf 0)) ::
+                      («Modules.rkAll»
+                        («Modules.rkDrop» (leaf 1) x2)
+                        (leaf 1)
+                        ([] : List T)))
+                else
+                  «Modules.mkList» («Modules.rkAll» x2 (leaf 3) ([] : List T))
+            else
+              if (Const.eq x3 (leaf 2)).label ≠ 0 then
+                if (Const.eq x6 (leaf 2)).label ≠ 0 then
+                  let x7 : T := «Prelude.at» x5 (leaf 0);
+                  if («Reader.isAtom» x7).label ≠ 0 then
+                    «Modules.mkList»
+                      (x7 :: («Prelude.single» («Modules.rkAt» x2 (leaf 1) (leaf 0) x4)))
+                  else
+                    «Modules.mkList»
+                      ((«Modules.renPattern» x0 x7) ::
+                        («Prelude.single»
+                          («Modules.rkAt»
+                            x2
+                            (leaf 1)
+                            (leaf 0)
+                            («Prelude.append» («Modules.patternVars» x7) x4))))
+                else
+                  x1
+              else
+                «Modules.renTermList» x0 x1 x2 x4
 
 def «Modules.rename» :=
   fun (x0 : List T) (x1 : T) (x2 : T) (x3 : List T) =>
@@ -9333,8 +9483,6 @@ def «Modules.aDeftypeM» :=
     leaf 101]
 
 def «Modules.aDefM» := mk 1 [leaf 100, leaf 101, leaf 102]
-
-def «Modules.aLetM» := mk 1 [leaf 108, leaf 101, leaf 116]
 
 def «Modules.aLamM» := mk 1 [leaf 108, leaf 97, leaf 109]
 

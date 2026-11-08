@@ -16,16 +16,20 @@ set_option doc.verso true in
 /-!
 # Module examples
 
-A program without modules is unchanged by their elaboration, the kernel's examples among
-them. Modules without parameters export their definitions under qualified names, imported
-unqualified or under a name; a module with parameters is instantiated at each import, a sort
-parameter by a type and an operation by a term of its type. A name bound in a term, a quoted
-datum and a hole are not renamed. A clash, an import naming no module or leaving a parameter
-unsupplied, and an export naming nothing are rejected with a message. The elaboration
+A program without modules or binding and conditional chains is unchanged by their elaboration,
+the kernel's examples among them. Modules without parameters export their definitions under
+qualified names, imported unqualified or under a name. A module with parameters is instantiated at
+each import, a sort parameter by a type and an operation by a term of its type. A name bound in a
+term, a quoted datum and a hole are not renamed. A clash, an import naming no module or leaving a
+parameter unsupplied, and an export naming nothing are rejected with a message. The elaboration
 written in Geb, {lit}`bootstrap/modules.geb`, agrees with Lean's, and the stage-0 compiler
 compiles a module of the datatype language. A module's identifier is unchanged by renaming the
 module and its members, and changed, with the root's, by a change of one of its definitions;
 the identifiers computed in Geb agree with Lean's.
+
+Sequential bindings and guarded clauses give the same checked bundles as their nested forms,
+with names resolved in each binding's scope and quotations preserved. Malformed chains and
+declarations taking their keywords are rejected.
 
 The texts are string constants, converted to lists of characters inside each {lit}`#guard`.
 
@@ -109,6 +113,74 @@ def twice : String :=
 #guard diagnose "(def module (lam ((x T)) x))".toList =
   some "module is reserved or declared before"
 
+/-- Sequential bindings and guarded clauses, paired with their nested forms. The bindings
+exercise shadowing of a visible definition, dependence on preceding bindings, and type names
+qualified by their module. -/
+def chainPairs : List (String × String) :=
+  [("(def main (lam ((t T)) (let* () t)))", "(def main (lam ((t T)) t))"),
+    ("(def main (lam ((t T)) (cond (else t))))", "(def main (lam ((t T)) t))"),
+    ("(def main (lam ((t T)) (cond ((eq t 0) 7) ((eq t 1) 8) (else 9))))",
+      "(def main (lam ((t T)) (if (eq t 0) 7 (if (eq t 1) 8 9))))"),
+    ("(module M (export f) (deftype A T) (def x 4)" ++
+        " (def f (lam ((t A)) (let* ((x A (add x t)) (y A x) (x A (add y 1))) x))))" ++
+        " (def main M.f)",
+      "(module M (export f) (deftype A T) (def x 4)" ++
+        " (def f (lam ((t A)) (let x A (add x t) (let y A x (let x A (add y 1) x))))))" ++
+        " (def main M.f)"),
+    ("(def main (lam ((t T)) (let* ((x T (cond (t 2) (else 3))))" ++
+        " (cond ((let* ((y T x)) (eq y 2)) (let* ((z T 4)) z)) (else x)))))",
+      "(def main (lam ((t T)) (let x T (if t 2 3)" ++
+        " (if (let y T x (eq y 2)) (let z T 4 z) x))))"),
+    ("(module M (parameter A) (parameter (f (A) A)) (export g)" ++
+        " (def g (lam ((x A)) (let* ((y A (f x)) (z A (f y))) z))))" ++
+        " (import (M T (lam ((x T)) (add x 1)))) (def main g)",
+      "(module M (parameter A) (parameter (f (A) A)) (export g)" ++
+        " (def g (lam ((x A)) (let y A (f x) (let z A (f y) z)))))" ++
+        " (import (M T (lam ((x T)) (add x 1)))) (def main g)")]
+
+-- the complete checked kernel bundles agree, including their variable indices and global references
+#guard chainPairs.all fun (p, q) ↦
+  let a := readProgram p.toList
+  a.isSome && a == readProgram q.toList && (a.bind fun ds ↦ load (ds.map Prod.snd)).isSome
+
+-- the guards select the first true branch, with the final else used when none is true
+#guard [0, 1, 2].all fun n ↦
+  runMain "(def main (lam ((t T)) (cond ((eq t 0) 7) ((eq t 1) 8) (else 9))))".toList
+    (leaf n) == some (leaf (n + 7))
+#guard runMain "(def main (lam ((t T)) (cond (1 7) (1 8) (else 9))))".toList
+  (leaf 0) == some (leaf 7)
+
+/-- Malformed chains and ill-scoped or ill-typed bindings, rejected as programs. A local
+function taking a keyword's name cannot make a malformed chain an ordinary application. -/
+def badChains : List String :=
+  ["(let*)", "(let* () 0 1)", "(let* x 0)", "(let* (x) 0)", "(let* ((x T)) 0)",
+    "(let* ((x T 1 2)) x)", "(let* (((x) T 1)) 0)", "(let* ((x T x)) x)",
+    "(let* ((x T y) (y T 1)) x)", "(let* ((x Unit 0)) x)",
+    "(cond)", "(cond (1 2))", "(cond (else))", "(cond (else 1 2))",
+    "(cond (else 1) (else 2))", "(cond (else 1) (1 2))", "(cond (1 2 3) (else 4))",
+    "(cond (1 unit) (else 0))", "(let cond (Arrow T T) (lam ((x T)) x) (cond 1))",
+    "(let let* (Arrow T T) (lam ((x T)) x) (let* 1))",
+    "(nil (cond (else T)))", "(nil (let* () T))"]
+
+#guard badChains.all fun b ↦
+  let p := ("(def main (lam ((t T)) " ++ b ++ "))").toList
+  (readSExps p).isSome && (diagnose p).isSome
+
+-- declarations and constructors cannot take the new keywords
+#guard ["let*", "cond"].all fun k ↦
+  [s!"(def {k} 0)", s!"(deftype {k} T)", s!"(defnum {k} 0)",
+    s!"(defn {k} ((x T)) T x)", s!"(data D ({k}))"].all fun p ↦
+      ((readSExps p.toList).bind expandModules).isNone
+
+/-- Forms in quotations, datums and hole names are preserved by module elaboration. -/
+def quotedChains : String :=
+  "(def q (quote (let* ((x T 1)) (cond (else x)))))" ++
+    " (def d (datum D (cond (else (let* () 1))))) (def h (hole cond))"
+
+#guard (readSExps quotedChains.toList).isSome &&
+  ((readSExps quotedChains.toList).bind expandModules).map (·.map canonOf) ==
+    (readSExps quotedChains.toList).map (·.map canonOf)
+
 /-- An S-expression as the Geb reader represents it: an atom the node of label 1 over its
 characters' codes, a list the node of label 2 over its elements. -/
 def sexpTree : SExp → Tree :=
@@ -132,7 +204,10 @@ def expectedModules (text : List Char) : Tree :=
 
 /-- The texts the elaboration is compared on: each example above, and failures. -/
 def moduleTexts : List String :=
-  [arith ++ " (def main (lam ((t T)) (Arith.double 3)))",
+  chainPairs.flatMap (fun (p, q) ↦ [p, q]) ++
+    badChains.map (fun b ↦ "(def main (lam ((t T)) " ++ b ++ "))") ++
+    [quotedChains, "(def let* 0)", "(def cond 0)",
+    arith ++ " (def main (lam ((t T)) (Arith.double 3)))",
     "(def x (lam ((t T)) (quote (0 \"…\"))))",
     arith ++ " (def main (lam ((t T)) (Arith.twice 3)))",
     "(module A (export f) (def f (lam ((x T)) (add x 1))))" ++
@@ -160,7 +235,9 @@ def moduleTexts : List String :=
 -- a module of the datatype language, compiled by the stage-0 compiler
 #guard runDatatype compiler.toList ("(module Opt (export Maybe nothing just fromMaybe)" ++
     " (data Maybe (nothing) (just T))" ++
-    " (defn fromMaybe ((d T) (m Maybe)) T (case m ((nothing) d) ((just x) x))))" ++
+    " (defn fromMaybe ((d T) (m Maybe)) T" ++
+    " (let* ((fallback T (cond ((eq d 0) 7) (else d))))" ++
+    " (case m ((nothing) fallback) ((just x) (cond (1 x) (else fallback)))))))" ++
     " (defn main ((t T)) T (Opt.fromMaybe 7 (Opt.just 3)))").toList (leaf 0) = some (leaf 3)
 
 -- a datatype of a module decoded, its name qualified in the recognizer the decoding refers to

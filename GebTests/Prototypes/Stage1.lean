@@ -191,6 +191,25 @@ def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
       runImage img (nameTree p.toList) != some (mk 0 []) && agreesOn img compiler.toList p.toList do
     throw (IO.userError "the stage-1 compiler rejects a template the typing admits")
 
+-- module elaboration removes chains before the datatype typing: both compilers emit the same
+-- image as the nested forms, and the stage-1 compiler checks their datatype annotations
+#eval show IO Unit from do
+  let img ← IO.FS.readBinFile "bootstrap/compiler.img"
+  let program := "(data N (z) (s N)) (def main (lam ((t T)) "
+  let chain := program ++ "(let* ((x N z) (y N (s x)))" ++
+    " (cond ((eq t 0) (rep x)) (else (rep y))))))"
+  let nested := program ++ "(let x N z (let y N (s x) (if (eq t 0) (rep x) (rep y))))))"
+  let out := runImage img (nameTree chain.toList)
+  unless ((out.bind toBytes).bind readImage).isSome &&
+      out == runImage img (nameTree nested.toList) &&
+      agreesOn img compiler.toList chain.toList do
+    throw (IO.userError "binding and conditional chains disagree with their nested forms")
+  for body in ["(let* ((x N t)) (rep x))", "(cond (1 z) (else t))",
+      "(cond ((eq t 0) (rep z)))", "(cond (else 0) (else 1))"] do
+    let p := program ++ body ++ "))"
+    unless (readSExps p.toList).isSome && runImage img (nameTree p.toList) == some (mk 0 []) do
+      throw (IO.userError s!"the stage-1 compiler accepts the invalid chain {body}")
+
 end Geb.Kernel.Stage1Tests
 
 end

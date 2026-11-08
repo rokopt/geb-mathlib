@@ -3884,7 +3884,11 @@ import-direction rules above are enforced by
   and export lists, and modules with parameters instantiated at their
   imports, every name of a body renamed to what it denotes
   (`Geb.Kernel.rename`), recording the program's tree of modules
-  (`Geb.Kernel.elabTree`). `ModuleIdentity.lean` identifies each module by
+  (`Geb.Kernel.elabTree`). The same pass expands sequential typed bindings
+  (`let*`) and guarded clauses ending in `else` (`cond`) to nested `let`
+  and `if` forms, preserving each binding's scope and leaving quoted data
+  unchanged (`Geb.Kernel.letChain`, `Geb.Kernel.condChain`).
+  `ModuleIdentity.lean` identifies each module by
   the CID of its members' and exports' identifiers
   (`Geb.Kernel.Identity.moduleCids`). `Printer.lean` writes a bundle in the
   readable syntax (`Geb.Kernel.printProgram`), printing nothing for a term

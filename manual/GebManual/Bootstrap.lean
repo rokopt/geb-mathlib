@@ -382,14 +382,14 @@ Extension:
   syntax, the schema of its notes and its prose, its notes holding examples
   and links. Comments are read as the recorded subset of Verso's markup,
   and every reference in them and in the notes' links resolves, as
-  `geb-doc` checks. The `geb` editor language is in progress, its
-  acceptance with Mike's Paredit pending. Ready, in the order of
+  `geb-doc` checks. The forms `let*` and `cond`, expanded in module
+  elaboration, are complete. The `geb` editor language is in progress,
+  its acceptance with Mike's Paredit pending. Ready, in the order of
   {ref "authoring-sequence"}[the sequence], and independent of the datatype
   language's completion: the syntax of statements
-  and proof scripts; `let*` and `cond`, expanded in the elaboration of
-  modules, and the checker of holes in programs in its suspending form with
-  the display of their obligations; and documentation as literate pages.
-  Waiting on those: the record of elaborated definitions, which is taken
+  and proof scripts; the checker of holes in programs in its suspending
+  form with the display of their obligations; and documentation as
+  literate pages. Waiting on those: the record of elaborated definitions, which is taken
   up at the first program outside the compilers. Waiting on the datatype
   language's completion: hygienic elaboration with explicit assembly,
   patterns with `&`, unused pattern variables, primitives that no binding
@@ -3331,7 +3331,7 @@ tag := "authoring-compatibility"
   * Ready
 *
   * `let*` and `cond`, expanded in the elaboration of modules
-  * Ready
+  * Complete
 *
   * The syntax of holes, the suspending checker of holes in programs and
     the display of their obligations
@@ -4221,10 +4221,32 @@ of its argument applied to fresh variables of the argument types with its
 result bound at the result type, so that the argument's type is checked;
 the body is then elaborated under the instance's prefix. Binding a
 parameter by a definition is substitution of the argument for it, the
-kernel's types being monomorphic. A program without modules is unchanged,
-and the stage-0 compiler and the committed image reproduce themselves.
+kernel's types being monomorphic. A program without modules or binding
+and conditional chains is unchanged, and the stage-0 compiler and the
+committed image reproduce themselves.
 Named telescopes and certificates as parameters follow their first
 consumers.
+
+The same pass expands sequential bindings and guarded conditionals:
+
+```
+(let* ((x A e) (y B f)) body)
+(cond (p a) (q b) (else c))
+```
+
+The first is `(let x A e (let y B f body))`: each value is in the scope
+of the preceding bindings, and the body in the scope of all of them;
+a later binding may shadow an earlier one. An empty list of bindings
+gives the body. The second is `(if p a (if q b c))`: tests stand in
+their written order, and exactly one final `(else c)` is required. That
+clause alone gives `c`. Both forms expand only where terms occur,
+leaving type expressions, quotations, datums and names of holes in their
+own roles. A declaration may take neither keyword. Malformed chains
+expand to an empty term, rejected by the reader and by the datatype
+typing, even in the scope of a local function named by the keyword.
+The expansion in Lean and in Geb agrees on the module tests; the seed
+and both compilers check the same bundles as the nested forms. The
+typing and datatype expansion read neither form.
 
 Each source under `bootstrap/` is a module named after its file, with an
 export list of the definitions other sources and the tests use, and
@@ -7257,11 +7279,13 @@ the change that removes it.
   are what parinfer's Indent Mode restructures
   ({ref "source-documents"}[Source documents and the formatter]). Forms
   `let*`, of several bindings, and `cond`, of several guarded branches,
-  expanded in the elaboration of modules
+  are expanded in the elaboration of modules
   ({ref "modules"}[Modules]), before the expansion of the datatype
-  language, remove both. The reader, the typing and the expansion, of which
+  language. They remove both. The reader, the typing and the expansion, of which
   the soundness of the typing is proved, then read neither, so that the
-  theorem has no case for them. They are widenings, and precede long chains.
+  theorem has no case for them. The forms are complete; the sources whose
+  typing's soundness is proved are converted after the datatype language's
+  completion, with the other additions of the authoring sequence.
 * The equivalence of the word-level codec with
   {name}`Geb.RoseTree.wire`, tested and not proved, which is the first
   of the decision gates of the value-representation chapter.
