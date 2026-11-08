@@ -3884,6 +3884,21 @@ import-direction rules above are enforced by
   (`Geb.Kernel.Markup.versoBlocks`), against which the tests and the
   executable `geb-doc`, run over every manifest by
   `scripts/bootstrap.sh check`, compare the subset's reading.
+  The [first authoring development](../manual/GebManual/Authoring.lean)
+  combines these documents with the proof-source reader and normalization
+  runner written in Geb (`bootstrap/authoring.geb`). The executable
+  `geb-author` compiles manifest programs, checks tree-valued examples,
+  proves equations between named closed definitions, replays their saved
+  certificates, and converts program and proof documents among the
+  authoring, canonical and advanced spellings; it also reads basic
+  transport encoding. `GebHost/Authoring.lean` shares those operations
+  with the manual's checked source inclusion (`GebManual.Geb`). The
+  [example](../examples/authoring/Pair.geb), its proof source and manifest
+  have a reproducible record of elaborated definitions, canonical source
+  documents, checked image, certificate and pinned inputs under
+  `examples/authoring/record/`, regenerated and checked by
+  `scripts/authoring.sh`. Contexts, hypotheses and further proof-script
+  forms remain to be exposed.
   `Blake3.lean` computes the hash BLAKE3 [OConnorAumassonNevesWilcoxOHearn2020]
   (`Geb.Blake3.hash`). `Identity.lean` identifies a definition by the
   CIDv1 [RatajBerjon2026] of its payload, the canonical encoding of its

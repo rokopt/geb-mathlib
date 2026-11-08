@@ -355,7 +355,7 @@ text = true
 [[lean_lib]]
 name = "GebManual"
 srcDir = "manual"
-needs = ["@/referencesBib"]
+needs = ["@/referencesBib", "@/authoringExample"]
 moreLeanArgs = [
   "-Dweak.verso.code.warnLineLength=100",
   "-Dweak.linter.hashCommand=false",
@@ -425,6 +425,19 @@ root = "GebCompileMain"
 [[lean_exe]]
 name = "geb-defs"
 root = "GebDefsMain"
+
+[[lean_lib]]
+name = "GebHost"
+
+# The manual includes and replays the development from these files at elaboration.
+[[input_dir]]
+name = "authoringExample"
+path = "examples/authoring"
+filter = {extension = ["geb", "manifest", "cert"]}
+
+[[lean_exe]]
+name = "geb-author"
+root = "GebAuthorMain"
 
 [[lean_exe]]
 name = "geb-fmt"

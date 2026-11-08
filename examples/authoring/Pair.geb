@@ -1,0 +1,9 @@
+; Taking the first component of a constructed pair. The theorem in {lit}`Pair.proofs.geb`
+; proves equality of {geb}`Pair.first` and {geb}`Pair.left` at every pair of arguments.
+
+(module Pair (export first left)
+  ; The first component of the pair of the arguments.
+  (note (example (Pair.first (quote (7)) (quote (9))) (quote (7))))
+  (defn first ((x T) (y T)) T (fst (pair x y)))
+  ; The first argument, independently of the second.
+  (defn left ((x T) (y T)) T x))

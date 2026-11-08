@@ -92,6 +92,10 @@ jobs:
       # sources are fixed points of geb-fmt and of parinfer.
       - name: bootstrap fixed points
         run: bash scripts/bootstrap.sh check
+      - name: recorded Geb development and authoring tests
+        run: |
+          bash scripts/authoring.sh check
+          bash scripts/tests/test-authoring.sh
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38  # v6
         with:
           node-version: '24'

@@ -144,6 +144,13 @@ where the time of the checks and of the searches goes, and its section
 The searches' remaining time the measurements that locate the next
 change to a search's speed.
 
+The first authoring milestone is documented in
+`manual/GebManual/Authoring.lean`: `examples/authoring/` contains a
+documented program, a statement and normalization script in Geb, and a
+reproducible record of its elaborated definitions and certificate.
+The Bootstrap chapter's authoring table distinguishes this fragment
+from the remaining proof syntax, holes and editor acceptance.
+
 Among the first work written in Geb after the bootstrap, after the setoid
 language, come the internal universes: the datatypes' codes in `2^T` and
 the subobjects of the trees' codes in `Ω^T`, each interpreted by

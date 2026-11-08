@@ -101,6 +101,9 @@ lake test
 step "scripts/bootstrap.sh check (bootstrap fixed points)"
 bash scripts/bootstrap.sh check
 
+step "scripts/authoring.sh check (recorded Geb development)"
+bash scripts/authoring.sh check
+
 # `lake shake` requires built oleans for every library it scans.
 # `lake build` alone honours `defaultTargets` (Geb), so
 # build `GebTests` explicitly here.
