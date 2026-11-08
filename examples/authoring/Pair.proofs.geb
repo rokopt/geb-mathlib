@@ -1,0 +1,4 @@
+; Equality of the functions, proved by normalization of their translations into the metalogic.
+; The budget bounds the normalization; failure to find a proof is not a refutation.
+
+(proofs 0 (theorem first-pair (equal Pair.first Pair.left) (by (normalize 64))))

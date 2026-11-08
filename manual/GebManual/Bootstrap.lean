@@ -3358,7 +3358,10 @@ tag := "authoring-compatibility"
 *
   * The syntax of statements and proof scripts
     ({ref "proof-scripts"}[Proof scripts and certificates])
-  * Ready
+  * A first fragment is complete: named closed-definition equalities,
+    normalization scripts, saved certificates and replay from Geb source
+    ({ref "first-authoring"}[Writing a first Geb development]); contexts,
+    hypotheses and the other tactics remain
 *
   * `let*` and `cond`, expanded in the elaboration of modules
   * Complete
@@ -3368,11 +3371,14 @@ tag := "authoring-compatibility"
   * Complete
 *
   * Documentation as literate pages
-  * Ready
+  * A first inclusion is complete: source comments rendered by Verso,
+    checked examples, resolved references and proof replay during the
+    manual build; richer navigation and expression-level prose remain
 *
   * The record of elaborated definitions
-  * Deferred until the first program outside the compilers; manifests
-    precede it
+  * Complete for the first development outside the compilers: the image,
+    elaborated definitions, certificate, canonical source documents and
+    pinned inputs under `examples/authoring/record/`
 *
   * The datatype language's completion
     ({ref "datatype-completion"}[The datatype language's completion])
@@ -5210,13 +5216,17 @@ keyed by the statement and the elaborated definitions it cites, and a
 script that fails after a change of the prover falls back to its cached
 certificate while it is repaired. The complete proofs about the
 compiler's components have from 600000 to 1240000 nodes, so the cache
-holds the form of shared certificates. The metalogic has no surface
-syntax for statements in Geb text yet, and it will need its own
-retraction at the level of documents. A development's statements are
-now Lean values and its scripts Lean code, the deducers under
+holds the form of shared certificates. The first surface fragment is the
+versioned `proofs` document of `bootstrap/authoring.geb`: equations between
+named closed definitions, with normalization scripts. The
+{ref "first-authoring"}[first authoring development] reads, converts,
+proves and replays those sources without Lean code of its own. Their
+canonical and advanced encodings use the existing durable-document
+retraction. The compiler developments' statements remain Lean values and
+their scripts Lean code, the deducers under
 `GebTests/Prototypes/FreeTopos/`, which the provers' agreement relates to
-the prover written in Geb; so a proof is not yet Geb source, which the
-bootstrap's end point requires. The syntax of statements and proof scripts
+the prover written in Geb; moving those proofs into Geb source requires
+contexts, hypotheses and further script forms. The syntax of statements and proof scripts
 is a step of the sequence ({ref "authoring-sequence"}[The sequence and its
 acceptance]). It adds no rule to the metalogic: a script is a program for
 one prover, and its certificate is checked as any other is.
