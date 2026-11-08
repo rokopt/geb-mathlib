@@ -1365,13 +1365,43 @@ The following was determined for VS Code on 2026-09-29.
   Whether `emeraldwalk.RunOnSave` can run commands of VS Code is not
   verified.
 
+The following was determined on 2026-11-08, from the extensions'
+repositories and the Marketplace's histories of their versions
+(`vsce show`).
+
+* Calva's paredit has had two implementations, and the two paredit
+  extensions above descend one from each, sharing an origin but no
+  implementation. The first, the standalone extension
+  [calva-paredit](https://github.com/BetterThanTomorrow/calva-paredit),
+  archived, wraps the library `paredit.js`; strict-paredit is a fork of
+  it, described by its listing as classic strict paredit, and its release
+  0.3.1 dates from May 2020. The second is built into Calva, in its
+  [`src/cursor-doc/`](https://github.com/BetterThanTomorrow/calva/tree/dev/src/cursor-doc),
+  the lexer, the model, the token cursor and the operations; Mike's
+  Paredit extracts it, so that the patch of `editors/vscode/patches/`
+  changes files Calva's implementation also holds. Mike's Paredit's
+  release 0.2.1 dates from December 2025.
+* `shaunlebron.vscode-parinfer`, by the author of parinfer, last released
+  0.6.2 in June 2018; Smart Mode and the dimming of trailing parentheses
+  were merged into [its repository](https://github.com/shaunlebron/vscode-parinfer)
+  in August 2018 and not released by it. `eduarddyckman.vscode-parinfer`
+  0.6.3, its only release, of November 2020, is published from the fork
+  [duskpoet/vscode-parinfer](https://github.com/duskpoet/vscode-parinfer),
+  whose one commit beyond the original's master raises the version, and
+  its listing names the original's repository: it is a release of the
+  original's unreleased master. Both depend on `parinfer` 3.12.0, the
+  library `parinfer.js`, which `scripts/parinfer/` pins at 3.13.1, and
+  both activate for a fixed list of languages (`clojure`, `lisp`,
+  `scheme`, `racket`, `extempore`).
+
 Paredit and parinfer are alternative models of editing the same balanced
 text. Paredit's commands change the tree explicitly and keep parentheses
 balanced by construction, whatever the layout. Parinfer infers while one
 types, and depends on layout: Indent Mode infers parentheses from
 indentation, so it changes the tree by design and is an operation of
 editing, never a formatter; Paren Mode infers indentation from
-parentheses and never changes the tree. Their invariant is that each
+parentheses and never changes the tree; Smart Mode chooses between the
+two at each edit. Their invariant is that each
 continuation line is indented beyond the innermost open parenthesis and
 not beyond a parenthesis closed at the end of the line before
 ([parinfer](https://shaunlebron.github.io/parinfer/#mathematical-foundation)).
