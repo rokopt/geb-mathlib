@@ -9,10 +9,10 @@
 ; children, and that field's type, the types with their abbreviations expanded. Where a
 ; program refers to the recognizer D.member of a datatype D, the marker becomes its definition;
 ; any other marker is dropped. The recognizer decides membership in D by one fold of the tree:
-; a node's result holds, at the position of each datatype on which D depends, including D, the
-; bit of its membership in that datatype, from its label, its arity and its children's bits.
+; a node's result is the node over the bit of its membership in each datatype on which D depends,
+; D first, from its label, its arity and its children's bits.
 ; The fields of a decoded datatype are trees and datatypes. The recognizers refer to the
-; primitives label, child, node, arity, eq, lt, add, div and mod by name.
+; primitives label, child, node, arity, eq, lt and add by name.
 
 (module Recognize (export insertRecognizers) (import Prelude) (import Reader)
   ; S-expressions under construction
@@ -21,7 +21,6 @@
   (def s3 (lam ((a T) (b T) (c T)) (sx (cons a (cons b (single c))))))
   (def s4 (lam ((a T) (b T) (c T) (d T)) (sx (cons a (cons b (cons c (single d)))))))
   (def num (lam ((n T)) (node 1 (Datatype.decimalChars n))))
-  (def pow2 (lam ((i T)) (iter T (lam ((x T)) (mul x 2)) 1 i)))
 
   ; the atoms of the recognizers
   (def rT (quote (1 T)))
@@ -35,14 +34,13 @@
   (def rIter (quote (1 iter)))
   (def rLcase (quote (1 lcase)))
   (def rNil (quote (1 nil)))
+  (def rCons (quote (1 cons)))
   (def rNode (quote (1 node)))
   (def rChild (quote (1 child)))
   (def rArity (quote (1 arity)))
   (def rEq (quote (1 eq)))
   (def rLt (quote (1 lt)))
   (def rAdd (quote (1 add)))
-  (def rDiv (quote (1 div)))
-  (def rMod (quote (1 mod)))
   (def vT (quote (1 "%t")))
   (def vL (quote (1 "%l")))
   (def vR (quote (1 "%r")))
@@ -61,7 +59,7 @@
   ; a conjunction, which a test that always holds leaves out
   (def conj (lam ((a T) (b T)) (if (equal a one) b (if (equal b one) a (s4 rIf a b zero)))))
   ; the bit of the position p in a tree's bits e
-  (def bitOf (lam ((e T) (p T)) (s3 rMod (s3 rDiv e (num (pow2 p))) (num 2))))
+  (def bitOf (lam ((e T) (p T)) (s3 rChild e (num p))))
   ; the children after the first n
   (def tailE
     (s3 rLam (bind1 vX tList)
@@ -169,9 +167,7 @@
                   (cons
                     (if (isSome mn)
                       (let t T (dataTest cl (get mn))
-                        (if (isSome t)
-                          (some (s4 rIf (get t) (num (pow2 (get (indexOf n cl)))) zero))
-                          none))
+                        (if (isSome t) (some (s4 rIf (get t) one zero)) none))
                       none)
                     acc)))
               (nil T)
@@ -185,8 +181,9 @@
                       (cons rT
                         (cons (s3 rNode zero vR)
                           (single
-                            (foldr T T (lam ((b T) (acc T)) (s3 rAdd b acc)) zero
-                              (children (get bits))))))))))
+                            (s3 rNode zero
+                              (foldr T T (lam ((b T) (acc T)) (s3 rCons b acc)) (s2 rNil rT)
+                                (children (get bits)))))))))))
               (some
                 (s3 rDef (Datatype.memberName (child m 0))
                   (s3 rLam (bind1 vT rT) (bitOf (s4 rFold rT step vT) 0)))))

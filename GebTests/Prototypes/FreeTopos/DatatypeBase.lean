@@ -173,10 +173,11 @@ names: no name abbreviated is reserved, begins with % or is a numeral, so that t
 each keyword, each name the erasure binds and each numeral it writes as written. -/
 def kwsT (nums : Term) : Term := call (T.q + 5 + 2 * nFolds) [] [nums]
 
-/-- The recognizers of the typing environment's datatypes among the definitions: at each datatype,
-its recognizer's name has an index, at which the definition evaluates to a function whose
-application to the quotation of a tree converges to the quotation of a tree true exactly when the
-tree is a member of the datatype, by the markers of the relation's context. -/
+/-- The recognizers of the typing environment's datatypes among the definitions: at each datatype
+whose recognizer's name has an index, as it has where the program refers to it, the definition at
+that index evaluates to a function whose application to the quotation of a tree converges to the
+quotation of a tree true exactly when the tree is a member of the datatype, by the markers of the
+relation's context. -/
 def recsT (R E names : Term) : Term := call (T.q + 6 + 2 * nFolds) [] [R, E, names]
 
 /-- The names of a named context: each name it gives a type is one the typing admits as a
@@ -372,10 +373,12 @@ def extend3 (P : Prog) (S : Defs) : Option (Prog × Defs3) := do
       (Term.lam treeTy (all treeTy (Term.lam treeTy applied))))
   let recsBody : Term := all treeTy (Term.lam treeTy (imp
     (truth o (pc P "Typing.hasName" [v 0, pc P "Typing.envNoms" [v 2]]))
-    (ex treeTy (Term.lam treeTy (conj
-      (Term.eq (pc P "Reader.indexOf" [pc P "Typing.recognizerName" [v 1], v 2])
-        (pc P "Prelude.some" [v 0]))
-      (ex treeTy (Term.lam treeTy recognizer)))))))
+    (imp (truth o (pc P "Prelude.isSome" [pc P "Reader.indexOf"
+        [pc P "Typing.recognizerName" [v 0], v 1]]))
+      (ex treeTy (Term.lam treeTy (conj
+        (Term.eq (pc P "Reader.indexOf" [pc P "Typing.recognizerName" [v 1], v 2])
+          (pc P "Prelude.some" [v 0]))
+        (ex treeTy (Term.lam treeTy recognizer))))))))
   let defs : List Internal.Defn := [
     relDefn P S,
     -- the relation of an environment to a named context: at each position of the context whose

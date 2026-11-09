@@ -2099,102 +2099,120 @@ def «Typing.tGeneric» := fun (x0 : List T) => Const.node (leaf 15) x0
 
 def «Typing.Tx.member» :=
   fun (x0 : T) =>
-    Const.mod
-      (Const.div
-        (Const.fold
-          (α := T)
-          (fun (x1 : T) (x2 : List T) =>
-            let x3 : T := Const.node (leaf 0) x2;
-            Const.add
-              (if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
-                Const.eq (Const.arity x3) (leaf 0)
+    Const.child
+      (Const.fold
+        (α := T)
+        (fun (x1 : T) (x2 : List T) =>
+          let x3 : T := Const.node (leaf 0) x2;
+          Const.node
+            (leaf 0)
+            ((if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
+              Const.eq (Const.arity x3) (leaf 0)
+            else
+              if (Const.eq x1 (leaf 1)).label ≠ 0 then
+                Const.lt (leaf 0) (Const.add (Const.arity x3) (leaf 1))
               else
-                if (Const.eq x1 (leaf 1)).label ≠ 0 then
-                  Const.lt (leaf 0) (Const.add (Const.arity x3) (leaf 1))
-                else
-                  if (Const.eq x1 (leaf 2)).label ≠ 0 then
-                    if (Const.lt
-                      (leaf 0)
-                      (Const.add (Const.arity x3) (leaf 1))).label ≠ 0 then
-                      Const.foldr
-                        (α := T)
-                        (β := T)
-                        (fun (x4 : T) (x5 : T) =>
-                          if (Const.mod (Const.div x4 (leaf 1)) (leaf 2)).label ≠ 0 then
-                            x5
-                          else
-                            leaf 0)
-                        (leaf 1)
-                        (Const.iter
-                          (α := List T)
-                          (fun (x4 : List T) =>
-                            Const.lcase
-                              (α := T)
-                              (β := List T)
-                              x4
-                              ([] : List T)
-                              (fun (_ : T) (x6 : List T) => x6))
-                          x2
-                          (leaf 0))
-                    else
-                      leaf 0
+                if (Const.eq x1 (leaf 2)).label ≠ 0 then
+                  if (Const.lt
+                    (leaf 0)
+                    (Const.add (Const.arity x3) (leaf 1))).label ≠ 0 then
+                    Const.foldr
+                      (α := T)
+                      (β := T)
+                      (fun (x4 : T) (x5 : T) =>
+                        if (Const.child x4 (leaf 0)).label ≠ 0 then x5 else leaf 0)
+                      (leaf 1)
+                      (Const.iter
+                        (α := List T)
+                        (fun (x4 : List T) =>
+                          Const.lcase
+                            (α := T)
+                            (β := List T)
+                            x4
+                            ([] : List T)
+                            (fun (_ : T) (x6 : List T) => x6))
+                        x2
+                        (leaf 0))
                   else
-                    if (Const.eq x1 (leaf 3)).label ≠ 0 then
+                    leaf 0
+                else
+                  if (Const.eq x1 (leaf 3)).label ≠ 0 then
+                    Const.eq (Const.arity x3) (leaf 0)
+                  else
+                    if (Const.eq x1 (leaf 4)).label ≠ 0 then
                       Const.eq (Const.arity x3) (leaf 0)
                     else
-                      if (Const.eq x1 (leaf 4)).label ≠ 0 then
+                      if (Const.eq x1 (leaf 5)).label ≠ 0 then
                         Const.eq (Const.arity x3) (leaf 0)
                       else
-                        if (Const.eq x1 (leaf 5)).label ≠ 0 then
+                        if (Const.eq x1 (leaf 6)).label ≠ 0 then
                           Const.eq (Const.arity x3) (leaf 0)
                         else
-                          if (Const.eq x1 (leaf 6)).label ≠ 0 then
+                          if (Const.eq x1 (leaf 7)).label ≠ 0 then
                             Const.eq (Const.arity x3) (leaf 0)
                           else
-                            if (Const.eq x1 (leaf 7)).label ≠ 0 then
+                            if (Const.eq x1 (leaf 8)).label ≠ 0 then
                               Const.eq (Const.arity x3) (leaf 0)
                             else
-                              if (Const.eq x1 (leaf 8)).label ≠ 0 then
-                                Const.eq (Const.arity x3) (leaf 0)
+                              if (Const.eq x1 (leaf 9)).label ≠ 0 then
+                                Const.lt (leaf 0) (Const.add (Const.arity x3) (leaf 1))
                               else
-                                if (Const.eq x1 (leaf 9)).label ≠ 0 then
-                                  Const.lt (leaf 0) (Const.add (Const.arity x3) (leaf 1))
+                                if (Const.eq x1 (leaf 10)).label ≠ 0 then
+                                  if (Const.eq (Const.arity x3) (leaf 1)).label ≠ 0 then
+                                    Const.child (Const.child x3 (leaf 0)) (leaf 0)
+                                  else
+                                    leaf 0
                                 else
-                                  if (Const.eq x1 (leaf 10)).label ≠ 0 then
-                                    if (Const.eq (Const.arity x3) (leaf 1)).label ≠ 0 then
-                                      Const.mod
-                                        (Const.div (Const.child x3 (leaf 0)) (leaf 1))
-                                        (leaf 2)
+                                  if (Const.eq x1 (leaf 11)).label ≠ 0 then
+                                    if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
+                                      if (Const.child
+                                        (Const.child x3 (leaf 0))
+                                        (leaf 0)).label ≠ 0 then
+                                        Const.child (Const.child x3 (leaf 1)) (leaf 0)
+                                      else
+                                        leaf 0
                                     else
                                       leaf 0
                                   else
-                                    if (Const.eq x1 (leaf 11)).label ≠ 0 then
+                                    if (Const.eq x1 (leaf 12)).label ≠ 0 then
                                       if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
-                                        if (Const.mod
-                                          (Const.div (Const.child x3 (leaf 0)) (leaf 1))
-                                          (leaf 2)).label ≠ 0 then
-                                          Const.mod
-                                            (Const.div (Const.child x3 (leaf 1)) (leaf 1))
-                                            (leaf 2)
+                                        if (Const.child
+                                          (Const.child x3 (leaf 0))
+                                          (leaf 0)).label ≠ 0 then
+                                          Const.child (Const.child x3 (leaf 1)) (leaf 0)
                                         else
                                           leaf 0
                                       else
                                         leaf 0
                                     else
-                                      if (Const.eq x1 (leaf 12)).label ≠ 0 then
-                                        if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
-                                          if (Const.mod
-                                            (Const.div (Const.child x3 (leaf 0)) (leaf 1))
-                                            (leaf 2)).label ≠ 0 then
-                                            Const.mod
-                                              (Const.div (Const.child x3 (leaf 1)) (leaf 1))
-                                              (leaf 2)
-                                          else
-                                            leaf 0
+                                      if (Const.eq x1 (leaf 13)).label ≠ 0 then
+                                        if (Const.lt
+                                          (leaf 0)
+                                          (Const.add (Const.arity x3) (leaf 1))).label ≠ 0 then
+                                          Const.foldr
+                                            (α := T)
+                                            (β := T)
+                                            (fun (x4 : T) (x5 : T) =>
+                                              if (Const.child x4 (leaf 0)).label ≠ 0 then
+                                                x5
+                                              else
+                                                leaf 0)
+                                            (leaf 1)
+                                            (Const.iter
+                                              (α := List T)
+                                              (fun (x4 : List T) =>
+                                                Const.lcase
+                                                  (α := T)
+                                                  (β := List T)
+                                                  x4
+                                                  ([] : List T)
+                                                  (fun (_ : T) (x6 : List T) => x6))
+                                              x2
+                                              (leaf 0))
                                         else
                                           leaf 0
                                       else
-                                        if (Const.eq x1 (leaf 13)).label ≠ 0 then
+                                        if (Const.eq x1 (leaf 14)).label ≠ 0 then
                                           if (Const.lt
                                             (leaf 0)
                                             (Const.add (Const.arity x3) (leaf 1))).label ≠ 0 then
@@ -2202,9 +2220,7 @@ def «Typing.Tx.member» :=
                                               (α := T)
                                               (β := T)
                                               (fun (x4 : T) (x5 : T) =>
-                                                if (Const.mod
-                                                  (Const.div x4 (leaf 1))
-                                                  (leaf 2)).label ≠ 0 then
+                                                if (Const.child x4 (leaf 0)).label ≠ 0 then
                                                   x5
                                                 else
                                                   leaf 0)
@@ -2223,7 +2239,7 @@ def «Typing.Tx.member» :=
                                           else
                                             leaf 0
                                         else
-                                          if (Const.eq x1 (leaf 14)).label ≠ 0 then
+                                          if (Const.eq x1 (leaf 15)).label ≠ 0 then
                                             if (Const.lt
                                               (leaf 0)
                                               (Const.add (Const.arity x3) (leaf 1))).label ≠ 0 then
@@ -2231,9 +2247,7 @@ def «Typing.Tx.member» :=
                                                 (α := T)
                                                 (β := T)
                                                 (fun (x4 : T) (x5 : T) =>
-                                                  if (Const.mod
-                                                    (Const.div x4 (leaf 1))
-                                                    (leaf 2)).label ≠ 0 then
+                                                  if (Const.child x4 (leaf 0)).label ≠ 0 then
                                                     x5
                                                   else
                                                     leaf 0)
@@ -2252,45 +2266,13 @@ def «Typing.Tx.member» :=
                                             else
                                               leaf 0
                                           else
-                                            if (Const.eq x1 (leaf 15)).label ≠ 0 then
-                                              if (Const.lt
-                                                (leaf 0)
-                                                (Const.add
-                                                  (Const.arity x3)
-                                                  (leaf 1))).label ≠ 0 then
-                                                Const.foldr
-                                                  (α := T)
-                                                  (β := T)
-                                                  (fun (x4 : T) (x5 : T) =>
-                                                    if (Const.mod
-                                                      (Const.div x4 (leaf 1))
-                                                      (leaf 2)).label ≠ 0 then
-                                                      x5
-                                                    else
-                                                      leaf 0)
-                                                  (leaf 1)
-                                                  (Const.iter
-                                                    (α := List T)
-                                                    (fun (x4 : List T) =>
-                                                      Const.lcase
-                                                        (α := T)
-                                                        (β := List T)
-                                                        x4
-                                                        ([] : List T)
-                                                        (fun (_ : T) (x6 : List T) => x6))
-                                                    x2
-                                                    (leaf 0))
-                                              else
-                                                leaf 0
-                                            else
-                                              leaf 0).label ≠ 0 then
-                leaf 1
-              else
-                leaf 0)
-              (leaf 0))
-          x0)
-        (leaf 1))
-      (leaf 2)
+                                            leaf 0).label ≠ 0 then
+              leaf 1
+            else
+              leaf 0) ::
+              ([] : List T)))
+        x0)
+      (leaf 0)
 
 def «Typing/Txs.single» :=
   fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
@@ -10374,14 +10356,6 @@ def «Recognize.s4» :=
 def «Recognize.num» :=
   fun (x0 : T) => Const.node (leaf 1) («Typing.decimalChars» x0)
 
-def «Recognize.pow2» :=
-  fun (x0 : T) =>
-    Const.iter
-      (α := T)
-      (fun (x1 : T) => Const.mul x1 (leaf 2))
-      (leaf 1)
-      x0
-
 def «Recognize.rT» := mk 1 [leaf 84]
 
 def «Recognize.rList» := mk 1 [leaf 76, leaf 105, leaf 115, leaf 116]
@@ -10406,6 +10380,8 @@ def «Recognize.rLcase» :=
 
 def «Recognize.rNil» := mk 1 [leaf 110, leaf 105, leaf 108]
 
+def «Recognize.rCons» := mk 1 [leaf 99, leaf 111, leaf 110, leaf 115]
+
 def «Recognize.rNode» := mk 1 [leaf 110, leaf 111, leaf 100, leaf 101]
 
 def «Recognize.rChild» :=
@@ -10419,10 +10395,6 @@ def «Recognize.rEq» := mk 1 [leaf 101, leaf 113]
 def «Recognize.rLt» := mk 1 [leaf 108, leaf 116]
 
 def «Recognize.rAdd» := mk 1 [leaf 97, leaf 100, leaf 100]
-
-def «Recognize.rDiv» := mk 1 [leaf 100, leaf 105, leaf 118]
-
-def «Recognize.rMod» := mk 1 [leaf 109, leaf 111, leaf 100]
 
 def «Recognize.vT» := mk 1 [leaf 37, leaf 116]
 
@@ -10470,13 +10442,7 @@ def «Recognize.conj» :=
 
 def «Recognize.bitOf» :=
   fun (x0 : T) (x1 : T) =>
-    «Recognize.s3»
-      «Recognize.rMod»
-      («Recognize.s3»
-        «Recognize.rDiv»
-        x0
-        («Recognize.num» («Recognize.pow2» x1)))
-      («Recognize.num» (leaf 2))
+    «Recognize.s3» «Recognize.rChild» x0 («Recognize.num» x1)
 
 def «Recognize.tailE» :=
   «Recognize.s3»
@@ -10718,8 +10684,7 @@ def «Recognize.recognizer» :=
                 («Recognize.s4»
                   «Recognize.rIf»
                   («Prelude.get» x6)
-                  («Recognize.num»
-                    («Recognize.pow2» («Prelude.get» («Reader.indexOf» x3 x2))))
+                  «Recognize.one»
                   «Recognize.zero»)
             else
               «Prelude.none»
@@ -10742,12 +10707,15 @@ def «Recognize.recognizer» :=
               («Recognize.rT» ::
                 ((«Recognize.s3» «Recognize.rNode» «Recognize.zero» «Recognize.vR») ::
                   («Prelude.single»
-                    (Const.foldr
-                      (α := T)
-                      (β := T)
-                      (fun (x4 : T) (x5 : T) => «Recognize.s3» «Recognize.rAdd» x4 x5)
+                    («Recognize.s3»
+                      «Recognize.rNode»
                       «Recognize.zero»
-                      (Const.children («Prelude.get» x3)))))))));
+                      (Const.foldr
+                        (α := T)
+                        (β := T)
+                        (fun (x4 : T) (x5 : T) => «Recognize.s3» «Recognize.rCons» x4 x5)
+                        («Recognize.s2» «Recognize.rNil» «Recognize.rT»)
+                        (Const.children («Prelude.get» x3))))))))));
       «Prelude.some»
         («Recognize.s3»
           «Recognize.rDef»
@@ -12385,265 +12353,216 @@ def «LeanBackend.kPara» :=
 
 def «LeanBackend.Kt.member» :=
   fun (x0 : T) =>
-    Const.mod
-      (Const.div
-        (Const.fold
-          (α := T)
-          (fun (x1 : T) (x2 : List T) =>
-            let x3 : T := Const.node (leaf 0) x2;
-            Const.add
-              (if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
+    Const.child
+      (Const.fold
+        (α := T)
+        (fun (x1 : T) (x2 : List T) =>
+          let x3 : T := Const.node (leaf 0) x2;
+          Const.node
+            (leaf 0)
+            ((if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
+              Const.eq (Const.arity x3) (leaf 0)
+            else
+              if (Const.eq x1 (leaf 1)).label ≠ 0 then
                 Const.eq (Const.arity x3) (leaf 0)
               else
-                if (Const.eq x1 (leaf 1)).label ≠ 0 then
-                  Const.eq (Const.arity x3) (leaf 0)
+                if (Const.eq x1 (leaf 2)).label ≠ 0 then
+                  if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
+                    if (Const.child (Const.child x3 (leaf 0)) (leaf 0)).label ≠ 0 then
+                      Const.child (Const.child x3 (leaf 1)) (leaf 0)
+                    else
+                      leaf 0
+                  else
+                    leaf 0
                 else
-                  if (Const.eq x1 (leaf 2)).label ≠ 0 then
+                  if (Const.eq x1 (leaf 3)).label ≠ 0 then
                     if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
-                      if (Const.mod
-                        (Const.div (Const.child x3 (leaf 0)) (leaf 1))
-                        (leaf 2)).label ≠ 0 then
-                        Const.mod (Const.div (Const.child x3 (leaf 1)) (leaf 1)) (leaf 2)
+                      if (Const.child (Const.child x3 (leaf 0)) (leaf 0)).label ≠ 0 then
+                        Const.child (Const.child x3 (leaf 1)) (leaf 0)
                       else
                         leaf 0
                     else
                       leaf 0
                   else
-                    if (Const.eq x1 (leaf 3)).label ≠ 0 then
-                      if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
-                        if (Const.mod
-                          (Const.div (Const.child x3 (leaf 0)) (leaf 1))
-                          (leaf 2)).label ≠ 0 then
-                          Const.mod (Const.div (Const.child x3 (leaf 1)) (leaf 1)) (leaf 2)
-                        else
-                          leaf 0
+                    if (Const.eq x1 (leaf 4)).label ≠ 0 then
+                      if (Const.eq (Const.arity x3) (leaf 1)).label ≠ 0 then
+                        Const.child (Const.child x3 (leaf 0)) (leaf 0)
                       else
                         leaf 0
                     else
-                      if (Const.eq x1 (leaf 4)).label ≠ 0 then
-                        if (Const.eq (Const.arity x3) (leaf 1)).label ≠ 0 then
-                          Const.mod (Const.div (Const.child x3 (leaf 0)) (leaf 1)) (leaf 2)
-                        else
-                          leaf 0
+                      if (Const.eq x1 (leaf 5)).label ≠ 0 then
+                        Const.eq (Const.arity x3) (leaf 0)
                       else
-                        if (Const.eq x1 (leaf 5)).label ≠ 0 then
+                        if (Const.eq x1 (leaf 6)).label ≠ 0 then
                           Const.eq (Const.arity x3) (leaf 0)
                         else
-                          if (Const.eq x1 (leaf 6)).label ≠ 0 then
+                          if (Const.eq x1 (leaf 7)).label ≠ 0 then
                             Const.eq (Const.arity x3) (leaf 0)
                           else
-                            if (Const.eq x1 (leaf 7)).label ≠ 0 then
-                              Const.eq (Const.arity x3) (leaf 0)
+                            if (Const.eq x1 (leaf 8)).label ≠ 0 then
+                              Const.eq (Const.arity x3) (leaf 1)
                             else
-                              if (Const.eq x1 (leaf 8)).label ≠ 0 then
-                                Const.eq (Const.arity x3) (leaf 1)
+                              if (Const.eq x1 (leaf 9)).label ≠ 0 then
+                                if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
+                                  if (Const.child (Const.child x3 (leaf 0)) (leaf 0)).label ≠ 0 then
+                                    Const.child (Const.child x3 (leaf 1)) (leaf 0)
+                                  else
+                                    leaf 0
+                                else
+                                  leaf 0
                               else
-                                if (Const.eq x1 (leaf 9)).label ≠ 0 then
+                                if (Const.eq x1 (leaf 10)).label ≠ 0 then
                                   if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
-                                    if (Const.mod
-                                      (Const.div (Const.child x3 (leaf 0)) (leaf 1))
-                                      (leaf 2)).label ≠ 0 then
-                                      Const.mod
-                                        (Const.div (Const.child x3 (leaf 1)) (leaf 1))
-                                        (leaf 2)
+                                    if (Const.child
+                                      (Const.child x3 (leaf 0))
+                                      (leaf 0)).label ≠ 0 then
+                                      Const.child (Const.child x3 (leaf 1)) (leaf 0)
                                     else
                                       leaf 0
                                   else
                                     leaf 0
                                 else
-                                  if (Const.eq x1 (leaf 10)).label ≠ 0 then
-                                    if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
-                                      if (Const.mod
-                                        (Const.div (Const.child x3 (leaf 0)) (leaf 1))
-                                        (leaf 2)).label ≠ 0 then
-                                        Const.mod
-                                          (Const.div (Const.child x3 (leaf 1)) (leaf 1))
-                                          (leaf 2)
-                                      else
-                                        leaf 0
-                                    else
-                                      leaf 0
+                                  if (Const.eq x1 (leaf 11)).label ≠ 0 then
+                                    Const.eq (Const.arity x3) (leaf 0)
                                   else
-                                    if (Const.eq x1 (leaf 11)).label ≠ 0 then
-                                      Const.eq (Const.arity x3) (leaf 0)
-                                    else
-                                      if (Const.eq x1 (leaf 12)).label ≠ 0 then
-                                        if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
-                                          if (Const.mod
-                                            (Const.div (Const.child x3 (leaf 0)) (leaf 1))
-                                            (leaf 2)).label ≠ 0 then
-                                            Const.mod
-                                              (Const.div (Const.child x3 (leaf 1)) (leaf 1))
-                                              (leaf 2)
-                                          else
-                                            leaf 0
+                                    if (Const.eq x1 (leaf 12)).label ≠ 0 then
+                                      if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
+                                        if (Const.child
+                                          (Const.child x3 (leaf 0))
+                                          (leaf 0)).label ≠ 0 then
+                                          Const.child (Const.child x3 (leaf 1)) (leaf 0)
                                         else
                                           leaf 0
                                       else
-                                        if (Const.eq x1 (leaf 13)).label ≠ 0 then
+                                        leaf 0
+                                    else
+                                      if (Const.eq x1 (leaf 13)).label ≠ 0 then
+                                        if (Const.eq (Const.arity x3) (leaf 1)).label ≠ 0 then
+                                          Const.child (Const.child x3 (leaf 0)) (leaf 0)
+                                        else
+                                          leaf 0
+                                      else
+                                        if (Const.eq x1 (leaf 14)).label ≠ 0 then
                                           if (Const.eq (Const.arity x3) (leaf 1)).label ≠ 0 then
-                                            Const.mod
-                                              (Const.div (Const.child x3 (leaf 0)) (leaf 1))
-                                              (leaf 2)
+                                            Const.child (Const.child x3 (leaf 0)) (leaf 0)
                                           else
                                             leaf 0
                                         else
-                                          if (Const.eq x1 (leaf 14)).label ≠ 0 then
-                                            if (Const.eq (Const.arity x3) (leaf 1)).label ≠ 0 then
-                                              Const.mod
-                                                (Const.div (Const.child x3 (leaf 0)) (leaf 1))
-                                                (leaf 2)
-                                            else
-                                              leaf 0
+                                          if (Const.eq x1 (leaf 15)).label ≠ 0 then
+                                            Const.eq (Const.arity x3) (leaf 1)
                                           else
-                                            if (Const.eq x1 (leaf 15)).label ≠ 0 then
-                                              Const.eq (Const.arity x3) (leaf 1)
-                                            else
-                                              if (Const.eq x1 (leaf 16)).label ≠ 0 then
-                                                if (Const.eq
-                                                  (Const.arity x3)
-                                                  (leaf 3)).label ≠ 0 then
-                                                  if (Const.mod
-                                                    (Const.div (Const.child x3 (leaf 0)) (leaf 1))
-                                                    (leaf 2)).label ≠ 0 then
-                                                    if (Const.mod
-                                                      (Const.div (Const.child x3 (leaf 1)) (leaf 1))
-                                                      (leaf 2)).label ≠ 0 then
-                                                      Const.mod
-                                                        (Const.div
-                                                          (Const.child x3 (leaf 2))
-                                                          (leaf 1))
-                                                        (leaf 2)
-                                                    else
-                                                      leaf 0
+                                            if (Const.eq x1 (leaf 16)).label ≠ 0 then
+                                              if (Const.eq (Const.arity x3) (leaf 3)).label ≠ 0 then
+                                                if (Const.child
+                                                  (Const.child x3 (leaf 0))
+                                                  (leaf 0)).label ≠ 0 then
+                                                  if (Const.child
+                                                    (Const.child x3 (leaf 1))
+                                                    (leaf 0)).label ≠ 0 then
+                                                    Const.child (Const.child x3 (leaf 2)) (leaf 0)
                                                   else
                                                     leaf 0
                                                 else
                                                   leaf 0
                                               else
-                                                if (Const.eq x1 (leaf 17)).label ≠ 0 then
+                                                leaf 0
+                                            else
+                                              if (Const.eq x1 (leaf 17)).label ≠ 0 then
+                                                if (Const.eq
+                                                  (Const.arity x3)
+                                                  (leaf 1)).label ≠ 0 then
+                                                  Const.child (Const.child x3 (leaf 0)) (leaf 0)
+                                                else
+                                                  leaf 0
+                                              else
+                                                if (Const.eq x1 (leaf 18)).label ≠ 0 then
                                                   if (Const.eq
                                                     (Const.arity x3)
                                                     (leaf 1)).label ≠ 0 then
-                                                    Const.mod
-                                                      (Const.div (Const.child x3 (leaf 0)) (leaf 1))
-                                                      (leaf 2)
+                                                    Const.child (Const.child x3 (leaf 0)) (leaf 0)
                                                   else
                                                     leaf 0
                                                 else
-                                                  if (Const.eq x1 (leaf 18)).label ≠ 0 then
+                                                  if (Const.eq x1 (leaf 19)).label ≠ 0 then
                                                     if (Const.eq
                                                       (Const.arity x3)
                                                       (leaf 1)).label ≠ 0 then
-                                                      Const.mod
-                                                        (Const.div
-                                                          (Const.child x3 (leaf 0))
-                                                          (leaf 1))
-                                                        (leaf 2)
+                                                      Const.child (Const.child x3 (leaf 0)) (leaf 0)
                                                     else
                                                       leaf 0
                                                   else
-                                                    if (Const.eq x1 (leaf 19)).label ≠ 0 then
+                                                    if (Const.eq x1 (leaf 20)).label ≠ 0 then
                                                       if (Const.eq
                                                         (Const.arity x3)
-                                                        (leaf 1)).label ≠ 0 then
-                                                        Const.mod
-                                                          (Const.div
-                                                            (Const.child x3 (leaf 0))
-                                                            (leaf 1))
-                                                          (leaf 2)
+                                                        (leaf 2)).label ≠ 0 then
+                                                        if (Const.child
+                                                          (Const.child x3 (leaf 0))
+                                                          (leaf 0)).label ≠ 0 then
+                                                          Const.child
+                                                            (Const.child x3 (leaf 1))
+                                                            (leaf 0)
+                                                        else
+                                                          leaf 0
                                                       else
                                                         leaf 0
                                                     else
-                                                      if (Const.eq x1 (leaf 20)).label ≠ 0 then
+                                                      if (Const.eq x1 (leaf 21)).label ≠ 0 then
                                                         if (Const.eq
                                                           (Const.arity x3)
                                                           (leaf 2)).label ≠ 0 then
-                                                          if (Const.mod
-                                                            (Const.div
-                                                              (Const.child x3 (leaf 0))
-                                                              (leaf 1))
-                                                            (leaf 2)).label ≠ 0 then
-                                                            Const.mod
-                                                              (Const.div
-                                                                (Const.child x3 (leaf 1))
-                                                                (leaf 1))
-                                                              (leaf 2)
+                                                          if (Const.child
+                                                            (Const.child x3 (leaf 0))
+                                                            (leaf 0)).label ≠ 0 then
+                                                            Const.child
+                                                              (Const.child x3 (leaf 1))
+                                                              (leaf 0)
                                                           else
                                                             leaf 0
                                                         else
                                                           leaf 0
                                                       else
-                                                        if (Const.eq x1 (leaf 21)).label ≠ 0 then
-                                                          if (Const.eq
-                                                            (Const.arity x3)
-                                                            (leaf 2)).label ≠ 0 then
-                                                            if (Const.mod
-                                                              (Const.div
-                                                                (Const.child x3 (leaf 0))
-                                                                (leaf 1))
-                                                              (leaf 2)).label ≠ 0 then
-                                                              Const.mod
-                                                                (Const.div
-                                                                  (Const.child x3 (leaf 1))
-                                                                  (leaf 1))
-                                                                (leaf 2)
-                                                            else
-                                                              leaf 0
-                                                          else
-                                                            leaf 0
+                                                        if (Const.eq x1 (leaf 22)).label ≠ 0 then
+                                                          Const.eq (Const.arity x3) (leaf 1)
                                                         else
-                                                          if (Const.eq x1 (leaf 22)).label ≠ 0 then
+                                                          if (Const.eq x1 (leaf 23)).label ≠ 0 then
                                                             Const.eq (Const.arity x3) (leaf 1)
                                                           else
                                                             if (Const.eq
                                                               x1
-                                                              (leaf 23)).label ≠ 0 then
-                                                              Const.eq (Const.arity x3) (leaf 1)
-                                                            else
+                                                              (leaf 24)).label ≠ 0 then
                                                               if (Const.eq
-                                                                x1
-                                                                (leaf 24)).label ≠ 0 then
-                                                                if (Const.eq
-                                                                  (Const.arity x3)
-                                                                  (leaf 2)).label ≠ 0 then
-                                                                  if (Const.mod
-                                                                    (Const.div
-                                                                      (Const.child x3 (leaf 0))
-                                                                      (leaf 1))
-                                                                    (leaf 2)).label ≠ 0 then
-                                                                    Const.mod
-                                                                      (Const.div
-                                                                        (Const.child x3 (leaf 1))
-                                                                        (leaf 1))
-                                                                      (leaf 2)
-                                                                  else
-                                                                    leaf 0
+                                                                (Const.arity x3)
+                                                                (leaf 2)).label ≠ 0 then
+                                                                if (Const.child
+                                                                  (Const.child x3 (leaf 0))
+                                                                  (leaf 0)).label ≠ 0 then
+                                                                  Const.child
+                                                                    (Const.child x3 (leaf 1))
+                                                                    (leaf 0)
                                                                 else
                                                                   leaf 0
                                                               else
+                                                                leaf 0
+                                                            else
+                                                              if (Const.eq
+                                                                x1
+                                                                (leaf 25)).label ≠ 0 then
                                                                 if (Const.eq
-                                                                  x1
-                                                                  (leaf 25)).label ≠ 0 then
-                                                                  if (Const.eq
-                                                                    (Const.arity x3)
-                                                                    (leaf 1)).label ≠ 0 then
-                                                                    Const.mod
-                                                                      (Const.div
-                                                                        (Const.child x3 (leaf 0))
-                                                                        (leaf 1))
-                                                                      (leaf 2)
-                                                                  else
-                                                                    leaf 0
+                                                                  (Const.arity x3)
+                                                                  (leaf 1)).label ≠ 0 then
+                                                                  Const.child
+                                                                    (Const.child x3 (leaf 0))
+                                                                    (leaf 0)
                                                                 else
-                                                                  leaf 0).label ≠ 0 then
-                leaf 1
-              else
-                leaf 0)
-              (leaf 0))
-          x0)
-        (leaf 1))
-      (leaf 2)
+                                                                  leaf 0
+                                                              else
+                                                                leaf 0).label ≠ 0 then
+              leaf 1
+            else
+              leaf 0) ::
+              ([] : List T)))
+        x0)
+      (leaf 0)
 
 def «LeanBackend.orList» :=
   fun (x0 : List T) (x1 : List T) =>

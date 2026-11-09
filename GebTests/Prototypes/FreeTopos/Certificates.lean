@@ -21,6 +21,7 @@ public import GebTests.Prototypes.FreeTopos.DatatypeDecode
 public import GebTests.Prototypes.FreeTopos.DatatypeFolds
 public import GebTests.Prototypes.FreeTopos.DatatypeSound
 public import GebTests.Prototypes.FreeTopos.DatatypeLam
+public import GebTests.Prototypes.FreeTopos.DatatypeConstructor
 public import GebTests.Prototypes.FreeTopos.Expansion
 public import GebTests.Prototypes.FreeTopos.Normalization
 
@@ -69,11 +70,67 @@ abbrev Search :=
   List String × (List (List Internal.Thm) → Except String (List Stored.Cert))
 
 set_option compiler.extract_closed false in
+/-- The searches of the developments of the definitions the expansion generates. -/
+def generatedSearches : List (String × Search) :=
+  [("datatype-den", (["datatype-base", "datatype-atom", "datatype-list",
+      "datatype-stages", "datatype-apply", "datatype-expansion", "datatype-assembly",
+      "datatype-datum", "datatype-decode", "datatype-folds", "datatype-case"], fun dss ↦
+    inProgram Datatypes.extended3 fun (P, S, T) ↦
+      Datatypes.denCertificates P S T dss.flatten)),
+    ("datatype-walk", (["datatype-base", "datatype-atom", "datatype-list",
+      "datatype-stages", "datatype-apply", "datatype-expansion", "datatype-assembly",
+      "datatype-datum", "datatype-decode", "datatype-folds", "datatype-case", "datatype-clauses",
+      "datatype-case-sound", "datatype-den"],
+      fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.walkCertificates P S T dss.flatten)),
+    ("datatype-recognizer", (["datatype-base", "datatype-atom", "datatype-list",
+      "datatype-stages", "datatype-apply", "datatype-expansion", "datatype-assembly",
+      "datatype-datum", "datatype-decode", "datatype-folds", "datatype-case", "datatype-clauses",
+      "datatype-case-sound", "datatype-den", "datatype-walk"],
+      fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.recognizerCertificates P S T dss.flatten)),
+    ("datatype-recognizer-fold", (["datatype-base", "datatype-atom", "datatype-list",
+      "datatype-stages", "datatype-apply", "datatype-expansion", "datatype-assembly",
+      "datatype-datum", "datatype-decode", "datatype-folds", "datatype-case", "datatype-clauses",
+      "datatype-case-sound", "datatype-den", "datatype-walk", "datatype-recognizer"],
+      fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.recognizerFoldCertificates P S T dss.flatten)),
+    ("datatype-constructor", (["datatype-base", "datatype-atom", "datatype-list",
+      "datatype-stages", "datatype-apply", "datatype-expansion", "datatype-assembly",
+      "datatype-datum", "datatype-decode", "datatype-folds", "datatype-case", "datatype-clauses",
+      "datatype-case-sound", "datatype-den", "datatype-walk", "datatype-recognizer",
+      "datatype-recognizer-fold"],
+      fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.constructorCertificates P S T dss.flatten)),
+    ("datatype-constructor-body", (["datatype-base", "datatype-atom", "datatype-list",
+      "datatype-stages", "datatype-apply", "datatype-expansion", "datatype-assembly",
+      "datatype-datum", "datatype-decode", "datatype-folds", "datatype-case", "datatype-clauses",
+      "datatype-case-sound", "datatype-den", "datatype-walk", "datatype-recognizer",
+      "datatype-recognizer-fold", "datatype-constructor"],
+      fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.constructorBodyCertificates P S T dss.flatten)),
+    ("datatype-constructor-lam", (["datatype-base", "datatype-atom", "datatype-list",
+      "datatype-stages", "datatype-apply", "datatype-expansion", "datatype-assembly",
+      "datatype-datum", "datatype-decode", "datatype-folds", "datatype-case", "datatype-clauses",
+      "datatype-case-sound", "datatype-den", "datatype-walk", "datatype-recognizer",
+      "datatype-recognizer-fold", "datatype-constructor", "datatype-constructor-body"],
+      fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.constructorLamCertificates P S T dss.flatten)),
+    ("datatype-constructor-nest", (["datatype-base", "datatype-atom", "datatype-list",
+      "datatype-stages", "datatype-apply", "datatype-expansion", "datatype-assembly",
+      "datatype-datum", "datatype-decode", "datatype-folds", "datatype-case", "datatype-clauses",
+      "datatype-case-sound", "datatype-den", "datatype-walk", "datatype-recognizer",
+      "datatype-recognizer-fold", "datatype-constructor", "datatype-constructor-body",
+      "datatype-constructor-lam"],
+      fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.constructorNestCertificates P S T dss.flatten))]
+
+set_option compiler.extract_closed false in
 /-- The searches of the developments with certificates, each with its name, after those whose
 certificates it continues from. Closed terms are not extracted, so that each search runs when it
 is timed rather than when the program starts. -/
 def searches : List (String × Search) :=
-  [("weakening", ([], fun _ ↦ inProgram Weakening.program fun P ↦
+  List.append [("weakening", ([], fun _ ↦ inProgram Weakening.program fun P ↦
       (Weakening.certificate P).bind fun ds ↦ (Stored.certOf "weakening" ds).map ([·]))),
     ("substitution", ([], fun _ ↦ inProgram Substitution.program fun P ↦
       (Substitution.certificate P).bind fun ds ↦ (Stored.certOf "substitution" ds).map ([·]))),
@@ -204,7 +261,7 @@ def searches : List (String × Search) :=
         "decode-case", "datatype-app", "datatype-lam", "datatype-data", "datatype-lists",
         "datatype-sound"], fun dss ↦
       inProgram Datatypes.extended3 fun (P, S, T) ↦
-        Datatypes.closedCertificates P S T dss.flatten))]
+        Datatypes.closedCertificates P S T dss.flatten))] generatedSearches
 
 end GebTests.Prototypes.FreeTopos.Certificates
 

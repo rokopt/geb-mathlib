@@ -2868,8 +2868,8 @@ Decoding is decided by the recognizer `D.member`, which the stage-0
 compiler writes where a program refers to it (`bootstrap/recognize.geb`),
 from a marker the expansion leaves after the constructors of each
 datatype `data` declares: one fold of the tree whose result at a node
-holds the bit of its membership in `D` and in each datatype on which `D`
-depends. The expansion writes the type a decoding or a datum reads with
+is the node over the bits of its membership in `D` and in each datatype
+on which `D` depends. The expansion writes the type a decoding or a datum reads with
 its abbreviations expanded, and the typing admits only a datatype's own
 name there, so that a type abbreviation means the datatype it abbreviates
 in these forms as in every other, and the recognizer the erasure names,
@@ -2968,11 +2968,17 @@ refers to it, decides membership in it; no definition takes a
 primitive's name or the unit value's; and each name the context gives a
 type is one the typing admits as a binder's. The relation holds at an
 opaque sort as at the trees, its erasure, of which a field of a template's
-datatype holds any. Remaining after it: those assumptions discharged
-for a whole program, the definitions the expansion generates related at
-their types and the generated recognizers' decisions proved, which a
-source form's soundness does not reach, and the transfer of the result to
-Lean; `tree-data` removed. The developments of the soundness continue
+datatype holds any. The definitions the expansion generates, which a
+source form's soundness does not reach, are proved apart: a recognizer's
+S-expressions denote a function deciding membership
+(`GebTests/Prototypes/FreeTopos/DatatypeRecognizer.lean`), and a
+constructor's definition denotes a value related at its type
+(`GebTests/Prototypes/FreeTopos/DatatypeConstructor.lean`). The typing of
+each field's coercion gives its relation, so that the proof reads neither
+the positions of the fields nor the kernel's typing. Remaining after it:
+the assumptions of those theorems and of the soundness discharged for a
+whole program, and the transfer of the result to Lean; `tree-data`
+removed. The developments of the soundness continue
 from one another in no one order, each citing the statements of those
 it continues from, so the modules of
 `GebTests/Prototypes/FreeTopos/Certified/` check each after those
