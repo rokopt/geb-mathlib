@@ -1,11 +1,3 @@
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
-
-- [Bootstrap architecture review](#bootstrap-architecture-review)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 # Bootstrap architecture review
 
 Review recorded on 2026-10-29 against repository revision `848e7902`.
