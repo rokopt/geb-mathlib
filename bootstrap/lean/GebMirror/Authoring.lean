@@ -2524,208 +2524,183 @@ def «Authoring.results» :=
 
 def «Authoring.Results.member» :=
   fun (x0 : T) =>
-    Const.mod
-      (Const.div
-        (Const.fold
-          (α := T)
-          (fun (x1 : T) (x2 : List T) =>
-            let x3 : T := Const.node (leaf 0) x2;
-            Const.add
-              (if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
-                if (Const.lt
+    Const.child
+      (Const.fold
+        (α := T)
+        (fun (x1 : T) (x2 : List T) =>
+          let x3 : T := Const.node (leaf 0) x2;
+          Const.node
+            (leaf 0)
+            ((if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
+              if (Const.lt
+                (leaf 1)
+                (Const.add (Const.arity x3) (leaf 1))).label ≠ 0 then
+                Const.foldr
+                  (α := T)
+                  (β := T)
+                  (fun (x4 : T) (x5 : T) =>
+                    if (Const.child x4 (leaf 1)).label ≠ 0 then x5 else leaf 0)
                   (leaf 1)
-                  (Const.add (Const.arity x3) (leaf 1))).label ≠ 0 then
-                  Const.foldr
-                    (α := T)
-                    (β := T)
-                    (fun (x4 : T) (x5 : T) =>
-                      if (Const.mod (Const.div x4 (leaf 2)) (leaf 2)).label ≠ 0 then
-                        x5
-                      else
-                        leaf 0)
-                    (leaf 1)
-                    (Const.iter
-                      (α := List T)
-                      (fun (x4 : List T) =>
-                        Const.lcase
-                          (α := T)
-                          (β := List T)
-                          x4
-                          ([] : List T)
-                          (fun (_ : T) (x6 : List T) => x6))
-                      x2
-                      (leaf 1))
+                  (Const.iter
+                    (α := List T)
+                    (fun (x4 : List T) =>
+                      Const.lcase
+                        (α := T)
+                        (β := List T)
+                        x4
+                        ([] : List T)
+                        (fun (_ : T) (x6 : List T) => x6))
+                    x2
+                    (leaf 1))
+              else
+                leaf 0
+            else
+              leaf 0).label ≠ 0 then
+              leaf 1
+            else
+              leaf 0) ::
+              ((if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
+                if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
+                  Const.child (Const.child x3 (leaf 0)) (leaf 2)
                 else
                   leaf 0
               else
-                leaf 0).label ≠ 0 then
-                leaf 1
-              else
-                leaf 0)
-              (Const.add
-                (if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
+                if (Const.eq x1 (leaf 1)).label ≠ 0 then
                   if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
-                    Const.mod (Const.div (Const.child x3 (leaf 0)) (leaf 4)) (leaf 2)
+                    Const.child (Const.child x3 (leaf 0)) (leaf 3)
                   else
                     leaf 0
                 else
-                  if (Const.eq x1 (leaf 1)).label ≠ 0 then
-                    if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
-                      Const.mod (Const.div (Const.child x3 (leaf 0)) (leaf 8)) (leaf 2)
+                  if (Const.eq x1 (leaf 2)).label ≠ 0 then
+                    if (Const.eq (Const.arity x3) (leaf 1)).label ≠ 0 then
+                      Const.child (Const.child x3 (leaf 0)) (leaf 4)
                     else
                       leaf 0
                   else
-                    if (Const.eq x1 (leaf 2)).label ≠ 0 then
-                      if (Const.eq (Const.arity x3) (leaf 1)).label ≠ 0 then
-                        Const.mod (Const.div (Const.child x3 (leaf 0)) (leaf 16)) (leaf 2)
+                    if (Const.eq x1 (leaf 3)).label ≠ 0 then
+                      if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
+                        Const.child (Const.child x3 (leaf 0)) (leaf 5)
                       else
                         leaf 0
                     else
-                      if (Const.eq x1 (leaf 3)).label ≠ 0 then
-                        if (Const.eq (Const.arity x3) (leaf 2)).label ≠ 0 then
-                          Const.mod (Const.div (Const.child x3 (leaf 0)) (leaf 32)) (leaf 2)
-                        else
-                          leaf 0
+                      if (Const.eq x1 (leaf 4)).label ≠ 0 then
+                        Const.eq (Const.arity x3) (leaf 3)
                       else
-                        if (Const.eq x1 (leaf 4)).label ≠ 0 then
+                        if (Const.eq x1 (leaf 5)).label ≠ 0 then
                           Const.eq (Const.arity x3) (leaf 3)
                         else
-                          if (Const.eq x1 (leaf 5)).label ≠ 0 then
-                            Const.eq (Const.arity x3) (leaf 3)
+                          if (Const.eq x1 (leaf 6)).label ≠ 0 then
+                            Const.eq (Const.arity x3) (leaf 4)
                           else
-                            if (Const.eq x1 (leaf 6)).label ≠ 0 then
-                              Const.eq (Const.arity x3) (leaf 4)
-                            else
-                              leaf 0).label ≠ 0 then
-                  leaf 2
+                            leaf 0).label ≠ 0 then
+                leaf 1
+              else
+                leaf 0) ::
+                ((if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
+                  if (Const.eq (Const.arity x3) (leaf 4)).label ≠ 0 then
+                    if (Const.child (Const.child x3 (leaf 1)) (leaf 6)).label ≠ 0 then
+                      Const.child (Const.child x3 (leaf 2)) (leaf 10)
+                    else
+                      leaf 0
+                  else
+                    leaf 0
                 else
-                  leaf 0)
-                (Const.add
-                  (if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
-                    if (Const.eq (Const.arity x3) (leaf 4)).label ≠ 0 then
-                      if (Const.mod
-                        (Const.div (Const.child x3 (leaf 1)) (leaf 64))
-                        (leaf 2)).label ≠ 0 then
-                        Const.mod (Const.div (Const.child x3 (leaf 2)) (leaf 1024)) (leaf 2)
+                  leaf 0).label ≠ 0 then
+                  leaf 1
+                else
+                  leaf 0) ::
+                  ((if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
+                    if (Const.eq (Const.arity x3) (leaf 3)).label ≠ 0 then
+                      if (Const.child (Const.child x3 (leaf 0)) (leaf 7)).label ≠ 0 then
+                        if (Const.child (Const.child x3 (leaf 1)) (leaf 8)).label ≠ 0 then
+                          Const.child (Const.child x3 (leaf 2)) (leaf 9)
+                        else
+                          leaf 0
                       else
                         leaf 0
                     else
                       leaf 0
                   else
                     leaf 0).label ≠ 0 then
-                    leaf 4
+                    leaf 1
                   else
-                    leaf 0)
-                  (Const.add
-                    (if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
-                      if (Const.eq (Const.arity x3) (leaf 3)).label ≠ 0 then
-                        if (Const.mod
-                          (Const.div (Const.child x3 (leaf 0)) (leaf 128))
-                          (leaf 2)).label ≠ 0 then
-                          if (Const.mod
-                            (Const.div (Const.child x3 (leaf 1)) (leaf 256))
-                            (leaf 2)).label ≠ 0 then
-                            Const.mod (Const.div (Const.child x3 (leaf 2)) (leaf 512)) (leaf 2)
-                          else
-                            leaf 0
-                        else
-                          leaf 0
+                    leaf 0) ::
+                    ((if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
+                      if (Const.eq (Const.arity x3) (leaf 4)).label ≠ 0 then
+                        Const.child (Const.child x3 (leaf 1)) (leaf 6)
                       else
                         leaf 0
                     else
                       leaf 0).label ≠ 0 then
-                      leaf 8
+                      leaf 1
                     else
-                      leaf 0)
-                    (Const.add
-                      (if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
-                        if (Const.eq (Const.arity x3) (leaf 4)).label ≠ 0 then
-                          Const.mod (Const.div (Const.child x3 (leaf 1)) (leaf 64)) (leaf 2)
-                        else
-                          leaf 0
+                      leaf 0) ::
+                      ((if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
+                        Const.eq (Const.arity x3) (leaf 4)
                       else
                         leaf 0).label ≠ 0 then
-                        leaf 16
+                        leaf 1
                       else
-                        leaf 0)
-                      (Const.add
-                        (if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
-                          Const.eq (Const.arity x3) (leaf 4)
+                        leaf 0) ::
+                        ((if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
+                          Const.lt (leaf 0) (Const.add (Const.arity x3) (leaf 1))
                         else
                           leaf 0).label ≠ 0 then
-                          leaf 32
+                          leaf 1
                         else
-                          leaf 0)
-                        (Const.add
-                          (if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
+                          leaf 0) ::
+                          ((if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
                             Const.lt (leaf 0) (Const.add (Const.arity x3) (leaf 1))
                           else
                             leaf 0).label ≠ 0 then
-                            leaf 64
+                            leaf 1
                           else
-                            leaf 0)
-                          (Const.add
-                            (if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
-                              Const.lt (leaf 0) (Const.add (Const.arity x3) (leaf 1))
+                            leaf 0) ::
+                            ((if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
+                              if (Const.lt
+                                (leaf 0)
+                                (Const.add (Const.arity x3) (leaf 1))).label ≠ 0 then
+                                Const.foldr
+                                  (α := T)
+                                  (β := T)
+                                  (fun (x4 : T) (x5 : T) =>
+                                    if (Const.child x4 (leaf 9)).label ≠ 0 then x5 else leaf 0)
+                                  (leaf 1)
+                                  (Const.iter
+                                    (α := List T)
+                                    (fun (x4 : List T) =>
+                                      Const.lcase
+                                        (α := T)
+                                        (β := List T)
+                                        x4
+                                        ([] : List T)
+                                        (fun (_ : T) (x6 : List T) => x6))
+                                    x2
+                                    (leaf 0))
+                              else
+                                leaf 0
                             else
                               leaf 0).label ≠ 0 then
-                              leaf 128
+                              leaf 1
                             else
-                              leaf 0)
-                            (Const.add
-                              (if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
-                                if (Const.lt
-                                  (leaf 0)
-                                  (Const.add (Const.arity x3) (leaf 1))).label ≠ 0 then
-                                  Const.foldr
-                                    (α := T)
-                                    (β := T)
-                                    (fun (x4 : T) (x5 : T) =>
-                                      if (Const.mod
-                                        (Const.div x4 (leaf 512))
-                                        (leaf 2)).label ≠ 0 then
-                                        x5
-                                      else
-                                        leaf 0)
-                                    (leaf 1)
-                                    (Const.iter
-                                      (α := List T)
-                                      (fun (x4 : List T) =>
-                                        Const.lcase
-                                          (α := T)
-                                          (β := List T)
-                                          x4
-                                          ([] : List T)
-                                          (fun (_ : T) (x6 : List T) => x6))
-                                      x2
-                                      (leaf 0))
-                                else
-                                  leaf 0
+                              leaf 0) ::
+                              ((if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
+                                Const.eq (Const.arity x3) (leaf 2)
                               else
                                 leaf 0).label ≠ 0 then
-                                leaf 256
+                                leaf 1
                               else
-                                leaf 0)
-                              (Const.add
-                                (if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
-                                  Const.eq (Const.arity x3) (leaf 2)
+                                leaf 0) ::
+                                ((if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
+                                  Const.lt (leaf 0) (Const.add (Const.arity x3) (leaf 1))
                                 else
                                   leaf 0).label ≠ 0 then
-                                  leaf 512
+                                  leaf 1
                                 else
-                                  leaf 0)
-                                (Const.add
-                                  (if (if (Const.eq x1 (leaf 0)).label ≠ 0 then
-                                    Const.lt (leaf 0) (Const.add (Const.arity x3) (leaf 1))
-                                  else
-                                    leaf 0).label ≠ 0 then
-                                    leaf 1024
-                                  else
-                                    leaf 0)
-                                  (leaf 0))))))))))))
-          x0)
-        (leaf 1))
-      (leaf 2)
+                                  leaf 0) ::
+                                  ([] : List T)))))))))))))
+        x0)
+      (leaf 0)
 
 def «Authoring/OResults.nothing» := Const.node (leaf 0) ([] : List T)
 
