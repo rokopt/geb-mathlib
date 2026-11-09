@@ -3885,20 +3885,21 @@ import-direction rules above are enforced by
   executable `geb-doc`, run over every manifest by
   `scripts/bootstrap.sh check`, compare the subset's reading.
   The [first authoring development](../manual/GebManual/Authoring.lean)
-  combines these documents with the proof-source reader and normalization
+  combines these documents with the proof-source reader and script
   runner written in Geb (`bootstrap/authoring.geb`). The executable
   `geb-author` compiles manifest programs, checks tree-valued examples,
-  proves equations between named closed definitions, replays their saved
-  certificates, and converts program and proof documents among the
-  authoring, canonical and advanced spellings; it also reads basic
-  transport encoding. `GebHost/Authoring.lean` shares those operations
+  proves theorems about a program's definitions, in a context of variables
+  and under hypotheses, by scripts composing the tactics written in Geb,
+  replays their saved certificates, and converts program and proof
+  documents among the authoring, canonical and advanced spellings; it also
+  reads basic transport encoding. `GebHost/Authoring.lean` shares those operations
   with the manual's checked source inclusion (`GebManual.Geb`). The
   [example](../examples/authoring/Pair.geb), its proof source and manifest
   have a reproducible record of elaborated definitions, canonical source
   documents, checked image, certificate and pinned inputs under
   `examples/authoring/record/`, regenerated and checked by
-  `scripts/authoring.sh`. Contexts, hypotheses and further proof-script
-  forms remain to be exposed.
+  `scripts/authoring.sh`. Statements over the datatype language's
+  datatypes and induction on trees remain to be exposed.
   `scripts/preserve.py` records any manifest-based development through those
   commands: original and canonical source documents, checked core, a replayed
   certificate, compiler artifacts, Geb tooling sources and host identities.

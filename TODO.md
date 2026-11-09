@@ -146,10 +146,10 @@ change to a search's speed.
 
 The first authoring milestone is documented in
 `manual/GebManual/Authoring.lean`: `examples/authoring/` contains a
-documented program, a statement and normalization script in Geb, and a
+documented program, its statements and proof scripts in Geb, and a
 reproducible record of its elaborated definitions and certificate.
-The Bootstrap chapter's authoring table distinguishes this fragment
-from the remaining proof syntax, holes and editor acceptance.
+The Bootstrap chapter's authoring table states what of the proof syntax,
+holes and editor acceptance remains.
 
 Among the first work written in Geb after the bootstrap, after the setoid
 language, come the internal universes: the datatypes' codes in `2^T` and

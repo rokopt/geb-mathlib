@@ -24,7 +24,7 @@ def run(*args, ok=True):
 
 with tempfile.TemporaryDirectory(prefix='geb-author-test-') as directory:
     root = Path(directory)
-    for name in ('Pair.geb', 'Pair.proofs.geb', 'pair.manifest'):
+    for name in ('Pair.geb', 'Lists.geb', 'Pair.proofs.geb', 'pair.manifest'):
         shutil.copyfile(sample / name, root / name)
     manifest = root / 'pair.manifest'
     source = root / 'Pair.geb'
@@ -103,7 +103,7 @@ with tempfile.TemporaryDirectory(prefix='geb-author-test-') as directory:
         run('replay', manifest, proofs, certificate, ok=False)
 
     reject_proof(original_proofs.replace('Pair.left', 'Pair.missing'))
-    reject_proof(original_proofs.replace('(proofs 0', '(proofs 1'))
+    reject_proof(original_proofs.replace('(proofs 1', '(proofs 2'))
     reject_proof(original_proofs.replace('(by (normalize 64))', '(by (unknown 64))'))
     reject_proof('(proofs 0)')
     reject_proof(original_proofs + '\n(proofs 0)')
@@ -111,6 +111,55 @@ with tempfile.TemporaryDirectory(prefix='geb-author-test-') as directory:
                  ' (theorem dup (equal Pair.first Pair.left) (by (normalize 64))))')
     proofs.write_text(original_proofs.replace('first-pair', 'renamed'))
     run('replay', manifest, proofs, certificate, ok=False)
+
+    # Version 0 documents keep their reading, and admit only its forms.
+    version0 = '(proofs 0 (theorem first-pair (equal Pair.first Pair.left) (by (normalize 64))))'
+    proofs.write_text(version0)
+    run('prove', manifest, proofs, root / 'version0.cert')
+    run('replay', manifest, proofs, root / 'version0.cert')
+    for theorem in ('(theorem t (forall ((x T)) (equal x x)) (by (normalize 4)))',
+                    '(theorem t (equal Pair.first Pair.left) (by (reduce weak)))',
+                    '(theorem t (equal (Pair.first) Pair.left) (by (normalize 64)))'):
+        reject_proof('(proofs 0 ' + theorem + ')')
+
+    # Each script form proves a theorem after those of the example.
+    def extended(*theorems):
+        return original_proofs.rstrip()[:-1] + '\n  ' + '\n  '.join(theorems) + ')'
+    accepted = extended(
+        '(theorem first-ext (equal Pair.first Pair.left)'
+        ' (by (extensionality x (extensionality y (normalize 64)))))',
+        '(theorem nil-append (forall ((xs (List T))) (equal (Lists.append (nil T) xs) xs))'
+        ' (by (auto weak 1)))',
+        '(theorem twice-cases (forall ((xs (List T)) (z T))'
+        ' (equal (Lists.append (Lists.append xs (nil T)) (nil T)) (Lists.append xs (nil T))))'
+        ' (by (cases xs (y ys) (reduce weak) (reduce weak append-nil))))')
+    proofs.write_text(accepted)
+    run('prove', manifest, proofs, root / 'forms.cert')
+    run('replay', manifest, proofs, root / 'forms.cert')
+
+    # Names are resolved in their scopes, and a statement's sides have one type.
+    for theorem in (
+            '(theorem t (equal Pair.first Pair.left) (by (normalize 64 missing)))',
+            '(theorem t (equal Pair.first Pair.left) (by (normalize 64 t)))',
+            '(theorem t (equal Pair.first Pair.left) (by (normalize 64 later)))'
+            ' (theorem later (equal Pair.left Pair.left) (by (normalize 64)))',
+            '(theorem t (forall ((Pair.first T)) (equal Pair.first Pair.first)) (by (normalize 4)))',
+            '(theorem t (forall ((x T) (x T)) (equal x x)) (by (normalize 4)))',
+            '(theorem t (forall ((x T)) (implies (x (equal x x)) (equal x x))) (by (normalize 4)))',
+            '(theorem t (forall ((lam T)) (equal lam lam)) (by (normalize 4)))',
+            '(theorem t (forall ((x Missing)) (equal x x)) (by (normalize 4)))',
+            '(theorem t (forall () (equal Pair.first Pair.first)) (by (normalize 4)))',
+            '(theorem t (forall ((x T) (xs (List T))) (equal x xs)) (by (normalize 4)))',
+            '(theorem t (forall ((x T) (xs (List T))) (equal xs xs))'
+            ' (by (induction x (y ys ih) (normalize 4) (normalize 4))))',
+            '(theorem t (forall ((xs (List T)) (z T)) (equal xs xs))'
+            ' (by (induction xs (y ys ih) (normalize 4) (normalize 4))))',
+            '(theorem t (forall ((xs (List T))) (equal xs xs))'
+            ' (by (cases xs (xs ys) (normalize 4) (normalize 4))))',
+            '(theorem t (equal Pair.first Pair.left) (by (extensionality first-pair (normalize 4))))',
+            '(theorem t (forall ((x T)) (equal x x)) (by (reduce-hypotheses weak (h) (normalize 4))))',
+            '(theorem t (equal Pair.first Pair.left) (by (reduce deep)))'):
+        reject_proof(extended(theorem))
 
     # A certificate cannot be reassociated with a different statement, even a true one.
     proofs.write_text(original_proofs.replace('(equal Pair.first Pair.left)',

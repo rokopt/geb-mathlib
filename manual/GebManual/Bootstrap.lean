@@ -375,22 +375,23 @@ Extension:
   complete, as are the canonical, basic transport and advanced encodings
   of the strict encodings of RFC 9804 with their retraction. Modules with
   parameters, imports and export lists are complete but for named
-  telescopes and certificates as parameters, which follow their first
-  consumers. The executable `geb-compile` names what rejects a program,
-  manifests with editions record each program's sources and entry
-  points, and a durable document records the versioned profile of its
-  syntax, the schema of its notes and its prose, its notes holding examples
-  and links. Comments are read as the recorded subset of Verso's markup,
-  and every reference in them and in the notes' links resolves, as
-  `geb-doc` checks. The forms `let*` and `cond`, expanded in module
+  telescopes and {ref "proposition-parameters"}[propositions as module
+  parameters], which follow their first consumers. The executable
+  `geb-compile` names what rejects a program, manifests with editions
+  record each program's sources and entry points, and a durable document
+  records the versioned profile of its syntax, the schema of its notes and
+  its prose, its notes holding examples and links. Comments are read as
+  the recorded subset of Verso's markup, and every reference in them and
+  in the notes' links resolves, as `geb-doc` checks. The forms `let*` and `cond`, expanded in module
   elaboration, are complete, as is the `geb` editor language with Mike's
   Paredit, built from a pinned commit and patch, and the checker of holes
-  in programs with the display of their obligations. Ready, in the order of
-  {ref "authoring-sequence"}[the sequence], and independent of the datatype
-  language's completion: the syntax of statements and proof scripts; and
-  documentation as literate pages. Waiting on those: the record of
-  elaborated definitions, which is taken up at the first program outside
-  the compilers. Waiting on the datatype
+  in programs with the display of their obligations. The syntax of
+  statements and proof scripts is complete over the kernel's types, with
+  contexts, hypotheses, citations of earlier theorems and the tactics of
+  reduction, search, extensionality and the induction and case analysis of
+  lists, as is the record of elaborated definitions for the first program
+  outside the compilers; documentation as literate pages has a first
+  inclusion. Waiting on the datatype
   language's completion: hygienic elaboration with explicit assembly,
   patterns with `&`, unused pattern variables, primitives that no binding
   shadows and emitted names that no definition captures; holes in the
@@ -3361,8 +3362,9 @@ tag := "authoring-compatibility"
     parameters of sorts and operations, in Lean and Geb, and the sources
     organized into modules without the prefixes that avoided collisions
     or the copies of one function at several element types, complete;
-    named telescopes and certificates as parameters, with their first
-    consumers
+    named telescopes and propositions as parameters
+    ({ref "proposition-parameters"}[Propositions as module parameters]),
+    with their first consumers
 *
   * Diagnostics naming the failing definition
   * Complete
@@ -3385,10 +3387,12 @@ tag := "authoring-compatibility"
 *
   * The syntax of statements and proof scripts
     ({ref "proof-scripts"}[Proof scripts and certificates])
-  * A first fragment is complete: named closed-definition equalities,
-    normalization scripts, saved certificates and replay from Geb source
-    ({ref "first-authoring"}[Writing a first Geb development]); contexts,
-    hypotheses and the other tactics remain
+  * Complete over the kernel's types: contexts, hypotheses, citations of
+    earlier theorems, the tactics of reduction, search, extensionality and
+    the induction and case analysis of lists, saved certificates and replay
+    from Geb source ({ref "first-authoring"}[Writing a first Geb
+    development]); statements over datatypes wait on the datatype
+    language's completion, and induction on trees on the lemmas of trees
 *
   * `let*` and `cond`, expanded in the elaboration of modules
   * Complete
@@ -4290,8 +4294,9 @@ parameter by a definition is substitution of the argument for it, the
 kernel's types being monomorphic. A program without modules or binding
 and conditional chains is unchanged, and the stage-0 compiler and the
 committed image reproduce themselves.
-Named telescopes and certificates as parameters follow their first
-consumers.
+Named telescopes follow their first consumers, as do propositions as
+parameters ({ref "proposition-parameters"}[Propositions as module
+parameters]).
 
 The same pass expands sequential bindings and guarded conditionals:
 
@@ -4342,6 +4347,44 @@ already rejects an unbalanced text as a whole, and a language server's
 recovery from errors, not the reader, answers it. The block's closing
 parenthesis ends the line of its last definition, so appending a
 definition changes that line too.
+
+#### Propositions as module parameters
+%%%
+tag := "proposition-parameters"
+%%%
+
+A parameter whose argument is a certificate of a proposition follows its
+first consumer: a theorem proved once about a module with parameters,
+holding at every instance, the certificate its hypothesis. The
+statements and scripts of {ref "proof-scripts"}[Proof scripts and
+certificates] prove theorems about a compiled program's definitions,
+which are already instances, so the step requires three things:
+
+* the translation of a module's body into the metalogic over its
+  parameters, a sort parameter an object variable and an operation
+  parameter a variable of the context, where the elaboration checks the
+  generic form and keeps the instances alone;
+* an obligation recorded by the elaboration at each import supplying
+  such a parameter, the proposition at the import's arguments, in a form
+  the authoring runner reads, which changes `bootstrap/modules.geb` and
+  `Geb/Prototypes/Kernel/Modules.lean` together and so regenerates the
+  committed images;
+* the instantiation of a theorem about a module at each import, by the
+  rule of application at the import's arguments, its hypotheses
+  discharged by the theorems the import supplies.
+
+Three decisions precede it:
+
+* the syntax of the parameter: whether it is `(parameter (h P))`, `P` a
+  statement of the `proofs` document over the module's parameters,
+  distinguished from a named telescope `(parameter (m I))` by `P` being a
+  list where `I` is an atom;
+* where theorems about a module with parameters are kept: in the `proofs`
+  document under the module's name, or in the module's source;
+* whether the step is merged before or after the datatype language's
+  completion, the regeneration of the images making it, before the
+  completion, one of the steps merged one at a time
+  ({ref "authoring-sequence"}[The sequence and its acceptance]).
 
 ### Documentation
 %%%
@@ -5246,17 +5289,25 @@ keyed by the statement and the elaborated definitions it cites, and a
 script that fails after a change of the prover falls back to its cached
 certificate while it is repaired. The complete proofs about the
 compiler's components have from 600000 to 1240000 nodes, so the cache
-holds the form of shared certificates. The first surface fragment is the
-versioned `proofs` document of `bootstrap/authoring.geb`: equations between
-named closed definitions, with normalization scripts. The
-{ref "first-authoring"}[first authoring development] reads, converts,
-proves and replays those sources without Lean code of its own. Their
-canonical and advanced encodings use the existing durable-document
+holds the form of shared certificates. The surface syntax is the
+versioned `proofs` document of `bootstrap/authoring.geb`: statements over
+the kernel's types, with a context of named variables and named
+hypotheses, whose terms are the kernel's terms over the program's
+definitions, translated as the program is; and scripts composing the
+tactics written in Geb, whose names for the variables and hypotheses they
+introduce are written in the script, and whose rules cite hypotheses and
+earlier theorems by name ({ref "first-authoring"}[Writing a first Geb
+development]). A theorem is followed in its certificate by its sides in weak
+normal form, derived from it, by which a rule citing it rewrites, as the Lean
+developments state their lemmas. The first authoring development reads,
+converts, proves and replays those sources without Lean code of its own.
+Their canonical and advanced encodings use the existing durable-document
 retraction. The compiler developments' statements remain Lean values and
 their scripts Lean code, the deducers under
 `GebTests/Prototypes/FreeTopos/`, which the provers' agreement relates to
 the prover written in Geb; moving those proofs into Geb source requires
-contexts, hypotheses and further script forms. The syntax of statements and proof scripts
+statements over the metalogic's own types and object variables, and the
+tactics of trees, bits and masks those deducers use. The syntax of statements and proof scripts
 is a step of the sequence ({ref "authoring-sequence"}[The sequence and its
 acceptance]). It adds no rule to the metalogic: a script is a program for
 one prover, and its certificate is checked as any other is.
