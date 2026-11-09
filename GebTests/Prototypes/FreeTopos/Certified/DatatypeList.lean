@@ -41,6 +41,8 @@ set_option doc.verso true
 namespace GebTests.Prototypes.FreeTopos.Certified.DatatypeList
 
 open Geb Geb.FreeTopos GebTests.Prototypes.FreeTopos.Datatypes
+open GebTests.Prototypes.FreeTopos.Weakening (Prog)
+open GebTests.Prototypes.FreeTopos.Normalization (Defs)
 
 /-- The developments, the soundness at the keywords' forms after the base's and the atom's. -/
 def decls : List Internal.Decl :=
@@ -60,6 +62,30 @@ theorem let_proved :
     ∃ PST, extended3 = some PST ∧ Proves PST.1.G decls
       (kwThm PST.1 PST.2.1 PST.2.2 "Reader.kwLet" 4 [false, false, true, true]) :=
   provedIn_eq_true proved
+
+set_option doc.verso false in
+/-- The developments' declarations are all of theorems, as Lean's evaluator decides. -/
+evaluation_axiom theorems : decls.all Internal.Decl.isTheorem = true
+
+universe v
+
+/-- The theorems of the developments are valid in every model of the program: they check, after no
+statements. -/
+theorem decls_valid {PST : Prog × Defs × Defs3} (h : extended3 = some PST)
+    (m : ProgramModel.{v} PST.1.G) : m.Valid decls := by
+  obtain ⟨P, hP, hc, -⟩ := provedIn_eq_true proved
+  obtain rfl : P = PST := Option.some.inj (hP.symm.trans h)
+  refine ProgramModel.Valid.after (before := []) (fun a ha ↦ by simp [Internal.thmsOf] at ha) ?_
+  simp only [Internal.checkAfter, Bool.and_eq_true]
+  exact ⟨theorems, hc⟩
+
+/-- The theorems of a development that checks in the extended program, after the theorems of valid
+declarations, are valid in a model of the program. -/
+theorem valid_after {PST : Prog × Defs × Defs3} (h : extended3 = some PST)
+    {m : ProgramModel.{v} PST.1.G} {before ds : List Internal.Decl} (hb : m.Valid before)
+    (hc : checkedAfterIn extended3 (·.1.G) before ds = true) : m.Valid ds :=
+  have hd := checkedAfterIn_some h hc
+  hb.after hd
 
 end GebTests.Prototypes.FreeTopos.Certified.DatatypeList
 

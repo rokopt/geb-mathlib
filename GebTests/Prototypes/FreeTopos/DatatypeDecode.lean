@@ -1276,14 +1276,14 @@ def decodeAfter (P : Prog) (S : Defs) (T : Defs3) : Option (List String) := do
 /-- The development at decodings ({name}`decodeDev3`), after the declarations of
 {name}`decodeAfter`, stored as the certificate {lit}`datatype-decode`. -/
 def decodeCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Thm) :
-    Except String (List (String × List Internal.Decl)) := do
+    Except String (List Stored.Cert) := do
   let some names := decodeAfter P S T | throw "the base is not stated"
   certifyAfter P names "datatype-decode" (decodeDev3 P S T) before
 
 /-- The soundness at decodings after the declarations of {name}`decodeAfter`, the datum's and
 the development at decodings. -/
 def decodeCaseCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Thm) :
-    Except String (List (String × List Internal.Decl)) := do
+    Except String (List Stored.Cert) := do
   let some names := decodeAfter P S T | throw "the base is not stated"
   certifyAfter P (names ++ (datumDev3 P S T).map (·.1) ++ (decodeDev3 P S T).map (·.1))
     "decode-case" ([atomEta P S, mapAppend P S T, mapAppendEq P S T] ++ expansionEqs P T ++

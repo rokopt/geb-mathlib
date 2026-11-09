@@ -164,7 +164,7 @@ def appDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
 atom's and the list's declarations, stored as the certificate {lit}`datatype-app`, each
 declaration checked as it is stored. -/
 def appCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Thm) :
-    Except String (List (String × List Internal.Decl)) := do
+    Except String (List Stored.Cert) := do
   let some dev := baseDev3 P S T | throw "the base is not stated"
   let E : Array Internal.Entry := (before.map Internal.Entry.language).toArray
   let names := dev.map (·.1) ++ (atomDev3 P S T).map (·.1) ++ (listDev3 P S T).map (·.1)
@@ -173,9 +173,7 @@ def appCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Th
   -- each step's proof reported as it is found
   let app := (appDev3 P S T).map fun (nm, f) ↦
     (nm, fun ix E ↦ (f ix E).map fun r ↦ dbgTrace s!"{nm} proved" fun _ ↦ r)
-  let (_, _, ds) ← developAfter names E app
-  checkAfter P.G E (app.map (·.1)) ds
-  pure [("datatype-app", ds)]
+  certifyFound P.G names E "datatype-app" app
 
 end GebTests.Prototypes.FreeTopos.Datatypes
 

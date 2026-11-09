@@ -837,14 +837,14 @@ def datumDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
 /-- The soundness at a datum after the base's, the atom's, the list's and the datum's
 declarations. -/
 def datumCaseCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Thm) :
-    Except String (List (String × List Internal.Decl)) := do
+    Except String (List Stored.Cert) := do
   let some names := listNames P S T | throw "the base is not stated"
   certifyAfter P (names ++ (datumDev3 P S T).map (·.1)) "datum-case" [datumCase P S T] before
 
 /-- The development of the soundness at datums ({name}`datumDev3`), after the base's, the atom's
 and the list's declarations, stored as the certificate {lit}`datatype-datum`. -/
 def datumCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Thm) :
-    Except String (List (String × List Internal.Decl)) := do
+    Except String (List Stored.Cert) := do
   let some names := listNames P S T | throw "the base is not stated"
   certifyAfter P names "datatype-datum" (datumDev3 P S T) before
 

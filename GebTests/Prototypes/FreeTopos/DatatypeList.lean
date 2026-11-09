@@ -1055,15 +1055,19 @@ def appCompat (P : Prog) (S : Defs) (T : Defs3) : Step :=
     pure (a, d))
 
 /-- The relation of an environment to a named context extended: an environment related to a
-context and a value related at the type of an entry, the environment with the value related to the
-context with the entry, by case analysis of the index's label, empty or a successor. -/
-def envTCons (P : Prog) (T : Defs3) : Step :=
-  ("envTCons", fun ix E ↦ do
+context and, where {lit}`impl` is false, a value related at the type of an entry, or, where it is
+true, an entry named by one of the names the erasure binds, the environment with the value related
+to the context with the entry; by case analysis of the index's label, empty or a successor, the
+entry's position, where the erasure binds its name, refuting the index's exclusion. -/
+def envTConsWith (P : Prog) (T : Defs3) (name : String) (impl : Bool) : Step :=
+  (name, fun ix E ↦ do
     let L : Conn := ⟨P.o, logicBase⟩
     let G := P.G
     -- context: the value, the entry, the environment, the context, the relation's context
+    let entryHyp : Term := if impl then truth P.o (boundNameT P (nameOf (v 1)))
+      else Term.app (T.relT (v 4) (tyOf (v 1))) (v 0)
     let a : Internal.Thm := ⟨0, [treeTy, treeTy, list treeTy, list treeTy, Defs3.ctxTy],
-      [T.envT (v 4) (v 3) (v 2), Term.app (T.relT (v 4) (tyOf (v 1))) (v 0)],
+      [T.envT (v 4) (v 3) (v 2), entryHyp],
       T.envT (v 4) (consT treeTy (v 1) (v 3)) (consT treeTy (v 0) (v 2))⟩
     let rules (Φ : List Term) : List Internal.NormRule :=
       eqHyps Φ ++ [.thm (ix "nthConsSucc") []] ++ vRules P ix
@@ -1083,17 +1087,31 @@ def envTCons (P : Prog) (T : Defs3) : Step :=
       let r := Φ.length - 1
       dRwHyp (evalRw G E (rules (Φ.take (Φ.length - 2))) .full) (Φ.length - 2)
         (dExI L G E (v 0) (dConjI L byNorm (byHyp r))) Γ Φ ψ
+    -- hypotheses after the introductions: the relations 0 and 1, the index's truth 2, the
+    -- lookup's truth 3 and the name's exclusion 4
     let succ : Deducer :=
-      exE (unfold (T.q + 1) 0 (allE (leafT (v 0)) (impE (byHyp 3) (exE (conjE witness)))))
-    let body : Deducer := dAllI L (dImpI L fun Γ Φ ψ ↦ do
-      -- context: the index; hypotheses: the relations, truth and the lookup's truth
+      exE (unfold (T.q + 1) 0 (allE (leafT (v 0)) (impE (byHyp 3) (impE (byHyp 4)
+        (exE (conjE witness))))))
+    -- the entry's position: its value, related; or, its name the implementation's, excluded
+    let head : Deducer := if impl then
+        fun Γ Φ ψ ↦ dImpE L 4 (byHyp 1) (fun Γ Φ ψ ↦
+          dFalse L (fun Γ Φ ψ ↦ dHyp Γ Φ ψ) Γ Φ ψ) Γ Φ ψ
+      else dExI L G E (v 1) (dConjI L byNorm (byHyp 1))
+    let body : Deducer := dAllI L (dImpI L <| dImpI L fun Γ Φ ψ ↦ do
       let X ← nfE G E (vRules P ix) Γ (call D.lab [] [v 0])
       let cases := Internal.instTerm [] [X] bs.concl
-      dCut cases (nd (.apply (ix "bitsSucc") [] [X]))
-        (dDisjE L (last Φ + 1) (dExI L G E (v 1) (dConjI L byNorm (byHyp 1))) succ) Γ Φ ψ)
+      dCut cases (nd (.apply (ix "bitsSucc") [] [X])) (dDisjE L (last Φ + 1) head succ) Γ Φ ψ)
     let some d := dRwBy (evalRw G E [.delta (T.q + 1)] .head) body a.ctx a.hyps a.concl
-      | dbgTrace "envTCons: not proved" fun _ ↦ none
+      | dbgTrace s!"{name}: not proved" fun _ ↦ none
     pure (a, d))
+
+/-- The relation of an environment to a named context extended by an entry and a value related at
+its type ({name}`envTConsWith`). -/
+def envTCons (P : Prog) (T : Defs3) : Step := envTConsWith P T "envTCons" false
+
+/-- The relation of an environment to a named context extended by an entry named by one of the
+names the erasure binds, at any value ({name}`envTConsWith`). -/
+def envTConsImpl (P : Prog) (T : Defs3) : Step := envTConsWith P T "envTConsImpl" true
 
 /-- The names of a named context extended: a context whose names the typing admits as binders' or
 are the implementation's ({name}`Defs3.cxT`) and a name of either kind, the context with the name's
@@ -1551,7 +1569,8 @@ def listDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
   ([("Reader.kwLet", 4), ("Reader.kwQuote", 1), ("Reader.kwNil", 1), ("Reader.kwIf", 3),
       ("Reader.kwCons", 2), ("Reader.kwFst", 1), ("Reader.kwSnd", 1), ("Reader.kwPair", 2)].flatMap
     fun (kw, n) ↦ kwEqs P T kw n) ++
-  [relTArrow P S T, lamCompat P S T, appCompat P S T, envTCons P T, cxTCons P S T,
+  [relTArrow P S T, lamCompat P S T, appCompat P S T, envTCons P T, envTConsImpl P T,
+    cxTCons P S T,
     relTTree P T, relTList1 P S T, readCase P S T true, readCase P S T false, ifCase P S T,
     consCase P S T, relTProd P T] ++
     relTProdNodes P T ++
@@ -1560,7 +1579,7 @@ def listDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
 /-- The development of the soundness at a list, after the base's and the atom's declarations,
 stored as the certificate {lit}`datatype-list`, each declaration checked as it is stored. -/
 def listCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Thm) :
-    Except String (List (String × List Internal.Decl)) := do
+    Except String (List Stored.Cert) := do
   let some dev := baseDev3 P S T | throw "the base is not stated"
   let E : Array Internal.Entry := (before.map Internal.Entry.language).toArray
   let names := dev.map (·.1) ++ (atomDev3 P S T).map (·.1)
@@ -1568,9 +1587,7 @@ def listCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.T
   -- each step's proof reported as it is found
   let list := (listDev3 P S T).map fun (nm, f) ↦
     (nm, fun ix E ↦ (f ix E).map fun r ↦ dbgTrace s!"{nm} proved" fun _ ↦ r)
-  let (_, _, ds) ← developAfter names E list
-  checkAfter P.G E (list.map (·.1)) ds
-  pure [("datatype-list", ds)]
+  certifyFound P.G names E "datatype-list" list
 
 
 

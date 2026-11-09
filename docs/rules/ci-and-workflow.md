@@ -284,9 +284,12 @@ each theorem with its derivation, as the table of the distinct nodes of
 their tree (`GebTests/Prototypes/FreeTopos/Stored.lean`). The modules of
 `GebTests/Prototypes/FreeTopos/Certified/` read the certificates of
 weakening, substitution, the expansion's identity, the lemmas of trees,
-the fundamental lemma and the datatype language's base, atoms and
-keywords' forms, and state that each development proves its theorem in
-the program it is about. The check is decided by Lean's evaluator and
+the fundamental lemma and the datatype language's soundness, and state
+that each development proves its theorem in the program it is about, a
+development that continues from others by checking it after their
+statements and composing by validity
+(`Geb/Prototypes/FreeTopos/Internal/Composition.lean`). The check is
+decided by Lean's evaluator and
 declared by the command `evaluation_axiom` as an axiom in either loading
 mode, the kernel's reduction of a check of that size being out of reach.
 The axiom linter
@@ -326,10 +329,7 @@ The executable is built reproducibly and linked statically, so a change
 that alters no compiled code leaves it, and so the key, unchanged.
 Documentation compiles to no code, but an operation that panics reports
 its source position, which is compiled into its message. The other
-workflows check the committed certificates and do not search. The
-datatype language's certificates other than those the modules above
-read are read by no module: the search's check as it stores each
-declaration is their only check, which `check` repeats.
+workflows check the committed certificates and do not search.
 
 ## Benchmarks
 

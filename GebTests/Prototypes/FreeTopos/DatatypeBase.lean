@@ -326,6 +326,14 @@ def scopeOf (P : Prog) (nums cx : Term) : Term :=
     (consT treeTy (pc P "expName" [Term.subst nums fun i ↦ v (i + 2),
       apps ((primT Kernel.Prim.child).getD Term.star) [v 1, leafT bnilT]]) (v 0)) cx
 
+/-- Whether a name is one of those the erasure binds ({lit}`Typing.boundNames`). -/
+def boundNameT (P : Prog) (n : Term) : Term :=
+  pc P "Prelude.isSome" [pc P "Reader.indexOf" [n, pc P "Typing.boundNames" []]]
+
+/-- The name of a named context's entry, its first field. -/
+def nameOf (p : Term) : Term :=
+  apps ((primT Kernel.Prim.child).getD Term.star) [p, leafT bnilT]
+
 /-- The type of a named context's entry, its second field, as the typing's lookup gives it. -/
 def tyOf (p : Term) : Term :=
   apps ((primT Kernel.Prim.child).getD Term.star) [p, leafT (numeral 1)]
@@ -370,15 +378,18 @@ def extend3 (P : Prog) (S : Defs) : Option (Prog × Defs3) := do
       (ex treeTy (Term.lam treeTy recognizer)))))))
   let defs : List Internal.Defn := [
     relDefn P S,
-    -- the relation of an environment to a named context: at each position of the context, the
-    -- environment has some value related at the type of the context's entry there
+    -- the relation of an environment to a named context: at each position of the context whose
+    -- name is not one the erasure binds, which the typing reads no term naming, the environment
+    -- has some value related at the type of the context's entry there
     ⟨0, [list treeTy, list treeTy, R], omega,
       all treeTy (Term.lam treeTy (imp
         (truth o (pc P "Prelude.isSome" [pc P "Prelude.nth" [v 2, v 0]]))
+        (imp (imp (truth o (boundNameT P (nameOf (pc P "Prelude.get"
+            [pc P "Prelude.nth" [v 2, v 0]])))) (Internal.Logic.ff o))
         (ex treeTy (Term.lam treeTy (conj
           (Term.eq (pc P "Prelude.nth" [v 2, v 1]) (pc P "Prelude.some" [v 0]))
           (Term.app (T.relT (v 4) (tyOf (pc P "Prelude.get" [pc P "Prelude.nth" [v 3, v 1]])))
-            (v 0)))))))⟩,
+            (v 0))))))))⟩,
     -- the relation of the definitions to the typing environment's definitions: at each name the
     -- environment gives some type, the names of the reader give an index, at which the
     -- definitions have some term whose evaluation in the empty environment converges to a value
@@ -1090,7 +1101,8 @@ def lookupAgreeB (P : Prog) (S : Defs) (T : Defs3) : Step :=
             (imp (isSomeT idx)
               (conj (Term.eq (pc P "Typing.lookupName" [v 0, v 3])
                   (pc P "Prelude.some" [tyOf (pc P "Prelude.get" [entry])]))
-                (isSomeT entry)))))))))))
+                (conj (isSomeT entry)
+                  (Term.eq (nameOf (pc P "Prelude.get" [entry])) (v 0)))))))))))))
     let childT ← primT Kernel.Prim.child
     let equalT ← primT Kernel.Prim.equal
     let lastFalse : Deducer := fun Γ Φ ψ ↦ K.hypFalse (Φ.length - 1) Γ Φ ψ
@@ -1130,7 +1142,8 @@ def lookupAgreeB (P : Prog) (S : Defs) (T : Defs3) : Step :=
         K.cutThm "equalSound" (fun Γ ↦ [n Γ]) (K.allEΓ eN (K.impE (K.solve 3) (normLastK K
           (decideIn K (abbrevOf m)
             (K.cutThm "equalRefl" (fun Γ ↦ [m Γ])
-              (decideIn K (fun Γ ↦ apps equalT [m Γ, m Γ]) (anyFalse K) (K.solve 4)))
+              (decideIn K (fun Γ ↦ apps equalT [m Γ, m Γ]) (anyFalse K)
+                (K.norm (dConjI L (K.solve 3) (dConjI L (K.solve 3) K.byNorm)))))
             numeralHead))))
       -- the scope's head not the name: the head's name not the name, the induction hypothesis
       let restCase : Deducer := linkK K "agreeB rest" fun Γ₂ Φ₂ ψ₂ ↦
@@ -1146,7 +1159,14 @@ def lookupAgreeB (P : Prog) (S : Defs) (T : Defs3) : Step :=
         let ih : Deducer := linkK K "agreeB induction" fun Γ Φ ψ ↦
           dAllE L K.G K.E 0 (nums Γ) (K.allEΓ Ev (K.allEΓ n (K.impE (K.byHyp hN)
             (K.impE (K.byHyp gNum) (K.impE (K.byHyp gAb) (K.impE (K.solve 3)
-              (K.conjE (dConjI L (K.solve 3) fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ)))))))) Γ Φ ψ
+              (K.conjE (K.conjE fun Γ Φ ψ ↦
+                let (hE, hN') := (Φ.length - 2, Φ.length - 1)
+                -- the name's equation, both sides normalized without it, which would rewrite
+                -- the goal's
+                (dConjI L (K.solve 3) (dConjI L (K.byHyp hE) fun Γ Φ ψ ↦
+                  dRwHyp (evalRw K.G K.E (K.rulesEx Φ hN') .full) hN'
+                    (dRwBy (evalRw K.G K.E (K.rulesEx Φ hN') .full) dHyp) Γ Φ ψ)) Γ Φ ψ))))))))
+            Γ Φ ψ
         decideIn K (fun Γ ↦ pc P "Prelude.isSome"
             [pc P "Reader.indexOf" [n Γ, scopeOf P (nums Γ) (at_ 1 Γ)]]) (anyFalse K)
           (decideIn K (fun Γ ↦ apps equalT [m Γ, n Γ]) ih headName) Γ₂ Φ₂ ψ₂
@@ -1301,6 +1321,7 @@ def atomCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
     -- the tests: of the typing at an atom, and of the reader
     let t0 (Γ : List Tree) : Term :=
       pc P "Typing.keywordTx" [nodeT (Term.pair (numeral 1) (outer 0 Γ))]
+    let tB (Γ : List Tree) : Term := boundNameT P (nm Γ)
     let t1 (Γ : List Tree) : Term := isSomeOf (pc P "Reader.numeral" [outer 0 Γ])
     let r0 (Γ : List Tree) : Term := isSomeOf (pc P "Reader.lookupAbbrev" [nm Γ, outer 7 Γ])
     let t2 (Γ : List Tree) : Term :=
@@ -1336,21 +1357,25 @@ def atomCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let varClose : Deducer := link "variable" <|
       K.cutThm "lookupAgreeB" (fun Γ ↦ [outer 5 Γ]) <| K.allEΓ (outer 7) <|
       K.allEΓ (outer 4) <| K.allEΓ nm <| K.impE (K.byHyp (hyp 2)) <| K.impE notGuard <|
-      K.impE notGuard <| K.impE solveD <| K.conjE fun Γ₀ Φ₀ ψ₀ ↦
-        let isN := Φ₀.length - 1
+      K.impE notGuard <| K.impE solveD <| K.conjE <| K.conjE fun Γ₀ Φ₀ ψ₀ ↦
+        let isN := Φ₀.length - 2
         let i (Γ : List Tree) : Term :=
           leafIndex P (pc P "Reader.indexOf" [nm Γ, scopeOf P (outer 7 Γ) (outer 5 Γ)])
-        -- the environment's relation at the index: a value there, related at the entry's type;
-        -- the value's equation normalized so that it rewrites the evaluator's lookup
+        -- the entry's name the atom's, the equation normalized so that it rewrites; the
+        -- environment's relation at the index, the entry's name none the erasure binds, as the
+        -- atom's is not: a value there, related at the entry's type; the value's equation
+        -- normalized so that it rewrites the evaluator's lookup
+        (dRwHyp (evalRw K.G K.E (K.rulesEx Φ₀ (Φ₀.length - 1)) .full) (Φ₀.length - 1) <|
         unfoldAt (hyp 1) (T.q + 1) (fun Γ Φ ψ ↦ dAllE L K.G K.E (Φ.length - 1) (i Γ)
-          (K.impE (K.byHyp isN) (K.exE (K.conjE fun Γ Φ ψ ↦
+          (K.impE (K.byHyp isN) (K.impE (link "variable, not bound" notGuard) (K.exE (K.conjE
+            fun Γ Φ ψ ↦
             let w := v (Γ.length - Γ₀.length - 1)
             let e := Φ.length - 2
             let r := Φ.length - 1
             dRwHyp (evalRw K.G K.E (K.rulesEx Φ e) .full) e (unfoldLocal (link
               "variable, unfolded" (K.norm (dConv L K.G K.E S (succN zeroN) w
                 (link "variable stable" K.byNorm) (link "variable related" (K.byHyp r))))))
-              Γ Φ ψ))) Γ Φ ψ) Γ₀ Φ₀ ψ₀
+              Γ Φ ψ)))) Γ Φ ψ)) Γ₀ Φ₀ ψ₀
     -- a name with a type in the named context and no index in the scope: refuted by the
     -- agreement, at the context, the abbreviations and the name
     let unscoped : Deducer := link "scope refuted" <|
@@ -1434,13 +1459,14 @@ def atomCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
           unscoped)
           varClose
       decide t0
-        (decide t1
+        (decide tB (decide t1
           (decide t2 (decide r0 notNums
               (link "abbreviation refuted" (dImpE L n₂ solveD hypFalseLast)))
             (link "numeral abbreviation" fromAbbrev))
           (decide r0 quoteClose
             (link "numeral's abbreviation" (dImpE L n₂ solveD (dImpE L n₁
               (fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ) numeralAtom)))))
+          (link "bound name" (unfoldLocal (K.hypFalse (hyp 6)))))
         (link "keyword" (unfoldLocal (K.hypFalse (hyp 6))))
     -- the instances at the atom's name, each after the hypotheses: the numeral abbreviations'
     -- coherence, both parts; the names' coherence; and the definitions' relation
@@ -1533,27 +1559,36 @@ def checkAfter (G : Internal.Globals) (E : Array Internal.Entry) (names : List S
       Except.error s!"the lemma {nm} does not check{if proves then
         ", its statement not well formed" else ""}") (G, E)
 
+/-- A development found after the declarations of the given names, as a certificate of the given
+name: the search's declarations entered in their table, which ends their use before the check, and
+each read back from the table and checked in order. The trees of a search's derivations outgrow
+those the table reads back, in which equal subtrees are one. -/
+def certifyFound (G : Internal.Globals) (names : List String) (E : Array Internal.Entry)
+    (cert : String) (steps : List Step) : Except String (List Stored.Cert) := do
+  let (_, _, ds) ← developAfter names E steps
+  let count := ds.length
+  let some table := Stored.declsToNats ds | throw s!"{cert}: a declaration is not of a theorem"
+  let some read := Stored.declsOfNats table | throw s!"{cert}: the table does not read"
+  checkAfter G E (steps.map (·.1)) read
+  pure [⟨cert, count, table⟩]
+
 /-- The base development, stored as the certificate {lit}`datatype-base`, each declaration checked
 as it is stored. -/
 def certificates (P : Prog) (S : Defs) (T : Defs3) :
-    Except String (List (String × List Internal.Decl)) := do
+    Except String (List Stored.Cert) := do
   let some dev := baseDev3 P S T | throw "the base is not stated"
-  let (_, _, ds) ← developAfter [] #[] dev
-  checkAfter P.G #[] (dev.map (·.1)) ds
-  pure [("datatype-base", ds)]
+  certifyFound P.G [] #[] "datatype-base" dev
 
 /-- The development of the soundness at an atom, after the base development's declarations, stored
 as the certificate {lit}`datatype-atom`, each declaration checked as it is stored. -/
 def atomCertificates (P : Prog) (S : Defs) (T : Defs3) (base : List Internal.Thm) :
-    Except String (List (String × List Internal.Decl)) := do
+    Except String (List Stored.Cert) := do
   let some dev := baseDev3 P S T | throw "the base is not stated"
   let E : Array Internal.Entry := (base.map Internal.Entry.language).toArray
   let names := dev.map (·.1)
   unless names.length = E.size do throw "the base's certificate is not the base's"
   let atom := atomDev3 P S T
-  let (_, _, ds) ← developAfter names E atom
-  checkAfter P.G E (atom.map (·.1)) ds
-  pure [("datatype-atom", ds)]
+  certifyFound P.G names E "datatype-atom" atom
 
 end GebTests.Prototypes.FreeTopos.Datatypes
 

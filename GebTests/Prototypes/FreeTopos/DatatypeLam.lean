@@ -230,7 +230,7 @@ def lamDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
 the atom's, the list's, the abstraction's over one binder and the stage functions' at
 applications, stored as the certificate {lit}`datatype-lam`. -/
 def lamCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List Internal.Thm) :
-    Except String (List (String × List Internal.Decl)) := do
+    Except String (List Stored.Cert) := do
   let some names := listNames P S T | throw "the base is not stated"
   certifyAfter P (names ++ (appDev3 P S T).map (·.1) ++ (stagesDev3 P S T).map (·.1))
     "datatype-lam" (lamDev3 P S T) before

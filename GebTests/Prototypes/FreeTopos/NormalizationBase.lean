@@ -1220,12 +1220,18 @@ def L : Conn := ⟨K.P.o, logicBase⟩
 /-- The rules: the equations among the hypotheses, addition's, those of a list's head and tail by
 case analysis where they are proved (the datatype language's {lit}`walkEqs`), the further equations,
 the vocabulary's, every element of a list satisfying a predicate unfolded, and the tail's rebuilding
-of lists of formulas. -/
+of lists of formulas. Where the program keeps the kernel's typing folded, the vocabulary's equation
+of the typing with its fold ({lit}`typeInRr`) is left out, which would unfold it. -/
 def rules (Φ : List Term) : List NormRule :=
+  let typing : List NormRule := if K.P.folded.contains "Check.typeIn" then
+      (vRules K.P K.ix).filter fun r ↦ match r with
+        | .thm j _ => j ≠ K.ix "typeInRr"
+        | _ => true
+    else vRules K.P K.ix
   eqHyps Φ ++ addLemmaRules K.ix ++
     (["walkHead", "walkTail"].filter fun nm ↦ 0 < K.ix nm ∧ K.ix nm < K.E.size).map
       (fun nm ↦ .thm (K.ix nm) []) ++
-    K.more.map (fun nm ↦ .thm (K.ix nm) []) ++ vRules K.P K.ix ++
+    K.more.map (fun nm ↦ .thm (K.ix nm) []) ++ typing ++
     [.delta (K.S.q + 5), .thm (K.ix "rebTail") [omega]]
 
 /-- The rules but the hypothesis of index i. -/
@@ -1308,21 +1314,32 @@ def splitHyp (h : ℕ) (k : Deducer) (depth : ℕ := 6) : Deducer := (Nat.rec
     else K.listCase bitTy X rec rec Γ Φ ψ) depth)
 
 /-- From the hypothesis h, an equation of two terms, the equation of their images by f, each
-normalized, cut in after the hypotheses. -/
+normalized, cut in after the hypotheses; nothing where rewriting the left side's image by the
+equation does not reach the right side's. -/
 def image (h : ℕ) (f : Term → Term) (k : Deducer) : Deducer := fun Γ Φ ψ ↦ do
   let (L, R) ← Internal.eqParts (← Φ[h]?)
   let (A', dA, _) ← Internal.eval K.G K.E 0 (K.rulesEx Φ h) 4096 .full Γ Φ (f L)
   let (B', dB, _) ← Internal.eval K.G K.E 0 (K.rulesEx Φ h) 4096 .full Γ Φ (f R)
-  let (_, dAh, _) ← Internal.eval K.G K.E 0 [.hyp h] 4096 .weak Γ Φ (f L)
+  let (t, dAh, _) ← Internal.eval K.G K.E 0 [.hyp h] 4096 .weak Γ Φ (f L)
+  -- the rewriting by the equation reaches the right side's image, which the join requires
+  if t != f R then none
   pure (nd (.cut (Term.eq A' B')) [nd (.convFrom (Term.eq (f L) (f R)))
     [nd .cong [dA, dB], nd .join [dAh, nd .refl]], ← k Γ (Φ ++ [Term.eq A' B']) ψ])
 
 /-- A formula equal to truth, the last hypothesis, cut in itself: truth folded by its
-introduction, unfolded, an equation, by its sides' equality. -/
+introduction, unfolded, an equation, by its sides' equality. Where truth is the equation's left
+side instead, its right side cut in, by the equation flipped; nothing where neither side is truth
+nor the right side an equation of equal sides. -/
 def trueOf (k : Deducer) : Deducer := fun Γ Φ ψ ↦ do
   let (A', B') ← Internal.eqParts (← Φ[Φ.length - 1]?)
-  let dB := if B' == Internal.Logic.tt K.P.o then Internal.Logic.trueI
-    else nd .join [nd .refl, nd .refl]
+  let tt := Internal.Logic.tt K.P.o
+  if B' != tt && A' == tt then
+    pure (nd (.cut B') [nd .conv [nd (.rwHyp (Φ.length - 1) true), Internal.Logic.trueI],
+      ← k Γ (Φ ++ [B']) ψ])
+  else
+  let dB ← if B' == tt then some Internal.Logic.trueI else match Internal.eqParts B' with
+    | some (x, y) => if x == y then some (nd .join [nd .refl, nd .refl]) else none
+    | none => none
   pure (nd (.cut A') [nd .conv [nd (.rwHyp (Φ.length - 1) false), dB], ← k Γ (Φ ++ [A']) ψ])
 
 /-- The instance of the named theorem at terms of the context, cut in after the hypotheses. -/

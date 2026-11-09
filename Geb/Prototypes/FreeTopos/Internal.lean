@@ -10,6 +10,7 @@ public import Geb.Prototypes.FreeTopos.Internal.Compile
 public import Geb.Prototypes.FreeTopos.Internal.Completeness
 public import Geb.Prototypes.FreeTopos.Internal.Connectives
 public import Geb.Prototypes.FreeTopos.Internal.Conversion
+public import Geb.Prototypes.FreeTopos.Internal.Composition
 public import Geb.Prototypes.FreeTopos.Internal.ConvDevelopment
 public import Geb.Prototypes.FreeTopos.Internal.Derivation
 public import Geb.Prototypes.FreeTopos.Internal.Development

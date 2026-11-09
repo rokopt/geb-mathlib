@@ -3959,6 +3959,14 @@ def «Typing.kwFields» := mk 0 [leaf 37, leaf 99]
 
 def «Typing.kwSplit» := mk 0 [leaf 37, leaf 113]
 
+def «Typing.boundNames» :=
+  («Typing.kwDecoded» ::
+    («Typing.kwScrutinee» ::
+      («Typing.kwNode» ::
+        («Typing.kwResults» ::
+          («Typing.kwUnitArg» ::
+            («Typing.kwFields» :: («Typing.kwSplit» :: ([] : List T))))))))
+
 def «Typing.decimalChars» :=
   fun (x0 : T) =>
     let x1 : List
@@ -4166,7 +4174,10 @@ def «Typing.synAtom» :=
     (x1 : List T)
     (x2 : List T) =>
     let x3 : T := (let x3 : T := «Typing.name» x1;
-                   if («Typing.keywordTx» («Typing.tAtom» x1)).label ≠ 0 then
+                   if («Prelude.or»
+                     («Typing.keywordTx» («Typing.tAtom» x1))
+                     («Prelude.isSome»
+                       («Reader.indexOf» x3 «Typing.boundNames»))).label ≠ 0 then
                      «Typing/OTy.nothing»
                    else
                      if («Prelude.isSome» («Reader.numeral» x1)).label ≠ 0 then
