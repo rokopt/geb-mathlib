@@ -54,19 +54,6 @@ name = "cslib"
 scope = "leanprover"
 rev = "v4.36.0-rc2"
 
-# Canonical, a solver for type inhabitation (the Bootstrap chapter of the
-# manual, § Search and synthesis), for experiments only: no module of `Geb` or
-# `GebTests` imports it, so a default build never fetches its solver
-# library, which Lake downloads from a GitHub release named after a Lean
-# version. It has no dependencies. `rev` follows Canonical's latest version
-# tag, the only revisions with a solver being those a release tag names
-# (the Bootstrap chapter records how a replaced release is refetched).
-# `TODO.md` § Triggers records the condition for removing it.
-[[require]]
-name = "Canonical"
-scope = "chasenorman"
-rev = "v4.35.0"
-
 # Pinned in lockstep with `lean-toolchain`; bump `rev` when bumping
 # the toolchain version.
 [[require]]
@@ -88,7 +75,7 @@ rev = "v4.36.0-rc2"
 name = "geb-lang"
 scope = "rokopt"
 git = "https://github.com/rokopt/geb-lang"
-rev = "7fbab128fd9435c61ecd9eb836ad97ea02ab9752"
+rev = "0fc72905ba0dfe92732a3ec5936b1e8590d1331f"
 
 # The library is compiled into a shared library that Lake loads into every
 # module importing it from another library, so that Lean's evaluator runs
