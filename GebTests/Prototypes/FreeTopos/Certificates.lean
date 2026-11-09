@@ -22,6 +22,7 @@ public import GebTests.Prototypes.FreeTopos.DatatypeFolds
 public import GebTests.Prototypes.FreeTopos.DatatypeSound
 public import GebTests.Prototypes.FreeTopos.DatatypeLam
 public import GebTests.Prototypes.FreeTopos.DatatypeConstructor
+public import GebTests.Prototypes.FreeTopos.DatatypeProgram
 public import GebTests.Prototypes.FreeTopos.Expansion
 public import GebTests.Prototypes.FreeTopos.Normalization
 
@@ -70,7 +71,8 @@ abbrev Search :=
   List String × (List (List Internal.Thm) → Except String (List Stored.Cert))
 
 set_option compiler.extract_closed false in
-/-- The searches of the developments of the definitions the expansion generates. -/
+/-- The searches of the developments of the definitions the expansion generates, and of the
+typing's runs over a program's forms. -/
 def generatedSearches : List (String × Search) :=
   [("datatype-den", (["datatype-base", "datatype-atom", "datatype-list",
       "datatype-stages", "datatype-apply", "datatype-expansion", "datatype-assembly",
@@ -123,7 +125,10 @@ def generatedSearches : List (String × Search) :=
       "datatype-recognizer-fold", "datatype-constructor", "datatype-constructor-body",
       "datatype-constructor-lam"],
       fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
-        Datatypes.constructorNestCertificates P S T dss.flatten))]
+        Datatypes.constructorNestCertificates P S T dss.flatten)),
+    ("datatype-program", (["datatype-base"], fun dss ↦
+      inProgram Datatypes.extended3 fun (P, S, T) ↦
+        Datatypes.programCertificates P S T dss.flatten))]
 
 set_option compiler.extract_closed false in
 /-- The searches of the developments with certificates, each with its name, after those whose
