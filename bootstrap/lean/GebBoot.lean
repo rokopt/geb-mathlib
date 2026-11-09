@@ -5703,52 +5703,64 @@ def «Typing.checkRun» :=
       x0;
     x2
 
-def «Typing.checkForms» :=
-  fun (x0 : List T) =>
-    let x1 : T := (Const.foldr
+def «Typing.checkAll» :=
+  fun (x0 : (List T ×
+      (List T × (List T × (List T × (List T × List T))))) ×
+      T)
+    (x1 : List T) =>
+    let x2 : (List T ×
+      (List T × (List T × (List T × (List T × List T))))) ×
+      T := Const.foldr
       (α := T)
       (β := ((List T × (List T × (List T × (List T × (List T × List T))))) ×
         T) →
         (List T × (List T × (List T × (List T × (List T × List T))))) × T)
-      (fun (x1 : T)
-         (x2 : ((List T × (List T × (List T × (List T × (List T × List T))))) ×
+      (fun (x2 : T)
+         (x3 : ((List T × (List T × (List T × (List T × (List T × List T))))) ×
            T) →
            (List T × (List T × (List T × (List T × (List T × List T))))) × T)
-         (x3 : (List T × (List T × (List T × (List T × (List T × List T))))) ×
+         (x4 : (List T × (List T × (List T × (List T × (List T × List T))))) ×
            T) =>
-        x2
-          (let x4 : T := x1;
-           if (Const.eq (Const.label x4) (leaf 15)).label ≠ 0 then
-             let x5 : List T := Const.children x4;
-             let x6 : List T := x5;
-             let x7 : T := (x3).2;
-             if (Const.eq (Const.label x7) (leaf 1)).label ≠ 0 then
-               let x8 : List T := Const.children x7;
+        x3
+          (let x5 : T := x2;
+           if (Const.eq (Const.label x5) (leaf 15)).label ≠ 0 then
+             let x6 : List T := Const.children x5;
+             let x7 : List T := x6;
+             let x8 : T := (x4).2;
+             if (Const.eq (Const.label x8) (leaf 1)).label ≠ 0 then
+               let x9 : List T := Const.children x8;
                let _ : T := Const.lcase
                  (α := T)
                  (β := T)
-                 x8
+                 x9
                  (leaf 0)
-                 (fun (x9 : T) (_ : List T) => x9);
+                 (fun (x10 : T) (_ : List T) => x10);
                let _ : List
                  T := Const.lcase
                  (α := T)
                  (β := List T)
-                 x8
+                 x9
                  ([] : List T)
-                 (fun (_ : T) (x11 : List T) => x11);
-               x3
+                 (fun (_ : T) (x12 : List T) => x12);
+               x4
              else
-               let _ : List T := Const.children x7;
-               ((x3).1, («Typing.checkRun» x3 x6).2)
+               let _ : List T := Const.children x8;
+               ((x4).1, («Typing.checkRun» x4 x7).2)
            else
-             «Typing.checkStep» x3 x1))
-      (fun (x1 : (List T ×
+             «Typing.checkStep» x4 x2))
+      (fun (x2 : (List T ×
            (List T × (List T × (List T × (List T × List T))))) ×
            T) =>
-        x1)
-      x0
-      («Typing.env0», «Typing/OName.nothing»)).2;
+        x2)
+      x1
+      x0;
+    x2
+
+def «Typing.checkForms» :=
+  fun (x0 : List T) =>
+    let x1 : T := («Typing.checkAll»
+      («Typing.env0», «Typing/OName.nothing»)
+      x0).2;
     x1
 
 def «Datatype/Txs.single» :=
@@ -8641,11 +8653,47 @@ def «Datatype.eraseForm» :=
                        x0);
     x1
 
+def «Datatype.markersFirst» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := (let x1 : List T ×
+              List
+                T := Const.foldr
+              (α := T)
+              (β := List T × List T)
+              (fun (x1 : T) (x2 : List T × List T) =>
+                let x3 : T := x1;
+                if (Const.eq (Const.label x3) (leaf 9)).label ≠ 0 then
+                  let x4 : List T := Const.children x3;
+                  let _ : List T := x4; ((x1 :: (x2).1), (x2).2)
+                else
+                  ((x2).1, (x1 :: (x2).2)))
+              (([] : List T), ([] : List T))
+              x0;
+            «Datatype/Txs.append» (x1).1 (x1).2);
+    x1
+
+def «Datatype.kernelForms» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x1 : T) (x2 : List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 15)).label ≠ 0 then
+          let x4 : List T := Const.children x3; let _ : List T := x4; x2
+        else
+          ((«Datatype.eraseForm» x1) :: x2))
+      ([] : List T)
+      x0;
+    x1
+
 def «Datatype.expandChecked» :=
   fun (x0 : List T) =>
     let x1 : T := (let x1 : T × List T := «Datatype.expandTyped» x0;
                    if ((x1).1).label ≠ 0 then
-                     let x2 : T := «Typing.checkForms» (x1).2;
+                     let x2 : T := «Typing.checkForms» («Datatype.markersFirst» (x1).2);
                      if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
                        let x3 : List T := Const.children x2;
                        let _ : T := Const.lcase
@@ -8664,19 +8712,7 @@ def «Datatype.expandChecked» :=
                        «Datatype/OTx.nothing»
                      else
                        let _ : List T := Const.children x2;
-                       «Datatype/OTx.just»
-                         («Typing.tList»
-                           (Const.foldr
-                             (α := T)
-                             (β := List T)
-                             (fun (x4 : T) (x5 : List T) =>
-                               let x6 : T := x4;
-                               if (Const.eq (Const.label x6) (leaf 15)).label ≠ 0 then
-                                 let x7 : List T := Const.children x6; let _ : List T := x7; x5
-                               else
-                                 ((«Datatype.eraseForm» x4) :: x5))
-                             ([] : List T)
-                             (x1).2))
+                       «Datatype/OTx.just» («Typing.tList» («Datatype.kernelForms» (x1).2))
                    else
                      «Datatype/OTx.nothing»);
     x1
@@ -8716,7 +8752,7 @@ def «Datatype.typeErrorOfForms» :=
                      let x2 : T := x1;
                      let x3 : T × List T := «Datatype.expandTyped» («Datatype.elems» x2);
                      if ((x3).1).label ≠ 0 then
-                       let x4 : T := «Typing.checkForms» (x3).2;
+                       let x4 : T := «Typing.checkForms» («Datatype.markersFirst» (x3).2);
                        if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
                          let x5 : List T := Const.children x4;
                          let x6 : T := Const.lcase
@@ -10740,6 +10776,31 @@ def «Recognize.occurs» :=
           Const.foldr (α := T) (β := T) «Prelude.or» (leaf 0) x3)
       x1
 
+def «Recognize.recognizersAt» :=
+  fun (x0 : List T) (x1 : List T) (x2 : T) =>
+    if (Const.eq (Const.label x2) (leaf 9)).label ≠ 0 then
+      if (Const.foldr
+        (α := T)
+        (β := T)
+        (fun (x3 : T) (x4 : T) =>
+          «Prelude.or»
+            («Recognize.occurs»
+              («Datatype.memberName» (Const.child x2 (leaf 0)))
+              x3)
+            x4)
+        (leaf 0)
+        x1).label ≠ 0 then
+        let x3 : T := «Recognize.recognizer» x0 x2;
+        if («Prelude.isSome» x3).label ≠ 0 then
+          «Prelude.some»
+            (Const.node (leaf 0) («Prelude.single» («Prelude.get» x3)))
+        else
+          «Prelude.none»
+      else
+        «Prelude.some» (Const.node (leaf 0) ([] : List T))
+    else
+      «Prelude.some» (Const.node (leaf 0) («Prelude.single» x2))
+
 def «Recognize.insertRecognizers» :=
   fun (x0 : List T) =>
     let x1 : List T := «Recognize.markers» x0;
@@ -10748,29 +10809,7 @@ def «Recognize.insertRecognizers» :=
         (α := T)
         (β := List T)
         (fun (x2 : T) (x3 : List T) =>
-          ((if (Const.eq (Const.label x2) (leaf 9)).label ≠ 0 then
-            if (Const.foldr
-              (α := T)
-              (β := T)
-              (fun (x4 : T) (x5 : T) =>
-                «Prelude.or»
-                  («Recognize.occurs»
-                    («Datatype.memberName» (Const.child x2 (leaf 0)))
-                    x4)
-                  x5)
-              (leaf 0)
-              x0).label ≠ 0 then
-              let x4 : T := «Recognize.recognizer» x1 x2;
-              if («Prelude.isSome» x4).label ≠ 0 then
-                «Prelude.some»
-                  (Const.node (leaf 0) («Prelude.single» («Prelude.get» x4)))
-              else
-                «Prelude.none»
-            else
-              «Prelude.some» (Const.node (leaf 0) ([] : List T))
-          else
-            «Prelude.some» (Const.node (leaf 0) («Prelude.single» x2))) ::
-            x3))
+          ((«Recognize.recognizersAt» x1 x0 x2) :: x3))
         ([] : List T)
         x0);
     if («Prelude.isSome» x2).label ≠ 0 then

@@ -619,20 +619,31 @@
          (sx3 (nthTx xs 0) (nthTx xs 1) (eraseExpr (nthTx xs 2)))
          f))
       (else f)))
+  ; a program's forms with its markers first, in their order, the others after them in theirs:
+  ; the typing checks every form with the markers of all the program's datatypes, of which a form
+  ; reads those of the datatypes declared before it
+  (defn markersFirst ((fs (List Tx))) (List Tx)
+    (let p (Prod (List Tx) (List Tx))
+      (foldr Tx (Prod (List Tx) (List Tx))
+        (lam ((f Tx) (acc (Prod (List Tx) (List Tx))))
+          (case f ((tMarker xs) (pair (cons f (fst acc)) (snd acc)))
+            (else (pair (fst acc) (cons f (snd acc))))))
+        (pair (nil Tx) (nil Tx))
+        fs)
+      (Txs.append (fst p) (snd p))))
+  ; a program's checked forms erased, the templates' instances at opaque arguments dropped
+  (defn kernelForms ((fs (List Tx))) (List Tx)
+    (foldr Tx (List Tx)
+      (lam ((f Tx) (acc (List Tx))) (case f ((tGeneric gs) acc) (else (cons (eraseForm f) acc))))
+      (nil Tx)
+      fs))
   ; a program's forms expanded with their datatypes, checked and erased, the templates' instances
   ; at opaque arguments dropped, when they expand and check
   (defn expandChecked ((es (List Tx))) MTx
     (let x (Prod T (List Tx)) (expandTyped es)
       (if (fst x)
-        (case (checkForms (snd x)) ((OName.just n) OTx.nothing)
-          ((OName.nothing)
-           (OTx.just
-             (tList
-               (foldr Tx (List Tx)
-                 (lam ((f Tx) (acc (List Tx)))
-                   (case f ((tGeneric gs) acc) (else (cons (eraseForm f) acc))))
-                 (nil Tx)
-                 (snd x))))))
+        (case (checkForms (markersFirst (snd x))) ((OName.just n) OTx.nothing)
+          ((OName.nothing) (OTx.just (tList (kernelForms (snd x))))))
         OTx.nothing)))
   ; a program's forms, as the front end gives them, expanded, when they expand and check
   (defn expandProgram ((es Ts)) T
@@ -648,7 +659,8 @@
       (lam ((x Tx))
         (let r (Prod T (List Tx)) (expandTyped (elems x))
           (if (fst r)
-            (case (checkForms (snd r)) ((OName.just n) (rep n)) ((OName.nothing) (node 0 (nil T))))
+            (case (checkForms (markersFirst (snd r))) ((OName.just n) (rep n))
+              ((OName.nothing) (node 0 (nil T))))
             (node 0 (nil T)))))
       (node 0 (nil T))))
   (defn typeErrorOf ((file T)) T

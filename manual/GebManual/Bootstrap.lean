@@ -2806,7 +2806,11 @@ constructor's label is a clause's unless an else clause ends them; the
 erasure writes the chain of tests of the scrutinee's label. The
 typing synthesizes each definition's type from its term, resolving names
 as the reader does, and names the first definition it rejects
-(`Datatype.typeErrorOf`). A keyword names no term: an atom naming one of
+(`Datatype.typeErrorOf`). It checks a program's markers before its other
+forms, each in its order, so that every form is checked with the markers of
+all the program's datatypes, of which it reads those of the datatypes
+declared before it; the erasure keeps the forms' order. A keyword names no
+term: an atom naming one of
 the typing's keywords has no type, though a binder may take its name, and a
 list headed by such an atom has a type only in one of that keyword's forms,
 since the reader writes it as the keyword's node or as an application, by
@@ -2963,7 +2967,8 @@ every tree
 `GebTests/Prototypes/FreeTopos/DatatypeCataSrc.lean`).
 The statement assumes of the definitions and the named context what the
 compilers ensure of a whole program: the relation's markers are the
-typing environment's; the recognizer of each datatype, where the program
+typing environment's, those of all the program's datatypes; the recognizer
+of each datatype, where the program
 refers to it, decides membership in it; no definition takes a
 primitive's name or the unit value's; and each name the context gives a
 type is one the typing admits as a binder's. The relation holds at an
