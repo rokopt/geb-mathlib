@@ -4,15 +4,6 @@ paths:
   - "scripts/**"
 ---
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
-
-- [CI and workflow — Claude-only additions](#ci-and-workflow--claude-only-additions)
-  - [Hook-script conventions](#hook-script-conventions)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 # CI and workflow — Claude-only additions
 
 Applies to GitHub Actions workflow files and scripts. Additions
