@@ -226,6 +226,21 @@ changes between versions, so before using a skill, list the
 commands it currently provides and select from that list; the
 names below are indicative. Select by activity.
 
+- When examining (such as to search or review) Lean code, Geb code,
+  or mathematics, if any of the following skills are available and
+  you are able to use them:
+
+  - [official Lean agent skills](https://github.com/leanprover/skills)
+  - [cameronfreer Lean 4 skill](https://github.com/cameronfreer/lean4-skills)
+  - [Claude's official math-proof skill](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/math-proof)
+  - [Vladimir Rotariu's claude-math skill](https://github.com/vladimirrott/claude-math)
+
+  then familiarize yourself with all of their options and
+  use them whenenver they appear they might be able to help. If
+  the skill is not available but its options appear likely to be
+  useful in helping with the user's requests, and you would be able
+  to use it if it were available, consider recommending it to the user.
+
 - Lean code work, proving, and mathlib search: the `lean4` skill's
   workflows ([docs/rules/lean-coding.md](docs/rules/lean-coding.md)
   § Lean 4 skill workflows) and the `lean-lsp` MCP's search and
