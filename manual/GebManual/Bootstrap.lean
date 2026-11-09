@@ -375,14 +375,14 @@ Extension:
   complete, as are the canonical, basic transport and advanced encodings
   of the strict encodings of RFC 9804 with their retraction. Modules with
   parameters, imports and export lists are complete but for named
-  telescopes and certificates as parameters, which follow their first
-  consumers. The executable `geb-compile` names what rejects a program,
-  manifests with editions record each program's sources and entry
-  points, and a durable document records the versioned profile of its
-  syntax, the schema of its notes and its prose, its notes holding examples
-  and links. Comments are read as the recorded subset of Verso's markup,
-  and every reference in them and in the notes' links resolves, as
-  `geb-doc` checks. The forms `let*` and `cond`, expanded in module
+  telescopes and {ref "proposition-parameters"}[propositions as module
+  parameters], which follow their first consumers. The executable
+  `geb-compile` names what rejects a program, manifests with editions
+  record each program's sources and entry points, and a durable document
+  records the versioned profile of its syntax, the schema of its notes and
+  its prose, its notes holding examples and links. Comments are read as
+  the recorded subset of Verso's markup, and every reference in them and
+  in the notes' links resolves, as `geb-doc` checks. The forms `let*` and `cond`, expanded in module
   elaboration, are complete, as is the `geb` editor language with Mike's
   Paredit, built from a pinned commit and patch, and the checker of holes
   in programs with the display of their obligations. The syntax of
@@ -3362,8 +3362,9 @@ tag := "authoring-compatibility"
     parameters of sorts and operations, in Lean and Geb, and the sources
     organized into modules without the prefixes that avoided collisions
     or the copies of one function at several element types, complete;
-    named telescopes and certificates as parameters, with their first
-    consumers
+    named telescopes and propositions as parameters
+    ({ref "proposition-parameters"}[Propositions as module parameters]),
+    with their first consumers
 *
   * Diagnostics naming the failing definition
   * Complete
@@ -4293,8 +4294,9 @@ parameter by a definition is substitution of the argument for it, the
 kernel's types being monomorphic. A program without modules or binding
 and conditional chains is unchanged, and the stage-0 compiler and the
 committed image reproduce themselves.
-Named telescopes and certificates as parameters follow their first
-consumers.
+Named telescopes follow their first consumers, as do propositions as
+parameters ({ref "proposition-parameters"}[Propositions as module
+parameters]).
 
 The same pass expands sequential bindings and guarded conditionals:
 
@@ -4345,6 +4347,44 @@ already rejects an unbalanced text as a whole, and a language server's
 recovery from errors, not the reader, answers it. The block's closing
 parenthesis ends the line of its last definition, so appending a
 definition changes that line too.
+
+#### Propositions as module parameters
+%%%
+tag := "proposition-parameters"
+%%%
+
+A parameter whose argument is a certificate of a proposition follows its
+first consumer: a theorem proved once about a module with parameters,
+holding at every instance, the certificate its hypothesis. The
+statements and scripts of {ref "proof-scripts"}[Proof scripts and
+certificates] prove theorems about a compiled program's definitions,
+which are already instances, so the step requires three things:
+
+* the translation of a module's body into the metalogic over its
+  parameters, a sort parameter an object variable and an operation
+  parameter a variable of the context, where the elaboration checks the
+  generic form and keeps the instances alone;
+* an obligation recorded by the elaboration at each import supplying
+  such a parameter, the proposition at the import's arguments, in a form
+  the authoring runner reads, which changes `bootstrap/modules.geb` and
+  `Geb/Prototypes/Kernel/Modules.lean` together and so regenerates the
+  committed images;
+* the instantiation of a theorem about a module at each import, by the
+  rule of application at the import's arguments, its hypotheses
+  discharged by the theorems the import supplies.
+
+Three decisions precede it:
+
+* the syntax of the parameter: whether it is `(parameter (h P))`, `P` a
+  statement of the `proofs` document over the module's parameters,
+  distinguished from a named telescope `(parameter (m I))` by `P` being a
+  list where `I` is an atom;
+* where theorems about a module with parameters are kept: in the `proofs`
+  document under the module's name, or in the module's source;
+* whether the step is merged before or after the datatype language's
+  completion, the regeneration of the images making it, before the
+  completion, one of the steps merged one at a time
+  ({ref "authoring-sequence"}[The sequence and its acceptance]).
 
 ### Documentation
 %%%
