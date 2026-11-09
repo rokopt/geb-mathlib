@@ -3899,6 +3899,16 @@ import-direction rules above are enforced by
   `examples/authoring/record/`, regenerated and checked by
   `scripts/authoring.sh`. Contexts, hypotheses and further proof-script
   forms remain to be exposed.
+  `scripts/preserve.py` records any manifest-based development through those
+  commands: original and canonical source documents, checked core, a replayed
+  certificate, compiler artifacts, Geb tooling sources and host identities.
+  Records are immutable; integrity verification runs without a compiler,
+  while checking recompiles archived sources and replays saved certificates
+  without proof search. Comparison with current sources reports document
+  changes separately from changes of core or rejected proofs. The layered
+  development `examples/roundtrip/` and its retained record are exercised by
+  `scripts/tests/test-preservation.sh`. `geb-kernel sources` supplies the
+  manifest's ordered relative source paths through the existing parser.
   `Blake3.lean` computes the hash BLAKE3 [OConnorAumassonNevesWilcoxOHearn2020]
   (`Geb.Blake3.hash`). `Identity.lean` identifies a definition by the
   CIDv1 [RatajBerjon2026] of its payload, the canonical encoding of its

@@ -1,0 +1,7 @@
+; Packing a tree with itself and selecting the first component.
+
+(module Box (export wrap unwrap)
+  ; The pair of a tree with itself.
+  (defn wrap ((x T)) (Prod T T) (pair x x))
+  ; The first component of a pair of trees.
+  (defn unwrap ((p (Prod T T))) T (fst p)))

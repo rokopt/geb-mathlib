@@ -3378,7 +3378,10 @@ tag := "authoring-compatibility"
   * The record of elaborated definitions
   * Complete for the first development outside the compilers: the image,
     elaborated definitions, certificate, canonical source documents and
-    pinned inputs under `examples/authoring/record/`
+    pinned inputs under `examples/authoring/record/`; the reusable workflow
+    `scripts/preserve.py` retains manifest-based developments in immutable
+    records, checked without proof search and compared with current sources,
+    with a layered development under `examples/roundtrip/`
 *
   * The datatype language's completion
     ({ref "datatype-completion"}[The datatype language's completion])

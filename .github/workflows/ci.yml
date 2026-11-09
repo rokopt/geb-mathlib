@@ -96,6 +96,7 @@ jobs:
         run: |
           bash scripts/authoring.sh check
           bash scripts/tests/test-authoring.sh
+          bash scripts/tests/test-preservation.sh
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38  # v6
         with:
           node-version: '24'

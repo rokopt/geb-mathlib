@@ -1,0 +1,4 @@
+; The library's definitions precede the application that imports them.
+(program roundtrip (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
+  (layers ("library layer" lib/Box.geb) (application Roundtrip.geb))
+  (entries Roundtrip.run Roundtrip.identity))

@@ -1,0 +1,9 @@
+{
+  "executables": {
+    "geb-author": "ef966b3a75ee1e21802dd10bc1f9873f66d89bc4349f73039a828605d37b73b2",
+    "geb-compile": "f502284a7d8dc70003fff9ab89d84b43c660e5e23a0b2eb4e4ece6a2bb58e169",
+    "geb-defs": "20a15d66bd8c46ff1cd8aa4a9bd0f97c61b49fc209ea1e92dbbe887395a04e0e",
+    "geb-kernel": "1e9258d7cb9a0cb46f0af86ccedba349174b815751f806beee91d948f645dd13"
+  },
+  "format": "geb-host/v1"
+}

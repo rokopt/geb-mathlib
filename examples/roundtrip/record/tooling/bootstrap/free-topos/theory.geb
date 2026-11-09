@@ -1,0 +1,538 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The partial Horn theory of an elementary topos with the natural numbers, list and rose-tree
+; objects, written in the datatype language as Geb.FreeTopos states it: the sorts, the
+; signature, the operations, the derived arrows and the axioms, block by block. The operations
+; Geb.FreeTopos names fst, snd, pair, nil, cons, node and zero are named cFst, cSnd, cPair,
+; cNil, cCons, cNode and cZero here, the other names being the kernel's.
+
+(module Theory
+  (export Sorts.obj Sorts.arr l2 l3 l4 l5 l6 sig x dom cod idt comp one bang prod cFst cSnd cPair
+    cZero
+    absurd
+    coprod
+    inl
+    inr
+    copair
+    coeqz
+    coeqProj
+    coeqDesc
+    exp
+    ev
+    curry
+    omega
+    tru
+    chi
+    nat
+    zeroN
+    succ
+    natRec
+    list
+    cNil
+    cCons
+    listRec
+    natRecP
+    listRecP
+    listMapP
+    roseStepP
+    roseRecP
+    rose
+    cNode
+    roseRec
+    lrose
+    lnode
+    lroseRec
+    dfd
+    prodMapLeft
+    diag
+    truthEq
+    truthIncl
+    categoryAxioms
+    terminalAxioms
+    productAxioms
+    equalizerAxioms
+    initialAxioms
+    coproductAxioms
+    coequalizerAxioms
+    exponentialAxioms
+    classifierAxioms
+    natAxioms
+    axioms
+    toposTheory)
+  (import Prelude)
+  (import PartialHorn)
+  (import (Seq OpSig) as OpSigs)
+  (import (Few OpSig) as OpSigL)
+  (import (Seq Sequent) as Seqs)
+  (import (Few Sequent) as SeqL)
+  (import (Seq Eqn) as Eqns)
+  (import (Few Eqn) as EqnL)
+  ; the sorts
+  (defnum Sorts.obj 0)
+  (defnum Sorts.arr 1)
+
+  ; lists of trees of a few elements
+  (defn l2 ((a T) (b T)) Ts (cons a (single b)))
+  (defn l3 ((a T) (b T) (c T)) Ts (cons a (l2 b c)))
+  (defn l4 ((a T) (b T) (c T) (d T)) Ts (cons a (l3 b c d)))
+  (defn l5 ((a T) (b T) (c T) (d T) (e T)) Ts (cons a (l4 b c d e)))
+  (defn l6 ((a T) (b T) (c T) (d T) (e T) (f T)) Ts (cons a (l5 b c d e f)))
+
+  ; the signature: for each operation, by its index, its arguments' sorts and its sort
+  (defn os ((as Ts) (s T)) OpSig (opSig (sorts as) s))
+  (def sig
+    (OpSigs.append
+      (OpSigL.l4 (os (single Sorts.arr) Sorts.obj) (os (single Sorts.arr) Sorts.obj)
+        (os (single Sorts.obj) Sorts.arr)
+        (os (l2 Sorts.arr Sorts.arr) Sorts.arr))
+      (OpSigs.append (OpSigL.l2 (os (nil T) Sorts.obj) (os (single Sorts.obj) Sorts.arr))
+        (OpSigs.append
+          (OpSigL.l4 (os (l2 Sorts.obj Sorts.obj) Sorts.obj) (os (l2 Sorts.obj Sorts.obj) Sorts.arr)
+            (os (l2 Sorts.obj Sorts.obj) Sorts.arr)
+            (os (l2 Sorts.arr Sorts.arr) Sorts.arr))
+          (OpSigs.append
+            (OpSigL.l3 (os (l2 Sorts.arr Sorts.arr) Sorts.obj)
+              (os (l2 Sorts.arr Sorts.arr) Sorts.arr)
+              (os (l3 Sorts.arr Sorts.arr Sorts.arr) Sorts.arr))
+            (OpSigs.append (OpSigL.l2 (os (nil T) Sorts.obj) (os (single Sorts.obj) Sorts.arr))
+              (OpSigs.append
+                (OpSigL.l4 (os (l2 Sorts.obj Sorts.obj) Sorts.obj)
+                  (os (l2 Sorts.obj Sorts.obj) Sorts.arr)
+                  (os (l2 Sorts.obj Sorts.obj) Sorts.arr)
+                  (os (l2 Sorts.arr Sorts.arr) Sorts.arr))
+                (OpSigs.append
+                  (OpSigL.l3 (os (l2 Sorts.arr Sorts.arr) Sorts.obj)
+                    (os (l2 Sorts.arr Sorts.arr) Sorts.arr)
+                    (os (l3 Sorts.arr Sorts.arr Sorts.arr) Sorts.arr))
+                  (OpSigs.append
+                    (OpSigL.l3 (os (l2 Sorts.obj Sorts.obj) Sorts.obj)
+                      (os (l2 Sorts.obj Sorts.obj) Sorts.arr)
+                      (os (l3 Sorts.obj Sorts.obj Sorts.arr) Sorts.arr))
+                    (OpSigs.append
+                      (OpSigL.l4 (os (nil T) Sorts.obj) (os (nil T) Sorts.arr)
+                        (os (single Sorts.arr) Sorts.arr)
+                        (os (single Sorts.arr) Sorts.arr))
+                      (OpSigs.append
+                        (OpSigL.l4 (os (nil T) Sorts.obj) (os (nil T) Sorts.arr)
+                          (os (nil T) Sorts.arr)
+                          (os (l2 Sorts.arr Sorts.arr) Sorts.arr))
+                        (OpSigs.append
+                          (OpSigL.l4 (os (single Sorts.obj) Sorts.obj)
+                            (os (single Sorts.obj) Sorts.arr)
+                            (os (single Sorts.obj) Sorts.arr)
+                            (os (l3 Sorts.obj Sorts.arr Sorts.arr) Sorts.arr))
+                          (OpSigs.append
+                            (OpSigL.l3 (os (nil T) Sorts.obj) (os (nil T) Sorts.arr)
+                              (os (single Sorts.arr) Sorts.arr))
+                            (OpSigL.l3 (os (single Sorts.obj) Sorts.obj)
+                              (os (single Sorts.obj) Sorts.arr)
+                              (os (l2 Sorts.obj Sorts.arr) Sorts.arr)))))))))))))))
+
+  ; the variables and the operations, by index
+  (defn x ((i T)) T (phVar i))
+  (defn dom ((f T)) T (phOp 0 (single f)))
+  (defn cod ((f T)) T (phOp 1 (single f)))
+  (defn idt ((a T)) T (phOp 2 (single a)))
+  (defn comp ((g T) (f T)) T (phOp 3 (l2 g f)))
+  (def one (phOp 4 (nil T)))
+  (defn bang ((a T)) T (phOp 5 (single a)))
+  (defn prod ((a T) (b T)) T (phOp 6 (l2 a b)))
+  (defn cFst ((a T) (b T)) T (phOp 7 (l2 a b)))
+  (defn cSnd ((a T) (b T)) T (phOp 8 (l2 a b)))
+  (defn cPair ((f T) (g T)) T (phOp 9 (l2 f g)))
+  (defn eqz ((f T) (g T)) T (phOp 10 (l2 f g)))
+  (defn eqIncl ((f T) (g T)) T (phOp 11 (l2 f g)))
+  (defn eqLift ((f T) (g T) (h T)) T (phOp 12 (l3 f g h)))
+  (def cZero (phOp 13 (nil T)))
+  (defn absurd ((a T)) T (phOp 14 (single a)))
+  (defn coprod ((a T) (b T)) T (phOp 15 (l2 a b)))
+  (defn inl ((a T) (b T)) T (phOp 16 (l2 a b)))
+  (defn inr ((a T) (b T)) T (phOp 17 (l2 a b)))
+  (defn copair ((f T) (g T)) T (phOp 18 (l2 f g)))
+  (defn coeqz ((f T) (g T)) T (phOp 19 (l2 f g)))
+  (defn coeqProj ((f T) (g T)) T (phOp 20 (l2 f g)))
+  (defn coeqDesc ((f T) (g T) (h T)) T (phOp 21 (l3 f g h)))
+  (defn exp ((a T) (b T)) T (phOp 22 (l2 a b)))
+  (defn ev ((a T) (b T)) T (phOp 23 (l2 a b)))
+  (defn curry ((c T) (a T) (f T)) T (phOp 24 (l3 c a f)))
+  (def omega (phOp 25 (nil T)))
+  (def tru (phOp 26 (nil T)))
+  (defn chi ((m T)) T (phOp 27 (single m)))
+  (defn chiInv ((m T)) T (phOp 28 (single m)))
+  (def nat (phOp 29 (nil T)))
+  (def zeroN (phOp 30 (nil T)))
+  (def succ (phOp 31 (nil T)))
+  (defn natRec ((z T) (s T)) T (phOp 32 (l2 z s)))
+  (defn list ((a T)) T (phOp 33 (single a)))
+  (defn cNil ((a T)) T (phOp 34 (single a)))
+  (defn cCons ((a T)) T (phOp 35 (single a)))
+  (defn listRec ((a T) (z T) (s T)) T (phOp 36 (l3 a z s)))
+  (def rose (phOp 37 (nil T)))
+  (def cNode (phOp 38 (nil T)))
+  (defn roseRec ((f T)) T (phOp 39 (single f)))
+  (defn lrose ((a T)) T (phOp 40 (single a)))
+  (defn lnode ((a T)) T (phOp 41 (single a)))
+  (defn lroseRec ((a T) (f T)) T (phOp 42 (l2 a f)))
+
+  ; definedness, and the derived arrows the axioms use
+  (defn dfd ((t T)) Eqn (eqn t t))
+  (defn prodMapLeft ((f T) (a T)) T (cPair (comp f (cFst (dom f) a)) (cSnd (dom f) a)))
+  (defn prodMapRight ((a T) (f T)) T (cPair (cFst a (dom f)) (comp f (cSnd a (dom f)))))
+  (defn listMap ((f T)) T
+    (listRec (dom f) (cNil (cod f)) (comp (cCons (cod f)) (prodMapLeft f (list (cod f))))))
+  ; the folds of the natural numbers object and of a list object with a parameter, into the
+  ; exponential of the parameters, evaluated at the parameter
+  (defn natRecP ((p T) (c T) (z T) (s T)) T
+    (comp (ev p c)
+      (cPair
+        (comp
+          (natRec (curry one p (comp z (cSnd one p)))
+            (curry (exp p c) p (comp s (cPair (cSnd (exp p c) p) (ev p c)))))
+          (cSnd p nat))
+        (cFst p nat))))
+  (defn listRecP ((p T) (a T) (c T) (z T) (s T)) T
+    (comp (ev p c)
+      (cPair
+        (comp
+          (listRec a (curry one p (comp z (cSnd one p)))
+            (curry (prod a (exp p c)) p
+              (comp s
+                (cPair
+                  (cPair (cSnd (prod a (exp p c)) p)
+                    (comp (cFst a (exp p c)) (cFst (prod a (exp p c)) p)))
+                  (comp (ev p c)
+                    (cPair (comp (cSnd a (exp p c)) (cFst (prod a (exp p c)) p))
+                      (cSnd (prod a (exp p c)) p)))))))
+          (cSnd p (list a)))
+        (cFst p (list a)))))
+  ; the action of a list object with a parameter, and the fold of a rose-tree object with a
+  ; parameter by its fold f without one, into the exponential of the parameters by the curried
+  ; step, evaluated at the parameter
+  (defn listMapP ((p T) (a T) (c T) (f T)) T
+    (listRecP p a (list c) (comp (cNil c) (bang p))
+      (comp (cCons c) (cPair (comp f (cFst (prod p a) (list c))) (cSnd (prod p a) (list c))))))
+  (defn roseStepP ((p T) (a T) (c T) (s T)) T
+    (comp s
+      (cPair (cSnd (prod a (list (exp p c))) p)
+        (cPair (comp (cFst a (list (exp p c))) (cFst (prod a (list (exp p c))) p))
+          (comp
+            (listMapP p (exp p c) c (comp (ev p c) (cPair (cSnd p (exp p c)) (cFst p (exp p c)))))
+            (cPair (cSnd (prod a (list (exp p c))) p)
+              (comp (cSnd a (list (exp p c))) (cFst (prod a (list (exp p c))) p))))))))
+  (defn roseRecP ((f (Arrow T T)) (p T) (a T) (t T) (c T) (s T)) T
+    (comp (ev p c)
+      (cPair (comp (f (curry (prod a (list (exp p c))) p (roseStepP p a c s))) (cSnd p t))
+        (cFst p t))))
+  (defn diag ((a T)) T (cPair (idt a) (idt a)))
+  (defn monoCond ((m T)) Eqn
+    (let a T (dom m)
+      (let k T (eqIncl (comp m (cFst a a)) (comp m (cSnd a a)))
+        (eqn (comp (cFst a a) k) (comp (cSnd a a) k)))))
+  (defn truthEq ((p T)) T (eqz p (comp tru (bang (dom p)))))
+  (defn truthIncl ((p T)) T (eqIncl p (comp tru (bang (dom p)))))
+  (defn truthLift ((p T) (m T)) T (eqLift p (comp tru (bang (dom p))) m))
+
+  ; a sequent of the theory, and the contexts the axioms have, by their sorts
+  (defn sq ((ctx Ts) (hs (List Eqn)) (q Eqn)) Sequent (mkSeq ctx hs q))
+  (def ctxOO (l2 Sorts.obj Sorts.obj))
+  (def ctxAA (l2 Sorts.arr Sorts.arr))
+  (def ctxAAA (l3 Sorts.arr Sorts.arr Sorts.arr))
+  (def ctxA (single Sorts.arr))
+  (def ctxO (single Sorts.obj))
+
+  (def categoryAxioms
+    (Seqs.append
+      (SeqL.l6 (sq ctxA (nil Eqn) (dfd (dom (x 0)))) (sq ctxA (nil Eqn) (dfd (cod (x 0))))
+        (sq ctxO (nil Eqn) (dfd (idt (x 0))))
+        (sq ctxAA (Eqns.single (dfd (comp (x 0) (x 1)))) (eqn (cod (x 1)) (dom (x 0))))
+        (sq ctxAA (Eqns.single (eqn (cod (x 1)) (dom (x 0)))) (dfd (comp (x 0) (x 1))))
+        (sq ctxAA (Eqns.single (dfd (comp (x 0) (x 1))))
+          (eqn (dom (comp (x 0) (x 1))) (dom (x 1)))))
+      (SeqL.l6
+        (sq ctxAA (Eqns.single (dfd (comp (x 0) (x 1)))) (eqn (cod (comp (x 0) (x 1))) (cod (x 0))))
+        (sq ctxAAA (Eqns.single (dfd (comp (x 0) (comp (x 1) (x 2)))))
+          (eqn (comp (x 0) (comp (x 1) (x 2))) (comp (comp (x 0) (x 1)) (x 2))))
+        (sq ctxO (nil Eqn) (eqn (dom (idt (x 0))) (x 0)))
+        (sq ctxO (nil Eqn) (eqn (cod (idt (x 0))) (x 0)))
+        (sq ctxA (nil Eqn) (eqn (comp (x 0) (idt (dom (x 0)))) (x 0)))
+        (sq ctxA (nil Eqn) (eqn (comp (idt (cod (x 0))) (x 0)) (x 0))))))
+
+  (def terminalAxioms
+    (SeqL.l4 (sq (nil T) (nil Eqn) (dfd one)) (sq ctxO (nil Eqn) (eqn (dom (bang (x 0))) (x 0)))
+      (sq ctxO (nil Eqn) (eqn (cod (bang (x 0))) one))
+      (sq ctxA (Eqns.single (eqn (cod (x 0)) one)) (eqn (x 0) (bang (dom (x 0)))))))
+
+  (def productAxioms
+    (Seqs.append
+      (SeqL.l6 (sq ctxOO (nil Eqn) (dfd (prod (x 0) (x 1))))
+        (sq ctxOO (nil Eqn) (eqn (dom (cFst (x 0) (x 1))) (prod (x 0) (x 1))))
+        (sq ctxOO (nil Eqn) (eqn (cod (cFst (x 0) (x 1))) (x 0)))
+        (sq ctxOO (nil Eqn) (eqn (dom (cSnd (x 0) (x 1))) (prod (x 0) (x 1))))
+        (sq ctxOO (nil Eqn) (eqn (cod (cSnd (x 0) (x 1))) (x 1)))
+        (sq ctxAA (Eqns.single (dfd (cPair (x 0) (x 1)))) (eqn (dom (x 0)) (dom (x 1)))))
+      (SeqL.l6 (sq ctxAA (Eqns.single (eqn (dom (x 0)) (dom (x 1)))) (dfd (cPair (x 0) (x 1))))
+        (sq ctxAA (Eqns.single (dfd (cPair (x 0) (x 1))))
+          (eqn (dom (cPair (x 0) (x 1))) (dom (x 0))))
+        (sq ctxAA (Eqns.single (dfd (cPair (x 0) (x 1))))
+          (eqn (cod (cPair (x 0) (x 1))) (prod (cod (x 0)) (cod (x 1)))))
+        (sq ctxAA (Eqns.single (dfd (cPair (x 0) (x 1))))
+          (eqn (comp (cFst (cod (x 0)) (cod (x 1))) (cPair (x 0) (x 1))) (x 0)))
+        (sq ctxAA (Eqns.single (dfd (cPair (x 0) (x 1))))
+          (eqn (comp (cSnd (cod (x 0)) (cod (x 1))) (cPair (x 0) (x 1))) (x 1)))
+        (sq (l3 Sorts.arr Sorts.obj Sorts.obj) (Eqns.single (eqn (cod (x 0)) (prod (x 1) (x 2))))
+          (eqn (cPair (comp (cFst (x 1) (x 2)) (x 0)) (comp (cSnd (x 1) (x 2)) (x 0))) (x 0))))))
+
+  (def equalizerAxioms
+    (Seqs.append
+      (SeqL.l6 (sq ctxAA (Eqns.single (dfd (eqz (x 0) (x 1)))) (eqn (dom (x 0)) (dom (x 1))))
+        (sq ctxAA (Eqns.single (dfd (eqz (x 0) (x 1)))) (eqn (cod (x 0)) (cod (x 1))))
+        (sq ctxAA (EqnL.l2 (eqn (dom (x 0)) (dom (x 1))) (eqn (cod (x 0)) (cod (x 1))))
+          (dfd (eqz (x 0) (x 1))))
+        (sq ctxAA (Eqns.single (dfd (eqIncl (x 0) (x 1)))) (dfd (eqz (x 0) (x 1))))
+        (sq ctxAA (Eqns.single (dfd (eqz (x 0) (x 1)))) (dfd (eqIncl (x 0) (x 1))))
+        (sq ctxAA (Eqns.single (dfd (eqz (x 0) (x 1))))
+          (eqn (dom (eqIncl (x 0) (x 1))) (eqz (x 0) (x 1)))))
+      (Seqs.append
+        (SeqL.l6
+          (sq ctxAA (Eqns.single (dfd (eqz (x 0) (x 1))))
+            (eqn (cod (eqIncl (x 0) (x 1))) (dom (x 0))))
+          (sq ctxAA (Eqns.single (dfd (eqz (x 0) (x 1))))
+            (eqn (comp (x 0) (eqIncl (x 0) (x 1))) (comp (x 1) (eqIncl (x 0) (x 1)))))
+          (sq ctxAAA (Eqns.single (dfd (eqLift (x 0) (x 1) (x 2)))) (dfd (eqz (x 0) (x 1))))
+          (sq ctxAAA (Eqns.single (dfd (eqLift (x 0) (x 1) (x 2))))
+            (eqn (comp (x 0) (x 2)) (comp (x 1) (x 2))))
+          (sq ctxAAA (EqnL.l2 (dfd (eqz (x 0) (x 1))) (eqn (comp (x 0) (x 2)) (comp (x 1) (x 2))))
+            (dfd (eqLift (x 0) (x 1) (x 2))))
+          (sq ctxAAA (Eqns.single (dfd (eqLift (x 0) (x 1) (x 2))))
+            (eqn (dom (eqLift (x 0) (x 1) (x 2))) (dom (x 2)))))
+        (SeqL.l3
+          (sq ctxAAA (Eqns.single (dfd (eqLift (x 0) (x 1) (x 2))))
+            (eqn (cod (eqLift (x 0) (x 1) (x 2))) (eqz (x 0) (x 1))))
+          (sq ctxAAA (Eqns.single (dfd (eqLift (x 0) (x 1) (x 2))))
+            (eqn (comp (eqIncl (x 0) (x 1)) (eqLift (x 0) (x 1) (x 2))) (x 2)))
+          (sq ctxAAA (EqnL.l2 (dfd (eqz (x 0) (x 1))) (eqn (cod (x 2)) (eqz (x 0) (x 1))))
+            (eqn (eqLift (x 0) (x 1) (comp (eqIncl (x 0) (x 1)) (x 2))) (x 2)))))))
+
+  (def initialAxioms
+    (SeqL.l4 (sq (nil T) (nil Eqn) (dfd cZero)) (sq ctxO (nil Eqn) (eqn (dom (absurd (x 0))) cZero))
+      (sq ctxO (nil Eqn) (eqn (cod (absurd (x 0))) (x 0)))
+      (sq ctxA (Eqns.single (eqn (dom (x 0)) cZero)) (eqn (x 0) (absurd (cod (x 0)))))))
+
+  (def coproductAxioms
+    (Seqs.append
+      (SeqL.l6 (sq ctxOO (nil Eqn) (dfd (coprod (x 0) (x 1))))
+        (sq ctxOO (nil Eqn) (eqn (dom (inl (x 0) (x 1))) (x 0)))
+        (sq ctxOO (nil Eqn) (eqn (cod (inl (x 0) (x 1))) (coprod (x 0) (x 1))))
+        (sq ctxOO (nil Eqn) (eqn (dom (inr (x 0) (x 1))) (x 1)))
+        (sq ctxOO (nil Eqn) (eqn (cod (inr (x 0) (x 1))) (coprod (x 0) (x 1))))
+        (sq ctxAA (Eqns.single (dfd (copair (x 0) (x 1)))) (eqn (cod (x 0)) (cod (x 1)))))
+      (SeqL.l6 (sq ctxAA (Eqns.single (eqn (cod (x 0)) (cod (x 1)))) (dfd (copair (x 0) (x 1))))
+        (sq ctxAA (Eqns.single (dfd (copair (x 0) (x 1))))
+          (eqn (dom (copair (x 0) (x 1))) (coprod (dom (x 0)) (dom (x 1)))))
+        (sq ctxAA (Eqns.single (dfd (copair (x 0) (x 1))))
+          (eqn (cod (copair (x 0) (x 1))) (cod (x 0))))
+        (sq ctxAA (Eqns.single (dfd (copair (x 0) (x 1))))
+          (eqn (comp (copair (x 0) (x 1)) (inl (dom (x 0)) (dom (x 1)))) (x 0)))
+        (sq ctxAA (Eqns.single (dfd (copair (x 0) (x 1))))
+          (eqn (comp (copair (x 0) (x 1)) (inr (dom (x 0)) (dom (x 1)))) (x 1)))
+        (sq (l3 Sorts.arr Sorts.obj Sorts.obj) (Eqns.single (eqn (dom (x 0)) (coprod (x 1) (x 2))))
+          (eqn (copair (comp (x 0) (inl (x 1) (x 2))) (comp (x 0) (inr (x 1) (x 2)))) (x 0))))))
+
+  (def coequalizerAxioms
+    (Seqs.append
+      (SeqL.l6 (sq ctxAA (Eqns.single (dfd (coeqz (x 0) (x 1)))) (eqn (dom (x 0)) (dom (x 1))))
+        (sq ctxAA (Eqns.single (dfd (coeqz (x 0) (x 1)))) (eqn (cod (x 0)) (cod (x 1))))
+        (sq ctxAA (EqnL.l2 (eqn (dom (x 0)) (dom (x 1))) (eqn (cod (x 0)) (cod (x 1))))
+          (dfd (coeqz (x 0) (x 1))))
+        (sq ctxAA (Eqns.single (dfd (coeqProj (x 0) (x 1)))) (dfd (coeqz (x 0) (x 1))))
+        (sq ctxAA (Eqns.single (dfd (coeqz (x 0) (x 1)))) (dfd (coeqProj (x 0) (x 1))))
+        (sq ctxAA (Eqns.single (dfd (coeqz (x 0) (x 1))))
+          (eqn (dom (coeqProj (x 0) (x 1))) (cod (x 0)))))
+      (Seqs.append
+        (SeqL.l6
+          (sq ctxAA (Eqns.single (dfd (coeqz (x 0) (x 1))))
+            (eqn (cod (coeqProj (x 0) (x 1))) (coeqz (x 0) (x 1))))
+          (sq ctxAA (Eqns.single (dfd (coeqz (x 0) (x 1))))
+            (eqn (comp (coeqProj (x 0) (x 1)) (x 0)) (comp (coeqProj (x 0) (x 1)) (x 1))))
+          (sq ctxAAA (Eqns.single (dfd (coeqDesc (x 0) (x 1) (x 2)))) (dfd (coeqz (x 0) (x 1))))
+          (sq ctxAAA (Eqns.single (dfd (coeqDesc (x 0) (x 1) (x 2))))
+            (eqn (comp (x 2) (x 0)) (comp (x 2) (x 1))))
+          (sq ctxAAA (EqnL.l2 (dfd (coeqz (x 0) (x 1))) (eqn (comp (x 2) (x 0)) (comp (x 2) (x 1))))
+            (dfd (coeqDesc (x 0) (x 1) (x 2))))
+          (sq ctxAAA (Eqns.single (dfd (coeqDesc (x 0) (x 1) (x 2))))
+            (eqn (dom (coeqDesc (x 0) (x 1) (x 2))) (coeqz (x 0) (x 1)))))
+        (SeqL.l3
+          (sq ctxAAA (Eqns.single (dfd (coeqDesc (x 0) (x 1) (x 2))))
+            (eqn (cod (coeqDesc (x 0) (x 1) (x 2))) (cod (x 2))))
+          (sq ctxAAA (Eqns.single (dfd (coeqDesc (x 0) (x 1) (x 2))))
+            (eqn (comp (coeqDesc (x 0) (x 1) (x 2)) (coeqProj (x 0) (x 1))) (x 2)))
+          (sq ctxAAA (EqnL.l2 (dfd (coeqz (x 0) (x 1))) (eqn (dom (x 2)) (coeqz (x 0) (x 1))))
+            (eqn (coeqDesc (x 0) (x 1) (comp (x 2) (coeqProj (x 0) (x 1)))) (x 2)))))))
+
+  (def ctxOOA (l3 Sorts.obj Sorts.obj Sorts.arr))
+  (def exponentialAxioms
+    (Seqs.append
+      (SeqL.l6 (sq ctxOO (nil Eqn) (dfd (exp (x 0) (x 1))))
+        (sq ctxOO (nil Eqn) (eqn (dom (ev (x 0) (x 1))) (prod (exp (x 0) (x 1)) (x 0))))
+        (sq ctxOO (nil Eqn) (eqn (cod (ev (x 0) (x 1))) (x 1)))
+        (sq ctxOOA (Eqns.single (dfd (curry (x 0) (x 1) (x 2))))
+          (eqn (dom (x 2)) (prod (x 0) (x 1))))
+        (sq ctxOOA (Eqns.single (eqn (dom (x 2)) (prod (x 0) (x 1))))
+          (dfd (curry (x 0) (x 1) (x 2))))
+        (sq ctxOOA (Eqns.single (dfd (curry (x 0) (x 1) (x 2))))
+          (eqn (dom (curry (x 0) (x 1) (x 2))) (x 0))))
+      (SeqL.l3
+        (sq ctxOOA (Eqns.single (dfd (curry (x 0) (x 1) (x 2))))
+          (eqn (cod (curry (x 0) (x 1) (x 2))) (exp (x 1) (cod (x 2)))))
+        (sq ctxOOA (Eqns.single (dfd (curry (x 0) (x 1) (x 2))))
+          (eqn (comp (ev (x 1) (cod (x 2))) (prodMapLeft (curry (x 0) (x 1) (x 2)) (x 1))) (x 2)))
+        (sq (l4 Sorts.obj Sorts.obj Sorts.obj Sorts.arr)
+          (EqnL.l2 (eqn (dom (x 3)) (x 0)) (eqn (cod (x 3)) (exp (x 1) (x 2))))
+          (eqn (curry (x 0) (x 1) (comp (ev (x 1) (x 2)) (prodMapLeft (x 3) (x 1)))) (x 3))))))
+
+  (def classifierAxioms
+    (Seqs.append
+      (SeqL.l6 (sq (nil T) (nil Eqn) (dfd omega)) (sq (nil T) (nil Eqn) (eqn (dom tru) one))
+        (sq (nil T) (nil Eqn) (eqn (cod tru) omega))
+        (sq ctxA (Eqns.single (dfd (chi (x 0)))) (monoCond (x 0)))
+        (sq ctxA (Eqns.single (monoCond (x 0))) (dfd (chi (x 0))))
+        (sq ctxA (Eqns.single (dfd (chi (x 0)))) (eqn (dom (chi (x 0))) (cod (x 0)))))
+      (Seqs.append
+        (SeqL.l6 (sq ctxA (Eqns.single (dfd (chi (x 0)))) (eqn (cod (chi (x 0))) omega))
+          (sq ctxA (Eqns.single (dfd (chi (x 0))))
+            (eqn (comp (chi (x 0)) (x 0)) (comp tru (bang (dom (x 0))))))
+          (sq ctxA (Eqns.single (dfd (chiInv (x 0)))) (dfd (chi (x 0))))
+          (sq ctxA (Eqns.single (dfd (chi (x 0)))) (dfd (chiInv (x 0))))
+          (sq ctxA (Eqns.single (dfd (chi (x 0)))) (eqn (dom (chiInv (x 0))) (truthEq (chi (x 0)))))
+          (sq ctxA (Eqns.single (dfd (chi (x 0)))) (eqn (cod (chiInv (x 0))) (dom (x 0)))))
+        (SeqL.l3
+          (sq ctxA (Eqns.single (dfd (chi (x 0))))
+            (eqn (comp (truthLift (chi (x 0)) (x 0)) (chiInv (x 0))) (idt (truthEq (chi (x 0))))))
+          (sq ctxA (Eqns.single (dfd (chi (x 0))))
+            (eqn (comp (chiInv (x 0)) (truthLift (chi (x 0)) (x 0))) (idt (dom (x 0)))))
+          (sq (l4 Sorts.arr Sorts.arr Sorts.arr Sorts.arr)
+            (EqnL.l6 (dfd (chi (x 0))) (eqn (dom (x 1)) (cod (x 0))) (eqn (cod (x 1)) omega)
+              (eqn (comp (truthIncl (x 1)) (x 2)) (x 0))
+              (eqn (comp (x 2) (x 3)) (idt (truthEq (x 1))))
+              (eqn (comp (x 3) (x 2)) (idt (dom (x 0)))))
+            (eqn (x 1) (chi (x 0))))))))
+
+  (def natAxioms
+    (Seqs.append
+      (SeqL.l6 (sq (nil T) (nil Eqn) (eqn (dom zeroN) one))
+        (sq (nil T) (nil Eqn) (eqn (cod zeroN) nat))
+        (sq (nil T) (nil Eqn) (eqn (dom succ) nat))
+        (sq (nil T) (nil Eqn) (eqn (cod succ) nat))
+        (sq ctxAA (Eqns.single (dfd (natRec (x 0) (x 1)))) (eqn (dom (x 0)) one))
+        (sq ctxAA (Eqns.single (dfd (natRec (x 0) (x 1)))) (eqn (cod (x 0)) (dom (x 1)))))
+      (Seqs.append
+        (SeqL.l6 (sq ctxAA (Eqns.single (dfd (natRec (x 0) (x 1)))) (eqn (dom (x 1)) (cod (x 1))))
+          (sq ctxAA
+            (EqnL.l3 (eqn (dom (x 0)) one) (eqn (cod (x 0)) (dom (x 1)))
+              (eqn (dom (x 1)) (cod (x 1))))
+            (dfd (natRec (x 0) (x 1))))
+          (sq ctxAA (Eqns.single (dfd (natRec (x 0) (x 1)))) (eqn (dom (natRec (x 0) (x 1))) nat))
+          (sq ctxAA (Eqns.single (dfd (natRec (x 0) (x 1))))
+            (eqn (cod (natRec (x 0) (x 1))) (cod (x 0))))
+          (sq ctxAA (Eqns.single (dfd (natRec (x 0) (x 1))))
+            (eqn (comp (natRec (x 0) (x 1)) zeroN) (x 0)))
+          (sq ctxAA (Eqns.single (dfd (natRec (x 0) (x 1))))
+            (eqn (comp (natRec (x 0) (x 1)) succ) (comp (x 1) (natRec (x 0) (x 1))))))
+        (Seqs.single
+          (sq ctxAAA
+            (EqnL.l4 (dfd (natRec (x 0) (x 1))) (eqn (dom (x 2)) nat) (eqn (comp (x 2) zeroN) (x 0))
+              (eqn (comp (x 2) succ) (comp (x 1) (x 2))))
+            (eqn (x 2) (natRec (x 0) (x 1))))))))
+
+  (def ctxOAA (l3 Sorts.obj Sorts.arr Sorts.arr))
+  (def listAxioms
+    (Seqs.append
+      (SeqL.l6 (sq ctxO (nil Eqn) (dfd (list (x 0))))
+        (sq ctxO (nil Eqn) (eqn (dom (cNil (x 0))) one))
+        (sq ctxO (nil Eqn) (eqn (cod (cNil (x 0))) (list (x 0))))
+        (sq ctxO (nil Eqn) (eqn (dom (cCons (x 0))) (prod (x 0) (list (x 0)))))
+        (sq ctxO (nil Eqn) (eqn (cod (cCons (x 0))) (list (x 0))))
+        (sq ctxOAA (Eqns.single (dfd (listRec (x 0) (x 1) (x 2)))) (eqn (dom (x 1)) one)))
+      (Seqs.append
+        (SeqL.l6
+          (sq ctxOAA (Eqns.single (dfd (listRec (x 0) (x 1) (x 2)))) (eqn (cod (x 1)) (cod (x 2))))
+          (sq ctxOAA (Eqns.single (dfd (listRec (x 0) (x 1) (x 2))))
+            (eqn (dom (x 2)) (prod (x 0) (cod (x 2)))))
+          (sq ctxOAA
+            (EqnL.l3 (eqn (dom (x 1)) one) (eqn (cod (x 1)) (cod (x 2)))
+              (eqn (dom (x 2)) (prod (x 0) (cod (x 2)))))
+            (dfd (listRec (x 0) (x 1) (x 2))))
+          (sq ctxOAA (Eqns.single (dfd (listRec (x 0) (x 1) (x 2))))
+            (eqn (dom (listRec (x 0) (x 1) (x 2))) (list (x 0))))
+          (sq ctxOAA (Eqns.single (dfd (listRec (x 0) (x 1) (x 2))))
+            (eqn (cod (listRec (x 0) (x 1) (x 2))) (cod (x 1))))
+          (sq ctxOAA (Eqns.single (dfd (listRec (x 0) (x 1) (x 2))))
+            (eqn (comp (listRec (x 0) (x 1) (x 2)) (cNil (x 0))) (x 1))))
+        (SeqL.l2
+          (sq ctxOAA (Eqns.single (dfd (listRec (x 0) (x 1) (x 2))))
+            (eqn (comp (listRec (x 0) (x 1) (x 2)) (cCons (x 0)))
+              (comp (x 2) (prodMapRight (x 0) (listRec (x 0) (x 1) (x 2))))))
+          (sq (l4 Sorts.obj Sorts.arr Sorts.arr Sorts.arr)
+            (EqnL.l4 (dfd (listRec (x 0) (x 1) (x 2))) (eqn (dom (x 3)) (list (x 0)))
+              (eqn (comp (x 3) (cNil (x 0))) (x 1))
+              (eqn (comp (x 3) (cCons (x 0))) (comp (x 2) (prodMapRight (x 0) (x 3)))))
+            (eqn (x 3) (listRec (x 0) (x 1) (x 2))))))))
+
+  (def roseAxioms
+    (Seqs.append
+      (SeqL.l6 (sq (nil T) (nil Eqn) (eqn (dom cNode) (prod nat (list rose))))
+        (sq (nil T) (nil Eqn) (eqn (cod cNode) rose))
+        (sq ctxA (Eqns.single (dfd (roseRec (x 0))))
+          (eqn (dom (x 0)) (prod nat (list (cod (x 0))))))
+        (sq ctxA (Eqns.single (eqn (dom (x 0)) (prod nat (list (cod (x 0))))))
+          (dfd (roseRec (x 0))))
+        (sq ctxA (Eqns.single (dfd (roseRec (x 0)))) (eqn (dom (roseRec (x 0))) rose))
+        (sq ctxA (Eqns.single (dfd (roseRec (x 0)))) (eqn (cod (roseRec (x 0))) (cod (x 0)))))
+      (SeqL.l2
+        (sq ctxA (Eqns.single (dfd (roseRec (x 0))))
+          (eqn (comp (roseRec (x 0)) cNode)
+            (comp (x 0) (prodMapRight nat (listMap (roseRec (x 0)))))))
+        (sq ctxAA
+          (EqnL.l3 (dfd (roseRec (x 0))) (eqn (dom (x 1)) rose)
+            (eqn (comp (x 1) cNode) (comp (x 0) (prodMapRight nat (listMap (x 1))))))
+          (eqn (x 1) (roseRec (x 0)))))))
+
+  (def ctxOA (l2 Sorts.obj Sorts.arr))
+  (def lroseAxioms
+    (Seqs.append
+      (SeqL.l6 (sq ctxO (nil Eqn) (dfd (lrose (x 0))))
+        (sq ctxO (nil Eqn) (eqn (dom (lnode (x 0))) (prod (x 0) (list (lrose (x 0))))))
+        (sq ctxO (nil Eqn) (eqn (cod (lnode (x 0))) (lrose (x 0))))
+        (sq ctxOA (Eqns.single (dfd (lroseRec (x 0) (x 1))))
+          (eqn (dom (x 1)) (prod (x 0) (list (cod (x 1))))))
+        (sq ctxOA (Eqns.single (eqn (dom (x 1)) (prod (x 0) (list (cod (x 1))))))
+          (dfd (lroseRec (x 0) (x 1))))
+        (sq ctxOA (Eqns.single (dfd (lroseRec (x 0) (x 1))))
+          (eqn (dom (lroseRec (x 0) (x 1))) (lrose (x 0)))))
+      (SeqL.l3
+        (sq ctxOA (Eqns.single (dfd (lroseRec (x 0) (x 1))))
+          (eqn (cod (lroseRec (x 0) (x 1))) (cod (x 1))))
+        (sq ctxOA (Eqns.single (dfd (lroseRec (x 0) (x 1))))
+          (eqn (comp (lroseRec (x 0) (x 1)) (lnode (x 0)))
+            (comp (x 1) (prodMapRight (x 0) (listMap (lroseRec (x 0) (x 1)))))))
+        (sq ctxOAA
+          (EqnL.l3 (dfd (lroseRec (x 0) (x 1))) (eqn (dom (x 2)) (lrose (x 0)))
+            (eqn (comp (x 2) (lnode (x 0))) (comp (x 1) (prodMapRight (x 0) (listMap (x 2))))))
+          (eqn (x 2) (lroseRec (x 0) (x 1)))))))
+
+  ; the axioms, block by block, and the theory
+  (def axioms
+    (Seqs.append categoryAxioms
+      (Seqs.append terminalAxioms
+        (Seqs.append productAxioms
+          (Seqs.append equalizerAxioms
+            (Seqs.append initialAxioms
+              (Seqs.append coproductAxioms
+                (Seqs.append coequalizerAxioms
+                  (Seqs.append exponentialAxioms
+                    (Seqs.append classifierAxioms
+                      (Seqs.append natAxioms
+                        (Seqs.append listAxioms (Seqs.append roseAxioms lroseAxioms)))))))))))))
+  (def toposTheory (theory (opSigs sig) (seqs axioms))))

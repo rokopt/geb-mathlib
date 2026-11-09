@@ -1,0 +1,3 @@
+; The imported operations compose to the identity, at every tree.
+
+(proofs 0 (theorem roundtrip (equal Roundtrip.run Roundtrip.identity) (by (normalize 64))))

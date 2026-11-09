@@ -1,0 +1,9 @@
+; The composition of {geb}`Box.wrap` with {geb}`Box.unwrap`.
+
+(module Roundtrip (export run identity) (import Box)
+  ; Packing and then selecting returns the input tree.
+  (note (example (Roundtrip.run (quote (7 (8)))) (quote (7 (8)))) (link geb Box.wrap)
+    (link geb Box.unwrap))
+  (defn run ((x T)) T (unwrap (wrap x)))
+  ; The identity function on trees.
+  (defn identity ((x T)) T x))

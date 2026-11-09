@@ -1,0 +1,12 @@
+; The proof-source reader and runner over the metalogic's translation, prover and checker.
+(program authoring (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
+  (sources prelude.geb seq.geb free-topos/base.geb free-topos/partial-horn.geb free-topos/theory.geb
+    free-topos/infer.geb
+    free-topos/language.geb
+    free-topos/derivation.geb
+    reader.geb
+    check.geb
+    free-topos/translation.geb
+    free-topos/prove.geb
+    authoring.geb)
+  (entries Authoring.prove Authoring.replay))
