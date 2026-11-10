@@ -1318,14 +1318,15 @@ the body's in the kernel's context extended by the annotation, each decided, any
 the statement's hypothesis; the term's type and the annotation decided equal. The binding
 resolves to the application of the abstraction of the body to the term, related by
 {lit}`appCompat`: the abstraction by {lit}`lamCompat`, the body's soundness at the context and
-environment extended, related by {lit}`envTCons`; the term by its soundness. -/
-def letCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
-  ("letCase", fun ix E ↦ do
+environment extended, related by {lit}`envTCons`; the term by its soundness. At source forms, or
+at expanded forms where {lit}`expanded` holds, under the name given. -/
+def letCaseAt (P : Prog) (S : Defs) (T : Defs3) (expanded : Bool) (name : String) : Step :=
+  (name, fun ix E ↦ do
     let ihs := [false, false, true, true]
-    let W := kwKit P S T ix E 4 ihs "Reader.kwLet"
+    let W := kwKit P S T ix E 4 ihs "Reader.kwLet" expanded
     let B : BindKit := ⟨W, 0, 1, 3, "let"⟩
     let K := W.K
-    let a := kwThm P S T "Reader.kwLet" 4 ihs
+    let a := kwThm P S T "Reader.kwLet" 4 ihs expanded
     let equalT ← primT Kernel.Prim.equal
     let (tyT, kT) := B.terms
     let kernelT := pc P "Check.typeIn" [v 9, v 8, pc P "Prelude.get" [kT]]
@@ -1394,8 +1395,12 @@ def letCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
       (W.presentAt "the term's kernel type" (at_ 2 kernelT) (typed + 2) (W.hyp 8) ·
         (unfolding := false) (tested := true)) <| K.norm k)
     let some d := W.intro "Reader.kwLet" (decisions eval) a.ctx a.hyps a.concl
-      | dbgTrace "letCase: not proved" fun _ ↦ none
+      | dbgTrace s!"{name}: not proved" fun _ ↦ none
     pure (a, d))
+
+/-- The soundness at a binding of a name to a term of an annotated type in a body, at source
+forms ({name}`letCaseAt`). -/
+def letCase (P : Prog) (S : Defs) (T : Defs3) : Step := letCaseAt P S T false "letCase"
 
 /-- The soundness at the empty list of a type or at a datum's quotation, whose element is a type's
 or a datum's form, read by the typing and the reader: its source form and expansion decided, then
