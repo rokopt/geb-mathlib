@@ -377,7 +377,8 @@ Extension:
   parameters, imports and export lists are complete but for named
   telescopes and {ref "proposition-parameters"}[propositions as module
   parameters], which follow their first consumers. The executable
-  `geb-compile` names what rejects a program, manifests with editions
+  `geb-compile` reports what rejects a program at the line and column of
+  the declaration, atom or parenthesis concerned, manifests with editions
   record each program's sources and entry points, and a durable document
   records the versioned profile of its syntax, the schema of its notes and
   its prose, its notes holding examples and links. Comments are read as
@@ -1689,8 +1690,8 @@ section below opens with a table of the states of its parts.
     formatter, the formatter's adoption, the authoring profile read by the
     seed and the Geb reader, and the canonical, basic transport and
     advanced encodings: complete; modules: complete but for the parts that
-    follow their consumers; diagnostics naming the failing definition, the
-    markup of comments, the `geb` editor language and the checker of holes
+    follow their consumers; diagnostics naming the failing definition at its
+    line and column, the markup of comments, the `geb` editor language and the checker of holes
     in programs: complete; the other steps of the sequence independent of the datatype language's
     completion: ready; the steps after it: waiting on it; the
     parts that follow their consumers: waiting on them
@@ -3423,8 +3424,10 @@ tag := "authoring-compatibility"
 *
   * Early in writing: holes in the datatype language, located diagnostics
     and the typed enumerator
-  * Holes in the datatype language and located diagnostics of its typing:
-    waiting on the datatype language's completion; the rest: ready
+  * Diagnostics at the line and column of a declaration, in the editors
+    through `geb-compile check`: complete; holes in the datatype language
+    and located diagnostics of its typing: waiting on the datatype
+    language's completion; the typed enumerator: ready
 *
   * When their consumers exist: digests and the store, the attachment of
     annotations and hover text, a language server, tree-sitter, holes in
@@ -4521,16 +4524,32 @@ editors that use tree-sitter need it, from tree-sitter-scheme as a base,
 and its recovery from errors never supplies trusted input to the
 compiler. Nothing is needed now.
 
-Diagnostics come before a language server: efm-langserver runs the
-executable `geb-compile`, which names what rejects a program, the first
-failing definition among it. A language service then needs the services the survey lists,
+Diagnostics come before a language server. The executable `geb-compile`
+reports what rejects a program as `FILE:LINE:COLUMN: error: MESSAGE`, at
+the first failing declaration's name where a stage determines one, at the
+name of the module among whose forms the modules do not elaborate, at an
+atom the implementation reserves, or at the character or parenthesis at
+which the text does not read. The spans are a derived annotation: after
+the compiler has rejected the program, `GebHost/Locate.lean` runs the
+document lexer over each source as written beside a count of lines and
+columns, and finds the declaration that a name of the flat program
+denotes by its path of modules; nothing the compiler checks or writes
+holds a span, and the function that finds one is untrusted. `geb-compile
+check SOURCE` compiles, and writes nothing, the sources of the nearest
+manifest that lists a source, up to that source, or the source alone where
+none lists it, a module importing only modules declared before it; its
+report reaches an editor through efm-langserver
+(`editors/efm-langserver/config.yaml`) or, in VS Code, through the task
+`Geb: check saved file` and the problem matcher the `geb` extension
+contributes. A diagnostic names a declaration and not an occurrence inside
+it: that needs a checker that reports the failing vertex, the trusted
+checker staying as it is and the locating checker a separate, untrusted
+function, and for the datatype language's typing it waits on the
+completion. A language service then needs the services the survey lists,
 of which the existing checker serves behind it; the server tracks
 versions of buffers, cancels stale checks, and translates offsets of
 bytes into the position encoding the editor negotiates, which reliable
-diagnostics after Unicode edits require. Diagnostics with locations need
-a map from vertices to spans, a derived annotation, and a checker that
-reports the failing vertex; the trusted checker stays as it is, and the
-locating checker is a separate, untrusted function.
+diagnostics after Unicode edits require.
 
 ### Typed holes
 %%%
@@ -5434,8 +5453,9 @@ declares its datatypes by `data`, `tree-data` being removed.
 *
   * Diagnostics naming the failing definition
   * A compile that fails names the stage that rejects the program and,
-    where the stage determines one, the first failing definition; it exits
-    with a nonzero status and leaves an existing output in place
+    where the stage determines one, the first failing definition, at its
+    line and column in the source that holds it; it exits with a nonzero
+    status and leaves an existing output in place
 *
   * The `geb` language with Mike's Paredit
   * The pinned extensions pass the profile's fixture
@@ -5504,8 +5524,8 @@ steps above add, in one mechanical change.
 
 Early in writing, alongside the first substantial module where it helps:
 holes in the datatype language, whose types the stage-1 typing reports, the
-kernel's erasing the datatypes; diagnostics with locations through
-efm-langserver; and the typed enumerator. When their consumers
+kernel's erasing the datatypes; diagnostics with locations inside a
+declaration; and the typed enumerator. When their consumers
 exist: digests and the store, `attach` and hover text, a language
 server, tree-sitter, holes in proofs, the cache of certificates and the
 export to canonical S-expressions. The Geb-native refinement search
@@ -7417,9 +7437,9 @@ the change that removes it.
   with status 1 and leaves the output in place. That report is host code
   composing the stages of the compiled compiler, with the seed's message for
   modules; an entry point of the compiler returning the report as a value
-  would serve a second host without restating it. It names a definition and
-  not an occurrence in it, nor why the typing rejects it. Diagnostics that
-  name a source occurrence are a step of the authoring sequence
+  would serve a second host without restating it. It reports the line and
+  column of the declaration, found from the sources as written, and not an
+  occurrence inside the declaration, nor why the typing rejects it
   ({ref "editing"}[Editing]).
 * Chains of tests and bindings. The kernel's conditional and `let` are
   binary, so chains of tests and of bindings nest, and under a layout

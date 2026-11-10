@@ -11,6 +11,7 @@ It does not change the compiler's grammar.
 
 - [Installation](#installation)
 - [Editing and formatting](#editing-and-formatting)
+- [Diagnostics](#diagnostics)
 - [Validation](#validation)
 - [Structural editing acceptance](#structural-editing-acceptance)
 - [References](#references)
@@ -68,10 +69,28 @@ save is disabled for Geb.
 The formatter and the document type are described in the
 [bootstrap chapter](../../manual/GebManual/Bootstrap.lean).
 
+## Diagnostics
+
+The task `Geb: check saved file` runs `lake exe geb-compile check` on the
+active file. The command compiles, and writes nothing, the sources of the
+nearest manifest that lists the file, up to that file, or the file alone
+where no manifest lists it. It reports what rejects the program as
+`FILE:LINE:COLUMN: error: MESSAGE`, at the name of the first failing
+declaration, at an atom the implementation reserves, or at the character
+or parenthesis at which the text does not read. The extension contributes
+the problem matcher `$geb`, which the task names, so that the report
+appears in the Problems view and at its position in the file that holds
+it, which may be an earlier source of the program.
+
+For an editor with a language-server client,
+[`editors/efm-langserver/config.yaml`](../efm-langserver/config.yaml)
+configures [efm-langserver](https://github.com/mattn/efm-langserver) to
+run the same command when a buffer is saved.
+
 ## Validation
 
 ```sh
-lake build geb-fmt geb-kernel
+lake build geb-fmt geb-kernel geb-compile
 npm test --prefix editors/vscode
 npm run test:editor --prefix editors/vscode
 npm run test:paredit --prefix editors/vscode
@@ -85,10 +104,11 @@ not install extensions into the user's editor. The first run requires
 network access.
 
 The grammar tests use VS Code's TextMate and Oniguruma libraries. The
-integration tests invoke the formatter task, bracket matching and pair
-completion in VS Code. Their fixtures include nested bindings,
-parentheses in comments, quoted parentheses and semicolons, escaped
-quotes, Unicode names, multiline atoms, CRLF and incomplete buffers.
+integration tests invoke the formatter task, the check task and its
+problem matcher, bracket matching and pair completion in VS Code. Their
+fixtures include nested bindings, parentheses in comments, quoted
+parentheses and semicolons, escaped quotes, Unicode names, multiline
+atoms, CRLF and incomplete buffers.
 
 Formatting is compared through the document formatter: equality of its
 output implies equality of the parsed documents by its retraction law.

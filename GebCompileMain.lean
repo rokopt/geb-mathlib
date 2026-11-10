@@ -18,6 +18,10 @@ public def main : List String → IO UInt32
     GebHost.Compiler.compileManifest "main" GebBoot.«main» m output
   | ["lean", "--manifest", m, output] =>
     GebHost.Compiler.compileManifest "mainLean" GebBoot.«mainLean» m output
+  | ["check", "--manifest", m] => GebHost.Compiler.checkManifest GebHost.Compiler.checked m
+  | ["check", source] => GebHost.Compiler.checkSource GebHost.Compiler.checked source
   | _ => do
-    IO.eprintln "usage: geb-compile image|lean [--manifest] INPUT OUTPUT"
+    IO.eprintln "usage: geb-compile image|lean [--manifest] INPUT OUTPUT\n\
+      geb-compile check SOURCE\n\
+      geb-compile check --manifest MANIFEST"
     return 2

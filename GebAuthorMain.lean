@@ -39,5 +39,5 @@ public def main (args : List String) : IO UInt32 := do
         geb-author convert canonical|advanced|authoring MANIFEST INPUT OUTPUT"
       return 2
   catch e =>
-    IO.eprintln s!"geb-author: {e}"
+    IO.eprintln e
     return 1

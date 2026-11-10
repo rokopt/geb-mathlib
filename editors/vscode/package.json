@@ -25,6 +25,18 @@
       "scopeName": "source.geb",
       "path": "./syntaxes/geb.tmLanguage.json"
     }],
+    "problemMatchers": [{
+      "name": "geb",
+      "owner": "geb",
+      "fileLocation": ["autoDetect", "${workspaceFolder}"],
+      "pattern": {
+        "regexp": "^(.+):(\\d+):(\\d+): error: (.*)$",
+        "file": 1,
+        "line": 2,
+        "column": 3,
+        "message": 4
+      }
+    }],
     "configurationDefaults": {
       "[geb]": {
         "editor.insertSpaces": true,
