@@ -3431,8 +3431,8 @@ tag := "authoring-compatibility"
 *
   * Early in writing: holes in the datatype language, located diagnostics
     and the typed enumerator
-  * Diagnostics at the line and column of a declaration, in the editors
-    through `geb-compile check`: complete; holes in the datatype language
+  * Diagnostics at the line and column of a declaration or of a theorem,
+    in the editors through `geb-author check`: complete; holes in the datatype language
     and located diagnostics of its typing: waiting on the datatype
     language's completion; the typed enumerator: ready
 *
@@ -4544,8 +4544,12 @@ denotes by its path of modules; nothing the compiler checks or writes
 holds a span, and the function that finds one is untrusted. `geb-compile
 check SOURCE` compiles, and writes nothing, the sources of the nearest
 manifest that lists a source, up to that source, or the source alone where
-none lists it, a module importing only modules declared before it; its
-report reaches an editor through efm-langserver
+none lists it, a module importing only modules declared before it.
+`geb-author check FILE` does so for a source and, for a proof document,
+proves it against the program it names by `(program NAME)`, the manifest of
+that program name in its directory or the nearest above, and writes
+nothing ({ref "internal-statements"}[Statements over the internal
+language]); its report reaches an editor through efm-langserver
 (`editors/efm-langserver/config.yaml`) or, in VS Code, through the task
 `Geb: check saved file` and the problem matcher the `geb` extension
 contributes. A diagnostic names a declaration and not an occurrence inside
@@ -5331,7 +5335,8 @@ Their canonical and advanced encodings use the existing durable-document
 retraction. Version 2 of the document states theorems also over the
 internal language's own types and terms, in object variables, cites the
 theorems of the documents it imports, a development's certificate holding
-the imported theorems' declarations before its own, and adds the tactics of
+the imported theorems' declarations before its own, names the program it is
+proved against where no manifest is given, and adds the tactics of
 trees, of bits and of the rewriting under a test that the compiler
 developments' deducers use
 ({ref "internal-statements"}[Statements over the internal language]). The

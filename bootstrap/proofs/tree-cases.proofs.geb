@@ -5,7 +5,7 @@
 ; children of the tree of a label and children, and a tree the reader names by the atom of the
 ; head of a definition's form, which is that atom.
 
-(proofs 2 (import trees.proofs.geb)
+(proofs 2 (program expansion) (import trees.proofs.geb)
   ; The first component of the fold of the case analysis of lists, at any pair of cases, is the
   ; list.
   (theorem rebuild-lcase

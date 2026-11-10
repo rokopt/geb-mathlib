@@ -3896,8 +3896,11 @@ import-direction rules above are enforced by
   theorems also over the internal language, in object variables, with
   rules at objects and the tactics of trees, coproducts and the rewriting
   under a test, and names by `(import PATH)` the documents whose theorems
-  it cites, which the host resolves into one development; a rejected
-  development is reported at the theorem concerned. The documents under
+  it cites, which the host resolves into one development, and by
+  `(program NAME)` the program it is proved against where the command gives
+  no manifest, the manifest of that program name in its directory or the
+  nearest above; a rejected development is reported at the theorem
+  concerned. The documents under
   `bootstrap/proofs/` state and prove in it the lemmas of trees of
   `GebTests/Prototypes/FreeTopos/TreeCases.lean`, and
   `scripts/tests/test-proof-scripts.sh` proves and replays them.
@@ -4025,9 +4028,10 @@ import-direction rules above are enforced by
   source's S-expressions from the document lexer and finds the declaration
   a name of the flat program denotes, after the compiler has rejected the
   program. `geb-compile check` compiles, and writes nothing, a source with
-  the sources its nearest manifest lists before it, whose diagnostics
-  `editors/efm-langserver/config.yaml` and the VS Code task
-  `Geb: check saved file` give an editor. `scripts/bootstrap.sh`
+  the sources its nearest manifest lists before it; `geb-author check` does
+  so for a source and proves a proof document against the program it names,
+  and its diagnostics `editors/efm-langserver/config.yaml` and the VS Code
+  task `Geb: check saved file` give an editor. `scripts/bootstrap.sh`
   regenerates both and checks the fixed points: each compiler reproduces its
   own image, and the compiler built from the emitted Lean reproduces the Lean
   and the image. `GebTests/Prototypes/Stage1.lean` checks the stage-1 compiler's
