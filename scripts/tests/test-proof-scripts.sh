@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Exercise version 2 of the proof profile through the CLI: statements over the internal language,
-# the tactics of trees and coproducts, rules at objects, imported documents, the diagnostics of a
-# rejected development, and the development of bootstrap/proofs/, proved and replayed.
+# the tactics of trees and coproducts, rules at objects, imported documents, the program a
+# document names, the diagnostics of a rejected development, and the development of
+# bootstrap/proofs/, proved and replayed.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
@@ -131,7 +132,7 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
              '2:12', 'the script of the theorem a does not read')
     rejected('(proofs 1 (import Pair.proofs.geb)\n'
              '  (theorem a (equal Pair.left Pair.left) (by (normalize 4))))\n', '',
-             'a document of a version before 2 imports no document')
+             'a document of a version before 2 has no form (import')
 
     # An import is a path below the document that reads, and imports return to no document.
     rejected(document('(theorem a (equal Pair.left Pair.left) (by (normalize 4)))',
@@ -141,12 +142,70 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
     rejected(document('(theorem a (equal Pair.left Pair.left) (by (normalize 4)))',
                       '(import Bad.proofs.geb)'), '', 'return to a document')
 
-    # The development of the tree lemmas and of the case analysis of trees, about the type checker
-    # and the expansion of the datatype language, is proved and replayed from its Geb sources.
-    cases = root / 'tree-cases.cert'
-    run('prove', 'bootstrap/expansion.manifest', proofs_dir / 'tree-cases.proofs.geb', cases)
-    run('replay', 'bootstrap/expansion.manifest', proofs_dir / 'tree-cases.proofs.geb', cases)
+    # A document that names its program is proved and replayed without a manifest, against the
+    # manifest of that name in its directory or the nearest above; the documents it imports are
+    # read against that program, whatever program they name.
+    def named(header, body='(theorem again (forall ((xs (List T)))'
+                           ' (equal (Lists.append xs (nil T)) xs)) (by (reduce weak append-nil)))'):
+        return f'(proofs 2 {header}\n  {body})\n'
+    below = root / 'below'
+    below.mkdir()
+    (below / 'Imported.proofs.geb').write_text(
+        '(proofs 2 (program elsewhere)\n'
+        '  (theorem append-nil (forall ((xs (List T))) (equal (Lists.append xs (nil T)) xs))\n'
+        '    (by (induction xs (y ys ih) (reduce weak)'
+        ' (reduce-hypotheses weak (ih) (reduce weak ih))))))\n')
+    here = below / 'Named.proofs.geb'
+    here.write_text(named('(program pair) (import Imported.proofs.geb)'))
+    own = root / 'named.cert'
+    run('prove', here, own)
+    run('replay', here, own)
+    explicit = root / 'explicit.cert'
+    run('prove', manifest, here, explicit)
+    assert explicit.read_bytes() == own.read_bytes()
 
-print('test-proof-scripts: internal statements, tactics, imports, diagnostics and the tree-cases '
-      'development passed')
+    # `check` proves a proof document and writes nothing, reports a failure at the theorem, and
+    # compiles any other file as a source of a program.
+    before = sorted(p.name for p in below.iterdir())
+    assert run('check', here) == ''
+    assert sorted(p.name for p in below.iterdir()) == before
+    failing = below / 'Failing.proofs.geb'
+    failing.write_text(named('(program pair)', '(theorem again (equal Pair.left Pair.first)'
+                                               ' (by (normalize 0)))'))
+    error = run('check', failing, ok=False)
+    assert error.startswith(f'{failing}:2:12: error: the script of the theorem again'), error
+    assert run('check', root / 'Pair.geb') == ''
+    broken = below / 'Broken.geb'
+    broken.write_text((root / 'Pair.geb').read_text().replace('T x))', 'T z))'))
+    assert run('check', broken, ok=False).startswith(f'{broken}:9:9: error: Pair.left does not check')
+
+    # A document proved without a manifest names one program, which a manifest in its directory
+    # or above names once; a manifest given takes the place of the program named.
+    def unnamed(text, message):
+        target = below / 'Unnamed.proofs.geb'
+        target.write_text(text)
+        error = run('check', target, ok=False)
+        assert error.startswith(f'{target}: ') and message in error, (text, error)
+        return target
+    plain = '(theorem again (equal Pair.left Pair.left) (by (normalize 4)))'
+    target = unnamed(named('', plain), 'the document names no program')
+    run('prove', manifest, target, root / 'unnamed.cert')
+    target = unnamed(named('(program nowhere)', plain), 'no manifest of the program nowhere')
+    run('prove', manifest, target, root / 'unnamed.cert')
+    unnamed(named('(program pair) (program pair)', plain), 'names more than one program')
+    unnamed('(proofs 1 (program pair)\n  ' + plain + ')\n',
+            'a document of a version before 2 has no form (program')
+    shutil.copyfile(manifest, root / 'second.manifest')
+    unnamed(named('(program pair)', plain), 'several manifests')
+    (root / 'second.manifest').unlink()
+
+    # The development of the tree lemmas and of the case analysis of trees, about the type checker
+    # and the expansion of the datatype language, is proved and replayed from its Geb sources, the
+    # document of the case analysis naming its program.
+    cases = root / 'tree-cases.cert'
+    run('prove', proofs_dir / 'tree-cases.proofs.geb', cases)
+    run('replay', proofs_dir / 'tree-cases.proofs.geb', cases)
+
+print('test-proof-scripts: internal statements, tactics, imports, named programs, diagnostics '
+      'and the tree-cases development passed')
 PY

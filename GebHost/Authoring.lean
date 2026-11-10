@@ -26,6 +26,13 @@ importing it, and the document last. The runner reads the theorems of all of the
 the development's certificate holds the declarations of the imported theorems before the
 document's own, and replays without the certificates of the imported documents.
 
+A proof document of version 2 may name its program, by a form {lit}`(program NAME)`: the
+manifest of that program name in the document's directory, or else in the nearest directory above
+it that holds one. The host proves a document against the program it names where no manifest is
+given, and a manifest given takes its place. Only the document proved is consulted: the documents
+it imports are read against its program, so that a document holding in every program names none
+and a development is proved again in a larger program by a document that imports it.
+
 Where the runner rejects a development it reports a reason and the theorem concerned, which the
 host writes as a diagnostic at the theorem's name in the document that states it
 ({name}`GebHost.Compiler.Diagnostic`).
@@ -35,7 +42,10 @@ host writes as a diagnostic at the theorem's name in the document that states it
 * {lit}`GebHost.Authoring.readDocument` reads authoring or strict durable documents.
 * {lit}`GebHost.Authoring.checkExamples` checks the tree-valued examples in a program's notes.
 * {lit}`GebHost.Authoring.development` reads a proof document after the documents it imports.
+* {lit}`GebHost.Authoring.manifestOf` finds the manifest of the program a proof document names.
 * {lit}`GebHost.Authoring.execute` proves or replays a development.
+* {lit}`GebHost.Authoring.checkFile` checks a program's source or a proof document and writes
+  nothing.
 
 ## Tags
 
@@ -140,19 +150,34 @@ def kwImport : List Char := "import".toList
 /-- The head of a theorem, {lit}`theorem`. -/
 def kwTheorem : List Char := "theorem".toList
 
-/-- The paths a proof document imports: the atoms of the forms {lit}`(import PATH)` of its form
-{lit}`(proofs V …)`, or what rejects them, an import in a document of a version before 2. -/
-def importsOf (d : Doc) : Except String (List String) :=
+/-- The head of the form naming a document's program, {lit}`program`. -/
+def kwProgram : List Char := "program".toList
+
+/-- The atoms of the forms {lit}`(HEAD ATOM)` of a given head among those of a proof document's
+form {lit}`(proofs V …)`, or what rejects them: such a form in a document of a version before 2,
+which reads none. -/
+def headerAtoms (head : List Char) (d : Doc) : Except String (List String) :=
   match d.items.find? (headIs kwProofs) with
   | some root =>
-    let imports := root.children.filterMap fun c ↦
+    let atoms := root.children.filterMap fun c ↦
       match c.children with
-      | [_, p] =>
-        if headIs kwImport c && p.children.isEmpty then p.label.2.map String.ofList else none
+      | [_, p] => if headIs head c && p.children.isEmpty then p.label.2.map String.ofList else none
       | _ => none
-    if imports.isEmpty || (root.children[1]?.bind (·.label.2)) == some ['2'] then .ok imports
-    else .error "a document of a version before 2 imports no document"
+    if atoms.isEmpty || (root.children[1]?.bind (·.label.2)) == some ['2'] then .ok atoms
+    else .error s!"a document of a version before 2 has no form ({String.ofList head} …)"
   | none => .ok []
+
+/-- The paths a proof document imports: the atoms of its forms {lit}`(import PATH)`. -/
+def importsOf (d : Doc) : Except String (List String) := headerAtoms kwImport d
+
+/-- The name of the program a proof document names, by its form {lit}`(program NAME)`, where it
+names one; a document names no more than one. -/
+def programOf (d : Doc) : Except String (Option String) :=
+  (headerAtoms kwProgram d).bind fun names ↦
+    match names with
+    | [] => .ok none
+    | [name] => .ok (some name)
+    | _ => .error "the document names more than one program"
 
 /-- The greatest number of documents of a development. -/
 def documentLimit : Nat := 4096
@@ -280,10 +305,60 @@ def certificateOf (expected : Tree) (profile : Profile) (program : Tree) (saved 
     else .error "certificate format, theory, profile, or compiled program differs"
   | _ => .error "malformed certificate envelope"
 
-/-- Prove or replay a development, reporting rejection without replacing an existing output. The
-development is the proof document after the documents it imports. A failure the runner reports
-of a theorem is a diagnostic at the theorem's name. -/
-def execute (mode manifest proofs certificate : String) : IO UInt32 := do
+/-! ## The program a document names -/
+
+/-- A proof document as written, read without the profile of its program: its strict encoding
+carries its own, and its authoring spelling needs none. -/
+def proofDocument (path : System.FilePath) : IO Doc := do
+  let text := Command.chars (← IO.FS.readBinFile path)
+  if let some (_, doc) := readBasic text then return doc
+  let some d := readDoc text | throw <| IO.userError s!"{path}: malformed source document"
+  return d
+
+/-- The manifest of the program of a name, for a proof document: the manifest of that program
+name in the document's directory, or else in the nearest directory above it that holds one. A
+directory holding several is rejected. -/
+def manifestNamed (proofs : System.FilePath) (name : String) : IO System.FilePath := do
+  let target ← IO.FS.realPath proofs
+  for d in (Compiler.ancestors target.toString).drop 1 do
+    let found ← (← Compiler.manifestsIn d).filterM fun path ↦ do
+      return match ← (Manifest.read path).toBaseIO with
+        | .ok m => m.name == name
+        | .error _ => false
+    match found with
+    | [path] => return path
+    | [] => continue
+    | _ => throw <| IO.userError s!"{proofs}: several manifests of {d} name the program {name}"
+  throw <| IO.userError
+    s!"{proofs}: no manifest of the program {name} is in the document's directory or above it"
+
+/-- The manifest a proof document is proved against where none is given: that of the program it
+names. -/
+def manifestOf (proofs : System.FilePath) : IO System.FilePath := do
+  let d ← proofDocument proofs
+  match ← IO.ofExcept ((programOf d).mapError (s!"{proofs}: {·}")) with
+  | some name => manifestNamed proofs name
+  | none => throw <| IO.userError s!"{proofs}: the document names no program; give its manifest"
+
+/-! ## Proving and replaying -/
+
+/-- A development read against its program: the profile, the compiled program, the development's
+sources as the runner reads them, its documents as written, and its certificate's format. -/
+structure Session where
+  /-- The profile of the program's manifest. -/
+  profile : Profile
+  /-- The compiled program. -/
+  program : Tree
+  /-- The sources of the development. -/
+  input : Tree
+  /-- The documents of the development in the authoring spelling, as written. -/
+  written : List Compiler.Source
+  /-- The format of the development's certificate. -/
+  format : Tree
+
+/-- Read a development against a manifest's program, whose examples are checked; a development
+that does not read is the diagnostic of what rejects it. -/
+def Session.read (manifest proofs : String) : IO Session := do
   let (m, text, b) ← readProgram manifest
   checkExamples manifest m text
   let docs ← development proofs m.profile
@@ -291,23 +366,48 @@ def execute (mode manifest proofs certificate : String) : IO UInt32 := do
   let input := sourcesTree docs
   let version ← IO.ofExcept
     (present proofs written (GebMirror.Metalogic.«Authoring.version» b input))
-  let format := formatOf version
+  return ⟨m.profile, b, input, written, formatOf version⟩
+
+/-- The certificate the runner finds for a development, which replays; a theorem its script does
+not prove is the diagnostic at its name. -/
+def Session.prove (s : Session) (proofs : String) : IO Tree := do
+  let cert ← IO.ofExcept
+    (present proofs s.written (GebMirror.Metalogic.«Authoring.prove» s.program s.input))
+  unless (GebMirror.Metalogic.«Authoring.replay» s.program s.input cert).label == 1 do
+    throw <| IO.userError s!"{proofs}: generated certificate does not replay"
+  return cert
+
+/-- Prove or replay a development, reporting rejection without replacing an existing output. The
+development is the proof document after the documents it imports. A failure the runner reports
+of a theorem is a diagnostic at the theorem's name. -/
+def execute (mode manifest proofs certificate : String) : IO UInt32 := do
+  let s ← Session.read manifest proofs
   match mode with
   | "prove" =>
-    let cert ← IO.ofExcept
-      (present proofs written (GebMirror.Metalogic.«Authoring.prove» b input))
-    unless (GebMirror.Metalogic.«Authoring.replay» b input cert).label == 1 do
-      throw <| IO.userError s!"{proofs}: generated certificate does not replay"
-    IO.FS.writeBinFile certificate (writeImage (envelope format m.profile b cert))
+    let cert ← s.prove proofs
+    IO.FS.writeBinFile certificate (writeImage (envelope s.format s.profile s.program cert))
   | "replay" =>
     let some saved := readImage (← IO.FS.readBinFile certificate)
       | throw <| IO.userError s!"{certificate}: malformed certificate image"
-    let cert ← IO.ofExcept (certificateOf format m.profile b saved)
-    unless (GebMirror.Metalogic.«Authoring.replay» b input cert).label == 1 do
+    let cert ← IO.ofExcept (certificateOf s.format s.profile s.program saved)
+    unless (GebMirror.Metalogic.«Authoring.replay» s.program s.input cert).label == 1 do
       throw <| IO.userError s!"{proofs}: certificate does not prove these statements"
   | _ => throw <| IO.userError "expected prove or replay"
   IO.println s!"{proofs}: {mode} accepted; examples checked"
   return 0
+
+/-- Check a file and write nothing: a proof document, one whose text holds a form
+{lit}`(proofs V …)`, is proved against the program it names, and any other file is compiled as
+{name}`GebHost.Compiler.checkSource` compiles a source. -/
+def checkFile (file : String) : IO UInt32 := do
+  let proofs := match Locate.locate (Command.chars (← IO.FS.readBinFile file)) with
+    | .ok items => items.any (Locate.headIs kwProofs)
+    | .error _ => false
+  if proofs then
+    let s ← Session.read (← manifestOf file).toString file
+    discard <| s.prove file
+    return 0
+  else Compiler.checkSource Compiler.checked file
 
 end GebHost.Authoring
 

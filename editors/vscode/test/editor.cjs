@@ -149,6 +149,29 @@ exports.run = async () => {
       assert.equal(exitCode, 0);
       assert.equal(found.length, 0);
     });
+    // A proof document is proved against the program it names, the manifest beside it.
+    writeFileSync(path.join(scratch, 'fixture.manifest'),
+      '(program fixture (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))\n' +
+      '  (sources Program.geb)\n  (entries))\n');
+    writeFileSync(path.join(scratch, 'Program.geb'),
+      '(module F (export id other)\n  (defn id ((x T)) T x)\n' +
+      '  (defn other ((x T)) T (fst (pair x x))))\n');
+    const proofs = fuel => '(proofs 2 (program fixture)\n' +
+      `  (theorem same (equal F.id F.other) (by (normalize ${fuel}))))\n`;
+    await test('check task reports a theorem its script does not prove', async () => {
+      const editor = await open(proofs(0));
+      const { exitCode, found } = await checkTask(editor);
+      assert.equal(exitCode, 1);
+      assert.equal(found.length, 1);
+      assert.equal(found[0].message, 'the script of the theorem same does not prove it');
+      assert.deepEqual([found[0].range.start.line, found[0].range.start.character], [1, 11]);
+    });
+    await test('check task reports nothing for a proved document', async () => {
+      const editor = await open(proofs(64));
+      const { exitCode, found } = await checkTask(editor);
+      assert.equal(exitCode, 0);
+      assert.equal(found.length, 0);
+    });
     for (const text of ['', '; comment ', '(def name "atom ']) {
       await test(`parenthesis completion at ${JSON.stringify(text)}`, async () => {
         const editor = await open(text);

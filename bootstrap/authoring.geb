@@ -4,12 +4,13 @@
 ; definitions, whose statements it reads as version 1 does and whose normalization keeps its own
 ; rules. Version 1 states theorems over the kernel's types and terms. Version 2 states them also
 ; over the internal language, in object variables, and adds the tactics of trees and coproducts,
-; rules at objects, and the forms (import PATH), which name the documents whose theorems a
-; document cites: a development is the documents a document imports, in the order the host
-; resolves them, followed by the document. Statements and scripts are read before any proof is
-; searched; every derivation is checked by {geb}`Derivation.declStep`, the step of the checker of
-; developments, as it is found, and replay checks a saved development by
-; {geb}`Derivation.checkDev`.
+; rules at objects, and two forms the host resolves: (import PATH), which name the documents
+; whose theorems a document cites, a development being the documents a document imports, in the
+; order the host resolves them, followed by the document; and (program NAME), which names the
+; program a document is proved against where the host is given none. Statements and scripts are
+; read before any proof is searched; every derivation is checked by
+; {geb}`Derivation.declStep`, the step of the checker of developments, as it is found, and
+; replay checks a saved development by {geb}`Derivation.checkDev`.
 
 (module Authoring (export prove replay version) (import Prelude) (import Base) (import Theory)
   (import Language)
@@ -794,7 +795,7 @@
       (requestBad 2)))
 
   ; A proof document's version and the forms of its theorems. In version 2 the forms
-  ; (import PATH), which the host resolves, are left out.
+  ; (import PATH) and (program NAME), which the host resolves, are left out.
   (data Document (document T & T))
   (import (Option Document) as ODoc)
   (defn readDocument ((source T)) ODoc.Maybe
@@ -809,7 +810,11 @@
             (let fs Ts
               (foldr T Ts
                 (lam ((f T) (acc Ts))
-                  (if (and (eq (get v) 2) (form f (quote (0 import)) 2)) acc (cons f acc)))
+                  (if
+                    (and (eq (get v) 2)
+                      (or (form f (quote (0 import)) 2) (form f (quote (0 program)) 2)))
+                    acc
+                    (cons f acc)))
                 (nil T)
                 (drop 2 (children root)))
               (if (isEmpty fs) ODoc.nothing (ODoc.just (document (get v) fs))))

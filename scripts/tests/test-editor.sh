@@ -5,8 +5,8 @@
 # `npm ci --prefix editors/vscode`. The editor test downloads its pinned
 # VS Code host on the first run, and the Paredit build fetches its
 # upstream source whenever its pinned inputs change; lake build geb-fmt
-# geb-kernel geb-compile supplies the formatter, the checker and the
-# compiler it invokes.
+# geb-kernel geb-author supplies the formatter, the checker and the
+# compiler and proof runner it invokes.
 
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."

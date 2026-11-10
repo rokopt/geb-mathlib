@@ -71,16 +71,21 @@ The formatter and the document type are described in the
 
 ## Diagnostics
 
-The task `Geb: check saved file` runs `lake exe geb-compile check` on the
-active file. The command compiles, and writes nothing, the sources of the
-nearest manifest that lists the file, up to that file, or the file alone
-where no manifest lists it. It reports what rejects the program as
-`FILE:LINE:COLUMN: error: MESSAGE`, at the name of the first failing
-declaration, at an atom the implementation reserves, or at the character
-or parenthesis at which the text does not read. The extension contributes
-the problem matcher `$geb`, which the task names, so that the report
-appears in the Problems view and at its position in the file that holds
-it, which may be an earlier source of the program.
+The task `Geb: check saved file` runs `lake exe geb-author check` on the
+active file, and the command writes nothing. For a source of a program it
+compiles the sources of the nearest manifest that lists the file, up to
+that file, or the file alone where no manifest lists it. It reports what
+rejects the program as `FILE:LINE:COLUMN: error: MESSAGE`, at the name of
+the first failing declaration, at an atom the implementation reserves, or
+at the character or parenthesis at which the text does not read. For a
+proof document, a file holding a form `(proofs V …)`, it proves the
+document, after the documents it imports, against the program the
+document names by `(program NAME)`, and reports a theorem whose statement
+or script does not read, or whose script does not prove it, at the
+theorem's name. The extension contributes the problem matcher `$geb`,
+which the task names, so that the report appears in the Problems view and
+at its position in the file that holds it, which may be an earlier source
+of the program or an imported document.
 
 For an editor with a language-server client,
 [`editors/efm-langserver/config.yaml`](../efm-langserver/config.yaml)
@@ -90,7 +95,7 @@ run the same command when a buffer is saved.
 ## Validation
 
 ```sh
-lake build geb-fmt geb-kernel geb-compile
+lake build geb-fmt geb-kernel geb-author
 npm test --prefix editors/vscode
 npm run test:editor --prefix editors/vscode
 npm run test:paredit --prefix editors/vscode

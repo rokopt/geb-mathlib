@@ -153,13 +153,14 @@ The statement reader and the script interpreter are in
 tag := "internal-statements"
 %%%
 
-Version `2` reads what version `1` reads, and adds the documents a document
-cites, statements over the metalogic's internal language in object
-variables, rules at objects, and the tactics of trees and coproducts:
+Version `2` reads what version `1` reads, and adds the program a document
+names and the documents it cites, statements over the metalogic's internal
+language in object variables, rules at objects, and the tactics of trees
+and coproducts:
 
 ```
-DOCUMENT ::= (proofs 2 IMPORT… THEOREM…)
-IMPORT ::= (import PATH)
+DOCUMENT ::= (proofs 2 HEADER… THEOREM…)
+HEADER ::= (program NAME) | (import PATH)
 STATEMENT ::= … | (internal (X…) QUANTIFIED)
 QUANTIFIED ::= (forall ((x TYPE) …) PROPOSITION) | PROPOSITION
 TYPE ::= T | Unit | (Prod TYPE TYPE) | (Arrow TYPE TYPE) | (List TYPE)
@@ -280,12 +281,34 @@ before it, and the certificate holds the declarations of the imported
 theorems before the document's own, so that it replays from the documents
 alone and a change to an imported statement prevents its reuse.
 
+A form `(program NAME)` names the program a document is proved against
+where the command gives no manifest: the manifest whose program has that
+name in the document's directory, or else in the nearest directory above
+it that holds one, a directory holding several being rejected. A document
+names no more than one program, and a manifest the command gives takes the
+place of the program named. Only the document proved is consulted: the
+documents it imports are read against its program, whatever they name, so
+that a document that holds in every program names none, and a development
+is proved again in a larger program by a document that imports it.
+
+```
+lake exe geb-author prove PROOFS CERTIFICATE
+lake exe geb-author replay PROOFS CERTIFICATE
+lake exe geb-author check FILE
+```
+
+`check` writes nothing. It proves a proof document, a file holding a form
+`(proofs V …)`, against the program it names, and compiles any other file
+as a source of a program, with the sources that the nearest manifest
+listing it lists before it; an editor runs it on the file being edited.
+
 The documents under `bootstrap/proofs/` state and prove in this profile the
 development of `GebTests/Prototypes/FreeTopos/TreeCases.lean`, whose
 statements are Lean values and whose scripts are Lean code, about the program
 of `bootstrap/expansion.manifest`: `trees.proofs.geb` the lemmas on the
-unfolding of trees, which hold in every program, and
-`tree-cases.proofs.geb`, which imports it, the conditional lemmas, the
+unfolding of trees, which hold in every program and name none, and
+`tree-cases.proofs.geb`, which names the program `expansion` and imports
+it, the conditional lemmas, the
 soundness of the equality of bitstrings, the rewriting under a test, and that
 a tree the reader names by the atom of the head of a definition's form is
 that atom. Each theorem is stated as it is written and followed by its
@@ -293,10 +316,10 @@ companion, where the Lean development states a lemma's sides in the normal
 form it computes.
 
 ```
-lake exe geb-author prove bootstrap/expansion.manifest \
-  bootstrap/proofs/tree-cases.proofs.geb /tmp/tree-cases.cert
-lake exe geb-author replay bootstrap/expansion.manifest \
-  bootstrap/proofs/tree-cases.proofs.geb /tmp/tree-cases.cert
+lake exe geb-author prove bootstrap/proofs/tree-cases.proofs.geb \
+  /tmp/tree-cases.cert
+lake exe geb-author replay bootstrap/proofs/tree-cases.proofs.geb \
+  /tmp/tree-cases.cert
 ```
 
 No tactic of scripts yet performs induction on trees with the hypothesis at

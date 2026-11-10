@@ -3480,10 +3480,21 @@ def «Authoring.readDocument» :=
                        (fun (x4 : T) (x5 : List T) =>
                          if («Prelude.and»
                            (Const.eq («Prelude.get» x3) (leaf 2))
-                           («Authoring.form»
-                             x4
-                             (mk 0 [leaf 105, leaf 109, leaf 112, leaf 111, leaf 114, leaf 116])
-                             (leaf 2))).label ≠ 0 then
+                           («Prelude.or»
+                             («Authoring.form»
+                               x4
+                               (mk 0 [leaf 105, leaf 109, leaf 112, leaf 111, leaf 114, leaf 116])
+                               (leaf 2))
+                             («Authoring.form»
+                               x4
+                               (mk 0 [leaf 112,
+                                 leaf 114,
+                                 leaf 111,
+                                 leaf 103,
+                                 leaf 114,
+                                 leaf 97,
+                                 leaf 109])
+                               (leaf 2)))).label ≠ 0 then
                            x5
                          else
                            (x4 :: x5))

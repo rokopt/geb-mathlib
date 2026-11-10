@@ -11,7 +11,7 @@
     "label": "Geb: check saved file",
     "type": "process",
     "command": "lake",
-    "args": ["exe", "geb-compile", "check", "${file}"],
+    "args": ["exe", "geb-author", "check", "${file}"],
     "options": { "cwd": "${workspaceFolder}" },
     "problemMatcher": "$geb"
   }]

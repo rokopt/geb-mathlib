@@ -11,8 +11,9 @@ import GebHost.Authoring
 
 open Geb.Kernel Geb.Kernel.Document
 
-/-- Execute proofs, list the documents of a development, or convert a document without
-discarding its decorations. -/
+/-- Execute proofs, check a file, list the documents of a development, or convert a document
+without discarding its decorations. A proof document is proved against the manifest given, or
+else against that of the program it names. -/
 public def main (args : List String) : IO UInt32 := do
   try
     match args with
@@ -25,6 +26,13 @@ public def main (args : List String) : IO UInt32 := do
       let m ← Manifest.read manifest
       for d in ← GebHost.Authoring.development proofs m.profile do IO.println d.1
       return 0
+    | ["check", file] => GebHost.Authoring.checkFile file
+    | ["prove", proofs, certificate] =>
+      let manifest ← GebHost.Authoring.manifestOf proofs
+      GebHost.Authoring.execute "prove" manifest.toString proofs certificate
+    | ["replay", proofs, certificate] =>
+      let manifest ← GebHost.Authoring.manifestOf proofs
+      GebHost.Authoring.execute "replay" manifest.toString proofs certificate
     | [mode, manifest, proofs, certificate] =>
       GebHost.Authoring.execute mode manifest proofs certificate
     | ["convert", spelling, manifest, input, output] =>
@@ -40,7 +48,8 @@ public def main (args : List String) : IO UInt32 := do
       return 0
     | _ =>
       IO.eprintln "usage: geb-author compile MANIFEST IMAGE\n\
-        geb-author prove|replay MANIFEST PROOFS CERTIFICATE\n\
+        geb-author prove|replay [MANIFEST] PROOFS CERTIFICATE\n\
+        geb-author check FILE\n\
         geb-author documents MANIFEST PROOFS\n\
         geb-author convert canonical|advanced|authoring MANIFEST INPUT OUTPUT"
       return 2
