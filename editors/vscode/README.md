@@ -2,9 +2,9 @@
 
 The `geb` language supports the Geb authoring profile: parentheses,
 semicolon line comments, quoted atoms with escapes and embedded line
-breaks, numerals, and named holes. The extension is declarative; it
-registers the language, its TextMate grammar and its editing configuration.
-It does not change the compiler's grammar.
+breaks, numerals, and named holes. The extension registers the language,
+its TextMate grammar and its editing configuration, and runs the Geb host
+commands for a selected program. It does not change the compiler's grammar.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -12,6 +12,7 @@ It does not change the compiler's grammar.
 - [Installation](#installation)
 - [Editing and formatting](#editing-and-formatting)
 - [Diagnostics](#diagnostics)
+- [Programs and commands](#programs-and-commands)
 - [Validation](#validation)
 - [Structural editing acceptance](#structural-editing-acceptance)
 - [References](#references)
@@ -92,10 +93,103 @@ For an editor with a language-server client,
 configures [efm-langserver](https://github.com/mattn/efm-langserver) to
 run the same command when a buffer is saved.
 
+## Programs and commands
+
+The workspace settings list the programs available to the editor. This
+repository configures the Pair and Roundtrip examples and the Tree cases
+proof development. For another program, add an entry to `geb.programs`
+in the workspace folder's settings:
+
+```json
+{
+  "geb.toolchainDirectory": ".",
+  "geb.programs": [{
+    "name": "Pair",
+    "manifest": "examples/authoring/pair.manifest",
+    "proofs": "examples/authoring/Pair.proofs.geb"
+  }]
+}
+```
+
+Paths are absolute or relative to that workspace folder, including when
+the editor has several folders open. `geb.toolchainDirectory` names the
+Geb repository containing `lakefile.toml` and `scripts/preserve.py`; set
+it to that repository's path when the development lives elsewhere.
+The host reads source order and entry points from the manifest. The
+editor does not infer a program from the active source file.
+
+Run `Geb: Select Program` or click the Geb status-bar item. The selection
+is remembered for the workspace and shown in the status bar and task
+title. A command selects the sole configured program automatically, or
+offers a selection when needed. Commands run as process tasks, with
+arguments passed separately and paths with spaces supported. The task
+terminal displays the host's output. Use `Tasks: Terminate Task` to stop
+a running command; another Geb command can start after the task ends.
+
+| Command | Host operation |
+| --- | --- |
+| `Geb: Compile Program` | `geb-author compile`: compile the manifest and check its examples |
+| `Geb: Prove Statements` | `geb-author prove`: run proof scripts, check and save the certificate |
+| `Geb: Replay Certificate` | `geb-author replay`: check the saved certificate against current statements without search |
+| `Geb: Show Kernel Holes` | `geb-kernel holes --manifest`: display the context and type of each kernel-language hole |
+| `Geb: Record Development` | `preserve.py record --certificate`: retain the development using its saved proof |
+| `Geb: Verify Record Integrity` | `preserve.py verify`: check the record's inventory and hashes |
+| `Geb: Check Recorded Development` | `preserve.py check`: compile archived sources and replay the saved certificate |
+| `Geb: Compare Sources with Record` | `preserve.py compare`: compare current sources with the record and replay its certificate |
+
+Compilation, proof commands, hole reporting, recording and comparison
+save modified file-backed documents in the selected workspace folder
+before running, and documents below the manifest's and entry proof
+document's directories, including proof imports opened elsewhere.
+A failed save prevents execution. Untitled buffers are not program
+inputs. Integrity verification and checking an archived development do
+not save buffers. Commands require a trusted, local-filesystem workspace;
+syntax highlighting remains available in Restricted Mode. A remote
+workspace runs the tools on its extension host.
+
+The `proofs` field selects one entry proof document and is required by
+proof, record and comparison commands. The host resolves its imports;
+recording retains those documents with the entry document. These commands
+use the selected manifest explicitly, including when a proof document
+names its default program. The task `Geb: check saved file` instead uses
+the proof document's program, independently of the editor's selection.
+The optional `image` and `certificate` fields choose output paths. Their
+defaults are
+`.lake/geb-editor/program-NAME/program.img` and
+`.lake/geb-editor/program-NAME/proof.cert`, with the display name encoded
+as a URI component. Parent directories are created for those outputs.
+Commands that compile or check proofs build their host tools through
+Lake before using them; integrity verification needs only Python.
+A rejected program or failed proof leaves an existing output in place.
+Hole reporting is limited to the kernel forms accepted by the current
+host: exit status `2` means open obligations, `0` means complete, and `1`
+means rejection. Open obligations are displayed without being reported
+as a completed program.
+
+A development can be compiled, proved and replayed with those commands,
+then retained by `Geb: Record Development`. Recording asks for a new
+directory and replays the selected certificate without proof search.
+The dialog proposes `records/program-NAME` under the workspace folder;
+keep retained records with the development's versioned files.
+An existing record is rejected rather than replaced. The new record is
+selected after successful creation; `Geb: Select Development Record`
+selects another directory. An optional `record` field supplies an initial
+selection, as the Roundtrip example's settings do. Integrity verification
+checks no theorem; use checking or comparison for compilation and replay.
+The [authoring chapter](../../manual/GebManual/Authoring.lean) describes
+the records' contents and migration limits.
+
+Commands use the public CLI and leave diagnostic text in the task
+terminal. Compilation, proving and replay also publish located errors
+in the Problems panel, including errors in imported proof documents.
+For command keybindings, `geb.selectProgram` accepts the program's name
+when unique across workspace folders, and `geb.record` accepts a new
+directory path in place of the directory dialog.
+
 ## Validation
 
 ```sh
-lake build geb-fmt geb-kernel geb-author
+lake build geb-fmt geb-kernel geb-author geb-compile geb-defs
 npm test --prefix editors/vscode
 npm run test:editor --prefix editors/vscode
 npm run test:paredit --prefix editors/vscode
@@ -124,6 +218,14 @@ when its dependencies are installed. A graphical session or `xvfb-run`
 is required for the integration tests. CI installs the dependencies and
 runs the integration tests under Xvfb.
 
+The command fixture uses a separate workspace folder whose path contains
+spaces and Unicode. It compiles saved editor buffers, proves and replays
+statements with imported proofs outside that folder, checks located
+diagnostics, preserves a certificate after failed search, records without
+search, checks and compares the record and its imports, rejects replacement
+of a record, and distinguishes open kernel holes from a complete program.
+It uses the real host commands and an isolated copy of the authoring example.
+
 ## Structural editing acceptance
 
 The pinned build of Mike's Paredit passes the authoring profile's
@@ -151,6 +253,8 @@ npm run test:paredit-release --prefix editors/vscode
 
 ## References
 
+- [VS Code process tasks](https://code.visualstudio.com/api/references/vscode-api#ProcessExecution)
+- [VS Code workspace trust](https://code.visualstudio.com/api/extension-guides/workspace-trust)
 - [VS Code language configuration](https://code.visualstudio.com/api/language-extensions/language-configuration-guide)
 - [VS Code extension testing](https://code.visualstudio.com/api/working-with-extensions/testing-extension)
 - [Mike's Paredit](https://github.com/quasarbright/vscode-paredit)

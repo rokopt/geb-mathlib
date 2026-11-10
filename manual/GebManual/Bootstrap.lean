@@ -4492,8 +4492,8 @@ are those parinfer reads, delimited by double quotes with backslash
 escapes; the formatter's output is a fixed point of both of parinfer's
 modes.
 
-The editor is a `geb` language, a declarative extension of a manifest, a
-language configuration and a TextMate grammar of some fifteen lines, with
+The editor registers a `geb` language through an extension manifest, a
+language configuration and a TextMate grammar, with
 Mike's Paredit configured for it as the structural editor (the decision on
 the editor); Mike's Paredit having few installations, its version is
 pinned and tested. Parinfer is optional: its extensions fix their
@@ -4515,9 +4515,18 @@ editor's recognition of other brackets or reader macros never defines
 Geb syntax. Formatting on save, through `pucelle.run-on-save` calling
 `geb-fmt`, stays off until the fixture passes.
 
-The declarative extension is in `editors/vscode/`, with a task for
-formatting a saved file in `.vscode/tasks.json`. Its grammar, bracket
-matching and formatter task are tested in VS Code. Mike's Paredit 0.2.1
+The extension is in `editors/vscode/`, with a task for
+formatting a saved file in `.vscode/tasks.json`. Its commands select a
+program by its manifest in workspace settings and invoke the host's
+compilation, proof search, certificate replay, kernel-hole reporting and
+development preservation. The selection is remembered, source and imported
+proof buffers are saved before commands reading the current program, and
+results are displayed in task terminals. Compilation, proving and
+replay also publish located diagnostics in the Problems view. The preservation
+commands retain a saved proof without search and keep records immutable. The command fixture
+exercises the host tools from a separate workspace folder, including
+imported proofs, located errors, failed proofs and open holes. Its grammar,
+bracket matching and formatter task are tested in VS Code. Mike's Paredit 0.2.1
 fails navigation across a quoted semicolon and navigation in CRLF input,
 so the structural editor is built from its upstream commit with a patch
 (`editors/vscode/patches/`), under a version, `0.2.1+geb.1`, of the

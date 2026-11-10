@@ -2,7 +2,7 @@
 const { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath,
   runTests } = require('@vscode/test-electron');
 const { execFileSync } = require('node:child_process');
-const { mkdirSync, mkdtempSync, rmSync, writeFileSync } = require('node:fs');
+const { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } = require('node:fs');
 const path = require('node:path');
 const { editorTest } = require('../package.json');
 
@@ -27,6 +27,34 @@ async function main() {
   const extensions = paredit && !release ? path.join(state, 'extensions')
     : path.join(cache, 'extensions');
   try {
+    // A separate workspace folder exercises explicit manifests and distinct project/toolchain roots.
+    const project = path.join(state, 'authoring λ with spaces');
+    mkdirSync(path.join(project, '.vscode'), { recursive: true });
+    for (const file of ['pair.manifest', 'Pair.geb', 'Lists.geb']) {
+      copyFileSync(path.join(root, 'examples/authoring', file), path.join(project, file));
+    }
+    // Proof imports outside the selected workspace folder must also be saved before execution.
+    const proofs = path.join(state, 'proofs λ with spaces');
+    mkdirSync(proofs);
+    copyFileSync(path.join(root, 'examples/authoring/Pair.proofs.geb'),
+      path.join(proofs, 'Pair.proofs.geb'));
+    writeFileSync(path.join(proofs, 'More.proofs.geb'),
+      '(proofs 2 (program pair) (import Pair.proofs.geb)\n' +
+      '  (theorem internal-id (internal (X) (forall ((x X)) (equal x x)))\n' +
+      '    (by (reduce weak))))\n');
+    writeFileSync(path.join(project, 'open.geb'), '(def f (lam ((x T)) (add x ?body)))\n');
+    writeFileSync(path.join(project, 'open.manifest'),
+      '(program open (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0)) ' +
+      '(sources open.geb) (entries f))\n');
+    writeFileSync(path.join(project, '.vscode/settings.json'), JSON.stringify({
+      'geb.toolchainDirectory': root,
+      'geb.programs': [{ name: 'Editor fixture', manifest: 'pair.manifest',
+        proofs: path.join(proofs, 'More.proofs.geb'),
+        image: 'out/program.img', certificate: 'out/proof.cert' },
+      { name: 'Kernel fixture', manifest: 'open.manifest' }],
+    }));
+    const workspace = path.join(state, 'editor.code-workspace');
+    writeFileSync(workspace, JSON.stringify({ folders: [{ path: root }, { path: project }] }));
     mkdirSync(path.join(state, 'User'));
     writeFileSync(path.join(state, 'User/settings.json'), JSON.stringify({
       'extensions.autoUpdate': false,
@@ -43,8 +71,9 @@ async function main() {
       vscodeExecutablePath: executable,
       extensionDevelopmentPath: extension,
       extensionTestsPath: path.join(__dirname, 'editor.cjs'),
-      extensionTestsEnv: { GEB_TEST_PAREDIT_VERSION: paredit ? pareditVersion : '' },
-      launchArgs: [root, '--extensions-dir', extensions, '--user-data-dir', state,
+      extensionTestsEnv: { GEB_TEST_PAREDIT_VERSION: paredit ? pareditVersion : '',
+        GEB_TEST_AUTHORING_PROJECT: project, GEB_TEST_AUTHORING_PROOFS: proofs },
+      launchArgs: [workspace, '--extensions-dir', extensions, '--user-data-dir', state,
         '--disable-gpu', '--skip-welcome', '--skip-release-notes', '--disable-workspace-trust',
         ...(!paredit ? ['--disable-extension', 'MikeDelmonaco.paredit'] : [])],
     });

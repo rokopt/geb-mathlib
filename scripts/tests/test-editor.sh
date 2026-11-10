@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
-# Check the Geb language grammar, package and formatter task in VS Code,
+# Check the Geb language grammar, package and authoring commands in VS Code,
 # alone and with the pinned build of Mike's Paredit, whose structural
 # fixture it also checks. Install dependencies with
 # `npm ci --prefix editors/vscode`. The editor test downloads its pinned
 # VS Code host on the first run, and the Paredit build fetches its
-# upstream source whenever its pinned inputs change; lake build geb-fmt
-# geb-kernel geb-author supplies the formatter, the checker and the
-# compiler and proof runner it invokes.
+# upstream source whenever its pinned inputs change. The formatter, kernel, compiler
+# and authoring executables supply the commands the integration fixture invokes.
 
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
@@ -16,6 +15,7 @@ if [ ! -d editors/vscode/node_modules/vscode-textmate ]; then
   exit 0
 fi
 
+lake build geb-fmt geb-kernel geb-author geb-compile geb-defs
 npm test --prefix editors/vscode
 npm run package --prefix editors/vscode
 if [ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]; then

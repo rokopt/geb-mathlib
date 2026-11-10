@@ -1,8 +1,8 @@
 {
   "name": "geb-language",
   "displayName": "Geb",
-  "description": "The Geb authoring profile: S-expressions, quoted atoms and comments",
-  "version": "0.1.0",
+  "description": "Geb source editing, compilation, proofs and development records",
+  "version": "0.2.0",
   "publisher": "geb-mathlib",
   "private": true,
   "license": "Apache-2.0",
@@ -44,6 +44,129 @@
         "editor.formatOnSave": false,
         "editor.wordSeparators": "()\";"
       }
+    },
+    "commands": [
+      {
+        "command": "geb.selectProgram",
+        "title": "Select Program",
+        "category": "Geb",
+        "enablement": "isWorkspaceTrusted && workspaceFolderCount != 0"
+      },
+      {
+        "command": "geb.selectRecord",
+        "title": "Select Development Record",
+        "category": "Geb",
+        "enablement": "isWorkspaceTrusted && workspaceFolderCount != 0"
+      },
+      {
+        "command": "geb.compile",
+        "title": "Compile Program",
+        "category": "Geb",
+        "enablement": "isWorkspaceTrusted && workspaceFolderCount != 0"
+      },
+      {
+        "command": "geb.prove",
+        "title": "Prove Statements",
+        "category": "Geb",
+        "enablement": "isWorkspaceTrusted && workspaceFolderCount != 0"
+      },
+      {
+        "command": "geb.replay",
+        "title": "Replay Certificate",
+        "category": "Geb",
+        "enablement": "isWorkspaceTrusted && workspaceFolderCount != 0"
+      },
+      {
+        "command": "geb.holes",
+        "title": "Show Kernel Holes",
+        "category": "Geb",
+        "enablement": "isWorkspaceTrusted && workspaceFolderCount != 0"
+      },
+      {
+        "command": "geb.record",
+        "title": "Record Development",
+        "category": "Geb",
+        "enablement": "isWorkspaceTrusted && workspaceFolderCount != 0"
+      },
+      {
+        "command": "geb.verify",
+        "title": "Verify Record Integrity",
+        "category": "Geb",
+        "enablement": "isWorkspaceTrusted && workspaceFolderCount != 0"
+      },
+      {
+        "command": "geb.check",
+        "title": "Check Recorded Development",
+        "category": "Geb",
+        "enablement": "isWorkspaceTrusted && workspaceFolderCount != 0"
+      },
+      {
+        "command": "geb.compare",
+        "title": "Compare Sources with Record",
+        "category": "Geb",
+        "enablement": "isWorkspaceTrusted && workspaceFolderCount != 0"
+      }
+    ],
+    "taskDefinitions": [{
+      "type": "geb",
+      "required": ["gebExecution"],
+      "properties": {
+        "gebExecution": { "type": "string", "description": "Identity of a command invocation." }
+      }
+    }],
+    "configuration": {
+      "title": "Geb",
+      "properties": {
+        "geb.toolchainDirectory": {
+          "type": "string",
+          "default": ".",
+          "scope": "resource",
+          "description": "Geb repository containing lakefile.toml and scripts/preserve.py. Relative to the workspace folder."
+        },
+        "geb.programs": {
+          "type": "array",
+          "default": [],
+          "scope": "resource",
+          "description": "Programs available to Geb commands. Paths are absolute or relative to their workspace folder; source ordering is read by the host from the manifest.",
+          "items": {
+            "type": "object",
+            "required": ["name", "manifest"],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Display name, unique within the workspace folder."
+              },
+              "manifest": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Program manifest path."
+              },
+              "proofs": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Entry proof document path; required for prove, replay, record and compare."
+              },
+              "image": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Compiled image path; defaults to .lake/geb-editor/program-NAME/program.img."
+              },
+              "certificate": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Saved certificate path; defaults to .lake/geb-editor/program-NAME/proof.cert."
+              },
+              "record": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Existing immutable development record to verify, check or compare."
+              }
+            }
+          }
+        }
+      }
     }
   },
   "scripts": {
@@ -69,5 +192,15 @@
       "patch": "patches/paredit-0.2.1.patch",
       "version": "0.2.1+geb.1"
     }
+  },
+  "main": "./extension.cjs",
+  "activationEvents": ["onLanguage:geb"],
+  "extensionKind": ["workspace"],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Syntax highlighting is available; Geb commands execute workspace tools and require trust."
+    },
+    "virtualWorkspaces": false
   }
 }

@@ -3924,6 +3924,14 @@ import-direction rules above are enforced by
   development `examples/roundtrip/` and its retained record are exercised by
   `scripts/tests/test-preservation.sh`. `geb-kernel sources` supplies the
   manifest's ordered relative source paths through the existing parser.
+  The VS Code extension under `editors/vscode/` selects a development by its
+  manifest in workspace settings and invokes compilation, proof search,
+  replay, kernel-hole reporting and preservation through the host commands.
+  The selected program is remembered; process tasks display the commands'
+  output and retain their exit status. The integration fixture uses a
+  separate workspace folder and checks saving edited buffers, imported
+  proofs, located errors, failed search, certificate reuse, immutable
+  records and open obligations.
   `Blake3.lean` computes the hash BLAKE3 [OConnorAumassonNevesWilcoxOHearn2020]
   (`Geb.Blake3.hash`). `Identity.lean` identifies a definition by the
   CIDv1 [RatajBerjon2026] of its payload, the canonical encoding of its
