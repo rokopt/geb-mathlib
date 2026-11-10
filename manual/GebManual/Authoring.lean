@@ -61,7 +61,11 @@ expressions use fully qualified definition names and must return trees;
 it evaluates both and compares their results. `prove` runs the script in
 the prover written in Geb, checks the
 result with the checker written in Geb, and replays it before writing the
-certificate. A rejected input leaves an existing output in place.
+certificate. A rejected input leaves an existing output in place. A program
+the compiler rejects is reported at the line and column of the declaration
+concerned, and a theorem whose statement or script does not read, or whose
+script does not prove it, at the theorem's name, as
+`FILE:LINE:COLUMN: error: MESSAGE`.
 
 `replay` checks the saved derivations against the source statements and
 their names. It performs no proof search. Reducing `normalize`'s budget
@@ -72,8 +76,8 @@ compiled program stays the same; examples are checked again on replay.
 
 # The proof-source profile
 
-A proof document is `(proofs V THEOREM…)`, its version `V` being `0` or `1`,
-with one or more theorems of distinct names, each
+A proof document is `(proofs V THEOREM…)`, its version `V` being `0`, `1` or
+`2`, with one or more theorems of distinct names, each
 `(theorem NAME STATEMENT (by SCRIPT))`. Version `1` reads:
 
 ```
@@ -134,16 +138,169 @@ definitions and computes applications of abstractions and the components
 of pairs alone, so a document of either version keeps its meaning. It
 cites no theorem, so its certificate saves no companion and has the format
 `geb-proof/v1`, whose certificates therefore still replay; version `1`
-writes `geb-proof/v2`. An unknown or unbound name, a name declared twice,
+writes `geb-proof/v2`, and version `2` `geb-proof/v3`. An unknown or unbound
+name, a name declared twice,
 a malformed form, an unsupported version, a false equation or an
 unsuccessful search is rejected. Failure of a bounded search does not establish that the
 statement is false.
 
-Statements are not yet written over the datatypes of the datatype language,
-and no tactic yet performs induction on trees, which needs the lemmas on
-the unfolding of trees the Lean developments prove first. The statement
-reader and the script interpreter are in `bootstrap/authoring.geb`; they
-add no rule to the metalogic.
+Statements are not yet written over the datatypes of the datatype language.
+The statement reader and the script interpreter are in
+`bootstrap/authoring.geb`; they add no rule to the metalogic.
+
+# Statements over the internal language
+%%%
+tag := "internal-statements"
+%%%
+
+Version `2` reads what version `1` reads, and adds the documents a document
+cites, statements over the metalogic's internal language in object
+variables, rules at objects, and the tactics of trees and coproducts:
+
+```
+DOCUMENT ::= (proofs 2 IMPORT… THEOREM…)
+IMPORT ::= (import PATH)
+STATEMENT ::= … | (internal (X…) QUANTIFIED)
+QUANTIFIED ::= (forall ((x TYPE) …) PROPOSITION) | PROPOSITION
+TYPE ::= T | Unit | (Prod TYPE TYPE) | (Arrow TYPE TYPE) | (List TYPE)
+       | Bit | Bits | Omega | (Sum TYPE TYPE) | (Rose TYPE) | X
+ITERM ::= x | NAME | unit | (pair ITERM ITERM) | (fst ITERM) | (snd ITERM)
+        | (lam ((x TYPE) …) ITERM) | (ITERM ITERM…) | (equal ITERM ITERM)
+        | (nil TYPE) | (cons TYPE ITERM ITERM) | (node TYPE ITERM)
+        | (inl TYPE TYPE ITERM) | (inr TYPE TYPE ITERM)
+        | (case TYPE TYPE TYPE ITERM)
+        | (list-rec ITERM (y r) ITERM ITERM)
+        | (rose-rec TYPE (n) ITERM ITERM)
+        | (lib NAME TYPE… ITERM…) | (kernel TERM)
+RULE ::= … | (NAME TYPE…)
+SCRIPT ::= … | (fold-induction x (y r) ITERM FUEL RULE…)
+         | (tree-fold-induction x (l rs) ITERM FUEL RULE…)
+         | (sum-cases x (y) SCRIPT SCRIPT)
+         | (tree-cases x (l cs) NAME SCRIPT)
+         | (auto-trees DEPTH SPLITS NAME RULE…)
+         | (generalize (y TYPE) ITERM SCRIPT)
+         | (pointwise NAME DEPTH RULE…)
+         | (mask-rewrite TYPE TYPE NAME LEMMA (ITERM…)
+             ITERM ITERM ITERM ITERM ITERM ITERM)
+LEMMA ::= NAME | (NAME TYPE…)
+```
+
+A statement `(internal (X…) Q)` binds the object variables `X…`, and `Q` has
+the form of a statement of version `1` with the types and terms of the
+internal language, an equation's sides `ITERM`s of one type. A type is the
+translation of a kernel type, `T` the rose trees over the bitstrings and
+`Unit`, `Prod`, `Arrow` and `List` the terminal object, products,
+exponentials and list objects; the bits, `Bit`, which is `(Sum Unit Unit)`;
+the bitstrings, `Bits`, which is `(List Bit)`; the truth values, `Omega`; a
+coproduct; the rose trees over a type of labels, `T` being `(Rose Bits)`; or
+an object variable.
+
+A term of the internal language is a variable; a definition of the program by
+its qualified name, at its translated type; the element `unit` of the
+terminal type; a pair or a component; an abstraction; an application, the
+function before its arguments; an equation, of the type `Omega`; or one of
+the forms below. Each form carries the types that the internal language does
+not infer.
+
+* `(nil A)` is the empty list of `A`, and `(cons A h t)` the list of a head
+  before a list.
+* `(node A p)` is the tree of the pair `p` of a label of `A` and a list of
+  trees.
+* `(inl A B t)` and `(inr A B t)` are the injections into `(Sum A B)`, and
+  `(case A B C p)` the function from `(Sum A B)` to `C` of the pair `p` of a
+  function from `A` and one from `B`.
+* `(list-rec z (y r) s l)` is the fold of the list `l`: `z` at the empty
+  list, and at a head `y` before a list the term `s`, in which `r` is the
+  fold's value at that list.
+* `(rose-rec C (n) s t)` is the fold of the tree `t` into `C`: at a node the
+  term `s`, in which `n` is the pair of the node's label and the list of the
+  fold's values at its children.
+* `(lib NAME A… t…)` applies a definition of the translation's library, with
+  an object for each of its object parameters before its arguments. The
+  names are `bnil`, `b0`, `b1`, `lab`, `unnode`, `children`, `cond`, `tail`,
+  `headD`, `lcase`, `isNil`, `succ`, `length`, `pred`, `dbl`, `add`, `cmp`,
+  `ltB`, `eqB`, `subE`, `sub`, `mul`, `divMod`, `log2`, `iter`, `mapApp`,
+  `and`, `allZip` and `equal`, those of `Geb.FreeTopos.Translation.D`.
+* `(kernel t)` is a term of the kernel, read and translated as version `1`
+  reads a statement's terms, in the variables whose types are kernel types.
+
+The names `inl`, `inr`, `case`, `list-rec`, `rose-rec`, `lib` and `kernel`
+head these forms wherever a term of the internal language is read, and no
+variable of an internal statement or of a script of version `2` takes one.
+The terms a script writes are terms of the internal language. A statement of
+either kind is rejected unless its sides have one type in its context.
+
+A rule `(NAME A…)` rewrites by an earlier theorem in object variables at the
+objects `A…`. The tactics added:
+
+* `fold-induction` proves the goal by induction on its innermost variable
+  `x`, a list, in the form of the uniqueness of a fold: the sides are equal
+  at the empty list, and each side at a head `y` before a list is the step,
+  in which `r` is that side's value at the list, each of the three by
+  normalization within the budget.
+* `tree-fold-induction` proves a goal whose one variable `x` is a tree by the
+  uniqueness of the tree's fold: each side at the node of a label `l` is the
+  step, in which `rs` is the list of that side's values at the children,
+  each by normalization within the budget.
+* `sum-cases` proves the goal at each injection of a new variable `y` for a
+  variable of a coproduct, a bit among them, and `tree-cases` at the node of
+  a new label `l` and children `cs` for a variable of the trees; `NAME` is
+  the theorem that a tree is the node of its unfolding.
+* `auto-trees` reduces to a depth and splits the list, coproduct or tree
+  variable the reduction is stuck on, as `auto` does for lists and
+  coproducts, with that theorem.
+* `generalize` proves the goal with a new variable `y` for the occurrences of
+  a term.
+* `pointwise` proves an equation from the earlier theorem `NAME` that equates
+  two functions: the goal's sides and the applications of the theorem's
+  sides to the goal's innermost variable have the same normal forms at the
+  depth.
+* `mask-rewrite A B ABSORB LEMMA (t…) c d x x' z y` proves that the
+  conditional on the test `c` between `y` and `d`, of the type `A`, is the
+  conditional between `y` with `x'` for the occurrences of `x`, of the type
+  `B`, and `d`. `LEMMA`, at its objects and at the terms `t…` for its
+  variables, equates the conditionals on `c` between `x` and `z` and between
+  `x'` and `z`, and `ABSORB` is the theorem that inside the branch a test
+  selects, a conditional on the same test is its first branch.
+
+The tactics that cite a theorem by `NAME`, and a `LEMMA`, cite it as stated,
+where a rule rewrites by its companion. `fold-induction` is
+`Geb.FreeTopos.Internal.byListInd` and `tree-fold-induction`
+`Geb.FreeTopos.Internal.byRoseInd`; the others but `pointwise` are tactics of
+`Geb.FreeTopos.Tactics`, and `pointwise` composes the derivation of the Lean
+developments' pointwise lemmas in `bootstrap/authoring.geb`.
+
+A form `(import PATH)` names a proof document whose theorems the document
+cites, by a path as a manifest's source is, relative to the document's own
+directory. A development is the documents a document imports, and those they
+import, each read once and before the documents importing it, followed by
+the document; an imported document is of version `1` or `2`. The theorems of
+a development are one list: their names are distinct, a theorem cites those
+before it, and the certificate holds the declarations of the imported
+theorems before the document's own, so that it replays from the documents
+alone and a change to an imported statement prevents its reuse.
+
+The documents under `bootstrap/proofs/` state and prove in this profile the
+development of `GebTests/Prototypes/FreeTopos/TreeCases.lean`, whose
+statements are Lean values and whose scripts are Lean code, about the program
+of `bootstrap/expansion.manifest`: `trees.proofs.geb` the lemmas on the
+unfolding of trees, which hold in every program, and
+`tree-cases.proofs.geb`, which imports it, the conditional lemmas, the
+soundness of the equality of bitstrings, the rewriting under a test, and that
+a tree the reader names by the atom of the head of a definition's form is
+that atom. Each theorem is stated as it is written and followed by its
+companion, where the Lean development states a lemma's sides in the normal
+form it computes.
+
+```
+lake exe geb-author prove bootstrap/expansion.manifest \
+  bootstrap/proofs/tree-cases.proofs.geb /tmp/tree-cases.cert
+lake exe geb-author replay bootstrap/expansion.manifest \
+  bootstrap/proofs/tree-cases.proofs.geb /tmp/tree-cases.cert
+```
+
+No tactic of scripts yet performs induction on trees with the hypothesis at
+each child, by which the Lean developments prove weakening and substitution.
 
 # Keeping the source
 
@@ -176,7 +333,8 @@ pin the compiler image and emitted compiler, the authoring runner and its
 source dependencies, the manifest and sources, the Lean toolchain and
 dependency lockfile. `record/compiler.img` retains the exact bytes of
 `bootstrap/compiler.img` used at the milestone. The certificate envelope separately identifies
-its format (`geb-proof/v2` for version `1`), theory (`free-topos/base/v1`),
+its format (`geb-proof/v2` for version `1`, `geb-proof/v3` for version `2`), theory
+(`free-topos/base/v1`),
 document profile and exact compiled program; its declarations retain the
 statements, their companions and their source names.
 
@@ -196,8 +354,8 @@ Edition `0` is still a pre-release edition. Keep the whole record with
 work written against it. No migration to a future edition is implemented
 here; its durable document, elaborated definitions and exact compiler
 give that migration explicit inputs. Suspended holes in proofs, statements
-over datatypes, induction on trees, editor acceptance and completion of
-datatype soundness remain separate work.
+over datatypes, induction on trees with the hypothesis at each child, and
+completion of datatype soundness remain separate work.
 
 # Preserving a development
 
@@ -221,7 +379,8 @@ python3 scripts/preserve.py compare /tmp/roundtrip-record \
 in this checkout.
 
 `record` first copies the manifest, every source in its order, and the
-proof document, retaining their original bytes and relative source paths.
+proof document with the documents it imports, retaining their original
+bytes and relative paths.
 It compiles those copies, checks the examples, produces and replays a
 certificate, and writes canonical copies of the complete documents.
 The record also holds the checked image, the elaborated definitions,
@@ -244,7 +403,9 @@ prevent recording or checking a development whose saved proof replays.
 
 `record.json` identifies format `geb-development/v1`, the archived
 manifest and proof document, the ordered source paths, and the SHA-256
-digest of every other file. `verify` checks this inventory without Lake
+digest of every other file; where the proof document imports documents the
+format is `geb-development/v2`, and the record names them. `verify` checks
+this inventory without Lake
 or the original project. It rejects missing, modified and unlisted files,
 symbolic links, paths outside the record and unsupported record formats.
 These digests check integrity relative to the index; they neither

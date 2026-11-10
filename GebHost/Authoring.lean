@@ -19,11 +19,23 @@ Certificates carry their format, theory, profile and checked program. Replay com
 with the current compilation and checks the saved derivations against the source statements.
 The host writes an output only after all checks succeed.
 
+A proof document of version 2 names the documents whose theorems it cites, by forms
+{lit}`(import PATH)`. The host resolves them, each against the directory of the document that
+imports it, and gives the runner the development: the imported documents, each before those
+importing it, and the document last. The runner reads the theorems of all of them as one list, so
+the development's certificate holds the declarations of the imported theorems before the
+document's own, and replays without the certificates of the imported documents.
+
+Where the runner rejects a development it reports a reason and the theorem concerned, which the
+host writes as a diagnostic at the theorem's name in the document that states it
+({name}`GebHost.Compiler.Diagnostic`).
+
 ## Main definitions
 
 * {lit}`GebHost.Authoring.readDocument` reads authoring or strict durable documents.
 * {lit}`GebHost.Authoring.checkExamples` checks the tree-valued examples in a program's notes.
-* {lit}`GebHost.Authoring.execute` proves or replays a proof document.
+* {lit}`GebHost.Authoring.development` reads a proof document after the documents it imports.
+* {lit}`GebHost.Authoring.execute` proves or replays a development.
 
 ## Tags
 
@@ -117,16 +129,139 @@ def checkExamples (manifest : System.FilePath) (m : Manifest) (text : ByteArray)
             throw <| IO.userError s!"{path}: example of {declaration} \
               differs from its expected value"
 
-/-- The certificate format of a proof source's version: version 0 saves one declaration for each
-theorem, and version 1 saves each theorem followed by its companion. -/
-def formatOf (version : Tree) : Tree :=
-  nameTree (if decide (version = leaf 0) then "geb-proof/v1" else "geb-proof/v2").toList
+/-! ## Developments -/
 
-/-- The version of a proof source, read against the program's statements. -/
-def versionOf (program input : Tree) : Except String Tree :=
-  let result := GebMirror.Metalogic.«Authoring.version» program input
-  if result.label == 0 then .error "invalid proof source"
-  else .ok (GebMirror.Metalogic.«Prelude.get» result)
+/-- The head of a proof document, {lit}`proofs`. -/
+def kwProofs : List Char := "proofs".toList
+
+/-- The head of an import, {lit}`import`. -/
+def kwImport : List Char := "import".toList
+
+/-- The head of a theorem, {lit}`theorem`. -/
+def kwTheorem : List Char := "theorem".toList
+
+/-- The paths a proof document imports: the atoms of the forms {lit}`(import PATH)` of its form
+{lit}`(proofs V …)`, or what rejects them, an import in a document of a version before 2. -/
+def importsOf (d : Doc) : Except String (List String) :=
+  match d.items.find? (headIs kwProofs) with
+  | some root =>
+    let imports := root.children.filterMap fun c ↦
+      match c.children with
+      | [_, p] =>
+        if headIs kwImport c && p.children.isEmpty then p.label.2.map String.ofList else none
+      | _ => none
+    if imports.isEmpty || (root.children[1]?.bind (·.label.2)) == some ['2'] then .ok imports
+    else .error "a document of a version before 2 imports no document"
+  | none => .ok []
+
+/-- The greatest number of documents of a development. -/
+def documentLimit : Nat := 4096
+
+/-- The documents of a development: those a proof document imports, and those they import, each
+before the documents importing it, and the document last. An import is a path as a manifest's
+source is ({name}`Geb.Kernel.Manifest.validSource`), resolved against the importing document's
+directory, and a document is read once however many import it. An import that does not read is
+reported with the document importing it, and imports that return to a document are rejected. -/
+def development (proofs : System.FilePath) (profile : Profile) :
+    IO (List (System.FilePath × Durable)) := do
+  let mut seen : List (String × Durable × List String) := []
+  let mut work : List (String × Option String) := [(proofs.toString, none)]
+  for _ in [0:documentLimit] do
+    match work with
+    | [] => break
+    | (p, importer) :: rest =>
+      work := rest
+      if seen.any (·.1 == p) then continue
+      let d ← match importer with
+        | none => readDocument p profile
+        | some i =>
+          try readDocument p profile
+          catch e => throw <| IO.userError s!"{i}: the import {p} does not read: {e}"
+      let imports ← (← IO.ofExcept ((importsOf d.doc).mapError (s!"{p}: {·}"))).mapM fun s ↦ do
+        unless Manifest.validSource s do
+          throw <| IO.userError s!"{p}: the import {s} is not a relative path below the document"
+        return (Manifest.resolve p s).toString
+      seen := seen ++ [(p, d, imports)]
+      work := imports.map (·, some p) ++ work
+  unless work.isEmpty do
+    throw <| IO.userError s!"{proofs}: the development has more than {documentLimit} documents"
+  let mut ordered : List (System.FilePath × Durable) := []
+  for _ in seen do
+    for (p, d, imports) in seen do
+      if !ordered.any (·.1.toString == p) &&
+          imports.all (fun i ↦ ordered.any (·.1.toString == i)) then
+        ordered := ordered ++ [(System.FilePath.mk p, d)]
+  unless ordered.length == seen.length do
+    throw <| IO.userError s!"{proofs}: the imports of the development return to a document"
+  return ordered
+
+/-- The sources of a development as the runner written in Geb reads them: the node of its
+documents, each the node of its characters in the authoring spelling. -/
+def sourcesTree (docs : List (System.FilePath × Durable)) : Tree :=
+  mk 0 (docs.map fun d ↦ ofBytes (sourceBytes d.2.doc))
+
+/-- The certificate format of a development's version, that of its last document: version 0
+saves one declaration for each theorem, and the later versions save each theorem followed by its
+companion, version 2 the theorems of the documents imported before its own. -/
+def formatOf (version : Tree) : Tree :=
+  nameTree (match version.label with
+    | 0 => "geb-proof/v1"
+    | 1 => "geb-proof/v2"
+    | _ => "geb-proof/v3").toList
+
+/-- Why the reader and prover written in Geb reject a development: the reason's number and the
+theorem it concerns, as {lit}`bootstrap/authoring.geb` reports them. -/
+def reasonOf (report : Tree) : Nat × Option String :=
+  match report.children with
+  | [why, name] =>
+    (why.label, (ofNameTree name).bind fun cs ↦
+      if cs.isEmpty then none else some (String.ofList cs))
+  | _ => (0, none)
+
+/-- The message of a reason and the theorem it concerns. -/
+def reasonMessage (why : Nat) (name : String) : String :=
+  match why with
+  | 1 => s!"the theorem {name} is declared before"
+  | 2 => s!"the theorem {name} is not (theorem NAME STATEMENT (by SCRIPT)), or its statement \
+    does not read"
+  | 3 => s!"the script of the theorem {name} does not read"
+  | 4 => s!"the script of the theorem {name} does not prove it"
+  | 5 => s!"the sides of the theorem {name} have no weak normal forms within the budget"
+  | 6 => "the derivations of the development do not check"
+  | _ => "a document of the development is not (proofs V FORM…) of a version this host reads \
+    with a theorem, or a document of version 0 is combined with others"
+
+/-- The span of the name of a theorem in a document as written: of the last theorem of that name
+among the forms of its form {lit}`(proofs V …)`. -/
+def theoremSpan (text : List Char) (name : String) : Option Locate.Span :=
+  match Locate.locate text with
+  | .ok items =>
+    ((items.filter (Locate.headIs kwProofs)).flatMap (·.children)).reverse.findSome? fun t ↦
+      if Locate.headIs kwTheorem t then
+        t.children[1]?.bind fun n ↦
+          if n.label.2 == some name.toList then some n.label.1 else none
+      else none
+  | .error _ => none
+
+/-- The diagnostic of a development the runner written in Geb rejects: at the name of the
+theorem the report concerns, in the last document as written that states it, and else at the
+proof document without a position. -/
+def rejection (proofs : String) (written : List Compiler.Source) (report : Tree) :
+    Compiler.Diagnostic :=
+  let (why, name) := reasonOf report
+  let message := reasonMessage why (name.getD "")
+  match name.bind fun n ↦ written.reverse.findSome? fun s ↦
+      (theoremSpan s.text n).map (s.path, ·) with
+  | some (path, span) => ⟨path, some span, message⟩
+  | none => ⟨proofs, none, message⟩
+
+/-- A present tree's content, or the diagnostic of the failure the runner reports in its
+place; the empty tree is the runner's rejection of the program. -/
+def present (proofs : String) (written : List Compiler.Source) (result : Tree) :
+    Except String Tree :=
+  if result.label == 1 then .ok (GebMirror.Metalogic.«Prelude.get» result)
+  else if result.label == 2 then .error (rejection proofs written result).render
+  else .error s!"{proofs}: the program has no translation into the metalogic"
 
 /-- The certificate format and theory are separate from the kernel image's wire version. -/
 def envelope (format : Tree) (profile : Profile) (program certificate : Tree) : Tree :=
@@ -145,20 +280,22 @@ def certificateOf (expected : Tree) (profile : Profile) (program : Tree) (saved 
     else .error "certificate format, theory, profile, or compiled program differs"
   | _ => .error "malformed certificate envelope"
 
-/-- Prove or replay, reporting rejection without replacing an existing output. -/
+/-- Prove or replay a development, reporting rejection without replacing an existing output. The
+development is the proof document after the documents it imports. A failure the runner reports
+of a theorem is a diagnostic at the theorem's name. -/
 def execute (mode manifest proofs certificate : String) : IO UInt32 := do
   let (m, text, b) ← readProgram manifest
   checkExamples manifest m text
-  let d ← readDocument proofs m.profile
-  let input := ofBytes (sourceBytes d.doc)
-  let format := formatOf (← IO.ofExcept ((versionOf b input).mapError (s!"{proofs}: {·}")))
+  let docs ← development proofs m.profile
+  let written ← writtenSources (docs.map (·.1))
+  let input := sourcesTree docs
+  let version ← IO.ofExcept
+    (present proofs written (GebMirror.Metalogic.«Authoring.version» b input))
+  let format := formatOf version
   match mode with
   | "prove" =>
-    let result := GebMirror.Metalogic.«Authoring.prove» b input
-    if result.label == 0 then
-      throw <| IO.userError s!"{proofs}: invalid proof source or normalization \
-        did not prove a statement"
-    let cert := GebMirror.Metalogic.«Prelude.get» result
+    let cert ← IO.ofExcept
+      (present proofs written (GebMirror.Metalogic.«Authoring.prove» b input))
     unless (GebMirror.Metalogic.«Authoring.replay» b input cert).label == 1 do
       throw <| IO.userError s!"{proofs}: generated certificate does not replay"
     IO.FS.writeBinFile certificate (writeImage (envelope format m.profile b cert))

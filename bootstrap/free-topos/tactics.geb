@@ -3,7 +3,9 @@
 ; translation's trees.
 
 (module Tactics
-  (export byMode hypRules byListCases byListSplit withWeakHyps AI openSubterms stuckVar mentions
+  (export apps byMode hypRules byListCases byListSplit bySplit2 withWeakHyps AI openSubterms
+    stuckVar
+    mentions
     matchesOf
     byAuto
     condParts
@@ -11,7 +13,11 @@
     appsOf
     unnodeU
     occRewrite
-    abstractTerm)
+    byTreeSplit
+    byAutoT
+    abstractTerm
+    maskRw
+    byGeneralize)
   (import Prelude)
   (import Base)
   (import Theory)

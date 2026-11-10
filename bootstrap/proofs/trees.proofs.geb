@@ -1,0 +1,52 @@
+; The lemmas on the unfolding of trees, about the translation's library alone, so that they hold
+; in every program: the fold of a list of trees by construction is the list, the trees rebuilt
+; from the unfoldings of a list of trees are the rebuilt unfoldings, and a tree is the node of
+; its unfolding, which is Lambek's lemma. The unfolding of a tree is the fold that the library's
+; definition of the label and the children of a tree unfolds to, written here as that fold.
+
+(proofs 2
+  ; The fold of a list of trees by construction is the list.
+  (theorem map-id
+    (internal () (forall ((ts (List T))) (equal (list-rec (nil T) (t r) (cons T t r) ts) ts)))
+    (by (fold-induction ts (t r) (cons T t r) 64)))
+  ; The trees rebuilt from the unfoldings of a list of trees are the rebuilt unfoldings.
+  (theorem map-fusion
+    (internal ()
+      (forall ((ts (List T)))
+        (equal
+          (list-rec (nil T) (p r) (cons T (node Bits p) r)
+            (list-rec (nil (Prod Bits (List T))) (t r)
+              (cons (Prod Bits (List T))
+                (rose-rec (Prod Bits (List T)) (n)
+                  (pair (fst n) (list-rec (nil T) (c s) (cons T (node Bits c) s) (snd n)))
+                  t)
+                r)
+              ts))
+          (list-rec (nil T) (t r)
+            (cons T
+              (node Bits
+                (rose-rec (Prod Bits (List T)) (n)
+                  (pair (fst n) (list-rec (nil T) (c s) (cons T (node Bits c) s) (snd n)))
+                  t))
+              r)
+            ts))))
+    (by
+      (fold-induction ts (t r)
+        (cons T
+          (node Bits
+            (rose-rec (Prod Bits (List T)) (n)
+              (pair (fst n) (list-rec (nil T) (c s) (cons T (node Bits c) s) (snd n)))
+              t))
+          r)
+        64)))
+  ; A tree is the node of its unfolding.
+  (theorem lambek
+    (internal ()
+      (forall ((t T))
+        (equal
+          (node Bits
+            (rose-rec (Prod Bits (List T)) (n)
+              (pair (fst n) (list-rec (nil T) (c s) (cons T (node Bits c) s) (snd n)))
+              t))
+          t)))
+    (by (tree-fold-induction t (l rs) (node Bits (pair l rs)) 64 map-id map-fusion))))

@@ -387,12 +387,15 @@ Extension:
   elaboration, are complete, as is the `geb` editor language with Mike's
   Paredit, built from a pinned commit and patch, and the checker of holes
   in programs with the display of their obligations. The syntax of
-  statements and proof scripts is complete over the kernel's types, with
-  contexts, hypotheses, citations of earlier theorems and the tactics of
-  reduction, search, extensionality and the induction and case analysis of
-  lists, as is the record of elaborated definitions for the first program
-  outside the compilers; documentation as literate pages has a first
-  inclusion. Waiting on the datatype
+  statements and proof scripts is complete over the kernel's types and
+  over the internal language's, in object variables, with contexts,
+  hypotheses, citations of earlier theorems, those of imported documents
+  among them, and the tactics of reduction, search, extensionality, the
+  induction and case analysis of lists, the case analysis of coproducts
+  and trees and the rewriting under a test, in which the development of
+  the lemmas of trees is written in Geb source; as is the record of
+  elaborated definitions for the first program outside the compilers;
+  documentation as literate pages has a first inclusion. Waiting on the datatype
   language's completion: hygienic elaboration with explicit assembly,
   patterns with `&`, unused pattern variables, primitives that no binding
   shadows and emitted names that no definition captures; holes in the
@@ -3388,12 +3391,16 @@ tag := "authoring-compatibility"
 *
   * The syntax of statements and proof scripts
     ({ref "proof-scripts"}[Proof scripts and certificates])
-  * Complete over the kernel's types: contexts, hypotheses, citations of
-    earlier theorems, the tactics of reduction, search, extensionality and
-    the induction and case analysis of lists, saved certificates and replay
-    from Geb source ({ref "first-authoring"}[Writing a first Geb
-    development]); statements over datatypes wait on the datatype
-    language's completion, and induction on trees on the lemmas of trees
+  * Complete over the kernel's types and the internal language's, in
+    object variables: contexts, hypotheses, citations of earlier theorems
+    and of imported documents, the tactics of reduction, search,
+    extensionality, the induction and case analysis of lists, the case
+    analysis of coproducts and trees and the rewriting under a test, saved
+    certificates and replay from Geb source ({ref "first-authoring"}[Writing
+    a first Geb development]), the development of the lemmas of trees
+    among them; statements over datatypes wait on the datatype language's
+    completion, and the developments by induction on trees with the
+    hypothesis at each child on that tactic's form in scripts
 *
   * `let*` and `cond`, expanded in the elaboration of modules
   * Complete
@@ -5321,12 +5328,25 @@ normal form, derived from it, by which a rule citing it rewrites, as the Lean
 developments state their lemmas. The first authoring development reads,
 converts, proves and replays those sources without Lean code of its own.
 Their canonical and advanced encodings use the existing durable-document
-retraction. The compiler developments' statements remain Lean values and
-their scripts Lean code, the deducers under
-`GebTests/Prototypes/FreeTopos/`, which the provers' agreement relates to
-the prover written in Geb; moving those proofs into Geb source requires
-statements over the metalogic's own types and object variables, and the
-tactics of trees, bits and masks those deducers use. The syntax of statements and proof scripts
+retraction. Version 2 of the document states theorems also over the
+internal language's own types and terms, in object variables, cites the
+theorems of the documents it imports, a development's certificate holding
+the imported theorems' declarations before its own, and adds the tactics of
+trees, of bits and of the rewriting under a test that the compiler
+developments' deducers use
+({ref "internal-statements"}[Statements over the internal language]). The
+development of the lemmas of trees, `GebTests/Prototypes/FreeTopos/TreeCases.lean`
+among the deducers, is stated and proved in that version under
+`bootstrap/proofs/`, about the program of `bootstrap/expansion.manifest`, and
+`scripts/tests/test-proof-scripts.sh` proves and replays it. A reader or
+prover that rejects a development reports the theorem concerned and why,
+which the host writes at the theorem's line and column. The other compiler
+developments' statements remain Lean values and their scripts Lean code,
+the deducers under `GebTests/Prototypes/FreeTopos/`, which the provers'
+agreement relates to the prover written in Geb; moving them into Geb source
+requires the forms in scripts of the induction on trees with the hypothesis
+at each child and of the hypotheses' instances and implications those
+deducers use. The syntax of statements and proof scripts
 is a step of the sequence ({ref "authoring-sequence"}[The sequence and its
 acceptance]). It adds no rule to the metalogic: a script is a program for
 one prover, and its certificate is checked as any other is.

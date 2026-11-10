@@ -62,7 +62,8 @@
     abstractVar
     byFunExt
     bySplit
-    byListIndWith)
+    byListIndWith
+    byRoseInd)
   (import Prelude)
   (import Base)
   (import Theory)

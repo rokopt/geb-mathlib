@@ -19,7 +19,10 @@ import tempfile
 
 
 ROOT = Path(__file__).resolve().parent.parent
+# A record of a development whose proof document imports documents holds them and names them in
+# the field "imports"; a record without imports keeps the earlier format.
 FORMAT = "geb-development/v1"
+FORMAT_IMPORTS = "geb-development/v2"
 TOOLS = ("geb-author", "geb-compile", "geb-defs", "geb-kernel")
 ARTIFACTS = {
     "program.img", "program.defs", "proof.cert", "compiler.img", "authoring.lean.txt",
@@ -77,6 +80,18 @@ def sources(manifest):
     return names
 
 
+def imports(manifest, proofs):
+    # The host resolves the documents a proof document imports, each below the document's
+    # directory, and lists the development's documents with the proof document last.
+    listed = command("geb-author", "documents", manifest, proofs).splitlines()
+    names = [Path(name).relative_to(proofs.parent).as_posix() for name in listed[:-1]]
+    for name in names:
+        relative(name)
+    if len(set(names)) != len(names) or proofs.name in names:
+        raise ValueError("the proof document's imports repeat a document")
+    return names
+
+
 def snapshot(manifest, proofs, target):
     saved = target / "project" / manifest.name
     copy(manifest, saved)
@@ -85,12 +100,16 @@ def snapshot(manifest, proofs, target):
         copy(manifest.parent / name, target / "project" / relative(name))
     proof = target / "proofs" / proofs.name
     copy(proofs, proof)
-    return saved, proof, names
+    extra = imports(manifest, proofs)
+    for name in extra:
+        copy(proofs.parent / name, target / "proofs" / relative(name))
+    return saved, proof, names, extra
 
 
-def documents(manifest, proofs, names, target):
+def documents(manifest, proofs, names, extra, target):
     pairs = [(manifest, Path("manifest.csexp")), (proofs, Path("proofs.csexp"))]
     pairs += [(manifest.parent / name, Path("sources") / (name + ".csexp")) for name in names]
+    pairs += [(proofs.parent / name, Path("imports") / (name + ".csexp")) for name in extra]
     for source, name in pairs:
         out = target / name
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -131,9 +150,12 @@ def verify(root):
     actual = inventory(root)
     info = json.loads((root / "record.json").read_text(encoding="utf-8"),
                       object_pairs_hook=unique_fields)
-    if not isinstance(info, dict) or info.get("format") != FORMAT:
+    if not isinstance(info, dict) or info.get("format") not in (FORMAT, FORMAT_IMPORTS):
         raise ValueError("unsupported development record format")
-    if set(info) != {"format", "manifest", "proofs", "sources", "files"}:
+    fields = {"format", "manifest", "proofs", "sources", "files"}
+    if info["format"] == FORMAT_IMPORTS:
+        fields |= {"imports"}
+    if set(info) != fields:
         raise ValueError("unexpected development record fields")
     manifest, proofs = relative(info["manifest"]), relative(info["proofs"])
     if manifest.parent != Path("project") or proofs.parent != Path("proofs"):
@@ -148,6 +170,13 @@ def verify(root):
     for name in names:
         relative(name)
         required |= {"project/" + name, "documents/sources/" + name + ".csexp"}
+    extra = info.get("imports", [])
+    if (not isinstance(extra, list) or not all(isinstance(s, str) for s in extra)
+            or len(set(extra)) != len(extra) or ("imports" in info and not extra)):
+        raise ValueError("invalid record import list")
+    for name in extra:
+        relative(name)
+        required |= {"proofs/" + name, "documents/imports/" + name + ".csexp"}
     expected = info["files"]
     if not isinstance(expected, dict) or not required <= expected.keys():
         raise ValueError("the record omits a required artifact")
@@ -206,8 +235,8 @@ def record(manifest, proofs, destination, certificate):
     with tempfile.TemporaryDirectory(prefix=".geb-record-", dir=destination.parent) as directory:
         staged = Path(directory) / "record"
         staged.mkdir()
-        saved, proof, names = snapshot(manifest, proofs, staged)
-        documents(saved, proof, names, staged / "documents")
+        saved, proof, names, extra = snapshot(manifest, proofs, staged)
+        documents(saved, proof, names, extra, staged / "documents")
         compile_program(saved, staged)
         if certificate is None:
             command("geb-author", "prove", saved, proof, staged / "proof.cert")
@@ -216,9 +245,10 @@ def record(manifest, proofs, destination, certificate):
         command("geb-author", "replay", saved, proof, staged / "proof.cert")
         tooling(staged)
         write_json(staged / "record.json", {
-            "format": FORMAT,
+            "format": FORMAT_IMPORTS if extra else FORMAT,
             "manifest": saved.relative_to(staged).as_posix(),
             "proofs": proof.relative_to(staged).as_posix(),
+            **({"imports": extra} if extra else {}),
             "sources": names,
             "files": inventory(staged),
         })
@@ -236,10 +266,11 @@ def check(root, info, manifest=None, proofs=None):
     with tempfile.TemporaryDirectory(prefix="geb-preserve-") as directory:
         target = Path(directory)
         # Check a snapshot so every command observes the same source bytes.
-        saved, proof, names = snapshot(manifest, proofs, target)
-        documents(saved, proof, names, target / "documents")
+        saved, proof, names, extra = snapshot(manifest, proofs, target)
+        documents(saved, proof, names, extra, target / "documents")
         docs_equal = inventory(target / "documents") == inventory(root / "documents")
-        if not compare and (names != info["sources"] or not docs_equal):
+        if not compare and (names != info["sources"] or extra != info.get("imports", [])
+                            or not docs_equal):
             raise ValueError("the current reader does not reproduce the recorded documents")
         compile_program(saved, target)
         for name in ("program.img", "program.defs"):

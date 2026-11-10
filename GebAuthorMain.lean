@@ -11,7 +11,8 @@ import GebHost.Authoring
 
 open Geb.Kernel Geb.Kernel.Document
 
-/-- Execute proofs or convert a document without discarding its decorations. -/
+/-- Execute proofs, list the documents of a development, or convert a document without
+discarding its decorations. -/
 public def main (args : List String) : IO UInt32 := do
   try
     match args with
@@ -19,6 +20,10 @@ public def main (args : List String) : IO UInt32 := do
       let (m, text, b) ← GebHost.Authoring.readProgram manifest
       GebHost.Authoring.checkExamples manifest m text
       IO.FS.writeBinFile output (writeImage b)
+      return 0
+    | ["documents", manifest, proofs] =>
+      let m ← Manifest.read manifest
+      for d in ← GebHost.Authoring.development proofs m.profile do IO.println d.1
       return 0
     | [mode, manifest, proofs, certificate] =>
       GebHost.Authoring.execute mode manifest proofs certificate
@@ -36,6 +41,7 @@ public def main (args : List String) : IO UInt32 := do
     | _ =>
       IO.eprintln "usage: geb-author compile MANIFEST IMAGE\n\
         geb-author prove|replay MANIFEST PROOFS CERTIFICATE\n\
+        geb-author documents MANIFEST PROOFS\n\
         geb-author convert canonical|advanced|authoring MANIFEST INPUT OUTPUT"
       return 2
   catch e =>
