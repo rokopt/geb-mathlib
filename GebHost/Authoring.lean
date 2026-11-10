@@ -61,24 +61,35 @@ def bytesOf (cs : List Char) : ByteArray :=
 def sourceBytes (d : Doc) : ByteArray :=
   bytesOf (printAt (defaultLayout .profile 100 d) d)
 
-/-- Compile source with the current Geb compiler and retain its checked bundle. -/
-def compile (text : ByteArray) : IO Tree := do
+/-- Compile source with the current Geb compiler and retain its checked bundle; a rejection is
+the diagnostic of what was compiled from the sources given
+({name}`GebHost.Compiler.diagnostic`). -/
+def compile (what : String) (sources : List Compiler.Source) (text : ByteArray) : IO Tree := do
   let input := ofBytes text
   let out := GebBoot.«Compile.bundleOf» input
   if out.label == 0 then
-    throw <| IO.userError (GebHost.Compiler.rejectionMessage input)
+    throw <| IO.userError
+      (Compiler.diagnostic what sources (Compiler.rejectionOf input)).render
   let b := GebBoot.«Prelude.get» out
   unless (unbundle b).isSome do throw <| IO.userError "compiler returned a malformed bundle"
   return b
 
+/-- The sources of a manifest in the authoring spelling, as written, in which a rejected program's
+occurrences are found; a source in a strict encoding has no lines and columns to report. -/
+def writtenSources (paths : List System.FilePath) : IO (List Compiler.Source) :=
+  paths.filterMapM fun path ↦ do
+    let s ← Compiler.Source.read path
+    return if (readBasic s.text).isSome then none else some s
+
 /-- A manifest's compiled program and the text from which its examples are checked. -/
 def readProgram (path : System.FilePath) : IO (Manifest × ByteArray × Tree) := do
   let m ← Manifest.read path
-  let text ← (Manifest.sourcePaths path m).foldlM (init := ByteArray.empty) fun acc src ↦ do
+  let paths := Manifest.sourcePaths path m
+  let text ← paths.foldlM (init := ByteArray.empty) fun acc src ↦ do
     let d ← readDocument src m.profile
     discard <| IO.ofExcept (notesOf d.doc)
     return (acc ++ sourceBytes d.doc.eraseNotes).push 10
-  let b ← compile text
+  let b ← compile path.toString (← writtenSources paths) text
   let some ds := unbundle b | throw <| IO.userError "malformed bundle"
   IO.ofExcept (m.checkEntries (ds.map fun d ↦ String.ofList d.1))
   return (m, text, b)
@@ -96,7 +107,7 @@ def checkExamples (manifest : System.FilePath) (m : Manifest) (text : ByteArray)
             canonOf term ++ "))\n".toList ++
             "(def __geb_example_expected (lam ((input T)) ".toList ++
             canonOf value ++ "))\n".toList
-          let b ← compile (text ++ bytesOf suffix)
+          let b ← compile path.toString [] (text ++ bytesOf suffix)
           let some actual := runEntry b "__geb_example_actual".toList (leaf 0)
             | throw <| IO.userError s!"{path}: example of {declaration} does not return a tree"
           let some expected := runEntry b "__geb_example_expected".toList (leaf 0)

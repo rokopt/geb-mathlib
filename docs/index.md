@@ -4008,7 +4008,15 @@ import-direction rules above are enforced by
   `bootstrap/lean/GebBoot.lean`, the library `GebBoot` under the executable
   `geb-compile` (`GebCompileMain.lean`), which for a program the compiler
   rejects reports what rejects it, exits with status 1 and leaves its output
-  in place (`scripts/tests/test-geb-compile.sh`). `scripts/bootstrap.sh`
+  in place (`scripts/tests/test-geb-compile.sh`). The report is a
+  diagnostic, `FILE:LINE:COLUMN: error: MESSAGE`, at the declaration, atom
+  or parenthesis concerned: `GebHost/Locate.lean` derives the spans of a
+  source's S-expressions from the document lexer and finds the declaration
+  a name of the flat program denotes, after the compiler has rejected the
+  program. `geb-compile check` compiles, and writes nothing, a source with
+  the sources its nearest manifest lists before it, whose diagnostics
+  `editors/efm-langserver/config.yaml` and the VS Code task
+  `Geb: check saved file` give an editor. `scripts/bootstrap.sh`
   regenerates both and checks the fixed points: each compiler reproduces its
   own image, and the compiler built from the emitted Lean reproduces the Lean
   and the image. `GebTests/Prototypes/Stage1.lean` checks the stage-1 compiler's

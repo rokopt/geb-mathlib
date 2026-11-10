@@ -37,21 +37,21 @@ function checked(text) {
   return readFileSync(image);
 }
 
-async function formatTask(editor) {
-  const task = (await vscode.tasks.fetchTasks()).find(t => t.name === 'Geb: format saved file');
-  assert.ok(task, 'the repository formatter task is available');
+// Save the buffer and run a task of the repository on it, to the task's exit status.
+async function runTask(name, editor) {
+  const task = (await vscode.tasks.fetchTasks()).find(t => t.name === name);
+  assert.ok(task, `the repository task ${name} is available`);
   await editor.document.save();
-  await new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       listener.dispose();
-      reject(new Error('formatter task timed out'));
+      reject(new Error(`${name} timed out`));
     }, 30000);
     const listener = vscode.tasks.onDidEndTaskProcess(event => {
       if (event.execution.task.name !== task.name) return;
       clearTimeout(timer);
       listener.dispose();
-      if (event.exitCode === 0) resolve();
-      else reject(new Error(`formatter task exited ${event.exitCode}`));
+      resolve(event.exitCode);
     });
     vscode.tasks.executeTask(task).catch(error => {
       clearTimeout(timer);
@@ -59,7 +59,23 @@ async function formatTask(editor) {
       reject(error);
     });
   });
+}
+
+async function formatTask(editor) {
+  const exitCode = await runTask('Geb: format saved file', editor);
+  if (exitCode !== 0) throw new Error(`formatter task exited ${exitCode}`);
   return readFileSync(editor.document.uri.fsPath, 'utf8');
+}
+
+// The diagnostics the check task's problem matcher publishes for the buffer.
+async function checkTask(editor) {
+  const exitCode = await runTask('Geb: check saved file', editor);
+  for (let i = 0; i < 50; i++) {
+    const found = vscode.languages.getDiagnostics(editor.document.uri);
+    if (found.length || exitCode === 0) return { exitCode, found };
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  return { exitCode, found: [] };
 }
 
 async function edit(command, marked, expected) {
@@ -117,6 +133,21 @@ exports.run = async () => {
       const editor = await open(text);
       await assert.rejects(formatTask(editor), /formatter task exited 1/);
       assert.equal(readFileSync(editor.document.uri.fsPath, 'utf8'), text);
+    });
+    await test('check task reports a failure at its declaration', async () => {
+      const editor = await open('(def f (lam ((x T)) x))\n(def g (lam ((x T)) (nope x)))\n');
+      const { exitCode, found } = await checkTask(editor);
+      assert.equal(exitCode, 1);
+      assert.equal(found.length, 1);
+      assert.equal(found[0].message, 'g does not check');
+      assert.equal(found[0].severity, vscode.DiagnosticSeverity.Error);
+      assert.deepEqual([found[0].range.start.line, found[0].range.start.character], [1, 5]);
+    });
+    await test('check task reports nothing for an accepted program', async () => {
+      const editor = await open('(def f (lam ((x T)) x))\n');
+      const { exitCode, found } = await checkTask(editor);
+      assert.equal(exitCode, 0);
+      assert.equal(found.length, 0);
     });
     for (const text of ['', '; comment ', '(def name "atom ']) {
       await test(`parenthesis completion at ${JSON.stringify(text)}`, async () => {

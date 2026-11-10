@@ -7,5 +7,12 @@
     "args": ["exe", "geb-fmt", "${file}"],
     "options": { "cwd": "${workspaceFolder}" },
     "problemMatcher": []
+  }, {
+    "label": "Geb: check saved file",
+    "type": "process",
+    "command": "lake",
+    "args": ["exe", "geb-compile", "check", "${file}"],
+    "options": { "cwd": "${workspaceFolder}" },
+    "problemMatcher": "$geb"
   }]
 }

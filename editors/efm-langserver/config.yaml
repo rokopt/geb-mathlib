@@ -1,0 +1,26 @@
+# efm-langserver configuration for Geb sources: the diagnostics of
+# `geb-compile check`, published when a buffer is saved.
+#
+#   efm-langserver -c editors/efm-langserver/config.yaml
+#
+# The command reads the sources from disk: those of the nearest manifest
+# that lists the saved file, up to that file, or the file alone where no
+# manifest lists it. It therefore runs on save and not on each change.
+# The first format reads a diagnostic at an occurrence,
+# FILE:LINE:COLUMN: error: MESSAGE, and the second a failure without one,
+# FILE: MESSAGE.
+version: 2
+root-markers:
+  - lakefile.toml
+tools:
+  geb-compile-check: &geb-compile-check
+    lint-command: 'lake exe geb-compile check ${INPUT}'
+    lint-stdin: false
+    lint-on-save: true
+    lint-source: 'geb-compile'
+    lint-formats:
+      - '%f:%l:%c: %trror: %m'
+      - '%f: %m'
+languages:
+  geb:
+    - <<: *geb-compile-check
