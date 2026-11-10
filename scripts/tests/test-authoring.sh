@@ -103,7 +103,7 @@ with tempfile.TemporaryDirectory(prefix='geb-author-test-') as directory:
         run('replay', manifest, proofs, certificate, ok=False)
 
     reject_proof(original_proofs.replace('Pair.left', 'Pair.missing'))
-    reject_proof(original_proofs.replace('(proofs 1', '(proofs 2'))
+    reject_proof(original_proofs.replace('(proofs 1', '(proofs 3'))
     reject_proof(original_proofs.replace('(by (normalize 64))', '(by (unknown 64))'))
     reject_proof('(proofs 0)')
     reject_proof(original_proofs + '\n(proofs 0)')

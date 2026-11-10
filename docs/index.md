@@ -3892,16 +3892,27 @@ import-direction rules above are enforced by
   and under hypotheses, by scripts composing the tactics written in Geb,
   replays their saved certificates, and converts program and proof
   documents among the authoring, canonical and advanced spellings; it also
-  reads basic transport encoding. `GebHost/Authoring.lean` shares those operations
+  reads basic transport encoding. Version 2 of the proof document states
+  theorems also over the internal language, in object variables, with
+  rules at objects and the tactics of trees, coproducts and the rewriting
+  under a test, and names by `(import PATH)` the documents whose theorems
+  it cites, which the host resolves into one development; a rejected
+  development is reported at the theorem concerned. The documents under
+  `bootstrap/proofs/` state and prove in it the lemmas of trees of
+  `GebTests/Prototypes/FreeTopos/TreeCases.lean`, and
+  `scripts/tests/test-proof-scripts.sh` proves and replays them.
+  `GebHost/Authoring.lean` shares those operations
   with the manual's checked source inclusion (`GebManual.Geb`). The
   [example](../examples/authoring/Pair.geb), its proof source and manifest
   have a reproducible record of elaborated definitions, canonical source
   documents, checked image, certificate and pinned inputs under
   `examples/authoring/record/`, regenerated and checked by
   `scripts/authoring.sh`. Statements over the datatype language's
-  datatypes and induction on trees remain to be exposed.
+  datatypes and induction on trees with the hypothesis at each child remain
+  to be exposed.
   `scripts/preserve.py` records any manifest-based development through those
-  commands: original and canonical source documents, checked core, a replayed
+  commands: original and canonical source documents, the documents its proof
+  document imports among them, checked core, a replayed
   certificate, compiler artifacts, Geb tooling sources and host identities.
   Records are immutable; integrity verification runs without a compiler,
   while checking recompiles archived sources and replays saved certificates

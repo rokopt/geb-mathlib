@@ -13,7 +13,32 @@
 ; declare them.
 
 (module Translation
-  (export bitsTy treeTy nodeT call D.unnode D.cond D.tail D.headD condT lib KTys ktys TrState
+  (export bitsTy treeTy nodeT call D.bnil D.b0 D.b1 D.lab D.unnode D.children D.cond D.tail D.headD
+    D.lcase
+    D.isNil
+    D.succ
+    D.length
+    D.pred
+    D.dbl
+    D.add
+    D.cmp
+    D.ltB
+    D.eqB
+    D.subE
+    D.sub
+    D.mul
+    D.divMod
+    D.log2
+    D.iter
+    D.mapApp
+    D.and
+    D.allZip
+    D.equal
+    condT
+    lib
+    KTys
+    ktys
+    TrState
     trState
     LDefns
     ldefns

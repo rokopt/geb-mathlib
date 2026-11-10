@@ -1,0 +1,82 @@
+; Lemmas about the translation of the prelude, the reader, the type checker and the expansion of
+; the datatype language, which the case analysis of trees and of bits proves: a conditional
+; between two lists with one head, a conditional under the test that selects it, the soundness
+; of the equality of bitstrings, the list a fold of the case analysis of lists rebuilds, the
+; children of the tree of a label and children, and a tree the reader names by the atom of the
+; head of a definition's form, which is that atom.
+
+(proofs 2 (import trees.proofs.geb)
+  ; The first component of the fold of the case analysis of lists, at any pair of cases, is the
+  ; list.
+  (theorem rebuild-lcase
+    (internal (X Y)
+      (forall ((p (Prod (Arrow Unit Y) (Arrow X (Arrow (List X) Y)))) (l (List X)))
+        (equal
+          (fst
+            ((list-rec
+               (lam ((q (Prod (Arrow Unit Y) (Arrow X (Arrow (List X) Y)))))
+                 (pair (nil X) ((fst q) unit)))
+               (h r)
+               (lam ((q (Prod (Arrow Unit Y) (Arrow X (Arrow (List X) Y)))))
+                 (pair (cons X h (fst (r q))) ((snd q) h (fst (r q)))))
+               l) p))
+          l)))
+    (by (fold-induction l (h r) (cons X h r) 256)))
+  ; A conditional between two lists with one head is the head before the conditional between
+  ; the tails.
+  (theorem cond-cons
+    (internal (X)
+      (forall ((h X) (t (List X)) (u (List X)) (c Bits))
+        (equal (lib cond (List X) c (cons X h t) (cons X h u))
+          (cons X h (lib cond (List X) c t u)))))
+    (by (induction c (b bs ih) (reduce weak) (sum-cases b (z) (reduce weak) (reduce weak)))))
+  ; Inside the branch a test selects, a conditional on the same test is its first branch.
+  (theorem absorb
+    (internal (X Y)
+      (forall ((f (Arrow Y X)) (y Y) (z Y) (x X) (c Bits))
+        (equal (lib cond X c (f (lib cond Y c z y)) x) (lib cond X c (f z) x))))
+    (by (induction c (b bs ih) (reduce weak) (sum-cases b (w) (reduce weak) (reduce weak)))))
+  ; A conditional between two terms of one value is that value.
+  (theorem cond-same (internal (X) (forall ((x X) (c Bits)) (equal (lib cond X c x x) x)))
+    (by (induction c (b bs ih) (reduce weak) (sum-cases b (w) (reduce weak) (reduce weak)))))
+  ; The soundness of the equality of bitstrings: the conditional on it between its arguments is
+  ; the second, as a function of the second.
+  (theorem eqb-sound
+    (internal ()
+      (forall ((m Bits))
+        (equal (lam ((n Bits)) (lib cond Bits (lib eqB m n) m n)) (lam ((n Bits)) n))))
+    (by
+      (induction m (b bs ih)
+        (extensionality n (auto open 4 (cond-cons Bit) (rebuild-lcase Bit Bits)))
+        (extensionality n (auto open 6 (cond-cons Bit) (rebuild-lcase Bit Bits))))))
+  ; The soundness of the equality of bitstrings at every second argument.
+  (theorem eqb-sound-at
+    (internal () (forall ((m Bits) (n Bits)) (equal (lib cond Bits (lib eqB m n) m n) n)))
+    (by (pointwise eqb-sound weak)))
+  ; Under the test of the equality of two bitstrings, the first is the second.
+  (theorem mask-eqb
+    (internal ()
+      (forall ((m Bits) (n Bits))
+        (equal (lib cond Bits (lib eqB m n) m n) (lib cond Bits (lib eqB m n) n n))))
+    (by (reduce weak eqb-sound-at (cond-same Bits))))
+  ; A tree's label rewritten under that test.
+  (theorem mask-test
+    (internal ()
+      (forall ((m Bits) (n Bits) (t T))
+        (equal (lib cond T (lib eqB m n) (node Bits (pair m (nil T))) t)
+          (lib cond T (lib eqB m n) (node Bits (pair n (nil T))) t))))
+    (by
+      (mask-rewrite T Bits absorb mask-eqb (n m) (lib eqB m n) t m n n
+        (node Bits (pair m (nil T))))))
+  ; The children of the tree of a label and children are the children.
+  (theorem children-node
+    (internal ()
+      (forall ((cs (List T))) (equal (lib children (node Bits (pair (lib bnil) cs))) cs)))
+    (by (reduce full map-id map-fusion lambek)))
+  ; A tree the reader names by the atom of the head of a definition's form is that atom.
+  (theorem head-def
+    (forall ((t T)) (equal (if (Reader.named t Reader.kwDef) t Datatype.aDef) Datatype.aDef))
+    (by
+      (auto-trees weak 80 lambek children-node (rebuild-lcase Bit Bits) (rebuild-lcase Bit T)
+        (rebuild-lcase T Bits)
+        (rebuild-lcase T T)))))
