@@ -72,6 +72,7 @@ async function main() {
       extensionDevelopmentPath: extension,
       extensionTestsPath: path.join(__dirname, 'editor.cjs'),
       extensionTestsEnv: { GEB_TEST_PAREDIT_VERSION: paredit ? pareditVersion : '',
+        GEB_TEST_NAVIGATION_ONLY: process.argv.includes('--navigation') ? '1' : '',
         GEB_TEST_AUTHORING_PROJECT: project, GEB_TEST_AUTHORING_PROOFS: proofs },
       launchArgs: [workspace, '--extensions-dir', extensions, '--user-data-dir', state,
         '--disable-gpu', '--skip-welcome', '--skip-release-notes', '--disable-workspace-trust',

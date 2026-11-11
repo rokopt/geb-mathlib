@@ -109,6 +109,11 @@ exports.run = async () => {
     }
   }
   try {
+    if (process.env.GEB_TEST_NAVIGATION_ONLY) {
+      await require('./navigation.cjs').run(test);
+      if (failures.length) throw new AggregateError(failures, 'Navigation acceptance failed');
+      return;
+    }
     const profile = readFileSync(path.join(__dirname, 'fixtures/profile.geb'), 'utf8');
     for (const [eol, text] of [['LF', profile], ['CRLF', profile.replaceAll('\n', '\r\n')]]) {
       await test(`formatter task preserves the document and checked program (${eol})`, async () => {
@@ -183,7 +188,10 @@ exports.run = async () => {
       });
     }
     if (process.env.GEB_TEST_PAREDIT_VERSION) await pareditTests(test, profile);
-    else await require('./authoring.cjs').run(test);
+    else {
+      await require('./navigation.cjs').run(test);
+      await require('./authoring.cjs').run(test);
+    }
     if (failures.length) throw new AggregateError(failures, 'Editor acceptance failed');
   } finally {
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');

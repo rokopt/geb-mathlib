@@ -2,7 +2,7 @@
   "name": "geb-language",
   "displayName": "Geb",
   "description": "Geb source editing, compilation, proofs and development records",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "geb-mathlib",
   "private": true,
   "license": "Apache-2.0",

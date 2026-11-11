@@ -4558,6 +4558,18 @@ release. The build passes the structural fixture in continuous
 integration, and the release's failures remain reproducible beside it.
 The extension's README describes the tests and installation.
 
+The extension also supplies declaration navigation, documentation on hover,
+the outline of a file and symbol lookup across the selected program.
+`geb-author navigation` reads snapshots of open buffers, uses the document
+lexer for occurrences and the module elaborator and its binder-aware
+renamer for references, and returns source declarations. Imports and aliases
+resolve as in compilation; an instantiated declaration opens its template.
+Comments preceding a declaration or its note supply its hover text.
+Navigation saves no buffer and compiles no program. The extension translates
+the host's byte positions into editor positions and discards results after
+an input buffer changes. Local variables, proof documents and strict-encoded
+sources have no navigation interface.
+
 A tree-sitter grammar for Geb is derived from the same profile when the
 editors that use tree-sitter need it, from tree-sitter-scheme as a base,
 and its recovery from errors never supplies trusted input to the
