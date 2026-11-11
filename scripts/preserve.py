@@ -227,7 +227,7 @@ def tooling(target):
     })
 
 
-def record(manifest, proofs, destination, certificate):
+def record(manifest, proofs, destination, certificate, predecessor=None):
     if destination.exists() or destination.is_symlink():
         raise ValueError("record already exists; choose a new directory to retain the old record")
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -244,6 +244,15 @@ def record(manifest, proofs, destination, certificate):
             copy(certificate, staged / "proof.cert")
         command("geb-author", "replay", saved, proof, staged / "proof.cert")
         tooling(staged)
+        if predecessor is not None:
+            for name in ("program.img", "program.defs"):
+                if (staged / name).read_bytes() != (predecessor / name).read_bytes():
+                    raise ValueError(f"{name} changed during migration")
+            write_json(staged / "migration.json", {
+                "format": "geb-migration/v1",
+                "operation": "proofs/1-to-2",
+                "previous_record_sha256": digest(predecessor / "record.json"),
+            })
         write_json(staged / "record.json", {
             "format": FORMAT_IMPORTS if extra else FORMAT,
             "manifest": saved.relative_to(staged).as_posix(),
@@ -281,6 +290,29 @@ def check(root, info, manifest=None, proofs=None):
     print(f"{root}: documents {status}; checked core unchanged; saved certificate replayed")
 
 
+def migrate_proof_v2(root, destination):
+    if destination.exists() or destination.is_symlink():
+        raise ValueError("record already exists; migration requires a new directory")
+    if destination.resolve().is_relative_to(root.resolve()):
+        raise ValueError("migration destination must be outside the predecessor record")
+    # Work exclusively on a verified copy: the old archive is never rewritten, and
+    # every subsequent command sees the same predecessor bytes.
+    with tempfile.TemporaryDirectory(prefix="geb-migrate-") as directory:
+        previous = Path(directory) / "previous"
+        shutil.copytree(root, previous, symlinks=True)
+        info = verify(previous)
+        check(previous, info)
+        manifest, proofs = previous / info["manifest"], previous / info["proofs"]
+        migrated = json.loads(command("geb-author", "migrate-proof-v2", manifest, proofs,
+                                      previous / "proof.cert"))
+        saved, proof, _, _ = snapshot(manifest, proofs, Path(directory) / "next")
+        proof.write_bytes(bytes(migrated["source"]))
+        certificate = Path(directory) / "proof.cert"
+        certificate.write_bytes(bytes(migrated["certificate"]))
+        record(saved, proof, destination, certificate, predecessor=previous)
+    print(f"{destination}: proof source migrated from version 1 to 2 without proof search")
+
+
 def main():
     os.environ.setdefault("LEAN_NUM_THREADS", "4")
     parser = argparse.ArgumentParser(description=__doc__)
@@ -293,6 +325,10 @@ def main():
     create.add_argument("record", type=Path)
     create.add_argument("--certificate", type=Path,
                         help="replay this certificate instead of running proof search")
+    migrate = actions.add_parser("migrate-proof-v2",
+                                 help="migrate a version-1 proof record to version 2 by replay")
+    migrate.add_argument("record", type=Path)
+    migrate.add_argument("destination", type=Path)
     for name, help_text in (
         ("verify", "verify the record's file inventory and hashes without building"),
         ("check", "recompile archived sources and replay their saved certificate"),
@@ -322,6 +358,8 @@ def main():
                     build()
                 if args.action == "compare":
                     check(root, info, args.manifest.absolute(), args.proofs.absolute())
+                elif args.action == "migrate-proof-v2":
+                    migrate_proof_v2(root, args.destination.absolute())
                 else:
                     check(root, info)
     except (OSError, ValueError, subprocess.CalledProcessError) as error:

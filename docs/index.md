@@ -3934,6 +3934,13 @@ import-direction rules above are enforced by
   development `examples/roundtrip/` and its retained record are exercised by
   `scripts/tests/test-preservation.sh`. `geb-kernel sources` supplies the
   manifest's ordered relative source paths through the existing parser.
+  `preserve.py migrate-proof-v2 OLD NEW` migrates a record's proof source
+  from version 1 to 2, preserving its decorated document except for the
+  version atom and replaying the same certificate payload under both
+  versions. It publishes a new record with unchanged compiled meaning
+  and a receipt identifying the predecessor. The migration fixture checks
+  relocation, retained annotations, insufficient search budgets and
+  rejection without partial output.
   The VS Code extension under `editors/vscode/` selects a development by its
   manifest in workspace settings and invokes compilation, proof search,
   replay, kernel-hole reporting and preservation through the host commands.

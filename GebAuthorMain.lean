@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 import GebHost.Authoring
+import GebHost.Migration
 import GebHost.Navigation
 
 /-! # The command-line entry point of the proof-source runner -/
@@ -18,6 +19,8 @@ else against that of the program it names. -/
 public def main (args : List String) : IO UInt32 := do
   try
     match args with
+    | ["migrate-proof-v2", manifest, proofs, certificate] =>
+      GebHost.Migration.run manifest proofs certificate
     | ["navigation", manifest] => GebHost.Navigation.run manifest
     | ["compile", manifest, output] =>
       let (m, text, b) ← GebHost.Authoring.readProgram manifest
@@ -54,6 +57,7 @@ public def main (args : List String) : IO UInt32 := do
         geb-author check FILE\n\
         geb-author documents MANIFEST PROOFS\n\
         geb-author navigation MANIFEST < REQUEST.json\n\
+        geb-author migrate-proof-v2 MANIFEST PROOFS CERTIFICATE\n\
         geb-author convert canonical|advanced|authoring MANIFEST INPUT OUTPUT"
       return 2
   catch e =>
