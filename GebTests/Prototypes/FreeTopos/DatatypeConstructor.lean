@@ -1222,6 +1222,8 @@ def bodyRel (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let msAt (Γ : List Tree) : Term := Term.snd (atPos 0 Γ)
     let DaAt (Γ : List Tree) : Term := nodeT (Term.pair (numeral 1) (csAt Γ))
     let numAt (Γ : List Tree) : Term := pc P "Recognize.num" [jAt Γ]
+    -- the number the position's numeral denotes: the leaf of the position's label
+    let numV (Γ : List Tree) : Term := leafT (call D.lab [] [jAt Γ])
     let bAt (Γ : List Tree) : Term := nodeOfForm P (numAt Γ) (lAt Γ)
     let formAt (Γ : List Tree) : Term := pc P "Typing.tAs" [DaAt Γ, bAt Γ]
     let lFAt (Γ : List Tree) : Term := pc P "Datatype.eraseExpr" [lAt Γ]
@@ -1249,15 +1251,15 @@ def bodyRel (P : Prog) (S : Defs) (T : Defs3) : Step :=
       K.conjE <| withCtx fun _ Φ₄ ↦
       let hp := Φ₄.length - 2
       K.conjE <| withCtx fun _ Φ₅ ↦
-      applyThm K "denNum" (fun Γ ↦ jAt Γ :: fixedAt Γ) [K.byHyp hp, K.byNorm,
+      applyThm K "denNum" (fun Γ ↦ numV Γ :: jAt Γ :: fixedAt Γ) [K.byHyp hp, K.byNorm,
         K.byHyp (Φ₅.length - 1)] <|
-      applyThm K "denNodeL" (fun Γ ↦ [tsAt Γ, wAt Γ, jAt Γ, lFAt Γ, numAt Γ] ++ fixedAt Γ)
+      applyThm K "denNodeL" (fun Γ ↦ [tsAt Γ, wAt Γ, numV Γ, lFAt Γ, numAt Γ] ++ fixedAt Γ)
         [K.byHyp hAb1, K.byHyp hAb2, K.byHyp hPlain, K.byHyp hLs,
           linkK K "bodyRel: the trees" K.byNorm, dHyp, dHyp] <|
       withCtx fun Γ₆ _ ↦
       dAllE L K.G K.E hMark (membershipsT P (msAt Γ₆) (tsAt Γ₆)) <| K.impE (K.byHyp hWalk) <|
       withCtx fun _ Φ₇ ↦
-      let tAt (Γ : List Tree) : Term := nodeT (Term.pair (call D.lab [] [jAt Γ]) (tsAt Γ))
+      let tAt (Γ : List Tree) : Term := nodeT (Term.pair (call D.lab [] [numV Γ]) (tsAt Γ))
       applyThm K "ctorsMember" (fun Γ ↦ [tAt Γ, DaAt Γ, msAt Γ])
         [linkK K "bodyRel: the constructor" (K.byHyp (Φ₇.length - 1))] <|
       withCtx fun _ Φ₈ ↦
