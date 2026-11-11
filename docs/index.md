@@ -4509,7 +4509,8 @@ import-direction rules above are enforced by
   compilers ensure of a whole program; `DatatypeRecognizer.lean` proves
   that a generated recognizer decides membership and
   `DatatypeConstructor.lean` that a generated constructor is related at
-  its type;
+  its type; `DatatypeProgram.lean` states the soundness at a whole
+  program and proves the typing's runs over a program's forms;
   `TreeCases.lean` exercises the case analysis of a tree variable in any
   context and rewriting under a test, and `Expansion.lean` proves with
   them that the expansion of the datatype language,
