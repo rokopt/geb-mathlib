@@ -7,8 +7,10 @@ module
 
 public import GebTests.Prototypes.FreeTopos.DatatypeProgramRuns
 public import GebTests.Prototypes.FreeTopos.DatatypeClosed
+public import GebTests.Prototypes.FreeTopos.DatatypeConstructor
 public meta import GebTests.Prototypes.FreeTopos.DatatypeProgramRuns -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos.DatatypeClosed -- shake: keep
+public meta import GebTests.Prototypes.FreeTopos.DatatypeConstructor -- shake: keep
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -22,13 +24,17 @@ a failure, the definitions the reader ends with are related to the typing enviro
 ends with. It is proved by induction on the forms. A form at which the expansion's step does not
 fail, and whose head no keyword of a datatype's declaration names, is of a kind: a definition, a
 type or a numeral abbreviation, a function, or a template's instance. The step at a kind shows
-that the states the passes' steps leave at a form of it satisfy the invariant; a definition and
-a function share the step at a form at which the expansion writes a definition, whose body is a
-source form sound at expanded forms. At the states the passes begin in, the soundness at all
-states is that of the program. The soundness assumes that no form declares a datatype, that no
-numeral abbreviation takes a name of the implementation's, and that each definition's body the
-expansion writes is a source form at the numeral abbreviations before it, which a run over the
-program's forms tests.
+that the states the passes' steps leave at a form of it satisfy the invariant, which includes
+the recognizers' agreement with membership: it is kept where a definition is read because the
+definition's name occurs in the program's kernel forms and each recognizer those forms refer to
+is among the names the reader has, so that the name, which is fresh, is no recognizer's. A
+definition and a function share the step at a form at which the expansion writes a definition,
+whose body is a source form sound at expanded forms; the hypotheses at the states are preserved
+by a definition written before pending forms, as the definitions a datatype's declaration
+writes are. At the states the passes begin in, the soundness at all states is that of the
+program. The soundness assumes that no form declares a datatype, that no numeral abbreviation
+takes a name of the implementation's, and that each definition's body the expansion writes is a
+source form at the numeral abbreviations before it, which a run over the program's forms tests.
 
 ## Main definitions
 
@@ -40,6 +46,7 @@ program's forms tests.
 
 ## Main statements
 
+* {lit}`writtenInv` — the hypotheses at the states are preserved by a definition written.
 * {lit}`stepDefined` — the step at a form at which the expansion writes a definition.
 * {lit}`formKind` — a form at which the expansion's step does not fail is of a kind.
 * {lit}`passesForms` — the soundness at all states, by induction on the forms.
@@ -88,6 +95,41 @@ def flatT (P : Prog) (xs : Term) : Term :=
   foldrT treeTy Ls (Term.lam treeTy (Term.lam Ls
     (pc P "Prelude.append" [call D.children [] [v 1], v 0]))) (nilT treeTy) xs
 
+/-- Whether an atom occurs in a form, as the recognizers' insertion tests it. -/
+def occT (P : Prog) (a g : Term) : Term := pc P "Recognize.occurs" [a, g]
+
+/-- Whether an atom occurs in a form of a list, as the recognizers' insertion tests the program's
+forms for a recognizer's atom. -/
+def occInT (P : Prog) (a fs : Term) : Term := anyT P (occT P (sh 2 a) (v 1)) fs
+
+/-- That each atom that occurs in a form occurs in a list of forms: the predicate of the form,
+beneath it, at the list. -/
+def occPred (P : Prog) (fs : Term) : Term :=
+  Term.lam treeTy (Internal.Logic.all P.o treeTy (Term.lam treeTy (Internal.Logic.imp P.o
+    (truth P.o (occT P (v 0) (v 1))) (truth P.o (occInT P (v 0) (sh 2 fs))))))
+
+/-- The atom of a name: the node of the atoms' label over the name's characters. -/
+def atomOfNameT (n : Term) : Term := nodeT (Term.pair (numeral 1) (call D.children [] [n]))
+
+/-- The atom of a datatype's recognizer, of the recognizer's name. -/
+def memberAtomT (P : Prog) (d : Term) : Term :=
+  atomOfNameT (pc P "Typing.recognizerName" [d])
+
+/-- That the recognizers the program's forms refer to are among the names: at each datatype of
+the typing environment whose recognizer's atom occurs in the forms, the recognizer's name has an
+index among the names. -/
+def insT (P : Prog) (Ev names fs : Term) : Term :=
+  let o := P.o
+  Internal.Logic.all o treeTy (Term.lam treeTy (Internal.Logic.imp o
+    (truth o (pc P "Typing.hasName" [v 0, pc P "Typing.envNoms" [sh 1 Ev]]))
+    (Internal.Logic.imp o (truth o (occInT P (memberAtomT P (v 0)) (sh 1 fs)))
+      (truth o (pc P "Prelude.isSome" [pc P "Reader.indexOf"
+        [pc P "Typing.recognizerName" [v 0], sh 1 names]])))))
+
+/-- That a name's atom occurs in the program's forms: the predicate of the name. -/
+def usedPred (P : Prog) (fs : Term) : Term :=
+  Term.lam treeTy (truth P.o (occInT P (atomOfNameT (v 0)) (sh 1 fs)))
+
 /-- The states of the compiler's passes over a program's forms, and the forms that remain: the
 expansion's declarations, the typing's environment and rejection, the reader's type and numeral
 abbreviations, names and terms, and the markers and the kernel forms of the whole program, which
@@ -114,13 +156,22 @@ structure Passes where
   ms : Term
   /-- The program's kernel forms. -/
   fs : Term
+  /-- The typed forms written and not yet read, in order, before those of the forms that
+  remain, where there are any. -/
+  ws : Option Term := none
+  /-- The environment whose datatypes' recognizers the invariant speaks of, where it is not the
+  typing's: within a datatype's declaration, the environment before it. -/
+  recEnv : Option Term := none
 
 namespace Passes
 
 variable (P : Prog) (S : Defs) (T : Defs3) (X₀ : Term) (s : Passes)
 
-/-- The typed forms the expansion writes for the forms that remain. -/
-def typed : Term := typedForms P s.es s.dv
+/-- The typed forms the passes after the expansion have yet to read: those written and not yet
+read, where there are any, before those the expansion writes for the forms that remain. -/
+def typed : Term := match s.ws with
+  | none => typedForms P s.es s.dv
+  | some w => txsApp P w (typedForms P s.es s.dv)
 
 /-- The typed forms that are no markers, which the typing checks after the markers. -/
 def others : Term := Term.snd (Term.subst X₀ fun _ ↦ s.typed P)
@@ -150,10 +201,15 @@ def rel : Term := Term.pair (s.finalTerms P) (pc P "Typing.envMs" [s.env])
 the kernel types the terms the reader ends with, and the states' invariant: no rejection, the
 definitions related to the typing environment's, the numeral abbreviations coherent with the
 environment's, the names those of definitions, no numeral abbreviation a keyword, as many names
-as terms, and no datatype declared; and each definition's body the expansion writes for the
-forms that remain is a source form at the numeral abbreviations before it. -/
+as terms, and the recognizers of the environment's datatypes among the definitions decide
+membership; each definition's body the expansion writes for the forms that remain is a source
+form at the numeral abbreviations before it; and, of the program's kernel forms, each atom of a
+kernel form that remains occurs in them, each recognizer they refer to of a datatype of the
+environment is among the names, and each name's atom occurs in them. The datatypes whose
+recognizers are spoken of are those of the recognizers' environment, where one is given. -/
 def hyps : List Term :=
   let o := P.o
+  let Er := s.recEnv.getD s.env
   let isSome (t : Term) : Term := pc P "Prelude.isSome" [t]
   let len (t : Term) : Term := pc P "Prelude.length" [t]
   [truth o (Term.fst (xpRun P s.es (xpState s.dv (nilT treeTy)))),
@@ -167,8 +223,11 @@ def hyps : List Term :=
     T.namesT s.names,
     T.kwsT s.nums,
     Term.eq (len s.names) (len s.terms),
-    Term.eq (pc P "Typing.envNoms" [s.env]) (nilT treeTy),
-    truth o (Term.fst (plainRun P s.es (plainState s.dv s.nums)))]
+    T.recsT (s.rel P) Er s.names,
+    truth o (Term.fst (plainRun P s.es (plainState s.dv s.nums))),
+    S.allL (occPred P s.fs) (pc P "Datatype.kernelForms" [s.typed P]),
+    insT P Er s.names s.fs,
+    S.allL (usedPred P s.fs) s.names]
 
 /-- The conclusion at the states: the typing environment the typing ends with has the markers
 of the environment, the definitions the reader ends with are related to it by the names the
@@ -192,15 +251,17 @@ def passesCtx (T : Defs3) : List Tree :=
 /-- The passes' states of the variables of {name}`passesCtx`, shifted by a number of variables
 within them, at forms that remain. -/
 def passesAt (k : ℕ) (es : Term) : Passes :=
-  ⟨es, v (k + 8), v (k + 7), v (k + 6), v (k + 5), v (k + 4), v (k + 3), v (k + 2), v (k + 1), v k⟩
+  ⟨es, v (k + 8), v (k + 7), v (k + 6), v (k + 5), v (k + 4), v (k + 3), v (k + 2), v (k + 1), v k,
+    none, none⟩
 
 /-- The soundness at the forms that remain, the variable of index 0, at all states: the
 quantification over the states' variables of the implication of the conclusion by the hypotheses
 and the further hypotheses {lit}`more` of the forms. -/
-def passesφ (P : Prog) (T : Defs3) (X₀ : Term) (more : Term → List Term) : Term :=
+def passesφ (P : Prog) (S : Defs) (T : Defs3) (X₀ : Term) (more : Term → List Term) :
+    Term :=
   let s := passesAt 0 (v 9)
   (passesCtx T).foldl (fun b A ↦ Internal.Logic.all P.o A (Term.lam A b))
-    ((s.hyps P T X₀ ++ more (v 9)).foldr (Internal.Logic.imp P.o) (s.concl P T X₀))
+    ((s.hyps P S T X₀ ++ more (v 9)).foldr (Internal.Logic.imp P.o) (s.concl P T X₀))
 
 /-- The environment's relation to the empty named context holds of the empty environment: no
 position of the context has an entry. In the context of the relation's context. -/
@@ -226,21 +287,6 @@ def cxNil (P : Prog) (S : Defs) (T : Defs3) : Step :=
         dAllI K.L <| dImpI K.L (linkK K "cxNil: a type" (lastFalse K)))
         a.ctx a.hyps a.concl
       | dbgTrace "cxNil: not proved" fun _ ↦ none
-    pure (a, d))
-
-/-- The recognizers' agreement holds of a typing environment that declares no datatype. In the
-context of the names, the environment and the relation's context. -/
-def recsNoData (P : Prog) (S : Defs) (T : Defs3) : Step :=
-  ("recsNoData", fun ix E ↦ do
-    let K : Kit := ⟨P, S, E, ix, []⟩
-    let a : Internal.Thm := ⟨0, [list treeTy, T.envTy, Defs3.ctxTy],
-      [Term.eq (pc P "Typing.envNoms" [v 1]) (nilT treeTy)], T.recsT (v 2) (v 1) (v 0)⟩
-    let hasName : List Internal.NormRule := [.delta (P.idx "Typing.hasName")]
-    let some d := (dRwBy (evalRw K.G K.E [.delta (T.q + 6 + 2 * nFolds)] .head) <|
-        normHyps K [0] <| dAllI K.L <| dImpI K.L fun Γ Φ ψ ↦
-          dRwHyp (evalRw K.G K.E (K.rulesEx Φ (Φ.length - 1) ++ hasName) .full) (Φ.length - 1)
-            (linkK K "recsNoData: a datatype" (dFalse K.L dHyp)) Γ Φ ψ) a.ctx a.hyps a.concl
-      | dbgTrace "recsNoData: not proved" fun _ ↦ none
     pure (a, d))
 
 /-- Whether a head is named by a keyword, as the expansion tests it. -/
@@ -337,7 +383,8 @@ recognizers' insertion at a form, whose values at a definition's form are equati
 ({lit}`eraseDefForm`, {lit}`recAtThree`). -/
 def passProg (P : Prog) : Prog :=
   { P with folded := P.folded ++ ["Typing.checkStep", "Datatype.xpStep", "Datatype.genericStep",
-      "Reader.progStep", "Datatype.eraseForm", "Recognize.recognizersAt"] }
+      "Reader.progStep", "Datatype.eraseForm", "Recognize.recognizersAt",
+      "Recognize.occurs"] }
 
 /-- An equation of a function kept folded at arguments, in the normal forms of the passes'
 rules: the function's value there, by its unfolding. -/
@@ -411,135 +458,240 @@ def expandedOf (K : Kit) (form dv : List Tree → Term) (present : Deducer) (k :
   applyThm K "expSound" (fun Γ ↦ [form Γ]) [lastOr K] <| K.allEΓ dv <| K.impE present <|
   fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
 
-/-- The soundness at the forms that remain after a form at which the expansion writes a
-definition, a step of the soundness at all states ({name}`passesφ`): given it at the forms
-after, the expansion's step at the form from the declarations writes the definition of a name
-as a body, a source form at the numeral abbreviations and sound at expanded forms, the test
-of the definitions' bodies steps to the state of the declarations and the abbreviations, and the
-hypotheses at the states give the conclusion. The definition is before the forms of the rest
-({lit}`typedFormsCons`); the typing's step ({lit}`checkDef`) declares the name at the body's
-type; the reader's ({lit}`readDef`) has the name after the names and the resolved term after the
-terms. The terms the reader ends with have the term at the index of the names' length
-({lit}`readExt`, {lit}`nthLen`), with a kernel type ({lit}`kcTyped`), so that the term converges
-to a value related at its type, by the body's soundness, and the invariant holds of the states
-the steps leave ({lit}`globExtend`, {lit}`namesExtend`), at which the hypothesis on the forms
-after gives the conclusion. In the context of the body, the name, the form, the forms after and
-the states. -/
-def stepDefined (P : Prog) (S : Defs) (T : Defs3) : Step :=
-  ("stepDefined", fun ix E ↦ do
-    let K : Kit := ⟨passProg P, S, E, ix, ["eraseDefForm", "recAtThree"]⟩
+/-- That a definition's body is sound at the states: where the typing gives it a type in the
+empty context, the reader resolves its erasure, its numeral abbreviations expanded, in the empty
+scope, and the kernel types the resolved term at the types of the terms the reader has, the term
+converges, in the empty environment, to a value related at the type. -/
+def soundAtT (P : Prog) (S : Defs) (T : Defs3) (s : Passes) (b : Term) : Term :=
+  let o := P.o
+  let nil := nilT treeTy
+  let isSomeT (t : Term) : Term := truth o (pc P "Prelude.isSome" [t])
+  let get (t : Term) : Term := pc P "Prelude.get" [t]
+  let syn := pc P "Typing.synIn" [s.env, nil, b]
+  let res := pc P "Reader.resolve" [s.tys, s.names,
+    pc P "Reader.expandNums" [s.nums, pc P "Datatype.eraseExpr" [b]], nil]
+  let kernel := pc P "Check.typeIn" [Term.snd (kcRun P s.terms kcInit), nil, get res]
+  [isSomeT syn, isSomeT res, isSomeT kernel].foldr (Internal.Logic.imp o)
+    (S.conv (Term.lam nat (S.evN (Term.fst (sh 1 (s.rel P))) (v 0) (sh 1 nil) (sh 1 (get res))))
+      (T.relT (s.rel P) (get syn)))
+
+/-- The soundness at the states ({name}`soundAtT`) of a body that is a source form at the
+numeral abbreviations and sound at expanded forms: that soundness at the states, whose
+hypotheses are those at the states and the relations of the empty named context and
+environment ({lit}`envNil`, {lit}`cxNil`). The hypotheses at the states are those from the index
+{lit}`hInv`, the
+body's being a source form that of index {lit}`iSrc`, and {lit}`expanded` gives the body's
+soundness at expanded forms as a hypothesis, by its index. -/
+def soundExpanded (K : Kit) (P : Prog) (s : List Tree → Passes) (hInv iSrc : ℕ)
+    (expanded : (ℕ → Deducer) → Deducer) : Deducer :=
+  let L := K.L
+  let nil := nilT treeTy
+  let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
+  let hypOr := hypOrK K
+  let at' (m : String) (k : Deducer) : Deducer := stage s!"soundExpanded: {m}" k
+  dImpI L <| dImpI L <| dImpI L <| fun Γ₀ Φ₀ ψ₀ ↦
+    let (iSyn, iRes, iTyped) := (Φ₀.length - 3, Φ₀.length - 2, Φ₀.length - 1)
+    (expanded fun iExp Γ₁ Φ₁ ψ₁ ↦
+      dAllE L K.G K.E iExp (Term.snd (kcRun P (s Γ₁).terms kcInit)) (
+        K.allEΓ (fun _ ↦ nil) <| K.allEΓ (fun Γ ↦ (s Γ).dv) <| K.allEΓ (fun Γ ↦ (s Γ).env) <|
+        K.allEΓ (fun _ ↦ nil) <| K.allEΓ (fun Γ ↦ (s Γ).tys) <| K.allEΓ (fun Γ ↦ (s Γ).nums) <|
+        K.allEΓ (fun Γ ↦ (s Γ).names) <| K.allEΓ (fun _ ↦ nil) <|
+        K.allEΓ (fun Γ ↦ (s Γ).rel P) <| last fun iS ↦ impEs L iS
+          [at' "the definitions related" (hypOr (hInv + 6)),
+            at' "the empty environment"
+              (K.cutThm "envNil" (fun Γ ↦ [(s Γ).rel P]) (last K.byHyp)),
+            at' "the numerals" (hypOr (hInv + 7)),
+            at' "the names" (hypOr (hInv + 8)),
+            at' "a source form" (K.byHyp iSrc),
+            at' "expanded" (K.solve 3),
+            at' "typed" (K.byHyp iSyn),
+            at' "resolved" (K.byHyp iRes),
+            at' "kernel typed" (K.byHyp iTyped),
+            at' "the keywords" (hypOr (hInv + 9)),
+            at' "the markers" K.byNorm,
+            at' "the recognizers" (hypOr (hInv + 11)),
+            at' "the empty context"
+              (K.cutThm "cxNil" (fun Γ ↦ [(s Γ).env]) (last K.byHyp))] <|
+        at' "the value" (last K.byHyp)) Γ₁ Φ₁ ψ₁) Γ₀ Φ₀ ψ₀
+
+/-- A number of deducer transformers applied in turn. -/
+def repeatK (n : ℕ) (f : Deducer → Deducer) (k : Deducer) : Deducer :=
+  Nat.rec (motive := fun _ ↦ Deducer) k (fun _ r ↦ f r) n
+
+/-- The parts of a conjunction nested to the right ({name}`conjAll`), proved in order. -/
+def conjIs (L : Conn) (ds : List Deducer) : Deducer := match ds.reverse with
+  | [] => fun _ _ _ ↦ none
+  | d :: rest => rest.foldl (fun acc p ↦ dConjI L p acc) d
+
+/-- The last hypothesis, a conjunction of a number of formulas nested to the right
+({name}`conjAll`), split: the continuation is given the index of each formula, by its
+position. -/
+def conjEs (K : Kit) (n : ℕ) (k : (ℕ → ℕ) → Deducer) : Deducer := fun Γ Φ ψ ↦
+  let base := Φ.length - 1
+  repeatK (n - 1) K.conjE
+    (k fun i ↦ if i + 1 < n then base + 1 + 2 * i else base + 2 * (n - 1)) Γ Φ ψ
+
+/-- A goal by a hypothesis, a defined predicate of an index unfolded at the head of both. -/
+def unfoldBothK (K : Kit) (idx h : ℕ) : Deducer :=
+  dRwBy (evalRw K.G K.E [.delta idx] .head) <|
+    dRwHyp (evalRw K.G K.E [.delta idx] .head) h fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ
+
+/-- The states after a definition written of a name's atom as a body is read, given the pending
+forms after it: the typing environment declares the name at the body's type, without a
+rejection, and the reader has the name after the names and the resolved body after the terms. -/
+def Passes.written (P : Prog) (s : Passes) (n b ws : Term) : Passes :=
+  let nil := nilT treeTy
+  let get (t : Term) : Term := pc P "Prelude.get" [t]
+  let nm := pc P "Reader.nameOf" [n]
+  let syn := pc P "Typing.synIn" [s.env, nil, b]
+  let res := pc P "Reader.resolve" [s.tys, s.names,
+    pc P "Reader.expandNums" [s.nums, pc P "Datatype.eraseExpr" [b]], nil]
+  { s with
+    env := pc P "Typing.withDefs" [s.env,
+      declareT P (pc P "Typing.envDefs" [s.env]) nm (get syn)]
+    rej := pc P "Typing/OName.nothing" []
+    names := pc P "Prelude.append" [s.names, pc P "Prelude.single" [nm]]
+    terms := pc P "Prelude.append" [s.terms, pc P "Prelude.single" [get res]]
+    ws := some ws }
+
+/-- The hypotheses at the states are preserved by a definition written: a definition of a
+name as a body sound at the states ({name}`soundAtT`), before pending forms, leaves states
+({name}`Passes.written`) of which the hypotheses hold again, and whose conclusion gives that at
+the states before. The typing's step
+({lit}`checkDef`) declares the name at the body's type; the reader's ({lit}`readDef`) has the
+name after the names and the resolved term after the terms. The terms the reader ends with have
+the term at the index of the names' length ({lit}`readExt`, {lit}`nthLen`), with a kernel type
+({lit}`kcTyped`), so that the term converges to a value related at its type, by the body's
+soundness, and the invariant holds of the states the steps leave ({lit}`globExtend`,
+{lit}`namesExtend`); the name, whose atom occurs in the program's forms
+({lit}`occursDefName`), is no recognizer's of a datatype of the recognizers' environment, the
+recognizers the forms refer to being among the names, so that the recognizers decide membership
+as before ({lit}`recsExtend`, {lit}`insExtend`). In the context of the body, the name, the
+pending forms after, the forms that remain, the states and the recognizers' environment. -/
+def writtenInv (P : Prog) (S : Defs) (T : Defs3) : Step :=
+  ("writtenInv", fun ix E ↦ do
+    let K : Kit := ⟨passProg P, S, E, ix, ["eraseDefForm", "recAtThree"] ++ lookupEqNames⟩
     let L := K.L
     let Ls := list treeTy
     let nil := nilT treeTy
-    let at' (m : String) (k : Deducer) : Deducer := stage s!"stepDefined @ {m}" k
-    let some X₀ := partitionT K [Ls] | dbgTrace "stepDefined: no partition" fun _ ↦ none
-    let s := passesAt 4 (consT treeTy (v 2) (v 3))
-    let hyps := [Internal.instTerm [] [v 3] (passesφ P T X₀ (formsOk P S)),
-        Term.eq (xpStepT P (xpState (v 12) nil) (v 2))
-          (xpState (v 12) (consT treeTy (defForm P (v 1) (v 0)) nil)),
-        Term.eq (plainStepT P (plainState (v 12) (v 8)) (v 2)) (plainState (v 12) (v 8))] ++
-      s.hyps P T X₀ ++ [truth P.o (srcTestT P (v 8) (v 0)),
-        Internal.instTerm [] [v 0] (expandedφ P S T)] ++ formsOk P S (v 3)
-    let Γ₀ := [treeTy, treeTy, treeTy, Ls] ++ passesCtx T
-    let a : Internal.Thm := ⟨0, Γ₀, hyps, s.concl P T X₀⟩
+    let at' (m : String) (k : Deducer) : Deducer := stage s!"writtenInv @ {m}" k
+    let some X₀ := partitionT K [Ls] | dbgTrace "writtenInv: no partition" fun _ ↦ none
+    let s : Passes := { passesAt 4 (v 3) with
+      ws := some (consT treeTy (defForm P (v 1) (v 0)) (v 2)), recEnv := some (v 13) }
+    let hyps := s.hyps P S T X₀ ++ [soundAtT P S T s (v 0)]
+    let Γ₀ := [treeTy, treeTy, Ls, Ls] ++ passesCtx T ++ [T.envTy]
+    let s' := s.written P (v 1) (v 0) (v 2)
+    let a : Internal.Thm := ⟨0, Γ₀, hyps, conjAll P.o (s'.hyps P S T X₀ ++
+      [Internal.Logic.imp P.o (s'.concl P T X₀) (s.concl P T X₀)])⟩
     -- the variables, from any context that extends the theorem's
     let at_ (j : ℕ) (Γ : List Tree) : Term := v (j + (Γ.length - Γ₀.length))
-    let (bA, nA, eA, esA) := (at_ 0, at_ 1, at_ 2, at_ 3)
-    let (fsA, msA, termsA, namesA, numsA, tysA) := (at_ 4, at_ 5, at_ 6, at_ 7, at_ 8, at_ 9)
-    let (rA, EA, dvA) := (at_ 10, at_ 11, at_ 12)
+    let (bA, nA, wsA, esA) := (at_ 0, at_ 1, at_ 2, at_ 3)
+    let (fsA, termsA, namesA, numsA, tysA) := (at_ 4, at_ 6, at_ 7, at_ 8, at_ 9)
+    let (rA, EA, ErA) := (at_ 10, at_ 11, at_ 13)
     let get (t : Term) : Term := pc P "Prelude.get" [t]
     let fA (Γ : List Tree) : Term := defForm P (nA Γ) (bA Γ)
     -- the states before the form, and the parts of the states after it
-    let sA (Γ : List Tree) : Passes :=
-      passesAt (4 + (Γ.length - Γ₀.length)) (consT treeTy (eA Γ) (esA Γ))
+    let sA (Γ : List Tree) : Passes := { passesAt (4 + (Γ.length - Γ₀.length)) (esA Γ) with
+      ws := some (consT treeTy (fA Γ) (wsA Γ)), recEnv := some (ErA Γ) }
     let synA (Γ : List Tree) : Term := pc P "Typing.synIn" [EA Γ, nil, bA Γ]
     let nmA (Γ : List Tree) : Term := pc P "Reader.nameOf" [nA Γ]
     let erA (Γ : List Tree) : Term := pc P "Datatype.eraseExpr" [bA Γ]
     let resA (Γ : List Tree) : Term := pc P "Reader.resolve" [tysA Γ, namesA Γ,
       pc P "Reader.expandNums" [numsA Γ, erA Γ], nil]
     let tA (Γ : List Tree) : Term := get (resA Γ)
-    let E'A (Γ : List Tree) : Term := pc P "Typing.withDefs" [EA Γ,
-      declareT P (pc P "Typing.envDefs" [EA Γ]) (nmA Γ) (get (synA Γ))]
     let names'A (Γ : List Tree) : Term :=
       pc P "Prelude.append" [namesA Γ, pc P "Prelude.single" [nmA Γ]]
     let terms'A (Γ : List Tree) : Term :=
       pc P "Prelude.append" [termsA Γ, pc P "Prelude.single" [tA Γ]]
-    let s'A (Γ : List Tree) : Passes := ⟨esA Γ, dvA Γ, E'A Γ, pc P "Typing/OName.nothing" [],
-      tysA Γ, numsA Γ, names'A Γ, terms'A Γ, msA Γ, fsA Γ⟩
-    let restA (Γ : List Tree) : Passes := { sA Γ with es := esA Γ }
+    let restA (Γ : List Tree) : Passes := { sA Γ with ws := some (wsA Γ) }
     let stA (Γ : List Tree) : Term := progState (tysA Γ) (numsA Γ) (namesA Γ) (termsA Γ)
     let kA (Γ : List Tree) : Term := defForm P (nA Γ) (erA Γ)
     let rsA (Γ : List Tree) : Term := flatT P (Term.snd ((restA Γ).inserted P))
     let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
     let hypOr := hypOrK K
     -- the hypotheses' indices
-    let (hStep, hPlain, hX, hC, hO, hR, hK, hGlob, hNums, hNames, hKws, hLen, hNoms, hP, hSrc,
-        hExp, hMore) := (1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18)
-    -- the last stage: the hypothesis on the forms after, at the states the steps leave
-    let apply (iSyn iO iRes iUnres iNotIdx iTyped iNth : ℕ) : Deducer :=
-      let sound : Deducer := at' "the soundness" <| fun Γ₈ Φ₈ ψ₈ ↦
-        dAllE L K.G K.E hExp (Term.snd (kcRun P (termsA Γ₈) kcInit)) (
-        K.allEΓ (fun _ ↦ nil) <|
-        K.allEΓ dvA <| K.allEΓ EA <| K.allEΓ (fun _ ↦ nil) <| K.allEΓ tysA <| K.allEΓ numsA <|
-        K.allEΓ namesA <| K.allEΓ (fun _ ↦ nil) <| K.allEΓ (fun Γ ↦ (sA Γ).rel P) <|
-        last fun iS ↦ impEs L iS
-          [stage "stepDefined: the definitions related" (hypOr hGlob),
-            stage "stepDefined: the empty environment"
-              (K.cutThm "envNil" (fun Γ ↦ [(sA Γ).rel P]) (last K.byHyp)),
-            stage "stepDefined: the numerals" (hypOr hNums),
-            stage "stepDefined: the names" (hypOr hNames),
-            stage "stepDefined: a source form" (K.byHyp hSrc),
-            stage "stepDefined: expanded" (K.solve 3),
-            stage "stepDefined: typed" (K.byHyp iSyn),
-            stage "stepDefined: resolved" (K.byHyp iRes),
-            stage "stepDefined: kernel typed" (K.byHyp iTyped),
-            stage "stepDefined: the keywords" (hypOr hKws),
-            stage "stepDefined: the markers" K.byNorm,
-            stage "stepDefined: the recognizers" (applyThm K "recsNoData"
-              (fun Γ ↦ [namesA Γ, EA Γ, (sA Γ).rel P]) [dHyp] (last K.byHyp)),
-            stage "stepDefined: the empty context"
-              (K.cutThm "cxNil" (fun Γ ↦ [EA Γ]) (last K.byHyp))] <|
+    let (hX, hC, hO, hR, hK, hNums, hKws, hLen, hRecs, hP, hOcc, hIns, hUsed, hSound) :=
+      (0, 1, 2, 3, 4, 7, 9, 10, 11, 12, 13, 14, 15, 16)
+    -- the last stage: the hypotheses at the states the steps leave
+    let apply (iAtom iSyn iO iRes iUnres iNotIdx iTyped iNth : ℕ) : Deducer :=
+      let sound : Deducer := at' "the soundness" <|
+        impEs L hSound
+          [stage "writtenInv: typed" (K.byHyp iSyn),
+            stage "writtenInv: resolved" (K.byHyp iRes),
+            stage "writtenInv: kernel typed" (K.byHyp iTyped)] <|
         at' "the definition sound" <| last fun iConv ↦
         applyThm K "globExtend"
           (fun Γ ↦ [get (synA Γ), tA Γ, nmA Γ, namesA Γ, EA Γ, (sA Γ).rel P])
-          [stage "stepDefined: related before" dHyp,
-            stage "stepDefined: no index" (hypOr iNotIdx),
-            stage "stepDefined: the term's index" (normHyps K [hLen, iNth] K.byNorm),
-            stage "stepDefined: the term's value" (K.byHyp iConv)] <|
+          [stage "writtenInv: related before" dHyp,
+            stage "writtenInv: no index" (hypOr iNotIdx),
+            stage "writtenInv: the term's index" (normHyps K [hLen, iNth] K.byNorm),
+            stage "writtenInv: the term's value" (K.byHyp iConv)] <|
         at' "the relation extended" <| last fun iGlob' ↦
-        -- the hypothesis on the forms after, at the states the steps leave
-        let s' := s'A
-        (fun Γ Φ ψ ↦ dAllE L K.G K.E 0 ((s' Γ).dv) (
-          K.allEΓ (fun Γ ↦ (s' Γ).env) <| K.allEΓ (fun Γ ↦ (s' Γ).rej) <|
-          K.allEΓ (fun Γ ↦ (s' Γ).tys) <| K.allEΓ (fun Γ ↦ (s' Γ).nums) <|
-          K.allEΓ (fun Γ ↦ (s' Γ).names) <| K.allEΓ (fun Γ ↦ (s' Γ).terms) <|
-          K.allEΓ (fun Γ ↦ (s' Γ).ms) <| K.allEΓ (fun Γ ↦ (s' Γ).fs) <|
-          last fun iIH ↦ impEs L iIH
-            [stage "stepDefined: the rest expands" (K.byHyp hX),
-              stage "stepDefined: the rest checks" (K.byHyp hC),
-              stage "stepDefined: the rest's recognizers" (hypOr iO),
-              stage "stepDefined: the rest reads" (K.byHyp hR),
-              stage "stepDefined: the kernel checks" (K.byHyp hK),
-              stage "stepDefined: no rejection" (dImpI L (lastFalse K)),
-              stage "stepDefined: related after" (K.byHyp iGlob'),
-              stage "stepDefined: the numerals after" (
+        -- the name's atom is itself as an atom, and occurs in the program's forms, the
+        -- definition's kernel form one of them
+        applyThm K "atomNode" (fun Γ ↦ [nA Γ])
+          [stage "writtenInv: the name an atom" (hypOr iAtom)] <|
+        last fun iAtomEq ↦ at' "the occurrences" <| normHyps K [iAtomEq, hOcc] <|
+        K.conjE <| fun Γ₉ Φ₉ ψ₉ ↦
+        let (iOccHead, iOccRest) := (Φ₉.length - 2, Φ₉.length - 1)
+        (at' "the name's occurrence" <| fun Γ Φ ψ ↦ dAllE L K.G K.E iOccHead (nA Γ) (
+          K.impE (applyThm K "occursDefName" (fun Γ ↦ [erA Γ, nA Γ])
+            [stage "writtenInv: the name's atom" (hypOr iAtom)] (last K.byHyp)) <|
+        last fun iOccN ↦
+        -- the name is no recognizer's of a datatype of the environment: one the forms refer
+        -- to is among the names, of which the name is none
+        let notRec : Deducer := dAllI L <| dImpI L <| dImpI L <| fun Γ₈ Φ₈ ψ₈ ↦
+          let (hHas, hEq, n₈) := (Φ₈.length - 2, Φ₈.length - 1, Γ₈.length)
+          -- the recognizer's name rewritten to the definition's by the equation alone
+          let named := evalRw K.G K.E [.hyp hEq] .full
+          (fun Γ Φ ψ ↦ dAllE L K.G K.E hIns (v (Γ.length - n₈)) (
+            K.impE (stage "writtenInv: a datatype" (hypOr hHas)) <|
+            K.impE (stage "writtenInv: the recognizer referred to"
+              (dRwBy named (K.byHyp iOccN))) <|
+            last fun iIdx ↦ dRwHyp named iIdx <| last fun iIdx' ↦ dImpE L iNotIdx
+              (stage "writtenInv: the recognizer indexed" (K.byHyp iIdx'))
+              (dFalse L dHyp)) Γ Φ ψ) Γ₈ Φ₈ ψ₈
+        -- the hypotheses at the states the steps leave
+        (conjIs L
+            [stage "writtenInv: the rest expands" (K.byHyp hX),
+              stage "writtenInv: the rest checks" (K.byHyp hC),
+              stage "writtenInv: the rest's recognizers" (hypOr iO),
+              stage "writtenInv: the rest reads" (K.byHyp hR),
+              stage "writtenInv: the kernel checks" (K.byHyp hK),
+              stage "writtenInv: no rejection" (dImpI L (lastFalse K)),
+              stage "writtenInv: related after" (K.byHyp iGlob'),
+              stage "writtenInv: the numerals after" (
                 dRwBy (evalRw K.G K.E [.delta (T.q + 3 + 2 * nFolds)] .head) <|
                 dRwHyp (evalRw K.G K.E [.delta (T.q + 3 + 2 * nFolds)] .head) hNums <|
                 last K.byHyp),
-              stage "stepDefined: the names after" (applyThm K "namesExtend"
+              stage "writtenInv: the names after" (applyThm K "namesExtend"
                 (fun Γ ↦ [nmA Γ, namesA Γ]) [dHyp, hypOr iUnres] (last K.byHyp)),
-              stage "stepDefined: the keywords after" (hypOr hKws),
-              stage "stepDefined: the lengths" (
+              stage "writtenInv: the keywords after" (hypOr hKws),
+              stage "writtenInv: the lengths" (
                 K.cutThm "lenSnoc" (fun Γ ↦ [namesA Γ]) <| K.allEΓ nmA <|
                 K.cutThm "lenSnoc" (fun Γ ↦ [termsA Γ]) <| K.allEΓ tA <| fun Γ Φ ψ ↦
                 normHyps K [hLen, Φ.length - 3, Φ.length - 1] K.byNorm Γ Φ ψ),
-              stage "stepDefined: no datatype" (normHyps K [hNoms] K.byNorm),
-              stage "stepDefined: the bodies after" (K.byHyp hP),
-              stage "stepDefined: the rest's kinds" (hypOr hMore)] <|
-          stage "stepDefined: the conclusion" (last K.byHyp)) Γ Φ ψ)) Γ₈ Φ₈ ψ₈
+              stage "writtenInv: the recognizers after" (applyThm K "recsExtend"
+                (fun Γ ↦ [nmA Γ, namesA Γ, ErA Γ, ErA Γ, (sA Γ).rel P])
+                [stage "writtenInv: the recognizers" (hypOr hRecs),
+                  stage "writtenInv: the datatypes" K.byNorm,
+                  stage "writtenInv: no recognizer's name" notRec] (last K.byHyp)),
+              stage "writtenInv: the bodies after" (K.byHyp hP),
+              stage "writtenInv: the occurrences after" (hypOr iOccRest),
+              stage "writtenInv: the recognizers referred to" (applyThm K "insExtend"
+                (fun Γ ↦ [nmA Γ, namesA Γ, ErA Γ, ErA Γ, fsA Γ])
+                [stage "writtenInv: referred to before" (hypOr hIns),
+                  stage "writtenInv: the datatypes" K.byNorm] (last K.byHyp)),
+              stage "writtenInv: the names' occurrences" (
+                K.cutThm "allSnoc" (fun Γ ↦ [namesA Γ]) <|
+                K.allEΓ (fun Γ ↦ usedPred P (fsA Γ)) <| K.allEΓ nmA <|
+                K.impE (stage "writtenInv: the names used" (hypOr hUsed)) <|
+                K.impE (stage "writtenInv: the name used" (K.byHyp iOccN)) <|
+                last K.byHyp),
+              stage "writtenInv: the conclusion" (dImpI L (last K.byHyp))])) Γ Φ ψ) Γ₉ Φ₉ ψ₉
       sound
     -- the terms the reader ends with: the terms, the term read, and further ones
-    let finals (iSyn iO iRes iUnres iNotIdx : ℕ) : Deducer := at' "the final terms" <|
+    let finals (iAtom iSyn iO iRes iUnres iNotIdx : ℕ) : Deducer := at' "the final terms" <|
       K.cutThm "readExt" (fun Γ ↦ [rsA Γ]) <| K.allEΓ (fun Γ ↦ progState (tysA Γ) (numsA Γ)
         (names'A Γ) (terms'A Γ)) <| K.exE <| fun Γ₇ Φ₇ ψ₇ ↦
       let n₇ := Γ₇.length
@@ -549,17 +701,17 @@ def stepDefined (P : Prog) (S : Defs) (T : Defs3) : Step :=
         K.cutThm "appendSnoc" (fun Γ ↦ [termsA Γ, tA Γ, extA Γ]) <| last fun iSnoc ↦
         normHyps K [iExt, iSnoc] <| at' "the terms rewritten" <|
         applyThm K "kcTyped" (fun Γ ↦ [extA Γ, tA Γ, termsA Γ])
-          [stage "stepDefined: the kernel's check" (K.byHyp hK)] <| last fun iTyped ↦
+          [stage "writtenInv: the kernel's check" (K.byHyp hK)] <| last fun iTyped ↦
         K.cutThm "nthLen" (fun Γ ↦ [termsA Γ]) <| K.allEΓ tA <| K.allEΓ extA <|
-        last fun iNth ↦ apply iSyn iO iRes iUnres iNotIdx iTyped iNth) Γ₇ Φ₇ ψ₇
+        last fun iNth ↦ apply iAtom iSyn iO iRes iUnres iNotIdx iTyped iNth) Γ₇ Φ₇ ψ₇
     -- the reader's step
     let reader (iSyn : ℕ) : Deducer := at' "the reader" <|
       applyThm K "someTruth" (fun Γ ↦ [Term.fst ((restA Γ).inserted P)])
-        [stage "stepDefined: the recognizers' insertion" (K.byHyp hO)] <| last fun iO ↦
+        [stage "writtenInv: the recognizers' insertion" (K.byHyp hO)] <| last fun iO ↦
       applyThm K "readPrefix" (fun Γ ↦ [rsA Γ, pc P "Reader.progStep" [stA Γ, kA Γ]])
-        [stage "stepDefined: the reader's run" (K.byHyp hR)] <| at' "the reader's step" <|
+        [stage "writtenInv: the reader's run" (K.byHyp hR)] <| at' "the reader's step" <|
       applyThm K "readDef" (fun Γ ↦ [erA Γ, nA Γ, termsA Γ, namesA Γ, numsA Γ, tysA Γ])
-        [stage "stepDefined: the reader's step" dHyp] <| at' "the reader's parts" <|
+        [stage "writtenInv: the reader's step" dHyp] <| at' "the reader's parts" <|
       K.conjE <| K.conjE <| K.conjE <| fun Γ₅ Φ₅ ψ₅ ↦
         let (iAtom, iFresh, iRes, iRead) :=
           (Φ₅.length - 6, Φ₅.length - 4, Φ₅.length - 2, Φ₅.length - 1)
@@ -567,57 +719,118 @@ def stepDefined (P : Prog) (S : Defs) (T : Defs3) : Step :=
           decideIn K (fun Γ ↦ pc P "Reader.isAtom" [nA Γ]) (K.hypFalse iAtom) <|
           at' "the name fresh" <|
           applyThm K "freshParts" (fun Γ ↦ [nmA Γ, namesA Γ, numsA Γ, tysA Γ])
-            [stage "stepDefined: fresh" (hypOr iFresh)] <| K.conjE <| K.conjE <| fun Γ Φ ψ ↦
-          finals iSyn iO iRes (Φ.length - 4) (Φ.length - 2) Γ Φ ψ) Γ₅ Φ₅ ψ₅
+            [stage "writtenInv: fresh" (hypOr iFresh)] <| K.conjE <| K.conjE <| fun Γ Φ ψ ↦
+          finals iAtom iSyn iO iRes (Φ.length - 4) (Φ.length - 2) Γ Φ ψ) Γ₅ Φ₅ ψ₅
     -- the typing's step
     let typing : Deducer := at' "the typing" <|
       applyThm K "checkPrefix" (fun Γ ↦ [(restA Γ).others P X₀,
           checkStepAt P (EA Γ) (rA Γ) (fA Γ)])
-        [stage "stepDefined: the typing's run" (K.byHyp hC)] <| at' "the typing's step" <|
+        [stage "writtenInv: the typing's run" (K.byHyp hC)] <| at' "the typing's step" <|
       applyThm K "checkDef" (fun Γ ↦ [bA Γ, nA Γ, rA Γ, EA Γ])
-        [stage "stepDefined: no rejection before" dHyp,
-          stage "stepDefined: the typing's step" dHyp] <|
+        [stage "writtenInv: no rejection before" dHyp,
+          stage "writtenInv: the typing's step" dHyp] <|
       K.conjE <| fun Γ Φ ψ ↦
         let (iSyn, iCheck) := (Φ.length - 2, Φ.length - 1)
         normHyps K [iCheck] (reader iSyn) Γ Φ ψ
-    -- the expansion's step, the equation given
-    let expansion : Deducer := at' "the expansion" <| normHyps K [hStep, hPlain] <|
-      at' "the typed forms" <|
-      applyThm K "typedFormsCons" (fun Γ ↦ [fA Γ, dvA Γ, esA Γ]) [] <| K.conjE <|
-      fun Γ₃ Φ₃ ψ₃ ↦
-        let (iFlag, iImp) := (Φ₃.length - 2, Φ₃.length - 1)
-        normHyps K [iFlag] (
-          dImpE L iImp (stage "stepDefined: the rest's expansion" (K.byHyp hX)) <|
-          last fun iTF ↦ normHyps K [iTF] typing) Γ₃ Φ₃ ψ₃
-    let some d := expansion a.ctx a.hyps a.concl
+    let some d := typing a.ctx a.hyps a.concl
+      | dbgTrace "writtenInv: not proved" fun _ ↦ none
+    pure (a, d))
+
+/-- The soundness at the forms that remain after a form at which the expansion writes a
+definition, a step of the soundness at all states ({name}`passesφ`): given it at the forms
+after, the expansion's step at the form from the declarations writes the definition of a name
+as a body, sound at the states ({name}`soundAtT`), the test of the definitions' bodies steps to
+the state of the declarations and the abbreviations, and the hypotheses at the states give the
+conclusion. The definition is before the forms of the rest ({lit}`typedFormsCons`), a pending
+form before none, which leaves states of which the hypotheses hold again ({name}`writtenInv`),
+at which the hypothesis on the forms after gives the conclusion. In the context of the body,
+the name, the form, the forms after and the states. -/
+def stepDefined (P : Prog) (S : Defs) (T : Defs3) : Step :=
+  ("stepDefined", fun ix E ↦ do
+    let K : Kit := ⟨passProg P, S, E, ix, ["eraseDefForm", "recAtThree"]⟩
+    let L := K.L
+    let Ls := list treeTy
+    let nil := nilT treeTy
+    let at' (m : String) (k : Deducer) : Deducer := stage s!"stepDefined @ {m}" k
+    let some X₀ := partitionT K [Ls] | dbgTrace "stepDefined: no partition" fun _ ↦ none
+    let s := passesAt 4 (consT treeTy (v 2) (v 3))
+    let hyps := [Internal.instTerm [] [v 3] (passesφ P S T X₀ (formsOk P S)),
+        Term.eq (xpStepT P (xpState (v 12) nil) (v 2))
+          (xpState (v 12) (consT treeTy (defForm P (v 1) (v 0)) nil)),
+        Term.eq (plainStepT P (plainState (v 12) (v 8)) (v 2)) (plainState (v 12) (v 8))] ++
+      s.hyps P S T X₀ ++ [soundAtT P S T s (v 0)] ++ formsOk P S (v 3)
+    let Γ₀ := [treeTy, treeTy, treeTy, Ls] ++ passesCtx T
+    let a : Internal.Thm := ⟨0, Γ₀, hyps, s.concl P T X₀⟩
+    -- the variables, from any context that extends the theorem's
+    let at_ (j : ℕ) (Γ : List Tree) : Term := v (j + (Γ.length - Γ₀.length))
+    let (bA, nA, esA, EA, dvA) := (at_ 0, at_ 1, at_ 3, at_ 11, at_ 12)
+    let states (Γ : List Tree) : List Term :=
+      (List.range (passesCtx T).length).map fun j ↦ at_ (4 + j) Γ
+    let fA (Γ : List Tree) : Term := defForm P (nA Γ) (bA Γ)
+    -- the states after the form
+    let s'A (Γ : List Tree) : Passes :=
+      { (passesAt (4 + (Γ.length - Γ₀.length)) (esA Γ)).written P (nA Γ) (bA Γ) nil with
+        ws := none }
+    let nInv := (s.hyps P S T X₀).length
+    let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
+    let (hStep, hPlain, hX, hSound, hMore) := (1, 2, 3, 19, 20)
+    let some d := (at' "the expansion" <| normHyps K [hStep, hPlain] <|
+        at' "the typed forms" <|
+        applyThm K "typedFormsCons" (fun Γ ↦ [fA Γ, dvA Γ, esA Γ]) [] <| K.conjE <|
+        fun Γ₃ Φ₃ ψ₃ ↦
+          let (iFlag, iImp) := (Φ₃.length - 2, Φ₃.length - 1)
+          normHyps K [iFlag] (
+            dImpE L iImp (stage "stepDefined: the rest's expansion" (K.byHyp hX)) <|
+            last fun iTF ↦ normHyps K [iTF] <| at' "the definition written" <|
+            applyThm K "writtenInv" (fun Γ ↦ [bA Γ, nA Γ, nil, esA Γ] ++ states Γ ++ [EA Γ])
+              ((List.range nInv).map (fun k ↦
+                  stage s!"stepDefined: the hypothesis {k} at the states" (hypOrK K (3 + k))) ++
+                [stage "stepDefined: the body sound" (K.byHyp hSound)]) <|
+            at' "the forms after" <| conjEs K (nInv + 1) fun inv Γ Φ ψ ↦
+            dAllE L K.G K.E 0 ((s'A Γ).dv) (
+              K.allEΓ (fun Γ ↦ (s'A Γ).env) <| K.allEΓ (fun Γ ↦ (s'A Γ).rej) <|
+              K.allEΓ (fun Γ ↦ (s'A Γ).tys) <| K.allEΓ (fun Γ ↦ (s'A Γ).nums) <|
+              K.allEΓ (fun Γ ↦ (s'A Γ).names) <| K.allEΓ (fun Γ ↦ (s'A Γ).terms) <|
+              K.allEΓ (fun Γ ↦ (s'A Γ).ms) <| K.allEΓ (fun Γ ↦ (s'A Γ).fs) <|
+              last fun iIH ↦ impEs L iIH
+                ((List.range nInv).map (fun k ↦
+                    stage s!"stepDefined: the hypothesis {k} after the form" <|
+                      if k = 11 then unfoldBothK K (T.q + 6 + 2 * nFolds) (inv k)
+                      else hypOrK K (inv k)) ++
+                  [stage "stepDefined: the rest's kinds" (hypOrK K hMore)]) <|
+              last fun iAfter ↦ dImpE L (inv nInv)
+                (stage "stepDefined: the conclusion after the form" (K.byHyp iAfter))
+                (stage "stepDefined: the conclusion" (last K.byHyp))) Γ Φ ψ) Γ₃ Φ₃ ψ₃)
+        a.ctx a.hyps a.concl
       | dbgTrace "stepDefined: not proved" fun _ ↦ none
     pure (a, d))
 
 /-- The step at a form at which the expansion writes a definition ({name}`stepDefined`), at a
 body, a name, a form, the forms after and the states: the hypothesis on the forms after the
 first hypothesis, the hypotheses at the states those from the index {lit}`hInv` and the rest's
-kinds that of index {lit}`hMore`; the expansion's step's equation, the test's step's, the body's
-being a source form and its soundness at expanded forms by the deducers given. The conclusion is
-the goal. -/
+kinds that of index {lit}`hMore`; the expansion's step's equation, the test's step's and the
+body's soundness at the states by the deducers given. The conclusion is the goal. -/
 def applyDefined (K : Kit) (σ : List Tree → List Term) (hInv hMore : ℕ)
-    (stepEq plainEq src sound : Deducer) : Deducer :=
+    (stepEq plainEq sound : Deducer) : Deducer :=
   applyThm K "stepDefined" σ
     ([stage "stepDefined: the hypothesis on the forms after" (hypOrK K 0),
         stage "stepDefined: the expansion's step" stepEq,
         stage "stepDefined: the test's step" plainEq] ++
-      (List.range 13).map (fun k ↦
+      (List.range 16).map (fun k ↦
         stage s!"stepDefined: the invariant's hypothesis {k}" (hypOrK K (hInv + k))) ++
-      [stage "stepDefined: the body a source form" src,
-        stage "stepDefined: the body sound" sound,
+      [stage "stepDefined: the body sound" sound,
         stage "stepDefined: the kinds of the forms after" (hypOrK K hMore)])
     (stage "stepDefined: the goal" (lastOr K))
 
 /-- The step at a form at which the expansion writes a definition ({name}`applyDefined`), the
 body a source form and the test's step that of the state by the test of the definitions' bodies
 ({lit}`plainDefined`): at a form whose head no keyword of an instance or of a datatype names,
-the hypotheses of indices 1 to 3, where the test's run is the hypothesis of index {lit}`hP`. -/
-def applyPlain (K : Kit) (b n e es nums dv : List Tree → Term) (states : List Tree → List Term)
-    (hP hMore : ℕ) (stepEq sound : Deducer) : Deducer :=
+the hypotheses of indices 1 to 3, where the test's run is the hypothesis of index {lit}`hP`. The
+body is sound at the states {lit}`s` by its soundness at expanded forms, which {lit}`expanded`
+gives ({name}`soundExpanded`). -/
+def applyPlain (K : Kit) (P : Prog) (b n e es nums dv : List Tree → Term)
+    (states : List Tree → List Term) (s : List Tree → Passes) (hP hMore : ℕ) (stepEq : Deducer)
+    (expanded : (ℕ → Deducer) → Deducer) : Deducer :=
   applyThm K "plainDefined" (fun Γ ↦ [b Γ, n Γ, e Γ, es Γ, nums Γ, dv Γ])
     ([1, 2, 3].map (fun i ↦ stage s!"plainDefined: the head's test {i}" (hypOrK K i)) ++
       [stage "plainDefined: the expansion's step" stepEq,
@@ -625,7 +838,7 @@ def applyPlain (K : Kit) (b n e es nums dv : List Tree → Term) (states : List 
   K.conjE <| fun Γ₁ Φ₁ ψ₁ ↦
     let (iSrc, iEq) := (Φ₁.length - 2, Φ₁.length - 1)
     applyDefined K (fun Γ ↦ [b Γ, n Γ, e Γ, es Γ] ++ states Γ) 5 hMore stepEq
-      (hypOrK K iEq) (hypOrK K iSrc) sound Γ₁ Φ₁ ψ₁
+      (hypOrK K iEq) (soundExpanded K P s 5 iSrc expanded) Γ₁ Φ₁ ψ₁
 
 /-- The soundness at the forms that remain after a definition's form, a step of the soundness at
 all states ({name}`passesφ`): given it at the forms after, the form the list of a head that names
@@ -642,8 +855,8 @@ def stepDef (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let some X₀ := partitionT K [Ls] | dbgTrace "stepDef: no partition" fun _ ↦ none
     let e := listNode [v 2, v 1, v 0]
     let s := passesAt 4 (consT treeTy e (v 3))
-    let hyps := [Internal.instTerm [] [v 3] (passesφ P T X₀ (formsOk P S))] ++ defHead P (v 2) ++
-      s.hyps P T X₀ ++ formsOk P S (v 3)
+    let hyps := [Internal.instTerm [] [v 3] (passesφ P S T X₀ (formsOk P S))] ++ defHead P (v 2) ++
+      s.hyps P S T X₀ ++ formsOk P S (v 3)
     let Γ₀ := [treeTy, treeTy, treeTy, Ls] ++ passesCtx T
     let a : Internal.Thm := ⟨0, Γ₀, hyps, s.concl P T X₀⟩
     -- the variables, from any context that extends the theorem's
@@ -655,7 +868,9 @@ def stepDef (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let bA (Γ : List Tree) : Term := pc P "Prelude.get" [exA Γ]
     let eA (Γ : List Tree) : Term := listNode [hA Γ, nA Γ, FA Γ]
     let xpA (Γ : List Tree) : Term := pc P "Datatype.xpStep" [xpState (dvA Γ) nil, eA Γ]
-    let (hX, hP, hMore) := (5, 17, 18)
+    let sA (Γ : List Tree) : Passes :=
+      passesAt (4 + (Γ.length - Γ₀.length)) (consT treeTy (eA Γ) (esA Γ))
+    let (hX, hP, hMore) := (5, 17, 21)
     -- the expansion's step
     let expansion : Deducer := stage "stepDef: the expansion" <|
       applyThm K "xpPrefix" (fun Γ ↦ [esA Γ, xpA Γ])
@@ -666,8 +881,8 @@ def stepDef (P : Prog) (S : Defs) (T : Defs3) : Step :=
           stage "stepDef: the expansion's step" dHyp] <|
       K.conjE <| fun Γ₂ Φ₂ ψ₂ ↦
         let (iEx, iStep) := (Φ₂.length - 2, Φ₂.length - 1)
-        applyPlain K bA nA eA esA numsA dvA states hP hMore (normHyps K [iStep] K.byNorm)
-          (expandedOf K FA dvA (K.byHyp iEx) (hypOrK K)) Γ₂ Φ₂ ψ₂
+        applyPlain K P bA nA eA esA numsA dvA states sA hP hMore (normHyps K [iStep] K.byNorm)
+          (expandedOf K FA dvA (K.byHyp iEx)) Γ₂ Φ₂ ψ₂
     let some d := decideIn K (fun Γ ↦ headNamed P (hA Γ) "Datatype.kwGeneric") expansion
         (stage "stepDef: a template's instance" (refuteNot K 1)) a.ctx a.hyps a.concl
       | dbgTrace "stepDef: not proved" fun _ ↦ none
@@ -720,8 +935,8 @@ def stepDefn (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let some X₀ := partitionT K [Ls] | dbgTrace "stepDefn: no partition" fun _ ↦ none
     let e := listNode [v 4, v 3, v 2, v 1, v 0]
     let s := passesAt 6 (consT treeTy e (v 5))
-    let hyps := [Internal.instTerm [] [v 5] (passesφ P T X₀ (formsOk P S))] ++
-      defnHead P (v 4) ++ s.hyps P T X₀ ++ formsOk P S (v 5)
+    let hyps := [Internal.instTerm [] [v 5] (passesφ P S T X₀ (formsOk P S))] ++
+      defnHead P (v 4) ++ s.hyps P S T X₀ ++ formsOk P S (v 5)
     let Γ₀ := [treeTy, treeTy, treeTy, treeTy, treeTy, Ls] ++ passesCtx T
     let a : Internal.Thm := ⟨0, Γ₀, hyps, s.concl P T X₀⟩
     -- the variables, from any context that extends the theorem's
@@ -739,19 +954,20 @@ def stepDefn (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let BA (Γ : List Tree) : Term := nestT P (bindersA Γ) (letA Γ)
     let eA (Γ : List Tree) : Term := listNode [hA Γ, nA Γ, bsA Γ, RA Γ, XA Γ]
     let xpA (Γ : List Tree) : Term := pc P "Datatype.xpStep" [xpState (dvA Γ) nil, eA Γ]
+    let sA (Γ : List Tree) : Passes :=
+      passesAt (6 + (Γ.length - Γ₀.length)) (consT treeTy (eA Γ) (esA Γ))
     let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
     let hypOr := hypOrK K
-    let (hX, hP, hMore) := (5, 17, 18)
+    let (hX, hP, hMore) := (5, 17, 21)
     -- the body written sound at expanded forms
-    let sound (iEx : ℕ) : Deducer :=
+    let sound (iEx : ℕ) (k : ℕ → Deducer) : Deducer :=
       expandedOf K XA dvA (K.byHyp iEx) fun iB ↦
       K.cutThm "expandedR" (fun _ ↦ []) <| last fun iR ↦
       applyThm K "letExpanded" (fun Γ ↦ [aR, bA Γ, RA Γ, aR])
         [stage "stepDefn: the body's expansion sound" (hypOr iB),
           stage "stepDefn: the variable sound" (hypOr iR)] <|
       last fun iLet ↦ K.cutThm "nest" (fun Γ ↦ [bindersA Γ, letA Γ]) <|
-      K.impE (stage "stepDefn: the binding sound" (hypOr iLet)) <|
-      stage "stepDefn: the abstractions sound" (lastOr K)
+      K.impE (stage "stepDefn: the binding sound" (hypOr iLet)) <| last k
     -- the expansion's step
     let expansion : Deducer := stage "stepDefn: the expansion" <|
       applyThm K "xpPrefix" (fun Γ ↦ [esA Γ, xpA Γ])
@@ -762,16 +978,12 @@ def stepDefn (P : Prog) (S : Defs) (T : Defs3) : Step :=
           stage "stepDefn: the expansion's step" dHyp] <|
       K.conjE <| fun Γ₂ Φ₂ ψ₂ ↦
         let (iEx, iStep) := (Φ₂.length - 2, Φ₂.length - 1)
-        applyPlain K BA nA eA esA numsA dvA states hP hMore (normHyps K [iStep] K.byNorm)
+        applyPlain K P BA nA eA esA numsA dvA states sA hP hMore (normHyps K [iStep] K.byNorm)
           (sound iEx) Γ₂ Φ₂ ψ₂
     let some d := decideIn K (fun Γ ↦ headNamed P (hA Γ) "Datatype.kwGeneric") expansion
         (stage "stepDefn: a template's instance" (refuteNot K 1)) a.ctx a.hyps a.concl
       | dbgTrace "stepDefn: not proved" fun _ ↦ none
     pure (a, d))
-
-/-- A number of deducer transformers applied in turn. -/
-def repeatK (n : ℕ) (f : Deducer → Deducer) (k : Deducer) : Deducer :=
-  Nat.rec (motive := fun _ ↦ Deducer) k (fun _ r ↦ f r) n
 
 /-- The soundness at the forms that remain after a type abbreviation's form, a step of the
 soundness at all states ({name}`passesφ`): the expansion's step ({lit}`xpDeftype`) declares the
@@ -789,8 +1001,8 @@ def stepDeftype (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let some X₀ := partitionT K [Ls] | dbgTrace "stepDeftype: no partition" fun _ ↦ none
     let e := listNode [v 2, v 1, v 0]
     let s := passesAt 4 (consT treeTy e (v 3))
-    let hyps := [Internal.instTerm [] [v 3] (passesφ P T X₀ (formsOk P S))] ++
-      deftypeHead P (v 2) ++ s.hyps P T X₀ ++ formsOk P S (v 3)
+    let hyps := [Internal.instTerm [] [v 3] (passesφ P S T X₀ (formsOk P S))] ++
+      deftypeHead P (v 2) ++ s.hyps P S T X₀ ++ formsOk P S (v 3)
     let Γ₀ := [treeTy, treeTy, treeTy, Ls] ++ passesCtx T
     let a : Internal.Thm := ⟨0, Γ₀, hyps, s.concl P T X₀⟩
     let at_ (j : ℕ) (Γ : List Tree) : Term := v (j + (Γ.length - Γ₀.length))
@@ -812,16 +1024,16 @@ def stepDeftype (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let tys'A (Γ : List Tree) : Term := consT treeTy
       (abbrevT P (nmA Γ) (get (pc P "Reader.readType" [tysA Γ, XA Γ]))) (tysA Γ)
     let s'A (Γ : List Tree) : Passes := ⟨esA Γ, dv'A Γ, E'A Γ, pc P "Typing/OName.nothing" [],
-      tys'A Γ, numsA Γ, namesA Γ, termsA Γ, msA Γ, fsA Γ⟩
+      tys'A Γ, numsA Γ, namesA Γ, termsA Γ, msA Γ, fsA Γ, none, none⟩
     let restA (Γ : List Tree) : Passes := { s'A Γ with env := EA Γ, rej := rA Γ }
     let stA (Γ : List Tree) : Term := progState (tysA Γ) (numsA Γ) (namesA Γ) (termsA Γ)
     let rsA (Γ : List Tree) : Term := flatT P (Term.snd ((restA Γ).inserted P))
     let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
     let hypOr (h : ℕ) : Deducer := fun Γ Φ ψ ↦ (dHyp Γ Φ ψ).orElse fun _ ↦ K.byHyp h Γ Φ ψ
-    let unfoldBoth (idx h : ℕ) : Deducer := dRwBy (evalRw K.G K.E [.delta idx] .head) <|
-      dRwHyp (evalRw K.G K.E [.delta idx] .head) h <| last K.byHyp
-    let (hNoDef, hKw, hX, hC, hO, hR, hK, hRej, hGlob, hNums, hNames, hKws, hLen, hNoms, hP,
-        hMore) := (4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19)
+    let unfoldBoth := unfoldBothK K
+    let (hNoDef, hKw, hX, hC, hO, hR, hK, hRej, hGlob, hNums, hNames, hKws, hLen, hRecs, hP,
+        hOcc, hIns, hUsed, hMore) :=
+      (4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22)
     -- the head's tests decided, as the test of the definitions' bodies reads them
     let heads : Deducer → Deducer := decideEach K Γ₀.length
       [(headNamed P (v 2) "Datatype.kwData", none, some (refuteNot K 2)),
@@ -829,7 +1041,9 @@ def stepDeftype (P : Prog) (S : Defs) (T : Defs3) : Step :=
         (headNamed P (v 2) "Reader.kwDef", none, some (refuteNot K 4)),
         (headNamed P (v 2) "Reader.kwDeftype", some (K.hypFalse 5), none)]
     -- the hypothesis on the forms after, at the states the steps leave
-    let apply (iO : ℕ) : Deducer := at' "the forms after" <| fun Γ Φ ψ ↦
+    let apply (iO : ℕ) : Deducer := at' "the forms after" <| normHyps K [hOcc] <|
+      K.conjE <| fun Γ Φ ψ ↦
+      let iOccRest := Φ.length - 1
       dAllE L K.G K.E 0 ((s'A Γ).dv) (
         K.allEΓ (fun Γ ↦ (s'A Γ).env) <| K.allEΓ (fun Γ ↦ (s'A Γ).rej) <|
         K.allEΓ (fun Γ ↦ (s'A Γ).tys) <| K.allEΓ (fun Γ ↦ (s'A Γ).nums) <|
@@ -847,8 +1061,11 @@ def stepDeftype (P : Prog) (S : Defs) (T : Defs3) : Step :=
             stage "stepDeftype: the names" (hypOr hNames),
             stage "stepDeftype: the keywords" (hypOr hKws),
             stage "stepDeftype: the lengths" (hypOr hLen),
-            stage "stepDeftype: no datatype" (normHyps K [hNoms] K.byNorm),
+            stage "stepDeftype: the recognizers" (unfoldBoth (T.q + 6 + 2 * nFolds) hRecs),
             stage "stepDeftype: the bodies after" (K.byHyp hP),
+            stage "stepDeftype: the occurrences after" (hypOr iOccRest),
+            stage "stepDeftype: the recognizers referred to" (hypOr hIns),
+            stage "stepDeftype: the names' occurrences" (hypOr hUsed),
             stage "stepDeftype: the rest's kinds" (hypOr hMore)] <|
         stage "stepDeftype: the conclusion" (last K.byHyp)) Γ Φ ψ
     -- the reader's step
@@ -1167,8 +1384,8 @@ def stepDefnum (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let some X₀ := partitionT K [Ls] | dbgTrace "stepDefnum: no partition" fun _ ↦ none
     let e := listNode [v 2, v 1, v 0]
     let s := passesAt 4 (consT treeTy e (v 3))
-    let hyps := [Internal.instTerm [] [v 3] (passesφ P T X₀ (formsOk P S))] ++
-      defnumHead P (v 2) ++ [userNameT P (pc P "Reader.nameOf" [v 1])] ++ s.hyps P T X₀ ++
+    let hyps := [Internal.instTerm [] [v 3] (passesφ P S T X₀ (formsOk P S))] ++
+      defnumHead P (v 2) ++ [userNameT P (pc P "Reader.nameOf" [v 1])] ++ s.hyps P S T X₀ ++
       formsOk P S (v 3)
     let Γ₀ := [treeTy, treeTy, treeTy, Ls] ++ passesCtx T
     let a : Internal.Thm := ⟨0, Γ₀, hyps, s.concl P T X₀⟩
@@ -1184,16 +1401,16 @@ def stepDefnum (P : Prog) (S : Defs) (T : Defs3) : Step :=
       namesSnoc P (pc P "Typing.envNums" [EA Γ]) (pc P "Typing.atomName" [nA Γ])]
     let nums'A (Γ : List Tree) : Term := consT treeTy (abbrevT P (nmA Γ) (valA Γ)) (numsA Γ)
     let s'A (Γ : List Tree) : Passes := ⟨esA Γ, dvA Γ, E'A Γ, pc P "Typing/OName.nothing" [],
-      tysA Γ, nums'A Γ, namesA Γ, termsA Γ, msA Γ, fsA Γ⟩
+      tysA Γ, nums'A Γ, namesA Γ, termsA Γ, msA Γ, fsA Γ, none, none⟩
     let restA (Γ : List Tree) : Passes := { s'A Γ with env := EA Γ, rej := rA Γ }
     let stA (Γ : List Tree) : Term := progState (tysA Γ) (numsA Γ) (namesA Γ) (termsA Γ)
     let rsA (Γ : List Tree) : Term := flatT P (Term.snd ((restA Γ).inserted P))
     let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
     let hypOr (h : ℕ) : Deducer := fun Γ Φ ψ ↦ (dHyp Γ Φ ψ).orElse fun _ ↦ K.byHyp h Γ Φ ψ
-    let unfoldBoth (idx h : ℕ) : Deducer := dRwBy (evalRw K.G K.E [.delta idx] .head) <|
-      dRwHyp (evalRw K.G K.E [.delta idx] .head) h <| last K.byHyp
-    let (hNoDef, hNoType, hKw, hUser, hX, hC, hO, hR, hK, hRej, hGlob, hNames, hLen, hNoms,
-        hP, hMore) := (4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 18, 19, 20, 21)
+    let unfoldBoth := unfoldBothK K
+    let (hNoDef, hNoType, hKw, hUser, hX, hC, hO, hR, hK, hRej, hGlob, hNames, hLen, hRecs,
+        hP, hOcc, hIns, hUsed, hMore) :=
+      (4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 18, 19, 20, 21, 22, 23, 24)
     -- the head's tests decided, as the test of the definitions' bodies reads them
     let heads : Deducer → Deducer := decideEach K Γ₀.length
       [(headNamed P (v 2) "Datatype.kwData", none, some (refuteNot K 2)),
@@ -1203,7 +1420,9 @@ def stepDefnum (P : Prog) (S : Defs) (T : Defs3) : Step :=
         (headNamed P (v 2) "Reader.kwDefnum", some (K.hypFalse 6), none)]
     -- the hypothesis on the forms after, at the states the steps leave
     let apply (iNotNum iO iUnres iAtom iNum : ℕ) : Deducer := at' "the forms after" <|
-      fun Γ Φ ψ ↦ dAllE L K.G K.E 0 ((s'A Γ).dv) (
+      normHyps K [hOcc] <| K.conjE <| fun Γ Φ ψ ↦
+      let iOccRest := Φ.length - 1
+      dAllE L K.G K.E 0 ((s'A Γ).dv) (
         K.allEΓ (fun Γ ↦ (s'A Γ).env) <| K.allEΓ (fun Γ ↦ (s'A Γ).rej) <|
         K.allEΓ (fun Γ ↦ (s'A Γ).tys) <| K.allEΓ (fun Γ ↦ (s'A Γ).nums) <|
         K.allEΓ (fun Γ ↦ (s'A Γ).names) <| K.allEΓ (fun Γ ↦ (s'A Γ).terms) <|
@@ -1228,8 +1447,11 @@ def stepDefnum (P : Prog) (S : Defs) (T : Defs3) : Step :=
                 stage "stepDefnum: no numeral" (dImpI L fun Γ Φ ψ ↦
                   normHyps K [iNotNum] (K.hypFalse (Φ.length - 1)) Γ Φ ψ)] (last K.byHyp)),
             stage "stepDefnum: the lengths" (hypOr hLen),
-            stage "stepDefnum: no datatype" (normHyps K [hNoms] K.byNorm),
+            stage "stepDefnum: the recognizers" (unfoldBoth (T.q + 6 + 2 * nFolds) hRecs),
             stage "stepDefnum: the bodies after" (K.byHyp hP),
+            stage "stepDefnum: the occurrences after" (hypOr iOccRest),
+            stage "stepDefnum: the recognizers referred to" (hypOr hIns),
+            stage "stepDefnum: the names' occurrences" (hypOr hUsed),
             stage "stepDefnum: the rest's kinds" (hypOr hMore)] <|
         stage "stepDefnum: the conclusion" (last K.byHyp)) Γ Φ ψ
     -- the reader's step
@@ -1355,8 +1577,8 @@ def stepGeneric (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let at' (m : String) (k : Deducer) : Deducer := stage s!"stepGeneric @ {m}" k
     let some X₀ := partitionT K [Ls] | dbgTrace "stepGeneric: no partition" fun _ ↦ none
     let s := passesAt 2 (consT treeTy (v 0) (v 1))
-    let hyps := [Internal.instTerm [] [v 1] (passesφ P T X₀ (formsOk P S)), genericT P (v 0)] ++
-      s.hyps P T X₀ ++ formsOk P S (v 1)
+    let hyps := [Internal.instTerm [] [v 1] (passesφ P S T X₀ (formsOk P S)), genericT P (v 0)] ++
+      s.hyps P S T X₀ ++ formsOk P S (v 1)
     let Γ₀ := [treeTy, Ls] ++ passesCtx T
     let a : Internal.Thm := ⟨0, Γ₀, hyps, s.concl P T X₀⟩
     let at_ (j : ℕ) (Γ : List Tree) : Term := v (j + (Γ.length - Γ₀.length))
@@ -1366,7 +1588,7 @@ def stepGeneric (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let restA (Γ : List Tree) : Passes := passesAt (2 + (Γ.length - Γ₀.length)) (esA Γ)
     let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
     let hypOr := hypOrK K
-    let (hGen, hX, hC, hO, hR, hK, hRej, hMore) := (1, 2, 3, 4, 5, 6, 7, 15)
+    let (hGen, hX, hC, hO, hR, hK, hRej, hMore) := (1, 2, 3, 4, 5, 6, 7, 18)
     -- the instance's tests decided, as the test of the definitions' bodies reads them
     let heads : Deducer → Deducer := fun k ↦ dConjE L hGen fun Γ Φ ψ ↦
       decideEach K Γ₀.length ((genericTest P (v 0)).zipIdx.map fun (t, i) ↦
@@ -1410,7 +1632,7 @@ def stepGeneric (P : Prog) (S : Defs) (T : Defs3) : Step :=
                     stage "stepGeneric: the rest reads" (K.byHyp hR),
                     stage "stepGeneric: the kernel checks" (K.byHyp hK),
                     stage "stepGeneric: no rejection" (K.byHyp iRej')] ++
-                  (List.range 7).map (fun k ↦
+                  (List.range 10).map (fun k ↦
                     stage s!"stepGeneric: the invariant {k}" (hypOr (hRej + 1 + k))) ++
                   [stage "stepGeneric: the rest's kinds" (hypOr hMore)]) <|
                 stage "stepGeneric: the conclusion" (last K.byHyp)) Γ Φ ψ) Γ₃ Φ₃ ψ₃) Γ₁ Φ₁ ψ₁)
@@ -1486,7 +1708,7 @@ def formKind (P : Prog) (S : Defs) : Step :=
 /-- The soundness at all states of forms of which its assumptions hold ({name}`passesφ`,
 {name}`formsOk`): by induction on the forms. None: the passes' runs leave the states, at which
 the conclusion is the invariant's relation of the definitions, and the recognizers' agreement
-that of an environment without datatypes ({lit}`recsNoData`). A construction: the head's kind
+the invariant's. A construction: the head's kind
 and its parts, from the expansion's step at it, which does not fail ({lit}`xpPrefix`,
 {name}`formKind`), and the hypothesis on the forms; the step at a form of that kind
 ({name}`stepDef`, {name}`stepDeftype`, {name}`stepDefnum`, {name}`stepDefn`,
@@ -1497,22 +1719,18 @@ def passesForms (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let L := K.L
     let Ls := list treeTy
     let some X₀ := partitionT K [Ls] | dbgTrace "passesForms: no partition" fun _ ↦ none
-    let φ := passesφ P T X₀ (formsOk P S)
+    let φ := passesφ P S T X₀ (formsOk P S)
     let nVars := (passesCtx T).length
-    let nHyps := ((passesAt 0 (v 9)).hyps P T X₀).length + 1
+    let nHyps := ((passesAt 0 (v 9)).hyps P S T X₀).length + 1
     let intro (k : Deducer) : Deducer := repeatK nVars (dAllI L) (repeatK nHyps (dImpI L) k)
     let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
     let hypOr (h : ℕ) : Deducer := fun Γ Φ ψ ↦ (dHyp Γ Φ ψ).orElse fun _ ↦ K.byHyp h Γ Φ ψ
     -- no forms: the states' variables, from the outermost the declarations first
     let base : Deducer := intro fun Γ₁ Φ₁ ψ₁ ↦
       let h (k : ℕ) : ℕ := Φ₁.length - nHyps + k
-      let s (Γ : List Tree) : Passes := passesAt (Γ.length - nVars) (nilT treeTy)
       dConjI L (stage "passesForms: none, the markers" K.byNorm) (dConjI L
         (stage "passesForms: none, related" (K.byHyp (h 6)))
-        (applyThm K "recsNoData" (fun Γ ↦ [(s Γ).finalNames P,
-            Term.fst ((s Γ).checked P X₀), (s Γ).rel P])
-          [stage "passesForms: none, no datatype" (normHyps K [h 11] K.byNorm)]
-          (stage "passesForms: none, the recognizers" dHyp))) Γ₁ Φ₁ ψ₁
+        (stage "passesForms: none, the recognizers" (K.byHyp (h 11)))) Γ₁ Φ₁ ψ₁
     -- a construction: the head and the tail outermost, then the states' variables
     let step : Deducer := intro fun Γ₁ Φ₁ ψ₁ ↦
       let h (k : ℕ) : ℕ := Φ₁.length - nHyps + k
@@ -1523,9 +1741,9 @@ def passesForms (P : Prog) (S : Defs) (T : Defs3) : Step :=
       -- a function's parts: the body, the result type, the binders, the name and the head
       let σ₅ (Γ : List Tree) : List Term :=
         [at_ 15 Γ, at_ 14 Γ, at_ 13 Γ, at_ 12 Γ, at_ 11 Γ, esA Γ] ++ states Γ
-      let invariant : List Deducer := (List.range 13).map fun k ↦
+      let invariant : List Deducer := (List.range 16).map fun k ↦
         stage s!"passesForms: the hypothesis {k}" (hypOr (h k))
-      (fun Γ Φ ψ ↦ dRwHyp (evalRw K.G K.E (K.rulesEx Φ (h 13)) .full) (h 13)
+      (fun Γ Φ ψ ↦ dRwHyp (evalRw K.G K.E (K.rulesEx Φ (h 16)) .full) (h 16)
         (stage "passesForms: the forms" <| K.conjE <| fun Γ₂ Φ₂ ψ₂ ↦
         let (iPre, iRest) := (Φ₂.length - 2, Φ₂.length - 1)
         -- the form's parts: its equation and the facts of its kind, of m conjuncts in all
@@ -1644,7 +1862,7 @@ def initialPasses (P : Prog) (X₀ es : Term) : Passes :=
   let fs := pc P "Datatype.kernelForms" [ts]
   ⟨es, nil, pc P "Typing.withMs" [pc P "Typing.env0" [],
       txsApp P nil (Term.fst (Term.subst X₀ fun _ ↦ ts))], pc P "Typing/OName.nothing" [],
-    nil, nil, nil, nil, pc P "Recognize.markers" [fs], fs⟩
+    nil, nil, nil, nil, pc P "Recognize.markers" [fs], fs, none, none⟩
 
 /-- That each definition's body the expansion writes for a program's forms is a source form at
 the numeral abbreviations before it: the run of the test of the definitions' bodies over the
@@ -1668,7 +1886,7 @@ def programTop (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let some X₀ := partitionT K [Ls] | dbgTrace "programTop: no partition" fun _ ↦ none
     let (hs, concl) ← programParts P T (v 0)
     let s := initialPasses P X₀ (v 0)
-    let passes := (s.hyps P T X₀).foldr (Internal.Logic.imp P.o) (s.concl P T X₀)
+    let passes := (s.hyps P S T X₀).foldr (Internal.Logic.imp P.o) (s.concl P T X₀)
     let a : Internal.Thm := ⟨0, [Ls], hs ++ [plainTop P (v 0), passes], concl⟩
     let s₀ (Γ : List Tree) : Passes := initialPasses P X₀ (v (Γ.length - 1))
     let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
@@ -1705,8 +1923,16 @@ def programTop (P : Prog) (S : Defs) (T : Defs3) : Step :=
               stage "programTop: the names" (K.cutThm "namesEmpty" (fun _ ↦ []) dHyp),
               stage "programTop: the keywords" (K.cutThm "kwsEmpty" (fun _ ↦ []) dHyp),
               stage "programTop: the lengths" K.byNorm,
-              stage "programTop: no datatype" K.byNorm,
-              stage "programTop: the definitions' bodies" (hypOrK K hPlain)] <|
+              stage "programTop: the recognizers" (applyThm K "recsEmpty"
+                (fun _ ↦ [s.env, s.rel P]) [] (last K.byHyp)),
+              stage "programTop: the definitions' bodies" (hypOrK K hPlain),
+              stage "programTop: the occurrences" (K.cutThm "occSelf" (fun _ ↦ [s.fs]) <|
+                K.allEΓ (fun _ ↦ nil) <| last K.byHyp),
+              stage "programTop: the recognizers referred to" (dAllI L <| dImpI L <|
+                fun Γ Φ ψ ↦ dRwHyp (evalRw K.G K.E (K.rulesEx Φ (Φ.length - 1) ++
+                  [.delta (P.idx "Typing.hasName")]) .full) (Φ.length - 1)
+                  (dFalse L dHyp) Γ Φ ψ),
+              stage "programTop: the names' occurrences" (K.solve 3)] <|
           -- the final environment's markers the first's, then the conclusion
           K.conjE <| fun Γ Φ ψ ↦
           let (iMs', iC) := (Φ.length - 2, Φ.length - 1)
@@ -1728,7 +1954,7 @@ def programForms (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let (hs, concl) ← programParts P T (v 0)
     let a : Internal.Thm := ⟨0, [Ls], hs ++ [plainTop P (v 0)] ++ formsOk P S (v 0), concl⟩
     let s := initialPasses P X₀ (v 0)
-    let n := (s.hyps P T X₀).length
+    let n := (s.hyps P S T X₀).length
     let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
     -- the soundness at the first states, from that at all states and the forms' kinds
     let passes : Deducer := K.cutThm "passesForms" (fun _ ↦ [v 0]) <|
@@ -1748,29 +1974,373 @@ in. -/
 def programTopDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
   [globEmpty P S T, numsEmpty P S T, namesEmpty P S T, kwsEmpty P S T, programTop P S T]
 
-/-- The development of the facts of the empty context and of programs without datatypes. -/
+/-- The development of the facts of the empty context. -/
 def programEmptyDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
-  [envNil P S T, cxNil P S T, recsNoData P S T]
+  [envNil P S T, cxNil P S T]
+
+/-- The definition the expansion's reading of a constructor writes, where the constructor has no
+variable field: the definition of the constructor's atom as the abstractions over its fields'
+binders around the coercion to the datatype of the node of the constructor's position over the
+fields' values, the term of the constructors' soundness
+({name}`GebTests.Prototypes.FreeTopos.Datatypes.ctorPlain`). In the context of the fields'
+types, the constructor's atom, its position and the datatype's name. -/
+def ctorDeclPlain (P : Prog) (S : Defs) : Step :=
+  ("ctorDeclPlain", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, []⟩
+    let Ls := list treeTy
+    let Γ := [Ls, treeTy, treeTy, treeTy]
+    let (fs, nm, j, d) := (v 0, v 1, v 2, v 3)
+    let ltT ← primT Kernel.Prim.lt
+    let subT ← primT Kernel.Prim.sub
+    let c := nodeT (Term.pair (numeral 2) (consT treeTy nm fs))
+    let nr := pc P "Datatype/Txs.length" [fs]
+    let more := apps ltT [leafT (numeral 1), nr]
+    let amp := pc P "Datatype.namedTx"
+      [pc P "Datatype.nthTx" [fs, apps subT [nr, leafT (numeral 2)]], pc P "Datatype.kwAmp" []]
+    let z := pc P "Datatype.sx2" [pc P "Datatype.aNil" [], pc P "Datatype.aT" []]
+    let cs := call D.children [] [d]
+    let decl := pc P "Datatype.ctorDecl" [d, j, c]
+    let a : Internal.Thm := ⟨0, Γ, [notTest P.o (pc P "Prelude.and" [more, amp])],
+      Term.eq (Term.snd (Term.snd decl))
+        (defForm P nm (nestT P (binderFold P nr fs) (ctorBody P cs j nr z fs)))⟩
+    let written : Deducer := fun Γ' Φ ψ ↦ (K.byNorm Γ' Φ ψ).orElse fun _ ↦
+      let nf (t : Term) : Option Term := (evalRw K.G K.E (K.rules Φ) .full Γ' Φ t).map Prod.fst
+      let d := (Internal.eqParts ψ).bind fun (l, r) ↦
+        (nf l).bind fun x ↦ (nf r).bind fun y ↦ firstDiff x y
+      dbgTrace s!"ctorDeclPlain: {d.map fun (x, y) ↦ s!"{showT x}\n  vs {showT y}"}" fun _ ↦ none
+    let at_ (t : Term) (Γ' : List Tree) : Term := sh (Γ'.length - Γ.length) t
+    let some d := decideIn K (at_ more) written
+        (decideIn K (at_ amp) written (refuteNot K 0)) a.ctx a.hyps a.concl
+      | dbgTrace "ctorDeclPlain: not proved" fun _ ↦ none
+    pure (a, d))
+
+/-- A form sound at every context and environment, as the constructors' definitions are
+({name}`GebTests.Prototypes.FreeTopos.Datatypes.formAllT`), is sound at states of the relation's
+context, the typing environment and the reader's abbreviations and names given
+({name}`soundAtT`): at the empty context and environment ({lit}`envNil`), the form typed and
+resolved, it denotes a value related at its type, to which the resolved term converges. In the
+context of the form, the kernel's types of the globals, the numeral abbreviations, the names,
+the type abbreviations, the typing environment and the relation's context. -/
+def soundOfFormAll (P : Prog) (S : Defs) (T : Defs3) : Step :=
+  ("soundOfFormAll", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, lookupEqNames⟩
+    let L := K.L
+    let o := P.o
+    let Ls := list treeTy
+    let nil := nilT treeTy
+    let Γ := [treeTy, Ls, Ls, Ls, Ls, T.envTy, Defs3.ctxTy]
+    let (x, G, nums, names, tys, Ev, R) := (v 0, v 1, v 2, v 3, v 4, v 5, v 6)
+    let isSomeT (t : Term) : Term := truth o (pc P "Prelude.isSome" [t])
+    let get (t : Term) : Term := pc P "Prelude.get" [t]
+    let syn := pc P "Typing.synIn" [Ev, nil, x]
+    let res := pc P "Reader.resolve" [tys, names,
+      pc P "Reader.expandNums" [nums, pc P "Datatype.eraseExpr" [x]], nil]
+    let kernel := pc P "Check.typeIn" [G, nil, get res]
+    let a : Internal.Thm := ⟨0, Γ, [formAllT P S T R nums names tys Ev x],
+      [isSomeT syn, isSomeT res, isSomeT kernel].foldr (Internal.Logic.imp o)
+        (S.conv (Term.lam nat (S.evN (Term.fst (sh 1 R)) (v 0) (sh 1 nil) (sh 1 (get res))))
+          (T.relT R (get syn)))⟩
+    let last (k : ℕ → Deducer) : Deducer := fun Γ' Φ ψ ↦ k (Φ.length - 1) Γ' Φ ψ
+    let at' (m : String) (k : Deducer) : Deducer := stage s!"soundOfFormAll: {m}" k
+    let some d := (dImpI L <| dImpI L <| dImpI L <| fun Γ₀ Φ₀ ψ₀ ↦
+        let (iSyn, iRes) := (Φ₀.length - 3, Φ₀.length - 2)
+        dAllE L K.G K.E 0 nil (K.allEΓ (fun _ ↦ nil) <|
+          K.impE (at' "the empty environment"
+            (K.cutThm "envNil" (fun Γ' ↦ [atPos 0 Γ']) (last K.byHyp))) <|
+          K.impE (at' "no name in the context" (dImpI L (lastFalse K))) <|
+          K.impE (at' "no name in the scope" (dImpI L (lastFalse K))) <|
+          K.impE (at' "typed" (K.byHyp iSyn)) <| K.impE (at' "resolved" (K.byHyp iRes)) <|
+          K.exE <| K.conjE <| fun Γ₁ Φ₁ ψ₁ ↦
+            let (iDen, iRel) := (Φ₁.length - 2, Φ₁.length - 1)
+            denE K iDen (fun _ n w st Γ' Φ ψ ↦
+              dConv L K.G K.E S (atPos n Γ') (atPos w Γ')
+                (at' "stable" (instNK K st (fun _ ↦ v 0) K.byNorm))
+                (at' "related" (K.byHyp iRel)) Γ' Φ ψ) Γ₁ Φ₁ ψ₁) Γ₀ Φ₀ ψ₀)
+        a.ctx a.hyps a.concl
+      | dbgTrace "soundOfFormAll: not proved" fun _ ↦ none
+    pure (a, d))
+
+/-- An atom that occurs in a form occurs in a list with the form after forms and before others:
+by induction on the forms before it. In the context of those forms, under the others, the form
+and the atom. -/
+def occInAppend (P : Prog) (S : Defs) : Step :=
+  ("occInAppend", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, []⟩
+    let L := K.L
+    let o := P.o
+    let Ls := list treeTy
+    let all (A : Tree) (b : Term) : Term := Internal.Logic.all o A (Term.lam A b)
+    -- under the quantifiers: the atom v0, the form v1, the forms after v2, the forms before v3
+    let φ := all Ls (all treeTy (all treeTy (Internal.Logic.imp o (truth o (occT P (v 0) (v 1)))
+      (truth o (occInT P (v 0) (txsApp P (v 3) (consT treeTy (v 1) (v 2))))))))
+    let at_ (j : ℕ) (Γ : List Tree) : Term := v (Γ.length - 1 - j)
+    let intro (k : ℕ → Deducer) : Deducer := dAllI L <| dAllI L <| dAllI L <| dImpI L
+      fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
+    let base : Deducer := intro fun h ↦
+      decideIn K (fun Γ ↦ occT P (at_ 2 Γ) (at_ 1 Γ)) (K.hypFalse h) (K.solve 3)
+    -- a construction: the head v(0), the tail v(1), the forms after v(2), the form v(3), the
+    -- atom v(4)
+    let step : Deducer := intro fun h ↦
+      decideIn K (fun Γ ↦ occT P (at_ 4 Γ) (at_ 0 Γ))
+        (fun Γ Φ ψ ↦ dAllE L K.G K.E 0 (at_ 2 Γ) (K.allEΓ (at_ 3) <| K.allEΓ (at_ 4) <|
+          K.impE (K.byHyp h) <| fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ) Γ Φ ψ)
+        (K.solve 3)
+    listInduction "occInAppend" φ base step)
+
+/-- Each atom that occurs in a form of a list after forms occurs in the list of those forms and
+the list: by induction on the list, the head's atoms by {name}`occInAppend`, the rest's by the
+induction hypothesis at the forms with the head after them ({lit}`appendSnoc`). In the context
+of the list, under the forms before. -/
+def occSelf (P : Prog) (S : Defs) : Step :=
+  ("occSelf", fun ix E ↦ do
+    let K : Kit := ⟨runProg P, S, E, ix, []⟩
+    let L := K.L
+    let o := P.o
+    let Ls := list treeTy
+    -- under the quantifier: the forms before v0, the list v1
+    let φ := Internal.Logic.all o Ls (Term.lam Ls
+      (S.allL (occPred P (txsApp P (v 0) (v 1))) (v 1)))
+    let at_ (j : ℕ) (Γ : List Tree) : Term := v (Γ.length - 1 - j)
+    -- a construction: the head v(0), the tail v(1), the forms before v(2)
+    let (g, xs, pre) := (at_ 0, at_ 1, at_ 2)
+    let step : Deducer := dAllI L <| K.norm <| dConjI L
+      (stage "occSelf: the head" <| dAllI L <| dImpI L <| fun Γ₁ Φ₁ ψ₁ ↦
+        let h := Φ₁.length - 1
+        (K.cutThm "occInAppend" (fun Γ ↦ [pre Γ]) <| K.allEΓ xs <| K.allEΓ g <|
+          K.allEΓ (at_ 3) <| K.impE (K.byHyp h) <| lastOr K) Γ₁ Φ₁ ψ₁)
+      (stage "occSelf: the rest" <| fun Γ Φ ψ ↦
+        dAllE L K.G K.E 0 (txsApp P (pre Γ) (consT treeTy (g Γ) (nilT treeTy)))
+          (fun Γ₁ Φ₁ ψ₁ ↦
+            let i := Φ₁.length - 1
+            (K.cutThm "appendSnoc" (fun Γ ↦ [pre Γ, g Γ, xs Γ]) <| K.byHyp i) Γ₁ Φ₁ ψ₁) Γ Φ ψ)
+    listInduction "occSelf" φ (dAllI L (K.solve 2)) step)
+
+/-- A predicate that holds of each element of a list and of an element holds of each element of
+the list with the element after them: by induction on the list. In the context of the list,
+under the predicate and the element. -/
+def allSnoc (P : Prog) (S : Defs) : Step :=
+  ("allSnoc", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, []⟩
+    let L := K.L
+    let o := P.o
+    let PrTy := exp treeTy omega
+    let snoc (xs x : Term) : Term := pc P "Prelude.append" [xs, pc P "Prelude.single" [x]]
+    -- under the quantifiers: the element v0, the predicate v1, the list v2
+    let φ := Internal.Logic.all o PrTy (Term.lam PrTy (Internal.Logic.all o treeTy
+      (Term.lam treeTy (Internal.Logic.imp o (S.allL (v 1) (v 2))
+        (Internal.Logic.imp o (Term.app (v 1) (v 0)) (S.allL (v 1) (snoc (v 2) (v 0))))))))
+    let at_ (j : ℕ) (Γ : List Tree) : Term := v (Γ.length - 1 - j)
+    let intro (k : ℕ → ℕ → Deducer) : Deducer := dAllI L <| dAllI L <| dImpI L <| dImpI L
+      fun Γ Φ ψ ↦ k (Φ.length - 2) (Φ.length - 1) Γ Φ ψ
+    let base : Deducer := intro fun _ h₂ ↦
+      K.norm (dConjI L (stage "allSnoc: the element" (K.byHyp h₂)) (K.solve 2))
+    -- a construction: the head v(0), the tail v(1), the predicate v(2), the element v(3)
+    let step : Deducer := intro fun h₁ h₂ ↦ normHyps K [h₁] <| K.conjE <| fun Γ₁ Φ₁ ψ₁ ↦
+      let (iHead, iTail) := (Φ₁.length - 2, Φ₁.length - 1)
+      K.norm (dConjI L (stage "allSnoc: the head" (K.byHyp iHead))
+        (stage "allSnoc: the rest" <| fun Γ Φ ψ ↦ dAllE L K.G K.E 0 (at_ 2 Γ) (K.allEΓ (at_ 3) <|
+          K.impE (K.byHyp iTail) <| K.impE (K.byHyp h₂) <| lastOr K) Γ Φ ψ)) Γ₁ Φ₁ ψ₁
+    listInduction "allSnoc" φ base step)
+
+/-- The rebuilding of a tree by the fold of the recognizers' test of an atom's occurrence, whose
+value at a node pairs the node rebuilt with the test: the first component is the tree
+({name}`GebTests.Prototypes.FreeTopos.Normalization.rebuildLemmas`). -/
+def occursRebuild (P : Prog) : List Step :=
+  let Γt := [treeTy, treeTy]
+  match firstFoldApp (weakNF P (baseNorm P) 0 Γt (pc P "Recognize.occurs" [v 1, v 0])) with
+  | some (C, s, Fp) => match Internal.expParts C with
+    | some (FX, _) => rebuildLemmas P "oc" FX
+        (fun x F ↦ Term.fst (Term.app (Term.roseRec C s x) F)) Γt.tail
+        (Term.app (Term.roseRec C s (v 0)) Fp) Fp none
+    | none => []
+  | none => []
+
+/-- The children rebuilt by the fold of the recognizers' test of an atom's occurrence are the
+children: the first components of the map of the folds applied, by induction on the children
+with the rebuilding of each ({lit}`ocFst`). In the context of the children and the atom. -/
+def occursKids (P : Prog) : Step :=
+  ("ocKids", fun ix E ↦ do
+    let rs := .thm (ix "ocFst") [] :: vRules P ix
+    let Γt := [treeTy, treeTy]
+    let Γ := [list treeTy, treeTy]
+    let (C, s, Fp) ← firstFoldApp
+      (weakNF P (baseNorm P) 0 Γt (pc P "Recognize.occurs" [v 1, v 0]))
+    let θ ← defnObjs D.mapApp s
+    let lhs := Term.listRec (nilT treeTy) (consT treeTy (Term.fst (v 1)) (v 0))
+      (call D.mapApp θ [Term.listRec (nilT C) (consT C (Term.roseRec C s (v 1)) (v 0)) (v 0),
+        Fp])
+    let some l := nfE P.G E rs Γ lhs | dbgTrace "ocKids: left" fun _ ↦ none
+    let some d := Internal.byListIndHyp P.G E 0 0 1 rs 4096 Γ [] l (v 0)
+      | dbgTrace s!"ocKids: {(firstDiff l (v 0)).map fun (x, y) ↦ s!"{showT x}\n  vs {showT y}"}"
+          fun _ ↦ none
+    pure (⟨0, Γ, [], Term.eq l (v 0)⟩, d))
+
+/-- The names of the rules of the rebuilding by the recognizers' test of an atom's occurrence:
+of a tree ({name}`occursRebuild`) and of a node's children ({name}`occursKids`). -/
+def occursRebuildNames : List String := ["ocFst", "ocKids"]
+
+/-- A definition's name's atom occurs in the definition's form: the atom a node of the atoms'
+label, equal to itself ({lit}`equalRefl`): the form's and the keyword's equalities with it
+decided, it occurs either way. In the context of the body and the atom. -/
+def occursDefName (P : Prog) (S : Defs) : Step :=
+  ("occursDefName", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, occursRebuildNames⟩
+    let L := K.L
+    let equalT ← primT Kernel.Prim.equal
+    let a : Internal.Thm := ⟨0, [treeTy, treeTy], [truth P.o (pc P "Reader.isAtom" [v 1])],
+      truth P.o (occT P (v 1) (defForm P (v 1) (v 0)))⟩
+    let nA (Γ : List Tree) : Term := v (Γ.length - 1)
+    let atom : Deducer := fun Γ₁ Φ₁ ψ₁ ↦
+      (K.cutThm "equalRefl" (fun Γ ↦ [nA Γ]) <| fun Γ₂ Φ₂ ψ₂ ↦
+        let iRefl := Φ₂.length - 1
+        decideKnown K (fun Γ ↦ apps equalT [nA Γ, nA Γ])
+          (stage "occursDefName: the atom itself" (K.hypFalse iRefl)) (
+          -- the form the atom or not, and the keyword the atom or not: the atom occurs
+          decideKnown K (fun Γ ↦ apps equalT [defForm P (nA Γ) (v (Γ.length - 2)), nA Γ])
+            (decideKnown K (fun Γ ↦ occT P (nA Γ) (pc P "Datatype.aDef" []))
+              (stage "occursDefName: the keyword not the atom" (K.solve 3))
+              (stage "occursDefName: the keyword the atom" (K.solve 3)))
+            (stage "occursDefName: the form the atom" (K.solve 3))) Γ₂ Φ₂ ψ₂) Γ₁ Φ₁ ψ₁
+    let some d := (K.treeNode (v 1) fun Γ₁ Φ₁ ψ₁ ↦
+        dBits L K.G K.E (ix "listCases") (ix "bitCases") (fun bs ↦
+          if bs.map Oitavem.rank == some 1 then atom
+          else stage "occursDefName: no atom" (K.hypFalse 0)) 3 [] (v 1) Γ₁ Φ₁ ψ₁)
+        a.ctx a.hyps a.concl
+      | dbgTrace "occursDefName: not proved" fun _ ↦ none
+    pure (a, d))
+
+/-- The recognizers' agreement holds of an environment of the same datatypes and of the names
+with a name after them, where the name is no recognizer's of a datatype of the environment: a
+recognizer's name with an index among the names with the name after them has it among the names
+({lit}`idxSnocCases`), where its index is the same ({lit}`indexAppendOld`). In the context of
+the name, the names, the two environments and the relation's context. -/
+def recsExtend (P : Prog) (S : Defs) (T : Defs3) : Step :=
+  ("recsExtend", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, lookupEqNames⟩
+    let L := K.L
+    let o := P.o
+    let Γ₀ := [treeTy, list treeTy, T.envTy, T.envTy, Defs3.ctxTy]
+    let (n, names, E', Ev, R) := (v 0, v 1, v 2, v 3, v 4)
+    let isSome (t : Term) : Term := pc P "Prelude.isSome" [t]
+    let idx (x xs : Term) : Term := pc P "Reader.indexOf" [x, xs]
+    let recName (d : Term) : Term := pc P "Typing.recognizerName" [d]
+    let noms (e : Term) : Term := pc P "Typing.envNoms" [e]
+    let one (x : Term) : Term := pc P "Prelude.single" [x]
+    let notRec := Internal.Logic.all o treeTy (Term.lam treeTy (Internal.Logic.imp o
+      (truth o (pc P "Typing.hasName" [v 0, noms (sh 1 Ev)]))
+      (Internal.Logic.imp o (Term.eq (recName (v 0)) (sh 1 n)) (Internal.Logic.ff o))))
+    let a : Internal.Thm := ⟨0, Γ₀,
+      [T.recsT R Ev names, Term.eq (noms E') (noms Ev), notRec],
+      T.recsT R E' (pc P "Prelude.append" [names, one n])⟩
+    let unfold : List Internal.NormRule := [.delta (T.q + 6 + 2 * nFolds)]
+    let at_ (j : ℕ) (Γ : List Tree) : Term := v (Γ.length - 1 - j)
+    let (namesA, nA, dA) := (at_ 3, at_ 4, at_ 5)
+    let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
+    let at' (m : String) (k : Deducer) : Deducer := stage s!"recsExtend: {m}" k
+    let some d := (dRwBy (evalRw K.G K.E unfold .head) <|
+        dRwHyp (evalRw K.G K.E unfold .head) 0 <| dAllI L <| dImpI L <| dImpI L <|
+        fun Γ₁ Φ₁ ψ₁ ↦
+          let (hHas, hIdx) := (Φ₁.length - 2, Φ₁.length - 1)
+          -- the datatype is one of the environment before
+          let hasOld : Deducer := at' "a datatype before" (normHyps K [1] (K.byHyp hHas))
+          let rec_ (Γ : List Tree) : Term := recName (dA Γ)
+          decideIn K (fun Γ ↦ isSome (idx (rec_ Γ) (namesA Γ)))
+            -- no index among the names: the name after them, which is no recognizer's
+            (K.cutThm "idxSnocCases" (fun Γ ↦ [namesA Γ]) <| K.allEΓ rec_ <| K.allEΓ nA <|
+              K.impE (at' "an index" (K.byHyp hIdx)) <| K.impE (dImpI L (lastFalse K)) <|
+              last fun iEqT ↦ K.cutThm "equalSound" (fun Γ ↦ [rec_ Γ]) <| K.allEΓ nA <|
+              K.impE (at' "the names equal" (hypOrK K iEqT)) <| last fun iEq ↦
+              fun Γ Φ ψ ↦ dAllE L K.G K.E 2 (dA Γ) (K.impE hasOld <|
+                K.impE (at' "the name a recognizer's" (hypOrK K iEq)) <|
+                dFalse L dHyp) Γ Φ ψ)
+            -- an index among the names: the same among the names with the name after them
+            (fun Γ Φ ψ ↦ dAllE L K.G K.E 3 (dA Γ) (K.impE hasOld <|
+              K.impE (at' "indexed" (K.solve 3)) <| K.exE <| K.conjE <| fun Γ₂ Φ₂ ψ₂ ↦
+                let (iIdx, iRec) := (Φ₂.length - 2, Φ₂.length - 1)
+                (K.cutThm "indexAppendOld" (fun Γ ↦ [namesA Γ]) <| K.allEΓ rec_ <|
+                  K.allEΓ (fun Γ ↦ one (nA Γ)) <| K.impE (at' "indexed before" (K.solve 3)) <|
+                  last fun iApp ↦ normHyps K [iIdx, iApp] <|
+                  dExI L K.G K.E (v 0) (dConjI L (at' "the index" K.byNorm)
+                    (at' "the recognizer" (K.byHyp iRec)))) Γ₂ Φ₂ ψ₂) Γ Φ ψ) Γ₁ Φ₁ ψ₁)
+        a.ctx a.hyps a.concl
+      | dbgTrace "recsExtend: not proved" fun _ ↦ none
+    let _ := (R, E')
+    pure (a, d))
+
+/-- The recognizers the forms refer to are among the names with a name after them, at an
+environment of the same datatypes: a recognizer's index among the names is its index among
+those ({lit}`indexAppendOld`). In the context of the name, the names, the two environments and
+the forms. -/
+def insExtend (P : Prog) (S : Defs) (T : Defs3) : Step :=
+  ("insExtend", fun ix E ↦ do
+    let K : Kit := ⟨{ P with folded := P.folded ++ ["Recognize.occurs"] }, S, E, ix,
+      lookupEqNames⟩
+    let L := K.L
+    let Γ₀ := [treeTy, list treeTy, T.envTy, T.envTy, list treeTy]
+    let (n, names, E', Ev, fs) := (v 0, v 1, v 2, v 3, v 4)
+    let noms (e : Term) : Term := pc P "Typing.envNoms" [e]
+    let recName (d : Term) : Term := pc P "Typing.recognizerName" [d]
+    let one (x : Term) : Term := pc P "Prelude.single" [x]
+    let a : Internal.Thm := ⟨0, Γ₀, [insT P Ev names fs, Term.eq (noms E') (noms Ev)],
+      insT P E' (pc P "Prelude.append" [names, one n]) fs⟩
+    let at_ (j : ℕ) (Γ : List Tree) : Term := v (Γ.length - 1 - j)
+    let (namesA, nA, dA) := (at_ 3, at_ 4, at_ 5)
+    let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
+    let some d := (dAllI L <| dImpI L <| dImpI L <| fun Γ₁ Φ₁ ψ₁ ↦
+        let (hHas, hOcc) := (Φ₁.length - 2, Φ₁.length - 1)
+        dAllE L K.G K.E 0 (dA Γ₁) (
+          K.impE (stage "insExtend: a datatype before" (normHyps K [1] (K.byHyp hHas))) <|
+          K.impE (stage "insExtend: referred to" (hypOrK K hOcc)) <| last fun iIdx ↦
+          K.cutThm "indexAppendOld" (fun Γ ↦ [namesA Γ]) <|
+          K.allEΓ (fun Γ ↦ recName (dA Γ)) <| K.allEΓ (fun Γ ↦ one (nA Γ)) <|
+          K.impE (stage "insExtend: indexed" (hypOrK K iIdx)) <| last fun iEq ↦
+          normHyps K [iEq] (stage "insExtend: the index" (K.byHyp iIdx))) Γ₁ Φ₁ ψ₁)
+        a.ctx a.hyps a.concl
+      | dbgTrace "insExtend: not proved" fun _ ↦ none
+    let _ := (E', fs)
+    pure (a, d))
+
+/-- The recognizers' agreement holds of no names: no recognizer's name has an index. In the
+context of the typing environment and the relation's context. -/
+def recsEmpty (P : Prog) (S : Defs) (T : Defs3) : Step :=
+  unfolded P S "recsEmpty" (T.q + 6 + 2 * nFolds) lookupEqNames []
+    ⟨0, [T.envTy, Defs3.ctxTy], [], T.recsT (v 1) (v 0) (nilT treeTy)⟩ fun K ↦
+      dImpI K.L (dImpI K.L (lastFalse K))
+
+/-- The development of the recognizers' agreement along the names. -/
+def programRecsDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
+  [recsEmpty P S T, recsExtend P S T, insExtend P S T]
+
+/-- The development of the atoms' occurrences in the program's forms. -/
+def programOccursDev (P : Prog) (S : Defs) : List Step :=
+  [occInAppend P S, occSelf P S, allSnoc P S] ++ occursRebuild P ++
+    [occursKids P, occursDefName P S]
 
 /-- The developments of the soundness of a whole program, each with its certificate's name, in
 the order in which each continues from those before it: the runs' ({name}`stepGroups`), the
-steps at each kind of form, the induction on the forms and the program's soundness. -/
+steps at each kind of form, the induction on the forms and the program's soundness; then the
+passes' steps at a datatype's declaration and the soundness at a constructor's definition from
+that at every context and environment. -/
 def programSoundGroups (P : Prog) (S : Defs) (T : Defs3) : List (String × List Step) :=
   stepGroups P S T ++
     [("datatype-program-empty", programEmptyDev P S T),
       ("datatype-program-forms", [eraseDefForm P S, recAtThree P S, eraseOther P S]),
+      ("datatype-program-recs", programRecsDev P S T),
+      ("datatype-program-occurs", programOccursDev P S),
       ("datatype-program-top", programTopDev P S T),
       ("datatype-program-nums", programNumsDev P S),
       ("datatype-program-nums-inv", programNumsInvDev P S T),
       ("datatype-program-let", programLetDev P S T),
-      ("datatype-program-defined", [stepDefined P S T]),
+      ("datatype-program-defined", [writtenInv P S T, stepDefined P S T]),
       ("datatype-program-def", [stepDef P S T]),
       ("datatype-program-deftype", [stepDeftype P S T]),
       ("datatype-program-defnum", [numOfParts P S, stepDefnum P S T]),
       ("datatype-program-defn", [stepDefn P S T]),
       ("datatype-program-generic", [xpGeneric P S, checkGeneric P S T, stepGeneric P S T]),
       ("datatype-program-defs", neqMore P ++ [formKind P S, passesForms P S T]),
-      ("datatype-program-sound", [programForms P S T])]
+      ("datatype-program-sound", [programForms P S T]),
+      ("datatype-program-data", programDataDev P S T),
+      ("datatype-program-ctor", [ctorDeclPlain P S, soundOfFormAll P S T])]
 
 /-- The names of the certificates the developments of the soundness of a whole program continue
 from, in order: the base's, the typing's runs', the soundness at every tree's, and those of

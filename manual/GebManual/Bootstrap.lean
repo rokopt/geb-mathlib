@@ -2994,8 +2994,9 @@ each field's coercion gives its relation, so that the proof reads neither
 the positions of the fields nor the kernel's typing. At a whole program
 the assumptions are discharged by induction on the program's forms, at
 all states of the expansion, the typing and the reader run in step: the
-definitions the reader has are related to the typing environment's, and
-each form's steps leave states of which that holds again
+definitions the reader has are related to the typing environment's, the
+recognizers among them deciding membership, and each form's steps leave
+states of which that holds again
 (`GebTests/Prototypes/FreeTopos/DatatypeProgram.lean`,
 `GebTests/Prototypes/FreeTopos/DatatypeProgramRuns.lean`,
 `GebTests/Prototypes/FreeTopos/DatatypeProgramStep.lean`). It is proved
