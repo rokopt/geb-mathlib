@@ -47,7 +47,7 @@ jobs:
             # builds what the site needs, and `lint`, left at its
             # default, would auto-detect the lakefile's lint driver and
             # run `lake lint` against a tree nothing has built.
-            - uses: leanprover/lean-action@fe408643ea7367d8c0404a8be3975bb145f5fb64  # v1
+            - uses: leanprover/lean-action@ba3fdfe5c4476c925da13bf11a005ddb47e47aee  # v1
               with:
                   build: false
                   test: false
