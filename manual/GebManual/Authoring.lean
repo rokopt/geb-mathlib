@@ -76,8 +76,8 @@ compiled program stays the same; examples are checked again on replay.
 
 # The proof-source profile
 
-A proof document is `(proofs V THEOREM…)`, its version `V` being `0`, `1` or
-`2`, with one or more theorems of distinct names, each
+A proof document is `(proofs V THEOREM…)`, its version `V` being `0`, `1`,
+`2` or `3`, with one or more theorems of distinct names, each
 `(theorem NAME STATEMENT (by SCRIPT))`. Version `1` reads:
 
 ```
@@ -138,7 +138,8 @@ definitions and computes applications of abstractions and the components
 of pairs alone, so a document of either version keeps its meaning. It
 cites no theorem, so its certificate saves no companion and has the format
 `geb-proof/v1`, whose certificates therefore still replay; version `1`
-writes `geb-proof/v2`, and version `2` `geb-proof/v3`. An unknown or unbound
+writes `geb-proof/v2`, version `2` `geb-proof/v3` and version `3`
+`geb-proof/v4`. An unknown or unbound
 name, a name declared twice,
 a malformed form, an unsupported version, a false equation or an
 unsuccessful search is rejected. Failure of a bounded search does not establish that the
@@ -322,8 +323,98 @@ lake exe geb-author replay bootstrap/proofs/tree-cases.proofs.geb \
   /tmp/tree-cases.cert
 ```
 
-No tactic of scripts yet performs induction on trees with the hypothesis at
-each child, by which the Lean developments prove weakening and substitution.
+# Hypotheses and implications
+%%%
+tag := "hypothesis-scripts"
+%%%
+
+Version `3` reads what version `2` reads, and adds truth and implication to
+the terms of the internal language, and the tactics of the induction on
+trees with the hypothesis at each child, of the instances of a hypothesis
+and of implications:
+
+```
+DOCUMENT ::= (proofs 3 HEADER… THEOREM…)
+ITERM ::= … | true | (implies ITERM ITERM)
+SCRIPT ::= … | (tree-induction x (l cs ih) SCRIPT)
+         | (child-hypotheses DEPTH h (CHILD…) SCRIPT)
+         | (instances DEPTH h (INSTANCE…) SCRIPT)
+         | (assume h SCRIPT)
+         | (modus-ponens h (h…) SCRIPT)
+         | (revert-cases h x (y ys) SCRIPT SCRIPT)
+CHILD ::= (INSTANCE…)
+INSTANCE ::= (h ITERM…)
+```
+
+Truth and implication are connectives of `Geb.FreeTopos.Internal.Logic`,
+definitions of the internal language in terms of equality: `true` is the
+equality of the element of the terminal type with itself, and
+`(implies p q)`, of two terms of the type `Omega`, the equality of the
+conjunction of `p` and `q` with `p`, a conjunction being the equality of the
+pair of its formulas with the pair of truths. The three definitions follow
+the program's among the definitions a development of version `3` is checked
+with, and their rules, each with its derivation, are the first declarations
+of its certificate, where the tactics of implications cite them
+(`bootstrap/free-topos/logic.geb`). A statement is an equation, so a theorem
+that an implication holds equates it with `true`. The names `true` and
+`implies` are read so wherever version `3` reads a term of the internal
+language, and no variable of an internal statement or of a script of version
+`3` takes one.
+
+The tactics added:
+
+* `tree-induction` proves a goal without hypotheses by induction on its
+  innermost variable `x`, a tree: the goal at the node of a label `l` and
+  children `cs`, under the induction hypothesis `ih`. The hypothesis is one
+  equation, of the list of the goal's formulas at the children with the list
+  of as many truths. Where `x` has the kernel's type of trees, `cs` has the
+  kernel's type of lists of trees.
+* `child-hypotheses` brings the induction hypothesis `h` to the first
+  children, as many as the `CHILD`s, of a list of children that is a
+  construction to that number, as `revert-cases` leaves it. For each `CHILD`
+  in order, the goal's formula at the child of that position is cut in, and
+  each `INSTANCE` names its instance at the terms `t…`: the equation of the
+  applications of the formula's two sides, functions, to the terms, reduced
+  to the depth. An `INSTANCE` without terms names the formula.
+* `instances` names so the instances of a hypothesis `h` that equates two
+  functions.
+* `assume` proves a goal whose sides reduce, at their heads, to the
+  implication of an equation and to `true`, by the proof of the equation
+  under the antecedent, named `h`.
+* `modus-ponens` takes hypotheses `h…` that each equate with `true` an
+  implication whose antecedent is the hypothesis `h`, and gives each name to
+  the implication's conclusion, cut in.
+* `revert-cases` proves the goal by the case analysis of a list variable `x`
+  that the hypothesis `h` mentions: at the empty list, and at a head `y`
+  before a list `ys`, under `h` at each. The implication of the goal by `h`
+  is proved for every list by induction, and the goal follows from it at
+  `x`.
+
+A hypothesis that a tactic reduces, or replaces by its conclusion or its
+case, keeps its name, and the hypotheses a tactic cuts in besides are cited
+by no name. `tree-induction` is `Geb.FreeTopos.Internal.byRoseIndHyp`, and
+the others `withChildHyps`, `withInsts`, `byImpI`, `withImpElim` and
+`revertCase` of `Geb.FreeTopos.Tactics`, by which the Lean developments
+prove that weakening and substitution preserve types.
+
+`scripts/tests/test-proof-scripts.sh` proves with them, among other
+theorems, that the fold of a tree that keeps the first child alone at each
+node gives at its own result that result, a goal in the one variable `t`:
+
+```
+(tree-induction t (l cs ih)
+  (revert-cases ih cs (c ys) (reduce full)
+    (child-hypotheses weak ih (((hc))) (reduce full hc))))
+```
+
+At a node without children both sides reduce to the node. At a first child
+`c` before the children `ys`, `hc` names the goal at `c`, the formula of
+`ih` at the first child, taken at no arguments, and both sides reduce to the
+node of the fold at `c` once `hc` rewrites.
+
+A document of version `3` imports documents of versions `1` to `3`, and no
+document imports one of a later version, whose certificate is laid out
+otherwise.
 
 # Keeping the source
 
@@ -356,7 +447,8 @@ pin the compiler image and emitted compiler, the authoring runner and its
 source dependencies, the manifest and sources, the Lean toolchain and
 dependency lockfile. `record/compiler.img` retains the exact bytes of
 `bootstrap/compiler.img` used at the milestone. The certificate envelope separately identifies
-its format (`geb-proof/v2` for version `1`, `geb-proof/v3` for version `2`), theory
+its format (`geb-proof/v2` for version `1`, `geb-proof/v3` for version `2`,
+`geb-proof/v4` for version `3`), theory
 (`free-topos/base/v1`),
 document profile and exact compiled program; its declarations retain the
 statements, their companions and their source names.
@@ -377,8 +469,7 @@ Edition `0` is still a pre-release edition. Keep the whole record with
 work written against it. No migration to a future edition is implemented
 here; its durable document, elaborated definitions and exact compiler
 give that migration explicit inputs. Suspended holes in proofs, statements
-over datatypes, induction on trees with the hypothesis at each child, and
-completion of datatype soundness remain separate work.
+over datatypes and completion of datatype soundness remain separate work.
 
 # Preserving a development
 

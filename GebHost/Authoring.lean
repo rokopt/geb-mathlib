@@ -19,14 +19,14 @@ Certificates carry their format, theory, profile and checked program. Replay com
 with the current compilation and checks the saved derivations against the source statements.
 The host writes an output only after all checks succeed.
 
-A proof document of version 2 names the documents whose theorems it cites, by forms
+A proof document from version 2 names the documents whose theorems it cites, by forms
 {lit}`(import PATH)`. The host resolves them, each against the directory of the document that
 imports it, and gives the runner the development: the imported documents, each before those
 importing it, and the document last. The runner reads the theorems of all of them as one list, so
 the development's certificate holds the declarations of the imported theorems before the
 document's own, and replays without the certificates of the imported documents.
 
-A proof document of version 2 may name its program, by a form {lit}`(program NAME)`: the
+A proof document from version 2 may name its program, by a form {lit}`(program NAME)`: the
 manifest of that program name in the document's directory, or else in the nearest directory above
 it that holds one. The host proves a document against the program it names where no manifest is
 given, and a manifest given takes its place. Only the document proved is consulted: the documents
@@ -163,7 +163,8 @@ def headerAtoms (head : List Char) (d : Doc) : Except String (List String) :=
       match c.children with
       | [_, p] => if headIs head c && p.children.isEmpty then p.label.2.map String.ofList else none
       | _ => none
-    if atoms.isEmpty || (root.children[1]?.bind (·.label.2)) == some ['2'] then .ok atoms
+    let version := root.children[1]?.bind (·.label.2)
+    if atoms.isEmpty || version == some ['2'] || version == some ['3'] then .ok atoms
     else .error s!"a document of a version before 2 has no form ({String.ofList head} …)"
   | none => .ok []
 
@@ -227,12 +228,14 @@ def sourcesTree (docs : List (System.FilePath × Durable)) : Tree :=
 
 /-- The certificate format of a development's version, that of its last document: version 0
 saves one declaration for each theorem, and the later versions save each theorem followed by its
-companion, version 2 the theorems of the documents imported before its own. -/
+companion, version 2 the theorems of the documents imported before its own, and version 3 the
+connectives' rules before every theorem. -/
 def formatOf (version : Tree) : Tree :=
   nameTree (match version.label with
     | 0 => "geb-proof/v1"
     | 1 => "geb-proof/v2"
-    | _ => "geb-proof/v3").toList
+    | 2 => "geb-proof/v3"
+    | _ => "geb-proof/v4").toList
 
 /-- Why the reader and prover written in Geb reject a development: the reason's number and the
 theorem it concerns, as {lit}`bootstrap/authoring.geb` reports them. -/
@@ -254,7 +257,8 @@ def reasonMessage (why : Nat) (name : String) : String :=
   | 5 => s!"the sides of the theorem {name} have no weak normal forms within the budget"
   | 6 => "the derivations of the development do not check"
   | _ => "a document of the development is not (proofs V FORM…) of a version this host reads \
-    with a theorem, or a document of version 0 is combined with others"
+    with a theorem, or a document of version 0 is combined with others, or a document imports \
+    one of a later version"
 
 /-- The span of the name of a theorem in a document as written: of the last theorem of that name
 among the forms of its form {lit}`(proofs V …)`. -/

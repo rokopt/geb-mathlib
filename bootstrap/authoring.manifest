@@ -9,5 +9,6 @@
     free-topos/translation.geb
     free-topos/prove.geb
     free-topos/tactics.geb
+    free-topos/logic.geb
     authoring.geb)
   (entries Authoring.prove Authoring.replay Authoring.version))

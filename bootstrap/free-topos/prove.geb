@@ -63,7 +63,8 @@
     byFunExt
     bySplit
     byListIndWith
-    byRoseInd)
+    byRoseInd
+    byRoseIndHyp)
   (import Prelude)
   (import Base)
   (import Theory)

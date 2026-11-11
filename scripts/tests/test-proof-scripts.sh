@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Exercise version 2 of the proof profile through the CLI: statements over the internal language,
-# the tactics of trees and coproducts, rules at objects, imported documents, the program a
-# document names, the diagnostics of a rejected development, and the development of
-# bootstrap/proofs/, proved and replayed.
+# Exercise versions 2 and 3 of the proof profile through the CLI: statements over the internal
+# language, the tactics of trees and coproducts, rules at objects, imported documents, the program
+# a document names, the diagnostics of a rejected development, truth and implication, the tactics
+# of the induction on trees with the hypothesis at each child, of the instances of a hypothesis
+# and of implications, and the development of bootstrap/proofs/, proved and replayed.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
@@ -56,6 +57,48 @@ MORE = '''; Theorems of version 2 about the pair example.
   (theorem node-label-children
     (internal () (forall ((t T)) (equal (node Bits (pair (lib lab t) (lib children t))) t)))
     (by (tree-cases t (l cs) lambek (reduce full map-id map-fusion lambek)))))
+'''
+
+def prune(t):
+    return ('(rose-rec T (n) (node Bits (pair (fst n) (list-rec (nil T) (r acc) (cons T r (nil T))'
+            f' (snd n)))) {t})')
+
+HYP = f'''; Theorems of version 3 about the pair example.
+
+(proofs 3 (import Pair.proofs.geb)
+  ; The instance of a hypothesis that equates functions.
+  (theorem instance
+    (internal (X Y)
+      (forall ((f (Arrow X Y)) (g (Arrow X Y)) (x X)) (implies (h (equal f g)) (equal (f x) (g x)))))
+    (by (instances weak h ((hx x)) (reduce weak hx))))
+  ; An implication is introduced, and eliminated by modus ponens.
+  (theorem symmetry
+    (internal (X) (forall ((x X) (y X)) (equal (implies (equal x y) (equal y x)) true)))
+    (by (assume h (reduce weak h))))
+  (theorem composition
+    (internal (X)
+      (forall ((a X) (b X) (c X) (d X))
+        (implies (h (equal (implies (equal a b) (equal c d)) true))
+          (equal (implies (equal a b) (equal d c)) true))))
+    (by (assume ha (modus-ponens ha (h) (reduce weak h)))))
+  ; The case analysis of a list that a hypothesis mentions.
+  (theorem reverted
+    (internal (X) (forall ((l (List X)) (m (List X))) (implies (h (equal l m)) (equal m l))))
+    (by (revert-cases h l (y ys) (reduce weak h) (reduce weak h))))
+  ; Keeping the first child alone at each node is idempotent, by induction on a tree with the
+  ; hypothesis at the first child.
+  (theorem prune-prune
+    (internal () (forall ((t T)) (equal {prune(prune('t'))} {prune('t')})))
+    (by
+      (tree-induction t (l cs ih)
+        (revert-cases ih cs (c ys) (reduce full)
+          (child-hypotheses weak ih (((hc))) (reduce full hc))))))
+  ; The children of a tree of the kernel have the kernel's type of lists of trees.
+  (theorem kernel-children (forall ((t T)) (equal t t))
+    (by (tree-induction t (l cs ih) (generalize (zs (List T)) (kernel cs) (reduce weak)))))
+  ; A theorem of a document of an earlier version is cited after the connectives' rules.
+  (theorem append-nil-again (forall ((xs (List T))) (equal (Lists.append xs (nil T)) xs))
+    (by (reduce weak append-nil))))
 '''
 
 def document(body, imports=''):
@@ -134,6 +177,36 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
              '  (theorem a (equal Pair.left Pair.left) (by (normalize 4))))\n', '',
              'a document of a version before 2 has no form (import')
 
+    # Version 3 reads truth and implication and the tactics of hypotheses, its certificate begins
+    # with the connectives' rules and replays, and it cites the theorems of earlier versions.
+    hyp = root / 'Hyp.proofs.geb'
+    hyp.write_text(HYP)
+    hyp_cert = root / 'hyp.cert'
+    run('prove', manifest, hyp, hyp_cert)
+    run('replay', manifest, hyp, hyp_cert)
+    # Version 2 reads none of them, and no document imports one of a later version.
+    rejected(HYP.replace('(proofs 3', '(proofs 2'), '5:12',
+             'the script of the theorem instance does not read')
+    rejected(document('(theorem a (internal () (forall ((p Omega)) (equal (implies p p) true)))'
+                      ' (by (normalize 4)))'), '2:12', 'the theorem a is not')
+    rejected(document('(theorem a (equal Pair.left Pair.left) (by (normalize 4)))',
+                      '(import Hyp.proofs.geb)'), '', 'imports one of a later version')
+    # The induction on a tree takes a goal without hypotheses; a keyword of the connectives names
+    # no variable or hypothesis of a script; modus ponens cites hypotheses.
+    three = '(proofs 3\n  {})\n'
+    rejected(three.format('(theorem a (forall ((t T)) (implies (h (equal t t)) (equal t t)))'
+                          ' (by (tree-induction t (l cs ih) (reduce weak))))'),
+             '2:12', 'the script of the theorem a does not read')
+    rejected(three.format('(theorem a (internal () (forall ((p Omega)) (equal (implies p p) true)))'
+                          ' (by (assume implies (reduce weak))))'),
+             '2:12', 'the script of the theorem a does not read')
+    rejected(three.format('(theorem a (forall ((t T)) (implies (h (equal t t)) (equal t t)))'
+                          ' (by (modus-ponens h (g) (reduce weak))))'),
+             '2:12', 'the script of the theorem a does not read')
+    # A script that does not prove its theorem is reported so: the antecedent is not cited.
+    rejected(HYP.replace('(by (assume h (reduce weak h)))', '(by (assume h (reduce weak)))'),
+             '10:12', 'the script of the theorem symmetry does not prove it')
+
     # An import is a path below the document that reads, and imports return to no document.
     rejected(document('(theorem a (equal Pair.left Pair.left) (by (normalize 4)))',
                       '(import ../Pair.proofs.geb)'), '', 'is not a relative path below')
@@ -206,6 +279,6 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
     run('prove', proofs_dir / 'tree-cases.proofs.geb', cases)
     run('replay', proofs_dir / 'tree-cases.proofs.geb', cases)
 
-print('test-proof-scripts: internal statements, tactics, imports, named programs, diagnostics '
-      'and the tree-cases development passed')
+print('test-proof-scripts: internal statements, tactics, imports, named programs, diagnostics, '
+      'hypotheses and implications and the tree-cases development passed')
 PY

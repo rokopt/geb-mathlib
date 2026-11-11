@@ -3395,12 +3395,14 @@ tag := "authoring-compatibility"
     object variables: contexts, hypotheses, citations of earlier theorems
     and of imported documents, the tactics of reduction, search,
     extensionality, the induction and case analysis of lists, the case
-    analysis of coproducts and trees and the rewriting under a test, saved
+    analysis of coproducts and trees, the rewriting under a test, the
+    induction on trees with the hypothesis at each child, the instances of
+    hypotheses and implications, saved
     certificates and replay from Geb source ({ref "first-authoring"}[Writing
     a first Geb development]), the development of the lemmas of trees
     among them; statements over datatypes wait on the datatype language's
-    completion, and the developments by induction on trees with the
-    hypothesis at each child on that tactic's form in scripts
+    completion, and the developments by induction on trees remain Lean
+    deducers
 *
   * `let*` and `cond`, expanded in the elaboration of modules
   * Complete
@@ -5357,10 +5359,23 @@ prover that rejects a development reports the theorem concerned and why,
 which the host writes at the theorem's line and column. The other compiler
 developments' statements remain Lean values and their scripts Lean code,
 the deducers under `GebTests/Prototypes/FreeTopos/`, which the provers'
-agreement relates to the prover written in Geb; moving them into Geb source
-requires the forms in scripts of the induction on trees with the hypothesis
-at each child and of the hypotheses' instances and implications those
-deducers use. The syntax of statements and proof scripts
+agreement relates to the prover written in Geb. Version 3 of the document
+reads truth and implication among the internal language's terms, the
+definitions of `bootstrap/free-topos/logic.geb` after the program's, whose
+rules begin a development's certificate, and adds the forms in scripts of
+the tactics those deducers compose: the induction on trees with the
+hypothesis at each child, the hypothesis at a child and its instances, the
+instances of a hypothesis that equates functions, the introduction of an
+implication and modus ponens, and the case analysis of a list that a
+hypothesis mentions ({ref "hypothesis-scripts"}[Hypotheses and
+implications]), which `scripts/tests/test-proof-scripts.sh` exercises.
+A deducer composes them by a Lean program, over the bits of a
+construction's label and the number of its children, and states its lemmas
+about terms it takes from the translated program, the step of a
+definition's fold among them; a script is one tree of tactics and a
+statement is written out, so moving a deducer into Geb source waits on a
+form in scripts for a tactic repeated over cases and on a form in
+statements for those terms. The syntax of statements and proof scripts
 is a step of the sequence ({ref "authoring-sequence"}[The sequence and its
 acceptance]). It adds no rule to the metalogic: a script is a program for
 one prover, and its certificate is checked as any other is.

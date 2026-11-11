@@ -1,0 +1,75 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The connectives of the internal language that the tactics of implications cite
+; (Geb.FreeTopos.Internal.Logic): truth, conjunction and implication, definitions of the internal
+; language in terms of equality, as in a local set theory, and their introduction and elimination
+; rules, theorems with hypotheses, each with its derivation. Truth is the equality of the element
+; of the terminal type with itself, a conjunction the equality of the pair of its formulas with
+; the pair of truths, and an implication the equality of the conjunction with the antecedent.
+
+(module Logic (export connectives connectiveRules) (import Prelude) (import Base) (import Theory)
+  (import Language)
+  (import Derivation)
+  (import Prover)
+  (import Tactics)
+  (import (Few LDefn) as LF)
+  (import (Few Decl) as DF)
+  ; the conjunction of two formulas, the definition after truth
+  (defn conjL ((o T) (p T) (q T)) T (mDefn (add o 1) (nil T) (l2 q p)))
+  ; the definitions, the first of index o: truth, conjunction and implication
+  (defn connectives ((o T)) (List LDefn)
+    (let two Objs (objs (l2 omega omega))
+      (LF.l3 (ldefn 0 (objs (nil T)) omega (mEq mStar mStar))
+        (ldefn 0 two omega (mEq (mPair (var 1) (var 0)) (mPair (ttL o) (ttL o))))
+        (ldefn 0 two omega (mEq (conjL o (var 1) (var 0)) (var 1))))))
+  ; the equality with truth of the hypothesis of an index, the unfolding of a hypothesis, and the
+  ; rewriting by a hypothesis
+  (defn eqTrueI ((i T)) T (dNode 25 (nil T) (l2 trueI (dNode 21 (single i) (nil T)))))
+  (defn unfoldHyp ((psi T) (i T)) T
+    (dNode 24 (single psi) (l2 (dNode 8 (nil T) (nil T)) (dNode 21 (single i) (nil T)))))
+  (defn rwHyp ((i T)) T (dNode 17 (l2 i 0) (nil T)))
+  ; the elimination of a conjunction: its component, by the projection of an index, from the
+  ; equality of the pair of its formulas with the pair of truths
+  (defn conjE ((o T) (proj (Arrow T T)) (k T) (i T)) Decl
+    (let conj T (conjL o (var 1) (var 0))
+      (let pairs T (mEq (mPair (var 1) (var 0)) (mPair (ttL o) (ttL o)))
+        (let beta T (dNode k (nil T) (nil T))
+          (declLang (mkThm 0 (objs (l2 omega omega)) (terms (single conj)) (var i))
+            (dNode 22 (single pairs)
+              (l2 (unfoldHyp conj 0)
+                (dNode 24 (single (proj (mPair (var 1) (var 0))))
+                  (l2 beta
+                    (dNode 23 (nil T)
+                      (l2 (dNode 1 (nil T) (l2 (dNode 2 (nil T) (single (rwHyp 1))) beta))
+                        trueI)))))))))))
+  ; the rules, the first of index j, for the definitions from the index o: the introduction of
+  ; truth and of conjunction, and the elimination of conjunction, to each formula, and of
+  ; implication
+  (defn connectiveRules ((o T) (j T)) (List Decl)
+    (let two Objs (objs (l2 omega omega))
+      (let tt T (ttL o)
+        (let conj T (conjL o (var 1) (var 0))
+          (let refl T (dNode 0 (nil T) (nil T))
+            (DF.l5 (declLang (mkThm 0 (objs (nil T)) (terms (nil T)) tt) trueI)
+              (declLang (mkThm 0 two (terms (l2 (var 1) (var 0))) conj)
+                (dNode 23 (nil T)
+                  (l2 (dNode 8 (nil T) (nil T))
+                    (dNode 22 (single (mEq (var 1) tt))
+                      (l2 (eqTrueI 0)
+                        (dNode 22 (single (mEq (var 0) tt))
+                          (l2 (eqTrueI 1)
+                            (dNode 18 (nil T)
+                              (l2 (dNode 2 (nil T) (l2 (rwHyp 2) (rwHyp 3))) refl)))))))))
+              (conjE o mFst 4 1)
+              (conjE o mSnd 5 0)
+              (declLang (mkThm 0 two (terms (l2 (impL o (var 1) (var 0)) (var 1))) (var 0))
+                (dNode 22 (single (mEq conj (var 1)))
+                  (l2 (unfoldHyp (impL o (var 1) (var 0)) 0)
+                    (dNode 22 (single (mEq (var 1) tt))
+                      (l2 (eqTrueI 1)
+                        (dNode 27 (l3 (add j 3) (node 0 (nil T)) (node 0 (l2 (var 0) (var 1))))
+                          (single
+                            (dNode 23 (nil T)
+                              (l2 (dNode 1 (nil T) (l2 (rwHyp 2) (rwHyp 3))) trueI))))))))))))))))
