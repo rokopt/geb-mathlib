@@ -2985,9 +2985,20 @@ S-expressions denote a function deciding membership
 constructor's definition denotes a value related at its type
 (`GebTests/Prototypes/FreeTopos/DatatypeConstructor.lean`). The typing of
 each field's coercion gives its relation, so that the proof reads neither
-the positions of the fields nor the kernel's typing. Remaining after it:
-the assumptions of those theorems and of the soundness discharged for a
-whole program, and the transfer of the result to Lean; `tree-data`
+the positions of the fields nor the kernel's typing. At a whole program
+the assumptions are discharged by induction on the program's forms, at
+all states of the expansion, the typing and the reader run in step: the
+definitions the reader has are related to the typing environment's, and
+each form's steps leave states of which that holds again
+(`GebTests/Prototypes/FreeTopos/DatatypeProgram.lean`,
+`GebTests/Prototypes/FreeTopos/DatatypeProgramRuns.lean`,
+`GebTests/Prototypes/FreeTopos/DatatypeProgramStep.lean`). It is proved
+of the programs whose forms are definitions, type and numeral
+abbreviations, functions and templates' instances, a definition's body
+assumed to expand to a source form. Remaining after it: that assumption
+discharged of the forms the reader gives, the forms that declare
+datatypes, with the definitions the expansion generates for them, and
+the transfer of the result to Lean; `tree-data`
 removed. The developments of the soundness continue
 from one another in no one order, each citing the statements of those
 it continues from, so the modules of
