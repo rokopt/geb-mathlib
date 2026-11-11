@@ -19,26 +19,31 @@ The soundness of a program of the datatype language, generalized over the states
 compiler's passes: from the declarations the expansion has, the typing's environment, and the
 reader's abbreviations, names and terms, where the passes over the forms that remain end without
 a failure, the definitions the reader ends with are related to the typing environment the typing
-ends with. It is proved by induction on the forms, each of a kind: a definition, a type or a
-numeral abbreviation, a function, or a template's instance. The step at a kind shows that the
-states the passes' steps leave at a form of it satisfy the invariant; a definition and a
-function share the step at a form at which the expansion writes a definition, whose body is a
+ends with. It is proved by induction on the forms. A form at which the expansion's step does not
+fail, and whose head no keyword of a datatype's declaration names, is of a kind: a definition, a
+type or a numeral abbreviation, a function, or a template's instance. The step at a kind shows
+that the states the passes' steps leave at a form of it satisfy the invariant; a definition and
+a function share the step at a form at which the expansion writes a definition, whose body is a
 source form sound at expanded forms. At the states the passes begin in, the soundness at all
-states is that of the program. A form that declares a datatype is of no kind, and a body's
-expansion is assumed a source form.
+states is that of the program. The soundness assumes that no form declares a datatype, that no
+numeral abbreviation takes a name of the implementation's, and that each definition's body the
+expansion writes is a source form at the numeral abbreviations before it, which a run over the
+program's forms tests.
 
 ## Main definitions
 
 * {lit}`Passes` — the states of the passes and the forms that remain.
 * {lit}`Passes.hyps`, {lit}`Passes.concl` — the hypotheses and the conclusion at the states.
+* {lit}`preOk` — what the soundness assumes of a form.
 * {lit}`formOk` — the kinds of forms.
 * {lit}`programSoundGroups` — the developments, each with its certificate's name.
 
 ## Main statements
 
 * {lit}`stepDefined` — the step at a form at which the expansion writes a definition.
+* {lit}`formKind` — a form at which the expansion's step does not fail is of a kind.
 * {lit}`passesForms` — the soundness at all states, by induction on the forms.
-* {lit}`programForms` — the soundness of a program whose forms are of the kinds.
+* {lit}`programForms` — the soundness of a program none of whose forms declares a datatype.
 
 ## References
 
@@ -145,7 +150,8 @@ def rel : Term := Term.pair (s.finalTerms P) (pc P "Typing.envMs" [s.env])
 the kernel types the terms the reader ends with, and the states' invariant: no rejection, the
 definitions related to the typing environment's, the numeral abbreviations coherent with the
 environment's, the names those of definitions, no numeral abbreviation a keyword, as many names
-as terms, and no datatype declared. -/
+as terms, and no datatype declared; and each definition's body the expansion writes for the
+forms that remain is a source form at the numeral abbreviations before it. -/
 def hyps : List Term :=
   let o := P.o
   let isSome (t : Term) : Term := pc P "Prelude.isSome" [t]
@@ -161,7 +167,8 @@ def hyps : List Term :=
     T.namesT s.names,
     T.kwsT s.nums,
     Term.eq (len s.names) (len s.terms),
-    Term.eq (pc P "Typing.envNoms" [s.env]) (nilT treeTy)]
+    Term.eq (pc P "Typing.envNoms" [s.env]) (nilT treeTy),
+    truth o (Term.fst (plainRun P s.es (plainState s.dv s.nums)))]
 
 /-- The conclusion at the states: the typing environment the typing ends with has the markers
 of the environment, the definitions the reader ends with are related to it by the names the
@@ -236,17 +243,6 @@ def recsNoData (P : Prog) (S : Defs) (T : Defs3) : Step :=
       | dbgTrace "recsNoData: not proved" fun _ ↦ none
     pure (a, d))
 
-/-- That a definition's body, where it expands under declarations, expands to a source form at
-any numeral abbreviations: under the declarations and the abbreviations. -/
-def expandsSrc (P : Prog) (body : Term) : Term :=
-  let o := P.o
-  let Ls := list treeTy
-  let ex := pc P "Datatype.expandExpr" [v 1, sh 2 body]
-  Internal.Logic.all o Ls (Term.lam Ls (Internal.Logic.all o Ls (Term.lam Ls
-    (Internal.Logic.imp o (truth o (pc P "Prelude.isSome" [ex]))
-      (truth o (pc P "srcForm" [Term.lam treeTy (pc P "Reader.expandNums" [v 1, v 0]),
-        pc P "Prelude.get" [ex]]))))))
-
 /-- Whether a head is named by a keyword, as the expansion tests it. -/
 def headNamed (P : Prog) (h : Term) (kw : String) : Term :=
   pc P "Datatype.namedTx" [h, pc P kw []]
@@ -290,18 +286,8 @@ def defnHead (P : Prog) (h : Term) : List Term :=
   ["Datatype.kwGeneric", "Datatype.kwData", "Datatype.kwTreeData"].map
     (fun kw ↦ notTest P.o (headNamed P h kw)) ++ [truth P.o (headNamed P h "Datatype.kwDefn")]
 
-/-- That a form is a source form at any numeral abbreviations: under the abbreviations. -/
-def srcAllT (P : Prog) (t : Term) : Term :=
-  Internal.Logic.all P.o (list treeTy) (Term.lam (list treeTy) (srcAt P (v 0) (sh 1 t)))
-
 /-- The binders the expansion reads of a function's list of binders. -/
 def bindersT (P : Prog) (bs : Term) : Term := pc P "Datatype.bindersTx" [bs]
-
-/-- That each binder the expansion reads of a list of binders is a source form at any numeral
-abbreviations: under the abbreviations. -/
-def srcBindersT (P : Prog) (S : Defs) (bs : Term) : Term :=
-  Internal.Logic.all P.o (list treeTy) (Term.lam (list treeTy)
-    (S.allL (Term.lam treeTy (srcAt P (v 1) (v 0))) (bindersT P (sh 1 bs))))
 
 /-- Whether a form is a template's instance, as the expansion's run tests it: a list whose
 head the instances' keyword names. -/
@@ -315,24 +301,36 @@ def genericT (P : Prog) (e : Term) : Term :=
   Internal.Logic.conj P.o (truth P.o ((genericTest P e).headD Term.star))
     (truth P.o ((genericTest P e).getLastD Term.star))
 
-/-- That a form is of a kind the soundness of a whole program reads: a definition, whose body
-expands to a source form, a type abbreviation, a numeral abbreviation whose name is not one of
-the implementation's, a function, the list of a head, a name, binders, a result type and a
-body, whose body expands to a source form and whose binders and result type are source forms, or
-a template's instance. -/
-def formOk (P : Prog) (S : Defs) (e : Term) : Term :=
-  Internal.Logic.disj P.o (kindT P e (defHead P (v 2) ++ [expandsSrc P (v 0)]))
+/-- That a form is of a kind the soundness of a whole program reads: a definition, a type
+abbreviation, a numeral abbreviation whose name is not one of the implementation's, a function,
+the list of a head, a name, binders, a result type and a body, or a template's instance. -/
+def formOk (P : Prog) (e : Term) : Term :=
+  Internal.Logic.disj P.o (kindT P e (defHead P (v 2)))
     (Internal.Logic.disj P.o (kindT P e (deftypeHead P (v 2)))
       (Internal.Logic.disj P.o
         (kindT P e (defnumHead P (v 2) ++ [userNameT P (pc P "Reader.nameOf" [v 1])]))
-        (Internal.Logic.disj P.o
-          (kindT P e (defnHead P (v 4) ++
-            [expandsSrc P (v 0), srcBindersT P S (v 2), srcAllT P (v 1)]) 5)
-          (genericT P e))))
+        (Internal.Logic.disj P.o (kindT P e (defnHead P (v 4)) 5) (genericT P e))))
 
-/-- The hypothesis of forms each of a kind the soundness reads ({name}`formOk`). -/
+/-- The head of a form, as the expansion reads it: the first of its elements. -/
+def formHead (P : Prog) (e : Term) : Term :=
+  pc P "Datatype.nthTx" [pc P "Datatype.elems" [e], leafT bnilT]
+
+/-- What the soundness of a whole program assumes of a form: no keyword of a datatype's
+declaration names its head, and where the numeral abbreviations' keyword names it, the name of
+its second element is not one of the implementation's. -/
+def preOk (P : Prog) (e : Term) : List Term :=
+  let named (kw : String) : Term := headNamed P (formHead P e) kw
+  [notTest P.o (named "Datatype.kwData"), notTest P.o (named "Datatype.kwTreeData"),
+    Internal.Logic.imp P.o (truth P.o (named "Reader.kwDefnum"))
+      (userNameT P (pc P "Reader.nameOf"
+        [pc P "Datatype.nthTx" [pc P "Datatype.elems" [e], leafT (numeral 1)]]))]
+
+/-- The hypothesis on the forms of a program: what the soundness assumes of each
+({name}`preOk`). -/
 def formsOk (P : Prog) (S : Defs) (es : Term) : List Term :=
-  [S.allL (Term.lam treeTy (formOk P S (v 0))) es]
+  let parts := preOk P (v 0)
+  [S.allL (Term.lam treeTy
+    (parts.dropLast.foldr (Internal.Logic.conj P.o) (parts.getLastD Term.star))) es]
 
 /-- The program with the passes' steps kept folded, and with them the erasure of a form and the
 recognizers' insertion at a form, whose values at a definition's form are equations
@@ -416,7 +414,8 @@ def expandedOf (K : Kit) (form dv : List Tree → Term) (present : Deducer) (k :
 /-- The soundness at the forms that remain after a form at which the expansion writes a
 definition, a step of the soundness at all states ({name}`passesφ`): given it at the forms
 after, the expansion's step at the form from the declarations writes the definition of a name
-as a body, a source form at the numeral abbreviations and sound at expanded forms, and the
+as a body, a source form at the numeral abbreviations and sound at expanded forms, the test
+of the definitions' bodies steps to the state of the declarations and the abbreviations, and the
 hypotheses at the states give the conclusion. The definition is before the forms of the rest
 ({lit}`typedFormsCons`); the typing's step ({lit}`checkDef`) declares the name at the body's
 type; the reader's ({lit}`readDef`) has the name after the names and the resolved term after the
@@ -437,9 +436,10 @@ def stepDefined (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let s := passesAt 4 (consT treeTy (v 2) (v 3))
     let hyps := [Internal.instTerm [] [v 3] (passesφ P T X₀ (formsOk P S)),
         Term.eq (xpStepT P (xpState (v 12) nil) (v 2))
-          (xpState (v 12) (consT treeTy (defForm P (v 1) (v 0)) nil))] ++
-      s.hyps P T X₀ ++ [srcAt P (v 8) (v 0), Internal.instTerm [] [v 0] (expandedφ P S T)] ++
-      formsOk P S (v 3)
+          (xpState (v 12) (consT treeTy (defForm P (v 1) (v 0)) nil)),
+        Term.eq (plainStepT P (plainState (v 12) (v 8)) (v 2)) (plainState (v 12) (v 8))] ++
+      s.hyps P T X₀ ++ [truth P.o (srcTestT P (v 8) (v 0)),
+        Internal.instTerm [] [v 0] (expandedφ P S T)] ++ formsOk P S (v 3)
     let Γ₀ := [treeTy, treeTy, treeTy, Ls] ++ passesCtx T
     let a : Internal.Thm := ⟨0, Γ₀, hyps, s.concl P T X₀⟩
     -- the variables, from any context that extends the theorem's
@@ -473,8 +473,8 @@ def stepDefined (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
     let hypOr := hypOrK K
     -- the hypotheses' indices
-    let (hStep, hX, hC, hO, hR, hK, hGlob, hNums, hNames, hKws, hLen, hNoms, hSrc, hExp,
-        hMore) := (1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16)
+    let (hStep, hPlain, hX, hC, hO, hR, hK, hGlob, hNums, hNames, hKws, hLen, hNoms, hP, hSrc,
+        hExp, hMore) := (1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18)
     -- the last stage: the hypothesis on the forms after, at the states the steps leave
     let apply (iSyn iO iRes iUnres iNotIdx iTyped iNth : ℕ) : Deducer :=
       let sound : Deducer := at' "the soundness" <| fun Γ₈ Φ₈ ψ₈ ↦
@@ -534,6 +534,7 @@ def stepDefined (P : Prog) (S : Defs) (T : Defs3) : Step :=
                 K.cutThm "lenSnoc" (fun Γ ↦ [termsA Γ]) <| K.allEΓ tA <| fun Γ Φ ψ ↦
                 normHyps K [hLen, Φ.length - 3, Φ.length - 1] K.byNorm Γ Φ ψ),
               stage "stepDefined: no datatype" (normHyps K [hNoms] K.byNorm),
+              stage "stepDefined: the bodies after" (K.byHyp hP),
               stage "stepDefined: the rest's kinds" (hypOr hMore)] <|
           stage "stepDefined: the conclusion" (last K.byHyp)) Γ Φ ψ)) Γ₈ Φ₈ ψ₈
       sound
@@ -580,7 +581,7 @@ def stepDefined (P : Prog) (S : Defs) (T : Defs3) : Step :=
         let (iSyn, iCheck) := (Φ.length - 2, Φ.length - 1)
         normHyps K [iCheck] (reader iSyn) Γ Φ ψ
     -- the expansion's step, the equation given
-    let expansion : Deducer := at' "the expansion" <| normHyps K [hStep] <|
+    let expansion : Deducer := at' "the expansion" <| normHyps K [hStep, hPlain] <|
       at' "the typed forms" <|
       applyThm K "typedFormsCons" (fun Γ ↦ [fA Γ, dvA Γ, esA Γ]) [] <| K.conjE <|
       fun Γ₃ Φ₃ ψ₃ ↦
@@ -594,39 +595,55 @@ def stepDefined (P : Prog) (S : Defs) (T : Defs3) : Step :=
 
 /-- The step at a form at which the expansion writes a definition ({name}`stepDefined`), at a
 body, a name, a form, the forms after and the states: the hypothesis on the forms after the
-first hypothesis, the invariant's hypotheses those from the index {lit}`hInv` and the rest's
-kinds that of index {lit}`hMore`; the expansion's step's equation, the body's being a source form
-and its soundness at expanded forms by the deducers given. The conclusion is the goal. -/
+first hypothesis, the hypotheses at the states those from the index {lit}`hInv` and the rest's
+kinds that of index {lit}`hMore`; the expansion's step's equation, the test's step's, the body's
+being a source form and its soundness at expanded forms by the deducers given. The conclusion is
+the goal. -/
 def applyDefined (K : Kit) (σ : List Tree → List Term) (hInv hMore : ℕ)
-    (stepEq src sound : Deducer) : Deducer :=
+    (stepEq plainEq src sound : Deducer) : Deducer :=
   applyThm K "stepDefined" σ
     ([stage "stepDefined: the hypothesis on the forms after" (hypOrK K 0),
-        stage "stepDefined: the expansion's step" stepEq] ++
-      (List.range 12).map (fun k ↦
+        stage "stepDefined: the expansion's step" stepEq,
+        stage "stepDefined: the test's step" plainEq] ++
+      (List.range 13).map (fun k ↦
         stage s!"stepDefined: the invariant's hypothesis {k}" (hypOrK K (hInv + k))) ++
       [stage "stepDefined: the body a source form" src,
         stage "stepDefined: the body sound" sound,
         stage "stepDefined: the kinds of the forms after" (hypOrK K hMore)])
     (stage "stepDefined: the goal" (lastOr K))
 
+/-- The step at a form at which the expansion writes a definition ({name}`applyDefined`), the
+body a source form and the test's step that of the state by the test of the definitions' bodies
+({lit}`plainDefined`): at a form whose head no keyword of an instance or of a datatype names,
+the hypotheses of indices 1 to 3, where the test's run is the hypothesis of index {lit}`hP`. -/
+def applyPlain (K : Kit) (b n e es nums dv : List Tree → Term) (states : List Tree → List Term)
+    (hP hMore : ℕ) (stepEq sound : Deducer) : Deducer :=
+  applyThm K "plainDefined" (fun Γ ↦ [b Γ, n Γ, e Γ, es Γ, nums Γ, dv Γ])
+    ([1, 2, 3].map (fun i ↦ stage s!"plainDefined: the head's test {i}" (hypOrK K i)) ++
+      [stage "plainDefined: the expansion's step" stepEq,
+        stage "plainDefined: the test's run" (hypOrK K hP)]) <|
+  K.conjE <| fun Γ₁ Φ₁ ψ₁ ↦
+    let (iSrc, iEq) := (Φ₁.length - 2, Φ₁.length - 1)
+    applyDefined K (fun Γ ↦ [b Γ, n Γ, e Γ, es Γ] ++ states Γ) 5 hMore stepEq
+      (hypOrK K iEq) (hypOrK K iSrc) sound Γ₁ Φ₁ ψ₁
+
 /-- The soundness at the forms that remain after a definition's form, a step of the soundness at
 all states ({name}`passesφ`): given it at the forms after, the form the list of a head that names
-a definition, a name and a body whose expansion is a source form, the hypotheses at the states
-give the conclusion. The expansion's step ({lit}`xpDef`) writes the definition of the name as
-the body's expansion, sound at expanded forms ({name}`expandedOf`), so that the step at a
-definition written gives the conclusion ({name}`stepDefined`). In the context of the body, the
-name, the head, the forms after and the states. -/
+a definition, a name and a body, the hypotheses at the states give the conclusion. The
+expansion's step ({lit}`xpDef`) writes the definition of the name as the body's expansion, sound
+at expanded forms ({name}`expandedOf`), so that the step at a definition written gives the
+conclusion ({name}`applyPlain`). In the context of the body, the name, the head, the forms after
+and the states. -/
 def stepDef (P : Prog) (S : Defs) (T : Defs3) : Step :=
   ("stepDef", fun ix E ↦ do
     let K : Kit := ⟨passProg P, S, E, ix, []⟩
-    let L := K.L
     let Ls := list treeTy
     let nil := nilT treeTy
     let some X₀ := partitionT K [Ls] | dbgTrace "stepDef: no partition" fun _ ↦ none
     let e := listNode [v 2, v 1, v 0]
     let s := passesAt 4 (consT treeTy e (v 3))
     let hyps := [Internal.instTerm [] [v 3] (passesφ P T X₀ (formsOk P S))] ++ defHead P (v 2) ++
-      s.hyps P T X₀ ++ [expandsSrc P (v 0)] ++ formsOk P S (v 3)
+      s.hyps P T X₀ ++ formsOk P S (v 3)
     let Γ₀ := [treeTy, treeTy, treeTy, Ls] ++ passesCtx T
     let a : Internal.Thm := ⟨0, Γ₀, hyps, s.concl P T X₀⟩
     -- the variables, from any context that extends the theorem's
@@ -638,10 +655,7 @@ def stepDef (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let bA (Γ : List Tree) : Term := pc P "Prelude.get" [exA Γ]
     let eA (Γ : List Tree) : Term := listNode [hA Γ, nA Γ, FA Γ]
     let xpA (Γ : List Tree) : Term := pc P "Datatype.xpStep" [xpState (dvA Γ) nil, eA Γ]
-    let (hX, hSrc, hMore) := (5, 17, 18)
-    -- the body's expansion a source form, by the hypothesis on the body
-    let src (iEx : ℕ) : Deducer := fun Γ Φ ψ ↦
-      dAllE L K.G K.E hSrc (dvA Γ) (K.allEΓ numsA (K.impE (K.byHyp iEx) (lastOr K))) Γ Φ ψ
+    let (hX, hP, hMore) := (5, 17, 18)
     -- the expansion's step
     let expansion : Deducer := stage "stepDef: the expansion" <|
       applyThm K "xpPrefix" (fun Γ ↦ [esA Γ, xpA Γ])
@@ -652,8 +666,7 @@ def stepDef (P : Prog) (S : Defs) (T : Defs3) : Step :=
           stage "stepDef: the expansion's step" dHyp] <|
       K.conjE <| fun Γ₂ Φ₂ ψ₂ ↦
         let (iEx, iStep) := (Φ₂.length - 2, Φ₂.length - 1)
-        applyDefined K (fun Γ ↦ [bA Γ, nA Γ, eA Γ, esA Γ] ++ states Γ) 5 hMore
-          (normHyps K [iStep] K.byNorm) (src iEx)
+        applyPlain K bA nA eA esA numsA dvA states hP hMore (normHyps K [iStep] K.byNorm)
           (expandedOf K FA dvA (K.byHyp iEx) (hypOrK K)) Γ₂ Φ₂ ψ₂
     let some d := decideIn K (fun Γ ↦ headNamed P (hA Γ) "Datatype.kwGeneric") expansion
         (stage "stepDef: a template's instance" (refuteNot K 1)) a.ctx a.hyps a.concl
@@ -664,78 +677,6 @@ def stepDef (P : Prog) (S : Defs) (T : Defs3) : Step :=
 read it. -/
 def letForm (P : Prog) (x A t b : Term) : Term :=
   listNode [kwAtom P "Reader.kwLet", x, A, t, b]
-
-/-- The test of source forms at a closed term or at a term whose parts' tests are decided, by
-normalization: by the rules, then with the test's step, the expansion of numeral abbreviations'
-step and the test of an atom's characters unfolded, which decide the tests at the keywords'
-atoms and at the empty list. -/
-def srcTrue (K : Kit) (T : Defs3) : Deducer :=
-  K.norm fun Γ Φ ψ ↦
-    dRwBy (evalRw K.G K.E (K.rules Φ ++ [.delta (T.argIdx 5), .delta (T.argIdx 3),
-      .delta (K.P.idx "charsFixed")]) .full) (K.solve 2) Γ Φ ψ
-
-/-- The kit of the proofs about the test of source forms: the vocabulary's rules and the test at
-a list split at its head ({lit}`srcCons`). -/
-def srcKit (P : Prog) (S : Defs) (ix : String → ℕ) (E : Array Internal.Entry) : Kit :=
-  datumKit P S ix E ((vocab3 ++ ["charsMap", "handlerAtom3", "srcCons"]).filter
-    fun nm ↦ 0 < ix nm ∧ ix nm < E.size)
-
-/-- The test of source forms at a term, as a test, under the abbreviations of the position
-given. -/
-def srcTest (P : Prog) (nums x : Term) : Term :=
-  pc P "srcForm" [Term.lam treeTy (pc P "Reader.expandNums" [sh 1 nums, v 0]), x]
-
-/-- A binding of the erasure's variable at a type to a term, in the variable, is a source form
-where the type and the term are: their tests decided, the atoms' by normalization. In the
-context of the term, the type and the abbreviations. -/
-def srcLet (P : Prog) (S : Defs) (T : Defs3) : Step :=
-  ("srcLet", fun ix E ↦ do
-    let K := srcKit P S ix E
-    let aR := pc P "Datatype.aR" []
-    let a : Internal.Thm := ⟨0, [treeTy, treeTy, list treeTy],
-      [srcAt P (v 2) (v 1), srcAt P (v 2) (v 0)], srcAt P (v 2) (letForm P aR (v 1) (v 0) aR)⟩
-    let at_ (j : ℕ) (Γ : List Tree) : Term := v (j + (Γ.length - 3))
-    let some d := (decideIn K (fun Γ ↦ srcTest P (at_ 2 Γ) (at_ 1 Γ))
-          (stage "srcLet: the type" (K.hypFalse 0)) <|
-        decideIn K (fun Γ ↦ srcTest P (at_ 2 Γ) (at_ 0 Γ))
-          (stage "srcLet: the term" (K.hypFalse 1)) <|
-        stage "srcLet: the binding" (srcTrue K T)) a.ctx a.hyps a.concl
-      | dbgTrace "srcLet: not proved" fun _ ↦ none
-    pure (a, d))
-
-/-- The abstractions over each binder of a list in turn around a body are a source form where
-each binder and the body are: by induction on the list. None: the body. A binder before a
-list: the binder's test and that of the abstractions over the list, the induction hypothesis,
-decided. In the context of the binders, under the body and the abbreviations. -/
-def srcNest (P : Prog) (S : Defs) (T : Defs3) : Step :=
-  ("srcNest", fun ix E ↦ do
-    let K := srcKit P S ix E
-    let L := K.L
-    let o := P.o
-    let Ls := list treeTy
-    -- under the quantifiers: the abbreviations v0, the body v1, the binders v2
-    let φ := Internal.Logic.all o treeTy (Term.lam treeTy (Internal.Logic.all o Ls (Term.lam Ls
-      (Internal.Logic.imp o (S.allL (Term.lam treeTy (srcAt P (v 1) (v 0))) (v 2))
-        (Internal.Logic.imp o (srcAt P (v 0) (v 1)) (srcAt P (v 0) (nestT P (v 2) (v 1))))))))
-    let at_ (j : ℕ) (Γ : List Tree) : Term := v (Γ.length - 1 - j)
-    let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
-    let intro (k : ℕ → ℕ → Deducer) : Deducer := dAllI L <| dAllI L <| dImpI L <| dImpI L
-      fun Γ Φ ψ ↦ k (Φ.length - 2) (Φ.length - 1) Γ Φ ψ
-    let base : Deducer := intro fun _ h₂ ↦ stage "srcNest: no binders" (K.byHyp h₂)
-    -- a construction: the head v(0), the tail v(1), the body v(2), the abbreviations v(3)
-    let step : Deducer := intro fun h₁ h₂ ↦
-      let (x, xs, body, nums) := (at_ 0, at_ 1, at_ 2, at_ 3)
-      normHyps K [h₁] <| K.conjE <| fun Γ₁ Φ₁ ψ₁ ↦
-        let (iHead, iTail) := (Φ₁.length - 2, Φ₁.length - 1)
-        dAllE L K.G K.E 0 (body Γ₁) (K.allEΓ nums <|
-          K.impE (stage "srcNest: the rest's binders" (K.byHyp iTail)) <|
-          K.impE (stage "srcNest: the body" (K.byHyp h₂)) <| last fun iRest ↦
-          decideIn K (fun Γ ↦ srcTest P (nums Γ) (x Γ))
-            (stage "srcNest: the binder" (K.hypFalse iHead)) <|
-          decideIn K (fun Γ ↦ srcTest P (nums Γ) (nestT P (xs Γ) (body Γ)))
-            (stage "srcNest: the rest" (K.hypFalse iRest)) <|
-          stage "srcNest: the abstraction" (srcTrue K T)) Γ₁ Φ₁ ψ₁
-    listInduction "srcNest" φ base step)
 
 /-- The erasure's variable is sound at expanded forms: the soundness at its expansion
 ({name}`expandedOf`), which is the variable, the expansion's step at the atom unfolded. -/
@@ -756,35 +697,31 @@ def expandedR (P : Prog) (S : Defs) (T : Defs3) : Step :=
       | dbgTrace "expandedR: not proved" fun _ ↦ none
     pure (a, d))
 
-/-- The development of the source forms and the soundness of the parts the expansion writes of a
-function's definition. -/
-def programSrcDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
-  [srcCons P S T, srcLet P S T, srcNest P S T, expandedR P S T,
-    letCaseAt P S T true "letExpanded"]
+/-- The development of the soundness at expanded forms of the parts the expansion writes of a
+function's definition: the erasure's variable and a binding. -/
+def programLetDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
+  [expandedR P S T, letCaseAt P S T true "letExpanded"]
 
 /-- The soundness at the forms that remain after a function's form, a step of the soundness at
 all states ({name}`passesφ`): given it at the forms after, the form the list of a head that names
-a function, a name, binders, a result type and a body, where the body's expansion, the binders
-and the result type are source forms, the hypotheses at the states give the conclusion. The
-expansion's step ({lit}`xpDefn`) writes the definition of the name as the abstractions over the
-binders around the binding of the erasure's variable at the result type to the body's expansion,
-in the variable: a source form ({name}`srcLet`, {name}`srcNest`), sound at expanded forms, the
-body's expansion ({name}`expandedOf`), the variable ({name}`expandedR`), the binding
-({lit}`letExpanded`) and the abstractions ({lit}`nest`), so that the step at a definition
-written gives the conclusion ({name}`stepDefined`). In the context of the body, the result type,
+a function, a name, binders, a result type and a body, the hypotheses at the states give the
+conclusion. The expansion's step ({lit}`xpDefn`) writes the definition of the name as the
+abstractions over the binders around the binding of the erasure's variable at the result type to
+the body's expansion, in the variable: sound at expanded forms, the body's expansion
+({name}`expandedOf`), the variable ({name}`expandedR`), the binding ({lit}`letExpanded`) and the
+abstractions ({lit}`nest`), so that the step at a definition written gives the conclusion
+({name}`applyPlain`). In the context of the body, the result type,
 the binders, the name, the head, the forms after and the states. -/
 def stepDefn (P : Prog) (S : Defs) (T : Defs3) : Step :=
   ("stepDefn", fun ix E ↦ do
     let K : Kit := ⟨passProg P, S, E, ix, []⟩
-    let L := K.L
     let Ls := list treeTy
     let nil := nilT treeTy
     let some X₀ := partitionT K [Ls] | dbgTrace "stepDefn: no partition" fun _ ↦ none
     let e := listNode [v 4, v 3, v 2, v 1, v 0]
     let s := passesAt 6 (consT treeTy e (v 5))
     let hyps := [Internal.instTerm [] [v 5] (passesφ P T X₀ (formsOk P S))] ++
-      defnHead P (v 4) ++ s.hyps P T X₀ ++
-      [expandsSrc P (v 0), srcBindersT P S (v 2), srcAllT P (v 1)] ++ formsOk P S (v 5)
+      defnHead P (v 4) ++ s.hyps P T X₀ ++ formsOk P S (v 5)
     let Γ₀ := [treeTy, treeTy, treeTy, treeTy, treeTy, Ls] ++ passesCtx T
     let a : Internal.Thm := ⟨0, Γ₀, hyps, s.concl P T X₀⟩
     -- the variables, from any context that extends the theorem's
@@ -804,20 +741,7 @@ def stepDefn (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let xpA (Γ : List Tree) : Term := pc P "Datatype.xpStep" [xpState (dvA Γ) nil, eA Γ]
     let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
     let hypOr := hypOrK K
-    let (hX, hSrcX, hSrcBs, hSrcR, hMore) := (5, 17, 18, 19, 20)
-    -- the body written a source form: the body's expansion, the result type and the binders
-    let src (iEx : ℕ) : Deducer := fun Γ₁ Φ₁ ψ₁ ↦
-      dAllE L K.G K.E hSrcX (dvA Γ₁) (K.allEΓ numsA <| K.impE (K.byHyp iEx) <| last fun iB ↦
-        fun Γ₂ Φ₂ ψ₂ ↦ dAllE L K.G K.E hSrcR (numsA Γ₂) (last fun iR ↦
-          applyThm K "srcLet" (fun Γ ↦ [bA Γ, RA Γ, numsA Γ])
-            [stage "stepDefn: the result type a source form" (hypOr iR),
-              stage "stepDefn: the body's expansion a source form" (hypOr iB)] <|
-          last fun iL ↦ fun Γ₃ Φ₃ ψ₃ ↦ dAllE L K.G K.E hSrcBs (numsA Γ₃) (last fun iBs ↦
-            K.cutThm "srcNest" (fun Γ ↦ [bindersA Γ]) <| K.allEΓ letA <| K.allEΓ numsA <|
-            K.impE (stage "stepDefn: the binders source forms" (hypOr iBs)) <|
-            K.impE (stage "stepDefn: the binding a source form" (hypOr iL)) <|
-            stage "stepDefn: the abstractions a source form" (lastOr K)) Γ₃ Φ₃ ψ₃)
-          Γ₂ Φ₂ ψ₂) Γ₁ Φ₁ ψ₁
+    let (hX, hP, hMore) := (5, 17, 18)
     -- the body written sound at expanded forms
     let sound (iEx : ℕ) : Deducer :=
       expandedOf K XA dvA (K.byHyp iEx) fun iB ↦
@@ -838,8 +762,8 @@ def stepDefn (P : Prog) (S : Defs) (T : Defs3) : Step :=
           stage "stepDefn: the expansion's step" dHyp] <|
       K.conjE <| fun Γ₂ Φ₂ ψ₂ ↦
         let (iEx, iStep) := (Φ₂.length - 2, Φ₂.length - 1)
-        applyDefined K (fun Γ ↦ [BA Γ, nA Γ, eA Γ, esA Γ] ++ states Γ) 5 hMore
-          (normHyps K [iStep] K.byNorm) (src iEx) (sound iEx) Γ₂ Φ₂ ψ₂
+        applyPlain K BA nA eA esA numsA dvA states hP hMore (normHyps K [iStep] K.byNorm)
+          (sound iEx) Γ₂ Φ₂ ψ₂
     let some d := decideIn K (fun Γ ↦ headNamed P (hA Γ) "Datatype.kwGeneric") expansion
         (stage "stepDefn: a template's instance" (refuteNot K 1)) a.ctx a.hyps a.concl
       | dbgTrace "stepDefn: not proved" fun _ ↦ none
@@ -896,8 +820,14 @@ def stepDeftype (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let hypOr (h : ℕ) : Deducer := fun Γ Φ ψ ↦ (dHyp Γ Φ ψ).orElse fun _ ↦ K.byHyp h Γ Φ ψ
     let unfoldBoth (idx h : ℕ) : Deducer := dRwBy (evalRw K.G K.E [.delta idx] .head) <|
       dRwHyp (evalRw K.G K.E [.delta idx] .head) h <| last K.byHyp
-    let (hNoDef, hKw, hX, hC, hO, hR, hK, hRej, hGlob, hNums, hNames, hKws, hLen, hNoms,
-        hMore) := (4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18)
+    let (hNoDef, hKw, hX, hC, hO, hR, hK, hRej, hGlob, hNums, hNames, hKws, hLen, hNoms, hP,
+        hMore) := (4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19)
+    -- the head's tests decided, as the test of the definitions' bodies reads them
+    let heads : Deducer → Deducer := decideEach K Γ₀.length
+      [(headNamed P (v 2) "Datatype.kwData", none, some (refuteNot K 2)),
+        (headNamed P (v 2) "Datatype.kwTreeData", none, some (refuteNot K 3)),
+        (headNamed P (v 2) "Reader.kwDef", none, some (refuteNot K 4)),
+        (headNamed P (v 2) "Reader.kwDeftype", some (K.hypFalse 5), none)]
     -- the hypothesis on the forms after, at the states the steps leave
     let apply (iO : ℕ) : Deducer := at' "the forms after" <| fun Γ Φ ψ ↦
       dAllE L K.G K.E 0 ((s'A Γ).dv) (
@@ -918,6 +848,7 @@ def stepDeftype (P : Prog) (S : Defs) (T : Defs3) : Step :=
             stage "stepDeftype: the keywords" (hypOr hKws),
             stage "stepDeftype: the lengths" (hypOr hLen),
             stage "stepDeftype: no datatype" (normHyps K [hNoms] K.byNorm),
+            stage "stepDeftype: the bodies after" (K.byHyp hP),
             stage "stepDeftype: the rest's kinds" (hypOr hMore)] <|
         stage "stepDeftype: the conclusion" (last K.byHyp)) Γ Φ ψ
     -- the reader's step
@@ -962,7 +893,8 @@ def stepDeftype (P : Prog) (S : Defs) (T : Defs3) : Step :=
           dImpE L iImp (stage "stepDeftype: the rest's expansion" (K.byHyp hX)) <|
           last fun iTF ↦ normHyps K [iTF] typing) Γ₃ Φ₃ ψ₃
     let _ := sA
-    let some d := decideIn K (fun Γ ↦ headNamed P (hA Γ) "Datatype.kwGeneric") expansion
+    let some d := decideIn K (fun Γ ↦ headNamed P (hA Γ) "Datatype.kwGeneric")
+        (heads expansion)
         (stage "stepDeftype: a template's instance" (refuteNot K 1)) a.ctx a.hyps a.concl
       | dbgTrace "stepDeftype: not proved" fun _ ↦ none
     pure (a, d))
@@ -1261,7 +1193,14 @@ def stepDefnum (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let unfoldBoth (idx h : ℕ) : Deducer := dRwBy (evalRw K.G K.E [.delta idx] .head) <|
       dRwHyp (evalRw K.G K.E [.delta idx] .head) h <| last K.byHyp
     let (hNoDef, hNoType, hKw, hUser, hX, hC, hO, hR, hK, hRej, hGlob, hNames, hLen, hNoms,
-        hMore) := (4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 18, 19, 20)
+        hP, hMore) := (4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 18, 19, 20, 21)
+    -- the head's tests decided, as the test of the definitions' bodies reads them
+    let heads : Deducer → Deducer := decideEach K Γ₀.length
+      [(headNamed P (v 2) "Datatype.kwData", none, some (refuteNot K 2)),
+        (headNamed P (v 2) "Datatype.kwTreeData", none, some (refuteNot K 3)),
+        (headNamed P (v 2) "Reader.kwDef", none, some (refuteNot K 4)),
+        (headNamed P (v 2) "Reader.kwDeftype", none, some (refuteNot K 5)),
+        (headNamed P (v 2) "Reader.kwDefnum", some (K.hypFalse 6), none)]
     -- the hypothesis on the forms after, at the states the steps leave
     let apply (iNotNum iO iUnres iAtom iNum : ℕ) : Deducer := at' "the forms after" <|
       fun Γ Φ ψ ↦ dAllE L K.G K.E 0 ((s'A Γ).dv) (
@@ -1290,6 +1229,7 @@ def stepDefnum (P : Prog) (S : Defs) (T : Defs3) : Step :=
                   normHyps K [iNotNum] (K.hypFalse (Φ.length - 1)) Γ Φ ψ)] (last K.byHyp)),
             stage "stepDefnum: the lengths" (hypOr hLen),
             stage "stepDefnum: no datatype" (normHyps K [hNoms] K.byNorm),
+            stage "stepDefnum: the bodies after" (K.byHyp hP),
             stage "stepDefnum: the rest's kinds" (hypOr hMore)] <|
         stage "stepDefnum: the conclusion" (last K.byHyp)) Γ Φ ψ
     -- the reader's step
@@ -1344,7 +1284,8 @@ def stepDefnum (P : Prog) (S : Defs) (T : Defs3) : Step :=
         normHyps K [iFlag] (
           dImpE L iImp (stage "stepDefnum: the rest's expansion" (K.byHyp hX)) <|
           last fun iTF ↦ normHyps K [iTF] typing) Γ₃ Φ₃ ψ₃
-    let some d := decideIn K (fun Γ ↦ headNamed P (hA Γ) "Datatype.kwGeneric") expansion
+    let some d := decideIn K (fun Γ ↦ headNamed P (hA Γ) "Datatype.kwGeneric")
+        (heads expansion)
         (stage "stepDefnum: a template's instance" (refuteNot K 1)) a.ctx a.hyps a.concl
       | dbgTrace "stepDefnum: not proved" fun _ ↦ none
     pure (a, d))
@@ -1425,8 +1366,12 @@ def stepGeneric (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let restA (Γ : List Tree) : Passes := passesAt (2 + (Γ.length - Γ₀.length)) (esA Γ)
     let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
     let hypOr := hypOrK K
-    let (hGen, hX, hC, hO, hR, hK, hRej, hMore) := (1, 2, 3, 4, 5, 6, 7, 14)
-    let some d := (at' "the expansion" <|
+    let (hGen, hX, hC, hO, hR, hK, hRej, hMore) := (1, 2, 3, 4, 5, 6, 7, 15)
+    -- the instance's tests decided, as the test of the definitions' bodies reads them
+    let heads : Deducer → Deducer := fun k ↦ dConjE L hGen fun Γ Φ ψ ↦
+      decideEach K Γ₀.length ((genericTest P (v 0)).zipIdx.map fun (t, i) ↦
+        (t, some (K.hypFalse (Φ.length - 2 + i)), none)) k Γ Φ ψ
+    let some d := (heads <| at' "the expansion" <|
         applyThm K "xpPrefix" (fun Γ ↦ [esA Γ, stepA Γ])
           [stage "stepGeneric: the expansion's run" (K.byHyp hX)] <|
         applyThm K "xpGeneric" (fun Γ ↦ [eA Γ, dvA Γ])
@@ -1465,7 +1410,7 @@ def stepGeneric (P : Prog) (S : Defs) (T : Defs3) : Step :=
                     stage "stepGeneric: the rest reads" (K.byHyp hR),
                     stage "stepGeneric: the kernel checks" (K.byHyp hK),
                     stage "stepGeneric: no rejection" (K.byHyp iRej')] ++
-                  (List.range 6).map (fun k ↦
+                  (List.range 7).map (fun k ↦
                     stage s!"stepGeneric: the invariant {k}" (hypOr (hRej + 1 + k))) ++
                   [stage "stepGeneric: the rest's kinds" (hypOr hMore)]) <|
                 stage "stepGeneric: the conclusion" (last K.byHyp)) Γ Φ ψ) Γ₃ Φ₃ ψ₃) Γ₁ Φ₁ ψ₁)
@@ -1473,11 +1418,77 @@ def stepGeneric (P : Prog) (S : Defs) (T : Defs3) : Step :=
       | dbgTrace "stepGeneric: not proved" fun _ ↦ none
     pure (a, d))
 
-/-- The soundness at all states of forms each of a kind the soundness reads ({name}`passesφ`,
+/-- A form at which the expansion's step does not fail, and of which the soundness's assumptions
+hold ({name}`preOk`), is of a kind the soundness reads ({name}`formOk`): the form a node, a list
+by its label, else the step fails; its elements split by cases; the head's tests decided in the
+order the step reads them: a template's instance; a datatype's declaration, refuted; a function,
+of five elements; a definition, a type abbreviation or a numeral abbreviation, of three; any
+other head or number of elements fails the step, a list of more elements having a length that is
+none of those ({lit}`neq5`). In the context of the form and the declarations. -/
+def formKind (P : Prog) (S : Defs) : Step :=
+  ("formKind", fun ix E ↦ do
+    let K : Kit := ⟨{ P with folded := P.folded ++
+      ["Datatype.dataDecl", "Datatype.marker", "Datatype.genericStep"] }, S, E, ix,
+      ["neq4", "neq5"]⟩
+    let L := K.L
+    let Ls := list treeTy
+    let hyps := [truth P.o (Term.fst (xpStepT P (xpState (v 1) (nilT treeTy)) (v 0)))] ++
+      preOk P (v 0)
+    let a : Internal.Thm := ⟨0, [treeTy, Ls], hyps, formOk P (v 0)⟩
+    -- the disjunct of an index, of the kinds in the order of the disjunction
+    let inj (i : ℕ) (k : Deducer) : Deducer :=
+      (List.range i).foldr (fun _ k ↦ dDisjI L true k) (if i < 4 then dDisjI L false k else k)
+    let conjs (ds : List Deducer) : Deducer := match ds.reverse with
+      | [] => K.solve 1
+      | d :: rest => rest.foldl (fun acc p ↦ dConjI L p acc) d
+    let no : Deducer := dImpI L (lastFalse K)
+    let yes : Deducer := K.solve 3
+    -- a kind's disjunct at the elements: the form's equation and the head's facts
+    let kind (i : ℕ) (xs : List (List Tree → Term)) (facts : List Deducer) : Deducer :=
+      stage s!"formKind: the kind {i}" <| inj i <|
+        xs.foldr (fun w k Γ Φ ψ ↦ dExI L K.G K.E (w Γ) k Γ Φ ψ)
+          (conjs ([stage "formKind: the form's equation" K.byNorm] ++ facts))
+    let user : Deducer := dImpE L 3 (K.solve 3) (lastOr K)
+    -- the head's tests in the step's order, at a list of m elements at the positions given
+    let chain (m : ℕ) (ps : List ℕ) : Deducer :=
+      let xs := ps.map fun p Γ ↦ atPos p Γ
+      let h := xs.headD fun _ ↦ Term.star
+      let t (kw : String) (Γ : List Tree) : Term := headNamed P (h Γ) kw
+      let fail := stage s!"formKind: the step at {m} elements" (K.hypFalse 0)
+      let k₆ := decideIn K (t "Reader.kwDefnum") fail
+        (if m = 3 then kind 2 xs [no, no, no, no, no, yes, user] else fail)
+      let k₅ := decideIn K (t "Reader.kwDeftype") k₆
+        (if m = 3 then kind 1 xs [no, no, no, no, yes] else k₆)
+      let k₄ := decideIn K (t "Reader.kwDef") k₅ (if m = 3 then kind 0 xs [no, no, no, yes] else k₅)
+      let k₃ := decideIn K (t "Datatype.kwDefn") k₄
+        (if m = 5 then kind 3 xs [no, no, no, yes] else k₄)
+      let k₂ := decideIn K (t "Datatype.kwTreeData") k₃ (refuteNot K 2)
+      let k₁ := decideIn K (t "Datatype.kwData") k₂ (refuteNot K 1)
+      if m = 0 then fail else
+      decideIn K (t "Datatype.kwGeneric") k₁
+        (stage "formKind: an instance" (inj 4 (conjs [yes, yes])))
+    -- the elements split by cases, the tail the innermost variable: to six elements and a tail
+    let split : ℕ → List ℕ → Deducer := Nat.rec (motive := fun _ ↦ List ℕ → Deducer)
+      (fun ps ↦ chain 6 ps)
+      (fun _ rec ps Γ Φ ψ ↦ K.listCase treeTy (v 0) (chain ps.length ps)
+        (fun Γ' Φ' ψ' ↦ rec (ps ++ [Γ'.length - 2]) Γ' Φ' ψ') Γ Φ ψ)
+    let some d := (K.treeNode (v 0) fun Γ₁ Φ₁ ψ₁ ↦
+        let pcs := Γ₁.length - 1
+        dBits L K.G K.E (ix "listCases") (ix "bitCases") (fun bs ↦
+          if bs.map Oitavem.rank == some 2 then fun Γ Φ ψ ↦
+            K.listCase treeTy (atPos pcs Γ) (chain 0 [])
+              (fun Γ' Φ' ψ' ↦ split 5 [Γ'.length - 2] Γ' Φ' ψ') Γ Φ ψ
+          else stage "formKind: no list" (K.hypFalse 0)) 3 [] (v 1) Γ₁ Φ₁ ψ₁)
+        a.ctx a.hyps a.concl
+      | dbgTrace "formKind: not proved" fun _ ↦ none
+    pure (a, d))
+
+/-- The soundness at all states of forms of which its assumptions hold ({name}`passesφ`,
 {name}`formsOk`): by induction on the forms. None: the passes' runs leave the states, at which
 the conclusion is the invariant's relation of the definitions, and the recognizers' agreement
 that of an environment without datatypes ({lit}`recsNoData`). A construction: the head's kind
-and its parts from the hypothesis on the forms, the step at a form of that kind
+and its parts, from the expansion's step at it, which does not fail ({lit}`xpPrefix`,
+{name}`formKind`), and the hypothesis on the forms; the step at a form of that kind
 ({name}`stepDef`, {name}`stepDeftype`, {name}`stepDefnum`, {name}`stepDefn`,
 {name}`stepGeneric`). In the context of the forms. -/
 def passesForms (P : Prog) (S : Defs) (T : Defs3) : Step :=
@@ -1512,11 +1523,11 @@ def passesForms (P : Prog) (S : Defs) (T : Defs3) : Step :=
       -- a function's parts: the body, the result type, the binders, the name and the head
       let σ₅ (Γ : List Tree) : List Term :=
         [at_ 15 Γ, at_ 14 Γ, at_ 13 Γ, at_ 12 Γ, at_ 11 Γ, esA Γ] ++ states Γ
-      let invariant : List Deducer := (List.range 12).map fun k ↦
+      let invariant : List Deducer := (List.range 13).map fun k ↦
         stage s!"passesForms: the hypothesis {k}" (hypOr (h k))
-      (fun Γ Φ ψ ↦ dRwHyp (evalRw K.G K.E (K.rulesEx Φ (h 12)) .full) (h 12)
+      (fun Γ Φ ψ ↦ dRwHyp (evalRw K.G K.E (K.rulesEx Φ (h 13)) .full) (h 13)
         (stage "passesForms: the forms" <| K.conjE <| fun Γ₂ Φ₂ ψ₂ ↦
-        let (iForm, iRest) := (Φ₂.length - 2, Φ₂.length - 1)
+        let (iPre, iRest) := (Φ₂.length - 2, Φ₂.length - 1)
         -- the form's parts: its equation and the facts of its kind, of m conjuncts in all
         let parts (m : ℕ) (k : ℕ → Deducer) (vars : ℕ := 3) : Deducer := repeatK vars K.exE <|
           repeatK (m - 1) K.conjE fun Γ Φ ψ ↦ k Φ.length Γ Φ ψ
@@ -1526,9 +1537,19 @@ def passesForms (P : Prog) (S : Defs) (T : Defs3) : Step :=
         let ih : Deducer := stage "passesForms: the hypothesis" (hypOr 0)
         let rest : Deducer := stage "passesForms: the rest's kinds" (K.byHyp iRest)
         let done : Deducer := stage "passesForms: the conclusion" (last K.byHyp)
-        dDisjE L iForm
-          (stage "passesForms: a definition" <| parts 6 fun n ↦ applyThm K "stepDef" σ
-            ([ih] ++ (facts n 6).take 4 ++ invariant ++ (facts n 6).drop 4 ++ [rest]) done)
+        (dConjE L iPre <| K.conjE <| fun Γ₃ Φ₃ ψ₃ ↦
+        let (iData, iTree, iNum) := (Φ₃.length - 4, Φ₃.length - 2, Φ₃.length - 1)
+        (applyThm K "xpPrefix" (fun Γ ↦ [esA Γ,
+            xpStepT P (xpState (at_ 2 Γ) (nilT treeTy)) (at_ 0 Γ)])
+          [stage "passesForms: the expansion's run" (K.byHyp (h 0))] <|
+        applyThm K "formKind" (fun Γ ↦ [at_ 0 Γ, at_ 2 Γ])
+          [stage "passesForms: the expansion's step" (lastOr K),
+            stage "passesForms: no datatype" (hypOr iData),
+            stage "passesForms: no tree datatype" (hypOr iTree),
+            stage "passesForms: the abbreviation's name" (hypOr iNum)] <|
+        fun Γ₄ Φ₄ ψ₄ ↦ dDisjE L (Φ₄.length - 1)
+          (stage "passesForms: a definition" <| parts 5 fun n ↦ applyThm K "stepDef" σ
+            ([ih] ++ facts n 5 ++ invariant ++ [rest]) done)
           (fun Γ Φ ψ ↦ dDisjE L (Φ.length - 1)
             (stage "passesForms: a type abbreviation" <| parts 6 fun n ↦
               applyThm K "stepDeftype" σ ([ih] ++ facts n 6 ++ invariant ++ [rest]) done)
@@ -1536,14 +1557,13 @@ def passesForms (P : Prog) (S : Defs) (T : Defs3) : Step :=
               (stage "passesForms: a numeral abbreviation" <| parts 8 fun n ↦
                 applyThm K "stepDefnum" σ ([ih] ++ facts n 8 ++ invariant ++ [rest]) done)
               (fun Γ Φ ψ ↦ dDisjE L (Φ.length - 1)
-                (stage "passesForms: a function" <| parts 8 (vars := 5) fun n ↦
-                  applyThm K "stepDefn" σ₅ ([ih] ++ (facts n 8).take 4 ++ invariant ++
-                    (facts n 8).drop 4 ++ [rest]) done)
+                (stage "passesForms: a function" <| parts 5 (vars := 5) fun n ↦
+                  applyThm K "stepDefn" σ₅ ([ih] ++ facts n 5 ++ invariant ++ [rest]) done)
                 (stage "passesForms: a template's instance" <|
                   applyThm K "stepGeneric" (fun Γ ↦ [at_ 0 Γ, esA Γ] ++ states Γ)
                     ([ih, stage "passesForms: an instance" (lastOr K)] ++ invariant ++ [rest])
                     done) Γ Φ ψ) Γ Φ ψ)
-            Γ Φ ψ) Γ₂ Φ₂ ψ₂) Γ Φ ψ) Γ₁ Φ₁ ψ₁
+            Γ Φ ψ) Γ₄ Φ₄ ψ₄) Γ₃ Φ₃ ψ₃) Γ₂ Φ₂ ψ₂) Γ Φ ψ) Γ₁ Φ₁ ψ₁
     listInduction "passesForms" φ base step)
 
 /-- A defined predicate that quantifies over a tree, proved at arguments at which the
@@ -1626,8 +1646,15 @@ def initialPasses (P : Prog) (X₀ es : Term) : Passes :=
       txsApp P nil (Term.fst (Term.subst X₀ fun _ ↦ ts))], pc P "Typing/OName.nothing" [],
     nil, nil, nil, nil, pc P "Recognize.markers" [fs], fs⟩
 
-/-- The soundness of a program ({name}`programParts`) from the soundness at the states the
-passes begin in ({name}`initialPasses`), a hypothesis. The typing's run over the forms with
+/-- That each definition's body the expansion writes for a program's forms is a source form at
+the numeral abbreviations before it: the run of the test of the definitions' bodies over the
+forms, from no declarations and no abbreviations, ends without a failure. -/
+def plainTop (P : Prog) (es : Term) : Term :=
+  truth P.o (Term.fst (plainRun P es (plainState (nilT treeTy) (nilT treeTy))))
+
+/-- The soundness of a program ({name}`programParts`) whose definitions' bodies are source forms
+({name}`plainTop`) from the soundness at the states the passes begin in
+({name}`initialPasses`), a hypothesis. The typing's run over the forms with
 their markers first is its run over the others from the environment of the markers
 ({lit}`checkAllAppend`, {lit}`markersRun`); the recognizers' insertion and the reader's
 program, where present, are the insertion's test and the reader's run; and the invariant holds
@@ -1642,14 +1669,14 @@ def programTop (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let (hs, concl) ← programParts P T (v 0)
     let s := initialPasses P X₀ (v 0)
     let passes := (s.hyps P T X₀).foldr (Internal.Logic.imp P.o) (s.concl P T X₀)
-    let a : Internal.Thm := ⟨0, [Ls], hs ++ [passes], concl⟩
+    let a : Internal.Thm := ⟨0, [Ls], hs ++ [plainTop P (v 0), passes], concl⟩
     let s₀ (Γ : List Tree) : Passes := initialPasses P X₀ (v (Γ.length - 1))
     let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
     let nothing := pc P "Typing/OName.nothing" []
     let env0 := pc P "Typing.env0" []
     let tsA (Γ : List Tree) : Term := (s₀ Γ).typed P
     let partA (Γ : List Tree) : Term := Term.subst X₀ fun _ ↦ tsA Γ
-    let (hX, hC, hO, hR, hK, hPasses) := (0, 1, 2, 3, 4, 5)
+    let (hX, hC, hO, hR, hK, hPlain, hPasses) := (0, 1, 2, 3, 4, 5, 6)
     let some d := (
         -- the typing's run: over the markers, then over the others
         K.cutThm "checkAllAppend" (fun Γ ↦ [Term.fst (partA Γ)]) <|
@@ -1678,7 +1705,8 @@ def programTop (P : Prog) (S : Defs) (T : Defs3) : Step :=
               stage "programTop: the names" (K.cutThm "namesEmpty" (fun _ ↦ []) dHyp),
               stage "programTop: the keywords" (K.cutThm "kwsEmpty" (fun _ ↦ []) dHyp),
               stage "programTop: the lengths" K.byNorm,
-              stage "programTop: no datatype" K.byNorm] <|
+              stage "programTop: no datatype" K.byNorm,
+              stage "programTop: the definitions' bodies" (hypOrK K hPlain)] <|
           -- the final environment's markers the first's, then the conclusion
           K.conjE <| fun Γ Φ ψ ↦
           let (iMs', iC) := (Φ.length - 2, Φ.length - 1)
@@ -1687,10 +1715,10 @@ def programTop (P : Prog) (S : Defs) (T : Defs3) : Step :=
       | dbgTrace "programTop: not proved" fun _ ↦ none
     pure (a, d))
 
-/-- The soundness of a program whose forms are of the kinds read ({name}`programParts`,
-{name}`formsOk`): the soundness at all states ({name}`passesForms`) at the states the passes
-begin in, of which the program's soundness follows ({name}`programTop`). In the context of the
-forms. -/
+/-- The soundness of a program ({name}`programParts`) whose definitions' bodies are source forms
+({name}`plainTop`) and of whose forms the soundness's assumptions hold ({name}`formsOk`): the
+soundness at all states ({name}`passesForms`) at the states the passes begin in, of which the
+program's soundness follows ({name}`programTop`). In the context of the forms. -/
 def programForms (P : Prog) (S : Defs) (T : Defs3) : Step :=
   ("programForms", fun ix E ↦ do
     let K : Kit := ⟨passProg P, S, E, ix, ["eraseDefForm", "recAtThree"]⟩
@@ -1698,7 +1726,7 @@ def programForms (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let Ls := list treeTy
     let some X₀ := partitionT K [Ls] | dbgTrace "programForms: no partition" fun _ ↦ none
     let (hs, concl) ← programParts P T (v 0)
-    let a : Internal.Thm := ⟨0, [Ls], hs ++ formsOk P S (v 0), concl⟩
+    let a : Internal.Thm := ⟨0, [Ls], hs ++ [plainTop P (v 0)] ++ formsOk P S (v 0), concl⟩
     let s := initialPasses P X₀ (v 0)
     let n := (s.hyps P T X₀).length
     let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
@@ -1710,7 +1738,7 @@ def programForms (P : Prog) (S : Defs) (T : Defs3) : Step :=
       last fun iP ↦ repeatK n (dImpI L) <|
         impEs L iP ((List.replicate (n + 1) dHyp).map (stage "programForms: a hypothesis")) dHyp
     let some d := applyThm K "programTop" (fun _ ↦ [v 0])
-        ((List.replicate hs.length dHyp).map (stage "programForms: the program") ++
+        ((List.replicate (hs.length + 1) dHyp).map (stage "programForms: the program") ++
           [stage "programForms: the passes" passes]) dHyp a.ctx a.hyps a.concl
       | dbgTrace "programForms: not proved" fun _ ↦ none
     pure (a, d))
@@ -1734,14 +1762,14 @@ def programSoundGroups (P : Prog) (S : Defs) (T : Defs3) : List (String × List 
       ("datatype-program-top", programTopDev P S T),
       ("datatype-program-nums", programNumsDev P S),
       ("datatype-program-nums-inv", programNumsInvDev P S T),
-      ("datatype-program-src", programSrcDev P S T),
+      ("datatype-program-let", programLetDev P S T),
       ("datatype-program-defined", [stepDefined P S T]),
       ("datatype-program-def", [stepDef P S T]),
       ("datatype-program-deftype", [stepDeftype P S T]),
       ("datatype-program-defnum", [numOfParts P S, stepDefnum P S T]),
       ("datatype-program-defn", [stepDefn P S T]),
       ("datatype-program-generic", [xpGeneric P S, checkGeneric P S T, stepGeneric P S T]),
-      ("datatype-program-defs", [passesForms P S T]),
+      ("datatype-program-defs", neqMore P ++ [formKind P S, passesForms P S T]),
       ("datatype-program-sound", [programForms P S T])]
 
 /-- The names of the certificates the developments of the soundness of a whole program continue

@@ -4512,12 +4512,14 @@ import-direction rules above are enforced by
   its type; `DatatypeProgram.lean` states the soundness at a whole
   program and proves the typing's runs over a program's forms,
   `DatatypeProgramRuns.lean` proves the runs of the expansion, the
-  reader and the kernel's check over them and the invariants the reading
-  of a definition preserves, and `DatatypeProgramStep.lean` proves the
-  soundness of a program whose forms are definitions, type and numeral
-  abbreviations, functions and templates' instances, by induction on
-  the forms at all states of those passes, given that the definitions'
-  bodies expand to source forms;
+  reader and the kernel's check over them, the invariants the reading
+  of a definition preserves and the run that tests the definitions'
+  bodies, and `DatatypeProgramStep.lean` proves the soundness of a
+  program none of whose forms declares a datatype, by induction on the
+  forms at all states of those passes, each form's kind read off the
+  expansion's step at it, given that each definition's body the
+  expansion writes is a source form at the numeral abbreviations before
+  it, which that run tests;
   `TreeCases.lean` exercises the case analysis of a tree variable in any
   context and rewriting under a test, and `Expansion.lean` proves with
   them that the expansion of the datatype language,
