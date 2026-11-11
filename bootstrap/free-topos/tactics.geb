@@ -3,7 +3,14 @@
 ; translation's trees.
 
 (module Tactics
-  (export apps byMode hypRules byListCases byListSplit bySplit2 withWeakHyps AI openSubterms
+  (export ttL impL trueI apps byMode hypRules byListCases byListSplit bySplit2 withWeakHyps
+    withInsts
+    withChildHyps
+    revertCase
+    byImpI
+    withImpElim
+    AI
+    openSubterms
     stuckVar
     mentions
     matchesOf

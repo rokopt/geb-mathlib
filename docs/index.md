@@ -3910,9 +3910,16 @@ import-direction rules above are enforced by
   have a reproducible record of elaborated definitions, canonical source
   documents, checked image, certificate and pinned inputs under
   `examples/authoring/record/`, regenerated and checked by
-  `scripts/authoring.sh`. Statements over the datatype language's
-  datatypes and induction on trees with the hypothesis at each child remain
-  to be exposed.
+  `scripts/authoring.sh`. Version 3 of the proof document reads truth and
+  implication among the internal language's terms, the connectives of
+  `bootstrap/free-topos/logic.geb` defined after the program's definitions,
+  whose rules begin a development's certificate, and adds the script forms
+  `tree-induction`, `child-hypotheses`, `instances`, `assume`,
+  `modus-ponens` and `revert-cases`: the induction on trees with the
+  hypothesis at each child, the instances of hypotheses, and the
+  introduction and elimination of implications, by which the Lean deducers
+  prove weakening and substitution. Statements over the datatype language's
+  datatypes remain to be exposed.
   `scripts/preserve.py` records any manifest-based development through those
   commands: original and canonical source documents, the documents its proof
   document imports among them, checked core, a replayed
