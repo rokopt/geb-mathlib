@@ -330,8 +330,9 @@ tag := "hypothesis-scripts"
 
 Version `3` reads what version `2` reads, and adds truth and implication to
 the terms of the internal language, and the tactics of the induction on
-trees with the hypothesis at each child, of the instances of a hypothesis
-and of implications:
+trees with the hypothesis at each child, of the instances of a hypothesis,
+of implications, of the alternative of two scripts and of the case analysis
+of a bitstring to a number of bits:
 
 ```
 DOCUMENT ::= (proofs 3 HEADER… THEOREM…)
@@ -342,6 +343,8 @@ SCRIPT ::= … | (tree-induction x (l cs ih) SCRIPT)
          | (assume h SCRIPT)
          | (modus-ponens h (h…) SCRIPT)
          | (revert-cases h x (y ys) SCRIPT SCRIPT)
+         | (first SCRIPT SCRIPT)
+         | (bits-cases x BITS SCRIPT)
 CHILD ::= (INSTANCE…)
 INSTANCE ::= (h ITERM…)
 ```
@@ -389,13 +392,28 @@ The tactics added:
   before a list `ys`, under `h` at each. The implication of the goal by `h`
   is proved for every list by induction, and the goal follows from it at
   `x`.
+* `first` proves the goal by its first script or, where that script does not
+  prove it, by its second.
+* `bits-cases` proves the goal by the case analysis of a variable `x` of the
+  bitstrings to the number `BITS` of bits: at each bitstring of fewer bits,
+  and at each bitstring of that number of bits before a bitstring, every
+  case by the one script. Each bit of a case adds three variables, the head
+  of a bitstring, the bitstring after it and the element of the head's
+  injection, and one hypothesis, the goal at the bitstring after the head,
+  none of them named. The script is read once for each number of bits, in
+  the variables and hypotheses of the cases of that number, so that it
+  cites those of the goal and those its own tactics name.
 
 A hypothesis that a tactic reduces, or replaces by its conclusion or its
 case, keeps its name, and the hypotheses a tactic cuts in besides are cited
 by no name. `tree-induction` is `Geb.FreeTopos.Internal.byRoseIndHyp`, and
-the others `withChildHyps`, `withInsts`, `byImpI`, `withImpElim` and
-`revertCase` of `Geb.FreeTopos.Tactics`, by which the Lean developments
-prove that weakening and substitution preserve types.
+the others but the last two `withChildHyps`, `withInsts`, `byImpI`,
+`withImpElim` and `revertCase` of `Geb.FreeTopos.Tactics`, by which the Lean
+developments prove that weakening and substitution preserve types.
+`bits-cases` composes the case analyses of a list and of a coproduct as
+`Geb.FreeTopos.Tactics.byBits` does, and with `first` one script proves the
+cases of a label's bits that differ in what proves them, as those
+developments' proofs at a construction do.
 
 `scripts/tests/test-proof-scripts.sh` proves with them, among other
 theorems, that the fold of a tree that keeps the first child alone at each

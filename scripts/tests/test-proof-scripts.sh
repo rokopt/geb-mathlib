@@ -3,7 +3,8 @@
 # language, the tactics of trees and coproducts, rules at objects, imported documents, the program
 # a document names, the diagnostics of a rejected development, truth and implication, the tactics
 # of the induction on trees with the hypothesis at each child, of the instances of a hypothesis
-# and of implications, and the development of bootstrap/proofs/, proved and replayed.
+# and of implications, the alternative of two scripts and the case analysis of a bitstring to a
+# number of bits, and the development of bootstrap/proofs/, proved and replayed.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
@@ -63,6 +64,10 @@ def prune(t):
     return ('(rose-rec T (n) (node Bits (pair (fst n) (list-rec (nil T) (r acc) (cons T r (nil T))'
             f' (snd n)))) {t})')
 
+def same(t):
+    return ('((case Unit Unit Bit (pair (lam ((u Unit)) (inl Unit Unit u))'
+            f' (lam ((u Unit)) (inr Unit Unit u)))) {t})')
+
 HYP = f'''; Theorems of version 3 about the pair example.
 
 (proofs 3 (import Pair.proofs.geb)
@@ -98,7 +103,23 @@ HYP = f'''; Theorems of version 3 about the pair example.
     (by (tree-induction t (l cs ih) (generalize (zs (List T)) (kernel cs) (reduce weak)))))
   ; A theorem of a document of an earlier version is cited after the connectives' rules.
   (theorem append-nil-again (forall ((xs (List T))) (equal (Lists.append xs (nil T)) xs))
-    (by (reduce weak append-nil))))
+    (by (reduce weak append-nil)))
+  ; An alternative proves by its second script where its first does not.
+  (theorem append-nil-first (forall ((xs (List T))) (equal (Lists.append xs (nil T)) xs))
+    (by (first (reduce weak) (reduce weak append-nil))))
+  ; The head of a bitstring or else a bit, the head taken through the case analysis that
+  ; returns a bit, is the head or else an equal bit: at each bitstring of fewer than two bits
+  ; and of two bits before a bitstring, and for a second bitstring at each of none and of one
+  ; before a bitstring, the script being read in the variables and hypotheses of each case.
+  (theorem head-bits
+    (internal ()
+      (forall ((d Bit) (e Bit) (b Bits) (c Bits))
+        (equal
+          (implies (equal d e)
+            (equal (pair (list-rec d (y r) {same('y')} b) (list-rec d (y r) {same('y')} c))
+              (pair (list-rec e (y r) y b) (list-rec e (y r) y c))))
+          true)))
+    (by (bits-cases b 2 (bits-cases c 1 (assume h (reduce weak h)))))))
 '''
 
 def document(body, imports=''):
@@ -206,6 +227,22 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
     # A script that does not prove its theorem is reported so: the antecedent is not cited.
     rejected(HYP.replace('(by (assume h (reduce weak h)))', '(by (assume h (reduce weak)))'),
              '10:12', 'the script of the theorem symmetry does not prove it')
+    # An alternative has two scripts, and proves by neither where neither proves; a case analysis
+    # of a bitstring names a variable and a number of bits, and proves nothing the bits decide
+    # where it takes fewer of them; version 2 reads neither.
+    rejected(HYP.replace('(first (reduce weak) (reduce weak append-nil))', '(first (reduce weak))'),
+             '38:12', 'the script of the theorem append-nil-first does not read')
+    rejected(HYP.replace('(first (reduce weak) (reduce weak append-nil))',
+                         '(first (reduce weak) (reduce head))'),
+             '38:12', 'the script of the theorem append-nil-first does not prove it')
+    for old, new, reason in (('(bits-cases b 2', '(bits-cases a 2', 'read'),
+                             ('(bits-cases b 2', '(bits-cases b weak', 'read'),
+                             ('(bits-cases c 1', '(bits-cases c 0', 'prove it')):
+        rejected(HYP.replace(old, new), '44:12',
+                 f'the script of the theorem head-bits does not {reason}')
+    rejected(document('(theorem a (forall ((t T)) (equal t t))'
+                      ' (by (first (reduce weak) (reduce weak))))'),
+             '2:12', 'the script of the theorem a does not read')
 
     # An import is a path below the document that reads, and imports return to no document.
     rejected(document('(theorem a (equal Pair.left Pair.left) (by (normalize 4)))',
@@ -280,5 +317,6 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
     run('replay', proofs_dir / 'tree-cases.proofs.geb', cases)
 
 print('test-proof-scripts: internal statements, tactics, imports, named programs, diagnostics, '
-      'hypotheses and implications and the tree-cases development passed')
+      'hypotheses and implications, alternatives, the cases of bitstrings and the tree-cases '
+      'development passed')
 PY

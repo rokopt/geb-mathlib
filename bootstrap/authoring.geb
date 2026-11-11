@@ -10,8 +10,9 @@
 ; program a document is proved against where the host is given none. Version 3 adds truth and
 ; implication to the terms of the internal language, the definitions of {geb}`Logic.connectives`
 ; after the program's, whose rules a development of that version begins with, and the tactics of
-; the induction on trees with the hypothesis at each child, of the instances of a hypothesis and
-; of implications. Statements and scripts are read before any proof is searched; every derivation
+; the induction on trees with the hypothesis at each child, of the instances of a hypothesis, of
+; implications, of the alternative of two scripts and of the case analysis of a bitstring to a
+; number of bits. Statements and scripts are read before any proof is searched; every derivation
 ; is checked by {geb}`Derivation.declStep`, the step of the checker of developments, as it is
 ; found, and replay checks a saved development by {geb}`Derivation.checkDev`.
 
@@ -580,7 +581,13 @@
   ; with truth of an implication whose antecedent is the hypothesis h, to its conclusion. The
   ; case analysis (revert-cases h x (y ys) SCRIPT SCRIPT) of a list variable x that the
   ; hypothesis h mentions proves the goal at the empty list and at a head y before a list ys,
-  ; under h at each. The connectives' rules are the first entries of a development of version 3.
+  ; under h at each. The alternative, (first SCRIPT SCRIPT), proves the goal by its first script
+  ; or, where that one does not prove it, by its second. The case analysis of a bitstring to a
+  ; number of bits, (bits-cases x BITS SCRIPT), proves the goal at each bitstring of fewer bits
+  ; for the variable x, and at each of that number of bits before a bitstring, by the one script,
+  ; read at each number of bits in the variables and hypotheses of that case: for each bit a head,
+  ; a list and the element of the bit's injection, and the goal at the list, none of them named.
+  ; The connectives' rules are the first entries of a development of version 3.
   (defn script4
     ((eb T) (gt Ts) (defs Ts) (ovars Ts) (thms Ts) (nd T) (rs (List SR)) (vars Ts) (kts Ts)
      (hyps Ts))
@@ -726,8 +733,45 @@
                                                             (getD (hypAt at1) 0)
                                                             ((snd r0) G E base)
                                                             ((snd r1) G E base)))))))))))
-                                        (script3 3 eb gt defs ovars thms nd vars kts
-                                          hyps))))))))))))))))))))
+                                        (if (form nd (quote (0 first)) 3)
+                                          (let r0 (Prod T Tac) (childR 1 vars kts hyps)
+                                            (let r1 (Prod T Tac) (childR 2 vars kts hyps)
+                                              (pair (and (fst r0) (fst r1))
+                                                (lam ((G Globals) (E (List Entry)) (base NRs))
+                                                  (lam ((g Ts) (hs Ts) (t T) (u T))
+                                                    (let found T ((snd r0) G E base g hs t u)
+                                                      (if (isSome found) found
+                                                        ((snd r1) G E base g hs t u))))))))
+                                          (if (form nd (quote (0 bits-cases)) 4)
+                                            (let i T
+                                              (if (Source.isAtom at1)
+                                                (Source.indexOf (Source.nameOf at1) vars)
+                                                none)
+                                              (let bits T (number at2)
+                                                (let level (Arrow T (Prod T Tac))
+                                                  (lam ((j T))
+                                                    (childR 3 (append (blanks (mul 3 j)) vars)
+                                                      (append
+                                                        (mapT (lam ((q T)) none) (range (mul 3 j)))
+                                                        kts)
+                                                      (append hyps (blanks j))))
+                                                  (pair
+                                                    (and (isSome i)
+                                                      (and (isSome bits)
+                                                        (allT (lam ((j T)) (fst (level j)))
+                                                          (range (add (getD bits 0) 1)))))
+                                                    (lam ((G Globals) (E (List Entry)) (base NRs))
+                                                      ((foldr T (Arrow T Pv)
+                                                         (lam ((j T) (deeper (Arrow T Pv)) (pos T))
+                                                           (byListSplit G n pos
+                                                             ((snd (level j)) G E base)
+                                                             (bySplit2 3 4 1 (deeper 1)
+                                                               (deeper 1))))
+                                                         (lam ((pos T))
+                                                           ((snd (level (getD bits 0))) G E base))
+                                                         (range (getD bits 0))) (getD i 0)))))))
+                                            (script3 3 eb gt defs ovars thms nd vars kts
+                                              hyps))))))))))))))))))))))
   ; The tactics version 2 adds. The uniqueness of a list's fold, (fold-induction x (y r) STEP FUEL
   ; RULE ...), proves the goal by induction on its innermost variable where both sides at a head y
   ; before a list are STEP at their values r at the list. The uniqueness of a tree's fold,

@@ -3417,7 +3417,8 @@ tag := "authoring-compatibility"
     extensionality, the induction and case analysis of lists, the case
     analysis of coproducts and trees, the rewriting under a test, the
     induction on trees with the hypothesis at each child, the instances of
-    hypotheses and implications, saved
+    hypotheses and implications, the alternative of two scripts and the
+    case analysis of a bitstring to a number of bits, saved
     certificates and replay from Geb source ({ref "first-authoring"}[Writing
     a first Geb development]), the development of the lemmas of trees
     among them; statements over datatypes wait on the datatype language's
@@ -5412,10 +5413,12 @@ implications]), which `scripts/tests/test-proof-scripts.sh` exercises.
 A deducer composes them by a Lean program, over the bits of a
 construction's label and the number of its children, and states its lemmas
 about terms it takes from the translated program, the step of a
-definition's fold among them; a script is one tree of tactics and a
-statement is written out, so moving a deducer into Geb source waits on a
-form in scripts for a tactic repeated over cases and on a form in
-statements for those terms. The syntax of statements and proof scripts
+definition's fold among them. A script is one tree of tactics, in which the
+case analysis of a bitstring to a number of bits proves every case of a
+label's bits by one script, read at each number of bits, and the
+alternative of two scripts proves by its second what its first does not;
+a statement is written out. The developments by induction on trees are not
+yet stated in Geb source. The syntax of statements and proof scripts
 is a step of the sequence ({ref "authoring-sequence"}[The sequence and its
 acceptance]). It adds no rule to the metalogic: a script is a program for
 one prover, and its certificate is checked as any other is.
