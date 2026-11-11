@@ -20,7 +20,9 @@ that has not failed passed through none that had. The steps at the forms of defi
 and numeral abbreviations and of functions are proved, with the forms the expansion writes, in
 the order of the forms, the terms the reader ends with, which extend those it has, the kernel's
 types of those terms, and the invariants the reading of a definition preserves: the names are
-those of definitions, and the definitions are related to the typing environment's.
+those of definitions, and the definitions are related to the typing environment's. A run of its
+own tests the definitions' bodies: at each form, where the expansion's step writes a definition,
+whether its body is a source form at the numeral abbreviations the reader has by then.
 
 ## Main definitions
 
@@ -28,6 +30,7 @@ those of definitions, and the definitions are related to the typing environment'
 * {lit}`readRun`, {lit}`xpRun`, {lit}`kcRun` — the reader's, the expansion's and the kernel
   check's runs.
 * {lit}`typedForms` — the typed forms the expansion writes.
+* {lit}`plainRun` — the run of the test of the definitions' bodies.
 * {lit}`stepGroups` — the developments, each with its certificate's name.
 
 ## Tags
@@ -1493,6 +1496,128 @@ def programReadDev (P : Prog) (S : Defs) : List Step :=
     namedApart P S "Typing.kwPostulate" "Reader.kwDeftype",
     namedApart P S "Typing.kwPostulate" "Reader.kwDefnum"]
 
+/-- The type of the state of the test of the definitions' bodies: whether each body the
+expansion has written is a source form, the expansion's declarations and the reader's numeral
+abbreviations. -/
+def plainTy : Tree := prod treeTy (prod (list treeTy) (list treeTy))
+
+/-- The state of the test of the definitions' bodies at declarations and numeral abbreviations,
+no body having failed it. -/
+def plainState (dv nums : Term) : Term := Term.pair (leafT (numeral 1)) (Term.pair dv nums)
+
+/-- The test of source forms at a term, at the expansion of numeral abbreviations. -/
+def srcTestT (P : Prog) (nums x : Term) : Term :=
+  pc P "srcForm" [Term.lam treeTy (pc P "Reader.expandNums" [sh 1 nums, v 0]), x]
+
+/-- The step at a form of the test of the definitions' bodies, from a state: the expansion's
+step at the form from the declarations leaves declarations and writes forms. At a template's
+instance or a datatype's declaration the state has those declarations. Else, where the form
+written is a definition's, the state has them where the definition's body is a source form at
+the numeral abbreviations, and has failed where it is not; where it is a numeral abbreviation's,
+the state has the abbreviation of its name before the others, as the reader does. A state that
+has failed is left as it is. -/
+def plainStepT (P : Prog) (s e : Term) : Term :=
+  let (dv, nums) := (Term.fst (Term.snd s), Term.snd (Term.snd s))
+  let x := xpStepT P (xpState dv (nilT treeTy)) e
+  let dv' := Term.fst (Term.snd x)
+  let nth (xs : Term) (i : ℕ) : Term :=
+    pc P "Datatype.nthTx" [xs, if i = 0 then leafT bnilT else leafT (numeral i)]
+  let named (h : Term) (kw : String) : Term := pc P "Datatype.namedTx" [h, pc P kw []]
+  let he := nth (pc P "Datatype.elems" [e]) 0
+  let fs := pc P "Datatype.elems" [nth (Term.snd (Term.snd x)) 0]
+  let (hf, n, b) := (nth fs 0, nth fs 1, nth fs 2)
+  let test (t a b : Term) : Term := condT plainTy (call D.lab [] [t]) a b
+  let keep := plainState dv' nums
+  let nums' := consT treeTy (abbrevT P (pc P "Reader.nameOf" [n])
+    (pc P "Prelude.get" [pc P "Reader.numOf" [nums, b]])) nums
+  test (Term.fst s)
+    (test (pc P "Prelude.and" [pc P "Datatype.isListTx" [e], named he "Datatype.kwGeneric"]) keep
+      (test (pc P "Prelude.or" [named he "Datatype.kwData", named he "Datatype.kwTreeData"]) keep
+        (test (named hf "Reader.kwDef")
+          (test (srcTestT P nums b) keep (Term.pair (leafT bnilT) (Term.pair dv' nums)))
+          (test (named hf "Reader.kwDeftype") keep
+            (test (named hf "Reader.kwDefnum") (plainState dv' nums') keep)))))
+    s
+
+/-- The run over a list of forms, from a state, of the test of the definitions' bodies. -/
+def plainRun (P : Prog) (xs s : Term) : Term := runT treeTy plainTy (plainStepT P) xs s
+
+/-- The step of the test of the definitions' bodies from a state that has failed leaves it. In
+the context of the form and the state. -/
+def plainStepFailed (P : Prog) (S : Defs) : Step :=
+  ("plainStepFailed", fun ix E ↦ do
+    let K : Kit := ⟨xpProg P, S, E, ix, []⟩
+    let a : Internal.Thm := ⟨0, [treeTy, plainTy], [failedT (v 1)],
+      failedT (plainStepT P (v 1) (v 0))⟩
+    let some d := normHyps K [0] (linkK K "plainStepFailed: failed" (byNormWith K [] true))
+        a.ctx a.hyps a.concl
+      | dbgTrace "plainStepFailed: not proved" fun _ ↦ none
+    pure (a, d))
+
+/-- A run from a state that has failed ends in a state that has failed, by the lemma
+{lit}`step` that the run's step from a state that has failed leaves one: by induction on the
+list, at a construction the induction hypothesis at the state the step leaves. In the context of
+the list, under the state. -/
+def runFailed (P : Prog) (S : Defs) (K₀ : Prog) (name step : String) (St : Tree)
+    (stepT run : Term → Term → Term) : Step :=
+  (name, fun ix E ↦ do
+    let K : Kit := ⟨K₀, S, E, ix, []⟩
+    let L := K.L
+    let o := P.o
+    -- under the quantifier: the state v0, the list v1
+    let φ := Internal.Logic.all o St (Term.lam St (Internal.Logic.imp o (failedT (v 0))
+      (failedT (run (v 1) (v 0)))))
+    let last : Deducer := fun Γ Φ ψ ↦ normHyps K [Φ.length - 1] (K.solve 2) Γ Φ ψ
+    let cons : Deducer := dAllI L <| dImpI L <|
+      dAllE L K.G K.E 0 (stepT (v 0) (v 2)) fun Γ Φ ψ ↦
+        dImpE L (Φ.length - 1) (applyThm K step (fun _ ↦ [v 2, v 0]) [dHyp] last) last Γ Φ ψ
+    listInduction name φ (dAllI L (dImpI L last)) cons)
+
+/-- The body of a definition the expansion's step writes at a form that is no template's
+instance and declares no datatype is a source form at the numeral abbreviations, where the run
+of the test of the definitions' bodies over the form and those after it ends without a failure
+({lit}`plainPrefix`); and the test's step leaves the declarations and the abbreviations. In the
+context of the body, the name, the form, the forms after, the abbreviations and the
+declarations. -/
+def plainDefined (P : Prog) (S : Defs) : Step :=
+  ("plainDefined", fun ix E ↦ do
+    let K : Kit := ⟨xpProg P, S, E, ix, []⟩
+    let Ls := list treeTy
+    let nil := nilT treeTy
+    let Γ := [treeTy, treeTy, treeTy, Ls, Ls, Ls]
+    let (b, n, e, es, nums, dv) := (v 0, v 1, v 2, v 3, v 4, v 5)
+    let he := pc P "Datatype.nthTx" [pc P "Datatype.elems" [e], leafT bnilT]
+    let named (kw : String) : Term := pc P "Datatype.namedTx" [he, pc P kw []]
+    let s := plainState dv nums
+    let hyps := ["Datatype.kwGeneric", "Datatype.kwData", "Datatype.kwTreeData"].map
+        (fun kw ↦ notTest P.o (named kw)) ++
+      [Term.eq (xpStepT P (xpState dv nil) e) (xpState dv (consT treeTy (defForm P n b) nil)),
+        truth P.o (Term.fst (plainRun P (consT treeTy e es) s))]
+    let a : Internal.Thm := ⟨0, Γ, hyps, Internal.Logic.conj P.o
+      (truth P.o (srcTestT P nums b)) (Term.eq (plainStepT P s e) s)⟩
+    let at_ (t : Term) (Γ' : List Tree) : Term := sh (Γ'.length - Γ.length) t
+    let decided : List (Term × Option Deducer × Option Deducer) :=
+      [(pc P "Datatype.isListTx" [e], none, none),
+        (named "Datatype.kwGeneric", none, some (refuteNot K 0)),
+        (named "Datatype.kwData", none, some (refuteNot K 1)),
+        (named "Datatype.kwTreeData", none, some (refuteNot K 2))]
+    let some d := (decideEach K Γ.length decided <| normHyps K [3] <|
+        applyThm K "plainPrefix" (fun Γ' ↦ [at_ es Γ', at_ (plainStepT P s e) Γ'])
+          [linkK K "plainDefined: the run" (K.byHyp 4)] <| fun Γ₁ Φ₁ ψ₁ ↦
+        let iOk := Φ₁.length - 1
+        decideIn K (fun Γ' ↦ at_ (srcTestT P nums b) Γ')
+          (linkK K "plainDefined: the body" (K.hypFalse iOk))
+          (linkK K "plainDefined: the step" (K.solve 3)) Γ₁ Φ₁ ψ₁) a.ctx a.hyps a.concl
+      | dbgTrace "plainDefined: not proved" fun _ ↦ none
+    pure (a, d))
+
+/-- The development of the test of the definitions' bodies. -/
+def programPlainDev (P : Prog) (S : Defs) : List Step :=
+  [plainStepFailed P S,
+    runFailed P S (xpProg P) "plainFailed" "plainStepFailed" plainTy (plainStepT P) (plainRun P),
+    runPrefix P S (xpProg P) "plainPrefix" "plainFailed" plainTy (plainRun P),
+    plainDefined P S]
+
 /-- The developments of the runs of a program's forms, each with its certificate's name, in the
 order in which each continues from those before it. -/
 def stepGroups (P : Prog) (S : Defs) (T : Defs3) : List (String × List Step) :=
@@ -1504,7 +1629,8 @@ def stepGroups (P : Prog) (S : Defs) (T : Defs3) : List (String × List Step) :=
     ("datatype-program-lists", programListsDev P S),
     ("datatype-program-lookup", programLookupDev P S),
     ("datatype-program-kernel", programKernelDev P S),
-    ("datatype-program-inv", programInvDev P S T)]
+    ("datatype-program-inv", programInvDev P S T),
+    ("datatype-program-plain", programPlainDev P S)]
 
 end GebTests.Prototypes.FreeTopos.Datatypes
 

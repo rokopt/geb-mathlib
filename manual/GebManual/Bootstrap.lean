@@ -2993,12 +2993,15 @@ each form's steps leave states of which that holds again
 (`GebTests/Prototypes/FreeTopos/DatatypeProgram.lean`,
 `GebTests/Prototypes/FreeTopos/DatatypeProgramRuns.lean`,
 `GebTests/Prototypes/FreeTopos/DatatypeProgramStep.lean`). It is proved
-of the programs whose forms are definitions, type and numeral
-abbreviations, functions and templates' instances, a definition's body
-assumed to expand to a source form. Remaining after it: that assumption
-discharged of the forms the reader gives, the forms that declare
-datatypes, with the definitions the expansion generates for them, and
-the transfer of the result to Lean; `tree-data`
+of the programs none of whose forms declares a datatype: a form at which
+the expansion does not fail is then a definition, a type or a numeral
+abbreviation, a function or a template's instance. It assumes that each
+body the expansion writes for a definition is a source form at the
+numeral abbreviations before it, which a run over the program's forms
+tests, and that no numeral abbreviation takes a name of the
+implementation's. Remaining after it: the forms that declare datatypes,
+with the definitions the expansion generates for them, and the transfer
+of the result to Lean; `tree-data`
 removed. The developments of the soundness continue
 from one another in no one order, each citing the statements of those
 it continues from, so the modules of
