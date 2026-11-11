@@ -14,6 +14,7 @@ public import Geb.Prototypes.FreeTopos.Internal.Composition
 public import Geb.Prototypes.FreeTopos.Internal.ConvDevelopment
 public import Geb.Prototypes.FreeTopos.Internal.Derivation
 public import Geb.Prototypes.FreeTopos.Internal.Development
+public import Geb.Prototypes.FreeTopos.Internal.Holes
 public import Geb.Prototypes.FreeTopos.Internal.Inversion
 public import Geb.Prototypes.FreeTopos.Internal.Logic
 public import Geb.Prototypes.FreeTopos.Internal.Machine

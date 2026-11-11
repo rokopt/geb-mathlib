@@ -311,6 +311,66 @@ variable {defs : List PartialHorn.Defn} {M : PartialHorn.Model.{v} (ext defs).si
   (hρ : ρ.map Sigma.fst = List.replicate n obj) (hps : PrimsHom M ρ G n) (hds : DefsHom M ρ G n)
 include hM hG hρ hps hds
 
+/-- One conversion step is sound when its children's checks are sound and a child marked as
+identity rewrites only to its input. This permits interpreting leaves by open obligations. -/
+theorem convStep_sound (hδ : DefnsOk M G) {E : Array Entry}
+    (hE : ∀ (j : ℕ) (e : Entry), E[j]? = some e → e.Valid M G) {R : List ℕ}
+    (hR : ∀ j ∈ R, Literals.ready G E j = true)
+    (hcert : ∀ cds, compileDefs G = some cds → G.base = sig.length → cds <+: defs)
+    (l : ConvRule) (cs : List (ConvDeriv × Checks))
+    (hcs : ∀ c ∈ cs, ChecksSound M ρ G n c.2)
+    (hfaith : ∀ c ∈ cs, c.1.label.toRule.isRefl = true →
+      ∀ Γ Φ t t', c.2.1 Γ Φ t = some t' → t' = t) :
+    ChecksSound M ρ G n (convStep G E R n l cs) := by
+  have hstep (r : Rule) : ChecksSound M ρ G n (checkStep G E n r
+      (cs.map fun (d, c) ↦ (RoseTree.node d.label.toRule [], c))) := by
+    refine checkStep_sound hM hG hρ hps hds hδ hE hcert r _ (fun x hx ↦ ?_) fun x hx ↦ ?_
+    all_goals obtain ⟨c, hc, rfl⟩ := List.mem_map.mp hx
+    · exact hcs c hc
+    · exact hfaith c hc
+  rcases l with r | ⟨rs, fuel⟩ | ⟨rs, fuel, depth⟩ | ⟨j, θ⟩ | j | ⟨fuel, m, except, kl, kc, rs⟩
+  · exact hstep r
+  · refine ⟨fun Γ Φ t t' h ↦ ?_, fun _ _ _ h ↦ nomatch h⟩
+    simp only [convStep, normalizeR_eq, Option.map_map] at h
+    obtain ⟨⟨_, d, _⟩, hn, rfl⟩ := Option.map_eq_some_iff.mp h
+    exact (check_sound hM hG hρ hps hds hδ hE hcert d).1 _ _ _ _
+      (normalize_checked rs fuel _ _ _ _ hn).check
+  · refine ⟨fun Γ Φ t t' h ↦ ?_, fun _ _ _ h ↦ nomatch h⟩
+    simp only [convStep, evalR_eq, Reduction.result, Option.map_map] at h
+    obtain ⟨⟨_, d, _⟩, hn, rfl⟩ := Option.map_eq_some_iff.mp h
+    exact (check_sound hM hG hρ hps hds hδ hE hcert d).1 _ _ _ _
+      (eval_checked rs fuel depth _ _ _ _ hn).check
+  · refine ⟨fun _ _ _ _ h ↦ (nomatch h), fun Γ Φ φ h ↦ ?_⟩
+    simp only [convStep] at h
+    split at h
+    · exact (hstep (.apply j θ _)).2 Γ Φ φ h
+    · cases h
+  · refine ⟨fun Γ Φ t t' h ↦ ?_, fun _ _ _ h ↦ nomatch h⟩
+    simp only [convStep] at h
+    split at h
+    · obtain ⟨v, hv, rfl⟩ := Option.map_eq_some_iff.mp h
+      obtain ⟨d, hd⟩ := Literals.checked_of_eval (Φ := Φ) hG
+        (hR j (List.contains_iff_mem.mp (by assumption))) hv
+      exact (check_sound hM hG hρ hps hds hδ hE hcert d.1).1 _ _ _ _ hd.check
+    · cases h
+  · refine ⟨fun Γ Φ t t' h X e he hΓ hH r hr ↦ ?_, fun _ _ _ h ↦ nomatch h⟩
+    simp only [convStep] at h
+    have hdefs : ∀ (j : ℕ) (d : Defn), G.defs[j]? = some (.language d) →
+        Term.VarLeaves d.body = true ∧ ∀ i, Term.occurs d.body i = true → i < d.params.length :=
+      fun j d hd ↦
+        let ⟨_, hF, _⟩ := hδ j d hd
+        ⟨Term.varLeaves_of_compile _ _ _ _ hF, fun i hi ↦
+          (congrArg List.length (map_snd_stdEnv d.params)).symm.trans (List.length_map _) ▸
+            compile_occurs_lt d.body _ _ _ hF i hi⟩
+    have hleaves := Term.varLeaves_of_compile t X e r hr
+    obtain ⟨d, hd⟩ : Literals.Reaches G E n Γ Φ t t' := by
+      simp only [machineReduceBy] at h
+      split at h
+      · exact machineReduce_reaches _ _ _ (fun _ _ _ _ h ↦ by cases h) hdefs hleaves h
+      · exact machineReduce_reaches _ _ _ (fun _ _ _ _ h ↦ machineRw_reaches G E n _ Φ h) hdefs
+          hleaves h
+    exact (check_sound hM hG hρ hps hds hδ hE hcert d.1).1 _ _ _ _ hd.check X e he hΓ hH r hr
+
 /-- The conversion checker is sound: every rewriting a certificate performs is sound, and every
 formula it proves holds, with sound unfoldings and valid earlier entries, when the model's
 definitions are the compilations of the definitions of {name}`G` wherever a certificate is
@@ -322,59 +382,11 @@ theorem convCheck_sound (hδ : DefnsOk M G) {E : Array Entry}
     ∀ d : ConvDeriv, ChecksSound M ρ G n (convCheck G E R n d) :=
   RoseTree.ind fun l cs ih ↦ by
     rw [convCheck_node]
-    -- the base checker's step is sound at children standing for their certificates' rules
-    have hstep (r : Rule) : ChecksSound M ρ G n (checkStep G E n r
-        ((cs.map fun c ↦ (c, convCheck G E R n c)).map fun (d, c) ↦
-          (RoseTree.node d.label.toRule [], c))) := by
-      refine checkStep_sound hM hG hρ hps hds hδ hE hcert r _ (fun x hx ↦ ?_) fun x hx ↦ ?_
-      all_goals
-        obtain ⟨⟨d, dc⟩, hd, rfl⟩ := List.mem_map.mp hx
-        obtain ⟨c, hc, h⟩ := List.mem_map.mp hd
-        obtain ⟨rfl, rfl⟩ := Prod.mk.inj h
-      · exact ih c hc
-      · exact fun hr _ _ _ _ h ↦ convCheck_isRefl hr h
-    rcases l with r | ⟨rs, fuel⟩ | ⟨rs, fuel, depth⟩ | ⟨j, θ⟩ | j | ⟨fuel, m, except, kl, kc, rs⟩
-    · exact hstep r
-    · refine ⟨fun Γ Φ t t' h ↦ ?_, fun _ _ _ h ↦ nomatch h⟩
-      simp only [convStep, normalizeR_eq, Option.map_map] at h
-      obtain ⟨⟨_, d, _⟩, hn, rfl⟩ := Option.map_eq_some_iff.mp h
-      exact (check_sound hM hG hρ hps hds hδ hE hcert d).1 _ _ _ _
-        (normalize_checked rs fuel _ _ _ _ hn).check
-    · refine ⟨fun Γ Φ t t' h ↦ ?_, fun _ _ _ h ↦ nomatch h⟩
-      simp only [convStep, evalR_eq, Reduction.result, Option.map_map] at h
-      obtain ⟨⟨_, d, _⟩, hn, rfl⟩ := Option.map_eq_some_iff.mp h
-      exact (check_sound hM hG hρ hps hds hδ hE hcert d).1 _ _ _ _
-        (eval_checked rs fuel depth _ _ _ _ hn).check
-    · refine ⟨fun _ _ _ _ h ↦ (nomatch h), fun Γ Φ φ h ↦ ?_⟩
-      simp only [convStep] at h
-      split at h
-      · exact (hstep (.apply j θ _)).2 Γ Φ φ h
-      · cases h
-    · refine ⟨fun Γ Φ t t' h ↦ ?_, fun _ _ _ h ↦ nomatch h⟩
-      simp only [convStep] at h
-      split at h
-      · obtain ⟨v, hv, rfl⟩ := Option.map_eq_some_iff.mp h
-        obtain ⟨d, hd⟩ := Literals.checked_of_eval (Φ := Φ) hG
-          (hR j (List.contains_iff_mem.mp (by assumption))) hv
-        exact (check_sound hM hG hρ hps hds hδ hE hcert d.1).1 _ _ _ _ hd.check
-      · cases h
-    · refine ⟨fun Γ Φ t t' h X e he hΓ hH r hr ↦ ?_, fun _ _ _ h ↦ nomatch h⟩
-      simp only [convStep] at h
-      have hdefs : ∀ (j : ℕ) (d : Defn), G.defs[j]? = some (.language d) →
-          Term.VarLeaves d.body = true ∧ ∀ i, Term.occurs d.body i = true → i < d.params.length :=
-        fun j d hd ↦
-          let ⟨_, hF, _⟩ := hδ j d hd
-          ⟨Term.varLeaves_of_compile _ _ _ _ hF, fun i hi ↦
-            (congrArg List.length (map_snd_stdEnv d.params)).symm.trans (List.length_map _) ▸
-              compile_occurs_lt d.body _ _ _ hF i hi⟩
-      have hleaves := Term.varLeaves_of_compile t X e r hr
-      obtain ⟨d, hd⟩ : Literals.Reaches G E n Γ Φ t t' := by
-        simp only [machineReduceBy] at h
-        split at h
-        · exact machineReduce_reaches _ _ _ (fun _ _ _ _ h ↦ by cases h) hdefs hleaves h
-        · exact machineReduce_reaches _ _ _ (fun _ _ _ _ h ↦ machineRw_reaches G E n _ Φ h) hdefs
-            hleaves h
-      exact (check_sound hM hG hρ hps hds hδ hE hcert d.1).1 _ _ _ _ hd.check X e he hΓ hH r hr
+    refine convStep_sound hM hG hρ hps hds hδ hE hR hcert l _
+      (fun c hc ↦ ?_) fun c hc ↦ ?_
+    all_goals obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hc
+    · exact ih d hd
+    · exact fun hr _ _ _ _ h ↦ convCheck_isRefl hr h
 
 end Soundness
 

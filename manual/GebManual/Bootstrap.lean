@@ -330,7 +330,12 @@ the sections below detail:
     the definitions' equations at the numerals' bits, theorems of the
     development, through a proof in Lean that rewriting by them reaches
     that literal ({ref "conversion-continuation"}[Completing the checker
-    with a step of conversion]). The checker of the shared
+    with a step of conversion]). The checker of proof holes is written
+    in Lean over those conversion rules, with conditional soundness and
+    completed proofs returned as conversion certificates
+    ({ref "typed-holes"}[Typed holes]); its translation of open sketches
+    to conditional certificates and its Geb transcription remain.
+    The checker of the shared
     certificates, by unsharing, is required if measurement shows the
     checking or storage of certificates to need it, and follows the
     bootstrap otherwise.
@@ -401,7 +406,8 @@ Extension:
   shadows and emitted names that no definition captures; holes in the
   datatype language; and diagnostics with locations of its typing. The typed
   enumerator accompanies the first substantial module. The rest, the store,
-  a language server and holes in proofs among it, waits on its consumers;
+  a language server and the authoring interface to holes in proofs among
+  it, waits on its consumers;
   the Geb-native refinement search follows the bootstrap.
 
 ## After the bootstrap
@@ -4671,6 +4677,26 @@ checker. Admitting a checker of open sketches is not admitting their
 unresolved conclusions, and an unresolved hole never becomes an axiom.
 It rests on the metalogic's prover in Geb, which is complete.
 
+The Lean checker is {name}`Geb.FreeTopos.Internal.ProofHoles.check`
+(`Geb/Prototypes/FreeTopos/Internal/Holes.lean`). Its sketches are the
+free monad of conversion rules, with a full sequent declared for each
+hole identity. An occurrence must match that sequent exactly, including
+its object parameters, context and hypotheses; holes suspend proofs of
+formulas, not rewritings. The report retains occurrences in premise
+order, repeated identities sharing their declaration.
+{name}`Geb.FreeTopos.Internal.ProofHoles.valid_of_checks` proves
+conditional validity in Lean, assuming each reported sequent valid in
+its own context. {name}`Geb.FreeTopos.Internal.ProofHoles.fill` checks
+the fillings against those sequents and rechecks their grafting, which
+may introduce further holes. Finishing requires no holes and returns an
+ordinary conversion certificate, proved accepted by
+{name}`Geb.FreeTopos.Internal.ProofHoles.convChecks_of_finish`.
+`GebTests/Prototypes/FreeTopos/InternalHoles.lean` tests contexts under
+extensionality, cut and induction, repeated identities, filling in stages,
+and rejection of wrong sequents and unfinished proofs. The translation
+of an open sketch to a certificate of the conditional formula above,
+the Geb transcription and the authoring interface remain.
+
 The checker of holes in programs is written in Lean, in the suspending
 form (`Geb/Prototypes/Kernel/Holes.lean`). A checker written as
 Canonical-min's is, suspending at unassigned metavariables, reports each
@@ -7730,7 +7756,11 @@ levels rests on the one below. Its conclusions are conditional, the
 obligations of the holes implying the goal, which the metalogic's checker
 can state ({ref "authoring-compatibility"}[Authoring across bootstrap
 revisions]). One checker admitted beside another admitted checker shows
-the admission repeatable. The checker of the shared certificates, admitted
+the admission repeatable. Its Lean implementation checks open sketches
+with conditional validity and returns conversion certificates for
+completed sketches; translating open sketches to conditional
+certificates and transcribing the checker into Geb remain
+({ref "typed-holes"}[Typed holes]). The checker of the shared certificates, admitted
 by unsharing, a translation that spells out each index as its term and
 each rule of the oracle as the typing lemmas the prover emits without it,
 speeds the developments of the combinators' certificates, which the

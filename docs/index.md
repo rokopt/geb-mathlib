@@ -4389,7 +4389,22 @@ import-direction rules above are enforced by
   term rewrites to the result by the base checker's rules
   (`Geb.FreeTopos.Internal.machineReduce_reaches`, `MachineSound.lean`),
   and `GebTests/Prototypes/FreeTopos/Machine.lean` tests it at the
-  library's arithmetic. `ConvDevelopment.lean` checks developments whose
+  library's arithmetic. `Holes.lean` checks proof sketches over the
+  conversion rules (`Geb.FreeTopos.Internal.ProofHoles.check`). A sketch
+  is their free monad with named holes, each declared by a full sequent;
+  an occurrence must match its object parameters, context, hypotheses
+  and conclusion. Checking reports the remaining sequents, and
+  `Geb.FreeTopos.Internal.ProofHoles.valid_of_checks` proves validity
+  conditional on them. Checked filling grafts proofs into holes by the
+  free monad's substitution and permits further holes. Finishing returns
+  a conversion certificate only when no holes remain, proved accepted
+  by the conversion checker
+  (`Geb.FreeTopos.Internal.ProofHoles.convChecks_of_finish`). This Lean
+  interface does not emit a certificate for the implication encoding an
+  open sketch's obligations; that translation and the Geb transcription
+  remain. `InternalHoles.lean` tests scopes, repeated identities,
+  filling in stages, rejected fillings, and completed certificates.
+  `ConvDevelopment.lean` checks developments whose
   theorems carry derivations of the base checker or certificates of the
   conversion checker (`Geb.FreeTopos.Internal.checkConvDev`), sound by
   the base development's invariant
