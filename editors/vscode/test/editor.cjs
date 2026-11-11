@@ -183,6 +183,7 @@ exports.run = async () => {
       });
     }
     if (process.env.GEB_TEST_PAREDIT_VERSION) await pareditTests(test, profile);
+    else await require('./authoring.cjs').run(test);
     if (failures.length) throw new AggregateError(failures, 'Editor acceptance failed');
   } finally {
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');

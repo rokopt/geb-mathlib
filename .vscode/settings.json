@@ -7,5 +7,19 @@
   "files.eol": "\n",
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,
-  "files.trimTrailingWhitespace": true
+  "files.trimTrailingWhitespace": true,
+  "geb.programs": [{
+    "name": "Pair",
+    "manifest": "examples/authoring/pair.manifest",
+    "proofs": "examples/authoring/Pair.proofs.geb"
+  }, {
+    "name": "Roundtrip",
+    "manifest": "examples/roundtrip/roundtrip.manifest",
+    "proofs": "examples/roundtrip/Roundtrip.proofs.geb",
+    "record": "examples/roundtrip/record"
+  }, {
+    "name": "Tree cases",
+    "manifest": "bootstrap/expansion.manifest",
+    "proofs": "bootstrap/proofs/tree-cases.proofs.geb"
+  }]
 }
