@@ -8,6 +8,7 @@ module -- shake: keep-all, shake: keep-downstream
 public import GebHost.Authoring
 public import GebHost.Migration
 public import GebHost.Navigation
+public import GebHost.Editor
 import GebMeta
 
 set_option doc.verso true in

@@ -1,65 +1,47 @@
 // Navigation uses the host's document reader and module resolution, with editor snapshots.
 const vscode = require('vscode');
-const { execFile } = require('node:child_process');
 const { realpath } = require('node:fs/promises');
-const path = require('node:path');
-
-function position(document, line, byteColumn) {
-  const row = Math.min(Math.max(line - 1, 0), document.lineCount - 1);
-  const text = document.lineAt(row).text;
-  const prefix = Buffer.from(text, 'utf8').subarray(0, Math.max(byteColumn - 1, 0));
-  return new vscode.Position(row, prefix.toString('utf8').length);
-}
-
-function range(document, span) {
-  const start = position(document, span[0], span[1]);
-  // Host spans include the final byte, whereas editor ranges exclude their end.
-  const end = position(document, span[2], span[3] + 1);
-  return new vscode.Range(start, end);
-}
+const host = require('./host.cjs');
+const { range } = host;
 
 exports.register = (context, selected) => {
   const output = vscode.window.createOutputChannel('Geb navigation');
   context.subscriptions.push(output);
+  const previous = new Map();
   async function request(document, at, token) {
     if (!vscode.workspace.isTrusted || token.isCancellationRequested) return;
     const program = selected();
     if (!program) return;
-    const open = vscode.workspace.textDocuments.filter(d => d.uri.scheme === 'file');
-    const versions = open.map(d => [d, d.version]);
     try {
-      const documents = (await Promise.all(open.map(async d => {
-        try { return { path: await realpath(d.uri.fsPath), text: d.getText() }; }
-        catch (error) {
-          // An unrelated buffer can remain open after its file has been removed.
-          if (error.code === 'ENOENT') return undefined;
-          throw error;
-        }
-      }))).filter(Boolean);
+      const snapshot = await host.capture();
       const file = document ? await realpath(document.uri.fsPath) : '';
-      const payload = JSON.stringify({ file, line: at ? at.line + 1 : 0,
+      const payload = { file, line: at ? at.line + 1 : 0,
         column: at ? Buffer.byteLength(document.lineAt(at.line).text.slice(0, at.character), 'utf8') + 1 : 0,
-        documents });
+        documents: snapshot.documents, proofs: program.proofs || '', recover: true };
       if (token.isCancellationRequested) return;
-      const result = await new Promise((resolve, reject) => {
-        const child = execFile(path.join(program.cwd, '.lake/build/bin/geb-author'),
-          ['navigation', program.manifest], { cwd: program.cwd, timeout: 15000,
-            maxBuffer: 16 * 1024 * 1024, encoding: 'utf8' }, (error, stdout, stderr) => {
-            cancellation.dispose();
-            if (error) reject(new Error(stderr.trim() || error.message));
-            else { try { resolve(JSON.parse(stdout)); } catch (e) { reject(e); } }
-          });
-        const cancellation = token.onCancellationRequested(() => child.kill());
-        child.stdin.on('error', () => {}); // A rejected request may close its input early.
-        child.stdin.end(payload);
-      });
-      if (token.isCancellationRequested || selected()?.key !== program.key ||
-          versions.some(([d, version]) => d.isClosed || d.version !== version)) return;
+      const result = await host.call(program.cwd, ['navigation', program.manifest], payload, token);
+      if (!result || token.isCancellationRequested || selected()?.key !== program.key ||
+          !snapshot.current()) return;
       const decode = symbol => symbol && ({ ...symbol,
-        name: Buffer.from(symbol.name).toString('utf8'),
-        signature: Buffer.from(symbol.signature).toString('utf8'),
-        documentation: Buffer.from(symbol.documentation).toString('utf8') });
-      return { ...result, symbols: result.symbols.map(decode), target: decode(result.target), file };
+        name: host.decode(symbol.name),
+        signature: host.decode(symbol.signature),
+        documentation: host.decode(symbol.documentation),
+        insertText: host.decode(symbol.insertText) });
+      const symbols = result.symbols.map(decode);
+      const incomplete = new Set(result.incomplete);
+      for (const f of new Set([...symbols.map(s => s.file), ...(document ? [file] : [])])) {
+        const key = `${program.key}:${f}`;
+        if (!incomplete.has(f)) previous.set(key, symbols.filter(s => s.file === f));
+      }
+      // Previous symbols are offered only in outlines, with an explicit label. Their old
+      // locations never answer definition, hover or completion queries.
+      for (const f of incomplete) {
+        for (const s of previous.get(`${program.key}:${f}`) || []) {
+          if (!symbols.some(n => n.file === f && n.name === s.name)) symbols.push({ ...s, stale: true });
+        }
+      }
+      return { ...result, symbols, target: decode(result.target),
+        completions: result.completions.map(decode), file };
     } catch (error) {
       if (!token.isCancellationRequested) output.appendLine(error.message);
       return undefined;
@@ -97,11 +79,31 @@ exports.register = (context, selected) => {
         const result = await request(document, undefined, token);
         if (!result) return [];
         return result.symbols.filter(s => s.file === result.file).map(s =>
-          new vscode.DocumentSymbol(s.name, s.kind,
+          new vscode.DocumentSymbol(s.name, s.stale ? 'previous successful parse' : s.kind,
             s.kind === 'module' ? vscode.SymbolKind.Module : vscode.SymbolKind.Function,
             range(document, s.span), range(document, s.selection)));
       },
     }),
+    vscode.languages.registerCompletionItemProvider(selector, {
+      async provideCompletionItems(document, at, token) {
+        const result = await request(document, at, token);
+        if (!result) return [];
+        // VS Code completion replacement ranges must lie on one line.
+        if (result.atomSpan && result.atomSpan[0] !== result.atomSpan[2]) return [];
+        return result.completions.map(s => {
+          const item = new vscode.CompletionItem(s.name,
+            s.kind === 'variable' ? vscode.CompletionItemKind.Variable : vscode.CompletionItemKind.Reference);
+          item.insertText = s.insertText;
+          item.filterText = s.insertText;
+          item.detail = s.signature.trim();
+          const prose = new vscode.MarkdownString();
+          prose.appendText(s.documentation);
+          item.documentation = prose;
+          if (result.atomSpan) item.range = range(document, result.atomSpan);
+          return item;
+        });
+      },
+    }, '.', '"'),
     vscode.languages.registerWorkspaceSymbolProvider({
       async provideWorkspaceSymbols(query, token) {
         const result = await request(undefined, undefined, token);
@@ -109,7 +111,8 @@ exports.register = (context, selected) => {
         return Promise.all(result.symbols.filter(s => s.name.toLowerCase().includes(query.toLowerCase()))
           .map(async s => {
             const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(s.file));
-            return new vscode.SymbolInformation(s.name, vscode.SymbolKind.Function, '',
+            return new vscode.SymbolInformation(s.name, vscode.SymbolKind.Function,
+              s.stale ? 'previous successful parse' : '',
               new vscode.Location(doc.uri, range(doc, s.selection)));
           }));
       },

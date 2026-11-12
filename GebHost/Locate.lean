@@ -189,6 +189,28 @@ def locate (text : List Char) : Except Fault (List Located) :=
       | _ :: f :: _ => .error ⟨.at f.start, "a parenthesis is not closed"⟩
       | [] => .ok []
 
+/-- Recover the readable prefix for editor inspection. Open lists are closed at the last
+position solely to expose their completed children. The compiler never consumes this result. -/
+def recover (text : List Char) : List Located := Id.run do
+  let scan := text.foldl scanStep Scan.init
+  let textPrefix :=  if scan.bad.isSome || (lexEnd scan.lex).isNone then
+      (text.foldl (fun (p, cs) c ↦
+        (p.next c, if p.line < scan.start.line ||
+          (p.line == scan.start.line && p.col < scan.start.col) then c :: cs else cs))
+        (Pos.first, [])).2.reverse
+    else text
+  let toks := (tokenSpans textPrefix).toOption.getD []
+  let mut stack : List Frame := [⟨.first, []⟩]
+  for tok in toks do
+    match readStep (.ok stack) tok with
+    | .ok fs => stack := fs
+    | .error _ => break
+  let stop := textPrefix.foldl Pos.next Pos.first
+  let closed := stack.foldl (fun (child : Option Located) frame ↦
+    let items := frame.items.reverse ++ child.toList
+    some (RoseTree.node (⟨frame.start, stop⟩, none) items)) none
+  return closed.toList.flatMap (·.children)
+
 /-- Whether a located S-expression is a list headed by a given atom. -/
 def headIs (k : List Char) (t : Located) : Bool :=
   t.label.2 == none && t.children.head?.any fun h ↦ h.label.2 == some k && h.children.isEmpty

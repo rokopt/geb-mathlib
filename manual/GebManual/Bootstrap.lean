@@ -4572,8 +4572,29 @@ resolve as in compilation; an instantiated declaration opens its template.
 Comments preceding a declaration or its note supply its hover text.
 Navigation saves no buffer and compiles no program. The extension translates
 the host's byte positions into editor positions and discards results after
-an input buffer changes. Local variables, proof documents and strict-encoded
-sources have no navigation interface.
+an input buffer changes. Local references navigate to their binders, including
+sequential bindings and pattern branches. The entry proof document and its
+imports supply theorem outlines, statement and script hover, and navigation
+among earlier theorems, quantified variables, hypotheses and script binders.
+Completion follows these scopes and the elaborator's visible import spellings;
+it quotes names as the authoring profile requires. Type positions offer type
+names. Comments, quoted data and hole identities supply no completions.
+
+During incomplete edits, the host recovers readable prefixes and completed
+children of open forms. Outlines may also show missing entries from a previous
+successful parse, labelled as such; definition, hover and completion use only
+current locations. Recovery supplies no compiler input. Strict-encoded sources
+have no editor navigation interface.
+
+Format Document formats an unsaved buffer through the existing document
+formatter, retaining comments and annotations; one undo restores the original
+text. Malformed input leaves the buffer unchanged. The Geb Kernel Obligations
+view checks the selected manifest's source snapshots with the existing kernel
+hole checker. It displays each obligation's expected type and context and links
+to its source occurrences, invalidating the report when an input changes.
+A completed check is distinguished from open obligations or rejected input.
+These editor services write no files and do not extend the datatype language's
+hole checker or proof search.
 
 A tree-sitter grammar for Geb is derived from the same profile when the
 editors that use tree-sitter need it, from tree-sitter-scheme as a base,

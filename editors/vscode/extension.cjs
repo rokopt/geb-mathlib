@@ -78,6 +78,7 @@ exports.activate = context => {
   const current = entries => entries.find(p => p.key === context.workspaceState.get('geb.program'))
     || (entries.length === 1 ? entries[0] : undefined);
   require('./navigation.cjs').register(context, () => current(programs()));
+  const editing = require('./editing.cjs').register(context, () => current(programs()));
   function refresh() {
     try { status.text = `Geb: ${current(programs())?.name || 'Select program'}`; }
     catch { status.text = 'Geb: Configure programs'; }
@@ -100,6 +101,7 @@ exports.activate = context => {
     }
     if (chosen) {
       await context.workspaceState.update('geb.program', chosen.key);
+      editing.invalidate();
       refresh();
     }
     return chosen;

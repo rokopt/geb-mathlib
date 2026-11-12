@@ -14,7 +14,11 @@ async function open(text) {
   writeFileSync(file, text);
   const document = await vscode.workspace.openTextDocument(file);
   assert.equal(document.languageId, 'geb');
-  return vscode.window.showTextDocument(document);
+  const editor = await vscode.window.showTextDocument(document);
+  // Task terminals can retain keyboard focus after their process exits. Built-in
+  // editing commands act on the focused widget, while Paredit uses the active editor.
+  await vscode.commands.executeCommand('workbench.action.focusActiveEditorGroup');
+  return editor;
 }
 
 function select(editor, start, end = start) {
