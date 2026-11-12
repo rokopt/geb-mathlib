@@ -23,7 +23,7 @@ public import GebTests.Prototypes.FreeTopos.DatatypeSound
 public import GebTests.Prototypes.FreeTopos.DatatypeLam
 public import GebTests.Prototypes.FreeTopos.DatatypeConstructor
 public import GebTests.Prototypes.FreeTopos.DatatypeProgram
-public import GebTests.Prototypes.FreeTopos.DatatypeProgramStep
+public import GebTests.Prototypes.FreeTopos.DatatypeProgramSound
 public import GebTests.Prototypes.FreeTopos.Expansion
 public import GebTests.Prototypes.FreeTopos.Normalization
 

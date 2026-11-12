@@ -4577,12 +4577,23 @@ import-direction rules above are enforced by
   of a definition preserves, the run that tests the definitions'
   bodies and the expansion's and the typing's steps at a datatype's
   declaration, and `DatatypeProgramStep.lean` proves the soundness of a
-  program none of whose forms declares a datatype, by induction on the
-  forms at all states of those passes, each form's kind read off the
-  expansion's step at it and the recognizers' agreement with membership
-  kept with the states' invariant, given that each definition's body
-  the expansion writes is a source form at the numeral abbreviations
-  before it, which that run tests;
+  program by induction on its forms at all states of those passes, each
+  form's kind read off the expansion's step at it and the recognizers'
+  agreement with membership kept with the states' invariant, given that
+  each definition's body the expansion writes is a source form at the
+  numeral abbreviations before it, which that run tests, that the tree
+  datatypes' keyword heads no form, that no name a form declares is one
+  of the implementation's, that each marker is the one its datatype's
+  atom finds, names its datatype by an atom other than the types the
+  typing reads first and has constructors of distinct labels, and that
+  the digits of a label read as the label and are fixed by the expansion
+  of numeral abbreviations; `DatatypeProgramCtor.lean` proves a
+  constructor's definition sound at those states,
+  `DatatypeProgramData.lean` the induction's step at a datatype's
+  declaration, through the datatype's node, its constructors'
+  definitions and its marker, and `DatatypeProgramSound.lean` lists the
+  developments in the order in which each continues from those before
+  it;
   `TreeCases.lean` exercises the case analysis of a tree variable in any
   context and rewriting under a test, and `Expansion.lean` proves with
   them that the expansion of the datatype language,
