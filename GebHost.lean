@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module -- shake: keep-all, shake: keep-downstream
 
 public import GebHost.Authoring
+public import GebHost.Migration
 public import GebHost.Navigation
 import GebMeta
 

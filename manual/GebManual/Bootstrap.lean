@@ -3443,7 +3443,12 @@ tag := "authoring-compatibility"
     pinned inputs under `examples/authoring/record/`; the reusable workflow
     `scripts/preserve.py` retains manifest-based developments in immutable
     records, checked without proof search and compared with current sources,
-    with a layered development under `examples/roundtrip/`
+    with a layered development under `examples/roundtrip/`. The command
+    `preserve.py migrate-proof-v2 OLD NEW` exercises migration from proof-source
+    version 1 to 2: the same certificate payload replays under both versions,
+    the decorated document is retained except for its version atom, and a new
+    record retains the unchanged compiled program and identifies its predecessor.
+    This does not migrate semantic editions or datatype representations.
 *
   * The datatype language's completion
     ({ref "datatype-completion"}[The datatype language's completion])

@@ -61,7 +61,7 @@ cp bootstrap/compiler.img "$tmp/compiler.img"
 {
   printf '%s\n' lean-toolchain lake-manifest.json bootstrap/compiler.img \
     bootstrap/lean/GebBoot.lean GebHost/Compiler.lean GebHost/Authoring.lean \
-    GebHost/Json.lean GebHost/Navigation.lean \
+    GebHost/Json.lean GebHost/Migration.lean GebHost/Navigation.lean \
     GebAuthorMain.lean scripts/authoring.sh \
     bootstrap/authoring.manifest "$mirror" "$example/pair.manifest" \
     "$example/Pair.geb" "$example/Lists.geb" "$example/Pair.proofs.geb"

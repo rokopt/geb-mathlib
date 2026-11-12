@@ -563,6 +563,43 @@ compared with its sources by `scripts/tests/test-preservation.sh`, which
 also exercises relocation, documentation changes, reuse of a saved proof,
 corrupt records and failed creation. Continuous integration runs this test.
 The Pair development's earlier record remains in its original format.
-No conversion between semantic editions or proof-language versions is
-implemented here; those conversions have the retained source documents,
-profiles, compiler inputs and checked results as their inputs.
+
+## Migrating a proof document
+
+The migration from proof-source version `1` to `2` enables the latter's
+document imports while retaining the existing statements and scripts.
+It accepts an immutable development record produced by `preserve.py`:
+
+```
+python3 scripts/preserve.py record examples/authoring/pair.manifest \
+  examples/authoring/Pair.proofs.geb /tmp/pair-v1
+python3 scripts/preserve.py migrate-proof-v2 /tmp/pair-v1 /tmp/pair-v2
+python3 scripts/preserve.py check /tmp/pair-v2
+```
+
+The migration verifies and checks a copy of the old record. The host
+`geb-author migrate-proof-v2` changes only the proof document's version
+atom, retaining its decorated tree, including names, comments and
+references. Program sources, including unknown note fields, are copied
+verbatim. The migrated proof uses the authoring spelling; its layout may change.
+It replays the saved
+certificate payload against both versions and changes its envelope from
+`geb-proof/v2` to `geb-proof/v3`; it runs no proof search. These versions
+share the theorem-and-companion layout and the translated program.
+
+The new record is published after the normal record checks, with its
+checked image and elaborated definitions byte-identical to the old ones.
+Its `migration.json` names operation `proofs/1-to-2` and the SHA-256 digest
+of the predecessor's `record.json`. This receipt is included in the new
+inventory. The old record remains unchanged; an existing destination is
+rejected. The migrated source under the new record's `proofs/` directory
+can be copied back into a working project. Keep both records.
+
+`scripts/tests/test-proof-migration.sh` exercises a relocated archive
+after deleting its original project. Its search budgets are insufficient
+to regenerate the proof, while replay succeeds. Reversing the version
+atom reproduces the entire old canonical decorated document; corrupt
+records, rejected certificates and unsupported source versions publish
+no new record. The migration establishes these checks for the accepted
+development. It is neither a general preservation theorem nor a migration
+between semantic editions or datatype representations.
