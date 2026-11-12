@@ -3921,8 +3921,21 @@ import-direction rules above are enforced by
   prove weakening and substitution; and the script forms `first` and
   `bits-cases`: the alternative of two scripts and the case analysis of a
   bitstring to a number of bits, by which one script proves the cases of a
-  label's bits. Statements over the datatype language's datatypes remain to
-  be exposed.
+  label's bits, or the scripts of the labels listed. It reads besides
+  `(abbreviation NAME ITEM…)`, by which a document names the types, terms,
+  rules and scripts it repeats; the form `(normal DEPTH RULE…)` after a
+  theorem's script, the normal form of the companion by which a rule citing
+  the theorem rewrites; rules `(folded NAME…)` that keep definitions
+  folded; and the script forms `with-rules`, `fold-uniqueness`,
+  `tree-fold-uniqueness`, `instance`, `have`, `congruence`, `holds`,
+  `reduced`, `succ-pred`, `test-cases`, `mask-hypotheses` and
+  `auto-conditions`: the rules of a script, the uniqueness of a fold with
+  premises that scripts prove, the instance of a theorem that equates
+  functions, hypotheses cut in from a theorem, from the congruence of a
+  hypothesis and from an equation with a truth, reduction before a script,
+  and the searches that split the values of tests, rewrite under masks by
+  hypotheses and split the variables conditionals are stuck on. Statements
+  over the datatype language's datatypes remain to be exposed.
   `scripts/preserve.py` records any manifest-based development through those
   commands: original and canonical source documents, the documents its proof
   document imports among them, checked core, a replayed

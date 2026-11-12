@@ -12,7 +12,13 @@
 ; after the program's, whose rules a development of that version begins with, and the tactics of
 ; the induction on trees with the hypothesis at each child, of the instances of a hypothesis, of
 ; implications, of the alternative of two scripts and of the case analysis of a bitstring to a
-; number of bits. Statements and scripts are read before any proof is searched; every derivation
+; number of bits, by one script or by the scripts of its labels; abbreviations, forms
+; (abbreviation NAME ITEM ...) that state nothing; the normal form of a theorem's companion,
+; (normal DEPTH RULE ...) after its script; rules that keep definitions folded; and the tactics
+; of the rules of a script, of the uniqueness of a fold with premises that scripts prove, of the
+; instances of theorems and the hypotheses cut in from them, and of the searches that split the
+; values of tests, rewrite under masks and split the variables conditionals are stuck on.
+; Statements and scripts are read before any proof is searched; every derivation
 ; is checked by {geb}`Derivation.declStep`, the step of the checker of developments, as it is
 ; found, and replay checks a saved development by {geb}`Derivation.checkDev`.
 
@@ -409,28 +415,71 @@
   ; its companion, the declaration after it. In version 2 a theorem in object variables is named
   ; with an object for each, (NAME TYPE ...). The theorems of a development follow eb entries, the
   ; connectives' rules in version 3.
-  (defn ruleOk ((v T) (ovars Ts) (hyps Ts) (thms Ts) (e T)) T
-    (if (Source.isAtom e) (or (has (Source.nameOf e) hyps) (has (Source.nameOf e) thms))
-      (and (lt 1 v)
-        (and (Source.isList e)
-          (and (Source.isAtom (child e 0))
-            (and (has (Source.nameOf (child e 0)) thms)
-              (allT (lam ((a T)) (isSome (itype ovars a))) (drop 1 (children e)))))))))
-  (defn ruleOf ((eb T) (ovars Ts) (hyps Ts) (thms Ts) (e T)) NormRule
+  ; The definition a rule keeps folded: a definition of the program by its name, or one of the
+  ; translation's library, (lib NAME), by its index among the definitions.
+  (defn foldedId ((defs Ts) (a T)) T
+    (if (Source.isAtom a)
+      (mapO (lam ((j T)) (add (LD.length lib) j)) (Source.indexOf (Source.nameOf a) defs))
+      (if (and (form a (quote (0 lib)) 2) (Source.isAtom (child a 1)))
+        (Source.lookupAbbrev (Source.nameOf (child a 1)) libTable)
+        none)))
+  (defn isFolded ((v T) (e T)) T (and (lt 2 v) (headed e (quote (0 folded)))))
+  (defn ruleOk ((v T) (defs Ts) (ovars Ts) (hyps Ts) (thms Ts) (e T)) T
+    (if (isFolded v e) (allT (lam ((a T)) (isSome (foldedId defs a))) (drop 1 (children e)))
+      (if (Source.isAtom e) (or (has (Source.nameOf e) hyps) (has (Source.nameOf e) thms))
+        (and (lt 1 v)
+          (and (Source.isList e)
+            (and (Source.isAtom (child e 0))
+              (and (has (Source.nameOf (child e 0)) thms)
+                (allT (lam ((a T)) (isSome (itype ovars a))) (drop 1 (children e))))))))))
+  (defn ruleOf ((eb T) (defs Ts) (ovars Ts) (hyps Ts) (thms Ts) (e T)) NormRule
     (let i T (if (Source.isAtom e) (Source.indexOf (Source.nameOf e) hyps) none)
-      (if (isSome i) (nrHyp (get i))
-        (nrThm
-          (add eb
-            (add
-              (mul 2
-                (getD (Source.indexOf (Source.nameOf (if (Source.isAtom e) e (child e 0))) thms) 0))
-              1))
-          (objs
-            (if (Source.isAtom e) (nil T)
-              (mapT (lam ((a T)) (getD (itype ovars a) one)) (drop 1 (children e)))))))))
-  (defn rulesFrom ((eb T) (ovars Ts) (hyps Ts) (thms Ts) (es Ts)) NRs
-    (foldr T NRs (lam ((e T) (acc NRs)) (cons (ruleOf eb ovars hyps thms e) acc)) (nil NormRule)
+      (if (headed e (quote (0 folded)))
+        (nrBelow 0 (terms (mapT (lam ((a T)) (getD (foldedId defs a) 0)) (drop 1 (children e)))))
+        (if (isSome i) (nrHyp (get i))
+          (nrThm
+            (add eb
+              (add
+                (mul 2
+                  (getD (Source.indexOf (Source.nameOf (if (Source.isAtom e) e (child e 0))) thms)
+                    0))
+                1))
+            (objs
+              (if (Source.isAtom e) (nil T)
+                (mapT (lam ((a T)) (getD (itype ovars a) one)) (drop 1 (children e))))))))))
+  (defn rulesFrom ((eb T) (defs Ts) (ovars Ts) (hyps Ts) (thms Ts) (es Ts)) NRs
+    (foldr T NRs (lam ((e T) (acc NRs)) (cons (ruleOf eb defs ovars hyps thms e) acc))
+      (nil NormRule)
       es))
+  ; The rules a script names before the rules given, each theorem's matching prepared, so that a
+  ; rule is tried only where the root of its left side occurs.
+  ; A rule (folded NAME ...) among them names the definitions kept folded, in place of those the
+  ; rules given keep: the rule of the unfolding of the definitions below an index then unfolds
+  ; every other.
+  (defn foldedOf ((named NRs)) OTerms.Maybe
+    (foldr NormRule OTerms.Maybe
+      (lam ((r NormRule) (acc OTerms.Maybe))
+        (case r ((nrBelow m exc) (if (eq m 0) (OTerms.just exc) acc)) (else acc)))
+      OTerms.nothing
+      named))
+  (defn refold ((exc Terms) (r NormRule)) NormRule
+    (case r ((nrBelow m old) (if (lt 0 m) (nrBelow m exc) r)) (else r)))
+  ; The rules given without those that name a theorem, a hypothesis or folded definitions: the
+  ; language's rules, and the unfolding of every definition.
+  (defn languageRules ((given NRs)) NRs
+    (foldr NormRule NRs
+      (lam ((r NormRule) (acc NRs))
+        (case r ((nrThm j th) acc) ((nrThmAt j th q k) acc) ((nrHyp h) acc)
+          ((nrBelow m exc) (if (eq m 0) acc (cons (nrBelow m (terms (nil T))) acc)))
+          (else (cons r acc))))
+      (nil NormRule)
+      given))
+  (defn rulesIn ((E (List Entry)) (named NRs) (given NRs)) NRs
+    (Rules.append (prepareRules E named)
+      (case (foldedOf named) ((OTerms.nothing) given)
+        ((OTerms.just exc)
+         (foldr NormRule NRs (lam ((r NormRule) (acc NRs)) (cons (refold exc r) acc)) (nil NormRule)
+           given)))))
   (defn depthOf ((e T)) T
     (if (word e (quote (0 head))) (some 0)
       (if (word e (quote (0 weak))) (some 1)
@@ -440,17 +489,19 @@
     (if (Source.isAtom e)
       (mapO (lam ((i T)) (add eb (mul 2 i))) (Source.indexOf (Source.nameOf e) thms))
       none))
-  ; The pointwise form of an earlier theorem that equates two functions: where the goal's sides
-  ; and the applications of the theorem's sides to the innermost variable have the same normal
-  ; forms at a depth, the goal follows from the theorem by rewriting the function applied.
-  (defn byPointwise ((G Globals) (E (List Entry)) (n T) (j T) (rs NRs) (m T)) Pv
+  ; The instance of an earlier theorem that equates two functions, at objects and at terms for its
+  ; variables, applied to arguments: where the goal's sides and the applications of the instance's
+  ; sides to the arguments have the same normal forms at a depth, the goal follows from the
+  ; theorem by rewriting the function applied.
+  (defn byInstance ((G Globals) (E (List Entry)) (n T) (j T) (th Ts) (sg Ts) (al Ts) (rs NRs) (m T))
+    Pv
     (lam ((g Ts) (hs Ts) (t T) (u T))
       (case (thmAt E j) ((OThm.nothing) none)
         ((OThm.just b)
          (bindPT (eqParts (thConcl b))
            (lam ((FH TPair))
-             (let F1 T (app (weaken1 (p1 FH)) (var 0))
-               (let H1 T (app (weaken1 (p2 FH)) (var 0))
+             (let F1 T (apps (instTerm th sg (p1 FH)) al)
+               (let H1 T (apps (instTerm th sg (p2 FH)) al)
                  (bindNT (eval G E n rs 4096 m g hs F1)
                    (lam ((rf NFR))
                      (bindNT (eval G E n rs 4096 m g hs H1)
@@ -473,18 +524,51 @@
                                                (l2 (mDeriv (nfMarked rf)) (mDeriv (nfMarked rh))))
                                              (dNode 18 (nil T)
                                                (l2
-                                                 (dNode 2 (nil T)
-                                                   (l2
-                                                     (dNode 16
-                                                       (l4 j (node 0 (mapT x (range n)))
-                                                         (node 0
-                                                           (mapT (lam ((i T)) (var (add i 1)))
-                                                             (range (length (thCtx b)))))
-                                                         0)
-                                                       (nil T))
-                                                     (dNode 0 (nil T) (nil T))))
+                                                 (foldr T T
+                                                   (lam ((a T) (d T))
+                                                     (dNode 2 (nil T)
+                                                       (l2 d (dNode 0 (nil T) (nil T)))))
+                                                   (dNode 16 (l4 j (node 0 th) (node 0 sg) 0)
+                                                     (nil T))
+                                                   al)
                                                  (dNode 0 (nil T) (nil T)))))))))
                                    none)))))))))))))))))
+  ; The pointwise form of an earlier theorem that equates two functions: its instance at its own
+  ; objects and variables, applied to the goal's innermost variable.
+  (defn byPointwise ((G Globals) (E (List Entry)) (n T) (j T) (rs NRs) (m T)) Pv
+    (lam ((g Ts) (hs Ts) (t T) (u T))
+      (case (thmAt E j) ((OThm.nothing) none)
+        ((OThm.just b)
+         (byInstance G E n j (mapT x (range n))
+           (mapT (lam ((i T)) (var (add i 1))) (range (length (thCtx b))))
+           (single (var 0))
+           rs
+           m
+           g
+           hs
+           t
+           u)))))
+  ; The uniqueness of a list's fold with a step, each premise by a prover: the sides at the empty
+  ; list by the first, and by the second each side at a head before a list as the step at that
+  ; side at the list.
+  (defn byListFold ((G Globals) (n T) (s T) (p0 Pv) (p1v Pv)) Pv
+    (lam ((g Ts) (hs Ts) (t T) (u T))
+      (lcase T T g none
+        (lam ((c T) (g1 Ts))
+          (bindO (listPart c)
+            (lam ((a T))
+              (bindHT (lowerHyps G n g1 hs)
+                (lam ((hn Terms))
+                  (let h1 Ts (termsOf hn)
+                    (let g2 Ts (cons c (cons a g1))
+                      (let h2 Ts (mapT weaken2 h1)
+                        (bindO (p0 g1 h1 (instAt 0 (single a) t) (instAt 0 (single a) u))
+                          (lam ((d0 T))
+                            (bindO (p1v g2 h2 (listConsAt 1 a t) (subst s (atVar0 (weakenElem t))))
+                              (lam ((d1 T))
+                                (mapO (lam ((d2 T)) (dNode 20 (l3 0 1 s) (l3 d0 d1 d2)))
+                                  (p1v g2 h2 (listConsAt 1 a u)
+                                    (subst s (atVar0 (weakenElem u))))))))))))))))))))
   ; The pointwise form, (pointwise THEOREM DEPTH RULE ...), and the rewriting under a test,
   ; (mask-rewrite A B ABSORB LEMMA (TERM ...) TEST ELSE OLD NEW OTHER BRANCH): in the branch a
   ; conditional on TEST selects, of the type A, the occurrences of OLD, of the type B, are
@@ -505,10 +589,10 @@
                     (and (lt 2 k)
                       (and (isSome j)
                         (and (isSome (depthOf (at es 2)))
-                          (allT (ruleOk 2 ovars hyps thms) (drop 3 es)))))
+                          (allT (ruleOk 2 defs ovars hyps thms) (drop 3 es)))))
                     (lam ((G Globals) (E (List Entry)) (base NRs))
                       (byPointwise G E n (getD j 0)
-                        (Rules.append (rulesFrom eb ovars hyps thms (drop 3 es)) base)
+                        (rulesIn E (rulesFrom eb defs ovars hyps thms (drop 3 es)) base)
                         (getD (depthOf (at es 2)) 0)))))
                 (if (form nd (quote (0 mask-rewrite)) 12)
                   (let a T (itype ovars at1)
@@ -565,6 +649,476 @@
         (cons (mapT (lam ((a T)) (getD (rd a) mStar)) (drop 1 (children x))) acc))
       (nil Ts)
       (children e)))
+  ; The instance of an earlier theorem cut in as a hypothesis: the equation of its sides at
+  ; objects and at terms for its variables, applied to arguments.
+  (defn withInstance ((E (List Entry)) (j T) (th Ts) (sg Ts) (al Ts) (p Pv)) Pv
+    (lam ((g Ts) (hs Ts) (t T) (u T))
+      (case (thmAt E j) ((OThm.nothing) none)
+        ((OThm.just b)
+         (bindPT (eqParts (thConcl b))
+           (lam ((FH TPair))
+             (let chi T (mEq (apps (instTerm th sg (p1 FH)) al) (apps (instTerm th sg (p2 FH)) al))
+               (mapO
+                 (lam ((q T))
+                   (dNode 22 (single chi)
+                     (l2
+                       (dNode 18 (nil T)
+                         (l2
+                           (foldr T T
+                             (lam ((a T) (d T)) (dNode 2 (nil T) (l2 d (dNode 0 (nil T) (nil T)))))
+                             (dNode 16 (l4 j (node 0 th) (node 0 sg) 0) (nil T))
+                             al)
+                           (dNode 0 (nil T) (nil T))))
+                       q)))
+                 (p g (append hs (single chi)) t u)))))))))
+  ; The equation of the applications of a function to the sides of an equation among the
+  ; hypotheses, cut in as a hypothesis.
+  (defn withCongruence ((i T) (f T) (p Pv)) Pv
+    (lam ((g Ts) (hs Ts) (t T) (u T))
+      (bindPT (bindTP (nth hs i) eqParts)
+        (lam ((LR TPair))
+          (let chi T (mEq (app f (p1 LR)) (app f (p2 LR)))
+            (mapO
+              (lam ((q T))
+                (dNode 22 (single chi)
+                  (l2
+                    (dNode 18 (nil T)
+                      (l2
+                        (dNode 2 (nil T) (l2 (dNode 0 (nil T) (nil T)) (dNode 17 (l2 i 0) (nil T))))
+                        (dNode 0 (nil T) (nil T))))
+                    q)))
+              (p g (append hs (single chi)) t u)))))))
+  ; The left side of an equation among the hypotheses whose right side is the equation of a term
+  ; with itself, cut in as a hypothesis.
+  (defn withHolds ((i T) (p Pv)) Pv
+    (lam ((g Ts) (hs Ts) (t T) (u T))
+      (bindPT (bindTP (nth hs i) eqParts)
+        (lam ((LR TPair))
+          (mapO
+            (lam ((q T))
+              (dNode 22 (single (p1 LR))
+                (l2
+                  (dNode 23 (nil T)
+                    (l2 (dNode 17 (l2 i 0) (nil T))
+                      (dNode 18 (nil T) (l2 (dNode 0 (nil T) (nil T)) (dNode 0 (nil T) (nil T))))))
+                  q)))
+            (p g (append hs (single (p1 LR))) t u))))))
+  ; The first of a term's subterms, outside binders and folds, that applies the definition of an
+  ; index to arguments, each any term or one given.
+  (defn isCall ((k T) (h T)) T
+    (and (eq (label h) 11) (and (eq (mD h 0) k) (equal (mD h 1) (node 0 (nil T))))))
+  (defn callArgs ((k T) (m T) (u T)) T
+    (let st T
+      (iter T
+        (lam ((s T))
+          (if (isSome s)
+            (let h T (child (get s) 0)
+              (if (mIs 6 2 h)
+                (some (node 0 (cons (mArg h 0) (cons (mArg h 1) (drop 1 (children (get s)))))))
+                none))
+            none))
+        (some (node 0 (single u)))
+        m)
+      (if (isSome st)
+        (if (isCall k (child (get st) 0)) (some (node 0 (drop 1 (children (get st))))) none)
+        none)))
+  (defn testMatches ((k T) (specs Ts) (u T)) T
+    (let as T (callArgs k (length specs) u)
+      (and (isSome as)
+        (allT
+          (lam ((i T))
+            (let sp T (at specs i)
+              (or (not (isSome sp)) (equal (get sp) (at (children (get as)) i)))))
+          (range (length specs))))))
+  (defn findTest ((k T) (specs Ts) (w T)) T
+    (foldr T T (lam ((u T) (acc T)) (if (testMatches k specs u) (some u) acc)) none
+      (openSubterms w)))
+  ; The case analysis of the values of tests, to a number of rounds: the sides are reduced to
+  ; weak normal form, the first test among their subterms is generalized to a tree, the tree is
+  ; split to a node and its label to the empty bitstring, where the search repeats, and to a bit
+  ; before a bitstring, where the first prover proves the goal; where no test occurs, or the
+  ; rounds are spent, the second does. The provers are given the number of rounds before them.
+  (deftype PvN (Arrow T Pv))
+  (defn byTests
+    ((G Globals) (E (List Entry)) (n T) (k T) (specs Ts) (lk T) (rs NRs) (pT PvN) (pR PvN) (d T))
+    Pv
+    ((iter PvN
+       (lam ((rec PvN) (j T))
+         (byNF G E n rs 1
+           (lam ((g Ts) (hs Ts) (t T) (u T))
+             (let N T (let a T (findTest k specs t) (if (isSome a) a (findTest k specs u)))
+               (if (isSome N)
+                 (byGeneralize treeTy (get N)
+                   (byTreeSplit lk 0 (byListSplit G n 1 (rec (add j 1)) (pT j)))
+                   g
+                   hs
+                   t
+                   u)
+                 (pR j g hs t u))))))
+       pR
+       d) 0))
+  ; The forms of hypotheses, of reductions and of searches that version 3 adds. An instance cut
+  ; in, (have h LEMMA (TERM ...) (TERM ...) SCRIPT), proves the goal under the hypothesis h: the
+  ; equation of the sides of LEMMA at its objects and at the first terms for its variables,
+  ; applied to the second terms. A congruence, (congruence h (g (z TYPE) TERM) SCRIPT), proves it
+  ; under the hypothesis g: the equation of the applications to the sides of the hypothesis h of
+  ; the function of z that TERM is. A formula that holds, (holds h (g) SCRIPT), proves it under
+  ; the hypothesis g: the left side of the hypothesis h, whose right side is the equation of a
+  ; term with itself. A reduction, (reduced DEPTH SCRIPT), proves the goal by the script's proof
+  ; of the equation of its sides' normal forms at the depth. The case analysis of tests,
+  ; (test-cases (NAME ARG ...) ROUNDS LEMMA SCRIPT SCRIPT), to a number of rounds: the sides are
+  ; reduced to weak normal form, the first of their subterms, outside binders and folds, that
+  ; applies the definition NAME of the program to arguments, each any term, written any, or the
+  ; term given, is generalized to a tree, and the tree is split to a node and its label to the
+  ; empty bitstring, where the search repeats, and to a bit before a bitstring, where the first
+  ; script proves the goal; where no such subterm occurs, or the rounds are spent, the second
+  ; does. LEMMA names the theorem that a tree is the node of its unfolding. The rewriting under
+  ; masks, (mask-hypotheses ABSORB SAME ROUNDS SCRIPT), to a number of rounds: the sides are
+  ; reduced to weak normal form, and a conditional among their subterms whose test a hypothesis
+  ; rewrites a term under, in its first branch, is cut in rewritten; the script proves the goal
+  ; with the equations cut in before the rules. ABSORB and SAME name the theorems that inside the
+  ; branch a test selects a conditional on the test is its first branch, and that a conditional
+  ; between two terms of one value is that value. The search of conditionals,
+  ; (auto-conditions SPLITS LEMMA RULE ...), reduces to weak normal form and splits the list,
+  ; coproduct or tree variable that the reduction, or a conditional's test, is stuck on. The
+  ; scripts of the two searches by rounds are read at each number of rounds, in the variables
+  ; and hypotheses they add, none of them named.
+  (defn script6
+    ((eb T) (gt Ts) (defs Ts) (ovars Ts) (thms Ts) (nd T) (rs (List SR)) (vars Ts) (kts Ts)
+     (hyps Ts))
+    (Prod T Tac)
+    (let es Ts (children nd)
+      (let k T (length es)
+        (let n T (length ovars)
+          (let at1 T (at es 1)
+            (let at2 T (at es 2)
+              (let childR (Arrow T SR) (lam ((i T)) (SRs.atOr failSR rs i))
+                (let rd (Arrow T T) (lam ((e T)) (iterm 3 gt defs ovars e vars kts))
+                  (let fresh (Arrow Ts T)
+                    (lam ((xs Ts)) (distinctFrom (append vars (append hyps thms)) xs))
+                    (let hypAt (Arrow T T)
+                      (lam ((e T))
+                        (if (Source.isAtom e) (Source.indexOf (Source.nameOf e) hyps) none))
+                      (let blanks (Arrow T Ts) (lam ((m T)) (mapT (lam ((q T)) unnamed) (range m)))
+                        (let nones (Arrow T Ts) (lam ((m T)) (mapT (lam ((q T)) none) (range m)))
+                          (if (form nd (quote (0 have)) 6)
+                            (let j T (lemmaOf eb thms (if (Source.isAtom at2) at2 (child at2 0)))
+                              (let th T
+                                (allSomeT
+                                  (mapT (itype ovars)
+                                    (if (Source.isAtom at2) (nil T) (drop 1 (children at2)))))
+                                (let sg T (allSomeT (mapT rd (children (at es 3))))
+                                  (let al T (allSomeT (mapT rd (children (at es 4))))
+                                    (let r (Prod T Tac)
+                                      (childR 5 vars kts (append hyps (single (Source.nameOf at1))))
+                                      (pair
+                                        (and (bindable 3 at1)
+                                          (and (fresh (single (Source.nameOf at1)))
+                                            (and (isSome j)
+                                              (and (isSome th)
+                                                (and (Source.isList (at es 3))
+                                                  (and (isSome sg)
+                                                    (and (Source.isList (at es 4))
+                                                      (and (isSome al) (fst r)))))))))
+                                        (lam ((G Globals) (E (List Entry)) (base NRs))
+                                          (withInstance E (getD j 0)
+                                            (children (getD th (node 0 (nil T))))
+                                            (children (getD sg (node 0 (nil T))))
+                                            (children (getD al (node 0 (nil T))))
+                                            ((snd r) G E base)))))))))
+                            (if (form nd (quote (0 congruence)) 4)
+                              (let spec Ts (children at2)
+                                (let nm T (Source.nameOf (at spec 0))
+                                  (let b T (at spec 1)
+                                    (let f T
+                                      (iterm 3 gt defs ovars (at spec 2)
+                                        (cons (Source.nameOf (child b 0)) vars)
+                                        (cons (kernelType defs (child b 1)) kts))
+                                      (let r (Prod T Tac)
+                                        (childR 3 vars kts (append hyps (single nm)))
+                                        (pair
+                                          (and (isSome (hypAt at1))
+                                            (and (and (Source.isList at2) (eq (length spec) 3))
+                                              (and (bindable 3 (at spec 0))
+                                                (and (fresh (single nm))
+                                                  (and (ibinder 3 ovars b)
+                                                    (and
+                                                      (fresh (single (Source.nameOf (child b 0))))
+                                                      (and (isSome f) (fst r))))))))
+                                          (lam ((G Globals) (E (List Entry)) (base NRs))
+                                            (withCongruence (getD (hypAt at1) 0)
+                                              (mLam (getD (itype ovars (child b 1)) one)
+                                                (getD f mStar))
+                                              ((snd r) G E base)))))))))
+                              (if (form nd (quote (0 holds)) 4)
+                                (let nm T (Source.nameOf (child at2 0))
+                                  (let r (Prod T Tac) (childR 3 vars kts (append hyps (single nm)))
+                                    (pair
+                                      (and (isSome (hypAt at1))
+                                        (and (namesOk 3 1 at2) (and (fresh (single nm)) (fst r))))
+                                      (lam ((G Globals) (E (List Entry)) (base NRs))
+                                        (withHolds (getD (hypAt at1) 0) ((snd r) G E base))))))
+                                (if (form nd (quote (0 reduced)) 3)
+                                  (let r (Prod T Tac) (childR 2 vars kts hyps)
+                                    (pair (and (isSome (depthOf at1)) (fst r))
+                                      (lam ((G Globals) (E (List Entry)) (base NRs))
+                                        (byNF G E n base (getD (depthOf at1) 0)
+                                          ((snd r) G E base)))))
+                                  (if (form nd (quote (0 test-cases)) 6)
+                                    (let pat Ts (children at1)
+                                      (let fnI T
+                                        (if (Source.isAtom (at pat 0))
+                                          (Source.indexOf (Source.nameOf (at pat 0)) defs)
+                                          none)
+                                        (let specs Ts
+                                          (mapT
+                                            (lam ((a T))
+                                              (if (word a (quote (0 any))) none
+                                                (some (getD (rd a) mStar))))
+                                            (drop 1 pat))
+                                          (let rounds T (number at2)
+                                            (let lk T (lemmaOf eb thms (at es 3))
+                                              (let trueAt (Arrow T (Prod T Tac))
+                                                (lam ((j T))
+                                                  (childR 4 (append (blanks (add (mul 3 j) 5)) vars)
+                                                    (append (nones (add (mul 3 j) 5)) kts)
+                                                    (append hyps (single unnamed))))
+                                                (let restAt (Arrow T (Prod T Tac))
+                                                  (lam ((j T))
+                                                    (childR 5 (append (blanks (mul 3 j)) vars)
+                                                      (append (nones (mul 3 j)) kts)
+                                                      hyps))
+                                                  (pair
+                                                    (and (Source.isList at1)
+                                                      (and (lt 1 (length pat))
+                                                        (and (isSome fnI)
+                                                          (and
+                                                            (allT
+                                                              (lam ((a T))
+                                                                (or (word a (quote (0 any)))
+                                                                  (isSome (rd a))))
+                                                              (drop 1 pat))
+                                                            (and (isSome rounds)
+                                                              (and (isSome lk)
+                                                                (and
+                                                                  (allT
+                                                                    (lam ((j T)) (fst (trueAt j)))
+                                                                    (range (getD rounds 0)))
+                                                                  (allT
+                                                                    (lam ((j T)) (fst (restAt j)))
+                                                                    (range
+                                                                      (add (getD rounds 0)
+                                                                        1))))))))))
+                                                    (lam ((G Globals) (E (List Entry)) (base NRs))
+                                                      (byTests G E n
+                                                        (add (LD.length lib) (getD fnI 0))
+                                                        specs
+                                                        (getD lk 0)
+                                                        base
+                                                        (lam ((j T)) ((snd (trueAt j)) G E base))
+                                                        (lam ((j T)) ((snd (restAt j)) G E base))
+                                                        (getD rounds 0)))))))))))
+                                    (if (form nd (quote (0 mask-hypotheses)) 5)
+                                      (let ab T (lemmaOf eb thms at1)
+                                        (let cs T (lemmaOf eb thms at2)
+                                          (let rounds T (number (at es 3))
+                                            (let level (Arrow T (Prod T Tac))
+                                              (lam ((j T))
+                                                (childR 4 vars kts (append hyps (blanks j))))
+                                              (pair
+                                                (and (isSome ab)
+                                                  (and (isSome cs)
+                                                    (and (isSome rounds)
+                                                      (allT (lam ((j T)) (fst (level j)))
+                                                        (range (add (getD rounds 0) 1))))))
+                                                (lam ((G Globals) (E (List Entry)) (base NRs))
+                                                  (byMaskSubs G E (getD ab 0) (getD cs 0) base
+                                                    (getD rounds 0)
+                                                    (lam ((extra NRs))
+                                                      ((snd (level (Rules.length extra))) G E
+                                                       (Rules.append extra base))))))))))
+                                      (if (headed nd (quote (0 auto-conditions)))
+                                        (let lk T (lemmaOf eb thms at2)
+                                          (pair
+                                            (and (lt 2 k)
+                                              (and (isSome (number at1))
+                                                (and (isSome lk)
+                                                  (allT (ruleOk 3 defs ovars hyps thms)
+                                                    (drop 3 es)))))
+                                            (lam ((G Globals) (E (List Entry)) (base NRs))
+                                              (byAutoC G E n (getD lk 0)
+                                                (rulesIn E
+                                                  (rulesFrom eb defs ovars hyps thms (drop 3 es))
+                                                  base)
+                                                (getD (number at1) 0)))))
+                                        (script3 3 eb gt defs ovars thms nd vars kts
+                                          hyps))))))))))))))))))))
+  ; The uniqueness of a fold with premises that scripts prove, the instance of a theorem, and the
+  ; argument that is a successor, which version 3 adds. The uniqueness of a list's fold,
+  ; (fold-uniqueness x (y ys r) STEP SCRIPT SCRIPT), proves the goal by induction on its innermost
+  ; variable x: by the first script at the empty list, and by the second, for each side, that the
+  ; side at a head y before a list ys is STEP, in which r is that side at ys. The uniqueness of a
+  ; tree's fold, (tree-fold-uniqueness x (l cs rs) STEP SCRIPT), proves a goal in the one variable
+  ; x by the script's proof, for each side, that the side at the node of a label l and children cs
+  ; is STEP, in which rs is the list of that side at the children. The instance of a theorem,
+  ; (instance LEMMA (TERM ...) (TERM ...) DEPTH RULE ...), proves a goal whose sides have, at the
+  ; depth, the normal forms of the sides of LEMMA, which equates two functions, at its objects and
+  ; at the first terms for its variables, applied to the second terms. The argument that is a
+  ; successor, (succ-pred THEOREM SCRIPT), proves an equation of two applications by the script's
+  ; proof of it at the left side of THEOREM, at the two innermost variables, for each argument:
+  ; THEOREM equates the successor of the predecessor of a bit before a bitstring with it. The
+  ; rules of a script, (with-rules (RULE ...) SCRIPT), prove the goal by the script with the rules
+  ; before the language's and the unfolding of the definitions, in place of the rules a script
+  ; around it gives, so that every reduction of the script, those of hypotheses and of their
+  ; instances among them, rewrites by them. A rule (folded NAME ...) keeps folded the definitions
+  ; it names, of the program by their names and of the translation's library as (lib NAME).
+  (defn script5
+    ((eb T) (gt Ts) (defs Ts) (ovars Ts) (thms Ts) (nd T) (rs (List SR)) (vars Ts) (kts Ts)
+     (hyps Ts))
+    (Prod T Tac)
+    (let es Ts (children nd)
+      (let k T (length es)
+        (let n T (length ovars)
+          (let at1 T (at es 1)
+            (let ns Ts (mapT Source.nameOf (children (at es 2)))
+              (let childR (Arrow T SR) (lam ((i T)) (SRs.atOr failSR rs i))
+                (let rd (Arrow T T) (lam ((e T)) (iterm 3 gt defs ovars e vars kts))
+                  (let rest Ts (drop 1 vars)
+                    (if (form nd (quote (0 fold-uniqueness)) 6)
+                      (let s T
+                        (iterm 3 gt defs ovars (at es 3) (cons (at ns 2) (cons (at ns 0) rest))
+                          (cons none (cons (listElem (at kts 0)) (drop 1 kts))))
+                        (let r0 (Prod T Tac) (childR 4 rest (drop 1 kts) hyps)
+                          (let r1 (Prod T Tac)
+                            (childR 5 (cons (at ns 1) (cons (at ns 0) rest))
+                              (cons (at kts 0) (cons (listElem (at kts 0)) (drop 1 kts)))
+                              hyps)
+                            (pair
+                              (and (and (not (isEmpty vars)) (word at1 (at vars 0)))
+                                (and (namesOk 3 3 (at es 2))
+                                  (and (distinctFrom (append rest (append hyps thms)) ns)
+                                    (and (isSome s) (and (fst r0) (fst r1))))))
+                              (lam ((G Globals) (E (List Entry)) (base NRs))
+                                (byListFold G n (getD s mStar) ((snd r0) G E base)
+                                  ((snd r1) G E base)))))))
+                      (if (form nd (quote (0 tree-fold-uniqueness)) 5)
+                        (let s T
+                          (iterm 3 gt defs ovars (at es 3) (cons (at ns 2) (cons (at ns 0) (nil T)))
+                            (cons none (cons none (nil T))))
+                          (let r (Prod T Tac)
+                            (childR 4 (cons (at ns 1) (cons (at ns 0) (nil T)))
+                              (cons (mapO (lam ((kt T)) (node Label.tyList (single kt))) (at kts 0))
+                                (cons none (nil T)))
+                              (nil T))
+                            (pair
+                              (and (and (eq (length vars) 1) (word at1 (at vars 0)))
+                                (and (isEmpty hyps)
+                                  (and (namesOk 3 3 (at es 2))
+                                    (and (distinctFrom thms ns) (and (isSome s) (fst r))))))
+                              (lam ((G Globals) (E (List Entry)) (base NRs))
+                                (byRoseIndWith G n (getD s mStar) ((snd r) G E base))))))
+                        (if (form nd (quote (0 succ-pred)) 3)
+                          (let j T (lemmaOf eb thms at1)
+                            (let r (Prod T Tac) (childR 2 vars kts hyps)
+                              (pair (and (isSome j) (fst r))
+                                (lam ((G Globals) (E (List Entry)) (base NRs))
+                                  (bySuccPred E (getD j 0) ((snd r) G E base))))))
+                          (if (form nd (quote (0 with-rules)) 3)
+                            (let r (Prod T Tac) (childR 2 vars kts hyps)
+                              (pair
+                                (and (Source.isList at1)
+                                  (and (allT (ruleOk 3 defs ovars hyps thms) (children at1))
+                                    (fst r)))
+                                (lam ((G Globals) (E (List Entry)) (base NRs))
+                                  ((snd r) G E
+                                   (rulesIn E (rulesFrom eb defs ovars hyps thms (children at1))
+                                     (languageRules base))))))
+                            (if (headed nd (quote (0 instance)))
+                              (let j T (lemmaOf eb thms (if (Source.isAtom at1) at1 (child at1 0)))
+                                (let th T
+                                  (allSomeT
+                                    (mapT (itype ovars)
+                                      (if (Source.isAtom at1) (nil T) (drop 1 (children at1)))))
+                                  (let sg T (allSomeT (mapT rd (children (at es 2))))
+                                    (let al T (allSomeT (mapT rd (children (at es 3))))
+                                      (pair
+                                        (and (lt 4 k)
+                                          (and (isSome j)
+                                            (and (isSome th)
+                                              (and (Source.isList (at es 2))
+                                                (and (isSome sg)
+                                                  (and (Source.isList (at es 3))
+                                                    (and (isSome al)
+                                                      (and (isSome (depthOf (at es 4)))
+                                                        (allT (ruleOk 3 defs ovars hyps thms)
+                                                          (drop 5 es))))))))))
+                                        (lam ((G Globals) (E (List Entry)) (base NRs))
+                                          (byInstance G E n (getD j 0)
+                                            (children (getD th (node 0 (nil T))))
+                                            (children (getD sg (node 0 (nil T))))
+                                            (children (getD al (node 0 (nil T))))
+                                            (rulesIn E
+                                              (rulesFrom eb defs ovars hyps thms (drop 5 es))
+                                              base)
+                                            (getD (depthOf (at es 4)) 0))))))))
+                              (script6 eb gt defs ovars thms nd rs vars kts hyps)))))))))))))))
+  ; The case analysis of a bitstring to a number of bits, (bits-cases x BITS SCRIPT (LABEL ...)
+  ; SCRIPT ...): the goal at each bitstring of fewer bits for the variable x, and at each of that
+  ; number of bits before a bitstring, by the first script; and at the bitstring of each label
+  ; listed before a later script, a numeral of fewer bits, by that script in its place. A script
+  ; is read at each number of bits it proves at, in the variables and hypotheses of that case. The
+  ; label of the bits taken so far is one less than the number whose binary digits, the least
+  ; significant first, are those bits and then a one.
+  (defn scriptBits ((n T) (es Ts) (childR (Arrow T SR)) (vars Ts) (kts Ts) (hyps Ts)) (Prod T Tac)
+    (let k T (length es)
+      (let blanks (Arrow T Ts) (lam ((m T)) (mapT (lam ((q T)) unnamed) (range m)))
+        (let i T (if (Source.isAtom (at es 1)) (Source.indexOf (Source.nameOf (at es 1)) vars) none)
+          (let bits T (number (at es 2))
+            (let levelAt (Arrow T (Arrow T (Prod T Tac)))
+              (lam ((s T) (j T))
+                (childR s (append (blanks (mul 3 j)) vars)
+                  (append (mapT (lam ((q T)) none) (range (mul 3 j))) kts)
+                  (append hyps (blanks j))))
+              (let pairs Ts (range (div (sub k 4) 2))
+                (let labelsAt (Arrow T Ts)
+                  (lam ((c T))
+                    (mapT (lam ((e T)) (getD (number e) 0)) (children (at es (add 4 (mul 2 c))))))
+                  (let scriptFor (Arrow T T)
+                    (lam ((lbl T))
+                      (foldr T T
+                        (lam ((c T) (acc T)) (if (has lbl (labelsAt c)) (add 5 (mul 2 c)) acc))
+                        3
+                        pairs))
+                    (pair
+                      (and (lt 3 k)
+                        (and (eq (mod k 2) 0)
+                          (and (isSome i)
+                            (and (isSome bits)
+                              (and
+                                (allT (lam ((j T)) (fst (levelAt 3 j)))
+                                  (range (add (getD bits 0) 1)))
+                                (allT
+                                  (lam ((c T))
+                                    (let ls T (at es (add 4 (mul 2 c)))
+                                      (and (Source.isList ls)
+                                        (allT
+                                          (lam ((e T))
+                                            (and (isSome (number e))
+                                              (let d T (log2 (add (getD (number e) 0) 1))
+                                                (and (lt d (getD bits 0))
+                                                  (fst (levelAt (add 5 (mul 2 c)) d))))))
+                                          (children ls)))))
+                                  pairs))))))
+                      (lam ((G Globals) (E (List Entry)) (base NRs))
+                        ((foldr T (Arrow T (Arrow T Pv))
+                           (lam ((j T) (deeper (Arrow T (Arrow T Pv))) (pos T) (p T))
+                             (let w T (iter T (lam ((a T)) (mul 2 a)) 1 j)
+                               (byListSplit G n pos
+                                 ((snd (levelAt (scriptFor (sub p 1)) j)) G E base)
+                                 (bySplit2 3 4 1 (deeper 1 (add p w))
+                                   (deeper 1 (add p (mul 2 w)))))))
+                           (lam ((pos T) (p T)) ((snd (levelAt 3 (getD bits 0))) G E base))
+                           (range (getD bits 0))) (getD i 0) 1))))))))))))
   ; The tactics version 3 adds. The induction on a tree, (tree-induction x (l cs ih) SCRIPT),
   ; proves a goal without hypotheses by its proof at the node of a label l and children cs for
   ; its innermost variable x, under the hypothesis ih that the goal holds at each child: the
@@ -583,10 +1137,12 @@
   ; hypothesis h mentions proves the goal at the empty list and at a head y before a list ys,
   ; under h at each. The alternative, (first SCRIPT SCRIPT), proves the goal by its first script
   ; or, where that one does not prove it, by its second. The case analysis of a bitstring to a
-  ; number of bits, (bits-cases x BITS SCRIPT), proves the goal at each bitstring of fewer bits
-  ; for the variable x, and at each of that number of bits before a bitstring, by the one script,
-  ; read at each number of bits in the variables and hypotheses of that case: for each bit a head,
-  ; a list and the element of the bit's injection, and the goal at the list, none of them named.
+  ; number of bits, (bits-cases x BITS SCRIPT (LABEL ...) SCRIPT ...), proves the goal at each
+  ; bitstring of fewer bits for the variable x, and at each of that number of bits before a
+  ; bitstring, by its first script or by the script of the bitstring's label
+  ; ({geb}`Authoring.scriptBits`), read at each number of bits in the variables and hypotheses of
+  ; that case: for each bit a head, a list and the element of the bit's injection, and the goal at
+  ; the list, none of them named.
   ; The connectives' rules are the first entries of a development of version 3.
   (defn script4
     ((eb T) (gt Ts) (defs Ts) (ovars Ts) (thms Ts) (nd T) (rs (List SR)) (vars Ts) (kts Ts)
@@ -742,35 +1298,9 @@
                                                     (let found T ((snd r0) G E base g hs t u)
                                                       (if (isSome found) found
                                                         ((snd r1) G E base g hs t u))))))))
-                                          (if (form nd (quote (0 bits-cases)) 4)
-                                            (let i T
-                                              (if (Source.isAtom at1)
-                                                (Source.indexOf (Source.nameOf at1) vars)
-                                                none)
-                                              (let bits T (number at2)
-                                                (let level (Arrow T (Prod T Tac))
-                                                  (lam ((j T))
-                                                    (childR 3 (append (blanks (mul 3 j)) vars)
-                                                      (append
-                                                        (mapT (lam ((q T)) none) (range (mul 3 j)))
-                                                        kts)
-                                                      (append hyps (blanks j))))
-                                                  (pair
-                                                    (and (isSome i)
-                                                      (and (isSome bits)
-                                                        (allT (lam ((j T)) (fst (level j)))
-                                                          (range (add (getD bits 0) 1)))))
-                                                    (lam ((G Globals) (E (List Entry)) (base NRs))
-                                                      ((foldr T (Arrow T Pv)
-                                                         (lam ((j T) (deeper (Arrow T Pv)) (pos T))
-                                                           (byListSplit G n pos
-                                                             ((snd (level j)) G E base)
-                                                             (bySplit2 3 4 1 (deeper 1)
-                                                               (deeper 1))))
-                                                         (lam ((pos T))
-                                                           ((snd (level (getD bits 0))) G E base))
-                                                         (range (getD bits 0))) (getD i 0)))))))
-                                            (script3 3 eb gt defs ovars thms nd vars kts
+                                          (if (headed nd (quote (0 bits-cases)))
+                                            (scriptBits n es childR vars kts hyps)
+                                            (script5 eb gt defs ovars thms nd rs vars kts
                                               hyps))))))))))))))))))))))
   ; The tactics version 2 adds. The uniqueness of a list's fold, (fold-induction x (y r) STEP FUEL
   ; RULE ...), proves the goal by induction on its innermost variable where both sides at a head y
@@ -794,9 +1324,10 @@
           (let at1 T (at es 1)
             (let ns Ts (mapT Source.nameOf (children (at es 2)))
               (let childR (Arrow T SR) (lam ((i T)) (SRs.atOr failSR rs i))
-                (let rulesAt (Arrow T NRs) (lam ((i T)) (rulesFrom eb ovars hyps thms (drop i es)))
+                (let rulesAt (Arrow T NRs)
+                  (lam ((i T)) (rulesFrom eb defs ovars hyps thms (drop i es)))
                   (let rulesOkAt (Arrow T T)
-                    (lam ((i T)) (allT (ruleOk 2 ovars hyps thms) (drop i es)))
+                    (lam ((i T)) (allT (ruleOk 2 defs ovars hyps thms) (drop i es)))
                     (let fresh (Arrow Ts (Arrow Ts T))
                       (lam ((scope Ts) (xs Ts)) (distinctFrom (append scope (append hyps thms)) xs))
                       (let i T (Source.indexOf (Source.nameOf at1) vars)
@@ -814,8 +1345,7 @@
                                         (and (fresh rest ns)
                                           (and (isSome s) (and (isSome fuel) (rulesOkAt 5)))))))
                                   (lam ((G Globals) (E (List Entry)) (base NRs))
-                                    (byListInd G E n 0 1 (getD s mStar)
-                                      (Rules.append (rulesAt 5) base)
+                                    (byListInd G E n 0 1 (getD s mStar) (rulesIn E (rulesAt 5) base)
                                       (getD fuel 0))))))
                             (if (headed nd (quote (0 tree-fold-induction)))
                               (let s T
@@ -832,7 +1362,7 @@
                                   (lam ((G Globals) (E (List Entry)) (base NRs))
                                     (lam ((g Ts) (hs Ts) (t T) (u T))
                                       (byRoseInd G E n 2 0 1 (getD s mStar)
-                                        (Rules.append (rulesAt 5) base)
+                                        (rulesIn E (rulesAt 5) base)
                                         (getD fuel 0)
                                         g
                                         t
@@ -870,7 +1400,7 @@
                                             (and (isSome (number (at es 2)))
                                               (and (isSome lk) (rulesOkAt 4)))))
                                         (lam ((G Globals) (E (List Entry)) (base NRs))
-                                          (byAutoT G E n (getD lk 0) (Rules.append (rulesAt 4) base)
+                                          (byAutoT G E n (getD lk 0) (rulesIn E (rulesAt 4) base)
                                             (getD (number (at es 2)) 0)
                                             (getD (depthOf at1) 0)))))
                                     (if (form nd (quote (0 generalize)) 4)
@@ -899,9 +1429,10 @@
           (let at1 T (at es 1)
             (let childR (Arrow T SR) (lam ((i T)) (SRs.atOr failSR rs i))
               (lam ((vars Ts) (kts Ts) (hyps Ts))
-                (let rulesAt (Arrow T NRs) (lam ((i T)) (rulesFrom eb ovars hyps thms (drop i es)))
+                (let rulesAt (Arrow T NRs)
+                  (lam ((i T)) (rulesFrom eb defs ovars hyps thms (drop i es)))
                   (let rulesOkAt (Arrow T T)
-                    (lam ((i T)) (allT (ruleOk v ovars hyps thms) (drop i es)))
+                    (lam ((i T)) (allT (ruleOk v defs ovars hyps thms) (drop i es)))
                     (let fresh (Arrow Ts (Arrow Ts T))
                       (lam ((scope Ts) (xs Ts))
                         (and (allT (lam ((y T)) (if (lt 1 v) (bindable v y) (declared y))) xs)
@@ -911,23 +1442,21 @@
                           (pair (and (lt 1 k) (and (isSome (number at1)) (rulesOkAt 2)))
                             (lam ((G Globals) (E (List Entry)) (base NRs))
                               (lam ((g Ts) (hs Ts) (t T) (u T))
-                                (byNormW G E n (Rules.append (rulesAt 2) base) (getD (number at1) 0)
-                                  g
+                                (byNormW G E n (rulesIn E (rulesAt 2) base) (getD (number at1) 0) g
                                   hs
                                   t
                                   u))))
                           (if (headed nd (quote (0 reduce)))
                             (pair (and (lt 1 k) (and (isSome (depthOf at1)) (rulesOkAt 2)))
                               (lam ((G Globals) (E (List Entry)) (base NRs))
-                                (byMode (getD (depthOf at1) 0) G E n
-                                  (Rules.append (rulesAt 2) base))))
+                                (byMode (getD (depthOf at1) 0) G E n (rulesIn E (rulesAt 2) base))))
                             (if (headed nd (quote (0 auto)))
                               (pair
                                 (and (lt 2 k)
                                   (and (isSome (depthOf at1))
                                     (and (isSome (number (at es 2))) (rulesOkAt 3))))
                                 (lam ((G Globals) (E (List Entry)) (base NRs))
-                                  (byAuto G E n (Rules.append (rulesAt 3) base)
+                                  (byAuto G E n (rulesIn E (rulesAt 3) base)
                                     (getD (number (at es 2)) 0)
                                     (getD (depthOf at1) 0))))
                               (if (form nd (quote (0 extensionality)) 3)
@@ -1013,10 +1542,32 @@
     (para SR (scriptStep v eb gt defs ovars thms) s))
 
   ; A source theorem carries its name, its statement, its script and the version of its document.
-  (data Request (request T Statement T T))
-  (defn requestName ((q Request)) T (case q ((request n s c w) n)))
+  (data Request (request T Statement T T T))
+  (defn requestName ((q Request)) T (case q ((request n s c w k) n)))
   (defn requestThm ((q Request)) Thm
-    (case q ((request n s c w) (case s ((statement os vs ks hs a) a)))))
+    (case q ((request n s c w k) (case s ((statement os vs ks hs a) a)))))
+  ; The normal form of a theorem's companion, (normal DEPTH RULE ...), which a theorem of version
+  ; 3 may state after its script: the depth of the reduction of the companion's sides, and the
+  ; rules it rewrites by before those that unfold the definitions, which name the statement's
+  ; hypotheses and the theorems before it. A theorem without the form has the companion of the
+  ; weak normal form. A request keeps the form, where there is one.
+  (defn normalOk ((v T) (defs Ts) (ovars Ts) (hyps Ts) (thms Ts) (spec T)) T
+    (if (isSome spec)
+      (let f T (get spec)
+        (and (lt 1 (length (children f)))
+          (and (isSome (depthOf (child f 1)))
+            (allT (ruleOk v defs ovars hyps thms) (drop 2 (children f))))))
+      1))
+  (defn normalDepth ((q Request)) T
+    (case q ((request n s c w spec) (if (isSome spec) (getD (depthOf (child (get spec) 1)) 1) 1))))
+  (defn normalRules ((eb T) (defs Ts) (thms Ts) (q Request)) NRs
+    (case q
+      ((request n s c w spec)
+       (case s
+         ((statement os vs ks hs a)
+          (if (isSome spec)
+            (rulesFrom eb defs (children os) (children hs) thms (drop 2 (children (get spec))))
+            (nil NormRule)))))))
   ; What rejects a development: a reason and the name of the theorem it concerns, or the empty
   ; name. The reasons: 0, a document is not a proof document of a version this reader reads, or
   ; the documents' versions do not combine; 1, a theorem's name is declared before; 2, a
@@ -1040,7 +1591,10 @@
       (node 0 (nil T))))
   (defn readRequest ((v T) (G Globals) (gt Ts) (defs Ts) (names Ts) (thms Ts) (e T)) ReadRequest
     (if
-      (and (form e (quote (0 theorem)) 4)
+      (and
+        (or (form e (quote (0 theorem)) 4)
+          (and (lt 2 v)
+            (and (form e (quote (0 theorem)) 5) (headed (child e 4) (quote (0 normal))))))
         (and (Source.isAtom (child e 1))
           (and (not (isEmpty (children (child e 1))))
             (and (form (child e 3) (quote (0 by)) 2) (or (lt 0 v) (version0 defs e))))))
@@ -1050,13 +1604,53 @@
          (case st
            ((statement os vs ks hs a)
             (let script T (child (child e 3) 1)
-              (if
-                (fst
-                  (readScript v 0 gt defs (children os) thms script (children vs) (children ks)
-                    (children hs)))
-                (requestOk (request (Source.nameOf (child e 1)) st script v))
-                (requestBad 3)))))))
+              (let spec T (if (form e (quote (0 theorem)) 5) (some (child e 4)) none)
+                (if
+                  (and
+                    (fst
+                      (readScript v 0 gt defs (children os) thms script (children vs) (children ks)
+                        (children hs)))
+                    (normalOk v defs (children os) (children hs) thms spec))
+                  (requestOk (request (Source.nameOf (child e 1)) st script v spec))
+                  (requestBad 3))))))))
       (requestBad 2)))
+
+  ; Abbreviations. A document of version 3 abbreviates by forms (abbreviation NAME ITEM ...), each
+  ; naming one or more items: in the forms after it, the atom NAME in a list stands for the items
+  ; in its place, as they are written, the abbreviations before it expanded in them. An
+  ; abbreviation states nothing: the theorems of a document are those of its forms with the
+  ; abbreviations expanded, and the names in an item are read where the item stands.
+  (defn expandItems ((table Ts) (e T)) Ts
+    (para Ts
+      (lam ((nd T) (rs (List Ts)))
+        (if (Source.isAtom nd)
+          (let r T (Source.lookupAbbrev (Source.nameOf nd) table)
+            (if (isSome r) (children (get r)) (single nd)))
+          (single
+            (node (label nd) (foldr Ts Ts (lam ((x Ts) (acc Ts)) (append x acc)) (nil T) rs)))))
+      e))
+  (defn expandForms ((v T) (fs Ts)) Ts
+    (reverse
+      (snd
+        (foldr T (Prod Ts Ts)
+          (lam ((f T) (st (Prod Ts Ts)))
+            (if
+              (and (lt 2 v)
+                (and (headed f (quote (0 abbreviation)))
+                  (and (lt 2 (length (children f))) (declared (child f 1)))))
+              (pair
+                (cons
+                  (node 0
+                    (l2 (Source.nameOf (child f 1))
+                      (node 0
+                        (foldr T Ts (lam ((x T) (acc Ts)) (append (expandItems (fst st) x) acc))
+                          (nil T)
+                          (drop 2 (children f))))))
+                  (fst st))
+                (snd st))
+              (pair (fst st) (append (expandItems (fst st) f) (snd st)))))
+          (pair (nil T) (nil T))
+          (reverse fs)))))
 
   ; A proof document's version and the forms of its theorems. From version 2 the forms
   ; (import PATH) and (program NAME), which the host resolves, are left out.
@@ -1072,15 +1666,16 @@
                 (and (Source.isList root)
                   (and (word (child root 0) (quote (0 proofs))) (and (isSome v) (lt (get v) 4))))))
             (let fs Ts
-              (foldr T Ts
-                (lam ((f T) (acc Ts))
-                  (if
-                    (and (lt 1 (get v))
-                      (or (form f (quote (0 import)) 2) (form f (quote (0 program)) 2)))
-                    acc
-                    (cons f acc)))
-                (nil T)
-                (drop 2 (children root)))
+              (expandForms (get v)
+                (foldr T Ts
+                  (lam ((f T) (acc Ts))
+                    (if
+                      (and (lt 1 (get v))
+                        (or (form f (quote (0 import)) 2) (form f (quote (0 program)) 2)))
+                      acc
+                      (cons f acc)))
+                  (nil T)
+                  (drop 2 (children root))))
               (if (isEmpty fs) ODoc.nothing (ODoc.just (document (get v) fs))))
             ODoc.nothing)))))
   ; The theorems of a development's documents in order, each with the version of its document, and
@@ -1165,7 +1760,7 @@
     ((G Globals) (E (List Entry)) (rs NRs) (eb T) (gt Ts) (defs Ts) (thms Ts) (q Request))
     T
     (case q
-      ((request n s script w)
+      ((request n s script w k)
        (case s
          ((statement os vs ks hs a)
           (case a
@@ -1180,7 +1775,7 @@
                          (readScript w eb gt defs (children os) thms script (children vs)
                            (children ks)
                            (children hs))) G E rs g hyps (p1 tu) (p2 tu)))))))))))))))
-  (defn companion ((G Globals) (E (List Entry)) (rs NRs) (j T) (a Thm)) T
+  (defn companion ((G Globals) (E (List Entry)) (rs NRs) (m T) (j T) (a Thm)) T
     (case a
       ((mkThm ar c h f)
        (case c
@@ -1189,9 +1784,9 @@
             ((terms hyps)
              (case (eqParts f) ((OTPair.nothing) none)
                ((OTPair.just lr)
-                (bindNT (eval G E ar rs 4096 1 g hyps (p1 lr))
+                (bindNT (eval G E ar rs 4096 m g hyps (p1 lr))
                   (lam ((nl NFR))
-                    (bindNT (eval G E ar rs 4096 1 g hyps (p2 lr))
+                    (bindNT (eval G E ar rs 4096 m g hyps (p2 lr))
                       (lam ((nr NFR))
                         (some
                           (node 0
@@ -1239,7 +1834,14 @@
                                (results (node 0 (append (children ns) (single (requestName q))))
                                  ds1)
                                el1)
-                             (let w T (companion G E1 rs (Decls.length ds) (requestThm q))
+                             (let w T
+                               (companion G E1
+                                 (rulesIn E1
+                                   (normalRules (entryBase v) defs (sourceNames v (children ns)) q)
+                                   rs)
+                                 (normalDepth q)
+                                 (Decls.length ds)
+                                 (requestThm q))
                                (if (isSome w)
                                  (let cs Ts (children (get w))
                                    (let decl2 Decl
