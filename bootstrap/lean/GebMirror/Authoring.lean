@@ -3068,7 +3068,107 @@ def «Authoring.script4» :=
                                              ((x27).2 x29 x30 x31)
                                              ((x28).2 x29 x30 x31))
                                      else
-                                       «Authoring.script3» (leaf 3) x0 x1 x2 x3 x4 x5 x7 x8 x9);
+                                       if («Authoring.form»
+                                         x5
+                                         (mk 0 [leaf 102, leaf 105, leaf 114, leaf 115, leaf 116])
+                                         (leaf 3)).label ≠ 0 then
+                                         let x22 : T ×
+                                           (T →
+                                             List T →
+                                               List T →
+                                                 List T →
+                                                   List T → T → T → T) := x16 (leaf 1) x7 x8 x9;
+                                         let x23 : T ×
+                                           (T →
+                                             List T →
+                                               List T →
+                                                 List T →
+                                                   List T → T → T → T) := x16 (leaf 2) x7 x8 x9;
+                                         («Prelude.and» (x22).1 (x23).1,
+                                           fun (x24 : T)
+                                             (x25 : List T)
+                                             (x26 : List T)
+                                             (x27 : List T)
+                                             (x28 : List T)
+                                             (x29 : T)
+                                             (x30 : T) =>
+                                             let x31 : T := (x22).2 x24 x25 x26 x27 x28 x29 x30;
+                                             if («Prelude.isSome» x31).label ≠ 0 then
+                                               x31
+                                             else
+                                               (x23).2 x24 x25 x26 x27 x28 x29 x30)
+                                       else
+                                         if («Authoring.form»
+                                           x5
+                                           (mk 0 [leaf 98,
+                                             leaf 105,
+                                             leaf 116,
+                                             leaf 115,
+                                             leaf 45,
+                                             leaf 99,
+                                             leaf 97,
+                                             leaf 115,
+                                             leaf 101,
+                                             leaf 115])
+                                           (leaf 4)).label ≠ 0 then
+                                           let x22 : T := (if («Reader.isAtom» x13).label ≠ 0 then
+                                             «Reader.indexOf» («Reader.nameOf» x13) x7
+                                           else
+                                             «Prelude.none»);
+                                           let x23 : T := «Authoring.number» x14;
+                                           let x24 : T →
+                                             T ×
+                                               (T →
+                                                 List T →
+                                                   List T →
+                                                     List T →
+                                                       List T →
+                                                         T →
+                                                           T →
+                                                             T) := (fun (x24 : T) =>
+                                             x16
+                                               (leaf 3)
+                                               («Prelude.append» (x21 (Const.mul (leaf 3) x24)) x7)
+                                               («Prelude.append»
+                                                 («Base.mapT»
+                                                   (fun (_ : T) => «Prelude.none»)
+                                                   («Base.range» (Const.mul (leaf 3) x24)))
+                                                 x8)
+                                               («Prelude.append» x9 (x21 x24)));
+                                           («Prelude.and»
+                                             («Prelude.isSome» x22)
+                                             («Prelude.and»
+                                               («Prelude.isSome» x23)
+                                               («Base.allT»
+                                                 (fun (x25 : T) => (x24 x25).1)
+                                                 («Base.range»
+                                                   (Const.add
+                                                     («Base.getD» x23 (leaf 0))
+                                                     (leaf 1))))),
+                                             fun (x25 : T) (x26 : List T) (x27 : List T) =>
+                                               Const.foldr
+                                                 (α := T)
+                                                 (β := T → List T → List T → T → T → T)
+                                                 (fun (x28 : T)
+                                                    (x29 : T → List T → List T → T → T → T)
+                                                    (x30 : T) =>
+                                                   «Tactics.byListSplit»
+                                                     x25
+                                                     x11
+                                                     x30
+                                                     ((x24 x28).2 x25 x26 x27)
+                                                     («Tactics.bySplit2»
+                                                       (leaf 3)
+                                                       (leaf 4)
+                                                       (leaf 1)
+                                                       (x29 (leaf 1))
+                                                       (x29 (leaf 1))))
+                                                 (fun (_ : T) =>
+                                                   (x24 («Base.getD» x23 (leaf 0))).2 x25 x26 x27)
+                                                 («Base.range» («Base.getD» x23 (leaf 0)))
+                                                 («Base.getD» x22 (leaf 0)))
+                                         else
+                                           «Authoring.script3» (leaf 3) x0 x1 x2 x3 x4 x5 x7 x8 x9);
     x10
 
 def «Authoring.script2» :=

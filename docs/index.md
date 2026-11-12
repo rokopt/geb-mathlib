@@ -3918,8 +3918,11 @@ import-direction rules above are enforced by
   `modus-ponens` and `revert-cases`: the induction on trees with the
   hypothesis at each child, the instances of hypotheses, and the
   introduction and elimination of implications, by which the Lean deducers
-  prove weakening and substitution. Statements over the datatype language's
-  datatypes remain to be exposed.
+  prove weakening and substitution; and the script forms `first` and
+  `bits-cases`: the alternative of two scripts and the case analysis of a
+  bitstring to a number of bits, by which one script proves the cases of a
+  label's bits. Statements over the datatype language's datatypes remain to
+  be exposed.
   `scripts/preserve.py` records any manifest-based development through those
   commands: original and canonical source documents, the documents its proof
   document imports among them, checked core, a replayed
