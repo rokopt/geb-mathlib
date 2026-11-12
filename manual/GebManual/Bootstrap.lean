@@ -3424,9 +3424,11 @@ tag := "authoring-compatibility"
     of tests' values, abbreviations and the normal form of a theorem's
     companion, saved certificates and replay from Geb source
     ({ref "first-authoring"}[Writing a first Geb development]), the
-    development of the lemmas of trees among them; statements over
-    datatypes wait on the datatype language's completion, and the
-    developments by induction on trees remain Lean deducers
+    developments of the lemmas of trees, of weakening, of substitution and
+    of the expansion's identity on kernel forms among them; statements
+    over datatypes wait on the datatype language's completion, and the
+    developments of the evaluator's fundamental lemma and of the datatype
+    language's soundness remain Lean deducers
 *
   * `let*` and `cond`, expanded in the elaboration of modules
   * Complete
@@ -5438,14 +5440,16 @@ among the deducers, is stated and proved in that version under
 `bootstrap/proofs/`, about the program of `bootstrap/expansion.manifest`, and
 `scripts/tests/test-proof-scripts.sh` proves and replays it. A reader or
 prover that rejects a development reports the theorem concerned and why,
-which the host writes at the theorem's line and column. The other compiler
-developments' statements remain Lean values and their scripts Lean code,
-the deducers under `GebTests/Prototypes/FreeTopos/`, which the provers'
+which the host writes at the theorem's line and column. The statements of
+the developments of the evaluator's fundamental lemma and of the datatype
+language's soundness remain Lean values and their scripts Lean code, the
+deducers under `GebTests/Prototypes/FreeTopos/`, which the provers'
 agreement relates to the prover written in Geb. Version 3 of the document
 reads truth and implication among the internal language's terms, the
 definitions of `bootstrap/free-topos/logic.geb` after the program's, whose
 rules begin a development's certificate, and adds the forms in scripts of
-the tactics those deducers compose: the induction on trees with the
+the tactics that the deducers of weakening and substitution compose: the
+induction on trees with the
 hypothesis at each child, the hypothesis at a child and its instances, the
 instances of a hypothesis that equates functions, the introduction of an
 implication and modus ponens, and the case analysis of a list that a
@@ -5465,8 +5469,15 @@ with the definitions the deducer keeps folded; the tactics added with them
 are those the deducers compose, the uniqueness of a fold with premises
 that scripts prove, the instances of theorems and the searches under masks
 among them ({ref "development-scripts"}[Abbreviations, folds and
-searches]). The developments by induction on trees are not yet stated in
-Geb source. The syntax of statements and proof scripts
+searches]). A lemma about a fold states the rose tree's fold that the
+kernel's fold translates to, applied to the kernel's step as the source
+writes it. The developments by induction on trees, that weakening and
+substitution preserve the types the kernel's type checker infers and that
+the expansion of the datatype language is the identity on a program of
+kernel forms, are so stated and proved under `bootstrap/proofs/`, the
+companion of each lemma that rewrites being the theorem its deducer
+states; `scripts/proofs.sh` proves and replays them. The syntax of
+statements and proof scripts
 is a step of the sequence ({ref "authoring-sequence"}[The sequence and its
 acceptance]). It adds no rule to the metalogic: a script is a program for
 one prover, and its certificate is checked as any other is.
@@ -7663,6 +7674,21 @@ the change that removes it.
   two equal; and a stored derivation would leave the check alone, and
   spare the substitution test, which proves weakening again as a lemma
   before its own theorem.
+* The steps of the folds of `typeIn`, `trav` and `expandExpr` are named by
+  no definition of their sources, so a proof document that states a lemma
+  about one of those folds writes its step out, once, in an abbreviation
+  ({ref "development-scripts"}[Abbreviations, folds and searches]). A
+  definition of each step removes the copies; `check.geb` and `subst.geb`
+  are sources of the program whose typing's soundness is proved, so the
+  definitions follow the datatype language's completion.
+* The time of the developments stated in Geb. The prover written in Geb,
+  compiled, finds the developments of weakening and substitution together
+  in about fifty minutes and that of the expansion's identity in about ten
+  on one machine, and their certificates replay in about five; the lemmas
+  before each theorem take a minute or less, and the rest is the weak
+  normalization of the checker and of the expansion at the cases of a
+  label, as in the deducers' searches. The developments are therefore
+  proved by `slow-checks.yml` and not by the routine checks.
 
 ## The next phase
 %%%

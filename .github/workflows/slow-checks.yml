@@ -1,7 +1,9 @@
 name: Slow checks
 
-# The benchmarks, which measure and do not check, daily and on demand
-# (docs/rules/ci-and-workflow.md § Benchmarks).
+# The benchmarks, which measure and do not check, and the developments of
+# bootstrap/proofs/, proved and replayed from their Geb sources, daily and
+# on demand (docs/rules/ci-and-workflow.md § Benchmarks and § Proof
+# documents).
 on:
   schedule:
     - cron: '0 6 * * *'
@@ -30,3 +32,17 @@ jobs:
         run: |
           ulimit -s "$(ulimit -Hs)"
           lake exe geb-bench
+
+  proofs:
+    name: Prove the developments of bootstrap/proofs
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: leanprover/lean-action@ba3fdfe5c4476c925da13bf11a005ddb47e47aee  # v1
+        with:
+          build: false
+          test: false
+          lint: false
+      - name: scripts/proofs.sh
+        run: bash scripts/proofs.sh

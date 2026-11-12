@@ -314,7 +314,8 @@ soundness of the equality of bitstrings, the rewriting under a test, and that
 a tree the reader names by the atom of the head of a definition's form is
 that atom. Each theorem is stated as it is written and followed by its
 companion, where the Lean development states a lemma's sides in the normal
-form it computes.
+form it computes. The lemma that the fold of the case analysis of lists
+rebuilds its list is among those of `trees.proofs.geb`.
 
 ```
 lake exe geb-author prove bootstrap/proofs/tree-cases.proofs.geb \
@@ -563,7 +564,39 @@ developments compose where they cut in an instance, a congruence or a
 formula, which `bootstrap/authoring.geb` composes. A rule that names a
 theorem is tried only where the root of its companion's left side occurs.
 
-`scripts/tests/test-proof-scripts.sh` exercises each form on the example.
+The documents `weakening.proofs.geb`, `substitution.proofs.geb` and
+`expansion.proofs.geb` under `bootstrap/proofs/` state and prove with them
+the developments of `GebTests/Prototypes/FreeTopos/Weakening.lean`,
+`Substitution.lean` and `Expansion.lean`: that weakening and substitution
+preserve the types the kernel's type checker infers, about the program of
+`bootstrap/weakening.manifest`, the second importing the first; and that the
+expansion of the datatype language is the identity on a program of kernel
+forms, about the program of `bootstrap/kernel-forms.manifest`, whose module
+`bootstrap/proofs/kernel-forms.geb` defines the predicates of kernel
+expressions and forms and the two sides of each statement. A lemma's
+companion is the theorem the Lean development states, node for node, but for
+the lemmas that equate functions, which are cited as stated. A lemma about
+a fold of the type checker, of the traversal or of the expansion states the
+fold as the reduction presents it: the rose tree's fold that the kernel's
+fold translates to, applied to the kernel's step, which the document writes
+out as the source does, since no definition of the source names it. The
+proof at a construction is chosen by the label, as the Lean developments
+choose it:
+
+```
+(tree-induction t (l cs ih)
+  (with-rules (typing-rules nth-weaken)
+    (bits-cases l 5 by-reduction
+      (8 13 14) (revert-cases ih cs (a as) by-reduction …)
+      (9 10 12 20) …
+      (16) …)))
+```
+
+`scripts/proofs.sh` proves and replays the developments, each document that
+no other imports with those it imports. Their searches take from minutes to
+tens of minutes compiled, so `slow-checks.yml` runs the script, and
+`scripts/tests/test-proof-scripts.sh` proves the development of
+`tree-cases.proofs.geb` and exercises each form on the example.
 
 # Keeping the source
 

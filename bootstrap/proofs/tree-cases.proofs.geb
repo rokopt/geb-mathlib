@@ -1,27 +1,10 @@
 ; Lemmas about the translation of the prelude, the reader, the type checker and the expansion of
 ; the datatype language, which the case analysis of trees and of bits proves: a conditional
 ; between two lists with one head, a conditional under the test that selects it, the soundness
-; of the equality of bitstrings, the list a fold of the case analysis of lists rebuilds, the
-; children of the tree of a label and children, and a tree the reader names by the atom of the
-; head of a definition's form, which is that atom.
+; of the equality of bitstrings, the children of the tree of a label and children, and a tree
+; the reader names by the atom of the head of a definition's form, which is that atom.
 
 (proofs 2 (program expansion) (import trees.proofs.geb)
-  ; The first component of the fold of the case analysis of lists, at any pair of cases, is the
-  ; list.
-  (theorem rebuild-lcase
-    (internal (X Y)
-      (forall ((p (Prod (Arrow Unit Y) (Arrow X (Arrow (List X) Y)))) (l (List X)))
-        (equal
-          (fst
-            ((list-rec
-               (lam ((q (Prod (Arrow Unit Y) (Arrow X (Arrow (List X) Y)))))
-                 (pair (nil X) ((fst q) unit)))
-               (h r)
-               (lam ((q (Prod (Arrow Unit Y) (Arrow X (Arrow (List X) Y)))))
-                 (pair (cons X h (fst (r q))) ((snd q) h (fst (r q)))))
-               l) p))
-          l)))
-    (by (fold-induction l (h r) (cons X h r) 256)))
   ; A conditional between two lists with one head is the head before the conditional between
   ; the tails.
   (theorem cond-cons

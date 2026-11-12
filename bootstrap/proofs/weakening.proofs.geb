@@ -1,0 +1,731 @@
+; Weakening preserves the types the kernel's type checker written in Geb infers, about the
+; translation of the prelude, the reader, the checker and the traversal of kernel terms. The lemmas:
+; the conditionals moved through projections, applications and folds; the first components of the
+; folds, which rebuild their trees and lists, and the lengths of the lists they rebuild; the
+; arithmetic of labels, by induction on bitstrings and the case analysis of their bits; and the
+; lookups in a context past inserted types. Both sides of an equation are compared in weak normal
+; form, which leaves the steps of folds and the bodies of abstractions unreduced, so that a lemma on
+; a fold states the fold as the reduction presents it.
+
+(proofs 3 (program weakening) (import trees.proofs.geb)
+  ; The traversal's function at a variable: of the number of binders and the variable's index.
+  (abbreviation Var (Arrow T (Arrow T T)))
+  ; The traversal's result at a node: the node, and its traversal as a function of the number of
+  ; binders.
+  (abbreviation TR (Prod T (Arrow T T)))
+  ; The kernel's step of a fold into the traversal's results.
+  (abbreviation TRStep (Arrow T (Arrow (List TR) TR)))
+  ; The result of the rose tree's fold that the kernel's fold into the traversal's results
+  ; translates to: a function of the kernel's step.
+  (abbreviation TRFold (Arrow TRStep TR))
+  ; The type checker's result at a node: the node, and its type as a function of the context.
+  (abbreviation RR (Prod T (Arrow (List T) T)))
+  ; The kernel's step of a fold into the type checker's results.
+  (abbreviation RRStep (Arrow T (Arrow (List RR) RR)))
+  ; The result of the rose tree's fold that the kernel's fold into the type checker's results
+  ; translates to: a function of the kernel's step.
+  (abbreviation RRFold (Arrow RRStep RR))
+  ; The type of comparisons: less, or else equal or greater.
+  (abbreviation Ord (Sum Unit Bit))
+  ; The step of that rose tree's fold at a node n of a label and the children's folds: the kernel's
+  ; step at the label and at the children's folds applied to it.
+  (abbreviation tr-fold-step
+    (lam ((f TRStep)) (f (node Bits (pair (fst n) (nil T))) (lib mapApp TRStep TR (snd n) f))))
+  ; The traversal's step at the function v at a variable, as bootstrap/subst.geb writes it, where no
+  ; definition names it.
+  (abbreviation trav-step
+    (lam ((l T) (rs (List TR)))
+      (let cs (List T) (Subst.trTrees rs)
+        (let n T (Prelude.length cs)
+          (pair (node l cs)
+            (lam ((k T))
+              (if (Prelude.and (eq l 8) (eq n 1)) (v k (label (Prelude.at cs 0)))
+                (if (Prelude.and (eq l 9) (eq n 2))
+                  (Reader.node2 9 (Prelude.at cs 0) (Prelude.at (Subst.trAll rs (add k 1)) 1))
+                  (if (Subst.termNode l) (node l (Subst.trAll rs k)) (node l cs))))))))))
+  ; The traversal's folds at the children cs.
+  (abbreviation tr-children
+    (list-rec (nil TRFold) (c r) (cons TRFold (rose-rec TRFold (n) tr-fold-step c) r) cs))
+  ; The step of the rose tree's fold into the type checker's results at a node n: the kernel's step
+  ; at the label and at the children's folds applied to it.
+  (abbreviation rr-fold-step
+    (lam ((f RRStep)) (f (node Bits (pair (fst n) (nil T))) (lib mapApp RRStep RR (snd n) f))))
+  ; The type checker's step in the environment G, as bootstrap/check.geb writes it, where no
+  ; definition names it.
+  (abbreviation check-step
+    (lam ((l T) (rs (List RR)))
+      (let raw T (node l (Reader.rrTrees rs))
+        (pair raw (lam ((ctx (List T))) (Check.checkNode G raw rs ctx))))))
+  ; The type checker's step in the environment G, as the internal language's term that the step
+  ; translates to.
+  (abbreviation check-step-reduced
+    (lam ((l T) (rs (List RR)))
+      ((lam ((raw T)) (pair raw (lam ((ctx (List T))) (Check.checkNode G raw rs ctx))))
+       ((lam ((x T) (y (List T))) (node Bits (pair (lib lab x) y))) l (Reader.rrTrees rs)))))
+  ; The type checker's folds at the children cs.
+  (abbreviation rr-children
+    (list-rec (nil RRFold) (c r) (cons RRFold (rose-rec RRFold (n) rr-fold-step c) r) cs))
+  ; The first component of the library's fold of the successor at the bitstring n: of the pair of
+  ; the bitstring rebuilt and its successor.
+  (abbreviation succ-fold
+    (fst
+      (list-rec (pair (lib bnil) (lib b0 (lib bnil))) (b r)
+        (pair (cons Bit b (fst r))
+          ((case Unit Unit Bits
+             (pair (lam ((u Unit)) (lib b1 (fst r))) (lam ((u Unit)) (lib b0 (snd r))))) b))
+        n)))
+  ; The start of the library's fold of addition, by recursion on the second summand into functions
+  ; of the first: the empty bitstring, and the identity.
+  (abbreviation add-fold-start (pair (lib bnil) (lam ((m Bits)) m)))
+  ; The step of that fold at a bit b before a bitstring, r the fold's value at it: the bitstring
+  ; rebuilt, and the function taking a first summand to the sum, by the case analysis of its bits.
+  (abbreviation add-fold-step
+    (pair (cons Bit b (fst r))
+      (lam ((m Bits))
+        (lib lcase Bit Bits m (lam ((u Unit)) (cons Bit b (fst r)))
+          (lam ((d Bit))
+            (lam ((ms Bits))
+              (cons Bit
+                ((case Unit Unit Bit
+                   (pair
+                     (lam ((u Unit))
+                       ((case Unit Unit Bit
+                          (pair (lam ((u Unit)) (inr Unit Unit unit))
+                            (lam ((u Unit)) (inl Unit Unit unit)))) b))
+                     (lam ((u Unit))
+                       ((case Unit Unit Bit
+                          (pair (lam ((u Unit)) (inl Unit Unit unit))
+                            (lam ((u Unit)) (inr Unit Unit unit)))) b)))) d)
+                ((lam ((c Bits))
+                   ((case Unit Unit Bits
+                      (pair
+                        (lam ((u Unit))
+                          ((case Unit Unit Bits
+                             (pair (lam ((u Unit)) c) (lam ((u Unit)) (lib succ c)))) b))
+                        (lam ((u Unit)) (lib succ c)))) d)) ((snd r) ms)))))))))
+  ; The rules of the lemmas proved by normalization: the first components of the folds of addition,
+  ; of the successor and of the case analysis of lists, in normal form.
+  (abbreviation normal-rules rebuild-add-normal rebuild-succ-normal (rebuild-lcase Bit Bits))
+  ; The rules of the lemmas on bitstrings: the first components of the folds of the successor, of
+  ; the predecessor and of the case analysis of lists.
+  (abbreviation bit-rules rebuild-succ rebuild-pred (rebuild-lcase Bit Ord)
+    (rebuild-lcase Bit Bits))
+  ; The rules of the lemmas on comparisons: the case analysis of a comparison that is a case
+  ; analysis, before those on bitstrings.
+  (abbreviation comparison-rules (ord-case Ord) (ord-case Bits) bit-rules)
+  ; The rules of the lookup lemmas, before those on comparisons.
+  (abbreviation lookup-rules lt-zero lt-zero-succ add-one length-label cmp-succ (iter-succ (List T))
+    cond-succ
+    unfold-rebuild
+    lambek
+    (rebuild-tail T)
+    lab-cond
+    comparison-rules)
+  ; The rules of the proofs at a label: the first components and the lengths of the folds, the
+  ; arithmetic of labels and the conditionals moved through projections, applications and folds.
+  (abbreviation typing-rules trav-children trav-first check-label unfold-rebuild lambek
+    check-children-length
+    trav-all-length
+    length-label
+    add-one
+    add-one-cons
+    (rebuild-lcase Bit Bits)
+    rebuild-succ
+    fold-cond
+    (cond-cond T)
+    (snd-cond T (Arrow (List T) T))
+    (fst-cond T (Arrow (List T) T))
+    lab-cond
+    (app-cond (List T) T))
+  ; The proof at the environment and the contexts by weak reduction of both sides.
+  (abbreviation by-reduction
+    (extensionality G (extensionality c1 (extensionality c0 (extensionality c2 (reduce weak))))))
+  ; The second component of a conditional between two pairs is the conditional between their second
+  ; components.
+  (theorem snd-cond
+    (internal (X Y)
+      (forall ((q (Prod X Y)) (p (Prod X Y)) (b Bits))
+        (equal (snd (lib cond (Prod X Y) b p q)) (lib cond Y b (snd p) (snd q)))))
+    (by (induction b (h t ih) (reduce weak) (reduce weak))))
+  ; The first component of a conditional between two pairs is the conditional between their first
+  ; components.
+  (theorem fst-cond
+    (internal (X Y)
+      (forall ((q (Prod X Y)) (p (Prod X Y)) (b Bits))
+        (equal (fst (lib cond (Prod X Y) b p q)) (lib cond X b (fst p) (fst q)))))
+    (by (induction b (h t ih) (reduce weak) (reduce weak))))
+  ; The label of a conditional between two trees is the conditional between their labels.
+  (theorem lab-cond
+    (internal ()
+      (forall ((u T) (t T) (b Bits))
+        (equal (lib lab (lib cond T b t u)) (lib cond Bits b (lib lab t) (lib lab u)))))
+    (by (induction b (h r ih) (reduce weak) (reduce weak))))
+  ; A conditional between two functions, applied, is the conditional between their applications.
+  (theorem app-cond
+    (internal (X Y)
+      (forall ((x X) (g (Arrow X Y)) (f (Arrow X Y)) (b Bits))
+        (equal ((lib cond (Arrow X Y) b f g) x) (lib cond Y b (f x) (g x)))))
+    (by (induction b (h t ih) (reduce weak) (reduce weak))))
+  ; A conditional whose second branch is a conditional on the same test is the conditional between
+  ; its first branch and that second branch.
+  (theorem cond-cond
+    (internal (X)
+      (forall ((z X) (y X) (x X) (b Bits))
+        (equal (lib cond X b x (lib cond X b y z)) (lib cond X b x z))))
+    (by (induction b (h t ih) (reduce weak) (reduce weak))))
+  ; The kernel's fold into the type checker's results, at a conditional between two trees, is the
+  ; conditional between the folds at them, at every step.
+  (theorem fold-cond
+    (internal ()
+      (forall ((f RRStep) (u T) (t T) (b Bits))
+        (equal ((kernel (lam ((x T)) (fold RR f x))) (lib cond T b t u))
+          (lib cond RR b (kernel (fold RR f t)) (kernel (fold RR f u))))))
+    (by (induction b (h r ih) (reduce weak) (reduce weak))))
+  ; The trees rebuilt from the unfoldings of a list of trees are the list.
+  (theorem unfold-rebuild
+    (internal ()
+      (forall ((ts (List T)))
+        (equal
+          (list-rec (nil T) (p r) (cons T (node Bits p) r)
+            (list-rec (nil (Prod Bits (List T))) (t r)
+              (cons (Prod Bits (List T))
+                (rose-rec (Prod Bits (List T)) (n)
+                  (pair (fst n) (list-rec (nil T) (c s) (cons T (node Bits c) s) (snd n)))
+                  t)
+                r)
+              ts))
+          ts)))
+    (by (fold-uniqueness ts (y ys r) (cons T y r) (reduce weak lambek) (reduce weak lambek))))
+  ; The trees of the results of the traversal's fold at the children of a node, with the step at a
+  ; function at a variable, are the applications to that function of the first components of the
+  ; children's folds as functions of it. The rose tree's fold is the one the kernel's fold
+  ; translates to, into functions of the step, and the step is the traversal's, which its definition
+  ; does not name.
+  (theorem trav-children-fn
+    (internal ()
+      (forall ((v Var) (cs (List T)))
+        (equal (Subst.trTrees (lib mapApp TRStep TR tr-children (kernel trav-step)))
+          (lib mapApp Var T
+            (list-rec (nil (Arrow Var T)) (c r)
+              (cons (Arrow Var T)
+                (lam ((v Var)) (fst ((rose-rec TRFold (n) tr-fold-step c) (kernel trav-step))))
+                r)
+              cs)
+            v))))
+    (by (induction cs (y ys ih) (reduce weak) (reduce-hypotheses weak (ih) (reduce weak ih)))))
+  ; The applications of a list of constant functions to one argument are their values.
+  (theorem map-app-const
+    (internal ()
+      (forall ((v Var) (cs (List T)))
+        (equal
+          (lib mapApp Var T
+            (list-rec (nil (Arrow Var T)) (c r) (cons (Arrow Var T) (lam ((w Var)) c) r) cs)
+            v)
+          cs)))
+    (by (induction cs (y ys ih) (reduce weak) (reduce-hypotheses weak (ih) (reduce weak ih)))))
+  ; The first component of the traversal's fold at a tree is the tree, as functions of the function
+  ; at a variable, by the uniqueness of the tree's fold.
+  (theorem trav-first-fn
+    (internal ()
+      (forall ((t T))
+        (equal (lam ((v Var)) (fst ((rose-rec TRFold (n) tr-fold-step t) (kernel trav-step))))
+          (lam ((v Var)) t))))
+    (by
+      (tree-fold-uniqueness t (l cs rs) (lam ((w Var)) (node Bits (pair l (lib mapApp Var T rs w))))
+        (extensionality w (reduce weak trav-children-fn map-app-const)))))
+  ; The first component of the traversal's fold at a tree is the tree, at every function at a
+  ; variable.
+  (theorem trav-first
+    (internal () (forall ((t T) (v Var)) (equal (fst (kernel (fold TR trav-step t))) t)))
+    (by (pointwise trav-first-fn weak)))
+  ; The trees of the results of the traversal's fold at the children of a node are the children.
+  (theorem trav-children
+    (internal ()
+      (forall ((v Var) (cs (List T)))
+        (equal (Subst.trTrees (lib mapApp TRStep TR tr-children (kernel trav-step))) cs)))
+    (by
+      (fold-uniqueness cs (y ys r) (cons T y r) (reduce weak trav-first) (reduce weak trav-first))))
+  ; The trees of the results of the type checker's fold at the children of a node are as many as the
+  ; children.
+  (theorem check-children-length
+    (internal ()
+      (forall ((G (List T)) (cs (List T)))
+        (equal
+          (lib length T (Reader.rrTrees (lib mapApp RRStep RR rr-children (kernel check-step))))
+          (lib length T cs))))
+    (by (fold-uniqueness cs (y ys r) (lib succ r) (reduce weak) (reduce weak))))
+  ; The children the traversal computes under a number of binders are as many as the children.
+  (theorem trav-all-length
+    (internal ()
+      (forall ((v Var) (k T) (cs (List T)))
+        (equal (lib length T (Subst.trAll (lib mapApp TRStep TR tr-children (kernel trav-step)) k))
+          (lib length T cs))))
+    (by (fold-uniqueness cs (y ys r) (lib succ r) (reduce weak) (reduce weak))))
+  ; The label of the first component of the type checker's fold at a tree is the tree's, as
+  ; functions of the environment.
+  (theorem check-label-fn
+    (internal ()
+      (forall ((t T))
+        (equal (lam ((G (List T))) (kernel (label (fst (fold RR check-step t)))))
+          (lam ((G (List T))) (kernel (label t))))))
+    (by
+      (tree-fold-uniqueness t (l cs rs)
+        (lam ((G (List T)))
+          ((lam ((x T)) (node Bits (pair (lib lab x) (nil T)))) (node Bits (pair l (nil T)))))
+        (extensionality G (reduce weak)))))
+  ; The label of the first component of the type checker's fold at a tree is the tree's, in every
+  ; environment.
+  (theorem check-label
+    (internal ()
+      (forall ((G (List T)) (t T))
+        (equal (kernel (label (fst (fold RR check-step t)))) (kernel (label t)))))
+    (by (instance check-label-fn (t) (G) weak)))
+  ; The first component of the successor's fold is the bitstring.
+  (theorem rebuild-succ (internal () (forall ((n Bits)) (equal succ-fold n)))
+    (by (fold-uniqueness n (y ys r) (cons Bit y r) (reduce weak) (reduce weak))))
+  ; The sum with one is the successor.
+  (theorem add-one
+    (internal () (forall ((n Bits)) (equal (lib add n (lib b0 (lib bnil))) (lib succ n))))
+    (by
+      (induction n (h t ih) (reduce weak (rebuild-lcase Bit Bits) rebuild-succ)
+        (sum-cases h (z) (reduce weak (rebuild-lcase Bit Bits) rebuild-succ)
+          (reduce weak (rebuild-lcase Bit Bits) rebuild-succ)))))
+  ; The sum with the bit zero before the empty bitstring, one in normal form, is the successor.
+  (theorem add-one-cons
+    (internal ()
+      (forall ((n Bits))
+        (equal (lib add n (cons Bit (inl Unit Unit unit) (nil Bit))) (lib succ n))))
+    (by
+      (induction n (h t ih) (reduce weak (rebuild-lcase Bit Bits) rebuild-succ)
+        (sum-cases h (z) (reduce weak (rebuild-lcase Bit Bits) rebuild-succ)
+          (reduce weak (rebuild-lcase Bit Bits) rebuild-succ)))))
+  ; The label of the prelude's length of a list is the library's length.
+  (theorem length-label
+    (internal () (forall ((ts (List T))) (equal (lib lab (Prelude.length ts)) (lib length T ts))))
+    (by (fold-uniqueness ts (y ys r) (lib succ r) (reduce weak add-one) (reduce weak add-one))))
+  ; The first component of addition's fold is the bitstring. A rule rewrites by its normal form, as
+  ; a normalization presents the fold.
+  (theorem rebuild-add-normal
+    (internal ()
+      (forall ((n Bits)) (equal (fst (list-rec add-fold-start (b r) add-fold-step n)) n)))
+    (by (fold-induction n (y r) (cons Bit y r) 256))
+    (normal full))
+  ; The first component of the successor's fold is the bitstring, again: a rule rewrites by its
+  ; normal form.
+  (theorem rebuild-succ-normal (internal () (forall ((n Bits)) (equal succ-fold n)))
+    (by (fold-induction n (y r) (cons Bit y r) 256))
+    (normal full))
+  ; The second component of addition's fold at a successor is the function taking a first summand to
+  ; the successor of its sum, by induction on the second summand, the hypothesis in normal form, and
+  ; on the first. A rule rewrites by its normal form.
+  (theorem add-succ-fold
+    (internal ()
+      (forall ((n Bits))
+        (equal (snd (list-rec add-fold-start (b r) add-fold-step (lib succ n)))
+          (lam ((m Bits)) (lib succ (lib add m n))))))
+    (by
+      (induction n (h t ih)
+        (extensionality m
+          (induction m (c cs ih2) (normalize 1024 normal-rules)
+            (sum-cases c (w) (normalize 1024 ih2 normal-rules) (normalize 1024 ih2 normal-rules))))
+        (sum-cases h (z)
+          (reduce-hypotheses full (ih)
+            (extensionality m
+              (induction m (c cs ih2) (normalize 1024 ih normal-rules)
+                (sum-cases c (w) (normalize 1024 ih ih2 normal-rules)
+                  (normalize 1024 ih ih2 normal-rules)))))
+          (reduce-hypotheses full (ih)
+            (extensionality m
+              (induction m (c cs ih2) (normalize 1024 ih normal-rules)
+                (sum-cases c (w) (normalize 1024 ih ih2 normal-rules)
+                  (normalize 1024 ih ih2 normal-rules))))))))
+    (normal full))
+  ; The sum with a successor is the successor of the sum.
+  (theorem add-succ
+    (internal ()
+      (forall ((m Bits) (n Bits)) (equal (lib add m (lib succ n)) (lib succ (lib add m n)))))
+    (by (normalize 1024 add-succ-fold)))
+  ; The first component of the tail's fold is the list.
+  (theorem rebuild-tail
+    (internal (X)
+      (forall ((l (List X)))
+        (equal (fst (list-rec (pair (nil X) (nil X)) (y r) (pair (cons X y (fst r)) (fst r)) l))
+          l)))
+    (by (fold-uniqueness l (y ys r) (cons X y r) (reduce weak) (reduce weak))))
+  ; The first component of the predecessor's fold is the bitstring.
+  (theorem rebuild-pred
+    (internal ()
+      (forall ((n Bits))
+        (equal
+          (fst
+            (list-rec (pair (lib bnil) (lib bnil)) (b r)
+              (pair (cons Bit b (fst r))
+                ((case Unit Unit Bits
+                   (pair (lam ((u Unit)) (lib cond Bits (fst r) (lib b1 (snd r)) (lib bnil)))
+                     (lam ((u Unit)) (lib b0 (fst r))))) b))
+              n))
+          n)))
+    (by (fold-uniqueness n (y ys r) (cons Bit y r) (reduce weak) (reduce weak))))
+  ; No number is less than zero.
+  (theorem lt-zero (internal () (forall ((n Bits)) (equal (lib ltB n (lib bnil)) (lib bnil))))
+    (by
+      (induction n (h t ih) (reduce weak bit-rules)
+        (sum-cases h (z) (reduce weak bit-rules) (reduce weak bit-rules)))))
+  ; Zero is less than a successor.
+  (theorem lt-zero-succ
+    (internal () (forall ((n Bits)) (equal (lib ltB (lib bnil) (lib succ n)) (lib b0 (lib bnil)))))
+    (by
+      (induction n (h t ih) (reduce weak bit-rules)
+        (sum-cases h (z) (reduce weak bit-rules) (reduce weak bit-rules)))))
+  ; A conditional between two successors is the successor of the conditional.
+  (theorem cond-succ
+    (internal ()
+      (forall ((y Bits) (x Bits) (c Bits))
+        (equal (lib cond Bits c (lib succ x) (lib succ y)) (lib succ (lib cond Bits c x y)))))
+    (by (induction c (h t ih) (reduce weak bit-rules) (reduce weak bit-rules))))
+  ; The successor of the predecessor of a bit before a bitstring is that bitstring, as functions of
+  ; the bit.
+  (theorem succ-of-pred-fn
+    (internal ()
+      (forall ((bs Bits))
+        (equal (lam ((b Bit)) (lib succ (lib pred (cons Bit b bs))))
+          (lam ((b Bit)) (cons Bit b bs)))))
+    (by
+      (induction bs (h t ih)
+        (extensionality c (sum-cases c (z) (reduce weak bit-rules) (reduce weak bit-rules)))
+        (extensionality c
+          (sum-cases c (z) (instances weak ih ((hx h)) (reduce weak hx bit-rules))
+            (instances weak ih ((hx h)) (reduce weak hx bit-rules)))))))
+  ; The case analysis of a comparison that is a case analysis of a comparison is the case analysis
+  ; of the inner one between the case analyses of its branches.
+  (theorem ord-case
+    (internal (X)
+      (forall ((g X) (e X) (l X) (c Ord) (b Ord) (a Ord) (o Ord))
+        (equal
+          ((case Unit Bit X
+             (pair (lam ((u Unit)) l)
+               (lam ((d Bit)) ((case Unit Unit X (pair (lam ((u Unit)) e) (lam ((u Unit)) g))) d))))
+           ((case Unit Bit Ord
+              (pair (lam ((u Unit)) a)
+                (lam ((d Bit))
+                  ((case Unit Unit Ord (pair (lam ((u Unit)) b) (lam ((u Unit)) c))) d)))) o))
+          ((case Unit Bit X
+             (pair
+               (lam ((u Unit))
+                 ((case Unit Bit X
+                    (pair (lam ((u Unit)) l)
+                      (lam ((d Bit))
+                        ((case Unit Unit X (pair (lam ((u Unit)) e) (lam ((u Unit)) g))) d)))) a))
+               (lam ((d Bit))
+                 ((case Unit Unit X
+                    (pair
+                      (lam ((u Unit))
+                        ((case Unit Bit X
+                           (pair (lam ((u Unit)) l)
+                             (lam ((d Bit))
+                               ((case Unit Unit X (pair (lam ((u Unit)) e) (lam ((u Unit)) g)))
+                                d)))) b))
+                      (lam ((u Unit))
+                        ((case Unit Bit X
+                           (pair (lam ((u Unit)) l)
+                             (lam ((d Bit))
+                               ((case Unit Unit X (pair (lam ((u Unit)) e) (lam ((u Unit)) g)))
+                                d)))) c)))) d)))) o))))
+    (by (auto weak 3 bit-rules)))
+  ; A number compares with a successor as less where it compares with the number as less or equal,
+  ; as functions of the first number.
+  (theorem cmp-succ-right-fn
+    (internal ()
+      (forall ((n Bits))
+        (equal
+          (lam ((m Bits))
+            ((case Unit Bit Ord
+               (pair (lam ((u Unit)) (inl Unit Bit unit))
+                 (lam ((d Bit))
+                   ((case Unit Unit Ord
+                      (pair (lam ((u Unit)) (inr Unit Bit (inr Unit Unit unit)))
+                        (lam ((u Unit)) (inr Unit Bit (inr Unit Unit unit))))) d))))
+             (lib cmp m (lib succ n))))
+          (lam ((m Bits))
+            ((case Unit Bit Ord
+               (pair (lam ((u Unit)) (inl Unit Bit unit))
+                 (lam ((d Bit))
+                   ((case Unit Unit Ord
+                      (pair (lam ((u Unit)) (inl Unit Bit unit))
+                        (lam ((u Unit)) (inr Unit Bit (inr Unit Unit unit))))) d))))
+             (lib cmp m n))))))
+    (by
+      (induction n (h t ih) (extensionality m (auto open 8 comparison-rules))
+        (extensionality m
+          (sum-cases h (z)
+            (cases m (y ys) (auto open 2 comparison-rules)
+              (sum-cases y (w) (auto open 2 comparison-rules) (auto open 2 comparison-rules)))
+            (cases m (y ys) (auto open 2 comparison-rules)
+              (sum-cases y (w) (auto open 2 comparison-rules) (auto open 2 comparison-rules))))))))
+  ; A successor compares with a number as less or equal where the number it succeeds compares as
+  ; less, as functions of that number.
+  (theorem cmp-succ-left-fn
+    (internal ()
+      (forall ((n Bits))
+        (equal
+          (lam ((m Bits))
+            ((case Unit Bit Ord
+               (pair (lam ((u Unit)) (inl Unit Bit unit))
+                 (lam ((d Bit))
+                   ((case Unit Unit Ord
+                      (pair (lam ((u Unit)) (inl Unit Bit unit))
+                        (lam ((u Unit)) (inr Unit Bit (inr Unit Unit unit))))) d))))
+             (lib cmp (lib succ m) n)))
+          (lam ((m Bits))
+            ((case Unit Bit Ord
+               (pair (lam ((u Unit)) (inl Unit Bit unit))
+                 (lam ((d Bit))
+                   ((case Unit Unit Ord
+                      (pair (lam ((u Unit)) (inr Unit Bit (inr Unit Unit unit)))
+                        (lam ((u Unit)) (inr Unit Bit (inr Unit Unit unit))))) d))))
+             (lib cmp m n))))))
+    (by
+      (induction n (h t ih) (extensionality m (auto open 8 comparison-rules))
+        (extensionality m
+          (sum-cases h (z)
+            (cases m (y ys) (auto open 2 comparison-rules)
+              (sum-cases y (w) (auto open 2 comparison-rules) (auto open 2 comparison-rules)))
+            (cases m (y ys) (auto open 2 comparison-rules)
+              (sum-cases y (w) (auto open 2 comparison-rules) (auto open 2 comparison-rules))))))))
+  ; A successor compares with a number as less or equal where the number it succeeds compares as
+  ; less.
+  (theorem cmp-succ-left
+    (internal ()
+      (forall ((n Bits) (m Bits))
+        (equal
+          ((case Unit Bit Ord
+             (pair (lam ((u Unit)) (inl Unit Bit unit))
+               (lam ((d Bit))
+                 ((case Unit Unit Ord
+                    (pair (lam ((u Unit)) (inl Unit Bit unit))
+                      (lam ((u Unit)) (inr Unit Bit (inr Unit Unit unit))))) d))))
+           (lib cmp (lib succ m) n))
+          ((case Unit Bit Ord
+             (pair (lam ((u Unit)) (inl Unit Bit unit))
+               (lam ((d Bit))
+                 ((case Unit Unit Ord
+                    (pair (lam ((u Unit)) (inr Unit Bit (inr Unit Unit unit)))
+                      (lam ((u Unit)) (inr Unit Bit (inr Unit Unit unit))))) d)))) (lib cmp m n)))))
+    (by (pointwise cmp-succ-left-fn open comparison-rules)))
+  ; A number compares with a successor as less where it compares with the number as less or equal.
+  (theorem cmp-succ-right
+    (internal ()
+      (forall ((n Bits) (m Bits))
+        (equal
+          ((case Unit Bit Ord
+             (pair (lam ((u Unit)) (inl Unit Bit unit))
+               (lam ((d Bit))
+                 ((case Unit Unit Ord
+                    (pair (lam ((u Unit)) (inr Unit Bit (inr Unit Unit unit)))
+                      (lam ((u Unit)) (inr Unit Bit (inr Unit Unit unit))))) d))))
+           (lib cmp m (lib succ n)))
+          ((case Unit Bit Ord
+             (pair (lam ((u Unit)) (inl Unit Bit unit))
+               (lam ((d Bit))
+                 ((case Unit Unit Ord
+                    (pair (lam ((u Unit)) (inl Unit Bit unit))
+                      (lam ((u Unit)) (inr Unit Bit (inr Unit Unit unit))))) d)))) (lib cmp m n)))))
+    (by (pointwise cmp-succ-right-fn open comparison-rules)))
+  ; The comparison of two successors is that of the numbers, as functions of the first.
+  (theorem cmp-succ-fn
+    (internal ()
+      (forall ((n Bits))
+        (equal (lam ((m Bits)) (lib cmp (lib succ m) (lib succ n)))
+          (lam ((m Bits)) (lib cmp m n)))))
+    (by
+      (induction n (h t ih)
+        (extensionality m (auto open 8 cmp-succ-left cmp-succ-right comparison-rules))
+        (extensionality m
+          (sum-cases h (z)
+            (cases m (y ys) (auto open 2 cmp-succ-left cmp-succ-right comparison-rules)
+              (sum-cases y (w) (auto open 2 cmp-succ-left cmp-succ-right comparison-rules)
+                (auto open 2 cmp-succ-left cmp-succ-right comparison-rules)))
+            (cases m (y ys) (auto open 2 cmp-succ-left cmp-succ-right comparison-rules)
+              (sum-cases y (w) (auto open 2 cmp-succ-left cmp-succ-right comparison-rules)
+                (auto open 2 cmp-succ-left cmp-succ-right comparison-rules))))))))
+  ; The comparison of two successors is that of the numbers.
+  (theorem cmp-succ
+    (internal ()
+      (forall ((n Bits) (m Bits)) (equal (lib cmp (lib succ m) (lib succ n)) (lib cmp m n))))
+    (by (pointwise cmp-succ-fn open comparison-rules)))
+  ; One more application before an iteration is one more after it, as functions of the start.
+  (theorem iter-comm-fn
+    (internal (X)
+      (forall ((f (Arrow X X)) (n Bits))
+        (equal (lam ((z X)) (lib iter X n f (f z))) (lam ((z X)) (f (lib iter X n f z))))))
+    (by
+      (induction n (h t ih) (extensionality m (auto open 4 comparison-rules))
+        (extensionality m (auto open 4 comparison-rules)))))
+  ; One more application before an iteration is one more after it.
+  (theorem iter-comm
+    (internal (X)
+      (forall ((f (Arrow X X)) (n Bits) (z X))
+        (equal (lib iter X n f (f z)) (f (lib iter X n f z)))))
+    (by (pointwise iter-comm-fn open comparison-rules)))
+  ; The iteration to a successor is the iteration after one application, as functions of the start.
+  (theorem iter-succ-fn
+    (internal (X)
+      (forall ((f (Arrow X X)) (n Bits))
+        (equal (lam ((z X)) (lib iter X (lib succ n) f z)) (lam ((z X)) (lib iter X n f (f z))))))
+    (by
+      (induction n (h t ih) (extensionality m (auto open 4 (iter-comm X) comparison-rules))
+        (extensionality m (auto open 4 (iter-comm X) comparison-rules)))))
+  ; The iteration to a successor is the iteration after one application.
+  (theorem iter-succ
+    (internal (X)
+      (forall ((f (Arrow X X)) (n Bits) (z X))
+        (equal (lib iter X (lib succ n) f z) (lib iter X n f (f z)))))
+    (by (pointwise iter-succ-fn open comparison-rules)))
+  ; The successor of the predecessor of a bit before a bitstring is that bitstring.
+  (theorem succ-of-pred
+    (internal ()
+      (forall ((bs Bits) (b Bit)) (equal (lib succ (lib pred (cons Bit b bs))) (cons Bit b bs))))
+    (by (pointwise succ-of-pred-fn open comparison-rules))
+    (normal open comparison-rules))
+  ; The sum of a successor with a number is the successor of the sum, as functions of the first
+  ; summand.
+  (theorem add-succ-left-fn
+    (internal ()
+      (forall ((n Bits))
+        (equal (lam ((m Bits)) (lib add (lib succ m) n))
+          (lam ((m Bits)) (lib succ (lib add m n))))))
+    (by
+      (induction n (h t ih) (extensionality m (auto open 4 comparison-rules))
+        (extensionality m (auto open 4 comparison-rules)))))
+  ; The sum of a successor with a number is the successor of the sum.
+  (theorem add-succ-left
+    (internal ()
+      (forall ((n Bits) (m Bits)) (equal (lib add (lib succ m) n) (lib succ (lib add m n)))))
+    (by (pointwise add-succ-left-fn open lookup-rules)))
+  ; The lookup in a context after inserted types, at an index moved past them, is the lookup in the
+  ; context at the index, as functions of the index.
+  (theorem nth-skip-fn
+    (internal ()
+      (forall ((c2 (List T)) (c0 (List T)))
+        (equal
+          (lam ((i Bits))
+            ((kernel
+               (lam ((t T))
+                 (Prelude.nth (Prelude.append c0 c2) (add (label t) (Prelude.length c0)))))
+             (node Bits (pair i (nil T)))))
+          (lam ((i Bits))
+            ((kernel (lam ((t T)) (Prelude.nth c2 (label t)))) (node Bits (pair i (nil T))))))))
+    (by
+      (induction c0 (h t ih) (extensionality j (auto open 2 add-succ lookup-rules))
+        (extensionality j (auto open 0 add-succ lookup-rules)))))
+  ; The lookup in a context after inserted types, at an index moved past them, is the lookup in the
+  ; context at the index.
+  (theorem nth-skip
+    (internal ()
+      (forall ((c2 (List T)) (c0 (List T)) (i Bits))
+        (equal
+          ((kernel
+             (lam ((t T)) (Prelude.nth (Prelude.append c0 c2) (add (label t) (Prelude.length c0)))))
+           (node Bits (pair i (nil T))))
+          ((kernel (lam ((t T)) (Prelude.nth c2 (label t)))) (node Bits (pair i (nil T)))))))
+    (by (pointwise nth-skip-fn open lookup-rules))
+    (normal open lookup-rules))
+  ; The lookup at a variable's index moved past the types inserted below a context's first part is
+  ; the lookup at the index in the context without them, as functions of the index, by induction on
+  ; the first part.
+  (theorem nth-weaken-fn
+    (internal ()
+      (forall ((c2 (List T)) (c0 (List T)) (c1 (List T)))
+        (equal
+          (lam ((i Bits))
+            ((kernel
+               (lam ((t T))
+                 (Prelude.nth (Prelude.append c1 (Prelude.append c0 c2))
+                   (if (lt (label t) (Prelude.length c1)) (label t)
+                     (add (label t) (Prelude.length c0)))))) (node Bits (pair i (nil T)))))
+          (lam ((i Bits))
+            ((kernel (lam ((t T)) (Prelude.nth (Prelude.append c1 c2) (label t))))
+             (node Bits (pair i (nil T))))))))
+    (by
+      (induction c1 (h t ih) (extensionality j (auto open 2 nth-skip add-succ-left lookup-rules))
+        (extensionality j
+          (cases j (y ys) (auto open 1 nth-skip add-succ-left lookup-rules)
+            (succ-pred succ-of-pred (auto open 0 nth-skip add-succ-left lookup-rules)))))))
+  ; The lookup at a variable's index moved past the types inserted below a context's first part is
+  ; the lookup at the index in the context without them.
+  (theorem nth-weaken
+    (internal ()
+      (forall ((c2 (List T)) (c0 (List T)) (c1 (List T)) (i Bits))
+        (equal
+          ((kernel
+             (lam ((t T))
+               (Prelude.nth (Prelude.append c1 (Prelude.append c0 c2))
+                 (if (lt (label t) (Prelude.length c1)) (label t)
+                   (add (label t) (Prelude.length c0)))))) (node Bits (pair i (nil T))))
+          ((kernel (lam ((t T)) (Prelude.nth (Prelude.append c1 c2) (label t))))
+           (node Bits (pair i (nil T)))))))
+    (by (pointwise nth-weaken-fn weak typing-rules))
+    (normal weak typing-rules))
+  ; Weakening preserves types: the type the checker infers for a term weakened past the types c0,
+  ; inserted below c1, in the context of c1, c0 and c2, is the type it infers for the term in the
+  ; context of c1 and c2, as functions of the environment and the contexts. By induction on the term
+  ; with the hypothesis at each child: at a construction the label's bits decide the checker's and
+  ; the traversal's tests; at a label whose case depends on its children's types the children are
+  ; split to their number, and the hypothesis is instantiated at each child, for an abstraction's
+  ; body at the first context extended by the abstraction's type.
+  (theorem weakening
+    (internal ()
+      (forall ((t T))
+        (equal
+          (lam ((G (List T)) (c1 (List T)) (c0 (List T)) (c2 (List T)))
+            (kernel
+              (Check.typeIn G (Prelude.append c1 (Prelude.append c0 c2))
+                (Subst.wkAt (Prelude.length c1) (Prelude.length c0) t))))
+          (lam ((G (List T)) (c1 (List T)) (c0 (List T)) (c2 (List T)))
+            (kernel (Check.typeIn G (Prelude.append c1 c2) t))))))
+    (by
+      (tree-induction t (l cs ih)
+        (with-rules (typing-rules nth-weaken)
+          (bits-cases l 5 by-reduction (8 13 14)
+            (revert-cases ih cs (a as) by-reduction
+              (extensionality G
+                (extensionality c1
+                  (extensionality c0
+                    (extensionality c2
+                      (child-hypotheses weak ih (((h0 G c1 c0 c2))) (reduce weak h0)))))))
+            (9 10 12 20)
+            (revert-cases ih cs (a as) by-reduction
+              (revert-cases ih as (b bs) by-reduction
+                (extensionality G
+                  (extensionality c1
+                    (extensionality c0
+                      (extensionality c2
+                        (child-hypotheses weak ih
+                          (((h0 G c1 c0 c2))
+                           ((h1 G c1 c0 c2)
+                            (h1x G
+                              (cons T
+                                (fst ((rose-rec RRFold (n) rr-fold-step a) check-step-reduced))
+                                c1)
+                              c0
+                              c2)))
+                          (reduce weak h0 h1 h1x))))))))
+            (16)
+            (revert-cases ih cs (a as) by-reduction
+              (revert-cases ih as (b bs) by-reduction
+                (revert-cases ih bs (c cs3) by-reduction
+                  (extensionality G
+                    (extensionality c1
+                      (extensionality c0
+                        (extensionality c2
+                          (child-hypotheses weak ih
+                            (((h0 G c1 c0 c2))
+                             ((h1 G c1 c0 c2)
+                              (h1x G
+                                (cons T
+                                  (fst ((rose-rec RRFold (n) rr-fold-step a) check-step-reduced))
+                                  c1)
+                                c0
+                                c2))
+                             ((h2 G c1 c0 c2)))
+                            (reduce weak h0 h1 h1x h2)))))))))))))))

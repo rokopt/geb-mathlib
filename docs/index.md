@@ -3934,8 +3934,16 @@ import-direction rules above are enforced by
   functions, hypotheses cut in from a theorem, from the congruence of a
   hypothesis and from an equation with a truth, reduction before a script,
   and the searches that split the values of tests, rewrite under masks by
-  hypotheses and split the variables conditionals are stuck on. Statements
-  over the datatype language's datatypes remain to be exposed.
+  hypotheses and split the variables conditionals are stuck on. The
+  documents `weakening.proofs.geb`, `substitution.proofs.geb` and
+  `expansion.proofs.geb` under `bootstrap/proofs/` state and prove with
+  them the developments of `GebTests/Prototypes/FreeTopos/Weakening.lean`,
+  `Substitution.lean` and `Expansion.lean`, the last about the program of
+  `bootstrap/kernel-forms.manifest`, whose module
+  `bootstrap/proofs/kernel-forms.geb` defines the predicates of the
+  kernel's forms; `scripts/proofs.sh` proves and replays them, and
+  `slow-checks.yml` runs it. Statements over the datatype language's
+  datatypes remain to be exposed.
   `scripts/preserve.py` records any manifest-based development through those
   commands: original and canonical source documents, the documents its proof
   document imports among them, checked core, a replayed

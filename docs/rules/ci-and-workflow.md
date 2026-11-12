@@ -15,6 +15,7 @@ paths:
 - [Literate site build](#literate-site-build)
 - [Loading modes](#loading-modes)
 - [Certificates](#certificates)
+- [Proof documents](#proof-documents)
 - [Benchmarks](#benchmarks)
 - [Action pinning policy](#action-pinning-policy)
 
@@ -330,6 +331,22 @@ that alters no compiled code leaves it, and so the key, unchanged.
 Documentation compiles to no code, but an operation that panics reports
 its source position, which is compiled into its message. The other
 workflows check the committed certificates and do not search.
+
+## Proof documents
+
+The documents under `bootstrap/proofs/` state and prove developments in the
+proof-source profile of `bootstrap/authoring.geb` (the manual's chapter
+Writing a first Geb development), each against the program it names. A
+development's search runs the prover written in Geb, compiled, and takes
+from a minute to tens of minutes. `scripts/tests/test-proof-scripts.sh`,
+which `ci.yml` and `scripts/test-tooling.sh` run, proves and replays the
+development of `tree-cases.proofs.geb` and exercises each form of the
+profile on the example of `examples/authoring/`. `scripts/proofs.sh` proves
+and replays every development, each document that no other imports with
+those it imports, side by side; `slow-checks.yml` runs it daily and on
+demand. A change to `bootstrap/authoring.geb`, to a tactic it composes, or
+to a document or the program it is about, is followed by
+`scripts/proofs.sh`.
 
 ## Benchmarks
 

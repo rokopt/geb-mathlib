@@ -1,0 +1,418 @@
+; Substitution preserves the types the kernel's type checker written in Geb infers, after the
+; development of weakening: the lemmas on the successors of bitstrings and on the lookups before, at
+; and past the substituted variable's index, and the theorem, an implication by the typing of the
+; substituted term.
+
+(proofs 3 (program weakening) (import weakening.proofs.geb)
+  ; The type checker's result at a node: the node, and its type as a function of the context.
+  (abbreviation RR (Prod T (Arrow (List T) T)))
+  ; The kernel's step of a fold into the type checker's results.
+  (abbreviation RRStep (Arrow T (Arrow (List RR) RR)))
+  ; The result of the rose tree's fold that the kernel's fold into the type checker's results
+  ; translates to: a function of the kernel's step.
+  (abbreviation RRFold (Arrow RRStep RR))
+  ; The type of comparisons: less, or else equal or greater.
+  (abbreviation Ord (Sum Unit Bit))
+  ; The step of the rose tree's fold into the type checker's results at a node n: the kernel's step
+  ; at the label and at the children's folds applied to it.
+  (abbreviation rr-fold-step
+    (lam ((f RRStep)) (f (node Bits (pair (fst n) (nil T))) (lib mapApp RRStep RR (snd n) f))))
+  ; The type checker's step in the environment G, as the internal language's term that the step
+  ; translates to.
+  (abbreviation check-step-reduced
+    (lam ((l T) (rs (List RR)))
+      ((lam ((raw T)) (pair raw (lam ((ctx (List T))) (Check.checkNode G raw rs ctx))))
+       ((lam ((x T) (y (List T))) (node Bits (pair (lib lab x) y))) l (Reader.rrTrees rs)))))
+  ; The rules of the lemmas on bitstrings: the first components of the folds of the successor, of
+  ; the predecessor and of the case analysis of lists.
+  (abbreviation bit-rules rebuild-succ rebuild-pred (rebuild-lcase Bit Ord)
+    (rebuild-lcase Bit Bits))
+  ; The rules of the lemmas on comparisons: the case analysis of a comparison that is a case
+  ; analysis, before those on bitstrings.
+  (abbreviation comparison-rules (ord-case Ord) (ord-case Bits) bit-rules)
+  ; The rules of the lookup lemmas, before those on comparisons.
+  (abbreviation lookup-rules lt-zero lt-zero-succ add-one length-label cmp-succ (iter-succ (List T))
+    cond-succ
+    unfold-rebuild
+    lambek
+    (rebuild-tail T)
+    lab-cond
+    comparison-rules)
+  ; The rules of the proofs at a label: the first components and the lengths of the folds, the
+  ; arithmetic of labels and the conditionals moved through projections, applications and folds.
+  (abbreviation typing-rules trav-children trav-first check-label unfold-rebuild lambek
+    check-children-length
+    trav-all-length
+    length-label
+    add-one
+    add-one-cons
+    (rebuild-lcase Bit Bits)
+    rebuild-succ
+    fold-cond
+    (cond-cond T)
+    (snd-cond T (Arrow (List T) T))
+    (fst-cond T (Arrow (List T) T))
+    lab-cond
+    (app-cond (List T) T))
+  ; The rules of the proofs at a label: weakening's, its instance below no part of the context, and
+  ; the lookup at the substituted variable.
+  (abbreviation substitution-rules typing-rules nth-weaken weakening-below subst-nth)
+  ; The proof at the environment, the contexts, the type and the substituted term, under the
+  ; antecedent in weak normal form, by weak reduction of both sides.
+  (abbreviation by-reduction
+    (extensionality G
+      (extensionality c1
+        (extensionality c
+          (extensionality a
+            (extensionality u (assume hA (reduce-hypotheses weak (hA) (reduce weak hA)))))))))
+  ; The instance of weakening below no part of the context: the type of a term weakened past a
+  ; context's first part, in the context, is its type in the rest.
+  (theorem weakening-below
+    (internal ()
+      (forall ((c (List T)) (c1 (List T)) (G (List T)) (t T))
+        (equal (kernel (Check.typeIn G (Prelude.append c1 c) (Subst.wk (Prelude.length c1) t)))
+          (kernel (Check.typeIn G c t)))))
+    (by (instance weakening (t) (G (nil T) c1 c) weak)))
+  ; The first component of doubling's fold is the bitstring.
+  (theorem rebuild-dbl
+    (internal ()
+      (forall ((n Bits))
+        (equal
+          (fst
+            (list-rec (pair (lib bnil) (lib bnil)) (b r)
+              (pair (cons Bit b (fst r))
+                ((case Unit Unit Bits
+                   (pair (lam ((u Unit)) (lib b1 (snd r)))
+                     (lam ((u Unit)) (lib b1 (lib b0 (fst r)))))) b))
+              n))
+          n)))
+    (by (fold-uniqueness n (y ys r) (cons Bit y r) (reduce weak) (reduce weak))))
+  ; A conditional on a successor, which is not empty, is its first branch.
+  (theorem cond-at-succ
+    (internal (X) (forall ((y X) (x X) (n Bits)) (equal (lib cond X (lib succ n) x y) x)))
+    (by
+      (induction n (h t ih) (reduce weak rebuild-dbl lookup-rules)
+        (sum-cases h (z) (reduce weak rebuild-dbl lookup-rules)
+          (reduce weak rebuild-dbl lookup-rules)))))
+  ; The predecessor of a successor is the number.
+  (theorem pred-succ (internal () (forall ((n Bits)) (equal (lib pred (lib succ n)) n)))
+    (by
+      (induction n (h t ih)
+        (reduce weak (cond-at-succ Bits) (cond-at-succ Ord) rebuild-dbl lookup-rules)
+        (sum-cases h (z)
+          (with-rules ((cond-at-succ Bits) (cond-at-succ Ord) rebuild-dbl lookup-rules)
+            (reduce-hypotheses weak (ih) (reduce weak ih)))
+          (with-rules ((cond-at-succ Bits) (cond-at-succ Ord) rebuild-dbl lookup-rules)
+            (reduce-hypotheses weak (ih) (reduce weak ih)))))))
+  ; The double of a successor is the bit one before the number.
+  (theorem dbl-succ
+    (internal ()
+      (forall ((n Bits)) (equal (lib dbl (lib succ n)) (cons Bit (inr Unit Unit unit) n))))
+    (by
+      (induction n (h t ih)
+        (reduce weak pred-succ (cond-at-succ Bits) (cond-at-succ Ord) rebuild-dbl lookup-rules)
+        (sum-cases h (z)
+          (with-rules (pred-succ (cond-at-succ Bits) (cond-at-succ Ord) rebuild-dbl lookup-rules)
+            (reduce-hypotheses weak (ih) (reduce weak ih)))
+          (with-rules (pred-succ (cond-at-succ Bits) (cond-at-succ Ord) rebuild-dbl lookup-rules)
+            (reduce-hypotheses weak (ih) (reduce weak ih)))))))
+  ; A successor less one is the number.
+  (theorem sub-succ
+    (internal () (forall ((n Bits)) (equal (lib sub (lib succ n) (lib b0 (lib bnil))) n)))
+    (by
+      (induction n (h t ih)
+        (auto open 2 dbl-succ pred-succ (cond-at-succ Bits) (cond-at-succ Ord) rebuild-dbl
+          lookup-rules)
+        (sum-cases h (z)
+          (auto open 2 dbl-succ pred-succ (cond-at-succ Bits) (cond-at-succ Ord) rebuild-dbl
+            lookup-rules)
+          (auto open 2 dbl-succ pred-succ (cond-at-succ Bits) (cond-at-succ Ord) rebuild-dbl
+            lookup-rules)))))
+  ; Zero is not a successor.
+  (theorem eq-zero-succ
+    (internal () (forall ((n Bits)) (equal (lib eqB (lib bnil) (lib succ n)) (lib bnil))))
+    (by
+      (induction n (h t ih)
+        (auto open 2 sub-succ dbl-succ pred-succ (cond-at-succ Bits) (cond-at-succ Ord) rebuild-dbl
+          lookup-rules)
+        (sum-cases h (z)
+          (auto open 2 sub-succ dbl-succ pred-succ (cond-at-succ Bits) (cond-at-succ Ord)
+            rebuild-dbl
+            lookup-rules)
+          (auto open 2 sub-succ dbl-succ pred-succ (cond-at-succ Bits) (cond-at-succ Ord)
+            rebuild-dbl
+            lookup-rules)))))
+  ; A successor is not empty.
+  (theorem nil-succ
+    (internal () (forall ((n Bits)) (equal (lib isNil Bit (lib succ n)) (lib bnil))))
+    (by
+      (induction n (h t ih)
+        (auto open 2 eq-zero-succ sub-succ dbl-succ pred-succ (cond-at-succ Bits) (cond-at-succ Ord)
+          rebuild-dbl
+          lookup-rules)
+        (sum-cases h (z)
+          (auto open 2 eq-zero-succ sub-succ dbl-succ pred-succ (cond-at-succ Bits)
+            (cond-at-succ Ord)
+            rebuild-dbl
+            lookup-rules)
+          (auto open 2 eq-zero-succ sub-succ dbl-succ pred-succ (cond-at-succ Bits)
+            (cond-at-succ Ord)
+            rebuild-dbl
+            lookup-rules)))))
+  ; Two successors are equal where the numbers are, as functions of the first.
+  (theorem eq-succ-fn
+    (internal ()
+      (forall ((n Bits))
+        (equal (lam ((m Bits)) (lib eqB (lib succ m) (lib succ n)))
+          (lam ((m Bits)) (lib eqB m n)))))
+    (by
+      (induction n (h t ih)
+        (extensionality m
+          (auto open 8 nil-succ eq-zero-succ sub-succ dbl-succ pred-succ (cond-at-succ Bits)
+            (cond-at-succ Ord)
+            rebuild-dbl
+            lookup-rules))
+        (extensionality m
+          (sum-cases h (z)
+            (cases m (y ys)
+              (auto open 2 nil-succ eq-zero-succ sub-succ dbl-succ pred-succ (cond-at-succ Bits)
+                (cond-at-succ Ord)
+                rebuild-dbl
+                lookup-rules)
+              (sum-cases y (w)
+                (auto open 2 nil-succ eq-zero-succ sub-succ dbl-succ pred-succ (cond-at-succ Bits)
+                  (cond-at-succ Ord)
+                  rebuild-dbl
+                  lookup-rules)
+                (auto open 2 nil-succ eq-zero-succ sub-succ dbl-succ pred-succ (cond-at-succ Bits)
+                  (cond-at-succ Ord)
+                  rebuild-dbl
+                  lookup-rules)))
+            (cases m (y ys)
+              (auto open 2 nil-succ eq-zero-succ sub-succ dbl-succ pred-succ (cond-at-succ Bits)
+                (cond-at-succ Ord)
+                rebuild-dbl
+                lookup-rules)
+              (sum-cases y (w)
+                (auto open 2 nil-succ eq-zero-succ sub-succ dbl-succ pred-succ (cond-at-succ Bits)
+                  (cond-at-succ Ord)
+                  rebuild-dbl
+                  lookup-rules)
+                (auto open 2 nil-succ eq-zero-succ sub-succ dbl-succ pred-succ (cond-at-succ Bits)
+                  (cond-at-succ Ord)
+                  rebuild-dbl
+                  lookup-rules))))))))
+  ; Two successors are equal where the numbers are.
+  (theorem eq-succ
+    (internal ()
+      (forall ((n Bits) (m Bits)) (equal (lib eqB (lib succ m) (lib succ n)) (lib eqB m n))))
+    (by
+      (pointwise eq-succ-fn open nil-succ eq-zero-succ sub-succ dbl-succ pred-succ
+        (cond-at-succ Bits)
+        (cond-at-succ Ord)
+        rebuild-dbl
+        lookup-rules))
+    (normal open nil-succ eq-zero-succ sub-succ dbl-succ pred-succ (cond-at-succ Bits)
+      (cond-at-succ Ord)
+      rebuild-dbl
+      lookup-rules))
+  ; Past the head of the context's first part, the lookup below the substituted variable is the
+  ; lookup in the rest at the index before, where the index is neither below nor at the first part's
+  ; length, as functions of the index.
+  (theorem subst-step-fn
+    (internal ()
+      (forall ((y T) (a T) (m (List T)) (c1 (List T)))
+        (equal
+          (lam ((i Bits))
+            ((kernel
+               (lam ((t T))
+                 (if (lt (label t) (Prelude.length c1)) (Prelude.nth m (label t))
+                   (if (eq (label t) (Prelude.length c1)) (Prelude.some a)
+                     (Prelude.nth (cons y m) (label t)))))) (node Bits (pair i (nil T)))))
+          (lam ((i Bits))
+            ((kernel
+               (lam ((t T))
+                 (if (lt (label t) (Prelude.length c1)) (Prelude.nth m (label t))
+                   (if (eq (label t) (Prelude.length c1)) (Prelude.some a)
+                     (Prelude.nth m (sub (label t) 1)))))) (node Bits (pair i (nil T))))))))
+    (by
+      (extensionality j
+        (cases j (d ds)
+          (auto open 2 eq-succ nil-succ eq-zero-succ sub-succ dbl-succ pred-succ (cond-at-succ Bits)
+            (cond-at-succ Ord)
+            rebuild-dbl
+            lookup-rules)
+          (succ-pred succ-of-pred
+            (auto open 2 eq-succ nil-succ eq-zero-succ sub-succ dbl-succ pred-succ
+              (cond-at-succ Bits)
+              (cond-at-succ Ord)
+              rebuild-dbl
+              lookup-rules))))))
+  ; Past the head of the context's first part, the lookup below the substituted variable is the
+  ; lookup in the rest at the index before, where the index is neither below nor at the first part's
+  ; length.
+  (theorem subst-step
+    (internal ()
+      (forall ((y T) (a T) (m (List T)) (c1 (List T)) (i Bits))
+        (equal
+          ((kernel
+             (lam ((t T))
+               (if (lt (label t) (Prelude.length c1)) (Prelude.nth m (label t))
+                 (if (eq (label t) (Prelude.length c1)) (Prelude.some a)
+                   (Prelude.nth (cons y m) (label t)))))) (node Bits (pair i (nil T))))
+          ((kernel
+             (lam ((t T))
+               (if (lt (label t) (Prelude.length c1)) (Prelude.nth m (label t))
+                 (if (eq (label t) (Prelude.length c1)) (Prelude.some a)
+                   (Prelude.nth m (sub (label t) 1)))))) (node Bits (pair i (nil T)))))))
+    (by
+      (pointwise subst-step-fn open eq-succ nil-succ eq-zero-succ sub-succ dbl-succ pred-succ
+        (cond-at-succ Bits)
+        (cond-at-succ Ord)
+        rebuild-dbl
+        lookup-rules))
+    (normal open eq-succ nil-succ eq-zero-succ sub-succ dbl-succ pred-succ (cond-at-succ Bits)
+      (cond-at-succ Ord)
+      rebuild-dbl
+      lookup-rules))
+  ; The type of a variable, with the substituted term's type for the variable below the context's
+  ; first part, is its type in the context with the substituted variable, as functions of the index,
+  ; by induction on the first part.
+  (theorem subst-nth-fn
+    (internal ()
+      (forall ((a T) (c (List T)) (c1 (List T)))
+        (equal
+          (lam ((i Bits))
+            ((kernel
+               (lam ((t T))
+                 (if (lt (label t) (Prelude.length c1))
+                   (Prelude.nth (Prelude.append c1 c) (label t))
+                   (if (eq (label t) (Prelude.length c1)) (Prelude.some a)
+                     (Prelude.nth (Prelude.append c1 c) (sub (label t) 1))))))
+             (node Bits (pair i (nil T)))))
+          (lam ((i Bits))
+            ((kernel (lam ((t T)) (Prelude.nth (Prelude.append c1 (cons a c)) (label t))))
+             (node Bits (pair i (nil T))))))))
+    (by
+      (induction c1 (h t ih)
+        (extensionality j
+          (cases j (d ds)
+            (auto open 2 subst-step eq-succ nil-succ eq-zero-succ sub-succ dbl-succ pred-succ
+              (cond-at-succ Bits)
+              (cond-at-succ Ord)
+              rebuild-dbl
+              lookup-rules)
+            (succ-pred succ-of-pred
+              (auto open 2 subst-step eq-succ nil-succ eq-zero-succ sub-succ dbl-succ pred-succ
+                (cond-at-succ Bits)
+                (cond-at-succ Ord)
+                rebuild-dbl
+                lookup-rules))))
+        (extensionality j
+          (cases j (d ds)
+            (auto open 2 subst-step eq-succ nil-succ eq-zero-succ sub-succ dbl-succ pred-succ
+              (cond-at-succ Bits)
+              (cond-at-succ Ord)
+              rebuild-dbl
+              lookup-rules)
+            (succ-pred succ-of-pred
+              (auto open 2 subst-step eq-succ nil-succ eq-zero-succ sub-succ dbl-succ pred-succ
+                (cond-at-succ Bits)
+                (cond-at-succ Ord)
+                rebuild-dbl
+                lookup-rules)))))))
+  ; The type of a variable, with the substituted term's type for the variable below the context's
+  ; first part, is its type in the context with the substituted variable.
+  (theorem subst-nth
+    (internal ()
+      (forall ((a T) (c (List T)) (c1 (List T)) (i Bits))
+        (equal
+          ((kernel
+             (lam ((t T))
+               (if (lt (label t) (Prelude.length c1)) (Prelude.nth (Prelude.append c1 c) (label t))
+                 (if (eq (label t) (Prelude.length c1)) (Prelude.some a)
+                   (Prelude.nth (Prelude.append c1 c) (sub (label t) 1))))))
+           (node Bits (pair i (nil T))))
+          ((kernel (lam ((t T)) (Prelude.nth (Prelude.append c1 (cons a c)) (label t))))
+           (node Bits (pair i (nil T)))))))
+    (by (pointwise subst-nth-fn weak typing-rules nth-weaken))
+    (normal weak typing-rules nth-weaken))
+  ; Substitution preserves types: where the checker infers the type a for u in c, the type it infers
+  ; for t with u, weakened past c1, substituted for the variable below c1, in the context of c1 and
+  ; c, is the type it infers for t in the context of c1, a and c, as the implication's equality with
+  ; truth, a function of the environment, the contexts, the type and the substituted term. By
+  ; induction on the term as weakening is proved, each case under the antecedent, whose instances at
+  ; the children modus ponens gives their conclusions.
+  (theorem substitution
+    (internal ()
+      (forall ((t T))
+        (equal
+          (lam ((G (List T)) (c1 (List T)) (c (List T)) (a T) (u T))
+            (implies (equal (kernel (Check.typeIn G c u)) (kernel (Prelude.some a)))
+              (equal
+                (kernel
+                  (Check.typeIn G (Prelude.append c1 c)
+                    (Subst.trav (Subst.substVar u) t (Prelude.length c1))))
+                (kernel (Check.typeIn G (Prelude.append c1 (cons a c)) t)))))
+          (lam ((G (List T)) (c1 (List T)) (c (List T)) (a T) (u T)) true))))
+    (by
+      (tree-induction t (l cs ih)
+        (with-rules (substitution-rules)
+          (bits-cases l 5 by-reduction (8 13 14)
+            (revert-cases ih cs (d es) by-reduction
+              (extensionality G
+                (extensionality c1
+                  (extensionality c
+                    (extensionality a
+                      (extensionality u
+                        (assume hA
+                          (reduce-hypotheses weak (hA)
+                            (child-hypotheses weak ih (((h0 G c1 c a u)))
+                              (modus-ponens hA (h0) (reduce weak h0 hA)))))))))))
+            (9 10 12 20)
+            (revert-cases ih cs (d es) by-reduction
+              (revert-cases ih es (e ds) by-reduction
+                (extensionality G
+                  (extensionality c1
+                    (extensionality c
+                      (extensionality a
+                        (extensionality u
+                          (assume hA
+                            (reduce-hypotheses weak (hA)
+                              (child-hypotheses weak ih
+                                (((h0 G c1 c a u))
+                                 ((h1 G c1 c a u)
+                                  (h1x G
+                                    (cons T
+                                      (fst
+                                        ((rose-rec RRFold (n) rr-fold-step d) check-step-reduced))
+                                      c1)
+                                    c
+                                    a
+                                    u)))
+                                (modus-ponens hA (h0 h1 h1x) (reduce weak h0 h1 h1x hA))))))))))))
+            (16)
+            (revert-cases ih cs (d es) by-reduction
+              (revert-cases ih es (e ds) by-reduction
+                (revert-cases ih ds (f fs) by-reduction
+                  (extensionality G
+                    (extensionality c1
+                      (extensionality c
+                        (extensionality a
+                          (extensionality u
+                            (assume hA
+                              (reduce-hypotheses weak (hA)
+                                (child-hypotheses weak ih
+                                  (((h0 G c1 c a u))
+                                   ((h1 G c1 c a u)
+                                    (h1x G
+                                      (cons T
+                                        (fst
+                                          ((rose-rec RRFold (n) rr-fold-step d) check-step-reduced))
+                                        c1)
+                                      c
+                                      a
+                                      u))
+                                   ((h2 G c1 c a u)))
+                                  (modus-ponens hA (h0 h1 h1x h2)
+                                    (reduce weak h0 h1 h1x h2 hA)))))))))))))))))))

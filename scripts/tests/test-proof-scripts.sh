@@ -7,8 +7,9 @@
 # number of bits and by the scripts of its labels, abbreviations, the normal form of a theorem's
 # companion, rules that keep definitions folded, the uniqueness of folds with premises that
 # scripts prove, instances of theorems and hypotheses cut in from them, the searches that split
-# the values of tests and rewrite under masks, and the development of bootstrap/proofs/, proved
-# and replayed.
+# the values of tests and rewrite under masks, and the development of
+# bootstrap/proofs/tree-cases.proofs.geb, proved and replayed. scripts/proofs.sh proves the
+# developments of bootstrap/proofs/ whose searches take longer.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
