@@ -3942,6 +3942,13 @@ import-direction rules above are enforced by
   separate workspace folder and checks saving edited buffers, imported
   proofs, located errors, failed search, certificate reuse, immutable
   records and open obligations.
+  `GebHost/Navigation.lean` derives declaration locations and documentation
+  from those source documents, using the module elaborator and binder-aware
+  renamer for references. `geb-author navigation` accepts editor snapshots
+  without saving or compiling them; the VS Code extension supplies
+  definition navigation, documentation hover, document outlines and symbol
+  lookup across the selected program, translating byte spans to editor
+  positions and discarding stale results.
   `Blake3.lean` computes the hash BLAKE3 [OConnorAumassonNevesWilcoxOHearn2020]
   (`Geb.Blake3.hash`). `Identity.lean` identifies a definition by the
   CIDv1 [RatajBerjon2026] of its payload, the canonical encoding of its

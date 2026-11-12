@@ -12,6 +12,7 @@ commands for a selected program. It does not change the compiler's grammar.
 - [Installation](#installation)
 - [Editing and formatting](#editing-and-formatting)
 - [Diagnostics](#diagnostics)
+- [Navigation](#navigation)
 - [Programs and commands](#programs-and-commands)
 - [Validation](#validation)
 - [Structural editing acceptance](#structural-editing-acceptance)
@@ -92,6 +93,40 @@ For an editor with a language-server client,
 [`editors/efm-langserver/config.yaml`](../efm-langserver/config.yaml)
 configures [efm-langserver](https://github.com/mattn/efm-langserver) to
 run the same command when a buffer is saved.
+
+## Navigation
+
+After building `geb-author` and selecting a program, Go to Definition
+resolves references to that program's declarations, including imports,
+aliases and module instances. An instance's declaration opens its
+template's source. Hover displays the source signature and its preceding
+documentation; comments before a declaration's note are included.
+The Outline view lists the current file's declarations, and Go to Symbol
+in Workspace searches the selected program.
+
+Navigation reads snapshots of open file buffers without saving them or
+compiling the program. The host reads the syntax and resolves modules;
+the extension translates its byte columns into editor positions,
+including Unicode names. Cancelled requests and results whose input
+buffers changed are discarded. Malformed syntax or rejected module
+resolution produces no navigation result; details appear in the
+`Geb navigation` output channel. Local-variable references, proof
+documents and sources stored in strict encodings have no navigation
+interface. Quoted data and shadowed global names do not navigate to a
+global declaration. Navigation requires workspace trust.
+
+The host interface is `geb-author navigation MANIFEST`. It reads a JSON
+object from standard input with `file`, one-based byte `line` and
+`column`, and `documents`, an array of `{path, text}` buffer snapshots
+under absolute paths. A zero line and column requests the declaration
+index alone. The result contains `symbols` and an optional `target`;
+each symbol names its file, full span, name selection, signature and
+documentation. Names, signatures and documentation are arrays of bytes,
+decoded as UTF-8 by the editor; file paths and kinds are JSON strings.
+Spans are `[startLine, startColumn, endLine, endColumn]`,
+with inclusive endpoints. This interface uses the existing document
+lexer and module renamer. The extension registers the standard
+[VS Code navigation providers](https://code.visualstudio.com/api/references/vscode-api#languages).
 
 ## Programs and commands
 
@@ -187,6 +222,11 @@ when unique across workspace folders, and `geb.record` accepts a new
 directory path in place of the directory dialog.
 
 ## Validation
+
+The editor suite includes navigation with unsaved imports, documentation,
+Unicode names, outlines and workspace symbols. To run only that fixture,
+pass `--navigation` to `node editors/vscode/test/run.cjs` after building
+`geb-author`.
 
 ```sh
 lake build geb-fmt geb-kernel geb-author geb-compile geb-defs

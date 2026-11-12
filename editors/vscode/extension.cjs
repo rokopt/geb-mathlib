@@ -77,6 +77,7 @@ exports.activate = context => {
   status.tooltip = 'Select the program used by Geb commands';
   const current = entries => entries.find(p => p.key === context.workspaceState.get('geb.program'))
     || (entries.length === 1 ? entries[0] : undefined);
+  require('./navigation.cjs').register(context, () => current(programs()));
   function refresh() {
     try { status.text = `Geb: ${current(programs())?.name || 'Select program'}`; }
     catch { status.text = 'Geb: Configure programs'; }
