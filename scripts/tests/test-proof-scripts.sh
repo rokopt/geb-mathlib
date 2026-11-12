@@ -4,7 +4,11 @@
 # a document names, the diagnostics of a rejected development, truth and implication, the tactics
 # of the induction on trees with the hypothesis at each child, of the instances of a hypothesis
 # and of implications, the alternative of two scripts and the case analysis of a bitstring to a
-# number of bits, and the development of bootstrap/proofs/, proved and replayed.
+# number of bits and by the scripts of its labels, abbreviations, the normal form of a theorem's
+# companion, rules that keep definitions folded, the uniqueness of folds with premises that
+# scripts prove, instances of theorems and hypotheses cut in from them, the searches that split
+# the values of tests and rewrite under masks, and the development of bootstrap/proofs/, proved
+# and replayed.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
@@ -120,6 +124,98 @@ HYP = f'''; Theorems of version 3 about the pair example.
               (pair (list-rec e (y r) y b) (list-rec e (y r) y c))))
           true)))
     (by (bits-cases b 2 (bits-cases c 1 (assume h (reduce weak h)))))))
+'''
+
+FORMS = '''; Theorems of version 3 about the pair example: abbreviations, the uniqueness of folds with
+; premises that scripts prove, instances of theorems, hypotheses cut in, normal forms and rules.
+
+(proofs 3 (import Pair.proofs.geb) (import lib/trees.proofs.geb)
+  ; A type, a term in the variable ts, several rules and a script.
+  (abbreviation Ts (List T))
+  (abbreviation rebuilt (list-rec (nil T) (t r) (cons T t r) ts))
+  (abbreviation append-rules append-nil append-nil-twice)
+  (abbreviation by-append (with-rules (append-rules) (reduce weak)))
+  ; The uniqueness of a list's fold, its premises by scripts.
+  (theorem rebuild-again (internal () (forall ((ts Ts)) (equal rebuilt ts)))
+    (by (fold-uniqueness ts (y ys r) (cons T y r) (reduce weak) (reduce weak))))
+  ; The uniqueness of a tree's fold, its premise by a script.
+  (theorem lambek-again
+    (internal ()
+      (forall ((t T))
+        (equal
+          (node Bits
+            (rose-rec (Prod Bits Ts) (n)
+              (pair (fst n) (list-rec (nil T) (c s) (cons T (node Bits c) s) (snd n)))
+              t))
+          t)))
+    (by
+      (tree-fold-uniqueness t (l cs rs) (node Bits (pair l rs))
+        (normalize 64 map-id map-fusion))))
+  ; A theorem that equates functions, and its instance at a term, applied to an argument.
+  (theorem first-fn
+    (internal (X) (forall ((x X)) (equal (lam ((y X)) (fst (pair y x))) (lam ((y X)) y))))
+    (by (extensionality z (reduce weak))))
+  (theorem first-at-pair (internal (X) (forall ((x X) (z X)) (equal (fst (pair z x)) z)))
+    (by (instance (first-fn X) (x) (z) weak)))
+  ; The rules of a script, and a theorem's instance cut in as a hypothesis.
+  (theorem append-nil-rules (forall ((xs Ts)) (equal (Lists.append xs (nil T)) xs)) (by by-append))
+  (theorem append-nil-have (forall ((xs Ts)) (equal (Lists.append xs (nil T)) xs))
+    (by (have h append-nil (xs) () (reduce-hypotheses weak (h) (reduce weak h)))))
+  ; The congruence of a hypothesis, and a formula that a hypothesis equates with a truth.
+  (theorem first-equal
+    (internal (X)
+      (forall ((p (Prod X X)) (q (Prod X X))) (implies (h (equal p q)) (equal (fst p) (fst q)))))
+    (by (congruence h (g (z (Prod X X)) (fst z)) (reduce-hypotheses weak (g) (reduce weak g)))))
+  (theorem holds-equal
+    (internal (X)
+      (forall ((x X) (y X)) (implies (h (equal (equal x y) (equal unit unit))) (equal x y))))
+    (by (holds h (g) (reduce weak g))))
+  ; A definition kept folded in a theorem's normal form, by which a rule rewrites where a script
+  ; keeps it folded.
+  (theorem first-folded (forall ((x T) (y T)) (equal (Pair.first x y) x)) (by (normalize 64))
+    (normal weak (folded Pair.first)))
+  (theorem first-twice (forall ((x T) (y T)) (equal (Pair.first (Pair.first x y) y) x))
+    (by (with-rules ((folded Pair.first) first-folded) (reduced weak (reduce weak)))))
+  ; The case analysis of a test's value, found among the sides' subterms.
+  (theorem test-either (forall ((x T) (y T)) (equal (if (Pair.left x y) 1 1) 1))
+    (by
+      (with-rules ((folded Pair.left))
+        (test-cases (Pair.left any any) 1 lambek (reduce weak) (reduce weak)))))
+  ; The search that splits the variable a conditional is stuck on.
+  (theorem cond-same-again (internal (X) (forall ((x X) (c Bits)) (equal (lib cond X c x x) x)))
+    (by (auto-conditions 4 lambek)))
+  ; The cases of a bitstring by the scripts of their labels: the empty bitstring, and the bit zero
+  ; before it.
+  (theorem label-scripts
+    (internal () (forall ((b Bits)) (equal (lib cond Bits b (lib bnil) (lib bnil)) (lib bnil))))
+    (by (bits-cases b 2 (reduce weak) (0 1) (reduce head))))
+  ; The argument of two applications rewritten to the left side of a theorem at the two innermost
+  ; variables.
+  (theorem cons-again
+    (internal ()
+      (forall ((bs Bits) (b Bit)) (equal ((lam ((x Bits)) x) (cons Bit b bs)) (cons Bit b bs))))
+    (by (reduce weak)))
+  (theorem at-cons
+    (internal ()
+      (forall ((f (Arrow Bits Bits)) (b Bit) (bs Bits))
+        (equal (f (cons Bit b bs)) (f (cons Bit b bs)))))
+    (by (succ-pred cons-again (reduce weak))))
+  ; A term rewritten under the mask of a conditional's test by a hypothesis, the conditional kept
+  ; folded.
+  (theorem absorb
+    (internal (X Y)
+      (forall ((f (Arrow Y X)) (y Y) (z Y) (x X) (c Bits))
+        (equal (lib cond X c (f (lib cond Y c z y)) x) (lib cond X c (f z) x))))
+    (by (induction c (b bs ih) (reduce weak) (sum-cases b (w) (reduce weak) (reduce weak)))))
+  (theorem under-mask
+    (internal ()
+      (forall ((t T) (m Bits) (n Bits) (c Bits))
+        (implies (h (equal (lib cond Bits c m n) (lib cond Bits c n n)))
+          (equal (lib cond T c (node Bits (pair m (nil T))) t)
+            (lib cond T c (node Bits (pair n (nil T))) t)))))
+    (by
+      (with-rules ((folded (lib cond)))
+        (mask-hypotheses absorb cond-same-again 1 (reduce weak))))))
 '''
 
 def document(body, imports=''):
@@ -244,6 +340,73 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
                       ' (by (first (reduce weak) (reduce weak))))'),
              '2:12', 'the script of the theorem a does not read')
 
+    # Version 3 abbreviates, proves the uniqueness of a fold with premises that scripts prove,
+    # cites the instances of theorems, cuts in hypotheses, states the normal form of a theorem's
+    # companion, keeps definitions folded, chooses a script by a bitstring's label, splits the
+    # values of tests and rewrites under masks and in arguments.
+    forms = root / 'Forms.proofs.geb'
+    forms.write_text(FORMS)
+    forms_cert = root / 'forms.cert'
+    run('prove', manifest, forms, forms_cert)
+    run('replay', manifest, forms, forms_cert)
+    def at(text, name):
+        for number, line in enumerate(text.splitlines(), 1):
+            column = line.find(f'(theorem {name}')
+            if column >= 0:
+                return f'{number}:{column + len("(theorem ") + 1}'
+        raise AssertionError(name)
+    def forms_rejected(old, new, name, message):
+        text = FORMS.replace(old, new)
+        assert text != FORMS, old
+        rejected(text, at(text, name), message)
+    # A definition kept folded is not unfolded: without the rule the script proves nothing.
+    forms_rejected('(with-rules ((folded Pair.first) first-folded)', '(with-rules ((folded Pair.first))',
+                   'first-twice', 'the script of the theorem first-twice does not prove it')
+    # A rule keeps folded definitions of the program and of the library; a normal form names a
+    # depth and rules; an abbreviation is expanded where it stands, and names what is bound there.
+    forms_rejected('(normal weak (folded Pair.first))', '(normal weak (folded Pair.second))',
+                   'first-folded', 'the script of the theorem first-folded does not read')
+    forms_rejected('(normal weak (folded Pair.first))', '(normal (folded Pair.first))',
+                   'first-folded', 'the script of the theorem first-folded does not read')
+    forms_rejected('(forall ((ts Ts)) (equal rebuilt ts))', '(forall ((us Ts)) (equal rebuilt us))',
+                   'rebuild-again', 'the theorem rebuild-again is not')
+    # The script of a label proves at its bitstring, and a label has fewer bits than the cases.
+    forms_rejected('(0 1) (reduce head)', '(0 1) (normalize 0)', 'label-scripts',
+                   'the script of the theorem label-scripts does not prove it')
+    forms_rejected('(0 1) (reduce head)', '(0 4) (reduce head)', 'label-scripts',
+                   'the script of the theorem label-scripts does not read')
+    forms_rejected('(0 1) (reduce head)', '(0 1)', 'label-scripts',
+                   'the script of the theorem label-scripts does not read')
+    # An instance is of the terms given; a formula holds where its hypothesis equates it with the
+    # equation of a term with itself, which the checker decides.
+    forms_rejected('(instance (first-fn X) (x) (z) weak)', '(instance (first-fn X) (z) (x) weak)',
+                   'first-at-pair', 'the script of the theorem first-at-pair does not prove it')
+    forms_rejected('(equal (equal x y) (equal unit unit))', '(equal (equal x y) (equal x unit))',
+                   'holds-equal', 'the theorem holds-equal is not')
+    text = FORMS.replace('(implies (h (equal (equal x y) (equal unit unit))) (equal x y))',
+                         '(implies (h (equal x y)) (equal x x))')
+    assert text != FORMS
+    target = root / 'Bad.proofs.geb'
+    target.write_text(text)
+    assert 'the derivations of the development do not check' in run(
+        'prove', manifest, target, certificate, ok=False)
+    # Rewriting under a mask takes its rounds, and finds the conditional where it is kept folded;
+    # an argument is rewritten to the left side of a theorem whose right side it is, which the
+    # checker decides.
+    forms_rejected('(mask-hypotheses absorb cond-same-again 1', '(mask-hypotheses absorb cond-same-again 0',
+                   'under-mask', 'the script of the theorem under-mask does not prove it')
+    forms_rejected('(with-rules ((folded (lib cond)))\n        (mask-hypotheses',
+                   '(with-rules ()\n        (mask-hypotheses',
+                   'under-mask', 'the script of the theorem under-mask does not prove it')
+    target.write_text(FORMS.replace('(succ-pred cons-again (reduce weak))',
+                                    '(succ-pred append-nil (reduce weak))'))
+    assert 'the derivations of the development do not check' in run(
+        'prove', manifest, target, certificate, ok=False)
+    # Version 2 reads none of them.
+    target.write_text(FORMS.replace('(proofs 3', '(proofs 2'))
+    assert 'the theorem Ts is not' in run('prove', manifest, target, certificate, ok=False)
+    assert certificate.read_bytes() == saved
+
     # An import is a path below the document that reads, and imports return to no document.
     rejected(document('(theorem a (equal Pair.left Pair.left) (by (normalize 4)))',
                       '(import ../Pair.proofs.geb)'), '', 'is not a relative path below')
@@ -317,6 +480,7 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
     run('replay', proofs_dir / 'tree-cases.proofs.geb', cases)
 
 print('test-proof-scripts: internal statements, tactics, imports, named programs, diagnostics, '
-      'hypotheses and implications, alternatives, the cases of bitstrings and the tree-cases '
-      'development passed')
+      'hypotheses and implications, alternatives, the cases of bitstrings, abbreviations, the '
+      'uniqueness of folds, instances, normal forms, folded definitions, rewriting under masks '
+      'and the tree-cases development passed')
 PY

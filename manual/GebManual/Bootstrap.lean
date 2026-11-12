@@ -3417,13 +3417,16 @@ tag := "authoring-compatibility"
     extensionality, the induction and case analysis of lists, the case
     analysis of coproducts and trees, the rewriting under a test, the
     induction on trees with the hypothesis at each child, the instances of
-    hypotheses and implications, the alternative of two scripts and the
-    case analysis of a bitstring to a number of bits, saved
-    certificates and replay from Geb source ({ref "first-authoring"}[Writing
-    a first Geb development]), the development of the lemmas of trees
-    among them; statements over datatypes wait on the datatype language's
-    completion, and the developments by induction on trees remain Lean
-    deducers
+    hypotheses and implications, the alternative of two scripts, the
+    case analysis of a bitstring to a number of bits with the scripts of
+    its labels, the uniqueness of folds with premises that scripts prove,
+    the instances of theorems, rewriting under masks and the case analysis
+    of tests' values, abbreviations and the normal form of a theorem's
+    companion, saved certificates and replay from Geb source
+    ({ref "first-authoring"}[Writing a first Geb development]), the
+    development of the lemmas of trees among them; statements over
+    datatypes wait on the datatype language's completion, and the
+    developments by induction on trees remain Lean deducers
 *
   * `let*` and `cond`, expanded in the elaboration of modules
   * Complete
@@ -5452,11 +5455,18 @@ A deducer composes them by a Lean program, over the bits of a
 construction's label and the number of its children, and states its lemmas
 about terms it takes from the translated program, the step of a
 definition's fold among them. A script is one tree of tactics, in which the
-case analysis of a bitstring to a number of bits proves every case of a
-label's bits by one script, read at each number of bits, and the
-alternative of two scripts proves by its second what its first does not;
-a statement is written out. The developments by induction on trees are not
-yet stated in Geb source. The syntax of statements and proof scripts
+case analysis of a bitstring to a number of bits proves the cases of a
+label's bits by one script, read at each number of bits, or by the scripts
+of the labels listed, and the alternative of two scripts proves by its
+second what its first does not. A statement is written out, a document
+abbreviating the types, the terms and the rules it repeats, and a theorem's
+companion is given the normal form in which a deducer states the lemma,
+with the definitions the deducer keeps folded; the tactics added with them
+are those the deducers compose, the uniqueness of a fold with premises
+that scripts prove, the instances of theorems and the searches under masks
+among them ({ref "development-scripts"}[Abbreviations, folds and
+searches]). The developments by induction on trees are not yet stated in
+Geb source. The syntax of statements and proof scripts
 is a step of the sequence ({ref "authoring-sequence"}[The sequence and its
 acceptance]). It adds no rule to the metalogic: a script is a program for
 one prover, and its certificate is checked as any other is.

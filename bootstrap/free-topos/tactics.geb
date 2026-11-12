@@ -3,12 +3,14 @@
 ; translation's trees.
 
 (module Tactics
-  (export ttL impL trueI apps byMode hypRules byListCases byListSplit bySplit2 withWeakHyps
+  (export ttL impL trueI apps byMode byNF hypRules byRoseIndWith byListCases byListSplit bySplit2
+    withWeakHyps
     withInsts
     withChildHyps
     revertCase
     byImpI
     withImpElim
+    bySuccPred
     AI
     openSubterms
     stuckVar
@@ -22,8 +24,10 @@
     occRewrite
     byTreeSplit
     byAutoT
+    byAutoC
     abstractTerm
     maskRw
+    byMaskSubs
     byGeneralize)
   (import Prelude)
   (import Base)

@@ -434,6 +434,137 @@ A document of version `3` imports documents of versions `1` to `3`, and no
 document imports one of a later version, whose certificate is laid out
 otherwise.
 
+# Abbreviations, folds and searches
+%%%
+tag := "development-scripts"
+%%%
+
+Version `3` reads, besides, abbreviations, the normal form of a theorem's
+companion, rules that keep definitions folded, and the tactics that the
+developments by induction on trees compose:
+
+```
+DOCUMENT ::= (proofs 3 HEADER… FORM…)
+FORM ::= THEOREM | (abbreviation NAME ITEM…)
+THEOREM ::= (theorem NAME STATEMENT (by SCRIPT))
+          | (theorem NAME STATEMENT (by SCRIPT) (normal DEPTH RULE…))
+RULE ::= … | (folded DEFINITION…)
+DEFINITION ::= NAME | (lib NAME)
+SCRIPT ::= … | (with-rules (RULE…) SCRIPT)
+         | (fold-uniqueness x (y ys r) ITERM SCRIPT SCRIPT)
+         | (tree-fold-uniqueness x (l cs rs) ITERM SCRIPT)
+         | (instance LEMMA (ITERM…) (ITERM…) DEPTH RULE…)
+         | (have h LEMMA (ITERM…) (ITERM…) SCRIPT)
+         | (congruence h (g (z TYPE) ITERM) SCRIPT)
+         | (holds h (g) SCRIPT)
+         | (reduced DEPTH SCRIPT)
+         | (succ-pred NAME SCRIPT)
+         | (test-cases (NAME ARGUMENT…) ROUNDS NAME SCRIPT SCRIPT)
+         | (mask-hypotheses NAME NAME ROUNDS SCRIPT)
+         | (auto-conditions SPLITS NAME RULE…)
+         | (bits-cases x BITS SCRIPT LABELLED…)
+LABELLED ::= (LABEL…) SCRIPT
+ARGUMENT ::= any | ITERM
+```
+
+An abbreviation `(abbreviation NAME ITEM…)` names one or more items, each
+any form. In the forms after it in its document, the atom `NAME` in a list
+stands for the items in its place, as they are written, the abbreviations
+before it expanded in them; so it names a type, a term, part of a script,
+or several rules. An abbreviation states nothing: the theorems of a
+document are those of its forms with the abbreviations expanded, a
+certificate holds none, and the names in an item are read where the item
+stands, so that an item may mention a variable that each of its places
+binds. An abbreviation is of its document alone, and a document that
+imports another declares its own.
+
+A theorem's companion is the theorem with its sides in weak normal form.
+The form `(normal DEPTH RULE…)` after a theorem's script gives its
+companion another: its sides reduced to the depth, rewriting by the rules,
+which name the statement's hypotheses and the theorems before it. A lemma is
+so stated as its source writes it and rewrites as the reduction that cites
+it presents its left side, where the Lean developments compute a lemma's
+statement by that reduction.
+
+A rule `(folded DEFINITION…)` names definitions that a reduction keeps
+folded, those of the program by their names and those of the translation's
+library as `(lib NAME)`; the reduction unfolds every other. `with-rules`
+proves the goal by its script with the rules before the language's and the
+unfolding of the definitions, in place of the rules that a script around it
+gives, so that each reduction of the script, those of the hypotheses and of
+their instances among them, rewrites by them; a rule that a tactic of the
+script names precedes them.
+
+The tactics added:
+
+* `fold-uniqueness` proves the goal by induction on its innermost variable
+  `x`, a list, in the form of the uniqueness of a fold, as `fold-induction`
+  does, each premise by a script: the first script proves the equation of
+  the sides at the empty list, and the second, for each side, that the side
+  at a head `y` before a list `ys` is the step, in which `r` is that side
+  at `ys`.
+* `tree-fold-uniqueness` proves a goal whose one variable `x` is a tree by
+  the uniqueness of the tree's fold, as `tree-fold-induction` does: its
+  script proves, for each side, that the side at the node of a label `l`
+  and children `cs` is the step, in which `rs` is the list of that side at
+  the children.
+* `instance` proves a goal whose sides have, at the depth and with the
+  rules, the normal forms of the sides of `LEMMA`, which equates two
+  functions, at its objects and at the first terms for its variables,
+  applied to the second terms. `pointwise` is the instance at a theorem's
+  own variables, applied to the goal's innermost.
+* `have` proves the goal under a hypothesis `h` cut in: the equation of the
+  sides of `LEMMA` at its objects and at the first terms for its variables,
+  applied to the second terms, as they are stated.
+* `congruence` proves the goal under a hypothesis `g` cut in: the equation
+  of the applications, to the two sides of the hypothesis `h`, of the
+  function of `z` that the term is.
+* `holds` proves the goal under a hypothesis `g` cut in: the left side of
+  the hypothesis `h`, an equation whose right side is the equation of a
+  term with itself.
+* `reduced` proves the goal by its script's proof of the equation of the
+  sides' normal forms at the depth.
+* `succ-pred` proves an equation of two applications by its script's proof
+  of it with each argument replaced by the left side, at the two innermost
+  variables, of the theorem `NAME`, which equates the successor of the
+  predecessor of a bit before a bitstring with that bitstring.
+* `test-cases` analyses the values of tests to a number of rounds. The
+  sides are reduced to weak normal form, and the first of their subterms,
+  outside binders and folds, that applies the definition `NAME` of the
+  program to arguments, each any term, written `any`, or the term given, is
+  generalized to a tree, the value of a test. The tree is split to a node,
+  and its label to the empty bitstring, where the test is false and the
+  search repeats, and to a bit before a bitstring, where it is true and the
+  first script proves the goal. Where no such subterm occurs, or the rounds
+  are spent, the second script proves it. The theorem `NAME` is that a tree
+  is the node of its unfolding.
+* `mask-hypotheses` rewrites under masks to a number of rounds. The sides
+  are reduced to weak normal form; where a conditional among their subterms
+  has a test under which a hypothesis rewrites a term of its first branch,
+  the equation of the conditional with the one rewritten is cut in and
+  rewrites, and the search repeats. The script then proves the goal with
+  the equations cut in before the rules. The theorems named are that inside
+  the branch a test selects, a conditional on the test is its first branch,
+  and that a conditional between two terms of one value is that value.
+* `auto-conditions` reduces to weak normal form and splits the list,
+  coproduct or tree variable that the reduction, or the test of a
+  conditional kept folded, is stuck on, up to a number of times; the
+  theorem `NAME` is that a tree is the node of its unfolding.
+* `bits-cases` takes, after its script, scripts for the bitstrings of
+  labels: at the bitstring of each label listed before a script, a numeral
+  of fewer bits than `BITS`, that script proves the goal in place of the
+  first. A script is read at each number of bits it proves at.
+
+The scripts of `test-cases` and `mask-hypotheses` are read at each number
+of rounds, in the variables and hypotheses the rounds add, none of them
+named. The tactics are `byRoseIndWith`, `bySuccPred`, `byNF`, `byMaskSubs`
+and `byAutoC` of `Geb.FreeTopos.Tactics`, and the derivations that the Lean
+developments compose where they cut in an instance, a congruence or a
+formula, which `bootstrap/authoring.geb` composes. A rule that names a
+theorem is tried only where the root of its companion's left side occurs.
+
+`scripts/tests/test-proof-scripts.sh` exercises each form on the example.
+
 # Keeping the source
 
 The authoring spelling and the canonical, advanced and basic transport
