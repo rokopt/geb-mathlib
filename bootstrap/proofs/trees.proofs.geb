@@ -1,8 +1,10 @@
-; The lemmas on the unfolding of trees, about the translation's library alone, so that they hold
-; in every program: the fold of a list of trees by construction is the list, the trees rebuilt
-; from the unfoldings of a list of trees are the rebuilt unfoldings, and a tree is the node of
-; its unfolding, which is Lambek's lemma. The unfolding of a tree is the fold that the library's
-; definition of the label and the children of a tree unfolds to, written here as that fold.
+; The lemmas on the unfolding of trees and on the case analysis of lists, about the translation's
+; library alone, so that they hold in every program: the fold of a list of trees by construction
+; is the list, the trees rebuilt from the unfoldings of a list of trees are the rebuilt
+; unfoldings, a tree is the node of its unfolding, which is Lambek's lemma, and the fold of the
+; case analysis of lists rebuilds its list. The unfolding of a tree is the fold that the
+; library's definition of the label and the children of a tree unfolds to, written here as that
+; fold, and the case analysis of lists the fold that the library's definition unfolds to.
 
 (proofs 2
   ; The fold of a list of trees by construction is the list.
@@ -49,4 +51,20 @@
               (pair (fst n) (list-rec (nil T) (c s) (cons T (node Bits c) s) (snd n)))
               t))
           t)))
-    (by (tree-fold-induction t (l rs) (node Bits (pair l rs)) 64 map-id map-fusion))))
+    (by (tree-fold-induction t (l rs) (node Bits (pair l rs)) 64 map-id map-fusion)))
+  ; The first component of the fold of the case analysis of lists, at any pair of cases, is the
+  ; list.
+  (theorem rebuild-lcase
+    (internal (X Y)
+      (forall ((p (Prod (Arrow Unit Y) (Arrow X (Arrow (List X) Y)))) (l (List X)))
+        (equal
+          (fst
+            ((list-rec
+               (lam ((q (Prod (Arrow Unit Y) (Arrow X (Arrow (List X) Y)))))
+                 (pair (nil X) ((fst q) unit)))
+               (h r)
+               (lam ((q (Prod (Arrow Unit Y) (Arrow X (Arrow (List X) Y)))))
+                 (pair (cons X h (fst (r q))) ((snd q) h (fst (r q)))))
+               l) p))
+          l)))
+    (by (fold-induction l (h r) (cons X h r) 256))))

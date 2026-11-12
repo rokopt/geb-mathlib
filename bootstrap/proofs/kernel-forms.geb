@@ -1,0 +1,121 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The kernel's forms as the datatype language's expansion meets them, and the two sides of the
+; statements that the expansion is the identity on them. A kernel expression is a tree no list of
+; which has a head that the reader names by the atom case, cata, rep, decode or datum; a kernel
+; form is a list of three trees whose head the reader names by def, with a kernel expression as
+; the third, or by deftype or defnum. The predicates are folds, and each statement is an equation
+; of two functions, each the conditional on a predicate between a side and nothing.
+
+(module KernelForms (export ke formOk kf) (import Prelude) (import Reader) (import Datatype)
+  (deftype KP (Prod T T))
+  ; the trees of a list of the predicate's results
+  (def kTrees
+    (lam ((ps (List KP))) (foldr KP Ts (lam ((p KP) (acc Ts)) (cons (fst p) acc)) (nil T) ps)))
+  ; the conjunction of the predicate's values in a list of its results
+  (def kAll (lam ((ps (List KP))) (foldr KP T (lam ((p KP) (r T)) (and (snd p) r)) 1 ps)))
+  ; the predicate's step at a label and the children's results: the node, and whether the children
+  ; are kernel expressions and the node, where it is a list, has a head the reader names by no
+  ; form of the datatype language
+  (def kstep
+    (lam ((l T) (ps (List KP)))
+      (let raw T (node l (kTrees ps))
+        (pair raw
+          (and (kAll ps)
+            (if (isList raw)
+              (let h T (at (children raw) 0)
+                (if (named h kwCase) 0
+                  (if (named h kwCata) 0
+                    (if (named h kwRep) 0 (if (named h kwDecode) 0 (if (named h kwDatum) 0 1))))))
+              1))))))
+  ; whether a tree is a kernel expression
+  (def ke (lam ((e T)) (snd (fold KP kstep e))))
+  ; whether every tree of a list is a kernel expression
+  (def allKe (lam ((cs Ts)) (foldr T T (lam ((c T) (r T)) (and (ke c) r)) 1 cs)))
+  ; the two sides of the expression's identity, under the predicate: the expansion of an
+  ; expression in a scope, and the expression
+  (def xL (lam ((e T) (s Ts)) (if (ke e) (expandExpr s e) none)))
+  (def xR (lam ((e T) (s Ts)) (if (ke e) (some e) none)))
+  (deftype XF (Arrow Ts T))
+  ; the lists of the two sides' functions of the scope at the trees of a list
+  (def xLs
+    (lam ((cs Ts)) (foldr T (List XF) (lam ((c T) (acc (List XF))) (cons (xL c) acc)) (nil XF) cs)))
+  (def xRs
+    (lam ((cs Ts)) (foldr T (List XF) (lam ((c T) (acc (List XF))) (cons (xR c) acc)) (nil XF) cs)))
+  ; the accumulation of a list of optional trees: whether every one is present, and their contents
+  (def accOf
+    (lam ((ms Ts))
+      (foldr T Opts (lam ((m T) (acc Opts)) (pair (both m (fst acc)) (cons (get m) (snd acc))))
+        (pair 1 (nil T))
+        ms)))
+  ; the expansions of the trees of a list in a scope, and the applications of a list of functions
+  ; to a scope
+  (def expAll
+    (lam ((cs Ts) (s Ts))
+      (foldr T Ts (lam ((c T) (acc Ts)) (cons (expandExpr s c) acc)) (nil T) cs)))
+  (def appAll
+    (lam ((fs (List XF)) (s Ts)) (foldr XF Ts (lam ((f XF) (acc Ts)) (cons (f s) acc)) (nil T) fs)))
+  ; the two sides of the accumulation of the children's expansions, under the conjunction of the
+  ; predicate at the children, and of the accumulation of the second side's functions
+  (def g1L (lam ((cs Ts) (s Ts)) (if (and (allKe cs) 1) (accOf (expAll cs s)) (pair 0 (nil T)))))
+  (def g1R
+    (lam ((cs Ts) (s Ts)) (if (and (allKe cs) 1) (accOf (appAll (xLs cs) s)) (pair 0 (nil T)))))
+  (def g2L
+    (lam ((cs Ts) (s Ts)) (if (and (allKe cs) 1) (accOf (appAll (xRs cs) s)) (pair 0 (nil T)))))
+  (def g2R (lam ((cs Ts) (s Ts)) (if (and (allKe cs) 1) (pair 1 cs) (pair 0 (nil T)))))
+  ; whether a tree is a kernel form: a list of three trees whose head the reader names by def,
+  ; with a kernel expression as the third, or by deftype or defnum
+  (def formOk
+    (lam ((e T))
+      (if (isList e)
+        (if (eq (arity e) 3)
+          (let h T (at (children e) 0)
+            (if (named h kwData) 0
+              (if (named h kwTreeData) 0
+                (if (named h kwDef) (ke (at (children e) 2))
+                  (if (named h kwDeftype) 1 (named h kwDefnum))))))
+          0)
+        0)))
+  ; the environment after a form: with the alias of a type's abbreviation added
+  (def envAfter
+    (lam ((e T) (env Ts))
+      (let es Ts (children e)
+        (if (named (at es 0) kwDeftype)
+          (append env (single (node2 7 (nameOf (at es 1)) (expandAliases env (at es 2)))))
+          env))))
+  ; the first side of the step's identity at a form, under the predicate: the expansion's step
+  ; from an environment and an output
+  (def fL (lam ((e T) (env Ts) (out Ts)) (if (formOk e) (xpStep (pair 1 (pair env out)) e) xpFail)))
+  ; whether a list of four trees before a list has three members
+  (def long3 (lam ((r Ts)) (eq (arity (node 0 (cons 0 (cons 0 (cons 0 (cons 0 r)))))) 3)))
+  ; whether every tree of a list is a kernel form
+  (def kf (lam ((es Ts)) (foldr T T (lam ((e T) (r T)) (and (formOk e) r)) 1 es)))
+  ; the run of the expansion's steps over a list of forms, from a state
+  (def runX
+    (lam ((es Ts) (s XP))
+      ((foldr T XPK (lam ((e T) (k XPK) (s XP)) (k (xpStep s e))) (lam ((s XP)) s) es) s)))
+  ; a list reversed onto an accumulator
+  (def revApp
+    (lam ((es Ts) (acc Ts))
+      ((foldr T Endo (lam ((x T) (k Endo) (acc Ts)) (k (cons x acc))) (lam ((acc Ts)) acc) es)
+       acc)))
+  ; the two sides of the run's identity, under the predicate of the forms: whether the run
+  ; succeeds and its output, and the forms reversed onto the output
+  (def rL
+    (lam ((es Ts) (env Ts) (out Ts))
+      (if (kf es) (let s XP (runX es (pair 1 (pair env out))) (pair (fst s) (snd (snd s))))
+        (pair 0 (nil T)))))
+  (def rR (lam ((es Ts) (env Ts) (out Ts)) (if (kf es) (pair 1 (revApp es out)) (pair 0 (nil T)))))
+  ; the two sides of the program's identity: the expansion of the forms, and the node of them
+  (def pL (lam ((es Ts)) (if (kf es) (expandProgram es) none)))
+  (def pR (lam ((es Ts)) (if (kf es) (some (node 0 es)) none)))
+  ; the two sides of the reversal of a reversal onto a second list
+  (def revL (lam ((xs Ts) (zs Ts) (acc Ts)) (revApp (revApp xs acc) zs)))
+  (def revR (lam ((xs Ts) (zs Ts) (acc Ts)) (revApp acc (append xs zs))))
+  ; the second side of the step's identity at a form: the environment after the form, and the form
+  ; before the output
+  (def fR
+    (lam ((e T) (env Ts) (out Ts))
+      (if (formOk e) (pair 1 (pair (envAfter e env) (cons e out))) xpFail))))

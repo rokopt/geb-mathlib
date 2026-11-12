@@ -1,0 +1,453 @@
+; The expansion of the datatype language is the identity on a program of kernel forms, about the
+; translation of the prelude, the reader, the type checker, the expansion and the predicates of the
+; kernel's forms. Each lemma equates two functions under a mask, the conditional on a predicate
+; between a side and nothing: the expression's identity, the step's at a form, the run's over the
+; forms and the program's. A lemma rewrites under a mask where a hypothesis equates a conditional
+; with one on the same test, by the lemma of absorption.
+
+(proofs 3 (program kernel-forms) (import tree-cases.proofs.geb)
+  ; The type checker's result at a node: the node, and its type as a function of the context.
+  (abbreviation RR (Prod T (Arrow (List T) T)))
+  ; The kernel's step of a fold into the type checker's results.
+  (abbreviation RRStep (Arrow T (Arrow (List RR) RR)))
+  ; The result of the rose tree's fold that the kernel's fold into the type checker's results
+  ; translates to: a function of the kernel's step.
+  (abbreviation RRFold (Arrow RRStep RR))
+  ; The result of the fold of the predicate of kernel expressions at a node: the node, and whether
+  ; it is one.
+  (abbreviation KP (Prod T T))
+  ; The kernel's step of a fold into the predicate's results.
+  (abbreviation KPStep (Arrow T (Arrow (List KP) KP)))
+  ; The result of the rose tree's fold that the kernel's fold into the predicate's results
+  ; translates to.
+  (abbreviation KPFold (Arrow KPStep KP))
+  ; The state of the expansion's run: whether it has succeeded, the environment and the output.
+  (abbreviation XP (Prod T (Prod (List T) (List T))))
+  ; The step of the rose tree's fold into the expansion's results at a node n: the kernel's step at
+  ; the label and at the children's folds applied to it.
+  (abbreviation rr-fold-step
+    (lam ((f RRStep)) (f (node Bits (pair (fst n) (nil T))) (lib mapApp RRStep RR (snd n) f))))
+  ; The step of the rose tree's fold into the predicate's results at a node n.
+  (abbreviation kp-fold-step
+    (lam ((f KPStep)) (f (node Bits (pair (fst n) (nil T))) (lib mapApp KPStep KP (snd n) f))))
+  ; The expansion's step, as bootstrap/datatype.geb writes it, where no definition names it.
+  (abbreviation expand-step
+    (lam ((l T) (rs (List RR)))
+      (let raw T (node l (Reader.rrTrees rs))
+        (pair raw
+          (lam ((env (List T)))
+            (if (Reader.isList raw)
+              (let h T (Prelude.at (children raw) 0)
+                (let k T (arity raw)
+                  (if (Prelude.and (Reader.named h Datatype.kwCase) (lt 2 k))
+                    (Datatype.expandCase env raw rs)
+                    (if (Prelude.and (Reader.named h Datatype.kwCata) (lt 4 k))
+                      (Datatype.expandCata env raw rs)
+                      (if (Prelude.and (Reader.named h Datatype.kwRep) (eq k 2))
+                        (Reader.rrAt rs 1 env)
+                        (if (Prelude.and (Reader.named h Datatype.kwDecode) (eq k 5))
+                          (Datatype.expandDecode env raw rs)
+                          (if (Prelude.and (Reader.named h Datatype.kwDatum) (eq k 3))
+                            (Prelude.some
+                              (Datatype.sx2 Datatype.aQuote (Prelude.at (children raw) 2)))
+                            (let xs T (Reader.allSome (Reader.rrApply rs env))
+                              (if (Prelude.isSome xs)
+                                (Prelude.some (node 2 (children (Prelude.get xs))))
+                                Prelude.none)))))))))
+              (Prelude.some raw)))))))
+  ; The expansion's folds at the children cs.
+  (abbreviation rr-children
+    (list-rec (nil RRFold) (c r) (cons RRFold (rose-rec RRFold (n) rr-fold-step c) r) cs))
+  ; The predicate's folds at the children cs.
+  (abbreviation kp-children
+    (list-rec (nil KPFold) (c r) (cons KPFold (rose-rec KPFold (n) kp-fold-step c) r) cs))
+  ; The rules of the proofs under a mask: the conditional's computation at the types it is taken at,
+  ; the first components and the conjunction of the folds, the children of a node, and the list the
+  ; case analysis of lists rebuilds.
+  (abbreviation mask-rules (cond-at-nil T) (cond-at-cons T) (cond-same-folded T) (cond-at-nil Bits)
+    (cond-at-cons Bits)
+    (cond-same-folded Bits)
+    (cond-at-nil (List T))
+    (cond-at-cons (List T))
+    (cond-same-folded (List T))
+    (cond-at-nil (Prod T (List T)))
+    (cond-at-cons (Prod T (List T)))
+    (cond-same-folded (Prod T (List T)))
+    (cond-at-nil XP)
+    (cond-at-cons XP)
+    (cond-same-folded XP)
+    (cond-at-nil (Prod (List T) (List T)))
+    (cond-at-cons (Prod (List T) (List T)))
+    (cond-same-folded (Prod (List T) (List T)))
+    (cond-at-nil (Arrow (List T) T))
+    (cond-at-cons (Arrow (List T) T))
+    (cond-same-folded (Arrow (List T) T))
+    expand-trees
+    kernel-trees
+    kernel-all
+    children-node
+    lambek
+    (rebuild-lcase Bit Bits)
+    (rebuild-lcase Bit T)
+    (rebuild-lcase T T)
+    (rebuild-lcase T (List T)))
+  ; The rules of the step at a form: the conditional, the predicate, the expansions and the reader's
+  ; tests of names kept folded.
+  (abbreviation form-rules
+    (folded (lib cond) KernelForms.ke Datatype.expandExpr Datatype.expandCase Datatype.expandCata
+      Datatype.expandDecode
+      Datatype.expandAliases
+      Datatype.dataDecl
+      Datatype.marker
+      Reader.named
+      Datatype.kwData
+      Datatype.kwTreeData
+      Reader.kwDef
+      Reader.kwDeftype
+      Reader.kwDefnum)
+    mask-rules)
+  ; The rules of the step at a form with the conditional on a conditional's label split and the
+  ; lists of four or more.
+  (abbreviation split-rules (mask-split XP) not-three form-rules)
+  ; The rules of the step at a definition's body: the tests of names unfolded.
+  (abbreviation body-rules
+    (folded (lib cond) KernelForms.ke Datatype.expandExpr Datatype.expandCase Datatype.expandCata
+      Datatype.expandDecode
+      Datatype.expandAliases
+      Datatype.dataDecl
+      Datatype.marker)
+    mask-rules)
+  ; The rules of the run: the step and the predicate of forms kept folded.
+  (abbreviation run-rules
+    (folded (lib cond) KernelForms.formOk Datatype.xpStep KernelForms.envAfter KernelForms.ke
+      Datatype.expandExpr
+      Datatype.expandCase
+      Datatype.expandCata
+      Datatype.expandDecode
+      Datatype.expandAliases
+      Datatype.dataDecl
+      Datatype.marker
+      Reader.named)
+    mask-rules)
+  ; The proof by weak reduction with the rules of the step at a form.
+  (abbreviation by-form-rules (with-rules (form-rules) (reduce weak)))
+  ; The trees of the results of the expansion's fold at the children of a node are the first
+  ; components of the children's folds. The step is the expansion's, which its definition does not
+  ; name.
+  (theorem expand-firsts
+    (internal ()
+      (forall ((cs (List T)))
+        (equal (Reader.rrTrees (lib mapApp RRStep RR rr-children (kernel expand-step)))
+          (list-rec (nil T) (c r)
+            (cons T (fst ((rose-rec RRFold (n) rr-fold-step c) (kernel expand-step))) r)
+            cs))))
+    (by (induction cs (y ys ih) (reduce weak) (reduce-hypotheses weak (ih) (reduce weak ih)))))
+  ; The first component of the expansion's fold at a tree is the tree, by the uniqueness of the
+  ; tree's fold.
+  (theorem expand-first
+    (internal ()
+      (forall ((t T)) (equal (fst ((rose-rec RRFold (n) rr-fold-step t) (kernel expand-step))) t)))
+    (by
+      (tree-fold-uniqueness t (l cs rs) (node Bits (pair l rs))
+        (reduce weak expand-firsts map-id))))
+  ; The trees of the results of the expansion's fold at the children of a node are the children.
+  (theorem expand-trees
+    (internal ()
+      (forall ((cs (List T)))
+        (equal (Reader.rrTrees (lib mapApp RRStep RR rr-children (kernel expand-step))) cs)))
+    (by (reduce full expand-firsts expand-first map-id)))
+  ; The trees of the results of the fold of the predicate of kernel expressions at the children of a
+  ; node are the first components of the children's folds.
+  (theorem kernel-firsts
+    (internal ()
+      (forall ((cs (List T)))
+        (equal (KernelForms.kTrees (lib mapApp KPStep KP kp-children (kernel KernelForms.kstep)))
+          (list-rec (nil T) (c r)
+            (cons T (fst ((rose-rec KPFold (n) kp-fold-step c) (kernel KernelForms.kstep))) r)
+            cs))))
+    (by (induction cs (y ys ih) (reduce weak) (reduce-hypotheses weak (ih) (reduce weak ih)))))
+  ; The first component of the fold of the predicate of kernel expressions at a tree is the tree.
+  (theorem kernel-first
+    (internal ()
+      (forall ((t T))
+        (equal (fst ((rose-rec KPFold (n) kp-fold-step t) (kernel KernelForms.kstep))) t)))
+    (by
+      (tree-fold-uniqueness t (l cs rs) (node Bits (pair l rs))
+        (reduce weak kernel-firsts map-id))))
+  ; The trees of the results of the predicate's fold at the children of a node are the children.
+  (theorem kernel-trees
+    (internal ()
+      (forall ((cs (List T)))
+        (equal (KernelForms.kTrees (lib mapApp KPStep KP kp-children (kernel KernelForms.kstep)))
+          cs)))
+    (by (reduce full kernel-firsts kernel-first map-id)))
+  ; The conjunction of the predicate's values at the children of a node is the conjunction of the
+  ; predicate at the children.
+  (theorem kernel-all
+    (internal ()
+      (forall ((cs (List T)))
+        (equal (KernelForms.kAll (lib mapApp KPStep KP kp-children (kernel KernelForms.kstep)))
+          (KernelForms.allKe cs))))
+    (by (induction cs (y ys ih) (reduce weak) (reduce-hypotheses weak (ih) (reduce weak ih)))))
+  ; The first component of the tail's fold is the list.
+  (theorem rebuild-tail
+    (internal (X)
+      (forall ((l (List X)))
+        (equal (fst (list-rec (pair (nil X) (nil X)) (y r) (pair (cons X y (fst r)) (fst r)) l))
+          l)))
+    (by (induction l (y ys ih) (reduce weak) (reduce-hypotheses weak (ih) (reduce weak ih)))))
+  ; Where the two sides of the expression's identity are equal at each child, the hypothesis of the
+  ; induction on trees, the lists of the sides' functions at the children are equal: by induction on
+  ; the children, the hypothesis's head and tail being its lists' heads and tails.
+  (theorem children-equal
+    (internal ()
+      (forall ((cs (List T)))
+        (equal
+          (implies
+            (equal
+              (list-rec (nil Omega) (c r)
+                (cons Omega (equal (KernelForms.xL c) (KernelForms.xR c)) r)
+                cs)
+              (list-rec (nil Omega) (c r) (cons Omega (equal unit unit) r) cs))
+            (equal (KernelForms.xLs cs) (KernelForms.xRs cs)))
+          true)))
+    (by
+      (with-rules
+        ((folded KernelForms.xL KernelForms.xR) (rebuild-lcase Omega (List Omega))
+         (rebuild-tail Omega))
+        (induction cs (d ds ih) (assume hA (reduce weak))
+          (assume hA
+            (congruence hA (hh (z (List Omega)) (lib headD Omega (equal unit unit) z))
+              (congruence hA (ht (z (List Omega)) (lib tail Omega z))
+                (reduce-hypotheses head (hh ht)
+                  (holds hh (hx)
+                    (modus-ponens ht (ih)
+                      (reduce-hypotheses weak (ih) (reduce weak ih hx))))))))))))
+  ; A conditional on the empty bitstring is its second branch, the conditional kept folded.
+  (theorem cond-at-nil (internal (X) (forall ((x X) (y X)) (equal (lib cond X (nil Bit) x y) y)))
+    (by (reduce weak))
+    (normal weak (folded (lib cond))))
+  ; A conditional on a bit before a bitstring is its first branch, the conditional kept folded.
+  (theorem cond-at-cons
+    (internal (X)
+      (forall ((b Bit) (bs Bits) (x X) (y X)) (equal (lib cond X (cons Bit b bs) x y) x)))
+    (by (reduce weak))
+    (normal weak (folded (lib cond))))
+  ; A conditional between two terms of one value is that value, the conditional kept folded.
+  (theorem cond-same-folded (internal (X) (forall ((x X) (c Bits)) (equal (lib cond X c x x) x)))
+    (by
+      (with-rules ((folded (lib cond)) (cond-at-nil X) (cond-at-cons X))
+        (induction c (h t ih) (reduce weak) (sum-cases h (z) (reduce weak) (reduce weak)))))
+    (normal weak (folded (lib cond))))
+  ; Under the mask of the children's predicate, the accumulation of the expansions of the children
+  ; is that of the applications of the first side's functions.
+  (theorem accumulate-expansions
+    (internal () (forall ((cs (List T))) (equal (KernelForms.g1L cs) (KernelForms.g1R cs))))
+    (by
+      (with-rules
+        ((folded (lib cond) KernelForms.ke Reader.named Datatype.expandCase Datatype.expandCata
+           Datatype.expandDecode) mask-rules)
+        (induction cs (d ds ih) (extensionality s (reduce weak))
+          (extensionality s
+            (instances weak ih ((hi s))
+              (test-cases (KernelForms.ke any) 1 lambek
+                (mask-hypotheses absorb cond-same 1 (reduce weak))
+                (reduce weak))))))))
+  ; Under the mask of the children's predicate, the accumulation of the applications of the second
+  ; side's functions is the children, all present.
+  (theorem accumulate-kernel
+    (internal () (forall ((cs (List T))) (equal (KernelForms.g2L cs) (KernelForms.g2R cs))))
+    (by
+      (with-rules
+        ((folded (lib cond) KernelForms.ke Reader.named Datatype.expandCase Datatype.expandCata
+           Datatype.expandDecode) mask-rules)
+        (induction cs (d ds ih) (extensionality s (reduce weak))
+          (extensionality s
+            (instances weak ih ((hi s))
+              (test-cases (KernelForms.ke any) 1 lambek
+                (mask-hypotheses absorb cond-same 1 (reduce weak))
+                (reduce weak))))))))
+  ; The applications of the children's folds of the expansion to a scope are the expansions of the
+  ; children in it.
+  (theorem apply-children
+    (internal ()
+      (forall ((s (List T)) (cs (List T)))
+        (equal (Reader.rrApply (lib mapApp RRStep RR rr-children (kernel expand-step)) s)
+          (KernelForms.expAll cs s))))
+    (by (induction cs (y ys ih) (reduce weak) (reduce-hypotheses weak (ih) (reduce weak ih)))))
+  ; Under the mask of the predicate of kernel expressions, the expansion of an expression in any
+  ; scope is the expression. By induction on the tree with the hypothesis at each child: the label's
+  ; bits decide whether the tree is a list, the tests of the heads' names are split, and at a list
+  ; whose head names no form of the datatype language the accumulation of the children's expansions
+  ; is rewritten under the mask of the children's predicate to the children.
+  (theorem expression-identity
+    (internal () (forall ((e T)) (equal (KernelForms.xL e) (KernelForms.xR e))))
+    (by
+      (tree-induction e (l cs ih)
+        (with-rules
+          ((folded (lib cond) Reader.named Datatype.expandCase Datatype.expandCata
+             Datatype.expandDecode) mask-rules apply-children)
+          (extensionality s
+            (bits-cases l 3
+              (first (reduce weak)
+                (test-cases (Reader.named any any) 6 lambek (reduce weak)
+                  (have hm children-equal (cs) ()
+                    (have h1 accumulate-expansions (cs) (s)
+                      (have h2 accumulate-kernel (cs) (s)
+                        (modus-ponens ih (hm)
+                          (reduce-hypotheses weak (hm h1 h2)
+                            (with-rules
+                              (hm h1 h2
+                                (folded (lib cond) Reader.named Datatype.expandCase
+                                  Datatype.expandCata
+                                  Datatype.expandDecode)
+                                mask-rules
+                                apply-children)
+                              (mask-hypotheses absorb cond-same 2 (reduce weak))))))))))))))))
+  ; A list of four trees before a list has not three members.
+  (theorem not-three
+    (internal () (forall ((r (List T))) (equal (lib lab (KernelForms.long3 r)) (nil Bit))))
+    (by
+      (with-rules (form-rules)
+        (reduced weak
+          (generalize (n Bits) (list-rec (lib bnil) (y q) (lib succ q) r)
+            (auto-conditions 12 lambek)))))
+    (normal weak form-rules))
+  ; A conditional on the label of a conditional is the conditional on the inner test between the
+  ; conditionals on the branches' labels.
+  (theorem mask-split
+    (internal (X)
+      (forall ((t T) (u T) (w T) (x X) (y X))
+        (equal (lib cond X (lib lab (lib cond T (lib lab t) u w)) x y)
+          (lib cond X (lib lab t) (lib cond X (lib lab u) x y) (lib cond X (lib lab w) x y)))))
+    (by
+      (with-rules (form-rules (cond-at-nil X) (cond-at-cons X) (cond-same-folded X))
+        (auto-conditions 12 lambek)))
+    (normal weak form-rules))
+  ; Under the mask of the predicate of kernel forms, the expansion's step at a form adds the form to
+  ; the output and, at an abbreviation of a type, its alias to the environment. The form is split to
+  ; a node, its label's bits and its children to three, and the tests of the keywords are split; at
+  ; a definition the head is the atom of its name, and the body's expansion is rewritten under the
+  ; mask of its predicate by the expression's identity.
+  (theorem form-identity
+    (internal () (forall ((e T)) (equal (KernelForms.fL e) (KernelForms.fR e))))
+    (by
+      (extensionality env
+        (extensionality out
+          (tree-cases e (l cs) lambek
+            (bits-cases l 3
+              (first by-form-rules
+                (cases cs (c1 r1) (with-rules (split-rules) (reduce weak))
+                  (cases r1 (c2 r2) (with-rules (split-rules) (reduce weak))
+                    (cases r2 (c3 r3) (with-rules (split-rules) (reduce weak))
+                      (cases r3 (c4 r4)
+                        (have hx expression-identity (c3) (env)
+                          (have hd head-def (c1) ()
+                            (with-rules (form-rules)
+                              (reduce-hypotheses weak (hd)
+                                (with-rules (body-rules)
+                                  (reduce-hypotheses weak (hx)
+                                    (with-rules (split-rules)
+                                      (test-cases (Reader.named any Datatype.kwData) 1 lambek
+                                        by-form-rules
+                                        (with-rules (split-rules)
+                                          (test-cases (Reader.named any Datatype.kwTreeData) 1
+                                            lambek
+                                            by-form-rules
+                                            (with-rules (split-rules)
+                                              (reduced weak
+                                                (mask-hypotheses absorb cond-same 6
+                                                  (with-rules (split-rules)
+                                                    (test-cases (Reader.named any Reader.kwDef) 1
+                                                      lambek
+                                                      (with-rules (body-rules)
+                                                        (mask-hypotheses absorb cond-same 2
+                                                          (reduce weak)))
+                                                      (with-rules (split-rules)
+                                                        (test-cases
+                                                          (Reader.named any Reader.kwDeftype)
+                                                          1
+                                                          lambek
+                                                          by-form-rules
+                                                          (with-rules (split-rules)
+                                                            (test-cases
+                                                              (Reader.named any Reader.kwDefnum)
+                                                              1
+                                                              lambek
+                                                              by-form-rules
+                                                              by-form-rules)))))))))))))))))))
+                        (with-rules (split-rules) (reduce weak)))))))))))))
+  ; Appending the empty list is the identity.
+  (theorem append-nil
+    (internal () (forall ((xs (List T))) (equal (kernel (Prelude.append xs (nil T))) xs)))
+    (by (induction xs (y ys ih) (reduce weak) (reduce-hypotheses weak (ih) (reduce weak ih)))))
+  ; A list reversed onto an accumulator and that onto a second list is the accumulator reversed onto
+  ; the first list before the second, as functions of the accumulator.
+  (theorem reverse-onto-fn
+    (internal ()
+      (forall ((zs (List T)) (xs (List T)))
+        (equal (lam ((acc (List T))) (KernelForms.revL xs zs acc))
+          (lam ((acc (List T))) (KernelForms.revR xs zs acc)))))
+    (by
+      (induction xs (y ys ih) (extensionality acc (reduce weak append-nil))
+        (extensionality acc
+          (with-rules (append-nil) (instances weak ih ((hi (cons T y acc))) (reduce weak hi)))))))
+  ; A list reversed onto an accumulator and that onto a second list is the accumulator reversed onto
+  ; the first list before the second.
+  (theorem reverse-onto
+    (internal ()
+      (forall ((zs (List T)) (xs (List T)) (acc (List T)))
+        (equal (KernelForms.revL xs zs acc) (KernelForms.revR xs zs acc))))
+    (by (pointwise reverse-onto-fn weak)))
+  ; The reversal of a reversal is the list.
+  (theorem reverse-reverse
+    (internal ()
+      (forall ((xs (List T)))
+        (equal (KernelForms.revApp (KernelForms.revApp xs (nil T)) (nil T)) xs)))
+    (by (reduce weak reverse-onto append-nil)))
+  ; Under the mask of the predicate of the forms, the run of the expansion's steps from an
+  ; environment and an output succeeds with the forms reversed onto the output, as functions of the
+  ; environment and the output. By induction on the forms: the step at a form is rewritten under the
+  ; form's mask by the step's identity, and the rest's run under the rest's mask by the hypothesis
+  ; at the environment and the output the step leaves.
+  (theorem run-identity
+    (internal () (forall ((es (List T))) (equal (KernelForms.rL es) (KernelForms.rR es))))
+    (by
+      (with-rules ((mask-split (Prod T (List T))) (mask-split XP) run-rules)
+        (induction es (e fs ih) (extensionality env (extensionality out (reduce weak)))
+          (extensionality env
+            (extensionality out
+              (instances weak ih ((hi (KernelForms.envAfter e env) (cons T e out)))
+                (have hf form-identity (e) (env out)
+                  (reduce-hypotheses weak (hf)
+                    (mask-hypotheses absorb cond-same 4 (reduce weak)))))))))))
+  ; The first component of a conditional between two pairs is the conditional between their first
+  ; components, the conditional kept folded.
+  (theorem cond-fst
+    (internal (X Y)
+      (forall ((q (Prod X Y)) (p (Prod X Y)) (b Bits))
+        (equal (fst (lib cond (Prod X Y) b p q)) (lib cond X b (fst p) (fst q)))))
+    (by (induction b (h t ih) (reduce weak) (sum-cases h (z) (reduce weak) (reduce weak))))
+    (normal weak (folded (lib cond))))
+  ; The second component of a conditional between two pairs is the conditional between their second
+  ; components, the conditional kept folded.
+  (theorem cond-snd
+    (internal (X Y)
+      (forall ((q (Prod X Y)) (p (Prod X Y)) (b Bits))
+        (equal (snd (lib cond (Prod X Y) b p q)) (lib cond Y b (snd p) (snd q)))))
+    (by (induction b (h t ih) (reduce weak) (sum-cases h (z) (reduce weak) (reduce weak))))
+    (normal weak (folded (lib cond))))
+  ; The expansion of the datatype language is the identity on a program of kernel forms: under the
+  ; mask of their predicate, the expansion of the forms is the node of them. From the run's identity
+  ; at the empty environment and output, its components taken through the conditional, and the
+  ; reversal of a reversal.
+  (theorem expansion
+    (internal () (forall ((es (List T))) (equal (KernelForms.pL es) (KernelForms.pR es))))
+    (by
+      (with-rules
+        ((cond-fst T (List T)) (cond-snd T (List T)) reverse-reverse (mask-split T) run-rules)
+        (have hr run-identity (es) ((nil T) (nil T))
+          (congruence hr (hf (z (Prod T (List T))) (fst z))
+            (congruence hr (hs (z (Prod T (List T))) (snd z))
+              (reduce-hypotheses weak (hf hs)
+                (mask-hypotheses absorb cond-same 4 (reduce weak))))))))))
