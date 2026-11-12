@@ -2,7 +2,7 @@
   "name": "geb-language",
   "displayName": "Geb",
   "description": "Geb source editing, compilation, proofs and development records",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "geb-mathlib",
   "private": true,
   "license": "Apache-2.0",
@@ -46,6 +46,12 @@
       }
     },
     "commands": [
+      {
+        "command": "geb.inspectHoles",
+        "title": "Refresh Kernel Obligations",
+        "category": "Geb",
+        "enablement": "isWorkspaceTrusted && workspaceFolderCount != 0"
+      },
       {
         "command": "geb.selectProgram",
         "title": "Select Program",
@@ -107,6 +113,14 @@
         "enablement": "isWorkspaceTrusted && workspaceFolderCount != 0"
       }
     ],
+    "views": {
+      "explorer": [{ "id": "geb.obligations", "name": "Geb Kernel Obligations",
+        "when": "isWorkspaceTrusted" }]
+    },
+    "menus": {
+      "view/title": [{ "command": "geb.inspectHoles", "when": "view == geb.obligations",
+        "group": "navigation" }]
+    },
     "taskDefinitions": [{
       "type": "geb",
       "required": ["gebExecution"],

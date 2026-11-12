@@ -71,15 +71,15 @@ with tempfile.TemporaryDirectory(prefix='geb-navigation-') as tmp:
     assert query('Tree) as G')['target']['name'] == 'Tree'
     assert query('forward)\n  (defn')['target']['name'] == 'B.forward'
     assert query('run)\n  (defn')['target']['name'] == 'C.run'
-    assert query('identity)\n  (defn chained')['target'] is None
+    assert query('identity)\n  (defn chained')['target']['kind'] == 'variable'
     assert query('identity x')['target']['name'] == 'A.identity'
-    assert query('identity))\n  (defn quoted')['target'] is None
+    assert query('identity))\n  (defn quoted')['target']['kind'] == 'variable'
     assert query('identity)))')['target'] is None
     assert query('succ zero')['target']['name'] == 'succ'
     assert query('B.forward x')['target']['name'] == 'B.forward'
     assert query('succ identity')['target']['name'] == 'succ'
-    assert query('identity) identity')['target'] is None
-    assert query('identity) ((zero')['target'] is None
+    assert query('identity) identity')['target']['kind'] == 'variable'
+    assert query('identity) ((zero')['target']['kind'] == 'variable'
     assert query('%navigation" identity')['target'] is None
     # UTF-8 byte columns, quoted names, CRLF, and snapshots never save a buffer.
     changed = source + '(def "λ😀" (lam ((x T)) (B.forward x)))\n(def last "λ😀")\n'

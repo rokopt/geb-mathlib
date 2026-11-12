@@ -3954,8 +3954,16 @@ import-direction rules above are enforced by
   renamer for references. `geb-author navigation` accepts editor snapshots
   without saving or compiling them; the VS Code extension supplies
   definition navigation, documentation hover, document outlines and symbol
-  lookup across the selected program, translating byte spans to editor
-  positions and discarding stale results.
+  lookup across the selected program, including local bindings and imported
+  proof documents. Completion respects binding scopes, proof branches,
+  module visibility and the authoring profile's spelling of names.
+  Editor recovery exposes readable prefixes without changing compiler input;
+  outlines label entries retained from the previous successful parse.
+  `GebHost/Editor.lean` supplies buffer formatting and structured kernel
+  obligations through the existing formatter and hole checker. The extension
+  formats unsaved buffers in one undoable edit and displays each obligation's
+  expected type, context and navigable source occurrences. These services
+  translate byte spans to editor positions and discard stale results.
   `Blake3.lean` computes the hash BLAKE3 [OConnorAumassonNevesWilcoxOHearn2020]
   (`Geb.Blake3.hash`). `Identity.lean` identifies a definition by the
   CIDv1 [RatajBerjon2026] of its payload, the canonical encoding of its

@@ -60,13 +60,19 @@ atoms. The grammar distinguishes comments and quoted atoms so that
 parentheses inside them do not participate in bracket matching.
 Brackets and braces are not Geb grouping delimiters.
 
-In this repository, save the buffer and run the VS Code task
-`Geb: format saved file`. It invokes `lake exe geb-fmt` with the active
-file as a process argument, including when its path contains spaces.
-The formatter keeps the parsed document, including comments, and writes
-its chosen layout. Malformed input leaves the file unchanged. The task
-requires the project's Lean toolchain and dependencies. Formatting on
-save is disabled for Geb.
+Build `geb-author` with `lake build geb-author`, then use VS Code's
+Format Document command. It formats the current buffer, including untitled
+Geb documents, without saving it; one undo restores the original text.
+The formatter retains comments and annotations. In CRLF buffers it spells
+newlines within quoted atoms as escapes, preserving their bytes when the
+editor normalizes inserted line endings. Malformed input leaves
+the buffer unchanged. Atoms containing non-UTF-8 bytes use hexadecimal
+escapes. It uses the selected program's toolchain, or the
+workspace's `geb.toolchainDirectory` when no program is selected.
+Formatting on save is disabled by default for Geb.
+
+The repository also retains the task `Geb: format saved file`, which
+invokes `lake exe geb-fmt` on the active file and writes its layout.
 
 The formatter and the document type are described in the
 [bootstrap chapter](../../manual/GebManual/Bootstrap.lean).
@@ -104,29 +110,57 @@ documentation; comments before a declaration's note are included.
 The Outline view lists the current file's declarations, and Go to Symbol
 in Workspace searches the selected program.
 
+Local references navigate to their binders, respecting shadowing, sequential
+bindings and pattern branches. The selected program's `proofs` entry and
+its imports contribute theorem outlines, statement and script hover,
+references to earlier theorems, quantified variables, named hypotheses and
+script binders. Identifier completion uses those scopes and the module
+elaborator's visible names, retaining import aliases and quoting names
+when the authoring profile requires it. Type positions offer type names.
+Comments, quoted data and hole names offer no identifier completions.
+Completion insertions escape embedded line breaks; a name already spanning
+several source lines supports navigation but not completion replacement.
+
 Navigation reads snapshots of open file buffers without saving them or
-compiling the program. The host reads the syntax and resolves modules;
-the extension translates its byte columns into editor positions,
-including Unicode names. Cancelled requests and results whose input
-buffers changed are discarded. Malformed syntax or rejected module
-resolution produces no navigation result; details appear in the
-`Geb navigation` output channel. Local-variable references, proof
-documents and sources stored in strict encodings have no navigation
-interface. Quoted data and shadowed global names do not navigate to a
-global declaration. Navigation requires workspace trust.
+compiling the program. The extension translates byte columns into editor
+positions, including Unicode names. Cancelled requests and results whose
+input buffers changed are discarded. During incomplete edits the host
+recovers readable prefixes and completed children of open forms. Outlines
+also retain missing entries from the previous successful parse, labelled
+as such; those entries supply no definition, hover or completion result.
+Recovery never changes the compiler's input. Strict-encoded sources have
+no editor navigation interface. Navigation requires workspace trust.
 
 The host interface is `geb-author navigation MANIFEST`. It reads a JSON
 object from standard input with `file`, one-based byte `line` and
 `column`, and `documents`, an array of `{path, text}` buffer snapshots
-under absolute paths. A zero line and column requests the declaration
-index alone. The result contains `symbols` and an optional `target`;
-each symbol names its file, full span, name selection, signature and
-documentation. Names, signatures and documentation are arrays of bytes,
-decoded as UTF-8 by the editor; file paths and kinds are JSON strings.
-Spans are `[startLine, startColumn, endLine, endColumn]`,
-with inclusive endpoints. This interface uses the existing document
-lexer and module renamer. The extension registers the standard
-[VS Code navigation providers](https://code.visualstudio.com/api/references/vscode-api#languages).
+under absolute paths. Optional `proofs` names the entry proof document;
+`recover: true` enables editor recovery. A zero line and column requests
+the declaration index alone. The result contains `symbols`, an optional
+`target`, `completions`, an optional `atomSpan` for completion replacement,
+`incomplete` file paths and `errors`. Each symbol names its file, full
+span, name selection, signature, documentation and completion `insertText`.
+Names and source text are arrays of bytes, decoded as UTF-8; file paths
+and kinds are JSON strings. Spans are
+`[startLine, startColumn, endLine, endColumn]`, with inclusive endpoints.
+The interface uses the existing document lexer and module renamer.
+
+The Explorer's Geb Kernel Obligations view is populated by
+`Geb: Refresh Kernel Obligations`. It displays each hole's expected type,
+its context and links to every source occurrence. After the first refresh,
+edits refresh the view automatically from unsaved snapshots. Changed
+inputs invalidate the previous report; rejected input is shown as not
+checked. A completed check with no holes is distinguished from a report
+of open obligations. This view uses the existing kernel hole checker and
+accepts its kernel forms; datatype holes and proof synthesis are separate
+work. The terminal command `Geb: Show Kernel Holes` remains available.
+
+`geb-author format-buffer` accepts `{text}` and an optional `crlf: true`,
+and returns formatted byte text. `geb-author editor-holes MANIFEST` accepts
+`{documents}` and returns
+`complete` and `holes`, each with `name`, `target`, `context` and
+`occurrences`. These interfaces write no files. Hole checking requires
+complete syntax and never consumes recovery results.
 
 ## Programs and commands
 
@@ -172,7 +206,7 @@ a running command; another Geb command can start after the task ends.
 | `Geb: Check Recorded Development` | `preserve.py check`: compile archived sources and replay the saved certificate |
 | `Geb: Compare Sources with Record` | `preserve.py compare`: compare current sources with the record and replay its certificate |
 
-Compilation, proof commands, hole reporting, recording and comparison
+Compilation, proof commands, terminal hole reporting, recording and comparison
 save modified file-backed documents in the selected workspace folder
 before running, and documents below the manifest's and entry proof
 document's directories, including proof imports opened elsewhere.
@@ -223,8 +257,9 @@ directory path in place of the directory dialog.
 
 ## Validation
 
-The editor suite includes navigation with unsaved imports, documentation,
-Unicode names, outlines and workspace symbols. To run only that fixture,
+The editor suite includes unsaved imports, local and proof navigation,
+scoped completion, Unicode names, recovery, outlines, workspace symbols,
+buffer formatting and navigable kernel obligations. To run only that fixture,
 pass `--navigation` to `node editors/vscode/test/run.cjs` after building
 `geb-author`.
 
