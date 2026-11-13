@@ -321,18 +321,20 @@ def denVar (P : Prog) (nm : String) (a : Term) : DenRule :=
       Term.eq (pc P "Prelude.nth" [at_ 5, leafT (call D.lab [] [i])]) (pc P "Prelude.some" [w])],
     form := a, value := w, levels := 1 }
 
-/-- The writer's numeral denotes its quotation, where its digits read as it and are fixed by the
-expansion of the numeral abbreviations. -/
+/-- The writer's numeral of a tree denotes the quotation of a number, where its digits read as
+that number and are fixed by the expansion of the numeral abbreviations. The digits are those of
+the tree's label, so that the number is the leaf of that label, the tree itself only where it is
+a leaf. -/
 def denNum (P : Prog) : DenRule :=
-  let vars := [treeTy]
-  let n := denAt vars 6
+  let vars := [treeTy, treeTy]
+  let (n, m) := (denAt vars 6, denAt vars 7)
   let form := pc P "Recognize.num" [n]
   let chars := pc P "Typing.decimalChars" [n]
   let fn := Term.lam treeTy (pc P "Reader.expandNums" [sh 1 (denAt vars 1), v 0])
   { name := "denNum", vars, plain := [form],
-    more := [Term.eq (pc P "Reader.numeral" [chars]) (pc P "Prelude.some" [n]),
+    more := [Term.eq (pc P "Reader.numeral" [chars]) (pc P "Prelude.some" [m]),
       truth P.o (pc P "charsFixed" [fn, chars])],
-    form, value := quoteV P n, levels := 1, numeralGiven := true,
+    form, value := quoteV P m, levels := 1, numeralGiven := true,
     pre := fun K up k ↦ K.cutThm "charsFixedEq" (fun Γ ↦ [up chars Γ, atPos 1 Γ])
       (K.impE (K.byHyp 2) (normLastK K k)) }
 
@@ -477,9 +479,9 @@ def denWith (P : Prog) (S : Defs) (vars : List Tree) (e A : Term) : Term :=
     (denT P S (sh 1 (at_ 0)) (sh 1 (at_ 3)) (sh 1 (at_ 2)) (sh 1 (at_ 1)) (sh 1 (at_ 4))
       (sh 1 (at_ 5)) (sh 1 e) (quoteV P (v 0))) A))
 
-/-- The numerals of the writer read as themselves at every number: the digits read as the number,
-fixed by the numeral abbreviations' expansion, and the numeral not abbreviated. In the context of
-the numeral abbreviations {lit}`nums`. -/
+/-- The numerals of the writer read as numbers at every tree: the digits, those of the tree's
+label, read as the leaf of that label, are fixed by the numeral abbreviations' expansion, and the
+numeral is not abbreviated. In the context of the numeral abbreviations {lit}`nums`. -/
 def numT (P : Prog) (nums : Term) : Term :=
   let n := v 0
   let chars := pc P "Typing.decimalChars" [n]
@@ -489,7 +491,8 @@ def numT (P : Prog) (nums : Term) : Term :=
     (notTest P.o (pc P "Prelude.isSome" [pc P "Reader.lookupAbbrev"
       [atomNameT (pc P "Recognize.num" [n]), nums']]))
     (Internal.Logic.conj P.o
-      (Term.eq (pc P "Reader.numeral" [chars]) (pc P "Prelude.some" [n]))
+      (Term.eq (pc P "Reader.numeral" [chars])
+        (pc P "Prelude.some" [leafT (call D.lab [] [n])]))
       (truth P.o (pc P "charsFixed" [fn, chars])))))
 
 /-- That no marker's datatype is named as the trees' type. -/
@@ -539,11 +542,36 @@ def denAsWith (K : Kit) (extra : List Internal.NormRule) (w l r : List Tree → 
 /-- {name}`denAsWith` without further rules. -/
 def denAs (K : Kit) (w l r : List Tree → Term) : Deducer := denAsWith K [] w l r
 
+/-- The index of an element among a list's, where it has one, is a number, the leaf of its
+label: by the list's cases and, at a construction, those of the head's equality with the element
+and of the presence of the index among the rest. In the context of the list and the element. -/
+def indexOfLeaf (P : Prog) (S : Defs) : Step :=
+  ("indexOfLeaf", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, lookupEqNames⟩
+    let equalT ← primT Kernel.Prim.equal
+    let idx (x xs : Term) : Term := pc P "Reader.indexOf" [x, xs]
+    let got := pc P "Prelude.get" [idx (v 1) (v 0)]
+    let a : Internal.Thm := ⟨0, [list treeTy, treeTy],
+      [truth P.o (pc P "Prelude.isSome" [idx (v 1) (v 0)])],
+      Term.eq (leafT (call D.lab [] [got])) got⟩
+    let some d := (K.listCase treeTy (v 0) (linkK K "indexOfLeaf: no element" (K.hypFalse 0))
+        fun Γ₁ Φ₁ ψ₁ ↦
+        let n₁ := Γ₁.length
+        let (xAt, hdAt, tlAt) := (atPos 0, atPos (n₁ - 2), atPos (n₁ - 1))
+        decideIn K (fun Γ ↦ apps equalT [xAt Γ, hdAt Γ])
+          (decideIn K (fun Γ ↦ pc P "Prelude.isSome" [idx (xAt Γ) (tlAt Γ)])
+            (linkK K "indexOfLeaf: no index" (K.hypFalse 0))
+            (linkK K "indexOfLeaf: an index among the rest" K.byNorm))
+          (linkK K "indexOfLeaf: the head" K.byNorm) Γ₁ Φ₁ ψ₁) a.ctx a.hyps a.concl
+      | dbgTrace "indexOfLeaf: not proved" fun _ ↦ none
+    pure (a, d))
+
 /-- The test of a field of the type {lit}`ty`, of a value the expression {lit}`e` denotes, where
 the writer gives one, denotes a bit, which at memberships the value holds the bits of has the truth
 of the field's test. The type's name the trees' type's: the numeral one, the field's test true as
-no marker has that name. Otherwise the type's position in the closure, by which the writer gives a
-test: the child at that position, whose truth the bits give. -/
+no marker has that name. Otherwise the type's position in the closure, a number
+({name}`indexOfLeaf`), by which the writer gives a test: the child at that position, whose truth
+the bits give. -/
 def fieldDen (P : Prog) (S : Defs) : Step :=
   ("fieldDen", fun ix E ↦ do
     let K := denKit P S ix E
@@ -596,11 +624,12 @@ def fieldDen (P : Prog) (S : Defs) : Step :=
     let posCase : Deducer := fun Γ Φ ψ ↦
       dExI L K.G K.E (apps childT [atPos 10 Γ, pos Γ]) (dConjI L
         (linkK K "fieldDen: the child" <|
+          applyThm K "indexOfLeaf" (fun Γ ↦ [atPos 6 Γ, tyAt Γ]) [K.solve 3] <| normLastK K <|
           dAllE L K.G K.E 3 (pos Γ) <| normLastK K <| K.conjE fun Γ₁ Φ₁ ψ₁ ↦
             let h₁ := Φ₁.length - 2
             K.conjE (fun Γ₂ Φ₂ ψ₂ ↦
               let h₄ := Φ₂.length - 1
-              applyThm K "denNum" (fun Γ ↦ pos Γ :: denFixed Γ) [K.byHyp h₁, K.byNorm,
+              applyThm K "denNum" (fun Γ ↦ pos Γ :: pos Γ :: denFixed Γ) [K.byHyp h₁, K.byNorm,
                 K.byHyp h₄] (fun Γ Φ ψ ↦
                 applyThm K "denPrim2/child" (fun Γ ↦ [pos Γ, atPos 10 Γ,
                     pc P "Recognize.num" [pos Γ], atPos 9 Γ] ++ denFixed Γ)
@@ -930,7 +959,7 @@ def fieldsVars : List Tree :=
 
 /-- The hypotheses of the walk of a constructor's fields: the variable of the node denotes the
 quotation of the node over the children's bits, the markers name no trees' type, the numerals read
-as themselves, and the atoms of the writer resolve as the primitive's and are not abbreviated. -/
+as numbers, and the atoms of the writer resolve as the primitive's and are not abbreviated. -/
 def fieldsHyps (P : Prog) (S : Defs) : List Term :=
   let at_ := denAt fieldsVars
   let (ms, cs, R) := (at_ 7, at_ 8, at_ 9)
@@ -1019,8 +1048,8 @@ def fieldsWalk (P : Prog) (S : Defs) : Step :=
           [K.byHyp hHead, dHyp, dHyp, dHyp, K.byHyp 3, K.byHyp 4, K.byHyp 5, K.byHyp 6] <|
         K.exE <| K.conjE fun Γ Φ ψ ↦ ihStage hRest (Φ.length - 1) (Γ.length - 1) Γ Φ ψ
       let childStage (hHead hRest h₃ h₅ : ℕ) : Deducer :=
-        applyThm K "denNum" (fun Γ ↦ leafT (b₁ Γ) :: denFixed Γ) [K.byHyp h₃, K.byNorm,
-          K.byHyp h₅] <|
+        applyThm K "denNum" (fun Γ ↦ leafT (b₁ Γ) :: leafT (b₁ Γ) :: denFixed Γ)
+          [K.byHyp h₃, K.byNorm, K.byHyp h₅] <|
         applyThm K "denPrim2/child" (fun Γ ↦ [leafT (b₁ Γ), nodeAt Γ,
             pc P "Recognize.num" [leafT (b₁ Γ)], pc P "Recognize.vN" []] ++ denFixed Γ)
           [K.byHyp 3, K.byHyp 4, K.byHyp 5, dHyp, dHyp] (fieldStage hHead hRest)
@@ -1942,7 +1971,7 @@ def writerAtoms : List String :=
 def writerPrims : List String := ["rChild", "rArity", "rEq", "rLt", "rAdd", "rNode"]
 
 /-- The hypotheses of the writer's larger forms, at the fixed variables of a context: the markers
-{lit}`ms` name no trees' type, the numerals read as themselves, each primitive's name in neither
+{lit}`ms` name no trees' type, the numerals read as numbers, each primitive's name in neither
 the scope nor the definitions' names, and no atom the writer's terms name abbreviated. -/
 def writerHyps (P : Prog) (ms at1 at2 at4 : Term) : List Term :=
   [noTreeMarkerT P ms, numT P at1] ++
@@ -2107,7 +2136,8 @@ def restDen (P : Prog) (S : Defs) (T : Defs3) : Step :=
 congruence, the field's and the conjunction's denotations, the arithmetic of the walk's number, the
 walk, the comparisons of its lengths, the rest of a list. -/
 def walkDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
-  [denDet P S, denCong P S, fieldDen P S, conjDen P S, lenFromSucc P S, lenFromSuccR P S,
+  [denDet P S, denCong P S, indexOfLeaf P S, fieldDen P S, conjDen P S, lenFromSucc P S,
+    lenFromSuccR P S,
     subOneK P S,
     fieldsCount P S, allSomeCons P S true, allSomeCons P S false, allSomeKids P S, dropTail P S,
     fieldsWalk P S, walkEnough P S] ++ eqSuccLemmas P S ++ [eqEnd P S] ++
@@ -2239,6 +2269,18 @@ the constructor, the markers and the closure. -/
 def ctorVars : List Tree :=
   [list treeTy, exp treeTy treeTy, treeTy, list treeTy, list treeTy]
 
+/-- A list's length is a number, the leaf of its label: by the list's cases. In the context of
+the list. -/
+def lengthLeaf (P : Prog) (S : Defs) : Step :=
+  ("lengthLeaf", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, []⟩
+    let len := pc P "Prelude.length" [v 0]
+    let a : Internal.Thm := ⟨0, [list treeTy], [], Term.eq (leafT (call D.lab [] [len])) len⟩
+    let some d := K.listCase treeTy (v 0) (linkK K "lengthLeaf: no element" K.byNorm)
+        (linkK K "lengthLeaf: a construction" K.byNorm) a.ctx a.hyps a.concl
+      | dbgTrace "lengthLeaf: not proved" fun _ ↦ none
+    pure (a, d))
+
 /-- The field types, the flag of a last field and its type, of a constructor. -/
 def ctorParts (c : Term) : Term × Term × Term :=
   let childT := (primT Kernel.Prim.child).getD Term.star
@@ -2299,12 +2341,13 @@ def ctorDen (P : Prog) (S : Defs) : Step :=
     let arityE (_ : List Tree) : Term := pc P "Recognize.s2" [atomT "rArity", atomT "vN"]
     let numE (Γ : List Tree) : Term := pc P "Recognize.num" [nfAt Γ]
     let arityV (Γ : List Tree) : Term := apps arityT [nodeAt Γ]
-    -- the numeral of the number of fields, its denotation the last hypothesis
-    let withNum (k : Deducer) : Deducer := fun Γ Φ ψ ↦
+    -- the numeral of the number of fields, a number, its denotation the last hypothesis
+    let withNum (k : Deducer) : Deducer :=
+      K.cutThm "lengthLeaf" (fun Γ ↦ [ftsAt Γ]) <| normLastK K <| fun Γ Φ ψ ↦
       dAllE L K.G K.E (base + 1) (nfAt Γ) (normLastK K <| K.conjE fun Γ₁ Φ₁ ψ₁ ↦
         let h₁ := Φ₁.length - 2
         K.conjE (fun Γ₂ Φ₂ ψ₂ ↦
-          applyThm K "denNum" (fun Γ ↦ nfAt Γ :: denFixed Γ) [K.byHyp h₁, K.byNorm,
+          applyThm K "denNum" (fun Γ ↦ nfAt Γ :: nfAt Γ :: denFixed Γ) [K.byHyp h₁, K.byNorm,
             K.byHyp (Φ₂.length - 1)] k Γ₂ Φ₂ ψ₂) Γ₁ Φ₁ ψ₁) Γ Φ ψ
     let withArity (k : Deducer) : Deducer :=
       applyThm K "denPrim1/arity" (fun Γ ↦ [nodeAt Γ, atomT "vN"] ++ denFixed Γ)
@@ -2731,9 +2774,11 @@ def dataDen (P : Prog) (S : Defs) : Step :=
         [K.byHyp (primHyp hb a), K.byHyp (primHyp hb a + 1)]) ++
       writerAtoms.map fun a ↦ K.byHyp (atomHyp hb a)
     let posAt (Γ : List Tree) : Term := child0 (hdAt Γ)
+    -- the number the position's numeral denotes: the leaf of the position's label
+    let numV (Γ : List Tree) : Term := leafT (call D.lab [] [posAt Γ])
     let numE (Γ : List Tree) : Term := pc P "Recognize.num" [posAt Γ]
     let eqE (Γ : List Tree) : Term := pc P "Recognize.s3" [atomT "rEq", atomT "vL", numE Γ]
-    let eqV (Γ : List Tree) : Term := apps eqT [lAt Γ, posAt Γ]
+    let eqV (Γ : List Tree) : Term := apps eqT [lAt Γ, numV Γ]
     let ctorT (Γ : List Tree) : Term := pc P "Recognize.ctorTest" [clAt Γ, hdAt Γ]
     let getT (t : Term) : Term := pc P "Prelude.get" [t]
     let restF (Γ : List Tree) : Term := dataFold P (clAt Γ) (tlAt Γ)
@@ -2790,9 +2835,9 @@ def dataDen (P : Prog) (S : Defs) : Step :=
       dAllE L K.G K.E (base + 1) (posAt Γ) (normLastK K <| K.conjE fun Γ₁ Φ₁ ψ₁ ↦
         let h₁ := Φ₁.length - 2
         K.conjE (fun Γ₂ Φ₂ ψ₂ ↦
-          applyThm K "denNum" (fun Γ ↦ posAt Γ :: denFixed Γ) [K.byHyp h₁, K.byNorm,
+          applyThm K "denNum" (fun Γ ↦ numV Γ :: posAt Γ :: denFixed Γ) [K.byHyp h₁, K.byNorm,
             K.byHyp (Φ₂.length - 1)] (
-          applyThm K "denPrim2/eq" (fun Γ ↦ [posAt Γ, lAt Γ, numE Γ, atomT "vL"] ++ denFixed Γ)
+          applyThm K "denPrim2/eq" (fun Γ ↦ [numV Γ, lAt Γ, numE Γ, atomT "vL"] ++ denFixed Γ)
             (hAbs "rEq" ++ [dHyp, dHyp]) k) Γ₂ Φ₂ ψ₂) Γ₁ Φ₁ ψ₁) Γ Φ ψ
     let cons : Deducer := dImpI L <| dImpI L fun Γ₁ Φ₁ ψ₁ ↦
       let hP := Φ₁.length - 1
@@ -3505,7 +3550,8 @@ def denFold (P : Prog) (S0 : Defs) : DenRule :=
 
 /-- The development of the recognizers' decisions. -/
 def recognizerDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
-  [lenMap P S, arityMap P S, allDrop P S, allTrees P S, ctorDen P S, eqSelfB P S, eqSym P S,
+  [lenMap P S, arityMap P S, allDrop P S, allTrees P S, lengthLeaf P S, ctorDen P S,
+    eqSelfB P S, eqSym P S,
     succBelowTwo P S, belowTwoDown P S, uniqTail P S, uniqHead P S, dataDen P S, valuesConv P S,
     roseAllFor P S "foldExactAll" (foldExactφ P S), foldExact P S, markerOfAt P S, ctorsMember P S,
     atIndexOf P S, bitsFnOk P S, bitsFnAll P S, memberField P S, markerOfNone P S, denVal P S,
@@ -3874,7 +3920,7 @@ def recDen (P : Prog) (S : Defs) (T : Defs3) : Step :=
         dAllE L K.G K.E (base + 1) zero (normLastK K <| K.conjE fun Γ₁ Φ₁ ψ₁ ↦
           let h₁ := Φ₁.length - 2
           K.conjE (fun Γ₂ Φ₂ ψ₂ ↦
-            applyThm K "denNum" (fun Γ ↦ zero :: fixed₁ Γ) [K.byHyp h₁, K.byNorm,
+            applyThm K "denNum" (fun Γ ↦ zero :: zero :: fixed₁ Γ) [K.byHyp h₁, K.byNorm,
               K.byHyp (Φ₂.length - 1)] (
             applyThm K "denPrim2/child" (fun Γ ↦ [zero, Rt Γ,
                 pc P "Recognize.num" [zero], foldF Γ] ++ fixed₁ Γ)
