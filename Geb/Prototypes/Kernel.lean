@@ -26,6 +26,7 @@ public import Geb.Prototypes.Kernel.Modules
 public import Geb.Prototypes.Kernel.Printer
 public import Geb.Prototypes.Kernel.Loading
 public import Geb.Prototypes.Kernel.Reader
+public import Geb.Prototypes.Kernel.SourceAnnotation
 public import Geb.Prototypes.Kernel.Strict
 public import Geb.Prototypes.Kernel.Subst
 

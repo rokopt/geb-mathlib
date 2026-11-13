@@ -124,7 +124,8 @@ Computation:
 * Complete. {ref "definitions-and-images"}[Definitions and images]:
   closed bundles, the image
   format and the host driver `geb-kernel`. The names of bound variables
-  and comments beside a bundle are ready.
+  and comments beside a bundle are retained for kernel declarations;
+  their correspondence through module and datatype elaboration remains.
 * Complete. {ref "geb-grows-in-itself"}[Geb grows in itself]: the
   stage-0 compiler in the kernel's syntax, the datatype language's
   expansion, the stage-1 compiler written in the datatype language, and
@@ -1674,7 +1675,9 @@ section below opens with a table of the states of its parts.
 *
   * {ref "definitions-and-images"}[Definitions and images]
   * Complete
-  * The names of bound variables and comments: ready; the hash binding:
+  * The names of bound variables and comments: complete for kernel
+    declarations; their correspondence through module and datatype
+    elaboration remains. The hash binding:
     complete, in content identity
 *
   * {ref "geb-grows-in-itself"}[Geb grows in itself]
@@ -2574,8 +2577,9 @@ tag := "definitions-and-images"
   * Complete
 *
   * The annotation table
-  * In progress: the names of definitions are kept; those of bound
-    variables and comments are ready
+  * Complete for kernel declarations: definition and binder names,
+    comments and source occurrences are retained beside the bundle.
+    Correspondence through module and datatype elaboration remains
 *
   * The image and the host driver
   * Complete
@@ -2596,8 +2600,27 @@ tag := "definitions-and-images"
   reference to a definition that is not earlier fails to load, so a
   loaded bundle is well founded.
 * Lean: the annotation table of names and comments, keyed by vertex.
-  Names of definitions are kept in the bundle; names of bound
-  variables and comments are not yet kept.
+  Names of definitions are kept in the bundle. A separate pass over
+  kernel declarations keeps their source document and maps source
+  occurrences to kernel vertices
+  (`Geb/Prototypes/Kernel/SourceAnnotation.lean`). Binder spellings address
+  the successive lambdas of an abstraction and the lambda introduced by
+  `let`; their source occurrences retain comments even for unused binders.
+  Comments inside quoted data and type expressions without a corresponding
+  core vertex remain in the document and are reported as unattached;
+  trailing prose remains the document's trailing comments. Re-keying the
+  table by definition CID keeps the source occurrences and their order,
+  equal definitions retaining separate annotations, with valid addresses
+  proved by {name}`Geb.Kernel.SourceAnnotation.valid_rekeyed`.
+  `geb-kernel annotations SOURCE OUTPUT` writes a canonical record of
+  the source, named core and correspondence after the kernel checks its
+  definitions. `geb-kernel check-annotations RECORD` reads the retained
+  source, recomputes its core and correspondence, rejects a stale header,
+  and checks the definitions again. The record's retraction is
+  {name}`Geb.Kernel.SourceAnnotation.read_write`. Neither command changes
+  the image format or compiler inputs. The pass reads `def`, `deftype`
+  and `defnum`; module and datatype elaboration need their own maps of
+  source occurrences before those forms can use this correspondence.
 * Lean: the image, a header of a magic number, a version and a bit
   count, followed by the word-level form of the interleaved wire
   format without sharing ({name}`Geb.Kernel.writeImage`). Its reader

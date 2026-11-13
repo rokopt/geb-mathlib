@@ -9,6 +9,7 @@ public import Geb.Prototypes.Kernel.Durable
 public import Geb.Prototypes.Kernel.Holes
 public import Geb.Prototypes.Kernel.Image
 public import Geb.Prototypes.Kernel.Manifest
+public import Geb.Prototypes.Kernel.SourceAnnotation
 
 set_option doc.verso true in
 /-!
@@ -115,10 +116,39 @@ def printHoles (what : String) (text : List Char) : IO UInt32 := do
     IO.print (String.ofList r.render)
     return if r.complete then 0 else 2
 
+/-- Retain a kernel source's binder names and comments beside its checked core and derived
+source correspondence. The output uses the canonical strict-document encoding. A rejected
+source leaves an existing output untouched; module and datatype elaboration are not run. -/
+def writeAnnotations (source output : String) : IO Unit := do
+  let some doc := Document.readDoc (chars (← IO.FS.readBinFile source))
+    | throw <| IO.userError s!"{source}: the source document does not read"
+  let some a := SourceAnnotation.annotate doc
+    | throw <| IO.userError s!"{source}: annotations require kernel def, deftype and defnum forms"
+  unless (load (a.definitions.map Prod.snd)).isSome do
+    throw <| IO.userError s!"{source}: the kernel definitions do not type-check"
+  unless a.source.strictWf a.header do
+    throw <| IO.userError s!"{source}: the document cannot be retained in strict form"
+  IO.FS.writeBinFile output ⟨(Identity.bytesOf a.write).toArray⟩
+
+/-- Check a retained annotation record against its complete source, kernel reader and type
+checker. The serialized correspondence is compared with the one derived from the source. -/
+def checkAnnotations (path : String) : IO Unit := do
+  let some a := SourceAnnotation.read (chars (← IO.FS.readBinFile path))
+    | throw <| IO.userError s!"{path}: malformed or stale source annotations"
+  unless (load (a.definitions.map Prod.snd)).isSome do
+    throw <| IO.userError s!"{path}: the kernel definitions do not type-check"
+  IO.println s!"{path}: source annotations and kernel definitions checked"
+
 /-- Build an image from a program's source or manifest, write or list a manifest's sources, run
 an image's named definition on a file, or check a program with holes. -/
 def run (args : List String) : IO UInt32 := do
   match args with
+  | ["annotations", source, output] =>
+    writeAnnotations source output
+    return 0
+  | ["check-annotations", path] =>
+    checkAnnotations path
+    return 0
   | ["build", "--manifest", path, img] =>
     let m ← Manifest.read path
     let text := chars (← joinSources (Manifest.sourcePaths path m))
@@ -167,6 +197,7 @@ def run (args : List String) : IO UInt32 := do
         "geb-kernel join MANIFEST OUTPUT [LAYER] | geb-kernel layers MANIFEST | " ++
         "geb-kernel sources MANIFEST | " ++
         "geb-kernel run IMAGE NAME INPUT OUTPUT | geb-kernel holes SOURCE... | " ++
-        "geb-kernel holes --manifest MANIFEST"
+        "geb-kernel holes --manifest MANIFEST | geb-kernel annotations SOURCE OUTPUT | " ++
+        "geb-kernel check-annotations RECORD"
 
 end Geb.Kernel.Command
