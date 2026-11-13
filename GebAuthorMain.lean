@@ -14,11 +14,23 @@ import GebHost.Editor
 
 open Geb.Kernel Geb.Kernel.Document
 
+/-- The directory of caches that the option {lit}`--cache DIRECTORY` names among the arguments,
+and the arguments without the option. -/
+def cacheOption (args : List String) : Option System.FilePath × List String :=
+  match args.idxOf? "--cache" with
+  | some i =>
+    match args[i + 1]? with
+    | some dir => (some dir, args.take i ++ args.drop (i + 2))
+    | none => (none, args)
+  | none => (none, args)
+
 /-- Execute proofs, check a file, list the documents of a development, or convert a document
 without discarding its decorations. A proof document is proved against the manifest given, or
-else against that of the program it names. -/
+else against that of the program it names; with {lit}`--cache DIRECTORY`, {lit}`prove` and
+{lit}`check` resume its development from its cache in that directory. -/
 public def main (args : List String) : IO UInt32 := do
   try
+    let (caches, args) := cacheOption args
     match args with
     | ["format-buffer"] => GebHost.Editor.run "format"
     | ["editor-holes", manifest] => GebHost.Editor.run "holes" manifest
@@ -34,15 +46,16 @@ public def main (args : List String) : IO UInt32 := do
       let m ← Manifest.read manifest
       for d in ← GebHost.Authoring.development proofs m.profile do IO.println d.1
       return 0
-    | ["check", file] => GebHost.Authoring.checkFile file
+    | ["check", file] => GebHost.Authoring.checkFile file caches
     | ["prove", proofs, certificate] =>
       let manifest ← GebHost.Authoring.manifestOf proofs
-      GebHost.Authoring.execute "prove" manifest.toString proofs certificate
+      GebHost.Authoring.execute "prove" manifest.toString proofs certificate caches
     | ["replay", proofs, certificate] =>
       let manifest ← GebHost.Authoring.manifestOf proofs
       GebHost.Authoring.execute "replay" manifest.toString proofs certificate
     | [mode, manifest, proofs, certificate] =>
       GebHost.Authoring.execute mode manifest proofs certificate
+        (if mode == "prove" then caches else none)
     | ["convert", spelling, manifest, input, output] =>
       let m ← Manifest.read manifest
       let d ← GebHost.Authoring.readDocument input m.profile
@@ -56,8 +69,9 @@ public def main (args : List String) : IO UInt32 := do
       return 0
     | _ =>
       IO.eprintln "usage: geb-author compile MANIFEST IMAGE\n\
-        geb-author prove|replay [MANIFEST] PROOFS CERTIFICATE\n\
-        geb-author check FILE\n\
+        geb-author prove [--cache DIRECTORY] [MANIFEST] PROOFS CERTIFICATE\n\
+        geb-author replay [MANIFEST] PROOFS CERTIFICATE\n\
+        geb-author check [--cache DIRECTORY] FILE\n\
         geb-author documents MANIFEST PROOFS\n\
         geb-author navigation MANIFEST < REQUEST.json\n\
         geb-author format-buffer < REQUEST.json\n\

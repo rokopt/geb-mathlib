@@ -3939,7 +3939,14 @@ import-direction rules above are enforced by
   with one has no certificate, and each hole, as each innermost step of a
   script that does not prove its theorem, is reported where it is written
   with its goal, a statement of the internal language in the names the
-  script has there, the theorems after it proved under its theorem. The
+  script has there, the theorems after it proved under its theorem. With
+  `--cache DIRECTORY`, `prove` and `check` resume a development from the
+  cache an earlier run left there: a theorem whose statement and script
+  the cache has, proved, is taken as it stands after unchanged statements
+  in an unchanged program, and elsewhere its cached derivation is checked,
+  the entries it cites renumbered by the theorems' names, so that a
+  search is made only for a theorem that changed;
+  `scripts/tests/test-proof-cache.sh` exercises it. The
   documents `weakening.proofs.geb`, `substitution.proofs.geb` and
   `expansion.proofs.geb` under `bootstrap/proofs/` state and prove with
   them the developments of `GebTests/Prototypes/FreeTopos/Weakening.lean`,

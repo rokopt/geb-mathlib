@@ -24,9 +24,12 @@
 ; found, and replay checks a saved development by {geb}`Derivation.checkDev`. A theorem whose
 ; script leaves a hole open, or does not prove it, is reported with the goals of its holes and
 ; of its steps that fail, and the theorems after it are proved under it; such a development has
-; no certificate.
+; no certificate. A development is resumed from the cache of an earlier run
+; ({geb}`Authoring.resume`): a theorem whose statement and script the cache has, proved, is not
+; searched for again.
 
-(module Authoring (export prove replay version) (import Prelude) (import Base) (import Theory)
+(module Authoring (export prove resume replay version) (import Prelude) (import Base)
+  (import Theory)
   (import Language)
   (import PartialHorn)
   (import Derivation)
@@ -1799,6 +1802,8 @@
   (defn requestThm ((q Request)) Thm
     (case q ((request n s c w k) (case s ((statement os vs ks hs a) a)))))
   (defn requestScript ((q Request)) T (case q ((request n s c w k) c)))
+  (defn requestVersion ((q Request)) T (case q ((request n s c w k) w)))
+  (defn requestSpec ((q Request)) T (case q ((request n s c w k) k)))
   (defn requestObjects ((q Request)) Ts
     (case q ((request n s c w k) (case s ((statement os vs ks hs a) (children os))))))
   ; The normal form of a theorem's companion, (normal DEPTH RULE ...), which a theorem of version
@@ -2011,9 +2016,11 @@
   ; A theorem whose script leaves holes open, or does not prove it, is reported and then taken
   ; as an entry without a derivation, with its companion, so that the theorems after it are
   ; proved under it and every such theorem of a development is reported; a development with a
-  ; failure has no certificate. The progress of a development keeps the node of its failures.
+  ; failure has no certificate. The progress of a development keeps the node of its failures,
+  ; whether it is aligned with the cache it is resumed from, the node of the items of its own
+  ; cache, and the node of how each theorem's declaration was come by.
   (data Results (results T & Decl))
-  (data Progress (proving Results EntryList T) (stuck T T T))
+  (data Progress (proving Results EntryList T T T T) (stuck T T T T T))
   (import (Option EntryList) as OEntries)
   ; The entries after a declaration, where the checker of developments admits it.
   (defn admit ((G Globals) (E (List Entry)) (d Decl)) OEntries.Maybe
@@ -2070,98 +2077,258 @@
     (if (eq v 0) ns
       (let xs Ts (drop (entryBase v) ns)
         (mapT (lam ((i T)) (at xs (mul 2 i))) (range (div (length xs) 2))))))
-  ; The development before its first theorem: in version 3 the connectives' rules, checked.
-  (def noFailures (node 0 (nil T)))
-  (defn begin ((G Globals) (v T) (o T)) Progress
+  ; Caches. The cache of a development keeps, for each of its theorems in order, what a later
+  ; run needs to take the theorem's declarations as they stand: the node of the theorem's name,
+  ; its statement, its script, the normal form its request keeps, the version of its document,
+  ; the node of its companion's sides, whether it is proved, and the derivations of the theorem
+  ; and of its companion. A cache is the node of the development's version and the node of its
+  ; items; a cache of another version has no item for a development.
+  (def noNode (node 0 (nil T)))
+  (defn cacheItem ((q Request) (sides T) (ok T) (d1 T) (d2 T)) T
+    (node 0
+      (cons (requestName q)
+        (cons (rep (requestThm q))
+          (cons (requestScript q)
+            (cons (requestSpec q) (cons (requestVersion q) (l4 sides ok d1 d2))))))))
+  (defn cacheItems ((v T) (cache T)) Ts
+    (if (and (eq (arity cache) 2) (and (eq (arity (child cache 0)) 0) (eq (child cache 0) v)))
+      (children (child cache 1))
+      (nil T)))
+  (defn withItem ((items T) (it T)) T (node 0 (append (children items) (single it))))
+  ; Whether an item is of a request, with its name, statement, script, normal form and version,
+  ; and whether its theorem is proved.
+  (defn sameRequest ((it T) (q Request)) T
+    (if (equal (child it 0) (requestName q))
+      (and (equal (child it 1) (rep (requestThm q)))
+        (and (equal (child it 2) (requestScript q))
+          (and (equal (child it 3) (requestSpec q)) (eq (child it 4) (requestVersion q)))))
+      0))
+  (defn itemProved ((it T)) T (eq (child it 6) 1))
+  (defn findItem ((old Ts) (q Request)) T
+    (foldr T T (lam ((it T) (acc T)) (if (and (sameRequest it q) (itemProved it)) (some it) acc))
+      none
+      old))
+  ; A development stays aligned with the cache it is resumed from while the cache's item at each
+  ; theorem's position has the theorem's name, statement and companion's sides: the entries
+  ; before the next theorem are then those its item's derivations were checked with.
+  (defn keptAligned ((aligned T) (here T) (q Request) (sides T)) T
+    (and aligned
+      (and (equal (child here 0) (requestName q))
+        (and (equal (child here 1) (rep (requestThm q))) (equal (child here 5) sides)))))
+  ; A derivation with the entries its rules cite renumbered: the rewriting by a theorem and the
+  ; application of one, the rules of positions 16 and 27, cite the theorem's entry by the first
+  ; of their data. A node's premises are its children after the node of its rule's data, which
+  ; is kept as it is, so that no datum but those is renumbered.
+  (defn recite ((f (Arrow T T)) (d T)) T
+    (para T
+      (lam ((nd T) (rs Ts))
+        (let data T (child nd 0)
+          (node (label nd)
+            (cons
+              (if (or (eq (label nd) 16) (eq (label nd) 27))
+                (node 0 (cons (f (child data 0)) (tail (children data))))
+                data)
+              (tail rs)))))
+      d))
+  ; The entry of the present development that an entry cited in a cache's denotes: an entry
+  ; before the theorems', one of the connectives' rules, is the same; a theorem's or its
+  ; companion's is that of the theorem of its name among the present theorems so far; and the
+  ; entry of a theorem not among them is left as it is cited, which no check then admits.
+  (defn entryMap ((v T) (oldNames Ts) (thms Ts) (j T)) T
+    (let eb T (entryBase v)
+      (if (or (eq v 0) (lt j eb)) j
+        (let i T (Source.indexOf (at oldNames (div (sub j eb) 2)) thms)
+          (if (isSome i) (add eb (add (mul 2 (get i)) (mod (sub j eb) 2))) j)))))
+
+  ; The development before its first theorem: in version 3 the connectives' rules, checked. It
+  ; is aligned with a cache of its own program.
+  (defn begin ((G Globals) (v T) (o T) (same T)) Progress
     (let ds (List Decl) (if (lt 2 v) (connectiveRules o 0) (nil Decl))
-      (case (checkDev G (nil Entry) ds) ((ODevState.nothing) (stuck 6 unnamed noFailures))
+      (case (checkDev G (nil Entry) ds) ((ODevState.nothing) (stuck 6 unnamed noNode noNode noNode))
         ((ODevState.just st)
          (case st
            ((devState G2 el)
             (proving (results (node 0 (mapT (lam ((i T)) unnamed) (range (Decls.length ds)))) ds) el
-              noFailures)))))))
-  ; The development after a theorem's declaration, given the entries after it: after version 0,
-  ; the theorem's companion follows it, derived from it and checked.
+              noNode
+              same
+              noNode
+              noNode)))))))
+  ; The development after a theorem's declaration, given the derivation the declaration keeps,
+  ; the entries after it and how it was come by, 0 by its script, 1 by a check of the cache's
+  ; derivation and 3 not at all: after version 0, the theorem's companion follows it, derived
+  ; from it and checked. The theorem's item is added to the cache's, with the derivations of a
+  ; theorem that is proved.
   (defn accompany
-    ((G Globals) (rs NRs) (defs Ts) (v T) (q Request) (thms Ts) (ns T) (ds (List Decl)) (decl Decl)
+    ((G Globals) (rs NRs) (defs Ts) (v T) (q Request) (thms Ts) (ns T) (ds (List Decl)) (d1 T)
      (el1 EntryList)
-     (fs T))
+     (fs T)
+     (how T)
+     (here T)
+     (aligned T)
+     (items T)
+     (uses T))
     Progress
     (case el1
       ((entries E1)
-       (let ds1 (List Decl) (Decls.append ds (Decls.single decl))
-         (if (eq v 0)
-           (proving (results (node 0 (append (children ns) (single (requestName q)))) ds1) el1 fs)
-           (let w T
-             (companion G E1 (rulesIn E1 (normalRules (entryBase v) defs thms q) rs) (normalDepth q)
-               (Decls.length ds)
-               (requestThm q))
-             (if (isSome w)
-               (let cs Ts (children (get w))
-                 (let decl2 Decl (declLang (withSides (requestThm q) (at cs 0) (at cs 1)) (at cs 2))
-                   (case (admit G E1 decl2) ((OEntries.nothing) (stuck 6 (requestName q) fs))
-                     ((OEntries.just el2)
-                      (proving
-                        (results
-                          (node 0 (append (children ns) (l2 (requestName q) (requestName q))))
-                          (Decls.append ds1 (Decls.single decl2)))
-                        el2
-                        fs)))))
-               (stuck 5 (requestName q) fs))))))))
-  ; A theorem's script is run in the manner 0. Where its derivation holds no obligation, the
-  ; checker of developments admits the theorem with it. Where it holds the leaves of holes, or
-  ; where the script proves nothing and, run again in the manner 1, gives the leaves of the steps
-  ; that fail, the failure is kept with what is reported of them, and the theorem is an entry
-  ; without a derivation.
-  (defn advance ((G Globals) (rs NRs) (gt Ts) (defs Ts) (v T) (q Request) (st Progress)) Progress
-    (case st ((stuck why name fs) st)
-      ((proving a el fs)
+       (let ok T (lt how 3)
+         (let ds1 (List Decl) (Decls.append ds (Decls.single (declLang (requestThm q) d1)))
+           (let uses1 T (withItem uses how)
+             (if (eq v 0)
+               (proving (results (node 0 (append (children ns) (single (requestName q)))) ds1) el1
+                 fs
+                 (keptAligned aligned here q 0)
+                 (withItem items (cacheItem q 0 ok (if ok d1 none) none))
+                 uses1)
+               (let w T
+                 (companion G E1 (rulesIn E1 (normalRules (entryBase v) defs thms q) rs)
+                   (normalDepth q)
+                   (Decls.length ds)
+                   (requestThm q))
+                 (if (isSome w)
+                   (let cs Ts (children (get w))
+                     (let sides T (node 0 (l2 (at cs 0) (at cs 1)))
+                       (let decl2 Decl
+                         (declLang (withSides (requestThm q) (at cs 0) (at cs 1)) (at cs 2))
+                         (case (admit G E1 decl2)
+                           ((OEntries.nothing) (stuck 6 (requestName q) fs items uses))
+                           ((OEntries.just el2)
+                            (proving
+                              (results
+                                (node 0 (append (children ns) (l2 (requestName q) (requestName q))))
+                                (Decls.append ds1 (Decls.single decl2)))
+                              el2
+                              fs
+                              (keptAligned aligned here q sides)
+                              (withItem items
+                                (cacheItem q sides ok (if ok d1 none) (if ok (at cs 2) none)))
+                              uses1))))))
+                   (stuck 5 (requestName q) fs items uses))))))))))
+  ; The development after a theorem whose declarations are the cache's item's, taken as they
+  ; stand: the theorem and its companion are entries, and their derivations are not checked.
+  (defn taken
+    ((v T) (q Request) (ns T) (ds (List Decl)) (E (List Entry)) (fs T) (here T) (items T) (uses T))
+    Progress
+    (let ds1 (List Decl) (Decls.append ds (Decls.single (declLang (requestThm q) (child here 7))))
+      (let E1 (List Entry) (push E (entLang (requestThm q)))
+        (if (eq v 0)
+          (proving (results (node 0 (append (children ns) (single (requestName q)))) ds1)
+            (entries E1)
+            fs
+            1
+            (withItem items here)
+            (withItem uses 2))
+          (let thm2 Thm (withSides (requestThm q) (child (child here 5) 0) (child (child here 5) 1))
+            (proving
+              (results (node 0 (append (children ns) (l2 (requestName q) (requestName q))))
+                (Decls.append ds1 (Decls.single (declLang thm2 (child here 8)))))
+              (entries (push E1 (entLang thm2)))
+              fs
+              1
+              (withItem items here)
+              (withItem uses 2)))))))
+  ; A theorem's declaration is come by in one of three ways. Where the development is aligned
+  ; with the cache and the cache's item at the theorem's position is of its request, proved, the
+  ; item's declarations are taken as they stand. Otherwise, where an item of the cache is of its
+  ; request, proved, that item's derivation, the entries it cites renumbered, is checked with
+  ; the entries of the present development, and kept where the checker admits it. Otherwise the
+  ; theorem's script is run in the manner 0: where its derivation holds no obligation, the
+  ; checker of developments admits the theorem with it; where it holds the leaves of holes, or
+  ; where the script proves nothing and, run again in the manner 1, gives the leaves of the
+  ; steps that fail, the failure is kept with what is reported of them, and the theorem is an
+  ; entry without a derivation.
+  (defn search
+    ((G Globals) (rs NRs) (gt Ts) (defs Ts) (v T) (q Request) (thms Ts) (ns T) (ds (List Decl))
+     (E (List Entry))
+     (fs T)
+     (here T)
+     (aligned T)
+     (items T)
+     (uses T))
+    Progress
+    (let d T (derive 0 G E rs (entryBase v) gt defs thms q)
+      (let obs Ts (if (and (isSome d) (holed (requestScript q))) (obligationsOf (get d)) (nil T))
+        (if (and (isSome d) (isEmpty obs))
+          (case (admit G E (declLang (requestThm q) (get d)))
+            ((OEntries.nothing) (stuck 6 (requestName q) fs items uses))
+            ((OEntries.just el1)
+             (accompany G rs defs v q thms ns ds (get d) el1 fs 0 here aligned items uses)))
+          (accompany G rs defs v q thms ns ds none (entries (push E (entLang (requestThm q))))
+            (node 0
+              (append (children fs)
+                (single
+                  (failed (if (isSome d) 7 4) (requestName q)
+                    (mapT (reportOf G E defs (requestObjects q))
+                      (if (isSome d) obs
+                        (obligationsOf
+                          (getD (derive 1 G E rs (entryBase v) gt defs thms q) none))))))))
+            3
+            here
+            aligned
+            items
+            uses)))))
+  (defn advance ((G Globals) (rs NRs) (gt Ts) (defs Ts) (v T) (old Ts) (q Request) (st Progress))
+    Progress
+    (case st ((stuck why name fs items uses) st)
+      ((proving a el fs aligned items uses)
        (case a
          ((results ns ds)
           (case el
             ((entries E)
              (let thms Ts (sourceNames v (children ns))
-               (let d T (derive 0 G E rs (entryBase v) gt defs thms q)
-                 (let obs Ts
-                   (if (and (isSome d) (holed (requestScript q))) (obligationsOf (get d)) (nil T))
-                   (if (and (isSome d) (isEmpty obs))
-                     (let decl Decl (declLang (requestThm q) (get d))
-                       (case (admit G E decl) ((OEntries.nothing) (stuck 6 (requestName q) fs))
-                         ((OEntries.just el1) (accompany G rs defs v q thms ns ds decl el1 fs))))
-                     (accompany G rs defs v q thms ns ds (declLang (requestThm q) none)
-                       (entries (push E (entLang (requestThm q))))
-                       (node 0
-                         (append (children fs)
-                           (single
-                             (failed (if (isSome d) 7 4) (requestName q)
-                               (mapT (reportOf G E defs (requestObjects q))
-                                 (if (isSome d) obs
-                                   (obligationsOf
-                                     (getD (derive 1 G E rs (entryBase v) gt defs thms q)
-                                       none))))))))))))))))))))
-  ; The development's certificate, the present tree, or its failures.
-  (defn proveWith ((gt Ts) (names Ts) (ds (List LDefn)) (sources Ts)) T
-    (case (readSources gt names ds sources) ((readBad why name) (failure why name))
+               (let here T (at old (length thms))
+                 (if (and aligned (and (sameRequest here q) (itemProved here)))
+                   (taken v q ns ds E fs here items uses)
+                   (let known T (findItem old q)
+                     (let d0 T
+                       (if (isSome known)
+                         (recite (entryMap v (mapT (lam ((it T)) (child it 0)) old) thms)
+                           (child (get known) 7))
+                         none)
+                       (case
+                         (if (isSome known) (admit G E (declLang (requestThm q) d0))
+                           OEntries.nothing)
+                         ((OEntries.just el1)
+                          (accompany G rs defs v q thms ns ds d0 el1 fs 1 here aligned items uses))
+                         ((OEntries.nothing)
+                          (search G rs gt defs v q thms ns ds E fs here aligned items
+                            uses)))))))))))))))
+  ; A development resumed from a cache: the node of its certificate, the present tree, or of its
+  ; failures; of the cache of this run; and of how each theorem's declaration was come by, 0 by
+  ; its script, 1 by a check of the cache's derivation, 2 taken from the cache and 3 not at all.
+  ; A development that does not read leaves the cache as it is. The cache of a run has an item
+  ; for each theorem the run reaches, in order, so that each item's derivations are those
+  ; checked with the entries of the items before it.
+  (defn resumeWith ((gt Ts) (names Ts) (ds (List LDefn)) (sources Ts) (cache T) (same T)) T
+    (case (readSources gt names ds sources)
+      ((readBad why name) (node 0 (l3 (failure why name) cache noNode)))
       ((readOk qs)
        (case qs
          ((requests v xs)
           (let G Globals (globalsFor v ds)
             (let o T (add (LD.length lib) (LD.length ds))
               (let rs NRs (rulesOf v o)
-                (case
-                  ((foldr Request (Arrow Progress Progress)
-                     (lam ((q Request) (k (Arrow Progress Progress)) (st Progress))
-                       (k (advance G rs gt names v q st)))
-                     (lam ((st Progress)) st)
-                     xs) (begin G v o))
-                  ((stuck why name fs)
-                   (node 2 (append (children fs) (single (failed why name (nil T))))))
-                  ((proving a el fs)
-                   (if (isEmpty (children fs)) (some (rep a)) (node 2 (children fs)))))))))))))
+                (let old Ts (cacheItems v cache)
+                  (case
+                    ((foldr Request (Arrow Progress Progress)
+                       (lam ((q Request) (k (Arrow Progress Progress)) (st Progress))
+                         (k (advance G rs gt names v old q st)))
+                       (lam ((st Progress)) st)
+                       xs) (begin G v o same))
+                    ((stuck why name fs items uses)
+                     (node 0
+                       (l3 (node 2 (append (children fs) (single (failed why name (nil T)))))
+                         (node 0 (l2 v items))
+                         uses)))
+                    ((proving a el fs aligned items uses)
+                     (node 0
+                       (l3 (if (isEmpty (children fs)) (some (rep a)) (node 2 (children fs)))
+                         (node 0 (l2 v items))
+                         uses)))))))))))))
   ; The sources of a development are the children of a node, each the node of a document's
-  ; characters.
-  (defn prove ((bundle T) (sources T)) T
-    (case (program (children (child bundle 0))) ((OTrState.nothing) none)
+  ; characters. A development is resumed from a cache and whether the cache is of its program;
+  ; one proved from no cache is its certificate or its failures alone.
+  (defn resume ((bundle T) (sources T) (cache T) (same T)) T
+    (case (program (children (child bundle 0))) ((OTrState.nothing) (node 0 (l3 none cache noNode)))
       ((OTrState.just st)
        (case st
          ((trState gt ds)
@@ -2169,7 +2336,9 @@
             ((ktys gs)
              (case ds
                ((ldefns xs)
-                (proveWith gs (children (child bundle 1)) xs (children sources)))))))))))
+                (resumeWith gs (children (child bundle 1)) xs (children sources) cache
+                  same))))))))))
+  (defn prove ((bundle T) (sources T)) T (child (resume bundle sources none 0) 0))
 
   ; Replay requires the statements and names of the sources and checks the saved derivations.
   ; It does not search, and it does not require the current prover to produce the same derivation.

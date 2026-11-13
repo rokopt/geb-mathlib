@@ -341,7 +341,10 @@ development's search runs the prover written in Geb, compiled, and takes
 from a minute to tens of minutes. `scripts/tests/test-proof-scripts.sh`,
 which `ci.yml` and `scripts/test-tooling.sh` run, proves and replays the
 development of `tree-cases.proofs.geb` and exercises each form of the
-profile on the example of `examples/authoring/`. `scripts/proofs.sh` proves
+profile on the example of `examples/authoring/`, and
+`scripts/tests/test-proof-cache.sh`, which they run too, exercises the
+cache from which `geb-author prove` and `geb-author check` resume a
+development (`--cache DIRECTORY`). `scripts/proofs.sh` proves
 and replays every development, each document that no other imports with
 those it imports, side by side; `slow-checks.yml` runs it daily and on
 demand. A change to `bootstrap/authoring.geb`, to a tactic it composes, or

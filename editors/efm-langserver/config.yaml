@@ -7,7 +7,9 @@
 # the sources of the nearest manifest that lists the saved file, up to that
 # file, or the file alone where no manifest lists it. For a proof document
 # it proves the document, after those it imports, against the program the
-# document names. It therefore runs on save and not on each change.
+# document names, resuming from the cache its last run left under
+# .lake/geb-proof-cache, so that a search is made only for a theorem that
+# changed. It therefore runs on save and not on each change.
 # The first format reads a diagnostic at an occurrence,
 # FILE:LINE:COLUMN: error: MESSAGE, and the second a failure without one,
 # FILE: MESSAGE.
@@ -16,7 +18,7 @@ root-markers:
   - lakefile.toml
 tools:
   geb-author-check: &geb-author-check
-    lint-command: 'lake exe geb-author check ${INPUT}'
+    lint-command: 'lake exe geb-author check --cache .lake/geb-proof-cache ${INPUT}'
     lint-stdin: false
     lint-on-save: true
     lint-source: 'geb-author'

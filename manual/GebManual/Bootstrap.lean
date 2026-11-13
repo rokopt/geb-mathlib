@@ -401,7 +401,9 @@ Extension:
   and trees and the rewriting under a test, in which the development of
   the lemmas of trees is written in Geb source; as are holes in proof
   scripts, each reported with its goal, as each step of a script that
-  fails is, and the record of
+  fails is, the cache of a development, from which a development is
+  resumed with no search for a theorem whose statement and script the
+  cache has, proved, and the record of
   elaborated definitions for the first program outside the compilers;
   documentation as literate pages has a first inclusion. Waiting on the datatype
   language's completion: hygienic elaboration with explicit assembly,
@@ -1705,7 +1707,8 @@ section below opens with a table of the states of its parts.
     advanced encodings: complete; modules: complete but for the parts that
     follow their consumers; diagnostics naming the failing definition at its
     line and column, the markup of comments, the `geb` editor language, the checker of holes
-    in programs and holes in proof scripts with the report of goals: complete; the other steps
+    in programs, holes in proof scripts with the report of goals and the cache of a
+    development: complete; the other steps
     of the sequence independent of the datatype language's
     completion: ready; the steps after it: waiting on it; the
     parts that follow their consumers: waiting on them
@@ -3504,6 +3507,16 @@ tag := "authoring-compatibility"
     ({ref "typed-holes"}[Typed holes]), its translation of open sketches
     and its transcription into Geb remaining
 *
+  * The cache of a development
+    ({ref "proof-cache"}[The cache of a development])
+  * Complete: `prove` and `check` resume a development from the cache of
+    an earlier run, a theorem whose statement and script the cache has,
+    proved, being taken as it stands after unchanged statements in an
+    unchanged program, and checked, the entries it cites renumbered,
+    elsewhere; a certificate replays before it is written, with a cache as
+    without one. A derivation's independence of the positions of the
+    definitions it names remains ({ref "improvements"}[Improvements])
+*
   * Documentation as literate pages
   * A first inclusion is complete: source comments rendered by Verso,
     checked examples, resolved references and proof replay during the
@@ -3537,9 +3550,8 @@ tag := "authoring-compatibility"
     language's completion; the typed enumerator: ready
 *
   * When their consumers exist: digests and the store, the attachment of
-    annotations and hover text, a language server, tree-sitter, the cache
-    of certificates, the export to canonical S-expressions, and the
-    Geb-native refinement search
+    annotations and hover text, a language server, tree-sitter, the export
+    to canonical S-expressions, and the Geb-native refinement search
   * Waiting on their consumers
 *
   * Acceptance
@@ -5488,7 +5500,16 @@ keyed by the statement and the elaborated definitions it cites, and a
 script that fails after a change of the prover falls back to its cached
 certificate while it is repaired. The complete proofs about the
 compiler's components have from 600000 to 1240000 nodes, so the cache
-holds the form of shared certificates. The surface syntax is the
+holds the form of shared certificates. The cache of a development
+({ref "proof-cache"}[The cache of a development]) is the first form of
+it: an item for each theorem, keyed by the theorem's statement and
+script, whose derivation is taken as it stands where the compiled
+program and the statements before the theorem are the cache's, and is
+otherwise checked with the present entries, those it cites renumbered by
+the theorems' names; a script that does not change is not run after a
+change of the prover. Its items are unshared derivations, and a key by
+the definitions a derivation cites remains
+({ref "improvements"}[Improvements]). The surface syntax is the
 versioned `proofs` document of `bootstrap/authoring.geb`: statements over
 the kernel's types, with a context of named variables and named
 hypotheses, whose terms are the kernel's terms over the program's
@@ -5728,6 +5749,13 @@ declares its datatypes by `data`, `tree-data` being removed.
     after it that cites its theorem is proved; a development with an open
     hole has no certificate
 *
+  * The cache of a development
+  * A development proved with a cache and proved again is searched for no
+    theorem; after a change of one script, for that theorem alone; after
+    a theorem stated before the others, for none of them, their
+    derivations checked; and its certificate is that of a development
+    proved without a cache
+*
   * Documentation as literate pages
   * One Geb module renders prose, a checked example and a link through
     Verso; editing only its documentation leaves the core identity
@@ -5761,7 +5789,7 @@ holes in the datatype language, whose types the stage-1 typing reports, the
 kernel's erasing the datatypes; diagnostics with locations inside a
 declaration; and the typed enumerator. When their consumers
 exist: digests and the store, `attach` and hover text, a language
-server, tree-sitter, the cache of certificates and the
+server, tree-sitter and the
 export to canonical S-expressions. The Geb-native refinement search
 follows the bootstrap.
 The library then written in Geb drives content storage, richer language
@@ -7771,7 +7799,26 @@ the change that removes it.
   before each theorem take a minute or less, and the rest is the weak
   normalization of the checker and of the expansion at the cases of a
   label, as in the deducers' searches. The developments are therefore
-  proved by `slow-checks.yml` and not by the routine checks.
+  proved by `slow-checks.yml` and not by the routine checks. A development
+  resumed from its cache ({ref "proof-cache"}[The cache of a development])
+  is searched for the theorems that changed alone: with none changed, in
+  one run on that machine, `check` takes 16 seconds for the developments
+  of weakening and substitution and 28 for that of the expansion's
+  identity, and `prove`, which replays the certificate, about two minutes
+  for each.
+* Definitions named by position in derivations. A term names a definition
+  of the program by its position among the program's, and the connectives
+  of a development of version 3 stand after them, so a definition stated
+  before another, or, for a theorem that names a connective, anywhere,
+  leaves a certificate that no longer replays and a cached derivation that
+  no longer checks, whether or not the theorem cites the definition. A
+  certificate is therefore bound to its exact compiled program, and a
+  development resumed from a cache of another program is checked or
+  proved again, no theorem taken. A translation of a declaration along a
+  renaming of the definitions, as the cache renumbers the entries a
+  derivation cites, checked as any derivation is, removes both; it reads
+  each rule's data as terms, types or indices, which the renumbering of
+  entries does not.
 
 ## The next phase
 %%%

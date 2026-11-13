@@ -98,6 +98,7 @@ jobs:
           bash scripts/tests/test-authoring.sh
           bash scripts/tests/test-preservation.sh
           bash scripts/tests/test-proof-scripts.sh
+          bash scripts/tests/test-proof-cache.sh
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version: '24'

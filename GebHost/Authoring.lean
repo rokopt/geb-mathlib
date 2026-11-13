@@ -495,23 +495,122 @@ def Session.read (manifest proofs : String) : IO Session := do
     (present proofs written (GebMirror.Metalogic.«Authoring.version» b input))
   return ⟨m.profile, b, input, written, formatOf version⟩
 
-/-- The certificate the runner finds for a development, which replays; a theorem its script does
-not prove is the diagnostic at its name. -/
-def Session.prove (s : Session) (proofs : String) : IO Tree := do
-  let cert ← IO.ofExcept
-    (present proofs s.written (GebMirror.Metalogic.«Authoring.prove» s.program s.input))
-  unless (GebMirror.Metalogic.«Authoring.replay» s.program s.input cert).label == 1 do
-    throw <| IO.userError s!"{proofs}: generated certificate does not replay"
+/-! ## The cache of a development -/
+
+/-- How the declarations of a development's theorems were come by in a run resumed from a cache:
+the numbers of theorems whose declarations were taken from the cache as they stand, whose
+cached derivations were checked again, whose scripts were run and proved them, and that are
+not proved. -/
+structure Uses where
+  /-- Taken from the cache as they stand. -/
+  taken : Nat
+  /-- The cache's derivation, checked with the present entries. -/
+  checked : Nat
+  /-- Proved by its script. -/
+  proved : Nat
+  /-- Not proved. -/
+  unproved : Nat
+
+/-- The uses a runner reports: a node of one number for each theorem, 0 by its script, 1 by a
+check of the cache's derivation, 2 taken from the cache and 3 not proved. -/
+def usesOf (t : Tree) : Uses :=
+  let count (k : Nat) := (t.children.filter (·.label == k)).length
+  ⟨count 2, count 1, count 0, count 3⟩
+
+/-- A line of the uses of a cache. -/
+def Uses.render (u : Uses) : String :=
+  s!"cache: {u.taken} taken, {u.checked} checked, {u.proved} proved, {u.unproved} not proved"
+
+/-- The format of a development's cache, separate from that of its certificate. -/
+def cacheFormat : Tree := nameTree "geb-proof-cache/v1".toList
+
+/-- The theory of the derivations a certificate or a cache keeps. -/
+def theoryName : Tree := nameTree "free-topos/base/v1".toList
+
+/-- The file of a proof document's cache in a directory of caches: the document's file name
+before a number of its path, so that documents of one name in several directories have
+several caches. The number identifies nothing: a cache is read for the items it holds, each
+of a theorem's name, statement and script, whichever document left it. -/
+def cachePath (dir : System.FilePath) (proofs : System.FilePath) : IO System.FilePath := do
+  let real ← IO.FS.realPath proofs
+  let name := String.ofList (real.toString.toList.reverse.takeWhile (· != '/')).reverse
+  return ⟨s!"{dir}/{name}.{(hash real.toString).toNat}.cache"⟩
+
+/-- The cache a file holds for a development, and whether it is of the development's compiled
+program: the cache of a file that is absent, does not read, or is of another format, theory or
+profile is empty. -/
+def readCache (path : System.FilePath) (profile : Profile) (program : Tree) :
+    IO (Tree × Bool) := do
+  unless ← path.pathExists do return (leaf 0, false)
+  let some saved := readImage (← IO.FS.readBinFile path) | return (leaf 0, false)
+  match saved.children with
+  | [format, theory, header, source, cache] =>
+    if saved.label == 0 && decide (format = cacheFormat) && decide (theory = theoryName) &&
+        decide (header = nameTree (canonOf profile.toSExp)) then
+      return (cache, decide (source = program))
+    else return (leaf 0, false)
+  | _ => return (leaf 0, false)
+
+/-- Write a development's cache, a file of a directory of caches, beside the format, theory,
+profile and compiled program it is of, through a file renamed into its place, so that a run
+interrupted leaves the cache whole. -/
+def writeCache (dir path : System.FilePath) (profile : Profile) (program cache : Tree) :
+    IO Unit := do
+  IO.FS.createDirAll dir
+  let tmp : System.FilePath := ⟨path.toString ++ ".tmp"⟩
+  IO.FS.writeBinFile tmp (writeImage (mk 0 [cacheFormat, theoryName,
+    nameTree (canonOf profile.toSExp), program, cache]))
+  IO.FS.rename tmp path
+
+/-- The certificate the runner finds for a development, or the diagnostics of its failures. With
+a directory of caches the development is resumed from the cache of its proof document there
+({lit}`Authoring.resume`). Where the development reads, the cache is then written as the run
+leaves it, whether or not the development is proved, beside the compiled program its items were
+checked with, and a line of how the theorems' declarations were come by is printed, which names
+no file, so that an editor reading diagnostics of the form {lit}`FILE: MESSAGE` reads none in
+it. -/
+def Session.run (s : Session) (proofs : String) (caches : Option System.FilePath) : IO Tree := do
+  match caches with
+  | none =>
+    IO.ofExcept
+      (present proofs s.written (GebMirror.Metalogic.«Authoring.prove» s.program s.input))
+  | some dir =>
+    let path ← cachePath dir proofs
+    let (cache, same) ← readCache path s.profile s.program
+    let out := GebMirror.Metalogic.«Authoring.resume» s.program s.input cache
+      (leaf (if same then 1 else 0))
+    match out.children with
+    | [result, cache', uses] =>
+      -- A development that does not read reports no theorem, and its cache is left as it is.
+      unless uses.children.isEmpty do
+        unless same && decide (cache' = cache) do
+          writeCache dir path s.profile s.program cache'
+        IO.println (usesOf uses).render
+      IO.ofExcept (present proofs s.written result)
+    | _ => throw <| IO.userError s!"{proofs}: the runner returned no development"
+
+/-- The certificate the runner finds for a development ({name}`Session.run`), which, where it
+is to be verified, replays; a theorem its script does not prove is the diagnostic of its
+obligations. -/
+def Session.prove (s : Session) (proofs : String) (caches : Option System.FilePath := none)
+    (verify : Bool := true) : IO Tree := do
+  let cert ← s.run proofs caches
+  if verify then
+    unless (GebMirror.Metalogic.«Authoring.replay» s.program s.input cert).label == 1 do
+      throw <| IO.userError s!"{proofs}: generated certificate does not replay"
   return cert
 
 /-- Prove or replay a development, reporting rejection without replacing an existing output. The
 development is the proof document after the documents it imports. A failure the runner reports
-of a theorem is a diagnostic at the theorem's name. -/
-def execute (mode manifest proofs certificate : String) : IO UInt32 := do
+of a theorem is a diagnostic at the theorem's name. A development proved with a directory of
+caches is resumed from its cache there, and its certificate replays before it is written, as
+that of any development proved. -/
+def execute (mode manifest proofs certificate : String)
+    (caches : Option System.FilePath := none) : IO UInt32 := do
   let s ← Session.read manifest proofs
   match mode with
   | "prove" =>
-    let cert ← s.prove proofs
+    let cert ← s.prove proofs caches
     IO.FS.writeBinFile certificate (writeImage (envelope s.format s.profile s.program cert))
   | "replay" =>
     let some saved := readImage (← IO.FS.readBinFile certificate)
@@ -525,14 +624,17 @@ def execute (mode manifest proofs certificate : String) : IO UInt32 := do
 
 /-- Check a file and write nothing: a proof document, one whose text holds a form
 {lit}`(proofs V …)`, is proved against the program it names, and any other file is compiled as
-{name}`GebHost.Compiler.checkSource` compiles a source. -/
-def checkFile (file : String) : IO UInt32 := do
+{name}`GebHost.Compiler.checkSource` compiles a source. With a directory of caches a proof
+document's development is resumed from its cache there, which is the one file written, and the
+certificate found is not replayed: the declarations taken from the cache are those an earlier
+run checked, and the others are checked as they are found. -/
+def checkFile (file : String) (caches : Option System.FilePath := none) : IO UInt32 := do
   let proofs := match Locate.locate (Command.chars (← IO.FS.readBinFile file)) with
     | .ok items => items.any (Locate.headIs kwProofs)
     | .error _ => false
   if proofs then
     let s ← Session.read (← manifestOf file).toString file
-    discard <| s.prove file
+    discard <| s.prove file caches (verify := caches.isNone)
     return 0
   else Compiler.checkSource Compiler.checked file
 

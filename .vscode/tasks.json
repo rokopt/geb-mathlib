@@ -11,7 +11,7 @@
     "label": "Geb: check saved file",
     "type": "process",
     "command": "lake",
-    "args": ["exe", "geb-author", "check", "${file}"],
+    "args": ["exe", "geb-author", "check", "--cache", ".lake/geb-proof-cache", "${file}"],
     "options": { "cwd": "${workspaceFolder}" },
     "problemMatcher": "$geb"
   }]
