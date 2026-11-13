@@ -3934,7 +3934,12 @@ import-direction rules above are enforced by
   functions, hypotheses cut in from a theorem, from the congruence of a
   hypothesis and from an equation with a truth, reduction before a script,
   and the searches that split the values of tests, rewrite under masks by
-  hypotheses and split the variables conditionals are stuck on. The
+  hypotheses and split the variables conditionals are stuck on. A hole,
+  `?NAME`, stands where a script stands and proves nothing: a document
+  with one has no certificate, and each hole, as each innermost step of a
+  script that does not prove its theorem, is reported where it is written
+  with its goal, a statement of the internal language in the names the
+  script has there, the theorems after it proved under its theorem. The
   documents `weakening.proofs.geb`, `substitution.proofs.geb` and
   `expansion.proofs.geb` under `bootstrap/proofs/` state and prove with
   them the developments of `GebTests/Prototypes/FreeTopos/Weakening.lean`,

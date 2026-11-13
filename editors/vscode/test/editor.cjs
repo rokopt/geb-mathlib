@@ -172,8 +172,10 @@ exports.run = async () => {
       const { exitCode, found } = await checkTask(editor);
       assert.equal(exitCode, 1);
       assert.equal(found.length, 1);
-      assert.equal(found[0].message, 'the script of the theorem same does not prove it');
-      assert.deepEqual([found[0].range.start.line, found[0].range.start.character], [1, 11]);
+      // The failure is reported at the step that fails, with the goal of that step.
+      assert.equal(found[0].message, 'the script of the theorem same does not prove it: ' +
+        'this step does not prove the goal (internal () (equal F.id F.other))');
+      assert.deepEqual([found[0].range.start.line, found[0].range.start.character], [1, 41]);
     });
     await test('check task reports nothing for a proved document', async () => {
       const editor = await open(proofs(64));

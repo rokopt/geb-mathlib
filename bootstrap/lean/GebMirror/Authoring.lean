@@ -5541,6 +5541,186 @@ def «Authoring.scriptStep» :=
                                                      (leaf 0, «Authoring.failTac»));
     x8
 
+def «Authoring.openRule» := leaf 255
+
+def «Authoring.obligation» :=
+  fun (x0 : T)
+    (x1 : T)
+    (x2 : List T)
+    (x3 : List T)
+    (x4 : List T)
+    (x5 : List T)
+    (x6 : List T)
+    (x7 : T)
+    (x8 : T) =>
+    let x9 : T := «Prelude.some»
+      («Prover.dNode»
+        «Authoring.openRule»
+        (x0 ::
+          (x1 ::
+            ((Const.node (leaf 0) («Prelude.reverse» x2)) ::
+              ((Const.node (leaf 0) x3) ::
+                ((Const.node (leaf 0) x4) ::
+                  ((Const.node (leaf 0) x5) ::
+                    («Theory.l3» (Const.node (leaf 0) x6) x7 x8)))))))
+        ([] : List T));
+    x9
+
+def «Authoring.located» :=
+  fun (x0 : T)
+    (x1 : T)
+    (x2 : List T)
+    (x3 : List T)
+    (x4 : List T)
+    (x5 : List T)
+    (x6 : T)
+    (x7 : List
+      (T →
+        List T →
+          List T →
+            List T →
+              List T → T × (T → List T → List T → List T → List T → T → T → T))) =>
+    let x8 : T →
+      List T →
+        List T →
+          List T →
+            List T →
+              T ×
+                (T →
+                  List T →
+                    List T →
+                      List T →
+                        List T →
+                          T →
+                            T →
+                              T) := (fun (x8 : T) (x9 : List T) =>
+      if («Prelude.and»
+        (Const.lt (leaf 2) x0)
+        («Prelude.and»
+          («Authoring.form» x6 «Reader.kwHole» (leaf 2))
+          («Reader.isAtom» (Const.child x6 (leaf 1))))).label ≠ 0 then
+        fun (x10 : List T) (_ : List T) (x12 : List T) =>
+          (leaf 1,
+            fun (_ : T)
+              (_ : List T)
+              (_ : List T)
+              (x16 : List T)
+              (x17 : List T)
+              (x18 : T)
+              (x19 : T) =>
+              «Authoring.obligation»
+                (leaf 0)
+                («Reader.nameOf» (Const.child x6 (leaf 1)))
+                x9
+                x10
+                x12
+                x16
+                x17
+                x18
+                x19)
+      else
+        let x10 : T := «Prelude.and»
+          (Const.lt (leaf 2) x0)
+          («Authoring.form»
+            x6
+            (mk 0 [leaf 102, leaf 105, leaf 114, leaf 115, leaf 116])
+            (leaf 3));
+        let x11 : List
+          (List T →
+            List T →
+              List T →
+                T ×
+                  (T →
+                    List T →
+                      List T →
+                        List T →
+                          List T →
+                            T →
+                              T →
+                                T)) := Const.foldr
+          (α := T →
+            List T →
+              List T →
+                List T →
+                  List T → T × (T → List T → List T → List T → List T → T → T → T))
+          (β := T →
+            List
+              (List T →
+                List T →
+                  List T → T × (T → List T → List T → List T → List T → T → T → T)))
+          (fun (x11 : T →
+               List T →
+                 List T →
+                   List T →
+                     List T → T × (T → List T → List T → List T → List T → T → T → T))
+             (x12 : T →
+               List
+                 (List T →
+                   List T →
+                     List T → T × (T → List T → List T → List T → List T → T → T → T)))
+             (x13 : T) =>
+            ((x11
+              (if («Prelude.and» x10 (Const.eq x13 (leaf 1))).label ≠ 0 then
+                leaf 0
+              else
+                x8)
+              (x13 :: x9)) ::
+              (x12 (Const.add x13 (leaf 1)))))
+          (fun (_ : T) =>
+            ([] : List (List T →
+              List T →
+                List T → T × (T → List T → List T → List T → List T → T → T → T))))
+          x7
+          (leaf 0);
+        let x12 : List T →
+          List T →
+            List T →
+              T ×
+                (T →
+                  List T →
+                    List T →
+                      List T →
+                        List T →
+                          T → T → T) := «Authoring.scriptStep»
+          x0
+          x1
+          x2
+          x3
+          x4
+          x5
+          x6
+          x11;
+        if (Const.eq x8 (leaf 0)).label ≠ 0 then
+          x12
+        else
+          fun (x13 : List T) (x14 : List T) (x15 : List T) =>
+            let x16 : T ×
+              (T →
+                List T → List T → List T → List T → T → T → T) := x12 x13 x14 x15;
+            ((x16).1,
+              fun (x17 : T)
+                (x18 : List T)
+                (x19 : List T)
+                (x20 : List T)
+                (x21 : List T)
+                (x22 : T)
+                (x23 : T) =>
+                let x24 : T := (x16).2 x17 x18 x19 x20 x21 x22 x23;
+                if («Prelude.isSome» x24).label ≠ 0 then
+                  x24
+                else
+                  «Authoring.obligation»
+                    (leaf 1)
+                    «Authoring.unnamed»
+                    x9
+                    x13
+                    x15
+                    x20
+                    x21
+                    x22
+                    x23));
+    x8
+
 def «Authoring.readScript» :=
   fun (x0 : T)
     (x1 : T)
@@ -5549,24 +5729,652 @@ def «Authoring.readScript» :=
     (x4 : List T)
     (x5 : List T)
     (x6 : T) =>
-    let x7 : List T →
+    let x7 : T →
       List T →
         List T →
-          T ×
-            (T →
-              List T →
-                List T →
+          List T →
+            List T →
+              T ×
+                (T →
                   List T →
                     List T →
-                      T →
-                        T →
-                          T) := Const.para
-      (α := List T →
+                      List T →
+                        List T →
+                          T →
+                            T →
+                              T) := Const.para
+      (α := T →
         List T →
-          List T → T × (T → List T → List T → List T → List T → T → T → T))
-      («Authoring.scriptStep» x0 x1 x2 x3 x4 x5)
+          List T →
+            List T →
+              List T → T × (T → List T → List T → List T → List T → T → T → T))
+      («Authoring.located» x0 x1 x2 x3 x4 x5)
       x6;
     x7
+
+def «Authoring.holed» :=
+  fun (x0 : T) =>
+    let x1 : T := Const.para
+      (α := T)
+      (fun (x1 : T) (x2 : List T) =>
+        «Prelude.or»
+          («Authoring.form» x1 «Reader.kwHole» (leaf 2))
+          («Base.anyT» (fun (x3 : T) => x3) x2))
+      x0;
+    x1
+
+def «Authoring.obligationsOf» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := Const.para
+      (α := List T)
+      (fun (x1 : T) (x2 : List (List T)) =>
+        if («Prelude.and»
+          (Const.eq (Const.label x1) «Authoring.openRule»)
+          (Const.eq (Const.arity x1) (leaf 1))).label ≠ 0 then
+          «Prelude.single» x1
+        else
+          Const.lcase
+            (α := List T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : List T) (x4 : List (List T)) =>
+              Const.foldr
+                (α := List T)
+                (β := List T)
+                (fun (x5 : List T) (x6 : List T) => «Prelude.append» x5 x6)
+                ([] : List T)
+                x4))
+      x0;
+    x1
+
+def «Authoring.atomOf» :=
+  fun (x0 : T) =>
+    let x1 : T := Const.node (leaf 1) (Const.children x0); x1
+
+def «Authoring.listOf» :=
+  fun (x0 : List T) => let x1 : T := Const.node (leaf 2) x0; x1
+
+def «Authoring.digits» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (Const.iter
+      (α := T × List T)
+      (fun (x1 : T × List T) =>
+        if («Prelude.and»
+          (Const.eq (x1).1 (leaf 0))
+          («Base.not» («Base.isEmpty» (x1).2))).label ≠ 0 then
+          x1
+        else
+          (Const.div (x1).1 (leaf 10),
+            ((Const.add (leaf 48) (Const.mod (x1).1 (leaf 10))) :: (x1).2)))
+      (x0, ([] : List T))
+      (Const.add (Const.log2 (Const.add x0 (leaf 1))) (leaf 1))).2;
+    x1
+
+def «Authoring.nameOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := (if («Base.isEmpty» (Const.children x0)).label ≠ 0 then
+      Const.node (leaf 0) («Prelude.append» x1 («Authoring.digits» x2))
+    else
+      x0);
+    x3
+
+def «Authoring.opaqueOf» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : T := «Authoring.listOf»
+      ((«Authoring.atomOf»
+        (mk 0 [leaf 111, leaf 112, leaf 97, leaf 113, leaf 117, leaf 101])) ::
+        ((Const.node (leaf 1) («Authoring.digits» x0)) :: x1));
+    x2
+
+def «Authoring.showType» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.para
+      (α := T)
+      (fun (x2 : T) (x3 : List T) =>
+        let x4 : T := Const.child x2 (leaf 0);
+        let x5 : T →
+          T := (fun (x5 : T) =>
+          «Authoring.listOf»
+            («Theory.l3»
+              («Authoring.atomOf» x5)
+              («Prelude.at» x3 (leaf 0))
+              («Prelude.at» x3 (leaf 1))));
+        let x6 : T →
+          T := (fun (x6 : T) =>
+          «Authoring.listOf»
+            («Theory.l2» («Authoring.atomOf» x6) («Prelude.at» x3 (leaf 0))));
+        if (Const.equal x2 «Translation.treeTy»).label ≠ 0 then
+          «Authoring.atomOf» «Reader.kwT»
+        else
+          if (Const.equal x2 «Translation.bitsTy»).label ≠ 0 then
+            «Authoring.atomOf» (mk 0 [leaf 66, leaf 105, leaf 116, leaf 115])
+          else
+            if (Const.equal
+              x2
+              («Theory.coprod» «Theory.one» «Theory.one»)).label ≠ 0 then
+              «Authoring.atomOf» (mk 0 [leaf 66, leaf 105, leaf 116])
+            else
+              if (Const.equal x2 «Theory.one»).label ≠ 0 then
+                «Authoring.atomOf» «Reader.kwUnit»
+              else
+                if (Const.equal x2 «Theory.omega»).label ≠ 0 then
+                  «Authoring.atomOf»
+                    (mk 0 [leaf 79, leaf 109, leaf 101, leaf 103, leaf 97])
+                else
+                  if (Const.equal
+                    x2
+                    («Theory.prod» x4 (Const.child x2 (leaf 1)))).label ≠ 0 then
+                    x5 «Reader.kwProd»
+                  else
+                    if (Const.equal
+                      x2
+                      («Theory.coprod» x4 (Const.child x2 (leaf 1)))).label ≠ 0 then
+                      x5 (mk 0 [leaf 83, leaf 117, leaf 109])
+                    else
+                      if (Const.equal
+                        x2
+                        («Theory.exp» x4 (Const.child x2 (leaf 1)))).label ≠ 0 then
+                        x5 «Reader.kwArrow»
+                      else
+                        if (Const.equal x2 («Theory.list» x4)).label ≠ 0 then
+                          x6 «Reader.kwList»
+                        else
+                          if (Const.equal x2 («Theory.lrose» x4)).label ≠ 0 then
+                            x6 (mk 0 [leaf 82, leaf 111, leaf 115, leaf 101])
+                          else
+                            if (Const.equal x2 («Theory.x» (Const.label x4))).label ≠ 0 then
+                              «Authoring.atomOf»
+                                («Authoring.nameOr»
+                                  («Prelude.at» x0 (Const.label x4))
+                                  («Theory.l2» (leaf 95) (leaf 88))
+                                  (Const.label x4))
+                            else
+                              «Authoring.opaqueOf» (Const.label x2) x3)
+      x1;
+    x2
+
+def «Authoring/Shows.single» :=
+  fun (x0 : List T → T) =>
+    let x1 : List (List T → T) := (x0 :: ([] : List (List T → T))); x1
+
+def «Authoring/Shows.length» :=
+  fun (x0 : List (List T → T)) =>
+    let x1 : T := Const.foldr
+      (α := List T → T)
+      (β := T)
+      (fun (_ : List T → T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Authoring/Shows.append» :=
+  fun (x0 : List (List T → T)) (x1 : List (List T → T)) =>
+    let x2 : List
+      (List T →
+        T) := Const.foldr
+      (α := List T → T)
+      (β := List (List T → T))
+      (fun (x2 : List T → T) (x3 : List (List T → T)) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Authoring/Shows.reverse» :=
+  fun (x0 : List (List T → T)) =>
+    let x1 : List
+      (List T →
+        T) := Const.foldr
+      (α := List T → T)
+      (β := List (List T → T) → List (List T → T))
+      (fun (x1 : List T → T)
+         (x2 : List (List T → T) → List (List T → T))
+         (x3 : List (List T → T)) =>
+        x2 (x1 :: x3))
+      (fun (x1 : List (List T → T)) => x1)
+      x0
+      ([] : List (List T → T));
+    x1
+
+def «Authoring/Shows.tail» :=
+  fun (x0 : List (List T → T)) =>
+    let x1 : List
+      (List T →
+        T) := Const.lcase
+      (α := List T → T)
+      (β := List (List T → T))
+      x0
+      ([] : List (List T → T))
+      (fun (_ : List T → T) (x2 : List (List T → T)) => x2);
+    x1
+
+def «Authoring/Shows.drop» :=
+  fun (x0 : T) (x1 : List (List T → T)) =>
+    let x2 : List
+      (List T →
+        T) := Const.iter
+      (α := List (List T → T))
+      «Authoring/Shows.tail»
+      x1
+      x0;
+    x2
+
+def «Authoring/Shows.atOr» :=
+  fun (x0 : List T → T) (x1 : List (List T → T)) (x2 : T) =>
+    let x3 : List T →
+      T := Const.lcase
+      (α := List T → T)
+      (β := List T → T)
+      («Authoring/Shows.drop» x2 x1)
+      x0
+      (fun (x3 : List T → T) (_ : List (List T → T)) => x3);
+    x3
+
+def «Authoring.showNothing» :=
+  fun (_ : List T) => «Authoring.opaqueOf» (leaf 0) ([] : List T)
+
+def «Authoring.libName» :=
+  fun (x0 : T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x1 : T) (x2 : T) =>
+        if (Const.eq (Const.child x1 (leaf 1)) x0).label ≠ 0 then
+          «Prelude.some» (Const.child x1 (leaf 0))
+        else
+          x2)
+      «Prelude.none»
+      «Authoring.libTable»;
+    x1
+
+def «Authoring.showPrim» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : T) =>
+    let x4 : T := (let x4 : T := «Prelude.length» x1;
+                   if («Prelude.and»
+                     (Const.eq x0 (leaf 0))
+                     («Prelude.and»
+                       (Const.eq x4 (leaf 1))
+                       («Language.mIs» (leaf 1) (leaf 0) x2))).label ≠ 0 then
+                     «Authoring.listOf»
+                       («Theory.l2»
+                         («Authoring.atomOf» «Reader.kwNil»)
+                         («Prelude.at» x1 (leaf 0)))
+                   else
+                     if («Prelude.and»
+                       (Const.eq x0 (leaf 1))
+                       («Prelude.and»
+                         (Const.eq x4 (leaf 1))
+                         («Language.mIs» (leaf 2) (leaf 2) x2))).label ≠ 0 then
+                       «Authoring.listOf»
+                         («Theory.l4»
+                           («Authoring.atomOf» «Reader.kwCons»)
+                           («Prelude.at» x1 (leaf 0))
+                           (Const.child x3 (leaf 1))
+                           (Const.child x3 (leaf 2)))
+                     else
+                       if («Prelude.and»
+                         (Const.eq x0 (leaf 2))
+                         (Const.eq x4 (leaf 1))).label ≠ 0 then
+                         «Authoring.listOf»
+                           («Theory.l3»
+                             («Authoring.atomOf» (mk 0 [leaf 110, leaf 111, leaf 100, leaf 101]))
+                             («Prelude.at» x1 (leaf 0))
+                             x3)
+                       else
+                         if («Prelude.and»
+                           («Prelude.or» (Const.eq x0 (leaf 3)) (Const.eq x0 (leaf 4)))
+                           (Const.eq x4 (leaf 2))).label ≠ 0 then
+                           «Authoring.listOf»
+                             («Theory.l4»
+                               («Authoring.atomOf»
+                                 (if (Const.eq x0 (leaf 3)).label ≠ 0 then
+                                   mk 0 [leaf 105, leaf 110, leaf 108]
+                                 else
+                                   mk 0 [leaf 105, leaf 110, leaf 114]))
+                               («Prelude.at» x1 (leaf 0))
+                               («Prelude.at» x1 (leaf 1))
+                               x3)
+                         else
+                           if («Prelude.and»
+                             (Const.eq x0 (leaf 5))
+                             (Const.eq x4 (leaf 3))).label ≠ 0 then
+                             «Authoring.listOf»
+                               («Theory.l5»
+                                 («Authoring.atomOf» (mk 0 [leaf 99, leaf 97, leaf 115, leaf 101]))
+                                 («Prelude.at» x1 (leaf 0))
+                                 («Prelude.at» x1 (leaf 1))
+                                 («Prelude.at» x1 (leaf 2))
+                                 x3)
+                           else
+                             «Authoring.opaqueOf» (leaf 7) («Prelude.single» x3));
+    x4
+
+def «Authoring.showCall» :=
+  fun (x0 : List T) (x1 : T) (x2 : T) (x3 : List T) (x4 : List T) =>
+    let x5 : T := (let x5 : T := «Authoring/LD.length» «Translation.lib»;
+                   let x6 : T := «Prelude.and» («Base.isEmpty» x3) («Base.isEmpty» x4);
+                   if (Const.lt x2 x5).label ≠ 0 then
+                     let x7 : T := «Authoring.libName» x2;
+                     if («Prelude.isSome» x7).label ≠ 0 then
+                       «Authoring.listOf»
+                         ((«Authoring.atomOf» (mk 0 [leaf 108, leaf 105, leaf 98])) ::
+                           ((«Authoring.atomOf» («Prelude.get» x7)) ::
+                             («Prelude.append» x3 («Prelude.reverse» x4))))
+                     else
+                       «Authoring.opaqueOf» (leaf 11) x4
+                   else
+                     if («Prelude.and» (Const.lt x2 x1) x6).label ≠ 0 then
+                       «Authoring.atomOf» («Prelude.at» x0 (Const.sub x2 x5))
+                     else
+                       if («Prelude.and» (Const.eq x2 x1) x6).label ≠ 0 then
+                         «Authoring.atomOf» (mk 0 [leaf 116, leaf 114, leaf 117, leaf 101])
+                       else
+                         if («Prelude.and»
+                           (Const.eq x2 (Const.add x1 (leaf 2)))
+                           («Prelude.and»
+                             («Base.isEmpty» x3)
+                             (Const.eq («Prelude.length» x4) (leaf 2)))).label ≠ 0 then
+                           «Authoring.listOf»
+                             («Theory.l3»
+                               («Authoring.atomOf»
+                                 (mk 0 [leaf 105,
+                                   leaf 109,
+                                   leaf 112,
+                                   leaf 108,
+                                   leaf 105,
+                                   leaf 101,
+                                   leaf 115]))
+                               («Prelude.at» x4 (leaf 1))
+                               («Prelude.at» x4 (leaf 0)))
+                         else
+                           «Authoring.opaqueOf» (leaf 11) x4);
+    x5
+
+def «Authoring.showStep» :=
+  fun (x0 : List T) (x1 : List T) (x2 : T) (x3 : List (List T → T)) =>
+    let x4 : List T →
+      T := (fun (x4 : List T) =>
+      let x5 : T := Const.label x2;
+      let x6 : T := «Prelude.length» («Language.mArgs» x2);
+      let x7 : T →
+        List T →
+          T := (fun (x7 : T) =>
+        «Authoring/Shows.atOr»
+          «Authoring.showNothing»
+          x3
+          (Const.add x7 (leaf 1)));
+      let x8 : T → T := (fun (x8 : T) => x7 x8 x4);
+      let x9 : T → T := «Authoring.showType» x1;
+      let x10 : T → T := «Authoring.atomOf»;
+      let x11 : T := «Authoring.nameOr»
+        «Authoring.unnamed»
+        («Prelude.single» (leaf 95))
+        («Prelude.length» x4);
+      let x12 : T := «Authoring.nameOr»
+        «Authoring.unnamed»
+        («Prelude.single» (leaf 95))
+        (Const.add («Prelude.length» x4) (leaf 1));
+      let x13 : T := «Language.mD» x2 (leaf 0);
+      let x14 : List T := Const.children («Language.mD» x2 (leaf 1));
+      let x15 : T := «Authoring.connectivesAt» x0;
+      let x16 : T →
+        T := (fun (_ : T) =>
+        «Authoring.opaqueOf» x5 («Base.mapT» x8 («Base.range» x6)));
+      if (Const.eq x5 (leaf 0)).label ≠ 0 then
+        x10
+          («Authoring.nameOr»
+            («Prelude.at» x4 x13)
+            («Theory.l5» (leaf 95) (leaf 102) (leaf 114) (leaf 101) (leaf 101))
+            x13)
+      else
+        if (Const.eq x5 (leaf 1)).label ≠ 0 then
+          x10 «Reader.kwUnitValue»
+        else
+          if («Prelude.and»
+            (Const.eq x5 (leaf 2))
+            (Const.eq x6 (leaf 2))).label ≠ 0 then
+            «Authoring.listOf»
+              («Theory.l3» (x10 «Reader.kwPair») (x8 (leaf 0)) (x8 (leaf 1)))
+          else
+            if («Prelude.and»
+              (Const.eq x5 (leaf 3))
+              (Const.eq x6 (leaf 1))).label ≠ 0 then
+              «Authoring.listOf» («Theory.l2» (x10 «Reader.kwFst») (x8 (leaf 0)))
+            else
+              if («Prelude.and»
+                (Const.eq x5 (leaf 4))
+                (Const.eq x6 (leaf 1))).label ≠ 0 then
+                «Authoring.listOf» («Theory.l2» (x10 «Reader.kwSnd») (x8 (leaf 0)))
+              else
+                if («Prelude.and»
+                  (Const.eq x5 (leaf 5))
+                  (Const.eq x6 (leaf 1))).label ≠ 0 then
+                  «Authoring.listOf»
+                    («Theory.l3»
+                      (x10 «Reader.kwLam»)
+                      («Authoring.listOf»
+                        («Prelude.single»
+                          («Authoring.listOf» («Theory.l2» (x10 x11) (x9 x13)))))
+                      (x7 (leaf 0) (x11 :: x4)))
+                else
+                  if («Prelude.and»
+                    (Const.eq x5 (leaf 6))
+                    (Const.eq x6 (leaf 2))).label ≠ 0 then
+                    if («Language.mIs»
+                      (leaf 6)
+                      (leaf 2)
+                      («Language.mArg» x2 (leaf 0))).label ≠ 0 then
+                      «Authoring.listOf»
+                        («Prelude.append»
+                          (Const.children (x8 (leaf 0)))
+                          («Prelude.single» (x8 (leaf 1))))
+                    else
+                      «Authoring.listOf» («Theory.l2» (x8 (leaf 0)) (x8 (leaf 1)))
+                  else
+                    if («Prelude.and»
+                      (Const.eq x5 (leaf 7))
+                      (Const.eq x6 (leaf 1))).label ≠ 0 then
+                      «Authoring.showPrim»
+                        x13
+                        («Base.mapT» x9 x14)
+                        («Language.mArg» x2 (leaf 0))
+                        (x8 (leaf 0))
+                    else
+                      if («Prelude.and»
+                        (Const.eq x5 (leaf 9))
+                        (Const.eq x6 (leaf 3))).label ≠ 0 then
+                        «Authoring.listOf»
+                          («Theory.l5»
+                            (x10
+                              (mk 0 [leaf 108,
+                                leaf 105,
+                                leaf 115,
+                                leaf 116,
+                                leaf 45,
+                                leaf 114,
+                                leaf 101,
+                                leaf 99]))
+                            (x8 (leaf 0))
+                            («Authoring.listOf» («Theory.l2» (x10 x11) (x10 x12)))
+                            (x7 (leaf 1) (x12 :: (x11 :: x4)))
+                            (x8 (leaf 2)))
+                      else
+                        if («Prelude.and»
+                          (Const.eq x5 (leaf 10))
+                          (Const.eq x6 (leaf 2))).label ≠ 0 then
+                          «Authoring.listOf»
+                            («Theory.l5»
+                              (x10
+                                (mk 0 [leaf 114,
+                                  leaf 111,
+                                  leaf 115,
+                                  leaf 101,
+                                  leaf 45,
+                                  leaf 114,
+                                  leaf 101,
+                                  leaf 99]))
+                              (x9 x13)
+                              («Authoring.listOf» («Prelude.single» (x10 x11)))
+                              (x7 (leaf 0) (x11 :: x4))
+                              (x8 (leaf 1)))
+                        else
+                          if (Const.eq x5 (leaf 11)).label ≠ 0 then
+                            «Authoring.showCall»
+                              x0
+                              x15
+                              x13
+                              («Base.mapT» x9 x14)
+                              («Base.mapT» x8 («Base.range» x6))
+                          else
+                            if («Prelude.and»
+                              (Const.eq x5 (leaf 12))
+                              (Const.eq x6 (leaf 2))).label ≠ 0 then
+                              «Authoring.listOf»
+                                («Theory.l3»
+                                  (x10 (mk 0 [leaf 101, leaf 113, leaf 117, leaf 97, leaf 108]))
+                                  (x8 (leaf 0))
+                                  (x8 (leaf 1)))
+                            else
+                              x16 (leaf 0));
+    x4
+
+def «Authoring.showTerm» :=
+  fun (x0 : List T) (x1 : List T) (x2 : T) (x3 : List T) =>
+    let x4 : T := Const.para
+      (α := List T → T)
+      («Authoring.showStep» x0 x1)
+      x2
+      x3;
+    x4
+
+def «Authoring.displayRules» :=
+  ((«Prover.nrRule» (leaf 3) («Derivation.terms» ([] : List T))) ::
+    ((«Prover.nrRule» (leaf 4) («Derivation.terms» ([] : List T))) ::
+      («Authoring/Rules.single»
+        («Prover.nrRule» (leaf 5) («Derivation.terms» ([] : List T))))))
+
+def «Authoring.showGoal» :=
+  fun (x0 : T) (x1 : List T) (x2 : List T) (x3 : List T) (x4 : T) =>
+    let x5 : T := (let x5 : List T := Const.children («Language.mD» x4 (leaf 5));
+                   let x6 : List T := Const.children («Language.mD» x4 (leaf 6));
+                   let x7 : T := «Prelude.length» x5;
+                   let x8 : List
+                     T := «Base.mapT»
+                     (fun (x8 : T) =>
+                       «Authoring.nameOr»
+                         («Prelude.at» (Const.children («Language.mD» x4 (leaf 3))) x8)
+                         («Prelude.single» (leaf 95))
+                         (Const.sub (Const.sub x7 (leaf 1)) x8))
+                     («Base.range» x7);
+                   let x9 : T →
+                     T := (fun (x9 : T) =>
+                     «Authoring.showTerm»
+                       x2
+                       x3
+                       (let x10 : T := «Prover.eval»
+                          x0
+                          x1
+                          («Prelude.length» x3)
+                          «Authoring.displayRules»
+                          (leaf 4096)
+                          (leaf 3)
+                          x5
+                          x6
+                          x9;
+                        if (Const.eq (Const.label x10) (leaf 0)).label ≠ 0 then
+                          let _ : List T := Const.children x10; x9
+                        else
+                          let x11 : List T := Const.children x10;
+                          let x12 : T := Const.lcase
+                            (α := T)
+                            (β := T)
+                            x11
+                            (leaf 0)
+                            (fun (x12 : T) (_ : List T) => x12);
+                          let _ : List
+                            T := Const.lcase
+                            (α := T)
+                            (β := List T)
+                            x11
+                            ([] : List T)
+                            (fun (_ : T) (x14 : List T) => x14);
+                          «Prover.nfTerm» x12)
+                       x8);
+                   let x10 : T := «Authoring.listOf»
+                     («Theory.l3»
+                       («Authoring.atomOf»
+                         (mk 0 [leaf 101, leaf 113, leaf 117, leaf 97, leaf 108]))
+                       (x9 («Language.mD» x4 (leaf 7)))
+                       (x9 («Language.mD» x4 (leaf 8))));
+                   let x11 : T := (if («Base.isEmpty» x6).label ≠ 0 then
+                     x10
+                   else
+                     «Authoring.listOf»
+                       ((«Authoring.atomOf»
+                         (mk 0 [leaf 105,
+                           leaf 109,
+                           leaf 112,
+                           leaf 108,
+                           leaf 105,
+                           leaf 101,
+                           leaf 115])) ::
+                         («Prelude.append»
+                           («Base.mapT»
+                             (fun (x11 : T) =>
+                               «Authoring.listOf»
+                                 («Theory.l2»
+                                   («Authoring.atomOf»
+                                     («Authoring.nameOr»
+                                       («Prelude.at»
+                                         (Const.children («Language.mD» x4 (leaf 4)))
+                                         x11)
+                                       («Theory.l2» (leaf 95) (leaf 104))
+                                       x11))
+                                   (x9 («Prelude.at» x6 x11))))
+                             («Base.range» («Prelude.length» x6)))
+                           («Prelude.single» x10))));
+                   «Authoring.listOf»
+                     («Theory.l3»
+                       («Authoring.atomOf»
+                         (mk 0 [leaf 105,
+                           leaf 110,
+                           leaf 116,
+                           leaf 101,
+                           leaf 114,
+                           leaf 110,
+                           leaf 97,
+                           leaf 108]))
+                       («Authoring.listOf» («Base.mapT» «Authoring.atomOf» x3))
+                       (if (Const.eq x7 (leaf 0)).label ≠ 0 then
+                         x11
+                       else
+                         «Authoring.listOf»
+                           («Theory.l3»
+                             («Authoring.atomOf»
+                               (mk 0 [leaf 102, leaf 111, leaf 114, leaf 97, leaf 108, leaf 108]))
+                             («Authoring.listOf»
+                               («Prelude.reverse»
+                                 («Base.mapT»
+                                   (fun (x12 : T) =>
+                                     «Authoring.listOf»
+                                       («Theory.l2»
+                                         («Authoring.atomOf» («Prelude.at» x8 x12))
+                                         («Authoring.showType» x3 («Prelude.at» x5 x12))))
+                                   («Base.range» x7))))
+                             x11))));
+    x5
+
+def «Authoring.reportOf» :=
+  fun (x0 : T) (x1 : List T) (x2 : List T) (x3 : List T) (x4 : T) =>
+    let x5 : T := Const.node
+      («Language.mD» x4 (leaf 0))
+      («Theory.l3»
+        («Language.mD» x4 (leaf 1))
+        («Language.mD» x4 (leaf 2))
+        («Authoring.showGoal» x0 x1 x2 x3 x4));
+    x5
 
 def «Authoring.request» :=
   fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
@@ -5783,6 +6591,218 @@ def «Authoring.requestThm» :=
                      ([] : List T)
                      (fun (_ : T) (x25 : List T) => x25);
                    x23);
+    x1
+
+def «Authoring.requestScript» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   let x2 : List T := Const.children x1;
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let x7 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let x8 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x8
+                     (leaf 0)
+                     (fun (x9 : T) (_ : List T) => x9);
+                   let x10 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x8
+                     ([] : List T)
+                     (fun (_ : T) (x11 : List T) => x11);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x10
+                     (leaf 0)
+                     (fun (x11 : T) (_ : List T) => x11);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x10
+                     ([] : List T)
+                     (fun (_ : T) (x13 : List T) => x13);
+                   x7);
+    x1
+
+def «Authoring.requestObjects» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (let x1 : T := x0;
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let x5 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let x6 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let x8 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x8
+              (leaf 0)
+              (fun (x9 : T) (_ : List T) => x9);
+            let x10 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x8
+              ([] : List T)
+              (fun (_ : T) (x11 : List T) => x11);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x10
+              (leaf 0)
+              (fun (x11 : T) (_ : List T) => x11);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x10
+              ([] : List T)
+              (fun (_ : T) (x13 : List T) => x13);
+            let x13 : T := x5;
+            let x14 : List T := Const.children x13;
+            let x15 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x14
+              (leaf 0)
+              (fun (x15 : T) (_ : List T) => x15);
+            let x16 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x14
+              ([] : List T)
+              (fun (_ : T) (x17 : List T) => x17);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x16
+              (leaf 0)
+              (fun (x17 : T) (_ : List T) => x17);
+            let x18 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x16
+              ([] : List T)
+              (fun (_ : T) (x19 : List T) => x19);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x18
+              (leaf 0)
+              (fun (x19 : T) (_ : List T) => x19);
+            let x20 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x18
+              ([] : List T)
+              (fun (_ : T) (x21 : List T) => x21);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x20
+              (leaf 0)
+              (fun (x21 : T) (_ : List T) => x21);
+            let x22 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x20
+              ([] : List T)
+              (fun (_ : T) (x23 : List T) => x23);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x22
+              (leaf 0)
+              (fun (x23 : T) (_ : List T) => x23);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x22
+              ([] : List T)
+              (fun (_ : T) (x25 : List T) => x25);
+            Const.children x15);
     x1
 
 def «Authoring.normalOk» :=
@@ -6031,9 +7051,16 @@ def «Authoring.normalRules» :=
               ([] : List T));
     x4
 
+def «Authoring.failed» :=
+  fun (x0 : T) (x1 : T) (x2 : List T) =>
+    let x3 : T := Const.node (leaf 0) (x0 :: (x1 :: x2)); x3
+
 def «Authoring.failure» :=
   fun (x0 : T) (x1 : T) =>
-    let x2 : T := Const.node (leaf 2) («Theory.l2» x0 x1); x2
+    let x2 : T := Const.node
+      (leaf 2)
+      («Prelude.single» («Authoring.failed» x0 x1 ([] : List T)));
+    x2
 
 def «Authoring.requestOk» :=
   fun (x0 : T) => Const.node (leaf 0) (x0 :: ([] : List T))
@@ -6249,6 +7276,8 @@ def «Authoring.readRequest» :=
             (Const.children x13)
             x5
             x23
+            (leaf 0)
+            ([] : List T)
             (Const.children x15)
             (Const.children x17)
             (Const.children x19)).1
@@ -7228,12 +8257,12 @@ def «Authoring.Results.member» :=
       (leaf 0)
 
 def «Authoring.proving» :=
-  fun (x0 : T) (x1 : T) =>
-    Const.node (leaf 0) (x0 :: (x1 :: ([] : List T)))
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    Const.node (leaf 0) (x0 :: (x1 :: (x2 :: ([] : List T))))
 
 def «Authoring.stuck» :=
-  fun (x0 : T) (x1 : T) =>
-    Const.node (leaf 1) (x0 :: (x1 :: ([] : List T)))
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    Const.node (leaf 1) (x0 :: (x1 :: (x2 :: ([] : List T))))
 
 def «Authoring/OEntries.nothing» := Const.node (leaf 0) ([] : List T)
 
@@ -7390,244 +8419,247 @@ def «Authoring.admit» :=
 
 def «Authoring.derive» :=
   fun (x0 : T)
-    (x1 : List T)
+    (x1 : T)
     (x2 : List T)
-    (x3 : T)
-    (x4 : List T)
+    (x3 : List T)
+    (x4 : T)
     (x5 : List T)
     (x6 : List T)
-    (x7 : T) =>
-    let x8 : T := (let x8 : T := x7;
-                   let x9 : List T := Const.children x8;
+    (x7 : List T)
+    (x8 : T) =>
+    let x9 : T := (let x9 : T := x8;
+                   let x10 : List T := Const.children x9;
                    let _ : T := Const.lcase
                      (α := T)
                      (β := T)
-                     x9
+                     x10
                      (leaf 0)
-                     (fun (x10 : T) (_ : List T) => x10);
-                   let x11 : List
+                     (fun (x11 : T) (_ : List T) => x11);
+                   let x12 : List
                      T := Const.lcase
                      (α := T)
                      (β := List T)
-                     x9
+                     x10
                      ([] : List T)
-                     (fun (_ : T) (x12 : List T) => x12);
-                   let x12 : T := Const.lcase
+                     (fun (_ : T) (x13 : List T) => x13);
+                   let x13 : T := Const.lcase
                      (α := T)
                      (β := T)
-                     x11
+                     x12
                      (leaf 0)
-                     (fun (x12 : T) (_ : List T) => x12);
-                   let x13 : List
+                     (fun (x13 : T) (_ : List T) => x13);
+                   let x14 : List
                      T := Const.lcase
                      (α := T)
                      (β := List T)
-                     x11
+                     x12
                      ([] : List T)
-                     (fun (_ : T) (x14 : List T) => x14);
-                   let x14 : T := Const.lcase
+                     (fun (_ : T) (x15 : List T) => x15);
+                   let x15 : T := Const.lcase
                      (α := T)
                      (β := T)
-                     x13
+                     x14
                      (leaf 0)
-                     (fun (x14 : T) (_ : List T) => x14);
-                   let x15 : List
+                     (fun (x15 : T) (_ : List T) => x15);
+                   let x16 : List
                      T := Const.lcase
                      (α := T)
                      (β := List T)
-                     x13
+                     x14
                      ([] : List T)
-                     (fun (_ : T) (x16 : List T) => x16);
-                   let x16 : T := Const.lcase
+                     (fun (_ : T) (x17 : List T) => x17);
+                   let x17 : T := Const.lcase
                      (α := T)
                      (β := T)
-                     x15
+                     x16
                      (leaf 0)
-                     (fun (x16 : T) (_ : List T) => x16);
-                   let x17 : List
+                     (fun (x17 : T) (_ : List T) => x17);
+                   let x18 : List
                      T := Const.lcase
                      (α := T)
                      (β := List T)
-                     x15
+                     x16
                      ([] : List T)
-                     (fun (_ : T) (x18 : List T) => x18);
+                     (fun (_ : T) (x19 : List T) => x19);
                    let _ : T := Const.lcase
                      (α := T)
                      (β := T)
-                     x17
+                     x18
                      (leaf 0)
-                     (fun (x18 : T) (_ : List T) => x18);
+                     (fun (x19 : T) (_ : List T) => x19);
                    let _ : List
                      T := Const.lcase
                      (α := T)
                      (β := List T)
-                     x17
+                     x18
                      ([] : List T)
-                     (fun (_ : T) (x20 : List T) => x20);
-                   let x20 : T := x12;
-                   let x21 : List T := Const.children x20;
-                   let x22 : T := Const.lcase
+                     (fun (_ : T) (x21 : List T) => x21);
+                   let x21 : T := x13;
+                   let x22 : List T := Const.children x21;
+                   let x23 : T := Const.lcase
                      (α := T)
                      (β := T)
-                     x21
+                     x22
                      (leaf 0)
-                     (fun (x22 : T) (_ : List T) => x22);
-                   let x23 : List
+                     (fun (x23 : T) (_ : List T) => x23);
+                   let x24 : List
                      T := Const.lcase
                      (α := T)
                      (β := List T)
-                     x21
+                     x22
                      ([] : List T)
-                     (fun (_ : T) (x24 : List T) => x24);
-                   let x24 : T := Const.lcase
+                     (fun (_ : T) (x25 : List T) => x25);
+                   let x25 : T := Const.lcase
                      (α := T)
                      (β := T)
-                     x23
+                     x24
                      (leaf 0)
-                     (fun (x24 : T) (_ : List T) => x24);
-                   let x25 : List
+                     (fun (x25 : T) (_ : List T) => x25);
+                   let x26 : List
                      T := Const.lcase
                      (α := T)
                      (β := List T)
-                     x23
+                     x24
                      ([] : List T)
-                     (fun (_ : T) (x26 : List T) => x26);
-                   let x26 : T := Const.lcase
+                     (fun (_ : T) (x27 : List T) => x27);
+                   let x27 : T := Const.lcase
                      (α := T)
                      (β := T)
-                     x25
+                     x26
                      (leaf 0)
-                     (fun (x26 : T) (_ : List T) => x26);
-                   let x27 : List
+                     (fun (x27 : T) (_ : List T) => x27);
+                   let x28 : List
                      T := Const.lcase
                      (α := T)
                      (β := List T)
-                     x25
+                     x26
                      ([] : List T)
-                     (fun (_ : T) (x28 : List T) => x28);
-                   let x28 : T := Const.lcase
+                     (fun (_ : T) (x29 : List T) => x29);
+                   let x29 : T := Const.lcase
                      (α := T)
                      (β := T)
-                     x27
+                     x28
                      (leaf 0)
-                     (fun (x28 : T) (_ : List T) => x28);
-                   let x29 : List
+                     (fun (x29 : T) (_ : List T) => x29);
+                   let x30 : List
                      T := Const.lcase
                      (α := T)
                      (β := List T)
-                     x27
+                     x28
                      ([] : List T)
-                     (fun (_ : T) (x30 : List T) => x30);
-                   let x30 : T := Const.lcase
+                     (fun (_ : T) (x31 : List T) => x31);
+                   let x31 : T := Const.lcase
                      (α := T)
                      (β := T)
-                     x29
+                     x30
                      (leaf 0)
-                     (fun (x30 : T) (_ : List T) => x30);
+                     (fun (x31 : T) (_ : List T) => x31);
                    let _ : List
                      T := Const.lcase
                      (α := T)
                      (β := List T)
-                     x29
+                     x30
                      ([] : List T)
-                     (fun (_ : T) (x32 : List T) => x32);
-                   let x32 : T := x30;
-                   let x33 : List T := Const.children x32;
+                     (fun (_ : T) (x33 : List T) => x33);
+                   let x33 : T := x31;
+                   let x34 : List T := Const.children x33;
                    let _ : T := Const.lcase
                      (α := T)
                      (β := T)
-                     x33
+                     x34
                      (leaf 0)
-                     (fun (x34 : T) (_ : List T) => x34);
-                   let x35 : List
+                     (fun (x35 : T) (_ : List T) => x35);
+                   let x36 : List
                      T := Const.lcase
                      (α := T)
                      (β := List T)
-                     x33
+                     x34
                      ([] : List T)
-                     (fun (_ : T) (x36 : List T) => x36);
-                   let x36 : T := Const.lcase
+                     (fun (_ : T) (x37 : List T) => x37);
+                   let x37 : T := Const.lcase
                      (α := T)
                      (β := T)
-                     x35
+                     x36
                      (leaf 0)
-                     (fun (x36 : T) (_ : List T) => x36);
-                   let x37 : List
+                     (fun (x37 : T) (_ : List T) => x37);
+                   let x38 : List
                      T := Const.lcase
                      (α := T)
                      (β := List T)
-                     x35
+                     x36
                      ([] : List T)
-                     (fun (_ : T) (x38 : List T) => x38);
-                   let x38 : T := Const.lcase
+                     (fun (_ : T) (x39 : List T) => x39);
+                   let x39 : T := Const.lcase
                      (α := T)
                      (β := T)
-                     x37
+                     x38
                      (leaf 0)
-                     (fun (x38 : T) (_ : List T) => x38);
-                   let x39 : List
+                     (fun (x39 : T) (_ : List T) => x39);
+                   let x40 : List
                      T := Const.lcase
                      (α := T)
                      (β := List T)
-                     x37
+                     x38
                      ([] : List T)
-                     (fun (_ : T) (x40 : List T) => x40);
-                   let x40 : T := Const.lcase
+                     (fun (_ : T) (x41 : List T) => x41);
+                   let x41 : T := Const.lcase
                      (α := T)
                      (β := T)
-                     x39
+                     x40
                      (leaf 0)
-                     (fun (x40 : T) (_ : List T) => x40);
+                     (fun (x41 : T) (_ : List T) => x41);
                    let _ : List
                      T := Const.lcase
                      (α := T)
                      (β := List T)
-                     x39
+                     x40
                      ([] : List T)
-                     (fun (_ : T) (x42 : List T) => x42);
-                   let x42 : T := x36;
-                   let x43 : List T := Const.children x42;
-                   let x44 : List T := x43;
-                   let x45 : T := x38;
-                   let x46 : List T := Const.children x45;
-                   let x47 : List T := x46;
-                   let x48 : T := «Derivation.eqParts» x40;
-                   if (Const.eq (Const.label x48) (leaf 0)).label ≠ 0 then
-                     let _ : List T := Const.children x48; «Prelude.none»
+                     (fun (_ : T) (x43 : List T) => x43);
+                   let x43 : T := x37;
+                   let x44 : List T := Const.children x43;
+                   let x45 : List T := x44;
+                   let x46 : T := x39;
+                   let x47 : List T := Const.children x46;
+                   let x48 : List T := x47;
+                   let x49 : T := «Derivation.eqParts» x41;
+                   if (Const.eq (Const.label x49) (leaf 0)).label ≠ 0 then
+                     let _ : List T := Const.children x49; «Prelude.none»
                    else
-                     let x49 : List T := Const.children x48;
-                     let x50 : T := Const.lcase
+                     let x50 : List T := Const.children x49;
+                     let x51 : T := Const.lcase
                        (α := T)
                        (β := T)
-                       x49
+                       x50
                        (leaf 0)
-                       (fun (x50 : T) (_ : List T) => x50);
+                       (fun (x51 : T) (_ : List T) => x51);
                      let _ : List
                        T := Const.lcase
                        (α := T)
                        (β := List T)
-                       x49
+                       x50
                        ([] : List T)
-                       (fun (_ : T) (x52 : List T) => x52);
+                       (fun (_ : T) (x53 : List T) => x53);
                      («Authoring.readScript»
-                       x16
-                       x3
+                       x17
                        x4
                        x5
-                       (Const.children x22)
                        x6
-                       x14
-                       (Const.children x24)
-                       (Const.children x26)
-                       (Const.children x28)).2
+                       (Const.children x23)
+                       x7
+                       x15
                        x0
+                       ([] : List T)
+                       (Const.children x25)
+                       (Const.children x27)
+                       (Const.children x29)).2
                        x1
                        x2
-                       x44
-                       x47
-                       («Language.p1» x50)
-                       («Language.p2» x50));
-    x8
+                       x3
+                       x45
+                       x48
+                       («Language.p1» x51)
+                       («Language.p2» x51));
+    x9
 
 def «Authoring.companion» :=
   fun (x0 : T) (x1 : List T) (x2 : List T) (x3 : T) (x4 : T) (x5 : T) =>
@@ -7823,6 +8855,8 @@ def «Authoring.sourceNames» :=
         («Base.range» (Const.div («Prelude.length» x2) (leaf 2))));
     x2
 
+def «Authoring.noFailures» := Const.node (leaf 0) ([] : List T)
+
 def «Authoring.begin» :=
   fun (x0 : T) (x1 : T) (x2 : T) =>
     let x3 : T := (let x3 : List
@@ -7833,7 +8867,7 @@ def «Authoring.begin» :=
                    let x4 : T := «Derivation.checkDev» x0 ([] : List T) x3;
                    if (Const.eq (Const.label x4) (leaf 0)).label ≠ 0 then
                      let _ : List T := Const.children x4;
-                     «Authoring.stuck» (leaf 6) «Authoring.unnamed»
+                     «Authoring.stuck» (leaf 6) «Authoring.unnamed» «Authoring.noFailures»
                    else
                      let x5 : List T := Const.children x4;
                      let x6 : T := Const.lcase
@@ -7885,8 +8919,91 @@ def «Authoring.begin» :=
                              (fun (_ : T) => «Authoring.unnamed»)
                              («Base.range» («Authoring/Decls.length» x3))))
                          x3)
-                       x12);
+                       x12
+                       «Authoring.noFailures»);
     x3
+
+def «Authoring.accompany» :=
+  fun (x0 : T)
+    (x1 : List T)
+    (x2 : List T)
+    (x3 : T)
+    (x4 : T)
+    (x5 : List T)
+    (x6 : T)
+    (x7 : List T)
+    (x8 : T)
+    (x9 : T)
+    (x10 : T) =>
+    let x11 : T := (let x11 : T := x9;
+                    let x12 : List T := Const.children x11;
+                    let x13 : List T := x12;
+                    let x14 : List
+                      T := «Authoring/Decls.append» x7 («Authoring/Decls.single» x8);
+                    if (Const.eq x3 (leaf 0)).label ≠ 0 then
+                      «Authoring.proving»
+                        («Authoring.results»
+                          (Const.node
+                            (leaf 0)
+                            («Prelude.append»
+                              (Const.children x6)
+                              («Prelude.single» («Authoring.requestName» x4))))
+                          x14)
+                        x9
+                        x10
+                    else
+                      let x15 : T := «Authoring.companion»
+                        x0
+                        x13
+                        («Authoring.rulesIn»
+                          x13
+                          («Authoring.normalRules» («Authoring.entryBase» x3) x2 x5 x4)
+                          x1)
+                        («Authoring.normalDepth» x4)
+                        («Authoring/Decls.length» x7)
+                        («Authoring.requestThm» x4);
+                      if («Prelude.isSome» x15).label ≠ 0 then
+                        let x16 : List T := Const.children («Prelude.get» x15);
+                        let x17 : T := «Derivation.declLang»
+                          («Authoring.withSides»
+                            («Authoring.requestThm» x4)
+                            («Prelude.at» x16 (leaf 0))
+                            («Prelude.at» x16 (leaf 1)))
+                          («Prelude.at» x16 (leaf 2));
+                        let x18 : T := «Authoring.admit» x0 x13 x17;
+                        if (Const.eq (Const.label x18) (leaf 0)).label ≠ 0 then
+                          let _ : List T := Const.children x18;
+                          «Authoring.stuck» (leaf 6) («Authoring.requestName» x4) x10
+                        else
+                          let x19 : List T := Const.children x18;
+                          let x20 : T := Const.lcase
+                            (α := T)
+                            (β := T)
+                            x19
+                            (leaf 0)
+                            (fun (x20 : T) (_ : List T) => x20);
+                          let _ : List
+                            T := Const.lcase
+                            (α := T)
+                            (β := List T)
+                            x19
+                            ([] : List T)
+                            (fun (_ : T) (x22 : List T) => x22);
+                          «Authoring.proving»
+                            («Authoring.results»
+                              (Const.node
+                                (leaf 0)
+                                («Prelude.append»
+                                  (Const.children x6)
+                                  («Theory.l2»
+                                    («Authoring.requestName» x4)
+                                    («Authoring.requestName» x4))))
+                              («Authoring/Decls.append» x14 («Authoring/Decls.single» x17)))
+                            x20
+                            x10
+                      else
+                        «Authoring.stuck» (leaf 5) («Authoring.requestName» x4) x10);
+    x11
 
 def «Authoring.advance» :=
   fun (x0 : T)
@@ -7918,13 +9035,26 @@ def «Authoring.advance» :=
                        x10
                        (leaf 0)
                        (fun (x11 : T) (_ : List T) => x11);
-                     let _ : List
+                     let x12 : List
                        T := Const.lcase
                        (α := T)
                        (β := List T)
                        x10
                        ([] : List T)
                        (fun (_ : T) (x13 : List T) => x13);
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x12
+                       (leaf 0)
+                       (fun (x13 : T) (_ : List T) => x13);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x12
+                       ([] : List T)
+                       (fun (_ : T) (x15 : List T) => x15);
                      x6
                    else
                      let x8 : List T := Const.children x7;
@@ -7947,136 +9077,130 @@ def «Authoring.advance» :=
                        x10
                        (leaf 0)
                        (fun (x11 : T) (_ : List T) => x11);
-                     let _ : List
+                     let x12 : List
                        T := Const.lcase
                        (α := T)
                        (β := List T)
                        x10
                        ([] : List T)
                        (fun (_ : T) (x13 : List T) => x13);
-                     let x13 : T := x9;
-                     let x14 : List T := Const.children x13;
-                     let x15 : T := Const.lcase
+                     let x13 : T := Const.lcase
                        (α := T)
                        (β := T)
-                       x14
+                       x12
                        (leaf 0)
-                       (fun (x15 : T) (_ : List T) => x15);
-                     let x16 : List
+                       (fun (x13 : T) (_ : List T) => x13);
+                     let _ : List
                        T := Const.lcase
                        (α := T)
                        (β := List T)
-                       x14
+                       x12
                        ([] : List T)
-                       (fun (_ : T) (x17 : List T) => x17);
-                     let x17 : List T := x16;
-                     let x18 : T := x11;
-                     let x19 : List T := Const.children x18;
-                     let x20 : List T := x19;
-                     let x21 : T := «Authoring.derive»
+                       (fun (_ : T) (x15 : List T) => x15);
+                     let x15 : T := x9;
+                     let x16 : List T := Const.children x15;
+                     let x17 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x16
+                       (leaf 0)
+                       (fun (x17 : T) (_ : List T) => x17);
+                     let x18 : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x16
+                       ([] : List T)
+                       (fun (_ : T) (x19 : List T) => x19);
+                     let x19 : List T := x18;
+                     let x20 : T := x11;
+                     let x21 : List T := Const.children x20;
+                     let x22 : List T := x21;
+                     let x23 : List T := «Authoring.sourceNames» x4 (Const.children x17);
+                     let x24 : T := «Authoring.derive»
+                       (leaf 0)
                        x0
-                       x20
+                       x22
                        x1
                        («Authoring.entryBase» x4)
                        x2
                        x3
-                       («Authoring.sourceNames» x4 (Const.children x15))
+                       x23
                        x5;
-                     if («Prelude.isSome» x21).label ≠ 0 then
-                       let x22 : T := «Derivation.declLang»
+                     let x25 : List
+                       T := (if («Prelude.and»
+                       («Prelude.isSome» x24)
+                       («Authoring.holed» («Authoring.requestScript» x5))).label ≠ 0 then
+                       «Authoring.obligationsOf» («Prelude.get» x24)
+                     else
+                       ([] : List T));
+                     if («Prelude.and»
+                       («Prelude.isSome» x24)
+                       («Base.isEmpty» x25)).label ≠ 0 then
+                       let x26 : T := «Derivation.declLang»
                          («Authoring.requestThm» x5)
-                         («Prelude.get» x21);
-                       let x23 : T := «Authoring.admit» x0 x20 x22;
-                       if (Const.eq (Const.label x23) (leaf 0)).label ≠ 0 then
-                         let _ : List T := Const.children x23;
-                         «Authoring.stuck» (leaf 6) («Authoring.requestName» x5)
+                         («Prelude.get» x24);
+                       let x27 : T := «Authoring.admit» x0 x22 x26;
+                       if (Const.eq (Const.label x27) (leaf 0)).label ≠ 0 then
+                         let _ : List T := Const.children x27;
+                         «Authoring.stuck» (leaf 6) («Authoring.requestName» x5) x13
                        else
-                         let x24 : List T := Const.children x23;
-                         let x25 : T := Const.lcase
+                         let x28 : List T := Const.children x27;
+                         let x29 : T := Const.lcase
                            (α := T)
                            (β := T)
-                           x24
+                           x28
                            (leaf 0)
-                           (fun (x25 : T) (_ : List T) => x25);
+                           (fun (x29 : T) (_ : List T) => x29);
                          let _ : List
                            T := Const.lcase
                            (α := T)
                            (β := List T)
-                           x24
+                           x28
                            ([] : List T)
-                           (fun (_ : T) (x27 : List T) => x27);
-                         let x27 : T := x25;
-                         let x28 : List T := Const.children x27;
-                         let x29 : List T := x28;
-                         let x30 : List
-                           T := «Authoring/Decls.append» x17 («Authoring/Decls.single» x22);
-                         if (Const.eq x4 (leaf 0)).label ≠ 0 then
-                           «Authoring.proving»
-                             («Authoring.results»
-                               (Const.node
-                                 (leaf 0)
-                                 («Prelude.append»
-                                   (Const.children x15)
-                                   («Prelude.single» («Authoring.requestName» x5))))
-                               x30)
-                             x25
-                         else
-                           let x31 : T := «Authoring.companion»
-                             x0
-                             x29
-                             («Authoring.rulesIn»
-                               x29
-                               («Authoring.normalRules»
-                                 («Authoring.entryBase» x4)
-                                 x3
-                                 («Authoring.sourceNames» x4 (Const.children x15))
-                                 x5)
-                               x1)
-                             («Authoring.normalDepth» x5)
-                             («Authoring/Decls.length» x17)
-                             («Authoring.requestThm» x5);
-                           if («Prelude.isSome» x31).label ≠ 0 then
-                             let x32 : List T := Const.children («Prelude.get» x31);
-                             let x33 : T := «Derivation.declLang»
-                               («Authoring.withSides»
-                                 («Authoring.requestThm» x5)
-                                 («Prelude.at» x32 (leaf 0))
-                                 («Prelude.at» x32 (leaf 1)))
-                               («Prelude.at» x32 (leaf 2));
-                             let x34 : T := «Authoring.admit» x0 x29 x33;
-                             if (Const.eq (Const.label x34) (leaf 0)).label ≠ 0 then
-                               let _ : List T := Const.children x34;
-                               «Authoring.stuck» (leaf 6) («Authoring.requestName» x5)
-                             else
-                               let x35 : List T := Const.children x34;
-                               let x36 : T := Const.lcase
-                                 (α := T)
-                                 (β := T)
-                                 x35
-                                 (leaf 0)
-                                 (fun (x36 : T) (_ : List T) => x36);
-                               let _ : List
-                                 T := Const.lcase
-                                 (α := T)
-                                 (β := List T)
-                                 x35
-                                 ([] : List T)
-                                 (fun (_ : T) (x38 : List T) => x38);
-                               «Authoring.proving»
-                                 («Authoring.results»
-                                   (Const.node
-                                     (leaf 0)
-                                     («Prelude.append»
-                                       (Const.children x15)
-                                       («Theory.l2»
-                                         («Authoring.requestName» x5)
-                                         («Authoring.requestName» x5))))
-                                   («Authoring/Decls.append» x30 («Authoring/Decls.single» x33)))
-                                 x36
-                           else
-                             «Authoring.stuck» (leaf 5) («Authoring.requestName» x5)
+                           (fun (_ : T) (x31 : List T) => x31);
+                         «Authoring.accompany» x0 x1 x3 x4 x5 x23 x17 x19 x26 x29 x13
                      else
-                       «Authoring.stuck» (leaf 4) («Authoring.requestName» x5));
+                       «Authoring.accompany»
+                         x0
+                         x1
+                         x3
+                         x4
+                         x5
+                         x23
+                         x17
+                         x19
+                         («Derivation.declLang» («Authoring.requestThm» x5) «Prelude.none»)
+                         («Derivation.entries»
+                           («Derivation.push»
+                             x22
+                             («Derivation.entLang» («Authoring.requestThm» x5))))
+                         (Const.node
+                           (leaf 0)
+                           («Prelude.append»
+                             (Const.children x13)
+                             («Prelude.single»
+                               («Authoring.failed»
+                                 (if («Prelude.isSome» x24).label ≠ 0 then leaf 7 else leaf 4)
+                                 («Authoring.requestName» x5)
+                                 («Base.mapT»
+                                   («Authoring.reportOf» x0 x22 x3 («Authoring.requestObjects» x5))
+                                   (if («Prelude.isSome» x24).label ≠ 0 then
+                                     x25
+                                   else
+                                     «Authoring.obligationsOf»
+                                       («Base.getD»
+                                         («Authoring.derive»
+                                           (leaf 1)
+                                           x0
+                                           x22
+                                           x1
+                                           («Authoring.entryBase» x4)
+                                           x2
+                                           x3
+                                           x23
+                                           x5)
+                                         «Prelude.none»))))))));
     x7
 
 def «Authoring.proveWith» :=
@@ -8176,14 +9300,31 @@ def «Authoring.proveWith» :=
                          x19
                          (leaf 0)
                          (fun (x20 : T) (_ : List T) => x20);
-                       let _ : List
+                       let x21 : List
                          T := Const.lcase
                          (α := T)
                          (β := List T)
                          x19
                          ([] : List T)
                          (fun (_ : T) (x22 : List T) => x22);
-                       «Authoring.failure» x18 x20
+                       let x22 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x21
+                         (leaf 0)
+                         (fun (x22 : T) (_ : List T) => x22);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x21
+                         ([] : List T)
+                         (fun (_ : T) (x24 : List T) => x24);
+                       Const.node
+                         (leaf 2)
+                         («Prelude.append»
+                           (Const.children x22)
+                           («Prelude.single» («Authoring.failed» x18 x20 ([] : List T))))
                      else
                        let x17 : List T := Const.children x16;
                        let x18 : T := Const.lcase
@@ -8205,14 +9346,30 @@ def «Authoring.proveWith» :=
                          x19
                          (leaf 0)
                          (fun (x20 : T) (_ : List T) => x20);
-                       let _ : List
+                       let x21 : List
                          T := Const.lcase
                          (α := T)
                          (β := List T)
                          x19
                          ([] : List T)
                          (fun (_ : T) (x22 : List T) => x22);
-                       «Prelude.some» x18);
+                       let x22 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x21
+                         (leaf 0)
+                         (fun (x22 : T) (_ : List T) => x22);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x21
+                         ([] : List T)
+                         (fun (_ : T) (x24 : List T) => x24);
+                       if («Base.isEmpty» (Const.children x22)).label ≠ 0 then
+                         «Prelude.some» x18
+                       else
+                         Const.node (leaf 2) (Const.children x22));
     x4
 
 def «Authoring.prove» :=
