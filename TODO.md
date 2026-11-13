@@ -168,15 +168,13 @@ and the checks of `datatype-list` and of the interaction-net compiler's
 graph executions at five nodes are among the tests, so `slow-checks.yml`
 holds the benchmarks alone. The steps that remain:
 
-1. Modules of `GebTests/Prototypes/FreeTopos/Certified/` checking the
-   certificates no module reads, the datatype language's but those of
-   its base, atoms and keywords' forms, each timed; their searches'
-   checks as they store each declaration are those certificates' only
-   check until then. Each such module imports a module
-   `GebTests/Prototypes/FreeTopos/Datatype*.lean` of the soundness of the
-   typing and names its last theorem, so they are added as that work
-   settles them (the Bootstrap chapter's section The datatype language's
-   completion).
+1. Whether the searches keep their check of each declaration as they
+   store it: every certificate is read and checked by a module of
+   `GebTests/Prototypes/FreeTopos/Certified/`, so that check is no
+   certificate's only one. A development added to the datatype
+   language's soundness
+   (`GebTests/Prototypes/FreeTopos/Datatype*.lean`) is added to those
+   modules with its certificate.
 2. The table of the checks in `manual/GebManual/CheckingCost.lean`
    refreshed from the next runs of `ci.yml` and `slow-checks.yml` on the
    hosted runners.
