@@ -65,6 +65,7 @@ label read as its leaf and are fixed by the expansion of numeral abbreviations.
 * {lit}`passesForms` — the soundness at all states, by induction on the forms.
 * {lit}`programFormsThm`, {lit}`programForms` — the soundness of a program, its statement
   and its proof.
+* {lit}`programClosed` — the soundness of a program as one formula without hypotheses.
 
 ## References
 
@@ -2264,6 +2265,32 @@ def programForms (P : Prog) (S : Defs) (T : Defs3) : Step :=
           [stage "programForms: the passes" passes]) dHyp a.ctx a.hyps a.concl
       | dbgTrace "programForms: not proved" fun _ ↦ none
     pure (a, d))
+
+/-- The statement of the soundness of a program as one formula without hypotheses
+({name}`programFormsThm`): at every list of forms, the hypotheses of the soundness imply its
+conclusion. -/
+def programClosedThm (P : Prog) (S : Defs) (T : Defs3) : Option Internal.Thm := do
+  let a ← programFormsThm P S T
+  let Ls := list treeTy
+  pure ⟨0, [], [], Internal.Logic.all P.o Ls (Term.lam Ls
+    (a.hyps.foldr (Internal.Logic.imp P.o) a.concl))⟩
+
+/-- The soundness of a program as one formula without hypotheses ({name}`programClosedThm`):
+the forms and the hypotheses introduced, the soundness of a program ({name}`programForms`) at
+the forms. -/
+def programClosed (P : Prog) (S : Defs) (T : Defs3) : Step :=
+  ("programClosed", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, []⟩
+    let L := K.L
+    let a ← programFormsThm P S T
+    let c ← programClosedThm P S T
+    let n := a.hyps.length
+    let some d := (dAllI L <| repeatK n (dImpI L) <|
+        applyThm K "programForms" (fun _ ↦ [v 0])
+          ((List.replicate n dHyp).map (stage "programClosed: a hypothesis")) dHyp)
+        c.ctx c.hyps c.concl
+      | dbgTrace "programClosed: not proved" fun _ ↦ none
+    pure (c, d))
 
 /-- The development of the soundness of a program from that at the states its passes begin
 in. -/
