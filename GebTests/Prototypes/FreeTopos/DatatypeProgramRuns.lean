@@ -22,7 +22,10 @@ the order of the forms, the terms the reader ends with, which extend those it ha
 types of those terms, and the invariants the reading of a definition preserves: the names are
 those of definitions, and the definitions are related to the typing environment's. A run of its
 own tests the definitions' bodies: at each form, where the expansion's step writes a definition,
-whether its body is a source form at the numeral abbreviations the reader has by then.
+whether its body is a source form at the numeral abbreviations the reader has by then. At a
+datatype's declaration the expansion's step writes the datatype's node, its constructors'
+definitions and its marker, and the typing's step at the datatype's node has its name after
+the environment's datatypes' names.
 
 ## Main definitions
 
@@ -1617,6 +1620,118 @@ def programPlainDev (P : Prog) (S : Defs) : List Step :=
     runFailed P S (xpProg P) "plainFailed" "plainStepFailed" plainTy (plainStepT P) (plainRun P),
     runPrefix P S (xpProg P) "plainPrefix" "plainFailed" plainTy (plainRun P),
     plainDefined P S]
+
+/-- The expansion's step at a datatype's declaration, a list whose head the keyword of datatypes
+names, from a state that has not failed, where the state it leaves has not: the declaration is
+well formed, and the state left has the declaration's declarations after the others and, before
+the forms written, the datatype's node, the constructors' definitions and the marker, the most
+recent first. The declaration's reading and the marker are kept folded. In the context of the
+form's elements, the forms written and the declarations. -/
+def xpDataDecl (P : Prog) (S : Defs) : Step :=
+  ("xpDataDecl", fun ix E ↦ do
+    let K : Kit := ⟨xpStepProg P, S, E, ix, []⟩
+    let Ls := list treeTy
+    let Γ := [Ls, Ls, Ls]
+    let (xs, out, dv) := (v 0, v 1, v 2)
+    let e := nodeT (Term.pair (numeral 2) xs)
+    let nth (i : ℕ) : Term :=
+      pc P "Datatype.nthTx" [xs, if i = 0 then leafT bnilT else leafT (numeral i)]
+    let named (k : String) : Term := pc P "Datatype.namedTx" [nth 0, pc P k []]
+    let step := pc P "Datatype.xpStep" [xpState dv out, e]
+    let dd := pc P "Datatype.dataDecl" [e]
+    let (ds, forms) := (Term.fst (Term.snd dd), Term.snd (Term.snd dd))
+    let written := pc P "Datatype/Txs.append"
+      [consT treeTy (pc P "Typing.tData" [nth 1]) (pc P "Datatype/Txs.tail" [forms]),
+        pc P "Datatype/Txs.single" [pc P "Datatype.marker" [dv, nth 1, ds]]]
+    let after := xpState (pc P "Datatype/Decls.append" [dv, ds])
+      (pc P "Datatype/Txs.append" [pc P "Datatype/Txs.reverse" [written], out])
+    let a : Internal.Thm := ⟨0, Γ,
+      [truth P.o (named "Datatype.kwData"), truth P.o (Term.fst step)],
+      Internal.Logic.conj P.o (truth P.o (Term.fst dd)) (Term.eq step after)⟩
+    let some d := decideEach K Γ.length
+        [(named "Datatype.kwData", some (K.hypFalse 0), none),
+          (Term.fst dd, some (K.hypFalse 1), none)]
+        (linkK K "xpDataDecl: expanded" (K.solve 4)) a.ctx a.hyps a.concl
+      | dbgTrace "xpDataDecl: not proved" fun _ ↦ none
+    pure (a, d))
+
+/-- The typing's step at a datatype's node, from a state without a rejection: the state left has
+the datatype's name after the datatypes' names. In the context of the datatype's atom, the
+rejection and the environment. -/
+def checkData (P : Prog) (S : Defs) (T : Defs3) : Step :=
+  ("checkData", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, []⟩
+    let Γ := [treeTy, treeTy, T.envTy]
+    let (d, r, Ev) := (v 0, v 1, v 2)
+    let step := checkStepAt P Ev r (pc P "Typing.tData" [d])
+    let after := checkOk P (pc P "Typing.withNoms" [Ev, pc P "Typing/Names.append"
+      [pc P "Typing.envNoms" [Ev], pc P "Typing/Names.single" [pc P "Typing.atomName" [d]]]])
+    let a : Internal.Thm := ⟨0, Γ, [notTest P.o (pc P "Prelude.isSome" [r])],
+      Term.eq step after⟩
+    let some d := decideEach K Γ.length
+        [(pc P "Prelude.isSome" [r], none, some (refuteNot K 0))]
+        (linkK K "checkData: checked" (K.solve 4)) a.ctx a.hyps a.concl
+      | dbgTrace "checkData: not proved" fun _ ↦ none
+    pure (a, d))
+
+/-- The reversal of a reversal onto forms is the reversal of those forms onto the list before
+the others: by induction on the list. In the context of the list, under the forms the first
+reversal is onto and those the second is onto. -/
+def revRev (P : Prog) (S : Defs) : Step :=
+  ("revRev", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, []⟩
+    let L := K.L
+    let o := P.o
+    let Ls := list treeTy
+    -- under the quantifiers: the second's forms v0, the first's v1, the list v2
+    let φ := Internal.Logic.all o Ls (Term.lam Ls (Internal.Logic.all o Ls (Term.lam Ls
+      (Term.eq (revRun (revRun (v 2) (v 1)) (v 0)) (revRun (v 1) (txsApp P (v 2) (v 0)))))))
+    -- a construction: the induction hypothesis at the first's forms after the head
+    let cons : Deducer := dAllI L <| dAllI L <|
+      dAllE L K.G K.E 0 (consT treeTy (v 3) (v 1)) fun Γ Φ ψ ↦
+        dAllE L K.G K.E (Φ.length - 1) (v 0) (normLastK K K.byNorm) Γ Φ ψ
+    listInduction "revRev" φ (dAllI L (dAllI L K.byNorm)) cons)
+
+/-- The expansion's run from a state with forms written, given in the order written, against
+that from the state with none ({name}`xpRunOut`): both fail or neither, and where they do not
+the former's forms reversed are the forms written before the latter's reversed
+({name}`revRunAppend`, {name}`revRev`). In the context of the forms written, the declarations
+and the forms. -/
+def typedFormsApp (P : Prog) (S : Defs) : Step :=
+  ("typedFormsApp", fun ix E ↦ do
+    let K : Kit := ⟨xpProg P, S, E, ix, []⟩
+    let L := K.L
+    let o := P.o
+    let Ls := list treeTy
+    let nil := nilT treeTy
+    let (ws, dv, es) := (v 0, v 1, v 2)
+    let rev := reverseT P ws
+    let r₁ := xpRun P es (xpState dv rev)
+    let r₀ := xpRun P es (xpState dv nil)
+    let outs (t : Term) : Term := Term.snd (Term.snd t)
+    let a : Internal.Thm := ⟨0, [Ls, Ls, Ls], [], Internal.Logic.conj o
+      (Term.eq (call D.lab [] [Term.fst r₁]) (call D.lab [] [Term.fst r₀]))
+      (Internal.Logic.imp o (truth o (Term.fst r₀))
+        (Term.eq (reverseT P (outs r₁)) (txsApp P ws (typedForms P es dv))))⟩
+    let some d := (K.cutThm "xpRunOut" (fun _ ↦ [es]) <| K.allEΓ (fun _ ↦ dv) <|
+        K.allEΓ (fun _ ↦ rev) <| K.conjE fun Γ Φ ψ ↦
+        let (fl, im) := (Φ.length - 2, Φ.length - 1)
+        dConjI L (linkK K "typedFormsApp: flags" (normHyps K [fl] (K.solve 2)))
+          (dImpI L <| dImpE L im dHyp <|
+            K.cutThm "revRunAppend" (fun _ ↦ [outs r₀]) <| K.allEΓ (fun _ ↦ rev) <|
+            K.allEΓ (fun _ ↦ nil) <|
+            K.cutThm "revRev" (fun _ ↦ [ws]) <| K.allEΓ (fun _ ↦ nil) <|
+            K.allEΓ (fun _ ↦ revRun (outs r₀) nil) <| fun Γ Φ ψ ↦
+            -- the equations: the forms the former has written, and the two reversals'
+            normHyps K [Φ.length - 7, Φ.length - 4, Φ.length - 1]
+              (linkK K "typedFormsApp: reversed" K.byNorm) Γ Φ ψ) Γ Φ ψ)
+        a.ctx a.hyps a.concl
+      | dbgTrace "typedFormsApp: not proved" fun _ ↦ none
+    pure (a, d))
+
+/-- The development of the passes' steps at a datatype's declaration. -/
+def programDataDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
+  [xpDataDecl P S, checkData P S T, revRev P S, typedFormsApp P S]
 
 /-- The developments of the runs of a program's forms, each with its certificate's name, in the
 order in which each continues from those before it. -/
