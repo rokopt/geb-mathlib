@@ -119,7 +119,8 @@ exports.run = async test => {
     assert.equal((await command('compile')).code, 1);
     const [error] = await diagnostics(doc,
       found => found.length === 1 && found[0].message.includes('broken does not check'));
-    assert.deepEqual(error.range.start, doc.positionAt(doc.getText().indexOf('broken')));
+    assert.match(error.message, /expected T, got Unit/);
+    assert.deepEqual(error.range.start, doc.positionAt(doc.getText().lastIndexOf('unit')));
     assert.deepEqual(readFileSync(image), before);
     await replace(source, original);
     assert.equal((await command('compile')).code, 0);

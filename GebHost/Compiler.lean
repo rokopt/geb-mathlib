@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.Kernel.Command
 public import GebBoot
 public import GebHost.Locate
+public import GebHost.Typing
 
 set_option doc.verso true
 
@@ -69,6 +70,8 @@ inductive Subject where
   | form (k : Nat)
   /-- The declaration of a name of the flat program, of a position among those of that name. -/
   | declaration (name : String) (nth : Nat)
+  /-- A kernel vertex inside a named definition. -/
+  | term (name : String) (path : List Nat)
   /-- No occurrence. -/
   | program
 
@@ -151,6 +154,8 @@ def rejection (file : Tree) : Except Rejection Unit := do
       | none => .program, modulesFailure file⟩
   let es := mx.children
   if let some n := nameString? (GebBoot.«Datatype.typeErrorOfForms» es) then
+    if let some f := Typing.inProgram (file.children.map fun c ↦ Char.ofNat c.label) n then
+      throw ⟨.term n f.path, s!"{n} does not check: {f.message}"⟩
     throw (checkFailure n)
   let expands (fs : List Tree) := (GebBoot.«Datatype.expandProgram» fs).label ≠ 0
   let kx ← required (GebBoot.«Datatype.expandProgram» es) fun _ ↦
@@ -238,6 +243,10 @@ def occurrence (sources : List Source) (r : Rejection) : Option (String × Span 
     let exact := items.flatMap fun (p, ts) ↦ (findDeclarations ts name).map (p, ·, r.message)
     (exact[nth]? <|> exact.getLast?) <|>
       items.findSome? fun (p, ts) ↦ (findEnclosing ts name).map (p, ·, r.message)
+  | .term name path =>
+    items.findSome? fun (p, ts) ↦
+      ((Typing.occurrences ts name path).head? <|>
+        (findDeclarations ts name).head? <|> findEnclosing ts name).map (p, ·, r.message)
   | .program => none
 
 /-- The diagnostic of a rejection of what was compiled from sources. -/

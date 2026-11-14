@@ -3945,7 +3945,10 @@ import-direction rules above are enforced by
   with one has no certificate, and each hole, as each innermost step of a
   script that does not prove its theorem, is reported where it is written
   with its goal, a statement of the internal language in the names the
-  script has there, the theorems after it proved under its theorem. With
+  script has there, the theorems after it proved under its theorem.
+  Failed `normalize` and `reduce` steps distinguish a reached reduction
+  budget from unequal completed results; other search steps keep their
+  ordinary failure reports. With
   `--cache DIRECTORY`, `prove` and `check` resume a development from the
   cache an earlier run left there: a theorem whose statement and script
   the cache has, proved, is taken as it stands after unchanged statements
@@ -4133,7 +4136,12 @@ import-direction rules above are enforced by
   or parenthesis concerned: `GebHost/Locate.lean` derives the spans of a
   source's S-expressions from the document lexer and finds the declaration
   a name of the flat program denotes, after the compiler has rejected the
-  program. `geb-compile check` compiles, and writes nothing, a source with
+  program. `GebHost/Typing.lean` follows failed operands through the
+  compiled kernel checker and maps their vertices through the source
+  correspondence. Kernel program prefixes, including modules and `defn`,
+  report the offending expression and its expected and actual types;
+  datatype prefixes retain declaration diagnostics.
+  `geb-compile check` compiles, and writes nothing, a source with
   the sources its nearest manifest lists before it; `geb-author check` does
   so for a source and proves a proof document against the program it names,
   and its diagnostics `editors/efm-langserver/config.yaml` and the VS Code

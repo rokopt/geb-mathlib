@@ -58,6 +58,15 @@
     uses
     EV
     eval
+    EVB
+    Job
+    job
+    JobL.single
+    firstR
+    evalStepB
+    indexRules
+    rootRewriteK
+    prepareHyps
     byNormW
     Pv
     abstractVar

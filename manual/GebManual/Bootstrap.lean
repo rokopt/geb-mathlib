@@ -16,6 +16,7 @@ import Geb.Prototypes.Definition
 import Geb.Prototypes.FreeTopos
 import Geb.Prototypes.PartialHorn
 import Geb.Prototypes.Computability.Triage.Simulation
+import GebHost.Typing
 
 /-! # Bootstrap chapter
 
@@ -3574,7 +3575,9 @@ tag := "authoring-compatibility"
   * Early in writing: holes in the datatype language, located diagnostics
     and the typed enumerator
   * Diagnostics at the line and column of a declaration or of a theorem,
-    in the editors through `geb-author check`: complete; holes in the datatype language
+    in the editors through `geb-author check`: complete; kernel typing
+    failures inside expressions, with expected and actual types: complete
+    for kernel program prefixes, including modules and `defn`. Holes in the datatype language
     and located diagnostics of its typing: waiting on the datatype
     language's completion; the typed enumerator: ready
 *
@@ -4801,11 +4804,14 @@ nothing ({ref "internal-statements"}[Statements over the internal
 language]); its report reaches an editor through efm-langserver
 (`editors/efm-langserver/config.yaml`) or, in VS Code, through the task
 `Geb: check saved file` and the problem matcher the `geb` extension
-contributes. A diagnostic names a declaration and not an occurrence inside
-it: that needs a checker that reports the failing vertex, the trusted
-checker staying as it is and the locating checker a separate, untrusted
-function, and for the datatype language's typing it waits on the
-completion. A language service then needs the services the survey lists,
+contributes. For kernel program prefixes, {name}`GebHost.Typing.check`
+reports the failing vertex and an expected type, delegating typing
+decisions to the compiled checker. The separate, untrusted pass maps that
+vertex through the source correspondence to the original expression,
+including under binders, `let`, `defn` and modules. Prefixes containing
+datatype declarations retain declaration diagnostics; locating their
+typing failures waits on the completion. A language service then needs
+the services the survey lists,
 of which the existing checker serves behind it; the server tracks
 versions of buffers, cancels stale checks, and translates offsets of
 bytes into the position encoding the editor negotiates, which reliable
@@ -5858,8 +5864,10 @@ remains.
     (`bootstrap/authoring.geb`, {name}`Geb.Kernel.Holes.unifyDefs`).
     The checks and the searches are measured
     ({ref "checking-cost"}[The cost of checking]), and the compilers by
-    `scripts/bench-bootstrap.sh`. Remaining: the report of a step that
-    fails does not say whether its budget was spent, ready; the stack
+    `scripts/bench-bootstrap.sh`. Failed `normalize` and `reduce` steps now
+    distinguish a reached reduction-fuel boundary from an unequal result
+    at the requested depth. Remaining: reporting exhaustion of the
+    case-split budgets of other search steps, ready; the stack
     the Geb reader and serializer take in proportion to a program's
     length is among the improvements
     ({ref "improvements"}[Improvements]); and the editors' operations

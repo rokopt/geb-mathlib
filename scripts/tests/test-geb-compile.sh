@@ -100,7 +100,31 @@ assert_rejected nested '(module A (export g)
 assert_rejected expansion "(data N (z)) (def f (lam ((x N)) (case x ((z) 0) (else))))" 1:19 \
   'f does not expand'
 
+# Kernel typing points to the operand, with binder contexts and source desugaring respected.
+assert_rejected function '(def f (lam ((x T)) (x 0)))' 1:22 'expected a function type, got T'
+assert_rejected argument '(def f (label (nil T)))' 1:15 'expected T, got (List T)'
+assert_rejected projection '(def f (fst 0))' 1:13 'expected a product type, got T'
+assert_rejected condition '(def f (if (nil T) 0 1))' 1:12 'expected T, got (List T)'
+assert_rejected branches '(def f (if 1 0 (nil T)))' 1:16 'expected T, got (List T)'
+assert_rejected element '(def f (cons (nil T) (nil T)))' 1:14 'expected T, got (List T)'
+assert_rejected tail '(def f (cons 0 1))' 1:16 'expected a list type, got T'
+assert_rejected binding '(def f (let x T (nil T) x))' 1:17 'expected T, got (List T)'
+assert_rejected shadowing '(def f (lam ((x T)) (lam ((x (List T))) (label x))))' 1:48 \
+  'expected T, got (List T)'
+assert_rejected signature '(defn f ((x T)) (List T) x)' 1:26 'expected (List T), got T'
+assert_rejected nested-typing '(module M (export f) (def f (label (nil T))))' 1:36 \
+  'expected T, got (List T)'
+assert_rejected duplicate-terms '(def f (pair (label 0) (label (nil T))))' 1:31 \
+  'expected T, got (List T)'
+assert_rejected alias '(deftype Ts (List T))
+(def f (lam ((xs Ts)) (label xs)))' 2:30 'expected T, got (List T)'
+assert_rejected global '(def xs (nil T))
+(def f (label xs))' 2:15 'expected T, got (List T)'
+assert_rejected bytes $'; λ\r\n(def f (pair (quote (0 "λ")) (label (nil T))))' 2:38 \
+  'expected T, got (List T)'
+
 assert_compiled image image '(def f (lam ((x T)) x))'
+assert_compiled quotation image '(def f (quote (11 (0 2) (99))))'
 assert_compiled lean lean "$nat (def h (lam ((n Nat)) (label (rep n))))"
 
 # `check` writes nothing for a program the compiler accepts.
