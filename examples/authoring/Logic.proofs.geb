@@ -1,0 +1,27 @@
+; Formulas and their proofs, using the checked connective rules. The last theorem transports
+; an existential witness along a function that preserves a predicate.
+
+(proofs 5 (program pair) (import Pair.proofs.geb)
+  ; An implication can conclude a proposition, without spelling its equality with truth.
+  (theorem identity (internal () (forall ((P Omega)) (implies P P))) (by (assume h (hypothesis h))))
+  ; A conjunction supplies both hypotheses to the rest of its proof.
+  (theorem conjunction-swap
+    (internal () (forall ((P Omega) (Q Omega)) (implies (and P Q) (and Q P))))
+    (by (assume h (and-elim h (hp hq) (and-intro (hypothesis hq) (hypothesis hp))))))
+  ; Each branch sees only the assumption for that branch.
+  (theorem disjunction-swap (internal () (forall ((P Omega) (Q Omega)) (implies (or P Q) (or Q P))))
+    (by (assume h (or-elim h (hp hq) (or-right (hypothesis hp)) (or-left (hypothesis hq))))))
+  ; Equational scripts remain available under logical quantifiers.
+  (theorem reflexivity (internal (X) (all X (lam ((x X)) (equal x x))))
+    (by (all-intro x (reduce weak))))
+  ; A predicate need not be a lambda: the quantifier rules also accept variables.
+  (theorem transport-witness
+    (internal (X Y)
+      (forall ((P (Arrow X Omega)) (Q (Arrow Y Omega)) (f (Arrow X Y)))
+        (assuming (preserves (all X (lam ((x X)) (implies (P x) (Q (f x))))))
+          (implies (exists X P) (exists Y Q)))))
+    (by
+      (assume inhabited
+        (exists-elim inhabited (x hx)
+          (all-elim preserves x step
+            (imp-elim step (hypothesis hx) image (exists-intro (f x) (hypothesis image)))))))))

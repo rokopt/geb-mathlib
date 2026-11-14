@@ -10,5 +10,6 @@
     free-topos/prove.geb
     free-topos/tactics.geb
     free-topos/logic.geb
+    formula.geb
     authoring.geb)
   (entries Authoring.prove Authoring.resume Authoring.replay Authoring.version Authoring.transport))

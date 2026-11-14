@@ -184,7 +184,7 @@ def headerAtoms (head : List Char) (d : Doc) : Except String (List String) :=
       | _ => none
     let version := root.children[1]?.bind (·.label.2)
     if atoms.isEmpty || version == some ['2'] || version == some ['3'] ||
-        version == some ['4'] then .ok atoms
+        version == some ['4'] || version == some ['5'] then .ok atoms
     else .error s!"a document of a version before 2 has no form ({String.ofList head} …)"
   | none => .ok []
 
@@ -250,14 +250,16 @@ def sourcesTree (docs : List (System.FilePath × Durable)) : Tree :=
 saves one declaration for each theorem, and the later versions save each theorem followed by its
 companion, version 2 the theorems of the documents imported before its own, version 3 the
 connectives' rules before every theorem, and version 4 the rules of every connective and, after
-them, the declarations of the definitions the development declares. -/
+them, the declarations of the definitions the development declares. Version 5 preserves formula
+conclusions in their declarations and gives them companions equating them with truth. -/
 def formatOf (version : Tree) : Tree :=
   nameTree (match version.label with
     | 0 => "geb-proof/v1"
     | 1 => "geb-proof/v2"
     | 2 => "geb-proof/v3"
     | 3 => "geb-proof/v4"
-    | _ => "geb-proof/v5").toList
+    | 4 => "geb-proof/v5"
+    | _ => "geb-proof/v6").toList
 
 /-! ## Failures and obligations -/
 

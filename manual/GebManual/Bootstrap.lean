@@ -3509,11 +3509,13 @@ tag := "authoring-compatibility"
     declares and the induction on a natural number, in which the
     development of the evaluator's fundamental lemma is begun, the lemmas
     of the addition that counts its fuel
-    ({ref "definition-scripts"}[Definitions and natural numbers]);
-    statements over datatypes wait on the datatype language's completion,
-    and the rest of the development of the fundamental lemma, whose
-    statements are formulas of the connectives, and that of the datatype
-    language's soundness remain Lean deducers
+    ({ref "definition-scripts"}[Definitions and natural numbers]); version
+    5 adds formula statements, every connective as a term, logical scripts
+    and explicit application of formula theorems, with saved certificates
+    and durable conversion ({ref "formula-scripts"}[Formula statements and
+    proofs]). Statements over datatypes wait on the datatype language's
+    completion. The rest of the development of the fundamental lemma and
+    that of the datatype language's soundness remain Lean deducers
 *
   * `let*` and `cond`, expanded in the elaboration of modules
   * Complete
@@ -5681,12 +5683,15 @@ of {name}`Geb.FreeTopos.Internal.Logic.defs`, with their rules
 development of the evaluator's fundamental lemma is begun in it: the
 addition of natural numbers, by which the lemma counts the evaluator's
 fuel, is declared, and its lemmas proved by the fold's computation and by
-induction. What the rest of that development needs of a document, and the
-development of the datatype language's soundness after it, is the reading
-of the connectives after implication as terms, statements that are
-formulas rather than equations, the tactics of the connectives'
-introductions and eliminations, by which its deducers proceed, and
-definitions that name a fold of the program's where its source names none
+induction. Version 5 reads every connective as a term and accepts formula
+conclusions and hypotheses. Its scripts compose the checked connective
+rules, including quantifier introductions and eliminations, and apply
+earlier formula theorems. `examples/authoring/Logic.proofs.geb` exercises
+them through a proof transporting existential witnesses, saved and replayed
+in the authoring record ({ref "formula-scripts"}[Formula statements and
+proofs]). The remaining ports of the fundamental lemma and the datatype
+language's soundness still need definitions that name a fold of the
+program's where its source names none
 ({ref "improvements"}[Improvements]). The syntax of
 statements and proof scripts
 is a step of the sequence ({ref "authoring-sequence"}[The sequence and its

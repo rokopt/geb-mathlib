@@ -85,7 +85,7 @@ program after it by `transport`
 # The proof-source profile
 
 A proof document is `(proofs V THEOREM…)`, its version `V` being `0`, `1`,
-`2`, `3` or `4`, with one or more theorems of distinct names, each
+`2`, `3`, `4` or `5`, with one or more theorems of distinct names, each
 `(theorem NAME STATEMENT (by SCRIPT))`. Version `1` reads:
 
 ```
@@ -147,7 +147,7 @@ of pairs alone, so a document of either version keeps its meaning. It
 cites no theorem, so its certificate saves no companion and has the format
 `geb-proof/v1`, whose certificates therefore still replay; version `1`
 writes `geb-proof/v2`, version `2` `geb-proof/v3`, version `3`
-`geb-proof/v4` and version `4` `geb-proof/v5`. An unknown or unbound
+`geb-proof/v4`, version `4` `geb-proof/v5` and version `5` `geb-proof/v6`. An unknown or unbound
 name, a name declared twice,
 a malformed form, an unsupported version, a false equation or an
 unsuccessful search is rejected. Failure of a bounded search does not establish that the
@@ -788,9 +788,102 @@ proves its lemmas: zero and a successor on each side, associativity and
 commutativity. The rest of that development, and those of
 `NormalizationConst.lean`, `NormalizationRel.lean` and `Normalization.lean`,
 remain Lean deducers. Their statements are formulas of the connectives
-rather than equations, their deductions the connectives' rules, and their
-definitions include folds of the program's own, none of which a script yet
-reads.
+rather than equations, and their deductions use the connectives' rules,
+which version `5` exposes below. Naming the program's otherwise unnamed
+folds and porting the remaining deductions are still outstanding.
+
+# Formula statements and proofs
+%%%
+tag := "formula-scripts"
+%%%
+
+Version `5` accepts any internal term of type `Omega` as a conclusion or a
+named hypothesis. It reads all the connectives already defined and checked
+in version `4`:
+
+```
+DOCUMENT ::= (proofs 5 HEADER… FORM…)
+PROPOSITION ::= FORMULA | (assuming (h FORMULA) … FORMULA)
+FORMULA ::= ITERM                         ; checked at Omega
+ITERM ::= … | false | (and ITERM ITERM) | (or ITERM ITERM) | (not ITERM)
+        | (all TYPE ITERM) | (exists TYPE ITERM) | (exists-unique TYPE ITERM)
+SCRIPT ::= … | (truth) | (hypothesis h) | (assume h SCRIPT)
+         | (and-intro SCRIPT SCRIPT) | (and-elim h (hp hq) SCRIPT)
+         | (imp-elim h SCRIPT name SCRIPT)
+         | (or-left SCRIPT) | (or-right SCRIPT) | (or-elim h (hp hq) SCRIPT SCRIPT)
+         | (all-intro x SCRIPT) | (all-elim h ITERM name SCRIPT)
+         | (exists-intro ITERM SCRIPT) | (exists-elim h (x hx) SCRIPT)
+         | (false-elim SCRIPT) | (unfold-formula SCRIPT)
+         | (unfold-hypothesis h name SCRIPT)
+         | (use THEOREM (TYPE …) (ITERM …) SCRIPT …)
+```
+
+These propositions occur inside `(internal (X …) PROPOSITION)`, optionally
+under the existing outer `(forall ((x TYPE) …) PROPOSITION)` context binder.
+The logical term `(implies P Q)` retains its binary meaning, including when
+`P` is a predicate application such as `(P x)`. Named assumptions use
+`assuming` so that those two forms are unambiguous. To move a version `4`
+internal statement to version `5`, change its outer named-hypothesis form
+from `implies` to `assuming`; logical implications stay as they are. The new
+connective keywords and `assuming` are reserved in version `5`, so bindings
+that used those names need renaming.
+Kernel statements keep their existing equational grammar. Imported documents
+retain their own version, and versions `0` through `4` retain their meanings
+and certificate formats.
+
+A quantifier takes a predicate of type `(Arrow TYPE Omega)`, either a
+lambda such as `(lam ((x X)) (P x))` or a term such as `P`. `all-intro`
+introduces a fresh variable; `all-elim` instantiates its named hypothesis
+at a term and names the resulting hypothesis. `exists-intro` supplies a
+witness; `exists-elim` introduces a fresh witness and its hypothesis only
+within its child script. Instances of lambda predicates are beta-reduced
+before the child script sees them. The checker validates the witness type
+and the quantified proof's context.
+
+`assume` proves an implication under its antecedent. `and-intro` proves its
+two conjuncts; `and-elim` gives its child both conjuncts of a named
+hypothesis. `imp-elim` proves the antecedent of its named implication with
+its first script, then gives its second script the named consequent.
+`or-left` and `or-right` choose a disjunct; `or-elim` proves the same
+conclusion under each disjunct, with `hp` visible only in its first branch
+and `hq` only in its second. `false-elim` proves the goal from its child's
+proof of falsity. `hypothesis` requires the goal to match its named
+hypothesis. Every introduced name is fresh in its scope.
+
+`unfold-formula` unfolds the goal's outer definition once, and
+`unfold-hypothesis` names the result of unfolding a hypothesis once. These
+expose negation as implication to falsity, and unique existence as existence
+conjoined with uniqueness, so their proofs use the same scripts.
+They also unfold definitions declared by the document.
+`use` applies an earlier theorem, including an imported one, at explicit
+object and variable arguments in the order of its written binders. Its child
+scripts prove the instantiated hypotheses in their written order; the
+instantiated conclusion must match the goal.
+
+Equation scripts still prove equations directly. At a general formula `P`,
+they instead prove `(equal P true)` and convert that proof back to `P`.
+Logical scripts can also prove a goal explicitly equating a formula with
+truth. Formula declarations retain their original conclusions in the saved
+certificate; their rewriting companions equate those conclusions with truth,
+in the requested normal form. The adapters and logical scripts are written
+in `bootstrap/formula.geb` and `bootstrap/authoring.geb`, and every resulting
+derivation passes the existing checker. No rule is added to it.
+
+The development in `examples/authoring/Logic.proofs.geb` uses these scopes
+to transport an existential witness along a function. It also imports the
+version `1` pair development.
+Its canonical document and certificate are recorded beside that development's
+artifacts, regenerated and replayed by `scripts/authoring.sh`.
+
+```
+lake exe geb-author prove examples/authoring/Logic.proofs.geb /tmp/logic.cert
+lake exe geb-author replay examples/authoring/Logic.proofs.geb /tmp/logic.cert
+```
+
+`scripts/tests/test-proof-formulas.sh` exercises formula type checking, the
+logical scripts, rejection of escaping or mistyped witnesses and branch
+hypotheses, goal display, cache reuse, conversion between durable spellings
+and replay against changed statements.
 
 # The cache of a development
 %%%

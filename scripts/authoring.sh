@@ -49,6 +49,7 @@ fi
 
 lake build geb-author
 "$runner" prove "$example/pair.manifest" "$example/Pair.proofs.geb" "$tmp/pair.cert"
+"$runner" prove "$example/pair.manifest" "$example/Logic.proofs.geb" "$tmp/logic.cert"
 "$runner" compile "$example/pair.manifest" "$tmp/pair.img"
 .lake/build/bin/geb-defs "$tmp/pair.img" "$tmp/pair.defs"
 cp bootstrap/compiler.img "$tmp/compiler.img"
@@ -56,6 +57,8 @@ cp bootstrap/compiler.img "$tmp/compiler.img"
 "$runner" convert canonical "$example/pair.manifest" "$example/Lists.geb" "$tmp/lists.source.csexp"
 "$runner" convert canonical "$example/pair.manifest" \
   "$example/Pair.proofs.geb" "$tmp/pair.proofs.csexp"
+"$runner" convert canonical "$example/pair.manifest" \
+  "$example/Logic.proofs.geb" "$tmp/logic.proofs.csexp"
 # Retain the compiler image itself; the input digests also pin its emitted Lean and the
 # source and proof documents, including their annotations.
 {
@@ -65,14 +68,14 @@ cp bootstrap/compiler.img "$tmp/compiler.img"
     GebHost/Locate.lean GebHost/Editor.lean \
     GebAuthorMain.lean scripts/authoring.sh \
     bootstrap/authoring.manifest "$mirror" "$example/pair.manifest" \
-    "$example/Pair.geb" "$example/Lists.geb" "$example/Pair.proofs.geb"
+    "$example/Pair.geb" "$example/Lists.geb" "$example/Pair.proofs.geb" "$example/Logic.proofs.geb"
   .lake/build/bin/geb-kernel layers bootstrap/authoring.manifest |
     awk '{ for (i = 2; i <= NF; i++) print $i }'
 } | LC_ALL=C sort -u > "$tmp/inputs"
 while IFS= read -r input; do sha256sum "$input"; done < "$tmp/inputs" > "$tmp/inputs.sha256"
 
 artifacts=(compiler.img pair.cert pair.img pair.defs pair.source.csexp lists.source.csexp
-  pair.proofs.csexp inputs.sha256)
+  pair.proofs.csexp logic.cert logic.proofs.csexp inputs.sha256)
 if [ "$mode" = regen ]; then
   mkdir -p "$example/record"
   for artifact in "${artifacts[@]}"; do
@@ -84,6 +87,7 @@ else
   done
 fi
 "$runner" replay "$example/pair.manifest" "$example/Pair.proofs.geb" "$example/record/pair.cert"
+"$runner" replay "$example/pair.manifest" "$example/Logic.proofs.geb" "$example/record/logic.cert"
 if [ "$mode" = check ]; then
   lake build GebHost
   lake exe batteries/runLinter GebHost
