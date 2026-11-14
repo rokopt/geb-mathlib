@@ -549,7 +549,7 @@ def Uses.render (u : Uses) : String :=
   s!"cache: {u.taken} taken, {u.checked} checked, {u.proved} proved, {u.unproved} not proved"
 
 /-- The format of a development's cache, separate from that of its certificate. -/
-def cacheFormat : Tree := nameTree "geb-proof-cache/v1".toList
+def cacheFormat : Tree := nameTree "geb-proof-cache/v2".toList
 
 /-- The theory of the derivations a certificate or a cache keeps. -/
 def theoryName : Tree := nameTree "free-topos/base/v1".toList
@@ -592,7 +592,8 @@ def writeCache (dir path : System.FilePath) (profile : Profile) (program cache :
 a directory of caches the development is resumed from the cache of its proof document there
 ({lit}`Authoring.resume`), which the runner is given with the compiled program it is of: the
 items of a cache of another program are read with the definitions they name at their places in
-this one, by the definitions' names, and their derivations are checked. Where the development
+this one, by the definitions' names, and their derivations are taken when their transitive
+definition dependencies agree, or checked otherwise. Where the development
 reads, the cache is then written as the run leaves it, whether or not the development is proved,
 beside the compiled program its items were checked with, and a line of how the theorems'
 declarations were come by is printed, which names no file, so that an editor reading diagnostics

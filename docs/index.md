@@ -3949,10 +3949,15 @@ import-direction rules above are enforced by
   `--cache DIRECTORY`, `prove` and `check` resume a development from the
   cache an earlier run left there: a theorem whose statement and script
   the cache has, proved, is taken as it stands after unchanged statements
-  in an unchanged program, and elsewhere its cached derivation is checked,
+  with unchanged transitive definition dependencies, and elsewhere its
+  cached derivation is checked,
   the entries it cites renumbered by the theorems' names, so that a
-  search is made only for a theorem that changed;
-  `scripts/tests/test-proof-cache.sh` exercises it. The
+  search is made only for a theorem that changed.
+  The cache retains the globals and closes each item's references, including
+  terms introduced by cited statements, under definition bodies. Comparison
+  transports references before comparing definitions; reuse transports the
+  saved dependency set as well. `scripts/tests/test-proof-cache.sh` exercises
+  unrelated edits, moved definitions and changed transitive dependencies. The
   documents `weakening.proofs.geb`, `substitution.proofs.geb` and
   `expansion.proofs.geb` under `bootstrap/proofs/` state and prove with
   them the developments of `GebTests/Prototypes/FreeTopos/Weakening.lean`,

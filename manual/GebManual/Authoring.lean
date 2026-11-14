@@ -772,9 +772,9 @@ certificates have their layout, so that the forms that will read them add no
 declaration to a certificate.
 
 The cache of a development of version `4` keeps the declarations of its
-definitions, and a development is aligned with a cache of the definitions it
-declares alone: a definition declared after the others, or defined
-otherwise, leaves every theorem checked or proved
+definitions among its globals. An added definition leaves theorems
+whose dependencies are unchanged taken from the cache; a changed dependency
+requires their derivations to be checked
 ({ref "proof-cache"}[The cache of a development]). A document of version `4`
 imports documents of versions `1` to `4`.
 
@@ -911,16 +911,19 @@ cache: 61 taken, 4 checked, 1 proved, 0 not proved
 A cache keeps, for each theorem of the development in order, its name, its
 statement, its script, the normal form its companion is to have and the
 version of its document, with the sides of its companion and, where the
-theorem is proved, the derivations of the theorem and of its companion. A
-theorem's declarations are come by in the first of three ways that
+theorem is proved, the derivations of the theorem and of its companion,
+with their transitive definition dependencies. The cache also keeps the
+globals those derivations were checked with. A theorem's declarations are come by in the first of three ways that
 applies.
 
 * Taken. The cache's item at the theorem's position has its name,
   statement, script, normal form and version, and is proved; the cache is
-  of the development's compiled program; and every theorem before it
+  of the same program and globals, or every definition in the item's dependency set
+  is unchanged after transport; and every theorem before it
   stands at its position in the cache with its statement and the sides of
-  its companion. The constants and the entries before the theorem are then
-  those its derivations were checked with, and its declarations are taken
+  its companion. The primitive signature agrees, and the definitions
+  reachable from the derivations and the entries they cite are those
+  they were checked with. Its declarations are taken
   as they stand, with no search and no check.
 * Checked. An item of the cache, at any position and of any program, has
   the theorem's name, statement, script, normal form and version, and is
@@ -951,21 +954,26 @@ names the two programs give their definitions: a definition of the
 program at the position of the present definition of its name, a
 connective at its position after the present definitions, and a
 definition that the present program does not declare at a position that
-names none. Under a changed program every theorem is thus checked or
-proved, none taken. A definition stated before or after the others, or
-the definitions stated in another order, leaves every theorem checked and
-none searched for. A theorem is proved again where its statement names a
-definition that is no longer declared, and where its derivation unfolds a
-definition that is defined otherwise, which the check rejects. The run
-leaves a cache of the present program, from which the next run takes.
+names none. Each item's dependency set includes the definitions named by
+its statement, its companion and the terms in its derivations, including
+the statements of cited theorems, and closes those references under the
+bodies of definitions. Definitions are compared in full after their
+references are transported. An unrelated definition may change or move
+without rechecking that item's derivations. A changed dependency requires
+a check, and a derivation that no longer checks requires a search.
+Combinator certificates, whose references use another grammar, require a
+check under changed globals. The dependencies saved after reuse are
+transported too, so the same conditions apply after further edits.
+A source naming a definition that is no longer declared is rejected when
+its statements are read.
 
 `check` with a cache replays nothing: a theorem taken was checked by the
-run that left the cache, with the same constants and entries, and the
+run that left the cache, with the same dependencies and entries, and the
 others are checked as they are found. `prove` replays the certificate
 before writing it, as it does without a cache, so that a certificate is
 checked whatever a cache holds; proved with the cache of the same prover,
 it is the certificate of a development proved without one. A cache is no
-durable artifact: its format is `geb-proof-cache/v1`, a file that does not
+durable artifact: its format is `geb-proof-cache/v2`, a file that does not
 read, or that is of another format, theory or profile, is no cache, a
 cache left by a development of another version holds no item for this
 one, and deleting a cache costs a search. A development that does not
