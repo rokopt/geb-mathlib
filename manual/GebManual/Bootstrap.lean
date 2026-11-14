@@ -199,8 +199,8 @@ Computation:
 * Complete. The Geb serializer's list processing in constant depth:
   data accumulators for digits, preorder traversal and byte packing;
   the fold counting the nodes still follows the tree's depth.
-* Ready. The Geb reader in constant depth, and the stage tests run by the
-  compiled executables, the section on improvements.
+* Ready. The Geb reader in constant depth, and the stage tests reading
+  each compiler once, the section on improvements.
 
 Logic ({ref "logic"}[The logic]), Gödel's T and then the metalogic, as
 the sections below detail:
@@ -8126,15 +8126,25 @@ the change that removes it.
   `GebTests/Prototypes/Serializer.lean` compare its bytes with the seed's
   and read them back, at byte and label-length boundaries, a wide tree,
   a long label and a nested tree.
-* Test time. The stage tests compare the Geb compilers with the seed in
-  Lean's interpreter, tens of seconds each; running those comparisons
-  with the compiled executables, as `scripts/bootstrap.sh` runs the
-  fixed points, shortens them. A change to a Geb source rebuilds the
-  test modules that read it at elaboration and their importers, each
-  group of sources being a dependency of a library of the modules that
-  read it (`lakefile.toml`); a change to a source of the stage-0
-  compiler, which most of the tests import, still rebuilds most of
-  them.
+* Test time. The stage tests compare the Geb compilers with the seed at
+  elaboration, where Lean's evaluator runs the library's compiled code
+  (`lakefile.toml`), so the executables by which `scripts/bootstrap.sh`
+  runs the fixed points would not shorten them: in one run on one
+  machine the stage-0 compiler compiles its own source in about six
+  seconds in a test and by `geb-kernel run` alike, and a program of a
+  few definitions in 0.18 seconds against 0.32, the executable starting
+  a process for each. Each comparison reads and checks its compiler
+  anew, 0.13 of those 0.18 seconds: the comparison of the stage-0
+  compiler with the seed on the kernel's examples takes 3.0 seconds, and
+  0.5 with the compiler read once. A definition of a program's entry,
+  read once and applied to each input of a comparison, removes the
+  repetition; the modules of the stage tests hold the sources that most
+  of the tests read, so it is made with a change that rebuilds those
+  tests. A change to a Geb source rebuilds the test modules that read it
+  at elaboration and their importers, each group of sources being a
+  dependency of a library of the modules that read it (`lakefile.toml`);
+  a change to a source of the stage-0 compiler, which most of the tests
+  import, still rebuilds most of them.
 * Emitted names. A program's definition named `T`, `leaf` or `mk` makes
   the emitted module ill-typed, since the module refers to the tree type,
   the leaf and the node by those names; qualifying them as the constants
@@ -8287,8 +8297,8 @@ What is ready, each item independent of the others except as stated:
 * Accelerations ({ref "speed-and-second-host"}[Speed and a second
   host]), the hash written in Geb, which computes by arithmetic on
   natural numbers, first among their uses.
-* The Geb reader in constant depth, and the stage tests run by the
-  compiled executables ({ref "improvements"}[Improvements]); the
+* The Geb reader in constant depth, and the stage tests reading each
+  compiler once ({ref "improvements"}[Improvements]); the
   serializer's list processing uses constant-depth data accumulators.
 
 The admission of stronger checkers rests on the checker written in Geb
