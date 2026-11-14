@@ -28,9 +28,11 @@ statement follows from the soundness as one formula, true there
 ## Main definitions
 
 * {lit}`Reads` — a formula in a context reads as a predicate of the context's values.
+* {lit}`Forms` — the values of the context of a program's forms.
 
 ## Main statements
 
+* {lit}`Reads.iff_of_repC` — a formula's reading is the proposition the formula represents.
 * {lit}`program_reads` — where the hypotheses of a whole program's soundness hold of a value,
   its conclusion does.
 
@@ -65,6 +67,19 @@ def Reads (G : Internal.Globals) (cds : List PartialHorn.Defn) (Γ : List Tree) 
     Internal.compile G 0 t (Internal.ctxObj Γ) (Internal.stdEnv Γ) = some (f, omega) ∧
       ArrVal [] (unfoldTerm sig cds f) φ ∧ H = fun es ↦ es ~[φ.rel] True
 
+/-- A formula's reading holds of a value exactly when the proposition the formula represents
+holds at what the value represents: the formula's arrow has one value, which represents both
+({name}`Geb.FreeTopos.truth_iff_of_represents`). -/
+theorem Reads.iff_of_repC {G : Internal.Globals} {cds : List PartialHorn.Defn} {Γ : List Tree}
+    {A S : Type} {t : Internal.Term} {H : A → Prop} (hr : Reads G cds Γ t H) {R : S → A → Prop}
+    {F : S → Prop}
+    (hc : Internal.RepC G 0 cds [] t (Internal.ctxObj Γ) (Internal.stdEnv Γ) omega R Rep.prop F)
+    {s : S} {a : A} (hs : R s a) : H a ↔ F s := by
+  obtain ⟨f, φ, hf, hφ, rfl⟩ := hr
+  obtain ⟨f', hf', hF⟩ := hc
+  obtain rfl : f' = f := (Prod.mk.inj (Option.some.inj (hf'.symm.trans hf))).1
+  exact truth_iff_of_represents hφ hF hs
+
 /-- A list each of whose elements is related to something is related, element by element, to a
 list. -/
 theorem exists_forall₂ {α β : Type} {R : α → β → Prop} :
@@ -74,11 +89,12 @@ theorem exists_forall₂ {α β : Type} {R : α → β → Prop} :
     let ⟨l', hl'⟩ := ih fun z hz ↦ h z (List.mem_cons_of_mem _ hz)
     ⟨y :: l', .cons hy hl'⟩
 
-/-- The value of the type of lists of trees, unfolded: the lists of rose trees of lists of
-bits. -/
+/-- The values of the type of lists of trees: the lists of rose trees of lists of bits. -/
+abbrev Forms : Type := List (RoseTree (List (Unit ⊕ Unit)))
+
+/-- The value of the type of lists of trees, unfolded. -/
 theorem objVal_forms {cds : List PartialHorn.Defn} :
-    ObjVal [] (unfoldTerm sig cds (list Translation.treeTy))
-      (List (RoseTree (List (Unit ⊕ Unit)))) := by
+    ObjVal [] (unfoldTerm sig cds (list Translation.treeTy)) Forms := by
   simp (disch := decide) only [Translation.treeTy, Translation.bitsTy, Translation.bitTy, list,
     lrose, coprod, one, Internal.unfold_op', List.map_cons, List.map_nil]
   exact eval_list (eval_lrose (eval_list (eval_coprod eval_one eval_one)))
@@ -91,15 +107,14 @@ include h
 
 /-- The soundness of a whole program of the datatype language's stage-1 compiler, read in the
 topos of types and functional relations: the hypotheses and the conclusion of the soundness
-({name}`programFormsThm`) read as predicates of the lists of forms ({name}`Reads`), and at
-every such list of which the hypotheses hold the conclusion holds. -/
+({name}`programFormsThm`) read as predicates of the lists of forms ({name}`Reads`,
+{name}`Forms`), and at every such list of which the hypotheses hold the conclusion holds. -/
 theorem program_reads {a : Internal.Thm}
     (ha : programFormsThm PST.1 PST.2.1 PST.2.2 = some a) :
-    ∃ (cds : List PartialHorn.Defn) (A : Type) (Hs : List (A → Prop)) (C : A → Prop),
+    ∃ (cds : List PartialHorn.Defn) (Hs : List (Forms → Prop)) (C : Forms → Prop),
       Internal.compileDefs PST.1.G = some cds ∧
-      ObjVal [] (unfoldTerm sig cds (Internal.ctxObj a.ctx)) A ∧
       List.Forall₂ (Reads PST.1.G cds a.ctx) a.hyps Hs ∧ Reads PST.1.G cds a.ctx a.concl C ∧
-      ∀ es : A, Hs.foldr (fun (H : A → Prop) (acc : Prop) ↦ H es → acc) (C es) := by
+      ∀ es : Forms, Hs.foldr (fun (H : Forms → Prop) (acc : Prop) ↦ H es → acc) (C es) := by
   obtain ⟨cds, hc, hbase, hok, hwf⟩ := Internal.Globals.of_accepted (DatatypeAccepted.accepted h)
   have hbase' : PST.1.G.base = sig.length + ([] : List PartialHorn.Defn).length := by
     simpa using hbase
@@ -117,14 +132,13 @@ theorem program_reads {a : Internal.Thm}
       Internal.isModel_point_ext (pre := []) hwf, hc, hbase',
       Internal.devInv_init (Internal.isModel_point_ext (pre := []) hwf) hbase' hok hc
         (Internal.Globals.Le.refl _) hc⟩ ha
-  have hX : ObjVal [] (unfoldTerm sig cds (Internal.ctxObj a.ctx))
-      (List (RoseTree (List (Unit ⊕ Unit)))) := by
+  have hX : ObjVal [] (unfoldTerm sig cds (Internal.ctxObj a.ctx)) Forms := by
     rw [hshape.2, Internal.ctxObj_single]
     exact objVal_forms
   have hΩ : ObjVal [] (unfoldTerm sig cds omega) Prop := Internal.objVal_omega
   -- a formula in the context reads as its truth
   have atom : ∀ t : Internal.Term, Internal.typeIn PST.1.G a.arity a.ctx t = some omega →
-      ∃ H : List (RoseTree (List (Unit ⊕ Unit))) → Prop, Reads PST.1.G cds a.ctx t H := by
+      ∃ H : Forms → Prop, Reads PST.1.G cds a.ctx t H := by
     intro t ht
     obtain ⟨⟨f, ty⟩, hf, hty⟩ := Option.map_eq_some_iff.mp (Internal.typeIn_eq_some.mp ht)
     obtain rfl : ty = omega := hty
@@ -143,7 +157,7 @@ theorem program_reads {a : Internal.Thm}
     exact ⟨_, f, φ, hshape.1 ▸ hf, hφ, rfl⟩
   obtain ⟨Hs, hHs⟩ := exists_forall₂ a.hyps fun t ht ↦ atom t (hhyps t ht)
   obtain ⟨C, hC⟩ := atom a.concl hcon
-  refine ⟨cds, _, Hs, C, hc, hX, hHs, hC, ?_⟩
+  refine ⟨cds, Hs, C, hc, hHs, hC, ?_⟩
   -- the soundness as one formula, true in the topos of types and functional relations
   have hcl : programClosedThm PST.1 PST.2.1 PST.2.2 =
       some ⟨0, a.ctx, [], a.hyps.foldr (Internal.Logic.imp PST.1.o) a.concl⟩ := by
@@ -161,10 +175,10 @@ theorem program_reads {a : Internal.Thm}
   obtain ⟨fi, hdi⟩ := Internal.compiled_language hc hk
   have hfi := Internal.represents_imp hbase hc hwf hlog hdt hdc hdi
   -- each formula represents its truth, and the implications Lean's
-  have rep : ∀ {t : Internal.Term} {H : List (RoseTree (List (Unit ⊕ Unit))) → Prop},
+  have rep : ∀ {t : Internal.Term} {H : Forms → Prop},
       Reads PST.1.G cds a.ctx t H →
         Internal.RepC PST.1.G 0 cds [] t (Internal.ctxObj a.ctx) (Internal.stdEnv a.ctx) omega
-          (fun x y : List (RoseTree (List (Unit ⊕ Unit))) ↦ x = y) Rep.prop H := by
+          (fun x y : Forms ↦ x = y) Rep.prop H := by
     rintro t H ⟨f, φ, hf, hφ, rfl⟩
     exact ⟨f, hf, represents_truth hφ⟩
   obtain ⟨f', hf', hF'⟩ := Internal.repC_imps (n := 0) (ρ := []) hbase hk hwf hdi hfi (rep hC)

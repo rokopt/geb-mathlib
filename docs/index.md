@@ -4355,7 +4355,9 @@ import-direction rules above are enforced by
   arrows, the characteristic map of a diagonal, to the equality of the
   functions they represent (`Geb.FreeTopos.represents_eq`), and an arrow
   into the subobject classifier to its truth
-  (`Geb.FreeTopos.represents_truth`); `ArrowValue.lean` gives a term with
+  (`Geb.FreeTopos.represents_truth`), which is the proposition any
+  representation of the arrow gives
+  (`Geb.FreeTopos.truth_iff_of_represents`); `ArrowValue.lean` gives a term with
   a domain and a codomain a functional relation as its value
   (`Geb.FreeTopos.exists_arrVal_of_dom_cod`).
   `Elementary.lean` constructs a topos with
@@ -4465,7 +4467,9 @@ import-direction rules above are enforced by
   Lean's truth, conjunction, implication and universal quantification
   by the connectives defined from equations, so that a formula without
   variables true there represents a true proposition
-  (`Geb.FreeTopos.Internal.holds_of_represents`). `Prove.lean` is the
+  (`Geb.FreeTopos.Internal.holds_of_represents`); `RepresentLift.lean`
+  carries a representation over constants to constants that extend them
+  (`Geb.FreeTopos.Internal.repC_le`). `Prove.lean` is the
   language's prover prototyped in Lean:
   normalization innermost first or to weak normal forms, earlier theorems
   as rewriting rules found by matching, induction and case analysis;
@@ -4616,7 +4620,15 @@ import-direction rules above are enforced by
   order (`Geb.FreeTopos.Translation.thm_valid`), and at every type under
   unique choice (`Geb.FreeTopos.Translation.thm_valid_of_uniqueChoice`),
   which `TranslationSoundClassical.lean` discharges by
-  `Classical.choice`. Tested in `GebTests/Prototypes/FreeTopos/`:
+  `Classical.choice`. `TranslationExtension.lean` reads terms over
+  constants that extend a translation's, built from references to the
+  translated globals by application, pairing, projections and the
+  library's children, as functions of the loaded globals' values
+  (`Geb.FreeTopos.Translation.RepK`), a test as the proposition that a
+  kernel tree's label is not zero
+  (`Geb.FreeTopos.Translation.repC_test`), and an equation at a type of
+  first order as an equality of kernel values
+  (`Geb.FreeTopos.Translation.repC_eqK`). Tested in `GebTests/Prototypes/FreeTopos/`:
   `Translation.lean` computes with the library, `TranslationProofs.lean`
   proves theorems of Gödel's T about the translated
   programs, `Agreement/Translation.lean` proves the translation written
@@ -4695,6 +4707,16 @@ import-direction rules above are enforced by
   conclusion are predicates of the lists of forms, each the truth of its
   formula's arrow, and the conclusion holds of every list of which the
   hypotheses hold (`Certified/DatatypeProgramReading.lean`). The
+  soundness's constants extend those of the compilers' translated
+  program, whose definitions represent the globals the kernel loads
+  (`Certified/DatatypeTranslated.lean`); the hypotheses that the
+  compiler's passes succeed represent statements about those globals'
+  values, at the kernel types the evaluator checks for them, that a tree
+  they compute has a label other than zero or that two are equal
+  (`Certified/DatatypePasses.lean`), and the soundness
+  holds where the loaded compilers' passes succeed on a kernel list of
+  forms and the remaining hypotheses hold of the list that represents it
+  (`Certified/DatatypeProgramPasses.lean`). The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   metalogic, the choices that fixed its form, and the proofs about the
   compiler's components made in it. Depends on the modules of

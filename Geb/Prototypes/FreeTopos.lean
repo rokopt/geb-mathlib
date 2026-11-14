@@ -30,6 +30,7 @@ public import Geb.Prototypes.FreeTopos.Tactics
 public import Geb.Prototypes.FreeTopos.Theory
 public import Geb.Prototypes.FreeTopos.Topos
 public import Geb.Prototypes.FreeTopos.Translation
+public import Geb.Prototypes.FreeTopos.TranslationExtension
 public import Geb.Prototypes.FreeTopos.TranslationKernel
 public import Geb.Prototypes.FreeTopos.TranslationLibrary
 public import Geb.Prototypes.FreeTopos.TranslationSound

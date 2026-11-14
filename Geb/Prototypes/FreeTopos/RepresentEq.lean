@@ -31,6 +31,8 @@ by themselves.
 * {lit}`represents_eq` — the equality of two arrows represents the equality of the functions
   they represent.
 * {lit}`represents_truth` — an arrow into the subobject classifier represents its truth.
+* {lit}`truth_iff_of_represents` — an arrow's truth at an element is the proposition it
+  represents at what the element represents.
 
 ## Tags
 
@@ -106,6 +108,28 @@ theorem represents_truth {f : Tree} {φ : FunRel A Prop} (hf : ArrVal ρ f φ) :
   ⟨φ, hf, fun s a hs b hb ↦ by
     subst hs
     exact propext ⟨fun h ↦ φ.unique h hb ▸ trivial, fun h ↦ eq_true h ▸ hb⟩⟩
+
+/-- An arrow term has at most one value between two types. -/
+theorem arrVal_unique {f : Tree} {φ ψ : FunRel A B} (hφ : ArrVal ρ f φ) (hψ : ArrVal ρ f ψ) :
+    φ = ψ := by
+  unfold ArrVal at hφ hψ
+  have h := Part.some_injective (hφ.symm.trans hψ)
+  simp only [Sigma.mk.injEq, heq_eq_eq, true_and] at h
+  obtain ⟨-, h₁⟩ := Sigma.mk.inj h
+  exact eq_of_heq (Sigma.mk.inj (eq_of_heq h₁)).2
+
+/-- Where an arrow into the subobject classifier represents a function into the propositions,
+its value relates an element to the true proposition exactly when the function's proposition
+holds at what the element represents. -/
+theorem truth_iff_of_represents {f : Tree} {φ : FunRel A Prop} (hφ : ArrVal ρ f φ)
+    {R : S → A → Prop} {F : S → Prop} (hF : Represents ρ f R Rep.prop F) {s : S} {a : A}
+    (hs : R s a) : a ~[φ.rel] True ↔ F s := by
+  obtain ⟨ψ, hψ, hrep⟩ := hF
+  obtain rfl := arrVal_unique hφ hψ
+  refine ⟨fun h ↦ (show F s = True from hrep s a hs True h) ▸ trivial, fun h ↦ ?_⟩
+  obtain ⟨b, hb, -⟩ := φ.functional a
+  have e : F s = b := hrep s a hs b hb
+  exact (eq_true (e ▸ h)) ▸ hb
 
 end Geb.FreeTopos
 

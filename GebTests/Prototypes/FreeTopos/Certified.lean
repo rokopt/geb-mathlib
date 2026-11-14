@@ -16,12 +16,15 @@ public import GebTests.Prototypes.FreeTopos.Certified.DatatypeDatum
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeForms
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeGenerated
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeList
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypePasses
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgram
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramData
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramKinds
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramPasses
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramReading
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramSound
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramTheory
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeTranslated
 public import GebTests.Prototypes.FreeTopos.Certified.Expansion
 public import GebTests.Prototypes.FreeTopos.Certified.Normalization
 public import GebTests.Prototypes.FreeTopos.Certified.Substitution

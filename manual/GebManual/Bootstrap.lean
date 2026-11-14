@@ -3093,9 +3093,26 @@ the soundness read as predicates of the lists of forms, each the truth
 of its formula's arrow, and the conclusion holds of every list of which
 the hypotheses hold
 (`GebTests/Prototypes/FreeTopos/Certified/DatatypeProgramReading.lean`).
-What remains of the transfer is the reading of each predicate as a
-statement about the kernel's evaluation of the compilers, the discharge
-of the hypotheses, and the compilers' entry point.
+The soundness's program extends the translation of the compilers'
+kernel program, whose definitions represent the globals the kernel
+loads from it
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeTranslated.lean`), so
+a formula built from references to the compilers' definitions
+represents the proposition built the same way from the loaded globals'
+values ({name}`Geb.FreeTopos.Translation.RepK`). The hypotheses that
+the compiler's passes succeed are read so: the forms expand, their
+typing rejects none, the recognizers can be written, the reader reads
+the result and the kernel types its terms, each a statement that a tree
+the loaded compilers compute has a label other than zero or equals
+another
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypePasses.lean`). The
+soundness then holds of a list of trees of bitstrings that represents a
+kernel list of forms on which those passes succeed, where its remaining
+hypotheses hold
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeProgramPasses.lean`).
+What remains of the transfer is the same reading of the remaining
+hypotheses and of the conclusion, the discharge of the hypotheses, and
+the compilers' entry point.
 
 The rewriting of the definitions the elementary-affine search rejects in
 the compilers' sources waits on this completion, whose soundness of the
