@@ -3,9 +3,11 @@
 # resumed from it, a theorem whose statement and script the cache has, proved, being searched
 # for no more. The declarations of a theorem at an unchanged position after unchanged
 # statements are taken as they stand; those of a theorem the cache has elsewhere, or under a
-# changed program, are checked with the entries they cite renumbered; a theorem whose script or
-# statement changed, or that is not proved, is run. The certificate is that of a development
-# proved without a cache.
+# changed program, are checked, the entries they cite renumbered and the definitions they name
+# at their places in the present program; a theorem whose script or statement changed, whose
+# derivation unfolds a definition defined otherwise, or that is not proved, is run. The
+# certificate is that of a development proved without a cache, and a certificate of the program
+# before a change is transported to the program after it where it still replays.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
@@ -132,10 +134,10 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-cache-test-') as directory:
     assert uses(out) == (3, 0, 1, 0), out
     assert cert.read_bytes() == saved
 
-    # A changed program: the cache's derivations are checked, and kept where the definitions they
-    # cite stand where they stood; a definition added after the others leaves the theorems of the
-    # program's definitions as they were, and moves the connectives, so that the theorem stated
-    # with them is proved again.
+    # A changed program: the cache's items are read with the definitions they name at their
+    # places in the present program, and their derivations are checked, none searched for again.
+    # A definition added after the others moves the connectives, which the theorem stated with
+    # them names.
     source = root / 'Lists.geb'
     original = source.read_text()
     source.write_text(original.replace("(module Lists (export append)", "(module Lists (export append twice)")
@@ -143,7 +145,51 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-cache-test-') as directory:
     manifest = root / 'pair.manifest'
     manifest.write_text(manifest.read_text().replace('Lists.append)', 'Lists.append Lists.twice)'))
     out, _ = prove(DOC)
+    assert uses(out) == (0, 4, 0, 0), out
+    out, _ = prove(DOC)
+    assert uses(out) == (4, 0, 0, 0), out
+
+    # The certificate of the program as it was does not replay against the changed program, and
+    # is transported to it: the certificate written replays, and the one read is left as it is.
+    earlier = root / 'earlier.cert'
+    earlier.write_bytes(saved)
+    moved = root / 'moved.cert'
+    _, err = run('replay', doc, earlier, ok=False)
+    assert 'compiled program differs' in err, err
+    run('transport', doc, earlier, moved)
+    run('replay', doc, moved)
+    assert earlier.read_bytes() == saved
+    run('transport', doc, moved, root / 'again.cert')
+    assert (root / 'again.cert').read_bytes() == moved.read_bytes()
+
+    # A definition stated before the others moves every definition of the program: the items
+    # are checked, and the certificate of the program before it is transported.
+    first = root / 'Pair.geb'
+    paired = first.read_text()
+    inserted = paired.replace('(module Pair (export first left)\n',
+                              '(module Pair (export first left)\n  (defn second ((x T) (y T)) T y)\n')
+    assert inserted != paired
+    first.write_text(inserted)
+    out, _ = prove(DOC)
+    assert uses(out) == (0, 4, 0, 0), out
+    out, _ = prove(DOC)
+    assert uses(out) == (4, 0, 0, 0), out
+    run('transport', doc, moved, root / 'inserted.cert')
+    run('replay', doc, root / 'inserted.cert')
+
+    # A definition defined otherwise: the theorem whose derivation unfolds it is proved again,
+    # the others are checked, and the certificate of the program before it is not transported,
+    # no output being written.
+    redefined = inserted.replace('(defn first ((x T) (y T)) T (fst (pair x y)))',
+                                 '(defn first ((x T) (y T)) T x)')
+    assert redefined != inserted
+    first.write_text(redefined)
+    out, _ = prove(DOC)
     assert uses(out) == (0, 3, 1, 0), out
+    refused = root / 'refused.cert'
+    _, err = run('transport', doc, root / 'inserted.cert', refused, ok=False)
+    assert 'does not prove these statements in this program' in err, err
+    assert not refused.exists()
     out, _ = prove(DOC)
     assert uses(out) == (4, 0, 0, 0), out
 
@@ -161,5 +207,5 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-cache-test-') as directory:
     assert file.read_bytes() != b'not a cache'
 
 print('test-proof-cache: taken, checked and proved theorems, changed scripts, statements and '
-      'programs, failures, holes and the certificate passed')
+      'programs, failures, holes, the certificate and its transport passed')
 PY
