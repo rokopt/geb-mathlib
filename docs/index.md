@@ -4072,6 +4072,13 @@ import-direction rules above are enforced by
   serializer with `Geb.Kernel.writeImage`, the checker with the seed's, and
   the compiler with the seed on the kernel's examples, runs programs in
   the datatype language compiled by the compiler, decoding included.
+  The serializer uses data accumulators for digit reversal, the
+  preorder traversal and byte packing, so their call depth does not grow
+  with the lengths of the lists. A fold counts the nodes to bound the
+  traversal; that fold still follows the tree's depth.
+  `GebTests/Prototypes/Serializer.lean` compares its images with the
+  seed's and reads them back at byte and label-length boundaries, on a
+  wide tree, a long label and a nested tree, in Lean's interpreter.
   `bootstrap/subst.geb` is the traversal of kernel terms with weakening
   and substitution, as `Subst.lean` defines them, and `bootstrap/eval.geb`
   the evaluator of kernel terms, as `Eval.lean` defines it, compared with

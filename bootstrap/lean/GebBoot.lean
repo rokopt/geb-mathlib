@@ -101,6 +101,24 @@ def «Prelude.digitsLsb» :=
   fun (x0 : T) (x1 : T) (x2 : T) =>
     «Prelude.reverse» («Prelude.digitsMsb» x0 x1 x2)
 
+def «Serialize.reverseList» :=
+  fun (x0 : List T) =>
+    (Const.iter
+      (α := List T × List T)
+      (fun (x1 : List T × List T) =>
+        Const.lcase
+          (α := T)
+          (β := List T × List T)
+          (x1).1
+          x1
+          (fun (x2 : T) (x3 : List T) => (x3, (x2 :: (x1).2))))
+      (x0, ([] : List T))
+      («Prelude.length» x0)).2
+
+def «Serialize.lowDigits» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    «Serialize.reverseList» («Prelude.digitsMsb» x0 x1 x2)
+
 def «Serialize.deltaBits» :=
   fun (x0 : T) =>
     let x1 : T := Const.add x0 (leaf 1);
@@ -121,53 +139,57 @@ def «Serialize.nodeBits» :=
       ((leaf 0) ::
         («Prelude.append»
           («Serialize.deltaBits» (Const.log2 x2))
-          («Prelude.digitsLsb» (leaf 2) x2 (Const.log2 x2))))
+          («Serialize.lowDigits» (leaf 2) x2 (Const.log2 x2))))
+
+def «Serialize.nodeCount» :=
+  fun (x0 : T) =>
+    Const.fold
+      (α := T)
+      (fun (_ : T) (x2 : List T) =>
+        Const.add
+          (leaf 1)
+          (Const.foldr (α := T) (β := T) Const.add (leaf 0) x2))
+      x0
 
 def «Serialize.treeBits» :=
   fun (x0 : T) =>
-    Const.fold
-      (α := List T → List T)
-      (fun (x1 : T) (x2 : List (List T → List T)) =>
-        let x3 : T ×
-          (List T →
-            List
-              T) := Const.foldr
-          (α := List T → List T)
-          (β := T × (List T → List T))
-          (fun (x3 : List T → List T) (x4 : T × (List T → List T)) =>
-            (Const.add (x4).1 (leaf 1), fun (x5 : List T) => x3 ((x4).2 x5)))
-          (leaf 0, fun (x3 : List T) => x3)
-          x2;
-        fun (x4 : List T) =>
-          «Prelude.append» («Serialize.nodeBits» (x3).1 x1) ((x3).2 x4))
-      x0
-      ([] : List T)
+    «Serialize.reverseList»
+      (Const.iter
+        (α := List T × List T)
+        (fun (x1 : List T × List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T × List T)
+            (x1).1
+            x1
+            (fun (x2 : T) (x3 : List T) =>
+              («Prelude.append» (Const.children x2) x3,
+                «Prelude.append»
+                  («Serialize.reverseList»
+                    («Serialize.nodeBits» (Const.arity x2) (Const.label x2)))
+                  (x1).2)))
+        («Prelude.single» x0, ([] : List T))
+        («Serialize.nodeCount» x0)).2
 
 def «Serialize.packBits» :=
   fun (x0 : List T) =>
-    let x1 : T ×
-      (T ×
-        List
-          T) := Const.foldr
+    ((Const.foldr
       (α := T)
-      (β := (T × (T × List T)) → T × (T × List T))
-      (fun (x1 : T)
-         (x2 : (T × (T × List T)) → T × (T × List T))
-         (x3 : T × (T × List T)) =>
-        let x4 : T := Const.add (x3).1 (Const.mul x1 ((x3).2).1);
-        x2
-          (if (Const.eq ((x3).2).1 (leaf 128)).label ≠ 0 then
-            (leaf 0, (leaf 1, (x4 :: ((x3).2).2)))
-          else
-            (x4, (Const.mul (leaf 2) ((x3).2).1, ((x3).2).2))))
-      (fun (x1 : T × (T × List T)) => x1)
-      x0
-      (leaf 0, (leaf 1, ([] : List T)));
-    «Prelude.reverse»
-      (if (Const.eq ((x1).2).1 (leaf 1)).label ≠ 0 then
-        ((x1).2).2
-      else
-        ((x1).1 :: ((x1).2).2))
+      (β := T × (T × List T))
+      (fun (x1 : T) (x2 : T × (T × List T)) =>
+        let x3 : T := Const.add (x2).1 (Const.mul x1 ((x2).2).1);
+        if (Const.eq ((x2).2).1 (leaf 1)).label ≠ 0 then
+          (leaf 0, (leaf 128, (x3 :: ((x2).2).2)))
+        else
+          (x3, (Const.div ((x2).2).1 (leaf 2), ((x2).2).2)))
+      (leaf 0,
+        (Const.iter
+          (α := T)
+          (fun (x1 : T) => Const.mul (leaf 2) x1)
+          (leaf 1)
+          (Const.mod (Const.sub («Prelude.length» x0) (leaf 1)) (leaf 8)),
+          ([] : List T)))
+      x0).2).2
 
 def «Serialize.image» :=
   fun (x0 : T) =>
@@ -179,7 +201,7 @@ def «Serialize.image» :=
           ((leaf 69) ::
             ((leaf 66) :: ((leaf 75) :: ((leaf 1) :: ([] : List T))))))
         («Prelude.append»
-          («Prelude.digitsLsb» (leaf 256) («Prelude.length» x1) (leaf 8))
+          («Serialize.lowDigits» (leaf 256) («Prelude.length» x1) (leaf 8))
           («Serialize.packBits» x1)))
 
 def «Reader.both» :=
