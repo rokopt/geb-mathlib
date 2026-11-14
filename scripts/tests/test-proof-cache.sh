@@ -2,8 +2,9 @@
 # Exercise the cache of a development through the CLI: a development proved with a cache is
 # resumed from it, a theorem whose statement and script the cache has, proved, being searched
 # for no more. The declarations of a theorem at an unchanged position after unchanged
-# statements are taken as they stand; those of a theorem the cache has elsewhere, or under a
-# changed program, are checked, the entries they cite renumbered and the definitions they name
+# statements and unchanged transitive definition dependencies are taken as they stand; those
+# of a theorem the cache has elsewhere, or whose dependencies changed, are checked, the entries
+# they cite renumbered and the definitions they name
 # at their places in the present program; a theorem whose script or statement changed, whose
 # derivation unfolds a definition defined otherwise, or that is not proved, is run. The
 # certificate is that of a development proved without a cache, and a certificate of the program
@@ -135,8 +136,8 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-cache-test-') as directory:
     assert uses(out) == (3, 0, 1, 0), out
     assert cert.read_bytes() == saved
 
-    # A changed program: the cache's items are read with the definitions they name at their
-    # places in the present program, and their derivations are checked, none searched for again.
+    # An unrelated program change: the cache's items and dependencies are transported to the
+    # present indices, and every theorem is taken without checking its derivation.
     # A definition added after the others moves the connectives, which the theorem stated with
     # them names.
     source = root / 'Lists.geb'
@@ -146,7 +147,7 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-cache-test-') as directory:
     manifest = root / 'pair.manifest'
     manifest.write_text(manifest.read_text().replace('Lists.append)', 'Lists.append Lists.twice)'))
     out, _ = prove(DOC)
-    assert uses(out) == (0, 4, 0, 0), out
+    assert uses(out) == (4, 0, 0, 0), out
     out, _ = prove(DOC)
     assert uses(out) == (4, 0, 0, 0), out
 
@@ -164,7 +165,7 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-cache-test-') as directory:
     assert (root / 'again.cert').read_bytes() == moved.read_bytes()
 
     # A definition stated before the others moves every definition of the program: the items
-    # are checked, and the certificate of the program before it is transported.
+    # are taken after transporting their references, as is the earlier certificate.
     first = root / 'Pair.geb'
     paired = first.read_text()
     inserted = paired.replace('(module Pair (export first left)\n',
@@ -172,21 +173,21 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-cache-test-') as directory:
     assert inserted != paired
     first.write_text(inserted)
     out, _ = prove(DOC)
-    assert uses(out) == (0, 4, 0, 0), out
+    assert uses(out) == (4, 0, 0, 0), out
     out, _ = prove(DOC)
     assert uses(out) == (4, 0, 0, 0), out
     run('transport', doc, moved, root / 'inserted.cert')
     run('replay', doc, root / 'inserted.cert')
 
     # A definition defined otherwise: the theorem whose derivation unfolds it is proved again,
-    # the others are checked, and the certificate of the program before it is not transported,
+    # the others are taken, and the certificate of the program before it is not transported,
     # no output being written.
     redefined = inserted.replace('(defn first ((x T) (y T)) T (fst (pair x y)))',
                                  '(defn first ((x T) (y T)) T x)')
     assert redefined != inserted
     first.write_text(redefined)
     out, _ = prove(DOC)
-    assert uses(out) == (0, 3, 1, 0), out
+    assert uses(out) == (3, 0, 1, 0), out
     refused = root / 'refused.cert'
     _, err = run('transport', doc, root / 'inserted.cert', refused, ok=False)
     assert 'does not prove these statements in this program' in err, err
@@ -208,7 +209,7 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-cache-test-') as directory:
     assert file.read_bytes() != b'not a cache'
 
     # A development of version 4 declares definitions, and its cache is of them: a definition
-    # declared after the others, or defined otherwise, leaves no theorem taken, and a bound
+    # declared after the others leaves proofs taken; changing a dependency rechecks them. A bound
     # variable's name is no part of a definition. Under a changed program its definitions move
     # with the connectives, in the cache's items and in its certificate.
     DEFS = '''(proofs 4 (program pair)
@@ -233,7 +234,7 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-cache-test-') as directory:
     assert renamed != DEFS and prove_defined(renamed) == (2, 0, 0, 0)
     more = DEFS.replace('  (theorem plus-zero',
                         '  (definition one () Nat (succ zero))\n  (theorem plus-zero')
-    assert more != DEFS and prove_defined(more) == (0, 2, 0, 0)
+    assert more != DEFS and prove_defined(more) == (2, 0, 0, 0)
     assert prove_defined(more) == (2, 0, 0, 0)
     otherwise = more.replace(') n) m))', ') n) ((lam ((a Nat)) a) m)))')
     assert otherwise != more
@@ -249,8 +250,99 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-cache-test-') as directory:
     run('transport', defined, counted, root / 'defined-moved.cert')
     run('replay', defined, root / 'defined-moved.cert')
     assert counted.read_bytes() == before
-    assert prove_defined(otherwise) == (0, 2, 0, 0)
     assert prove_defined(otherwise) == (2, 0, 0, 0)
+    assert prove_defined(otherwise) == (2, 0, 0, 0)
+
+    # A reference's body reaches other definitions. Changing an otherwise invisible leaf of
+    # that chain must invalidate reuse, including `check`, which does not replay taken proofs.
+    chain = root / 'Chain.geb'
+    chain_source = '''(module Chain (export top unused)
+  (defn source ((x T) (y T)) T (fst (pair x y)))
+  (defn middle ((x T) (y T)) T (source x y))
+  (defn top ((x T) (y T)) T (middle x y))
+  (defn unused ((x T)) T x))
+'''
+    chain.write_text(chain_source)
+    (root / 'chain.manifest').write_text('''(program chain (edition 0)
+  (document (syntax authoring 0) (schema 0) (prose verso 0))
+  (sources Chain.geb) (entries))
+''')
+    chain_doc = root / 'Chain.proofs.geb'
+    chain_doc.write_text('''(proofs 3 (program chain)
+  (theorem reflexive (forall ((x T)) (equal x x)) (by (normalize 8)))
+  (theorem top-at (forall ((x T) (y T)) (equal (Chain.top x y) x))
+    (by (normalize 128))))
+''')
+    chain_cert = root / 'chain.cert'
+
+    def check_chain(ok=True):
+        return run('check', '--cache', cache, chain_doc, ok=ok)
+
+    out, _ = run('prove', '--cache', cache, chain_doc, chain_cert)
+    assert uses(out) == (0, 0, 2, 0), out
+    out, _ = check_chain()
+    assert uses(out) == (2, 0, 0, 0), out
+    chain.write_text(chain_source.replace('(defn unused ((x T)) T x)',
+                                          '(defn unused ((x T)) T (fst (pair x x)))'))
+    out, _ = check_chain()
+    assert uses(out) == (2, 0, 0, 0), out
+    # Equivalent source, but a different reduction: only the dependent proof is searched.
+    chain.write_text(chain_source.replace('(fst (pair x y))', 'x'))
+    out, _ = check_chain()
+    assert uses(out) == (1, 0, 1, 0), out
+    chain.write_text(chain_source.replace('(fst (pair x y))', 'y'))
+    out, err = check_chain(ok=False)
+    assert uses(out) == (1, 0, 0, 1), out
+    assert 'top-at does not prove it' in err, err
+    # Restore the source, relocate every definition, and then change the same dependency.
+    # The dependencies saved by a taken item must have moved along with its derivations.
+    chain.write_text(chain_source)
+    check_chain()
+    shifted = chain_source.replace('(module Chain (export top unused)',
+                                    '(module Chain (export top unused) (def extra 0)')
+    chain.write_text(shifted)
+    out, _ = check_chain()
+    assert uses(out) == (2, 0, 0, 0), out
+    chain.write_text(shifted.replace('(fst (pair x y))', 'y'))
+    out, _ = check_chain(ok=False)
+    assert uses(out) == (1, 0, 0, 1), out
+
+    # A cut can introduce a dependency absent from the goal. Keep the cited theorem's
+    # companion folded so that changed companion alignment cannot mask missing dependencies.
+    chain.write_text(chain_source)
+    chain_doc.write_text('''(proofs 3 (program chain)
+  (theorem folded-refl
+    (forall ((x T) (y T)) (equal (Chain.top x y) (Chain.top x y)))
+    (by (normalize 0)) (normal head (folded Chain.top)))
+  (theorem only-in-proof (forall ((x T) (y T)) (equal x x))
+    (by (have h folded-refl (x y) () (normalize 0)))))
+''')
+    out, _ = check_chain()
+    assert uses(out) == (0, 0, 2, 0), out
+    out, _ = check_chain()
+    assert uses(out) == (2, 0, 0, 0), out
+    chain.write_text(chain_source.replace('(fst (pair x y))', 'y'))
+    out, _ = check_chain()
+    assert uses(out) == (0, 2, 0, 0), out
+
+    # Renaming definitions can leave the nameless globals byte-identical while changing the
+    # meaning of a source name. Such a cache still needs comparison after name transport.
+    named = root / 'Named.geb'
+    named.write_text('(def f 0) (def g 1)')
+    (root / 'named.manifest').write_text('''(program named (edition 0)
+  (document (syntax authoring 0) (schema 0) (prose verso 0))
+  (sources Named.geb) (entries))
+''')
+    named_doc = root / 'Named.proofs.geb'
+    named_doc.write_text('''(proofs 3 (program named)
+  (theorem value (equal f 0) (by (normalize 64))))
+''')
+    run('check', '--cache', cache, named_doc)
+    named.write_text('(def g 0) (def f 1)')
+    _, plain_error = run('check', named_doc, ok=False)
+    out, cached_error = run('check', '--cache', cache, named_doc, ok=False)
+    assert uses(out) == (0, 0, 0, 1), out
+    assert cached_error == plain_error, (cached_error, plain_error)
 
 print('test-proof-cache: taken, checked and proved theorems, changed scripts, statements and '
       'programs, failures, holes, the certificate, its transport and declared definitions '

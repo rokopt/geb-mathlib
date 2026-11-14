@@ -12431,17 +12431,6 @@ def «Authoring.sourceNames» :=
 
 def «Authoring.noNode» := Const.node (leaf 0) ([] : List T)
 
-def «Authoring.cacheItem» :=
-  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
-    let x5 : T := Const.node
-      (leaf 0)
-      ((«Authoring.requestName» x0) ::
-        ((«Authoring.requestThm» x0) ::
-          ((«Authoring.requestScript» x0) ::
-            ((«Authoring.requestSpec» x0) ::
-              ((«Authoring.requestVersion» x0) :: («Theory.l4» x1 x2 x3 x4))))));
-    x5
-
 def «Authoring.cacheItems» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : List
@@ -12453,16 +12442,6 @@ def «Authoring.cacheItems» :=
       Const.children (Const.child x1 (leaf 1))
     else
       ([] : List T));
-    x2
-
-def «Authoring.sameDeclared» :=
-  fun (x0 : T) (x1 : T) =>
-    let x2 : T := Const.equal
-      (if (Const.eq (Const.arity x0) (leaf 3)).label ≠ 0 then
-        Const.child x0 (leaf 2)
-      else
-        «Authoring.noResults»)
-      x1;
     x2
 
 def «Authoring.declaredNames» :=
@@ -12828,6 +12807,237 @@ def «Authoring.transportDefinition» :=
         («Authoring.transportTerm» x0 (Const.child x1 (leaf 3))));
     x2
 
+def «Authoring.unionRefs» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) =>
+        if («Authoring.has» x2 x3).label ≠ 0 then x3 else (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Authoring.joinRefs» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.node
+      (leaf 0)
+      (Const.foldr
+        (α := T)
+        (β := List T)
+        (fun (x1 : T) (x2 : List T) =>
+          «Authoring.unionRefs» (Const.children x1) x2)
+        ([] : List T)
+        x0);
+    x1
+
+def «Authoring.termRefs» :=
+  fun (x0 : T) =>
+    let x1 : T := Const.para
+      (α := T)
+      (fun (x1 : T) (x2 : List T) =>
+        let x3 : T := «Authoring.joinRefs» («Prelude.tail» x2);
+        if (Const.eq (Const.label x1) (leaf 11)).label ≠ 0 then
+          Const.node
+            (leaf 0)
+            («Authoring.unionRefs»
+              («Prelude.single» (Const.child (Const.child x1 (leaf 0)) (leaf 0)))
+              (Const.children x3))
+        else
+          x3)
+      x0;
+    x1
+
+def «Authoring.thmRefs» :=
+  fun (x0 : T) =>
+    let x1 : T := «Authoring.joinRefs»
+      ((«Authoring.termRefs» (Const.child x0 (leaf 3))) ::
+        («Base.mapT»
+          «Authoring.termRefs»
+          (Const.children (Const.child x0 (leaf 2)))));
+    x1
+
+def «Authoring.derivRefs» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := (if (Const.eq (Const.arity x1) (leaf 0)).label ≠ 0 then
+      «Prelude.some» «Authoring.noNode»
+    else
+      Const.para
+        (α := T)
+        (fun (x2 : T) (x3 : List T) =>
+          let x4 : T := Const.label x2;
+          let x5 : List T := Const.children (Const.child x2 (leaf 0));
+          if («Prelude.or»
+            (Const.eq x4 (leaf 30))
+            («Prelude.or»
+              (Const.eq x4 (leaf 31))
+              (Const.lt (leaf 36) x4))).label ≠ 0 then
+            «Prelude.none»
+          else
+            if («Base.allT» «Prelude.isSome» («Prelude.tail» x3)).label ≠ 0 then
+              let x6 : T := (if («Prelude.or»
+                (Const.eq x4 (leaf 16))
+                (Const.eq x4 (leaf 27))).label ≠ 0 then
+                let x6 : T := «Derivation.thmAt» x0 («Prelude.at» x5 (leaf 0));
+                if (Const.eq (Const.label x6) (leaf 0)).label ≠ 0 then
+                  let _ : List T := Const.children x6; «Prelude.none»
+                else
+                  let x7 : List T := Const.children x6;
+                  let x8 : T := Const.lcase
+                    (α := T)
+                    (β := T)
+                    x7
+                    (leaf 0)
+                    (fun (x8 : T) (_ : List T) => x8);
+                  let _ : List
+                    T := Const.lcase
+                    (α := T)
+                    (β := List T)
+                    x7
+                    ([] : List T)
+                    (fun (_ : T) (x10 : List T) => x10);
+                  «Prelude.some»
+                    («Authoring.joinRefs»
+                      ((«Authoring.thmRefs» x8) ::
+                        («Base.mapT»
+                          «Authoring.termRefs»
+                          (Const.children («Prelude.at» x5 (leaf 2))))))
+              else
+                «Prelude.some»
+                  (if («Prelude.or»
+                    (Const.eq x4 (leaf 19))
+                    (Const.eq x4 (leaf 20))).label ≠ 0 then
+                    «Authoring.termRefs» («Prelude.at» x5 (leaf 2))
+                  else
+                    if (Const.eq x4 (leaf 32)).label ≠ 0 then
+                      «Authoring.termRefs» («Prelude.at» x5 (leaf 3))
+                    else
+                      if («Prelude.or»
+                        (Const.eq x4 (leaf 22))
+                        (Const.eq x4 (leaf 24))).label ≠ 0 then
+                        «Authoring.termRefs» («Prelude.at» x5 (leaf 0))
+                      else
+                        «Authoring.noNode»));
+              if («Prelude.isSome» x6).label ≠ 0 then
+                «Prelude.some»
+                  («Authoring.joinRefs»
+                    ((«Prelude.get» x6) ::
+                      («Base.mapT» «Prelude.get» («Prelude.tail» x3))))
+              else
+                «Prelude.none»
+            else
+              «Prelude.none»)
+        x1);
+    x2
+
+def «Authoring.closeRefs» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := Const.child x0 (leaf 1);
+                   Const.node
+                     (leaf 0)
+                     (Const.foldr
+                       (α := T)
+                       (β := List T)
+                       (fun (x3 : T) (x4 : List T) =>
+                         if («Authoring.has» x3 x4).label ≠ 0 then
+                           «Authoring.unionRefs»
+                             (Const.children
+                               («Authoring.termRefs»
+                                 (Const.child (Const.child (Const.child x2 x3) (leaf 0)) (leaf 3))))
+                             x4
+                         else
+                           x4)
+                       (Const.children x1)
+                       («Base.range» (Const.arity x2))));
+    x2
+
+def «Authoring.dependencies» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) =>
+    let x6 : T := (let x6 : T := «Authoring.derivRefs» x1 x4;
+                   let x7 : T := «Authoring.derivRefs» x1 x5;
+                   if («Prelude.and»
+                     («Prelude.isSome» x6)
+                     («Prelude.isSome» x7)).label ≠ 0 then
+                     «Prelude.some»
+                       («Authoring.closeRefs»
+                         x0
+                         («Authoring.joinRefs»
+                           ((«Authoring.thmRefs» x2) ::
+                             ((«Prelude.get» x6) ::
+                               ((«Prelude.get» x7) ::
+                                 («Base.mapT» «Authoring.termRefs» (Const.children x3)))))))
+                   else
+                     «Prelude.none»);
+    x6
+
+def «Authoring.cacheItem» :=
+  fun (x0 : T)
+    (x1 : List T)
+    (x2 : T)
+    (x3 : T)
+    (x4 : T)
+    (x5 : T)
+    (x6 : T) =>
+    let x7 : T := Const.node
+      (leaf 0)
+      ((«Authoring.requestName» x2) ::
+        ((«Authoring.requestThm» x2) ::
+          ((«Authoring.requestScript» x2) ::
+            ((«Authoring.requestSpec» x2) ::
+              ((«Authoring.requestVersion» x2) ::
+                (x3 ::
+                  («Theory.l4»
+                    x4
+                    x5
+                    x6
+                    (if (x4).label ≠ 0 then
+                      «Authoring.dependencies» x0 x1 («Authoring.requestThm» x2) x3 x5 x6
+                    else
+                      «Prelude.none»))))))));
+    x7
+
+def «Authoring.unchangedDefs» :=
+  fun (x0 : T → T) (x1 : T) (x2 : T) =>
+    let x3 : T := (let x3 : T := x2;
+                   let x4 : T := Const.child x3 (leaf 1);
+                   let x5 : T := Const.child x1 (leaf 1);
+                   Const.node
+                     (leaf 0)
+                     («Base.mapT»
+                       (fun (x6 : T) =>
+                         let x7 : T := x0 x6;
+                         «Prelude.and»
+                           (Const.equal (Const.child x1 (leaf 0)) (Const.child x3 (leaf 0)))
+                           («Prelude.and»
+                             (Const.equal (Const.child x1 (leaf 2)) (Const.child x3 (leaf 2)))
+                             («Prelude.and»
+                               (Const.lt x7 (Const.arity x4))
+                               («Prelude.and»
+                                 (Const.eq (Const.label (Const.child x5 x6)) (leaf 0))
+                                 («Prelude.and»
+                                   (Const.eq (Const.label (Const.child x4 x7)) (leaf 0))
+                                   (Const.equal
+                                     («Authoring.transportDefinition»
+                                       x0
+                                       (Const.child (Const.child x5 x6) (leaf 0)))
+                                     (Const.child (Const.child x4 x7) (leaf 0))))))))
+                       («Base.range» (Const.arity x5))));
+    x3
+
+def «Authoring.sameDependencies» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := Const.child x1 (leaf 9);
+                   «Prelude.and»
+                     («Prelude.isSome» x2)
+                     («Base.allT»
+                       (fun (x3 : T) =>
+                         «Prelude.and»
+                           (Const.lt x3 (Const.arity x0))
+                           (Const.eq (Const.child x0 x3) (leaf 1)))
+                       (Const.children («Prelude.get» x2))));
+    x2
+
 def «Authoring.transportItem» :=
   fun (x0 : T → T) (x1 : T) =>
     let x2 : T := (let x2 : List T := Const.children x1;
@@ -12843,30 +13053,59 @@ def «Authoring.transportItem» :=
                                  («Base.mapT»
                                    («Authoring.transportTerm» x0)
                                    (Const.children («Prelude.at» x2 (leaf 5))))) ::
-                                 («Theory.l3»
+                                 («Theory.l4»
                                    («Prelude.at» x2 (leaf 6))
                                    («Authoring.transportDeriv» x0 («Prelude.at» x2 (leaf 7)))
-                                   («Authoring.transportDeriv»
-                                     x0
-                                     («Prelude.at» x2 (leaf 8)))))))))));
+                                   («Authoring.transportDeriv» x0 («Prelude.at» x2 (leaf 8)))
+                                   (if («Prelude.isSome» («Prelude.at» x2 (leaf 9))).label ≠ 0 then
+                                     «Prelude.some»
+                                       (Const.node
+                                         (leaf 0)
+                                         («Base.mapT»
+                                           x0
+                                           (Const.children
+                                             («Prelude.get» («Prelude.at» x2 (leaf 9))))))
+                                   else
+                                     «Prelude.none»)))))))));
     x2
 
 def «Authoring.itemsFor» :=
-  fun (x0 : T) (x1 : T) (x2 : List T) (x3 : List T) (x4 : T) =>
-    let x5 : List
-      T := (let x5 : List T := «Authoring.cacheItems» x0 x1;
-            if (x4).label ≠ 0 then
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : List T) (x4 : List T) (x5 : T) =>
+    let x6 : List
+      T := (let x6 : List T := «Authoring.cacheItems» x1 x2;
+            let x7 : T →
+              T := «Authoring.placeOf»
+              («Authoring/LD.length» «Translation.lib»)
+              («Authoring.placesOf» x3 x4)
+              («Prelude.length» x4);
+            let x8 : T := Const.child x2 (leaf 2);
+            let x9 : T := (if («Prelude.and»
               x5
+              (Const.equal x8 x0)).label ≠ 0 then
+              «Authoring.noNode»
             else
-              let x6 : T := «Authoring.placesOf» x2 x3;
-              «Base.mapT»
-                («Authoring.transportItem»
-                  («Authoring.placeOf»
-                    («Authoring/LD.length» «Translation.lib»)
-                    x6
-                    («Prelude.length» x3)))
-                x5);
-    x5
+              «Authoring.unchangedDefs» x7 x8 x0);
+            let x10 : T := «Prelude.and»
+              (Const.equal (Const.child x8 (leaf 0)) (Const.child x0 (leaf 0)))
+              (Const.equal (Const.child x8 (leaf 2)) (Const.child x0 (leaf 2)));
+            «Base.mapT»
+              (fun (x11 : T) =>
+                let x12 : T := (if (x5).label ≠ 0 then
+                  x11
+                else
+                  «Authoring.transportItem» x7 x11);
+                Const.node
+                  (leaf 0)
+                  («Prelude.append»
+                    («Base.take» (leaf 10) (Const.children x12))
+                    («Prelude.single»
+                      («Prelude.and»
+                        x10
+                        («Prelude.or»
+                          («Prelude.and» x5 (Const.equal x8 x0))
+                          («Authoring.sameDependencies» x9 x11))))))
+              x6);
+    x6
 
 def «Authoring.begin» :=
   fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) =>
@@ -12980,6 +13219,8 @@ def «Authoring.accompany» :=
                         («Authoring.withItem»
                           x14
                           («Authoring.cacheItem»
+                            x0
+                            x18
                             x4
                             (leaf 0)
                             x19
@@ -13044,6 +13285,8 @@ def «Authoring.accompany» :=
                             («Authoring.withItem»
                               x14
                               («Authoring.cacheItem»
+                                x0
+                                x18
                                 x4
                                 x24
                                 x19
@@ -13090,7 +13333,9 @@ def «Authoring.taken» :=
                        («Derivation.entries» x10)
                        x5
                        (leaf 1)
-                       («Authoring.withItem» x7 x6)
+                       («Authoring.withItem»
+                         x7
+                         (Const.node (leaf 0) («Base.take» (leaf 10) (Const.children x6))))
                        («Authoring.withItem» x8 (leaf 2))
                    else
                      let x11 : T := «Authoring.withSides»
@@ -13114,7 +13359,9 @@ def «Authoring.taken» :=
                          («Derivation.push» x10 («Derivation.entLang» x11)))
                        x5
                        (leaf 1)
-                       («Authoring.withItem» x7 x6)
+                       («Authoring.withItem»
+                         x7
+                         (Const.node (leaf 0) («Base.take» (leaf 10) (Const.children x6))))
                        («Authoring.withItem» x8 (leaf 2)));
     x9
 
@@ -13433,8 +13680,10 @@ def «Authoring.advance» :=
                      if («Prelude.and»
                        x17
                        («Prelude.and»
-                         («Authoring.sameRequest» x32 x7)
-                         («Authoring.itemProved» x32))).label ≠ 0 then
+                         (Const.eq (Const.child x32 (leaf 10)) (leaf 1))
+                         («Prelude.and»
+                           («Authoring.sameRequest» x32 x7)
+                           («Authoring.itemProved» x32)))).label ≠ 0 then
                        «Authoring.taken» x5 x7 x25 x27 x30 x15 x32 x19 x21
                      else
                        let x33 : T := «Authoring.findItem» x6 x7;
@@ -13598,7 +13847,7 @@ def «Authoring.resumeWith» :=
                        («Authoring/LD.length» «Translation.lib»)
                        («Authoring/LD.length» x2);
                      let x20 : List T := «Authoring.rulesOf» x13 x19;
-                     let x21 : List T := «Authoring.itemsFor» x13 x4 x5 x1 x6;
+                     let x21 : List T := «Authoring.itemsFor» x18 x13 x4 x5 x1 x6;
                      let x22 : List T := «Authoring.declaredNames» x15;
                      let x23 : T := Const.foldr
                        (α := T)
@@ -13607,11 +13856,7 @@ def «Authoring.resumeWith» :=
                          x24 («Authoring.advance» x18 x20 x0 x1 x22 x13 x21 x23 x25))
                        (fun (x23 : T) => x23)
                        x17
-                       («Authoring.begin»
-                         x18
-                         x13
-                         x19
-                         («Prelude.and» x6 («Authoring.sameDeclared» x4 x15)));
+                       («Authoring.begin» x18 x13 x19 (leaf 1));
                      if (Const.eq (Const.label x23) (leaf 1)).label ≠ 0 then
                        let x24 : List T := Const.children x23;
                        let x25 : T := Const.lcase
@@ -13687,7 +13932,7 @@ def «Authoring.resumeWith» :=
                              («Prelude.append»
                                (Const.children x29)
                                («Prelude.single» («Authoring.failed» x25 x27 ([] : List T)))))
-                           (Const.node (leaf 0) («Theory.l3» x13 x31 x15))
+                           (Const.node (leaf 0) («Theory.l3» x13 x31 x18))
                            x33)
                      else
                        let x24 : List T := Const.children x23;
@@ -13776,7 +14021,7 @@ def «Authoring.resumeWith» :=
                              «Prelude.some» («Authoring.certified» x13 x15 x25)
                            else
                              Const.node (leaf 2) (Const.children x29))
-                           (Const.node (leaf 0) («Theory.l3» x13 x33 x15))
+                           (Const.node (leaf 0) («Theory.l3» x13 x33 x18))
                            x35));
     x7
 
