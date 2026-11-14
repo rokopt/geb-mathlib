@@ -4370,8 +4370,10 @@ import-direction rules above are enforced by
   into the subobject classifier to its truth
   (`Geb.FreeTopos.represents_truth`), which is the proposition any
   representation of the arrow gives
-  (`Geb.FreeTopos.truth_iff_of_represents`); `ArrowValue.lean` gives a term with
-  a domain and a codomain a functional relation as its value
+  (`Geb.FreeTopos.truth_iff_of_represents`); `RepresentNat.lean` represents
+  the natural numbers by themselves, with zero, the successor and
+  recursion (`Geb.FreeTopos.represents_natRec`); `ArrowValue.lean` gives
+  a term with a domain and a codomain a functional relation as its value
   (`Geb.FreeTopos.exists_arrVal_of_dom_cod`).
   `Elementary.lean` constructs a topos with
   chosen structure from an elementary topos with chosen data objects
@@ -4477,12 +4479,17 @@ import-direction rules above are enforced by
   functions by the language's terms in the topos of functional
   relations, `RepresentEq.lean` the equality of two functions by an
   equation (`Geb.FreeTopos.Internal.repC_eq`), and `RepresentLogic.lean`
-  Lean's truth, conjunction, implication and universal quantification
-  by the connectives defined from equations, so that a formula without
+  Lean's truth, falsity, conjunction, implication and universal and
+  existential quantification by the connectives defined from equations
+  (`Geb.FreeTopos.Internal.Connectives`), so that a formula without
   variables true there represents a true proposition
-  (`Geb.FreeTopos.Internal.holds_of_represents`); `RepresentLift.lean`
-  carries a representation over constants to constants that extend them
-  (`Geb.FreeTopos.Internal.repC_le`). `Prove.lean` is the
+  (`Geb.FreeTopos.Internal.holds_of_represents`); `RepresentNat.lean`
+  represents the natural numbers' terms, zero, a successor and a fold
+  (`Geb.FreeTopos.Internal.repC_natRec`); `RepresentLift.lean`
+  carries a representation over constants, in a sorted environment, to
+  constants that extend them (`Geb.FreeTopos.Internal.repC_lift`), and a
+  definition's arrow to what its body represents over all the constants
+  (`Geb.FreeTopos.Internal.rep_def_full`). `Prove.lean` is the
   language's prover prototyped in Lean:
   normalization innermost first or to weak normal forms, earlier theorems
   as rewriting rules found by matching, induction and case analysis;
@@ -4641,7 +4648,11 @@ import-direction rules above are enforced by
   kernel tree's label is not zero
   (`Geb.FreeTopos.Translation.repC_test`), and an equation at a type of
   first order as an equality of kernel values
-  (`Geb.FreeTopos.Translation.repC_eqK`). Tested in `GebTests/Prototypes/FreeTopos/`:
+  (`Geb.FreeTopos.Translation.repC_eqK`); a represented context carries
+  its value, its environment's representation and its sortedness under
+  binders (`Geb.FreeTopos.Translation.RepCtx`), in which the
+  translation's constants, the library's conditional and its test of
+  equality of labels are read. Tested in `GebTests/Prototypes/FreeTopos/`:
   `Translation.lean` computes with the library, `TranslationProofs.lean`
   proves theorems of Gödel's T about the translated
   programs, `Agreement/Translation.lean` proves the translation written
@@ -4729,7 +4740,21 @@ import-direction rules above are enforced by
   (`Certified/DatatypePasses.lean`), and the soundness
   holds where the loaded compilers' passes succeed on a kernel list of
   forms and the remaining hypotheses hold of the list that represents it
-  (`Certified/DatatypeProgramPasses.lean`). The
+  (`Certified/DatatypeProgramPasses.lean`). The definitions the
+  conclusion is stated by, which the evaluator finds at their indices
+  (`Certified/DatatypeAccepted.lean`), represent functions and
+  predicates of Lean built from the loaded globals' values: addition,
+  convergence of a function of the fuel, the quantification over a list
+  and the evaluator's functions at a level
+  (`Certified/DatatypeStatements.lean`), the relation at a type of the
+  datatype language, a fold of the type's tree
+  (`Certified/DatatypeRelation.lean`), and the conclusion's formulas,
+  that each definition the typing gives a type evaluates to a value
+  related at the type and that each datatype's recognizer decides
+  membership (`Certified/DatatypeConclusion.lean`); the soundness
+  concludes that statement of Lean where the loaded compilers' passes
+  succeed and the remaining hypotheses hold
+  (`Certified/DatatypeProgramConclusion.lean`). The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   metalogic, the choices that fixed its form, and the proofs about the
   compiler's components made in it. Depends on the modules of

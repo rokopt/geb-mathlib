@@ -26,6 +26,7 @@ public import Geb.Prototypes.FreeTopos.RoseRecursion
 public import Geb.Prototypes.FreeTopos.Relations
 public import Geb.Prototypes.FreeTopos.Represent
 public import Geb.Prototypes.FreeTopos.RepresentEq
+public import Geb.Prototypes.FreeTopos.RepresentNat
 public import Geb.Prototypes.FreeTopos.Tactics
 public import Geb.Prototypes.FreeTopos.Theory
 public import Geb.Prototypes.FreeTopos.Topos
