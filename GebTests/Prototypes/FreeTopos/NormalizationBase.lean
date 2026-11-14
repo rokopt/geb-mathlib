@@ -313,16 +313,16 @@ def fuel (k : Term) : Term := call (S.q + 1) [] [k]
 def conv (F Pr : Term) : Term := call (S.q + 2) [] [F, Pr]
 
 /-- The relation at a type, a predicate on values, with the program's definitions. -/
-def rel (D A : Term) : Term := call (S.q + 3) [] [D, A]
+def rel (D A : Term) : Term := call (S.q + 5) [] [D, A]
 
 /-- The relation of an environment to a context. -/
-def envR (D c env : Term) : Term := call (S.q + 4) [] [D, c, env]
+def envR (D c env : Term) : Term := call (S.q + 6) [] [D, c, env]
 
 /-- Every element of a list satisfies a predicate. -/
-def allL (Pr xs : Term) : Term := call (S.q + 5) [] [Pr, xs]
+def allL (Pr xs : Term) : Term := call (S.q + 3) [] [Pr, xs]
 
 /-- The evaluator's functions at a level of fuel, a natural number. -/
-def levelN (D k : Term) : Term := call (S.q + 6) [] [D, k]
+def levelN (D k : Term) : Term := call (S.q + 4) [] [D, k]
 
 /-- The relation of the program's definitions to the types of the globals. -/
 def globR (D GT : Term) : Term := call (S.q + 7) [] [D, GT]
@@ -411,6 +411,15 @@ def extend (P : Prog) : Option (Prog × Defs) := do
         (conj (all nat (Term.lam nat
             (Term.eq (Term.app (v 4) (S.add (v 2) (v 0))) (someT (v 1)))))
           (Term.app (v 2) (v 0))))))⟩,
+    -- every element of a list satisfies a predicate
+    ⟨0, [list treeTy, exp treeTy omega], omega,
+      Term.app (Term.listRec (Term.lam (exp treeTy omega) tt)
+        (Term.lam (exp treeTy omega) (conj (Term.app (v 0) (v 2)) (Term.app (v 1) (v 0))))
+        (v 0)) (v 1)⟩,
+    -- the evaluator's functions at a level, by the fold of the level from the level zero
+    ⟨0, [nat, list treeTy], fnsTy,
+      Term.app (Term.natRec (Term.lam (list treeTy) (pc "Eval.level" [v 0, leafT bnilT]))
+        (Term.lam (list treeTy) (pc "Eval.next" [v 0, Term.app (v 1) (v 0)])) (v 0)) (v 1)⟩,
     -- the relation at a type, by the fold of the type
     ⟨0, [treeTy, list treeTy], exp treeTy omega,
       Term.app (Term.roseRec relC relStep (v 0)) (v 1)⟩,
@@ -421,15 +430,6 @@ def extend (P : Prog) : Option (Prog × Defs) := do
         (ex treeTy (Term.lam treeTy
           (conj (Term.eq (pc "Prelude.nth" [v 2, v 1]) (someT (v 0)))
             (Term.app (S.rel (v 4) (pc "Prelude.get" [pc "Prelude.nth" [v 3, v 1]])) (v 0)))))))⟩,
-    -- every element of a list satisfies a predicate
-    ⟨0, [list treeTy, exp treeTy omega], omega,
-      Term.app (Term.listRec (Term.lam (exp treeTy omega) tt)
-        (Term.lam (exp treeTy omega) (conj (Term.app (v 0) (v 2)) (Term.app (v 1) (v 0))))
-        (v 0)) (v 1)⟩,
-    -- the evaluator's functions at a level, by the fold of the level from the level zero
-    ⟨0, [nat, list treeTy], fnsTy,
-      Term.app (Term.natRec (Term.lam (list treeTy) (pc "Eval.level" [v 0, leafT bnilT]))
-        (Term.lam (list treeTy) (pc "Eval.next" [v 0, Term.app (v 1) (v 0)])) (v 0)) (v 1)⟩,
     -- the relation of the definitions to the types of the globals: at each index where a
     -- global's type is some type, a definition is some term, whose evaluation in the empty
     -- environment converges to a value related at the type
@@ -988,7 +988,7 @@ def envConsLemma (P : Prog) (S : Defs) : Step :=
       dRwHyp (evalRw G E (rules (Φ.take (Φ.length - 2))) .full) (Φ.length - 2)
         (dExI L G E (v 0) (dConjI L byNorm (byHyp r))) Γ Φ ψ
     let succ : Deducer :=
-      exE (unfold (S.q + 4) 0 (allE (leafT (v 0)) (impE (byHyp 3) (exE (conjE witness)))))
+      exE (unfold (S.q + 6) 0 (allE (leafT (v 0)) (impE (byHyp 3) (exE (conjE witness)))))
     let body : Deducer := dAllI L (dImpI L fun Γ Φ ψ ↦ do
       -- context: the index; hypotheses: the relations, truth and the lookup's truth
       let X ← nfE G E (vRules P ix) Γ (call D.lab [] [v 0])
@@ -997,7 +997,7 @@ def envConsLemma (P : Prog) (S : Defs) : Step :=
         -- the empty label: the value itself; a successor's: the environment's relation at its
         -- predecessor
         (dDisjE L (last Φ + 1) (dExI L G E (v 1) (dConjI L byNorm (byHyp 1))) succ) Γ Φ ψ)
-    let some d := dRwBy (evalRw G E [.delta (S.q + 4)] .head) body a.ctx a.hyps a.concl
+    let some d := dRwBy (evalRw G E [.delta (S.q + 6)] .head) body a.ctx a.hyps a.concl
       | dbgTrace "envCons: not proved" fun _ ↦ none
     pure (a, d))
 
@@ -1014,22 +1014,22 @@ def relLemmas (P : Prog) (S : Defs) : List Step :=
   let relAt (D A x : Term) : Term := Term.app (S.rel D A) x
   [genEq2 P "rel0" [list treeTy] (S.rel (v 0) (node (numeral 0) (ls [])))
       (Term.lam treeTy (ex treeTy (Term.lam treeTy
-        (Term.eq (v 1) (pc P "Eval.valQuote" [v 0]))))) [S.q + 3],
+        (Term.eq (v 1) (pc P "Eval.valQuote" [v 0]))))) [S.q + 5],
     genEq2 P "rel1" [list treeTy] (S.rel (v 0) (node (numeral 1) (ls [])))
-      (Term.lam treeTy (Term.eq (v 0) (pc P "Eval.valUnit" []))) [S.q + 3],
+      (Term.lam treeTy (Term.eq (v 0) (pc P "Eval.valUnit" []))) [S.q + 5],
     -- context: the second type, the first, the definitions
     genEq2 P "rel2" [treeTy, treeTy, list treeTy] (S.rel (v 2) (node (numeral 2) (ls [v 1, v 0])))
       (Term.lam treeTy (ex treeTy (Term.lam treeTy (ex treeTy (Term.lam treeTy
         (conj (Term.eq (v 2) (pc P "Eval.valPair" [v 1, v 0]))
-          (conj (relAt (v 5) (v 4) (v 1)) (relAt (v 5) (v 3) (v 0))))))))) [S.q + 3],
+          (conj (relAt (v 5) (v 4) (v 1)) (relAt (v 5) (v 3) (v 0))))))))) [S.q + 5],
     genEq2 P "rel3" [treeTy, treeTy, list treeTy] (S.rel (v 2) (node (numeral 3) (ls [v 1, v 0])))
       (Term.lam treeTy (all treeTy (Term.lam treeTy (imp (relAt (v 4) (v 3) (v 0))
         (S.conv (Term.lam nat (apps (Term.snd (S.levelN (v 5) (v 0))) [v 2, v 1]))
-          (Term.lam treeTy (relAt (v 5) (v 3) (v 0)))))))) [S.q + 3],
+          (Term.lam treeTy (relAt (v 5) (v 3) (v 0)))))))) [S.q + 5],
     genEq2 P "rel4" [treeTy, list treeTy] (S.rel (v 1) (node (numeral 4) (ls [v 0])))
       (Term.lam treeTy (conj (truth o (pc P "Prelude.isSome" [pc P "Eval.listOf" [v 0]]))
         (S.allL (Term.lam treeTy (relAt (v 3) (v 2) (v 0)))
-          (call D.children [] [pc P "Prelude.get" [pc P "Eval.listOf" [v 0]]])))) [S.q + 3]]
+          (call D.children [] [pc P "Prelude.get" [pc P "Eval.listOf" [v 0]]])))) [S.q + 5]]
 
 /-- The vocabulary's equations: the checker as its fold's second component, the functions at a
 level as the evaluator's fold and its application, the level at a successor, the folds at a
@@ -1058,7 +1058,7 @@ def vLemmas (P : Prog) (S : Defs) : List Step :=
     genEq P "nextSnd" [treeTy, treeTy, fnsTy, list treeTy]
       (apps (Term.snd (fns [v 3, v 2])) [v 1, v 0]) [P.idx "Eval.next"],
     genEq2 P "levelSucc" [nat, list treeTy] (S.levelN (v 1) (succN (v 0)))
-      (fns [v 1, S.levelN (v 1) (v 0)]) [S.q + 6]] ++
+      (fns [v 1, S.levelN (v 1) (v 0)]) [S.q + 4]] ++
   (termLabels.map fun k ↦ genEq P s!"checkNode{k}"
     [list treeTy, list S.rr, list treeTy, list treeTy]
     (pc P "Check.checkNode" [v 3, node (numeral k) (v 2), v 1, v 0]) [P.idx "Check.checkNode"]) ++
@@ -1232,7 +1232,7 @@ def rules (Φ : List Term) : List NormRule :=
     (["walkHead", "walkTail"].filter fun nm ↦ 0 < K.ix nm ∧ K.ix nm < K.E.size).map
       (fun nm ↦ .thm (K.ix nm) []) ++
     K.more.map (fun nm ↦ .thm (K.ix nm) []) ++ typing ++
-    [.delta (K.S.q + 5), .thm (K.ix "rebTail") [omega]]
+    [.delta (K.S.q + 3), .thm (K.ix "rebTail") [omega]]
 
 /-- The rules but the hypothesis of index i. -/
 def rulesEx (Φ : List Term) (i : ℕ) : List NormRule :=

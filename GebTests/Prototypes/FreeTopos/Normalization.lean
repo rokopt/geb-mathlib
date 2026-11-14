@@ -96,7 +96,7 @@ def fundamentalDeriv (P : Prog) (S : Defs) (base : List (String × Internal.Thm)
     (fun X ↦ dListCase L G E (ix "listCases") treeTy X valid refuteT)
     fun _ rec X ↦ dListCase L G E (ix "listCases") treeTy X refuteT (rec (v 0))
   let rules (Φ : List Internal.Term) : List NormRule :=
-    rsV Φ ++ [.delta (S.q + 5), .thm (ix "rebTail") [omega]]
+    rsV Φ ++ [.delta (S.q + 3), .thm (ix "rebTail") [omega]]
   -- the rules but the hypothesis of index i
   let rulesEx (Φ : List Internal.Term) (i : ℕ) : List NormRule :=
     (rules Φ).filter fun r ↦ match r with
@@ -468,7 +468,7 @@ def fundamentalDeriv (P : Prog) (S : Defs) (base : List (String × Internal.Thm)
             ((byHyp r)) Γ Φ ψ) Γ₁ Φ₁ ψ₁))) Γ₀ Φ₀ ψ₀) 24),
      -- a variable: the environment's relation at its index, a value and its relation
      (Kernel.Label.var, fun b ↦ split b 0 (norm <| fun Γ₀ Φ₀ ψ₀ ↦
-      dRwHyp (evalRw G E [.delta (S.q + 4)] .head) 6 (fun Γ Φ ψ ↦
+      dRwHyp (evalRw G E [.delta (S.q + 6)] .head) 6 (fun Γ Φ ψ ↦
         dAllE L G E (Φ.length - 1) (index b Γ) (impE (byHyp hT)
           (exE (conjE <| fun Γ Φ ψ ↦
         let w := v (Γ.length - Γ₀.length - 1)
