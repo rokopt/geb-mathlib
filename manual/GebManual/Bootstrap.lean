@@ -3033,7 +3033,11 @@ it continues from, so the modules of
 statements and compose them by validity
 ({name}`Geb.FreeTopos.Internal.valid_of_checkAfter`):
 `GebTests/Prototypes/FreeTopos/Certified/DatatypeClosed.lean` states that
-the soundness at every tree is valid in every model of the program.
+the soundness at every tree is valid in every model of the program, and
+`GebTests/Prototypes/FreeTopos/Certified/DatatypeProgramSound.lean` that
+the soundness of a whole program is, the certificates one search writes
+being checked one after another by one evaluation
+(`GebTests/Prototypes/FreeTopos/Certified/Chain.lean`).
 
 The rewriting of the definitions the elementary-affine search rejects in
 the compilers' sources waits on this completion, whose soundness of the

@@ -4608,7 +4608,9 @@ import-direction rules above are enforced by
   each development proves its theorem in the program it is about, a fact
   Lean's evaluator decides (`docs/rules/ci-and-workflow.md`
   § Certificates), a development that continues from others being checked
-  after their statements and composed by validity. The
+  after their statements and composed by validity, and the certificates
+  one search writes being checked one after another by one evaluation
+  (`Certified/Chain.lean`). The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   metalogic, the choices that fixed its form, and the proofs about the
   compiler's components made in it. Depends on the modules of

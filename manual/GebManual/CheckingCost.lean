@@ -671,7 +671,8 @@ Two measurements locate the next change: the division of the
 reduction's remainder among the matching of a rule's left side, the
 choice of the rules tried at a node and the traversal; and, in the
 check, how often the same formula's type is inferred at successive
-instances of theorems. The check as stored is the only check of the
-certificates that no module of `GebTests/Prototypes/FreeTopos/Certified/`
-reads (`docs/rules/ci-and-workflow.md` § Certificates),
-so it stays in the search until such modules check them.
+instances of theorems. Each certificate is read and checked by a module
+of `GebTests/Prototypes/FreeTopos/Certified/`
+(`docs/rules/ci-and-workflow.md` § Certificates), so the check as stored
+is no certificate's only check, and whether the search keeps it is open
+(`TODO.md` § The slow checks among the routine checks).

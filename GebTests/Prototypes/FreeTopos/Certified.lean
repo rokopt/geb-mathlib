@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import GebTests.Prototypes.FreeTopos.Certified.Basic
+public import GebTests.Prototypes.FreeTopos.Certified.Chain
 public import GebTests.Prototypes.FreeTopos.Certified.Datatype
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeCase
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeCata
@@ -14,6 +15,10 @@ public import GebTests.Prototypes.FreeTopos.Certified.DatatypeDatum
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeForms
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeGenerated
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeList
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgram
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramData
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramKinds
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramSound
 public import GebTests.Prototypes.FreeTopos.Certified.Expansion
 public import GebTests.Prototypes.FreeTopos.Certified.Normalization
 public import GebTests.Prototypes.FreeTopos.Certified.Substitution

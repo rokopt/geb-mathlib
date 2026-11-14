@@ -63,7 +63,8 @@ label read as its leaf and are fixed by the expansion of numeral abbreviations.
   aliases, and the aliases' coherence is kept where a type abbreviation is declared.
 * {lit}`formKind` — a form at which the expansion's step does not fail is of a kind.
 * {lit}`passesForms` — the soundness at all states, by induction on the forms.
-* {lit}`programForms` — the soundness of a program.
+* {lit}`programFormsThm`, {lit}`programForms` — the soundness of a program, its statement
+  and its proof.
 
 ## References
 
@@ -2225,23 +2226,30 @@ def programTop (P : Prog) (S : Defs) (T : Defs3) : Step :=
       | dbgTrace "programTop: not proved" fun _ ↦ none
     pure (a, d))
 
-/-- The soundness of a program ({name}`programParts`) whose definitions' bodies are source forms
-({name}`plainTop`), whose markers and numerals are as the soundness assumes ({name}`markerPred`,
-{name}`staticT`), and of whose forms the soundness's assumptions hold ({name}`formsOk`): the
-soundness at all states ({name}`passesForms`) at the states the passes begin in, of which the
-program's soundness follows ({name}`programTop`). In the context of the forms. -/
+/-- The statement of the soundness of a program: the soundness's parts ({name}`programParts`)
+under the hypotheses that the program's definitions' bodies are source forms ({name}`plainTop`),
+that its markers and numerals are as the soundness assumes ({name}`markerPred`,
+{name}`staticT`), and that the soundness's assumptions hold of its forms ({name}`formsOk`). In
+the context of the forms. -/
+def programFormsThm (P : Prog) (S : Defs) (T : Defs3) : Option Internal.Thm := do
+  let (hs, concl) ← programParts P T (v 0)
+  let fs := pc P "Datatype.kernelForms" [typedForms P (v 0) (nilT treeTy)]
+  let ms := pc P "Recognize.markers" [fs]
+  pure ⟨0, [list treeTy], hs ++ [plainTop P (v 0), S.allL (markerPred P ms) fs, staticT P ms] ++
+    formsOk P S (v 0), concl⟩
+
+/-- The soundness of a program ({name}`programFormsThm`): the soundness at all states
+({name}`passesForms`) at the states the passes begin in, of which the program's soundness
+follows ({name}`programTop`). -/
 def programForms (P : Prog) (S : Defs) (T : Defs3) : Step :=
   ("programForms", fun ix E ↦ do
     let K : Kit := ⟨passProg P, S, E, ix, ["eraseDefForm", "recAtThree"]⟩
     let L := K.L
     let Ls := list treeTy
     let some X₀ := partitionT K [Ls] | dbgTrace "programForms: no partition" fun _ ↦ none
-    let (hs, concl) ← programParts P T (v 0)
+    let (hs, _) ← programParts P T (v 0)
     let s := initialPasses P X₀ (v 0)
-    let assumed := [S.allL (markerPred P s.ms) (pc P "Datatype.kernelForms" [s.typed P]),
-      staticT P s.ms]
-    let a : Internal.Thm := ⟨0, [Ls], hs ++ [plainTop P (v 0)] ++ assumed ++ formsOk P S (v 0),
-      concl⟩
+    let a ← programFormsThm P S T
     let n := (s.hyps P S T X₀).length
     let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
     -- the soundness at the first states, from that at all states and the forms' kinds
