@@ -643,11 +643,17 @@ The following are fixed; the plan builds on them.
   over the context they form; declarations keep parameters of their own,
   supplied where they are used. A parameter may take a named telescope,
   an abbreviation of its entries, declared as `(interface I entries…)` and
-  taken as `(parameter (m I))`, its entries then named `m.x`. The rest of
-  an enclosing body refers to the exports of a nested module without
-  parameters of its own by qualified name, and uses a nested module with
-  parameters through an import in a later module's header
-  ({ref "modules"}[Modules]).
+  taken as `(parameter (m I))`, its entries then named `m.x`. A
+  certificate of a proposition is taken as `(parameter (h P))`, `P` a
+  statement that the elaboration of modules keeps as a datum, and is
+  supplied by an import as the name of a theorem or of a hypothesis;
+  theorems about a module with parameters are kept in the `proofs`
+  document, and the step is merged after the datatype language's
+  completion ({ref "proposition-parameters"}[Propositions as module
+  parameters]). The rest of an enclosing body refers to the exports of a
+  nested module without parameters of its own by qualified name, and
+  uses a nested module with parameters through an import in a later
+  module's header ({ref "modules"}[Modules]).
 * Documentation. The markup of comments and documentation is Verso's,
   with the role `{name}` for Lean constants and a role `{geb}` for Geb
   definitions, and documentation renders as literate pages generated from
@@ -4350,6 +4356,8 @@ argument. A parameter is a sort, an operation, a certificate of a
 proposition, or a named telescope, which abbreviates its entries:
 declared as `(interface I entries…)`, parameter and import entries under
 a name, and taken as `(parameter (m I))`, its entries then named `m.x`.
+A certificate is taken as `(parameter (h P))`, `P` a statement
+({ref "proposition-parameters"}[Propositions as module parameters]).
 An import names a module and supplies every one of its parameters; a
 module leaving one of them open declares a parameter of its own and
 passes it through. `(import M)` brings `M`'s exports into scope
@@ -4517,26 +4525,82 @@ which are already instances, so the step requires three things:
   parameter a variable of the context, where the elaboration checks the
   generic form and keeps the instances alone;
 * an obligation recorded by the elaboration at each import supplying
-  such a parameter, the proposition at the import's arguments, in a form
-  the authoring runner reads, which changes `bootstrap/modules.geb` and
-  `Geb/Prototypes/Kernel/Modules.lean` together and so regenerates the
-  committed images;
+  such a parameter, the proposition with the instance and the import's
+  arguments, in a form the authoring runner reads, which changes
+  `bootstrap/modules.geb` and `Geb/Prototypes/Kernel/Modules.lean`
+  together and so regenerates the committed images;
 * the instantiation of a theorem about a module at each import, by the
   rule of application at the import's arguments, its hypotheses
-  discharged by the theorems the import supplies.
+  discharged by the theorems the import names.
 
-Three decisions precede it:
+The parameter is written `(parameter (h P))`: `h` names the hypothesis,
+and `P` is a statement of the `proofs` document over the entries of the
+header before it. The kinds of parameter are told apart by their form: a
+sort is an atom; an operation a list of its name, its argument types and
+its result type; a certificate a list of its name and a statement, which
+is a list; and a named telescope a list of its name and an interface's
+name, an atom. An import writes a name at the position of a certificate:
+that of a theorem of the development, or that of a hypothesis among the
+importer's own parameters, which passes it through.
 
-* the syntax of the parameter: whether it is `(parameter (h P))`, `P` a
-  statement of the `proofs` document over the module's parameters,
-  distinguished from a named telescope `(parameter (m I))` by `P` being a
-  list where `I` is an atom;
-* where theorems about a module with parameters are kept: in the `proofs`
-  document under the module's name, or in the module's source;
-* whether the step is merged before or after the datatype language's
-  completion, the regeneration of the images making it, before the
-  completion, one of the steps merged one at a time
-  ({ref "authoring-sequence"}[The sequence and its acceptance]).
+```
+(module Monoid
+  (parameter A)
+  (parameter (e () A))
+  (parameter (op (A A) A))
+  (parameter (left-unit (forall ((x A)) (equal (op e x) x))))
+  (export concat)
+  (defn concat ((xs (List A))) A …))
+
+(import (Monoid (List T) empty append append-empty-left) as Appending)
+```
+
+The arguments of an import are then the whole of the substitution
+`σ : Δ → Γ` along which it reindexes: a certificate cuts a subobject out
+of the context, a morphism into a subobject is a morphism into the
+context that factors through it, and the name is the proof that it does.
+
+The elaboration of modules reads no statement. It keeps `P` as a datum,
+as it keeps a quotation, and records it with the instance and the
+import's arguments; the authoring runner reads it at the version of the
+`proofs` document it is run on, in the scope of the header's entries
+before it. A version of the `proofs` document that adds a form therefore
+changes no compiler and regenerates no image.
+
+Theorems about a module with parameters are kept in the `proofs`
+document, in a block `(module M THEOREM…)` named by the module's path,
+in which the module's parameters are in scope, a hypothesis under its
+name. A source holds no theorem and no script, so the compilers read
+neither. A script is a program for one version of the prover and is
+versioned by its document, where a source is versioned by its program's
+edition. And keeping theorems in a module's source would widen the
+grammar of sources, a change that is an embedding and so is available
+later, where narrowing the grammar is not
+({ref "compatibility-contract"}[The compatibility contract]). A module's
+text is then not the whole of its theory, and an export list names no
+theorem.
+
+The step is merged after the datatype language's completion. A
+template's generic form, `(%generic …)` over the declarations
+`(%sort S)` and `(%postulate P A)`, is read by
+`bootstrap/stage1/typing.geb` and `bootstrap/stage1/datatype.geb`,
+sources of the program whose typing's soundness is proved, which a
+declaration added to that form for a certificate would change; and the
+change of `bootstrap/modules.geb` regenerates the committed images in
+either case, which before the completion makes the step one of those
+merged one at a time ({ref "authoring-sequence"}[The sequence and its
+acceptance]).
+
+The first version covers operation parameters and certificates. A
+theorem about a module is instantiated at an import with each sort
+argument read as its erasure, a type of the kernel in which a datatype
+is the trees, as the soundness of the typing relates an opaque sort
+({ref "datatype-completion"}[The datatype language's completion]). A
+certificate supplied at a datatype is therefore a statement about every
+tree. An instance whose certificate holds of the datatype's members
+alone requires the sort's instantiation at the datatype itself, which
+follows the bootstrap, where type parameters become parameters over
+internal universes.
 
 ### Documentation
 %%%
