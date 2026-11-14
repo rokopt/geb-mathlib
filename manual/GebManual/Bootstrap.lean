@@ -3522,10 +3522,13 @@ tag := "authoring-compatibility"
   * Complete: `prove` and `check` resume a development from the cache of
     an earlier run, a theorem whose statement and script the cache has,
     proved, being taken as it stands after unchanged statements in an
-    unchanged program, and checked, the entries it cites renumbered,
-    elsewhere; a certificate replays before it is written, with a cache as
-    without one. A derivation's independence of the positions of the
-    definitions it names remains ({ref "improvements"}[Improvements])
+    unchanged program, and checked elsewhere, the entries it cites
+    renumbered and, under a changed program, the definitions it names at
+    their places in that program; a certificate replays before it is
+    written, with a cache as without one, and `transport` carries a
+    certificate to a changed program in which it replays. The taking of
+    an item under a changed program that does not reach the definitions
+    its derivations unfold remains ({ref "improvements"}[Improvements])
 *
   * Documentation as literate pages
   * A first inclusion is complete: source comments rendered by Verso,
@@ -5516,9 +5519,11 @@ it: an item for each theorem, keyed by the theorem's statement and
 script, whose derivation is taken as it stands where the compiled
 program and the statements before the theorem are the cache's, and is
 otherwise checked with the present entries, those it cites renumbered by
-the theorems' names; a script that does not change is not run after a
+the theorems' names and the definitions it names placed in the present
+program by theirs; a script that does not change is not run after a
 change of the prover. Its items are unshared derivations, and a key by
-the definitions a derivation cites remains
+the definitions a derivation unfolds, by which an item is taken under a
+changed program, remains
 ({ref "improvements"}[Improvements]). The surface syntax is the
 versioned `proofs` document of `bootstrap/authoring.geb`: statements over
 the kernel's types, with a context of named variables and named
@@ -5762,9 +5767,10 @@ declares its datatypes by `data`, `tree-data` being removed.
   * The cache of a development
   * A development proved with a cache and proved again is searched for no
     theorem; after a change of one script, for that theorem alone; after
-    a theorem stated before the others, for none of them, their
-    derivations checked; and its certificate is that of a development
-    proved without a cache
+    a theorem stated before the others, or a definition of the program
+    stated before the others, for none of them, their derivations
+    checked; and its certificate is that of a development proved without
+    a cache
 *
   * Documentation as literate pages
   * One Geb module renders prose, a checked example and a link through
@@ -7825,19 +7831,26 @@ the change that removes it.
   of weakening and substitution and 28 for that of the expansion's
   identity, and `prove`, which replays the certificate, about two minutes
   for each.
-* Definitions named by position in derivations. A term names a definition
-  of the program by its position among the program's, and the connectives
-  of a development of version 3 stand after them, so a definition stated
-  before another, or, for a theorem that names a connective, anywhere,
-  leaves a certificate that no longer replays and a cached derivation that
-  no longer checks, whether or not the theorem cites the definition. A
-  certificate is therefore bound to its exact compiled program, and a
-  development resumed from a cache of another program is checked or
-  proved again, no theorem taken. A translation of a declaration along a
-  renaming of the definitions, as the cache renumbers the entries a
-  derivation cites, checked as any derivation is, removes both; it reads
-  each rule's data as terms, types or indices, which the renumbering of
-  entries does not.
+* Derivations checked again under a changed program. A term names a
+  definition of the program by its position, and the connectives of a
+  development of version 3 stand after the program's definitions, so a
+  certificate and a cache are each of one compiled program. Either is
+  read in another program with the definitions it names at their places
+  there, by the definitions' names, and is then checked
+  ({ref "proof-cache"}[The cache of a development]): a development
+  resumed from a cache of another program is searched for no theorem
+  whose derivation still checks, and no theorem of it is taken. In one
+  run on one machine, the development of the expansion's identity is
+  found in 664 seconds and taken from its cache in 25; with a definition
+  stated before the others of its program, it is checked from that cache
+  in 104 seconds, no theorem searched for, and its certificate is
+  transported in 114. An item
+  could be taken where the definitions its derivations unfold are those
+  of the cache's program at their places. A rule that unfolds a
+  definition holds no datum, so these are the definitions reached from
+  the ones the item's terms name through the bodies of definitions; a
+  record of them beside each item, compared with the present program,
+  takes the items that a change of the program does not reach.
 
 ## The next phase
 %%%

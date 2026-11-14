@@ -11,4 +11,4 @@
     free-topos/tactics.geb
     free-topos/logic.geb
     authoring.geb)
-  (entries Authoring.prove Authoring.resume Authoring.replay Authoring.version))
+  (entries Authoring.prove Authoring.resume Authoring.replay Authoring.version Authoring.transport))

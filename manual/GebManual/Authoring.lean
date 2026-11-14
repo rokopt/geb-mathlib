@@ -78,6 +78,9 @@ to zero can make `prove` fail while `replay` continues to accept the saved
 certificate. Changing the statement, its name, the program, or its
 profile prevents that reuse. Comments and notes may change while the
 compiled program stays the same; examples are checked again on replay.
+A certificate of the program as it was before a change is carried to the
+program after it by `transport`
+({ref "proof-cache"}[The cache of a development]).
 
 # The proof-source profile
 
@@ -760,12 +763,23 @@ no longer stated; and a statement that changes is proved again, as is a
 theorem after it whose derivation no longer checks. A script that does not
 change is not run again when the prover changes, its derivation standing.
 
-Under a changed program every theorem is checked or proved, none taken. A
-derivation names the definitions of the program by their positions, and
-the connectives of version `3` stand after the program's definitions, so a
-definition stated after the others leaves the derivations that name no
-connective as they were, which are checked, and moves the connectives,
-whose theorems are proved again.
+A term names a definition by its position among the constants: the
+library's definitions, then the program's in the program's order, then,
+in version `3`, the connectives. A statement and a derivation are
+therefore of one compiled program, and a cache is kept beside the program
+it is of. The items of a cache of another program are read with the
+definitions they name at their places in the present program, by the
+names the two programs give their definitions: a definition of the
+program at the position of the present definition of its name, a
+connective at its position after the present definitions, and a
+definition that the present program does not declare at a position that
+names none. Under a changed program every theorem is thus checked or
+proved, none taken. A definition stated before or after the others, or
+the definitions stated in another order, leaves every theorem checked and
+none searched for. A theorem is proved again where its statement names a
+definition that is no longer declared, and where its derivation unfolds a
+definition that is defined otherwise, which the check rejects. The run
+leaves a cache of the present program, from which the next run takes.
 
 `check` with a cache replays nothing: a theorem taken was checked by the
 run that left the cache, with the same constants and entries, and the
@@ -778,15 +792,31 @@ read, or that is of another format, theory or profile, is no cache, a
 cache left by a development of another version holds no item for this
 one, and deleting a cache costs a search. A development that does not
 read leaves its cache as it is, and one the runner stops before its last
-theorem leaves a cache of the theorems before that. The certificate still
-requires the exact compiled program ({ref "improvements"}[Improvements]).
+theorem leaves a cache of the theorems before that.
+
+A certificate is of one compiled program as well, the program its
+envelope holds, and `replay` accepts it against that program alone.
+`transport` reads a certificate of another program as the items of a
+cache are read, its declarations with the definitions they name at their
+places in the present program, and writes the certificate of the present
+program where that replays against the development:
+
+```
+lake exe geb-author transport Draft.proofs.geb /tmp/earlier.cert /tmp/draft.cert
+```
+
+It runs no script and decides nothing. Where the present program declares
+no definition of a name the certificate's declarations cite, or defines
+one otherwise than a derivation unfolds it, the development does not
+replay, and nothing is written. The certificate read is left as it is.
 
 The task `Geb: check saved file` of `.vscode/tasks.json` and the command
 of `editors/efm-langserver/config.yaml` pass
 `--cache .lake/geb-proof-cache`, so that a document checked when it is
 saved is searched only where it changed. The cache's items, the three
-ways and the renumbering are in `bootstrap/authoring.geb`
-(`Authoring.resume`), the file and its envelope in
+ways, the renumbering of entries and the places of definitions are in
+`bootstrap/authoring.geb` (`Authoring.resume`, `Authoring.itemsFor`,
+`Authoring.transport`), the files and their envelopes in
 `GebHost/Authoring.lean`, and `scripts/tests/test-proof-cache.sh`
 exercises them.
 

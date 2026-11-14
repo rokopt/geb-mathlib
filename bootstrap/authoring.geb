@@ -26,9 +26,11 @@
 ; of its steps that fail, and the theorems after it are proved under it; such a development has
 ; no certificate. A development is resumed from the cache of an earlier run
 ; ({geb}`Authoring.resume`): a theorem whose statement and script the cache has, proved, is not
-; searched for again.
+; searched for again. A cache, and a saved development ({geb}`Authoring.transport`), of a
+; program in which the definitions stand at other positions is read with the definitions it
+; names at their places in the present program, and checked as any derivation is.
 
-(module Authoring (export prove resume replay version) (import Prelude) (import Base)
+(module Authoring (export prove resume replay version transport) (import Prelude) (import Base)
   (import Theory)
   (import Language)
   (import PartialHorn)
@@ -2139,6 +2141,90 @@
       (if (or (eq v 0) (lt j eb)) j
         (let i T (Source.indexOf (at oldNames (div (sub j eb) 2)) thms)
           (if (isSome i) (add eb (add (mul 2 (get i)) (mod (sub j eb) 2))) j)))))
+  ; Definitions at their places in another program. A term names a definition by its index among
+  ; the constants: the library's definitions, the program's after them in the program's order,
+  ; and in version 3 the connectives' after those. The places of a program's definitions in the
+  ; present program are the node of one index for each, in order: the position among the
+  ; present definitions of the definition of its name, and, where the present program declares
+  ; none of that name, a position past the present definitions and the connectives. The place
+  ; of a constant, given the number of the library's definitions and that of the present
+  ; program's, is then its own index for a definition of the library, the place of its
+  ; definition for one of the program, and for a connective the index of the same connective
+  ; after the present definitions. A definition the present program does not declare is thus
+  ; placed past every constant, where it names none: no check admits a derivation that names
+  ; it, and no statement read from a source is one that does. The places are computed once for a
+  ; cache or a saved development, the place of a constant at each definition a term names.
+  (defn placesOf ((oldNames Ts) (names Ts)) T
+    (let past T (add (length names) (LD.length (connectives 0)))
+      (node 0 (mapT (lam ((n T)) (getD (Source.indexOf n names) past)) oldNames))))
+  (defn placeOf ((n0 T) (places T) (count T) (j T)) T
+    (if (lt j n0) j
+      (let k T (sub j n0)
+        (if (lt k (arity places)) (add n0 (child places k))
+          (add (add n0 count) (sub k (arity places)))))))
+  ; A term with the definitions it names at the places a function gives: the application of a
+  ; definition, the label of position 11, names it by the first of its data. A node's subterms
+  ; are its children after the node of its label's data, which is otherwise kept as it is.
+  (defn transportTerm ((f (Arrow T T)) (t T)) T
+    (para T
+      (lam ((nd T) (rs Ts))
+        (let data T (child nd 0)
+          (node (label nd)
+            (cons
+              (if (eq (label nd) 11) (node 0 (cons (f (child data 0)) (tail (children data)))) data)
+              (tail rs)))))
+      t))
+  ; A rule's data with the definitions they name at the places a function gives. The data that
+  ; hold terms are the terms of a theorem's instance, the third datum of the rules of positions
+  ; 16 and 27; the step of an induction, the third datum of those of positions 19 and 20 and the
+  ; fourth of that of position 32; and the formula of a cut and of a conversion, the datum of
+  ; those of positions 22 and 24. The other data are types and the indices of primitives, of
+  ; entries, of hypotheses and of variables, which name no definition, and a certificate of the
+  ; combinators, which is kept as it is.
+  (defn datumAt ((g (Arrow T T)) (i T) (ds Ts)) Ts
+    (append (take i ds) (cons (g (at ds i)) (drop (add i 1) ds))))
+  (defn transportData ((f (Arrow T T)) (l T) (ds Ts)) Ts
+    (if (or (eq l 16) (eq l 27))
+      (datumAt (lam ((s T)) (node 0 (mapT (transportTerm f) (children s)))) 2 ds)
+      (if (or (eq l 19) (eq l 20)) (datumAt (transportTerm f) 2 ds)
+        (if (eq l 32) (datumAt (transportTerm f) 3 ds)
+          (if (or (eq l 22) (eq l 24)) (datumAt (transportTerm f) 0 ds) ds)))))
+  ; A derivation with the definitions its rules' data name at the places a function gives; the
+  ; leaf that stands for no derivation is kept.
+  (defn transportDeriv ((f (Arrow T T)) (d T)) T
+    (if (eq (arity d) 0) d
+      (para T
+        (lam ((nd T) (rs Ts))
+          (node (label nd)
+            (cons (node 0 (transportData f (label nd) (children (child nd 0)))) (tail rs))))
+        d)))
+  ; A theorem, the node of its arity, its context, its hypotheses and its conclusion, with the
+  ; definitions its hypotheses and its conclusion name at the places a function gives.
+  (defn transportThm ((f (Arrow T T)) (a T)) T
+    (node (label a)
+      (l4 (child a 0) (child a 1) (node 0 (mapT (transportTerm f) (children (child a 2))))
+        (transportTerm f (child a 3)))))
+  ; An item of a cache with the definitions that its statement, its companion's sides and its
+  ; derivations name at the places a function gives.
+  (defn transportItem ((f (Arrow T T)) (it T)) T
+    (let cs Ts (children it)
+      (node 0
+        (cons (at cs 0)
+          (cons (transportThm f (at cs 1))
+            (cons (at cs 2)
+              (cons (at cs 3)
+                (cons (at cs 4)
+                  (cons (node 0 (mapT (transportTerm f) (children (at cs 5))))
+                    (l3 (at cs 6) (transportDeriv f (at cs 7))
+                      (transportDeriv f (at cs 8))))))))))))
+  ; The items of a cache as a development of the present program reads them: those of a cache
+  ; of the present program as they stand, and those of a cache of another program with the
+  ; definitions they name at their places in the present one.
+  (defn itemsFor ((v T) (cache T) (oldNames Ts) (names Ts) (same T)) Ts
+    (let items Ts (cacheItems v cache)
+      (if same items
+        (let places T (placesOf oldNames names)
+          (mapT (transportItem (placeOf (LD.length lib) places (length names))) items)))))
 
   ; The development before its first theorem: in version 3 the connectives' rules, checked. It
   ; is aligned with a cache of its own program.
@@ -2298,7 +2384,9 @@
   ; A development that does not read leaves the cache as it is. The cache of a run has an item
   ; for each theorem the run reaches, in order, so that each item's derivations are those
   ; checked with the entries of the items before it.
-  (defn resumeWith ((gt Ts) (names Ts) (ds (List LDefn)) (sources Ts) (cache T) (same T)) T
+  (defn resumeWith
+    ((gt Ts) (names Ts) (ds (List LDefn)) (sources Ts) (cache T) (oldNames Ts) (same T))
+    T
     (case (readSources gt names ds sources)
       ((readBad why name) (node 0 (l3 (failure why name) cache noNode)))
       ((readOk qs)
@@ -2307,7 +2395,7 @@
           (let G Globals (globalsFor v ds)
             (let o T (add (LD.length lib) (LD.length ds))
               (let rs NRs (rulesOf v o)
-                (let old Ts (cacheItems v cache)
+                (let old Ts (itemsFor v cache oldNames names same)
                   (case
                     ((foldr Request (Arrow Progress Progress)
                        (lam ((q Request) (k (Arrow Progress Progress)) (st Progress))
@@ -2325,9 +2413,12 @@
                          (node 0 (l2 v items))
                          uses)))))))))))))
   ; The sources of a development are the children of a node, each the node of a document's
-  ; characters. A development is resumed from a cache and whether the cache is of its program;
-  ; one proved from no cache is its certificate or its failures alone.
-  (defn resume ((bundle T) (sources T) (cache T) (same T)) T
+  ; characters. A development is resumed from a cache and the compiled program the cache is of,
+  ; the bundle whose second child is the node of its definitions' names: a cache of the present
+  ; program is read as it stands, and one of another program with the definitions its items
+  ; name at their places in the present one ({geb}`Authoring.itemsFor`), by the definitions'
+  ; names. One proved from no cache is its certificate or its failures alone.
+  (defn resume ((bundle T) (sources T) (cache T) (old T)) T
     (case (program (children (child bundle 0))) ((OTrState.nothing) (node 0 (l3 none cache noNode)))
       ((OTrState.just st)
        (case st
@@ -2337,8 +2428,26 @@
              (case ds
                ((ldefns xs)
                 (resumeWith gs (children (child bundle 1)) xs (children sources) cache
-                  same))))))))))
-  (defn prove ((bundle T) (sources T)) T (child (resume bundle sources none 0) 0))
+                  (children (child old 1))
+                  (equal old bundle)))))))))))
+  (defn prove ((bundle T) (sources T)) T (child (resume bundle sources none none) 0))
+
+  ; A saved development of another compiled program as one of the present program: each
+  ; theorem's declaration with the definitions that its statement and its derivation name at
+  ; their places in the present program, by the definitions' names. Nothing of it is checked
+  ; here: the development it gives is replayed as any other is.
+  (defn transport ((bundle T) (old T) (saved T)) T
+    (let names Ts (children (child bundle 1))
+      (let places T (placesOf (children (child old 1)) names)
+        (let f (Arrow T T) (placeOf (LD.length lib) places (length names))
+          (node (label saved)
+            (cons (child saved 0)
+              (mapT
+                (lam ((d T))
+                  (if (and (eq (label d) 0) (eq (arity d) 2))
+                    (node 0 (l2 (transportThm f (child d 0)) (transportDeriv f (child d 1))))
+                    d))
+                (tail (children saved)))))))))
 
   ; Replay requires the statements and names of the sources and checks the saved derivations.
   ; It does not search, and it does not require the current prover to produce the same derivation.

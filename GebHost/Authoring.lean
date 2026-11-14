@@ -43,6 +43,13 @@ place by the positions of the script's children, after expanding the document's 
 the runner does. Nothing of this is checked: a development with an obligation has no
 certificate, and the place and the goal are for the author.
 
+A term names a definition of the program by its position, so a certificate and a cache are each
+of one compiled program. The runner reads either of another program with the definitions it
+names at their places in the present one, by the names the two programs give their definitions,
+and what it reads is checked as any derivation is: a cache's items when a development is resumed
+from it, and a certificate by {lit}`GebHost.Authoring.transport`, which writes the certificate of
+the present program where that one replays.
+
 ## Main definitions
 
 * {lit}`GebHost.Authoring.readDocument` reads authoring or strict durable documents.
@@ -52,6 +59,7 @@ certificate, and the place and the goal are for the author.
 * {lit}`GebHost.Authoring.failuresOf`, {lit}`GebHost.Authoring.diagnosticsOf` read the failures
   the runner reports and locate their obligations.
 * {lit}`GebHost.Authoring.execute` proves or replays a development.
+* {lit}`GebHost.Authoring.transport` transports a certificate to the present program.
 * {lit}`GebHost.Authoring.checkFile` checks a program's source or a proof document and writes
   nothing.
 
@@ -420,17 +428,25 @@ def envelope (format : Tree) (profile : Profile) (program certificate : Tree) : 
   mk 0 [format, nameTree "free-topos/base/v1".toList,
     nameTree (canonOf profile.toSExp), program, certificate]
 
-/-- Read a certificate only for the format, program and theory against which it was produced. -/
-def certificateOf (expected : Tree) (profile : Profile) (program : Tree) (saved : Tree) :
-    Except String Tree :=
+/-- The compiled program a certificate was produced against and the development it saves, read
+only for the format, theory and profile against which it was produced. -/
+def savedOf (expected : Tree) (profile : Profile) (saved : Tree) : Except String (Tree × Tree) :=
   match saved.children with
   | [format, theory, header, source, cert] =>
     if saved.label == 0 && decide (format = expected) &&
         decide (theory = nameTree "free-topos/base/v1".toList) &&
-        decide (header = nameTree (canonOf profile.toSExp)) && decide (source = program) then
-      .ok cert
+        decide (header = nameTree (canonOf profile.toSExp)) then
+      .ok (source, cert)
     else .error "certificate format, theory, profile, or compiled program differs"
   | _ => .error "malformed certificate envelope"
+
+/-- Read a certificate only for the format, program and theory against which it was produced. -/
+def certificateOf (expected : Tree) (profile : Profile) (program : Tree) (saved : Tree) :
+    Except String Tree := do
+  let (source, cert) ← savedOf expected profile saved
+  unless decide (source = program) do
+    throw "certificate format, theory, profile, or compiled program differs"
+  return cert
 
 /-! ## The program a document names -/
 
@@ -536,20 +552,19 @@ def cachePath (dir : System.FilePath) (proofs : System.FilePath) : IO System.Fil
   let name := String.ofList (real.toString.toList.reverse.takeWhile (· != '/')).reverse
   return ⟨s!"{dir}/{name}.{(hash real.toString).toNat}.cache"⟩
 
-/-- The cache a file holds for a development, and whether it is of the development's compiled
-program: the cache of a file that is absent, does not read, or is of another format, theory or
-profile is empty. -/
-def readCache (path : System.FilePath) (profile : Profile) (program : Tree) :
-    IO (Tree × Bool) := do
-  unless ← path.pathExists do return (leaf 0, false)
-  let some saved := readImage (← IO.FS.readBinFile path) | return (leaf 0, false)
+/-- The cache a file holds for a development, and the compiled program it is of: the cache of a
+file that is absent, does not read, or is of another format, theory or profile is empty, and of
+no program. -/
+def readCache (path : System.FilePath) (profile : Profile) : IO (Tree × Tree) := do
+  unless ← path.pathExists do return (leaf 0, leaf 0)
+  let some saved := readImage (← IO.FS.readBinFile path) | return (leaf 0, leaf 0)
   match saved.children with
   | [format, theory, header, source, cache] =>
     if saved.label == 0 && decide (format = cacheFormat) && decide (theory = theoryName) &&
         decide (header = nameTree (canonOf profile.toSExp)) then
-      return (cache, decide (source = program))
-    else return (leaf 0, false)
-  | _ => return (leaf 0, false)
+      return (cache, source)
+    else return (leaf 0, leaf 0)
+  | _ => return (leaf 0, leaf 0)
 
 /-- Write a development's cache, a file of a directory of caches, beside the format, theory,
 profile and compiled program it is of, through a file renamed into its place, so that a run
@@ -564,11 +579,13 @@ def writeCache (dir path : System.FilePath) (profile : Profile) (program cache :
 
 /-- The certificate the runner finds for a development, or the diagnostics of its failures. With
 a directory of caches the development is resumed from the cache of its proof document there
-({lit}`Authoring.resume`). Where the development reads, the cache is then written as the run
-leaves it, whether or not the development is proved, beside the compiled program its items were
-checked with, and a line of how the theorems' declarations were come by is printed, which names
-no file, so that an editor reading diagnostics of the form {lit}`FILE: MESSAGE` reads none in
-it. -/
+({lit}`Authoring.resume`), which the runner is given with the compiled program it is of: the
+items of a cache of another program are read with the definitions they name at their places in
+this one, by the definitions' names, and their derivations are checked. Where the development
+reads, the cache is then written as the run leaves it, whether or not the development is proved,
+beside the compiled program its items were checked with, and a line of how the theorems'
+declarations were come by is printed, which names no file, so that an editor reading diagnostics
+of the form {lit}`FILE: MESSAGE` reads none in it. -/
 def Session.run (s : Session) (proofs : String) (caches : Option System.FilePath) : IO Tree := do
   match caches with
   | none =>
@@ -576,14 +593,13 @@ def Session.run (s : Session) (proofs : String) (caches : Option System.FilePath
       (present proofs s.written (GebMirror.Metalogic.«Authoring.prove» s.program s.input))
   | some dir =>
     let path ← cachePath dir proofs
-    let (cache, same) ← readCache path s.profile s.program
-    let out := GebMirror.Metalogic.«Authoring.resume» s.program s.input cache
-      (leaf (if same then 1 else 0))
+    let (cache, old) ← readCache path s.profile
+    let out := GebMirror.Metalogic.«Authoring.resume» s.program s.input cache old
     match out.children with
     | [result, cache', uses] =>
       -- A development that does not read reports no theorem, and its cache is left as it is.
       unless uses.children.isEmpty do
-        unless same && decide (cache' = cache) do
+        unless decide (old = s.program) && decide (cache' = cache) do
           writeCache dir path s.profile s.program cache'
         IO.println (usesOf uses).render
       IO.ofExcept (present proofs s.written result)
@@ -620,6 +636,27 @@ def execute (mode manifest proofs certificate : String)
       throw <| IO.userError s!"{proofs}: certificate does not prove these statements"
   | _ => throw <| IO.userError "expected prove or replay"
   IO.println s!"{proofs}: {mode} accepted; examples checked"
+  return 0
+
+/-- Transport a certificate to the program of a manifest: a certificate produced against
+another compiled program, of the same format, theory and profile, is read with the definitions
+its declarations name at their places in this program, by the definitions' names
+({lit}`Authoring.transport`), and is written, beside this program, only where it then replays
+against the development. The transport decides nothing: a definition that this program does not
+declare, or defines otherwise than the certificate's derivations unfold it, leaves a development
+that does not replay, and an existing output in place. -/
+def transport (manifest proofs certificate output : String) : IO UInt32 := do
+  let s ← Session.read manifest proofs
+  let some saved := readImage (← IO.FS.readBinFile certificate)
+    | throw <| IO.userError s!"{certificate}: malformed certificate image"
+  let (source, cert) ← IO.ofExcept (savedOf s.format s.profile saved)
+  let cert := if decide (source = s.program) then cert
+    else GebMirror.Metalogic.«Authoring.transport» s.program source cert
+  unless (GebMirror.Metalogic.«Authoring.replay» s.program s.input cert).label == 1 do
+    throw <| IO.userError
+      s!"{proofs}: the certificate does not prove these statements in this program"
+  IO.FS.writeBinFile output (writeImage (envelope s.format s.profile s.program cert))
+  IO.println s!"{proofs}: transport accepted; examples checked"
   return 0
 
 /-- Check a file and write nothing: a proof document, one whose text holds a form

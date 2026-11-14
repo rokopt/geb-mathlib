@@ -27,7 +27,8 @@ def cacheOption (args : List String) : Option System.FilePath × List String :=
 /-- Execute proofs, check a file, list the documents of a development, or convert a document
 without discarding its decorations. A proof document is proved against the manifest given, or
 else against that of the program it names; with {lit}`--cache DIRECTORY`, {lit}`prove` and
-{lit}`check` resume its development from its cache in that directory. -/
+{lit}`check` resume its development from its cache in that directory, and {lit}`transport`
+writes the certificate of the present program that a certificate of another program gives. -/
 public def main (args : List String) : IO UInt32 := do
   try
     let (caches, args) := cacheOption args
@@ -53,6 +54,11 @@ public def main (args : List String) : IO UInt32 := do
     | ["replay", proofs, certificate] =>
       let manifest ← GebHost.Authoring.manifestOf proofs
       GebHost.Authoring.execute "replay" manifest.toString proofs certificate
+    | ["transport", proofs, certificate, output] =>
+      let manifest ← GebHost.Authoring.manifestOf proofs
+      GebHost.Authoring.transport manifest.toString proofs certificate output
+    | ["transport", manifest, proofs, certificate, output] =>
+      GebHost.Authoring.transport manifest proofs certificate output
     | [mode, manifest, proofs, certificate] =>
       GebHost.Authoring.execute mode manifest proofs certificate
         (if mode == "prove" then caches else none)
@@ -71,6 +77,7 @@ public def main (args : List String) : IO UInt32 := do
       IO.eprintln "usage: geb-author compile MANIFEST IMAGE\n\
         geb-author prove [--cache DIRECTORY] [MANIFEST] PROOFS CERTIFICATE\n\
         geb-author replay [MANIFEST] PROOFS CERTIFICATE\n\
+        geb-author transport [MANIFEST] PROOFS CERTIFICATE OUTPUT\n\
         geb-author check [--cache DIRECTORY] FILE\n\
         geb-author documents MANIFEST PROOFS\n\
         geb-author navigation MANIFEST < REQUEST.json\n\
