@@ -33,9 +33,15 @@ given, and a manifest given takes its place. Only the document proved is consult
 it imports are read against its program, so that a document holding in every program names none
 and a development is proved again in a larger program by a document that imports it.
 
-Where the runner rejects a development it reports a reason and the theorem concerned, which the
-host writes as a diagnostic at the theorem's name in the document that states it
-({name}`GebHost.Compiler.Diagnostic`).
+Where the runner rejects a development it reports its failures, each a reason and the theorem
+concerned, which the host writes as a diagnostic at the theorem's name in the document that
+states it ({name}`GebHost.Compiler.Diagnostic`). A theorem whose script leaves a hole open, or
+does not prove it, is reported by its obligations instead: each hole, and each innermost step
+that fails, at its place in the script as written, with the goal it is given. The goal is the
+runner's statement of it, which the host prints in the authoring spelling; the host finds the
+place by the positions of the script's children, after expanding the document's abbreviations as
+the runner does. Nothing of this is checked: a development with an obligation has no
+certificate, and the place and the goal are for the author.
 
 ## Main definitions
 
@@ -43,6 +49,8 @@ host writes as a diagnostic at the theorem's name in the document that states it
 * {lit}`GebHost.Authoring.checkExamples` checks the tree-valued examples in a program's notes.
 * {lit}`GebHost.Authoring.development` reads a proof document after the documents it imports.
 * {lit}`GebHost.Authoring.manifestOf` finds the manifest of the program a proof document names.
+* {lit}`GebHost.Authoring.failuresOf`, {lit}`GebHost.Authoring.diagnosticsOf` read the failures
+  the runner reports and locate their obligations.
 * {lit}`GebHost.Authoring.execute` proves or replays a development.
 * {lit}`GebHost.Authoring.checkFile` checks a program's source or a proof document and writes
   nothing.
@@ -237,14 +245,49 @@ def formatOf (version : Tree) : Tree :=
     | 2 => "geb-proof/v3"
     | _ => "geb-proof/v4").toList
 
-/-- Why the reader and prover written in Geb reject a development: the reason's number and the
-theorem it concerns, as {lit}`bootstrap/authoring.geb` reports them. -/
-def reasonOf (report : Tree) : Nat × Option String :=
-  match report.children with
-  | [why, name] =>
-    (why.label, (ofNameTree name).bind fun cs ↦
-      if cs.isEmpty then none else some (String.ofList cs))
-  | _ => (0, none)
+/-! ## Failures and obligations -/
+
+/-- An obligation the runner reports of a theorem's script ({lit}`Authoring.reportOf` of
+{lit}`bootstrap/authoring.geb`): a hole the script leaves open, or a step of the script that
+does not prove the goal it is given. -/
+structure Obligation where
+  /-- Whether the obligation is a hole's, and not a failing step's. -/
+  hole : Bool
+  /-- The name of the hole. -/
+  name : String
+  /-- The positions of the children from the script down to the hole or the step. -/
+  path : List Nat
+  /-- The goal, a statement of the internal language as the Geb reader reads one. -/
+  goal : Tree
+
+/-- A failure the runner reports of a development: its reason, the theorem it concerns, where it
+concerns one, and the obligations of that theorem's script. -/
+structure Failure where
+  /-- The number of the reason. -/
+  why : Nat
+  /-- The name of the theorem. -/
+  name : Option String
+  /-- The obligations. -/
+  obligations : List Obligation
+
+/-- The obligation a tree reports: the node of its kind over the hole's name, the node of its path
+and its goal. -/
+def obligationOf (t : Tree) : Option Obligation :=
+  match t.children with
+  | [name, path, goal] =>
+    some ⟨t.label == 0, String.ofList ((ofNameTree name).getD []), path.children.map (·.label),
+      goal⟩
+  | _ => none
+
+/-- The failures a runner's report holds: each the node of its reason, the name of the theorem it
+concerns, empty where it concerns none, and the theorem's obligations. -/
+def failuresOf (report : Tree) : List Failure :=
+  report.children.map fun f ↦
+    match f.children with
+    | why :: name :: obs =>
+      ⟨why.label, (ofNameTree name).bind fun cs ↦
+        if cs.isEmpty then none else some (String.ofList cs), obs.filterMap obligationOf⟩
+    | _ => ⟨0, none, []⟩
 
 /-- The message of a reason and the theorem it concerns. -/
 def reasonMessage (why : Nat) (name : String) : String :=
@@ -256,40 +299,120 @@ def reasonMessage (why : Nat) (name : String) : String :=
   | 4 => s!"the script of the theorem {name} does not prove it"
   | 5 => s!"the sides of the theorem {name} have no weak normal forms within the budget"
   | 6 => "the derivations of the development do not check"
+  | 7 => s!"the script of the theorem {name} leaves holes open"
   | _ => "a document of the development is not (proofs V FORM…) of a version this host reads \
     with a theorem, or a document of version 0 is combined with others, or a document imports \
     one of a later version"
 
-/-- The span of the name of a theorem in a document as written: of the last theorem of that name
-among the forms of its form {lit}`(proofs V …)`. -/
-def theoremSpan (text : List Char) (name : String) : Option Locate.Span :=
+/-- The S-expression a tree of the Geb reader holds: an atom is the node of label 1 over the
+leaves of its characters, and a list the node of label 2 over its elements. -/
+def sexpOfTree : Tree → SExp :=
+  RoseTree.para fun l rs ↦
+    if l == 1 then atomOf (rs.map fun r ↦ Char.ofNat r.1.label) else listOf (rs.map Prod.snd)
+
+/-- The greatest length of a goal written on the line of its diagnostic alone. -/
+def goalWidth : Nat := 72
+
+/-- A goal as a diagnostic's message holds it: on the diagnostic's line, so that an editor
+reading diagnostics a line at a time keeps it, and, where it is longer than
+{name}`goalWidth`, also laid out on the lines after, each indented. -/
+def goalText (goal : Tree) : String :=
+  let d : Doc := ⟨[plain (sexpOfTree goal)], []⟩
+  let printed (ds : Array (Bool × ℕ)) : List Char :=
+    ((printAt ds d).reverse.dropWhile (· == '\n')).reverse
+  let line := printed #[]
+  if line.length ≤ goalWidth then String.ofList line
+  else
+    String.ofList (line ++ '\n' :: ' ' :: ' ' ::
+      (printed (defaultLayout .profile 98 d)).flatMap fun c ↦
+        if c == '\n' then ['\n', ' ', ' '] else [c])
+
+/-- The message of an obligation of a theorem's script. -/
+def obligationMessage (name : String) (o : Obligation) : String :=
+  (if o.hole then s!"the script of the theorem {name} leaves the hole ?{o.name} open, at the goal "
+    else s!"the script of the theorem {name} does not prove it: this step does not prove the \
+      goal ") ++ goalText o.goal
+
+/-- The head of an abbreviation, {lit}`abbreviation`. -/
+def kwAbbreviation : List Char := "abbreviation".toList
+
+/-- A located S-expression with every span replaced by one. -/
+def relocate (sp : Locate.Span) (t : Locate.Located) : Locate.Located :=
+  t.map fun l ↦ (sp, l.2)
+
+/-- The items a located S-expression stands for under abbreviations, the latest first, as
+{lit}`Authoring.expandItems` expands them: an atom naming an abbreviation is its items, each at
+the atom's span, since the text holds them there. -/
+def expandItems (table : List (List Char × List Locate.Located)) :
+    Locate.Located → List Locate.Located :=
+  RoseTree.elim fun l rs ↦
+    match l.2.bind fun name ↦ table.find? (·.1 == name) with
+    | some (_, items) => items.map (relocate l.1)
+    | none => [RoseTree.node l rs.flatten]
+
+/-- The forms of a proof document's form {lit}`(proofs V …)` as the runner reads them
+({lit}`Authoring.readDocument`), each located: from version 2 without the forms the host
+resolves, and in version 3 with the abbreviations expanded and left out. -/
+def formsOf (root : Locate.Located) : List Locate.Located :=
+  let v := ((root.children[1]?.bind (·.label.2)).bind decimal?).getD 0
+  let fs := (root.children.drop 2).filter fun f ↦
+    !(v > 1 && f.children.length == 2 && (Locate.headIs kwImport f || Locate.headIs kwProgram f))
+  (fs.foldl (fun (st : List (List Char × List Locate.Located) × List Locate.Located) f ↦
+    match f.children with
+    | _ :: n :: item :: items =>
+      match n.label.2 with
+      | some name =>
+        if v > 2 && Locate.headIs kwAbbreviation f && n.children.isEmpty && !name.isEmpty &&
+            !isNumeral name then
+          ((name, (item :: items).flatMap (expandItems st.1)) :: st.1, st.2)
+        else (st.1, st.2 ++ expandItems st.1 f)
+      | none => (st.1, st.2 ++ expandItems st.1 f)
+    | _ => (st.1, st.2 ++ expandItems st.1 f)) ([], [])).2
+
+/-- The form of a theorem in a document as written, as the runner reads it: the last theorem of
+that name among the forms of its form {lit}`(proofs V …)`. -/
+def theoremForm (text : List Char) (name : String) : Option Locate.Located :=
   match Locate.locate text with
   | .ok items =>
-    ((items.filter (Locate.headIs kwProofs)).flatMap (·.children)).reverse.findSome? fun t ↦
-      if Locate.headIs kwTheorem t then
-        t.children[1]?.bind fun n ↦
-          if n.label.2 == some name.toList then some n.label.1 else none
-      else none
+    ((items.filter (Locate.headIs kwProofs)).flatMap formsOf).reverse.find? fun t ↦
+      Locate.headIs kwTheorem t &&
+        (t.children[1]?.bind (·.label.2)) == some name.toList
   | .error _ => none
 
-/-- The diagnostic of a development the runner written in Geb rejects: at the name of the
-theorem the report concerns, in the last document as written that states it, and else at the
-proof document without a position. -/
-def rejection (proofs : String) (written : List Compiler.Source) (report : Tree) :
-    Compiler.Diagnostic :=
-  let (why, name) := reasonOf report
-  let message := reasonMessage why (name.getD "")
-  match name.bind fun n ↦ written.reverse.findSome? fun s ↦
-      (theoremSpan s.text n).map (s.path, ·) with
-  | some (path, span) => ⟨path, some span, message⟩
-  | none => ⟨proofs, none, message⟩
+/-- The script of a theorem's form at a path: the script of its form {lit}`(by SCRIPT)`, and at
+each position of the path the child of that position. -/
+def scriptAt (t : Locate.Located) (path : List Nat) : Option Locate.Located :=
+  path.foldl (fun node i ↦ node.bind (·.children[i]?))
+    (t.children[3]?.bind (·.children[1]?))
 
-/-- A present tree's content, or the diagnostic of the failure the runner reports in its
+/-- The diagnostics of a failure the runner reports: of each obligation at the hole or the step
+of the script it concerns, in the last document as written that states the theorem, and of a
+failure without obligations at the theorem's name; where no document as written states the
+theorem, at the proof document without a position. -/
+def diagnosticsOf (proofs : String) (written : List Compiler.Source) (f : Failure) :
+    List Compiler.Diagnostic :=
+  let name := f.name.getD ""
+  let stated := f.name.bind fun n ↦ written.reverse.findSome? fun s ↦
+    (theoremForm s.text n).map (s.path, ·)
+  let report (sp : Option Locate.Span) (message : String) : Compiler.Diagnostic :=
+    match stated with
+    | some (path, t) => ⟨path, some (sp.getD (Compiler.nameSpan t)), message⟩
+    | none => ⟨proofs, none, message⟩
+  if f.obligations.isEmpty then [report none (reasonMessage f.why name)]
+  else f.obligations.map fun o ↦
+    report (stated.bind fun st ↦ (scriptAt st.2 o.path).map (·.label.1)) (obligationMessage name o)
+
+/-- The diagnostics of a development the runner written in Geb rejects, one to a line but for the
+lines of a goal laid out. -/
+def rejection (proofs : String) (written : List Compiler.Source) (report : Tree) : String :=
+  "\n".intercalate (((failuresOf report).flatMap (diagnosticsOf proofs written)).map (·.render))
+
+/-- A present tree's content, or the diagnostics of the failures the runner reports in its
 place; the empty tree is the runner's rejection of the program. -/
 def present (proofs : String) (written : List Compiler.Source) (result : Tree) :
     Except String Tree :=
   if result.label == 1 then .ok (GebMirror.Metalogic.«Prelude.get» result)
-  else if result.label == 2 then .error (rejection proofs written result).render
+  else if result.label == 2 then .error (rejection proofs written result)
   else .error s!"{proofs}: the program has no translation into the metalogic"
 
 /-- The certificate format and theory are separate from the kernel image's wire version. -/

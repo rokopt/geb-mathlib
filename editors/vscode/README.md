@@ -89,8 +89,11 @@ at the character or parenthesis at which the text does not read. For a
 proof document, a file holding a form `(proofs V …)`, it proves the
 document, after the documents it imports, against the program the
 document names by `(program NAME)`, and reports a theorem whose statement
-or script does not read, or whose script does not prove it, at the
-theorem's name. The extension contributes the problem matcher `$geb`,
+or script does not read at the theorem's name, and a hole that a script
+leaves open, or a step of a script that does not prove its goal, at the
+hole or the step, with the goal on the diagnostic's line (the manual's
+chapter Writing a first Geb development, § Holes and goals). The
+extension contributes the problem matcher `$geb`,
 which the task names, so that the report appears in the Problems view and
 at its position in the file that holds it, which may be an earlier source
 of the program or an imported document.

@@ -63,9 +63,10 @@ the prover written in Geb, checks the
 result with the checker written in Geb, and replays it before writing the
 certificate. A rejected input leaves an existing output in place. A program
 the compiler rejects is reported at the line and column of the declaration
-concerned, and a theorem whose statement or script does not read, or whose
-script does not prove it, at the theorem's name, as
-`FILE:LINE:COLUMN: error: MESSAGE`.
+concerned, and a theorem whose statement or script does not read at the
+theorem's name, as `FILE:LINE:COLUMN: error: MESSAGE`. A script that does
+not prove its theorem is reported at each of its steps that fails, with the
+goal of that step ({ref "proof-holes"}[Holes and goals]).
 
 `replay` checks the saved derivations against the source statements and
 their names. It performs no proof search. Reducing `normalize`'s budget
@@ -598,6 +599,107 @@ tens of minutes compiled, so `slow-checks.yml` runs the script, and
 `scripts/tests/test-proof-scripts.sh` proves the development of
 `tree-cases.proofs.geb` and exercises each form on the example.
 
+# Holes and goals
+%%%
+tag := "proof-holes"
+%%%
+
+In version `3` a hole stands where a script stands:
+
+```
+SCRIPT ::= … | ?NAME
+```
+
+`?NAME` is the authoring spelling of the form `(hole NAME)`, which the
+strict encodings write. A hole proves nothing. A document with a hole is
+not proved: `prove` and `check` report the hole where it is written, with
+its goal, and write no certificate. For the document
+
+```
+(proofs 3 (program pair)
+  (theorem append-nil (forall ((xs (List T))) (equal (Lists.append xs (nil T)) xs))
+    (by (induction xs (y ys ih) (reduce weak) ?step))))
+```
+
+`lake exe geb-author check Draft.proofs.geb` writes one diagnostic, whose
+line is broken here and its goal abridged, and exits with status 1:
+
+```
+Draft.proofs.geb:3:47: error: the script of the theorem append-nil leaves the hole ?step
+open, at the goal (internal () (forall ((y T) (ys (List T))) (implies (ih …) (equal … …))))
+  (internal ()
+    (forall ((y T) (ys (List T)))
+      (implies (ih (equal (Lists.append ys (nil T)) ys))
+        (equal (Lists.append (cons T y ys) (nil T)) (cons T y ys)))))
+```
+
+The diagnostic's line holds the goal, so that an editor reading
+diagnostics a line at a time keeps it; a goal of more than 72 characters
+is also laid out on the lines after it. The problem matcher of the `geb`
+extension and the format of `editors/efm-langserver/config.yaml` read the
+line as they read every diagnostic.
+
+The goal is a statement of the internal language
+({ref "internal-statements"}[Statements over the internal language]),
+whichever language the theorem is stated in: the object variables, the
+variables of the context with their types, the hypotheses, and the equation
+to prove. Its names are those the script has at the hole, here the `y`,
+`ys` and `ih` that the induction's script gives. A variable or a hypothesis
+that a tactic adds without a name, as the case analysis of bits and the
+searches by rounds add them, and a variable that a term binds, is named by
+an underscore before its position: `_3`, the variables counted from the
+outermost, or `_h0`, the hypotheses from the first. The sides and the
+hypotheses are reported reduced by β and by the components of pairs
+wherever those apply, under binders too. A tactic that splits a variable,
+generalizes a term or takes an induction states the goal of the script
+within it by applying abstractions to the new variables, and the reduction
+leaves the terms the script is written about. A type or a term that the
+syntax of statements does not write is reported as `(opaque LABEL PART…)`,
+which no document reads. A goal without one is a statement that a document
+reads, so that a goal may be stated as a lemma as it is reported.
+
+A script that does not prove its theorem is reported in the same form, at
+each innermost step that fails, with the goal that step is given. With the
+script `(induction xs (y ys ih) (normalize 0) …)` in the document above:
+
+```
+Draft.proofs.geb:3:33: error: the script of the theorem append-nil does not prove it: this
+step does not prove the goal (internal () (equal (Lists.append (nil T) (nil T)) (nil T)))
+```
+
+The runner runs a script once as it is written. Where the script proves
+nothing, the runner runs it again, each script within it then returning its
+goal where it proves nothing, so that the steps reported are those that
+fail with every script within them proving its goal or itself reported. An
+alternative, `(first SCRIPT SCRIPT)`, is reported by the failure of its
+second script, its first being run as it is written. A script that a
+tactic reads at several cases, as `bits-cases` reads its scripts, is
+reported once for each case at which its hole is reached or its step fails.
+A hole that no proof reaches, as the second script of an alternative whose
+first proves the goal, states no obligation, and its theorem is proved.
+
+A theorem with an obligation is not proved, and the theorems after it are
+proved under it: it and its companion are entries of the development
+without derivations, so that a rule naming it rewrites by it. One run
+therefore reports every theorem of a development that has an obligation,
+and a theorem may be proved from a lemma whose proof is still a hole. The
+development has no certificate until no obligation remains.
+
+The report is the prover's and no checker certifies it. The tactic of a
+hole returns, as the derivation of its goal, a leaf of no rule of the
+checker that keeps the goal; the tactics build their derivations around
+those of the scripts within them and read none of them, so the leaf reaches
+the runner within the derivation of the theorem's script, and the runner
+reports the leaves it finds there and gives that derivation to no checker.
+The checker of developments rejects a derivation that holds one. The
+checker of holes of the Bootstrap chapter
+({ref "typed-holes"}[Typed holes]), which certifies a theorem under the
+obligations of its holes, is a separate checker, written in Lean. The
+hole's form, the leaf, the goal's statement and the report are in
+`bootstrap/authoring.geb`, and the host finds an obligation's place in the
+document as written, after the abbreviations are expanded, in
+`GebHost/Authoring.lean`.
+
 # Keeping the source
 
 The authoring spelling and the canonical, advanced and basic transport
@@ -650,8 +752,9 @@ rejection through the command-line interface.
 Edition `0` is still a pre-release edition. Keep the whole record with
 work written against it. No migration to a future edition is implemented
 here; its durable document, elaborated definitions and exact compiler
-give that migration explicit inputs. Suspended holes in proofs, statements
-over datatypes and completion of datatype soundness remain separate work.
+give that migration explicit inputs. The checker of holes in proofs, which
+certifies a theorem under the obligations of its holes, statements over
+datatypes and completion of datatype soundness remain separate work.
 
 # Preserving a development
 

@@ -7,7 +7,8 @@
 # number of bits and by the scripts of its labels, abbreviations, the normal form of a theorem's
 # companion, rules that keep definitions folded, the uniqueness of folds with premises that
 # scripts prove, instances of theorems and hypotheses cut in from them, the searches that split
-# the values of tests and rewrite under masks, and the development of
+# the values of tests and rewrite under masks, holes and the goals reported of them and of the
+# steps that fail, and the development of
 # bootstrap/proofs/tree-cases.proofs.geb, proved and replayed. scripts/proofs.sh proves the
 # developments of bootstrap/proofs/ whose searches take longer.
 set -euo pipefail
@@ -255,7 +256,15 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
     more.write_text(MORE)
     assert certificate.read_bytes() == saved
 
-    # A rejected development is reported at the theorem concerned, and leaves the output.
+    # The line and column at which an occurrence of a snippet of a text begins.
+    def where(text, snippet, nth=0):
+        index = -1
+        for _ in range(nth + 1):
+            index = text.index(snippet, index + 1)
+        return f"{text.count(chr(10), 0, index) + 1}:{index - text.rfind(chr(10), 0, index)}"
+
+    # A rejected development is reported at the theorem concerned, or at the step of its script
+    # that fails, and leaves the output.
     def rejected(text, at, message, name='Bad.proofs.geb'):
         target = root / name
         target.write_text(text)
@@ -263,9 +272,17 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
         expected = f'{target}:{at}: error: ' if at else f'{target}: '
         assert error.startswith(expected) and message in error, (text, error)
         assert certificate.read_bytes() == saved
+        return error
 
-    rejected(MORE.replace('(reduce weak append-nil))))', '(reduce weak))))'), '5:12',
-             'the script of the theorem append-append-nil does not prove it')
+    # A script that does not prove its theorem is reported at its innermost step that fails, with
+    # the goal that step is given: here the goal the generalization gives, which applies the
+    # abstractions over the term generalized to the new variable, reported reduced.
+    text = MORE.replace('(reduce weak append-nil))))', '(reduce weak))))')
+    error = rejected(text, where(text, '(reduce weak))))'),
+                     'the script of the theorem append-append-nil does not prove it: this step '
+                     'does not prove the goal (internal () (forall ((xs (List T)) (ys (List T)) '
+                     '(zs (List T))) (equal (Lists.append zs (nil T)) zs)))')
+    assert error.count(': error: ') == 1, error
     rejected(MORE.replace('(lib lab t)', '(lib label t)'), '31:12',
              'the theorem node-label-children is not')
     rejected(MORE.replace('(sum-cases b (u)', '(sum-cases c (u)'), '21:12',
@@ -322,21 +339,28 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
                           ' (by (modus-ponens h (g) (reduce weak))))'),
              '2:12', 'the script of the theorem a does not read')
     # A script that does not prove its theorem is reported so: the antecedent is not cited.
-    rejected(HYP.replace('(by (assume h (reduce weak h)))', '(by (assume h (reduce weak)))'),
-             '10:12', 'the script of the theorem symmetry does not prove it')
+    text = HYP.replace('(by (assume h (reduce weak h)))', '(by (assume h (reduce weak)))')
+    rejected(text, where(text, '(reduce weak))))\n  (theorem composition'),
+             'the script of the theorem symmetry does not prove it')
     # An alternative has two scripts, and proves by neither where neither proves; a case analysis
     # of a bitstring names a variable and a number of bits, and proves nothing the bits decide
     # where it takes fewer of them; version 2 reads neither.
     rejected(HYP.replace('(first (reduce weak) (reduce weak append-nil))', '(first (reduce weak))'),
              '38:12', 'the script of the theorem append-nil-first does not read')
-    rejected(HYP.replace('(first (reduce weak) (reduce weak append-nil))',
-                         '(first (reduce weak) (reduce head))'),
-             '38:12', 'the script of the theorem append-nil-first does not prove it')
-    for old, new, reason in (('(bits-cases b 2', '(bits-cases a 2', 'read'),
-                             ('(bits-cases b 2', '(bits-cases b weak', 'read'),
-                             ('(bits-cases c 1', '(bits-cases c 0', 'prove it')):
-        rejected(HYP.replace(old, new), '44:12',
-                 f'the script of the theorem head-bits does not {reason}')
+    # The failure of an alternative is that of its second script; a script read at several cases
+    # is reported at each case at which it fails.
+    text = HYP.replace('(first (reduce weak) (reduce weak append-nil))',
+                       '(first (reduce weak) (reduce head))')
+    error = rejected(text, where(text, '(reduce head)'),
+                     'the script of the theorem append-nil-first does not prove it')
+    assert error.count(': error: ') == 1, error
+    for old, new in (('(bits-cases b 2', '(bits-cases a 2'), ('(bits-cases b 2', '(bits-cases b weak')):
+        rejected(HYP.replace(old, new), '44:12', 'the script of the theorem head-bits does not read')
+    text = HYP.replace('(bits-cases c 1', '(bits-cases c 0')
+    step = where(text, '(reduce weak h))))))')
+    error = rejected(text, step, 'the script of the theorem head-bits does not prove it')
+    reports = [line for line in error.splitlines() if ': error: ' in line]
+    assert len(reports) > 1 and all(f':{step}: error: ' in line for line in reports), error
     rejected(document('(theorem a (forall ((t T)) (equal t t))'
                       ' (by (first (reduce weak) (reduce weak))))'),
              '2:12', 'the script of the theorem a does not read')
@@ -356,13 +380,14 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
             if column >= 0:
                 return f'{number}:{column + len("(theorem ") + 1}'
         raise AssertionError(name)
-    def forms_rejected(old, new, name, message):
+    def forms_rejected(old, new, name, message, step=None):
         text = FORMS.replace(old, new)
         assert text != FORMS, old
-        rejected(text, at(text, name), message)
+        rejected(text, where(text, step) if step else at(text, name), message)
     # A definition kept folded is not unfolded: without the rule the script proves nothing.
     forms_rejected('(with-rules ((folded Pair.first) first-folded)', '(with-rules ((folded Pair.first))',
-                   'first-twice', 'the script of the theorem first-twice does not prove it')
+                   'first-twice', 'the script of the theorem first-twice does not prove it',
+                   step='(reduce weak)))))\n  ; The case analysis of a test')
     # A rule keeps folded definitions of the program and of the library; a normal form names a
     # depth and rules; an abbreviation is expanded where it stands, and names what is bound there.
     forms_rejected('(normal weak (folded Pair.first))', '(normal weak (folded Pair.second))',
@@ -373,7 +398,8 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
                    'rebuild-again', 'the theorem rebuild-again is not')
     # The script of a label proves at its bitstring, and a label has fewer bits than the cases.
     forms_rejected('(0 1) (reduce head)', '(0 1) (normalize 0)', 'label-scripts',
-                   'the script of the theorem label-scripts does not prove it')
+                   'the script of the theorem label-scripts does not prove it',
+                   step='(normalize 0)')
     forms_rejected('(0 1) (reduce head)', '(0 4) (reduce head)', 'label-scripts',
                    'the script of the theorem label-scripts does not read')
     forms_rejected('(0 1) (reduce head)', '(0 1)', 'label-scripts',
@@ -381,7 +407,8 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
     # An instance is of the terms given; a formula holds where its hypothesis equates it with the
     # equation of a term with itself, which the checker decides.
     forms_rejected('(instance (first-fn X) (x) (z) weak)', '(instance (first-fn X) (z) (x) weak)',
-                   'first-at-pair', 'the script of the theorem first-at-pair does not prove it')
+                   'first-at-pair', 'the script of the theorem first-at-pair does not prove it',
+                   step='(instance (first-fn X) (z) (x) weak)')
     forms_rejected('(equal (equal x y) (equal unit unit))', '(equal (equal x y) (equal x unit))',
                    'holds-equal', 'the theorem holds-equal is not')
     text = FORMS.replace('(implies (h (equal (equal x y) (equal unit unit))) (equal x y))',
@@ -395,10 +422,12 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
     # an argument is rewritten to the left side of a theorem whose right side it is, which the
     # checker decides.
     forms_rejected('(mask-hypotheses absorb cond-same-again 1', '(mask-hypotheses absorb cond-same-again 0',
-                   'under-mask', 'the script of the theorem under-mask does not prove it')
+                   'under-mask', 'the script of the theorem under-mask does not prove it',
+                   step='(reduce weak))))))\n')
     forms_rejected('(with-rules ((folded (lib cond)))\n        (mask-hypotheses',
                    '(with-rules ()\n        (mask-hypotheses',
-                   'under-mask', 'the script of the theorem under-mask does not prove it')
+                   'under-mask', 'the script of the theorem under-mask does not prove it',
+                   step='(reduce weak))))))\n')
     target.write_text(FORMS.replace('(succ-pred cons-again (reduce weak))',
                                     '(succ-pred append-nil (reduce weak))'))
     assert 'the derivations of the development do not check' in run(
@@ -407,6 +436,93 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
     target.write_text(FORMS.replace('(proofs 3', '(proofs 2'))
     assert 'the theorem Ts is not' in run('prove', manifest, target, certificate, ok=False)
     assert certificate.read_bytes() == saved
+
+    # A hole stands where a script stands, in version 3. Its development is not proved and writes
+    # nothing: the hole is reported where it is written, with its goal as a statement of the
+    # internal language in the names the script has there. The theorems after it are proved
+    # under it, so that a later failure is reported beside it and a theorem that cites it is not.
+    holes = """(proofs 3 (program pair) (import Pair.proofs.geb)
+  (theorem right-unit (forall ((xs (List T))) (equal (Lists.append xs (nil T)) xs))
+    (by (induction xs (y ys ih) (reduce weak) ?step)))
+  (theorem right-unit-twice
+    (forall ((xs (List T))) (equal (Lists.append (Lists.append xs (nil T)) (nil T)) xs))
+    (by (reduce weak right-unit)))
+  (theorem left-first (equal Pair.left Pair.first) (by (normalize 0))))
+"""
+    goal = ('(internal () (forall ((y T) (ys (List T))) '
+            '(implies (ih (equal (Lists.append ys (nil T)) ys)) '
+            '(equal (Lists.append (cons T y ys) (nil T)) (cons T y ys)))))')
+    error = rejected(holes, where(holes, '?step'),
+                     f'the script of the theorem right-unit leaves the hole ?step open, at the goal {goal}')
+    reports = [line for line in error.splitlines() if ': error: ' in line]
+    assert len(reports) == 2, error
+    assert (f":{where(holes, '(normalize 0)')}: error: the script of the theorem left-first does "
+            'not prove it') in reports[1], error
+    # A goal longer than a line of the report is also laid out on the lines after it.
+    assert error.splitlines()[1] == '  (internal ()', error
+    # `check` reports the same obligations.
+    target = root / 'Bad.proofs.geb'
+    assert run('check', target, ok=False) == error
+    # The goal reported is a statement the document reads: stated as a theorem, the script that
+    # fills the hole proves it, and the development with the hole filled is proved and replayed.
+    fill = '(reduce-hypotheses weak (ih) (reduce weak ih))'
+    filled = (holes.replace('?step', fill).replace('(normalize 0)', '(normalize 64)')
+              .replace('(import Pair.proofs.geb)',
+                       f'(import Pair.proofs.geb)\n  (theorem step {goal}\n    (by {fill}))'))
+    target.write_text(filled)
+    run('prove', manifest, target, root / 'filled.cert')
+    run('replay', manifest, target, root / 'filled.cert')
+    # A step that fails and a hole of one script are both reported, each where it is written.
+    text = holes.replace('(reduce weak) ?step', '(normalize 0) ?step')
+    error = rejected(text, where(text, '(normalize 0) ?step'),
+                     'the script of the theorem right-unit does not prove it: this step does not '
+                     'prove the goal (internal () (equal (Lists.append (nil T) (nil T)) (nil T)))')
+    assert f":{where(text, '?step')}: error: the script of the theorem right-unit leaves the hole" in error, error
+    # A hole that no proof reaches states no obligation; version 2 reads no hole.
+    target.write_text(holes.replace('(induction xs (y ys ih) (reduce weak) ?step)',
+                                    '(first (reduce weak append-nil) ?unreached)')
+                      .replace('(normalize 0)', '(normalize 64)'))
+    run('prove', manifest, target, root / 'filled.cert')
+    run('replay', manifest, target, root / 'filled.cert')
+    rejected(document('(theorem a (forall ((t T)) (equal t t)) (by ?h))'), '2:12',
+             'the script of the theorem a does not read')
+    # A hole of a script read at several cases is reported at each, here the empty bitstring and
+    # each bit before a bitstring, the variables and hypotheses the cases add named by their
+    # positions; a hole an abbreviation holds is reported where the abbreviation stands.
+    text = FORMS.replace('(bits-cases b 2 (reduce weak) (0 1) (reduce head))', '(bits-cases b 1 ?bit)')
+    error = rejected(text, where(text, '?bit'),
+                     'the script of the theorem label-scripts leaves the hole ?bit open, at the goal '
+                     '(internal () (forall ((b Bits)) '
+                     '(equal (lib cond Bits (nil Bit) (lib bnil) (lib bnil)) (lib bnil))))')
+    reports = [line for line in error.splitlines() if ': error: ' in line]
+    assert len(reports) == 3, error
+    assert all(f":{where(text, '?bit')}: error: " in line for line in reports), error
+    for line, bit in zip(reports[1:], ('inl', 'inr')):
+        assert ('(forall ((b Bits) (_1 Bit) (_2 Bits) (_3 Unit)) (implies (_h0 (equal (lib cond '
+                'Bits _2 (lib bnil) (lib bnil)) (lib bnil))) (equal (lib cond Bits '
+                f'(cons Bit ({bit} Unit Unit _3) _2) (lib bnil) (lib bnil)) (lib bnil)))))') in line, error
+    # The goal of a hole that is a theorem's whole script is the theorem's statement, as the
+    # document reads the forms of types and of terms: written with the names the report gives the
+    # variables that terms bind, the statement is reported as it is written.
+    part = ('(pair (list-rec (nil Y) (_8 _9) (cons Y (f _8) _9) (snd p)) '
+            '(pair ((case X Unit Y (pair f (lam ((_8 Unit)) (f (fst p))))) s) '
+            '(pair (rose-rec Bits (_8) (fst _8) t) '
+            '(pair (implies o true) '
+            '(pair (inr Unit Unit unit) '
+            '(pair (lib cond Y bs (f (fst p)) (f (fst p))) '
+            '(pair (node Bits (pair bs (nil T))) '
+            '(pair (equal r r) (pair (Pair.first t t) (lam ((_8 X)) (pair _8 b)))))))))))')
+    statement = ('(internal (X Y) (forall ((f (Arrow X Y)) (p (Prod X (List X))) (s (Sum X Unit)) '
+                 '(t T) (r (Rose X)) (o Omega) (b Bit) (bs Bits)) '
+                 f'(implies (h (equal (f (fst p)) (f (fst p)))) (equal {part} {part}))))')
+    text = three.format(f'(theorem shapes {statement}\n    (by ?whole))')
+    rejected(text, where(text, '?whole'),
+             f'the script of the theorem shapes leaves the hole ?whole open, at the goal {statement}')
+    text = FORMS.replace('(abbreviation by-append (with-rules (append-rules) (reduce weak)))',
+                         '(abbreviation by-append (with-rules (append-rules) ?rules))')
+    rejected(text, where(text, 'by-append))'),
+             'the script of the theorem append-nil-rules leaves the hole ?rules open, at the goal '
+             '(internal () (forall ((xs (List T))) (equal (Lists.append xs (nil T)) xs)))')
 
     # An import is a path below the document that reads, and imports return to no document.
     rejected(document('(theorem a (equal Pair.left Pair.left) (by (normalize 4)))',
@@ -447,7 +563,9 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
     failing.write_text(named('(program pair)', '(theorem again (equal Pair.left Pair.first)'
                                                ' (by (normalize 0)))'))
     error = run('check', failing, ok=False)
-    assert error.startswith(f'{failing}:2:12: error: the script of the theorem again'), error
+    assert error.startswith(f'{failing}:2:51: error: the script of the theorem again does not '
+                            'prove it: this step does not prove the goal '
+                            '(internal () (equal Pair.left Pair.first))'), error
     assert run('check', root / 'Pair.geb') == ''
     broken = below / 'Broken.geb'
     broken.write_text((root / 'Pair.geb').read_text().replace('T x))', 'T z))'))
@@ -482,6 +600,6 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
 
 print('test-proof-scripts: internal statements, tactics, imports, named programs, diagnostics, '
       'hypotheses and implications, alternatives, the cases of bitstrings, abbreviations, the '
-      'uniqueness of folds, instances, normal forms, folded definitions, rewriting under masks '
-      'and the tree-cases development passed')
+      'uniqueness of folds, instances, normal forms, folded definitions, rewriting under masks, '
+      'holes and goals, and the tree-cases development passed')
 PY

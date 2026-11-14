@@ -17,10 +17,14 @@
 ; (normal DEPTH RULE ...) after its script; rules that keep definitions folded; and the tactics
 ; of the rules of a script, of the uniqueness of a fold with premises that scripts prove, of the
 ; instances of theorems and the hypotheses cut in from them, and of the searches that split the
-; values of tests, rewrite under masks and split the variables conditionals are stuck on.
+; values of tests, rewrite under masks and split the variables conditionals are stuck on; and
+; holes, ?NAME, each standing where a script stands and proving nothing.
 ; Statements and scripts are read before any proof is searched; every derivation
 ; is checked by {geb}`Derivation.declStep`, the step of the checker of developments, as it is
-; found, and replay checks a saved development by {geb}`Derivation.checkDev`.
+; found, and replay checks a saved development by {geb}`Derivation.checkDev`. A theorem whose
+; script leaves a hole open, or does not prove it, is reported with the goals of its holes and
+; of its steps that fail, and the theorems after it are proved under it; such a development has
+; no certificate.
 
 (module Authoring (export prove replay version) (import Prelude) (import Base) (import Theory)
   (import Language)
@@ -1538,14 +1542,265 @@
                                             (if (lt 1 v)
                                               (script2 v eb gt defs ovars thms nd rs vars kts hyps)
                                               (pair 0 failTac)))))))))))))))))))))))
-  (defn readScript ((v T) (eb T) (gt Ts) (defs Ts) (ovars Ts) (thms Ts) (s T)) SR
-    (para SR (scriptStep v eb gt defs ovars thms) s))
+  ; Obligations. A hole, ?NAME, the form (hole NAME), stands where a script stands, in version 3.
+  ; It proves nothing: the derivation its tactic returns is a leaf of no rule of the checker, which
+  ; keeps the goal the tactic is given, the context, the hypotheses and the sides of the equation,
+  ; beside the names the script has for the variables and the hypotheses there and the path of the
+  ; hole, the positions of the children from the script down to it. The tactics build their
+  ; derivations around those of the scripts within them and read none of them, so the derivation
+  ; of a script holds that leaf wherever the tactic of a hole is run, once for each case at which
+  ; a script read at several cases is run, and no checker accepts it. The leaf of a step that
+  ; fails has the same form: a script read in the manner 1 returns it where its tactic proves
+  ; nothing, so that in the derivation of a script so read the leaves are the holes and the
+  ; innermost scripts that fail, each with the goal it was given.
+  (def openRule 255)
+  (defn obligation ((kind T) (name T) (path Ts) (vars Ts) (hyps Ts) (g Ts) (hs Ts) (t T) (u T)) T
+    (some
+      (dNode openRule
+        (cons kind
+          (cons name
+            (cons (node 0 (reverse path))
+              (cons (node 0 vars) (cons (node 0 hyps) (cons (node 0 g) (l3 (node 0 hs) t u)))))))
+        (nil T))))
+  ; A script is read in a manner and at a path, the positions from it up to the script it is
+  ; within, the nearest first. In the manner 0 it is read as {geb}`Authoring.scriptStep` reads it.
+  ; The scripts within it are read in its manner, but the first script of an alternative, read in
+  ; the manner 0, since the alternative's second script answers its failure.
+  (deftype SRP (Arrow T (Arrow Ts SR)))
+  (defn located ((v T) (eb T) (gt Ts) (defs Ts) (ovars Ts) (thms Ts) (nd T) (rs (List SRP))) SRP
+    (lam ((manner T) (path Ts))
+      (if (and (lt 2 v) (and (form nd Source.kwHole 2) (Source.isAtom (child nd 1))))
+        (lam ((vars Ts) (kts Ts) (hyps Ts))
+          (pair 1
+            (lam ((G Globals) (E (List Entry)) (base NRs))
+              (lam ((g Ts) (hs Ts) (t T) (u T))
+                (obligation 0 (Source.nameOf (child nd 1)) path vars hyps g hs t u)))))
+        (let alternative T (and (lt 2 v) (form nd (quote (0 first)) 3))
+          (let kids (List SR)
+            ((foldr SRP (Arrow T (List SR))
+               (lam ((r SRP) (k (Arrow T (List SR))) (i T))
+                 (cons (r (if (and alternative (eq i 1)) 0 manner) (cons i path)) (k (add i 1))))
+               (lam ((i T)) (nil SR))
+               rs) 0)
+            (let sr SR (scriptStep v eb gt defs ovars thms nd kids)
+              (if (eq manner 0) sr
+                (lam ((vars Ts) (kts Ts) (hyps Ts))
+                  (let r (Prod T Tac) (sr vars kts hyps)
+                    (pair (fst r)
+                      (lam ((G Globals) (E (List Entry)) (base NRs))
+                        (lam ((g Ts) (hs Ts) (t T) (u T))
+                          (let d T ((snd r) G E base g hs t u)
+                            (if (isSome d) d
+                              (obligation 1 unnamed path vars hyps g hs t u)))))))))))))))
+  (defn readScript ((v T) (eb T) (gt Ts) (defs Ts) (ovars Ts) (thms Ts) (s T)) SRP
+    (para SRP (located v eb gt defs ovars thms) s))
+  ; Whether a script holds a hole.
+  (defn holed ((s T)) T
+    (para T (lam ((nd T) (rs Ts)) (or (form nd Source.kwHole 2) (anyT (lam ((r T)) r) rs))) s))
+  ; The leaves of obligations among the premises of a derivation, in order: the premises of a
+  ; node are its children after the node of its rule's data, whose own leaves are left out.
+  (defn obligationsOf ((d T)) Ts
+    (para Ts
+      (lam ((nd T) (rs (List Ts)))
+        (if (and (eq (label nd) openRule) (eq (arity nd) 1)) (single nd)
+          (lcase Ts Ts rs (nil T)
+            (lam ((x Ts) (rest (List Ts)))
+              (foldr Ts Ts (lam ((y Ts) (acc Ts)) (append y acc)) (nil T) rest)))))
+      d))
+
+  ; The goal of an obligation is reported as a statement of the internal language in the syntax
+  ; a document reads, (internal (X ...) (forall ((x A) ...) (implies (h P) ... (equal L R)))),
+  ; with the names the script has for the variables and the hypotheses. Its sides and its
+  ; hypotheses are reported reduced by β and by the components of pairs wherever those apply,
+  ; under binders too: the tactics state a goal after a case analysis, an induction or a
+  ; generalization by applying abstractions, and the reduction leaves the terms a script was
+  ; written about. A variable or a hypothesis without a name, and a variable a term binds, is
+  ; named by an underscore before its position, a variable's counted from the outermost. A type
+  ; or a term that the syntax does not write is the form (opaque LABEL PART ...), which no
+  ; document reads.
+  (defn atomOf ((n T)) T (node 1 (children n)))
+  (defn listOf ((es Ts)) T (node 2 es))
+  (defn digits ((n T)) Ts
+    (snd
+      (iter (Prod T Ts)
+        (lam ((s (Prod T Ts)))
+          (if (and (eq (fst s) 0) (not (isEmpty (snd s)))) s
+            (pair (div (fst s) 10) (cons (add 48 (mod (fst s) 10)) (snd s)))))
+        (pair n (nil T))
+        (add (log2 (add n 1)) 1))))
+  (defn nameOr ((n T) (prefix Ts) (k T)) T
+    (if (isEmpty (children n)) (node 0 (append prefix (digits k))) n))
+  (defn opaqueOf ((l T) (parts Ts)) T
+    (listOf (cons (atomOf (quote (0 opaque))) (cons (node 1 (digits l)) parts))))
+  (defn showType ((ovars Ts) (a T)) T
+    (para T
+      (lam ((nd T) (rs Ts))
+        (let c0 T (child nd 0)
+          (let bin (Arrow T T) (lam ((h T)) (listOf (l3 (atomOf h) (at rs 0) (at rs 1))))
+            (let un (Arrow T T) (lam ((h T)) (listOf (l2 (atomOf h) (at rs 0))))
+              (if (equal nd treeTy) (atomOf Source.kwT)
+                (if (equal nd bitsTy) (atomOf (quote (0 Bits)))
+                  (if (equal nd (coprod one one)) (atomOf (quote (0 Bit)))
+                    (if (equal nd one) (atomOf Source.kwUnit)
+                      (if (equal nd omega) (atomOf (quote (0 Omega)))
+                        (if (equal nd (prod c0 (child nd 1))) (bin Source.kwProd)
+                          (if (equal nd (coprod c0 (child nd 1))) (bin (quote (0 Sum)))
+                            (if (equal nd (exp c0 (child nd 1))) (bin Source.kwArrow)
+                              (if (equal nd (list c0)) (un Source.kwList)
+                                (if (equal nd (lrose c0)) (un (quote (0 Rose)))
+                                  (if (equal nd (x (label c0)))
+                                    (atomOf (nameOr (at ovars (label c0)) (l2 95 88) (label c0)))
+                                    (opaqueOf (label nd) rs))))))))))))))))
+      a))
+  (deftype Show (Arrow Ts T))
+  (import (Seq Show) as Shows)
+  (def showNothing (lam ((scope Ts)) (opaqueOf 0 (nil T))))
+  (defn libName ((j T)) T
+    (foldr T T (lam ((p T) (acc T)) (if (eq (child p 1) j) (some (child p 0)) acc)) none libTable))
+  ; A primitive arrow at its objects, as the forms of {geb}`Authoring.iprim` write it; the term
+  ; it applies to is given beside that term shown.
+  (defn showPrim ((j T) (tys Ts) (p T) (shown T)) T
+    (let m T (length tys)
+      (if (and (eq j 0) (and (eq m 1) (mIs 1 0 p))) (listOf (l2 (atomOf Source.kwNil) (at tys 0)))
+        (if (and (eq j 1) (and (eq m 1) (mIs 2 2 p)))
+          (listOf (l4 (atomOf Source.kwCons) (at tys 0) (child shown 1) (child shown 2)))
+          (if (and (eq j 2) (eq m 1)) (listOf (l3 (atomOf (quote (0 node))) (at tys 0) shown))
+            (if (and (or (eq j 3) (eq j 4)) (eq m 2))
+              (listOf
+                (l4 (atomOf (if (eq j 3) (quote (0 inl)) (quote (0 inr)))) (at tys 0) (at tys 1)
+                  shown))
+              (if (and (eq j 5) (eq m 3))
+                (listOf (l5 (atomOf (quote (0 case))) (at tys 0) (at tys 1) (at tys 2) shown))
+                (opaqueOf 7 (single shown)))))))))
+  ; A definition applied, its terms the last first as {geb}`Translation.call` keeps them: one of
+  ; the translation's library at its objects and terms, one of the program by its name, or, of
+  ; the connectives, truth or an implication.
+  (defn showCall ((defs Ts) (o T) (j T) (tys Ts) (args Ts)) T
+    (let nl T (LD.length lib)
+      (let bare T (and (isEmpty tys) (isEmpty args))
+        (if (lt j nl)
+          (let nm T (libName j)
+            (if (isSome nm)
+              (listOf
+                (cons (atomOf (quote (0 lib)))
+                  (cons (atomOf (get nm)) (append tys (reverse args)))))
+              (opaqueOf 11 args)))
+          (if (and (lt j o) bare) (atomOf (at defs (sub j nl)))
+            (if (and (eq j o) bare) (atomOf (quote (0 true)))
+              (if (and (eq j (add o 2)) (and (isEmpty tys) (eq (length args) 2)))
+                (listOf (l3 (atomOf (quote (0 implies))) (at args 1) (at args 0)))
+                (opaqueOf 11 args))))))))
+  ; A term is shown in the names of the variables in scope, the innermost first.
+  (defn showStep ((defs Ts) (ovars Ts) (nd T) (rs (List Show))) Show
+    (lam ((scope Ts))
+      (let l T (label nd)
+        (let k T (length (mArgs nd))
+          (let part (Arrow T Show) (lam ((i T)) (Shows.atOr showNothing rs (add i 1)))
+            (let sh (Arrow T T) (lam ((i T)) (part i scope))
+              (let ty (Arrow T T) (showType ovars)
+                (let kw (Arrow T T) atomOf
+                  (let y0 T (nameOr unnamed (single 95) (length scope))
+                    (let y1 T (nameOr unnamed (single 95) (add (length scope) 1))
+                      (let j T (mD nd 0)
+                        (let th Ts (children (mD nd 1))
+                          (let o T (connectivesAt defs)
+                            (let other (Arrow T T) (lam ((q T)) (opaqueOf l (mapT sh (range k))))
+                              (if (eq l 0) (kw (nameOr (at scope j) (l5 95 102 114 101 101) j))
+                                (if (eq l 1) (kw Source.kwUnitValue)
+                                  (if (and (eq l 2) (eq k 2))
+                                    (listOf (l3 (kw Source.kwPair) (sh 0) (sh 1)))
+                                    (if (and (eq l 3) (eq k 1))
+                                      (listOf (l2 (kw Source.kwFst) (sh 0)))
+                                      (if (and (eq l 4) (eq k 1))
+                                        (listOf (l2 (kw Source.kwSnd) (sh 0)))
+                                        (if (and (eq l 5) (eq k 1))
+                                          (listOf
+                                            (l3 (kw Source.kwLam)
+                                              (listOf (single (listOf (l2 (kw y0) (ty j)))))
+                                              (part 0 (cons y0 scope))))
+                                          (if (and (eq l 6) (eq k 2))
+                                            (if (mIs 6 2 (mArg nd 0))
+                                              (listOf (append (children (sh 0)) (single (sh 1))))
+                                              (listOf (l2 (sh 0) (sh 1))))
+                                            (if (and (eq l 7) (eq k 1))
+                                              (showPrim j (mapT ty th) (mArg nd 0) (sh 0))
+                                              (if (and (eq l 9) (eq k 3))
+                                                (listOf
+                                                  (l5 (kw (quote (0 list-rec))) (sh 0)
+                                                    (listOf (l2 (kw y0) (kw y1)))
+                                                    (part 1 (cons y1 (cons y0 scope)))
+                                                    (sh 2)))
+                                                (if (and (eq l 10) (eq k 2))
+                                                  (listOf
+                                                    (l5 (kw (quote (0 rose-rec))) (ty j)
+                                                      (listOf (single (kw y0)))
+                                                      (part 0 (cons y0 scope))
+                                                      (sh 1)))
+                                                  (if (eq l 11)
+                                                    (showCall defs o j (mapT ty th)
+                                                      (mapT sh (range k)))
+                                                    (if (and (eq l 12) (eq k 2))
+                                                      (listOf
+                                                        (l3 (kw (quote (0 equal))) (sh 0) (sh 1)))
+                                                      (other 0)))))))))))))))))))))))))))
+  (defn showTerm ((defs Ts) (ovars Ts) (t T) (scope Ts)) T
+    ((para Show (showStep defs ovars) t) scope))
+  ; The statement of an obligation's goal, given the constants and the entries its theorem is
+  ; proved with.
+  (def displayRules
+    (cons (nrRule 3 (terms (nil T)))
+      (cons (nrRule 4 (terms (nil T))) (Rules.single (nrRule 5 (terms (nil T)))))))
+  (defn showGoal ((G Globals) (E (List Entry)) (defs Ts) (ovars Ts) (ob T)) T
+    (let g Ts (children (mD ob 5))
+      (let hs Ts (children (mD ob 6))
+        (let n T (length g)
+          (let scope Ts
+            (mapT (lam ((i T)) (nameOr (at (children (mD ob 3)) i) (single 95) (sub (sub n 1) i)))
+              (range n))
+            (let sh (Arrow T T)
+              (lam ((w T))
+                (showTerm defs ovars
+                  (case (eval G E (length ovars) displayRules 4096 3 g hs w) ((ONFR.nothing) w)
+                    ((ONFR.just r) (nfTerm r)))
+                  scope))
+              (let concl T (listOf (l3 (atomOf (quote (0 equal))) (sh (mD ob 7)) (sh (mD ob 8))))
+                (let body T
+                  (if (isEmpty hs) concl
+                    (listOf
+                      (cons (atomOf (quote (0 implies)))
+                        (append
+                          (mapT
+                            (lam ((i T))
+                              (listOf
+                                (l2 (atomOf (nameOr (at (children (mD ob 4)) i) (l2 95 104) i))
+                                  (sh (at hs i)))))
+                            (range (length hs)))
+                          (single concl)))))
+                  (listOf
+                    (l3 (atomOf (quote (0 internal))) (listOf (mapT atomOf ovars))
+                      (if (eq n 0) body
+                        (listOf
+                          (l3 (atomOf (quote (0 forall)))
+                            (listOf
+                              (reverse
+                                (mapT
+                                  (lam ((i T))
+                                    (listOf (l2 (atomOf (at scope i)) (showType ovars (at g i)))))
+                                  (range n))))
+                            body)))))))))))))
+  ; What is reported of an obligation: the node of its kind, 0 a hole and 1 a step that fails,
+  ; over the hole's name, the node of its path and its goal.
+  (defn reportOf ((G Globals) (E (List Entry)) (defs Ts) (ovars Ts) (ob T)) T
+    (node (mD ob 0) (l3 (mD ob 1) (mD ob 2) (showGoal G E defs ovars ob))))
 
   ; A source theorem carries its name, its statement, its script and the version of its document.
   (data Request (request T Statement T T T))
   (defn requestName ((q Request)) T (case q ((request n s c w k) n)))
   (defn requestThm ((q Request)) Thm
     (case q ((request n s c w k) (case s ((statement os vs ks hs a) a)))))
+  (defn requestScript ((q Request)) T (case q ((request n s c w k) c)))
+  (defn requestObjects ((q Request)) Ts
+    (case q ((request n s c w k) (case s ((statement os vs ks hs a) (children os))))))
   ; The normal form of a theorem's companion, (normal DEPTH RULE ...), which a theorem of version
   ; 3 may state after its script: the depth of the reduction of the companion's sides, and the
   ; rules it rewrites by before those that unfold the definitions, which name the statement's
@@ -1568,13 +1823,16 @@
           (if (isSome spec)
             (rulesFrom eb defs (children os) (children hs) thms (drop 2 (children (get spec))))
             (nil NormRule)))))))
-  ; What rejects a development: a reason and the name of the theorem it concerns, or the empty
-  ; name. The reasons: 0, a document is not a proof document of a version this reader reads, or
-  ; the documents' versions do not combine; 1, a theorem's name is declared before; 2, a
-  ; theorem's form or statement does not read; 3, its script does not read; 4, its script does
-  ; not prove it; 5, its sides have no weak normal forms within the budget; 6, the derivation its
-  ; script gives, or its companion's, does not check.
-  (defn failure ((why T) (name T)) T (node 2 (l2 why name)))
+  ; What rejects a development: the node of label 2 over its failures, each the node of a reason,
+  ; the name of the theorem it concerns, or the empty name, and what is reported of the theorem's
+  ; obligations ({geb}`Authoring.reportOf`). The reasons: 0, a document is not a proof document
+  ; of a version this reader reads, or the documents' versions do not combine; 1, a theorem's
+  ; name is declared before; 2, a theorem's form or statement does not read; 3, its script does
+  ; not read; 4, its script does not prove it, the obligations those of the steps that fail; 5,
+  ; its sides have no weak normal forms within the budget; 6, the derivation its script gives, or
+  ; its companion's, does not check; 7, its script leaves holes open, the obligations theirs.
+  (defn failed ((why T) (name T) (obs Ts)) T (node 0 (cons why (cons name obs))))
+  (defn failure ((why T) (name T)) T (node 2 (single (failed why name (nil T)))))
   ; A request read, or the reason it is not.
   (data ReadRequest (requestOk Request) (requestBad T))
   ; The theorems of version 0: an equation of two definitions' names, proved by normalization.
@@ -1608,7 +1866,8 @@
                 (if
                   (and
                     (fst
-                      (readScript v 0 gt defs (children os) thms script (children vs) (children ks)
+                      (readScript v 0 gt defs (children os) thms script 0 (nil T) (children vs)
+                        (children ks)
                         (children hs)))
                     (normalOk v defs (children os) (children hs) thms spec))
                   (requestOk (request (Source.nameOf (child e 1)) st script v spec))
@@ -1749,15 +2008,20 @@
   ; a term whose head they have reduced, so a rule rewrites by a theorem's companion, as a theorem
   ; the Lean developments state in weak normal form. Version 0 cites no theorem and saves no
   ; companion.
+  ; A theorem whose script leaves holes open, or does not prove it, is reported and then taken
+  ; as an entry without a derivation, with its companion, so that the theorems after it are
+  ; proved under it and every such theorem of a development is reported; a development with a
+  ; failure has no certificate. The progress of a development keeps the node of its failures.
   (data Results (results T & Decl))
-  (data Progress (proving Results EntryList) (stuck T T))
+  (data Progress (proving Results EntryList T) (stuck T T T))
   (import (Option EntryList) as OEntries)
   ; The entries after a declaration, where the checker of developments admits it.
   (defn admit ((G Globals) (E (List Entry)) (d Decl)) OEntries.Maybe
     (case (declStep G E d) ((ODevState.nothing) OEntries.nothing)
       ((ODevState.just st) (case st ((devState G2 es) (OEntries.just es))))))
   (defn derive
-    ((G Globals) (E (List Entry)) (rs NRs) (eb T) (gt Ts) (defs Ts) (thms Ts) (q Request))
+    ((manner T) (G Globals) (E (List Entry)) (rs NRs) (eb T) (gt Ts) (defs Ts) (thms Ts)
+     (q Request))
     T
     (case q
       ((request n s script w k)
@@ -1772,7 +2036,8 @@
                    (case (eqParts f) ((OTPair.nothing) none)
                      ((OTPair.just tu)
                       ((snd
-                         (readScript w eb gt defs (children os) thms script (children vs)
+                         (readScript w eb gt defs (children os) thms script manner (nil T)
+                           (children vs)
                            (children ks)
                            (children hs))) G E rs g hyps (p1 tu) (p2 tu)))))))))))))))
   (defn companion ((G Globals) (E (List Entry)) (rs NRs) (m T) (j T) (a Thm)) T
@@ -1806,60 +2071,75 @@
       (let xs Ts (drop (entryBase v) ns)
         (mapT (lam ((i T)) (at xs (mul 2 i))) (range (div (length xs) 2))))))
   ; The development before its first theorem: in version 3 the connectives' rules, checked.
+  (def noFailures (node 0 (nil T)))
   (defn begin ((G Globals) (v T) (o T)) Progress
     (let ds (List Decl) (if (lt 2 v) (connectiveRules o 0) (nil Decl))
-      (case (checkDev G (nil Entry) ds) ((ODevState.nothing) (stuck 6 unnamed))
+      (case (checkDev G (nil Entry) ds) ((ODevState.nothing) (stuck 6 unnamed noFailures))
         ((ODevState.just st)
          (case st
            ((devState G2 el)
-            (proving (results (node 0 (mapT (lam ((i T)) unnamed) (range (Decls.length ds)))) ds)
-              el)))))))
+            (proving (results (node 0 (mapT (lam ((i T)) unnamed) (range (Decls.length ds)))) ds) el
+              noFailures)))))))
+  ; The development after a theorem's declaration, given the entries after it: after version 0,
+  ; the theorem's companion follows it, derived from it and checked.
+  (defn accompany
+    ((G Globals) (rs NRs) (defs Ts) (v T) (q Request) (thms Ts) (ns T) (ds (List Decl)) (decl Decl)
+     (el1 EntryList)
+     (fs T))
+    Progress
+    (case el1
+      ((entries E1)
+       (let ds1 (List Decl) (Decls.append ds (Decls.single decl))
+         (if (eq v 0)
+           (proving (results (node 0 (append (children ns) (single (requestName q)))) ds1) el1 fs)
+           (let w T
+             (companion G E1 (rulesIn E1 (normalRules (entryBase v) defs thms q) rs) (normalDepth q)
+               (Decls.length ds)
+               (requestThm q))
+             (if (isSome w)
+               (let cs Ts (children (get w))
+                 (let decl2 Decl (declLang (withSides (requestThm q) (at cs 0) (at cs 1)) (at cs 2))
+                   (case (admit G E1 decl2) ((OEntries.nothing) (stuck 6 (requestName q) fs))
+                     ((OEntries.just el2)
+                      (proving
+                        (results
+                          (node 0 (append (children ns) (l2 (requestName q) (requestName q))))
+                          (Decls.append ds1 (Decls.single decl2)))
+                        el2
+                        fs)))))
+               (stuck 5 (requestName q) fs))))))))
+  ; A theorem's script is run in the manner 0. Where its derivation holds no obligation, the
+  ; checker of developments admits the theorem with it. Where it holds the leaves of holes, or
+  ; where the script proves nothing and, run again in the manner 1, gives the leaves of the steps
+  ; that fail, the failure is kept with what is reported of them, and the theorem is an entry
+  ; without a derivation.
   (defn advance ((G Globals) (rs NRs) (gt Ts) (defs Ts) (v T) (q Request) (st Progress)) Progress
-    (case st ((stuck why name) st)
-      ((proving a el)
+    (case st ((stuck why name fs) st)
+      ((proving a el fs)
        (case a
          ((results ns ds)
           (case el
             ((entries E)
-             (let d T (derive G E rs (entryBase v) gt defs (sourceNames v (children ns)) q)
-               (if (isSome d)
-                 (let decl Decl (declLang (requestThm q) (get d))
-                   (case (admit G E decl) ((OEntries.nothing) (stuck 6 (requestName q)))
-                     ((OEntries.just el1)
-                      (case el1
-                        ((entries E1)
-                         (let ds1 (List Decl) (Decls.append ds (Decls.single decl))
-                           (if (eq v 0)
-                             (proving
-                               (results (node 0 (append (children ns) (single (requestName q))))
-                                 ds1)
-                               el1)
-                             (let w T
-                               (companion G E1
-                                 (rulesIn E1
-                                   (normalRules (entryBase v) defs (sourceNames v (children ns)) q)
-                                   rs)
-                                 (normalDepth q)
-                                 (Decls.length ds)
-                                 (requestThm q))
-                               (if (isSome w)
-                                 (let cs Ts (children (get w))
-                                   (let decl2 Decl
-                                     (declLang (withSides (requestThm q) (at cs 0) (at cs 1))
-                                       (at cs 2))
-                                     (case (admit G E1 decl2)
-                                       ((OEntries.nothing) (stuck 6 (requestName q)))
-                                       ((OEntries.just el2)
-                                        (proving
-                                          (results
-                                            (node 0
-                                              (append (children ns)
-                                                (l2 (requestName q) (requestName q))))
-                                            (Decls.append ds1 (Decls.single decl2)))
-                                          el2)))))
-                                 (stuck 5 (requestName q)))))))))))
-                 (stuck 4 (requestName q)))))))))))
-  ; The development's certificate, the present tree, or its failure.
+             (let thms Ts (sourceNames v (children ns))
+               (let d T (derive 0 G E rs (entryBase v) gt defs thms q)
+                 (let obs Ts
+                   (if (and (isSome d) (holed (requestScript q))) (obligationsOf (get d)) (nil T))
+                   (if (and (isSome d) (isEmpty obs))
+                     (let decl Decl (declLang (requestThm q) (get d))
+                       (case (admit G E decl) ((OEntries.nothing) (stuck 6 (requestName q) fs))
+                         ((OEntries.just el1) (accompany G rs defs v q thms ns ds decl el1 fs))))
+                     (accompany G rs defs v q thms ns ds (declLang (requestThm q) none)
+                       (entries (push E (entLang (requestThm q))))
+                       (node 0
+                         (append (children fs)
+                           (single
+                             (failed (if (isSome d) 7 4) (requestName q)
+                               (mapT (reportOf G E defs (requestObjects q))
+                                 (if (isSome d) obs
+                                   (obligationsOf
+                                     (getD (derive 1 G E rs (entryBase v) gt defs thms q)
+                                       none))))))))))))))))))))
+  ; The development's certificate, the present tree, or its failures.
   (defn proveWith ((gt Ts) (names Ts) (ds (List LDefn)) (sources Ts)) T
     (case (readSources gt names ds sources) ((readBad why name) (failure why name))
       ((readOk qs)
@@ -1874,8 +2154,10 @@
                        (k (advance G rs gt names v q st)))
                      (lam ((st Progress)) st)
                      xs) (begin G v o))
-                  ((stuck why name) (failure why name))
-                  ((proving a el) (some (rep a))))))))))))
+                  ((stuck why name fs)
+                   (node 2 (append (children fs) (single (failed why name (nil T))))))
+                  ((proving a el fs)
+                   (if (isEmpty (children fs)) (some (rep a)) (node 2 (children fs)))))))))))))
   ; The sources of a development are the children of a node, each the node of a document's
   ; characters.
   (defn prove ((bundle T) (sources T)) T

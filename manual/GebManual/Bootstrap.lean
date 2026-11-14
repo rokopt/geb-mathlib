@@ -399,16 +399,17 @@ Extension:
   among them, and the tactics of reduction, search, extensionality, the
   induction and case analysis of lists, the case analysis of coproducts
   and trees and the rewriting under a test, in which the development of
-  the lemmas of trees is written in Geb source; as is the record of
+  the lemmas of trees is written in Geb source; as are holes in proof
+  scripts, each reported with its goal, as each step of a script that
+  fails is, and the record of
   elaborated definitions for the first program outside the compilers;
   documentation as literate pages has a first inclusion. Waiting on the datatype
   language's completion: hygienic elaboration with explicit assembly,
   patterns with `&`, unused pattern variables, primitives that no binding
   shadows and emitted names that no definition captures; holes in the
   datatype language; and diagnostics with locations of its typing. The typed
-  enumerator accompanies the first substantial module. The rest, the store,
-  a language server and the authoring interface to holes in proofs among
-  it, waits on its consumers;
+  enumerator accompanies the first substantial module. The rest, the store
+  and a language server among it, waits on its consumers;
   the Geb-native refinement search follows the bootstrap.
 
 ## After the bootstrap
@@ -1703,8 +1704,9 @@ section below opens with a table of the states of its parts.
     seed and the Geb reader, and the canonical, basic transport and
     advanced encodings: complete; modules: complete but for the parts that
     follow their consumers; diagnostics naming the failing definition at its
-    line and column, the markup of comments, the `geb` editor language and the checker of holes
-    in programs: complete; the other steps of the sequence independent of the datatype language's
+    line and column, the markup of comments, the `geb` editor language, the checker of holes
+    in programs and holes in proof scripts with the report of goals: complete; the other steps
+    of the sequence independent of the datatype language's
     completion: ready; the steps after it: waiting on it; the
     parts that follow their consumers: waiting on them
 *
@@ -3492,6 +3494,16 @@ tag := "authoring-compatibility"
     the display of their obligations
   * Complete
 *
+  * Holes in proof scripts and the report of goals
+    ({ref "proof-holes"}[Holes and goals])
+  * Complete: a hole stands where a script stands, and each hole and each
+    step of a script that fails is reported at its place with its goal, a
+    statement the document reads, the theorems after it proved under its
+    theorem; the report is the prover's, and the checker of holes that
+    certifies a theorem under its obligations is written in Lean
+    ({ref "typed-holes"}[Typed holes]), its translation of open sketches
+    and its transcription into Geb remaining
+*
   * Documentation as literate pages
   * A first inclusion is complete: source comments rendered by Verso,
     checked examples, resolved references and proof replay during the
@@ -3525,9 +3537,9 @@ tag := "authoring-compatibility"
     language's completion; the typed enumerator: ready
 *
   * When their consumers exist: digests and the store, the attachment of
-    annotations and hover text, a language server, tree-sitter, holes in
-    proofs, the cache of certificates, the export to canonical
-    S-expressions, and the Geb-native refinement search
+    annotations and hover text, a language server, tree-sitter, the cache
+    of certificates, the export to canonical S-expressions, and the
+    Geb-native refinement search
   * Waiting on their consumers
 *
   * Acceptance
@@ -4793,8 +4805,15 @@ ordinary conversion certificate, proved accepted by
 `GebTests/Prototypes/FreeTopos/InternalHoles.lean` tests contexts under
 extensionality, cut and induction, repeated identities, filling in stages,
 and rejection of wrong sequents and unfinished proofs. The translation
-of an open sketch to a certificate of the conditional formula above,
-the Geb transcription and the authoring interface remain.
+of an open sketch to a certificate of the conditional formula above and
+the Geb transcription remain. The authoring interface is that of
+{ref "proof-holes"}[Holes and goals]: a hole of a proof script is a tactic
+of the prover written in Geb, whose derivation of the script holds, where
+the hole's tactic is run, a leaf of no rule that keeps the sequent the
+tactic is given, and the runner reports those leaves, with the sequents of
+the steps that fail in a script that proves nothing, and writes no
+certificate. Nothing checks that report; this checker, transcribed, is
+what certifies a sketch's conclusion under the sequents of its holes.
 
 The checker of holes in programs is written in Lean, in the suspending
 form (`Geb/Prototypes/Kernel/Holes.lean`). A checker written as
@@ -5495,7 +5514,10 @@ among the deducers, is stated and proved in that version under
 `bootstrap/proofs/`, about the program of `bootstrap/expansion.manifest`, and
 `scripts/tests/test-proof-scripts.sh` proves and replays it. A reader or
 prover that rejects a development reports the theorem concerned and why,
-which the host writes at the theorem's line and column. The statements of
+which the host writes at the theorem's line and column; a script that
+leaves a hole open, or does not prove its theorem, is reported at the hole
+or at the step that fails, with its goal
+({ref "proof-holes"}[Holes and goals]). The statements of
 the developments of the evaluator's fundamental lemma and of the datatype
 language's soundness remain Lean values and their scripts Lean code, the
 deducers under `GebTests/Prototypes/FreeTopos/`, which the provers'
@@ -5700,6 +5722,12 @@ declares its datatypes by `data`, `tree-data` being removed.
     and a well-typed filling is accepted without capture; a program with an
     open hole is not reported as complete
 *
+  * Holes in proof scripts and the report of goals
+  * In a proof script, each hole and each step that fails is reported at
+    its place with its goal, a statement the document reads back; a theorem
+    after it that cites its theorem is proved; a development with an open
+    hole has no certificate
+*
   * Documentation as literate pages
   * One Geb module renders prose, a checked example and a link through
     Verso; editing only its documentation leaves the core identity
@@ -5733,7 +5761,7 @@ holes in the datatype language, whose types the stage-1 typing reports, the
 kernel's erasing the datatypes; diagnostics with locations inside a
 declaration; and the typed enumerator. When their consumers
 exist: digests and the store, `attach` and hover text, a language
-server, tree-sitter, holes in proofs, the cache of certificates and the
+server, tree-sitter, the cache of certificates and the
 export to canonical S-expressions. The Geb-native refinement search
 follows the bootstrap.
 The library then written in Geb drives content storage, richer language
