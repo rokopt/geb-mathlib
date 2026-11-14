@@ -7,7 +7,8 @@
 # at their places in the present program; a theorem whose script or statement changed, whose
 # derivation unfolds a definition defined otherwise, or that is not proved, is run. The
 # certificate is that of a development proved without a cache, and a certificate of the program
-# before a change is transported to the program after it where it still replays.
+# before a change is transported to the program after it where it still replays. A development
+# of version 4 is resumed from a cache of the definitions it declares.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
@@ -206,6 +207,52 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-cache-test-') as directory:
     assert uses(out) == (0, 0, 4, 0), out
     assert file.read_bytes() != b'not a cache'
 
+    # A development of version 4 declares definitions, and its cache is of them: a definition
+    # declared after the others, or defined otherwise, leaves no theorem taken, and a bound
+    # variable's name is no part of a definition. Under a changed program its definitions move
+    # with the connectives, in the cache's items and in its certificate.
+    DEFS = '''(proofs 4 (program pair)
+  (definition plus ((m Nat) (n Nat)) Nat
+    ((nat-rec (lam ((a Nat)) a) (r) (lam ((a Nat)) (succ (r a))) n) m))
+  (theorem plus-zero (internal () (forall ((n Nat)) (equal (plus n zero) n)))
+    (by (reduce full (unfold plus))))
+  (theorem zero-plus (internal () (forall ((n Nat)) (equal (plus zero n) n)))
+    (by (nat-induction n 256 (unfold plus)))))
+'''
+    defined = root / 'Defined.proofs.geb'
+    counted = root / 'defined.cert'
+
+    def prove_defined(text):
+        defined.write_text(text)
+        out, _ = run('prove', '--cache', cache, defined, counted)
+        return uses(out)
+
+    assert prove_defined(DEFS) == (0, 0, 2, 0)
+    assert prove_defined(DEFS) == (2, 0, 0, 0)
+    renamed = DEFS.replace('(lam ((a Nat)) (succ (r a)))', '(lam ((b Nat)) (succ (r b)))')
+    assert renamed != DEFS and prove_defined(renamed) == (2, 0, 0, 0)
+    more = DEFS.replace('  (theorem plus-zero',
+                        '  (definition one () Nat (succ zero))\n  (theorem plus-zero')
+    assert more != DEFS and prove_defined(more) == (0, 2, 0, 0)
+    assert prove_defined(more) == (2, 0, 0, 0)
+    otherwise = more.replace(') n) m))', ') n) ((lam ((a Nat)) a) m)))')
+    assert otherwise != more
+    taken, _, _, unproved = prove_defined(otherwise)
+    assert taken == 0 and unproved == 0
+    assert prove_defined(otherwise) == (2, 0, 0, 0)
+    before = counted.read_bytes()
+    first.write_text(first.read_text().replace(
+        '(module Pair (export first left)\n',
+        '(module Pair (export first left)\n  (defn third ((x T) (y T)) T x)\n'))
+    _, err = run('replay', defined, counted, ok=False)
+    assert 'compiled program differs' in err, err
+    run('transport', defined, counted, root / 'defined-moved.cert')
+    run('replay', defined, root / 'defined-moved.cert')
+    assert counted.read_bytes() == before
+    assert prove_defined(otherwise) == (0, 2, 0, 0)
+    assert prove_defined(otherwise) == (2, 0, 0, 0)
+
 print('test-proof-cache: taken, checked and proved theorems, changed scripts, statements and '
-      'programs, failures, holes, the certificate and its transport passed')
+      'programs, failures, holes, the certificate, its transport and declared definitions '
+      'passed')
 PY

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Exercise versions 2 and 3 of the proof profile through the CLI: statements over the internal
+# Exercise versions 2 to 4 of the proof profile through the CLI: statements over the internal
 # language, the tactics of trees and coproducts, rules at objects, imported documents, the program
 # a document names, the diagnostics of a rejected development, truth and implication, the tactics
 # of the induction on trees with the hypothesis at each child, of the instances of a hypothesis
@@ -8,7 +8,8 @@
 # companion, rules that keep definitions folded, the uniqueness of folds with premises that
 # scripts prove, instances of theorems and hypotheses cut in from them, the searches that split
 # the values of tests and rewrite under masks, holes and the goals reported of them and of the
-# steps that fail, and the development of
+# steps that fail, the natural numbers and the definitions a development declares, and the
+# development of
 # bootstrap/proofs/tree-cases.proofs.geb, proved and replayed. scripts/proofs.sh proves the
 # developments of bootstrap/proofs/ whose searches take longer.
 set -euo pipefail
@@ -288,7 +289,7 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
     rejected(MORE.replace('(sum-cases b (u)', '(sum-cases c (u)'), '21:12',
              'the script of the theorem bit-constant does not read')
     rejected(MORE.replace('(theorem case-inr', '(theorem first-at'), '15:12',
-             'the theorem first-at is declared before')
+             'the name first-at is declared before')
     # A term of the kernel mentions no variable without a kernel type; an equation's sides have
     # one type; an object variable is bound; a definition of the library takes its objects.
     for body in ('(theorem a (internal () (forall ((x Bits)) (equal (kernel x) x))) (by (normalize 4)))',
@@ -591,6 +592,65 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
     unnamed(named('(program pair)', plain), 'several manifests')
     (root / 'second.manifest').unlink()
 
+    # Version 4: the natural numbers, the definitions a development declares, the rule that
+    # unfolds one and the induction on a natural number. The certificate replays; a document of
+    # version 3 reads none of it; a definition that does not check, a name declared twice and a
+    # declared name taken by a variable are rejected; and a hole's goal is reported in the names
+    # of the definitions.
+    NATURALS = '''(proofs 4 (program pair)
+  (definition plus ((m Nat) (n Nat)) Nat
+    ((nat-rec (lam ((a Nat)) a) (r) (lam ((a Nat)) (succ (r a))) n) m))
+  (definition two () Nat (succ (succ zero)))
+  (theorem plus-zero (internal () (forall ((n Nat)) (equal (plus n zero) n)))
+    (by (reduce full (unfold plus))))
+  (theorem zero-plus (internal () (forall ((n Nat)) (equal (plus zero n) n)))
+    (by (nat-induction n 256 (unfold plus))))
+  (theorem succ-plus
+    (internal () (forall ((m Nat) (n Nat)) (equal (plus (succ m) n) (succ (plus m n)))))
+    (by (nat-induction n 256 (unfold plus))))
+  (theorem plus-comm (internal () (forall ((m Nat) (n Nat)) (equal (plus m n) (plus n m))))
+    (by (nat-induction n 256 zero-plus succ-plus (unfold plus))))
+  (theorem two-twice (internal () (equal (plus two two) (succ (succ two))))
+    (by (reduce full (unfold plus) (unfold two))))
+  (theorem append-nil-again (forall ((xs (List T))) (equal (Lists.append xs (nil T)) xs))
+    (by (induction xs (y ys ih) (reduce weak) (reduce-hypotheses weak (ih) (reduce weak ih))))))
+'''
+    naturals = root / 'Naturals.proofs.geb'
+    naturals.write_text(NATURALS)
+    counted = root / 'naturals.cert'
+    run('prove', naturals, counted)
+    run('replay', naturals, counted)
+
+    def naturals_rejected(old, new, message):
+        text = NATURALS.replace(old, new)
+        assert text != NATURALS, old
+        target = root / 'BadNaturals.proofs.geb'
+        target.write_text(text)
+        error = run('check', target, ok=False)
+        assert message in error, (new, error)
+        return error
+
+    naturals_rejected('(proofs 4 ', '(proofs 3 ', 'does not read')
+    naturals_rejected('(definition two () Nat (succ (succ zero)))',
+                      '(definition two () Nat (pair zero zero))',
+                      'the definition two is not (definition NAME')
+    naturals_rejected('(definition two () Nat', '(definition plus () Nat',
+                      'the name plus is declared before')
+    naturals_rejected('(theorem plus-zero ', '(theorem two ', 'the name two is declared before')
+    naturals_rejected('(theorem plus-zero ', '(theorem Nat ', 'the name Nat is declared before')
+    naturals_rejected('(forall ((n Nat)) (equal (plus n zero) n))',
+                      '(forall ((two Nat)) (equal (plus two zero) two))',
+                      'the theorem plus-zero is not (theorem NAME STATEMENT (by SCRIPT))')
+    naturals_rejected('(equal (plus two two) (succ (succ two)))', '(equal (plus two) two)',
+                      'the theorem two-twice is not (theorem NAME STATEMENT (by SCRIPT))')
+    error = naturals_rejected('(by (nat-induction n 256 (unfold plus))))\n  (theorem succ-plus',
+                              '(by ?base))\n  (theorem succ-plus',
+                              'the script of the theorem zero-plus leaves the hole ?base open')
+    assert 'at the goal (internal () (forall ((n Nat)) (equal (plus zero n) n)))' in error, error
+    error = naturals_rejected('(by (reduce full (unfold plus) (unfold two))))',
+                              '(by (reduce full (unfold plus))))',
+                              'the script of the theorem two-twice does not prove it')
+
     # The development of the tree lemmas and of the case analysis of trees, about the type checker
     # and the expansion of the datatype language, is proved and replayed from its Geb sources, the
     # document of the case analysis naming its program.
@@ -601,5 +661,5 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
 print('test-proof-scripts: internal statements, tactics, imports, named programs, diagnostics, '
       'hypotheses and implications, alternatives, the cases of bitstrings, abbreviations, the '
       'uniqueness of folds, instances, normal forms, folded definitions, rewriting under masks, '
-      'holes and goals, and the tree-cases development passed')
+      'holes and goals, natural numbers and definitions, and the tree-cases development passed')
 PY

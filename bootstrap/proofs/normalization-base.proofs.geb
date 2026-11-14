@@ -1,0 +1,31 @@
+; The base of the fundamental lemma of the evaluator written in Geb, about the translation of the
+; prelude, the reader, the type checker, the traversal of kernel terms and the evaluator: the
+; definitions the lemma states and the lemmas it rests on. The addition of natural numbers, by
+; which the levels of the evaluator's fuel are counted, is defined by recursion on its second
+; summand, and its lemmas are proved by the computation of the fold and by induction on that
+; summand.
+
+(proofs 4 (program normalization)
+  ; Addition, by recursion on the second summand into functions of the first.
+  (definition plus ((m Nat) (n Nat)) Nat
+    ((nat-rec (lam ((a Nat)) a) (r) (lam ((a Nat)) (succ (r a))) n) m))
+  ; Zero is a right unit, and the sum at a successor on the right is the successor of the sum.
+  (theorem plus-zero (internal () (forall ((n Nat)) (equal (plus n zero) n)))
+    (by (reduce full (unfold plus))))
+  (theorem plus-succ
+    (internal () (forall ((m Nat) (n Nat)) (equal (plus m (succ n)) (succ (plus m n)))))
+    (by (reduce full (unfold plus))))
+  ; Zero is a left unit, and the sum at a successor on the left is the successor of the sum, by
+  ; induction on the second summand.
+  (theorem zero-plus (internal () (forall ((n Nat)) (equal (plus zero n) n)))
+    (by (nat-induction n 4096 (unfold plus))))
+  (theorem succ-plus
+    (internal () (forall ((m Nat) (n Nat)) (equal (plus (succ m) n) (succ (plus m n)))))
+    (by (nat-induction n 4096 (unfold plus))))
+  ; Addition is associative, by induction on the last summand, and commutative, by induction on
+  ; the second with the two lemmas before.
+  (theorem plus-assoc
+    (internal () (forall ((k Nat) (m Nat) (n Nat)) (equal (plus (plus k m) n) (plus k (plus m n)))))
+    (by (nat-induction n 4096 (unfold plus))))
+  (theorem plus-comm (internal () (forall ((m Nat) (n Nat)) (equal (plus m n) (plus n m))))
+    (by (nat-induction n 4096 zero-plus succ-plus (unfold plus)))))

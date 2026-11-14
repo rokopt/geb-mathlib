@@ -85,7 +85,7 @@ program after it by `transport`
 # The proof-source profile
 
 A proof document is `(proofs V THEOREM…)`, its version `V` being `0`, `1`,
-`2` or `3`, with one or more theorems of distinct names, each
+`2`, `3` or `4`, with one or more theorems of distinct names, each
 `(theorem NAME STATEMENT (by SCRIPT))`. Version `1` reads:
 
 ```
@@ -146,8 +146,8 @@ definitions and computes applications of abstractions and the components
 of pairs alone, so a document of either version keeps its meaning. It
 cites no theorem, so its certificate saves no companion and has the format
 `geb-proof/v1`, whose certificates therefore still replay; version `1`
-writes `geb-proof/v2`, version `2` `geb-proof/v3` and version `3`
-`geb-proof/v4`. An unknown or unbound
+writes `geb-proof/v2`, version `2` `geb-proof/v3`, version `3`
+`geb-proof/v4` and version `4` `geb-proof/v5`. An unknown or unbound
 name, a name declared twice,
 a malformed form, an unsupported version, a false equation or an
 unsuccessful search is rejected. Failure of a bounded search does not establish that the
@@ -707,6 +707,91 @@ hole's form, the leaf, the goal's statement and the report are in
 document as written, after the abbreviations are expanded, in
 `GebHost/Authoring.lean`.
 
+# Definitions and natural numbers
+%%%
+tag := "definition-scripts"
+%%%
+
+Version `4` reads what version `3` reads, and adds the natural numbers, the
+definitions that a development declares, and every connective among the
+constants of a development:
+
+```
+DOCUMENT ::= (proofs 4 HEADER… FORM…)
+FORM ::= … | (definition NAME ((x TYPE) …) TYPE ITERM)
+TYPE ::= … | Nat
+ITERM ::= … | zero | (succ ITERM) | (nat-rec ITERM (r) ITERM ITERM)
+        | NAME | (NAME ITERM…)
+RULE ::= … | (unfold NAME)
+SCRIPT ::= … | (nat-induction x FUEL RULE…)
+```
+
+`Nat` is the natural numbers object, `zero` and `(succ t)` its zero and
+successor, and `(nat-rec z (r) s n)` the fold of the number `n`: `z` at
+zero, and at a successor the term `s`, in which `r` is the fold's value at
+the number before it. The zero and the successor are primitive arrows of a
+development of version `4`, after those of the lists, the trees and the
+coproducts, and its reductions compute the fold at each. No variable of a
+document of version `4` takes the name `zero`, `succ` or `nat-rec`.
+
+A form `(definition NAME ((x TYPE) …) TYPE ITERM)` declares a definition of
+the internal language, in no object variables: `NAME` at parameters of the
+types given is the term, of the type given, which is read in the parameters.
+The name is one a variable may take, so none the kernel's reader reserves,
+and is that of no definition of the program, of no theorem and of no
+definition declared before it. The definitions of a development follow the
+connectives' among the constants it is checked with, in the order of their
+forms, each read and checked with those before it, and their declarations
+follow the connectives' rules in its certificate, before the theorems',
+under their names. In the forms after a definition's, of its document and
+of the documents after it in the development, `(NAME t…)` applies it to a
+term for each of its parameters, and `NAME` alone is a definition without
+parameters. The name then stands for the definition wherever it is written
+in those forms, as an abbreviation's does for its items, and `Nat` for the
+natural numbers, so that no variable, hypothesis or theorem of those forms
+takes either name. The reductions keep a declared definition folded, as they
+keep the connectives: a rule `(unfold NAME)` unfolds it, and a rule
+`(folded NAME…)` may name it among the definitions it keeps.
+
+`nat-induction` proves the goal by induction on its innermost variable `x`,
+a natural number: at zero, and at a successor under the induction
+hypothesis, each by normalization within the budget with the rules, the
+hypothesis rewriting at the successor. It is
+`Geb.FreeTopos.Internal.byNatIndHyp`.
+
+The connectives of a development of version `4` are those of
+`Geb.FreeTopos.Internal.Logic`: truth, conjunction and implication and,
+after them, the universal quantification, falsity, negation, disjunction and
+the existential and unique existential quantifications, with the
+introduction and elimination rules of each, which begin the certificate
+(`bootstrap/free-topos/logic.geb`). A test compares the definitions and the
+rules with Lean's
+(`GebTests/Prototypes/FreeTopos/InternalLogicMirror.lean`). Version `4`
+reads no term and no tactic of the connectives after implication; its
+certificates have their layout, so that the forms that will read them add no
+declaration to a certificate.
+
+The cache of a development of version `4` keeps the declarations of its
+definitions, and a development is aligned with a cache of the definitions it
+declares alone: a definition declared after the others, or defined
+otherwise, leaves every theorem checked or proved
+({ref "proof-cache"}[The cache of a development]). A document of version `4`
+imports documents of versions `1` to `4`.
+
+The document `normalization-base.proofs.geb` under `bootstrap/proofs/`
+begins in this version the development of
+`GebTests/Prototypes/FreeTopos/NormalizationBase.lean`, the base of the
+fundamental lemma of the evaluator, about the program of
+`bootstrap/normalization.manifest`. It declares the addition of natural
+numbers, by which the levels of the evaluator's fuel are counted, and
+proves its lemmas: zero and a successor on each side, associativity and
+commutativity. The rest of that development, and those of
+`NormalizationConst.lean`, `NormalizationRel.lean` and `Normalization.lean`,
+remain Lean deducers. Their statements are formulas of the connectives
+rather than equations, their deductions the connectives' rules, and their
+definitions include folds of the program's own, none of which a script yet
+reads.
+
 # The cache of a development
 %%%
 tag := "proof-cache"
@@ -852,7 +937,7 @@ source dependencies, the manifest and sources, the Lean toolchain and
 dependency lockfile. `record/compiler.img` retains the exact bytes of
 `bootstrap/compiler.img` used at the milestone. The certificate envelope separately identifies
 its format (`geb-proof/v2` for version `1`, `geb-proof/v3` for version `2`,
-`geb-proof/v4` for version `3`), theory
+`geb-proof/v4` for version `3`, `geb-proof/v5` for version `4`), theory
 (`free-topos/base/v1`),
 document profile and exact compiled program; its declarations retain the
 statements, their companions and their source names.

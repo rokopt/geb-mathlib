@@ -166,6 +166,9 @@ def kwImport : List Char := "import".toList
 /-- The head of a theorem, {lit}`theorem`. -/
 def kwTheorem : List Char := "theorem".toList
 
+/-- The head of a definition that a development declares, {lit}`definition`. -/
+def kwDefinition : List Char := "definition".toList
+
 /-- The head of the form naming a document's program, {lit}`program`. -/
 def kwProgram : List Char := "program".toList
 
@@ -180,7 +183,8 @@ def headerAtoms (head : List Char) (d : Doc) : Except String (List String) :=
       | [_, p] => if headIs head c && p.children.isEmpty then p.label.2.map String.ofList else none
       | _ => none
     let version := root.children[1]?.bind (·.label.2)
-    if atoms.isEmpty || version == some ['2'] || version == some ['3'] then .ok atoms
+    if atoms.isEmpty || version == some ['2'] || version == some ['3'] ||
+        version == some ['4'] then .ok atoms
     else .error s!"a document of a version before 2 has no form ({String.ofList head} …)"
   | none => .ok []
 
@@ -244,14 +248,16 @@ def sourcesTree (docs : List (System.FilePath × Durable)) : Tree :=
 
 /-- The certificate format of a development's version, that of its last document: version 0
 saves one declaration for each theorem, and the later versions save each theorem followed by its
-companion, version 2 the theorems of the documents imported before its own, and version 3 the
-connectives' rules before every theorem. -/
+companion, version 2 the theorems of the documents imported before its own, version 3 the
+connectives' rules before every theorem, and version 4 the rules of every connective and, after
+them, the declarations of the definitions the development declares. -/
 def formatOf (version : Tree) : Tree :=
   nameTree (match version.label with
     | 0 => "geb-proof/v1"
     | 1 => "geb-proof/v2"
     | 2 => "geb-proof/v3"
-    | _ => "geb-proof/v4").toList
+    | 3 => "geb-proof/v4"
+    | _ => "geb-proof/v5").toList
 
 /-! ## Failures and obligations -/
 
@@ -300,7 +306,7 @@ def failuresOf (report : Tree) : List Failure :=
 /-- The message of a reason and the theorem it concerns. -/
 def reasonMessage (why : Nat) (name : String) : String :=
   match why with
-  | 1 => s!"the theorem {name} is declared before"
+  | 1 => s!"the name {name} is declared before, by a theorem or a definition"
   | 2 => s!"the theorem {name} is not (theorem NAME STATEMENT (by SCRIPT)), or its statement \
     does not read"
   | 3 => s!"the script of the theorem {name} does not read"
@@ -308,6 +314,9 @@ def reasonMessage (why : Nat) (name : String) : String :=
   | 5 => s!"the sides of the theorem {name} have no weak normal forms within the budget"
   | 6 => "the derivations of the development do not check"
   | 7 => s!"the script of the theorem {name} leaves holes open"
+  | 8 => s!"the definition {name} is not (definition NAME ((x TYPE) …) TYPE TERM) of a name \
+    that a variable may take and no definition of the program has, or its term does not read \
+    or does not check"
   | _ => "a document of the development is not (proofs V FORM…) of a version this host reads \
     with a theorem, or a document of version 0 is combined with others, or a document imports \
     one of a later version"
@@ -377,13 +386,13 @@ def formsOf (root : Locate.Located) : List Locate.Located :=
       | none => (st.1, st.2 ++ expandItems st.1 f)
     | _ => (st.1, st.2 ++ expandItems st.1 f)) ([], [])).2
 
-/-- The form of a theorem in a document as written, as the runner reads it: the last theorem of
-that name among the forms of its form {lit}`(proofs V …)`. -/
+/-- The form of a theorem, or of a definition, in a document as written, as the runner reads
+it: the last form of that name among the forms of its form {lit}`(proofs V …)`. -/
 def theoremForm (text : List Char) (name : String) : Option Locate.Located :=
   match Locate.locate text with
   | .ok items =>
     ((items.filter (Locate.headIs kwProofs)).flatMap formsOf).reverse.find? fun t ↦
-      Locate.headIs kwTheorem t &&
+      (Locate.headIs kwTheorem t || Locate.headIs kwDefinition t) &&
         (t.children[1]?.bind (·.label.2)) == some name.toList
   | .error _ => none
 

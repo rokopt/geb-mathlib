@@ -9,13 +9,20 @@
 ; of the terminal type with itself, a conjunction the equality of the pair of its formulas with
 ; the pair of truths, and an implication the equality of the conjunction with the antecedent.
 
-(module Logic (export connectives connectiveRules) (import Prelude) (import Base) (import Theory)
+(module Logic
+  (export connectives connectiveRules connectivesAll connectiveRulesAll allL ffL negL disjL exL
+    exuL)
+  (import Prelude)
+  (import Base)
+  (import Theory)
   (import Language)
   (import Derivation)
   (import Prover)
   (import Tactics)
   (import (Few LDefn) as LF)
   (import (Few Decl) as DF)
+  (import (Seq LDefn) as LD)
+  (import (Seq Decl) as Decls)
   ; the conjunction of two formulas, the definition after truth
   (defn conjL ((o T) (p T) (q T)) T (mDefn (add o 1) (nil T) (l2 q p)))
   ; the definitions, the first of index o: truth, conjunction and implication
@@ -72,4 +79,162 @@
                         (dNode 27 (l3 (add j 3) (node 0 (nil T)) (node 0 (l2 (var 0) (var 1))))
                           (single
                             (dNode 23 (nil T)
-                              (l2 (dNode 1 (nil T) (l2 (rwHyp 2) (rwHyp 3))) trueI))))))))))))))))
+                              (l2 (dNode 1 (nil T) (l2 (rwHyp 2) (rwHyp 3))) trueI)))))))))))))))
+  ; The connectives after implication, each the definition of its index from o: the universal
+  ; quantification over a type of a predicate, falsity, the negation of a formula, the disjunction
+  ; of two formulas, and the existential and the unique existential quantification over a type of
+  ; a predicate.
+  (defn allL ((o T) (a T) (p T)) T (mDefn (add o 3) (single a) (single p)))
+  (defn ffL ((o T)) T (mDefn (add o 4) (nil T) (nil T)))
+  (defn negL ((o T) (p T)) T (mDefn (add o 5) (nil T) (single p)))
+  (defn disjL ((o T) (p T) (q T)) T (mDefn (add o 6) (nil T) (l2 q p)))
+  (defn exL ((o T) (a T) (p T)) T (mDefn (add o 7) (single a) (single p)))
+  (defn exuL ((o T) (a T) (p T)) T (mDefn (add o 8) (single a) (single p)))
+  ; the definitions of every connective, the first of index o: those of truth, conjunction and
+  ; implication, and then the universal quantification, the equality of the predicate with the
+  ; predicate constantly true; falsity, the universal quantification of every formula; a
+  ; negation, the implication of falsity; a disjunction, and an existential quantification, the
+  ; formula that every consequence of each disjunct, and of each instance, implies; and a unique
+  ; existential quantification, the existential quantification and the equality of every two
+  ; instances
+  (defn connectivesAll ((o T)) (List LDefn)
+    (let two Objs (objs (l2 omega omega))
+      (let pred Objs (objs (single (exp (x 0) omega)))
+        (let imp (Arrow T (Arrow T T)) (impL o)
+          (LD.append (connectives o)
+            (LF.l6 (ldefn 1 pred omega (mEq (var 0) (mLam (x 0) (ttL o))))
+              (ldefn 0 (objs (nil T)) omega (allL o omega (mLam omega (var 0))))
+              (ldefn 0 (objs (single omega)) omega (imp (var 0) (ffL o)))
+              (ldefn 0 two omega
+                (allL o omega
+                  (mLam omega (imp (conjL o (imp (var 2) (var 0)) (imp (var 1) (var 0))) (var 0)))))
+              (ldefn 1 pred omega
+                (allL o omega
+                  (mLam omega
+                    (imp (allL o (x 0) (mLam (x 0) (imp (app (var 2) (var 0)) (var 1)))) (var 0)))))
+              (ldefn 1 pred omega
+                (conjL o (exL o (x 0) (var 0))
+                  (allL o (x 0)
+                    (mLam (x 0)
+                      (allL o (x 0)
+                        (mLam (x 0)
+                          (imp (conjL o (app (var 2) (var 1)) (app (var 2) (var 0)))
+                            (mEq (var 1) (var 0)))))))))))))))
+  ; the derivations' nodes: a conversion, a cut, a formula from one it rewrites to, the
+  ; application of a theorem at objects and terms, and the hypothesis of an index
+  (def dDelta (dNode 8 (nil T) (nil T)))
+  (def dBeta (dNode 3 (nil T) (nil T)))
+  (defn dConv ((a T) (b T)) T (dNode 23 (nil T) (l2 a b)))
+  (defn dCut ((phi T) (a T) (b T)) T (dNode 22 (single phi) (l2 a b)))
+  (defn dConvFrom ((phi T) (a T) (b T)) T (dNode 24 (single phi) (l2 a b)))
+  (defn dApply ((j T) (th Ts) (ts Ts) (ps Ts)) T (dNode 27 (l3 j (node 0 th) (node 0 ts)) ps))
+  (defn dHyp ((i T)) T (dNode 21 (single i) (nil T)))
+  ; the introduction of the implication of q by p, under n hypotheses, from the derivation of q
+  ; under them and p, as {geb}`Tactics.impI` builds it, which that module does not export
+  (defn impIntro ((j T) (n T) (p T) (q T) (d T)) T
+    (dConv dDelta
+      (dNode 25 (nil T)
+        (l2 (dApply (add j 2) (nil T) (l2 q p) (single (dHyp n)))
+          (dApply (add j 1) (nil T) (l2 q p) (l2 (dHyp n) d))))))
+  ; the introduction of a universal quantification of an abstraction, from the derivation of its
+  ; body at a new variable, under truth: the predicate's applications to the new variable and
+  ; truth are equal
+  (defn allI ((d T)) T
+    (dConv dDelta
+      (dNode 26 (nil T)
+        (single (dConv (dNode 2 (nil T) (l2 dBeta dBeta)) (dNode 25 (nil T) (l2 trueI d)))))))
+  ; the rules of every connective, the first of index j, for the definitions from the index o:
+  ; those of truth, conjunction and implication, and then the elimination of a universal
+  ; quantification and of falsity, the introduction of a disjunction from each disjunct and its
+  ; elimination, and the introduction and the elimination of an existential quantification
+  (defn connectiveRulesAll ((o T) (j T)) (List Decl)
+    (let two Objs (objs (l2 omega omega))
+      (let imp (Arrow T (Arrow T T)) (impL o)
+        (let pred T (exp (x 0) omega)
+          (let none0 Ts (nil T)
+            (let cases T (conjL o (imp (var 2) (var 0)) (imp (var 1) (var 0)))
+              (let caseB T (imp (conjL o (imp (var 3) (var 0)) (imp (var 2) (var 0))) (var 0))
+                (let each T (mLam (x 0) (imp (app (var 3) (var 0)) (var 1)))
+                  (let every T (allL o (x 0) (mLam (x 0) (imp (app (var 2) (var 0)) (var 1))))
+                    (let exB T
+                      (mLam omega
+                        (imp (allL o (x 0) (mLam (x 0) (imp (app (var 3) (var 0)) (var 1))))
+                          (var 0)))
+                      (let disjI (Arrow T (Arrow T T))
+                        (lam ((side T) (proj T))
+                          (dConv dDelta
+                            (allI
+                              (impIntro j 2 cases (var 0)
+                                (dApply (add j 4) none0 (l2 (var 0) side)
+                                  (l2
+                                    (dApply (add j proj) none0
+                                      (l2 (imp (var 1) (var 0)) (imp (var 2) (var 0)))
+                                      (single (dHyp 2)))
+                                    (dHyp 0)))))))
+                        (Decls.append (connectiveRules o j)
+                          (Decls.append
+                            (DF.l4
+                              (declLang
+                                (mkThm 1 (objs (l2 (x 0) pred))
+                                  (terms (single (allL o (x 0) (var 1))))
+                                  (app (var 1) (var 0)))
+                                (dCut (mEq (var 1) (mLam (x 0) (ttL o)))
+                                  (unfoldHyp (allL o (x 0) (var 1)) 0)
+                                  (dConv
+                                    (dNode 1 (nil T)
+                                      (l2 (dNode 2 (nil T) (l2 (rwHyp 1) (dNode 0 (nil T) (nil T))))
+                                        dBeta))
+                                    trueI)))
+                              (declLang
+                                (mkThm 0 (objs (single omega)) (terms (single (ffL o))) (var 0))
+                                (dConvFrom (app (mLam omega (var 0)) (var 0)) dBeta
+                                  (dApply (add j 5) (single omega) (l2 (var 0) (mLam omega (var 0)))
+                                    (single (unfoldHyp (ffL o) 0)))))
+                              (declLang
+                                (mkThm 0 two (terms (single (var 1))) (disjL o (var 1) (var 0)))
+                                (disjI (var 2) 2))
+                              (declLang
+                                (mkThm 0 two (terms (single (var 0))) (disjL o (var 1) (var 0)))
+                                (disjI (var 1) 3)))
+                            (DF.l3
+                              (declLang
+                                (mkThm 0 (objs (l3 omega omega omega))
+                                  (terms
+                                    (l3 (disjL o (var 2) (var 1)) (imp (var 2) (var 0))
+                                      (imp (var 1) (var 0))))
+                                  (var 0))
+                                (dCut (imp cases (var 0))
+                                  (dConvFrom (app (mLam omega caseB) (var 0)) dBeta
+                                    (dApply (add j 5) (single omega) (l2 (var 0) (mLam omega caseB))
+                                      (single (unfoldHyp (disjL o (var 2) (var 1)) 0))))
+                                  (dApply (add j 4) none0 (l2 (var 0) cases)
+                                    (l2 (dHyp 3)
+                                      (dApply (add j 1) none0
+                                        (l2 (imp (var 1) (var 0)) (imp (var 2) (var 0)))
+                                        (l2 (dHyp 1) (dHyp 2)))))))
+                              (declLang
+                                (mkThm 1 (objs (l2 (x 0) pred))
+                                  (terms (single (app (var 1) (var 0))))
+                                  (exL o (x 0) (var 1)))
+                                (dConv dDelta
+                                  (allI
+                                    (impIntro j 2
+                                      (allL o (x 0)
+                                        (mLam (x 0) (imp (app (var 3) (var 0)) (var 1))))
+                                      (var 0)
+                                      (dApply (add j 4) none0 (l2 (var 0) (app (var 2) (var 1)))
+                                        (l2
+                                          (dConvFrom (app each (var 1)) dBeta
+                                            (dApply (add j 5) (single (x 0)) (l2 (var 1) each)
+                                              (single (dHyp 2))))
+                                          (dHyp 0)))))))
+                              (declLang
+                                (mkThm 1 (objs (l2 omega pred))
+                                  (terms (l2 (exL o (x 0) (var 1)) every))
+                                  (var 0))
+                                (dCut (imp every (var 0))
+                                  (dConvFrom (app exB (var 0)) dBeta
+                                    (dApply (add j 5) (single omega) (l2 (var 0) exB)
+                                      (single (unfoldHyp (exL o (x 0) (var 1)) 0))))
+                                  (dApply (add j 4) none0 (l2 (var 0) every)
+                                    (l2 (dHyp 2) (dHyp 1))))))))))))))))))))

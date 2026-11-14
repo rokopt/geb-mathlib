@@ -402,7 +402,10 @@ Extension:
   among them, and the tactics of reduction, search, extensionality, the
   induction and case analysis of lists, the case analysis of coproducts
   and trees and the rewriting under a test, in which the development of
-  the lemmas of trees is written in Geb source; as are holes in proof
+  the lemmas of trees is written in Geb source, and, in its version 4,
+  the natural numbers and the definitions that a development declares, in
+  which that of the evaluator's fundamental lemma is begun; as are holes
+  in proof
   scripts, each reported with its goal, as each step of a script that
   fails is, the cache of a development, from which a development is
   resumed with no search for a theorem whose statement and script the
@@ -3495,9 +3498,15 @@ tag := "authoring-compatibility"
     companion, saved certificates and replay from Geb source
     ({ref "first-authoring"}[Writing a first Geb development]), the
     developments of the lemmas of trees, of weakening, of substitution and
-    of the expansion's identity on kernel forms among them; statements
-    over datatypes wait on the datatype language's completion, and the
-    developments of the evaluator's fundamental lemma and of the datatype
+    of the expansion's identity on kernel forms among them, and, in
+    version 4, the natural numbers, the definitions a development
+    declares and the induction on a natural number, in which the
+    development of the evaluator's fundamental lemma is begun, the lemmas
+    of the addition that counts its fuel
+    ({ref "definition-scripts"}[Definitions and natural numbers]);
+    statements over datatypes wait on the datatype language's completion,
+    and the rest of the development of the fundamental lemma, whose
+    statements are formulas of the connectives, and that of the datatype
     language's soundness remain Lean deducers
 *
   * `let*` and `cond`, expanded in the elaboration of modules
@@ -5554,7 +5563,8 @@ which the host writes at the theorem's line and column; a script that
 leaves a hole open, or does not prove its theorem, is reported at the hole
 or at the step that fails, with its goal
 ({ref "proof-holes"}[Holes and goals]). The statements of
-the developments of the evaluator's fundamental lemma and of the datatype
+the developments of the evaluator's fundamental lemma, but for its lemmas
+of addition, and of the datatype
 language's soundness remain Lean values and their scripts Lean code, the
 deducers under `GebTests/Prototypes/FreeTopos/`, which the provers'
 agreement relates to the prover written in Geb. Version 3 of the document
@@ -5589,7 +5599,23 @@ substitution preserve the types the kernel's type checker infers and that
 the expansion of the datatype language is the identity on a program of
 kernel forms, are so stated and proved under `bootstrap/proofs/`, the
 companion of each lemma that rewrites being the theorem its deducer
-states; `scripts/proofs.sh` proves and replays them. The syntax of
+states; `scripts/proofs.sh` proves and replays them. Version 4 of the
+document reads the natural numbers, their zero, successor and fold, and
+definitions of the internal language that a development declares, which
+follow the connectives' among its constants and whose declarations follow
+the connectives' rules in its certificate; its connectives are all those
+of {name}`Geb.FreeTopos.Internal.Logic.defs`, with their rules
+({ref "definition-scripts"}[Definitions and natural numbers]). The
+development of the evaluator's fundamental lemma is begun in it: the
+addition of natural numbers, by which the lemma counts the evaluator's
+fuel, is declared, and its lemmas proved by the fold's computation and by
+induction. What the rest of that development needs of a document, and the
+development of the datatype language's soundness after it, is the reading
+of the connectives after implication as terms, statements that are
+formulas rather than equations, the tactics of the connectives'
+introductions and eliminations, by which its deducers proceed, and
+definitions that name a fold of the program's where its source names none
+({ref "improvements"}[Improvements]). The syntax of
 statements and proof scripts
 is a step of the sequence ({ref "authoring-sequence"}[The sequence and its
 acceptance]). It adds no rule to the metalogic: a script is a program for
