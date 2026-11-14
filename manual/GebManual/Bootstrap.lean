@@ -196,8 +196,11 @@ Computation:
   `resolve`, `typeIn` and `expandExpr`, which the metalogic's program
   includes, so that no program is typable as a whole before it. Waiting on
   that rewriting: the check in the build.
-* Ready. The Geb reader and serializer in constant depth, and the stage
-  tests run by the compiled executables, the section on improvements.
+* Complete. The Geb serializer's list processing in constant depth:
+  data accumulators for digits, preorder traversal and byte packing;
+  the fold counting the nodes still follows the tree's depth.
+* Ready. The Geb reader in constant depth, and the stage tests run by the
+  compiled executables, the section on improvements.
 
 Logic ({ref "logic"}[The logic]), Gödel's T and then the metalogic, as
 the sections below detail:
@@ -2351,12 +2354,12 @@ child's function by case analysis, or that composes the children's
 functions into one by a right fold and returns that function, is
 typable, and a step returning a closure over the argument that loops
 over the children's functions is not, the right fold's list of functions
-needing a box that the closure's body cannot give it. The serializer's
-`treeBits`, which pairs its children's count with the composition of
-their results, takes the composing form, and `scripts/eal/examples.defs`
-holds the four shapes. Typing a whole program with one decoration per
-definition fails for each program, so a program's typing needs a
-decoration per use of a definition. With a decoration per use, each use
+needing a box that the closure's body cannot give it.
+`scripts/eal/examples.defs` holds the four shapes. The serializer's
+`treeBits` instead iterates over a work list of trees, first-order data,
+bounded by a fold counting the nodes. Typing a whole program with one
+decoration per definition fails for each program, so a program's typing
+needs a decoration per use of a definition. With a decoration per use, each use
 constrained by the decorations the used definition admits, its
 constraints projected onto the numbers of `!` of its type by quantifier
 elimination, more definitions fail than one at a time, each contracting
@@ -7745,13 +7748,22 @@ the change that removes it.
   be decorated waits on their rewriting
   ({ref "interaction-net-affine-certificates"}[Elementary-affine
   certificates]).
-* Depth of the Geb reader and serializer. The reader's tokenizer and
-  the serializer's packing of bits are right folds whose continuations
-  nest one call per character and per bit, so running either in Lean's
-  interpreter needs stack in proportion to a program's length; the
-  tests bundle and load the prover without writing its image for that
-  reason. Folds that thread their state from the left in constant depth
-  remove the limit.
+* Depth of the Geb reader. The reader's tokenizer is a right fold whose
+  continuations nest one call per character, so running it in Lean's
+  interpreter needs stack in proportion to a program's length. A fold
+  that threads its state in constant depth removes the limit.
+  The serializer's list processing uses data accumulators: digit
+  reversal iterates over an unread suffix, preorder traversal iterates
+  over a work list of trees, and packing folds from the last bit to the
+  first, prepending each completed byte. A fold counts the nodes to
+  bound the traversal; its call depth follows the tree's depth, not its
+  width or the length of its labels or bit stream. Each step puts the
+  node's children before the remaining work and prepends its reversed
+  header to the reversed output, which is reversed once at the end.
+  The tests of
+  `GebTests/Prototypes/Serializer.lean` compare its bytes with the seed's
+  and read them back, at byte and label-length boundaries, a wide tree,
+  a long label and a nested tree.
 * Test time. The stage tests compare the Geb compilers with the seed in
   Lean's interpreter, tens of seconds each; running those comparisons
   with the compiled executables, as `scripts/bootstrap.sh` runs the
@@ -7906,8 +7918,9 @@ What is ready, each item independent of the others except as stated:
 * Accelerations ({ref "speed-and-second-host"}[Speed and a second
   host]), the hash written in Geb, which computes by arithmetic on
   natural numbers, first among their uses.
-* The Geb reader and serializer in constant depth, and the stage tests
-  run by the compiled executables ({ref "improvements"}[Improvements]).
+* The Geb reader in constant depth, and the stage tests run by the
+  compiled executables ({ref "improvements"}[Improvements]); the
+  serializer's list processing uses constant-depth data accumulators.
 
 The admission of stronger checkers rests on the checker written in Geb
 and its agreement, and two are required by the bootstrap. The provers

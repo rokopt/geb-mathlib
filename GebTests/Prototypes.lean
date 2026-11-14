@@ -89,6 +89,7 @@ import GebTests.Prototypes.Typechecker.Instances
 import GebTests.Prototypes.Typechecker.Oitavem
 import GebTests.Prototypes.UniverseVariance
 import GebTests.Prototypes.SExprIO
+import GebTests.Prototypes.Serializer
 import GebTests.Prototypes.Stage0
 import GebTests.Prototypes.Stage1
 
