@@ -68,6 +68,10 @@ theorem's name, as `FILE:LINE:COLUMN: error: MESSAGE`. A script that does
 not prove its theorem is reported at each of its steps that fails, with the
 goal of that step ({ref "proof-holes"}[Holes and goals]).
 
+`prove` and `check` search for every theorem's derivation at each run
+unless they are given a directory of caches
+({ref "proof-cache"}[The cache of a development]).
+
 `replay` checks the saved derivations against the source statements and
 their names. It performs no proof search. Reducing `normalize`'s budget
 to zero can make `prove` fail while `replay` continues to accept the saved
@@ -699,6 +703,92 @@ hole's form, the leaf, the goal's statement and the report are in
 `bootstrap/authoring.geb`, and the host finds an obligation's place in the
 document as written, after the abbreviations are expanded, in
 `GebHost/Authoring.lean`.
+
+# The cache of a development
+%%%
+tag := "proof-cache"
+%%%
+
+`prove` and `check` take a directory of caches, here for a proof document
+`Draft.proofs.geb` that names its program:
+
+```
+lake exe geb-author check --cache .lake/geb-proof-cache Draft.proofs.geb
+lake exe geb-author prove --cache .lake/geb-proof-cache Draft.proofs.geb /tmp/draft.cert
+```
+
+With the option, a development is resumed from the cache of its proof
+document in that directory, a file named by the document's file name and a
+number of its path, and the cache is written as the run leaves it, whether
+or not the development is proved. The command prints how the declarations
+of the development's theorems were come by:
+
+```
+cache: 61 taken, 4 checked, 1 proved, 0 not proved
+```
+
+A cache keeps, for each theorem of the development in order, its name, its
+statement, its script, the normal form its companion is to have and the
+version of its document, with the sides of its companion and, where the
+theorem is proved, the derivations of the theorem and of its companion. A
+theorem's declarations are come by in the first of three ways that
+applies.
+
+* Taken. The cache's item at the theorem's position has its name,
+  statement, script, normal form and version, and is proved; the cache is
+  of the development's compiled program; and every theorem before it
+  stands at its position in the cache with its statement and the sides of
+  its companion. The constants and the entries before the theorem are then
+  those its derivations were checked with, and its declarations are taken
+  as they stand, with no search and no check.
+* Checked. An item of the cache, at any position and of any program, has
+  the theorem's name, statement, script, normal form and version, and is
+  proved. A derivation cites an earlier theorem by the position of its
+  entry, so the entries the item's derivation cites are renumbered to
+  those of the theorems of the same names, and the checker of developments
+  is given the derivation with the entries of the present development.
+  Where it admits the derivation the theorem is declared with it, and the
+  theorem's companion is derived again.
+* Proved. The theorem's script is run, as without a cache.
+
+A theorem that is not proved, one with a hole or a step that fails, keeps
+no derivation, and its script is run at each run. So a script that changes
+is run again, and the theorems after it are taken, their entries standing
+as they stood; a theorem stated, removed or moved before others leaves them
+checked, and none is searched for again unless its derivation cites what is
+no longer stated; and a statement that changes is proved again, as is a
+theorem after it whose derivation no longer checks. A script that does not
+change is not run again when the prover changes, its derivation standing.
+
+Under a changed program every theorem is checked or proved, none taken. A
+derivation names the definitions of the program by their positions, and
+the connectives of version `3` stand after the program's definitions, so a
+definition stated after the others leaves the derivations that name no
+connective as they were, which are checked, and moves the connectives,
+whose theorems are proved again.
+
+`check` with a cache replays nothing: a theorem taken was checked by the
+run that left the cache, with the same constants and entries, and the
+others are checked as they are found. `prove` replays the certificate
+before writing it, as it does without a cache, so that a certificate is
+checked whatever a cache holds; proved with the cache of the same prover,
+it is the certificate of a development proved without one. A cache is no
+durable artifact: its format is `geb-proof-cache/v1`, a file that does not
+read, or that is of another format, theory or profile, is no cache, a
+cache left by a development of another version holds no item for this
+one, and deleting a cache costs a search. A development that does not
+read leaves its cache as it is, and one the runner stops before its last
+theorem leaves a cache of the theorems before that. The certificate still
+requires the exact compiled program ({ref "improvements"}[Improvements]).
+
+The task `Geb: check saved file` of `.vscode/tasks.json` and the command
+of `editors/efm-langserver/config.yaml` pass
+`--cache .lake/geb-proof-cache`, so that a document checked when it is
+saved is searched only where it changed. The cache's items, the three
+ways and the renumbering are in `bootstrap/authoring.geb`
+(`Authoring.resume`), the file and its envelope in
+`GebHost/Authoring.lean`, and `scripts/tests/test-proof-cache.sh`
+exercises them.
 
 # Keeping the source
 
