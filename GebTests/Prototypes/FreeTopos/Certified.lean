@@ -8,6 +8,7 @@ module
 public import GebTests.Prototypes.FreeTopos.Certified.Basic
 public import GebTests.Prototypes.FreeTopos.Certified.Chain
 public import GebTests.Prototypes.FreeTopos.Certified.Datatype
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeAccepted
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeCase
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeCata
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeClosed
@@ -19,6 +20,7 @@ public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgram
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramData
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramKinds
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramSound
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramTheory
 public import GebTests.Prototypes.FreeTopos.Certified.Expansion
 public import GebTests.Prototypes.FreeTopos.Certified.Normalization
 public import GebTests.Prototypes.FreeTopos.Certified.Substitution

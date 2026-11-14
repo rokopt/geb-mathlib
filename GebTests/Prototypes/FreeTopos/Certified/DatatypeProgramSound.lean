@@ -24,6 +24,7 @@ each checked after the theorems of those before it, in the order of their search
 
 * {lit}`programForms_valid` — the soundness of a whole program is valid in every model of the
   program.
+* {lit}`programClosed_valid` — so is the soundness as one formula without hypotheses.
 
 ## References
 
@@ -77,6 +78,30 @@ set_option doc.verso false in
 decides. -/
 evaluation_axiom soundStates : statesLastIn extended3 sound soundThm = true
 
+/-- With the program's soundness. -/
+def upToSound : List Internal.Decl := upToDefs ++ sound
+
+/-- The development of the certificate {lit}`datatype-program-closed`. -/
+def closed : List Internal.Decl :=
+  ofText (include_str "../../../../bootstrap/certificates/datatype-program-closed.cert")
+
+set_option doc.verso false in
+/-- The development checks in the extended program, after the theorems it continues from, as
+Lean's evaluator decides. -/
+evaluation_axiom closedChecked :
+    checkedAfterIn extended3 (·.1.G) upToSound closed = true
+
+/-- The statement of a program's soundness as one formula in a program
+({name}`programClosedThm`), and a statement without hypotheses where its parts are not
+given. -/
+def closedThm (PST : Prog × Defs × Defs3) : Internal.Thm :=
+  (programClosedThm PST.1 PST.2.1 PST.2.2).getD ⟨0, [], [], Internal.Term.star⟩
+
+set_option doc.verso false in
+/-- The development's last declaration states the soundness of a program as one formula, as
+Lean's evaluator decides. -/
+evaluation_axiom closedStates : statesLastIn extended3 closed closedThm = true
+
 universe v
 
 variable {PST : Prog × Defs × Defs3} (h : extended3 = some PST)
@@ -103,6 +128,22 @@ theorem programForms_valid {a : Internal.Thm}
   have hl := mem_thmsOf_of_statesLastIn h soundStates
   have hs : soundThm PST = a := by simp [soundThm, ha]
   exact hs ▸ sound_valid h m _ hl
+
+/-- The theorems of {name}`upToSound` are valid in every model of the program. -/
+theorem upToSound_valid : m.Valid upToSound :=
+  (upToDefs_valid h m).append (sound_valid h m)
+
+/-- The theorems of {lit}`datatype-program-closed` are valid in every model of the program. -/
+theorem closed_valid : m.Valid closed :=
+  DatatypeList.valid_after h (upToSound_valid h m) closedChecked
+
+/-- The soundness of a whole program as one formula without hypotheses
+({name}`programClosedThm`) is valid in every model of the program. -/
+theorem programClosed_valid {a : Internal.Thm}
+    (ha : programClosedThm PST.1 PST.2.1 PST.2.2 = some a) : a.Valid m.M PST.1.G := by
+  have hl := mem_thmsOf_of_statesLastIn h closedStates
+  have hs : closedThm PST = a := by simp [closedThm, ha]
+  exact hs ▸ closed_valid h m _ hl
 
 end GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramSound
 

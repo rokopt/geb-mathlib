@@ -50,7 +50,7 @@ the forms that write a definition, a type or a numeral abbreviation, and at a te
 instance; the soundness of a constructor's definition at the passes' states; the steps at a
 datatype's node, at its marker and at its constructors' definitions, and the step at a
 datatype's declaration; then the kinds of forms, the induction on the forms and the program's
-soundness. -/
+soundness, with hypotheses and as one formula without them. -/
 def programSoundGroups (P : Prog) (S : Defs) (T : Defs3) : List (String × List Step) :=
   stepGroups P S T ++
     [("datatype-program-empty", programEmptyDev P S T),
@@ -111,7 +111,8 @@ def programSoundGroups (P : Prog) (S : Defs) (T : Defs3) : List (String × List 
       ("datatype-program-ctors", [ctorFlag P S, ctorsInv P S T]),
       ("datatype-program-data-step", [stepData P S T]),
       ("datatype-program-defs", neqMore P ++ [formKind P S, passesForms P S T]),
-      ("datatype-program-sound", [programForms P S T])]
+      ("datatype-program-sound", [programForms P S T]),
+      ("datatype-program-closed", [programClosed P S T])]
 
 /-- The names of the certificates the developments of the soundness of a whole program continue
 from, in order: those the soundness of the definitions the expansion generates continues from

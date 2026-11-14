@@ -34,6 +34,7 @@ public import Geb.Prototypes.FreeTopos.Internal.Substitution
 public import Geb.Prototypes.FreeTopos.Internal.Syntax
 public import Geb.Prototypes.FreeTopos.Internal.SyntaxLaws
 public import Geb.Prototypes.FreeTopos.Internal.Typing
+public import Geb.Prototypes.FreeTopos.Internal.Unfolded
 
 set_option doc.verso true in
 /-!

@@ -3037,7 +3037,17 @@ the soundness at every tree is valid in every model of the program, and
 `GebTests/Prototypes/FreeTopos/Certified/DatatypeProgramSound.lean` that
 the soundness of a whole program is, the certificates one search writes
 being checked one after another by one evaluation
-(`GebTests/Prototypes/FreeTopos/Certified/Chain.lean`).
+(`GebTests/Prototypes/FreeTopos/Certified/Chain.lean`). The program's
+constants are ones the check accepts, each definition compiling over
+those before it
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeAccepted.lean`), so
+the theory of a topos extended by their definitions has models; and the
+soundness of a whole program, stated as one formula without hypotheses,
+is true, with every definition unfolded, in every model of the theory
+of a topos itself
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeProgramTheory.lean`),
+the topos of types and functional relations among them, in which the
+transfer to Lean reads it.
 
 The rewriting of the definitions the elementary-affine search rejects in
 the compilers' sources waits on this completion, whose soundness of the

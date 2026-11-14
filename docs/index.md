@@ -4225,8 +4225,11 @@ import-direction rules above are enforced by
   non-creativity of [Suppes1957] (`Geb.PartialHorn.eval_expand_unfold`,
   `Geb.PartialHorn.valid_of_valid_extendAll`), so that a development
   checked in an extension is sound for the theory's models
-  (`Geb.PartialHorn.checkDevelopment_extendAll_sound`). `Point.lean`
-  gives the one-point model. `Completeness.lean` constructs the term
+  (`Geb.PartialHorn.checkDevelopment_extendAll_sound`), and
+  `WellFormed.lean` decides the well-formedness of a list of definitions
+  those statements assume (`Geb.PartialHorn.defnsWF_of_defnsWFb`).
+  `Point.lean` gives the one-point model. `Completeness.lean` constructs
+  the term
   model of a context under hypotheses [Kawase2024] and proves derivability
   by a certificate equivalent to validity in every model
   (`Geb.PartialHorn.derivable_iff_valid`). `Initial.lean` defines
@@ -4382,7 +4385,11 @@ import-direction rules above are enforced by
   (`Geb.FreeTopos.Internal.valid_unfoldAll_of_checkDev`), and
   `Composition.lean` the theorems of a development that checks after the
   statements of others, in a model where those are valid
-  (`Geb.FreeTopos.Internal.valid_of_checkAfter`). `Logic.lean`
+  (`Geb.FreeTopos.Internal.valid_of_checkAfter`), and `Unfolded.lean` a
+  formula valid without hypotheses in every model of the constants'
+  extension true, with its definitions unfolded, in every model of the
+  theory itself (`Geb.FreeTopos.Internal.valid_unfoldAll_holds_of_valid`).
+  `Logic.lean`
   defines the connectives from equality with their introduction and
   elimination rules, `Connectives.lean` proves their Kripke–Joyal
   conditions (Section VI.6 of [MacLaneMoerdijk1992]) and description by
@@ -4610,7 +4617,12 @@ import-direction rules above are enforced by
   § Certificates), a development that continues from others being checked
   after their statements and composed by validity, and the certificates
   one search writes being checked one after another by one evaluation
-  (`Certified/Chain.lean`). The
+  (`Certified/Chain.lean`). The constants of the datatype language's
+  soundness are ones the check accepts, each definition compiling over
+  those before it (`Certified/DatatypeAccepted.lean`), so that the
+  program has models, and the soundness of a whole program, as one
+  formula with its definitions unfolded, is true in every model of the
+  theory of a topos (`Certified/DatatypeProgramTheory.lean`). The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   metalogic, the choices that fixed its form, and the proofs about the
   compiler's components made in it. Depends on the modules of
