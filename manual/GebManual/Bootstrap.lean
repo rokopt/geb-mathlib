@@ -2984,8 +2984,13 @@ refers to it, decides membership in it; no definition takes a
 primitive's name or the unit value's; and each name the context gives a
 type is one the typing admits as a binder's. The relation holds at an
 opaque sort as at the trees, its erasure, of which a field of a template's
-datatype holds any. The definitions the expansion generates, which a
-source form's soundness does not reach, are proved apart: a recognizer's
+datatype holds any. No predicate variable stands for a sort in it, so
+the soundness states of a template's code what holds at the trees, and
+nothing uniform in the sort; a statement uniform in a type parameter is
+obtained after the bootstrap, where type parameters become parameters
+over internal universes (below). The definitions the expansion
+generates, which a source form's soundness does not reach, are proved
+apart: a recognizer's
 S-expressions denote a function deciding membership
 (`GebTests/Prototypes/FreeTopos/DatatypeRecognizer.lean`), and a
 constructor's definition denotes a value related at its type
@@ -2999,16 +3004,28 @@ recognizers among them deciding membership, and each form's steps leave
 states of which that holds again
 (`GebTests/Prototypes/FreeTopos/DatatypeProgram.lean`,
 `GebTests/Prototypes/FreeTopos/DatatypeProgramRuns.lean`,
-`GebTests/Prototypes/FreeTopos/DatatypeProgramStep.lean`). It is proved
-of the programs none of whose forms declares a datatype: a form at which
-the expansion does not fail is then a definition, a type or a numeral
-abbreviation, a function or a template's instance. It assumes that each
-body the expansion writes for a definition is a source form at the
-numeral abbreviations before it, which a run over the program's forms
-tests, and that no numeral abbreviation takes a name of the
-implementation's. Remaining after it: the forms that declare datatypes,
-with the definitions the expansion generates for them, and the transfer
-of the result to Lean; `tree-data`
+`GebTests/Prototypes/FreeTopos/DatatypeProgramStep.lean`). A form at
+which the expansion does not fail is a definition, a type or a numeral
+abbreviation, a function, a template's instance or a datatype's
+declaration. A declaration's forms are read in the order the expansion
+writes them: the datatype's node; each constructor's definition, sound
+at the states it is read in by the soundness of the definitions the
+expansion generates, whose hypotheses the states' invariant gives
+(`GebTests/Prototypes/FreeTopos/DatatypeProgramCtor.lean`); and the
+marker, at which the datatype's recognizer is written where the program
+refers to it and decides membership
+(`GebTests/Prototypes/FreeTopos/DatatypeProgramData.lean`). The result
+assumes of a program that each body the expansion writes for a
+definition is a source form at the numeral abbreviations before it,
+which a run over the program's forms tests; that no form is a
+`tree-data` declaration; that no name a form declares, a constructor's
+and a recognizer's among them, is one of the implementation's; that
+each marker is the one its datatype's atom finds among the markers,
+names its datatype by an atom other than the trees' type and the unit
+type, and has at most one constructor of each label; and that the
+digits of a label read as the label and are fixed by the expansion of
+numeral abbreviations. Remaining after it: the transfer of the result
+to Lean, where those assumptions are to be discharged; `tree-data`
 removed. The developments of the soundness continue
 from one another in no one order, each citing the statements of those
 it continues from, so the modules of
