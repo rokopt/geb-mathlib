@@ -4325,7 +4325,14 @@ import-direction rules above are enforced by
   so that a development that checks proves equations of Lean functions
   (`Geb.FreeTopos.eq_of_checkDevelopment`), and `Represent.lean` relates
   the model's arrows to Lean functions through representations of values
-  (`Geb.FreeTopos.Represents`). `Elementary.lean` constructs a topos with
+  (`Geb.FreeTopos.Represents`), `RepresentEq.lean` the equality of two
+  arrows, the characteristic map of a diagonal, to the equality of the
+  functions they represent (`Geb.FreeTopos.represents_eq`), and an arrow
+  into the subobject classifier to its truth
+  (`Geb.FreeTopos.represents_truth`); `ArrowValue.lean` gives a term with
+  a domain and a codomain a functional relation as its value
+  (`Geb.FreeTopos.exists_arrVal_of_dom_cod`).
+  `Elementary.lean` constructs a topos with
   chosen structure from an elementary topos with chosen data objects
   (`Geb.FreeTopos.Elementary.chosenTopos`), in a module admitted to
   `Classical.choice` as a correspondence with mathlib's category theory.
@@ -4415,7 +4422,9 @@ import-direction rules above are enforced by
   (`Geb.FreeTopos.Internal.valid_of_checkAfter`), and `Unfolded.lean` a
   formula valid without hypotheses in every model of the constants'
   extension true, with its definitions unfolded, in every model of the
-  theory itself (`Geb.FreeTopos.Internal.valid_unfoldAll_holds_of_valid`).
+  theory itself (`Geb.FreeTopos.Internal.valid_unfoldAll_holds_of_valid`),
+  where a term's arrow has its context's product as domain and its type
+  as codomain (`Geb.FreeTopos.Internal.hom_unfoldAll_of_compile`).
   `Logic.lean`
   defines the connectives from equality with their introduction and
   elimination rules, `Connectives.lean` proves their Kripke–Joyal
@@ -4425,7 +4434,13 @@ import-direction rules above are enforced by
   certificates (`Geb.FreeTopos.Internal.exists_certSeq_of_valid`), with
   the round trips of the compilation. `Represent.lean` represents Lean's
   functions by the language's terms in the topos of functional
-  relations. `Prove.lean` is the language's prover prototyped in Lean:
+  relations, `RepresentEq.lean` the equality of two functions by an
+  equation (`Geb.FreeTopos.Internal.repC_eq`), and `RepresentLogic.lean`
+  Lean's truth, conjunction, implication and universal quantification
+  by the connectives defined from equations, so that a formula without
+  variables true there represents a true proposition
+  (`Geb.FreeTopos.Internal.holds_of_represents`). `Prove.lean` is the
+  language's prover prototyped in Lean:
   normalization innermost first or to weak normal forms, earlier theorems
   as rewriting rules found by matching, induction and case analysis;
   every derivation it computes is checked by
@@ -4649,7 +4664,11 @@ import-direction rules above are enforced by
   those before it (`Certified/DatatypeAccepted.lean`), so that the
   program has models, and the soundness of a whole program, as one
   formula with its definitions unfolded, is true in every model of the
-  theory of a topos (`Certified/DatatypeProgramTheory.lean`). The
+  theory of a topos (`Certified/DatatypeProgramTheory.lean`); read in the
+  topos of types and functional relations, its hypotheses and its
+  conclusion are predicates of the lists of forms, each the truth of its
+  formula's arrow, and the conclusion holds of every list of which the
+  hypotheses hold (`Certified/DatatypeProgramReading.lean`). The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   metalogic, the choices that fixed its form, and the proofs about the
   compiler's components made in it. Depends on the modules of

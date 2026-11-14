@@ -62,7 +62,7 @@ formula without hypotheses ({name}`programClosedThm`), compiles to an arrow that
 definition of the program's constants unfolded, is true in every model of the theory of a
 topos: it is valid in every model of the extension by the constants' definitions
 ({name}`DatatypeProgramSound.programClosed_valid`), the one-point model among them, which gives
-that it is a formula. -/
+that it is a formula in a context of types. -/
 theorem programClosed_unfolded {a : Internal.Thm}
     (ha : programClosedThm PST.1 PST.2.1 PST.2.2 = some a) :
     ∃ cds C, Internal.compileDefs PST.1.G = some cds ∧
@@ -74,19 +74,19 @@ theorem programClosed_unfolded {a : Internal.Thm}
   obtain ⟨cds, hc, hbase, hok, hwf⟩ := Internal.Globals.of_accepted (DatatypeAccepted.accepted h)
   have hbase' : PST.1.G.base = sig.length + ([] : List PartialHorn.Defn).length := by
     simpa using hbase
-  have hshape : a.ctx = [] ∧ a.hyps = [] := by
+  have hnil : a.hyps = [] := by
     simp only [programClosedThm, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
       Option.some.injEq] at ha
     obtain ⟨_, -, rfl⟩ := ha
-    exact ⟨rfl, rfl⟩
-  -- the formula's type, from its validity in the one-point model
+    rfl
+  -- the context's types and the formula's type, from its validity in the one-point model
   have hpoint := DatatypeProgramSound.programClosed_valid h
     ⟨[], cds, PartialHorn.pointModel (ext cds).sig,
       Internal.isModel_point_ext (pre := []) hwf, hc, hbase',
       Internal.devInv_init (Internal.isModel_point_ext (pre := []) hwf) hbase' hok hc
         (Internal.Globals.Le.refl _) hc⟩ ha
   obtain ⟨C, hC, hM⟩ := Internal.valid_unfoldAll_holds_of_valid (pre := []) hbase' hok hc hwf
-    (by rw [hshape.1]; rfl) hpoint.2.2.1 hshape.2
+    hpoint.1 hpoint.2.2.1 hnil
     (fun N hN hinv ↦ DatatypeProgramSound.programClosed_valid h
       ⟨[], cds, N, hN, hc, hbase', hinv⟩ ha)
   exact ⟨cds, C, hc, hC, hM⟩

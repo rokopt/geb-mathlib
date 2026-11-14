@@ -19,6 +19,7 @@ public import GebTests.Prototypes.FreeTopos.Certified.DatatypeList
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgram
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramData
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramKinds
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramReading
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramSound
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramTheory
 public import GebTests.Prototypes.FreeTopos.Certified.Expansion

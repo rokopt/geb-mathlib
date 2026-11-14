@@ -5,9 +5,11 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Prototypes.FreeTopos.Internal.RepresentLogic
 public import Geb.Prototypes.FreeTopos.Internal.Unfolded
 public import GebTests.Prototypes.FreeTopos.DatatypeBase
 public import GebTests.Prototypes.ProgramCommand
+public meta import Geb.Prototypes.FreeTopos.Internal.RepresentLogic -- shake: keep
 public meta import Geb.Prototypes.FreeTopos.Internal.Unfolded -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos.DatatypeBase -- shake: keep
 
@@ -27,6 +29,7 @@ of each of them.
 ## Main statements
 
 * {lit}`accepted` — the constants of the extended program are accepted.
+* {lit}`hasLogic` — they have the connectives' definitions from the index the program names.
 
 ## Tags
 
@@ -61,6 +64,25 @@ theorem accepted {PST : Prog × Defs × Defs3} (h : extended3 = some PST) :
   have ha := constantsAccepted
   rw [h] at ha
   exact ha
+
+/-- Whether the constants of a program, where one is given, have the connectives' definitions
+from the index it names ({name}`Geb.FreeTopos.Internal.Globals.hasLogic`). -/
+def hasLogicIn {α : Type} (o : Option α) (G : α → Internal.Globals) (i : α → ℕ) : Bool :=
+  match o with
+  | some P => (G P).hasLogic (i P)
+  | none => false
+
+set_option doc.verso false in
+/-- The constants of the extended program have the connectives' definitions from the index the
+program names, as Lean's evaluator decides. -/
+evaluation_axiom logicPresent : hasLogicIn extended3 (·.1.G) (·.1.o) = true
+
+/-- The constants of the extended program have the connectives' definitions. -/
+theorem hasLogic {PST : Prog × Defs × Defs3} (h : extended3 = some PST) :
+    Internal.HasLogic PST.1.G PST.1.o := by
+  have ha := logicPresent
+  rw [h] at ha
+  exact Internal.Globals.hasLogic_sound ha
 
 end GebTests.Prototypes.FreeTopos.Certified.DatatypeAccepted
 

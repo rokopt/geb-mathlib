@@ -26,6 +26,8 @@ public import Geb.Prototypes.FreeTopos.Internal.Prove
 public import Geb.Prototypes.FreeTopos.Internal.ProveChecked
 public import Geb.Prototypes.FreeTopos.Internal.Reduce
 public import Geb.Prototypes.FreeTopos.Internal.Represent
+public import Geb.Prototypes.FreeTopos.Internal.RepresentEq
+public import Geb.Prototypes.FreeTopos.Internal.RepresentLogic
 public import Geb.Prototypes.FreeTopos.Internal.Semantics
 public import Geb.Prototypes.FreeTopos.Internal.Soundness
 public import Geb.Prototypes.FreeTopos.Internal.Sorting

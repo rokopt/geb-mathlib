@@ -3075,7 +3075,14 @@ is true, with every definition unfolded, in every model of the theory
 of a topos itself
 (`GebTests/Prototypes/FreeTopos/Certified/DatatypeProgramTheory.lean`),
 the topos of types and functional relations among them, in which the
-transfer to Lean reads it.
+transfer to Lean reads it. There the hypotheses and the conclusion of
+the soundness read as predicates of the lists of forms, each the truth
+of its formula's arrow, and the conclusion holds of every list of which
+the hypotheses hold
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeProgramReading.lean`).
+What remains of the transfer is the reading of each predicate as a
+statement about the kernel's evaluation of the compilers, the discharge
+of the hypotheses, and the compilers' entry point.
 
 The rewriting of the definitions the elementary-affine search rejects in
 the compilers' sources waits on this completion, whose soundness of the
