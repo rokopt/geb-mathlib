@@ -24,7 +24,11 @@
 ; {geb}`Logic.connectivesAll` after the program's, whose rules a development of that version
 ; begins with; and definitions of the internal language that a development declares, forms
 ; (definition NAME ((x TYPE) ...) TYPE TERM), which follow the connectives' and which a rule
-; (unfold NAME) unfolds.
+; (unfold NAME) unfolds. Version 5 reads every connective as a term, accepts internal
+; statements and named hypotheses of type Omega, and adds formula scripts. Named hypotheses
+; use (assuming (h FORMULA) ... FORMULA); (implies P Q) is always an internal implication.
+; Formula scripts compose the rules in {geb}`Logic.connectiveRulesAll`, through
+; {geb}`Formula.prove` and {geb}`Formula.equate`, without changing the checker.
 ; Statements and scripts are read before any proof is searched; every derivation
 ; is checked by {geb}`Derivation.declStep`, the step of the checker of developments, as it is
 ; found, and replay checks a saved development by {geb}`Derivation.checkDev`. A theorem whose
@@ -45,6 +49,7 @@
   (import Prover)
   (import Tactics)
   (import Logic)
+  (import Formula as F)
   (import Reader as Source)
   (import (Seq LDefn) as LD)
   (import (Seq OpSig) as OS)
@@ -77,11 +82,17 @@
   ; The keywords of the natural numbers, which version 4 reads: a name declared where it reads
   ; terms of the internal language is none of them.
   (def naturalNames (children (quote (0 (0 zero) (0 succ) (0 nat-rec)))))
+  ; Formula keywords of version 5, whose statements distinguish assumptions from implication.
+  (def formulaNames
+    (children
+      (quote
+        (0 (0 false) (0 and) (0 or) (0 not) (0 all) (0 exists) (0 exists-unique) (0 assuming)))))
   (defn bindable ((v T) (e T)) T
     (and (declared e)
       (and (not (has (Source.nameOf e) internalNames))
         (and (not (and (lt 2 v) (has (Source.nameOf e) connectiveNames)))
-          (not (and (lt 3 v) (has (Source.nameOf e) naturalNames)))))))
+          (and (not (and (lt 3 v) (has (Source.nameOf e) naturalNames)))
+            (not (and (lt 4 v) (has (Source.nameOf e) formulaNames))))))))
   ; Names are distinct from one another and from the names already taken.
   (defn distinctFrom ((taken Ts) (xs Ts)) T
     ((foldr T (Arrow Ts T)
@@ -296,8 +307,9 @@
         (if (equal n Source.kwUnitValue) (some mStar)
           (if (and (lt 2 v) (equal n (quote (0 true)))) (some (ttL (connectivesAt defs)))
             (if (and (lt 3 v) (equal n (quote (0 zero)))) (some (mArr kZero (nil T) mStar))
-              (mapO (lam ((j T)) (call (add (LD.length lib) j) (nil T) (nil T)))
-                (Source.indexOf n defs))))))))
+              (if (and (lt 4 v) (equal n (quote (0 false)))) (some (ffL (connectivesAt defs)))
+                (mapO (lam ((j T)) (call (add (LD.length lib) j) (nil T) (nil T)))
+                  (Source.indexOf n defs)))))))))
   ; The forms of the primitive arrows, each at its objects: the empty list, a head before a list,
   ; the node of a label and children, the injections and the case analysis of a coproduct.
   (defn iprim ((ovars Ts) (es Ts) (arg (Arrow T T))) T
@@ -361,6 +373,25 @@
                   (allSomeT (mapT arg (drop 1 (range k)))))
                 none)
               (other 0)))))))
+  ; Quantifiers take a type and its predicate, an ordinary term of function type.
+  (defn ilogic ((o T) (ovars Ts) (es Ts) (arg (Arrow T T))) T
+    (let h T (at es 0)
+      (let k T (length es)
+        (if (word h (quote (0 not))) (if (eq k 2) (mapO (negL o) (arg 1)) none)
+          (if (or (word h (quote (0 and))) (word h (quote (0 or))))
+            (if (eq k 3) (map2 (if (word h (quote (0 and))) (F.conj o) (disjL o)) (arg 1) (arg 2))
+              none)
+            (if
+              (and (eq k 3)
+                (or (word h (quote (0 all)))
+                  (or (word h (quote (0 exists))) (word h (quote (0 exists-unique))))))
+              (bindO (itype ovars (at es 1))
+                (lam ((a T))
+                  (mapO
+                    (if (word h (quote (0 all))) (allL o a)
+                      (if (word h (quote (0 exists))) (exL o a) (exuL o a)))
+                    (arg 2))))
+              none))))))
   (defn itermStep ((v T) (gt Ts) (defs Ts) (ovars Ts) (nd T) (rs (List IR))) IR
     (let es Ts (children nd)
       (let k T (length es)
@@ -411,12 +442,17 @@
                                             (if (eq k 2) (ikernel gt defs (at es 1) scope kts) none)
                                             (inatural v defs h es ns kid scope kts
                                               (lam ((u T))
-                                                (if (lt 1 k)
-                                                  (bindO (arg 0)
-                                                    (lam ((f T))
-                                                      (mapO (lam ((xs T)) (apps f (children xs)))
-                                                        (allSomeT (mapT arg (drop 1 (range k)))))))
-                                                  none))))))))))))))))))))))))
+                                                (if
+                                                  (and (lt 4 v)
+                                                    (has (Source.nameOf h) formulaNames))
+                                                  (ilogic (connectivesAt defs) ovars es arg)
+                                                  (if (lt 1 k)
+                                                    (bindO (arg 0)
+                                                      (lam ((f T))
+                                                        (mapO (lam ((xs T)) (apps f (children xs)))
+                                                          (allSomeT
+                                                            (mapT arg (drop 1 (range k)))))))
+                                                    none)))))))))))))))))))))))))
   (defn iterm ((v T) (gt Ts) (defs Ts) (ovars Ts) (e T)) IR (para IR (itermStep v gt defs ovars) e))
 
   ; Statements. A statement over the kernel is (forall ((x A) ...) P) or P, each A a kernel type
@@ -437,6 +473,12 @@
   ; the kernel type of each variable that has one, and the names of its hypotheses, in their
   ; order, each list as the children of a node, beside its theorem of the metalogic.
   (data Statement (statement T T T T Thm))
+  ; General formulas are checked at Omega. Earlier profiles and kernel statements keep their
+  ; equation-only reader, so upgrading the runner changes no earlier statement.
+  (defn readFormula ((v T) (internal T) (G Globals) (n T) (ctx Ts) (rd (Arrow T T)) (e T)) T
+    (if (and (lt 4 v) internal)
+      (bindO (rd e) (lam ((p T)) (if (equal (typeIn G n ctx p) (some omega)) (some p) none)))
+      (readEqn G n ctx rd e)))
   (import (Option Statement) as OSt)
   (defn binderOk ((v T) (defs Ts) (ovars Ts) (internal T) (b T)) T
     (and (Source.isList b)
@@ -454,7 +496,10 @@
       (let bs Ts (if quant (children (child e 1)) (nil T))
         (let body T (if quant (child e 2) e)
           (let k T (length (children body))
-            (let hyp T (and (headed body (quote (0 implies))) (lt 2 k))
+            (let hyp T
+              (and
+                (headed body (if (and (lt 4 v) internal) (quote (0 assuming)) (quote (0 implies))))
+                (lt 2 k))
               (let hs Ts (if hyp (take (sub k 2) (drop 1 (children body))) (nil T))
                 (let concl T (if hyp (at (children body) (sub k 1)) body)
                   (let vars Ts (reverse (mapT binderName bs))
@@ -475,8 +520,10 @@
                                     (ikernel gt defs t vars kts)))
                                 (let hfs T
                                   (allSomeT
-                                    (mapT (lam ((h T)) (readEqn G n ctx rd (child h 1))) hs))
-                                  (let f T (readEqn G n ctx rd concl)
+                                    (mapT
+                                      (lam ((h T)) (readFormula v internal G n ctx rd (child h 1)))
+                                      hs))
+                                  (let f T (readFormula v internal G n ctx rd concl)
                                     (if (and (isSome hfs) (isSome f))
                                       (OSt.just
                                         (statement (node 0 ovars) (node 0 vars) (node 0 kts)
@@ -1523,7 +1570,144 @@
                                         (script4 v eb gt defs ovars thms nd rs vars kts hyps)
                                         (script3 v eb gt defs ovars thms nd vars kts
                                           hyps))))))))))))))))))))
-  (defn scriptStep ((v T) (eb T) (gt Ts) (defs Ts) (ovars Ts) (thms Ts) (nd T) (rs (List SR))) SR
+  ; Formula scripts compose the checked connective rules. The adapter adds one anonymous
+  ; truth hypothesis, which is reflected in every child script's scope.
+  (deftype FTac (Arrow Globals (Arrow (List Entry) (Arrow NRs F.Deducer))))
+  (defn deduction ((o T) (r (Prod T Tac))) FTac
+    (lam ((G Globals) (E (List Entry)) (base NRs)) (F.prove o ((snd r) G E base))))
+  (defn logical ((o T) (ok T) (p FTac)) (Prod T Tac)
+    (pair ok (lam ((G Globals) (E (List Entry)) (base NRs)) (F.equate o (p G E base)))))
+  (defn logicalExact ((o T) (ok T) (p FTac)) (Prod T Tac)
+    (pair ok (lam ((G Globals) (E (List Entry)) (base NRs)) (F.equateExact o (p G E base)))))
+  (def logicalScripts
+    (children
+      (quote
+        (0 (0 truth) (0 hypothesis) (0 assume) (0 and-intro) (0 and-elim) (0 imp-elim) (0 or-left)
+          (0 or-right)
+          (0 or-elim)
+          (0 all-intro)
+          (0 all-elim)
+          (0 exists-intro)
+          (0 exists-elim)
+          (0 false-elim)
+          (0 unfold-formula)
+          (0 unfold-hypothesis)
+          (0 use)))))
+  (defn scriptLogic ((v T) (eb T) (gt Ts) (defs Ts) (ovars Ts) (thms Ts) (nd T) (rs (List SR))) SR
+    (lam ((vars Ts) (kts Ts) (hyps Ts))
+      (let*
+        ((es Ts (children nd)) (o T (connectivesAt defs)) (hs Ts (append hyps (single unnamed)))
+         (a T (at es 1))
+         (b T (at es 2))
+         (c T (at es 3))
+         (childR (Arrow T SR) (lam ((i T)) (SRs.atOr failSR rs i)))
+         (atR (Arrow T (Prod T Tac)) (lam ((i T)) (childR i vars kts hs)))
+         (rd (Arrow T T) (lam ((e T)) (iterm v gt defs ovars e vars kts)))
+         (fresh (Arrow Ts T)
+           (lam ((xs Ts))
+             (and (allT (bindable v) xs)
+               (distinctFrom (append defs (append ovars (append vars (append hyps thms))))
+                 (mapT Source.nameOf xs)))))
+         (hi T (if (Source.isAtom a) (Source.indexOf (Source.nameOf a) hyps) none))
+         (p FTac (deduction o (atR 1)))
+         (q FTac (deduction o (atR 2))))
+        (cond
+          ((form nd (quote (0 truth)) 1)
+           (logical o 1 (lam ((G Globals) (E (List Entry)) (base NRs)) (F.truth o))))
+          ((form nd (quote (0 hypothesis)) 2)
+           (logicalExact o (isSome hi)
+             (lam ((G Globals) (E (List Entry)) (base NRs)) (F.hypothesis (getD hi 0)))))
+          ((form nd (quote (0 assume)) 3)
+           (let r (Prod T Tac) (childR 2 vars kts (append hs (single (Source.nameOf a))))
+             (logical o (and (fresh (single a)) (fst r))
+               (lam ((G Globals) (E (List Entry)) (base NRs))
+                 (F.assume o (deduction o r G E base))))))
+          ((form nd (quote (0 and-intro)) 3)
+           (logical o (and (fst (atR 1)) (fst (atR 2)))
+             (lam ((G Globals) (E (List Entry)) (base NRs))
+               (F.conjunction o (p G E base) (q G E base)))))
+          ((form nd (quote (0 and-elim)) 4)
+           (let r (Prod T Tac) (childR 3 vars kts (append hs (mapT Source.nameOf (children b))))
+             (logical o (and (isSome hi) (and (namesOk v 2 b) (and (fresh (children b)) (fst r))))
+               (lam ((G Globals) (E (List Entry)) (base NRs))
+                 (F.conjuncts o (getD hi 0) (deduction o r G E base))))))
+          ((form nd (quote (0 imp-elim)) 5)
+           (let r (Prod T Tac) (childR 4 vars kts (append hs (single (Source.nameOf c))))
+             (logical o (and (isSome hi) (and (fresh (single c)) (and (fst (atR 2)) (fst r))))
+               (lam ((G Globals) (E (List Entry)) (base NRs))
+                 (F.implication o (getD hi 0) (q G E base) (deduction o r G E base))))))
+          ((or (form nd (quote (0 or-left)) 2) (form nd (quote (0 or-right)) 2))
+           (logical o (fst (atR 1))
+             (lam ((G Globals) (E (List Entry)) (base NRs))
+               (F.disjunct o (headed nd (quote (0 or-right))) (p G E base)))))
+          ((form nd (quote (0 or-elim)) 5)
+           (let*
+             ((left (Prod T Tac)
+                (childR 3 vars kts (append hs (single (Source.nameOf (child b 0))))))
+              (right (Prod T Tac)
+                (childR 4 vars kts (append hs (single (Source.nameOf (child b 1)))))))
+             (logical o
+               (and (isSome hi)
+                 (and (namesOk v 2 b) (and (fresh (children b)) (and (fst left) (fst right)))))
+               (lam ((G Globals) (E (List Entry)) (base NRs))
+                 (F.alternatives o (getD hi 0) (deduction o left G E base)
+                   (deduction o right G E base))))))
+          ((form nd (quote (0 all-intro)) 3)
+           (let r (Prod T Tac)
+             (childR 2 (cons (Source.nameOf a) vars) (cons none kts) (append hs (single unnamed)))
+             (logical o (and (fresh (single a)) (fst r))
+               (lam ((G Globals) (E (List Entry)) (base NRs))
+                 (F.allIntro o (deduction o r G E base))))))
+          ((form nd (quote (0 all-elim)) 5)
+           (let r (Prod T Tac) (childR 4 vars kts (append hs (single (Source.nameOf c))))
+             (logical o (and (isSome hi) (and (isSome (rd b)) (and (fresh (single c)) (fst r))))
+               (lam ((G Globals) (E (List Entry)) (base NRs))
+                 (F.allElim o (getD hi 0) (getD (rd b) mStar) (deduction o r G E base))))))
+          ((form nd (quote (0 exists-intro)) 3)
+           (logical o (and (isSome (rd a)) (fst (atR 2)))
+             (lam ((G Globals) (E (List Entry)) (base NRs))
+               (F.existsIntro o (getD (rd a) mStar) (q G E base)))))
+          ((form nd (quote (0 exists-elim)) 4)
+           (let r (Prod T Tac)
+             (childR 3 (cons (Source.nameOf (child b 0)) vars) (cons none kts)
+               (append hs (l3 unnamed unnamed (Source.nameOf (child b 1)))))
+             (logical o (and (isSome hi) (and (namesOk v 2 b) (and (fresh (children b)) (fst r))))
+               (lam ((G Globals) (E (List Entry)) (base NRs))
+                 (F.existsElim o (getD hi 0) (deduction o r G E base))))))
+          ((form nd (quote (0 false-elim)) 2)
+           (logical o (fst (atR 1))
+             (lam ((G Globals) (E (List Entry)) (base NRs)) (F.falseElim o (p G E base)))))
+          ((form nd (quote (0 unfold-formula)) 2)
+           (logical o (fst (atR 1))
+             (lam ((G Globals) (E (List Entry)) (base NRs))
+               (F.unfoldFormula G E (length ovars) (p G E base)))))
+          ((form nd (quote (0 unfold-hypothesis)) 4)
+           (let r (Prod T Tac) (childR 3 vars kts (append hs (single (Source.nameOf b))))
+             (logical o (and (isSome hi) (and (fresh (single b)) (fst r)))
+               (lam ((G Globals) (E (List Entry)) (base NRs))
+                 (F.unfoldHypothesis G E (length ovars) (getD hi 0) (deduction o r G E base))))))
+          ((headed nd (quote (0 use)))
+           (let*
+             ((j T (lemmaOf eb thms a)) (th T (allSomeT (mapT (itype ovars) (children b))))
+              (sg T (allSomeT (mapT rd (reverse (children c)))))
+              (ps Ts (drop 4 (range (length es)))))
+             (logicalExact o
+               (and (lt 3 (length es))
+                 (and (isSome j)
+                   (and (Source.isList b)
+                     (and (isSome th)
+                       (and (Source.isList c)
+                         (and (isSome sg) (allT (lam ((i T)) (fst (atR i))) ps)))))))
+               (lam ((G Globals) (E (List Entry)) (base NRs))
+                 (F.applyTheorem E (getD j 0) (children (getD th unnamed))
+                   (children (getD sg unnamed))
+                   (foldr T (List F.Deducer)
+                     (lam ((i T) (ds (List F.Deducer))) (cons (deduction o (atR i) G E base) ds))
+                     (nil F.Deducer)
+                     ps))))))
+          (else (pair 0 failTac))))))
+  (defn equationScript ((v T) (eb T) (gt Ts) (defs Ts) (ovars Ts) (thms Ts) (nd T) (rs (List SR)))
+    SR
     (let es Ts (children nd)
       (let k T (length es)
         (let n T (length ovars)
@@ -1651,6 +1835,10 @@
                                                 (script2 v eb gt defs ovars thms nd rs vars kts
                                                   hyps)
                                                 (pair 0 failTac))))))))))))))))))))))))
+  (defn scriptStep ((v T) (eb T) (gt Ts) (defs Ts) (ovars Ts) (thms Ts) (nd T) (rs (List SR))) SR
+    (if (and (lt 4 v) (and (Source.isList nd) (has (Source.nameOf (child nd 0)) logicalScripts)))
+      (scriptLogic v eb gt defs ovars thms nd rs)
+      (equationScript v eb gt defs ovars thms nd rs)))
   ; Obligations. A hole, ?NAME, the form (hole NAME), stands where a script stands, in version 3.
   ; It proves nothing: the derivation its tactic returns is a leaf of no rule of the checker, which
   ; keeps the goal the tactic is given, the context, the hypotheses and the sides of the equation,
@@ -1788,24 +1976,28 @@
   ; the translation's library at its objects and terms, one of the program by its name, or, of
   ; the connectives, truth or an implication.
   (defn showCall ((defs Ts) (dn Ts) (o T) (j T) (tys Ts) (args Ts)) T
-    (let nl T (LD.length lib)
-      (let bare T (and (isEmpty tys) (isEmpty args))
-        (if (lt j nl)
-          (let nm T (libName j)
-            (if (isSome nm)
-              (listOf
-                (cons (atomOf (quote (0 lib)))
-                  (cons (atomOf (get nm)) (append tys (reverse args)))))
-              (opaqueOf 11 args)))
-          (if (and (lt j o) bare) (atomOf (at defs (sub j nl)))
-            (if (and (eq j o) bare) (atomOf (quote (0 true)))
-              (if (and (eq j (add o 2)) (and (isEmpty tys) (eq (length args) 2)))
-                (listOf (l3 (atomOf (quote (0 implies))) (at args 1) (at args 0)))
-                (let k T (sub j (declaredAt defs))
-                  (if (and (not (lt j (declaredAt defs))) (and (lt k (length dn)) (isEmpty tys)))
-                    (if (isEmpty args) (atomOf (at dn k))
-                      (listOf (cons (atomOf (at dn k)) (reverse args))))
-                    (opaqueOf 11 args))))))))))
+    (let*
+      ((nl T (LD.length lib)) (bare T (and (isEmpty tys) (isEmpty args)))
+       (conn Ts
+         (children
+           (quote
+             (0 (0 true) (0 and) (0 implies) (0 all) (0 false) (0 not) (0 or) (0 exists)
+               (0 exists-unique)))))
+       (k T (sub j (declaredAt defs))))
+      (cond
+        ((lt j nl)
+         (let nm T (libName j)
+           (if (isSome nm)
+             (listOf
+               (cons (atomOf (quote (0 lib))) (cons (atomOf (get nm)) (append tys (reverse args)))))
+             (opaqueOf 11 args))))
+        ((and (lt j o) bare) (atomOf (at defs (sub j nl))))
+        ((and (not (lt j o)) (lt j (add o 9)))
+         (let h T (atomOf (at conn (sub j o)))
+           (if bare h (listOf (cons h (append tys (reverse args)))))))
+        ((and (not (lt j (declaredAt defs))) (and (lt k (length dn)) (isEmpty tys)))
+         (if (isEmpty args) (atomOf (at dn k)) (listOf (cons (atomOf (at dn k)) (reverse args)))))
+        (else (opaqueOf 11 args)))))
   ; A term is shown in the names of the variables in scope, the innermost first.
   (defn showStep ((defs Ts) (dn Ts) (ovars Ts) (nd T) (rs (List Show))) Show
     (lam ((scope Ts))
@@ -1872,7 +2064,7 @@
   (def displayRules
     (cons (nrRule 3 (terms (nil T)))
       (cons (nrRule 4 (terms (nil T))) (Rules.single (nrRule 5 (terms (nil T)))))))
-  (defn showGoal ((G Globals) (E (List Entry)) (defs Ts) (dn Ts) (ovars Ts) (ob T)) T
+  (defn showGoal ((v T) (G Globals) (E (List Entry)) (defs Ts) (dn Ts) (ovars Ts) (ob T)) T
     (let g Ts (children (mD ob 5))
       (let hs Ts (children (mD ob 6))
         (let n T (length g)
@@ -1885,11 +2077,13 @@
                   (case (eval G E (length ovars) displayRules 4096 3 g hs w) ((ONFR.nothing) w)
                     ((ONFR.just r) (nfTerm r)))
                   scope))
-              (let concl T (listOf (l3 (atomOf (quote (0 equal))) (sh (mD ob 7)) (sh (mD ob 8))))
+              (let concl T
+                (if (and (lt 4 v) (equal (mD ob 8) (ttL (connectivesAt defs)))) (sh (mD ob 7))
+                  (listOf (l3 (atomOf (quote (0 equal))) (sh (mD ob 7)) (sh (mD ob 8)))))
                 (let body T
                   (if (isEmpty hs) concl
                     (listOf
-                      (cons (atomOf (quote (0 implies)))
+                      (cons (atomOf (if (lt 4 v) (quote (0 assuming)) (quote (0 implies))))
                         (append
                           (mapT
                             (lam ((i T))
@@ -1912,8 +2106,8 @@
                             body)))))))))))))
   ; What is reported of an obligation: the node of its kind, 0 a hole and 1 a step that fails,
   ; over the hole's name, the node of its path and its goal.
-  (defn reportOf ((G Globals) (E (List Entry)) (defs Ts) (dn Ts) (ovars Ts) (ob T)) T
-    (node (mD ob 0) (l3 (mD ob 1) (mD ob 2) (showGoal G E defs dn ovars ob))))
+  (defn reportOf ((v T) (G Globals) (E (List Entry)) (defs Ts) (dn Ts) (ovars Ts) (ob T)) T
+    (node (mD ob 0) (l3 (mD ob 1) (mD ob 2) (showGoal v G E defs dn ovars ob))))
 
   ; A source theorem carries its name, its statement, its script and the version of its document.
   (data Request (request T Statement T T T))
@@ -2047,7 +2241,7 @@
             (and (isSome parsed)
               (and (eq (length (children (get parsed))) 1)
                 (and (Source.isList root)
-                  (and (word (child root 0) (quote (0 proofs))) (and (isSome v) (lt (get v) 5))))))
+                  (and (word (child root 0) (quote (0 proofs))) (and (isSome v) (lt (get v) 6))))))
             (let fs Ts
               (expandForms (get v)
                 (foldr T Ts
@@ -2259,38 +2453,47 @@
                ((objs g)
                 (case h
                   ((terms hyps)
-                   (case (eqParts f) ((OTPair.nothing) none)
-                     ((OTPair.just tu)
-                      ((snd
-                         (readScript w eb gt defs (children os) thms script manner (nil T)
-                           (children vs)
-                           (children ks)
-                           (children hs))) G E rs g hyps (p1 tu) (p2 tu)))))))))))))))
-  (defn companion ((G Globals) (E (List Entry)) (rs NRs) (m T) (j T) (a Thm)) T
+                   (F.prove (connectivesAt defs)
+                     ((snd
+                        (readScript w eb gt defs (children os) thms script manner (nil T)
+                          (children vs)
+                          (children ks)
+                          (children hs))) G E rs)
+                     g
+                     hyps
+                     f))))))))))))
+  ; A formula's rewriting companion equates it with truth. An equation keeps its sides,
+  ; preserving the companions and certificates of the earlier document versions.
+  (defn companion ((G Globals) (E (List Entry)) (rs NRs) (o T) (m T) (j T) (a Thm)) T
     (case a
       ((mkThm ar c h f)
        (case c
          ((objs g)
           (case h
             ((terms hyps)
-             (case (eqParts f) ((OTPair.nothing) none)
-               ((OTPair.just lr)
-                (bindNT (eval G E ar rs 4096 m g hyps (p1 lr))
-                  (lam ((nl NFR))
-                    (bindNT (eval G E ar rs 4096 m g hyps (p2 lr))
-                      (lam ((nr NFR))
-                        (some
-                          (node 0
-                            (l3 (nfTerm nl) (nfTerm nr)
-                              (dNode 24 (single f)
-                                (l2
-                                  (dNode 2 (nil T)
-                                    (l2 (mDeriv (nfMarked nl)) (mDeriv (nfMarked nr))))
-                                  (dNode 27
-                                    (l3 j (node 0 (mapT x (range ar)))
-                                      (node 0 (mapT var (range (length g)))))
-                                    (mapT (lam ((i T)) (dNode 21 (single i) (nil T)))
-                                      (range (length hyps))))))))))))))))))))))
+             (let*
+               ((lr TPair
+                  (case (eqParts f) ((OTPair.just lr) lr) ((OTPair.nothing) (pr f (ttL o)))))
+                (source T (mEq (p1 lr) (p2 lr)))
+                (apply T
+                  (dNode 27
+                    (l3 j (node 0 (mapT x (range ar))) (node 0 (mapT var (range (length g)))))
+                    (mapT (lam ((i T)) (dNode 21 (single i) (nil T))) (range (length hyps)))))
+                (d T
+                  (case (eqParts f) ((OTPair.just lr) apply)
+                    ((OTPair.nothing) (dNode 25 (nil T) (l2 trueI apply))))))
+               (bindNT (eval G E ar rs 4096 m g hyps (p1 lr))
+                 (lam ((nl NFR))
+                   (bindNT (eval G E ar rs 4096 m g hyps (p2 lr))
+                     (lam ((nr NFR))
+                       (some
+                         (node 0
+                           (l3 (nfTerm nl) (nfTerm nr)
+                             (dNode 24 (single source)
+                               (l2
+                                 (dNode 2 (nil T)
+                                   (l2 (mDeriv (nfMarked nl)) (mDeriv (nfMarked nr))))
+                                 d)))))))))))))))))
   (defn withSides ((a Thm) (l T) (r T)) Thm (case a ((mkThm ar c h f) (mkThm ar c h (mEq l r)))))
   (defn sourceNames ((v T) (ns Ts)) Ts
     (if (eq v 0) ns
@@ -2515,6 +2718,7 @@
                  uses1)
                (let w T
                  (companion G E1 (rulesIn E1 (normalRules (entryBase v) defs thms q) rs)
+                   (connectivesAt defs)
                    (normalDepth q)
                    (Decls.length ds)
                    (requestThm q))
@@ -2592,7 +2796,7 @@
               (append (children fs)
                 (single
                   (failed (if (isSome d) 7 4) (requestName q)
-                    (mapT (reportOf G E defs dn (requestObjects q))
+                    (mapT (reportOf (requestVersion q) G E defs dn (requestObjects q))
                       (if (isSome d) obs
                         (obligationsOf
                           (getD (derive 1 G E rs (entryBase v) gt defs thms q) none))))))))

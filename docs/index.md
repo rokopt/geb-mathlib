@@ -3886,7 +3886,13 @@ import-direction rules above are enforced by
   `scripts/bootstrap.sh check`, compare the subset's reading.
   The [first authoring development](../manual/GebManual/Authoring.lean)
   combines these documents with the proof-source reader and script
-  runner written in Geb (`bootstrap/authoring.geb`). The executable
+  runner written in Geb (`bootstrap/authoring.geb`). Version 5 reads
+  internal formulas and every connective, with logical scripts in
+  `bootstrap/formula.geb` composing the existing checked rules. The
+  [logical development](../examples/authoring/Logic.proofs.geb) transports
+  existential witnesses and has a recorded certificate and canonical
+  document; formula proofs support cache reuse, goal display and replay.
+  The executable
   `geb-author` compiles manifest programs, checks tree-valued examples,
   proves theorems about a program's definitions, in a context of variables
   and under hypotheses, by scripts composing the tactics written in Geb,

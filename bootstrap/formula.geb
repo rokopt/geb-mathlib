@@ -1,0 +1,228 @@
+; Proofs of formulas of the internal language, composed from the connective rules of Logic.
+; A deducer takes a context, hypotheses and a formula and returns an optional derivation. The
+; adapters to equational tactics use propositional extensionality and a cut of equality with
+; truth. Every returned derivation is checked by the authoring runner.
+
+(module Formula
+  (export Deducer prove equate equateExact conj truth hypothesis assume conjunction conjuncts
+    disjunct
+    alternatives
+    allIntro
+    allElim
+    existsIntro
+    existsElim
+    falseElim
+    implication
+    unfoldFormula
+    unfoldHypothesis
+    applyTheorem)
+  (import Prelude)
+  (import Base)
+  (import Theory)
+  (import Language)
+  (import Derivation)
+  (import Prover)
+  (import Tactics)
+  (import Logic)
+  (deftype Deducer (Arrow Ts (Arrow Ts (Arrow T T))))
+  (defn conj ((o T) (p T) (q T)) T (mDefn (add o 1) (nil T) (l2 q p)))
+  ; An equation proved, used as a rewriting of its left side to truth.
+  (defn prove ((o T) (p Pv)) Deducer
+    (lam ((g Ts) (hs Ts) (phi T))
+      (case (eqParts phi) ((OTPair.just lr) (p g hs (p1 lr) (p2 lr)))
+        ((OTPair.nothing)
+         (mapO
+           (lam ((d T))
+             (dNode 22 (single (mEq phi (ttL o)))
+               (l2 d (dNode 23 (nil T) (l2 (dNode 17 (l2 (length hs) 0) (nil T)) trueI)))))
+           (p g hs phi (ttL o)))))))
+  ; A formula proved under an additional truth hypothesis gives its equality with truth.
+  (defn equate ((o T) (p Deducer)) Pv
+    (lam ((g Ts) (hs Ts) (t T) (u T))
+      (if (equal u (ttL o))
+        (mapO (lam ((d T)) (dNode 25 (nil T) (l2 trueI d))) (p g (append hs (single (ttL o))) t))
+        (mapO (lam ((d T)) (dNode 22 (single (ttL o)) (l2 trueI d)))
+          (p g (append hs (single (ttL o))) (mEq t u))))))
+  ; Hypothesis lookup and theorem application match a fixed conclusion. Try the equation
+  ; itself before its equality-with-truth interpretation. Keep this choice at those leaves:
+  ; retrying a whole elimination's continuation would duplicate a failed search at every step.
+  (defn equateExact ((o T) (p Deducer)) Pv
+    (lam ((g Ts) (hs Ts) (t T) (u T))
+      (let scope Ts (append hs (single (ttL o)))
+        (let direct T (p g scope (mEq t u))
+          (if (isSome direct) (mapO (lam ((d T)) (dNode 22 (single (ttL o)) (l2 trueI d))) direct)
+            (if (equal u (ttL o)) (mapO (lam ((d T)) (dNode 25 (nil T) (l2 trueI d))) (p g scope t))
+              none))))))
+  (defn truth ((o T)) Deducer
+    (lam ((g Ts) (hs Ts) (phi T)) (if (equal phi (ttL o)) (some trueI) none)))
+  (defn hypothesis ((i T)) Deducer
+    (lam ((g Ts) (hs Ts) (phi T))
+      (if (and (lt i (length hs)) (equal (at hs i) phi)) (some (dNode 21 (single i) (nil T)))
+        none)))
+  ; An implication introduced by proving its consequent under its antecedent.
+  (defn assume ((o T) (p Deducer)) Deducer
+    (lam ((g Ts) (hs Ts) (phi T))
+      (if (and (mIs 11 2 phi) (eq (mD phi 0) (add o 2)))
+        (let a T (mArg phi 1)
+          (let b T (mArg phi 0)
+            (mapO
+              (lam ((d T))
+                (dNode 23 (nil T)
+                  (l2 (dNode 8 (nil T) (nil T))
+                    (dNode 25 (nil T)
+                      (l2
+                        (dNode 27 (l3 2 (node 0 (nil T)) (node 0 (l2 b a)))
+                          (single (dNode 21 (single (length hs)) (nil T))))
+                        (dNode 27 (l3 1 (node 0 (nil T)) (node 0 (l2 b a)))
+                          (l2 (dNode 21 (single (length hs)) (nil T)) d)))))))
+              (p g (append hs (single a)) b))))
+        none)))
+  ; Instances of the declared rules, and cuts adding their consequences to the hypotheses.
+  (defn rule ((j T) (th Ts) (sg Ts) (ds Ts)) T (dNode 27 (l3 j (node 0 th) (node 0 sg)) ds))
+  (defn hyp ((i T)) T (dNode 21 (single i) (nil T)))
+  (defn cut ((phi T) (p T) (q T)) T (dNode 22 (single phi) (l2 p q)))
+  (def beta (dNode 3 (nil T) (nil T)))
+  (defn conv ((r T) (p T)) T (dNode 23 (nil T) (l2 r p)))
+  (defn from ((phi T) (r T) (p T)) T (dNode 24 (single phi) (l2 r p)))
+  (defn connective ((o T) (j T) (k T) (phi T)) T (and (mIs 11 k phi) (eq (mD phi 0) (add o j))))
+  (defn conjunction ((o T) (p Deducer) (q Deducer)) Deducer
+    (lam ((g Ts) (hs Ts) (phi T))
+      (if (connective o 1 2 phi)
+        (bindO (p g hs (mArg phi 1))
+          (lam ((dp T))
+            (mapO (lam ((dq T)) (rule 1 (nil T) (mArgs phi) (l2 dp dq))) (q g hs (mArg phi 0)))))
+        none)))
+  (defn conjuncts ((o T) (i T) (p Deducer)) Deducer
+    (lam ((g Ts) (hs Ts) (phi T))
+      (let h T (at hs i)
+        (if (and (lt i (length hs)) (connective o 1 2 h))
+          (let a T (mArg h 1)
+            (let b T (mArg h 0)
+              (mapO
+                (lam ((d T))
+                  (cut a (rule 2 (nil T) (mArgs h) (single (hyp i)))
+                    (cut b (rule 3 (nil T) (mArgs h) (single (hyp i))) d)))
+                (p g (append hs (l2 a b)) phi))))
+          none))))
+  (defn implication ((o T) (i T) (p Deducer) (q Deducer)) Deducer
+    (lam ((g Ts) (hs Ts) (phi T))
+      (let h T (at hs i)
+        (if (and (lt i (length hs)) (connective o 2 2 h))
+          (bindO (p g hs (mArg h 1))
+            (lam ((d T))
+              (mapO (lam ((r T)) (cut (mArg h 0) (rule 4 (nil T) (mArgs h) (l2 (hyp i) d)) r))
+                (q g (append hs (single (mArg h 0))) phi))))
+          none))))
+  (defn disjunct ((o T) (right T) (p Deducer)) Deducer
+    (lam ((g Ts) (hs Ts) (phi T))
+      (if (connective o 6 2 phi)
+        (mapO (lam ((d T)) (rule (if right 8 7) (nil T) (mArgs phi) (single d)))
+          (p g hs (mArg phi (if right 0 1))))
+        none)))
+  (defn alternatives ((o T) (i T) (p Deducer) (q Deducer)) Deducer
+    (lam ((g Ts) (hs Ts) (phi T))
+      (let h T (at hs i)
+        (if (and (lt i (length hs)) (connective o 6 2 h))
+          (bindO (assume o p g hs (impL o (mArg h 1) phi))
+            (lam ((dp T))
+              (mapO (lam ((dq T)) (rule 9 (nil T) (cons phi (mArgs h)) (l3 (hyp i) dp dq)))
+                (assume o q g hs (impL o (mArg h 0) phi)))))
+          none))))
+  ; Instances of abstractions are beta-reduced before a child script sees them. Other
+  ; predicates remain applications, including predicates that are variables.
+  (defn quantified ((o T) (j T) (phi T)) T (and (connective o j 1 phi) (eq (arity (mD phi 1)) 1)))
+  (defn instanceOf ((pred T) (w T)) T
+    (if (mIs 5 1 pred) (subst (mArg pred 0) (instVar w)) (app pred w)))
+  (defn instanceRule ((pred T)) T (if (mIs 5 1 pred) beta (dNode 0 (nil T) (nil T))))
+  (defn allIntro ((o T) (p Deducer)) Deducer
+    (lam ((g Ts) (hs Ts) (phi T))
+      (if (quantified o 3 phi)
+        (mapO
+          (lam ((d T))
+            (conv (dNode 8 (nil T) (nil T))
+              (dNode 26 (nil T)
+                (single
+                  (conv (dNode 2 (nil T) (l2 (instanceRule (mArg phi 0)) beta))
+                    (dNode 25 (nil T) (l2 trueI d)))))))
+          (p (cons (child (mD phi 1) 0) g) (append (mapT weaken1 hs) (single (ttL o)))
+            (instanceOf (weaken1 (mArg phi 0)) (var 0))))
+        none)))
+  (defn allElim ((o T) (i T) (w T) (p Deducer)) Deducer
+    (lam ((g Ts) (hs Ts) (phi T))
+      (let h T (at hs i)
+        (if (and (lt i (length hs)) (quantified o 3 h))
+          (let pred T (mArg h 0)
+            (let psi T (instanceOf pred w)
+              (mapO
+                (lam ((d T))
+                  (cut psi
+                    (from (app pred w) (instanceRule pred)
+                      (rule 5 (children (mD h 1)) (l2 w pred) (single (hyp i))))
+                    d))
+                (p g (append hs (single psi)) phi))))
+          none))))
+  (defn existsIntro ((o T) (w T) (p Deducer)) Deducer
+    (lam ((g Ts) (hs Ts) (phi T))
+      (if (quantified o 7 phi)
+        (let pred T (mArg phi 0)
+          (mapO
+            (lam ((d T))
+              (rule 10 (children (mD phi 1)) (l2 w pred) (single (conv (instanceRule pred) d))))
+            (p g hs (instanceOf pred w))))
+        none)))
+  (defn existsElim ((o T) (i T) (p Deducer)) Deducer
+    (lam ((g Ts) (hs Ts) (phi T))
+      (let h T (at hs i)
+        (if (and (lt i (length hs)) (quantified o 7 h))
+          (let a T (child (mD h 1) 0)
+            (let pred T (mArg h 0)
+              (let instance T (app (weaken1 pred) (var 0))
+                (let body T (instanceOf (weaken1 pred) (var 0))
+                  (let under Deducer
+                    (lam ((g1 Ts) (hs1 Ts) (phi1 T))
+                      (mapO
+                        (lam ((d T))
+                          (cut body (from instance (instanceRule pred) (hyp (sub (length hs1) 1)))
+                            d))
+                        (p g1 (append hs1 (single body)) phi1)))
+                    (mapO (lam ((d T)) (rule 11 (single a) (l2 phi pred) (l2 (hyp i) d)))
+                      (allIntro o (assume o under) g hs
+                        (allL o a (mLam a (impL o instance (weaken1 phi)))))))))))
+          none))))
+  (defn falseElim ((o T) (p Deducer)) Deducer
+    (lam ((g Ts) (hs Ts) (phi T))
+      (mapO (lam ((d T)) (rule 6 (nil T) (single phi) (single d))) (p g hs (ffL o)))))
+  ; Unfold the goal at its head, retaining the rewriting as the conversion's certificate.
+  (defn unfoldFormula ((G Globals) (E (List Entry)) (n T) (p Deducer)) Deducer
+    (lam ((g Ts) (hs Ts) (phi T))
+      (bindO (rootStep G E n g hs 8 (nil T) phi)
+        (lam ((psi T)) (mapO (conv (dNode 8 (nil T) (nil T))) (p g hs psi))))))
+  (defn unfoldHypothesis ((G Globals) (E (List Entry)) (n T) (i T) (p Deducer)) Deducer
+    (lam ((g Ts) (hs Ts) (phi T))
+      (if (lt i (length hs))
+        (bindO (rootStep G E n g hs 8 (nil T) (at hs i))
+          (lam ((psi T))
+            (mapO (lam ((d T)) (cut psi (from (at hs i) (dNode 8 (nil T) (nil T)) (hyp i)) d))
+              (p g (append hs (single psi)) phi))))
+        none)))
+  (import (Seq Deducer) as Deducers)
+  (def noProof (lam ((g Ts) (hs Ts) (phi T)) none))
+  (defn applyTheorem ((E (List Entry)) (j T) (th Ts) (sg Ts) (ps (List Deducer))) Deducer
+    (lam ((g Ts) (hs Ts) (phi T))
+      (case (thmAt E j) ((OThm.nothing) none)
+        ((OThm.just a)
+         (case a
+           ((mkThm n ctx hyps result)
+            (case hyps
+              ((terms fs)
+               (if
+                 (and (eq n (length th))
+                   (and (eq (length (case ctx ((objs xs) xs))) (length sg))
+                     (and (equal phi (instTerm th sg result))
+                       (eq (length fs) (Deducers.length ps)))))
+                 (mapO (lam ((ds T)) (rule j th sg (children ds)))
+                   (allSomeT
+                     (mapT
+                       (lam ((i T)) (Deducers.atOr noProof ps i g hs (instTerm th sg (at fs i))))
+                       (range (length fs)))))
+                 none))))))))))

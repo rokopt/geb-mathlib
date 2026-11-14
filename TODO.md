@@ -148,6 +148,10 @@ The first authoring milestone is documented in
 `manual/GebManual/Authoring.lean`: `examples/authoring/` contains a
 documented program, its statements and proof scripts in Geb, and a
 reproducible record of its elaborated definitions and certificate.
+Version 5 of the proof profile adds internal formula statements and
+logical scripts; `Logic.proofs.geb` exercises their checked certificates
+and durable encodings. Porting the remaining normalization deductions
+and naming the program's otherwise unnamed folds remain outstanding.
 The Bootstrap chapter's authoring table states what of the proof syntax,
 holes and editor acceptance remains.
 
