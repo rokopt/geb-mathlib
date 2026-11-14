@@ -269,6 +269,8 @@ does not prove the goal it is given. -/
 structure Obligation where
   /-- Whether the obligation is a hole's, and not a failing step's. -/
   hole : Bool
+  /-- Whether a failed reduction reached its fuel boundary. -/
+  exhausted : Bool
   /-- The name of the hole. -/
   name : String
   /-- The positions of the children from the script down to the hole or the step. -/
@@ -291,7 +293,8 @@ and its goal. -/
 def obligationOf (t : Tree) : Option Obligation :=
   match t.children with
   | [name, path, goal] =>
-    some ⟨t.label == 0, String.ofList ((ofNameTree name).getD []), path.children.map (·.label),
+    some ⟨t.label == 0, t.label == 2, String.ofList ((ofNameTree name).getD []),
+      path.children.map (·.label),
       goal⟩
   | _ => none
 
@@ -349,6 +352,8 @@ def goalText (goal : Tree) : String :=
 /-- The message of an obligation of a theorem's script. -/
 def obligationMessage (name : String) (o : Obligation) : String :=
   (if o.hole then s!"the script of the theorem {name} leaves the hole ?{o.name} open, at the goal "
+    else if o.exhausted then s!"the script of the theorem {name} does not prove it: \
+      this step exhausted its reduction budget, at the goal "
     else s!"the script of the theorem {name} does not prove it: this step does not prove the \
       goal ") ++ goalText o.goal
 

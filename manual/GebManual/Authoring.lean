@@ -671,8 +671,17 @@ script `(induction xs (y ys ih) (normalize 0) …)` in the document above:
 
 ```
 Draft.proofs.geb:3:33: error: the script of the theorem append-nil does not prove it: this
-step does not prove the goal (internal () (equal (Lists.append (nil T) (nil T)) (nil T)))
+step exhausted its reduction budget, at the goal
+(internal () (equal (Lists.append (nil T) (nil T)) (nil T)))
 ```
+
+For `normalize` and `reduce`, the report distinguishes a reached fuel
+boundary from a reduction that finishes at the requested depth with
+unequal results. A diagnostic pass uses the evaluator's same rounds and
+rules with a failing zero-fuel continuation. It reports exhaustion only
+when ordinary evaluation returns a partial result and that pass fails.
+Neither outcome refutes the goal. Other search steps retain their ordinary
+failure report; this distinction does not measure their case-split budgets.
 
 The runner runs a script once as it is written. Where the script proves
 nothing, the runner runs it again, each script within it then returning its
@@ -913,8 +922,8 @@ statement, its script, the normal form its companion is to have and the
 version of its document, with the sides of its companion and, where the
 theorem is proved, the derivations of the theorem and of its companion,
 with their transitive definition dependencies. The cache also keeps the
-globals those derivations were checked with. A theorem's declarations are come by in the first of three ways that
-applies.
+globals those derivations were checked with. A theorem's declarations are
+come by in the first of three ways that applies.
 
 * Taken. The cache's item at the theorem's position has its name,
   statement, script, normal form and version, and is proved; the cache is

@@ -8346,6 +8346,144 @@ def «Authoring.scriptStep» :=
 
 def «Authoring.openRule» := leaf 255
 
+def «Authoring.boundedEval» :=
+  fun (x0 : T)
+    (x1 : List T)
+    (x2 : T)
+    (x3 : List T)
+    (x4 : T)
+    (x5 : T)
+    (x6 : List T)
+    (x7 : List T)
+    (x8 : T) =>
+    let x9 : T := «Prover.firstR»
+      (Const.iter
+        (α := List T → List T)
+        («Prover.evalStepB»
+          x0
+          x2
+          («Prover.rootRewriteK»
+            x0
+            x1
+            x2
+            («Prover.indexRules» x1 x3)
+            («Prover.prepareHyps» x7)))
+        (fun (x9 : List T) =>
+          Const.foldr
+            (α := T)
+            (β := List T)
+            (fun (_ : T) (x11 : List T) => («Prover/ONFR.nothing» :: x11))
+            ([] : List T)
+            x9)
+        x4
+        («Prover/JobL.single»
+          («Prover.job»
+            x5
+            («Language.objs» x6)
+            (leaf 0)
+            («Derivation.terms» x7)
+            x8)));
+    x9
+
+def «Authoring.exhausted» :=
+  fun (x0 : T)
+    (x1 : List T)
+    (x2 : T)
+    (x3 : List T)
+    (x4 : T)
+    (x5 : T)
+    (x6 : List T)
+    (x7 : List T)
+    (x8 : T) =>
+    let x9 : T := «Prelude.and»
+      («Prover/ONFR.isJust» («Prover.eval» x0 x1 x2 x3 x4 x5 x6 x7 x8))
+      («Base.not»
+        («Prover/ONFR.isJust»
+          («Authoring.boundedEval» x0 x1 x2 x3 x4 x5 x6 x7 x8)));
+    x9
+
+def «Authoring.failureKind» :=
+  fun (x0 : T)
+    (x1 : List T)
+    (x2 : List T)
+    (x3 : List T)
+    (x4 : List T)
+    (x5 : T)
+    (x6 : T)
+    (x7 : List T)
+    (x8 : List T)
+    (x9 : List T)
+    (x10 : List T)
+    (x11 : T)
+    (x12 : T) =>
+    let x13 : T := (let x13 : T := «Authoring.headed»
+                      x5
+                      (mk 0 [leaf 110,
+                        leaf 111,
+                        leaf 114,
+                        leaf 109,
+                        leaf 97,
+                        leaf 108,
+                        leaf 105,
+                        leaf 122,
+                        leaf 101]);
+                    if («Prelude.or»
+                      x13
+                      («Authoring.headed»
+                        x5
+                        (mk 0 [leaf 114,
+                          leaf 101,
+                          leaf 100,
+                          leaf 117,
+                          leaf 99,
+                          leaf 101]))).label ≠ 0 then
+                      let x14 : T := (if (x13).label ≠ 0 then
+                        «Base.getD» («Authoring.number» (Const.child x5 (leaf 1))) (leaf 0)
+                      else
+                        leaf 4096);
+                      let x15 : T := (if (x13).label ≠ 0 then
+                        leaf 3
+                      else
+                        «Base.getD» («Authoring.depthOf» (Const.child x5 (leaf 1))) (leaf 0));
+                      let x16 : List
+                        T := «Authoring.rulesIn»
+                        x7
+                        («Authoring.rulesFrom»
+                          x0
+                          x1
+                          x2
+                          x4
+                          x3
+                          («Prelude.drop» (leaf 2) (Const.children x5)))
+                        x8;
+                      if («Prelude.or»
+                        («Authoring.exhausted»
+                          x6
+                          x7
+                          («Prelude.length» x2)
+                          x16
+                          x14
+                          x15
+                          x9
+                          x10
+                          x11)
+                        («Authoring.exhausted»
+                          x6
+                          x7
+                          («Prelude.length» x2)
+                          x16
+                          x14
+                          x15
+                          x9
+                          x10
+                          x12)).label ≠ 0 then
+                        leaf 2
+                      else
+                        leaf 1
+                    else
+                      leaf 1);
+    x13
+
 def «Authoring.obligation» :=
   fun (x0 : T)
     (x1 : T)
@@ -8513,7 +8651,20 @@ def «Authoring.located» :=
                   x24
                 else
                   «Authoring.obligation»
-                    (leaf 1)
+                    («Authoring.failureKind»
+                      x1
+                      x3
+                      x4
+                      x5
+                      x15
+                      x6
+                      x17
+                      x18
+                      x19
+                      x20
+                      x21
+                      x22
+                      x23)
                     «Authoring.unnamed»
                     x9
                     x13

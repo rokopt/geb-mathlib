@@ -1851,6 +1851,44 @@
   ; nothing, so that in the derivation of a script so read the leaves are the holes and the
   ; innermost scripts that fail, each with the goal it was given.
   (def openRule 255)
+  ; The evaluator with a failing zero-fuel continuation, for diagnostics alone. Its rounds,
+  ; rewrite rules and jobs are the prover's. If ordinary evaluation returns a partial result
+  ; but this evaluation fails, a job reached the fuel boundary. No proof uses this result.
+  (defn boundedEval
+    ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T) (dp T) (g Ts) (hs Ts) (t T))
+    ONFR.Maybe
+    (firstR
+      ((iter EVB (evalStepB G n (rootRewriteK G E n (indexRules E rs) (prepareHyps hs)))
+         (lam ((js (List Job)))
+           (foldr Job (List ONFR.Maybe)
+             (lam ((j Job) (acc (List ONFR.Maybe))) (cons ONFR.nothing acc))
+             (nil ONFR.Maybe)
+             js))
+         fuel) (JobL.single (job dp (objs g) 0 (terms hs) t)))))
+  (defn exhausted ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T) (dp T) (g Ts) (hs Ts) (t T))
+    T
+    (and (ONFR.isJust (eval G E n rs fuel dp g hs t))
+      (not (ONFR.isJust (boundedEval G E n rs fuel dp g hs t)))))
+  ; A failed normalization or reduction reports an observed cutoff separately from unequal
+  ; completed normal forms. Other steps keep their ordinary failure; exhaustion refutes no goal.
+  (defn failureKind
+    ((eb T) (defs Ts) (ovars Ts) (thms Ts) (hyps Ts) (nd T) (G Globals) (E (List Entry)) (base NRs)
+     (g Ts)
+     (hs Ts)
+     (t T)
+     (u T))
+    T
+    (let norm T (headed nd (quote (0 normalize)))
+      (if (or norm (headed nd (quote (0 reduce))))
+        (let fuel T (if norm (getD (number (child nd 1)) 0) 4096)
+          (let dp T (if norm 3 (getD (depthOf (child nd 1)) 0))
+            (let rs NRs (rulesIn E (rulesFrom eb defs ovars hyps thms (drop 2 (children nd))) base)
+              (if
+                (or (exhausted G E (length ovars) rs fuel dp g hs t)
+                  (exhausted G E (length ovars) rs fuel dp g hs u))
+                2
+                1))))
+        1)))
   (defn obligation ((kind T) (name T) (path Ts) (vars Ts) (hyps Ts) (g Ts) (hs Ts) (t T) (u T)) T
     (some
       (dNode openRule
@@ -1888,7 +1926,15 @@
                         (lam ((g Ts) (hs Ts) (t T) (u T))
                           (let d T ((snd r) G E base g hs t u)
                             (if (isSome d) d
-                              (obligation 1 unnamed path vars hyps g hs t u)))))))))))))))
+                              (obligation (failureKind eb defs ovars thms hyps nd G E base g hs t u)
+                                unnamed
+                                path
+                                vars
+                                hyps
+                                g
+                                hs
+                                t
+                                u)))))))))))))))
   (defn readScript ((v T) (eb T) (gt Ts) (defs Ts) (ovars Ts) (thms Ts) (s T)) SRP
     (para SRP (located v eb gt defs ovars thms) s))
   ; Whether a script holds a hole.
@@ -2104,7 +2150,8 @@
                                     (listOf (l2 (atomOf (at scope i)) (showType ovars (at g i)))))
                                   (range n))))
                             body)))))))))))))
-  ; What is reported of an obligation: the node of its kind, 0 a hole and 1 a step that fails,
+  ; What is reported of an obligation: the node of its kind, 0 a hole, 1 a step that fails and
+  ; 2 a normalization whose fuel boundary was reached,
   ; over the hole's name, the node of its path and its goal.
   (defn reportOf ((v T) (G Globals) (E (List Entry)) (defs Ts) (dn Ts) (ovars Ts) (ob T)) T
     (node (mD ob 0) (l3 (mD ob 1) (mD ob 2) (showGoal v G E defs dn ovars ob))))

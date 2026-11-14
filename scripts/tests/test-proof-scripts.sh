@@ -476,9 +476,26 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
     # A step that fails and a hole of one script are both reported, each where it is written.
     text = holes.replace('(reduce weak) ?step', '(normalize 0) ?step')
     error = rejected(text, where(text, '(normalize 0) ?step'),
-                     'the script of the theorem right-unit does not prove it: this step does not '
-                     'prove the goal (internal () (equal (Lists.append (nil T) (nil T)) (nil T)))')
+                     'the script of the theorem right-unit does not prove it: this step exhausted '
+                     'its reduction budget, at the goal '
+                     '(internal () (equal (Lists.append (nil T) (nil T)) (nil T)))')
     assert f":{where(text, '?step')}: error: the script of the theorem right-unit leaves the hole" in error, error
+    # A reached fuel boundary differs from a completed reduction with unequal results. Neither
+    # report claims the theorem is false. Alternatives report only the branch they retain.
+    exhausted = '''(proofs 3 (program pair)
+  (theorem budget (forall ((x T) (y T)) (equal (Pair.first x y) x))
+    (by (normalize 1))))'''
+    error = rejected(exhausted, where(exhausted, '(normalize 1)'),
+                     'this step exhausted its reduction budget')
+    unequal = '''(proofs 3 (program pair)
+  (theorem unequal (forall ((x T) (y T)) (equal x y)) (by (normalize 64))))'''
+    error = rejected(unequal, where(unequal, '(normalize 64)'),
+                     'this step does not prove the goal')
+    assert 'exhausted' not in error, error
+    target.write_text(exhausted.replace('(normalize 1)',
+                                       '(first (normalize 0) (normalize 64))'))
+    run('prove', manifest, target, root / 'alternative.cert')
+    run('replay', manifest, target, root / 'alternative.cert')
     # A hole that no proof reaches states no obligation; version 2 reads no hole.
     target.write_text(holes.replace('(induction xs (y ys ih) (reduce weak) ?step)',
                                     '(first (reduce weak append-nil) ?unreached)')
@@ -565,7 +582,7 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
                                                ' (by (normalize 0)))'))
     error = run('check', failing, ok=False)
     assert error.startswith(f'{failing}:2:51: error: the script of the theorem again does not '
-                            'prove it: this step does not prove the goal '
+                            'prove it: this step exhausted its reduction budget, at the goal '
                             '(internal () (equal Pair.left Pair.first))'), error
     assert run('check', root / 'Pair.geb') == ''
     broken = below / 'Broken.geb'
