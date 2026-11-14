@@ -3576,6 +3576,12 @@ tag := "authoring-compatibility"
     to canonical S-expressions, and the Geb-native refinement search
   * Waiting on their consumers
 *
+  * The further requirements
+    ({ref "further-requirements"}[Further requirements])
+  * In progress: each has its contract and its state stated, with what
+    remains; reproducible builds are complete for a recorded
+    development, and no remainder is information a source supplies
+*
   * Acceptance
   * Not met
 :::
@@ -3639,7 +3645,8 @@ written. The work to do first:
    durable form of a proof and no program computes it from a certificate
    ({ref "proof-scripts"}[Proof scripts and certificates]).
 9. State which steps of the pipeline are proved and which are tested
-   ({ref "compatibility-contract"}[The compatibility contract]).
+   ({ref "compatibility-contract"}[The compatibility contract],
+   {ref "verification-boundary"}[The verification boundary]).
 
 Content storage, a network of identifiers, a language server,
 tree-sitter, richer holes and synthesis derive from the source and
@@ -3744,7 +3751,8 @@ the reader, the serializer, the code generator, the host compiler or the
 file driver correct, and the bootstrap's fixed points, byte for byte, are
 evidence against regression, not preservation theorems. Which steps are
 proved and which tested is stated explicitly, the agreement of the word
-codec with the wire form, tested and not proved, among them.
+codec with the wire form, tested and not proved, among them
+({ref "verification-boundary"}[The verification boundary]).
 
 ### The sources and what the guarantees leave out
 %%%
@@ -5627,63 +5635,321 @@ tag := "further-requirements"
 %%%
 
 Before substantial authoring, each of the following has at least the
-contract stated.
+contract stated. The third column gives a requirement's state, one of
+the five the section on status defines, with what meets it and what
+remains.
 
 :::table +header
 *
   * Requirement
   * Minimum contract
+  * State, and what remains
 *
   * Schema and feature versions
   * Syntax, core, annotations, certificates and semantic profile are
     identified separately; an unsupported mandatory feature is rejected
     and an optional field kept opaque.
+  * In progress. A document's profile names its syntax, the schema of
+    its annotations and the format of its prose, each with a version, is
+    rejected at a version or at a field of `(crit …)` its host does not
+    read, and keeps its further fields
+    ({name}`Geb.Kernel.Document.Profile.check`,
+    {name}`Geb.Kernel.Document.readStrictDurable_printCanonDurable`). A
+    manifest names its edition; an image the version of its format
+    ({name}`Geb.Kernel.readImage`); a definition's payload its schema
+    and the kernel's profile, `geb-def/v1` and `geb-kernel/v1`
+    (`Geb/Prototypes/Kernel/Identity.lean`); and the envelope of a
+    certificate or of a cache its format, its theory, the profile of its
+    document and its compiled program (`GebHost/Authoring.lean`).
+    Remaining: the certificates of `bootstrap/certificates/`, tables of
+    numbers that name no format and no theory
+    (`GebTests/Prototypes/FreeTopos/Stored.lean`), each replaced by an
+    enveloped certificate as its development is stated in a proof
+    document, in progress; and the kernel's profile in an image, whose
+    version stands for its format and for that profile together, ready.
 *
   * Persistent data
   * Serialized values, tags of datatype constructors, examples and saved
     inputs of programs are versioned interfaces; migrating code does not
     migrate values stored outside it.
+  * In progress. A serialized tree is an image, whose format is
+    versioned. A constructor's tag is its position among the
+    constructors of its declaration, which the program's edition reads
+    ({ref "authoring-state"}[The sources and what the guarantees leave
+    out]), so that a declaration keeping an earlier representation
+    writes a constructor at each position it passes over, as `Tx` of
+    `bootstrap/stage1/typing.geb` does. An example is a note of the
+    document's schema, and a record keeps a development's inputs with
+    their digests ({ref "first-authoring"}[Writing a first Geb
+    development]). Remaining: a value stored outside its program names
+    the declaration it is a value of only through the format of its
+    envelope, which is changed by hand. The stored values are the
+    certificates and the caches: a change of a certificate's encoding is
+    detected by the replay of the committed records
+    (`scripts/authoring.sh check`, `scripts/tests/test-preservation.sh`),
+    and a cache is no durable artifact. A stored value's reference to
+    its datatype's declaration waits on the first stored value of
+    another datatype; `scripts/preserve.py` migrates neither an edition
+    nor a datatype's representation.
 *
   * Library behavior
   * Dependencies are frozen; an implementation is replaced only with
     proved equality for the observations its interface permits, or kept
     under its old identity (the compatibility contract).
+  * In progress. A program's dependencies are the sources its manifest
+    lists, in their order and below its directory, and a proof
+    document's the documents it imports
+    ({ref "files-editions"}[Files, editions and the host boundary]); a
+    record keeps them with the compiler's image and the Lean it emits,
+    the proof runner, the toolchain and the lockfile, each by its
+    digest. The checker, the translation, the prover and the tactics
+    written in Geb replace those written in Lean by equality proved at
+    every input ({ref "logic"}[The logic]), and the prover's contract
+    with its clients is stated
+    ({ref "compatibility-contract"}[The compatibility contract]).
+    Remaining: a manifest and an import name a path and no digest, so
+    that a dependency is frozen in a record and not where it is used;
+    references by digest wait on the store.
 *
   * Verification boundary
   * Which steps of parsing, elaboration, serialization, code generation
     and host execution are proved and which tested is stated, and
     correctness is carried through the whole path that runs a program.
+  * In progress. {ref "verification-boundary"}[The verification
+    boundary] states of each step what is proved and what is tested.
+    Remaining: the proofs of the steps it gives as tested, by which
+    correctness is carried through the whole path; ready, but for those
+    of the expansion and the typing of the datatype language, which are
+    in progress.
 *
   * Reproducible builds
   * Source, the closure of dependencies and the compiler profile are
     kept; the identities of document, checked core and generated
     artifacts are distinct; a corpus of previously accepted programs is
     kept.
+  * Complete for a recorded development. `scripts/preserve.py record`
+    keeps the sources as written, the proof document with the documents
+    it imports, the compiler's image and the Lean it emits, the proof
+    runner, the closures of their Geb sources, the toolchain and the
+    lockfile, with the digest of each and of the host's executables,
+    which it identifies and does not keep
+    ({ref "first-authoring"}[Writing a first Geb development]). The
+    canonical source documents, the checked image, the elaborated
+    definitions and the certificate are files of their own in a record.
+    The corpus is the committed records of `examples/authoring/` and
+    `examples/roundtrip/` and the compilers' image and emitted Lean,
+    each regenerated or replayed in continuous integration.
 *
   * Diagnostics
   * A structured result of success or error with its source occurrence;
     an empty output of the compiler is not an interface for developers.
+  * In progress. `geb-compile` and `geb-author` report what rejects a
+    program or a development as `FILE:LINE:COLUMN: error: MESSAGE`, at
+    the declaration, the theorem, the hole or the step concerned, exit
+    with a nonzero status and leave an existing output in place
+    ({ref "editing"}[Editing], {ref "proof-holes"}[Holes and goals]).
+    Remaining: the occurrence inside a declaration and the reason its
+    typing gives, by a checker that reports the failing vertex, ready
+    for the kernel's typing and waiting on the datatype language's
+    completion for the datatype language's; and the report as a value
+    that an entry point of the compiler returns, the entry points
+    giving a program they reject the empty tree
+    ({ref "improvements"}[Improvements]), ready.
 *
   * Editing and recovery
   * Incomplete documents, obligations of holes and unattached annotations
     are saved; drafts are distinguished from accepted programs; updates
     of several artifacts are atomic.
+  * In progress. A document with holes reads, prints and converts as any
+    document does, and the obligations of its holes are a function of it
+    and of its program, which `geb-kernel holes` and `geb-author check`
+    display. A comment that no vertex of the core holds stays in the
+    document and is reported as unattached
+    ({name}`Geb.Kernel.SourceAnnotation.Annotated.unattached`). A
+    program with an open hole is not reported as complete, and a
+    development with an obligation has no certificate. A cache keeps
+    the theorems a run proves beside those it does not, and a cache and
+    a record are each put in place by a renaming. Remaining: a text
+    that does not read is no document, the editors' recovery of its
+    readable parts serving navigation alone; a certificate, an image
+    and emitted Lean are written in place; and no update of several
+    artifacts but a record's is atomic. These wait on their consumers,
+    the store and a language server.
 *
   * Performance and limits
   * Exhaustion of resources is distinct from falsity and from
     ill-typing; representative operations of editing, checking and
     compiling are measured; implementations may improve without promising
     equal cost.
+  * In progress. A search is bounded by the budgets its script writes,
+    and a script that does not prove its theorem within them is
+    reported as not proving it, which refutes nothing; a theorem whose
+    sides have no weak normal forms within the budget, and a program
+    whose holes' types do not unify within theirs, are reported as such
+    (`bootstrap/authoring.geb`, {name}`Geb.Kernel.Holes.unifyDefs`).
+    The checks and the searches are measured
+    ({ref "checking-cost"}[The cost of checking]), and the compilers by
+    `scripts/bench-bootstrap.sh`. Remaining: the report of a step that
+    fails does not say whether its budget was spent, ready; the stack
+    the Geb reader and serializer take in proportion to a program's
+    length is among the improvements
+    ({ref "improvements"}[Improvements]); and the editors' operations
+    are not measured, ready.
 *
   * Reflection
   * Representations of code are distinguished from ordinary data; which
     structural observations are stable, and how quoted schemas migrate,
     is stated.
+  * In progress. A quotation and a datum are forms of their own, which
+    the elaboration of modules, the expansion, the typing and the
+    migration to digests read apart from terms
+    ({ref "modules"}[Modules], {ref "datatype-completion"}[The datatype
+    language's completion], {ref "content-identity"}[Content
+    identity]). The stage-1 compiler declares the forms, the types and
+    the terms it computes on as datatypes, distinct from the trees. The
+    stable observations are the labels of the kernel's types and terms
+    and the indices of {name}`Geb.Kernel.prims`, which are only extended
+    ({ref "speed-and-second-host"}[Speed and a second host]). Remaining:
+    how a quoted value of a datatype of code migrates when the
+    datatype's declaration or the kernel's labels change, which is the
+    remainder of persistent data above, such a value being a stored
+    value of a datatype.
 *
   * Host protocols
   * Contracts of bytes, framing, errors and types of entry points are
     fixed independently of files, the width of machine words and the
     names of backends (files, editions and the host boundary).
+  * In progress. Kernel programs are pure, and the driver alone reads
+    and writes files. An entry point is a definition of type `T → T`
+    ({name}`Geb.Kernel.runEntry`), its input a file as the tree of the
+    leaves of its bytes and its output the bytes of the labels of a
+    tree's children, a label beyond a byte being rejected
+    ({name}`Geb.Kernel.Command.runBytes`). A manifest names its
+    program's entry points, which the driver requires the program to
+    define; a failure is a message on standard error and a nonzero
+    status, the output left in place; a label is a natural number, so
+    that no contract names a machine word; and the table of primitives
+    is only extended. Remaining: a manifest states no type of an entry
+    point, and an entry point of another type, the proof runner's among
+    them, is called through the Lean the compiler emits and by no
+    protocol; and a run bounded in steps that returns a value, an error
+    or a resumable state (the decision on input and output) is not
+    constructed. These wait on the second host.
+:::
+
+No remainder is information that a person supplies in a source. Each
+is a version, a reference or a report that a program computes from the
+sources as they are written, a contract of a host, or a proof about the
+programs that read them, so that by the criterion of this section none
+bears on what is written now.
+
+#### The verification boundary
+%%%
+tag := "verification-boundary"
+%%%
+
+The path from a source's text to a running program and to a checked
+theorem passes through the steps below. A step is proved where a
+theorem of Lean states it at every input, and tested where the tests
+compare its results at the inputs they hold. An agreement is the
+equality, at every input, of a program written in Geb with its Lean
+counterpart. It is stated of the Lean the compiler emits from the
+program, and it is of the program itself where the loading of that Lean
+is proved, which the row of the emitted Lean states.
+
+:::table +header
+*
+  * Step
+  * In Lean
+  * Written in Geb
+*
+  * Text to document
+  * Proved: each reader retracts its printer, in the authoring profile
+    ({name}`Geb.Kernel.Document.readDoc_print`) and in the strict
+    encodings ({name}`Geb.Kernel.Document.readStrictDoc_printCanonDoc`,
+    {name}`Geb.Kernel.Document.readStrictDoc_printAdvancedDoc`), and the
+    kernel's reader reads a document's S-expressions by its definition
+    ({name}`Geb.Kernel.readSExps`). Tested: the erasure of notes
+    ({name}`Geb.Kernel.Document.erasedText`)
+  * Tested against Lean's: the tokenizer of `bootstrap/reader.geb`
+    (`GebTests/Prototypes/Stage0.lean`). No printer of documents is
+    written in Geb
+*
+  * Resolution of names, and the printer of terms
+  * Proved: the reader retracts the printer, of terms and of programs
+    ({name}`Geb.Kernel.resolve_printTerm`,
+    {name}`Geb.Kernel.readForms_printProgram`)
+  * Agreement proved, the loading proved: `resolve_eq` and
+    `printTermOpt_eq` of
+    `GebTests/Prototypes/FreeTopos/Agreement/Reader.lean`
+*
+  * Elaboration of modules
+  * Defined, with no theorem (`Geb/Prototypes/Kernel/Modules.lean`)
+  * Tested against Lean's (`GebTests/Prototypes/Kernel/Modules.lean`)
+*
+  * Expansion and typing of the datatype language
+  * Not defined: the programs written in Geb are their definition
+  * Proved in the metalogic, of the programs' translations: the
+    expansion's identity on kernel forms and, in progress, the
+    soundness of the typing
+    ({ref "datatype-completion"}[The datatype language's completion]),
+    the check of each development decided by Lean's evaluator. Tested:
+    the agreement of the two compilers
+    (`GebTests/Prototypes/Stage1.lean`)
+*
+  * Type checking and evaluation of the kernel
+  * The denotation is the checker's result, by definition
+    ({name}`Geb.Kernel.infer`). Proved: the evaluator is adequate to it
+    ({name}`Geb.Kernel.Eval.fundamental`)
+  * Agreement proved, of emitted Lean whose loading is not: `typeIn_eq`
+    of `GebTests/Prototypes/CheckMirror.lean` and `eval_eq` of
+    `GebTests/Prototypes/EvalMirror.lean`. Proved in the metalogic, of
+    the programs' translations: weakening, substitution and the
+    evaluator's fundamental lemma ({ref "goedel-t"}[Gödel's T])
+*
+  * Images
+  * Tested: the reader of images reads what the writer writes, and the
+    word-level codec agrees with {name}`Geb.RoseTree.wire`
+  * Tested against Lean's: `bootstrap/serialize.geb`
+    (`GebTests/Prototypes/Stage0.lean`)
+*
+  * The Lean the compiler emits
+  * Not defined: the backend is `bootstrap/stage1/lean.geb` alone
+  * Proved for the metalogic's program: its loading gives each
+    definition the Lean emitted from it as its denotation
+    (`docs/rules/ci-and-workflow.md` § Loading modes). Tested for the
+    compilers, the kernel's checker and evaluator and the proof runner:
+    the fixed points and the comparison of the emitted Lean's bytes
+    (`scripts/bootstrap.sh check`, `scripts/authoring.sh check`)
+*
+  * The metalogic's checker, translation, prover and tactics
+  * Proved: the checker's soundness
+    ({name}`Geb.FreeTopos.Internal.valid_of_checkDev`) and the
+    translation's ({name}`Geb.FreeTopos.Translation.translation_sound`)
+  * Agreement proved, the loading proved: `checkDev_eq`, `program_eq`
+    and `thm_eq` of `GebTests/Prototypes/FreeTopos/Agreement/`, and
+    those of the prover and the tactics there
+*
+  * Proof documents
+  * Not defined: the runner is `bootstrap/authoring.geb` alone
+  * Tested: its reading of statements and scripts and its replay
+    (`scripts/tests/test-authoring.sh`,
+    `scripts/tests/test-proof-scripts.sh`,
+    `scripts/tests/test-proof-cache.sh`). A replay checks a certificate
+    by the checker of developments, whose agreement is proved; no
+    theorem states that the formula it checks is the statement as
+    written
+*
+  * Content identity
+  * Proved: the migration and the linker
+    ({name}`Geb.Kernel.Identity.migrate_link`,
+    {name}`Geb.Kernel.Identity.migrate_idem`)
+  * Tested against Lean's (`GebTests/Prototypes/Kernel/Identity.lean`)
+*
+  * Host execution
+  * Trusted: Lean's compiler and runtime (the seed boundary)
+  * Trusted likewise, the programs running as the Lean emitted from
+    them or by the Lean evaluator
 :::
 
 ### The sequence and its acceptance
