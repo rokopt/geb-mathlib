@@ -3999,6 +3999,21 @@ import-direction rules above are enforced by
   identifiers (`Geb.Kernel.Identity.rekey`) addresses the same nodes
   (`Geb.Kernel.Identity.valid_rekey`), and keeps names as such annotations
   (`Geb.Kernel.Identity.nameNotes`).
+  `SourceAnnotation.lean` reads kernel declarations beside their complete
+  source document and derives a relation from source occurrences to core
+  vertices (`Geb.Kernel.SourceAnnotation.annotate`). Binder spellings address
+  lambda vertices, including those introduced by `let`; comments at an
+  occurrence are read from the retained document, and trivia without a core
+  address is reported separately. Re-keying by definition CID preserves the
+  source occurrences and their multiplicity, with valid core addresses proved
+  by `valid_rekeyed`. Canonical records retain the exact named core and
+  correspondence beside the source, with the retraction `read_write`; reading
+  recomputes the correspondence and rejects a stale header. The host commands
+  `geb-kernel annotations SOURCE OUTPUT` and `check-annotations RECORD` also
+  check the definitions' types. The pass handles kernel declarations; tracing
+  module and datatype elaboration remains separate. Tested in
+  `GebTests/Prototypes/Kernel/SourceAnnotation.lean` and
+  `scripts/tests/test-source-annotations.sh`.
   `Modules.lean` elaborates a program's modules before it is read
   (`Geb.Kernel.expandModules`): declarations under qualified names, imports
   and export lists, and modules with parameters instantiated at their
