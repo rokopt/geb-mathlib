@@ -150,8 +150,10 @@ documented program, its statements and proof scripts in Geb, and a
 reproducible record of its elaborated definitions and certificate.
 Version 5 of the proof profile adds internal formula statements and
 logical scripts; `Logic.proofs.geb` exercises their checked certificates
-and durable encodings. Porting the remaining normalization deductions
-and naming the program's otherwise unnamed folds remain outstanding.
+and durable encodings. Version 6 adds the scripts that reduce a hypothesis
+and cite a theorem as a hypothesis, and the fundamental lemma of the
+evaluator is stated and proved in it under `bootstrap/proofs/`. Porting
+the deductions of the datatype language's soundness remains outstanding.
 The Bootstrap chapter's authoring table states what of the proof syntax,
 holes and editor acceptance remains.
 

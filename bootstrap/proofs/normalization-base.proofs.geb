@@ -1,14 +1,142 @@
 ; The base of the fundamental lemma of the evaluator written in Geb, about the translation of the
 ; prelude, the reader, the type checker, the traversal of kernel terms and the evaluator: the
-; definitions the lemma states and the lemmas it rests on. The addition of natural numbers, by
-; which the levels of the evaluator's fuel are counted, is defined by recursion on its second
-; summand, and its lemmas are proved by the computation of the fold and by induction on that
-; summand.
+; definitions the lemma states and the development it rests on. The definitions are the addition
+; and the fuel of a natural number, the stable convergence of a function of the fuel, the relation
+; at a type by the fold of the type into the predicates on values, the relations of an environment
+; to a context and of a program's definitions to the types of its globals, the evaluator's
+; functions at a level of fuel, and the folds of the type checker and of the evaluator, which
+; their sources do not name. The development proves a vocabulary of equations, each used as a
+; rewriting rule by its companion in normal form with the vocabulary kept folded: the folds at
+; nodes and their rebuilding of trees, the checker's case and the evaluator's step at each label,
+; and the relation at each type former; and from them the lemmas of stability, of the lookups in
+; an extended environment, the soundness of the equality of trees, the inversions of the type
+; tests, and the two labels of the test that an optional tree is some.
 
-(proofs 4 (program normalization)
+(proofs 6 (program normalization) (import weakening-lemmas.proofs.geb)
+  ; The types of lists of trees, of the evaluation and the application at a level and of their
+  ; pair, of predicates on values and of the relation as a function of the definitions.
+  (abbreviation Ts (List T))
+  (abbreviation Ev (Arrow Ts (Arrow T T)))
+  (abbreviation Ap (Arrow T (Arrow T T)))
+  (abbreviation Fns (Prod Ev Ap))
+  (abbreviation Pred (Arrow T Omega))
+  (abbreviation Rel (Arrow Ts Pred))
+  ; The type checker's result at a node, the kernel's step of a fold into such results, and the
+  ; result of the rose tree's fold that the kernel's fold translates to, a function of the step.
+  (abbreviation RR (Prod T (Arrow Ts T)))
+  (abbreviation RRStep (Arrow T (Arrow (List RR) RR)))
+  (abbreviation RRFold (Arrow RRStep RR))
+  ; The evaluator's value as a function of the environment, the kernel's step of the fold whose
+  ; step sees the node, the result of the rose tree's fold that it translates to, the pair of the
+  ; node rebuilt and the value, and that fold's type, of functions of the step.
+  (abbreviation EvE (Arrow Ts T))
+  (abbreviation EStep (Arrow T (Arrow (List EvE) EvE)))
+  (abbreviation RE (Prod T EvE))
+  (abbreviation REFold (Arrow EStep RE))
+  ; The numerals of the labels of the types: of trees, the unit, products, functions and lists.
+  (abbreviation n0 (lib bnil))
+  (abbreviation n1 (lib b0 (lib bnil)))
+  (abbreviation n2 (lib b1 (lib bnil)))
+  (abbreviation n3 (lib b0 (lib b0 (lib bnil))))
+  (abbreviation n4 (lib b1 (lib b0 (lib bnil))))
+  ; The step of the rose tree's fold into the type checker's results at a node n: the kernel's
+  ; step at the label and at the children's folds applied to it.
+  (abbreviation rr-fold-step
+    (lam ((f RRStep)) (f (node Bits (pair (fst n) (nil T))) (lib mapApp RRStep RR (snd n) f))))
+  ; The step of the rose tree's fold that the evaluator's fold translates to, at a node n and a
+  ; kernel's step f: the node rebuilt from the first components of the children's folds applied
+  ; to the step, and the step at that node and at their second components.
+  (abbreviation pe-kids (list-rec (nil T) (c r) (cons T (fst c) r) (lib mapApp EStep RE (snd n) f)))
+  (abbreviation pe-values
+    (list-rec (nil EvE) (c r) (cons EvE (snd c) r) (lib mapApp EStep RE (snd n) f)))
+  (abbreviation pe-fold-step
+    (lam ((f EStep))
+      (pair (node Bits (pair (fst n) pe-kids)) (f (node Bits (pair (fst n) pe-kids)) pe-values))))
+  ; The type checker's step at the types GT of the globals, as bootstrap/check.geb writes it,
+  ; where no definition names it.
+  (abbreviation check-step
+    (lam ((l T) (rs (List RR)))
+      (let raw T (node l (Reader.rrTrees rs))
+        (pair raw (lam ((ctx (List T))) (Check.checkNode GT raw rs ctx))))))
+  ; The relations at the first two children of a type's node n, of the pair of its label and the
+  ; list of its children's relations; the relation that holds of nothing where a child is absent.
+  (abbreviation rel-false (lam ((d Ts) (x T)) false))
+  (abbreviation rel-kids (list-rec (pair rel-false rel-false) (y r) (pair y (fst r)) (snd n)))
   ; Addition, by recursion on the second summand into functions of the first.
   (definition plus ((m Nat) (n Nat)) Nat
     ((nat-rec (lam ((a Nat)) a) (r) (lam ((a Nat)) (succ (r a))) n) m))
+  ; The fuel of a natural number: the leaf whose label is its bitstring.
+  (definition fuel ((k Nat)) T (node Bits (pair (nat-rec (lib bnil) (r) (lib succ r) k) (nil T))))
+  ; Convergence: from some fuel on, the function's value is one value the predicate holds of.
+  (definition converges ((F (Arrow Nat T)) (Pr Pred)) Omega
+    (exists Nat
+      (lam ((n Nat))
+        (exists T
+          (lam ((w T))
+            (and (all Nat (lam ((k Nat)) (equal (F (plus n k)) (Prelude.some w)))) (Pr w)))))))
+  ; Every element of a list satisfies a predicate.
+  (definition all-of ((Pr Pred) (xs Ts)) Omega
+    ((list-rec (lam ((p Pred)) true) (y r) (lam ((p Pred)) (and (p y) (r p))) xs) Pr))
+  ; The evaluator's functions at a level, by the fold of the level from the level zero.
+  (definition level-at ((D Ts) (k Nat)) Fns
+    ((nat-rec (lam ((d Ts)) (Eval.level d (node Bits (pair (lib bnil) (nil T))))) (r)
+       (lam ((d Ts)) (Eval.next d (r d)))
+       k) D))
+  ; The relation at a type, a predicate on values, with the program's definitions: by the fold of
+  ; the type, at the types of trees, the unit, products, functions and lists.
+  (definition related ((D Ts) (A T)) Pred
+    ((rose-rec Rel (n)
+       (lam ((d Ts) (x T))
+         (lib cond Omega (lib eqB (fst n) n0) (exists T (lam ((t T)) (equal x (Eval.valQuote t))))
+           (lib cond Omega (lib eqB (fst n) n1) (equal x Eval.valUnit)
+             (lib cond Omega (lib eqB (fst n) n2)
+               (exists T
+                 (lam ((a T))
+                   (exists T
+                     (lam ((b T))
+                       (and (equal x (Eval.valPair a b))
+                         (and ((fst rel-kids) d a) ((snd rel-kids) d b)))))))
+               (lib cond Omega (lib eqB (fst n) n3)
+                 (all T
+                   (lam ((a T))
+                     (implies ((fst rel-kids) d a)
+                       (converges (lam ((k Nat)) ((snd (level-at d k)) x a))
+                         (lam ((w T)) ((snd rel-kids) d w))))))
+                 (lib cond Omega (lib eqB (fst n) n4)
+                   (and (lib cond Omega (lib lab (Prelude.isSome (Eval.listOf x))) true false)
+                     (all-of (lam ((a T)) ((fst rel-kids) d a))
+                       (lib children (Prelude.get (Eval.listOf x)))))
+                   false))))))
+       A) D))
+  ; The relation of an environment to a context: at each index where the context has some type,
+  ; the environment has some value related at the type.
+  (definition env-related ((D Ts) (c Ts) (env Ts)) Omega
+    (all T
+      (lam ((i T))
+        (implies (lib cond Omega (lib lab (Prelude.isSome (Prelude.nth c i))) true false)
+          (exists T
+            (lam ((w T))
+              (and (equal (Prelude.nth env i) (Prelude.some w))
+                ((related D (Prelude.get (Prelude.nth c i))) w))))))))
+  ; The relation of the definitions to the types of the globals: at each index where a global's
+  ; type is some type, a definition is some term, whose evaluation in the empty environment
+  ; converges to a value related at the type.
+  (definition globals-related ((D Ts) (GT Ts)) Omega
+    (all T
+      (lam ((i T))
+        (implies (lib cond Omega (lib lab (Prelude.isSome (Prelude.nth GT i))) true false)
+          (exists T
+            (lam ((d T))
+              (and (equal (Prelude.nth D i) (Prelude.some d))
+                (converges (lam ((k Nat)) ((fst (level-at D k)) (nil T) d))
+                  (related D (Prelude.get (Prelude.nth GT i)))))))))))
+  ; The type checker's fold at a tree, at the globals' types: the pair of the tree rebuilt and its
+  ; type as a function of the context.
+  (definition check-fold ((GT Ts) (x T)) RR (kernel (fold RR check-step x)))
+  ; The evaluator's fold at a tree, at the definitions and the functions of the level below: the
+  ; pair of the tree rebuilt and its value as a function of the environment.
+  (definition eval-fold ((D Ts) (p Fns) (x T)) RE
+    ((rose-rec REFold (n) pe-fold-step x) (Eval.evStep D p)))
   ; Zero is a right unit, and the sum at a successor on the right is the successor of the sum.
   (theorem plus-zero (internal () (forall ((n Nat)) (equal (plus n zero) n)))
     (by (reduce full (unfold plus))))
@@ -28,4 +156,1423 @@
     (internal () (forall ((k Nat) (m Nat) (n Nat)) (equal (plus (plus k m) n) (plus k (plus m n)))))
     (by (nat-induction n 4096 (unfold plus))))
   (theorem plus-comm (internal () (forall ((m Nat) (n Nat)) (equal (plus m n) (plus n m))))
-    (by (nat-induction n 4096 zero-plus succ-plus (unfold plus)))))
+    (by (nat-induction n 4096 zero-plus succ-plus (unfold plus))))
+  ; Stability: from a threshold on, a function of the fuel has one value. It holds from a later
+  ; threshold, the sum with a number on the right or on the left.
+  (theorem stable-right
+    (internal ()
+      (forall ((F (Arrow Nat T)) (w T) (n Nat) (j Nat))
+        (assuming (h (all Nat (lam ((k Nat)) (equal (F (plus n k)) (Prelude.some w)))))
+          (all Nat (lam ((k Nat)) (equal (F (plus (plus n j) k)) (Prelude.some w)))))))
+    (by (all-intro k (all-elim h (plus j k) hk (reduce full hk plus-assoc)))))
+  (theorem stable-left
+    (internal ()
+      (forall ((F (Arrow Nat T)) (w T) (n Nat) (j Nat))
+        (assuming (h (all Nat (lam ((k Nat)) (equal (F (plus n k)) (Prelude.some w)))))
+          (all Nat (lam ((k Nat)) (equal (F (plus (plus j n) k)) (Prelude.some w)))))))
+    (by
+      (all-intro k
+        (all-elim h (plus j k) hk
+          (obtain c plus-comm () (j n)
+            (with-rules (c) (reduced full (reduce full hk plus-assoc))))))))
+  ; A list is empty or a construction; a tree is a node; a bit is zero or one.
+  (theorem list-cases
+    (internal (X)
+      (forall ((xs (List X)))
+        (or (equal xs (nil X))
+          (exists X
+            (lam ((y X)) (exists (List X) (lam ((ys (List X))) (equal xs (cons X y ys)))))))))
+    (by
+      (induction xs (h t ih) (or-left (reduce weak))
+        (or-right (exists-intro h (exists-intro t (reduce weak)))))))
+  (theorem tree-node
+    (internal ()
+      (forall ((t T))
+        (exists Bits
+          (lam ((l Bits))
+            (exists (List T) (lam ((cs (List T))) (equal t (node Bits (pair l cs)))))))))
+    (by (tree-induction t (l cs ih) (exists-intro l (exists-intro cs (reduce weak))))))
+  (theorem bit-cases
+    (internal ()
+      (forall ((b Bit)) (or (equal b (inl Unit Unit unit)) (equal b (inr Unit Unit unit)))))
+    (by
+      (sum-cases b (u) (reduced head (or-left (reduce weak)))
+        (reduced head (or-right (reduce weak))))))
+  ; The type of comparisons, and the rules of the first components of the library's folds of the
+  ; successor, of addition, of the predecessor and of the case analysis of lists.
+  (abbreviation Ord (Sum Unit Bit))
+  (abbreviation rebuild-rules rebuild-succ-normal rebuild-add-normal rebuild-succ rebuild-pred
+    (rebuild-lcase Bit Ord)
+    (rebuild-lcase Bit Bits))
+  ; The successors of a bitstring differ from the numerals below their number, by the case
+  ; analysis of the bitstring and of its first bit, each with the inequalities before.
+  (theorem succ-not-0 (internal () (forall ((x Bits)) (equal (lib eqB (lib succ x) n0) (lib bnil))))
+    (by
+      (cases x (b bs) (reduce full rebuild-rules)
+        (sum-cases b (u) (reduce full rebuild-rules) (reduce full rebuild-rules))))
+    (normal full (folded (lib equal))))
+  (theorem succ-not-1
+    (internal () (forall ((x Bits)) (equal (lib eqB (lib succ (lib succ x)) n1) (lib bnil))))
+    (by
+      (cases x (b bs) (reduce full succ-not-0 rebuild-rules)
+        (sum-cases b (u) (reduce full succ-not-0 rebuild-rules)
+          (reduce full succ-not-0 rebuild-rules))))
+    (normal full (folded (lib equal))))
+  (theorem succ-not-2
+    (internal ()
+      (forall ((x Bits)) (equal (lib eqB (lib succ (lib succ (lib succ x))) n2) (lib bnil))))
+    (by
+      (cases x (b bs) (reduce full succ-not-0 succ-not-1 rebuild-rules)
+        (sum-cases b (u) (reduce full succ-not-0 succ-not-1 rebuild-rules)
+          (reduce full succ-not-0 succ-not-1 rebuild-rules))))
+    (normal full (folded (lib equal))))
+  (theorem succ-not-3
+    (internal ()
+      (forall ((x Bits))
+        (equal (lib eqB (lib succ (lib succ (lib succ (lib succ x)))) n3) (lib bnil))))
+    (by
+      (cases x (b bs) (reduce full succ-not-0 succ-not-1 succ-not-2 rebuild-rules)
+        (sum-cases b (u) (reduce full succ-not-0 succ-not-1 succ-not-2 rebuild-rules)
+          (reduce full succ-not-0 succ-not-1 succ-not-2 rebuild-rules))))
+    (normal full (folded (lib equal))))
+  ; The values of the first three children among the values rs, as the evaluator's step binds them.
+  (abbreviation with-r0 let r0 EvE
+    (lcase EvE EvE rs (lam ((e (List T))) Prelude.none) (lam ((r EvE) (rest (List EvE))) r)))
+  (abbreviation with-r1 let r1 EvE
+    (lcase EvE EvE rs (lam ((e (List T))) Prelude.none)
+      (lam ((r EvE) (rest (List EvE)))
+        (lcase EvE EvE rest (lam ((e (List T))) Prelude.none)
+          (lam ((r1 EvE) (rest1 (List EvE))) r1)))))
+  (abbreviation with-r2 let r2 EvE
+    (lcase EvE EvE rs (lam ((e (List T))) Prelude.none)
+      (lam ((r EvE) (rest (List EvE)))
+        (lcase EvE EvE rest (lam ((e (List T))) Prelude.none)
+          (lam ((r1 EvE) (rest1 (List EvE)))
+            (lcase EvE EvE rest1 (lam ((e (List T))) Prelude.none)
+              (lam ((r2 EvE) (rest2 (List EvE))) r2)))))))
+  ; The definitions the vocabulary keeps folded: the equality of trees, the type checker, its case
+  ; at a node, the evaluator's step and application, and its functions at a level from those
+  ; below.
+  (abbreviation kept
+    (folded (lib equal) Check.typeIn Check.checkNode Eval.evStep Eval.apStep Eval.next))
+  ; The step of the fold of the equality of trees at a node n, and the folds at the children cs.
+  (abbreviation equal-step
+    (lam ((y T)) (lib and (lib eqB (fst n) (lib lab y)) (lib allZip (snd n) (lib children y)))))
+  (abbreviation equal-kids
+    (list-rec (nil (Arrow T Bits)) (c r)
+      (cons (Arrow T Bits) (rose-rec (Arrow T Bits) (n) equal-step c) r)
+      cs))
+  ; The fold of the equality of trees, applied, is the equality; and the equality at two nodes is
+  ; the conjunction of the equality of their labels with the elementwise equality of their
+  ; children.
+  (theorem equal-fold
+    (internal ()
+      (forall ((a T) (b T)) (equal ((rose-rec (Arrow T Bits) (n) equal-step a) b) (lib equal a b))))
+    (by (reduce full))
+    (normal full kept))
+  (theorem equal-node
+    (internal ()
+      (forall ((l Bits) (cs Ts) (m Bits) (ds Ts))
+        (equal (lib equal (node Bits (pair l cs)) (node Bits (pair m ds)))
+          (lib and (lib eqB l m) (lib allZip equal-kids ds)))))
+    (by (reduce full unfold-rebuild lambek (folded (lib eqB) (lib allZip))))
+    (normal full equal-fold kept))
+  ; The checker's type of a term is the second component of its fold; the evaluation at a level
+  ; is that of the evaluator's fold, and the application the step of application; and the
+  ; functions at a successor level are those from the level below.
+  (theorem type-in-fold
+    (internal ()
+      (forall ((G Ts) (ctx Ts) (t T)) (equal (Check.typeIn G ctx t) ((snd (check-fold G t)) ctx))))
+    (by (reduce weak (unfold check-fold) (folded Check.checkNode)))
+    (normal full kept))
+  (theorem next-fst
+    (internal ()
+      (forall ((G Ts) (p Fns) (env Ts) (t T))
+        (equal ((fst (Eval.next G p)) env t) ((snd (eval-fold G p t)) env))))
+    (by (reduce full (unfold eval-fold) (folded Eval.evStep Eval.apStep)))
+    (normal full kept))
+  (theorem next-snd
+    (internal ()
+      (forall ((G Ts) (p Fns) (f T) (x T)) (equal ((snd (Eval.next G p)) f x) (Eval.apStep p f x))))
+    (by (reduce weak (folded Eval.evStep Eval.apStep)))
+    (normal full kept))
+  (theorem level-succ
+    (internal ()
+      (forall ((D Ts) (k Nat)) (equal (level-at D (succ k)) (Eval.next D (level-at D k)))))
+    (by (reduce weak (unfold level-at) (folded Eval.next)))
+    (normal full kept))
+  ; The checker's case at a node of each label of the kernel's terms, as bootstrap/check.geb
+  ; writes it.
+  (theorem check-node-var
+    (internal ()
+      (forall ((G Ts) (cs Ts) (rs (List RR)) (ctx Ts))
+        (equal
+          (Check.checkNode G (node Bits (pair (lib b1 (lib b0 (lib b0 (lib bnil)))) cs)) rs ctx)
+          (kernel
+            (let raw T (node 8 cs)
+              (let es (List T) (children raw)
+                (let k T (arity raw)
+                  (if (eq k 1) (Prelude.nth ctx (label (Prelude.at es 0))) Prelude.none))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem check-node-lam
+    (internal ()
+      (forall ((G Ts) (cs Ts) (rs (List RR)) (ctx Ts))
+        (equal
+          (Check.checkNode G (node Bits (pair (lib b0 (lib b1 (lib b0 (lib bnil)))) cs)) rs ctx)
+          (kernel
+            (let raw T (node 9 cs)
+              (let es (List T) (children raw)
+                (let k T (arity raw)
+                  (if (eq k 2)
+                    (let A T (Prelude.at es 0)
+                      (if (Check.isTy A)
+                        (let b T (Reader.rrAt rs 1 (cons A ctx))
+                          (if (Prelude.isSome b) (Prelude.some (Check.tyArrow A (Prelude.get b)))
+                            Prelude.none))
+                        Prelude.none))
+                    Prelude.none))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem check-node-app
+    (internal ()
+      (forall ((G Ts) (cs Ts) (rs (List RR)) (ctx Ts))
+        (equal
+          (Check.checkNode G (node Bits (pair (lib b1 (lib b1 (lib b0 (lib bnil)))) cs)) rs ctx)
+          (kernel
+            (let raw T (node 10 cs)
+              (let es (List T) (children raw)
+                (let k T (arity raw)
+                  (if (eq k 2)
+                    (let f T (Reader.rrAt rs 0 ctx)
+                      (let x T (Reader.rrAt rs 1 ctx)
+                        (if (Reader.both f x)
+                          (if (Check.isArrow (Prelude.get f))
+                            (if (equal (Prelude.get x) (child (Prelude.get f) 0))
+                              (Prelude.some (child (Prelude.get f) 1))
+                              Prelude.none)
+                            Prelude.none)
+                          Prelude.none)))
+                    Prelude.none))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem check-node-unit
+    (internal ()
+      (forall ((G Ts) (cs Ts) (rs (List RR)) (ctx Ts))
+        (equal
+          (Check.checkNode G (node Bits (pair (lib b0 (lib b0 (lib b1 (lib bnil)))) cs)) rs ctx)
+          (kernel
+            (let raw T (node 11 cs)
+              (let es (List T) (children raw)
+                (let k T (arity raw) (if (eq k 0) (Prelude.some 1) Prelude.none))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem check-node-pair
+    (internal ()
+      (forall ((G Ts) (cs Ts) (rs (List RR)) (ctx Ts))
+        (equal
+          (Check.checkNode G (node Bits (pair (lib b1 (lib b0 (lib b1 (lib bnil)))) cs)) rs ctx)
+          (kernel
+            (let raw T (node 12 cs)
+              (let es (List T) (children raw)
+                (let k T (arity raw)
+                  (if (eq k 2) (Reader.some2 2 (Reader.rrAt rs 0 ctx) (Reader.rrAt rs 1 ctx))
+                    Prelude.none))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem check-node-fst
+    (internal ()
+      (forall ((G Ts) (cs Ts) (rs (List RR)) (ctx Ts))
+        (equal
+          (Check.checkNode G (node Bits (pair (lib b0 (lib b1 (lib b1 (lib bnil)))) cs)) rs ctx)
+          (kernel
+            (let raw T (node 13 cs)
+              (let es (List T) (children raw)
+                (let k T (arity raw)
+                  (if (eq k 1)
+                    (let p T (Reader.rrAt rs 0 ctx)
+                      (if (Prelude.isSome p)
+                        (if (Check.isProd (Prelude.get p)) (Prelude.some (child (Prelude.get p) 0))
+                          Prelude.none)
+                        Prelude.none))
+                    Prelude.none))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem check-node-snd
+    (internal ()
+      (forall ((G Ts) (cs Ts) (rs (List RR)) (ctx Ts))
+        (equal
+          (Check.checkNode G (node Bits (pair (lib b1 (lib b1 (lib b1 (lib bnil)))) cs)) rs ctx)
+          (kernel
+            (let raw T (node 14 cs)
+              (let es (List T) (children raw)
+                (let k T (arity raw)
+                  (if (eq k 1)
+                    (let p T (Reader.rrAt rs 0 ctx)
+                      (if (Prelude.isSome p)
+                        (if (Check.isProd (Prelude.get p)) (Prelude.some (child (Prelude.get p) 1))
+                          Prelude.none)
+                        Prelude.none))
+                    Prelude.none))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem check-node-quote
+    (internal ()
+      (forall ((G Ts) (cs Ts) (rs (List RR)) (ctx Ts))
+        (equal
+          (Check.checkNode G (node Bits (pair (lib b0 (lib b0 (lib b0 (lib b0 (lib bnil))))) cs)) rs
+            ctx)
+          (kernel
+            (let raw T (node 15 cs)
+              (let es (List T) (children raw)
+                (let k T (arity raw) (if (eq k 1) (Prelude.some 0) Prelude.none))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem check-node-cond
+    (internal ()
+      (forall ((G Ts) (cs Ts) (rs (List RR)) (ctx Ts))
+        (equal
+          (Check.checkNode G (node Bits (pair (lib b1 (lib b0 (lib b0 (lib b0 (lib bnil))))) cs)) rs
+            ctx)
+          (kernel
+            (let raw T (node 16 cs)
+              (let es (List T) (children raw)
+                (let k T (arity raw)
+                  (if (eq k 3)
+                    (let c T (Reader.rrAt rs 0 ctx)
+                      (let a T (Reader.rrAt rs 1 ctx)
+                        (let b T (Reader.rrAt rs 2 ctx)
+                          (if (Reader.both c (Reader.both a b))
+                            (if (equal (Prelude.get c) 0)
+                              (if (equal (Prelude.get b) (Prelude.get a)) a Prelude.none)
+                              Prelude.none)
+                            Prelude.none))))
+                    Prelude.none))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem check-node-fold
+    (internal ()
+      (forall ((G Ts) (cs Ts) (rs (List RR)) (ctx Ts))
+        (equal
+          (Check.checkNode G (node Bits (pair (lib b0 (lib b1 (lib b0 (lib b0 (lib bnil))))) cs)) rs
+            ctx)
+          (kernel
+            (let raw T (node 17 cs)
+              (let es (List T) (children raw)
+                (let k T (arity raw)
+                  (if (eq k 1)
+                    (if (Check.isTy (Prelude.at es 0))
+                      (Prelude.some (Check.foldTy (Prelude.at es 0)))
+                      Prelude.none)
+                    Prelude.none))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem check-node-iter
+    (internal ()
+      (forall ((G Ts) (cs Ts) (rs (List RR)) (ctx Ts))
+        (equal
+          (Check.checkNode G (node Bits (pair (lib b1 (lib b1 (lib b0 (lib b0 (lib bnil))))) cs)) rs
+            ctx)
+          (kernel
+            (let raw T (node 18 cs)
+              (let es (List T) (children raw)
+                (let k T (arity raw)
+                  (if (eq k 1)
+                    (if (Check.isTy (Prelude.at es 0))
+                      (Prelude.some (Check.iterTy (Prelude.at es 0)))
+                      Prelude.none)
+                    Prelude.none))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem check-node-nil
+    (internal ()
+      (forall ((G Ts) (cs Ts) (rs (List RR)) (ctx Ts))
+        (equal
+          (Check.checkNode G (node Bits (pair (lib b0 (lib b0 (lib b1 (lib b0 (lib bnil))))) cs)) rs
+            ctx)
+          (kernel
+            (let raw T (node 19 cs)
+              (let es (List T) (children raw)
+                (let k T (arity raw)
+                  (if (eq k 1)
+                    (if (Check.isTy (Prelude.at es 0))
+                      (Prelude.some (Check.tyList (Prelude.at es 0)))
+                      Prelude.none)
+                    Prelude.none))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem check-node-cons
+    (internal ()
+      (forall ((G Ts) (cs Ts) (rs (List RR)) (ctx Ts))
+        (equal
+          (Check.checkNode G (node Bits (pair (lib b1 (lib b0 (lib b1 (lib b0 (lib bnil))))) cs)) rs
+            ctx)
+          (kernel
+            (let raw T (node 20 cs)
+              (let es (List T) (children raw)
+                (let k T (arity raw)
+                  (if (eq k 2)
+                    (let x T (Reader.rrAt rs 0 ctx)
+                      (let xs T (Reader.rrAt rs 1 ctx)
+                        (if (Reader.both x xs)
+                          (if (Check.isListTy (Prelude.get xs))
+                            (if (equal (Prelude.get x) (child (Prelude.get xs) 0))
+                              (Prelude.some (Check.tyList (Prelude.get x)))
+                              Prelude.none)
+                            Prelude.none)
+                          Prelude.none)))
+                    Prelude.none))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem check-node-foldr
+    (internal ()
+      (forall ((G Ts) (cs Ts) (rs (List RR)) (ctx Ts))
+        (equal
+          (Check.checkNode G (node Bits (pair (lib b0 (lib b1 (lib b1 (lib b0 (lib bnil))))) cs)) rs
+            ctx)
+          (kernel
+            (let raw T (node 21 cs)
+              (let es (List T) (children raw)
+                (let k T (arity raw)
+                  (if (eq k 2)
+                    (if (Prelude.and (Check.isTy (Prelude.at es 0)) (Check.isTy (Prelude.at es 1)))
+                      (Prelude.some (Check.foldrTy (Prelude.at es 0) (Prelude.at es 1)))
+                      Prelude.none)
+                    Prelude.none))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem check-node-prim
+    (internal ()
+      (forall ((G Ts) (cs Ts) (rs (List RR)) (ctx Ts))
+        (equal
+          (Check.checkNode G (node Bits (pair (lib b1 (lib b1 (lib b1 (lib b0 (lib bnil))))) cs)) rs
+            ctx)
+          (kernel
+            (let raw T (node 22 cs)
+              (let es (List T) (children raw)
+                (let k T (arity raw)
+                  (if (eq k 1) (Prelude.nth Check.primTypes (label (Prelude.at es 0)))
+                    Prelude.none))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem check-node-ref
+    (internal ()
+      (forall ((G Ts) (cs Ts) (rs (List RR)) (ctx Ts))
+        (equal
+          (Check.checkNode G (node Bits (pair (lib b0 (lib b0 (lib b0 (lib b1 (lib bnil))))) cs)) rs
+            ctx)
+          (kernel
+            (let raw T (node 23 cs)
+              (let es (List T) (children raw)
+                (let k T (arity raw)
+                  (if (eq k 1) (Prelude.nth G (label (Prelude.at es 0))) Prelude.none))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem check-node-lcase
+    (internal ()
+      (forall ((G Ts) (cs Ts) (rs (List RR)) (ctx Ts))
+        (equal
+          (Check.checkNode G (node Bits (pair (lib b1 (lib b0 (lib b0 (lib b1 (lib bnil))))) cs)) rs
+            ctx)
+          (kernel
+            (let raw T (node 24 cs)
+              (let es (List T) (children raw)
+                (let k T (arity raw)
+                  (if (eq k 2)
+                    (if (Prelude.and (Check.isTy (Prelude.at es 0)) (Check.isTy (Prelude.at es 1)))
+                      (Prelude.some (Check.lcaseTy (Prelude.at es 0) (Prelude.at es 1)))
+                      Prelude.none)
+                    Prelude.none))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem check-node-para
+    (internal ()
+      (forall ((G Ts) (cs Ts) (rs (List RR)) (ctx Ts))
+        (equal
+          (Check.checkNode G (node Bits (pair (lib b0 (lib b1 (lib b0 (lib b1 (lib bnil))))) cs)) rs
+            ctx)
+          (kernel
+            (let raw T (node 25 cs)
+              (let es (List T) (children raw)
+                (let k T (arity raw)
+                  (if (eq k 1)
+                    (if (Check.isTy (Prelude.at es 0))
+                      (Prelude.some (Check.foldTy (Prelude.at es 0)))
+                      Prelude.none)
+                    Prelude.none))))))))
+    (by (reduce weak))
+    (normal full kept))
+  ; The evaluator's step at a node of each label of the kernel's terms, as bootstrap/eval.geb
+  ; writes it.
+  (theorem eval-step-var
+    (internal ()
+      (forall ((G Ts) (p Fns) (cs Ts) (rs (List EvE)) (env Ts))
+        (equal (Eval.evStep G p (node Bits (pair (lib b1 (lib b0 (lib b0 (lib bnil)))) cs)) rs env)
+          (kernel
+            (let nd T (node 8 cs)
+              (let l T (label nd)
+                (let n T (arity nd)
+                  (with-r0
+                    (with-r1
+                      (with-r2
+                        (if (Prelude.and (eq l 8) (eq n 1)) (Prelude.nth env (label (child nd 0)))
+                          Prelude.none)))))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem eval-step-lam
+    (internal ()
+      (forall ((G Ts) (p Fns) (cs Ts) (rs (List EvE)) (env Ts))
+        (equal (Eval.evStep G p (node Bits (pair (lib b0 (lib b1 (lib b0 (lib bnil)))) cs)) rs env)
+          (kernel
+            (let nd T (node 9 cs)
+              (let l T (label nd)
+                (let n T (arity nd)
+                  (with-r0
+                    (with-r1
+                      (with-r2
+                        (if (Prelude.and (eq l 9) (eq n 2))
+                          (Prelude.some (Eval.valClo env (child nd 0) (child nd 1)))
+                          Prelude.none)))))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem eval-step-app
+    (internal ()
+      (forall ((G Ts) (p Fns) (cs Ts) (rs (List EvE)) (env Ts))
+        (equal (Eval.evStep G p (node Bits (pair (lib b1 (lib b1 (lib b0 (lib bnil)))) cs)) rs env)
+          (kernel
+            (let nd T (node 10 cs)
+              (let l T (label nd)
+                (let n T (arity nd)
+                  (with-r0
+                    (with-r1
+                      (with-r2
+                        (if (Prelude.and (eq l 10) (eq n 2))
+                          (Eval.bindO (r0 env)
+                            (lam ((vf T)) (Eval.bindO (r1 env) (lam ((vx T)) ((snd p) vf vx)))))
+                          Prelude.none)))))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem eval-step-unit
+    (internal ()
+      (forall ((G Ts) (p Fns) (cs Ts) (rs (List EvE)) (env Ts))
+        (equal (Eval.evStep G p (node Bits (pair (lib b0 (lib b0 (lib b1 (lib bnil)))) cs)) rs env)
+          (kernel
+            (let nd T (node 11 cs)
+              (let l T (label nd)
+                (let n T (arity nd)
+                  (with-r0
+                    (with-r1
+                      (with-r2
+                        (if (Prelude.and (eq l 11) (eq n 0)) (Prelude.some Eval.valUnit)
+                          Prelude.none)))))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem eval-step-pair
+    (internal ()
+      (forall ((G Ts) (p Fns) (cs Ts) (rs (List EvE)) (env Ts))
+        (equal (Eval.evStep G p (node Bits (pair (lib b1 (lib b0 (lib b1 (lib bnil)))) cs)) rs env)
+          (kernel
+            (let nd T (node 12 cs)
+              (let l T (label nd)
+                (let n T (arity nd)
+                  (with-r0
+                    (with-r1
+                      (with-r2
+                        (if (Prelude.and (eq l 12) (eq n 2))
+                          (Eval.bindO (r0 env)
+                            (lam ((va T))
+                              (Eval.bindO (r1 env)
+                                (lam ((vb T)) (Prelude.some (Eval.valPair va vb))))))
+                          Prelude.none)))))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem eval-step-fst
+    (internal ()
+      (forall ((G Ts) (p Fns) (cs Ts) (rs (List EvE)) (env Ts))
+        (equal (Eval.evStep G p (node Bits (pair (lib b0 (lib b1 (lib b1 (lib bnil)))) cs)) rs env)
+          (kernel
+            (let nd T (node 13 cs)
+              (let l T (label nd)
+                (let n T (arity nd)
+                  (with-r0
+                    (with-r1
+                      (with-r2
+                        (if (Prelude.and (eq l 13) (eq n 1)) (Eval.bindO (r0 env) Eval.pairFst)
+                          Prelude.none)))))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem eval-step-snd
+    (internal ()
+      (forall ((G Ts) (p Fns) (cs Ts) (rs (List EvE)) (env Ts))
+        (equal (Eval.evStep G p (node Bits (pair (lib b1 (lib b1 (lib b1 (lib bnil)))) cs)) rs env)
+          (kernel
+            (let nd T (node 14 cs)
+              (let l T (label nd)
+                (let n T (arity nd)
+                  (with-r0
+                    (with-r1
+                      (with-r2
+                        (if (Prelude.and (eq l 14) (eq n 1)) (Eval.bindO (r0 env) Eval.pairSnd)
+                          Prelude.none)))))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem eval-step-quote
+    (internal ()
+      (forall ((G Ts) (p Fns) (cs Ts) (rs (List EvE)) (env Ts))
+        (equal
+          (Eval.evStep G p (node Bits (pair (lib b0 (lib b0 (lib b0 (lib b0 (lib bnil))))) cs)) rs
+            env)
+          (kernel
+            (let nd T (node 15 cs)
+              (let l T (label nd)
+                (let n T (arity nd)
+                  (with-r0
+                    (with-r1
+                      (with-r2
+                        (if (Prelude.and (eq l 15) (eq n 1))
+                          (Prelude.some (Eval.valQuote (child nd 0)))
+                          Prelude.none)))))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem eval-step-cond
+    (internal ()
+      (forall ((G Ts) (p Fns) (cs Ts) (rs (List EvE)) (env Ts))
+        (equal
+          (Eval.evStep G p (node Bits (pair (lib b1 (lib b0 (lib b0 (lib b0 (lib bnil))))) cs)) rs
+            env)
+          (kernel
+            (let nd T (node 16 cs)
+              (let l T (label nd)
+                (let n T (arity nd)
+                  (with-r0
+                    (with-r1
+                      (with-r2
+                        (if (Prelude.and (eq l 16) (eq n 3))
+                          (Eval.bindO (r0 env)
+                            (lam ((vc T))
+                              (Eval.bindO (Eval.unquote vc)
+                                (lam ((t T)) (if (eq (label t) 0) (r2 env) (r1 env))))))
+                          Prelude.none)))))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem eval-step-fold
+    (internal ()
+      (forall ((G Ts) (p Fns) (cs Ts) (rs (List EvE)) (env Ts))
+        (equal
+          (Eval.evStep G p (node Bits (pair (lib b0 (lib b1 (lib b0 (lib b0 (lib bnil))))) cs)) rs
+            env)
+          (kernel
+            (let nd T (node 17 cs)
+              (let l T (label nd)
+                (let n T (arity nd)
+                  (with-r0
+                    (with-r1
+                      (with-r2
+                        (if
+                          (Prelude.or
+                            (Prelude.and (Prelude.or (eq l 17) (Prelude.or (eq l 25) (eq l 18)))
+                              (eq n 1))
+                            (Prelude.and (Prelude.or (eq l 21) (eq l 24)) (eq n 2)))
+                          (Prelude.some nd)
+                          Prelude.none)))))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem eval-step-iter
+    (internal ()
+      (forall ((G Ts) (p Fns) (cs Ts) (rs (List EvE)) (env Ts))
+        (equal
+          (Eval.evStep G p (node Bits (pair (lib b1 (lib b1 (lib b0 (lib b0 (lib bnil))))) cs)) rs
+            env)
+          (kernel
+            (let nd T (node 18 cs)
+              (let l T (label nd)
+                (let n T (arity nd)
+                  (with-r0
+                    (with-r1
+                      (with-r2
+                        (if
+                          (Prelude.or
+                            (Prelude.and (Prelude.or (eq l 17) (Prelude.or (eq l 25) (eq l 18)))
+                              (eq n 1))
+                            (Prelude.and (Prelude.or (eq l 21) (eq l 24)) (eq n 2)))
+                          (Prelude.some nd)
+                          Prelude.none)))))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem eval-step-nil
+    (internal ()
+      (forall ((G Ts) (p Fns) (cs Ts) (rs (List EvE)) (env Ts))
+        (equal
+          (Eval.evStep G p (node Bits (pair (lib b0 (lib b0 (lib b1 (lib b0 (lib bnil))))) cs)) rs
+            env)
+          (kernel
+            (let nd T (node 19 cs)
+              (let l T (label nd)
+                (let n T (arity nd)
+                  (with-r0
+                    (with-r1
+                      (with-r2
+                        (if (Prelude.and (eq l 19) (eq n 1))
+                          (Prelude.some (node 19 (Prelude.single (child nd 0))))
+                          Prelude.none)))))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem eval-step-cons
+    (internal ()
+      (forall ((G Ts) (p Fns) (cs Ts) (rs (List EvE)) (env Ts))
+        (equal
+          (Eval.evStep G p (node Bits (pair (lib b1 (lib b0 (lib b1 (lib b0 (lib bnil))))) cs)) rs
+            env)
+          (kernel
+            (let nd T (node 20 cs)
+              (let l T (label nd)
+                (let n T (arity nd)
+                  (with-r0
+                    (with-r1
+                      (with-r2
+                        (if (Prelude.and (eq l 20) (eq n 2))
+                          (Eval.bindO (r0 env)
+                            (lam ((vx T))
+                              (Eval.bindO (r1 env)
+                                (lam ((vxs T))
+                                  (Prelude.some (node 20 (cons vx (Prelude.single vxs))))))))
+                          Prelude.none)))))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem eval-step-foldr
+    (internal ()
+      (forall ((G Ts) (p Fns) (cs Ts) (rs (List EvE)) (env Ts))
+        (equal
+          (Eval.evStep G p (node Bits (pair (lib b0 (lib b1 (lib b1 (lib b0 (lib bnil))))) cs)) rs
+            env)
+          (kernel
+            (let nd T (node 21 cs)
+              (let l T (label nd)
+                (let n T (arity nd)
+                  (with-r0
+                    (with-r1
+                      (with-r2
+                        (if
+                          (Prelude.or
+                            (Prelude.and (Prelude.or (eq l 17) (Prelude.or (eq l 25) (eq l 18)))
+                              (eq n 1))
+                            (Prelude.and (Prelude.or (eq l 21) (eq l 24)) (eq n 2)))
+                          (Prelude.some nd)
+                          Prelude.none)))))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem eval-step-prim
+    (internal ()
+      (forall ((G Ts) (p Fns) (cs Ts) (rs (List EvE)) (env Ts))
+        (equal
+          (Eval.evStep G p (node Bits (pair (lib b1 (lib b1 (lib b1 (lib b0 (lib bnil))))) cs)) rs
+            env)
+          (kernel
+            (let nd T (node 22 cs)
+              (let l T (label nd)
+                (let n T (arity nd)
+                  (with-r0
+                    (with-r1
+                      (with-r2
+                        (if (Prelude.and (eq l 22) (eq n 1))
+                          (Prelude.some
+                            (node 22 (Prelude.single (node (label (child nd 0)) (nil T)))))
+                          Prelude.none)))))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem eval-step-ref
+    (internal ()
+      (forall ((G Ts) (p Fns) (cs Ts) (rs (List EvE)) (env Ts))
+        (equal
+          (Eval.evStep G p (node Bits (pair (lib b0 (lib b0 (lib b0 (lib b1 (lib bnil))))) cs)) rs
+            env)
+          (kernel
+            (let nd T (node 23 cs)
+              (let l T (label nd)
+                (let n T (arity nd)
+                  (with-r0
+                    (with-r1
+                      (with-r2
+                        (if (Prelude.and (eq l 23) (eq n 1))
+                          (Eval.bindO (Prelude.nth G (label (child nd 0))) ((fst p) (nil T)))
+                          Prelude.none)))))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem eval-step-lcase
+    (internal ()
+      (forall ((G Ts) (p Fns) (cs Ts) (rs (List EvE)) (env Ts))
+        (equal
+          (Eval.evStep G p (node Bits (pair (lib b1 (lib b0 (lib b0 (lib b1 (lib bnil))))) cs)) rs
+            env)
+          (kernel
+            (let nd T (node 24 cs)
+              (let l T (label nd)
+                (let n T (arity nd)
+                  (with-r0
+                    (with-r1
+                      (with-r2
+                        (if
+                          (Prelude.or
+                            (Prelude.and (Prelude.or (eq l 17) (Prelude.or (eq l 25) (eq l 18)))
+                              (eq n 1))
+                            (Prelude.and (Prelude.or (eq l 21) (eq l 24)) (eq n 2)))
+                          (Prelude.some nd)
+                          Prelude.none)))))))))))
+    (by (reduce weak))
+    (normal full kept))
+  (theorem eval-step-para
+    (internal ()
+      (forall ((G Ts) (p Fns) (cs Ts) (rs (List EvE)) (env Ts))
+        (equal
+          (Eval.evStep G p (node Bits (pair (lib b0 (lib b1 (lib b0 (lib b1 (lib bnil))))) cs)) rs
+            env)
+          (kernel
+            (let nd T (node 25 cs)
+              (let l T (label nd)
+                (let n T (arity nd)
+                  (with-r0
+                    (with-r1
+                      (with-r2
+                        (if
+                          (Prelude.or
+                            (Prelude.and (Prelude.or (eq l 17) (Prelude.or (eq l 25) (eq l 18)))
+                              (eq n 1))
+                            (Prelude.and (Prelude.or (eq l 21) (eq l 24)) (eq n 2)))
+                          (Prelude.some nd)
+                          Prelude.none)))))))))))
+    (by (reduce weak))
+    (normal full kept))
+  ; The relation at the node of each type: the quotations at the type of trees, the unit value at
+  ; the unit type, the pairs of related values at a product, the values whose application to a
+  ; related value converges to a related value at a function type, and the list values of
+  ; related values at a list type.
+  (theorem related-tree
+    (internal ()
+      (forall ((D Ts))
+        (equal (related D (node Bits (pair n0 (nil T))))
+          (lam ((x T)) (exists T (lam ((t T)) (equal x (Eval.valQuote t))))))))
+    (by (reduce full (unfold related)))
+    (normal full kept))
+  (theorem related-unit
+    (internal ()
+      (forall ((D Ts))
+        (equal (related D (node Bits (pair n1 (nil T)))) (lam ((x T)) (equal x Eval.valUnit)))))
+    (by (reduce full (unfold related)))
+    (normal full kept))
+  (theorem related-prod
+    (internal ()
+      (forall ((D Ts) (A T) (B T))
+        (equal (related D (node Bits (pair n2 (cons T A (cons T B (nil T))))))
+          (lam ((x T))
+            (exists T
+              (lam ((a T))
+                (exists T
+                  (lam ((b T))
+                    (and (equal x (Eval.valPair a b))
+                      (and ((related D A) a) ((related D B) b)))))))))))
+    (by (reduce full (unfold related)))
+    (normal full kept))
+  (theorem related-arrow
+    (internal ()
+      (forall ((D Ts) (A T) (B T))
+        (equal (related D (node Bits (pair n3 (cons T A (cons T B (nil T))))))
+          (lam ((x T))
+            (all T
+              (lam ((a T))
+                (implies ((related D A) a)
+                  (converges (lam ((k Nat)) ((snd (level-at D k)) x a))
+                    (lam ((w T)) ((related D B) w))))))))))
+    (by (reduce full (unfold related)))
+    (normal full kept))
+  (theorem related-list
+    (internal ()
+      (forall ((D Ts) (A T))
+        (equal (related D (node Bits (pair n4 (cons T A (nil T)))))
+          (lam ((x T))
+            (and (lib cond Omega (lib lab (Prelude.isSome (Eval.listOf x))) true false)
+              (all-of (lam ((a T)) ((related D A) a))
+                (lib children (Prelude.get (Eval.listOf x)))))))))
+    (by (reduce full (unfold related)))
+    (normal full kept))
+  ; The rules of the vocabulary so far, before the trees' unfoldings and the folds' first
+  ; components.
+  (abbreviation check-rules check-node-var check-node-lam check-node-app check-node-unit
+    check-node-pair
+    check-node-fst
+    check-node-snd
+    check-node-quote
+    check-node-cond
+    check-node-fold
+    check-node-iter
+    check-node-nil
+    check-node-cons
+    check-node-foldr
+    check-node-prim
+    check-node-ref
+    check-node-lcase
+    check-node-para)
+  (abbreviation step-rules eval-step-var eval-step-lam eval-step-app eval-step-unit eval-step-pair
+    eval-step-fst
+    eval-step-snd
+    eval-step-quote
+    eval-step-cond
+    eval-step-fold
+    eval-step-iter
+    eval-step-nil
+    eval-step-cons
+    eval-step-foldr
+    eval-step-prim
+    eval-step-ref
+    eval-step-lcase
+    eval-step-para)
+  (abbreviation related-rules related-tree related-unit related-prod related-arrow related-list)
+  (abbreviation v1 equal-fold equal-node succ-not-0 succ-not-1 succ-not-2 succ-not-3 type-in-fold
+    next-fst
+    next-snd
+    level-succ
+    lambek
+    unfold-rebuild
+    map-id
+    check-rules
+    step-rules
+    related-rules
+    rebuild-rules
+    kept)
+  ; The folds at the children cs as the fold at a node gives them to its step, unapplied, and the
+  ; list of the folded folds at them, for the checker and for the evaluator.
+  (abbreviation rr-children
+    (list-rec (nil RRFold) (c r) (cons RRFold (rose-rec RRFold (n) rr-fold-step c) r) cs))
+  (abbreviation check-folds
+    ((list-rec (lam ((g Ts)) (nil RR)) (c r) (lam ((g Ts)) (cons RR (check-fold g c) (r g))) cs)
+     GT))
+  (abbreviation pe-children
+    (list-rec (nil REFold) (c r) (cons REFold (rose-rec REFold (n) pe-fold-step c) r) cs))
+  (abbreviation DP (Prod Ts Fns))
+  (abbreviation eval-folds
+    ((list-rec (lam ((dp DP)) (nil RE)) (c r)
+       (lam ((dp DP)) (cons RE (eval-fold (fst dp) (snd dp) c) (r dp)))
+       cs) (pair D p)))
+  ; The map of the children's folds applied to the step is the list of the folded folds, by
+  ; induction on the children; and each fold at a node is its step at the node's label and at
+  ; that list.
+  (theorem check-children-folds
+    (internal ()
+      (forall ((GT Ts) (cs Ts))
+        (equal (lib mapApp RRStep RR rr-children (kernel check-step)) check-folds)))
+    (by
+      (with-rules (v1 (unfold check-fold))
+        (induction cs (y ys ih) (reduce full) (reduce-hypotheses full (ih) (reduce full ih)))))
+    (normal full v1))
+  (theorem eval-children-folds
+    (internal ()
+      (forall ((D Ts) (p Fns) (cs Ts))
+        (equal (lib mapApp EStep RE pe-children (Eval.evStep D p)) eval-folds)))
+    (by
+      (with-rules (v1 (unfold eval-fold))
+        (induction cs (y ys ih) (reduce full) (reduce-hypotheses full (ih) (reduce full ih)))))
+    (normal full v1))
+  (theorem check-fold-node
+    (internal ()
+      (forall ((GT Ts) (l Bits) (cs Ts))
+        (equal (check-fold GT (node Bits (pair l cs)))
+          ((kernel check-step) (node Bits (pair l (nil T))) check-folds))))
+    (by (with-rules (check-children-folds v1 (unfold check-fold)) (reduce full)))
+    (normal full check-children-folds v1))
+  (theorem eval-fold-node
+    (internal ()
+      (forall ((D Ts) (p Fns) (l Bits) (cs Ts))
+        (equal (eval-fold D p (node Bits (pair l cs)))
+          (pair (node Bits (pair l (list-rec (nil T) (c r) (cons T (fst c) r) eval-folds)))
+            (Eval.evStep D p
+              (node Bits (pair l (list-rec (nil T) (c r) (cons T (fst c) r) eval-folds)))
+              (list-rec (nil EvE) (c r) (cons EvE (snd c) r) eval-folds))))))
+    (by (with-rules (eval-children-folds v1 (unfold eval-fold)) (reduce full)))
+    (normal full eval-children-folds v1))
+  ; The first component of the checker's fold at a tree is the tree: the trees of the folded
+  ; folds at the children are the applications of the first components as functions of the
+  ; globals' types, by induction on the children, and the first component is the identity as a
+  ; function of those types by the uniqueness of the tree's fold.
+  (abbreviation v2 check-fold-node eval-fold-node v1)
+  (abbreviation by-list-induction
+    (induction cs (y ys ih) (reduce full) (reduce-hypotheses full (ih) (reduce full ih))))
+  (theorem map-app-constant
+    (internal (X)
+      (forall ((v X) (cs Ts))
+        (equal
+          (lib mapApp X T (list-rec (nil (Arrow X T)) (c r) (cons (Arrow X T) (lam ((w X)) c) r) cs)
+            v)
+          cs)))
+    (by (with-rules (v2) by-list-induction))
+    (normal full v2))
+  (theorem check-children-trees
+    (internal ()
+      (forall ((GT Ts) (cs Ts))
+        (equal (Reader.rrTrees check-folds)
+          (lib mapApp Ts T
+            (list-rec (nil (Arrow Ts T)) (c r)
+              (cons (Arrow Ts T) (lam ((g Ts)) (fst (check-fold g c))) r)
+              cs)
+            GT))))
+    (by (with-rules (v2) by-list-induction))
+    (normal full v2))
+  (theorem check-first-fn
+    (internal () (forall ((t T)) (equal (lam ((g Ts)) (fst (check-fold g t))) (lam ((g Ts)) t))))
+    (by
+      (tree-fold-uniqueness t (l cs rs) (lam ((g Ts)) (node Bits (pair l (lib mapApp Ts T rs g))))
+        (extensionality g (reduce full check-children-trees (map-app-constant Ts) v2)))))
+  (theorem check-first (internal () (forall ((t T) (GT Ts)) (equal (fst (check-fold GT t)) t)))
+    (by (with-rules (v2) (pointwise check-first-fn full)))
+    (normal full v2))
+  ; The same of the rose tree's fold that the kernel's fold whose step sees the node translates
+  ; to, into pairs of the node rebuilt and a value of the type X, at every step.
+  (abbreviation PaStep (Arrow T (Arrow (List X) X)))
+  (abbreviation PaR (Prod T X))
+  (abbreviation PaFold (Arrow PaStep PaR))
+  (abbreviation para-kids
+    (list-rec (nil T) (c r) (cons T (fst c) r) (lib mapApp PaStep PaR (snd n) f)))
+  (abbreviation para-values
+    (list-rec (nil X) (c r) (cons X (snd c) r) (lib mapApp PaStep PaR (snd n) f)))
+  (abbreviation para-fold-step
+    (lam ((f PaStep))
+      (pair (node Bits (pair (fst n) para-kids))
+        (f (node Bits (pair (fst n) para-kids)) para-values))))
+  (abbreviation para-children
+    (list-rec (nil PaFold) (c r) (cons PaFold (rose-rec PaFold (n) para-fold-step c) r) cs))
+  (theorem para-children-trees
+    (internal (X)
+      (forall ((F PaStep) (cs Ts))
+        (equal (list-rec (nil T) (c r) (cons T (fst c) r) (lib mapApp PaStep PaR para-children F))
+          (lib mapApp PaStep T
+            (list-rec (nil (Arrow PaStep T)) (c r)
+              (cons (Arrow PaStep T)
+                (lam ((f PaStep)) (fst ((rose-rec PaFold (n) para-fold-step c) f)))
+                r)
+              cs)
+            F))))
+    (by (with-rules (v2) by-list-induction))
+    (normal full v2))
+  (theorem para-first-fn
+    (internal (X)
+      (forall ((t T))
+        (equal (lam ((f PaStep)) (fst ((rose-rec PaFold (n) para-fold-step t) f)))
+          (lam ((f PaStep)) t))))
+    (by
+      (tree-fold-uniqueness t (l cs rs)
+        (lam ((f PaStep)) (node Bits (pair l (lib mapApp PaStep T rs f))))
+        (extensionality f (reduce full (para-children-trees X) (map-app-constant PaStep) v2)))))
+  (theorem para-first
+    (internal (X)
+      (forall ((t T) (F PaStep)) (equal (fst ((rose-rec PaFold (n) para-fold-step t) F)) t)))
+    (by (with-rules (v2) (pointwise para-first-fn full)))
+    (normal full v2))
+  (theorem eval-first
+    (internal () (forall ((D Ts) (p Fns) (t T)) (equal (fst (eval-fold D p t)) t)))
+    (by (reduce full (unfold eval-fold) (para-first EvE) v2))
+    (normal full v2))
+  ; The vocabulary with the folds' first components.
+  (abbreviation v3 eval-first check-first (para-first T) (para-first EvE) v2)
+  ; The weakening proof's lemmas on successors, each with its companion in the vocabulary's normal
+  ; form.
+  (theorem rebuild-tail-folded
+    (internal (X)
+      (forall ((l (List X)))
+        (equal (fst (list-rec (pair (nil X) (nil X)) (y r) (pair (cons X y (fst r)) (fst r)) l))
+          l)))
+    (by (use rebuild-tail (X) (l)))
+    (normal full v3))
+  (theorem iter-succ-folded
+    (internal (X)
+      (forall ((f (Arrow X X)) (n Bits) (z X))
+        (equal (lib iter X (lib succ n) f z) (lib iter X n f (f z)))))
+    (by (use iter-succ (X) (f n z)))
+    (normal full v3))
+  (theorem iter-comm-folded
+    (internal (X)
+      (forall ((f (Arrow X X)) (n Bits) (z X))
+        (equal (lib iter X n f (f z)) (f (lib iter X n f z)))))
+    (by (use iter-comm (X) (f n z)))
+    (normal full v3))
+  (theorem cmp-succ-folded
+    (internal ()
+      (forall ((n Bits) (m Bits)) (equal (lib cmp (lib succ m) (lib succ n)) (lib cmp m n))))
+    (by (use cmp-succ () (n m)))
+    (normal full v3))
+  (theorem succ-of-pred-folded
+    (internal ()
+      (forall ((bs Bits) (b Bit)) (equal (lib succ (lib pred (cons Bit b bs))) (cons Bit b bs))))
+    (by (use succ-of-pred () (bs b)))
+    (normal full v3))
+  (theorem add-one-folded
+    (internal () (forall ((n Bits)) (equal (lib add n (lib b0 (lib bnil))) (lib succ n))))
+    (by (use add-one () (n)))
+    (normal full v3))
+  (theorem lt-zero-succ-folded
+    (internal () (forall ((n Bits)) (equal (lib ltB (lib bnil) (lib succ n)) (lib b0 (lib bnil)))))
+    (by (use lt-zero-succ () (n)))
+    (normal full v3))
+  ; The rules of the lookups.
+  (abbreviation lookup-rules add-one-folded cmp-succ-folded lt-zero-succ-folded
+    (rebuild-tail-folded T)
+    (iter-succ-folded Ts)
+    v3)
+  ; A bitstring is empty or a successor.
+  (theorem bits-succ
+    (internal ()
+      (forall ((x Bits))
+        (or (equal x (lib bnil)) (exists Bits (lam ((y Bits)) (equal x (lib succ y)))))))
+    (by
+      (induction x (b bs ih) (or-left (reduce full))
+        (or-right (exists-intro (lib pred (cons Bit b bs)) (reduce full succ-of-pred-folded v3))))))
+  ; The lookup in a construction at a successor's index is the lookup in the rest at the index.
+  (theorem nth-cons-succ
+    (internal ()
+      (forall ((a T) (xs Ts) (i Bits))
+        (equal (Prelude.nth (cons T a xs) (node Bits (pair (lib succ i) (nil T))))
+          (Prelude.nth xs (node Bits (pair i (nil T)))))))
+    (by (reduce full lookup-rules))
+    (normal full lookup-rules))
+  ; The application of a closure evaluates its body in its environment with the argument.
+  (theorem apply-closure
+    (internal ()
+      (forall ((p Fns) (env Ts) (A T) (b T) (x T))
+        (equal (Eval.apStep p (Eval.valClo env A b) x) ((fst p) (cons T x env) b))))
+    (by (reduce full lambek unfold-rebuild map-id rebuild-rules))
+    (normal full v3))
+  ; The vocabulary with the lookups and the application of a closure.
+  (abbreviation v4 apply-closure nth-cons-succ lookup-rules)
+  ; The relation of environments extended: an environment related to a context and a value related
+  ; at a type, the environment with the value is related to the context with the type.
+  (theorem env-cons
+    (internal ()
+      (forall ((D Ts) (c Ts) (env Ts) (A T) (w T))
+        (assuming (he (env-related D c env)) (hw ((related D A) w))
+          (env-related D (cons T A c) (cons T w env)))))
+    (by
+      (with-rules (v4)
+        (unfold-formula
+          (all-intro i
+            (assume hi
+              (obtain cases bits-succ () ((lib lab i))
+                (or-elim cases (e0 es)
+                  (reduce-hypotheses full (e0)
+                    (exists-intro w (and-intro (reduce full e0) (matches hw full e0))))
+                  (exists-elim es (j ej)
+                    (reduce-hypotheses full (ej)
+                      (unfold-hypothesis he he2
+                        (all-elim he2 (node Bits (pair j (nil T))) hj
+                          (imp-elim hj (matches hi full ej) hx
+                            (exists-elim hx (x hx2)
+                              (and-elim hx2 (hx3 hx4)
+                                (reduce-hypothesis hx3 hx5 full (ej)
+                                  (exists-intro x
+                                    (and-intro (reduce full ej hx5)
+                                      (matches hx4 full ej hx5)))))))))))))))))))
+  ; The rules of the deductions: the lemmas of addition before the vocabulary, the predicate of
+  ; every element of a list unfolded, and the tail's rebuilding of lists of formulas.
+  (abbreviation kit plus-zero plus-succ zero-plus succ-plus plus-assoc v4 (unfold all-of)
+    (rebuild-tail-folded Omega))
+  ; The equality of bitstrings is sound: bitstrings that test equal are equal; by induction on
+  ; the second and the case analysis of the first and of their first bits.
+  (theorem eq-bits-sound
+    (internal ()
+      (forall ((y Bits))
+        (all Bits
+          (lam ((x Bits)) (implies (lib cond Omega (lib eqB x y) true false) (equal x y))))))
+    (by
+      (with-rules (kit)
+        (induction y (b ys ih)
+          (all-intro x
+            (assume h
+              (obtain cx list-cases (Bit) (x)
+                (or-elim cx (e0 e1) (reduce full e0)
+                  (exists-elim e1 (c e2)
+                    (exists-elim e2 (xs e3) (reduce-hypotheses full (e3) (absurd h full e3))))))))
+          (holds ih (ihf)
+            (all-intro x
+              (assume h
+                (obtain cx list-cases (Bit) (x)
+                  (or-elim cx (e0 e1) (reduce-hypotheses full (e0) (absurd h full e0))
+                    (exists-elim e1 (c e2)
+                      (exists-elim e2 (xs e3)
+                        (reduce-hypotheses full (e3)
+                          (obtain cb bit-cases () (b)
+                            (or-elim cb (b0 b1)
+                              (obtain cc0 bit-cases () (c)
+                                (or-elim cc0 (c00 c01)
+                                  (first (absurd h full e3 b0 c00)
+                                    (all-elim ihf xs hs
+                                      (imp-elim hs (matches h full e3 b0 c00) hq
+                                        (reduce full e3 b0 c00 hq))))
+                                  (first (absurd h full e3 b0 c01)
+                                    (all-elim ihf xs hs
+                                      (imp-elim hs (matches h full e3 b0 c01) hq
+                                        (reduce full e3 b0 c01 hq))))))
+                              (obtain cc1 bit-cases () (c)
+                                (or-elim cc1 (c10 c11)
+                                  (first (absurd h full e3 b1 c10)
+                                    (all-elim ihf xs hs
+                                      (imp-elim hs (matches h full e3 b1 c10) hq
+                                        (reduce full e3 b1 c10 hq))))
+                                  (first (absurd h full e3 b1 c11)
+                                    (all-elim ihf xs hs
+                                      (imp-elim hs (matches h full e3 b1 c11) hq
+                                        (reduce full e3 b1 c11 hq))))))))))))))))))))
+  ; The soundness of the equality of trees at the tree t: it is every tree it tests equal to.
+  (abbreviation sound-at
+    (all T (lam ((u T)) (implies (lib cond Omega (lib equal t u) true false) (equal t u)))))
+  ; The elementwise equality of lists of trees is sound where the equality is sound at each
+  ; element of the first; by induction on the first and the case analysis of the second.
+  (theorem all-zip-sound
+    (internal ()
+      (forall ((cs Ts))
+        (all Ts
+          (lam ((ds Ts))
+            (implies (all-of (lam ((t T)) sound-at) cs)
+              (implies (lib cond Omega (lib allZip equal-kids ds) true false) (equal cs ds)))))))
+    (by
+      (with-rules (kit)
+        (induction cs (y ys ih)
+          (all-intro ds
+            (assume ha
+              (assume hz
+                (obtain cd list-cases (T) (ds)
+                  (or-elim cd (e0 e1) (reduce full e0)
+                    (exists-elim e1 (d e2)
+                      (exists-elim e2 (ds2 e3)
+                        (reduce-hypotheses full (e3) (absurd hz full e3)))))))))
+          (holds ih (ihf)
+            (all-intro ds
+              (assume ha
+                (assume hz
+                  (obtain cd list-cases (T) (ds)
+                    (or-elim cd (e0 e1) (reduce-hypotheses full (e0) (absurd hz full e0))
+                      (exists-elim e1 (d e2)
+                        (exists-elim e2 (ds2 e3)
+                          (reduce-hypotheses full (e3)
+                            (obtain ce list-cases (Bit) ((lib equal y d))
+                              (or-elim ce (q0 q1)
+                                (reduce-hypotheses full (q0) (absurd hz full e3 q0))
+                                (exists-elim q1 (qb q2)
+                                  (exists-elim q2 (qs q3)
+                                    (reduce-hypotheses full (q3)
+                                      (reduce-hypothesis ha ha2 head ()
+                                        (and-elim ha2 (py pys)
+                                          (reduce-hypothesis py py2 head ()
+                                            (all-elim ihf ds2 hi1
+                                              (imp-elim hi1 (matches pys full) hi2
+                                                (imp-elim hi2 (matches hz full e3 q3) heq
+                                                  (all-elim py2 d hd
+                                                    (imp-elim hd (reduce full q3) hyd
+                                                      (reduce full e3 heq
+                                                        hyd)))))))))))))))))))))))))))
+  ; The hypothesis of the induction on trees at a list of children, for the soundness of the
+  ; equality, is that soundness at every child; by induction on the list, the head's soundness
+  ; and the rest's hypothesis read off the hypothesis's equation of lists.
+  (theorem rose-all-sound
+    (internal ()
+      (forall ((cs Ts))
+        (implies
+          (equal (list-rec (nil Omega) (t r) (cons Omega (equal sound-at true) r) cs)
+            (list-rec (nil Omega) (t r) (cons Omega (equal unit unit) r) cs))
+          (all-of (lam ((t T)) sound-at) cs))))
+    (by
+      (with-rules (kit)
+        (induction cs (y ys ih) (assume h (reduce full))
+          (holds ih (ihf)
+            (assume h
+              (congruence h (g1 (z (List Omega)) (lib headD Omega (equal unit unit) z))
+                (reduce-hypotheses full (g1)
+                  (holds g1 (g2)
+                    (holds g2 (g3)
+                      (congruence h (g4 (z (List Omega)) (lib tail Omega z))
+                        (reduce-hypotheses full (g4)
+                          (imp-elim ihf (matches g4 full) hall
+                            (reduced full
+                              (and-intro (matches g3 full) (matches hall full))))))))))))))))
+  ; The equality of trees is sound: a tree is every tree it tests equal to; by induction on the
+  ; tree, the other a node, the tests of the labels and of the children decided.
+  (theorem equal-sound (internal () (forall ((t T)) sound-at))
+    (by
+      (with-rules (kit)
+        (tree-induction t (l cs ih)
+          (all-intro u
+            (assume h
+              (obtain nu tree-node () (u)
+                (exists-elim nu (m e1)
+                  (exists-elim e1 (ds eu)
+                    (reduce-hypotheses full (eu)
+                      (obtain cl list-cases (Bit) ((lib eqB l m))
+                        (or-elim cl (x0 x1) (reduce-hypotheses full (x0) (absurd h full eu x0))
+                          (exists-elim x1 (xb x2)
+                            (exists-elim x2 (xs x3)
+                              (reduce-hypotheses full (x3)
+                                (obtain cz list-cases (Bit) ((lib allZip equal-kids ds))
+                                  (or-elim cz (z0 z1)
+                                    (reduce-hypotheses full (z0) (absurd h full eu x3 z0))
+                                    (exists-elim z1 (zb z2)
+                                      (exists-elim z2 (zs z3)
+                                        (reduce-hypotheses full (z3)
+                                          (obtain sb eq-bits-sound () (m)
+                                            (all-elim sb l hb
+                                              (imp-elim hb (reduce full x3) hlm
+                                                (obtain ra rose-all-sound () (cs)
+                                                  (imp-elim ra (hypothesis ih) hall
+                                                    (obtain za all-zip-sound () (cs)
+                                                      (all-elim za ds hz1
+                                                        (imp-elim hz1 (hypothesis hall) hz2
+                                                          (imp-elim hz2 (reduce full z3) hcd
+                                                            (reduce full eu hlm
+                                                              hcd))))))))))))))))))))))))))))))
+  ; A tree the test of a function type holds of is the node of that label over two trees.
+  (theorem arrow-type-inversion
+    (internal ()
+      (forall ((t T))
+        (implies (lib cond Omega (lib lab (Check.isArrow t)) true false)
+          (exists T
+            (lam ((a T))
+              (exists T
+                (lam ((b T)) (equal t (node Bits (pair n3 (cons T a (cons T b (nil T)))))))))))))
+    (by
+      (with-rules (kit)
+        (assume h
+          (obtain nt tree-node () (t)
+            (exists-elim nt (l e1)
+              (exists-elim e1 (cs et)
+                (reduce-hypotheses full (et)
+                  (obtain cl list-cases (Bit) ((lib eqB l n3))
+                    (or-elim cl (x0 x1) (reduce-hypotheses full (x0) (absurd h full et x0))
+                      (exists-elim x1 (xb x2)
+                        (exists-elim x2 (xs x3)
+                          (reduce-hypotheses full (x3)
+                            (obtain sb eq-bits-sound () (n3)
+                              (all-elim sb l hb
+                                (imp-elim hb (reduce full x3) hl
+                                  (obtain c0 list-cases (T) (cs)
+                                    (or-elim c0 (k00 k01)
+                                      (reduce-hypotheses full (k00) (absurd h full et hl k00))
+                                      (exists-elim k01 (a k02)
+                                        (exists-elim k02 (cs1 k03)
+                                          (reduce-hypotheses full (k03)
+                                            (obtain c1 list-cases (T) (cs1)
+                                              (or-elim c1 (k10 k11)
+                                                (reduce-hypotheses full (k10)
+                                                  (absurd h full et hl k03 k10))
+                                                (exists-elim k11 (b k12)
+                                                  (exists-elim k12 (cs2 k13)
+                                                    (reduce-hypotheses full (k13)
+                                                      (obtain c2 list-cases (T) (cs2)
+                                                        (or-elim c2 (k20 k21)
+                                                          (reduce-hypotheses full (k20)
+                                                            (exists-intro a
+                                                              (exists-intro b
+                                                                (reduce full et hl k03 k13 k20))))
+                                                          (exists-elim k21 (further k22)
+                                                            (exists-elim k22 (cs3 k23)
+                                                              (reduce-hypotheses full (k23)
+                                                                (absurd h full et hl k03 k13
+                                                                  k23))))))))))))))))))))))))))))))))
+  ; A tree the test of a product type holds of is the node of that label over two trees.
+  (theorem product-type-inversion
+    (internal ()
+      (forall ((t T))
+        (implies (lib cond Omega (lib lab (Check.isProd t)) true false)
+          (exists T
+            (lam ((a T))
+              (exists T
+                (lam ((b T)) (equal t (node Bits (pair n2 (cons T a (cons T b (nil T)))))))))))))
+    (by
+      (with-rules (kit)
+        (assume h
+          (obtain nt tree-node () (t)
+            (exists-elim nt (l e1)
+              (exists-elim e1 (cs et)
+                (reduce-hypotheses full (et)
+                  (obtain cl list-cases (Bit) ((lib eqB l n2))
+                    (or-elim cl (x0 x1) (reduce-hypotheses full (x0) (absurd h full et x0))
+                      (exists-elim x1 (xb x2)
+                        (exists-elim x2 (xs x3)
+                          (reduce-hypotheses full (x3)
+                            (obtain sb eq-bits-sound () (n2)
+                              (all-elim sb l hb
+                                (imp-elim hb (reduce full x3) hl
+                                  (obtain c0 list-cases (T) (cs)
+                                    (or-elim c0 (k00 k01)
+                                      (reduce-hypotheses full (k00) (absurd h full et hl k00))
+                                      (exists-elim k01 (a k02)
+                                        (exists-elim k02 (cs1 k03)
+                                          (reduce-hypotheses full (k03)
+                                            (obtain c1 list-cases (T) (cs1)
+                                              (or-elim c1 (k10 k11)
+                                                (reduce-hypotheses full (k10)
+                                                  (absurd h full et hl k03 k10))
+                                                (exists-elim k11 (b k12)
+                                                  (exists-elim k12 (cs2 k13)
+                                                    (reduce-hypotheses full (k13)
+                                                      (obtain c2 list-cases (T) (cs2)
+                                                        (or-elim c2 (k20 k21)
+                                                          (reduce-hypotheses full (k20)
+                                                            (exists-intro a
+                                                              (exists-intro b
+                                                                (reduce full et hl k03 k13 k20))))
+                                                          (exists-elim k21 (further k22)
+                                                            (exists-elim k22 (cs3 k23)
+                                                              (reduce-hypotheses full (k23)
+                                                                (absurd h full et hl k03 k13
+                                                                  k23))))))))))))))))))))))))))))))))
+  ; A tree the test of a list type holds of is the node of that label over one tree.
+  (theorem list-type-inversion
+    (internal ()
+      (forall ((t T))
+        (implies (lib cond Omega (lib lab (Check.isListTy t)) true false)
+          (exists T (lam ((a T)) (equal t (node Bits (pair n4 (cons T a (nil T))))))))))
+    (by
+      (with-rules (kit)
+        (assume h
+          (obtain nt tree-node () (t)
+            (exists-elim nt (l e1)
+              (exists-elim e1 (cs et)
+                (reduce-hypotheses full (et)
+                  (obtain cl list-cases (Bit) ((lib eqB l n4))
+                    (or-elim cl (x0 x1) (reduce-hypotheses full (x0) (absurd h full et x0))
+                      (exists-elim x1 (xb x2)
+                        (exists-elim x2 (xs x3)
+                          (reduce-hypotheses full (x3)
+                            (obtain sb eq-bits-sound () (n4)
+                              (all-elim sb l hb
+                                (imp-elim hb (reduce full x3) hl
+                                  (obtain c0 list-cases (T) (cs)
+                                    (or-elim c0 (k00 k01)
+                                      (reduce-hypotheses full (k00) (absurd h full et hl k00))
+                                      (exists-elim k01 (a k02)
+                                        (exists-elim k02 (cs1 k03)
+                                          (reduce-hypotheses full (k03)
+                                            (obtain c1 list-cases (T) (cs1)
+                                              (or-elim c1 (k10 k11)
+                                                (reduce-hypotheses full (k10)
+                                                  (exists-intro a (reduce full et hl k03 k10)))
+                                                (exists-elim k11 (further k12)
+                                                  (exists-elim k12 (cs2 k13)
+                                                    (reduce-hypotheses full (k13)
+                                                      (absurd h full et hl k03
+                                                        k13)))))))))))))))))))))))))))
+  ; The test that an optional tree is some has the empty label or the numeral one's; by the case
+  ; analysis of the tree's label, of its first bit and of the bits after it.
+  (theorem some-test-label
+    (internal ()
+      (forall ((m T))
+        (or (equal (lib lab (Prelude.isSome m)) (lib bnil))
+          (equal (lib lab (Prelude.isSome m)) n1))))
+    (by
+      (with-rules (kit)
+        (obtain cl list-cases (Bit) ((lib lab m))
+          (or-elim cl (e0 e1) (reduce-hypotheses full (e0) (or-left (reduce full e0)))
+            (exists-elim e1 (b e2)
+              (exists-elim e2 (r e3)
+                (reduce-hypotheses full (e3)
+                  (obtain cb bit-cases () (b)
+                    (or-elim cb (bz bo)
+                      (obtain cr list-cases (Bit) (r)
+                        (or-elim cr (r0 r1) (or-right (reduce full e3 bz r0))
+                          (exists-elim r1 (rb r2)
+                            (exists-elim r2 (rs r3) (or-left (reduce full e3 bz r3))))))
+                      (or-left (reduce full e3 bo)))))))))))))
