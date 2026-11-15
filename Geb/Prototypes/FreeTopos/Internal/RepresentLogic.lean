@@ -25,11 +25,11 @@ the equality a connective's body states is equivalent to the connective.
 
 ## Main statements
 
-* {lit}`represents_tt`, {lit}`represents_conj`, {lit}`represents_imp`, {lit}`represents_all` —
-  the arrows of truth, conjunction, implication and universal quantification represent
-  Lean's.
-* {lit}`repC_tt`, {lit}`repC_conj`, {lit}`repC_imp`, {lit}`repC_all` — so do their
-  applications in a context.
+* {lit}`represents_tt`, {lit}`represents_conj`, {lit}`represents_imp`, {lit}`represents_all`,
+  {lit}`represents_ff` — the arrows of truth, conjunction, implication, universal
+  quantification and falsity represent Lean's.
+* {lit}`repC_tt`, {lit}`repC_ff`, {lit}`repC_conj`, {lit}`repC_imp`, {lit}`repC_all` — so do
+  their applications in a context.
 * {lit}`repC_imps` — the implication of a formula by a list of formulas in turn.
 * {lit}`holds_of_represents` — a formula that is true, unfolded, in the topos of types and
   functional relations represents a function that holds at each represented value.
@@ -366,6 +366,55 @@ theorem repC_all (hbase : G.base = sig.length)
     (subst_omega [a])
     (by simp only [List.map_cons, List.map_nil, exp, omega, subst_op, subst_x,
       List.getElem?_cons_zero, Option.getD_some]) hfk hP
+
+/-- The representation of the propositions is total in each direction. -/
+theorem prop_total : (∀ p : Prop, ∃ q, Rep.prop p q) ∧ ∀ q : Prop, ∃ p, Rep.prop p q :=
+  ⟨fun p ↦ ⟨p, rfl⟩, fun q ↦ ⟨q, rfl⟩⟩
+
+/-- Falsity's arrow represents the false proposition: the quantification over the propositions
+of the proposition itself. -/
+theorem represents_ff (hbase : G.base = sig.length) (hF : compileDefs G = some ds)
+    (hwf : PartialHorn.DefnsWF sig ds) (hlog : HasLogic G o) {ft fa fk : Tree}
+    (hdt : ds[o]? = some ⟨List.replicate 0 obj, arr, ft⟩)
+    (hda : ds[o + 3]? = some ⟨List.replicate 1 obj, arr, fa⟩)
+    (hdk : ds[o + 4]? = some ⟨List.replicate 0 obj, arr, fk⟩) :
+    Represents [] (unfoldTerm sig ds fk) Rep.unit Rep.prop fun _ ↦ False := by
+  have hk : G.defs[o + 4]? = some (.language ⟨0, [], omega,
+      Logic.all o omega (Term.lam omega (Term.var 0))⟩) :=
+    hlog 4 _ rfl
+  have hk₃ : ({ G with defs := G.defs.take (o + 4) } : Globals).defs[o + 3]? =
+      some (.language ⟨1, [exp (x 0) omega], omega,
+        Term.eq (Term.var 0) (Term.lam (x 0) (Logic.tt o))⟩) := by
+    rw [defs_take (Nat.lt_succ_self (o + 3))]
+    exact hlog 3 _ rfl
+  have hall := represents_all (Rx := Rep.prop) hbase hF hwf hlog prop_total.1 prop_total.2 hdt
+    hda
+  have hvar : RepC { G with defs := G.defs.take (o + 4) } 0 ds [] (Term.var 0) (prod one omega)
+      (extEnv one omega []) omega (Rep.prod Rep.unit Rep.prop) Rep.prop Prod.snd :=
+    repC_var (envRep_ext (e := []) objVal_one objVal_omega .nil Rep.prop) rfl
+  have hlam : RepC { G with defs := G.defs.take (o + 4) } 0 ds [] (Term.lam omega (Term.var 0))
+      (ctxObj []) (stdEnv []) (exp omega omega) Rep.unit (Rep.exp Rep.prop Rep.prop)
+      fun _ p ↦ p :=
+    repC_lam (G := { G with defs := G.defs.take (o + 4) }) rfl objVal_one objVal_omega hvar
+  have hb : RepC { G with defs := G.defs.take (o + 4) } 0 ds []
+      (Logic.all o omega (Term.lam omega (Term.var 0))) (ctxObj []) (stdEnv []) omega Rep.unit
+      Rep.prop fun _ ↦ ∀ p : Prop, p :=
+    repC_all (G := { G with defs := G.defs.take (o + 4) }) (n := 0) (ρ := []) hbase hk₃ hwf hda
+      hall rfl rfl eval_omega hlam
+  exact rep_def (τ' := []) hF hk hb (fun _ ↦ propext ⟨fun h ↦ h False, False.elim⟩) hdk
+
+/-- Falsity, applied in a context, represents the function to the false proposition, where the
+constants have its definition and its arrow represents the false proposition. -/
+theorem repC_ff (hbase : G.base = sig.length)
+    (hk : G.defs[o + 4]? = some (.language ⟨0, [], omega,
+      Logic.all o omega (Term.lam omega (Term.var 0))⟩))
+    (hwf : PartialHorn.DefnsWF sig ds) {fk : Tree}
+    (hdk : ds[o + 4]? = some ⟨List.replicate 0 obj, arr, fk⟩)
+    (hfk : Represents [] (unfoldTerm sig ds fk) Rep.unit Rep.prop fun _ ↦ False) {X : Tree}
+    {e : List (Tree × Tree)} (hX : ObjVal ρ (unfoldTerm sig ds X) A) (R : S → A → Prop) :
+    RepC G n ds ρ (Logic.ff o) X e omega R Rep.prop fun _ ↦ False :=
+  repC_call₀ (d := ⟨0, [], omega, Logic.all o omega (Term.lam omega (Term.var 0))⟩) hbase hk hwf
+    hdk rfl rfl (subst_omega []) hX hfk
 
 /-- A formula whose arrow from an object, with every definition unfolded, is true in the topos
 of types and functional relations, and represents there a function into the propositions,
