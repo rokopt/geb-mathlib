@@ -125,10 +125,12 @@ def encKV {β : Type} (e : β → Tree) (p : Tree × β) : Tree := RoseTree.node
 
 /-- A state written in Geb and a state are related: the tables agree with lists of their keys'
 values, and the state written in Geb is the node of the development's entries, those lists, the
-definitions in force, the extended signature and whether the typing is inferred. -/
+definitions in force, the extended signature and whether the typing is inferred. The Lean state
+uses theorem lemmas, the default mode, rather than local cuts. -/
 def SRel (st' : Tree) (st : St) : Prop :=
   ∃ (lm : List (Tree × Ty)) (ln : List (Tree × (Tree × Tree))), TRel lm st.memo ∧
-    TRel ln st.nfs ∧ st' = RoseTree.node 0 [RoseTree.node 0 (st.dev.toList.map encDevEntry),
+    TRel ln st.nfs ∧ st.localProofs = false ∧
+    st' = RoseTree.node 0 [RoseTree.node 0 (st.dev.toList.map encDevEntry),
       RoseTree.node 0 (lm.map (encKV encTy)), RoseTree.node 0 (ln.map (encKV encPair)),
       RoseTree.node 0 (st.defs.map encDefn), RoseTree.node 0 (st.sig.map encOpSig),
       ofBool st.infer]
@@ -576,19 +578,20 @@ local macro "pm_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(t
     Option.map_some, stateT_get_run, stateT_set_run, Option.pure_def, option_failure,
     Option.bind_none, ReaderT.run_failure, StateT.run_failure, $ls,*])
 
-/-- The run of adding a lemma. -/
-theorem addLemma_run (q : Eqn) (c : Tree) (sc : Scope) (st : St) :
+/-- The run of adding a lemma in the default, theorem-environment mode. -/
+theorem addLemma_run (q : Eqn) (c : Tree) (sc : Scope) (st : St)
+    (hl : st.localProofs = false) :
     ((addLemma q c).run sc).run st =
       some (sc.cite st.dev.size, { st with dev := st.dev.push (sc.seq q, c) }) := by
-  pm_simp [addLemma]
+  pm_simp [addLemma, hl, Bool.false_eq_true, ite_false]
 
 /-- The mirror's addition of a lemma. -/
 theorem addLemma_rel (q : Eqn) (c : Tree) :
     PMRel id («Combinator.addLemma» (encEqn q) c) (addLemma q c) := by
   intro sc st' st h
-  rw [addLemma_run]
-  obtain ⟨lm, ln, hm, hn, rfl⟩ := h
-  refine ⟨_, ⟨lm, ln, hm, hn, rfl⟩, ?_⟩
+  obtain ⟨lm, ln, hm, hn, hl, rfl⟩ := h
+  rw [addLemma_run _ _ _ _ hl]
+  refine ⟨_, ⟨lm, ln, hm, hn, hl, rfl⟩, ?_⟩
   mirror_simp [«Combinator.addLemma», «Combinator.stDev»,
     «Combinator.withDev», «Combinator.pst», «Theory.l2», scSeq_eq,
     scCite_eq, Array.toList_push, Array.size_eq_length_toList, List.map_append, List.map_cons,
@@ -631,8 +634,8 @@ theorem lookup_rel (t : Tree) :
     PMRel (fun o ↦ encOpt (o.map encTy)) («Combinator.lookup» t) (lookup t) := by
   intro sc st' st h
   pm_simp [lookup]
-  obtain ⟨lm, ln, hm, hn, rfl⟩ := h
-  refine ⟨_, ⟨lm, ln, hm, hn, rfl⟩, ?_⟩
+  obtain ⟨lm, ln, hm, hn, hl, rfl⟩ := h
+  refine ⟨_, ⟨lm, ln, hm, hn, hl, rfl⟩, ?_⟩
   mirror_simp [«Combinator.lookup», «Combinator.stMemo», «Theory.l2»,
     tableFind_eq, ← hm.2 t, Option.map_map]
   rfl
@@ -642,8 +645,8 @@ theorem memoize_rel (y : Ty) :
     PMRel (fun _ ↦ leaf 0) («Combinator.memoize» (encTy y)) (memoize y) := by
   intro sc st' st h
   pm_simp [memoize]
-  obtain ⟨lm, ln, hm, hn, rfl⟩ := h
-  refine ⟨_, ⟨(y.term, y) :: lm, ln, tRel_insert lm st.memo hm y.term y, hn, rfl⟩, ?_⟩
+  obtain ⟨lm, ln, hm, hn, hl, rfl⟩ := h
+  refine ⟨_, ⟨(y.term, y) :: lm, ln, tRel_insert lm st.memo hm y.term y, hn, hl, rfl⟩, ?_⟩
   mirror_simp [«Combinator.memoize», «Combinator.stMemo»,
     «Combinator.withMemo», «Combinator.memoEntry», «Combinator.pst»,
     «Theory.l2», «Combinator.tyT»]
@@ -652,7 +655,7 @@ theorem memoize_rel (y : Ty) :
 /-- The fields of an encoded state. -/
 theorem stInfer_srel {st' : Tree} {st : St} (h : SRel st' st) :
     «Combinator.stInfer» st' = ofBool st.infer := by
-  obtain ⟨lm, ln, hm, hn, rfl⟩ := h
+  obtain ⟨lm, ln, hm, hn, hl, rfl⟩ := h
   mirror_simp [«Combinator.stInfer»]
 
 /-- The mirror's record of a typing, and the typing. -/
@@ -756,7 +759,7 @@ theorem objEq_rel (l r : Ty) :
 /-- The definitions in force of an encoded state. -/
 theorem stDefs_srel {st' : Tree} {st : St} (h : SRel st' st) :
     «Combinator.stDefs» st' = st.defs.map encDefn := by
-  obtain ⟨lm, ln, hm, hn, rfl⟩ := h
+  obtain ⟨lm, ln, hm, hn, hl, rfl⟩ := h
   mirror_simp [«Combinator.stDefs»]
 
 set_option maxRecDepth 100000 in
@@ -898,7 +901,7 @@ theorem typeDefined_rel (pt' : List Tree → Tree → Tree → Tree → Tree)
 /-- The extended signature of an encoded state. -/
 theorem stSig_srel {st' : Tree} {st : St} (h : SRel st' st) :
     «Combinator.stSig» st' = st.sig.map encOpSig := by
-  obtain ⟨lm, ln, hm, hn, rfl⟩ := h
+  obtain ⟨lm, ln, hm, hn, hl, rfl⟩ := h
   mirror_simp [«Combinator.stSig»]
 
 /-- The mirror's failure, at a failure composed with a computation. -/
@@ -1260,7 +1263,7 @@ def encMS (ms : MatchSt) : Tree :=
 /-- The development of an encoded state. -/
 theorem stDev_srel {st' : Tree} {st : St} (h : SRel st' st) :
     «Combinator.stDev» st' = st.dev.toList.map encDevEntry := by
-  obtain ⟨lm, ln, hm, hn, rfl⟩ := h
+  obtain ⟨lm, ln, hm, hn, hl, rfl⟩ := h
   mirror_simp [«Combinator.stDev»]
 
 set_option maxRecDepth 100000 in
@@ -1555,8 +1558,8 @@ theorem lookupNf_rel (t : Tree) :
     PMRel (fun o ↦ encOpt (o.map encPair)) («Combinator.lookupNf» t) (lookupNf t) := by
   intro sc st' st h
   pm_simp [lookupNf]
-  obtain ⟨lm, ln, hm, hn, rfl⟩ := h
-  refine ⟨_, ⟨lm, ln, hm, hn, rfl⟩, ?_⟩
+  obtain ⟨lm, ln, hm, hn, hl, rfl⟩ := h
+  refine ⟨_, ⟨lm, ln, hm, hn, hl, rfl⟩, ?_⟩
   mirror_simp [«Combinator.lookupNf», «Combinator.stNfs», «Theory.l2»,
     tableFind_eq, ← hn.2 t, Option.map_map]
   rfl
@@ -1569,8 +1572,8 @@ theorem nfsInsert_rel (t n c : Tree) :
       (do modify fun st ↦ { st with nfs := st.nfs.insert t (n, c) }; pure (n, c)) := by
   intro sc st' st h
   pm_simp []
-  obtain ⟨lm, ln, hm, hn, rfl⟩ := h
-  refine ⟨_, ⟨lm, (t, (n, c)) :: ln, hm, tRel_insert ln st.nfs hn t (n, c), rfl⟩, ?_⟩
+  obtain ⟨lm, ln, hm, hn, hl, rfl⟩ := h
+  refine ⟨_, ⟨lm, (t, (n, c)) :: ln, hm, tRel_insert ln st.nfs hn t (n, c), hl, rfl⟩, ?_⟩
   mirror_simp [«Combinator.stNfs», «Combinator.withNfs», «Combinator.nfEntry»,
     «Language.pr», «Combinator.pst», Templates.ok, Templates.res]
   rfl
@@ -1786,7 +1789,7 @@ theorem pmStart_srel (dev : Development) (defs : List Defn) (infer : Bool) :
     SRel («Combinator.pmStart» (dev.map encDevEntry) (defs.map encDefn) (ofBool infer))
       { dev := dev.toArray, defs := defs, sig := sig ++ defs.map (fun d ↦ (d.ctx, d.sort)),
         infer := infer } := by
-  refine ⟨[], [], tRel_empty, tRel_empty, ?_⟩
+  refine ⟨[], [], tRel_empty, tRel_empty, rfl, ?_⟩
   simp [template, «Combinator.pmStart», «Combinator.pst», sig_eq, append_eq, mapT_eq,
     «PartialHorn.opSig», encOpSig, Function.comp_def]
 

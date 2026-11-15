@@ -338,8 +338,10 @@ the sections below detail:
     with a step of conversion]). The checker of proof holes is written
     in Lean over those conversion rules, with conditional soundness and
     completed proofs returned as conversion certificates
-    ({ref "typed-holes"}[Typed holes]); its translation of open sketches
-    to conditional certificates and its Geb transcription remain.
+    ({ref "typed-holes"}[Typed holes]). Open sketches translate to
+    conditional conversion certificates through closed lemmas, including
+    rose-tree uniqueness premises and embedded sequent certificates.
+    The Geb transcription remains.
     The checker of the shared
     certificates, by unsharing, is required if measurement shows the
     checking or storage of certificates to need it, and follows the
@@ -3572,8 +3574,8 @@ tag := "authoring-compatibility"
     statement the document reads, the theorems after it proved under its
     theorem; the report is the prover's, and the checker of holes that
     certifies a theorem under its obligations is written in Lean
-    ({ref "typed-holes"}[Typed holes]), its translation of open sketches
-    and its transcription into Geb remaining
+    ({ref "typed-holes"}[Typed holes]), with open sketches translated to
+    conditional conversion certificates; its transcription into Geb remains
 *
   * The cache of a development
     ({ref "proof-cache"}[The cache of a development])
@@ -4957,9 +4959,41 @@ ordinary conversion certificate, proved accepted by
 {name}`Geb.FreeTopos.Internal.ProofHoles.convChecks_of_finish`.
 `GebTests/Prototypes/FreeTopos/InternalHoles.lean` tests contexts under
 extensionality, cut and induction, repeated identities, filling in stages,
-and rejection of wrong sequents and unfinished proofs. The translation
-of an open sketch to a certificate of the conditional formula above and
-the Geb transcription remain. The authoring interface is that of
+and rejection of wrong sequents and unfinished proofs.
+
+{name}`Geb.FreeTopos.Internal.ProofHoles.Closed.certify`
+(`Geb/Prototypes/FreeTopos/Internal/Holes/Closed.lean`) translates open
+sketches to ordinary conversion certificates of
+{name}`Geb.FreeTopos.Internal.ProofHoles.Closed.conditional`. Each
+obligation's hypotheses imply its conclusion, universally quantified
+over its context. The hole conditions imply the same closure of the
+original sequent, so the resulting theorem has neither hypotheses nor
+free term variables; object parameters remain external. The logical
+definitions and theorems are those of {name}`Geb.FreeTopos.Internal.Logic.defs`
+and {name}`Geb.FreeTopos.Internal.Logic.theorems`, at the supplied offsets.
+The translation checks both its input and its output in the original
+environment. {name}`Geb.FreeTopos.Internal.ProofHoles.Closed.valid_of_certify`
+proves the conditional theorem valid without assuming the holes valid.
+
+The translation proves closed lemmas in premise order and combines them
+by cuts. Rose-tree uniqueness is derived from induction with its
+hypothesis, using list induction to pass from a list of true equations
+to equality of lists of values. Embedded sequent certificates are
+restricted along the inclusion of the truth subobject of the added
+hypotheses; their intermediate equations remain local cuts. Neither
+construction adds a theorem to the environment. Construction and replay
+can fail, and successful translation of every accepted sketch is not
+claimed. The direct translation
+{name}`Geb.FreeTopos.Internal.ProofHoles.certify` keeps the original term
+context, but cannot carry hole conditions into a rose-tree uniqueness
+premise or adapt an embedded sequent certificate.
+
+`GebTests/Prototypes/FreeTopos/InternalHolesConditional.lean`,
+`GebTests/Prototypes/FreeTopos/InternalHolesClosed.lean` and
+`GebTests/Prototypes/FreeTopos/InternalHolesSequent.lean` test conditional
+certificates under binders, cut and induction, hypothesis references in
+conversion steps, repeated holes, open rose-tree uniqueness and sequent
+transport. The Geb transcription remains. The authoring interface is that of
 {ref "proof-holes"}[Holes and goals]: a hole of a proof script is a tactic
 of the prover written in Geb, whose derivation of the script holds, where
 the hole's tactic is run, a leaf of no rule that keeps the sequent the
@@ -8405,8 +8439,9 @@ can state ({ref "authoring-compatibility"}[Authoring across bootstrap
 revisions]). One checker admitted beside another admitted checker shows
 the admission repeatable. Its Lean implementation checks open sketches
 with conditional validity and returns conversion certificates for
-completed sketches; translating open sketches to conditional
-certificates and transcribing the checker into Geb remain
+completed sketches. Open sketches translate to conditional certificates
+through closed lemmas, including open rose-tree uniqueness premises and
+embedded sequent certificates. The Geb transcription remains
 ({ref "typed-holes"}[Typed holes]). The checker of the shared certificates, admitted
 by unsharing, a translation that spells out each index as its term and
 each rule of the oracle as the typing lemmas the prover emits without it,
