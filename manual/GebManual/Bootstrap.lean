@@ -3110,9 +3110,28 @@ soundness then holds of a list of trees of bitstrings that represents a
 kernel list of forms on which those passes succeed, where its remaining
 hypotheses hold
 (`GebTests/Prototypes/FreeTopos/Certified/DatatypeProgramPasses.lean`).
-What remains of the transfer is the same reading of the remaining
-hypotheses and of the conclusion, the discharge of the hypotheses, and
-the compilers' entry point.
+The conclusion is read the same way. The definitions it is stated by
+represent functions and predicates of Lean built from the loaded
+globals' values: convergence of a function of the fuel, the evaluator's
+functions at a level of fuel
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeStatements.lean`), and
+the relation at a type of the datatype language, the fold of the type's
+tree that the internal definition is, over Lean's trees
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeRelation.lean`). The
+conclusion's two formulas then represent statements of Lean about the
+evaluator the kernel loads: each name the typing environment gives a
+type has an index among the reader's names, at which the definitions
+have a term whose evaluation converges to a value related at the type;
+and each datatype's recognizer evaluates to a function whose
+application to the quotation of a tree converges to the quotation of a
+tree true exactly when the tree is a member of the datatype
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeConclusion.lean`). The
+soundness concludes that statement where the loaded compilers' passes
+succeed on a kernel list of forms and its remaining hypotheses hold of
+the list that represents it
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeProgramConclusion.lean`).
+What remains of the transfer is the reading and the discharge of the
+remaining hypotheses, and the compilers' entry point.
 
 The rewriting of the definitions the elementary-affine search rejects in
 the compilers' sources waits on this completion, whose soundness of the
