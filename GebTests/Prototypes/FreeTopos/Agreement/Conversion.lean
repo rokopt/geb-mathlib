@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import GebTests.Prototypes.FreeTopos.Agreement.Literals
+public import GebTests.Prototypes.FreeTopos.Agreement.Machine
 public import GebTests.Prototypes.FreeTopos.Agreement.Prove
 public import Geb.Prototypes.FreeTopos.Internal.Conversion
 
@@ -17,16 +18,21 @@ The functions of {lit}`bootstrap/free-topos/conversion.geb`, in the Lean the boo
 emits ({lit}`GebMirror.Metalogic`), agree with the checker of the internal language with a step
 of conversion ({name}`Geb.FreeTopos.Internal.convCheck`) at every encoded certificate whose rules
 the mirror reads: the rule of the language a certificate's root stands for, the rules of the
-normalizer a step names, the instance of a theorem whose conclusion matches a formula, the step
-of the checker at a node and the checker, so that the two checkers accept the same certificates
-of the same theorems.
+normalizer a step names, the instance of a theorem whose conclusion matches a formula, the
+reduction by the environment machine with its rewriting by the prover's rules, the step of the
+checker at a node and the checker, so that the two checkers accept the same certificates of the
+same theorems.
 
 A certificate is encoded as a derivation is, the node of its rule's position over the node of the
 rule's data and its premises: a rule of the language at its position and with its data, and the
 steps of conversion and the application of a theorem at the positions after the language's rules.
 A rule of the normalizer that holds a prepared theorem holds a matching, a function, which no
 tree encodes, so that the agreement is stated at the certificates none of whose steps names one;
-a step of the prover's reductions names its rules before they are prepared.
+a step of the prover's reductions, and a step of the machine, names its rules before they are
+prepared. A declaration of a development is the node of its constructor's position over its
+fields, a declaration of the base checker as that checker's agreement encodes it, and the state
+of the check the node of the constants, the node of the entries and the node of the indices at
+which the evaluation at literals is ready.
 
 ## Main definitions
 
@@ -34,14 +40,21 @@ a step of the prover's reductions names its rules before they are prepared.
   certificate.
 * {lit}`RulePlain`, {lit}`Plain` — the rules of the certificates the mirror reads, and the
   certificates of such rules.
+* {lit}`encConvDecl`, {lit}`encConvState`, {lit}`DeclPlain` — the encoding of a declaration of a
+  development with certificates and of the state of its check, and the declarations the mirror
+  reads.
 
 ## Main statements
 
 * {lit}`toRule_eq` — the mirror's rule of the language a certificate's root stands for.
 * {lit}`applyInst_eq` — the mirror's instance of a theorem whose conclusion matches a formula.
+* {lit}`machineReduceBy_eq` — the mirror's reduction of a term by the machine, rewriting its
+  normal form by the prover's rules.
 * {lit}`convStep_eq` — the mirror's step of the checker.
 * {lit}`convCheck_eq` — the mirror's checker.
 * {lit}`thmConvChecks_eq` — the mirror's test that a certificate proves a theorem.
+* {lit}`convDeclStep_eq`, {lit}`checkConvDev_eq` — the mirror's check of a declaration, and of
+  a development's declarations in order.
 
 ## Tags
 
@@ -96,11 +109,10 @@ theorem encConv_node (l : ConvRule) (cs : List ConvDeriv) :
 encodes. -/
 def Unprepared (rs : List NormRule) : Prop := ∀ r ∈ rs, ∀ j θ root m k, r ≠ .thmAt j θ root m k
 
-/-- A rule of the certificates the mirror reads: a step of the prover's reductions names no
-prepared theorem, and the rule is not the reduction by the machine. -/
+/-- A rule of the certificates the mirror reads: a step of the prover's reductions, and a step
+of the machine, names no prepared theorem. -/
 def RulePlain : ConvRule → Prop
-  | .norm rs _ | .eval rs _ _ => Unprepared rs
-  | .machine _ _ _ _ _ _ => False
+  | .norm rs _ | .eval rs _ _ | .machine _ _ _ _ _ rs => Unprepared rs
   | _ => True
 
 /-- A certificate each of whose rules the mirror reads. -/
@@ -214,6 +226,45 @@ theorem applyInst_eq (j : ℕ) (θ : List Tree) (φ : Term) :
   · mirror_simp [entryLanguage_eq, Internal.Entry.language?, none_eq]
     rfl
 
+/-! The reduction by the machine. -/
+
+/-- The rewriting at the root by prepared rules is the rewriting by the rules. -/
+theorem rootRewrite_prepareRules (rs : List NormRule) (Γ : List Tree) (Φ : List Term)
+    (t : Term) :
+    Internal.rootRewrite G E n (Internal.prepareRules E rs) Γ Φ t =
+      Internal.rootRewrite G E n rs Γ Φ t := by
+  simp only [Internal.rootRewrite, Internal.prepareRules, List.findSome?_map]
+  exact congrArg (List.findSome? · rs)
+    (funext fun r ↦ Internal.tryRule_prepareRule G E n Γ Φ t r)
+
+/-- The mirror's reduction of an encoded term in a context under encoded hypotheses by the
+machine, at a predicate related to the machine's and at encoded rules none of which is a prepared
+theorem. -/
+theorem machineReduceBy_eq (unf' : Tree → Tree) (unfold : ℕ → Bool)
+    (hunf : ∀ j, unf' (leaf j) = ofBool (unfold j)) (kl kc : ℕ) (rs : List NormRule)
+    (hrs : Unprepared rs) (fuel : ℕ) (Γ : List Tree) (Φ : List Term) (t : Term) :
+    «Conversion.machineReduceBy» (encGlobals G) (E.toList.map encEntry) (leaf n) unf' (leaf kl)
+        (leaf kc) (rs.map encRule) (leaf fuel) Γ (Φ.map encTerm) (encTerm t) =
+      encOpt ((Internal.machineReduceBy G E n unfold kl kc rs fuel Γ Φ t).map encTerm) := by
+  have hemp : «Conversion/EachRule.isEmpty» (rs.map encRule) = ofBool rs.isEmpty := by
+    simp only [template, isEmpty_eq, List.isEmpty_map]
+  simp only [«Conversion.machineReduceBy», hemp, ofBool_bne, label_ne_zero,
+    Internal.machineReduceBy]
+  cases hr : rs.isEmpty
+  · simp only [Bool.false_eq_true, ↓reduceIte]
+    exact Machine.machineReduce_eq (P := ⟨encGlobals G, leaf n, unf', leaf kl, leaf kc, _⟩)
+      ⟨rfl, rfl, hunf, rfl, rfl, fun Γ' k u ↦ by
+        have h := Prove.rootRewriteK_eq G E n Γ' Φ _ _ (prepareRules_eq E rs hrs) k u
+        rw [rootRewrite_prepareRules] at h
+        simp only [Internal.machineRw, Internal.rootRewriteK_eq]
+        rw [h]
+        rcases Internal.rootRewrite G E n rs Γ' (Φ.map (Internal.weakenBy k)) u with _ | ⟨u', d⟩
+        · rfl
+        · rfl⟩ fuel Γ t
+  · simp only [↓reduceIte]
+    exact Machine.machineReduce_eq (P := ⟨encGlobals G, leaf n, unf', leaf kl, leaf kc, _⟩)
+      ⟨rfl, rfl, hunf, rfl, rfl, fun _ _ _ ↦ rfl⟩ fuel Γ t
+
 /-! The step of the checker. -/
 
 /-- The label of an encoded certificate's node is its rule's position. -/
@@ -325,7 +376,29 @@ theorem convStep_eq (l : ConvRule) (hl : RulePlain l) (v : DV)
     simp only [label_leaf, bne_self_eq_false, Bool.false_eq_true, ↓reduceIte,
       Literals.litEval_eq, Internal.convFastStep, Internal.convStep]
     cases R.contains j <;> simp [Option.map_map, none_eq, Function.comp_def]
-  | machine fuel m except kl kc rs => exact hl.elim
+  | machine fuel m except kl kc rs =>
+    have hunf : ∀ j : ℕ, «Prelude.and» (Const.lt (leaf j) (leaf m))
+        («Base.not» («Base.anyT» (fun x ↦ Const.eq x (leaf j)) (except.map leaf))) =
+        ofBool (decide (j < m) && !except.contains j) := fun j ↦ by
+      rw [(anyT_eq (fun x ↦ Const.eq x (leaf j)) (fun x ↦ x.label == j) _ fun x _ ↦ rfl).trans
+        (congrArg ofBool (List.any_map.trans (any_leaf_eq j except)))]
+      mirror_simp []
+    have hemp : «Conversion/EachRule.isEmpty» (rs.map encRule) = ofBool rs.isEmpty := by
+      simp only [template, isEmpty_eq, List.isEmpty_map]
+    simp only [«Conversion.convStep», label_eq, label_encConv, child_encConv, convData, lt_leaf,
+      eq_leaf, label_ne_zero, ofBool_bne, children_eq, RoseTree.children_node, Nat.reduceLT,
+      Nat.reduceBEq, decide_false, Bool.false_eq_true, ↓reduceIte,
+      «Conversion.stepMachine», at_eq, List.getD_cons_zero, List.getD_cons_succ, rulesOf_eq, hemp]
+    refine ⟨fun Γ k Φ t ↦ ?_, fun Γ Φ φ ↦ rfl⟩
+    have hΦ : (if rs.isEmpty = true then []
+        else «Base.mapT» (fun h ↦ «Derivation.weakenBy» (leaf k) h) (Φ.map encTerm)) =
+        (if rs.isEmpty then [] else Φ.map (Internal.weakenBy k)).map encTerm := by
+      split
+      · rfl
+      · exact mapT_weakenBy k Φ
+    simp only [label_leaf, bne_self_eq_false, Bool.false_eq_true, ↓reduceIte, hΦ,
+      Internal.convFastStep, Internal.convStep, ConvRule.hyps]
+    exact machineReduceBy_eq G E n _ _ hunf kl kc rs hl fuel Γ _ t
 
 /-! The checker. -/
 
@@ -371,6 +444,104 @@ theorem thmConvChecks_eq (a : Internal.Thm) (d : ConvDeriv) (hd : Plain d) :
     thArity_eq, thCtx_eq, thHyps_eq, thConcl_eq, allT_isTy, ha, isFormula_eq, hc, ite_leaf_zero,
     Bool.decide_eq_true, Bool.decide_and]
   simp only [Bool.and_assoc]
+
+/-! Developments with certificates. -/
+
+/-- A declaration of a development with certificates as the node of its constructor's position
+over its fields. -/
+def encConvDecl : Internal.ConvDecl → Tree
+  | .base d => RoseTree.node 0 [encDecl d]
+  | .conv a c => RoseTree.node 1 [encThm a, encConv c]
+  | .ready j => RoseTree.node 2 [leaf j]
+
+/-- The state of the check of a development with certificates as the node of its constants, the
+node of its entries and the node of the indices at which the evaluation at literals is ready. -/
+def encConvState (s : Internal.ConvState) : Tree :=
+  RoseTree.node 0 [encGlobals s.1, RoseTree.node 0 (s.2.1.toList.map encEntry),
+    RoseTree.node 0 (s.2.2.map leaf)]
+
+/-- A declaration the mirror reads: a theorem's certificate is one the mirror reads. -/
+def DeclPlain : Internal.ConvDecl → Prop
+  | .conv _ c => Plain c
+  | _ => True
+
+/-- The mirror's state after a declaration of a development with certificates, where its check
+accepts it. -/
+theorem convDeclStep_eq (d : Internal.ConvDecl) (hd : DeclPlain d) :
+    «Conversion.convDeclStep» (encGlobals G) (E.toList.map encEntry) (R.map leaf)
+        (encConvDecl d) =
+      encOpt ((d.step G E R).map encConvState) := by
+  cases d with
+  | base b =>
+    mirror_simp [«Conversion.convDeclStep», encConvDecl, Internal.ConvDecl.step, declStep_eq]
+    rcases b.step G E with _ | ⟨G', E'⟩
+    · rfl
+    · rfl
+  | conv a c =>
+    mirror_simp [«Conversion.convDeclStep», encConvDecl, Internal.ConvDecl.step,
+      thmConvChecks_eq G E R a c hd, entLang_eq, push_eq]
+    cases a.convChecks G E R c
+    · rfl
+    · simp only [↓reduceIte, Option.map_some, encConvState, Array.toList_push, List.map_append,
+        List.map_cons, List.map_nil]
+      rfl
+  | ready j =>
+    mirror_simp [«Conversion.convDeclStep», encConvDecl, Internal.ConvDecl.step, Literals.ready_eq]
+    cases Geb.FreeTopos.Literals.ready G E j <;> rfl
+
+/-- The mirror's parts of an encoded state of a development's check. -/
+theorem csConsts_eq (s : Internal.ConvState) :
+    «Conversion.csConsts» (encConvState s) = encGlobals s.1 := by
+  mirror_simp [«Conversion.csConsts», encConvState]
+
+@[inherit_doc csConsts_eq] theorem csEntries_eq (s : Internal.ConvState) :
+    «Conversion.csEntries» (encConvState s) = s.2.1.toList.map encEntry := by
+  mirror_simp [«Conversion.csEntries», encConvState]
+
+@[inherit_doc csConsts_eq] theorem csIndices_eq (s : Internal.ConvState) :
+    «Conversion.csIndices» (encConvState s) = s.2.2.map leaf := by
+  mirror_simp [«Conversion.csIndices», encConvState]
+
+/-- The states after declarations from an optional state, by a step that agrees with the check of
+each declaration at every optional state. -/
+theorem foldl_convDeclStep {f : Tree → Tree → Tree} (ds : List Internal.ConvDecl)
+    (hf : ∀ d ∈ ds, ∀ o : Option Internal.ConvState,
+      f (encOpt (o.map encConvState)) (encConvDecl d) =
+        encOpt ((o.bind fun st ↦ d.step st.1 st.2.1 st.2.2).map encConvState)) :
+    ∀ o : Option Internal.ConvState,
+      (ds.map encConvDecl).foldl f (encOpt (o.map encConvState)) =
+        encOpt ((o.bind fun s ↦
+          ds.foldlM (fun st d ↦ d.step st.1 st.2.1 st.2.2) s).map encConvState) :=
+  ds.rec (motive := fun ds ↦ (∀ d ∈ ds, ∀ o : Option Internal.ConvState,
+      f (encOpt (o.map encConvState)) (encConvDecl d) =
+        encOpt ((o.bind fun st ↦ d.step st.1 st.2.1 st.2.2).map encConvState)) →
+      ∀ o : Option Internal.ConvState,
+        (ds.map encConvDecl).foldl f (encOpt (o.map encConvState)) =
+          encOpt ((o.bind fun s ↦
+            ds.foldlM (fun st d ↦ d.step st.1 st.2.1 st.2.2) s).map encConvState))
+    (fun _ o ↦ by cases o <;> rfl)
+    (fun d ds ih hf o ↦ by
+      rw [List.map_cons, List.foldl_cons, hf d List.mem_cons_self o,
+        ih (fun d' hd' ↦ hf d' (List.mem_cons_of_mem d hd'))]
+      cases o with
+      | none => rfl
+      | some st =>
+        simp only [Option.bind_some, List.foldlM_cons]
+        rfl) hf
+
+/-- The mirror's state after a development with certificates, each declaration checked with the
+state the declarations before it leave, at declarations the mirror reads. -/
+theorem checkConvDev_eq (ds : List Internal.ConvDecl) (hds : ∀ d ∈ ds, DeclPlain d) :
+    «Conversion.checkConvDev» (encGlobals G) (E.toList.map encEntry) (ds.map encConvDecl) =
+      encOpt ((Internal.checkConvDev G E ds).map encConvState) := by
+  simp only [«Conversion.checkConvDev», template, reverse_eq, foldr_eq, List.foldr_reverse]
+  refine foldl_convDeclStep ds (fun d hd o ↦ ?_) (some (G, E, []))
+  cases o with
+  | none => rfl
+  | some st =>
+    obtain ⟨G', E', R'⟩ := st
+    have h := convDeclStep_eq G' E' R' d (hds d hd)
+    mirror_simp [csConsts_eq, csEntries_eq, csIndices_eq, h]
 
 end GebTests.Prototypes.FreeTopos.Agreement.Conversion
 

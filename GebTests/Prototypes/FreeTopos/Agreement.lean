@@ -50,10 +50,12 @@ retraction ({name}`Geb.Kernel.resolve_of_printTerm?`) carried across the two agr
 of elementary-affine certificates written in Geb, {lit}`bootstrap/affine.geb`, is part of the same
 program, and gives the encoding of what {name}`Geb.Affine.check` gives at every program and
 certificate. The conversion checker written in Geb, {lit}`bootstrap/free-topos/conversion.geb`,
-with the evaluation at literals, {lit}`bootstrap/free-topos/literals.geb`, is part of the same
-program, and at an encoded certificate none of whose steps is the reduction by the environment
-machine or names a prepared theorem its results are those of
-{name}`Geb.FreeTopos.Internal.convCheck`, the evaluation's terms those of
+with the evaluation at literals, {lit}`bootstrap/free-topos/literals.geb`, and the environment
+machine, {lit}`bootstrap/free-topos/machine.geb`, is part of the same program, and at an encoded
+certificate none of whose steps names a prepared theorem its results are those of
+{name}`Geb.FreeTopos.Internal.convCheck`, the reduction by the machine among its steps; its
+check of a development's declarations gives the encoding of what
+{name}`Geb.FreeTopos.Internal.checkConvDev` gives; the evaluation's terms are those of
 {name}`Geb.FreeTopos.Literals.eval` and its test of readiness
 {name}`Geb.FreeTopos.Literals.ready`'s.
 
@@ -93,8 +95,9 @@ combinator prover's other agreements).
 * {lit}`affineCheck_agree` — the loaded check of elementary-affine certificates written in Geb
   accepts as the check in Lean does, with the same instances.
 * {lit}`conversion_agree` — the loaded conversion checker written in Geb decides as the conversion
-  checker in Lean at the certificates without a step of the machine, and the loaded evaluation at
-  literals evaluates and tests its readiness as the evaluation in Lean.
+  checker in Lean at the certificates none of whose steps names a prepared theorem, and checks a
+  development's declarations as the check in Lean; the loaded evaluation at literals evaluates
+  and tests its readiness as the evaluation in Lean.
 
 ## Tags
 
@@ -529,24 +532,31 @@ theorem affineCheck_agree : ∃ G' : List Glob, load metalogic = some G' ∧
 
 /-- The conversion checker written in Geb decides as the conversion checker in Lean, and the
 evaluation at literals written in Geb evaluates as the evaluation in Lean: the program loads to
-globals among which are the conversion checker, its test that a certificate proves a theorem, the
-term of a term's value by the evaluation and the evaluation's test of readiness, each a function
-of its type. At encoded constants, entries, indices at which the evaluation is ready and a
-certificate none of whose steps is the reduction by the machine or names a prepared theorem, the
-checker's rewriting and proving are those of the checker in Lean, and its test of a theorem the
-test in Lean; the evaluation gives the encoded term of the value the evaluation in Lean gives, and
-its test of readiness the test in Lean. -/
+globals among which are the conversion checker, its test that a certificate proves a theorem, its
+check of a development's declarations, the term of a term's value by the evaluation and the
+evaluation's test of readiness, each a function of its type. At encoded constants, entries,
+indices at which the evaluation is ready and a certificate none of whose steps names a prepared
+theorem, the checker's rewriting and proving are those of the checker in Lean, the reduction by
+the environment machine among its steps, and its test of a theorem the test in Lean; at encoded
+declarations whose certificates are such, its check of a development gives the encoding of the
+state the check in Lean gives; the evaluation gives the encoded term of the value the evaluation
+in Lean gives, and its test of readiness the test in Lean. -/
 theorem conversion_agree : ∃ G' : List Glob, load metalogic = some G' ∧
-    (∃ f : Ty.den convCheckTy, G'[2141]? = some ⟨convCheckTy, f⟩ ∧
+    (∃ f : Ty.den convCheckTy, G'[2175]? = some ⟨convCheckTy, f⟩ ∧
       ∀ (G : Internal.Globals) (E : Array Internal.Entry) (R : List ℕ) (n : ℕ)
         (d : Internal.ConvDeriv), Plain d →
           DRel (f (encGlobals G) (E.toList.map encEntry) (R.map leaf) (leaf n) (encConv d))
             (Internal.convCheck G E R n d)) ∧
-    (∃ f : Ty.den thmConvChecksTy, G'[2142]? = some ⟨thmConvChecksTy, f⟩ ∧
+    (∃ f : Ty.den thmConvChecksTy, G'[2176]? = some ⟨thmConvChecksTy, f⟩ ∧
       ∀ (G : Internal.Globals) (E : Array Internal.Entry) (R : List ℕ) (a : Internal.Thm)
         (d : Internal.ConvDeriv), Plain d →
           f (encGlobals G) (E.toList.map encEntry) (R.map leaf) (encThm a) (encConv d) =
             ofBool (a.convChecks G E R d)) ∧
+    (∃ f : Ty.den checkConvDevTy, G'[2199]? = some ⟨checkConvDevTy, f⟩ ∧
+      ∀ (G : Internal.Globals) (E : Array Internal.Entry) (ds : List Internal.ConvDecl),
+        (∀ d ∈ ds, DeclPlain d) →
+          f (encGlobals G) (E.toList.map encEntry) (ds.map encConvDecl) =
+            encOpt ((Internal.checkConvDev G E ds).map encConvState)) ∧
     (∃ f : Ty.den litEvalTy, G'[2052]? = some ⟨litEvalTy, f⟩ ∧
       ∀ t : Internal.Term,
         f (encTerm t) = encOpt ((Geb.FreeTopos.Literals.eval t).map fun v ↦ encTerm v.term)) ∧
@@ -558,6 +568,8 @@ theorem conversion_agree : ∃ G' : List Glob, load metalogic = some G' ∧
     ⟨«Conversion.convCheck», metalogic_convCheck, fun G E R n d hd ↦ convCheck_eq G E R n d hd⟩,
     ⟨«Conversion.thmConvChecks», metalogic_thmConvChecks,
       fun G E R a d hd ↦ thmConvChecks_eq G E R a d hd⟩,
+    ⟨«Conversion.checkConvDev», metalogic_checkConvDev,
+      fun G E ds hds ↦ checkConvDev_eq G E ds hds⟩,
     ⟨«Literals.litEval», metalogic_litEval, Literals.litEval_eq⟩,
     ⟨«Literals.ready», metalogic_ready, Literals.ready_eq⟩⟩
 

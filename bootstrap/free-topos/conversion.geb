@@ -17,10 +17,26 @@
 ; bound of the definitions it unfolds, the node of those it does not, the indices of the
 ; primitives of lists and the node of its rules. A rule of the normalizer is read from the node of
 ; its constructor's position over its fields. The evaluation at literals rewrites where its index
-; is among those the checker is given, at which its equations were found.
+; is among those the checker is given, at which its equations were found. A development's
+; declarations are checked as Geb.FreeTopos.Internal.checkConvDev checks them: a declaration of
+; the base checker by its step; a theorem with a certificate, added to the entries where the
+; certificate proves it given the indices recorded; and the record of an index, added to the
+; indices where the evaluation at literals is ready there.
 
 (module Conversion
-  (export CK toRule ruleOf applyInst machineReduceBy convStep convCheck thmConvChecks)
+  (export CK toRule ruleOf applyInst machineReduceBy convStep convCheck thmConvChecks Indices
+    indices
+    ConvState
+    convState
+    OConvState.Maybe
+    OConvState.nothing
+    OConvState.just
+    ConvDecl
+    cdBase
+    cdConv
+    cdReady
+    convDeclStep
+    checkConvDev)
   (import Prelude)
   (import Base)
   (import Theory)
@@ -164,4 +180,45 @@
           (and (allT (isTy G n) g)
             (and (allT (isFormula G n g) (thHyps a)) (isFormula G n g (thConcl a))))
           ((convCheck G E R n d) 1 g 0 (thHyps a) (thConcl a))
-          0)))))
+          0))))
+
+  ; the state of the check of a development with certificates: the constants, the entries, and
+  ; the indices at which the evaluation at literals is ready
+  (data Indices (indices & T))
+  (data ConvState (convState Globals EntryList Indices))
+  (import (Option ConvState) as OConvState)
+  (defn csConsts ((st ConvState)) Globals (case st ((convState G E R) G)))
+  (defn csEntries ((st ConvState)) (List Entry)
+    (case st ((convState G E R) (case E ((entries xs) xs)))))
+  (defn csIndices ((st ConvState)) Ts (case st ((convState G E R) (case R ((indices xs) xs)))))
+  ; a declaration of such a development: a declaration of the base checker, a theorem with a
+  ; certificate of the conversion checker, or the record that the evaluation at literals is ready
+  ; at an index
+  (data ConvDecl (cdBase Decl) (cdConv Thm T) (cdReady T))
+  ; the check of a declaration with the constants, the entries and the indices: the base checker's
+  ; step, which keeps the indices; a theorem added to the entries where its certificate proves it
+  ; given the indices; and an index added to the indices where the evaluation is ready there
+  (defn convDeclStep ((G Globals) (E (List Entry)) (R Ts) (d ConvDecl)) OConvState.Maybe
+    (case d
+      ((cdBase b)
+       (case (declStep G E b)
+         ((ODevState.just s)
+          (case s ((devState G1 E1) (OConvState.just (convState G1 E1 (indices R))))))
+         ((ODevState.nothing) OConvState.nothing)))
+      ((cdConv a c)
+       (if (thmConvChecks G E R a c)
+         (OConvState.just (convState G (entries (push E (entLang a))) (indices R)))
+         OConvState.nothing))
+      ((cdReady j)
+       (if (ready G E j) (OConvState.just (convState G (entries E) (indices (cons j R))))
+         OConvState.nothing))))
+  ; the state after a development, each declaration checked with the state the declarations before
+  ; it leave, from no index at which the evaluation at literals is ready
+  (import (Seq ConvDecl) as ConvDecls)
+  (defn checkConvDev ((G Globals) (E (List Entry)) (ds (List ConvDecl))) OConvState.Maybe
+    (foldr ConvDecl OConvState.Maybe
+      (lam ((d ConvDecl) (st OConvState.Maybe))
+        (case st ((OConvState.just s) (convDeclStep (csConsts s) (csEntries s) (csIndices s) d))
+          ((OConvState.nothing) OConvState.nothing)))
+      (OConvState.just (convState G (entries E) (indices (nil T))))
+      (ConvDecls.reverse ds))))
