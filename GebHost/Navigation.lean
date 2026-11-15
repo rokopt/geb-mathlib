@@ -550,6 +550,8 @@ def proofScope (file : String) (pos : Locate.Pos) (t : Locate.Located)
       body := [2]
     else if kw == "and-elim" then added := namesAt 2 "hypothesis"; body := [3]
     else if kw == "unfold-hypothesis" then added := namesAt 2 "hypothesis"; body := [3]
+    else if kw == "reduce-hypothesis" then added := namesAt 2 "hypothesis"; body := [5]
+    else if kw == "obtain" then added := namesAt 1 "hypothesis"; body := [nodes.length - 1]
     else if kw == "imp-elim" || kw == "all-elim" then
       added := namesAt 3 "hypothesis"; body := [4]
     else if kw == "exists-elim" then
@@ -607,7 +609,8 @@ def proofDeclaration (src : Source) (pos : Option Locate.Pos) (st : State)
   if let some p := pos then
     if contains t.label.1 p then
       let formulas := (src.forms.find? (Locate.headIs Authoring.kwProofs)).any fun doc ↦
-        (doc.children[1]?.bind (·.label.2)) == some ['5'] &&
+        ((doc.children[1]?.bind (·.label.2)) == some ['5'] ||
+          (doc.children[1]?.bind (·.label.2)) == some ['6']) &&
           t.children[2]?.any (Locate.headIs "internal".toList)
       let locals := t.children[2]?.toList.flatMap (statementNames src.file formulas)
       let scope := if t.children[3]?.any (contains ·.label.1 p) then

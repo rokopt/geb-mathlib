@@ -3892,6 +3892,11 @@ import-direction rules above are enforced by
   [logical development](../examples/authoring/Logic.proofs.geb) transports
   existential witnesses and has a recorded certificate and canonical
   document; formula proofs support cache reuse, goal display and replay.
+  Version 6 adds the scripts by which a formula's proof reduces a
+  hypothesis (`reduce-hypothesis`), proves a goal that has a hypothesis's
+  normal form (`matches`) or any goal from a hypothesis whose normal form
+  is falsity (`absurd`), and cites an earlier theorem as a hypothesis
+  (`obtain`); `scripts/tests/test-proof-formulas.sh` exercises them.
   The executable
   `geb-author` compiles manifest programs, checks tree-valued examples,
   proves theorems about a program's definitions, in a context of variables

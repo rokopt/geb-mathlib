@@ -15,7 +15,12 @@
     implication
     unfoldFormula
     unfoldHypothesis
-    applyTheorem)
+    applyTheorem
+    reduceGoal
+    reduceHypothesis
+    matchHypothesis
+    refuteHypothesis
+    obtainTheorem)
   (import Prelude)
   (import Base)
   (import Theory)
@@ -225,4 +230,41 @@
                      (mapT
                        (lam ((i T)) (Deducers.atOr noProof ps i g hs (instTerm th sg (at fs i))))
                        (range (length fs)))))
-                 none))))))))))
+                 none)))))))))
+  ; The goal reduced to a depth by rules, and its normal form proved.
+  (defn reduceGoal ((G Globals) (E (List Entry)) (n T) (rs NRs) (m T) (p Deducer)) Deducer
+    (lam ((g Ts) (hs Ts) (phi T))
+      (bindNT (eval G E n rs 4096 m g hs phi)
+        (lam ((r NFR)) (mapO (conv (mDeriv (nfMarked r))) (p g hs (nfTerm r)))))))
+  ; A hypothesis reduced to a depth by rules, its normal form cut in after the hypotheses.
+  (defn reduceHypothesis ((G Globals) (E (List Entry)) (n T) (rs NRs) (m T) (i T) (p Deducer))
+    Deducer
+    (lam ((g Ts) (hs Ts) (phi T))
+      (if (lt i (length hs))
+        (bindNT (eval G E n rs 4096 m g hs (at hs i))
+          (lam ((r NFR))
+            (mapO (lam ((d T)) (cut (nfTerm r) (from (at hs i) (mDeriv (nfMarked r)) (hyp i)) d))
+              (p g (append hs (single (nfTerm r))) phi))))
+        none)))
+  ; A goal that has the normal form of a hypothesis, at a depth by rules.
+  (defn matchHypothesis ((G Globals) (E (List Entry)) (n T) (rs NRs) (m T) (i T)) Deducer
+    (reduceHypothesis G E n rs m i
+      (lam ((g Ts) (hs Ts) (phi T))
+        (reduceGoal G E n rs m (hypothesis (sub (length hs) 1)) g hs phi))))
+  ; Any goal, from a hypothesis whose normal form at a depth by rules is falsity.
+  (defn refuteHypothesis ((G Globals) (E (List Entry)) (o T) (n T) (rs NRs) (m T) (i T)) Deducer
+    (reduceHypothesis G E n rs m i
+      (lam ((g Ts) (hs Ts) (phi T)) (falseElim o (hypothesis (sub (length hs) 1)) g hs phi))))
+  ; The conclusion of an earlier theorem at objects and terms, its hypotheses proved, cut in
+  ; after the hypotheses.
+  (defn obtainTheorem ((E (List Entry)) (j T) (th Ts) (sg Ts) (ps (List Deducer)) (p Deducer))
+    Deducer
+    (lam ((g Ts) (hs Ts) (phi T))
+      (case (thmAt E j) ((OThm.nothing) none)
+        ((OThm.just a)
+         (case a
+           ((mkThm n ctx hyps result)
+            (let chi T (instTerm th sg result)
+              (bindO (applyTheorem E j th sg ps g hs chi)
+                (lam ((dc T))
+                  (mapO (lam ((d T)) (cut chi dc d)) (p g (append hs (single chi)) phi))))))))))))
