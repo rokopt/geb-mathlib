@@ -8662,8 +8662,22 @@ that remain, and the constraints each of them carries.
    and which of them keeps the machine's time is measured. A free
    variable of the machine is a de Bruijn level, an integer, negative at
    the variables of the reduced term's context, and the Geb sources have
-   no integers, so that the transcription encodes them unless the machine
-   takes natural numbers first, a question stated below. The
+   no integers. The level stays an integer, and the transcription encodes
+   it as the coproduct of the natural numbers with themselves, as
+   {name}`Int` is constructed: the level of a binder the normal form has
+   passed, which is not negative, or the index in the reduced term's
+   context of the variable of a negative level. The level of the variable
+   of index `j` past an environment under `k` binders is the first, at
+   `k - 1 - j`, where `j < k`, and the second, at `j - k`, otherwise; under
+   `D` binders the first, at `l`, reads back to the variable of index
+   `D - 1 - l`, and the second, at `m`, to that of index `D + m`, so that
+   the two operations on levels are case analyses over the arithmetic of
+   natural numbers. A natural number counted from the context's length
+   would make the evaluation ({name}`Geb.FreeTopos.Internal.Machine.eval`)
+   read that length, which it does not read, and would give no level to a
+   variable past the context, at which the machine would fail or its
+   soundness assume the term's scope, where
+   {name}`Geb.FreeTopos.Internal.machineReduce_reaches` assumes none. The
    normal form of a fold's step computes the type of the normal form of
    the fold's start, list or tree
    ({name}`Geb.FreeTopos.Internal.typeIn`), which the transcription of
@@ -8796,11 +8810,6 @@ that remain, and the constraints each of them carries.
   does not join, those with a rewriting that cites a rule from its right
   side to its left, which the translation does not replace, and those
   whose translation the conversion checker does not accept.
-* The machine's levels. Whether a free variable of the machine stays an
-  integer level, which the transcription into Geb encodes, or becomes a
-  natural number counted from the context's length, which changes how
-  the machine's rewriting counts the binders passed and how its soundness
-  states a value's scope, is decided before that transcription (step 2).
 
 ### The base checker's evaluation
 %%%
