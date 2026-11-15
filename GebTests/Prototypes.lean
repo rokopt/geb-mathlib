@@ -37,6 +37,9 @@ import GebTests.Prototypes.FreeTopos.InternalConversion
 import GebTests.Prototypes.FreeTopos.InternalCoproducts
 import GebTests.Prototypes.FreeTopos.InternalDerivation
 import GebTests.Prototypes.FreeTopos.InternalHoles
+import GebTests.Prototypes.FreeTopos.InternalHolesClosed
+import GebTests.Prototypes.FreeTopos.InternalHolesConditional
+import GebTests.Prototypes.FreeTopos.InternalHolesSequent
 import GebTests.Prototypes.FreeTopos.InternalLogic
 import GebTests.Prototypes.FreeTopos.InternalLogicMirror
 import GebTests.Prototypes.FreeTopos.InternalQuotients

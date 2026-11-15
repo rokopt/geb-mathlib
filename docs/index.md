@@ -4544,11 +4544,29 @@ import-direction rules above are enforced by
   free monad's substitution and permits further holes. Finishing returns
   a conversion certificate only when no holes remain, proved accepted
   by the conversion checker
-  (`Geb.FreeTopos.Internal.ProofHoles.convChecks_of_finish`). This Lean
-  interface does not emit a certificate for the implication encoding an
-  open sketch's obligations; that translation and the Geb transcription
-  remain. `InternalHoles.lean` tests scopes, repeated identities,
-  filling in stages, rejected fillings, and completed certificates.
+  (`Geb.FreeTopos.Internal.ProofHoles.convChecks_of_finish`).
+  `Holes/Conditional.lean` defines the universally closed formula of an
+  obligation and a direct translation that preserves the goal's term
+  context. `Holes/Closed.lean` translates through closed lemmas combined
+  by cuts (`Geb.FreeTopos.Internal.ProofHoles.Closed.certify`): the hole
+  conditions imply the universally closed original sequent. The result
+  has no hypotheses or free term variables and replays in the original
+  environment. Its conditional validity assumes no hole valid
+  (`Geb.FreeTopos.Internal.ProofHoles.Closed.valid_of_certify`).
+  `Holes/Rose.lean` supplies the list-induction lemmas used to derive
+  rose-tree uniqueness under closed conditions. `Holes/Sequent.lean`
+  transports embedded certificates along the truth-subobject inclusion
+  for added hypotheses, retaining intermediate equations as local cuts;
+  the typing prover's local-proof mode gives them stable insertion
+  indices, reindexed when cuts are assembled. Translation is partial:
+  construction or replay can fail, and no totality theorem is claimed.
+  The Geb transcription remains.
+  `InternalHoles.lean` tests scopes, repeated identities, filling in
+  stages, rejected fillings, and completed certificates;
+  `InternalHolesConditional.lean`, `InternalHolesClosed.lean` and
+  `InternalHolesSequent.lean` test conditional certificates under binders
+  and induction, conversion steps citing hypotheses, open rose-tree
+  uniqueness, sequent transport and rejection of invalid inputs.
   `ConvDevelopment.lean` checks developments whose
   theorems carry derivations of the base checker or certificates of the
   conversion checker (`Geb.FreeTopos.Internal.checkConvDev`), sound by
