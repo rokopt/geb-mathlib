@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Check formula statements, connective scripts, scopes, durable spellings and cached replay.
+# Check formula statements, connective scripts, the scripts of reductions and cited theorems,
+# scopes, durable spellings and cached replay.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
@@ -71,6 +72,42 @@ MORE = '''(proofs 5 (program pair) (import Logic.proofs.geb)
     (by (use explicit-equality-hypothesis () (P) (hypothesis h)))))
 '''
 
+# Version 6: a hypothesis reduced, a goal with a hypothesis's normal form, a hypothesis whose
+# normal form is falsity, a theorem's conclusion cut in, without and with a hypothesis of its
+# own, a normal form that is an equation, and an induction's hypothesis brought to its formula.
+SIX = '''(proofs 6 (program pair) (import Logic.proofs.geb)
+  (theorem reduce-then-use
+    (internal () (forall ((P Omega)) (assuming (h ((lam ((Q Omega)) Q) P)) P)))
+    (by (reduce-hypothesis h g full () (hypothesis g))))
+  (theorem match-up-to-reduction
+    (internal () (forall ((P Omega)) (assuming (h P) ((lam ((Q Omega)) Q) P))))
+    (by (matches h full)))
+  (theorem refute
+    (internal () (forall ((P Omega)) (assuming (h ((lam ((Q Omega)) Q) false)) P)))
+    (by (absurd h full)))
+  (theorem cite
+    (internal () (forall ((P Omega) (Q Omega)) (assuming (h (and P Q)) (and Q P))))
+    (by (obtain swap conjunction-swap () (P Q) (imp-elim swap (hypothesis h) g (hypothesis g)))))
+  (theorem cite-with-premise
+    (internal (X Y)
+      (forall ((P (Arrow X Omega)) (Q (Arrow Y Omega)) (f (Arrow X Y)))
+        (assuming (preserves (all X (lam ((x X)) (implies (P x) (Q (f x))))))
+          (inhabited (exists X P))
+          (exists Y Q))))
+    (by
+      (obtain step transport-witness (X Y) (P Q f) (hypothesis preserves)
+        (imp-elim step (hypothesis inhabited) g (hypothesis g)))))
+  (theorem formula-of-equation
+    (internal () (forall ((x T)) ((lam ((y T)) (equal y y)) x)))
+    (by (reduced full (formula (reduce weak)))))
+  (theorem hypothesis-of-induction
+    (internal ()
+      (forall ((xs (List T))) (all T (lam ((y T)) (implies (equal y y) (equal xs xs))))))
+    (by
+      (induction xs (z zs ih) (all-intro y (assume h (reduce weak)))
+        (holds ih (g) (all-elim g z gz (all-intro y (assume h (reduce weak)))))))))
+'''
+
 with tempfile.TemporaryDirectory(prefix='geb-proof-formulas-') as directory:
     root = Path(directory)
     for name in ('Pair.geb', 'Lists.geb', 'pair.manifest', 'Pair.proofs.geb', 'Logic.proofs.geb'):
@@ -128,7 +165,27 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-formulas-') as directory:
            '(and-intro (all-intro x (reduce weak)) (exists-intro x (truth)))')
     reject('(internal () true)', '(truth)', version=4)
     reject('(internal () (equal false false))', '(reduce weak)', version=4)
-    reject('(internal () true)', '(truth)', version=6)
+    reject('(internal () true)', '(truth)', version=7)
+    # The scripts of version 6 are read by no earlier version, and each fails where its
+    # hypothesis, its goal or the theorem it cites does not fit.
+    doc.write_text(SIX.replace('(proofs 6', '(proofs 5'))
+    run('prove', doc, plain, ok=False)
+    doc.write_text(SIX)
+    run('prove', doc, plain)
+    run('replay', doc, plain)
+    held = '(internal () (forall ((P Omega) (Q Omega)) (assuming (h P) Q)))'
+    reject(held, '(matches h full)', version=6)
+    reject(held, '(absurd h full)', version=6)
+    reject(held, '(reduce-hypothesis h g full () (hypothesis h))', version=6)
+    reject(held, '(reduce-hypothesis h h full () (hypothesis h))', version=6)
+    reject(held, '(obtain g identity () (P Q) (hypothesis g))', version=6)
+    reject(held, '(obtain g transport-witness () (P) (hypothesis g))', version=6)
+    reject('(internal () (forall ((x T) (y T)) ((lam ((z T)) (equal z y)) x)))',
+           '(reduced full (formula (reduce weak)))', version=6)
+    reject('(internal () (forall ((xs (List T))) '
+           '(all T (lam ((y T)) (implies (equal y y) (equal xs xs))))))',
+           '(induction xs (z zs ih) (all-intro y (assume h (reduce weak))) '
+           '(holds ih (g) (all-intro y (assume h (reduce weak)))))', version=5)
 
     # Quantifier elimination cannot let its witness escape to the outer conclusion.
     reject('(internal (X) (forall ((P (Arrow X Omega)) (y X)) '
@@ -194,6 +251,19 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-formulas-') as directory:
     (root / 'Logic.proofs.geb').write_text(text)
     nav = decoded(navigate('h)))))'))
     assert next(s for s in nav['completions'] if s['name'] == 'P')['kind'] == 'variable', nav
+    # The scripts of version 6 that name a hypothesis bind it in the script after them.
+    text = '''(proofs 6 (program pair)
+      (theorem keep (internal () (forall ((P Omega)) (implies P P)))
+        (by (assume h (hypothesis h))))
+      (theorem cited (internal () (forall ((P Omega)) (assuming (h P) P)))
+        (by (obtain step keep () (P) (imp-elim step (hypothesis h) g (hypothesis g)))))
+      (theorem reduced (internal () (forall ((P Omega)) (assuming (h P) P)))
+        (by (reduce-hypothesis h again full () (hypothesis again)))))'''
+    (root / 'Logic.proofs.geb').write_text(text)
+    nav = decoded(navigate('step (hypothesis h) g'))
+    assert nav['target']['kind'] == 'hypothesis', nav
+    nav = decoded(navigate('again)))))'))
+    assert nav['target']['kind'] == 'hypothesis', nav
 
 print('test-proof-formulas: formulas, checked scripts, scopes, conversion and replay passed')
 PY

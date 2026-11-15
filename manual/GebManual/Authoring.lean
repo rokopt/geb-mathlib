@@ -85,7 +85,7 @@ program after it by `transport`
 # The proof-source profile
 
 A proof document is `(proofs V THEOREM…)`, its version `V` being `0`, `1`,
-`2`, `3`, `4` or `5`, with one or more theorems of distinct names, each
+`2`, `3`, `4`, `5` or `6`, with one or more theorems of distinct names, each
 `(theorem NAME STATEMENT (by SCRIPT))`. Version `1` reads:
 
 ```
@@ -147,8 +147,8 @@ of pairs alone, so a document of either version keeps its meaning. It
 cites no theorem, so its certificate saves no companion and has the format
 `geb-proof/v1`, whose certificates therefore still replay; version `1`
 writes `geb-proof/v2`, version `2` `geb-proof/v3`, version `3`
-`geb-proof/v4`, version `4` `geb-proof/v5` and version `5` `geb-proof/v6`. An unknown or unbound
-name, a name declared twice,
+`geb-proof/v4`, version `4` `geb-proof/v5`, version `5` `geb-proof/v6` and
+version `6` `geb-proof/v7`. An unknown or unbound name, a name declared twice,
 a malformed form, an unsupported version, a false equation or an
 unsuccessful search is rejected. Failure of a bounded search does not establish that the
 statement is false.
@@ -896,6 +896,74 @@ lake exe geb-author replay examples/authoring/Logic.proofs.geb /tmp/logic.cert
 logical scripts, rejection of escaping or mistyped witnesses and branch
 hypotheses, goal display, cache reuse, conversion between durable spellings
 and replay against changed statements.
+
+# Reductions and cited theorems in formula proofs
+%%%
+tag := "reduction-scripts"
+%%%
+
+Version `6` reads what version `5` reads, and adds the scripts by which a
+proof of a formula reduces a hypothesis, compares its goal with one, and
+cites an earlier theorem as a hypothesis:
+
+```
+DOCUMENT ::= (proofs 6 HEADER… FORM…)
+SCRIPT ::= … | (reduce-hypothesis h g DEPTH (RULE…) SCRIPT)
+         | (matches h DEPTH RULE…) | (absurd h DEPTH RULE…)
+         | (obtain h THEOREM (TYPE…) (ITERM…) SCRIPT… SCRIPT)
+         | (formula SCRIPT)
+```
+
+* `reduce-hypothesis` proves the goal under a hypothesis `g` cut in: the
+  hypothesis `h`, a formula or an equation, reduced to the depth with the
+  rules, which precede those of the script around it.
+* `matches` proves a goal that has, at the depth and with the rules, the
+  normal form of the hypothesis `h`.
+* `absurd` proves any goal from the hypothesis `h` whose normal form, at the
+  depth and with the rules, is falsity.
+* `obtain` proves the goal under a hypothesis `h` cut in: the conclusion of
+  the earlier theorem at the objects and at the terms for its variables, in
+  the order of its written binders. The scripts before the last prove the
+  theorem's hypotheses at those objects and terms, in their written order,
+  and the last proves the goal.
+* `formula` proves the goal by its script, the goal read as a formula: an
+  equation by the script's proof of the equation of its sides, and any
+  other formula by the script's proof of its equality with truth. Under
+  `(reduced DEPTH …)`, whose script is given the goal's normal form, it lets
+  a script of equations prove a normal form that is an equation.
+
+In version `6`, `(holds h (g) SCRIPT)` also takes a hypothesis `h` that
+equates a formula with `true`, and cuts the formula in. The hypothesis of an
+induction on a formula, which `induction`, `tree-induction` and the other
+tactics of equations state as the formula's equality with truth, is so
+brought to the formula. A rule that names a hypothesis rewrites by it as it
+stands, so a script reduces an equation among its hypotheses before a rule
+names it, by `reduce-hypotheses` an equation and by `reduce-hypothesis` any
+formula. A document of version `6` imports documents of versions `1` to
+`6`.
+
+The scripts compose the derivations of the Lean developments' deducers, in
+`bootstrap/formula.geb` (`Formula.reduceHypothesis`,
+`Formula.matchHypothesis`, `Formula.refuteHypothesis` and
+`Formula.obtainTheorem`), and add no rule to the checker. The case analysis
+of a term, which those deducers take from a lemma, is `obtain` at the lemma
+followed by the eliminations of its conclusion: for a term `x` of the
+bitstrings and the lemma `list-cases`, that a list is empty or a
+construction,
+
+```
+(obtain c list-cases (Bit) (x)
+  (or-elim c (e0 e1) EMPTY
+    (exists-elim e1 (b e2)
+      (exists-elim e2 (bs e3) (reduce-hypotheses full (e3) CONSTRUCTION)))))
+```
+
+where `EMPTY` is proved under the equation `e0` of `x` with the empty list,
+and `CONSTRUCTION` under the equation `e3` of `x` with the bit `b` before
+`bs`, reduced so that a rule naming it rewrites the normal form of `x`. A
+test that a conditional is stuck on is decided so, by the case analysis of
+its value, and the case in which it fails is refuted by `absurd` at the
+hypothesis that the test's truth follows from.
 
 # The cache of a development
 %%%
