@@ -18,7 +18,14 @@
 ; them.
 
 (module Derivation
-  (export nilPrim consPrim lnodePrim inlPrim inrPrim casePrim instVar instVar2 atVar0 natSuccAt
+  (export thArity thHyps isFormula primIs zeroPrim succPrim nodePrim nilPrim consPrim lnodePrim
+    inlPrim
+    inrPrim
+    casePrim
+    instVar
+    instVar2
+    atVar0
+    natSuccAt
     listConsAt
     roseNodeAt
     weakenElem
@@ -79,6 +86,7 @@
     weakenBy
     rootStep
     rootStepK
+    checkStep
     check
     Decl
     declLang

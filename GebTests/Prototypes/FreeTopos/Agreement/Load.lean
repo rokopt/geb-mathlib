@@ -31,7 +31,8 @@ the provers built from provers; the tactics' entry points, the proofs by reducti
 analysis, induction, hypotheses and search; and the combinator prover's entry points, the typing,
 normalization, the proofs by normalization and by induction, the proof of a sequent added to a
 development and the library; the partial printer of kernel terms and the reader's resolution
-of what it prints; the check of elementary-affine certificates; and the checker's functions the
+of what it prints; the check of elementary-affine certificates; the conversion checker with the
+evaluation at literals; and the checker's functions the
 checker of a development is built from, the partial Horn checker of the combinators' certificates,
 the theory, the inference of typings and the step of a development, with the tactics' functions of
 terms. Each
@@ -55,6 +56,9 @@ type, has the type the checker-evaluator infers, which the kernel evaluates.
 * {lit}`printTermTy`, {lit}`readBackTy` — the types of the printer of kernel terms and of the
   reader's resolution of what it prints.
 * {lit}`affineCheckTy` — the type of the check of an elementary-affine certificate.
+* {lit}`convCheckTy`, {lit}`thmConvChecksTy`, {lit}`litEvalTy`, {lit}`readyTy` — the types of the
+  conversion checker, of its test of a theorem, of the evaluation at literals and of its test of
+  readiness.
 * {lit}`pcheckTy`, {lit}`infersTy` — the types of the checker of a certificate and of the
   inferences at a fuel.
 
@@ -72,7 +76,8 @@ type, has the type the checker-evaluator infers, which the kernel evaluates.
   {lit}`metalogic_thm`, {lit}`metalogic_byNorm` with the prover's other entry points, and
   {lit}`metalogic_byMode` with the tactics' other entry points, and {lit}`metalogic_proveSeq`
   with the combinator prover's other entry points, and {lit}`metalogic_printTermOpt` and
-  {lit}`metalogic_readBack`, and {lit}`metalogic_affineCheck`, and {lit}`metalogic_pcheck` with
+  {lit}`metalogic_readBack`, and {lit}`metalogic_affineCheck`, and {lit}`metalogic_convCheck`
+  with the conversion checker's other entry points, and {lit}`metalogic_pcheck` with
   the checker's other functions and {lit}`metalogic_openSubterms` with the tactics' other functions
   of terms — those globals are the mirror's definitions, at those types.
 
@@ -1262,6 +1267,74 @@ theorem metalogic_affineCheck :
     ((infer_of_loadStep metalogic.step2014).elim fun _ h ↦
       infer_lams tT _ [tList tT, tT] h)
     metalogic.«Affine.check_heq»))
+
+/-! The conversion checker and the evaluation at literals. -/
+
+/-- The type of the term of a term's value by the evaluation at literals: from a term to the
+optional term. -/
+def litEvalTy : Tree := [tT].foldr tArrow tT
+
+/-- The type of the test of the conditions under which the evaluation at literals is a rewriting:
+from the constants, the entries and an index to a truth value. -/
+def readyTy : Tree := [tT, tList tT, tT].foldr tArrow tT
+
+/-- The type of the conversion checker: from the constants, the entries, the indices at which the
+evaluation at literals is ready, the number of object variables and a certificate to the
+checker's result, a function of a mode, a context, a number of variables, hypotheses and a
+term. -/
+def convCheckTy : Tree :=
+  [tT, tList tT, tList tT, tT, tT].foldr tArrow ([tT, tList tT, tT, tList tT, tT].foldr tArrow tT)
+
+/-- The type of the test that a certificate of the conversion checker proves a theorem: from the
+constants, the entries, the indices at which the evaluation at literals is ready, a theorem and a
+certificate to a truth value. -/
+def thmConvChecksTy : Tree := [tT, tList tT, tList tT, tT, tT].foldr tArrow tT
+
+-- the evaluation at literals, its test of readiness, the conversion checker and its test of a
+-- theorem are the program's globals of indices 2052, 2097, 2141 and 2142
+kernel_rfl metalogic_g2052 : metalogic.globals[2052]? = some metalogic.g2052
+kernel_rfl metalogic_g2097 : metalogic.globals[2097]? = some metalogic.g2097
+kernel_rfl metalogic_g2141 : metalogic.globals[2141]? = some metalogic.g2141
+kernel_rfl metalogic_g2142 : metalogic.globals[2142]? = some metalogic.g2142
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 2052 is the mirror's term of a term's value by the evaluation
+at literals, at its type. -/
+theorem metalogic_litEval :
+    metalogic.globals[2052]? = some (⟨litEvalTy, «Literals.litEval»⟩ : Glob) :=
+  metalogic_g2052.trans (congrArg some (glob_ext
+    ((infer_of_loadStep metalogic.step2052).elim fun _ h ↦ infer_lams tT _ [tT] h)
+    metalogic.«Literals.litEval_heq»))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 2097 is the mirror's test of the conditions under which the
+evaluation at literals is a rewriting, at its type. -/
+theorem metalogic_ready :
+    metalogic.globals[2097]? = some (⟨readyTy, «Literals.ready»⟩ : Glob) :=
+  metalogic_g2097.trans (congrArg some (glob_ext
+    ((infer_of_loadStep metalogic.step2097).elim fun _ h ↦
+      infer_lams tT _ [tT, tList tT, tT] h)
+    metalogic.«Literals.ready_heq»))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 2141 is the mirror's conversion checker, at its type. -/
+theorem metalogic_convCheck :
+    metalogic.globals[2141]? = some (⟨convCheckTy, «Conversion.convCheck»⟩ : Glob) :=
+  metalogic_g2141.trans (congrArg some (glob_ext
+    ((infer_of_loadStep metalogic.step2141).elim fun _ h ↦
+      infer_lams ([tT, tList tT, tT, tList tT, tT].foldr tArrow tT) _
+        [tT, tList tT, tList tT, tT, tT] h)
+    metalogic.«Conversion.convCheck_heq»))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 2142 is the mirror's test that a certificate of the conversion
+checker proves a theorem, at its type. -/
+theorem metalogic_thmConvChecks :
+    metalogic.globals[2142]? = some (⟨thmConvChecksTy, «Conversion.thmConvChecks»⟩ : Glob) :=
+  metalogic_g2142.trans (congrArg some (glob_ext
+    ((infer_of_loadStep metalogic.step2142).elim fun _ h ↦
+      infer_lams tT _ [tT, tList tT, tList tT, tT, tT] h)
+    metalogic.«Conversion.thmConvChecks_heq»))
 
 /-! The checker's functions: the partial Horn checker, the theory, the inference of typings and
 the step of a development. -/

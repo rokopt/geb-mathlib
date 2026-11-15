@@ -29,6 +29,7 @@ def benchmarks : List (String × IO Unit) :=
     ("FreeTopos.Certified", GebBench.Prototypes.FreeTopos.Certified.run),
     ("FreeTopos.Literals", GebBench.Prototypes.FreeTopos.Literals.run),
     ("FreeTopos.ByMachine", GebBench.Prototypes.FreeTopos.ByMachine.run),
+    ("FreeTopos.MachineMirror", GebBench.Prototypes.FreeTopos.MachineMirror.run),
     ("FreeTopos.Profile", GebBench.Prototypes.FreeTopos.Profile.run),
     ("InteractionNet.GraphRuntime", GebBench.Prototypes.InteractionNet.GraphRuntime.run)]
 

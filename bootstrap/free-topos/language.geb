@@ -16,7 +16,9 @@
 ; operation, as their datatypes declare them.
 
 (module Language
-  (export TPair pr p1 p2 mNode var mStar mPair mFst mSnd mLam app mArr mNatRec mListRec mRoseRec
+  (export liftS ldParams TPair pr p1 p2 mNode var mStar mPair mFst mSnd mLam app mArr mNatRec
+    mListRec
+    mRoseRec
     mDefn
     mEq
     mArgs
