@@ -1,0 +1,167 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The checker of the internal language with a step of conversion, written in the datatype
+; language, deciding as Geb.FreeTopos.Internal.convCheckFast decides: at a rule of the language
+; the step of the checker of derivations, each premise standing for the rule of the language its
+; certificate's root stands for; at a step of conversion the result of the prover's reduction of
+; the term under the rules the step names, under the hypotheses weakened past the number of
+; variables the rewriting is given; and at an application of a theorem the checker's application
+; at the instance whose conclusion matches the formula. A certificate is the node of its rule's
+; position over the node of the rule's data followed by its premises: a rule of the language at
+; its position among Geb.FreeTopos.Internal.Rule's constructors with its data, and after them the
+; normalization over its rules and its fuel, the reduction over its rules, its fuel and its depth,
+; the application of a theorem over its index and the node of its objects, the evaluation at
+; literals over the index of its equations, and the reduction by the machine over its fuel, the
+; bound of the definitions it unfolds, the node of those it does not, the indices of the
+; primitives of lists and the node of its rules. A rule of the normalizer is read from the node of
+; its constructor's position over its fields. The evaluation at literals rewrites where its index
+; is among those the checker is given, at which its equations were found.
+
+(module Conversion
+  (export CK toRule ruleOf applyInst machineReduceBy convStep convCheck thmConvChecks)
+  (import Prelude)
+  (import Base)
+  (import Theory)
+  (import Language)
+  (import Derivation)
+  (import Prover)
+  (import Literals)
+  (import Machine)
+  (import (Map T NormRule) as RuleAt)
+  (import (Each NormRule) as EachRule)
+  ; the checker's result at a node, as the checker of derivations gives it: a function of a mode, 0
+  ; the rewriting and 1 the proving, a context, a number of variables, hypotheses and a term
+  (deftype CK (Arrow T (Arrow Ts (Arrow T (Arrow Ts (Arrow T T))))))
+  (deftype CKs (List CK))
+  (def ckNone (lam ((md T) (g Ts) (k T) (hs Ts) (t T)) 0))
+
+  ; the rule of the language a certificate's root stands for among a node's premises, as a
+  ; derivation without premises: its own rule with its data, the application of a theorem at no
+  ; terms for the application at an instance found, and transitivity for a step of conversion
+  (defn toRule ((d T)) T
+    (let l T (label d)
+      (if (lt l 37) (node l (single (child d 0)))
+        (if (eq l 39) (node 27 (single (node 0 (l3 (mD d 0) (mD d 1) (node 0 (nil T))))))
+          (node 1 (single (node 0 (nil T))))))))
+  ; the derivation of a rule of the language with its data over the rules a node's premises stand
+  ; for
+  (defn baseNode ((rl T) (dn T) (nd T)) T (node rl (cons dn (mapT toRule (tail (children nd))))))
+
+  ; a rule of the normalizer read from the node of its constructor's position over its fields
+  (defn ruleOf ((r T)) NormRule
+    (let l T (label r)
+      (let cs Ts (children r)
+        (if (eq l 0) (nrRule (at cs 0) (terms (children (at cs 1))))
+          (if (eq l 1) (nrDelta (at cs 0))
+            (if (eq l 2) (nrBelow (at cs 0) (terms (children (at cs 1))))
+              (if (eq l 4) (nrThm (at cs 0) (objs (children (at cs 1))))
+                (if (eq l 5) (nrThmAt (at cs 0) (objs (children (at cs 1))) (at cs 2) (at cs 3))
+                  (if (eq l 6) (nrHyp (at cs 0)) nrUnit)))))))))
+  (defn rulesOf ((xs Ts)) NRs (RuleAt.map ruleOf xs))
+
+  ; a step of conversion by the prover's normalization, and by its reduction to a depth: the
+  ; reduction's result under the hypotheses weakened past k new innermost variables, and no proof
+  (defn stepNorm ((G Globals) (E (List Entry)) (n T) (dt Ts)) CK
+    (let nf NF (normalize G E n (rulesOf (children (at dt 0))) (at dt 1))
+      (lam ((md T) (g Ts) (k T) (hs Ts) (t T))
+        (if md 0
+          (bindNT (nf g (mapT (lam ((h T)) (weakenBy k h)) hs) t)
+            (lam ((r NFR)) (some (nfTerm r))))))))
+  (defn stepEval ((G Globals) (E (List Entry)) (n T) (dt Ts)) CK
+    (let ev EV (eval G E n (rulesOf (children (at dt 0))) (at dt 1))
+      (lam ((md T) (g Ts) (k T) (hs Ts) (t T))
+        (if md 0
+          (bindNT (ev (at dt 2) g (mapT (lam ((h T)) (weakenBy k h)) hs) t)
+            (lam ((r NFR)) (some (nfTerm r))))))))
+
+  ; the instance of the theorem of an index at objects whose conclusion matches a formula, where
+  ; every variable of the theorem's context is matched: the optional node of the instance's terms
+  (defn applyInst ((E (List Entry)) (j T) (th Ts) (phi T)) T
+    (case (thmAt E j)
+      ((OThm.just a)
+       (case
+         ((matchTerm (if (isEmpty th) (thConcl a) (osubst th (thConcl a)))) 0 phi
+          (replicate (length (thCtx a)) none))
+         ((OAssign.just sn) (allSomeT (assigned sn)))
+         ((OAssign.nothing) none)))
+      ((OThm.nothing) none)))
+  ; the application of a theorem at the instance that matches the formula: the checker's
+  ; application at that instance, which rewrites no term
+  (defn stepApply ((G Globals) (E (List Entry)) (n T) (dt Ts) (nd T) (rs CKs)) CK
+    (lam ((md T) (g Ts) (k T) (hs Ts) (phi T))
+      (if md
+        (let sg T (applyInst E (at dt 0) (children (at dt 1)) phi)
+          (if (isSome sg)
+            ((checkStep G E n (baseNode 27 (node 0 (l3 (at dt 0) (at dt 1) (get sg))) nd) rs) 1 g 0
+             hs
+             phi)
+            0))
+        none)))
+
+  ; the evaluation at literals of a term built of the library's arithmetic over numerals, where
+  ; the index of its equations is among those at which they were found
+  (defn stepLit ((R Ts) (dt Ts)) CK
+    (lam ((md T) (g Ts) (k T) (hs Ts) (t T))
+      (if md 0 (if (anyT (lam ((x T)) (eq x (at dt 0))) R) (litEval t) none))))
+
+  ; the reduction of a term in a context under hypotheses by the machine, which rewrites its
+  ; normal form by the prover's rules, prepared once for the reduction; where there is no rule,
+  ; the reduction reads no hypothesis
+  (deftype RWK (Arrow Ts (Arrow T (Arrow Ts (Arrow T OTPair.Maybe)))))
+  (defn machineReduceBy
+    ((G Globals) (E (List Entry)) (n T) (unf (Arrow T T)) (kl T) (kc T) (rs NRs) (fuel T) (g Ts)
+     (hs Ts)
+     (t T))
+    T
+    (if (EachRule.isEmpty rs)
+      (machineReduce G n unf kl kc (lam ((g1 Ts) (k T) (u T)) none) fuel g t)
+      (let rk RWK (rootRewriteK G E n (indexRules E (prepareRules E rs)) (prepareHyps hs))
+        (machineReduce G n unf kl kc
+          (lam ((g1 Ts) (k T) (u T))
+            (case (rk g1 k hs u) ((OTPair.just q) (some (p1 q))) ((OTPair.nothing) none)))
+          fuel
+          g
+          t))))
+  ; a step of the machine, unfolding the definitions of an index below a bound but those of a
+  ; list, under the hypotheses weakened past k new innermost variables where it has rules
+  (defn stepMachine ((G Globals) (E (List Entry)) (n T) (dt Ts)) CK
+    (let ex Ts (children (at dt 2))
+      (let rs NRs (rulesOf (children (at dt 5)))
+        (lam ((md T) (g Ts) (k T) (hs Ts) (t T))
+          (if md 0
+            (machineReduceBy G E n
+              (lam ((j T)) (and (lt j (at dt 1)) (not (anyT (lam ((x T)) (eq x j)) ex))))
+              (at dt 3)
+              (at dt 4)
+              rs
+              (at dt 0)
+              g
+              (if (EachRule.isEmpty rs) (nil T) (mapT (lam ((h T)) (weakenBy k h)) hs))
+              t))))))
+
+  ; one step of the checker, at a node of a rule from its premises' results
+  (defn convStep ((G Globals) (E (List Entry)) (R Ts) (n T) (nd T) (rs CKs)) CK
+    (let rl T (label nd)
+      (let dn T (child nd 0)
+        (let dt Ts (children dn)
+          (if (lt rl 37) (checkStep G E n (baseNode rl dn nd) rs)
+            (if (eq rl 37) (stepNorm G E n dt)
+              (if (eq rl 38) (stepEval G E n dt)
+                (if (eq rl 39) (stepApply G E n dt nd rs)
+                  (if (eq rl 40) (stepLit R dt)
+                    (if (eq rl 41) (stepMachine G E n dt) ckNone))))))))))
+  ; the checker: the paramorphism of a certificate
+  (defn convCheck ((G Globals) (E (List Entry)) (R Ts) (n T) (d T)) CK
+    (para CK (convStep G E R n) d))
+
+  ; whether a certificate proves a theorem
+  (defn thmConvChecks ((G Globals) (E (List Entry)) (R Ts) (a Thm) (d T)) T
+    (let n T (thArity a)
+      (let g Ts (thCtx a)
+        (if
+          (and (allT (isTy G n) g)
+            (and (allT (isFormula G n g) (thHyps a)) (isFormula G n g (thConcl a))))
+          ((convCheck G E R n d) 1 g 0 (thHyps a) (thConcl a))
+          0)))))

@@ -4633,8 +4633,26 @@ import-direction rules above are enforced by
   every term, and the two carry `Geb.Kernel.resolve_of_printTerm?` across,
   so that the reader written in Geb inverts the printer written in Geb.
   The check of elementary-affine certificates, `bootstrap/affine.geb`, is
-  the program's last layer: `Agreement/Affine.lean` proves it equal to
-  `Geb.Affine.check` at every program and certificate.
+  a layer of its own: `Agreement/Affine.lean` proves it equal to
+  `Geb.Affine.check` at every program and certificate. The checker with a
+  step of conversion is the program's last layer: the evaluation at
+  literals (`bootstrap/free-topos/literals.geb`), which represents a
+  bitstring by the number it denotes and computes the library's
+  arithmetic by the kernel's primitives on labels, the environment machine
+  (`bootstrap/free-topos/machine.geb`), which computes each delayed value
+  where it builds its node, and the checker
+  (`bootstrap/free-topos/conversion.geb`). `Agreement/Literals.lean`
+  proves the evaluation, its equations and its test of readiness equal to
+  `Geb.FreeTopos.Literals.eval`, `Geb.FreeTopos.Literals.lemmas` and
+  `Geb.FreeTopos.Literals.ready`, and `Agreement/Conversion.lean` the
+  checker equal to `Geb.FreeTopos.Internal.convCheck` at every encoded
+  certificate none of whose steps is the reduction by the machine or
+  names a prepared theorem (`conversion_agree`); the agreement of the
+  machine remains. `GebTests/Prototypes/FreeTopos/ConversionMirror.lean`
+  tests the evaluation and the checker's steps of the machine against
+  Lean's at the library's arithmetic, and
+  `GebBench/Prototypes/FreeTopos/MachineMirror.lean` measures the two
+  machines' times.
   Depends on the modules of `Geb/Prototypes/FreeTopos/` above and
   `Geb.Prototypes.PartialHorn.Completeness`.
 - `Geb/Prototypes/FreeTopos/Translation.lean` — the translation of the

@@ -1,0 +1,371 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The environment machine reducing the internal language's terms, written in the datatype
+; language, reducing as Geb.FreeTopos.Internal.machineReduce reduces: the evaluation of a term in
+; an environment of values, the weak head normal form of a value, and the normal form of a
+; value's term in a context under its constructors, its abstractions and the steps of its folds,
+; rewritten at its roots, each within a depth of recursion. A delayed value is the node of its
+; value and its source, the value computed where the node is built, as the machine's is where its
+; first child is read: the two are one function of the term reduced. A value is the node of its
+; label's position over the node of the label's data followed by its children: the free variable
+; of a level that is not negative, over the level, and of a negative level, over the index in the
+; reduced term's context of the variable it denotes; the element of the terminal type; the pair;
+; the closure, over its type, its body and the number of binders past its environment; the
+; application of a primitive arrow, over its index and the node of its objects; the application;
+; the components; the folds of a natural number and of a list, over the step and the number of
+; binders, and of a rose tree, over the type, the step and the number of binders; the
+; application of a definition, over its index and the node of its objects; the equality; the
+; unevaluated term, over the term and the number of binders; the delayed value; and the value of
+; a computation that does not reach one. A normal form with its mark is the node of the two.
+
+(module Machine
+  (export MEval MWhnf MNf Mach MRw failV delayed delay freeVar envSubst readStep readBack varLeaves
+    evalStep
+    whnfStep
+    nfNode
+    renorm
+    nfStep
+    machine
+    machineReduce)
+  (import Prelude)
+  (import Base)
+  (import Theory)
+  (import Language)
+  (import Derivation)
+  ; the machine's operations at a depth of recursion: the evaluation of a term in an environment
+  ; past which its variables are those under a number of binders, the weak head normal form of a
+  ; value, and the normal form of a value's term in a context under a number of binders; and the
+  ; rewriting at a root of a normal form, of a context, a number of binders and a term
+  (deftype MEval (Arrow T (Arrow Ts (Arrow T T))))
+  (deftype MWhnf (Arrow T T))
+  (deftype MNf (Arrow Ts (Arrow T (Arrow T T))))
+  (deftype Mach (Prod MEval (Prod MWhnf MNf)))
+  (deftype MRw (Arrow Ts (Arrow T (Arrow T T))))
+
+  ; the value of a computation that does not reach one, and the delayed value of a computation's
+  ; optional value with its source
+  (def failV (mNode 16 (nil T) (nil T)))
+  (defn delayed ((val T) (src T)) T (mNode 15 (nil T) (l2 (getD val failV) src)))
+  ; the delayed value of a term in an environment past which its variables are those under k
+  ; binders: the weak head normal form of its evaluation, with the unevaluated term
+  (defn delay ((me MEval) (mw MWhnf) (t T) (vs Ts) (k T)) T
+    (delayed (bindO (me t vs k) mw) (mNode 14 (l2 t k) vs)))
+  ; the free variable of the level of the variable of index j past an environment under k
+  ; binders: the level of one of the binders, or the index of a variable of the context
+  (defn freeVar ((k T) (j T)) T
+    (if (lt j k) (mNode 0 (single (sub (sub k 1) j)) (nil T)) (mNode 1 (single (sub j k)) (nil T))))
+  (defn level ((k T)) T (mNode 0 (single k) (nil T)))
+
+  ; the substitution an environment stands for: the variable of an index in it its value's term,
+  ; and each later variable the variable past the environment's values shifted by k
+  (defn envSubst ((ts Ts) (k T) (i T)) T
+    (if (lt i (length ts)) (at ts i) (var (add (sub i (length ts)) k))))
+  ; one step of the reading back of a value to a term under D binders, at a node from the terms
+  ; of its children
+  (defn readStep ((D T) (v T) (cs Ts)) T
+    (let l T (label v)
+      (if (eq l 0) (var (sub (sub D 1) (mD v 0)))
+        (if (eq l 1) (var (add D (mD v 0)))
+          (if (eq l 3) (mNode 2 (nil T) cs)
+            (if (eq l 4)
+              (mLam (mD v 0)
+                (subst (mD v 1) (lam ((i T)) (liftS (envSubst cs (sub D (mD v 2))) i))))
+              (if (eq l 5) (mNode 7 (children (child v 0)) cs)
+                (if (eq l 6) (mNode 6 (nil T) cs)
+                  (if (eq l 7) (mNode 3 (nil T) cs)
+                    (if (eq l 8) (mNode 4 (nil T) cs)
+                      (if (eq l 9)
+                        (if (lt (length cs) 2) (mNode 8 (nil T) cs)
+                          (mNatRec (at cs 0)
+                            (subst (mD v 0)
+                              (lam ((i T)) (liftS (envSubst (drop 2 cs) (sub D (mD v 1))) i)))
+                            (at cs 1)))
+                        (if (eq l 10)
+                          (if (lt (length cs) 2) (mNode 9 (nil T) cs)
+                            (mListRec (at cs 0)
+                              (subst (mD v 0)
+                                (lam ((i T))
+                                  (liftS
+                                    (lam ((j T)) (liftS (envSubst (drop 2 cs) (sub D (mD v 1))) j))
+                                    i)))
+                              (at cs 1)))
+                          (if (eq l 11)
+                            (if (isEmpty cs) (mNode 10 (single (mD v 0)) cs)
+                              (mRoseRec (mD v 0)
+                                (subst (mD v 1)
+                                  (lam ((i T)) (liftS (envSubst (tail cs) (sub D (mD v 2))) i)))
+                                (at cs 0)))
+                            (if (eq l 12) (mNode 11 (children (child v 0)) cs)
+                              (if (eq l 13) (mNode 12 (nil T) cs)
+                                (if (eq l 14)
+                                  (subst (mD v 0) (lam ((i T)) (envSubst cs (sub D (mD v 1)) i)))
+                                  (if (and (eq l 15) (eq (length cs) 2)) (at cs 1)
+                                    mStar)))))))))))))))))
+  ; the term a value reads back to under D binders
+  (defn readBack ((D T) (v T)) T (para T (lam ((nd T) (rs Ts)) (readStep D nd (tail rs))) v))
+
+  ; whether each variable of a term is a leaf
+  (defn varLeaves ((t T)) T
+    (para T
+      (lam ((nd T) (rs Ts))
+        (and (if (eq (label nd) 0) (isEmpty (tail rs)) 1) (allT (lam ((b T)) b) (tail rs))))
+      t))
+
+  ; one step of the evaluation of a term in an environment past which its variables are those
+  ; under k binders, the subterms and the values reduced by the operations of the depth below
+  (defn evalDefn ((G Globals) (unf (Arrow T T)) (me MEval) (us Ts) (t T) (k T)) T
+    (let j T (mD t 0)
+      (let th Ts (children (mD t 1))
+        (let stuck T (some (mNode 12 (children (child t 0)) us))
+          (case (if (unf j) (bindDL (ODefinition.nthOf (gDefs G) j) defLanguage) OLDefn.nothing)
+            ((OLDefn.just d)
+             (if (eq (length us) (length (ldParams d)))
+               (me (if (isEmpty th) (ldBody d) (osubst th (ldBody d))) us k)
+               stuck))
+            ((OLDefn.nothing) stuck))))))
+  (defn evalStep ((G Globals) (unf (Arrow T T)) (me MEval) (mw MWhnf) (t T) (vs Ts) (k T)) T
+    (let l T (label t)
+      (let ts Ts (mArgs t)
+        (if (eq l 0)
+          (let i T (mD t 0)
+            (some (if (lt i (length vs)) (at vs i) (freeVar k (sub i (length vs))))))
+          (if (mIs 1 0 t) (some (mNode 2 (nil T) (nil T)))
+            (if (mIs 5 1 t) (some (mNode 4 (l3 (mD t 0) (mArg t 0) k) vs))
+              (if (and (or (eq l 3) (eq l 4)) (eq (length ts) 1))
+                (bindO (me (mArg t 0) vs k)
+                  (lam ((p T)) (mw (mNode (if (eq l 3) 7 8) (nil T) (single p)))))
+                (if (mIs 6 2 t)
+                  (bindO (me (mArg t 0) vs k)
+                    (lam ((f T)) (mw (mNode 6 (nil T) (l2 f (delay me mw (mArg t 1) vs k))))))
+                  (if (and (or (eq l 8) (eq l 9)) (eq (length ts) 3))
+                    (bindO (me (mArg t 2) vs k)
+                      (lam ((m T))
+                        (mw
+                          (mNode (if (eq l 8) 9 10) (l2 (mArg t 1) k)
+                            (cons (delay me mw (mArg t 0) vs k) (cons m vs))))))
+                    (if (mIs 10 2 t)
+                      (bindO (me (mArg t 1) vs k)
+                        (lam ((m T)) (mw (mNode 11 (l3 (mD t 0) (mArg t 0) k) (cons m vs)))))
+                      (let us Ts (mapT (lam ((u T)) (delay me mw u vs k)) ts)
+                        (if (eq l 11) (evalDefn G unf me us t k)
+                          (if (eq l 2) (some (mNode 3 (nil T) us))
+                            (if (eq l 3) (some (mNode 7 (nil T) us))
+                              (if (eq l 4) (some (mNode 8 (nil T) us))
+                                (if (eq l 6) (some (mNode 6 (nil T) us))
+                                  (if (eq l 7) (some (mNode 5 (children (child t 0)) us))
+                                    (if (eq l 12) (some (mNode 13 (nil T) us))
+                                      none))))))))))))))))))
+
+  ; one step of the weak head normal form of a value, the values reduced and the terms evaluated
+  ; by the operations of the depth below
+  (defn whnfApp ((G Globals) (me MEval) (mw MWhnf) (f T) (u T)) T
+    (bindO (mw f)
+      (lam ((f1 T))
+        (let stuck T (some (mNode 6 (nil T) (l2 f1 u)))
+          (if (eq (label f1) 4) (bindO (me (mD f1 1) (cons u (mArgs f1)) (mD f1 2)) mw)
+            (if (and (mIs 5 1 f1) (primIs G (mD f1 0) casePrim))
+              (bindO (mw u)
+                (lam ((u1 T))
+                  (let stuck1 T (some (mNode 6 (nil T) (l2 f1 u1)))
+                    (if
+                      (and (mIs 5 1 u1)
+                        (or (primIs G (mD u1 0) inlPrim) (primIs G (mD u1 0) inrPrim)))
+                      (bindO (mw (mArg f1 0))
+                        (lam ((p1 T))
+                          (if (mIs 3 2 p1)
+                            (mw
+                              (mNode 6 (nil T)
+                                (l2 (mArg p1 (if (primIs G (mD u1 0) inlPrim) 0 1)) (mArg u1 0))))
+                            stuck1)))
+                      stuck1))))
+              stuck))))))
+  (defn whnfNat ((G Globals) (me MEval) (mw MWhnf) (v T)) T
+    (let s T (mD v 0)
+      (let k T (mD v 1)
+        (let z T (mArg v 0)
+          (let env Ts (drop 2 (mArgs v))
+            (bindO (mw (mArg v 1))
+              (lam ((m1 T))
+                (let stuck T (some (mNode 9 (l2 s k) (cons z (cons m1 env))))
+                  (if (and (mIs 5 1 m1) (isEmpty (children (mD m1 1))))
+                    (let c T (mArg m1 0)
+                      (if (primIs G (mD m1 0) zeroPrim)
+                        (bindO (mw c) (lam ((c1 T)) (if (mIs 2 0 c1) (mw z) stuck)))
+                        (if (primIs G (mD m1 0) succPrim)
+                          (let src T (mNode 9 (l2 s k) (cons z (cons c env)))
+                            (bindO (me s (cons (delayed (mw src) src) env) k) mw))
+                          stuck)))
+                    stuck)))))))))
+  (defn whnfList ((G Globals) (me MEval) (mw MWhnf) (v T)) T
+    (let s T (mD v 0)
+      (let k T (mD v 1)
+        (let z T (mArg v 0)
+          (let env Ts (drop 2 (mArgs v))
+            (bindO (mw (mArg v 1))
+              (lam ((m1 T))
+                (let stuck T (some (mNode 10 (l2 s k) (cons z (cons m1 env))))
+                  (if (and (mIs 5 1 m1) (eq (length (children (mD m1 1))) 1))
+                    (let c T (mArg m1 0)
+                      (if (primIs G (mD m1 0) nilPrim)
+                        (bindO (mw c) (lam ((c1 T)) (if (mIs 2 0 c1) (mw z) stuck)))
+                        (if (primIs G (mD m1 0) consPrim)
+                          (bindO (mw c)
+                            (lam ((c1 T))
+                              (if (mIs 3 2 c1)
+                                (let src T (mNode 10 (l2 s k) (cons z (cons (mArg c1 1) env)))
+                                  (bindO
+                                    (me s (cons (delayed (mw src) src) (cons (mArg c1 0) env)) k)
+                                    mw))
+                                stuck)))
+                          stuck)))
+                    stuck)))))))))
+  (defn whnfRose ((G Globals) (kl T) (kc T) (me MEval) (mw MWhnf) (v T)) T
+    (let c T (mD v 0)
+      (let s T (mD v 1)
+        (let k T (mD v 2)
+          (let env Ts (tail (mArgs v))
+            (bindO (mw (mArg v 0))
+              (lam ((m1 T))
+                (let stuck T (some (mNode 11 (l3 c s k) (cons m1 env)))
+                  (if
+                    (and (mIs 5 1 m1)
+                      (and (or (primIs G (mD m1 0) nodePrim) (primIs G (mD m1 0) lnodePrim))
+                        (and (primIs G kl nilPrim) (primIs G kc consPrim))))
+                    (bindO (mw (mArg m1 0))
+                      (lam ((p1 T))
+                        (if (mIs 3 2 p1)
+                          (let folds T
+                            (mNode 10
+                              (l2
+                                (mArr kc (single c)
+                                  (mPair (mRoseRec c (weakenStep2 s) (var 1)) (var 0)))
+                                k)
+                              (cons
+                                (mNode 5 (l2 kl (node 0 (single c)))
+                                  (single (mNode 2 (nil T) (nil T))))
+                                (cons (mArg p1 1) env)))
+                            (bindO
+                              (me s
+                                (cons (mNode 3 (nil T) (l2 (mArg p1 0) (delayed (mw folds) folds)))
+                                  env)
+                                k)
+                              mw))
+                          stuck)))
+                    stuck)))))))))
+  (defn whnfStep ((G Globals) (kl T) (kc T) (me MEval) (mw MWhnf) (v T)) T
+    (let l T (label v)
+      (let cs Ts (mArgs v)
+        (if (mIs 15 2 v) (let r T (mArg v 0) (if (eq (label r) 16) none (some r)))
+          (if (and (or (eq l 7) (eq l 8)) (eq (length cs) 1))
+            (bindO (mw (mArg v 0))
+              (lam ((p T))
+                (if (mIs 3 2 p) (mw (mArg p (if (eq l 7) 0 1)))
+                  (some (mNode l (nil T) (single p))))))
+            (if (mIs 6 2 v) (whnfApp G me mw (mArg v 0) (mArg v 1))
+              (if (and (eq l 9) (not (lt (length cs) 2))) (whnfNat G me mw v)
+                (if (and (eq l 10) (not (lt (length cs) 2))) (whnfList G me mw v)
+                  (if (and (eq l 11) (not (isEmpty cs))) (whnfRose G kl kc me mw v)
+                    (some v))))))))))
+
+  ; a normal form with its mark, and its parts
+  (defn marked ((t T) (b T)) T (some (node 0 (l2 t b))))
+  (defn nfTerm ((r T)) T (child r 0))
+  (defn nfMark ((r T)) T (child r 1))
+  ; the normal form of a weak head normal form's term in a context under k binders, the values
+  ; reduced by the operations of the depth below
+  (defn nfNode ((G Globals) (n T) (me MEval) (mn MNf) (g Ts) (k T) (w T)) T
+    (let l T (label w)
+      (let cs Ts (mArgs w)
+        (if (and (eq l 9) (not (lt (length cs) 2)))
+          (bindO (mn g k (at cs 0))
+            (lam ((rz T))
+              (bindO (mn g k (at cs 1))
+                (lam ((rm T))
+                  (bindO (typeIn G n g (nfTerm rz))
+                    (lam ((c T))
+                      (bindO
+                        (bindO (me (mD w 0) (cons (level k) (drop 2 cs)) (mD w 1))
+                          (lam ((sv T)) (mn (cons c g) (add k 1) sv)))
+                        (lam ((rs T))
+                          (marked (mNatRec (nfTerm rz) (nfTerm rs) (nfTerm rm))
+                            (or (nfMark rz) (nfMark rm)))))))))))
+          (if (and (eq l 10) (not (lt (length cs) 2)))
+            (bindO (mn g k (at cs 0))
+              (lam ((rz T))
+                (bindO (mn g k (at cs 1))
+                  (lam ((rm T))
+                    (bindO (typeIn G n g (nfTerm rz))
+                      (lam ((c T))
+                        (bindO (bindO (typeIn G n g (nfTerm rm)) listPart)
+                          (lam ((a T))
+                            (bindO
+                              (bindO
+                                (me (mD w 0) (cons (level (add k 1)) (cons (level k) (drop 2 cs)))
+                                  (mD w 1))
+                                (lam ((sv T)) (mn (cons c (cons a g)) (add k 2) sv)))
+                              (lam ((rs T))
+                                (marked (mListRec (nfTerm rz) (nfTerm rs) (nfTerm rm))
+                                  (or (nfMark rz) (nfMark rm)))))))))))))
+            (if (and (eq l 11) (not (isEmpty cs)))
+              (bindO (mn g k (at cs 0))
+                (lam ((rm T))
+                  (bindO (bindO (typeIn G n g (nfTerm rm)) roseLabel)
+                    (lam ((a T))
+                      (bindO
+                        (bindO (me (mD w 1) (cons (level k) (tail cs)) (mD w 2))
+                          (lam ((sv T)) (mn (cons (prod a (list (mD w 0))) g) (add k 1) sv)))
+                        (lam ((rs T))
+                          (marked (mRoseRec (mD w 0) (nfTerm rs) (nfTerm rm)) (nfMark rm))))))))
+              (if (eq l 4)
+                (bindO
+                  (bindO (me (mD w 1) (cons (level k) cs) (mD w 2))
+                    (lam ((bv T)) (mn (cons (mD w 0) g) (add k 1) bv)))
+                  (lam ((rb T)) (marked (mLam (mD w 0) (nfTerm rb)) (nfMark rb))))
+                (if (or (lt l 4) (or (and (lt 4 l) (lt l 9)) (or (eq l 12) (eq l 13))))
+                  (let rs Ts (mapT (lam ((c T)) (mn g k c)) cs)
+                    (if (allT isSome rs)
+                      (marked (readStep k w (mapT (lam ((r T)) (nfTerm (get r))) rs))
+                        (anyT (lam ((r T)) (nfMark (get r))) rs))
+                      none))
+                  (if (eq l 16) none (marked (readBack k w) 0))))))))))
+  ; the normal form of a term in a context under k binders, the normal form of its value in the
+  ; empty environment, marked as changed by a rewriting
+  (defn renorm ((me MEval) (mn MNf) (g Ts) (k T) (t T)) T
+    (bindO (bindO (me t (nil T) k) (lam ((v T)) (mn g k v))) (lam ((r T)) (marked (nfTerm r) 1))))
+  ; one step of the normal form of a value's term in a context under k binders: the weak head
+  ; normal form, then the normal form of its node; a node that eliminates a child within which a
+  ; rewriting changed a term is reduced again, and any other is rewritten at its root where the
+  ; rewriting rewrites it to a term whose variables are leaves, the result reduced again
+  (defn nfStep ((G Globals) (n T) (rw MRw) (me MEval) (mw MWhnf) (mn MNf) (g Ts) (k T) (v T)) T
+    (bindO (mw v)
+      (lam ((w T))
+        (bindO (nfNode G n me mn g k w)
+          (lam ((r T))
+            (if (and (nfMark r) (and (lt 5 (label w)) (lt (label w) 12)))
+              (renorm me mn g k (nfTerm r))
+              (let u T (rw g k (nfTerm r))
+                (if (and (isSome u) (varLeaves (get u))) (renorm me mn g k (get u)) (some r)))))))))
+
+  ; the machine within a depth of recursion of fuel, each operation's recursive calls made at the
+  ; depth below, and the reduction of a term in a context: the normal form of its value in the
+  ; empty environment
+  (defn machStep ((G Globals) (n T) (unf (Arrow T T)) (kl T) (kc T) (rw MRw) (o Mach)) Mach
+    (let me MEval (fst o)
+      (let mw MWhnf (fst (snd o))
+        (let mn MNf (snd (snd o))
+          (pair (lam ((t T) (vs Ts) (k T)) (evalStep G unf me mw t vs k))
+            (pair (lam ((v T)) (whnfStep G kl kc me mw v))
+              (lam ((g Ts) (k T) (v T)) (nfStep G n rw me mw mn g k v))))))))
+  (defn machine ((G Globals) (n T) (unf (Arrow T T)) (kl T) (kc T) (rw MRw) (fuel T)) Mach
+    (iter Mach (machStep G n unf kl kc rw)
+      (pair (lam ((t T) (vs Ts) (k T)) none)
+        (pair (lam ((v T)) none) (lam ((g Ts) (k T) (v T)) none)))
+      fuel))
+  (defn machineReduce
+    ((G Globals) (n T) (unf (Arrow T T)) (kl T) (kc T) (rw MRw) (fuel T) (g Ts) (t T))
+    T
+    (let m Mach (machine G n unf kl kc rw fuel)
+      (bindO (bindO ((fst m) t (nil T) 0) (lam ((v T)) ((snd (snd m)) g 0 v)))
+        (lam ((r T)) (some (nfTerm r)))))))

@@ -7,6 +7,7 @@ module
 
 public import GebTests.Prototypes.FreeTopos.Agreement.Affine
 public import GebTests.Prototypes.FreeTopos.Agreement.Combinator
+public import GebTests.Prototypes.FreeTopos.Agreement.Conversion
 public import GebTests.Prototypes.FreeTopos.Agreement.Derivation
 public import GebTests.Prototypes.FreeTopos.Agreement.Load
 public import GebTests.Prototypes.FreeTopos.Agreement.Prove
@@ -48,7 +49,13 @@ so the reader written in Geb inverts the printer written in Geb without hypothes
 retraction ({name}`Geb.Kernel.resolve_of_printTerm?`) carried across the two agreements. The check
 of elementary-affine certificates written in Geb, {lit}`bootstrap/affine.geb`, is part of the same
 program, and gives the encoding of what {name}`Geb.Affine.check` gives at every program and
-certificate.
+certificate. The conversion checker written in Geb, {lit}`bootstrap/free-topos/conversion.geb`,
+with the evaluation at literals, {lit}`bootstrap/free-topos/literals.geb`, is part of the same
+program, and at an encoded certificate none of whose steps is the reduction by the environment
+machine or names a prepared theorem its results are those of
+{name}`Geb.FreeTopos.Internal.convCheck`, the evaluation's terms those of
+{name}`Geb.FreeTopos.Literals.eval` and its test of readiness
+{name}`Geb.FreeTopos.Literals.ready`'s.
 
 Constants are encoded by
 {name}`GebTests.Prototypes.FreeTopos.Agreement.Encode.encGlobals`, entries by
@@ -85,6 +92,9 @@ combinator prover's other agreements).
   Lean's, and the resolution inverts the printer.
 * {lit}`affineCheck_agree` — the loaded check of elementary-affine certificates written in Geb
   accepts as the check in Lean does, with the same instances.
+* {lit}`conversion_agree` — the loaded conversion checker written in Geb decides as the conversion
+  checker in Lean at the certificates without a step of the machine, and the loaded evaluation at
+  literals evaluates and tests its readiness as the evaluation in Lean.
 
 ## Tags
 
@@ -104,6 +114,7 @@ open Geb Geb.Kernel Geb.FreeTopos GebTests.Prototypes.FreeTopos.Agreement.Encode
   GebTests.Prototypes.FreeTopos.Agreement.Load GebTests.Prototypes.FreeTopos.Agreement.Derivation
   GebTests.Prototypes.FreeTopos.Agreement.Translation GebTests.Prototypes.FreeTopos.Agreement.Prove
   GebTests.Prototypes.FreeTopos.Agreement.Tactics
+  GebTests.Prototypes.FreeTopos.Agreement.Conversion
 open Geb.Kernel.ModulesTests (sexpTree)
 open GebMirror (metalogic)
 
@@ -515,6 +526,40 @@ theorem affineCheck_agree : ∃ G' : List Glob, load metalogic = some G' ∧
           encOpt ((Geb.Affine.check prog cert).map fun E ↦
             RoseTree.node 0 (E.map Affine.encInst)) :=
   ⟨_, metalogic.load_globals, «Affine.check», metalogic_affineCheck, Affine.check_eq⟩
+
+/-- The conversion checker written in Geb decides as the conversion checker in Lean, and the
+evaluation at literals written in Geb evaluates as the evaluation in Lean: the program loads to
+globals among which are the conversion checker, its test that a certificate proves a theorem, the
+term of a term's value by the evaluation and the evaluation's test of readiness, each a function
+of its type. At encoded constants, entries, indices at which the evaluation is ready and a
+certificate none of whose steps is the reduction by the machine or names a prepared theorem, the
+checker's rewriting and proving are those of the checker in Lean, and its test of a theorem the
+test in Lean; the evaluation gives the encoded term of the value the evaluation in Lean gives, and
+its test of readiness the test in Lean. -/
+theorem conversion_agree : ∃ G' : List Glob, load metalogic = some G' ∧
+    (∃ f : Ty.den convCheckTy, G'[2141]? = some ⟨convCheckTy, f⟩ ∧
+      ∀ (G : Internal.Globals) (E : Array Internal.Entry) (R : List ℕ) (n : ℕ)
+        (d : Internal.ConvDeriv), Plain d →
+          DRel (f (encGlobals G) (E.toList.map encEntry) (R.map leaf) (leaf n) (encConv d))
+            (Internal.convCheck G E R n d)) ∧
+    (∃ f : Ty.den thmConvChecksTy, G'[2142]? = some ⟨thmConvChecksTy, f⟩ ∧
+      ∀ (G : Internal.Globals) (E : Array Internal.Entry) (R : List ℕ) (a : Internal.Thm)
+        (d : Internal.ConvDeriv), Plain d →
+          f (encGlobals G) (E.toList.map encEntry) (R.map leaf) (encThm a) (encConv d) =
+            ofBool (a.convChecks G E R d)) ∧
+    (∃ f : Ty.den litEvalTy, G'[2052]? = some ⟨litEvalTy, f⟩ ∧
+      ∀ t : Internal.Term,
+        f (encTerm t) = encOpt ((Geb.FreeTopos.Literals.eval t).map fun v ↦ encTerm v.term)) ∧
+    (∃ f : Ty.den readyTy, G'[2097]? = some ⟨readyTy, f⟩ ∧
+      ∀ (G : Internal.Globals) (E : Array Internal.Entry) (j : ℕ),
+        f (encGlobals G) (E.toList.map encEntry) (leaf j) =
+          ofBool (Geb.FreeTopos.Literals.ready G E j)) :=
+  ⟨_, metalogic.load_globals,
+    ⟨«Conversion.convCheck», metalogic_convCheck, fun G E R n d hd ↦ convCheck_eq G E R n d hd⟩,
+    ⟨«Conversion.thmConvChecks», metalogic_thmConvChecks,
+      fun G E R a d hd ↦ thmConvChecks_eq G E R a d hd⟩,
+    ⟨«Literals.litEval», metalogic_litEval, Literals.litEval_eq⟩,
+    ⟨«Literals.ready», metalogic_ready, Literals.ready_eq⟩⟩
 
 end GebTests.Prototypes.FreeTopos.Agreement
 

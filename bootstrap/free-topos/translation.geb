@@ -13,7 +13,16 @@
 ; declare them.
 
 (module Translation
-  (export bitsTy treeTy nodeT call D.bnil D.b0 D.b1 D.lab D.unnode D.children D.cond D.tail D.headD
+  (export bitTy ordTy bnilT b0T b1T trueT ltO eqO gtO ifBit ifOrd trNumeral bitsTy treeTy nodeT call
+    D.bnil
+    D.b0
+    D.b1
+    D.lab
+    D.unnode
+    D.children
+    D.cond
+    D.tail
+    D.headD
     D.lcase
     D.isNil
     D.succ

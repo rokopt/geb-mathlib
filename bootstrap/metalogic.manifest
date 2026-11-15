@@ -20,7 +20,8 @@
     (Tactics free-topos/tactics.geb)
     (Combinator free-topos/combinator.geb)
     (Printer datatype.geb printer.geb)
-    (Affine affine.geb))
+    (Affine affine.geb)
+    (Conversion free-topos/literals.geb free-topos/machine.geb free-topos/conversion.geb))
   (entries Derivation.checkDev Translation.program Translation.trGlobals Translation.thm
     Prover.prepareRules
     Prover.byNorm
@@ -100,4 +101,8 @@
     Tactics.unnodeU
     Tactics.occRewrite
     Tactics.abstractTerm
-    Affine.check))
+    Affine.check
+    Literals.litEval
+    Literals.ready
+    Conversion.convCheck
+    Conversion.thmConvChecks))

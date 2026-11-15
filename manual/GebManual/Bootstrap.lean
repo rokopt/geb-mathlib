@@ -99,7 +99,7 @@ order of dependence.
   checker, the translation, the prover, its tactics and the combinator
   prover are written in Geb and proved in Lean to agree with their Lean
   prototypes; the stronger checkers admitted beside the checker written
-  in Geb are ready.
+  in Geb are in progress.
   The checker of Gödel's T, the equational theory of the kernel's terms,
   constructed and written in Geb first, is retired: equations between
   kernel programs are proved in the metalogic
@@ -317,8 +317,12 @@ the sections below detail:
     computes the reduction's result alone, the derivation the reduction
     computes being, by a theorem in Lean, one the base checker accepts
     with that result, so that it is sound relative to the base checker,
-    and an application of a theorem finds its instance by matching; its
-    transcription into Geb, with its agreement, follows, and then the
+    and an application of a theorem finds its instance by matching; it is
+    transcribed into Geb (`bootstrap/free-topos/conversion.geb`), and the
+    transcription proved in Lean to agree with it at the certificates
+    without a step of the environment machine; the agreement of the
+    machine written in Geb follows, by which the Lean the compiler emits
+    takes the machine in Lean as an acceleration, and then the
     tactics, in Lean and in Geb together, emit its steps in place of the
     derivations their reductions compute, and the stored developments are
     certified again in its certificates and measured. The step of the
@@ -3225,7 +3229,11 @@ tag := "speed-and-second-host"
   Rust crate of the value-representation prototypes.
 * Lean and Geb: accelerations bound by position or builtin
   identifier, each proved in Lean against the denotation of the term
-  it replaces, with the shadow mode that runs both.
+  it replaces, with the shadow mode that runs both. The conversion
+  checker's environment machine is one, the machine in Lean in place of
+  the machine written in Geb
+  ({ref "conversion-continuation"}[Completing the checker with a step of
+  conversion]).
 * Geb: compilers to the targets the choice of machine selects, emitting
   Lean first
   and then the staged interaction system for an interaction-net
@@ -8343,12 +8351,13 @@ What is ready, each item independent of the others except as stated:
 * Stronger checkers ({ref "metalogic-and-checker"}[The metalogic and its
   checker]), in progress, described below: the measurement that decides
   the rules of the checker with a step of conversion is made, and that
-  checker is written in Lean. Its transcription into Geb follows the
-  datatype language's completion, which precedes substantial authoring
-  in Geb; the tactics' emission of its steps and the stored
+  checker is written in Lean and transcribed into Geb, in sources of
+  their own that change no source of the program whose typing's
+  soundness is proved, its agreement proved but for the step of the
+  environment machine; the tactics' emission of its steps and the stored
   developments' certification in its certificates follow the
-  transcription, since the tactics written in Geb construct exactly the
-  certificates the Lean tactics construct. The evaluation of primitives
+  transcription's agreement, since the tactics written in Geb construct
+  exactly the certificates the Lean tactics construct. The evaluation of primitives
   at literals is written in Lean for addition, the truncated
   difference, multiplication, equality, less, division, remainder and
   the logarithm. The steps that remain, in their order,
@@ -8467,10 +8476,12 @@ tag := "conversion-continuation"
 
 The first stronger checker, the checker with a step of conversion, is
 written in Lean and proved sound relative to the base checker, with its
-evaluation at literals for the arithmetic named above. None of it is
-written in Geb, no prover emits its steps, and no stored certificate
-uses them. This section states what is written, the order of the steps
-that remain, and the constraints each of them carries.
+evaluation at literals for the arithmetic named above. It is written
+again in Geb, and the checker written in Geb is proved in Lean to agree
+with it at every certificate without a step of the environment machine.
+No prover emits its steps, and no stored certificate uses them. This
+section states what is written, the order of the steps that remain, and
+the constraints each of them carries.
 
 #### What is written
 
@@ -8631,35 +8642,95 @@ that remain, and the constraints each of them carries.
   reduces through weak head normal forms: at numerals of eight decimal
   digits, the innermost normalization of a product did not complete in
   a run of the bench.
+* `bootstrap/free-topos/literals.geb`, `bootstrap/free-topos/machine.geb`
+  and `bootstrap/free-topos/conversion.geb`: the evaluation at literals,
+  the environment machine and the checker written in Geb, the last layer
+  of the metalogic's program (`bootstrap/metalogic.manifest`), after the
+  layers whose agreement is proved, so that the positions of their
+  definitions are unchanged. A certificate is encoded as a derivation
+  is, a rule of the language at its position and the steps of conversion
+  and the application of a theorem at the positions after them, so that
+  the step at a rule of the language is the base checker's step
+  (`checkStep` of `bootstrap/free-topos/derivation.geb`) at the rules
+  the premises stand for. The steps `norm` and `eval` take the term of
+  the prover's reductions written in Geb (`normalize` and `eval` of
+  `bootstrap/free-topos/prove.geb`), whose agreement is proved, and so
+  compute the derivation they discard; the step of the machine replaces
+  each of their reductions (step 4 below), so that reductions computing
+  their results alone are not written in Geb. The evaluation at literals
+  represents a bitstring by the number it denotes, its index in the
+  enumeration, which is the label whose numeral it is, so that it
+  computes each definition by the kernel's primitives on labels and
+  writes a value's numeral by the translation's (`trNumeral`); the
+  definitions evaluated are a table of their indices, objects and types,
+  which the evaluation and the test of readiness search, and the
+  equations are built as {name}`Geb.FreeTopos.Literals.lemmas` builds
+  them. A free variable of the machine's values is the level of a binder
+  or the index of a variable of the context, the two constructors of the
+  integers (step 2 below).
+* `GebTests/Prototypes/FreeTopos/Agreement/Literals.lean` and
+  `GebTests/Prototypes/FreeTopos/Agreement/Conversion.lean`: the
+  agreements. The evaluation written in Geb gives the encoded term of the
+  value {name}`Geb.FreeTopos.Literals.eval` gives, at every term; its
+  equations are the encodings of {name}`Geb.FreeTopos.Literals.lemmas`;
+  its test of readiness is {name}`Geb.FreeTopos.Literals.ready`'s, at
+  every constants, entries and index; and the checker written in Geb is
+  related to {name}`Geb.FreeTopos.Internal.convCheck` at every encoded
+  certificate none of whose steps is the reduction by the machine or
+  names a prepared theorem, whose matching, a function, no tree encodes,
+  with its test that a certificate proves a theorem
+  (`conversion_agree` of `GebTests/Prototypes/FreeTopos/Agreement.lean`).
+  `GebTests/Prototypes/FreeTopos/ConversionMirror.lean` tests the
+  evaluation, the test of readiness and the checker's steps of the
+  machine against Lean's at the library's arithmetic.
+* `GebBench/Prototypes/FreeTopos/MachineMirror.lean` measures the time
+  the two checkers take to accept a step of the machine at each side of
+  the equation of a product and its value's numeral (step 2 below).
 
 #### The order of the remaining steps
 
 1. The datatype language's completion
    ({ref "datatype-completion"}[The datatype language's completion]),
    which precedes substantial authoring in Geb.
-2. The transcription into Geb, beside `bootstrap/free-topos/derivation.geb`
-   and `bootstrap/free-topos/prove.geb`: the rules of the certificates,
-   the instance of a theorem by matching, the step, the checker, and the
-   evaluation at literals with its equations, its test of readiness and
-   the development's record of it;
-   then the proof in Lean that each agrees with its Lean counterpart at
-   every input, in the manner of
-   `GebTests/Prototypes/FreeTopos/Agreement/Derivation.lean`, whose
-   `checkDev_eq` states the base checker's agreement, and
-   `GebTests/Prototypes/FreeTopos/Agreement/Prove.lean`. The
-   reductions that compute a derivation (`normalize`, `eval`) and the
-   matching of a term (`matchTerm`) are written in `prove.geb` already,
-   with their agreement, so the transcription adds the reductions that
-   compute their results alone
-   ({name}`Geb.FreeTopos.Internal.normalizeR`,
-   {name}`Geb.FreeTopos.Internal.evalR`), the environment machine
-   ({name}`Geb.FreeTopos.Internal.machineReduce`), the dispatch over the
-   rules and the evaluation at literals. The machine delays a value as a
-   {name}`Thunk`, computed on its first reading and kept, which the
-   kernel has no form of; the value of a {name}`Thunk` is its function's,
-   so a transcription that computes the value at once, or delays it by an
-   abstraction and computes it at each reading, agrees with the machine,
-   and which of them keeps the machine's time is measured. A free
+2. The agreement of the environment machine written in Geb. The
+   transcription into Geb is written, with the agreements of the
+   evaluation at literals and of the checker at the certificates without
+   a step of the machine (above). What remains is the proof in Lean that
+   the machine written in Geb, `bootstrap/free-topos/machine.geb`, gives
+   at every encoded input the encoding of what
+   {name}`Geb.FreeTopos.Internal.machineReduce` gives, in the manner of
+   `GebTests/Prototypes/FreeTopos/Agreement/Prove.lean`, and with it the
+   checker's agreement at the certificates with steps of the machine.
+   The machine delays a value as a {name}`Thunk`, computed on its first
+   reading and kept, which the kernel has no form of; the value of a
+   {name}`Thunk` is its function's, so the machine written in Geb, which
+   computes the value where it builds the delayed node, is the same
+   function of the term reduced, and the tests find the two checkers
+   accepting the same steps. It does not keep the machine's time: the
+   library's conditional takes its branches as arguments
+   ({name}`Geb.FreeTopos.Translation.condT`), so the machine written in
+   Geb reduces both, and a recursion through the branches multiplies at
+   each level. In one run of
+   `GebBench/Prototypes/FreeTopos/MachineMirror.lean` on one machine, the
+   checkers accept the equation of the product of a factor with itself
+   and its numeral, at the factors 1, 3, 7, 15 and 31, in 0.3, 0.7, 1.9,
+   3.8 and 6.5 milliseconds in Lean, and in 1.7, 3.3, 77, 781 and 7959
+   written in Geb, ten or more times longer for each bit of the factor
+   past the second. A delay by an abstraction is not available to the
+   machine written in Geb: a value is a tree, which holds no function,
+   and a delayed value computed where it is read is computed at the
+   reader's depth of recursion, where the machine's is computed at the
+   depth of the step that built it, so that the two differ where a depth
+   is exhausted. The time is kept by an acceleration
+   ({ref "speed-and-second-host"}[Speed and a second host]): the Lean the
+   compiler emits takes the machine in Lean in place of the machine
+   written in Geb, by the agreement. The machine written in Geb applies
+   the operations of the depth below within the folds over a term's
+   children, a form the elementary-affine typing rejects
+   ({ref "interaction-net-affine-certificates"}[Elementary-affine
+   certificates]), so it is first rewritten in the form of the prover's
+   reduction, applied to lists of jobs, and the agreement is proved of
+   the rewritten source. A free
    variable of the machine is a de Bruijn level, an integer, negative at
    the variables of the reduced term's context, and the Geb sources have
    no integers. The level stays an integer, and the transcription encodes
@@ -8677,20 +8748,7 @@ that remain, and the constraints each of them carries.
    read that length, which it does not read, and would give no level to a
    variable past the context, at which the machine would fail or its
    soundness assume the term's scope, where
-   {name}`Geb.FreeTopos.Internal.machineReduce_reaches` assumes none. The
-   normal form of a fold's step computes the type of the normal form of
-   the fold's start, list or tree
-   ({name}`Geb.FreeTopos.Internal.typeIn`), which the transcription of
-   the machine therefore requires. The Geb
-   sources have no rank or unrank of bitstrings. The evaluation computes
-   a numeral's index by the fold `val (b :: w) = 2 * val w + b + 1`, where `b` is one at the bit
-   {name}`Geb.FreeTopos.Translation.b1T` builds and zero at the other,
-   and an index's numeral by the inverse, a recursion on the index that
-   Geb, which has no general recursion, bounds by the numeral's length,
-   the logarithm of the index's successor. The arithmetic itself is the
-   kernel's primitives on labels, which are natural numbers read as
-   bitstrings by the same enumeration ({ref "values-and-labels"}[Values
-   and labels]).
+   {name}`Geb.FreeTopos.Internal.machineReduce_reaches` assumes none.
 3. Certificates in declarations in Geb. In Lean a declaration of a
    development is a {name}`Geb.FreeTopos.Internal.ConvDecl`: a
    declaration of the base checker, which the agreement proofs cover as
@@ -8764,7 +8822,19 @@ that remain, and the constraints each of them carries.
    against the projection of about one node in ninety.
 
 #### The questions that remain open
+%%%
+tag := "conversion-open"
+%%%
 
+* The machine of a host without Lean. The acceleration gives the Lean
+  the compiler emits the time of the machine in Lean (step 2 above); a
+  host without Lean runs the machine written in Geb, at the time
+  measured there, or supplies a machine of its own. The alternative
+  that keeps the time in the Geb source makes the machine's delayed
+  values entries of a store threaded through the evaluation, in Lean
+  and in Geb alike, with the soundness proved of that machine. Whether
+  it is written waits on the second host
+  ({ref "speed-and-second-host"}[Speed and a second host]).
 * The reach of the step of the machine. The steps `norm` and `eval`
   compute the reduction's result alone
   ({name}`Geb.FreeTopos.Internal.evalR`), and a step takes about as long
