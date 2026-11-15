@@ -35,8 +35,9 @@ the definitions the soundness's conclusion is stated by.
 ## Main definitions
 
 * {lit}`translatedGlobals` — the constants of the translation of the compilers' program.
-* {lit}`passGlobals`, {lit}`statementGlobals` — the definitions the compiler's passes and the
-  soundness's conclusion call, with their kernel types.
+* {lit}`passGlobals`, {lit}`statementGlobals`, {lit}`hypGlobals` — the definitions the
+  compiler's passes, the soundness's conclusion and its remaining hypotheses call, with their
+  kernel types.
 * {lit}`statementDefs` — the definitions the soundness's conclusion is stated by, with their
   indices.
 
@@ -45,8 +46,9 @@ the definitions the soundness's conclusion is stated by.
 * {lit}`accepted` — the constants of the extended program are accepted.
 * {lit}`hasLogic` — they have the connectives' definitions from the index the program names.
 * {lit}`translatedAccepted` — the constants of the translation alone are accepted.
-* {lit}`passGlobalsTyped`, {lit}`statementGlobalsTyped` — the definitions the passes and the
-  conclusion call have the kernel types named.
+* {lit}`passGlobalsTyped`, {lit}`statementGlobalsTyped`, {lit}`hypGlobalsTyped` — the
+  definitions the passes, the conclusion and the remaining hypotheses call have the kernel
+  types named.
 * {lit}`defined`, {lit}`natPrims` — the extended program's constants have the definitions the
   conclusion is stated by, and the primitive arrows of the natural numbers.
 * {lit}`envTy_eq` — the type of the typing's environments the program records is the
@@ -189,6 +191,43 @@ set_option doc.verso false in
 /-- The compilers' definitions the soundness's conclusion calls have the kernel types named
 with them, in the types the translation records, as Lean's evaluator decides. -/
 evaluation_axiom statementGlobalsTyped : typedIn bundledTypes statementGlobals = true
+
+/-- The kernel type of the expansion's states: whether every form has expanded, the
+declarations, and the forms written. -/
+def xpK : Kernel.Tree := tProd tT (tProd (tList tT) (tList tT))
+
+/-- The names of the compilers' definitions the soundness's remaining hypotheses call, each
+with its kernel type. -/
+def hypGlobals : List (String × Kernel.Tree) :=
+  [("Datatype.genericStep", tArrow xpK (tArrow tT xpK)),
+    ("Datatype.xpStep", tArrow xpK (tArrow tT xpK)),
+    ("Prelude.and", tArrow tT (tArrow tT tT)), ("Prelude.or", tArrow tT (tArrow tT tT)),
+    ("Datatype.isListTx", tArrow tT tT), ("Datatype.namedTx", tArrow tT (tArrow tT tT)),
+    ("Datatype.nthTx", tArrow (tList tT) (tArrow tT tT)), ("Datatype.elems", tArrow tT (tList tT)),
+    ("Datatype.kwGeneric", tT), ("Datatype.kwData", tT), ("Datatype.kwTreeData", tT),
+    ("Datatype.kwDefn", tT), ("Reader.kwDef", tT), ("Reader.kwDeftype", tT),
+    ("Reader.kwDefnum", tT), ("Reader.kwT", tT), ("Reader.kwUnit", tT),
+    ("srcForm", tArrow (tArrow tT tT) (tArrow tT tT)),
+    ("Reader.expandNums", tArrow (tList tT) (tArrow tT tT)),
+    ("Reader.numOf", tArrow (tList tT) (tArrow tT tT)), ("Reader.nameOf", tArrow tT tT),
+    ("Reader.node2", tArrow tT (tArrow tT (tArrow tT tT))),
+    ("Datatype/Txs.reverse", tArrow (tList tT) (tList tT)),
+    ("Datatype/Txs.drop", tArrow tT (tArrow (tList tT) (tList tT))),
+    ("Datatype.kernelForms", tArrow (tList tT) (tList tT)),
+    ("Recognize.markers", tArrow (tList tT) (tList tT)),
+    ("Typing.markerCtors", tArrow (tList tT) (tArrow tT (tProd tT (tList tT)))),
+    ("Typing.markerNames", tArrow (tList tT) (tList tT)), ("Reader.isAtom", tArrow tT tT),
+    ("Reader.named", tArrow tT (tArrow tT tT)), ("Prelude.length", tArrow (tList tT) tT),
+    ("Reader.numeral", tArrow (tList tT) tT), ("Typing.decimalChars", tArrow tT (tList tT)),
+    ("charsFixed", tArrow (tArrow tT tT) (tArrow (tList tT) tT)), ("implName", tArrow tT tT),
+    ("Datatype.memberName", tArrow tT tT), ("Prelude.get", tArrow tT tT),
+    ("Prelude.isSome", tArrow tT tT), ("Prelude.some", tArrow tT tT),
+    ("Reader.indexOf", tArrow tT (tArrow (tList tT) tT))]
+
+set_option doc.verso false in
+/-- The compilers' definitions the soundness's remaining hypotheses call have the kernel types
+named with them, in the types the translation records, as Lean's evaluator decides. -/
+evaluation_axiom hypGlobalsTyped : typedIn bundledTypes hypGlobals = true
 
 /-! The definitions the soundness's conclusion is stated by. -/
 

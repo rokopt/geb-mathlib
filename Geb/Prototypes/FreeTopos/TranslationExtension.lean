@@ -42,8 +42,9 @@ at a type of first order the equality of two kernel values.
 * {lit}`repC_truth`, {lit}`repC_test` — the truth of a test represents that its tree's label
   is not zero.
 * {lit}`repC_eqK` — an equation at a type of first order represents the equality of the values.
-* {lit}`repC_condB`, {lit}`repC_eqB` — the library's conditional and test of equality of
-  bitstrings represent the kernel's on labels.
+* {lit}`repC_condB`, {lit}`repC_eqB`, {lit}`repC_lab`, {lit}`repC_leafL`, {lit}`repC_tail` —
+  the library's conditional, test of equality of bitstrings, label, leaf and tail represent
+  the kernel's.
 * {lit}`RepCtx.lift`, {lit}`RepCtx.prim`, {lit}`RepCtx.numeral`, {lit}`RepCtx.quote` — the
   translation's constants in a represented context.
 
@@ -293,6 +294,58 @@ theorem repC_test {o : ℕ} (hlog : HasLogic G' o) {u : Term} {B : S → Kernel.
   obtain ⟨a, ha, hu⟩ := hu
   obtain rfl : a = treeTy := Option.some.inj (ha.symm.trans ty_tT)
   exact repC_truth hE hlog hE.val hu
+
+/-- The library's label of a tree, in any environment, represents a kernel tree's label. -/
+theorem repC_lab {X : Tree} {e : List (Tree × Tree)} {S' A' : Type} {R' : S' → A' → Prop}
+    {u : Term} {B : S' → Kernel.Tree}
+    (hu : RepC G' 0 (ds ++ ext) [] u X e treeTy R' (Rep.rose RN) B) :
+    RepC G' 0 (ds ++ ext) [] (call D.lab [] [u]) X e bitsTy R' RN fun s ↦ (B s).label := by
+  obtain ⟨fl, hfl⟩ := Internal.compiled_language hE.compiles₀ (k := D.lab) (d := lib[D.lab]) rfl
+  have hlab : Represents [] (unfoldTerm sig (ds ++ ext) fl) (Rep.rose RN) RN RoseTree.label := by
+    rw [show unfoldTerm sig (ds ++ ext) fl = unfoldTerm sig ds fl from
+      Internal.unfoldTerm_append_defn hE.wf₀ hfl]
+    exact represents_lab (rep_lab hE.compiles₀ hfl)
+  have hkl : G'.defs[D.lab]? = some (.language lib[D.lab]) :=
+    Internal.getElem?_of_prefix hE.le.2.2 rfl
+  exact Internal.repC_call₁ (τ' := []) (a := bitsTy) hE.base hkl hE.wf
+    (Internal.getElem?_of_prefix (List.prefix_append ds ext) hfl) rfl (by simp) (by simp) .nil
+    rfl rfl hlab hu
+
+/-- The leaf of a label, in any environment over an object with a value, represents the leaf
+of the label it represents. -/
+theorem repC_leafL {X : Tree} {e : List (Tree × Tree)} {S' A' : Type} {R' : S' → A' → Prop}
+    (hX : ObjVal [] (unfoldTerm sig (ds ++ ext) X) A') {l : Term} {F : S' → ℕ}
+    (hl : RepC G' 0 (ds ++ ext) [] l X e bitsTy R' RN F) :
+    RepC G' 0 (ds ++ ext) [] (leafT l) X e treeTy R' (Rep.rose RN)
+      fun s ↦ RoseTree.node (F s) [] := by
+  have hkNil : G'.prims[0]? = some Internal.nilPrim := Internal.getElem?_of_prefix hE.le.1 rfl
+  have hkNode : G'.prims[2]? = some Internal.lnodePrim :=
+    Internal.getElem?_of_prefix hE.le.1 rfl
+  refine Internal.repC_lnode hkNode ?_
+    (Internal.repC_pair hl (Internal.repC_nil hkNil ?_ (Internal.repC_star hX _) ?_
+      (Rep.rose RN))) ?_
+  side_goals
+
+/-- The library's tail of a list, in any environment, represents the tail of the list, at any
+representation of the elements' type, a type of the theory's signature. -/
+theorem repC_tail {a : Tree} {X : Tree} {e : List (Tree × Tree)} {S' A' T B : Type}
+    {R' : S' → A' → Prop} {Ra : T → B → Prop} (hta : Internal.IsTy G' 0 a = true)
+    (hops : PartialHorn.OpsBelow sig.length a = true) (hva : ObjVal [] a B) {u : Term}
+    {F : S' → List T} (hu : RepC G' 0 (ds ++ ext) [] u X e (list a) R' (Rep.list Ra) F) :
+    RepC G' 0 (ds ++ ext) [] (call D.tail [a] [u]) X e (list a) R' (Rep.list Ra)
+      fun s ↦ (F s).tail := by
+  obtain ⟨ft, hft⟩ :=
+    Internal.compiled_language hE.compiles₀ (k := D.tail) (d := lib[D.tail]) rfl
+  have htl : Represents (Internal.objs [B]) (unfoldTerm sig (ds ++ ext) ft) (Rep.list Ra)
+      (Rep.list Ra) List.tail := by
+    rw [show unfoldTerm sig (ds ++ ext) ft = unfoldTerm sig ds ft from
+      Internal.unfoldTerm_append_defn hE.wf₀ hft]
+    exact rep_tail hE.compiles₀ hft Ra
+  have hk : G'.defs[D.tail]? = some (.language lib[D.tail]) :=
+    Internal.getElem?_of_prefix hE.le.2.2 rfl
+  exact Internal.repC_call₁ (τ' := [B]) (a := list a) hE.base hk hE.wf
+    (Internal.getElem?_of_prefix (List.prefix_append ds ext) hft) rfl (by simp [hta])
+    (by simp [hops]) (.cons hva .nil) rfl rfl htl hu
 
 /-- The conditional on a bitstring, in any environment, represents the choice of the first
 branch at a label other than zero and of the second at zero, at any representation of the

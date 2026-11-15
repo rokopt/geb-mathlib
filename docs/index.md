@@ -4687,8 +4687,9 @@ import-direction rules above are enforced by
   (`Geb.FreeTopos.Translation.repC_eqK`); a represented context carries
   its value, its environment's representation and its sortedness under
   binders (`Geb.FreeTopos.Translation.RepCtx`), in which the
-  translation's constants, the library's conditional and its test of
-  equality of labels are read. Tested in `GebTests/Prototypes/FreeTopos/`:
+  translation's constants, the library's conditional, its test of
+  equality of labels, and its label, leaf and tail of a tree's children
+  are read. Tested in `GebTests/Prototypes/FreeTopos/`:
   `Translation.lean` computes with the library, `TranslationProofs.lean`
   proves theorems of Gödel's T about the translated
   programs, `Agreement/Translation.lean` proves the translation written
@@ -4790,7 +4791,17 @@ import-direction rules above are enforced by
   membership (`Certified/DatatypeConclusion.lean`); the soundness
   concludes that statement of Lean where the loaded compilers' passes
   succeed and the remaining hypotheses hold
-  (`Certified/DatatypeProgramConclusion.lean`). The
+  (`Certified/DatatypeProgramConclusion.lean`). The prelude's right fold
+  and a pass's run over a list represent Lean's folds
+  (`Certified/DatatypeFolds.lean`), so the remaining hypotheses
+  represent statements about the loaded globals' values too: the run of
+  the test that the definitions' bodies are source forms, what the
+  soundness assumes of the markers, their names and constructors and of
+  the numerals, and what it assumes of each form
+  (`Certified/DatatypeHypotheses.lean`). Every kernel list of trees
+  being represented, the soundness is a statement of the kernel's lists
+  of forms alone, with each hypothesis explicit
+  (`Certified/DatatypeProgramExplicit.lean`). The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   metalogic, the choices that fixed its form, and the proofs about the
   compiler's components made in it. Depends on the modules of

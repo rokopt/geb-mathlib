@@ -444,6 +444,17 @@ translations:
   Canonical is removed when everything done or planned with it is
   writable by it (`TODO.md` § Triggers).
 
+* Among the first items, the datatype language's soundness of every
+  source the compiler accepts
+  ({ref "datatype-completion"}[The datatype language's completion]).
+  The soundness's transfer to Lean holds of a program under conditions
+  on what the expansion writes for it, besides the passes' successes:
+  that each body written for a definition passes the test of source
+  forms, that each marker is the one its datatype's atom finds among
+  the markers, that each marker's datatype is named by an atom other
+  than the trees' type's and the unit type's, and that each marker has
+  at most one constructor of each label. Their proofs of every program
+  on which the passes succeed remove them from the statement.
 * The setoid language: quotients whose respect is proved, subset types by
   propositions, definitions by equations whose unique solution is
   proved, and dependent products of families, each a construction of
@@ -3072,10 +3083,10 @@ names its datatype by an atom other than the trees' type and the unit
 type, and has at most one constructor of each label; and that the
 digits of a label read as the label and are fixed by the expansion of
 numeral abbreviations. Remaining after it: the transfer of the result
-to Lean, where those assumptions are to be discharged; `tree-data`
-removed. The developments of the soundness continue
-from one another in no one order, each citing the statements of those
-it continues from, so the modules of
+to Lean, which the paragraphs below describe with what becomes of those
+assumptions; `tree-data` removed. The developments of the soundness
+continue from one another in no one order, each citing the statements
+of those it continues from, so the modules of
 `GebTests/Prototypes/FreeTopos/Certified/` check each after those
 statements and compose them by validity
 ({name}`Geb.FreeTopos.Internal.valid_of_checkAfter`):
@@ -3136,8 +3147,30 @@ soundness concludes that statement where the loaded compilers' passes
 succeed on a kernel list of forms and its remaining hypotheses hold of
 the list that represents it
 (`GebTests/Prototypes/FreeTopos/Certified/DatatypeProgramConclusion.lean`).
-What remains of the transfer is the reading and the discharge of the
-remaining hypotheses, and the compilers' entry point.
+The remaining hypotheses are read the same way, the runs over the
+program's forms as Lean's left folds of the steps the loaded compilers
+compute
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeFolds.lean`,
+`GebTests/Prototypes/FreeTopos/Certified/DatatypeHypotheses.lean`), and
+every kernel list of trees is represented by a list of trees of
+bitstrings. The soundness is then a statement of Lean about the
+kernel's lists of forms alone
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeProgramExplicit.lean`):
+at a list of forms on which the loaded compilers' passes succeed, whose
+definitions' bodies pass the test of source forms, whose markers and
+forms are as the soundness assumes, and with the numerals' digits read
+back and fixed, each definition the typing gives a type evaluates to a
+value related at the type and each datatype's recognizer decides
+membership. Of those hypotheses, the conditions on what the expansion
+writes stay hypotheses of the transfer: the test of source forms and
+the condition on each marker among the kernel forms are computed from a
+program's forms, and the conditions on the markers' names and
+constructors are stated of every name and of every label; their proof
+of every program on which the passes succeed follows the bootstrap (the
+road map). What remains of the transfer is the proof of the two facts
+about the numerals' digits, which do not depend on the program, the
+discharge of the conditions on the names a form declares, and the
+compilers' entry point.
 
 The rewriting of the definitions the elementary-affine search rejects in
 the compilers' sources waits on this completion, whose soundness of the
