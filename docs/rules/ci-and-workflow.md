@@ -273,6 +273,13 @@ A build in the mode `native` outside that script leaves no record, and
 a stale module it leaves in a later build depends on an axiom of the
 loading, which the linter then rejects.
 
+The modes apply to the steps the command `geb_load` declares in those
+modules. The command `geb_program`
+(`GebTests/Prototypes/ProgramCommand.lean`) proves each step it declares
+itself, in either mode: the program the datatype language's soundness is
+stated in is loaded so, in seconds
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeLoad.lean`).
+
 ## Certificates
 
 The developments the internal language proves about the bootstrap's

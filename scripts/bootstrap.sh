@@ -7,8 +7,9 @@
 # from its own source, bootstrap/lean/GebBoot.lean (the manual's
 # Bootstrap chapter, Speed and a second host and What self-compilation
 # establishes); and the Lean it emits from the programs whose agreement
-# with a Lean function is proved, each under bootstrap/lean/GebMirror/ in
-# a namespace of its own; the metalogic's, a module per layer, beside the
+# with a Lean function is proved, and from the program the datatype
+# language's soundness is stated in, each under bootstrap/lean/GebMirror/
+# in a namespace of its own; the metalogic's, a module per layer, beside the
 # loading of its program through each layer, checked by the kernel.
 #
 # The programs' sources are those of their manifests, bootstrap/*.manifest.
@@ -42,7 +43,7 @@ b=bootstrap
 img=$b/compiler.img
 lean=$b/lean/GebBoot.lean
 # each mirror emitted as one module: its name, then its manifest
-mirrors=("Kernel $b/kernel.manifest")
+mirrors=("Kernel $b/kernel.manifest" "DatatypeSoundness $b/datatype-soundness.manifest")
 kernel=.lake/build/bin/geb-kernel
 
 tmp=$(mktemp -d)

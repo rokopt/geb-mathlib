@@ -261,6 +261,18 @@ moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 [lean_lib.moreServerOptions]
 weak.linter.hashCommand = false
 
+# The statements that the proof of weakening and the datatype language's soundness add to their
+# programs.
+[[input_file]]
+name = "weakeningStatement"
+path = "bootstrap/proofs/weakening.geb"
+text = true
+
+[[input_file]]
+name = "datatypeSoundnessStatement"
+path = "bootstrap/proofs/datatype-soundness.geb"
+text = true
+
 # The benchmarks, run by `lake exe geb-bench` and by slow-checks.yml, and built by neither
 # `lake build` nor `lake test`.
 [[lean_lib]]
@@ -271,6 +283,20 @@ name = "GebBench"
 name = "GebTestsCertified"
 globs = ["GebTests.Prototypes.FreeTopos.Certified.+"]
 needs = ["@/certificates"]
+moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
+
+[lean_lib.moreServerOptions]
+weak.linter.hashCommand = false
+
+# The program the datatype language's soundness is stated in, which the kernel loads to its
+# mirror's definitions; declared after the library of the certificates' modules, whose glob
+# covers the module.
+[[lean_lib]]
+name = "GebTestsDatatypeSoundness"
+globs = ["GebTests.Prototypes.FreeTopos.Certified.DatatypeLoad"]
+needs = ["@/preludeSource", "@/readerSource", "@/checkSource", "@/seqSource", "@/stage1Sources",
+  "@/recognizeSource", "@/substSource", "@/evalSource", "@/weakeningStatement",
+  "@/datatypeSoundnessStatement"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]

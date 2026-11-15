@@ -19,6 +19,7 @@ public import GebTests.Prototypes.FreeTopos.Certified.DatatypeForms
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeGenerated
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeHypotheses
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeList
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeLoad
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypePasses
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgram
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramConclusion

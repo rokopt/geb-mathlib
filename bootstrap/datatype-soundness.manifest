@@ -1,0 +1,71 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The program the datatype language's soundness is stated in: the stage-1 compiler's typing and
+; expansion with the reader, the kernel's type checker and the recognizers, the traversal of kernel
+; terms and the evaluator, and the statements of weakening and of the soundness.
+
+(program datatype-soundness (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
+  (sources prelude.geb reader.geb check.geb seq.geb stage1/typing.geb stage1/datatype.geb
+    recognize.geb
+    subst.geb
+    eval.geb
+    proofs/weakening.geb
+    proofs/datatype-soundness.geb)
+  (entries Prelude.length Prelude.some Prelude.isSome Prelude.get Prelude.and Prelude.or Prelude.nth
+    Reader.isAtom
+    Reader.nameOf
+    Reader.named
+    Reader.kwT
+    Reader.kwUnit
+    Reader.kwDef
+    Reader.kwDeftype
+    Reader.kwDefnum
+    Reader.indexOf
+    Reader.numeral
+    Reader.expandNums
+    Reader.numOf
+    Reader.node2
+    Reader.readProgram
+    Check.checkProgram
+    Typing.envDefs
+    Typing.envNoms
+    Typing.envMs
+    Typing.env0
+    Typing.lookupName
+    Typing.hasName
+    Typing.recognizerName
+    Typing.markerNames
+    Typing.memberOf
+    Typing.decimalChars
+    Typing.markerCtors
+    Typing/OName.nothing
+    Typing.checkAll
+    Datatype/Txs.reverse
+    Datatype/Txs.drop
+    Datatype.isListTx
+    Datatype.namedTx
+    Datatype.elems
+    Datatype.nthTx
+    Datatype.kwData
+    Datatype.kwTreeData
+    Datatype.kwDefn
+    Datatype.kwGeneric
+    Datatype.memberName
+    Datatype.xpStep
+    Datatype.genericStep
+    Datatype.expandTyped
+    Datatype.markersFirst
+    Datatype.kernelForms
+    Recognize.markers
+    Recognize.insertRecognizers
+    Eval.valQuote
+    Eval.valUnit
+    Eval.valPair
+    Eval.listOf
+    Eval.next
+    Eval.level
+    charsFixed
+    srcForm
+    implName))
