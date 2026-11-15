@@ -199,7 +199,8 @@ def «Serialize.image» :=
       («Prelude.append»
         ((leaf 71) ::
           ((leaf 69) ::
-            ((leaf 66) :: ((leaf 75) :: ((leaf 1) :: ([] : List T))))))
+            ((leaf 66) ::
+              ((leaf 75) :: ((leaf 2) :: ((leaf 1) :: ([] : List T)))))))
         («Prelude.append»
           («Serialize.lowDigits» (leaf 256) («Prelude.length» x1) (leaf 8))
           («Serialize.packBits» x1)))

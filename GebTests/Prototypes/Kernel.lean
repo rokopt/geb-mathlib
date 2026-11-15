@@ -178,10 +178,25 @@ def imageOf (text : List Char) : ByteArray :=
   none
 #guard readImage ((imageOf quadruple.toList).push 0) = none
 #guard readImage ((imageOf quadruple.toList).set! 0 0) = none
-#guard readImage ((imageOf quadruple.toList).set! 4 2) = none
+#guard readImage ((imageOf quadruple.toList).set! 4 3) = none
+#guard readImage ((imageOf quadruple.toList).set! 5 0) = none
+#guard readImage ((imageOf quadruple.toList).set! 5 2) = none
 #guard readImage ((imageOf quadruple.toList).set! 20 0xFF) !=
   readImage (imageOf quadruple.toList)
 #guard readImage .empty = none
+-- golden encodings separate format 2 from kernel profile 1; format 1 implies the same profile
+#guard (writeImage (leaf 0)).data = #[71, 69, 66, 75, 2, 1, 2, 0, 0, 0, 0, 0, 0, 0, 2]
+#guard readImage ⟨#[71, 69, 66, 75, 1, 2, 0, 0, 0, 0, 0, 0, 0, 2]⟩ = some (leaf 0)
+#guard migrateImage ⟨#[71, 69, 66, 75, 1, 2, 0, 0, 0, 0, 0, 0, 0, 2]⟩ ==
+  some (writeImage (leaf 0))
+#guard migrateImage (imageOf quadruple.toList) == some (imageOf quadruple.toList)
+#guard migrateImage ((imageOf quadruple.toList).set! 5 2) = none
+#guard migrateImage ((imageOf quadruple.toList).push 0) = none
+#guard migrateImage ⟨#[71, 69, 66, 75, 2]⟩ = none
+#guard migrateImage ⟨#[71, 69, 66, 75, 2, 1]⟩ = none
+-- the final byte has six unused bits, all of which must be zero
+#guard migrateImage ⟨#[71, 69, 66, 75, 1, 2, 0, 0, 0, 0, 0, 0, 0, 6]⟩ = none
+#guard migrateImage ⟨#[71, 69, 66, 75, 2, 1, 2, 0, 0, 0, 0, 0, 0, 0, 6]⟩ = none
 -- a bundle whose definition refers to itself, and a tree that is not a bundle
 #guard runEntry (mk 100 [mk 101 [mk Label.ref [leaf 0]], mk 102 [nameTree "f".toList]]) "f".toList
   (leaf 0) = none

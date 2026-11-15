@@ -25,7 +25,9 @@ and {lit}`layers MANIFEST` prints a line for each of its layers, the layer's nam
 paths of its sources;
 {lit}`sources MANIFEST` prints the sources' relative paths, one per line in manifest order;
 {lit}`run IMAGE NAME INPUT OUTPUT` reads an image, applies its definition of that name to
-the input file's tree, and writes the output tree's bytes; and {lit}`holes SOURCE …` and
+the input file's tree, and writes the output tree's bytes;
+{lit}`migrate-image INPUT OUTPUT` validates an image and writes its explicit-profile form,
+preserving its payload bytes; and {lit}`holes SOURCE …` and
 {lit}`holes --manifest MANIFEST` check a program with holes ({name}`Geb.Kernel.Holes.check`) and
 print each hole's context and expected type, or that the program is complete, exiting with
 status 0 when it is complete and 2 when a hole is open. Kernel programs are pure: the
@@ -143,6 +145,11 @@ def checkAnnotations (path : String) : IO Unit := do
 an image's named definition on a file, or check a program with holes. -/
 def run (args : List String) : IO UInt32 := do
   match args with
+  | ["migrate-image", input, output] =>
+    let some img := migrateImage (← IO.FS.readBinFile input)
+      | throw <| IO.userError s!"{input}: malformed image or unsupported format or kernel profile"
+    IO.FS.writeBinFile output img
+    return 0
   | ["annotations", source, output] =>
     writeAnnotations source output
     return 0
@@ -196,7 +203,8 @@ def run (args : List String) : IO UInt32 := do
       "usage: geb-kernel build SOURCE... IMAGE | geb-kernel build --manifest MANIFEST IMAGE | " ++
         "geb-kernel join MANIFEST OUTPUT [LAYER] | geb-kernel layers MANIFEST | " ++
         "geb-kernel sources MANIFEST | " ++
-        "geb-kernel run IMAGE NAME INPUT OUTPUT | geb-kernel holes SOURCE... | " ++
+        "geb-kernel run IMAGE NAME INPUT OUTPUT | geb-kernel migrate-image INPUT OUTPUT | " ++
+        "geb-kernel holes SOURCE... | " ++
         "geb-kernel holes --manifest MANIFEST | geb-kernel annotations SOURCE OUTPUT | " ++
         "geb-kernel check-annotations RECORD"
 

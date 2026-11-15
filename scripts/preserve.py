@@ -121,6 +121,18 @@ def compile_program(manifest, target):
     command("geb-defs", target / "program.img", target / "program.defs")
 
 
+def same_artifact(left, right):
+    # Compare supported image headers in their explicit-profile form. The kernel validates
+    # both images and retains their payload bytes; archives themselves are never rewritten.
+    if left.name == "program.img":
+        with tempfile.TemporaryDirectory(prefix="geb-image-compare-") as directory:
+            a, b = Path(directory) / "left.img", Path(directory) / "right.img"
+            command("geb-kernel", "migrate-image", left, a)
+            command("geb-kernel", "migrate-image", right, b)
+            return a.read_bytes() == b.read_bytes()
+    return left.read_bytes() == right.read_bytes()
+
+
 def inventory(root):
     if root.is_symlink() or not root.is_dir():
         raise ValueError("a record must be a directory, not a symbolic link")
@@ -246,7 +258,7 @@ def record(manifest, proofs, destination, certificate, predecessor=None):
         tooling(staged)
         if predecessor is not None:
             for name in ("program.img", "program.defs"):
-                if (staged / name).read_bytes() != (predecessor / name).read_bytes():
+                if not same_artifact(staged / name, predecessor / name):
                     raise ValueError(f"{name} changed during migration")
             write_json(staged / "migration.json", {
                 "format": "geb-migration/v1",
@@ -283,7 +295,7 @@ def check(root, info, manifest=None, proofs=None):
             raise ValueError("the current reader does not reproduce the recorded documents")
         compile_program(saved, target)
         for name in ("program.img", "program.defs"):
-            if (target / name).read_bytes() != (root / name).read_bytes():
+            if not same_artifact(target / name, root / name):
                 raise ValueError(f"{name} differs: compilation changed; the record was not updated")
         command("geb-author", "replay", saved, proof, root / "proof.cert")
     status = "unchanged" if docs_equal else "changed"

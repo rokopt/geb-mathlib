@@ -1225,6 +1225,11 @@ record, and replays its saved certificate, checking examples again.
 It performs no proof search and does not regenerate the record. A moved
 record therefore remains checkable after the original project is removed,
 provided the current host still reads its profile and reproduces its core.
+Images are compared after `geb-kernel migrate-image` validates them and
+normalizes their headers: format `1` implies kernel profile `geb-kernel/v1`,
+and format `2` names that profile explicitly. The migration preserves the
+bit count and payload bytes, and no image of an unsupported profile is
+accepted. The files and digests of the record itself remain unchanged.
 
 `compare` performs the same compilation and replay on the supplied
 current sources. It reports document changes separately: edits to
@@ -1264,7 +1269,8 @@ certificate payload against both versions and changes its envelope from
 share the theorem-and-companion layout and the translated program.
 
 The new record is published after the normal record checks, with its
-checked image and elaborated definitions byte-identical to the old ones.
+checked image byte-identical after header migration and its elaborated
+definitions byte-identical to the old ones.
 Its `migration.json` names operation `proofs/1-to-2` and the SHA-256 digest
 of the predecessor's `record.json`. This receipt is included in the new
 inventory. The old record remains unchanged; an existing destination is
