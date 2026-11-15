@@ -572,12 +572,15 @@ developments compose where they cut in an instance, a congruence or a
 formula, which `bootstrap/authoring.geb` composes. A rule that names a
 theorem is tried only where the root of its companion's left side occurs.
 
-The documents `weakening.proofs.geb`, `substitution.proofs.geb` and
-`expansion.proofs.geb` under `bootstrap/proofs/` state and prove with them
+The documents `weakening-lemmas.proofs.geb`, `weakening.proofs.geb`,
+`substitution.proofs.geb` and `expansion.proofs.geb` under `bootstrap/proofs/`
+state and prove with them
 the developments of `GebTests/Prototypes/FreeTopos/Weakening.lean`,
 `Substitution.lean` and `Expansion.lean`: that weakening and substitution
 preserve the types the kernel's type checker infers, about the program of
-`bootstrap/weakening.manifest`, the second importing the first; and that the
+`bootstrap/weakening.manifest`, the theorem of weakening in a document that
+imports its lemmas', which the developments citing the lemmas alone import, and
+the substitution's importing the theorem's; and that the
 expansion of the datatype language is the identity on a program of kernel
 forms, about the program of `bootstrap/kernel-forms.manifest`, whose module
 `bootstrap/proofs/kernel-forms.geb` defines the predicates of kernel

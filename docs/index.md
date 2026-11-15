@@ -3961,8 +3961,9 @@ import-direction rules above are enforced by
   transports references before comparing definitions; reuse transports the
   saved dependency set as well. `scripts/tests/test-proof-cache.sh` exercises
   unrelated edits, moved definitions and changed transitive dependencies. The
-  documents `weakening.proofs.geb`, `substitution.proofs.geb` and
-  `expansion.proofs.geb` under `bootstrap/proofs/` state and prove with
+  documents `weakening-lemmas.proofs.geb`, `weakening.proofs.geb`,
+  `substitution.proofs.geb` and `expansion.proofs.geb` under
+  `bootstrap/proofs/` state and prove with
   them the developments of `GebTests/Prototypes/FreeTopos/Weakening.lean`,
   `Substitution.lean` and `Expansion.lean`, the last about the program of
   `bootstrap/kernel-forms.manifest`, whose module
