@@ -3973,7 +3973,14 @@ import-direction rules above are enforced by
   `Substitution.lean` and `Expansion.lean`, the last about the program of
   `bootstrap/kernel-forms.manifest`, whose module
   `bootstrap/proofs/kernel-forms.geb` defines the predicates of the
-  kernel's forms; `scripts/proofs.sh` proves and replays them, and
+  kernel's forms. The documents `normalization-base.proofs.geb`,
+  `normalization-const.proofs.geb`, `normalization-rel.proofs.geb` and
+  `normalization.proofs.geb`, each importing the one before it and the
+  first the lemmas of weakening, state and prove the developments of
+  `NormalizationBase.lean`, `NormalizationConst.lean`,
+  `NormalizationRel.lean` and `Normalization.lean`, the fundamental lemma
+  of the evaluator, about the program of `bootstrap/normalization.manifest`;
+  `scripts/proofs.sh` proves and replays them all, and
   `slow-checks.yml` runs it. Statements over the datatype language's
   datatypes remain to be exposed.
   `scripts/preserve.py` records any manifest-based development through those

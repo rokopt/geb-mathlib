@@ -3531,9 +3531,13 @@ tag := "authoring-compatibility"
     5 adds formula statements, every connective as a term, logical scripts
     and explicit application of formula theorems, with saved certificates
     and durable conversion ({ref "formula-scripts"}[Formula statements and
+    proofs]); and version 6 adds the scripts that reduce a hypothesis,
+    compare a goal with one and cite a theorem as a hypothesis, in which
+    the evaluator's fundamental lemma is stated and proved
+    ({ref "reduction-scripts"}[Reductions and cited theorems in formula
     proofs]). Statements over datatypes wait on the datatype language's
-    completion. The rest of the development of the fundamental lemma and
-    that of the datatype language's soundness remain Lean deducers
+    completion, and the development of the datatype language's soundness
+    remains Lean deducers
 *
   * `let*` and `cond`, expanded in the elaboration of modules
   * Complete
@@ -5712,10 +5716,15 @@ rules, including quantifier introductions and eliminations, and apply
 earlier formula theorems. `examples/authoring/Logic.proofs.geb` exercises
 them through a proof transporting existential witnesses, saved and replayed
 in the authoring record ({ref "formula-scripts"}[Formula statements and
-proofs]). The remaining ports of the fundamental lemma and the datatype
-language's soundness still need definitions that name a fold of the
-program's where its source names none
-({ref "improvements"}[Improvements]). The syntax of
+proofs]). Version 6 adds the scripts by which a formula's proof reduces a
+hypothesis, compares its goal with one and cites an earlier theorem as a
+hypothesis, and the fundamental lemma of the evaluator is stated and proved
+in it under `bootstrap/proofs/`: the folds of the type checker and of the
+evaluator, which their sources do not name, are definitions of the
+development, each writing its fold out, and the tests that the Lean
+deducers decide by a search are decided by the case analysis of their
+values ({ref "reduction-scripts"}[Reductions and cited theorems in formula
+proofs]). The port of the datatype language's soundness remains. The syntax of
 statements and proof scripts
 is a step of the sequence ({ref "authoring-sequence"}[The sequence and its
 acceptance]). It adds no rule to the metalogic: a script is a program for
@@ -8210,7 +8219,9 @@ the change that removes it.
 * The steps of the folds of `typeIn`, `trav` and `expandExpr` are named by
   no definition of their sources, so a proof document that states a lemma
   about one of those folds writes its step out, once, in an abbreviation
-  ({ref "development-scripts"}[Abbreviations, folds and searches]). A
+  ({ref "development-scripts"}[Abbreviations, folds and searches]), and
+  the development of the fundamental lemma declares the folds of `typeIn`
+  and of the evaluator as definitions of its own. A
   definition of each step removes the copies; `check.geb` and `subst.geb`
   are sources of the program whose typing's soundness is proved, so the
   definitions follow the datatype language's completion.

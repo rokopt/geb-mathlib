@@ -790,19 +790,14 @@ requires their derivations to be checked
 ({ref "proof-cache"}[The cache of a development]). A document of version `4`
 imports documents of versions `1` to `4`.
 
-The document `normalization-base.proofs.geb` under `bootstrap/proofs/`
-begins in this version the development of
-`GebTests/Prototypes/FreeTopos/NormalizationBase.lean`, the base of the
-fundamental lemma of the evaluator, about the program of
-`bootstrap/normalization.manifest`. It declares the addition of natural
-numbers, by which the levels of the evaluator's fuel are counted, and
-proves its lemmas: zero and a successor on each side, associativity and
-commutativity. The rest of that development, and those of
-`NormalizationConst.lean`, `NormalizationRel.lean` and `Normalization.lean`,
-remain Lean deducers. Their statements are formulas of the connectives
-rather than equations, and their deductions use the connectives' rules,
-which version `5` exposes below. Naming the program's otherwise unnamed
-folds and porting the remaining deductions are still outstanding.
+The development of the fundamental lemma of the evaluator, about the program
+of `bootstrap/normalization.manifest`, declares its definitions in this
+form, the addition of natural numbers, by which the levels of the
+evaluator's fuel are counted, the first of them, and proves the lemmas of
+addition by `nat-induction`: zero and a successor on each side,
+associativity and commutativity. Its statements after those are formulas of
+the connectives, and it is stated and proved in version `6`
+({ref "reduction-scripts"}[Reductions and cited theorems in formula proofs]).
 
 # Formula statements and proofs
 %%%
@@ -964,6 +959,34 @@ and `CONSTRUCTION` under the equation `e3` of `x` with the bit `b` before
 test that a conditional is stuck on is decided so, by the case analysis of
 its value, and the case in which it fails is refuted by `absurd` at the
 hypothesis that the test's truth follows from.
+
+The documents `normalization-base.proofs.geb`,
+`normalization-const.proofs.geb`, `normalization-rel.proofs.geb` and
+`normalization.proofs.geb` under `bootstrap/proofs/`, each importing the one
+before it and the first `weakening-lemmas.proofs.geb`, state and prove in
+this version the developments of
+`GebTests/Prototypes/FreeTopos/NormalizationBase.lean`,
+`NormalizationConst.lean`, `NormalizationRel.lean` and `Normalization.lean`:
+the fundamental lemma of the evaluator written in Geb, that a term with some
+type evaluates, in an environment related to its context, to a value related
+at that type, about the program of `bootstrap/normalization.manifest`.
+
+The first declares the statement's definitions: the addition and the fuel of
+a natural number, convergence, the relation at a type by the fold of the
+type, the relations of an environment and of a program's definitions, the
+evaluator's functions at a level, and the folds of the type checker and of
+the evaluator. Neither source names its fold, and each is a definition
+whose term writes the fold out, the checker's as its source does and the
+evaluator's as the rose tree's fold that the kernel's fold translates to. A
+theorem equates the source's function with the definition's component, and
+the lemmas on a fold are stated of the definition. Where the Lean
+developments compute an equation of their vocabulary by reduction, the
+document states it as its source writes it, the checker's case and the
+evaluator's step at each label among them, and its companion is its normal
+form with the vocabulary kept folded. Where they search for the data that a
+hypothesis's reduction waits on, splitting bits to a depth, the document
+decides each test of the checker's case by the case analysis of its value
+and inverts the type it tests by a lemma.
 
 # The cache of a development
 %%%

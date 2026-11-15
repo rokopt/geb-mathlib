@@ -1,0 +1,830 @@
+; The constants' development of the fundamental lemma of the evaluator written in Geb, about the
+; program of normalization-base.proofs.geb: the lemmas on lists of convergences, that every
+; element of a list satisfying a predicate satisfies every predicate it implies, that
+; convergences at each element combine, and that the list value of related values is related
+; at the list type; the application of the constants of the folds to their arguments; and the
+; convergence of the fold, and of the fold whose step sees the node, at a step related at the
+; step's type, by induction on trees.
+
+(proofs 6 (program normalization) (import normalization-base.proofs.geb)
+  ; The types of lists of trees, of the evaluation and the application at a level and of their
+  ; pair, of predicates on values, of a value as a function of the environment and of a spine.
+  (abbreviation Ts (List T))
+  (abbreviation Ev (Arrow Ts (Arrow T T)))
+  (abbreviation Ap (Arrow T (Arrow T T)))
+  (abbreviation Fns (Prod Ev Ap))
+  (abbreviation Pred (Arrow T Omega))
+  (abbreviation EvE (Arrow Ts T))
+  (abbreviation Sp (Prod T Ts))
+  (abbreviation Ord (Sum Unit Bit))
+  ; The numeral of the label of the type of trees.
+  (abbreviation n0 (lib bnil))
+  ; The rules of the first components of the library's folds of the successor, of addition, of
+  ; the predecessor and of the case analysis of lists.
+  (abbreviation rebuild-rules rebuild-succ-normal rebuild-add-normal rebuild-succ rebuild-pred
+    (rebuild-lcase Bit Ord)
+    (rebuild-lcase Bit Bits))
+  ; The rules of the base's vocabulary, the definitions it keeps folded last.
+  (abbreviation vocabulary apply-closure nth-cons-succ add-one-folded cmp-succ-folded
+    lt-zero-succ-folded
+    (rebuild-tail-folded T)
+    (iter-succ-folded Ts)
+    eval-first
+    check-first
+    (para-first T)
+    (para-first EvE)
+    check-fold-node
+    eval-fold-node
+    equal-fold
+    equal-node
+    succ-not-0
+    succ-not-1
+    succ-not-2
+    succ-not-3
+    type-in-fold
+    next-fst
+    next-snd
+    level-succ
+    lambek
+    unfold-rebuild
+    map-id
+    check-node-var
+    check-node-lam
+    check-node-app
+    check-node-unit
+    check-node-pair
+    check-node-fst
+    check-node-snd
+    check-node-quote
+    check-node-cond
+    check-node-fold
+    check-node-iter
+    check-node-nil
+    check-node-cons
+    check-node-foldr
+    check-node-prim
+    check-node-ref
+    check-node-lcase
+    check-node-para
+    eval-step-var
+    eval-step-lam
+    eval-step-app
+    eval-step-unit
+    eval-step-pair
+    eval-step-fst
+    eval-step-snd
+    eval-step-quote
+    eval-step-cond
+    eval-step-fold
+    eval-step-iter
+    eval-step-nil
+    eval-step-cons
+    eval-step-foldr
+    eval-step-prim
+    eval-step-ref
+    eval-step-lcase
+    eval-step-para
+    related-tree
+    related-unit
+    related-prod
+    related-arrow
+    related-list
+    rebuild-succ-normal
+    rebuild-add-normal
+    rebuild-succ
+    rebuild-pred
+    (rebuild-lcase Bit Ord)
+    (rebuild-lcase Bit Bits)
+    (folded (lib equal) Check.typeIn Check.checkNode Eval.evStep Eval.apStep Eval.next))
+  ; The rules of the deductions: the lemmas of addition before the vocabulary, the predicate of
+  ; every element of a list unfolded, and the tail's rebuilding of lists of formulas.
+  (abbreviation kit plus-zero plus-succ zero-plus succ-plus plus-assoc vocabulary (unfold all-of)
+    (rebuild-tail-folded Omega))
+  ; The step of the rose tree's fold that the kernel's fold whose step sees the node translates
+  ; to, into pairs of the node rebuilt and a value of the type X, at a node n and a kernel's step
+  ; f, and the folds at the children cs.
+  (abbreviation PaStep (Arrow T (Arrow (List X) X)))
+  (abbreviation PaR (Prod T X))
+  (abbreviation PaFold (Arrow PaStep PaR))
+  (abbreviation para-kids
+    (list-rec (nil T) (c r) (cons T (fst c) r) (lib mapApp PaStep PaR (snd n) f)))
+  (abbreviation para-values
+    (list-rec (nil X) (c r) (cons X (snd c) r) (lib mapApp PaStep PaR (snd n) f)))
+  (abbreviation para-fold-step
+    (lam ((f PaStep))
+      (pair (node Bits (pair (fst n) para-kids))
+        (f (node Bits (pair (fst n) para-kids)) para-values))))
+  (abbreviation para-children
+    (list-rec (nil PaFold) (c r) (cons PaFold (rose-rec PaFold (n) para-fold-step c) r) cs))
+  ; The proof by induction on the children cs, each side reduced with the hypothesis.
+  (abbreviation by-list-induction
+    (induction cs (y ys ih) (reduce full) (reduce-hypotheses full (ih) (reduce full ih))))
+  ; The numerals of the labels of an application, of the fold and of the fold whose step sees the
+  ; node.
+  (abbreviation n10 (lib b1 (lib b1 (lib b0 (lib bnil)))))
+  (abbreviation n17 (lib b0 (lib b1 (lib b0 (lib b0 (lib bnil))))))
+  (abbreviation n25 (lib b0 (lib b1 (lib b0 (lib b1 (lib bnil))))))
+  ; Every element of a list satisfying a predicate satisfies every predicate it implies; by
+  ; induction on the list.
+  (theorem all-of-monotone
+    (internal ()
+      (forall ((xs Ts))
+        (all Pred
+          (lam ((P Pred))
+            (all Pred
+              (lam ((Q Pred))
+                (implies (all-of P xs)
+                  (implies (all T (lam ((x T)) (implies (P x) (Q x)))) (all-of Q xs)))))))))
+    (by
+      (with-rules (kit)
+        (induction xs (y ys ih) (all-intro P (all-intro Q (assume ha (assume hm (reduce full)))))
+          (holds ih (ihf)
+            (all-intro P
+              (all-intro Q
+                (assume ha
+                  (assume hm
+                    (reduce-hypothesis ha ha2 full ()
+                      (and-elim ha2 (hp hps)
+                        (reduced full
+                          (and-intro
+                            (all-elim hm y hy (imp-elim hy (matches hp full) hq (matches hq full)))
+                            (all-elim ihf P h1
+                              (all-elim h1 Q h2
+                                (imp-elim h2 (matches hps full) h3
+                                  (imp-elim h3 (hypothesis hm) h4 (matches h4 full))))))))))))))))))
+  ; The application of a constant of a fold, or of a fold whose step sees the node, to its step
+  ; is a partial application, and to its step and a value the fold of the tree the value quotes.
+  (theorem apply-fold-0
+    (internal ()
+      (forall ((p Fns) (A T) (f T))
+        (equal (Eval.apStep p (node Bits (pair n17 (cons T A (nil T)))) f)
+          (Prelude.some (Eval.valApp (node Bits (pair n17 (cons T A (nil T)))) f)))))
+    (by (reduce full lambek unfold-rebuild map-id rebuild-rules))
+    (normal full vocabulary))
+  (theorem apply-fold-1
+    (internal ()
+      (forall ((p Fns) (A T) (f T) (x T))
+        (equal (Eval.apStep p (Eval.valApp (node Bits (pair n17 (cons T A (nil T)))) f) x)
+          (Eval.bindO (Eval.unquote x) (Eval.foldVal (snd p) A f)))))
+    (by (reduce full (para-first Sp) lambek unfold-rebuild map-id rebuild-rules))
+    (normal full vocabulary))
+  (theorem apply-para-0
+    (internal ()
+      (forall ((p Fns) (A T) (f T))
+        (equal (Eval.apStep p (node Bits (pair n25 (cons T A (nil T)))) f)
+          (Prelude.some (Eval.valApp (node Bits (pair n25 (cons T A (nil T)))) f)))))
+    (by (reduce full lambek unfold-rebuild map-id rebuild-rules))
+    (normal full vocabulary))
+  (theorem apply-para-1
+    (internal ()
+      (forall ((p Fns) (A T) (f T) (x T))
+        (equal (Eval.apStep p (Eval.valApp (node Bits (pair n25 (cons T A (nil T)))) f) x)
+          (Eval.bindO (Eval.unquote x) (Eval.paraVal (snd p) A f)))))
+    (by (reduce full (para-first Sp) lambek unfold-rebuild map-id rebuild-rules))
+    (normal full vocabulary))
+  ; Convergences of a function's values at each element of a list combined: its values at the
+  ; elements, collected, converge to the node of values each of which the predicate holds of; by
+  ; induction on the list, the head's and the rest's stabilities shifted to the sum of their
+  ; thresholds.
+  (theorem all-converge
+    (internal ()
+      (forall ((xs Ts))
+        (all (Arrow Nat (Arrow T T))
+          (lam ((F (Arrow Nat (Arrow T T))))
+            (all Pred
+              (lam ((Pr Pred))
+                (implies (all-of (lam ((x T)) (converges (lam ((k Nat)) (F k x)) Pr)) xs)
+                  (converges (lam ((k Nat)) (Eval.allSomeT (Eval.mapT (F k) xs)))
+                    (lam ((w T)) (all-of Pr (lib children w)))))))))))
+    (by
+      (with-rules (kit)
+        (induction xs (y ys ih)
+          (all-intro F
+            (all-intro Pr
+              (assume h
+                (unfold-formula
+                  (exists-intro zero
+                    (exists-intro (node Bits (pair n0 (nil T)))
+                      (and-intro (all-intro k (reduce full)) (reduce full))))))))
+          (holds ih (ihf)
+            (all-intro F
+              (all-intro Pr
+                (assume h
+                  (reduce-hypothesis h h2 full ()
+                    (and-elim h2 (hc hr)
+                      (unfold-hypothesis hc hc2
+                        (exists-elim hc2 (m1 hc3)
+                          (exists-elim hc3 (w1 hc4)
+                            (and-elim hc4 (s1 r1)
+                              (all-elim ihf F i1
+                                (all-elim i1 Pr i2
+                                  (imp-elim i2 (matches hr full) i3
+                                    (unfold-hypothesis i3 i4
+                                      (exists-elim i4 (m2 i5)
+                                        (exists-elim i5 (w2 i6)
+                                          (and-elim i6 (s2 r2)
+                                            (obtain t1 stable-right ()
+                                              ((lam ((k Nat)) (F k y)) w1 m1 m2)
+                                              (matches s1 full)
+                                              (obtain t2 stable-left ()
+                                                ((lam ((k Nat))
+                                                   (Eval.allSomeT (Eval.mapT (F k) ys))) w2 m2 m1)
+                                                (matches s2 full)
+                                                (unfold-formula
+                                                  (exists-intro (plus m1 m2)
+                                                    (exists-intro
+                                                      (node Bits
+                                                        (pair n0 (cons T w1 (lib children w2))))
+                                                      (and-intro
+                                                        (all-intro k
+                                                          (all-elim t1 k u1
+                                                            (reduce-hypothesis u1 u1n full ()
+                                                              (all-elim t2 k u2
+                                                                (reduce-hypothesis u2 u2n full ()
+                                                                  (reduce full u1n u2n))))))
+                                                        (reduced full
+                                                          (and-intro (matches r1 full)
+                                                            (matches r2
+                                                              full))))))))))))))))))))))))))))))
+  ; The list value of values each related at a type is related at the list type; by induction on
+  ; the list, the test of the rest's list value decided.
+  (theorem related-of-list
+    (internal ()
+      (forall ((xs Ts))
+        (all Ts
+          (lam ((D Ts))
+            (all T
+              (lam ((A T))
+                (implies (all-of (related D A) xs)
+                  ((related D (Check.tyList A)) (Eval.ofList A xs)))))))))
+    (by
+      (with-rules (kit)
+        (induction xs (y ys ih)
+          (all-intro D
+            (all-intro A (assume h (reduced full (and-intro (reduce full) (reduce full))))))
+          (holds ih (ihf)
+            (all-intro D
+              (all-intro A
+                (assume h
+                  (reduce-hypothesis h h2 full ()
+                    (and-elim h2 (h3 h4)
+                      (all-elim ihf D i1
+                        (all-elim i1 A i2
+                          (imp-elim i2 (matches h4 full) i3
+                            (reduce-hypothesis i3 i4 full ()
+                              (and-elim i4 (t1 t2)
+                                (obtain cq list-cases (Bit)
+                                  ((lib lab (Prelude.isSome (Eval.listOf (Eval.ofList A ys)))))
+                                  (or-elim cq (q0 q1)
+                                    (reduce-hypotheses full (q0) (absurd t1 full q0))
+                                    (exists-elim q1 (qb q2)
+                                      (exists-elim q2 (qs q3)
+                                        (reduce-hypotheses full (q3)
+                                          (with-rules (q3 kit)
+                                            (reduced full
+                                              (and-intro (reduce full)
+                                                (and-intro (matches h3 full)
+                                                  (matches t2 full)))))))))))))))))))))))))
+  ; The type of the step of a fold into the type A: from a tree and a list of A to A.
+  (abbreviation fold-step-type
+    (Check.tyArrow (node Bits (pair n0 (nil T))) (Check.tyArrow (Check.tyList A) A)))
+  ; The convergence of the fold, and of the fold whose step sees the node, at the tree t: for all
+  ; definitions, result types and steps related at the step's type, the fold's value at the tree,
+  ; by the application at each level, converges to a value related at the result type.
+  (abbreviation fold-converges-at
+    (all Ts
+      (lam ((D Ts))
+        (all T
+          (lam ((A T))
+            (all T
+              (lam ((f T))
+                (implies ((related D fold-step-type) f)
+                  (converges (lam ((k Nat)) (Eval.foldVal (snd (level-at D k)) A f t))
+                    (related D A))))))))))
+  (abbreviation para-converges-at
+    (all Ts
+      (lam ((D Ts))
+        (all T
+          (lam ((A T))
+            (all T
+              (lam ((f T))
+                (implies ((related D fold-step-type) f)
+                  (converges (lam ((k Nat)) (Eval.paraVal (snd (level-at D k)) A f t))
+                    (related D A))))))))))
+  ; The kernel's step of a fold into trees, the result of the rose tree's fold that it translates
+  ; to, and that fold's step at a node n.
+  (abbreviation TStep (Arrow T (Arrow Ts T)))
+  (abbreviation TFold (Arrow TStep T))
+  (abbreviation t-fold-step
+    (lam ((s TStep)) (s (node Bits (pair (fst n) (nil T))) (lib mapApp TStep T (snd n) s))))
+  ; The steps of the evaluator's folds at the application ap, the type A and the step f, as
+  ; bootstrap/eval.geb writes them.
+  (abbreviation fold-val-step
+    (lam ((l T) (rs (List T)))
+      (Eval.bindO (Eval.allSomeT rs)
+        (lam ((vsN T))
+          (Eval.bindO (ap f (Eval.valQuote (node l (nil T))))
+            (lam ((g T)) (ap g (Eval.ofList A (children vsN)))))))))
+  (abbreviation para-val-step
+    (lam ((nd T) (rs (List T)))
+      (Eval.bindO (Eval.allSomeT rs)
+        (lam ((vsN T))
+          (Eval.bindO (ap f (Eval.valQuote nd))
+            (lam ((g T)) (ap g (Eval.ofList A (children vsN)))))))))
+  ; The step of the rose tree's fold that the kernel's fold whose step sees the node translates
+  ; to, into pairs of the node rebuilt and a tree, and the folds at the children cs.
+  (abbreviation PvR (Prod T T))
+  (abbreviation PvFold (Arrow TStep PvR))
+  (abbreviation pv-kids
+    (list-rec (nil T) (c r) (cons T (fst c) r) (lib mapApp TStep PvR (snd n) s)))
+  (abbreviation pv-values
+    (list-rec (nil T) (c r) (cons T (snd c) r) (lib mapApp TStep PvR (snd n) s)))
+  (abbreviation pv-fold-step
+    (lam ((s TStep))
+      (pair (node Bits (pair (fst n) pv-kids)) (s (node Bits (pair (fst n) pv-kids)) pv-values))))
+  (abbreviation pv-children
+    (list-rec (nil PvFold) (c r) (cons PvFold (rose-rec PvFold (n) pv-fold-step c) r) cs))
+  ; The first components of the folds at the children, applied to a step, are the children; by
+  ; induction on the children with the first component of each.
+  (theorem para-children-first
+    (internal (X)
+      (forall ((F PaStep) (cs Ts))
+        (equal (list-rec (nil T) (c r) (cons T (fst c) r) (lib mapApp PaStep PaR para-children F))
+          cs)))
+    (by (with-rules ((para-first X) kit) by-list-induction))
+    (normal full vocabulary))
+  ; The map of the children's folds applied to the step of the evaluator's fold is the list of
+  ; the fold's values at the children; by induction on the children.
+  (theorem fold-val-children
+    (internal ()
+      (forall ((ap Ap) (A T) (f T) (cs Ts))
+        (equal
+          (lib mapApp TStep T
+            (list-rec (nil TFold) (c r) (cons TFold (rose-rec TFold (n) t-fold-step c) r) cs)
+            (kernel fold-val-step))
+          (Eval.mapT (lam ((c T)) (Eval.foldVal ap A f c)) cs))))
+    (by (with-rules (kit) by-list-induction))
+    (normal full vocabulary))
+  (theorem para-val-children
+    (internal ()
+      (forall ((ap Ap) (A T) (f T) (cs Ts))
+        (equal
+          (list-rec (nil T) (c r) (cons T (snd c) r)
+            (lib mapApp TStep PvR pv-children (kernel para-val-step)))
+          (Eval.mapT (lam ((c T)) (Eval.paraVal ap A f c)) cs))))
+    (by (with-rules (kit) by-list-induction))
+    (normal full vocabulary))
+  ; The hypothesis of the induction on trees at a list of children, for the fold's convergence, is
+  ; that convergence at every child.
+  (theorem fold-converges-all
+    (internal ()
+      (forall ((cs Ts))
+        (implies
+          (equal (list-rec (nil Omega) (t r) (cons Omega (equal fold-converges-at true) r) cs)
+            (list-rec (nil Omega) (t r) (cons Omega (equal unit unit) r) cs))
+          (all-of (lam ((t T)) fold-converges-at) cs))))
+    (by
+      (with-rules (kit)
+        (induction cs (y ys ih) (assume h (reduce full))
+          (holds ih (ihf)
+            (assume h
+              (congruence h (g1 (z (List Omega)) (lib headD Omega (equal unit unit) z))
+                (reduce-hypotheses full (g1)
+                  (holds g1 (g2)
+                    (holds g2 (g3)
+                      (congruence h (g4 (z (List Omega)) (lib tail Omega z))
+                        (reduce-hypotheses full (g4)
+                          (imp-elim ihf (matches g4 full) hall
+                            (reduced full
+                              (and-intro (matches g3 full) (matches hall full))))))))))))))))
+  ; The fold computes at a step related at the step's type: by induction on trees, the children's
+  ; values converging together, the step's application to the node's label and then to the list
+  ; value of the children's values each converging.
+  (theorem fold-converges (internal () (forall ((t T)) fold-converges-at))
+    (by
+      (with-rules (fold-val-children kit)
+        (tree-induction t (l cs ih)
+          (obtain ra fold-converges-all () (cs)
+            (imp-elim ra (hypothesis ih) hall
+              (all-intro D
+                (all-intro A
+                  (all-intro f
+                    (assume hf
+                      (obtain mono all-of-monotone () (cs)
+                        (all-elim mono (lam ((t T)) fold-converges-at) mono1
+                          (all-elim mono1
+                            (lam ((c T))
+                              (converges (lam ((k Nat)) (Eval.foldVal (snd (level-at D k)) A f c))
+                                (related D A)))
+                            mono2
+                            (imp-elim mono2 (matches hall full) mono3
+                              (imp-elim mono3
+                                (all-intro x
+                                  (assume hx
+                                    (reduce-hypothesis hx hx2 full ()
+                                      (all-elim hx2 D j1
+                                        (all-elim j1 A j2
+                                          (all-elim j2 f j3
+                                            (imp-elim j3 (matches hf full) j4
+                                              (matches j4 full))))))))
+                                hq
+                                (obtain ac all-converge () (cs)
+                                  (all-elim ac
+                                    (lam ((k Nat) (c T)) (Eval.foldVal (snd (level-at D k)) A f c))
+                                    ac1
+                                    (all-elim ac1 (related D A) ac2
+                                      (imp-elim ac2 (matches hq full) ac3
+                                        (unfold-hypothesis ac3 ac4
+                                          (exists-elim ac4 (N ac5)
+                                            (exists-elim ac5 (r ac6)
+                                              (and-elim ac6 (sC rC)
+                                                (reduce-hypothesis hf hf2 full ()
+                                                  (all-elim hf2
+                                                    (Eval.valQuote (node Bits (pair l (nil T))))
+                                                    a1
+                                                    (imp-elim a1
+                                                      (reduced full
+                                                        (exists-intro (node Bits (pair l (nil T)))
+                                                          (reduce full)))
+                                                      a2
+                                                      (unfold-hypothesis a2 a3
+                                                        (exists-elim a3 (m1 a4)
+                                                          (exists-elim a4 (g a5)
+                                                            (and-elim a5 (s1 rg)
+                                                              (reduce-hypothesis rg rg2 full ()
+                                                                (all-elim rg2
+                                                                  (Eval.ofList A (lib children r))
+                                                                  b1
+                                                                  (imp-elim b1
+                                                                    (obtain rl related-of-list ()
+                                                                      ((lib children r))
+                                                                      (all-elim rl D rl1
+                                                                        (all-elim rl1 A rl2
+                                                                          (imp-elim rl2
+                                                                            (matches rC full)
+                                                                            rl3
+                                                                            (matches rl3 full)))))
+                                                                    b2
+                                                                    (unfold-hypothesis b2 b3
+                                                                      (exists-elim b3 (m2 b4)
+                                                                        (exists-elim b4 (w b5)
+                                                                          (and-elim b5 (s2 rw)
+                                                                            (obtain c1 stable-right
+                                                                              ()
+                                                                              ((lam ((k Nat))
+                                                                                 (Eval.allSomeT
+                                                                                   (Eval.mapT
+                                                                                     (lam ((c T))
+                                                                                       (Eval.foldVal
+                                                                                         (snd
+                                                                                           (level-at
+                                                                                             D
+                                                                                             k))
+                                                                                         A
+                                                                                         f
+                                                                                         c))
+                                                                                     cs))) r N m1)
+                                                                              (matches sC full)
+                                                                              (obtain c2
+                                                                                stable-right
+                                                                                ()
+                                                                                ((lam ((k Nat))
+                                                                                   (Eval.allSomeT
+                                                                                     (Eval.mapT
+                                                                                       (lam ((c T))
+                                                                                         (Eval.foldVal
+                                                                                           (snd
+                                                                                             (level-at
+                                                                                               D
+                                                                                               k))
+                                                                                           A
+                                                                                           f
+                                                                                           c))
+                                                                                       cs))) r
+                                                                                 (plus N m1)
+                                                                                 m2)
+                                                                                (matches c1 full)
+                                                                                (obtain d1
+                                                                                  stable-left
+                                                                                  ()
+                                                                                  ((lam ((k Nat))
+                                                                                     ((snd
+                                                                                        (level-at D
+                                                                                          k)) f
+                                                                                      (Eval.valQuote
+                                                                                        (node Bits
+                                                                                          (pair l
+                                                                                            (nil
+                                                                                              T))))))
+                                                                                   g
+                                                                                   m1
+                                                                                   N)
+                                                                                  (matches s1 full)
+                                                                                  (obtain d2
+                                                                                    stable-right
+                                                                                    ()
+                                                                                    ((lam ((k Nat))
+                                                                                       ((snd
+                                                                                          (level-at
+                                                                                            D
+                                                                                            k)) f
+                                                                                        (Eval.valQuote
+                                                                                          (node Bits
+                                                                                            (pair l
+                                                                                              (nil
+                                                                                                T))))))
+                                                                                     g
+                                                                                     (plus N m1)
+                                                                                     m2)
+                                                                                    (matches d1
+                                                                                      full)
+                                                                                    (obtain e1
+                                                                                      stable-left
+                                                                                      ()
+                                                                                      ((lam
+                                                                                         ((k Nat))
+                                                                                         ((snd
+                                                                                            (level-at
+                                                                                              D
+                                                                                              k)) g
+                                                                                          (Eval.ofList
+                                                                                            A
+                                                                                            (lib
+                                                                                              children
+                                                                                              r))))
+                                                                                       w
+                                                                                       m2
+                                                                                       (plus N m1))
+                                                                                      (matches s2
+                                                                                        full)
+                                                                                      (unfold-formula
+                                                                                        (exists-intro
+                                                                                          (plus
+                                                                                            (plus N
+                                                                                              m1)
+                                                                                            m2)
+                                                                                          (exists-intro
+                                                                                            w
+                                                                                            (and-intro
+                                                                                              (all-intro
+                                                                                                k
+                                                                                                (all-elim
+                                                                                                  c2
+                                                                                                  k
+                                                                                                  x1
+                                                                                                  (reduce-hypothesis
+                                                                                                    x1
+                                                                                                    x1n
+                                                                                                    full
+                                                                                                    ()
+                                                                                                    (all-elim
+                                                                                                      d2
+                                                                                                      k
+                                                                                                      x2
+                                                                                                      (reduce-hypothesis
+                                                                                                        x2
+                                                                                                        x2n
+                                                                                                        full
+                                                                                                        ()
+                                                                                                        (all-elim
+                                                                                                          e1
+                                                                                                          k
+                                                                                                          x3
+                                                                                                          (reduce-hypothesis
+                                                                                                            x3
+                                                                                                            x3n
+                                                                                                            full
+                                                                                                            ()
+                                                                                                            (reduce
+                                                                                                              full
+                                                                                                              x1n
+                                                                                                              x2n
+                                                                                                              x3n))))))))
+                                                                                              (matches
+                                                                                                rw
+                                                                                                full)))))))))))))))))))))))))))))))))))))))))))))))
+  ; The same hypothesis for the convergence of the fold whose step sees the node.
+  (theorem para-converges-all
+    (internal ()
+      (forall ((cs Ts))
+        (implies
+          (equal (list-rec (nil Omega) (t r) (cons Omega (equal para-converges-at true) r) cs)
+            (list-rec (nil Omega) (t r) (cons Omega (equal unit unit) r) cs))
+          (all-of (lam ((t T)) para-converges-at) cs))))
+    (by
+      (with-rules (kit)
+        (induction cs (y ys ih) (assume h (reduce full))
+          (holds ih (ihf)
+            (assume h
+              (congruence h (g1 (z (List Omega)) (lib headD Omega (equal unit unit) z))
+                (reduce-hypotheses full (g1)
+                  (holds g1 (g2)
+                    (holds g2 (g3)
+                      (congruence h (g4 (z (List Omega)) (lib tail Omega z))
+                        (reduce-hypotheses full (g4)
+                          (imp-elim ihf (matches g4 full) hall
+                            (reduced full
+                              (and-intro (matches g3 full) (matches hall full))))))))))))))))
+  ; The fold whose step sees the node computes at a step related at the step's type, as the fold
+  ; does, the step applied to the node.
+  (theorem para-converges (internal () (forall ((t T)) para-converges-at))
+    (by
+      (with-rules (para-val-children (para-first T) (para-children-first T) kit)
+        (tree-induction t (l cs ih)
+          (obtain ra para-converges-all () (cs)
+            (imp-elim ra (hypothesis ih) hall
+              (all-intro D
+                (all-intro A
+                  (all-intro f
+                    (assume hf
+                      (obtain mono all-of-monotone () (cs)
+                        (all-elim mono (lam ((t T)) para-converges-at) mono1
+                          (all-elim mono1
+                            (lam ((c T))
+                              (converges (lam ((k Nat)) (Eval.paraVal (snd (level-at D k)) A f c))
+                                (related D A)))
+                            mono2
+                            (imp-elim mono2 (matches hall full) mono3
+                              (imp-elim mono3
+                                (all-intro x
+                                  (assume hx
+                                    (reduce-hypothesis hx hx2 full ()
+                                      (all-elim hx2 D j1
+                                        (all-elim j1 A j2
+                                          (all-elim j2 f j3
+                                            (imp-elim j3 (matches hf full) j4
+                                              (matches j4 full))))))))
+                                hq
+                                (obtain ac all-converge () (cs)
+                                  (all-elim ac
+                                    (lam ((k Nat) (c T)) (Eval.paraVal (snd (level-at D k)) A f c))
+                                    ac1
+                                    (all-elim ac1 (related D A) ac2
+                                      (imp-elim ac2 (matches hq full) ac3
+                                        (unfold-hypothesis ac3 ac4
+                                          (exists-elim ac4 (N ac5)
+                                            (exists-elim ac5 (r ac6)
+                                              (and-elim ac6 (sC rC)
+                                                (reduce-hypothesis hf hf2 full ()
+                                                  (all-elim hf2
+                                                    (Eval.valQuote (node Bits (pair l cs)))
+                                                    a1
+                                                    (imp-elim a1
+                                                      (reduced full
+                                                        (exists-intro (node Bits (pair l cs))
+                                                          (reduce full)))
+                                                      a2
+                                                      (unfold-hypothesis a2 a3
+                                                        (exists-elim a3 (m1 a4)
+                                                          (exists-elim a4 (g a5)
+                                                            (and-elim a5 (s1 rg)
+                                                              (reduce-hypothesis rg rg2 full ()
+                                                                (all-elim rg2
+                                                                  (Eval.ofList A (lib children r))
+                                                                  b1
+                                                                  (imp-elim b1
+                                                                    (obtain rl related-of-list ()
+                                                                      ((lib children r))
+                                                                      (all-elim rl D rl1
+                                                                        (all-elim rl1 A rl2
+                                                                          (imp-elim rl2
+                                                                            (matches rC full)
+                                                                            rl3
+                                                                            (matches rl3 full)))))
+                                                                    b2
+                                                                    (unfold-hypothesis b2 b3
+                                                                      (exists-elim b3 (m2 b4)
+                                                                        (exists-elim b4 (w b5)
+                                                                          (and-elim b5 (s2 rw)
+                                                                            (obtain c1 stable-right
+                                                                              ()
+                                                                              ((lam ((k Nat))
+                                                                                 (Eval.allSomeT
+                                                                                   (Eval.mapT
+                                                                                     (lam ((c T))
+                                                                                       (Eval.paraVal
+                                                                                         (snd
+                                                                                           (level-at
+                                                                                             D
+                                                                                             k))
+                                                                                         A
+                                                                                         f
+                                                                                         c))
+                                                                                     cs))) r N m1)
+                                                                              (matches sC full)
+                                                                              (obtain c2
+                                                                                stable-right
+                                                                                ()
+                                                                                ((lam ((k Nat))
+                                                                                   (Eval.allSomeT
+                                                                                     (Eval.mapT
+                                                                                       (lam ((c T))
+                                                                                         (Eval.paraVal
+                                                                                           (snd
+                                                                                             (level-at
+                                                                                               D
+                                                                                               k))
+                                                                                           A
+                                                                                           f
+                                                                                           c))
+                                                                                       cs))) r
+                                                                                 (plus N m1)
+                                                                                 m2)
+                                                                                (matches c1 full)
+                                                                                (obtain d1
+                                                                                  stable-left
+                                                                                  ()
+                                                                                  ((lam ((k Nat))
+                                                                                     ((snd
+                                                                                        (level-at D
+                                                                                          k)) f
+                                                                                      (Eval.valQuote
+                                                                                        (node Bits
+                                                                                          (pair l
+                                                                                            cs)))))
+                                                                                   g
+                                                                                   m1
+                                                                                   N)
+                                                                                  (matches s1 full)
+                                                                                  (obtain d2
+                                                                                    stable-right
+                                                                                    ()
+                                                                                    ((lam ((k Nat))
+                                                                                       ((snd
+                                                                                          (level-at
+                                                                                            D
+                                                                                            k)) f
+                                                                                        (Eval.valQuote
+                                                                                          (node Bits
+                                                                                            (pair l
+                                                                                              cs)))))
+                                                                                     g
+                                                                                     (plus N m1)
+                                                                                     m2)
+                                                                                    (matches d1
+                                                                                      full)
+                                                                                    (obtain e1
+                                                                                      stable-left
+                                                                                      ()
+                                                                                      ((lam
+                                                                                         ((k Nat))
+                                                                                         ((snd
+                                                                                            (level-at
+                                                                                              D
+                                                                                              k)) g
+                                                                                          (Eval.ofList
+                                                                                            A
+                                                                                            (lib
+                                                                                              children
+                                                                                              r))))
+                                                                                       w
+                                                                                       m2
+                                                                                       (plus N m1))
+                                                                                      (matches s2
+                                                                                        full)
+                                                                                      (unfold-formula
+                                                                                        (exists-intro
+                                                                                          (plus
+                                                                                            (plus N
+                                                                                              m1)
+                                                                                            m2)
+                                                                                          (exists-intro
+                                                                                            w
+                                                                                            (and-intro
+                                                                                              (all-intro
+                                                                                                k
+                                                                                                (all-elim
+                                                                                                  c2
+                                                                                                  k
+                                                                                                  x1
+                                                                                                  (reduce-hypothesis
+                                                                                                    x1
+                                                                                                    x1n
+                                                                                                    full
+                                                                                                    ()
+                                                                                                    (all-elim
+                                                                                                      d2
+                                                                                                      k
+                                                                                                      x2
+                                                                                                      (reduce-hypothesis
+                                                                                                        x2
+                                                                                                        x2n
+                                                                                                        full
+                                                                                                        ()
+                                                                                                        (all-elim
+                                                                                                          e1
+                                                                                                          k
+                                                                                                          x3
+                                                                                                          (reduce-hypothesis
+                                                                                                            x3
+                                                                                                            x3n
+                                                                                                            full
+                                                                                                            ()
+                                                                                                            (reduce
+                                                                                                              full
+                                                                                                              x1n
+                                                                                                              x2n
+                                                                                                              x3n))))))))
+                                                                                              (matches
+                                                                                                rw
+                                                                                                full))))))))))))))))))))))))))))))))))))))))))))))))
