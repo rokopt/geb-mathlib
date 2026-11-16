@@ -16,6 +16,7 @@ import tempfile
 
 repo = Path.cwd()
 author = repo / '.lake/build/bin/geb-author'
+kernel = repo / '.lake/build/bin/geb-kernel'
 preserve = repo / 'scripts/preserve.py'
 
 def run(argv, ok=True):
@@ -49,6 +50,16 @@ with tempfile.TemporaryDirectory(prefix='geb-migration-') as directory:
     run([author, 'prove', manifest, proofs, root / 'unproved.cert'], ok=False)
     old = root / 'old'
     archive('record', manifest, proofs, old, '--certificate', cert)
+    # An archived image can use format 1 while the current compiler writes format 2.
+    # Keep the fixture's inventory consistent, then treat it as immutable.
+    metadata = json.loads((old / 'record.json').read_text())
+    for name in ('program.img', 'proof.cert'):
+        path = old / name
+        image = path.read_bytes()
+        assert image[:6] == b'GEBK\x02\x01'
+        path.write_bytes(b'GEBK\x01' + image[6:])
+        metadata['files'][name] = hashlib.sha256(path.read_bytes()).hexdigest()
+    (old / 'record.json').write_text(json.dumps(metadata))
     # Neither the original project nor its location is needed for migration.
     shutil.rmtree(project)
     moved = root / 'relocated old'
@@ -68,11 +79,13 @@ with tempfile.TemporaryDirectory(prefix='geb-migration-') as directory:
     receipt = json.loads((new / 'migration.json').read_text())
     assert receipt == dict(format='geb-migration/v1', operation='proofs/1-to-2',
         previous_record_sha256=hashlib.sha256((old / 'record.json').read_bytes()).hexdigest())
-    # All archived source files and the compiled meaning remain byte-identical.
+    # Source files and elaborated definitions stay byte-identical; image headers migrate.
     for name in info['sources']:
         assert (new / 'project' / name).read_bytes() == (old / 'project' / name).read_bytes()
-    for name in ('program.img', 'program.defs', info['manifest']):
+    for name in ('program.defs', info['manifest']):
         assert (new / name).read_bytes() == (old / name).read_bytes()
+    run([kernel, 'migrate-image', old / 'program.img', root / 'old-current.img'])
+    assert (new / 'program.img').read_bytes() == (root / 'old-current.img').read_bytes()
     # Formatting may change; replacing only the version back reproduces the full
     # canonical decorated document, including comments on the version atom.
     restored = root / 'restored.geb'

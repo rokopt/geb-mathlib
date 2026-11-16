@@ -14,28 +14,37 @@ set_option doc.verso true in
 
 A closed bundle is a program as one rose tree: its definitions in order, each a kernel term
 referring to earlier ones by position, beside a table of their names. An image is a bundle
-serialized as bytes: a header of a magic number, a format version and the number of
-payload bits, followed by the bundle's serialization at word level. A file is presented to
+serialized as bytes: a header of a magic number, a format version, a kernel profile and the
+number of payload bits, followed by the bundle's serialization at word level. A file is presented to
 a program as the tree whose children are the leaves of its bytes, and a program's output
 tree is written back as the bytes of its children's labels.
 
 The bundle's tree is a node of label {lit}`100` over two nodes: one of label {lit}`101`
 whose children are the definitions, and one of label {lit}`102` whose children are the
 names, each a node whose children are the leaves of its characters' code points. The
-header is the four bytes of {lit}`GEBK`, the version byte {lit}`1`, and the bit count as
-eight bytes, least significant first.
+header is the four bytes of {lit}`GEBK`, the format byte {lit}`2`, the kernel-profile byte
+{lit}`1` identifying {lit}`geb-kernel/v1`, and the bit count as eight bytes, least significant
+first. The format determines the framing and payload codec; the profile determines the kernel's
+types, term labels and primitives. Their versions are independent. Format {lit}`1` has no profile
+byte and denotes {lit}`geb-kernel/v1` implicitly. Both formats are read; writers use format
+{lit}`2`. Migration changes the header alone, retaining the bit count and payload bytes.
 
 ## Main definitions
 
 * {lit}`bundle`, {lit}`unbundle` — a program's definitions as a tree, and back.
 * {lit}`writeImage`, {lit}`readImage` — the image of a tree, and the tree of an image.
+* {lit}`migrateImage` — validate an image and give it the explicit-profile header.
 * {lit}`runEntry` — the application of a bundle's named definition to an input tree.
 * {lit}`ofBytes`, {lit}`toBytes` — a file's bytes as a tree, and a tree's children as bytes.
 
+## Main statements
+
+* {lit}`readImage_migrateImage` — migration preserves the decoded tree.
+
 ## Implementation notes
 
-The reader of an image rejects a wrong magic number or version, a bit count inconsistent
-with the payload's length, a payload whose bits beyond the count are not zero, and a
+The reader of an image rejects a wrong magic number, unsupported format or kernel profile,
+a bit count inconsistent with the payload's length, nonzero bits beyond the count, and a
 payload holding anything but exactly one tree; {name}`Geb.Packed.decode` makes the last
 check. The payload's codec agrees with {name}`Geb.RoseTree.wire` by test, not by proof.
 
@@ -81,8 +90,18 @@ def runEntry (t : Tree) (name : List Char) (input : Tree) : Option Tree := do
   let i ← (ds.map Prod.fst).idxOf? name
   (← G[i]?).apply input
 
+/-- The version of the image's framing and payload codec, independently of the kernel profile. -/
+def imageVersion : UInt8 := 2
+
+/-- The supported kernel profile: byte {lit}`1` identifies {lit}`geb-kernel/v1`, the types,
+term labels and primitive indices of the bootstrap kernel. -/
+def imageKernelProfile : UInt8 := 1
+
 /-- The magic number and version of the image format. -/
-def imageMagic : List UInt8 := [0x47, 0x45, 0x42, 0x4B, 1]
+def imageMagic : List UInt8 := [0x47, 0x45, 0x42, 0x4B, imageVersion]
+
+/-- The image header before the bit count, including its kernel profile. -/
+def imageHeader : List UInt8 := imageMagic ++ [imageKernelProfile]
 
 /-- The bytes of a natural number below {lit}`2^64`, least significant first. -/
 def natBytes (n : ℕ) : List UInt8 := (List.range 8).map fun i ↦ (n / 256 ^ i % 256).toUInt8
@@ -93,18 +112,54 @@ def bytesNat (bs : List UInt8) : ℕ := bs.foldr (fun b n ↦ b.toNat + 256 * n)
 /-- The image of a tree. -/
 def writeImage (t : Tree) : ByteArray :=
   let b := Packed.encode t
-  ⟨(imageMagic ++ natBytes b.nbits).toArray⟩ ++ b.bytes
+  ⟨(imageHeader ++ natBytes b.nbits).toArray⟩ ++ b.bytes
 
-/-- The tree of an image, when the image is well formed. -/
-def readImage (img : ByteArray) : Option Tree :=
+/-- The bit count and payload after a supported header. Format {lit}`1` denotes profile
+{lit}`1` implicitly; format {lit}`2` carries it explicitly. No other profile is accepted. -/
+def imageBody (img : ByteArray) : Option (List UInt8) :=
   let bs := img.data.toList
-  let nbits := bytesNat ((bs.drop 5).take 8)
-  let payload := bs.drop 13
+  if bs.take 5 == [0x47, 0x45, 0x42, 0x4B, 1] then some (bs.drop 5)
+  else if bs.take 6 == imageHeader then some (bs.drop 6)
+  else none
+
+/-- Decode an image's bit count and payload, checking its length, padding and tree encoding. -/
+def readImageBody (bs : List UInt8) : Option Tree :=
+  let nbits := bytesNat (bs.take 8)
+  let payload := bs.drop 8
   let slack := 8 * payload.length - nbits
-  if bs.take 5 == imageMagic && 13 ≤ bs.length && payload.length == (nbits + 7) / 8 &&
+  if 8 ≤ bs.length && payload.length == (nbits + 7) / 8 &&
       payload.getLast?.all (fun b ↦ b.toNat / 2 ^ (8 - slack) == 0) then
     Packed.decode ⟨⟨payload.toArray⟩, nbits⟩
   else none
+
+/-- The tree of a well-formed image with a supported format and kernel profile. -/
+def readImage (img : ByteArray) : Option Tree := (imageBody img).bind readImageBody
+
+/-- Validate an image and replace its header with the explicit-profile header, retaining its
+bit count and payload bytes. Malformed images and unsupported profiles are rejected. -/
+def migrateImage (img : ByteArray) : Option ByteArray := do
+  let body ← imageBody img
+  let _ ← readImageBody body
+  return ⟨(imageHeader ++ body).toArray⟩
+
+/-- Reading the explicit-profile header recovers the body. -/
+theorem imageBody_header (body : List UInt8) :
+    imageBody ⟨(imageHeader ++ body).toArray⟩ = some body := by
+  simp [imageBody, imageHeader, imageMagic, imageVersion, imageKernelProfile]
+
+/-- Migrating an accepted image preserves its decoded tree, without re-encoding the payload. -/
+theorem readImage_migrateImage (img out : ByteArray) (h : migrateImage img = some out) :
+    readImage out = readImage img := by
+  unfold migrateImage at h
+  cases hb : imageBody img with
+  | none => simp [hb] at h
+  | some body =>
+    cases hr : readImageBody body with
+    | none => simp [hb, hr] at h
+    | some t =>
+      simp [hb, hr] at h
+      subst out
+      simp [readImage, imageBody_header, hb]
 
 /-- A file's bytes as a tree: a node whose children are the leaves of the bytes. -/
 def ofBytes (b : ByteArray) : Tree := mk 0 (b.data.toList.map fun x ↦ leaf x.toNat)

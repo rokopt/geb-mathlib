@@ -3,7 +3,8 @@
 ; Authors: Terence Rokop
 ;
 ; The image of a tree, byte for byte the image the seed writes: a header of the magic number
-; GEBK, the version 1 and the bit count in eight bytes, least significant first, followed by
+; GEBK, the format version 2, the kernel profile 1 (geb-kernel/v1), and the bit count in eight
+; bytes, least significant first, followed by
 ; the tree's serialization packed eight bits to a byte, least significant first. Each node in
 ; preorder is its arity in unary ones and a zero, the Elias delta code of its label's length,
 ; its label's bits below the sentinel, least significant first, and then its children.
@@ -79,5 +80,5 @@
     (lam ((t T))
       (let bits Ts (treeBits t)
         (node 0
-          (append (cons 71 (cons 69 (cons 66 (cons 75 (cons 1 (nil T))))))
+          (append (cons 71 (cons 69 (cons 66 (cons 75 (cons 2 (cons 1 (nil T)))))))
             (append (lowDigits 256 (length bits) 8) (packBits bits))))))))

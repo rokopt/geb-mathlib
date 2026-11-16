@@ -3801,12 +3801,19 @@ import-direction rules above are enforced by
   (`Geb.Kernel.readDatum`), loads them in order
   (`Geb.Kernel.load`), and applies the last to an input tree
   (`Geb.Kernel.runMain`). `Image.lean` stores a program as one tree
-  (`Geb.Kernel.bundle`), writes and reads its image, a versioned header
+  (`Geb.Kernel.bundle`), writes and reads its image, a header with separate
+  format and kernel-profile versions
   over the word-level serialization (`Geb.Kernel.writeImage`,
   `Geb.Kernel.readImage`), and runs a bundle's named definition
   (`Geb.Kernel.runEntry`); `Command.lean` is the host driver of the
   executable `geb-kernel`, which builds images from source and runs them
-  on files, and its `Geb.Kernel.Command.runFile` applies a function of
+  on files. Format 2 explicitly identifies profile `geb-kernel/v1`, which
+  format 1 implies. `geb-kernel migrate-image INPUT OUTPUT` validates
+  either format and writes format 2 without changing the bit count or
+  payload; `Geb.Kernel.readImage_migrateImage` proves preservation of the
+  decoded tree. Unsupported formats and profiles are rejected. Preservation
+  records compare images after this header migration without rewriting the
+  archived files. `Geb.Kernel.Command.runFile` applies a function of
   trees to a file. `Manifest.lean` reads a program's manifest, its edition,
   the profile of its sources, its sources in order and its entry points
   (`Geb.Kernel.Manifest.parse`),

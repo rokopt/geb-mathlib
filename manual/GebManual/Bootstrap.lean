@@ -2658,12 +2658,18 @@ tag := "definitions-and-images"
   the image format or compiler inputs. The pass reads `def`, `deftype`
   and `defnum`; module and datatype elaboration need their own maps of
   source occurrences before those forms can use this correspondence.
-* Lean: the image, a header of a magic number, a version and a bit
-  count, followed by the word-level form of the interleaved wire
-  format without sharing ({name}`Geb.Kernel.writeImage`). Its reader
-  {name}`Geb.Kernel.readImage` rejects a wrong magic number or
-  version, truncation, trailing data and non-zero bits beyond the
-  count. The host driver, the executable `geb-kernel` over
+* Lean: the image, a header of a magic number, a format version, a
+  kernel profile and a bit count, followed by the word-level form of the
+  interleaved wire format without sharing ({name}`Geb.Kernel.writeImage`).
+  Its reader {name}`Geb.Kernel.readImage` rejects a wrong magic number,
+  unsupported format or kernel profile, truncation, trailing data and non-zero bits
+  beyond the count. Format `2` carries profile `1`, identifying
+  `geb-kernel/v1`, separately from its format version. Format `1`
+  implies that same profile. `geb-kernel migrate-image INPUT OUTPUT`
+  validates either format and writes format `2`, retaining the bit
+  count and payload bytes; {name}`Geb.Kernel.readImage_migrateImage`
+  proves that migration preserves the decoded tree. The host driver,
+  the executable `geb-kernel` over
   {name}`Geb.Kernel.Command.run`, builds an image from a program's
   source and runs an image's named definition on a file, presented as
   the tree whose children are the leaves of its bytes. The word-level
@@ -5895,7 +5901,7 @@ remains.
     read, and keeps its further fields
     ({name}`Geb.Kernel.Document.Profile.check`,
     {name}`Geb.Kernel.Document.readStrictDurable_printCanonDurable`). A
-    manifest names its edition; an image the version of its format
+    manifest names its edition; an image its format version and kernel profile
     ({name}`Geb.Kernel.readImage`); a definition's payload its schema
     and the kernel's profile, `geb-def/v1` and `geb-kernel/v1`
     (`Geb/Prototypes/Kernel/Identity.lean`); and the envelope of a
@@ -5905,8 +5911,9 @@ remains.
     numbers that name no format and no theory
     (`GebTests/Prototypes/FreeTopos/Stored.lean`), each replaced by an
     enveloped certificate as its development is stated in a proof
-    document, in progress; and the kernel's profile in an image, whose
-    version stands for its format and for that profile together, ready.
+    document, in progress. The image's format and kernel profile are
+    separate fields; migration from the implicit-profile format preserves
+    the decoded tree ({name}`Geb.Kernel.readImage_migrateImage`).
 *
   * Persistent data
   * Serialized values, tags of datatype constructors, examples and saved
@@ -6150,7 +6157,9 @@ is proved, which the row of the emitted Lean states.
     evaluator's fundamental lemma ({ref "goedel-t"}[Gödel's T])
 *
   * Images
-  * Tested: the reader of images reads what the writer writes, and the
+  * Proved: migration to an explicit kernel profile preserves the decoded
+    tree ({name}`Geb.Kernel.readImage_migrateImage`). Tested: the reader
+    of images reads what the writer writes, and the
     word-level codec agrees with {name}`Geb.RoseTree.wire`
   * Tested against Lean's: `bootstrap/serialize.geb`
     (`GebTests/Prototypes/Stage0.lean`)
